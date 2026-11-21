@@ -8260,7 +8260,7 @@
   },
   "karte2.erleben.sinn.entdeckung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.entdeckung#1 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#1 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#2 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#2 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#3 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.erleben.sinn.entdeckung#4 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.erleben.sinn.entdeckung#5 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#5 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#6 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.erleben.sinn.entdeckung#7 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#7 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.entdeckung#1 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#1 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#2 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#2 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#3 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#3 gtx: Station seit der Messung geändert · karte2.erleben.sinn.entdeckung#4 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#4 gtx: Station seit der Messung geändert · karte2.erleben.sinn.entdeckung#5 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#5 gtx: ungemessen (R10) · karte2.erleben.sinn.entdeckung#6 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#6 gtx: Station seit der Messung geändert · karte2.erleben.sinn.entdeckung#7 radeon: ungemessen (R10) · karte2.erleben.sinn.entdeckung#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.sinn.entdeckung#1",
@@ -8315,9 +8315,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.sinn.entdeckung#4",
@@ -8334,9 +8333,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.sinn.entdeckung#5",
@@ -8371,9 +8369,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.sinn.entdeckung#7",
@@ -8390,9 +8387,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -10482,7 +10478,7 @@
   },
   "karte2.erleben.spieler.nichtleib": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.nichtleib#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · karte2.erleben.spieler.nichtleib#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · karte2.erleben.spieler.nichtleib#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · karte2.erleben.spieler.nichtleib#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · karte2.erleben.spieler.nichtleib#5 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · karte2.erleben.spieler.nichtleib#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#7 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.nichtleib#1 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#1 gtx: Station seit der Messung geändert · karte2.erleben.spieler.nichtleib#2 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.nichtleib#3 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.nichtleib#4 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.nichtleib#5 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.nichtleib#7 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.nichtleib#1",
@@ -10490,7 +10486,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -10500,9 +10496,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -10511,7 +10506,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -10520,9 +10515,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.spieler.nichtleib#3",
@@ -10530,7 +10524,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -10539,9 +10533,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.spieler.nichtleib#4",
@@ -10549,7 +10542,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -10558,9 +10551,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.spieler.nichtleib#5",
@@ -10586,7 +10578,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -10595,9 +10587,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.erleben.spieler.nichtleib#7",
@@ -10605,7 +10596,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -10614,9 +10605,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -18399,7 +18389,7 @@
   },
   "karte2.mensch.kultur.bildkunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#1 gtx: ungemessen (R10) — zuletzt an c445936d: Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.bildkunst#1",
@@ -18417,7 +18407,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10) — zuletzt an c445936d: Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -34339,7 +34329,7 @@
   },
   "karte2.same.gedaechtnis.schicht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.schicht#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.same.gedaechtnis.schicht#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.same.gedaechtnis.schicht#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.same.gedaechtnis.schicht#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.same.gedaechtnis.schicht#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.same.gedaechtnis.schicht#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.gedaechtnis.schicht#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.schicht#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#1 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.schicht#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#2 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.schicht#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#3 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.schicht#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#4 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.schicht#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#5 gtx: Station seit der Messung geändert · karte2.same.gedaechtnis.schicht#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.schicht#1",
@@ -34347,7 +34337,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -34357,9 +34347,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -34368,7 +34357,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -34377,9 +34366,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.gedaechtnis.schicht#3",
@@ -34387,7 +34375,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -34396,9 +34384,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.gedaechtnis.schicht#4",
@@ -34406,7 +34393,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -34415,9 +34402,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.gedaechtnis.schicht#5",
@@ -34425,7 +34411,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -34434,9 +34420,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.gedaechtnis.schicht#6",
@@ -34444,7 +34429,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -34453,9 +34438,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +14) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -35637,7 +35621,7 @@
   },
   "karte2.same.massstab.nahe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.nahe#1 radeon: ungemessen (R10) · karte2.same.massstab.nahe#1 gtx: ungemessen (R10) · karte2.same.massstab.nahe#2 radeon: ungemessen (R10) · karte2.same.massstab.nahe#2 gtx: ungemessen (R10) · karte2.same.massstab.nahe#3 radeon: ungemessen (R10) · karte2.same.massstab.nahe#3 gtx: ungemessen (R10) · karte2.same.massstab.nahe#4 radeon: ungemessen (R10) · karte2.same.massstab.nahe#4 gtx: ungemessen (R10) · karte2.same.massstab.nahe#5 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +12) · karte2.same.massstab.nahe#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.massstab.nahe#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +12) · karte2.same.massstab.nahe#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.massstab.nahe#7 radeon: ungemessen (R10) · karte2.same.massstab.nahe#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.nahe#1 radeon: ungemessen (R10) · karte2.same.massstab.nahe#1 gtx: ungemessen (R10) · karte2.same.massstab.nahe#2 radeon: ungemessen (R10) · karte2.same.massstab.nahe#2 gtx: ungemessen (R10) · karte2.same.massstab.nahe#3 radeon: ungemessen (R10) · karte2.same.massstab.nahe#3 gtx: ungemessen (R10) · karte2.same.massstab.nahe#4 radeon: ungemessen (R10) · karte2.same.massstab.nahe#4 gtx: ungemessen (R10) · karte2.same.massstab.nahe#5 radeon: Station seit der Messung geändert · karte2.same.massstab.nahe#5 gtx: Station seit der Messung geändert · karte2.same.massstab.nahe#6 radeon: Station seit der Messung geändert · karte2.same.massstab.nahe#6 gtx: Station seit der Messung geändert · karte2.same.massstab.nahe#7 radeon: ungemessen (R10) · karte2.same.massstab.nahe#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.massstab.nahe#1",
@@ -35719,9 +35703,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.nahe#5",
@@ -35729,9 +35712,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.nahe#6",
@@ -35739,9 +35721,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.nahe#6",
@@ -35749,9 +35730,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.nahe#7",
@@ -35903,7 +35883,7 @@
   },
   "karte2.same.massstab.spanne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#3 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#3 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#4 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#4 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#5 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#5 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#6 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#6 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#7 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#7 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#8 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#8 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.same.massstab.spanne#9 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.massstab.spanne#9 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#1 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.massstab.spanne#1",
@@ -35911,9 +35891,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -35922,9 +35901,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -35933,9 +35911,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#2",
@@ -35943,9 +35920,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#3",
@@ -35953,9 +35929,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#3",
@@ -35963,9 +35938,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#4",
@@ -35973,9 +35947,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#4",
@@ -35983,9 +35956,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#5",
@@ -35993,9 +35965,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#5",
@@ -36003,9 +35974,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#6",
@@ -36013,9 +35983,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#6",
@@ -36023,9 +35992,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#7",
@@ -36033,9 +36001,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#7",
@@ -36043,9 +36010,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#8",
@@ -36053,9 +36019,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#8",
@@ -36063,9 +36028,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#9",
@@ -36073,9 +36037,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.massstab.spanne#9",
@@ -36083,9 +36046,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -36806,7 +36768,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.same.physik.reaktion#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.same.physik.reaktion#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.same.physik.reaktion#4 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.same.physik.reaktion#5 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15) · karte2.same.physik.reaktion#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13) · karte2.same.physik.reaktion#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36814,9 +36776,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -36825,9 +36786,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -36836,9 +36796,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#2",
@@ -36846,9 +36805,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#3",
@@ -36856,9 +36814,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#3",
@@ -36866,9 +36823,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#4",
@@ -36876,9 +36832,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#4",
@@ -36886,9 +36841,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#5",
@@ -36896,9 +36850,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#5",
@@ -36906,9 +36859,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#6",
@@ -36916,9 +36868,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.physik.reaktion#6",
@@ -36926,9 +36877,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +15)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -37626,7 +37576,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, roh je Boot 32.65 MB · 32.65 MB · 32.65 MB · 32.65 MB (max 32.65 MB, Soll ≤ 50.00 MB), am größten 17.13 MB Draht, 183 Anfragen, bis zur Kontrolle 32.65 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.339 1.04 MB | /fachwerk-core.js?v=18.546.339 1.04 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.bytes#2 radeon: ungemessen (R10) · karte2.same.preis.bytes#2 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.preis.bytes#3 radeon: ungemessen (R10) · karte2.same.preis.bytes#3 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.preis.bytes#4 radeon: ungemessen (R10) · karte2.same.preis.bytes#4 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.preis.bytes#5 radeon: ungemessen (R10) · karte2.same.preis.bytes#5 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.preis.bytes#6 radeon: ungemessen (R10) · karte2.same.preis.bytes#6 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.preis.bytes#7 radeon: ungemessen (R10) · karte2.same.preis.bytes#7 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, roh je Boot 32.65 MB · 32.65 MB · 32.65 MB · 32.65 MB (max 32.65 MB, Soll ≤ 50.00 MB), am größten 17.13 MB Draht, 183 Anfragen, bis zur Kontrolle 32.65 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.339 1.04 MB | /fachwerk-core.js?v=18.546.339 1.04 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.bytes#2 radeon: ungemessen (R10) · karte2.same.preis.bytes#2 gtx: Station seit der Messung geändert · karte2.same.preis.bytes#3 radeon: ungemessen (R10) · karte2.same.preis.bytes#3 gtx: Station seit der Messung geändert · karte2.same.preis.bytes#4 radeon: ungemessen (R10) · karte2.same.preis.bytes#4 gtx: Station seit der Messung geändert · karte2.same.preis.bytes#5 radeon: ungemessen (R10) · karte2.same.preis.bytes#5 gtx: Station seit der Messung geändert · karte2.same.preis.bytes#6 radeon: ungemessen (R10) · karte2.same.preis.bytes#6 gtx: Station seit der Messung geändert · karte2.same.preis.bytes#7 radeon: ungemessen (R10) · karte2.same.preis.bytes#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -37665,9 +37615,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.preis.bytes#3",
@@ -37684,9 +37633,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.preis.bytes#4",
@@ -37703,9 +37651,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.preis.bytes#5",
@@ -37722,9 +37669,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.preis.bytes#6",
@@ -37741,9 +37687,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.same.preis.bytes#7",
@@ -37760,9 +37705,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -38365,7 +38309,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 1142,
+  "konsum": 1086,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38527,11 +38471,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2484
+  "ohne": 2540
  },
  "kopfVoll": "1e204f8352cc0366097f6898b194993e6c608afa",
- "zeit": "2026-11-21T19:11:42.192Z",
- "vorher": "9502aa0e",
+ "zeit": "2026-11-21T19:25:33.346Z",
+ "vorher": "1e204f83",
  "bilanz": {
   "gewinn": [],
   "fall": [],
