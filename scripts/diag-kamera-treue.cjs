@@ -14,6 +14,8 @@
 //       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
 //       Bürger einmal auf, der Frame danach nicht.
 //   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: gemuteter Melder < 0,98.
+//       BELICHTUNG (w28-pop-treue) — das Bild DES Belichtungs-Wechsels (der Boden liest r184 `toneMappingExposure` wie das
+//       Szenen-Ziel der Welt) zeichnet wie der volle Refresh; Kontrolle: der Wechsel ändert das Bild (< 0,98).
 //   (g) VERSCHACHTELT — nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät wie der
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
@@ -131,6 +133,13 @@ function urteil(z) {
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
             v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+        const be = s.belichtung?.[pfad] || {};
+        if (!(be.blind < BLIND_GRENZE))
+            v.push(`BELICHTUNG ${pfad}: der Wechsel der Belichtung zeichnet ${be.blind} gleich mit dem Bild davor (Soll < ${BLIND_GRENZE}) — die Probe ist blind`);
+        else if (!(be.diaet >= BILD_SOLL))
+            v.push(
+                `BELICHTUNG ${pfad}: im Bild des Wechsels zeichnet die Diät ${be.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}; geteilt alt: ${(be.alt || []).join(", ") || "?"}) — der Verweis des Renderers stand nach seiner Gruppe, die Szene trägt die Belichtung davor`
+            );
         const n = s.verschachtelt?.[pfad] || {};
         if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
@@ -161,6 +170,7 @@ function selbsttest() {
             direkt: ruhig,
             replay: ruhig,
             aenderung: { direkt: { diaet: 1, taeter: 0.93 }, replay: { diaet: 1, taeter: 0.93 } },
+            belichtung: { direkt: { diaet: 1, blind: 0.12, alt: [] }, replay: { diaet: 1, blind: 0.12, alt: [] } },
             verschachtelt: { direkt: { renders: 1, diaet: 1, taeter: 0.11 }, replay: { renders: 1, diaet: 1, taeter: 0.11 } },
         },
     };
@@ -183,6 +193,9 @@ function selbsttest() {
         ["Prüfung ohne Meldung", ["stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }], /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/],
         ["vergessener Refresh", ["stand.aenderung.replay", { diaet: 0.9 }], /ÄNDERUNG replay: .* ein vergessener Refresh/],
         ["Änderungs-Probe blind", ["stand.aenderung.direkt", { taeter: 1 }], /die Änderungs-Probe ist blind/],
+        ["Belichtung einen Render zu spät (w28-pop-treue)", ["stand.belichtung.direkt", { diaet: 0.21, alt: ["RendererReferenceNode toneMappingExposure"] }], /BELICHTUNG direkt: im Bild des Wechsels zeichnet die Diät 0\.21 .*geteilt alt: RendererReferenceNode toneMappingExposure\) — der Verweis des Renderers stand nach seiner Gruppe/],
+        ["Belichtungs-Probe blind", ["stand.belichtung.replay", { blind: 1 }], /BELICHTUNG replay: der Wechsel der Belichtung zeichnet 1 gleich .* die Probe ist blind/],
+        ["Belichtung ohne Messung", ["stand.belichtung"], /BELICHTUNG direkt: .* die Probe ist blind/],
         ["Gruppe je Programm", ["stand.teilen", { gruppen: 8 }], /tragen 8 geteilte Gruppen statt 1/],
         ["Teilen blind", ["stand.teilen", { programme: 0 }], /TEILEN: 0 Karten-Programme/],
         ["Kaskaden-Aufbau im Stapel des ersten Programms", ["stand.aufbau.leck", { n: 58, kaskaden: { n: 58, wer: ["VarNode", "linearDepth"] } }], /AUFBAU: der einmalige Bau legt 58 Knoten in den Stapel des Programms, das ihn zuerst baut \(Kaskaden 58, Schatten-Farbe des Lichts 0: VarNode, linearDepth; Soll 0\)/],
@@ -268,6 +281,11 @@ function buehne() {
         };
         const schattenAlt = rend.shadowMap.enabled;
         rend.shadowMap.enabled = true;
+        // DIE BELICHTUNG DER BÜHNE (w28-pop-treue): der Boden liest die Belichtung des Renderers wie das Szenen-Ziel der Welt
+        // (die Vorbelichtung `_vorBelichtung().k` = r184 `toneMappingExposure`, ein Verweis auf den Renderer in der geteilten
+        // Gruppe des Renders) — die Bühne steht bei 1 (jedes Bild der übrigen Proben unverändert), BELICHTUNG (f) wechselt sie.
+        const belichtungAlt = rend.toneMappingExposure;
+        rend.toneMappingExposure = 1;
         const szene = new T.Scene();
         const licht = new T.DirectionalLight(0xffffff, 3);
         licht.position.set(6, 12, 4);
@@ -285,7 +303,7 @@ function buehne() {
             new T.PlaneGeometry(30, 30),
             diaet(
                 new T.MeshStandardNodeMaterial({
-                    colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
+                    colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()).mul(TSL.toneMappingExposure),
                 })
             )
         );
@@ -580,6 +598,7 @@ function buehne() {
                     }
                 };
                 const bild = {};
+                const belichtung = {};
                 for (const bundle of [false, true]) {
                     gruppe.isBundleGroup = bundle;
                     gruppe.needsUpdate = true;
@@ -595,8 +614,21 @@ function buehne() {
                     const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
                     const wahr2 = await mitDiaet(immer);
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
+                    // BELICHTUNG (w28-pop-treue): die Belichtung wechselt — der EINE Verweis des Renderers, den jedes Programm der Szene
+                    // in seiner geteilten Render-Gruppe lädt — und das Bild DES Wechsels gleicht dem vollen Refresh; Kontrolle: der
+                    // Wechsel ändert das Bild. Die Diät-Linse nennt den Verweis, dessen Gruppe den Wert vor seiner Quelle lud.
+                    await mitDiaet(immer);
+                    const vorBild = await mitDiaet(null);
+                    rend.toneMappingExposure = 1.6;
+                    let belichtet = null;
+                    const zb = await gezaehlt(async () => (belichtet = await mitDiaet(null)));
+                    const wahrB = await mitDiaet(immer);
+                    rend.toneMappingExposure = 1;
+                    await mitDiaet(immer);
+                    belichtung[bundle ? "replay" : "direkt"] = { diaet: gleich(belichtet, wahrB), blind: gleich(vorBild, wahrB), alt: Object.keys(zb.geteiltA || {}) };
                 }
                 stand.aenderung = bild;
+                stand.belichtung = belichtung;
                 // (g) VERSCHACHTELT: im Schatten-Render wirft nur ein Werfer ohne Diät (die Vendor-Bahn stellt die Kamera-Knoten);
                 // ein Diät-Stoff ohne Schatten zeichnet zuerst (renderOrder −1), dann startet der Diät-Boden den Schatten.
                 const szene2 = new T.Scene();
@@ -787,6 +819,7 @@ function buehne() {
             rend._renderObjectDirect = odRoh;
             rend._renderScene = spielSzene;
             rend.shadowMap.enabled = schattenAlt;
+            rend.toneMappingExposure = belichtungAlt;
             rend.setAnimationLoop = loopRoh;
             if (loopVerlangt) rend.setAnimationLoop(loopVerlangt);
             if (rt.dispose) rt.dispose();
@@ -847,7 +880,7 @@ function buehne() {
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +
             `SENKE: zwei Senken EINER Gestalt zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
-            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); im Bild des Belichtungs-Wechsels ${out.stand.belichtung.direkt.diaet}/${out.stand.belichtung.replay.diaet} (Bild davor ${out.stand.belichtung.direkt.blind}/${out.stand.belichtung.replay.blind}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
 })();
