@@ -159,7 +159,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         const draht = (o) => jsonKlon(o);
         const nullAlsNull = [];
         if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
-        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
+        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, b: 1, soul: "wesen" }] }));
         if (st.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
         r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
         const lsB = st.p2p.peers.get("peerB").lockstep;
