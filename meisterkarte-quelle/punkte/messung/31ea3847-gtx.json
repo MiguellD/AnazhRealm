@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:33:46.584Z",
+ "zeit": "2026-11-21T10:40:15.176Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -51663,6 +51663,805 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.welten#2",
    "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ lage_max_m 1000000000 (Soll ≤ 1) · ✅ Umfang verlangt 118 Bewohner der Test-Stadt, die Welt erzeugte 480 — Täter: 8 Lagen fehlen nach der Wiederkehr · wohnhaus/patrizierhaus #946697:3471934731 um 18.5 Uhr 124.70 m neben dem Zuschauer (4 Prüf-Stunden, je 6 h fort, 1912 Lagen) · lage_max_m 1000000000 statt ≤ 1",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S1 · ROT ❌ lage_max_m 1000000000 (Soll ≤ 1) · ✅ Umfang verlangt 118 Bewohner der Test-Stadt, die Welt erzeugte 480 — Täter: 8 Lagen fehlen nach der Wiederkehr · wohnhaus/patrizierhaus #946697:3471934731 um 18.5 Uhr 124.70 m neben dem Zuschauer (4 Prüf-Stunden, je 6 h fort, 1912 Lagen) · lage_max_m 1000000000 statt ≤ 1",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "dab2a50083a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen, 1 Tiere, 1052 Gewächse (verlangt 10000 Wesen (Menschen, Tiere, Wuchs), die Welt erzeugte 1053)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen, 1 Tiere, 1052 Gewächse (verlangt 10000 Wesen (Menschen, Tiere, Wuchs), die Welt erzeugte 1053)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "018a17d2382b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen in 0 Siedlungen — keine Metropole (verlangt 1000000 Menschen einer Metropole, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen in 0 Siedlungen — keine Metropole (verlangt 1000000 Menschen einer Metropole, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "c44aa41f7f29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen — kein Kontinent, kein Lauf über 100 Jahre (verlangt 100000000 Menschen eines Kontinents, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen — kein Kontinent, kein Lauf über 100 Jahre (verlangt 100000000 Menschen eines Kontinents, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "53fd4ab4882f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen auf einem Planeten (Samen anazh-realm-seed) — keine Stadtgrößen über Jahrhunderte (verlangt 10000000000 Menschen eines Planeten, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen auf einem Planeten (Samen anazh-realm-seed) — keine Stadtgrößen über Jahrhunderte (verlangt 10000000000 Menschen eines Planeten, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "4c366120900c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Welt der Sitzung springt nie in der Epoche: sie steht in zeitMa 0 (eine Epoche), der Satz reise wechselt die Welt (stamm/feld-leben.js:1277) — 0 Jahre Zeitsprung (verlangt 1000000 Jahre Zeitsprung, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Welt der Sitzung springt nie in der Epoche: sie steht in zeitMa 0 (eine Epoche), der Satz reise wechselt die Welt (stamm/feld-leben.js:1277) — 0 Jahre Zeitsprung (verlangt 1000000 Jahre Zeitsprung, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "90ff48772a9e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen Welten verlangen Welten, die Leiter teilt EINE (verlangt 1000 Besuche an zufälligen (Welt, Ort, Zeit), die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen Welten verlangen Welten, die Leiter teilt EINE (verlangt 1000 Besuche an zufälligen (Welt, Ort, Zeit), die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "c108b98fd240",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "035db0e41584",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "36bb56ef855b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "0b886cd39cc3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -51766,7 +52565,8 @@
   "k5039cf2afc92": "dVVdj5swEPwveezVZz4DWLoH57gqV7UqeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu91Va7Y6tPq80rDGYlGdUb1vNcrtgpi00Kb8WtRzvlrB4tVfqo1LXJBQZSQHZE0qsa8eI57mm9aiSUZbd94G1EaUY9uWn6rV/7yMm9TCEwqUoPEsUkQSNsHNgc2OgWBBBrZCw9g10eQLqN9+SGP9nSsTpm2X35E6W6uKqBMps6Dteuhy95bzt+WLpMcsCZFXupRN05cYVvsJtYuOQpacgHMClQDCUwPTDGa7SNpo4DOiLJotJ6I+XbiWj6jdIFNUedxVpOTqgSWA1wElmcC2yw9paeGyIkjIcAX86wzwDJFNfFg2LFcm4z+8udND3BEBaSEbMzSsD1L3LOhlG6XXoreeC8xGl8b0nT8CbEbKk27pMK0b0Qv4/foulQh57vbhqUzER1nuTpO45EOWobNvi0t6QwSVORQ6fqG9h0A9IebENJeK3LCOfN+mIFnibXhPp7Fp3y7yE5Xsm5BIUlPzUBEB13PZZy/L8A1HI/j3kvbseP54HTdLfajDddBc+11NtL/zOF6DcgF82IkSek4gcteN84cfFZwJCBSlUs5Tlu4sQw+Ws4Wi5qIqqrH8dqGHZidl/Ihli7XzeMbEf62fm5395n29bapPvDeK1Sqvp1WrA3pMHnubmS8QOeqJi3E2W1GUiB01hdzuaAqMMVJlIkjbEgYbeXV+cXnPPKG6y+fJkt7WXbMsQu51I0eNyvwkkCyD56PFtVBQHkYgM7a9U2Lfe2C+sG315jKIHwK6bxky/kuCq9vy3e+5e8h3Q/NTxjTk6pk3r1+NINGZ1DU99/A338=",
   "ke729cb01f4c9": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/I13FXHOtx0sVvml1rTIBQVRQnZG0qga8+Il7mm+aSWWZLTd8TaiNKIe3bSvr3NqITCpSA0SR2IQSNsHNgc2OgWBBBrZDxvAro8gXUb78kMeHelYm5Zz2u7mEwWUyVRpsHY9dNnhnfMdXyhMcsCaFHmpx5lx4grbYo9By1slClpyA8wKVAMJTA9MMQrtrWyjgM6Ismi0ngzz7cS1fEbpApuizuOsJhdVCSwHuAgszwT2idPppSFyokgI8MXc5wywTFFNNBh2LNcmo7/9edMTnFEBKSEbvTRszxJPbyil+6WWohfejxiFrw1pOv6E2AVK086pMO0b0dt4HvUG8pAPW9lVOhui4yxX56k90kHLsNn3pSSdQYKKnCpdP9C+A4A+G2bRflbkhHPm8zIDzxJrw/14F5/y/cI7Xcm6BYUkvTQDER10PZdxfliAazifx52XtmPH8+B03S32Rxmug+ba62Sk/8nh/gzIDfNiJEnpOIE7b35VcCYgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYtH44E/RPYPMLjWx6+W7/2b888+9rxuea+e6Xqxy3F2pAOk9fuJcYLdK5q0kKcPbKRAqGTvcjjhqrAFCcWJo6wIWG0lXfZR5/zyBuevfw6WdbbsmOOnbmlbvS4UYGXBJJ98m20qE4CytMAdNaub1r96m1+8v3djKMR0pBG7UeDtjxpOT9sw/uf8oNv+CGk4dD8gjG9qErm3a9HM2h0BkX9/O7//gM=",
   "k4c0a86219703": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/F6Uc77tYLHKL7WmRS4oiBKyM5JG1ZgXL3FP800rsSSj7Y63EaUR9eimfX2dUwuBSUVqkDgSg0DaPrA5sNEpCCTQyH7YAHZ9BOky2pcf8uhIx9q0nNN2N58ooEymSoO166HLDu+c7/hCYZID1qTISz3OjBNX2BZ7DFreKlHQkhtgVqAaSGB6YIpRaG9lGwV0RpRFo/VkmG8nruUzShfYFHUeZzW5qEpgOcBFYHkmsE+cTi8NkRNFQoAv5j5ngGWKaqLBsGO5Nhn97c+bnuCMCkgJ2eilYXuWeHpDKd0vtRS98H7EKHxtSNPxJ8QuUJp2ToVp34jexvPovowh5298rHQ2RMdZrs5Te6SDlmGz70tJOoMEFTlVun6gfQcA/WHzQ9rPipxwznxeZuBZYm24H+/iU75feKcrWbegkKSXZiCig67nMs4PC3AN5/O489J27HgenK67xf4ow3XQXHudjPQ/OdyfAblhXowkKR0ncOfNrwrOBESqcinHpIUby+CzxWyxqImoqnqM1jbswGTUpuXDkaB/AptHeHzLw3fr1/7tmWdfOz7X3HevVP24pVgb0mHy2r3EeIHOVU1aiLNHNlIgdLIXedxQFZjixMLEETYkjLbyLjv0OY+84dnLr5NlvS075tiZW+pGjxsVeEkg2SffRovqJKA8DUBn7fqm1a/e5iff3804GiENadR+NGjLk5bzwza8/yk/+IYfQhoOzS8Y04uqZN79ejSDRmdQ1M/v/u8/",
-  "k80e74eb9452f": "dVRdj5swEPwveWzrc/gKYOkenBApkVqVe+rzGtZAQgDZEHqp+t8rCCQHXPfRmtkdz6z9Z1VBdIYEX066LFZs9WX1baXhikSjuqJ6OekVW/mRYaLF+L0o53zXwSKVVbWmeSYoiALSC5JG1ZjlL1FP8wwzNiWj7Z63IaUhdem2fX2dU3OBcUlqkDgSfV9aHrA5sNEJCCTQyH7YAHY8BOkw2pcX8PBEx9q2nNN2P58ooIinSv2N46LDju+c7/lCYZwB1iTPCj3OjGJHWCZ7DFreKlbQkhtgmqMaSGC4YIhRaG9lG/p0RpR5o/VkmGfFjukxShfYBHUWpTWpVCmwGODCN10D2CdOJ1VD5ESREOCJuc8pYJGgmmhYW5HcGIz+9uZNz3BBBaSAdPRybbmmeHpDKT0steS98H7EKHyzlobtTYhdoDTpnAqSvhG9jefhfRkDzt/4WMlsiI7STF2m9kgbzbXFvi8l6RRiVORc6vqB9mwA9IbND2g/K7SDOfN5mYFnis3a+XgXj/LDwjtdyroFhSSpmoGINjquwzg/LsA1XC7jzkvLtqJ5cLruFvujDMdGY+N2MpL/5HB/BuSGWT6SpLRt32G7bTIHXxVcCIhEZVKOaQsnkv5ny9liXhNRlvUYr7W2fINRixYPV/z+GWwfAfIdD97NX4e3Z6Z97flcSt+9VPXjpmKzljaT1+41Rgt0pmrSQpQ+8pECoZO9yOSGKscEJzbGtrAgZrSVd9knj/PQHZ6+/DpZ2NuyY4adwYVu9LhVvhv7kn3ydbSozgKK8wC0N45nmP36bX/yw92iwg9oQMP2o0E7HrecH3fB/V/5wbf8GNBgaF5hRCtVyqz7+WgKjU4hr59f/t9/"
+  "k80e74eb9452f": "dVRdj5swEPwveWzrc/gKYOkenBApkVqVe+rzGtZAQgDZEHqp+t8rCCQHXPfRmtkdz6z9Z1VBdIYEX066LFZs9WX1baXhikSjuqJ6OekVW/mRYaLF+L0o53zXwSKVVbWmeSYoiALSC5JG1ZjlL1FP8wwzNiWj7Z63IaUhdem2fX2dU3OBcUlqkDgSfV9aHrA5sNEJCCTQyH7YAHY8BOkw2pcX8PBEx9q2nNN2P58ooIinSv2N46LDju+c7/lCYZwB1iTPCj3OjGJHWCZ7DFreKlbQkhtgmqMaSGC4YIhRaG9lG/p0RpR5o/VkmGfFjukxShfYBHUWpTWpVCmwGODCN10D2CdOJ1VD5ESREOCJuc8pYJGgmmhYW5HcGIz+9uZNz3BBBaSAdPRybbmmeHpDKT0steS98H7EKHyzlobtTYhdoDTpnAqSvhG9jefhfRkDzt/4WMlsiI7STF2m9kgbzbXFvi8l6RRiVORc6vqB9mwA9IbND2g/K7SDOfN5mYFnis3a+XgXj/LDwjtdyroFhSSpmoGINjquwzg/LsA1XC7jzkvLtqJ5cLruFvujDMdGY+N2MpL/5HB/BuSGWT6SpLRt32G7bTIHXxVcCIhEZVKOaQsnkv5ny9liXhNRlvUYr7W2fINRixYPV/z+GWwfAfIdD97NX4e3Z6Z97flcSt+9VPXjpmKzljaT1+41Rgt0pmrSQpQ+8pECoZO9yOSGKscEJzbGtrAgZrSVd9knj/PQHZ6+/DpZ2NuyY4adwYVu9LhVvhv7kn3ydbSozgKK8wC0N45nmP36bX/yw92iwg9oQMP2o0E7HrecH3fB/V/5wbf8GNBgaF5hRCtVyqz7+WgKjU4hr59f/t9/",
+  "k908f081ef941": "dVVdj5swEPwveWzLbfgKYOkenBApJ7Uq99TnNayBC4HIhtCm6n+vIJAccOdHNLMzO7s2f1dnjI+Y0tObrsoVW31ZfVtpvJChSV1IPb3pFVsFsWmRzfjtAOd818FilZ9rDUUuAEWJ2YmMRtWUF09xT/NNK7Ekg3bP2wggAg+27fPznFoISiqjRkkjMQik7SObAxudoiADG9mLDWDXJ5Qug/74IY/eYDzblnNo93NFgWUydRpsXI9c9vKH8z1fOExypNoo8lKPmnHiCttid6FlV4nC1rgiZQWpgYSmh6YYjfZRtlEAM6IsGq0nYr6duJbPABbYlHQeZ7VxVpWgcoCLwPJMZB8knZ4bQ04cCYG+mOecIZUpqYmHtR3Ljcngt88/O3DpgliEfcQTKTRKzMas17ZniUd2AHBYei36xnoLY2ObtTQdf0LsBg5ppx6mfSG4jt+jm6uQ89e7xXQmouMsV6dpfNIha22z70tLOsOElHGsdH1H+w4i+cPNCKHXipxwznw0M/AssVm773vxgR/8hWIl6xYVGem5GYjkkOu5jPOXBbjG02m8E9J27Hg+WF13i//ehuuQufE6G+knc7hdE+NKeTGSpHScwGW7bToHXxSeDBSpyqUcpy3cWAYfLW9LRW2IqqrH8dprOzAZ2FDeUwn6dds+lmzHwz/Wr8Pr63T39nxupa9eqfreqdispcNkv6TxAp2r2mgxzu7zkYKws72YyZVUQSlNYkwcYWPCoJU321ef88gbngb5dbKw12XFnLqAS93ocasCLwkk++BpaUkdBZbHAehsXN+0+vXb/uSHPoldGYQQQtS+D2jHk6tIX3bh7f7+4Fv+EkI4FD9TDGdVybx7GSHDRmdY1I9fwr//"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -73360,6 +74160,429 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — unscharf unter Last: eingabe_pixel_p95_ms roh 141,2, entlastet ≥ 70,6 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT ❌ eingabe_pixel_p95_ms 141,2 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) — Täter: ego/wechsel p95 141.2 ms (fehlt 0, Täter-Stufen eingabe 0.3 · hörer 0.4 · kette 20.6 · kurve 0 ms) · v1-Aktionen mit Taste 8 von 8 · Verben bewegt 5)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — unscharf unter Last: eingabe_pixel_p95_ms roh 141,2, entlastet ≥ 70,6 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT ❌ eingabe_pixel_p95_ms 141,2 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) — Täter: ego/wechsel p95 141.2 ms (fehlt 0, Täter-Stufen eingabe 0.3 · hörer 0.4 · kette 20.6 · kurve 0 ms) · v1-Aktionen mit Taste 8 von 8 · Verben bewegt 5)",
+   "mass": [
+    {
+     "wort": "eingabe_pixel_p95_ms",
+     "wert": 141.2,
+     "soll": 100
+    },
+    {
+     "wort": "verben_pct",
+     "wert": 100,
+     "soll": 100,
+     "richtung": "≥"
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "8949f1352a59",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "742dcb921181",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#3": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Leser fehlt: Finger: 0 touch-Hörer an Fenster, Dokument und Leinwand — kein Verb hört den Finger (pointerdown stempelt nur die Zeit, stamm/dirigent-ankunft.js:500; die Verben hören keydown und mousedown, stamm/dirigent-ankunft.js:5)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Leser fehlt: Finger: 0 touch-Hörer an Fenster, Dokument und Leinwand — kein Verb hört den Finger (pointerdown stempelt nur die Zeit, stamm/dirigent-ankunft.js:500; die Verben hören keydown und mousedown, stamm/dirigent-ankunft.js:5)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "c5a125b625ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#5": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Leser fehlt: Hände im Raum: der Renderer trägt xr.enabled false (navigator.xr da) — keine immersive Sitzung, kein Greifen der Hände (der Renderer ohne XR stamm/dirigent-ankunft.js:296))",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,3 CPU-s · git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Leser fehlt: Hände im Raum: der Renderer trägt xr.enabled false (navigator.xr da) — keine immersive Sitzung, kein Greifen der Hände (der Renderer ohne XR stamm/dirigent-ankunft.js:296))",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "k908f081ef941",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 29,
+   "fremd": {
+    "s": 33.3,
+    "takte": 15,
+    "fremdS": 12.86,
+    "kerne": 0.387,
+    "fensterKerne": 0.564,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ],
+     [
+      "git read-tree 957904f60d761931c31f15ee4fe6e9cfdf96ce37",
+      1.02
+     ]
+    ],
+    "dienerS": 17.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.8
+     ],
+     [
+      "System",
+      6.91
+     ]
+    ],
+    "geraetS": 13.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.8
+     ],
+     [
+      "svchost.exe",
+      5.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 107.48,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.508,
+     "nach": 0.516,
+     "station": 0.867
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.8,
+     "alle": 263.6,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 124.1,
+     "alle": 291,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 766,
+     "von": "2026-11-16"
+    },
+    "f": 1.377,
+    "fEin": 1.377,
+    "fAlle": 1.274,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:40:15.176Z",
+   "abdruck": "b2f7ee888b72",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
    "modus": "session"
   }
  },
