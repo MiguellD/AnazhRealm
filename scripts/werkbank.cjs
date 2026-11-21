@@ -397,53 +397,296 @@ function bandProben(k) {
 // Pixel mit ΔLuma > 18 (Rec. 709) ist ein Pop, den keine Bewegung erklärt (die Blende dithert in beiden dieselbe Folge); die Treue
 // nimmt A ein zweites Mal und bricht an jedem Byte. Je Schritt beim Namen, was zwischen A und B eintrat: die Karten-Dinge, die zum
 // ersten Mal gezeichnet stehen (Zahl, nächster Abstand), und die Bauten, die ihre Stufe wechselten.
-function popGang() {
+// DER LICHTMESSER DER TREUE (w28-pop-treue): zwei Aufnahmen derselben Szene zeichnen mit derselben Belichtung und demselben Boden
+// des Rückstrahls (`info.licht` des gezählten Bilds, `__ausgabeAufnahme`) — sonst trug der erste Schuss den Lichtmesser seiner
+// Vorgeschichte (`_rueckstrahlJetzt`: beide Böden unter der Belichtung des Schusses davor gemessen, die Aufwärm-Bilder unter der
+// neuen; GTX 1050 an der Mess-Wiese: Boden 0,3866915 ↔ 0,3864365, die Treue 16 496 Bytes). Leer = gleich.
+function treueLicht(a, b) {
+    if (!a || !b || !Array.isArray(a.boden) || !Array.isArray(b.boden)) return "DER LICHTMESSER: ungemessen (das gezählte Bild trägt kein `info.licht`)";
+    const z = (v) => v.map((x) => +x.toPrecision(7)).join("/");
+    const t = [];
+    if (a.k !== b.k) t.push(`die Belichtung ${+a.k.toPrecision(7)} ↔ ${+b.k.toPrecision(7)}`);
+    if (z(a.boden) !== z(b.boden)) t.push(`der Boden des Rückstrahls ${z(a.boden)} ↔ ${z(b.boden)}`);
+    return t.length ? `DER LICHTMESSER: ${t.join(", ")} — der erste Schuss maß unter dem Licht seiner Vorgeschichte (_rueckstrahlJetzt)` : "";
+}
+
+function treueLichtSelbsttest() {
+    const g = { k: 0.51881, boden: [0.386436, 0.488962, 0.106928] };
+    const f = [];
+    if (treueLicht(g, { ...g, boden: [...g.boden] }) !== "") f.push("gleiches Licht nennt einen Täter");
+    if (!/Boden des Rückstrahls 0\.3866915/.test(treueLicht({ ...g, boden: [0.3866915, 0.488962, 0.106928] }, g))) f.push("der Boden von main (0,3866915 ↔ 0,386436) bleibt ungenannt");
+    if (!/Belichtung 0\.5219376 ↔ 0\.51881/.test(treueLicht({ ...g, k: 0.5219376 }, g))) f.push("die Belichtung des Schusses davor bleibt ungenannt");
+    if (!/ungemessen/.test(treueLicht({ k: 1 }, g))) f.push("ein Bild ohne Boden gilt als gleich");
+    return f;
+}
+
+// DER WURF DER STUFE (w28-pop-treue): eine Kachel der Wiese (Nähe, Ferne), die zwischen A und B neu baute, wirft an derselben
+// Zelle dieselben Büschel — unter dem Anteil BEIDER Bauten (die Ferne baut mit dem Auge mehr dazu, nie anders). Ein Büschel, das
+// dort fehlt oder dazukommt, warf die Stufe der Chunks (GTX 1050 an der Mess-Wiese, Schritt 4: drei Chunks 2→1, 31 Kacheln der
+// Ferne neu, 18 Büschel weg und 19 dazu — 426 der 591 Pop-Pixel um sie). `alt`, `neu`: { anteil, zellen: [[gi|gj, o]] }.
+// Rückgabe: { weg, dazu } — die Zellen beim Namen.
+function wurfWechsel(alt, neu) {
+    const a = Math.min(alt.anteil, neu.anteil);
+    const [A, B] = [alt, neu].map((k) => new Set(k.zellen.filter((z) => z[1] < a).map((z) => z[0])));
+    return { weg: [...A].filter((c) => !B.has(c)), dazu: [...B].filter((c) => !A.has(c)) };
+}
+
+function wurfWechselSelbsttest() {
+    const f = [];
+    const k = { anteil: 0.5, zellen: [["1|1", 0.1], ["1|2", 0.3]] };
+    const w = (a, b) => wurfWechsel(a, b);
+    if (w(k, k).weg.length + w(k, k).dazu.length) f.push("derselbe Wurf nennt einen Wechsel");
+    const mehr = { anteil: 0.8, zellen: [...k.zellen, ["2|2", 0.7]] };
+    if (w(k, mehr).weg.length + w(k, mehr).dazu.length) f.push("die Ferne, die mit dem Auge mehr dazu baut, gilt als Wechsel");
+    const anders = { anteil: 0.5, zellen: [["1|1", 0.1], ["3|3", 0.2]] };
+    const r = w(k, anders);
+    if (r.weg.join() !== "1|2" || r.dazu.join() !== "3|3") f.push("das getauschte Büschel (1|2 weg, 3|3 dazu) bleibt ungenannt");
+    return f;
+}
+
+// DIE KACHEL FÄLLT ERST MIT IHREM NACHFOLGER (w28-pop-treue): eine Kachel der Wiese (Nähe n, Ferne f) oder der Nah-Streu (s), deren
+// Boden, Wasser oder Weite sich ändert, steht mit ihrem alten Satz, bis ihr Neubau sie ablöst — nie ein Takt ohne sie. `reihe`:
+// je Takt die stehenden Kacheln (Familie:Schlüssel); `steht[t]`: vor Takt t stand die Welt, es regte sich nur die Boden-Karte
+// (der Zwang des Gangs — das Gesetz will jede Kachel weiter); `frei`: die Kacheln, die das Gesetz gehen und wiederkommen lässt
+// (die Kachel der Ferne, in der das Auge steht: ganz diesseits der Übergabe trägt sie nichts). Ein LOCH: die Kachel stand in
+// t − 1, fehlt in t und steht später wieder (`dauer` Takte) — oder fehlt, während die Welt steht (`dauer` null: sie blieb weg).
+// GTX 1050 an der Mess-Wiese, Schritt 4 (drei Chunks 2→1): 46 Kacheln der Ferne fehlten im zweiten Schuss, zwölf Takte nach
+// ihrem Fall; der Gegenlauf ohne Wechsel der Stufe (74 Kacheln fallen einmal) popte 159 statt ~30 px.
+// Rückgabe: die Löcher beim Namen [{ key, t, dauer }].
+function kachelLoch(reihe, steht, frei) {
+    const [aus, faellt] = [[], new Map()];
+    for (let t = 1; t < reihe.length; t++) {
+        for (const key of reihe[t - 1]) if (!reihe[t].has(key) && !frei.has(key)) faellt.set(key, t);
+        for (const [key, t0] of faellt)
+            if (reihe[t].has(key)) (aus.push({ key, t: t0, dauer: t - t0 }), faellt.delete(key));
+    }
+    for (const [key, t0] of faellt) if (steht[t0]) aus.push({ key, t: t0, dauer: null });
+    return aus;
+}
+
+function kachelLochSelbsttest() {
+    const f = [];
+    const R = (...takte) => takte.map((s) => new Set(s.split(" ").filter(Boolean)));
+    const L = (reihe, steht = [], frei = []) => kachelLoch(reihe, steht, new Set(frei)).map((x) => `${x.key}@${x.t}×${x.dauer}`).join(); // prettier-ignore
+    if (L(R("n:1,1 f:0,0", "n:1,1 f:0,0", "n:1,1 f:0,0"))) f.push("der stehende Bestand nennt ein Loch");
+    if (L(R("n:1,1 n:2,1", "n:2,1", "n:2,1 n:3,1"))) f.push("die Kachel, die den Ring verlässt, und die, die ihn betritt, gelten als Loch");
+    if (L(R("f:0,0", "", "", "f:0,0")) !== "f:0,0@1×2") f.push("die Kachel, die zwei Takte fehlt und wiederkommt (f:0,0@1×2), bleibt ungenannt");
+    if (L(R("f:0,0 f:1,0", "f:1,0", "f:0,0 f:1,0"), [], ["f:0,0"])) f.push("die Kachel der Ferne unter dem Auge gilt als Loch");
+    if (L(R("s:4,4", "", ""), [false, true, true]) !== "s:4,4@1×null") f.push("die Kachel, die bei stehender Welt wegbleibt (s:4,4@1×null), bleibt ungenannt");
+    if (L(R("s:4,4", "", ""), [false, false, false])) f.push("die Kachel, die im Gehen den Ring verlässt, gilt bei stehender Welt als Loch");
+    return f;
+}
+
+// DIE GRÖSSE DER FERNE AM NEUBAU (w28-pop-treue): eine Kachel der Ferne, die zwischen A und B neu baute, zeichnet jedes Büschel,
+// das blieb, in derselben GRÖSSE (v · s, `_halmFerne`) — das Gesetz der Ferne am Auge des Schusses über der FRACHT der Instanz
+// (der Fuß, die Ebene des Gesetzes in Element 3 und 7, die Ordnung in 11: der Puffer der Senke, den der Stoff und die Wahl der
+// GPU lesen). Springt sie, würfelte der Neubau das Gesetz neu: bis w28-pop-treue las es die Stand-Ebene der Stufen-Karte (GTX
+// 1050 an der Mess-Wiese, die drei Schritte mit Wechsel 2→1: 7 von 261 gebliebenen Büscheln sprangen um > 0,1, bis 0,00 → 2,50;
+// der Gang ohne das Lebende 550 Pop-Pixel, mit der Ebene des Gesetzes 288). `alt`, `neu`: [[Zelle, Größe]]. Rückgabe: die
+// Sprünge über `tol` beim Namen [[Zelle, alt, neu]] — eine Größe, die keine Zahl ist, ist ein Sprung.
+function groesseWechsel(alt, neu, tol = 0.1) {
+    const A = new Map(alt);
+    return neu.filter(([z, g]) => A.has(z) && !(Math.abs(g - A.get(z)) <= tol)).map(([z, g]) => [z, A.get(z), g]);
+}
+
+function groesseWechselSelbsttest() {
+    const f = [];
+    const k = [["1|1", 1], ["1|2", 0.4], ["2|2", 0]];
+    if (groesseWechsel(k, k).length) f.push("dieselbe Größe nennt einen Sprung");
+    if (groesseWechsel(k, [...k, ["3|3", 2.5]]).length) f.push("das Büschel, das die Ferne mit dem Auge dazu baut, gilt als Sprung");
+    if (groesseWechsel(k, [["1|1", 1.05], ["1|2", 0.35]]).length) f.push("eine Größe im Band (≤ 0,1) gilt als Sprung");
+    const r = groesseWechsel(k, [["1|1", 1], ["1|2", 2.5], ["2|2", 0]]);
+    if (r.length !== 1 || r[0].join() !== "1|2,0.4,2.5") f.push("das Büschel, das am Neubau von 0,4 auf 2,5 springt, bleibt ungenannt");
+    if (groesseWechsel(k, [["1|1", NaN]]).length !== 1) f.push("eine Fracht ohne Zahl (NaN) gilt als gleich");
+    return f;
+}
+
+// DIE KONTROLLE IM STAND (w28-pop-treue): zwei Schüsse am Start, zwölf Takte dazwischen, der Spieler steht. OHNE DAS LEBENDE popt
+// die Welt dort 0 Pixel — sonst zählte der Gang als Pop, was sich im Stand regt, und die Linse nennt es; MIT ihm steht die Zahl,
+// die das Lebende je Paar trägt (es bewegt sich selbst und steht in keinem Schuss des Gangs: GTX 1050 an der Mess-Wiese 68–89 px
+// je Paar, 45–50 % der Zahl des Gangs bis hier). `stand`: { ohne, mit, versteckt, regt } — `versteckt` die Dinge, die der Griff
+// des Lebenden fand (der Leib des Spielers steht immer: 0 heißt, der Griff ist blind); `regt` die Täter-Klassen, deren Zeichner
+// zwischen den zwei Schüssen ohne das Lebende Lage, Instanz-Puffer oder Zahl wechselten (der Täter beim Namen: die Pools der
+// Vögel hießen `vogel`, außerhalb der Familie `tier:` — 1–10 px je Paar). Rückgabe: der Bruch beim Namen oder null.
+function standKontrolle(stand) {
+    const S = stand || {};
+    if (!Number.isInteger(S.ohne) || !Number.isInteger(S.mit)) return "DIE KONTROLLE IM STAND: ungemessen";
+    if (!(S.versteckt > 0)) return "DIE KONTROLLE IM STAND: ungemessen — der Griff des Lebenden fand nichts, nicht einmal den Leib des Spielers";
+    if (S.ohne > 0) return `DIE WELT POPT IM STAND: ${S.ohne} px ohne das Lebende (mit ihm ${S.mit}) — der Gang zählt als Pop, was sich im Stand regt: ${S.regt?.length ? S.regt.join(" · ") : "kein Zeichner wechselte Lage, Instanz-Puffer oder Zahl (der Täter schreibt im Stoff)"}`; // prettier-ignore
+    return null;
+}
+
+function standKontrolleSelbsttest() {
+    const f = [];
+    if (standKontrolle({ ohne: 0, mit: 89, versteckt: 138 }) !== null) f.push("die stehende Welt mit bewegtem Leben gilt als Bruch");
+    if (!/POPT IM STAND: 12 px.*im Stoff/.test(standKontrolle({ ohne: 12, mit: 89, versteckt: 138 }) || "")) f.push("die Welt, die im Stand 12 px popt, bleibt ungenannt");
+    if (!/regt: vogel \(Instanz-Puffer\) ×1 · brand/.test(standKontrolle({ ohne: 10, mit: 28, versteckt: 137, regt: ["vogel (Instanz-Puffer) ×1", "brand (Zahl) ×2"] }) || "")) f.push("der Täter des Stands (der Pool der Vögel) bleibt ungenannt"); // prettier-ignore
+    if (!/ungemessen/.test(standKontrolle({ mit: 89, versteckt: 138 }) || "")) f.push("ein Gang ohne Kontrolle gilt als gemessen");
+    if (!/Griff/.test(standKontrolle({ ohne: 0, mit: 0, versteckt: 0 }) || "")) f.push("der blinde Griff des Lebenden (0 versteckt) gilt als gemessen");
+    return f;
+}
+
+function popGang(treueLicht, wurfWechsel, kachelLoch, groesseWechsel) {
     return (async () => {
         const cam = st.camera, W = 1920, H = 1080, pm = st.playerMesh.position, start = pm.clone(), y = (p) => r._voxelSurfaceY(p.x, p.z);
         const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
         st.renderer.setAnimationLoop(null);
         window.__buehne({});
-        const schuss = async (p) => {
+        let licht = null; // das Licht des zuletzt gezählten Bilds (`info.licht`): Belichtung und Boden des Rückstrahls
+        // DAS LEBENDE STEHT IN KEINEM SCHUSS DES GANGS (`standKontrolle`): was sich selbst bewegt — die Täter-Klassen `spieler`,
+        // `bewohner`, `tier:*` und `vogel` des EINEN Namens (`_taeterKlasse`: der Leib des Spielers, jeder Bewohner, jedes Tier,
+        // die Pools der Fauna und der Vögel, `_vogelZeichnen` — die Familie, die auch die Stufen-Wache ausnimmt, ausgabe-aufnahme
+        // `STUFEN_OHNE`) — ist kein Pop der Welt; `mitLeben` zeichnet es (die Kontrolle im Stand)
+        const lebt = (o) => /^(spieler$|bewohner$|tier:|vogel$)/.test(r._taeterKlasse(o));
+        // WAS SICH REGT (der Täter der Kontrolle im Stand beim Namen): je sichtbarem Zeichner außer dem Lebenden seine Lage, der
+        // Stand seines Instanz-Puffers und seine Zahl — gelesen gleich nach dem Schuss, am Auge des Schusses
+        const zensus = () => {
+            const m = new Map();
+            st.scene.traverse((o) => {
+                if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine) || lebt(o)) return;
+                for (let p = o; p; p = p.parent) if (!p.visible) return;
+                m.set(o, [o.matrixWorld.elements.join(), o.instanceMatrix ? o.instanceMatrix.version : -1, o.count ?? -1]);
+            });
+            return m;
+        };
+        const regung = (za, zb) => {
+            const R = new Map(), zaehl = (k) => R.set(k, (R.get(k) || 0) + 1);
+            for (const [o, b] of zb) {
+                const a = za.get(o);
+                if (!a) zaehl(`${r._taeterKlasse(o)} (neu)`);
+                else ["Lage", "Instanz-Puffer", "Zahl"].forEach((n, i) => a[i] !== b[i] && zaehl(`${r._taeterKlasse(o)} (${n})`));
+            }
+            for (const o of za.keys()) if (!zb.has(o)) zaehl(`${r._taeterKlasse(o)} (fort)`);
+            return [...R].sort((p, q) => q[1] - p[1]).slice(0, 8).map(([k, n]) => `${k} ×${n}`);
+        };
+        let versteckt = 0;
+        const schuss = async (p, mitLeben = false) => {
             cam.fov = r.constructor.KAM_FOV_GRAD;
             cam.updateProjectionMatrix();
             cam.position.set(p.x, y(p) + 1.7, p.z);
             cam.lookAt(p.x + fwd.x * 50, y(p) + 1.7, p.z + fwd.z * 50);
             cam.updateMatrixWorld(true);
-            const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
-            aus.kosten.push([f.info.drawCalls, f.info.triangles]); // Befehle und Dreiecke des gezählten Bilds
-            return f.u8;
+            const weg = [];
+            if (!mitLeben) st.scene.traverse((o) => (o.isMesh || o.isPoints || o.isSprite || o.isLine) && o.visible && lebt(o) && ((o.visible = false), weg.push(o))); // prettier-ignore
+            versteckt = weg.length;
+            try {
+                const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
+                aus.kosten.push([f.info.drawCalls, f.info.triangles]); // Befehle und Dreiecke des gezählten Bilds
+                licht = f.info.licht;
+                return f.u8;
+            } finally {
+                for (const o of weg) o.visible = true;
+            }
         };
+        const popPixel = (a, b) => {
+            let n = 0;
+            for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma709(a, k) - luma709(b, k)) > 18) n++;
+            return n;
+        };
+        // DER BESTAND JE TAKT (`kachelLoch`): die stehenden Kacheln der Nähe, der Ferne und — soweit sie zeichnet — der Nah-Streu,
+        // dieselben Karten, die der Bestand liest (`_nahWieseBestand`, `_nahStreuBestand`); `ort` der Schritt des Gangs
+        const [reihe, steht, orte, frei] = [[], [], [], new Set()];
+        const KF = r.constructor.NAH_WIESE.fern.kachel;
+        const takt = async (ort, ruhe) => {
+            r._gameLoopTick(performance.now());
+            const [nw, ns, m] = [st.nahWiese, st.nahStreu, new Set()];
+            for (const key of nw ? nw.kacheln.keys() : []) m.add("n:" + key);
+            for (const key of nw && nw.fern ? nw.fern.kacheln.keys() : []) m.add("f:" + key);
+            for (const [key, k] of ns ? ns.kacheln : []) if (k.senken && k.senken.size) m.add("s:" + key);
+            (reihe.push(m), steht.push(ruhe), orte.push(ort));
+            frei.add(`f:${Math.floor(cam.position.x / KF)},${Math.floor(cam.position.z / KF)}`);
+            await sleep(5);
+        };
+        let schritt = 0;
         const geh = async (p) => {
             pm.set(p.x, y(p) + 0.05, p.z);
-            for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
+            for (let t = 0; t < 12; t++) await takt(schritt, false);
         };
         const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
-        const aus = { schritte: [], popPixel: 0, kosten: [] };
+        // die Kacheln der Wiese je Schuss (Familie:Kachel → Kachel): der Wurf der Stufe vergleicht jede, die zwischen A und B neu baute
+        const kacheln = () => {
+            const nw = st.nahWiese, m = new Map();
+            for (const [n, K] of [["nah", nw && nw.kacheln], ["fern", nw && nw.fern && nw.fern.kacheln]]) for (const [key, k] of K || []) m.set(n + ":" + key, k); // prettier-ignore
+            return m;
+        };
+        const wurf = (k) => ({ anteil: k.anteil ?? 1, zellen: (k.bueschel || []).map((b) => [b.gi + "|" + b.gj, b.o]) });
+        // DIE FRACHT DER FERNE je Schuss (`groesseWechsel`): je stehendem Block der Ferne aus dem Puffer seiner Senke — den lesen der
+        // Stoff (`_halmFerne`) und die Wahl der GPU (Art 6) —, je Büschel die Zelle, der Fuß, die Ebene des Gesetzes, die Ordnung
+        const fracht = () => {
+            const nw = st.nahWiese, m = new Map();
+            for (let v = 0; v < 2; v++) {
+                const [F, l2] = [nw.bestand && nw.bestand["fern" + v], nw.vorlagen.get(v + ":L2")];
+                const arr = l2 && l2.fern[0] && l2.fern[0].mesh ? l2.fern[0].mesh.instanceMatrix.array : null;
+                for (const b of F && arr ? F.bloecke.values() : []) {
+                    const liste = m.get(b.k) || m.set(b.k, []).get(b.k);
+                    b.k.bueschel.filter((q) => q.vorlage === v).forEach((q, n) => liste.push([q.gi + "|" + q.gj, ...[12, 13, 14, 3, 7, 11].map((e) => arr[(b.s + n) * 16 + e])])); // prettier-ignore
+                }
+            }
+            return m;
+        };
+        // die Größe im Stoff (v · s) je Büschel einer Fracht am Auge `A` (`_wieseAuge`): das Gesetz der Ferne in Zahlen
+        const groesse = (liste, A) => {
+            const AR = r.constructor, NW = AR.NAH_WIESE, Z = globalThis.__phytoCore.WIND_ZAHLEN;
+            return liste.map(([zelle, x, y2, z, gx, gz, o]) => {
+                const d = Math.hypot(x - A.x, z - A.z);
+                const G = AR._wieseFern(Z, d, AR._wieseFuss(Z, x - A.x, y2 - A.y, z - A.z, -gx, 1, -gz, A.h));
+                const v = Math.max(0, Math.min(1, (G.anteil * (1 + NW.fern.rand) - o) / Math.max(1e-6, G.anteil * NW.fern.rand)));
+                return [zelle, d < NW.radius ? 0 : v * G.skala];
+            });
+        };
+        const aus = { schritte: [], popPixel: 0, kosten: [], wurf: [], groesse: { kacheln: 0, bueschel: 0, sprung: [] } };
         try {
+            // DIE KONTROLLE IM STAND (`standKontrolle`): am Start, der Spieler steht — ohne das Lebende, dann mit ihm
+            schritt = "Stand";
+            await geh(start);
+            const paar = async (mit) => {
+                const a = await schuss(start, mit), [n, za] = [versteckt, zensus()];
+                await geh(start);
+                const b = await schuss(start, mit);
+                return [popPixel(a, b), n, regung(za, zensus())];
+            };
+            const [ohne, mit] = [await paar(false), await paar(true)];
+            aus.stand = { ohne: ohne[0], mit: mit[0], versteckt: ohne[1], regt: ohne[2] };
             for (let i = 0; i < 8; i++) {
+                schritt = i;
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
                 await geh(start.clone().addScaledVector(fwd, i / 2));
+                const kA = kacheln(), gA = fracht();
                 const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
                 const folgen = () => r.constructor.__arenaFolgen | 0, fA = folgen();
                 // die Zahl der GPU-Wahl je Glied und Kamera nach dem Schuss (`zug.gpuZahl`, ein Bild Verzug) — wählt A anders als A2?
                 const zahlen = async (z = new Map()) => { await sleep(80); for (const ar of r.constructor.__arenen.values()) for (const [k, zug] of ar._zuege || []) for (const [m, n] of zug.gpuZahl || []) z.set(`${r._taeterKlasse(m).slice(0, 40)}·${m.id}@${k === cam ? "auge" : "k" + k.id}`, n); return z; }; // prettier-ignore
-                const a = await schuss(p1), zA = await zahlen();
+                const a = await schuss(p1), lA = licht, zA = await zahlen();
                 if (aus.treue === undefined) {
                     // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
                     const ohne = [];
                     st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
-                    const [a2, fA2, zA2] = [await schuss(p1), folgen(), await zahlen()];
+                    const [a2, lA2, fA2, zA2] = [await schuss(p1), licht, folgen(), await zahlen()];
                     const wahl = [...new Set([...zA.keys(), ...zA2.keys()])].filter((k) => zA.get(k) !== zA2.get(k)).map((k) => `${k} ${zA.get(k) ?? "-"}→${zA2.get(k) ?? "-"}`); // prettier-ignore
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
+                    aus.licht = treueLicht(lA, lA2); // der Lichtmesser beim Namen — auch, wenn die Bytes gleich sind
                     // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
                     // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
                     const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
+                    if (aus.treue || aus.licht) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab${aus.licht ? " — " + aus.licht : ""} — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
-                const s = { pop: 0, ein: [], wechsel: 0 };
-                for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma709(a, k) - luma709(b, k)) > 18) s.pop++;
+                const [gB, auge] = [fracht(), r._wieseAuge(cam.position)];
+                for (const [key, k] of kacheln()) {
+                    const alt = kA.get(key);
+                    if (!alt || alt === k) continue;
+                    const w = wurfWechsel(wurf(alt), wurf(k));
+                    if (w.weg.length + w.dazu.length) aus.wurf.push(`${i}:${key} −${w.weg.length}/+${w.dazu.length} (${w.weg.concat(w.dazu).slice(0, 2).join(" ")})`); // prettier-ignore
+                    // DIE GRÖSSE DER FERNE AM NEUBAU: wo der Bestand den neuen Block schrieb (sonst zeichnete B noch den alten)
+                    if (!key.startsWith("fern:") || !gA.has(alt) || !gB.has(k)) continue;
+                    const [ga, gb] = [groesse(gA.get(alt), auge), groesse(gB.get(k), auge)];
+                    const da = new Set(ga.map((x) => x[0]));
+                    aus.groesse.kacheln++;
+                    aus.groesse.bueschel += gb.filter((x) => da.has(x[0])).length;
+                    for (const [z, g0, g1] of groesseWechsel(ga, gb)) aus.groesse.sprung.push(`${i}:${key}:${z} ${(+g0).toFixed(2)}→${(+g1).toFixed(2)}`); // prettier-ignore
+                }
+                const s = { pop: popPixel(a, b), ein: [], wechsel: 0 };
                 for (const e of st.architectures) {
                     const v = e && vor.get(e);
                     if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z)));
@@ -452,6 +695,32 @@ function popGang() {
                 aus.popPixel += s.pop;
                 aus.schritte.push(s);
             }
+            // DER ZWANG (der Wechsel der Stufe ohne Zufall, nach den gezählten Bildern): die Welt kommt zur Ruhe, dann sagt die
+            // Boden-Karte JEDER stehenden Kachel einmal „dein Boden steht nicht mehr“ (`_bodenKartenStehen`, geweckt wie am Wechsel
+            // der Stufe: `_weltRegt(true, true)`) — jede baut neu, keine fehlt dabei einen Takt
+            const offen = () => (st.nahWiese ? st.nahWiese.offen | 0 : 0) + (st.nahStreu ? st.nahStreu.offen | 0 : 0);
+            let ruhe = 0;
+            for (let t = 0; t < 360 && ruhe < 6; t++) (await takt("Ruhe", false), (ruhe = offen() ? 0 : ruhe + 1));
+            const zwang = new Set();
+            for (const K of [st.nahWiese.kacheln, st.nahWiese.fern.kacheln]) for (const k of K.values()) zwang.add(k.chunkKarten);
+            for (const k of st.nahStreu ? st.nahStreu.kacheln.values() : []) if (k.chunks) zwang.add(k.chunks);
+            const [P, n] = [Object.getPrototypeOf(r), zwang.size];
+            r._bodenKartenStehen = function (c) { return zwang.delete(c) ? false : P._bodenKartenStehen.call(this, c); }; // prettier-ignore
+            try {
+                r._weltRegt(true, true);
+                for (let t = 0; ruhe >= 6 && t < 60; t++) await takt("Zwang", true);
+            } finally {
+                delete r._bodenKartenStehen;
+            }
+            // … und baut zu Ende: die Welt ruht wieder (jeder Neubau unter dem Auge der Linse), EIN Bild trägt ihre Blöcke in die
+            // Arena — die Block-Treue liest das letzte Bild (bis hier ließ der Zwang die Welt mitten im Neubau: 23 + 17 Instanzen
+            // der Ferne standen seit dem letzten Bild neu im Puffer, „fremd“)
+            let danach = 0;
+            for (let t = 0; ruhe >= 6 && t < 480 && danach < 6; t++) (await takt("Zwang", true), (danach = offen() ? 0 : danach + 1));
+            await schuss(start.clone().addScaledVector(fwd, 4));
+            // gezwungen: so viele Kacheln hörten das Nein (0 = die Sonde maß nichts: kein Takt fragte seine Karten)
+            aus.zwang = { kacheln: n, gezwungen: n - zwang.size, ruhe: ruhe >= 6, danach: danach >= 6 };
+            aus.loch = kachelLoch(reihe, steht, frei).map((x) => `${orte[x.t]}:${x.key} ×${x.dauer ?? "bleibt"}`);
         } finally {
             pm.copy(start);
         }
@@ -3325,6 +3594,7 @@ hauptLauf(async () => {
         selbsttestEnde(f, "der eval-Text der Werkbank trägt seinen Namen in jedem Stapel (werkbank/eval/probe.js), der alte Rahmen bricht am End-Kommentar (" + alt + ")");
         return;
     } else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "pop" && SELBST) return selbsttestEnde([...treueLichtSelbsttest(), ...wurfWechselSelbsttest(), ...kachelLochSelbsttest(), ...groesseWechselSelbsttest(), ...standKontrolleSelbsttest()], "die Treue des Gangs nennt den Lichtmesser beim Namen: den Boden von main (0,3866915 ↔ 0,386436), die Belichtung des Schusses davor und ein Bild ohne `info.licht`; gleiches Licht ist leer — der Wurf der Stufe nennt das getauschte Büschel, nie das, das die Ferne mit dem Auge dazu baut — das Loch der Kachel nennt die, die fehlt und wiederkommt, und die, die bei stehender Welt wegbleibt; nie die am Ring und nie die Kachel der Ferne unter dem Auge — die Größe der Ferne nennt das Büschel, das am Neubau springt (0,4 → 2,5) und die Fracht ohne Zahl, nie das dazu gebaute — die Kontrolle im Stand nennt die Welt, die ohne das Lebende popt, und den blinden Griff");
     else if (cmd === "pop") {
         // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
         // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
@@ -3333,7 +3603,7 @@ hauptLauf(async () => {
         try {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
-            o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o = ergebnis(await evalRuf(`return await (${popGang})(${treueLicht}, ${wurfWechsel}, ${kachelLoch}, ${groesseWechsel});`));
             o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
             // DER BAUM VOR DEM ORT (w28-ort-vor-wald): der Sprung an den Messort dorf (590 m, der Dorf-Zug lebt — an der Wiese ruhte er,
@@ -3354,6 +3624,31 @@ hauptLauf(async () => {
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
         // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
         const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
+        // DER WURF DER STUFE beim Namen (`wurfWechsel`): je neu gebaute Kachel die getauschten Büschel (Schritt:Familie:Kachel −weg/+dazu)
+        const L = o.wurf || [];
+        if (!Array.isArray(o.wurf)) pop.push("DER WURF DER STUFE: ungemessen");
+        else if (L.length) pop.push(`DER WURF DER STUFE: ${L.length} neu gebaute Kacheln werfen an denselben Zellen andere Büschel (${L.slice(0, 4).join(", ")}) — der Wurf liest die Stufe der Chunks`); // prettier-ignore
+        console.log(L.length ? `WURF ROT ${L.length} Kacheln` : Array.isArray(o.wurf) ? "WURF GRÜN: jede neu gebaute Kachel wirft dieselben Büschel" : "WURF ungemessen");
+        // DIE KACHEL FÄLLT ERST MIT IHREM NACHFOLGER (`kachelLoch`): jede Kachel, die einen Takt fehlte (Schritt:Familie:Kachel ×Takte),
+        // im Gang und unter dem Zwang; ein Zwang, den keine Kachel hörte, maß nichts
+        const [Z, LO] = [o.zwang || {}, o.loch];
+        const je2 = (n) => (LO || []).filter((x) => x.includes(n)).length;
+        if (!Array.isArray(LO)) pop.push("DAS LOCH DER KACHEL: ungemessen");
+        else if (!Z.ruhe) pop.push("DAS LOCH DER KACHEL: ungemessen — die Welt kam vor dem Zwang nicht zur Ruhe (360 Takte)");
+        else if (!(Z.gezwungen > 0)) pop.push(`DAS LOCH DER KACHEL: ungemessen — der Zwang erreichte 0 von ${Z.kacheln} Kacheln`);
+        else if (!Z.danach) pop.push("DAS LOCH DER KACHEL: ungemessen — die Welt kam nach dem Zwang nicht zur Ruhe (480 Takte)");
+        else if (LO.length) pop.push(`DAS LOCH DER KACHEL: ${LO.length} Kacheln fielen vor ihrem Nachfolger (Nähe ${je2(":n:")}, Ferne ${je2(":f:")}, Streu ${je2(":s:")} — ${LO.slice(0, 5).join(", ")})`); // prettier-ignore
+        console.log(!Array.isArray(LO) || !Z.ruhe || !(Z.gezwungen > 0) || !Z.danach ? "LOCH ungemessen" : LO.length ? `LOCH ROT ${LO.length} Kacheln (Nähe ${je2(":n:")}, Ferne ${je2(":f:")}, Streu ${je2(":s:")}) · Zwang ${Z.gezwungen} von ${Z.kacheln}` : `LOCH GRÜN: keine Kachel fehlte einen Takt · Zwang ${Z.gezwungen} von ${Z.kacheln} Kacheln`); // prettier-ignore
+        // DIE GRÖSSE DER FERNE AM NEUBAU (`groesseWechsel`): je neu gebauter Kachel der Ferne die Büschel, deren Größe im Stoff springt
+        // (Schritt:Kachel:Zelle alt→neu); ohne eine neu gebaute Kachel im Bestand beider Schüsse maß die Linse nichts
+        const GR = o.groesse || {};
+        if (!(GR.kacheln > 0) || !(GR.bueschel > 0)) pop.push("DIE GRÖSSE DER FERNE: ungemessen — keine neu gebaute Kachel der Ferne stand in beiden Schüssen im Bestand");
+        else if (GR.sprung.length) pop.push(`DIE GRÖSSE DER FERNE: ${GR.sprung.length} von ${GR.bueschel} Büscheln springen am Neubau ihrer Kachel (${GR.sprung.slice(0, 4).join(", ")}) — das Gesetz der Ferne liest, was der Neubau ändert`); // prettier-ignore
+        console.log(!(GR.kacheln > 0) || !(GR.bueschel > 0) ? "GRÖSSE ungemessen" : GR.sprung.length ? `GRÖSSE ROT ${GR.sprung.length} von ${GR.bueschel} Büscheln` : `GRÖSSE GRÜN: ${GR.bueschel} Büschel in ${GR.kacheln} neu gebauten Kacheln der Ferne halten ihre Größe`); // prettier-ignore
+        // DIE KONTROLLE IM STAND (`standKontrolle`): ohne das Lebende popt die stehende Welt 0 Pixel; mit ihm die Zahl, die es je Paar trägt
+        const sU = standKontrolle(o.stand);
+        if (sU) pop.push(sU);
+        console.log(sU ? `STAND ROT: ${sU}` : `STAND GRÜN: 0 px ohne das Lebende (${o.stand.versteckt} Dinge) · mit ihm ${o.stand.mit} px je Paar — es steht in keinem Schuss des Gangs`);
         if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
         // der Baum vor dem Ort nach dem Sprung: ohne seinen Befund (der Gang brach davor) ist er ungemessen — ROT, nie still
         const bf = o.baumFall ? AA.baumFallUrteil(o.baumFall) : { rot: ["BAUM VOR DEM ORT: ungemessen — kein Sprung"], zeile: "" };

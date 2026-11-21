@@ -525,6 +525,9 @@ class AnazhRealm_daten {
                     rand: 0.2,
                     vorlauf: 8,
                     skalaMax: 2.5,
+                    // das Gitter der EBENE DES GESETZES (`_wieseHang`): je Knoten der Gradient der Höhe der Saat (`_terrainSaatY`) über
+                    // ±ebene/2, dazwischen bilinear — die Ebene, an der das Gesetz der Ferne den Fußabdruck eines Büschels misst
+                    ebene: 12,
                 }),
             })
         );
