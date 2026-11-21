@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T03:40:03.738Z",
+ "zeit": "2026-11-21T04:56:20.819Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -53916,6 +53916,360 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.geist.tag#2",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.netz#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Verwandtschaft und keine Freundschaft: der Besuch wählt ein Haus fern von Heim und Platz nach Same und Angebot (191 beim Besuch um 17.6 Uhr, 1202 von 1213 mit Besuchsort, 0 mit einer Bindung im Satz) (koerper-core.js:5316) · gemessen 191 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Verwandtschaft und keine Freundschaft: der Besuch wählt ein Haus fern von Heim und Platz nach Same und Angebot (191 beim Besuch um 17.6 Uhr, 1202 von 1213 mit Besuchsort, 0 mit einer Bindung im Satz) (koerper-core.js:5316) · gemessen 191 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6b36e67be582",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 76,
+   "fremd": {
+    "s": 79.6,
+    "takte": 36,
+    "fremdS": 74.06,
+    "kerne": 0.931,
+    "fensterKerne": 1.641,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.66
+     ]
+    ],
+    "dienerS": 43.97,
+    "diener": [
+     [
+      "System",
+      21.66
+     ],
+     [
+      "dwm.exe",
+      14.03
+     ]
+    ],
+    "geraetS": 38.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.5
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.5
+     ]
+    ],
+    "eigenS": 170.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T04:56:20.819Z",
+   "abdruck": "9cf63de9bb0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.netz#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner mit Bekannten, die eine Tat meiden: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner mit Bekannten, die eine Tat meiden: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6b36e67be582",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 76,
+   "fremd": {
+    "s": 79.6,
+    "takte": 36,
+    "fremdS": 74.06,
+    "kerne": 0.931,
+    "fensterKerne": 1.641,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.66
+     ]
+    ],
+    "dienerS": 43.97,
+    "diener": [
+     [
+      "System",
+      21.66
+     ],
+     [
+      "dwm.exe",
+      14.03
+     ]
+    ],
+    "geraetS": 38.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.5
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.5
+     ]
+    ],
+    "eigenS": 170.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T04:56:20.819Z",
+   "abdruck": "a507e59bc032",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.netz#1",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.netz#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner, 1 000 befragte Paare: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 1000000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner, 1 000 befragte Paare: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 1000000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6b36e67be582",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 76,
+   "fremd": {
+    "s": 79.6,
+    "takte": 36,
+    "fremdS": 74.06,
+    "kerne": 0.931,
+    "fensterKerne": 1.641,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.66
+     ]
+    ],
+    "dienerS": 43.97,
+    "diener": [
+     [
+      "System",
+      21.66
+     ],
+     [
+      "dwm.exe",
+      14.03
+     ]
+    ],
+    "geraetS": 38.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.5
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.5
+     ]
+    ],
+    "eigenS": 170.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T04:56:20.819Z",
+   "abdruck": "06fab2f9c27c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.netz#1",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.netz#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 10⁹ Menschen über 5 Kulturen: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 1000000000 Menschen über 5 Kulturen) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10⁹ Menschen über 5 Kulturen: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 1000000000 Menschen über 5 Kulturen) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6b36e67be582",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 76,
+   "fremd": {
+    "s": 79.6,
+    "takte": 36,
+    "fremdS": 74.06,
+    "kerne": 0.931,
+    "fensterKerne": 1.641,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.66
+     ]
+    ],
+    "dienerS": 43.97,
+    "diener": [
+     [
+      "System",
+      21.66
+     ],
+     [
+      "dwm.exe",
+      14.03
+     ]
+    ],
+    "geraetS": 38.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.5
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.5
+     ]
+    ],
+    "eigenS": 170.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T04:56:20.819Z",
+   "abdruck": "12ee525bbd21",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.netz#1",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.netz#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: 100 Welten fremder Arten: eine Welt in der Sitzung (Saat anazh-realm-seed), eine Art (gemessen 1, Soll 100 Welten fremder Arten) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: 100 Welten fremder Arten: eine Welt in der Sitzung (Saat anazh-realm-seed), eine Art (gemessen 1, Soll 100 Welten fremder Arten) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6b36e67be582",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 76,
+   "fremd": {
+    "s": 79.6,
+    "takte": 36,
+    "fremdS": 74.06,
+    "kerne": 0.931,
+    "fensterKerne": 1.641,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.66
+     ]
+    ],
+    "dienerS": 43.97,
+    "diener": [
+     [
+      "System",
+      21.66
+     ],
+     [
+      "dwm.exe",
+      14.03
+     ]
+    ],
+    "geraetS": 38.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.5
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.5
+     ]
+    ],
+    "eigenS": 170.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T04:56:20.819Z",
+   "abdruck": "9519ec6f7ef9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.netz#1",
    "modus": "session"
   }
  },
