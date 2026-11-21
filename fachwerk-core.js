@@ -3850,6 +3850,12 @@
   nordisch:    [[0,['russisch','norwegisch']],[1550,['skandinavisch','norwegisch']],[1880,['skandinavisch','modern']],[1945,['modern']]],
   fernost:     [[0,['japanisch','chinesisch']],[1900,['japanisch','chinesisch','modern']],[1955,['modern','volle_moderne']]],
   antik:       [[-800,['griechisch','roemisch']],[0,['roemisch','griechisch']]],
+  // DIE RÄUME DER ERDE ohne Tafel-Epoche (mensch.zeit.erde, `erdSchluessel`): nur ein Herd der Erde nennt sie, nie der Würfel des DORF
+  osteuropa:   [[0,['russisch']],[1700,['barock','russisch']],[1930,['modern']],[1965,['modern','volle_moderne']]],
+  orient:      [[-3500,['marokkanisch']],[1950,['marokkanisch','modern']],[1990,['modern','volle_moderne']]],
+  altamerika:  [[-3000,['pueblo']]],
+  kolonial:    [[1500,['spanisch','andalusisch']],[1900,['spanisch','modern']],[1960,['modern','volle_moderne']]],
+  neuwelt:     [[1600,['georgian','hollaendisch']],[1800,['georgian','viktorianisch']],[1900,['viktorianisch','modern']],[1940,['modern','volle_moderne']]],
 };
     // prettier-ignore
     // DIE TRACHT je Epoche (siedlung.K4): der Schnitt (top · bottom · shoes, die Wahlen des Mensch-Gesetzes koerper-core
@@ -3874,12 +3880,116 @@
   mediterran:{v:['Monte','Porto','Villa','Castel','San','Terra','Bella','Roc'],n:['bello','mare','nova','forte','luna','verde','alto','sole']},
   nordisch:{v:['Björn','Ravn','Ulv','Sten','Vind','Hav','Skog','Ny'],n:['vik','fjord','stad','berg','dal','holm','nes','by']},
   fernost:{v:['Shan','Hai','Long','Mei','Yun','Feng','Jin','Tian'],n:['zhou','jing','shan','he','lin','men','chuan','xi']},
-  antik:{v:['Aqua','Nova','Alta','Porta','Castra','Colonia','Ara','Via'],n:['rium','num','polis','dunum','ium','ata','ona','ensis']}};
+  antik:{v:['Aqua','Nova','Alta','Porta','Castra','Colonia','Ara','Via'],n:['rium','num','polis','dunum','ium','ata','ona','ensis']},
+  osteuropa:{v:['Novo','Belo','Krasno','Zeleno','Staro','Bor','Vysh','Gor'],n:['grad','gorod','sk','ovo','ino','ets','pol','dol']},
+  orient:{v:['Dar','Bab','Tell','Qasr','Ain','Bir','Ras','Wadi'],n:['salam','abad','iya','ein','ur','ana','um','ah']},
+  altamerika:{v:['Teo','Tla','Xo','Coa','Chal','Ma','Cuz','Pa'],n:['tlan','co','pan','huac','pec','ca','chi','ma']},
+  kolonial:{v:['San','Santa','Villa','Puerto','Nueva','Real','Monte','Vera'],n:['cruz','rosa','luz','mar','paz','fe','ana','sol']},
+  neuwelt:{v:['New','Port','Fort','Spring','Green','North','Elm','Bay'],n:['ton','field','ville','burg','wood','port','dale','ford']}};
     // prettier-ignore
     function ORTSNAME(region, seed){ let s=((Math.round(seed*911+37)*2654435761)>>>0);
   const r=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const T=NAMEN[region]||NAMEN.mitteleuropa;
   return T.v[(r()*T.v.length)|0]+T.n[(r()*T.n.length)|0]; }
+    // ════════════ DER SCHLÜSSEL DER ERDE (mensch.zeit.erde) ════════════
+    // (Breite °, Länge °, Jahr) → der Ort der Erde in seiner Zeit: EINE reine Funktion aus vier Grundgrößen, die Erd-Daten sind
+    // nur ihre Parameter (`ERDE`, wenige hundert Byte):
+    //  1. DER KULTUR-RAUM: die Herde der Menschheit (`ERDE.herde`: Ort, Beginn, Ende, Reichweite, Tempo der Ausbreitung). Ein Herd
+    //     wirkt ab seinem Beginn, seine Reichweite wächst mit `kmJeJahr` bis `reichKm`; am Ort gewinnt der Herd mit dem größten
+    //     Rest 1 − d/R (d der Großkreis-Abstand). Reicht keiner hin, trägt die Erde dort keinen Raum, den die Welt kennt (null) —
+    //     der Export bricht beim Namen, nie ein Ersatz-Ort.
+    //  2. DIE EPOCHE: die Epoche der Tafel auf der Zeitachse der Bau-Region des Raums (`zeitachse`; die jüngste, die bis zum Jahr
+    //     begann, vor der ersten die erste); ein Raum ohne Tafel-Achse trägt keine — der Ort steht dann im Jahr selbst.
+    //  3. DER KLIMA-GÜRTEL aus der Breite → die Dachneigung des Orts (`dachGrad`): Regen und Schnee steil, der Trockengürtel flach;
+    //     DORF wägt die Baukulturen seines Pools nach ihr (`wahlNachDach`, derselbe EINE Wurf).
+    //  4. DIE STADTFORM: ein Herd mit Plan (Kolonie, Kaiserstadt, Kolonialstadt) gründet im Raster (`ERDE.raster`, das Netz der
+    //     Stufe 1 ohne Spiel), sonst wächst der Ort um seinen Grund.
+    // `ERDE.heimat`: der Ort der Erde, an dem eine Welt steht, deren Stand keinen nennt (worldMeta.erde, `_weltMetaHeil`) — das
+    // Rheinknie bei Augst (Augusta Raurica), Mitteleuropa im gemäßigten Gürtel wie das Ort-Gesetz der Welt. Leser: exportSettlement
+    // (der Export trägt `erde`), DORF (Region, Jahr, Pool, Dach), epocheImJahr (das Jahr eines Satzes am Ort), der Wirt.
+    // prettier-ignore
+    var ERDE = {
+        heimat: { breite: 47.53, laenge: 7.72 },
+        raster: { tore: 5, spiel: 0, jeKachel: 190, torLueckeM: 3.5, mauerInnenM: 2.4, turmJeM: 42 },
+        // [name, raum (die Bau-Region der Welt), Breite, Länge, von, bis, reichKm, kmJeJahr, plan]
+        herde: [
+            ['aegaeis',     'antik',       37.97,  23.73, -1200,  -146, 1200,  3, 1],
+            ['rom',         'antik',       41.90,  12.50,  -500,   476, 2300,  6, 1],
+            ['byzanz',      'mediterran',  41.01,  28.98,   476,  1453,  900, 50, 0],
+            ['italien',     'mediterran',  43.00,  12.00,   476,  1e9,   700, 50, 0],
+            ['iberien',     'mediterran',  40.00,  -4.00,   476,  1e9,   700, 50, 0],
+            ['franken',     'mitteleuropa',50.00,   8.00,   481,  1e9,   950,  5, 0],
+            ['skandinavien','nordisch',    60.00,  12.00,  -500,  1e9,  1000,  3, 0],
+            ['rus',         'osteuropa',   55.75,  37.62,   880,  1e9,  1500,  3, 0],
+            ['china',       'fernost',     34.27, 108.95, -2000,  1e9,  2500,  2, 1],
+            ['japan',       'fernost',     34.69, 135.50,   300,  1e9,   900,  3, 1],
+            ['mesopotamien','orient',      32.54,  44.42, -3500,  1e9,  1800,  2, 0],
+            ['aegypten',    'orient',      26.00,  32.70, -3100,  1e9,   900,  2, 0],
+            ['arabien',     'orient',      21.42,  39.83,   632,  1e9,  4000,  8, 0],
+            ['maghreb',     'orient',      34.03,  -5.00,   789,  1e9,   900,  5, 0],
+            ['sahel',       'orient',      16.77,  -3.01,   300,  1e9,  1500,  3, 0],
+            ['mesoamerika', 'altamerika',  19.69, -98.84,  -200,  1521, 1200,  3, 1],
+            ['anden',       'altamerika', -13.53, -71.97,  1000,  1533, 2000,  6, 0],
+            ['chaco',       'altamerika',  36.06,-107.96,   850,  1e9,   600,  2, 0],
+            ['neuspanien',  'kolonial',    19.43, -99.13,  1521,  1e9,  6000, 20, 1],
+            ['neuengland',  'neuwelt',     40.71, -74.01,  1620,  1e9,  4500, 15, 1],
+            ['australien',  'neuwelt',    -33.87, 151.21,  1788,  1e9,  3500, 15, 1],
+        ],
+    };
+    // der Großkreis-Abstand in km (Haversine, Erdradius 6 371 km)
+    function erdAbstandKm(b1, l1, b2, l2) {
+        var r = Math.PI / 180, db = (b2 - b1) * r, dl = (l2 - l1) * r;
+        var a = Math.sin(db / 2) * Math.sin(db / 2) + Math.cos(b1 * r) * Math.cos(b2 * r) * Math.sin(dl / 2) * Math.sin(dl / 2);
+        return 2 * 6371 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    // der Klima-Gürtel der Breite und die Dachneigung, die er verlangt: 30° in den Tropen (Regen), 12° im Trockengürtel um 18–28°,
+    // dann steigend bis 52° jenseits von 50° (Regen und Schnee) — glatt, ohne Stufe
+    function erdKlima(breite) {
+        var a = Math.abs(breite), g = function (t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+        var dach = a < 18 ? 12 + 18 * g((18 - a) / 12) : 12 + 40 * g((a - 28) / 22);
+        var guertel = a < 23.5 ? 'tropen' : a < 35 ? 'subtropen' : a < 55 ? 'gemaessigt' : a < 66.5 ? 'boreal' : 'polar';
+        return { guertel: guertel, dachGrad: Math.round(dach * 10) / 10 };
+    }
+    // die Epoche der Tafel auf der Achse einer Bau-Region im Jahr j (undefined: die Region trägt keine Achse)
+    function erdEpoche(region, j) {
+        var A = zeitachse(region);
+        if (!A.length) return undefined;
+        var e = A[0];
+        for (var k = 0; k < A.length; k++) if (EPOCHEN[A[k]].jahr <= j) e = A[k];
+        return e;
+    }
+    function erdSchluessel(breite, laenge, jahr) {
+        breite = Number(breite); laenge = Number(laenge); jahr = Math.round(Number(jahr));
+        if (!(Math.abs(breite) <= 90 && Math.abs(laenge) <= 180 && isFinite(jahr)))
+            throw new Error('fachwerk erdSchluessel: kein Ort der Erde (' + breite + ', ' + laenge + ', ' + jahr + ')');
+        var best = null, rest = 0;
+        for (var i = 0; i < ERDE.herde.length; i++) {
+            var h = ERDE.herde[i];
+            if (jahr < h[4] || jahr > h[5]) continue;
+            var R = Math.min(h[6], h[7] * (jahr - h[4] + 1)), d = erdAbstandKm(breite, laenge, h[2], h[3]), s = 1 - d / R;
+            if (s > rest) { rest = s; best = h; }
+        }
+        var K = erdKlima(breite);
+        var aus = { breite: breite, laenge: laenge, jahr: jahr, guertel: K.guertel, dachGrad: K.dachGrad, herd: null, raum: null, region: null, epoche: undefined, form: 'gewachsen' };
+        if (!best) return aus;
+        aus.herd = best[0];
+        aus.raum = aus.region = best[1];
+        aus.rest = Math.round(rest * 1000) / 1000;
+        aus.epoche = erdEpoche(best[1], jahr);
+        aus.form = best[8] ? 'raster' : 'gewachsen';
+        return aus;
+    }
+    // der EINE Wurf u ∈ [0, 1) wählt aus dem Pool nach der Dachneigung des Orts: Gewicht e^(−(Δ/18)²) je Baukultur (KULTUR.pitch)
+    function wahlNachDach(pool, u, dachGrad) {
+        var w = [], s = 0, k;
+        for (k = 0; k < pool.length; k++) {
+            var p = KULTUR[pool[k]] ? KULTUR[pool[k]].pitch : dachGrad, q = (p - dachGrad) / 18;
+            w.push(Math.exp(-q * q) + 1e-6); s += w[k];
+        }
+        var t = u * s;
+        for (k = 0; k < pool.length; k++) { t -= w[k]; if (t < 0) return pool[k]; }
+        return pool[pool.length - 1];
+    }
     // prettier-ignore
     // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
@@ -4415,17 +4525,13 @@
     // DAS JAHR EINES SATZES (siedlung.K4, „dorf 7 300 1560"): die Epoche der Tafel, deren Zeitachse eine Chronik trägt (mehr als
     // eine Epoche ihrer Region), die bis zum Jahr j begann — die jüngste, vor der ersten die erste. Der Ort steht am Ende ihrer
     // Spanne (DORF), wie Teil J ihn misst; Leser: der Satz „dorf" und der Akt `spawn_village` des Wirts
-    function epocheImJahr(j) {
-        var E = Object.keys(EPOCHEN)
-            .filter(function (k) {
-                return zeitachse(EPOCHEN[k].region).length > 1;
-            })
-            .sort(function (a, b) {
-                return EPOCHEN[a].jahr - EPOCHEN[b].jahr;
-            });
-        var e = E[0];
-        for (var k = 0; k < E.length; k++) if (EPOCHEN[E[k]].jahr <= j) e = E[k];
-        return e;
+    // DER ORT DES JAHRS (mensch.zeit.erde): das Jahr wählt die Epoche am Ort der Erde `ort` {breite, laenge} (ohne ihn die Heimat,
+    // `ERDE.heimat`) — die des Raums, den der Schlüssel dort nennt (`erdSchluessel`: am Rheinknie im Jahr 100 die Antike Roms, 1300
+    // das Mittelalter der Franken). undefined: der Raum trägt keine Tafel-Epoche oder die Erde dort keinen Raum (dann zählt das Jahr).
+    // Bis zum Schlüssel wählte das Jahr nur auf der Achse Mitteleuropas: das Jahr 100 stand als Mittelalter.
+    function epocheImJahr(j, ort) {
+        var o = ort && isFinite(ort.breite) && isFinite(ort.laenge) ? ort : ERDE.heimat;
+        return erdSchluessel(o.breite, o.laenge, j).epoche;
     }
     // die Anker [[jahr, häuser], …] eines Orts der Region mit nEnde Häusern am Jahr tEnde, dessen Gegenwart die Klasse
     // `klasse` trägt; `vor` = die Epochen der Achse vor seiner (ihre Anker), gr0 = die Gründung
@@ -4648,6 +4754,10 @@
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
   if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
+  const erde=DP.erde&&isFinite(DP.erde.breite)&&isFinite(DP.erde.laenge)?erdSchluessel(DP.erde.breite, DP.erde.laenge, leg?jahr+spanne:isFinite(DP.erde.jahr)?DP.erde.jahr:jahr):null;   /*DER SCHLUESSEL DER ERDE (mensch.zeit.erde, `erdSchluessel`): der Ort der Erde nennt Region, Dach und Stadtform — ohne Epoche auch das Jahr (der Ort steht am verlangten Jahr, gegruendet eine Spanne davor); der Wuerfel der Region oben gibt dann nur die Zeit*/
+  if(erde){ if(!erde.raum) throw new Error('fachwerk DORF: die Erde traegt bei '+erde.breite+'/'+erde.laenge+' im Jahr '+erde.jahr+' keinen Raum, den die Welt kennt (kein Herd reicht hin)');
+    if(!leg){ region=erde.region; if(isFinite(DP.erde.jahr)) jahr=Math.round(DP.erde.jahr)-spanne; }
+    else if(leg.region!==erde.region) throw new Error('fachwerk DORF: die Epoche '+DP.epoche+' ('+leg.region+') ist nicht die des Orts der Erde ('+erde.region+', '+erde.herd+')'); }
   const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
   const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
@@ -4668,7 +4778,7 @@
       by=Math.max(gr0, Math.min(jahr+spanne, by)); }
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
     gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
-    const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
+    const pool=poolAt(by, ringe), kn=erde?wahlNachDach(pool, rnd(), erde.dachGrad):pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
     const p=bauRezept({bauweise:kn},null,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
     const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
@@ -4683,7 +4793,7 @@
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
-    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]})}); }
+    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=erde?wahlNachDach(P0, (hs%1000003)/1000003, erde.dachGrad):P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
@@ -4692,7 +4802,7 @@
     p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0); p.rolle='turm'; } } }   // das Los des Turms; seine Form ist die Zeile `turm` am Schreiber-Ende
   if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6&&gr[i]>=1850){ const p=geb[i];   // GEWERBE-GESETZ: Hallen-Viertel am Rand (ein Los, das vor 1850 gegruendet ist, traegt keine Halle)
     p.rolle='halle'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1; p.sektor=gwA; } } }   // das Los der Halle; ihre Form ist die Zeile `halle` am Schreiber-Ende
-  const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
+  const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='orient'?{k:'marokkanisch',set:{kuppel:1,W:14,D:12}}:region==='altamerika'?{k:'pueblo',set:{W:15,D:12}}:region==='kolonial'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='osteuropa'?{k:'barock',set:{kuppel:1,W:12,D:10}}:region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
   const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',baujahr:ab});   // das Los der Kirche (die Marke ihrer Epoche); ihre Form ist die Zeile `kirche` am Schreiber-Ende
   if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
     if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
@@ -4753,7 +4863,7 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, ...(erde?{erde}:null), nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
@@ -10422,6 +10532,23 @@
         var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
         var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
         var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
+        // DER ORT DER ERDE (mensch.zeit.erde): `dp.erde` {breite, laenge, jahr?} — das Jahr (sonst das der verlangten Epoche) nennt am
+        // Ort die Epoche seines Raums (`erdSchluessel`): eine Epoche beim Namen ist hier nur ihre Zeit, die Kultur ist die des Orts.
+        // Ohne `erde` (das Labor, die Goldens) bleibt der Export byte-gleich.
+        var erdOrt =
+            dp.erde && isFinite(dp.erde.breite) && isFinite(dp.erde.laenge)
+                ? { breite: Number(dp.erde.breite), laenge: Number(dp.erde.laenge) }
+                : undefined;
+        if (erdOrt) {
+            var ej = isFinite(dp.erde.jahr) ? Number(dp.erde.jahr) : epo && EPOCHEN[epo] ? EPOCHEN[epo].jahr : undefined;
+            if (ej !== undefined) {
+                var ek = erdSchluessel(erdOrt.breite, erdOrt.laenge, ej);
+                if (!ek.raum)
+                    throw new Error("fachwerk: die Erde trägt bei " + ek.breite + "/" + ek.laenge + " im Jahr " + ek.jahr + " keinen Raum, den die Welt kennt");
+                epo = ek.epoche;
+                erdOrt.jahr = ej;
+            }
+        }
         var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
         if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
         var plan = DORF({
@@ -10431,6 +10558,7 @@
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
+            erde: erdOrt,
         });
         var kNetz = null,
             kRand = null;
@@ -10458,6 +10586,11 @@
                 },
                 kachel.i || kachel.k ? { kernel: "kreuzung" } : null
             );
+        } else if (plan.erde && plan.erde.form === "raster") {
+            // DIE GEPLANTE STADT DER ERDE (`erdSchluessel` form): ein Herd mit Plan gründet seine Lose auf dem Raster — das Netz der
+            // Stufe 1 ohne Spiel (`ERDE.raster`): gerade Achsen, rechte Winkel, Blöcke (die Insulae der Kolonie, das Gitter der Kaiserstadt)
+            kNetz = kachelNetz(plan.seed, 0, 0, ERDE.raster);
+            plan.netz = kNetz;
         }
         var ext = [];
         var Bs = [];
@@ -10666,6 +10799,9 @@
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
+        // DER SCHLÜSSEL DER ERDE reist mit dem Plan, der ihn las (ohne `dp.erde` kein Feld): Ort, Jahr, Herd, Raum, Epoche, Gürtel,
+        // Dach, Form — Leser: der Wirt (das Gedächtnis des Orts), der Richter mensch.zeit.erde, gate:settlement Teil E
+        if (plan.erde) aus.erde = plan.erde;
         // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
         // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
@@ -13220,6 +13356,9 @@
         zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
+        ERDE: ERDE, // der Schlüssel der Erde: Heimat, Raster, die Herde (Leser: der Wirt `_weltMetaHeil`, gate:settlement Teil E)
+        erdSchluessel: erdSchluessel, // (Breite, Länge, Jahr) → Raum, Epoche, Dach, Form (Leser: exportSettlement, DORF, der Wirt)
+        erdKlima: erdKlima,
         MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
         WACHSTUM: WACHSTUM, // das Wachstum in Spielzeit (Staffel 2; Leser: der Wirt, gate:settlement W)
         wachstum: wachstum,

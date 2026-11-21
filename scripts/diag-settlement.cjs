@@ -1,4 +1,5 @@
-// diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
+// diag-settlement.cjs (gate:settlement) — Teil E (`--nur-e` allein): der Schlüssel der Erde (`erdUrteil`, mensch.zeit.erde) ·
+// Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
 // Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
 // (`kreuzungsUrteil`) · G (`--nur-g` nach K): die Gründung ist flach (`gruendungFlach`, Operationen je Stand) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
@@ -734,6 +735,68 @@ function gruendungFlach(FC, o = {}) {
     }
 }
 
+// ===== TEIL E (mensch.zeit.erde): DER SCHLÜSSEL DER ERDE — (Breite, Länge, Jahr) → Raum, Epoche, Dach, Form (fachwerk
+// `erdSchluessel`) und sein Konsum im Export (`exportSettlement` dp.erde → DORF: Region, Pool nach dem Dach, das Raster). E1: die
+// drei Orte des Richters (Augusta Raurica 100, Köln 1300, Wien 1860) an ihrer wahren Lage, je Erdteil ein Kontroll-Ort, den kein
+// Richter nennt, und der Jahr-Lauf am Rheinknie (100 → 1300 → 1860). E2: der Export trägt den Schlüssel und wird anders — die
+// Kolonie im Jahr 100 baut römisch (der Pool nach dem Dach: roemisch vor griechisch) im RASTER (≥ 90 % der Häuser achsgleich,
+// ≥ 9 Blöcke), Köln 1300 wächst (< 90 % achsgleich), Kyoto 1000 baut fernöstlich; ohne `erde` bleibt der Export byte-gleich
+// (Teil N, das Golden). E3: das Jahr eines Satzes am Ort der Heimat (`epocheImJahr`: 100 ist die Antike, nie das Mittelalter).
+// Die Mutanten (`ex`: der Export, der `erde` nicht liest · `ep`: das Jahr auf der Achse Mitteleuropas allein) fallen beim Namen.
+// Leser: der Wirt (`_foundryRequestSettlement` trägt worldMeta.erde in jeden Plan), der Richter mensch.zeit.erde.
+const ERD_ORTE = [
+    ["Augusta Raurica", 47.53, 7.72, 100, "antik", "antike"],
+    ["Köln", 50.94, 6.96, 1300, "mitteleuropa", "mittelalter"],
+    ["Wien", 48.21, 16.37, 1860, "mitteleuropa", "gruenderzeit"],
+    ["Kyoto", 35.01, 135.77, 1000, "fernost", "fernost"],
+    ["Timbuktu", 16.77, -3.01, 1400, "orient", undefined],
+    ["Teotihuacan", 19.69, -98.84, 500, "altamerika", undefined],
+    ["Sydney", -33.87, 151.21, 1900, "neuwelt", undefined],
+];
+const achsGleich = (x) =>
+    x.slots.filter((s) => ((d) => Math.min(d, 90 - d) < 2)(((((s.obb.phi * 180) / Math.PI) % 90) + 90) % 90)).length /
+    x.slots.length;
+function erdUrteil(FC, o = {}) {
+    const [ex, ep, fehl, je] = [o.ex || FC.exportSettlement, o.ep || FC.epocheImJahr, [], []];
+    for (const [n, b, l, j, raum, epoche] of ERD_ORTE) {
+        const k = FC.erdSchluessel(b, l, j);
+        je.push(`${n} ${j} → ${k.herd}/${k.raum}/${k.epoche || "-"}/${k.form}`);
+        if (k.raum !== raum || k.epoche !== epoche)
+            fehl.push(`E1 ${n} ${j}: ${k.raum}/${k.epoche} statt ${raum}/${epoche}`);
+    }
+    const lauf = [100, 1300, 1860].map((j) => ep(j, { breite: 47.53, laenge: 7.72 }));
+    if (lauf.join() !== "antike,mittelalter,gruenderzeit") fehl.push(`E1 Jahr-Lauf am Rheinknie ${lauf.join(" → ")}`);
+    const X = (b, l, j) => ex({ seed: 7, nH: 12, erde: { breite: b, laenge: l, jahr: j } });
+    const [rom, koeln, kyoto] = [X(47.53, 7.72, 100), X(50.94, 6.96, 1300), X(35.01, 135.77, 1000)];
+    const kult = (x) => x.slots.filter((s) => !/kirche|scheune/.test(s.rolle)).map((s) => s.kultur);
+    const [kr, kk] = [kult(rom), kult(kyoto)];
+    const zahl = (a, k) => a.filter((q) => q === k).length;
+    const mass = {
+        romAchs: +achsGleich(rom).toFixed(3),
+        romBloecke: rom.graph.zyklen,
+        koelnAchs: +achsGleich(koeln).toFixed(3),
+    };
+    je.push(
+        `Kolonie ${rom.region} ${zahl(kr, "roemisch")}×roemisch/${zahl(kr, "griechisch")}×griechisch achsgleich ${mass.romAchs} Blöcke ${mass.romBloecke} · Köln ${koeln.region} achsgleich ${mass.koelnAchs} · Kyoto ${[...new Set(kk)].join("/")}`
+    );
+    if (!rom.erde || !koeln.erde) fehl.push("E2 der Export trägt keinen Schlüssel der Erde");
+    if (
+        rom.region !== "antik" ||
+        kr.some((k) => !/roemisch|griechisch/.test(k)) ||
+        !(zahl(kr, "roemisch") > zahl(kr, "griechisch"))
+    )
+        fehl.push(`E2 die Kolonie im Jahr 100 baut ${rom.region}: ${[...new Set(kr)].join("/")}`);
+    if (!(mass.romAchs >= 0.9 && mass.romBloecke >= 9))
+        fehl.push(`E2 kein Raster: achsgleich ${mass.romAchs}, ${mass.romBloecke} Blöcke`);
+    if (koeln.region !== "mitteleuropa" || !(mass.koelnAchs < 0.9))
+        fehl.push(`E2 Köln 1300 ${koeln.region}, achsgleich ${mass.koelnAchs}`);
+    if (kk.some((k) => !/japanisch|chinesisch/.test(k))) fehl.push(`E2 Kyoto 1000 baut ${[...new Set(kk)].join("/")}`);
+    const heim = [100, 1300, 1860].map((j) => ep(j));
+    if (heim.join() !== "antike,mittelalter,gruenderzeit")
+        fehl.push(`E3 das Jahr eines Satzes an der Heimat ${heim.join(" → ")}`);
+    return { fehl, je, mass };
+}
+
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
     // die Bau-Typen der EINEN Grammatik: die Zeilen des Bau-Gesetzes (BAU_NUTZUNG) und die Rollen davor (die Kirche, der Palas, die Scheune)
@@ -1225,6 +1288,25 @@ hauptLauf(async () => {
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
+    if (!nur("z") && !nur("w") && !nur("j") && !ww) {
+        console.log("=== TEIL E: DER SCHLÜSSEL DER ERDE (mensch.zeit.erde) ===");
+        const E = erdUrteil(FC);
+        // die Mutanten: der Export, der den Ort der Erde nicht liest — und das Jahr auf der Achse Mitteleuropas allein (bis zum Schlüssel)
+        const Eo = erdUrteil(FC, {
+            ex: (dp) => FC.exportSettlement({ ...dp, erde: undefined, epoche: "mittelalter" }),
+        });
+        const Ea = erdUrteil(FC, { ep: (j) => (j < 1560 ? "mittelalter" : FC.epocheImJahr(j)) });
+        console.log("ERDE " + JSON.stringify({ je: E.je, mass: E.mass, fehl: E.fehl }));
+        check(`E1–E3 SCHLÜSSEL DER ERDE: ${E.je.join(" · ")}`, !E.fehl.length, E.fehl.join(" · "));
+        check(
+            `E4 DIE MUTANTEN fallen beim Namen: ohne Ort ${Eo.fehl.length} Brüche, das Jahr nur in Mitteleuropa ${Ea.fehl.length}`,
+            /E2 der Export trägt keinen Schlüssel/.test(Eo.fehl) &&
+                /E2 kein Raster/.test(Eo.fehl) &&
+                /E3 .*mittelalter → mittelalter/.test(Ea.fehl),
+            [...Eo.fehl, ...Ea.fehl].slice(0, 4).join(" · ")
+        );
+        if (nur("e")) wandEnde(errs, "DER ORT DER ERDE TRÄGT SEINE ZEIT (Teil E).");
+    }
     if (!nur("z") && !nur("w") && !ww) {
         console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
         const mut = (dp) =>
@@ -1719,7 +1801,7 @@ hauptLauf(async () => {
         }
         // DER VERKEHR IM PLAN (w28-stadt-grammatik, lib/verkehrsnetz-proben.cjs): der Wagen im Ring, die Wende ohne Begegnung, der
         // Kranz samt Ausscheren, der freie Fahrer-Stand — samt den Selbst-Tests 15d bis 15g
-        verkehrsnetzProben(FC, check);
+        verkehrsnetzProben(FC, check, studioKern("koerper-core.js", "__koerperCore"), studioKern("tetrapoda-core.js", "__tetrapodaCore"));
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");

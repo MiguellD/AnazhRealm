@@ -946,6 +946,8 @@ class AnazhRealm_daten {
             "chat.befehl.dorf.gruendung": ["Siedlung wird gegründet (Settlement-Export läuft) …", "Founding the settlement (settlement export running) …"],
             "chat.befehl.dorf.keine-epoche": ["Keine Epoche „{epoche}\" — es gibt {epochen}.", "No era “{epoche}” — there are: {epochen}."],
             "chat.befehl.dorf.keine-epoche-kern": ["Keine Epoche „{epoche}\" — es gibt keine (Kern fehlt).", "No era “{epoche}” — there are none (core missing)."],
+            "chat.befehl.dorf.erde-form": ["So nennst du den Ort der Erde: „dorf … bei <Breite> <Länge>\" (Grad, Süden und Westen negativ).", "To name the place on Earth: “dorf … bei <latitude> <longitude>” (degrees, south and west negative)."],
+            "chat.befehl.dorf.erde-leer": ["Bei {breite}/{laenge} trägt die Erde im Jahr {jahr} keinen Ort, den die Welt kennt — keine Gründung.", "At {breite}/{laenge} the Earth bears no place this world knows in the year {jahr} — nothing founded."],
             "chat.befehl.dorf.kein-grund": ["Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort.", "No house finds ground here — too steep, too wet or built over. Try another place."],
             "chat.befehl.dorf.name-leer": ["Das Dorf", "The village"],
             "chat.befehl.dorf.ort-fehlt": ["Hier kann kein Dorf entstehen: der Ort fehlt.", "No village can rise here: the place is missing."],

@@ -1023,13 +1023,25 @@ class AnazhRealm_feld_leben {
                 // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24" — und sein Jahr (siedlung.K4):
                 // „dorf 7 300 jahr 1560" oder die Epoche beim Namen („dorf 7 300 hanse"); die Zahl ist die Größe der Gegenwart.
                 // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
-                example: "dorf [seed] [häuser] [jahr 1560]",
-                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?(?:\s+(?:jahr\s+(\d{1,4})|([a-zäöü]+)))?$/i,
+                // DER ORT DER ERDE (mensch.zeit.erde): „… bei <Breite> <Länge>" (Grad, Süden und Westen negativ) gründet den Ort, den
+                // die Erde dort trägt (fachwerk `erdSchluessel`: „dorf 7 12 jahr 100 bei 47.5 7.7" die römische Kolonie im Raster),
+                // ohne „bei" am Ort der Welt (`worldMeta.erde`); ein Jahr vor Christus mit Minus („jahr -300").
+                example: "dorf [seed] [häuser] [jahr 1560] [bei <Breite> <Länge>]",
+                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?(?:\s+(?:jahr\s+(-?\d{1,4})|([a-zäöü]+)))?(?:\s+bei\s+(-?\d{1,2}(?:[.,]\d+)?)\s+(-?\d{1,3}(?:[.,]\d+)?))?$/i,
                 run: (m, append) => {
                     const opts = { verlangt: "human" };
                     if (m[1] !== undefined) opts.seed = Number(m[1]);
                     if (m[2] !== undefined) opts.nH = Number(m[2]);
                     if (m[3] !== undefined) opts.jahr = Number(m[3]);
+                    if (m[5] !== undefined) {
+                        const zahl = (s) => Number(String(s).replace(",", "."));
+                        const [breite, laenge] = [zahl(m[5]), zahl(m[6])];
+                        if (!(Math.abs(breite) <= 90 && Math.abs(laenge) <= 180)) {
+                            append(this._t("chat.befehl.dorf.erde-form"));
+                            return;
+                        }
+                        opts.erde = { breite, laenge };
+                    }
                     const EP = globalThis.__fachwerkCore && globalThis.__fachwerkCore.EPOCHEN;
                     if (m[4] !== undefined && !(EP && Object.hasOwn(EP, m[4].toLowerCase()))) {
                         append(

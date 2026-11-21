@@ -267,6 +267,17 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DER ORT DER ERDE (mensch.zeit.erde): jeder Plan der Welt liest den Schlüssel der Erde an ihrem Ort (`worldMeta.erde`,
+        // `_weltMetaHeil`) — Region, Epoche, Dach und Stadtform sind seine Antwort (fachwerk `erdSchluessel`); ein Akt mit eigenem Ort
+        // (der Satz „dorf … bei <Breite> <Länge>") trägt ihn selbst. Ohne Ort der Welt kein Export (laut, nie der Würfel der Region).
+        if (!d.erde) {
+            const e = this.state.worldMeta && this.state.worldMeta.erde;
+            if (!(e && Number.isFinite(e.breite) && Number.isFinite(e.laenge))) {
+                this.log("SIEDLUNG: die Welt nennt keinen Ort der Erde (worldMeta.erde) — kein Export.", "ERROR");
+                return Promise.resolve(null);
+            }
+            d.erde = { breite: e.breite, laenge: e.laenge };
+        }
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
         // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
@@ -1224,7 +1235,24 @@ class AnazhRealm_siedlung_ort {
         }
         // DAS JAHR DES AKTS (siedlung.K4, „dorf 7 300 jahr 1560", `spawn_village` mit Jahr): es wählt die Epoche seiner
         // Zeitachse (fachwerk `epocheImJahr`) — der Ort steht am Ende ihrer Spanne, die Zahl ist die Größe seiner Gegenwart
-        if (Number.isFinite(o.jahr)) o.epoche = AnazhRealm.Gesetz("fachwerk:epocheImJahr")(o.jahr);
+        // — am Ort der Erde des Akts (`o.erde`, sonst der der Welt): der Schlüssel der Erde nennt dort Raum und Epoche (mensch.zeit.erde);
+        // trägt die Erde dort in dem Jahr keinen Raum, den die Welt kennt, sagt es der Satz und gründet nichts
+        const erde = o.erde || (welt.worldMeta && welt.worldMeta.erde);
+        if (Number.isFinite(o.jahr)) {
+            const ek = AnazhRealm.Gesetz("fachwerk:erdSchluessel")(erde.breite, erde.laenge, o.jahr);
+            if (!ek.raum) {
+                this.log(
+                    `Siedlung: die Erde trägt bei ${ek.breite}/${ek.laenge} im Jahr ${ek.jahr} keinen Raum — keine Gründung.`,
+                    "ERROR"
+                );
+                this._chatEcho?.([
+                    "chat.befehl.dorf.erde-leer",
+                    { breite: ek.breite, laenge: ek.laenge, jahr: ek.jahr },
+                ]);
+                return null;
+            }
+            o.epoche = AnazhRealm.Gesetz("fachwerk:epocheImJahr")(o.jahr, erde);
+        }
         // eine verlangte Epoche ohne Zahl nimmt die Größe ihrer Klasse (fachwerk DORF, EPOCHEN.groesse), nie die des Dorfs
         if (o.nHAusGesetz && nH === undefined && !o.epoche) {
             const SG = AnazhRealm._siedlungGesetz();
@@ -1244,7 +1272,14 @@ class AnazhRealm_siedlung_ort {
         const stadt = SF && nH > SF.voll ? nH : undefined;
         const kachel = stadt ? { samen: seed, nH: stadt, i: 0, k: 0 } : undefined;
         if (stadt) nH = AnazhRealm.Gesetz("fachwerk:viertelWort")(seed, stadt, 0, 0, o.epoche).nH;
-        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null) };
+        const dp = {
+            seed,
+            nH,
+            epoche: o.epoche,
+            budget: o.budget,
+            erde: { breite: erde.breite, laenge: erde.laenge, ...(Number.isFinite(o.jahr) ? { jahr: o.jahr } : null) },
+            ...(kachel ? { kachel } : null),
+        };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
@@ -1326,6 +1361,7 @@ class AnazhRealm_siedlung_ort {
                         wz: b.ort.z,
                         ort,
                         epoche: o.epoche,
+                        erde: dp.erde, // der Ort der Erde des Akts (und sein Jahr): die Wiederkehr fragt den Schlüssel dort (`_ortDp`)
                         budget: o.budget,
                         autonomous: o.autonomous || undefined,
                         wachs: this._ortWachsAnfang(plan),
@@ -3067,7 +3103,11 @@ class AnazhRealm_siedlung_ort {
         const akt = k.startsWith("d:");
         // die Kachel trägt die Zeit ihrer Stadt und nennt sich (`kachel`); die Mitte einer Stadt des Worts ist ihre Kachel (0, 0)
         const zeit = akt
-            ? { epoche: c.epoche, ...(c.stadt ? { kachel: { samen: c.seed, nH: c.stadt, i: 0, k: 0 } } : null) }
+            ? {
+                  epoche: c.epoche,
+                  ...(c.erde ? { erde: c.erde } : null),
+                  ...(c.stadt ? { kachel: { samen: c.seed, nH: c.stadt, i: 0, k: 0 } } : null),
+              }
             : this._zellZeit(k, c.seed);
         return {
             seed: c.seed,

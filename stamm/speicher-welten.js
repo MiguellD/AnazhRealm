@@ -65,6 +65,13 @@ class AnazhRealm_speicher_welten {
         m.voxelTerrain = true;
         // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
         delete m.macro;
+        // DER ORT DER WELT AUF DER ERDE (mensch.zeit.erde): `erde` {breite, laenge} — jede Siedlung der Welt fragt den Schlüssel der
+        // Erde an ihm (fachwerk `erdSchluessel`, der Wirt `_foundryRequestSettlement`); eine Welt, deren Stand keinen nennt, steht an
+        // der Heimat des Kerns (`ERDE.heimat`). Er reist im Stand und zum Gast.
+        if (!(m.erde && Number.isFinite(m.erde.breite) && Number.isFinite(m.erde.laenge))) {
+            const H = globalThis.__fachwerkCore.ERDE.heimat;
+            m.erde = { breite: H.breite, laenge: H.laenge };
+        }
         // DAS GEDÄCHTNIS EINES ORTS KOMMT GANZ ZURÜCK (w4-heil-speicher): eine Zelle ohne `x`/`z`, mit dem Ort ihrer Trasse
         // (`wx`/`wz`), reiste knapp (die Stand-Tafel, `worldMeta`) — ihr Anker ist er, der Schlüssel ihres Erdbaus folgt aus Same
         // und Anker. Eine Zelle von vor der Trasse trägt `x`/`z` ohne `wx` und bleibt, wie sie ist.
