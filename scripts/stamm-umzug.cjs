@@ -365,14 +365,19 @@ function richter(root, trocken) {
 // Rein über die Dateien von S: `ueber` nennt jede Datei über der Decke mit ihrer Zeilenzahl (ROT beim Namen), `kante` jede, die
 // höchstens KANTE Zeilen unter ihr steht — eine Auskunft, kein Urteil: zwei Zweige, je unter der Decke, heben eine Datei an der
 // Kante zusammen darüber (z637: stamm/bild-sicht.js 3 987 + 13 + 9 = 4 009), der nächste Schneider liest ihren Namen hier.
+// DIE EINE ZAHL (21.11.): die Decke je Datei gilt für den Stamm UND für scripts/ aus DIESER Konstante (diag-betriebsgesetz liest sie
+// von hier). Bis dahin trug der Stamm die alte 4 000, während scripts/ seit 15.11. bei 6 000 stand — der Zwilling blieb stehen, und
+// am Tier-Leser zog ein Methoden-Block um, nur damit stamm/kreatur-leben.js von 4 034 auf 4 000 kam (Arbeit ohne Leser im Spiel).
+// Die Decke des Richters (DECKE, oben) teilt das Werkzeug selbst, ohne Hand — sie bleibt.
+const DATEI_DECKE = 6000;
 const KANTE = 15;
 const tsd = (n) => String(n).replace(/\B(?=(\d{3})+$)/g, " ");
 function deckenUrteil(S) {
     const z = S.map((x) => [x.pfad, x.text.split("\n").length - 1]).sort((a, b) => b[1] - a[1]);
-    const ueber = z.filter(([, n]) => n > DECKE);
-    const kante = z.filter(([, n]) => n <= DECKE && n >= DECKE - KANTE);
+    const ueber = z.filter(([, n]) => n > DATEI_DECKE);
+    const kante = z.filter(([, n]) => n <= DATEI_DECKE && n >= DATEI_DECKE - KANTE);
     const text = [
-        ueber.length ? "über der Decke: " + ueber.map(([p, n]) => `${p} ${tsd(n)} > ${tsd(DECKE)}`).join(", ") : "",
+        ueber.length ? "über der Decke: " + ueber.map(([p, n]) => `${p} ${tsd(n)} > ${tsd(DATEI_DECKE)}`).join(", ") : "",
         kante.length ? `an der Kante (≤ ${KANTE} Z. darunter): ` + kante.map(([p, n]) => `${p} ${tsd(n)}`).join(", ") : "",
     ];
     return { ueber, kante, text: text.filter(Boolean).join(" · ") || `größte ${tsd(z.length ? z[0][1] : 0)} Z.` };
@@ -390,16 +395,17 @@ function selbsttest() {
     pruef("ordne: Fixpunkt", stamm.ordne(r.text, K).text === r.text, `${S.length} Dateien, ${Date.now() - t0} ms`);
     pruef("ordne: S∘S⁻¹ = id", stamm.fuege(S) === r.text);
     const dk = deckenUrteil(S);
-    pruef(`ordne: keine Datei über der Decke ${tsd(DECKE)}`, !dk.ueber.length, dk.text);
-    // die Linse der Decke am erfundenen Täter: 4 001 Zeilen fallen beim Namen, 4 000 halten, die Kante steht als Auskunft
+    pruef(`ordne: keine Datei über der Decke ${tsd(DATEI_DECKE)}`, !dk.ueber.length, dk.text);
+    // die Linse der Decke am erfundenen Täter: eine Zeile über der Decke fällt beim Namen, die Decke selbst hält, die Kante steht als Auskunft
     const zeilen = (pfad, n) => ({ pfad, text: "\n".repeat(n) });
-    const erf = deckenUrteil([zeilen("stamm/erfunden.js", DECKE + 1), zeilen("stamm/voll.js", DECKE), zeilen("stamm/luft.js", DECKE - KANTE - 1)]);
+    const D = DATEI_DECKE;
+    const erf = deckenUrteil([zeilen("stamm/erfunden.js", D + 1), zeilen("stamm/voll.js", D), zeilen("stamm/luft.js", D - KANTE - 1)]);
     pruef(
-        "Decke: eine Datei mit 4 001 Zeilen ist ROT beim Namen, die Kante nur Auskunft",
-        erf.ueber.join() === `stamm/erfunden.js,${DECKE + 1}` &&
-            erf.kante.join() === `stamm/voll.js,${DECKE}` &&
-            erf.text === `über der Decke: stamm/erfunden.js 4 001 > 4 000 · an der Kante (≤ ${KANTE} Z. darunter): stamm/voll.js 4 000` &&
-            !deckenUrteil([zeilen("stamm/voll.js", DECKE)]).ueber.length,
+        "Decke: eine Datei eine Zeile über der Decke ist ROT beim Namen, die Kante nur Auskunft",
+        erf.ueber.join() === `stamm/erfunden.js,${D + 1}` &&
+            erf.kante.join() === `stamm/voll.js,${D}` &&
+            erf.text === `über der Decke: stamm/erfunden.js ${tsd(D + 1)} > ${tsd(D)} · an der Kante (≤ ${KANTE} Z. darunter): stamm/voll.js ${tsd(D)}` &&
+            !deckenUrteil([zeilen("stamm/voll.js", D)]).ueber.length,
         erf.text
     );
     // 2) dieselbe Klasse (der Rumpf-Hash je Glied)
@@ -512,4 +518,4 @@ function main() {
 }
 
 if (require.main === module) process.exit(main());
-module.exports = { werkzeugVon, TAFELN };
+module.exports = { werkzeugVon, TAFELN, DATEI_DECKE };
