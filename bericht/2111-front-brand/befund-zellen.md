@@ -35,11 +35,19 @@ Die Prämisse „liest je Bild neu" trägt nicht: `_brandStoff` läuft EINMAL je
 
 - **Ziel ≤ 512 nicht erreicht (895).** saat-argument trägt + 231 (`_saat` 126, `_saatMerk` 105): 895 + 231 = 1 126 > 1 024 —
   ihre Landung bleibt an diesem Schritt rot, bis der nächste Handgriff fällt.
-- **Nächster Handgriff:** `_bodenSichtAt` (stamm/gelaende-boden.js:20) hält die Stufen-Naht je CHUNK statt je Punkt (die fünf
-  Punkte einer Zelle liegen in 1–4 Chunks): 10 Punkte × ≈ 35 → ≈ 10 je Punkt, Schritt 11 ≈ 895 → ≈ 640. Danach der Wiesen-Neubau
-  (60 `_nahStreuKachelFaellt` je Takt) an die Kacheln mit geändertem Texel. Beide zusammen tragen ≤ 512 rechnerisch nicht sicher —
-  die Zahl führt, der nächste Lauf ist der Richter.
-- Ein lebender Mutant „drei Märsche" ist nicht gebaut; es steht die Selbsttest-Zeile mit den Zahlen des Täters.
+- **BERICHTIGT 22:00 — kein Chokepoint je Bett-Punkt.** Der zuerst genannte Handgriff („`_bodenSichtAt` hält die Stufen-Naht je
+  Chunk, ≈ 35 von 48 Einheiten je Punkt") war falsch zugeordnet. Gelesen an Quelle und Leser-Liste (Tiefen-Lauf, 69 Bett-Punkte
+  in einem Schritt): je Bett-Punkt ≈ 58 Einheiten über ~30 Leser — Stufen-Lesung ≈ 15 (`_voxelChunkConfig` 5, `_bodenFlaeche` 4,
+  `_bodenStufeMisch` + `_stufeGewichtAuge` + `_stufeGewicht` 5, `_bodenSichtAt` 1; je Chunk haltbar nur `_voxelChunkConfig`, der
+  Geomorph wiegt je PUNKT), Lage-Leser `_genVersion` + `_erdbauLage` + `_gelaende` ≈ 15, die Köpfe der Stoff-Kette (Auflage,
+  Blocker, Lava, Eis, Streu, Decke, Belag) ≈ 12, Grün-Gesetz + Hydro ≈ 12, `_stoff` 3. Die Naht je Chunk trüge ≈ 40 von 895 —
+  ein Ameisenschritt, NICHT geschnitten. Die Masse ist die Breite des EINEN Stoff-Lesers `_kontaktStoffAt` × 10 Punkte (zwei
+  Zündungen); das Ziel 512 fällt an diesem Schritt mit keinem sauberen Schnitt in feld-brand oder `_bodenSichtAt`.
+- **Was saat-argument öffnet:** bei der Basis 895 bleiben 129 Einheiten bis zum Soll; ihr + 231 (`_saat` 126 + `_saatMerk` 105
+  bei zwei Zündungen) ist der nähere Hebel.
+- **Der lebende Mutant** steht als N9 in `--narbe` (front-brand-wip 8b63ff7d0): SÄULE — `_voxelSurfaceY` unter `_brandStoff` = 1
+  Marsch (Mutante im Stand 8e2d76d1: 3), WIESE — der Neubau nach der Zündung < Zelle ±½. Selbsttest grün; der Live-Lauf stand
+  beim Schreiben aus (die GPU-Maschine trug die CI).
 - Das Bildpaar `paar-vor-nach.jpg` ist der Stand 8e2d76d1; nach dem Gefälle-Schnitt nicht neu geschossen (Richter im Zug:
   gate:post-kette und gate:pruefbuehne-licht der GPU-Probe).
 
