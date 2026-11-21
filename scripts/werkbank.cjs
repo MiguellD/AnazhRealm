@@ -2747,6 +2747,7 @@ async function starte() {
                     if (b.stichprobe) o.js = await heapStichprobe((stichCdp = stichCdp || (await page.target().createCDPSession())), b.stichprobe); // prettier-ignore
                     return send(o);
                 }
+                if (req.url === "/faeden") return send(await require("./lib/speicher-proben.cjs").fadenHeap(page, !!b.gc));
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
