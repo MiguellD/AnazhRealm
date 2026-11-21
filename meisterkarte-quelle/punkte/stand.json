@@ -34039,7 +34039,7 @@
   },
   "karte2.same.gedaechtnis.pfad": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.gedaechtnis.pfad#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.gedaechtnis.pfad#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abb · karte2.same.gedaechtnis.pfad#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.pfad#1",
@@ -34078,8 +34078,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 31ea3847: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.pfad) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abb",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.gedaechtnis.pfad#3",
@@ -38133,7 +38134,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 906,
+  "konsum": 907,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38301,10 +38302,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2714
+  "ohne": 2713
  },
  "kopfVoll": "1e204f8352cc0366097f6898b194993e6c608afa",
- "zeit": "2026-11-21T23:23:54.022Z",
+ "zeit": "2026-11-21T23:30:08.872Z",
  "vorher": "1e204f83",
  "bilanz": {
   "gewinn": [],
