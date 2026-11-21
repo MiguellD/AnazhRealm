@@ -428,7 +428,13 @@
         // Rampe gleitet zum Wert ihres Takts, keine eigene Glaettung darueber. Bis w18-wind-ohr trug sie eine eigene (rampeSek
         // 0,35 s): das Ohr hinkte der Boee 0,6 s nach (Rampe 0,4 · Takt 0,2; Radeon 5fb21e29, klang.K2#1 r 0,99 bei +0,6 s gegen
         // das Gesetz am Ohr), dem Bild 1,2 s.
-        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1 },
+        // DER KOPF (erleben.klang.raum#1, rein additiv): der Radius des Kopfs (m; Kugel-Modell nach Woodworth, der mittlere
+        // Erwachsene 8,75 cm) und die Schallgeschwindigkeit der Luft (m/s, 20 °C) — die Laufzeit zwischen den Ohren
+        // (`ohrLaufzeit`) folgt aus ihnen, bis 0,66 ms von der Seite; der Schatten des Kopfs (Brown & Duda 1998: die Kugel
+        // daempft ueber f0 = c/(2πa) auf α(θ) = (1 + αmin/2) + (1 − αmin/2)·cos(θ/θmin·π), θ der Winkel Quelle ↔ Ohr,
+        // αmin 0,1, θmin 150°) — `ohrSchatten`.
+        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1, kopfRadiusM: 0.0875, schallMs: 343,
+               schattenMin: 0.1, schattenGrad: 150 },
         // DER RAUM AM OHR (klang.K3 Staffel 2, w5-s2-g1, rein additiv): der Nachhall folgt aus dem, was um das Ohr STEHT —
         // RT60 = basis + krone·Deckung + bau·Bau-Anteil + fels·Fels-Anteil + hoehle·(Fels ueber dem Ohr), geklemmt auf maxSek
         // (umweltRaumNachhall). Bau- und Fels-Anteil = der Anteil der `strahlen` waagerechten Strahlen in Ohr-Hoehe, die binnen
@@ -959,6 +965,64 @@
     // DIE LIEFERUNG: eine hoerbare Stimme ohne Puffer wird bestellt — `liefern(name)` rechnet ihr Paket (umweltPaket)
     // und reicht es an aufnehmen(); erst dann klingt sie. Ohne `liefern` rechnet der Graph selbst, sofort (Lab,
     // Offline-Render); der Wirt reicht seine Klang-Werkstatt (ein Worker), das Paket kommt einen Takt spaeter.
+    // DIE LAUFZEIT ZWISCHEN DEN OHREN (erleben.klang.raum#1): eine Quelle unter dem Panorama pan (sin des Azimuts, −1 links …
+    // +1 rechts) erreicht das ferne Ohr um τ = (a/c)·(θ + sin θ) später (Woodworth: der Weg um die Kugel des Kopfs, θ = asin pan,
+    // a = UMWELT.ohr.kopfRadiusM, c = schallMs). Vorzeichen: τ > 0 — das linke Ohr hoert spaeter (die Quelle steht rechts).
+    function ohrLaufzeit(pan) {
+        var O = UMWELT.ohr, th = Math.asin(Math.max(-1, Math.min(1, +pan || 0)));
+        return (O.kopfRadiusM / O.schallMs) * (th + Math.sin(th));
+    }
+    // DER SCHATTEN DES KOPFS am Ohr, dessen Achse θ (rad, 0 … π) von der Quelle abweicht: die Daempfung ueber f0 in dB gegen
+    // das Ohr quer zur Quelle (θ = π/2, die Quelle vorn: beide Ohren 0 dB) — Brown & Duda, UMWELT.ohr.schattenMin/-Grad.
+    function ohrSchatten(theta) {
+        var O = UMWELT.ohr, a = function (th) {
+            return 1 + O.schattenMin / 2 + (1 - O.schattenMin / 2) * Math.cos(((th * 180) / Math.PI / O.schattenGrad) * Math.PI);
+        };
+        return 20 * Math.log10(a(theta) / a(Math.PI / 2));
+    }
+    // DAS OHR ZWEIER SEITEN (der EINE Richtungs-Weg jeder verorteten Quelle: der Ruf, jede gerichtete Stimme des Graphs): je Ohr
+    // der Schatten des Kopfs (ein Hoch-Regal bei f0 = c/(2πa), `ohrSchatten`: der Pegel je Ohr, ILD) und die Laufzeit (eine
+    // Verzoegerung, das ferne Ohr um `ohrLaufzeit`, ITD) — eingang (mono, −3 dB je Ohr wie die Mitte des Panoramas) → je Ohr
+    // Regal → Verzoegerung → Vereiner → ausgang. setzen(pan[, t, tau]) stellt beide (mit t gleitend wie der Graph, `ziel`).
+    // Vorher trug der Raum nur den Pegel eines StereoPanners (von der Seite schwieg das ferne Ohr ganz): Lag 0 Samples an 23
+    // von 24 Lagen.
+    function ohrRichtung(ctx, pan) {
+        var O = UMWELT.ohr, f0 = O.schallMs / (2 * Math.PI * O.kopfRadiusM);
+        var ein = ctx.createGain(), mg = ctx.createChannelMerger(2);
+        var sl = ctx.createBiquadFilter(), sr = ctx.createBiquadFilter(), dl = ctx.createDelay(0.002), dr = ctx.createDelay(0.002);
+        ein.gain.value = Math.SQRT1_2;
+        [sl, sr].forEach(function (f) {
+            f.type = "highshelf";
+            f.frequency.value = f0;
+            ein.connect(f);
+        });
+        sl.connect(dl);
+        sr.connect(dr);
+        dl.connect(mg, 0, 0);
+        dr.connect(mg, 0, 1);
+        function setzen(pan, t, tau) {
+            var q = Math.max(-1, Math.min(1, +pan || 0)), it = ohrLaufzeit(q), phi = Math.asin(q);
+            // die Lautheit gibt die Mischung (das EINE Pegel-Gesetz), der Kopf verteilt sie nur: beide Regale um k, dass die
+            // Leistung beider Ohren ueber f0 der vorderen Quelle gleicht (ohne k trug die seitliche Glut +2 dB ueber dem Gesetz)
+            var gl = ohrSchatten(Math.PI / 2 + phi), gr = ohrSchatten(Math.PI / 2 - phi);
+            var k = 10 * Math.log10(2 / (Math.pow(10, gl / 10) + Math.pow(10, gr / 10)));
+            gl += k;
+            gr += k;
+            if (typeof t !== "number") {
+                sl.gain.value = gl;
+                sr.gain.value = gr;
+                dl.delayTime.value = Math.max(0, it);
+                dr.delayTime.value = Math.max(0, -it);
+                return;
+            }
+            ziel(sl.gain, gl, t, tau);
+            ziel(sr.gain, gr, t, tau);
+            ziel(dl.delayTime, Math.max(0, it), t, tau);
+            ziel(dr.delayTime, Math.max(0, -it), t, tau);
+        }
+        setzen(pan);
+        return { eingang: ein, ausgang: mg, setzen: setzen, knoten: [ein, sl, sr, dl, dr, mg] };
+    }
     function umweltGraph(ctx, ausgang, liefern) {
         var U = UMWELT, W = U.stimmen;
         var puffer = {}, kalib = {}, bestellt = {}, stimmen = {}, knoten = new WeakSet();
@@ -990,7 +1054,7 @@
             return true;
         }
         function starte(name, m, t) {
-            var S = W[name], st = { name: name, an: true, quellen: [], panner: [], huellen: [] };
+            var S = W[name], st = { name: name, an: true, quellen: [], panner: [], huellen: [], ohren: [] };
             // Ausgleich: die Filter-Eichung zurueck und die Leistung auf die Quellen verteilt (n unkorrelierte
             // Schleifen tragen zusammen den Pegel der Mischung).
             st.ausgleich = Math.pow(10, -kalib[name] / 20) / Math.sqrt(S.quellen);
@@ -1008,8 +1072,12 @@
                 src.buffer = b;
                 src.loop = true;
                 src.playbackRate.value = m.rate || 1;
-                var pan = ctx.createStereoPanner();
-                pan.pan.value = S.gerichtet ? m.pan : (k % 2 ? 1 : -1) * (S.spreizung || 0);
+                // die verortete Stimme hoert das Ohr zweier Seiten (Pegel und Laufzeit, `ohrRichtung`), die Flaeche (Wind,
+                // Regen) traegt ihre Spreizung
+                var ohr = S.gerichtet ? ohrRichtung(ctx, m.pan) : null;
+                var pan = ohr ? ohr.eingang : ctx.createStereoPanner();
+                if (ohr) st.ohren.push(ohr);
+                else pan.pan.value = (k % 2 ? 1 : -1) * (S.spreizung || 0);
                 if (S.traegerHz) {
                     // DIE HARFE (der Koerper der Grille) klingt, die Huelle oeffnet sie: ihr Takt laesst den Ton stehen
                     var harfe = ctx.createOscillator(), auf = ctx.createGain();
@@ -1023,7 +1091,7 @@
                     st.quellen.push(harfe);
                     st.huellen.push(auf);
                 } else src.connect(pan);
-                pan.connect(st.filter);
+                (ohr ? ohr.ausgang : pan).connect(st.filter);
                 src.start(t, versatz() * b.duration);
                 knoten.add(src);
                 st.quellen.push(src);
@@ -1037,6 +1105,7 @@
             st.gain.gain.cancelScheduledValues(t);
             st.gain.gain.setTargetAtTime(0, t, U.abklangSek);
             var alle = [st.filter, st.gain].concat(st.panner, st.huellen);
+            st.ohren.forEach(function (o) { alle = alle.concat(o.knoten); });
             st.quellen.forEach(function (src, i) {
                 src.stop(t + 8 * U.abklangSek);
                 if (i === 0) src.onended = function () { alle.forEach(function (nd) { try { nd.disconnect(); } catch (_e) {} }); };
@@ -1081,7 +1150,7 @@
                     }
                     ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.ohr.mischSek);
                     ziel(st.filter.frequency, mm.hz, zeit, U.ohr.mischSek);
-                    if (W[name].gerichtet) ziel(st.panner[0].pan, mm.pan, zeit, U.ohr.mischSek);
+                    if (W[name].gerichtet) st.ohren.forEach(function (o) { o.setzen(mm.pan, zeit, U.ohr.mischSek); });
                     for (var q = 0; q < st.quellen.length; q++)
                         if (st.quellen[q].playbackRate) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.ohr.mischSek);
                 }
@@ -1280,23 +1349,22 @@
         var t = ctx.currentTime;
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
         b.getChannelData(0).set(tex.daten);
-        var src = ctx.createBufferSource(), pan = ctx.createStereoPanner(), g = ctx.createGain();
+        var src = ctx.createBufferSource(), ohr = ohrRichtung(ctx, typeof r.pan === "number" && isFinite(r.pan) ? r.pan : 0), g = ctx.createGain();
         // DIE VERDECKUNG (UMWELT.raum, w5-s2-g1): der Wirt legt sie an den Ruf ({ db, hz }), wenn Hang oder Bau die Sichtlinie schneiden
         var vd = r.verdeckung && typeof r.verdeckung.db === "number" && isFinite(r.verdeckung.db) ? r.verdeckung : null;
         var lp = vd ? ctx.createBiquadFilter() : null;
         src.buffer = b;
-        pan.pan.value = typeof r.pan === "number" && isFinite(r.pan) ? Math.max(-1, Math.min(1, r.pan)) : 0;
         g.gain.value = Math.pow(10, (pegel + (vd ? vd.db : 0) - UMWELT.texturRmsDb) / 20);
-        src.connect(pan);
+        src.connect(ohr.eingang);
         if (lp) {
             lp.type = "lowpass";
             lp.frequency.value = vd.hz;
             lp.Q.value = 0.707;
-            pan.connect(lp);
+            ohr.ausgang.connect(lp);
             lp.connect(g);
-        } else pan.connect(g);
+        } else ohr.ausgang.connect(g);
         g.connect(ausgang);
-        src.onended = function () { try { pan.disconnect(); g.disconnect(); if (lp) lp.disconnect(); } catch (_e) {} };
+        src.onended = function () { try { ohr.knoten.forEach(function (nd) { nd.disconnect(); }); g.disconnect(); if (lp) lp.disconnect(); } catch (_e) {} };
         src.start(t);
         return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration };
     }
@@ -1808,6 +1876,8 @@
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,
         tierRufSpielen: tierRufSpielen,
+        ohrLaufzeit: ohrLaufzeit,
+        ohrRichtung: ohrRichtung,
         SUBSTANZ: SUBSTANZ,
         substanzKlang: substanzKlang,
         // halten.K2 Staffel 2 (rein additiv) — der Treffer aus dem Stoff-Paar

@@ -22,7 +22,7 @@
 //  (N) UHR × WETTER × GANG an der Wiese (klang.K1 Staffel 2): nachts (Grillen, kein Vogel), im Regen, gehend und fahrend
 //      (im Sattel des GT) — Wetter und Uhr als Wort des Spielers, je Szene das Soll und der Weg in Bewegung.
 //  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S16 unten), Stubs restauriert.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S17 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -1346,17 +1346,25 @@ function koerperUrteil(F) {
 // Studio-Graphen) in drei Abständen, und das Ohr dreht sich (die Kamera): die Quelle gerade links und rechts und 30° neben dem
 // Blick, der Master an einem Stereo-OfflineAudioContext. Die Seite misst die Spalte 0 der Kamera-Matrix, nie den Rechts-Vektor
 // des gemessenen Gesetzes. ROT beim Namen der Probe, wenn ILD = R − L nicht mit dem Vorzeichen der Seite ≥ 3 dB trägt, der
-// Pegel nicht ≥ 1 dB je Abstands-Stufe fällt oder die Welt die Quelle in einem anderen Abstand hört (eine nähere Glut). Je
-// Probe: Quelle, Winkel, Abstand, ILD/Pegel in dB. Der Täter (S15): der Panner aus (ein Gain mit totem pan).
+// Pegel nicht ≥ 1 dB je Abstands-Stufe fällt oder die Welt die Quelle in einem anderen Abstand hört (eine nähere Glut) — und
+// (erleben.klang.raum#1) wenn die LAUFZEIT je Ohr fehlt: der Gipfel der Kreuzkorrelation Σ L[i]·R[i−t] (±40 Samples) steht nicht
+// auf der Seite der Quelle (t > 0: das linke Ohr hört später, die Quelle steht rechts; das Gesetz `ohrLaufzeit`, Woodworth).
+// Je Probe: Quelle, Winkel, Abstand, ILD/Pegel in dB, Lag in Samples. Die Täter: S15 der Schatten des Kopfs aus (`ohrRichtung`:
+// das Regal ohne Verstärkung — Ruf und Glut klingen mittig), S17 die Laufzeit aus (die Verzögerung ein Gain mit totem delayTime).
 async function raumSeite(dorf, mut) {
     const [r, K, P, rot, zahl] = [anazhRealm, __klangCore, BaseAudioContext.prototype, [], []];
-    const [s, sp, g] = [r.state, P.createStereoPanner, dorf.glut];
+    const [s, bq, dly, g] = [r.state, P.createBiquadFilter, P.createDelay, dorf.glut];
     const [pm, cam, tier] = [s.playerMesh, s.camera, s.creatures.find((c) => !c.userData?.dying)];
     // W.orte stellt das Dorf 4 m vor den Bau: (ux, uz) ist ein Meter vom Bau zum Dorf
     const [t0, p0, ux, uz] = [tier.position.clone(), pm.position.clone(), (dorf.x - g.x) / 4, (dorf.z - g.z) / 4];
-    if (mut)
-        P.createStereoPanner = function () {
-            return Object.assign(this.createGain(), { pan: this.createGain().gain });
+    if (mut === "pegel")
+        P.createBiquadFilter = function () {
+            const f = bq.call(this);
+            return Object.defineProperty(f, "gain", { value: this.createGain().gain });
+        };
+    if (mut === "laufzeit")
+        P.createDelay = function () {
+            return Object.assign(this.createGain(), { delayTime: this.createGain().gain });
         };
     // je Quelle: Abstände, Sekunden, gemessen ab, ihre Richtung vom Ohr und das Spiel in d Metern — es nennt den Abstand der Welt
     const Q = {
@@ -1401,17 +1409,41 @@ async function raumSeite(dorf, mut) {
                     cam.updateMatrixWorld();
                     const [e, welt] = [cam.matrixWorld.elements, spiel(ctx, d)];
                     const [seite, buf] = [Math.sign(vx * e[0] + vz * e[2]), await ctx.startRendering()];
-                    const [L, R] = [0, 1]
-                        .map((c) => buf.getChannelData(c).subarray(48000 * ab))
-                        .map((c) => c.reduce((v, x) => v + x * x, 0) / c.length + 1e-12);
-                    const [ild, db] = [10 * Math.log10(R / L), 10 * Math.log10(L + R)];
-                    zahl.push(`${q} ${w}° ${d} m ${ild.toFixed(1)}/${db.toFixed(1)}`);
-                    if (!(ild * seite >= 3 && db <= db0 - 1 && Math.abs(welt - d) < 0.1))
-                        rot.push(`Ra ${zahl.at(-1)} dB, Seite ${seite}, gehört in ${welt} m`);
+                    const [kl, kr] = [0, 1].map((c) => buf.getChannelData(c).subarray(48000 * ab));
+                    const [L, R] = [kl, kr].map((c) => c.reduce((v, x) => v + x * x, 0) / c.length + 1e-12);
+                    // der Pegel-Unterschied dort, wo der Kopf schattet: über f0 = c/(2πa) (ein Hochpass 2. Ordnung, RBJ, in
+                    // f0) — darunter beugt sich der Schall um den Kopf, dort trägt die Laufzeit die Seite
+                    const [hl, hr] = [kl, kr].map((c) => {
+                        const w = (2 * Math.PI * K.UMWELT.ohr.schallMs) / (2 * Math.PI * K.UMWELT.ohr.kopfRadiusM) / 48000;
+                        const [cw, al] = [Math.cos(w), Math.sin(w) / Math.SQRT2];
+                        const [b0, b1, a0, a1, a2] = [(1 + cw) / 2, -(1 + cw), 1 + al, -2 * cw, 1 - al];
+                        let [x1, x2, y1, y2, e] = [0, 0, 0, 0, 0];
+                        for (const x of c) {
+                            const y = (b0 * x + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2) / a0;
+                            [x2, x1, y2, y1, e] = [x1, x, y1, y, e + y * y];
+                        }
+                        return e / c.length + 1e-12;
+                    });
+                    const [ild, db] = [10 * Math.log10(hr / hl), 10 * Math.log10(L + R)];
+                    // die Laufzeit: der Gipfel von Σ L[i]·R[i−t] über ±40 Samples auf 0,25 s ab der Messung
+                    const n = Math.min(kl.length, 12000);
+                    let [lag, best] = [0, -Infinity];
+                    for (let t = -40; t <= 40; t++) {
+                        let v = 0;
+                        for (let i = Math.max(0, t); i < n; i++) v += kl[i] * kr[i - t];
+                        if (v > best) [lag, best] = [t, v];
+                    }
+                    // das Gesetz: die Woodworth-Laufzeit der Lage in Samples — der Gipfel trägt mindestens 60 % davon (das Regal
+                    // allein verschiebt die Phase um wenige Samples, nie um die Laufzeit des Kopfs)
+                    const soll = K.ohrLaufzeit(Math.sin((w * Math.PI) / 180)) * 48000;
+                    zahl.push(`${q} ${w}° ${d} m ${ild.toFixed(1)}/${db.toFixed(1)} dB · Lag ${lag}/${soll.toFixed(1)}`);
+                    const lagOk = Math.sign(lag) === seite && Math.abs(lag) >= 0.6 * Math.abs(soll);
+                    if (!(ild * seite >= 3 && db <= db0 - 1 && Math.abs(welt - d) < 0.1 && lagOk))
+                        rot.push(`Ra ${zahl.at(-1)}, Seite ${seite}, gehört in ${welt} m`);
                     db0 = db;
                 }
     } finally {
-        P.createStereoPanner = sp;
+        [P.createBiquadFilter, P.createDelay] = [bq, dly];
         // die Kamera stellt der Loop im nächsten Bild aus dem Blick des Spielers
         tier.position.copy(t0);
         pm.position.copy(p0);
@@ -1814,16 +1846,18 @@ async function zensus(page, browser, ergebnis) {
         const d14 = await messeOrt(page, "nacht", orte.wiese, { szene: SZENEN.nacht, luft: true });
         d14.mixMitte = await kW("mischung", mitte(d14.zensus.lage));
         nennt(urteile({ nacht: d14 }).rot, /^N nacht: grille/, "S14: die Grille ohne den Boden ihrer Röhre");
-        // S15: der Panner aus — Ruf und Glut klingen mittig
-        const u15 = (await page.evaluate(raumSeite, orte.dorf, true)).rot;
-        for (const q of ["tier", "glut"]) nennt(u15, new RegExp(`^Ra ${q} `), `S15: ${q} ohne Panner`);
+        // S15: der Schatten des Kopfs aus — Ruf und Glut klingen mittig; S17: die Laufzeit aus — beide Ohren hören zugleich
+        const u15 = (await page.evaluate(raumSeite, orte.dorf, "pegel")).rot;
+        for (const q of ["tier", "glut"]) nennt(u15, new RegExp(`^Ra ${q} `), `S15: ${q} ohne Schatten des Kopfs`);
+        const u17 = (await page.evaluate(raumSeite, orte.dorf, "laufzeit")).rot;
+        for (const q of ["tier", "glut"]) nennt(u17, new RegExp(`^Ra ${q} `), `S17: ${q} ohne Laufzeit je Ohr`);
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S16 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S17 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }
