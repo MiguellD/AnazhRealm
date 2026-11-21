@@ -190,9 +190,6 @@ function seitenPruefer() {
         },
         // Welt A trägt ihr Zeichen: jedes welt-eigene Feld, die Gedächtnisse der Seite und ein Tier.
         pflanzeA(buehneErbgut) {
-            // DIE KARTE DES WOLKEN-WURFS gehört der Seite (`WELT_GRENZE.seite`): die bleibenden Stoffe lesen sie, nach dem
-            // Wechsel muss es dieselbe sein (`befundeLive`)
-            window.__wolkenKarteA = r._wolkenKarte();
             const wm = st.worldMeta;
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
@@ -285,9 +282,6 @@ function seitenPruefer() {
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
             if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T)) out.push("Seite: Karte ohne Back-Schlange");
-            // fiel sie mit der Welt, legte jede Welt eine neue an (0,34 MB VRAM je Wechsel) und die Stoffe lasen still die alte
-            if (window.__wolkenKarteA && st.wolkenKarte !== window.__wolkenKarteA)
-                out.push("Seite: die Karte des Wolken-Wurfs fiel mit der Welt (WELT_GRENZE.seite `wolkenKarte`)");
             if (ganz) {
                 const snap = r.buildStateSnapshot();
                 for (const p of pfade(snap, "Snapshot", 3)) if (!ok.has(p.replace(/^Snapshot\./, ""))) out.push(p);
@@ -766,6 +760,13 @@ async function fahreSaat(browser, schein) {
                     rep.befunde.push(`${wann}: dieselbe Saat ${saat}, anderer Wert an ${f} — A′ ≠ A`);
         };
         pruefe(A, k0, "der Boot");
+        // DIE KARTE DES WOLKEN-WURFS gehört der Seite (`WELT_GRENZE.seite`): die bleibenden Stoffe lesen sie — nach jedem Wechsel am
+        // Ort dieselbe. Fiel sie mit der Welt, legte jede Welt eine neue an (0,34 MB VRAM je Wechsel) und die Stoffe lasen still die alte
+        await page.evaluate(() => void (window.__wolkenKarteA = r._wolkenKarte()));
+        const wolke = async (wann) => {
+            if (!(await page.evaluate(() => r.state.wolkenKarte === window.__wolkenKarteA)))
+                rep.befunde.push(`${wann}: die Karte des Wolken-Wurfs fiel mit der Welt (WELT_GRENZE.seite \`wolkenKarte\`)`);
+        };
         for (const [i, saat] of [B, B, A].entries()) {
             const wann = `Wechsel ${i + 1} (Saat ${saat})`;
             const w = await page.evaluate(async (saat) => {
@@ -782,6 +783,7 @@ async function fahreSaat(browser, schein) {
             const k = await page.evaluate(saatKennzahlen);
             rep.saaten.push([saat, k.leser["worldMeta.seed"]]);
             pruefe(saat, k, wann);
+            await wolke(wann);
             await nullPunkt(wann);
         }
         // DER TAG DER PROZESSE ÜBER SPEICHERN + LADEN: zurück in die Welt des Boots (`switchToWorld`, ihr Stand liegt gespeichert
@@ -789,6 +791,7 @@ async function fahreSaat(browser, schein) {
         const zurueck = await page.evaluate(async (id) => r.switchToWorld(id, { reload: true }) && (await r.erwacht), heim.id);
         const nach = await page.evaluate(() => r.state.worldMeta.tagNull);
         rep.tagSprung = zurueck ? (Number(nach) || 0) - (Number(heim.tagNull) || 0) : null;
+        if (zurueck) await wolke("zurück in die Welt des Boots (switchToWorld)");
         if (!zurueck) rep.befunde.push("die Welt des Boots kehrt nicht zurück (switchToWorld)");
         else if (rep.tagSprung !== 0) rep.befunde.push(`Speichern + Laden: der Tag der Prozesse springt um ${rep.tagSprung} (tagNull ${heim.tagNull} → ${nach})`);
         // DER ALT-STAND (ohne Null-Punkt, von vor w28-lava-nachlauf): sein Laden eicht GENAU einmal — das erste Laden legt den
