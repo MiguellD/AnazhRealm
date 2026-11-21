@@ -4630,18 +4630,20 @@ const LEITERN = [];
                             }
                         }, 40);
                         await warte(o.vorMs);
-                        // DER DUCK AM ABGRIFF: ein Mess-Ton (−60 dBFS, auf einer Linie der FFT) läuft durch den Duck-Bus der Musik, ein
+                        // DER DUCK AM ABGRIFF: ein Mess-Ton (−30 dBFS, auf einer Linie der FFT) läuft durch den Duck-Bus der Musik, ein
                         // Analyser an seinem Ausgang liest die Linie vor und nach der Stimme — der Ton hält den Bus zugleich im Takt des
-                        // Audio-Fadens (ein Bus ohne Eingang rechnet seine Rampe nicht)
+                        // Audio-Fadens (ein Bus ohne Eingang rechnet seine Rampe nicht). Der Boden der Musik (die Hihat des Regens trägt
+                        // bei 15 kHz) steht neben der Linie (Bins k±5…8) und fällt aus ihr: vorher lag der Ton (−60 dBFS, 11,7-Hz-Bin)
+                        // unter der Hihat — der Bus senkte exakt −12,00 dB (Gain 0,2512), die Linie las 13,31 · 7,60 · 11,76 dB.
                         const Lf = sy.lofi, ctx = sy.ctx;
                         const an2 = ctx.createAnalyser();
-                        an2.fftSize = 4096;
+                        an2.fftSize = 16384;
                         an2.smoothingTimeConstant = 0;
                         const k = Math.round(o.tonHz / (ctx.sampleRate / an2.fftSize));
                         ton = ctx.createOscillator();
                         tonG = ctx.createGain();
                         ton.frequency.value = (k * ctx.sampleRate) / an2.fftSize;
-                        tonG.gain.value = 1e-3;
+                        tonG.gain.value = 0.0316;
                         ton.connect(tonG);
                         tonG.connect(Lf.duck);
                         Lf.duck.connect(an2);
@@ -4649,15 +4651,18 @@ const LEITERN = [];
                         const fd = new Float32Array(an2.frequencyBinCount);
                         const linie = async () => {
                             let q = 0;
-                            for (let i = 0; i < 3; i++) {
+                            for (let i = 0; i < 6; i++) {
                                 await warte(60);
                                 an2.getFloatFrequencyData(fd);
-                                q += Math.pow(10, fd[k] / 10);
+                                let bo = 0;
+                                for (let j = 5; j <= 8; j++) bo += Math.pow(10, fd[k - j] / 10) + Math.pow(10, fd[k + j] / 10);
+                                q += Math.pow(10, fd[k] / 10) - bo / 8;
                             }
-                            return 10 * Math.log10(q / 3);
+                            return 10 * Math.log10(q / 6);
                         };
                         await warte(200);
-                        for (let i = 0; i < 60 && Lf.duckBis > ctx.currentTime; i++) await warte(50);
+                        // der vorige Duck (ein Schritt, ein Ruf) löst erst nach duckBis + freiSek (vorher las l0 in seine Rampe)
+                        for (let i = 0; i < 60 && Lf.duckBis + AnazhRealm._musikGesetz().duck.freiSek > ctx.currentTime; i++) await warte(50);
                         const [l0, g0] = [await linie(), Lf.duck.gain.value];
                         const ok = r._musikDuck("gespraech", o.zeichen);
                         await warte(o.duckMs);
@@ -4714,11 +4719,12 @@ const LEITERN = [];
                     await L.ort("wiese", "ego");
                     L.preisPose("wiese", "ego");
                     const sek = Math.max(6, Math.min(14, L.rest() - 10));
-                    const G = await L.ev("return await (" + getuemmelSeite + ")(" + JSON.stringify({ wetter: "rainy", sek, vorMs: Math.round(sek * 300), duckMs: 300, zeichen: 30, tonHz: 15000 }) + ");", Math.max(10, L.rest() - 2));
+                    const G = await L.ev("return await (" + getuemmelSeite + ")(" + JSON.stringify({ wetter: "rainy", sek, vorMs: Math.round(sek * 300), duckMs: 450, zeichen: 30, tonHz: 15000 }) + ");", Math.max(10, L.rest() - 2));
                     L.zeile("Getümmel am Ohr: " + JSON.stringify(G));
                     if (G.fehler) throw new Error(G.fehler);
                     // der Duck am Abgriff: die Linie des Mess-Tons am Ausgang des Duck-Busses vor gegen nach der Stimme (dB)
-                    const duck = Number.isFinite(G.duck.l0) && Number.isFinite(G.duck.l1) ? +(G.duck.l0 - G.duck.l1).toFixed(2) : null;
+                    // die Auflösung des Abgriffs: 0,1 dB (sechs Läufe am Kopf 11,82 … 12,02 dB bei Gain 0,2512 = −12,00 dB)
+                    const duck = Number.isFinite(G.duck.l0) && Number.isFinite(G.duck.l1) ? +(G.duck.l0 - G.duck.l1).toFixed(1) : null;
                     const wechsel = duck == null ? 0 : duck;
                     const dauer = +(G.ms / 60000).toFixed(3);
                     const t = [];
