@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:30:09.068Z",
+ "zeit": "2026-11-21T10:31:51.163Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -50884,6 +50884,431 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.sternhimmel#2",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "8e716ee93261",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "b19cd7b1cd04",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "460a1bf2133b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "e6b12eb0e725",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "6829f6c3d504",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 9474 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4c0a86219703",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "27f9c445d029",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -50985,7 +51410,8 @@
   "k2027ed401b24": "dVRNj5tADP0vObaddfgKMFIPkxApK7Vq9tSzBzzAhkA0A6FN1f9ewUKywNbH0Xv287M9f1YXjE+Y0tOrqcoVX31afVkZvBIzpK+kn17Niq/C2LLJ4eJFdAFCiF0Hi3V+qQ0UuQSUJWZnYo2uKS+e4p4WWHZiKw7tXrRHgCP4sG2/fp1TC0lJxWpUNBLDUDkB8jmwMSlKYtiovtgA9gJC5XHoI4jE8RXG2LZCQLufV5RYJlOl4cbzyePPrRB7sVCY5Eg1K/LSjDXjxJOOze+Fll0lGlt2Q8oK0gMJLR8tOQrtrWyPIcyIqmiMmRQLnMSzAw6wwKZk8jir2UVXksoBLkPbt5B/4HR6aZiaKJISAzn3OUMqU9ITDWsnVhuLw69gnvSEZ9LISsxGL9eOb8uHNwBwWGopeuF9iVH4Zq0sN5gQu4FC2jkVpX0iuI3vx95AEYlhK7tIZ0VMnOX6PLVHuWSvHf5tKclkmJBmp8rUd3TgIlLAh1rQ1zq60Zz5aGbg2XKz9t73EoA4LLwzlapb1MTSSzMQySXP97gQzwtwjefzuPPKcZ14PjhTd4v9XobnkrXxOxnpf+bwdgbsRnkxkpRy3dDju206B181nhnKVOdKjdOWXqzCj5azpaJmsqrqcbzO2gktDg6Ud1fC/gy29wGKnYh+2z8PL4+Z9rEXcyl99krX907lZq1crq7dNcYLdK5r1mKc3eejJGEnezGTG+mCUprYmLjSwYRDq95k3wIhjv5w+urzZGFvy4w5dQaXpjHjVoV+Eir+wdfRkj5JLE8D0N14gWX367f9IQ5vFpVhBBFcp3cCSSvEyy56+1e+i614jiAakl8ohouuVN79fJBhYzIs6seX//cf",
   "k08245dac43a0": "dVVdj5swEPwvPLb1OXwFsHQPTjgpV7Uq99TnNayBCwFkQ2hT9b9XEEgCXPcRzeyMZ9fmj1FDfIQUn951VRrM+GR8MTSckWhUZ1RP79pgRhCbFtqMX4tyzvc9LFZ53Wha5IKCKCE7IWlVg3nxFA8037QSSzLavfAuojSiHt11/FZ7/vy8bFMITCrSgMSpSRBI2we2BLY6BYEEWjkIj2DXR5Auo0P5IY/e6VS9cu/kA1UBZTJ3HmxdD132+pvzlzU+yQEbUuSlnnTjxBW2xW5i3ZqjoCMXwKxANZLA9MAUk9khki4K6IIoi1brmZhvJ67lM0pX2BR1HmcNqVUlsBzhIrA8E9hu7SmtWyJnjoQAXyyzzgDLFNXMw8aO5dZk9Je/bHqEEyogJWRTlhvbs8Q9G0rpYe2lGIwPEpPx7Uaajj8j9kOlaZ9UmA6N6GX6Hl2XKuT87bZh6UJEx1muTvN4pIPWxmbf1pZ0Bgkqcqx0c0P7DgD6400I6aAVOeGSeT/MyLPEduM+nsWn/LDKTley6UAhSet2JKKDrucyzl9X4AZOp2nvpe3Y8XJwuukX+9GG66C59Xob6X/mcL0G5IJ5MZGkdJzAZftdugSfFZwIiFTlUk7TFm4sg4+Ws8OiIaKqmmm89sYOzN5L+RBLn+vu8Y0If1s/D2/3mQ71wpdWhu6Vam4nFduNdJg897cxXqFz1ZAO4uw2HykQeturmVxQFZjiLMbEETYkjHby6vricx5549WXn2cLe1l3zLEPuNStnrYq8JJAsg+ejg7VUUB5HIHO1vVNi33tQ/rBD9eIyiCkIV1W0nH+tg+v78p3vuOvIQ3H5jXGtFaVzPuXj2bQ6gyK5v4L+PsP",
   "k5039cf2afc92": "dVVdj5swEPwveezVZz4DWLoH57gqV7UqeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu91Va7Y6tPq80rDGYlGdUb1vNcrtgpi00Kb8WtRzvlrB4tVfqo1LXJBQZSQHZE0qsa8eI57mm9aiSUZbd94G1EaUY9uWn6rV/7yMm9TCEwqUoPEsUkQSNsHNgc2OgWBBBrZCw9g10eQLqN9+SGP9nSsTpm2X35E6W6uKqBMps6Dteuhy95bzt+WLpMcsCZFXupRN05cYVvsJtYuOQpacgHMClQDCUwPTDGa7SNpo4DOiLJotJ6I+XbiWj6jdIFNUedxVpOTqgSWA1wElmcC2yw9paeGyIkjIcAX86wzwDJFNfFg2LFcm4z+8udND3BEBaSEbMzSsD1L3LOhlG6XXoreeC8xGl8b0nT8CbEbKk27pMK0b0Qv4/foulQh57vbhqUzER1nuTpO45EOWobNvi0t6QwSVORQ6fqG9h0A9IebENJeK3LCOfN+mIFnibXhPp7Fp3y7yE5Xsm5BIUlPzUBEB13PZZy/L8A1HI/j3kvbseP54HTdLfajDddBc+11NtL/zOF6DcgF82IkSek4gcteN84cfFZwJCBSlUs5Tlu4sQw+Ws4Wi5qIqqrH8dqGHZidl/Ihli7XzeMbEf62fm5395n29bapPvDeK1Sqvp1WrA3pMHnubmS8QOeqJi3E2W1GUiB01hdzuaAqMMVJlIkjbEgYbeXV+cXnPPKG6y+fJkt7WXbMsQu51I0eNyvwkkCyD56PFtVBQHkYgM7a9U2Lfe2C+sG315jKIHwK6bxky/kuCq9vy3e+5e8h3Q/NTxjTk6pk3r1+NINGZ1DU99/A338=",
-  "ke729cb01f4c9": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/I13FXHOtx0sVvml1rTIBQVRQnZG0qga8+Il7mm+aSWWZLTd8TaiNKIe3bSvr3NqITCpSA0SR2IQSNsHNgc2OgWBBBrZDxvAro8gXUb78kMeHelYm5Zz2u7mEwWUyVRpsHY9dNnhnfMdXyhMcsCaFHmpx5lx4grbYo9By1slClpyA8wKVAMJTA9MMQrtrWyjgM6Ismi0ngzz7cS1fEbpApuizuOsJhdVCSwHuAgszwT2idPppSFyokgI8MXc5wywTFFNNBh2LNcmo7/9edMTnFEBKSEbvTRszxJPbyil+6WWohfejxiFrw1pOv6E2AVK086pMO0b0dt4HvUG8pAPW9lVOhui4yxX56k90kHLsNn3pSSdQYKKnCpdP9C+A4A+G2bRflbkhHPm8zIDzxJrw/14F5/y/cI7Xcm6BYUkvTQDER10PZdxfliAazifx52XtmPH8+B03S32Rxmug+ba62Sk/8nh/gzIDfNiJEnpOIE7b35VcCYgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYtH44E/RPYPMLjWx6+W7/2b888+9rxuea+e6Xqxy3F2pAOk9fuJcYLdK5q0kKcPbKRAqGTvcjjhqrAFCcWJo6wIWG0lXfZR5/zyBuevfw6WdbbsmOOnbmlbvS4UYGXBJJ98m20qE4CytMAdNaub1r96m1+8v3djKMR0pBG7UeDtjxpOT9sw/uf8oNv+CGk4dD8gjG9qErm3a9HM2h0BkX9/O7//gM="
+  "ke729cb01f4c9": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/I13FXHOtx0sVvml1rTIBQVRQnZG0qga8+Il7mm+aSWWZLTd8TaiNKIe3bSvr3NqITCpSA0SR2IQSNsHNgc2OgWBBBrZDxvAro8gXUb78kMeHelYm5Zz2u7mEwWUyVRpsHY9dNnhnfMdXyhMcsCaFHmpx5lx4grbYo9By1slClpyA8wKVAMJTA9MMQrtrWyjgM6Ismi0ngzz7cS1fEbpApuizuOsJhdVCSwHuAgszwT2idPppSFyokgI8MXc5wywTFFNNBh2LNcmo7/9edMTnFEBKSEbvTRszxJPbyil+6WWohfejxiFrw1pOv6E2AVK086pMO0b0dt4HvUG8pAPW9lVOhui4yxX56k90kHLsNn3pSSdQYKKnCpdP9C+A4A+G2bRflbkhHPm8zIDzxJrw/14F5/y/cI7Xcm6BYUkvTQDER10PZdxfliAazifx52XtmPH8+B03S32Rxmug+ba62Sk/8nh/gzIDfNiJEnpOIE7b35VcCYgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYtH44E/RPYPMLjWx6+W7/2b888+9rxuea+e6Xqxy3F2pAOk9fuJcYLdK5q0kKcPbKRAqGTvcjjhqrAFCcWJo6wIWG0lXfZR5/zyBuevfw6WdbbsmOOnbmlbvS4UYGXBJJ98m20qE4CytMAdNaub1r96m1+8v3djKMR0pBG7UeDtjxpOT9sw/uf8oNv+CGk4dD8gjG9qErm3a9HM2h0BkX9/O7//gM=",
+  "k4c0a86219703": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/F6Uc77tYLHKL7WmRS4oiBKyM5JG1ZgXL3FP800rsSSj7Y63EaUR9eimfX2dUwuBSUVqkDgSg0DaPrA5sNEpCCTQyH7YAHZ9BOky2pcf8uhIx9q0nNN2N58ooEymSoO166HLDu+c7/hCYZID1qTISz3OjBNX2BZ7DFreKlHQkhtgVqAaSGB6YIpRaG9lGwV0RpRFo/VkmG8nruUzShfYFHUeZzW5qEpgOcBFYHkmsE+cTi8NkRNFQoAv5j5ngGWKaqLBsGO5Nhn97c+bnuCMCkgJ2eilYXuWeHpDKd0vtRS98H7EKHxtSNPxJ8QuUJp2ToVp34jexvPovowh5298rHQ2RMdZrs5Te6SDlmGz70tJOoMEFTlVun6gfQcA/WHzQ9rPipxwznxeZuBZYm24H+/iU75feKcrWbegkKSXZiCig67nMs4PC3AN5/O489J27HgenK67xf4ow3XQXHudjPQ/OdyfAblhXowkKR0ncOfNrwrOBESqcinHpIUby+CzxWyxqImoqnqM1jbswGTUpuXDkaB/AptHeHzLw3fr1/7tmWdfOz7X3HevVP24pVgb0mHy2r3EeIHOVU1aiLNHNlIgdLIXedxQFZjixMLEETYkjLbyLjv0OY+84dnLr5NlvS075tiZW+pGjxsVeEkg2SffRovqJKA8DUBn7fqm1a/e5iff3804GiENadR+NGjLk5bzwza8/yk/+IYfQhoOzS8Y04uqZN79ejSDRmdQ1M/v/u8/"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -72514,6 +72940,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.sterne) · Täter: @@ 0 s · planet.kosmos.sterne S4 warf: das Sternfeld trägt keine Größenklassen (aMag fehlt, stamm/bild-himmel.js:465)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.sterne) · Täter: @@ 0 s · planet.kosmos.sterne S4 warf: das Sternfeld trägt keine Größenklassen (aMag fehlt, stamm/bild-himmel.js:465)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 15.2,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 7.06,
+    "kerne": 0.392,
+    "fensterKerne": 0.465,
+    "namen": [
+     [
+      "silentConfig",
+      2.27
+     ],
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.38
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.45
+     ]
+    ],
+    "geraetS": 5.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.47
+     ],
+     [
+      "svchost.exe",
+      1.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 46.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:31:51.163Z",
+   "abdruck": "c0798b471035",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
    "modus": "session"
   }
  },
