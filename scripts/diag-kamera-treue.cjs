@@ -80,6 +80,8 @@ function urteil(z) {
     if (!ks.geprueft) v.push("SCHLÜSSEL: die Welt zeichnete kein Render-Objekt — die Probe ist blind");
     if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
+    if (ks.arenaHaelt)
+        v.push(`SCHLÜSSEL: ${ks.arenaHaelt} — der Zeichner hält nach dem Eintritt seiner Senke, was er davor zeichnete`);
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
     if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
     if (z.vorbau !== "merken,,bauen") v.push(`VORBAU: Ladeschirm, Bild des letzten, danach ${z.vorbau} (Soll merken,,bauen)`);
@@ -213,6 +215,7 @@ function selbsttest() {
         ["Diät nach Anlage (B-K1)", ["schluessel", { veraltet: { bauSatz: 1 } }], /SCHLÜSSEL: bauSatz ×1/],
         ["Schlüssel-Kontrolle blind", ["schluessel", { kontrolle: false }], /die Kontrolle ist blind/],
         ["Welt ohne Render-Objekt", ["schluessel", { geprueft: 0 }], /die Welt zeichnete kein Render-Objekt/],
+        ["Zeichner hält nach dem Eintritt (w28-pop-treue)", ["schluessel", { arenaHaelt: "3 Senken der Arena mit 4 Render-Objekten ihres Zeichners" }], /SCHLÜSSEL: 3 Senken der Arena mit 4 Render-Objekten ihres Zeichners — der Zeichner hält/],
         ["alphaTest-0,5-Werfer verliert discard", ["wurf.werfer.1", { wurf: false }], /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/],
         ["Farb-Graph im Wurf", ["wurf.werfer.0", { farbe: true }], /WURF: wurf:voll — ohne Ausschnitt/],
         ["Stand blind", ["stand.direkt.zahl", { pruef: 0 }], /STAND direkt: DIÄT: keine Diät-Prüfung/],
@@ -245,6 +248,21 @@ function buehne() {
         // (i) SCHLÜSSEL: jedes Hauptpass-Render-Objekt der Welt (Welt-Szene, Senken über ihren Zeichner) trägt nach der
         // Erst-Zeichnung den Schlüssel seines Baus; Kontrolle: die Aufzählbarkeit des Beobachters wechselt ihn.
         const schluessel = { geprueft: 0, veraltet: {} };
+        // was der letzte Frame der Welt löste, ist gelöst (`pendingDisposals` leert nach `onSubmittedWorkDone`)
+        const q = rend.backend && rend.backend.device && rend.backend.device.queue;
+        if (q && typeof q.onSubmittedWorkDone === "function") await q.onSubmittedWorkDone();
+        {
+            // … und der Zeichner einer Senke in der Arena hält kein Render-Objekt mehr (`_zeichnerVerlassen`): er verließ den
+            // Graphen, was er vor dem Eintritt zeichnete, liest keiner (w28-pop-treue; die Radeon nannte einen davon
+            // „SCHLÜSSEL: instanz-zeichner ×1")
+            let [senken, halten] = [0, 0];
+            st.scene.traverse((o) => {
+                const zz = o.__arena && o.__zeichner;
+                const n = zz && zz.__renderObjekte ? zz.__renderObjekte.length : 0;
+                if (n) [senken, halten] = [senken + 1, halten + n];
+            });
+            schluessel.arenaHaelt = senken ? `${senken} Senken der Arena mit ${halten} Render-Objekten ihres Zeichners` : 0;
+        }
         {
             const ros = new Set();
             st.scene.traverse((o) => {
