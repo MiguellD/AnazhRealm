@@ -401,6 +401,29 @@ function vorlageWand(A) {
     return { errs, merges };
 }
 
+// H12 DER VERLASSENE KÖRPER FOLGT DEM BLICK (heap-register 21.11.): gibt der letzte Halter einen Foundry-Körper zurück
+// (`_foundryLoslassen`), fällt er nach GPU_KEHRAUS_MS (`_foundryRuheDeckel`); der gebaute oder bestellte, den noch kein Halter
+// nahm, wartet die Bestell-Frist (`_foundryRuheMs`). Bis heap-register ruhte jeder Untätige 60 s Spiel-Zeit (Radeon, Wegenetz-
+// Fahrt, Richter-Preis: 95 Verlassene 10–60 s alt = 47,9 MB). Die Linse fährt die echte Rückgabe und den echten Räumer an drei
+// Körpern: verlassen (Kehraus + 1 s später fort), bestellt (bleibt), gehalten (bleibt).
+function verlassenWand(A) {
+    const w = weltVon(A, { spielZeit: 100 });
+    const fort = [];
+    w._disposeFoundryGroupGeom = (g) => fort.push(g);
+    const koerper = (n, halter) => ({ n, _liveRefs: halter, _cacheBytes: 1 << 20, children: [] });
+    const [verl, best, geh] = [koerper("verlassen", 1), koerper("bestellt", 0), koerper("gehalten", 1)];
+    w._foundry = { cache: new Map([["v", verl], ["b", best], ["g", geh]]), cacheBytes: 3 << 20, requested: new Set() }; // prettier-ignore
+    best._ruheSeit = 100;
+    A.prototype._foundryLoslassen.call(w, verl);
+    w.state.spielZeit = 100 + A.GPU_KEHRAUS_MS / 1000 + 1;
+    A.prototype._foundryRuheDeckel.call(w);
+    const errs = [];
+    if (w._foundry.cache.has("v")) errs.push(`H12 _foundryRuheDeckel: der verlassene Körper ruht nach ${A.GPU_KEHRAUS_MS / 1000 + 1} s weiter (Soll: fort nach GPU_KEHRAUS_MS)`); // prettier-ignore
+    if (!w._foundry.cache.has("b")) errs.push("H12 _foundryRuheDeckel: der bestellte Körper fiel vor der Bestell-Frist (_foundryRuheMs)"); // prettier-ignore
+    if (!w._foundry.cache.has("g")) errs.push("H12 _foundryRuheDeckel: der gehaltene Körper fiel");
+    return { errs, fort: fort.length };
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
@@ -1712,6 +1735,11 @@ function selbsttest() {
     const v11Halt = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "return;"))); // prettier-ignore
     const v11Frueh = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "q.nutzer--;"))); // prettier-ignore
     t("Vorlage: ohne Rückgabe rot bei _archMergeCache und dem Vorbacken, ohne Zählung rot am stehenden Bau, der Stamm grün", v11Halt.errs.some((e) => /H11 _archMergeCache: die Vorlage hält/.test(e)) && v11Halt.errs.some((e) => /H11 _tickBlueprintPrebake/.test(e)) && v11Frueh.errs.some((e) => /fiel, während ein Bau aus ihr steht/.test(e)) && !vorlageWand(A).errs.length); // prettier-ignore
+    // DER VERLASSENE (H12): die Rückgabe ohne Marke (der Stand vor heap-register: der Verlassene wartet die Bestell-Frist) ist rot
+    // beim Verlassenen, das Kehraus-Gesetz für jeden Untätigen rot beim Bestellten, der Stamm grün
+    const v12Alt = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryLoslassen", "[src._ruheSeit, src._verlassen] = [this.state.spielZeit, true];", "src._ruheSeit = this.state.spielZeit;"))); // prettier-ignore
+    const v12Alle = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryRuheDeckel", "const frist = v._verlassen ? kehraus : bestellt;", "const frist = kehraus;"))); // prettier-ignore
+    t("Verlassener Körper: ohne Marke rot beim Verlassenen, Kehraus für alle rot beim Bestellten, der Stamm grün", v12Alt.errs.some((e) => /verlassene Körper ruht/.test(e)) && v12Alle.errs.some((e) => /bestellte Körper fiel/.test(e)) && !verlassenWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1768,6 +1796,9 @@ function main() {
     console.log(`H10 die ferne Siedlung nach dem Abschied: ${fs10.n} Köpfe erreichbar (Soll 0)`);
     const v11 = vorlageWand(A);
     errs.push(...v11.errs);
+    const v12 = verlassenWand(A);
+    errs.push(...v12.errs);
+    console.log(`H12 der verlassene Foundry-Körper: ${v12.fort} nach dem Kehraus-Gesetz gefallen (Soll 1), bestellt und gehalten bleiben (${v12.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     console.log(`H11 die Vorlage des Bauplans: ${v11.merges}× verschmolzen für zwei Bauten und einen Geist, nach dem letzten gefallen (${v11.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
