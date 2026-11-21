@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 5,
+    "heute": 6,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 2.6,
+    "anteilHeute": 3.1,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -18657,7 +18657,7 @@
        "richter": "Saat-Tausch bei gleichem Planeten: andere Personen → andere Wendepunkte ≥ 70 %; Gegenlauf: dieselben Personen → dieselben Wendepunkte ≥ 95 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "nur Gewalt → Furcht lokal; Bauten altern ohne Kopplung an Bewohner (stamm/siedlung-satz.js:858)",
@@ -20086,11 +20086,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 40,
+  "heute": 41,
   "davonKopplungen": 33,
   "kern": 8,
   "kernDazu": 8,
-  "anteilHeute": 2.4,
+  "anteilHeute": 2.5,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 29,
-  "nachwache": 11
+  "nachwache": 12
  },
  "zusammengelegt": [
   {
