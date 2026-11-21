@@ -263,6 +263,8 @@ function abdruckKern(G) {
                     txt(h, Math.round(b.o * 1e6));
                     txt(h, b.vorlage);
                     for (let j = 0; j < 16; j++) txt(h, Math.round(v.basis[i * 16 + j] * 1e4));
+                    // die Ebene des Gesetzes (`_wieseHang`): an ihr misst das Gesetz der Ferne Anteil und Größe des Büschels
+                    for (let j = 0; j < 2; j++) txt(h, Math.round(v.hang[i * 2 + j] * 1e5));
                     for (let j = 0; j < 3; j++) txt(h, Math.round(v.farben[i * 3 + j] * 1e4));
                 });
                 // ihre Puffer (Basis, Tint, die Blöcke je Vorlage) sind die Kopie dieser Büschel
