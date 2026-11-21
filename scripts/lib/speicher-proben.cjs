@@ -214,4 +214,20 @@ async function rundeFahrt({ umstellen, rufe }) {
     return { text: zeilen.join("\n") + rot.map((z) => "\n  ❌ RUNDE " + z).join("") + "\n" + datei, gruen: !rot.length };
 }
 
-module.exports = { wegFahrt, rundeFahrt };
+const FADEN_NAME = new WeakMap();
+async function fadenHeap(page, gc = false) {
+    const frist = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
+    const mb = (u) => (u ? +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1) : null);
+    return Promise.all(
+        page.workers().map(async (w) => {
+            if (!FADEN_NAME.has(w)) FADEN_NAME.set(w, await frist(w.evaluate(() => self.name).catch(() => null), 1500));
+            const u = await frist(w.client.send("Runtime.getHeapUsage").catch(() => null), 1500);
+            const o = { name: FADEN_NAME.get(w) || "?", mb: mb(u) };
+            if (gc && (await frist(w.client.send("HeapProfiler.collectGarbage").then(() => 1, () => null), 5000)))
+                o.gehalten = mb(await frist(w.client.send("Runtime.getHeapUsage").catch(() => null), 1500));
+            return o;
+        })
+    );
+}
+
+module.exports = { wegFahrt, rundeFahrt, fadenHeap };

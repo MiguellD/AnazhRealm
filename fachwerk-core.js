@@ -2815,18 +2815,84 @@
     // Soll war sie selbst, hochhaus L1/L0 0,777 im Sicht-Ton, material.K3). Gemessen erst, wenn eine Körper-Stufe sie braucht
     // (eine gezeigte Stufe misst nichts): am Fragment im Fach, sonst baut der Bau sie einmal (das Fragment fällt, Wand-Ton
     // und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
+    var SOLL_TON = new Map(),
+        SOLL_TON_PLAETZE = 256,
+        SOLL_ECKEN = 65536;
+    // DIE MESSUNG LIEST DREI KANÄLE (`sichtTon`: Lage, Farbe, Index der tragenden Stoffe): je gebackenem Teil hängt `sollTeil` sie
+    // an (der Index um die Ecken davor versetzt, wie `mischeGeoms`), `sollGanz` legt sie in genau so große Float64-/Uint32-Felder —
+    // dieselben Zahlen in derselben Folge der Stoffe und Ecken, außerhalb des Haufens der Fäden; Normale, UV und Gefüge des Bakes
+    // fallen mit dem Teil (die Messung liest sie nie)
+    function sollTeil(ziel, teil) {
+        for (var rolle in teil) {
+            var S = teil[rolle];
+            if (!S || !S.vo || !_tonTraegt(rolle)) continue;
+            var Z = ziel[rolle] || (ziel[rolle] = { teile: [], vo: 0 });
+            Z.teile.push({ pos: Float64Array.from(S.pos), col: Float64Array.from(S.col), idx: Uint32Array.from(S.idx), off: Z.vo });
+            Z.vo += S.vo;
+        }
+    }
+    function sollGanz(ziel) {
+        var g = {};
+        for (var rolle in ziel) {
+            var Z = ziel[rolle], np = 0, ni = 0, k;
+            for (k = 0; k < Z.teile.length; k++) {
+                np += Z.teile[k].pos.length;
+                ni += Z.teile[k].idx.length;
+            }
+            var G = (g[rolle] = { pos: new Float64Array(np), col: new Float64Array(np), idx: new Uint32Array(ni), vo: Z.vo });
+            for (var ap = 0, ai = 0, k2 = 0; k2 < Z.teile.length; k2++) {
+                var T = Z.teile[k2];
+                G.pos.set(T.pos, ap);
+                G.col.set(T.col, ap);
+                for (var j = 0; j < T.idx.length; j++) G.idx[ai + j] = T.idx[j] + T.off;
+                ap += T.pos.length;
+                ai += T.idx.length;
+            }
+        }
+        return g;
+    }
     function sollTon(B) {
         if (!B.sichtTon) {
             var g = B.frag && B.fragStufe === 1 && !turmBau(B) ? B.frag : null;
             if (turmBau(B)) {
-                var st = stufe0Bau(stufe0Param(Object.assign({}, B.p, { __sehne: undefined }))),
-                    wrap = bauOrtWrap(B);
-                wrap.add(st.g);
-                wrap.updateMatrixWorld(true);
-                bakeLOD(st.g, B.p.col, (g = {}), 0, true);
+                // DAS SOLL DES TURMS IST EINE ZAHL DES BAUS (hochhaus-dach-speicher): seine Stufe 0 — ein Turm aus Backstein trägt
+                // 2,8 Mio. Ecken (modern, 22 Geschosse) — baut der Faden je Bau EINMAL, nie je Stufe und Auftrag (L1, L2 und der
+                // Wurf L3 desselben Hauses fragten es dreimal, je Messung bis 1 000 MB lebend); der Schlüssel ist, was die Messung
+                // liest (der Plan und der Ort des Baus), der Wert vier Zahlen je Klasse
+                var sk = JSON.stringify([B.p, B.q]);
+                if (SOLL_TON.has(sk)) return (B.sichtTon = SOLL_TON.get(sk));
+                // je Teil des Stapels gebacken (stapelBau `backe`), aus dem Bake nur, was die Messung liest (`sollTeil`)
+                var wrap = bauOrtWrap(B),
+                    gT = {};
+                var st = stufe0Bau(stufe0Param(Object.assign({}, B.p, { __sehne: undefined })), function (teil) {
+                    if (!teil.parent) wrap.add(teil);
+                    wrap.updateMatrixWorld(true);
+                    // Ast um Ast in der Folge des Baums (dieselbe, die `bakeLOD` am Ganzen geht): jedes Teil fällt, sobald es
+                    // gebacken ist, der Bake reicht je SOLL_ECKEN Ecken an die Messung weiter
+                    var t = {}, n = 0;
+                    (function ast(o) {
+                        if (o.isMesh) {
+                            bakeLOD(o, B.p.col, t, 0, true);
+                            if ((n += o.geometry && o.geometry.attributes.position ? o.geometry.attributes.position.count : 0) >= SOLL_ECKEN) {
+                                sollTeil(gT, t);
+                                t = {};
+                                n = 0;
+                            }
+                        }
+                        var kinder = o.children.slice();
+                        for (var i = 0; i < kinder.length; i++) ast(kinder[i]);
+                    })(teil);
+                    sollTeil(gT, t);
+                });
+                g = sollGanz(gT);
                 st.g.traverse(function (o) {
                     if (o.geometry) o.geometry.dispose();
                 });
+                B.sichtTon = sichtTon(g);
+                g = null;
+                if (SOLL_TON.size >= SOLL_TON_PLAETZE) SOLL_TON.delete(SOLL_TON.keys().next().value);
+                SOLL_TON.set(sk, B.sichtTon);
+                return B.sichtTon;
             } else if (!g) {
                 g = fragFuer(B, 1);
                 B.frag = null;
@@ -2885,18 +2951,21 @@
         return geoms;
     }
     // prettier-ignore
-    function stapelBau(hp, flags, extraNur){
+    function stapelBau(hp, flags, extraNur, backe){
   if(extraNur) hp=Object.assign({},hp,{nur:Object.assign({},hp.nur||{},extraNur)});                                                               // TURM-STAPEL-GESETZ: Türme sind gestapelte ECHTE builds
   const st=Math.max(1,hp.storeys||1);
-  if(st<=11){ const H=HAUS(THREE,mat,hp); return {g:H.build(flags), H, off:0, topH:null}; }
+  if(st<=11){ const H=HAUS(THREE,mat,hp), g0=H.build(flags); if(backe) backe(g0); return {g:g0, H, off:0, topH:null}; }
   const pB=Object.assign({},hp,{storeys:11, dachTyp:'flach'});                                // STAPEL-NAHT-GESETZ: die Basis wird FLACH gedeckelt — ihr Dach ragte in den Aufsatz („kein sauberes Dach"); die KRONE (hp.dachTyp) trägt der Aufsatz oben
   const pT=Object.assign({},hp,{storeys:st-11, turm:0, portikus:0, arkade:0,
     nur:Object.assign({},hp.nur||{}, {tueren:false, veranda:false, anbau:false, terrasse:false, pilotis:false, hof:false})});   // der Aufsatz ist KEIN Erdgeschoss: Türen/Veranden/Anbauten schwebten auf Nahthöhe („fliegende Eingänge")
   const base=HAUS(THREE,mat,pB), gB=base.build(flags);
   const bb=new THREE.Box3().setFromObject(gB), off=bb.max.y-0.12;
+  const g=new THREE.Group(); g.add(gB);
+  if(backe) backe(g);                                                                         // DER STAPEL BÄCKT JE TEIL (hochhaus-dach-speicher): wer die Gestalt nur gebacken liest, bäckt die Basis, bevor der Aufsatz wächst — derselbe Lauf der Teile, dieselben Bytes; lebend steht nur noch ein Teil (modern 22 Geschosse: Spitze 600–1 000 MB je Faden, vier Werk-Fäden im EINEN Renderer rissen am Hochhaus-Dach den Speicher)
   const top=HAUS(THREE,mat,pT), gT=top.build(Object.assign({},flags,{fundament:false}));
   const wrapT=new THREE.Group(); wrapT.position.y=off; wrapT.add(gT);
-  const g=new THREE.Group(); g.add(gB); g.add(wrapT);
+  g.add(wrapT);
+  if(backe) backe(g);
   return {g, H:base, off, topH:top};
 }
     // DAS FENSTER JEDER STUFE (K38, 13.10.) — die Stufe wechselt die Kosten, nie das Material. Befund (Auge 1310 Nr. 11,
@@ -3735,10 +3804,10 @@
   if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
-    const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
-    const wrap=bauOrtWrap(B); wrap.add(st.g);
-    wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
-    bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
+    const wrap=bauOrtWrap(B);
+    const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR),   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
+      teil=>{ if(!teil.parent) wrap.add(teil); wrap.updateMatrixWorld(true);                 // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
+        bakeLOD(teil, B.p.col, geoms, stufe===2?KULLVOL:0, true); });                         // LÜCKENLOS: Türen/Fenster werden Teil des Bakes; der Stapel bäckt je Teil (stapelBau `backe`)
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
       if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
         B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY));
@@ -6433,12 +6502,14 @@
         // hohlen Turms den Himmel (die Hochhaus-L1 stand an der Diagonale 50,7 px neben ihrer L0); Hochhaus L0 75 856 → 79 456.
         return Object.assign({}, p, { nur: (p.storeys || 1) >= 6 || p.arm ? { moebel: false } : {} });
     }
-    function stufe0Bau(hp2) {
+    function stufe0Bau(hp2, backe) {
         return (hp2.storeys || 1) > 11
-            ? stapelBau(hp2, { gelaende: false })
+            ? stapelBau(hp2, { gelaende: false }, null, backe)
             : (function () {
-                  var H = HAUS(THREE, mat, hp2);
-                  return { g: H.build({ gelaende: false }), H: H };
+                  var H = HAUS(THREE, mat, hp2),
+                      g0 = H.build({ gelaende: false });
+                  if (backe) backe(g0);
+                  return { g: g0, H: H };
               })();
     }
     // Die Solids eines Stufe-0-Baus haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]… (der Aufsatz des Stapels um st.off); mit
