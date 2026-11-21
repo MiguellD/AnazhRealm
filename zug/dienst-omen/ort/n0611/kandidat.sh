@@ -55,7 +55,7 @@ VERSUCHE=${VERSUCHE:-4}
 # + 89 UNGEMESSEN lagen nur im Baum, gepusht wurde erst nach dem Ende der GANZEN Sitzung, die Grenz-Flagge las diese Kette nur zwischen
 # zwei Sitzungen). Jetzt wacht teil() WÄHREND der Sitzung (Takt KANDIDAT_TAKT s) über die Mess-Datei des Baums — punkte.cjs schreibt sie
 # je Lauf (melde) —, und jede neu geurteilte Station ist eine STATIONS-GRENZE (KANDIDAT_TAKT: ganze Sekunden, Vorgabe 5):
-#   BUCHUNG  sie wird sofort nach punkte-maschine gepusht (nur Mess-Datei, Akten und IHRE Roh-Ausgaben, PUSH_ROH_NUR) und steht als
+#   BUCHUNG  sie wird sofort nach punkte-maschine gepusht (der EINE Schreiber, unten bei buche) und steht erst nach Exit 0 als
 #            „GEPUSHT (Versuch v) <n> Station(en)“ in der Kette — der Zähler der Runde steigt je Station, nie erst am Ende der Sitzung.
 #   GRENZE   liegt dort die Grenz-Flagge des Dienstes (SPRUNG: WEICHT/HALT) oder wartet ein CI-Job im Start-Hook, endet die Sitzung an
 #            DIESER Grenze: der Baum des Laufs fällt über die EIGENE Start-PID (taskkill -T, wie gpu-lauf.sh bei der Verdrängung), die
@@ -76,15 +76,32 @@ halte_an() {
   [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
   kill -9 $LP 2>/dev/null; wait $LP 2>/dev/null
   ( . $SCHLOSS; type schloss_verwaist >/dev/null 2>&1 && schloss_verwaist ) 2>> $L; return 0; }
-# buche <name> <versuch> <stationen> [ganz] — Push der geurteilten Stationen nach punkte-maschine; ohne „ganz“ nur ihre Roh-Ausgaben
-buche() { local name=$1 v=$2 B=$3
+# buche <name> <versuch> <stationen> — DER EINE SCHREIBER (Koordinator 21.11. 01:10; Fund: die GTX-Runde 2 zählte 1 290 von 1 428
+# Stationen am 31ea3847, der Ursprung trug KEINE Mess-Datei — seit 19.11. 14:57:02 lag die verwaiste Index-Sperre
+# gtx-dauer/index-punkte-maschine.tmp.lock eines git, das beim Dienst-Tausch fiel; jeder `punkte-offen.cjs push` scheiterte an read-tree
+# (736 Versuche in gtx-dauer/dauer.log), und die Kette schrieb trotzdem GEPUSHT). Jetzt wie die Radeon: `runde.cjs push-pfade` — der
+# frische Ursprungs-Kopf, NUR die eigenen Geräte-Pfade des Kopfs (Mess-Datei, referenz-gtx, Roh ohne sitzung-*, Akten), ein Index je
+# Prozess, commit-tree, Push, bei Ablehnung von vorn. Exit 0 = gepusht (Rückgabe 0); sonst „PUSH ROT <kopf8>: <grund>“ in der Kette
+# und in $PUSH_ROT (Zeit, Kopf, Sitzung, Grund — landung-dienst.sh hebt daraus den Alarm), Rückgabe 1, nie still. Die Stationen eines
+# gescheiterten Pushs (PUSH_OFFEN) zählt die nächste GEPUSHT-Zeile mit: der Zähler der Runde nennt nur, was der Ursprung trägt.
+PUSH_CJS=${KANDIDAT_PUSH_CJS:-$RUNDE_CJS}
+PUSH_ROT=${KANDIDAT_PUSH_ROT:-$N/omen.push-rot}
+PUSH_OFFEN=
+buche() { local name=$1 v=$2 B=$3 o rc
   # CPU-RUHE (10.11., Koordinator 07:30: nie neben einem echt-/Probe-Job): der Push wartet, solange ein CI-Job das Schloss hält oder wartet
   . $SCHLOSS; cpu_ruhe 2>> $L
   # DAS GESETZ DER ROH-BILDER (19.11.): ein Bild, dessen Station ihr Urteil gegen stand.json hält, zieht in die Ablage am Gerät (nur seine
-  # Prüfsumme reist); ein Beweis- oder Täter-Bild (Urteil wechselt) reist mit (gtx-dauer.cjs messDateien mit ROH_BILDER_GEPRUEFT=1)
+  # Prüfsumme reist); ein Beweis- oder Täter-Bild (Urteil wechselt) bleibt im Baum und reist mit
   node "$RUNDE_CJS" bilder "$PM" gtx "$K" "$BILD_ABLAGE" >> $L 2>&1
-  if [ "$4" = ganz ]; then ROH_BILDER_GEPRUEFT=1 TEIL=$name-v$v NUR=$B node punkte-offen.cjs push $K >> $L 2>&1
-  else ROH_BILDER_GEPRUEFT=1 PUSH_ROH_NUR=$B TEIL=$name-v$v NUR=$B node punkte-offen.cjs push $K >> $L 2>&1; fi; }
+  o=$(node "$PUSH_CJS" push-pfade "$(cygpath -m "$PM")" punkte-maschine gtx "$K" "OMEN GTX: messung ${K:0:8} $name-v$v, $(zahl "$B") Station(en) (kandidat.sh)" 2>> $L)
+  rc=$?
+  [ -n "$o" ] && echo "$o" >> $L
+  if [ "$rc" = 0 ]; then rm -f "$PUSH_ROT"; return 0; fi
+  o=${o:-runde.cjs push-pfade Exit $rc ohne Zeile}
+  echo "$(date '+%T') $name PUSH ROT ${K:0:8}: $o — die Messung bleibt im Baum, nichts verworfen" >> $L
+  echo "$(date -Iseconds) ${K:0:8} $name $o" > "$PUSH_ROT"
+  PUSH_OFFEN=${PUSH_OFFEN:+$PUSH_OFFEN,}$B
+  return 1; }
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
 # was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
 teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
@@ -113,9 +130,11 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
     [ -z "$g" ] && [ $(( $(date +%s) - t0 )) -ge "$DECKEL" ] && g="der Deckel der Sitzung ($DECKEL s, seit $(date -d @$t0 '+%T'))"
     if [ -n "$g" ] && [ "${g#der Deckel}" != "$g" ]; then grund=$g; halte_an; echo "$(date '+%T') $name DECKEL: $g — die Sitzung endet an der Station nach $k von $(zahl "$R"), der Rest folgt sofort in einer neuen" >> $L; break; fi
     [ -n "$g" ] && { grund=$g; halte_an; echo "$(date '+%T') $name GRENZE: $g — die Sitzung endet an der Station nach $(zahl "${B:+$B,}$neu") von $(zahl "$R")" >> $L; break; }
-    buche $name $v "$neu"
     B=${B:+$B,}$neu
-    echo "$(date '+%T') $name GEPUSHT (Versuch $v) $(zahl "$neu") Station(en) — gebucht an der Stations-Grenze: $neu" >> $L
+    if buche $name $v "$neu"; then
+      echo "$(date '+%T') $name GEPUSHT (Versuch $v) $(zahl "${PUSH_OFFEN:+$PUSH_OFFEN,}$neu") Station(en) — gebucht an der Stations-Grenze: ${PUSH_OFFEN:+$PUSH_OFFEN,}$neu" >> $L
+      PUSH_OFFEN=
+    fi
   done
   wait $LP 2>/dev/null
   # der Roh-Ordner DIESER Sitzung (14.11.: jede Sitzung schreibt in ihren eigenen `sitzung-<kennung>`, der jüngste Name ist der letzte)
@@ -132,10 +151,12 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
   fi
   TEIL_GEBUCHT=$(zahl "${B:+$B,}$neu")
   [ "$TEIL_GEBUCHT" = 0 ] && return 1   # nichts fertig gemessen
-  n=$(zahl "$neu")
-  # der Schluss-Push trägt alle Roh-Ausgaben (auch die einer jüngeren Messung, die pm-stand.cjs im Baum behielt)
-  buche $name $v "${neu:-$B}" ganz
-  echo "$(date '+%T') $name GEPUSHT (Versuch $v) $n Station(en)${REST_TEIL:+ — BEHALTEN je Station, der Rest folgt: $REST_TEIL}" >> $L; node $N/zeile-erledigt.cjs $K $name "$(ohne "$R" "$REST_TEIL")" >> $L 2>&1
+  # der Schluss-Push (push-pfade trägt alle eigenen Pfade des Kopfs, auch die Roh-Ausgaben einer jüngeren Messung im Baum)
+  if buche $name $v "$neu"; then
+    echo "$(date '+%T') $name GEPUSHT (Versuch $v) $(zahl "${PUSH_OFFEN:+$PUSH_OFFEN,}$neu") Station(en)${REST_TEIL:+ — BEHALTEN je Station, der Rest folgt: $REST_TEIL}" >> $L
+    PUSH_OFFEN=
+  fi
+  node $N/zeile-erledigt.cjs $K $name "$(ohne "$R" "$REST_TEIL")" >> $L 2>&1
   [ -n "$REST_TEIL" ] || return 0
   [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && [ "${grund#die Grenz-Flagge}" != "$grund" ] && return 2
   [ "${grund#der Deckel}" != "$grund" ] && return 3

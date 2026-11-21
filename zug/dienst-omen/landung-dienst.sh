@@ -80,6 +80,23 @@ ungepusht_pruefen() {
     touch "$m"
     runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "$UNGEPUSHT_TEXT" >>"$L"
 }
+# push_rot_pruefen [bg] — DER PUSH SCHEITERT LAUT (Koordinator 21.11. 01:10; Fund: die GTX-Runde 2 zählte 1 290 von 1 428 am 31ea3847,
+# der Ursprung trug keine Mess-Datei, die Kette schrieb GEPUSHT): kandidat.sh legt bei einem gescheiterten Push $S/omen.push-rot (Zeit,
+# Kopf, Sitzung, Grund — KANDIDAT_PUSH_ROT), der nächste gelungene löscht sie. Daraus PUSH_ROT_TEXT für den Puls und EIN Alarm je Stunde
+# „PUSH ROT <kopf8> <sitzung> <grund>“ (zug/runde.txt + zug/erledigt.txt). Mit „bg“ schreibt der Alarm im Hintergrund (die Wache an der
+# Grenze wartet nie auf ihn), seine PID in PUSH_ROT_PID.
+push_rot_pruefen() {
+    local m=$S/omen.push-rot.alarm
+    PUSH_ROT_TEXT=
+    [ -f "$S/omen.push-rot" ] || return 0
+    PUSH_ROT_TEXT="PUSH ROT $(head -n 1 "$S/omen.push-rot" | cut -d' ' -f2- | cut -c1-200)"
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    if [ "$1" = bg ]; then
+        runde_bg alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "$PUSH_ROT_TEXT" &
+        PUSH_ROT_PID=$!
+    else runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "$PUSH_ROT_TEXT" >>"$L"; fi
+}
 # runde_bg — für die Schreiber im HINTERGRUND: eine EIGENE Datei. node (ein Windows-Prozess) schreibt nicht mit O_APPEND wie MSYS —
 # zwei Schreiber in derselben Log-Datei überschrieben im Selbsttest Zeilen des Dienstes (die Radeon verlor so ihre WEICHT-Zeilen)
 runde_bg() { node "$RUNDE_CJS" "$@" >>"$L.runde" 2>&1; }
@@ -160,11 +177,11 @@ liste_fahren() {
     TEILE=$(teile_von "$REST")
     [ -n "$TEILE" ] || { liste_rot "runde.cjs teile gab für $r Stationen keine Sitzung (Exit $?)"; return 4; }
     log "Runde $RN ${K:0:8}: $r Stationen in $(echo "$TEILE" | tr ';' '\n' | grep -c .) Sitzungen (je Linse EINE, Σ Deckel ≤ $TEIL_BUDGET_S s)"
-    KOPF=$K SPRUNG=$GRENZE RUNDE_CJS=$RUNDE_CJS bash "$KANDIDAT" "$NAME" x "$(liste_datei "kandidat-$NAME" "$TEILE")" >>"$L" 2>&1 &
+    KOPF=$K SPRUNG=$GRENZE RUNDE_CJS=$RUNDE_CJS KANDIDAT_PUSH_ROT=$S/omen.push-rot bash "$KANDIDAT" "$NAME" x "$(liste_datei "kandidat-$NAME" "$TEILE")" >>"$L" 2>&1 &
     kp=$!
     t=0
     while kill -0 $kp 2>/dev/null; do
-        puls landung "Runde $RN misst ${K:0:8} ($((BASIS + fb))/$GESAMT, C: $(frei_gb) GB frei, Abstand zu main $(abstand "$K"))${WEICHT_VOR:+ — WEICHT vor $WEICHT_VOR}: $(tail -n 1 "$KETTE_LOG" 2>/dev/null | cut -c1-150)"
+        puls landung "${PUSH_ROT_TEXT:+$PUSH_ROT_TEXT · }Runde $RN misst ${K:0:8} ($((BASIS + fb))/$GESAMT, C: $(frei_gb) GB frei, Abstand zu main $(abstand "$K"))${WEICHT_VOR:+ — WEICHT vor $WEICHT_VOR}: $(tail -n 1 "$KETTE_LOG" 2>/dev/null | cut -c1-150)"
         sleep $TAKT_S
         t=$((t + 1))
         b=$(gepusht "$l0" "$NAME")
@@ -178,6 +195,12 @@ liste_fahren() {
             PROG_PID=$!
         fi
         if [ $((t % 4)) = 0 ] && ! kill -0 "${ALARM_PID:-999999}" 2>/dev/null; then runde_bg alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" & ALARM_PID=$!; fi
+        # der gescheiterte Push der Sitzung (kandidat.sh legt $S/omen.push-rot): im Puls jeden Takt, als Alarm einmal je Stunde
+        if ! kill -0 "${ALARM_PID:-999999}" 2>/dev/null; then
+            PUSH_ROT_PID=
+            push_rot_pruefen bg
+            [ -n "$PUSH_ROT_PID" ] && ALARM_PID=$PUSH_ROT_PID
+        fi
         grenze_pruefen
     done
     wait $kp
@@ -257,6 +280,7 @@ runde_takt() {
     read -r RN RK RV RZ RLISTE <<<"$RL"
     runde_alarm
     ungepusht_pruefen
+    push_rot_pruefen
     # DER LISTEN-BRUCH VON 05:53 (Live 06:17: „gtx durch 0/0 am f68dbf09“ gebucht): steht die eigene Zeile „durch“ ohne Station, war es nie
     # eine Messung — zurück auf offen (Notiz in zug/runde.txt), der Neubau folgt in diesem Takt
     if [ "$RZ" = durch ] && [ "$(zahl "$RLISTE")" = 0 ]; then
@@ -265,7 +289,7 @@ runde_takt() {
         RZ=offen RLISTE=-
     fi
     if [ "$RZ" = durch ]; then
-        puls landung "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die OMEN ist durch — $(runde weiter "$RUNDE_REPO" "$(main_kopf)")"
+        puls landung "${PUSH_ROT_TEXT:+$PUSH_ROT_TEXT · }${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die OMEN ist durch — $(runde weiter "$RUNDE_REPO" "$(main_kopf)")"
         return
     fi
     if ! darf_beginnen; then
@@ -345,6 +369,9 @@ runde_takt() {
 #    der nächsten Stations-Grenze, nie erst nach der Sitzung · s  der Wartende kommt und geht → die Flagge fällt, der Zähler steigt, der
 #    Puls nennt ihn nicht mehr · t  der Deckel der Sitzung (Uhr, KANDIDAT_DECKEL_S) schneidet an der Grenze, je Station eine Zeile mit Uhr.
 #    Mutanten dazu: bucht-am-ende · flagge-bleibt · deckel-blind · station-stumm
+# u  der Push scheitert laut (das echte kandidat.sh, Push über den EINEN Schreiber runde.cjs push-pfade): scheitert er, steht keine
+#    GEPUSHT-Zeile, sondern „PUSH ROT <kopf8>: <grund>“, omen.push-rot trägt den Grund, EIN Alarm je Stunde; der nächste gelungene zählt
+#    die Stationen der gescheiterten mit. Mutante dazu: push-still
 # j  die Platte unter PLATTE_UNTEN: EIN Alarm mit GB, Station und Kopf (Koordinator 19.11. 02:35), nicht doppelt
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter) ·
@@ -436,6 +463,7 @@ STUMMEL
         bucht-am-ende) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^  while kill -0 \$LP 2>/dev/null; do$|  while false; do|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: die Sitzung bucht erst an ihrem Ende, die Flagge wirkt nur zwischen Sitzungen
         deckel-blind) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^DECKEL=.*$|DECKEL=999999|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: die Sitzung kennt keine Uhr, nur Σ Deckel beim Packen
         station-stumm) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^    for i in ${neu//,/ }; do k=.*$|    :|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: keine Zeile je Station
+        push-still) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^\( *\)if buche \(.*\); then$|\1buche \2; if :; then|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: GEPUSHT steht, ob der Push gelang oder nicht
         flagge-bleibt) grenze_pruefen() { [ -f "$GRENZE" ] && return 0; if [ -f "$S/landung.halt" ]; then grund=halt; touch "$GRENZE"; return 0; fi; WEICHT_VOR=$(warter); [ -n "$WEICHT_VOR" ] && { grund=weicht; touch "$GRENZE"; }; return 0; } ;; # die alte Regel: die Flagge bleibt liegen
         volle-liste) richte_runde() { local s; for s in $(echo "$3" | tr ',|' '  '); do bash "$RICHTER" "$GERAET" --fall "$s" "$2" "$1" >>"$L" 2>&1; done; } ;;
         tafel-reihe) runde() { if [ "$1" = reihe ]; then echo "$4|"; else node "$RUNDE_CJS" "$@" 2>>"$L"; fi; } ;;
@@ -565,7 +593,7 @@ STUMMEL
     : >"$KT/hook.log"; : >"$KT/dienst.log"; : >"$KT/n/pm-stand.cjs"; : >"$KT/n/zeile-erledigt.cjs"
     printf 'gpu_frei() { return 0; }\ncpu_ruhe() { :; }\n' >"$KT/schloss.sh"
     cat >"$KT/n/punkte-offen.cjs" <<'ATTRAPPE'
-const fs = require("fs"), path = require("path"), [was, K] = process.argv.slice(2), X = process.env.KT_X;
+const fs = require("fs"), path = require("path"), a = process.argv.slice(2), was = a[0], K = was === "push-pfade" ? a[4] : a[1], X = process.env.KT_X;
 const f = path.join(X, "kpm", "meisterkarte-quelle", "punkte", "messung", K.slice(0, 8) + "-gtx.json");
 const lies = () => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : { je: {} });
 if (was === "lauf") {
@@ -590,13 +618,23 @@ if (was === "lauf") {
         if (s === "a" || s === "b") { const rd = path.join(path.dirname(f), "roh", K.slice(0, 8) + "-gtx"); fs.mkdirSync(rd, { recursive: true }); fs.writeFileSync(path.join(rd, s + "-bild.png"), "PNG " + s); }
         i++;
     }
-} else if (was === "push") fs.appendFileSync(path.join(X, "push.log"), Object.keys(lies().je).sort().join(",") + "\n");
+} else if (was === "push-pfade") {
+    // der EINE Schreiber (runde.cjs push-pfade <baum> <zweig> <geraet> <kopf> <botschaft>); push_rot_n=<n>: die nächsten n Pushes scheitern
+    const pr = path.join(X, "push_rot_n"), n = fs.existsSync(pr) ? Number(fs.readFileSync(pr, "utf8")) : 0;
+    if (n > 0) {
+        fs.writeFileSync(pr, String(n - 1));
+        console.log("PUSH SCHEITERT 10x: fatal: Unable to create 'index-punkte-maschine.tmp.lock': File exists.");
+        process.exit(1);
+    }
+    fs.appendFileSync(path.join(X, "push.log"), Object.keys(lies().je).sort().join(",") + "\n");
+    console.log("punkte-maschine 0000000 · 1 Datei(en) von gtx");
+}
 ATTRAPPE
     echo 2 >"$KT/verdr_nach"
     # das Gesetz der Roh-Bilder (6b): a gebucht GRÜN, misst GRÜN (Urteil hält) → Bild in die Ablage; b gebucht ROT, misst GRÜN (Beweis-Bild) → bleibt
     echo '{"je":{"x":{"stationen":[{"id":"a","geraet":"gtx","gruen":true,"sha":"x"},{"id":"b","geraet":"gtx","gruen":false,"sha":"x"}]}}}' >"$KT/kpm/meisterkarte-quelle/punkte/stand.json"
     KANDIDAT_ABLAGE=$KT/ablage KT_X=$KT KOPF=$k0 KANDIDAT_N=$KT/n KANDIDAT_PM=$KT/kpm KANDIDAT_M=$KT/km KANDIDAT_H=$KT/hook.log KANDIDAT_D=$KT/dienst.log \
-        KANDIDAT_SCHLOSS=$KT/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 RUNDE_CJS=$RUNDE_CJS bash "$ke" kt x "a,b,c,d;e" >/dev/null 2>&1
+        KANDIDAT_SCHLOSS=$KT/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_PUSH_CJS=$KT/n/punkte-offen.cjs KANDIDAT_PUSH_ROT=$KT/push-rot RUNDE_CJS=$RUNDE_CJS bash "$ke" kt x "a,b,c,d;e" >/dev/null 2>&1
     f1=$(paste -sd' ' "$KT/laeufe.log" 2>/dev/null)
     f2=$(head -n 1 "$KT/push.log" 2>/dev/null)
     f3=$(grep -c "kt-1 GEPUSHT (Versuch 1) 2 Station(en) — BEHALTEN je Station, der Rest folgt: c,d" "$KT/n/kette-0711.log" 2>/dev/null)
@@ -615,7 +653,7 @@ ATTRAPPE
     : >"$K2/hook.log"; : >"$K2/dienst.log"; : >"$K2/n/pm-stand.cjs"; : >"$K2/n/zeile-erledigt.cjs"; echo 10000 >"$K2/langsam"; echo 2 >"$K2/grenze_nach"
     cp "$KT/schloss.sh" "$K2/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K2/n/punkte-offen.cjs"
     KANDIDAT_ABLAGE=$K2/ablage KT_X=$K2 KOPF=$k0 KANDIDAT_N=$K2/n KANDIDAT_PM=$K2/kpm KANDIDAT_M=$K2/km KANDIDAT_H=$K2/hook.log KANDIDAT_D=$K2/dienst.log \
-        KANDIDAT_SCHLOSS=$K2/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 SPRUNG=$K2/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt2 x "a,b,c,d,e" >/dev/null 2>&1
+        KANDIDAT_SCHLOSS=$K2/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 SPRUNG=$K2/grenze KANDIDAT_PUSH_CJS=$K2/n/punkte-offen.cjs KANDIDAT_PUSH_ROT=$K2/push-rot RUNDE_CJS=$RUNDE_CJS bash "$ke" kt2 x "a,b,c,d,e" >/dev/null 2>&1
     r1=$(paste -sd' ' "$K2/push.log" 2>/dev/null)
     r2=$(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).je).sort().join(","))' "$(cygpath -m "$K2/kpm/meisterkarte-quelle/punkte/messung/${k0:0:8}-gtx.json")" 2>/dev/null)
     r3=$(grep -c "kt2-1 GEPUSHT (Versuch 1) 1 Station(en)" "$K2/n/kette-0711.log" 2>/dev/null)
@@ -632,7 +670,7 @@ ATTRAPPE
     : >"$K3/hook.log"; : >"$K3/dienst.log"; : >"$K3/n/pm-stand.cjs"; : >"$K3/n/zeile-erledigt.cjs"; echo 10000 >"$K3/langsam"
     cp "$KT/schloss.sh" "$K3/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K3/n/punkte-offen.cjs"
     KANDIDAT_ABLAGE=$K3/ablage KT_X=$K3 KOPF=$k0 KANDIDAT_N=$K3/n KANDIDAT_PM=$K3/kpm KANDIDAT_M=$K3/km KANDIDAT_H=$K3/hook.log KANDIDAT_D=$K3/dienst.log \
-        KANDIDAT_SCHLOSS=$K3/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_DECKEL_S=15 SPRUNG=$K3/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt3 x "a,b,c,d" >/dev/null 2>&1
+        KANDIDAT_SCHLOSS=$K3/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_DECKEL_S=15 SPRUNG=$K3/grenze KANDIDAT_PUSH_CJS=$K3/n/punkte-offen.cjs KANDIDAT_PUSH_ROT=$K3/push-rot RUNDE_CJS=$RUNDE_CJS bash "$ke" kt3 x "a,b,c,d" >/dev/null 2>&1
     t1=$(paste -sd' ' "$K3/laeufe.log" 2>/dev/null)
     t2=$(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).je).sort().join(","))' "$(cygpath -m "$K3/kpm/meisterkarte-quelle/punkte/messung/${k0:0:8}-gtx.json")" 2>/dev/null)
     t3=$(grep -cE "^[0-9]{2}:[0-9]{2}:[0-9]{2} kt3-1 STATION [a-d] geurteilt \([0-9]/[0-9]\)$" "$K3/n/kette-0711.log" 2>/dev/null)
@@ -640,6 +678,37 @@ ATTRAPPE
     if echo "$t1" | grep -qE "^a,b,c,d [b-d]" && [ "$t2" = "a,b,c,d" ] && [ "$t3" -ge 4 ] && [ "$t4" -ge 1 ] && ! grep -q "SPRUNG\|OFFEN nach" "$K3/n/kette-0711.log"; then
         echo "OK t  Deckel der Sitzung: die Sitzung a,b,c,d endete an der ersten Grenze nach 15 s, der Rest c,d fuhr sofort neu (Sitzungen „$t1“), gemessen $t2; $t3 Zeilen „STATION … geurteilt (k/N)“ mit Uhr"
     else echo "ROT t  Deckel/Zeile je Station: Sitzungen „$t1“ (Soll „a,b,c,d“ und der Rest nach dem Schnitt), gemessen „$t2“ (Soll a,b,c,d), Stations-Zeilen mit Uhr $t3 (Soll ≥ 4), DECKEL-Zeilen $t4 (Soll ≥ 1)"; fi
+    # u — DER PUSH SCHEITERT LAUT (Koordinator 21.11. 01:10; Fund: die GTX-Runde 2 zählte 1 290 von 1 428 am 31ea3847, der Ursprung trug
+    # keine Mess-Datei — eine verwaiste Index-Sperre ließ jeden `punkte-offen.cjs push` scheitern, die Kette schrieb trotzdem GEPUSHT): das
+    # ECHTE kandidat.sh, EINE Sitzung „a,b,c“, je Station 3 s, der Push über den EINEN Schreiber (push-pfade, Attrappe). u1: jeder Push
+    # scheitert — keine GEPUSHT-Zeile, „PUSH ROT <kopf8>: <grund>“ in der Kette, omen.push-rot trägt den Grund, push_rot_pruefen hebt
+    # daraus EINEN Alarm „PUSH ROT“ in zug/erledigt.txt (zweimal gerufen, einmal geschrieben). u2: die ersten zwei Pushes scheitern — der
+    # nächste gelungene zählt ihre Stationen mit (Σ GEPUSHT = 3, nie mehr), omen.push-rot fällt mit ihm. Mutante dazu: push-still
+    local K4=$X/kt4 K5=$X/kt5 KK u1 u2 u3 u4 u5 u6
+    for KK in "$K4" "$K5"; do
+        mkdir -p "$KK/n" "$KK/kpm/meisterkarte-quelle/punkte/messung" "$KK/km"
+        : >"$KK/hook.log"; : >"$KK/dienst.log"; : >"$KK/n/pm-stand.cjs"; : >"$KK/n/zeile-erledigt.cjs"; echo 3000 >"$KK/langsam"
+        cp "$KT/schloss.sh" "$KK/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$KK/n/punkte-offen.cjs"
+    done
+    echo 99 >"$K4/push_rot_n"
+    echo 2 >"$K5/push_rot_n"
+    for KK in "$K4" "$K5"; do
+        KANDIDAT_ABLAGE=$KK/ablage KT_X=$KK KOPF=$k0 KANDIDAT_N=$KK/n KANDIDAT_PM=$KK/kpm KANDIDAT_M=$KK/km KANDIDAT_H=$KK/hook.log KANDIDAT_D=$KK/dienst.log \
+            KANDIDAT_SCHLOSS=$KK/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_PUSH_CJS=$KK/n/punkte-offen.cjs KANDIDAT_PUSH_ROT=$KK/push-rot RUNDE_CJS=$RUNDE_CJS bash "$ke" ku x "a,b,c" >/dev/null 2>&1
+    done
+    u1=$(grep -c "ku-1 GEPUSHT" "$K4/n/kette-0711.log" 2>/dev/null)
+    u2=$(grep -c "ku-1 PUSH ROT ${k0:0:8}: PUSH SCHEITERT 10x: fatal: Unable to create" "$K4/n/kette-0711.log" 2>/dev/null)
+    u3=$(grep -c "${k0:0:8} ku-1 PUSH SCHEITERT 10x: .*index-punkte-maschine.tmp.lock" "$K4/push-rot" 2>/dev/null)
+    cp "$K4/push-rot" "$S/omen.push-rot" 2>/dev/null
+    push_rot_pruefen
+    push_rot_pruefen
+    u4=$(koord zug/erledigt.txt | grep -c "ALARM gtx: PUSH ROT ${k0:0:8} ku-1 PUSH SCHEITERT")
+    rm -f "$S/omen.push-rot" "$S/omen.push-rot.alarm"
+    u5=$(sed -n 's/.* ku-1 GEPUSHT (Versuch [0-9]*) \([0-9]*\) Station.*/\1/p' "$K5/n/kette-0711.log" 2>/dev/null | awk '{ s += $1 } END { print s + 0 }')
+    u6=$(grep -c "ku-1 PUSH ROT" "$K5/n/kette-0711.log" 2>/dev/null)
+    if [ "$u1" = 0 ] && [ "${u2:-0}" -ge 1 ] && [ "$u3" = 1 ] && [ "$u4" = 1 ] && [ "$u5" = 3 ] && [ "$u6" = 2 ] && [ ! -f "$K5/push-rot" ]; then
+        echo "OK u  Push laut: scheitert jeder Push, steht keine GEPUSHT-Zeile, aber $u2× „PUSH ROT“ mit Grund in der Kette, omen.push-rot trägt ihn, EIN Alarm „PUSH ROT“; scheitern zwei, zählt der nächste gelungene Σ $u5 Stationen und die Datei fällt"
+    else echo "ROT u  Push laut: GEPUSHT-Zeilen bei jedem Push gescheitert $u1 (Soll 0), PUSH ROT-Zeilen $u2 (Soll ≥ 1), Grund in omen.push-rot $u3 (Soll 1), Alarm-Zeilen $u4 (Soll 1); zwei gescheitert: Σ GEPUSHT $u5 (Soll 3), PUSH ROT $u6 (Soll 2), Datei danach $([ -f "$K5/push-rot" ] && echo da || echo weg) (Soll weg)"; fi
     # g — die Baum-Sperre (14.11.)
     BAUM_WARTET=$X/wartet
     mkdir -p "$BAUM_WARTET"
@@ -776,9 +845,9 @@ ATTRAPPE
     else echo "ROT s  kommt und geht: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k3") (Soll 8), Zähler-Stände $s0 → $s1 (Soll mehr), WEICHT+WEITER $s2 (Soll 2), Puls nach dem Gehen mit „WEICHT vor“ $s3 (Soll 0)"; fi
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt deckel-blind station-stumm liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 selbsttest() {
-    local O m r rot=0 mr=0 mz=0
+    local O m r rot=0 mr=0 mz=0 ok
     O=$(mktemp -d)
     # der echte Lauf ALLEIN zuerst (19.11.: die Fälle r, s, t urteilen über Uhr und Takt — neben 19 parallelen Mutanten verpasste der
     # Wächter Grenzen von 10 s, 12:11–12:55), danach die Mutanten parallel (sie brauchen nur ein ROT)
@@ -787,15 +856,16 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 21 ] || rot=1
+    ok=$(grep -c "^OK" "$O/echt")
+    [ "$ok" = 22 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 21 Fälle grün (a–t), $mr/$mz Mutanten ROT"; return 0; fi
-    echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 22 Fälle grün (a–u), $mr/$mz Mutanten ROT"; return 0; fi
+    echo "landung-dienst SELBSTTEST ROT: $ok von 22 Fällen OK, $mr/$mz Mutanten ROT"
     return 1
 }
 [ "$1" = --selbsttest ] && { selbsttest; exit $?; }
