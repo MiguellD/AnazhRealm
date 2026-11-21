@@ -21526,7 +21526,7 @@
   },
   "karte2.mensch.menge.dichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#2 gtx: ungemessen (R10) · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#3 gtx: ungemessen (R10) · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#4 gtx: ungemessen (R10) · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#5 gtx: ungemessen (R10) · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#6 gtx: ungemessen (R10) · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.dichte#7 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.dichte#2",
@@ -21543,8 +21543,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#3",
@@ -21561,8 +21562,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#4",
@@ -21579,8 +21581,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#5",
@@ -21597,8 +21600,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#6",
@@ -21615,8 +21619,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.dichte#7",
@@ -21633,8 +21638,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -38186,7 +38192,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 963,
+  "konsum": 969,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38348,10 +38354,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2663
+  "ohne": 2657
  },
  "kopfVoll": "1a90e9f978d2303402d2fc35339a0b941fec6d93",
- "zeit": "2026-11-21T09:53:29.153Z",
+ "zeit": "2026-11-21T09:59:28.362Z",
  "vorher": "1a90e9f9",
  "bilanz": {
   "gewinn": [],
