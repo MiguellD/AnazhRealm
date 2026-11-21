@@ -151,6 +151,15 @@ offene_koepfe() {
         { print $1, $2 }
     ' "$1" "$1"
 }
+# EIN KOPF, EINE ZEILE (21.11., z655/z656: der Puls „fährt“ stand 18 und 9,5 min NACH der Log-Zeile, die Fahrt begann erst danach):
+# zug-nicht-gelandet.txt trug 361 Zeilen für 3 Köpfe (w28-ankunft-faden 130×, w28-feld-fuss 128×, w28-licht-kern 103× — jede Fahrt
+# z455–z584 hängte denselben Kopf wieder an), `nicht_gelandet` fragte git je ZEILE zweimal: gemessen 564 s, vor JEDER Fahrt und in
+# jedem Warte-Takt. Die Datei liest sich als Menge: je (Zweig, Kopf) die erste Zeile — der Preis hängt am Kopf, nie an der Zahl der
+# Fahrten, die ihn nannten.
+nicht_gelandet_koepfe() {
+    [ -s "$1" ] || return 0
+    awk '!(($1 " " $2) in g) { g[$1 " " $2] = 1; print }' "$1"
+}
 # --selbsttest-sammeln: ohne Karte, ohne Netz — die offenen Köpfe an einem gestellten Stand, jede Regel ein Zweig der Liste
 if [ "$1" = "--selbsttest-sammeln" ]; then
     n=0 ok=0
@@ -175,6 +184,17 @@ if [ "$1" = "--selbsttest-sammeln" ]; then
     pr "ein Kopf, der ruht, fällt samt seinem Zwilling; ein ANDERER Kopf desselben Zweigs fährt" "$(offene_koepfe "$X/refs" "$X/gefahren" "$X/ruht" | tr '\n' '|')" "ccc refs/heads/w28-c|ddd refs/heads/w28-d-wip|fff refs/heads/w28-f|"
     : >"$X/leer"
     pr "eine leere Liste gibt nichts" "$(offene_koepfe "$X/leer" "$X/gefahren" | tr '\n' '|')" ""
+    # der Fall 21.11.: 361 Zeilen für 3 Köpfe — je Kopf die erste Zeile; ein NEUER Kopf desselben Zweigs ist eine eigene Zeile
+    i=455
+    while [ $i -le 584 ]; do
+        echo "w28-ankunft-faden 49c7 z$i nicht im Kandidaten"
+        [ $i -ge 456 ] && echo "w28-feld-fuss 92b8 z$i nicht im Kandidaten"
+        [ $i -ge 482 ] && echo "w28-licht-kern 1062 z$i nicht im Kandidaten"
+        i=$((i + 1))
+    done >"$X/nicht"
+    echo "w28-feld-fuss 77aa z585 nicht im Kandidaten" >>"$X/nicht"
+    pr "nicht gelandet: $(grep -c . "$X/nicht") Zeilen lesen sich als 4 Köpfe, je die erste Fahrt" "$(nicht_gelandet_koepfe "$X/nicht" | cut -d' ' -f1-3 | tr '\n' '|')" "w28-ankunft-faden 49c7 z455|w28-feld-fuss 92b8 z456|w28-licht-kern 1062 z482|w28-feld-fuss 77aa z585|"
+    pr "nicht gelandet: keine Datei gibt nichts" "$(nicht_gelandet_koepfe "$X/fehlt" | tr '\n' '|')" ""
     rm -rf "$X"
     echo "zug-dienst selbsttest-sammeln: $ok von $n grün"
     [ $ok = $n ]
@@ -398,6 +418,7 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
 nicht_gelandet() {
     local f="$W/zug-nicht-gelandet.txt" b s id rest k out=""
     [ -s "$f" ] || { vorab_main; return 0; }
+    nicht_gelandet_koepfe "$f" >"$f.eins"
     : >"$f.neu"
     while read -r b s id rest; do
         git -C $R merge-base --is-ancestor "$s" origin/main 2>/dev/null && continue
@@ -405,7 +426,8 @@ nicht_gelandet() {
         [ -n "$k" ] && [ "${k:0:8}" != "${s:0:8}" ] && continue
         echo "$b $s $id $rest" >>"$f.neu"
         out="$out $b($id)"
-    done <"$f"
+    done <"$f.eins"
+    rm -f "$f.eins"
     mv "$f.neu" "$f"
     [ -n "$out" ] && echo " · NICHT GELANDET:$out"
     vorab_main
