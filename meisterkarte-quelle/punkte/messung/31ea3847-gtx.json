@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:09:57.184Z",
+ "zeit": "2026-11-21T10:30:09.068Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -49963,6 +49963,927 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.pflanzen.arten#5",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "d49c68b6e020",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "b70b904d5968",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "7f2cf63e8e06",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "9f887033bf66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "d891af768555",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "4faeafd9754b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#8": {
+   "gruen": false,
+   "zahl": "S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k46e76358decc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.7,
+    "takte": 7,
+    "fremdS": 6.41,
+    "kerne": 0.408,
+    "fensterKerne": 0.43,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      2.41
+     ]
+    ],
+    "geraetS": 4.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.28
+     ],
+     [
+      "svchost.exe",
+      1.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 63.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:28:27.674Z",
+   "abdruck": "8622906bc3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: 0 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 8 von 9474 Punkten wandern über 100 Tage gegen das Feld — die 8 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: 0 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 8 von 9474 Punkten wandern über 100 Tage gegen das Feld — die 8 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "cbd11605784f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.276 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.276 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "023436f9ee4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "fa4a63dcf150",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "e7a008347e25",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 9474 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "981b2986c539",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.276, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.276, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke729cb01f4c9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 15,
+   "fremd": {
+    "s": 17.8,
+    "takte": 8,
+    "fremdS": 12.97,
+    "kerne": 0.727,
+    "fensterKerne": 1,
+    "namen": [
+     [
+      "Explorer.EXE",
+      2.63
+     ],
+     [
+      "git hash-object --no-filters -w --stdin-paths",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.28
+     ]
+    ],
+    "dienerS": 10.28,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.38
+     ]
+    ],
+    "geraetS": 7.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.22
+     ],
+     [
+      "svchost.exe",
+      2.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 56.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:30:09.068Z",
+   "abdruck": "e43b2d330183",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -50063,7 +50984,8 @@
   "k47ffa86850c2": "dVRNj5swEP0vHNt6zfeHpT04IdKuVKnpqecxjIENAWRDqFL1v1ewkARI54TQe5437439x2ggOUGGLx+6rgxmfDG+GRouSDSqC6qXD20wI0osGx3GP4tyzvcDLFFF02paFoKCqCA/I+lUi0X5koy00LJTWzLaH3h/pPRIA7rrX1/X1FJgWpMWJM7EKJJOCGwN7HQGAgl0cmw2gb0QQXqMjhXG/PhB5+I/Oaf9Yd1RQJUulUa+F6DH3nvOD3yjMC0AW1IWlZ57JqknHJvdGm2nShX05AqYl6gmElgBWGIWOlrZHyO6Isqy03rRLHRSzw4ZpRtshrpI8pY0qhZYTXAR2YEF7InTWdMRuVAkBIRi7XMOWGWoFhpMJ5G+xejvcH3oCc6ogFSQz16aTmCLuzeU0retlnIUPraYhfumtNxwQRwCpdngVJyNB9Hr/P/4uYwxH0KeKls10UleqPPSHumibTrs+1aSziFFRU61bm/o0AXAcNr8eFwofnTjNfM+zMSzhW96j7OElL9tvNO1bHtQSLKmm4joohd4jPP3DbiF83neeem4TrIOTrfDYj/K8Fy0/GCQkf0nh89rQK5YlDNJSteNvPXhFwVnAiJThZRz0sJLZPRsMXssWyLqup2jdUwnshh1aHVzJBqvwO4WHt/zuDd/7R/yHOvA15rH02vV3qYUvildJi/DTUw26EK1pIckv2UjBULEnkCvqErMcGFh6goH0gF9lxS788fXxbJeNwlfCxzMrXSn542KgjSS7Mmz0aM6CahOE9D1vdCyx9Xb/eBvU0MzpjFdV9pz/nO/Cx9ty6Z3rMGENqqWxfDq0Rw6nUPZ3p/7v/8A",
   "k2027ed401b24": "dVRNj5tADP0vObaddfgKMFIPkxApK7Vq9tSzBzzAhkA0A6FN1f9ewUKywNbH0Xv287M9f1YXjE+Y0tOrqcoVX31afVkZvBIzpK+kn17Niq/C2LLJ4eJFdAFCiF0Hi3V+qQ0UuQSUJWZnYo2uKS+e4p4WWHZiKw7tXrRHgCP4sG2/fp1TC0lJxWpUNBLDUDkB8jmwMSlKYtiovtgA9gJC5XHoI4jE8RXG2LZCQLufV5RYJlOl4cbzyePPrRB7sVCY5Eg1K/LSjDXjxJOOze+Fll0lGlt2Q8oK0gMJLR8tOQrtrWyPIcyIqmiMmRQLnMSzAw6wwKZk8jir2UVXksoBLkPbt5B/4HR6aZiaKJISAzn3OUMqU9ITDWsnVhuLw69gnvSEZ9LISsxGL9eOb8uHNwBwWGopeuF9iVH4Zq0sN5gQu4FC2jkVpX0iuI3vx95AEYlhK7tIZ0VMnOX6PLVHuWSvHf5tKclkmJBmp8rUd3TgIlLAh1rQ1zq60Zz5aGbg2XKz9t73EoA4LLwzlapb1MTSSzMQySXP97gQzwtwjefzuPPKcZ14PjhTd4v9XobnkrXxOxnpf+bwdgbsRnkxkpRy3dDju206B181nhnKVOdKjdOWXqzCj5azpaJmsqrqcbzO2gktDg6Ud1fC/gy29wGKnYh+2z8PL4+Z9rEXcyl99krX907lZq1crq7dNcYLdK5r1mKc3eejJGEnezGTG+mCUprYmLjSwYRDq95k3wIhjv5w+urzZGFvy4w5dQaXpjHjVoV+Eir+wdfRkj5JLE8D0N14gWX367f9IQ5vFpVhBBFcp3cCSSvEyy56+1e+i614jiAakl8ohouuVN79fJBhYzIs6seX//cf",
   "k08245dac43a0": "dVVdj5swEPwvPLb1OXwFsHQPTjgpV7Uq99TnNayBCwFkQ2hT9b9XEEgCXPcRzeyMZ9fmj1FDfIQUn951VRrM+GR8MTSckWhUZ1RP79pgRhCbFtqMX4tyzvc9LFZ53Wha5IKCKCE7IWlVg3nxFA8037QSSzLavfAuojSiHt11/FZ7/vy8bFMITCrSgMSpSRBI2we2BLY6BYEEWjkIj2DXR5Auo0P5IY/e6VS9cu/kA1UBZTJ3HmxdD132+pvzlzU+yQEbUuSlnnTjxBW2xW5i3ZqjoCMXwKxANZLA9MAUk9khki4K6IIoi1brmZhvJ67lM0pX2BR1HmcNqVUlsBzhIrA8E9hu7SmtWyJnjoQAXyyzzgDLFNXMw8aO5dZk9Je/bHqEEyogJWRTlhvbs8Q9G0rpYe2lGIwPEpPx7Uaajj8j9kOlaZ9UmA6N6GX6Hl2XKuT87bZh6UJEx1muTvN4pIPWxmbf1pZ0Bgkqcqx0c0P7DgD6400I6aAVOeGSeT/MyLPEduM+nsWn/LDKTley6UAhSet2JKKDrucyzl9X4AZOp2nvpe3Y8XJwuukX+9GG66C59Xob6X/mcL0G5IJ5MZGkdJzAZftdugSfFZwIiFTlUk7TFm4sg4+Ws8OiIaKqmmm89sYOzN5L+RBLn+vu8Y0If1s/D2/3mQ71wpdWhu6Vam4nFduNdJg897cxXqFz1ZAO4uw2HykQeturmVxQFZjiLMbEETYkjHby6vricx5549WXn2cLe1l3zLEPuNStnrYq8JJAsg+ejg7VUUB5HIHO1vVNi33tQ/rBD9eIyiCkIV1W0nH+tg+v78p3vuOvIQ3H5jXGtFaVzPuXj2bQ6gyK5v4L+PsP",
-  "k5039cf2afc92": "dVVdj5swEPwveezVZz4DWLoH57gqV7UqeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu91Va7Y6tPq80rDGYlGdUb1vNcrtgpi00Kb8WtRzvlrB4tVfqo1LXJBQZSQHZE0qsa8eI57mm9aiSUZbd94G1EaUY9uWn6rV/7yMm9TCEwqUoPEsUkQSNsHNgc2OgWBBBrZCw9g10eQLqN9+SGP9nSsTpm2X35E6W6uKqBMps6Dteuhy95bzt+WLpMcsCZFXupRN05cYVvsJtYuOQpacgHMClQDCUwPTDGa7SNpo4DOiLJotJ6I+XbiWj6jdIFNUedxVpOTqgSWA1wElmcC2yw9paeGyIkjIcAX86wzwDJFNfFg2LFcm4z+8udND3BEBaSEbMzSsD1L3LOhlG6XXoreeC8xGl8b0nT8CbEbKk27pMK0b0Qv4/foulQh57vbhqUzER1nuTpO45EOWobNvi0t6QwSVORQ6fqG9h0A9IebENJeK3LCOfN+mIFnibXhPp7Fp3y7yE5Xsm5BIUlPzUBEB13PZZy/L8A1HI/j3kvbseP54HTdLfajDddBc+11NtL/zOF6DcgF82IkSek4gcteN84cfFZwJCBSlUs5Tlu4sQw+Ws4Wi5qIqqrH8dqGHZidl/Ihli7XzeMbEf62fm5395n29bapPvDeK1Sqvp1WrA3pMHnubmS8QOeqJi3E2W1GUiB01hdzuaAqMMVJlIkjbEgYbeXV+cXnPPKG6y+fJkt7WXbMsQu51I0eNyvwkkCyD56PFtVBQHkYgM7a9U2Lfe2C+sG315jKIHwK6bxky/kuCq9vy3e+5e8h3Q/NTxjTk6pk3r1+NINGZ1DU99/A338="
+  "k5039cf2afc92": "dVVdj5swEPwveezVZz4DWLoH57gqV7UqeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu91Va7Y6tPq80rDGYlGdUb1vNcrtgpi00Kb8WtRzvlrB4tVfqo1LXJBQZSQHZE0qsa8eI57mm9aiSUZbd94G1EaUY9uWn6rV/7yMm9TCEwqUoPEsUkQSNsHNgc2OgWBBBrZCw9g10eQLqN9+SGP9nSsTpm2X35E6W6uKqBMps6Dteuhy95bzt+WLpMcsCZFXupRN05cYVvsJtYuOQpacgHMClQDCUwPTDGa7SNpo4DOiLJotJ6I+XbiWj6jdIFNUedxVpOTqgSWA1wElmcC2yw9paeGyIkjIcAX86wzwDJFNfFg2LFcm4z+8udND3BEBaSEbMzSsD1L3LOhlG6XXoreeC8xGl8b0nT8CbEbKk27pMK0b0Qv4/foulQh57vbhqUzER1nuTpO45EOWobNvi0t6QwSVORQ6fqG9h0A9IebENJeK3LCOfN+mIFnibXhPp7Fp3y7yE5Xsm5BIUlPzUBEB13PZZy/L8A1HI/j3kvbseP54HTdLfajDddBc+11NtL/zOF6DcgF82IkSek4gcteN84cfFZwJCBSlUs5Tlu4sQw+Ws4Wi5qIqqrH8dqGHZidl/Ihli7XzeMbEf62fm5395n29bapPvDeK1Sqvp1WrA3pMHnubmS8QOeqJi3E2W1GUiB01hdzuaAqMMVJlIkjbEgYbeXV+cXnPPKG6y+fJkt7WXbMsQu51I0eNyvwkkCyD56PFtVBQHkYgM7a9U2Lfe2C+sG315jKIHwK6bxky/kuCq9vy3e+5e8h3Q/NTxjTk6pk3r1+NINGZ1DU99/A338=",
+  "ke729cb01f4c9": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/I13FXHOtx0sVvml1rTIBQVRQnZG0qga8+Il7mm+aSWWZLTd8TaiNKIe3bSvr3NqITCpSA0SR2IQSNsHNgc2OgWBBBrZDxvAro8gXUb78kMeHelYm5Zz2u7mEwWUyVRpsHY9dNnhnfMdXyhMcsCaFHmpx5lx4grbYo9By1slClpyA8wKVAMJTA9MMQrtrWyjgM6Ismi0ngzz7cS1fEbpApuizuOsJhdVCSwHuAgszwT2idPppSFyokgI8MXc5wywTFFNNBh2LNcmo7/9edMTnFEBKSEbvTRszxJPbyil+6WWohfejxiFrw1pOv6E2AVK086pMO0b0dt4HvUG8pAPW9lVOhui4yxX56k90kHLsNn3pSSdQYKKnCpdP9C+A4A+G2bRflbkhHPm8zIDzxJrw/14F5/y/cI7Xcm6BYUkvTQDER10PZdxfliAazifx52XtmPH8+B03S32Rxmug+ba62Sk/8nh/gzIDfNiJEnpOIE7b35VcCYgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYtH44E/RPYPMLjWx6+W7/2b888+9rxuea+e6Xqxy3F2pAOk9fuJcYLdK5q0kKcPbKRAqGTvcjjhqrAFCcWJo6wIWG0lXfZR5/zyBuevfw6WdbbsmOOnbmlbvS4UYGXBJJ98m20qE4CytMAdNaub1r96m1+8v3djKMR0pBG7UeDtjxpOT9sw/uf8oNv+CGk4dD8gjG9qErm3a9HM2h0BkX9/O7//gM="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
