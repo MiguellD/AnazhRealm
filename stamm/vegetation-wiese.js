@@ -143,7 +143,6 @@ class AnazhRealm_vegetation_wiese {
             const v = this._bodenSichtAt(px, pz);
             return v === null ? NaN : v;
         };
-        const grund = {};
         const licht = this._bodenLichtFeld(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34);
         const GC =
             AnazhRealm.Gesetz("terrain:groundCover", null) || AnazhRealm._kernPflichtBruch("terrain:groundCover");
@@ -172,18 +171,21 @@ class AnazhRealm_vegetation_wiese {
                 const rot = w() * Math.PI * 2;
                 const o = AnazhRealm._wieseOrdnung(x, z);
                 if (o >= anteil) continue;
-                const y = this._bodenSichtAt(x, z, grund);
+                const y = this._bodenSichtAt(x, z);
                 if (y === null) continue;
-                // der Grund der Wiese (`_wieseGrund`: Grün, Pfad, Asche, Wasser) — die Ferne zeichnet dieselben Büschel
-                const wg = this._wieseGrund(x, z, y, grund.gruen);
+                // die Ebene des Hangs (gx, gz) — auf ihr steht das Büschel (`_nahWieseKachelDaten`), über keine Kante gekippt; ihr
+                // Betrag (die zentrale Steile) trägt das Grün des Gesetzes und die Bodenschicht
+                const eb = {};
+                const hang = this._slopeAt(x, z, boden, 1, eb, y);
+                // der Grund der Wiese (`_wieseGrund`: Grün, Pfad, Asche, Wasser) — die Ferne zeichnet dieselben Büschel. Das Grün ist
+                // das des Gesetzes am Fuß (`_bodenGruenAt`), nie das der Boden-Karte einer Stufe (w28-pop-treue: am Wechsel der
+                // Stufe warf die neu gebaute Kachel an derselben Zelle ein anderes Büschel, gate:pop „DER WURF DER STUFE“)
+                const wg = this._wieseGrund(x, z, y, this._bodenGruenAt(x, y, z, hang));
                 if (!(wg > 0)) continue;
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
                 // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
                 const L = licht(x, z);
-                // die Ebene des Hangs (gx, gz) — auf ihr steht das Büschel (`_nahWieseKachelDaten`), über keine Kante gekippt
-                const eb = {};
-                const hang = this._slopeAt(x, z, boden, 1, eb, y);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const p = GC(L, m, rk, Infinity).grass * wg;
                 if (wurf >= p) continue;
