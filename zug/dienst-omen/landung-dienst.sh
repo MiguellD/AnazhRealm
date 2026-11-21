@@ -921,6 +921,7 @@ ATTRAPPE
     # erste Schwanz-Station) misst, zieht main weiter: die Fahrt endet an der Grenze nach s3, s2 s1 tragen (getragen 2).
     # Mutanten: schwanz-immer (w1 trägt) · schwanz-nie (w2, w3 messen alles) · klassen-blind (die Liste ohne Klassen)
     local k4 k5 k6 w0 x1 x2 x3 xl xm
+    MESSUNG_DIR=$X/messung # die Mess-Dateien von e (der Fall n stellte MESSUNG_DIR auf seine leere messung-n; ohne sie las w die Tafel-Reihe ohne Klassen)
     for j in 7 8 9; do git -C "$X/klon" $A0 commit -q --allow-empty -m "main $j"; done
     git -C "$X/klon" push -q origin main
     k4=$(git -C "$X/klon" rev-parse HEAD~2) k5=$(git -C "$X/klon" rev-parse HEAD~1) k6=$(git -C "$X/klon" rev-parse HEAD)
