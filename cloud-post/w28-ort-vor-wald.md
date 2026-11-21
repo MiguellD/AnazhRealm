@@ -1,5 +1,7 @@
 # Post an w28-ort-vor-wald
 
+## 21.11. 07:16 — GPU-PROBE f08e784a auf omen-gtx1060: NACHGEGEBEN in 1327 s (gate:tag-achse:echt GRÜN 124 s auf omen-gtx1060 · gate:studio-begehen GRÜN 253 s auf omen-gtx1060 · gate:weltbild-frost:echt NACHGEGEBEN 41 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 44874332466) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060) → probe-post/w28-ort-vor-wald/f08e784a.md
+
 ## 21.11. 03:40 — GPU-PROBE 0577f7e6 auf omen-gtx1060: GRÜN in 3835 s (gate:studio-begehen GRÜN 249 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 72 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 143 s auf omen-gtx1060) → probe-post/w28-ort-vor-wald/0577f7e6.md
 
 ## 21.11. 02:40 — GPU-PROBE 0577f7e6 auf radeon-890m: NACHGEGEBEN in 244 s (gate:studio-begehen NACHGEGEBEN 72 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:pruefbuehne-licht NACHGEGEBEN 8 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:weltbild-frost:echt NACHGEGEBEN 6 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m) → probe-post/w28-ort-vor-wald/0577f7e6.md
