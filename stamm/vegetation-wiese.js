@@ -344,7 +344,9 @@ class AnazhRealm_vegetation_wiese {
             return [x / l, y / l, z / l];
         };
         const [r, u, f] = [norm(e[0], e[1], e[2]), norm(e[4], e[5], e[6]), norm(-e[8], -e[9], -e[10])];
-        const jetzt = performance.now() / 1000;
+        // die Zeit der Drehung: der Stempel des Takts (`_taktZeit`, der rAF-Stempel des Bilds) — die Dreh-Rate ist eine des
+        // gezeichneten Bilds, keine eigene Uhr der Wiese
+        const jetzt = (this._taktZeit || 0) / 1000;
         const dt = jetzt - F.t;
         if (!(dt >= 0)) [F.t, F.f] = [jetzt, f];
         else if (dt >= FA.taktS) {
