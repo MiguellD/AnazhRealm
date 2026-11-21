@@ -534,6 +534,16 @@ function stationVerdict(s) {
             [ruht(fk.kisten), "frei-ruhe: die Kisten ruhen nicht am Boden"],
             [fk.kisten.zittern <= 0.01 && fk.wachZittern <= 0.01, "frei-zittern über 1 cm"],
             [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
+            // same.physik.koerper#1: das Fass aus 4,5 m ruht im Gras ≤ 2 s nach der Landung — es rollt als Kreis
+            // (`_freiRandFuss`) und hält mit dem Rollwiderstand der Stoffe (`_rollWiderstand`); ohne ihn ruht es später
+            [
+                fk.fassFall && fk.fassFall.ruheS !== null && fk.fassFall.ruheS <= 2,
+                `frei-fass-ruhe: das Fass ruht im Gras ${fk.fassFall ? fk.fassFall.ruheS : "–"} s nach der Landung (≤ 2) — Täter \`_rollWiderstand\` / \`_freiRandFuss\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.fassFall && (fk.fassFallOhneRoll?.ruheS === null || fk.fassFallOhneRoll?.ruheS > fk.fassFall.ruheS),
+                "frei-mutante: ohne Rollwiderstand ruht das Fass so früh (vakuös)",
+            ],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
         ]),
@@ -2000,6 +2010,8 @@ hauptLauf(async () => {
                 schwerelos: { boden: 0.1, fugen: [0.1] },
                 fass: { kipp: 172 },
                 fassOhneStoss: { kipp: 2 },
+                fassFall: { boden: "gras", ruheS: 1.483, crr: 0.3 },
+                fassFallOhneRoll: { boden: "gras", ruheS: null, crr: 0 },
             },
             spielerWagen: {
                 a: {
@@ -2194,6 +2206,18 @@ hauptLauf(async () => {
                 "frei-ruhe",
             ],
             ["die Wagen-Kollision aus: das Fass steht", { frei: { ...gutS.frei, fass: { kipp: 2 } } }, "frei-fass"],
+            // same.physik.koerper#1 an main 9f24b5b8: das Fass schaukelte auf dem Sechzehneck seines Rands, die Bremse des
+            // Fahr-Gesetzes hielt es auf jedem Grund gleich — im Gras 3,1 s nach der Landung
+            [
+                "das Fass ruht im Gras 3,1 s (main)",
+                { frei: { ...gutS.frei, fassFall: { boden: "gras", ruheS: 3.1, crr: null } } },
+                "frei-fass-ruhe",
+            ],
+            [
+                "ohne Rollwiderstand ruht das Fass so früh",
+                { frei: { ...gutS.frei, fassFallOhneRoll: { ...gutS.frei.fassFall } } },
+                "frei-mutante: ohne Roll",
+            ],
             [
                 "ohne Schwere ruhen die Kisten am Boden",
                 { frei: { ...gutS.frei, schwerelos: gutS.frei.kisten } },

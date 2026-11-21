@@ -1015,7 +1015,8 @@ class AnazhRealm_koerper_frei {
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
     // am Beginn, Quaternion, Dreh-Matrix (0–24), der Rollwiderstand je Drehung und ob er die Welt berührt (25, 26), die inverse
-    // Masse und die Welt-Trägheit⁻¹ (27–36); sein Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
+    // Masse und die Welt-Trägheit⁻¹ (27–36), die Walze (37), die Luft je Fläche und der Wind (38–42, `_freiLuftPacken`); sein
+    // Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
     // (`_freiKontakt`, `_freiKontaktBereit`): die Jacobi-Zeilen der Normalen und der zwei Tangenten (je 15), die wirksamen Massen
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
     // Körper (58, 59; −1: Welt), ihre inversen Massen (60, 61), die Anker (62–73: r_a im Rahmen und in der Welt, dasselbe für b),
@@ -1027,6 +1028,7 @@ class AnazhRealm_koerper_frei {
         // der Rollwiderstand je Drehung (rad/s²): das Moment C_rr · m|g| · r um den Fuß durch die Trägheit um ihn (I + m r²) —
         // r der Roll-Radius (das Fass sein Rand, die Kiste ihre kleinste Halb-Kante), I die kleinste Haupt-Trägheit
         const schwere = Math.abs(Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81);
+        const rho = AnazhRealm._fahrSchrittGesetz().vc.FAHR.luft.rho;
         for (let i = 0, x = 0; i < W.length; i++, x += KS) {
             const K = W[i];
             K.slot = x;
@@ -1043,8 +1045,36 @@ class AnazhRealm_koerper_frei {
             X[x + 27] = K.invM;
             X.set(K.Iw, x + 28);
             X[x + 37] = K.kiste ? 0 : 1;
+            this._freiLuftPacken(K, X, x, rho);
         }
         return X;
+    }
+
+    // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Fläche der Hülle
+    // mit dem größten c_w·A (die Kiste je Flächen-Paar, die Walze quer oder längs ihrer Achse): ein fallender Körper stellt
+    // sie der Strömung entgegen (die Platte, das Blatt fällt quer: der Druckpunkt liegt vor der Mitte, Hoerner 1965 Kap. 3),
+    // und der EINE Wind an seinem Ort (41, 42: m/s in Welt-x/z, `_windAt` zur Uhr des Sim-Schritts). Der Widerstand im
+    // Teil-Schritt (`_freiZiehen`) liest sie gegen das Tempo durch die Luft. Vorher kannte der Löser keine Luft: die Feder
+    // (1,9 g) flog wie der Stein, 2 260 % weiter als die Rechnung.
+    _freiLuftPacken(K, X, x, rho) {
+        const L = AnazhRealm.FREI.luft;
+        const [a, b, c] = [K.hx, K.hy, K.hz];
+        const cwA = K.kiste
+            ? Math.max(
+                  this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c,
+                  this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c,
+                  this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b
+              )
+            : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
+        X[x + 38] = (0.5 * rho * cwA) / K.m;
+        const w = this._windAt(K.p[0], K.p[2], this.state._simZeit, this._freiWindAus || (this._freiWindAus = {}));
+        X[x + 41] = w.x * w.ms;
+        X[x + 42] = w.z * w.ms;
+    }
+    // c_w einer Fläche aus ihrer Tiefe durch ihre Breite: die Platte (0) bis der Würfel (≥ 1), dazwischen gerade
+    _freiLuftZahl(tiefe, breite) {
+        const L = AnazhRealm.FREI.luft;
+        return L.cwPlatte + (L.cwWuerfel - L.cwPlatte) * Math.min(1, tiefe / breite);
     }
 
     // DER GANG über alle Kontakte im Puffer: je Kontakt die Normale (λ ≥ 0, akkumuliert) — die Trennung jetzt aus dem Weg
@@ -1180,6 +1210,18 @@ class AnazhRealm_koerper_frei {
         for (let x = 0; x < m * KS; x += KS) {
             if (vor) {
                 X[x + 1] += g * h;
+                // DER WIDERSTAND DER LUFT (`_freiLuftPacken`): Δv = −c · |u| u · h, u das Tempo durch die Luft (gegen den Wind),
+                // c = ½ ρ c_w A / m der Quer-Fläche — implizit, stabil bei jedem h
+                const ux = X[x] - X[x + 41];
+                const uy = X[x + 1];
+                const uz = X[x + 2] - X[x + 42];
+                const u = Math.sqrt(ux * ux + uy * uy + uz * uz);
+                if (u > 1e-9) {
+                    const f = 1 / (1 + X[x + 38] * u * h);
+                    X[x] = X[x + 41] + ux * f;
+                    X[x + 1] = uy * f;
+                    X[x + 2] = X[x + 42] + uz * f;
+                }
                 continue;
             }
             X[x + 6] += X[x] * h;
@@ -1357,7 +1399,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 AnazhRealm.FREI_KONTAKT = 76;
 // die Marke eines Baus ohne freien Körper (die Stand-Tafel, `architectures`): vier leere Plätze der Drehung
 AnazhRealm.FREI_OHNE_DREHUNG = Object.freeze([null, null, null, null]);
-AnazhRealm.FREI_KOERPER = 40;
+AnazhRealm.FREI_KOERPER = 44;
 AnazhRealm.FREI = Object.freeze({
     teile: 4,
     gaenge: 1,
@@ -1372,4 +1414,9 @@ AnazhRealm.FREI = Object.freeze({
     rundPunkte: 16,
     huelleM: 0.5,
     umweltM: 0.3,
+    // DIE LUFT AM KÖRPER (same.physik.flug#1): der Widerstand je Fläche der Hülle c_w nach Hoerner (Fluid-Dynamic Drag 1965,
+    // 3-12/3-16): die dünne Platte quer 1,17, der Würfel 1,05 — dazwischen nach der Tiefe der Fläche durch ihre Breite
+    // (`_freiLuftZahl`); die kurze Walze quer angeströmt 0,8 (L/D 1–2). Dichte und Wind sind die der EINEN Luft
+    // (vehicle:FAHR.luft.rho, `_windAt`).
+    luft: Object.freeze({ cwPlatte: 1.17, cwWuerfel: 1.05, cwWalzeQuer: 0.8 }),
 });

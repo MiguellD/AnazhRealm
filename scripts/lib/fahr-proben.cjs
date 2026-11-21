@@ -2422,6 +2422,46 @@ async function probeLeben(expected) {
             r.dslEffects.gravity([0]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
             S.frei.schwerelos = stapel(false);
             r.dslEffects.gravity([schwere]);
+            // (3) DAS FASS FÄLLT (same.physik.koerper#1): aus 4,5 m auf Gras neben der Gasse (der erste Punkt der Ringe 4–63 m, dessen
+            // Grund `_kontaktStoffAt` Gras nennt), gedreht 0,3 — die Zeit von der Landung bis zum Schlaf, im Löser
+            // (`_freiSchritt`, FIXED_DT). Die Mutante: ohne Rollwiderstand der Stoffe (`_rollWiderstand` 0).
+            const fassFall = () => {
+                let ort = null;
+                const nah = [];
+                for (let k = 0; k < 480 && !ort; k++) {
+                    const [d, a] = [4 + (k >> 3), (k * Math.PI) / 4 + (k >> 3) * 0.37];
+                    const [x, zz] = [gasse.x + d * Math.sin(a), gasse.z + d * Math.cos(a)];
+                    const g = hh(x, zz);
+                    if (!Number.isFinite(g) || nass(x, zz) || r._kontaktStoffAt(x, zz, g) !== "gras") continue;
+                    nah.length = 0;
+                    r._blockerNahe(x, zz, 3, -Infinity, nah); // offener Grund: kein Bau binnen 3 m
+                    if (!nah.some((e) => (e.blockerAABBs || []).some((b) => r._boxAbstand2(b, x, zz) <= 9))) ort = { x, zz, g };
+                }
+                if (!ort) return null;
+                const e = r.spawnArchitecture(
+                    "fass",
+                    { x: ort.x, y: ort.g + 4.5, z: ort.zz },
+                    { silent: true, precise: true, rotationY: 0.3 }
+                );
+                const K = e._frei;
+                const o = { boden: "gras", ruheS: null, crr: null };
+                let [t, tLand] = [0, null];
+                for (let i = 0; i < 600 && o.ruheS === null; i++) {
+                    r._freiSchritt(A.FIXED_DT);
+                    t += A.FIXED_DT;
+                    let mn = Infinity;
+                    for (let j = 1; j < K.pw.length; j += 3) mn = Math.min(mn, K.pw[j]);
+                    if (tLand === null && mn - r._koerperBodenUnter(K.p[0], mn + 0.5, K.p[2]) <= A.FREI.spalt) tLand = t;
+                    if (tLand !== null && K.schlaf) o.ruheS = Math.round((t - tLand) * 1000) / 1000;
+                }
+                o.crr = K.grund ? K.grund.roll : null;
+                r.removeArchitecture(e, { still: true });
+                return o;
+            };
+            S.frei.fassFall = fassFall();
+            r._rollWiderstand = () => 0;
+            S.frei.fassFallOhneRoll = fassFall();
+            delete r._rollWiderstand;
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({
