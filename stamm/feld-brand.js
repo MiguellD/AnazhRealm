@@ -737,13 +737,17 @@ class AnazhRealm_feld_brand {
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
                 const f = fl[q.von + (h % (q.bis - q.von))];
+                // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
+                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel)
+                const b0 = R.b0 * f.lang * k;
+                const y = f.y + f.lang + b0 * R.size;
                 T.push({
                     x: f.x,
-                    y: f.y + f.lang,
+                    y,
                     z: f.z,
-                    y0: f.y + f.lang,
-                    b0: R.b0 * f.lang * k,
-                    s: R.b0 * f.lang * k,
+                    y0: y,
+                    b0,
+                    s: b0,
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
                     a: R.a0,
                     alt: 0,
@@ -765,6 +769,67 @@ class AnazhRealm_feld_brand {
         this._rauchZeichnen(R, T, "brandRauchSatz", R.maxTeilchen, R.steigMs);
     }
 
+    // DIE TAFEL DER ZUNGE (`_brandFlammenZeichnen`) → { daten, n, rMax, luma0, mittel }, gerechnet einmal je Welt: je Höhe h
+    // (`bild.flamme.tafel` Zeilen) ihr Ton in RGB — der Planck-Ort ihrer Temperatur (fachwerk `lichtFarbe`, von kelvin[0] an der
+    // Wurzel auf kelvin[1] an der Spitze) × (T/T0)⁴ — und ihr Radius r(h) ÷ `rMax` in A (fachwerk `FLAMME.zunge`). `luma0` ist die
+    // Luma der heißesten Zeile, `mittel` DAS MITTEL DES LEIBS in ihrem Maß: Luma(Ton) × Dicke über die Fläche der Zunge (ξ quer,
+    // h längs, gewichtet mit r(h); der Ton bei h + (1 − h)·`mantel`·ξ², die Dicke (1 − ξ²)^`rand`·(1 − h)^`spitze` — aus
+    // denselben Bytes, linear wie der Filter der Tafel). Gemessen 0,17: so wenig ihrer Wurzel trägt die Zunge im Mittel.
+    _flammeTafel() {
+        if (this._flammeTafelMerk) return this._flammeTafelMerk;
+        const FW = globalThis.__fachwerkCore;
+        const [B, Z] = [AnazhRealm.BRAND.bild, FW.FLAMME.zunge];
+        const BF = B.flamme;
+        const rMax = Math.max(...Z.map((p) => p[0]));
+        const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
+        const daten = new Uint8Array(4 * N);
+        for (let i = 0; i < N; i++) {
+            const h = i / (N - 1);
+            let j = 1;
+            while (j < Z.length - 1 && Z[j][1] < h) j++;
+            const [a, b] = [Z[j - 1], Z[j]];
+            const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
+            const K = K0 + (K1 - K0) * h;
+            const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
+            for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
+            daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
+        }
+        const lies = (h, k) => {
+            const u = Math.min(N - 1, Math.max(0, h * N - 0.5));
+            const i = Math.min(N - 2, Math.floor(u));
+            return (daten[4 * i + k] * (1 - (u - i)) + daten[4 * i + 4 + k] * (u - i)) / 255;
+        };
+        const luma = (h) => 0.2126 * lies(h, 0) + 0.7152 * lies(h, 1) + 0.0722 * lies(h, 2);
+        const luma0 = ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(FW.lichtFarbe(K0));
+        const [NH, NX] = [64, 32];
+        let [strahl, flaeche] = [0, 0];
+        for (let i = 0; i < NH; i++) {
+            const h = (i + 0.5) / NH;
+            const r = lies(h, 3);
+            for (let j = 0; j < NX; j++) {
+                const q = Math.pow((j + 0.5) / NX, 2); // ξ²
+                strahl += luma(h + (1 - h) * BF.mantel * q) * Math.pow(1 - q, BF.rand) * Math.pow(1 - h, B.spitze) * r;
+                flaeche += r;
+            }
+        }
+        return (this._flammeTafelMerk = { daten, n: N, rMax, luma0, mittel: strahl / flaeche / luma0 });
+    }
+
+    // DIE OPTIK DER ZUNGE (front-brand) → { quelle, deckung }: die Flamme ist ein DÜNNER STRAHLER, kein Körper. Das Gesetz des
+    // Kerns: der leuchtende Leib eines Feuers trägt `FEUER_LEUCHTDICHTE` (15 000 cd/m²) — ein Dreißigstel des schwarzen Körpers
+    // seiner Temperatur (`glutLeuchtdichte(LICHT_GESETZ.feuer.kelvin)`: der Ruß ist dünn). `quelle` ist dieser schwarze Körper
+    // (cd/m², der Ton der Wurzel), `deckung` die Deckung bei Dicke 1: Leib ÷ Quelle ÷ das Mittel des Leibs (`_flammeTafel`) —
+    // die Zunge strahlt je Pixel Quelle × Ton × Deckung und nimmt ihrem Grund nur diese Deckung (Kirchhoff), IM MITTEL IHRES
+    // LEIBS steht sie bei der Leuchtdichte des Gesetzes: dieselbe Zahl × Fläche, die `_flammenLicht` als Schein wirft. Bis hier
+    // trug nur ihre WURZEL die Leuchtdichte des Gesetzes (der Leib im Mittel 17 %), und sie deckte wie ein schwarzer Körper
+    // (1 − e^(−6·Dicke)): über der Wiese im Mittagslicht stand ein dunkleres Band (gate:post-kette (l): 20 % ihrer Pixel
+    // dunkler als die Karte, Lichtstärke × 0,24; die Station same.kopplung.kaskade zählte +9 Flammen-Pixel).
+    _flammeOptik() {
+        const FW = globalThis.__fachwerkCore;
+        const quelle = FW.glutLeuchtdichte(FW.LICHT_GESETZ.feuer.kelvin);
+        return { quelle, deckung: FW.FEUER_LEUCHTDICHTE / quelle / this._flammeTafel().mittel };
+    }
+
     // Die Flammen des Bilds (`_brandBild`) als EIN Satz. DIE ZUNGE IST DER DREHKÖRPER des Flammen-Gesetzes (fachwerk `FLAMME`),
     // gezeichnet als sein Abbild: je Flamme eine Fläche längs ihrer Achse (Länge, Neigung in den Wind), quer zur Sicht gedreht
     // (`cameraWorldMatrix`; blickt das Auge längs der Achse, steht sie in der Rechten der Kamera), Breite `breite` × Länge × größter
@@ -774,8 +839,8 @@ class AnazhRealm_feld_brand {
     // die Spitze dunkel-rot. DIE ZUNGE IST EIN MEDIUM, das strahlt und schluckt: ihre Dicke im Abstand ξ = |x|/r(h) von der Achse ist
     // (1 − ξ²)^`rand` (der Rand weich, ohne Kante), × (1 − h)^spitze; Rand und Dichte zerreißen im Rausch-Gesetz, das mit `zug`
     // Längen je Sekunde steigt (`rausch`: Skala quer, hoch, Hub zur Spitze hin; zwei Lagen des EINEN Rausch-Atlas); die Deckung
-    // 1 − exp(−`dicke` · Dicke), gemischt vormultipliert (Licht × Deckung + Grund × (1 − Deckung)): wie viele Zungen sich auch decken,
-    // keine strahlt heller als ihr Ton. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
+    // ist Dicke × `_flammeOptik().deckung` (ein dünner Strahler), gemischt vormultipliert (Quelle × Deckung + Grund × (1 − Deckung)):
+    // wie viele Zungen sich auch decken, keine strahlt heller als ihre Quelle, und keine verdunkelt ihren Grund. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
     // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). DER KERN (w28-brand-kern): die Temperatur fällt auch QUER zur Achse — bei ξ liest der Ton die Tafel bei h + (1 − h)·`mantel`·ξ² (die Achse heiß, der Mantel orange bis rot); und der Ton steht VOR dem Auge der Nacht (`_nachtAuge`, bild-kosten).
     _brandFlammenZeichnen(fl) {
         const st = this.state;
@@ -786,22 +851,7 @@ class AnazhRealm_feld_brand {
         const [sq, sh, hub] = BF.rausch;
         const weit = 1 + 1.25 * hub; // so weit weitet das Rauschen den Radius höchstens: die Fläche trägt den Rand ganz
         if (!S) {
-            const FW = globalThis.__fachwerkCore;
-            const Z = FW.FLAMME.zunge;
-            const rMax = Math.max(...Z.map((p) => p[0]));
-            const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
-            const daten = new Uint8Array(4 * N);
-            for (let i = 0; i < N; i++) {
-                const h = i / (N - 1);
-                let j = 1;
-                while (j < Z.length - 1 && Z[j][1] < h) j++;
-                const [a, b] = [Z[j - 1], Z[j]];
-                const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
-                const K = K0 + (K1 - K0) * h;
-                const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
-                for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
-                daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
-            }
+            const { daten, n: N, rMax, luma0 } = this._flammeTafel();
             const tafel = new THREE.DataTexture(daten, N, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
             tafel.name = "brand-flamme:tafel";
             tafel.magFilter = tafel.minFilter = THREE.LinearFilter;
@@ -843,24 +893,13 @@ class AnazhRealm_feld_brand {
                 .mul(T.float(1).sub(h).pow(B.spitze))
                 .mul(T.float(1).add(rausch.mul(0.5)).max(0));
             const ton = T.texture(tafel, T.vec2(h.add(h.oneMinus().mul(x.div(r).pow2().min(1)).mul(BF.mantel)), 0.5)).rgb; // prettier-ignore
+            // DIE ZUNGE IST EIN DÜNNER STRAHLER (`_flammeOptik`, front-brand): ihr Ton steht in der Leuchtdichte ihrer QUELLE
+            // (die Tafel trägt die Lichtfarbe auf den hellsten Kanal 1: ÷ die Luma der heißesten Zeile), ihre Deckung ist ihre
+            // Dicke × `deckung` — sie strahlt Quelle × Deckung und nimmt dem Grund nur diese Deckung (Kirchhoff)
+            const O = this._flammeOptik();
             mat.colorNode = T.vec4(
-                // die Zunge leuchtet in der Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE`, licht-eine-skala P8) — bis
-                // hier trug sie einen Bild-Ton `ziel` ÷ Belichtung: bei Tag und Nacht dasselbe Bild, nie dieselbe Flamme
-                // (die Tafel trägt die Lichtfarbe auf den hellsten Kanal 1: ÷ die Luma der heißesten Zeile, die Wurzel steht
-                // bei der Leuchtdichte des Gesetzes)
-                this._nachtAuge(
-                    ton.mul(
-                        globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE /
-                            __weltLicht.EINHEIT_LX /
-                            ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(
-                                globalThis.__fachwerkCore.lichtFarbe(BF.kelvin[0])
-                            )
-                    ),
-                    true
-                ),
-                T.float(1)
-                    .sub(T.exp(dicke.mul(BF.dicke).negate()))
-                    .mul(this._tiefenSaum(BF.saumM))
+                this._nachtAuge(ton.mul(O.quelle / __weltLicht.EINHEIT_LX / luma0), true),
+                dicke.mul(O.deckung).min(1).mul(this._tiefenSaum(BF.saumM))
             );
             const mesh = AnazhRealm._instanzMesh(geo, mat, B.flammenMax);
             mesh.name = "brand-flammen";
@@ -935,7 +974,7 @@ AnazhRealm.BRAND = Object.freeze({
     // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); die Spitze der Zunge pulst um ± `puls` ihrer Länge; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
     // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
-    // Tonkurve, ihr Licht trägt ihre Leuchtdichte (`_flammenLicht`, fachwerk `FEUER_LEUCHTDICHTE`), die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
+    // Tonkurve, ihr Leib trägt im Mittel die Leuchtdichte des Gesetzes (`_flammeOptik`, fachwerk `FEUER_LEUCHTDICHTE` — dieselbe, die `_flammenLicht` wirft), ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
     // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
     // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
     // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
@@ -956,7 +995,6 @@ AnazhRealm.BRAND = Object.freeze({
         flamme: Object.freeze({
             kelvin: Object.freeze([3000, 1700]),
             mantel: 1,
-            dicke: 6,
             rand: 1.5,
             rausch: Object.freeze([1.6, 2.5, 0.8]),
             tafel: 32,

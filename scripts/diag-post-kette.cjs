@@ -75,6 +75,10 @@
 //       (k4) BEIDE LESER zur Laufzeit: die Stoffe der Sätze, die `_brandRauch` und `_updateDorfRauch` anlegen, stammen aus dem
 //       EINEN Bauer `_rauchStoff` (ein Mithörer am Glied), jeder mit dem Steigen seiner Quelle; `_rauchStoff` ohne `steigMs`
 //       bricht laut; außerhalb von `_rauchZeichnen` / `_rauchStoff` liest niemand im Stamm die Attribute des Rauchs (`STAMM.fehlt`).
+//   (l) ZUNGE (front-brand) — EINE echte Zunge durch `_brandFlammenZeichnen` am Mittag, in der Schicht der Probe: (l1) kein
+//       Strahler verdunkelt seinen Grund (vor der Karte), (l2) ihr Leib trägt die Lichtstärke des Gesetzes (fachwerk
+//       `FEUER_LEUCHTDICHTE` × Fläche, vor Schwarz im geraden Teil der Kurve); MUTANTE-L über das Glied `_flammeOptik` (Kommentar
+//       an `ZUNGE_PROBE`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
@@ -151,7 +155,9 @@ const FLAMME_TOL = 6;
 // die Ratsche `nachtSatt` 0,75 bleibt; das Glimmen trägt sein eigenes Band (es steht unter Bild-Weiß, im Fuß der Kurve).
 // (j2) KERN UND MANTEL AM KONSUM, NICHT AN EINER SCHWELLE (licht-eine-skala): der Pixel am Schirm ist die EINE Kurve am Quellen-Ton
 // — `flammenSoll` rechnet ihn in Node aus dem Datum (fachwerk `lichtFarbe(K)` × (K/kelvin[0])⁴ in 8 Bit wie die Tafel in
-// `_brandFlammenZeichnen`, × `FEUER_LEUCHTDICHTE` ÷ `EINHEIT_LX` ÷ Luma(lichtFarbe(kelvin[0])), × k, der Deckel des Szenen-Ziels am
+// `_brandFlammenZeichnen`, × die QUELLE der Zunge (seit front-brand der schwarze Körper des Kerns, `_flammeOptik().quelle` =
+// fachwerk `glutLeuchtdichte(LICHT_GESETZ.feuer.kelvin)`; bis dahin `FEUER_LEUCHTDICHTE` — bei k 20 000 steht beides am Deckel,
+// die Töne am Schirm blieben) ÷ `EINHEIT_LX` ÷ Luma(lichtFarbe(kelvin[0])), × k, der Deckel des Szenen-Ziels am
 // größten Kanal, `tonKurveJs`, sRGB), je Kanal ± FLAMME_KONSUM_TOL (8 Bit). Das Band bleibt nur als „Feuer, nicht weiß": Farbton
 // 22–40°, Sättigung ≥ 0,42 für BEIDE. DIE GEFALLENE SCHWELLE 0,75 des Mantels war ein Artefakt des Fußes der alten Kurve: main
 // MANTEL [200,118,18] trug Sättigung 0,91, weil der Bild-Ton unter Weiß stand und der Fuß 6,25·x² das Blau fraß (linear 0,03 →
@@ -204,7 +210,8 @@ function flammenSoll(K, K0, k, kz, mut) {
     const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     const w = Math.pow(K / K0, 4);
     const t8 = FW.lichtFarbe(K).map((v) => Math.round(255 * v * w) / 255);
-    const f = (FW.FEUER_LEUCHTDICHTE / luma(FW.lichtFarbe(K0)) / W.EINHEIT_LX) * k;
+    // die QUELLE der Zunge (front-brand, `_flammeOptik`): der schwarze Körper des Kerns bei der Temperatur seines Feuers
+    const f = (FW.glutLeuchtdichte(FW.LICHT_GESETZ.feuer.kelvin) / luma(FW.lichtFarbe(K0)) / W.EINHEIT_LX) * k;
     const bild = t8.map((v) => v * f);
     const spitze = Math.max(...bild);
     const gedeckelt = bild.map((v) => (v * kz.deckel) / Math.max(spitze, kz.deckel));
@@ -371,6 +378,85 @@ const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, 
 const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
 const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
 // (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
+// (l) DIE ZUNGE VOR DEM HELLEN GRUND (front-brand): EINE echte Zunge durch `_brandFlammenZeichnen` in der eigenen Schicht der Probe
+// (wie der Rauch in (k)), am Mittag der Bühne. DIE KLASSE: ein Strahler, der seinen Grund verdunkelt. Der Täter (main 9502aa0e7,
+// die Station same.kopplung.kaskade zählte am Tag +9 Flammen-Pixel statt ≥ 200): seit licht-eine-skala P8 trug nur die WURZEL der
+// Zunge die Leuchtdichte des Gesetzes (fachwerk `FEUER_LEUCHTDICHTE`), ihr Leib im Mittel 17 % davon (Temperatur-Fall (T/T0)⁴ längs
+// und quer) — und sie deckte wie ein schwarzer Körper (1 − e^(−6·Dicke)): über der Wiese im Mittagslicht stand ein dunkleres Band.
+// (l1) KEIN STRAHLER VERDUNKELT SEINEN GRUND: vor der Wand im Ton der Karte am Mittag (`BELICHTUNG.zielKarte`) ist kein Pixel der
+//      Zunge dunkler als die Wand ohne sie (Anteil ≤ `dunkel`), und sie hellt ihn auf (Anteil ≥ `hell`).
+// (l2) DER LEIB TRÄGT DIE LICHTSTÄRKE DES GESETZES: vor der schwarzen Wand, bei der Blende `kLin` (der schwarze Körper des Kerns
+//      × 0,3 an der Schulter — das Bild steht im geraden Teil der Kurve, die Probe rechnet sRGB und den Fuß zurück), ist
+//      Σ Leuchtdichte × Pixel-Fläche = `FEUER_LEUCHTDICHTE` × Fläche des Leibs (2 × halbe Breite × Länge × mittlerer Radius der
+//      Tafel fachwerk `FLAMME.zunge`) — dieselbe Zahl, die `_flammenLicht` als Schein wirft (Gebot 4), im Band `staerke`.
+// MUTANTE-L im selben Lauf: `_flammeOptik` liefert das Gesetz von vorher (Quelle = `FEUER_LEUCHTDICHTE` an der Wurzel, Deckung 6)
+// — beide Zeilen müssen an ihr reißen (`mutDunkel`, `mutStaerke`), sonst liest der Stoff das Glied nicht.
+const ZUNGE_PROBE = { uhr: 0.5, abstandM: 3, wandM: 2, langM: 1.6, zeiten: [0, 0.37, 0.74], tol: 3, frames: 6, mutDeckung: 6 };
+const ZUNGE_BAND = { pxMin: 60, karte: [95, 140], dunkel: 0.005, hell: 0.15, staerke: [0.8, 1.25], mutDunkel: 0.05, mutStaerke: 0.5 };
+const ZUNGE_ORT = "stamm/feld-brand.js `_brandFlammenZeichnen` (die Optik der Zunge: `_flammeOptik`)";
+// GEMESSEN (GTX 1050, Leinwand 321×241): `kopf` nach dem Schnitt front-brand (0 Pixel dunkler, Lichtstärke × 1,057; MUTANTE-L
+// 20,4 % dunkler, × 0,255), `taeter` der Kopf von main 9502aa0e7 im selben Maß (Abstand 4 m: 20,0 % dunkler, × 0,241)
+const ZUNGE_GEMESSEN = {
+    kopf: {
+        gpuFehler: [],
+        uhr: 0.5,
+        nf: 0,
+        k: 0.5113,
+        leinwand: [321, 241],
+        zungePx: [79, 85],
+        optik: { quelle: 456732, deckung: 0.1963 },
+        z1: { dunkel: 0, hell: 4926, px: 20145, tiefst: -0.1, grund: 117.6 },
+        z2: { k: 0.0455, cd: 11005, sollCd: 10412, flaecheM2: 0.6941, spitze: 0.463, schulter: 0.76 },
+        mut: { z1: { dunkel: 4119, hell: 927, px: 20145, tiefst: -68.8, grund: 117.6 }, z2: { k: 0.0455, cd: 2651, sollCd: 10412, flaecheM2: 0.6941, spitze: 0.074, schulter: 0.76 } },
+    },
+    taeter: { z1: { dunkel: 2304, hell: 504, px: 11529, tiefst: -54.2, grund: 117.6 }, z2: { k: 0.0455, cd: 2513, sollCd: 10412, flaecheM2: 0.6941, spitze: 0.076, schulter: 0.76 } },
+};
+// die Blende von (l2) und der Ton der Wand von (l1) aus den Quellen (keine Kopie ihrer Zahlen)
+const zungeMass = () => {
+    const { FW, W } = quelle();
+    const l0 = ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(FW.lichtFarbe(3000));
+    return { karte: W.BELICHTUNG.zielKarte, schulter: W.BELICHTUNG.schulter, kLin: +((0.9 * W.BELICHTUNG.schulter) / ((FW.glutLeuchtdichte(FW.LICHT_GESETZ.feuer.kelvin) / W.EINHEIT_LX / l0) * 0.3)).toPrecision(3) };
+};
+function zungeUrteil(zu) {
+    if (!zu) return ["ZUNGE: die Probe lief nicht"];
+    if (zu.abbruch) return [`ZUNGE: ABBRUCH — ${zu.abbruch}`];
+    const [v, B, P] = [[], ZUNGE_BAND, ZUNGE_PROBE];
+    const im = (x, [a, b]) => x >= a && x <= b;
+    if (zu.gpuFehler?.length) v.push(`ZUNGE: ${zu.gpuFehler.length} GPU-Validierungs-Fehler: ${zu.gpuFehler[0]}`);
+    if (!(zu.uhr === P.uhr && zu.nf === 0)) v.push(`ZUNGE: die Bühne stand bei Uhr ${zu.uhr} / nightFactor ${zu.nf} statt ${P.uhr} / 0 (die Probe ist blind)`);
+    if (!(zu.zungePx && zu.zungePx[1] >= B.pxMin)) v.push(`ZUNGE: die Zunge misst ${JSON.stringify(zu.zungePx)} Pixel im Bild (Soll ≥ ${B.pxMin} hoch) — die Probe ist blind`);
+    const [a, b, m] = [zu.z1 || {}, zu.z2 || {}, zu.mut || {}];
+    if (!(a.px > 0 && im(a.grund, B.karte))) v.push(`ZUNGE: (l1) die Wand steht bei Luma ${a.grund} (Soll ${B.karte[0]}–${B.karte[1]}: die Karte am Mittag) über ${a.px} Pixel — die Probe ist blind`);
+    else {
+        if (!(a.dunkel / a.px <= B.dunkel))
+            v.push(
+                `ZUNGE: (l1) KEIN STRAHLER VERDUNKELT SEINEN GRUND — ${a.dunkel} von ${a.px} Pixeln der Zunge (${((100 * a.dunkel) / a.px).toFixed(1)} %, Soll ≤ ${100 * B.dunkel} %) sind vor der Karte am Mittag (Luma ${a.grund}) DUNKLER als die Wand ohne sie (tiefster ${a.tiefst}) — ${ZUNGE_ORT}: die Zunge deckt mehr, als sie strahlt (Kirchhoff: Deckung = Strahlung ÷ Quelle)`
+            );
+        if (!(a.hell / a.px >= B.hell))
+            v.push(`ZUNGE: (l1) nur ${a.hell} von ${a.px} Pixeln (${((100 * a.hell) / a.px).toFixed(1)} %, Soll ≥ ${100 * B.hell} %) sind heller als die Wand — am Mittag steht keine Flamme im Bild: ${ZUNGE_ORT}`);
+    }
+    if (!(b.sollCd > 0 && b.cd >= 0 && b.spitze < b.schulter)) v.push(`ZUNGE: (l2) ungemessen oder im Knie der Kurve (${JSON.stringify(b)}; Soll Spitze < Schulter) — die Probe ist blind`);
+    else if (!im(b.cd / b.sollCd, B.staerke))
+        v.push(
+            `ZUNGE: (l2) DER LEIB TRÄGT DIE LICHTSTÄRKE DES GESETZES — das Bild der Zunge strahlt ${b.cd} cd, ihr Gesetz ${b.sollCd} cd (fachwerk \`FEUER_LEUCHTDICHTE\` × ${b.flaecheM2} m² Leib; Verhältnis ${(b.cd / b.sollCd).toFixed(3)}, Soll ${B.staerke[0]}–${B.staerke[1]}) — ${ZUNGE_ORT}: das Bild trägt nicht die Leuchtdichte, die \`_flammenLicht\` als Schein wirft`
+        );
+    const [ma, mb] = [m.z1 || {}, m.z2 || {}];
+    if (!(ma.px > 0 && ma.dunkel / ma.px >= B.mutDunkel && mb.sollCd > 0 && mb.cd / mb.sollCd <= B.mutStaerke))
+        v.push(
+            `ZUNGE: MUTANTE-L (\`_flammeOptik\` mit dem Gesetz von vorher: Quelle \`FEUER_LEUCHTDICHTE\`, Deckung ${P.mutDeckung}) reißt nicht — dunkler ${ma.dunkel} von ${ma.px} (Soll ≥ ${100 * B.mutDunkel} %), Lichtstärke × ${mb.sollCd > 0 ? (mb.cd / mb.sollCd).toFixed(3) : "?"} (Soll ≤ ${B.mutStaerke}): der Stoff der Zunge liest \`_flammeOptik\` nicht, oder die Linse ist blind`
+        );
+    return v;
+}
+function zungeZeilen(zu) {
+    if (!zu || zu.abbruch) return [`Zunge: ${zu ? "ABBRUCH " + zu.abbruch : "lief nicht"}`];
+    const j = JSON.stringify;
+    const verh = (x) => (x && x.sollCd > 0 ? (x.cd / x.sollCd).toFixed(3) : "?");
+    return [
+        `Zunge (Uhr ${zu.uhr}, nightFactor ${zu.nf}, Belichtung ${zu.k}, Leinwand ${j(zu.leinwand)}, Zunge ${j(zu.zungePx)} Pixel) · Optik ${j(zu.optik)}`,
+        `Zunge (l1) GRUND: ${j(zu.z1)} · MUTANTE-L ${j(zu.mut && zu.mut.z1)}`,
+        `Zunge (l2) LICHTSTÄRKE: ${j(zu.z2)} = × ${verh(zu.z2)} · MUTANTE-L ${j(zu.mut && zu.mut.z2)} = × ${verh(zu.mut && zu.mut.z2)}`,
+    ];
+}
 function rauchUrteil(ra) {
     if (!ra) return ["RAUCH: die Probe lief nicht"];
     if (ra.abbruch) return [`RAUCH: ABBRUCH — ${ra.abbruch}`];
@@ -705,6 +791,8 @@ function urteil(z) {
     }
     // (k) DER RAUCH
     for (const x of rauchUrteil(z.rauch)) v.push(x);
+    // (l) DIE ZUNGE
+    for (const x of zungeUrteil(z.zunge)) v.push(x);
     const zg = z.zugang || { abbruch: "lief nicht" };
     const t = zg.tritanopie || {};
     if (zg.abbruch || zg.ausTraegt) v.push(`ZUGANG: ${zg.abbruch || "aus trägt den Knoten der Farbsicht (vp-0611g)"}`);
@@ -844,9 +932,21 @@ function selbsttest() {
             tritanopie: { himmel: 0, himmelPx: 4700, kiste: 90, kistePx: 100 },
         },
         rauch: jsonKlon(RAUCH_GEMESSEN.kopf),
+        zunge: jsonKlon(ZUNGE_GEMESSEN.kopf),
     };
     const RM = RAUCH_GEMESSEN;
+    const ZG = ZUNGE_GEMESSEN;
     const faelle = [
+        // (l) die Zunge: der Täter von main zuerst (seine Zahlen), dann die blinden Proben
+        ["die Zunge von main deckt wie ein schwarzer Körper (die Zahl des Täters)", (z) => (z.zunge.z1 = jsonKlon(ZG.taeter.z1)), /ZUNGE: \(l1\) KEIN STRAHLER VERDUNKELT SEINEN GRUND — 2304 von 11529 Pixeln/],
+        ["die Zunge von main trägt ein Viertel ihrer Lichtstärke (die Zahl des Täters)", (z) => (z.zunge.z2 = jsonKlon(ZG.taeter.z2)), /ZUNGE: \(l2\) DER LEIB TRÄGT DIE LICHTSTÄRKE DES GESETZES — das Bild der Zunge strahlt 2513 cd, ihr Gesetz 10412 cd/],
+        ["am Mittag steht keine Flamme im Bild", (z) => (z.zunge.z1.hell = 504), /ZUNGE: \(l1\) nur 504 von 20145 Pixeln/],
+        ["MUTANTE-L reißt nicht (der Stoff liest `_flammeOptik` nicht)", (z) => (z.zunge.mut = jsonKlon({ z1: ZG.kopf.z1, z2: ZG.kopf.z2 })), /ZUNGE: MUTANTE-L .* reißt nicht — dunkler 0 von 20145/],
+        ["die Zunge lief nicht", ["zunge"], /ZUNGE: die Probe lief nicht/],
+        ["die Zunge am Abend (blind)", (z) => (z.zunge.uhr = 0.8), /ZUNGE: die Bühne stand bei Uhr 0\.8 \/ nightFactor 0 statt 0\.5 \/ 0/],
+        ["die Wand ist nicht die Karte (blind)", (z) => (z.zunge.z1.grund = 40), /ZUNGE: \(l1\) die Wand steht bei Luma 40 /],
+        ["die Lichtstärke im Knie der Kurve gemessen (blind)", (z) => (z.zunge.z2.spitze = 0.9), /ZUNGE: \(l2\) ungemessen oder im Knie der Kurve/],
+        ["die Zunge zu klein im Bild (blind)", (z) => (z.zunge.zungePx = [30, 40]), /ZUNGE: die Zunge misst \[30,40\] Pixel im Bild/],
         ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
         ["Direktpfad ohne Tiefe", ["schritte.1.tiefe=", false], /Direktpfad zeichnet ohne Tiefe/],
         ["Leinwand-Tiefe in der Kette", ["schritte.2.tiefe=", true], /trägt eine Leinwand-Tiefe/],
@@ -1473,7 +1573,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                     const flammenStoff = (K, umkehr, cd) => {
                         const [c, w] = [FW.lichtFarbe(K), Math.pow(K / BF.kelvin[0], 4)];
                         const t8 = [0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255);
-                        const faktor = cd > 0 ? cd / luma(t8) : FW.FEUER_LEUCHTDICHTE / luma(FW.lichtFarbe(BF.kelvin[0]));
+                        const faktor = cd > 0 ? cd / luma(t8) : r._flammeOptik().quelle / luma(FW.lichtFarbe(BF.kelvin[0]));
                         const ton = L.vec3(...t8).mul(L.float(faktor / __weltLicht.EINHEIT_LX));
                         const m = new T.MeshBasicNodeMaterial();
                         m.fog = false;
@@ -1504,7 +1604,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                         const [mit, ohneUmkehr] = [flammenStoff(K, true, cd), flammenStoff(K, false, cd)];
                         const [tag, nacht, ohne] = [await mitte(mit, 0), await mitte(mit, 1), await mitte(ohneUmkehr, 1)];
                         const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
-                        FL.toene[name] = { kelvin: K, cd: cd || FW.FEUER_LEUCHTDICHTE, k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
+                        FL.toene[name] = { kelvin: K, cd: cd || Math.round(r._flammeOptik().quelle), k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
                     }
                     // (j2) die Kurve, an der Node das Soll rechnet: die Zahl `BELICHTUNG.schulter` der Seite, die Kurve auf ihrem Platz am
                     // Renderer, der Deckel des Szenen-Ziels, die Wurzel der Flamme
@@ -1711,6 +1811,193 @@ function zugangProbe() {
 // `_rauchStoff` nennt den Bauer ihrer Stoffe; gemessen wird der Satz der Brand-Fahne mit gestellten Ballen über `_rauchZeichnen`.
 // Die Quelle des Licht-Pools geht durch den EINEN Schreiber (`_leuchtTakt` liest `_leuchtQuellen` der Seite: nur sie oder keine).
 // Jede Mutante baut den Stoff neu (der Satz nimmt Abschied wie im Stamm) und stellt Tafel und Naht danach zurück.
+// (l) DIE ZUNGE: die Probe im Bild (Kommentar an `ZUNGE_PROBE`)
+function zungeProbe(ort, P) {
+    return (async () => {
+        const T = window.THREE;
+        const [L, AR, rend, cam, FW] = [T.TSL, r.constructor, st.renderer, st.camera, globalThis.__fachwerkCore];
+        rend.setAnimationLoop(null);
+        const aus = { gpuFehler: [] };
+        const dev = rend.backend.device;
+        const gpuHoer = (e) => aus.gpuFehler.push(String(e.error?.message || e.message || e).slice(0, 240));
+        dev.addEventListener("uncapturederror", gpuHoer);
+        const B = AR.BRAND.bild;
+        const { x: x0, y: y0, z: z0 } = ort;
+        const setzeKamera = () => {
+            cam.position.set(x0, y0, z0);
+            cam.up.set(0, 1, 0);
+            cam.lookAt(x0, y0, z0 - 10);
+            cam.updateMatrixWorld(true);
+        };
+        const wandU = L.uniform(0);
+        const wandStoff = new T.MeshBasicNodeMaterial();
+        wandStoff.fog = false;
+        wandStoff.colorNode = L.vec4(L.vec3(wandU).div(L.toneMappingExposure), 1);
+        const wand = new T.Mesh(new T.PlaneGeometry(80, 60), wandStoff);
+        wand.name = "post-kette:ZUNGE";
+        wand.frustumCulled = false;
+        wand.position.set(x0, y0, z0 - P.abstandM - P.wandM);
+        const SCHICHT = 31;
+        wand.layers.set(SCHICHT);
+        const [maskeVor, zeitVor] = [cam.layers.mask, r._bildZeit];
+        // der Abschied des Satzes der Flammen (die Welt legt ihn am nächsten Brand neu an)
+        const abschied = () => {
+            const S = st.brandFlammenSatz;
+            if (!S) return;
+            if (S.mesh.parent) S.mesh.parent.remove(S.mesh);
+            r._instanzAbschied(S.mesh);
+            S.mesh.geometry.dispose();
+            S.mesh.material.dispose();
+            S.tafel.dispose();
+            st.brandFlammenSatz = null;
+        };
+        try {
+            if (Object.prototype.hasOwnProperty.call(r, "_flammeOptik")) throw new Error("die Welt trägt schon eine Hülle um _flammeOptik — eine Probe stellte sie nicht zurück");
+            window.__buehne({ uhr: P.uhr });
+            await r._himmelFrisch();
+            r._applyDayNightToScene();
+            setzeKamera();
+            st.scene.add(wand);
+            cam.layers.set(SCHICHT);
+            abschied();
+            const db = rend.getDrawingBufferSize(new T.Vector2());
+            const [W, H] = [Math.round(db.x), Math.round(db.y)];
+            const f = { x: x0, y: y0 - P.langM / 2, z: z0 - P.abstandM, wx: 1, wz: 0, kipp: 0, lang: P.langM, dreh: 0 };
+            const zeichne = (an, zeit = 0) => {
+                r._bildZeit = zeit;
+                r._brandFlammenZeichnen(an ? [f] : []);
+                if (st.brandFlammenSatz) st.brandFlammenSatz.mesh.layers.set(SCHICHT);
+            };
+            const schuss = async () => {
+                for (let i = 0; i < P.frames; i++) {
+                    setzeKamera();
+                    window.__loopBild();
+                }
+                setzeKamera();
+                return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            };
+            const pix = (x, y, z) => {
+                const p = new T.Vector3(x, y, z).project(cam);
+                return [(0.5 + p.x / 2) * W, (0.5 - p.y / 2) * H];
+            };
+            // der Kasten der Zunge im Bild: Fuß bis Spitze, quer die Fläche des Satzes (halbe Breite × die Weite des Rauschens)
+            const Z = FW.FLAMME.zunge;
+            const rMax = Math.max(...Z.map((p) => p[0]));
+            const halb = B.breite * P.langM * rMax;
+            const [fuss, kopf] = [pix(f.x, f.y, f.z), pix(f.x, f.y + f.lang, f.z)];
+            const ppm = Math.abs(fuss[1] - kopf[1]) / f.lang;
+            const weit = 1 + 1.25 * B.flamme.rausch[2];
+            const kasten = [Math.max(0, Math.floor(fuss[0] - halb * weit * ppm)), Math.max(0, Math.floor(kopf[1])), Math.min(W, Math.ceil(fuss[0] + halb * weit * ppm)), Math.min(H, Math.ceil(fuss[1]))];
+            const imKasten = (fn) => {
+                for (let y = kasten[1]; y < kasten[3]; y++) for (let x = kasten[0]; x < kasten[2]; x++) fn(y * W + x);
+            };
+            Object.assign(aus, {
+                uhr: st.timeOfDay,
+                nf: st.postProcessingUniforms ? st.postProcessingUniforms.nightFactor.value : null,
+                k: +rend.toneMappingExposure.toPrecision(4),
+                leinwand: [W, H],
+                zungePx: [kasten[2] - kasten[0], kasten[3] - kasten[1]],
+            });
+            // (l1) vor der Wand im Ton der Karte: je Pixel des Kastens MIT gegen OHNE die Zunge, über die Phasen des Rauschens
+            const z1 = async () => {
+                r._blendeBestellen(null);
+                wandU.value = P.karte;
+                zeichne(false);
+                const ohne = await schuss();
+                const s = { dunkel: 0, hell: 0, px: 0, tiefst: 0, grund: 0 };
+                let nG = 0;
+                imKasten((p) => ((s.grund += luma709(ohne, p * 4)), nG++));
+                s.grund = +(s.grund / Math.max(1, nG)).toFixed(1);
+                for (const zeit of P.zeiten) {
+                    zeichne(true, zeit);
+                    const mit = await schuss();
+                    imKasten((p) => {
+                        const d = luma709(mit, p * 4) - luma709(ohne, p * 4);
+                        s.px++;
+                        if (d < -P.tol) s.dunkel++;
+                        else if (d > P.tol) s.hell++;
+                        if (d < s.tiefst) s.tiefst = d;
+                    });
+                }
+                s.tiefst = +s.tiefst.toFixed(1);
+                return s;
+            };
+            // (l2) vor der schwarzen Wand bei der Blende `kLin`: die Leuchtdichte je Pixel aus dem Bild unter der Schulter — sRGB
+            // zurück (IEC 61966-2-1), der Fuß der Kurve zurück (welt-licht `tonKurve`: am kleinsten Kanal x − 6,25·x² unter 0,08,
+            // sonst 0,04, von jedem Kanal abgezogen), ÷ Blende × `EINHEIT_LX`
+            const lin = (u) => {
+                const v = u / 255;
+                return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            };
+            const bildwert = (u8, i) => {
+                const c = [lin(u8[i]), lin(u8[i + 1]), lin(u8[i + 2])];
+                const m = Math.min(...c);
+                const o = m < 0.04 ? Math.sqrt(m / 6.25) - m : 0.04;
+                return c.map((x) => x + o);
+            };
+            const z2 = async () => {
+                wandU.value = 0;
+                r._blendeBestellen({ k: P.kLin });
+                zeichne(false);
+                const ohne = await schuss();
+                const k = rend.toneMappingExposure;
+                const pxM2 = 1 / (ppm * ppm);
+                let [summe, spitze] = [0, 0];
+                for (const zeit of P.zeiten) {
+                    zeichne(true, zeit);
+                    const mit = await schuss();
+                    imKasten((p) => {
+                        const [a, b] = [bildwert(mit, p * 4), bildwert(ohne, p * 4)];
+                        spitze = Math.max(spitze, ...a);
+                        summe += 0.2126 * (a[0] - b[0]) + 0.7152 * (a[1] - b[1]) + 0.0722 * (a[2] - b[2]);
+                    });
+                }
+                // die Fläche des Leibs: 2 × halbe Breite × Länge × der mittlere Radius der Tafel (Trapez über ihre Stützstellen)
+                let mittel = 0;
+                for (let i = 1; i < Z.length; i++) mittel += ((Z[i][0] + Z[i - 1][0]) / 2 / rMax) * (Z[i][1] - Z[i - 1][1]);
+                const flaeche = 2 * halb * P.langM * mittel;
+                return {
+                    k: +k.toPrecision(4),
+                    cd: Math.round((summe / P.zeiten.length / k) * __weltLicht.EINHEIT_LX * pxM2),
+                    sollCd: Math.round(FW.FEUER_LEUCHTDICHTE * flaeche),
+                    flaecheM2: +flaeche.toFixed(4),
+                    spitze: +spitze.toFixed(3),
+                    schulter: P.schulter,
+                };
+            };
+            // DER KOPF: der Stoff, den die Welt baut
+            aus.optik = typeof r._flammeOptik === "function" ? r._flammeOptik() : null;
+            aus.z1 = await z1();
+            aus.z2 = await z2();
+            // MUTANTE-L: das Gesetz von vorher über das Glied der Optik — der Stoff neu gebaut
+            r._flammeOptik = () => ({ quelle: FW.FEUER_LEUCHTDICHTE, deckung: P.mutDeckung });
+            abschied();
+            try {
+                aus.mut = { z1: await z1(), z2: await z2() };
+            } finally {
+                delete r._flammeOptik;
+            }
+        } catch (e) {
+            aus.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
+        } finally {
+            delete r._flammeOptik;
+            try {
+                abschied();
+            } catch (e) {
+                aus.abbruch = aus.abbruch || "Abschied brandFlammenSatz: " + fehlerText(e);
+            }
+            r._blendeBestellen(null);
+            r._bildZeit = zeitVor;
+            cam.layers.mask = maskeVor;
+            st.scene.remove(wand);
+            wand.geometry.dispose();
+            wandStoff.dispose();
+            dev.removeEventListener("uncapturederror", gpuHoer);
+            window.__buehne();
+        }
+        return aus;
+    })();
+}
 function rauchProbe(ort, P) {
     return (async () => {
         const T = window.THREE;
@@ -2139,6 +2426,9 @@ function rauchProbe(ort, P) {
         if (out.rauch.leser)
             out.rauch.leser.zwilling = STAMM.fehlt({ ausser: ["_rauchZeichnen", "_rauchStoff"] }, /["'`]a(?:Rauch|Zug)["'`]/) ? null : STAMM.fehlt.wo;
         for (const z of rauchZeilen(out.rauch)) log(z);
+        // (l) die Zunge nach dem Rauch: sie stellt den Mittag
+        out.zunge = await page.evaluate(zungeProbe, b, { ...ZUNGE_PROBE, ...zungeMass() });
+        for (const z of zungeZeilen(out.zunge)) log(z);
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
@@ -2197,6 +2487,8 @@ function rauchProbe(ort, P) {
                 .map(([n, tn]) => `${n.toUpperCase()} Tag ${JSON.stringify(tn.tag)} ↔ Nacht ${JSON.stringify(tn.nacht)}, ohne Umkehr ${JSON.stringify(tn.ohne)}`)
                 .join(" · ")}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt; ` +
             `der Rauch ist EIN Bild (Unterseite ${rauchVerh(out.rauch.unten)}× die Oberseite, flach ${rauchVerh(out.rauch.mutUnten)}×; zwei Ballen ein Muster ${out.rauch.koerper.gleich}, am Ballen ${out.rauch.mutKoerper.gleich}; ` +
-            `der Zug streckt ${out.rauch.zug.quer.form}, längs des Blicks ${out.rauch.zug.laengs.form}, ohne Streckung ${out.rauch.mutZug.quer.form}; Fahne und Kamin aus \`_rauchStoff\`).`
+            `der Zug streckt ${out.rauch.zug.quer.form}, längs des Blicks ${out.rauch.zug.laengs.form}, ohne Streckung ${out.rauch.mutZug.quer.form}; Fahne und Kamin aus \`_rauchStoff\`); ` +
+            `die Zunge verdunkelt ihren Grund nicht (${out.zunge.z1.dunkel} von ${out.zunge.z1.px} Pixeln vor der Karte am Mittag, MUTANTE-L ${out.zunge.mut.z1.dunkel}) und trägt die Lichtstärke ihres Gesetzes ` +
+            `(${out.zunge.z2.cd} cd gegen ${out.zunge.z2.sollCd} cd, MUTANTE-L ${out.zunge.mut.z2.cd} cd).`
     );
 })();
