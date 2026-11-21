@@ -3387,7 +3387,7 @@
     //   Masse      = Volumen (Länge · Spur · Dach, m³ — die Größe, auf die Izz und die Wirts-Masse geeicht sind) × FAHR.masseDichte
     //   Luft       = ½ ρ · cw · Spur · Dach / Masse (cw der Gattung; vor heute und in der Zukunft der Zeit — der offene Karren 1,1)
     //   Reibung    = cr · g (die Kufe gleitet mit 0,2, das Vollrad rollt mit 0,06, der Gummi mit 0,013)
-    //   Leistung   = das Zugtier (Zahl × Watt, Zugkraft am Stand, gedeckelt bei seiner Gangart) oder der Motor (kW/t der Gattung ×
+    //   Leistung   = das Zugtier (Zahl × Watt, Zugkraft am Stand, gedeckelt bei seiner Gangart) oder der Motor (kW des Bauplans ÷ Masse ×
     //                der Stufe, Wirkungsgrad η, die volle Leistung ab vKnick, darunter das Moment: a = min(aEngine, aLeist / v);
     //                das Moment im ersten Gang trägt mindestens die Steigfähigkeit: aEngine ≥ g · (sin θ + cr · cos θ))
     //   vmax       = das Gleichgewicht aLeist / v = Reibung + Luft · v² (das Zugtier höchstens in seiner Gangart).
@@ -3409,7 +3409,10 @@
             vGang = Z.zug.vGang;
             schlepp = A.zugHalt;
         } else {
-            aLeist = P.leistung * (Z.leistung != null ? Z.leistung : 1) * A.eta; // kW/t = W/kg
+            // DIE LEISTUNG IST DIE DES MOTORS (mensch.fahrzeug.form): kW aus dem Bauplan, geteilt durch die Masse DIESER Form —
+            // die schwerere Form zieht langsamer an. Bis hier stand die Leistung je Tonne fest (kW/t): ein Werkstatt-Wagen mit
+            // 1,9-facher Masse fuhr nach 6 s Vollgas 1,0009-mal so schnell wie der leichte.
+            aLeist = (P.leistung * 1000 * (Z.leistung != null ? Z.leistung : 1) * A.eta) / kg; // kW → W/kg
             const th = Math.atan(A.steig);
             aEngine = Math.max(aLeist / A.vKnick, FAHR.G * Math.sin(th) + reibung * Math.cos(th));
             vGang = Infinity;
@@ -4599,7 +4602,7 @@
             kind: "vehicle",
             lab: "Supersport",
             s: {
-                leistung: 140, // kW/t (das Antriebs-Gesetz, carPhys)
+                leistung: 156.1728, // kW des Motors (das Antriebs-Gesetz, carPhys) = 140 kW/t × 1 115,52 kg seiner Form
                 cw: 0.35,
                 radstand: 2.7,
                 spur: 1.66,
@@ -4633,7 +4636,7 @@
             kind: "vehicle",
             lab: "Limousine",
             s: {
-                leistung: 57, // kW/t (das Antriebs-Gesetz, carPhys)
+                leistung: 95.768208, // kW des Motors (das Antriebs-Gesetz, carPhys) = 57 kW/t × 1 680,144 kg seiner Form
                 cw: 0.27,
                 radstand: 3.05,
                 spur: 1.6,
@@ -4667,7 +4670,7 @@
             kind: "vehicle",
             lab: "Kompakt-FWD",
             s: {
-                leistung: 31, // kW/t (das Antriebs-Gesetz, carPhys)
+                leistung: 39.854592, // kW des Motors (das Antriebs-Gesetz, carPhys) = 31 kW/t × 1 285,632 kg seiner Form
                 cw: 0.31,
                 radstand: 2.6,
                 spur: 1.55,
@@ -4701,7 +4704,7 @@
             kind: "vehicle",
             lab: "SUV",
             s: {
-                leistung: 52, // kW/t (das Antriebs-Gesetz, carPhys)
+                leistung: 96.1932816, // kW des Motors (das Antriebs-Gesetz, carPhys) = 52 kW/t × 1 849,8708 kg seiner Form
                 cw: 0.37,
                 radstand: 2.85,
                 spur: 1.64,
@@ -4735,7 +4738,7 @@
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
-        leistung: 92, // kW/t der Gattung (das Antriebs-Gesetz, carPhys) — der GT
+        leistung: 123.40512, // kW des Motors (das Antriebs-Gesetz, carPhys) — der GT: 92 kW/t × 1 341,36 kg seiner Form
         cw: 0.31, // Luftwiderstands-Beiwert der Gattung
         radstand: 2.9,
         spur: 1.62,
@@ -4814,7 +4817,7 @@
             koerper: "wagengruen",
             s: { radstand: 2.55, spur: 1.42, ueberhangV: 0.35, ueberhangH: 0.55, taille: 0, radR: 0.41, radVorn: 1, fahrhoehe: 0.34, guertel: 1.12, dach: 1.95, kabineMitte: -0.6, kabineLaenge: 1.7, tumblehome: 0, windshieldRake: 0.05, verdeck: 0 },
             gestuft: { rad: "speiche", radFrei: true, antrieb: "motor", topo: "motorwagen" },
-            // der frühe Motor: 0,15 der Leistung von heute je Tonne, das aufrechte Blech (cw 0,8), Vollgummi (0,02)
+            // der frühe Motor: 0,15 der Leistung von heute, das aufrechte Blech (cw 0,8), Vollgummi (0,02)
             antrieb: { leistung: 0.15, cw: 0.8, reibung: 0.02 },
             gestalt: ["kuehler", "haube", "kotfluegel", "trittbrett", "scheinwerfer", "windschutz", "lenkrad", "rahmen"],
             stoffe: { rimM: "holz", rimD: "messing" },
@@ -4828,7 +4831,7 @@
             koerper: "keramik",
             s: { radstand: 3.0, spur: 1.66, ueberhangV: 0.62, ueberhangH: 1.2, taille: 0, radR: 0.35, fahrhoehe: 0.12, guertel: 0.8, dach: 1.22, kabineMitte: 0.35, kabineLaenge: 1.9, tumblehome: 0.2, windshieldRake: 0.9 },
             gestuft: { rad: "aero", radInnen: 0.08, antrieb: "leise", topo: "kanzel" },
-            // der leise Antrieb: anderthalbfache Leistung je Tonne, die Kanzel (cw 0,2), der Leichtlauf-Reifen (0,009)
+            // der leise Antrieb: anderthalbfache Leistung, die Kanzel (cw 0,2), der Leichtlauf-Reifen (0,009)
             antrieb: { leistung: 1.5, cw: 0.2, reibung: 0.009 },
             gestalt: ["monocoque", "kanzel", "lichtKante", "radVerkleidung"],
         },

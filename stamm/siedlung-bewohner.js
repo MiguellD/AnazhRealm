@@ -1139,7 +1139,11 @@ class AnazhRealm_siedlung_bewohner {
         b.beinMass = this._bewohnerBeinMass(G, b);
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
-        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        // SEIN KÖNNEN (koerper KOENNEN_GESETZ): das Talent seines Genoms trägt sein Tempo — die 100-m-Zeit von 100 Bewohnern
+        // streut 12 % statt der 1,65 % der Beinlänge allein (mensch.sport.koennen)
+        b.koennen = { talent: b.genom.talent };
+        b.tempo =
+            globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang * b.genom.talent;
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort

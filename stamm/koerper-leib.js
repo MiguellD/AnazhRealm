@@ -70,6 +70,10 @@ class AnazhRealm_koerper_leib {
             gen[a.achse] = core.bauWurf(
                 Array.from({ length: core.BAU_GESETZ.wurf }, (_, i) => g.axis(i + ":" + a.achse))
             );
+        // DAS TALENT (koerper KOENNEN_GESETZ): sein Können-Faktor aus eigenen Strömen — das Tempo seines Gangs liest ihn
+        // (`_bewohnerGeburt`)
+        if (typeof core.koennenWurf !== "function") return AnazhRealm._kernPflichtBruch("koerper:koennenWurf");
+        gen.talent = core.koennenWurf(Array.from({ length: core.BAU_GESETZ.wurf }, (_, i) => g.axis(i + ":talent")));
         return gen;
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die

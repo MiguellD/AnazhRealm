@@ -1648,6 +1648,16 @@
         for (var i = 0; i < n; i++) s += stroeme[i];
         return Math.max(-BAU_GESETZ.spanne, Math.min(BAU_GESETZ.spanne, (s - n / 2) * Math.sqrt(12 / n)));
     }
+    // DAS KÖNNEN (mensch.sport.koennen, rein additiv): EIN Gesetz des Talents für Lauf, Handwerk, Tanz — ein Faktor auf dem, was
+    // der Leib allein trüge, log-normal um 1 mit `sigma` (der Wurf eines Stroms des Genoms wie eine Achse des Baus, `bauWurf`,
+    // in derselben Spanne). σ 0,12: die Streuung des Geh- und Lauf-Tempos Erwachsener gleichen Leibs liegt bei 10–20 % des
+    // Mittels (Bohannon & Andrews 2011, Geh-Tempo je Altersklasse; 100-m-Zeiten nicht trainierter Erwachsener). Bis hier trug
+    // jeder Bewohner das Tempo seiner Beinlänge allein: die 100-m-Zeit von 100 Bewohnern streute 1,65 %. Leser: der Roller der
+    // Welt (`_rollHumanoidGenome` → `talent`), das Tempo des Gangs (`_bewohnerGeburt`).
+    var KOENNEN_GESETZ = Object.freeze({ sigma: 0.12 });
+    function koennenWurf(stroeme) {
+        return Math.exp(KOENNEN_GESETZ.sigma * bauWurf(stroeme));
+    }
 
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
     // additiv): die Achsen, auf denen sich ein Mensch der Menge vom anderen unterscheidet, je Achse ihre Knoten. Der Ofen gießt je
@@ -9654,6 +9664,8 @@
         KETTE_GELENKE: KETTE_GELENKE,
         leibBau: leibBau,
         bauWurf: bauWurf,
+        KOENNEN_GESETZ: KOENNEN_GESETZ,
+        koennenWurf: koennenWurf,
         leibBauRuhe: leibBauRuhe,
         leibBauAuf: leibBauAuf,
         leibBauArme: leibBauArme,
