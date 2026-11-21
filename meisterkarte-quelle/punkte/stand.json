@@ -1,5 +1,5 @@
 {
- "kopf": "1a90e9f9",
+ "kopf": "44446d65",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3378,7 +3378,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 21/21, die alten 0.917 · Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +31) — zuletzt an f68dbf09: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +31) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3552,7 +3552,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +176)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3588,7 +3588,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +176)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3598,7 +3598,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +176)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -17618,7 +17618,7 @@
   },
   "karte2.mensch.kopplung.antwort": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.kopplung.antwort#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.kopplung.antwort#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.antwort#1",
@@ -17637,7 +17637,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "ungemessen": true,
      "beide": true
     },
@@ -26443,7 +26443,7 @@
   },
   "karte2.mensch.zeit.kausal": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.mensch.zeit.kausal#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.zeit.kausal#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#3 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#4 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#5 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#6 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
+   "beleg": "Maschine: gehalten: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.mensch.zeit.kausal#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.zeit.kausal#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#3 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#4 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#5 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) · karte2.mensch.zeit.kausal#6 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.mensch.zeit.kausal#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.kausal#1",
@@ -26462,7 +26462,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "ungemessen": true,
      "beide": true
     },
@@ -38407,8 +38407,8 @@
   ],
   "ohne": 2606
  },
- "kopfVoll": "1a90e9f978d2303402d2fc35339a0b941fec6d93",
- "zeit": "2026-11-21T10:45:31.170Z",
+ "kopfVoll": "44446d65797ab71bb77976f2583f096bc69949e9",
+ "zeit": "2026-11-21T10:53:06.089Z",
  "vorher": "1a90e9f9",
  "bilanz": {
   "gewinn": [],
