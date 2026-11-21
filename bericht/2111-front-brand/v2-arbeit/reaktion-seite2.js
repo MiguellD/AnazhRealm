@@ -52,10 +52,15 @@ const nur = (wahl, fn) => {
         st.brandFeld.delete(x + "," + z);
         return null;
     };
+    // die Probe schreitet ihre eigene Uhr (je Herd 16 s): die Stunde, die die nahen Regionen danach nachholen, steht dem Entfachen
+    // nicht voran (`_feldFolgeSteht`, wie gate:stand-takt) — sonst tritt der Akt des nächsten Herds in die Reihe der Folge und
+    // fängt erst, wenn die Welt ihre Takte nachgeholt hat (gemessen: Herd 2 und 3 mit 0 brennenden Zellen)
+    r._feldFolgeSteht = () => true;
     try {
         return fn();
     } finally {
         delete r._brandZuenden;
+        delete r._feldFolgeSteht;
         leer();
     }
 };
@@ -98,6 +103,7 @@ const fahne = (wahl) =>
     nur(wahl, () => {
         r._brandBett = null;
         for (const [x, z] of wahl) r._brandEntfachen((x + 0.5) * cs, (z + 0.5) * cs);
+        const gefangen = wahl.filter(([x, z]) => ((q) => q && q.t0 !== null)(st.brandFeld.get(x + "," + z))).length;
         for (let i = 0; i < 10; i++) takt(B.schrittS);
         const T = st.brandRauch.teilchen;
         const schuld = () => [...st.brandFeld.values()].reduce((s, q) => s + (q.rauchKg || 0), 0) * (1 - S_T);
@@ -114,10 +120,12 @@ const fahne = (wahl) =>
         const haelt = schuld() - h1;
         const verzehrt = Z.reduce((s, q) => s + verzehrtKg(q, t1, st.spielZeit), 0);
         const masse = geboren.reduce((s, g) => s + g.m, 0) + haelt;
-        return { zellen: Z.length, ballen: geboren.length, holz: verzehrt, strom: verzehrt * (1 - S_T), masse, haelt, optisch: geboren.reduce((s, g) => s + g.o, 0) };
+        return { soll: wahl.length, gefangen, zellen: Z.length, ballen: geboren.length, holz: verzehrt, strom: verzehrt * (1 - S_T), masse, haelt, optisch: geboren.reduce((s, g) => s + g.o, 0) };
     });
 if (bette.length < 9) return { fehler: "um den Herd tragen nur " + bette.length + " Zellen ein Bett (verlangt 9 für die drei Herde)" };
 const H = [1, 3, 9].map((n) => fahne(bette.slice(0, n)));
+const lahm = H.find((h) => h.gefangen < h.soll);
+if (lahm) return { fehler: "der Herd aus " + lahm.soll + " Zellen fing nur in " + lahm.gefangen + " (jede trägt ein Bett: `_brandStoff`)" };
 const F = H[0];
 const rauch = Number.isFinite(F.masse) && F.strom > 0 ? holz * (1 - S_T) * (F.masse / F.strom) : null;
 // PROPORTIONAL: optische Fläche je kg verzehrtes Holz, je Herd — die größte Abweichung vom Mittel; die Folge nach Holz = die nach Fläche
