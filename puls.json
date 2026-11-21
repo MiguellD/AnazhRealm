@@ -1,0 +1,29 @@
+{
+ "v": 1,
+ "geraet": "radeon",
+ "t": 1795272144,
+ "welten": [
+  "4436",
+  "4611",
+  "4931"
+ ],
+ "frei": false,
+ "halter": {
+  "wer": "ci-runner 44913880308/1 echt",
+  "art": "CI",
+  "pid": null,
+  "seit": 1795271309,
+  "lebt": true,
+  "cpu": 13.3,
+  "n": 4,
+  "regt": 1795271944
+ },
+ "warten": 5,
+ "wartende": [
+  "heap-register-kopf",
+  "stern-sicht-main",
+  "stufe-auge-vorher",
+  "punkte-radeon-sitzung",
+  "punkte-radeon-sitzung"
+ ]
+}
