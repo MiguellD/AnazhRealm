@@ -1374,14 +1374,17 @@ async function lebenBuehnen() {
                 for (const q of Object.values(b.orte)) {
                     const t = q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05);
                     if (!t) continue;
-                    const [v, p] = [vor.get(t), q.ur || q];
+                    // (der Ort, an dem er steht und zu dem man geht — nach dem Tag auch der gerückte; die Liste neu gestellt steht am
+                    // Ursprung. Bis hier richtete die Linse den verlassenen Ursprung: an der Stadt dorf 7 30 rückten nach den Proben
+                    // davor zwei Stände an haus#134516 fort, weil eine Hülle ihren Ursprung vom Netz schnitt — die Linse nannte den Ursprung)
+                    const [v, p] = [vor.get(t), q];
                     if (!an.has(t)) an.set(t, amNetz(v));
                     const [a, e] = [an.get(t), amNetz(p)];
                     if (a < 0 || e < 0) continue; // ohne Anschluss: die Probe der Wege nennt ihn (`kein Weg`)
                     N++;
                     if (!LW.has(a)) LW.set(a, laengen(a));
                     const [weg, luft] = [ab(v, K[a]) + LW.get(a)[e] + ab(p, K[e]), ab(v, p)];
-                    if (weg > JENSEITS.umweg * luft + JENSEITS.nahtM) aus.push(`${wer(b)} an ${t.k}: ${q3(luft)} m Luft, ${Math.round(weg)} m über das Netz`); // prettier-ignore
+                    if (weg > JENSEITS.umweg * luft + JENSEITS.nahtM) aus.push(`${wer(b)} an ${t.k}: ${q3(luft)} m Luft, ${Math.round(weg)} m über das Netz, die Tür am Netz bei der Geburt: ${q.tuerAm ? "Knoten " + q.tuerAm.i : q.tuerAm === null ? "keiner" : "-"}${q.ur && (q.x !== q.ur.x || q.z !== q.ur.z) ? ", gerückt" : ""}`); // prettier-ignore
                 }
             return { N, n: aus.length, erste: aus.slice(0, 3) };
         };
