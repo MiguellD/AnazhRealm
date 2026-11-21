@@ -942,6 +942,18 @@ function messeMenge(eingriff, W = mengeWelt(eingriff)) {
 const MENGE_GLEICH_SOLL = 1;
 const urteileMenge = (m) => (m.gleich > MENGE_GLEICH_SOLL ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar}), Soll ≤ ${MENGE_GLEICH_SOLL}`] : []); // prettier-ignore
 
+// DAS KÖNNEN (mensch.sport.koennen#1, koerper KOENNEN_GESETZ; front-mensch 21.11.): die 100-m-Zeit (100 m ÷ das Tempo seines Gangs,
+// `_bewohnerTempo` — der EINE Ort, den die Geburt liest) jedes Bewohners der Menge bei derselben Beinlänge: ihr Variationskoeffizient
+// liegt im Band des Gesetzes (`streuung`, %). Befund 21.11.: 1,65 % an 100 Bewohnern der Stadt — das Tempo las die Beinlänge allein.
+function messeKoennen(eingriff, W = mengeWelt(eingriff)) {
+    const t = [];
+    for (const { S } of W.siedlungen) for (const b of S.liste) t.push(100 / W.r._bewohnerTempo(1, b));
+    const m = t.reduce((s, x) => s + x, 0) / t.length;
+    const sd = Math.sqrt(t.reduce((s, x) => s + (x - m) * (x - m), 0) / (t.length - 1));
+    return { n: t.length, cv: (100 * sd) / m, band: W.ctx.__koerperCore.KOENNEN_GESETZ.streuung };
+}
+const urteileKoennen = (k) => (k.cv >= k.band[0] && k.cv <= k.band[1] ? [] : [`koennen.streuung VK der 100-m-Zeit ${k.cv.toFixed(2)} % ∉ ${k.band.join("–")} über ${k.n} Bewohner (das Tempo liest kein Talent: stamm/siedlung-bewohner.js _bewohnerTempo)`]); // prettier-ignore
+
 // DER BAU (w28-leib-genom, koerper BAU_GESETZ; die Bänder BAU_SOLL): das Skelett jedes Bewohners ist sein eigenes — gemessen am
 // GELESENEN, mit Vorzeichen. (1) DIE STREUUNG IN DER MENGE: je Bewohner sein gezeichneter Leib der Menge (die Vorlage der Stufe 2 an
 // seinem Punkt, `_leibRaumLeib`: was der Satz zeichnet), an seinen Ecken je nach dem Gelenk ihres Gewichts — bein = die Oberkante
@@ -1151,7 +1163,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "handMenge" ? urteileHandMenge(messeHandMenge(sb, verzerre)) : kopf === "flankeMenge" ? urteileFlankeMenge(messeFlankeMenge(sb, verzerre)) : kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "koennen" ? urteileKoennen(messeKoennen(verzerre)) : kopf === "handMenge" ? urteileHandMenge(messeHandMenge(sb, verzerre)) : kopf === "flankeMenge" ? urteileFlankeMenge(messeFlankeMenge(sb, verzerre)) : kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -1208,6 +1220,8 @@ if (SELBSTTEST) {
     // gehen auseinander) · (BA4) die Knochen heben das Becken nicht (der Rumpf des nahen Leibs bleibt, die Beine wachsen in den Boden)
     // · (BA5) die Arme hängen in der Ruhe der Gestalt (Ellbogen und Hand stehen nicht, wo der Guss seines Baus sie hängt)
     const bauPunkt = (f) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); const n = ctx.__koerperCore.BAU_GESETZ.achsen.length; S.liste.forEach((b) => (b.raumPunkt = b.raumPunkt.map((x, i) => (i >= b.raumPunkt.length - n ? f(x) : x)))); }); // prettier-ignore
+    // DAS KÖNNEN: (KO1) das Tempo ohne Talent (die Beinlänge allein, der Stand vor front-mensch)
+    pruefe("KO1 das Tempo ohne Talent (die Beinlänge allein) wird erkannt", (A, ctx) => (A.prototype._bewohnerTempo = (beinL) => ctx.__tetrapodaCore.tempoEinheit(beinL) * ctx.__koerperCore.TAGES_GESETZ.gang), /^koennen.streuung .*_bewohnerTempo/, "koennen"); // prettier-ignore
     pruefe("BA1 alle lesen denselben Bau (die Menge im Kanon des Skeletts) wird erkannt", bauPunkt(() => 1), /^bau\.streuung bein .*denselben Bau/, "bau"); // prettier-ignore
     pruefe("BA2 das verkehrte Vorzeichen (lange Beine werden in der Menge kurz) wird erkannt", bauPunkt((x) => 2 - x), /^bau\.vorzeichen bein /, "bau"); // prettier-ignore
     pruefe("BA3 die Knochen des nahen Leibs im Kanon (der Bau erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauAuf = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
@@ -1414,6 +1428,8 @@ zeige(mmg);
 const mW = mengeWelt();
 const mm = messeMenge(null, mW);
 const mb = messeBau(null, 0, mW);
+const mko = messeKoennen(null, mW);
+console.log(`  koennen.streuung (VK % der 100-m-Zeit über ${mko.n} Bewohner, Band ${mko.band.join("–")}): ${mko.cv.toFixed(2)}`);
 console.log(`  bau.streuung (VK % über ${mW.siedlungen.reduce((n, x) => n + x.S.liste.length, 0)} Leiber der Menge): ${Object.entries(mb.vk).map(([k, x]) => `${k} ${x.toFixed(2)}`).join(" · ")} | vorzeichen r: ${Object.entries(mb.r).map(([k, x]) => `${k} ${x.toFixed(2)}`).join(" · ")}`); // prettier-ignore
 console.log(`  bau.leser (${mb.leser.wer}): ${Object.entries(mb.leser).filter(([, x]) => typeof x === "number").map(([k, x]) => `${k} ${x < 1e-3 ? x.toExponential(1) : x.toFixed(4)}`).join(" · ")}`); // prettier-ignore
 const mr = messeRuhe(so);
@@ -1446,7 +1462,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mmg), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileHandMenge(mhm), urteileFlankeMenge(mfm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mmg), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileKoennen(mko), urteileHandMenge(mhm), urteileFlankeMenge(mfm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),

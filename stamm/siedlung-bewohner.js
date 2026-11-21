@@ -1139,11 +1139,7 @@ class AnazhRealm_siedlung_bewohner {
         b.beinMass = this._bewohnerBeinMass(G, b);
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
-        // SEIN KÖNNEN (koerper KOENNEN_GESETZ): das Talent seines Genoms trägt sein Tempo — die 100-m-Zeit von 100 Bewohnern
-        // streut 12 % statt der 1,65 % der Beinlänge allein (mensch.sport.koennen)
-        b.koennen = { talent: b.genom.talent };
-        b.tempo =
-            globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang * b.genom.talent;
+        b.tempo = this._bewohnerTempo(b.beinL, b);
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
@@ -1152,6 +1148,17 @@ class AnazhRealm_siedlung_bewohner {
             for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
                 this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
         }
+    }
+
+    // DAS TEMPO SEINES GANGS (mensch.K2, mensch.sport.koennen — der EINE Ort): die Tempo-Einheit des Steuer-Gesetzes an seiner
+    // Beinlänge `beinL` × `gang` des Tags × SEIN KÖNNEN (koerper KOENNEN_GESETZ: das Talent seines Genoms, `b.koennen`). Bis
+    // front-mensch trug jeder das Tempo seiner Beinlänge allein: die 100-m-Zeit von 100 Bewohnern streute 1,65 % (Soll 10–20 %).
+    // Leser: die Geburt, gate:mensch-anatomie KÖNNEN.
+    _bewohnerTempo(beinL, b) {
+        b.koennen = { talent: b.genom.talent };
+        return (
+            globalThis.__tetrapodaCore.tempoEinheit(beinL) * window.__koerperCore.TAGES_GESETZ.gang * b.koennen.talent
+        );
     }
 
     // DER BEWOHNER-TAKT (Lehre 13: im Frame-Takt der Wesen, nie am Render-Signal): je gemeldeter Siedlung nahe dem Spieler

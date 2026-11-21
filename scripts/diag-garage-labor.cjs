@@ -64,10 +64,16 @@ function laborVerdict(m) {
 // wirkt (min ↔ max ändert den Bau — Σ |Koordinate|, die Flanke ist symmetrisch — oder das Fahr-Gesetz). Befund 04.11.: Schlitten
 // 79 km/h > GT heute 54, alle 40–80, die Farbe nur heute änderbar, Taille und Tumblehome in Kutsche, Motorwagen, Zukunft tot.
 // Ordnung je Gattung: Schlitten und Ochsenkarren < Kutsche < Motorwagen < heute < Zukunft; die Bänder in km/h.
+// DIE MASSE (mensch.fahrzeug.form#1, front-mensch 21.11.): je Gattung heute derselbe Bauplan in der schweren Form (Radstand 3,4 ·
+// Spur 1,9 · Dach 1,75 — die Form der Station) fährt langsamer als die eigene: der Motor trägt kW, die Masse der Form teilt sie
+// (carPhys). Befund 21.11.: schwer ÷ leicht 1,0009 nach 6 s Vollgas, GT schwer 235,6 > eigen 228,4 km/h (Leistung je Tonne
+// fest); nach dem Schnitt schwer 184,5 < 228,4.
+const MASSE_FORM = { radstand: 3.4, spur: 1.9, dach: 1.75 };
 const ZEIT_ORDNUNG = ["schlitten kutsche", "ochsenkarren kutsche", "kutsche motorwagen", "motorwagen heute", "heute zukunft"];
 const ZEIT_BAND = { ochsenkarren: [5, 12], kutsche: [18, 32], motorwagen: [30, 110], heute: [120, 250] };
 function epocheMessen(VC) {
-    const e = { kmh: {}, farbe: {}, tot: {} };
+    const e = { kmh: {}, farbe: {}, tot: {}, schwer: {} };
+    for (const g in VC.PRESETS) e.schwer[g] = VC.fahrLeistung({ ...VC.presetPatch(g), ...MASSE_FORM }).kmh;
     const spur = (pid, ov, w) => {
         let s = 0;
         VC.buildInstance(pid, 1, 0, ov, w).traverse((o) => {
@@ -96,6 +102,7 @@ function epocheVerdict(e) {
         for (const id in e.farbe) if (!(e.farbe[id][g] > 0.02)) out.push(`farbe ${id} ${g}: Δ ${e.farbe[id][g]}`);
     }
     for (const id in e.tot) for (const r of e.tot[id]) out.push(`regler ${id}: ${r} wirkt nicht`);
+    for (const g in e.schwer) if (!(e.schwer[g] < e.kmh.heute[g])) out.push(`masse ${g}: die schwere Form ${e.schwer[g]} ≥ eigen ${e.kmh.heute[g]} km/h — die Leistung je Masse ist fest (vehicle-core carPhys aLeist)`);
     // jede Gattung ihr Antrieb (H7, bis w12-fahrzeug-decke gate:vehicle-drive A3: GT ≠ Supersport in zwei Skalaren)
     const h = Object.values(e.kmh.heute);
     if (new Set(h).size < h.length) out.push(`gattung heute ${h} km/h`);
@@ -146,6 +153,7 @@ const MUTANTEN = [
     ["vehicle", "            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/, G9],
     ["vehicle", "        if (topo) taperBody(", "        if (false) taperBody(", /^regler kutsche: taille/, G9],
     ["vehicle", "        const pre = PRESETS[id];", "        const pre = PRESETS.gt;", /^gattung/, G9],
+    ["vehicle", "A.eta) / kg; // kW → W/kg", "A.eta) / 1341.36; // kW → W/kg", /^masse/, G9],
     ["gelaende", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/, G11],
     ["vehicle", "const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/, G11],
     ["vehicle", "boden, dt);\n            t += dt;", "boden, dt);\n            z.x += Math.random() * 1e-3;\n            t += dt;", /^wiederholung/, G11],

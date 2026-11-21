@@ -1650,11 +1650,12 @@
     }
     // DAS KÖNNEN (mensch.sport.koennen, rein additiv): EIN Gesetz des Talents für Lauf, Handwerk, Tanz — ein Faktor auf dem, was
     // der Leib allein trüge, log-normal um 1 mit `sigma` (der Wurf eines Stroms des Genoms wie eine Achse des Baus, `bauWurf`,
-    // in derselben Spanne). σ 0,12: die Streuung des Geh- und Lauf-Tempos Erwachsener gleichen Leibs liegt bei 10–20 % des
+    // in derselben Spanne). σ 0,15: die Streuung des Geh- und Lauf-Tempos Erwachsener gleichen Leibs liegt bei 10–20 % des
     // Mittels (Bohannon & Andrews 2011, Geh-Tempo je Altersklasse; 100-m-Zeiten nicht trainierter Erwachsener). Bis hier trug
     // jeder Bewohner das Tempo seiner Beinlänge allein: die 100-m-Zeit von 100 Bewohnern streute 1,65 %. Leser: der Roller der
     // Welt (`_rollHumanoidGenome` → `talent`), das Tempo des Gangs (`_bewohnerGeburt`).
-    var KOENNEN_GESETZ = Object.freeze({ sigma: 0.12 });
+    // `streuung`: das Band (%) des Variationskoeffizienten der 100-m-Zeit einer Menge (die Karte, mensch.sport.koennen#1) — gate:mensch-anatomie KÖNNEN
+    var KOENNEN_GESETZ = Object.freeze({ sigma: 0.15, streuung: Object.freeze([10, 20]) });
     function koennenWurf(stroeme) {
         return Math.exp(KOENNEN_GESETZ.sigma * bauWurf(stroeme));
     }
