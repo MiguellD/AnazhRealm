@@ -254,7 +254,7 @@ class AnazhRealm_koerper_frei {
         const n0 = -gr.b / gr.l;
         const n1 = 1 / gr.l;
         const n2 = -gr.c / gr.l;
-        if (!K.kiste) this._freiRandFuss(K, n0, n1, n2);
+        if (!K.kiste) this._freiRandFuss(K, n0, n1, n2, dt);
         for (let i = 0, j = 0; i < pw.length; i += 3, j += 4) {
             const g = gr.a + gr.b * (pw[i] - gr.x) + gr.c * (pw[i + 2] - gr.z);
             if ((pw[i + 1] - g) * n1 > weg) {
@@ -295,13 +295,24 @@ class AnazhRealm_koerper_frei {
     // des Körpers die Mitte des Rands (0, ±hy, 0) minus r längs der Projektion von n in die Ebene des Rands. Vorher trug das
     // Fass nur seine FREI.rundPunkte Ecken: auf der Seite lag es auf einem Sechzehneck, die Mitte hob und senkte sich um
     // r(1 − cos(π/16)) = 5,8 mm je Kante — es schaukelte in der Mulde seiner Fläche, nach der Landung 3,1 s statt zu rollen
-    // und zu ruhen. Steht die Achse längs n (das Fass auf dem Boden), tragen die Ecken des Rands; der Fuss bleibt, wo er war.
-    _freiRandFuss(K, n0, n1, n2) {
+    // und zu ruhen. Steht die Achse näher an n als an der Fläche (|n in der Rand-Ebene| ≤ FREI.fussLiegt, das Fass auf seinem
+    // Boden), tragen die Ecken des Rands und der Fuss bleibt, wo er war: dort dreht ein Grad Neigung ihn um den halben Rand,
+    // der Anker sprang je Schritt — das stehende Fass im Gras schaukelte ohne Ende (+2,2 W, die Mitte stieg 3,6 cm in 8 s).
+    // DER LAUF DES FUSSES (K.fussLauf, rad/s): wie schnell der tiefste Punkt des Rands über den Rand wandert — der Weg der
+    // Berührung über die Fläche, den der Rollwiderstand walkt (`_freiKoerperPacken`): das liegende Fass rollt (der Lauf ist
+    // seine Drehung um die Achse), das taumelnde rollt auf dem Rand, das kippende dreht um einen festen Punkt (Lauf 0).
+    _freiRandFuss(K, n0, n1, n2, dt) {
         const R = K.R;
         const lx = R[0] * n0 + R[3] * n1 + R[6] * n2;
         const lz = R[2] * n0 + R[5] * n1 + R[8] * n2;
         const q = Math.sqrt(lx * lx + lz * lz);
-        if (!(q > 1e-6)) return;
+        const fr = K.fussRichtung || (K.fussRichtung = [NaN, NaN]);
+        if (q > 1e-3) {
+            const [ux, uz] = [lx / q, lz / q];
+            K.fussLauf = fr[0] === fr[0] && dt > 0 ? Math.abs(Math.atan2(fr[0] * uz - fr[1] * ux, fr[0] * ux + fr[1] * uz)) / dt : 0;
+            [fr[0], fr[1]] = [ux, uz];
+        } else [K.fussLauf, fr[0], fr[1]] = [0, NaN, NaN];
+        if (!(q > AnazhRealm.FREI.fussLiegt)) return;
         const pk = K.pk;
         const pw = K.pw;
         const p = K.p;
@@ -1015,7 +1026,7 @@ class AnazhRealm_koerper_frei {
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
     // am Beginn, Quaternion, Dreh-Matrix (0–24), der Rollwiderstand je Drehung und ob er die Welt berührt (25, 26), die inverse
-    // Masse und die Welt-Trägheit⁻¹ (27–36), die Walze (37), die Luft je Fläche und der Wind (38–42, `_freiLuftPacken`); sein
+    // Masse und die Welt-Trägheit⁻¹ (27–36), die Luft je Fläche und der Wind (38–42, `_freiLuftPacken`); sein
     // Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
     // (`_freiKontakt`, `_freiKontaktBereit`): die Jacobi-Zeilen der Normalen und der zwei Tangenten (je 15), die wirksamen Massen
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
@@ -1039,12 +1050,15 @@ class AnazhRealm_koerper_frei {
             X.set(K.q, x + 12);
             X.set(K.R, x + 16);
             const rr = K.kiste ? Math.min(K.hx, K.hy, K.hz) : K.r;
+            // die Walze walkt nur, soweit ihr Fuss läuft: der Anteil des Laufs an ihrer Drehung (≤ 1; kippt sie um einen festen
+            // Punkt ihres Rands, 0 — vorher hielt die volle Bremse jede Drehung: das Fass stand 0,9° vor dem Kipp-Punkt still)
+            const wm = Math.hypot(K.w[0], K.w[1], K.w[2]);
+            const lauf = K.kiste ? 1 : wm > 1e-9 ? Math.min(1, (K.fussLauf || 0) / wm) : 0;
             const crr = K.grund ? K.grund.roll : 0;
-            X[x + 25] = (crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
+            X[x + 25] = (lauf * crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
             X[x + 26] = 0;
             X[x + 27] = K.invM;
             X.set(K.Iw, x + 28);
-            X[x + 37] = K.kiste ? 0 : 1;
             this._freiLuftPacken(K, X, x, rho);
         }
         return X;
@@ -1204,7 +1218,7 @@ class AnazhRealm_koerper_frei {
     }
 
     // DIE LAGE im Puffer (jeder Teil-Schritt): x += v·h, die Drehung q += ½ ω ⊗ q · h (normiert, die Dreh-Matrix neu), der
-    // Rollwiderstand der Stoffe am Boden (die Walze um ihre Achse); `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
+    // Rollwiderstand der Stoffe am Boden (die Walze, soweit ihr Fuss läuft); `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
     _freiZiehen(X, m, h, g, vor) {
         const KS = AnazhRealm.FREI_KOERPER;
         for (let x = 0; x < m * KS; x += KS) {
@@ -1257,16 +1271,7 @@ class AnazhRealm_koerper_frei {
             X[x + 23] = 2 * (b * c + w * a);
             X[x + 24] = 1 - 2 * (a * a + b * b);
             const wm = Math.sqrt(wx * wx + wy * wy + wz * wz);
-            if (X[x + 26] && wm > 0 && X[x + 37]) {
-                // die Walze rollt um ihre Achse (die Spalte y der Dreh-Matrix): nur diese Drehung walkt die Spur — das Kippen
-                // über den Rand bleibt frei (vorher hielt die Bremse jede Drehung: das Fass stand 0,9° vor dem Kipp-Punkt still)
-                const [a0, a1, a2] = [X[x + 17], X[x + 20], X[x + 23]];
-                const wa = wx * a0 + wy * a1 + wz * a2;
-                const d = Math.sign(wa) * Math.max(0, Math.abs(wa) - X[x + 25] * h) - wa;
-                X[x + 3] += d * a0;
-                X[x + 4] += d * a1;
-                X[x + 5] += d * a2;
-            } else if (X[x + 26] && wm > 0) {
+            if (X[x + 26] && wm > 0) {
                 const f = Math.max(0, wm - X[x + 25] * h) / wm;
                 X[x + 3] *= f;
                 X[x + 4] *= f;
@@ -1412,6 +1417,8 @@ AnazhRealm.FREI = Object.freeze({
     ruheMs: 0.05,
     ruheS: 0.3,
     rundPunkte: 16,
+    // der Fuss je Rand trägt, sobald die Achse weiter als 45° von der Normale des Grunds steht (das Fass liegt eher, als es steht)
+    fussLiegt: Math.SQRT1_2,
     huelleM: 0.5,
     umweltM: 0.3,
     // DIE LUFT AM KÖRPER (same.physik.flug#1): der Widerstand je Fläche der Hülle c_w nach Hoerner (Fluid-Dynamic Drag 1965,
