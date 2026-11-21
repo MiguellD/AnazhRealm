@@ -406,6 +406,17 @@ const BRAND_JE = 64; // je Zelle des Feuers und Schritt: ihr Gang, die Zündung 
 // 64 Teile der Zelle, je Punkt dasselbe Soll wie je Zelle (der EINE Stoff-Leser `_kontaktStoffAt` mit seinen Lese-Stellen;
 // gemessen an der Mess-Wiese 2 Masken in einem Schritt mit 79 Zellen: 10 882 Einheiten, ≈ 61 je Punkt)
 const BRAND_MASKE = BRAND_JE * 64;
+const brandSoll = (Z, k) => BRAND_JE * Z.zellen[k] + BRAND_MASKE * ((Z.masken && Z.masken[k]) || 0);
+// DIE SPANNE AM SOLL (die Zeile der Sim, w28-pop-treue): der Schritt, der seinem Soll am nächsten kommt — sein Anteil am Soll und
+// seine Leser. Die Zahl steht in jedem Lauf, nicht erst im Rot.
+function brandAmSoll(Z) {
+    let best = null;
+    Z.einheiten.forEach((e, k) => {
+        const a = e / brandSoll(Z, k);
+        if (!best || a > best.anteil) best = { schritt: k + 1, anteil: a, einheiten: e, zellen: Z.zellen[k], masken: (Z.masken && Z.masken[k]) || 0, leser: Z.rufe && Z.rufe[k] ? simJe({ je: Z.rufe[k] }) : undefined };
+    });
+    return best && Object.assign(best, { anteil: +best.anteil.toFixed(3) });
+}
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -453,10 +464,10 @@ function simUrteil(b, v) {
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
-        const soll = (k) => BRAND_JE * Z.zellen[k] + BRAND_MASKE * ((Z.masken && Z.masken[k]) || 0);
+        const soll = (k) => brandSoll(Z, k);
         const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > soll(k));
         if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
-        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle${Z.masken && Z.masken[i] ? ` + ${BRAND_MASKE} je gemessene Bett-Maske, hier ${Z.masken[i]}` : ""})`);
+        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle${Z.masken && Z.masken[i] ? ` + ${BRAND_MASKE} je gemessene Bett-Maske, hier ${Z.masken[i]}` : ""})${Z.rufe && Z.rufe[i] ? ` — seine Leser: ${simJe({ je: Z.rufe[i] })}` : ""}`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
@@ -881,6 +892,7 @@ module.exports = {
     TAKTE,
     SIMS,
     standUrteil,
+    brandAmSoll,
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__simLinseAn = () => (${simLinseAn.toString()})(${JSON.stringify(SIMS)}, ${JSON.stringify(AKTE)});` +

@@ -808,7 +808,8 @@ async function kreaturProben(r, T, opts) {
     // Lebenszyklus in der Spiel-Zeit (`tickFaunaLifecycle`, wie im Spiel; der Prüfer von Zug 29 sah dort 14 Risse ohne Jäger):
     // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (ANALOG_NAH_M, das Feld) hat
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
-    // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
+    // sein Tier verlässt den Bestand MIT seinem Tod (gelesen am Tod selbst: `_kreaturFaellt` → `_bestandAus`, im selben Ruf);
+    // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), fehlt ihm weiter — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
     await buehne("jagd", async () => {
         r.setGameMode("pfad");
@@ -827,12 +828,23 @@ async function kreaturProben(r, T, opts) {
         // der Übergang verliert den Riss: der Tod im Nah-Kreis erreicht den Bestand nicht (sein Akt „aus“ fällt aus)
         if (taeter === "riss-verloren")
             decke("_bestandAus", (alt) => (c) => (nah(c) ? void (c.userData._bestand = null) : alt.call(r, c)));
-        const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0, lebend: 0, da: 0 };
+        const R = { nah: 0, mitJaeger: 0, risse: 0, amTod: 0, gefallen: 0, lebend: 0, da: 0 };
         // ein Riss: ein Tod durch Jagd im Nah-Kreis an einem Tier des Bestands (sein Kopf — im Gau für Hirsch und Wolf, Leben C2b)
         const genannt = new Map();
+        // der Bestand am EINEN Leser (`_bestandArt`); ein Kopf, dessen Akt „ein“ noch reist, steht als offene Annahme (`_gauOffen`)
+        const imBestand = ([key, g, id]) => {
+            const B = r._bestandArt(key, g);
+            return !!B && B.tiere.some((t) => t.id === id);
+        };
+        // DER RISS WIRD AM TOD GELESEN (w28-pop-treue): die Lesung nach dem Übergang allein trennt ein stehen gelassenes Tier nicht
+        // vom Gesetz — es nimmt in den 20 s danach selbst Kitze aus dem Bild (35 % der lebenden fehlen dort, main wie Zweig), und
+        // der Täter `riss-verloren` blieb unsichtbar, wann immer es gerade seine traf (6 von 10 seiner Risse fehlten dort ohnehin,
+        // zwei von fünf Läufen blind)
+        const steht = new Set();
         // jeder Tod durch Jagd im Nah-Kreis hat ein Maul am Leib — und der Jäger lebt (VERWAIST, sein Jäger fiel mitten im Riss,
         // zählt als ohne Jäger)
         decke("_creatureCombatDeath", (tod) => (c, quelle) => {
+            let neu = null;
             if (quelle === "jagd" && nah(c)) {
                 R.nah++;
                 R.mitJaeger +=
@@ -844,9 +856,11 @@ async function kreaturProben(r, T, opts) {
                             r._kreaturBissSpalt(j, c) <= r._kreaturBissReich(j)
                     );
                 const t = c.userData._bestand;
-                if (t && !genannt.has(t.id)) (R.risse++, genannt.set(t.id, [r._bestandKey(t.x, t.z), t.g]));
+                if (t && !genannt.has(t.id)) (R.risse++, genannt.set(t.id, (neu = [r._bestandKey(t.x, t.z), t.g, t.id])));
             }
-            return tod.call(r, c, quelle);
+            const o = tod.call(r, c, quelle);
+            if (neu && (imBestand(neu) || !!(r._gauOffen && r._gauOffen.has(neu[2])))) (R.amTod++, steht.add(neu[2]));
+            return o;
         });
         // der Jäger fällt mitten in seinem Riss (28.10.: sein Tier verhungerte im Gesetz, und er fiel sofort, statt erst nach dem
         // Biss — `_faelltNach`; 9 von 10 Opfern ohne Maul). Den Bruch stellt der Täter SICHER her: jeder Jäger, dessen Maul das
@@ -957,13 +971,10 @@ async function kreaturProben(r, T, opts) {
             const L = [...[...genannt].map(([id, [key, g]]) => [key, g, id]), ...kitze.map(wo)];
             uhrVor(10);
             await gauLies([...new Set(L.map((q) => q[0]))]);
-            const imBestand = ([key, g, id]) => {
-                const B = r._bestandArt(key, g);
-                return !!B && B.tiere.some((t) => t.id === id);
-            };
-            for (const [id, [key, g]] of genannt) R.gefallen += !imBestand([key, g, id]);
+            for (const [id, [key, g]] of genannt) R.gefallen += !steht.has(id) && !imBestand([key, g, id]);
             for (const t of kitze.filter((q) => !genannt.has(q.id))) (R.lebend++, (R.da += imBestand(wo(t))));
             genannt.clear();
+            steht.clear();
             leer(1);
         }
         return {
@@ -4067,7 +4078,7 @@ function urteil(name, z) {
         );
         soll(
             R.risse >= 1 && R.gefallen === R.risse,
-            `der Riss geht im Übergang verloren: ${R.risse - R.gefallen} von ${R.risse} Rissen im Nah-Kreis stehen nach ihm noch im Bestand ihrer Art`
+            `der Riss geht im Übergang verloren: ${R.risse - R.gefallen} von ${R.risse} Rissen im Nah-Kreis — ${R.amTod} standen nach ihrem Tod noch im Bestand ihrer Art (das Tier verlässt ihn mit seinem Leib: _bestandAus), ${R.risse - R.gefallen - R.amTod} erst nach dem Übergang wieder`
         );
         soll(
             R.da >= 1,

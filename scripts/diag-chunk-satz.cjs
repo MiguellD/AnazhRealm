@@ -1619,7 +1619,7 @@ const { errs, check } = pruefer();
                 for (let z = 1; z < S; z += 2)
                     for (let x = 1; x < S; x += 2) {
                         const v = K.surfMap ? r._bodenKarteBilinear(K, K.cx, K.cz, K.cx * S + x, K.cz * S + z) : null;
-                        o.push(v ? v.y : NaN);
+                        o.push(v !== null ? v : NaN);
                     }
                 return o;
             };
