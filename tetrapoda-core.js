@@ -1712,7 +1712,10 @@
     }
     // drang = {Art: Drang ≥ 0}, angebote = [{x, z, bietet}], (x, z) = von wo der Weg zaehlt. opt: halbM (sonst ZIEL_GESETZ),
     // same + wort (die Wahl des Samens), bietet(a, i) (das Angebot aus der Sicht dessen, der waehlt — sonst a.bietet),
-    // ohne(a, i) (nicht zu haben). Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
+    // ohne(a, i) (nicht zu haben), weg(a, i) (der Weg, den der Wählende zu ihm GEHT — wer einen Plan hat, misst die Nähe am Netz;
+    // Infinity: kein Weg; ohne: die Luftlinie, das Tier der Wildnis). Bis pendler-anschluss wog jeder die Luftlinie: an stadt-voll
+    // nahm der Wohnhaus-Mensch auf der Terrasse das Werk 14 m unter sich am Fuß der Klippe, sein Gang ging 648 m um den Ring.
+    // Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
     function zielWahl(drang, angebote, x, z, opt) {
         var o = opt || {};
         var halb = o.halbM > 0 ? o.halbM : ZIEL_GESETZ.halbM;
@@ -1734,7 +1737,7 @@
                 }
             }
             if (!(n > 0)) continue;
-            n *= zielNaehe(Math.hypot(a.x - x, a.z - z), halb);
+            n *= zielNaehe(o.weg ? o.weg(a, i) : Math.hypot(a.x - x, a.z - z), halb);
             if (o.same != null) n /= -Math.log(_zielZahl(o.same, o.wort || "", i));
             if (n > bestN) {
                 best = i;
@@ -1745,9 +1748,10 @@
         return best < 0 ? null : { i: best, art: bestArt, nutzen: bestN };
     }
     // n = die Zahl der Knoten, kanten[i] = [j, Laenge, j, Laenge, …], a = der Anfang, frei(i, j) = die Kante traegt (ohne: jede).
-    // Liefert vor (Int32Array): je Knoten sein Vorgaenger auf dem kuerzesten Weg von a, −1 = unerreicht (und a selbst).
-    function wegBaum(n, kanten, a, frei) {
-        var dist = new Float64Array(n).fill(Infinity);
+    // Liefert vor (Int32Array): je Knoten sein Vorgaenger auf dem kuerzesten Weg von a, −1 = unerreicht (und a selbst);
+    // `laengen` (Float64Array der Laenge n, sonst keine): traegt je Knoten die Laenge seines Wegs (Infinity = unerreicht).
+    function wegBaum(n, kanten, a, frei, laengen) {
+        var dist = (laengen || new Float64Array(n)).fill(Infinity);
         var vor = new Int32Array(n).fill(-1);
         var hd = [0],
             hk = [a];
@@ -1803,6 +1807,13 @@
             }
         }
         return vor;
+    }
+    // DIE LAENGEN DER WEGE von a (derselbe Baum, `wegBaum`): je Knoten die Laenge seines kuerzesten Wegs, Infinity = unerreicht.
+    // Leser: die Naehe einer Wahl am Netz (`zielWahl` `weg`; der Wirt der Bewohner, `_bewohnerListe`).
+    function wegLaengen(n, kanten, a, frei) {
+        var L = new Float64Array(n);
+        wegBaum(n, kanten, a, frei, L);
+        return L;
     }
     // DIE TEILE EINES GRAPHEN (kein Ziel ohne Plan: wer waehlt, fragt, ob Ziel und Anfang am selben Teil haengen): je Knoten
     // die Nummer seines Teils (Int32Array, ab 0 in der Reihe der Knoten), `frei(i, j)` wie wegBaum.
@@ -5266,6 +5277,7 @@
         zielNaehe: zielNaehe,
         zielWahl: zielWahl,
         wegBaum: wegBaum,
+        wegLaengen: wegLaengen,
         wegTeile: wegTeile,
         wegKette: wegKette,
         zielWunsch: zielWunsch,
