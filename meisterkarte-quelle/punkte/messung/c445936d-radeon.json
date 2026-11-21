@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "radeon",
- "zeit": "2026-11-21T20:02:22.184Z",
+ "zeit": "2026-11-21T21:19:14.466Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.sinn.ziele#1": {
@@ -548,6 +548,103 @@
    "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 40016 nach 151.4 min · letzte Zeile: SITZUNG die Welt vor karte2.same.physik.tragen#1: 17.1 s (652 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
    "ungemessen": true,
    "zeit": "2026-11-21T20:04:40.614Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 20,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 20,006 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 104.5 s · Exit 0",
+   "exit": 0,
+   "minuten": 1.77,
+   "grund": "der Deckel der Leiter riss nach 20,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 20,006 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 104.5 s · Exit 0",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 105.7,
+   "fremd": {
+    "s": 110.4,
+    "takte": 42,
+    "fremdS": 166.84,
+    "kerne": 1.512,
+    "fensterKerne": 1.981,
+    "namen": [
+     [
+      "bash.exe landung-dienst.sh --selbsttest",
+      25.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh punkte-radeon-sitzung C:\\Program Files\\nodejs\\node.exe -e co",
+      18.19
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… EXIT= h3/schleife.log dev/null && gre",
+      15.42
+     ]
+    ],
+    "dienerS": 103.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      59.27
+     ],
+     [
+      "System",
+      34.52
+     ]
+    ],
+    "geraetS": 67.53,
+    "geraet": [
+     [
+      "svchost.exe",
+      38.25
+     ],
+     [
+      "MsMpEng.exe",
+      25.38
+     ],
+     [
+      "SearchIndexer.exe",
+      3.11
+     ]
+    ],
+    "eigenS": 294.59,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T21:19:14.466Z",
+   "abdruck": "f9291524cd3b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "exit": 3221226505,
+   "minuten": 39.83,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "ungemessen": true,
+   "zeit": "2026-11-21T21:23:20.004Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  },
+  "karte2.erleben.kopplung.ein-ereignis#1": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "exit": 3221226505,
+   "minuten": 39.83,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "ungemessen": true,
+   "zeit": "2026-11-21T21:23:20.005Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  },
+  "karte2.erleben.kopplung.epoche-ganz#1": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "exit": 3221226505,
+   "minuten": 39.83,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "ungemessen": true,
+   "zeit": "2026-11-21T21:23:20.005Z",
    "bahn": "tod",
    "host": "MiguellD"
   }

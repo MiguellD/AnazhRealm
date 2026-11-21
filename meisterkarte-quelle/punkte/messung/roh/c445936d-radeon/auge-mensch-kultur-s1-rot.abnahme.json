@@ -1,0 +1,133 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.361",
+  "sha": "1f0a8e8f1da9bbb60b3684ad8f9a271bfb04026a"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 30,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": null,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": null,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   null,
+   null
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": null,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   null,
+   null,
+   null
+  ],
+  "blick": [
+   null,
+   null,
+   null
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 0,
+  "sigma": 0,
+  "schwarz": 1,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [bild.mittel 0 < 6 · bild.sigma 0 < 4 · bild.schwarz 1 > 0.6 · Ziel Blickziel nicht im Bild (ndc [null,null]) · kein bodenSatz im Bild: 0.0 % < 15.0 % · kein portal-membran im Bild: 0.0 % < 0.3 %] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei NaN m · Luma 0 σ 0 schwarz 100.0 % weiß 0.0 % · Stand 18.546.361 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 0.0 % (≥ 15.0 %), portal-membran 0.0 % (≥ 0.3 %)",
+ "rot": [
+  {
+   "feld": "bild.mittel",
+   "grund": "bild.mittel 0 < 6"
+  },
+  {
+   "feld": "bild.sigma",
+   "grund": "bild.sigma 0 < 4"
+  },
+  {
+   "feld": "bild.schwarz",
+   "grund": "bild.schwarz 1 > 0.6"
+  },
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [null,null])"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bodenSatz",
+    "grund": "kein bodenSatz im Bild: 0.0 % < 15.0 %"
+   },
+   {
+    "schluessel": "imBild.portal-membran",
+    "grund": "kein portal-membran im Bild: 0.0 % < 0.3 %"
+   }
+  ],
+  "zeile": "Inhalt bodenSatz 0.0 % (≥ 15.0 %), portal-membran 0.0 % (≥ 0.3 %)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^portal-membran([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 592,
+   "wechsel": 0
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {},
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-pm-f1\\meisterkarte-quelle\\punkte\\messung\\roh\\c445936d-radeon\\auge-mensch-kultur-s1-rot.maske.png"
+ }
+}

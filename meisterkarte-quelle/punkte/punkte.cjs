@@ -2251,13 +2251,26 @@ function baumAmSha(repo, geraet, sha) {
         git(["checkout", "-q", "--detach", "--force", sha], baum);
         git(["clean", "-fdq", "-e", "node_modules"], baum);
     }
-    const ist = git(["rev-parse", "HEAD"], baum);
+    const ist = baumKopf(baum);
     if (ist !== sha) throw new Error("Spiel-Baum steht auf " + ist + " statt " + sha);
     const nm = path.join(baum, "node_modules");
     const ziel = path.join(repo, "node_modules");
     if (!fs.existsSync(ziel)) throw new Error("node_modules fehlt im Haupt-Klon " + ziel);
     if (!fs.existsSync(nm)) fs.symlinkSync(ziel, nm, "junction");
     return baum;
+}
+// DER KOPF DES SPIEL-BAUMS AM URTEIL (pm-front-f1, 21.11., Koordinator Radeon: der gemeinsame Spiel-Baum punkte-radeon wurde von zwei
+// Läufen gegeneinander umgestellt — ein Urteil, das an einem fremden Kopf entstand, stand unter dem SHA dieses Laufs). baumAmSha prüft
+// den Kopf nur beim Start; VOR JEDEM EINTRAG liest der Lauf den Kopf des Baums, in dem seine Gruppe fuhr (run → melde): weicht er vom
+// --sha ab oder ist er unlesbar, ist jedes Ergebnis der Gruppe UNGEMESSEN beim Grund — „— offen, UNGEMESSEN“ (apparatOffen: die Runde
+// misst nach), nie GRÜN, nie ROT. Der Selbsttest (1t) stellt einen echten git-Baum um.
+function baumKopf(baum) {
+    try { return git(["rev-parse", "HEAD"], baum); } catch (_e) { return null; }
+}
+function amBaumKopf(es, ist, sha) {
+    if (ist === sha) return es;
+    const grund = "der Spiel-Baum stand am Urteil auf " + (ist ? ist.slice(0, 8) : "unlesbar") + " statt " + String(sha).slice(0, 8) + " (ein fremder Lauf stellte ihn um) — offen, UNGEMESSEN";
+    return es.map((e) => ({ ...e, gruen: false, ungemessen: true, grund, zahl: grund + " · die Probe sah: " + String((e && e.zahl) || "").slice(0, 240) }));
 }
 
 // DER HALTER EINER SPERRE IST pid + START, NIE DIE pid ALLEIN (11.11., Koordinator): das System vergibt eine freie Nummer neu. Die
@@ -4664,6 +4677,7 @@ async function run(opt) {
     fs.mkdirSync(rohDir, { recursive: true });
     // je Gruppe die Einträge ihrer Stationen (der Zwilling erbt Lauf und Roh-Ausgabe der ersten)
     const melde = (g, es, aus, wie) => {
+        es = amBaumKopf(es, baumKopf(wie.baum), sha); // DER KOPF DES SPIEL-BAUMS AM URTEIL
         const ids = g.map(schluessel);
         const zeit = wie.zeit;
         g.forEach((st, i) => {
@@ -4689,7 +4703,7 @@ async function run(opt) {
         // DER TÄTER-ORT gilt für den ganzen Lauf: jede Welle und jede Fortsetzung lässt ihn stehen (fahreSitzung)
         const taeterOrte = new Map();
         const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt, taeterOrte },
-            (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
+            (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session", baum }));
         delete m.fortsetzung;
         for (const [i, welle] of w.wellen.entries()) {
             if (w.wellen.length > 1) console.log("  WELLE " + (i + 1) + "/" + w.wellen.length + " " + w.namen[i] + ": " + welle.length + " Läufe — eine Sitzung");
@@ -4713,7 +4727,7 @@ async function run(opt) {
         const zeit = new Date().toISOString();
         akteLaeuft("bahn-" + b, g.map(schluessel));
         const es = await fahreGruppe(g, ctx);
-        melde(g, es, ctx, { zeit, port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen });
+        melde(g, es, ctx, { zeit, port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen, baum: ctx.baum });
         akteLaeuft("bahn-" + b, null);
     });
     console.log("→ " + path.relative(KOORD, datei));
@@ -6369,6 +6383,36 @@ async function selbsttest(o = {}) {
         pruef("SPERRE pid + Start: die neu vergebene Nummer ist verwaist (die alte Regel hielte sie), der lebende Halter und die Frage ohne Antwort halten, der tote fällt",
             Number.isFinite(start) && Math.abs(Date.now() - process.uptime() * 1000 - start) < 5000 && neuVergeben === true && alteRegel && lebend === false && tot === true && unlesbar === false,
             JSON.stringify({ start, gegenUptimeMs: Math.round(Date.now() - process.uptime() * 1000 - start), neuVergeben, lebend, tot, unlesbar }));
+    }
+    // (1t) DER KOPF DES SPIEL-BAUMS AM URTEIL (amBaumKopf, 21.11.: zwei Läufe stellten punkte-radeon gegeneinander um): ein echter git-Baum
+    // mit zwei Köpfen — am --sha bleibt das Urteil Byte für Byte, ein fremder Lauf stellt den Baum um: GRÜN und ROT werden UNGEMESSEN beim
+    // Grund (offen: die Runde misst nach) und landen in m.ungemessen; ein unlesbarer Baum ebenso. Die Mutante ohne Wand (das Urteil, wie es
+    // kam) trüge das GRÜN des fremden Kopfs unter dem SHA dieses Laufs — ROT am Täter
+    {
+        const r = path.join(tmp, "kopf-baum"), g = (...a) => git(["-c", "user.name=selbst", "-c", "user.email=selbst@punkte", ...a], r);
+        fs.mkdirSync(r, { recursive: true });
+        g("init", "-q");
+        fs.writeFileSync(path.join(r, "a.txt"), "a");
+        g("add", "a.txt");
+        g("commit", "-q", "-m", "a");
+        const A = g("rev-parse", "HEAD");
+        fs.writeFileSync(path.join(r, "a.txt"), "b");
+        g("commit", "-q", "-am", "b");
+        const B = g("rev-parse", "HEAD");
+        g("checkout", "-q", "--detach", A);
+        const es = [{ gruen: true, zahl: "GRÜN am Kopf" }, { gruen: false, zahl: "ROT am Kopf", grund: "ROT: x" }];
+        const amA = amBaumKopf(es, baumKopf(r), A);
+        g("checkout", "-q", "--detach", B); // der fremde Lauf
+        const fremd = amBaumKopf(es, baumKopf(r), A);
+        const unlesbar = amBaumKopf(es, baumKopf(path.join(tmp, "kein-baum")), A);
+        const ohneWand = es; // die Mutante: das Urteil, wie es kam
+        const m = { sha: A, geraet: "radeon", je: {} };
+        eintragen(m, "k.K1#1", fremd[0]);
+        const grundOk = (e) => e.ungemessen === true && e.gruen === false && apparatOffen(e.grund) && new RegExp("^der Spiel-Baum stand am Urteil auf " + B.slice(0, 8) + " statt " + A.slice(0, 8)).test(e.grund);
+        pruef("KOPF DES SPIEL-BAUMS am Urteil: am --sha Byte für Byte, ein umgestellter Baum macht GRÜN und ROT UNGEMESSEN beim Grund (offen, m.ungemessen), ein unlesbarer ebenso; die Mutante ohne Wand trüge das fremde GRÜN",
+            amA === es && fremd.every(grundOk) && /^der Spiel-Baum stand am Urteil auf unlesbar statt /.test(unlesbar[0].grund) && unlesbar.every((e) => e.ungemessen) &&
+                !m.je["k.K1#1"] && m.ungemessen["k.K1#1"].offen === 1 && ohneWand[0].gruen === true,
+            JSON.stringify({ A: A.slice(0, 8), B: B.slice(0, 8), fremd: fremd.map((e) => e.grund), unlesbar: unlesbar[0].grund, offen: (m.ungemessen || {})["k.K1#1"] && m.ungemessen["k.K1#1"].offen }));
     }
     // (1k) WAS EIN ABGEBROCHENER LAUF GEMESSEN HAT, BLEIBT (messungKappen): die Station, die vor dem CI-Job endete, bleibt; die danach
     // endete, weicht ihrem Eintrag im Archiv (oder fällt, wo es keinen gibt); was der Lauf nicht anrührte, bleibt Byte für Byte; ein

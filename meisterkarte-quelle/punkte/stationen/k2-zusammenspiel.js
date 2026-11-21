@@ -207,7 +207,7 @@ L.perspektive("planet", (() => {
                         return aus;
                     };
                     const w = await S(seite, { n: 50, zellen: 12 });
-                    const aus = {};
+                    const aus = M.teil || {};
                     const s1 = w.s1;
                     const benannt = ["ufer", "schilf", "fuss"];
                     const anteil = (n) => (s1.punkte ? s1.je[n][0] / s1.punkte : 0);
@@ -502,7 +502,7 @@ L.perspektive("planet", (() => {
                     };
                     const w = await S(seite, { n: 32, budgetMs: 36000 });
                     const med = (v) => { const x = v.filter(Number.isFinite).sort((p, q) => p - q); return x.length ? x[Math.floor(x.length / 2)] : null; };
-                    const aus = {};
+                    const aus = M.teil || {};
                     const z0 = { antworten: w.s1.antworten, streuung: w.streuung };
                     const flachN = w.s1.flach.length;
                     aus[1] = {
@@ -617,7 +617,7 @@ L.perspektive("planet", (() => {
                         const kh = r._gelaende().ort.klimaHeute;
                         const ort = (b, l, t, extra) => r._planetAuftrag(Object.assign({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa: t || 0 }, extra || {}));
                         const amp = (o) => kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter);
-                        const aus = {};
+                        const aus = M.teil || {};
                         const erde = await ort(45, L0);
                         const null0 = await ort(45, L0, 0, { koerper: { neigungRad: 0 }, neigungRad: 0 });
                         const n45 = await ort(45, L0, 0, { koerper: { neigungRad: 0.7854 }, neigungRad: 0.7854 });
@@ -649,7 +649,7 @@ L.perspektive("planet", (() => {
                         return aus;
                     };
                     const w = await S(seite, {});
-                    const aus = {};
+                    const aus = M.teil || {};
                     const s2 = w.s2;
                     aus[2] = {
                         werte: { amp0Prozent: s2.ampErde ? Math.round((1000 * s2.amp0) / s2.ampErde) / 10 : null, amp45Faktor: s2.ampErde ? Math.round((1000 * s2.amp45) / s2.ampErde) / 1000 : null },
@@ -743,7 +743,7 @@ L.perspektive("planet", (() => {
                         const st = r.state;
                         const p = st.playerMesh.position;
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                        const aus = {};
+                        const aus = M.teil || {};
                         const t = st.spielZeit || 0;
                         const wi = (d) => { d = ((((d + 180) % 360) + 360) % 360) - 180; return Math.abs(d); };
                         const lauf = (tt) => {
@@ -870,7 +870,7 @@ L.perspektive("planet", (() => {
                     } catch (e) {
                         sf = String((e && e.message) || e).slice(0, 200);
                     }
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[2] = { werte: { streuungGrad: w.s2.streuungGrad }, zeuge: w.s2, auge: await M.auge("wetter-welt-s2", { ort: "wiese" }) };
                     aus[3] = { werte: { lumaVerh: w.s3.lumaVerh, rPfuetze: w.s3.rPfuetze, lumaTrocken: w.s3.lumaTrocken, rTrocken: w.s3.rTrocken }, zeuge: w.s3 };
                     if (s) {
@@ -1012,7 +1012,7 @@ L.perspektive("planet", (() => {
                         return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), schatten: ["_schattenTrocknen", "_naesseSchatten"].filter((n) => typeof r[n] === "function").length, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
                     };
                     const w = await S(seite, {});
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = { werte: { abweichungGrad: w.abweichung, abweichungFrei: w.abweichungFrei }, zeuge: w };
                     aus[2] = { werte: { dK: w.dK }, zeuge: w, auge: await M.auge("stadtklima-s2", { ort: "wiese" }), ...(w.groesste >= 100 ? {} : { nicht: "keine Stadt mit 10² Häusern geladen (größter Ort " + w.groesste + " Häuser); _temperaturAt liest nur die Höhe: Kern − Rand auf gleicher Höhe " + w.dK + " K (" + w.dHoeheM + " m Höhenversatz), 600 m daneben ohne Höhen-Abgleich " + w.dKOhneHoehe + " K — die Höhe, keine Stadt" }) };
                     aus[3] = { werte: { sichtProzent: 100, boeFaktor: w.boeFaktor }, zeuge: w, nicht: "keine Stadt mit 10⁴ Häusern (die Wand des Rang-Gesetzes 500); der Dunst ist ein Wetter-Feld der ganzen Welt (Nebel " + w.nebel + ")" };
@@ -1146,7 +1146,7 @@ L.perspektive("planet", (() => {
                     const g = w.glieder;
                     const da = Object.keys(g).filter((n) => g[n]);
                     const fehlt = (namen) => namen.filter((n) => !g[n]).join(", ");
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = { werte: { saatenMitFolge: 0 }, zeuge: { glieder: g }, auge: await M.auge("kaskade-s1", { ort: "wiese" }), nicht: "keine Rutschung sperrt eine Straße (" + fehlt(["_rutschung", "_bergsturz"]) + " fehlen)" };
                     aus[2] = { werte: {}, zeuge: { glieder: g }, nicht: "kein Ausbruch formt Land: " + (g._lavaGiessen ? "die Lava (_lavaGiessen) gießt Glut ins Feld, kein Erdbau der Küste" : "keine Lava") };
                     aus[3] = { werte: {}, zeuge: { glieder: g }, nicht: "kein Fluss verlagert sich und keine Stadt baut einen Deich (" + fehlt(["_flussVerlegen", "_deichBauen"]) + ")" };
@@ -1278,7 +1278,7 @@ L.perspektive("planet", (() => {
                         return { schritte: decke.length, orte: netz.length, einbrueche, mitUrsache, spruenge, grab, asche, tSpanne: r3(Math.max(...temp) - Math.min(...temp)), tStreuung: r3(Math.sqrt(temp.reduce((s, x) => s + (x - mt) ** 2, 0) / temp.length)), maxSprungK: r3(Math.max(...temp.slice(1).map((x, i) => Math.abs(x - temp[i])))), dSpanne: r3(Math.max(...decke) - Math.min(...decke)) };
                     };
                     const w = await S(seite, {});
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = { werte: {}, zeuge: w, nicht: "keine Grabung: kein Leser der Schichtfolge nach Alter in der Welt (" + w.grab + "); _ascheAt liest nur die Asche-Decke der Oberfläche nach einem Brand, kein Ausbruch legt Asche ins Alter" };
                     aus[2] = { werte: {}, zeuge: w, nicht: "kein Großausbruch: das Welt-Mittel des Planeten (" + w.orte + " Orte) springt in 500 Ma " + w.spruenge + "-mal um ≥ 2 K je 10 Ma (größter Schritt " + w.maxSprungK + " K), kein Jahr nach einem Ausbruch" };
                     aus[3] = { werte: {}, zeuge: w, nicht: "kein Trapp als Ereignis der Welt: der Faden reicht keinen Vulkan und kein Gestein (keine Bohrung)" };
@@ -1469,7 +1469,7 @@ L.perspektive("planet", (() => {
                         return aus;
                     };
                     const w = await S(seite, { saaten: 12, budgetMs: 22000 });
-                    const aus = {};
+                    const aus = M.teil || {};
                     const s1 = w.s1;
                     aus[1] = { werte: { ursacheProzent: s1.relikte ? Math.round((1000 * s1.mitUrsache) / s1.relikte) / 10 : null }, zeuge: s1 };
                     const s2 = w.s2;
@@ -1905,7 +1905,7 @@ L.perspektive("leben", (() => {
                             tiefOhneGleich: tiefOhne.filter((o, i) => ohneId(o) === ohneId(tief[i][tief[i].length - 1])).length,
                         };
                     };
-                    const aus = {};
+                    const aus = M.teil || {};
                     // S2 — der Hang unter Starkregen: bewaldet gegen offen (der Gegenlauf: die Wurzeln fehlen)
                     try {
                         const h = await S(hang, U[2]);
@@ -2227,7 +2227,7 @@ L.perspektive("leben", (() => {
                         const LG = r.constructor._lebensraumGesetz();
                         return { antworten: an.filter((x) => Number.isFinite(x.breite)).length, breiten: an.map((x) => Math.round((x.breite * 18000) / Math.PI) / 100), gattungen: Object.keys(LG.L.gattung) };
                     };
-                    const aus = {};
+                    const aus = M.teil || {};
                     let B = null;
                     let bw = null;
                     try {
@@ -2524,7 +2524,7 @@ L.perspektive("leben", (() => {
                         };
                     };
                     const pose = (p) => (p ? { px: p[0], py: p[1], pz: p[2], lx: p[3], ly: p[4], lz: p[5] } : { ort: "wiese" });
-                    const aus = {};
+                    const aus = M.teil || {};
                     let O = null;
                     try {
                         O = await S(orte, { zeiten: U[7].zeiten });
@@ -2873,7 +2873,7 @@ L.perspektive("mensch", (() => {
                     const d = M.dorfDa();
                     const m = await S(leib, { lagen: ["pullover", "poncho", "jacket", "jacke", "coat", "mantel", "hoodie"], same: d.seed, nH: 8, jahre: [1320, 1560, 1700, 1860] });
                     if (!m || m.fehler) throw new Error("der Leib: " + (m && m.fehler));
-                    const aus = {};
+                    const aus = M.teil || {};
                     const s1 = m.s1 || {};
                     const amGeraet = async (name, code) => {
                         if (M.swift) return M.auge(name, d.pose, {});
@@ -3051,7 +3051,7 @@ L.perspektive("mensch", (() => {
                     const akte = Object.keys(m.abend.akte).join("+");
                     const kein = "der Tag kennt kein Spiel: die Akte am Abend sind " + akte + " (koerper-core.js:5326 tagesPlan — schlaf · morgen · besuch · arbeit · mittag · abend)";
                     const z = m.zellen;
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = { werte: { spielProzent: (100 * m.abend.spiel) / m.abend.ges, amPlatzProzent: (100 * m.abend.platz) / m.abend.ges }, zeuge: { n: m.n, spielAbend: m.abend.spiel, spielMittag: m.mittag.spiel, stunden: 5 }, nicht: kein };
                     aus[2] = { werte: { partienSonne: m.abend.spiel, partienRegen: m.abendRegen.spiel, amPlatzSonne: m.abend.platz, amPlatzRegen: m.abendRegen.platz }, zeuge: { partienSonne: m.abend.spiel, regen: m.rainRegen, gegenPartien: m.abendGegen.spiel }, nicht: kein + "; keine Partie, die der Regen abbricht, kein Eis unter 0 °C" };
                     aus[3] = { werte: { saaten: z.plaene, staetten: z.staetten, biome: z.biome }, zeuge: { saaten: z.plaene, sportarten: 0, biome: z.biome }, nicht: "keine Sportart an " + z.plaene + " Plänen der Zellen (Rollen " + z.rollen.slice(0, 160) + ") — fachwerk DORF kennt keine Sportstätte" };
@@ -3204,7 +3204,7 @@ L.perspektive("mensch", (() => {
                     const d = M.dorfDa();
                     const m = await S(leben, { takte: 3 });
                     if (!m || m.fehler) throw new Error("das Leben: " + (m && m.fehler));
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = m.fehler1 || !m.sonne ? { werte: {}, nicht: "der Wechsel Sonne ↔ Regen warf: " + m.fehler1 } : {
                         werte: { draussenSinkt: m.sonne.ist - m.regen.ist, draussenSonne: m.sonne.ist, draussenRegen: m.regen.ist, draussenGegen: m.gegen.ist, sollSonne: m.sonne.soll, sollRegen: m.regen.soll },
                         zeuge: { n: m.n, sonne: m.sonne.rain, regen: m.regen.rain, istSonne: m.sonne.ist, istRegen: m.regen.ist, istGegen: m.gegen.ist },
@@ -3400,7 +3400,7 @@ L.perspektive("mensch", (() => {
                     };
                     const m = await S(kultur, {});
                     if (!m || m.fehler) throw new Error("die Kultur: " + (m && m.fehler));
-                    const aus = {};
+                    const aus = M.teil || {};
                     const s1 = m.s1;
                     aus[1] = { werte: { saaten: s1.saaten, passendProzent: (100 * s1.passend) / Math.max(1, s1.saaten) }, zeuge: { saaten: s1.saaten, stoffe: JSON.stringify(s1.stoffe) }, auge: await M.auge("mensch-kultur-s1", { ort: "genesis" }, {}), nicht: "der Baustoff folgt nicht dem Boden: der Plan liest nur seinen Samen (fachwerk-core.js:4410 region aus rnd()), " + s1.passend + " von " + s1.saaten + " Zellen treffen den Stoff ihres Bodens wie der Zufall" };
                     const s2 = m.s2;
@@ -3546,7 +3546,7 @@ L.perspektive("mensch", (() => {
                     if (!m || m.fehler) throw new Error("der Kreislauf: " + (m && m.fehler));
                     const P = (x) => (100 * x) / Math.max(1, m.personen);
                     const ware = "keine Ware mit Herkunft: das Mahl ist ein Ort der Bindung (koerper-core.js:5269 tagesBindung), nie ein Bissen aus der Flur — " + m.herkunft + " von " + m.personen + " tragen eine Herkunft";
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[1] = { werte: { personen: m.personen, mahlFeldProzent: P(m.herkunft), wohnungProzent: P(m.heim), werkProzent: P(m.werk), wasserProzent: P(m.wasser) }, zeuge: { personen: m.personen, felder: m.felder, gegen: false }, nicht: ware + "; " + m.brunnen + " Brunnen im Plan" };
                     aus[2] = { werte: { staende: m.staende, gueter: 0 }, zeuge: { gueter: 0 }, nicht: "kein Gut mit Bilanz: " + m.staende + " Stände ohne Ware, kein Brennholz, kein Werkzeug im Fluss" };
                     aus[3] = { werte: { laternen: m.laternen, leitungen: 0 }, zeuge: { stoffe: 0 }, nicht: "kein Stoff im Fluss: keine Leitung, kein Abwasser, kein Müll; " + m.laternen + " Laternen ohne Energie" };
@@ -3693,7 +3693,7 @@ L.perspektive("mensch", (() => {
                     };
                     const m = await S(antwort, { taten: 100 });
                     if (!m || m.fehler) throw new Error("die Antwort: " + (m && m.fehler));
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[2] = { werte: { dichteFaktor: m.s2.dichteFaktor, zellen: m.zellen }, zeuge: { trasse: false, zellen: m.zellen, kontrolle: m.s2.ausG }, nicht: "keine Trasse des Spielers: die DSL kennt keinen Weg-Akt, die Zellen der Welt lesen keine Erreichbarkeit — Dichte im Gürtel " + (m.s2.dichteFaktor == null ? "?" : m.s2.dichteFaktor.toFixed(2)) + "× der Kontrolle ohne Trasse" };
                     const s3 = m.s3 || {};
                     aus[3] = { werte: { gegenAenderung: s3.gleich === true ? 0 : s3.gleich === false ? 1 : undefined, wegeAlt: s3.a ? s3.a.wege : undefined }, zeuge: { abriss: false, neubau: 0, gegenGemessen: s3.gleich !== undefined }, nicht: "kein Neubau nach Zerstörung: der Ort wächst nur aus seinem Jahr (stamm/siedlung-ort.js:2915 _ortWaechst), kein Bodenwert und kein Wiederaufbau nach remove_architecture" };
@@ -4228,7 +4228,7 @@ L.perspektive("erleben", (() => {
                     const sinne = async (r, T, a) => {
                         const s = r.state;
                         const pm = s.playerMesh.position;
-                        const aus = {};
+                        const aus = M.teil || {};
                         const arr = s.creatures;
                         const andere = arr.splice(0, arr.length);
                         const leichAlt = new Set(s.leichname || []);
@@ -6117,7 +6117,7 @@ L.perspektive("same", (() => {
                         const L0 = (st.worldMeta.taten ||= []);
                         const A = (window.__ereignisAlt = { n0: L0.length, bf0: [...(st.brandFeld || new Map()).keys()], rest0: !!r._brandRest, wetter: st.weather, tod: st.timeOfDay, spiel: st.spielZeit, uhr: st._uhrSpielZeit, halt: st.weatherEffectTime, regler: st.perfRegulator });
                         st.perfRegulator = false;
-                        const aus = {};
+                        const aus = M.teil || {};
                         const leute = [];
                         for (const Sd of (r._bewohnerSiedlungen || new Map()).values()) for (const b of Sd.liste || []) leute.push(b);
                         aus.bewohnerWelt = leute.length;
@@ -6670,7 +6670,7 @@ L.perspektive("same", (() => {
                         const pm = st.playerMesh.position;
                         const P = { x: pm.x, z: pm.z };
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                        const aus = {};
+                        const aus = M.teil || {};
                         const Z = C.WETTER_ZUG_SEK;
                         const nZ = Math.round((a.jahre * st.seasonYearSeconds) / Z);
                         const tA = st.spielZeit;
@@ -8418,7 +8418,7 @@ L.perspektive("same", (() => {
                         const [B, L] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
                         const samen = r._planetSamen();
                         const ort = (sa, b, l, z) => r._planetAuftrag({ type: "planet-ort", samen: sa, breite: b, laenge: l, zeitMa: z });
-                        const aus = {};
+                        const aus = M.teil || {};
                         // S1: der Regen — das Feld des Worts (der EINE Leser `_weatherFieldFor`, ohne Ort) an Ziel und Lee, das Wort des
                         // Regens als einziges Werkzeug; der Planet trägt den Regen je Lage (planet-ort regenQuote), zweimal gefragt
                         const wort = s.weather;

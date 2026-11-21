@@ -188,6 +188,16 @@ const KERN = (() => {
             const mit = (u) => (vorDeckel ? { ...u, zahl: u.zahl + vorDeckel } : u);
             if (!roh || typeof roh !== "object") return rot("die Sprosse ist im Lauf nicht gemessen", sp.taeter);
             const werte = roh.werte || {};
+            // DIE HALBE SPROSSE UNTER DEM DECKEL (pm-front-f1): jede Leiter schreibt ihr Ergebnis in M.teil (`const aus = M.teil`), der Deckel
+            // kann eine Sprosse treffen, deren Wert noch nicht stand — fehlt unter dem Deckel ein Wert ihres Solls, ist sie UNGEMESSEN beim
+            // Namen des Werts, nie ROT „ungemessen ✗“ (ohne Deckel bleibt ein fehlender Wert ROT: die Leiter lief durch und las ihn nicht)
+            if (L.warf && deckelL) {
+                const offen = sp.soll.filter((s) => werte[s.key] == null || (typeof werte[s.key] === "number" && !Number.isFinite(werte[s.key]))).map((s) => s.key);
+                if (offen.length) {
+                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s, ehe " + offen.join(", ") + " der Sprosse stand";
+                    return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                }
+            }
             const teile = sp.soll.map((s) => {
                 const w = werte[s.key];
                 const ok = haelt(s, w);
@@ -419,14 +429,24 @@ const KERN = (() => {
 
     // DER DECKEL DER LEITER IM SELBSTTEST (pm-front-f1): je Station zwei Proben aus ihrer ersten („gemessen im Soll“) — ohne Wert der
     // Sprosse UNGEMESSEN beim Namen (`ohneUrteil`, nie ROT „warf“); mit Wert aus `M.teil` urteilt die Sprosse wie gemessen, der Deckel daneben
-    function mitDeckelProben(st) {
+    function mitDeckelProben(st, def) {
         const leiter = st.kriterium.slice(7), nr = st.staffel, p0 = st.proben[0];
         const roh = p0.j.leitern[leiter].sprossen[nr];
         const j = (sprossen) => ({ leitern: { [leiter]: { s: 25, warf: "der Deckel der Leiter 25 s", deckel: true, sprossen } } });
+        const sp = def && def.leitern && def.leitern[leiter] && def.leitern[leiter].sprossen && def.leitern[leiter].sprossen[nr];
+        const w0 = (roh && roh.werte) || {};
+        // trägt schon die erste Probe nicht jeden Wert ihres Solls, ist sie unter dem Deckel die halbe Sprosse (unten)
+        const halb = !!(sp && Array.isArray(sp.soll) && sp.soll.some((s) => w0[s.key] == null || (typeof w0[s.key] === "number" && !Number.isFinite(w0[s.key]))));
         st.proben = st.proben.concat([
             { name: "der Deckel der Leiter riss vor dem Wert", j: j({}), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse/ },
-            { name: "gemessen vor dem Deckel der Leiter", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: p0.gruen, zahl: /gemessen vor dem Wurf der Leiter nach 25 s/ },
+            halb
+                ? { name: "gemessen vor dem Deckel der Leiter, ohne jeden Wert des Solls", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s, ehe .+ der Sprosse stand/ }
+                : { name: "gemessen vor dem Deckel der Leiter", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: p0.gruen, zahl: /gemessen vor dem Wurf der Leiter nach 25 s/ },
         ]);
+        // die halbe Sprosse: der Deckel traf sie, ehe ihre Werte standen (M.teil trägt das Objekt ohne Werte) — UNGEMESSEN beim Namen des Werts
+        if (sp && Array.isArray(sp.soll) && sp.soll.length && roh && typeof roh === "object")
+            st.proben.push({ name: "der Deckel der Leiter traf die halbe Sprosse", j: j({ [nr]: { ...roh, werte: {} } }), stdout: p0.stdout, gruen: false,
+                zahl: /der Deckel der Leiter riss nach 25 s, ehe .+ der Sprosse stand/ });
         return st;
     }
 
@@ -444,7 +464,7 @@ const KERN = (() => {
                 }
                 defs.set(pid, d);
             },
-            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d)).map(mitDeckelProben),
+            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d).map((st) => mitDeckelProben(st, d))),
         };
     }
     return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp };
@@ -560,7 +580,7 @@ L.perspektive("geologie", (() => {
                 }
                 return b;
             };
-            const aus = {};
+            const aus = M.teil || {};
             const A = U[2];
             // ── A: die Stichprobe je Saat (S2, S4, S9; Grundlage von S1, S5): A.punkte Fibonacci-Lagen zur Zeit 0 — gezogen von der Leiter
             // gebirge DERSELBEN Probe über denselben Faden (window.__geoStich); was ihr Deckel nicht trug, zieht diese Leiter bis A.bis nach
@@ -1239,7 +1259,7 @@ L.perspektive("geologie", (() => {
                 }
                 return b;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // ── DIE STICHPROBE DER PROBE (S6; dieselbe liest die Leiter platten für S1, S2, S4, S5, S9): je Saat erde-01 … S6.punkte
             // Fibonacci-Lagen zur Zeit 0 über den Planet-Faden, abgelegt in window.__geoStich (die Probe räumt es am Ende)
             const S6 = U[6];
@@ -1927,7 +1947,7 @@ return { laeufe: lf.length, hack, bif: rb.length ? Math.exp(rb.reduce((s, v) => 
             const streu = (a) => (a.length > 1 ? Math.sqrt(mittel(a.map((x) => (x - mittel(a)) ** 2))) : 0);
             const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : NaN);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE SAATEN DES NETZES (S2 20 Lagen, 10 × 10 km; S5 10 Lagen, 30 × 30 km) und DER HANG (S3 50 Lagen, 100 × 100 km, 9 Felder
             // je 5 × 5 Punkte im 30-m-Raster): alles aus dem Gelände-Gesetz der Reise-Welt am Ort
             const w = await H.seite(KOPF + `
@@ -2205,7 +2225,7 @@ return { orte: orte.length, je, mae, wasserfaelle: wf, kacheln, breiteMin: R3(br
             const klassen = { vtal: hat((x) => x[0] !== null && x[0] < 1.5), trog: hat((x) => x[0] !== null && x[0] >= 1.5), aue: hat((x) => x[1] !== null && x[1] >= 20), schichtstufe: hat((x) => x[2] === 1), maeander: hat((x) => x[4] !== null && x[4] >= 1.5), talsee: hat((x) => x[5] > 0), wasserfall: (w.wasserfaelle || 0) > 0 };
             const gefunden = Object.keys(klassen).filter((k) => klassen[k]);
             const drei = ["vtal", "trog", "aue", "schichtstufe"].filter((k) => klassen[k]);
-            const aus = {};
+            const aus = M.teil || {};
             const zeugeS = { saaten: je.length, klassen: gefunden.length, streuung: R3(Math.sqrt(je.filter((x) => x[0] !== null).reduce((s, x, i, a) => s + (x[0] - a.reduce((t, y) => t + y[0], 0) / a.length) ** 2, 0) / Math.max(1, je.filter((x) => x[0] !== null).length))) };
             aus[1] = { werte: { saaten: s20.length, klassenDerDrei: ["vtal", "trog"].some((k) => klassen[k]) + klassen.aue + klassen.schichtstufe, schichtstufeSaaten: s20.filter((x) => x[2]).length, talExponentMedian: R3(med(s20.filter((x) => x[0] !== null).map((x) => x[0]))) }, zeuge: Object.assign({ gefunden: drei }, zeugeS), auge: await M.auge("relief-formschatz-s1", w.poseSchicht || { ort: "wiese" }) };
             aus[2] = {
@@ -2356,7 +2376,7 @@ return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH
             const pa = w.paare || [];
             const mitDick = pa.filter((x) => x[1] !== null && x[3] !== null);
             const stoffe = new Set((w.laeufe || []).flat().filter(Boolean));
-            const aus = {};
+            const aus = M.teil || {};
             aus[1] = { werte: { posen: P.length / 9, schuttSteilProzent: anteil(steil, (x) => x[1] > 0.5), schuttFlachProzent: anteil(flach, (x) => x[1] > 0.5), feuchtProzent: anteil(P, (x) => x[2] > 0.5), steilePunkte: steil.length }, zeuge: { posen: P.length / 9, klassen: [...new Set(P.map((x) => x[3]))] }, auge: await M.auge("relief-boden-s1", { ort: "wiese" }) };
             aus[2] = { werte: { laeufe: (w.laeufe || []).length, stoffeDerSohle: stoffe.size }, zeuge: { laeufe: (w.laeufe || []).length, stoffe: [...stoffe] }, nicht: "keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)" };
             aus[3] = {
@@ -2548,7 +2568,7 @@ aus.hoehen = pk.slice(0, 5).map((p, i) => ep.length);
 aus.ms = Math.round(performance.now() - t0);
 return aus;
 `);
-            const aus = {};
+            const aus = M.teil || {};
             // je Lauf [Wetter, Regenmenge (Regen 1 · Sturm 2 je min), Minuten, Σ|Δ| m, geänderte Zellen > 5 cm]
             const dz = (zeit && zeit.d) || [];
             const z10 = dz.find((x) => x[0] === "10min");
@@ -2771,7 +2791,7 @@ window.__pwMeer = m;
 `;
             const meer = await H.seite(MEER + "return m;");
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
-            const aus = {};
+            const aus = M.teil || {};
             const ziel = Object.keys(U);
             if (!meer || !meer.gefunden) {
                 for (const nr of ziel) aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn (gelaende-core hoehe unter dem Spiegel)");
@@ -3057,7 +3077,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DER SPIEGEL ÜBER 25 STUNDEN der Welt-Uhr (`spielZeit`, der Pegel nachgezogen) an der Küste und quer übers Watt (41 Punkte vom
             // Ufer zur Tiefe, `_nassAt`), der Mond gegen die Sonne an 31 Tagen (`__weltLicht`), der Spiegel im Sturm gegen die Flaute
             const w = await H.seite(MEER + `
@@ -3308,7 +3328,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE FLÜSSE DER HEIMAT: 12 Posen auf den Läufen des Gesetzes (`flussLaeufe` ±1 km, ≥ 150 m auseinander, im Kanal), je Pose die
             // Strömung der Welt (`_waterFlowAt`) gegen die Richtung des Laufs; DAS MEER: die Strömung an seinen Punkten (Küste und innen)
             const w = await H.seite(MEER + `
@@ -3503,7 +3523,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
             // `_schneeVersatz` der Saison, gelaende-core schneeTrittAm), gegen die Nullgrad-Höhe des Tagesmittels (temperaturAus über
             // `_temperaturFeld`, vier Stunden); der Tritt des Fußes am Gelände der Pose
@@ -3730,7 +3750,7 @@ return { meer, kalt, felder: Object.keys(a) };
         mess: async function (H, U, M) {
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE GRUBEN AM SEE (der See der Soll-Tafel): 20 Gruben 40–200 m vom Ufer, ihr Boden 1 m unter dem Spiegel des Sees — wie hoch
             // füllt die Welt sie (`_atlasWaterLevelAt`, der Spiegel, den die Zellen des Wassers lesen)?
             const gruben = await H.seite(`
@@ -3942,7 +3962,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DAS MEDIUM DER KAMERA UNTER WASSER: die Kamera an der tiefsten Stelle der Bucht 0,1 m · 5 m · (Grund − 0,3 m) unter dem
             // Spiegel, der Tag der Welt angewandt (`_applyDayNightToScene` — derselbe Leser, der jedes Bild färbt): die Farbe des Lichts
             // (`luft.U.farbe`), der Abfall je Kanal, die Sicht (`_luftSichtM`); danach steht die Kamera, wo sie stand
@@ -4273,7 +4293,7 @@ return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[
                 for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
                 return b > 0 && c > 0 ? a / Math.sqrt(b * c) : NaN;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S2 die Frontpassage: Abfolge (die Bedeckung steigt aus dünner Decke zur Decke bewölkt, nach dem Regen ein Schauer) und
             // Winddrehung (rechtsdrehend ≥ 15° über ±3 Takte, Nordhalbkugel); einen Druck trägt die Welt nicht
             const pas = welt.passagen.filter(Boolean);
@@ -4469,7 +4489,7 @@ return { korrelation: best[0], texel: px, dt: b.t - a.t, ms: b.t > a.t ? (px * W
 } finally { window.__wetterSetzen(alt); }
 `).catch((e) => ({ grund: String((e && e.message) || e).slice(0, 200) }));
             }
-            const aus = {};
+            const aus = M.teil || {};
             const zug = welt.wolkeZugMs;
             const sch = Number.isFinite(schatten.ms) ? schatten.ms : null;
             // S1 die Schicht: Zug der Wolke (Uniform) und des Wurfs (Karte, am Gerät), Versatz; das 2AFC am Gerät
@@ -4706,7 +4726,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 for (let k = 0; k < a.length; k++) (s += (a[k] - ma) * (b[k] - mb)), (sa += (a[k] - ma) ** 2), (sb += (b[k] - mb) ** 2);
                 return sa > 0 && sb > 0 ? s / Math.sqrt(sa * sb) : NaN;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S2 Schnee- und Baumgrenze (Gesetz) gegen die Erd-Höhe der Breite der Heimat
             aus[2] = {
                 werte: { schneegrenzeM: R(heim.schnee), baumgrenzeM: R(heim.baum), hoechsterM: R(heim.hoechsterM) },
@@ -4893,7 +4913,7 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
                 for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
                 return b > 0 && c > 0 ? a / Math.sqrt(b * c) : 0;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S1 die Flut: der größte Regen einer nassen Strecke in 100 Jahren am Ort; der Hub ist an der Krone gedeckelt
             aus[1] = {
                 werte: { regenMaxMm: R(welt.maxAll), kroneM: R(welt.krone) },
@@ -5075,7 +5095,7 @@ return out;
 `);
             const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
             const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
-            const aus = {};
+            const aus = M.teil || {};
             // S1 Regen kommt aus der Windrichtung: die Bedeckung im Luv (Zug × 1 h gegen den Wind) eine Stunde vor dem Beginn höher als
             // am Ort, und sie stieg am Ort binnen der Stunde
             const B = welt.beginne;
@@ -5278,7 +5298,7 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
                 const lNah = links.length ? links[links.length - 1] : -Infinity, rNah = rechts.length ? rechts[0] : -Infinity;
                 if (p[i] >= lNah && p[i] >= rNah && p[i] - Math.max(lMin, rMin) >= 0.02) baender++;
             }
-            const aus = {};
+            const aus = M.teil || {};
             const E = welt.je.erde, F = welt.je.ferne;
             // S1 die Erde: der Farbton der Sonne Mittag/Abend durch die Atmosphäre der Welt; die Himmelsfarbe im Bild am Gerät
             aus[1] = {
@@ -5520,7 +5540,7 @@ aus.super.push([z, land, gross, land ? R3(gross / land) : null]);
 aus.ms = Math.round(performance.now() - t0);
 return aus;
 `);
-            const aus = {};
+            const aus = M.teil || {};
             const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
             // S1: +100 a — die Wärme, die Schneegrenze, die Küste (Bruun: Rückzug = Δh / Neigung)
             const [z0, t0, , , m0, sn0] = a.heute, [, t1, , , m1, sn1] = a.plus100;
@@ -5799,7 +5819,7 @@ return { tafel, heimY: R3(y0), lagen3m: lg.size, stetigM: stetig, stetigVoll, gr
             const mil = w.milieu || [];
             const wechsel = mil.reduce((s, r) => s + r.slice(1).filter((m, i) => m !== r[i]).length, 0);
             const arten = new Set(mil.flat());
-            const aus = {};
+            const aus = M.teil || {};
             aus[1] = {
                 werte: Object.assign({ tafelSaaten: alle.length, mitKliff: tf.length }, alle.length ? { kliffGrad: R3(med(alle.map((x) => x[4] || 0))), kliffP90Grad: R3(med(alle.map((x) => x[5] || 0))), schuttZellen: tf.reduce((s, x) => s + x[6], 0) } : {}),
                 zeuge: { tafelSaaten: tf.length, kliffZellen: tf.reduce((s, x) => s + x[3], 0), schuttZellen: tf.reduce((s, x) => s + x[6], 0), je: alle.map((x) => x.slice(0, 8)) },
@@ -5953,7 +5973,7 @@ L.perspektive("erde", (() => {
                         );
                     // der Schlüssel der Erd-Saat (R4): ein Leser im Spiel, der ihn trägt — heute keiner (die Probe fragt die Welt, nicht den Text)
                     const schluessel = await H.seite("const G = r._gelaende && r._gelaende(); return !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel);");
-                    const aus = {};
+                    const aus = M.teil || {};
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
                         const werte = {};
