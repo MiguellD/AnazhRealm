@@ -3503,6 +3503,15 @@ class AnazhRealm_siedlung_bewohner {
         }
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
         S.liste = null;
+        // DER TAKT DER KÖPFE GEHT MIT DER LISTE (siedlung-heap): `aktivListe`, `aktiv`, `ruhend`, `raster` und `koepfe` sind
+        // Funktionen der Liste (`_tickBewohner` legt sie neu, sobald `aktivListe !== liste`) — bis hier hielten sie jede ferne
+        // Siedlung mit ihren gegangenen Köpfen samt Leib (Radeon, Messort der Wegenetz-Fahrt: 8 ferne Siedlungen, 434 Köpfe,
+        // `aktivListe[].leib.userData` 88,3 MB nach GC)
+        [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];
+        // … und die Arbeits-Puffer des Takts (`_bewohnerKoepfe`, `_bewohnerBewegt`, `_bewohnerNachbarn`, die Wahl in
+        // `_bewohnerNbZahl`): vor jedem Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
+        for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;
+        if (this._bewohnerNbZahl) this._bewohnerNbZahl.geachtet.length = this._bewohnerNbZahl.naechste.length = 0;
         S.listeWerk = null;
         S.lebt = false;
         S.gestalten = null;

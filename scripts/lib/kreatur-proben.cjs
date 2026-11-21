@@ -1017,7 +1017,7 @@ async function kreaturProben(r, T, opts) {
         // verschobene Lage im Leger des Reviers allein traf keinen (0,98 im Fenster)
         if (taeter === "herde-revier") {
             const weg = (c, a, leash) => {
-                const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
+                const w = r._leibNummer(c); // die Richtung aus der Los-Nummer des Glieds (Welle SAMEN), nie aus der netId
                 return { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
             };
             decke(
@@ -1083,7 +1083,7 @@ async function kreaturProben(r, T, opts) {
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
-            Object.assign(t, { enge: 0, engst: [Infinity] });
+            Object.assign(t, { enge: 0, engst: [Infinity], leine: [0, 0, 0] });
             const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
             // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
             // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
@@ -1092,10 +1092,20 @@ async function kreaturProben(r, T, opts) {
             // DER SPIELER STEHT JENSEITS DER NAH-REGEL (w27-wagen-spalt-3): `isInFrustum` nennt jedes Tier binnen 50 m sichtbar,
             // wohin die Kamera auch blickt — bei 45 m sah der Blick-Vergleich den Täter `herde` nur an Gliedern, die zufällig über
             // 50 m hinaus wanderten (main 1,47 m, mit der gezeichneten Haut 0,83 m, im CI 0: blind); bei 60 m 9,32 m
+            // DER GANG AN DER HERDE VORBEI (samen-tier-leser 21.11.): 12 m neben der Mitte der Herde, wo sie beim Beginn des Gangs
+            // steht — bei 100 s die eigene südlich, bei 300 s die fremde nördlich. Bis hier ging er 12 m neben ihrem Wurf-Ort: mit
+            // den Wander-Kursen aus der Los-Nummer stand die Mitte der eigenen 5 m nördlich davon, der Spieler kam ihr nur auf 17,5 m
+            // (die fremde 16,5 m), keine floh, und die Probe war vakuös (neben dem fremden 0,0 s)
+            let gang = null;
             for (let k = 0; k < t.takte; k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
-                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 60;
-                const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
+                if (g0 && k === g0) {
+                    const G = g0 > 6000 ? fremd : glieder;
+                    const m = G.reduce((m, c) => m.add(c.position), new T.Vector3()).divideScalar(G.length);
+                    gang = { x: m.x - heim.x, z: m.z - heim.z + (g0 > 6000 ? 12 : -12) };
+                }
+                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? gang.x - 30 + (1.4 * (k - g0)) / 60 : 60;
+                const q = neben(heim.x + x, heim.z + (g0 ? gang.z : 0));
                 pm.set(q.x, q.y, q.z);
                 if (k % 600 === 0) kamera(flucht || art === "blick" ? 1 : -1, 0);
                 takt(1 / 60);
@@ -1120,6 +1130,13 @@ async function kreaturProben(r, T, opts) {
                         const q = ab(p, b.position) / (r._kreaturRaum(c) + r._kreaturRaum(b));
                         if (q < e[0]) e = [rund(q, 2), b.userData.name, c.userData.name, (k / 60) | 0];
                     }
+                    // DIE LEINE DES REVIERS: im Wandern steht das Glied in der Leine seines Ankers — dieselbe Leine, die das Wandern
+                    // zieht (`_creatureCharacterWander`: `_gehegeLeine` über `_creatureMoveCharacter`), in Leinen gezählt
+                    if (art === "wander" && k >= 600) {
+                        const A = c.userData.wanderAnchor;
+                        const L = A ? ab(p, A) / r._gehegeLeine(c, r._creatureMoveCharacter(c).leashM) : Infinity;
+                        ((t.leine[0] += L > 1 ? 1 : 0), t.leine[1]++, (t.leine[2] = Math.max(t.leine[2], L)));
+                    }
                     const d = ab(p, alt[i]);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
@@ -1131,6 +1148,9 @@ async function kreaturProben(r, T, opts) {
                 if (k >= 600) t.enge += e[0];
                 if (!(e[0] >= t.engst[0])) t.engst = e;
             }
+            // wie weit die Anker der Glieder auseinander liegen (das Revier des Wurfs ist EINES)
+            const an = glieder.map((c) => c.userData.wanderAnchor).filter(Boolean);
+            t.anker = rund(Math.max(0, ...an.flatMap((A, i) => an.slice(0, i).map((o) => ab(A, o)))), 1);
             return t;
         };
         const [W, F, X, B] = ["wander", "flucht", "fremd", "blick"].map(lauf);
@@ -1143,6 +1163,8 @@ async function kreaturProben(r, T, opts) {
             fluchtMin: t.fb ? rund(t.fMin, 3) : null,
             enge: rund(t.enge / t.bilder, 2),
             engst: t.engst,
+            leine: t.leine[1] ? { jenseits: rund(t.leine[0] / t.leine[1], 3), max: rund(t.leine[2], 2) } : null,
+            anker: t.anker,
         });
         // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang: das Dorf erwachte nach dem Wurf, sein Erdbau trug den Hang
         // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
@@ -2416,7 +2438,33 @@ async function kreaturProben(r, T, opts) {
             if (typeof f !== "function") fehlt.push(n);
             else if (!__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
         }
-        return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
+        // DIE LOSE DES LEIBS HÄNGEN NIE AN DER LAUFENDEN NUMMER (Welle SAMEN): bis hier würfelten Größe und Name eines Geworfenen
+        // aus `_creatureNetSeq`, und A gegen A am Ort dorf (gate:takt, werkbank abdruck) trug nach 593 Takten Einschwingen andere
+        // Boot-Tiere als nach 1300. Derselbe Wurf am selben Ort aus demselben Strom, einmal nach 0, einmal nach 100 000 Leibern:
+        // Los-Nummer, Größe und Name jedes Geworfenen gleich. Der Täter: die Los-Nummer aus der laufenden Nummer (der alte Stand).
+        if (taeter === "zufall-nummer")
+            decke(
+                "_leibLos",
+                () =>
+                    function () {
+                        return (this.state._creatureNetSeq || 0) + 1;
+                    }
+            );
+        const heim = frei(-40, 60, 40) || land(-40, 60);
+        const wurf = (seq) => {
+            leer();
+            Object.assign(s, { _creatureNetSeq: seq });
+            Object.assign(r, { _faunaStroeme: null });
+            pm.set(heim.x + 140, heim.y, heim.z);
+            kamera(1, 0);
+            const g = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("los-probe"), 7);
+            return g.map((c) => [c.userData.los, c.userData.bodySize, c.userData.name].join("|"));
+        };
+        const [vorher, nachher] = [wurf(0), wurf(1e5)];
+        leer();
+        const nummerAnders =
+            vorher.filter((x, i) => x !== nachher[i]).length + Math.abs(vorher.length - nachher.length);
+        return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer, leiber: vorher.length, nummerAnders };
     });
 
     // ── peer: die Sicht-Kopie beim Mitspieler dreht und geht ──
@@ -2425,6 +2473,17 @@ async function kreaturProben(r, T, opts) {
         if (!remote) return { fehler: "kein p2p-Zustand" };
         // Der Täter: die Kopie geht nicht — am lebenden Chokepoint: der echte Takt zieht Lage und Gier nach, nur der Gang
         // der Kopie ruht.
+        // Der Täter der Größe (der alte Stand): die Kopie liest ihre Größe nicht aus dem Strom (`b`) — bis leben-erbe würfelte
+        // der Empfänger sie aus der Kennung; hier trägt sie die Größe 1 des Art-Mittels
+        if (taeter === "peer-groesse")
+            decke(
+                "_p2pHandleCreaturePos",
+                (alt) =>
+                    function (peerId, msg) {
+                        const list = msg.list.map((e) => Object.assign({}, e, { b: 1 }));
+                        return alt.call(this, peerId, Object.assign({}, msg, { list }));
+                    }
+            );
         if (taeter === "peer")
             decke(
                 "_p2pTickRemoteCreatures",
@@ -2448,7 +2507,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 150; k++) {
             x += 1.5 * dt;
             r._p2pHandleCreaturePos("linse-peer", {
-                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, b: 1, soul: "wesen" }],
+                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, b: 1.37, soul: "wesen" }],
             });
             r._p2pTickRemoteCreatures(100 + k * dt, dt);
         }
@@ -2458,6 +2517,8 @@ async function kreaturProben(r, T, opts) {
         return {
             gierFehlerGrad: rund(Math.abs(grad(wrap(rc.mesh.rotation.y - Math.PI / 2))), 1),
             gangV: tb?._gang ? rund(tb._gang.v || 0, 2) : 0,
+            // die Größe des Originals reist im Strom (`b`, leben-erbe), nie aus der Kennung
+            groesse: rund(rc.mesh.scale.x, 3),
         };
     });
 
@@ -3754,10 +3815,21 @@ async function kreaturProben(r, T, opts) {
         kamera(1, 0);
         ring(10, 15, 30, 1, 1);
         laufen(240);
-        const B10 = befehle();
+        const zehn = new Set(s.creatures);
         ring(40, 30, 55, 101, -1);
         laufen(240);
         const B50 = befehle();
+        // DIE ZEHN ALLEIN IM SELBEN MOMENT (samen-tier-leser 21.11.): die 40 gehen, zwei Takte wählen die Leiber neu, dann zählen
+        // die 10 — und die 40 kommen wieder (dieselben Plätze, 240 Takte), für die Proben dahinter. Bis hier zählten die 10 VOR den
+        // 40, vier Sekunden früher: mit den Losen des Samen-Baums flohen zwei Füchse der 10 vor den Wölfen unter ihnen (5,8 m/s,
+        // 20 → 44 m, dieselben vier Leiber), und am Fell-Gesetz des Schirms (44 m: eine Fell-Senke statt zwei) zählte die Zeit
+        // als Kopfzahl: 10 Tiere 33 Befehle, 50 Tiere 31
+        for (const c of s.creatures.filter((c) => !zehn.has(c))) r.removeCreature(c);
+        bildTakt(0);
+        bildTakt(0);
+        const B10 = befehle();
+        ring(40, 30, 55, 101, -1);
+        laufen(240);
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich
         // rührten; im Blick nach +x trägt das Auge jedes Satz-Tier im Frustum (keines fehlt) und nicht alle, der Wurf ebenso.
         const schreibe = A._gangSatzInstanz;
@@ -4019,6 +4091,16 @@ function urteil(name, z) {
             W.mittel >= 0.9,
             `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 120 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
         );
+        // DAS EINE REVIER DES VERBANDS: ein Revier je Glied (Täter herde-revier) zeigt sich auf einem von zwei Wegen — der Verband
+        // zerfällt (oben), oder sein Zug hält jedes Glied gespannt fern seines Ankers (es zeigt „ziehen“ und steht). Die Probe sah
+        // nur den ersten, und welcher Weg fällt, entscheiden die Leib-Größen: am Kopf d0104e7e hielt der Verband unter dem Täter
+        // 0,794, mit den Größen aus der Los-Nummer (Tier-Leser, Welle SAMEN) 1,0 — jedes Glied 1,3–3,4 Leinen vor seinem Anker, die
+        // Anker 30–50 m auseinander; gesund ≤ 0,6 Leinen (headless, 20.11.). Beide Wege zusammen lassen dem Täter keinen dritten.
+        const L = W.leine || {};
+        soll(
+            L.jenseits <= 0.1,
+            `Verband ohne gemeinsames Revier: ${Math.round(L.jenseits * 100)} % der Glied-Bilder von 10 bis 120 s jenseits der Leine ihres Ankers (Soll ≤ 10 %; bis ${L.max} Leinen, die Anker bis ${W.anker} m auseinander)`
+        );
         soll(
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
@@ -4074,11 +4156,14 @@ function urteil(name, z) {
     if (name === "peer") {
         soll(z.gierFehlerGrad <= 15, `Sicht-Kopie blickt ${z.gierFehlerGrad}° neben die Laufrichtung`);
         soll(z.gangV > 0.5, `Sicht-Kopie geht nicht (Gang-Tempo ${z.gangV})`);
+        soll(z.groesse === 1.37, `Sicht-Kopie trägt Größe ${z.groesse} statt der gesandten 1,37`);
     }
     if (name === "zufall") {
         soll(z.fehlt.length === 0, `benannte Methode fehlt: ${z.fehlt.join(", ")}`);
         soll(z.methoden > z.benannt, `nur ${z.methoden} Methoden gelesen (die Tier-Klasse fehlt — Probe vakuös)`);
         soll(z.treffer.length === 0, `Math.random im Kreatur-Leben: ${z.treffer.join(", ")}`);
+        soll(z.leiber >= 2, `Probe vakuös: der Wurf der Lose trägt ${z.leiber} Leiber`);
+        soll(z.nummerAnders === 0, `ein Los des Leibs hängt an der laufenden Nummer: ${z.nummerAnders} von ${z.leiber} Geworfenen nach 100 000 Leibern anders (Los-Nummer, Größe, Name)`); // prettier-ignore
     }
     if (name === "nexus") {
         soll(
@@ -4374,8 +4459,10 @@ const TAETER = {
         // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
         // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
         ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
-        ["herde-revier", /zerfällt beim Wandern/],
-        ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
+        ["herde-revier", /zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /],
+        // ohne den Alarm aus zweiter Hand reißt die Kette auf eine von zwei Weisen: der letzte flieht spät (s ≥ 1) oder einer
+        // flieht nie (null: am Merge herde ⊕ Samen-Lose 4 von 5 — das fünfte Glied sah den Fremden nie selbst)
+        ["herde-alarm", /Alarm-Kette reißt: der letzte von [1-9] Flüchtern läuft (null|[1-9])/],
         // der Fluchtweg am Radius der Witterung ist kurz — auch 0 m (kein Flüchter kommt vom Fleck) nennt den Täter
         ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
@@ -4388,8 +4475,14 @@ const TAETER = {
         ["leittier-uhr", /Leittier ohne Ereignis: der Pulk flieht nie/],
         ["leittier-hoehe", /landet neben dem Scheitel/],
     ],
-    peer: [["peer", /Sicht-Kopie/]],
-    zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
+    peer: [
+        ["peer", /Sicht-Kopie/],
+        ["peer-groesse", /Sicht-Kopie trägt Größe [0-9.]+ statt/],
+    ],
+    zufall: [
+        ["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/],
+        ["zufall-nummer", /ein Los des Leibs hängt an der laufenden Nummer: [1-9]/],
+    ],
     nexus: [
         ["nexus-wuerfel", /der Würfel schreibt ein Körper-Gesetz/],
         ["nexus-gesetz", /jenseits des Gesetz-Bands/],
