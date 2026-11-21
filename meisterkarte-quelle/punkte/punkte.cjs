@@ -625,8 +625,13 @@ async function befehlTraegt(stationen, regel = {}) {
     if (jeSkript.size && !bash) rot.push("keine Git-bash gefunden (PUNKTE_BASH) — bash -n ungeprüft");
     // je Skript: über BASH_RUMPF_MAX startet der Läufer es (mit Rumpf) als Datei, sonst hinter -c. Bis BASH_RUMPF_MAX liest bash hinter
     // -c dasselbe wie aus der Datei — diese Skripte prüft EIN `bash -n` über EINE Datei (je Skript ein Funktionsrumpf). Einzeln startet nur ein Skript über BASH_RUMPF_MAX hinter -c —
-    // genau so, wie der Läufer vor dem Rumpf es startete (Windows startet je Prozess 0,3–0,6 s, 31 einzeln rissen die 20 s)
+    // genau so, wie der Läufer vor dem Rumpf es startete (Windows startet je Prozess 0,3–0,6 s, 31 einzeln rissen die 20 s).
+    // DER PREIS DER LINSE IST IHRE ZAHL DER STARTS, NIE DIE WANDUHR (21.11.: die Grenze „≤ 20 s“ fiel unter Last ROT bei 47,3 s, allein
+    // 9,2 s — die Uhr maß den Laptop, nie die Linse): `starts` zählt jeden bash-Prozess; die gesunde Tafel kostet EINEN, gleich wie
+    // viele Stationen sie trägt (der Selbsttest urteilt daran)
+    let starts = 0;
     const bashN = (args) => new Promise((ok) => {
+        starts++;
         const p = spawn(bash, args, { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
         let e = "";
         p.stderr.on("data", (d) => (e += d));
@@ -663,7 +668,7 @@ async function befehlTraegt(stationen, regel = {}) {
         if (err) melde(text, ids, err, Number((/line (\d+)/.exec(err) || [])[1]) || 0);
     }
     fs.rmSync(tmp, { recursive: true, force: true });
-    return { rot, stationen: stationen.length, bash: jeSkript.size };
+    return { rot, stationen: stationen.length, bash: jeSkript.size, starts };
 }
 // DIE GRENZE DES STARTS in der Sitzung (die EINE Regel für fahreSitzung und die Linse BEFEHL TRÄGT): eine Probe startet erst, wenn
 // der Rest der Fahrt restMin trägt — dann ist ihr kleinster SEK ihr Grund-Deckel (sekMin); ein Grund über der halben Fahrt kappt am
@@ -6202,8 +6207,8 @@ async function selbsttest(o = {}) {
         const verfehlt = taeter.filter((id) => !vorher.rot.some((z) => z.startsWith(id + " · ")));
         for (const z of jetzt.rot) console.log("    ROT " + z);
         pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen, die Befehlszeile ≤ " + ZEILE_MAX + " Zeichen, wie Windows sie sieht; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
-            jetzt.rot.length === 0 && verfehlt.length === 0 && vorher.rot.length > 0 && mutOk && Number(s) <= 20,
-            "jetzt ROT " + jetzt.rot.length + " · vorher ROT " + vorher.rot.length + " (Befehlszeile über " + ZEILE_MAX + ": " + zeileVorher + ")" + (verfehlt.length ? " · vorher NICHT rot: " + verfehlt.join(", ") : "") +
+            jetzt.rot.length === 0 && verfehlt.length === 0 && vorher.rot.length > 0 && mutOk && jetzt.starts <= 1 && vorher.starts > jetzt.starts,
+            "jetzt ROT " + jetzt.rot.length + " · bash-Starts " + jetzt.starts + " (der Läufer vor dem Rumpf " + vorher.starts + ") · vorher ROT " + vorher.rot.length + " (Befehlszeile über " + ZEILE_MAX + ": " + zeileVorher + ")" + (verfehlt.length ? " · vorher NICHT rot: " + verfehlt.join(", ") : "") +
             " · Mutanten " + (mutOk ? "ROT an Station und Zeile" : JSON.stringify([mut.rot, zmut.rot, zmutAlt.rot])) + " · " + s + " s");
         if (o.nur === "befehl-traegt") {
             const sek = vorher.rot.filter((z) => / · SEK \d+ ≤ /.test(z));
