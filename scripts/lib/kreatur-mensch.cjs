@@ -893,17 +893,59 @@ async function menschBuehnen() {
         // true,false,false,true). Die Gruppe ist eine eigene Klasse, offen im Rumpf der Abgabe.
         const allein = (k) => S.liste.filter((o) => o !== k && o.leib && !o.drinnen && ab(o.leib.position, k.leib.position) < 2 * A.BEWOHNER.begegnungM).length < A.BEWOHNER.nahLeiber - 1; // prettier-ignore
         // DER WEG UM IHN: aus 9 m schräg vor seinem Gesicht (±0,6 rad) durch seinen Stand, der Vorbeigang 2 m daneben — der erste freie
-        const wegUm = (k, faecher = [0.6, -0.6]) => {
+        const wegAm = (p, blick, faecher) => {
             for (const dw of faecher) {
-                const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
-                const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
+                const u = { x: -Math.sin(blick + dw), z: -Math.cos(blick + dw) };
+                const [a, v] = [{ x: p.x - u.x * 9, z: p.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
                 if (frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u)) return { a, u, v };
             }
             return null;
         };
+        const wegUm = (k, faecher = [0.6, -0.6]) => wegAm(k.leib.position, k.leib.rotation.y, faecher);
+        // DER FÄCHER DES VIERTEN GANGS (w28-bau-rezept-tuer): der Weich-Ort ist ein Stand des Gesetzes, oft vor Häusern — der
+        // Gang sucht den ersten freien von acht Winkeln (0,3–1,2 rad neben seinem Blick: der Kopf wendet sich immer). Bis hier nur
+        // ±0,6 rad: im Dorf des Bau-Rezepts stand #946581 4–5 m vor zwei Häusern, beide Wege zu (+0,6 nach 14 m, −0,6 im Haus)
+        const FAECHER4 = [0.6, -0.6, 0.9, -0.9, 0.3, -0.3, 1.2, -1.2];
+        // DER ORT DER TAT NACH DEM GESETZ (pendler-anschluss): wo der Spieler schlägt, wählt die Probe — wohin der Zeuge flieht, das
+        // Gesetz (`_bewohnerWeichOrt`: derselbe Ort, den ihm `_bewohnerWeichen` im Schlag gibt, aus derselben Lage, Stunde und
+        // Belegung). Die Tat liegt am ersten freien Punkt der Spirale 5 m neben seinem Stand, nach dem ihn das Gesetz an einen Ort
+        // weichen lässt, durch den der vierte Gang geht — das Gesetz des Stands verspricht Raum für einen Gehenden neben ihm
+        // (`standRandM`), nie 21 m gerade Bahn im Fächer seines Blicks. Bis hier schlug sie am ersten freien Punkt: seit dem Werk am
+        // Weg (die Stände der Pendler an der Tür ihres Werks) floh #946581 an den Stand vor pfarrhaus #16036 (−39,2/−171,1), um ihn
+        // trug nur −112° einen Gang (begegnung-starr und begegnung-steht rot aus fremdem Grund); eine Wahl des Zeugen vorab sagte
+        // im ganzen Teil 3 den Ort falsch voraus (#809070 floh an −62,7/−147,9, ohne Gang rundum — Uhr und Belegung gehen weiter)
+        const tatAm = (k, um = k.ziel) => {
+            const stunde = (((s.timeOfDay % 1) + 1) % 1) * 24; // wie der Zeuge sie liest (`_bewohnerZeuge`)
+            const belegt = new Set(S.liste.map((x) => x.ziel));
+            return spirale(um.x + 5 - P0.x, um.z - P0.z, 4, 1.5, (x, z) => {
+                if (!offen(x, z)) return null;
+                const t = neben(x, z);
+                // die Zeugen vor ihm in der Liste weichen zuerst und belegen ihren Ort (`_bewohnerZeuge`, in derselben Reihe)
+                const B = new Set(belegt);
+                // (wie `_bewohnerWeichen`: sein altes Weichen fällt, bevor er sein Soll liest — die Frage stellt es danach zurück)
+                const weichOrt = (o) => {
+                    const alt = o.weichen;
+                    o.weichen = null;
+                    try {
+                        return r._bewohnerWeichOrt(S, o, t, stunde, B);
+                    } finally {
+                        o.weichen = alt;
+                    }
+                };
+                for (const o of S.liste) {
+                    if (o === k) break;
+                    if (!o.leib || o.drinnen || o.amSteuer || o.ankunft || !o.ziel || ab(o.leib.position, t) ** 2 >= A.BEWOHNER.zeugeM ** 2) continue; // prettier-ignore
+                    const V = weichOrt(o);
+                    if (V) B.add(V.ort);
+                }
+                const W = weichOrt(k);
+                return W && wegAm(W.ort, Number.isFinite(W.ort.blick) ? W.ort.blick : k.leib.rotation.y, FAECHER4) ? Object.assign(t, { weich: W.ort }) : null; // prettier-ignore
+            });
+        };
         let [b, w] = [];
-        for (const k of S.liste) if (!b && !k.drinnen && !k.weg && k.da && allein(k) && (w = wegUm(k))) b = k;
-        if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
+        for (const k of S.liste)
+            if (!b && !k.drinnen && !k.weg && k.da && allein(k) && (w = wegUm(k)) && tatAm(k)) b = k;
+        if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr, an seinem Stand und am Ort, an den er vor einer Tat neben ihm wiche" }; // prettier-ignore
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
         // (den Kopf trägt nur der Leib: in 3 m hat ihn die Nah-Wahl gegeben — fehlt er, bricht die Probe beim Namen)
@@ -955,7 +997,8 @@ async function menschBuehnen() {
             r._bewohnerZiel(b, (((s.timeOfDay % 1) + 1) % 1) * 24, true);
             for (let i = 0; i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
             const G = [gang(1), gang(0), gang(0)];
-            const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
+            const ort = tatAm(b, stand); // im Schlag selbst gefragt: dieselbe Lage, Stunde und Belegung wie das Weichen
+            if (!ort) return { fehler: `kein Ort der Tat neben ${wer(b)}, nach dem ihn das Gesetz an einen Ort mit freiem Gang weichen ließe` }; // prettier-ignore
             const opfer = tier(ort, "wesen"); // ohne Ort wirft der Wurf beim Namen
             const tat = { x: opfer.position.x, z: opfer.position.z };
             r.damageCreature(opfer, 1e9, { source: "player" });
@@ -973,18 +1016,25 @@ async function menschBuehnen() {
             const W4 = b.weichen && b.weichen.ort;
             for (let i = 0; W4 && i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, W4) < 0.5); i++) schritt();
             const fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
-            // DER FÄCHER DES VIERTEN GANGS (w28-bau-rezept-tuer): der Weich-Ort ist ein Stand des Gesetzes, oft vor Häusern — der
-            // Gang sucht den ersten freien von acht Winkeln (0,3–1,2 rad neben seinem Blick: der Kopf wendet sich immer). Bis hier nur
-            // ±0,6 rad: im Dorf des Bau-Rezepts stand #946581 4–5 m vor zwei Häusern, beide Wege zu (+0,6 nach 14 m, −0,6 im Haus)
             zugebaut = true;
-            const w4 = wegUm(b, [0.6, -0.6, 0.9, -0.9, 0.3, -0.3, 1.2, -1.2]);
+            // (der Fächer um den Blick seines Weich-Orts — dasselbe Maß, nach dem die Tat gewählt ist; der Leib selbst dreht nicht
+            // unter jedem Täter dorthin, `_bewohnerKopf`)
+            const w4 = wegAm(g.position, W4 && Number.isFinite(W4.blick) ? W4.blick : g.rotation.y, FAECHER4);
             zugebaut = false;
-            if (!w4) return { fehler: `kein freier Weg um den Zeugen ${wer(b)} an seinem neuen Stand` };
+            if (!w4) {
+                // (wo er steht und wohin er sieht, und welche der 16 Richtungen um ihn einen Gang tragen — Grad zu seinem Blick)
+                const rund = [...Array(16).keys()].map((j) => (j * Math.PI) / 8 - Math.PI).filter((dw) => wegUm(b, [dw]));
+                const G4 = b.leib.position;
+                const von = W4 && S.liste.find((k) => Object.values(k.orte).includes(W4));
+                const wessen = von ? `${wer(von)} ${Object.keys(von.orte).find((n) => von.orte[n] === W4)}${W4.anker ? " an " + W4.anker.x.toFixed(1) + "/" + W4.anker.z.toFixed(1) : ""}${W4.ur ? " ur " + W4.ur.x.toFixed(1) + "/" + W4.ur.z.toFixed(1) : ""}` : "-"; // prettier-ignore
+                return { fehler: `kein freier Weg um den Zeugen ${wer(b)} an seinem neuen Stand (${G4.x.toFixed(1)}/${G4.z.toFixed(1)}, Weich-Ort ${W4 ? W4.x.toFixed(1) + "/" + W4.z.toFixed(1) : "-"} der Stand von ${wessen}, das Gesetz sagte vor der Tat ${ort.weich ? ort.weich.x.toFixed(1) + "/" + ort.weich.z.toFixed(1) : "-"}, frei rundum: ${rund.map((dw) => Math.round(grad(dw)) + "°").join(" ") || "keine"})` }; // prettier-ignore
+            }
             G.push(gang(0, w4));
             const je = (k) => G.map((x) => x[k]);
             return {
                 ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis, begegnungM: A.BEWOHNER.begegnungM },
                 ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort },
+                weichOrt: W4 ? [+W4.x.toFixed(1), +W4.z.toFixed(1)] : null,
             };
         };
         if (!taeter) return lauf();
