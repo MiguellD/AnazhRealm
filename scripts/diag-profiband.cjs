@@ -407,7 +407,8 @@ function vorlageWand(A) {
 // Fahrt, Richter-Preis: 95 Verlassene 10–60 s alt = 47,9 MB). Die Linse fährt die echte Rückgabe und den echten Räumer an drei
 // Körpern: verlassen (Kehraus + 1 s später fort), bestellt (bleibt), gehalten (bleibt).
 function verlassenWand(A) {
-    const w = weltVon(A, { spielZeit: 100 });
+    let uhr = 100; // die Welt-Uhr der Probe: ein Leser, kein Schreiber am Stand
+    const w = weltVon(A, { get spielZeit() { return uhr; } }); // prettier-ignore
     const fort = [];
     w._disposeFoundryGroupGeom = (g) => fort.push(g);
     const koerper = (n, halter) => ({ n, _liveRefs: halter, _cacheBytes: 1 << 20, children: [] });
@@ -415,7 +416,7 @@ function verlassenWand(A) {
     w._foundry = { cache: new Map([["v", verl], ["b", best], ["g", geh]]), cacheBytes: 3 << 20, requested: new Set() }; // prettier-ignore
     best._ruheSeit = 100;
     A.prototype._foundryLoslassen.call(w, verl);
-    w.state.spielZeit = 100 + A.GPU_KEHRAUS_MS / 1000 + 1;
+    uhr += A.GPU_KEHRAUS_MS / 1000 + 1;
     A.prototype._foundryRuheDeckel.call(w);
     const errs = [];
     if (w._foundry.cache.has("v")) errs.push(`H12 _foundryRuheDeckel: der verlassene Körper ruht nach ${A.GPU_KEHRAUS_MS / 1000 + 1} s weiter (Soll: fort nach GPU_KEHRAUS_MS)`); // prettier-ignore
