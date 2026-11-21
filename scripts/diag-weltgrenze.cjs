@@ -190,6 +190,9 @@ function seitenPruefer() {
         },
         // Welt A trägt ihr Zeichen: jedes welt-eigene Feld, die Gedächtnisse der Seite und ein Tier.
         pflanzeA(buehneErbgut) {
+            // DIE KARTE DES WOLKEN-WURFS gehört der Seite (`WELT_GRENZE.seite`): die bleibenden Stoffe lesen sie, nach dem
+            // Wechsel muss es dieselbe sein (`befundeLive`)
+            window.__wolkenKarteA = r._wolkenKarte();
             const wm = st.worldMeta;
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
@@ -282,6 +285,9 @@ function seitenPruefer() {
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
             if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T)) out.push("Seite: Karte ohne Back-Schlange");
+            // fiel sie mit der Welt, legte jede Welt eine neue an (0,34 MB VRAM je Wechsel) und die Stoffe lasen still die alte
+            if (window.__wolkenKarteA && st.wolkenKarte !== window.__wolkenKarteA)
+                out.push("Seite: die Karte des Wolken-Wurfs fiel mit der Welt (WELT_GRENZE.seite `wolkenKarte`)");
             if (ganz) {
                 const snap = r.buildStateSnapshot();
                 for (const p of pfade(snap, "Snapshot", 3)) if (!ok.has(p.replace(/^Snapshot\./, ""))) out.push(p);

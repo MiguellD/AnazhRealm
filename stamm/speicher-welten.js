@@ -2638,7 +2638,9 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                das erste Weltbild — sie gehören nie zur Seite
 //   seite        Glieder des Zustands, die die Seite tragen: der Renderer und seine Kette, die Bühne (Szene, Kamera, Himmel,
 //                Licht, Kaskaden), jede Uniform und jede Karte, die ein bleibendes Programm liest (die Horizont-Karte der
-//                Kaskaden, der Leser des Spiegels, die Umgebung des Himmels), die Stoff-Pools, der Voxel-Faden und seine
+//                Kaskaden, die Karte des Wolken-Wurfs, der Leser des Spiegels, die Umgebung des Himmels — fiel die
+//                Wolken-Karte, legte jede Welt eine neue an, 0,34 MB VRAM je Wechsel, und die Stoffe lasen still die alte),
+//                die Stoff-Pools, der Voxel-Faden und seine
 //                Zähler, die Wahl des Spielers (Tasten, Kamera, Tag-Länge), Begleiter, KI, Klang, Messung, Log, Pass, sein
 //                Name, die Werkstatt (ihre Bühne)
 //   wirt         Felder am Wirt, die die Seite tragen: die Fäden, ihre Hörer und Generationen, Takt und Messung, das Buch der
@@ -2707,6 +2709,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "spiegelLeser",
         "kontaktLeser",
         "horizontKarte",
+        "wolkenKarte",
         "_skyPmrem",
         "_skyEnvRT",
         "_foliageMatCache",
