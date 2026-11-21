@@ -1,5 +1,5 @@
 {
- "kopf": "9f24b5b8",
+ "kopf": "ee0c1306",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3552,7 +3552,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +172)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +173)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3588,7 +3588,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +172)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +173)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3598,7 +3598,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +172)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +173)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4830,9 +4830,10 @@
      "id": "breite.siedlung#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "dorf 7 9310: 145 Kacheln, 9544 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,269 ↔ Rand 0,060 = 4,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,936 (Soll ≥ 0,8, λ 893 m) · Traufe Median Kern 19,4 m ↔ Rand 8,6 m = 2,3 (Soll ≥ 5) · höchstes Haus 27,0 m",
-     "sha": "9f24b5b8a72d910481281c6f46ecd3da9010b080",
-     "grund": "ROT: dorf 7 9310: 145 Kacheln, 9544 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,269 ↔ Rand 0,060 = 4,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,936 (Soll ≥ 0,8, λ 893 m) · Traufe Median Kern 19,4 m ↔ Rand 8,6 m = 2,3 (Soll ≥ 5) · höchstes Haus 27,0 m",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -17255,7 +17256,7 @@
   },
   "karte2.mensch.geist.innenleben": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.innenleben#1 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#1 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#2 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#3 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#3 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#4 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#5 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#6 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.innenleben#1 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#1 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22) · karte2.mensch.geist.innenleben#3 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#3 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22) · karte2.mensch.geist.innenleben#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22) · karte2.mensch.geist.innenleben#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22) · karte2.mensch.geist.innenleben#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.geist.innenleben#7 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
    "stationen": [
     {
      "id": "karte2.mensch.geist.innenleben#1",
@@ -17292,8 +17293,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.geist.innenleben#3",
@@ -17328,8 +17330,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.geist.innenleben#5",
@@ -17346,8 +17349,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.geist.innenleben#6",
@@ -17364,8 +17368,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.geist.innenleben#7",
@@ -17382,8 +17387,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -21282,7 +21288,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +31) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +25) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures leben weather · wie {\"creatures\":{\"vorher\":5,\"nachher\":0,\"fehlt\":[\"Quin\",\"Yto\",\"Glim\",\"Ilen\"],\"neu\":[],\"anders\":[] · karte2.mensch.menge.bevoelkerung#2 radeon: ROT: S2 ROT an Stichproben-Personen ± 2 m angetroffen 18 verfehlt ≥ 20 — Täter: nicht angetroffen: werkstatt arbeit 138.0 m, wohnhaus arbeit 171.2 m · Stichproben-Personen ± 2 m angetroffen 18 (Soll ≥ 20) · Umfang 1368 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (307 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 14 von 20 · [linse-gpu] amd/rdna-3 an 9f24b5b8 · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#7 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#8 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +31) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +25) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures leben weather · wie {\"creatures\":{\"vorher\":5,\"nachher\":0,\"fehlt\":[\"Quin\",\"Yto\",\"Glim\",\"Ilen\"],\"neu\":[],\"anders\":[] · karte2.mensch.menge.bevoelkerung#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s) · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21) · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21) · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21) · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#7 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21) · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#8 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21) · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#9 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -21310,9 +21316,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S2 ROT an Stichproben-Personen ± 2 m angetroffen 18 verfehlt ≥ 20 — Täter: nicht angetroffen: werkstatt arbeit 138.0 m, wohnhaus arbeit 171.2 m · Stichproben-Personen ± 2 m angetroffen 18 (Soll ≥ 20) · Umfang 1368 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (307 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 14 von 20 · [linse-gpu] amd/rdna-3",
-     "sha": "9f24b5b8a72d910481281c6f46ecd3da9010b080",
-     "grund": "ROT: S2 ROT an Stichproben-Personen ± 2 m angetroffen 18 verfehlt ≥ 20 — Täter: nicht angetroffen: werkstatt arbeit 138.0 m, wohnhaus arbeit 171.2 m · Stichproben-Personen ± 2 m angetroffen 18 (Soll ≥ 20) · Umfang 1368 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (307 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 14 von 20 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -21321,7 +21328,7 @@
      "gruen": true,
      "zahl": "S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 67 s · S2 warf: /eval ohne Antwort binnen 9 s",
      "gehalten": true
     },
     {
@@ -21339,7 +21346,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s)",
      "ungemessen": true
     },
     {
@@ -21357,8 +21364,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#5",
@@ -21375,8 +21383,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#6",
@@ -21393,8 +21402,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#7",
@@ -21411,8 +21421,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#8",
@@ -21429,8 +21440,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#9",
@@ -21447,8 +21459,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -25215,7 +25228,7 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 9f24b5b8 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an b7ed8419 gtx — offen: karte2.mensch.stadt.siedlungsnetz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 9f24b5b8 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an b7ed8419 gtx — offen: karte2.mensch.stadt.siedlungsnetz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.stadt.siedlungsnetz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.stadt.siedlungsnetz#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
@@ -25223,7 +25236,8 @@
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
      "sha": "9f24b5b8a72d910481281c6f46ecd3da9010b080",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +21) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -38376,7 +38390,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 915,
+  "konsum": 926,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38779,10 +38793,10 @@
    "karte2.planet.wetter.wolken#6 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2470
+  "ohne": 2459
  },
- "kopfVoll": "9f24b5b8a72d910481281c6f46ecd3da9010b080",
- "zeit": "2026-11-21T05:05:22.678Z",
+ "kopfVoll": "ee0c1306b08d37358e1a0df158419f1447447f9a",
+ "zeit": "2026-11-21T05:13:18.476Z",
  "vorher": "9f24b5b8",
  "bilanz": {
   "gewinn": [],
