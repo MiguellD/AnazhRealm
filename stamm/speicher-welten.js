@@ -61,7 +61,7 @@ class AnazhRealm_speicher_welten {
     // _generateFreshWorldMeta), und der Voxel-Boden ist die kanonische, irreversible Form (auch ein explizites
     // `voxelTerrain:false`). Leser: ensureWorldMeta (Boot) und der Restore jeder geladenen Welt.
     static _weltMetaHeil(m) {
-        if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = "anazh-realm-seed";
+        if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = globalThis.__samenCore.EINGANG;
         m.voxelTerrain = true;
         // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
         delete m.macro;
@@ -76,6 +76,31 @@ class AnazhRealm_speicher_welten {
         // der Trampelpfad reiste gepackt (`_trittPacken`): die Welt liest ihn als Zellen "i,j" → [n, t]
         if (Array.isArray(m.tritt)) m.tritt = AnazhRealm._trittAuspacken(m.tritt);
         AnazhRealm._weltGesetz(m);
+    }
+
+    // DIE SAAT DER WELT — der EINE Leser der Sitzungs-Saat (Welle saat-argument): die Saat ist das Argument der Welt, nie ein Feld,
+    // das ein Leser mit einer eigenen Ersatz-Saat liest (bis hier 41 Kopien von „anazh-realm-seed“ im Stamm, 2 im Faden — sie feuerten
+    // nur vor dem Heil, im Konstruktor). Vor dem Heil (`_weltMetaHeil`) trägt die Welt keine Saat: wer dann liest, bricht beim Namen.
+    _saat() {
+        return AnazhRealm._saatVon(this.state.worldMeta);
+    }
+    static _saatVon(wm) {
+        const s = wm && wm.seed;
+        if (typeof s !== "string" || !s)
+            throw new Error(`Die Saat der Welt fehlt (${s}) — gelesen vor dem Heil (_weltMetaHeil)`);
+        return s;
+    }
+    // DAS GEDÄCHTNIS DER SAAT: was die Seite aus der Saat der Welt ableitet und behält (Rausch-Felder, Ströme, Formationen), hält sie
+    // HIER unter seinem Namen — an der Saat, die es gebar. Wechselt die Saat (`_weltWechsel`, ein Laden), fällt das ganze Gedächtnis,
+    // gleich auf welchem Weg die Welt ging (bis hier merkten 11 Stellen ohne Saat im Schlüssel; zwei reisten über jeden Wechsel).
+    // Leser: gate:weltgrenze (der Weg „saat“ vergleicht jeden Eintrag mit dem frisch aus der Saat gebauten).
+    _saatMerk(name, bau) {
+        const s = this._saat();
+        let M = this._saatGedaechtnis;
+        if (!M || M.saat !== s) M = this._saatGedaechtnis = { saat: s, je: new Map() };
+        let v = M.je.get(name);
+        if (v === undefined) M.je.set(name, (v = bau(s)));
+        return v;
     }
 
     // DAS GESETZ DER WELT (ultiversum.K1) — die EINE Quelle ihrer Konstanten, in ihrem Speicher (`worldMeta.gesetz`), nie als Flag:
@@ -414,7 +439,8 @@ class AnazhRealm_speicher_welten {
     // Welt-Tor, die Reise. DIE SAAT IST EINE EINGABE (saat-im-lauf): nennt der Schöpfer sie (`saat`, „neue welt saat <Saat>“), wächst
     // die Welt aus ihr — dieselbe Saat, dieselbe Welt; ohne sie würfelt die Geburt. Eine Saat, die kein Wort ist, WIRFT beim Namen.
     _generateFreshWorldMeta(slug, saat = null) {
-        if (saat != null && !/^[\w.:@-]{1,64}$/.test(saat)) throw new Error(`Die Saat „${saat}“ ist kein Wort`);
+        // ein Wort: Buchstaben, Ziffern und . : @ ~ - (die Ort-Saat der Reise trägt @ und ~, gelaende-core `ortSaat`)
+        if (saat != null && !/^[\w.:@~-]{1,64}$/.test(saat)) throw new Error(`Die Saat „${saat}“ ist kein Wort`);
         const worldId = AnazhRealm._neueWeltId();
         let finalSlug = (slug || "")
             .toString()
@@ -495,7 +521,7 @@ class AnazhRealm_speicher_welten {
                         t: ["journal.erwache-als", { welt: worldMeta.slug }],
                         ctx: {
                             worldId: worldMeta.worldId,
-                            seed: worldMeta.seed || null,
+                            seed: AnazhRealm._saatVon(worldMeta),
                             inheritedPlayer: !!inheritPlayer,
                         },
                     },

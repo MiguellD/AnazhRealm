@@ -691,10 +691,10 @@ class AnazhRealm_netz_portal {
         const kurz = (x, p, n) => `${Math.round(Math.abs(x) * 100)}${x < 0 ? n : p}`;
         const meta = this._generateFreshWorldMeta(
             `ort-${kurz(o.breite, "n", "s")}-${kurz(o.laenge, "o", "w")}` +
-                (o.zeitMa ? `-${kurz(o.zeitMa / 100, "n", "v")}` : "")
+                (o.zeitMa ? `-${kurz(o.zeitMa / 100, "n", "v")}` : ""),
+            saat // die Ort-Saat durch das Argument des EINEN Schreibers (Welle saat-argument)
         );
         meta.worldId = worldId;
-        meta.seed = saat;
         const snap = this._buildEmptyWorldSnapshot(meta, true);
         snap.worldMeta.voxelTerrain = true;
         snap.worldMeta.gesetz = {

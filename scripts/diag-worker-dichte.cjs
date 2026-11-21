@@ -352,7 +352,6 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     const macroAlt = s.worldMeta.macro;
                     const regenesis = (saat, macro) => {
                         s.worldMeta.seed = saat;
-                        r._voxelNoise = null;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
                     };
@@ -1802,7 +1801,6 @@ async function gebaut(page) {
             // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
             const regenesis = async (saat, macro) => {
                 s.worldMeta.seed = saat;
-                r._voxelNoise = null;
                 if (macro !== undefined) s.worldMeta.macro = macro;
                 else delete s.worldMeta.macro;
                 await r._worldgenComputeAndBuildHydrosphere();

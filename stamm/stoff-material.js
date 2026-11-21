@@ -212,7 +212,7 @@ class AnazhRealm_stoff_material {
     // wohin der Wind weht). EIN Wert je Uhr und Saat (w27-takt-gc): der Rauch fragt den Wind je Teilchen, hunderte Male im Bild
     // zur selben Bild-Uhr — dasselbe Objekt, kein Neubau je Frage (die Leser schreiben es nie).
     _windDirAt(tSec) {
-        const saat = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const saat = this._saat();
         const M = this._windDirMerk || (this._windDirMerk = { t: NaN, saat: null, d: null });
         if (M.t !== tSec || M.saat !== saat) {
             M.d = globalThis.__phytoCore.windRichtung(saat, tSec);

@@ -363,7 +363,7 @@ class AnazhRealm_gelaende_chunks {
 
     // Voller State-Snapshot für den Worker (Seed, Gesetz, voxelEdits, …) — reine Daten des Mains, nie empfangene Bytes.
     _voxelWorkerSnapshotState() {
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const seed = this._saat();
         const snap = {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,

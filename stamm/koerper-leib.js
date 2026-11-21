@@ -2637,7 +2637,7 @@ class AnazhRealm_koerper_leib {
     // Die Größe würfelt hier nichts mehr: sie ist Physik dieses Erbes über das Alter (`__lebenCore.masseZurZeit`).
     _erbeGruender(kennung) {
         const L = AnazhRealm._lebenKern();
-        const welt = (this.state.worldMeta && this.state.worldMeta.seed) || "";
+        const welt = this._saat();
         // der Sub-Strom (`seq`), nie zwei Achsen: Achsen-Namen, die sich nur im letzten Zeichen unterscheiden, tragen fast dieselbe
         // Gleichverteilte (FNV, r ≈ 0,96) — ein Paar daraus ist keine Normale
         const u = this._rollGenome(welt + "/" + String(kennung), "erbe").seq("erbe");

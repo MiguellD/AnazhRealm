@@ -819,7 +819,7 @@ class AnazhRealm_feld_dsl {
     // Lockstep): bis dahin hieß die Saat des Wurfs die Kennung der Welt (`worldId`) — zwei Seiten derselben Saat mit eigener Kennung
     // (eine Seite bootete, bevor der Stand des Mitspielers lag) würfelten unter Last anders (gate:mp-sync (h), 1 von 3 Läufen).
     _worldRuleSeed(rule, scheibe) {
-        const saat = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const saat = this._saat();
         return parseInt(this._fastHash(`${saat}:rule:${this._regelHash(rule)}:${scheibe || 0}`), 16) >>> 0 || 1;
     }
 
