@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 5,
+    "heute": 8,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.1,
+    "anteilHeute": 4.3,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3792,7 +3792,7 @@
        "richter": "100 fremde Saaten: Bestand über 100 Generationen getragen; Gegenprobe Fortpflanzung aus → Aussterben"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Geburt und Tod als Zahl je Revier mit Holling-III-Riss und Alterstod (BESTAND_GESETZ, tetrapoda-core.js:2177) — headless; sichtbares Wachstum, Brunft, Nest: nichts.",
@@ -4417,7 +4417,7 @@
        "richter": "64 Saaten × 3 Planetentypen: Fremdwelt-Probe (R10) am beobachteten Netz; Kennzahl-Tafeln aus dem Transekt trennen Fachleute nicht über Zufall von realen"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "4 Land-Säuger mit Beute nach Masse (beuteMasse 2,0, tetrapoda-core.js:166), Bestand aus Nahrung × Lebensraum (alte Ökologie K2 2/2) — headless, unter P im Fenster nie gefahren.",
@@ -4584,7 +4584,7 @@
        "richter": "64 Saaten: Bestandsreihen schwingen nur, wo Räuber-Beute-Paare es tragen (Gegenprobe Paar entfernt → Zyklus weg)"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Wölfe weg → Hirsche +0,448 [0,321; 0,536], Jungwuchs −0,279 über 8 Saaten (alte Ökologie K1 2/2) — headless, im Fenster nie.",
@@ -20086,11 +20086,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 37,
+  "heute": 40,
   "davonKopplungen": 33,
   "kern": 8,
   "kernDazu": 8,
-  "anteilHeute": 2.2,
+  "anteilHeute": 2.4,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 29,
-  "nachwache": 8
+  "nachwache": 11
  },
  "zusammengelegt": [
   {
