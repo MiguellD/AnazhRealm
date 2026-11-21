@@ -4450,7 +4450,9 @@ const TAETER = {
         // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
         ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
         ["herde-revier", /zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /],
-        ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
+        // ohne den Alarm aus zweiter Hand reißt die Kette auf eine von zwei Weisen: der letzte flieht spät (s ≥ 1) oder einer
+        // flieht nie (null: am Merge herde ⊕ Samen-Lose 4 von 5 — das fünfte Glied sah den Fremden nie selbst)
+        ["herde-alarm", /Alarm-Kette reißt: der letzte von [1-9] Flüchtern läuft (null|[1-9])/],
         // der Fluchtweg am Radius der Witterung ist kurz — auch 0 m (kein Flüchter kommt vom Fleck) nennt den Täter
         ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
