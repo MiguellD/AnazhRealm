@@ -1,0 +1,21 @@
+{
+ "v": 1,
+ "geraet": "gtx1050",
+ "t": 1795272202,
+ "welten": [
+  "4528"
+ ],
+ "frei": false,
+ "halter": {
+  "wer": "ci-runner 44913880308/1 echt",
+  "art": "CI",
+  "pid": 6372,
+  "seit": 1795271756,
+  "lebt": true,
+  "cpu": 8,
+  "n": 4,
+  "regt": 1795272022
+ },
+ "warten": 0,
+ "wartende": []
+}
