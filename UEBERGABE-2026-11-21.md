@@ -53,3 +53,11 @@ Warum sie wieder aufgingen: eine Regel im Gedächtnis wirkt nicht im Moment des 
 ## Ehrlich offen
 
 R8 (ohne Kalt-Ankunft ≤ 5 s höchstens 762 Punkte) · R11 (198 Panel-Sprossen, 28 Korpus: gesetzt, nicht bestellt; geladen wird nichts ohne sein Wort) · Heap +2,24 MB je Weltwechsel · der Rückstand zum Plan (44 statt ≥ 80 am 21.11.).
+
+## OMEN (GTX 1060) — die Wunden des Tages mit Zahl, und was ich dem Nächsten an dieser Karte rate
+
+1. **Der Sparse-Baum der Punkte-Maschine fehlte Dateien:** der Selbsttest fiel an RICHTER-AKTE (vision/buche-2.cjs, BRUECKE.md, karte-2-stand.json, seite-bauen.cjs nicht im Sparse; ein Lauf à 650 s verloren), und `git sparse-checkout add /vision/…` machte MSYS zu „C:/Program Files/Git/vision“. **Rat:** vor dem ersten Selbsttest `node vision/richter-akte.cjs --selbsttest` (21/21 in Sekunden); Pfade mit führendem `/` nur mit `MSYS_NO_PATHCONV=1`.
+2. **Gemessen im Baum, in dem ich schneiden wollte:** die Stand-Takt-Kette schaltete n1911-main auf main um, der Schnitt wartete 18 min. **Rat:** den Schnitt als Skript gegen eine Kopie proben (p3/n2111/saat-arg/brand/schnitt.cjs) und nach der Messung anwenden — oder main in einem eigenen detached Baum messen.
+3. **Die Vorher-Zahl am main kam zu spät:** vom Rot des Zweigs (1 336 Einheiten, Schritt 11) waren 1 105 main selbst; drei Läufe am main (9 min) tragen die Zuordnung, bevor einer deutet. **Rat:** jedes Rot eines Zweigs zuerst 3× an main messen.
+4. **Buchen ist ein Ganz-Datei-Schreiber:** `runde.cjs push-pfade` setzt messung/<kopf8>-gtx.json und referenz-gtx.json ganz — vorher prüfen, was origin trägt (heute 0 Dateien an 1e204f83), die Referenz auf origin stellen; die Buche trocken braucht `--karte vision/meisterkarte-2.json` (mit karte-2-stand.json: „karte.preisTreppe is not iterable“).
+5. **Der Kreatur-Takt (3 Teile) braucht hier über 30 min:** er stand am Ende meiner Tor-Kette und lief beim Sichern noch. **Rat:** die längste Wand zuerst fahren, nie zuletzt vor einer Budget-Grenze.
