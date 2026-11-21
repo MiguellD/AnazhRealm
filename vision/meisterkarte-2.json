@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 9,
+    "heute": 11,
     "kern": 7,
     "kernDazu": 7,
-    "anteilHeute": 1.5,
+    "anteilHeute": 2,
     "anteilKern": 1.2
    },
    "perspektiven": [
@@ -11617,7 +11617,7 @@
        "richter": "1 000 Stichproben: Kette lückenlos 100 %; Gegenlauf: Glied entfernt → die Folge bleibt aus ≥ 95 %"
       }
      ],
-     "heute": 0,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Gewalt → Furcht → langsameres Wachstum im Spiel gemessen (WACHSTUM fachwerk-core.js:3580, siedlung.K4); Epoche sonst Kalender-Nachschlag an ≥ 4 Stellen — KARTE: 0 — Geräte der Messung nicht belegt.",
@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 6,
+    "heute": 7,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 3.1,
+    "anteilHeute": 3.7,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -18725,7 +18725,7 @@
        "richter": "100 Taten: Folge in ≥ 3 Perspektiven ≥ 90 %; Mutante = 0"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Ring 8–9 neuer Häuser, Median 22 m um das Spielerhaus, beide Geräte (siedlung.K4) — KARTE: 0 — das Wachstum (siedlung.K4) hebt den Kern von mensch.zeit.palimpsest, das benutzte Werk (bauen.K5) den von erleben.spieler.rolle (R9, Z6); der eigene Lauf mit Gegenlauf fehlt.",
@@ -20086,11 +20086,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 41,
+  "heute": 44,
   "davonKopplungen": 33,
   "kern": 8,
   "kernDazu": 8,
-  "anteilHeute": 2.5,
+  "anteilHeute": 2.6,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20100,8 +20100,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 29,
-  "nachwache": 12
+  "beide": 30,
+  "nachwache": 14
  },
  "zusammengelegt": [
   {
