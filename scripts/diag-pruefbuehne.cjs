@@ -298,6 +298,19 @@ async function s0Probe(page, station, schein) {
             }
             r._spawnSettlementErlebnis({ laternen: [{ x: frei[0], z: frei[1] }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne" });
             const cam = s.camera;
+            // DAS AUGE DER PROBE HÄLT SEINE POSE (w28-pop-treue): jede Pose führt die Kamera über die Tür eines Studios
+            // (`kameraFuehren`) — sonst setzt der Takt der Schleife die Spieler-Kamera (`_loopCamera`), und gemessen wurde am
+            // Spieler: unter der Laterne las der Messer den Pool 5,4 m statt 2,5 m fern (0,77 Stufen), wo der Same des Satzes das
+            // Feuer dem Spieler näher setzte, 1,22 — dieselbe Laterne, zwei Urteile.
+            const auge = (x, y, z, zx, zy, zz) => {
+                const setze = (c) => {
+                    c.position.set(x, y, z);
+                    c.lookAt(zx, zy, zz);
+                    c.updateMatrixWorld(true);
+                };
+                setze(cam);
+                r.kameraFuehren(setze);
+            };
             const zaehle = (um) => {
                 const lichter = [];
                 const v = new T.Vector3();
@@ -321,14 +334,14 @@ async function s0Probe(page, station, schein) {
                 }
                 const en = r._waagrechtIrradianz([0, 0, 0]);
                 const nacht = luma709(en);
-                return { n: lichter.length, lichter, e2: +e2.toFixed(3), nacht: +nacht.toFixed(3) };
+                // vier Ziffern, nie drei Stellen hinter dem Komma (w28-pop-treue): beide stehen in Welt-Einheiten um 1e-5, auf
+                // drei Stellen lasen sie 0 und 0 — die Prüfung „≥ 10× die Nacht" las 0 ≥ 0 und war blind
+                return { n: lichter.length, lichter, e2: +e2.toPrecision(4), nacht: +nacht.toPrecision(4) };
             };
             for (const klang of [false, true]) {
                 if (s.symphony) s.symphony.enabled = klang;
                 uhr(0);
-                cam.position.set(f.x - 2, f.y + 1.2, f.z);
-                cam.lookAt(f.x, f.y, f.z);
-                cam.updateMatrixWorld(true);
+                auge(f.x - 2, f.y + 1.2, f.z, f.x, f.y, f.z);
                 await takt(45); // die Plätze blenden ein (LICHT_POOL.blendeS)
                 const z = zaehle(f);
                 out.nacht[klang ? "klang" : "still"] = z;
@@ -356,8 +369,7 @@ async function s0Probe(page, station, schein) {
                 (r._leuchtPool?.plaetze || []).filter(
                     (p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
                 ).length;
-            cam.position.set(lp.x - 2, lp.y - 1.5, lp.z);
-            cam.updateMatrixWorld(true);
+            auge(lp.x - 2, lp.y - 1.5, lp.z, lp.x, lp.y - 1.5, lp.z);
             uhr(0);
             await takt(45);
             const nachtL = laterneAn();
@@ -374,7 +386,16 @@ async function s0Probe(page, station, schein) {
                 const kOhne = e == null ? null : r._belichtungAusLicht(e);
                 r._poolAmAuge = echt;
                 const ev = kMit > 0 && kOhne > 0 ? Math.log2(kOhne / kMit) : null;
-                out.messer = { kMit, kOhne, ev: ev == null ? null : +ev.toFixed(2), poolE: r._poolE };
+                // DIE POSE BEIM NAMEN: das Auge steht 2 m neben dem Platz der Laterne und 1,5 m unter ihm (≈ 2,5 m, ihr Kopf auf
+                // eigenem Boden) — steht es fern, misst der Messer ein anderes Auge (bis w28-pop-treue 5,4 m: die Spieler-Kamera)
+                const kopf = (r._leuchtPool?.plaetze || []).find((p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1);
+                const dAuge = kopf ? Math.hypot(kopf.x - cam.position.x, kopf.y - cam.position.y, kopf.z - cam.position.z) : null;
+                out.messer = { kMit, kOhne, ev: ev == null ? null : +ev.toFixed(2), poolE: r._poolE, dAuge: dAuge == null ? null : +dAuge.toFixed(2) };
+                if (kopf && !(Math.abs(dAuge - 2.5) <= 0.25))
+                    out.befunde.push(
+                        `S0 Messer: das Auge steht ${dAuge.toFixed(2)} m vom Kopf der Laterne (Soll 2,5 ± 0,25: 2 m daneben, 1,5 m darunter) — ` +
+                            "die Pose der Probe hält nicht (`kameraFuehren`), der Messer liest den Pool an einem anderen Auge"
+                    );
                 if (!(ev >= messerEv))
                     out.befunde.push(
                         `S0 Messer: unter der Laterne schließt die Belichtung ${ev == null ? "—" : ev.toFixed(2)} Stufen (Soll ≥ ${messerEv}) — ` +
@@ -430,6 +451,7 @@ async function s0Probe(page, station, schein) {
                     `S0 Punktlicht: ${out.bauer.length} Stamm-Methode(n) bauen ein Szenen-Licht (${out.bauer.join(", ")}) — ` +
                         "jedes Szenen-Licht kostet jeden beleuchteten Stoff, auch auf 0"
                 );
+            r.kameraFuehren(null); // die Kamera geht an den Spieler zurück
             uhr(0.5);
             return out;
         },
@@ -454,7 +476,7 @@ function zeigeS0(rep, schein) {
         );
     }
     if (rep.laterne) console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze`);
-    if (rep.messer) console.log(`    Messer unter der Laterne: k ${rep.messer.kMit} mit dem Pool · ${rep.messer.kOhne} ohne — ${rep.messer.ev} Stufen (Pool am Auge ${rep.messer.poolE})`);
+    if (rep.messer) console.log(`    Messer unter der Laterne: k ${rep.messer.kMit} mit dem Pool · ${rep.messer.kOhne} ohne — ${rep.messer.ev} Stufen (Pool am Auge ${rep.messer.poolE}, das Auge ${rep.messer.dAuge} m vom Kopf der Laterne)`);
     if (rep.fenster) console.log(`    Fenster-Glut: nachts ${rep.fenster.nachts} · mittags ${rep.fenster.mittags}`);
     if (rep.stoffe)
         console.log(
