@@ -437,18 +437,24 @@ function k2TafelZeile(st) {
     return { station: schluessel(st), leiter: st.kriterium.slice("karte2.".length), sprosse: st.staffel, richter: t.richter, ...(t.richter === "fehlt" ? { grund: t.grund } : {}) };
 }
 // `tafel [--schreibe]`: je Station der Karte 2 ohne Zeile ihre Zeile aus dem Register; belegt eine andere Zeile dieselbe Sprosse, gewinnt
-// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand
+// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand.
+// DAS REGISTER IST DIE QUELLE (pm-auge 21.11.: die Klasse der Auge-Sprossen, auge-klasse.cjs): weicht die Zeile einer Station mit
+// `tafel` in Richter oder Grund vom Register ab, ersetzt `--schreibe` sie durch die des Registers — die Tafel entsteht aus ihrem
+// Erzeuger, nie von Hand (bis 21.11. blieb jede Abweichung stehen: 282 „fehlt“ nach dem alten Vertrag „auge = fehlt“)
 function tafelCli(o) {
     const tafel = ladeTafel();
     const { stationen } = pruefeStationen(ladeStationen(), kriterienDerKarte(), tafel);
     const da = new Set(tafel.zeilen.map((z) => z.station));
     const belegt = new Map(tafel.zeilen.map((z) => [z.leiter + "#" + z.sprosse, z]));
-    const neu = [], kollision = [], vonHand = [], abweichung = [];
+    const neu = [], kollision = [], vonHand = [], abweichung = [], ersetze = [];
     for (const st of stationen.filter(istKarte2)) {
         const z = k2TafelZeile(st), id = schluessel(st);
         const alt = tafel.zeilen.find((x) => x.station === id);
         if (alt) {
-            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse)) abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter);
+            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse || (alt.grund || null) !== (z.grund || null))) {
+                abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter + (alt.richter === z.richter ? " (Grund)" : ""));
+                ersetze.push([alt, z]);
+            }
             continue;
         }
         if (da.has(id)) continue;
@@ -462,7 +468,8 @@ function tafelCli(o) {
     for (const k of kollision) console.log("  KOLLISION " + k);
     for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
     for (const k of abweichung) console.log("  ABWEICHUNG " + k);
-    if (o.schreibe && neu.length) {
+    if (o.schreibe && (neu.length || ersetze.length)) {
+        for (const [alt, z] of ersetze) tafel.zeilen[tafel.zeilen.indexOf(alt)] = z;
         tafel.zeilen.push(...neu);
         const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
         fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
