@@ -868,7 +868,7 @@ const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohr
 const vorgeschichteVerdict = (vg) =>
     urteil([
         [!!vg && vg.bilder[0] === VERKEHR.zwillingS * 60 && vg.bilder[1] === vg.bilder[0], `die Stunde ohne Vorgeschichte ungezählt ${JSON.stringify(vg)}`], // prettier-ignore
-        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling`], // prettier-ignore
+        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling${vg && vg.wer && vg.wer.length ? ` (Zwilling ↔ Lauf: ${vg.wer.join(" · ")})` : ""}`], // prettier-ignore
         // wer noch ankommt, steigt nicht ein (`_tickVerkehr`, der Fall des Sprungs vor dem ersten Lauf): ein Name = er stieg ein
         [!vg || vg.einAnkunft === false, `wer noch ankommt, steigt ein: ${vg && vg.einAnkunft === null ? "keine Probe" : vg && vg.einAnkunft} — mit der Lage von vor dem Sprung (\`_tickVerkehr\` ohne \`ankunft\`)`], // prettier-ignore
     ]);

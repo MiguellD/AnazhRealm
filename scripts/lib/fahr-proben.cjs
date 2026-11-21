@@ -802,6 +802,12 @@ async function probeLeben(expected) {
             for (const W of VK.wagen) if (W.entry) mische(W.entry.position.x), mische(W.entry.position.z);
             return h[0];
         };
+        // (die Lage je Leib und Wagen in den ersten 30 Bildern: trennt sich die Stunde dort, nennt die Linse, WER sich trennt —
+        // sein Same, seine Rolle, seine Tat und beide Lagen)
+        const lagenJetzt = (VK) => [
+            ...S.liste.filter((b) => b.leib).map((b) => [`${b.rolle}#${b.same >>> 0} ${b.akt}${b.ankunft ? " ankunft" : ""}${b.weg ? " geht" : ""}${b.amSteuer ? " steuer" : ""}${b.ziel ? ` ziel ${b.ziel.x.toFixed(2)}/${b.ziel.z.toFixed(2)}` : ""}${b.ziel && b.ziel.ur ? ` ur ${b.ziel.ur.x.toFixed(2)}/${b.ziel.ur.z.toFixed(2)}` : ""}`, b.leib.position.x, b.leib.position.z]), // prettier-ignore
+            ...VK.wagen.filter((W) => W.entry).map((W) => [`wagen ${W.nr} ${W.zustand}`, W.entry.position.x, W.entry.position.z]),
+        ];
         const Z = {};
         for (const [lauf, [stunde, sek, nr]] of laeufe.entries()) {
             const zwilling = nr === o.stunden.length;
@@ -1033,13 +1039,14 @@ async function probeLeben(expected) {
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
             if (o.taeter) r._verkehrUmfahren = () => false;
-            const abdruck = [];
+            const [abdruck, lagen] = [[], []];
             for (let k = 0; k < sek * 60; k++, i++) {
                 const tv = tMs;
                 frame(i);
                 if (!zwilling) bildRuck((tMs - tv) / 1000, k), ohr(k);
                 if (i % 8 === 7) await window.sleep();
                 if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
+                if (k < 30 && o.zwillingS) lagen.push(lagenJetzt(VK));
                 if (zwilling) continue;
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
                     const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
@@ -1211,12 +1218,14 @@ async function probeLeben(expected) {
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
             Object.assign(sy, KL.vor);
             if (zwilling) {
-                Z.abdruck = abdruck;
+                [Z.abdruck, Z.lagen] = [abdruck, lagen];
                 continue;
             }
             if (Z.abdruck && !nr) {
                 const erst = Z.abdruck.findIndex((x, j) => x !== abdruck[j]);
-                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst, einAnkunft: Z.einAnkunft ?? null };
+                const [A, B] = [Z.lagen[erst], lagen[erst]];
+                const wer = A && B ? A.map((a, j) => [a, B[j]]).filter(([a, c]) => !c || a[1] !== c[1] || a[2] !== c[2]).slice(0, 4).map(([a, c]) => `${a[0]} ${a[1].toFixed(3)}/${a[2].toFixed(3)} ↔ ${c ? c[0] + " " + c[1].toFixed(3) + "/" + c[2].toFixed(3) : "-"}`) : []; // prettier-ignore
+                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst, einAnkunft: Z.einAnkunft ?? null, wer };
             }
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
