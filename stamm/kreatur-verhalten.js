@@ -699,16 +699,25 @@ class AnazhRealm_kreatur_verhalten {
     // Paar-Raum eines anderen Tiers führt (_kreaturFreierWeg) — wer folgt, stellt sich an, statt in den Vordermann zu laufen.
     // DER UMWEG (Ökologie K5, tetrapoda umwegSeite): hielt eine Wand das Tier eben (`_halt`) und zeigt der Wunsch fast frontal in
     // sie, geht es längs der Wand um sie herum — `umweg` ist das Tier (auch wo der Paar-Raum nicht gilt: Pirsch, Aas).
-    _kreaturZiel(out, dx, dz, rest, vMax, creature, umweg = creature) {
-        if (creature) rest = Math.min(rest, this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)));
+    // DAS ZIEL LÄUFT (mensch.nahrung.tier#1, front-mensch): `fort` ist das Tempo, mit dem das Ziel sich entfernt (m/s, ≥ 0) — der
+    // Wunsch trägt es über dem Ankunfts-Tempo, höchstens vMax (dasselbe Gesetz wie Hetze und Ansprung: ankunftTempo + fort);
+    // am Halt und in ihm (rest ≤ 0) läuft der Folger im Tempo des Ziels, stetig über rest = 0 (ankunftTempo(0) = 0) — sonst
+    // pumpt er am Halt zwischen 0 und fort. Der Paar-Raum eines Vordermanns (rest gekürzt) hält ihn wie bisher. Bis hier
+    // bremste der Folger auf einen stehenden Halt: am 29,5°-Hang fiel das gebundene Tier auf p95 5,11 m zurück (Soll ≤ 5).
+    _kreaturZiel(out, dx, dz, rest, vMax, creature, umweg = creature, fort = 0) {
+        const frei = creature ? this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)) : Infinity;
+        if (frei < rest) [rest, fort] = [frei, rest > 0 ? (fort * frei) / rest : 0];
+        const d = Math.hypot(dx, dz);
+        if (!(d > 1e-6)) return out.set(0, 0, 0);
+        const [ux, uz] = [dx / d, dz / d];
         // DER WUNSCH DER ZIEL-KETTE (tetrapoda `zielWunsch`: der Kern rechnet ihn für Tier und Mensch); der Wirt trägt den Umweg
         const W = globalThis.__tetrapodaCore.zielWunsch(dx, dz, rest, vMax, this._zielWunschAus || (this._zielWunschAus = { x: 0, z: 0, v: 0 })); // prettier-ignore
+        if (fort > 0) [W.v] = [Math.min(vMax, W.v + fort)];
         if (!(W.v > 0)) return out.set(0, 0, 0);
+        [W.x, W.z] = [ux * W.v, uz * W.v];
         const h = umweg && umweg.userData._halt;
         const t = this.state.creatureAnimationTime;
         const U = h && AnazhRealm._umwegGesetz();
-        const d = Math.hypot(dx, dz);
-        const [ux, uz] = [dx / d, dz / d];
         if (h && t - h.t <= U.UMWEG_GESETZ.haltS && ux * h.nx + uz * h.nz < 0) {
             const p = umweg.position;
             const alt = t - h.umweg <= U.UMWEG_GESETZ.haltS ? h.seite : 0;
@@ -1944,14 +1953,22 @@ class AnazhRealm_kreatur_verhalten {
         const dx = player.x - creature.position.x;
         const dz = player.z - creature.position.z;
         const dist = Math.hypot(dx, dz);
+        const fort = this._spielerFort(dx, dz, dist);
         if (dist <= haltDist) {
             // DAS WESEN ERINNERT, WEM ES FOLGTE (KI K3): angekommen beim Spieler, einmal je Auftrag — das Gespräch liest es
             if (!task.erinnert) ((task.erinnert = true), this._creatureRemember(creature, "gefolgt", {}));
-            return out.set(0, 0, 0);
+            if (!(fort > 0)) return out.set(0, 0, 0);
         }
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
-        return this._kreaturZiel(out, dx, dz, dist - haltDist, speed, creature);
+        return this._kreaturZiel(out, dx, dz, dist - haltDist, speed, creature, creature, fort);
+    }
+
+    // DER LAUF DES SPIELERS VON EINEM TIER FORT (m/s, ≥ 0): sein Lauf dieses Takts (`_spielerLageAlt`, updateCreatures) längs
+    // (dx, dz)/d, der Richtung vom Tier zu ihm — jeder Weg, dessen Ziel der Spieler ist (Folgen, Bringen), hält damit Schritt
+    _spielerFort(dx, dz, d) {
+        const sa = this._spielerLageAlt;
+        return sa && d > 1e-6 ? Math.max(0, (sa.vx * dx + sa.vz * dz) / d) : 0;
     }
 
     // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
@@ -2002,7 +2019,7 @@ class AnazhRealm_kreatur_verhalten {
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            return this._kreaturZiel(out, dxp, dzp, distp - handover, speed, creature);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, speed, creature, creature, this._spielerFort(dxp, dzp, distp)); // prettier-ignore
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
@@ -2148,7 +2165,7 @@ class AnazhRealm_kreatur_verhalten {
                 this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
-            return this._kreaturZiel(out, dxp, dzp, distp - handover, buildSpeed, creature);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, buildSpeed, creature, creature, this._spielerFort(dxp, dzp, distp)); // prettier-ignore
         }
         // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
         const dxp2 = creature.position.x - player.x;

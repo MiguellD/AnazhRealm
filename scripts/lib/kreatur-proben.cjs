@@ -690,6 +690,10 @@ async function kreaturProben(r, T, opts) {
                         return out.set((dx / d) * vMax, 0, (dz / d) * vMax);
                     }
             );
+        // Folgen hinter einem stehenden Ziel: der Lauf des Spielers erreicht den Weg nicht (das Ankunfts-Gesetz bremst auf
+        // einen Halt, den der Spieler längst verlassen hat — mensch.nahrung.tier#1)
+        if (taeter === "gier-fort") decke("_spielerFort", () => () => 0);
+        const halt = A.CREATURE_FOLLOW_DISTANCE;
         // Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (die Linse von gate:tier-gang, frei gegiert).
         const pfoten = tiere.map((cr) => {
             const P = pfotenRaum(cr, ["legHL"]);
@@ -711,6 +715,7 @@ async function kreaturProben(r, T, opts) {
             phase: 0, // +1 Gas, −1 Bremse (im freien Lauf, |a| > 1,5 m/s²)
             wechsel: 0, // Gas ↔ Bremse
             freiT: 0,
+            nach: [], // m — der Abstand zum Spieler über dem Halt, je Takt der zweiten Hälfte jeder Seite
         }));
         const vorher = tiere.map((c) => ({ x: c.position.x, z: c.position.z, v: 0, anprall: false }));
         const geschoben = kontaktZaehler();
@@ -746,6 +751,8 @@ async function kreaturProben(r, T, opts) {
                         z.lauf++;
                         if (a > 90) z.rueck++;
                     }
+                    // DER NACHLAUF: auf der zweiten Hälfte jeder Seite (die Ecke ist durch) der Abstand über dem Halt
+                    if (j > Math.round(15 / v / dt)) z.nach.push(Math.hypot(pm.x - c.position.x, pm.z - c.position.z) - halt);
                     vorher[i] = { x: c.position.x, z: c.position.z, v: sp, anprall };
                     const pf = pfoten[i];
                     if (pf) {
@@ -799,6 +806,7 @@ async function kreaturProben(r, T, opts) {
                 gasBremseJeMin: z.freiT > 0 ? rund((z.wechsel / z.freiT) * 60, 1) : null,
                 schlupfQuer: schlupf[i] ? schlupf[i].q : null,
                 schlupfLaengs: schlupf[i] ? schlupf[i].l : null,
+                nachlaufP95: z.nach.length ? rund(quantil(z.nach, 0.95), 2) : null,
             };
         });
         return o;
@@ -3960,6 +3968,9 @@ const PROBEN = [
     "todlage",
     "tiersatz",
 ];
+// DER NACHLAUF des ersten Folgers (m über dem Halt, p95 auf der Geraden): Kopf 2,01 · ohne den Lauf des Ziels 2,32 (gier, headless)
+const NACHLAUF_M = 2.15;
+
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
     if (z.fehler) return { ok: false, grund: z.fehler };
@@ -4050,6 +4061,14 @@ function urteil(name, z) {
                 `${art}: Folgen als Gas ↔ Bremse ${a.gasBremseJeMin} Wechsel je Minute (Soll ≤ 30, das Ankunfts-Gesetz)`
             );
         }
+        // DAS ZIEL LÄUFT (mensch.nahrung.tier#1): der erste Folger (das Wesen, vor ihm kein Paar-Raum) hält auf der Geraden
+        // Schritt — der Lauf des Spielers trägt seinen Wunsch über dem Ankunfts-Tempo (_kreaturZiel fort, _spielerFort)
+        const w = z.wesen;
+        if (w)
+            soll(
+                w.nachlaufP95 !== null && w.nachlaufP95 <= NACHLAUF_M,
+                `wesen: das Folgen bremst auf einen stehenden Halt — Nachlauf p95 ${w.nachlaufP95} m über dem Halt auf der Geraden (Soll ≤ ${NACHLAUF_M} m; der Lauf des Ziels fehlt im Wunsch: stamm/kreatur-verhalten.js _kreaturZiel fort)`
+            );
     }
     if (name === "jagd") {
         // der Jäger hetzt im Sprint der Gestalt (der Schritt-Weg holt ein ruhiges Kitz auch ein, er hetzt nie); ohne Hetze
@@ -4443,6 +4462,7 @@ const TAETER = {
     gier: [
         ["gier", /Lauf ↔ Blick|rückwärts/],
         ["gier-folgen", /Gas ↔ Bremse/],
+        ["gier-fort", /wesen: das Folgen bremst auf einen stehenden Halt/],
     ],
     jagd: [
         ["jagd", /Achsen/],
