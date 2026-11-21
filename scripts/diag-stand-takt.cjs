@@ -2957,14 +2957,17 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // die die nahen Regionen danach nachholen, steht dem Entfachen nicht voran (`_feldFolgeSteht`, wie in `brandSeite`)
                         r._feldFolgeSteht = () => true;
                         const lauf = async (n) => {
-                            const [Z, H, bf, gesehen] = [{ zellen: [], einheiten: [], masken: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld, new Set()];
+                            const [Z, H, bf, gesehen] = [{ zellen: [], einheiten: [], masken: [], rufe: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld, new Set()];
                             S.frame();
                             for (let i = 0; i < n && bf.size; i++) {
                                 const vor = bf.size;
                                 r._weltUhrNimm(r._brandUhr + B.schrittS);
                                 takt();
                                 Z.zellen.push(Math.max(vor, bf.size));
-                                Z.einheiten.push(S.frame().brand);
+                                // je Schritt seine Leser (BRAND-ZELLEN nennt den Täter beim Namen, w28-pop-treue: die häufigsten Rufe)
+                                const bild = S.frame();
+                                Z.einheiten.push(bild.brand);
+                                Z.rufe.push(Object.entries(bild.je.brand).sort((a, b) => b[1] - a[1]).slice(0, 6));
                                 // die Zellen, die in diesem Schritt die Maske ihres Betts maßen (eine Zelle mit Bett-Kante, einmal je Brand):
                                 // die neuen Einträge des Gemessenen (`_brandBett`) mit Brennstoff UND Kahlem
                                 let masken = 0;
@@ -3116,7 +3119,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     : n === "feld"
                       ? `${w.geschrieben} Zellen geschrieben, tote/Zellen nach den Wellen ${w.wellen.map((x) => x.tote + "/" + x.groesse).join(" · ")} — ${simZeile(w.welle)}`
                       : n === "brand"
-                        ? JSON.stringify({ ...w, zellen: Math.max(0, ...w.zellen), einheiten: Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1))), nachher: undefined }) +
+                        ? JSON.stringify({ ...w, zellen: Math.max(0, ...w.zellen), einheiten: Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1))), rufe: undefined, amSoll: STAND.brandAmSoll(w), nachher: undefined }) +
                           ` — nachher ${simZeile(w.nachher)}`
                         : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
