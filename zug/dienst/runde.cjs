@@ -151,9 +151,13 @@ function oeffne(r, main) { // die naechste Runde am main-Kopf des Moments
 }
 
 // ── DIE MESS-DATEIEN ── ein Urteil je Station: GRUEN, ROT oder keins (ungemessen; ein juengeres UNGEMESSEN schlaegt den aelteren Lauf)
+// EIN START IST NIE EIN URTEIL (21.11.; 31ea3847: GTX 162, Radeon 79 Einträge „Start: spawn ENAMETOOLONG“ unter m.je, das Gesetz (2)
+// der Reihe warf sie als „ROT am Vor-Kopf ohne Berührung“ aus jeder nächsten Runde): ein Eintrag „Start: …“ unter m.je stammt vom Läufer
+// vor dem 21.11. — er liest sich wie punkte.cjs startOffen ihn ablegt: UNGEMESSEN mit `offen` 1, nie GRÜN oder ROT
+const startFehler = (v) => !!v && !v.ungemessen && /^Start: /.test(String(v.grund || ""));
 function urteil(m, s) {
     const v = ((m && m.je) || {})[s], u = ((m && m.ungemessen) || {})[s];
-    if (!v || v.ungemessen) return null;
+    if (!v || v.ungemessen || startFehler(v)) return null;
     if (u && String(u.zeit || "") >= String(v.zeit || "")) return null;
     return v.gruen ? "GRUEN" : "ROT";
 }
@@ -166,7 +170,11 @@ function urteil(m, s) {
 // oder aus der Zeit vor dem Feld — steht wie bisher.
 const OFFEN_MAX = 3;
 const apparatOffen = (u) => !!u && u.offen >= 1 && u.offen < OFFEN_MAX;
-const hatEintrag = (m, s) => { const u = ((m && m.ungemessen) || {})[s]; return !!(((m && m.je) || {})[s] || (u && !apparatOffen(u))); };
+const hatEintrag = (m, s) => {
+    const u = ((m && m.ungemessen) || {})[s], v = ((m && m.je) || {})[s];
+    if (startFehler(v)) return !!(u && String(u.zeit || "") >= String(v.zeit || "") && !apparatOffen(u));
+    return !!(v || (u && !apparatOffen(u)));
+};
 
 const [was, ...arg] = process.argv.slice(2);
 const opt = (n) => { const i = arg.indexOf("--" + n); return i < 0 ? null : arg[i + 1]; };

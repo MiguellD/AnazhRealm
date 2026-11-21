@@ -508,11 +508,46 @@ function fahrtUrteil(stationen) {
     });
 }
 
-// die Länge der Befehlszeile, wie Windows sie sieht (obere Schranke): je Argument Anführung und Trenner, je " und je \ ein Fluchtzeichen.
-// RUMPF_ZEILE_MAX lässt unter den 32 767 Zeichen Platz für den Pfad von node, gpu-lauf.sh und den Namen des Laufs.
-const zeileLaenge = (argv) => argv.reduce((n, a) => n + a.length + 3 + (a.match(/["\\]/g) || []).length, 0);
+// DIE BEFEHLSZEILE, WIE WINDOWS SIE SIEHT (21.11., 162 Stationen der GTX am 31ea3847 und f68dbf09, 79 der Radeon „Start: spawn
+// ENAMETOOLONG“): libuv baut sie für CreateProcessW aus [exe, ...argv] (src/win/process.c quote_cmd_arg) — ein Argument ohne Leer-,
+// Tab- und Anführungszeichen geht roh, sonst in Anführung; je " ein \ davor, und jede Folge von \ vor einem " (oder vor der
+// schließenden Anführung) verdoppelt; dazwischen je ein Leerzeichen. Geeicht an der Radeon (node 24, C:\Program Files\nodejs\node.exe):
+// eine Zeile von 32 766 Zeichen startet, 32 767 wirft ENAMETOOLONG (ZEILE_MAX). Die Regel vom 15.11. maß nur `argv[2]` (den Läufer der
+// Probe) und legte nur ihn ab — die ART der Probe (seite.cjs seiteProbe: `knapp(art)` als argv[6], der ganze Kern einer Perspektive von
+// k2-planet) blieb auf der Zeile: 565 von 1 975 Stationen trugen 34 110–110 096 Zeichen.
+// je " zählt die Folge \…\" ganz noch einmal (bs + 1), die \ vor der schließenden Anführung einmal; ein langes Argument (die Art der
+// Probe, je Perspektive EIN Text für alle ihre Zwillinge) zählt EINMAL je Prozess
+const ZEILE_ARG_GEZAEHLT = new Map();
+const zeileArg = (a) => {
+    if (!a.length) return 2;
+    if (!/[ \t"]/.test(a)) return a.length;
+    if (!/["\\]/.test(a)) return a.length + 2;
+    if (a.length > 4096 && ZEILE_ARG_GEZAEHLT.has(a)) return ZEILE_ARG_GEZAEHLT.get(a);
+    let n = a.length + 2;
+    const re = /\\*"/g;
+    let m;
+    while ((m = re.exec(a))) n += m[0].length;
+    n += /\\*$/.exec(a)[0].length;
+    if (a.length > 4096) ZEILE_ARG_GEZAEHLT.set(a, n);
+    return n;
+};
+const zeileLaenge = (argv) => argv.reduce((n, a) => n + zeileArg(String(a)), 0) + Math.max(0, argv.length - 1);
+const ZEILE_MAX = 32766;
+// RUMPF_ZEILE_MAX lässt unter ZEILE_MAX Platz für bash, gpu-lauf.sh und den Namen des Laufs (das Schloss stellt sie vor node)
 const RUMPF_ZEILE_MAX = 30000;
-const RUMPF_LADER = 'eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))';
+// DIE EINE TÜR DER BEFEHLSZEILE (zeileTuer; fahreStation startet so, die Linse BEFEHL TRÄGT misst so): trägt die Zeile von `node -e`
+// mehr als RUMPF_ZEILE_MAX, liegt der GANZE Inhalt — der Rumpf und jedes Argument dahinter — als JSON neben der Ausgabe der Station
+// (PUNKTE_RUMPF), und `-e` trägt nur den Lader: er hängt die Argumente an process.argv (dasselbe argv wie auf der Zeile) und wertet
+// den Rumpf direkt aus (dasselbe `require` vom Baum). Die Zeile trägt dann nur noch Pfade, nie einen Inhalt.
+const RUMPF_LADER = 'eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))';
+function zeileTuer(argv) {
+    if (argv[0] === "node" && argv[1] === "-e" && typeof argv[2] === "string" && zeileLaenge([process.execPath, ...argv.slice(1)]) > RUMPF_ZEILE_MAX)
+        return { argv: ["node", "-e", RUMPF_LADER], rumpf: JSON.stringify({ rumpf: argv[2], argv: argv.slice(3) }) };
+    return { argv, rumpf: null };
+}
+// der Läufer VOR der Tür (die Mutante der Linse): nur argv[2] als Datei, gemessen mit der alten Schranke
+const zeileTuerAlt = (argv) => (argv[0] === "node" && argv[1] === "-e" && argv.reduce((n, a) => n + a.length + 3 + (a.match(/["\\]/g) || []).length, 0) > RUMPF_ZEILE_MAX
+    ? { argv: [argv[0], argv[1], 'eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))', ...argv.slice(3)], rumpf: argv[2] } : { argv, rumpf: null });
 // DER BASH-RUMPF (16.11., Radeon fe885d9d, Paar-Fahrt der Welle 2): die Git-bash (bash 5.3, x86_64-pc-cygwin) liest das Skript hinter
 // `-c` nur bis 8 191 Bytes — der Rest fällt still weg, gleich ob node oder bash sie startet (nachgestellt: ein Kommentar von 8 192 Bytes
 // vor `echo ok` druckt nichts, 8 187 druckt „ok“). siedlung.K4#2 maß 9 094 Bytes, seit die Welle 2 Gegen-Orte in ORT, UHR und STAND
@@ -557,6 +592,19 @@ async function befehlTraegt(stationen, regel = {}) {
             if (m) {
                 const n = a.slice(0, m.index).split("\n").length;
                 rot.push(id + " · Zeile " + n + ": unersetzter Platzhalter " + m[0] + " — " + zeile(a, n));
+            }
+        }
+        // (c) DIE BEFEHLSZEILE TRÄGT (21.11.): nach der Tür (zeileTuer; `regel.zeileAlt` der Läufer davor) die Zeile so, wie Windows
+        // sie bekommt — node, unter dem Schloss davor bash, gpu-lauf.sh und der Name des Laufs —, höchstens ZEILE_MAX Zeichen
+        {
+            const tuer = (regel.zeileAlt ? zeileTuerAlt : zeileTuer)(argv);
+            const bashPfad = bash || "C:/Program Files/Git/usr/bin/bash.exe";
+            const schloss = !st.probe && st.gpu ? [bashPfad, GPU_LAUF.split(path.sep).join("/"), "punkte-radeon-3"] : [];
+            const voll = [...schloss, tuer.argv[0] === "node" ? process.execPath : bashPfad, ...tuer.argv.slice(1)];
+            const n = zeileLaenge(voll);
+            if (n > ZEILE_MAX) {
+                const je = voll.map((a) => zeileArg(String(a))), i = je.indexOf(Math.max(...je.slice(1)));
+                rot.push(id + " · Befehlszeile " + n + " Zeichen über " + ZEILE_MAX + " (argv[" + i + "] " + je[i] + " Zeichen) — Windows startet sie nie (ENAMETOOLONG)");
             }
         }
         if (tpl.some((a) => String(a).includes("{SEK}")) && !(sek > SEK_RAND_S))
@@ -1948,11 +1996,14 @@ function fahreGruppeEinmal(sts, ctx) {
         // 32 767 Zeichen (CreateProcess), der Rumpf dieser Station maß 32 754 vor den Fluchtzeichen; 41 von 278 Stationen standen über
         // 20 000, sieben bei 26 210). Über RUMPF_ZEILE_MAX liegt der Rumpf neben der Ausgabe der Station, und `-e` trägt nur seinen Lader:
         // derselbe Prozess, dasselbe argv dahinter, dasselbe `require` vom Baum aus (ein direktes eval im Rumpf von -e) — die Probe sieht
-        // keinen Unterschied, auf jedem Betriebssystem dieselbe Regel.
-        if (argv[0] === "node" && argv[1] === "-e" && typeof argv[2] === "string" && zeileLaenge(argv) > RUMPF_ZEILE_MAX) {
-            env.PUNKTE_RUMPF = ctx.aus + ".rumpf.js";
-            fs.writeFileSync(env.PUNKTE_RUMPF, argv[2]);
-            argv[2] = RUMPF_LADER;
+        // keinen Unterschied, auf jedem Betriebssystem dieselbe Regel. Seit 21.11. die EINE Tür (zeileTuer): der Rumpf UND jedes
+        // Argument dahinter (die Art der Probe, seite.cjs) liegen als Datei — gemessen wie Windows die Zeile sieht (zeileLaenge).
+        const tuer = zeileTuer(argv);
+        if (tuer.rumpf != null) {
+            env.PUNKTE_RUMPF = ctx.aus + ".rumpf.json";
+            fs.mkdirSync(path.dirname(env.PUNKTE_RUMPF), { recursive: true });
+            fs.writeFileSync(env.PUNKTE_RUMPF, tuer.rumpf);
+            argv = tuer.argv;
         }
         if (argv[0] === "bash" && argv[1] === "-c" && typeof argv[2] === "string" && Buffer.byteLength(argv[2]) > BASH_RUMPF_MAX) {
             env.PUNKTE_RUMPF_SH = (ctx.aus + ".rumpf.sh").split(path.sep).join("/");
@@ -1981,6 +2032,15 @@ function fahreGruppeEinmal(sts, ctx) {
             // das Platz-Schloss: ein Zeit-Lauf nimmt alle Plätze, ein Bild-Lauf einen von N (N = 1: das Ein-Platz-Schloss)
             env.GPU_LAUF_ART = istZeit(sts) ? "zeit" : "bild";
             env.GPU_LAUF_PLAETZE = String(ctx.plaetze || 1);
+        }
+        // DER START IST NIE EIN URTEIL (Regel (d), DER MESSORT): trägt die Zeile nach der Tür noch mehr, als Windows startet (ein Inhalt
+        // außerhalb von `node -e`), fährt sie nie — UNGEMESSEN beim Namen des Arguments, wie jeder Start-Fehler unten
+        {
+            const voll = [exe, ...argv], n = zeileLaenge(voll);
+            if (n > ZEILE_MAX) {
+                const je = voll.map((a) => zeileArg(String(a))), i = je.indexOf(Math.max(...je.slice(1)));
+                return offen("Start: die Befehlszeile trägt " + n + " Zeichen über " + ZEILE_MAX + " (argv[" + i + "] " + je[i] + " Zeichen) — die Tür legt nur `node -e` ab");
+            }
         }
         if (st.gpu) {
             // der Zeuge der Karte in JEDEM node-Prozess der Station (die Werkbank schreibt in ihr eigenes Log)
@@ -2062,13 +2122,14 @@ function fahreGruppeEinmal(sts, ctx) {
             try {
                 k = kind = spawn(exe, argv, { cwd: ctx.baum, env, windowsHide: true, detached: process.platform !== "win32" });
             } catch (e) {
-                return rot("Start: " + e.message);
+                // ein Start, der warf, hat die Linse nie erreicht: UNGEMESSEN beim Grund (eintragen zählt `offen`, die Runde misst neu)
+                return offen("Start: " + e.message);
             }
             k.stdout.on("data", (d) => { tLeben = Date.now(); out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); wurfLies(outTeil.slice(-4000)); });
             k.stderr.on("data", (d) => { tLeben = Date.now(); err = kappe(err, String(d)); lauscht(); });
             if (sitz) ((tLeben = tA), leine(tA));
             else stelle(schloss ? stillS : deckelS);
-            k.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
+            k.on("error", (e) => { clearTimeout(uhr); offen("Start: " + e.message); });
             // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
             // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
             // k × 5 min (fahrzeug.K3#1 5,02 gegen 1,07 auf der Radeon); nach "exit" bleiben den Rohren 2 s zum Leerlaufen
@@ -4390,7 +4451,7 @@ function vereineCli(opt) {
     }
     const erwartet = opt.scheiben ? JSON.parse(fs.readFileSync(opt.scheiben, "utf8")).scheiben : null;
     const datei = messDatei(opt.sha, opt.geraet);
-    const alt = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
+    const alt = fs.existsSync(datei) ? messungLesen(fs.readFileSync(datei, "utf8")) : null;
     const r = vereineMessungen(alt, teile, opt.sha, opt.geraet, opt.farm, erwartet);
     fs.writeFileSync(datei, JSON.stringify(r.m, null, 1) + "\n");
     const rohZiel = path.join(DIR, "messung", "roh", name);
@@ -4561,7 +4622,7 @@ async function run(opt) {
     const datei = messDatei(sha, opt.geraet, mdir);
     const rohDir = path.join(mdir, "roh", sha.slice(0, 8) + "-" + opt.geraet);
     fs.mkdirSync(path.dirname(datei), { recursive: true }); // die Farm checkt messung/ nie aus (ihr Teil trägt nur die Scheibe)
-    let m = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
+    let m = fs.existsSync(datei) ? messungLesen(fs.readFileSync(datei, "utf8")) : null;
     const host = opt.farm || os.hostname();
     if (!m || m.sha !== sha) m = { sha, geraet: opt.geraet, zeit: null, host, je: {} };
     const hilfe = hilfeText();
@@ -4660,7 +4721,25 @@ const stationsEintrag = (e, o) => ({ ...e, zeit: o.zeit, abdruck: o.abdruck, por
 // die laufende Probe —, trägt `offen` = die Zahl seiner Versuche an diesem Kopf. Die Runde fährt ihn nach, solange die Zahl unter
 // ihrer Grenze steht; ein Eintrag beim Namen der Station (Frist, Grund-Stellung, Täter-Ort, Urteils-Zeile, die laufende Probe) trägt
 // das Feld nie und steht.
-const apparatOffen = (grund) => /— offen, UNGEMESSEN$/.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
+// DER START (21.11.): ein Lauf, dessen Prozess nie startete („Start: …“, fahreStation), erreichte den Apparat nie — er zählt seine
+// Versuche wie jeder Eintrag oben.
+const START_GRUND = /^Start: /;
+const apparatOffen = (grund) => /— offen, UNGEMESSEN$/.test(grund) || START_GRUND.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
+// DIE ALTEN START-FEHLER IM BUCH (startOffen; 31ea3847: GTX 162, Radeon 79; f68dbf09: GTX 162 — bis 21.11. schrieb der Läufer „Start:
+// spawn ENAMETOOLONG“ als ROT nach m.je): jede gelesene Mess-Datei (messungLesen: ladeMessungen, run, vereine) trägt einen solchen
+// Eintrag unter m.ungemessen mit `offen` 1 — frischUrteil, `run --offen`, beruehrt und die Buchung sehen ihn UNGEMESSEN, nie als
+// Urteil; der nächste Schreiber der Datei legt ihn so ab (zug/dienst/runde.cjs `startFehler` liest die Datei am Ursprung dasselbe).
+function startOffen(m) {
+    if (!m || !m.je) return m;
+    for (const [id, e] of Object.entries(m.je)) {
+        if (!e || e.ungemessen || !START_GRUND.test(String(e.grund || ""))) continue;
+        delete m.je[id];
+        const u = (m.ungemessen || {})[id];
+        if (!u || String(u.zeit || "") < String(e.zeit || "")) (m.ungemessen = m.ungemessen || {})[id] = { ...e, ungemessen: true, offen: 1 };
+    }
+    return m;
+}
+const messungLesen = (text) => startOffen(JSON.parse(text));
 function eintragen(m, id, e) {
     e = konsumTafeln(m, e);
     if (e.ungemessen) {
@@ -4935,7 +5014,7 @@ const r6Zeile = (r) => "R6 nach Konsum: " + r.konsum + " von " + r.haelften + " 
 
 function ladeMessungen(mdir = path.join(DIR, "messung")) {
     if (!fs.existsSync(mdir)) return [];
-    return fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)).map((f) => JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")));
+    return fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)).map((f) => messungLesen(fs.readFileSync(path.join(mdir, f), "utf8")));
 }
 
 // R6 urteilt über die Bytes OHNE Versions-Stempel (?v=, "version", VERSION) — 23.10.: jede Versions-Stufe stempelt index.html
@@ -6099,20 +6178,33 @@ async function selbsttest(o = {}) {
     {
         const t0 = Date.now();
         const jetzt = await befehlTraegt(echt.stationen);
-        const vorher = await befehlTraegt(echt.stationen, { bashRumpf: false, sitzGrenze: () => ({ sekMin: 1 }) });
+        const vorher = await befehlTraegt(echt.stationen, { bashRumpf: false, sitzGrenze: () => ({ sekMin: 1 }), zeileAlt: true });
         // die Mutanten der Linse selbst: ein offenes Hochkomma mitten unter gesunden Skripten, ein Platzhalter, den niemand ersetzt,
         // ein node -e, das nie parst — je ROT an seiner Station und Zeile; das gesunde Skript daneben bleibt GRÜN
         const m = (id, befehl) => ({ kriterium: id, staffel: 1, minuten: 1, befehl });
         const mut = await befehlTraegt([m("m.gesund", ["bash", "-c", "echo a\necho b"]), m("m.zitat", ["bash", "-c", "echo a\necho 'b\necho c"]), m("m.gesund2", ["bash", "-c", "echo d"]),
             m("m.platz", ["bash", "-c", "echo {AUS}\necho {AUSGABE}"]), m("m.node", ["node", "-e", "const a = 1;\nconst = 2;"])]);
-        const mutOk = ["m.zitat#1 · Zeile 2", "m.platz#1 · Zeile 2", "m.node#1 · Zeile 2"].every((p) => mut.rot.some((z) => z.startsWith(p))) && mut.rot.length === 3;
+        // die Mutanten der Befehlszeile: ein Inhalt hinter dem Rumpf (wie die Art der Probe) fährt durch die Tür; derselbe Inhalt hinter
+        // `bash -c` trägt keine Tür — ROT an der Zeile, und Fluchtzeichen zählen wie bei Windows (12 000 × \" sind 24 000 Zeichen im
+        // Argument, 36 002 auf der Zeile)
+        const z = "x".repeat(40000);
+        const zmut = await befehlTraegt([m("z.tuer", ["node", "-e", "0", "{AUS}", z]), m("z.bash", ["bash", "-c", "echo", "a", z]), m("z.flucht", ["bash", "-c", "echo", "a", '\\"'.repeat(12000)])]);
+        const zOk = ["z.bash#1 · Befehlszeile ", "z.flucht#1 · Befehlszeile "].every((p) => zmut.rot.some((x) => x.startsWith(p))) && zmut.rot.length === 2;
+        const zmutAlt = await befehlTraegt([m("z.tuer", ["node", "-e", "0", "{AUS}", z])], { zeileAlt: true });
+        const zAltOk = zmutAlt.rot.length === 1 && zmutAlt.rot[0].startsWith("z.tuer#1 · Befehlszeile ");
+        const mutOk = ["m.zitat#1 · Zeile 2", "m.platz#1 · Zeile 2", "m.node#1 · Zeile 2"].every((p) => mut.rot.some((z) => z.startsWith(p))) && mut.rot.length === 3 && zOk && zAltOk;
         const s = ((Date.now() - t0) / 1000).toFixed(1);
-        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
+        // die Täter der Befehlszeile (31ea3847 GTX „Start: spawn ENAMETOOLONG“): je Leiter-Gruppe der 162 eine Station
+        const taeterZeile = ["karte2.planet.relief.grossform#2", "karte2.planet.geologie.gebirge#2", "karte2.planet.wetter.lagen#2", "karte2.planet.kopplung.siedlungslage#3",
+            "karte2.leben.kopplung.leben-formt-planet#4", "karte2.mensch.kopplung.leib#2", "karte2.erleben.kopplung.emergenz#2"];
+        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1", ...taeterZeile];
+        const zeileVorher = vorher.rot.filter((x) => / · Befehlszeile \d+ Zeichen/.test(x)).length;
         const verfehlt = taeter.filter((id) => !vorher.rot.some((z) => z.startsWith(id + " · ")));
         for (const z of jetzt.rot) console.log("    ROT " + z);
-        pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
+        pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen, die Befehlszeile ≤ " + ZEILE_MAX + " Zeichen, wie Windows sie sieht; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
             jetzt.rot.length === 0 && verfehlt.length === 0 && vorher.rot.length > 0 && mutOk && Number(s) <= 20,
-            "jetzt ROT " + jetzt.rot.length + " · vorher ROT " + vorher.rot.length + (verfehlt.length ? " · vorher NICHT rot: " + verfehlt.join(", ") : "") + " · Mutanten " + (mutOk ? "ROT an Station und Zeile" : JSON.stringify(mut.rot)) + " · " + s + " s");
+            "jetzt ROT " + jetzt.rot.length + " · vorher ROT " + vorher.rot.length + " (Befehlszeile über " + ZEILE_MAX + ": " + zeileVorher + ")" + (verfehlt.length ? " · vorher NICHT rot: " + verfehlt.join(", ") : "") +
+            " · Mutanten " + (mutOk ? "ROT an Station und Zeile" : JSON.stringify([mut.rot, zmut.rot, zmutAlt.rot])) + " · " + s + " s");
         if (o.nur === "befehl-traegt") {
             const sek = vorher.rot.filter((z) => / · SEK \d+ ≤ /.test(z));
             for (const z of vorher.rot.filter((z) => !sek.includes(z) || taeter.some((id) => z.startsWith(id + " · ")))) console.log("    vorher " + z);
@@ -6485,9 +6577,31 @@ async function selbsttest(o = {}) {
     // überall keine Rumpf-Datei)
     const lang = "/*" + "x".repeat(40000) + "*/require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0, argv: process.argv.length, req: typeof require('path').join }))";
     e = await fahreStation({ ...st0, befehl: ["node", "-e", lang, "{AUS}"], urteil: (j) => ({ gruen: j.n === 0 && j.argv === 2 && j.req === "function", zahl: "argv " + j.argv }) }, ctx("rumpf"));
-    pruef("LÄUFER ein Rumpf über der Befehlszeile fährt als Datei — dasselbe argv, dasselbe require", e.gruen === true && e.zahl === "argv 2" && fs.existsSync(path.join(tmp, "rumpf.json.rumpf.js")), JSON.stringify(e));
+    pruef("LÄUFER ein Rumpf über der Befehlszeile fährt als Datei — dasselbe argv, dasselbe require", e.gruen === true && e.zahl === "argv 2" && fs.existsSync(path.join(tmp, "rumpf.json.rumpf.json")), JSON.stringify(e));
+    // DIE ART HINTER DEM RUMPF (21.11., 162 Stationen von k2-planet an der GTX „Start: spawn ENAMETOOLONG“): ein kurzer Rumpf mit einem
+    // Argument von 40 000 Zeichen dahinter (seite.cjs: die Art der Probe als argv[6]) fährt durch die Tür — jedes Argument Zeichen für
+    // Zeichen gleich, in derselben Reihe; der Läufer davor reichte das Argument auf die Zeile (Windows: ENAMETOOLONG)
+    const art = "async (H) => { /*" + "ä \"\\ ".repeat(8000) + "*/ return 0; }";
+    const pruefArt = "const a = process.argv.slice(1), soll = \"async (H) => { /*\" + " + JSON.stringify("ä \"\\ ") + ".repeat(8000) + \"*/ return 0; }\"; " +
+        "require('fs').writeFileSync(a[0], JSON.stringify({ n: a.length === 3 && a[1] === '7704' && a[2] === soll ? 0 : 1, argv: process.argv.length }))";
+    e = await fahreStation({ ...st0, befehl: ["node", "-e", pruefArt, "{AUS}", "7704", art], urteil: (j) => ({ gruen: j.n === 0, zahl: "argv " + j.argv }) }, ctx("art"));
+    pruef("LÄUFER eine Art von " + art.length + " Zeichen hinter einem kurzen Rumpf fährt durch die Tür — dasselbe argv in derselben Reihe", e.gruen === true && e.zahl === "argv 4" && fs.existsSync(path.join(tmp, "art.json.rumpf.json")), JSON.stringify(e).slice(0, 400));
     e = await fahreStation({ ...st0, befehl: schreib({ n: 0 }), urteil: lies }, ctx("kurz"));
-    pruef("LÄUFER ein kurzer Rumpf bleibt auf der Befehlszeile (keine Rumpf-Datei)", e.gruen === true && !fs.existsSync(path.join(tmp, "kurz.json.rumpf.js")), JSON.stringify(e));
+    pruef("LÄUFER ein kurzer Rumpf bleibt auf der Befehlszeile (keine Rumpf-Datei)", e.gruen === true && !fs.existsSync(path.join(tmp, "kurz.json.rumpf.json")), JSON.stringify(e));
+    // DER START IST NIE EIN URTEIL (Regel (d)): eine Zeile, die keine Tür trägt (40 000 Zeichen hinter `bash -c`), und ein Programm, das
+    // nicht startet, sind UNGEMESSEN beim Grund „Start: …“ mit `offen` im Eintrag — nie ROT; ein alter Start-Fehler unter m.je liest sich
+    // UNGEMESSEN (startOffen)
+    e = await fahreStation({ ...st0, befehl: ["bash", "-c", "echo", "a", "x".repeat(40000)], urteil: lies }, ctx("zeile"));
+    const eNie = await fahreStation({ ...st0, befehl: ["bash", "-c", "echo"], urteil: lies }, { ...ctx("nie"), bash: path.join(tmp, "keine-bash.exe") });
+    const mStart = { je: {}, ungemessen: {} };
+    eintragen(mStart, "s.zeile#1", e);
+    eintragen(mStart, "s.nie#1", eNie);
+    const alt = startOffen({ je: { "a#1": { gruen: false, grund: "Start: spawn ENAMETOOLONG", zahl: "Start: spawn ENAMETOOLONG", exit: null, minuten: 0, zeit: "2026-11-20T21:00:00Z" }, "b#1": { gruen: false, grund: "ROT: n 3", zeit: "2026-11-20T21:00:00Z" } } });
+    pruef("LÄUFER ein Start-Fehler ist UNGEMESSEN beim Grund, nie ROT (Zeile über " + ZEILE_MAX + ", Programm fehlt, der alte Eintrag im Buch)",
+        e.ungemessen === true && /^Start: die Befehlszeile trägt \d+ Zeichen über 32766 \(argv\[4\] 40000 Zeichen\)/.test(e.grund) && eNie.ungemessen === true && /^Start: spawn .*ENOENT/.test(eNie.grund) &&
+        !Object.keys(mStart.je).length && mStart.ungemessen["s.zeile#1"].offen === 1 && mStart.ungemessen["s.nie#1"].offen === 1 &&
+        !alt.je["a#1"] && alt.ungemessen["a#1"].ungemessen === true && alt.ungemessen["a#1"].offen === 1 && alt.je["b#1"].grund === "ROT: n 3",
+        JSON.stringify([e.grund, eNie.grund, mStart, alt]).slice(0, 600));
     e = await fahreStation({ ...st0, befehl: ["node", "-e", "process.exit(3)"], urteil: lies }, ctx("absturz"));
     pruef("LÄUFER ein Urteil, das am Lauf ohne Ausgabe wirft, bleibt ROT beim Namen (kaputt: laut, nie gehalten)", e.gruen === false && !e.ungemessen && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
