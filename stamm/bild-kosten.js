@@ -823,12 +823,14 @@ class AnazhRealm_bild_kosten {
         // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
         // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
         // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
-        const frist = this._bauFrist("knoten", true);
         const t0 = performance.now();
-        // SEIN PFLICHT-STÜCK (w19-gang-hitch): der erste Ruf des Takts baut einen Schritt auch nach der Frist, jeder weitere wartet.
+        // SEIN PFLICHT-STÜCK (w19-gang-hitch): der erste Ruf des Takts baut auch nach der Frist, jeder weitere wartet.
         // IM SPIEL IST ES DAS EINE DES TAKTS (w28-takt-frist, `_bauStueck`): ging nach der Frist schon ein Bauer des Planers seines,
         // wartet der Knoten-Bau und wird hungriger (bis hier ging er seines NEBEN jedem: Radeon, Wiese im Gang, 9,0 ms ab p95).
-        if (!this._bauStueck("knoten", t0 >= frist)) return false;
+        // UND ES IST DIE SCHEIBE DES VORTRITTS (w28-knoten-rate): `_bauStueck` reicht ihr Ende als die Frist dieses Rufs — die
+        // kleinen Schritte eines Baus (leere Stufen, der Vertex, der Abschluss) gehen in ihr mit, statt je ein Stück zu sein.
+        const frist = this._bauStueck("knoten", this._bauFrist("knoten", true), t0);
+        if (frist === null) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -894,6 +896,8 @@ class AnazhRealm_bild_kosten {
             E.imFlug.delete(key);
             this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
             return (N.getForRender(ro), true);
+        } finally {
+            this._bauStueckEnde("knoten", t0); // seine Arbeit nach der Frist steht im Hauptbuch des Takts
         }
         [d.rate, d.nodeBuilderState] = [undefined, s];
         s.usedTimes++;

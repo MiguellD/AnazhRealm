@@ -2085,15 +2085,20 @@ class AnazhRealm_dirigent_takt {
         W.length = 0;
         return T.pflicht;
     }
-    // DAS STÜCK EINES LESERS OHNE TOR (der Knoten-Bau im Render: sein Gang liegt im Bild, nie im Planer): vor der Frist geht es
-    // immer; nach ihr (`nach`) nur sein erstes dieser Aufgabe — und im Spiel nur, wenn das EINE Pflicht-Stück des Takts noch frei
-    // ist. Sonst wartet er und wird hungriger (der Pflicht-Gang des nächsten Takts liest es). → true: er baut.
-    _bauStueck(wer, nach) {
+    // DAS STÜCK EINES LESERS OHNE TOR (der Knoten-Bau im Render: sein Gang liegt im Bild, nie im Planer): vor seiner Frist
+    // (`frist`, die er fragte) geht es immer; nach ihr nur sein erstes dieser Aufgabe — und im Spiel nur, wenn das EINE
+    // Pflicht-Stück des Takts noch frei ist. Sonst wartet er und wird hungriger (der Pflicht-Gang des nächsten Takts liest es).
+    // SEIN PFLICHT-STÜCK IST DIE SCHEIBE DES VORTRITTS, wie am Tor (`_bauPflichtGang`, TAKT_FRIST.vortritt — w28-knoten-rate):
+    // jeder Ruf des Lesers in diesem Takt baut bis zu ihrem Ende (`_bauFrist` reicht sie ihm). Bis hier endete es mit seinem
+    // ERSTEN Knoten, gleich wie klein: GTX 1050, main c445936d5, ein neuer Bürger in der ruhenden Welt (der Render allein füllt
+    // das Soll, jeder Ruf kommt nach der Frist) — 16 Stücke für zwei Programme, acht davon für den Schatten-Stoff (zusammen
+    // 5 ms), der Bürger stand nach 131–254 Bildern (2,9–8,8 s). → bis wann er baut (ms der Wanduhr); null: er wartet.
+    _bauStueck(wer, frist, jetzt = performance.now()) {
         const T = this._bauFristTakt || this._fristAufgabe();
         const h = this._bauHungerVon(wer);
         h.ohneTor = true;
-        if (nach && !T.ohne) {
-            if (h.stueck === T.nr) return false;
+        if (jetzt >= frist && !T.ohne) {
+            if (h.stueck === T.nr) return null;
             if (!T.lade) {
                 T.knapp = true;
                 if (T.pflicht !== null) {
@@ -2103,15 +2108,26 @@ class AnazhRealm_dirigent_takt {
                         h.bild = T.bildNr;
                         if (h.hunger > h.satt) h.satt = h.hunger;
                     }
-                    return false;
+                    return null;
                 }
-                T.pflicht = wer;
+                T.pflicht = T.vortritt = wer;
+                frist = T.vortrittBis = Math.max(jetzt, T.bis) + AnazhRealm.TAKT_FRIST.vortritt;
             }
         }
         h.stueck = T.nr;
         h.hunger = 0;
         h.bild = T.bildNr;
-        return true;
+        return frist;
+    }
+    // … UND SEIN ENDE: was er nach der Frist des Takts baute, steht wie bei jedem Bauer im Hauptbuch („Arbeit nach der Frist:
+    // knoten X ms“ — die Akte des Offenen, gate:takt T13). Sein längstes Stück ist der Knoten, der über die Scheibe reicht: der
+    // Vendor baut EINEN Fluss-Knoten am Stück (GTX 1050: die Licht-Anweisung des Fragments, 95 % des Baus eines Standard-Stoffs,
+    // 3 272 Knoten, 50–60 ms je Bau-Stufe).
+    _bauStueckEnde(wer, t0) {
+        const T = this._bauFristTakt;
+        if (!T || T.ohne || T.lade) return;
+        const ms = performance.now() - Math.max(t0, T.bis);
+        if (ms >= AnazhRealm.TAKT_FRIST.stueckAb) this._bauNachFrist(T, this._bauHungerVon(wer), ms);
     }
     // DER VORBAU GEHT IM ZWISCHEN-TAKT (w28-preis-ort, Schnitt 3, die Regel der EINEN Frist „gebaut wird, wo der Faden auf die GPU
     // wartet“): ein Takt ohne Bild (die GPU-Leine ist gespannt) trägt ihn — dort wartet der Faden ohnehin auf das Bild davor, ein

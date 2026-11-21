@@ -45,7 +45,10 @@
 //       (`_fristStellen`); ist sie abgelaufen, geht am Tor (`_bauer`) je Takt EIN Bauer sein Pflicht-Stück (`_bauPflichtGang`),
 //       der Hungrigste zuerst — vier Bauer mit Arbeit bauen in 12 Takten je 3 Stücke, keiner verhungert, und die Arbeit nach der
 //       Frist steht je Bauer im Hauptbuch (`_bauHunger`: „Arbeit nach der Frist: <Bauer> X ms“). Bis hier ging JEDER der 17 Bauer
-//       nach der Frist sein Stück (Radeon, Dorf im Gang: `_runFrameScheduler` 16,4 ms je Takt ab p95).
+//       nach der Frist sein Stück (Radeon, Dorf im Gang: `_runFrameScheduler` 16,4 ms je Takt ab p95). Der Leser OHNE Tor (der
+//       Knoten-Bau im Render, `_knotenRate` → `_bauStueck`) geht dieselbe Scheibe (w28-knoten-rate): zwölf Knoten in höchstens
+//       acht Stücken, mehr als EIN Knoten je Stück. Bis hier endete sein Stück mit dem ersten Knoten, gleich wie klein (GTX 1050,
+//       ein neuer Bürger in der ruhenden Welt: 16 Stücke für zwei Programme, er stand nach 131–254 Bildern).
 //   T15 DER VORBAU AM TOR (w28-preis-ort, Schnitt 3): der Vorbau der Bedienung ist ein Bauer der EINEN Frist (`_bauer("vorbau")`),
 //       nie ein Ruf neben ihr; Rezeptbuch und Werkstatt bauen bei abgelaufener Frist je Ruf EIN Stück (`_rezeptBau`,
 //       `_werkstattBau`). Bis hier lief er nach dem Bild am Tor vorbei (Radeon, Mess-Wiese 41ec3a96: Rezeptbuch 175,6 · Werkstatt
@@ -66,7 +69,8 @@
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
-// Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer), der Vorbau neben dem Tor
+// Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers, das Tor ohne Hunger und das Stück des Knoten-Baus ohne Scheibe T13
+// (je Bauer), der Vorbau neben dem Tor
 // und Rezeptbuch und Werkstatt am Stück T15 (je Täter), die Saat mit dem Boden, am Stück, mit Gedächtnis und die Probe an der Marke
 // T16 (je Täter), der Faden ohne die Normale T17, der Abschied ohne die Frage an Karte und Menge T19 (je Art).
 //
@@ -605,6 +609,22 @@ hauptLauf(async () => {
                                 [stueck13[k] | 0, r._bauHunger.get(k).satt, +r._bauHunger.get(k).nachMax.toFixed(1)],
                             ])
                         );
+                        // … UND DER LESER OHNE TOR (w28-knoten-rate): der Knoten-Bau im Render (`_knotenRate`, der echte) an einem Schein-Bauer mit
+                        // zwölf Fluss-Knoten (je zwei in Fragment und Vertex der drei Bau-Stufen) — je Takt mit abgelaufener Frist geht er sein
+                        // Pflicht-Stück, DIESELBE Scheibe wie am Tor: mehr als EIN Knoten je Stück, nie der ganze Bau, und seine Arbeit nach der
+                        // Frist steht im Hauptbuch. Der Selbsttest: das Stück ohne Scheibe (es endet mit seinem ersten Knoten)
+                        const k13 = { rufe: 0, knoten: 0, max: 0, steht: false };
+                        const kn13 = { build: () => k13.knoten++ };
+                        const [b13, d13] = [{ flowNodes: { fragment: [kn13, kn13], vertex: [kn13, kn13], compute: [] }, context: {}, prebuild() {}, setBuildStage() {}, setShaderStage() {}, flowNode: kn13.build, buildCode() {}, buildUpdateNodes() {} }, {}]; // prettier-ignore
+                        const N13 = { get: () => d13, getForRenderCacheKey: () => "t13", nodeBuilderCache: new Map(), nodeFrame: { frameId: 0 }, _createNodeBuilder: () => b13, _createNodeBuilderState: () => ({ usedTimes: 0 }), getForRender: () => (k13.rufe = 99) }; // prettier-ignore
+                        const stueck13k = leihe(r, { _bauFrist: P13._bauFrist, ...(selbst ? { _bauStueck(wer, frist, jetzt) { return P13._bauStueck.call(this, wer, frist, jetzt) === null ? null : frist; } } : {}) }); // prettier-ignore
+                        for (const E13 = { imFlug: new Map(), bauN: 0, bauMs: 0 }; k13.rufe < 24 && !k13.steht; k13.rufe++) {
+                            const n0 = (P13._fristStellen.call(r, uhr - 1e3, false), k13.knoten);
+                            k13.steht = P13._knotenRate.call(r, N13, { object: {}, material: {} }, E13);
+                            k13.max = Math.max(k13.max, k13.knoten - n0);
+                        }
+                        stueck13k();
+                        aus9.knoten13 = [k13.rufe, k13.max, k13.steht, +r._bauHunger.get("knoten").nachMax.toFixed(1)];
                         [hungert13(), (r._bauFristTakt = null)];
                     } finally {
                         delete performance.now;
@@ -1123,9 +1143,16 @@ hauptLauf(async () => {
     const n13 = Object.keys(t9.satt13).filter(
         (k, i, a, [n, satt, ms] = t9.satt13[k]) => (n === 9 && satt <= 3 && ms <= 5) === SELBST
     );
-    const z13 = Object.entries(t9.satt13)
-        .map(([k, [n, satt, ms]]) => `${k} ${n} Stücke · Hunger ${satt} · Arbeit nach der Frist: ${k} ${ms} ms`)
-        .join(" | ");
+    // … und der Leser ohne Tor [Stücke, die meisten Knoten eines Stücks, steht, ms nach der Frist]: zwölf Knoten in Scheiben — mehr
+    // als EIN Knoten je Stück, nie der ganze Bau in einem, nach der Frist EINE Scheibe (in der Uhr der Probe ≤ 7 ms: die Scheibe
+    // und die vier Fragen seines Stücks an die Uhr — Beginn, Ende der Scheibe, die Summe des Baus, das Hauptbuch)
+    const [kR13, kMax13, kSteht13, kMs13] = t9.knoten13;
+    if ((kSteht13 && kR13 >= 3 && kR13 <= 8 && kMax13 >= 2 && kMs13 > 0 && kMs13 <= 7) === SELBST) n13.push("knoten (_knotenRate)");
+    const z13 =
+        Object.entries(t9.satt13)
+            .map(([k, [n, satt, ms]]) => `${k} ${n} Stücke · Hunger ${satt} · Arbeit nach der Frist: ${k} ${ms} ms`)
+            .join(" | ") +
+        ` | knoten ${kR13} Stücke für 12 Knoten (höchstens ${kMax13} je Stück${kSteht13 ? "" : ", steht nicht"}) · Arbeit nach der Frist: knoten ${kMs13} ms`;
     const z5 = [t5.K, t5.folge, t5.nummernSteigen, t5.imFlug, aus.t5i.frei[0], aus.t5i.n, aus.t5a.n, aus.t5a.erster];
     const t10 = aus.t10;
     const [z3, z6, z10] = [[t3.fernJa, t3.nah1, t3.nah2, t3.fern2, t3.fern3], `${t6.folge} · frei ${t6.frei}`, [t10.name, t10.post, t10.helfer, t10.helferSoll]]; // prettier-ignore
