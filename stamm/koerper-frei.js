@@ -43,13 +43,16 @@ class AnazhRealm_koerper_frei {
         const [m, ...I] = voll.map((x, i) => x - hohl[i]);
         if (!(m > 0)) return null;
         // DIE PUNKTE DER GESTALT (im Rahmen des Schwerpunkts): die Kiste ihre 8 Ecken und 12 Kanten-Mitten, das Fass je Rand
-        // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper
+        // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper; dazu je Rand sein FUSS (die letzten zwei: der
+        // tiefste Punkt des Kreises gegen den Grund, `_freiRandFuss` je Schritt) — der Rand rollt als Kreis, nie als Vieleck
         const pk = kiste ? this._freiKistenPunkte(hx, hy, hz) : [];
-        if (!kiste)
+        if (!kiste) {
             for (let i = 0; i < F.rundPunkte; i++) {
                 const a = (2 * Math.PI * i) / F.rundPunkte;
                 pk.push(r * Math.cos(a), hy, r * Math.sin(a), r * Math.cos(a), -hy, r * Math.sin(a));
             }
+            pk.push(r, hy, 0, r, -hy, 0);
+        }
         const um = { x: 0, y: tp0.y || 0, z: 0 };
         const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
         // die Gier des Eintrags wandert in die Drehung des Körpers (die Pose dreht um den Schwerpunkt im Rahmen des Plans)
@@ -251,6 +254,7 @@ class AnazhRealm_koerper_frei {
         const n0 = -gr.b / gr.l;
         const n1 = 1 / gr.l;
         const n2 = -gr.c / gr.l;
+        if (!K.kiste) this._freiRandFuss(K, n0, n1, n2);
         for (let i = 0, j = 0; i < pw.length; i += 3, j += 4) {
             const g = gr.a + gr.b * (pw[i] - gr.x) + gr.c * (pw[i + 2] - gr.z);
             if ((pw[i + 1] - g) * n1 > weg) {
@@ -284,6 +288,29 @@ class AnazhRealm_koerper_frei {
                     for (const b of e.blockerAABBs || [])
                         if (b.topY > B.y - r && b.botY < B.y + r) K.bauten.push(this._freiStatisch(b, e));
             nah.length = 0;
+        }
+    }
+
+    // DER FUSS JE RAND (same.physik.koerper#1): der tiefste Punkt jedes Rand-Kreises gegen die Normale n des Grunds — im Rahmen
+    // des Körpers die Mitte des Rands (0, ±hy, 0) minus r längs der Projektion von n in die Ebene des Rands. Vorher trug das
+    // Fass nur seine FREI.rundPunkte Ecken: auf der Seite lag es auf einem Sechzehneck, die Mitte hob und senkte sich um
+    // r(1 − cos(π/16)) = 5,8 mm je Kante — es schaukelte in der Mulde seiner Fläche, nach der Landung 3,1 s statt zu rollen
+    // und zu ruhen. Steht die Achse längs n (das Fass auf dem Boden), tragen die Ecken des Rands; der Fuss bleibt, wo er war.
+    _freiRandFuss(K, n0, n1, n2) {
+        const R = K.R;
+        const lx = R[0] * n0 + R[3] * n1 + R[6] * n2;
+        const lz = R[2] * n0 + R[5] * n1 + R[8] * n2;
+        const q = Math.sqrt(lx * lx + lz * lz);
+        if (!(q > 1e-6)) return;
+        const pk = K.pk;
+        const pw = K.pw;
+        const p = K.p;
+        const [fx, fz] = [(-K.r * lx) / q, (-K.r * lz) / q];
+        for (let i = pk.length - 6; i < pk.length; i += 3) {
+            pk[i] = fx;
+            pk[i + 2] = fz;
+            for (let k = 0; k < 3; k++)
+                pw[i + k] = p[k] + R[k * 3] * fx + R[k * 3 + 1] * pk[i + 1] + R[k * 3 + 2] * fz;
         }
     }
 
@@ -327,7 +354,20 @@ class AnazhRealm_koerper_frei {
             c,
             l: Math.sqrt(b * b + 1 + c * c),
             mu: st && st.mu > 0 ? st.mu : 0,
+            roll: this._rollWiderstand(z, st),
         });
+    }
+
+    // DER ROLLWIDERSTAND zweier Stoffe (same.physik.koerper#1), C_rr = F/N: der Verlustfaktor η des WEICHEREN Partners
+    // (kleineres E der Stoff-Tafel, schmiede-core STOFF_GESETZ) — er walkt in der Spur und gibt die Arbeit nicht zurück: das
+    // Holz-Fass im Gras 0,3, auf Erde 0,2, das Rad auf Stein und das Fass auf Eis 0,01. Vorher hielt jeden Körper auf jedem
+    // Grund dieselbe Verzögerung des Fahr-Gesetzes (vehicle:FAHR.rollDecel 1 m/s², geteilt durch die Hülle statt den Roll-
+    // Radius): das Fass rollte im Gras wie auf Stein. Leser: der freie Körper (`_freiKoerperPacken`) und das rollende Werk
+    // (`_werkRollSchritt`). Ohne Zeile eines Partners rollt er ohne Widerstand (und der Melder `_stoff` nennt ihn).
+    _rollWiderstand(a, b) {
+        if (!a || !b) return 0;
+        const w = a.E <= b.E ? a : b;
+        return w.eta > 0 ? w.eta : 0;
     }
 
     // EIN ABBAU ODER EDIT WECKT, WAS DORT RUHT: jeder schlafende freie Körper, dessen Hülle den Kasten [x0, x1] × [z0, z1] (± 0,1 m)
@@ -414,7 +454,7 @@ class AnazhRealm_koerper_frei {
     // die Durchdringung drückt sie mit höchstens FREI.schubMs heraus — kein getrennter Lage-Impuls mehr), die Lage (die Anker
     // drehen mit, die Trennung des Punkts folgt seinem Weg), ein Gang ohne Feder (die Entspannung: kein Schub fliegt weg), dann
     // die Stoß-Zahl des starren Paars (STOSS.stossZahl.starr) über FREI.prallMs; Reibung nach Coulomb (μ = √(μ₁ μ₂) der
-    // Stoff-Zeilen), der Rollwiderstand des Fahr-Gesetzes (vehicle:FAHR.rollDecel) am Boden. Ein Körper, der FREI.ruheS ruhig
+    // Stoff-Zeilen), der Rollwiderstand der Stoffe (`_rollWiderstand`) am Boden. Ein Körper, der FREI.ruheS ruhig
     // liegt und dessen Nachbarn ruhen, schläft — der Schlaf kostet nichts: ruht jeder Körper, rechnet der Löser nichts, bis ein
     // Stoß, ein Wort oder ein bewegter Nachbar ihn weckt. Vorher trug jeder der 4 Teil-Schritte seine eigene Kontakt-Suche und
     // 8 + 8 Gänge (Geschwindigkeit und Lage): 100 wache Kisten 24 ms je Schritt (Node, flacher Boden, der Haufen der Bank).
@@ -984,7 +1024,9 @@ class AnazhRealm_koerper_frei {
         const KS = AnazhRealm.FREI_KOERPER;
         if (!this._freiX || this._freiX.length < W.length * KS) this._freiX = new Float64Array(W.length * KS * 2);
         const X = this._freiX;
-        const roll = AnazhRealm._fahrSchrittGesetz().vc.FAHR.rollDecel;
+        // der Rollwiderstand je Drehung (rad/s²): das Moment C_rr · m|g| · r um den Fuß durch die Trägheit um ihn (I + m r²) —
+        // r der Roll-Radius (das Fass sein Rand, die Kiste ihre kleinste Halb-Kante), I die kleinste Haupt-Trägheit
+        const schwere = Math.abs(Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81);
         for (let i = 0, x = 0; i < W.length; i++, x += KS) {
             const K = W[i];
             K.slot = x;
@@ -994,10 +1036,13 @@ class AnazhRealm_koerper_frei {
             X.set(K.p, x + 9);
             X.set(K.q, x + 12);
             X.set(K.R, x + 16);
-            X[x + 25] = roll / K.rad;
+            const rr = K.kiste ? Math.min(K.hx, K.hy, K.hz) : K.r;
+            const crr = K.grund ? K.grund.roll : 0;
+            X[x + 25] = (crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
             X[x + 26] = 0;
             X[x + 27] = K.invM;
             X.set(K.Iw, x + 28);
+            X[x + 37] = K.kiste ? 0 : 1;
         }
         return X;
     }
@@ -1129,7 +1174,7 @@ class AnazhRealm_koerper_frei {
     }
 
     // DIE LAGE im Puffer (jeder Teil-Schritt): x += v·h, die Drehung q += ½ ω ⊗ q · h (normiert, die Dreh-Matrix neu), der
-    // Rollwiderstand des Fahr-Gesetzes am Boden; `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
+    // Rollwiderstand der Stoffe am Boden (die Walze um ihre Achse); `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
     _freiZiehen(X, m, h, g, vor) {
         const KS = AnazhRealm.FREI_KOERPER;
         for (let x = 0; x < m * KS; x += KS) {
@@ -1170,7 +1215,16 @@ class AnazhRealm_koerper_frei {
             X[x + 23] = 2 * (b * c + w * a);
             X[x + 24] = 1 - 2 * (a * a + b * b);
             const wm = Math.sqrt(wx * wx + wy * wy + wz * wz);
-            if (X[x + 26] && wm > 0) {
+            if (X[x + 26] && wm > 0 && X[x + 37]) {
+                // die Walze rollt um ihre Achse (die Spalte y der Dreh-Matrix): nur diese Drehung walkt die Spur — das Kippen
+                // über den Rand bleibt frei (vorher hielt die Bremse jede Drehung: das Fass stand 0,9° vor dem Kipp-Punkt still)
+                const [a0, a1, a2] = [X[x + 17], X[x + 20], X[x + 23]];
+                const wa = wx * a0 + wy * a1 + wz * a2;
+                const d = Math.sign(wa) * Math.max(0, Math.abs(wa) - X[x + 25] * h) - wa;
+                X[x + 3] += d * a0;
+                X[x + 4] += d * a1;
+                X[x + 5] += d * a2;
+            } else if (X[x + 26] && wm > 0) {
                 const f = Math.max(0, wm - X[x + 25] * h) / wm;
                 X[x + 3] *= f;
                 X[x + 4] *= f;
