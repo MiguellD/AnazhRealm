@@ -1303,7 +1303,7 @@ function ungelandetZeile() {
 //        Sitzungs-Protokollen am Laptop (~/.claude/projects/**/*.jsonl, inkrementell über $TEMP/claude/w3/blick-tokens.json) ÷ Landungen
 //        heute, und seit der letzten Landung; über 10 M seit der letzten Landung ist die erste Zeile ROT. Grenze: Cloud-Sitzungen
 //        schreiben hier kein Protokoll — die Zahl heißt „lokal“.
-const PULS_MIN = 15, WELLE_ROT = 10e6;
+const PULS_MIN = 15, UNGEPUSHT_MIN = 60, WELLE_ROT = 10e6;
 const MESS = "meisterkarte-quelle/punkte/messung";
 const PULS_GERAETE = ["gtx", "radeon"];
 // je Station neu oder mit neuer „zeit“ (ohne zeit: neuer Inhalt) zwischen zwei Ständen einer Mess-Datei
@@ -1323,16 +1323,27 @@ function rundeVon(text) {
     }
     return r;
 }
-// pulsUrteil({ je: { gtx: { n, zuletzt: Date|null } }, runde, pushRot: "iso kopf8 grund"|null }) → { zeile, steht: [gerät] }
+// pulsUrteil({ je: { gtx: { n, zuletzt: Date|null, amKopf?: Date|null } }, runde, pushRot: "iso kopf8 grund"|null, jetzt? })
+//   → { zeile, steht: [gerät], ungepusht: [gerät] }
+// UNGEPUSHT (Koordinator 21.11.; Fund: die GTX-Runde 2 zählte 1 290 von 1 428 Stationen, der Ursprung trug keine 31ea3847-gtx.json — 19 h
+// stand das als „STEHT gtx“ in der ersten Zeile und las sich wie eine ruhende Runde): lief der Zähler der Runde in den letzten 15 min
+// weiter, aber die Mess-Datei des Geräts am Runden-Kopf fehlt am Ursprung (amKopf null) oder ist älter als UNGEPUSHT_MIN, heißt das Gerät
+// UNGEPUSHT mit Datei beim Namen — gemessen wird, an kommt nichts. STEHT bleibt für die Runde, deren Zähler ruht oder deren Datei frisch
+// ist. amKopf undefined (nicht gelesen) urteilt nie UNGEPUSHT.
 function pulsUrteil(P) {
-    const R = rundeVon(P.runde), steht = [];
+    const R = rundeVon(P.runde), steht = [], ungepusht = [], jetzt = +(P.jetzt || Date.now());
     const teile = PULS_GERAETE.map((g) => {
         const j = P.je[g] || { n: 0, zuletzt: null }, r = R.runde && R.g[g], faehrt = !!(r && r.zustand !== "durch");
-        if (faehrt && !j.n) steht.push(g);
-        return `${g} ${j.n}${faehrt && !j.n ? " STEHT" : ""} (${r ? `Runde ${R.runde.n} ${r.zustand} ${r.stand}` : "keine Runde"}, zuletzt gebucht ${j.zuletzt ? `${tag(j.zuletzt)} ${hhmm(j.zuletzt)}` : "—"})`;
+        const tF = r ? Date.parse(r.fortschritt) : NaN, zaehlt = faehrt && isFinite(tF) && jetzt - tF <= PULS_MIN * 60e3;
+        const liegt = zaehlt && !j.n && j.amKopf !== undefined && (!j.amKopf || jetzt - +j.amKopf > UNGEPUSHT_MIN * 60e3);
+        if (liegt) ungepusht.push(g);
+        else if (faehrt && !j.n) steht.push(g);
+        const datei = liegt ? `${R.runde.kopf.slice(0, 8)}-${g}.json` : "";
+        const ursprung = liegt ? `, am Ursprung ${j.amKopf ? `${datei} zuletzt ${tag(j.amKopf)} ${hhmm(j.amKopf)}` : `keine ${datei}`}` : "";
+        return `${g} ${j.n}${liegt ? " UNGEPUSHT" : faehrt && !j.n ? " STEHT" : ""} (${r ? `Runde ${R.runde.n} ${r.zustand} ${r.stand}` : "keine Runde"}${ursprung}, zuletzt gebucht ${j.zuletzt ? `${tag(j.zuletzt)} ${hhmm(j.zuletzt)}` : "—"})`;
     });
     const pr = P.pushRot ? (() => { const [t, k, ...g] = P.pushRot.trim().split(/\s+/); const d = new Date(t); return ` · RADEON PUSH ROT${isNaN(d) ? "" : " seit " + hhmm(d)} am ${k}: ${g.join(" ").slice(0, 90)}`; })() : "";
-    return { zeile: `PULS gebucht in ${PULS_MIN} min: ${teile.join(" · ")}${pr}`, steht, pushRot: !!P.pushRot };
+    return { zeile: `PULS gebucht in ${PULS_MIN} min: ${teile.join(" · ")}${pr}`, steht, ungepusht, pushRot: !!P.pushRot };
 }
 // landungenVon([{ t: Date, betreff }], jetzt) — betreff = der zweite Elter eines Merges der ersten Eltern-Linie
 function landungenVon(rows, jetzt) {
@@ -1418,7 +1429,9 @@ async function pulsVon(jetzt) {
     await Promise.all(PULS_GERAETE.map(async (g, i) => { const r = await git(["log", "-1", "--format=%ct", "origin/punkte-maschine", "--", pfade[i]]); const t = +r.out.trim(); if (t) je[g].zuletzt = new Date(t * 1000); }));
     const rd = await git(["show", "origin/koordination:zug/runde.txt"]);
     let pushRot = null; try { pushRot = fs.readFileSync(path.join(TEMP_CLAUDE, "dienst", "radeon.push-rot"), "utf8"); } catch (_e) { /* kein gescheiterter Push */ }
-    const puls = pulsUrteil({ je, runde: rd.e ? "" : rd.out, pushRot });
+    const rk = rd.e ? null : rundeVon(rd.out).runde;
+    if (rk && /^[0-9a-f]{8}/.test(rk.kopf || "")) await Promise.all(PULS_GERAETE.map(async (g) => { const r = await git(["log", "-1", "--format=%ct", "origin/punkte-maschine", "--", `:(top)${MESS}/${rk.kopf.slice(0, 8)}-${g}.json`]); if (!r.e) je[g].amKopf = +r.out.trim() ? new Date(+r.out.trim() * 1000) : null; }));
+    const puls = pulsUrteil({ je, runde: rd.e ? "" : rd.out, pushRot, jetzt });
     if (rd.e) fehler.push("zug/runde.txt nicht lesbar — STEHT ungeurteilt");
     // LANDUNG: die Merges der ersten Eltern-Linie seit gestern 00:00 (eine Woche zurück für die letzte Landung)
     const t0 = new Date(jetzt); t0.setHours(0, 0, 0, 0);
@@ -1445,7 +1458,7 @@ function kurzText(S) {
     // DER PULS (oben, vor der 25-Zeilen-Grenze): steht ein Gerät, scheiterte der Push der Radeon oder brennen > 10 M Tokens ohne Landung,
     // heißt die ERSTE Zeile so — beim Namen
     if (S.puls) {
-        const P = S.puls, alarm = [...P.puls.steht.map((g) => `STEHT ${g}`), ...(P.puls.pushRot ? ["RADEON PUSH ROT"] : []), ...(P.welle.rot ? ["ROT wellen-landung"] : [])];
+        const P = S.puls, alarm = [...(P.puls.ungepusht || []).map((g) => `UNGEPUSHT ${g}`), ...P.puls.steht.map((g) => `STEHT ${g}`), ...(P.puls.pushRot ? ["RADEON PUSH ROT"] : []), ...(P.welle.rot ? ["ROT wellen-landung"] : [])];
         o.push(P.puls.zeile, P.landung, P.welle.zeile);
         if (alarm.length) o.unshift(alarm.join(" · ") + ` (${S.jetzt.toTimeString().slice(0, 5)}, PULS darunter)`);
     }
@@ -1558,6 +1571,15 @@ function selbsttest() {
     if (!(p1.steht.join() === "gtx" && /gtx 0 STEHT \(Runde 1 laeuft 252\/1428/.test(p1.zeile) && !/radeon 0 STEHT/.test(p1.zeile) && !p1.pushRot)) fehler.push("Puls STEHT (V6): " + p1.steht.join() + " · " + p1.zeile);
     if (!(p2.steht.length === 0 && p2.pushRot && /gtx 4 \(/.test(p2.zeile) && /RADEON PUSH ROT .*am f68dbf09: PUSH SCHEITERT 10x: rejected/.test(p2.zeile))) fehler.push("Puls PUSH ROT (V6): " + p2.zeile);
     if (p3.steht.length) fehler.push("Puls ohne Runde (V6): " + p3.steht.join());
+    // UNGEPUSHT (21.11.): Zähler frisch + Datei fehlt → UNGEPUSHT mit Datei beim Namen (nie STEHT) · Datei 2 h alt → UNGEPUSHT mit Uhr ·
+    // Datei 20 min alt → STEHT (die Radeon zwischen zwei Pushs) · Zähler ruht (1 h) → STEHT, auch ohne Datei
+    const tR = Date.parse("2026-11-19T10:18:47Z"), pUng = (amKopf, nach) => pulsUrteil({ je: { gtx: { n: 0, zuletzt: null, amKopf }, radeon: { n: 0, zuletzt: null } }, runde: RT, pushRot: null, jetzt: new Date(tR + nach) });
+    const u1 = pUng(null, 5 * 60e3), u2 = pUng(new Date(tR - 2 * h), 5 * 60e3), u3 = pUng(new Date(tR - 20 * 60e3), 5 * 60e3), u4 = pUng(null, h);
+    if (!(u1.ungepusht.join() === "gtx" && !u1.steht.length && u1.zeile.includes("gtx 0 UNGEPUSHT (Runde 1 laeuft 252/1428, am Ursprung keine aaaa-gtx.json,"))) fehler.push("Puls UNGEPUSHT ohne Datei: " + u1.zeile);
+    if (!(u2.ungepusht.join() === "gtx" && u2.zeile.includes("am Ursprung aaaa-gtx.json zuletzt "))) fehler.push("Puls UNGEPUSHT alte Datei: " + u2.zeile);
+    if (!(u3.steht.join() === "gtx" && !u3.ungepusht.length && /gtx 0 STEHT/.test(u3.zeile))) fehler.push("Puls frische Datei bleibt STEHT: " + u3.zeile);
+    if (!(u4.steht.join() === "gtx" && !u4.ungepusht.length)) fehler.push("Puls ruhender Zähler bleibt STEHT: " + u4.zeile);
+    if (p1.ungepusht.length) fehler.push("Puls amKopf ungelesen urteilt UNGEPUSHT: " + p1.zeile);
     const nG = [neuGebucht({ je: { a: { zeit: "1" }, b: { zeit: "2" }, c: { zeit: "4" } } }, { je: { a: { zeit: "1" }, c: { zeit: "3" } } }), neuGebucht({ je: { a: { zeit: "1" } } }, null), neuGebucht({ je: { a: { zeit: "1" } } }, { je: { a: { zeit: "1" } } })].join();
     if (nG !== "2,1,0") fehler.push("Puls gebucht je Station (V6): " + nG);
     // (V7) LANDUNG heute · gestern: nur Merges, deren zweiter Elter „Abgabe w…“ trägt, je Kalendertag
@@ -1576,7 +1598,7 @@ function selbsttest() {
     // (V5) DIE UHR (messplatz-uhr.cjs): ihre Fälle grün, jede Mutante ROT
     const pu = UHR.pruefe();
     if (pu.rot.length) fehler.push("Uhr (V5): " + pu.rot.join(" · "));
-    fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : `messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht, Abgaben aus den Köpfen, Puls (STEHT, PUSH ROT, je Station), LANDUNG, WELLEN-LANDUNG, Uhr ${pu.faelle} Fälle / ${Object.keys(pu.je).length} Mutanten ROT`);
+    fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : `messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht, Abgaben aus den Köpfen, Puls (STEHT, UNGEPUSHT, PUSH ROT, je Station), LANDUNG, WELLEN-LANDUNG, Uhr ${pu.faelle} Fälle / ${Object.keys(pu.je).length} Mutanten ROT`);
     process.exitCode = fehler.length ? 1 : 0;
 }
 // DER BLICK ÜBERNIMMT NEUEN CODE SELBST (14.11.): das Fenster fuhr seit 13.11. 15:56 den Code jenes Tages — „zug-dienst läuft nicht“,
