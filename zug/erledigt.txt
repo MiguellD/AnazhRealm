@@ -2007,3 +2007,4 @@ omen-gtx-gtx-c445936d-w191730-1-c445936d ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-21 19:25 landung Runde 3 am c445936d: misst 165 von 177 Stationen (12 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-21 19:41 RUNDE 3 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 12/177, Station karte2.mensch.wirtschaft.technik#1, Kopf c445936d) — gesehen von gtx (landung-dienst)
 2026-11-21 20:01 RUNDE 3 ALARM radeon: ohne Fortschritt seit 321 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
+omen-gtx-gtx-c445936d-w192538-2-c445936d UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.mensch.kultur.bildkunst#1 ‖ karte2.mensch.kultur.bildkunst#1 UNGEMESSEN roh: Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier (punkte-maschine d42a29b1 messung/c445936d-gtx.json)
