@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T13:45:21.412Z",
+ "zeit": "2026-11-21T13:51:54.298Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -327,6 +327,460 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.stadt.siedlungsnetz#2",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "2339af3a7190",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "3d33737ed6f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "bb29e854a93d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "d7556829c9c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "c7ff315e75a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "253a95155063",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.habitat#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.6,
+   "fremd": {
+    "s": 69.1,
+    "takte": 31,
+    "fremdS": 80.61,
+    "kerne": 1.166,
+    "fensterKerne": 1.718,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.22
+     ]
+    ],
+    "dienerS": 41.91,
+    "diener": [
+     [
+      "System",
+      17.7
+     ],
+     [
+      "dwm.exe",
+      12.38
+     ]
+    ],
+    "geraetS": 37.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.83
+     ],
+     [
+      "svchost.exe",
+      13.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 165.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:51:54.298Z",
+   "abdruck": "081e819290e3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.habitat#1",
    "modus": "session"
   }
  }
