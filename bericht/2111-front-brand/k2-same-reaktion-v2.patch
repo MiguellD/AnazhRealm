@@ -1,25 +1,29 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-same.js b/meisterkarte-quelle/punkte/stationen/k2-same.js
+index 6462512e0..d01563f6f 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-same.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-same.js
-@@ -1500,8 +1500,9 @@
+@@ -1500,8 +1500,9 @@ LEITERN.push(
      );
  
      // ─────────── same.physik.reaktion — Chemie ───────────
 -    // Die Welt zählt ihre Reaktionen: die Zeilen der Stoff-Tafel mit Brenn-Spalte (die einzige Reaktion, Rothermel); jede verlangte
 -    // Masse, Druckwelle, Korrosion je Ort, Schmelze fehlt beim Namen; S5 fährt die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel
 +    // Die Welt zählt ihre Reaktionen: die Zeilen der Stoff-Tafel mit Brenn-Spalte (die einzige Reaktion, Rothermel). S1 misst die Masse
-+    // des Brands an der Mess-Wiese (`masseProbe`: Holz → Asche + Rauch, und der Rauch im Bild proportional zum verzehrten Holz über drei
-+    // Herde); Druckwelle, Korrosion je Ort, Schmelze fehlen beim Namen; S5 fährt die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel
++    // des Brands an der Mess-Wiese (`masseProbe`: Holz → Asche + Rauch, und der Rauch im Bild proportional zum verzehrten Holz über vier
++    // Herde aus 1 · 3 · 9 · 25 Zellen); Druckwelle, Korrosion je Ort, Schmelze fehlen beim Namen; S5 fährt die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel
      // am Ort) und zählt je Saat die Stoff-Tafel und die Siedlungen; die Planeten (S6) zählt die Sitzung.
      LEITERN.push(
          leiter({
-@@ -1511,7 +1512,13 @@
+@@ -1511,7 +1512,15 @@ LEITERN.push(
              welt: [{ wort: "umgesetzt_kg", ab: 0.1, was: "Masse, die die Reaktion in der Welt umsetzt (kg)" }],
              sprossen: {
                  1: {
 -                    soll: [{ wort: "masse_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %", feld: "richter" }],
 +                    // BEIDE HÄLFTEN DES SATZES sind gerichtet: die Masse (Asche + Rauch gegen das Holz) und „Rauchmenge sichtbar
-+                    // proportional" (die optische Fläche der Fahne je kg verzehrtes Holz über drei Herde, größte Abweichung vom Mittel) —
-+                    // der Satz nennt EINE Zahl, sie gilt beiden
++                    // proportional" (die optische Fläche der Fahne je kg verzehrtes Holz über vier Herde, größte Abweichung vom Mittel).
++                    // LESART DER STATION, beim Namen: die Karte nennt EINE Zahl (±10 %), sie steht bei der Masse — für „proportional"
++                    // nennt sie keine eigene; die Station legt dieselbe Zahl an beide Hälften (darum trägt das zweite Wort den ganzen Satz
++                    // als Wortlaut). Gemessen wird an den gezeichneten Ballen (τ·A aus Deckung und Größe), nicht an Pixeln
 +                    soll: [
 +                        { wort: "masse_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %", feld: "richter" },
 +                        { wort: "rauch_prop_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional", feld: "richter" },
@@ -27,7 +31,7 @@
                      umfang: { verlangt: 1, einheit: "Reaktion (Stoff-Zeile mit Brenn-Spalte)", wortlaut: "1 Reaktion", feld: "umfang" },
                  },
                  2: { soll: [{ wort: "radius_abw_pct", richtung: "≤", wert: 25, wortlaut: "Schadensradius ∝ W^(1/3) ±25 % bei drei Ladungen", feld: "richter" }] },
-@@ -1540,12 +1547,168 @@
+@@ -1540,12 +1549,168 @@ LEITERN.push(
                      const erz = zeilen.filter((n) => /erz|kupfer|zinn/i.test(n));
                      return { zeilen: zeilen.length, brenn, erz, wetter: s.weather, nassTage: s.worldMeta && s.worldMeta.nassTage, saat: s.worldMeta && s.worldMeta.seed };
                  }
@@ -38,10 +42,10 @@
 +                    // (Sommer, sonnig, Mittag, trocken). HOLZ: die Station misst das Bett selbst (Last der Zeile × lebendig × Bett-Anteil × Zell-Fläche).
 +                    // ASCHE: der Herd brennt allein aus, seine Tat `brand` trägt sie. RAUCH: der Herd brennt 10 s, dann 6 s im Takt von 100 ms — die Masse
 +                    // der geborenen Ballen (samt dem, was die Zellen für ihren nächsten halten) gegen das Holz, das die Front im Fenster verzehrte (die
-+                    // Ankunft ihrer Ellipse auf einem Gitter über dem Brand), auf das ganze Holz gehoben. PROPORTIONAL: drei Herde verschiedener Masse
-+                    // (1 · 3 · 9 Zellen, jede in ihrer Mitte gezündet, nur sie fangen) — je Herd die optische Fläche, mit der das Bild seine geborenen
++                    // Ankunft ihrer Ellipse auf einem Gitter über dem Brand), auf das ganze Holz gehoben. PROPORTIONAL: vier Herde verschiedener Masse
++                    // (1 · 3 · 9 · 25 Zellen, jede in ihrer Mitte gezündet, nur sie fangen) — je Herd die optische Fläche, mit der das Bild seine geborenen
 +                    // Ballen zeichnet (τ·A aus Deckung und Größe jedes Ballens), je kg Holz, das seine Fronten im Fenster verzehrten: die größte
-+                    // Abweichung vom Mittel der drei, und die Folge der Herde nach Holz muss die nach optischer Fläche sein. Kein Wert kommt aus dem
++                    // Abweichung vom Mittel der vier, und die Folge der Herde nach Holz muss die nach optischer Fläche sein. Kein Wert kommt aus dem
 +                    // Buch des Gesetzes.
 +                    const r3 = (v) => Math.round(v * 1e3) / 1e3;
 +                    r.setSeason("sommer");
@@ -64,11 +68,11 @@
 +                        return g ? g.zeile.brenn.last * Math.min(1, g.leb) * g.anteil * cs * cs : NaN;
 +                    };
 +                    const holz = f.zeile.brenn.last * Math.min(1, f.leb) * f.anteil * cs * cs;
-+                    // die Zellen der drei Herde: der Herd und die nächsten Zellen mit Bett (Ringe um ihn, bis 9 stehen)
++                    // die Zellen der vier Herde: der Herd und die nächsten Zellen mit Bett (Ringe um ihn, bis 25 stehen)
 +                    const bette = [[cx, cz]];
-+                    for (let d = 1; d <= 3 && bette.length < 9; d++)
-+                        for (let i = -d; i <= d && bette.length < 9; i++)
-+                            for (let j = -d; j <= d && bette.length < 9; j++)
++                    for (let d = 1; d <= 6 && bette.length < 25; d++)
++                        for (let i = -d; i <= d && bette.length < 25; i++)
++                            for (let j = -d; j <= d && bette.length < 25; j++)
 +                                if (Math.max(Math.abs(i), Math.abs(j)) === d && r._brandStoff(cx + i, cz + j, st.spielZeit)) bette.push([cx + i, cz + j]);
 +                    const taten = st.worldMeta.taten || (st.worldMeta.taten = []);
 +                    const n0 = taten.length;
@@ -157,8 +161,8 @@
 +                            const masse = geboren.reduce((s, g) => s + g.m, 0) + haelt;
 +                            return { soll: wahl.length, gefangen, zellen: Z.length, ballen: geboren.length, holz: verzehrt, strom: verzehrt * (1 - S_T), masse, haelt, optisch: geboren.reduce((s, g) => s + g.o, 0) };
 +                        });
-+                    if (bette.length < 9) return { fehler: "um den Herd tragen nur " + bette.length + " Zellen ein Bett (verlangt 9 für die drei Herde)" };
-+                    const H = [1, 3, 9].map((n) => fahne(bette.slice(0, n)));
++                    if (bette.length < 25) return { fehler: "um den Herd tragen nur " + bette.length + " Zellen ein Bett (verlangt 25 für die vier Herde)" };
++                    const H = [1, 3, 9, 25].map((n) => fahne(bette.slice(0, n)));
 +                    const lahm = H.find((h) => h.gefangen < h.soll);
 +                    if (lahm) return { fehler: "der Herd aus " + lahm.soll + " Zellen fing nur in " + lahm.gefangen + " (jede trägt ein Bett: `_brandStoff`)" };
 +                    const F = H[0];
