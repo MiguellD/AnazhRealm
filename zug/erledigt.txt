@@ -1941,3 +1941,4 @@ omen-gtx-gtx-f68dbf09-w030546-1-f68dbf09 UNGEMESSEN 2 GRÜN / 0 ROT / 3 UNGEMESS
 2026-11-21 01:37 RUNDE 2 ALARM gtx: OMEN: 461 Messungen ungepusht seit 05:53 — weicht 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-21 02:38 RUNDE 2 ALARM gtx: ohne Fortschritt seit 95 min (weicht, 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
 2026-11-21 02:38 RUNDE 2 ALARM gtx: OMEN: 460 Messungen ungepusht seit 05:53 — weicht 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-21 03:39 RUNDE 2 ALARM gtx: ohne Fortschritt seit 156 min (weicht, 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
