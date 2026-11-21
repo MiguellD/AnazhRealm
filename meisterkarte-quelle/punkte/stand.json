@@ -27510,7 +27510,7 @@
   },
   "karte2.planet.geologie.einschlag": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.einschlag#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#2 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#2 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.einschlag#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#2 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#2 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.einschlag#7 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.geologie.einschlag#1",
@@ -27528,8 +27528,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -27565,8 +27566,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.einschlag#4",
@@ -27583,8 +27585,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.einschlag#5",
@@ -27601,8 +27604,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.einschlag#6",
@@ -27619,8 +27623,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.einschlag#7",
@@ -27637,14 +27642,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.geologie.gebirge": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.gebirge#1 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#1 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#4 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#4 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.gebirge#1 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#1 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#4 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#4 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.gebirge#7 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.geologie.gebirge#1",
@@ -27681,8 +27687,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.gebirge#3",
@@ -27699,8 +27706,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.gebirge#4",
@@ -27735,8 +27743,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.gebirge#6",
@@ -27753,8 +27762,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.gebirge#7",
@@ -27771,14 +27781,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.geologie.inneres": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.inneres#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#6 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.inneres#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.inneres#6 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.inneres#1",
@@ -27796,8 +27807,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -27815,8 +27827,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.inneres#3",
@@ -27833,8 +27846,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.inneres#4",
@@ -27851,8 +27865,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.inneres#5",
@@ -27869,8 +27884,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.inneres#6",
@@ -27894,7 +27910,7 @@
   },
   "karte2.planet.geologie.lagerstaette": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.lagerstaette#1 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#1 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#4 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.lagerstaette#1 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#1 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#3 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#4 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.lagerstaette#6 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.geologie.lagerstaette#1",
@@ -27949,8 +27965,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.lagerstaette#4",
@@ -28003,14 +28020,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.geologie.platten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.platten#1 radeon: ungemessen (R10) · karte2.planet.geologie.platten#1 gtx: ungemessen (R10) · karte2.planet.geologie.platten#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#3 radeon: ungemessen (R10) · karte2.planet.geologie.platten#3 gtx: ungemessen (R10) · karte2.planet.geologie.platten#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#7 radeon: ungemessen (R10) · karte2.planet.geologie.platten#7 gtx: ungemessen (R10) · karte2.planet.geologie.platten#8 radeon: ungemessen (R10) · karte2.planet.geologie.platten#8 gtx: ungemessen (R10) · karte2.planet.geologie.platten#9 radeon: ungemessen (R10) · karte2.planet.geologie.platten#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.platten#1 radeon: ungemessen (R10) · karte2.planet.geologie.platten#1 gtx: ungemessen (R10) · karte2.planet.geologie.platten#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#3 radeon: ungemessen (R10) · karte2.planet.geologie.platten#3 gtx: ungemessen (R10) · karte2.planet.geologie.platten#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.platten#7 radeon: ungemessen (R10) · karte2.planet.geologie.platten#7 gtx: ungemessen (R10) · karte2.planet.geologie.platten#8 radeon: ungemessen (R10) · karte2.planet.geologie.platten#8 gtx: ungemessen (R10) · karte2.planet.geologie.platten#9 radeon: ungemessen (R10) · karte2.planet.geologie.platten#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.platten#1",
@@ -28047,8 +28065,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.platten#3",
@@ -28083,8 +28102,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.platten#5",
@@ -28101,8 +28121,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.platten#6",
@@ -28119,8 +28140,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.platten#7",
@@ -28180,7 +28202,7 @@
   },
   "karte2.planet.geologie.unterwelt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.unterwelt#1 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#1 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#5 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.unterwelt#1 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#1 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#5 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.unterwelt#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.geologie.unterwelt#1",
@@ -28235,8 +28257,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.unterwelt#4",
@@ -28253,8 +28276,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.unterwelt#5",
@@ -28289,14 +28313,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.geologie.vulkan": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.vulkan#1 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#1 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#2 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#2 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#4 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#4 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#7 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.vulkan#1 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#1 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#2 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#2 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#4 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#4 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.geologie.vulkan#7 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.vulkan#1",
@@ -28351,8 +28376,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.vulkan#4",
@@ -28387,8 +28413,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.vulkan#6",
@@ -28405,8 +28432,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.geologie.vulkan#7",
@@ -38149,7 +38177,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 926,
+  "konsum": 954,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38311,11 +38339,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2700
+  "ohne": 2672
  },
  "kopfVoll": "1a90e9f978d2303402d2fc35339a0b941fec6d93",
- "zeit": "2026-11-21T08:47:29.793Z",
- "vorher": "28e3fc3d",
+ "zeit": "2026-11-21T09:08:49.078Z",
+ "vorher": "1a90e9f9",
  "bilanz": {
   "gewinn": [],
   "fall": [],
