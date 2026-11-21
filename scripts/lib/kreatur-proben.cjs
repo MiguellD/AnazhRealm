@@ -1017,7 +1017,7 @@ async function kreaturProben(r, T, opts) {
         // verschobene Lage im Leger des Reviers allein traf keinen (0,98 im Fenster)
         if (taeter === "herde-revier") {
             const weg = (c, a, leash) => {
-                const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
+                const w = r._leibNummer(c); // die Richtung aus der Los-Nummer des Glieds (Welle SAMEN), nie aus der netId
                 return { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
             };
             decke(
