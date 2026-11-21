@@ -1156,7 +1156,9 @@ Waldes), der EINE Text-Hash `samenHash` (FNV-1a über die UTF-16-Einheiten: Bau-
 Strom eines Samens `samenStrom` (das LCG der Welt: die Würfe eines Akts im Stamm `_samenStrom`, der Bestand des Gaus über den
 Wirt im Gau-Faden), der Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
 der Baum `samenBaum` (Welt-Samen → je benanntem Pfad ein eigener Strom: das Los eines Dorfs `los:<i>`, die Op eines Programms
-`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen). Geladen VOR jedem Kern in jedem Kontext (die erste
+`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen) und die Saat der Eingangs-Welt `EINGANG` (die Wurzel
+der Welt, die ohne genannte Saat geboren wird — EIN Leser der Sitzungs-Saat im Stamm, `_saat`, Welle saat-argument; vor dem Heil
+bricht er beim Namen). Geladen VOR jedem Kern in jedem Kontext (die erste
 Zeile des Manifests, index.html vor phyto-core, die Fäden des Gesetzes `FADEN_QUELLE.kerne`, die Klang-Werkstatt, jede
 Labor-Seite, die Node-Lader); jeder Kern liest ihn je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Jede frühere
 Kopie des Generators ruft ihn mit ihrer Saat-Formel, wie sie stand — die Bytes jeder Welt blieben (die Goldens unberührt); die
