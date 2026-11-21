@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T09:54:03.589Z",
+ "zeit": "2026-11-21T09:57:03.296Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -48758,6 +48758,1211 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.zeit.spanne#2",
    "modus": "session"
+  },
+  "karte2.leben.pflanzen.arten#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: Chao1 11.0 über 1000 Zellen der Zufallsgänge (±20 km) und den Bestand (Soll 10⁵); keine Gattung trägt Schwesterarten — die Arten stehen in EINER Tafel (12 Zeilen: stamm/vegetation-baum.js SPECIES_TREE_PARAMS, phyto-core FOREST_SPECIES), je Art 3 Gestalten · chao1 11 gegen Soll ≥ 1,00e+5 ✗ · schwesterProzent ungemessen gegen Soll ≥ 95 % ✗ · Täter: phyto-core.js FOREST_SPECIES (Tafel statt Merkmalsraum)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: Chao1 11.0 über 1000 Zellen der Zufallsgänge (±20 km) und den Bestand (Soll 10⁵); keine Gattung trägt Schwesterarten — die Arten stehen in EINER Tafel (12 Zeilen: stamm/vegetation-baum.js SPECIES_TREE_PARAMS, phyto-core FOREST_SPECIES), je Art 3 Gestalten · chao1 11 gegen Soll ≥ 1,00e+5 ✗ · schwesterProzent ungemessen gegen Soll ≥ 95 % ✗ · Täter: phyto-core.js FOREST_SPECIES (Tafel statt Merkmalsraum)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "1d2b3c5060cd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.arten#7": {
+   "gruen": false,
+   "zahl": "S7 Umfang nicht erzeugbar: Chao1 12.5 über alles (Soll ≥ 10⁷); 96.6 % der Pflanzen im Bestand sind Duplikate einer Gestalt; kein Leser sagt die Nische je Art aus Klima und Boden voraus — die Arten stehen in EINER Tafel (12 Zeilen: stamm/vegetation-baum.js SPECIES_TREE_PARAMS, phyto-core · saaten 100 Saaten gegen Soll ≥ 1000 Saaten ✗ · chao1Alle 12,5 gegen Soll ≥ 1,00e+7 ✗ · nischeProzent ungemessen gegen Soll ≥ 90 % ✗ · duplikatProzent 96,595 % gegen Soll ≤ 1 % ✗ · Täter: phyto-core.js FOREST_SPECIES (Tafel statt Merkmalsraum)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S7 Umfang nicht erzeugbar: Chao1 12.5 über alles (Soll ≥ 10⁷); 96.6 % der Pflanzen im Bestand sind Duplikate einer Gestalt; kein Leser sagt die Nische je Art aus Klima und Boden voraus — die Arten stehen in EINER Tafel (12 Zeilen: stamm/vegetation-baum.js SPECIES_TREE_PARAMS, phyto-core · saaten 100 Saaten gegen Soll ≥ 1000 Saaten ✗ · chao1Alle 12,5 gegen Soll ≥ 1,00e+7 ✗ · nischeProzent ungemessen gegen Soll ≥ 90 % ✗ · duplikatProzent 96,595 % gegen Soll ≤ 1 % ✗ · Täter: phyto-core.js FOREST_SPECIES (Tafel statt Merkmalsraum)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "97813f409d71",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#1": {
+   "gruen": false,
+   "zahl": "S1 uferProzent 64,706 % gegen Soll ≥ 90 % ✗ · waermeAussen 2 Pflanzen gegen Soll = 0 Pflanzen ✗ · Täter: stamm/vegetation-streu.js _scatterSpeciesForCell (die Palme folgt `lebendig`, nicht der Wärme)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S1 uferProzent 64,706 % gegen Soll ≥ 90 % ✗ · waermeAussen 2 Pflanzen gegen Soll = 0 Pflanzen ✗ · Täter: stamm/vegetation-streu.js _scatterSpeciesForCell (die Palme folgt `lebendig`, nicht der Wärme)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "f9fd936f3e6b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#2": {
+   "gruen": false,
+   "zahl": "S2 stufenProzent 56,897 % gegen Soll ≥ 90 % ✗ · kantenProzent 14,765 % gegen Soll ≤ 10 % ✗ · Täter: phyto-core.js forestNische (die Art folgt dry/wet/clim, keine Höhenstufe)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S2 stufenProzent 56,897 % gegen Soll ≥ 90 % ✗ · kantenProzent 14,765 % gegen Soll ≤ 10 % ✗ · Täter: phyto-core.js forestNische (die Art folgt dry/wet/clim, keine Höhenstufe)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "c7a29e3d50a3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#3": {
+   "gruen": true,
+   "zahl": "S3 kappa 0,614 gegen Soll ≥ 0,6 ✓ · Zeuge: 300 Punkte des Planet-Fadens auf dem Kontinent des Ankers, Köppen (E: wärmster Monat < 10 °C; B: Abfluss < 50 mm/a) gege",
+   "exit": 0,
+   "minuten": 1.7,
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "9af9f408cc52",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: keine Orbit-Pose (scripts/werkbank.cjs /bild); der Wuchs des Planeten trägt nur Decke und Wald — keine Mangrove, kein Moor, keine Küstenwüste (voxel-worker.js planetOrtAuftrag delta.wuchs) · passtProzent 83,761 % gegen Soll ≥ 90 % ✗ · orbitAehnlich ungemessen gegen Soll ≥ 0,7 ✗ · Täter: voxel-worker.js planetOrtAuftrag (delta.wuchs nur Decke und Wald) + scripts/werkbank.cjs (keine Orbit-Pose)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: keine Orbit-Pose (scripts/werkbank.cjs /bild); der Wuchs des Planeten trägt nur Decke und Wald — keine Mangrove, kein Moor, keine Küstenwüste (voxel-worker.js planetOrtAuftrag delta.wuchs) · passtProzent 83,761 % gegen Soll ≥ 90 % ✗ · orbitAehnlich ungemessen gegen Soll ≥ 0,7 ✗ · Täter: voxel-worker.js planetOrtAuftrag (delta.wuchs nur Decke und Wald) + scripts/werkbank.cjs (keine Orbit-Pose)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "4dbd6c14bb05",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: fremde Klimata: jede Saat steht an ihrem Anker im Klima der Heimat (klimaHeute 18/−4 °C), Stern, Achse und Atmosphäre reisen nicht durch den Planet-Faden · vorhersagbarProzent 55,405 % gegen Soll ≥ 90 % ✗ · Täter: gelaende-core.js ortGesetz klimaHeute (jeder Anker im Klima der Heimat)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: fremde Klimata: jede Saat steht an ihrem Anker im Klima der Heimat (klimaHeute 18/−4 °C), Stern, Achse und Atmosphäre reisen nicht durch den Planet-Faden · vorhersagbarProzent 55,405 % gegen Soll ≥ 90 % ✗ · Täter: gelaende-core.js ortGesetz klimaHeute (jeder Anker im Klima der Heimat)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "620ff384d4ab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.lebenslauf#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: der Bestand ist keine Funktion der Zeit: 1412 Bäume an 20 Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten) · staemmeVerh 1 gegen Soll 0,3 ± 20 % ✗ · basalVerh 1 gegen Soll 1,4 ± 20 % ✗ · Täter: phyto-core.js planForestCell (der Bestand liest keine Uhr)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: der Bestand ist keine Funktion der Zeit: 1412 Bäume an 20 Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten) · staemmeVerh 1 gegen Soll 0,3 ± 20 % ✗ · basalVerh 1 gegen Soll 1,4 ± 20 % ✗ · Täter: phyto-core.js planForestCell (der Bestand liest keine Uhr)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "6d54038e75fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.lebenslauf#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: der Bestand ist keine Funktion der Zeit: 1412 Bäume an 20 Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten) · orte 19 Orte gegen Soll ≥ 20 Orte ✗ · jahre 50 Jahre gegen Soll ≥ 50 Jahre ✓ · orteImBandProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: phyto-core.js planForestCell (der Bestand liest keine Uhr)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: der Bestand ist keine Funktion der Zeit: 1412 Bäume an 20 Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten) · orte 19 Orte gegen Soll ≥ 20 Orte ✗ · jahre 50 Jahre gegen Soll ≥ 50 Jahre ✓ · orteImBandProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: phyto-core.js planForestCell (der Bestand liest keine Uhr)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "6cd2c0284209",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.lebenslauf#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: keine Pflanze trägt ein Alter in Jahren (der Dart trägt die Schicht 1.00 ≤ 1, phyto-core forestSchicht) und keine Lebensdauer je Wuchsform · pflanzen 1412 Pflanzen gegen Soll ≥ 1000 Pflanzen ✓ · Täter: phyto-core.js forestSchicht (kein Alter in Jahren)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: keine Pflanze trägt ein Alter in Jahren (der Dart trägt die Schicht 1.00 ≤ 1, phyto-core forestSchicht) und keine Lebensdauer je Wuchsform · pflanzen 1412 Pflanzen gegen Soll ≥ 1000 Pflanzen ✓ · Täter: phyto-core.js forestSchicht (kein Alter in Jahren)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "d069432a737e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.jahreslauf#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: stamm/bild-himmel.js _saisonPraesenz (EINE Kurve für jede Art)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: stamm/bild-himmel.js _saisonPraesenz (EINE Kurve für jede Art)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "b9e5f692397a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.jahreslauf#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: stamm/bild-himmel.js _saisonPraesenz (keine Trockenzeit, kein Monsun) + scripts/werkbank.cjs (keine Orbit-Pose)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: stamm/bild-himmel.js _saisonPraesenz (keine Trockenzeit, kein Monsun) + scripts/werkbank.cjs (keine Orbit-Pose)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "72f4f2d98db0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.jahreslauf#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: voxel-worker.js planetOrtAuftrag (Bahn und Jahr fremder Planeten fehlen)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 12,008 s: der Deckel der Leiter 12 s · Täter: voxel-worker.js planetOrtAuftrag (Bahn und Jahr fremder Planeten fehlen)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "bed2a418543d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.dichte#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 20,011 s: der Deckel der Leiter 20 s · Täter: stamm/gelaende-fern.js (Kronen-Mittel statt adressierter Pflanze) + scripts/werkbank.cjs (kein Anflug)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 20,011 s: der Deckel der Leiter 20 s · Täter: stamm/gelaende-fern.js (Kronen-Mittel statt adressierter Pflanze) + scripts/werkbank.cjs (kein Anflug)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "152e6041ce00",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.dichte#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 20,011 s: der Deckel der Leiter 20 s · Täter: scripts/werkbank.cjs (kein Flug Orbit → Halm) + stamm/gelaende-fern.js",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 20,011 s: der Deckel der Leiter 20 s · Täter: scripts/werkbank.cjs (kein Flug Orbit → Halm) + stamm/gelaende-fern.js",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "2a0fc6d87092",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.kraft#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 12,013 s: der Deckel der Leiter 12 s · Täter: stamm/stoff-material.js _windAt (die Böe wandert mit ω/k, nicht mit dem Wind)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 12,013 s: der Deckel der Leiter 12 s · Täter: stamm/stoff-material.js _windAt (die Böe wandert mit ω/k, nicht mit dem Wind)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "4aeee5e54799",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.kraft#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 12,013 s: der Deckel der Leiter 12 s · Täter: stamm/stoff-material.js _windWiegen (Biegung ∝ v, ohne Schwere und Luftdichte)",
+   "exit": 0,
+   "minuten": 1.7,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 12,013 s: der Deckel der Leiter 12 s · Täter: stamm/stoff-material.js _windWiegen (Biegung ∝ v, ohne Schwere und Luftdichte)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5039cf2afc92",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 101.7,
+   "fremd": {
+    "s": 103.1,
+    "takte": 47,
+    "fremdS": 43.8,
+    "kerne": 0.425,
+    "fensterKerne": 0.897,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.17
+     ],
+     [
+      "Explorer.EXE",
+      4.59
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2676 3484",
+      4.55
+     ]
+    ],
+    "dienerS": 39.09,
+    "diener": [
+     [
+      "dwm.exe",
+      18.03
+     ],
+     [
+      "System",
+      13.69
+     ]
+    ],
+    "geraetS": 47.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.13
+     ],
+     [
+      "svchost.exe",
+      13.64
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 165.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:57:03.296Z",
+   "abdruck": "a49f1ac35a6c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.arten#5",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -48857,7 +50062,8 @@
   "k60c7daed1327": "dVbLkqtGDP0XL+OLxftVdRfCTJXnVh7MKnWXDa0GbAxONzYTp/LvKTDMGJhoYxccSUdHajX/bLJGktqdWV0KUu3uqJp6E25+2XzbCJYVHcmT1kN2R7UJNwZ3feIhBABgbd/9xOeYxAJ6uwFAt0XcQgAeAL4hxleM++c42WsMYAVw6PH6HzZAcBCYbAEOEPv418u7+xPfcI/4EzHyk8kNRkssB+B2zLPAgxvoGO0zxLe4A5tDNCBj/QZzu99txBhf8ck6jKwu9hExwahD3CY9cpvguwdelH0C9/i2+bYpa07vu6I9V6MyF5adWE7PYil2I02RvJF8SBVkhklWOFXQB+thmSwvrQJeslxT1LYVnalud9ngY5OZBU7YJZ+lj/Yy/Ynw+/enOFWZAktrVpxJu8qWymoM5RsmN0UI3Qt2CUACHvSVThZ/EaZKiTdaywRNQYJAWD4Ll8CryllKGruKIfEIdnxiwgkfqvsxJsePHvSZeyb7ddaU1XzOPHAdj5zwteurXuF5yajVqrJWU96MO6llhh/JurWPZJ12Z1RUJEcnZnjMSCeyj6FIAlg4iuqq1CyZb3HH9EOAFTYnVWZFq11kk1I9wtPA9AwWRmtO+eWqiRmjNGV+utS6YFTnJGccdCsTrhHCu78MemJnkkyrWTFpqVuemYbP5+Gw5lINxIcUE3FXF4btzxz7psIwQnE+BIL79DyZhqo/9KPlyySNmmtDrsFdviy4kQsJbcu1XTaeo7iD7mVJX2VFKc9zL2GTqVvhr+tiVcE4Se3UqPYD7duMkT/lGFYXJna89PyUafQzU1d3nlXyAQ+rrqhGtB2TpOWX61S7TY7nhIivK3DL+EIBYQhLOEuhVMvO5+noCcu2si8QNZ/xdWwyXK/nm//PKDxOonanspqchLDtwAn3kb0E30ieqJCqpva+aFrKhRcsCd0kO2sszWUpxDSgqZOJ4Kvz1FHVamnTTLvRtXQrMHru9ZPeYliJT/s6/tv88/A2jWGUDz+/I35R65Chke2HOqmrCzscbrMuW6FL2Wody4qP5ouUWE991fA7yYpymknP7dRiPITucVnC0UdMvHFjie38ylpHLKlvSq2uahrZwOOBeIzeuNdf59uyv7pTVp+mlriOb5jhD4zzH1s8PFyOegwxLE10iD/38WMt/oZRf23HPg7BL5TBRTai7Bc3FOyqClbNPhtuVPNGQltIot3w6XAu68eduHp9bvi1egIwiwXcDDf//gc=",
   "k47ffa86850c2": "dVRNj5swEP0vHNt6zfeHpT04IdKuVKnpqecxjIENAWRDqFL1v1ewkARI54TQe5437439x2ggOUGGLx+6rgxmfDG+GRouSDSqC6qXD20wI0osGx3GP4tyzvcDLFFF02paFoKCqCA/I+lUi0X5koy00LJTWzLaH3h/pPRIA7rrX1/X1FJgWpMWJM7EKJJOCGwN7HQGAgl0cmw2gb0QQXqMjhXG/PhB5+I/Oaf9Yd1RQJUulUa+F6DH3nvOD3yjMC0AW1IWlZ57JqknHJvdGm2nShX05AqYl6gmElgBWGIWOlrZHyO6Isqy03rRLHRSzw4ZpRtshrpI8pY0qhZYTXAR2YEF7InTWdMRuVAkBIRi7XMOWGWoFhpMJ5G+xejvcH3oCc6ogFSQz16aTmCLuzeU0retlnIUPraYhfumtNxwQRwCpdngVJyNB9Hr/P/4uYwxH0KeKls10UleqPPSHumibTrs+1aSziFFRU61bm/o0AXAcNr8eFwofnTjNfM+zMSzhW96j7OElL9tvNO1bHtQSLKmm4joohd4jPP3DbiF83neeem4TrIOTrfDYj/K8Fy0/GCQkf0nh89rQK5YlDNJSteNvPXhFwVnAiJThZRz0sJLZPRsMXssWyLqup2jdUwnshh1aHVzJBqvwO4WHt/zuDd/7R/yHOvA15rH02vV3qYUvildJi/DTUw26EK1pIckv2UjBULEnkCvqErMcGFh6goH0gF9lxS788fXxbJeNwlfCxzMrXSn542KgjSS7Mmz0aM6CahOE9D1vdCyx9Xb/eBvU0MzpjFdV9pz/nO/Cx9ty6Z3rMGENqqWxfDq0Rw6nUPZ3p/7v/8A",
   "k2027ed401b24": "dVRNj5tADP0vObaddfgKMFIPkxApK7Vq9tSzBzzAhkA0A6FN1f9ewUKywNbH0Xv287M9f1YXjE+Y0tOrqcoVX31afVkZvBIzpK+kn17Niq/C2LLJ4eJFdAFCiF0Hi3V+qQ0UuQSUJWZnYo2uKS+e4p4WWHZiKw7tXrRHgCP4sG2/fp1TC0lJxWpUNBLDUDkB8jmwMSlKYtiovtgA9gJC5XHoI4jE8RXG2LZCQLufV5RYJlOl4cbzyePPrRB7sVCY5Eg1K/LSjDXjxJOOze+Fll0lGlt2Q8oK0gMJLR8tOQrtrWyPIcyIqmiMmRQLnMSzAw6wwKZk8jir2UVXksoBLkPbt5B/4HR6aZiaKJISAzn3OUMqU9ITDWsnVhuLw69gnvSEZ9LISsxGL9eOb8uHNwBwWGopeuF9iVH4Zq0sN5gQu4FC2jkVpX0iuI3vx95AEYlhK7tIZ0VMnOX6PLVHuWSvHf5tKclkmJBmp8rUd3TgIlLAh1rQ1zq60Zz5aGbg2XKz9t73EoA4LLwzlapb1MTSSzMQySXP97gQzwtwjefzuPPKcZ14PjhTd4v9XobnkrXxOxnpf+bwdgbsRnkxkpRy3dDju206B181nhnKVOdKjdOWXqzCj5azpaJmsqrqcbzO2gktDg6Ud1fC/gy29wGKnYh+2z8PL4+Z9rEXcyl99krX907lZq1crq7dNcYLdK5r1mKc3eejJGEnezGTG+mCUprYmLjSwYRDq95k3wIhjv5w+urzZGFvy4w5dQaXpjHjVoV+Eir+wdfRkj5JLE8D0N14gWX367f9IQ5vFpVhBBFcp3cCSSvEyy56+1e+i614jiAakl8ohouuVN79fJBhYzIs6seX//cf",
-  "k08245dac43a0": "dVVdj5swEPwvPLb1OXwFsHQPTjgpV7Uq99TnNayBCwFkQ2hT9b9XEEgCXPcRzeyMZ9fmj1FDfIQUn951VRrM+GR8MTSckWhUZ1RP79pgRhCbFtqMX4tyzvc9LFZ53Wha5IKCKCE7IWlVg3nxFA8037QSSzLavfAuojSiHt11/FZ7/vy8bFMITCrSgMSpSRBI2we2BLY6BYEEWjkIj2DXR5Auo0P5IY/e6VS9cu/kA1UBZTJ3HmxdD132+pvzlzU+yQEbUuSlnnTjxBW2xW5i3ZqjoCMXwKxANZLA9MAUk9khki4K6IIoi1brmZhvJ67lM0pX2BR1HmcNqVUlsBzhIrA8E9hu7SmtWyJnjoQAXyyzzgDLFNXMw8aO5dZk9Je/bHqEEyogJWRTlhvbs8Q9G0rpYe2lGIwPEpPx7Uaajj8j9kOlaZ9UmA6N6GX6Hl2XKuT87bZh6UJEx1muTvN4pIPWxmbf1pZ0Bgkqcqx0c0P7DgD6400I6aAVOeGSeT/MyLPEduM+nsWn/LDKTley6UAhSet2JKKDrucyzl9X4AZOp2nvpe3Y8XJwuukX+9GG66C59Xob6X/mcL0G5IJ5MZGkdJzAZftdugSfFZwIiFTlUk7TFm4sg4+Ws8OiIaKqmmm89sYOzN5L+RBLn+vu8Y0If1s/D2/3mQ71wpdWhu6Vam4nFduNdJg897cxXqFz1ZAO4uw2HykQeturmVxQFZjiLMbEETYkjHby6vricx5549WXn2cLe1l3zLEPuNStnrYq8JJAsg+ejg7VUUB5HIHO1vVNi33tQ/rBD9eIyiCkIV1W0nH+tg+v78p3vuOvIQ3H5jXGtFaVzPuXj2bQ6gyK5v4L+PsP"
+  "k08245dac43a0": "dVVdj5swEPwvPLb1OXwFsHQPTjgpV7Uq99TnNayBCwFkQ2hT9b9XEEgCXPcRzeyMZ9fmj1FDfIQUn951VRrM+GR8MTSckWhUZ1RP79pgRhCbFtqMX4tyzvc9LFZ53Wha5IKCKCE7IWlVg3nxFA8037QSSzLavfAuojSiHt11/FZ7/vy8bFMITCrSgMSpSRBI2we2BLY6BYEEWjkIj2DXR5Auo0P5IY/e6VS9cu/kA1UBZTJ3HmxdD132+pvzlzU+yQEbUuSlnnTjxBW2xW5i3ZqjoCMXwKxANZLA9MAUk9khki4K6IIoi1brmZhvJ67lM0pX2BR1HmcNqVUlsBzhIrA8E9hu7SmtWyJnjoQAXyyzzgDLFNXMw8aO5dZk9Je/bHqEEyogJWRTlhvbs8Q9G0rpYe2lGIwPEpPx7Uaajj8j9kOlaZ9UmA6N6GX6Hl2XKuT87bZh6UJEx1muTvN4pIPWxmbf1pZ0Bgkqcqx0c0P7DgD6400I6aAVOeGSeT/MyLPEduM+nsWn/LDKTley6UAhSet2JKKDrucyzl9X4AZOp2nvpe3Y8XJwuukX+9GG66C59Xob6X/mcL0G5IJ5MZGkdJzAZftdugSfFZwIiFTlUk7TFm4sg4+Ws8OiIaKqmmm89sYOzN5L+RBLn+vu8Y0If1s/D2/3mQ71wpdWhu6Vam4nFduNdJg897cxXqFz1ZAO4uw2HykQeturmVxQFZjiLMbEETYkjHby6vricx5549WXn2cLe1l3zLEPuNStnrYq8JJAsg+ejg7VUUB5HIHO1vVNi33tQ/rBD9eIyiCkIV1W0nH+tg+v78p3vuOvIQ3H5jXGtFaVzPuXj2bQ6gyK5v4L+PsP",
+  "k5039cf2afc92": "dVVdj5swEPwveezVZz4DWLoH57gqV7UqeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu91Va7Y6tPq80rDGYlGdUb1vNcrtgpi00Kb8WtRzvlrB4tVfqo1LXJBQZSQHZE0qsa8eI57mm9aiSUZbd94G1EaUY9uWn6rV/7yMm9TCEwqUoPEsUkQSNsHNgc2OgWBBBrZCw9g10eQLqN9+SGP9nSsTpm2X35E6W6uKqBMps6Dteuhy95bzt+WLpMcsCZFXupRN05cYVvsJtYuOQpacgHMClQDCUwPTDGa7SNpo4DOiLJotJ6I+XbiWj6jdIFNUedxVpOTqgSWA1wElmcC2yw9paeGyIkjIcAX86wzwDJFNfFg2LFcm4z+8udND3BEBaSEbMzSsD1L3LOhlG6XXoreeC8xGl8b0nT8CbEbKk27pMK0b0Qv4/foulQh57vbhqUzER1nuTpO45EOWobNvi0t6QwSVORQ6fqG9h0A9IebENJeK3LCOfN+mIFnibXhPp7Fp3y7yE5Xsm5BIUlPzUBEB13PZZy/L8A1HI/j3kvbseP54HTdLfajDddBc+11NtL/zOF6DcgF82IkSek4gcteN84cfFZwJCBSlUs5Tlu4sQw+Ws4Wi5qIqqrH8dqGHZidl/Ihli7XzeMbEf62fm5395n29bapPvDeK1Sqvp1WrA3pMHnubmS8QOeqJi3E2W1GUiB01hdzuaAqMMVJlIkjbEgYbeXV+cXnPPKG6y+fJkt7WXbMsQu51I0eNyvwkkCyD56PFtVBQHkYgM7a9U2Lfe2C+sG315jKIHwK6bxky/kuCq9vy3e+5e8h3Q/NTxjTk6pk3r1+NINGZ1DU99/A338="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
