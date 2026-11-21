@@ -4654,9 +4654,18 @@ const stationsEintrag = (e, o) => ({ ...e, zeit: o.zeit, abdruck: o.abdruck, por
 // DER EINTRAG einer gefahrenen Station: ein Urteil (GRÜN/ROT) nach m.je, das Buchung und `run --offen` lesen; ein Lauf ohne
 // Schloss (Exit 75, gpu-lauf.sh schwieg beim Warten) nach m.ungemessen mit Grund, NIE als ROT — frischUrteil nähme ihn sonst als
 // frische Messung, und `run --offen` mäße die Station an diesem SHA nie neu (26.10., Prüfung gpu-bahnen)
+// DIE RUNDE LIEST `offen` (21.11., Koordinator; Leser: koordination zug/dienst/runde.cjs `hatEintrag`, das Verb `offen` der Geräte-
+// Dienste — die Radeon hieß am 31ea3847 „durch 1428/1428“ mit 219 Urteilen und 1 212 ungemessenen Stationen): ein Eintrag, den der
+// APPARAT nie erreichte — „… — offen, UNGEMESSEN“ (die Welt der Sitzung trug nicht, die Fahrt riss vor ihm) oder „Läufer starb“ ohne
+// die laufende Probe —, trägt `offen` = die Zahl seiner Versuche an diesem Kopf. Die Runde fährt ihn nach, solange die Zahl unter
+// ihrer Grenze steht; ein Eintrag beim Namen der Station (Frist, Grund-Stellung, Täter-Ort, Urteils-Zeile, die laufende Probe) trägt
+// das Feld nie und steht.
+const apparatOffen = (grund) => /— offen, UNGEMESSEN$/.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
 function eintragen(m, id, e) {
     e = konsumTafeln(m, e);
     if (e.ungemessen) {
+        const alt = (m.ungemessen || {})[id];
+        if (apparatOffen(String(e.grund || ""))) e = { ...e, offen: ((alt && alt.offen) || 0) + 1 };
         (m.ungemessen = m.ungemessen || {})[id] = e;
         return;
     }
@@ -7629,6 +7638,24 @@ async function selbsttest(o = {}) {
         pruef("KONSUM-TAFEL Zwillinge teilen EINEN Abdruck, die Buchung liest ihn aus der Tafel, vereine trägt ihn mit, ein Abdruck ohne Eintrag fällt",
             KONSUM_REF.test(ref) && v.je["a.K1#2"].konsum === ref && Object.keys(v.konsumTafel).join() === ref && JSON.stringify(konsumVon(v.je["a.K1#1"], v).k) === JSON.stringify(K) &&
             konsumVon(v.je["a.K1#1"], { konsumTafel: {} }) === null && !konsumRaeumen(mt).konsumTafel, JSON.stringify([ref, Object.keys(v.konsumTafel || {}), Object.keys(mt.konsumTafel || {})]));
+        // DER EINTRAG ZÄHLT DIE VERSUCHE DES APPARATS (`offen`, der Leser ist die Runde): a erreichte der Apparat zweimal nicht (die Welt
+        // trug nicht, dann starb der Läufer) → offen 1, dann 2; die laufende Probe, der Täter-Ort und die gerissene Frist stehen beim
+        // Namen ohne das Feld; ein Urteil räumt den Eintrag. Vorher: kein Eintrag trug das Feld, die Runde zählte jeden als gemessen
+        {
+            const mo = { sha: "a1", geraet: "radeon", je: {} }, U = (grund) => ({ gruen: false, ungemessen: true, zahl: grund, grund });
+            eintragen(mo, "a#1", U("die Welt der Sitzung trägt nicht mehr (x) — offen, UNGEMESSEN"));
+            const o1 = mo.ungemessen["a#1"].offen;
+            eintragen(mo, "a#1", U("UNGEMESSEN: Läufer starb (Exit 0xC0000409) · Kind 1 nach 3.5 min"));
+            const o2 = mo.ungemessen["a#1"].offen;
+            eintragen(mo, "b#1", U("UNGEMESSEN: Läufer starb (Exit 0xC0000409) · Kind 1 nach 3.5 min · die laufende Probe"));
+            eintragen(mo, "c#1", U("Messort: /umstellen dach: ABSTURZ der Seite — die Welt starb am Ort (vor c#1), kein Urteil, UNGEMESSEN"));
+            eintragen(mo, "d#1", U("Frist der Probe gerissen (60 s)"));
+            const frei = ["b#1", "c#1", "d#1"].every((id) => mo.ungemessen[id] && mo.ungemessen[id].offen === undefined);
+            eintragen(mo, "a#1", { gruen: true, zahl: "z" });
+            pruef("EINTRAG `offen` zählt die Versuche des Apparats: „— offen, UNGEMESSEN“ und „Läufer starb“ ohne die laufende Probe tragen 1, dann 2; die laufende Probe, der Täter-Ort und die " +
+                "gerissene Frist tragen das Feld nie; ein Urteil räumt den Eintrag (vorher: kein Feld — die Runde zählte jeden als gemessen)",
+                o1 === 1 && o2 === 2 && frei && !mo.ungemessen["a#1"] && mo.je["a#1"].gruen === true, JSON.stringify([o1, o2, mo.ungemessen]));
+        }
         // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
         const ord = path.join(tmp, "getoetet.konsum");
         fs.mkdirSync(ord, { recursive: true });
