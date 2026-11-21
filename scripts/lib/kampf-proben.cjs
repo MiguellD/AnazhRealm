@@ -2888,8 +2888,10 @@ async function WELLE_L(ort) {
                     if (t) Object.assign(x, { verb: "hieb", wirk: t.amount / t.kraft, kraft: t.kraft });
                     parke(wild);
                 } else if (ziel === "wiese") {
-                    await __weltStehtNach();
+                    // erst der Blick auf den Halm, dann steht die Welt: die Nah-Wiese ist ein Fächer am EINEN Auge
+                    // (stufe-ein-auge) — sie baut, wohin der Spieler sieht, nicht wohin der vorige Klick sah
                     zielen(halm);
+                    await __weltStehtNach();
                     const v = [um(), kraut()];
                     r.tryMouseBreak();
                     Object.assign(x, { verb: p._mausVerb, kraut: kraut() - v[1] });
