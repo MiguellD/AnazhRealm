@@ -15,3 +15,7 @@ Zahlen: Stichprobe 18 → 20 von 20; nicht angekommen 43 von 1 338 → 1 von 1 3
 Stände jenseits der Wand 588 von 5 451 → 0 von 5 242.
 Offen: 1235848548 (Werkstatt, eigene Station) steht 3,5 m vor seinem Stand, Weg 6 m — Ursache nicht bestimmt;
 19 Bewohner ohne Stand vor der Tür (main 17), laut.
+
+Kopf f943ccfe (am main 44446d65; jeder Stand mit gelaufener Suche urteilt neu, EIN Gesetz der Tür), dieselben zwei Kameras, 10 Uhr, beide ABNAHME GRÜN — kopf2-werk.png / kopf2-werk-nah.png:
+- an der Kante der Terrasse etwa 10 · an der Tür der Werkstatt etwa 6 · an der Wand 2, am Fuß der Klippe 3 — gegen kopf-werk.png (rund 10 · 6 · 2 + 3–4) gleich.
+- Urteil (eigenes Auge): das Bild steht wie am Kopf 75b0f860 — derselbe kleine Trupp an der Kante, dieselben Gestalten an Wand und Fuß, nur ein Mensch an der Terrasse steht um eine Schulter versetzt; das neue Urteil der Stände rückt hier keinen sichtbar fort.
