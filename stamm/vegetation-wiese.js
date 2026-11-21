@@ -2522,7 +2522,10 @@ class AnazhRealm_vegetation_wiese {
     // ist mittelwert-neutral (≈1): die Gesamt-Dichte bleibt, nur die Verteilung ändert sich. Main-only
     // Deko, seed-gebunden (alle Peers gleich); tag-neutral (reiner chance-Skalar, diag-arch-tags wacht).
     _clumpAt(x, z, freq) {
-        return AnazhRealm._saatJe(this, "wiese.klump", (s) => new SimplexNoise(s + ":clump")).noise2D(x * freq, z * freq);
+        return AnazhRealm._saatJe(this, "wiese.klump", (s) => new SimplexNoise(s + ":clump")).noise2D(
+            x * freq,
+            z * freq
+        );
     }
 
     // STAND-Klumpung je Zweck (phytogenesis-standDensity): Γ5-Suffix ':forest' für Bäume λ~170 m,

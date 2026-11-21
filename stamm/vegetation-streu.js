@@ -2463,7 +2463,10 @@ class AnazhRealm_vegetation_streu {
     // wuchs mit der Grammatik der Welt davor). Der Wuchs der Built-ins liest das saat-freie Feld des Konstruktors (`_wuchsRausch`,
     // bau-vorlagen `_defaultBlueprints`). Leser: `_growTreeBlueprintRich`, `_growTreeBlueprintLegacy`, die Kronen-Hebung des Himmels.
     _baumGrammatik() {
-        return this._wuchsRausch || AnazhRealm._saatJe(this, "baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"));
+        return (
+            this._wuchsRausch ||
+            AnazhRealm._saatJe(this, "baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"))
+        );
     }
 
     _growTreeBlueprintRich(speciesKey, seed, opts) {

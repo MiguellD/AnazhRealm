@@ -838,7 +838,9 @@ class AnazhRealm_gelaende_boden {
                 return AnazhRealm._saatJe(realm);
             },
             get noise() {
-                return AnazhRealm._saatJe(realm, "gelaende.rausch", (s) => globalThis.__gelaendeCore.lageRausch(s, SimplexNoise));
+                return AnazhRealm._saatJe(realm, "gelaende.rausch", (s) =>
+                    globalThis.__gelaendeCore.lageRausch(s, SimplexNoise)
+                );
             },
             get baseHeight() {
                 return realm.state.terrainBaseHeight;
