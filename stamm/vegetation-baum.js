@@ -2350,9 +2350,7 @@ class AnazhRealm_vegetation_baum {
             for (let tx = Math.floor((hx - r) / K); tx <= Math.floor((hx + r) / K); tx++)
                 for (let tz = Math.floor((hz - r) / K); tz <= Math.floor((hz + r) / K); tz++) {
                     const k = ns.kacheln.get(`${tx},${tz}`);
-                    if (!k) continue;
-                    this._nahStreuKachelEntsorgen(k);
-                    ns.kacheln.delete(k.key);
+                    if (k) this._nahStreuKachelFaellt(k); // sie steht, bis ihr Neubau sie ablöst
                 }
         }
         return n;

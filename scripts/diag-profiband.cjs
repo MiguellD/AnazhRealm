@@ -26,7 +26,8 @@
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
 //   P-Ferne DIE FERNE DER NAH-WIESE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne (`WIESE_FERN_TAFEL`) — das Büschel
-//       unverformt (nur ein Anteil, der Block affin), die Lücke des Strahls bis zur Kappe, die Büschel je Pixel ≤ 2× der Übergabe
+//       unverformt (nur ein Anteil, der Block affin, je Büschel die Ebene des Gesetzes), die Lücke des Strahls bis zur Kappe,
+//       die Büschel je Pixel ≤ 2× der Übergabe
 //   H9  DAS SOLL DES TURMS (hochhaus-dach-speicher) am Kern des Werk-Fadens: die Fern-Stufen L2 · L3 · L1 eines frischen
 //       Klinker-Turms (modern, 22 Geschosse) legen zusammen höchstens die Ecken seiner Stufe 0 an — der Warm-Pfad `sollTon`
 //       baut die Stufe 0 je Bau einmal, nie je Auftrag (der Müll von 1,1–1,7 GB je Auftrag brach den Renderer der Metropole)
@@ -452,7 +453,9 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // Glied ist rot); DIE DECKUNG IM BLICK: die Größe steht bis zur Kappe auf 1 (stetig), übersteigt nie `skalaMax`, und solange
 // sie darunter liegt, hält Anteil × Größe² die Lücke (was die Kappe an Zahl nimmt, trägt das Büschel in seiner Fläche); der
 // Block der Ferne trägt die Matrix des Büschels affin
-// (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
+// (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung) und je Büschel SEINE Ebene des
+// Gesetzes (w28-pop-treue: `hang` der Kachel, `_wieseHang` — der Bestand schreibt sie in die vierte Zeile der Instanz, das
+// Gesetz der Ferne misst an ihr; die Ebene eines anderen Büschels ist rot). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
 // radius hält 1 von der Übergabe bis zur Kappe (der Strahl lässt so viel Grund durch wie an der Übergabe); DER SCHIRM: die
 // Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis
 // w14-wiese-saum die Übergabe — absolut dieselbe Wand). Bis w28-wiese-schale streckte das Gesetz das Büschel bis 14-fach, und eine
@@ -491,9 +494,14 @@ function ferneWand(A) {
     try {
         const w = weltVon(A, { nahWiese: { vorlagen: new Map(), reich: 0.775, fern: { kacheln: new Map() } } });
         const b = { x: 30, y: 1.5, z: 30, s: 1.1, rot: 0.3, vorlage: 0, o: 0.1, f: [1, 1, 1], gx: 0.05, gz: -0.02 };
-        const M = w._nahWieseFernBlock({ bloecke: [], ...w._nahWieseKachelDaten(2, 2, [b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }).matrizen[0]; // prettier-ignore
+        // zwei Büschel, das zweite trägt die Vorlage des Blocks: seine Ebene des Gesetzes steht im Block, nie die des ersten
+        const hang = new Float32Array([0.5, 0.5, 0.031, -0.017]);
+        const B = w._nahWieseFernBlock({ bloecke: [], hang, ...w._nahWieseKachelDaten(2, 2, [{ ...b, vorlage: 1, o: 0.05 }, b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }); // prettier-ignore
+        const M = B.matrizen[0];
         if (M[3] !== 0 || M[7] !== 0 || M[11] !== 0 || M[15] !== 1)
             affin = `vierte Zeile ${[M[3], M[7], M[11], M[15]].join(" ")}`;
+        else if (B.hang?.[0] !== hang[2] || B.hang?.[1] !== hang[3])
+            affin = `die Ebene des Gesetzes ${[...(B.hang || [])].join(" ")} statt ${hang[2]} ${hang[3]}`;
     } catch (e) {
         affin = e.message;
     }
@@ -1481,8 +1489,8 @@ function selbsttest() {
         );
         // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm, Gestalt und Größe; je Glied ein Mutant, der genau seinen Teil
         // rot macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Größe verliert
-        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix (der veränderte Stamm als
-        // Klasse geladen)
+        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix, der Block trägt die Ebene eines
+        // anderen Büschels (der veränderte Stamm als Klasse geladen)
         const stillF = [
             ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
             [
@@ -1496,6 +1504,7 @@ function selbsttest() {
             ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
             ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
             ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
+            ["Ebene eines anderen Büschels", "_nahWieseFernBlock", "k.hang.subarray(i * 2, i * 2 + 2)", "k.hang.subarray(n * 2, n * 2 + 2)", (r) => /Ebene des Gesetzes 0.5 0.5/.test(r.affin)], // prettier-ignore
         ].filter(([, g, a, b, rot]) => {
             const r = ferneWand(klasseVon(stammLib.ersetze(st, g, a, b)));
             return !(r.errs.length && rot(r));
