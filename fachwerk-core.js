@@ -10586,11 +10586,19 @@
                 },
                 kachel.i || kachel.k ? { kernel: "kreuzung" } : null
             );
-        } else if (plan.erde && plan.erde.form === "raster") {
+        }
+        // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
+        // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
+        var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
+        if (!kNetz && plan.erde && plan.erde.form === "raster") {
             // DIE GEPLANTE STADT DER ERDE (`erdSchluessel` form): ein Herd mit Plan gründet seine Lose auf dem Raster — das Netz der
-            // Stufe 1 ohne Spiel (`ERDE.raster`): gerade Achsen, rechte Winkel, Blöcke (die Insulae der Kolonie, das Gitter der Kaiserstadt)
-            kNetz = kachelNetz(plan.seed, 0, 0, ERDE.raster);
-            plan.netz = kNetz;
+            // Stufe 1 ohne Spiel (`ERDE.raster`): gerade Achsen, rechte Winkel, Blöcke (die Insulae der Kolonie, das Gitter der
+            // Kaiserstadt). Das Raster steht nur auf dem Grund, der es trägt: steigt eine seiner geraden Achsen über das Gesetz der
+            // Trasse (`trasseSteil`), wächst der Ort am Hang (form "gewachsen", grund "hang") — die Kolonie am Hang folgt dem Gelände
+            var rNetz = kachelNetz(plan.seed, 0, 0, ERDE.raster);
+            if (Htr && rNetz.edges.some(function (e) { return trasseSteil(Htr, e.pts); }))
+                plan.erde = Object.assign({}, plan.erde, { form: "gewachsen", grund: "hang" });
+            else plan.netz = kNetz = rNetz;
         }
         var ext = [];
         var Bs = [];
@@ -10619,9 +10627,6 @@
             Bs.push(Bm);
             ext.push(el);
         }
-        // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
-        // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
-        var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
         // DER KERN EINES RINGS (siedlung.K4 Staffel 2): ein gesetztes Haus im Ort (`dp.kern` {x, z, phi, ex, ez, ab}: seine Platte
         // plan-lokal, ab = das Jahr des Orts, als es stand) wird Kern der Lose, die danach gegründet sind — sie wachsen in ihrem
         // eigenen Layout um das Haus (`ringUm`), die älteren liegen, wie sie lagen (ihr Layout ist das des Schnitts bis ab)

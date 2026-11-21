@@ -791,6 +791,16 @@ function erdUrteil(FC, o = {}) {
     if (koeln.region !== "mitteleuropa" || !(mass.koelnAchs < 0.9))
         fehl.push(`E2 Köln 1300 ${koeln.region}, achsgleich ${mass.koelnAchs}`);
     if (kk.some((k) => !/japanisch|chinesisch/.test(k))) fehl.push(`E2 Kyoto 1000 baut ${[...new Set(kk)].join("/")}`);
+    // E2 DAS RASTER STEHT NUR AUF DEM GRUND, DER ES TRÄGT: dieselbe Kolonie auf ebenem Grund (dp.hoehe 0) bleibt im Raster, am
+    // Hang (15 % quer zur Achse, über dem Gesetz der Trasse) wächst sie (form "gewachsen", grund "hang") — nie die gerade Achse
+    // über den Hang, die den Sockel der Kirche auf 12 m hob
+    const grund = (s) => ({ x0: -150, z0: -150, d: 5, n: 61, h: Array.from({ length: 61 * 61 }, (_, k) => s * ((k % 61) * 5 - 150)) });
+    const [eben, hang] = [0, 0.15].map((s) =>
+        ex({ seed: 7, nH: 12, erde: { breite: 47.53, laenge: 7.72, jahr: 100 }, hoehe: grund(s) })
+    );
+    je.push(`Kolonie eben ${eben.erde && eben.erde.form} · am Hang ${hang.erde && hang.erde.form}/${hang.erde && hang.erde.grund}`);
+    if (!(eben.erde && eben.erde.form === "raster" && hang.erde && hang.erde.form === "gewachsen" && hang.erde.grund === "hang"))
+        fehl.push(`E2 das Raster am Hang: eben ${eben.erde && eben.erde.form}, Hang ${hang.erde && hang.erde.form}`);
     const heim = [100, 1300, 1860].map((j) => ep(j));
     if (heim.join() !== "antike,mittelalter,gruenderzeit")
         fehl.push(`E3 das Jahr eines Satzes an der Heimat ${heim.join(" → ")}`);
@@ -1296,14 +1306,17 @@ hauptLauf(async () => {
             ex: (dp) => FC.exportSettlement({ ...dp, erde: undefined, epoche: "mittelalter" }),
         });
         const Ea = erdUrteil(FC, { ep: (j) => (j < 1560 ? "mittelalter" : FC.epocheImJahr(j)) });
+        // · und das Raster, das den Grund nicht liest (die gerade Achse über den Hang)
+        const Eh = erdUrteil(FC, { ex: (dp) => FC.exportSettlement({ ...dp, hoehe: undefined }) });
         console.log("ERDE " + JSON.stringify({ je: E.je, mass: E.mass, fehl: E.fehl }));
         check(`E1–E3 SCHLÜSSEL DER ERDE: ${E.je.join(" · ")}`, !E.fehl.length, E.fehl.join(" · "));
         check(
-            `E4 DIE MUTANTEN fallen beim Namen: ohne Ort ${Eo.fehl.length} Brüche, das Jahr nur in Mitteleuropa ${Ea.fehl.length}`,
+            `E4 DIE MUTANTEN fallen beim Namen: ohne Ort ${Eo.fehl.length} Brüche, das Jahr nur in Mitteleuropa ${Ea.fehl.length}, das Raster ohne Grund ${Eh.fehl.length}`,
             /E2 der Export trägt keinen Schlüssel/.test(Eo.fehl) &&
                 /E2 kein Raster/.test(Eo.fehl) &&
-                /E3 .*mittelalter → mittelalter/.test(Ea.fehl),
-            [...Eo.fehl, ...Ea.fehl].slice(0, 4).join(" · ")
+                /E3 .*mittelalter → mittelalter/.test(Ea.fehl) &&
+                /E2 das Raster am Hang: eben raster, Hang raster/.test(Eh.fehl),
+            [...Eo.fehl, ...Ea.fehl, ...Eh.fehl].slice(0, 5).join(" · ")
         );
         if (nur("e")) wandEnde(errs, "DER ORT DER ERDE TRÄGT SEINE ZEIT (Teil E).");
     }
