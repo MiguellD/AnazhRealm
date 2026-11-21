@@ -2649,6 +2649,32 @@ async function wirtRuf(w, gib, heap) {
         return { fehler: String((e && e.message) || e).split("\n")[0] };
     }
 }
+// DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT (pm-probe-raeumt 21.11.; GTX an main 1e204f83: kausal#1 + antwort#1 ließen `window.__k4` stehen —
+// stationen/g5.js K4_ORT, die Hügel-Closures über dem eval der Probe, +157,3 MB —, praesenz#1 `window.__zeigerDerProbe`, +120,8 MB; die Wache
+// gibt Funktionen zurück, nie Daten, und ein Daten-Feld hält den Kontext wie ein Haken: UNGEMESSEN). EIN Ort für jeden Rahmen der Probe
+// (seite.cjs, die bash-Sitzung, sitzung-seite.js): nach `nimm` die Namen von window, vor `gib` fällt jedes neue Daten-Feld beim Namen —
+// Funktionen und Zugriffe nimmt die Wache; der Halter, die Uhr des Gangs, die Frist, die Hänger-Linse, die Felder der Grundstellung und die
+// eigenen der Maschine gehören der Sitzung. Was danach noch hält, hält außerhalb von window: die Wache bleibt hart
+const FELDER_DER_SITZUNG = "^__(gehalten|offen|gangUhr|punkte|wirt|probeFrist|haenger)";
+function probeFelder(gib, sitzung, grundSeite) {
+    if (!gib) {
+        window.__punkteFelderVor = Object.getOwnPropertyNames(window);
+        return { n: window.__punkteFelderVor.length };
+    }
+    const vor = window.__punkteFelderVor;
+    delete window.__punkteFelderVor;
+    if (!Array.isArray(vor)) return { ohne: true };
+    const da = new Set(vor), eigen = new RegExp(sitzung), weg = [];
+    for (const k of Object.getOwnPropertyNames(window)) {
+        if (da.has(k) || eigen.test(k) || grundSeite.includes(k)) continue;
+        const d = Object.getOwnPropertyDescriptor(window, k);
+        if (!d || !d.configurable || d.get || d.set || typeof d.value === "function") continue;
+        delete window[k];
+        weg.push(k);
+    }
+    return { weg };
+}
+const PROBE_FELDER = (gib) => "/* __punkteFelder */ return (" + probeFelder + ")(" + !!gib + ", " + JSON.stringify(FELDER_DER_SITZUNG) + ", " + JSON.stringify(GRUND_SEITE) + ");";
 // der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
 const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
 const GRUND_NIMM =
@@ -4142,10 +4168,23 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const mitPreis = karte2PreisLauf(g);
         const wirtVor = await wirtRuf(W, false, mitPreis);
         if (wirtVor.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: wirtVor.fehler });
+        // DIE FELDER DER PROBE (probeFelder): die Namen von window vor ihr
+        const felderRuf = (gib) => rufFrist(W, "/eval", { code: PROBE_FELDER(gib) }, 30000)
+            .then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: String((a && a.fehler) || JSON.stringify(a)).slice(0, 200) }))
+            .catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
+        const felderVor = await felderRuf(false);
+        if (felderVor.fehler) (kopf.felderBlind = kopf.felderBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: felderVor.fehler });
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
+        // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGTE (probeFelder), VOR der Wache: jedes neue Daten-Feld fällt beim Namen (im Kopf `felder`)
+        const felder = felderVor.fehler || gerissen || tot ? null : await felderRuf(true);
+        if (felder && felder.fehler) (kopf.felderBlind = kopf.felderBlind || []).push({ probe: schluessel(g[0]), wann: "nach", fehler: felder.fehler });
+        else if (felder && Array.isArray(felder.weg) && felder.weg.length) {
+            (kopf.felder = kopf.felder || []).push({ probe: schluessel(g[0]), weg: felder.weg });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ window-Felder stehen: " + felder.weg.join(" · ") + " — zurück vor der Wache");
+        }
         // DIE WIRT-WACHE NACH DER PROBE, VOR DEM PREIS: was die Probe am Wirt stehen ließ, fällt beim Namen — der Preis misst das Spiel;
         // hält die Probe danach noch ihren Kontext über der Schwelle der Linse, misst er es nie: die Stationen der Probe stehen UNGEMESSEN beim Grund
         const wirt = wirtVor.fehler || gerissen || tot ? null : await wirtRuf(W, true, mitPreis);
@@ -8110,9 +8149,10 @@ async function selbsttest(o = {}) {
             // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
             'let geladen = false, seiteTot = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             // DER WEG /wirt (w28-probe-wirt, art „wirt…“; jede andere Art antwortet ohne ihn — die Werkbank vor der Wache): nimm merkt die
-            // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `__haelt` setzt, hält ihren Kontext
+            // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `r.state.__haelt` setzt (ein
+            // Halter außerhalb von window), hält ihren Kontext — ebenso ein Daten-Feld `__gross`, das beim gib noch auf window steht
             'let wirtVor = []; const wirtWeg = (b, s) => { const W = seite.welt; n(b.gib ? "wirt-gib" : "wirt-nimm"); if (!b.gib) { wirtVor = Object.keys(W).filter((k) => typeof W[k] === "function"); return s({ genommen: true }); }',
-            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && seite.win.__haelt ? ["eval#2"] : [];',
+            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && (W.state.__haelt || seite.win.__gross) ? ["eval#2"] : [];',
             '  return s({ anders, wie: Object.fromEntries(anders.map((k) => [k, "neu"])), haelt, heapVor: 100, heapNach: haelt.length ? 200 : 101, ungemessen: haelt.length ? "eine Marke lebt (eval#2), der Heap hält +100 MB über dem Stand vor der Probe (Schwelle 64)" : null, zeile: "r: " + (anders.join(", ") || "—") + (haelt.length ? " · hält " + haelt.join(", ") : "") }); };',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // DER TÄTER-ORT (art „ort-tod“): das Umstellen auf „dach“ reißt die Seite — danach fällt jede Frage an sie wie in der Werkbank
@@ -8120,7 +8160,7 @@ async function selbsttest(o = {}) {
             '  if (seiteTot && q.url !== "/stop") return s({ fehler: "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild stub.dmp" });',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
-            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand/.test(b.code)) return inSeite(b.code);',
+            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand|__punkteFelder/.test(b.code)) return inSeite(b.code);',
             '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" || (art === "anders-ort" && !geladen) ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
@@ -8314,21 +8354,30 @@ async function selbsttest(o = {}) {
         // DIE WIRT-WACHE (wirtRuf, w28-probe-wirt): vor JEDER Probe nimm, nach ihr gib — w1 lässt einen Haken an der Welt stehen, die Wache
         // nimmt ihn beim Namen zurück, w2 findet die Welt ohne ihn; w3 hält ihren Kontext über der Schwelle: UNGEMESSEN beim Grund der Wache,
         // nie GRÜN. DIE MUTANTE (vorher ROT am Täter, Radeon f9cdeca5 vegetation.K4#1: der Haken an `_hausHuelleSetzen` hielt 1 386 statt
-        // 522 MB am Preis): der Haken bleibt → UNGEMESSEN. Eine Werkbank ohne den Weg (die Art „gut“) steht beim Namen in wirtBlind
+        // 522 MB am Preis): der Haken bleibt → UNGEMESSEN. Eine Werkbank ohne den Weg (die Art „gut“) steht beim Namen in wirtBlind.
+        // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT (probeFelder, pm-probe-raeumt): w4 lässt ein 64-MB-Feld `window.__gross` stehen — die
+        // Sitzung nimmt es VOR der Wache beim Namen zurück (Kopf `felder`), w4 misst; der Halter der Sitzung (`__gehalten`, h2) bleibt ihr.
+        // DIE MUTANTE (vorher ROT am Täter, GTX an main 1e204f83: `window.__k4` +157,3 MB, `window.__zeigerDerProbe` +120,8 MB): ohne die
+        // Rücknahme stünde `__gross` beim gib — UNGEMESSEN
         {
             const typU = (j) => ({ gruen: !!j && j.welt === "frei", zahl: "w2 " + JSON.stringify(j) });
             const rw = await lauf([[S("w1.K1", 1, { befehl: [...ruf, "seite: r._loopNexusUpdate = () => {}; return \"warm\";"], sek: 30 }, warm)],
                 [S("w2.K1", 1, { befehl: [...ruf, "seite: return r._loopNexusUpdate ? \"haken\" : \"frei\";"], sek: 30 }, typU)],
-                [S("w3.K1", 1, { befehl: [...ruf, "seite: window.__haelt = 1; r._lofiTick = function () {}; return \"warm\";"], sek: 30 }, warm)]], "wirt-haelt");
-            const w3 = rw.es["w3.K1#1"] || {};
+                [S("w4.K1", 1, { befehl: [...ruf, "seite: window.__gross = { feld: new Float64Array(8388608) }; return \"warm\";"], sek: 30 }, warm)],
+                [S("w3.K1", 1, { befehl: [...ruf, "seite: r.state.__haelt = 1; r._lofiTick = function () {}; return \"warm\";"], sek: 30 }, warm)]], "wirt-haelt");
+            const w3 = rw.es["w3.K1#1"] || {}, w4 = rw.es["w4.K1#1"] || {};
             const gib = rw.z.filter((l) => /^wirt-/.test(l));
             pruef("SITZUNG DIE WIRT-WACHE: nimm vor jeder Probe, gib nach ihr; der Haken von w1 fällt beim Namen (w2 misst ohne ihn), w3 hält ihren Kontext — UNGEMESSEN beim Grund der Wache, nie GRÜN; die Werkbank ohne den Weg steht in wirtBlind",
                 !!rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen === true && !!rw.es["w2.K1#1"] && rw.es["w2.K1#1"].gruen === true &&
                     w3.gruen === false && w3.ungemessen === true && /^Wirt-Wache: eine Marke lebt \(eval#2\)/.test(w3.grund) &&
-                    JSON.stringify(gib) === JSON.stringify(["wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib"]) &&
+                    JSON.stringify(gib) === JSON.stringify(["wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib"]) &&
                     JSON.stringify((rw.kopf.wirt || []).map((x) => [x.probe, x.anders, !!x.ungemessen])) === JSON.stringify([["w1.K1#1", ["_loopNexusUpdate"], false], ["w3.K1#1", ["_lofiTick"], true]]) &&
                     !rw.kopf.wirtBlind && Array.isArray(rt.kopf.wirtBlind) && rt.kopf.wirtBlind.length === 2 && rt.kopf.wirtBlind.every((x) => x.wann === "vor" && /unbekannt/.test(x.fehler)),
                 JSON.stringify([["w1", rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen, "w2", rw.es["w2.K1#1"] && rw.es["w2.K1#1"].zahl, "w3", w3.gruen, w3.ungemessen], w3.grund, gib, rw.kopf.wirt, rw.kopf.wirtBlind, rt.kopf.wirtBlind]));
+            pruef("SITZUNG DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT: w4 ließ ein 64-MB-Feld stehen — beim Namen zurück vor der Wache (Kopf felder), w4 misst; der Halter der Sitzung (h2) bleibt ihr",
+                w4.gruen === true && !w4.ungemessen && JSON.stringify(rw.kopf.felder) === JSON.stringify([{ probe: "w4.K1#1", weg: ["__gross"] }]) &&
+                    !rw.kopf.felderBlind && !rt.kopf.felder && !rt.kopf.felderBlind,
+                JSON.stringify([w4.gruen, w4.ungemessen, w4.grund, rw.kopf.felder, rw.kopf.felderBlind, rt.kopf.felder, rt.kopf.felderBlind]));
         }
         }
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
