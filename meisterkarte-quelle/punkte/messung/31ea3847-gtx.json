@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T09:57:03.296Z",
+ "zeit": "2026-11-21T10:09:57.184Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -71138,6 +71138,460 @@
    "abdruck": "47cc56a17829",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "e25c75ce91cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "2102fd971a7a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "f2b63e94edec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "92473657d75f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "0dec2b5bd30a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "c895584360a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
+   "modus": "session"
+  },
+  "karte2.same.gedaechtnis.alter#8": {
+   "gruen": false,
+   "zahl": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.47,
+   "grund": "Frist der Probe 87 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 87 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 87.6,
+   "fremd": {
+    "s": 90.5,
+    "takte": 40,
+    "fremdS": 41.33,
+    "kerne": 0.456,
+    "fensterKerne": 1.209,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 3968 3144",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.61
+     ]
+    ],
+    "dienerS": 43.19,
+    "diener": [
+     [
+      "System",
+      18.11
+     ],
+     [
+      "dwm.exe",
+      17.67
+     ]
+    ],
+    "geraetS": 46.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.42
+     ],
+     [
+      "svchost.exe",
+      17.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 390.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:09:57.184Z",
+   "abdruck": "dbfbe2281ba9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.gedaechtnis.alter#1",
    "modus": "session"
   }
  },
