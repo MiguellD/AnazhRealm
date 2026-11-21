@@ -1954,3 +1954,4 @@ omen-gtx-gtx-31ea3847-w051226-1-31ea3847 ROT 0 GRÜN / 16 ROT / 2 UNGEMESSEN · 
 2026-11-21 07:26 RUNDE 2 ALARM gtx: ohne Fortschritt seit 76 min (weicht, 1316/1428, Station karte2.mensch.menge.bevoelkerung#9, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
 2026-11-21 08:27 RUNDE 2 ALARM gtx: ohne Fortschritt seit 137 min (weicht, 1316/1428, Station karte2.mensch.menge.bevoelkerung#9, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
 2026-11-21 09:28 RUNDE 2 ALARM gtx: ohne Fortschritt seit 198 min (weicht, 1316/1428, Station karte2.mensch.menge.bevoelkerung#9, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
+2026-11-21 09:42 landung Runde 2 am 31ea3847: misst 274 von 1428 Stationen (1154 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
