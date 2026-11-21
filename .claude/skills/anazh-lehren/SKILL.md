@@ -10,7 +10,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 
 ## Architektur
 
-- **Stamm** `stamm/` (~117k Zeilen in 50 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp), je Datei ein Modul der Karte
+- **Stamm** `stamm/` (~117k Zeilen in 50 Dateien ≤ 6 000 Z., EINE Klasse, EIN Prototyp), je Datei ein Modul der Karte
   `spec/stamm/modul-karte.json` (19 Module, Datei = `<modul>[-<teil>].js`): der Kern `stamm/dirigent-kern.js` (Konstruktor + Naht,
   VERSION), jede Zone trägt sich mit ihrem Naht-Ruf auf `AnazhRealm`, ihre Außen-Konstanten dahinter; die Liste = die Stamm-Tags in
   index.html; `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden, Kerne, die Arten je

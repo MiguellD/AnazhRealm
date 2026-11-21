@@ -18,7 +18,9 @@
 //   K6  TIER AM CHUNK-RAND: am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
 //       des Eigners ist leer oder trägt nur, was darunter liegt — (a) der Stand-Leser quer durch die Rand-Streifen um den
 //       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm; die Pfote am
-//       Mesh misst K8
+//       Mesh misst K8; (b) an jeder Naht zweier Netze im Inneren des gebauten Rings (dicht an den Ecken der Chunks) trägt der
+//       Boden-Leser (`_bodenSichtAt`) den Boden quer durch den Streifen, wo ein Netz zeichnet — nie null (Täter „naht": der
+//       Nachbar trug seine Fläche nur am Punkt, nie an den Ecken)
 //   K7  WIESE UND STREU AM CHUNK-RAND: der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
 //       Stufe im Umkreis 160 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen — der Jackknife über die Chunks, die Wiese je Zelle ihres Gitters
@@ -51,14 +53,14 @@ const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 // DIE KARTE DES EIGNERS (die Karte des Chunks unter dem Punkt, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
 // `_bodenSichtAt` über alle Nachbarn — die Linse fragt den EINEN Karten-Leser des Spiels für den Eigner allein, ohne das Gewicht
 // der Stufe (`_bodenKarteBilinear`, Stufe 0; Seite: `window.__eignerKarte`, Proben und Täter „rand" und „wiese"), `aus` nimmt
-// sein Grün.
+// das Grün des Gesetzes an seinem Boden (`_bodenGruenAt`, wie `_bodenSichtAt`).
 function eignerKarte(r, x, z, aus) {
     const span = r._voxelChunkConfig(0).span;
     const [cx, cz] = [Math.floor(x / span), Math.floor(z / span)];
     const e = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
-    const k = e && e.surfMap && r._bodenKarteBilinear(e, cx, cz, x, z, aus, 0);
-    if (k && aus) aus.gruen = k.gruen;
-    return k ? k.y : null;
+    const k = e && e.surfMap ? r._bodenKarteBilinear(e, cx, cz, x, z, 0) : null;
+    if (k !== null && aus) aus.gruen = r._bodenGruenAt(x, k, z);
+    return k;
 }
 
 // DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
@@ -183,6 +185,52 @@ function taeter(inj) {
             ueber(n, function () {
                 this._bodenSichtAt = (x, z, g) => window.__eignerKarte(this, x, z, g);
             });
+    // naht (K6b): der Leser vor w28-pop-treue — ein unterer Nachbar einer anderen Stufe trug seine Fläche nur am Punkt bei (bilinear
+    // in SEINEM Raster), nie an den Ecken des Eigners: wo sich die Netze zweier Stufen treffen, antwortete er null
+    if (inj === "naht")
+        r._bodenSichtAt = function (x, z, aus, stufe) {
+            const vc = this.state.voxelChunks;
+            if (!vc) return null;
+            const span = this._voxelChunkConfig(0).span;
+            const [cx, cz] = [Math.floor(x / span), Math.floor(z / span)];
+            const e = vc.get(`${cx},${cz}`);
+            const lod = e ? e.lod || 0 : 0;
+            const cfg = this._voxelChunkConfig(lod);
+            const T = this.constructor.BODEN_KARTE_TEILUNG;
+            const [h, M, n] = [cfg.step / T, T * (cfg.dim + 3) + 1, cfg.dim * T];
+            const [gx, gz] = [Math.floor(x / h), Math.floor(z / h)];
+            const k = [-Infinity, -Infinity, -Infinity, -Infinity];
+            let fremd = -Infinity;
+            for (let q = 0; q < 4; q++) {
+                const [ax, az] = [cx - (q & 1), cz - (q >> 1)];
+                const E = q === 0 ? e : vc.get(`${ax},${az}`);
+                if (E && E.surfMap && (E.lod || 0) !== lod) {
+                    const v = this._bodenKarteBilinear(E, ax, az, x, z, stufe);
+                    if (v !== null && v > fremd) fremd = v;
+                    continue;
+                }
+                const m = E && (E.lod || 0) === lod ? E.surfMap : null;
+                if (!m) continue;
+                const [i, j] = [gx - ax * n + T, gz - az * n + T];
+                if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
+                const st = this._bodenStufeMisch(E, ax, az, x, z, stufe);
+                [0, 1, M, M + 1].forEach((d, c) => {
+                    const v = st ? st(m, i + j * M + d) : m[i + j * M + d];
+                    if (v > k[c]) k[c] = v;
+                });
+            }
+            const [fu, fv] = [x / h - gx, z / h - gz];
+            let y = k.every((v) => v > -Infinity)
+                ? (k[0] * (1 - fu) + k[1] * fu) * (1 - fv) + (k[2] * (1 - fu) + k[3] * fu) * fv
+                : -Infinity;
+            if (fremd > y) y = fremd;
+            const S = this.state.saeulenVorlaeufig;
+            if (S && S.size)
+                for (const s of S.values()) if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y >= s.krone)) y = s.krone;
+            if (!(y > -Infinity)) return null;
+            if (aus) aus.gruen = this._bodenGruenAt(x, y, z);
+            return y;
+        };
     // rolle (K8): der Fuß der Streu las das Gesetz bilinear im 8-m-Raster des Feld-Bakes (vor H5), die Pfote stand auf dem
     // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz und sein Reifen wölbte 0,12 radR (0,2 Federweg) unter
     // den Aufstand (vor H5)
@@ -712,6 +760,75 @@ async function proben(mitWiese) {
                     }
         o.k6leser = { ...leser, maxCm: Math.round(leser.max * 1000) / 10, mitte: [mitte.x, mitte.z], meshe: G.meshe };
     }
+    // ── K6b DER LESER AN DER STUFEN-NAHT (w28-pop-treue): am unteren Rand eines Chunks, dessen unterer Nachbar in einer anderen
+    // Stufe steht, treffen sich zwei Netze verschiedener Raster — quer durch den Streifen (bis zum halben Schritt der gröberen Stufe
+    // und zwei ihrer Raster-Abstände darüber) trägt der EINE Boden-Leser (`_bodenSichtAt`) den Boden überall, wo ein Netz zeichnet
+    // (der Strahl auf die gemorphten Dreiecke, `__gezeichnet`; steile Flächen nicht). Bis w28-pop-treue antwortete er dort null (die
+    // Zelle jeder Karte lag halb jenseits ihres Netzes; Mess-Wiese, GTX 1050: die Naht 1/0 bei 1,9–2,3 m 21 von 30 Punkten, 2/1 bei
+    // 3,7–4,2 m 49 von 55) — am Wechsel einer Stufe fiel und kam dort ein Büschel der Ferne (gate:pop „DER WURF DER STUFE“) ──
+    // Die Probe geht JEDE Naht zweier Netze (auch derselben Stufe: an der Ecke von vier Chunks steht die Diagonale oft in einer
+    // anderen), längs der Kante dicht an ihren Enden (dort treffen sich vier Netze), und nur im Inneren des gebauten Rings (alle
+    // neun Chunks um den Punkt tragen ein Netz — am Rand der gebauten Welt fehlt dem Leser die Karte des Nachbarn zu Recht).
+    {
+        // `ab`: die Abweichung des Lesers vom gezeichneten Netz an den Naht-Punkten unter 1 m (darüber steht der Strahl an einem
+        // Überhang): ihre Summe, die Zahl, und wie viele über 5 und über 25 cm liegen
+        const naht = { paare: 0, n: 0, null: 0, abMax: 0, ab: { n: 0, summeCm: 0, ueber5: 0, ueber25: 0 }, wo: null, arten: {}, zellen: {}, orte: [] }; // prettier-ignore
+        const netz = (x, z) => {
+            const E = s.voxelChunks.get(`${x},${z}`);
+            return E && !E.empty && E.mesh ? E : null;
+        };
+        const innen = (cx, cz) => [-1, 0, 1].every((a) => [-1, 0, 1].every((b) => netz(cx + a, cz + b)));
+        const laengs = [0.6, 1.5, 2.5, 4, 12, 20, 28, 36, span - 2.5, span - 1.5, span - 0.6];
+        for (const [k, E] of s.voxelChunks) {
+            if (!E || E.empty || !E.mesh) continue;
+            const [cx, cz] = k.split(",").map(Number);
+            if (!innen(cx, cz)) continue;
+            // die Stufen der vier Karten der Lesung: Eigner, x-Nachbar, z-Nachbar, Diagonale
+            const art = [0, 1, 2, 3].map((q) => netz(cx - (q & 1), cz - (q >> 1)).lod || 0).join("");
+            for (const ach of [0, 1]) {
+                const N = netz(ach ? cx : cx - 1, ach ? cz - 1 : cz);
+                if ((N.lod || 0) !== (E.lod || 0)) naht.paare++;
+                const grob = r._voxelChunkConfig(Math.max(E.lod || 0, N.lod || 0)).step;
+                for (const t of laengs)
+                    for (let d = 0.05; d < grob / 2 + (2 * grob) / A.BODEN_KARTE_TEILUNG; d += 0.15) {
+                        const [x, z] = ach ? [cx * span + t, cz * span + d] : [cx * span + d, cz * span + t];
+                        const g = window.__gezeichnet(r, x, z);
+                        if (g === null || window.__gezeichnet.steil || r._koerperWasser(x, z, g) > g) continue;
+                        naht.n++;
+                        const y = r._bodenSichtAt(x, z);
+                        if (y !== null) {
+                            const ab = Math.abs(y - g);
+                            naht.abMax = Math.max(naht.abMax, ab);
+                            if (ab < 1) (naht.ab.n++, (naht.ab.summeCm += ab * 100), ab > 0.05 && naht.ab.ueber5++, ab > 0.25 && naht.ab.ueber25++); // prettier-ignore
+                            continue;
+                        }
+                        naht.null++;
+                        naht.arten[art] = (naht.arten[art] || 0) + 1;
+                        if (!naht.wo) naht.wo = `${Math.round(x * 100) / 100}|${Math.round(z * 100) / 100} (Stufen ${art}, ${Math.round(d * 100) / 100} m quer, ${Math.round(t * 10) / 10} m längs)`; // prettier-ignore
+                        // DIE ZELLE BEIM NAMEN: welche Ecke der Raster-Zelle des Eigners trägt keine Karte (`_bodenFlaeche` über den
+                        // Karten der Lesung eben), und wie weit ist es von ihrem Rasterpunkt zum nächsten gezeichneten Netz (0 = der
+                        // Punkt selbst ist gezeichnet: die Karte verfehlt ihr Netz; > 0 = er liegt in einer Fuge dieser Breite) — nur
+                        // unter dem Leser des Spiels: der Satz `_bodenKarten` trägt die Karten SEINER Lesung, ein Täter füllt ihn nicht
+                        if (r._bodenSichtAt !== Object.getPrototypeOf(r)._bodenSichtAt) continue;
+                        const hh = r._voxelChunkConfig(E.lod || 0).step / A.BODEN_KARTE_TEILUNG;
+                        const [gx, gz] = [Math.floor(x / hh), Math.floor(z / hh)];
+                        const nK = [0, 1, 2, 3].filter((q) => (s.voxelChunks.get(`${cx - (q & 1)},${cz - (q >> 1)}`) || {}).surfMap).length; // prettier-ignore
+                        const ohne = [0, 1, 2, 3].filter((q) => !(r._bodenFlaeche(nK, gx + (q & 1), gz + (q >> 1), E.lod || 0) > -Infinity)); // prettier-ignore
+                        const fuge = (X, Z) => {
+                            for (const w of [0, 0.002, 0.01, 0.03, 0.06, 0.12, 0.3, 0.9])
+                                for (let a = 0; a < (w ? 8 : 1); a++)
+                                    if (window.__gezeichnet(r, X + w * Math.cos(a * 0.7854), Z + w * Math.sin(a * 0.7854)) !== null) return w; // prettier-ignore
+                            return 9;
+                        };
+                        const weit = ohne.map((q) => fuge((gx + (q & 1)) * hh, (gz + (q >> 1)) * hh));
+                        const klasse = `${ohne.length} Ecken ohne Karte, nächstes Netz ${Math.max(...weit, 0) * 100} cm`;
+                        naht.zellen[klasse] = (naht.zellen[klasse] || 0) + 1;
+                        if (naht.orte.length < 8) naht.orte.push(`${x.toFixed(2)}|${z.toFixed(2)} Stufen ${art} ohne ${ohne.join("")} Netz ${weit.join("/")}`); // prettier-ignore
+                    }
+            }
+        }
+        o.k6naht = { ...naht, abMaxCm: Math.round(naht.abMax * 1000) / 10 };
+    }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
     s.playerVel = savedVel;
@@ -1148,6 +1265,13 @@ function urteil(o) {
             `K6 Leser im Rand-Streifen: ${L.fehl} von ${L.n} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${L.maxCm} cm bei ${L.wo}, Karten dort ${L.stufen}, Mitte ${L.mitte}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
         );
     if (!(L.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
+    const N6 = o.k6naht || {};
+    if (!(N6.paare > 0) || !(N6.n >= 100))
+        f.push(`K6 Aufbau Stufen-Naht: ${N6.paare} Nähte verschiedener Stufen, ${N6.n} Punkte mit Netz (Soll ≥ 100)`);
+    else if (N6.null > 0)
+        f.push(
+            `K6 Leser an der Stufen-Naht: ${N6.null} von ${N6.n} Punkten, an denen ein Netz zeichnet, antworten null (je Stufen Eigner·x·z·Diagonale ${JSON.stringify(N6.arten)}, zuerst ${N6.wo}) — Täter: der Leser nimmt die Ecke nicht von der Karte, die sie trägt, oder führt die Zelle nicht über den Riss der Netze (_bodenSichtAt, _bodenKarteEcke)`
+        );
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
     // was weiter ist — EINE Regel; die Unschärfe ist seit w27-k7-l2-rand der Jackknife über die Chunks (`zaehle`). Die Wiese hielt
     // ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln (Poisson); in der Aue
@@ -1264,6 +1388,7 @@ hauptLauf(async () => {
                 tod: ["K5 Tod-Lage"],
                 fuge: ["K4 Fuge"],
                 rand: ["K6 Leser im Rand-Streifen"],
+                naht: ["K6 Leser an der Stufen-Naht"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
                 sohle: ["K8 huf hang"],
@@ -1272,13 +1397,16 @@ hauptLauf(async () => {
                 fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
                 sprung: ["K9 Mutante masse first", "K9 Mutante kraft third"],
             };
-            for (const inj of Object.keys(soll)) {
+            // `KOERPER_STAND_NUR=naht,rand`: nur diese Täter (der gezielte Beweis einer Linse; die CI fährt alle)
+            const nur = process.env.KOERPER_STAND_NUR ? process.env.KOERPER_STAND_NUR.split(",") : null;
+            for (const inj of Object.keys(soll).filter((k) => !nur || nur.includes(k))) {
                 const k8 = /^K[89]/.test(soll[inj][0]);
                 const { o } = await lauf(inj, k8);
                 const f = k8 ? urteilK8(o) : urteil(o);
                 const ok = soll[inj].every((x) => f.some((y) => y.startsWith(x)));
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
                 console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
+                if (o && o.k6naht && inj === "naht") console.log("    " + zeile({ k6naht: { ...o.k6naht, orte: undefined } }));
                 if (!ok) rot++;
             }
         }

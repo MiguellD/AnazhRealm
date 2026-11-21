@@ -985,8 +985,9 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // und nur vom ersten Teil der nahen Stufe; nach einem Sprung des Auges aus dem Jetzt); jede Senke behält ihre Stufe (`fenster.y`
 // 1 die nahe, 2 die ferne, 3 eine Art mit EINER Stufe: keine Wahl der Stufe).
 // DIE FERNE (Art 6, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht, solange seine
-// Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand `_wieseFuss`
-// (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in `auge.w`), aus
+// Ordnung (Element 11) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand `_wieseFuss`
+// (der Fuß, die EBENE DES GESETZES aus Element 3 und 7, `_wieseHang` — bis w28-pop-treue die Stand-Ebene aus den waagrechten
+// Achsen, die Ordnung in Element 7 —, die Höhe des Auges über dem eigenen Boden in `auge.w`), aus
 // `WIESE_WGSL` (dieselbe Algebra wie der Stoff). Das Büschel ist unverformt (w28-wiese-schale): seine Kugel die des Teils wie
 // in der Nähe. Bis dahin spreizte es die Halme um die Streckung (Element 3 die Grenze), und Art 7 wählte die Karten der Schale.
 AnazhRealm.PASS_WAHL_WGSL = `
@@ -1055,9 +1056,9 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         let fuss = m[3].xyz;
         let d = length(fuss.xz - lage.auge.xz);
         if (d < a.saum.y) { return false; }
-        let n = cross(m[2].xyz, m[0].xyz);
+        let n = vec3f(-m[0].w, 1.0, -m[1].w);
         let q = wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w);
-        if (m[1].w >= wieseFern(d, q) * (1.0 + a.saum.z)) { return false; }
+        if (m[2].w >= wieseFern(d, q) * (1.0 + a.saum.z)) { return false; }
         let sk = wieseSkala(d, q);
         c = (m * vec4f(a.kugel.xyz * sk, 1.0)).xyz - lage.auge.xyz;
         r = a.kugel.w * sqrt(s2) * sk + a.saum.x;
