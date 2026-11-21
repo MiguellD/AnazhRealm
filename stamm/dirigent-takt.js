@@ -772,7 +772,12 @@ class AnazhRealm_dirigent_takt {
         const n = (x) => (x ? x.size | 0 || x.length | 0 : 0);
         return (
             `Wald: Saat ${S.length} [${S.slice(0, 4).map((c) => `${c.cx},${c.cz} i${c.i}${c.flug ? " flug" : ""}`)}] · Plan ` +
-            `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
+            `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)}` +
+            // der Ort, auf den der Wald zuletzt wartete (`_ortInArbeit`), und ob sein Takt lebt (`_dorfTaktLebt`)
+            (n(this._waldPflanzWarten) && this._waldWartetAmOrt
+                ? ` (zuletzt am Ort ${this._waldWartetAmOrt}, Dorf-Takt ${this._dorfTaktLebt() ? "lebt" : "ruht"})`
+                : "") +
+            ` · Würfe ${P.length} (außer Blick ` +
             `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
             `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Zeichnung ${this._zeichnungZeuge() || "ganz"} · Tore ohne Fenster ${this._toreOffen()} · Weltbild ` +

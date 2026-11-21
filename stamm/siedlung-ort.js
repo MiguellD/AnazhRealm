@@ -2917,7 +2917,12 @@ class AnazhRealm_siedlung_ort {
     // `_ortRandSetzen` und `_saumRaeumen`; vor dem Plan die Häuser der Zelle und die Trasse, die den Anker bis 128 m rückt) den
     // Kasten x0…x1 · z0…z1 erreicht → sein Schlüssel, sonst null. Leser: der Pflanz-Gang des Walds (`_forestPlantChunk`: der Chunk
     // wartet, bis der Grund liegt — sonst räumte ihn der Saum nach dem Bild, `_saumRaeumen`).
+    // IN ARBEIT IST NUR, WAS EIN TAKT BAUT: ruht der Dorf-Takt (`_dorfTaktLebt`, das EINE Urteil des Siedlungs-Takts, des
+    // Genesis-Orts, des ersten Weltbilds und von `_dorfOffen`: der Messort ohne Dorf-Zug), legt kein Vorrat und kein Zug seinen
+    // Grund — der Wald pflanzt. Bis hier wartete er auf die Vorräte des Boots, die der ruhende Takt nie weiterführt (Zug z653,
+    // OMEN gate:tag-achse:echt an genesis: 25 Karten im Pflanz-Warten, die Welt stand nach 8 579 Takten nicht, dorf 0).
     _ortInArbeit(x0, z0, x1, z1) {
+        if (!this._dorfTaktLebt()) return null;
         const V = this._dorfVorraete;
         const q = this._autoSettlementQueue;
         if (!(V && V.size) && !(q && q.plan)) return null;
