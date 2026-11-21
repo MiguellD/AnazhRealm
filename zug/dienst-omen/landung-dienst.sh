@@ -7,8 +7,11 @@
 #     zug/dienst/runde.cjs — frischer Stand, eigene Zeile, commit-tree, Push, sonst von vorn: zwei Geräte, kein Merge). Die OMEN fährt
 #     ihre ganze Liste an DIESEM Kopf zu Ende, keine Landung löst sie ab; die nächste Runde nimmt den main-Kopf des Moments, in dem
 #     beide Geräte durch sind (runde.cjs durch/weiter). So steht nach jeder Runde jede Station als Paar am SELBEN Kopf (Karte 2).
-#   2 DIE REIHE (runde.cjs reihe, EINE Quelle für beide Geräte): zuerst die Stationen ohne gebucht grünes Paar, dann die gebucht grünen;
-#     darin die älteste Messung zuerst, eine Fahrt ≥ 10 min zuletzt. Die Liste wird beim Eintritt in die Runde EINGEFROREN (Feld liste).
+#   2 DIE REIHE FOLGT DER ERWARTETEN ÄNDERUNG (runde.cjs reihe, EINE Quelle für beide Geräte, 21.11.): NUR die Front der Karte 2
+#     (--karte vision/meisterkarte-2.json: je Leiter die Sprosse heute, Glieder jede ungebuchte, dahinter nur lückenlos beansprucht) · K1 beansprucht (zug/anspruch.txt)
+#     · K2 ohne Urteil · K3 GRÜN · K4 ROT anderes | der Schwanz K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — die Klasse aus
+#     dem jüngsten Urteil über alle Köpfe; darin die älteste Messung zuerst, eine Fahrt ≥ 10 min zuletzt. Die Liste wird beim Eintritt in
+#     die Runde EINGEFROREN (Feld liste). Vorn und Schwanz fahren getrennt; bleibt nur der Schwanz und ist main weiter, TRÄGT er (getragen).
 #   3 DER RICHTER DER RUNDE (richte_runde): nach der Liste nennt runde.cjs faelle jede Station, die am vorigen Mess-Kopf GRÜN und am
 #     jetzigen ROT misst; NUR sie wird über die Köpfe dazwischen halbiert (richter.sh --fall <station> <vorher> <kopf>, Täter beim Namen).
 #     Die erste Runde (kein voriger Mess-Kopf) richtet gegen die letzte Buchung (richter.sh --kopf, wie bis 19.11.).
@@ -120,6 +123,12 @@ liste_quelle() { # <kopf> → die Stationen der Runde (vor /band und Reihe); set
 # Unbegrenzt lang reist eine Liste nie in argv oder Umgebung; ein Teil (runde.cjs teile: ≤ 1 740 s Deckel und ≤ 8 000 Zeichen) darf es.
 liste_datei() { mkdir -p "${S:?}/listen" && printf '%s\n' "$2" >"$S/listen/$1.txt" && echo "@$S/listen/$1.txt"; }
 ohne_band() { node "$ST/ohne-band.cjs" "$(liste_datei band "$1")" 2>>"$L"; }
+# anspruch_datei — zug/anspruch.txt (K1 der Reihe: die Stationen, die ein Zweig beim Stempel beansprucht; Schreiber ist der Koordinator)
+# am eben geholten koordination-Stand (runde lies holt ihn nach refs/runde/koord); fehlt sie: leer → der Pfad
+anspruch_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/runde/koord:zug/anspruch.txt >"$S/listen/anspruch.txt" 2>/dev/null || : >"$S/listen/anspruch.txt"; } && echo "$S/listen/anspruch.txt"; }
+# karte_datei — vision/meisterkarte-2.json am koordination-Stand der Runde (die Front: runde.cjs reihe --karte); fehlt sie, bleibt die
+# Datei leer und die Reihe bricht mit Exit 6 beim Namen (liste_rot) — nie still die ganze Tafel
+karte_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/runde/koord:vision/meisterkarte-2.json >"$S/listen/karte.json" 2>/dev/null || : >"$S/listen/karte.json"; } && echo "$S/listen/karte.json"; }
 pm_stand() { node "$N/pm-stand.cjs" "$PM" >>"$L" 2>&1; } # der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt
 # offen_am <kopf> <liste> → was an diesem Kopf noch keinen Eintrag trägt, in der Mess-Datei des BAUMS (pm-stand.cjs: eine jüngere Messung
 # im Baum überlebt) — so zählt nach einem Tod mitten in einer Sitzung, was sie schon fertig maß; es reist mit dem nächsten Push
@@ -167,7 +176,8 @@ grenze_pruefen() {
 }
 # liste_fahren <K> <NAME> <REST> <r> <BASIS> <GESAMT> — EINE Fahrt über kandidat.sh, je Station eine Sitzung, je gepushte Station der
 # Stand in zug/runde.txt; 0 durch · 2 GEWICHEN (ein Lauf wartete am Schloss; BEHALTEN = gepushte Stationen) · 3 GEHALTEN (landung.halt).
-# Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE).
+# Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE) — nur die Fahrt über den Schwanz
+# (SCHWANZ_FAHRT) endet an der nächsten Grenze, sobald main weiter ist (grund getragen, Rückgabe 0: der Rest trägt).
 liste_fahren() {
     local K=$1 NAME=$2 REST=$3 r=$4 BASIS=$5 GESAMT=$6 kp t l0 b fb=0 grund= sj sv= TEILE
     GRENZE=${S:?}/landung.grenze
@@ -202,6 +212,12 @@ liste_fahren() {
             [ -n "$PUSH_ROT_PID" ] && ALARM_PID=$PUSH_ROT_PID
         fi
         grenze_pruefen
+        # DER SCHWANZ TRÄGT, SOBALD main WEITER IST (21.11.): je vierten Takt; die Flagge endet die Fahrt an der nächsten Stations-Grenze
+        if [ -n "$SCHWANZ_FAHRT" ] && [ -z "$grund" ] && [ $((t % 4)) = 0 ] && main_weiter; then
+            grund=getragen
+            touch "$GRENZE"
+            log "MAIN WEITER (${K:0:8} → $(main_kopf | cut -c1-8)): der Schwanz trägt — die Fahrt endet an der nächsten Stations-Grenze"
+        fi
     done
     wait $kp
     wait ${PROG_PID:-} ${ALARM_PID:-} 2>/dev/null # die Schreiber im Hintergrund zuerst: der Stand danach ist der letzte
@@ -265,8 +281,8 @@ vor_station() {
 # runde_takt — EIN Blick der Schleife: die Runde lesen (beim ersten Mal aus dem Bestand anlegen), die eigene Liste am Kopf der Runde
 # fahren oder fortsetzen, nach ihr der Richter und „durch“; ist die OMEN durch, auf das andere Gerät warten (Alarm, nie still)
 runde_takt() {
-    local RL B a n r GESAMT REST NAME
-    RL=$(runde lies "$RUNDE_REPO" "$GERAET")
+    local RL B a n r rs GESAMT REST VREST SREST SCHW GETRAGEN RG
+    RL=$(runde lies "$RUNDE_REPO" "$GERAET" --voll)
     if [ -z "$RL" ]; then
         puls landung "zug/runde.txt nicht lesbar (fetch koordination?) — nächster Takt"
         return
@@ -277,7 +293,7 @@ runde_takt() {
         log "RUNDE aus dem Bestand angelegt: Kopf ${B:0:8} (seine Mess-Datei zählt mit)"
         return
     fi
-    read -r RN RK RV RZ RLISTE <<<"$RL"
+    read -r RN RK RV RZ RLISTE RG <<<"$RL"
     runde_alarm
     ungepusht_pruefen
     push_rot_pruefen
@@ -307,43 +323,85 @@ runde_takt() {
         a=$(<"$S/listen/quelle.txt")
         B=$(ohne_band "$a")
         rb=$?
-        RLISTE=$(runde reihe "$MESSUNG_DIR" "$GERAET" "$(liste_datei reihe "$B")")
+        local KD
+        KD=$(karte_datei)
+        RLISTE=$(runde reihe "$MESSUNG_DIR" "$GERAET" "$(liste_datei reihe "$B")" ${KD:+--karte "$KD"} --anspruch "$(anspruch_datei)")
         rr=$?
         if [ $ra != 0 ] || [ $rb != 0 ] || [ $rr != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then
             liste_rot "Runde $RN am ${RK:0:8}: Quelle ${QUELLE:-?} $(zahl "$a") (Exit $ra), ohne /band $(zahl "$B") (Exit $rb), Reihe $(zahl "$RLISTE") (Exit $rr)"
             return
         fi
-        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (ungebucht | gebucht grün): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen (zustand/listen/runde.txt)"
-        runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L" ||
+        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (K1–K4 | Schwanz): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($(grep "^Reihe $GERAET: " "$L" | tail -n 1 | cut -c1-160); zustand/listen/runde.txt)"
+        runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 --getragen 0 >>"$L" ||
             { liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $?)"; return; }
+        RG=0
     fi
     GESAMT=$(zahl "$RLISTE")
+    # DER SCHWANZ TRÄGT (Koordinator 21.11.; Befund Runde 2 am 31ea3847: 8,0 h für 521 ROT „Umfang nicht erzeugbar“, 0,7 h für 132 ROT
+    # „Leser fehlt“ — die Fähigkeit fehlt, das Urteil hängt nicht am Gerät). Die Liste heißt „<K1–K4>|<Schwanz K5 K6>“ (runde.cjs reihe);
+    # vorn und Schwanz fahren in GETRENNTEN Fahrten (kein Teil mischt beide), vorn zuerst. Bleibt nur der Schwanz und ist main weiter als
+    # der Runden-Kopf, ist die OMEN durch: das rote Urteil des Schwanzes vom früheren Kopf steht (aus ROT bucht nichts), die Zahl steht als
+    # „getragen“ in der Zeile. Ist main nicht weiter, misst sie den Schwanz (nie leer) — und endet an der nächsten Stations-Grenze, sobald
+    # main weiterzieht. Eine Zeile von vor dem 21.11. (RG „-“: <ungebucht>|<gebucht grün>) kennt keinen Schwanz und fährt wie bisher.
+    SCHW=
+    if [ "${RG:--}" != - ]; then case "$RLISTE" in *"|"*) SCHW=${RLISTE#*|} ;; esac; fi
+    GETRAGEN=0
     REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; return; }
-    r=$(zahl "$REST")
-    if [ -n "$REST" ]; then
-        NAME=gtx-${RK:0:8}
-        [ "$r" != "$GESAMT" ] && NAME=$NAME-w$(date +%H%M%S) # fortgesetzt: eigener Name, damit keine Zeile doppelt heißt
-        runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --erledigt $((GESAMT - r)) --gesamt "$GESAMT" >>"$L"
-        eichtafel_lesen
-        sag "landung Runde $RN am ${RK:0:8}: misst $r von $GESAMT Stationen ($((GESAMT - r)) tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile"
-        liste_fahren "$RK" "$NAME" "$REST" "$r" $((GESAMT - r)) "$GESAMT"
-        case $? in
-            2) runde stand "$RUNDE_REPO" "$GERAET" "$RK" weicht --erledigt $((GESAMT - r + BEHALTEN)) >>"$L"
-               sag "landung Runde $RN am ${RK:0:8}: WEICHT — $WEICHT_VOR wartete am GPU-Schloss, BEHALTEN $BEHALTEN, die Liste geht an derselben Station weiter"
-               return ;;
-            3) runde stand "$RUNDE_REPO" "$GERAET" "$RK" halt --erledigt $((GESAMT - r + BEHALTEN)) >>"$L"
-               return ;;
-            4) return ;; # LISTE ROT (liste_rot hat es beim Namen gemeldet)
-        esac
-        pm_stand
+    VREST=$(teil_von "$REST" "$SCHW" vorn)
+    if [ -n "$VREST" ]; then
+        fahre_teil "$VREST" "$(zahl "$REST")" vorn || return
         REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen nach der Fahrt am ${RK:0:8} scheiterte (Exit $?)"; return; }
-        [ -n "$REST" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(zahl "$REST"): ${REST:0:400} (kandidat.sh OFFEN nach 4 Versuchen)"
     fi
+    SREST=$(teil_von "$REST" "$SCHW" schwanz)
+    if [ -n "$SREST" ] && main_weiter; then
+        GETRAGEN=$(zahl "$SREST")
+    elif [ -n "$SREST" ]; then
+        SCHWANZ_FAHRT=1
+        fahre_teil "$SREST" "$(zahl "$REST")" schwanz
+        rs=$?
+        SCHWANZ_FAHRT=
+        [ $rs = 0 ] || return
+        REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen nach der Fahrt am ${RK:0:8} scheiterte (Exit $?)"; return; }
+        SREST=$(teil_von "$REST" "$SCHW" schwanz)
+        [ -n "$SREST" ] && main_weiter && GETRAGEN=$(zahl "$SREST")
+    fi
+    [ "$GETRAGEN" != 0 ] && log "Runde $RN am ${RK:0:8}: main ist weiter — der Schwanz TRÄGT: $GETRAGEN Station(en) behalten ihr ROT vom früheren Kopf (K5 Leser fehlt · K6 Umfang nicht erzeugbar), keine Fahrt"
+    [ -n "$REST" ] && [ "$(zahl "$REST")" != "$GETRAGEN" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(($(zahl "$REST") - GETRAGEN)) (kandidat.sh OFFEN nach 4 Versuchen): ${REST:0:400}"
     # nie ein Null-Bericht (Live 06:17: „0 grün / 0 rot / 0 ungemessen“ ging hinaus) und nie „durch“ ohne Station: LISTE ROT davor
     if [ "$GESAMT" = 0 ]; then liste_rot "Runde $RN am ${RK:0:8}: die Liste trägt 0 Stationen — kein Bericht, kein durch"; return; fi
     summe "$RK" "gtx-${RK:0:8}" "${RLISTE/|/,}"
     richte_runde "$RK" "$RV" "$RLISTE"
-    sag "landung Runde $RN am ${RK:0:8}: die OMEN ist durch ($GESAMT Stationen) — $(runde durch "$RUNDE_REPO" "$GERAET" "$RK" "$(main_kopf)" --erledigt $((GESAMT - $(zahl "$REST"))))"
+    sag "landung Runde $RN am ${RK:0:8}: die OMEN ist durch ($GESAMT Stationen$([ "$GETRAGEN" != 0 ] && echo ", $GETRAGEN getragen")) — $(runde durch "$RUNDE_REPO" "$GERAET" "$RK" "$(main_kopf)" --erledigt $((GESAMT - $(zahl "$REST"))) $([ "${RG:--}" != - ] && echo --getragen "$GETRAGEN"))"
+}
+# teil_von <liste> <schwanz> <vorn|schwanz> — die Stationen der Liste vor dem Schwanz oder in ihm, in ihrer Reihe (über Dateien: kein argv)
+teil_von() {
+    mkdir -p "${S:?}/listen"
+    printf '%s\n' "$2" | tr ',|' '\n\n' >"$S/listen/schwanz-menge.txt"
+    printf '%s\n' "$1" | tr ',|' '\n\n' | awk -v w="$3" 'NR == FNR { if ($0 != "") s[$0] = 1; next } $0 != "" && ((w == "schwanz") == ($0 in s))' "$S/listen/schwanz-menge.txt" - | paste -sd, -
+}
+main_weiter() { local m; m=$(main_kopf); [ -n "$m" ] && [ "$m" != "$RK" ]; }
+# fahre_teil <rest> <offen gesamt> <vorn|schwanz> — EINE Fahrt über einen Teil der Liste (je Linse EINE Sitzung); 0 gefahren, 1 die Runde
+# endet in diesem Takt (WEICHT, HALT oder LISTE ROT — der Stand steht in zug/runde.txt)
+fahre_teil() {
+    local REST=$1 r NAME B=$(($GESAMT - $2))
+    r=$(zahl "$REST")
+    NAME=gtx-${RK:0:8}
+    [ "$2" != "$GESAMT" ] && NAME=$NAME-w$(date +%H%M%S) # fortgesetzt: eigener Name, damit keine Zeile doppelt heißt
+    [ "$3" = schwanz ] && NAME=$NAME-s
+    runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --erledigt "$B" --gesamt "$GESAMT" >>"$L"
+    eichtafel_lesen
+    sag "landung Runde $RN am ${RK:0:8}: misst $r von $GESAMT Stationen ($([ "$3" = schwanz ] && echo "den Schwanz — main ist nicht weiter" || echo "$3"); $B tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile"
+    liste_fahren "$RK" "$NAME" "$REST" "$r" "$B" "$GESAMT"
+    case $? in
+        2) runde stand "$RUNDE_REPO" "$GERAET" "$RK" weicht --erledigt $((B + BEHALTEN)) >>"$L"
+           sag "landung Runde $RN am ${RK:0:8}: WEICHT — $WEICHT_VOR wartete am GPU-Schloss, BEHALTEN $BEHALTEN, die Liste geht an derselben Station weiter"
+           return 1 ;;
+        3) runde stand "$RUNDE_REPO" "$GERAET" "$RK" halt --erledigt $((B + BEHALTEN)) >>"$L"
+           return 1 ;;
+        4) return 1 ;; # LISTE ROT (liste_rot hat es beim Namen gemeldet)
+    esac
+    pm_stand
+    return 0
 }
 
 # ── DER SELBSTTEST (trocken, ohne GPU): ein Sandkasten mit eigenem origin (main · koordination · punkte-maschine) und Klon, ein
@@ -357,7 +415,9 @@ runde_takt() {
 # c  Neustart: der Dienst stirbt in Station 4 (kein Push); ein neuer Prozess ohne Gedächtnis setzt an Station 4 fort
 # d  frisches ROT: s1 GRÜN am vorigen, ROT am jetzigen Mess-Kopf → NUR s1 wird über die Köpfe dazwischen halbiert, der Täter-Kopf
 #    steht in zug/richter.txt; s2 (GRÜN → GRÜN) und s3 (nie GRÜN) nicht
-# e  die Reihe: ungebucht (nie gemessen, Paar ROT) vor gebucht grün
+# e  die Reihe der Klassen: K1 beansprucht · K2 ohne Urteil · K3 GRÜN · K4 ROT | Schwanz K5 Leser fehlt · K6 Umfang, aus dem jüngsten Urteil
+# w  der Schwanz trägt nur, wenn main weiter ist; zieht main während der Schwanz-Fahrt weiter, endet sie an der Grenze. Mutanten dazu:
+#    klassen-blind · schwanz-immer · schwanz-nie
 # f  ein Gerät ohne Fortschritt > 15 min: EINE Alarm-Zeile mit Namen, nicht doppelt; unter 15 min keine
 # g  die Baum-Sperre (14.11.) · h  die Karte 2 (karte2_nur) · i  halt() lässt die Flagge liegen
 # k  je Linse EINE Sitzung (runde.cjs teile), nie je Station eine · l  BEHALTEN je Station: das echte kandidat.sh, eine Sitzung fällt nach
@@ -414,6 +474,7 @@ for T in "${TT[@]}"; do
         i=$((i + 1))
         [ -f "$X/tod_in" ] && [ "$(cat "$X/tod_in")" = "$i" ] && { rm -f "$X/tod_in"; sleep 2; kill -9 $PPID; exit 9; }
         [ -f "$X/warter_kommt" ] && [ "$(cat "$X/warter_kommt")" = "$i" ] && { echo macher-kommt-und-geht >"$X/warter"; sleep 8; rm -f "$X/warter"; sleep 8; }
+        [ -f "$X/landung_bei" ] && [ "$(cat "$X/landung_bei")" = "$s" ] && { rm -f "$X/landung_bei"; cp "$X/kopf-bei" "$X/main"; sleep 8; } # main zieht weiter, während s misst
         sleep 0.4
         echo "$KOPF:$s" >>"$X/gepusht"
         echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 1 Station(en)" >>"$X/kette.log"
@@ -438,6 +499,7 @@ STUMMEL
     main_kopf() { cat "$X/main"; }
     abstand() { echo 0; }
     pm_stand() { :; }
+    karte_datei() { :; } # die Fälle a–w fahren Stummel-Stationen (s1…), keine Sprossen der Karte 2; die Front prüft Fall x
     ungepusht_pruefen() { :; } # die Linse: radeon-dienst.sh --selbsttest Fall p (dieselbe runde.cjs ungepusht)
     frei_gb() { echo 50; }
     kleiner() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; } # wie orte.sh
@@ -449,7 +511,7 @@ STUMMEL
     eindeutig() { grep "^$1:" "$X/gepusht" 2>/dev/null | sort -u | wc -l; }
     koord() { git -C "$X/klon" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$X/klon" show "refs/t/k:$1"; }
     feld() { koord zug/runde.txt | grep "^$1 "; }
-    nte() { echo "$1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep . | sed -n "$2p"; } # die n-te Station der eingefrorenen Liste
+    nte() { echo "$1" | sed 's/.* liste //; s/ getragen [0-9]*$//' | tr ',|' '\n\n' | grep . | sed -n "$2p"; } # die n-te Station der eingefrorenen Liste
     erst() { tail -n +$(($1 + 1)) "$KETTE_LOG" | sed -n 's/.* Versuch 1 START (\(.*\))$/\1/p' | head -n 1 | cut -d, -f1; } # die erste Station nach Zeile $1 (die erste der Sitzung)
     nach() { date -u -d "@$(($(date -u -d "$1" +%s) + $2 * 60))" +%FT%TZ; }
     case "$1" in
@@ -472,6 +534,10 @@ STUMMEL
         halt-rm) halt() { [ -f "$S/landung.halt" ] && { rm -f "$S/landung.halt"; exit 3; }; } ;;
         nur-schloss) baum_wartende() { :; } ;;
         tafel-blind) karte2_nur() { :; } ;;
+        klassen-blind) sed 's|^    const klasse = .*$|    const klasse = () => "K2";|' "$RUNDE_CJS" >"$X/runde-alt.cjs"; RUNDE_CJS=$X/runde-alt.cjs ;; # die Regel bis 21.11.: keine Klasse, die Reihe der Tafel
+        schwanz-immer) main_weiter() { return 0; } ;; # der Schwanz trägt, auch wenn main nicht weiter ist (die Runde misst ihn nie)
+        schwanz-nie) main_weiter() { return 1; } ;; # die Regel bis 21.11.: der Schwanz misst an jedem Kopf neu
+        front-blind) sed "s|^        ids = ids.filter((id) => F.has(id));$|        ;|" "$RUNDE_CJS" >"$X/runde-alt.cjs"; RUNDE_CJS=$X/runde-alt.cjs ;; # die Regel bis 21.11. 15:45: die ganze Tafel, auch hinter der Front
         tafel-alle) karte2_nur() { [ -f "$PM/vision/richter-tafel.json" ] && grep -o '"station":"[^"]*"' "$PM/vision/richter-tafel.json" | cut -d'"' -f4 | awk '!s[$0]++' | paste -sd, -; } ;;
     esac
     # a — eine Landung nach Station 2, ein Macher nach Station 4: die Liste weicht und geht AM KOPF DER RUNDE weiter, nie am neuen main
@@ -548,12 +614,18 @@ STUMMEL
     if echo "$o" | grep -q "TÄTER s1: ${k1:0:8} .*(gut ${k0:0:8}, schlecht ${k2:0:8}" && ! echo "$o" | grep -qE " (s2|s3)[: ]" && ! grep -qE "START (s2|s3) " "$X/richter/richter.log" 2>/dev/null; then
         echo "OK d  frisches ROT an s1 (GRÜN am ${k0:0:8}, ROT am ${k2:0:8}): NUR s1 über die Köpfe dazwischen halbiert, TÄTER-Kopf ${k1:0:8} in zug/richter.txt; s2, s3 nicht gefahren"
     else echo "ROT d  Richter: richter.txt „$(echo "$o" | tail -n 2 | cut -c1-110 | tr '\n' '|')“, gestartet „$(grep -oE "START [^ ]+" "$X/richter/richter.log" 2>/dev/null | tr '\n' ' ')“ (Soll nur s1, Täter ${k1:0:8})"; fi
-    # e — die Reihe: s1 Paar beide GRÜN (gebucht), s2 Paar ROT, s3 nur gtx GRÜN, s4–s8 nie gemessen
-    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"},"s2":{"gruen":true,"zeit":"2026-11-18T01:01:00Z"},"s3":{"gruen":true,"zeit":"2026-11-18T01:02:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-gtx.json"
-    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"},"s2":{"gruen":false,"zeit":"2026-11-18T01:01:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-radeon.json"
-    o=$(runde reihe "$MESSUNG_DIR" gtx s1,s2,s3,s4,s5,s6,s7,s8)
-    if [ "$o" = "s4,s5,s6,s7,s8,s2,s3|s1" ]; then echo "OK e  Reihe: ungebucht vor gebucht grün — nie gemessen, Paar ROT, ohne Paar zuerst, das grüne Paar s1 zuletzt ($o)"
-    else echo "ROT e  Reihe: „$o“ (Soll s4,s5,s6,s7,s8,s2,s3|s1)"; fi
+    # e — DIE REIHE FOLGT DER ERWARTETEN ÄNDERUNG (21.11.): die Klasse aus dem JÜNGSTEN Urteil über alle Köpfe (am aaaaaaaa: s1 GRÜN,
+    # s2 ROT Umfang, s3 ROT Leser fehlt, s4 ROT anderes, s5 UNGEMESSEN; am jüngeren bbbbbbbb: s1 ROT Umfang), ohne eigenes das andere
+    # Gerät (s6 GRÜN nur auf der Radeon), s7 beansprucht (zug/anspruch.txt), s8 nie gemessen → K1 s7 · K2 s8 s5 · K3 s6 · K4 s4 | K5 s3 · K6 s2 s1
+    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"},"s2":{"gruen":false,"grund":"S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 3","zeit":"2026-11-18T01:01:00Z"},"s3":{"gruen":false,"grund":"S2 · ROT Leser fehlt: kein Leser von x","zeit":"2026-11-18T01:02:00Z"},"s4":{"gruen":false,"grund":"ROT: 0,4 verfehlt ≥ 1","zeit":"2026-11-18T01:03:00Z"}},"ungemessen":{"s5":{"gruen":false,"ungemessen":true,"grund":"die Welt der Sitzung trägt nicht mehr","zeit":"2026-11-18T01:04:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-gtx.json"
+    echo '{"zeit":"2026-11-19T01:00:00Z","je":{"s1":{"gruen":false,"grund":"S6 · ROT Leser fehlt: Umfang nicht erzeugbar (10⁹)","zeit":"2026-11-19T01:00:00Z"}}}' >"$MESSUNG_DIR/bbbbbbbb-gtx.json"
+    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s6":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-radeon.json"
+    printf '# zug/anspruch.txt
+w29-probe s7,nicht-in-der-liste#1 # Kommentar
+' >"$X/anspruch.txt"
+    o=$(runde reihe "$MESSUNG_DIR" gtx s1,s2,s3,s4,s5,s6,s7,s8 --anspruch "$X/anspruch.txt")
+    if [ "$o" = "s7,s8,s5,s6,s4|s3,s2,s1" ]; then echo "OK e  Reihe der Klassen: K1 beansprucht s7 · K2 ohne Urteil s8 s5 · K3 GRÜN s6 (das andere Gerät) · K4 s4 | Schwanz K5 s3 · K6 s2 s1 (das jüngste Urteil über alle Köpfe) — $o"
+    else echo "ROT e  Reihe der Klassen: „$o“ (Soll s7,s8,s5,s6,s4|s3,s2,s1)"; fi
     # f — Alarm (Runde 4 am k2b: die OMEN durch, das andere Gerät ohne Fortschritt seit dem Start der Runde)
     t0=$(feld runde | sed -n 's/^runde .* start \([^ ]*\) .*/\1/p')
     export RUNDE_JETZT=$(nach "$t0" 10)
@@ -757,7 +829,7 @@ ATTRAPPE
     j=$(wc -l <"$KETTE_LOG")
     runde_takt
     e1=$(feld gtx)
-    lz=$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)
+    lz=$(echo "$e1" | sed 's/.* liste //; s/ getragen [0-9]*$//' | tr ',|' '\n\n' | grep -c .)
     nz=$(tail -n +$((j + 1)) "$KETTE_LOG" | grep -c " Versuch 1 START (.*,.*)")
     rm -f "$X/nur_erste" "$S/landung.halt"
     unset -f node
@@ -794,7 +866,7 @@ ATTRAPPE
     rm -f "$X/nur_erste" "$S/landung.halt"
     e1=$(feld gtx)
     f5=$(koord zug/runde.txt | grep -c "^notiz .* gtx neu gebaut nach Listen-Bruch: vorher laeuft 0/0 liste |")
-    if [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ] && [ "$f5" = 1 ] && koord zug/runde.txt | grep -q "^runde 6 "; then
+    if [ "$(echo "$e1" | sed 's/.* liste //; s/ getragen [0-9]*$//' | tr ',|' '\n\n' | grep -c .)" = 8 ] && [ "$f5" = 1 ] && koord zug/runde.txt | grep -q "^runde 6 "; then
         echo "OK p  Listen-Bruch „laeuft 0/0 … liste |“: der erste Takt baute die Liste neu (8 Stationen), dieselbe Runde 6, die Notiz steht in zug/runde.txt"
     else echo "ROT p  Listen-Bruch: Zeile „$(echo "$e1" | cut -c1-40) … $(echo "$e1" | sed "s/.* liste //" | cut -c1-60)“ (Soll Liste mit 8), Notiz $f5 (Soll 1), Runde $(koord zug/runde.txt | grep -c '^runde 6 ') (Soll 6)"; fi
     # q — „gtx durch 0/0 … liste |“ (Live 06:17, am f68dbf09 gebucht): runde.cjs schreibt „durch“ ohne Station nie (Exit 5); steht die
@@ -817,7 +889,7 @@ ATTRAPPE
     e1=$(feld gtx)
     f6=$(koord zug/runde.txt | grep -c "^notiz .* gtx durch 0/0 war ein Listen-Bruch .* zurück auf offen")
     f7=$(tail -n +$((j + 1)) "$KETTE_LOG" | grep -c "GEPUSHT (Versuch 1) 0 Station" )
-    if [ "$rq" = 5 ] && [ "$f6" = 1 ] && [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ]; then
+    if [ "$rq" = 5 ] && [ "$f6" = 1 ] && [ "$(echo "$e1" | sed 's/.* liste //; s/ getragen [0-9]*$//' | tr ',|' '\n\n' | grep -c .)" = 8 ]; then
         echo "OK q  „durch 0/0 … liste |“: runde.cjs durch ohne Station verweigert (Exit 5); der erste Takt setzte die Zeile zurück auf offen (Notiz) und baute die Liste neu (8)"
     else echo "ROT q  durch 0/0: runde durch ohne Station Exit $rq (Soll 5), Notiz $f6 (Soll 1), Zeile „$(echo "$e1" | cut -c1-40) … $(echo "$e1" | sed 's/.* liste //' | cut -c1-60)“ (Soll Liste mit 8)"; fi
     # s — DER WARTENDE KOMMT UND GEHT → DER ZÄHLER STEIGT (Koordinator 19.11.; Befund 08:35–10:33: omen-los-main wartete 10 min, die
@@ -843,9 +915,59 @@ ATTRAPPE
     if echo "$e1" | grep -q "^gtx durch 8/8 " && [ "$(am "$k3")" = 8 ] && [ "$(eindeutig "$k3")" = 8 ] && [ "$s1" -gt "$s0" ] && [ "$s2" = 2 ] && [ "$s3" = 0 ]; then
         echo "OK s  Wartender kommt und geht in Station 3: WEICHT, dann WEITER (die Flagge fiel), dieselbe Sitzung maß 8 von 8 in einem Takt, der Zähler stieg ($((s1 - s0))× laeuft k/8), kein Puls nannte ihn nach dem Gehen"
     else echo "ROT s  kommt und geht: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k3") (Soll 8), Zähler-Stände $s0 → $s1 (Soll mehr), WEICHT+WEITER $s2 (Soll 2), Puls nach dem Gehen mit „WEICHT vor“ $s3 (Soll 0)"; fi
+    # w — DER SCHWANZ TRÄGT NUR, WENN main WEITER IST (21.11.): die Liste aus den Mess-Dateien von e heißt „s7,s8,s5,s6,s4|s3,s2,s1“ (ohne
+    # Anspruch ist s7 K2). w1 Runde 8, main = Kopf: vorn 5 und der Schwanz 3 fahren, 8/8, getragen 0, kein Teil mischt vorn und Schwanz.
+    # w2 Runde 9, main ist weiter: vorn 5 fahren, der Schwanz trägt (getragen 3, keine Fahrt). w3 Runde 10, main = Kopf, während s3 (die
+    # erste Schwanz-Station) misst, zieht main weiter: die Fahrt endet an der Grenze nach s3, s2 s1 tragen (getragen 2).
+    # Mutanten: schwanz-immer (w1 trägt) · schwanz-nie (w2, w3 messen alles) · klassen-blind (die Liste ohne Klassen)
+    local k4 k5 k6 w0 x1 x2 x3 xl xm
+    for j in 7 8 9; do git -C "$X/klon" $A0 commit -q --allow-empty -m "main $j"; done
+    git -C "$X/klon" push -q origin main
+    k4=$(git -C "$X/klon" rev-parse HEAD~2) k5=$(git -C "$X/klon" rev-parse HEAD~1) k6=$(git -C "$X/klon" rev-parse HEAD)
+    geraet_durch radeon "$k3" "$k4" >/dev/null # Runde 8 am k4 (die GTX ist an k3 durch)
+    echo "$k4" >"$X/main"
+    j=$(wc -l <"$KETTE_LOG")
+    runde_takt
+    x1=$(feld gtx)
+    xl=$(echo "$x1" | sed 's/.* liste \([^ ]*\).*/\1/')
+    # kein Teil mischt: jede Sitzung am k4 trägt nur vorn oder nur Schwanz
+    xm=$(tail -n +$((j + 1)) "$KETTE_LOG" | sed -n "s/.* ${k4:0:8} .* Versuch 1 START (\(.*\))$/\1/p" | while read -r t; do v=0 h=0; for s in ${t//,/ }; do case ",${xl#*|}," in *",$s,"*) h=1 ;; *) v=1 ;; esac; done; [ $v = 1 ] && [ $h = 1 ] && echo "$t"; done)
+    geraet_durch radeon "$k4" "$k5" >/dev/null # Runde 9 am k5
+    echo "$k6" >"$X/main"                       # main ist weiter als der Kopf der Runde
+    runde_takt
+    x2=$(feld gtx)
+    w0=$(am "$k5")
+    geraet_durch radeon "$k5" "$k6" >/dev/null # Runde 10 am k6, main = k6
+    echo "$k5" >"$X/kopf-bei"
+    echo s3 >"$X/landung_bei"
+    runde_takt
+    rm -f "$X/landung_bei"
+    x3=$(feld gtx)
+    if [ "$xl" = "s7,s8,s5,s6,s4|s3,s2,s1" ] && echo "$x1" | grep -q "^gtx durch 8/8 .* getragen 0$" && [ "$(am "$k4")" = 8 ] && [ -z "$xm" ] &&
+        echo "$x2" | grep -q "^gtx durch 5/8 .* getragen 3$" && [ "$w0" = 5 ] && ! grep -q "^$k5:s[123]$" "$X/gepusht" &&
+        echo "$x3" | grep -q "^gtx durch 6/8 .* getragen 2$" && [ "$(am "$k6")" = 6 ] && grep -q "^$k6:s3$" "$X/gepusht" && grep -q "MAIN WEITER (${k6:0:8}" "$L"; then
+        echo "OK w  Schwanz trägt nur bei main weiter: main = Kopf → vorn 5 + Schwanz 3 gemessen (8/8, kein Teil mischt); main weiter → vorn 5, der Schwanz trägt (5/8, getragen 3); main zieht während s3 weiter → Ende an der Grenze (6/8, getragen 2)"
+    else echo "ROT w  Schwanz: Liste „$xl“ (Soll s7,s8,s5,s6,s4|s3,s2,s1), main = Kopf „$(echo "$x1" | cut -c1-16) … $(echo "$x1" | grep -o 'getragen.*')“ am Kopf $(am "$k4") (Soll 8/8 getragen 0, 8), gemischt „$xm“, main weiter „$(echo "$x2" | cut -c1-16) … $(echo "$x2" | grep -o 'getragen.*')“ am Kopf $w0 (Soll 5/8 getragen 3, 5), main zieht weiter „$(echo "$x3" | cut -c1-16) … $(echo "$x3" | grep -o 'getragen.*')“ am Kopf $(am "$k6") (Soll 6/8 getragen 2, 6)"; fi
+    # x — DIE FRONT DER KARTE 2 (Koordinator 21.11. 15:45, runde.cjs reihe --karte): Leiter a (heute 1: a#1 gebucht, Front a#2 ROT,
+    # dahinter a#3 GRÜN), Glieder-Leiter b (heuteSprossen 1, 3), Leiter c (heute 1, Front c#2, dahinter c#3)
+    echo "{\"gruppen\":[{\"kriterien\":[{\"id\":\"a\",\"heute\":1,\"sprossen\":[{\"nr\":1},{\"nr\":2},{\"nr\":3}]},{\"id\":\"b\",\"zaehlung\":\"glieder\",\"heuteSprossen\":[1,3],\"sprossen\":[{\"nr\":1},{\"nr\":2},{\"nr\":3},{\"nr\":4}]},{\"id\":\"c\",\"heute\":1,\"sprossen\":[{\"nr\":1},{\"nr\":2},{\"nr\":3}]}]}]}" >"$X/karte.json"
+    echo "{\"zeit\":\"2026-11-20T01:00:00Z\",\"je\":{\"karte2.a#2\":{\"gruen\":false,\"grund\":\"ROT: 0,4 verfehlt\",\"zeit\":\"2026-11-20T01:00:00Z\"},\"karte2.a#3\":{\"gruen\":true,\"zeit\":\"2026-11-20T01:00:00Z\"}}}" >"$MESSUNG_DIR/cccccccc-gtx.json"
+    XL=karte2.a#1,karte2.a#2,karte2.a#3,karte2.b#1,karte2.b#2,karte2.b#3,karte2.b#4,karte2.c#1,karte2.c#2,karte2.c#3
+    : >"$X/anspruch-x.txt"
+    x1=$(runde reihe "$MESSUNG_DIR" gtx "$XL" --karte "$X/karte.json" --anspruch "$X/anspruch-x.txt")
+    echo "w29-drei karte2.c#3" >"$X/anspruch-x.txt"
+    x2=$(runde reihe "$MESSUNG_DIR" gtx "$XL" --karte "$X/karte.json" --anspruch "$X/anspruch-x.txt")
+    echo "w29-zwei karte2.c#2,karte2.c#3" >"$X/anspruch-x.txt"
+    x3=$(runde reihe "$MESSUNG_DIR" gtx "$XL" --karte "$X/karte.json" --anspruch "$X/anspruch-x.txt")
+    : >"$X/karte-leer.json"
+    runde reihe "$MESSUNG_DIR" gtx "$XL" --karte "$X/karte-leer.json" >/dev/null
+    x4=$?
+    if [ "$x1" = "karte2.b#2,karte2.b#4,karte2.c#2,karte2.a#2|" ] && [ "$x2" = "$x1" ] && [ "$x3" = "karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4,karte2.a#2|" ] && [ "$x4" = 6 ]; then
+        echo "OK x  Front der Karte 2: die grüne a#3 hinter der roten Front a#2 steht nicht in der Liste; Glieder-Leiter b: jede ungebuchte (b#2, b#4) steht drin; Anspruch auf c#3 ohne gebuchte c#2 tritt nicht ein, mit Anspruch auf c#2+c#3 treten beide als K1 ein; Karte unlesbar → Exit 6 — $x3"
+    else echo "ROT x  Front: ohne Anspruch „$x1“ (Soll karte2.b#2,karte2.b#4,karte2.c#2,karte2.a#2|), Anspruch c#3 „$x2“ (Soll gleich), Anspruch c#2+c#3 „$x3“ (Soll karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4,karte2.a#2|), leere Karte Exit $x4 (Soll 6)"; fi
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"front-blind klassen-blind schwanz-immer schwanz-nie bucht-am-ende flagge-bleibt deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 selbsttest() {
     local O m r rot=0 mr=0 mz=0 ok
     O=$(mktemp -d)
@@ -857,15 +979,15 @@ selbsttest() {
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
     ok=$(grep -c "^OK" "$O/echt")
-    [ "$ok" = 22 ] || rot=1
+    [ "$ok" = 24 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 22 Fälle grün (a–u), $mr/$mz Mutanten ROT"; return 0; fi
-    echo "landung-dienst SELBSTTEST ROT: $ok von 22 Fällen OK, $mr/$mz Mutanten ROT"
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 24 Fälle grün (a–x), $mr/$mz Mutanten ROT"; return 0; fi
+    echo "landung-dienst SELBSTTEST ROT: $ok von 24 Fällen OK, $mr/$mz Mutanten ROT"
     return 1
 }
 [ "$1" = --selbsttest ] && { selbsttest; exit $?; }
