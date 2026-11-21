@@ -3847,23 +3847,28 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 56, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
 // DIE LICHT-KARTE (nacht-lichter-2, `_lichtKarteTakt`, `_lichtKarteTerm`): jede Quelle im Umkreis, die keinen Platz des Pools
 // hält (× 1 − ihre Blende, solange sie ein- oder ausblendet), schreibt ihre Bestrahlung als VEKTOR (Σ E · Richtung zur Quelle,
 // Luma) in ein Gitter von `texel`² Zellen à `zelleM` um das Auge — je Zelle in zwei Lagen über dem Boden (`lagenM`, die Höhe des
 // Bodens in d0.w) — und ihre Farbe (Σ E · Farbe ÷ Σ E); Boden und Wand lesen E = max(0, n · D) × Farbe × Albedo ÷ π: drei
-// Abgriffe je Fragment, gleich viele bei 5 wie bei 500 Quellen. Neu geschrieben nur bei neuer Mitte (`nachM` Weg) oder neuer
-// Stärke einer Quelle (Kosten an Änderung, Gebot 7); die Blende in `blendeStufen` Stufen (ein Platz, der ein- oder ausblendet,
-// schreibt die Karte höchstens so oft neu); die Höhen des Bodens einer neuen Mitte höchstens `hoehenJeBild` je Bild, die alte
-// Mitte trägt, bis alle da sind (gemessen 9 216 Höhen in 48 ms an einem Bild). `skala` hebt E in den Bereich des Halb-Floats.
+// Abgriffe je Fragment, gleich viele bei 5 wie bei 500 Quellen. Die Kosten an der Änderung (Gebot 7): eine Quelle, deren Stärke
+// um mehr als `stufe` wechselt (die Blende in `blendeStufen` Stufen), die kommt oder geht, trägt nur ihren Fleck ein (je Bild
+// bis `bauMs` und höchstens `zellenJeBild` hochzuladende Zellen, die nächste zuerst, der Rest im nächsten Bild); eine neue
+// Mitte (`nachM` Weg) baut im Hintergrund des Takts — je Bild höchstens `hoehenJeBild` Höhen des Bodens und Arbeit bis `bauMs`,
+// die alte Mitte trägt, bis die neue steht. `texel` 144 deckt die Quellen im Umkreis des Pools (56 m: 50 m um den Spieler, die dritte Person steht dahinter) bei jeder Lage der Mitte
+// (≤ 12 m vom Auge). `skala` hebt E in den Bereich des Halb-Floats.
 AnazhRealm.LICHT_KARTE = Object.freeze({
-    texel: 96,
+    texel: 144,
     zelleM: 1,
     nachM: 12,
     lagenM: [0.1, 2.6],
     skala: 1000,
     blendeStufen: 4,
     hoehenJeBild: 1024,
+    bauMs: 2,
+    zellenJeBild: 6000,
+    stufe: 0.02,
 });
 // DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
 // (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
