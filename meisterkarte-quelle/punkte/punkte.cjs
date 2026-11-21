@@ -3864,7 +3864,22 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
     // (auch vor dem Preis-Lauf der Meisterkarte 2: seine Referenz urteilt gegen dieselbe Ruhe)
     if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(g))) await referenzAuffuellen("sitzung");
+    // DER TÄTER-ORT (pm-tod-kostet-ort, 21.11.; Runde 2 an 31ea3847: „/umstellen hochhaus-dach“ riss die Seite — renderer, Speicher
+    // erschöpft —, Radeon 471 und GTX 468 Stationen standen „die Welt der Sitzung trägt nicht mehr“, und jede Fortsetzung begann wieder
+    // am Dach: stadt.vertikal, dann macht.megastadt, je ein Absturz und ein neuer Boot, bis der Dienst die Karte abgab): stirbt die Welt
+    // am Umstellen auf einen Messort (das Lebenszeichen /fenster schweigt danach), ist der ORT der Täter — jede Probe dort steht in
+    // diesem Lauf UNGEMESSEN beim Namen „Messort: /umstellen <ort>: …“ und fährt nie mehr (ctx.taeterOrte: ein Lauf, jede Welle und
+    // Fortsetzung); jede Probe an einem anderen Ort ist offen und misst in der neuen Sitzung. Der Tod kostet den Ort, nie den Rest.
+    const taeterOrte = ctx.taeterOrte || new Map();
+    const amTaeterOrt = (g) => (probeOrt(g[0]) && taeterOrte.get(probeOrt(g[0]))) || null;
     for (const g of gruppen) {
+        // DIE LAUFENDE PROBE in der Akte des Läufers (akteLaeuft): stirbt er, nennt die Wache nur sie, die übrigen fahren neu
+        akteLaeuft("sitzung", g.map(schluessel));
+        const taeter = amTaeterOrt(g);
+        if (taeter) {
+            await melde(g, g.map(() => ohne(taeter, true)), null, new Date().toISOString());
+            continue;
+        }
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
         if (!tot && s.schloss && s.schloss.kind.exitCode != null) tot = "das Schloss der Sitzung fiel (gpu-lauf.sh Exit " + s.schloss.kind.exitCode + ")";
@@ -3991,6 +4006,22 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             }
             const us = +((Date.now() - tu) / 1000).toFixed(1);
             const wo = ort ? "Ort " + ort : "die Welt";
+            // DER TÄTER-ORT: steht der Ort nicht und schweigt danach das Lebenszeichen der Welt, starb sie am Umstellen (die Werkbank
+            // nennt nach dem Absturz jede Frage an die Seite „ABSTURZ der Seite: …“) — der Ort fällt, nie die Proben anderer Orte
+            if (ort && u && u.fehler) {
+                const f = await rufFrist(W, "/fenster", {}, 30000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+                if (!f || !Array.isArray(f.fenster)) {
+                    const fehler = String(u.fehler).replace(/\s+/g, " ").slice(0, 300);
+                    taeterOrte.set(ort, "Messort: /umstellen " + ort + ": " + fehler + " — die Welt starb am Ort (vor " + schluessel(g[0]) + "), kein Urteil, UNGEMESSEN");
+                    (kopf.taeterOrte = kopf.taeterOrte || []).push({ ort, vor: schluessel(g[0]), s: us, fehler });
+                    tot = "die Welt starb am Messort " + ort + " (" + fehler + ")";
+                    kopf.grund = "die Welt trägt nicht mehr: der Messort " + ort + " riss sie vor " + schluessel(g[0]) + ": " + fehler;
+                    kopf.orte.push({ ort, vor: schluessel(g[0]), s: us, fehler: fehler.slice(0, 200), nach: ortNach, taeter: true });
+                    console.log("  SITZUNG " + kopf.grund + " — jede Probe am Ort " + ort + " UNGEMESSEN beim Namen, die übrigen offen für die neue Sitzung");
+                    await melde(g, g.map(() => ohne(taeterOrte.get(ort), true)), null, new Date().toISOString());
+                    continue;
+                }
+            }
             await zapf(aktuell); // die Bilder des Einschwingens unter „(sitzung)“, nie unter der Probe; der Zapfen nennt die Seite danach
             if (u && !u.fehler) {
                 aktOrt = ort || "(hier)";
@@ -4146,6 +4177,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         await melde(g, urteile, aus, zeit);
         richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, ...(preisFahrt || {}) });
     }
+    akteLaeuft("sitzung", null);
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
     kopf.ciBlicke = ci.n;
@@ -4175,7 +4207,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
 // riss — offen, UNGEMESSEN“, bis ein Mensch `run --offen` rief): riss die Fahrt, misst eine NEUE Sitzung (eigener Boot, eigene Uhr
 // ≤ FAHRT_MAX_S) die offenen Läufe aus gruppen (kopf.offen); fährt sie ein `ende`, fährt sie jeden `anfang` mit (der Strom lebt eine
 // Sitzung, auswahl). Sie endet, wenn nichts offen ist oder eine Sitzung keinen offenen Lauf mehr schaffte — die übrigen bleiben UNGEMESSEN
-// beim Namen „die Fahrt riss“. Ein Lauf, der seinen Deckel reißt, ist nie offen: er steht UNGEMESSEN beim Grund und fährt nie nach.
+// beim Namen „die Fahrt riss“. Ein Lauf, der seinen Deckel reißt, ist nie offen: er steht UNGEMESSEN beim Grund und fährt nie nach —
+// ebenso jede Probe an einem TÄTER-ORT (fahreSitzung `taeterOrte`): sie ist nie offen, die Fortsetzung beginnt nie wieder dort.
 // fahre(gruppen) → der Kopf der neuen Sitzung; Rückgabe die Köpfe der Fortsetzungen
 async function fahreFortsetzung(gruppen, kopf, fahre) {
     const koepfe = [];
@@ -4213,7 +4246,10 @@ function auswahl(opt) {
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
     const { stationen, fehler } = ladeGeprueft();
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
-    const nur = opt.nur ? new Set(opt.nur.split(",")) : null;
+    // `--nur @<datei>` (die Wache nach dem Tod des Läufers, laeuferWache): die Ids aus der Datei — die Liste einer ganzen Sitzung reißt
+    // als EIN Argument die Grenze von Windows (32 767 Zeichen)
+    const nurText = opt.nur && /^@/.test(String(opt.nur)) ? fs.readFileSync(String(opt.nur).slice(1), "utf8") : opt.nur;
+    const nur = nurText ? new Set(String(nurText).split(/[,\r\n]+/).filter(Boolean)) : null;
     let meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
     if (nur) for (const id of nur) if (!meine.some((st) => schluessel(st) === id)) throw new Error("--nur " + id + ": keine Station auf " + opt.geraet);
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
@@ -4578,7 +4614,9 @@ async function run(opt) {
         // der Rest — je Welle eine Sitzung mit ihrer Fortsetzung, das Älteste zuerst, das Hängende zuletzt; bricht der Dienst die Fahrt
         // ab (CI, Warter), ist die vordere Welle schon gemessen
         const w = wellenDerFahrt(opt, sha, proben);
-        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt },
+        // DER TÄTER-ORT gilt für den ganzen Lauf: jede Welle und jede Fortsetzung lässt ihn stehen (fahreSitzung)
+        const taeterOrte = new Map();
+        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt, taeterOrte },
             (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
         delete m.fortsetzung;
         for (const [i, welle] of w.wellen.entries()) {
@@ -4601,8 +4639,10 @@ async function run(opt) {
         const ctx = { ...ctx0, baum: baeume[b], bahn: b, port: band(b).port, band: band(b).alle,
             aus: path.join(rohDir, name + ".json"), roh: path.join(rohDir, name + ".out") };
         const zeit = new Date().toISOString();
+        akteLaeuft("bahn-" + b, g.map(schluessel));
         const es = await fahreGruppe(g, ctx);
         melde(g, es, ctx, { zeit, port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen });
+        akteLaeuft("bahn-" + b, null);
     });
     console.log("→ " + path.relative(KOORD, datei));
     return m;
@@ -6185,6 +6225,24 @@ async function selbsttest(o = {}) {
                     /letzte Zeile: SITZUNG radeon · die Welt steht/.test((u["x.b#1"] || {}).grund || "") && m1.je["x.a#1"].gruen === true && !!m1.je["x.c#1"] &&
                     r2.code === 1 && !m2.ungemessen,
                 JSON.stringify({ r1: [r1.code, r1.n, (r1.grund || "").slice(0, 160)], u: Object.keys(u), r2: [r2.code, !!m2.ungemessen] }));
+            // DER TOD KOSTET NUR DIE LAUFENDE PROBE (pm-tod-kostet-ort; Radeon 31ea3847: 265 Stationen „Läufer starb“ nach 3,5 min): das
+            // Kind urteilt a, nennt in der Akte b als laufend und stirbt mit 0xC0000409 — b steht UNGEMESSEN beim Namen, c und d fahren in
+            // EINEM neuen Lauf (`--nur @<datei>` mit genau ihnen) und urteilen GRÜN. Vorher: b, c, d standen „Läufer starb“
+            const kindRest = ["-e", 'const fs = require("fs"), d = process.argv[1], f = process.env.PUNKTE_LAEUFER_AKTE, start = Date.now(), i = process.argv.indexOf("--nur");' +
+                'const ids = i < 0 ? ["x.a#1", "x.b#1", "x.c#1", "x.d#1"] : fs.readFileSync(process.argv[i + 1].slice(1), "utf8").split(/\\s+/).filter(Boolean);' +
+                'const m = JSON.parse(fs.readFileSync(d, "utf8")), z = new Date(start + 5).toISOString();' +
+                'if (i < 0) { fs.writeFileSync(f, JSON.stringify({ datei: d, sha: "s", ids, start, pid: process.pid, laeuft: { sitzung: ["x.b#1"] } })); m.je["x.a#1"] = { gruen: true, zeit: z };' +
+                '  fs.writeFileSync(d, JSON.stringify(m)); console.log("  SITZUNG radeon · x.b#1 läuft"); setTimeout(() => process.exit(-1073740791), 50); }' +
+                'else { fs.writeFileSync(f, JSON.stringify({ datei: d, sha: "s", ids, start, pid: process.pid, laeuft: {} })); process.on("exit", () => fs.rmSync(f, { force: true }));' +
+                '  for (const id of ids) m.je[id] = { gruen: true, zeit: z }; fs.writeFileSync(d, JSON.stringify(m)); console.log("NEU " + ids.join(",")); }', d];
+            fs.writeFileSync(d, JSON.stringify({ sha: "s", geraet: "radeon", je: {} }));
+            const r3 = await laeuferWache([], { still: true, argv: kindRest });
+            const m3 = JSON.parse(fs.readFileSync(d, "utf8")), u3 = m3.ungemessen || {};
+            pruef("WACHE DER TOD KOSTET NUR DIE LAUFENDE PROBE: stirbt der Läufer, steht nur die laufende Probe (Akte `laeuft`) UNGEMESSEN beim Namen; die übrigen ohne Urteil fahren in EINEM neuen Lauf (`--nur @<datei>`) und urteilen (vorher: alle „Läufer starb“)",
+                Object.keys(u3).join() === "x.b#1" && /^UNGEMESSEN: Läufer starb \(Exit 0xC0000409 .* · die laufende Probe$/.test(u3["x.b#1"].grund) &&
+                    ["x.a#1", "x.c#1", "x.d#1"].every((id) => m3.je[id] && m3.je[id].gruen === true) && r3.laeufe === 2 && r3.n === 1 && r3.code === 3 &&
+                    /^WACHE der Läufer fährt neu: 2 Stationen/.test(String((r3.zeilen || [])[1] || "")),
+                JSON.stringify({ r3: [r3.code, r3.n, r3.laeufe, r3.zeilen], u: u3, je: Object.keys(m3.je) }));
         }
         // DIE ORDNUNG DER SCHLÖSSER: unter gpu-lauf.sh (GPU_LAUF_HAELT) weist die Sperre sofort ab, beim Namen, und legt keinen Baum an;
         // der echte gpu-lauf.sh gibt die Marke seinem Befehl mit (Mutante: ohne die Marke nähme die Sperre den Baum)
@@ -7896,13 +7954,16 @@ async function selbsttest(o = {}) {
             'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
             // der Weg einer Probe (art „weg“): die Grundstellung an Ort und Stelle nennt ihn, bis die Seite neu lud; „weg-bleibt“ trägt ihn
             // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
-            'let geladen = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
+            'let geladen = false, seiteTot = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             // DER WEG /wirt (w28-probe-wirt, art „wirt…“; jede andere Art antwortet ohne ihn — die Werkbank vor der Wache): nimm merkt die
             // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `__haelt` setzt, hält ihren Kontext
             'let wirtVor = []; const wirtWeg = (b, s) => { const W = seite.welt; n(b.gib ? "wirt-gib" : "wirt-nimm"); if (!b.gib) { wirtVor = Object.keys(W).filter((k) => typeof W[k] === "function"); return s({ genommen: true }); }',
             '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && seite.win.__haelt ? ["eval#2"] : [];',
             '  return s({ anders, wie: Object.fromEntries(anders.map((k) => [k, "neu"])), haelt, heapVor: 100, heapNach: haelt.length ? 200 : 101, ungemessen: haelt.length ? "eine Marke lebt (eval#2), der Heap hält +100 MB über dem Stand vor der Probe (Schwelle 64)" : null, zeile: "r: " + (anders.join(", ") || "—") + (haelt.length ? " · hält " + haelt.join(", ") : "") }); };',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
+            // DER TÄTER-ORT (art „ort-tod“): das Umstellen auf „dach“ reißt die Seite — danach fällt jede Frage an sie wie in der Werkbank
+            '  if (art === "ort-tod" && q.url === "/umstellen" && b.ort === "dach") { n("absturz:dach"); seiteTot = true; }',
+            '  if (seiteTot && q.url !== "/stop") return s({ fehler: "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild stub.dmp" });',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
             '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand/.test(b.code)) return inSeite(b.code);',
@@ -8193,6 +8254,35 @@ async function selbsttest(o = {}) {
             r12.z.join(",") === "start,nimm,warm,mord" && r12.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r12.es["a.K1#1"].grund) &&
             /die Probe sah: exit [1-9]/.test(r12.es["a.K1#1"].zahl) && r12.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r12.es["b.K1#1"].grund),
             JSON.stringify([r12.z, r12.es, r12.kopf]));
+        // DER TOD KOSTET DEN ORT (pm-tod-kostet-ort; Runde 2 an 31ea3847: „/umstellen hochhaus-dach“ riss die Seite, 471 + 468 Stationen
+        // standen „trägt nicht mehr“, jede Fortsetzung begann wieder am Dach): die Welt stirbt am Umstellen auf „dach“ — a und b (beide
+        // am Dach) stehen UNGEMESSEN beim Namen des Orts, c und d (Wiese) sind offen und misst EINE neue Sitzung GRÜN, ohne das Dach.
+        // Vorher: b stand „trägt nicht mehr — offen“, die Fortsetzung fuhr b am Dach, starb ein zweites Mal und brauchte eine dritte Sitzung
+        {
+            const rufOrt = (o) => ["node", "-e", 'const fs = require("fs"); require("http").request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: "/eval", method: "POST" }, (r) => { let d = ""; ' +
+                'r.on("data", (c) => (d += c)); r.on("end", () => { const j = JSON.parse(d); if (j.fehler) console.log("@@PUNKTE@@ MESSORT /umstellen ' + o + ': " + j.fehler); ' +
+                'else fs.writeFileSync(process.argv[1], JSON.stringify({ welt: j.ergebnis, log: !!process.env.PUNKTE_SITZUNG_LOG })); }); }).end(JSON.stringify({ code: "return 1" }));', "{AUS}", "umstellen --ort " + o];
+            const rtg = [[S("a.K1", 1, { befehl: rufOrt("dach"), sek: 30 }, warm)], [S("b.K1", 1, { befehl: rufOrt("dach"), sek: 30 }, warm)],
+                [S("c.K1", 1, { befehl: rufOrt("wiese"), sek: 30 }, warm)], [S("d.K1", 1, { befehl: rufOrt("wiese"), sek: 30 }, warm)]];
+            const rt = await lauf(rtg, "ort-tod", null);
+            const rtf = { es: {}, gefahren: [], z: [] };
+            const rtk = await fahreFortsetzung(rtg, rt.kopf, async (gs) => {
+                rtf.gefahren.push(gs.map((g) => schluessel(g[0])).join(","));
+                const k = await lauf(gs, "ort-tod", null);
+                Object.assign(rtf.es, k.es);
+                rtf.z.push(...k.z);
+                return k.kopf;
+            });
+            const amDach = (e) => !!e && e.ungemessen === true && /^Messort: \/umstellen dach: ABSTURZ der Seite: renderer/.test(e.grund || "");
+            pruef("SITZUNG DER TOD KOSTET DEN ORT: stirbt die Welt am Umstellen auf einen Messort, stehen alle Proben DIESES Orts UNGEMESSEN beim Namen „Messort: /umstellen <ort>: ABSTURZ …“ " +
+                "und fahren nie mehr; die Proben anderer Orte misst EINE neue Sitzung GRÜN (vorher: b „trägt nicht mehr — offen“, die Fortsetzung starb ein zweites Mal am Dach)",
+                amDach(rt.es["a.K1#1"]) && amDach(rt.es["b.K1#1"]) && rt.z.filter((l) => l === "absturz:dach").length === 1 &&
+                    JSON.stringify(rt.kopf.offen) === '["c.K1#1","d.K1#1"]' && /trägt nicht mehr .* — offen, UNGEMESSEN$/.test((rt.es["c.K1#1"] || {}).grund || "") &&
+                    (rt.kopf.taeterOrte || []).map((x) => x.ort + "@" + x.vor).join() === "dach@a.K1#1" &&
+                    rtf.gefahren.join("|") === "c.K1#1,d.K1#1" && rtk.length === 1 && !rtk[0].offen && rtf.es["c.K1#1"].gruen === true && rtf.es["d.K1#1"].gruen === true &&
+                    !rtf.z.some((l) => /dach/.test(l)),
+                JSON.stringify([rt.z, rt.es, rt.kopf.offen, rt.kopf.taeterOrte, rtf]));
+        }
         // DER WEG EINER PROBE (w4-sitzung-reif; tempo4 legt seinen Weg über die Wiese, `_standRueckspielen` lässt die Wege-Karte und die
         // Natur, die er räumte, warm): nennt die Grundstellung an Ort und Stelle einen Weg seit dem Grund, geht sie durch die Tür (die
         // Lade-Kette des Speicher-Gesetzes baut Karte und Natur aus dem Grund neu) — die nächste Probe misst im Grund; trägt die Welt ihn
@@ -8778,23 +8868,59 @@ function todName(code, sig) {
     if (u === 1) return "Exit 1 ohne exit-Haken — von außen beendet (TerminateProcess, taskkill /F)";
     return "Exit " + u + " ohne exit-Haken";
 }
+let akteJetzt = null; // { f, a } — die Akte dieses Läufers (laeuferAkte), die laufenden Proben je Platz (akteLaeuft)
 function laeuferAkte(a) {
     const f = process.env.PUNKTE_LAEUFER_AKTE;
     if (!f) return;
-    fs.writeFileSync(f, JSON.stringify({ ...a, pid: process.pid, start: Date.now() }));
+    akteJetzt = { f, a: { ...a, pid: process.pid, start: Date.now(), laeuft: {} } };
+    fs.writeFileSync(f, JSON.stringify(akteJetzt.a));
     process.on("exit", () => { try { fs.rmSync(f, { force: true }); } catch (_e) { /* geräumt */ } });
+}
+// DIE LAUFENDE PROBE (pm-tod-kostet-ort): je Platz (die Sitzung, jede Bahn) die Stationen, die gerade fahren — vom Grund und Umstellen
+// bis zum Urteil; null räumt den Platz. Stirbt der Läufer, ist nur sie der Täter (laeuferWache)
+function akteLaeuft(platz, ids) {
+    if (!akteJetzt) return;
+    if (ids) akteJetzt.a.laeuft[platz] = ids;
+    else delete akteJetzt.a.laeuft[platz];
+    try { fs.writeFileSync(akteJetzt.f, JSON.stringify(akteJetzt.a)); } catch (_e) { /* die Akte ist fort: der Läufer endet eben */ }
 }
 function wacheFolgen() {
     const w = Number(process.env.PUNKTE_LAEUFER_WACHE) || 0;
     if (w) setInterval(() => { try { process.kill(w, 0); } catch (e) { if (e.code !== "EPERM") process.exit(3); } }, 1000).unref();
 }
+// DER TOD KOSTET NUR DIE LAUFENDE PROBE (pm-tod-kostet-ort, 21.11.; Radeon 31ea3847: der Läufer starb nach 3,5 min mit 0xC0000409,
+// 265 Stationen seiner Sitzung standen „Läufer starb“, bis die Runde sie als gemessen zählte): die Wache nennt nur die Stationen, die
+// laut Akte gerade fuhren (akteLaeuft) — die übrigen ohne frisches Urteil fahren in einem NEUEN Lauf (dasselbe argv, `--nur @<datei>`
+// mit genau ihnen). Ein neuer Lauf nur, solange der Rest schrumpft (ein Lauf, der weder urteilt noch einen Täter nennt, endet die
+// Kette: dann stehen alle beim Namen wie bisher); Strg+C fährt nie nach.
 // DIE WACHE: argv des Kindes; o.exe/o.argv (der Selbsttest: ein Kind, das stirbt), o.still (keine Durchreiche), o.env
-function laeuferWache(argv, o = {}) {
+async function laeuferWache(argv, o = {}) {
+    let args = o.argv || [...process.execArgv, __filename, ...argv], vorher = Infinity, r = null, n = 0;
+    const zeilen = [];
+    for (let lauf = 1; ; lauf++) {
+        r = await laeuferWacheEinmal(args, o, vorher);
+        n += r.n || 0;
+        if (r.zeile) zeilen.push(r.zeile);
+        if (!r.rest) break;
+        const datei = path.join(os.tmpdir(), "punkte-rest-" + process.pid + "-" + lauf + ".txt");
+        fs.writeFileSync(datei, r.rest.join("\n") + "\n");
+        const i = args.indexOf("--nur");
+        args = i >= 0 ? [...args.slice(0, i), ...args.slice(i + 2)] : args.slice();
+        args.push("--nur", "@" + datei);
+        vorher = r.rest.length;
+        const z = "WACHE der Läufer fährt neu: " + r.rest.length + " Stationen ohne Urteil in einem neuen Lauf (Lauf " + (lauf + 1) + ")";
+        zeilen.push(z);
+        if (!o.still) console.log(z);
+    }
+    return { ...r, n, laeufe: zeilen.filter((z) => /^WACHE der Läufer fährt neu/.test(z)).length + 1, zeilen,
+        ...(n && r.code === 0 ? { code: 3 } : {}) };
+}
+function laeuferWacheEinmal(args, o, vorher) {
     return new Promise((fertig) => {
         const t0 = Date.now(), akte = path.join(os.tmpdir(), "punkte-akte-" + process.pid + "-" + t0 + ".json");
         const env = { ...process.env, ...(o.env || {}), PUNKTE_LAEUFER_WACHE: String(process.pid), PUNKTE_LAEUFER_AKTE: akte };
-        const kind = spawn(o.exe || process.execPath, o.argv || [...process.execArgv, __filename, ...argv], { env, stdio: ["inherit", "pipe", "pipe"], windowsHide: true });
-        let rest = "", letzte = "";
+        const kind = spawn(o.exe || process.execPath, args, { env, stdio: ["inherit", "pipe", "pipe"], windowsHide: true });
+        let rest = "", letzte = "", strgC = false;
         const lies = (strom) => (d) => {
             if (!o.still) strom.write(d);
             rest = (rest + String(d)).slice(-8192);
@@ -8804,7 +8930,7 @@ function laeuferWache(argv, o = {}) {
         kind.stdout.on("data", lies(process.stdout));
         kind.stderr.on("data", lies(process.stderr));
         // Strg+C trifft beide: die Wache bleibt, bis das Kind sein Ende hat, und nennt es
-        const still = () => {};
+        const still = () => { strgC = true; };
         process.on("SIGINT", still);
         kind.on("error", (e) => fertig({ code: 2, grund: "die Wache startet den Läufer nicht: " + e.message }));
         kind.on("close", (code, sig) => {
@@ -8816,22 +8942,29 @@ function laeuferWache(argv, o = {}) {
             fs.rmSync(akte, { force: true });
             const grund = "UNGEMESSEN: Läufer starb (" + todName(code, sig) + ") · Kind " + kind.pid + " nach " + ((Date.now() - t0) / 60000).toFixed(1) + " min" +
                 (letzte ? " · letzte Zeile: " + letzte.slice(0, 240) : "");
-            let n = 0;
+            let n = 0, neu = null;
             if (a && a.datei && fs.existsSync(a.datei)) {
                 const m = JSON.parse(fs.readFileSync(a.datei, "utf8"));
                 if (m.sha === a.sha) {
-                    for (const id of a.ids || []) {
-                        if ([m.je, m.ungemessen].some((x) => x && x[id] && Date.parse(x[id].zeit || "") >= a.start)) continue;
-                        eintragen(m, id, { gruen: false, zahl: grund, exit: code, minuten: +((Date.now() - a.start) / 60000).toFixed(2), grund, ungemessen: true,
+                    const offen = (a.ids || []).filter((id) => ![m.je, m.ungemessen].some((x) => x && x[id] && Date.parse(x[id].zeit || "") >= a.start));
+                    // der Täter: was laut Akte gerade fuhr; der Rest fährt neu, solange er schrumpft (sonst steht er beim Namen wie bisher)
+                    const lief = new Set(Object.values(a.laeuft || {}).flat());
+                    const rest = offen.filter((id) => !lief.has(id));
+                    const weiter = !strgC && rest.length > 0 && rest.length < Math.min(vorher, (a.ids || []).length);
+                    for (const id of weiter ? offen.filter((x) => lief.has(x)) : offen) {
+                        const g = grund + (lief.has(id) ? " · die laufende Probe" : "");
+                        eintragen(m, id, { gruen: false, zahl: g, exit: code, minuten: +((Date.now() - a.start) / 60000).toFixed(2), grund: g, ungemessen: true,
                             zeit: new Date().toISOString(), bahn: "tod", ...(a.host ? { host: a.host } : {}) });
                         n++;
                     }
                     if (n) fs.writeFileSync(a.datei, JSON.stringify(konsumRaeumen(m), null, 1) + "\n");
+                    if (weiter) neu = rest;
                 }
             }
-            const zeile = grund + (a && a.datei ? " → " + n + " von " + (a.ids || []).length + " Stationen UNGEMESSEN in " + path.basename(String(a.datei)) : " (vor der Sperre: keine Akte)");
+            const zeile = grund + (a && a.datei ? " → " + n + " von " + (a.ids || []).length + " Stationen UNGEMESSEN in " + path.basename(String(a.datei)) +
+                (neu ? " (die laufende Probe), " + neu.length + " fahren neu" : "") : " (vor der Sperre: keine Akte)");
             if (!o.still) console.log(zeile);
-            fertig({ code: 3, grund, zeile, n });
+            fertig({ code: 3, grund, zeile, n, ...(neu ? { rest: neu } : {}) });
         });
     });
 }
