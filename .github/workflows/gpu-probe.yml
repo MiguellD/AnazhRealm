@@ -80,7 +80,7 @@ jobs:
                                 : "weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]";
                           if (g && !grund) grund = `„${p.slice(0, 80)}“: ${g}`;
                       }
-                      if (!grund && proben.length > 3) grund = `${proben.length} Proben, höchstens 3 je Push`;
+                      if (!grund && proben.length > 4) grund = `${proben.length} Proben, höchstens 4 je Push`;
                       const arten = [
                           ["gpu-probe", proben.filter((p) => !p.startsWith("zeit:"))],
                           ["gpu-zeit", proben.filter((p) => p.startsWith("zeit:"))],

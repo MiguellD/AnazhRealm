@@ -496,7 +496,8 @@ function scanTasten(dateien) {
 }
 
 // KLINGE 7 (w22-gpu-probe, w26-probe-zeit): DER EINLASS DER GPU-PROBE (.github/workflows/gpu-probe.yml). Die Kopf-Commit-Message
-// trägt GENAU eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens drei Proben, Komma-getrennt, jede in einer von
+// trägt GENAU eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens vier Proben (die Pflicht-Wände eines Wurzel-Schnitts,
+// zug.cjs PROBE_PFLICHT: Bau 2 · Haus 1 · Licht 1 — bis saat-argument drei), Komma-getrennt, jede in einer von
 // DREI Formen: `gate:<npm-skript>` (ein Skript aus package.json), `zeit:gate:<npm-skript>` (dasselbe Skript, nur auf einem
 // Band-Gerät) und `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die Uhr 0..1) — nie ein freier Befehl: die
 // Probe fährt auf eigenen Rechnern, das Repo ist öffentlich. Der EINE Leser steht im Workflow selbst (Schritt `einlass`, env
@@ -508,7 +509,7 @@ function scanTasten(dateien) {
 // Matrix nur aus dem Einlass.
 const PROBE_DATEI = ".github/workflows/gpu-probe.yml";
 // je Ruf [Message, Matrix] — ohne Matrix muss der Einlass abweisen (freier Befehl, fremde Namen, ein Bild auf dem Band, die Uhr,
-// zwei Marken, ein Umbruch in der Marke, vier Proben); eine leere Art steht nie in der Matrix
+// zwei Marken, ein Umbruch in der Marke, fünf Proben); eine leere Art steht nie in der Matrix
 const PROBE_RUFE = [
     [
         "[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0.3, gate:apparat]",
@@ -523,6 +524,17 @@ const PROBE_RUFE = [
     ["[gpu-probe: zeit:bild:wiese]"],
     ["[gpu-probe: bild:wiese@1.5]"],
     ["[gpu-probe: bild:wiese\nplan=gate:x]"],
+    // die Grenze des Einlasses: vier Proben fahren (die vier Pflicht-Wände eines Wurzel-Schnitts), die fünfte weist ab
+    [
+        "[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt]",
+        [
+            {
+                label: "gpu-probe",
+                plan: "gate:pruefbuehne-licht gate:weltbild-frost:echt gate:studio-begehen gate:tag-achse:echt",
+            },
+        ],
+    ],
+    ["[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt, gate:apparat]"],
 ];
 function probeGesetz(doc) {
     const an = Object.keys(doc.on) + "";
