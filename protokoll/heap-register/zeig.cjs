@@ -1,0 +1,4 @@
+const o=require(require("path").resolve(process.argv[2]));const n=+process.argv[3]||35;
+console.log("boot",o.heap_boot,"nachProbe",o.heap_nach_probe,"PREIS",o.heap_preis,"vram",o.vram,"typed",o.typed_mb,"p95",o.lauf&&o.lauf.p95,JSON.stringify(o.renderer));
+if(o.extra&&o.extra.summe){console.log("ZENSUS summe",JSON.stringify(o.extra.summe));console.log("top",JSON.stringify(o.extra.top.slice(0,25)));console.log("sied",JSON.stringify(o.extra.sied).slice(0,1500));console.log("arch",JSON.stringify(o.extra.archInfo).slice(0,1200));}else console.log("extra",JSON.stringify(o.extra).slice(0,500));
+const h=o.halde;if(h&&h.halter){console.log("halde",h.gesamt_mb,"ab r",h.ab_r_mb);for(const [p,mb,a] of h.halter.slice(0,n))console.log(String(mb).padStart(7),p.padEnd(55),JSON.stringify(a.slice(0,2)).slice(0,120));}

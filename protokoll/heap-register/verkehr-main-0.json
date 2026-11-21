@@ -1,0 +1,1338 @@
+{
+ "etikett": "verkehr-main-1",
+ "baum": ".",
+ "boot_s": 7.579,
+ "heap_boot": 65.8,
+ "probe_s": 121.033,
+ "probe_exit": 0,
+ "probe_tail": [
+  "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]",
+  "  ✅ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — auf dem Netz · 120.4 s in der Welt der Sitzung (Teil 1/1)",
+  "WEGENETZ {\"lang\":2410,\"weg\":2408,\"ende\":true,\"schritte\":12786,\"tempo\":[13,13,130,71,248,356,317,400,472,10687,79],\"steck\":[],\"anteil\":0.8789300797747537,\"bezug\":{\"kmh\":{\"ortsdurchfahrt\":50,\"wohnstrasse\":30,\"gasse\":25,\"feldweg\":40},\"vmax\":63.81970403432012,\"mittel\":12.222352573127917},\"wegAnteil\":0.9"
+ ],
+ "heap_nach_probe": 703.1,
+ "lauf": {
+  "p95": 41.84,
+  "bilder": 747,
+  "ruhe": {
+   "ruhig": true,
+   "sek": 3.1,
+   "chunks": 107,
+   "foundry": 0,
+   "karten": 0,
+   "meshOffen": 0
+  },
+  "fehler": [
+   "[konsole] [AnazhRealm V18.546.360] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+   "[konsole] [AnazhRealm V18.546.360] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+   "[konsole] [budget] japanisch L2: [{\"feld\":\"tris\",\"ist\":12612,\"soll\":7000}]"
+  ]
+ },
+ "heap_preis": 510.6,
+ "vram": 155.1,
+ "typed": [
+  [
+   "r.state.renderer",
+   55.65
+  ],
+  [
+   "r._foundry.cache",
+   54.13
+  ],
+  [
+   "r.state.voxelChunks",
+   29.93
+  ],
+  [
+   "r._bewohnerSiedlungen[]",
+   27.43
+  ],
+  [
+   "r._bewohnerKoepfe[]",
+   16.54
+  ],
+  [
+   "r.state.wegeKarte",
+   11.5
+  ],
+  [
+   "r._sichtTiefeZ.auftraege",
+   10.58
+  ],
+  [
+   "r.state.archInstanceGroups",
+   8.76
+  ],
+  [
+   "r.state.waterLevelCells",
+   8.16
+  ],
+  [
+   "r.state.scene",
+   8.15
+  ],
+  [
+   "r.state.chunkSaetze",
+   7.09
+  ],
+  [
+   "r.state._regionBundles",
+   5.05
+  ],
+  [
+   "r.state.hydroTiles",
+   3.51
+  ],
+  [
+   "r.state.voxelMeshCache",
+   3.35
+  ],
+  [
+   "r.state.weltMarch",
+   2.83
+  ],
+  [
+   "r._fahrLeibKoerper[]",
+   2.53
+  ],
+  [
+   "r._wuchsVorrat[]",
+   2.36
+  ],
+  [
+   "r.state.fernRing",
+   2.07
+  ],
+  [
+   "r.state.spiegelFeld",
+   1.72
+  ],
+  [
+   "r._foliageAtlasTex.mipmaps",
+   1.33
+  ],
+  [
+   "r.state.horizontKarte",
+   1.13
+  ],
+  [
+   "r.state.nahWiese",
+   1.1
+  ],
+  [
+   "r.state.feldPass",
+   1.08
+  ],
+  [
+   "r.state.waterCAScratch",
+   1.02
+  ]
+ ],
+ "typed_mb": 267,
+ "renderer": {
+  "attrN": 431,
+  "attrCpuMB": 50.6,
+  "geometries": 288,
+  "nodeBuilderCache": 149,
+  "dc": 146,
+  "tris": 536828,
+  "pos": [
+   1197.8,
+   9.2,
+   -1687.1
+  ]
+ },
+ "halde": {
+  "ms": 14310,
+  "gesamt_mb": 527.18,
+  "ab_r_mb": 525.15,
+  "ausserhalb_r_mb": 2.03,
+  "knoten": 7617359,
+  "halter": [
+   [
+    "r.state.scene.attributes",
+    54.63,
+    [
+     [
+      "native system / JSArrayBufferData",
+      54.37
+     ],
+     [
+      "object Mn",
+      0.05
+     ],
+     [
+      "array (object elements)",
+      0.04
+     ],
+     [
+      "object ArrayBuffer",
+      0.04
+     ]
+    ]
+   ],
+   [
+    "r._foundry.cache.children[].geometry.attributes",
+    33.2,
+    [
+     [
+      "native system / JSArrayBufferData",
+      32.53
+     ],
+     [
+      "object Mn",
+      0.17
+     ],
+     [
+      "object Float32Array",
+      0.14
+     ],
+     [
+      "object ArrayBuffer",
+      0.11
+     ]
+    ]
+   ],
+   [
+    "r.state.architectures[]",
+    29.67,
+    [
+     [
+      "number heap number",
+      13.66
+     ],
+     [
+      "object Object",
+      7.07
+     ],
+     [
+      "hidden system / PropertyArray",
+      3.71
+     ],
+     [
+      "array (object elements)",
+      3
+     ]
+    ]
+   ],
+   [
+    "r._bewohnerSiedlungen.backt[]",
+    28.87,
+    [
+     [
+      "native system / JSArrayBufferData",
+      26.27
+     ],
+     [
+      "array (object elements)",
+      1.3
+     ],
+     [
+      "object Array",
+      0.21
+     ],
+     [
+      "number heap number",
+      0.17
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._anazhIx",
+    21.04,
+    [
+     [
+      "native system / JSArrayBufferData",
+      20.97
+     ],
+     [
+      "native ArrayBuffer",
+      0.01
+     ],
+     [
+      "object Mn",
+      0.01
+     ],
+     [
+      "object Uint16Array",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r.__proto__.constructor._tuchGitterMemo",
+    19.59,
+    [
+     [
+      "native system / JSArrayBufferData",
+      14.76
+     ],
+     [
+      "array (object elements)",
+      3.01
+     ],
+     [
+      "object Array",
+      1.73
+     ],
+     [
+      "native ArrayBuffer",
+      0.05
+     ]
+    ]
+   ],
+   [
+    "r._archMergeCache[].geom",
+    15.72,
+    [
+     [
+      "native system / JSArrayBufferData",
+      15.57
+     ],
+     [
+      "object Mn",
+      0.02
+     ],
+     [
+      "object Float32Array",
+      0.02
+     ],
+     [
+      "object ArrayBuffer",
+      0.02
+     ]
+    ]
+   ],
+   [
+    "r.__proto__.constructor._tierOfenMemo",
+    13.6,
+    [
+     [
+      "native system / JSArrayBufferData",
+      11.4
+     ],
+     [
+      "array (object elements)",
+      1.2
+     ],
+     [
+      "object Array",
+      0.18
+     ],
+     [
+      "number heap number",
+      0.12
+     ]
+    ]
+   ],
+   [
+    "r.state.voxelChunks.waterCells",
+    13.53,
+    [
+     [
+      "native system / JSArrayBufferData",
+      13.51
+     ],
+     [
+      "native ArrayBuffer",
+      0.01
+     ],
+     [
+      "object Uint8Array",
+      0.01
+     ],
+     [
+      "hidden system / WeakArrayList",
+      0
+     ]
+    ]
+   ],
+   [
+    "r._sichtTiefeZ.auftraege[]",
+    11.57,
+    [
+     [
+      "native system / JSArrayBufferData",
+      11.51
+     ],
+     [
+      "native GPUBuffer",
+      0.01
+     ],
+     [
+      "number heap number",
+      0.01
+     ],
+     [
+      "object Object",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r.state.voxelChunks.mesh",
+    10.87,
+    [
+     [
+      "native system / JSArrayBufferData",
+      10.21
+     ],
+     [
+      "native ArrayBuffer",
+      0.24
+     ],
+     [
+      "object Float32Array",
+      0.1
+     ],
+     [
+      "object Mn",
+      0.07
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._nodeBuilderState",
+    9.81,
+    [
+     [
+      "native system / ExternalStringData",
+      5.69
+     ],
+     [
+      "object Du",
+      0.98
+     ],
+     [
+      "native system / JSArrayBufferData",
+      0.75
+     ],
+     [
+      "object La",
+      0.54
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._anazhAtt",
+    8.72,
+    [
+     [
+      "native system / JSArrayBufferData",
+      8.69
+     ],
+     [
+      "array (object elements)",
+      0.01
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ],
+     [
+      "object WeakRef",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.wegeKarte.stufen",
+    8.51,
+    [
+     [
+      "native system / JSArrayBufferData",
+      8.5
+     ],
+     [
+      "hidden system / WeakArrayList",
+      0
+     ],
+     [
+      "object shape system / Map",
+      0
+     ],
+     [
+      "object Uint8Array",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.waterLevelCells",
+    8.16,
+    [
+     [
+      "native system / JSArrayBufferData",
+      8.16
+     ],
+     [
+      "object Float32Array",
+      0
+     ],
+     [
+      "object ArrayBuffer",
+      0
+     ],
+     [
+      "array ",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.archInstanceGroups.geom",
+    6.56,
+    [
+     [
+      "native system / JSArrayBufferData",
+      6.32
+     ],
+     [
+      "native ArrayBuffer",
+      0.04
+     ],
+     [
+      "object Float32Array",
+      0.04
+     ],
+     [
+      "object Mn",
+      0.04
+     ]
+    ]
+   ],
+   [
+    "r.state.scene.children",
+    6.05,
+    [
+     [
+      "native system / JSArrayBufferData",
+      5.24
+     ],
+     [
+      "array (object elements)",
+      0.21
+     ],
+     [
+      "array (object properties)",
+      0.07
+     ],
+     [
+      "string 91eeebf7-cc29-45eb-ae27-5b3e43c9d0a4|aH0",
+      0.05
+     ]
+    ]
+   ],
+   [
+    "r.state.scene.geometry",
+    5.95,
+    [
+     [
+      "native system / JSArrayBufferData",
+      5.74
+     ],
+     [
+      "object Object",
+      0.05
+     ],
+     [
+      "array (object properties)",
+      0.02
+     ],
+     [
+      "number heap number",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r.state.chunkSaetze.ordnung",
+    5.3,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.11
+     ],
+     [
+      "number heap number",
+      0.51
+     ],
+     [
+      "object Float64Array",
+      0.48
+     ],
+     [
+      "object ArrayBuffer",
+      0.43
+     ]
+    ]
+   ],
+   [
+    "r.state.nahWiese.fern",
+    4.35,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.1
+     ],
+     [
+      "number heap number",
+      0.87
+     ],
+     [
+      "object Object",
+      0.5
+     ],
+     [
+      "array (object elements)",
+      0.48
+     ]
+    ]
+   ],
+   [
+    "r.state.camera.scene",
+    4.08,
+    [
+     [
+      "native system / JSArrayBufferData",
+      3.19
+     ],
+     [
+      "array (object elements)",
+      0.45
+     ],
+     [
+      "number heap number",
+      0.07
+     ],
+     [
+      "object Array",
+      0.07
+     ]
+    ]
+   ],
+   [
+    "r._stauBauWerke.huelle[]",
+    4.05,
+    [
+     [
+      "number heap number",
+      2.18
+     ],
+     [
+      "object Object",
+      1.04
+     ],
+     [
+      "hidden system / PropertyArray",
+      0.82
+     ]
+    ]
+   ],
+   [
+    "r._naesseKnoten.farbe.node",
+    3.57,
+    [
+     [
+      "object Du",
+      1.38
+     ],
+     [
+      "object La",
+      0.83
+     ],
+     [
+      "object vi",
+      0.44
+     ],
+     [
+      "object yi",
+      0.2
+     ]
+    ]
+   ],
+   [
+    "r._foundry.cache._foundryFlat.leaves[].geom",
+    3.54,
+    [
+     [
+      "native system / JSArrayBufferData",
+      3.48
+     ],
+     [
+      "object Mn",
+      0.01
+     ],
+     [
+      "object ArrayBuffer",
+      0.01
+     ],
+     [
+      "object Float32Array",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._bindings",
+    3.39,
+    [
+     [
+      "array (object elements)",
+      0.59
+     ],
+     [
+      "object Du",
+      0.38
+     ],
+     [
+      "object _N",
+      0.25
+     ],
+     [
+      "object IN",
+      0.21
+     ]
+    ]
+   ],
+   [
+    "r.__proto__.constructor._gesetzStromMemo",
+    3.19,
+    [
+     [
+      "native system / ExternalStringData",
+      1.42
+     ],
+     [
+      "native system / JSArrayBufferData",
+      1.25
+     ],
+     [
+      "code system / InstructionStream",
+      0.19
+     ],
+     [
+      "code system / TrustedByteArray",
+      0.04
+     ]
+    ]
+   ],
+   [
+    "r.state.wegeKarte.neigung",
+    3,
+    [
+     [
+      "native system / JSArrayBufferData",
+      3
+     ],
+     [
+      "closure ",
+      0
+     ],
+     [
+      "object system / Context",
+      0
+     ],
+     [
+      "object Object",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.scene.vertexBuffers",
+    2.94,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.92
+     ],
+     [
+      "array (object elements)",
+      0.01
+     ],
+     [
+      "object Array",
+      0
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ]
+    ]
+   ],
+   [
+    "r._foundry.cache.children[].geometry.index",
+    2.88,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.79
+     ],
+     [
+      "native ArrayBuffer",
+      0.04
+     ],
+     [
+      "object Mn",
+      0.02
+     ],
+     [
+      "object Uint16Array",
+      0.02
+     ]
+    ]
+   ],
+   [
+    "r.state.voxelMeshCache.waterCells",
+    2.55,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.55
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ],
+     [
+      "object Uint8Array",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.__proto__.constructor._leibTaktMemo",
+    2.54,
+    [
+     [
+      "native system / ExternalStringData",
+      1.22
+     ],
+     [
+      "code system / InstructionStream",
+      0.55
+     ],
+     [
+      "code system / TrustedByteArray",
+      0.13
+     ],
+     [
+      "code system / BytecodeArray",
+      0.08
+     ]
+    ]
+   ],
+   [
+    "r.state.gpuWahlWirt.children",
+    2.45,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.21
+     ],
+     [
+      "array (object elements)",
+      0.03
+     ],
+     [
+      "array (object properties)",
+      0.03
+     ],
+     [
+      "number heap number",
+      0.02
+     ]
+    ]
+   ],
+   [
+    "r._wuchsVorrat",
+    2.36,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.36
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ],
+     [
+      "object Float64Array",
+      0
+     ],
+     [
+      "array ",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._anazhIM",
+    2.18,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.15
+     ],
+     [
+      "native ArrayBuffer",
+      0.01
+     ],
+     [
+      "native GPUBuffer",
+      0.01
+     ],
+     [
+      "object Ax",
+      0
+     ]
+    ]
+   ],
+   [
+    "r._bewohnerNachbarn[].leib",
+    2.17,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.58
+     ],
+     [
+      "array (object elements)",
+      0.32
+     ],
+     [
+      "object Array",
+      0.05
+     ],
+     [
+      "number heap number",
+      0.03
+     ]
+    ]
+   ],
+   [
+    "r.state.scene.object",
+    2.16,
+    [
+     [
+      "array (object elements)",
+      0.98
+     ],
+     [
+      "native system / JSArrayBufferData",
+      0.31
+     ],
+     [
+      "object Array",
+      0.14
+     ],
+     [
+      "object Qs",
+      0.1
+     ]
+    ]
+   ],
+   [
+    "r.__proto__._siedlungMehrM",
+    2.12,
+    [
+     [
+      "native system / ExternalStringData",
+      2.1
+     ],
+     [
+      "code system / WeakFixedArray",
+      0.01
+     ],
+     [
+      "code system / InstructionStream",
+      0.01
+     ],
+     [
+      "code system / TrustedByteArray",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.hydroTiles.daten",
+    2.1,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.1
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ],
+     [
+      "object Uint8Array",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.voxelChunks.surfMap",
+    2.05,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.04
+     ],
+     [
+      "native ArrayBuffer",
+      0.01
+     ],
+     [
+      "object Float32Array",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r.state.voxelChunks.surfMapZiel",
+    2.05,
+    [
+     [
+      "native system / JSArrayBufferData",
+      2.04
+     ],
+     [
+      "native ArrayBuffer",
+      0.01
+     ],
+     [
+      "object Float32Array",
+      0.01
+     ]
+    ]
+   ],
+   [
+    "r._bewohnerKoepfe[].leib",
+    1.93,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.23
+     ],
+     [
+      "array (object elements)",
+      0.4
+     ],
+     [
+      "object Array",
+      0.06
+     ],
+     [
+      "number heap number",
+      0.04
+     ]
+    ]
+   ],
+   [
+    "r.state.scene._anazhGeo",
+    1.77,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.75
+     ],
+     [
+      "object Object",
+      0
+     ],
+     [
+      "array (object properties)",
+      0
+     ],
+     [
+      "hidden system / PropertyArray",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.renderer.info.memoryMap.source.data",
+    1.7,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.7
+     ],
+     [
+      "native Uint16Array",
+      0
+     ],
+     [
+      "native Uint8Array",
+      0
+     ],
+     [
+      "native ArrayBuffer",
+      0
+     ]
+    ]
+   ],
+   [
+    "r._fahrLeibKoerper[].userData",
+    1.69,
+    [
+     [
+      "array (object elements)",
+      0.78
+     ],
+     [
+      "native system / JSArrayBufferData",
+      0.22
+     ],
+     [
+      "object Array",
+      0.11
+     ],
+     [
+      "number heap number",
+      0.11
+     ]
+    ]
+   ],
+   [
+    "r._forestDartMemo[]",
+    1.68,
+    [
+     [
+      "number heap number",
+      1.13
+     ],
+     [
+      "object Object",
+      0.5
+     ],
+     [
+      "hidden system / PropertyArray",
+      0.05
+     ],
+     [
+      "hidden system / WeakArrayList",
+      0
+     ]
+    ]
+   ],
+   [
+    "r._emotionLabel[][]",
+    1.64,
+    [
+     [
+      "native system / ExternalStringData",
+      0.32
+     ],
+     [
+      "native Text",
+      0.29
+     ],
+     [
+      "native V8EventListener",
+      0.04
+     ],
+     [
+      "hidden system / FunctionTemplateInfo",
+      0.03
+     ]
+    ]
+   ],
+   [
+    "r._spalten.plaetze[]",
+    1.54,
+    [
+     [
+      "number heap number",
+      0.59
+     ],
+     [
+      "object Object",
+      0.45
+     ],
+     [
+      "array (object elements)",
+      0.31
+     ],
+     [
+      "hidden system / PropertyArray",
+      0.13
+     ]
+    ]
+   ],
+   [
+    "r.state.hydroTiles.get rivers",
+    1.51,
+    [
+     [
+      "number heap number",
+      0.97
+     ],
+     [
+      "object Object",
+      0.5
+     ],
+     [
+      "array (object elements)",
+      0.04
+     ],
+     [
+      "object Array",
+      0
+     ]
+    ]
+   ],
+   [
+    "r.state.starField.__arena",
+    1.46,
+    [
+     [
+      "native system / JSArrayBufferData",
+      1.03
+     ],
+     [
+      "code system / InstructionStream",
+      0.23
+     ],
+     [
+      "code system / TrustedByteArray",
+      0.08
+     ],
+     [
+      "code system / ProtectedFixedArray",
+      0.02
+     ]
+    ]
+   ],
+   [
+    "r._speicher.listen.glieder",
+    1.43,
+    [
+     [
+      "array (object elements)",
+      0.67
+     ],
+     [
+      "native system / JSArrayBufferData",
+      0.17
+     ],
+     [
+      "object Array",
+      0.1
+     ],
+     [
+      "number heap number",
+      0.09
+     ]
+    ]
+   ]
+  ],
+  "ausserhalb": [
+   [
+    "string window.__messWiese = [-280.4, -1045.6];window.__wieseGesetz ",
+    0.33
+   ],
+   [
+    "string window.__linsenZiel = function linsenZiel(W, H) {\n    const ",
+    0.24
+   ],
+   [
+    "code system / InstructionStream",
+    0.22
+   ],
+   [
+    "string window.__sichtLinseAn = () => (function sichtLinse(cfg) {\n  ",
+    0.11
+   ],
+   [
+    "hidden system / WeakArrayList",
+    0.11
+   ],
+   [
+    "array ",
+    0.08
+   ],
+   [
+    "array (object properties)",
+    0.07
+   ],
+   [
+    "string window.__passName = function passName(scene, camera) {\n    i",
+    0.07
+   ],
+   [
+    "hidden system / PropertyCell",
+    0.06
+   ],
+   [
+    "concatenated string (concatenated string)",
+    0.06
+   ],
+   [
+    "object shape system / DescriptorArray",
+    0.05
+   ],
+   [
+    "hidden system / DoubleStringCache",
+    0.05
+   ],
+   [
+    "code system / BytecodeArray",
+    0.04
+   ],
+   [
+    "string window.__zielZensus = (function(){ const haken = (o, key, fn",
+    0.04
+   ],
+   [
+    "code system / TrustedByteArray",
+    0.03
+   ],
+   [
+    "object shape system / Map",
+    0.03
+   ],
+   [
+    "hidden system / FunctionTemplateInfo",
+    0.03
+   ],
+   [
+    "string window.__diaetZaehler = function diaetZaehler() {\n    const ",
+    0.03
+   ],
+   [
+    "string window.__standLinseAn = () => (function standLinseAn(takte, ",
+    0.02
+   ],
+   [
+    "code system / FeedbackVector",
+    0.02
+   ],
+   [
+    "string function mxLookup3(x, y, z) {\n    const rot = (v, k) => ((v ",
+    0.02
+   ],
+   [
+    "hidden system / AccessorInfo",
+    0.01
+   ],
+   [
+    "object Object",
+    0.01
+   ],
+   [
+    "code (constant pool)",
+    0.01
+   ],
+   [
+    "hidden system / AccessorPair",
+    0.01
+   ]
+  ],
+  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\a2d6fda3d89c432f\\fbfd5778-401f-4a17-bf73-0367303d8996\\scratchpad\\h\\aus\\verkehr-main-1.heapsnapshot",
+  "heapMB": 510.8
+ }
+}
