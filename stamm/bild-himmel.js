@@ -459,9 +459,14 @@ class AnazhRealm_bild_himmel {
         // Raum; hier ÷ k (die Belichtung DIESES Bilds, derselbe Knoten wie die Vor-Belichtung): die Spitze steht bei E × uAuge ×
         // Spitze, für jede Belichtung im selben Bild.
         const kernSpitze = float(SB.kern).div(s2.mul(2 * Math.PI)); // = `kern` oben an der Mitte (rPx 0)
-        // E ÷ E_G des Punkts (die Luma der Instanz-Farbe, ihr Ton trägt Luma 1): nur der Faktor des Ausblendens — die Farbe selbst
-        // multipliziert r184 EINMAL hinein
-        const ueber = TSL.luminance(attribute("instanceColor", "vec3")).mul(uAuge).mul(kernSpitze).div(SB.schwelle);
+        // E ÷ E_G des Punkts, nur der Faktor des Ausblendens (die Farbe selbst multipliziert r184 EINMAL hinein): E liest der
+        // Halbmesser seiner Scheibe (`_sternKante`: (aKante ÷ θ0)² = 10^(0,4·(feldGrenze − m)), E = sternLx0 ÷ EINHEIT_LX ·
+        // 10^(−0,4·feldGrenze) · (aKante ÷ θ0)²) — ein Instanz-Attribut, das Zeichner und Arena tragen. Die Instanz-Farbe liegt dort
+        // unter `instanzFarbe`, nie als Attribut `instanceColor`: so gelesen stand E auf 0, und jeder Punkt blendete aus.
+        const kq = attribute("aKante", "float").div(SB.theta0);
+        const eFeld =
+            (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * __weltLicht.KOSMOS.feldGrenze)) / __weltLicht.EINHEIT_LX;
+        const ueber = kq.mul(kq).mul(eFeld).mul(uAuge).mul(kernSpitze).div(SB.schwelle);
         const gesehen = TSL.smoothstep(float(10 ** -0.2), float(1), ueber);
         starMat.colorNode = vec4(
             TSL.vec3(psf.mul(uAuge).div(TSL.toneMappingExposure).mul(gesehen)),
