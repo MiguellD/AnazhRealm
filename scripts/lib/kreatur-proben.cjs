@@ -1092,10 +1092,20 @@ async function kreaturProben(r, T, opts) {
             // DER SPIELER STEHT JENSEITS DER NAH-REGEL (w27-wagen-spalt-3): `isInFrustum` nennt jedes Tier binnen 50 m sichtbar,
             // wohin die Kamera auch blickt — bei 45 m sah der Blick-Vergleich den Täter `herde` nur an Gliedern, die zufällig über
             // 50 m hinaus wanderten (main 1,47 m, mit der gezeichneten Haut 0,83 m, im CI 0: blind); bei 60 m 9,32 m
+            // DER GANG AN DER HERDE VORBEI (samen-tier-leser 21.11.): 12 m neben der Mitte der Herde, wo sie beim Beginn des Gangs
+            // steht — bei 100 s die eigene südlich, bei 300 s die fremde nördlich. Bis hier ging er 12 m neben ihrem Wurf-Ort: mit
+            // den Wander-Kursen aus der Los-Nummer stand die Mitte der eigenen 5 m nördlich davon, der Spieler kam ihr nur auf 17,5 m
+            // (die fremde 16,5 m), keine floh, und die Probe war vakuös (neben dem fremden 0,0 s)
+            let gang = null;
             for (let k = 0; k < t.takte; k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
-                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 60;
-                const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
+                if (g0 && k === g0) {
+                    const G = g0 > 6000 ? fremd : glieder;
+                    const m = G.reduce((m, c) => m.add(c.position), new T.Vector3()).divideScalar(G.length);
+                    gang = { x: m.x - heim.x, z: m.z - heim.z + (g0 > 6000 ? 12 : -12) };
+                }
+                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? gang.x - 30 + (1.4 * (k - g0)) / 60 : 60;
+                const q = neben(heim.x + x, heim.z + (g0 ? gang.z : 0));
                 pm.set(q.x, q.y, q.z);
                 if (k % 600 === 0) kamera(flucht || art === "blick" ? 1 : -1, 0);
                 takt(1 / 60);

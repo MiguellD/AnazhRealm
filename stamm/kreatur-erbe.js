@@ -1,5 +1,31 @@
 class AnazhRealm_kreatur_erbe {
     // ===== ATLAS · Kreatur/erbe — Das Gesetz des Lebens am Tier (leben-core): Erbe · Leib über das Alter · Auslese nach dem Leib · Spanne =====
+    // DIE LOS-NUMMER EINES LEIBS (Welle SAMEN): der Samen-Baum der Welt (samen-core `samenBaum`, die Wurzel ist der Same der
+    // Welt) am Pfad `leib:<Ort>:<Art>:<Platz im Wurf>` — der Ort auf den Dezimeter, die Art die Seele. Dieselbe Welt ruft am
+    // selben Ort dieselbe Art an denselben Platz: derselbe Leib, gleich wie viele Leiber vorher kamen und gingen. Der Wertebereich
+    // ist der der Kennung im Bestand (1e6 + h mod 9e8, `_bestandLeib`): die Leser (Wander-Kurs, Ruhe-Pegel) sehen eine Nummer.
+    _leibLos(ort, art, platz) {
+        const same = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const pfad = `leib:${Math.round(ort.x * 10)},${Math.round(ort.z * 10)}:${art}:${platz}`;
+        return 1e6 + (globalThis.__samenCore.samenBaum(same).saat(pfad) % 9e8);
+    }
+    // Die Los-Nummer, die ein Leser eines Loses fragt (Wander-Kurs, Ruhe-Pegel). Jeder Leib trägt sie seit seiner Geburt
+    // (`spawnCreatureAt`); ein Leib ohne sie bricht beim Namen — nie fällt der Leser auf die Kennung zurück.
+    _leibNummer(creature) {
+        const n = creature && creature.userData && creature.userData.los;
+        if (!Number.isFinite(n))
+            throw new Error(`Der Leib ${creature && creature.userData && creature.userData.netId} trägt keine Los-Nummer (spawnCreatureAt)`); // prettier-ignore
+        return n;
+    }
+
+    // Der Name aus der Los-Nummer des Leibs (`_leibLos`, Γ5) oder der Kennung eines Tiers im Bestand: derselbe Wurf auf jedem
+    // Peer und nach jedem Reload-Guss.
+    _pickCreatureName(netId) {
+        const pool = AnazhRealm.CREATURE_NAME_POOL;
+        const g = this._rollGenome(String(netId == null ? "c0" : netId), "creature-name");
+        return pool[Math.min(pool.length - 1, Math.floor(g.axis("name") * pool.length))];
+    }
+
     // ═══ DAS GESETZ DES LEBENS am Bestand (leben-core `__lebenCore`, Welle leben-erbe) ═══
     // Ein Tier des Bestands ist eine ADRESSE (`id` = `indId(Region, Welt-Takt der Geburt, Lauf-Nummer)`), trägt ein ERBE (`a`, der
     // Zuchtwert-Vektor aus Mutter und Vater, `m` = die Mutter) und sein Leib ist PHYSIK seines Erbes über das Alter: M∞ =
