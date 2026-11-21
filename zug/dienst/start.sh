@@ -97,8 +97,34 @@ selbsttest_kaputt() {
     a=$(kaputt "$t") && [ -z "$a" ] || return 1
     rm -rf "$t"
 }
+# DER LESER DES ZUG-SELBSTTESTS (21.11.): die 60 Fälle des Zug-Werkzeugs samt der Puffer-Linse liefen nur von Hand — eine Linse ohne
+# Leser schützt nichts (zeile-erledigt.cjs fiel an der OMEN 255× mit ENOBUFS, bevor jemand hinsah). Wechselt die Installation eine
+# Datei, beweist sich das Werkzeug am installierten Ort (22 s); rot fällt beim Namen mit seinen letzten Zeilen und bleibt bei jedem
+# weiteren Start rot, bis ein grüner Lauf es ablöst. Die Schleifen starten trotzdem: die Messung hängt nicht am Zug-Werkzeug.
+# WERKZEUG_BEFEHL ersetzt den Ruf nur im Selbsttest.
+werkzeug_beweis() {
+    local a
+    a=$(${WERKZEUG_BEFEHL:-node $ZIEL_W/zug.cjs selbsttest} 2>&1 | tail -3)
+    case "$a" in
+        *"selbsttest grün"*) echo "  bewiesen: $(echo "$a" | tail -1)" ;;
+        *)
+            echo "ROT: der Selbsttest des Zug-Werkzeugs fällt am installierten Stand — Täter-Suche und Puffer-Linse gelten nicht, bis er grün ist:"
+            echo "${a:-(keine Zeile: der Lauf endete stumm)}" | sed 's/^/    /'
+            return 1
+            ;;
+    esac
+}
+selbsttest_beweis() {
+    local a
+    a=$(WERKZEUG_BEFEHL="echo zug selbsttest grün (60 Fälle)"; werkzeug_beweis) || return 1
+    [ "$a" = "  bewiesen: zug selbsttest grün (60 Fälle)" ] || return 1
+    a=$(WERKZEUG_BEFEHL="echo ROT Puffer-Grenze: git ohne maxBuffer"; werkzeug_beweis) && return 1 # ein roter Selbsttest MUSS rot enden
+    echo "$a" | grep -q "^ROT: der Selbsttest des Zug-Werkzeugs" && echo "$a" | grep -q "    ROT Puffer-Grenze" || return 1
+    a=$(WERKZEUG_BEFEHL="true"; werkzeug_beweis) && return 1 # ein stummer Lauf (Absturz ohne Zeile) ist kein Beweis
+    echo "$a" | grep -q "keine Zeile" || return 1
+}
 case "$1" in
-    --selbsttest) selbsttest_lebt && selbsttest_kaputt && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-probe-lauf && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, buche, probe-lauf)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
+    --selbsttest) selbsttest_lebt && selbsttest_kaputt && selbsttest_beweis && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-probe-lauf && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, beweis, buche, probe-lauf)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
     --blick) blick; exit 0 ;;
     --stopp) stopp "$2"; exit 0 ;;
 esac
@@ -162,8 +188,13 @@ else
             [ "$(git -C $R hash-object --no-filters "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
         done < <(tail -n +2 "$MAN")
     fi
+    gleich=0
+    [ -s "$MAN" ] && [ "$(tail -n +2 "$MAN" | sort)" = "$(tail -n +2 "$tmp" | sort)" ] && gleich=1
     mv "$tmp" "$MAN"
     echo "INSTALLIERT ${K:0:8} ($(($(wc -l <"$MAN") - 1)) Dateien)"
+    if [ "$gleich" = 0 ] || [ "$(cat "$S/werkzeug-beweis" 2>/dev/null)" != gruen ]; then
+        if werkzeug_beweis; then echo gruen >"$S/werkzeug-beweis"; else echo rot >"$S/werkzeug-beweis"; fi
+    fi
 
 fi
 
