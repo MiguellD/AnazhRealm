@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T16:15:14.938Z",
+ "zeit": "2026-11-21T16:33:37.256Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -1436,6 +1436,70 @@
    "ungemessen": true,
    "zeit": "2026-11-21T16:15:14.938Z",
    "abdruck": "324c5444699e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.stoffstrom#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68,
+    "takte": 31,
+    "fremdS": 23.06,
+    "kerne": 0.339,
+    "fensterKerne": 0.681,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.05
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.08
+     ]
+    ],
+    "dienerS": 22.17,
+    "diener": [
+     [
+      "dwm.exe",
+      10.63
+     ],
+     [
+      "System",
+      6.73
+     ]
+    ],
+    "geraetS": 25.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.27
+     ],
+     [
+      "svchost.exe",
+      10.31
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 168.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T16:33:37.256Z",
+   "abdruck": "8f498cce655a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
