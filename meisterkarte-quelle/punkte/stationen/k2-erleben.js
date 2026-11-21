@@ -860,7 +860,7 @@ const LEITERN = [];
     LEITERN.push(
         leiter({
             leiter: "erleben.spieler.nichtleib",
-            sek: 45,
+            sek: 60,
             pfad: ["scripts/werkbank.cjs", "spec/profiband/haushalt.json", "stamm/koerper-seele.js", "stamm/bau-buch.js", "stamm/siedlung-bewohner.js", "stamm/bild-himmel.js", "gelaende-core.js", "stamm/feld-leben.js"],
             welt: [{ wort: "ding_proben", ab: 1, was: "Perspektiven ohne Leib, die der Spieler im Lauf einnahm" }],
             sprossen: {
@@ -896,6 +896,7 @@ const LEITERN = [];
                     umfang: { verlangt: 10, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Zufalls-Dinge aus 10 Saaten", feld: "richter", aus: 6 },
                 },
             },
+            seite: { SAATEN },
             lauf: async function nichtleibLauf(H, P, L) {
                 await L.ort("stadt-voll", "third");
                 L.preisPose("stadt-voll", "third");
@@ -949,8 +950,35 @@ const LEITERN = [];
                     if (jahreJeMinute < P.sprossen[5].umfang.verlangt) return L.umfang(5, jahreJeMinute, "die Welt rafft " + jahreJeMinute + " Jahre je Minute (ein Jahr = " + z.jahrSek + " s, stamm/bild-himmel.js:970); die Zeitachse des Planeten ist nur ein Sprung der Konsole (stamm/feld-leben.js:1278)");
                     await L.auge(5, { erzeugt: jahreJeMinute, b: { wahl: 0 } });
                 });
-                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält eine Saat (" + z.saat + ") — die Zufalls-Dinge verlangen " + P.sprossen[6].umfang.verlangt + " Saaten"));
-                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und eine Welt, eine Epoche"));
+                // S6 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+                // die Seelen ohne Leib und die Epoche der Welt der Saat. Die Schleife läuft zuletzt (S1–S5 lasen die Stadt der Sitzung) und
+                // endet 4 s vor der Frist; S7 urteilt über dieselbe Fahrt (sein Umfang ist der von S6).
+                let saaten = null;
+                const seelenJe = function (r) {
+                    const st = r.state, teil = r._gelaende().ort.teil;
+                    const seelen = Object.entries(r.playerSoulDefs || {}).concat(Object.entries(st.customSouls || {}));
+                    const ohne = seelen.filter(([k, d]) => !(d && (typeof d.build === "function" || (Array.isArray(d.bodyParts) && d.bodyParts.length)))).length;
+                    return { ohne, zeitMa: teil && Number.isFinite(teil.zeitMa) ? teil.zeitMa : 0 };
+                };
+                await L.je(6, async () => {
+                    const v = P.sprossen[6].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s6", n: v, bis: Date.now() + Math.max(0, (L.rest() - 4) * 1000) };
+                    const s = (saaten = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + seelenJe + ");", Math.max(5, L.rest() - 2)));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("nichtleib S6 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    const ohne = "Seelen ohne Leib je Saat " + (s.je.map((x) => x.z.ohne).join("/") || "—");
+                    if (s.je.length < v) return L.umfang(6, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + ohne + "; " + zeit + "; Ende: " + s.grund + ")");
+                    L.leser(6, "Zufalls-Dinge spielen: keine Saat trägt ein Ding, das der Spieler sein kann — die Seele wechselt nur zwischen Leibern (stamm/koerper-seele.js:437 `_getSoulDef`), " + ohne + " (" + zeit + ")", s.je.length);
+                });
+                await L.je(7, async () => {
+                    const s = saaten;
+                    if (!s || s.fehler) throw new Error("S7 urteilt über die Fahrt von S6, sie fuhr nicht" + (s && s.fehler ? " (" + s.fehler + ")" : ""));
+                    const v = P.sprossen[7].umfang.verlangt;
+                    const ep = "die Epoche je Saat (zeitMa) " + (s.je.map((x) => x.z.zeitMa).join("/") || "—");
+                    if (s.je.length < v) return L.umfang(7, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + ep + "; Ende: " + s.grund + ")");
+                    L.leser(7, "über Welten und Epochen: jede Saat erwacht in EINER Epoche, kein Lauf wechselt sie (" + ep + ") — die Epoche wechselt nur der Satz reise als eigene Welt (stamm/feld-leben.js:1224); die Zufalls-Dinge fehlen wie in S6", s.je.length);
+                });
             },
         })
     );
@@ -2281,7 +2309,7 @@ const LEITERN = [];
     LEITERN.push(
         leiter({
             leiter: "erleben.sinn.entdeckung",
-            sek: 30,
+            sek: 60,
             pfad: ["stamm/feld-leben.js", "stamm/gelaende-boden.js", "stamm/vegetation-baum.js", "stamm/siedlung-ort.js", "stamm/speicher-welten.js", "stamm/gelaende-chunks.js"],
             welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Feld, Funde, Welten)" }],
             sprossen: {
@@ -2316,6 +2344,7 @@ const LEITERN = [];
                     umfang: { verlangt: 1000, einheit: "Planeten", wortlaut: "Ultiversum aus 10³ Planeten", feld: "umfang" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function entdeckungLauf(H, P, L) {
                 const feldFn = function (r) {
                     const st = r.state;
@@ -2366,7 +2395,6 @@ const LEITERN = [];
                 await L.je(3, async () =>
                     L.leser(3, "Funde mit Ursache: kein Ereignis-Graph — die Seltenheit eines Funds emergiert aus dem Rauschen des Welt-Felds (`worldFieldAt`, stamm/feld-leben.js:1793), kein Fund trägt eine Geschichte; im Umkreis 50 m " + funde + " Funde")
                 );
-                await L.je(4, async () => L.umfang(4, f.saat != null ? 1 : 0, "die Sitzung hält eine Saat (" + f.saat + ") — 100 Saaten verlangt"));
                 await L.je(5, async () =>
                     L.leser(5, "unter der Stadt liegt keine ältere: der Ort wächst über die Jahre EINES Plans (plan.jahr + spanne, stamm/siedlung-ort.js:2858), kein Gesetz legt eine ältere Schicht darunter, keine Grabung zeigt sie")
                 );
@@ -2374,6 +2402,20 @@ const LEITERN = [];
                     L.umfang(6, +(H.sek() / 3600).toFixed(4), "die Leiter spielt " + H.sek() + " s, kein fremder Planet: ein Planetensprung lädt die Welt neu (Reise, stamm/feld-leben.js:1265; `_reiseBetreten`, stamm/netz-portal.js:660)")
                 );
                 await L.je(7, async () => L.umfang(7, f.welten, "der Speicher kennt " + f.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672)"));
+                // S4 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+                // dasselbe Feld-Programm am Spawn (Orte 400 m weiter mit anderem Feld / Funde im Umkreis 50 m). Die Schleife läuft zuletzt
+                // (S1–S3, S5–S7 lasen die Welt der Sitzung) und endet 4 s vor der Frist. Trägt die Welt alle Saaten, nennt S4 den Leser.
+                await L.je(4, async () => {
+                    const v = P.sprossen[4].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s4", n: v, bis: Date.now() + Math.max(0, (L.rest() - 4) * 1000) };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => { const f = (" + feldFn + ")(r); return [f.anders, f.wesen + f.selten + f.ruinen]; });", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("entdeckung S4 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    const je = "anders/Funde am Spawn je Saat " + (s.je.map((x) => x.z.join("/")).join(" · ") || "—");
+                    if (s.je.length < v) return L.umfang(4, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + je + "; " + zeit + "; Ende: " + s.grund + ")");
+                    L.leser(4, "Neues nach 30 min je Region: kein Blind-Agent spielt eine Region 30 min ohne Spieler — die Probe legt nur sein Bild (S1/S2 auge), der Leib geht nur über die Eingabe (`_eingabeTakt`, stamm/koerper-bewegung.js:2386) — in " + v + " Saaten (" + je + "; " + zeit + ")", s.je.length);
+                });
             },
         })
     );

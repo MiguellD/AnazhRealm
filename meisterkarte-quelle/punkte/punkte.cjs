@@ -3460,7 +3460,15 @@ function richterAkten(g, urteile, o) {
         console.log("  KARTE2 die Akte nach " + schluessel(g[0]) + " ROT: " + String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 200));
     }
 }
-const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
+// DER HAKEN HÄLT NIE DEN RUMPF SEINES ZAPFENS (Wirt-Wache 21.11., GTX: wegfindung#1 an main c445936d und die 11 Saat-Stationen UNGEMESSEN
+// an „den Kontext der Probe hält noch: return (function stromSeite …“): die Werkbank setzt jedem /eval zwischen `nimm` und `gib` die
+// Marke in seinen äußersten Kontext. Der Haken (`haken`, `huelle`, `bild`) lebt mit dem Renderer; als Ausdruck IM Rumpf gebaut hielt er
+// dessen Kontext und so die Marke jedes Zapfens, der ihn in einer Probe einzog (eine neue Seite, ein anderer Renderer) — die Wache nannte
+// die Maschine selbst als Halter der Probe. Der Zapfen baut stromSeite über den Function-Konstruktor im globalen Bereich: der Haken hält
+// nur seine eigenen Größen; window und performance reisen als Argument (der Selbsttest stellt beide). Werkbank am OMEN
+// (p3/n2111/wirt/wache-probe.cjs, V1 ↔ V3): der Zapfen, der den Haken einzieht, ließ 1 Marke leben → 0.
+const stromCode = (a) =>
+    "return Function(\"window\", \"performance\", " + JSON.stringify("return (" + stromSeite + ")") + ")(window, performance)(r, " + JSON.stringify(a || {}) + ");";
 // EIN Zapfen: die Zeilen seit dem letzten an den Strom (eine JSON-Zeile je Block, mit der Probe); Rückgabe { ok, n?, grund? } —
 // wirft nie (ein Zapfen, der scheitert, ist eine Lücke im Strom, nie ein Bruch der Probe)
 async function stromZapfen(w, datei, probe, a = {}) {
