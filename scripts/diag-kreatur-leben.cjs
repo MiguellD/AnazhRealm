@@ -3121,13 +3121,8 @@ if (process.argv.includes("--bestand")) {
     const neuKlasse = () => ({ rudelTakte: 0, kopfTakte: 0, geb: 0, welpe: 0, deckung: 0, alter: 0, wanderung: 0 });
     // der Eingriff S13: jeder Beute-Kopf fällt mit `anteil`; der Strom gehört dem Läufer (wie in der Vorlage)
     function eingriff(z, saat, anteil) {
-        let s = (Math.imul(saat | 0, 0x9e3779b1) ^ Math.imul(z.takt + 1, 0x85ebca77) ^ 0x7e1f) | 0;
-        const rng = () => {
-            s = (s + 0x6d2b79f5) | 0;
-            let t = Math.imul(s ^ (s >>> 15), 1 | s);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        // der EINE Generator (samen-core `mulberry32`) an der Saat des Eingriffs
+        const rng = global.__samenCore.mulberry32((Math.imul(saat | 0, 0x9e3779b1) ^ Math.imul(z.takt + 1, 0x85ebca77) ^ 0x7e1f) | 0);
         let gefallen = 0;
         for (const l of z.beute)
             for (let k = l.length - 1; k >= 0; k--) if (rng() < anteil) (l.splice(k, 1), gefallen++);
