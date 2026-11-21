@@ -523,7 +523,8 @@ class AnazhRealm_koerper_frei {
                 K.p0[1] = K.p[1];
                 K.p0[2] = K.p[2];
             }
-        const X = this._freiKoerperPacken(W);
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
+        const X = this._freiKoerperPacken(W, Math.abs(g));
         // DIE KONTAKTE des Schritts: der Boden (je Punkt der Abstand zur Ebene des Gesetzes unter ihm), die Bauten, die Paare
         const o = this._freiInnenAus || (this._freiInnenAus = {});
         let n = 0;
@@ -582,7 +583,6 @@ class AnazhRealm_koerper_frei {
         const CS = AnazhRealm.FREI_KONTAKT;
         for (const K of W) X[K.slot + 26] = K.welt ? 1 : 0;
         for (let k = 0; k < n; k++) this._freiKontaktBereit(k * CS, X, weich, alt);
-        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
         const invH = 1 / h;
         const G = this._freiG;
         for (let t = 0; t < F.teile; t++) {
@@ -1032,13 +1032,12 @@ class AnazhRealm_koerper_frei {
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
     // Körper (58, 59; −1: Welt), ihre inversen Massen (60, 61), die Anker (62–73: r_a im Rahmen und in der Welt, dasselbe für b),
     // der Schlüssel des Warmstarts (74) und die Tiefe (75).
-    _freiKoerperPacken(W) {
+    _freiKoerperPacken(W, schwere) {
         const KS = AnazhRealm.FREI_KOERPER;
         if (!this._freiX || this._freiX.length < W.length * KS) this._freiX = new Float64Array(W.length * KS * 2);
         const X = this._freiX;
         // der Rollwiderstand je Drehung (rad/s²): das Moment C_rr · m|g| · r um den Fuß durch die Trägheit um ihn (I + m r²) —
         // r der Roll-Radius (das Fass sein Rand, die Kiste ihre kleinste Halb-Kante), I die kleinste Haupt-Trägheit
-        const schwere = Math.abs(Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81);
         const rho = AnazhRealm._fahrSchrittGesetz().vc.FAHR.luft.rho;
         for (let i = 0, x = 0; i < W.length; i++, x += KS) {
             const K = W[i];

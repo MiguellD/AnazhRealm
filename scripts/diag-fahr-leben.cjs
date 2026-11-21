@@ -541,6 +541,12 @@ function stationVerdict(s) {
                 fk.fassFall && fk.fassFall.ruheS !== null && fk.fassFall.ruheS <= 2 && fk.fassFall.crr > 0,
                 `frei-fass-ruhe: das Fass ruht auf ${fk.fassFall?.boden} ${fk.fassFall ? fk.fassFall.ruheS : "–"} s nach der Landung (≤ 2, C_rr ${fk.fassFall?.crr}) — Täter \`_rollWiderstand\` / \`_freiRandFuss\` (stamm/koerper-frei.js)`,
             ],
+            // der Löser erfindet keine Arbeit: nach der Landung (ab 0,5 s) steigt die Energie des Fasses nie über ihr Tief (≤ 1 J,
+            // der Wind am Ort trägt weniger) — vorher schaukelte das stehende Fass im Gras ohne Ende, +18 J in 8 s
+            [
+                fk.fassFall && fk.fassFall.anstiegJ <= 1,
+                `frei-energie: das Fass gewinnt nach der Landung ${fk.fassFall?.anstiegJ} J (≤ 1) — Täter \`_freiRandFuss\` (der Anker wandert mit der Neigung) / die Bremse \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
             [
                 fk.fassFall && fk.fassFallOhneRoll && fk.fassFallOhneRoll.ruheS !== fk.fassFall.ruheS,
                 "frei-mutante: ohne Rollwiderstand ruht das Fass wie mit ihm (vakuös: der Löser liest ihn nicht)",
@@ -2022,7 +2028,7 @@ hauptLauf(async () => {
                 schwerelos: { boden: 0.1, fugen: [0.1] },
                 fass: { kipp: 172 },
                 fassOhneStoss: { kipp: 2 },
-                fassFall: { boden: "gras", ruheS: 1.483, crr: 0.3 },
+                fassFall: { boden: "gras", ruheS: 1.483, crr: 0.3, anstiegJ: 0.12 },
                 fassFallOhneRoll: { boden: "gras", ruheS: null, crr: 0 },
                 luft: { stein: { weite: 11.37, rechnung: 11.402, abwPct: 0.28 }, feder: { weite: 0.504, rechnung: 0.507, abwPct: 0.44 } },
                 luftWind: { stein: { weite: 11.6, rechnung: 11.402, abwPct: 1.7 }, feder: { weite: 2.1, rechnung: 0.507, abwPct: 314 } },
@@ -2238,6 +2244,12 @@ hauptLauf(async () => {
                 "die Luft ohne Wind",
                 { frei: { ...gutS.frei, luftWind: gutS.frei.luft } },
                 "frei-luft-wind",
+            ],
+            // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
+            [
+                "das stehende Fass gewinnt Energie",
+                { frei: { ...gutS.frei, fassFall: { ...gutS.frei.fassFall, anstiegJ: 18 } } },
+                "frei-energie",
             ],
             [
                 "ohne Rollwiderstand ruht das Fass so früh",

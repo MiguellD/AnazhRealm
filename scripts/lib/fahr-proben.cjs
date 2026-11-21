@@ -2447,14 +2447,27 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: 0.3 }
                 );
                 const K = e._frei;
-                const o = { boden: r._kontaktStoffAt(ort.x, ort.zz, ort.g), ruheS: null, crr: null };
-                let [t, tLand] = [0, null];
+                const o = { boden: r._kontaktStoffAt(ort.x, ort.zz, ort.g), ruheS: null, crr: null, anstiegJ: 0 };
+                // die Energie des Körpers (Bewegung, Drehung im Rahmen, Lage): nach der Landung wächst sie nie — ein Anstieg über ihr
+                // Tief ist ein Löser, der Arbeit erfindet (der wandernde Fuss am stehenden Fass: +18 J in 8 s)
+                const energie = () => {
+                    const [R, w] = [K.R, K.w];
+                    let e = 0.5 * K.m * (K.v[0] ** 2 + K.v[1] ** 2 + K.v[2] ** 2) + K.m * Math.abs(schwere) * K.p[1];
+                    for (let j = 0; j < 3; j++) e += (0.5 * (R[j] * w[0] + R[3 + j] * w[1] + R[6 + j] * w[2]) ** 2) / K.invI[j];
+                    return e;
+                };
+                let [t, tLand, tief] = [0, null, Infinity];
                 for (let i = 0; i < 600 && o.ruheS === null; i++) {
                     r._freiSchritt(A.FIXED_DT);
                     t += A.FIXED_DT;
                     let mn = Infinity;
                     for (let j = 1; j < K.pw.length; j += 3) mn = Math.min(mn, K.pw[j]);
                     if (tLand === null && mn - r._koerperBodenUnter(K.p[0], mn + 0.5, K.p[2]) <= A.FREI.spalt) tLand = t;
+                    if (tLand !== null && t - tLand >= 0.5) {
+                        const e = energie();
+                        tief = Math.min(tief, e);
+                        o.anstiegJ = Math.max(o.anstiegJ, Math.round((e - tief) * 100) / 100);
+                    }
                     if (tLand !== null && K.schlaf) o.ruheS = Math.round((t - tLand) * 1000) / 1000;
                 }
                 o.crr = K.grund ? K.grund.roll : null;
