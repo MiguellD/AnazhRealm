@@ -187,6 +187,8 @@ function selbsttest() {
                 // sechs Schritte eines Felds von 9–16 Zellen (die Mess-Wiese, Radeon 890M): der Gang je Schritt; in Schritt 3 EINE
                 // Ankunft der Front mit neu gemessenem Bett (fünf grobe Punkte, alle Gras), in Schritt 4 zwei
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
+                // in Schritt 4 fällt die Wiese über EINER Zelle (±½ Zelle, 1 024 m²): 98 Kacheln der Streu, 24 der Wiese stehen darin
+                ...{ kachel: [0, 0, 0, 122, 0, 0], kachelSoll: [0, 0, 0, 122, 0, 0], ringe: [0, 0, 0, 1, 0, 0], ringM2: [0, 0, 0, 1024, 0, 0] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
                 // die Herde auf dem gesetzten Bett (Gras, Last 0,092, im gesetzten Wind): das Vorrücken trägt R, die drei Starts der
@@ -595,7 +597,16 @@ function selbsttest() {
         ["die Marke der Zündung ist blind", (b) => b.simWecken.brand.zuendung.fill(0), /STUMPF: die Front erreichte 3 Zellen, die Sim-Linse sieht keine Zündung/],
         // DER GANG: was der Takt außerhalb der Zündung tut, je Zelle des Felds
         ["der Brand fegt die Welt", ["simWecken.brand.gang.3=", 4000], /BRAND-GANG: Schritt 4 kostete 4000 Einheiten Gang bei 16 Zellen des Felds/],
-        ["der Gang misst das Bett jeder Zelle je Schritt neu (16 Zellen × fünf Punkte)", ["simWecken.brand.gang.4=", 113 + 16 * 254], /BRAND-GANG: Schritt 5 kostete 4177 Einheiten Gang bei 16 Zellen/],
+        // DER FALL DER KACHELN (linse-brand-schritte 4): CI c8e95d38 und Radeon wortgleich — Schritt 4 168 Einheiten bei 9 Zellen,
+        // davon 122 Kacheln über EINER Zelle: der Gang trägt 46 (≤ 144), die Kacheln ihr eigenes Soll
+        ["der Fall der Wiese über einer Zelle in einem kleinen Feld (CI c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 46, 113, 36] }), null],
+        ["der Gang trägt die Kacheln ungetrennt (der Täter von c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 168, 113, 36], kachel: [0, 0, 0, 0, 0, 0] }), /BRAND-GANG: Schritt 4 kostete 168 Einheiten Gang bei 9 Zellen des Felds \(Soll ≤ 16 je Zelle\)/],
+        ["jede Kachel fällt zweimal",["simWecken.brand.kachel.3=", 244], /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 122 \(je Kachel im Rechteck der Asche eine\), 1 Neubau von 1024 m²/],
+        ["zwei Zellen fallen im selben Bild (der gebündelte Neubau)", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 2, 0, 0], kachel: [0, 0, 0, 244, 0, 0], kachelSoll: [0, 0, 0, 244, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 244 .*2 Neubauten/],
+        ["der Neubau fällt über ±1 Zelle", ["simWecken.brand.ringM2.3=", 4096], /KACHEL-FALL: .*1 Neubau von 4096 m² \(Soll ≤ 1 je Bild, ≤ 1024 m²/],
+        ["die Kacheln fallen ohne Asche", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 0, 0, 0], kachelSoll: [0, 0, 0, 0, 0, 0], ringM2: [0, 0, 0, 0, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 122 Kacheln fallen — Soll ≤ 0/],
+        ["die Kachel-Probe des Brands lief nicht", ["simWecken.brand.kachel"], /LEER: die Kachel-Probe des Brands/],
+        ["der Gang misst das Bett jeder Zelle je Schritt neu (16 Zellen × fünf Punkte)",["simWecken.brand.gang.4=", 113 + 16 * 254], /BRAND-GANG: Schritt 5 kostete 4177 Einheiten Gang bei 16 Zellen/],
         // DIE ZÜNDUNG: ihr Soll kommt aus dem, was die Welt neu maß — eine Zündung, die ihr Bett zweimal liest, hebt es nicht
         ["die Zündung liest ihr Bett zweimal", ["simWecken.brand.zuendung.2=", 395 + 254], /BRAND-ZÜNDUNG: Schritt 3 kostete 649 Einheiten Zündung für 1 Ankünfte und 1 neu gemessene Betten \(5 Bett-Punkte/],
         // die Zündung marschiert für Höhe und Gefälle dreimal durch ihre Säule (der Stand von 8e2d76d1, GPU-Probe 44943679460 und
@@ -3571,7 +3582,38 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         };
                         const lauf = async (n) => {
                             const h0 = r._brandEntfachen(MESS.x, MESS.z);
-                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
+                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], kachel: [], kachelSoll: [], ringe: [], ringM2: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
+                            // DER FALL DER KACHELN AN SEINEM MASS (linse-brand-schritte 4): die Asche malt je Bild EIN Viertel EINER
+                            // glühenden Zelle (`_brandMalen`), und je Zelle höchstens alle `BRAND.wieseS` fällt die Nah-Wiese und Nah-Streu
+                            // über dem Rechteck ihrer geänderten Viertel (`_nahRingNeuIn`, ±½ Zelle) — je Kachel im Rechteck EIN Ruf des
+                            // Fall-Lesers. Das ist Arbeit am Schirm, nie am Feld: sie wächst mit dem Rechteck, nicht mit den Zellen des
+                            // Brands (CI c8e95d38: 98 + 24 Kacheln bei 9 Zellen). Die Probe zählt je Bild die Neubauten, ihre Fläche und
+                            // die Kacheln, die in ihren Rechtecken stehen (vor dem Fall gezählt, an den Karten vorbei: keine Einheit)
+                            const [P0, KF] = [Object.getPrototypeOf(r), { malen: false, ringe: 0, m2: 0, kacheln: 0 }];
+                            const stehen = (map, K, x0, z0, x1, z1) => {
+                                let n = 0;
+                                if (map)
+                                    for (const key of Map.prototype.keys.call(map)) {
+                                        const [tx, tz] = key.split(",").map(Number);
+                                        if (!((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1)) n++;
+                                    }
+                                return n;
+                            };
+                            r._brandMalen = function (...a) {
+                                KF.malen = true;
+                                try {
+                                    return P0._brandMalen.apply(this, a);
+                                } finally {
+                                    KF.malen = false;
+                                }
+                            };
+                            r._nahRingNeuIn = function (x0, z0, x1, z1) {
+                                const [nw, ns] = [st.nahWiese, st.nahStreu];
+                                const soll = stehen(nw && nw.kacheln, AnazhRealm.NAH_WIESE.kachel, x0, z0, x1, z1) + stehen(ns && ns.kacheln, AnazhRealm.NAH_STREU.kachel, x0, z0, x1, z1);
+                                const n = P0._nahRingNeuIn.call(this, x0, z0, x1, z1);
+                                if (KF.malen && n > 0) (KF.ringe++, (KF.m2 = Math.max(KF.m2, (x1 - x0) * (z1 - z0))), (KF.kacheln += soll));
+                                return n;
+                            };
                             // das Gemessene, das der Herd schon trägt: sein Bett maß die Tat `_brandEntfachen` (die Linse zählt sie als Tat)
                             const gesehen = new Set((r._brandBett || new Map()).keys());
                             const haeufigste = (je, n) => Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, n);
@@ -3590,13 +3632,19 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 }
                             };
                             S.frame();
-                            const G = await brandGehen(n, () => bf.size, (vor, ganz) => {
-                                Z.zellen.push(Math.max(vor, bf.size));
+                            const G = await brandGehen(n, () => bf.size, (vor, ganz) => {                                Z.zellen.push(Math.max(vor, bf.size));
                                 // DER GANG UND DIE ZÜNDUNG, JE AN IHRER EINHEIT (front-brand): der Gang der Zellen (`brand`: alles unter
                                 // `_tickBrand` außerhalb der Zündung) und die Zündung (`zuendung`: alles unter `_brandZuenden`) je Bild
                                 // getrennt, je mit ihren häufigsten Lesern (die Linse nennt den Täter beim Namen); `einheiten` ihre Summe
                                 const bild = S.frame();
-                                Z.gang.push(bild.brand);
+                                // der Gang ohne den Fall der Kacheln (sein eigenes Maß: `kachel` gegen die Kacheln der Rechtecke)
+                                const kf = (bild.je.brand._nahStreuKachelFaellt | 0) + (bild.je.brand._nahWieseKachelFaellt | 0);
+                                Z.gang.push(bild.brand - kf);
+                                Z.kachel.push(kf);
+                                Z.kachelSoll.push(KF.kacheln);
+                                Z.ringe.push(KF.ringe);
+                                Z.ringM2.push(KF.m2);
+                                Object.assign(KF, { ringe: 0, m2: 0, kacheln: 0 });
                                 Z.zuendung.push(bild.zuendung);
                                 Z.einheiten.push(bild.brand + bild.zuendung);
                                 Z.rufe.push(haeufigste(bild.je.brand, 6));
@@ -3624,7 +3672,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 Z.punkte.push(punkte);
                                 Z.kahl.push(kahl);
                                 if (ganz) spruenge();
-                            });
+                            }).finally(() => (delete r._brandMalen, delete r._nahRingNeuIn));
                             const [kopf, alle] = [new Map(), [...H.values()]];
                             for (const h of alle) if (!(kopf.get(h.q)?.v >= h.v)) kopf.set(h.q, h);
                             const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
@@ -3886,6 +3934,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                               einheiten: Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1))),
                               gang: Math.max(0, ...w.gang.map((e, i) => +(e / w.zellen[i]).toFixed(1))),
                               zuendung: Math.max(0, ...w.zuendung),
+                              ...{ kachel: Math.max(0, ...(w.kachel || [])), kachelSoll: Math.max(0, ...(w.kachelSoll || [])), ringe: Math.max(0, ...(w.ringe || [])), ringM2: Math.max(0, ...(w.ringM2 || [])) },
                               ...Object.fromEntries(["ankuenfte", "betten", "masken", "punkte", "kahl"].map((k) => [k, w[k].reduce((a, b) => a + b, 0)])),
                               ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, nachher: undefined },
                               amSoll: STAND.brandAmSoll(w),

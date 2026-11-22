@@ -447,6 +447,13 @@ const BRAND_BETT = 160;
 const BRAND_PUNKT = 56;
 const BRAND_KAHL = 72;
 const brandGangSoll = (Z, k) => BRAND_GANG * Z.zellen[k];
+// DER FALL DER KACHELN (linse-brand-schritte 4): der Gang je Zelle (BRAND_GANG) trägt ihn nicht — er ist die Änderung am Schirm,
+// gemessen an seiner Quelle (`_brandMalen` → `_nahRingNeuIn`): je Bild höchstens EIN Rechteck der Asche über ±½ Zelle
+// (2 × 16 m)², je Kachel darin EIN Ruf (`_nahStreuKachelFaellt`, `_nahWieseKachelFaellt`). CI c8e95d38 und Radeon wortgleich:
+// 98 + 24 Kacheln in EINEM Rechteck, im Gang lagen sie bei 9 Zellen über 144
+const BRAND_KACHEL = 1;
+const BRAND_RING_M2 = 1024;
+const brandKachelSoll = (Z, k) => BRAND_KACHEL * (Z.kachelSoll[k] | 0);
 const brandZuendSoll = (Z, k) =>
     BRAND_ANKUNFT * (Z.ankuenfte[k] | 0) + BRAND_BETT * (Z.betten[k] | 0) + BRAND_PUNKT * (Z.punkte[k] | 0) + BRAND_KAHL * (Z.kahl[k] | 0);
 const brandLeser = (je, n = 6) => (je ? simJe({ je: je.slice(0, n) }) : "");
@@ -463,6 +470,7 @@ function brandAmSoll(Z) {
     };
     return {
         gang: eng(Z.gang, (k) => brandGangSoll(Z, k), (k) => ({ zellen: Z.zellen[k], leser: brandLeser(Z.rufe && Z.rufe[k]) })),
+        kachel: Z.kachel && eng(Z.kachel, (k) => Math.max(1, brandKachelSoll(Z, k)), (k) => ({ ringe: Z.ringe[k], m2: Z.ringM2[k] })),
         zuendung: eng(Z.zuendung, (k) => brandZuendSoll(Z, k), (k) => ({ ankuenfte: Z.ankuenfte[k], betten: Z.betten[k], punkte: Z.punkte[k], kahl: Z.kahl[k], masken: Z.masken[k], leser: brandLeser(Z.rufeZ && Z.rufeZ[k]) })), // prettier-ignore
     };
 }
@@ -634,6 +642,14 @@ function simUrteil(b, v) {
         else if (!(summe(Z.zuendung) > 0)) v.push(`STUMPF: die Front erreichte ${an} Zellen, die Sim-Linse sieht keine Zündung (die Marke \`zuendung\` unter ${SIMS.zuendung[0].join(" · ")})`);
         const i = Z.gang.findIndex((e, k) => e > brandGangSoll(Z, k));
         if (i >= 0) v.push(`BRAND-GANG: Schritt ${i + 1} kostete ${Z.gang[i]} Einheiten Gang bei ${Z.zellen[i]} Zellen des Felds (Soll ≤ ${BRAND_GANG} je Zelle) — seine Leser: ${brandLeser(Z.rufe && Z.rufe[i])}`);
+        // DER FALL DER KACHELN an seinem Maß (linse-brand-schritte 4): je Bild höchstens EIN Neubau über ±½ Zelle (`_brandMalen` malt
+        // EINE Zelle je Bild), je Kachel, die in seinem Rechteck steht, EIN Ruf des Fall-Lesers — nie je Zelle des Felds
+        if (!Z.kachel) v.push("LEER: die Kachel-Probe des Brands lief nicht (der Fall der Wiese unter der Asche ungezählt)");
+        else {
+            const k = Z.kachel.findIndex((e, s) => e > brandKachelSoll(Z, s) || Z.ringe[s] > 1 || Z.ringM2[s] > BRAND_RING_M2);
+            if (k >= 0)
+                v.push(`KACHEL-FALL: Schritt ${k + 1} ließ ${Z.kachel[k]} Kacheln fallen — Soll ≤ ${brandKachelSoll(Z, k)} (je Kachel im Rechteck der Asche eine), ${Z.ringe[k]} ${Z.ringe[k] === 1 ? "Neubau" : "Neubauten"} von ${Z.ringM2[k]} m² (Soll ≤ 1 je Bild, ≤ ${BRAND_RING_M2} m² = ±½ Zelle) — seine Leser: ${brandLeser(Z.rufe && Z.rufe[k])}`);
+        }
         const j = Z.zuendung.findIndex((e, k) => e > brandZuendSoll(Z, k));
         if (j >= 0)
             v.push(`BRAND-ZÜNDUNG: Schritt ${j + 1} kostete ${Z.zuendung[j]} Einheiten Zündung für ${Z.ankuenfte[j]} Ankünfte und ${Z.betten[j]} neu gemessene Betten (${Z.punkte[j]} Bett-Punkte, davon bis ${Z.kahl[j]} kahl, ${Z.masken[j]} Masken; ${(Z.lesungen || [])[j] | 0} Stoff-Lesungen) — ` +
