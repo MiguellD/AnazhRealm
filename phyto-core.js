@@ -7170,15 +7170,15 @@
     }
     // DER ACKER UND SEINE FRUCHT (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2, additiv): ein bestellter Acker trägt die Spur
     // der Arbeit und den Wuchs der Kulturpflanze als FUNKTION der Tage seit seiner Saat — kein Zustand, keine Liste. `furche`: die
-    // Kämme des Pflugs quer zur Zugrichtung gereiht (Abstand der Furchen eines Beetpflugs 0,25–0,35 m, Kamm 8–15 cm über der
-    // Sohle); `frucht`: die Kulturpflanze (Sommerweizen, Mitteleuropa) gedrillt in Reihen auf den Kämmen, ihr Wuchs über die
+    // Kämme des Pflugs quer zur Zugrichtung gereiht (Abstand der Furchen eines Beetpflugs 0,25–0,35 m, der frisch gewendete Kamm
+    // 15–25 cm über der Sohle); `frucht`: die Kulturpflanze (Sommerweizen, Mitteleuropa) gedrillt in Reihen auf den Kämmen, ihr Wuchs über die
     // Stützen [Tag, Höhe m, Reife 0 grün … 1 gelb, Deckung der Reihe] nach dem BBCH-Gang (Auflaufen BBCH 10 nach ~12 Tagen,
     // Bestockung 21–29 bis ~45, Schossen 30–39 bis ~75, Ähre und Blüte 51–69 bis ~95, Milch- und Teigreife 71–87 bis ~125,
     // Vollreife 89 ~135), am `ernteTag` gemäht: dann steht die Stoppel bis zur nächsten Saat. `saatPhase` ist die Phase des Jahrs,
     // in der das Dorf sät (SAISON_GESETZ: 0 Frühling) — wer selbst bestellt, setzt die Saat seiner Stunde. Farben sRGB (der
     // Wirt linearisiert). Leser: der Wirt (`_ackerStand`, `_ackerKoerperTakt`) und gate:koerper-kern (die Kurve).
     var ACKER_GESETZ = Object.freeze({
-        furche: Object.freeze({ abstandM: 0.3, hoeheM: 0.1, breiteM: 0.3 }),
+        furche: Object.freeze({ abstandM: 0.3, hoeheM: 0.2, breiteM: 0.3 }),
         frucht: Object.freeze({
             art: "weizen",
             stuetzen: Object.freeze([

@@ -2888,6 +2888,17 @@ class AnazhRealm_siedlung_wege {
         return null;
     }
 
+    // DER GRUND DES ACKERS (acker-kette 2): trägt (x, z) den gemalten Acker ab der halben Deckung (`_wegeBelagAt` Kanal acker —
+    // dieselben Bytes, die der Boden-Stoff als feuchte Erde zeichnet, `ACKER_KOERPER.wieseWeicht`)? Der Acker ist ein Grundriss der
+    // Natur-Wand: die Nah-Wiese (`_wieseGrund`, die Ferne mit ihr) und die Nah-Streu (`_nahStreuKachel`) tragen auf ihm nichts,
+    // die Würfe des Felds weichen ihm schon über `_imGrundriss` („weg"). Fällt der Acker aus der Karte, wächst beides zurück
+    // (dieselbe Räumung wie jede Fläche, `_nahWieseNeuIn`). Bis hier standen 224 Büschel und 3 Pflanzen im Acker der Station.
+    _ackerGrund(x, z) {
+        const B = this._ackerGrundAus || (this._ackerGrundAus = {});
+        this._wegeBelagAt(x, z, B);
+        return B.acker >= AnazhRealm.ACKER_KOERPER.wieseWeicht;
+    }
+
     // DAS BESTELLEN (mensch.nahrung hand S2, das Verb der Klick-Kette nach der Mühe des Grabens, kampf `tryMouseBreak`): ein Hieb
     // des Geräts, das den Boden öffnet, pflügt und sät am Acker unter dem Fadenkreuz ein Stück (`ACKER_KOERPER` stueckM × bahnM)
     // — seine Reihen laufen in der Zugrichtung (die Achse des Ackers, die dem Blick am nächsten liegt). Die Tat „bestellen"
@@ -2917,10 +2928,10 @@ class AnazhRealm_siedlung_wege {
 
     // DER KÖRPER DES ACKERS (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2; das Gesetz: phyto-core ACKER_GESETZ · ackerStand):
     // über dem gemalten Grund jedes nahen Ackers (`state.aecker`, im Kreis `ACKER_KOERPER.nahM` um das Auge) die Kämme des Pflugs
-    // in Reihen, gefärbt von der Deckung der Frucht (der Halm selbst steht noch nicht) — im Stand der Tage seit seiner Saat: der Acker des Dorfs sät zur Phase des Jahrs
+    // in Reihen aus der Erde des Ackers, auf ihnen die Halme der Frucht nach ihrer Höhe und Deckung — im Stand der Tage seit seiner Saat: der Acker des Dorfs sät zur Phase des Jahrs
     // (`ackerTage`, die EINE Uhr des Jahrs `seasonPhase`), jedes Stück, das eine Hand bestellt hat (die Tat „bestellen",
-    // `_ackerBestellen`), trägt den Stand seit SEINER Stunde und seine Reihen in SEINER Zugrichtung. Gezeichnet in EINEM Pool der
-    // Kiste der Wege (`_kistenPool`: ein Stoff, ein Draw, die Farbe je Instanz) mit dem Prisma des Kamms als Form; je Strecke
+    // `_ackerBestellen`), trägt den Stand seit SEINER Stunde und seine Reihen in SEINER Zugrichtung. Gezeichnet in ZWEI Pools der
+    // Kiste der Wege (`_kistenPool`: ein Stoff, je Pool ein Draw, die Farbe je Instanz) — das Prisma des Kamms, die Halme der Reihe; je Strecke
     // `segM` ein Kamm und eine Reihe auf dem gezeichneten Boden (`_bodenSichtAt`, Lehre 22: wo er noch nicht steht, wartet die
     // Strecke auf den nächsten Takt). Neu gelegt nur, wenn sich das Bild ändert (die nahen Äcker, der Stand auf `stufeTage`, die
     // Stücke): die Kosten tragen der Schirm und die Änderung, nie die Welt (Gebot 7). Bis hier lag jeder Acker als brauner
@@ -2944,7 +2955,9 @@ class AnazhRealm_siedlung_wege {
         const taten = this._tatIndex().bestellen;
         const nah = [...st.aecker.values()].filter((a) => Math.hypot(a.x - p.x, a.z - p.z) < AK.nahM + Math.max(a.ex, a.ez));
         const stufe = (d) => Math.floor(d / AK.stufeTage);
-        let key = nah.map((a) => AnazhRealm._ackerSchluessel(a.x, a.z)).join(";") + "|" + stufe(dorf);
+        // die Zelle des Auges (`halmSchrittM`): der Kreis der Halme wandert mit ihm, in Schritten — nie je Bild
+        const zelle = Math.round(p.x / AK.halmSchrittM) + ":" + Math.round(p.z / AK.halmSchrittM);
+        let key = nah.map((a) => AnazhRealm._ackerSchluessel(a.x, a.z)).join(";") + "|" + stufe(dorf) + "|" + zelle;
         for (const q of taten) key += "," + q.acker + ":" + stufe((h - q.h) / 24);
         if (key === K.schluessel && !K.fehlt) return;
         K.schluessel = key;
@@ -2952,7 +2965,13 @@ class AnazhRealm_siedlung_wege {
         K.je.clear();
         const M = [];
         const C = [];
-        const boden = AnazhRealm.BODEN_FARBE.dirt; // die gewendete Erde: die Erde der Studio-Palette (PORTAL_GROUND)
+        const H = [];
+        const HC = [];
+        // DIE FURCHE IST ERDE (acker-kette 2): der Kamm trägt den Stoff des gemalten Ackers — die feuchte, frisch gewendete Erde
+        // der Palette (`BODEN_FARBE.wet`, dieselbe Farbe, die der Boden-Stoff im Kanal Acker mischt, `_wegeBodenFarbe`), je
+        // Strecke um `streuErde` gestreut. Bis acker-kette 1 färbte die Frucht den Kamm (orange Dreiecke unter der Wiese).
+        const erde = AnazhRealm.BODEN_FARBE.wet;
+        const nahHalm = (ax, az) => Math.hypot(ax - p.x, az - p.z) < AK.halmNahM;
         // EINE Strecke: ein Kamm von a nach b (Welt), darauf die Reihe der Frucht im Stand S (null: brach gepflügt)
         const strecke = (ax, az, bx, bz, S, z) => {
             const ya = this._bodenSichtAt(ax, az);
@@ -2961,19 +2980,20 @@ class AnazhRealm_siedlung_wege {
             const [dx, dz] = [bx - ax, bz - az];
             const len = Math.hypot(dx, dz);
             const ziel = { ax, az, bx, bz, ya, yb, yaw: Math.atan2(dx, dz), pitch: -Math.atan2(yb - ya, len), len };
-            // der Kamm (seine Sohle `sohleM` im Grund: die Strecke folgt der Sehne, der Boden dazwischen nicht); die Frucht auf ihm
-            // färbt ihn nach ihrer Deckung (der Stand des Gesetzes: grün im Schossen, gelb zur Reife, die Stoppel fahl) — als Halm
-            // steht sie nicht (ein Prisma je Reihe zeichnete eine Wand, kein Feld: Bild hand_2-S2-nach am e71adb10)
+            // der Kamm (seine Sohle `sohleM` im Grund: die Strecke folgt der Sehne, der Boden dazwischen nicht)
             M.push([ziel, F.breiteM, F.hoeheM + AK.sohleM, -AK.sohleM]);
-            let c = boden;
-            if (S && S.deckung > 0) {
-                const lin = AnazhRealm._srgbHexLinear(S.farbe);
-                const k = 1 + (AnazhRealm._ackerZahl(ax, az) - 0.5) * AK.streuFarbe;
-                c = boden.map((b, i) => b + (lin[i] * k - b) * S.deckung);
-                z.frucht++;
-            }
-            C.push(c);
+            const k = 1 + (AnazhRealm._ackerZahl(ax, az) - 0.5) * AK.streuErde;
+            C.push(erde.map((b) => b * k));
             z.kaemme++;
+            // DIE FRUCHT STEHT AUF DEM KAMM (frucht S1): die Halme der Reihe (`_ackerHalme`) auf seinem First, so hoch wie der
+            // Stand des Gesetzes (`hoeheM`), so breit wie ihre Deckung (`deckung` × Abstand der Furchen), in seiner Farbe (grün im
+            // Schossen, gelb zur Reife, die Stoppel fahl) — im Kreis `halmNahM` um das Auge; dahinter trägt der Kamm allein
+            if (!S || !(S.deckung > 0) || !(S.hoeheM > 0) || !nahHalm(ax, az)) return;
+            const lin = AnazhRealm._srgbHexLinear(S.farbe);
+            const kf = 1 + (AnazhRealm._ackerZahl(bx, bz) - 0.5) * AK.streuFarbe;
+            H.push([ziel, F.abstandM * S.deckung, S.hoeheM, F.hoeheM * AK.firstAnteil]);
+            HC.push(lin.map((b) => b * kf));
+            z.frucht++;
         };
         for (const a of nah) {
             const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
@@ -3029,17 +3049,25 @@ class AnazhRealm_siedlung_wege {
             z.stand = P.ackerStand(dorf);
             K.je.set(ak, z);
         }
-        // der Pool wächst in Zweier-Potenzen (EIN Draw; die alte Hülle geht durch den Abschied der Instanzen)
-        if (M.length > K.cap || !K.mesh) {
+        // ZWEI Pools derselben Kiste (EIN Stoff, je Pool EIN Draw): die Kämme (`_ackerPrisma`) und die Halme (`_ackerHalme`)
+        K.n = this._ackerPoolFuellen(K, "mesh", "cap", "siedlung-acker", AnazhRealm._ackerPrisma(), M, C);
+        K.halme = this._ackerPoolFuellen(K, "halmMesh", "halmCap", "siedlung-frucht", AnazhRealm._ackerHalme(), H, HC);
+    }
+    // EIN Pool des Ackers (`_ackerKoerperTakt`): wächst in Zweier-Potenzen (die alte Hülle geht durch den Abschied der
+    // Instanzen), je Strecke eine Instanz (Mitte auf der Sehne + `sockel`, gedreht längs der Strecke, Maß breite × höhe × Länge)
+    _ackerPoolFuellen(K, feld, capFeld, name, geo, M, C) {
+        const st = this.state;
+        if (M.length > (K[capFeld] || 0) || !K[feld]) {
             const cap = Math.max(1024, 2 ** Math.ceil(Math.log2(Math.max(1, M.length))));
-            if (K.mesh) {
-                st.scene.remove(K.mesh);
-                this._instanzAbschied(K.mesh);
+            if (K[feld]) {
+                st.scene.remove(K[feld]);
+                this._instanzAbschied(K[feld]);
             }
-            K.mesh = this._kistenPool("siedlung-acker", cap, AnazhRealm._ackerPrisma());
-            st.scene.add(K.mesh);
-            K.cap = cap;
+            K[feld] = this._kistenPool(name, cap, geo);
+            st.scene.add(K[feld]);
+            K[capFeld] = cap;
         }
+        const mesh = K[feld];
         const m = this._stlWegeTmpM || (this._stlWegeTmpM = new THREE.Matrix4());
         const q = this._stlWegeTmpQ || (this._stlWegeTmpQ = new THREE.Quaternion());
         const e = this._stlWegeTmpE || (this._stlWegeTmpE = new THREE.Euler());
@@ -3050,13 +3078,13 @@ class AnazhRealm_siedlung_wege {
             e.set(g.pitch, g.yaw, 0, "YXZ");
             q.setFromEuler(e);
             m.compose(v.set((g.ax + g.bx) / 2, (g.ya + g.yb) / 2 + sockel, (g.az + g.bz) / 2), q, sc.set(breite, hoehe, g.len));
-            K.mesh.setMatrixAt(i, m);
-            K.mesh.setColorAt(i, col.setRGB(C[i][0], C[i][1], C[i][2]));
+            mesh.setMatrixAt(i, m);
+            mesh.setColorAt(i, col.setRGB(C[i][0], C[i][1], C[i][2]));
         });
-        K.n = M.length;
-        AnazhRealm._instanzZahl(K.mesh, K.n);
-        K.mesh.instanceMatrix.needsUpdate = true;
-        if (K.mesh.instanceColor) K.mesh.instanceColor.needsUpdate = true;
+        AnazhRealm._instanzZahl(mesh, M.length);
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        return M.length;
     }
     // die Zahl einer Strecke in [0, 1) (rein, aus ihrer Lage: dieselbe Strecke trägt bei jedem Bau denselben Ton)
     static _ackerZahl(x, z) {
@@ -3096,14 +3124,68 @@ class AnazhRealm_siedlung_wege {
         g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
         return (AnazhRealm._ackerPrismaGeo = g);
     }
+    // DIE HALME EINER REIHE (die Form des Frucht-Pools): `ACKER_KOERPER.halm` — je Strecke `bueschel` Büschel längs z (±0,5, mit
+    // Zitter), je Büschel `blaetter` Blätter, jedes ein spitzes Dreieck von der Sohle y 0 bis zur Spitze y (`spitze`…1), geneigt um
+    // `neigM`, beidseitig (zwei Windungen, die Normale zum Himmel gekippt wie die Halme der Wiese). Gebaut im Maß der nominalen
+    // Strecke (Abstand der Furchen × `segM`, in Metern), damit ein Blatt nach der Skala der Instanz seine Breite in Metern hält.
+    static _ackerHalme() {
+        if (AnazhRealm._ackerHalmGeo) return AnazhRealm._ackerHalmGeo;
+        const AK = AnazhRealm.ACKER_KOERPER;
+        const HA = AK.halm;
+        const [sx, sz] = [globalThis.__phytoCore.ACKER_GESETZ.furche.abstandM, AK.segM];
+        const pos = [];
+        const nor = [];
+        const uv = [];
+        let s = 0x9e3779b9;
+        const zuf = () => {
+            s = Math.imul(s ^ (s >>> 15), 2246822507) >>> 0;
+            s = Math.imul(s ^ (s >>> 13), 3266489909) >>> 0;
+            return (s >>> 0) / 4294967296;
+        };
+        const ecke = (p, n, v) => {
+            pos.push(p[0] / sx, p[1], p[2] / sz);
+            nor.push(...n);
+            uv.push(v[0], v[1]);
+        };
+        for (let b = 0; b < HA.bueschel; b++) {
+            const bx = (zuf() - 0.5) * sx * 0.7;
+            const bz = ((b + 0.25 + zuf() * 0.5) / HA.bueschel - 0.5) * sz;
+            for (let k = 0; k < HA.blaetter; k++) {
+                const th = ((k + zuf() * 0.6) / HA.blaetter) * Math.PI;
+                const [ux, uz] = [Math.cos(th), Math.sin(th)];
+                const ph = zuf() * Math.PI * 2;
+                const nm = HA.neigM * (0.4 + zuf() * 0.6);
+                const top = HA.spitze + (1 - HA.spitze) * zuf();
+                const L = [bx - ux * HA.breitM, 0, bz - uz * HA.breitM];
+                const R = [bx + ux * HA.breitM, 0, bz + uz * HA.breitM];
+                const T = [bx + Math.cos(ph) * nm, top, bz + Math.sin(ph) * nm];
+                // die Normale der Blatt-Ebene (quer zu u), zum Himmel gekippt — je Seite gespiegelt
+                for (const sg of [1, -1]) {
+                    const [nx, ny, nz] = [-uz * sg * HA.kipp, 1, ux * sg * HA.kipp];
+                    const l = Math.hypot(nx, ny, nz);
+                    const n = [nx / l, ny / l, nz / l];
+                    const [a, c] = sg > 0 ? [L, R] : [R, L];
+                    ecke(a, n, [0, 0]);
+                    ecke(c, n, [1, 0]);
+                    ecke(T, n, [0.5, 1]);
+                }
+            }
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+        return (AnazhRealm._ackerHalmGeo = g);
+    }
 
     _stlWegeDispose() {
         for (const feld of ["stlZaun", "stlMauer", "ackerKoerper"]) {
             const P = this.state[feld];
-            if (P && P.mesh) {
-                if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-                this._instanzAbschied(P.mesh);
-            }
+            for (const mesh of P ? [P.mesh, P.halmMesh] : [])
+                if (mesh) {
+                    if (mesh.parent) mesh.parent.remove(mesh);
+                    this._instanzAbschied(mesh);
+                }
             this.state[feld] = null;
         }
         if (this.state.aecker) this.state.aecker.clear(); // die Äcker gehören der alten Welt
@@ -3233,7 +3315,11 @@ AnazhRealm.STADT_FERNE = Object.freeze({
 // DER KÖRPER DES ACKERS (`_ackerKoerperTakt`; das Maß der Furche und der Frucht trägt phyto-core ACKER_GESETZ): der Takt des
 // Neulegens in Bild-Sekunden, der Kreis um das Auge, die Länge einer Strecke, die Sohle des Kamms im Grund, die Stufe des
 // Stands in Tagen (darunter legt nichts neu), das Stück einer Hand (längs seiner Reihen · quer: vier Furchen) und die Streuung
-// der Farbe je Reihe.
+// der Farbe je Reihe. acker-kette 2: `streuErde` die Streuung der Erde je Kamm; `wieseWeicht` die Deckung des gemalten Ackers, ab
+// der Wiese und Nah-Streu ihm weichen (`_ackerGrund`, die halbe Deckung wie die Kante des Pflasters); die Halme der Frucht stehen
+// im Kreis `halmNahM` um das Auge (er wandert in Schritten `halmSchrittM`), ihr Fuß bei `firstAnteil` der Kamm-Höhe; `halm` die
+// Form einer Reihe je Strecke (`_ackerHalme`: Büschel, Blätter je Büschel, halbe Breite und Neigung des Blatts in Metern, die
+// kürzeste Spitze relativ, die Kippung der Normale zum Himmel) — 60 Dreiecke je Strecke.
 AnazhRealm.ACKER_KOERPER = Object.freeze({
     taktS: 0.5,
     nahM: 90,
@@ -3243,6 +3329,12 @@ AnazhRealm.ACKER_KOERPER = Object.freeze({
     stueckM: 3,
     bahnM: 1.2,
     streuFarbe: 0.16,
+    streuErde: 0.12,
+    wieseWeicht: 0.5,
+    halmNahM: 45,
+    halmSchrittM: 8,
+    firstAnteil: 0.8,
+    halm: Object.freeze({ bueschel: 10, blaetter: 3, breitM: 0.012, neigM: 0.08, spitze: 0.65, kipp: 0.6 }),
 });
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),
