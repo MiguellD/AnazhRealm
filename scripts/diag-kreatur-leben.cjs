@@ -2270,11 +2270,13 @@ async function lebenBuehnen() {
     // ein Tier durch `_bestandStirbt`: der Nährstoff (`_naehrstoffAt`, der EINE Leser) seiner 16-m-Zelle vorher ↔ nachher, die
     // Nachbar-Zelle ↔ und derselbe Tod ein zweites Mal (nachgeholt) — er düngt nicht doppelt. (B) der Gau: die nahen Reviere
     // lesen ihre Spur aus dem Faden (`_gauBis` → `_gauAntwort`, der Ruf des Spiels); gezählt: die Tode der Spur, deren Leichnam
-    // noch liegt, davon gedüngt (Taten „aas“ mit der Kennung des Gaus), der Nährstoff je Kopf an den Ankern, und dieselbe
-    // Antwort ein zweites Mal düngt nicht. Die Taten der Welt, ihr Index und das Speichern ruhen in der Bühne.
+    // noch liegt, davon gedüngt (Leichname mit der Kennung des Gaus im Feld des Lebens, `state.aasFeld`), der Nährstoff je Kopf
+    // an den Ankern, und dieselbe Antwort ein zweites Mal düngt nicht. Kein Tod schreibt eine Tat (`worldMeta.taten`: ein
+    // Welt-Prozess ist Funktion der Zeit, kein Eintrag im Stand des Spielers). Die Taten der Welt, ihr Index, das Feld der
+    // Leichname und das Speichern ruhen in der Bühne.
     await buehne("zerfall", async () => {
         const wm = s.worldMeta;
-        aufraeumen.push(leihe(wm, { taten: [] }), leihe(r, { _tatIdx: null, _sukzessionNeu: null, _nachwuchsFaellig: Infinity })); // prettier-ignore
+        aufraeumen.push(leihe(wm, { taten: [] }), leihe(s, { aasFeld: new Map() }), leihe(r, { _tatIdx: null, _sukzessionNeu: null, _nachwuchsFaellig: Infinity })); // prettier-ignore
         decke("_scheduleEditSave", () => () => {});
         decke("_nahStreuTat", () => () => {});
         decke("_weltRegt", () => () => {});
@@ -2326,7 +2328,9 @@ async function lebenBuehnen() {
         }
         const G = { reviere: 0, takte: 0, tode: 0, lebend: 0, gedungt: 0, naehr: 0, doppel: 0, ms: 0 };
         const stunden = A.TAT_NARBE.aas ? A.TAT_NARBE.aas.stunden : A.TAT_NARBE.riss.stunden;
-        const aasVon = (kopf) => (wm.taten || []).filter((a) => a.tat === "aas" && String(a.id).startsWith(kopf)).length;
+        // je Zelle des Felds der Leichname die Kennungen des Kopfs
+        const aasZellen = (kopf) => [...(s.aasFeld || [])].filter(([, e]) => e.ids.some(([id]) => id.startsWith(kopf)));
+        const aasVon = (kopf) => aasZellen(kopf).reduce((n, [, e]) => n + e.ids.filter(([id]) => id.startsWith(kopf)).length, 0);
         for (const { o, lesen } of je.values()) {
             lesen.sort((p, q) => p - q);
             const takt = Math.floor(s.spielZeit / T) + 300; // der Gau eine Stunde voraus: die Spur trägt die Tode ab dem Takt der Altlast
@@ -2351,7 +2355,7 @@ async function lebenBuehnen() {
             r._gauAntwort(b, a, lesen.join(), 0);
             G.doppel += aasVon(kopf) - n1;
             G.gedungt += n1;
-            const zellen = new Set((wm.taten || []).filter((t) => t.tat === "aas" && String(t.id).startsWith(kopf)).map((t) => r._lifeCellKey(t.x, t.z))); // prettier-ignore
+            const zellen = new Set(aasZellen(kopf).map(([k]) => k));
             G.zellen = (G.zellen || 0) + zellen.size;
             for (const c of zellen) {
                 const [cx, cz] = c.split(",").map(Number);
@@ -2363,6 +2367,7 @@ async function lebenBuehnen() {
         G.fahrtMs = Math.round(performance.now() - gz0);
         G.naehr = +G.naehr.toFixed(4);
         z.gau = G;
+        z.taten = (wm.taten || []).length; // kein Tod schreibt eine Tat
         return z;
     });
 }
@@ -2394,6 +2399,7 @@ function lebenUrteil(name, z, soll) {
             `Gau-Tode ohne Aas: ${G.gedungt} gedüngt von ${G.lebend} Toten, deren Leichnam liegt (Spur ${G.tode} Tode), Nährstoff je Kopf ${G.naehrJeKopf}`
         );
         soll(G.doppel === 0, `dieselbe Spur ein zweites Mal düngt ${G.doppel} Köpfe doppelt`);
+        soll(z.taten === 0, `die Tode schreiben ${z.taten} Taten in worldMeta.taten — ein Welt-Prozess ist keine Tat des Spielers`);
     }
     if (name === "gau") {
         const B = GAU_B4;

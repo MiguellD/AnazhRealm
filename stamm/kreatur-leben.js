@@ -2509,7 +2509,7 @@ class AnazhRealm_kreatur_leben {
     // EIN TIER DES BESTANDS STIRBT: es verlässt das Verzeichnis jetzt; der Tod am Hunger und am Alter nährt das Feld an seinem
     // Anker (dieselbe Gabe, ob gezeichnet oder nicht), der Riss eines Ungezeichneten prägt seine Furcht dort ein. Ist es
     // gezeichnet, fällt sein Leib nach dem Gesetz aller Regionen (`tode`, `_bestandTode`). JEDER Tod — Riss, Hunger, Alter, im
-    // Gehege wie frei — legt seinen Leichnam als Tat in den Boden seines Ankers (`_aasTat`, oeko.zerfall#1).
+    // Gehege wie frei — legt seinen Leichnam in den Boden seines Ankers (`_aasTat`, oeko.zerfall#1).
     _bestandStirbt(R, t, ursache, tode, jaeger) {
         R.tiere.splice(R.tiere.indexOf(t), 1);
         this._aasTat(t, R.t);
@@ -2520,19 +2520,38 @@ class AnazhRealm_kreatur_leben {
         if (t.leib) tode.push({ R, t, ursache, jaeger });
         else if (ursache === "jagd") this._depositEmotion(t.x, t.z, AnazhRealm._furchtGesetz().F.riss, R.t);
     }
-    // DER TOD DÜNGT (oeko.zerfall#1, stoffe.K5#2): der Leichnam eines Tiers ist die Tat „aas“ an seinem Anker zur Welt-Stunde
-    // seines Takts (`uhr`) — der EINE Schreiber des Nährstoffs (`_tatSchreiben`), der EINE Leser (`_naehrstoffAt` → `_wuchsAt`:
-    // die Narben der Zelle heilen schneller, `_tatDauer`). Derselbe Tod ein zweites Mal (eine ferne Region holt ihre Stunde nach,
-    // ein Reload, der Mitspieler am selben Takt) schreibt nicht: die Tat trägt die Kennung des Tiers; ein Tod, dessen Leichnam
-    // auch im vollen Wuchs schon vergangen wäre (Wuchs 1: die Dauer ist `stunden`), schreibt nicht — ohne den Wuchs des Orts zu
-    // fragen. Bis hier nährte nur der Tod von Spieler-Hand (`riss`) den Boden.
+    // DER TOD DÜNGT (oeko.zerfall#1, stoffe.K5#2): der Leichnam eines Tiers gibt der 16-m-Zelle seines Ankers `TAT_NARBE.aas.naehr`
+    // zur Welt-Stunde seines Takts (`uhr`), und er zerfällt als FUNKTION der Zeit (e^(−Δh/τ), τ ein Drittel seiner `stunden`).
+    // EIN Wert je Zelle im Leben der Welt (`state.aasFeld`: Zelle → Betrag zur Stunde `h` und die Kennungen der Leichname, die
+    // noch liegen) — ein Welt-Prozess ist keine Tat des Spielers: er schreibt nie in `worldMeta.taten`, weckt die Ruhe nicht und
+    // reist im Stand des Lebens (`_lebenImStand`). Bis oeko-kreislauf 4 eine Tat „aas“ je Tod: 1 km Gang ohne Edit +11,4 kB
+    // worldMeta.taten, gate:stand-takt RUHE-SIM der Wuchs nach jedem Tod in der Ruhe. Derselbe Tod ein zweites Mal (eine Spur, die
+    // zweimal kommt, ein Reload) düngt nicht; ein Tod, dessen Leichnam schon vergangen wäre, düngt nicht.
     _aasTat(t, uhr) {
-        const I = this._tatIndex();
-        const je = I.n ? I.je.get(this._lifeCellKey(t.x, t.z)) : null;
-        if (je && je.some((a) => a.tat === "aas" && a.id === t.id)) return null;
-        const h = Math.round(this._weltStunde(uhr) * 1e4) / 1e4;
-        if (h + AnazhRealm.TAT_NARBE.aas.stunden <= this._weltStunde()) return null;
-        return this._tatSchreiben("aas", t.x, t.z, { h, id: t.id });
+        const A = AnazhRealm.TAT_NARBE.aas;
+        const [h, jetzt] = [this._weltStunde(uhr), this._weltStunde()];
+        if (h + A.stunden <= jetzt) return null;
+        const F = this.state.aasFeld || (this.state.aasFeld = new Map());
+        const k = this._lifeCellKey(t.x, t.z);
+        const z = F.get(k);
+        if (z && z.ids.some(([id]) => id === t.id)) return null;
+        const H = z ? Math.max(h, z.h) : h;
+        const tau = A.stunden / 3;
+        const e = {
+            n: (z ? z.n * Math.exp(-(H - z.h) / tau) : 0) + A.naehr * Math.exp(-(H - h) / tau),
+            h: H,
+            ids: (z ? z.ids.filter(([, hi]) => hi + A.stunden > jetzt) : []).concat([[t.id, h]]),
+        };
+        F.set(k, e);
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
+        return e;
+    }
+    // Der Nährstoff der Leichname an (x,z) zur Welt-Stunde `h`: der Betrag der Zelle, zerfallen seit ihrer Stunde (der Leser
+    // `_naehrstoffAt`).
+    _aasNaehrAt(x, z, h = this._weltStunde()) {
+        const F = this.state.aasFeld;
+        const e = F && F.size ? F.get(this._lifeCellKey(x, z)) : null;
+        return e ? e.n * Math.exp(-Math.max(0, h - e.h) / (AnazhRealm.TAT_NARBE.aas.stunden / 3)) : 0;
     }
 
     // DER FALL DER GEZEICHNETEN, nach dem Gesetz aller Regionen eines Takts (kein Gefühl eines Falls färbt eine Wahl desselben
