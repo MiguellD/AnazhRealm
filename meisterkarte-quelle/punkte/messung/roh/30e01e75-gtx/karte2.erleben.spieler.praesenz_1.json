@@ -1,0 +1,98 @@
+{
+ "fehlt": [],
+ "latenz": {
+  "reihen": {
+   "ego/gehen": {
+    "n": 15,
+    "fehlt": 0,
+    "p50": 33.8,
+    "p95": 58.3,
+    "max": 58.3,
+    "eingabe": 0.5,
+    "hoerer": 0.1,
+    "kette": 13.2,
+    "kurve": 21.1,
+    "takte": 4
+   },
+   "third/gehen": {
+    "n": 15,
+    "fehlt": 0,
+    "p50": 33.9,
+    "p95": 77.6,
+    "max": 77.6,
+    "eingabe": 0.9,
+    "hoerer": 0,
+    "kette": 13.8,
+    "kurve": 22.1,
+    "takte": 3
+   }
+  },
+  "bildMs": 22.23,
+  "urteil": "ROT"
+ },
+ "fuss": {
+  "wiese": {
+   "neig": 0,
+   "fuss": {
+    "p95": 0.9,
+    "n": 200
+   },
+   "falllinie": {
+    "p95": 0.4,
+    "n": 200
+   }
+  },
+  "hang": {
+   "neig": 24.4,
+   "fuss": {
+    "p95": 1,
+    "n": 200
+   },
+   "falllinie": {
+    "p95": 0.8,
+    "n": 200
+   }
+  }
+ },
+ "kamera": {
+  "anker": {
+   "haus": 2,
+   "fels": 8,
+   "baum": 60
+  },
+  "err": null,
+  "gaenge": [
+   "stamm",
+   "fels",
+   "haus",
+   "innen",
+   "innen-sprint",
+   "steil",
+   "steil-sprint"
+  ],
+  "hangOrt": [
+   -532.694803998486,
+   -852.0248676214696,
+   -0.7209050814895401
+  ],
+  "third": {
+   "bilder": 7474,
+   "fels": 0,
+   "wer": []
+  },
+  "thirdS": 138.1,
+  "ego": {
+   "bilder": 960,
+   "fels": 0,
+   "wer": [],
+   "ms": 17735.999999999985,
+   "orte": [
+    "wiese-gehen",
+    "wiese-laufen",
+    "hang-gehen",
+    "hang-laufen"
+   ]
+  },
+  "gangS": 155.8
+ }
+}
