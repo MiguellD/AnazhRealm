@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 11,
-    "kern": 10,
-    "kernDazu": 10,
+    "kern": 11,
+    "kernDazu": 11,
     "anteilHeute": 2,
-    "anteilKern": 1.8
+    "anteilKern": 1.9
    },
    "perspektiven": [
     {
@@ -10012,7 +10012,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Wagen ohne Ladung (hausJeWagen 15); Hafen, Lager: Grep 0",
      "alt": []
@@ -20088,8 +20088,8 @@
   "sprossen": 1718,
   "heute": 50,
   "davonKopplungen": 33,
-  "kern": 11,
-  "kernDazu": 11,
+  "kern": 12,
+  "kernDazu": 12,
   "anteilHeute": 2.9,
   "anteilKern": 0.4,
   "kapitel": 7,
