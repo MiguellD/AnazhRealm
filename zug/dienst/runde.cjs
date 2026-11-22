@@ -3,10 +3,10 @@
 //   1 EIN Mess-Kopf je Runde in EINER Datei (zug/runde.txt im Zweig koordination): Kopf, Startzeit, Stand je Geraet. Jedes Geraet
 //     faehrt seine ganze Liste an DIESEM Kopf zu Ende; die naechste Runde nimmt den main-Kopf des Moments, in dem alle Geraete durch
 //     sind — so steht nach jeder Runde jede Station als Paar am SELBEN Kopf (die Karte 2 bucht daraus).
-//   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht · K2 ohne Urteil · K3 GRUEN · K4 ROT anderes
+//   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht · K2 ohne Urteil · K3 GRUEN (K4 ROT anderes: seit 22.11. Schwanz)
 //     | der SCHWANZ K5 ROT „Leser fehlt" · K6 ROT „Umfang nicht erzeugbar". Bleibt einem Geraet nur der Schwanz und ist main weiter als
 //     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen); das zweite Geraet misst nur, was das erste am Kopf
-//     GRUEN urteilte, und WARTET (Zustand wartet, kein Alarm), bis jenes K1–K4 hinter sich hat.
+//     GRUEN urteilte, und WARTET (Zustand wartet, kein Alarm), bis jenes K1–K3 hinter sich hat.
 //   3 frisches ROT an einer am vorigen Mess-Kopf gruenen Station: NUR diese Station wird ueber die Koepfe dazwischen halbiert
 //     (`faelle` nennt sie, richter.sh --fall halbiert und nennt den Taeter-Kopf).
 //   4 Halt, Weichen, Neustart: der Stand je Geraet steht in der Datei, die Liste ist eingefroren — es geht an derselben Station weiter.
@@ -28,7 +28,7 @@
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
 //   reihe <messung-dir> <geraet> <liste> [--karte <json>] [--anspruch <datei>] [--kopf <sha> --erst <geraet> [--git <repo> --ref <ref>]]
 //                                           --karte: nur die Front der Karte 2 (je Leiter Sprosse heute, Glieder jede ungebuchte)
-//                                           → "<K1–K4,..>|<Schwanz K5 K6,..>" (stderr: die Klassen mit Zahl); mit --erst nur, was das
+//                                           → "<K1–K3,..>|<Schwanz K5 K6,..>" (stderr: die Klassen mit Zahl); mit --erst nur, was das
 //                                           erste Geraet am Kopf GRUEN urteilte (ohne Schwanz) — Exit 6 ohne dessen Mess-Datei,
 //                                           Exit 7 + "gesetz-leer", wenn keine Station bleibt
 //   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
@@ -72,10 +72,10 @@ const KOPF = [
     "# sind. Geschrieben NUR von zug/dienst/runde.cjs (frischer Stand von origin/koordination, die eine Zeile ersetzt, commit-tree,",
     "# Push — lehnt er ab, von vorn; nie ein Merge). Von Hand nichts aendern. Je Runde und je Geraet EINE Zeile:",
     "# runde <n> kopf <sha40> start <iso> vorher <sha40|->",
-    "# <geraet> <offen|wartet|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <K1–K4,..>|<Schwanz,..> getragen <n>",
-    "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN · K4 ROT anderes | Schwanz:",
+    "# <geraet> <offen|wartet|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <K1–K3,..>|<Schwanz,..> getragen <n>",
+    "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN | Schwanz: K4 ROT anderes (22.11.: so viel wie noetig) ·",
     "# K5 ROT Leser fehlt · K6 ROT Umfang nicht erzeugbar. Bleibt nur der Schwanz und ist main weiter, traegt sein ROT vom frueheren Kopf",
-    "# (getragen). Das zweite Geraet wartet (wartet: kein Alarm), bis das erste K1–K4 hinter sich hat, und misst nur dessen GRUEN am Kopf.",
+    "# (getragen). Das zweite Geraet wartet (wartet: kein Alarm), bis das erste K1–K3 hinter sich hat, und misst nur dessen GRUEN am Kopf.",
     "# Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.",
     "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
@@ -288,7 +288,7 @@ if (was === "lies") {
         }
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
-            // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K4 des ersten wartet, steht nicht still — kein Alarm
+            // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K3 des ersten wartet, steht nicht still — kein Alarm
             if (e.zustand === "durch" || e.zustand === "wartet") continue;
             const seit = Date.parse(e.fortschritt === "-" ? r.runde.start : e.fortschritt), min = Math.floor((t - seit) / 60000);
             if (!(min > ALARM_MIN)) continue;
@@ -307,11 +307,11 @@ if (was === "lies") {
     // ihrem JÜNGSTEN Eintrag über ALLE Köpfe (dieses Gerät; trägt es keinen, das andere) — nie nur aus dem Vor-Kopf, sonst käme eine
     // getragene Station in der nächsten Runde als „ohne Urteil“ zurück:
     //   K1 beansprucht (--anspruch <datei>: zug/anspruch.txt, je Zeile „<zweig> <id,id,…>“, # Kommentar; fehlt sie: leer)
-    //   K2 ohne Urteil (nie gemessen, neu in der Tafel, jüngster Eintrag UNGEMESSEN) · K3 jüngstes Urteil GRÜN · K4 ROT, anderes
+    //   K2 ohne Urteil (nie gemessen, neu in der Tafel, jüngster Eintrag UNGEMESSEN) · K3 jüngstes Urteil GRÜN · K4 ROT, anderes (seit 22.11. im SCHWANZ, zuerst)
     //   K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — der SCHWANZ (die Fähigkeit fehlt; „Leser fehlt: Umfang nicht erzeugbar“
     //   ist K6: zuerst wird nach dem Umfang gefragt)
     // Innerhalb einer Klasse die Reihe von n0611/stufe/reihe.cjs (12.11.): wer am längsten ohne Messung auf diesem Gerät ist zuerst, wessen
-    // letzte Fahrt LANG_MIN oder länger lief zuletzt. Ausgabe „<K1–K4>|<K5 K6>“ — die Grenze reist in der eingefrorenen Liste mit, die
+    // letzte Fahrt LANG_MIN oder länger lief zuletzt. Ausgabe „<K1–K3>|<K5 K6>“ — die Grenze reist in der eingefrorenen Liste mit, die
     // Dienste fahren vorn und Schwanz in getrennten Fahrten (kein Teil mischt beide).
     // DAS ZWEITE GERÄT (--erst <geraet> --kopf <sha>): nur die Stationen, die das erste Gerät am Kopf GRÜN urteilte (ein Paar wird nur
     // GRÜN, wenn beide GRÜN sind), ohne Schwanz; die Mess-Datei liest es am Ursprung (--git <repo> --ref <ref>, sonst der Ordner <dir>).
@@ -385,7 +385,7 @@ if (was === "lies") {
         const t = zeigRef ? zeigRef(opt("ref"), MDIR + "/" + rel) : (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })();
         let m = null;
         try { m = t ? JSON.parse(t) : null; } catch { m = null; }
-        if (!m) { console.error("reihe: das Gesetz der Liste ohne Mess-Datei " + rel + " — das erste Gerät hat K1–K4 hinter sich, aber sein Urteil fehlt"); process.exit(6); }
+        if (!m) { console.error("reihe: das Gesetz der Liste ohne Mess-Datei " + rel + " — das erste Gerät hat K1–K3 hinter sich, aber sein Urteil fehlt"); process.exit(6); }
         drin = ids.filter((id) => urteil(m, id) === "GRUEN");
         process.stderr.write("Gesetz der Liste " + g + " am " + k8(RK) + ": " + ids.length + " → " + drin.length + " · nicht GRÜN auf " + ERST + ": " + (ids.length - drin.length) + "\n");
         if (ids.length && !drin.length) { console.log(GESETZ_LEER); process.exit(7); }
@@ -393,7 +393,11 @@ if (was === "lies") {
     const je = { K1: [], K2: [], K3: [], K4: [], K5: [], K6: [] };
     for (const id of drin) je[klasse(id)].push(id);
     // das zweite Gerät kennt keinen Schwanz: was das erste am Kopf GRÜN urteilte, fehlt ihm nicht an Fähigkeit
-    const vorn = [...ord(je.K1), ...ord(je.K2), ...ord(je.K3), ...ord(je.K4)], schwanz = [...ord(je.K5), ...ord(je.K6)];
+    // SO VIEL WIE NÖTIG (Koordinator 22.11., Wort des Schöpfers: „so viel messen wie nötig, nicht wie möglich“; Bilanz der 12 h davor:
+    // Stations-Zeit GTX 21 min gegen 1 340 min Karten-Zeit der CI, und in der Liste der Runde 4 standen 56 von 179 Stationen vorn als
+    // Wiederholung eines bekannten ROT): K4 — ROT aus anderem Grund, von keiner Landung beansprucht — steht im SCHWANZ, vor K5 und K6.
+    // Vorn bleibt, was ein Urteil braucht: K1 beansprucht · K2 nie beurteilt · K3 GRÜN und ungebucht (der Preis fehlt oder ist offen).
+    const vorn = [...ord(je.K1), ...ord(je.K2), ...ord(je.K3)], schwanz = [...ord(je.K4), ...ord(je.K5), ...ord(je.K6)];
     if (ERST) vorn.push(...schwanz.splice(0));
     process.stderr.write("Reihe " + g + ": " + Object.entries(je).map(([k, v]) => k + " " + v.length).join(" · ") + " → vorn " + vorn.length + " | Schwanz " + schwanz.length + "\n");
     console.log(vorn.join(",") + "|" + schwanz.join(","));

@@ -643,7 +643,8 @@ STUMMEL
     if nur e; then
     # e — DIE REIHE FOLGT DER ERWARTETEN ÄNDERUNG (21.11.): die Klasse aus dem JÜNGSTEN Urteil über alle Köpfe (am aaaaaaaa: s1 GRÜN,
     # s2 ROT Umfang, s3 ROT Leser fehlt, s4 ROT anderes, s5 UNGEMESSEN; am jüngeren bbbbbbbb: s1 ROT Umfang), ohne eigenes das andere
-    # Gerät (s6 GRÜN nur auf der Radeon), s7 beansprucht (zug/anspruch.txt), s8 nie gemessen → K1 s7 · K2 s8 s5 · K3 s6 · K4 s4 | K5 s3 · K6 s2 s1
+    # Gerät (s6 GRÜN nur auf der Radeon), s7 beansprucht (zug/anspruch.txt), s8 nie gemessen → K1 s7 · K2 s8 s5 · K3 s6 | K4 s4 · K5 s3 · K6 s2 s1
+    # (22.11., so viel wie nötig: K4 — bekanntes ROT ohne Anspruch — steht im Schwanz)
     echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"},"s2":{"gruen":false,"grund":"S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 3","zeit":"2026-11-18T01:01:00Z"},"s3":{"gruen":false,"grund":"S2 · ROT Leser fehlt: kein Leser von x","zeit":"2026-11-18T01:02:00Z"},"s4":{"gruen":false,"grund":"ROT: 0,4 verfehlt ≥ 1","zeit":"2026-11-18T01:03:00Z"}},"ungemessen":{"s5":{"gruen":false,"ungemessen":true,"grund":"die Welt der Sitzung trägt nicht mehr","zeit":"2026-11-18T01:04:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-gtx.json"
     echo '{"zeit":"2026-11-19T01:00:00Z","je":{"s1":{"gruen":false,"grund":"S6 · ROT Leser fehlt: Umfang nicht erzeugbar (10⁹)","zeit":"2026-11-19T01:00:00Z"}}}' >"$MESSUNG_DIR/bbbbbbbb-gtx.json"
     echo '{"zeit":"2026-11-18T01:00:00Z","je":{"s6":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"}}}' >"$MESSUNG_DIR/aaaaaaaa-radeon.json"
@@ -651,8 +652,8 @@ STUMMEL
 w29-probe s7,nicht-in-der-liste#1 # Kommentar
 ' >"$X/anspruch.txt"
     o=$(runde reihe "$MESSUNG_DIR" gtx s1,s2,s3,s4,s5,s6,s7,s8 --anspruch "$X/anspruch.txt")
-    if [ "$o" = "s7,s8,s5,s6,s4|s3,s2,s1" ]; then echo "OK e  Reihe der Klassen: K1 beansprucht s7 · K2 ohne Urteil s8 s5 · K3 GRÜN s6 (das andere Gerät) · K4 s4 | Schwanz K5 s3 · K6 s2 s1 (das jüngste Urteil über alle Köpfe) — $o"
-    else echo "ROT e  Reihe der Klassen: „$o“ (Soll s7,s8,s5,s6,s4|s3,s2,s1)"; fi
+    if [ "$o" = "s7,s8,s5,s6|s4,s3,s2,s1" ]; then echo "OK e  Reihe der Klassen: K1 beansprucht s7 · K2 ohne Urteil s8 s5 · K3 GRÜN s6 (das andere Gerät) | Schwanz K4 s4 · K5 s3 · K6 s2 s1 (das jüngste Urteil über alle Köpfe) — $o"
+    else echo "ROT e  Reihe der Klassen: „$o“ (Soll s7,s8,s5,s6|s4,s3,s2,s1)"; fi
     fi
     if nur f; then
     # f — Alarm (Runde 4 am k2b: die OMEN durch, das andere Gerät ohne Fortschritt seit dem Start der Runde)
@@ -981,10 +982,10 @@ ATTRAPPE
     else echo "ROT s  kommt und geht: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k3") (Soll 8), Zähler-Stände $s0 → $s1 (Soll mehr), WEICHT+WEITER $s2 (Soll 2), Puls nach dem Gehen mit „WEICHT vor“ $s3 (Soll 0)"; fi
     fi
     if nur w; then
-    # w — DER SCHWANZ TRÄGT NUR, WENN main WEITER IST (21.11.): die Liste aus den Mess-Dateien von e heißt „s7,s8,s5,s6,s4|s3,s2,s1“ (ohne
-    # Anspruch ist s7 K2). w1 Runde 8, main = Kopf: vorn 5 und der Schwanz 3 fahren, 8/8, getragen 0, kein Teil mischt vorn und Schwanz.
-    # w2 Runde 9, main ist weiter: vorn 5 fahren, der Schwanz trägt (getragen 3, keine Fahrt). w3 Runde 10, main = Kopf, während s3 (die
-    # erste Schwanz-Station) misst, zieht main weiter: die Fahrt endet an der Grenze nach s3, s2 s1 tragen (getragen 2).
+    # w — DER SCHWANZ TRÄGT NUR, WENN main WEITER IST (21.11.): die Liste aus den Mess-Dateien von e heißt „s7,s8,s5,s6|s4,s3,s2,s1“ (ohne
+    # Anspruch ist s7 K2). w1 Runde 8, main = Kopf: vorn 4 und der Schwanz 4 fahren, 8/8, getragen 0, kein Teil mischt vorn und Schwanz.
+    # w2 Runde 9, main ist weiter: vorn 4 fahren, der Schwanz trägt (getragen 4, keine Fahrt). w3 Runde 10, main = Kopf, während s4 (die
+    # erste Schwanz-Station, K4 seit dem 22.11.) misst, zieht main weiter: die Fahrt endet an der Grenze nach s4, s3 s2 s1 tragen (getragen 3).
     # Mutanten: schwanz-immer (w1 trägt) · schwanz-nie (w2, w3 messen alles) · klassen-blind (die Liste ohne Klassen)
     local k4 k5 k6 w0 x1 x2 x3 xl xm
     if [ -z "$k3" ]; then # allein (ST_NUR=e,w): die Runde am Bestand anlegen, die GTX ist an ihrem Kopf durch — wie nach s
@@ -1011,15 +1012,15 @@ ATTRAPPE
     w0=$(am "$k5")
     geraet_durch radeon "$k5" "$k6" >/dev/null # Runde 10 am k6, main = k6
     echo "$k5" >"$X/kopf-bei"
-    echo s3 >"$X/landung_bei"
+    echo s4 >"$X/landung_bei"
     runde_takt
     rm -f "$X/landung_bei"
     x3=$(feld gtx)
-    if [ "$xl" = "s7,s8,s5,s6,s4|s3,s2,s1" ] && echo "$x1" | grep -q "^gtx durch 8/8 .* getragen 0$" && [ "$(am "$k4")" = 8 ] && [ -z "$xm" ] &&
-        echo "$x2" | grep -q "^gtx durch 5/8 .* getragen 3$" && [ "$w0" = 5 ] && ! grep -q "^$k5:s[123]$" "$X/gepusht" &&
-        echo "$x3" | grep -q "^gtx durch 6/8 .* getragen 2$" && [ "$(am "$k6")" = 6 ] && grep -q "^$k6:s3$" "$X/gepusht" && grep -q "MAIN WEITER (${k6:0:8}" "$L"; then
-        echo "OK w  Schwanz trägt nur bei main weiter: main = Kopf → vorn 5 + Schwanz 3 gemessen (8/8, kein Teil mischt); main weiter → vorn 5, der Schwanz trägt (5/8, getragen 3); main zieht während s3 weiter → Ende an der Grenze (6/8, getragen 2)"
-    else echo "ROT w  Schwanz: Liste „$xl“ (Soll s7,s8,s5,s6,s4|s3,s2,s1), main = Kopf „$(echo "$x1" | cut -c1-16) … $(echo "$x1" | grep -o 'getragen.*')“ am Kopf $(am "$k4") (Soll 8/8 getragen 0, 8), gemischt „$xm“, main weiter „$(echo "$x2" | cut -c1-16) … $(echo "$x2" | grep -o 'getragen.*')“ am Kopf $w0 (Soll 5/8 getragen 3, 5), main zieht weiter „$(echo "$x3" | cut -c1-16) … $(echo "$x3" | grep -o 'getragen.*')“ am Kopf $(am "$k6") (Soll 6/8 getragen 2, 6)"; fi
+    if [ "$xl" = "s7,s8,s5,s6|s4,s3,s2,s1" ] && echo "$x1" | grep -q "^gtx durch 8/8 .* getragen 0$" && [ "$(am "$k4")" = 8 ] && [ -z "$xm" ] &&
+        echo "$x2" | grep -q "^gtx durch 4/8 .* getragen 4$" && [ "$w0" = 4 ] && ! grep -q "^$k5:s[1234]$" "$X/gepusht" &&
+        echo "$x3" | grep -q "^gtx durch 5/8 .* getragen 3$" && [ "$(am "$k6")" = 5 ] && grep -q "^$k6:s4$" "$X/gepusht" && grep -q "MAIN WEITER (${k6:0:8}" "$L"; then
+        echo "OK w  Schwanz trägt nur bei main weiter: main = Kopf → vorn 4 + Schwanz 4 gemessen (8/8, kein Teil mischt); main weiter → vorn 4, der Schwanz trägt (4/8, getragen 4); main zieht während s4 weiter → Ende an der Grenze (5/8, getragen 3)"
+    else echo "ROT w  Schwanz: Liste „$xl“ (Soll s7,s8,s5,s6|s4,s3,s2,s1), main = Kopf „$(echo "$x1" | cut -c1-16) … $(echo "$x1" | grep -o 'getragen.*')“ am Kopf $(am "$k4") (Soll 8/8 getragen 0, 8), gemischt „$xm“, main weiter „$(echo "$x2" | cut -c1-16) … $(echo "$x2" | grep -o 'getragen.*')“ am Kopf $w0 (Soll 4/8 getragen 4, 4), main zieht weiter „$(echo "$x3" | cut -c1-16) … $(echo "$x3" | grep -o 'getragen.*')“ am Kopf $(am "$k6") (Soll 5/8 getragen 3, 5)"; fi
     fi
     if nur x; then
     # x — DIE FRONT DER KARTE 2 (Koordinator 21.11. 15:45, runde.cjs reihe --karte): Leiter a (heute 1: a#1 gebucht, Front a#2 ROT,
