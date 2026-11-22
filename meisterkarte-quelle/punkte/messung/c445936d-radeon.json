@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "radeon",
- "zeit": "2026-11-22T00:34:07.976Z",
+ "zeit": "2026-11-22T02:09:20.523Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.sinn.ziele#1": {
@@ -762,73 +762,79 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  }
- },
- "ungemessen": {
+  },
   "karte2.mensch.kopplung.kultur#2": {
    "gruen": false,
-   "zahl": "der Deckel der Leiter riss nach 20,012 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 20,012 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 134.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 203.5 → 400.1 MB (+196.6 > 64)",
+   "zahl": "S2 Umfang nicht erzeugbar: kein Niederschlag am Ort einer Siedlung: die Welt trägt EIN Klima am Anker (Regen-Quote 0), der Plan liest keins — 0 von 32 Plänen ändern sich unter Regen; Dach-Neigung streut 37.3° aus dem Samen · r ungemessen gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js bauRezept (kein Klima am Dach)",
    "exit": 0,
-   "minuten": 2.25,
-   "grund": "der Deckel der Leiter riss nach 20,012 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 20,012 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 134.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 203.5 → 400.1 MB (+196.6 > 64)",
+   "minuten": 1.5,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: kein Niederschlag am Ort einer Siedlung: die Welt trägt EIN Klima am Anker (Regen-Quote 0), der Plan liest keins — 0 von 32 Plänen ändern sich unter Regen; Dach-Neigung streut 37.3° aus dem Samen · r ungemessen gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js bauRezept (kein Klima am Dach)",
    "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 134.9,
+   "konsum": "k5907443f5d71",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 89.6,
    "fremd": {
-    "s": 138.2,
-    "takte": 55,
-    "fremdS": 723.52,
-    "kerne": 5.234,
-    "fensterKerne": 9.16,
+    "s": 94.8,
+    "takte": 39,
+    "fremdS": 196.56,
+    "kerne": 2.073,
+    "fensterKerne": 2.774,
     "namen": [
      [
-      "node.exe scripts/diag-settlement.cjs --nur-a",
-      150.23
+      "bash.exe n0611/kandidat.sh kt x a,b,c,d;e",
+      30.09
      ],
      [
-      "node.exe scratchpad/bw-such.cjs 1/400 4/400 6/400 8/400 9/400 10/400 11/400",
-      111.8
+      "sh werkzeug/gpu-lauf.sh taeter-z662-nacht-lichter-2 sh -c npm run gate:webgl-probe",
+      16.11
      ],
      [
-      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
-      105.7
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… tasks/bdp37bz8e.output dev/null; do s",
+      12.92
      ]
     ],
-    "dienerS": 95.19,
+    "dienerS": 44.14,
     "diener": [
      [
       "System",
-      41
+      20.69
      ],
      [
-      "dwm.exe",
-      26.22
+      "WmiPrvSE.exe",
+      15.05
      ]
     ],
-    "geraetS": 83.78,
+    "geraetS": 45.77,
     "geraet": [
      [
       "MsMpEng.exe",
-      55.75
+      27.98
      ],
      [
       "svchost.exe",
-      22.17
+      15.59
      ],
      [
       "SearchIndexer.exe",
-      5.5
+      2
      ]
     ],
-    "eigenS": 404.25,
+    "eigenS": 221.34,
     "rechnerKerne": 24
    },
-   "zeit": "2026-11-22T00:34:07.976Z",
-   "abdruck": "3bb4fb7a571c",
+   "zeit": "2026-11-22T02:09:20.523Z",
+   "abdruck": "b7457da8665d",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
+  }
+ },
+ "ungemessen": {
   "karte2.erleben.kopplung.wahrnehmung#2": {
    "gruen": false,
    "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
@@ -935,60 +941,45 @@
   "k7ec70f9b690a": "bVVNj5swEP0vObZlTcAsYGkPToiUrSotW/XS49iMgYRAZJO4StX/XsFCPmDnhOC9mec34+Hv4ghyDzk+7UxTL9jiy+LbwsAZHYP6jPppZxZsEculhz7j77yLlHO+7mBSl8fWkKoUBEQNxQGdk26xrJ5kT/OWMlwGjNgNtykhKQnJyvJrrPnLyzRNJTBrnBYUjkkgiDIVsCnwZHIQ6MBJ9YUHcBjJkFJG+ogS/paQMbaWc5IQTqzkv3Z0M0kooM4e1cfPQYgBe7Wcb+ZKsxKwdaqyNmNtmQXC99i1oJ1zNFjnAlhUqAdSFqIXXwWvOlvylJAJUVUnYx6KRX4WeBEjJJ5iczSlLFrnqBuB9QAXsRcuga3mmvLjyVH3ikAIiMTU7wKwzlE/aHB9qZ6XjPyJpkn3cEANTg3F6KXrh564edP3Y6al6oX3JUbhLvrPGD4Qu8aSMyHjGHXPJNpev47vk/w2avx9VszIotSHR5sURc/12Y+5NFNAhtrZN6a9oiMKgBEbqpH+dqQ0mTJvhxp5ABC5d2eKCN/OPDSNai1odPLjaSAixSAMGOevM3ALh8OACpRPfTltoGm7Ab+XQZWSWTdCJO9EpPNDf1wH54JlNZKUojQO2HpFp+CzhoMDItelUmPXRSBV/NmQWqxaRzRNO24KoMJVnZb6zpZVvyTuItU/f2cFn8S6UPP29hUa3Y7CA/HsKspUNyxWztClbh0LshjhnhIInfRZXy6oK8zxwUoRRnE33lZ9KL9EnKfhsAbU14fhvcwzltiZXJuTGRstgYqAfbJGLOq9gHo/AJfxknox+845X73x7YcfOzf5mpBpKMv5e5pEPeS1W+IJ2dpNn/yIkhx1o8puC5ICTqaAqr39Ev79Bw==",
   "k22f42b79fdba": "bVVNj5swEP0vObZlnfARwNIeJmGlrFRp2d72ODZjYEMgsiG0qfrfK1jIB2SO5j3P85tn83dxRLnHlJ4+TVUu+OLb4sfC4IksQ/pE+unTLPgilCubHA5fxQBg28Gkzo+1YUUuGIoSswNZja4pL55kT7NX0l95nLUv0MaMxcxnm/b5eUotBCWVVaOikYhekCiPT4GNSVGQhY3qmw1gP5C+63LWVxDBW8TG2rUALGLAWgmQzjoLLJN7xeHa88njr38AXmCGT3Kk2iry0oy9ZeIJx+aXhvPTJRpb64yUFaQHUuKTHV4EbzpL05ixCVEVjTF3zQIn8eyAMxZOsSmZXGa1ddSVoHKAi9D2V8gfOJ4eG0vdKkIhMBBTvzOkMiV9p2HpSLVecfY7mG66xwNptErMRi+Xjm+Lqzf9PGZail5432IUviRnTf4dsRssOzEGYwRP3dLu8nVcj1K41vusmZFZrg/3NimX7KXDf86lmQwT0ta+MvUFHbiIFAw3IWLwDgCxG02Z10ONPEQMljdnChjsZh6aStUtarLSYzMQySXP9zjA6wxc4+EwoDzluI6cDtDUXcBvZbhKyaSLEEs7EfH80F/XwTpTXowkpVw39Ph2407BJ40HC0Wqc6XGqQtPqvBRSFsqaktUVT2+DuiKpeLMYeXFFb+/DtubIUKsf30kGUwqytT8fvYdKl2Pwj2xXiqXqy4srZyhc11bLcpshNtKEHbSZ3M5ky4opTsrhR+EXbxb9SX9HADE/vAMqO934T3Pd8ypM7k0jRkHLdEVHn/wjLSk9wLL/QBchSvXDvsIbt5g19uxLcOIRWxaqgX4iKKgx7xC3EV21770mx9JsqOuVN69gizDxmRY1NffwL//",
   "k4cfe3651a982": "bVTbjpswEP2XPLZlh3BZwNI+OGGlrFRps33r49iMgQ2ByIZQpeq/V2RxLpB54nKO58yZGf9dHFDuMKenT9PUC7b4tvixMHgkx5A+kn76NAu2SOTSI5/xrwDO+XqASV0eWgNVKQBFjcWenE63VFZP8kzzljJahgz6V95vAbYQwap/eZlSK0FZ47SoyBIxjDMVsimwMzkKcrBT52QjOIplFAQMzhGn/D0FG6uec0iBQy+nWQXW2b3a5DmMKGRvPeevfKYyK5FapyprY/PKLBS+xy7J5pVlGnvnhFRUpEdSFpGXXMSuBjvzLcCEqKrOmLtksZ+FXswAkik2J1PKonUOuhFUj3CReNES2QO380PnqFtFKATGYup1gVTnpO80uL5Uz0sGf+LpoTvck0anxsJ66fqRJ67eAMBmrqU6Cz+nsMJd8p8puiMOTYUjALfjdxw+bS5/7fc059f4mCUzsij1/t4mFZDn+uznXJopMCPt7BrTXtBxgEjxuAUp8A/O+TZIp8xrUZaHiLF7U1MMfDPz0DSq7VGTkx+6kUgBhVHIOH+bgVvc70dUqPzAl9MGmnYY8FsZgVIyG0YI8kHEdl701zo4JyorS1IqCJLZJh417h0UuS6Vsh0XoVTJowHtqWod0TStvRUwEK5i4EN9cSQ6r8L6poF8+/nr99uKT2P16PRGt1ZwKJ5dFTA1DMl86/tSt06PsrBwTwnChD2AnkhXlNOdhSKKk2Gse3kVlAb24fvd0J5mHT6VNJhbm87YBksMRMgeXB896Z3AejcCl8ky8JLz6K3e+WZM6KaQwra/tWfNs+F9vYqHww4k4aAbVQ63HRTYmQKr9nrV//sP",
-  "kd8730d31d121": "bVTbbqMwEP2XPG7XNeESwFIf3FAplVYq3bc+js0YaAhENoRVVvvvK1PIBTpPuZzjOXPm8nd1BLmHHB8/TVOv2OrH6ufKwAmJQX1C/fhpVmwVy7WLHuPv3EbKOd9amNTlsTW0KgUFUUNxQNLpFsvqUQ40dy3DdcBo/8L7lNKUhvS5f3qaUyuBWUNaUDgRIYgyFbA5sDM5CCTQqSHZCA4jGfo+o0NECX9L6BS7nnOaUE57Oc8qoM7u1cabIMSA2Qpf+EJlVgK2pCprM+WVWSA8l12SLSvLNPTkDFhUqEdSFqIbX8Q+22R5SumMqKrOmLtkkZcFbsQojefYHE0pi5YcdSOwHuEidsM1sG/czo8dUbeKQAiIxNzrArDOUd9pcDypNmtG/0TzR/dwQA2khmLy0vFCV1y9GXqx0FINwocUk3AHvQ2Gd0TbVHqilI9hP9Nod/l3+j3J+TXeF8mMLEp9uLdJ+eg6Hvu1lGYKyFCTfWPaCzryATBiYzY6bEPqJ3PmtaiJBwCRc1NTRPlu4aFpVNuDRpIfu5GIPgahncjXBbiFw2FEBcrzPTlvoGntgN/K8JWSmR0hmlsR6bLor3UgZyyriaSU78eLTTxpOBAQuS6VmjouAqni7wa0x6olomna6SqALxzF6JnWF0fCYRW2Nw3kqf79kRV8rnF4rdHtJDAQG0f5TNmhWG55X+qW9CCLCe4qgWBlLvw/o64wxzvLRBjFdox79SXzHHGehuO6q4e7IT0vXyzRmlmbzkwNleCLgH1zLnrUewH1fgSu47XvxsOoPb/x3XCS+KeTPCQ07W9d2vKsT3K+TaLh6ytP7GhOu3ZESY+6UaW9drSAzhRQtddT/+8/"
+  "kd8730d31d121": "bVTbbqMwEP2XPG7XNeESwFIf3FAplVYq3bc+js0YaAhENoRVVvvvK1PIBTpPuZzjOXPm8nd1BLmHHB8/TVOv2OrH6ufKwAmJQX1C/fhpVmwVy7WLHuPv3EbKOd9amNTlsTW0KgUFUUNxQNLpFsvqUQ40dy3DdcBo/8L7lNKUhvS5f3qaUyuBWUNaUDgRIYgyFbA5sDM5CCTQqSHZCA4jGfo+o0NECX9L6BS7nnOaUE57Oc8qoM7u1cabIMSA2Qpf+EJlVgK2pCprM+WVWSA8l12SLSvLNPTkDFhUqEdSFqIbX8Q+22R5SumMqKrOmLtkkZcFbsQojefYHE0pi5YcdSOwHuEidsM1sG/czo8dUbeKQAiIxNzrArDOUd9pcDypNmtG/0TzR/dwQA2khmLy0vFCV1y9GXqx0FINwocUk3AHvQ2Gd0TbVHqilI9hP9Nod/l3+j3J+TXeF8mMLEp9uLdJ+eg6Hvu1lGYKyFCTfWPaCzryATBiYzY6bEPqJ3PmtaiJBwCRc1NTRPlu4aFpVNuDRpIfu5GIPgahncjXBbiFw2FEBcrzPTlvoGntgN/K8JWSmR0hmlsR6bLor3UgZyyriaSU78eLTTxpOBAQuS6VmjouAqni7wa0x6olomna6SqALxzF6JnWF0fCYRW2Nw3kqf79kRV8rnF4rdHtJDAQG0f5TNmhWG55X+qW9CCLCe4qgWBlLvw/o64wxzvLRBjFdox79SXzHHGehuO6q4e7IT0vXyzRmlmbzkwNleCLgH1zLnrUewH1fgSu47XvxsOoPb/x3XCS+KeTPCQ07W9d2vKsT3K+TaLh6ytP7GhOu3ZESY+6UaW9drSAzhRQtddT/+8/",
+  "k5907443f5d71": "bVVNj5swEP0vObZlh/CxgKU9mCVStqq02d56HJsxkBCIbAhVqv73ihSSADsnBG/mPb8ZD39WJ5QHzOhpb+pqxVZfVt9WBs9kGdJn0k97s2KrSK4dchn/H8A5f+1hUhenxkBZCEBRYX4kq9UNFeWTvKY5axmsfQbdhnc7gB0EEHf8Fq/85WVephSU1laDisYi6Iep8tkc2JoMBVnYqivxAA5CGXgeg2uECX9PYIyeGRLg0EkO+3AzKyiwSqfqo2c/IJ+9dZxvlkrTAqmxyqIyI7dMfeE67EbYLXM0dtYFKS9JD0lpQE50Exz3tmQ7gFmiKltjJmShm/pOyACiOTYjU8i8sU66FlQNcBE5wRpZvNSUnVpLPSpCITAUc79zpCojPdFgu1I9rxn8DudFD3gkjVaF+eil7QaOuHsDANullvIq/EoxCrfJfaZgktg3Fs4A4xj1zxBub1/H90l2HzX+sSAzMi/0cWqT8sixXfZjKc3kmJK2DrVpbujQQ6RwuBUJ8A/O+c5L5pn3Q415iBjaD2cKgW8XHppaNR1qsrJTOySSR37gM87fFuAGj8cB5SvXc+W8gabpB/xRhqeUTPsRgqwXsVse+v91sC5UlGOSUp4X+ew19ubgs8ajhSLThVJj14UvVfTZkHZUNpao62bcFOgJW/Vaqgdb4uuSeIjd/uevt5jPI1bL+3llqHUzCvfFs608pvph6eQCXejG6lDmI9xRgjBin0AvpEvKaGKlCMKoH+9O3kUl3vjwdTK8l0WnLwX1JlemNWOjJXrCZ5+skY70QWB1GIDraO05Efvem/DOtwOhnUAC81Ad5x+7OJxat7kWP5GEk65V0W9ByLE1OZbN/Zfw9x8="
  },
  "sitzung": {
-  "start": "2026-11-22T00:09:05.829Z",
-  "ordner": "sitzung-20261122-010905",
+  "start": "2026-11-22T01:54:46.266Z",
+  "ordner": "sitzung-20261122-025446",
   "port": 7804,
-  "warten": 6.43,
-  "bootS": 42,
-  "grundstellungS": [
-   5.2
-  ],
-  "proben": 3,
+  "warten": 13.57,
+  "bootS": 8.1,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.geist.absicht#1",
-    "s": 141.4,
-    "takte": 2851,
-    "chunks": 81,
-    "nach": null
-   },
-   {
     "ort": null,
     "vor": "karte2.mensch.kopplung.kultur#2",
-    "s": 36.8,
-    "takte": 1675,
+    "s": 24.1,
+    "takte": 1135,
     "chunks": 81,
-    "nach": "der Tür"
+    "nach": null
    }
   ],
-  "wegeTueren": [
+  "wegeTueren": [],
+  "felder": [
    {
-    "vor": "karte2.mensch.kopplung.kultur#2",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [425.5,53.7,1072.3,817.4/2672] [660.2,284.5,992.9,577.1/4] …",
-    "s": 5.2
+    "probe": "karte2.mensch.kopplung.kultur#2",
+    "weg": [
+     "__dorfDerProbe",
+     "__wetterSpionBuch",
+     "__weltaktSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung"
+    ]
    }
   ],
   "wirt": [
-   {
-    "probe": "karte2.mensch.geist.absicht#1",
-    "anders": [
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     458.2,
-     518.8
-    ],
-    "ungemessen": null
-   },
    {
     "probe": "karte2.mensch.kopplung.kultur#2",
     "anders": [
@@ -1007,31 +998,15 @@
      "r.state.weather": "neu: () => wert",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [
-     "return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime };"
-    ],
+    "haelt": [],
     "heap": [
-     203.5,
-     400.1
+     200.5,
+     276.3
     ],
-    "ungemessen": "den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 203.5 → 400.1 MB (+196.6 > 64)"
+    "ungemessen": null
    }
   ],
   "messHalt": [
-   {
-    "probe": "karte2.mensch.geist.absicht#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.erleben.sinn.takt#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
    {
     "probe": "karte2.mensch.kopplung.kultur#2",
     "halt": -1000000000,
@@ -1047,60 +1022,23 @@
     "offen": []
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.erleben.sinn.takt#1",
-    "ort": "stadt-voll",
-    "m": 60.33,
-    "dreh": 78.54
-   }
-  ],
-  "anOrt": [
-   {
-    "vor": "karte2.mensch.kopplung.kultur#2",
-    "anders": [
-     "worldMeta.kalender"
-    ],
-    "wie": {
-     "worldMeta.kalender": "undefined → undefined"
-    }
-   }
-  ],
-  "zeichner": [
-   {
-    "probe": "karte2.mensch.kopplung.kultur#2",
-    "anders": [
-     "zeichner.renderer._handleObjectFunction"
-    ],
-    "wie": {
-     "zeichner.renderer._handleObjectFunction": "getauscht: function (object, material, scene, camera, lightsNode, group"
-    }
-   }
-  ],
-  "ciBlicke": 4,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 20067,
-   "frameP95": 50.56,
-   "taktP95": 46.35,
-   "vramMax": 241.1,
-   "seiten": 2,
+   "bilder": 3196,
+   "frameP95": 33.37,
+   "taktP95": 18.92,
+   "vramMax": 140.6,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.mensch.geist.absicht#1",
-     "m": 446,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 1109,
-   "luecken": 6,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 214,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 1243.6,
-  "minuten": 27.6
+  "fahrtS": 224.2,
+  "minuten": 17.93
  }
 }
