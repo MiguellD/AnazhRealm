@@ -79,6 +79,24 @@ async function headless(laeufe) {
     const server = statikServer();
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, viewport: ORT ? { width: 1920, height: 1080 } : undefined }, 120000, "index.html", "networkidle0"); // prettier-ignore
     page.setDefaultTimeout(880000);
+    // DER HALTEPUNKT (Kreatur-Takt 22.11., `stelle` der Probe): das Urteil wohnt hier. Der Grund-Lauf legt je Punkt sein
+    // Zwischen-Urteil ab; ein Täter hält am ersten Punkt, an dem sein Wort in seinem Zwischen-Urteil steht und in dem des Grunds
+    // am selben Punkt nicht — gesehen an seinem Namen, wo die gesunde Welt dasselbe Fenster trägt, ohne es zu zeigen.
+    const grundStellen = {};
+    if (SELBSTTEST)
+        await page.exposeFunction("__taeterStelle", (name, t, n, z) => {
+            // ein Zwischen-Ergebnis, an dem das Urteil bricht, ist kein Punkt: der Grund legt nichts ab, der Täter fährt weiter
+            let u;
+            try {
+                u = urteil(name, z);
+            } catch {
+                return false;
+            }
+            if (!t) return (void ((grundStellen[name] || (grundStellen[name] = {}))[n] = u.grund), false);
+            const re = (taeterVon(name) || []).find(([x]) => x === t)?.[1];
+            const g = grundStellen[name]?.[n];
+            return !!re && !u.ok && re.test(u.grund) && g !== undefined && !re.test(g);
+        });
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
         const t = Date.now();
@@ -109,7 +127,11 @@ async function headless(laeufe) {
     try {
         await bereit();
         await einschwingen();
-        for (const l of laeufe) aus.push(await zeit(l.proben[0], () => lauf(l)));
+        // ein Täter mit Teilen liest die Teile seines Grund-Laufs (er lief vor ihm auf derselben Seite)
+        for (const l of laeufe) {
+            const grundTeile = l.grundVon != null ? aus[l.grundVon]?.[l.proben[0]]?.__teile : undefined;
+            aus.push(await zeit(l.proben[0], () => lauf(grundTeile ? { ...l, grundTeile } : l)));
+        }
         // eine fremde Welt aus json: frische Platte, durch die Tür (`weltTor`), geladen, eingeschwungen
         const fremdeWelt = async (json) => {
             await page.evaluate(() => localStorage.clear());
@@ -177,10 +199,17 @@ hauptLauf(async () => {
             process.exit(1);
         }
     }
+    // DER EINE GRUND-LAUF JE PROBE (Kreatur-Takt 22.11.: 61 % der Uhr waren Täter, die jede Probe von Takt 0 neu fuhren): im
+    // Selbsttest fährt zuerst die Probe ohne Täter — ihr Urteil ist das der Probe (der Lauf ohne --selftest fährt dasselbe, das
+    // Tor fährt ihn nicht mehr daneben) und sie legt ihre Teile ab (`teileAblegen`). Ein Täter, dessen Zeile die Teile seines
+    // Urteils nennt (TAETER, dritter Eintrag), fährt nur sie; die übrigen liest er aus diesem Grund-Lauf (`grundVon`).
+    const art = opt("--art", undefined);
     for (const p of gewaehlt) {
         const [T, ein] = [SELBSTTEST ? taeterVon(p) : [[null]], SELBSTTEST && EIN_LAUF.includes(p)];
+        const g = SELBSTTEST ? laeufe.push({ proben: [p], taeter: null, ort: ORT, art, teileAblegen: true }) - 1 : null;
+        if (SELBSTTEST) faelle.push({ li: g, t: null, re: null });
         if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
-        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT, art: opt("--art", undefined) }) - 1, t, re }); // prettier-ignore
+        for (const [t, re, traegt] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT, art, ...(traegt && { traegt, grundVon: g }) }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
@@ -188,14 +217,20 @@ hauptLauf(async () => {
         `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBSTTEST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
     );
     let rot = 0;
+    const zahl = { taeter: 0, gesehen: 0, grund: 0, gruen: 0 };
     for (const { li, t, re } of faelle) {
         const name = laeufe[li].proben[0];
         const e = aus[li][name];
-        const z = e?.sicht && e.sicht[t] ? { ...e, ...e.sicht[t] } : e;
+        const z0 = e?.sicht && e.sicht[t] ? { ...e, ...e.sicht[t] } : e;
+        // die Teile des Grund-Laufs druckt keine Zeile, der Haltepunkt eines Täters steht vor ihr
+        const z = z0 && (z0.__teile || z0.__halt) ? (({ __teile, __halt, ...rest }) => rest)(z0) : z0;
+        const halt = z0?.__halt ? ` [Haltepunkt ${z0.__halt}]` : "";
         const u = urteil(name, z);
         const gruen = t ? !u.ok && re.test(u.grund) : u.ok;
         if (!gruen) rot++;
-        console.log(`  ${u.ok ? "✅" : "❌"} ${name.padEnd(9)}${t ? ` [Täter ${t}]` : ""} ${JSON.stringify(z)}`);
+        if (t) (zahl.taeter++, (zahl.gesehen += gruen));
+        else (zahl.grund++, (zahl.gruen += gruen));
+        console.log(`  ${u.ok ? "✅" : "❌"} ${name.padEnd(9)}${t ? ` [Täter ${t}]` : ""}${halt} ${JSON.stringify(z)}`);
         if (!u.ok) console.log(`       ↳ ${u.grund}`);
         if (t)
             console.log(
@@ -209,16 +244,21 @@ hauptLauf(async () => {
             );
     }
     const je = Object.entries(dauer || {}).map(([p, s]) => `${p}: ${Math.round(s)}`);
+    // DIE ZEILE DES BEWEISES (Kreatur-Takt 22.11.): jeder Täter fällt rot an seinem Namen, jede Probe ist im Grund grün
+    if (SELBSTTEST)
+        console.log(
+            `\n  Täter ${zahl.gesehen} von ${zahl.taeter} rot beim Namen · Grund ${zahl.gruen} von ${zahl.grund} Proben grün`
+        );
     console.log(
         `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`
     );
     urteilEnde(
         rot,
         SELBSTTEST
-            ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
+            ? `\n❌ SELBST-TEST ROT — ${zahl.taeter - zahl.gesehen} Täter unsichtbar oder nicht beim Namen genannt, ${zahl.grund - zahl.gruen} Probe(n) im Grund verletzt.`
             : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`,
         SELBSTTEST
-            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
+            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${zahl.taeter} Täter), jede Probe ist im Grund grün (${zahl.grund}).`
             : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );
 });
