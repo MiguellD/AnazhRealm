@@ -232,20 +232,22 @@ const FRUCHT = async (r, T, arg) => {
     const f = arg.feld;
     if (!f) throw new Error("kein gemalter Acker am Messort");
     const c = Math.cos(f.phi || 0), sn = Math.sin(f.phi || 0);
+    // die Lage im Acker in der Drehung seines Anstrichs (`_wegeFormAbstand` Kasten: u = c·dx − s·dz, v = s·dx + c·dz) — bis
+    // pm-acker-kette 2 drehte die Station andersherum: an einem gedrehten Acker zählte sie Büschel neben ihm als „innen“
     const lokal = (x, z) => {
         const dx = x - f.x, dz = z - f.z;
-        return [dx * c + dz * sn, -dx * sn + dz * c];
+        return [c * dx - sn * dz, sn * dx + c * dz];
     };
     const abstand = (x, z) => {
         const l = lokal(x, z);
         return Math.max(Math.abs(l[0]) - f.ex, Math.abs(l[1]) - f.ez);
     };
-    const ex = f.x - sn * (f.ez + 3), ez = f.z + c * (f.ez + 3);
+    const ex = f.x + sn * (f.ez + 3), ez = f.z + c * (f.ez + 3);
     pm.set(ex, r.getTerrainHeightAt(ex, ez) + A.PLAYER_FOOT_OFFSET, ez);
     if (s._fixedSimPos) s._fixedSimPos.copy(pm);
     const K = A.NAH_STREU.kachel;
     const proben = [];
-    for (let p = -1; p <= 1; p++) for (let q = -1; q <= 1; q++) proben.push([f.x + p * f.ex * c - q * f.ez * sn, f.z + p * f.ex * sn + q * f.ez * c]);
+    for (let p = -1; p <= 1; p++) for (let q = -1; q <= 1; q++) proben.push([f.x + p * f.ex * c + q * f.ez * sn, f.z - p * f.ex * sn + q * f.ez * c]);
     const steht = () =>
         proben.every((w) => {
             const k = s.nahStreu && s.nahStreu.kacheln.get(Math.floor(w[0] / K) + "," + Math.floor(w[1] / K));
@@ -280,7 +282,15 @@ const FRUCHT = async (r, T, arg) => {
     // Ego 1,7 m über dem GRUND (der gezeichnete Boden): „+1,7“ der Werkbank misst über der obersten Voxel-Fläche — unter einer Krone
     // stand das Auge im Baum (Bild frucht_1-S1 am e71adb10: 15 m über dem Acker)
     const grund = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
-    return { innen, ring, wiInnen, wiRing, kinds, takte, pose: { px: +ex.toFixed(2), py: +(grund(ex, ez) + 1.7).toFixed(2), pz: +ez.toFixed(2), lx: f.x, ly: +(grund(f.x, f.z) + 0.3).toFixed(2), lz: f.z } };
+    // die Kultur: die Strecken mit Halmen der Frucht im Körper des Ackers (`ackerKoerper.je`, `_ackerKoerperTakt`) — nie der Wildwuchs
+    let halme = 0, kaemme = 0, stand = null;
+    if (s.ackerKoerper) {
+        s.ackerKoerper.takt = null;
+        for (let i = 0; i < 4; i++) await window.__seitenTakt();
+        const zk = s.ackerKoerper.je.get(A._ackerSchluessel ? A._ackerSchluessel(f.x, f.z) : "");
+        if (zk) [halme, kaemme, stand] = [zk.frucht, zk.kaemme, zk.stand];
+    }
+    return { innen, ring, wiInnen, wiRing, kinds, takte, halme, kaemme, stand, pose: { px: +ex.toFixed(2), py: +(grund(ex, ez) + 1.7).toFixed(2), pz: +ez.toFixed(2), lx: f.x, ly: +(grund(f.x, f.z) + 0.3).toFixed(2), lz: f.z } };
 };
 
 // DAS GEBUNDENE TIER ÜBER DEM HANG (tier S1): ein Hang von 10–30° nahe dem Spieler mit ≥ 3 m Anstieg über 16 m (Land, frei von
@@ -666,7 +676,7 @@ module.exports = (F) => [
 
     // ───────── DIE FRUCHT: was auf dem gemalten Acker steht ─────────
     F.leiter("mensch.nahrung.frucht", {
-        sek: 45,
+        sek: 60,
         mutiert: true,
         pfad: [...SIEDLUNG, "stamm/vegetation-wiese.js", "stamm/feld-leben.js"],
         messe: async (H, K) => {
@@ -690,7 +700,7 @@ module.exports = (F) => [
             };
             try {
                 R = await ruf("FRUCHT", { feld: feld() });
-                H.zeile("Acker: " + R.innen + " Pflanzen + " + R.wiInnen + " Büschel innen, Kontrolle im Ring " + R.ring + " + " + R.wiRing + " (" + R.takte + " Takte)");
+                H.zeile("Acker: " + R.halme + " Strecken mit Halmen der Frucht auf " + R.kaemme + " Kämmen (Stand " + JSON.stringify(R.stand) + "); Wildwuchs " + R.innen + " Pflanzen + " + R.wiInnen + " Büschel innen, Kontrolle im Ring " + R.ring + " + " + R.wiRing + " (" + R.takte + " Takte)");
             } catch (e) {
                 rf = String((e && e.message) || e).slice(0, 200);
             }
@@ -699,8 +709,9 @@ module.exports = (F) => [
                 if (!(R.ring + R.wiRing > 0)) throw new Error("die Kontrolle im Ring trägt keine Pflanze — die Streu baute dort nicht");
                 return R;
             };
-            const kultur = () => r().innen + r().wiInnen;
-            const artText = () => Object.entries(r().kinds).map(([k, v]) => k + " " + v).join(", ") || "keine";
+            // die Kultur sind die Halme der Frucht im Körper des Ackers; Wildwuchs im Acker (Nah-Streu, Nah-Wiese) ist keine
+            const kultur = () => r().halme || 0;
+            const artText = () => (r().halme ? "weizen in " + r().halme + " Strecken" : "keine") + " · Wildwuchs " + (r().innen + r().wiInnen) + (Object.keys(r().kinds).length ? " (" + Object.entries(r().kinds).map(([k, v]) => k + " " + v).join(", ") + ")" : "");
             await K.schritt(2, async () => K.nicht(2, { n: kultur(), fehlt: "eine Kulturart über ein Spieljahr: im Acker stehen " + kultur() + " Pflanzen (Arten: " + artText() + ") — der Takt räumt jeden Wuchs vom Acker, das Boden-Gesetz trägt keine Kulturart" }));
             await K.schritt(3, async () => K.nicht(3, { n: 1, fehlt: "32 Saaten × 4 Klimazonen mit ihren Pflanzen: die Sitzung trägt eine Saat und eine Zone, " + z().felder.length + " Äcker ohne Kulturart" }));
             await K.schritt(4, async () => K.nicht(4, { n: z().felder.length, fehlt: "10³ Felder mit eigenem Schicksal (Ertrag, Dürre): die Welt am Messort trägt " + z().felder.length + " Äcker ohne Ertrag" }));
@@ -708,8 +719,8 @@ module.exports = (F) => [
             await K.schritt(6, async () => K.nicht(6, { n: 1, fehlt: "64 Welten mit gezüchteter Art: die Sitzung trägt eine Welt ohne Kulturform" }));
             // S1 zuletzt: der Spieler steht am Rand des Ackers
             await K.schritt(1, async () => {
-                if (kultur() < 1) return K.nicht(1, { n: 0, fehlt: "eine Kulturpflanze auf einem Acker: der gemalte Acker trägt 0 Pflanzen (Kontrolle im Ring " + (r().ring + r().wiRing) + ") — siedlung-wege räumt jeden Wuchs vom Acker" });
-                const b = await K.bild(1, r().pose);
+                if (kultur() < 1) return K.nicht(1, { n: 0, fehlt: "eine Kulturpflanze auf einem Acker: der gemalte Acker trägt keine Halme der Frucht (" + artText() + ", Kontrolle im Ring " + (r().ring + r().wiRing) + ") — der Körper des Ackers (siedlung-wege `_ackerKoerperTakt`) stellt keine Frucht" });
+                const b = await K.bild(1, r().pose, { wahl: 0 });
                 K.auge(1, { bild: b.datei, pose: "3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte", mass: kultur() + " Pflanzen im Acker (" + artText() + ")" });
             });
         },
@@ -871,7 +882,7 @@ module.exports = (F) => [
                 if (V.paar >= 0) {
                     const bildAn = async (zu, wort) => {
                         const o = await ruf("STROM", { zu, z0: V.z0, hof: V.paar });
-                        const b = await K.bild(1 + "-" + wort, o.kam);
+                        const b = await K.bild(1 + "-" + wort, o.kam, { wahl: 0 });
                         return { ...o, datei: b.datei };
                     };
                     // die Uhr reist nur vorwärts: das Paar fällt auf dieselben Stunden des Tags nach dem gemessenen Fenster
@@ -935,11 +946,11 @@ module.exports = (F) => [
             await K.schritt(2, async () => {
                 const P = await ruf("BESTELLEN", { nur: "pose" });
                 if (P.fehlt) return K.leser(2, { fehlt: P.fehlt, wo: "stamm/kampf.js:2308" });
-                const vor = await K.bild("2-vor", P.pose);
+                const vor = await K.bild("2-vor", P.pose, { wahl: 0 });
                 const B = await ruf("BESTELLEN", {});
                 H.zeile("bestellt: " + JSON.stringify(B));
                 if (!B.tat) return K.zahl(2, { n: 0, werte: { furchen: 0 }, taeter: B.fehlt || "keine Tat (stamm/kampf.js tryMouseBreak)" });
-                const nach = await K.bild("2-nach", P.pose);
+                const nach = await K.bild("2-nach", P.pose, { wahl: 0 });
                 const furchen = B.kaemme > 0 && B.achse === B.zug && vor.datei !== nach.datei ? 1 : 0;
                 K.zahl(2, {
                     n: 1,
