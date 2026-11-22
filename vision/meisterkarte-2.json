@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 7,
+    "heute": 8,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 3.7,
+    "anteilHeute": 4.2,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -19320,7 +19320,7 @@
        "richter": "N = 100 Zufallsereignisse aus 10 Saaten: Anteil ohne Widerspruch zwischen allen Kanälen und Perspektiven ≥ 0,95"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Wind gesehen = gehört r 0,81 (§32.K2) ist ein Zwei-Kanal-Same, aber kein Ereignis; nie über Kanäle gemessen.",
@@ -20086,11 +20086,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 48,
+  "heute": 49,
   "davonKopplungen": 33,
   "kern": 11,
   "kernDazu": 11,
-  "anteilHeute": 2.8,
+  "anteilHeute": 2.9,
   "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 17
+  "nachwache": 18
  },
  "zusammengelegt": [
   {
