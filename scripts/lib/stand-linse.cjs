@@ -433,6 +433,9 @@ function standLauf(k) {
 // eines Orts ohne Bett zählen als kahl (Obergrenze: der Eintrag des Gemessenen trägt nur das feine Gitter). Die Zeile der
 // Sim nennt in jedem Lauf je Gesetz den Anteil am Soll.
 const BRAND_GANG = 16;
+// das Fenster am langsamsten Läufer (FENSTER-UHR): Median und schnellster Sprung der Köpfe auf 0,02 m/s gleich — zwischen zwei Herden
+// lebt die Welt weiter (lokal 0,305 ↔ 0,307 m/s), die Uhr des Läufers trug 0,06 (0,35 ↔ 0,29 m/s) bis 0,69 (CI)
+const FENSTER_MS = 0.02;
 const BRAND_ANKUNFT = 16;
 const BRAND_BETT = 160;
 const BRAND_PUNKT = 56;
@@ -633,15 +636,16 @@ function simUrteil(b, v) {
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
         if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
-        // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS (linse-brand-schritte): derselbe Herd ohne Wind am schnellsten Läufer (jeder Schritt
-        // in einem Bild) und am langsamsten (ein Stück je Bild) trägt dieselben Zellen, Köpfe, Sprünge und Schritte — bis hier
-        // zählte das Fenster Bilder und begann zur Uhr, zu der der Läufer ankam: FRONT-MIT schwankte am selben Gesetz
-        // 0,335–1,029 m/s (CI voll 15/18). Ein Fenster, das seinen Deckel der Bilder erreicht, endet laut (FENSTER-DECKEL)
+        // DAS FENSTER HÄNGT NIE AM LÄUFER (linse-brand-schritte): derselbe Herd mit dem Wind mit dem Budget des Spiels und am
+        // langsamsten Läufer (ein Stück je Bild) trägt dieselben Köpfe und Schritte, Median und schnellsten Sprung auf FENSTER_MS
+        // gleich (die Welt lebt zwischen beiden Herden weiter) — bis hier zählte das Fenster Bilder und begann zur Uhr, zu der der
+        // Läufer ankam: FRONT-MIT schwankte am selben Gesetz 0,335–1,029 m/s (CI voll 15/18), lokal 0,35 ↔ 0,29 m/s zwischen zwei
+        // Herden. Ein Fenster, das seinen Deckel der Bilder erreicht, endet laut (FENSTER-DECKEL)
         const F = Z.fenster;
-        const fz = (f) => `${f.zellen} Zellen, ${f.koepfe} Köpfe, alle ${f.alle} m/s in ${f.schritte} Schritten und ${f.bilder} Bildern`;
-        if (!F || !F.schnell || !F.langsam) v.push("LEER: die Probe des Fensters (derselbe Herd am schnellsten und am langsamsten Läufer) lief nicht");
-        else if (["zellen", "koepfe", "alle", "schritte"].some((k) => F.schnell[k] !== F.langsam[k]))
-            v.push(`FENSTER-UHR: derselbe Herd ohne Wind trägt am schnellsten Läufer ${fz(F.schnell)}, am langsamsten ${fz(F.langsam)} — das Fenster zählt Bilder, nie Schritte des Brands`);
+        const fz = (f) => `${f.zellen} Zellen, ${f.koepfe} Köpfe (Median ${f.mit} m/s), alle ${f.alle} m/s in ${f.schritte} Schritten und ${f.bilder} Bildern`;
+        if (!F || !F.spiel || !F.langsam) v.push("LEER: die Probe des Fensters (derselbe Herd mit dem Budget des Spiels und am langsamsten Läufer) lief nicht");
+        else if (F.spiel.koepfe !== F.langsam.koepfe || F.spiel.schritte !== F.langsam.schritte || !(Math.abs(F.spiel.mit - F.langsam.mit) <= FENSTER_MS) || !(Math.abs(F.spiel.alle - F.langsam.alle) <= FENSTER_MS))
+            v.push(`FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels ${fz(F.spiel)}, am langsamsten Läufer ${fz(F.langsam)} (Soll: gleiche Köpfe und Schritte, Median und alle ±${FENSTER_MS} m/s) — das Fenster hängt am Läufer`);
         for (const [wo, d] of [["mit dem Wind", Z.deckel], ["im Regen", Z.regenDeckel], ["am langsamsten Läufer", F?.langsam?.deckel]])
             if (d) v.push(`FENSTER-DECKEL: das Fenster ${wo} erreichte nach ${d} Bildern seine Schritte nicht`);
         // die Asche senkt lebendig am Herd (auraAt, der Leser) — gemessen NETTO des Leben-Overlays, das derselbe Leser im selben

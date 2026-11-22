@@ -189,7 +189,7 @@ function selbsttest() {
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
-                fenster: { schnell: { zellen: 9, koepfe: 1, alle: 0.037, schritte: 60, bilder: 60 }, langsam: { zellen: 9, koepfe: 1, alle: 0.037, schritte: 60, bilder: 83 } },
+                fenster: { spiel: { zellen: 44, koepfe: 9, mit: 0.305, alle: 0.982, schritte: 300, bilder: 300 }, langsam: { zellen: 48, koepfe: 9, mit: 0.307, alle: 0.985, schritte: 300, bilder: 371 } },
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
@@ -600,9 +600,11 @@ function selbsttest() {
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => Object.entries({ zuendung: 9000, ankuenfte: 1, betten: 1, punkte: 69, kahl: 19, masken: 1, lesungen: 69 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), /BRAND-ZÜNDUNG: Schritt 4 kostete 9000 Einheiten Zündung .*69 Bett-Punkte, davon bis 19 kahl, 1 Masken/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
-        // das Fenster zählt Bilder (bis linse-brand-schritte): am langsamsten Läufer gingen dieselben 60 Bilder weniger Schritte
-        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.langsam", { zellen: 4, schritte: 41, bilder: 60 }], /FENSTER-UHR: derselbe Herd ohne Wind trägt am schnellsten Läufer 9 Zellen, 1 Köpfe, alle 0.037 m\/s in 60 Schritten und 60 Bildern, am langsamsten 4 Zellen, 1 Köpfe, alle 0.037 m\/s in 41 Schritten und 60 Bildern/],
-        ["der langsamste Läufer geht einen Schritt weniger", ["simWecken.brand.fenster.langsam.schritte=", 59], /FENSTER-UHR: .* am langsamsten 9 Zellen, 1 Köpfe, alle 0.037 m\/s in 59 Schritten/],
+        // das Fenster hängt am Läufer (bis linse-brand-schritte, lokal am Radeon-Laptop): der zweite Herd begann zu einer späteren
+        // Welt-Uhr, 0,35 m/s mit 8 Köpfen ↔ 0,29 mit 9; am langsamsten Läufer gingen dieselben Bilder weniger Schritte
+        ["der Herd beginnt zur Uhr des Läufers", ["simWecken.brand.fenster", { spiel: { zellen: 42, koepfe: 8, mit: 0.35, alle: 0.978, schritte: 300, bilder: 300 }, langsam: { zellen: 47, koepfe: 9, mit: 0.29, alle: 0.982, schritte: 300, bilder: 300 } }], /FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels 42 Zellen, 8 Köpfe \(Median 0.35 m\/s\), alle 0.978 m\/s in 300 Schritten und 300 Bildern, am langsamsten Läufer 47 Zellen, 9 Köpfe \(Median 0.29 m\/s\)/],
+        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.langsam", { schritte: 212, bilder: 300 }], /FENSTER-UHR: .* am langsamsten Läufer 48 Zellen, 9 Köpfe \(Median 0.307 m\/s\), alle 0.985 m\/s in 212 Schritten und 300 Bildern/],
+        ["der Median am langsamsten Läufer liegt 0,03 m/s daneben", ["simWecken.brand.fenster.langsam.mit=", 0.335], /FENSTER-UHR: .* \(Median 0.335 m\/s\)/],
         ["das Fenster erreicht seine Schritte nicht", ["simWecken.brand.deckel=", 15000], /FENSTER-DECKEL: das Fenster mit dem Wind erreichte nach 15000 Bildern/],
         ["die Probe des Fensters lief nicht", ["simWecken.brand.fenster"], /LEER: die Probe des Fensters/],
         ["die Front läuft gegen den Wind",["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
@@ -3627,29 +3629,29 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         };
                         // von Hand gelöscht: auch sein Rest (ein Herd schreibt keine Asche in den nächsten)
                         const loeschen = () => ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
-                        // DER SCHNELLSTE UND DER LANGSAMSTE LÄUFER (FENSTER-UHR): derselbe Herd ohne Wind, einmal mit unbegrenztem Budget
-                        // (jeder Schritt in einem Bild), einmal mit leerem und EINEM Stück je Bild (ein Schritt mit k Aschen und
-                        // Zündungen geht in k Bildern — mit `mindestJeBild` 8 passte jeder Schritt dieses Herds in ein Bild, die
-                        // Mutante sah nichts): dieselben Zellen, Köpfe, Sprünge und Schritte, sonst zählt das Fenster Bilder
-                        const fenster = {};
                         r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
+                        let ohneWind;
                         try {
-                            for (const [art, gesetz] of [["schnell", { budgetMs: 1e9 }], ["langsam", { budgetMs: 0, mindestJeBild: 1 }]]) {
-                                if (art === "langsam") loeschen();
-                                const L = await herd(60, gesetz);
-                                fenster[art] = { zellen: st.brandFeld.size, koepfe: L.koepfe, alle: L.alle, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel };
-                            }
+                            ohneWind = (await herd(60)).alle;
                         } finally {
                             delete r._windAt;
                         }
-                        const ohneWind = Math.max(fenster.schnell.alle, fenster.langsam.alle);
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
+                        loeschen();
+                        // DER LANGSAMSTE LÄUFER (FENSTER-UHR): derselbe Herd mit dem Wind, mit leerem Budget und EINEM Stück je Bild (ein
+                        // Schritt mit k Aschen und Zündungen geht in k Bildern; mit `mindestJeBild` 8 passte jeder Schritt in ein Bild,
+                        // ohne Wind trägt kein Schritt mehr als eines — die Mutante sähe dort nichts), vor dem Herd des Spiels: dieselben
+                        // Köpfe und Schritte, ihr Median und ihr schnellster Sprung auf `FENSTER_MS` gleich (die Welt lebt zwischen
+                        // beiden Herden weiter — der Bestand frisst am Bett, lokal 44 ↔ 48 Zellen, 0,305 ↔ 0,307 m/s)
+                        const M = await herd(300, { budgetMs: 0, mindestJeBild: 1 });
+                        const langsam = { zellen: st.brandFeld.size, koepfe: M.koepfe, mit: M.mit, alle: M.alle, schritte: M.schritte, bilder: M.bilder, deckel: M.deckel };
                         loeschen();
                         // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
                         let [lebVor, ovVor] = [];
                         const Z = (W.brand = await herd(300, {}, () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()])));
-                        Object.assign(Z, { ohneWind, fenster, lebVor, ovVor, glut, licht });
+                        const spiel = { zellen: st.brandFeld.size, koepfe: Z.koepfe, mit: Z.mit, alle: Z.alle, schritte: Z.schritte, bilder: Z.bilder };
+                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam }, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
