@@ -1803,8 +1803,8 @@ class AnazhRealm_koerper_fahrt {
     // der Asphalt des Labors, μ 1). Die Zahlen trägt die EINE Stoff-Zeile (`_stoff`: `muRad` trocken, `muRadNass` voll nass), die
     // Gewichte tragen die Schichten, die den Boden malen: der Grund (`_terrainMaterialAt`, was der Spieler beim Graben bekommt),
     // darüber die Wiese als gras — dieselbe Zeile, auf der Huf und Schritt stehen (`_kontaktStoffAt`) — mit dem Grün des Gesetzes
-    // unter dem Rad (`_bodenGruenUnter`, die Wache, unter der der Halm wächst und das Grün gemalt wird — auch bevor die Karte
-    // des Chunks steht: bis 22.11. galt dort Grün 0, und die Fahrt hing am Bau-Stand, also am Gerät), darüber der Weg
+    // unter dem Rad (`_bodenGruenUnter`, die Wache, unter der der Halm wächst, NUR aus dem Gesetz mit dem Hang des Felds am Rad —
+    // bis 22.11. las sie die Karte des Bodens und galt ohne sie Grün 0: die Fahrt hing am Bau-Stand, also am Gerät), darüber der Weg
     // als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
     // nach dem Wetter-Wort — wird sie festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Bis 24.10. reichte die Welt
     // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).

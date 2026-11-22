@@ -317,6 +317,9 @@ class AnazhRealm_feld_brand {
             ];
             if (!Number.isFinite(gx + gz))
                 this._bruchMelden("BRAND-GEFÄLLE: die 2D-Höhe trägt an " + x + "/" + z + " keine Zahl");
+            // der Hang des Betts ist der seiner Ebene: das Grün des Gesetzes je Bett-Punkt (`_kontaktStoffAt` → `_bodenGruenUnter`)
+            // liest ihn, statt die Normale des Felds je Punkt zu messen (fahrt-weltzeit: 81 statt 40 Einheiten je Punkt)
+            const hang = Math.hypot(gx, gz);
             // DAS BETT LIEGT, WO DIE ZELLE BRENNSTOFF TRÄGT (w28-lava-nachlauf): die Zelle misst ihr Bett auf einem Gitter von
             // `bettGitter`² Punkten (der Stoff je Punkt auf der Ebene des Gefälles) — `bett` ist seine Maske (null: die ganze
             // Zelle), `anteil` seine Fläche, die Zeile die des häufigsten Brennstoffs. DIE LAST BLEIBT GANZ (`leb`): wo Bett liegt,
@@ -334,7 +337,7 @@ class AnazhRealm_feld_brand {
                 const [bett, je] = [new Uint8Array(P.length), new Map()];
                 P.forEach(([px, pz], k) => {
                     const [dx, dz] = [px * cs, pz * cs];
-                    const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz));
+                    const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz, hang));
                     if (s && s.brenn) ((bett[k] = 1), je.set(s, (je.get(s) || 0) + 1));
                 });
                 return { N: P.length, bett, je, n: bett.reduce((a, b) => a + b, 0) };
