@@ -5753,7 +5753,12 @@
         meer: Object.freeze(["waterLevelM"]),
         wetter: Object.freeze(["regenQuote", "sturmQuote"]),
         wuchs: Object.freeze(["decke", "wald"]),
+        eis: Object.freeze(["zeit"]),
     });
+    // DIE EIS-ZEIT (Karte 2 planet.kopplung.gegenwart, `eis` der Tafel): 1, wo das Eis des Quartärs den Ort trug (planet-core
+    // `ortEisZeit`: polwärts der Eisgrenze des Planeten in einer der `EIS_ZEITEN`), sonst 0. Die Heimat trägt 0 — ihr Anker liegt
+    // nie unter dem Eis (scripts/diag-phyto-tree.cjs fragt den Planeten); am Ziel Heimat + Δ. Leser: der Findling (Stamm
+    // `_rockGeologyClass`).
     // DER WUCHS DES ORTS (Reise, Welle 3: Bewuchs und Grund nach Klima) — ein Teil der EINEN Tafel (`ortGesetz(teil).wuchs`): was
     // Klima und Zeit des Orts an Pflanzen tragen, je Größe ein Faktor ∈ [0, 1]; in der Heimat ist jeder genau 1 (x · 1 und
     // Gewicht 0 in jedem Leser: byte-gleich ohne Bedingung).
@@ -5832,6 +5837,16 @@
     function ortBaum(W, nass, nadel) {
         return (nadel ? W.nadel : W.laub) * (W.wald + (W.oase - W.wald) * nass);
     }
+    // DIE WÄRME-ART AM ORT (die Palme): sie steht nur, wo der Winter an ihrer Höhe y ihren Frost nicht kennt — das Mittel der
+    // Winter-Mitte (`temperaturFeld`: Mittel − Jahres-Amplitude − Kühlung der Höhe) mindestens `WAERME_ART.winterC`. Die Palme
+    // hat kein Ruhe-Meristem gegen Frost: ihre Grenze ist das Mittel des kältesten Monats über 5 °C (Greenwood & Wing 1995,
+    // Geology 23). Die Heimat trägt am Meer einen Winter von −4 °C — dort steht keine; am warmen Ort der Reise steht sie.
+    // Leser: die Art der Streu (Stamm `_scatterSpeciesForCell`).
+    const WAERME_ART = Object.freeze({ winterC: 5 });
+    function waermeTraegt(L, y) {
+        const f = temperaturFeld(L, y);
+        return f.mittel - f.jahr.amp - f.kuehlung >= WAERME_ART.winterC;
+    }
     // DIE LANDUNG DER REISE (K5, w28-reise-ort): trägt das Makro-Gesetz der Lage `L` Grund an der Ankunft — am Ursprung oder auf
     // der Ring-Spirale (je `LANDUNG.ringM` bis `LANDUNG.bisM`, 8 Richtungen; dieselbe Spirale wie der Plan der Ankunft im Faden):
     // die Fläche `LANDUNG.ueberM` über dem Meer der Lage. → {x, z} des ersten tragenden Punkts oder null.
@@ -5906,6 +5921,7 @@
                     klimaHeute,
                     spendeVerh: 1,
                     schneeBandM: 0,
+                    eis: 0,
                     wetter: null,
                     wuchs: ortWuchs(klimaHeute, 0, { decke: 1, wald: 1 }),
                     siedlung: null,
@@ -5940,6 +5956,7 @@
                 if (!(d[g] && Number.isFinite(d[g][f]))) nein(`Δ ${g}.${f} fehlt`);
         if (!(d.klima.spendeVerh >= 0)) nein(`Δ klima.spendeVerh ${d.klima.spendeVerh} (≥ 0)`);
         for (const f of ORT_FELDER.wuchs) if (!(d.wuchs[f] >= 0)) nein(`Δ wuchs.${f} ${d.wuchs[f]} (≥ 0)`);
+        if (![-1, 0, 1].includes(d.eis.zeit)) nein(`Δ eis.zeit ${d.eis.zeit} (−1, 0 oder 1)`);
         if (!d.wildnis || typeof d.wildnis !== "object") nein("Δ wildnis fehlt");
         for (const id of Object.keys(d.wildnis)) {
             if (!LANDFORM_REGLER.some((r) => r.id === id)) nein(`Δ des unbekannten Reglers „${id}"`);
@@ -5970,6 +5987,7 @@
             Object.assign(ohneBand, {
                 spendeVerh: k.spendeVerh,
                 schneeBandM: linie(ohneBand) - linie(H),
+                eis: Math.min(1, Math.max(0, H.eis + d.eis.zeit)),
                 wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
                 wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
                 siedlung: ortSiedlung(teil.zeitMa, ortWuchs(klimaHeute, teil.zeitMa, d.wuchs), false),
@@ -7896,6 +7914,8 @@
         kahlGrund: kahlGrund,
         ortKraut: ortKraut,
         ortBaum: ortBaum,
+        WAERME_ART: WAERME_ART,
+        waermeTraegt: waermeTraegt,
         ortLandung: ortLandung,
         ortSaat: ortSaat,
         ortSaatWahl: ortSaatWahl,

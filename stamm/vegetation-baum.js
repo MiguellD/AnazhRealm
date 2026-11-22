@@ -1425,12 +1425,16 @@ class AnazhRealm_vegetation_baum {
 
     // Stein-Geologie-Klasse (phytogenesis-placeRocks): FLACH → Findling, steil + hoch → Aufschluss (Grat),
     // steil + tief → Talus (Hang-Fuß), Mittelhang → kein Fels; Prüf-Folge Findling → Aufschluss → Talus.
-    // Reine Funktion von (slope, relH) → Γ5-deterministisch.
+    // Reine Funktion von (slope, relH) und dem Ort → Γ5-deterministisch.
+    // DER FINDLING LIEGT, WO DAS EIS LAG (Karte 2 planet.kopplung.gegenwart): der Erratiker ist die Fracht des Inlandeises — am
+    // flachen Grund liegt er nur, wo die Eis-Zeit des Orts (`ort.eis`, gelaende-core: polwärts der Eisgrenze des Planeten im
+    // Quartär) 1 ist; sonst trägt der flache Grund keinen Fels. Bis hier lag er an jedem flachen Ort: an der Heimat (Jahresmittel
+    // 7 °C, nie unter dem Eis) 660 Findlinge an 1 000 Punkten ohne Ursache.
     _rockGeologyClass(slope, relH) {
         const G = AnazhRealm.ROCK_GEOLOGY;
         const s = Number.isFinite(slope) ? slope : 0;
         const h = Number.isFinite(relH) ? relH : 0;
-        if (s <= G.findlingSlopeMax) return "findling"; // flacher Grund
+        if (s <= G.findlingSlopeMax) return this._gelaende().ort.eis ? "findling" : null; // flacher Grund: der Findling des Eises
         if (s > G.aufschlussSlopeMin && h > G.aufschlussHeightMin) return "aufschluss"; // Fels bricht auf dem Grat durch
         if (s > G.talusSlopeMin) return "talus"; // Blockschutt am Steilhang-Fuß
         return null; // Mittelhang → kein Fels (die Nische trägt hier keinen Stein)

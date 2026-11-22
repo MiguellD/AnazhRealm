@@ -1113,6 +1113,7 @@ Nah-Streu, der Rasen und die Bäume eines Plans lesen ihn. Die Farbe des Bodens 
 Wüsten-Ocker der Palette, foundry-core `PORTAL_GROUND.wueste`), EINE Formel für Wirt und Faden. Die Wasser-Bilanz `bilanz`
 füllt jeden See nur zu ihrem Anteil (`seeBilanz` in `hydrosphaere`). Am Ort (x, z) mit der Nässe des Bodens: die Krautschicht
 `ortKraut` (Boden-Farbe, Acker, Grund eines Dorfs) und der Baum seines Holzes `ortBaum` (Hof-Baum, Baum des Plans).
+Die Wärme-Art an der Höhe y `waermeTraegt` (die Palme nur im Winter ab `WAERME_ART.winterC`, Greenwood & Wing 1995) liest die Art der Streu.
 DIE SIEDLUNG DES ORTS (`ortGesetz(teil).siedlung`, in der Heimat 1): `bau` (der Mensch baut — nicht vor seiner Zeit, nicht im
 Dauer-Frost) liest die Wahl der Dorf-Zelle, `platz` (der Prüfplatz nur in der Heimat) der Plan des Genesis-Orts; ein Dorf steht,
 wo `ortKraut` in seinem Reich `ORT_SIEDLUNG.naehrt` trägt. DIE LANDUNG: `ortLandung` (Grund an der Ankunft im Makro-Gesetz),
@@ -1135,7 +1136,7 @@ Adresse `planetWasserR` (Abfluss und See-Tiefe, stetig). DIE BRÜCKE ZUM ORT: de
 davor keinen Ort fand — eine Saat mit Ort bei 512 behält ihn bitgleich; Richter: Zeile anker.jede-saat), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
 jedes Feld +0, Spende und Wuchs als Verhältnis 1; DER JAHRESZEITEN-VERTRAG: „Sommer“ ist die wärmere Jahreszeit und trägt ihre
 Phase, das Δ des Jahres-Gangs wird zur selben Zeit des Jahres genommen — Heimat + Δ hält Sommer ≥ Winter an jedem Ort, die Phase
-reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
+reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; die Eis-Zeit des Orts `ortEisZeit` (polwärts der Eisgrenze in einer der `EIS_ZEITEN` des Quartärs, als Δ `eis.zeit` im Ort, Leser: der Findling); der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
 Die Bytes sind Gesetz: die eigene Mathe `planetMathe`, der Hash `planetHash` und der zählerbasierte Zufall `planetZufall` —
 der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_intern` reicht ihm die Terme. Der Planet lebt nur
 im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach
