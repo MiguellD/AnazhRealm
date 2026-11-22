@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T22:12:24.592Z",
+ "zeit": "2026-11-22T22:32:52.330Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -1360,6 +1360,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.geist.generationen#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kinder unter 15 J 0 verfehlt ≥ 0.35 — Täter: stamm/koerper-leib.js:55 das Alter des Genoms 0,05–0,5 auf dem Regler (18–80 J) — kein Kind, kein Greis · Anteil Kinder unter 15 J 0 (Soll ≥ 0.35) · Umfang 1367 · Alter am Leib (die Gestalt jedes Bewohners, Regler 18–80 J) 22.3–48.7 J, die Gestalten [22.3,44,46.5,30.1,25.8,48.7,28,25.5], Epoche 1238, 1367 Bewohner · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.29,
+   "grund": "ROT: S1 ROT an Anteil Kinder unter 15 J 0 verfehlt ≥ 0.35 — Täter: stamm/koerper-leib.js:55 das Alter des Genoms 0,05–0,5 auf dem Regler (18–80 J) — kein Kind, kein Greis · Anteil Kinder unter 15 J 0 (Soll ≥ 0.35) · Umfang 1367 · Alter am Leib (die Gestalt jedes Bewohners, Regler 18–80 J) 22.3–48.7 J, die Gestalten [22.3,44,46.5,30.1,25.8,48.7,28,25.5], Epoche 1238, 1367 Bewohner · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k1ccc3f8337ea",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1669917f368e",
+   "s": 16.7,
+   "fremd": {
+    "s": 20.2,
+    "takte": 9,
+    "fremdS": 19.13,
+    "kerne": 0.944,
+    "fensterKerne": 0.977,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.47
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.86
+     ]
+    ],
+    "dienerS": 9.78,
+    "diener": [
+     [
+      "dwm.exe",
+      4.02
+     ],
+     [
+      "System",
+      3.45
+     ]
+    ],
+    "geraetS": 11.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.61
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 46.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T22:32:52.330Z",
+   "abdruck": "721086e4e62e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1381,7 +1451,9 @@
   "k5b49cbe3cc87": "dVVNc5swEP0vPjYl4jMIzeQgh0ycTjtxZnrpcSVWQIzBI2HTcaf/vSMbbAPpHjjAW723b1fLn8UO5AZyvP8wTb1giy+LrwsDB3QM6gPq+w+zYItEej4GjJ+DcM6fLEzqctcaUpWCgKih2KKz1y2W1b08pYHAMKOMdM88XxOiyJGkHb/EM398nB5TCcwapwWFl0MimqmITYF7k4NAB/bqRNyDIzfwhGLkFDTlbym5RPeD83WowjVNLfnkQAF1NlafPEQxRuy1+1RpVgK2TlXWZuD2sjhRLrvhm+Vo6JwjYFGh7pOyGP0kHAQvrS3WqkmiqvbGjMhokEU+ZYQkU2yOppRF6+x0I7Du4SLxYw/YspvVke/2jrpVBEIAFVO/C8A6Rz3S4AZSPXiM/Kb8f0EOdKpvA1vU4NRQDD67QeyLq2+EkNVcZ3Uq6kQ/FOVF6IEcJdqmkwMhV377anX5OrxP8xuR7zMyI4tSb8cWqhB9N2Df59JMARlqZ9OY9oKmIQDS/sakhL9zO3zpNPNa1JAHAPRmiAglfEVnjI1qO9Do5Lt9n4ghRnHEOH+dgVvYbof7oYIwkNPmmtYO/60MSIQHGSPk7nyB5kWfr4pzxLIakpQKwyRiT8t8Cj5o2Dogcl0qNXRdRFIlnw1wh1XriKZph2MxjiGwltS3jV535x1yjTR0X9Ll+3QGn/hUzomh0e1la4gHV4VM2WHp5Axd6tbpQBYD3FcCwUqf9eWIusIcR1aKmCZ2vDvZq7STEPcrQt2Nhvc4P7FEa3Jt9mZotIRQROyTtnSoNwLqTQ+Unut7lH3jnC/f+GrkyetPd01TMo3g4XnJ+bpYnrf0L/t46XffDiXZ6UaVdlOSAvamgKq9/jb+/gM=",
   "kc56980e055b5": "bVXbjpswEP2XPLb1mutiLO2Ds6yarbba5BPGZgxsCEQ2hCpV/70iCUmAzBOCc2aOz8yYv4s9qC1k+PRl62rBF98WPxYWDkgsmgOapy+74ItYuR76XJyDCiFee5gyxb6xtCwkBVlBvkPSmgaL8kmdaCAxSBmn3ZvI1pRqeqRJJ67xJl5epmlKiWlNGtB4TRKyVId8CmxtBhIJtPpU+AIOHd+VmtNTsER8JvQa3W8h1oEO1izpi08SSqjSsfr4OYww5O/dQ6VpAdiQsqjsUNtNo1g7/K7ejGOgI0fAvERzIaURenEwCF72tvRWTYi6bK0dFWN+GnqMUxpPsRnaQuUN2ZtaYnWBy9iLXODLbnaObN8Sfa8IpAQmp37ngFWGZqTB8ZV+djn9w6ZJt7BDA6SCfPDS8SNP3ryhlK7mWsqT8FOJQbgbogtqROwbSw+UDmPUP1O2un4d3ifZbdTEZlbMqrwwu7FNOkDP8fnHXJrNIUVDtrVtrmgWACC7bEVCxUb0A5ZMmbdDDTwAYHeDQhkVq5mHttZNBwZJtm8vRAwwjEIuxPsM3MBuN+yA9gNfTRtom37A72VALF1IOaXfz0syP/R5HcgRi3IgaR0E8WwbDwZ2BGRmCq2HjstQ6fjRgHZYNkTWdTOkxCgCv7ejum/yujvfEbdIAufn63IjJvEqprpPFWrTXG8F+ezogOt+UDo1QxemIR2ofIB7WiLE/AH0iKbEDEc2yojF/Wh36l7p8PB9NLjHWZePBfYGV7a1Q5MVBDLkD1rSodlKqLYXoHIdz2X8lxBi+SlWY1OSzZoldBp+1/v5kYtL4j0quje1Lvrbj+bQ2hzK5vYr+Pcf",
   "k7e0920b48508": "bVVdb5swFP0veVxHzWcxlvrgNNVSrVsTaU97uzbXQEMgskmZMu2/TyaQBOh9QnCOz/G51+bv4gByBxnev5u6WrDFl8XXhYEPdAzqD9T372bBFon0fAwY33JbhHP+ZGFSF4fGkLIQBEQF+R6do26wKO9lRwOBYUoZaZ95tiFEkRNZtY+PU2opMK2dBhReiBFNVcSmwKPJQKADR9WJ9eDIDTyhGOmKrvjbilyqpZxvQhVu6GqymIAqHbtNHqIYI/bScv7MZy7TArBxyqIyg66Xxoly2VXrx4yjoXVOgHmJuielMfpJOJhd2jhtNBOiKo/GjMRokEY+ZYQkU2yGppB54xx0LbDq4SLxYw/Ycp52djg66tYRCAFUTLPOAasM9ciDG0j14DHyh04X3cEeNTgV5EOWbhD74poNIWQ991J2xjuJwbgXoQdyRLRNJR+E8L7sM6Hry9fh/Srj19rOxIzMC70fx6RC9N2Avc6tmRxS1M6uNs0FTUMApKxXI91p2ITTwTLXTQ08AKA3g0Io4etZhqZWTQsanexw7IkYYhRHjPOXGbiB/X6YfxWEgZw20DR2wG9tQCI8SBkhd+cDMt/0+Tg4JyzKgaRUGCYRe1pmU/CHhr0DItOFUkPXRSRV8tmQtlg2jqjrZlgW4xgCRgJS3Tb6Z2ujfb7p4yp0v73+3m75uJ741E6nUOvmciuIB1eFTNlhaeUMXejGaUHmA9xXAsFan/XlhLrEDEdRipgmdrxbdfZ9stdM3F8D6m40vKf5igXakCtzNEOjJYQiYp+0pUW9E1DteqD0XN87j+Dyja9HmXz/5W6obW080g9am+drvuyy5dJmOogcUJKDrlVhb0OSw9HkUDbXX8G//w==",
-  "k0faf0a92a0bd": "bVVNc5swFPwvPjYl4jMIzeQgh0ydmbS1r709iScgxuCRsGnd6X/vyAbbQN6JgV3tat+T+LvYg9xCjo8fpqkXbPFl8XVh4IiOQX1E/fhhFmyRSM/HgPENt7XmnL9YmNTlvjWkKgUBUUOxQ+egWyyrR3mmgcAwo4x0rzxfE6LIiaTd8/OUWgnMGqcFhVdiRDMVsSnwYHIQ6MBBncV6cOQGnlCMnIum/GdKrtVRztehCtc0nSwmoM7GbpOnKMaIvf3h/JXPXGYlYOtUZW0GXS+LE+Wym9b3GUdD55wAiwp1T8pi9JNwMLu0cdpoJkRVHYwZidEgi3zKCEmm2BxNKYvW2etGYN3DReLHHrDlPO18f3DUvSMQAqiYZl0A1jnqkQc3kOrJY+Q3nS66hR1qcGoohizdIPbFLRtCyGrupTobP0sMxr0IPZAjom0qORLC+7LPhK6uX4f3ac5vtZmJGVmUejeOSYXouwF7n1szBWSonW1j2iuahgBIWa9GzqdhHU4Hy9w2NfAAgN4NCqGEr2YZmka1HWh08v2hJ2KIURwxzt9m4BZ2u2H+VRAGctpA09oBv7cBifAgY4Q8XA7IfNOX4+CcsKwGklJhmMxO4lHDzgGR61KpoeMikir5bEA7rFpHNE07LIlxDAEjAanvm/yjs7G+3vUwDd1v7782Gz6uFz71fVZodHu9EcSTq0Km7KB0coYudet0IIsB7iuBYK3PenJCXWGOoxhFTBM72p26+D7ZKyburwD1MBrc03zFEm3AtTmYockSQhGxT1rSod4KqLc9UHqu713Gb/mTr8aZpJs1TQnpxlEFuc0zLZaX99JmOojsUZK9blRpb0JSwMEUULW338C//w=="
+  "k0faf0a92a0bd": "bVVNc5swFPwvPjYl4jMIzeQgh0ydmbS1r709iScgxuCRsGnd6X/vyAbbQN6JgV3tat+T+LvYg9xCjo8fpqkXbPFl8XVh4IiOQX1E/fhhFmyRSM/HgPENt7XmnL9YmNTlvjWkKgUBUUOxQ+egWyyrR3mmgcAwo4x0rzxfE6LIiaTd8/OUWgnMGqcFhVdiRDMVsSnwYHIQ6MBBncV6cOQGnlCMnIum/GdKrtVRztehCtc0nSwmoM7GbpOnKMaIvf3h/JXPXGYlYOtUZW0GXS+LE+Wym9b3GUdD55wAiwp1T8pi9JNwMLu0cdpoJkRVHYwZidEgi3zKCEmm2BxNKYvW2etGYN3DReLHHrDlPO18f3DUvSMQAqiYZl0A1jnqkQc3kOrJY+Q3nS66hR1qcGoohizdIPbFLRtCyGrupTobP0sMxr0IPZAjom0qORLC+7LPhK6uX4f3ac5vtZmJGVmUejeOSYXouwF7n1szBWSonW1j2iuahgBIWa9GzqdhHU4Hy9w2NfAAgN4NCqGEr2YZmka1HWh08v2hJ2KIURwxzt9m4BZ2u2H+VRAGctpA09oBv7cBifAgY4Q8XA7IfNOX4+CcsKwGklJhmMxO4lHDzgGR61KpoeMikir5bEA7rFpHNE07LIlxDAEjAanvm/yjs7G+3vUwDd1v7782Gz6uFz71fVZodHu9EcSTq0Km7KB0coYudet0IIsB7iuBYK3PenJCXWGOoxhFTBM72p26+D7ZKyburwD1MBrc03zFEm3AtTmYockSQhGxT1rSod4KqLc9UHqu713Gb/mTr8aZpJs1TQnpxlEFuc0zLZaX99JmOojsUZK9blRpb0JSwMEUULW338C//w==",
+  "k1ccc3f8337ea": "bVXbjpswEP2XPLZlzXUxlvbBWVbNVltt8gljMwY2BCIb4ipV/70iCUmAzBOCMz5nzsyYv4s9yC3k+PRlmnrBFt8WPxYGDugY1AfUT19mwRaJ9HwMGD8H4Zy/9jCpy31rSFUKAqKGYodOp1ssqyd5SgOBYUYZsW88XxOiyJGkll/jjb+8TI+pBGaN04LC6yERzVTEpsDO5CDQgU6diC/gyA08oRg5BU35Z0quYX9zvg5VuKYp51zxfMYuoM7GFSTPUYwRe7cP1WYlYOtUZW0Gfi+LE+WyO85ZjgbrHAGLCvUlKYvRT8JB9LK3prdrkqiqzpgRGQ2yyKeMkGSKzdGUsmidvW4E1he4SPzYA7a0szryfeeoe0UgBFAx9bwArHPUIw1uINWzx8gfOj10CzvU4NRQDF66QeyLmzeEkNVcS3USfqIYhHsReiBHiX1zyYGQYZT6Z0JX16/D+zS/jRvfzMiMLEq9G9ukQvTdgH3MpZkCMtTOtjHtFU1DAKSXzUgJ3/B+yNJp5q2oIQ8A6N2gEEr4auahaVRrQaOT77tLIoYYxRHj/H0GbmG3G/ZABWEgpw00bT/g9zIgER5kjJDv50WZF31eB+eIZTUkKRWGyWwjDxp2Dohcl0oNHReRVMmjAbVYtY5omnY4EuMYgt6O+r7Ja3u+J26Rhu7P1+WGT+KVT3WfGBrdXm8G8eyqkKl+UKycoUvdOhZkMcB9JRAS9gB6RF1hjiMbRUyTfrStvFc6PHwfDe5x1uVjib3BtenM0GQJoYjYg5ZY1FsB9fYClJ7re5T94pwvP/lqbEq6WdOUTCOwvZ8fNbf32PxEskdJ9rpRZX8TkgI6U0DV3n4N//4D",
+  "k1669917f368e": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuIp96+fXXz/ebufaraH06aMKla4vG0E8WMpj6tSpnIJvc12TFmQ2uDtKIERTEo+oC0xxRKMIwqiTdSuvcGJveLkbifY4m/Ixx47g0jRmGLIET/hndfRL8nm8elrUWwHltg+QtuXYnQzjlL/w9Q0ra/78Zm1a/n+25KuuyB4l3etK5d02pBk0JoOivv4W/v4D"
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
