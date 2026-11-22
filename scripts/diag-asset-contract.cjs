@@ -9,7 +9,7 @@
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
 //
 //   npm run gate:asset-contract
-const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung, KLASSE, kanalImVm } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung, KLASSE, kanalImVm, gegenZeile } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 const {
@@ -213,9 +213,8 @@ function sehUrteil(proben) {
     }
     return v;
 }
-// DER STEIN AUSSER DER ZEILE (E8.1): gegen die Zeile zählen die Dreiecke ohne die, die sie frei stellt — die Zahl des Ausgangs
-// (phyto-core `budgetFrei` vor der Faltung, Bericht `frei`); ohne Bericht (die Pflanzen) ist nichts frei.
-const gegenZeile = (mm) => mm.tris - (mm.budget?.frei || 0);
+// DER STEIN AUSSER DER ZEILE (E8.1) und DIE BEWEGTEN TEILE: gezählt wird über die EINE Zählung des Harness (`gegenZeile`) —
+// die Dreiecke ohne die freien, die Draws ohne die bewegten (gegen `bewegt` der Zeile).
 function kostenUrteil(messungen, budget) {
     const v = [];
     for (const mm of messungen) {
@@ -225,11 +224,10 @@ function kostenUrteil(messungen, budget) {
             continue;
         }
         if (z.karte) continue;
-        if (gegenZeile(mm) > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${gegenZeile(mm)} Dreiecke > ${z.tris}`);
-        // die bewegten Teile einer Maschine (die Haspel: Kurbel · Seil · Eimer) zählen gegen `bewegt` der Zeile, nie gegen die ruhenden Draws
-        const bw = mm.bewegt || 0;
-        if (mm.draws - bw > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.draws - bw} Draws > ${z.draws}`);
-        if (bw > (z.bewegt | 0)) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${bw} bewegte Draws > ${z.bewegt | 0}`);
+        const g = gegenZeile(mm);
+        if (g.tris > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${g.tris} Dreiecke > ${z.tris}`);
+        if (g.draws > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${g.draws} Draws > ${z.draws}`);
+        if (g.bewegt > (z.bewegt | 0)) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${g.bewegt} bewegte Draws > ${z.bewegt | 0}`);
     }
     return v;
 }
@@ -1079,13 +1077,13 @@ hauptLauf(async () => {
                     );
                     continue;
                 }
-                const top = mm.reduce((s, x) => (!s || gegenZeile(x) > gegenZeile(s) ? x : s), null);
-                const dMax = mm.reduce((s, x) => Math.max(s, x.draws), 0);
+                const top = mm.reduce((s, x) => (!s || gegenZeile(x).tris > gegenZeile(s).tris ? x : s), null);
+                const dMax = mm.reduce((s, x) => Math.max(s, gegenZeile(x).draws), 0);
                 const vor = mm.reduce((s, x) => Math.max(s, x.budget?.vorher ? x.budget.vorher.draws : 0), 0);
                 // gegen die Zeile ohne den freien Stein (E8.1); gebaut steht daneben, das Band misst den Bau
                 const frei = mm.reduce((s, x) => Math.max(s, x.budget?.frei || 0), 0);
                 zeilen.push(
-                    `${k}[${st}] ${top ? gegenZeile(top) : "—"}/${z.tris}` +
+                    `${k}[${st}] ${top ? gegenZeile(top).tris : "—"}/${z.tris}` +
                         (frei ? ` (Stein frei bis ${frei}, gebaut ${top.tris})` : "") +
                         ` · Draws ${dMax}/${z.draws}` +
                         (vor ? ` (ungefaltet bis ${vor})` : "") +

@@ -555,7 +555,15 @@ function wirtMitBuch() {
     A._studioRenderConfig = rc;
     return A;
 }
+// DIE KOSTEN GEGEN DIE BUDGET-ZEILE (die EINE Zählung für gate:asset-contract und gate:regler-wirkt): die Dreiecke ohne die,
+// die der Kern frei stellt (E8.1, `budget.frei`), die Draws ohne die bewegten Teile einer Maschine (die Haspel: Kurbel ·
+// Seil · Eimer — sie zählen gegen `bewegt` der Zeile, nie gegen die ruhenden Draws).
+function gegenZeile(k) {
+    const bewegt = (k && k.bewegt) || 0;
+    return { tris: k.tris - ((k.budget && k.budget.frei) || 0), draws: k.draws - bewegt, bewegt };
+}
 module.exports = {
+    gegenZeile,
     wirtMitBuch,
     KLASSE,
     runWithWorker,
