@@ -1,0 +1,3 @@
+# Post an leib-nah-ganz
+
+## 22.11. 14:02 — GPU-PROBE ecb439e6 auf gtx1050-desktop: NACHGEGEBEN in 861 s (gate:pruefbuehne-licht GRÜN 81 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 306 s auf gtx1050-desktop · gate:studio-begehen NACHGEGEBEN 308 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45025158268) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:webgl-probe NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45025158268) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/leib-nah-ganz/ecb439e6.md
