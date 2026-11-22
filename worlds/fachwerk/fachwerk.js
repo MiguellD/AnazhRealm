@@ -172,7 +172,7 @@ function ausstattungAm(id, x, z, ry){
 // Fail-closed: weicht das Labor-Layout vom Export ab, wirft der Ort (das Studio zeigte sonst ein anderes Dorf als die Welt).
 const GK=window.__gelaendeCore;
 const WELT=(()=>{ const u=new URLSearchParams(location.search), o=(u.get('ort')||'').split(',').map(Number);
-  return {seed:u.get('welt')||GK.LAGE_GRUND.seed, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null, genesis:u.get('ort')==='genesis'}; })();
+  return {seed:u.get('welt')||window.__samenCore.EINGANG, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null, genesis:u.get('ort')==='genesis'}; })();
 // DIE TRASSE AUF DEM WELTGRUND (siedlung.K3): das Höhen-Raster um den Ort (fachwerk trasseRahmen, gelaende-core hoehenRaster) — das
 // Labor-Layout und der Export lesen DASSELBE Raster wie die Welt am Ort ihrer Zelle: die Gassen folgen dem Hang.
 function trasseAufWelt(dp){

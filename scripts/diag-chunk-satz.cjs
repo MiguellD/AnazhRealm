@@ -1657,6 +1657,9 @@ const { errs, check } = pruefer();
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
                     for (let i = 0; i < n; i++) {
                         p.x += dx;
+                        // das EINE Auge wandert (`_lodAuge`: die Kamera, wo das Rig sie setzt) — der Strom wählt die Stufe an ihm
+                        s.camera.position.set(p.x, s.camera.position.y, p.z);
+                        s.camera.updateMatrixWorld(true);
                         r._stufeAugeTakt(p);
                         const vor = new Map();
                         for (const [key, e] of s.voxelChunks) {

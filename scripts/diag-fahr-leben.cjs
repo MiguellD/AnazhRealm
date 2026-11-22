@@ -613,6 +613,34 @@ function stationVerdict(s) {
                 `frei-flach: das Brett liegt ${fk.flach ? (fk.flach.boden * 1000).toFixed(1) : "?"} mm zum Boden (Soll ±5 mm)`,
             ],
             [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
+            // same.physik.koerper#1: das Fass aus 4,5 m ruht auf weichem Grund ≤ 2 s nach der Landung — es rollt als Kreis
+            // (`_freiRandFuss`) und hält mit dem Rollwiderstand der Stoffe (`_rollWiderstand`, C_rr > 0 auf weichem Grund); ohne
+            // ihn liegt es anders (der Löser liest ihn)
+            [
+                fk.fassFall && fk.fassFall.ruheS !== null && fk.fassFall.ruheS <= 2 && fk.fassFall.crr > 0,
+                `frei-fass-ruhe: das Fass ruht auf ${fk.fassFall?.boden} ${fk.fassFall ? fk.fassFall.ruheS : "–"} s nach der Landung (≤ 2, C_rr ${fk.fassFall?.crr}) — Täter \`_rollWiderstand\` / \`_freiRandFuss\` (stamm/koerper-frei.js)`,
+            ],
+            // der Löser erfindet keine Arbeit: nach der Landung (ab 0,5 s) steigt die Energie des Fasses nie über ihr Tief (≤ 1 J,
+            // der Wind am Ort trägt weniger) — vorher schaukelte das stehende Fass im Gras ohne Ende, +18 J in 8 s
+            [
+                fk.fassFall && fk.fassFall.anstiegJ <= 1,
+                `frei-energie: das Fass gewinnt nach der Landung ${fk.fassFall?.anstiegJ} J (≤ 1) — Täter \`_freiRandFuss\` (der Anker wandert mit der Neigung) / die Bremse \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.fassFall && fk.fassFallOhneRoll && fk.fassFallOhneRoll.ruheS !== fk.fassFall.ruheS,
+                "frei-mutante: ohne Rollwiderstand ruht das Fass wie mit ihm (vakuös: der Löser liest ihn nicht)",
+            ],
+            // same.physik.flug#1: Stein und Feder fliegen in stiller Luft wie die Rechnung (±10 %), der Wind trägt die Feder
+            // weiter; ohne Luft fliegt die Feder wie der Stein
+            [
+                fk.luft?.stein?.abwPct <= 10 && fk.luft?.feder?.abwPct <= 10,
+                `frei-luft: Wurfweiten gegen die Rechnung mit Luft — Stein ${fk.luft?.stein?.abwPct} %, Feder ${fk.luft?.feder?.abwPct} % (≤ 10) — Täter \`_freiLuftPacken\` / \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.luftWind?.feder?.weite > (fk.luft?.feder?.weite ?? Infinity) + 0.2,
+                `frei-luft-wind: der Wind 2 m/s längs der Bahn trägt die Feder nicht (${fk.luftWind?.feder?.weite} gegen ${fk.luft?.feder?.weite} m) — \`_windAt\` in \`_freiLuftPacken\``,
+            ],
+            [fk.ohneLuft?.feder?.abwPct > 10, "frei-mutante: ohne Luft fliegt die Feder wie die Rechnung (vakuös)"],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
         ]),
@@ -2119,6 +2147,11 @@ hauptLauf(async () => {
                 schwerelos: { boden: 0.1, fugen: [0.1] },
                 fass: { kipp: 172 },
                 fassOhneStoss: { kipp: 2 },
+                fassFall: { boden: "gras", ruheS: 1.483, crr: 0.3, anstiegJ: 0.12 },
+                fassFallOhneRoll: { boden: "gras", ruheS: null, crr: 0 },
+                luft: { stein: { weite: 11.37, rechnung: 11.402, abwPct: 0.28 }, feder: { weite: 0.504, rechnung: 0.507, abwPct: 0.44 } },
+                luftWind: { stein: { weite: 11.6, rechnung: 11.402, abwPct: 1.7 }, feder: { weite: 2.1, rechnung: 0.507, abwPct: 314 } },
+                ohneLuft: { stein: { weite: 11.9, rechnung: 11.402, abwPct: 4.4 }, feder: { weite: 11.9, rechnung: 0.507, abwPct: 2247 } },
             },
             spielerWagen: {
                 a: {
@@ -2319,6 +2352,35 @@ hauptLauf(async () => {
             ["das Brett liegt 18,6 mm im Boden", { frei: { ...gutS.frei, flach: { ruheS: 0.6, wach: 0, boden: -0.0186 } } }, "frei-flach: das Brett liegt -18.6 mm"],
             ["die Probe des flachen Körpers fehlt", { frei: { ...gutS.frei, flach: undefined } }, "frei-flach"],
             ["die Wagen-Kollision aus: das Fass steht", { frei: { ...gutS.frei, fass: { kipp: 2 } } }, "frei-fass"],
+            // same.physik.koerper#1 an main 9f24b5b8: das Fass schaukelte auf dem Sechzehneck seines Rands, die Bremse des
+            // Fahr-Gesetzes hielt es auf jedem Grund gleich — im Gras 3,1 s nach der Landung
+            [
+                "das Fass ruht im Gras 3,1 s (main)",
+                { frei: { ...gutS.frei, fassFall: { boden: "gras", ruheS: 3.1, crr: null } } },
+                "frei-fass-ruhe",
+            ],
+            // same.physik.flug#1 an main 9f24b5b8: der Löser kannte keine Luft — die Feder flog wie der Stein (Station 2 260 %)
+            [
+                "der Löser ohne Luft (main)",
+                { frei: { ...gutS.frei, luft: gutS.frei.ohneLuft, luftWind: gutS.frei.ohneLuft } },
+                "frei-luft",
+            ],
+            [
+                "die Luft ohne Wind",
+                { frei: { ...gutS.frei, luftWind: gutS.frei.luft } },
+                "frei-luft-wind",
+            ],
+            // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
+            [
+                "das stehende Fass gewinnt Energie",
+                { frei: { ...gutS.frei, fassFall: { ...gutS.frei.fassFall, anstiegJ: 18 } } },
+                "frei-energie",
+            ],
+            [
+                "ohne Rollwiderstand ruht das Fass so früh",
+                { frei: { ...gutS.frei, fassFallOhneRoll: { ...gutS.frei.fassFall } } },
+                "frei-mutante: ohne Roll",
+            ],
             [
                 "ohne Schwere ruhen die Kisten am Boden",
                 { frei: { ...gutS.frei, schwerelos: gutS.frei.kisten } },

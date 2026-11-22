@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-11';
+  const VERSION = 'planet-h2-12';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2577,12 +2577,17 @@
   // Der Anker: der Ort, an dem die Konstanten des heutigen Ort-Gesetzes (Sommer/Winter am Meer) wahr sind — auf Land, Küste ≤ 300 km,
   // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
   // Runden 3×3-Verfeinerung zu 240 · 120 · 60 km. Bricht beim Namen, wenn kein Ort trägt (K10). Memo je (Plan, Zeit, Konstanten).
+  // DIE TREPPE DER SUCHE (h2-12): 512 Proben trugen 2 986 von 3 000 Saaten des Spiels (Form `w-<12 hex>-<6 base36>`); die 14 ohne Ort
+  // (0,47 %) verloren die ganze Reise — `reise` brach an ihrer Welt mit K10. Dieselbe Wertung sucht dichter (2 048 · 8 192 · 32 768
+  // Proben), je NUR wenn die Stufe davor keinen Ort fand: eine Saat mit Ort bei 512 geht denselben Weg wie zuvor (bitgleich, ihre
+  // Heimat liegt, wo sie lag), gemessen trug Stufe 2 alle 14 in je ≤ 427 ms. Trägt auch die dichteste keinen, bricht der Anker weiter.
+  const ANKER_PROBEN = [512, 2048, 8192, 32768];
   function planetAnker(plan, zeitMa, og) {
     pruefOrtGesetz(og); pruefJahr(plan.koerper, og);
     const M = memoVon(plan); if (!M.anker) M.anker = new Map();
     const kh = og.klimaHeute, key = zeitMa + '|' + ortGesetzSchluessel(og);
     if (M.anker.has(key)) return M.anker.get(key);
-    const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa), N = 512, F = fib(N);
+    const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa);
     const tMitte = 0.5 * (kh.sommer + kh.winter);
     const wert = (x, y, z) => {
       const tZ = G.T0 + G.T2 * (1.5 * y * y - 0.5); if (tZ - tMitte > 14 || tMitte - tZ > 14) return Infinity;   // Zone zuerst (ohne Punkt)
@@ -2596,7 +2601,8 @@
       return dS * dS + dW * dW;
     };
     let best = Infinity, bx = 0, by = 0, bz = 0;
-    for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } }
+    for (let s = 0; s < ANKER_PROBEN.length && best === Infinity; s++) { const N = ANKER_PROBEN[s], F = fib(N);
+      for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } } }
     if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km, Spende, Wuchs, kein E) (K10)');
     const tb = new Float64Array(6);
     for (let runde = 0; runde < 3; runde++) {

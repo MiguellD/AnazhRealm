@@ -352,7 +352,6 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     const macroAlt = s.worldMeta.macro;
                     const regenesis = (saat, macro) => {
                         s.worldMeta.seed = saat;
-                        r._voxelNoise = null;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
                     };
@@ -892,7 +891,7 @@ async function kernProbe(page, url) {
         [SELBSTTEST && !(rein.karteNeu[1] > 0), "SELBSTTEST: der Neubau je Probe blieb unentdeckt"],
     ])
         if (rot) befunde.push(b);
-    console.log(`  Die Edit-Karte steht: ${rein.karteNeu[0]} Neubauten in ${N} Proben${SELBSTTEST ? ` · Rückfall ROT: ${karteRot(rein.karteNeu[1])}` : ""}`);
+    console.log(`  Die Edit-Karte steht: ${rein.karteNeu[0]} Neubauten in ${N} Proben${SELBSTTEST ? ` · Rückfall rot: ${karteRot(rein.karteNeu[1])}` : ""}`);
     for (const name of ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel"]) {
         const z = { name, anker: kernQuelle().split(KERN_MUTATIONEN[name][0]).length === 2 };
         const m = z.anker && (await lauf(name));
@@ -906,7 +905,9 @@ async function kernProbe(page, url) {
     for (const [wer, haupt, faden] of selbsttest ? [["WORKER-FELD", "Dichte-Versatz", null], ["STAMM-LESER", null, "Dichte-Versatz"]] : []) {
         const g = kernGleich(await lauf(haupt, faden, "Dichte-Versatz"));
         selbsttest[wer] = { stamm: g.stamm, faden: g.faden, nennt: haupt ? g.faden > 0 && !g.stamm : g.stamm > 0 && !g.faden };
-        console.log(`  SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm ${g.stamm} · Faden ${g.faden} → ${selbsttest[wer].nennt ? "beim Namen ROT" : "BLIEB BLIND"}`);
+        // die Zeile eines Selbsttests trägt ihr Urteil vorn (✅ die Mutante fiel · ⛔ sie blieb blind): der Kopf der GPU-Probe liest jede
+        // Zeile mit dem Wort ROT ohne ✅ als Urteil (scripts/lib/urteil-zeile.cjs) — die Wand stand an der Probe ROT über „✅ PLANET GRÜN“
+        console.log(`  ${selbsttest[wer].nennt ? "✅" : "⛔"} SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm ${g.stamm} · Faden ${g.faden} → ${selbsttest[wer].nennt ? "beim Namen ROT" : "BLIEB BLIND"}`);
     }
     if (selbsttest && !(selbsttest.sieht = selbsttest["WORKER-FELD"].nennt && selbsttest["STAMM-LESER"].nennt)) befunde.push("SELBSTTEST: eine Abschrift blieb unentdeckt");
     const kern = { punkte: N, edits: plan.edits.length, haelt: rein.haelt, orte: plan.orte, wirkt: rein.wirkt, faeden: rein.faden.length, rein: g0, mutationen, selbsttest,
@@ -1802,7 +1803,6 @@ async function gebaut(page) {
             // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
             const regenesis = async (saat, macro) => {
                 s.worldMeta.seed = saat;
-                r._voxelNoise = null;
                 if (macro !== undefined) s.worldMeta.macro = macro;
                 else delete s.worldMeta.macro;
                 await r._worldgenComputeAndBuildHydrosphere();
@@ -2296,7 +2296,7 @@ async function planetSelbst(page, ist, soll) {
     const taeter = ["rechnete den Samen", "die Bytes weichen ab", "VOR dem Satz", "bekam den Stand der Welt", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"];
     const sieht = taeter.every((t) => M.some((x) => x.includes(t))) && ohne.some((x) => x.includes("kennt ihren Ort nicht"));
     console.log(
-        `  SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden vor dem Satz, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
+        `  ${sieht ? "✅" : "⛔"} SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden vor dem Satz, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
     );
     return sieht;
 }
@@ -2711,7 +2711,7 @@ async function faden(page, url) {
             kopf >= 2e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld, Stand (${mb(kopf)} MB) und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  ${sieht ? "✅" : "⛔"} SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld, Stand (${mb(kopf)} MB) und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
         rot = rot || !(await planetSelbst(page, planetIst, planetSollWert));
@@ -2800,11 +2800,11 @@ hauptLauf(async () => {
                 rot = true;
             }
             if (SELBSTTEST)
-                console.log(`  SELBSTTEST Strom (die Urform, Soll ROT): ${(urform = await strom(page, true))}`);
+                console.log(`  SELBSTTEST Strom (die Urform, Soll rot):${(urform = await strom(page, true))}`);
             const sp = await spalteEinmal(page, false);
             console.log(`    Die Spalte einmal (Teil E, \`_terrainColumnContextIn\`, neu je Ruf): ${sp} (Soll ${SPALTE_SOLL})`);
             rot ||= sp !== SPALTE_SOLL;
-            if (SELBSTTEST) console.log(`  SELBSTTEST Spalte (vergisst, Soll ROT): ${(vergisst = await spalteEinmal(page, true))}`);
+            if (SELBSTTEST) console.log(`  SELBSTTEST Spalte (vergisst, Soll rot):${(vergisst = await spalteEinmal(page, true))}`);
         }
         const rep = await probe(page, weltArg, !!ABDRUCK);
         rep.welt = welt;

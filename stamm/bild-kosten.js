@@ -2855,7 +2855,17 @@ class AnazhRealm_bild_kosten {
         else v.set(0, 0);
         s.breite = v.x;
         s.hoehe = v.y;
-        s.pxJeM = cam && cam.isPerspectiveCamera && v.y > 0 ? v.y / (2 * Math.tan((cam.fov * Math.PI) / 360)) : null;
+        // DIE BRENNWEITE ist die EINE des Stufen-Gesetzes (`_brennweite`, stufe-ein-auge): der Schirm schreibt ihr Sichtfeld, beide
+        // lesen dieselbe — gerastert in Schritten von 2 % der Brennweite (ein gleitendes Tempo-Sichtfeld schreibt erst am nächsten
+        // Schritt). `wahl`: der Schlüssel jeder Grenze, die am Schirm hängt (Zeilen und Sichtfeld) — ihr Gedächtnis liest ihn.
+        if (cam && cam.isPerspectiveCamera && cam.fov > 0) {
+            const stufe = Math.round(
+                Math.log(Math.max(1, v.y) / (2 * Math.tan((cam.fov * Math.PI) / 360))) / Math.log(1.02)
+            );
+            if (stufe !== s.stufe) [s.stufe, AnazhRealm._sichtfeldGrad] = [stufe, cam.fov];
+        }
+        s.pxJeM = cam && cam.isPerspectiveCamera && v.y > 0 ? AnazhRealm._brennweite(v.y) : null;
+        s.wahl = v.y + ":" + (AnazhRealm._sichtfeldGrad > 0 ? AnazhRealm._sichtfeldGrad : AnazhRealm.KAM_FOV_GRAD);
         return s;
     }
 

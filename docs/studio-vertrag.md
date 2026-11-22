@@ -1131,7 +1131,8 @@ Klima `KLIMA` (`planetKlimaGlobal`, `planetKlima`, `planetKlimaR`) mit den Klass
 `WHITTAKER`; die EINE Verdunstung `planetPet` (Wuchs und Wasser lesen sie); das Wasser auf EINEM Gitter je Scheibe
 `planetWasserGitter` (`PLANET_WASSER_N` Zellen, fest, nie die Weltgröße: Einzugsgebiet, Seen, Überlauf gegen die PET) und an der
 Adresse `planetWasserR` (Abfluss und See-Tiefe, stetig). DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
-`ortGesetz`), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
+`ortGesetz`; JEDE Saat des Spiels trägt ihn: die Suche steigt eine Treppe 512 · 2 048 · 8 192 · 32 768 Proben, je nur wenn die Stufe
+davor keinen Ort fand — eine Saat mit Ort bei 512 behält ihn bitgleich; Richter: Zeile anker.jede-saat), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
 jedes Feld +0, Spende und Wuchs als Verhältnis 1; DER JAHRESZEITEN-VERTRAG: „Sommer“ ist die wärmere Jahreszeit und trägt ihre
 Phase, das Δ des Jahres-Gangs wird zur selben Zeit des Jahres genommen — Heimat + Δ hält Sommer ≥ Winter an jedem Ort, die Phase
 reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
@@ -1156,7 +1157,9 @@ Waldes), der EINE Text-Hash `samenHash` (FNV-1a über die UTF-16-Einheiten: Bau-
 Strom eines Samens `samenStrom` (das LCG der Welt: die Würfe eines Akts im Stamm `_samenStrom`, der Bestand des Gaus über den
 Wirt im Gau-Faden), der Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
 der Baum `samenBaum` (Welt-Samen → je benanntem Pfad ein eigener Strom: das Los eines Dorfs `los:<i>`, die Op eines Programms
-`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen). Geladen VOR jedem Kern in jedem Kontext (die erste
+`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen) und die Saat der Eingangs-Welt `EINGANG` (die Wurzel
+der Welt, die ohne genannte Saat geboren wird — EIN Leser der Sitzungs-Saat im Stamm, `_saat`, Welle saat-argument; vor dem Heil
+bricht er beim Namen). Geladen VOR jedem Kern in jedem Kontext (die erste
 Zeile des Manifests, index.html vor phyto-core, die Fäden des Gesetzes `FADEN_QUELLE.kerne`, die Klang-Werkstatt, jede
 Labor-Seite, die Node-Lader); jeder Kern liest ihn je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Jede frühere
 Kopie des Generators ruft ihn mit ihrer Saat-Formel, wie sie stand — die Bytes jeder Welt blieben (die Goldens unberührt); die

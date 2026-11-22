@@ -95,7 +95,13 @@
         return samen;
     }
 
+    // DIE SAAT DER EINGANGS-WELT (Welle saat-argument): die Wurzel der Welt, die ohne genannte Saat geboren wird (brandneuer
+    // Spieler, ein Save ohne Saat) — hier EINMAL, weil Seite, Faden und Studio sie lesen. Ihr EINER Leser in der Welt ist das Heil
+    // (`_weltMetaHeil`, stamm/speicher-welten.js); kein Leser der Saat ersetzt eine fehlende still durch sie.
+    const EINGANG = "anazh-realm-seed";
+
     root.__samenCore = Object.freeze({
+        EINGANG: EINGANG,
         mulberry32: mulberry32,
         mulberrySchritt: mulberrySchritt,
         samenHash: samenHash,
