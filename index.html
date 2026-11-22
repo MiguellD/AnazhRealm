@@ -7768,10 +7768,15 @@
                 gap: 3px;
             }
             /* die Material-Karten im Raster ihrer Schrift (w12-menue): 3 Spalten in 200 px schnitten bei 16 px 7 von 15 Namen
-               („KNOCH“, „SCHUPP“) — eine Karte trägt Glyphe und Namen (⌘ Knochen 7 em), die rechte Palette zwei Spalten */
+               („KNOCH“, „SCHUPP“) — eine Karte trägt Glyphe und Namen (⌘ Knochen 7 em), die rechte Palette zwei Spalten.
+               DIE KARTE WÄCHST AUS IHREM WORT (front-druckwelle): das feste Raster zu 7,5 em schnitt „Donnerkorn“ (116 px in
+               121) und jedes eigene Material mit langem Namen (`defineMaterial`: ein Wort bis 40 Zeichen, 399 px in 121). Die
+               Reihe trägt Karten ab 7,5 em und teilt ihre Breite unter ihnen; eine Karte ist nie schmaler als ihr Wort (das
+               selbsttätige Mindestmaß des Flex-Glieds — darum schneidet sie nicht, unten) und nie breiter als die Reihe; erst
+               ein Wort, das keine Reihe trägt, bricht in seiner Karte. */
             #workshop-material-palette {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr));
+                display: flex;
+                flex-wrap: wrap;
                 gap: 3px;
             }
             .workshop-material-card,
@@ -7793,6 +7798,16 @@
                 min-height: 22px;
                 position: relative;
                 overflow: hidden;
+            }
+            .workshop-material-card {
+                flex: 1 1 7.5em;
+                box-sizing: border-box;
+                max-width: 100%;
+                overflow: visible;
+            }
+            .workshop-material-card > span:last-child {
+                min-width: 0;
+                overflow-wrap: break-word;
             }
             .workshop-material-card:hover,
             .workshop-color-swatch:hover {

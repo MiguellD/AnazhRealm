@@ -428,6 +428,11 @@ function werkzeug() {
             st.inventoryHoverLast = 0;
             r.playInventoryHoverPing({ resoniert: 1 });
         });
+        // DER KNALL (same.physik.reaktion#2): die Druckwelle am Ohr über ihren echten Weg (`_druckTrifft`, Art „ohr") — 10 kPa
+        // über 5 ms klingen (ein Graph im Audio-Thread: kein Sample im Haupt-Thread, Wand W), 1 Pa liegt unter der Schwelle
+        // des Gesetzes (`SUBSTANZ.knall.still`): dort bleibt die Welt still.
+        await fang("knall", () => r._druckTrifft({ art: "ohr", w: { dp: 1e4, dauer: 0.005 } }));
+        await fang("knallFern", () => r._druckTrifft({ art: "ohr", w: { dp: 1, dauer: 0.005 } }), 0, true);
         // Ein echtes Tier, 3 m neben dem Ohr: es antwortet auf den Auftrag „folge mir" und steigt eine Stufe auf (danach
         // stehen Ort und Auftrag wie vorher). Antwortet der Weg mit einer Tier-Stimme, kommt sie aus der Werkstatt.
         const tier = (st.creatures || []).find((c) => c?.position && c.userData && !c.userData.dying);

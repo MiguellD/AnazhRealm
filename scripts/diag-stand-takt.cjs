@@ -191,6 +191,36 @@ function selbsttest() {
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
+            // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
+            // Bruch-Grenze des Gesetzes 29,98 m — vier Fenster brechen (das in 12 m mit zwei Scheiben), zwei stehen
+            druck: ((E) => ({
+                start: true,
+                frist: 2.465,
+                ereignisse: E.map((e) => ({ teile: 0, scherben: 0, ...e, leser: [["_x", e.einheiten]] })),
+                einheiten: E.reduce((s, e) => s + e.einheiten, 0),
+                rest: 0,
+                grenze: 29.982,
+                scheiben: [[8.031, true], [12.037, true], [16.045, true], [24.064, true], [36.097, false], [48.142, false]].map(([R, gebrochen]) => ({ R, gebrochen })), // prettier-ignore
+                ...{ scherben: 20, wach: 0, schlafS: 1.5, verzug: 0.032 },
+                kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
+                spieler: { R: 16, dv: 1.005 },
+                ohr: { dp: 18281.248, dauer: 0.008 },
+                mutante: { raeumt: 4, bruch: [1109, 1899, 1164, 1186] },
+                nachher: simPh(0, 60),
+            }))([
+                { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
+                { art: "umsatz", einheiten: 37 },
+                { art: "frei", R: 6, einheiten: 11 },
+                { art: "werk", R: 8.013, einheiten: 1041, teile: 2, scherben: 4 },
+                { art: "werk", R: 12.008, einheiten: 1780, teile: 3, scherben: 8 },
+                { art: "leib", R: 16, einheiten: 12 },
+                { art: "ohr", R: 16, einheiten: 2 },
+                { art: "werk", R: 16.006, einheiten: 1084, teile: 2, scherben: 4 },
+                { art: "werk", R: 24.004, einheiten: 1095, teile: 2, scherben: 4 },
+                { art: "werk", R: 36.003, einheiten: 6, teile: 2 },
+                { art: "werk", R: 48.002, einheiten: 6, teile: 2 },
+                { art: "ende", einheiten: 3 },
+            ]),
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
             wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
         },
@@ -577,6 +607,48 @@ function selbsttest() {
         ["das Overlay steigt, während die Asche senkt (CI 00520c2e)", ["simWecken.brand", { lebVor: 0.75, lebNach: 0.725, ovVor: -0.089, ovNach: 0.186 }], null],
         ["der Brand leuchtet nicht", ["simWecken.brand.licht=", false], /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
         ["der Brand schläft nicht", ["simWecken.brand.nachher=", simPh(2, 60, "brand")], /BRAND-RUHE: .* 120 Einheiten/],
+        // DIE DRUCKWELLE (same.physik.reaktion#2): die Probe trägt, was sie misst — sonst LEER
+        ["kein Funke fängt neben der Ladung", ["simWecken.druck.start=", false], /LEER: an der Mess-Wiese fing der Funke neben der Ladung nicht/],
+        ["die Front gibt der Ladung keine Frist (sie steht in einer anderen Zelle)", ["simWecken.druck.frist=", null], /LEER: die Front des Funkens gab der Ladung keine Frist/],
+        ["die Frist der Ladung fällt ohne Welle", (b) => b.simWecken.druck.ereignisse.shift(), /LEER: die Frist der Ladung fiel, keine Welle/],
+        ["die Marke druck ist blind", (b) => (b.simWecken.druck.ereignisse.forEach((e) => (e.einheiten = 0)), (b.simWecken.druck.einheiten = 0)), /STUMPF: die Ladung setzte um, die Sim-Linse sieht keinen Takt der Welle/],
+        // je Ereignis an seinem Soll
+        ["der Umsatz der Ladung fegt die Welt", ["simWecken.druck.ereignisse.1", { einheiten: 900 }], /DRUCK-SOLL: der Umsatz der Ladung kostete 900 Einheiten \(Soll ≤ 50: 50\)/],
+        // der Schreiber ruft je Eintrag des Netzes im Radius ein Glied (4 136 Einträge, davon 71 Bauten): die Natur kostet nichts
+        ["der Schreiber fragt die Welt je Eintrag des Netzes", ["simWecken.druck.ereignisse.0", { einheiten: 2245 + 4136 }], /DRUCK-SOLL: der Schreiber der Welle kostete 6381 Einheiten \(Soll ≤ 2920: 80 \+ 40 je Bau im Radius \(71\)\)/],
+        ["der Schreiber an einem Ort mit 200 Bauten: sein Soll wächst mit dem Blick", ["simWecken.druck.ereignisse.0", { einheiten: 60 + 31 * 200, blick: 200 }], null],
+        ["ein gestoßener Körper fegt die Welt", ["simWecken.druck.ereignisse.2", { einheiten: 300 }], /DRUCK-SOLL: die Frist eines Gestoßenen \(frei\) in 6 m kostete 300 Einheiten \(Soll ≤ 16: 16\)/],
+        ["ein stehendes Werk kostet wie ein Bruch", ["simWecken.druck.ereignisse.9", { einheiten: 1041 }], /DRUCK-SOLL: die Frist eines stehenden Werks in 36.003 m kostete 1041 Einheiten \(Soll ≤ 8: 4 je Teil \(2\)\)/],
+        ["ein Bruch fragt die Welt", ["simWecken.druck.ereignisse.3", { einheiten: 4000 }], /DRUCK-SOLL: die Frist eines brechenden Werks in 8.013 m kostete 4000 Einheiten \(Soll ≤ 1298: 4 je Teil \(2\) \+ 370 \+ 230 je Scherbe \(4\)\)/],
+        ["acht Scherben tragen ihr eigenes Soll (das Doppel-Fenster am Rand)", ["simWecken.druck.ereignisse.4", { einheiten: 2222 }], null],
+        // im ersten Lauf (GTX 1050, 52 brechende Werke) schrieb jedes Werk seinen Satz: 52 Sätze statt einem
+        ["das Ende schreibt je Werk einen Satz", ["simWecken.druck.ereignisse.11", { einheiten: 12 }], /DRUCK-SOLL: das Ende der Welle kostete 12 Einheiten \(Soll ≤ 5: 5\)/],
+        ["der Takt arbeitet außerhalb seiner Ereignisse", ["simWecken.druck.rest=", 40], /DRUCK-TAKT: der Takt der Welle arbeitete 40 Einheiten außerhalb jedes Ereignisses/],
+        // DAS ERBE DES GRUNDS: die Mutante des Laufs (der Rest räumt den Grund seines Werks ein zweites Mal — in Einheiten 1 041 →
+        // 1 109, unter dem Soll; ihr Maß ist die Räumung selbst) und der Stand vor dem freien Körper ohne Grundriss (der Rest und
+        // jede der vier Scherben räumten bei ihrer Geburt)
+        ["der Rest räumt den Grund seines Werks ein zweites Mal", ["simWecken.druck.ereignisse.3", { einheiten: 1109, raeumt: 1 }], /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m räumte die Natur seines Grunds \(`_naturRaeumen` 1× in der Welle\)/],
+        ["jede Scherbe räumt bei ihrer Geburt die Natur", (b) => [3, 7, 8].forEach((k) => (b.simWecken.druck.ereignisse[k].raeumt = 5)), /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m .*`_naturRaeumen` 15× in der Welle/],
+        ["die Mutante des Laufs bleibt ungesehen", ["simWecken.druck.mutante", { raeumt: 0 }], /BLIND: die Mutante der Welle .* blieb ungesehen — `_naturRaeumen` unter der Marke `druck`: 0/],
+        ["die Mutante lief nicht", ["simWecken.druck.mutante"], /BLIND: die Mutante der Welle .*: kein Lauf/],
+        // das Gesetz am Bild der Welt
+        ["die Scheibe jenseits der Grenze bricht", ["simWecken.druck.scheiben.4", { gebrochen: true }], /DRUCK-BRUCH: die Scheibe in 36.097 m brach — die Grenze des Gesetzes .* liegt bei 29.982 m/],
+        ["die Scheibe diesseits der Grenze steht", ["simWecken.druck.scheiben.3", { gebrochen: false }], /DRUCK-BRUCH: die Scheibe in 24.064 m steht — die Grenze des Gesetzes/],
+        ["keine Scheibe jenseits der Grenze", (b) => (b.simWecken.druck.scheiben.length = 4), /LEER: die Probe trägt keine Scheibe diesseits UND jenseits der Bruch-Grenze des Gesetzes \(29.982 m/],
+        ["die Kiste trägt den halben Stoß", ["simWecken.druck.kiste", { dv: 0.771 }], /DRUCK-STOSS: die Kiste in 6 m trägt 0.771 m\/s \(das Gesetz: Impuls × Schattenfläche ÷ Masse = 1.542 m\/s/],
+        ["der Löser nimmt den Stoß der Kiste nicht", ["simWecken.druck.kiste", { wegM: 0 }], /DRUCK-STOSS: die Kiste in 6 m trägt 1.542 m\/s und liegt danach 0 m weiter — der Löser nahm den Stoß nicht/],
+        ["die Probe ohne Kiste", ["simWecken.druck.kiste"], /LEER: die Probe trägt keine freie Kiste im Radius der Welle/],
+        ["der Spieler trägt keinen Stoß", ["simWecken.druck.spieler", { dv: 0 }], /DRUCK-LEIB: der Spieler in 16 m trägt keinen Stoß der Welle/],
+        ["das Ohr hört die Welle nicht", ["simWecken.druck.ohr"], /DRUCK-OHR: das Ohr hörte die Welle nicht/],
+        // ein Fass vor 78 Probe-Fenstern (GTX 1050, 52 brechende Werke unter dem Bild-Budget von 4 ms): der letzte Bruch 2,628 s
+        // hinter seiner Ankunft
+        ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
+        ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
+        // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
+        ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
+        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
+        ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
             "der Automat geht am Fixpunkt 4 Takte (die Basis)",
             ["simWecken.wasser", { takte: [1, 4], gehalten: [0, 9] }],
@@ -3281,6 +3353,170 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // die Probe stellte die Uhr von Hand vier Wellen vor (12 000 s) und schreitet je Bild ihre eigene Uhr: die Stunde,
                         // die die nahen Regionen danach nachholen, steht dem Entfachen nicht voran (`_feldFolgeSteht`, wie in `brandSeite`)
                         r._feldFolgeSteht = () => true;
+                        // (D) DIE DRUCKWELLE (same.physik.reaktion#2): in der Zelle westlich des Herds ein Donnerfass der Welt, westlich
+                        // davon sechs Probe-Fenster (Holz-Bock + Scheibe 0,5 × 0,5 m × 4 mm aus der Zeile quarz, der Welle zugewandt) in
+                        // 8 · 12 · 16 · 24 · 36 · 48 m, nördlich eine Kiste in 6 m; der Spieler steht am Herd (16 m). Der Funke fällt in der
+                        // Zelle des Fasses NEBEN ihm (der Weg des Brennglases): die Front trägt die Frist der Ladung (`_ladungZuenden`), die
+                        // Uhr rückt an sie, der Takt des Spiels läuft — die Ladung setzt um, die Welle trifft jeden Körper zu seiner Ankunft.
+                        // Je EREIGNIS (Umsatz, Welle, Frist, Ende) der Stand der Rolle `druck` davor und danach (`S.stand`, Mitleser an der
+                        // Instanz, kein Stamm-Ruf im Mitleser) und seine Leser; dazu, was das Gesetz am Bild der Welt verlangt: die Scheiben
+                        // diesseits seiner Bruch-Grenze (schmiede `plattenLast` = 1, hier gerechnet) brechen, die jenseits stehen; die Kiste
+                        // trägt Impuls × Schattenfläche ÷ Masse; der Spieler wird gestoßen, das Ohr hört den Knall; die Scherben schlafen ein.
+                        // Die Probe räumt hinter sich auf (ihre Bauten, Pläne, das Feuer des Funkens), der Brand danach beginnt im leeren Feld.
+                        // Ein Doppel-Fenster in 12 m (zwei Scheiben auf einem Bock) trägt die zweite Zahl des Bruchs: acht Scherben statt vier.
+                        // `mutante` (in JEDEM Lauf die zweite Probe): der Rest eines Einsturzes räumt den Grund seines Werks ein zweites Mal
+                        // (der Stand vor dem geerbten Grund, `_grundrissRaeumen` ohne `gehalten`) — die Linse zählt ihre Natur-Räumungen
+                        // unter der Marke (`raeumt`), an ihr fällt DRUCK-ERBE; sieht sie keine, ist die Linse BLIND.
+                        const druckProbe = async (mutante) => {
+                            const t0 = performance.now();
+                            const [SG, cs, N] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK.scherben];
+                            const O = { x: MESS.x - cs, z: MESS.z };
+                            const r3 = (v) => +(+v).toFixed(3);
+                            const [plaeneVor, bautenVor] = [new Set(Object.keys(st.blueprints)), new Set(st.architectures)];
+                            const setz = (typ, x, z, mehr) => r.spawnArchitecture(typ, { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, { precise: true, silent: true, ...mehr });
+                            const scheibe = (x) => ({ shape: "box", material: "quarz", size: { x: 0.5, y: 0.5, z: 0.004 }, position: { x, y: 0.37, z: 0 } });
+                            const bock = (b) => ({ shape: "box", material: "holz", size: { x: b, y: 0.12, z: 0.35 }, position: { x: 0, y: 0.06, z: 0 } });
+                            for (const [name, parts] of [["_druck_fenster", [bock(0.7), scheibe(0)]], ["_druck_doppel", [bock(1.3), scheibe(-0.3), scheibe(0.3)]]]) // prettier-ignore
+                                st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, parts });
+                            const fass = setz("donnerfass", O.x, O.z, { seed: 7999, ruht: true });
+                            const kiste = setz("kiste", O.x, O.z + 6, { seed: 7906, ruht: true });
+                            const fenster = [8, 12, 16, 24, 36, 48].map((d, k) => {
+                                const [x, z] = [O.x - d, O.z + (k % 2 ? 0.45 : -0.45)];
+                                return setz(d === 12 ? "_druck_doppel" : "_druck_fenster", x, z, { seed: 7000 + k, rotationY: Math.atan2(O.x - x, O.z - z) });
+                            });
+                            const D = { start: false, frist: null, ereignisse: [], einheiten: 0, rest: 0, scheiben: [], scherben: 0, wach: 0, schlafS: null, verzug: null };
+                            if (fass && kiste && kiste._frei && fenster.every(Boolean)) {
+                                const [energieJ, luft] = [r._ladungJ(fass), r._druckLuft()];
+                                // der Blick des Schreibers: die Bauten im Radius der Welle — jeder Eintrag des Platz-Netzes, der weder Natur
+                                // noch freier Körper ist (ohne das Fass: es geht vor ihr); `netz`: alle Einträge, die er durchgeht
+                                const imRadius = r._blockerUmPlatz(O.x, O.z, SG.druckRadius(energieJ, luft), []);
+                                const blick = imRadius.filter((e) => e !== fass && e.position && !e._frei && !r._istNatur(e)).length;
+                                const taten0 = st.worldMeta.taten.length;
+                                const E = D.ereignisse;
+                                const wellen = [];
+                                let [inWelle, gebrochen] = [0, 0];
+                                // EIN Ereignis messen: der Stand der Rolle und ihre Leser davor und danach
+                                const mess = (e, ruf) => {
+                                    const [a0, l0] = [S.stand("druck"), S.leser("druck")];
+                                    const aus = ruf();
+                                    const l1 = S.leser("druck");
+                                    e.einheiten = S.stand("druck") - a0;
+                                    e.d = Object.fromEntries(Object.entries(l1).map(([m, n]) => [m, n - (l0[m] | 0)]));
+                                    E.push(e);
+                                    return aus;
+                                };
+                                r._ladungUmsatz = function (f) {
+                                    const [e, w0, k0] = [{ art: "umsatz" }, inWelle, E.length];
+                                    mess(e, () => P._ladungUmsatz.call(this, f));
+                                    e.einheiten -= inWelle - w0; // ohne ihre Welle (sie misst sich selbst — ihre Einheiten, ihre Leser)
+                                    for (const w of E.slice(k0, -1)) for (const m in w.d) e.d[m] -= w.d[m];
+                                };
+                                r._druckWelle = function (...a) {
+                                    const e = { art: "welle", blick, netz: imRadius.length - 1 };
+                                    const w = mess(e, () => P._druckWelle.apply(this, a));
+                                    inWelle += e.einheiten;
+                                    if (w) wellen.push(w), Object.assign(e, { radius: r3(w.radius), treffer: w.treffer, energieMJ: r3(w.energieJ / 1e6) });
+                                    return w;
+                                };
+                                r._druckWerk = function (...a) {
+                                    return (gebrochen = P._druckWerk.apply(this, a));
+                                };
+                                r._druckTrifft = function (f) {
+                                    const plan = f.art === "werk" && f.q ? (f.q._gesetz && f.q._gesetz.plan) || st.blueprints[f.q.type] : null;
+                                    const p = f.q ? (f.q._frei ? { x: f.q._frei.p[0], z: f.q._frei.p[2] } : f.q.position) : st.playerMesh.position;
+                                    const e = { art: f.art, R: r3(Math.hypot(p.x - f.welle.x, p.z - f.welle.z)), teile: plan && plan.parts ? plan.parts.length : 0 };
+                                    gebrochen = 0;
+                                    mess(e, () => P._druckTrifft.call(this, f));
+                                    e.scherben = gebrochen * N * N;
+                                };
+                                r._druckEnde = function (w) {
+                                    mess({ art: "ende" }, () => P._druckEnde.call(this, w));
+                                };
+                                const stoss = new Map();
+                                r._druckStoss = function (q, ...a) {
+                                    const dv = P._druckStoss.call(this, q, ...a);
+                                    stoss.set(q, dv);
+                                    return dv;
+                                };
+                                r._substanzKlang = function (art, tags, ...a) {
+                                    if (art === "knall") D.ohr = { dp: r3(tags.dp), dauer: r3(tags.dauer) };
+                                    return P._substanzKlang.call(this, art, tags, ...a);
+                                };
+                                if (mutante) r._grundrissRaeumen = (haus) => P._grundrissRaeumen.call(r, haus);
+                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckWerk", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen"];
+                                const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
+                                const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
+                                const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
+                                try {
+                                    // der Funke fällt 2,4 m vor dem Fass GEGEN den Kopf der Front (ihr Bett und ihr Tempo aus dem Gesetz des Brands):
+                                    // die Spitze läuft auf die Ladung zu, ihre Frist ist die Laufzeit der Front
+                                    const bett = r._brandStoff(Math.floor(O.x / cs), Math.floor(O.z / cs), st.spielZeit);
+                                    const T = bett && r._brandTempo(bett, st.spielZeit);
+                                    const [kx, kz] = T ? [T.px, T.pz] : [1, 0];
+                                    D.start = !!r._brandEntfachen(O.x - 2.4 * kx, O.z - 2.4 * kz);
+                                    D.frist = fass._ladungFrist != null ? r3(fass._ladungFrist - st.spielZeit) : null;
+                                    if (D.frist > 0) {
+                                        r._weltUhrNimm(fass._ladungFrist - 0.02);
+                                        S.frame();
+                                        const bild = () => (takt(), (D.einheiten += S.frame().druck));
+                                        for (let i = 0; i < 600 && (!wellen.length || (r._druckFristen && r._druckFristen.length)); i++) bild();
+                                        const w = wellen[0];
+                                        if (w) {
+                                            const tW = st.spielZeit;
+                                            // die Bruch-Grenze des Gesetzes für die Scheibe der Probe (σ = σ_B: `plattenLast` = 1), hier gerechnet
+                                            const quarz = r._stoff("quarz");
+                                            const last = (R) => ((x) => SG.plattenLast(quarz, 0.5, 0.5, 0.004, x.dp, x.dauer))(SG.druckwelle(energieJ, R, luft));
+                                            let [lo, hi] = [0.5, 400];
+                                            for (let i = 0; i < 60; i++) ((m) => (last(m) >= 1 ? (lo = m) : (hi = m)))(Math.sqrt(lo * hi));
+                                            D.grenze = r3(Math.sqrt(lo * hi));
+                                            D.scheiben = fenster.map((e) => ({ R: r3(Math.hypot(e.position.x - w.x, e.position.y - 0.5 + 0.37 - w.y, e.position.z - w.z)), gebrochen: !st.architectures.includes(e) }));
+                                            loesche();
+                                            // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
+                                            D.scherben = st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste).length;
+                                            while (st.spielZeit - tW < 10 && wachN() > 0) bild();
+                                            D.wach = wachN();
+                                            D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            D.verzug = r3(w.verzug);
+                                            const K = kiste._frei;
+                                            const [dx, dz] = [kiste0[0] - w.x, kiste0[2] - w.z];
+                                            const d = Math.hypot(dx, dz);
+                                            const x = SG.druckwelle(energieJ, Math.hypot(d, kiste0[1] - w.y), luft);
+                                            // die Schattenfläche der Kiste quer zur Welle, in ihrer Lage vor dem Stoß: Σ Fläche × |Achse · n|
+                                            const a = (k) => Math.abs(dx * kisteR[k] + dz * kisteR[6 + k]) / d;
+                                            const A = 4 * (K.hy * K.hz * a(0) + K.hx * K.hz * a(1) + K.hx * K.hy * a(2));
+                                            D.kiste = { R: r3(d), dv: r3(stoss.get(kiste) || 0), soll: r3((x.impuls * A) / K.m), wegM: r3(Math.hypot(K.p[0] - kiste0[0], K.p[2] - kiste0[2])) };
+                                            D.spieler = { R: r3(Math.hypot(MESS.x - w.x, MESS.z - w.z)), dv: r3(stoss.get(st.playerMesh) || 0) };
+                                        }
+                                        D.rest = D.einheiten - E.reduce((s, e) => s + e.einheiten, 0);
+                                    }
+                                } finally {
+                                    for (const k of eigen) delete r[k];
+                                    // je Ereignis seine acht größten Leser und sein Erbe-Maß: die Rufe der Natur-Räumung unter der Marke
+                                    for (const e of E) {
+                                        if (e.d._naturRaeumen > 0) e.raeumt = e.d._naturRaeumen;
+                                        e.leser = Object.entries(e.d).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                                        delete e.d;
+                                    }
+                                }
+                                loesche();
+                            }
+                            for (const e of st.architectures.filter((e) => !bautenVor.has(e))) r.removeArchitecture(e, { still: true });
+                            for (const k of Object.keys(st.blueprints)) if (!plaeneVor.has(k)) delete st.blueprints[k];
+                            pm.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+                            st.playerVel.setValue(0, 0, 0);
+                            await __weltStehtNach(takt); // die Kacheln unter den Bauten der Probe wachsen nach, der Spieler steht wieder
+                            D.nachher = await simPhase(60);
+                            D.ms = Math.round(performance.now() - t0);
+                            return D;
+                        };
+                        W.druck = await druckProbe(false);
+                        // die Mutante jedes Laufs: ihre Natur-Räumungen unter der Marke, die Einheiten ihrer Brüche, ihre Dauer
+                        const DM = await druckProbe(true);
+                        W.druck.mutante = {
+                            raeumt: DM.ereignisse.reduce((s, e) => s + (e.raeumt | 0), 0),
+                            bruch: DM.ereignisse.filter((e) => e.art === "werk" && e.scherben > 0).map((e) => e.einheiten),
+                            ms: DM.ms,
+                        };
                         const lauf = async (n) => {
                             const [Z, H, bf] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
                             // das Gemessene, das der Herd schon trägt: sein Bett maß die Tat `_brandEntfachen` (die Linse zählt sie als Tat)
@@ -3458,6 +3694,20 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
             : x;
     const { simRuhe, simWecken, ...rest } = befund;
     for (const [n, x] of Object.entries(rest)) console.log(`  ${n}: ${JSON.stringify(x, phase)}`);
+    // die Druckwelle in ihrer Zeile: je Ereignis [Klasse, R m, Einheiten, Teile, Scherben] (der Schreiber: Einheiten, seine Bauten
+    // im Radius, die Einträge des Netzes dort; eine Natur-Räumung steht dabei), je Klasse das Ereignis am nächsten an seinem Soll
+    // mit seinen Lesern (`amSoll`), dazu Bruch-Grenze, Scheiben, Kiste, Spieler, Ohr, Verzug, Schlaf und die Mutante des Laufs
+    const druckZeile = (w) =>
+        JSON.stringify({
+            ...w,
+            ereignisse: (w.ereignisse || []).map((e) =>
+                e.art === "welle"
+                    ? ["welle", e.einheiten, `${e.blick} Bauten`, `${e.netz} im Netz`]
+                    : [e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : e.art, e.R, e.einheiten, e.teile, e.scherben, e.raeumt ? `räumt ${e.raeumt}` : undefined].filter((x) => x !== undefined)
+            ),
+            nachher: undefined,
+            amSoll: STAND.druckAmSoll(w),
+        }) + (w.nachher ? ` — nachher ${simZeile(w.nachher)}` : "");
     const simZeile = (ph) =>
         Object.entries(ph.sims)
             .map(([n, t]) => `${n} ${t.summe}${t.summe ? ` (${t.je.map((x) => x.join(" ")).join(", ")})` : ""}`)
@@ -3483,7 +3733,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                               ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, nachher: undefined },
                               amSoll: STAND.brandAmSoll(w),
                           }) + ` — nachher ${simZeile(w.nachher)}`
-                        : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
+                        : n === "druck"
+                          ? druckZeile(w)
+                          : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
     const v = urteil(befund);
     wandEnde(

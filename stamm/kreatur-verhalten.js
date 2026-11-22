@@ -866,11 +866,12 @@ class AnazhRealm_kreatur_verhalten {
         o.q = q;
         return o.m > 0 ? o : null;
     }
-    _stossAuf(K, nx, nz, dv) {
+    // `mitte`: der Stoß greift im Schwerpunkt (die Druckwelle, `_druckStoss`) — nur der freie Körper trägt einen Hebel.
+    _stossAuf(K, nx, nz, dv, mitte = false) {
         if (!(dv > 0)) return;
         if (K.art === "spieler") this._spielerStoss(nx, nz, dv);
         else if (K.art === "tier") this._kreaturStoss(K.q, nx, nz, dv);
-        else if (K.art === "frei") this._freiStoss(K.q, nx, nz, dv);
+        else if (K.art === "frei") this._freiStoss(K.q, nx, nz, dv, mitte);
         else this._fahrWagenStoss(K.q, K.G, nx * dv, nz * dv);
     }
     // DAS PAAR: n (Einheit) zeigt von A nach B. Nähern sie sich längs n (v_rel = (vA − vB) · n > 0), tauschen sie Impuls

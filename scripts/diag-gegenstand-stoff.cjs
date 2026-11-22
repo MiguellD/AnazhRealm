@@ -52,6 +52,9 @@
 //          spiegel     der Fresnel F0 je Kanal, den der Blick des Wassers liest (wasser, eis; `_wasserOptikLeser`)
 //   bruch  bruchlast   die größte Platte aus dem Stoff, die eine Säule aus ihm trägt (`_failsUnderLoad`, schlank 1:20 und
 //                      gedrungen 1:1,5; feste Stoffe — eine Flüssigkeit trägt nichts, lebendes Gewebe hält sich selbst)
+//          druckplatte σ ÷ σ_B einer Scheibe 0,5 × 0,5 m × 4 mm aus dem Stoff, 12 m vor 1 kg-Äquivalent (same.physik.reaktion#2,
+//                      `_druckTeilLast` → schmiede `plattenLast`: σ_B, E und ρ der Zeile; feste Stoffe mit σ_B)
+//          ladung      die Energie eines Würfels aus dem Stoff (`_ladungJ`: q und ρ der Zeile; nur ein Stoff, dessen Zeile q trägt)
 //   klang  ton         der Spektral-Schwerpunkt des Treffers Stoff auf Stoff nach dem Kontakt (`_trefferPaar`, die Stimme
 //                      des Wirts im OfflineAudioContext)
 //          schritt     Band und Dauer der Ferse (`_schrittKlangParams` → klang `schrittBand`)
@@ -231,7 +234,42 @@ function selbstTest() {
     if (!gesetzUrteil(L(["E"]), tot, ["eisen"]).gruen) fehl.push("die gesunde Gesetz-Zeile meldet");
     if (gesetzUrteil(L([]), tot, ["eisen"]).taeter.join() !== "eisen.bruchlast") fehl.push("der Bruch-Leser mit eigener Zahl bleibt still");
     if (gesetzUrteil(L(["E"]), L(["E"]), ["eisen"]).vorbei.length !== 3) fehl.push("ein Leser an der Zeile vorbei bleibt still");
+    // die Druckwelle: das Gesetz des Kerns hält seine Anker, die Mutante (jeder Überdruck × 1,5) fällt beim Namen
+    const SG = SC.STOFF_GESETZ;
+    const gesund = druckUrteil(SG);
+    if (gesund.length) fehl.push("das Gesetz der Druckwelle verlässt seine Anker: " + gesund.join(" · "));
+    const mutante = (f) => Object.assign(Object.create(SG), { druckwelle: (e, r, l) => f(SG.druckwelle(e, r, l)) });
+    const hoch = druckUrteil(mutante((w) => w && { ...w, dp: w.dp * 1.5 }));
+    if (!hoch.some((s) => /ANKER Δp/.test(s))) fehl.push("eine Welle mit 1,5-fachem Überdruck bleibt still");
+    const lahm = druckUrteil(mutante((w) => w && { ...w, ankunft: w.ankunft * 2 }));
+    if (!lahm.some((s) => /ANKER Ankunft/.test(s))) fehl.push("eine Welle mit halbem Tempo bleibt still");
     return fehl;
+}
+// DAS URTEIL DER DRUCKWELLE (rein, same.physik.reaktion#2): das Gesetz `SG` (schmiede `STOFF_GESETZ`) gegen seine Anker — die
+// veröffentlichten Werte der IATG 01.80 (`ankerAbweichung`, der Kern trägt die Punkte): der Überdruck in ±16 %, die Ankunft in
+// ±10 %, der Impuls in ±10 % ab Z 1,5 (im Nahfeld darunter bis −40 %: die benannte Grenze der Formel); dazu, was das Gesetz
+// selbst verspricht — Hopkinson–Cranz (achtfache Energie im doppelten Abstand trägt denselben Überdruck und den doppelten
+// Impuls), der Radius als Umkehrung der Welle (an ihm steht `endePa`), die Platte (β quadratisch 0,2874, lang 0,75 — Roark;
+// der Stoß-Faktor u/2 für den kurzen Puls, 2 für die Stufe). → die Täter-Zeilen, leer = grün.
+function druckUrteil(SG) {
+    const v = [];
+    const pct = (x) => (x > 0 ? "+" : "") + x.toFixed(1) + " %";
+    for (const a of SG.ankerAbweichung((e, r, l) => SG.druckwelle(e, r, l))) {
+        const wo = a.kg + " kg in " + a.m + " m (Z " + a.Z.toFixed(2) + ")";
+        if (!(Math.abs(a.dp) <= 16)) v.push("ANKER Δp: " + wo + " " + pct(a.dp) + " (Band ±16 %)");
+        if (!(a.impuls <= 10 && a.impuls >= (a.Z < 1.5 ? -40 : -10))) v.push("ANKER Impuls: " + wo + " " + pct(a.impuls));
+        if (a.ankunft !== null && !(Math.abs(a.ankunft) <= 10)) v.push("ANKER Ankunft: " + wo + " " + pct(a.ankunft) + " (Band ±10 %)");
+    }
+    const luft = { rho: 1.2, c: 343 };
+    const [a, b] = [SG.druckwelle(SG.DRUCK.tntJ, 9, luft), SG.druckwelle(8 * SG.DRUCK.tntJ, 18, luft)];
+    if (!(Math.abs(b.dp / a.dp - 1) < 1e-9 && Math.abs(b.impuls / a.impuls - 2) < 1e-9 && Math.abs(b.ankunft / a.ankunft - 2) < 1e-9))
+        v.push("SKALA: achtfache Energie im doppelten Abstand trägt nicht denselben Überdruck, den doppelten Impuls und die doppelte Ankunft");
+    const R = SG.druckRadius(SG.DRUCK.tntJ, luft);
+    if (!(Math.abs(SG.druckwelle(SG.DRUCK.tntJ, R, luft).dp / SG.DRUCK.endePa - 1) < 1e-3)) v.push("RADIUS: am Radius der Welle steht nicht ihr Ende (" + SG.DRUCK.endePa + " Pa)");
+    if (!(Math.abs(SG.plattenBeta(1, 1) - 0.2874) < 5e-4 && Math.abs(SG.plattenBeta(40, 1) - 0.75) < 5e-3)) v.push("PLATTE: β " + SG.plattenBeta(1, 1).toFixed(4) + " quadratisch, " + SG.plattenBeta(40, 1).toFixed(4) + " lang (Roark 0,2874 · 0,75)");
+    if (!(Math.abs(SG.stossFaktor(1e-3) / 1e-3 - 0.5) < 1e-6 && Math.abs(SG.stossFaktor(1e6) - 2) < 1e-5 && SG.stossFaktor(2.33) < SG.stossFaktor(2.34)))
+        v.push("STOSS: der Stoß-Faktor trägt nicht u/2 für den kurzen Puls und 2 für die Stufe");
+    return v;
 }
 
 const STOFFE = ["holz", "stein", "eisen", "gras", "erde", "laub", "wasser"];
@@ -407,6 +445,7 @@ async function gesetzProbe(sabotage) {
     const M = st.materials;
     const A = r.constructor;
     const K = window.__klangCore;
+    const SG = window.__schmiedeCore.STOFF_GESETZ;
     window.__buehne();
     const licht = r._sonnenRichtung();
     const WG = A.Gesetz("terrain:WASSER_GESETZ", null);
@@ -449,6 +488,26 @@ async function gesetzProbe(sabotage) {
         // an main liest der Blick des Wassers die eine Zahl des Terrain-Gesetzes (kein Leser der Zeile)
         spiegel: ["licht", (X) => X === "wasser" || X === "eis", (X) => (r._wasserOptikLeser ? r._wasserOptikLeser(THREE.TSL)[X === "eis" ? "f0Eis" : "f0"].value.toArray() : Array(3).fill(WG.fresnel[0])), ["n", "abbe", "rho"]],
         bruchlast: ["bruch", fest, (X) => [last(X, 6), last(X, 0.45)], ["E", "sigY", "rho"]],
+        // DIE DRUCKWELLE (same.physik.reaktion#2): die Platte unter der Welle und die Energie der Ladung — beide am Leser des Wirts
+        druckplatte: [
+            "bruch",
+            (X) => fest(X) && M[X].sigB > 0,
+            (X) => {
+                const teil = { shape: "box", material: X, size: { x: 0.5, y: 0.5, z: 0.004 }, position: { x: 0, y: 0.25, z: 0 } };
+                const l = r._druckTeilLast(teil, { position: { x: 12, y: 0.5, z: 0 }, scale: 1, rotationY: Math.PI / 2 }, { x: 0, y: 0.25, z: 0, energieJ: SG.DRUCK.tntJ });
+                return l && l.last > 0 ? l.last : null;
+            },
+            ["sigB", "E", "rho"],
+        ],
+        ladung: [
+            "bruch",
+            (X) => M[X].q > 0,
+            (X) => {
+                st.blueprints._gesetzLadung = { parts: [{ shape: "box", material: X, size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.2, z: 0 } }] };
+                return r._ladungJ({ type: "_gesetzLadung", scale: 1 }) || null;
+            },
+            ["q", "rho"],
+        ],
         ton: ["klang", () => true, ton, ["E", "rho", "eta"]],
         schritt: [
             "klang",
@@ -492,6 +551,7 @@ async function gesetzProbe(sabotage) {
         zurueck();
         for (const X of namen) stoffe[X].dispose();
         delete st.blueprints._gesetzLinse;
+        delete st.blueprints._gesetzLadung;
     }
     return out;
 }
