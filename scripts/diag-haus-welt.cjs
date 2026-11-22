@@ -54,7 +54,8 @@ const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen
 const BILD = process.argv.includes("--bild");
 
 // DIE DEFEKTE (spec/haus-welt/defekte.json, die Folge der Selbsttests): je Defekt [[die Phase seiner Welt, die Proben, die er
-// rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]]. Was jeder bricht:
+// rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis] bzw. am Glied { glied, basis }].
+// Was jeder bricht:
 //   huelle: ohne die Hülle des Gesetzbuchs: nur die vier EG-Wände der Tür-Zeile, keine Böden, Tritte, Innenwände
 //   obb: die gedrehte Box als achsparallele Welt-AABB gelesen
 //   grundriss: die Natur wirft in den Grundriss, und das Dorf räumt nicht · die Wand des Orts (`_ortWand`) trägt den
@@ -105,8 +106,23 @@ const BILD = process.argv.includes("--bild");
 //   zugreload: W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
 //   verblassen: W9: das Verblassen nimmt nur den Eintrag
 const DEFEKTE = require("../spec/haus-welt/defekte.json").defekte;
+// EIN DEFEKT AM GLIED (`{ glied, basis }`, front-druckwelle): die Basis-Form tritt zur Laufzeit an die Stelle des Glieds — der
+// Server hängt sie an die Datei, die es trägt (`dateiVon`: der Name im Stamm, nie der Text seines Rumpfs), `basis` ist ein
+// Ausdruck `(alt) => function`, und eine Marke der Seite (`__defektLief`) nennt, dass die Basis in ihrer Welt lief. Ein Schnitt
+// im Rumpf lässt den Defekt stehen (zwei Zeilen-Defekte fielen so: `_grundrissRaeumen(entry)` bekam ein zweites Argument, die
+// Hülle der Boxen eine dritte Bedingung — „geheilte Zeile fehlt"); fällt das Glied, nennt ihn der Lauf.
+const amGlied = (z) => !Array.isArray(z);
 const patchZiel = (z) =>
-    z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
+    amGlied(z)
+        ? ["/" + (stammLib.dateiVon(ROOT, z.glied) || stammLib.dateien(ROOT)[0]), "das Glied " + z.glied, z.basis]
+        : z.length === 3
+          ? z
+          : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
+const gliedBasis = (z) =>
+    `\n;(() => { const [P, n] = [AnazhRealm.prototype, ${JSON.stringify(z.glied)}]; const alt = P[n]; ` +
+    `if (typeof alt !== "function") throw new Error("DEFEKT AM GLIED: " + n + " steht nicht am Prototyp"); ` +
+    `const neu = (${z.basis})(alt); ` +
+    `P[n] = function (...a) { (window.__defektLief || (window.__defektLief = {}))[n] = true; return neu.apply(this, a); }; })();\n`;
 
 // DIE WELTEN NEBENEINANDER (HAUS_WELT_PARALLEL, höchstens 4): je Platz ein EIGENER Server (HAUS_WELT_PORT + Platz) mit dem
 // Patch SEINER Welt, je Welt ein eigener Browser-Kontext
@@ -123,11 +139,14 @@ const machServer = (platz) =>
         root: ROOT,
         wandle: (p, data) => {
             const z = platz.z;
-            const meine = data && z?.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
+            const meine = data && z?.patch ? z.patch.map((q) => [...patchZiel(q), q]).filter((x) => x[0] === p) : [];
             if (!meine.length) return data;
             let txt = data.toString("utf8");
-            for (const [, geheilt, basis] of meine) {
-                if (!txt.includes(geheilt)) z.fehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
+            for (const [, geheilt, basis, q] of meine) {
+                if (amGlied(q)) {
+                    if (!stammLib.dateiVon(ROOT, q.glied)) z.fehler.push(`das Glied ${q.glied} steht in keiner Datei des Stamms`);
+                    else txt += gliedBasis(q);
+                } else if (!txt.includes(geheilt)) z.fehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
                 else {
                     txt = txt.replace(geheilt, basis);
                     z.angewandt.add(p + "|" + geheilt);
@@ -2368,6 +2387,9 @@ hauptLauf(async () => {
             if ((await page.evaluate(() => typeof window.__probeWartet)) !== "function")
                 z.fehler.push("die Seite trägt kein __probeWartet — die Akte nennte den Wartenden nicht");
             const o = await page.evaluate(proben, phasen);
+            // ein Defekt am Glied ist angewandt, wenn seine Basis in dieser Welt lief (die Marke der Seite)
+            const lief = await page.evaluate(() => window.__defektLief || {});
+            for (const q of (z.patch || []).filter(amGlied)) if (lief[q.glied]) z.angewandt.add(patchZiel(q).slice(0, 2).join("|"));
             await kontext.close();
             platz.z = null;
             for (const zeile of z.patch || []) {

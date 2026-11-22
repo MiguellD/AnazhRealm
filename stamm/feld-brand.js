@@ -1274,17 +1274,22 @@ class AnazhRealm_feld_brand {
     _druckEnde(welle) {
         const wer = welle.wer;
         if (!wer) return;
-        const text = welle.teile
-            ? ["journal.ladung-bruch", { name: wer.name, teile: welle.teile, werke: welle.werke }]
-            : ["journal.ladung", { name: wer.name }];
-        this.journalAppend("loss", text, {
-            type: wer.type,
-            id: wer.id,
-            energieJ: Math.round(welle.energieJ),
-            treffer: welle.treffer,
-            werke: welle.werke,
-            teile: welle.teile,
-        });
+        // die Zeile der Tafel steht AM Ruf (die Wand der Erinnerung liest sie dort, gate:v1-pfad FEIND: ein Name reist als Wert
+        // seiner Zeile, nie in einem fertigen Text, den eine Variable trägt)
+        this.journalAppend(
+            "loss",
+            welle.teile
+                ? ["journal.ladung-bruch", { name: wer.name, teile: welle.teile, werke: welle.werke }]
+                : ["journal.ladung", { name: wer.name }],
+            {
+                type: wer.type,
+                id: wer.id,
+                energieJ: Math.round(welle.energieJ),
+                treffer: welle.treffer,
+                werke: welle.werke,
+                teile: welle.teile,
+            }
+        );
     }
 
     // Was ein Bau unter der Welle ist (je Bauplan gemerkt): „werk" (seine Form sind seine Teile: die Platten brechen), „sonst"
