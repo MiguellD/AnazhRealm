@@ -6707,7 +6707,7 @@ L.perspektive("same", (() => {
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
                         const aus = M.teil || {};
                         const Z = C.WETTER_ZUG_SEK;
-                        const nZ = Math.round((a.jahre * ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender())) / Z);
+                        const nZ = Math.round((a.jahre * r._kalender().jahrK) / Z);
                         const tA = st.spielZeit;
                         let [sturm, sonne, sturmNachTrocken, lauf] = [0, 0, 0, 0];
                         for (let k = 0; k < nZ; k++) {

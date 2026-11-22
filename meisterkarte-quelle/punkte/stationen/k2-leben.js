@@ -2802,7 +2802,7 @@ L.perspektive("tiere", (() => {
                         });
                         const vorG = R.tiere.length;
                         const n2 = Math.ceil((a.gegenLeben * maxS) / B.taktS);
-                        for (let k = 0; k < n2; k++) r._bestandSchritt(key, R, true, tode);
+                        window.__raffer(n2, () => r._bestandSchritt(key, R, true, tode), "gegenprobe");
                         aus.gegen = { vor: vorG, nach: R.tiere.length, lebensdauern: a.gegenLeben, alleAlt: R.tiere.length ? r3(Math.min(...R.tiere.map((t) => t.alterS)) / maxS) : null };
                         aus.taktS = B.taktS;
                         aus.lebensdauerS = maxS;
@@ -4856,7 +4856,7 @@ L.perspektive("oeko", (() => {
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
                         if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
-                        const jahrT = Math.round(((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()) / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const G = Object.keys(A._lebensraumGesetz().L.gattung);
                         const diet = r._bestandDiet();
                         const kg = {};
@@ -4888,7 +4888,7 @@ L.perspektive("oeko", (() => {
                                 return f.call(this, bestand, zellen);
                             }));
                             for (const saat of a.saaten) {
-                                if (performance.now() - t0 > a.budgetMs) break;
+                                if (performance.now() - t0 > a.budgetMs || (laeufe.length && window.__rafferRest() < 1.2 * laeufe[laeufe.length - 1].ms)) break;
                                 r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                 s.faunaBestand = undefined;
                                 s.lifeField = undefined;
@@ -4900,7 +4900,7 @@ L.perspektive("oeko", (() => {
                                 const t1 = performance.now();
                                 const tode = [];
                                 let K0 = 0;
-                                for (let k = 0; k < a.jahre * jahrT; k++) {
+                                window.__raffer(a.jahre * jahrT, (k) => {
                                     r._bestandSchritt(k0, R, true, tode);
                                     if (a.ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === a.ohne) R.tiere.splice(i, 1);
                                     if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
@@ -4909,7 +4909,7 @@ L.perspektive("oeko", (() => {
                                         for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
                                         for (const g of G) reihe[g].push(je[g] || 0);
                                     }
-                                }
+                                }, "netz saat " + saat);
                                 laeufe.push({ saat, reihe, K0: Math.round(K0 * 100) / 100, ms: Math.round(performance.now() - t1) });
                             }
                         } finally {
@@ -4971,7 +4971,7 @@ L.perspektive("oeko", (() => {
                             }));
                             const takte = Math.round((a.minuten * 60) / B.taktS);
                             tiere0 = R.tiere.map((t) => t.id).join(",");
-                            for (let k = 0; k < takte; k++) r._bestandSchritt(key, R, true, []);
+                            window.__raffer(takte, () => r._bestandSchritt(key, R, true, []), "minuten");
                             tiere = R.tiere.length;
                             tiere0 = tiere0 === R.tiere.map((t) => t.id).join(",") ? 0 : 1;
                         } finally {
@@ -5580,7 +5580,7 @@ L.perspektive("oeko", (() => {
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
                         if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
-                        const jahrT = Math.round(((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()) / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const G = Object.keys(A._lebensraumGesetz().L.gattung);
                         const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
                         const laeufe = [];
@@ -5590,6 +5590,8 @@ L.perspektive("oeko", (() => {
                             for (const ohne of a.varianten)
                                 for (const saat of a.saaten) {
                                     if (performance.now() - t0 > a.budgetMs * (ohne ? 1 : 0.5) && laeufe.filter((l) => l.ohne === ohne).length >= 2) break;
+                                    // die Front und die Läufe ohne Wolf brauchen ihren Rest: ein Lauf beginnt nur, wenn er und die Front ins Budget passen
+                                    if (laeufe.length && window.__rafferRest() < (ohne ? 2.6 : 4) * laeufe[laeufe.length - 1].ms && laeufe.filter((l) => l.ohne === ohne).length >= 2) break;
                                     r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                     s.faunaBestand = undefined;
                                     s.lifeField = undefined;
@@ -5602,10 +5604,9 @@ L.perspektive("oeko", (() => {
                                     let jung = null;
                                     let kappe = 0;
                                     const t1 = performance.now();
-                                    // DER DECKEL DES RAFFERS (oeko-front 22.11.): bis der Kalender las, lief er 0 Takte (NaN-Jahr); jetzt
-                                    // trägt ein Lauf 50 Jahre — er endet am Budget der Probe, nie am Deckel der Sitzung. Rotwild und Wolf
-                                    // leben seit Leben C2b im Gau: die Region der Altlast trägt kein `deer` — dann ist der Jungwuchs ungemessen (null)
-                                    for (let k = 0; k < a.jahre * jahrT && performance.now() - t0 < a.budgetMs * 1.5; k++) {
+                                    // Rotwild und Wolf leben seit Leben C2b im Gau: die Region der Altlast trägt kein `deer` — dann ist
+                                    // der Jungwuchs ungemessen (null); der Lauf fährt am Budget der Leiter (`window.__raffer`, k2-planet.js)
+                                    window.__raffer(a.jahre * jahrT, (k) => {
                                         r._bestandSchritt(k0, R, true, []);
                                         if (ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === ohne) R.tiere.splice(i, 1);
                                         if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
@@ -5616,7 +5617,7 @@ L.perspektive("oeko", (() => {
                                             for (const g of G) reihe[g].push(je[g] || 0);
                                             if (K0 > 0 && R.tiere.length > 3 * K0 + 10) kappe++;
                                         }
-                                    }
+                                    }, "dynamik saat " + saat + (ohne ? " ohne " + ohne : ""));
                                     laeufe.push({ saat, ohne, reihe, K0: Math.round(K0 * 100) / 100, jung, kappe, ms: Math.round(performance.now() - t1) });
                                 }
                             // DIE FRONT (S6): eine Zeile aus 5 Regionen östlich des Tals, frisch und leer; je Region der Takt, an dem der erste
@@ -5629,12 +5630,12 @@ L.perspektive("oeko", (() => {
                             const zeile = [0, 1, 2, 3, 4].map((d) => x0 + d + "," + z0);
                             const Rz = zeile.map((k) => r._bestandRegion(k, false));
                             const erst = zeile.map(() => null);
-                            for (let k = 0; k < 2 * jahrT && performance.now() - t0 < a.budgetMs * 1.5; k++)
+                            window.__raffer(2 * jahrT, (k) =>
                                 zeile.forEach((key, i) => {
                                     if (!r._bestandBereit(key)) return;
                                     r._bestandSchritt(key, Rz[i], true, []);
                                     if (erst[i] === null && Rz[i].tiere.some((t) => t.g === a.front)) erst[i] = k;
-                                });
+                                }), "dynamik front");
                             fern.push(...erst);
                         } finally {
                             s.faunaBestand = alt.fb;
@@ -5811,7 +5812,7 @@ L.perspektive("oeko", (() => {
                         let k0 = ix + "," + iz;
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
-                        const jahrT = Math.round(((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()) / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
                         const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
                         const eDL = Object.prototype.hasOwnProperty.call(r, "_depositLife");
@@ -5829,7 +5830,7 @@ L.perspektive("oeko", (() => {
                             s.emotionField = new Map();
                             s.spielZeit = 0;
                             const R = r._bestandRegion(k0, false);
-                            for (let k = 0; k < a.fuellT; k++) r._bestandSchritt(k0, R, true, []);
+                            window.__raffer(a.fuellT, () => r._bestandSchritt(k0, R, true, []), "zerfall fuellen");
                             for (const u of ["jagd", "alter", "hunger"]) {
                                 const t = R.tiere.find((x) => !aus.tode.some((d) => d.id === x.id));
                                 if (!t) continue;
@@ -5849,7 +5850,7 @@ L.perspektive("oeko", (() => {
                                 else nahme -= m;
                                 return fDL.call(this, x2, z2, m);
                             };
-                            for (let k = 0; k < jahrT; k++) r._bestandSchritt(k0, R, true, []);
+                            window.__raffer(jahrT, () => r._bestandSchritt(k0, R, true, []), "zerfall jahr");
                             aus.bilanz = { gabe: Math.round(gabe * 1000) / 1000, nahme: Math.round(nahme * 1000) / 1000 };
                         } finally {
                             if (eDL) r._depositLife = fDL;
