@@ -483,8 +483,10 @@ module.exports = (F) => [
     }),
 
     // ───────── DIE TECHNIK: Voraussetzung, Pfad, Epoche ─────────
+    // DER DECKEL IST OFFEN (22.11.): in der warmen Welt der Runde ungemessen — die einzige Zahl ist die kalte eigene Welt der Radeon
+    // (Ankunft am Messort stadt-voll 101,1 s, die Station danach 0,1 s: der Zensus der Stadt und technikImBild über 20 Saaten). Darum
+    // trägt sie kein eigenes `sek`: es gilt die Vorgabe des Kapitels (SEK_VORGABE 45 s in k2-mensch.js), bis die Eich-Tafel aus ihren Grün-Läufen schreibt
     F.leiter("mensch.wirtschaft.technik", {
-        sek: 35,
         pfad: [...STADT_PFAD, "schmiede-core.js"],
         messe: async (H, K) => {
             await K.messort("stadt-voll");
