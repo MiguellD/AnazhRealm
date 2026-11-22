@@ -777,12 +777,24 @@ function bruchBuch(eintraege, wann) {
     return neu;
 }
 
+// DER WURF NENNT SEINEN RUFER (z667, 22.11., Lauf 45006602185 Versuch 1, gate:weltgrenze: „Die Saat der Welt fehlt (null) — gelesen
+// vor dem Heil | at _saatVon (…) | at _saat (…)“ — drei Zeilen: das Wort und die zwei Rahmen des WERFERS; der Leser, der die Saat zu
+// früh las, stand im dritten Rahmen und fiel der Kappung). Ein Stapel ist kein Text: sein Wort bleibt, seine Rahmen reisen bis zur
+// Tiefe `STAPEL_RAHMEN`, je Rahmen ohne den Ursprung der Seite und ohne den Versions-Stempel — es bleibt der Pfad des Baums
+// (stamm/speicher-welten.js:90:19). Ein Wort ohne Rahmen bleibt, wie es war (3 Zeilen, 400 Zeichen).
+// Leser: jede Linse über den EINEN Sammler (`melde`); gate:welt-boot (Seiten-Wurf: der Rufer im dritten Rahmen steht beim Namen).
+const STAPEL_RAHMEN = 8;
+const stapelWort = (text) => {
+    const z = String(text || "").split("\n");
+    const rahmen = (x) => /^\s+at /.test(x);
+    const ab = z.findIndex(rahmen);
+    if (ab < 0) return z.slice(0, 3).join(" | ").slice(0, 400);
+    const kurz = (x) => x.trim().replace(/https?:\/\/[^/\s()]+\//g, "").replace(/\?v=[\w.]+/g, "");
+    return [...z.slice(0, Math.min(ab, 3)), ...z.slice(ab).filter(rahmen).slice(0, STAPEL_RAHMEN).map(kurz)].join(" | ").slice(0, 900);
+};
+
 function melde(art, text) {
-    const t = String(text || "")
-        .split("\n")
-        .slice(0, 3)
-        .join(" | ")
-        .slice(0, 400);
+    const t = stapelWort(text);
     if (sammlung.erwartet?.test(t)) return;
     // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite meldet, steht als SELBSTTEST
     if (sammlung.selbsttest && (art === "console.error" || art === "pageerror"))
@@ -2293,7 +2305,7 @@ async function selbsttest() {
         ),
         "/abbruch.html":
             "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
-        "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();throw new Error('__seitenWurf')},50)</script>`,
+        "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();function __werfer(){throw new Error('__seitenWurf')}function __leser(){__werfer()}function __rufer(){__leser()}__rufer()},50)</script>`,
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -2663,8 +2675,8 @@ async function selbsttest() {
             `ein liegendes Profil nennt seinen Täter (kein Profil genannt · Halter hinter der Marke · Aufräumen lief nicht): ${taeterProbe}`,
         ],
         [
-            /^pageerror: Error: __seitenWurf/.test(wurf[0]),
-            `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
+            /^pageerror: Error: __seitenWurf \| at __werfer \(wirft\.html:\d+:\d+\) \| at __leser \(wirft\.html:\d+:\d+\) \| at __rufer \(wirft\.html:\d+:\d+\)/.test(wurf[0]),
+            `Seiten-Wurf nennt den Rufer im dritten Rahmen, je Rahmen der Pfad des Baums: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
         [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
         [
