@@ -839,9 +839,9 @@ const TAG_PRUEFE =
 // DIE PUNKTE HELLER ALS G AM TAG (stern-station, 22.11.; Entscheid des Koordinators: das Gesetz führt, die Station liest G): die
 // Grenzgröße G liest die Probe aus dem GESETZ (welt-licht.js `tagAchse`, die Anker GRENZGROESSE), nie aus dem Stamm; je Uhr mit
 // höchstens 50 Punkten heller als G (der Tag und die helle Dämmerung — nachts urteilt die Tafel die Zahl) projiziert sie diese Punkte
-// in das Fenster der Zählung (obere Hälfte, 3 Pixel Rand, über dem Horizont): `hell` die Punkte im Fenster, `hellFrei` die freien
-// (der Ring im Bild ohne Sternfeld flach wie in der Zählung — kein Laub, keine Kante — und die Wolke der EINEN Quelle
-// `r._wolkenMenge` in seiner Richtung ≤ 0,5), `hellIm` die freien mit einer gezählten Punkt-Quelle des Differenzbilds in ≤ 2 Pixeln,
+// in das Fenster der Zählung (obere Hälfte, 3 Pixel Rand, über dem Horizont): `hellG` die Punkte im Fenster (nie `hell`: das ist die Luma der Tag-Kurve), `hellFrei` die freien
+// (der Ring im Bild ohne Sternfeld flach wie in der Zählung — kein Laub, keine Kante — und sein Licht durch die Wolke der EINEN
+// Quelle `r._wolkenMenge` in seiner Richtung, × (1 − Menge), noch heller als G), `hellIm` die freien mit einer gezählten Punkt-Quelle des Differenzbilds in ≤ 2 Pixeln,
 // `fremd` die gezählten Punkt-Quellen ohne einen Punkt heller als G in ≤ 2 Pixeln: ein Punkt schwächer als G am Taghimmel.
 // (b mit Feld, o ohne Feld oder null, d das Differenzbild als Luma-Leser oder null)
 const TAG_HELL = async function tagHell(b, o, d) {
@@ -849,7 +849,7 @@ const TAG_HELL = async function tagHell(b, o, d) {
     const sf = st.starField;
     const G = __weltLicht.tagAchse(r._sonnenRichtung().y).grenze;
     const mags = sf && sf.userData && sf.userData.mags;
-    if (!mags) return { G, hell: 0, hellFrei: 0, hellIm: 0, fremd: 0 };
+    if (!mags) return { G, hellG: 0, hellFrei: 0, hellIm: 0, fremd: 0 };
     const idx = [];
     for (let i = 0; i < mags.length && idx.length <= 50; i++) if (mags[i] <= G) idx.push(i);
     if (idx.length > 50) return { G };
@@ -868,7 +868,7 @@ const TAG_HELL = async function tagHell(b, o, d) {
         if (p.z > 1) continue;
         const x = Math.floor(((p.x + 1) / 2) * W), y = Math.floor(((1 - p.y) / 2) * H);
         if (x < 3 || x >= W - 3 || y < 3 || y >= (H >> 1) - 3) continue;
-        pts.push({ x, y, dir });
+        pts.push({ x, y, dir, m: mags[i] });
     }
     // die Wolke in der Richtung jedes Punkts: EIN Schirm-Pass über die EINE Quelle, zurückgelesen
     let wolke = pts.map(() => 0);
@@ -927,10 +927,12 @@ const TAG_HELL = async function tagHell(b, o, d) {
                 if (c - sr / 16 >= 8 && hi - lo <= 6) orte.push([x, y]);
             }
     const nah = (a, q) => Math.max(Math.abs(a[0] - q.x), Math.abs(a[1] - q.y)) <= 2;
-    const frei = pts.filter((q, k) => wolke[k] <= 0.5 && flach(q.x, q.y));
+    // frei: der Ring flach und das Licht DURCH die Wolke (× (1 − Menge), wie die Kuppel sie über den Himmel mischt) noch heller als G
+    const frei = pts.filter((q, k) => q.m - 2.5 * Math.log10(Math.max(1 - wolke[k], 1e-6)) <= G && flach(q.x, q.y));
     return {
         G,
-        hell: pts.length,
+        hellG: pts.length,
+        wolkeG: wolke.map((v) => +v.toFixed(2)),
         hellFrei: frei.length,
         hellIm: frei.filter((q) => orte.some((a) => nah(a, q))).length,
         fremd: orte.filter((a) => !pts.some((q) => nah(a, q))).length,
@@ -4465,7 +4467,7 @@ const stationen = [
             const tagZ = (s, n, th) => {
                 if (s < 10) return {};
                 const h = th ? th(s) : { hellFrei: 0, hellIm: 0 };
-                return { G: -5, hell: h.hell != null ? h.hell : h.hellFrei, hellFrei: h.hellFrei, hellIm: h.hellIm, fremd: Math.max(0, n - h.hellIm) };
+                return { G: -5, hellG: h.hellG != null ? h.hellG : h.hellFrei, hellFrei: h.hellFrei, hellIm: h.hellIm, fremd: Math.max(0, n - h.hellIm) };
             };
             const zeile = (u, st, pt, th) => ({ uhr: u, sonne: sonne(u), Y: 0.2, sterne: st(sonne(u)), punkte: st(sonne(u)) + (pt && sonne(u) >= 10 ? pt : 0), grenze: 6, ...tagZ(sonne(u), st(sonne(u)), th) });
             const ort = (st = grenzStern, pt = 0, th = null) => ({
@@ -4473,7 +4475,7 @@ const stationen = [
                 fein: Array.from({ length: 60 }, (_, i) => zeile(+(0.7 + 0.001 * (i + 1)).toFixed(3), st, pt, th)),
             });
             // die Mess-Zeilen bis stern-sicht: am Tag keine Punkte heller als G gelesen
-            const ohneG = (o) => { for (const z of o.zeilen.concat(o.fein)) for (const k of ["G", "hell", "hellFrei", "hellIm", "fremd"]) delete z[k]; return o; };
+            const ohneG = (o) => { for (const z of o.zeilen.concat(o.fein)) for (const k of ["G", "hellG", "hellFrei", "hellIm", "fremd"]) delete z[k]; return o; };
             // der Planet m −5,36 heller als G −5 (Radeon 9dd55aa5: genesis 62°, wiese 62° und 72° je 1 Punkt)
             const planet = (s) => (s >= 60 ? 1 : grenzStern(s));
             const planetH = (s) => (s >= 60 ? { hellFrei: 1, hellIm: 1 } : { hellFrei: 0, hellIm: 0 });
@@ -4493,7 +4495,7 @@ const stationen = [
                 { name: "main c445936d an der GTX: 144 und 213 Punkte am Taghimmel, einer heller als G", stdout: ad, j: welt({ genesis: ort((s) => (s >= 10 ? 144 : grenzStern(s)), 0, (s) => ({ hellFrei: 1, hellIm: 1 })), wiese: ort((s) => (s >= 10 ? 213 : grenzStern(s)), 0, (s) => ({ hellFrei: 1, hellIm: 1 })) }), gruen: false },
                 { name: "die Mutante tagstern: das Auge der Nacht zu jeder Stunde (jeder Stern am Mittag)", stdout: ad, j: welt({ "wiese:third": ort((s) => (s >= 10 ? 160 : grenzStern(s)), 0, planetH) }), gruen: false },
                 { name: "der freie Planet heller als G fehlt am Mittag", stdout: ad, j: welt({ wiese: ort(grenzStern, 0, (s) => (s >= 60 ? { hellFrei: 1, hellIm: 0 } : { hellFrei: 0, hellIm: 0 })) }), gruen: false },
-                { name: "der Planet heller als G hinter der Wolke (nicht frei, nicht im Bild)", stdout: ad, j: welt({ genesis: ort(grenzStern, 0, (s) => (s >= 60 ? { hell: 1, hellFrei: 0, hellIm: 0 } : { hellFrei: 0, hellIm: 0 })) }), gruen: true },
+                { name: "der Planet heller als G hinter der Wolke (nicht frei, nicht im Bild)", stdout: ad, j: welt({ genesis: ort(grenzStern, 0, (s) => (s >= 60 ? { hellG: 1, hellFrei: 0, hellIm: 0 } : { hellFrei: 0, hellIm: 0 })) }), gruen: true },
                 { name: "die Tag-Zeilen ohne die Punkte heller als G (die Probe bis stern-sicht)", stdout: ad, j: welt({ wiese: ohneG(ort()) }), gruen: false },
                 { name: "vier Punkte in der hellen Dämmerung (≥ −3°: höchstens die Planeten)", stdout: ad, j: welt({ "genesis:third": ort((s) => (s >= -3 && s < 10 ? 4 : grenzStern(s))) }), gruen: false },
                 { name: "die astronomische Nacht zu dünn (3 Sterne)", stdout: ad, j: welt({ "wiese:third": ort((s) => Math.min(3, grenzStern(s))) }), gruen: false },
