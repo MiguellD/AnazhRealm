@@ -789,6 +789,8 @@ const FORBIDDEN = [
     ["_impostorBakePending", "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)"],
     // w4-b-pflanzen: das Urteil der Kronen-Schüchternheit ist Kern-Gesetz (phyto-core `forestSteht`), der Bestand trägt es
     ["_forestDartSteht", "w4-b-pflanzen"],
+    // eine-huelle: die vier Wände aus der Tür-Zeile (die zweite Hülle desselben Hauses) — jede Stufe des Gesetzbuchs trägt die Solids
+    ["_hausKernHuelle", "eine-huelle — die Hülle des Hauses kommt NUR aus dem Gesetzbuch (`_hausHuelleSetzen`, wer wartet: `_hausHuelleHolen`)"],
     ["gpuScatter", "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter"],
     ["uSeite", "18.10. — das Panorama faltet EINE CPU-Faltung je Engine, die GLSL-Faltung fiel", ["worlds/huelle/huelle.js"]],
     // F6 — das additive Licht-Band der Host-Stoffe (Rim, Nacht-Boden, Mond-Rim, der sonnen-blinde Gegenlicht-Glow) leuchtete aus
