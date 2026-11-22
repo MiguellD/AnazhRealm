@@ -5715,6 +5715,24 @@
         var speed = Math.max((2 / 7) * B.speed.base, (B.speed.base + 0 * B.speed.leicht + 0 * B.speed.mag) * sizeSpeedMul);
         return { speed: speed, sprintSpeed: speed * B.sprintMul, jumpPower: (B.jumpPower.base + 0 * B.jumpPower.leicht + 0 * B.jumpPower.mag) * sizeSpeedMul };
     }
+    // DAS KÖNNEN DES MENSCHEN aus seinem Leib (mensch-zahlen, rein additiv; Meisterkarte 2 mensch.sport.koennen S1): `kraft` = die
+    // Kraft seiner Beine über seinem Gewicht, am Kanon (START_PARAMS) 1 — die Kraft wächst mit dem Querschnitt des Bein-Muskels
+    // ((legM × Höhe)², `labMorph`: der Muskel-Ton, das Alter, das Geschlecht), das Gewicht mit Größe × Höhe (`leibGroesse`).
+    // `lauf` = √kraft: bei gleicher Anstrengung hält die dynamische Ähnlichkeit v² ÷ (g × L) ∝ Kraft ÷ Gewicht — die
+    // Froude-Einheit des Gangs (tetrapoda `tempoEinheit`) mal `lauf` ist sein Tempo; zwei gleich gebaute Menschen
+    // verschiedener Höhe laufen gleich schnell (die Höhe kürzt sich gegen die Einheit). Leser: der Bewohner (der Wirt
+    // `_bewohnerGenome` → das Tempo seines Gangs). Bis hier trug das Tempo nur die Länge des Beins: 100 Bewohner einer Stadt
+    // liefen 100 m binnen ±1,5 % (Station k2-mensch-sport), der Greis so schnell wie der Athlet.
+    function leibKoennen(dials) {
+        var s = dials || {};
+        if (!isFinite(s.age) || !isFinite(s.gender)) throw new Error("KERN-PFLICHT verletzt: leibKoennen ohne age/gender");
+        var roh = function (d) {
+            var m = labMorph(d).legM;
+            return (m * m * d.height) / leibGroesse(d);
+        };
+        var kraft = roh(s) / roh(START_PARAMS);
+        return { kraft: kraft, lauf: Math.sqrt(kraft) };
+    }
     // Der Leib-Zustand (die Felder, die das Gesetz liest und schreibt — dieselben Namen wie im Zustand des Wirts) mit dem
     // schmalen Geschwindigkeits-Speicher (`setValue` · `x()` · `y()` · `z()`, wie der Feld-Vektor des Wirts `_makeFieldVec`)
     function leibVec(x, y, z) {
@@ -9945,6 +9963,7 @@
         leibMasse: leibMasse,
         leibGroesse: leibGroesse,
         leibWerte: leibWerte,
+        leibKoennen: leibKoennen,
         leibVec: leibVec,
         leibZustand: leibZustand,
         leibRichtung: leibRichtung,
