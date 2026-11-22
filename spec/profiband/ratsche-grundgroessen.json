@@ -18,7 +18,7 @@
         "samen": {
             "stamm/bau-teile.js": ["1664525"],
             "stamm/bild-sicht.js": ["1664525"],
-            "stamm/klang.js": ["Math.random", "1664525 ×2"],
+            "stamm/klang.js": ["Math.random", "1664525"],
             "stamm/feld-leben.js": ["Math.random"],
             "stamm/speicher-welten.js": ["Math.random ×4"],
             "phyto-core.js": ["1664525 ×7"],

@@ -122,7 +122,7 @@ async function checkBandW4LofiPad({ page, check }) {
                     (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
                 );
             // Das Welt-Feld biast die Harmonie, die Emotion bleibt dominant: _lofiWorldField gestubbt, um beide
-            // Kanäle (Emotion 0.8, Welt-Feld 0.4) bei fixem rngState deterministisch zu vergleichen. Gemessen
+            // Kanäle (Emotion 0.8, Welt-Feld 0.4) bei fixem Harmonie-Strom deterministisch zu vergleichen. Gemessen
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
             r._klangStudioPreset = () => null;
             sym.lofi.bar = 0;
@@ -132,7 +132,7 @@ async function checkBandW4LofiPad({ page, check }) {
             const hell = (saat, n, froh, trauer, feld) => {
                 r._lofiWorldField = feld ? () => feld : origField;
                 Object.assign(emo, { joy: froh, hope: froh, sorrow: trauer });
-                sym.lofi.rngState = saat;
+                r._klangStrom("lofi").zustand = saat;
                 let c = 0;
                 for (let i = 0; i < n; i++) if (AnazhRealm.LOFI_BRIGHT_DEGREES.includes(r._lofiNextDegree(0))) c++;
                 r._lofiWorldField = origField;
@@ -153,9 +153,9 @@ async function checkBandW4LofiPad({ page, check }) {
             out["W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe"] = AnazhRealm.LOFI_HARMONY[0]
                 .map((t) => t[0])
                 .includes(r._lofiNextDegree(0));
-            // W4 V3 — Determinismus: selber rngState → selbe Folge.
+            // W4 V3 — Determinismus: selber Harmonie-Strom → selbe Folge.
             const folge = () => {
-                sym.lofi.rngState = 12345;
+                r._klangStrom("lofi").zustand = 12345;
                 const q = [0];
                 for (let i = 0; i < 6; i++) q.push(r._lofiNextDegree(q[i]));
                 return q.join();

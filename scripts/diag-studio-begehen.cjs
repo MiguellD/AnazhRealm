@@ -300,7 +300,7 @@ function proben(inj) {
         // Welt, siedlung.K3) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
         const FCk = window.__fachwerkCore;
         const Gk = window.__gelaendeCore;
-        const Lk = Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise);
+        const Lk = Gk.lageGrund(window.__samenCore.EINGANG, window.SimplexNoise);
         const kern = FCk.ortPlan(
             FCk.exportSettlement({
                 seed: 7,

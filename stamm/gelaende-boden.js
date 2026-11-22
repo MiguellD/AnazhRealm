@@ -477,7 +477,7 @@ class AnazhRealm_gelaende_boden {
         const wm = this.state.worldMeta || {};
         const msg = {
             type: "genesis-plan",
-            saat: globalThis.__fachwerkCore.genesisSaat(wm.seed || "anazh-realm-seed"),
+            saat: globalThis.__fachwerkCore.genesisSaat(AnazhRealm._saatVon(wm)),
             welten: this._genesisWelten(),
             W: AnazhRealm.ORT_WAHL,
             M: AnazhRealm.WERK_LAND_M,
@@ -828,19 +828,19 @@ class AnazhRealm_gelaende_boden {
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
-    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `erbgut` ist die gemerkte Normalform (sie trägt die
-    // Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
+    // Strom entsteht beim ersten Lesen aus der Saat und steht im Gedächtnis der Saat (`_saatJe`, er fällt mit ihr); `erbgut` ist
+    // die gemerkte Normalform (sie trägt die Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
     _gelaende() {
         if (this._gelaendeLage) return this._gelaendeLage;
         const realm = this;
         this._gelaendeLage = {
             get seed() {
-                return (realm.state.worldMeta && realm.state.worldMeta.seed) || "anazh-realm-seed";
+                return AnazhRealm._saatJe(realm);
             },
             get noise() {
-                if (!realm._voxelNoise)
-                    realm._voxelNoise = globalThis.__gelaendeCore.lageRausch(this.seed, SimplexNoise);
-                return realm._voxelNoise;
+                return AnazhRealm._saatJe(realm, "gelaende.rausch", (s) =>
+                    globalThis.__gelaendeCore.lageRausch(s, SimplexNoise)
+                );
             },
             get baseHeight() {
                 return realm.state.terrainBaseHeight;
@@ -1456,7 +1456,7 @@ class AnazhRealm_gelaende_boden {
         const t = st.hydroTiles;
         const j = S.jetzt;
         j[0] = L;
-        j[1] = this._voxelNoise;
+        j[1] = L.noise;
         j[2] = st.terrainBaseHeight;
         j[3] = st.waterLevel;
         j[4] = this._erbgutCache;

@@ -324,13 +324,16 @@ class AnazhRealm_dirigent_ankunft {
             16,
             16
         );
+        // Sonne und Mond hinter der EINEN Wolke (`_hinterDerWolke`, wie das Sternfeld)
         const sunMat = AnazhRealm._himmelImUnendlichen(
-            new THREE.MeshBasicNodeMaterial({
-                color: 0xffe8b0,
-                fog: false,
-                transparent: true,
-                opacity: 0.95,
-            })
+            this._hinterDerWolke(
+                new THREE.MeshBasicNodeMaterial({
+                    color: 0xffe8b0,
+                    fog: false,
+                    transparent: true,
+                    opacity: 0.95,
+                })
+            )
         );
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
         sunMesh.name = "himmel-sonne";
@@ -339,18 +342,20 @@ class AnazhRealm_dirigent_ankunft {
         this.state.sunMesh = sunMesh;
         const moonGeo = new THREE.SphereGeometry(9, 16, 16);
         const moonMat = AnazhRealm._himmelImUnendlichen(
-            new THREE.MeshBasicNodeMaterial({
-                // die Scheibe des Vollmonds: ihre Leuchtdichte in der EINEN Skala (`HIMMEL.mondCd`), ADDIERT zum Himmel vor ihr; ihr
-                // Ton auf Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe) — bis hier trug 0xd0d4e0 Luma 0,659 mit: 1 648 statt
-                // 2 500 cd/m²
-                color: this._lichtLinear({ farbe: 0xd0d4e0 }, new THREE.Color()).multiplyScalar(
-                    AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX
-                ),
-                fog: false,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-            })
+            this._hinterDerWolke(
+                new THREE.MeshBasicNodeMaterial({
+                    // die Scheibe des Vollmonds: ihre Leuchtdichte in der EINEN Skala (`HIMMEL.mondCd`), ADDIERT zum Himmel vor ihr; ihr
+                    // Ton auf Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe) — bis hier trug 0xd0d4e0 Luma 0,659 mit: 1 648 statt
+                    // 2 500 cd/m²
+                    color: this._lichtLinear({ farbe: 0xd0d4e0 }, new THREE.Color()).multiplyScalar(
+                        AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX
+                    ),
+                    fog: false,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                })
+            )
         );
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
         moonMesh.name = "himmel-mond";

@@ -38,6 +38,31 @@ async function kreaturProben(r, T, opts) {
     // Spielers durch die Häuser, main wie Zweig). Die Dorf-Proben laufen darum zuletzt (`DORF_PROBEN`), und eine Probe ohne
     // eigenes Dorf dahinter ist ROT beim Namen (`__dorfVon`: die Probe, die es auf dieser Seite wachsen ließ)
     const dorf = { probe: null, hier: false };
+    // DIE TEILE EINER PROBE (Kreatur-Takt 22.11.: ein Täter fährt nur bis zu seinem Urteil, nie die ganze Probe von Takt 0): ein
+    // Teil-Lauf `teil(name, fn)` liefert ein Stück des Ergebnisses. Der Grund-Lauf des Selbsttests legt jedes ab (`teileAblegen`
+    // → `__teile`); ein Täter fährt nur die Teile, die sein Urteil lesen (`traegt`, die Tafel TAETER), die übrigen liest er aus dem
+    // Grund-Lauf derselben Seite (`grundTeile`) — dort ist die Welt gesund, sein Name fällt nur in seinem Teil. Ein Teil ist JSON.
+    const teile = {};
+    const teil = async (name, fn) => {
+        const G = opts?.grundTeile;
+        if (taeter && opts.traegt && G && !opts.traegt.includes(name) && G[name] !== undefined) return G[name];
+        const v = await fn();
+        if (opts?.teileAblegen) (teile[dorf.probe] || (teile[dorf.probe] = {}))[name] = JSON.parse(JSON.stringify(v));
+        return v;
+    };
+    // DER HALTEPUNKT (Kreatur-Takt 22.11.): an der Grenze eines Felds, einer Jagd, einer Saat reicht die Probe ihr Zwischen-Ergebnis
+    // an Node (`__taeterStelle` — das Urteil wohnt dort). Der Grund-Lauf legt am Punkt n sein Zwischen-Urteil ab; ein Täter endet am
+    // ersten Punkt, an dem sein Wort in SEINEM Zwischen-Urteil steht und in dem des Grunds am selben Punkt nicht — sein Ergebnis ist
+    // dieses Zwischen-Ergebnis (`__halt` n). Ohne den Ruf (die Werkbank, der Lauf ohne Selbsttest) fährt jede Probe ganz.
+    // Der Punkt heißt nach seinem Fenster (`schluessel`, z. B. „rudel#7“: dieselbe Jagd am selben Ort), sonst zählt er.
+    const stellen = {};
+    const stelle = async (z, schluessel) => {
+        if (typeof window.__taeterStelle !== "function" || Array.isArray(taeter)) return;
+        const name = dorf.probe;
+        const n = schluessel ?? (stellen[name] = (stellen[name] || 0) + 1);
+        const json = JSON.parse(JSON.stringify(z));
+        if (await window.__taeterStelle(name, taeter, n, json)) throw { __halt: n, z: json };
+    };
     const buehne = async (name, fn) => {
         if (nur && !nur.includes(name)) return;
         Object.assign(dorf, { probe: name, hier: false });
@@ -95,10 +120,11 @@ async function kreaturProben(r, T, opts) {
         kamera(0, -1);
         try {
             aus[name] = await fn(restore);
+            if (teile[name] && aus[name] && typeof aus[name] === "object") aus[name].__teile = teile[name];
             if (window.__dorfVon && !dorf.hier)
                 aus[name] = { fehler: `${name} lief im Start-Dorf, das ${window.__dorfVon} wachsen ließ — die Dorf-Proben laufen zuletzt` }; // prettier-ignore
         } catch (e) {
-            aus[name] = { fehler: String(e?.stack || e).slice(0, 600) };
+            aus[name] = e && e.__halt ? Object.assign(e.z, { __halt: e.__halt }) : { fehler: String(e?.stack || e).slice(0, 600) };
         } finally {
             for (const f of restore.reverse()) {
                 try {
@@ -912,6 +938,12 @@ async function kreaturProben(r, T, opts) {
             );
         // je Zustand der Jagd (Pirsch, Hetze) die Takte im Lauf und die auf den Achsen
         const F = { jagd: [0, 0], hetzen: [0, 0] };
+        const ergebnis = () => ({
+            jagdFrames: F.jagd[0] + F.hetzen[0],
+            hetzFrames: F.hetzen[0],
+            achsAnteil: rund(Math.max(...Object.values(F).map(([n, a]) => (n ? a / n : 0))), 3),
+            riss: { ...R },
+        });
         for (const [ox, oz] of [
             [-60, 50],
             [70, -40],
@@ -976,13 +1008,9 @@ async function kreaturProben(r, T, opts) {
             genannt.clear();
             steht.clear();
             leer(1);
+            await stelle(ergebnis()); // je Feld ein Haltepunkt
         }
-        return {
-            jagdFrames: F.jagd[0] + F.hetzen[0],
-            hetzFrames: F.hetzen[0],
-            achsAnteil: rund(Math.max(...Object.values(F).map(([n, a]) => (n ? a / n : 0))), 3),
-            riss: R,
-        };
+        return ergebnis();
     });
 
     // ── herde: der Verband des ECHTEN Wurfs (`_kreaturWurf`, fünf scheue Hirsche) hält beim Wandern und auf der Flucht
@@ -1164,7 +1192,11 @@ async function kreaturProben(r, T, opts) {
             t.anker = rund(Math.max(0, ...an.flatMap((A, i) => an.slice(0, i).map((o) => ab(A, o)))), 1);
             return t;
         };
-        const [W, F, X, B] = ["wander", "flucht", "fremd", "blick"].map(lauf);
+        // je Lauf ein Teil (die Tafel TAETER nennt, welche ein Täter trägt — der fremde Verband, 36 000 der 48 000 Takte, nur die ID)
+        const W = await teil("wander", () => lauf("wander"));
+        const F = await teil("flucht", () => lauf("flucht"));
+        const X = await teil("fremd", () => lauf("fremd"));
+        const B = await teil("blick", () => lauf("blick"));
         const zahl = (t) => ({
             n: t.n,
             wurfAnteil: rund(t.wurf, 3),
@@ -3018,12 +3050,16 @@ async function kreaturProben(r, T, opts) {
             const kante = v === null ? null : v > hi ? hi : v < lo ? lo : null;
             return kante !== null && Math.abs(v - kante) <= 2 * Math.sqrt((kante * (1 - kante)) / Q.jagden);
         };
-        for (const [szene, nW, gr, n, lo, hi] of [
+        // jede Szene steht von Anfang an im Ergebnis (das Zwischen-Urteil je Jagd liest alle drei); ein Täter fährt dieselben 60
+        // Jagden des Rudels an denselben Orten wie der Grund — er hält, sobald sein Wort fällt (`stelle` je Jagd)
+        const SZENEN = [
             ["einWolf", 1, 1, 20, 0, 0.1],
-            ["rudel", 4, 1, taeter ? 20 : 60, 0.2, 0.4],
+            ["rudel", 4, 1, 60, 0.2, 0.4],
             ["kitz", 4, 0.6, 20, 0.6, 1],
-        ]) {
-            const Q = (R.quote[szene] = { jagden: 0, risse: 0, erschoepft: 0, band: [lo, hi] });
+        ];
+        for (const [sz, , , , lo, hi] of SZENEN) R.quote[sz] = { jagden: 0, risse: 0, erschoepft: 0, band: [lo, hi] };
+        for (const [szene, nW, gr, n, lo, hi] of SZENEN) {
+            const Q = R.quote[szene];
             for (let o = 0, ziel = n; o < ziel && !(mahl && (szene !== "rudel" || R.rissS !== null)); o++) {
                 s.creatureAnimationTime = 100;
                 r._creatureAiFrame = 0;
@@ -3094,6 +3130,7 @@ async function kreaturProben(r, T, opts) {
                 for (const G of R.gaeste) delete G.c;
                 leer(1);
                 if (o === n - 1 && ziel === n && !taeter && !mahl && offen(Q, lo, hi)) ziel = 4 * n;
+                if (!mahl) await stelle({ riss: R }, `${szene}#${o}`);
             }
         }
         return { riss: R };
@@ -4463,22 +4500,23 @@ const TAETER = {
         ["riss-verloren", /im Übergang verloren: [1-9]/],
         ["jaeger-faellt", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
     ],
+    // der dritte Eintrag je Täter: die Teile, die sein Urteil liest (`teil`) — die übrigen kommen aus dem Grund-Lauf
     herde: [
-        ["herde", /am Blick/],
-        ["herde-artfremd", /Verbands-ID bricht nach 0 s: Verband 0 liest 10 Leiber/],
+        ["herde", /am Blick/, ["wander", "blick"]],
+        ["herde-artfremd", /Verbands-ID bricht nach 0 s: Verband 0 liest 10 Leiber/, ["fremd"]],
         // der Verband ohne seinen Zug zerfällt auf der Flucht (0,456 an main, 0,645 mit dem Revier, Soll ≥ 0,8); beim Wandern und
         // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
         // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
-        ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
-        ["herde-revier", /zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /],
+        ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/, ["flucht"]],
+        ["herde-revier", /zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /, ["wander"]],
         // ohne den Alarm aus zweiter Hand reißt die Kette auf eine von zwei Weisen: der letzte flieht spät (s ≥ 1) oder einer
         // flieht nie (null: am Merge herde ⊕ Samen-Lose 4 von 5 — das fünfte Glied sah den Fremden nie selbst)
-        ["herde-alarm", /Alarm-Kette reißt: der letzte von [1-9] Flüchtern läuft (null|[1-9])/],
+        ["herde-alarm", /Alarm-Kette reißt: der letzte von [1-9] Flüchtern läuft (null|[1-9])/, ["flucht"]],
         // der Fluchtweg am Radius der Witterung ist kurz — auch 0 m (kein Flüchter kommt vom Fleck) nennt den Täter
-        ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/],
-        ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
-        ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
-        ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+: 8 von 8/],
+        ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/, ["flucht"]],
+        ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/, ["wander", "flucht"]],
+        ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /, ["wander", "flucht"]],
+        ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+: 8 von 8/, []],
     ],
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],

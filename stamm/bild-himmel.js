@@ -103,6 +103,17 @@ class AnazhRealm_bild_himmel {
         return __weltLicht.wolkenMenge(HG, this._himmelUniformen(), dir);
     }
 
+    // DER KÖRPER AM HIMMEL STEHT HINTER DER WOLKE (stern-station): Stern, Planet, Mond und Sonne liegen im Unendlichen, die Wolke
+    // davor — ihr Licht trägt den Durchlass der EINEN Wolke in ihrer Richtung (`_wolkenMenge`, dieselbe Menge, mit der die Kuppel
+    // die Wolke über Himmel und Band mischt: × (1 − Menge)). Bis hier addierten Feld und Mond ihr Licht auf die Wolke, die Sonne
+    // stand deckend über ihr. Ein Faktor der Deckkraft: der additive Stoff trägt ihn als Licht, der deckende als Mischung.
+    _hinterDerWolke(mat) {
+        const T = THREE.TSL;
+        const dir = T.positionWorld.sub(T.cameraPosition).normalize();
+        mat.opacityNode = (mat.opacityNode || T.materialOpacity).mul(T.float(1).sub(this._wolkenMenge(dir)));
+        return mat;
+    }
+
     // DIE KARTE DES WURFS (licht.K4, die Cloud-Shadow-Map von Horizon/MSFS): je Texel die Menge der Wolke an EINEM Punkt der
     // Schicht in Welt-Koordinaten (`_wolkenFeld`, Zelle `zelleM`, `karte`² um den Punkt, an dem das Licht über dem Spieler die
     // Schicht quert) als Deckung der Sonne: die Menge, die die Kuppel als Deckkraft der Wolke zeichnet, gewogen mit dem Wetter
@@ -468,8 +479,30 @@ class AnazhRealm_bild_himmel {
             (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * __weltLicht.KOSMOS.feldGrenze)) / __weltLicht.EINHEIT_LX;
         const ueber = kq.mul(kq).mul(eFeld).mul(uAuge).mul(kernSpitze).div(SB.schwelle);
         const gesehen = TSL.smoothstep(float(10 ** -0.2), float(1), ueber);
+        // DIE SCHWELLE VOR DEM HIMMEL (stern-station): `schwelle` trägt über schwarzem Himmel 20 von 255 auf den Schirm; vor dem
+        // Himmel des Tags trägt derselbe belichtete Schritt durch die Tonkurve und die Ausgabe (sRGB) weniger (vor Luma 180 etwa 8)
+        // — der Punkt heller als G stand unter der Schwelle des Schirms: der Planet m −5,36 am Taghimmel (G −5) fehlte an 14 von
+        // 19 freien Uhren (Station sternhimmel#1, Radeon, vier Kurven). `vorHimmel` hebt den Schritt, bis er vor DEM Himmel in
+        // seiner Richtung (die EINE Atmosphäre, `himmelFarbe`, belichtet) auf dem Schirm so weit trägt wie über schwarz: zwei
+        // Sekanten-Schritte an der EINEN Tonkurve (`tonKurve`) und der Ausgabe; über schwarzem Himmel genau 1.
+        const ton = __weltLicht.tonKurve(THREE);
+        const schirm = (x) => TSL.sRGBTransferOETF(ton(TSL.vec3(x), float(1))).x;
+        const blick = TSL.positionWorld.sub(TSL.cameraPosition).normalize();
+        const grund = TSL.dot(this._atmoLutBau().himmelFarbe(blick), TSL.vec3(0.2126, 0.7152, 0.0722))
+            .mul(TSL.toneMappingExposure)
+            .toVar();
+        const stufe = float(SB.schwelle);
+        const ueberSchwarz = schirm(stufe).toVar();
+        const amGrund = schirm(grund).toVar();
+        const f1 = ueberSchwarz
+            .div(TSL.max(schirm(grund.add(stufe)).sub(amGrund), 1e-6))
+            .clamp(1, 64)
+            .toVar();
+        const vorHimmel = f1
+            .mul(ueberSchwarz.div(TSL.max(schirm(grund.add(stufe.mul(f1))).sub(amGrund), 1e-6)))
+            .clamp(1, 64);
         starMat.colorNode = vec4(
-            TSL.vec3(psf.mul(uAuge).div(TSL.toneMappingExposure).mul(gesehen)),
+            TSL.vec3(psf.mul(uAuge).mul(vorHimmel).div(TSL.toneMappingExposure).mul(gesehen)),
             TSL.step(dw, halb).mul(uOpacity)
         );
 
@@ -490,7 +523,7 @@ class AnazhRealm_bild_himmel {
         // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
         // ist dasselbe Bild.
         starMat.forceSinglePass = true;
-        AnazhRealm._himmelImUnendlichen(starMat);
+        AnazhRealm._himmelImUnendlichen(this._hinterDerWolke(starMat));
 
         // Der hellste Punkt des Himmels am Tag des Felds (`kosmosZeit(…).hellste`): liegt die Grenzgröße mehr als ½ Klasse darüber,
         // ist kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
@@ -685,10 +718,7 @@ class AnazhRealm_bild_himmel {
                 }
             }
             const lift = coverage > 0.18 ? coverage * 7 + 11 : 0;
-            let bump = 0;
-            if (this._growTreeNoise) {
-                bump = this._growTreeNoise.noise2D(wx * 0.05, wz * 0.05) * 0.8;
-            }
+            const bump = this._baumGrammatik().noise2D(wx * 0.05, wz * 0.05) * 0.8;
             positions.setY(i, terrainY + lift + bump);
             // Vertex-Position auf Welt-Koord setzen (so kann der Mesh am
             // Welt-Ursprung sitzen, ohne dass eine pro-Chunk-Position-Set
@@ -1905,7 +1935,7 @@ class AnazhRealm_bild_himmel {
             // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
             // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
             const P = globalThis.__phytoCore;
-            const g = P.windGrund((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const g = P.windGrund(AnazhRealm._saatJe(this));
             const HG =
                 AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
                 AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
@@ -2981,7 +3011,7 @@ class AnazhRealm_bild_himmel {
         const wm = this.state.worldMeta || {};
         // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
         const zeile = globalThis.__phytoCore.wetterAt(
-            wm.seed || "anazh-realm-seed",
+            AnazhRealm._saatVon(wm),
             x,
             z,
             t,
@@ -3472,7 +3502,8 @@ AnazhRealm.HIMMEL = Object.freeze({
     // (2 × 2), nur der helle trägt seinen Saum (mit 0,1° deckte das Feld 5- bis 10-mal die Fläche für Säume unter der Grenze)
     // `schwelle` (stern-sicht): DIE SCHWELLE DES SCHIRMS — der belichtete Wert (L × k) am Kern-Pixel eines Punkts an der Grenzgröße
     // des Auges: 0,0334 legt die Tonkurve (Fuß 6,25·x²) auf 0,0070 linear = 20 von 255 über schwarzem Himmel, der feinste Punkt,
-    // der auf dem Schirm als Punkt steht; eine Klasse heller 2,5-mal, zwei Klassen bis zur Schulter
+    // der auf dem Schirm als Punkt steht; eine Klasse heller 2,5-mal, zwei Klassen bis zur Schulter. Vor hellem Himmel hebt der
+    // Knoten den Schritt, bis er auf dem Schirm gleich weit trägt (`vorHimmel`, `_buildStarField`)
     sternBild: Object.freeze({
         a: 0.02,
         kern: 0.367,
