@@ -6858,10 +6858,23 @@ async function selbsttest(o = {}) {
         const schlossEnv = (n) => ({ GPU_SCHLOSS: fw(path.join(tmp, "bahn-" + n)), GPU_HOOK_LOG: fw(path.join(tmp, "bahn-" + n + ".hook.log")),
             GPU_NACHT: "", GPU_WORKER_BILD: "Kein.Worker.exe", GPU_LAUF_TAKT_S: "1" });
         // $1 Log · $2 wer · $3 {AUS} oder leer · $4 Tür oder leer · $5 Partner oder leer (er steht „S“ oder kam nie „X“)
+        // DER STUB WARTET OHNE PROZESS (22.11.): seine zwei Schleifen riefen je 0,1 s `sleep` (und `grep`) — zehn bis zwanzig Prozess-Starts
+        // je Sekunde je haltendem Stub, in zehn Fällen zugleich; am 22.11. hielt ein Selbsttest so 53–62 bash.exe über 40 min, ein
+        // bash-Start kostete 9–13 s. Jetzt schläft er mit `read -t` an einem eigenen FIFO (dasselbe Gesetz wie gs_schlaf im Werkzeug),
+        // die Zeile des Partners liest eine Schleife aus Builtins; ohne FIFO fällt der Schlaf auf `sleep` zurück (gleiches Verhalten)
         const STUB = 'echo "[linse-gpu] amd/rdna-3"; echo "S $2" >> "$1"; ' +
-            'while [ -n "$4" ] && [ ! -e "$4" ]; do sleep 0.1; done; ' +
-            'while [ -n "$5" ] && ! grep -qx "[SX] $5" "$1"; do sleep 0.1; done; ' +
+            'f=/tmp/stub-schlaf.$$.$RANDOM; mkfifo "$f" 2>/dev/null && exec 9<>"$f"; rm -f "$f"; ' +
+            'schlaf() { read -r -t 0.1 -u 9 2>/dev/null; [ $? -gt 128 ] || sleep 0.1; }; ' +
+            'hat() { local z; while IFS= read -r z; do case "$z" in "S $2" | "X $2") return 0 ;; esac; done <"$1"; return 1; }; ' +
+            'while [ -n "$4" ] && [ ! -e "$4" ]; do schlaf; done; ' +
+            'while [ -n "$5" ] && ! hat "$1" "$5"; do schlaf; done; ' +
             'echo "E $2" >> "$1"; [ -n "$3" ] && echo "{\\"n\\": 0}" > "$3"; true';
+        // der Starter der Zähl-Linse (Fall k): der Lauf erbt Zähl-Funktionen (export -f) — je Programm-Name eine Zeile in $GPU_ZAEHL,
+        // dann das echte Programm; `read -t` (der Schlaf ohne Prozess) notiert nur „schlaf“. Die Zählung selbst startet keinen Prozess
+        const zaehlStart = fw(path.join(tmp, "bahn-zaehl.sh"));
+        fs.writeFileSync(zaehlStart, "#!/bin/bash\nfor n in tasklist date stat head tr grep tail sed cut sleep seq cat mkdir rmdir rm touch cp mv powershell pgrep awk wc sort ps taskkill cygpath ls find dirname basename mkfifo; do\n" +
+            '    eval "$n() { echo $n >>\\"\\$GPU_ZAEHL\\"; command $n \\"\\$@\\"; }"\n    export -f "$n"\ndone\n' +
+            'read() {\n    case " $* " in *" -t "*) echo schlaf >>"$GPU_ZAEHL" ;; esac\n    builtin read "$@"\n}\nexport -f read\nexec bash "$@"\n');
         // je Lauf die Zeilen-Stelle seines S und E im Log
         const spannen = (log) => {
             const m = {};
@@ -6878,9 +6891,9 @@ async function selbsttest(o = {}) {
         // wartet auf ein Ereignis, solange der Lauf r lebt, der es bringt — endet er ohne, ist es false (ROT mit seinem Exit)
         const bis = async (f, r) => { while (!f()) { if (r.code !== undefined) return f(); await warte(100); } return true; };
         // ein fremder Lauf: gpu-lauf.sh direkt, wie ein Macher oder ein zweiter Läufer ihn ruft
-        const lauf = (env, art, n, wer, log, tuer = "") => {
+        const lauf = (env, art, n, wer, log, tuer = "", vor = "") => {
             const r = { out: "", err: "", code: undefined };
-            r.k = spawn(findeBash(), [wz, "probe-" + wer, "bash", "-c", STUB, "stub", fw(log), wer, "", tuer && fw(tuer), ""],
+            r.k = spawn(findeBash(), [...(vor ? [vor] : []), wz, "probe-" + wer, "bash", "-c", STUB, "stub", fw(log), wer, "", tuer && fw(tuer), ""],
                 { env: { ...process.env, ...env, GPU_LAUF_ART: art, GPU_LAUF_PLAETZE: String(n) }, windowsHide: true });
             r.k.stdout.setEncoding("utf8");
             r.k.stderr.setEncoding("utf8");
@@ -7079,7 +7092,43 @@ async function selbsttest(o = {}) {
                 new RegExp("VERWAIST: Halter 'probe-tot' \\(Halter pid=" + tot + " lebt nicht\\) tot — Schloss übernommen von 'probe-T'").test(w.err),
                 "Exit " + c + " nach " + ms + " ms · " + vl(w)];
         })();
-        for (const [name, ok, was] of await Promise.all([planFall, zeitFall, einFall, ciFall, vertreterFall, nachtFall, vorrangFall, waiseCiFall, haeltCiFall, totFall])) pruef(name, ok, was);
+        // (k) DER WARTER RUHT AM GEHALTENEN SCHLOSS (22.11.): die Linse zählt die Prozess-Starts EINES Warters je Takt (zaehlStart). Urteil
+        // am TAKT, nie an der Wanduhr: von 13 Takten am gehaltenen Schloss ruhen mindestens 11 mit 0 Starts (der volle Blick fällt je
+        // zwölftem Takt, auch der Schlaf ist ein Builtin), und der Warter nimmt das Schloss nach dem Halter. Die Gegenprobe
+        // GPU_RUHT_TAKTE=0 ist die Fassung bis 22.11. (je Takt der volle Blick, rund 35 Starts): sie ruht in keinem von 2 Takten
+        const ruhtFall = async (mutant) => {
+            const n = mutant ? "ruht-m" : "ruht";
+            const env = { ...schlossEnv(n), GPU_LAUF_WARTE_S: "600", ...(mutant ? { GPU_RUHT_TAKTE: "0" } : {}) };
+            const log = path.join(tmp, "bahn-" + n + ".log"), tuer = path.join(tmp, "bahn-" + n + ".tuer"), zaehl = path.join(tmp, "bahn-" + n + ".zaehl");
+            const h = lauf(env, "zeit", 1, "H", log, tuer);
+            const ev = [await bis(steht(log, "H"), h)];
+            const w = lauf({ ...env, GPU_ZAEHL: fw(zaehl) }, "zeit", 1, "W", log, "", zaehlStart);
+            const zeilen = () => (fs.existsSync(zaehl) ? fs.readFileSync(zaehl, "utf8").split(/\r?\n/).filter(Boolean) : []);
+            const schlaeft = (x) => x === "sleep" || x === "schlaf";
+            const soll = mutant ? 3 : 14; // Schläfe: der erste öffnet das Fenster, danach 2 bzw. 13 Takte
+            ev.push(await bis(() => zeilen().filter(schlaeft).length >= soll, w));
+            const z = zeilen();
+            fs.writeFileSync(tuer, "");
+            const codes = await Promise.all([h.fertig, w.fertig]);
+            // je Takt (von einem Schlaf zum nächsten) seine Starts: `sleep` ist ein Start, „schlaf“ (read -t) keiner
+            const je = [];
+            for (let i = z.findIndex(schlaeft) + 1, k = 0; i < z.length && je.length < soll - 1; i++) {
+                if (z[i] !== "schlaf") k++;
+                if (schlaeft(z[i])) { je.push(k); k = 0; }
+            }
+            return { ev, codes, je, ruhend: je.filter((k) => k === 0).length, sp: spannen(log), schloss: fs.existsSync(env.GPU_SCHLOSS) };
+        };
+        const ruhtFaelle = (async () => {
+            const a = await ruhtFall(false), m = await ruhtFall(true);
+            return [
+                ["WARTER RUHT am gehaltenen Schloss: von 13 Takten ruhen mindestens 11 ohne Prozess-Start, der Warter nimmt das Schloss nach dem Halter",
+                    a.ev.every(Boolean) && a.codes.every((c) => c === 0) && a.je.length === 13 && a.ruhend >= 11 && nach(a.sp.W, a.sp.H) && !a.schloss,
+                    "Starts je Takt " + a.je.join(",") + " · ruhend " + a.ruhend + " von " + a.je.length + " · Exit " + a.codes.join("/")],
+                ["WARTER RUHT die Gegenprobe GPU_RUHT_TAKTE=0 (je Takt der volle Blick) ruht in keinem Takt — die Linse nennt den Täter",
+                    m.ev.every(Boolean) && m.je.length === 2 && m.ruhend === 0 && m.je.every((k) => k >= 5), "Starts je Takt " + m.je.join(",") + " · Exit " + m.codes.join("/")],
+            ];
+        })();
+        for (const [name, ok, was] of [...(await Promise.all([planFall, zeitFall, einFall, ciFall, vertreterFall, nachtFall, vorrangFall, waiseCiFall, haeltCiFall, totFall])), ...(await ruhtFaelle)]) pruef(name, ok, was);
     } else pruef("BAHNEN Platz-Schloss", false, "keine Git-bash");
     // (4) Glob
     const gl = [["stamm/kreatur-leben.js", ["stamm/kreatur-*.js"], true], ["stamm/x/kreatur-a.js", ["stamm/kreatur-*.js"], false],

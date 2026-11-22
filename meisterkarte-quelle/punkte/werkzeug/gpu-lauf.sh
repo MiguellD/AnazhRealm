@@ -33,16 +33,25 @@ letzte=0
 nimm() { if [ "$ART" = zeit ]; then ganz_versuch "$NAME"; else platz_versuch "$NAME" "$PLAETZE"; fi; }
 [ "$ART" = zeit ] && gs_vorrang "$NAME"
 trap 'gs_vorrang_weg' EXIT
-until nimm; do
-    gs_uebernimm nimm "$NAME" && break
-    jetzt=$(date +%s)
+# DER WARTER RUHT AM GEHALTENEN SCHLOSS (22.11., gs_ruht in gpu-schloss.sh): der volle Blick — nehmen, Verwaisung, Vorfahrt, wer hält —
+# fällt nur, wenn das Schloss fehlt, sein Besitzer wechselte oder GPU_RUHT_TAKTE Takte seit dem letzten vollen Blick vergingen;
+# dazwischen kostet ein Takt KEINEN Prozess-Start (gs_schlaf wartet mit einem Builtin) statt rund 35. `wer` trägt den Namen vom letzten
+# vollen Blick.
+wer=
+while :; do
+    if ! gs_ruht "$ART" "$PLAETZE"; then
+        nimm && break
+        gs_uebernimm nimm "$NAME" && break
+        gs_ruht_merken
+        wer=$(gs_vorfahrt)
+        [ -z "$wer" ] && [ "$ART" = bild ] && wer=$(gs_vorrang_wer)
+        [ -z "$wer" ] && wer=$(schloss_erster)
+    fi
+    gs_jetzt jetzt
     # DIE WARTE-UHR zählt die Nachtruhe nie (26.10., Prüfung gpu-bahnen): sie sperrt jedes Nehmen und ist mit 50 min länger als
     # die Frist — wer um 03:26 zu warten begann, endete um 04:11 mit Exit 75, mitten in der Nacht, ohne dass ein Lauf die Karte hielt
     gs_nacht || gewartet=$((gewartet + jetzt - vorher))
     vorher=$jetzt
-    wer=$(gs_vorfahrt)
-    [ -z "$wer" ] && [ "$ART" = bild ] && wer=$(gs_vorrang_wer)
-    [ -z "$wer" ] && wer=$(schloss_erster)
     if [ "$gewartet" -gt "$WARTE" ]; then
         echo "SCHLOSS BLOCKIERT von ${wer:-?} nach $gewartet s Warten (ohne Nachtruhe; Wanduhr $((jetzt - t0)) s)"
         exit 75
@@ -51,8 +60,9 @@ until nimm; do
         echo "gpu-lauf: $NAME ($ART) wartet auf ${wer:-?}" >&2
         letzte=$jetzt
     fi
-    sleep "$TAKT"
+    gs_schlaf "$TAKT"
 done
+gs_schlaf_zu
 gs_vorrang_weg
 if [ "$ART" = zeit ]; then
     trap 'ganz_loesen "$NAME"' EXIT

@@ -50,6 +50,73 @@ gs_pid_von() { grep -m1 "^pid=" "$1" 2>/dev/null | tr -dc 0-9; }
 gs_schreib() { printf '%s\npid=%s\n' "$2" "$GPU_ICH_PID" >"$1"; }
 gs_meins() { [ "$(head -n 1 "$1" 2>/dev/null | tr -d '\r')" = "$2" ] && [ "$(gs_pid_von "$1")" = "$GPU_ICH_PID" ]; }
 
+# DER WARTER RUHT AM GEHALTENEN SCHLOSS (22.11., Koordinator): ein Warter prüfte je Takt (5 s) Vorfahrt, Verwaisung und Besitzer neu —
+# rund 35 Prozess-Starts (tasklist, grep, head, tr, stat, date, cut, tail …). Am 22.11. 20:22 standen an der Radeon 17 Warter am
+# Schloss, dazu die Fälle eines Selbsttests: 144 bash.exe, ein bash-Start 9–13 s (gesund 1–2 s), der echt-Job des Zugs und jedes Gate
+# liefen im selben Stau. Jetzt: solange das Schloss STEHT, besitzer.txt dieselbe ist wie beim letzten vollen Blick und seither
+# weniger als GPU_RUHT_TAKTE (12) Takte vergingen, tut der Warter nichts als schlafen — gs_ruht liest nur mit Builtins (kein
+# Prozess-Start). Der volle Blick (nehmen, Verwaisung, Vorfahrt) fällt, sobald das Schloss fehlt, der Besitzer wechselt oder der
+# zwölfte Takt um ist (60 s bei 5 s Takt): ein toter Halter wird so nach höchstens zwölf Takten gebrochen statt nach einem. Ein
+# Bild-Lauf ruht an einem Platz-Schloss nur, wenn kein Platz für ihn frei ist. GPU_RUHT_TAKTE=0 schaltet die Ruhe ab (der Mutant
+# des Selbsttests).
+GPU_RUHT_TAKTE=${GPU_RUHT_TAKTE:-12}
+GS_RUHT_BILD=
+GS_RUHT_N=0
+gs_jetzt() { printf -v "$1" '%(%s)T' -1; }
+gs_besitzer_roh() { # setzt GS_ROH auf den ganzen Inhalt von besitzer.txt (leer: fehlt) — read, kein Prozess
+    GS_ROH=
+    [ -f "$GPU_SCHLOSS/besitzer.txt" ] && IFS= read -r -d '' GS_ROH <"$GPU_SCHLOSS/besitzer.txt"
+    return 0
+}
+gs_ruht() { # <art> <plaetze> — 0: nichts zu tun als schlafen
+    local j k n M
+    [ "$GPU_RUHT_TAKTE" -gt 0 ] && [ -d "$GPU_SCHLOSS" ] || return 1
+    if [ "$1" = bild ] && [ -f "$GPU_SCHLOSS/plaetze" ]; then
+        M=
+        IFS= read -r M <"$GPU_SCHLOSS/plaetze"
+        M=${M//[!0-9]/}
+        n=${2:-1}
+        [ -n "$M" ] && [ "$M" -lt "$n" ] && n=$M
+        k=0
+        for j in "$GPU_SCHLOSS"/platz.*; do [ -d "$j" ] && k=$((k + 1)); done
+        [ "$k" -ge "$n" ] || return 1
+    fi
+    gs_besitzer_roh
+    [ -n "$GS_ROH" ] && [ "$GS_ROH" = "$GS_RUHT_BILD" ] && [ "$GS_RUHT_N" -lt "$GPU_RUHT_TAKTE" ] || return 1
+    GS_RUHT_N=$((GS_RUHT_N + 1))
+}
+# nach einem vollen Blick, der das Schloss nicht nahm: der Besitzer von jetzt, die Takt-Zahl von vorn
+gs_ruht_merken() {
+    gs_besitzer_roh
+    GS_RUHT_BILD=$GS_ROH
+    GS_RUHT_N=0
+}
+# DER SCHLAF OHNE PROZESS (22.11.): `sleep` ist je Takt ein Prozess-Start — der letzte, den ein ruhender Warter noch kostete. Die Shell
+# hält einen eigenen FIFO lesend UND schreibend offen (nie Daten, nie EOF) und wartet mit `read -t` an ihm: ein Builtin. Die
+# Prozess-Substitution `<(:)` taugt in der Git-Bash dafür nicht (read kehrt sofort mit EOF zurück), der FIFO schon (read -t 2 endet
+# nach 2 s mit 142; beides gemessen 22.11., bash 5.3.9). Endet read ohne Zeitablauf (kein FIFO, Fehler), schläft der Takt mit `sleep`:
+# gleiches Verhalten zum alten Preis — die Linse der Bahnen (Selbsttest 3c, Starts je ruhendem Takt = 0) nennt diesen Rückfall rot.
+GS_SCHLAF_FD=
+gs_schlaf() { # <sekunden>
+    local f
+    if [ -z "$GS_SCHLAF_FD" ]; then
+        f="/tmp/gs-schlaf.$$.$RANDOM"
+        if mkfifo "$f" 2>/dev/null && exec {GS_SCHLAF_FD}<>"$f"; then :; else GS_SCHLAF_FD=-; fi
+        rm -f "$f"
+    fi
+    if [ "$GS_SCHLAF_FD" != - ]; then
+        read -r -t "$1" -u "$GS_SCHLAF_FD"
+        [ $? -gt 128 ] && return 0
+    fi
+    sleep "$1"
+}
+# vor dem Befehl unter dem Schloss: das Kind erbt den FIFO nie
+gs_schlaf_zu() {
+    [ -n "$GS_SCHLAF_FD" ] && [ "$GS_SCHLAF_FD" != - ] && exec {GS_SCHLAF_FD}>&-
+    GS_SCHLAF_FD=
+    return 0
+}
+
 # das Tor: kurz (Beitritt, Austritt, Übergabe); eines älter als 60 s gilt als verwaist (sein Halter starb mitten darin)
 gs_tor_auf() {
     local i alt
