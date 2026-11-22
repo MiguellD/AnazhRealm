@@ -2501,6 +2501,7 @@ class AnazhRealm_dirigent_takt {
             this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
             if (this.state.windUniforms.uWindDir) this.state.windUniforms.uWindDir.value.set(w.x, w.z);
             this._tickGrasBend();
+            this._tickHalmWelle();
         }
         // uLodRef spiegelt live die EINE Quelle `state.lodRef` (Slider ohne Mesh-Rebuild; dieselbe Zahl
         // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT rotiert golden-ratio, wo die

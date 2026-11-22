@@ -1210,6 +1210,9 @@ class AnazhRealm_feld_brand {
         if (!(radius > 0)) return null;
         const st = this.state;
         const F = this._druckFristen || (this._druckFristen = []);
+        // das Bild der Welle (`_tickHalmWelle` → `_halmWelle`: der Halm liest sie im Wind-Term): W^(1/3) und die Welt-Zeit, zu
+        // der ihr letzter Halm steht — Ankunft und Dauer an ihrem Radius + die Ruhe des Halms (`_halmZahlen`)
+        const rand = SG.druckwelle(energieJ, radius, luft);
         const welle = {
             x: ort.x,
             y: ort.y,
@@ -1224,7 +1227,10 @@ class AnazhRealm_feld_brand {
             werke: 0,
             teile: 0,
             verzug: 0,
+            w3: Math.cbrt(rand.W),
+            bildEnde: uhr + rand.ankunft + rand.dauer + this._halmZahlen().ruhe,
         };
+        (this._druckWellen || (this._druckWellen = [])).push(welle);
         const frist = (art, q, x, y, z) => {
             const [dx, dz] = [x - ort.x, z - ort.z];
             const d = Math.hypot(dx, dz);
@@ -1601,7 +1607,8 @@ AnazhRealm.BRAND = Object.freeze({
 // liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
 // bewegt nichts Sichtbares und fällt; `scherben`: eine gebrochene Platte fällt in scherben × scherben Stücke; `budgetMs` und
 // `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
-// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist).
+// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist);
+// `bildWellen`: so viele Wellen zugleich liest der Halm im Bild (`_halmWelle`, die Slots des Wind-Satzes) — die jüngsten.
 AnazhRealm.DRUCK = Object.freeze({
     funkeM: 0.5,
     stossMin: 0.05,
@@ -1609,5 +1616,6 @@ AnazhRealm.DRUCK = Object.freeze({
     budgetMs: 4,
     mindestJeBild: 1,
     verzugS: 0.25,
+    bildWellen: 4,
     keine: Object.freeze([]),
 });
