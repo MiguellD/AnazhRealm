@@ -33,6 +33,9 @@
 # BUCHUNG JE STATION (19.11.): kandidat.sh pusht jede geurteilte Station an ihrer Grenze („GEPUSHT … 1 Station(en)“) — der Zähler der
 #   Runde steigt in der Sitzung, ein Weichen oder eine Verdrängung verliert höchstens die eben begonnene Station.
 # Beweis: `bash landung-dienst.sh --selbsttest` (Sandkasten mit eigenem origin: main · koordination · punkte-maschine).
+# UNTER sh.exe (wie zug-dienst.sh, 13.11.): ein Prozess-Start kostet unter bash.exe 2 358 ms, unter dem byte-gleichen sh.exe 317 ms
+# (22.11. 04:08); als sh gerufen schaltet die Zeile nur POSIX ab (volles bash), sonst startet sich das Skript EINMAL unter sh.exe neu.
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 D=$(cd "$(dirname "$0")" && pwd)
 if [ -f "$D/gemein.sh" ]; then . "$D/gemein.sh"; else . "$D/../dienst/gemein.sh"; fi
 # runde.cjs und richter.sh: installiert neben diesem Skript, im Zweig in ../dienst (EINE Quelle beim Laptop)
@@ -459,6 +462,7 @@ st_lauf() { # $1 = Mutante (leer = echt)
     echo "$k2" >"$X/kopf2"
     cat >"$KANDIDAT" <<'STUMMEL'
 #!/bin/bash
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder STATION (wie kandidat.sh seit 19.11.: Grenze je
 # Station in der Sitzung), je Station 0,4 s; jede geurteilte Station ist sofort gebucht (im „Baum“ gepusht, eine GEPUSHT-Zeile je Station).
 # warter_kommt=<i>: in Station i kommt ein Wartender und geht wieder (je 8 s: lang genug für einen Takt unter Last), bevor die Station endet
