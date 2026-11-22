@@ -998,22 +998,27 @@ async function starte() {
                     r.state.yaw = o.gier;
                     r.state.pitch = 0;
                 }
-                // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
-                // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
-                const a = o?.anlauf || [x, z];
-                r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): Same und Größe aus dem Wort, der Ort am Anker der Spec (bis w25-stadt-takt-3 sprach der Spieler sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat)) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
                 // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
                 // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o?.gruendung;
+                const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
+                const steht = () =>
+                    !!g && !!zellen().find((c) => String(c.seed) === g.wort.split(" ")[1] && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
+                // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
+                // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m).
+                // DER ANLAUF GRÜNDET, ER MISST NICHTS (Runde 4 GTX an 6066c757: 5 von 21 Stationen an stadt-voll „Frist der Probe 64 s
+                // gerissen“ ohne eine Zeile): die Sitzung stellt vor dem Deckel um (punkte.cjs probeOrt), die Probe ruft `K.messort` noch
+                // einmal, und je Ruf ging der Spieler 437 m vor die STEHENDE Stadt — ihr Verkehr fiel (nearM 260 m) und wuchs neu: Ruf 2
+                // 74,2 s (die Welt am Anlauf 13,8 · der Verkehr 20,1 · die Welt an der Pose 38,9), Ruf 1 124,5 s. Steht die Stadt des Orts
+                // schon an ihrem Anker, tritt der Spieler gleich an ihn; der Verkehr und die Pose warten unten wie nach dem Anlauf
+                const gegruendet = steht();
+                const a = gegruendet ? g.anker : o?.anlauf || [x, z];
+                r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 window.__ortBahn = o?.bahn || null;
                 if (g) {
-                    const same = g.wort.split(" ")[1];
-                    const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
-                    const steht = () =>
-                        zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
                         // DIE STADT AM ANKER DER SPEC, nie am Fenster (w25-stadt-takt-3): das Wort ohne Ort misst den Anker vor dem
                         // Spieler durch den Bildwinkel der Welt-Kamera (`_siedlungsAnker`, fov × Seitenverhältnis) — das Fenster des
@@ -1148,6 +1153,9 @@ async function starte() {
                     dorfZug: window.__anazhAutoSettlement !== false,
                     ortTakt: window.__ortTakt,
                     dorfSchwebt,
+                    // der Weg des Spielers: „gegangen“ (über den Anlauf: gegründet oder die Stadt fehlte) · „stand“ (die Stadt stand
+                    // am Anker, kein Anlauf) · null (ein Ort ohne Anlauf)
+                    anlauf: o?.anlauf ? (gegruendet ? "stand" : "gegangen") : null,
                 };
             },
             x,
