@@ -8,3 +8,6 @@ w28-stern-sicht karte2.planet.kosmos.sternhimmel#1
 w28-front-klang-koerper karte2.same.physik.feuer#1,karte2.erleben.kopplung.ein-ereignis#1
 # z668 (main 6699a813): Nässe nach Lekner, Relikte nur wo Eis lag, Uferart am Wasser, Wärme-Art im Warmen — alle vier an der Front
 w28-front-planet-leben karte2.planet.kopplung.wetter-welt#3,karte2.planet.kopplung.gegenwart#1,karte2.planet.kopplung.gegenwart#6,karte2.leben.pflanzen.biome#1
+# z671 (main 68634ee8, 22.11. 14:30): die Technik wächst aus Voraussetzungen, die Ware liegt auf einem Weg mit Fahrer — beide an der Front; die Runde 5 misst sie
+w28-front-technik karte2.mensch.wirtschaft.technik#1
+w28-wirtschaft-wende karte2.mensch.wirtschaft.handel#1
