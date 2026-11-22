@@ -1044,11 +1044,10 @@ LEITERN.push(
                         for (const k of Object.keys(s.blueprints)) if (!plaene.has(k)) delete s.blueprints[k];
                     }
                 }
-                await L.ort("stadt-voll", "third");
-                L.preisPose("stadt-voll", "third");
-                const z = await ev(zaehlen, { nah: 120 });
-                L.zeile("Werke unter dem Gesetz an der Stadt-Pose (120 m): " + JSON.stringify(z));
-                const ohneStatik = z.haeuser + " Häuser binnen 120 m sind Studio-Gestalten ohne Statik (stamm/bau-teile.js:2493)";
+                // S1 VOR DER STADT (pm-front-f1, Radeon c445936d: die Probe schwieg 60 s am Umstellen auf stadt-voll und starb ohne Wert
+                // der Säule; GTX f68dbf09 riss dort die Frist 87 s): die Säule braucht offenen Grund 4–10 m um den Spieler, keine Stadt —
+                // sie misst an der Wiese, ehe der Ort wechselt; S2–S7 zählen die Werke der Stadt
+                await L.ort("wiese", "ego");
                 await L.je(1, async () => {
                     const f = await ev(saeule, null, Math.max(5, L.rest() - 25));
                     L.zeile("Säule λ 30 gegen Euler (β 2): " + JSON.stringify(f));
@@ -1059,6 +1058,11 @@ LEITERN.push(
                         { erzeugt: 1, welt: { knick: f.knick, steht: f.steht }, taeter: "Holzsäule 0,1 × 3 m: versagt bei " + f.F_voll + " N (E/2: " + f.F_halb + " N), Euler " + f.F_euler + " N (β " + f.beta + ", eingespannt-frei) — stamm/bau-buch.js _failsUnderLoad · schmiede-core.js tragSpannung" + (f.grund ? " · " + f.grund : "") }
                     );
                 });
+                await L.ort("stadt-voll", "third");
+                L.preisPose("stadt-voll", "third");
+                const z = await ev(zaehlen, { nah: 120 });
+                L.zeile("Werke unter dem Gesetz an der Stadt-Pose (120 m): " + JSON.stringify(z));
+                const ohneStatik = z.haeuser + " Häuser binnen 120 m sind Studio-Gestalten ohne Statik (stamm/bau-teile.js:2493)";
                 await L.je(2, async () => {
                     if (z.maxTeile < P.sprossen[2].umfang.verlangt)
                         return L.umfang(2, z.maxTeile, "das größte Werk unter dem Gesetz binnen 120 m trägt " + z.maxTeile + " Glieder (" + (z.maxTyp || "keines") + ") — " + ohneStatik);

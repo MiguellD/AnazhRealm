@@ -114,14 +114,12 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1324,
+   "ms": 612,
    "wechsel": 0
   },
   "rinde": null,
   "toene": [
-   "nahWiese:L1=255/80/80",
-   "nahWiese:L2=80/255/80",
-   "nahWiese:Lf=80/120/255"
+   "nahWiese:Lf=255/80/80"
   ],
   "klassen": {},
   "abstand": null,

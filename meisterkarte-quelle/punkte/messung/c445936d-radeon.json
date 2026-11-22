@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "radeon",
- "zeit": "2026-11-21T21:19:14.466Z",
+ "zeit": "2026-11-21T23:56:59.024Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.sinn.ziele#1": {
@@ -280,6 +280,349 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.sinne.signale#1": {
+   "gruen": true,
+   "zahl": "S1 · GRÜN ✅ anteil_zweite_hand 0,8 (Soll ≥ 0,7)",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "amd/rdna-3",
+   "konsum": "k2ed5d8065eb8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 23.1,
+   "fremd": {
+    "s": 26.7,
+    "takte": 11,
+    "fremdS": 59.84,
+    "kerne": 2.239,
+    "fensterKerne": 2.593,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      26.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… origin/pm-schloss-offen origin/punkte",
+      3.56
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… WATCH $(date +%T) > $P/neu-echt.zeit2",
+      3.08
+     ]
+    ],
+    "dienerS": 30.72,
+    "diener": [
+     [
+      "System",
+      22.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.2
+     ]
+    ],
+    "geraetS": 14.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.45
+     ],
+     [
+      "svchost.exe",
+      5.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 94.48,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T23:31:07.990Z",
+   "abdruck": "fd214b577657",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#1": {
+   "gruen": true,
+   "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,008 s: der Deckel der Leiter 25 s",
+   "exit": 0,
+   "minuten": 0.95,
+   "gpu": "amd/rdna-3",
+   "konsum": "k0ef06cf20b4d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 56.2,
+   "fremd": {
+    "s": 61.6,
+    "takte": 25,
+    "fremdS": 125.19,
+    "kerne": 2.033,
+    "fensterKerne": 2.658,
+    "namen": [
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.09
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      7.59
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      6.75
+     ]
+    ],
+    "dienerS": 62.97,
+    "diener": [
+     [
+      "System",
+      46.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.55
+     ]
+    ],
+    "geraetS": 102.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      82.34
+     ],
+     [
+      "svchost.exe",
+      16.06
+     ],
+     [
+      "SearchIndexer.exe",
+      3.58
+     ]
+    ],
+    "eigenS": 221.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T23:47:31.347Z",
+   "abdruck": "468fe03521cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.jahreslauf#2": {
+   "gruen": false,
+   "zahl": "S2 rang 0 gegen Soll ≥ 0,8 ✗ · Täter: stamm/bild-himmel.js _saisonPraesenz (EINE Kurve für jede Art) · gemessen vor dem Wurf der Leiter nach 12,002 s: der Deckel der Leiter 12 s",
+   "exit": 0,
+   "minuten": 1.5,
+   "grund": "ROT: S2 rang 0 gegen Soll ≥ 0,8 ✗ · Täter: stamm/bild-himmel.js _saisonPraesenz (EINE Kurve für jede Art) · gemessen vor dem Wurf der Leiter nach 12,002 s: der Deckel der Leiter 12 s",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7ec70f9b690a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 89.7,
+   "fremd": {
+    "s": 92.3,
+    "takte": 38,
+    "fremdS": 163.09,
+    "kerne": 1.767,
+    "fensterKerne": 2.161,
+    "namen": [
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      14.16
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… WATCH $(date +%T) > $P/neu-echt.zeit2",
+      10.83
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.59
+     ]
+    ],
+    "dienerS": 48.53,
+    "diener": [
+     [
+      "System",
+      26.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      14.36
+     ]
+    ],
+    "geraetS": 96.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      77.19
+     ],
+     [
+      "svchost.exe",
+      16.33
+     ],
+     [
+      "SearchIndexer.exe",
+      2.56
+     ]
+    ],
+    "eigenS": 137.84,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T23:49:47.105Z",
+   "abdruck": "19d13a099883",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.kraft#2": {
+   "gruen": false,
+   "zahl": "S2 laufzeitAbw 36,861 % gegen Soll ≤ 20 % ✗ · Täter: stamm/stoff-material.js _windAt (die Böe wandert mit ω/k, nicht mit dem Wind) · gemessen vor dem Wurf der Leiter nach 12,009 s: der Deckel der Leiter 12 s",
+   "exit": 0,
+   "minuten": 1.5,
+   "grund": "ROT: S2 laufzeitAbw 36,861 % gegen Soll ≤ 20 % ✗ · Täter: stamm/stoff-material.js _windAt (die Böe wandert mit ω/k, nicht mit dem Wind) · gemessen vor dem Wurf der Leiter nach 12,009 s: der Deckel der Leiter 12 s",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7ec70f9b690a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 89.7,
+   "fremd": {
+    "s": 92.3,
+    "takte": 38,
+    "fremdS": 163.09,
+    "kerne": 1.767,
+    "fensterKerne": 2.161,
+    "namen": [
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      14.16
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… WATCH $(date +%T) > $P/neu-echt.zeit2",
+      10.83
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.59
+     ]
+    ],
+    "dienerS": 48.53,
+    "diener": [
+     [
+      "System",
+      26.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      14.36
+     ]
+    ],
+    "geraetS": 96.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      77.19
+     ],
+     [
+      "svchost.exe",
+      16.33
+     ],
+     [
+      "SearchIndexer.exe",
+      2.56
+     ]
+    ],
+    "eigenS": 137.84,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T23:49:47.105Z",
+   "abdruck": "75053f420a56",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.jahreslauf#2",
+   "modus": "session"
+  },
+  "karte2.same.physik.tragen#1": {
+   "gruen": true,
+   "zahl": "S1 · GRÜN ✅ abw_pct 0 (Soll ≤ 20) · ✅ abw_halbe_pct 0 (Soll ≤ 20) · ✅ Umfang verlangt 1 Glied, die Welt erzeugte 1 · gemessen vor dem Abbruch: Deckel 128 s gerissen: Stille seit 35.2 s nach 128 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)",
+   "exit": 1,
+   "minuten": 2.14,
+   "gpu": "amd/rdna-3",
+   "abbruch": "Deckel 128 s gerissen: Stille seit 35.2 s nach 128 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 24760",
+   "s": 128.5,
+   "fremd": {
+    "s": 132.1,
+    "takte": 55,
+    "fremdS": 247.14,
+    "kerne": 1.871,
+    "fensterKerne": 3.041,
+    "namen": [
+     [
+      "node.exe scratchpad/plan-abdruck.cjs .",
+      31.28
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh stern-sicht-kopf bash w/station.sh scratchpad/kopf",
+      15.97
+     ]
+    ],
+    "dienerS": 86.34,
+    "diener": [
+     [
+      "System",
+      48.47
+     ],
+     [
+      "WmiPrvSE.exe",
+      19.55
+     ]
+    ],
+    "geraetS": 79.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.84
+     ],
+     [
+      "svchost.exe",
+      29.94
+     ],
+     [
+      "SearchIndexer.exe",
+      3.59
+     ]
+    ],
+    "eigenS": 510.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T23:52:50.737Z",
+   "abdruck": "fe6282032739",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -346,210 +689,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.planet.zeit.archiv#1": {
-   "gruen": false,
-   "zahl": "der Deckel der Leiter riss nach 25,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,006 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 70.1 s · Exit 0",
-   "exit": 0,
-   "minuten": 1.22,
-   "grund": "der Deckel der Leiter riss nach 25,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,006 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 70.1 s · Exit 0",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 72.8,
-   "fremd": {
-    "s": 78.1,
-    "takte": 25,
-    "fremdS": 799.03,
-    "kerne": 10.236,
-    "fensterKerne": 11.489,
-    "namen": [
-     [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-4012-profil-CiaaQl --no-pr",
-      272.64
-     ],
-     [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32812-profil-YjEcBF --no-p",
-      148.2
-     ],
-     [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36772-profil-sVqgll --no-p",
-      133.98
-     ]
-    ],
-    "dienerS": 216.02,
-    "diener": [
-     [
-      "System",
-      90.36
-     ],
-     [
-      "WmiPrvSE.exe",
-      81.53
-     ]
-    ],
-    "geraetS": 65.44,
-    "geraet": [
-     [
-      "svchost.exe",
-      33.34
-     ],
-     [
-      "MsMpEng.exe",
-      27.5
-     ],
-     [
-      "SearchIndexer.exe",
-      3.98
-     ]
-    ],
-    "eigenS": 222.97,
-    "rechnerKerne": 24
-   },
-   "zeit": "2026-11-21T19:49:52.588Z",
-   "abdruck": "f87edf4b87ea",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.leben.pflanzen.jahreslauf#2": {
-   "gruen": false,
-   "zahl": "der Deckel der Leiter riss nach 12,003 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 12,003 s vor dem Wert der Sprosse · der Deckel der Leiter 12 s) · Täter: @@PUNKTE@@ PROBE 111.9 s · Exit 0",
-   "exit": 0,
-   "minuten": 1.87,
-   "grund": "der Deckel der Leiter riss nach 12,003 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 12,003 s vor dem Wert der Sprosse · der Deckel der Leiter 12 s) · Täter: @@PUNKTE@@ PROBE 111.9 s · Exit 0",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 112.2,
-   "fremd": {
-    "s": 117.3,
-    "takte": 40,
-    "fremdS": 643.95,
-    "kerne": 5.491,
-    "fensterKerne": 6.216,
-    "namen": [
-     [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33008-profil-oBGgbV --no-p",
-      280.89
-     ],
-     [
-      "chrome.exe --type=gpu-process --no-sandbox --headless=new --noerrdialogs --user-data-dir=a",
-      26.89
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      26.17
-     ]
-    ],
-    "dienerS": 174.86,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      119.06
-     ],
-     [
-      "System",
-      35.3
-     ]
-    ],
-    "geraetS": 102.33,
-    "geraet": [
-     [
-      "svchost.exe",
-      59.13
-     ],
-     [
-      "MsMpEng.exe",
-      38.41
-     ],
-     [
-      "SearchIndexer.exe",
-      3.81
-     ]
-    ],
-    "eigenS": 182.78,
-    "rechnerKerne": 24
-   },
-   "zeit": "2026-11-21T20:02:22.184Z",
-   "abdruck": "e5dba4cb8bce",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.leben.pflanzen.kraft#2": {
-   "gruen": false,
-   "zahl": "der Deckel der Leiter riss nach 12,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 12,006 s vor dem Wert der Sprosse · der Deckel der Leiter 12 s) · Täter: @@PUNKTE@@ PROBE 111.9 s · Exit 0",
-   "exit": 0,
-   "minuten": 1.87,
-   "grund": "der Deckel der Leiter riss nach 12,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 12,006 s vor dem Wert der Sprosse · der Deckel der Leiter 12 s) · Täter: @@PUNKTE@@ PROBE 111.9 s · Exit 0",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 112.2,
-   "fremd": {
-    "s": 117.3,
-    "takte": 40,
-    "fremdS": 643.95,
-    "kerne": 5.491,
-    "fensterKerne": 6.216,
-    "namen": [
-     [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33008-profil-oBGgbV --no-p",
-      280.89
-     ],
-     [
-      "chrome.exe --type=gpu-process --no-sandbox --headless=new --noerrdialogs --user-data-dir=a",
-      26.89
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      26.17
-     ]
-    ],
-    "dienerS": 174.86,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      119.06
-     ],
-     [
-      "System",
-      35.3
-     ]
-    ],
-    "geraetS": 102.33,
-    "geraet": [
-     [
-      "svchost.exe",
-      59.13
-     ],
-     [
-      "MsMpEng.exe",
-      38.41
-     ],
-     [
-      "SearchIndexer.exe",
-      3.81
-     ]
-    ],
-    "eigenS": 182.78,
-    "rechnerKerne": 24
-   },
-   "zeit": "2026-11-21T20:02:22.184Z",
-   "abdruck": "04e144ad9c8c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.leben.pflanzen.jahreslauf#2",
-   "modus": "session"
-  },
-  "karte2.same.physik.tragen#1": {
-   "gruen": false,
-   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 40016 nach 151.4 min · letzte Zeile: SITZUNG die Welt vor karte2.same.physik.tragen#1: 17.1 s (652 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
-   "exit": 3221226505,
-   "minuten": 38.07,
-   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 40016 nach 151.4 min · letzte Zeile: SITZUNG die Welt vor karte2.same.physik.tragen#1: 17.1 s (652 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
-   "ungemessen": true,
-   "zeit": "2026-11-21T20:04:40.614Z",
-   "bahn": "tod",
-   "host": "MiguellD"
   },
   "karte2.mensch.kopplung.kultur#2": {
    "gruen": false,
@@ -639,14 +778,74 @@
   },
   "karte2.erleben.kopplung.epoche-ganz#1": {
    "gruen": false,
-   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
-   "exit": 3221226505,
-   "minuten": 39.83,
-   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 30728 nach 78.7 min · letzte Zeile: SITZUNG die Welt vor karte2.erleben.kopplung.wahrnehmung#2: 16.4 s (690 Takte, 81 Chunks, nach der Tür) · die laufende Probe",
+   "zahl": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die Probe sah: S1 uhren 24 gegen Soll ≥ 24 ✓ · widersprueche 0 gegen Soll = 0 ✓ · der Zeuge der Welt fehlt: die Grillen schweigen an diesem Ort zu jeder Uhr (zu kalt) — der Kanal Grillen ist ungeprüft (grillen 0, Soll ≥ 1) · Täter: stamm/klang.js _umweltL)",
+   "exit": 0,
+   "minuten": 3.49,
+   "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die Probe sah: S1 uhren 24 gegen Soll ≥ 24 ✓ · widersprueche 0 gegen Soll = 0 ✓ · der Zeuge der Welt fehlt: die Grillen schweigen an diesem Ort zu jeder Uhr (zu kalt) — der Kanal Grillen ist ungeprüft (grillen 0, Soll ≥ 1) · Täter: stamm/klang.js _umweltL)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k22f42b79fdba",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf1087f16a9bd",
+   "s": 209,
+   "fremd": {
+    "s": 212,
+    "takte": 86,
+    "fremdS": 648.72,
+    "kerne": 3.06,
+    "fensterKerne": 11.526,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      232.52
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      52.42
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      27.72
+     ]
+    ],
+    "dienerS": 182.55,
+    "diener": [
+     [
+      "System",
+      90.14
+     ],
+     [
+      "dwm.exe",
+      45.45
+     ]
+    ],
+    "geraetS": 131.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      79.95
+     ],
+     [
+      "svchost.exe",
+      41.52
+     ],
+     [
+      "SearchIndexer.exe",
+      9.81
+     ]
+    ],
+    "eigenS": 470.3,
+    "rechnerKerne": 24
+   },
    "ungemessen": true,
-   "zeit": "2026-11-21T21:23:20.005Z",
-   "bahn": "tod",
-   "host": "MiguellD"
+   "zeit": "2026-11-21T23:56:59.024Z",
+   "abdruck": "e1b3b2ed866a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -654,6 +853,263 @@
   "ke7146e25dfae": "jVVNj5swEP0vObZlnYAJYGkPzrJqclhttuqlx7EZAxsCkQ2hStX/XsHiJMAe6kMUOe/NPL/5yJ/FCeQBUnx4N1W5YIsvi28LA2d0DOoz6od3s2CLSK5c9Bj/OIRz/r2DSZ2fakOKXBAQJWRHdBpdY148yJ7mrmSw8hlpn3m7J2RPArJp+fVs+OPjNEwhMKmcGhTaIOCHifLZFNiYFAQ60Kg+8QAOQhlQykh/wpi/xsSeLjOJCSetnGYVUCZj5dHaD9Bnu5bz57nKJAesnSIvjc0rE194Lrsma+ccDa1zAcwK1AMpCdCNrmI3nSXpnpAJURWNMaNkoZf4bsgIiabYFE0us9o56UpgOcBF5AYrYJu5pvTUOOpeEQgBoZh6nQGWKeqRhqUn1XrFyO9wGvQAR9TglJBZL5de4IqbN4SQ7VxL0QvvU1jhS/TWGIyIXVG7T9tC5Nxdba+/2vs4vbUZf5slMzLL9XFsk6LoLr3p200GCWrnUJn6igwpAIbDNMSEv3HO9zSeMm8PsjwACJd37wkJ3878M5WqW9DopKdmICJFP/AZT19m4BqOxwHlK496cvaAumvuexlUKZl07UPSTsR+XouPUXAumBeWpBSlkc+eNnQKPms4OiBSnStlKy58qaLPGrTFonZEVdV2QwAVS8WIR8qrK0G44SmP7/YEKv3jV5Lt7u54N5g/P4te6dqK9sV6qShT/UTOpr7Nde20IDMLd5VAiKYGXlAXmOLIQhGEUdfSrbzJian98nXUsJdZhS85duaWpjG2wBKo8D86Y1iQu/HaaVEfBJSHgbCKVtSNWN/or3zLX/iGP22juOX/d3a7PvgJJTnpSuXdBiQZNCaDor79Ffz9Bw==",
   "kadb04236e6a3": "bVVdj5swEPwveWzrc8JHMJbuwQkn5aRKl+vbPa7NGrgQiGwIbar+9woOkgDZpyiZ8Yxnd52/ixOoAyT49GnLYsEX3xY/FhbOSCyaM5qnT7vgi1CtHHS5eBdtUSHEtoUpk50qS/NMUpAFpEcktakwy59UR3NWKlj5nDYvotlTuqcB3TTPz1NqLjEuSQUaByL4LNY+nwJrm4BEArXuxHpwwFTgeZx2xSLxFtGhdo0QNKKCNmqqKqGIx27DtR+gz1//CPEiZi7jDLAieVbYQVfFvnQdfhWb3yw20JALYJqj6UlxgE54Nbtp40z2lE6IOq+tHYkxN/YdxikNp9gEbabSipxMKbHo4TJ0ghXwB2knp5roe0cgJTA5zToFLBI0Iw9LV+n1itPfbHroAY5ogBSQDlku3cCRt2y6Xsy85J3xTmIwvkR3jcGI2DaVnikVfbWfKdtdfx2+jxJxq/eZmFVpZo7jmLSHztLlP+fWbAoxGnIobXVFMw8AGe/VaLcNey+aMm+XGngAwJZ3d2JU7GYZ2lJXDRgkyanuieihH/hciNcZuILjsUf52vVcNW2grdoBv7fhaa3idoRo0prYzy/9tQ7kglk+kLT2vNDn2403BZ8NHAnIxGRaD12XvtLhoyFtMK+ILMtqeBnAk0vNqUuLaypBtw7buyaKvfn1EadiUtuNnu9np1CaajDuy/VSe1x3mznb/iYzFWlApQPc0RKhtT7rywVNjgmOopQBC9vxbvSX9QsTYh/0z4D+Phrey/zEDNuQC1vbodEKPOnzB89Ig+YgoTj0wFW48pywG8HNm9h9xVGEEe02ZFS6EeJjG7EO8yqidmR3zUt3+AkVPZlSZ+0rSFOobQp5dfsL+Pcf",
   "k5674eb157f77": "bVRNj5swEP0vObb1OuEjgKU9OGGlrFRp0972ODZjYEMgsiFUqfrfKwhOAmSO8J7nzZuPv4sTyAOk+PJlqnLBFt8WPxYGzkgM6jPqly+zYItIrhx0Gb8G5ZxvO5jU+ak2tMgFBVFCdkTS6Brz4kX2NGclg5XPaPvG2z2lexrQTfv6OqUWApOK1KDQEsEPE+WzKbAxKQgk0Kg+2QAOQhl4HqN9hDH/iKmNXcs5jSmnrZxmFVAmY7XR2g/QZ+8t5298pjLJAWtS5KWxeWXiC9dht2TzyhINLbkAZgXqgZQE6EQ3sZvOznRP6YSoisaYUbLQTXwnZJRGU2yKJpdZTU66ElgOcBE5wQrYE7fTU0PUoyIQAkIx9ToDLFPUIw1LV6r1itE/4fTRAxxRAykhs14u3cARd2/6Xsy0FL3wPoUVvkR3jcGI2DWVninldvzO3afd7a/9Hqf8Hr9myYzMcn0c26Q8dJYu+zmXZjJIUJNDZeobOvQAMBy2IKb8F+d878VT5r0oywOAcPlQU0j5buahqVTdgkaSnpqBiB76gc84f5+BazgeB5SvXM+V0waauhvwRxmeUjLpRoimnYj9vOjrOpAL5oUlKeV5kc+2m3QKPms4EhCpzpWyXRe+VNGzIW2xqImoqtpeBvDEUjHq0vLmStCvw/ahiXyvf38mGZ/EdvPs9UrXVrQv1kvlMdUNynzz21zXpAWZWbijBEIne9aTC+oCUxzZKIIw6ka7VVfZl5DzfTCcAPV9NLiX+Ys5dgaXpjG2yRI84bMnJ6RFfRBQHgbgKlp5TtSP3+aD765WlFFM++0YRdJy/rmNwx7zzuNuXO3+nVDSk65U3l1AmkFjMijq+/n/9x8=",
-  "k31d33c67f726": "bVXBjpswEP2XHLv1OgETwNIenBApK63UbG97HJsxsCEQ2RDaVP33ChaSAJ0DB3hv5nnmjfmzOIM6QoLPn7YsFnzxbfF9YeGCxKK5oHn+tAu+CNXKQZeLr6BCiG0LUyY7V5bmmaQgC0hPSGpTYZY/q47mrJS/8jhtdqI5UHqgPt004hYb8fIyTZNLjEtSgcYhCXhBrD0+BdY2AYkEat0V7sF+oHzGOO0iiMSPiA6xb4SgERW0UdOqEop4rDxcez56/PW3ELu5yjgDrEieFXaoq2JPug6/FWvmHAMNuQKmOZqeFPvohDexm7YlyYHSCVHntbWjYoEbe07AKQ2n2ARtptKKnE0psejhMnT8FfDNXFNyrol+VARSQiCnvU4BiwTNSMPSVXq94vRXME16hBMaIAWkQy+Xru/Ie2+6Wcy05J3wrsQgfInuGv0RsR1q+xwsRC/tq/3t6/A+Su42E++zYlalmTmN26QZOkuXv82l2RRiNORY2uqGDhgABv1GRFS8CyEOLJoy74caeAAQLB/OFFCxn/XQlrpqwCBJznVPRIae73EhXmfgCk6nHuVpl7lqOkBbtQZ/lMG0VnFrIZq0Ig7zQ3+tA7lilg8krRkLPb7dsCn4YuBEQCYm03qYuvSUDv9n0gbzisiyrIZbAphcak5dWty64nfrsH0YojiYnx9xKsax20Z6vp9dhdJUg3BPrpeacd1t5mz7m8xUpAGVDnBHS4RW+mwuVzQ5JjhqpfSDsLV3o7+kXwMhDn5/DeinkXmv84wZtk0ubG2HQStg0vtySH9Zvo6P2KA5SiiOPWEVrpgT8tb0b09i3zG2RRjRqNuOx9CNEB/bKOizRq1192y3aZOfUdGzKXXW3oY0hdqmkFf338Lffw=="
+  "k31d33c67f726": "bVXBjpswEP2XHLv1OgETwNIenBApK63UbG97HJsxsCEQ2RDaVP33ChaSAJ0DB3hv5nnmjfmzOIM6QoLPn7YsFnzxbfF9YeGCxKK5oHn+tAu+CNXKQZeLr6BCiG0LUyY7V5bmmaQgC0hPSGpTYZY/q47mrJS/8jhtdqI5UHqgPt004hYb8fIyTZNLjEtSgcYhCXhBrD0+BdY2AYkEat0V7sF+oHzGOO0iiMSPiA6xb4SgERW0UdOqEop4rDxcez56/PW3ELu5yjgDrEieFXaoq2JPug6/FWvmHAMNuQKmOZqeFPvohDexm7YlyYHSCVHntbWjYoEbe07AKQ2n2ARtptKKnE0psejhMnT8FfDNXFNyrol+VARSQiCnvU4BiwTNSMPSVXq94vRXME16hBMaIAWkQy+Xru/Ie2+6Wcy05J3wrsQgfInuGv0RsR1q+xwsRC/tq/3t6/A+Su42E++zYlalmTmN26QZOkuXv82l2RRiNORY2uqGDhgABv1GRFS8CyEOLJoy74caeAAQLB/OFFCxn/XQlrpqwCBJznVPRIae73EhXmfgCk6nHuVpl7lqOkBbtQZ/lMG0VnFrIZq0Ig7zQ3+tA7lilg8krRkLPb7dsCn4YuBEQCYm03qYuvSUDv9n0gbzisiyrIZbAphcak5dWty64nfrsH0YojiYnx9xKsax20Z6vp9dhdJUg3BPrpeacd1t5mz7m8xUpAGVDnBHS4RW+mwuVzQ5JjhqpfSDsLV3o7+kXwMhDn5/DeinkXmv84wZtk0ubG2HQStg0vtySH9Zvo6P2KA5SiiOPWEVrpgT8tb0b09i3zG2RRjRqNuOx9CNEB/bKOizRq1192y3aZOfUdGzKXXW3oY0hdqmkFf338Lffw==",
+  "k2ed5d8065eb8": "bVRNj5swEP0vObZlh/ARwNIenLBSIlXabG89js0Y2BCIbAhtqv73ihSSAJkTMu953ryZ8Z/FCeUBU3r5NFW5YIsvi28Lg2eyDOkz6ZdPs2CLSC4dchn/H8A533QwqfNTbaDIBaAoMTuS1eia8uJFXmnOUgZLn0H7xts9wB4CWLevr1NqISiprBoVDUT0w0T5bApsTIqCLGzUNVkPDkIZeB6Da4Qxf49hiHXLOcTAoZXTrALLZKw2WvkB+Wz3m/M3PlOZ5Ei1VeSlGfLKxBeuw27J5pUlGlvrgpQVpHtSEpAT3cSuOzvTPcCEqIrGmFGy0E18J2QA0RSbksllVlsnXQkqe7iInGCJ7Inb6amx1KMiFAJDMfU6QypT0iMNtivVasngVzi99IBH0miVmA1e2m7giLs3ALCdaymuwq8pBuE2uSsKRsSuqXAG4MP4nbuj7e3vcB6n/B4fs2RGZrk+jm1SHjm2y77PpZkME9LWoTL1DR16iBT2WxAD/+Cc7714yrwXNfAQMbQfagqBb2cemkrVLWqy0lPTE8kjP/AZ57sZuMbjsUf5yvVcOW2gqbsBf5ThKSWTboQg7UTs50X/XwfrQnkxkJTyvGi2iWeNRwtFqnOlho4LX6ro2YC2VNSWqKp6eBXQE7Zi4EJ5cyS4rsLmoYF8//nj527Np7F+dnul60GwL1a28pjqhmS+9W2ua6tFmQ1wRwnCiD2BXkgXlNLIQhGEUTfWrbwLir3h4+toaC+zDl9y6swtTWOGBkv0hM+ePB8t6YPA8tADl9HSc6Lr6K3f+bZPaMcQw759tGfDk5bz3WYddpedSMJJVyrvXjvIsDEZFvX9qf/7Dw==",
+  "kf1087f16a9bd": "jVVNj5swEP0vObZlnYAJYGkPzrJqclhttuqlx7EZAxsCkQ2hStX/XsHiJMAe6kMUOe/NPL/5yJ/FCeQBUnx4N1W5YIsvi28LA2d0DOoz6od3s2CLSK5c9Bj/OIRz/r2DSZ2fakOKXBAQJWRHdBpdY148yJ7mrmSw8hlpn3m7J2RPArJp+fVs+OPjNEwhMKmcGhTaIOCHifLZFNiYFAQ60Kg+8QAOQhlQykh/wpi/xsSeLjOJCSetnGYVUCZj5dHaD9Bnu5bz57nKJAesnSIvjc0rE194Lrsma+ccDa1zAcwK1AMpCdCNrmI3nSXpnpAJURWNMaNkoZf4bsgIiabYFE0us9o56UpgOcBF5AYrYJu5pvTUOOpeEQgBoZh6nQGWKeqRhqUn1XrFyO9wGvQAR9TglJBZL5de4IqbN4SQ7VxL0QvvU1jhS/TWGIyIXVG7T9tC5Nxdba+/2vs4vbUZf5slMzLL9XFsk6LoLr3p200GCWrnUJn6igwpAIbDNMSEv3HO9zSeMm8PsjwACJd37wkJ3878M5WqW9DopKdmICJFP/AZT19m4BqOxwHlK496cvaAumvuexlUKZl07UPSTsR+XouPUXAumBeWpBSlkc+eNnQKPms4OiBSnStlKy58qaLPGrTFonZEVdV2QwAVS8WIR8qrK0G44SmP7/bEm9I/fiXZ7u6Od4P587Pola6taF+sl4oy1U/kbOrbXNdOCzKzcFcJhGhq4AV1gSmOLBRBGHUt3cqbnJjaL19HDXuZVfiSY2duaRpjCyyBCv+jM4YFuRuvnRb1QUB5GAiraEXdiPWN/sq3/IVv+NM2ilv+f2e364OfUJKTrlTebUCSQWMyKOrbX8Hffw==",
+  "k0ef06cf20b4d": "bVXBjpswEP2XHNuyJmAWsLQHEyJlq0qbrXrpcWzGQEIgsiFUqfrvFSwkAXZOKHlv3vObwfxdnUEeIcWng6nKFVt9WX1bGbigZVBfUD8dzIqtQrl20GX8owjnfNPBpM7PtSFFLgiIErITWo2uMS+eZE9z1tJfe4y0W97uCdkTn0Qtv9WGv7zM2xQCk8qqQeHYBLwgUR6bAxuTgkALGtULD2A/kD6ljPQVxPwtJmN1yiQmnLSS/zrQ7ayhgDKZug+fPR899tpyvl06TXLA2iry0ozaMvGE67CbYLvkaGitK2BWoB5IiY9OeDMcdbGke0JmRFU0xkzEAjfxnIAREs6xKZpcZrV11pXAcoCL0PHXwKKlp/TcWOrREQgBgZjnnQGWKeqJB9uV6nnNyJ9g3vQIJ9RglZCNWdqu74h7NoSQ3dJL0RvvJUbjNrrP6E+I3WDJhZBxjbpnEuxu/46/x+l91fj7QszILNenaUyKomO77MfSmskgQW0dK1Pf0AEFwGB4K2LC3znnexrPmfdDjTwACOyHMwWE7xYZmkrVLWi00nMzEJGi53uM89cFuIbTaUB5yqWunA/Q1N2CP9qgSsmkWyGSdib2y0N/vA7WFfNiJClFaeixTUTn4IuGkwUi1blS49SFJ1X42ZK2WNSWqKp6vCmAClt1XsqHWKL+knio/eHn79eIz2qTqeV4e4VK16NxTzzbijLVLUsrF+hc11YLMhvhjhIIIfsEekVdYIqTKIUfhN16t/LuKqbjw9fJ8l4Xk77m2IVcmsaMg5ZAhcc+uUZa1EcB5XEArsM1dUL2nXMevfHdIGjHJCbzUi3n7/somGa37ZufUZKzrlTe3YIkg8ZkUNT3T8K//w==",
+  "k7ec70f9b690a": "bVVNj5swEP0vObZlTcAsYGkPToiUrSotW/XS49iMgYRAZJO4StX/XsFCPmDnhOC9mec34+Hv4ghyDzk+7UxTL9jiy+LbwsAZHYP6jPppZxZsEculhz7j77yLlHO+7mBSl8fWkKoUBEQNxQGdk26xrJ5kT/OWMlwGjNgNtykhKQnJyvJrrPnLyzRNJTBrnBYUjkkgiDIVsCnwZHIQ6MBJ9YUHcBjJkFJG+ogS/paQMbaWc5IQTqzkv3Z0M0kooM4e1cfPQYgBe7Wcb+ZKsxKwdaqyNmNtmQXC99i1oJ1zNFjnAlhUqAdSFqIXXwWvOlvylJAJUVUnYx6KRX4WeBEjJJ5iczSlLFrnqBuB9QAXsRcuga3mmvLjyVH3ikAIiMTU7wKwzlE/aHB9qZ6XjPyJpkn3cEANTg3F6KXrh564edP3Y6al6oX3JUbhLvrPGD4Qu8aSMyHjGHXPJNpev47vk/w2avx9VszIotSHR5sURc/12Y+5NFNAhtrZN6a9oiMKgBEbqpH+dqQ0mTJvhxp5ABC5d2eKCN/OPDSNai1odPLjaSAixSAMGOevM3ALh8OACpRPfTltoGm7Ab+XQZWSWTdCJO9EpPNDf1wH54JlNZKUojQO2HpFp+CzhoMDItelUmPXRSBV/NmQWqxaRzRNO24KoMJVnZb6zpZVvyTuItU/f2cFn8S6UPP29hUa3Y7CA/HsKspUNyxWztClbh0LshjhnhIInfRZXy6oK8zxwUoRRnE33lZ9KL9EnKfhsAbU14fhvcwzltiZXJuTGRstgYqAfbJGLOq9gHo/AJfxknox+845X73x7YcfOzf5mpBpKMv5e5pEPeS1W+IJ2dpNn/yIkhx1o8puC5ICTqaAqr39Ev79Bw==",
+  "k22f42b79fdba": "bVVNj5swEP0vObZlnfARwNIeJmGlrFRp2d72ODZjYEMgsiG0qfrfK1jIB2SO5j3P85tn83dxRLnHlJ4+TVUu+OLb4sfC4IksQ/pE+unTLPgilCubHA5fxQBg28Gkzo+1YUUuGIoSswNZja4pL55kT7NX0l95nLUv0MaMxcxnm/b5eUotBCWVVaOikYhekCiPT4GNSVGQhY3qmw1gP5C+63LWVxDBW8TG2rUALGLAWgmQzjoLLJN7xeHa88njr38AXmCGT3Kk2iry0oy9ZeIJx+aXhvPTJRpb64yUFaQHUuKTHV4EbzpL05ixCVEVjTF3zQIn8eyAMxZOsSmZXGa1ddSVoHKAi9D2V8gfOJ4eG0vdKkIhMBBTvzOkMiV9p2HpSLVecfY7mG66xwNptErMRi+Xjm+Lqzf9PGZail5432IUviRnTf4dsRssOzEGYwRP3dLu8nVcj1K41vusmZFZrg/3NimX7KXDf86lmQwT0ta+MvUFHbiIFAw3IWLwDgCxG02Z10ONPEQMljdnChjsZh6aStUtarLSYzMQySXP9zjA6wxc4+EwoDzluI6cDtDUXcBvZbhKyaSLEEs7EfH80F/XwTpTXowkpVw39Ph2407BJ40HC0Wqc6XGqQtPqvBRSFsqaktUVT2+DuiKpeLMYeXFFb+/DtubIUKsf30kGUwqytT8fvYdKl2Pwj2xXiqXqy4srZyhc11bLcpshNtKEHbSZ3M5ky4opTsrhR+EXbxb9SX9HADE/vAMqO934T3Pd8ypM7k0jRkHLdEVHn/wjLSk9wLL/QBchSvXDvsIbt5g19uxLcOIRWxaqgX4iKKgx7xC3EV21770mx9JsqOuVN69gizDxmRY1NffwL//"
+ },
+ "sitzung": {
+  "start": "2026-11-21T23:46:17.013Z",
+  "ordner": "sitzung-20261122-004617",
+  "port": 7804,
+  "warten": 0.42,
+  "bootS": 7,
+  "grundstellungS": [
+   5.9,
+   4.3
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.planet.zeit.archiv#1",
+    "s": 24.8,
+    "takte": 1131,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.physik.tragen#1",
+    "s": 15.8,
+    "takte": 708,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.erleben.kopplung.epoche-ganz#1",
+    "s": 21.7,
+    "takte": 697,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.planet.zeit.archiv#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     200.5,
+     280.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.leben.pflanzen.jahreslauf#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T"
+    },
+    "haelt": [],
+    "heap": [
+     318.9,
+     335.5
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.physik.tragen#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     201.8,
+     497.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.erleben.kopplung.epoche-ganz#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     211.3,
+     434.8
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.zeit.archiv#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.zeit.archiv#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.leben.pflanzen.jahreslauf#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.pflanzen.jahreslauf#2",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.same.physik.tragen#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.physik.tragen#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.erleben.kopplung.epoche-ganz#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.erleben.kopplung.epoche-ganz#1",
+    "gehalten": [
+     "skala",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "anOrt": [
+   {
+    "vor": "karte2.same.physik.tragen#1",
+    "anders": [
+     "playerPathBuckets",
+     "worldMeta.kalender"
+    ],
+    "wie": {
+     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w",
+     "worldMeta.kalender": "undefined → undefined"
+    }
+   }
+  ],
+  "zeichner": [
+   {
+    "probe": "karte2.erleben.kopplung.epoche-ganz#1",
+    "anders": [
+     "zeichner.renderer._handleObjectFunction",
+     "zeichner.renderer._renderObjectDirect"
+    ],
+    "wie": {
+     "zeichner.renderer._handleObjectFunction": "getauscht: function (object, material, scene, camera, lightsNode, group",
+     "zeichner.renderer._renderObjectDirect": "getauscht: function (object, material, scene, camera, ...rest) { const "
+    }
+   }
+  ],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 10648,
+   "frameP95": 50.1,
+   "taktP95": 24.95,
+   "vramMax": 204.3,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.zeit.archiv#1",
+     "m": 10372,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.same.physik.tragen#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 956,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1022.1,
+  "minuten": 17.71
  }
 }
