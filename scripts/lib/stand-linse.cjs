@@ -436,6 +436,11 @@ const BRAND_GANG = 16;
 // das Fenster am langsamsten Läufer (FENSTER-UHR): Median und schnellster Sprung der Köpfe auf 0,02 m/s gleich — zwischen zwei Herden
 // lebt die Welt weiter (lokal 0,305 ↔ 0,307 m/s), die Uhr des Läufers trug 0,06 (0,35 ↔ 0,29 m/s) bis 0,69 (CI)
 const FENSTER_MS = 0.02;
+// DIE TREUE DER FRONT (FRONT-TREUE): das Vorrücken des Kopfs auf dem gesetzten Bett ÷ R des Gesetzes — gemessen 0,963 (35°,
+// Radeon-Laptop): jede Zelle der Kette lief genau ihr Tempo der Ellipse, den Rest trägt der erste Sprung aus der Mitte des Herds
+const FRONT_TREUE = [0.85, 1.15];
+// DIE DREI STARTS AN DERSELBEN UHR (FENSTER-BETT): mit · alle · Vorrücken · R relativ gleich
+const BETT_GLEICH = 0.02;
 const BRAND_ANKUNFT = 16;
 const BRAND_BETT = 160;
 const BRAND_PUNKT = 56;
@@ -633,9 +638,41 @@ function simUrteil(b, v) {
             v.push(`BRAND-ZÜNDUNG: Schritt ${j + 1} kostete ${Z.zuendung[j]} Einheiten Zündung für ${Z.ankuenfte[j]} Ankünfte und ${Z.betten[j]} neu gemessene Betten (${Z.punkte[j]} Bett-Punkte, davon bis ${Z.kahl[j]} kahl, ${Z.masken[j]} Masken; ${(Z.lesungen || [])[j] | 0} Stoff-Lesungen) — ` +
                 `Soll ≤ ${brandZuendSoll(Z, j)} (${BRAND_ANKUNFT} je Ankunft + ${BRAND_BETT} je neuem Bett + ${BRAND_PUNKT} je Punkt + ${BRAND_KAHL} je kahlem Punkt) — ihre Leser: ${brandLeser(Z.rufeZ && Z.rufeZ[j])}`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
-        if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
         if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
+        // DIE WAHRHEIT DER FRONT (linse-brand-schritte 2): derselbe Herd auf dem GESETZTEN Bett im gesetzten Wind, sein Kopf längs
+        // einer Achse, schräg und diagonal zum Gitter der Zellen. FRONT-MIT urteilt das Vorrücken des Kopfs (der Weg der vordersten
+        // Zelle längs des Kopfs durch die Zeit, zu der die Front sie erreichte) — `mit`, `alle` am Herd des Spiels sind Lesewerte:
+        // sein Bett trägt R 0,05–0,98 m/s je Zelle (Overlay, Fraß des Gaus, Narbe), und der Mäander dreht den Kopf. FRONT-TREUE:
+        // das Vorrücken ist R des Gesetzes (`_brandTempo`) auf FRONT_TREUE in jedem Winkel — die Mutante des groben Gitters (vier
+        // Nachbarn) fällt, sonst ist die Linse BLIND. FENSTER-BETT: jede Zelle verzehrte das gesetzte Bett (Stoff Gras, Last, Boden,
+        // Gefälle des Herds; die Nässe 0), die drei Starts an derselben Uhr des Winds tragen dieselben Zahlen auf BETT_GLEICH, keine
+        // Uhr ging rückwärts — und der Herd des Spiels (sein Bett ungesetzt) weicht ab, sonst ist sie BLIND
+        const WA = Z.wahr || {};
+        const WINKEL = ["achse", "schraeg", "diagonal"];
+        const wz = (n, h) => `${n} (Kopf ${h.winkel}° zum Gitter): Vorrücken ${h.vor} m/s bei R ${h.R} m/s`;
+        if (![...WINKEL, "wieder", "langsam", "grob"].every((n) => WA[n] && WA[n].bett)) v.push("LEER: die Herde auf dem gesetzten Bett (achse · schraeg · diagonal · wieder · langsam · grob) liefen nicht");
+        else {
+            for (const n of WINKEL) {
+                const h = WA[n];
+                if (!(h.vor >= 0.5 && h.vor <= 2)) v.push(`FRONT-MIT: ${wz(n, h)} (Soll 0,5–2)`);
+                const q = h.R > 0 ? h.vor / h.R : 0;
+                if (!(q >= FRONT_TREUE[0] && q <= FRONT_TREUE[1])) v.push(`FRONT-TREUE: ${wz(n, h)} — ${+q.toFixed(3)} von R (Soll ${FRONT_TREUE.join("–")}): das Gitter verliert das Gesetz`);
+            }
+            const g = WA.grob;
+            if (g.R > 0 && g.vor / g.R >= FRONT_TREUE[0]) v.push(`BLIND: das grobe Gitter (vier Nachbarn) trägt ${wz("grob", g)} — FRONT-TREUE sieht das Gitter nicht`);
+            for (const n of [...WINKEL, "wieder", "langsam"]) {
+                const b = WA[n].bett;
+                if (b.abweichend || b.stoff !== "gras" || b.naesse !== 0)
+                    v.push(`FENSTER-BETT: ${n} zündete auf ${b.stoff} (Last ${b.w}, Boden ${b.boden}, Nässe ${b.naesse}), ${b.abweichend} von ${b.zellen} Zellen verzehrten ein anderes Bett (zuerst ${b.erste}) — Soll: jede Zelle das gesetzte Gras-Bett, Nässe 0`);
+            }
+            const drei = ["diagonal", "wieder", "langsam"].map((n) => WA[n]);
+            const weg = ["mit", "alle", "vor", "R"].filter((k) => drei.some((h) => !(Math.abs(h[k] - drei[0][k]) <= BETT_GLEICH * Math.abs(drei[0][k]))));
+            if (weg.length)
+                v.push(`FENSTER-BETT: drei Starts an derselben Uhr des Winds tragen ${weg.map((k) => `${k} ${drei.map((h) => h[k]).join(" · ")}`).join(", ")} (Soll gleich auf ±${BETT_GLEICH * 100} %) — der Herd hängt an der Welt, die er antrifft`);
+            if ((Z.uhrRueck || []).length) v.push(`FENSTER-BETT: die Welt-Uhr stand vor dem Herd schon später (${Z.uhrRueck.map(([a, b]) => `${a} s statt ${b} s`).join(", ")}) — ein Herd begann nicht zu seiner Uhr`);
+            if (!(Z.bett && Z.bett.abweichend > 0)) v.push("BLIND: der Herd des Spiels (sein Bett ungesetzt) verzehrte überall das Bett seines Herds — FENSTER-BETT sieht kein Bett");
+        }
         // DAS FENSTER HÄNGT NIE AM LÄUFER (linse-brand-schritte): derselbe Herd mit dem Wind mit dem Budget des Spiels und am
         // langsamsten Läufer (ein Stück je Bild) trägt dieselben Köpfe und Schritte, Median und schnellsten Sprung auf FENSTER_MS
         // gleich (die Welt lebt zwischen beiden Herden weiter) — bis hier zählte das Fenster Bilder und begann zur Uhr, zu der der

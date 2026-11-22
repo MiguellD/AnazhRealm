@@ -189,7 +189,14 @@ function selbsttest() {
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
-                fenster: { spiel: { zellen: 44, koepfe: 9, mit: 0.305, alle: 0.982, schritte: 300, bilder: 300 }, langsam: { zellen: 48, koepfe: 9, mit: 0.307, alle: 0.985, schritte: 300, bilder: 371 } },
+                // die Herde auf dem gesetzten Bett (Gras, Last 0,092, im gesetzten Wind): das Vorrücken trägt R, die drei Starts der
+                // Diagonale dieselben Zahlen, das grobe Gitter (vier Nachbarn) verliert die Hälfte; der Herd des Spiels verzehrte 17
+                // fremde Betten von 21 (sein Bett ungesetzt)
+                ...((b) => {
+                    const h = (winkel, vor, R, mehr) => ({ zellen: 44, koepfe: 9, mit: 0.58, alle: 0.63, vor, R, winkel, schritte: 300, bilder: 300, bett: { ...b }, ...mehr });
+                    const wahr = { achse: h(0.8, 0.62, 0.64), schraeg: h(23.5, 0.6, 0.63), diagonal: h(44.1, 0.6, 0.63), wieder: h(44.1, 0.6, 0.63), langsam: h(44.1, 0.6, 0.63, { bilder: 371 }), grob: h(44.1, 0.3, 0.63) };
+                    return { wahr, fenster: { spiel: wahr.diagonal, langsam: wahr.langsam }, uhrRueck: [], bett: { ...b, zellen: 21, abweichend: 17, erste: "Last 0.061" } };
+                })({ stoff: "gras", w: 0.092, boden: 0.1, naesse: 0, zellen: 51, abweichend: 0, erste: null }),
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
@@ -599,11 +606,23 @@ function selbsttest() {
         ["drei Zündungen in einem Schritt (die Radeon-Probe cc19e47a)", (b) => Object.entries({ zuendung: 1156, ankuenfte: 3, betten: 3, punkte: 15, lesungen: 15 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), null],
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => Object.entries({ zuendung: 9000, ankuenfte: 1, betten: 1, punkte: 69, kahl: 19, masken: 1, lesungen: 69 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), /BRAND-ZÜNDUNG: Schritt 4 kostete 9000 Einheiten Zündung .*69 Bett-Punkte, davon bis 19 kahl, 1 Masken/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
-        ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
+        // die Front auf dem gesetzten Bett (linse-brand-schritte 2): das Vorrücken des Kopfs kriecht, das Gitter verliert das
+        // Gesetz, das grobe Gitter hält (die Linse blind), das Bett ist nicht gesetzt, die drei Starts würfeln (lokal derselbe Herd
+        // zur Uhr 40 000: 0,31 · 1,03 · 0,458 m/s), die Uhr ging rückwärts; der Median am Herd des Spiels ist ein Lesewert
+        ["die Front kriecht mit dem Wind", ["simWecken.brand.wahr.achse", { vor: 0.3, R: 0.31 }], /FRONT-MIT: achse \(Kopf 0.8° zum Gitter\): Vorrücken 0.3 m\/s bei R 0.31 m\/s \(Soll 0,5–2\)/],
+        ["der Median der Köpfe am Herd des Spiels ist ein Lesewert", ["simWecken.brand.mit=", 0.3], null],
+        ["das Gitter verliert das Gesetz (32–48 % von R)", ["simWecken.brand.wahr.schraeg.vor=", 0.27], /FRONT-TREUE: schraeg \(Kopf 23.5° zum Gitter\): Vorrücken 0.27 m\/s bei R 0.63 m\/s — 0.429 von R/],
+        ["das grobe Gitter hält die Treue", ["simWecken.brand.wahr.grob.vor=", 0.6], /BLIND: das grobe Gitter \(vier Nachbarn\)/],
+        ["der Herd verzehrt das Bett der Welt", ["simWecken.brand.wahr.achse.bett", { abweichend: 17, erste: "Last 0.061" }], /FENSTER-BETT: achse zündete auf gras .* 17 von 51 Zellen verzehrten ein anderes Bett \(zuerst Last 0.061\)/],
+        ["der Herd zündet im nassen Bett", ["simWecken.brand.wahr.diagonal.bett.naesse=", 0.4], /FENSTER-BETT: diagonal zündete auf gras \(Last 0.092, Boden 0.1, Nässe 0.4\)/],
+        ["drei Starts an derselben Uhr würfeln", ["simWecken.brand.wahr.wieder", { mit: 1.03, vor: 0.95 }], /FENSTER-BETT: drei Starts an derselben Uhr des Winds tragen mit 0.58 · 1.03 · 0.58, vor 0.6 · 0.95 · 0.6/],
+        ["ein Herd stellt die Uhr zurück", ["simWecken.brand.uhrRueck=", [[40300, 40000]]], /FENSTER-BETT: die Welt-Uhr stand vor dem Herd schon später \(40300 s statt 40000 s\)/],
+        ["das Bett des Spiels ist das des Herds", ["simWecken.brand.bett.abweichend=", 0], /BLIND: der Herd des Spiels/],
+        ["die Herde auf dem gesetzten Bett liefen nicht", ["simWecken.brand.wahr"], /LEER: die Herde auf dem gesetzten Bett/],
         // das Fenster hängt am Läufer (bis linse-brand-schritte, lokal am Radeon-Laptop): der zweite Herd begann zu einer späteren
         // Welt-Uhr, 0,35 m/s mit 8 Köpfen ↔ 0,29 mit 9; am langsamsten Läufer gingen dieselben Bilder weniger Schritte
         ["der Herd beginnt zur Uhr des Läufers", ["simWecken.brand.fenster", { spiel: { zellen: 42, koepfe: 8, mit: 0.35, alle: 0.978, schritte: 300, bilder: 300 }, langsam: { zellen: 47, koepfe: 9, mit: 0.29, alle: 0.982, schritte: 300, bilder: 300 } }], /FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels 42 Zellen, 8 Köpfe \(Median 0.35 m\/s\), alle 0.978 m\/s in 300 Schritten und 300 Bildern, am langsamsten Läufer 47 Zellen, 9 Köpfe \(Median 0.29 m\/s\)/],
-        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.langsam", { schritte: 212, bilder: 300 }], /FENSTER-UHR: .* am langsamsten Läufer 48 Zellen, 9 Köpfe \(Median 0.307 m\/s\), alle 0.985 m\/s in 212 Schritten und 300 Bildern/],
+        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.langsam", { schritte: 212, bilder: 300 }], /FENSTER-UHR: .* am langsamsten Läufer 44 Zellen, 9 Köpfe \(Median 0.58 m\/s\), alle 0.63 m\/s in 212 Schritten und 300 Bildern/],
         ["der Median am langsamsten Läufer liegt 0,03 m/s daneben", ["simWecken.brand.fenster.langsam.mit=", 0.335], /FENSTER-UHR: .* \(Median 0.335 m\/s\)/],
         ["das Fenster erreicht seine Schritte nicht", ["simWecken.brand.deckel=", 15000], /FENSTER-DECKEL: das Fenster mit dem Wind erreichte nach 15000 Bildern/],
         ["die Probe des Fensters lief nicht", ["simWecken.brand.fenster"], /LEER: die Probe des Fensters/],
@@ -3566,7 +3585,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     const d = Math.hypot(dx, dz);
                                     if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
                                     // jede gefangene Zelle mit dem Punkt und der Zeit, zu der die Front sie erreichte (das Vorrücken)
-                                    if (c.t0 !== null && !I.has(k)) I.set(k, { ex: c.ex, ez: c.ez, an: c.t0 });
+                                    if (c.t0 !== null && !I.has(k)) I.set(k, { ex: c.ex, ez: c.ez, an: c.t0, stoff: c.stoff, w: c.w, boden: c.boden, gx: c.gx, gz: c.gz });
                                 }
                             };
                             S.frame();
@@ -3623,52 +3642,87 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 }
                                 const w = (((Math.atan2(kz, kx) * 180) / Math.PI) % 90 + 90) % 90;
                                 Object.assign(Z, { vor: t > 0 ? +(p / t).toFixed(3) : 0, vorM: +p.toFixed(1), R: +h0.R.toFixed(3), winkel: +Math.min(w, 90 - w).toFixed(1) });
+                                // DAS BETT, WIE DIE FRONT ES VERZEHRTE (FENSTER-BETT): je gefangene Zelle Stoff, Last (`w`: Last × lebendig),
+                                // Boden-Feuchte und Gefälle, wie `_brandZuenden` sie aus `_brandStoff` las — gegen die des Herds
+                                const fern = (c) =>
+                                    c.stoff !== h0.stoff ? `Stoff ${c.stoff}` : Math.abs(c.w - h0.w) > 1e-9 ? `Last ${+c.w.toFixed(4)}` : c.boden !== h0.boden ? `Boden ${+(+c.boden).toFixed(3)}` : c.gx !== h0.gx || c.gz !== h0.gz ? "Gefälle" : null;
+                                const ab = [...I.values()].map(fern).filter(Boolean);
+                                Z.bett = { stoff: h0.stoff, w: +h0.w.toFixed(4), boden: +(+h0.boden).toFixed(3), naesse: st.naesse, zellen: I.size, abweichend: ab.length, erste: ab[0] || null };
                             }
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
-                        // JEDER HERD BEGINNT ZUR SELBEN WELT-UHR (linse-brand-schritte): das Tempo der Front liest Wind und Luft zur
-                        // Uhr des Brands (`_brandTempo` → `_windAt(t)`, `_temperaturAt`), und die Uhr, zu der die Probe hier ankam, trug
-                        // die Bilder der Phasen davor (das Einschwingen, `bisDa` — an der Wanduhr des Läufers): jeder Läufer zündete in
-                        // einem anderen Wind (FRONT-MIT am selben Gesetz 0,335–1,029 m/s mit 9–14 Köpfen, CI voll 15/18). Jeder Herd
-                        // beginnt darum zur Uhr `HERD_UHR` (`_weltUhrNeu`, wie jede Messung, die zu ihrem Anfang zurückkehrt) mit dem
-                        // Gesetz des Spiels oder einem getauschten (für diesen einen Lauf, im `finally` zurück, kein Flag im Spiel);
-                        // `vor` misst nach dem Stellen der Uhr, vor dem Zünden
-                        const [B0, HERD_UHR] = [AnazhRealm.BRAND, 40000];
-                        const herd = async (n, gesetz = {}, vor = () => {}, uhr = HERD_UHR) => {
-                            r._weltUhrNeu(uhr);
+                        // JEDER HERD BEGINNT ZU SEINER WELT-UHR, NIE RÜCKWÄRTS (linse-brand-schritte): das Tempo der Front liest Wind und
+                        // Luft zur Uhr des Brands (`_brandTempo` → `_windAt(t)`, `_temperaturAt`), und die Uhr, zu der die Probe hier ankam,
+                        // trug die Bilder der Phasen davor (`bisDa`, an der Wanduhr des Läufers: lokal 12 235 s). Jeder Herd stellt die Uhr
+                        // darum VORWÄRTS auf seine feste Uhr (`_weltUhrNeu`; steht die Welt schon später, bleibt sie und `uhrRueck` nennt
+                        // es) und die Stunde auf Mittag (`setTimeOfDay`: die Luft der Zünd-Wärme). Bis hier kehrten drei Herde zur selben
+                        // Uhr 40 000 zurück: Overlay, Fraß des Gaus und Narbe tragen Stempel der Welt-Uhr, und derselbe Herd trug
+                        // 0,31 · 1,03 · 0,458 m/s. `gesetz` tauscht das Gesetz des Brands für diesen einen Lauf (im `finally` zurück, kein
+                        // Flag im Spiel), `wind` „aus" (ohne m/s) oder die Uhr des GESETZTEN Winds (`_windAt` am Herd zu dieser Uhr, überall
+                        // und jederzeit derselbe), `bett` das GESETZTE BETT (s. u.), `vor` misst nach dem Stellen der Uhr, vor dem Zünden
+                        const [B0, uhrRueck] = [AnazhRealm.BRAND, []];
+                        const herd = async (n, uhr, { gesetz = {}, wind, bett = false, vor = () => {} } = {}) => {
+                            if (st.spielZeit > uhr) uhrRueck.push([+st.spielZeit.toFixed(1), uhr]);
+                            r._weltUhrNeu(Math.max(uhr, st.spielZeit));
+                            r.setTimeOfDay(0.5, "regler");
                             vor();
+                            if (wind === "aus") r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
+                            else if (wind != null) r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
+                            // DAS GESETZTE BETT (FENSTER-BETT): der EINE Schreiber des Betts im Brand ist `_brandStoff` (stamm/feld-brand.js,
+                            // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
+                            // (das Overlay `_depositLife`, die Narbe der Taten, der Fraß aus dem Faden des Gaus). Der Herd misst sein Bett
+                            // wie das Spiel (Stoff, Boden-Feuchte, Gefälle, Maske), lebendig ist das der Saat (`worldFieldAt`: kein Overlay,
+                            // keine Narbe, kein Gau), und JEDE Zelle mit Bett trägt dieses Bett an ihrem Ort (wo die Welt keins trägt — Fels,
+                            // Wasser, Asche —, bleibt keins); die Nässe hält die Bühne bei 0
+                            if (bett) {
+                                let F0 = null;
+                                r._brandStoff = function (cx, cz, u) {
+                                    const f = P._brandStoff.call(this, cx, cz, u);
+                                    if (!f) return f;
+                                    F0 ||= Object.assign({}, f, { leb: this.worldFieldAt(f.x, f.z).lebendig });
+                                    return Object.assign({}, F0, { x: f.x, z: f.z, y: f.y });
+                                };
+                            }
                             AnazhRealm.BRAND = Object.freeze({ ...B0, ...gesetz });
                             try {
                                 return await lauf(n);
                             } finally {
                                 AnazhRealm.BRAND = B0;
+                                delete r._windAt;
+                                delete r._brandStoff;
                             }
                         };
                         // von Hand gelöscht: auch sein Rest (ein Herd schreibt keine Asche in den nächsten)
                         const loeschen = () => ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
-                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                        let ohneWind;
-                        try {
-                            ohneWind = (await herd(60)).alle;
-                        } finally {
-                            delete r._windAt;
-                        }
+                        const ohneWind = (await herd(60, 36900, { wind: "aus" })).alle;
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
                         loeschen();
-                        // DER LANGSAMSTE LÄUFER (FENSTER-UHR): derselbe Herd mit dem Wind, mit leerem Budget und EINEM Stück je Bild (ein
-                        // Schritt mit k Aschen und Zündungen geht in k Bildern; mit `mindestJeBild` 8 passte jeder Schritt in ein Bild,
-                        // ohne Wind trägt kein Schritt mehr als eines — die Mutante sähe dort nichts), vor dem Herd des Spiels: dieselben
-                        // Köpfe und Schritte, ihr Median und ihr schnellster Sprung auf `FENSTER_MS` gleich (die Welt lebt zwischen
-                        // beiden Herden weiter — der Bestand frisst am Bett, lokal 44 ↔ 48 Zellen, 0,305 ↔ 0,307 m/s)
-                        const M = await herd(300, { budgetMs: 0, mindestJeBild: 1 });
-                        const langsam = { zellen: st.brandFeld.size, koepfe: M.koepfe, mit: M.mit, alle: M.alle, schritte: M.schritte, bilder: M.bilder, deckel: M.deckel };
-                        loeschen();
-                        // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
+                        // DIE WAHRHEIT DER FRONT (FRONT-TREUE · FRONT-MIT · FENSTER-BETT · FENSTER-UHR): derselbe Herd auf dem gesetzten
+                        // Bett im gesetzten Wind zu drei Uhren des Winds, an denen sein Kopf längs einer Achse, schräg und diagonal zum
+                        // Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat: 41 150 · 40 766 · 40 713) — das Vorrücken des Kopfs
+                        // ist R des Gesetzes; der diagonale noch zweimal: wieder (dieselbe Uhr des Winds, eine spätere der Welt) und am
+                        // langsamsten Läufer (leeres Budget, EIN Stück je Bild) — drei Starts, dieselben Zahlen; dazu die Mutante des
+                        // groben Gitters (vier Nachbarn statt acht: die Diagonale zackt), an der FRONT-TREUE fallen muss
+                        const VIER = B0.nachbarn.slice(0, 4);
+                        const wahr = {};
+                        for (const [name, uhr, wind, gesetz] of [
+                            ["achse", 37100, 41150],
+                            ["schraeg", 37500, 40766],
+                            ["diagonal", 37900, 40713],
+                            ["wieder", 38300, 40713],
+                            ["langsam", 38700, 40713, { budgetMs: 0, mindestJeBild: 1 }],
+                            ["grob", 39100, 40713, { nachbarn: VIER }],
+                        ]) {
+                            const L = await herd(300, uhr, { wind, bett: true, gesetz });
+                            wahr[name] = { windUhr: wind, zellen: st.brandFeld.size, koepfe: L.koepfe, mit: L.mit, alle: L.alle, vor: L.vor, R: L.R, winkel: L.winkel, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel, bett: L.bett };
+                            loeschen();
+                        }
+                        // DER HERD DES SPIELS (die Kosten des Brands, Asche, Regen): sein Bett und sein Wind, wie die Welt sie trägt — seine
+                        // Abweichung vom Bett des Herds ist die Mutante von FENSTER-BETT (ein ungesetztes Bett muss sie sehen)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
                         let [lebVor, ovVor] = [];
-                        const Z = (W.brand = await herd(300, {}, () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()])));
-                        const spiel = { zellen: st.brandFeld.size, koepfe: Z.koepfe, mit: Z.mit, alle: Z.alle, schritte: Z.schritte, bilder: Z.bilder };
-                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam: Object.assign(langsam, { vor: M.vor, R: M.R }) }, lebVor, ovVor, glut, licht });
+                        const Z = (W.brand = await herd(300, 40000, { vor: () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()]) }));
+                        Object.assign(Z, { ohneWind, wahr, uhrRueck, fenster: { spiel: wahr.diagonal, langsam: wahr.langsam }, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
