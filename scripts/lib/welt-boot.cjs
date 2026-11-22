@@ -571,9 +571,13 @@ function ENGINE_THREE() {
 // DER STUDIO-KERN in Node: die Engine der Kerne (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
 // der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
 // w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
+// DIE KERNE, DIE EIN KERN BEIM NAMEN LIEST — sie laden vor ihm (in Node wie im Faden des Wirts, `FADEN_QUELLE.spaet`): das
+// Technik-Gesetz des Fachwerks (TECHNIK) liest T_schmelz der Stoff-Zeile der Schmiede (schmiede-core `STOFF_GESETZ`)
+const KERN_LIEST = { "fachwerk-core.js": ["schmiede-core.js"] };
 function studioKern(datei, name, frisch) {
     global.THREE ||= ENGINE_THREE();
     require(path.join(ROOT, "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN: jeder Strom zieht aus ihm)
+    for (const d of KERN_LIEST[datei] || []) require(path.join(ROOT, d));
     if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
     require(path.join(ROOT, datei));
     return globalThis[name];
@@ -592,7 +596,8 @@ function fadenScope(quellen) {
     sb.self = sb.globalThis = sb.window = sb;
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
-    for (const f of quellen.includes("samen-core.js") ? quellen : ["samen-core.js", ...quellen])
+    const mit = quellen.flatMap((f) => [...(KERN_LIEST[f] || []).filter((d) => !quellen.includes(d)), f]);
+    for (const f of mit.includes("samen-core.js") ? mit : ["samen-core.js", ...mit])
         require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });
