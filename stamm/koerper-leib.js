@@ -1019,8 +1019,16 @@ class AnazhRealm_koerper_leib {
     // UND hier); der Stamm assembliert via _foundryBuildMesh und memoiert je Art+Dials+Stufe → jede
     // Kreatur ist ein Template-CLONE. _ofenKreaturDials: TETRAPODA_SOUL_MAP = welches Rezept,
     // TETRAPODA_DIAL_MAP = wie; tag-neutral (nur Längen/Positionen). null → Modul-bodyParts bleiben.
+    // DIE ART DES NETZES (leben.oeko.netz S2): eine gezogene Art gießt die Rezeptur ihres Vorbilds (`rezept`, das Rezept des Buchs)
+    // mit IHREN Dials (tetrapoda ARTEN_NETZ) — immer als Prägung des Rezepts (`istDefault` nur für die Gattung des Buchs selbst);
+    // `rezept` nennt dem Ofen das Rezept, das er bestellt.
     _ofenKreaturDials(recId, ovOpt) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        const art = core && core.ARTEN_NETZ && core.ARTEN_NETZ.arten[recId];
+        if (art && !art.anker) {
+            const dials = Object.assign({}, art.dials, ovOpt && typeof ovOpt === "object" ? ovOpt : {});
+            return { dials, istDefault: false, rezept: art.rezept };
+        }
         if (!core || !core.GATTUNGEN || !core.GATTUNGEN[recId]) return null;
         const basis = core.GATTUNGEN[recId];
         const buch = this._tetrapodaStudioDials(recId);
@@ -1028,7 +1036,7 @@ class AnazhRealm_koerper_leib {
         // istDefault steuert den IDB-Pfad: nur die unveränderte Gattungs-Gestalt
         // darf die Platte lesen/schreiben (Regler-Unikate bleiben Unikate, W-A1).
         const istDefault = !ovOpt && JSON.stringify(dials) === JSON.stringify(Object.assign({}, basis));
-        return { dials, istDefault };
+        return { dials, istDefault, rezept: recId };
     }
     _ofenKreaturKey(recId, dials, lod) {
         let d = "";
@@ -1301,14 +1309,14 @@ class AnazhRealm_koerper_leib {
                 const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
                 if (!BAKER || typeof BAKER.kreatur !== "function") return null;
                 this._fadenUmgangen("Guss „kreatur“ ohne Vorlage"); // die Vorlage gießt das Werk der Foundry (Lehre 14)
-                const g = BAKER.kreatur(core, recId, 0, lod | 0, d.dials);
+                const g = BAKER.kreatur(core, d.rezept, 0, lod | 0, d.dials);
                 const eintraege = [];
                 g.traverse((o) => {
                     if (o.isMesh) eintraege.push(this._ofenMeshEintragAusThree(o));
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                return this._ofenAssembleAsset(this._ofenBudget(core, "kreatur", lod, eintraege, recId));
+                return this._ofenAssembleAsset(this._ofenBudget(core, "kreatur", lod, eintraege, d.rezept));
             } catch (e) {
                 this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
                 return null;
@@ -2197,7 +2205,7 @@ class AnazhRealm_koerper_leib {
         const Q = this._ofenBestellt || (this._ofenBestellt = new Map());
         let a = Q.get(key);
         if (!a) {
-            a = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials, wo).then((meshes) => {
+            a = this._foundryRequest(d.rezept, 0, lod, d.istDefault ? null : d.dials, wo).then((meshes) => {
                 Q.delete(key);
                 if (!meshes || !meshes.length) {
                     if (!memo.has(key)) this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
@@ -2515,7 +2523,9 @@ class AnazhRealm_koerper_leib {
         // ERFINDER-WELLE — der optionale ov-Kanal (Werkstatt-Regler): Overrides mergen
         // ueber die LIVE-Buch-Dials (ohne ovOpt byte-alt; kaltes Buch + ov → nur ov,
         // die Finite-Wache je Zeile traegt Teilvektoren).
-        const s0 = this._tetrapodaStudioDials(recId);
+        // eine gezogene Art des Netzes trägt ihre eigenen Dials (`_ofenKreaturDials`), die Gattung des Buchs die des Buchs
+        const art = globalThis.__tetrapodaCore.ARTEN_NETZ.arten[recId];
+        const s0 = art && !art.anker ? art.dials : this._tetrapodaStudioDials(recId);
         const s = ovOpt && typeof ovOpt === "object" ? Object.assign({}, s0 || {}, ovOpt) : s0;
         if (!s) return null;
         const arch = Object.assign({}, AnazhRealm.CREATURE_ARCHETYPES[gSpec.archetypeName] || {});
@@ -2967,7 +2977,13 @@ class AnazhRealm_koerper_leib {
         const ud = creature.userData;
         if (ud._verhaltenDiet === undefined) {
             const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
-            const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
+            const art = recId && globalThis.__tetrapodaCore.ARTEN_NETZ.arten[recId];
+            const dials =
+                art && !art.anker
+                    ? art.dials
+                    : recId && this._tetrapodaStudioDials
+                      ? this._tetrapodaStudioDials(recId)
+                      : null;
             ud._verhaltenDiet = dials && Number.isFinite(dials.diet) ? dials.diet : 1;
         }
         return ud._verhaltenDiet;
@@ -3639,12 +3655,18 @@ Object.defineProperty(AnazhRealm, "KOERPER_DIAL_MAP", {
 // Gattungs-Tiere ihre eigene (wolf/fox/bear). Die Dials überschreiben NUR die vier Zahl-Achsen
 // (TETRAPODA_DIAL_MAP); Shapes+Materialien bleiben → Tags byte-gleich. sprite/geist bleiben bewusst
 // draußen: skelettlose 2-Part-Minimalformen, kein Vierbeiner.
-AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
-    wesen: "deer",
-    wolf: "wolf",
-    fuchs: "fox",
-    baer: "bear",
-});
+// DIE ARTEN DES NETZES (leben.oeko.netz S2, tetrapoda ARTEN_NETZ): jede gezogene Art ist ihre eigene Seele (ihr Name die Art) —
+// die vier Gattungen des Buchs bleiben die Seelen ihrer Namen; welche Rezeptur ihre Gestalt gießt, sagt die Art (`rezept`).
+AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze(
+    Object.assign(
+        { wesen: "deer", wolf: "wolf", fuchs: "fox", baer: "bear" },
+        Object.fromEntries(
+            globalThis.__tetrapodaCore.ARTEN_NETZ.ids
+                .filter((g) => !globalThis.__tetrapodaCore.ARTEN_NETZ.arten[g].anker)
+                .map((g) => [g, g])
+        )
+    )
+);
 // TETRAPODA_DIAL_MAP — Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht:
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich): neck→neckFrac · leg→legFrac
 // (Einheiten-Brücke) · build→torsoW · diet→eyeFront (Carnivor frontal, Herbivor lateral).

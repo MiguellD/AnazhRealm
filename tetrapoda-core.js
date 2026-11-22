@@ -2257,6 +2257,180 @@
         return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
     }
 
+    // DAS NETZ DER ARTEN (leben.oeko.netz S2, 22.11., additiv — ARTEN_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck
+    // bleibt; GATTUNGEN, LEBENSRAUM_GESETZ, ETHOGRAMM_GESETZ und herde.wurf stehen byte-gleich und sind die STÜTZPUNKTE des
+    // Gesetzes): eine Art ist kein Eintrag einer Tafel, sie FOLGT aus der Saat des Bioms, ihrer GILDE (Ebene und Kost) und ihrer
+    // Masse. DIE GILDEN (gilden): Pflanzenfresser klein und groß (Ebene 2, äsen den Jungwuchs, Ebene 1), Klein- und Großräuber
+    // (Ebene 3), Spitzenräuber (Ebene 4) und Allesfresser (Ebene 2, äsen UND reißen Ebene 2); je Gilde n Arten — der Anker der
+    // Gilde (Hirsch, Fuchs, Wolf, Bär: die Gattungen des Buchs) ist eine von ihnen, die übrigen zieht die Saat (artWurf).
+    // DIE MASSE einer gezogenen Art: log-gleichverteilt im Band ihrer Gilde, je Art ein eigener Streifen (die Arten einer Gilde
+    // trennen sich in der Masse). DER BAUPLAN aus dem Vorbild der Gilde: Größe ∝ Masse^⅓ (die Gestalt ist ein Volumen,
+    // kg = Volumen × dichteKgM3), die Statur ∝ Masse^0,1 (der Schwere ist gedrungener), Hals und Bein streuen um ± streu.
+    // DIE DICHTE (haeufigkeit) aus Masse und Ebene: Masse^−¾ (Damuth 1981, Nature 290:699) und je Ebene über dem Vorbild
+    // ein Zehntel (Lindeman 1942) — wenige Große, viele Kleine, die Energie-Pyramide; gedeckelt auf hMax (der Takt zählt Köpfe).
+    // DIE NAHRUNG (artFrisst) folgt aus Ebene und Massen-Verhältnis, nie aus einer Tafel: ein Fresser reißt nur die Ebene
+    // unter sich (der Allesfresser äst und reißt Ebene 2), keinen Jäger mit Masse (ein wilder wehrt sich), und unter jagdKg
+    // Beute bis zur eigenen Masse, darüber Beute ab einem Viertel bis beuteMasse × die eigene (Carbone et al. 1999, Nature
+    // 402:286: die Schwelle 21,5 kg trennt die Kleinbeute- von den Großbeute-Jägern). Ein Wurf der Gruppe wie das Vorbild, ein
+    // Jäger über der Ebene seines Vorbilds jagt allein; das Ethogramm und die Rezeptur der Gestalt (das Rezept des Buchs, das
+    // der Ofen mit den Dials der Art gießt) erbt die Art vom Vorbild. Der Wirt liest das EINE Netz (`ARTEN_NETZ`): die Liste der
+    // Arten, ihr Lebensraum (L) und ihr Tag (E) — die Stützpunkte darin wörtlich die Zeilen des Buchs.
+    var ARTEN_GESETZ = Object.freeze({
+        saat: 23063,
+        anker: Object.freeze({ deer: 94, fox: 15, wolf: 64, bear: 335 }),
+        damuth: -0.75,
+        lindeman: 0.1,
+        hMax: 2,
+        kleinBeute: 1,
+        grossBeute: 4,
+        streu: 0.15,
+        gilden: Object.freeze({
+            "pflanzen-klein": Object.freeze({ ebene: 2, diet: 0, kg: Object.freeze([4.5, 13]), vorbild: "deer", anker: null, n: 3, lebensraum: Object.freeze({ wiese: 1, waldrand: 0.7 }) }),
+            "pflanzen-gross": Object.freeze({ ebene: 2, diet: 0, kg: Object.freeze([150, 260]), vorbild: "deer", anker: "deer", n: 2, lebensraum: Object.freeze({ waldrand: 1, wald: 0.6, wiese: 0.4 }) }),
+            "klein-raeuber": Object.freeze({ ebene: 3, diet: 1, kg: Object.freeze([7, 10]), vorbild: "fox", anker: "fox", n: 2, lebensraum: Object.freeze({ waldrand: 1, wiese: 0.6, wald: 0.4 }) }),
+            "gross-raeuber": Object.freeze({ ebene: 3, diet: 1, kg: Object.freeze([64, 64]), vorbild: "wolf", anker: "wolf", n: 1, lebensraum: Object.freeze({ wald: 1 }) }),
+            "spitzen-raeuber": Object.freeze({ ebene: 4, diet: 1, kg: Object.freeze([24, 36]), vorbild: "wolf", anker: null, n: 2, lebensraum: Object.freeze({ hang: 1, wald: 0.7, waldrand: 0.4 }) }),
+            "alles-fresser": Object.freeze({ ebene: 2, diet: 0.5, kg: Object.freeze([14, 20]), vorbild: "bear", anker: "bear", n: 2, lebensraum: Object.freeze({ wald: 1, fluss: 0.8, waldrand: 0.5 }) }),
+        }),
+    });
+    // Der Wurf der Saat für die Achse k der Art i einer Gilde (u ∈ [0, 1), ganzzahliger Hash: dieselbe Saat, dieselbe Art).
+    function artWurf(saat, gilde, i, k) {
+        var h = saat >>> 0;
+        for (var c = 0; c < gilde.length; c++) h = Math.imul(h ^ gilde.charCodeAt(c), 16777619);
+        h = (h ^ Math.imul(i + 1, 0x27d4eb2d) ^ Math.imul(k + 1, 0x9e3779b1)) >>> 0;
+        h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+        h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    // Die Ebenen, die eine Kost frisst: der Pflanzenfresser den Jungwuchs (1), der Fleischfresser die Ebene unter sich, der
+    // Allesfresser beides (1 und 2).
+    function artFrisstEbenen(diet, ebene, T) {
+        if (diet <= T.pflanzDiet) return [1];
+        if (diet >= T.fleischDiet) return [ebene - 1];
+        return [1, 2];
+    }
+    // J, B = Arten des Netzes, kgJ, kgB = die Massen ihrer Leiber (kg; ohne: die Masse der Art), T =
+    // VERHALTEN.temperament.gattung, beuteMasse = VERHALTEN.jagd.beuteMasse. Liefert: reißt J ein Tier von B?
+    function artFrisst(J, B, kgJ, kgB, T, beuteMasse, A) {
+        if (!J || !B || J.id === B.id || !(J.dials.diet > T.pflanzDiet)) return false;
+        if (J.frisst.indexOf(B.ebene) < 0) return false;
+        var mj = kgJ > 0 ? kgJ : J.kg,
+            mb = kgB > 0 ? kgB : B.kg;
+        if (temperamentDerGattung(B.dials, mb, T) === "wild") return false;
+        var q = mj / mb;
+        return mj < T.jagdKg ? q >= A.kleinBeute : q <= A.grossBeute && q >= 1 / beuteMasse;
+    }
+    function artRund(x) {
+        return Math.round(x * 1000) / 1000;
+    }
+    // DAS NETZ EINER SAAT: { saat, ids, arten: { id: Art }, L, E }. Art = { id, gilde, ebene, frisst, anker, vorbild, rezept,
+    // kg, dials, wurf }; L = LEBENSRAUM_GESETZ mit dem Lebensraum und der Häufigkeit jeder Art, E = ETHOGRAMM_GESETZ mit ihrem Tag.
+    function artenNetz(saat) {
+        var A = ARTEN_GESETZ,
+            T = VERHALTEN.temperament.gattung,
+            arten = {},
+            ids = [],
+            lr = {},
+            hf = {},
+            eg = {},
+            gName,
+            g,
+            id;
+        var gildeVon = {};
+        for (gName in A.gilden) if (A.gilden[gName].anker) gildeVon[A.gilden[gName].anker] = gName;
+        // die Stützpunkte: die Gattungen des Buchs, in der Folge ihres Lebensraums, Zeile für Zeile
+        for (id in LEBENSRAUM_GESETZ.gattung) {
+            g = A.gilden[gildeVon[id]];
+            arten[id] = Object.freeze({
+                id: id,
+                gilde: gildeVon[id],
+                ebene: g.ebene,
+                frisst: Object.freeze(artFrisstEbenen(GATTUNGEN[id].diet, g.ebene, T)),
+                anker: true,
+                vorbild: id,
+                rezept: id,
+                kg: A.anker[id],
+                dials: Object.freeze(Object.assign({}, GATTUNGEN[id])),
+                wurf: Object.freeze(VERHALTEN.herde.wurf[id].slice()),
+            });
+            ids.push(id);
+            lr[id] = LEBENSRAUM_GESETZ.gattung[id];
+            hf[id] = LEBENSRAUM_GESETZ.haeufigkeit[id];
+            eg[id] = ETHOGRAMM_GESETZ.gattung[id];
+        }
+        // die gezogenen Arten: je Gilde n, der Anker zählt mit
+        for (gName in A.gilden) {
+            g = A.gilden[gName];
+            var V = g.vorbild,
+                d0 = GATTUNGEN[V],
+                kgV = A.anker[V],
+                ebV = A.gilden[gildeVon[V]].ebene,
+                frei = g.n - (g.anker ? 1 : 0),
+                lo = Math.log(g.kg[0]),
+                hi = Math.log(g.kg[1]);
+            for (var i = 0; i < frei; i++) {
+                var u = function (k) {
+                    return artWurf(saat, gName, i, k);
+                };
+                var kg = artRund(Math.exp(lo + ((i + u(0)) / frei) * (hi - lo)));
+                var s = A.streu;
+                var dials = {
+                    size: artRund(Math.min(4, Math.max(1, d0.size * Math.pow(kg / kgV, 1 / 3)))),
+                    neck: artRund(Math.min(0.4, Math.max(0.15, d0.neck * (1 + s * (2 * u(1) - 1))))),
+                    leg: artRund(Math.min(0.35, Math.max(0.15, d0.leg * (1 + s * (2 * u(2) - 1))))),
+                    diet: g.diet,
+                    build: artRund(Math.min(1, Math.max(0, d0.build * Math.pow(kg / kgV, 0.1) * (1 + s * (2 * u(3) - 1))))),
+                };
+                id = gName + "-" + (i + 1);
+                arten[id] = Object.freeze({
+                    id: id,
+                    gilde: gName,
+                    ebene: g.ebene,
+                    frisst: Object.freeze(artFrisstEbenen(g.diet, g.ebene, T)),
+                    anker: false,
+                    vorbild: V,
+                    rezept: V,
+                    kg: kg,
+                    dials: Object.freeze(dials),
+                    wurf: Object.freeze(g.ebene > ebV ? [1, 1] : VERHALTEN.herde.wurf[V].slice()),
+                });
+                ids.push(id);
+                var raum = {};
+                var k2 = 4;
+                for (var kl in g.lebensraum) raum[kl] = artRund(g.lebensraum[kl] * (0.6 + 0.4 * u(k2++)));
+                lr[id] = Object.freeze(raum);
+                hf[id] = artRund(
+                    Math.min(A.hMax, LEBENSRAUM_GESETZ.haeufigkeit[V] * Math.pow(kg / kgV, A.damuth) * Math.pow(A.lindeman, g.ebene - ebV))
+                );
+                eg[id] = ETHOGRAMM_GESETZ.gattung[V];
+            }
+        }
+        var L = {},
+            E = {},
+            key;
+        for (key in LEBENSRAUM_GESETZ) L[key] = LEBENSRAUM_GESETZ[key];
+        L.gattung = Object.freeze(lr);
+        L.haeufigkeit = Object.freeze(hf);
+        for (key in ETHOGRAMM_GESETZ) E[key] = ETHOGRAMM_GESETZ[key];
+        E.gattung = Object.freeze(eg);
+        return Object.freeze({ saat: saat, ids: Object.freeze(ids), arten: Object.freeze(arten), L: Object.freeze(L), E: Object.freeze(E) });
+    }
+    // DIE FRASS-PAARE EINES NETZES an den Massen seiner Arten: [{ j, b, q }] (q = Masse J ÷ B), dazu je Art die Äsung (b „jungwuchs“).
+    function artenPaare(N) {
+        var T = VERHALTEN.temperament.gattung,
+            aus = [];
+        for (var a = 0; a < N.ids.length; a++) {
+            var J = N.arten[N.ids[a]];
+            if (J.frisst.indexOf(1) >= 0) aus.push({ j: J.id, b: "jungwuchs", q: null });
+            for (var b = 0; b < N.ids.length; b++) {
+                var B = N.arten[N.ids[b]];
+                if (artFrisst(J, B, 0, 0, T, VERHALTEN.jagd.beuteMasse, ARTEN_GESETZ)) aus.push({ j: J.id, b: B.id, q: artRund(J.kg / B.kg) });
+            }
+        }
+        return aus;
+    }
+    var ARTEN_NETZ = artenNetz(ARTEN_GESETZ.saat);
+
     // DAS GEHEGE (Prüfplatz, der Zoo mit fester Zahl; w28-gehege, additiv — GEHEGE_GESETZ wohnt nicht in VERHALTEN, der
     // v7-Fingerabdruck bleibt): ein Term DES Bestands-Gesetzes, nie ein zweites Register — die Tiere eines Geheges stehen im
     // Verzeichnis ihrer Region wie jedes Tier, mit dem Term. DIE ZEILE (gehegeZeile) bringt der Plan: Gattung und Kopfzahl,
@@ -5636,6 +5810,11 @@
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,
         bestandRiss: bestandRiss,
+        ARTEN_GESETZ: ARTEN_GESETZ,
+        ARTEN_NETZ: ARTEN_NETZ,
+        artenNetz: artenNetz,
+        artFrisst: artFrisst,
+        artenPaare: artenPaare,
         GEHEGE_GESETZ: GEHEGE_GESETZ,
         gehegeZeile: gehegeZeile,
         gehegeTiere: gehegeTiere,

@@ -1880,7 +1880,9 @@ class AnazhRealm_kreatur_leben {
         const geboren = [];
         if (!soul) return geboren;
         const W = AnazhRealm._verhaltenGesetz().herde.wurf;
-        const zeile = W[AnazhRealm.TETRAPODA_SOUL_MAP[soul]];
+        // die Kopfzahl der Art (tetrapoda ARTEN_NETZ: die Gattung des Buchs ihre Zeile von herde.wurf, die gezogene die ihres Vorbilds)
+        const art = AnazhRealm._lebensraumGesetz().arten[AnazhRealm.TETRAPODA_SOUL_MAP[soul]];
+        const zeile = art ? art.wurf : null;
         const kopf = tiere ? tiere.length : zeile ? zeile[0] + Math.floor(rng() * (zeile[1] - zeile[0] + 1)) : 1;
         const n = Math.min(kopf, platz);
         // hält der Platz die kleinste Gruppe der Gattung nicht, fällt der Wurf (kein Rudel aus einem Wolf: der Deckel
@@ -2017,7 +2019,7 @@ class AnazhRealm_kreatur_leben {
         const geboren = [];
         for (const best of wuerfe) {
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[best.soul];
-            const zeile = AnazhRealm._verhaltenGesetz().herde.wurf[g];
+            const zeile = AnazhRealm._lebensraumGesetz().arten[g].wurf; // die Kopfzahl der Art (tetrapoda ARTEN_NETZ)
             const kopf = zeile ? zeile[0] + Math.floor(rng() * (zeile[1] - zeile[0] + 1)) : 1;
             const reife = this._bestandFreie(R).filter((t) => t.g === g && this._bestandReif(t));
             const wurf = [];
@@ -2193,9 +2195,16 @@ class AnazhRealm_kreatur_leben {
         for (const t of tiere) if (t.g in n) n[t.g]++;
         const { jaeger, gejagt, beuteVon } = this._bestandJagd(tiere, diet);
         const gau = this._gauRevier(key);
-        let beuteN = !gau ? 0 : takt == null ? gau.koepfe.beute : this._gauBeuteAm(key, takt); // am Takt: die Spur (`_gauSpurAb`)
-        for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
-        const beute = Math.min(1, beuteN / B.beuteVoll);
+        const gauN = !gau ? 0 : takt == null ? gau.koepfe.beute : this._gauBeuteAm(key, takt); // am Takt: die Spur (`_gauSpurAb`)
+        // DIE BEUTE JE ART (das Netz der Arten, tetrapoda artFrisst): die Köpfe der Arten, die sie nach Ebene und Masse reißt — die
+        // Beute des Gaus, wenn sie sie reißt —, gegen beuteVoll. Bis hier las jeder Jäger EINEN Topf (jeder Pflanzenfresser der
+        // Region und des Gaus), gleich, wen er schlagen kann.
+        const beuteJe = {};
+        for (const g in n) {
+            let s = gauN && LG.frisst(g, AnazhRealm.GAU.beute) ? gauN : 0;
+            if (diet[g] > pflanz) for (const b in n) if (LG.frisst(g, b)) s += n[b];
+            beuteJe[g] = Math.min(1, s / B.beuteVoll);
+        }
         // je Zelle Lebensraum × Äsung (der Jungwuchs, den der Fraß liest); K aus der EINEN Formel (`_bestandKapazitaet`)
         if (zellen)
             for (const c of feld.zellen) {
@@ -2205,7 +2214,7 @@ class AnazhRealm_kreatur_leben {
             }
         const aus = {};
         for (const g in n) {
-            const k = this._bestandKapazitaet(g, feld, beute);
+            const k = this._bestandKapazitaet(g, feld, beuteJe[g]);
             const riss = BG.riss(jaeger[g], gejagt[g] / B.beuteVoll, B);
             aus[g] = Object.assign(
                 { n: n[g], K: +k.toFixed(2), frass: BG.frass(diet[g], B), riss, beute: beuteVon },
@@ -2229,18 +2238,24 @@ class AnazhRealm_kreatur_leben {
     // wilden Jäger Beute ist (einer anderen Gattung, nicht wild, höchstens beuteMasse × seine Masse), je Gattung gezählt (gejagt),
     // mit seinen Jägern (beuteVon), und die Kost der Jäger je Gattung, die sie jagen (jaeger). Die eigene Art ist keine Beute: seit
     // leben-erbe wächst jedes Junge heran und ist bis jagdKg „scheu“ — der Riss fraß sonst jeden Welpen des eigenen Rudels.
+    // DER RISS FOLGT DEM NETZ DER ARTEN (leben.oeko.netz S2, tetrapoda artFrisst): Jäger ist, wessen Art Fleisch frisst; Beute,
+    // wessen Art auf der Ebene liegt, die er reißt, und wessen Leib in sein Massen-Fenster fällt (unter jagdKg bis zur eigenen
+    // Masse, darüber ab einem Viertel bis beuteMasse × die eigene) und nicht wild ist — je Paar an den Massen DIESER Leiber. Bis
+    // hier jagte nur ein wilder Jäger (Fleischfresser ab jagdKg) jedes Nicht-Wilde bis beuteMasse × seine Masse: der Fuchs riss
+    // nie, und Ebenen kannte der Riss nicht.
     _bestandJagd(tiere, diet) {
-        const beuteMasse = AnazhRealm._verhaltenGesetz().jagd.beuteMasse;
+        const LG = AnazhRealm._lebensraumGesetz();
+        const pflanz = AnazhRealm._verhaltenGesetz().temperament.gattung.pflanzDiet;
         const jaeger = {};
         const gejagt = {};
         for (const g in diet) jaeger[g] = gejagt[g] = 0;
         const beuteVon = new Map();
         for (const h of tiere) {
-            if (!(diet[h.g] > 0) || !this._bestandWild(h)) continue;
+            if (!(diet[h.g] > pflanz)) continue;
+            const kh = this._bestandKg(h);
             const jagt = new Set();
             for (const o of tiere) {
-                if (o.g === h.g || this._bestandWild(o) || this._bestandKg(o) > beuteMasse * this._bestandKg(h))
-                    continue;
+                if (o.g === h.g || !LG.frisst(h.g, o.g, kh, this._bestandKg(o))) continue;
                 jagt.add(o.g);
                 const j = beuteVon.get(o);
                 if (j) j.push(h);
@@ -3679,6 +3694,20 @@ AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREAT
 // Init in `_creatureSkeleton` gießt — damit `_tetrapodaSoulParts` zur BAU-Zeit dasselbe g mit
 // dial-überschriebenem Archetyp erneut gießen kann (ohne Rezept bleiben die Modul-bodyParts die
 // Wahrheit). archetypeName wird beim Guss über CREATURE_ARCHETYPES aufgelöst.
+// DIE ARTEN DES NETZES ALS SEELEN (leben.oeko.netz S2, tetrapoda ARTEN_NETZ): jede gezogene Art trägt die Zeile der Seele ihres
+// Vorbilds (`zeile(vorbild, Art)`: Skelett-g, Teile, Aura — tag-gleich, Lehre 8; die Gestalt gießt der Ofen aus den Dials der
+// Art), ihr Name ist die Art. Liefert die Tafel mit ihnen, eingefroren.
+AnazhRealm._seelenDesNetzes = function (tafel, zeile) {
+    const N = globalThis.__tetrapodaCore.ARTEN_NETZ;
+    const M = AnazhRealm.TETRAPODA_SOUL_MAP;
+    const aus = Object.assign({}, tafel);
+    for (const g of N.ids) {
+        const A = N.arten[g];
+        if (A.anker) continue;
+        aus[g] = zeile(tafel[Object.keys(M).find((s) => M[s] === A.vorbild)], A);
+    }
+    return Object.freeze(aus);
+};
 AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
     wesen: Object.freeze({
         size: 0.6,
@@ -3727,6 +3756,7 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         limbColor: 0x3e2c1e,
     }),
 });
+AnazhRealm.CREATURE_SKELETON_G = AnazhRealm._seelenDesNetzes(AnazhRealm.CREATURE_SKELETON_G, (z) => z);
 // je Seele `label` der Schlüssel ihres Namens in der Sprach-Tafel (`wesen.…`); jeder Leser spricht ihn über `_t`.
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     // `wesen` ist ein Vierbeiner aus dem Skelett-Gesetz: Rumpf (box stein) + Kopf (sphere holz) +
@@ -3783,6 +3813,9 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         auraY: 0.85,
     }),
 });
+AnazhRealm.CREATURE_SOULS = AnazhRealm._seelenDesNetzes(AnazhRealm.CREATURE_SOULS, (z, A) =>
+    Object.freeze(Object.assign({}, z, { label: "wesen.gilde." + A.gilde }))
+);
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
 
 AnazhRealm.CREATURE_NAME_POOL = Object.freeze([
@@ -3936,12 +3969,20 @@ AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2, vorlaufSec: 0.2
 // DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst,
 // ETHOGRAMM_GESETZ + lichtPhase · ruhePegel · aesung · taetigkeit, Tiere K4): Art × Ort × Uhr — die Boden-Klasse eines Orts, die
 // Eignung je Gattung und ihr Tag. Fail-closed.
+// DAS NETZ DER ARTEN (leben.oeko.netz S2, tetrapoda ARTEN_NETZ): L und E sind die des Netzes — der Lebensraum, die Häufigkeit und
+// der Tag JEDER Art der Saat (die vier Gattungen des Buchs sind seine Stützpunkte, Zeile für Zeile), `arten` die Arten mit Ebene,
+// Masse, Bauplan, Wurf und Rezept, `frisst` die Nahrung aus Ebene und Massen-Verhältnis (tetrapoda artFrisst). Die EINE Liste
+// der Arten der Welt: wer die Gattungen zählt, liest `L.gattung` — bis hier trug die Welt vier feste Namen.
 AnazhRealm._lebensraumGesetz = function () {
     if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-    const L = k && k.LEBENSRAUM_GESETZ;
+    const N = k && k.ARTEN_NETZ;
+    const L = N && N.L;
     if (
         L &&
+        N.arten &&
+        N.ids.every((g) => N.arten[g] && L.gattung[g] && Number.isFinite(L.haeufigkeit[g]) && N.E.gattung[g]) &&
+        typeof k.artFrisst === "function" &&
         [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
         L.gattung &&
         L.haeufigkeit &&
@@ -3951,18 +3992,24 @@ AnazhRealm._lebensraumGesetz = function () {
         k.DURST_GESETZ &&
         [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
         typeof k.durst === "function" &&
-        k.ETHOGRAMM_GESETZ &&
-        Number.isFinite(k.ETHOGRAMM_GESETZ.daemmerSin) &&
+        N.E &&
+        Number.isFinite(N.E.daemmerSin) &&
         ["lichtPhase", "ruhePegel", "aesung", "taetigkeit"].every((f) => typeof k[f] === "function")
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
+            arten: N.arten,
+            // reißt die Art j ein Tier der Art b (die Massen ihrer Leiber in kg)?
+            frisst: (j, b, kgJ, kgB) => {
+                const V = AnazhRealm._verhaltenGesetz();
+                return k.artFrisst(N.arten[j], N.arten[b], kgJ, kgB, V.temperament.gattung, V.jagd.beuteMasse, k.ARTEN_GESETZ); // prettier-ignore
+            },
             bodenKlasseAm: k.bodenKlasseAm,
             lebensraum: k.lebensraum,
             wahl: k.lebensraumWahl,
             D: k.DURST_GESETZ,
             durst: k.durst,
-            E: k.ETHOGRAMM_GESETZ,
+            E: N.E,
             lichtPhase: k.lichtPhase,
             ruhePegel: k.ruhePegel,
             aesung: k.aesung,
