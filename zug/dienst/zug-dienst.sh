@@ -89,8 +89,10 @@ nachgeben_posten() {
         n == 3 { l = z; sub(/.*\/actions\/runs\//, "", l); lauf[f] = l }
         END { for (f in nach) { b = f; sub(/^probe-post\//, "", b); h = b; sub(/.*\//, "", h); sub(/[.]md$/, "", h); sub(/\/[^\/]*$/, "", b); print b, h, lauf[f] } }'
 }
-# die drei Rufe nach draußen — der Selbsttest ersetzt sie (Funktions-Überschreibung, kein Netz); der Token wird nie gedruckt
+# die vier Rufe nach draußen — der Selbsttest ersetzt sie (Funktions-Überschreibung, kein Netz); der Token wird nie gedruckt
 koord_abruf() { git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" 2>/dev/null; }
+# gelandet <sha40> — der Kopf ist Vorfahr von main (sein Stempel fuhr im Zug): seine Probe hat keinen Leser mehr
+gelandet() { git -C $R merge-base --is-ancestor "$1" refs/remotes/origin/main 2>/dev/null; }
 koepfe_abruf() { git -C $R ls-remote origin "$@" 2>/dev/null; }
 lauf_neu() {
     local pt
@@ -100,19 +102,26 @@ lauf_neu() {
 # nachgeben_neu — einmal je Takt der Schleife: je NACHGEGEBEN-Posten, dessen Zweig-Kopf am Ursprung NOCH mit <sha8> beginnt (ein
 # weitergezogener Kopf trägt seine eigene Probe), die gefallenen Jobs seines Laufs neu — je Kopf höchstens alle 20 min (Marke
 # $W/probe-neu-<sha8>, ihre mtime ist die Frist). Ein ls-remote nur für die Zweige der Posten, nur wenn einer nachgab.
+# EIN GELANDETER KOPF HAT KEINEN LESER (22.11. 16:26): der Vorprüf-Zweig leib-nah-ganz ecb439e6 blieb nach der Landung seines
+# Stempels (z673) am Ursprung stehen, sein Posten sagte NACHGEGEBEN — der Takt stieß die Probe alle 20 min neu an (15:31, 16:26,
+# je Anstoß eine Probe an einer Karte, die nachgab oder ohne Leser urteilte). Ein Kopf, der Vorfahr von main ist, fällt aus dem Takt.
 nachgeben_neu() {
-    local b h pl pm pc refs
+    local b h voll pl pm pc refs
     koord_abruf || { echo "$(date +%H:%M) nachgeben: Abruf von koordination scheiterte — kein Neu-Anstoß in diesem Takt" >>"$L"; return 0; }
     nachgeben_posten >"$W/nachgeben.posten"
     [ -s "$W/nachgeben.posten" ] || return 0
     refs=$(awk '{ print "refs/heads/" $1 }' "$W/nachgeben.posten")
     koepfe_abruf $refs >"$W/nachgeben.koepfe"
     [ -s "$W/nachgeben.koepfe" ] || { echo "$(date +%H:%M) nachgeben: ls-remote gab keinen Kopf für $(wc -l <"$W/nachgeben.posten") nachgegebene Posten — kein Neu-Anstoß in diesem Takt" >>"$L"; return 0; }
-    awk 'FNR == NR { k[$2] = substr($1, 1, 8); next } k["refs/heads/" $1] == $2' "$W/nachgeben.koepfe" - <"$W/nachgeben.posten" >"$W/nachgeben.faellig"
-    while read -r b h pl; do
+    awk 'FNR == NR { k[$2] = $1; next } substr(k["refs/heads/" $1], 1, 8) == $2 { print $1, $2, k["refs/heads/" $1], $3 }' "$W/nachgeben.koepfe" - <"$W/nachgeben.posten" >"$W/nachgeben.faellig"
+    while read -r b h voll pl; do
         pm="$W/probe-neu-$h"
         [ -f "$pm" ] && [ $(($(date +%s) - $(mzeit "$pm"))) -le $NACHGEBEN_FRIST_S ] && continue
         touch "$pm"
+        if gelandet "$voll"; then
+            echo "$(date +%H:%M) $b $h: GPU-Probe NACHGEGEBEN, der Kopf ist in main gelandet — kein Neu-Anstoß" >>"$L"
+            continue
+        fi
         if [ -z "$pl" ]; then
             echo "$(date +%H:%M) $b $h: GPU-Probe NACHGEGEBEN, der Posten nennt keinen Lauf — kein Neu-Anstoß" >>"$L"
             continue
@@ -246,13 +255,15 @@ if [ "$1" = "--selbsttest-sammeln" ]; then
     posten front-rot eeee4444 ROT 104                           # (5) ROT
     posten front-gruen ffff5555 "GRÜN · ROT wie an main (bekannt): x" 105 # (5) GRÜN
     posten cloud/tief 99990000 NACHGEGEBEN 106                  # ein Zweig mit Schrägstrich
+    posten leib-gelandet aaaa1111 NACHGEGEBEN 107               # (8) der Kopf ist Vorfahr von main
     git -C "$R" -c core.autocrlf=false add -A && git -C "$R" -c user.name=t -c user.email=t@t commit -q -m neu && git -C "$R" update-ref refs/remotes/origin/koordination HEAD
     koord_abruf() { :; }
+    gelandet() { [ "$1" = aaaa111100000000000000000000000000000000 ]; }
     koepfe_abruf() {
         printf '%s\t%s\n' 1465592300000000000000000000000000000000 refs/heads/stern-uhr bbbb222200000000000000000000000000000000 refs/heads/w28-stempel \
             dddd444400000000000000000000000000000000 refs/heads/w28-weiter eeee444400000000000000000000000000000000 refs/heads/front-rot \
             ffff555500000000000000000000000000000000 refs/heads/front-gruen 9999000000000000000000000000000000000000 refs/heads/cloud/tief \
-            7777000000000000000000000000000000000000 refs/heads/alt-zweig
+            7777000000000000000000000000000000000000 refs/heads/alt-zweig aaaa111100000000000000000000000000000000 refs/heads/leib-gelandet
     }
     lauf_neu() { echo "$1" >>"$X/neu"; echo 201; }
     : >"$X/neu"
@@ -267,6 +278,8 @@ if [ "$1" = "--selbsttest-sammeln" ]; then
     pr "nachgeben (5) der Posten sagt GRÜN → kein Neulauf" "$(fehlt 105)" 0
     pr "nachgeben (6) ein Zweig mit Schrägstrich (cloud/tief) → Neulauf" "$(hat 106)" 0
     pr "nachgeben (7) ein Posten älter als 3 h → kein Neulauf" "$(fehlt 100)" 0
+    pr "nachgeben (8) der Kopf ist in main gelandet (leib-gelandet aaaa1111) → kein Neulauf" "$(fehlt 107)" 0
+    pr "nachgeben (8) die Log-Zeile nennt den gelandeten Kopf" "$(grep -c "leib-gelandet aaaa1111: GPU-Probe NACHGEGEBEN, der Kopf ist in main gelandet — kein Neu-Anstoß" "$L")" 1
     : >"$X/neu"
     nachgeben_neu
     pr "nachgeben (4) zweiter Takt innerhalb von 20 min → kein zweiter Neulauf" "$(grep -c . "$X/neu")" 0

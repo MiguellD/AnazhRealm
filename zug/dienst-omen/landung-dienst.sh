@@ -9,9 +9,12 @@
 #     beide Geräte durch sind (runde.cjs durch/weiter). So steht nach jeder Runde jede Station als Paar am SELBEN Kopf (Karte 2).
 #   2 DIE REIHE FOLGT DER ERWARTETEN ÄNDERUNG (runde.cjs reihe, EINE Quelle für beide Geräte, 21.11.): NUR die Front der Karte 2
 #     (--karte vision/meisterkarte-2.json: je Leiter die Sprosse heute, Glieder jede ungebuchte, dahinter nur lückenlos beansprucht) · K1 beansprucht (zug/anspruch.txt)
-#     · K2 ohne Urteil · K3 GRÜN · K4 ROT anderes | der Schwanz K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — die Klasse aus
+#     · K2 ohne Urteil · K3 GRÜN | der Schwanz K4 ROT anderes · K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — die Klasse aus
 #     dem jüngsten Urteil über alle Köpfe; darin die älteste Messung zuerst, eine Fahrt ≥ 10 min zuletzt. Die Liste wird beim Eintritt in
 #     die Runde EINGEFROREN (Feld liste). Vorn und Schwanz fahren getrennt; bleibt nur der Schwanz und ist main weiter, TRÄGT er (getragen).
+#   2a DIE GETEILTE FRONT (Koordinator 22.11.): die Radeon fährt den vorderen Teil dieser Liste vom anderen Ende (umgekehrt), sobald die
+#     Liste in zug/runde.txt steht; was eines der Geräte am Kopf ROT urteilt, misst das andere nicht mehr (runde.cjs offen --anders —
+#     hier offen_am und kandidat.sh vor jeder Sitzung; GRÜN und UNGEMESSEN der Radeon überspringen nie).
 #   3 DER RICHTER DER RUNDE (richte_runde): nach der Liste nennt runde.cjs faelle jede Station, die am vorigen Mess-Kopf GRÜN und am
 #     jetzigen ROT misst; NUR sie wird über die Köpfe dazwischen halbiert (richter.sh --fall <station> <vorher> <kopf>, Täter beim Namen).
 #     Die erste Runde (kein voriger Mess-Kopf) richtet gegen die letzte Buchung (richter.sh --kopf, wie bis 19.11.).
@@ -134,8 +137,11 @@ anspruch_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/
 karte_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/runde/koord:vision/meisterkarte-2.json >"$S/listen/karte.json" 2>/dev/null || : >"$S/listen/karte.json"; } && echo "$S/listen/karte.json"; }
 pm_stand() { node "$N/pm-stand.cjs" "$PM" >>"$L" 2>&1; } # der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt
 # offen_am <kopf> <liste> → was an diesem Kopf noch keinen Eintrag trägt, in der Mess-Datei des BAUMS (pm-stand.cjs: eine jüngere Messung
-# im Baum überlebt) — so zählt nach einem Tod mitten in einer Sitzung, was sie schon fertig maß; es reist mit dem nächsten Push
-offen_am() { runde offen "$PM" - "$GERAET" "$1" "$(liste_datei offen "$2")"; }
+# im Baum überlebt) — so zählt nach einem Tod mitten in einer Sitzung, was sie schon fertig maß; es reist mit dem nächsten Push.
+# DIE GETEILTE FRONT (22.11.): und ohne ROT der Radeon am selben Kopf (--anders radeon). Ihre Mess-Datei liest offen im selben Baum:
+# pm-stand.cjs stellt ihn je Takt (pm_stand vor der Liste und nach jeder Fahrt) und zu Beginn jeder Sitzung (punkte-offen.cjs) auf
+# origin/punkte-maschine — der fetch, den der Dienst ohnehin macht; je Station kein Netz-Gang und kein git-Prozess mehr
+offen_am() { runde offen "$PM" - "$GERAET" "$1" "$(liste_datei offen "$2")" --anders radeon; }
 # DIE TEILE DER RUNDE (Koordinator 19.11. 03:30): Stationen EINER Linse in EINER Sitzung. eichtafel_lesen schreibt die Lauf-Tafel der
 # Maschine (punkte.cjs eichtafel: je Lauf seine Stationen und sein Deckel), teile_von packt den Rest der Liste in ihrer Reihe zu Sitzungen
 # je Σ Deckel ≤ TEIL_BUDGET_S (FAHRT_MAX_S 1 800 − Boot 60 = 1 740 s, die Teil-Größe der Maschine selbst; runde.cjs teile)
@@ -334,14 +340,14 @@ runde_takt() {
             liste_rot "Runde $RN am ${RK:0:8}: Quelle ${QUELLE:-?} $(zahl "$a") (Exit $ra), ohne /band $(zahl "$B") (Exit $rb), Reihe $(zahl "$RLISTE") (Exit $rr)"
             return
         fi
-        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (K1–K4 | Schwanz): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($(grep "^Reihe $GERAET: " "$L" | tail -n 1 | cut -c1-160); zustand/listen/runde.txt)"
+        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (vorn K1–K3 | Schwanz K4–K6): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($(grep "^Reihe $GERAET: " "$L" | tail -n 1 | cut -c1-160); zustand/listen/runde.txt)"
         runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 --getragen 0 >>"$L" ||
             { liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $?)"; return; }
         RG=0
     fi
     GESAMT=$(zahl "$RLISTE")
     # DER SCHWANZ TRÄGT (Koordinator 21.11.; Befund Runde 2 am 31ea3847: 8,0 h für 521 ROT „Umfang nicht erzeugbar“, 0,7 h für 132 ROT
-    # „Leser fehlt“ — die Fähigkeit fehlt, das Urteil hängt nicht am Gerät). Die Liste heißt „<K1–K4>|<Schwanz K5 K6>“ (runde.cjs reihe);
+    # „Leser fehlt“ — die Fähigkeit fehlt, das Urteil hängt nicht am Gerät). Die Liste heißt „<K1–K3>|<Schwanz K4 K5 K6>“ (runde.cjs reihe);
     # vorn und Schwanz fahren in GETRENNTEN Fahrten (kein Teil mischt beide), vorn zuerst. Bleibt nur der Schwanz und ist main weiter als
     # der Runden-Kopf, ist die OMEN durch: das rote Urteil des Schwanzes vom früheren Kopf steht (aus ROT bucht nichts), die Zahl steht als
     # „getragen“ in der Zeile. Ist main nicht weiter, misst sie den Schwanz (nie leer) — und endet an der nächsten Stations-Grenze, sobald
@@ -1037,9 +1043,10 @@ ATTRAPPE
     : >"$X/karte-leer.json"
     runde reihe "$MESSUNG_DIR" gtx "$XL" --karte "$X/karte-leer.json" >/dev/null
     x4=$?
-    if [ "$x1" = "karte2.b#2,karte2.b#4,karte2.c#2,karte2.a#2|" ] && [ "$x2" = "$x1" ] && [ "$x3" = "karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4,karte2.a#2|" ] && [ "$x4" = 6 ]; then
+    # die rote Front a#2 (K4, ROT anderes) steht seit 22.11. im Schwanz („so viel wie nötig“)
+    if [ "$x1" = "karte2.b#2,karte2.b#4,karte2.c#2|karte2.a#2" ] && [ "$x2" = "$x1" ] && [ "$x3" = "karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4|karte2.a#2" ] && [ "$x4" = 6 ]; then
         echo "OK x  Front der Karte 2: die grüne a#3 hinter der roten Front a#2 steht nicht in der Liste; Glieder-Leiter b: jede ungebuchte (b#2, b#4) steht drin; Anspruch auf c#3 ohne gebuchte c#2 tritt nicht ein, mit Anspruch auf c#2+c#3 treten beide als K1 ein; Karte unlesbar → Exit 6 — $x3"
-    else echo "ROT x  Front: ohne Anspruch „$x1“ (Soll karte2.b#2,karte2.b#4,karte2.c#2,karte2.a#2|), Anspruch c#3 „$x2“ (Soll gleich), Anspruch c#2+c#3 „$x3“ (Soll karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4,karte2.a#2|), leere Karte Exit $x4 (Soll 6)"; fi
+    else echo "ROT x  Front: ohne Anspruch „$x1“ (Soll karte2.b#2,karte2.b#4,karte2.c#2|karte2.a#2), Anspruch c#3 „$x2“ (Soll gleich), Anspruch c#2+c#3 „$x3“ (Soll karte2.c#2,karte2.c#3,karte2.b#2,karte2.b#4|karte2.a#2), leere Karte Exit $x4 (Soll 6)"; fi
     fi
     nur -
     command rm -rf "$X"
