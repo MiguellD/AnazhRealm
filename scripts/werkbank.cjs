@@ -3548,8 +3548,9 @@ hauptLauf(async () => {
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
-        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
-        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe und den Baum, der nach dem Sprung im Saum seines Orts fällt, ROT beim Namen, jede Mutante von main besteht nicht");
+        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche,
+        // der Leib ganz (leib-nah-ganz)
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe, den Baum, der nach dem Sprung im Saum seines Orts fällt, und den nahen Leib ohne sein Teil ROT beim Namen, jede Mutante von main besteht nicht");
         selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")

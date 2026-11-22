@@ -1054,6 +1054,7 @@ hauptLauf(async () => {
     // schloss r184s Bereich, die GPU-Wache zählt die fremde Validierung; der Mutant (main: der Abgriff am `pushErrorScope` gelöst,
     // der Bereich bleibt über das Versprechen offen) markiert die Pipeline. Gelesen wird, wenn jeder Bau und jedes Urteil eines
     // Fehler-Bereichs seit dem Täter sich entschieden hat (das Ereignis, nie die Uhr).
+    const t4Ab = Date.now();
     const t4 = await page.evaluate(async () => {
         const T = window.THREE;
         const F = window.__frostWand;
@@ -1116,6 +1117,7 @@ hauptLauf(async () => {
         }
         return aus;
     });
+    const t4Ms = Date.now() - t4Ab;
     const t4Zeile = (x) => `${x.bauten} Bauten, ${x.fremd} fremde Validierungen, ${x.bereiche} Bereiche geschlossen, GPU-Wache +${x.wache}, Marken: ${x.marken.join(", ") || "keine"}${x.bruch ? " · " + x.bruch : ""}`;
     check(
         "T4 ein fremder Fehler im Bau einer Pipeline markiert keine Pipeline — der Abgriff schließt r184s Bereich, die GPU-Wache zählt den Fehler",
@@ -1125,7 +1127,7 @@ hauptLauf(async () => {
     check(
         "T4 der Mutant (main 6699a813: r184s Fehler-Bereich bleibt über das Versprechen des Baus offen) markiert die Pipeline des Täters",
         t4.mutant.marken.length > 0 && t4.mutant.bereiche === 0,
-        t4Zeile(t4.mutant)
+        `${t4Zeile(t4.mutant)} · T4 mit beiden Läufen in ${t4Ms} ms`
     );
     const hoerVor = (await lage()).hoer;
     const t2 = await page.evaluate(() => {
@@ -1188,6 +1190,6 @@ hauptLauf(async () => {
     server.close();
     require("./lib/welt-boot.cjs").wandEnde(
         fehler,
-        "DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, und das stehende Bild wird erkannt."
+        "DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, ein fremder Fehler im Bau einer Pipeline markiert keine, und das stehende Bild wird erkannt."
     );
 });

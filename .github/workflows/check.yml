@@ -1314,7 +1314,7 @@ jobs:
               timeout-minutes: 8
               if: ${{ !cancelled() && matrix.karte == 'omen' }}
               # der SPIELPFAD (Ankunft · dritte Person · Werkstatt · Tab · Hof) am selben Pruefer wie die Probe-Buehne: Index-Zensus, keine
-              # WebGPU-Validierung, die Wachen schweigen, das Bild folgt der Kamera, die Entsorgung der Buehnen (S1–S6), die Taeter T1–T3
+              # WebGPU-Validierung, die Wachen schweigen, das Bild folgt der Kamera, die Entsorgung der Buehnen (S1–S6), die Taeter T1–T4
               run: npm run gate:weltbild-frost:echt
 
             - name: Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)
