@@ -67,26 +67,60 @@ taeter_anstoss() {
     ) </dev/null &
     echo "$(date +%H:%M) $id: Täter-Suche angestoßen (eigener Prozess, Sperre $TAETER_SPERRE)" >>"$L"
 }
-# probe_lauf — der Lauf der GPU-Probe am Kopf, gelesen aus der Ausgabe von ci.sh (stdin): die Zeile „    lauf: <id>“ direkt unter dem
-# ersten Urteil der Probe. EINE Quelle: derselbe Aufruf, der das Urteil trug, nennt den Lauf — nie eine Datei eines anderen Rufers
-# (20.11.: die tote ci-runs.tmp gab den Lauf 44651655142 eines fremden Zweigs, der Neu-Anstoß der nachgegebenen Probe fiel mit 403).
-probe_lauf() { awk '/^  GPU-Probe / { f = 1; next } f && /^    lauf: [0-9]+$/ { print $2; exit } f && /^  [^ ]/ { exit }'; }
-# --selbsttest-probe-lauf: der Lauf kommt aus der Ausgabe am Kopf; die Zeile eines fremden Blocks zählt nie
-if [ "$1" = "--selbsttest-probe-lauf" ]; then
-    n=0 ok=0
-    pr() { n=$((n + 1)); if [ "$2" = 0 ]; then ok=$((ok + 1)); echo "OK   $1"; else echo "ROT  $1"; fi; }
-    a=$(printf '== w28-x 11112222\n  Code-Check: completed success\n    voll: 18/18\n  GPU-Probe w28-x 1111: completed failure\n    lauf: 44821323126\n    rot (2/3): probe\n' | probe_lauf)
-    pr "der Lauf steht unter dem Urteil der Probe ($a)" $([ "$a" = 44821323126 ] && echo 0 || echo 1)
-    a=$(printf '== w28-x 11112222\n  GPU-Probe w28-x 1111: completed failure\n    lauf: 7\n  GPU-Probe w28-x 1111: completed success\n    lauf: 8\n' | probe_lauf)
-    pr "bei zwei Läufen am Kopf gilt der erste, der jüngste ($a)" $([ "$a" = 7 ] && echo 0 || echo 1)
-    a=$(printf '== w28-x 11112222\n  GPU-Probe w28-x 1111: completed failure\n  Code-Check: completed success\n    lauf: 9\n' | probe_lauf)
-    pr "ohne Lauf-Zeile unter der Probe bleibt die Antwort leer — kein fremder Lauf („$a“)" $([ -z "$a" ] && echo 0 || echo 1)
-    a=$(printf '44651655142\tGPU-Probe zug-vorab-statik 41032f4a\tcompleted\tskipped\n' | probe_lauf)
-    pr "die alte Lauf-Liste (Tab-Zeilen der toten ci-runs.tmp) gibt keinen Lauf („$a“)" $([ -z "$a" ] && echo 0 || echo 1)
-    echo "zug-dienst selbsttest-probe-lauf: $ok von $n grün"
-    [ $ok = $n ]
-    exit
-fi
+# NACHGEGEBEN IST KEIN URTEIL — AN JEDEM KOPF (22.11.): die Probe wich einem Karten-Job der CI auf demselben Läufer („NACHGEGEBEN:
+# Karten-Job „echt omen …“ wartet auf diesen Läufer“) und endet als „failure“ ohne Urteil (11.11.: w28-stadt-grammatik 4073fb2f
+# wartete 100 min). Bis heute stieß der Dienst sie nur an Stempel-Köpfen neu an (ein Block in der Schleife von bereit(), der Lauf aus
+# der ci.sh-Zeile „lauf:“) — an Vorprüf-Köpfen niemand: 22.11. 08:06 drei Proben (stufe-ein-auge, front-klang-koerper, front-technik),
+# 09:31 stern-uhr 14655923, jede von Hand. EIN Takt, EINE Regel für jeden Kopf: nachgeben_neu liest die Probe-Posten der letzten 3 h.
+# nachgeben_posten — die Posten in koordination (probe-post/<zweig>/<sha8>.md, gpu-probe.yml „Post nach koordination“), berührt in
+# den letzten 3 h, deren ERSTE Zeile „# GPU-PROBE <sha8> — NACHGEGEBEN“ sagt; je Posten „<zweig> <sha8> <lauf>“. Der Lauf ist der,
+# den der Posten selbst nennt (dritte Zeile „… · Lauf <url>/actions/runs/<id>“): der Lauf, der ihn schrieb — nie ein gesuchter
+# (20.11.: die tote ci-runs.tmp gab den Lauf eines fremden Zweigs, der Anstoß fiel mit 403). Ein git log und ein git grep, je Takt.
+NACHGEBEN_FRIST_S=1200
+nachgeben_posten() {
+    local p
+    p=$(git -C $R log --since="3 hours ago" --format= --name-only origin/koordination -- probe-post/ 2>/dev/null |
+        grep -E '^probe-post/.+/[0-9a-f]{8}[.]md$' | sort -u)
+    [ -n "$p" ] || return 0
+    git -C $R grep -n -E -e '^# GPU-PROBE [0-9a-f]{8} ' -e '/actions/runs/[0-9]+$' origin/koordination -- $p 2>/dev/null | awk '
+        { s = $0; sub(/^origin\/koordination:/, "", s); i = index(s, ".md:"); f = substr(s, 1, i + 2); r = substr(s, i + 4)
+          n = r; sub(/:.*/, "", n); z = substr(r, length(n) + 2) }
+        n == 1 && z ~ /^# GPU-PROBE [0-9a-f]+ — NACHGEGEBEN/ { nach[f] = 1 }
+        n == 3 { l = z; sub(/.*\/actions\/runs\//, "", l); lauf[f] = l }
+        END { for (f in nach) { b = f; sub(/^probe-post\//, "", b); h = b; sub(/.*\//, "", h); sub(/[.]md$/, "", h); sub(/\/[^\/]*$/, "", b); print b, h, lauf[f] } }'
+}
+# die drei Rufe nach draußen — der Selbsttest ersetzt sie (Funktions-Überschreibung, kein Netz); der Token wird nie gedruckt
+koord_abruf() { git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" 2>/dev/null; }
+koepfe_abruf() { git -C $R ls-remote origin "$@" 2>/dev/null; }
+lauf_neu() {
+    local pt
+    pt=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
+    curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $pt" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/$1/rerun-failed-jobs"
+}
+# nachgeben_neu — einmal je Takt der Schleife: je NACHGEGEBEN-Posten, dessen Zweig-Kopf am Ursprung NOCH mit <sha8> beginnt (ein
+# weitergezogener Kopf trägt seine eigene Probe), die gefallenen Jobs seines Laufs neu — je Kopf höchstens alle 20 min (Marke
+# $W/probe-neu-<sha8>, ihre mtime ist die Frist). Ein ls-remote nur für die Zweige der Posten, nur wenn einer nachgab.
+nachgeben_neu() {
+    local b h pl pm pc refs
+    koord_abruf || { echo "$(date +%H:%M) nachgeben: Abruf von koordination scheiterte — kein Neu-Anstoß in diesem Takt" >>"$L"; return 0; }
+    nachgeben_posten >"$W/nachgeben.posten"
+    [ -s "$W/nachgeben.posten" ] || return 0
+    refs=$(awk '{ print "refs/heads/" $1 }' "$W/nachgeben.posten")
+    koepfe_abruf $refs >"$W/nachgeben.koepfe"
+    [ -s "$W/nachgeben.koepfe" ] || { echo "$(date +%H:%M) nachgeben: ls-remote gab keinen Kopf für $(wc -l <"$W/nachgeben.posten") nachgegebene Posten — kein Neu-Anstoß in diesem Takt" >>"$L"; return 0; }
+    awk 'FNR == NR { k[$2] = substr($1, 1, 8); next } k["refs/heads/" $1] == $2' "$W/nachgeben.koepfe" - <"$W/nachgeben.posten" >"$W/nachgeben.faellig"
+    while read -r b h pl; do
+        pm="$W/probe-neu-$h"
+        [ -f "$pm" ] && [ $(($(date +%s) - $(mzeit "$pm"))) -le $NACHGEBEN_FRIST_S ] && continue
+        touch "$pm"
+        if [ -z "$pl" ]; then
+            echo "$(date +%H:%M) $b $h: GPU-Probe NACHGEGEBEN, der Posten nennt keinen Lauf — kein Neu-Anstoß" >>"$L"
+            continue
+        fi
+        pc=$(lauf_neu "$pl")
+        echo "$(date +%H:%M) $b $h: GPU-Probe NACHGEGEBEN → neu angestoßen (Lauf $pl, HTTP $pc)" >>"$L"
+    done <"$W/nachgeben.faellig"
+}
 # --selbsttest-taeter: ohne Karte — eine gestellte Suche (sleep) läuft, der Anstoß kehrt sofort zurück, eine zweite startet nicht,
 # nach ihrem Ende (Sperre weg) und an einer toten PID startet sie wieder
 if [ "$1" = "--selbsttest-taeter" ]; then
@@ -195,6 +229,50 @@ if [ "$1" = "--selbsttest-sammeln" ]; then
     echo "w28-feld-fuss 77aa z585 nicht im Kandidaten" >>"$X/nicht"
     pr "nicht gelandet: $(grep -c . "$X/nicht") Zeilen lesen sich als 4 Köpfe, je die erste Fahrt" "$(nicht_gelandet_koepfe "$X/nicht" | cut -d' ' -f1-3 | tr '\n' '|')" "w28-ankunft-faden 49c7 z455|w28-feld-fuss 92b8 z456|w28-licht-kern 1062 z482|w28-feld-fuss 77aa z585|"
     pr "nicht gelandet: keine Datei gibt nichts" "$(nicht_gelandet_koepfe "$X/fehlt" | tr '\n' '|')" ""
+    # NACHGEGEBEN AN JEDEM KOPF (22.11.): ein gestelltes koordination (git am Tisch, Posten im Format von gpu-probe.yml), die drei
+    # Rufe nach draußen überschrieben — je Fall der Name im ROT. Die Frist läuft über die gestellte mtime der Marke, nie über Warten.
+    R=$X/r W=$X/w L=$X/w/log
+    mkdir -p "$R" "$W"
+    posten() { # <zweig> <sha8> <urteil> <lauf>
+        mkdir -p "$R/probe-post/$1"
+        printf '# GPU-PROBE %s — %s\n\nZweig `%s` · Kopf %s00000000000000000000000000000000 · Läufer omen · 22.11. 09:31 · Wanduhr ab Push 900 s · Lauf https://github.com/MiguellD/AnazhRealm/actions/runs/%s\n\nRuf: `gate:x`\n\n## Läufer omen — %s\n\nNACHGEGEBEN: Karten-Job „echt omen“ wartet auf diesen Läufer\n' "$2" "$3" "$1" "$2" "$4" "$3" >"$R/probe-post/$1/$2.md"
+    }
+    git -C "$R" init -q
+    posten alt-zweig 77770000 NACHGEGEBEN 100 # älter als 3 h: kein Takt sieht ihn
+    git -C "$R" -c core.autocrlf=false add -A && GIT_COMMITTER_DATE="$(($(date +%s) - 4 * 3600)) +0100" git -C "$R" -c user.name=t -c user.email=t@t commit -q -m alt
+    posten stern-uhr 14655923 NACHGEGEBEN 101                   # (1) Vorprüf-Kopf auf beliebigem Zweig
+    posten w28-stempel bbbb2222 NACHGEGEBEN 102                 # (2) Stempel-Kopf
+    posten w28-weiter cccc3333 NACHGEGEBEN 103                  # (3) der Kopf zog weiter
+    posten front-rot eeee4444 ROT 104                           # (5) ROT
+    posten front-gruen ffff5555 "GRÜN · ROT wie an main (bekannt): x" 105 # (5) GRÜN
+    posten cloud/tief 99990000 NACHGEGEBEN 106                  # ein Zweig mit Schrägstrich
+    git -C "$R" -c core.autocrlf=false add -A && git -C "$R" -c user.name=t -c user.email=t@t commit -q -m neu && git -C "$R" update-ref refs/remotes/origin/koordination HEAD
+    koord_abruf() { :; }
+    koepfe_abruf() {
+        printf '%s\t%s\n' 1465592300000000000000000000000000000000 refs/heads/stern-uhr bbbb222200000000000000000000000000000000 refs/heads/w28-stempel \
+            dddd444400000000000000000000000000000000 refs/heads/w28-weiter eeee444400000000000000000000000000000000 refs/heads/front-rot \
+            ffff555500000000000000000000000000000000 refs/heads/front-gruen 9999000000000000000000000000000000000000 refs/heads/cloud/tief \
+            7777000000000000000000000000000000000000 refs/heads/alt-zweig
+    }
+    lauf_neu() { echo "$1" >>"$X/neu"; echo 201; }
+    : >"$X/neu"
+    nachgeben_neu
+    hat() { grep -qx "$1" "$X/neu" && echo 0 || echo 1; }
+    fehlt() { grep -qx "$1" "$X/neu" && echo 1 || echo 0; }
+    pr "nachgeben (1) Vorprüf-Kopf stern-uhr 14655923 NACHGEGEBEN → Neulauf" "$(hat 101)" 0
+    pr "nachgeben (1) die Log-Zeile nennt Kopf, Lauf, HTTP" "$(grep -c "stern-uhr 14655923: GPU-Probe NACHGEGEBEN → neu angestoßen (Lauf 101, HTTP 201)" "$L")" 1
+    pr "nachgeben (2) Stempel-Kopf w28-stempel NACHGEGEBEN → Neulauf" "$(hat 102)" 0
+    pr "nachgeben (3) der Kopf zog weiter (dddd4444 statt cccc3333) → kein Neulauf" "$(fehlt 103)" 0
+    pr "nachgeben (5) der Posten sagt ROT → kein Neulauf" "$(fehlt 104)" 0
+    pr "nachgeben (5) der Posten sagt GRÜN → kein Neulauf" "$(fehlt 105)" 0
+    pr "nachgeben (6) ein Zweig mit Schrägstrich (cloud/tief) → Neulauf" "$(hat 106)" 0
+    pr "nachgeben (7) ein Posten älter als 3 h → kein Neulauf" "$(fehlt 100)" 0
+    : >"$X/neu"
+    nachgeben_neu
+    pr "nachgeben (4) zweiter Takt innerhalb von 20 min → kein zweiter Neulauf" "$(grep -c . "$X/neu")" 0
+    touch -d "@$(($(date +%s) - 1260))" "$W/probe-neu-14655923"
+    nachgeben_neu
+    pr "nachgeben (4) nach 21 min (gestellte mtime der Marke) stößt der Takt wieder an" "$(tr '\n' ' ' <"$X/neu")" "101 "
     rm -rf "$X"
     echo "zug-dienst selbsttest-sammeln: $ok von $n grün"
     [ $ok = $n ]
@@ -294,23 +372,7 @@ bereit() {
         [ "$sp" -gt 0 ] && {
             echo "$c" | grep "GPU-Probe" | head -1 | grep -q "completed success" || {
                 echo "$b ${sha:0:8}: GPU-Probe nicht GRÜN ($(echo "$c" | grep "GPU-Probe" | head -1 | cut -c1-110))" >>"$W/zug-nie-leer.wartet"
-                # NACHGEGEBEN IST KEIN URTEIL: die Probe wich einem Karten-Job der CI (oder ihr Vorfahrt-Blick scheiterte) und endet als
-                # „failure“ — niemand stieß sie neu an, der Zweig wartete für immer (11.11.: w28-stadt-grammatik 4073fb2f mit zwei
-                # GRÜNEN Bildern und einem nachgegebenen 100 min, w27-verkehr-leib 314ff351 an einem 502 der API). Sagt der Post am
-                # Kopf NACHGEGEBEN, stößt der Dienst die gefallenen Jobs der Probe neu an — je Kopf höchstens alle 20 min.
-                if git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" 2>/dev/null &&
-                    git -C $R show "origin/koordination:probe-post/$b/${sha:0:8}.md" 2>/dev/null | head -1 | grep -q NACHGEGEBEN; then
-                    pm="$W/probe-neu-${sha:0:8}"
-                    if [ ! -f "$pm" ] || [ $(($(date +%s) - $(mzeit "$pm"))) -gt 1200 ]; then
-                        pl=$(echo "$c" | probe_lauf)
-                        if [ -n "$pl" ]; then
-                            PT=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
-                            pc=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $PT" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/$pl/rerun-failed-jobs")
-                            touch "$pm"
-                            echo "$(date +%H:%M) $b ${sha:0:8}: GPU-Probe NACHGEGEBEN → neu angestoßen (Lauf $pl, HTTP $pc)" >>"$L"
-                        fi
-                    fi
-                fi
+                # eine NACHGEGEBENE Probe stößt nachgeben_neu im Takt der Schleife neu an — für jeden Kopf, nicht nur hier
                 continue
             }
         }
@@ -486,6 +548,7 @@ while true; do
         git -C $R -c pack.threads=4 repack --geometric=2 -d --write-midx </dev/null >"$S/repack.log" 2>&1
         echo "$(date +%H:%M) Packs gefaltet: $packs → $(ls "$R/.git/objects/pack/" 2>/dev/null | grep -c ".pack$")" >>"$L"
     fi
+    nachgeben_neu
     puls zug "sammelt (jüngster Zug z$n)"
     B=$(bereit | tr "\n" " ")
     B=$(vorn "$B")
