@@ -2850,7 +2850,9 @@
     //     Gefüge), trägt die Zeile gemessen (`eigen`).
     //   Spalten (SI): rho kg/m³ · E Pa · sigY Pa (Streckgrenze, bei spröden Stoffen die Druckfestigkeit) · sigB Pa
     //     (Bruchfestigkeit im Zug) · n (Brechzahl bei 587,6 nm) · abbe (Abbe-Zahl V = (n_d − 1)/(n_F − n_C)) · c J/(kg·K) ·
-    //     tSchmelz K · eta (Verlustfaktor) · rauheit (die Breite des Glanzes, GGX; gemessene BRDF der Klasse, MERL) —
+    //     tSchmelz K · eta (Verlustfaktor) · rauheit (die Breite des Glanzes, GGX; gemessene BRDF der Klasse, MERL) ·
+    //     q J/kg (same.physik.reaktion#2: die Energie, die der Stoff im Umsatz SCHLAGARTIG freisetzt — die Quelle der
+    //     Druckwelle, `druckwelle` unten; der Heizwert des langsamen Brands steht in der Brenn-Tafel des Wirts) —
     //     und `metall` FOLGT aus der Bindung: freie Elektronen spiegeln (Metall, Karbid, gelöstes Metall 1, sonst 0). null: die Spalte gilt dem Stoff nicht (eine Flüssigkeit streckt sich nicht, ein
     //     opaker Stoff bricht kein Bild) oder die Dichte ist der Eintrag eines anderen Gesetzbuchs (`rhoVon`: der Wirt
     //     verbindet sie — das Wasser des Fahr-Kerns, das Gewebe der Leiber).
@@ -2902,13 +2904,17 @@
             erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2, 0.755],
             // Holz- und Gras-Asche, lose geschüttet (Schüttdichte 500–700 kg/m³, c ≈ 840 J/kg·K): ein trockenes Pulver, matt
             asche:      [null,                 "korn",        600,   1e7,     5e4,    5e3,    null,   null, 840,  null,   0.3, 0.96],
+            // Donnerkorn: ein Stoff der WELT (kein Stoff der Erde — keine Formel, kein Rezept): loses dunkles Korn, das im Feuer
+            // schlagartig umsetzt. Seine EINE Zahl ist q (die 13. Stelle, J/kg; jede Zeile ohne sie setzt nichts frei); geschüttet
+            // wie die Krume.
+            donnerkorn: [null,                 "korn",        900,   5e7,     2e5,    2e4,    null,   null, 800,  null,   0.3, 0.9, 1e6],
             kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
             essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03, 0.76],
             gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9]
         };
         // die Dichte als Eintrag eines anderen Gesetzbuchs (der Wirt verbindet sie beim Bau seiner Tafel) bzw. dieses Kerns
         var RHO_VON = { wasser: "vehicle:FAHR.wasser.rho", blech: "vehicle:FAHR.huelleDichte × FAHR.wasser.rho", fleisch: "tetrapoda:MASSSTAB.dichteKgM3", leib: "koerper:LEIB.dichteKgM3", holz: "schmiede:RHO.holz" };
-        var SPALTEN = ["rho", "E", "sigY", "sigB", "n", "abbe", "c", "tSchmelz", "eta", "rauheit"];
+        var SPALTEN = ["rho", "E", "sigY", "sigB", "n", "abbe", "c", "tSchmelz", "eta", "rauheit", "q"];
         // LEGIERUNG UND VERBUND: `teile` Massen-Anteile von Zeilen. Stahl und Schmiede-Eisen sind Eisen mit `C` Massen-%
         // Kohlenstoff, gebunden als Zementit (die Stöchiometrie aus den molaren Massen, `karbid`); in der Bronze löst sich das
         // Zinn im Kupfer-Gitter (`loest`); Glas ist ein Netz dreier Oxide. Der Mörtel steht nicht hier: die Festigkeit eines
@@ -2960,6 +2966,113 @@
             if (!z || !(z.E > 0) || !(z.sigY > 0)) return 0;
             return Math.min(z.sigY / (druck > 0 ? druck : 1), (Math.PI * Math.PI * z.E) / (12 * lambda * lambda) / (knick > 0 ? knick : 1));
         }
+        // DIE DRUCKWELLE (same.physik.reaktion#2, additiv): ein Stoff mit der Spalte q setzt im Umsatz E = m · q frei. Die Welle in
+        // freier Luft hängt allein am skalierten Abstand Z = R ÷ W^(1/3) in m/kg^(1/3) (Hopkinson–Cranz), W = E ÷ tntJ die Masse
+        // gleicher Energie (das „kg TNT" IST die Einheit 4,184 MJ — eine Vereinbarung, kein Stoff dieser Tafel):
+        //   ueberdruck  Δp ÷ p0 nach Kinney–Graham (Explosive Shocks in Air, 1985 — die Formel gelesen in JRC 87200, Karlos &
+        //               Solomos 2013, Gl. 8; gültig bis Z 500, dahinter fällt sie wie Schall mit 1/R).
+        //   impulsZ     der Impuls je Fläche der Überdruck-Phase in Pa·s je kg^(1/3) (Kinney–Graham; das Buch war nicht erreichbar —
+        //               gerechnet gegen die veröffentlichten Kingery–Bulmash-Werte der IATG 01.80, Tafel 3 und 5: −3 … −9 % bei
+        //               Z 1,9 … 18, im Nahfeld Z 0,89 −36 %; `ANKER` trägt die Punkte, `ankerAbweichung` rechnet sie nach).
+        //   frontWeg    die Front läuft mit der Mach-Zahl ihres Überdrucks (Rankine–Hugoniot: M² = 1 + (γ+1)/(2γ) · Δp/p0) — die
+        //               Ankunft bei Z ist ∫ dZ ÷ M, geteilt durch c: eine Tafel über Z (gegen IATG Tafel 5: −3 … −9 %).
+        //   Die Dauer der Überdruck-Phase ist das Dreieck gleichen Impulses, t = 2 · i ÷ Δp (so rechnet IATG 01.80 die wirksame
+        //   Dauer). Die Luft reicht der Rufer ({ rho kg/m³, c m/s }: die Zahlen des Fahr- und des Klang-Kerns) — p0 = ρ·c² ÷ γ,
+        //   γ = 7/5 (das zweiatomige Gas: fünf Freiheitsgrade). Die Welle endet, wo ihr Überdruck unter `endePa` fällt (dort
+        //   beginnt das Band des belegten Fensterbruchs — darunter ist sie Schall).
+        // DIE PLATTE UNTER DER WELLE (`plattenLast` → σ ÷ σ_B, ab 1 bricht sie): allseits gelenkig, lang × kurz × dick, die größte
+        //   Biegespannung σ = β · Δp · (kurz/dick)² — β aus der Navier-Reihe (`plattenBeta`, ν 0,3: quadratisch 0,2874, lang 0,75;
+        //   Roark, Tafel der Platten) — mal dem STOSS-FAKTOR des Ein-Massen-Schwingers unter dem Dreieck-Puls (`stossFaktor`,
+        //   geschlossen gelöst: u = ω·t ≥ 2,331: 2·(1 − atan u ÷ u), darunter √(1 − 2·sin u/u + 2·(1 − cos u)/u²) — der kurze Puls
+        //   wirkt als Impuls, u/2, der lange als Stufe, 2), ω die Grund-Kreisfrequenz der Platte π²·(1/a² + 1/b²)·√(D ÷ ρ·d),
+        //   D = E·d³ ÷ 12·(1 − ν²). So liest der Bruch σ_B, E UND ρ der Zeile: eine kleine Ladung bricht die große dünne Scheibe
+        //   weit näher, als ihr Spitzen-Druck allein sagt (1 kg-Äquivalent, Quarz 0,9 m × 3 mm: 11,6 statt 43,6 m), und der
+        //   Bruch-Radius wächst steiler als W^(1/3), bis der Puls lang gegen die Platte ist.
+        var DRUCK = { tntJ: 4.184e6, gamma: 1.4, nu: 0.3, endePa: 1000, zMin: 0.05, zMax: 500 };
+        function ueberdruck(Z) {
+            return (808 * (1 + (Z / 4.5) * (Z / 4.5))) / Math.sqrt((1 + (Z / 0.048) * (Z / 0.048)) * (1 + (Z / 0.32) * (Z / 0.32)) * (1 + (Z / 1.35) * (Z / 1.35)));
+        }
+        function impulsZ(Z) {
+            return (6.7 * Math.sqrt(1 + Math.pow(Z / 0.23, 4))) / (Z * Z * Math.cbrt(1 + Math.pow(Z / 1.55, 3)));
+        }
+        var FRONT = (function () {
+            var n = 240, T = new Float64Array(n + 1), q = Math.pow(DRUCK.zMax / DRUCK.zMin, 1 / n), z = DRUCK.zMin, s = 0;
+            var f = function (x) { return 1 / Math.sqrt(1 + ((DRUCK.gamma + 1) / (2 * DRUCK.gamma)) * ueberdruck(x)); };
+            for (var i = 1; i <= n; i++) {
+                var z1 = z * q;
+                s += ((z1 - z) / 6) * (f(z) + 4 * f(0.5 * (z + z1)) + f(z1));
+                T[i] = s;
+                z = z1;
+            }
+            return { n: n, lnq: Math.log(q), T: T };
+        })();
+        function frontWeg(Z) {
+            if (!(Z > DRUCK.zMin)) return 0;
+            var f = Math.log(Z / DRUCK.zMin) / FRONT.lnq, i = Math.floor(f);
+            if (i >= FRONT.n) return FRONT.T[FRONT.n] + (Z - DRUCK.zMax);
+            return FRONT.T[i] + (FRONT.T[i + 1] - FRONT.T[i]) * (f - i);
+        }
+        // die Welle der Energie `energieJ` im Abstand R (m) → { W kg, Z, p0 Pa, dp Pa, impuls Pa·s, dauer s, ankunft s }; null
+        // ohne Energie oder Luft
+        function druckwelle(energieJ, R, luft) {
+            var W = energieJ / DRUCK.tntJ;
+            if (!(W > 0) || !(R >= 0) || !luft || !(luft.rho > 0) || !(luft.c > 0)) return null;
+            var w3 = Math.cbrt(W), Zr = R / w3, Z = Math.min(DRUCK.zMax, Math.max(DRUCK.zMin, Zr)), fern = Zr > DRUCK.zMax ? DRUCK.zMax / Zr : 1;
+            var p0 = (luft.rho * luft.c * luft.c) / DRUCK.gamma, dp = ueberdruck(Z) * p0 * fern, i = impulsZ(Z) * w3 * fern;
+            return { W: W, Z: Zr, p0: p0, dp: dp, impuls: i, dauer: (2 * i) / dp, ankunft: (frontWeg(Zr) * w3) / luft.c };
+        }
+        // der Abstand (m), an dem der Überdruck der Welle auf `dp` Pa fällt (ohne `dp`: ihr Ende, `endePa`) — er fällt monoton
+        function druckRadius(energieJ, luft, dp) {
+            var W = energieJ / DRUCK.tntJ;
+            if (!(W > 0) || !luft || !(luft.rho > 0) || !(luft.c > 0)) return 0;
+            var ziel = (dp > 0 ? dp : DRUCK.endePa) / ((luft.rho * luft.c * luft.c) / DRUCK.gamma), lo = DRUCK.zMin, hi = DRUCK.zMax;
+            if (ueberdruck(hi) >= ziel) return ((hi * ueberdruck(hi)) / ziel) * Math.cbrt(W);
+            if (ueberdruck(lo) <= ziel) return lo * Math.cbrt(W);
+            for (var k = 0; k < 60; k++) {
+                var m = Math.sqrt(lo * hi);
+                if (ueberdruck(m) > ziel) lo = m;
+                else hi = m;
+            }
+            return Math.sqrt(lo * hi) * Math.cbrt(W);
+        }
+        var BETA = {};
+        function plattenBeta(lang, kurz) {
+            var a = Math.max(lang, kurz) / Math.min(lang, kurz), key = Math.round(Math.min(a, 50) * 100), beta = BETA[key];
+            if (beta !== undefined) return beta;
+            var sx = 0, sy = 0;
+            a = key / 100;
+            for (var m = 1; m < 60; m += 2)
+                for (var n = 1; n < 60; n += 2) {
+                    var k = (m * m) / (a * a) + n * n, s = ((m + n) / 2) % 2 ? 1 : -1;
+                    sx += (s * ((m * m) / (a * a) + DRUCK.nu * n * n)) / (m * n * k * k);
+                    sy += (s * ((DRUCK.nu * m * m) / (a * a) + n * n)) / (m * n * k * k);
+                }
+            return (BETA[key] = (96 / Math.pow(Math.PI, 4)) * Math.max(sx, sy));
+        }
+        function stossFaktor(u) {
+            if (!(u > 0)) return 0;
+            if (u < 0.01) return u / 2;
+            return u >= 2.331122 ? 2 * (1 - Math.atan(u) / u) : Math.sqrt(1 - (2 * Math.sin(u)) / u + (2 * (1 - Math.cos(u))) / (u * u));
+        }
+        function plattenLast(z, lang, kurz, dick, dp, dauer) {
+            if (!z || !(z.sigB > 0) || !(z.E > 0) || !(z.rho > 0) || !(dick > 0) || !(kurz > 0) || !(lang > 0) || !(dp > 0)) return 0;
+            var a = Math.max(lang, kurz), b = Math.min(lang, kurz), D = (z.E * dick * dick * dick) / (12 * (1 - DRUCK.nu * DRUCK.nu));
+            var omega = Math.PI * Math.PI * (1 / (a * a) + 1 / (b * b)) * Math.sqrt(D / (z.rho * dick));
+            return (plattenBeta(a, b) * dp * stossFaktor(omega * dauer) * (b / dick) * (b / dick)) / z.sigB;
+        }
+        // DIE ANKER DER WELLE (IATG 01.80, Kingery–Bulmash-Werte der Halbkugel am Boden — hier als freie Ladung der 1,8-fachen
+        // Masse gerechnet): [kg, m, Δp bar, Impuls bar·ms, Ankunft ms | null]. → je Anker die Abweichung des Gesetzes in % in der
+        // Norm-Luft (ρ 1,225 kg/m³, c 340,3 m/s); die Linse hält die Bänder (gate:gegenstand-stoff, Selbsttest — `welle`: das
+        // Gesetz, das sie prüft, ohne Wort `druckwelle`; ihre Mutante reicht ein verdorbenes).
+        var ANKER = [[1000, 222, 0.054, 1.43, null], [1000, 50, 0.43, 5.9, 82.4], [10000, 50, 2.02, 25.2, 48.1], [100000, 50, 11.5, 106, 24.8]];
+        function ankerAbweichung(welle) {
+            var gesetz = welle || druckwelle;
+            var pct = function (ist, soll) { return soll === null ? null : (ist / soll - 1) * 100; };
+            return ANKER.map(function (A) {
+                var w = gesetz(A[0] * 1.8 * DRUCK.tntJ, A[1], { rho: 1.225, c: 340.3 });
+                return { kg: A[0], m: A[1], Z: w.Z, dp: pct(w.dp / 1e5, A[2]), impuls: pct(w.impuls / 100, A[3]), ankunft: pct(w.ankunft * 1e3, A[4]) };
+            });
+        }
         // DIE EINE MISCH-REGEL (partielle Additivität): je Spalte wird gemittelt, was sich in der Mischung ADDIERT —
         //   das Volumen (ρ = 1 / Σ w/ρ, Amagat · Vegard) und daraus die Volumen-Anteile φ,
         //   die Wärme je Masse (c = Σ w·c, Kopp-Neumann),
@@ -3002,6 +3115,11 @@
                 }
                 return spalte === "n" ? nL.d : (nL.d - 1) / (nL.F - nL.C);
             }
+            // die Energie je Masse addiert sich nach Massen-Anteilen (q = Σ w·q; ohne einen Teil mit q trägt die Mischung keine)
+            if (spalte === "q") {
+                for (k in T) if (zeile(k).q > 0) v += T[k] * zeile(k).q;
+                return v > 0 ? v : null;
+            }
             return null;
         }
         var ZEILEN = {};
@@ -3035,7 +3153,7 @@
         }
         Object.keys(REIN).forEach(function (name) {
             var R = REIN[name], z = { name: name, formel: R[0], bindung: R[1], rhoVon: RHO_VON[name] || null };
-            SPALTEN.forEach(function (s, i) { z[s] = R[i + 2]; });
+            SPALTEN.forEach(function (s, i) { z[s] = R[i + 2] === undefined ? null : R[i + 2]; });
             brechend(z);
             klingend(z);
             ZEILEN[name] = z;
@@ -3072,7 +3190,9 @@
         return {
             ELEMENTE: ELEMENTE, SPALTEN: SPALTEN, ZEILEN: ZEILEN, LINIE: LINIE, KANAL: KANAL,
             zeile: zeile, molMasse: molMasse, mische: mische, brechzahl: brechzahl, kanaele: kanaele, fresnel0: fresnel0,
-            bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde
+            bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde,
+            DRUCK: DRUCK, druckwelle: druckwelle, druckRadius: druckRadius, plattenBeta: plattenBeta, stossFaktor: stossFaktor,
+            plattenLast: plattenLast, ankerAbweichung: ankerAbweichung
         };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
