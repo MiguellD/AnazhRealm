@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 7,
+    "heute": 8,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 2.7,
+    "anteilHeute": 3,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -13322,7 +13322,7 @@
        "richter": "Rate neu gewählter Ziel-Arten je Stunde nach 1 000 h ≥ 50 % der Rate in Stunde 10"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "kern",
      "beleg": "δ-Wertung antwortet am Ort, beide Geräte, Tag/Nacht, Ego/Third: Tat 1 δ 0,1607 → Tat 10 δ −0,0018, Vogelchor 3,39 dB, Nachbar 0 dB (§10.K1 2/2). Kein Ziel entsteht aus der Welt; „Aufträge/Quests\" in der Statusleiste sind Befehle an Wesen. — KARTE: Kern 1 — die Antwort am Ort an beiden Geräten, Tag und Nacht, Ego und Third (affekt.K1); Bild-Preis nicht gemessen.",
@@ -20086,11 +20086,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 44,
+  "heute": 45,
   "davonKopplungen": 33,
   "kern": 9,
   "kernDazu": 9,
-  "anteilHeute": 2.6,
+  "anteilHeute": 2.7,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 30,
-  "nachwache": 14
+  "nachwache": 15
  },
  "zusammengelegt": [
   {

@@ -8934,7 +8934,7 @@
   },
   "karte2.erleben.sinn.ziele": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.ziele#1 radeon: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +8) · karte2.erleben.sinn.ziele#1 gtx: ungemessen (R10) · karte2.erleben.sinn.ziele#2 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#2 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#3 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#3 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#4 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#4 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#5 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#5 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#6 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#6 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#7 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.ziele#1 radeon: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +8) · karte2.erleben.sinn.ziele#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs) · karte2.erleben.sinn.ziele#2 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#2 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#3 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#3 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#4 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#4 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#5 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#5 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#6 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#6 gtx: Station seit der Messung geändert · karte2.erleben.sinn.ziele#7 radeon: Station seit der Messung geändert · karte2.erleben.sinn.ziele#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.sinn.ziele#1",
@@ -8953,8 +8953,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37730,7 +37731,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 481,
+  "konsum": 482,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37898,10 +37899,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3141
+  "ohne": 3140
  },
  "kopfVoll": "6699a813707ad97dc857bed070685878af018a67",
- "zeit": "2026-11-22T11:30:20.424Z",
+ "zeit": "2026-11-22T11:37:41.117Z",
  "vorher": "6699a813",
  "bilanz": {
   "gewinn": [],
