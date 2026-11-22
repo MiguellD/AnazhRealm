@@ -453,6 +453,18 @@
                 "organ": "_erstWartet (1): das Vendor-Versprechen wartet danach auf den Fehler-Scope — an ihm hängt nichts; _erstAbsageWache: r184 verschluckt die Absage (catch(e){})"
             },
             {
+                "sub": "d.pushErrorScope(\"validation\"),null===t)h.pipeline=d.createRenderPipeline(A),d.popErrorScope().then(",
+                "organ": "_erstAbsageWache (der Fehler-Bereich: r184 öffnet ihn im Zug des Baus, kein await bis zum Ruf; der synchrone Bau schließt ihn sofort)"
+            },
+            {
+                "sub": "catch(e){}const t=await d.popErrorScope();null!==t&&(h.error=!0,o(t.message))",
+                "organ": "_erstAbsageWache (der Fehler-Bereich: r184 fragt das Urteil des asynchronen Baus im Zug nach dessen Versprechen — der Abgriff reicht es ihm)"
+            },
+            {
+                "sub": "a=this.get(i),o=a.pipeline;if(!0===a.error)return;",
+                "organ": "_erstAbsageWache (eine Pipeline mit Fehler-Marke zeichnet nie wieder — die Marke gehört allein ihrem eigenen Bau)"
+            },
+            {
                 "sub": "label:`renderPipeline_${s.name||s.type}_${s.id}`",
                 "organ": "_erstAbsageWache (das Label der Absage nennt den Stoff)"
             },

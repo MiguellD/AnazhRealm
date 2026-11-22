@@ -1784,12 +1784,17 @@ class AnazhRealm_stoff_karte {
     }
 
     // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
-    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
-    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
-    // EIN KNOTEN JE ATLAS (w27-karte-nadel): Nadel und Jahr wachsen IN ihrem Knoten (r184 liest die Länge je Programm-Bau,
-    // `UniformArrayNode.setup`), wie die Texturen des Atlas nur ihren Wert tauschen. Bis hier legte das Wachsen einen neuen
-    // Knoten desselben Namens an: die Albedo (`_buildPbrNodeMaterial`) hielt den alten, das Laub-Licht (`_laubLichtStoff`) holte
-    // je Programm-Bau den neuen — „redeclaration of karteNadelStruct", die Karte der vollen Stadt sagte ab (GTX 1050, 09.11.)
+    // Uniform-Reihe für jede Karte jeder Art.
+    // DIE REIHEN STEHEN FEST (leib-nah-ganz, 22.11.): Nadel und Jahr tragen von Geburt an `KARTEN_ATLAS_SCHICHTEN` Plätze, EIN
+    // Knoten je Atlas — ihre Länge steht im WGSL jedes Programms und in der Größe ihres EINEN Puffers der geteilten renderGroup.
+    // Bis hier wuchsen sie mit dem Atlas (32 → 64, „IN ihrem Knoten", w27-karte-nadel): r184 legt den Puffer einer geteilten
+    // Bindung EINMAL an (die Größe ihres ersten Werts), der Knoten trug danach 1 024 Byte für einen Puffer von 512. An der vollen
+    // Stadt (33 Schichten) warf jedes Bild Validierungen — „Write range (size: 1024) does not fit in Buffer size (512)", die
+    // Bindung „too small" für jedes neu gebaute Programm, der Befehlspuffer einer Kaskade verworfen (983 in 20 s, Radeon
+    // 6699a813) —, und jede davon konnte über r184s offenen Fehler-Bereich eine fremde Pipeline für immer töten
+    // (`_erstAbsageWache`: 4 von 4 Bewohnern näher als 6 m ohne Haut und Stoff). Davor (bis w27) legte das Wachsen einen neuen
+    // Knoten desselben Namens an — „redeclaration of karteNadelStruct", die Karte der vollen Stadt sagte ab (GTX 1050, 09.11.).
+    // Eine Schicht jenseits der Reihen bricht laut (`_bruchMelden`), nie still.
     _karteNadel(T, z) {
         const at = this._impostorAtlas();
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
@@ -1797,8 +1802,14 @@ class AnazhRealm_stoff_karte {
         // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
         // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
         if (!at.nadelU) {
-            at.nadelU = (T || THREE.TSL).uniformArray([], "float").setName("karteNadel");
-            at.jahrU = (T || THREE.TSL).uniformArray([], "vec4").setName("karteJahr");
+            const N = AnazhRealm.KARTEN_ATLAS_SCHICHTEN;
+            at.nadelU = (T || THREE.TSL).uniformArray(new Array(N).fill(0), "float").setName("karteNadel");
+            at.jahrU = (T || THREE.TSL)
+                .uniformArray(
+                    Array.from({ length: N }, () => new THREE.Vector4(1, 1, 1, 1)),
+                    "vec4"
+                )
+                .setName("karteJahr");
             // DIE HEIMAT DER REIHEN (saison-am-laub, Pflicht-Paar der Diät): die Reihen wechseln zur Laufzeit (die Stufe des Jahrs
             // je gelegter Schicht, `_karteJahrGelegt`; die Nadel je neuer Zelle) — als Objekt-Puffer lud die Diät sie nur beim
             // Erst-Init ihres Render-Objekts (ein Feld-Puffer ist kein freier Uniform des Wächters), die GPU trug die Tönung des
@@ -1806,15 +1817,11 @@ class AnazhRealm_stoff_karte {
             // magenta (× 1,39 · 0,84 · 1,67), im Herbst orange. In der geteilten renderGroup lädt die Diät sie EINMAL je Render.
             this._uniformHeimatTeilen({ nadel: at.nadelU, jahr: at.jahrU });
         }
-        const [a, j] = [at.nadelU.array, at.jahrU.array];
-        let n = a.length;
-        if (n < Math.max(at.n, 1)) {
-            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
-            // die Reihe des Jahrs (`_karteJahrFarbe`) wächst mit: EINE Länge je Schicht, sie steht im Programm-Schlüssel
-            while (a.length < n) (a.push(0), j.push(new THREE.Vector4(1, 1, 1, 1)));
-            if (at.mat) at.mat.needsUpdate = true;
-        }
-        if (z) {
+        if (z && z.idx >= at.nadelU.array.length)
+            this._bruchMelden(
+                `KARTE: Schicht ${z.idx} (${z.key}) jenseits der Reihen — der Atlas trägt ${at.nadelU.array.length} Schichten (KARTEN_ATLAS_SCHICHTEN)`
+            );
+        else if (z) {
             const rec = tab[z.preset];
             // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp, dieselbe Quelle wie der Baum).
             const pc = globalThis.__phytoCore;
@@ -1859,9 +1866,9 @@ class AnazhRealm_stoff_karte {
 
     // DIE TÖNUNG DER SCHICHT (die Reihe des Jahrs, je Atlas-Schicht ein vec4): der Karten-Stoff zeichnet ihr Laub in der Tönung
     // der Welt — die gebackene Albedo × uSeasonMul / die Tönung ihres Bakes, die Nadel-Art ×1 —, dieselbe Farbe wie die nahe
-    // Stufe, stetig zwischen zwei Bakes (`_buildPbrNodeMaterial`). Sie wächst mit der Reihe der Nadel (`_karteNadel`).
+    // Stufe, stetig zwischen zwei Bakes (`_buildPbrNodeMaterial`). Sie entsteht mit der Reihe der Nadel (`_karteNadel`).
     _karteJahrFarbe(T) {
-        this._karteNadel(T); // die Reihen wachsen zusammen: EINE Länge, ein Programm-Schlüssel
+        this._karteNadel(T); // die Reihen entstehen zusammen: EINE feste Länge
         return this._impostorAtlas().jahrU;
     }
 
@@ -1900,6 +1907,10 @@ AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
 // BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht rgba8 112 KB, 128 × 3584 samt Mips; waagrecht allein 0,3 MiB), das Wachsen
 // kopiert nur beim Einzug einer Art (Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// DIE SCHICHTEN DES ATLAS (leib-nah-ganz): so viele Schichten trägt eine Array-Textur auf JEDEM Standardgerät (WebGPU
+// `maxTextureArrayLayers` 256, WebGL2 `MAX_ARRAY_TEXTURE_LAYERS` ≥ 256) — die feste Länge der Reihen je Schicht (`_karteNadel`:
+// Nadel und Jahr, zusammen 8 KiB in der geteilten renderGroup, EIN Schreiben je Render-Abschnitt).
+AnazhRealm.KARTEN_ATLAS_SCHICHTEN = 256;
 // DAS GITTER DER KARTE (heil-laub-tiefe, `_impostorQuad` und der Stoff): `zellen` Spalten × Zeilen, an deren Ecken der Stoff die
 // Tiefe der Gestalt liest (`vertexNode`; der frühe Tiefentest bleibt, kein frag_depth) — die Mitte trägt die Kuppel der Krone,
 // Rand und Fuß ihren Saum. `px` die Bild-Höhe der Karte in Pixeln der Szene, ab der ihr Gitter zu wachsen beginnt und ab der

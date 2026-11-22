@@ -39,6 +39,8 @@ const SCHWELLEN = Object.freeze({
         { feld: "ziel.imBild", op: "==", wert: true, wenn: "ziel" },
         { feld: "ziel.frei", op: "==", wert: true, wenn: "ziel" },
         { feld: "ziel.gezeichnet", op: "==", wert: true, wenn: "ziel" },
+        // DER LEIB GANZ (leib-nah-ganz, ausgabe-aufnahme `leiberMessen`): jeder Leib im Blick näher als 6 m zeichnet jedes seiner Teile
+        { feld: "leiber.ganz", op: "==", wert: true, wenn: "leiber" },
     ],
     messung: [
         { feld: "stand.version", op: "da" },
@@ -96,6 +98,8 @@ function abnahmeUrteil(m, S) {
                 grund = `Vordergrund ${pct(v)} näher als ${m.sicht.vordergrund.radius} m (der halbe Ziel-Abstand): ${namen(m.sicht.vordergrund.taeter) || "ohne Namen"}`;
             if (s.feld === "ziel.gezeichnet")
                 grund = `Ziel ${m.ziel.name} nicht gezeichnet: ${(m.ziel.gestalt || []).filter((q) => / UNGEZEICHNET| fehlt/.test(q)).join(", ") || "?"}`;
+            if (s.feld === "leiber.ganz")
+                grund = `Leib halb: ${m.leiber.halb} von ${m.leiber.n} Leibern näher als ${m.leiber.nahM} m ohne ein Teil im Bild — ${m.leiber.fehlt.slice(0, 6).join(", ")}${m.leiber.fehlt.length > 6 ? ` und ${m.leiber.fehlt.length - 6} weitere Teile` : ""}`;
             if (s.feld === "ziel.imBild")
                 grund = `Ziel ${m.ziel.name} nicht im Bild (ndc ${JSON.stringify(m.ziel.ndc)})`;
             rot.push({ feld: s.feld, grund });
@@ -109,6 +113,7 @@ function abnahmeUrteil(m, S) {
     // geurteilt nur im Vordergrund (≤ 25 %) und am Ziel (`ziel.frei`)
     if (m?.sicht?.vordergrund?.leib?.deckung > 0)
         t.push(`Leib im Vordergrund ${pct(m.sicht.vordergrund.leib.deckung)} (${namen(m.sicht.vordergrund.leib.taeter)})`);
+    if (m?.leiber?.n) t.push(`Leiber näher als ${m.leiber.nahM} m: ${m.leiber.n - m.leiber.halb} von ${m.leiber.n} ganz (${m.leiber.teile} Teile)`);
     if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m` +
@@ -364,6 +369,25 @@ function abnahmeSelbsttest(fixtureDir) {
         const r = u.rot.find((x) => x.feld === "sicht.vordergrund.deckung");
         if (u.ok || !r || u.rot.length !== 1) v.push(`Bewohner vor der Linse: nicht ROT allein am Vordergrund — ${u.zeile}`);
         else if (!r.grund.includes("Leib bewohner 30.0 %")) v.push(`Bewohner vor der Linse: ROT ohne Namen — ${u.zeile}`);
+    }
+    // DER LEIB GANZ (leib-nah-ganz, ausgabe-aufnahme `leiberMessen`): vier Bewohner näher als 6 m mit jedem Teil im Bild sind GRÜN,
+    // gemeldet; fehlt einem der Stoff im Bild, ROT beim Namen — Bewohner, Teil, Stoff (stadt-voll an main 6699a813: 4 von 4)
+    {
+        const m = gesund();
+        m.leiber = { nahM: 6, n: 4, halb: 0, teile: 28, ganz: true, fehlt: [] };
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const wort = "Leiber näher als 6 m: 4 von 4 ganz (28 Teile)";
+        if (!u.ok) v.push(`Leiber ganz: fälschlich ROT — ${u.zeile}`);
+        else if (!u.zeile.includes(wort)) v.push(`Leiber ganz: GRÜN ohne Meldung „${wort}" — ${u.zeile}`);
+    }
+    {
+        const m = gesund();
+        const teil = "bewohner 57 in 5.57 m: bewohner:leib/stoff (MeshStandardNodeMaterial_724) 0 von 31 Ecken im Bild";
+        m.leiber = { nahM: 6, n: 4, halb: 1, teile: 28, ganz: false, fehlt: [teil] };
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const r = u.rot.find((x) => x.feld === "leiber.ganz");
+        if (u.ok || !r || u.rot.length !== 1) v.push(`Leib halb: nicht ROT allein an leiber.ganz — ${u.zeile}`);
+        else if (!r.grund.includes(`Leib halb: 1 von 4 Leibern näher als 6 m ohne ein Teil im Bild — ${teil}`)) v.push(`Leib halb: ROT ohne Namen — ${u.zeile}`); // prettier-ignore
     }
     // ein Leib ALLEIN vor dem Ziel ist GRÜN, beim Namen gemeldet (w27-ort-pose-voll)
     {
