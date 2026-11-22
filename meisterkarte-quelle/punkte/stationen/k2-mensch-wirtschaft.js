@@ -10,6 +10,42 @@
 const PROBE = "[linse-gpu] amd/rdna-3 (Probe)";
 const STADT_PFAD = ["stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "stamm/siedlung-wege.js", "fachwerk-core.js", "koerper-core.js"];
 
+// DER STAND DER TECHNIK (mensch.wirtschaft.technik#1): der Leser ruft das Gesetz des Kerns beim Namen und rechnet nichts nach — je Saat
+// 1 … arg.saaten der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)}) vor `technikImBild` (Techniken im Bild, die der Stand
+// der Saat nicht trägt: `ohneVor`), die verschiedenen Stände, der Graph (Techniken mit Vorgänger); dazu der Plan der Stadt am Messort,
+// wie die Welt ihn gebaut hat (`technik` des Plans). Trägt der Kern das Gesetz nicht (main vor front-technik), steht `fehlt`
+const TECHNIK = async (r, T, arg) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.technikImBild !== "function" || !FC.TECHNIK) return { fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan" };
+    const G = FC.TECHNIK.graph, mitVor = Object.keys(G).filter((k) => G[k].vor.length);
+    const o = { mitVor: mitVor.length, ohneVor: 0, ohne: {}, imBild: {}, staende: 0, saaten: 0, welt: null };
+    const st = new Set();
+    for (let seed = 1; seed <= arg.saaten; seed++) {
+        const D = FC.DORF({ seed, nH: arg.nH, epoche: FC.siedlungsEpoche(seed) });
+        if (!D.technik) return { fehlt: "der Plan der Saat " + seed + " trägt keinen Technik-Stand" };
+        const B = FC.technikImBild({ technik: D.technik, slots: D.houses });
+        o.saaten++;
+        o.ohneVor += B.ohneVor;
+        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
+        for (const k in B.imBild) o.imBild[k] = (o.imBild[k] || 0) + B.imBild[k];
+        st.add(D.technik.stand.join(","));
+    }
+    o.staende = st.size;
+    // die Stadt am Messort, wie die Welt sie gebaut hat
+    let S = null, d = Infinity;
+    for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
+        const e = Math.hypot(q.ox - arg.ox, q.oz - arg.oz);
+        if (q && q.plan && e < d) [S, d] = [q, e];
+    }
+    if (S && S.plan.technik) {
+        const B = FC.technikImBild(S.plan);
+        o.welt = { ohneVor: B.ohneVor, ohne: B.ohne, stand: S.plan.technik.stand.length, ohneTechnik: S.plan.technik.fehlt, epoche: S.plan.technik.epoche };
+        o.ohneVor += B.ohneVor;
+        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
+    } else o.welt = { fehlt: S ? "der Plan der Stadt trägt keinen Technik-Stand" : "keine Siedlung am Messort" };
+    return o;
+};
+
 // DER ZENSUS DER STADT (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
 // ist (`__gebautNach`, wie g2 dorfZaehlung), dann je Plan die Rollen der Häuser, die Bewohner mit Werk, Beruf und Rolle, die Händler,
 // die Stände und Märkte, die Wagen (mit Fahrer, ihre gezählten Fahrten, ob einer den Plan verlässt), die Laternen, die Jahre der
@@ -449,7 +485,7 @@ module.exports = (F) => [
     // ───────── DIE TECHNIK: Voraussetzung, Pfad, Epoche ─────────
     F.leiter("mensch.wirtschaft.technik", {
         sek: 35,
-        pfad: [...STADT_PFAD],
+        pfad: [...STADT_PFAD, "schmiede-core.js"],
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
@@ -478,11 +514,31 @@ module.exports = (F) => [
                 K.auge(6, { bild: b.datei, pose: "20 m südlich der Mitte der Stadt, Ego 1,7 m", mass: epochen() + " Epochen" });
             });
             await K.schritt(7, async () => K.nicht(7, { n: 0, fehlt: "fremde Chemie in ≥ 10 Pfaden jenseits unserer: keine Technik, keine fremde Stoffwelt" }));
-            await K.schritt(1, async () => K.leser(1, { n: epochen(), fehlt: "keine Technik mit Voraussetzung: die Epoche ist eine Wahl von Region, Jahr und Tracht (EPOCHEN), keine Technik setzt eine andere voraus — nichts im Bild hat eine Voraussetzung", wo: "fachwerk-core.js:3622" }));
+            // S1: der Stand der Technik je Saat, gelesen am Gesetz des Kerns (`TECHNIK`), dazu der Plan der Stadt am Messort
+            await K.schritt(1, async () => {
+                const t = await ruf("TECHNIK", { saaten: 20, nH: 60, ox: z().nah.ox, oz: z().nah.oz });
+                H.zeile("Technik S1: " + JSON.stringify(t).slice(0, 400));
+                if (t.fehlt) return K.leser(1, { fehlt: t.fehlt, wo: "fachwerk-core.js technikImBild" });
+                if (t.welt && t.welt.fehlt) return K.leser(1, { fehlt: "die Stadt am Messort: " + t.welt.fehlt, wo: "fachwerk-core.js DORF technik" });
+                const ohne = Object.keys(t.ohne).map((k) => k + " " + t.ohne[k]).join(", ");
+                return K.zahl(1, {
+                    n: t.mitVor,
+                    werte: { ohneVor: t.ohneVor, staende: t.staende },
+                    beleg: t.saaten + " Saaten + die Stadt am Messort (" + (t.welt.epoche || "ohne Epoche") + ", ohne " + t.welt.ohneTechnik.join("/") + "); im Bild " + JSON.stringify(t.imBild),
+                    ...(t.ohneVor || t.staende < 2 ? { taeter: (ohne ? "Technik ohne Vorgänger im Bild: " + ohne : "") + (t.staende < 2 ? " jede Saat derselbe Stand" : "") } : {}),
+                });
+            });
         },
-        seite: { STADT },
+        seite: { STADT, TECHNIK },
         sprossen: {
-            1: { umfang: { soll: 10, wort: "Techniken mit Voraussetzung" }, masse: [{ key: "ohneVor", wort: "Techniken ohne Voraussetzung im Bild (20 Saaten)", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "keine Technik", wo: "fachwerk-core.js:3622" },
+            1: {
+                umfang: { soll: 10, wort: "Techniken mit Voraussetzung" },
+                masse: [
+                    { key: "ohneVor", wort: "Techniken ohne Voraussetzung im Bild (20 Saaten)", soll: 0, richtung: "≤" },
+                    { key: "staende", wort: "verschiedene Stände (20 Saaten)", soll: 2, richtung: "≥", herkunft: "„Technik wächst aus Voraussetzungen“: hängt der Stand an Stoff und Ort, tragen 20 Saaten nicht alle denselben — ein Stand für jede Saat ist eine Liste" },
+                ],
+                erwartet: "zahl",
+            },
             2: { umfang: { soll: 100, wort: "Techniken in ≥ 5 Pfaden" }, masse: [{ key: "pfade", wort: "plausible Pfadfolgen (50 Saaten)", soll: 5, richtung: "≥" }, { key: "streuung", wort: "Streuung der Erfindungsjahre", soll: 0.1, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Techniken" },
             3: { umfang: { soll: 1000, wort: "Techniken als sichtbare Dinge" }, masse: [{ key: "passt", wort: "Artefakte passen zum Pfad", soll: 0.8, richtung: "≥" }, { key: "H", wort: "Kettentiefe H", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "10³ Techniken" },
             4: { umfang: { soll: 1e4, wort: "Techniken bis Dampf, Elektrik, Chemie" }, masse: [{ key: "r", wort: "Ausbreitung ↔ Handelsdichte (r)", soll: 0.6, richtung: "≥" }, { key: "front", wort: "Front km/Jahr", von: 0.3, bis: 3 }, { key: "mehrfach", wort: "mehrfach erfunden", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Techniken" },
@@ -491,6 +547,11 @@ module.exports = (F) => [
             7: { auge: { pose: "Ego 1,7 m je fremder Welt", vorbild: "Panel: „folgt aus Stoffen“ ≥ 80 % UND „nicht unsere Geschichte“ ≥ 80 % an ≥ 10 Pfaden" }, erwartet: "nicht", fehlt: "fremde Chemie" },
         },
         proben: {
+            1: [
+                { name: "Technik ohne Vorgänger im Bild (drei Kuppeln ohne Kupfer)", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 3, staende: 4 }, taeter: "Technik ohne Vorgänger im Bild: kupfer 3" } } }, gruen: false, zahl: /ROT an Techniken ohne Voraussetzung im Bild \(20 Saaten\) 3 / },
+                { name: "jede Saat derselbe Stand", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 0, staende: 1 }, taeter: " jede Saat derselbe Stand" } } }, gruen: false, zahl: /ROT an verschiedene Stände \(20 Saaten\) 1 / },
+                { name: "der Leser von main: kein Stand im Plan", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan", wo: "fachwerk-core.js technikImBild" } } }, gruen: false },
+            ],
             4: [{ name: "ATTRAPPE: die Front springt (30 km/Jahr) — Ausbreitung ohne Weg", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 4: { art: "zahl", n: 1e4, werte: { r: 0.7, front: 30, mehrfach: 0.7 } } } }, gruen: false, zahl: /ROT an Front km\/Jahr 30 / }],
         },
     }),
