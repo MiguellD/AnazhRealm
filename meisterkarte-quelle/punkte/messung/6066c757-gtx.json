@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "gtx",
- "zeit": "2026-11-22T12:43:51.616Z",
+ "zeit": "2026-11-22T12:46:47.681Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.physik.reaktion#1": {
@@ -1851,6 +1851,70 @@
    },
    "zeit": "2026-11-22T12:43:51.616Z",
    "abdruck": "91ffcaefbab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.stoffwechsel#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.07,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 66,
+    "takte": 30,
+    "fremdS": 18.06,
+    "kerne": 0.274,
+    "fensterKerne": 0.543,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.3
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-6066c757 x listen/kandidat-gtx-6066c757.txt",
+      2.02
+     ]
+    ],
+    "dienerS": 16.69,
+    "diener": [
+     [
+      "dwm.exe",
+      7.59
+     ],
+     [
+      "System",
+      4.48
+     ]
+    ],
+    "geraetS": 19.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.31
+     ],
+     [
+      "svchost.exe",
+      7.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 155.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T12:46:47.681Z",
+   "abdruck": "7b2d751994fa",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
