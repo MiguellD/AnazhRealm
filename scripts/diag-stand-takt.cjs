@@ -190,7 +190,7 @@ function selbsttest() {
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
                 // die Herde auf dem gesetzten Bett (Gras, Last 0,092, im gesetzten Wind): das Vorrücken trägt R, die drei Starts der
-                // Diagonale dieselben Zahlen, das grobe Gitter (vier Nachbarn) verliert die Hälfte; der Herd des Spiels verzehrte 17
+                // Diagonale dieselben Zahlen, das grobe Gitter (nur Diagonalen) verliert die Hälfte; der Herd des Spiels verzehrte 17
                 // fremde Betten von 21 (sein Bett ungesetzt)
                 ...((b) => {
                     const h = (winkel, vor, R, mehr) => ({ zellen: 44, koepfe: 9, mit: 0.58, alle: 0.63, vor, R, winkel, schritte: 300, bilder: 300, bett: { ...b }, ...mehr });
@@ -612,7 +612,7 @@ function selbsttest() {
         ["die Front kriecht mit dem Wind", ["simWecken.brand.wahr.achse", { vor: 0.3, R: 0.31 }], /FRONT-MIT: achse \(Kopf 0.8° zum Gitter\): Vorrücken 0.3 m\/s bei R 0.31 m\/s \(Soll 0,5–2\)/],
         ["der Median der Köpfe am Herd des Spiels ist ein Lesewert", ["simWecken.brand.mit=", 0.3], null],
         ["das Gitter verliert das Gesetz (32–48 % von R)", ["simWecken.brand.wahr.schraeg.vor=", 0.27], /FRONT-TREUE: schraeg \(Kopf 23.5° zum Gitter\): Vorrücken 0.27 m\/s bei R 0.63 m\/s — 0.429 von R/],
-        ["das grobe Gitter hält die Treue", ["simWecken.brand.wahr.grob.vor=", 0.6], /BLIND: das grobe Gitter \(vier Nachbarn\)/],
+        ["das grobe Gitter hält die Treue", ["simWecken.brand.wahr.grob.vor=", 0.6], /BLIND: das grobe Gitter \(nur Diagonalen\)/],
         ["der Herd verzehrt das Bett der Welt", ["simWecken.brand.wahr.achse.bett", { abweichend: 17, erste: "Last 0.061" }], /FENSTER-BETT: achse zündete auf gras .* 17 von 51 Zellen verzehrten ein anderes Bett \(zuerst Last 0.061\)/],
         ["der Herd zündet im nassen Bett", ["simWecken.brand.wahr.diagonal.bett.naesse=", 0.4], /FENSTER-BETT: diagonal zündete auf gras \(Last 0.092, Boden 0.1, Nässe 0.4\)/],
         ["drei Starts an derselben Uhr würfeln", ["simWecken.brand.wahr.wieder", { mit: 1.03, vor: 0.95 }], /FENSTER-BETT: drei Starts an derselben Uhr des Winds tragen mit 0.58 · 1.03 · 0.58, vor 0.6 · 0.95 · 0.6/],
@@ -3667,7 +3667,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             r.setTimeOfDay(0.5, "regler");
                             vor();
                             if (wind === "aus") r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                            else if (wind != null) r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
+                            // der gesetzte Wind GANZ: `_brandTempo` teilt die Stärke durch die Böen-Drift zur Uhr des Brands
+                            // (`_windWob(t)`) — trägt der Wind sie zur Uhr des Winds, teilt die Drift auch dort (lokal streute R sonst
+                            // an derselben Uhr des Winds 0,935 · 0,871 · 0,875)
+                            else if (wind != null) {
+                                r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
+                                r._windWob = () => P._windWob.call(r, wind);
+                            }
                             // DAS GESETZTE BETT (FENSTER-BETT): der EINE Schreiber des Betts im Brand ist `_brandStoff` (stamm/feld-brand.js,
                             // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
                             // (das Overlay `_depositLife`, die Narbe der Taten, der Fraß aus dem Faden des Gaus). Der Herd misst sein Bett
@@ -3689,6 +3695,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             } finally {
                                 AnazhRealm.BRAND = B0;
                                 delete r._windAt;
+                                delete r._windWob;
                                 delete r._brandStoff;
                             }
                         };
@@ -3702,8 +3709,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat: 41 150 · 40 766 · 40 713) — das Vorrücken des Kopfs
                         // ist R des Gesetzes; der diagonale noch zweimal: wieder (dieselbe Uhr des Winds, eine spätere der Welt) und am
                         // langsamsten Läufer (leeres Budget, EIN Stück je Bild) — drei Starts, dieselben Zahlen; dazu die Mutante des
-                        // groben Gitters (vier Nachbarn statt acht: die Diagonale zackt), an der FRONT-TREUE fallen muss
-                        const VIER = B0.nachbarn.slice(0, 4);
+                        // groben Gitters (nur die vier diagonalen Nachbarn: längs der Achse zackt die Front), an der FRONT-TREUE fallen
+                        // muss — vier Nachbarn längs der Achsen bissen nicht (eine Gerade durchs Gitter kreuzt Kanten, nie Ecken)
+                        const VIER = B0.nachbarn.slice(4);
                         const wahr = {};
                         for (const [name, uhr, wind, gesetz] of [
                             ["achse", 37100, 41150],
@@ -3711,7 +3719,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             ["diagonal", 37900, 40713],
                             ["wieder", 38300, 40713],
                             ["langsam", 38700, 40713, { budgetMs: 0, mindestJeBild: 1 }],
-                            ["grob", 39100, 40713, { nachbarn: VIER }],
+                            ["grob", 39100, 41150, { nachbarn: VIER }],
                         ]) {
                             const L = await herd(300, uhr, { wind, bett: true, gesetz });
                             wahr[name] = { windUhr: wind, zellen: st.brandFeld.size, koepfe: L.koepfe, mit: L.mit, alle: L.alle, vor: L.vor, R: L.R, winkel: L.winkel, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel, bett: L.bett };

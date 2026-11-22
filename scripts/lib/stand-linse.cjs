@@ -660,7 +660,7 @@ function simUrteil(b, v) {
                 if (!(q >= FRONT_TREUE[0] && q <= FRONT_TREUE[1])) v.push(`FRONT-TREUE: ${wz(n, h)} — ${+q.toFixed(3)} von R (Soll ${FRONT_TREUE.join("–")}): das Gitter verliert das Gesetz`);
             }
             const g = WA.grob;
-            if (g.R > 0 && g.vor / g.R >= FRONT_TREUE[0]) v.push(`BLIND: das grobe Gitter (vier Nachbarn) trägt ${wz("grob", g)} — FRONT-TREUE sieht das Gitter nicht`);
+            if (g.R > 0 && g.vor / g.R >= FRONT_TREUE[0]) v.push(`BLIND: das grobe Gitter (nur Diagonalen) trägt ${wz("grob", g)} — FRONT-TREUE sieht das Gitter nicht`);
             for (const n of [...WINKEL, "wieder", "langsam"]) {
                 const b = WA[n].bett;
                 if (b.abweichend || b.stoff !== "gras" || b.naesse !== 0)
