@@ -3663,25 +3663,12 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const M = await herd(300, { budgetMs: 0, mindestJeBild: 1 });
                         const langsam = { zellen: st.brandFeld.size, koepfe: M.koepfe, mit: M.mit, alle: M.alle, schritte: M.schritte, bilder: M.bilder, deckel: M.deckel };
                         loeschen();
-                        // DIE FRONT QUER ZUM GITTER (BRAND-RICHTUNG): derselbe Herd zu den ersten Uhren nach `HERD_UHR`, an denen der Wind
-                        // längs einer Achse, unter 22,5° und diagonal zum Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat) —
-                        // das Vorrücken des Kopfs trägt in jeder Lage dasselbe Tempo
-                        const lage = (t) => ((w) => Math.min(w, 90 - w))(((((Math.atan2(r._windDirAt(t).z, r._windDirAt(t).x) * 180) / Math.PI) % 90) + 90) % 90);
-                        const richtung = [];
-                        for (const ziel of [0, 22.5, 45]) {
-                            let uhr = HERD_UHR + 600;
-                            while (uhr < HERD_UHR + 200000 && Math.abs(lage(uhr) - ziel) > 1) uhr += 1;
-                            const L = await herd(300, {}, () => {}, uhr);
-                            richtung.push({ uhr, wind: +lage(uhr).toFixed(1), winkel: L.winkel, mit: L.mit, koepfe: L.koepfe, alle: L.alle, vor: L.vor, vorM: L.vorM, R: L.R });
-                            loeschen();
-                        }
                         // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
                         let [lebVor, ovVor] = [];
                         const Z = (W.brand = await herd(300, {}, () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()])));
                         const spiel = { zellen: st.brandFeld.size, koepfe: Z.koepfe, mit: Z.mit, alle: Z.alle, schritte: Z.schritte, bilder: Z.bilder };
-                        richtung.push({ uhr: HERD_UHR, wind: +lage(HERD_UHR).toFixed(1), winkel: Z.winkel, mit: Z.mit, koepfe: Z.koepfe, alle: Z.alle, vor: Z.vor, vorM: Z.vorM, R: Z.R });
-                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam }, richtung, lebVor, ovVor, glut, licht });
+                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam: Object.assign(langsam, { vor: M.vor, R: M.R }) }, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
