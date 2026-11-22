@@ -2472,8 +2472,8 @@ class AnazhRealm_koerper_bewegung {
                 if (st.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
                 return false;
-            case "einsteigen": // ein Portal in Reichweite schlägt das Reiten (nie im Werkstatt-Drawer: dort ist E der Dreh-Modus)
-                return welt && (this._tryEnterPortalAtPlayer() || this.toggleMountAtPlayer(), true);
+            case "einsteigen": // ein Portal in Reichweite schlägt den Tausch am Stand, der Tausch das Reiten (nie im Werkstatt-Drawer: dort ist E der Dreh-Modus)
+                return welt && (this._tryEnterPortalAtPlayer() || this._bestandTausch() || this.toggleMountAtPlayer(), true);
             case "zoom":
                 return welt && (this.setZoomActive(true), true);
             case "hud": // beim Spielen gehört der Bildschirm der Welt

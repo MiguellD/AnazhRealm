@@ -5533,18 +5533,19 @@
         s = im(d0, h0, (d0 + 1) * 24) + im(d1, d1 * 24, h1) + Math.max(0, d1 - d0 - 1) * tag;
         return s;
     }
-    // EIN HALTER: art „werk" (füllt in seinem Fenster mit `rate` je Stunde bis `cap`), „stand" (leert in seinem Fenster mit `rate`),
-    // „wagen" (nur, was man ihm gibt); `ware` die Ware seines Werks, seines Stands, seiner Fahrt; zur Stunde h mit `n` Einheiten
-    function bestandHalter(art, ware, h, n, fenster, same, rolle) {
+    // EIN HALTER: art „werk" (füllt in seinem Fenster mit `jeStunde` seines Berufs bis `cap`), „stand" (leert in seinem Fenster),
+    // „wagen" (nur, was man ihm gibt); `ware` die Ware seines Werks, seines Stands, seiner Fahrt; zur Stunde h mit `n` Einheiten;
+    // same und rolle sind die seines Menschen (sein Fenster, `tagesFenster`), beruf wählt die Herstellung
+    function bestandHalter(art, ware, h, n, same, rolle, beruf) {
         var B = BESTAND_GESETZ,
             L = B.lager,
-            H = { art: art, ware: ware, h: h, n: {}, cap: art === "werk" ? L.werk : art === "stand" ? L.stand : L.wagen, rate: 0, fenster: fenster || null, her: 0, ver: 0 };
+            H = { art: art, ware: ware, h: h, n: {}, cap: art === "werk" ? L.werk : art === "stand" ? L.stand : L.wagen, rate: 0, fenster: null, her: 0, ver: 0 };
         if (art === "werk") {
-            var P = B.herstellung[rolle];
+            var P = B.herstellung[beruf];
             H.rate = P && P.ware === ware ? P.jeStunde : 0;
-            if (!H.fenster) H.fenster = tagesFenster(same, rolle);
+            H.fenster = tagesFenster(same, rolle);
         } else if (art === "stand") {
-            if (!H.fenster) H.fenster = tagesFenster(same, rolle);
+            H.fenster = tagesFenster(same, rolle);
             var lang = 0;
             for (var i = 0; i < H.fenster.length; i++) lang += H.fenster[i][1] - H.fenster[i][0];
             H.rate = lang > 0 ? (H.cap * B.verbrauch.anteil) / lang : 0;
