@@ -3119,6 +3119,58 @@
             var omega = Math.PI * Math.PI * (1 / (a * a) + 1 / (b * b)) * Math.sqrt(D / (z.rho * dick));
             return (plattenBeta(a, b) * dp * stossFaktor(omega * dauer) * (b / dick) * (b / dick)) / z.sigB;
         }
+        // DER BRUCH DER PLATTE (`plattenBruch`, druckwelle-bild, additiv): DER RISS IST DIE ENERGIE. Die Dehnungs-Energie der Platte
+        //   am Bruch wächst mit dem Quadrat ihrer Last (σ² ÷ 2E); sie wird Riss-Fläche (Griffith: je Fläche des Risses eine feste
+        //   Energie) — die Riss-Länge ist L = L₁ · last², L₁ = lang + kurz das Kreuz der Mittellinien: das Bild der Platte, die
+        //   gerade bricht (last 1: vier Stücke, auch der lange Streifen). Die Risse teilen sie in möglichst quadratische Zellen
+        //   der Kante e: 2 · lang · kurz ÷ e − (lang + kurz) = L → e = 2 · lang · kurz ÷ ((lang + kurz) · (1 + last²)). Die kurze
+        //   Achse zuerst (ihre Schnitte sind die langen): n_kurz = kurz ÷ e gerundet; die lange trägt, was vom Riss bleibt:
+        //   n_lang = 1 + (L − (n_kurz − 1) · lang) ÷ kurz gerundet — die Riss-Länge des Gitters trifft L auf einen halben Schnitt
+        //   der kurzen Seite. Je Achse mindestens 2 (das Kreuz), höchstens Maß ÷ dick (die Scherbe bleibt Platte) und `achse`
+        //   (so fein trägt der Rufer sie); über `gesamt` Stücken fällt je ein Schnitt der feineren Achse, bis das Gitter passt
+        //   (nie unter das Kreuz).
+        //   DIE SCHNITTE LIEGEN, WO DIE ENERGIE LIEGT: die Biege-Spannung der Grundform der gelenkigen Platte fällt zum Rand wie
+        //   sin(π · x ÷ a), ihre Energie wie sin² — F(x) = x/a − sin(2π · x/a) ÷ 2π; der k-te Schnitt liegt bei F = k ÷ n (die
+        //   Mitte zerspringt fein, der Rand bleibt grob; die Drill-Energie der Ecken zählt das Gesetz nicht).
+        //   plattenBruch(lang, kurz, dick, last, achse, gesamt) → { lang: [0 … 1], kurz: [0 … 1] } die Schnitt-Stellen je Achse als
+        //     Anteil ihres Maßes (n + 1 Werte), oder null (last < 1: die Platte steht). `achse` und `gesamt` sind Zahlen des
+        //     Rufers — ohne Wort (undefined) frei; eine Zahl gilt, auch 0 und darunter: dann bleibt das Kreuz.
+        var SCHNITT = {};
+        function bruchSchnitte(n) {
+            if (SCHNITT[n]) return SCHNITT[n];
+            var s = [0];
+            for (var k = 1; k < n; k++) {
+                // die Grundform ist spiegelgleich: die Mitte liegt in der Mitte, die zweite Hälfte ist das Spiegelbild der ersten
+                if (2 * k >= n) {
+                    s.push(2 * k === n ? 0.5 : 1 - s[n - k]);
+                    continue;
+                }
+                var lo = 0, hi = 0.5;
+                for (var i = 0; i < 48; i++) {
+                    var m = 0.5 * (lo + hi);
+                    if (m - Math.sin(2 * Math.PI * m) / (2 * Math.PI) < k / n) lo = m;
+                    else hi = m;
+                }
+                s.push(0.5 * (lo + hi));
+            }
+            s.push(1);
+            return (SCHNITT[n] = s);
+        }
+        function plattenBruch(lang, kurz, dick, last, achse, gesamt) {
+            if (!(last >= 1) || !(lang > 0) || !(kurz > 0) || !(dick > 0)) return null;
+            var a = Math.max(lang, kurz), b = Math.min(lang, kurz), L = (a + b) * last * last;
+            var zahl = function (n, m) {
+                n = Math.min(Math.max(2, Math.round(n)), Math.max(2, Math.floor(m / dick)));
+                return typeof achse === "number" ? Math.min(n, Math.max(2, Math.floor(achse))) : n;
+            };
+            var nb = zahl(((a + b) * (1 + last * last)) / (2 * a), b), na = zahl(1 + (L - (nb - 1) * a) / b, a);
+            if (typeof gesamt === "number")
+                while (na * nb > gesamt && (na > 2 || nb > 2)) {
+                    if (na >= nb) na--;
+                    else nb--;
+                }
+            return { lang: bruchSchnitte(na), kurz: bruchSchnitte(nb) };
+        }
         // DIE ANKER DER WELLE (IATG 01.80, Kingery–Bulmash-Werte der Halbkugel am Boden — hier als freie Ladung der 1,8-fachen
         // Masse gerechnet): [kg, m, Δp bar, Impuls bar·ms, Ankunft ms | null]. → je Anker die Abweichung des Gesetzes in % in der
         // Norm-Luft (ρ 1,225 kg/m³, c 340,3 m/s); die Linse hält die Bänder (gate:gegenstand-stoff, Selbsttest — `welle`: das
@@ -3251,7 +3303,7 @@
             zeile: zeile, molMasse: molMasse, mische: mische, brechzahl: brechzahl, kanaele: kanaele, fresnel0: fresnel0,
             bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde,
             DRUCK: DRUCK, druckwelle: druckwelle, druckRadius: druckRadius, plattenBeta: plattenBeta, stossFaktor: stossFaktor,
-            plattenLast: plattenLast, ankerAbweichung: ankerAbweichung,
+            plattenLast: plattenLast, plattenBruch: plattenBruch, ankerAbweichung: ankerAbweichung,
             druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel
         };
     })();

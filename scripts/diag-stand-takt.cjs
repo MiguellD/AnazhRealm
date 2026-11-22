@@ -192,7 +192,9 @@ function selbsttest() {
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
-            // Bruch-Grenze des Gesetzes 29,98 m — vier Fenster brechen (das in 12 m mit zwei Scheiben), zwei stehen
+            // Bruch-Grenze des Gesetzes 29,98 m — vier Fenster brechen (das in 12 m mit zwei Scheiben), zwei stehen; nach dem
+            // Bruch-Gesetz der Scheibe (druckwelle-bild) fallen die drei nahen in 4 × 4 Scherben je Scheibe (Kanten 66 bis 184 mm),
+            // das in 24 m in 2 × 3 (85 bis 250 mm); der Vorrat der Welle bis auf fünf verbraucht: 9 Scherben, dann das Kreuz
             druck: ((E) => ({
                 start: true,
                 frist: 2.465,
@@ -200,23 +202,23 @@ function selbsttest() {
                 einheiten: E.reduce((s, e) => s + e.einheiten, 0),
                 rest: 0,
                 grenze: 29.982,
-                scheiben: [[8.031, true], [12.037, true], [16.045, true], [24.064, true], [36.097, false], [48.142, false]].map(([R, gebrochen]) => ({ R, gebrochen })), // prettier-ignore
-                ...{ scherben: 20, wach: 0, schlafS: 1.5, verzug: 0.032 },
+                scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
+                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032 },
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
-                mutante: { raeumt: 4, bruch: [1109, 1899, 1164, 1186] },
+                mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832] },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
                 { art: "umsatz", einheiten: 37 },
                 { art: "frei", R: 6, einheiten: 11 },
-                { art: "werk", R: 8.013, einheiten: 1041, teile: 2, scherben: 4 },
-                { art: "werk", R: 12.008, einheiten: 1780, teile: 3, scherben: 8 },
+                { art: "werk", R: 8.013, einheiten: 3183, teile: 2, scherben: 16 },
+                { art: "werk", R: 12.008, einheiten: 6091, teile: 3, scherben: 32 },
                 { art: "leib", R: 16, einheiten: 12 },
                 { art: "ohr", R: 16, einheiten: 2 },
-                { art: "werk", R: 16.006, einheiten: 1084, teile: 2, scherben: 4 },
-                { art: "werk", R: 24.004, einheiten: 1095, teile: 2, scherben: 4 },
+                { art: "werk", R: 16.006, einheiten: 3328, teile: 2, scherben: 16 },
+                { art: "werk", R: 24.004, einheiten: 1597, teile: 2, scherben: 6 },
                 { art: "werk", R: 36.003, einheiten: 6, teile: 2 },
                 { art: "werk", R: 48.002, einheiten: 6, teile: 2 },
                 { art: "ende", einheiten: 3 },
@@ -619,15 +621,15 @@ function selbsttest() {
         ["der Schreiber an einem Ort mit 200 Bauten: sein Soll wächst mit dem Blick", ["simWecken.druck.ereignisse.0", { einheiten: 60 + 31 * 200, blick: 200 }], null],
         ["ein gestoßener Körper fegt die Welt", ["simWecken.druck.ereignisse.2", { einheiten: 300 }], /DRUCK-SOLL: die Frist eines Gestoßenen \(frei\) in 6 m kostete 300 Einheiten \(Soll ≤ 16: 16\)/],
         ["ein stehendes Werk kostet wie ein Bruch", ["simWecken.druck.ereignisse.9", { einheiten: 1041 }], /DRUCK-SOLL: die Frist eines stehenden Werks in 36.003 m kostete 1041 Einheiten \(Soll ≤ 8: 4 je Teil \(2\)\)/],
-        ["ein Bruch fragt die Welt", ["simWecken.druck.ereignisse.3", { einheiten: 4000 }], /DRUCK-SOLL: die Frist eines brechenden Werks in 8.013 m kostete 4000 Einheiten \(Soll ≤ 1298: 4 je Teil \(2\) \+ 370 \+ 230 je Scherbe \(4\)\)/],
-        ["acht Scherben tragen ihr eigenes Soll (das Doppel-Fenster am Rand)", ["simWecken.druck.ereignisse.4", { einheiten: 2222 }], null],
+        ["ein Bruch fragt die Welt", ["simWecken.druck.ereignisse.3", { einheiten: 6000 }], /DRUCK-SOLL: die Frist eines brechenden Werks in 8.013 m kostete 6000 Einheiten \(Soll ≤ 4058: 4 je Teil \(2\) \+ 370 \+ 230 je Scherbe \(16\)\)/],
+        ["zweiunddreißig Scherben tragen ihr eigenes Soll (das Doppel-Fenster am Rand)", ["simWecken.druck.ereignisse.4", { einheiten: 7700 }], null],
         // im ersten Lauf (GTX 1050, 52 brechende Werke) schrieb jedes Werk seinen Satz: 52 Sätze statt einem
         ["das Ende schreibt je Werk einen Satz", ["simWecken.druck.ereignisse.11", { einheiten: 12 }], /DRUCK-SOLL: das Ende der Welle kostete 12 Einheiten \(Soll ≤ 5: 5\)/],
         ["der Takt arbeitet außerhalb seiner Ereignisse", ["simWecken.druck.rest=", 40], /DRUCK-TAKT: der Takt der Welle arbeitete 40 Einheiten außerhalb jedes Ereignisses/],
-        // DAS ERBE DES GRUNDS: die Mutante des Laufs (der Rest räumt den Grund seines Werks ein zweites Mal — in Einheiten 1 041 →
-        // 1 109, unter dem Soll; ihr Maß ist die Räumung selbst) und der Stand vor dem freien Körper ohne Grundriss (der Rest und
-        // jede der vier Scherben räumten bei ihrer Geburt)
-        ["der Rest räumt den Grund seines Werks ein zweites Mal", ["simWecken.druck.ereignisse.3", { einheiten: 1109, raeumt: 1 }], /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m räumte die Natur seines Grunds \(`_naturRaeumen` 1× in der Welle\)/],
+        // DAS ERBE DES GRUNDS: die Mutante des Laufs (der Rest räumt den Grund seines Werks ein zweites Mal — in Einheiten 3 183 →
+        // 3 254, unter dem Soll; ihr Maß ist die Räumung selbst) und der Stand vor dem freien Körper ohne Grundriss (der Rest und
+        // jede Scherbe räumten bei ihrer Geburt)
+        ["der Rest räumt den Grund seines Werks ein zweites Mal", ["simWecken.druck.ereignisse.3", { einheiten: 3254, raeumt: 1 }], /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m räumte die Natur seines Grunds \(`_naturRaeumen` 1× in der Welle\)/],
         ["jede Scherbe räumt bei ihrer Geburt die Natur", (b) => [3, 7, 8].forEach((k) => (b.simWecken.druck.ereignisse[k].raeumt = 5)), /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m .*`_naturRaeumen` 15× in der Welle/],
         ["die Mutante des Laufs bleibt ungesehen", ["simWecken.druck.mutante", { raeumt: 0 }], /BLIND: die Mutante der Welle .* blieb ungesehen — `_naturRaeumen` unter der Marke `druck`: 0/],
         ["die Mutante lief nicht", ["simWecken.druck.mutante"], /BLIND: die Mutante der Welle .*: kein Lauf/],
@@ -635,6 +637,20 @@ function selbsttest() {
         ["die Scheibe jenseits der Grenze bricht", ["simWecken.druck.scheiben.4", { gebrochen: true }], /DRUCK-BRUCH: die Scheibe in 36.097 m brach — die Grenze des Gesetzes .* liegt bei 29.982 m/],
         ["die Scheibe diesseits der Grenze steht", ["simWecken.druck.scheiben.3", { gebrochen: false }], /DRUCK-BRUCH: die Scheibe in 24.064 m steht — die Grenze des Gesetzes/],
         ["keine Scheibe jenseits der Grenze", (b) => (b.simWecken.druck.scheiben.length = 4), /LEER: die Probe trägt keine Scheibe diesseits UND jenseits der Bruch-Grenze des Gesetzes \(29.982 m/],
+        // DAS BILD DES BRUCHS: der Stand bis druckwelle-bild an der Probe gemessen — jede Scheibe fiel in vier gleiche Stücke
+        // (Kanten 250 mm), die in 8 m wie die an ihrer Grenze; dazu der Leser, der nur die Zahl des Gesetzes nimmt und gleich
+        // weit schneidet (4 × 4 Stücke zu 125 mm)
+        ["jede Scheibe fällt in vier gleiche Stücke (der Stand vor dem Bruch-Gesetz)", ["simWecken.druck.scheiben.0", { scherben: 4, kante: [0.25, 0.25] }], /DRUCK-BRUCH-BILD: das Fenster in 8.031 m \(last 5.557\) fiel in 4 Scherben — sein Bruch-Gesetz verlangt 16/],
+        ["der Leser schneidet gleich weit", ["simWecken.druck.scheiben.0", { kante: [0.125, 0.125] }], /DRUCK-BRUCH-BILD: die 16 Scherben des Fensters in 8.031 m tragen Kanten von 0.125 bis 0.125 m — die Schnitte seines Gesetzes liegen, wo die Energie liegt: 0.066 bis 0.184 m/],
+        ["das Doppel-Fenster bricht nur eine seiner Scheiben fein", ["simWecken.druck.scheiben.1", { scherben: 20 }], /DRUCK-BRUCH-BILD: das Fenster in 12.037 m \(last 3.234\) fiel in 20 Scherben — sein Bruch-Gesetz verlangt 32/],
+        ["die Scherben einer Scheibe tragen keine Kante", ["simWecken.druck.scheiben.3", { kante: undefined }], /DRUCK-BRUCH-BILD: die 6 Scherben des Fensters in 24.064 m tragen Kanten von \? m/],
+        ["keine Scheibe der Probe bricht feiner als ihr Kreuz", (b) => b.simWecken.druck.scheiben.forEach((s) => s.gebrochen && Object.assign(s, { scherben: s.kreuz, soll: s.kreuz, kante: [0.25, 0.25], kanteSoll: [0.25, 0.25] })), /LEER: keine Scheibe der Probe bricht feiner als ihr Kreuz \(Scherben je Fenster nach dem Gesetz: 4 · 8 · 4 · 4\)/],
+        ["der Zähler der Welle rechnet an der Welt vorbei", ["simWecken.druck.zaehler=", 20], /DRUCK-ZAHL: die Welle zählte 20 Scherben, in der Welt liegen 70/],
+        ["die Welle zählt ihre Scherben nicht", ["simWecken.druck.zaehler=", null], /DRUCK-ZAHL: die Welle zählte null Scherben, in der Welt liegen 70/],
+        // der Vorrat: ohne ihn fielen beide Scheiben der Hand-Welle in 4 × 4
+        ["der Vorrat hält die Welle nicht", ["simWecken.druck.vorrat", { scherben: [16, 16] }], /DRUCK-VORRAT: unter einer Welle, deren Vorrat bis auf 5 verbraucht ist, fielen zwei Scheiben in 16 und 16 Scherben/],
+        ["der Vorrat nimmt der Platte ihr Kreuz", ["simWecken.druck.vorrat", { scherben: [9, 0] }], /DRUCK-VORRAT: .* fielen zwei Scheiben in 9 und 0 Scherben/],
+        ["die Probe misst den Vorrat nicht", ["simWecken.druck.vorrat"], /LEER: die Probe maß den Vorrat der Welle nicht/],
         ["die Kiste trägt den halben Stoß", ["simWecken.druck.kiste", { dv: 0.771 }], /DRUCK-STOSS: die Kiste in 6 m trägt 0.771 m\/s \(das Gesetz: Impuls × Schattenfläche ÷ Masse = 1.542 m\/s/],
         ["der Löser nimmt den Stoß der Kiste nicht", ["simWecken.druck.kiste", { wegM: 0 }], /DRUCK-STOSS: die Kiste in 6 m trägt 1.542 m\/s und liegt danach 0 m weiter — der Löser nahm den Stoß nicht/],
         ["die Probe ohne Kiste", ["simWecken.druck.kiste"], /LEER: die Probe trägt keine freie Kiste im Radius der Welle/],
@@ -645,8 +661,8 @@ function selbsttest() {
         ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
-        ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
-        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
+        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
@@ -3363,13 +3379,19 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // diesseits seiner Bruch-Grenze (schmiede `plattenLast` = 1, hier gerechnet) brechen, die jenseits stehen; die Kiste
                         // trägt Impuls × Schattenfläche ÷ Masse; der Spieler wird gestoßen, das Ohr hört den Knall; die Scherben schlafen ein.
                         // Die Probe räumt hinter sich auf (ihre Bauten, Pläne, das Feuer des Funkens), der Brand danach beginnt im leeren Feld.
-                        // Ein Doppel-Fenster in 12 m (zwei Scheiben auf einem Bock) trägt die zweite Zahl des Bruchs: acht Scherben statt vier.
+                        // DAS BILD DES BRUCHS (druckwelle-bild): je gebrochenem Fenster die Scherben, die in der Welt liegen (die freien
+                        // Körper, die seine Frist gebar), und ihre kleinste und größte Kante — gegen das Bruch-Gesetz seiner Scheibe an
+                        // ihrem Ort (schmiede `plattenBruch` unter `DRUCK.scherbenAchse`: nah das feine Gitter, die Mitte fein, der Rand
+                        // grob; zur Grenze hin das Kreuz); das Doppel-Fenster in 12 m trägt zwei Scheiben auf einem Bock. Der Zähler der
+                        // Welle (`welle.scherben`) steht gegen die Welt. DER VORRAT am echten Rumpf: die zwei stehenden Fenster (36 · 48 m)
+                        // unter einer Welle von Hand mit dreißigfacher Energie, ihr Vorrat (`DRUCK.scherbenFein`) bis auf fünf verbraucht —
+                        // das erste trägt sein Kreuz und höchstens den Rest, das zweite sein Kreuz.
                         // `mutante` (in JEDEM Lauf die zweite Probe): der Rest eines Einsturzes räumt den Grund seines Werks ein zweites Mal
                         // (der Stand vor dem geerbten Grund, `_grundrissRaeumen` ohne `gehalten`) — die Linse zählt ihre Natur-Räumungen
                         // unter der Marke (`raeumt`), an ihr fällt DRUCK-ERBE; sieht sie keine, ist die Linse BLIND.
                         const druckProbe = async (mutante) => {
                             const t0 = performance.now();
-                            const [SG, cs, N] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK.scherben];
+                            const [SG, cs, DR] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK];
                             const O = { x: MESS.x - cs, z: MESS.z };
                             const r3 = (v) => +(+v).toFixed(3);
                             const [plaeneVor, bautenVor] = [new Set(Object.keys(st.blueprints)), new Set(st.architectures)];
@@ -3384,7 +3406,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 const [x, z] = [O.x - d, O.z + (k % 2 ? 0.45 : -0.45)];
                                 return setz(d === 12 ? "_druck_doppel" : "_druck_fenster", x, z, { seed: 7000 + k, rotationY: Math.atan2(O.x - x, O.z - z) });
                             });
-                            const D = { start: false, frist: null, ereignisse: [], einheiten: 0, rest: 0, scheiben: [], scherben: 0, wach: 0, schlafS: null, verzug: null };
+                            const D = { start: false, frist: null, ereignisse: [], einheiten: 0, rest: 0, scheiben: [], scherben: 0, zaehler: null, vorrat: null, wach: 0, schlafS: null, verzug: null };
                             if (fass && kiste && kiste._frei && fenster.every(Boolean)) {
                                 const [energieJ, luft] = [r._ladungJ(fass), r._druckLuft()];
                                 // der Blick des Schreibers: die Bauten im Radius der Welle — jeder Eintrag des Platz-Netzes, der weder Natur
@@ -3394,7 +3416,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 const taten0 = st.worldMeta.taten.length;
                                 const E = D.ereignisse;
                                 const wellen = [];
-                                let [inWelle, gebrochen] = [0, 0];
+                                let inWelle = 0;
+                                // die freien Körper der Probe außer der Kiste: die Scherben in der Welt; `geburt`: je Werk die, die seine Frist gebar
+                                const freie = () => st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste);
+                                const geburt = new Map();
                                 // EIN Ereignis messen: der Stand der Rolle und ihre Leser davor und danach
                                 const mess = (e, ruf) => {
                                     const [a0, l0] = [S.stand("druck"), S.leser("druck")];
@@ -3418,16 +3443,15 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     if (w) wellen.push(w), Object.assign(e, { radius: r3(w.radius), treffer: w.treffer, energieMJ: r3(w.energieJ / 1e6) });
                                     return w;
                                 };
-                                r._druckWerk = function (...a) {
-                                    return (gebrochen = P._druckWerk.apply(this, a));
-                                };
                                 r._druckTrifft = function (f) {
                                     const plan = f.art === "werk" && f.q ? (f.q._gesetz && f.q._gesetz.plan) || st.blueprints[f.q.type] : null;
                                     const p = f.q ? (f.q._frei ? { x: f.q._frei.p[0], z: f.q._frei.p[2] } : f.q.position) : st.playerMesh.position;
                                     const e = { art: f.art, R: r3(Math.hypot(p.x - f.welle.x, p.z - f.welle.z)), teile: plan && plan.parts ? plan.parts.length : 0 };
-                                    gebrochen = 0;
+                                    const vor = new Set(freie());
                                     mess(e, () => P._druckTrifft.call(this, f));
-                                    e.scherben = gebrochen * N * N;
+                                    const neu = freie().filter((x) => !vor.has(x));
+                                    e.scherben = neu.length;
+                                    if (f.q && neu.length) geburt.set(f.q, neu);
                                 };
                                 r._druckEnde = function (w) {
                                     mess({ art: "ende" }, () => P._druckEnde.call(this, w));
@@ -3443,7 +3467,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     return P._substanzKlang.call(this, art, tags, ...a);
                                 };
                                 if (mutante) r._grundrissRaeumen = (haus) => P._grundrissRaeumen.call(r, haus);
-                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckWerk", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen"];
+                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3469,10 +3493,27 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             let [lo, hi] = [0.5, 400];
                                             for (let i = 0; i < 60; i++) ((m) => (last(m) >= 1 ? (lo = m) : (hi = m)))(Math.sqrt(lo * hi));
                                             D.grenze = r3(Math.sqrt(lo * hi));
-                                            D.scheiben = fenster.map((e) => ({ R: r3(Math.hypot(e.position.x - w.x, e.position.y - 0.5 + 0.37 - w.y, e.position.z - w.z)), gebrochen: !st.architectures.includes(e) }));
+                                            // je Fenster: was das Bruch-Gesetz seiner Scheibe am Ort verlangt (`soll` Scherben, ihre kleinste und
+                                            // größte Kante; `kreuz`: vier je Scheibe) und was in der Welt liegt (die freien Körper seiner Frist)
+                                            D.scheiben = fenster.map((e) => {
+                                                const R = Math.hypot(e.position.x - w.x, e.position.y - 0.5 + 0.37 - w.y, e.position.z - w.z);
+                                                const [n, neu] = [e.type === "_druck_doppel" ? 2 : 1, geburt.get(e) || []];
+                                                const s = { R: r3(R), gebrochen: !st.architectures.includes(e), last: r3(last(R)), kreuz: 4 * n, scherben: neu.length };
+                                                const B = SG.plattenBruch(0.5, 0.5, 0.004, last(R), DR.scherbenAchse);
+                                                if (B) {
+                                                    const breit = [B.lang, B.kurz].flatMap((u) => u.slice(1).map((x, k) => (x - u[k]) * 0.5));
+                                                    Object.assign(s, { soll: n * (B.lang.length - 1) * (B.kurz.length - 1), kanteSoll: [r3(Math.min(...breit)), r3(Math.max(...breit))] });
+                                                }
+                                                if (neu.length) {
+                                                    const halb = neu.map((x) => Array.from(x._frei.halb).sort((a, b) => b - a));
+                                                    s.kante = [r3(2 * Math.min(...halb.map((h) => h[1]))), r3(2 * Math.max(...halb.map((h) => h[0])))];
+                                                }
+                                                return s;
+                                            });
                                             loesche();
                                             // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
-                                            D.scherben = st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste).length;
+                                            D.scherben = freie().length;
+                                            D.zaehler = w.scherben;
                                             while (st.spielZeit - tW < 10 && wachN() > 0) bild();
                                             D.wach = wachN();
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
@@ -3486,6 +3527,16 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             const A = 4 * (K.hy * K.hz * a(0) + K.hx * K.hz * a(1) + K.hx * K.hy * a(2));
                                             D.kiste = { R: r3(d), dv: r3(stoss.get(kiste) || 0), soll: r3((x.impuls * A) / K.m), wegM: r3(Math.hypot(K.p[0] - kiste0[0], K.p[2] - kiste0[2])) };
                                             D.spieler = { R: r3(Math.hypot(MESS.x - w.x, MESS.z - w.z)), dv: r3(stoss.get(st.playerMesh) || 0) };
+                                            // der Vorrat am echten Rumpf (`_druckWerk`): die Welle von Hand, ihr Vorrat bis auf `rest` verbraucht
+                                            const rest = 5;
+                                            const hand = { ...w, energieJ: w.energieJ * 30, scherben: 0, fein: DR.scherbenFein - rest, werke: 0, teile: 0 };
+                                            const bricht = (e) => {
+                                                const vor = new Set(freie());
+                                                P._druckWerk.call(r, e, hand);
+                                                return freie().filter((x) => !vor.has(x)).length;
+                                            };
+                                            D.vorrat = { rest, scherben: fenster.slice(4).map(bricht) };
+                                            S.frame(); // die Einheiten dieser Probe gehören keinem Bild des Takts
                                         }
                                         D.rest = D.einheiten - E.reduce((s, e) => s + e.einheiten, 0);
                                     }

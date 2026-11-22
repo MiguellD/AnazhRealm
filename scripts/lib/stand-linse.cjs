@@ -472,7 +472,9 @@ function brandAmSoll(Z) {
 // (GTX 1050, Null-Renderer, die Welt frisch: ein Donnerfass mit 60,6 MJ, sechs Probe-Fenster in 8–48 m — das in 12 m mit zwei
 // Scheiben —, eine Kiste in 6 m, der Spieler in 16 m; 71 Bauten des Dorfs im Radius), gemessen je Ereignis: Umsatz 37 ·
 // Schreiber 2 245 (kalt: je Bau 31 für sein Fahr-Profil; die zweite Welle derselben Welt 231) · Stoß 2–12 · stehendes Werk 6 ·
-// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3.
+// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3. Seit dem Bruch-Gesetz der Platte (druckwelle-bild) fallen die
+// Scheiben der Probe feiner — dieselben Ratschen halten: Bruch 1 597 mit sechs Scherben (Soll 1 758), 3 183–3 328 mit
+// sechzehn (4 058), 6 091 mit zweiunddreißig (7 742).
 // DAS ERBE DES GRUNDS trägt sein eigenes Maß (`raeumt`: die Rufe der Natur-Räumung `_naturRaeumen` unter der Marke, je
 // Ereignis): die Welle räumt keine Natur — der Rest eines Einsturzes erbt den Grund seines Werks (`grundErbe`), der freie
 // Körper trägt keinen Grundriss. In Einheiten hebt die Räumung einen Bruch nur um 7 % (1 041 → 1 109), in Zeit um 43 % (GTX
@@ -483,7 +485,7 @@ function brandAmSoll(Z) {
 // Anteil, den die älteste Frist schon wartete, nach verzugS alles Fällige) plus EIN Takt am Deckel der Welt-Uhr
 // (`TAKT_DECKEL_S` 0,1 s: so spät kann das Bild kommen, das die Grenze sieht). Das Budget allein hielt den letzten von 52
 // Brüchen 2,6 s, die Grenze 0,27 s; gemessen an der Probe 0,032 s. `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach
-// liegen (gemessen 1,5 s).
+// liegen (gemessen 1,5 s mit 20 Scherben, 2,2 s mit den 70 des Bruch-Gesetzes).
 const DRUCK_UMSATZ = 50;
 const DRUCK_WELLE = 80;
 const DRUCK_BLICK = 40;
@@ -556,6 +558,25 @@ function druckUrteil(D, v) {
         for (const s of S)
             if (s.gebrochen !== s.R < D.grenze)
                 v.push(`DRUCK-BRUCH: die Scheibe in ${s.R} m ${s.gebrochen ? "brach" : "steht"} — die Grenze des Gesetzes (σ der Platte = σ_B ihrer Stoff-Zeile) liegt bei ${D.grenze} m`);
+    // DAS BILD DES BRUCHS (druckwelle-bild): je gebrochenem Fenster die Scherben seines Bruch-Gesetzes am Ort (schmiede
+    // `plattenBruch`: der Riss ist die Energie) — ihre Zahl in der Welt, dann ihre kleinste und größte Kante (±1 mm: die
+    // Schnitte liegen, wo die Energie liegt). Bis druckwelle-bild fiel jede Scheibe in vier gleiche Stücke: eine Probe, in der
+    // keine feiner als ihr Kreuz bricht, sähe diesen Stand nicht — sie ist LEER.
+    const G = S.filter((s) => s.gebrochen && (s.soll > 0 || s.R < D.grenze)); // die jenseits der Grenze brach, nennt DRUCK-BRUCH
+    for (const s of G) {
+        if (!(s.soll > 0) || s.scherben !== s.soll)
+            v.push(`DRUCK-BRUCH-BILD: das Fenster in ${s.R} m (last ${s.last}) fiel in ${s.scherben} Scherben — sein Bruch-Gesetz verlangt ${s.soll} (schmiede \`plattenBruch\`: der Riss ist die Energie; der Leser \`_druckWerk\`)`);
+        else if (!s.kante || !s.kanteSoll || !s.kante.every((x, k) => Math.abs(x - s.kanteSoll[k]) <= 0.001))
+            v.push(`DRUCK-BRUCH-BILD: die ${s.scherben} Scherben des Fensters in ${s.R} m tragen Kanten von ${s.kante ? s.kante.join(" bis ") : "?"} m — die Schnitte seines Gesetzes liegen, wo die Energie liegt: ${s.kanteSoll ? s.kanteSoll.join(" bis ") : "?"} m (die Mitte fein, der Rand grob)`);
+    }
+    if (G.length && !G.some((s) => s.soll > s.kreuz)) v.push(`LEER: keine Scheibe der Probe bricht feiner als ihr Kreuz (Scherben je Fenster nach dem Gesetz: ${G.map((s) => s.soll).join(" · ")})`);
+    // der Zähler der Welle gegen die Welt: an ihm rechnet ihr Vorrat (`welle.fein`)
+    if (D.scherben > 0 && D.zaehler !== D.scherben) v.push(`DRUCK-ZAHL: die Welle zählte ${D.zaehler} Scherben, in der Welt liegen ${D.scherben} — ihr Vorrat (\`DRUCK.scherbenFein\`) rechnet an der Welt vorbei`);
+    // der Vorrat am echten Rumpf: das Kreuz trägt jede Platte, darüber höchstens den Rest des Vorrats
+    const V = D.vorrat;
+    if (!V || !Array.isArray(V.scherben) || V.scherben.length < 2 || !(V.rest > 0)) v.push("LEER: die Probe maß den Vorrat der Welle nicht (zwei stehende Fenster unter einer Welle von Hand, ihr Vorrat fast verbraucht)");
+    else if (!(V.scherben[0] > 4 && V.scherben[0] <= 4 + V.rest) || V.scherben[1] !== 4)
+        v.push(`DRUCK-VORRAT: unter einer Welle, deren Vorrat bis auf ${V.rest} verbraucht ist, fielen zwei Scheiben in ${V.scherben[0]} und ${V.scherben[1]} Scherben — die erste trägt ihr Kreuz und höchstens den Rest (5 bis ${4 + V.rest}), die zweite ihr Kreuz (4) (\`DRUCK.scherbenFein\`, \`_druckWerk\`)`);
     const K = D.kiste;
     if (!K || !(K.soll > 0)) v.push("LEER: die Probe trägt keine freie Kiste im Radius der Welle");
     else if (!(Math.abs(K.dv / K.soll - 1) <= 0.05))

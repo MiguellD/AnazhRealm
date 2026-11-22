@@ -1226,6 +1226,8 @@ class AnazhRealm_feld_brand {
             offen: 0,
             werke: 0,
             teile: 0,
+            scherben: 0, // die freien Körper, in die ihre Platten bisher fielen (`_druckWerk`)
+            fein: 0, // davon die über dem Kreuz ihrer Platte: der Vorrat der Welle (`DRUCK.scherbenFein`)
             verzug: 0,
             w3: Math.cbrt(rand.W),
             bildEnde: uhr + rand.ankunft + rand.dauer + this._halmZahlen().ruhe,
@@ -1431,37 +1433,58 @@ class AnazhRealm_feld_brand {
         return { last: SG.plattenLast(z, lang, kurz, S[d], w.dp * cos, w.dauer), w, cos };
     }
 
-    // DAS WERK UNTER DER WELLE: je Teil die Last seiner Platte (`_druckTeilLast`). Was bricht, zerfällt in `DRUCK.scherben`²
-    // Scherben in seiner Ebene und fällt aus dem Werk — über den EINEN Einsturz (`_werkBricht`, still — die Welle nennt ihn: der Rest
-    // steht als Werk weiter und urteilt neu, jede Scherbe ist ein freier Körper) —, und jede Scherbe trägt den Stoß der Welle
-    // an ihrem Ort. → die Zahl der gebrochenen Teile.
+    // DAS WERK UNTER DER WELLE: je Teil die Last seiner Platte (`_druckTeilLast`). Was bricht, zerfällt nach SEINEM Bruch-Gesetz
+    // (schmiede `plattenBruch`: der Riss ist die Energie — an der Bruch-Grenze das Kreuz der Mittellinien, vier Stücke; unter
+    // mehr Last ein feineres Gitter, die Mitte fein, der Rand grob) in Scherben in seiner Ebene und fällt aus dem Werk — über
+    // den EINEN Einsturz (`_werkBricht`, still — die Welle nennt ihn: der Rest steht als Werk weiter und urteilt neu, jede
+    // Scherbe ist ein freier Körper) —, und jede Scherbe trägt den Stoß der Welle an ihrem Ort. Bis druckwelle-bild fiel jede
+    // Platte in vier gleiche Stücke, die in 6 m wie die an ihrer Grenze in 28 m.
+    // DIE WELLE TRÄGT EINEN VORRAT FEINER SCHERBEN (jede ist ein freier Körper des Lösers): das Kreuz trägt jede Platte, wie
+    // zuvor; darüber je Platte höchstens `DRUCK.scherbenAchse` Stücke je Achse und je Welle `DRUCK.scherbenFein` Scherben über
+    // dem Kreuz (`welle.fein`). Die Fristen fallen in der Reihe ihrer Ankunft: die nahe Scheibe zerspringt fein, ist der Vorrat
+    // verbraucht, fällt die ferne gröber, zuletzt in ihr Kreuz — eine Welle kostet den Löser höchstens `scherbenFein` Körper
+    // mehr als zuvor, wie viele Werke auch in ihrem Radius stehen. → die Zahl der gebrochenen Teile.
     _druckWerk(e, welle) {
         const g = e._gesetz;
         const bp = (g && g.plan) || this.state.blueprints[e.type];
         if (!bp || !Array.isArray(bp.parts)) return 0;
-        const N = AnazhRealm.DRUCK.scherben;
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const D = AnazhRealm.DRUCK;
         const teile = bp.parts.slice();
         const frei = [];
         let gebrochen = 0;
         bp.parts.forEach((p, i) => {
             const l = this._druckTeilLast(p, e, welle);
             if (!l || !(l.last >= 1)) return;
-            gebrochen++;
             const S = [p.size.x, p.size.y, p.size.z];
             const d = S.indexOf(Math.min(...S));
             const [a, b] = [0, 1, 2].filter((k) => k !== d);
+            const B = SG.plattenBruch(
+                Math.max(S[a], S[b]),
+                Math.min(S[a], S[b]),
+                S[d],
+                l.last,
+                D.scherbenAchse,
+                4 + D.scherbenFein - welle.fein
+            );
+            if (!B) return;
+            gebrochen++;
+            const [ua, ub] = S[a] >= S[b] ? [B.lang, B.kurz] : [B.kurz, B.lang];
+            const n = (ua.length - 1) * (ub.length - 1);
+            welle.scherben += n;
+            welle.fein += n - 4;
             const r = p.rotation;
             const dreh = r ? new THREE.Euler(r.x || 0, r.y || 0, r.z || 0, "XYZ") : null;
             const q = p.position || {};
-            const gr = S.slice();
-            gr[a] /= N;
-            gr[b] /= N;
-            for (let u = 0; u < N; u++)
-                for (let v = 0; v < N; v++) {
+            for (let u = 0; u + 1 < ua.length; u++)
+                for (let v = 0; v + 1 < ub.length; v++) {
                     const o = new THREE.Vector3();
-                    o.setComponent(a, ((u + 0.5) / N - 0.5) * S[a]);
-                    o.setComponent(b, ((v + 0.5) / N - 0.5) * S[b]);
+                    o.setComponent(a, (0.5 * (ua[u] + ua[u + 1]) - 0.5) * S[a]);
+                    o.setComponent(b, (0.5 * (ub[v] + ub[v + 1]) - 0.5) * S[b]);
                     if (dreh) o.applyEuler(dreh);
+                    const gr = S.slice();
+                    gr[a] = (ua[u + 1] - ua[u]) * S[a];
+                    gr[b] = (ub[v + 1] - ub[v]) * S[b];
                     const t = JSON.parse(JSON.stringify(p));
                     t.size = { x: gr[0], y: gr[1], z: gr[2] };
                     t.position = { x: (q.x || 0) + o.x, y: (q.y || 0) + o.y, z: (q.z || 0) + o.z };
@@ -1474,7 +1497,6 @@ class AnazhRealm_feld_brand {
         const truemmer = this._werkBricht(e, plan, frei, true) || [];
         welle.werke++;
         welle.teile += gebrochen;
-        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
         for (const t of truemmer) {
             const K = t && t._frei;
             if (!K) continue;
@@ -1605,14 +1627,19 @@ AnazhRealm.BRAND = Object.freeze({
 // DIE DRUCKWELLE IM WIRT (same.physik.reaktion#2, `_druckWelle`): das Gesetz und seine Zahlen stehen im Kern (schmiede
 // `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst
 // liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
-// bewegt nichts Sichtbares und fällt; `scherben`: eine gebrochene Platte fällt in scherben × scherben Stücke; `budgetMs` und
+// bewegt nichts Sichtbares und fällt; `scherbenAchse` und `scherbenFein`: so fein trägt der Löser der freien Körper den
+// Bruch — je Platte höchstens so viele Stücke je Achse (die Geburt einer Scherbe 0,66 ms, GTX 1050: sechzehn je Platte in
+// einem Bild), je Welle so viele Scherben über dem Kreuz ihrer Platten (sechs Platten ganz fein, je zwölf über dem Kreuz;
+// 0,095 ms je wacher Scherbe und Schritt: höchstens 6,8 ms je Schritt mehr als zuvor, bis sie schlafen; `_druckWerk` —
+// das Gitter selbst ist Gesetz, schmiede `plattenBruch`); `budgetMs` und
 // `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
 // `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist);
 // `bildWellen`: so viele Wellen zugleich liest der Halm im Bild (`_halmWelle`, die Slots des Wind-Satzes) — die jüngsten.
 AnazhRealm.DRUCK = Object.freeze({
     funkeM: 0.5,
     stossMin: 0.05,
-    scherben: 2,
+    scherbenAchse: 4,
+    scherbenFein: 72,
     budgetMs: 4,
     mindestJeBild: 1,
     verzugS: 0.25,
