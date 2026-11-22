@@ -992,3 +992,4 @@
 2026-11-22T18:20 karte=219 (gebucht am 161ff792, buche.sh) karte2=48
 2026-11-22T18:30 karte=219 (gebucht am 161ff792, buche.sh) karte2=49
 2026-11-22T18:41 karte=219 (gebucht am 161ff792, buche.sh) karte2=50
+2026-11-22T18:51 karte=219 (gebucht am 161ff792, buche.sh) karte2=50

@@ -22164,7 +22164,7 @@
   },
   "karte2.mensch.nahrung.jenseits": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 · karte2.mensch.nahrung.jenseits#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.jenseits#1",
@@ -22172,7 +22172,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29",
      "ungemessen": true,
      "beide": true
     },
@@ -22280,7 +22280,7 @@
   },
   "karte2.mensch.nahrung.strom": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) — zuletzt an 6066c757: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s) · karte2.mensch.nahrung.strom#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.strom#1",
@@ -22288,7 +22288,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 6066c757: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -22530,7 +22530,7 @@
   },
   "karte2.mensch.netz.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.gestalt#1",
@@ -22538,7 +22538,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR",
      "ungemessen": true,
      "beide": true
     },
@@ -37650,7 +37650,7 @@
   "ohne": 3392
  },
  "kopfVoll": "161ff792cc8d02410bfe44c7e420870d03381ec7",
- "zeit": "2026-11-22T17:40:39.677Z",
+ "zeit": "2026-11-22T17:50:57.581Z",
  "vorher": "161ff792",
  "bilanz": {
   "gewinn": [],
