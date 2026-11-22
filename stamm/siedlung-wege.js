@@ -174,12 +174,10 @@ class AnazhRealm_siedlung_wege {
 
     // Nah-Wiese und Nah-Streu lesen das Licht derselben Kronen (`_bodenLichtFeld`): ihre Kacheln, so weit Streu ODER
     // Schatten einer geänderten Krone reichen, fallen und wachsen neu — so weit der WEITERE der beiden Ringe um ihre EINE
-    // Mitte (die Kamera, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
+    // Mitte (das Auge `_lodAuge`, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
     // Reichweite der Wiese (27 m) um den Spieler: die Streu-Kacheln am Ringrand (bis 35 m) behielten das alte Licht.
     _kronenStreuWiese(x, z, radius) {
-        const mitte = this.state.camera
-            ? this.state.camera.position
-            : this.state.playerMesh && this.state.playerMesh.position;
+        const mitte = this._lodAuge(); // das EINE Auge der Stufen
         if (!mitte) return;
         const a = AnazhRealm._kronenReich(radius);
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())

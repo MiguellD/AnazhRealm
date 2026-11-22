@@ -1908,10 +1908,14 @@ class AnazhRealm_vegetation_streu {
     // (wer je Leib fragt, liest ihn EINMAL je Takt, `_schirm`).
     _gelenkGrenzen(g, zeilen) {
         const z = zeilen !== undefined ? zeilen : this._schirm().hoehe;
-        if (g.grenzen && g.grenzenZeilen === z) return g.grenzen;
+        const w = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
+        if (g.grenzen && g.grenzenZeilen === z && g.grenzenWahl === w) return g.grenzen;
         const ab = AnazhRealm._wechselGesetz(g.art, 1, 1, z, g.abM);
-        return Object.assign(g, { grenzenZeilen: z, grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] } })
-            .grenzen;
+        return Object.assign(g, {
+            grenzenZeilen: z,
+            grenzenWahl: w,
+            grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] },
+        }).grenzen;
     }
     // die Grenze der Grobstufe eines Leibs in Metern (Gesetz × Größe) — der Takt seines Gangs liest sie (`_creatureAnimDiv`)
     _gelenkAb(gruppe, zeilen) {
@@ -1923,7 +1927,8 @@ class AnazhRealm_vegetation_streu {
         const z = this._schirm().hoehe;
         const F = this._feldG || (this._feldG = [null, null]);
         const alt = F[menge ? 1 : 0];
-        if (alt && alt.z === z) return alt;
+        const w = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
+        if (alt && alt.z === z && alt.w === w) return alt;
         const L = AnazhRealm.LOD_SCHIRM.leib;
         const N =
             menge && z > 0
@@ -1937,6 +1942,7 @@ class AnazhRealm_vegetation_streu {
             ein: N,
             aus: N + hm,
             z,
+            w,
         });
     }
     // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
@@ -1970,8 +1976,8 @@ class AnazhRealm_vegetation_streu {
     _bedeutung(groesse, d, tempo, p) {
         const z = this._schirm().hoehe;
         const B = this._bedeutungF || (this._bedeutungF = { z: NaN, f: 0, v: 0 });
-        if (B.z !== z) {
-            B.z = z;
+        if (B.z !== this._schirm().wahl) {
+            B.z = this._schirm().wahl;
             B.f = AnazhRealm._brennweite(z);
             B.v = AnazhRealm.LOD_SCHIRM.bewegungMS;
         }
@@ -1992,7 +1998,7 @@ class AnazhRealm_vegetation_streu {
     _stufenSchirm() {
         const D = AnazhRealm.LOD_DISTANCES;
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
-        const h = this._schirm().hoehe;
+        const h = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
         const M = D.hysteresis;
         if (!(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM)) {
             [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
@@ -3062,12 +3068,15 @@ AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen, haushalt, vo
     const e = vorlage != null ? T[vorlage][stufe] : 0;
     return Math.max(e > 0 ? (e * AnazhRealm._brennweite(zeilen)) / S.px : 0, h) * groesse;
 };
-// DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand): die Höhe des Zeichenpuffers `zeilen` im
-// Ruhe-Sichtfeld KAM_FOV_GRAD, ohne Zeichenpuffer (0) der Schirm des Solls — jede Grenze des Stufen-Gesetzes liest sie.
+// DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand) — die EINE Quelle (stufe-ein-auge): die Höhe des
+// Zeichenpuffers `zeilen` im Sichtfeld, mit dem das Bild GEZEICHNET wird (`_sichtfeldGrad`: das Sichtfeld der Haupt-Kamera,
+// gemessen am Schirm `_schirmMessen`, dem EINEN Schreiber; vor der ersten Messung KAM_FOV_GRAD), ohne Zeichenpuffer (0) der
+// Schirm des Solls. Jede Grenze des Stufen-Gesetzes und der Schirm selbst (`_schirm().pxJeM`) lesen sie. Bis stufe-ein-auge
+// rechnete das Stufen-Gesetz im Ruhe-Sichtfeld 75°, der Schirm im lebenden: das Fernglas (ZOOM_FOV_DEG) zeigte die Stufe der
+// Ruhe vergrößert, ein Sichtfeld des Spielers (`zugang.fov` 60–100°) wählte die Stufen eines anderen Bilds.
 AnazhRealm._brennweite = function (zeilen) {
-    return (
-        (zeilen > 0 ? zeilen : AnazhRealm.LOD_SCHIRM.zeilen) / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360))
-    );
+    const fov = AnazhRealm._sichtfeldGrad > 0 ? AnazhRealm._sichtfeldGrad : AnazhRealm.KAM_FOV_GRAD;
+    return (zeilen > 0 ? zeilen : AnazhRealm.LOD_SCHIRM.zeilen) / (2 * Math.tan((fov * Math.PI) / 360));
 };
 // DER HAUSHALT DES WECHSELS aus dem Buch (live `_studioRenderConfig`, vor dem Umschlag foundry-core): die Grenze `ab` der
 // Budget-Zeile, wo die Art sie nennt (das Tor, B2c), sonst die Distanzen d0 (Stufe 1) und d1 (Stufe 2) des Labors — der Baum

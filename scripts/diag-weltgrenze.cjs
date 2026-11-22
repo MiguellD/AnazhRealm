@@ -236,6 +236,10 @@ function seitenPruefer() {
             // Das Tor steht 3 m vor dem Auge in seiner Höhe (im Kegel und im Umkreis des Pools, wo die Kamera der Seite auch steht —
             // vor jeder Laterne des Genesis-Orts: seine Kern-Laternen hielten sonst die vier Plätze, ein Tor seitlich hinter dem
             // Spieler rangiert hinter jeder im Bild), der Pool wählt frisch wie nach dem Boot
+            // Die Kamera steht, wo das Rig sie setzt: am EINEN Auge (`_lodAuge`, das der Pool liest) — die ungesetzte Kamera
+            // der Kopflos-Seite steht am Ursprung, ein Tor vor ihr läge außer Umkreis des Auges
+            st.camera.position.copy(r._lodAuge());
+            st.camera.updateMatrixWorld(true);
             const cam = st.camera.position;
             r._leuchtPool = null;
             r._tickPortalLicht({

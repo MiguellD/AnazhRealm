@@ -1938,7 +1938,7 @@ class AnazhRealm {
     // und nach jedem Sprung der Uhr (`_uhrSetzen` setzt `t` auf −∞).
     _leuchtWahl(pool, cam, jetzt = performance.now() / 1000) {
         const LP = AnazhRealm.LICHT_POOL;
-        const cp = cam.position;
+        const cp = this._lodAuge() || cam.position; // das EINE Auge der Stufen
         if (jetzt - pool.t < LP.wahlS && Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM) return;
         pool.t = jetzt;
         pool.x = cp.x;
