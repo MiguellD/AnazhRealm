@@ -2334,10 +2334,12 @@ class AnazhRealm_gelaende_chunks {
     // Mitte vor der Ebene des Treffers (r + 2 cm) / cos θ) und den Ring der Kugel (4 Punkte, je r quer zum Strahl) nur an der
     // Stelle, an der sie stehen soll; berührt ein Punkt dort Fels, geht er allein rückwärts (wachsende Schritte, Bisektion),
     // bis der ganze Ring frei ist. `t` ist die Stelle der MITTE: sie steht absolut r vor jeder Fläche. Der Gelände-Marsch
-    // endet einen Schritt hinter dem Bau-Treffer. `o.gelaende === false` fragt nur die Bauten.
+    // endet einen Schritt hinter dem Bau-Treffer. `o.gelaende === false` fragt nur die Bauten. `o.ohne`: EIN Bestand, den der
+    // Wurf nicht fragt — das Werk, dessen Rig die Kamera eben verließ (`_kamAb`): ihr Arm gleitet zu ihm, er springt nie.
     _fieldRaycast(sx, sy, sz, ex, ey, ez, o) {
         const durchPflanzen = !!(o && o.durchPflanzen);
         const rad = o && o.radius > 0 ? o.radius : 0;
+        const ohne = (o && o.ohne) || null;
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -2384,7 +2386,7 @@ class AnazhRealm_gelaende_chunks {
                     const e = zelle[i];
                     if (e._blockerFrage === frage) continue;
                     e._blockerFrage = frage;
-                    if (!e.blockerAABBs || !e.position || this._gerittenesWerk(e)) continue;
+                    if (!e.blockerAABBs || !e.position || e === ohne || this._gerittenesWerk(e)) continue;
                     // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
