@@ -80,6 +80,175 @@ const zensusFahr = async (r, T, arg) => {
     };
 };
 
+// DIE HASPEL AM GEHALTENEN KLICK (Seite der Welt): der nächste Ziehbrunnen mit Haspel (`_haspelVon`, die Teile seiner Stufe),
+// die Kamera aus Arm-Länge auf die Trommel, der EINE Klick (`tryMouseBreak`, das Verb `kurbeln`) gedrückt und je Griff 12 Takte
+// des echten Loops gehalten, bis der Eimer unten geschöpft hat und oben steht. Gemessen an den GEZEICHNETEN Matrizen der Teile
+// gegen ihre Ruhe: der Kurbelweg aus der Drehung der Kurbel um die Welle, der Hub aus der Lage des Eimers — und davor und danach
+// der Gegenlauf (Takte ohne Klick: kein Hub).
+const haspelKurbel = async (r, T, arg) => {
+    const s = r.state;
+    const FC = window.__fachwerkCore;
+    if (typeof r._haspelVon !== "function" || typeof r._kurbeln !== "function" || !FC || typeof FC.haspelSchritt !== "function")
+        return { leser: "die Haspel des Ziehbrunnens ist Gestalt: kein Verb dreht die Kurbel (fachwerk haspelSchritt, Wirt _haspelVon · _kurbeln)" };
+    const pm = s.playerMesh.position;
+    const p = s.player;
+    const A = s.architectures || [];
+    // die Ziehbrunnen: die Bauten aus dem Rezept `brunnen` des Fachwerks (der Glutbrunnen ist eine Feuerstelle)
+    const brunnen = A.filter((e) => e && e.position && r._foundryPresetForEntry(e) === "brunnen");
+    const weit = (e) => Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+    let uhr = performance.now();
+    const takte = (k) => {
+        for (let i = 0; i < k; i++) {
+            uhr += 1000 / 60;
+            r._gameLoopTick(uhr);
+        }
+    };
+    const mitHaspel = () => brunnen.filter((e) => r._haspelVon(e)).sort((a, b) => weit(a) - weit(b));
+    if (!brunnen.length) return { n: 0, brunnen: 0, taeter: "kein Brunnen am Ort" };
+    // der Spieler tritt an den nächsten Brunnen (die nahe Stufe baut seine Teile), höchstens 20 s
+    const b0 = brunnen.slice().sort((a, b) => weit(a) - weit(b))[0];
+    if (weit(b0) > 6) pm.set(b0.position.x + 3, r.getTerrainHeightAt(b0.position.x + 3, b0.position.z + 3) + 1.2, b0.position.z + 3);
+    for (let i = 0; i < 100 && !(mitHaspel()[0] && weit(mitHaspel()[0]) < 8); i++) {
+        takte(6);
+        await new Promise((f) => setTimeout(f, 200));
+    }
+    const e = mitHaspel()[0];
+    if (!e || weit(e) > 8) return { n: 0, brunnen: brunnen.length, taeter: "die nahe Stufe des Brunnens " + b0.id + " trägt keine Haspel-Teile" };
+    const M = r._haspelMass(e);
+    const th = e.rotationY || 0;
+    const P = e.position;
+    const welt = (x, y, z) => new T.Vector3(P.x + x * Math.cos(th) + z * Math.sin(th), P.y + y, P.z - x * Math.sin(th) + z * Math.cos(th));
+    const m = new T.Matrix4();
+    const inv = new T.Matrix4();
+    // eine Lesung: Kurbelwinkel (Drehung um die Welle gegen die Ruhe) und Hub des Eimers (Verschiebung längs der Hochachse der Ruhe)
+    const lies = () => {
+        const t = r._haspelVon(e) || [];
+        const k = t.find((x) => x.teil === "kurbel" && x.quelle === e.instSlots);
+        const ei = t.find((x) => x.teil === "eimer" && x.quelle === e.instSlots);
+        if (!k || !ei) return null;
+        k.g.mesh.getMatrixAt(k.ref.slot, m);
+        const rel = inv.copy(k.ruhe).invert().multiply(m).elements;
+        const winkel = -Math.atan2(rel[6], rel[5]);
+        ei.g.mesh.getMatrixAt(ei.ref.slot, m);
+        const a = m.elements;
+        const q = ei.ruhe.elements;
+        const s2 = q[4] * q[4] + q[5] * q[5] + q[6] * q[6];
+        const hub = ((a[12] - q[12]) * q[4] + (a[13] - q[13]) * q[5] + (a[14] - q[14]) * q[6]) / s2;
+        return { winkel, hub };
+    };
+    p._mausVerb = null;
+    const l0 = lies();
+    if (!l0) return { n: 0, brunnen: brunnen.length, taeter: "der Brunnen " + e.id + " zeichnet Kurbel oder Eimer nicht als eigene Instanz" };
+    takte(120);
+    const l1 = lies();
+    let ohneKlick = Math.abs(l1.hub - l0.hub) + M.r * Math.abs(l1.winkel - l0.winkel);
+    // der gehaltene Klick: auf die Trommel zielen, drücken, halten
+    const auge = welt(0.4, 1.4, 2.0);
+    const ziel = welt(0, 1.0, 0);
+    const cam = s.camera;
+    const spur = [];
+    let w = l1.winkel;
+    let vor = l1.winkel;
+    let verb = null;
+    let unten = false;
+    let oben = false;
+    let wasser = 0;
+    let n = 0;
+    for (; n < 160; n++) {
+        cam.position.copy(auge);
+        cam.lookAt(ziel);
+        cam.updateMatrixWorld(true);
+        r.tryMouseBreak(n ? p._mausVerb : undefined);
+        verb = p._mausVerb;
+        if (verb !== "kurbeln") break;
+        takte(12);
+        const l = lies();
+        if (!l) break;
+        let d = l.winkel - vor;
+        d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+        vor = l.winkel;
+        w += d;
+        spur.push([w, l.hub]);
+        const z = e._haspel;
+        if (z && z.richtung > 0) unten = true;
+        if (z) wasser = Math.max(wasser, z.wasser);
+        if (unten && z && z.richtung < 0) {
+            oben = true;
+            break;
+        }
+    }
+    p._mausVerb = null;
+    // losgelassen: die gezeigte Kurbel holt den Zustand ein, danach hält sie (Gegenlauf zum zweiten)
+    takte(120);
+    const l2 = lies();
+    let d2 = l2.winkel - vor;
+    d2 -= 2 * Math.PI * Math.round(d2 / (2 * Math.PI));
+    w += d2;
+    vor = l2.winkel;
+    spur.push([w, l2.hub]);
+    takte(120);
+    const l3 = lies();
+    ohneKlick = Math.max(ohneKlick, Math.abs(l3.hub - l2.hub) + M.r * Math.abs(l3.winkel - l2.winkel));
+    // die Maße: größte Abweichung |Hub − r·φ| über den Weg, Hub je Umdrehung (Steigung · 2π), Rang-r Kurbelweg ↔ Hub
+    let fehl = 0;
+    for (const [x, y] of spur) fehl = Math.max(fehl, Math.abs(y - M.r * x));
+    const N = spur.length;
+    const mx = spur.reduce((a, q) => a + q[0], 0) / N;
+    const my = spur.reduce((a, q) => a + q[1], 0) / N;
+    let sxy = 0;
+    let sxx = 0;
+    for (const [x, y] of spur) {
+        sxy += (x - mx) * (y - my);
+        sxx += (x - mx) * (x - mx);
+    }
+    const rang = (v) => {
+        const o = v.map((x, i) => [x, i]).sort((a, b) => a[0] - b[0]);
+        const rg = new Array(v.length);
+        for (let i = 0; i < o.length; ) {
+            let j = i;
+            while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++;
+            for (let k = i; k <= j; k++) rg[o[k][1]] = (i + j) / 2;
+            i = j + 1;
+        }
+        return rg;
+    };
+    const rx = rang(spur.map((q) => q[0]));
+    const ry = rang(spur.map((q) => q[1]));
+    const mr = (N - 1) / 2;
+    let a1 = 0;
+    let a2 = 0;
+    let a3 = 0;
+    for (let i = 0; i < N; i++) {
+        a1 += (rx[i] - mr) * (ry[i] - mr);
+        a2 += (rx[i] - mr) ** 2;
+        a3 += (ry[i] - mr) ** 2;
+    }
+    let weg = 0;
+    for (let i = 1; i < N; i++) weg += Math.abs(spur[i][0] - spur[i - 1][0]);
+    const hubs = spur.map((q) => q[1]);
+    return {
+        n: oben ? 1 : 0,
+        brunnen: brunnen.length,
+        id: e.id,
+        verb,
+        griffe: n,
+        unten,
+        oben,
+        wasserL: Math.round(wasser * M.volM3 * 1000),
+        hub: sxx > 0 ? (sxy / sxx) * 2 * Math.PI : 0,
+        folgt: a2 > 0 && a3 > 0 ? a1 / Math.sqrt(a2 * a3) : 0,
+        fehlCm: fehl * 100,
+        ohneKlick,
+        wegUmdr: weg / (2 * Math.PI),
+        hubSpanne: Math.max(...hubs) - Math.min(...hubs),
+        pose: (() => {
+            const c = welt(1.0, 2.3, 2.6);
+            const l = welt(0, 0.4, 0);
+            return { px: c.x, py: c.y, pz: c.z, lx: l.x, ly: l.y, lz: l.z };
+        })(),
+    };
+};
+
 // DER WERKSTATT-WAGEN UNTER VOLLGAS (Seite der Welt): der GT des Kerns zweimal gesetzt — sein Bauplan und derselbe mit größtem
 // Radstand, Spur und Dach (die Masse des Kerns: Länge × Spur × Dach, vehicle-core carPhys) —, aufgesessen, eingeschwungen, dann
 // `arg.takte` Takte zu 1/60 s mit gehaltenem Gas (die Verb-Tafel); gemessen die Masse des Fahr-Gesetzes am Werk
@@ -738,11 +907,12 @@ module.exports = (F) => [
         },
     }),
 
-    // ── mensch.fahrzeug.maschine — Kraft, die arbeitet. S1 die Haspel des Ziehbrunnens (gezählt am Dorf), S2–S6 die Maschinen der
-    // Welt gezählt.
+    // ── mensch.fahrzeug.maschine — Kraft, die arbeitet. S1 die Haspel des Ziehbrunnens am gehaltenen Klick (das Verb kurbeln,
+    // gemessen an den gezeichneten Teilen), S2–S6 die Maschinen der Welt gezählt.
     F.leiter("mensch.fahrzeug.maschine", {
-        sek: 45,
-        pfad: [...PFAD, "fachwerk-core.js"],
+        sek: 60,
+        mutiert: true,
+        pfad: [...PFAD, "fachwerk-core.js", "stamm/siedlung-tor.js", "stamm/kampf.js"],
         messe: async (H, K) => {
             await K.messort("dorf");
             let z = null;
@@ -761,19 +931,39 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: da().fabrik, fehlt: "Fabrik, Industriestadt: kein Fabrik- und kein Kraftwerks-Bau" }));
             await K.schritt(5, async () => K.nicht(5, { n: da().werft, fehlt: "Industrie eines Planeten: keine Werft, kein Raumhafen" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().fabrik > 0 ? 1 : 0, fehlt: "Industrie über Sonnensysteme: die Welt trägt EIN Sonnensystem, " + da().fabrik + " Fabrik-Bauten in ihm" }));
-            await K.schritt(1, async () => K.leser(1, { n: da().brunnen, fehlt: "die Haspel des Ziehbrunnens ist Gestalt: kein Verb dreht die Kurbel, der Eimer hängt an der Fülle (" + da().brunnen + " Brunnen am Ort)", wo: "fachwerk-core.js:7462" }));
+            // S1 zuletzt (die Probe mutiert): der gehaltene Klick an der Haspel des nächsten Ziehbrunnens
+            await K.schritt(1, async () => {
+                const h = await K.welt("return await (" + H.seite.HASPEL + ")(r, T, {});", Math.max(5000, Math.floor((H.rest() - 3) * 1000)));
+                if (h.leser) return K.leser(1, { n: da().brunnen, fehlt: h.leser + " — " + da().brunnen + " Brunnen am Ort", wo: "fachwerk-core.js:7462" });
+                H.zeile("Haspel: Brunnen " + h.id + ", " + h.griffe + " Griffe, Verb " + h.verb + ", unten " + h.unten + ", oben " + h.oben + ", " + h.wasserL + " l, Weg " +
+                    (+h.wegUmdr || 0).toFixed(2) + " Umdr., Hub-Spanne " + (+h.hubSpanne || 0).toFixed(3) + " m");
+                let bild = "";
+                if (h.n) bild = " · Bild " + (await K.bild(1, h.pose)).datei;
+                K.zahl(1, {
+                    n: h.n,
+                    werte: { hub: h.hub, folgt: h.folgt, fehlCm: h.fehlCm, ohneKlick: h.ohneKlick },
+                    beleg: "Brunnen " + h.id + " von " + h.brunnen + ", " + h.griffe + " Griffe, Weg " + (+h.wegUmdr || 0).toFixed(2) + " Umdr., Hub-Spanne " + (+h.hubSpanne || 0).toFixed(2) + " m, " + h.wasserL + " l oben" + bild,
+                    taeter: h.n ? null : h.taeter || (h.verb !== "kurbeln" ? "der Klick an der Trommel wählte das Verb " + h.verb : "der Eimer kam nicht unten an und oben zurück"),
+                });
+            });
         },
-        seite: { ZENSUS: zensusFahr },
+        seite: { ZENSUS: zensusFahr, HASPEL: haspelKurbel },
         sprossen: {
             1: {
                 umfang: { soll: 1, wort: "Werkzeug mit Wirkung (Haspel am Ziehbrunnen)" },
                 masse: [
                     { key: "hub", wort: "Hub des Eimers je Kurbel-Umdrehung in m", soll: 0, richtung: ">" },
                     { key: "folgt", wort: "Rang-r Kurbelweg ↔ Hub über die Umdrehungen", soll: 0, richtung: ">" },
+                    {
+                        key: "fehlCm",
+                        wort: "größte Abweichung |Hub − r·φ| über den Kurbelweg in cm",
+                        soll: 1,
+                        richtung: "≤",
+                        herkunft: "„Hub folgt Kurbelweg“: an jedem Punkt des Wegs steht der Eimer, wohin die Trommel das Seil gewickelt hat — innerhalb eines Zentimeters, unter der Dicke des Seils",
+                    },
+                    { key: "ohneKlick", wort: "Gegenlauf: Hub in m je 2 s ohne Klick vor und nach dem Kurbeln", soll: 0.001, richtung: "≤", herkunft: "„Haspel hebt Eimer“: ohne die Hand an der Kurbel hebt nichts — 1 mm, die Rechen-Genauigkeit der Matrix" },
                 ],
-                erwartet: "leser",
-                fehlt: "die Haspel ist Gestalt: kein Verb dreht die Kurbel, der Eimer hängt an der Fülle",
-                wo: "fachwerk-core.js:7462",
+                erwartet: "zahl",
             },
             2: {
                 umfang: { soll: 50, wort: "Maschinen-Saaten mit Quelle (Mühle, Wasserrad)" },
@@ -817,15 +1007,38 @@ module.exports = (F) => [
             1: [
                 {
                     name: "ATTRAPPE: die Kurbel dreht, der Eimer hängt an der Fülle (Hub 0)",
-                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0, folgt: 0 } } } },
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0, folgt: 0, fehlCm: 0, ohneKlick: 0 } } } },
                     gruen: false,
                     zahl: /ROT an Hub des Eimers je Kurbel-Umdrehung in m 0 verfehlt/,
                 },
                 {
                     name: "der Eimer steigt mit der Uhr, nicht mit der Kurbel (r −0,2)",
-                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0.3, folgt: -0.2 } } } },
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0.3, folgt: -0.2, fehlCm: 0, ohneKlick: 0 } } } },
                     gruen: false,
                     zahl: /ROT an Rang-r Kurbelweg ↔ Hub über die Umdrehungen -0\.2 verfehlt/,
+                },
+                {
+                    name: "der Zweig brunnen-haspel: der Eimer steigt um r·2π je Umdrehung, ohne Klick steht er",
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0.804, folgt: 1, fehlCm: 0, ohneKlick: 0 } } } },
+                    gruen: true,
+                },
+                {
+                    name: "TÄTER: der Eimer hängt am Zustand, die gezeigte Kurbel läuft nach (40 cm daneben)",
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0.8, folgt: 0.99, fehlCm: 40, ohneKlick: 0 } } } },
+                    gruen: false,
+                    zahl: /ROT an größte Abweichung \|Hub − r·φ\| über den Kurbelweg in cm 40 verfehlt/,
+                },
+                {
+                    name: "ATTRAPPE: der Eimer steigt auch ohne Klick (Gegenlauf 0,3 m)",
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { hub: 0.8, folgt: 1, fehlCm: 0, ohneKlick: 0.3 } } } },
+                    gruen: false,
+                    zahl: /ROT an Gegenlauf: Hub in m je 2 s ohne Klick vor und nach dem Kurbeln 0\.3 verfehlt/,
+                },
+                {
+                    name: "TÄTER: der Klick an der Trommel wählt abbau (Umfang 0)",
+                    j: { leiter: "mensch.fahrzeug.maschine", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { hub: 0, folgt: 0, fehlCm: 0, ohneKlick: 0 }, taeter: "der Klick an der Trommel wählte das Verb abbau" } } },
+                    gruen: false,
+                    zahl: /ROT an Umfang 0 .*Täter: der Klick an der Trommel wählte das Verb abbau/,
                 },
             ],
         },
