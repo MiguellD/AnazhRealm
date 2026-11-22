@@ -663,6 +663,35 @@ function kopfLaedt() {
     return [...gesehen];
 }
 
+// der Richter läuft in einem Teil-Checkout: jede Datei seiner relativen require-Kette steht in sparse-checkout — sonst stirbt
+// er an MODULE_NOT_FOUND, bevor er urteilt (Lehre z398, 12.11.: die Urteils-Wache kam in ci-kopf.cjs, der Checkout nicht mit).
+// Zwei Leser: der Job `kopf` der check.yml und der Einlass der GPU-Probe (stempel-erbt-probe: der Stempel erbt über dieselbe Kette)
+function teilLaedt(J, wer) {
+    const co = ((J && J.steps) || []).find((s) => String(s.uses).startsWith("actions/checkout@"));
+    const teil = String((co && co.with && co.with["sparse-checkout"]) || "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((p) => p.replace(/^\//, ""));
+    return teil.length
+        ? kopfLaedt()
+              .filter((f) => !teil.includes(f))
+              .map(
+                  (f) =>
+                      `(V) KOPF: ${wer} lädt „${f}", der Teil-Checkout holt nur ${teil.join(" · ")} — er stürbe an MODULE_NOT_FOUND vor dem Urteil`
+              )
+        : [];
+}
+// der Einlass der GPU-Probe (gpu-probe.yml, EINLASS_JS) ruft den Richter: sein Teil-Checkout trägt dessen require-Kette
+const PROBE_WF = "gpu-probe.yml";
+function einlassTeil(docs) {
+    const E = docs[PROBE_WF]?.jobs?.einlass;
+    if (!E) return [`(V) KOPF: ${PROBE_WF} trägt keinen Job „einlass"`];
+    const js = String(E.steps.at(-1)?.env?.EINLASS_JS || "");
+    if (!/require\("\.\/scripts\/ci-kopf\.cjs"\)/.test(js))
+        return [`(V) KOPF: der Einlass der GPU-Probe ruft scripts/ci-kopf.cjs nicht — der Stempel erbt seine Probe nicht`];
+    return teilLaedt(E, "der Einlass der GPU-Probe");
+}
+
 // (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
 // checkout (scripts/ci-kopf.cjs mit id), dessen Ausgaben `voll` und `echt` der Job weiterreicht
 function kopfForm(doc) {
@@ -676,19 +705,7 @@ function kopfForm(doc) {
     if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
     if (K["continue-on-error"] !== undefined && K["continue-on-error"] !== false)
         v.push(`(V) KOPF: „${KOPF_JOB}" trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
-    // der Richter läuft in einem Teil-Checkout: jede Datei seiner relativen require-Kette steht in sparse-checkout — sonst
-    // stirbt er an MODULE_NOT_FOUND, bevor er urteilt (Lehre z398, 12.11.: die Urteils-Wache kam in ci-kopf.cjs, der Checkout nicht mit)
-    const co = (K.steps || []).find((s) => String(s.uses).startsWith("actions/checkout@"));
-    const teil = String((co && co.with && co.with["sparse-checkout"]) || "")
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((p) => p.replace(/^\//, ""));
-    if (teil.length)
-        for (const f of kopfLaedt())
-            if (!teil.includes(f))
-                v.push(
-                    `(V) KOPF: der Richter lädt „${f}", der Teil-Checkout holt nur ${teil.join(" · ")} — er stürbe an MODULE_NOT_FOUND vor dem Urteil`
-                );
+    v.push(...teilLaedt(K, "der Richter"));
     const eigen = (K.steps || []).filter((s) => !String(s.uses).startsWith("actions/checkout@"));
     const r = eigen.find((s) => KOPF_LAUF.test(lauf(s)));
     if (eigen.length !== 1 || !r)
@@ -1456,10 +1473,25 @@ function selbsttest() {
         selbsttestSchluessel(),
         selbsttestKopf(),
         selbsttestKette(),
+        selbsttestEinlass(),
         selbsttestZug()
     );
 }
 // (Z) gegen die echte check.yml: je Mutante der R6-Shell der Täter beim Namen
+// (V) KOPF am Einlass der GPU-Probe: die echten Workflows sind grün; der Teil-Checkout ohne die Urteils-Wache (der Fall z398 am
+// zweiten Leser) und ein Einlass, der den Richter nicht mehr ruft, fallen beim Namen
+function selbsttestEinlass() {
+    const teil = (z) => z[PROBE_WF].jobs.einlass.steps.find((s) => String(s.uses).startsWith("actions/checkout@")).with;
+    return taeterFaelle(
+        [
+            ["der Einlass ohne die Urteils-Wache im Teil-Checkout", (z) => { const w = teil(z); w["sparse-checkout"] = w["sparse-checkout"].replace("/scripts/lib/urteil-zeile.cjs", ""); }, /\(V\) KOPF: der Einlass der GPU-Probe lädt „scripts\/lib\/urteil-zeile\.cjs"/], // prettier-ignore
+            ["der Einlass ohne den Richter", (z) => { const e = z[PROBE_WF].jobs.einlass.steps.at(-1).env; e.EINLASS_JS = e.EINLASS_JS.replace('require("./scripts/ci-kopf.cjs")', "{}"); }, /\(V\) KOPF: der Einlass der GPU-Probe ruft scripts\/ci-kopf\.cjs nicht/], // prettier-ignore
+        ],
+        einlassTeil,
+        { gruen: workflowsLesen() }
+    );
+}
+
 function selbsttestZug() {
     const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
     const leer = () => ({ code: new Map(), text: "", namen: new Set(), zeilen: [] });
@@ -2052,6 +2084,7 @@ function hauptlauf() {
     const g = deckung(skripte, alleWorkflows, { ...AUSNAHMEN, ...torAusnahmen(tafel) });
     v.push(...g.v);
     v.push(...schluesselUrteil(alleWorkflows));
+    v.push(...einlassTeil(alleWorkflows));
     v.push(...playtestUrteil(alleWorkflows, skripte));
     const zeitenDatei = path.join(root, ZEITEN);
     const w = fs.existsSync(zeitenDatei)

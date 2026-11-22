@@ -5,6 +5,7 @@
 // jedes Bein der Karten (`echt <karte> (…)`) grün: `echt=nein`. Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
 // ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
 // der API ist ROT. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
+// DIESELBE KETTE trägt die GPU-Probe (`probeErbeLesen`, Leser: der Einlass in gpu-probe.yml, gate:apparat Klinge 7 fährt ihn).
 //   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` und `echt=` nach $GITHUB_OUTPUT
 "use strict";
 require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
@@ -90,7 +91,61 @@ function apiMit(basis, token) {
     return api;
 }
 
-module.exports = { kopfUrteil, kopfKette, KETTE, alleLaeufe, apiMit };
+// die Kette des Kopfs aus der API (der Richter unten, der Einlass der GPU-Probe): je Glied EINE Anfrage, sie endet am ersten
+// Commit, der nicht mehr erbt; ein Fehler der API ist ROT (apiMit wirft), nie eine kürzere Kette
+async function kopfKetteLesen(api, sha) {
+    const commits = {};
+    for (let s = sha; s; ) {
+        const c = (commits[s] = await api(`/git/commits/${s}`));
+        const e = c.parents.length === 1 ? c.parents[0].sha : null;
+        s = e && !commits[e] && kopfKette(sha, commits).at(-1) === c.sha ? e : null;
+    }
+    return commits;
+}
+
+// DIE GPU-PROBE ERBT WIE DIE BATTERIE (stempel-erbt-probe, 22.11.: je Stempel 10–13 min einer Karte für ein Urteil, das am
+// selben Baum schon stand; e3d964c9 gab auf der GTX 1050 nach, sein Elter fdba94e2 trug die Probe 3 von 3 grün): ein Kopf ohne
+// Inhalt erbt die Probe vom NÄCHSTEN Glied seiner Kette (die Kette oben: jedes Glied trägt denselben Baum), dessen Ruf JEDE Probe
+// des eigenen Rufs nennt (`rufVon`, der EINE Leser der Marke im Einlass) und an dem ein Lauf `completed/success` steht — die
+// Vorprüfung ist selbst leer über dem WIP (w28-pop-treue: Abgabe 4042a0c4 → Vorprüfung 7570379a → WIP c7324b75, ein Baum 902a0f92),
+// das Ende der Kette trägt keinen Ruf. Jeder andere Fall fährt, beim Namen. → { erbt: { sha, lauf } } · { faehrt: grund }
+function probeErbe({ sha, commits, laeufe = [], proben, rufVon }) {
+    const kette = kopfKette(sha, commits);
+    if (kette.length < 2)
+        return { faehrt: `Kopf ${String(sha).slice(0, 8)} trägt Inhalt oder ist ein Merge — er erbt keine Probe` };
+    const gruende = [];
+    for (const e of kette.slice(1)) {
+        const ruf = rufVon(commits[e].message) || [];
+        const fehlt = proben.filter((p) => !ruf.includes(p));
+        const an = laeufe.filter((l) => l.head_sha === e && l.event === "push");
+        const g = an.find((l) => l.status === "completed" && l.conclusion === "success");
+        if (!fehlt.length && g) return { erbt: { sha: e, lauf: g.id } };
+        gruende.push(
+            fehlt.length
+                ? `${e.slice(0, 8)} fuhr ${fehlt.join(", ")} nicht (Ruf: ${ruf.join(", ") || "keiner"})`
+                : `${e.slice(0, 8)} trägt keinen grünen Lauf (${an.map((l) => `${l.id} ${l.status}/${l.conclusion || "-"}`).join(", ") || "keinen"})`
+        );
+    }
+    return { faehrt: `kein Glied der Kette ohne Inhalt trägt diese Probe grün: ${gruende.join(" · ")}` };
+}
+
+// das Urteil aus der API: die Kette, dann die Läufe der Probe seit dem ältesten Glied (höchstens 3 Tage, wie der Richter); die
+// erste Seite reicht bis zum eigenen Lauf zurück, sonst ist sie kurz
+async function probeErbeLesen(api, { sha, lauf, proben, rufVon, wf = "gpu-probe.yml" }) {
+    const commits = await kopfKetteLesen(api, sha);
+    const glieder = kopfKette(sha, commits).slice(1);
+    const alt = Math.min(...glieder.map((s) => new Date(commits[s].committer.date)));
+    const laeufe = glieder.length
+        ? await alleLaeufe(api, `/actions/workflows/${wf}/runs`, {
+              nimm: (l) => glieder.includes(l.head_sha),
+              seit: Math.max(alt - 36e5, Date.now() - 3 * 864e5),
+              traegt: (rs) => rs.some((l) => Number(l.id) <= Number(lauf)),
+          })
+        : [];
+    return probeErbe({ sha, commits, laeufe, proben, rufVon });
+}
+
+module.exports = { kopfUrteil, kopfKette, KETTE, alleLaeufe, apiMit, kopfKetteLesen, probeErbe, probeErbeLesen };
 
 if (require.main === module) {
     const env = process.env;
@@ -102,12 +157,7 @@ if (require.main === module) {
     (async () => {
         const [ereignis, gewartet] = [env.GITHUB_EVENT_NAME, []];
         // die Kette des Kopfs: je Glied EINE Anfrage, sie endet am ersten Commit, der nicht mehr erbt
-        const commits = {};
-        for (let s = IMMER.includes(ereignis) ? null : env.GITHUB_SHA; s; ) {
-            const c = (commits[s] = await api(`/git/commits/${s}`));
-            const e = c.parents.length === 1 ? c.parents[0].sha : null;
-            s = e && !commits[e] && kopfKette(env.GITHUB_SHA, commits).at(-1) === c.sha ? e : null;
-        }
+        const commits = IMMER.includes(ereignis) ? {} : await kopfKetteLesen(api, env.GITHUB_SHA);
         const kette = kopfKette(env.GITHUB_SHA, commits);
         if (kette.length > 1)
             console.log(`Kopf ${String(env.GITHUB_SHA).slice(0, 8)}: ohne Inhalt über ${kette.slice(1).map((s) => s.slice(0, 8)).join(" → ")} — er trägt deren Urteil`);
