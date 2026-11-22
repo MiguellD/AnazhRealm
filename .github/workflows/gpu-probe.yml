@@ -16,6 +16,10 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 # dem Haupt-Faden 3- bis 8-mal über jedem Budget, sein ms-Urteil ist ROT gleich welcher Code. Bilder und Gates, die ZÄHLEN oder
 # vergleichen (Pixel, Dreiecke, Befehle, Bytes, Treue), rufen `gate:`/`bild:` und gelten auf jedem Läufer. Ein Ruf darf mischen:
 # `[gpu-probe: bild:wiese@0.5, zeit:gate:ankunft]` — das Bild fährt der freie Probe-Läufer, das Zeit-Gate wartet auf ein Band-Gerät.
+# DIE GL-WAND FÄHRT MIT (22.11., der Zug z662 fiel am Kandidaten 52ecb6df): jedes Bein auf gpu-probe trägt hinter den Proben des
+# Rufs `gate:webgl-probe` (W5 jedes Programm linkt im WebGL2-Rückfall, W6 ≤ 16 Sampler-Einheiten je Stoff; an der Radeon 45 s) —
+# eine neue Karte im Stoff (die Licht-Karte: der Fern-Ring trug 17) fiel bis dahin erst im echt-Job des Zugs an der GTX 1050,
+# nach dem Stempel. Kein neues Bein: ein Ruf nur mit `zeit:` weckt keinen Probe-Läufer; die Grenze von drei gilt den Proben des Rufs.
 # Nur diese drei Formen, die Namen gegen package.json und die Tafel geprüft — der EINE Leser ist der Schritt `einlass` unten
 # (EINLASS_JS; gate:apparat Klinge 7 FÄHRT ihn mit freien Befehlen, fremden Namen und gemischten Rufen und hält dieses Gesetz mit
 # Mutanten): nie ein freier Befehl aus der Message, das Repo ist öffentlich.
@@ -81,8 +85,12 @@ jobs:
                           if (g && !grund) grund = `„${p.slice(0, 80)}“: ${g}`;
                       }
                       if (!grund && proben.length > 3) grund = `${proben.length} Proben, höchstens 3 je Push`;
+                      const GL = "gate:webgl-probe";
+                      if (!grund && !skripte[GL]) grund = `die GL-Wand ${GL} fehlt in package.json`;
+                      const aufProbe = proben.filter((p) => !p.startsWith("zeit:"));
+                      if (aufProbe.length && !aufProbe.includes(GL)) aufProbe.push(GL);
                       const arten = [
-                          ["gpu-probe", proben.filter((p) => !p.startsWith("zeit:"))],
+                          ["gpu-probe", aufProbe],
                           ["gpu-zeit", proben.filter((p) => p.startsWith("zeit:"))],
                       ]
                           .filter(([, l]) => l.length)
@@ -101,8 +109,8 @@ jobs:
             fail-fast: false
             matrix: ${{ fromJSON(needs.einlass.outputs.matrix) }}
         runs-on: [self-hosted, "${{ matrix.label }}"]
-        # der Start-Hook wartet bis 25 min auf das Schloss, je Probe ≤ 8 min (höchstens drei), dazu Baum und npm ci
-        timeout-minutes: 60
+        # der Start-Hook wartet bis 25 min auf das Schloss, je Probe ≤ 8 min (höchstens drei und die GL-Wand), dazu Baum und npm ci
+        timeout-minutes: 70
         permissions:
             contents: read
             actions: read

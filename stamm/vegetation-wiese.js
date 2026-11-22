@@ -2599,10 +2599,19 @@ class AnazhRealm_vegetation_wiese {
     _terrainMaterialAt(x, z, y) {
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
+        // EIN MARSCH DURCH DIE SÄULE (front-brand): der Höhen-Term der Feuchte und die Strata fragen DIESELBE Oberfläche der
+        // Säule (`_voxelSurfaceY`) — sie wird einmal gelesen und beiden gereicht, das Ergebnis bleibt bit-gleich. Bis hier
+        // marschierte jeder Leser mit `y` (der Stoff unter dem Körper `_kontaktStoffAt`, das Graben, das Rad, das Bett des
+        // Brands) zweimal durch dieselbe Säule, je Marsch 17 Dichte-Proben: an der Mess-Wiese kostete die Zündung einer
+        // Bett-Maske mit 14 kahlen Punkten 29 Märsche und 3 654 Einheiten der Stand-Linse, mit EINEM Marsch 15 und 3 080
+        // (mit 9 kahlen: 19 → 10 Märsche, 3 275 → 2 906). Die Wand: gate:stand-takt --narbe N9-FELD.
+        const tief = typeof y === "number" && Number.isFinite(y);
+        const gen2 = this._genVersion() >= 2;
+        const surfY = (gen2 || tief) && this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
         // Γ1 (genese-plan, Lesart Boden): die FEUCHTE hebt die erde-Achse —
         // Ufer und Niederungen sind grabbar weich (erde schlägt stein), die
         // Farbe, die der Spieler sieht, bleibt das Material, das er bekommt.
-        const fw = this._genVersion() >= 2 ? this._feuchteAt(x, z) : 0;
+        const fw = gen2 ? this._feuchteAt(x, z, surfY) : 0;
         const axes = [
             [(f.lebendig || 0) + fw * AnazhRealm.FEUCHTE.erdeGewicht, "erde"],
             [f.dichte || 0, "stein"],
@@ -2616,8 +2625,7 @@ class AnazhRealm_vegetation_wiese {
         // STRATA: mit y schichtet das Material nach Tiefe — mehr als STRATA_STEIN_DEPTH unter `_voxelSurfaceY`
         // wird es "stein", auch wenn die erde-Achse gewinnt (erde/glut/quarz nur am obersten Band).
         // Ohne y bleibt das Verhalten bit-identisch.
-        if (typeof y === "number" && Number.isFinite(y)) {
-            const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
+        if (tief) {
             if (Number.isFinite(surfY)) {
                 const depth = surfY - y;
                 if (depth > AnazhRealm.STRATA_STEIN_DEPTH) {

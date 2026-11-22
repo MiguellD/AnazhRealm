@@ -119,6 +119,77 @@ class AnazhRealm_feld_brand {
         return { asche: 1, busch: 0, wald: 0, front };
     }
 
+    // DIE MASSE DES BRANDS (same.physik.reaktion#1, front-brand) → { holz, brannte, asche, rauch } in kg zur Uhr t: HOLZ BRENNT ZU
+    // ASCHE UND RAUCH, DIE MASSE BLEIBT. `holz` ist das Bett der Zelle, wie die Front es antraf (`kg`, `_brandZuenden`: Last ×
+    // lebendig × die Fläche ihres Betts); `brannte`, was ihre Front erreichte — der Anteil ihres Betts in derselben Ellipse, die
+    // Narbe und Flammen lesen (`_brandWeg`, auf `masseGitter`² Punkten, gewichtet mit der Maske, `_brandBettFn`): ausgebrannt
+    // das ganze Holz, vom Regen gelöscht der Teil hinter der Front. Davon bleibt der Mineral-Anteil des Gesetzes als ASCHE am
+    // Boden (`BRAND.mineral.gesamt`, Rothermels S_T — derselbe, der die Reaktion mindert; die Tat `brand` trägt sie,
+    // `_brandArbeit`), der Rest steigt als RAUCH — im Bild tragen ihn die Ballen: `_brandStrom` misst ihn an der Front,
+    // `_brandRauch` gibt ihn weiter. Bis front-brand war die Asche eine Decke ohne Masse und der Rauch eine Zahl von Ballen je
+    // Sekunde (gate:stand-takt --narbe N8: die optische Masse eines Ballens wuchs im Steigen × 1,58, volle ↔ halbe Last × 1,41).
+    _brandMasse(b, t = this._brandUhr) {
+        const [B, cs] = [AnazhRealm.BRAND, AnazhRealm.LIFE_FIELD.cell];
+        let teil = 1; // ausgebrannt: das ganze Holz (die Kosten trägt nur die Zelle, die noch brennt)
+        if (t < b.ende) {
+            const [N, bett, weg] = [
+                B.masseGitter,
+                this._brandBettFn(b.bett, b.cx, b.cz),
+                this._brandWeg(b, b.ecc, b.kopf[0], b.kopf[1]),
+            ];
+            const reich = (t - b.t0) * b.R * (1 - b.ecc); // so weit lief die Front im Maß ihrer Ellipse
+            let [u, n] = [0, 0];
+            for (let k = 0; k < N * N; k++) {
+                const [x, z] = [(b.cx + ((k % N) + 0.5) / N) * cs, (b.cz + (Math.floor(k / N) + 0.5) / N) * cs];
+                const g = bett ? bett(x, z) : 1;
+                n += g;
+                if (weg(x, z) <= reich) u += g;
+            }
+            teil = n > 0 ? u / n : 0;
+        }
+        const brannte = b.kg * teil;
+        const asche = brannte * B.mineral.gesamt;
+        return { holz: b.kg, brannte, asche, rauch: brannte - asche };
+    }
+
+    // DER STROM DER FRONT (front-brand, same.physik.reaktion#1) → kg Holz je Sekunde, die die Front der Zelle zur Uhr t verzehrt:
+    // die Fläche, die ihre Ellipsen im Bett der Zelle je Sekunde überstreichen — ∫ R(θ)·r(θ) dθ in `masseWinkel` Strahlen (je
+    // Eintritt seine Ellipse, wo keine andere sie schon verzehrte, gewogen mit der Maske des Betts wie im Buch `_brandMasse`) —
+    // mal die Masse je m² Bett. ER HÄNGT NIE AM BILD: bis hier zählte ihn `_brandBild` in den Winkeln, mit denen es die Front
+    // für das Auge abtastet, und `_brandRauch` gab ihn im Takt des Bilds weiter — 100 m vom Brand trug die Fahne 78 % ihres
+    // Rauchs, bei einem Bild von 250 ms 38 % (gate:stand-takt --narbe N8-BILD).
+    _brandStrom(b, t) {
+        const [N, K, G] = [AnazhRealm.BRAND.masseWinkel, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.BRAND.masseGitter];
+        const tau = t - b.t0;
+        if (!(tau > 0 && b.R > 0)) return 0;
+        const [x0, z0, [px, pz]] = [b.cx * K, b.cz * K, b.kopf];
+        const bett = this._brandBettFn(b.bett, b.cx, b.cz);
+        if (bett && !(b.bettM2 > 0)) {
+            let n = 0;
+            for (let k = 0; k < G * G; k++)
+                n += bett((b.cx + ((k % G) + 0.5) / G) * K, (b.cz + (Math.floor(k / G) + 0.5) / G) * K);
+            b.bettM2 = (n / (G * G)) * K * K; // die Fläche ihres Betts im Maß der Maske
+        }
+        const m2 = bett ? b.bettM2 : K * K;
+        if (!(m2 > 0)) return 0;
+        const [E, weg, reich] = [
+            b.ein || [b.ex, b.ez],
+            b.ein && this._brandWeg(b, b.ecc, px, pz),
+            tau * b.R * (1 - b.ecc),
+        ];
+        let flaeche = 0;
+        for (let j = 0; j < E.length; j += 2)
+            for (let i = 0; i < N; i++) {
+                const w = Math.PI * ((2 * i + 1) / N - 1);
+                const [c, sn] = [Math.cos(w), Math.sin(w)];
+                const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
+                const [x, z] = [E[j] + tau * Rt * (px * c - pz * sn), E[j + 1] + tau * Rt * (pz * c + px * sn)];
+                if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (weg && weg(x, z) < reich - 0.01)) continue;
+                flaeche += tau * Rt * Rt * (bett ? bett(x, z) : 1);
+            }
+        return ((b.kg / m2) * flaeche * 2 * Math.PI) / N;
+    }
+
     // DAS BETT EINER ZELLE ALS FLÄCHE (w28-lava-nachlauf) → null (die ganze Zelle trägt Bett) oder die Funktion (x, z) ∈ [0, 1]:
     // ihre Maske (`_brandStoff` `bett`, in der Tat als Hex-Wort) bilinear zwischen den Punkten ihres Gitters, über die weiche
     // Kante `BRAND.bettKante` — 1 auf dem Brennstoff, 0 auf dem Kies; außerhalb der Zelle gilt ihr Rand. Die EINE Lese-Stelle
@@ -142,7 +213,8 @@ class AnazhRealm_feld_brand {
     }
 
     // DIE ASCHE FOLGT DER FRONT (w28-brand-bild): je Bild malt der Takt EIN Viertel der Fläche EINER glühenden Zelle (±½ Zelle,
-    // reihum) in die Boden-Decke — es kostet, was brennt; die Nah-Wiese darüber baut neu, je Zelle höchstens alle `BRAND.wieseS` s.
+    // reihum) in die Boden-Decke — es kostet, was brennt; die Nah-Wiese über den geänderten Vierteln baut neu, je Zelle höchstens
+    // alle `BRAND.wieseS` s.
     _brandMalen() {
         const [bf, wk] = [this.state.brandFeld, this.state.wegeKarte];
         const G = bf && bf.glueht;
@@ -151,11 +223,22 @@ class AnazhRealm_feld_brand {
         const [b, v, cs] = [G[n >> 2], n & 3, AnazhRealm.LIFE_FIELD.cell];
         const [x0, z0] = [(b.cx - 0.5 + (v & 1)) * cs, (b.cz - 0.5 + (v >> 1)) * cs];
         const zelle = this._brandZellen();
+        let neu = false;
         for (const stufe of wk.stufen)
-            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle)) b.wieseNeu = true;
+            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle)) neu = true;
+        // DIE WIESE BAUT NEU, WO DIE ASCHE SICH ÄNDERTE (front-brand): `wieseNeu` ist das Rechteck der Viertel, deren Texel sich
+        // seit dem letzten Neubau der Zelle änderten — nur seine Kacheln fallen. Bis hier fiel mit jedem geänderten Viertel die
+        // ganze Fläche ±½ Zelle (32 m: 100 Kacheln der Nah-Streu und 36 der Nah-Wiese je Neubau, gate:stand-takt BRAND-ZELLEN).
+        if (neu) {
+            const W = b.wieseNeu;
+            b.wieseNeu = W
+                ? [Math.min(W[0], x0), Math.min(W[1], z0), Math.max(W[2], x0 + cs), Math.max(W[3], z0 + cs)]
+                : [x0, z0, x0 + cs, z0 + cs];
+        }
         if (b.wieseNeu && !(this._brandUhr - b.wieseT < AnazhRealm.BRAND.wieseS)) {
-            [b.wieseNeu, b.wieseT] = [false, this._brandUhr];
-            this._nahRingNeuIn((b.cx - 0.5) * cs, (b.cz - 0.5) * cs, (b.cx + 1.5) * cs, (b.cz + 1.5) * cs);
+            const W = b.wieseNeu;
+            [b.wieseNeu, b.wieseT] = [null, this._brandUhr];
+            this._nahRingNeuIn(W[0], W[1], W[2], W[3]);
         }
     }
 
@@ -222,8 +305,18 @@ class AnazhRealm_feld_brand {
         const leb = this.auraAt(x, z, 0, uhr).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
-            const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
-            const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
+            // DAS GEFÄLLE DES BETTS LIEST DIE EINE 2D-HÖHE DER WELT (front-brand, `_terrainMacroSurfaceY`: das Gelände-Gesetzbuch,
+            // auf jeder Seite dieselbe Zahl) — die Höhe `y`, auf der das Bett liegt, bleibt die der Säule (`_voxelSurfaceY`: Höhle,
+            // Edit). Bis hier marschierte jede Zündung für Höhe und Gefälle DREIMAL durch ihre Säule (je Marsch 17 Dichte-Proben,
+            // 57 Einheiten der Stand-Linse): mit ihren fünf Bett-Punkten 450 Einheiten je Zündung, zwei Zündungen in einem Schritt
+            // mit 16 Zellen 1 099 (gate:stand-takt BRAND-ZELLEN, Soll 64 je Zelle).
+            const [y, h, y0] = [this._voxelSurfaceY(x, z), cs / 2, this._terrainMacroSurfaceY(x, z)];
+            const [gx, gz] = [
+                (this._terrainMacroSurfaceY(x + h, z) - y0) / h,
+                (this._terrainMacroSurfaceY(x, z + h) - y0) / h,
+            ];
+            if (!Number.isFinite(gx + gz))
+                this._bruchMelden("BRAND-GEFÄLLE: die 2D-Höhe trägt an " + x + "/" + z + " keine Zahl");
             // DAS BETT LIEGT, WO DIE ZELLE BRENNSTOFF TRÄGT (w28-lava-nachlauf): die Zelle misst ihr Bett auf einem Gitter von
             // `bettGitter`² Punkten (der Stoff je Punkt auf der Ebene des Gefälles) — `bett` ist seine Maske (null: die ganze
             // Zelle), `anteil` seine Fläche, die Zeile die des häufigsten Brennstoffs. DIE LAST BLEIBT GANZ (`leb`): wo Bett liegt,
@@ -416,6 +509,7 @@ class AnazhRealm_feld_brand {
         // hier fiel sie mit dem KOPF, die Flanken hatten erst einen Keil gebrannt (Dorf-Wiese 300 s: 1 Zelle, 7 Flammen → 9, 106)
         const ecken = [x0, x0 + cs].flatMap((x) => [z0, z0 + cs].map((z) => [x, z]));
         const quer = Math.max(...ecken.map(([x, z]) => (x - ex) * T.px + (z - ez) * T.pz));
+        const last = f.zeile.brenn.last * Math.min(1, f.leb);
         const zelle = Object.assign(bf.get(key) || { cx, cz, y: null }, {
             t0: t,
             an: t,
@@ -434,8 +528,12 @@ class AnazhRealm_feld_brand {
             tr: T.tr,
             gx: f.gx,
             gz: f.gz,
-            // H·w (kJ/m²): die Wärme des Betts je Fläche — mal dem Tempo die Intensität der Front (Byram), die das Bild liest
-            iw: (f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, f.leb),
+            // DIE LAST DES BETTS, wie die Front es antrifft (`w` kg/m² trocken: die Last der Zeile × lebendig): sie trägt die Wärme
+            // je Fläche H·w (`iw` kJ/m² — mal dem Tempo die Intensität der Front nach Byram, die das Bild liest) und DIE MASSE DER
+            // ZELLE (`kg`: × die Fläche ihres Betts — das Holz, das zu Asche und Rauch brennt, `_brandMasse`)
+            w: last,
+            iw: (f.zeile.brenn.heiz / 1000) * last,
+            kg: last * f.anteil * cs * cs,
             bett: f.bett, // die Maske ihres Betts (`_brandStoff`): Flammen, Front und Asche stehen auf ihr (`_brandBettFn`)
         });
         bf.set(key, zelle);
@@ -573,7 +671,9 @@ class AnazhRealm_feld_brand {
                             (z.bett[4 * i + 3] << 3)
                         ).toString(16)
                     ).join("");
-                this._tatSchreiben("brand", ax, az, hex ? { w, bett: hex } : { w });
+                // DIE ASCHE HAT MASSE (`_brandMasse`): der Mineral-Anteil dessen, was in der Zelle brannte, in kg (auf das Gramm)
+                const kg = Math.round(this._brandMasse(z, R.t).asche * 1e3) / 1e3;
+                this._tatSchreiben("brand", ax, az, hex ? { w, kg, bett: hex } : { w, kg });
                 continue;
             }
             const z = R.faellig[R.i - n];
@@ -683,8 +783,8 @@ class AnazhRealm_feld_brand {
                     if (weg && weg(x, z) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01) continue;
                     if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
                     [vx, vz] = [x, z];
-                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (bett && bett(x, z) < 0.5))
-                        continue;
+                    if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (bett && bett(x, z) < 0.5)) continue;
+                    if (s < naechste) continue;
                     const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
                     naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
                     const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
@@ -702,7 +802,21 @@ class AnazhRealm_feld_brand {
                     fl.push(f);
                 }
             if (fl.length > n0) {
-                qu.push({ b, von: n0, bis: fl.length });
+                // `holz`: was die Front der Zelle seit ihrem letzten Bild verzehrte (kg) — ihr Rauch. Ihr Strom (`_brandStrom`, kg/s),
+                // gemessen einmal je `schrittS` der Welt-Uhr zur Mitte dieser Sekunde (die Kosten trägt die Änderung, Gebot 7), mal
+                // die Spanne an der Uhr der WELT, die die Front treibt — nie am Takt des Bilds. Tritt die Zelle neu ins Bild, zählt
+                // die letzte Sekunde (höchstens seit ihrem Zünden) mit dem Strom zu deren Mitte: Rauch von früher bringt sie nicht mit.
+                const S = AnazhRealm.BRAND.schrittS;
+                if (!(t < b.stromBis)) [b.strom, b.stromBis] = [this._brandStrom(b, t + S / 2), t + S];
+                const neu = !(t - b.rauchT <= S);
+                const seit = neu ? Math.max(b.t0, t - S) : b.rauchT;
+                qu.push({
+                    b,
+                    von: n0,
+                    bis: fl.length,
+                    holz: (neu ? this._brandStrom(b, (seit + t) / 2) : b.strom) * (t - seit),
+                });
+                b.rauchT = t;
                 // DAS LICHT STEHT BEI DEN FLAMMEN (w28-brand-bild): 1 m über der stärksten der Zelle — bis hier über der Zell-Mitte
                 let k = n0;
                 for (let i = n0 + 1; i < fl.length; i++) if (fl[i].I > fl[k].I) k = i;
@@ -714,10 +828,18 @@ class AnazhRealm_feld_brand {
         this._brandRauch(dt, qu, wind);
     }
 
-    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild. Je Zelle und Sekunde
-    // `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens
-    // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur
-    // Welt-Uhr wie die Front, die ihn trägt).
+    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild und dem Holz, das ihre
+    // Front seit ihrem letzten Bild verzehrte (`holz` kg). Je Zelle und Sekunde `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist
+    // der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens `rauch.max` im Himmel (der älteste weicht dem neuen); jeder
+    // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt).
+    // DER BALLEN TRÄGT DIE MASSE SEINES RAUCHS (same.physik.reaktion#1, `_brandMasse`): was die Front seit dem letzten verzehrte,
+    // ohne die Asche (`m` kg). Sichtbar ist sein Schwebstoff (`BRAND.partikel`: `jeKg` kg je kg verbranntem Holz, mit dem
+    // Auslösch-Querschnitt `km` m² je kg): die optische Dicke über seine Fläche ist km × Schwebstoff — im Maß des Rauch-Bilds
+    // (`_rauchStoff`: τ im Kern, die Dicke (1 − ρ²)^profil) steht im Kern τ = `tr2` ÷ r², tr2 = km × Schwebstoff × (profil + 1)
+    // ÷ π. Seine Deckung ist 1 − e^(−τ) (Beer-Lambert) und fällt im Wachsen mit 1 ÷ r²: der Ballen verdünnt, er verliert und
+    // erfindet keinen Rauch. Ein frischer Ballen deckt höchstens `a0` — trägt er mehr, ist er größer (dieselbe Masse über
+    // mehr Fläche); deckt er unter `aKill`, wartet sein Rauch auf den nächsten. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
+    // verdünnte mit b0 ÷ s: ein dünnes Bett rauchte wie ein dichtes, und im Steigen wuchs der Rauch.
     _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
         const st = this.state;
         const R = AnazhRealm.BRAND.bild.rauch;
@@ -728,24 +850,44 @@ class AnazhRealm_feld_brand {
         // fasst, steigt je Zelle seltener ein größerer Ballen (bis `kMax`: dieselbe Deckung der Fläche); bis w3v-brand-bild schob
         // jeder neue den ältesten aus dem Himmel, und die Fahne eines großen Brands stieg nie
         const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
+        const [B, W] = [AnazhRealm.BRAND, AnazhRealm.RAUCH_BILD];
+        const [optik, tau0] = [(B.partikel.km * B.partikel.jeKg * (W.profil + 1)) / Math.PI, -Math.log(1 - R.a0)];
+        // geboren wird ein Ballen erst zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
+        // selbst verdünnte ihn sein erstes Bild unter die Sicht — er stürbe, ehe ihn ein Auge sah, und sein Rauch mit ihm
+        const aGeburt = Math.sqrt(R.aKill * R.a0);
         for (const q of qu) {
-            const voll = R.jeS * q.b.glut;
+            const b = q.b;
+            const voll = R.jeS * b.glut;
             const rate = Math.min(voll, anteil);
             const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
-            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + rate * s;
-            for (; q.b.rauchSchuld >= 1; q.b.rauchSchuld--) {
-                if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
+            // DIE SCHULD DER MASSE (`rauchKg`): das Holz, das die Front seit dem letzten Ballen verzehrte (`holz` je Bild, gezählt an
+            // der Uhr der Welt). Der Ballen nimmt sie mit; deckt er unter der Sicht, bleibt sie beim nächsten.
+            b.rauchKg = (b.rauchKg || 0) + q.holz;
+            b.rauchSchuld = (b.rauchSchuld || 0) + rate * s;
+            for (; b.rauchSchuld >= 1; b.rauchSchuld--) {
+                const holz = b.rauchKg / Math.floor(b.rauchSchuld); // die Schuld teilt sich auf die Ballen dieses Bilds
+                const [m, tr2] = [holz * (1 - B.mineral.gesamt), holz * optik];
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
                 const f = fl[q.von + (h % (q.bis - q.von))];
+                // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
+                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel)
+                const b0 = Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size);
+                const a = 1 - Math.exp(-tr2 / (R.size * b0) ** 2);
+                if (a < aGeburt) continue; // unter der Sicht: sein Rauch bleibt beim nächsten Ballen
+                b.rauchKg -= holz;
+                if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
+                const y = f.y + f.lang + b0 * R.size;
                 T.push({
                     x: f.x,
-                    y: f.y + f.lang,
+                    y,
                     z: f.z,
-                    y0: f.y + f.lang,
-                    b0: R.b0 * f.lang * k,
-                    s: R.b0 * f.lang * k,
+                    y0: y,
+                    b0,
+                    s: b0,
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
-                    a: R.a0,
+                    m,
+                    tr2,
+                    a,
                     alt: 0,
                 });
             }
@@ -759,10 +901,71 @@ class AnazhRealm_feld_brand {
             [p.zx, p.zy, p.zz] = [w.x * w.ms, p.w, w.z * w.ms]; // sein Zug in m/s (`_rauchZeichnen`)
             p.alt += s;
             p.s = p.b0 + R.alpha * (p.y - p.y0);
-            p.a = (R.a0 * p.b0) / p.s;
+            p.a = 1 - Math.exp(-p.tr2 / (R.size * p.s) ** 2);
             if (p.a < R.aKill || p.alt > R.lebenS) T.splice(k, 1);
         }
         this._rauchZeichnen(R, T, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+    }
+
+    // DIE TAFEL DER ZUNGE (`_brandFlammenZeichnen`) → { daten, n, rMax, luma0, mittel }, gerechnet einmal je Welt: je Höhe h
+    // (`bild.flamme.tafel` Zeilen) ihr Ton in RGB — der Planck-Ort ihrer Temperatur (fachwerk `lichtFarbe`, von kelvin[0] an der
+    // Wurzel auf kelvin[1] an der Spitze) × (T/T0)⁴ — und ihr Radius r(h) ÷ `rMax` in A (fachwerk `FLAMME.zunge`). `luma0` ist die
+    // Luma der heißesten Zeile, `mittel` DAS MITTEL DES LEIBS in ihrem Maß: Luma(Ton) × Dicke über die Fläche der Zunge (ξ quer,
+    // h längs, gewichtet mit r(h); der Ton bei h + (1 − h)·`mantel`·ξ², die Dicke (1 − ξ²)^`rand`·(1 − h)^`spitze` — aus
+    // denselben Bytes, linear wie der Filter der Tafel). Gemessen 0,17: so wenig ihrer Wurzel trägt die Zunge im Mittel.
+    _flammeTafel() {
+        if (this._flammeTafelMerk) return this._flammeTafelMerk;
+        const FW = globalThis.__fachwerkCore;
+        const [B, Z] = [AnazhRealm.BRAND.bild, FW.FLAMME.zunge];
+        const BF = B.flamme;
+        const rMax = Math.max(...Z.map((p) => p[0]));
+        const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
+        const daten = new Uint8Array(4 * N);
+        for (let i = 0; i < N; i++) {
+            const h = i / (N - 1);
+            let j = 1;
+            while (j < Z.length - 1 && Z[j][1] < h) j++;
+            const [a, b] = [Z[j - 1], Z[j]];
+            const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
+            const K = K0 + (K1 - K0) * h;
+            const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
+            for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
+            daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
+        }
+        const lies = (h, k) => {
+            const u = Math.min(N - 1, Math.max(0, h * N - 0.5));
+            const i = Math.min(N - 2, Math.floor(u));
+            return (daten[4 * i + k] * (1 - (u - i)) + daten[4 * i + 4 + k] * (u - i)) / 255;
+        };
+        const luma = (h) => 0.2126 * lies(h, 0) + 0.7152 * lies(h, 1) + 0.0722 * lies(h, 2);
+        const luma0 = ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(FW.lichtFarbe(K0));
+        const [NH, NX] = [64, 32];
+        let [strahl, flaeche] = [0, 0];
+        for (let i = 0; i < NH; i++) {
+            const h = (i + 0.5) / NH;
+            const r = lies(h, 3);
+            for (let j = 0; j < NX; j++) {
+                const q = Math.pow((j + 0.5) / NX, 2); // ξ²
+                strahl += luma(h + (1 - h) * BF.mantel * q) * Math.pow(1 - q, BF.rand) * Math.pow(1 - h, B.spitze) * r;
+                flaeche += r;
+            }
+        }
+        return (this._flammeTafelMerk = { daten, n: N, rMax, luma0, mittel: strahl / flaeche / luma0 });
+    }
+
+    // DIE OPTIK DER ZUNGE (front-brand) → { quelle, deckung }: die Flamme ist ein DÜNNER STRAHLER, kein Körper. Das Gesetz des
+    // Kerns: der leuchtende Leib eines Feuers trägt `FEUER_LEUCHTDICHTE` (15 000 cd/m²) — ein Dreißigstel des schwarzen Körpers
+    // seiner Temperatur (`glutLeuchtdichte(LICHT_GESETZ.feuer.kelvin)`: der Ruß ist dünn). `quelle` ist dieser schwarze Körper
+    // (cd/m², der Ton der Wurzel), `deckung` die Deckung bei Dicke 1: Leib ÷ Quelle ÷ das Mittel des Leibs (`_flammeTafel`) —
+    // die Zunge strahlt je Pixel Quelle × Ton × Deckung und nimmt ihrem Grund nur diese Deckung (Kirchhoff), IM MITTEL IHRES
+    // LEIBS steht sie bei der Leuchtdichte des Gesetzes: dieselbe Zahl × Fläche, die `_flammenLicht` als Schein wirft. Bis hier
+    // trug nur ihre WURZEL die Leuchtdichte des Gesetzes (der Leib im Mittel 17 %), und sie deckte wie ein schwarzer Körper
+    // (1 − e^(−6·Dicke)): über der Wiese im Mittagslicht stand ein dunkleres Band (gate:post-kette (l): 20 % ihrer Pixel
+    // dunkler als die Karte, Lichtstärke × 0,24; die Station same.kopplung.kaskade zählte +9 Flammen-Pixel).
+    _flammeOptik() {
+        const FW = globalThis.__fachwerkCore;
+        const quelle = FW.glutLeuchtdichte(FW.LICHT_GESETZ.feuer.kelvin);
+        return { quelle, deckung: FW.FEUER_LEUCHTDICHTE / quelle / this._flammeTafel().mittel };
     }
 
     // Die Flammen des Bilds (`_brandBild`) als EIN Satz. DIE ZUNGE IST DER DREHKÖRPER des Flammen-Gesetzes (fachwerk `FLAMME`),
@@ -774,8 +977,8 @@ class AnazhRealm_feld_brand {
     // die Spitze dunkel-rot. DIE ZUNGE IST EIN MEDIUM, das strahlt und schluckt: ihre Dicke im Abstand ξ = |x|/r(h) von der Achse ist
     // (1 − ξ²)^`rand` (der Rand weich, ohne Kante), × (1 − h)^spitze; Rand und Dichte zerreißen im Rausch-Gesetz, das mit `zug`
     // Längen je Sekunde steigt (`rausch`: Skala quer, hoch, Hub zur Spitze hin; zwei Lagen des EINEN Rausch-Atlas); die Deckung
-    // 1 − exp(−`dicke` · Dicke), gemischt vormultipliert (Licht × Deckung + Grund × (1 − Deckung)): wie viele Zungen sich auch decken,
-    // keine strahlt heller als ihr Ton. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
+    // ist Dicke × `_flammeOptik().deckung` (ein dünner Strahler), gemischt vormultipliert (Quelle × Deckung + Grund × (1 − Deckung)):
+    // wie viele Zungen sich auch decken, keine strahlt heller als ihre Quelle, und keine verdunkelt ihren Grund. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
     // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). DER KERN (w28-brand-kern): die Temperatur fällt auch QUER zur Achse — bei ξ liest der Ton die Tafel bei h + (1 − h)·`mantel`·ξ² (die Achse heiß, der Mantel orange bis rot); und der Ton steht VOR dem Auge der Nacht (`_nachtAuge`, bild-kosten).
     _brandFlammenZeichnen(fl) {
         const st = this.state;
@@ -786,22 +989,7 @@ class AnazhRealm_feld_brand {
         const [sq, sh, hub] = BF.rausch;
         const weit = 1 + 1.25 * hub; // so weit weitet das Rauschen den Radius höchstens: die Fläche trägt den Rand ganz
         if (!S) {
-            const FW = globalThis.__fachwerkCore;
-            const Z = FW.FLAMME.zunge;
-            const rMax = Math.max(...Z.map((p) => p[0]));
-            const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
-            const daten = new Uint8Array(4 * N);
-            for (let i = 0; i < N; i++) {
-                const h = i / (N - 1);
-                let j = 1;
-                while (j < Z.length - 1 && Z[j][1] < h) j++;
-                const [a, b] = [Z[j - 1], Z[j]];
-                const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
-                const K = K0 + (K1 - K0) * h;
-                const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
-                for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
-                daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
-            }
+            const { daten, n: N, rMax, luma0 } = this._flammeTafel();
             const tafel = new THREE.DataTexture(daten, N, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
             tafel.name = "brand-flamme:tafel";
             tafel.magFilter = tafel.minFilter = THREE.LinearFilter;
@@ -843,24 +1031,13 @@ class AnazhRealm_feld_brand {
                 .mul(T.float(1).sub(h).pow(B.spitze))
                 .mul(T.float(1).add(rausch.mul(0.5)).max(0));
             const ton = T.texture(tafel, T.vec2(h.add(h.oneMinus().mul(x.div(r).pow2().min(1)).mul(BF.mantel)), 0.5)).rgb; // prettier-ignore
+            // DIE ZUNGE IST EIN DÜNNER STRAHLER (`_flammeOptik`, front-brand): ihr Ton steht in der Leuchtdichte ihrer QUELLE
+            // (die Tafel trägt die Lichtfarbe auf den hellsten Kanal 1: ÷ die Luma der heißesten Zeile), ihre Deckung ist ihre
+            // Dicke × `deckung` — sie strahlt Quelle × Deckung und nimmt dem Grund nur diese Deckung (Kirchhoff)
+            const O = this._flammeOptik();
             mat.colorNode = T.vec4(
-                // die Zunge leuchtet in der Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE`, licht-eine-skala P8) — bis
-                // hier trug sie einen Bild-Ton `ziel` ÷ Belichtung: bei Tag und Nacht dasselbe Bild, nie dieselbe Flamme
-                // (die Tafel trägt die Lichtfarbe auf den hellsten Kanal 1: ÷ die Luma der heißesten Zeile, die Wurzel steht
-                // bei der Leuchtdichte des Gesetzes)
-                this._nachtAuge(
-                    ton.mul(
-                        globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE /
-                            __weltLicht.EINHEIT_LX /
-                            ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(
-                                globalThis.__fachwerkCore.lichtFarbe(BF.kelvin[0])
-                            )
-                    ),
-                    true
-                ),
-                T.float(1)
-                    .sub(T.exp(dicke.mul(BF.dicke).negate()))
-                    .mul(this._tiefenSaum(BF.saumM))
+                this._nachtAuge(ton.mul(O.quelle / __weltLicht.EINHEIT_LX / luma0), true),
+                dicke.mul(O.deckung).min(1).mul(this._tiefenSaum(BF.saumM))
             );
             const mesh = AnazhRealm._instanzMesh(geo, mat, B.flammenMax);
             mesh.name = "brand-flammen";
@@ -935,9 +1112,9 @@ AnazhRealm.BRAND = Object.freeze({
     // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); die Spitze der Zunge pulst um ± `puls` ihrer Länge; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
     // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
-    // Tonkurve, ihr Licht trägt ihre Leuchtdichte (`_flammenLicht`, fachwerk `FEUER_LEUCHTDICHTE`), die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
+    // Tonkurve, ihr Leib trägt im Mittel die Leuchtdichte des Gesetzes (`_flammeOptik`, fachwerk `FEUER_LEUCHTDICHTE` — dieselbe, die `_flammenLicht` wirft), ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
     // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
-    // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
+    // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken nach ihrer Masse (`_brandRauch`: frisch höchstens `a0`) und fallen unter
     // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
     // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD), sein Muster steigt mit `steigMs` m/s
     bild: Object.freeze({
@@ -956,7 +1133,6 @@ AnazhRealm.BRAND = Object.freeze({
         flamme: Object.freeze({
             kelvin: Object.freeze([3000, 1700]),
             mantel: 1,
-            dicke: 6,
             rand: 1.5,
             rausch: Object.freeze([1.6, 2.5, 0.8]),
             tafel: 32,
@@ -986,6 +1162,15 @@ AnazhRealm.BRAND = Object.freeze({
     narbe: Object.freeze({ lambda: Object.freeze([14, 5]), amp: Object.freeze([0.7, 0.25]), band: 0.18 }),
     feuchte: Object.freeze({ trocken: 0.06, faser: 0.35, nass: 2.5 }),
     mineral: Object.freeze({ gesamt: 0.0555, frei: 0.01 }),
+    // DIE MASSE (`_brandMasse`, same.physik.reaktion#1): das Gitter je Zelle, auf dem das Buch den verzehrten Anteil ihres Betts
+    // misst (32² Punkte, ½ m); der Schwebstoff des Rauchs — `jeKg` kg je kg verbranntem trockenem Brennstoff (Andreae & Merlet
+    // 2001, Global Biogeochem. Cycles 15: Savanne und Grasland, Gesamt-Schwebstoff 8,3 g/kg) mit dem Auslösch-Querschnitt
+    // `km` m²/kg (Mulholland & Croarkin 2000, Fire and Materials 24: 8,7 m²/g für Rauch flammender Verbrennung)
+    // `masseWinkel` die Strahlen, in denen `_brandStrom` die Front abtastet (bei der größten Exzentrizität, lbMax 8 → 0,992,
+    // auf 0,1 % genau)
+    masseGitter: 32,
+    masseWinkel: 96,
+    partikel: Object.freeze({ jeKg: 0.0083, km: 8700 }),
     lbMax: 8,
     nachbarn: Object.freeze(
         [

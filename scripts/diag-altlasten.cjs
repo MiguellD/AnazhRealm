@@ -1617,6 +1617,8 @@ const BELICHTUNG_TEILER = [
     // KORREKTUR (die Daten-Leser): seit a3663ef5f liest der Spiegel zweimal zurück, die Zeile nannte 1 — die Wand stand ROT am Kopf
     ["_spiegelPass", 2, "bild-sicht.js — der Spiegel-Pass liest das Szenen-Ziel als Strahldichte zurück, ÷ kBild: am Treffer (vier Abgriffe) und am Himmel des Bilds"],
     ["_augenLichtStaerke", 1, "bild-himmel.js — das Licht des Auges eicht die 18-%-Karte der Höhle bei der Belichtung k auf Mittelgrau (das Auge adaptiert wie die Kamera)"],
+    // stern-sicht: das Glied Auge → Schirm für Punktquellen — kein Mitglied der Klasse (das Licht des Punkts bleibt lx in der Instanz-Farbe)
+    ["_buildStarField", 1, "bild-himmel.js — das Auge eines Punkts: an der Grenzgröße der Tag-Achse steht sein Kern-Pixel auf der Schwelle des Schirms (`sternBild.schwelle`, belichtet), ÷ k desselben Bilds"],
 ];
 const BELICHTUNG_TERM = /\btoneMappingExposure\b|_vorBelichtung\(\)\s*\.\s*k(?:Bild)?\b/;
 function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = BELICHTUNG_TEILER, klasse = ERSCHEINUNG_KLASSE, rest = ERSCHEINUNG_REST) {
