@@ -337,7 +337,8 @@ class AnazhRealm_siedlung_instanz {
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         // Auch die REGIONALE InstancedMesh-Gruppe hängt in der Region-BundleGroup; jede Mutation (Alloc/Free/
         // Slot-Stempel/Matrix/Grow) läuft durch die Chokepoints mit _archMeshBundleTouch. Tür-Flügel
-        // (leaf.tuer) bleiben DRAUSSEN (per-Frame-Matrizen, _tickTorFluegel). GLOBALE Gruppen ziehen in EIN
+        // (leaf.tuer) und die Teile einer Haspel (leaf.welle, _tickHaspel) bleiben DRAUSSEN (per-Frame-Matrizen, _tickTorFluegel).
+        // GLOBALE Gruppen ziehen in EIN
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
         // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
@@ -345,7 +346,9 @@ class AnazhRealm_siedlung_instanz {
         // auf der GPU (ein Bündel spielte die Züge ab, die es aufnahm — bis w25-gpu-wahl das eigene "@wahl"-Bündel, das das
         // Hauptbild bei jeder neuen Wahl neu aufnahm), die Kaskaden-Box liest ihre Werfer-Hülle (`_kaskadenHuellen`).
         const bundle =
-            !leaf.tuer && !satz && !wahl ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
+            !leaf.tuer && !leaf.welle && !satz && !wahl
+                ? this._archRegionBundleFor(regional ? regionKey : "@global")
+                : null;
         if (satz) {
             mesh.frustumCulled = false;
             mesh.userData.bauSatz = satz;
@@ -375,6 +378,7 @@ class AnazhRealm_siedlung_instanz {
             regional,
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
+            welle: leaf.welle || null, // brunnen-haspel — das Teil der Maschine (kurbel · seil · eimer), `_haspelLeib`
             satz, // Welle 6 — die Satz-Art (null = die Gruppe zeichnet selbst)
             wahl, // "gpu": die Wahl der GPU je Instanz und Pass (null = die Gruppe zeichnet jede Instanz, regional ihr Bündel)
             wahlGpu, // der Stempel der Wahl auf jede Senke der Gruppe (auch die gewachsene)
@@ -687,6 +691,7 @@ class AnazhRealm_siedlung_instanz {
             // DIE FLÜGEL-INSTANZ (1310-4): zeichnen mehrere Flügel in EINER Gruppe, trägt die Marke den Schwenk-Träger ihres
             // Flügels (Scharnier, Lage der Gestalt) — `g.tuer` ist nur der des ersten
             if (leaf.tuer) ref.tuer = leaf.tuer;
+            if (leaf.welle) ref.welle = leaf.welle;
             const slot = ref.slot;
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -722,6 +727,7 @@ class AnazhRealm_siedlung_instanz {
         entry.instSlots = slots;
         this._cullWecken(entry); // die gezeichnete Stufe wechselt: der Cull urteilt neu (`_cullWache`)
         this._fluegelLeib(entry); // der Tür- und Tor-Flügel trägt seinen Leib aus der Matrix, die er zeichnet (leib.K4)
+        this._haspelLeib(entry); // die Haspel merkt die Geburt ihrer Teile und steht im Zustand ihrer Kurbel (brunnen-haspel)
         // DIE HÜLLE DER STUFE (Welle L, Kollision == Optik): ein Haus kollidiert, wie es gezeichnet ist — die Stufe 0 mit den
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.

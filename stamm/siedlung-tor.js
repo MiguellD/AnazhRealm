@@ -881,5 +881,96 @@ class AnazhRealm_siedlung_tor {
         tmp.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
         return out.multiply(tmp); // T(h)·R·T(−h)
     }
+
+    // DIE HASPEL (brunnen-haspel, mensch.fahrzeug.maschine#1): die Welle mit Kurbel des Ziehbrunnens ist Gesetz des Kerns
+    // (fachwerk `HASPEL`: Hub = r·φ, Kraft = Last · r ÷ Arm, der Eimer schöpft erst unter dem Spiegel). Ihre bewegten Teile reisen
+    // als benannte Teile (`leaf.welle`: kurbel · seil · eimer) und zeichnen als eigene Instanzen außerhalb jedes Satzes und
+    // Bündels (wie der Tür-Flügel); der Wirt setzt je Teil Ruhe · `haspelTeilMatrix(φ)` — die Ruhe ist die Matrix, mit der die
+    // Stufe den Slot geboren hat. Der Zustand {phi, wasser, richtung} steht am Eintrag (`entry._haspel`), das Verb `kurbeln`
+    // (`_bauVerb` im Klick) schreibt ihn über `haspelSchritt`, der Takt (`_tickHaspel`) führt die gezeigte Kurbel mit der
+    // Hand nach (höchstens die Drehzahl des Gesetzes) — Kurbel, Seil und Eimer lesen in jedem Bild DASSELBE φ.
+    // Die Teile eines Eintrags (aus den Slots seiner Stufe) oder null: ein Bau ohne Haspel kennt das Verb nicht.
+    _haspelVon(entry) {
+        const t = entry && entry._haspelSlots === entry.instSlots ? entry._haspelTeile : null;
+        return t && t.length ? t : null;
+    }
+    // Gerufen, wo die Slots einer Stufe entstehen (`_archInstancePlace`, neben `_fluegelLeib`): sammelt die Haspel-Teile, merkt
+    // ihre Geburts-Matrix und setzt sie in den Zustand des Eintrags (eine neue Stufe dreht nie zurück in die Ruhe-Lage).
+    _haspelLeib(entry) {
+        const slots = entry.instSlots;
+        const groups = this.state.archInstanceGroups;
+        const teile = [];
+        for (const s of slots || []) {
+            const g = groups && groups.get(s.key);
+            const w = s.welle || (g && g.welle);
+            if (!g || !w || g.shadowTwin || !(s.slot >= 0)) continue;
+            const ruhe = new THREE.Matrix4();
+            g.mesh.getMatrixAt(s.slot, ruhe);
+            teile.push({ g, ref: s, teil: w.teil, ruhe });
+        }
+        entry._haspelSlots = slots;
+        entry._haspelTeile = teile;
+        if (teile.length && entry._haspel) this._haspelSetzen(entry, entry._haspelGezeigt);
+    }
+    // Die Maße der Haspel des Eintrags: der Kern aus den Reglern seiner Gestalt (Rezept + Guss-Stempel `studioOv`).
+    _haspelMass(entry) {
+        if (entry._haspelM) return entry._haspelM;
+        const FC = globalThis.__fachwerkCore;
+        const pre = FC.PRESETS[this._foundryPresetForEntry(entry)];
+        if (!pre) throw new Error(`HASPEL: der Eintrag ${entry.id} trägt Haspel-Teile ohne Rezept des Fachwerks`);
+        return (entry._haspelM = FC.haspelMass(Object.assign({}, pre.s, entry.studioOv || {})));
+    }
+    // DAS VERB `kurbeln`: die Hand dreht die Kurbel über die Zeit seit dem letzten Griff (der Halte-Takt `_tickHarvest`, höchstens
+    // ¼ s) — der Kern rechnet φ, Hub, Füllung und Kraft (unter der Schwere der Welt). Gibt true (der Griff hat gedreht).
+    _kurbeln(entry) {
+        const FC = globalThis.__fachwerkCore;
+        const M = this._haspelMass(entry);
+        const jetzt = this.state.spielZeit;
+        const dt = Number.isFinite(entry._haspelT)
+            ? Math.min(0.25, Math.max(0, jetzt - entry._haspelT))
+            : AnazhRealm.HARVEST.strikeIntervalSec;
+        entry._haspelT = jetzt;
+        const z = entry._haspel || FC.haspelStart(M);
+        if (entry._haspelGezeigt === undefined) entry._haspelGezeigt = z.phi;
+        // die Last zieht mit der Schwere der Welt (`state.gravity`, aus ihrem Gesetz)
+        const neu = FC.haspelSchritt(M, z, dt, Math.abs(this.state.gravity));
+        if (neu.richtung !== z.richtung)
+            this.log(
+                neu.richtung > 0
+                    ? "Haspel: der Eimer schöpft — kurbeln hebt ihn."
+                    : `Haspel: der Eimer steht oben (${Math.round(neu.wasser * M.volM3 * 1000)} l Wasser, ${neu.kurbelN.toFixed(0)} N an der Kurbel).`,
+                "INFO"
+            );
+        entry._haspel = neu;
+        (this._haspelWach || (this._haspelWach = new Set())).add(entry);
+        return true;
+    }
+    // DER TAKT DER HASPEL: jede Kurbel, deren gezeigtes φ noch nicht am Zustand steht, dreht ihm nach (die Drehzahl der Hand aus
+    // dem Gesetz, `HASPEL.kurbelMaxUmdrS`) — Kosten nur an der bewegten Kurbel.
+    _tickHaspel(dt) {
+        const wach = this._haspelWach;
+        if (!wach || !wach.size) return;
+        const om = 2 * Math.PI * globalThis.__fachwerkCore.HASPEL.kurbelMaxUmdrS * Math.max(0, Math.min(0.1, dt || 0));
+        for (const e of wach) {
+            const ziel = e._haspel ? e._haspel.phi : e._haspelGezeigt;
+            const d = ziel - e._haspelGezeigt;
+            e._haspelGezeigt = Math.abs(d) <= om ? ziel : e._haspelGezeigt + Math.sign(d) * om;
+            if (this._haspelVon(e)) this._haspelSetzen(e, e._haspelGezeigt);
+            if (e._haspelGezeigt === ziel) wach.delete(e);
+        }
+    }
+    // Setzt jedes Haspel-Teil des Eintrags auf φ: Ruhe (die Geburts-Matrix des Slots) · Teil-Matrix des Kerns.
+    _haspelSetzen(entry, phi) {
+        const FC = globalThis.__fachwerkCore;
+        const M = this._haspelMass(entry);
+        const m = this._haspelTmp || (this._haspelTmp = new THREE.Matrix4());
+        for (const t of entry._haspelTeile || []) {
+            if (!(t.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): die nächste Stufe sammelt neu
+            m.fromArray(FC.haspelTeilMatrix(M, t.teil, phi)).premultiply(t.ruhe);
+            t.g.mesh.setMatrixAt(t.ref.slot, m);
+            t.g.mesh.instanceMatrix.needsUpdate = true;
+            t.g.mesh.boundingSphere = null;
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_tor]);

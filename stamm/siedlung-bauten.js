@@ -1723,7 +1723,7 @@ class AnazhRealm_siedlung_bauten {
     _archLeavesVerschmelzen(leaves) {
         const sig = (lf) => {
             const g = lf.geom;
-            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.shadowTwin) return null;
+            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.welle || lf.shadowTwin) return null;
             // nur Lichtquellen (castShadow false aus _archTeilLeuchtet) ohne Instanz-Farb-Kanal
             if (lf.castShadow !== false || lf.tint !== undefined) return null;
             if (g.groups && g.groups.length) return null;
