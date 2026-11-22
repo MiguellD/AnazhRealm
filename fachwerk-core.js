@@ -430,16 +430,28 @@
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
-    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
-    const zBandTritt=(Dp/2)*(1-(NORM.kopfSpar-lRise)/Math.max(0.6,ridgeY-eaveY));                   // DIE LETZTE STUFE (w28-bau-rezept-tuer): wer auf ihr steht (eine Steigung unter dem Estrich), hat kopfSpar über sich — bis hier galt nur das Podest-Ende; lief der Lauf zum First, stand die letzte Stufe unter der Schräge (Dorf 25 Slots, Haus D 9 m mit drei Geschossen: Stufe bei 0,88 m, Band ±0,85 m, am Kopf 1,5 m Dach, der Körper fiel 4,9 m in den Schacht)
+    /* der Austritt samt Podest (PODEST_A in `lage`) */                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
+    const zBandTritt=(Dp/2)*(1-(BEGEH_GESETZ.playerH+P.spar/(2*Math.cos(pitch)))/Math.max(0.6,ridgeY-eaveY));   /*DER KOPF UNTER DEM SPARREN (speicher-first): auf der letzten Stufe steht der Fuß auf dem Estrich (gemessen: die Kirche 7/18, Fuß 0,00 m), über der Körpermitte liegt die Unterkante des Sparrens (die Achse in der Dachhaut, halbe Sparrenstärke darunter) — das Band hält BEGEH_GESETZ.playerH bis dorthin; bis hier hielt es kopfSpar − Stufe über der Haut, das Wohnhaus 7/18 (D 9, First 2,10 m) stand mit 1,66 m unter dem Sparren*/                   // DIE LETZTE STUFE (w28-bau-rezept-tuer): wer auf ihr steht (eine Steigung unter dem Estrich), hat kopfSpar über sich — bis hier galt nur das Podest-Ende; lief der Lauf zum First, stand die letzte Stufe unter der Schräge (Dorf 25 Slots, Haus D 9 m mit drei Geschossen: Stufe bei 0,88 m, Band ±0,85 m, am Kopf 1,5 m Dach, der Körper fiel 4,9 m in den Schacht)
     // DER KÖRPER STEHT HINTER SEINEM RAND (front-technik, 22.11.): auf die letzte Stufe tritt der Körper mit dem Rand, seine Mitte steht einen
     // Körper-Radius (BEGEH_GESETZ.radius) vor der Stufen-Kante, der Kopf ÜBER der Mitte — bis hier maß das Band an der Kante: die Kirche 7/18
     // (provenzalisch, D 11, Sattel 26°) trug ihren Speicherlauf bis z 1,88 bei Band 2,01, der Kopf stand bei z 2,15 unter 1,68 m Dach
-    const frei=(d)=>austritt(d)<=zBandTop && Math.abs(((d>0)?stZ0:wz1)+d*(lRun-lGo-BEGEH_GESETZ.radius))<=zBandTritt;
-    if(!frei(dir) && frei(-dir)) dir=-dir;
-    if(frei(dir)){                                                            // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
-    const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
-    LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
+    // DER AUSTRITT RÜCKT ZUM FIRST (speicher-first, 22.11.): die LAGE des Laufs ist eine Größe des Gesetzes — je Richtung der kleinste Versatz t
+    // des Fußes längs der Spur, bei dem die Körpermitte auf der letzten Stufe im Band (zBandTritt) und der Austritt samt Podest im Stehraum
+    // (zBandTop) stehen, Fuß samt Antritt-Podest und Kopf des Laufs im Haus. Zuerst die Kehre ohne Versatz, dann die Gegenrichtung, dann der
+    // kleinste Versatz; erst wenn auch am First kein Kopfraum ist, bleibt der Estrich zu. Bis hier fragte `frei()` nur die RICHTUNG: die Kirche
+    // 7/18 (Sattel 26°, D 11, First 2,68 m) und das Pfarrhaus 7/18 schlossen ihren Speicher, obwohl 0,18 m zum First den Kopf frei trugen
+    const PODEST_A=(KNIESTOCK?NORM.podest:0.3), RAND=DiF-0.35;
+    const STEHRAUM=KNIESTOCK||Math.abs(zBandTop)>=DiF-0.3;                      // DER ESTRICH HÄLT DEN KÖRPER: ohne Kniestock (Stehraum < 2 × 0,6 m) läge der Estrich offen bis unter die Traufe, das Dach ist kein Körper — der Körper ging durch die Schräge und fiel 7 m vor das Haus (Wohnhaus 7/18, Stehraum 0,86 m): kein Speicherlauf
+    const lage=(d,mitVersatz)=>{ if(!STEHRAUM) return null; const f0=(d>0)?stZ0:wz1, c0=f0+d*(lRun-lGo-BEGEH_GESETZ.radius), e0=f0+d*(lRun+PODEST_A), k0=f0+d*lRun, a0=f0-d*NORM.podest;
+      const lo=Math.max(-zBandTritt-c0, -zBandTop-e0, -RAND-k0, -DiF-a0), hi=Math.min(zBandTritt-c0, zBandTop-e0, RAND-k0, DiF-a0);
+      if(lo>hi+1e-9) return null; const t=clamp(0,lo,hi); return (Math.abs(t)<1e-9||mitVersatz)?{dir:d,t:Math.abs(t)<1e-9?0:t}:null; };
+    const speicherLage=()=>{ const a=lage(dir,false)||lage(-dir,false); if(a) return a;
+      const b=lage(dir,true), c=lage(-dir,true); return (b&&c)?((Math.abs(c.t)<Math.abs(b.t))?c:b):(b||c); };
+    const LAGE=speicherLage();
+    if(LAGE){                                                                 // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Lage ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
+    dir=LAGE.dir;
+    const zFoot=((dir>0)?stZ0:wz1)+LAGE.t, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
+    LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot,versatz:LAGE.t};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
     addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); } }
   const levelOpen=levels.map(()=>({front:false,back:false}));                              // offene Geländerkante je Geschoss (wo ein Lauf an-/austritt)
@@ -910,6 +922,8 @@
     const floorWithStair=(yT,op)=>{ levelTop=yT;
       rect(yT+0.02,-Wi,wx0,-Di,Di,'boden'); rect(yT+0.02,wx1,Wi,-Di,Di,'boden');
       rect(yT+0.02,wx0,wx1,-Di,stZ0,'boden'); rect(yT+0.02,wx0,wx1,wz1,Di,'boden');     // Loch = Lauflinie, vorderes + hinteres Podest
+      if(LOFT&&LOFT.versatz&&Math.abs(yT-LOFT.base)<0.01){ const ek=(LOFT.dir>0)?stZ0:wz1, a=Math.max(stZ0,Math.min(ek,LOFT.zFoot)), b=Math.min(wz1,Math.max(ek,LOFT.zFoot));   // DER GERÜCKTE FUSS STEHT AUF DIELEN (speicher-first): rückt der Speicherlauf zum First, trägt seine Spur zwischen Loch-Kante und Fuß den Boden des Geschosses
+        if(b-a>0.01) rect(yT+0.02,LOFT.x0,LOFT.x1,a,b,'boden'); }
       const hcz=(stZ0+wz1)/2;
       if(!op.front) railSeg(wx0,stZ0,wx1,stZ0,0,hcz);                                   // Brüstung nur wo KEIN Lauf an-/austritt
       if(!op.back)  railSeg(wx0,wz1,wx1,wz1,0,hcz);
@@ -1904,7 +1918,7 @@
       tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
-      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse,
+      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go,versatz:LOFT.versatz}:null}, furniture, chimney, roofY, masse,
       rahmen:(function(){ const m=mat('holz'); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })(),   // der Rahmen-Stoff des Stils (das Fern-Fenster liest ihn)
       raum:(function(){ const m=mat('gefach'); return (m&&m.__role)||_roleByMat.get(m)||'gefach'; })() };   // der Wand-Stoff, den die L0 hinter dem Glas zeigt (der Innenkörper der L1 und des Fern-Fensters liest ihn)
 }
