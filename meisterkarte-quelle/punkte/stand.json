@@ -1,5 +1,5 @@
 {
- "kopf": "6699a813",
+ "kopf": "d5455921",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -36626,8 +36626,9 @@
      "gruen": true,
      "zahl": "klinge_flegel Schwung 0.392 m, Länge (längs) 0.328–0.328 m, v² 2.834 → 0.178 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/532 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 283 px, Gestalt 648 px über dem Rauschen 0 (ohne Gestalt 0, Welt gehalten), Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
      "sha": "1857c808e448b72fdc7361a74979f6e8bf2a954d",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +2)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37731,7 +37732,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 482,
+  "konsum": 483,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37899,10 +37900,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3140
+  "ohne": 3139
  },
- "kopfVoll": "6699a813707ad97dc857bed070685878af018a67",
- "zeit": "2026-11-22T11:37:41.117Z",
+ "kopfVoll": "d5455921bf4d8920cca6143f8796f53e9b0e01f2",
+ "zeit": "2026-11-22T12:08:00.295Z",
  "vorher": "6699a813",
  "bilanz": {
   "gewinn": [],
