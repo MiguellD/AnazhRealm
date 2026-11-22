@@ -22167,7 +22167,7 @@
   },
   "karte2.mensch.nahrung.jenseits": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 · karte2.mensch.nahrung.jenseits#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 · karte2.mensch.nahrung.jenseits#1 gtx: ROT: S1 ROT: Umfang nicht erzeugbar: Gewächshaus und Garten im Ort: keiner unter 31 Häusern (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede) (gemessen 0) · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.jenseits#1",
@@ -22183,10 +22183,10 @@
      "id": "karte2.mensch.nahrung.jenseits#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: Umfang nicht erzeugbar: Gewächshaus und Garten im Ort: keiner unter 31 Häusern (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede) (gemessen 0) · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Gewächshaus und Garten im Ort: keiner unter 31 Häusern (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede) (gemessen 0) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37482,7 +37482,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 235,
+  "konsum": 236,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37650,10 +37650,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3387
+  "ohne": 3386
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T18:58:11.485Z",
+ "zeit": "2026-11-22T19:11:16.104Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
