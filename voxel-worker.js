@@ -600,9 +600,18 @@ function gauAuftrag(msg) {
     // je Zelle im Ring der letzten GAU_SPUR Takte (den liest nur der gestempelte Leser des Felds, nahe am Jetzt)
     if (!e.spurT)
         [e.spurT, e.spurN, e.spurF, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(64 * N), new Float32Array(GAU_SPUR * N * e.F.Z), 0]; // prettier-ignore
+    // DIE TODE JE TAKT UND REVIER im selben Ring (oeko.zerfall#1): Köpfe der Beute und der Jäger, die der Schritt zu diesem Takt
+    // fällte (leben-core `stirbAn`, `ereignis.tod` — das Revier `wo` ist der Ort des Leichnams); die Seite legt sie als Aas in den
+    // Boden (`_gauAas`). Ein Takt ohne Schritt (der erste nach einem Stand) trägt keine Tode.
+    if (!e.spurTod) e.spurTod = new Int16Array(GAU_SPUR * N * 2);
     const hatF = (k) => e.spurT[k % GAU_SPUR] === k;
     const merke = () => {
         const [k, z] = [e.g.z.takt, e.g.z];
+        const s0 = (k % GAU_SPUR) * N * 2;
+        if (e.spurT[k % GAU_SPUR] !== k) {
+            e.spurTod.fill(0, s0, s0 + 2 * N);
+            for (const d of (z.ereignis && z.ereignis.tod) || []) e.spurTod[s0 + 2 * d.wo + (d.t.g === "jaeger" ? 1 : 0)]++;
+        }
         const q = (k - e.spurUnten) * N;
         if (q + N > e.spurN.length) {
             const neu = new Int16Array(Math.max(2 * e.spurN.length, q + N));
@@ -679,8 +688,15 @@ function gauAuftrag(msg) {
                 const q = (((ab + k) % GAU_SPUR) * N + L[j]) * Z;
                 frass.set(e.spurF.subarray(q, q + Z), (k * L.length + j) * Z);
             }
-        antwort.spur = { von: ab, unten: e.spurUnten, beute, frass };
-        transfer.push(beute.buffer, frass.buffer);
+        // und die Tode (Takt, Revier, [Beute, Jäger]); −1, wo der Ring den Takt nicht mehr hält
+        const tod = new Int16Array(n * L.length * 2).fill(-1);
+        for (let k = 0; k < n; k++)
+            for (let j = 0; hatF(ab + k) && j < L.length; j++) {
+                const q = (((ab + k) % GAU_SPUR) * N + L[j]) * 2;
+                tod.set(e.spurTod.subarray(q, q + 2), (k * L.length + j) * 2);
+            }
+        antwort.spur = { von: ab, unten: e.spurUnten, beute, frass, tod };
+        transfer.push(beute.buffer, frass.buffer, tod.buffer);
     }
     // die Tode des letzten Takts (nur eine Linse fragt sie, Takt für Takt): Kennung, Gattung, Ursache, Revier
     if (msg.tode) antwort.tode = (z.ereignis ? z.ereignis.tod : []).map((d) => ({ id: d.t.id, g: d.t.g, ursache: d.ursache, wo: d.wo })); // prettier-ignore
