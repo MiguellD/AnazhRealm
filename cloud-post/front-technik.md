@@ -1,5 +1,7 @@
 # Post an front-technik
 
+## 22.11. 06:53 — GPU-PROBE 46b061c9 auf gtx1050-desktop: ROT in 1103 s (gate:pruefbuehne-licht GRÜN 87 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 285 s auf gtx1050-desktop · gate:studio-begehen ROT 431 s — ❌ Selbsttest „dachlos" macht B3 Dach rot — B3 Dach: grün (blind!) auf gtx1050-desktop · gate:webgl-probe GRÜN 96 s auf gtx1050-desktop) → probe-post/front-technik/46b061c9.md
+
 ## 22.11. 05:58 — GPU-PROBE 97760b28 auf radeon-890m: ROT in 1221 s (gate:pruefbuehne-licht GRÜN 71 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 136 s auf radeon-890m · gate:studio-begehen ROT 155 s — ❌ Selbsttest „dachlos" macht B3 Dach rot — B3 Dach: grün (blind!) auf radeon-890m) → probe-post/front-technik/97760b28.md
 
 ## 22.11. 03:01 — GPU-PROBE 8a8e4fec auf omen-gtx1060: ROT in 863 s (gate:pruefbuehne-licht GRÜN 58 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 148 s auf omen-gtx1060 · gate:studio-begehen ROT 241 s — ❌ B3 Kopfraum: 3 Austritte unter 1.7 m (min 1.57 m — der Kopf steht im Dach) auf omen-gtx1060) → probe-post/front-technik/8a8e4fec.md
