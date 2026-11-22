@@ -2383,10 +2383,15 @@ class AnazhRealm_stoff_material {
         return this._pfuetzeK;
     }
 
-    // DAS GESETZ NASSER OBERFLÄCHEN (Lagarde 2013, „Water drop 3b — Physically based wet surfaces"; Lekner & Dorf 1988): das
-    // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (`faktor` auf die Farbe:
-    // dunkle Stoffe dunkeln stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
-    // im Stoff (`_naesseImStoff`), Zahlen in der Linse (`werkbank licht --naesse`: dicht) — EINE Formel.
+    // DAS GESETZ NASSER OBERFLÄCHEN (Lekner & Dorf 1988, „Why some things are darker when wet", Appl. Opt. 27:1278; Lagarde
+    // 2013, „Water drop 3b"): der Wasserfilm über den Poren fängt das gestreute Licht — was der Stoff zurückwirft, verlässt den
+    // Film nur zum Anteil 1 − r_i, der Rest (die innere Reflexion r_i = 1 − (1 − r_e)/n², n die Brechzahl des Wassers, r_e seine
+    // Reflexion für diffuses Licht von außen) fällt zurück auf den Stoff und wird erneut gestreut: faktor = (1 − r_e)(1 − r_i) ·
+    // Σ_k (r_i · Albedo)^k, die Reihe der Rückwürfe bis `NAESSE.rueckwuerfe` (der Rest unter 1 % bis Albedo 1). Dunkle Stoffe
+    // dunkeln auf ~0,5 ihrer Helle, helle weniger — bis hier ging die Albedo gegen ihr Quadrat (der Boden mit Albedo 0,094 fiel
+    // auf 9 % statt 51 %: Luma nass/trocken 0,265, planet.kopplung.wetter-welt#3). Der Film glättet die Rauheit; Metall hat
+    // keine Poren (Gewicht × 1 − Metall). Über einer Algebra A (k · mul · sub · mix): TSL-Knoten im Stoff (`_naesseImStoff`),
+    // Zahlen in der Linse (`werkbank licht --naesse`: dicht, das Gesetz `naesseGesetzBefunde`) — EINE Formel.
     // DIE PFÜTZE (`pfuetze`, optional, ihre Deckung 0 … 1, `_pfuetzeGesetz`): unter ihr ist der Boden ganz getränkt, ihr Spiegel
     // ist Wasser (`PFUETZE.rauh`); ohne Pfütze dieselben Zahlen wie bisher.
     static _naesseGesetz(A, albedo, rauh, metall, w, pfuetze) {
@@ -2394,8 +2399,12 @@ class AnazhRealm_stoff_material {
         let p = A.mul(w, A.sub(A.k(1), metall));
         if (pfuetze != null) p = A.mix(p, A.k(1), pfuetze);
         const r = A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p);
+        const ri = 1 - (1 - N.wasserR) / (N.wasserN * N.wasserN);
+        const q = A.mul(albedo, A.k(ri));
+        let reihe = A.k(1);
+        for (let k = 0; k < N.rueckwuerfe; k++) reihe = A.sub(A.k(1), A.mul(A.mul(q, reihe), A.k(-1)));
         return {
-            faktor: A.mix(A.k(1), albedo, p),
+            faktor: A.mix(A.k(1), A.mul(reihe, A.k((1 - N.wasserR) * (1 - ri))), p),
             rauh: pfuetze != null ? A.mix(r, A.k(AnazhRealm.PFUETZE.rauh), pfuetze) : r,
         };
     }
@@ -4051,7 +4060,7 @@ AnazhRealm.LICHT_KARTE = Object.freeze({
 // Trocken-Stufe, Penman: die Luft trägt das Wasser ab, solange die Fläche nass ist) — die Rate (sonne · Sonne + wind · Wind + luft)
 // / `verdunstS`, × (1 − versickern + versickern · Poren des Bodens): ein trockener Wind und die Sonne trocknen schneller, ein
 // poröser Boden schluckt den Film (`poren.erde`, der Stoff des Bodens). Klar (Sonne 1, Wind 0,06) trocknet die Nässe des
-// zehnminütigen Regens (0,91) in 9,4 min, bewölkt in 15,7 min — ohne Sprung bis 0. Voll nass geht die Albedo zu ihrem Quadrat,
+// zehnminütigen Regens (0,91) in 9,4 min, bewölkt in 15,7 min — ohne Sprung bis 0. Voll nass fängt der Film das Licht (Lekner & Dorf: `wasserN`, `wasserR`, `rueckwuerfe`),
 // die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs, Haut Fett, der Schatten-Stoff zeichnet
 // keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
@@ -4067,6 +4076,9 @@ AnazhRealm.NAESSE = Object.freeze({
     versickern: 0.3,
     ruhe: 1e-3,
     glatt: 0.5,
+    wasserN: 1.333, // die Brechzahl des Wassers (`_naesseGesetz`, Lekner & Dorf 1988)
+    wasserR: 0.066, // seine Reflexion für diffuses Licht von außen (Lekner & Dorf 1988: 6,6 %)
+    rueckwuerfe: 6, // die Glieder der Reihe der Rückwürfe im Film (der Rest unter 1 % bis Albedo 1)
     poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0, erde: 1 }),
     dachPlaetze: 8,
     dachUmkreisM: 64,

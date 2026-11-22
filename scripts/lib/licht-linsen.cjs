@@ -3256,6 +3256,46 @@ function naesseUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
+// DAS GESETZ NASSER OBERFLÄCHEN ALS ZAHL (planet.kopplung.wetter-welt#3, ohne Welt): `_naesseGesetz` und `NAESSE` aus dem Stamm
+// (`naesseGesetzAusStamm`, die EINE Formel des Stoffs) unter der Zahlen-Algebra — voll nass (w 1, poröser Stoff, kein Metall)
+// liegt der Faktor je Albedo im Band von Lekner & Dorf 1988 (die Reihe der Rückwürfe im Film: (1 − r_e)(1 − r_i)/(1 − r_i · a),
+// Wasser n 1,333, r_e 0,066 → 0,49 … 0,93 über a 0 … 1, ±3 %), und die Luma porös nass/trocken des Bodens (Albedo 0,094, sRGB)
+// liegt in 0,5–0,8. Ein Faktor außerhalb ist ROT beim Namen des Täters (`_naesseGesetz`) mit der Albedo und beiden Zahlen — die
+// Albedo zum Quadrat (bis main 9502aa0e) fiel am Boden auf 0,094 statt 0,51.
+function naesseGesetzBefunde(gesetz, naesse) {
+    const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
+    const ri = 1 - (1 - 0.066) / (1.333 * 1.333);
+    const ld = (a) => ((1 - 0.066) * (1 - ri)) / (1 - ri * a);
+    const enc = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+    const befunde = [];
+    for (const a of [0.02, 0.094, 0.18, 0.3, 0.5, 0.8, 1]) {
+        const f = gesetz(A, a, 0.8, 0, 1, null).faktor;
+        if (!(Math.abs(f / ld(a) - 1) <= 0.03)) befunde.push(`_naesseGesetz: Albedo ${a} nass × ${+f.toFixed(3)}, Lekner–Dorf ${+ld(a).toFixed(3)}`);
+    }
+    const boden = gesetz(A, 0.094, 0.8, 0, 1, null).faktor;
+    const luma = enc(0.094 * boden) / enc(0.094);
+    if (!(luma >= 0.5 && luma <= 0.8)) befunde.push(`_naesseGesetz: Luma porös nass/trocken ${+luma.toFixed(3)} außerhalb [0.5, 0.8]`);
+    if (gesetz(A, 0.4, 0.3, 1, 1, null).faktor !== 1) befunde.push("_naesseGesetz: Metall dunkelt nass");
+    if (!(naesse && naesse.rueckwuerfe >= 4)) befunde.push("NAESSE.rueckwuerfe fehlt oder < 4");
+    return befunde;
+}
+// `_naesseGesetz` und `NAESSE` aus dem Text des Stamms (scripts/lib/stamm.cjs: das Glied am AST, die Außen-Zeile bis zu ihrem
+// Schluss in Spalte 0) → { gesetz(A, …), naesse }
+function naesseGesetzAusStamm(root) {
+    const stammLib = require("./stamm.cjs");
+    const t = stammLib.text(root);
+    const g = stammLib.glieder(t).find((x) => x.name === "_naesseGesetz" && x.statisch);
+    if (!g) throw new Error("naesseGesetzAusStamm: das Glied _naesseGesetz fehlt im Stamm");
+    const a = t.indexOf("AnazhRealm.NAESSE = Object.freeze(");
+    const e = t.indexOf("\n});", a);
+    if (a < 0 || e < 0) throw new Error("naesseGesetzAusStamm: AnazhRealm.NAESSE fehlt im Stamm");
+    const AnazhRealm = {};
+    new Function("AnazhRealm", t.slice(a, e + 4))(AnazhRealm);
+    const methode = t.slice(g.start, g.ende).replace(/^static\s+/, "");
+    const gesetz = new Function("AnazhRealm", `return ({ ${methode} })._naesseGesetz;`)(AnazhRealm);
+    return { gesetz, naesse: AnazhRealm.NAESSE };
+}
+
 // DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) auf der Platte `o.platte` der
 // Prüfbühne (spec/pruefbuehne/welt.json saat-s7-platte, 1,4 m dick, Oberkante über jedem Halm: der Boden-Stoff ohne Relief, nie
 // die Linse); je Pose (ego 2 m quer, Auge 1,6 m · third 4,5 m, 2,6 m) und Ziel drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die
@@ -3715,6 +3755,8 @@ module.exports = {
     kontaktSelbsttest,
     naesseSicht,
     naesseUrteil,
+    naesseGesetzBefunde,
+    naesseGesetzAusStamm,
     kantenLinie,
     luftBetaRef,
     luftAufgeloest,

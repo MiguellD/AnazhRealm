@@ -52,6 +52,25 @@ function taktVerdict(m, minWeg = TAKT.wegFahrtMinM) {
         [m.stufe === 0, `stufe ${m.stufe} (geritten nie Grob- oder Kartenstufe)`],
     ]);
 }
+// T6 DIE FAHRT DER WELT-ZEIT (fahrt-weltzeit 22.11.; `weltzeit` in fahr-proben): nach N Sim-Schritten derselbe Weg und dasselbe Tempo
+// über der Karte, vor der Karte und im doppelten Bildtakt — die Schwelle aus der Messung am Schnitt (GTX 1060: alle drei Fahrten
+// 32,253 m / 16,114 m/s, Δ 0; am main d3f43d76 ohne Karte 43,673 m / 21,067 m/s); die zwei gepflanzten Täter liegen weit jenseits
+// von ihr (Dämpfung je Bild 17,69 ↔ 22,50 m, Tor der Karte 43,67 ↔ 32,25 m), sonst ist die Linse blind.
+const WELTZEIT = { sM: 0.05, vMs: 0.05 };
+function weltzeitVerdict(w) {
+    if (!w || !w.karte) return ["T6 ohne Fahrt"];
+    const A = w.karte;
+    const weg = (B) => !B || Math.abs(B.s - A.s) > WELTZEIT.sM || Math.abs(B.v - A.v) > WELTZEIT.vMs;
+    const zahl = (B) => (B ? `${B.s.toFixed(2)} m / ${B.v.toFixed(2)} m/s` : "keine Fahrt");
+    const [d1, d2] = w.taeterBild || [];
+    return urteil([
+        [A.mitKarte, `die Karte kam nicht unter die Bahn (vakuös: ${zahl(A)} ohne Vergleich)`],
+        [!weg(w.ohneKarte), `die Fahrt hängt am Bau-Stand der Karte: ohne Karte ${zahl(w.ohneKarte)} (μ ${w.ohneKarte?.haft}), mit Karte ${zahl(A)} (μ ${A.haft})`], // prettier-ignore
+        [!weg(w.takt2), `die Fahrt hängt am Bildtakt: im doppelten Takt ${zahl(w.takt2)}, im Muster ${zahl(A)}`],
+        [!!d1 && !!d2 && (Math.abs(d1.s - d2.s) > WELTZEIT.sM || Math.abs(d1.v - d2.v) > WELTZEIT.vMs), `der Täter Dämpfung je Bild bleibt unsichtbar (${zahl(d1)} gegen ${zahl(d2)})`], // prettier-ignore
+        [weg(w.taeterKarte), `der Täter Tor der Karte bleibt unsichtbar (${zahl(w.taeterKarte)} gegen ${zahl(A)})`],
+    ]);
+}
 // Am Hang ohne Taste: kein Teleport, der Wagen hält, die Gier steht.
 function haltVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
@@ -1850,6 +1869,23 @@ hauptLauf(async () => {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
+        // T6: gesund treffen sich die drei Fahrten, die gepflanzten Täter liegen weit weg; jeder Bruch allein beim Namen
+        const wz = (s, v, mitKarte = true, haft = 0.4) => ({ s, v, mitKarte, haft });
+        const w6 = { n: 240, karte: wz(39.62, 17.85), ohneKarte: wz(39.62, 17.85), takt2: wz(39.62, 17.85), taeterBild: [wz(33.1, 14.2), wz(35.4, 15.3)], taeterKarte: wz(59.32, 23.62, true, 0.7) }; // prettier-ignore
+        check("Selbst-Test T6: gesunde Welt-Zeit == 0 Täter", weltzeitVerdict(w6).length === 0, weltzeitVerdict(w6).join(" · "));
+        jeBruch(
+            " T6",
+            weltzeitVerdict,
+            w6,
+            [
+                ["ohne Karte auf Erde", { ohneKarte: wz(59.32, 23.62, true, 0.7) }, "die Fahrt hängt am Bau-Stand der Karte"],
+                ["Bildtakt", { takt2: wz(41.0, 18.3) }, "die Fahrt hängt am Bildtakt"],
+                ["Karte kam nicht", { karte: wz(39.62, 17.85, false) }, "die Karte kam nicht unter die Bahn"],
+                ["Täter Bild blind", { taeterBild: [wz(39.62, 17.85), wz(39.62, 17.85)] }, "der Täter Dämpfung je Bild bleibt unsichtbar"],
+                ["Täter Karte blind", { taeterKarte: wz(39.62, 17.85) }, "der Täter Tor der Karte bleibt unsichtbar"],
+            ],
+            true
+        );
         // W: gesund Tiefe 4 (der Ast über Brand und Licht), jeder Täter beim Namen seines Glieds (je Lage der Bremsweg s, die
         // Glut des Herds, sein Licht); ein gebrochener Grip kürzt die Tiefe nicht. Dieselben Lagen trägt der K8-Selbsttest
         const lg = (regen, naesse, s, brand = 1 - naesse, licht = brand) => ({
@@ -2984,6 +3020,13 @@ hauptLauf(async () => {
         `${zeile(out.ross)}${taeter(vRoss, ", ")}`
     );
     wechselBericht(out.wechsel);
+    const v6 = weltzeitVerdict(out.weltzeit);
+    const w6 = out.weltzeit || {};
+    check(
+        "T6 die Fahrt ist eine Funktion der Welt-Zeit: nach N Sim-Schritten derselbe Weg und dasselbe Tempo über der Karte, vor der Karte und im doppelten Bildtakt — beide gepflanzten Täter sichtbar",
+        v6.length === 0,
+        `${w6.n} Schritte · Karte ${JSON.stringify(w6.karte)} · ohne ${JSON.stringify(w6.ohneKarte)} · Takt 2 ${JSON.stringify(w6.takt2)} · Täter Bild ${JSON.stringify(w6.taeterBild)} · Täter Karte ${JSON.stringify(w6.taeterKarte)}${taeter(v6)}`
+    );
     const v5 = tempoVerdict(out.tempo && Object.assign(out.tempo, kernTempo(globalThis.__vehicleCore)));
     check(
         "T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s",

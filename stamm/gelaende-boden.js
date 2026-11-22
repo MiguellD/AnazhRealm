@@ -2747,8 +2747,9 @@ class AnazhRealm_gelaende_boden {
     // Grün aus der Boden-Karte der Stufe (die Vertex-Farbe, über die Dreiecke der Stufe gerastert, ohne ihren Geomorph) — an jedem
     // Wechsel der Stufe warfen die neu gebauten Kacheln der Wiese an denselben Zellen andere Büschel (gate:pop „DER WURF DER
     // STUFE“: 23 Kacheln, die Mess-Wiese 0,0604 % Pop-Pixel/s an der GTX 1050). In Stufe 0 tragen Karte und Gesetz dasselbe Grün
-    // (1 667 Zellen der Nähe, Mittel |Δ| 0), fern kippten 442 von 17 836 Zellen. Leser: `_bodenSichtAt(…, aus).gruen` (Schritt,
-    // Rad, Messort) und der Wurf der Nah-Wiese mit seinem eigenen Hang (`_nahWieseKachelBueschel`).
+    // (1 667 Zellen der Nähe, Mittel |Δ| 0), fern kippten 442 von 17 836 Zellen. Leser: `_bodenSichtAt(…, aus).gruen` (das Auge,
+    // Messort), das Grün unter dem Kontakt (`_bodenGruenUnter`: Rad, Schritt, Stoß, Brand-Bett) und der Wurf der Nah-Wiese mit
+    // seinem eigenen Hang (`_nahWieseKachelBueschel`).
     _bodenGruenAt(x, y, z, hang) {
         const S = this.state.saeulenVorlaeufig;
         if (S && S.size)
@@ -2778,6 +2779,26 @@ class AnazhRealm_gelaende_boden {
         this._wegeBelagAt(x, z, B);
         const g = t * t * (3 - 2 * t);
         return (g > B.rasen ? g : B.rasen) * (1 - B.pflaster);
+    }
+
+    // DAS GRÜN UNTER DEM KONTAKT (fahrt-weltzeit 22.11.): das Grün des GESETZES (`_bodenGruenAt`), auf dem ein Rad, ein Fuß oder ein
+    // gleitender Leib bei (x, z) in der Höhe y steht — die EINE Quelle der Wiese für Reibung und Stoff (`_fahrHaft`, `_kontaktStoffAt`),
+    // an jedem Gerät dieselbe Zahl, nie die Karte des Bodens (sie bleibt Bild: Wiese, Streu, Stand-Leser). Der Hang ist der des
+    // Felds am Kontakt — die Normale der Dichte (`_fieldGradient`, sie trägt Edit, Höhle und Gewässer) —, oder der, den der Rufer
+    // kennt (`hang`, tan: die Ebene des Brand-Betts aus der 2D-Höhe, die Ebene unter dem freien Körper). Gemessen Karte ↔ Gesetz
+    // (GTX, Kreuzungen der Schwelle ½): Mess-Wiese Stufe 0 0 von 1 677, Stufe 1 0 von 414, Stufe 2 2 von 992, Steilhang (−62/−37)
+    // 1 von 1 500; eine frisch gegrabene Grube vor dem Neubau ihres Chunks 45 von 400 (die Karte zeigt den alten Boden, das Gesetz
+    // die Grube). Bis hier galt ohne Karte Grün 0, darüber das Grün der Karte: die Reibung hing am Bau-Stand der Chunks, also am
+    // Gerät — der GT fuhr T1 auf der Mess-Wiese (Grün 1) an der GTX ohne Karte auf Erde (μ 0,7) 59,32 m / 23,6 m/s, mit Karte auf
+    // Gras (μ 0,4) 39,62 m / 17,85 m/s. Je Ruf 81 Einheiten der Stand-Linse (die Karte 40, der Hang über `_slopeAt` 201: vier
+    // Spalten-Scans; die Brand-Zündung stieg damit auf 1 240 bei Soll 456).
+    _bodenGruenUnter(x, z, y, hang) {
+        const yy = Number.isFinite(y) ? y : this._voxelSurfaceY(x, z);
+        if (!(hang >= 0)) {
+            const n = this._fieldGradient(x, yy, z, this._bodenGruenUnterN || (this._bodenGruenUnterN = {}));
+            hang = n.y > 0 ? Math.hypot(n.x, n.z) / n.y : Infinity;
+        }
+        return this._bodenGruenAt(x, yy, z, hang);
     }
 
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt

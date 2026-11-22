@@ -1133,10 +1133,11 @@ class AnazhRealm_gelaende_kollision {
     // `_blockerComputePartAABB`; eine Box ohne Teil, die Hülle des Hauses und des Tors, den Stoff ihres Werks, `_werkStoff`);
     // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Pflaster eines Plans (der Belag der Wege-Karte `_wegeBelagAt` ≥ ½:
     // Stein), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
-    // `_kronenStreuAt` ≥ ½), die Wiese, wo die Boden-Karte Gras zeichnet (der Grün-Kanal des EINEN Lesers `_bodenSichtAt` ≥ ½),
-    // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
-    // gestoßenen Leibs (`_kreaturStossSchritt`).
-    _kontaktStoffAt(x, z, y) {
+    // `_kronenStreuAt` ≥ ½), die Wiese, wo das Gesetz Gras trägt (das Grün unter dem Kontakt `_bodenGruenUnter` ≥ ½, nie die Karte;
+    // `hang` optional, tan: die Ebene, die der Rufer schon kennt), darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der
+    // Schritt-Klang (`_schrittMaterialAt`), die Reibung des gestoßenen Leibs (`_kreaturStossSchritt`) und des freien Körpers, das Bett
+    // des Brands.
+    _kontaktStoffAt(x, z, y, hang) {
         const aus = this._kontaktAus || (this._kontaktAus = { stoff: null });
         if (this._auflageAt(x, z, y, aus) > -Infinity) return aus.stoff;
         if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
@@ -1146,8 +1147,7 @@ class AnazhRealm_gelaende_kollision {
         this._wegeBelagAt(x, z, belag);
         if (belag.pflaster >= 0.5) return "stein";
         if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
-        const grund = {};
-        if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";
+        if (this._bodenGruenUnter(x, z, y, hang) >= 0.5) return "gras";
         return this._terrainMaterialAt(x, z, y);
     }
 
