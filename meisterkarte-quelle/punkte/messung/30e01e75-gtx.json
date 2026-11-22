@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T20:19:50.034Z",
+ "zeit": "2026-11-22T20:47:00.508Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -728,6 +728,76 @@
    },
    "zeit": "2026-11-22T20:19:50.034Z",
    "abdruck": "7fccbe85c59b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk (fachwerk-core.js:6495) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk (fachwerk-core.js:6495) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 14.7,
+   "fremd": {
+    "s": 17.7,
+    "takte": 8,
+    "fremdS": 6.8,
+    "kerne": 0.384,
+    "fensterKerne": 0.35,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.02
+     ],
+     [
+      "Explorer.EXE",
+      1
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.64
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "dwm.exe",
+      3.33
+     ]
+    ],
+    "geraetS": 9.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.2
+     ],
+     [
+      "svchost.exe",
+      3.61
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 47.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T20:47:00.508Z",
+   "abdruck": "0a50ca32d54b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
