@@ -456,6 +456,76 @@ async function menschBuehnen() {
         if (hat("bewohner-grund"))
             decke("_koerperBodenUnter", (alt) => (x, y, z) => (Number.isFinite(y) ? alt.call(r, Math.round(x * 2) / 2, y, Math.round(z * 2) / 2) : alt.call(r, x, y, z))); // prettier-ignore
         const SD = wegeMesser(liste);
+        // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
+        // tempoEinheit an seinem Bein × TAGES_GESETZ.gang × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
+        // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
+        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher
+        // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins
+        if (hat("bewohner-koennen")) {
+            for (const b of liste) b.tempo = b.tempoBand;
+            decke("_bewohnerGeburt", (alt) => (S2, b) => (alt.call(r, S2, b), b.tempoBand > 0 && (b.tempo = b.tempoBand), undefined)); // prettier-ignore
+        }
+        // DAHEIM AM WERK (mensch-zahlen, der Griff von `binden`): wessen Werk sein eigenes Haus ist (Beruf = Rolle, kein Posten),
+        // der trägt den Stand seines Werks nie als Abend oder Tisch — der Abend daheim sitzt vor der Tür, der Tisch daheim ist
+        // drinnen (koerper `tagesPlan` ohne Ort)
+        // Täter (Selbsttest): der Stand vor dem Schnitt — der Griff reicht den Stand des Werks als Abend durch
+        const amEigenenWerk = (b) => b.rolle !== "wohnhaus" && b.beruf === b.rolle && !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).regenfest && !!b.orte.werk; // prettier-ignore
+        if (hat("bewohner-abendstand")) for (const b of liste) if (amEigenenWerk(b)) b.orte.abend = b.orte.werk;
+        const daheimWerk = () => {
+            const eigen = liste.filter(amEigenenWerk);
+            const falsch = eigen.filter((b) => b.orte.abend === b.orte.werk || b.orte.mahl === b.orte.werk);
+            return { n: eigen.length, falsch: falsch.length, wer: falsch.slice(0, 3).map(wer) };
+        };
+        const koennen = (() => {
+            let spur = new Map();
+            const paare = [];
+            const rang = (A) => {
+                const R = new Array(A.length);
+                A.map((x, i) => [x, i]).sort((a, c) => a[0] - c[0]).forEach((x, k) => (R[x[1]] = k)); // prettier-ignore
+                return R;
+            };
+            return {
+                fenster: () => (spur = new Map(liste.filter((b) => b.leib).map((b) => [b, { x: b.leib.position.x, z: b.leib.position.z, m: 0, s: 0 }]))),
+                messen: (dt) => {
+                    for (const [b, q] of spur) {
+                        const p = b.leib && b.leib.position;
+                        if (!p) continue;
+                        const d = Math.hypot(p.x - q.x, p.z - q.z);
+                        // (ein Sprung — die Ankunft, die Tür — ist kein Gang)
+                        if (b.weg && !b.drinnen && d < 1) [q.m, q.s] = [q.m + d, q.s + dt];
+                        [q.x, q.z] = [p.x, p.z];
+                    }
+                },
+                ende: () => {
+                    for (const [b, q] of spur) if (q.s >= 5 && b.koennen) paare.push([b.koennen.lauf, q.m / q.s]);
+                },
+                zahl: () => {
+                    const TC = window.__tetrapodaCore;
+                    const ohne = liste.filter((b) => {
+                        if (!b.koennen || !(b.tempo > 0)) return true;
+                        const d = Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter });
+                        return Math.abs(b.tempo - TC.tempoEinheit(b.beinL) * KC.TAGES_GESETZ.gang * KC.leibKoennen(d).lauf) > 1e-9;
+                    });
+                    const [ra, rb, m] = [rang(paare.map((q) => q[0])), rang(paare.map((q) => q[1])), (paare.length - 1) / 2];
+                    let [sab, sa, sb] = [0, 0, 0];
+                    for (let i = 0; i < paare.length; i++) [sab, sa, sb] = [sab + (ra[i] - m) * (rb[i] - m), sa + (ra[i] - m) ** 2, sb + (rb[i] - m) ** 2];
+                    const nachLauf = paare.slice().sort((a, c) => a[0] - c[0]);
+                    const mittel = (A) => A.reduce((a, q) => a + q[1], 0) / Math.max(1, A.length);
+                    const h = Math.floor(nachLauf.length / 2);
+                    const T = liste.map((b) => b.tempo).filter((v) => v > 0);
+                    const tm = T.reduce(addiere, 0) / Math.max(1, T.length);
+                    return {
+                        n: liste.length,
+                        ohne: ohne.length,
+                        wer: ohne.slice(0, 3).map(wer),
+                        geher: paare.length,
+                        rho: sa && sb ? q3(sab / Math.sqrt(sa * sb)) : 0,
+                        haelften: h ? q3(mittel(nachLauf.slice(nachLauf.length - h)) / mittel(nachLauf.slice(0, h))) : 0,
+                        cv: T.length > 1 ? q3(Math.sqrt(T.reduce((a, v) => a + (v - tm) ** 2, 0) / (T.length - 1)) / tm) : 0,
+                    };
+                },
+            };
+        })();
         const treffer = new Map();
         const vorher = new Map();
         // DER TAG BEGINNT MIT DEM SPRUNG (`uhrAuf`): der Takt der Bewohner lief seit ihm 0 s (`taktUhr`)
@@ -717,8 +787,10 @@ async function menschBuehnen() {
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s
             if ([7.5, 12, 17.2].some(um)) {
                 gang.luecke(); // das Fenster beginnt jede Spur neu
+                koennen.fenster();
                 for (let k = 0; k < 600; k++) {
                     takt(1 / 60, SD);
+                    koennen.messen(1 / 60);
                     // Täter (Selbsttest): jede Instanz des Satzes steht in der Phase 0
                     if (hat("bewohner-gleiten"))
                         for (const m of SZ) {
@@ -727,6 +799,7 @@ async function menschBuehnen() {
                         }
                     gangMessen(SZ);
                 }
+                koennen.ende();
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible && !g.userData._drinnen).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür) · unterwegs (sein Weg zu DIESEM Soll begann
@@ -832,6 +905,8 @@ async function menschBuehnen() {
             unterN: unter.length,
             stationen: stationen.length,
             satzGang: gang.schlupf(),
+            koennen: koennen.zahl(),
+            daheimWerk: daheimWerk(),
             haltung,
             gestalt,
             blick: {
@@ -1123,6 +1198,16 @@ function menschUrteil(name, z, soll) {
             `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
         );
         soll(sg.schlupf <= 0.05 && sg.wegLeib >= 10, `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m`);
+        const kn = z.koennen || { n: 0, ohne: "ungemessen", wer: [], geher: 0, rho: "ungemessen", haelften: "ungemessen" };
+        soll(
+            kn.n > 0 && kn.ohne === 0 && kn.geher >= 10 && kn.rho >= 0.5,
+            `das Können trägt den Gang nicht: ${kn.ohne} von ${kn.n} Bewohnern gehen nicht Einheit × gang × lauf (${kn.wer}), Rang-Korrelation Können ↔ gegangenes Tempo ${kn.rho} über ${kn.geher} Geher (Soll ≥ 0,5; die Hälfte mit mehr Können geht × ${kn.haelften}, Streuung des Tempos ${kn.cv})`
+        );
+        const dw = z.daheimWerk || { n: 0, falsch: "ungemessen", wer: [] };
+        soll(
+            dw.n > 0 && dw.falsch === 0,
+            `daheim am Werk: ${dw.falsch} von ${dw.n} Bewohnern, deren Werk ihr Haus ist, tragen den Stand ihres Werks als Abend oder Tisch (${dw.wer}) — der Abend daheim sitzt vor der Tür, der Tisch daheim ist drinnen`
+        );
         const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
         soll(
             ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1,
@@ -1190,6 +1275,8 @@ module.exports = {
             ["bewohner-sprung", /Sprung im Nahbereich/],
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
+            ["bewohner-koennen", /das Können trägt den Gang nicht/],
+            ["bewohner-abendstand", /daheim am Werk/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
             ["bewohner-grund", /der Stand nach dem Gang/],

@@ -3003,7 +3003,13 @@ class AnazhRealm_koerper_leib {
         // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht, bis zur Landung
         if (this._kreaturAnsprungOffen(creature)) return;
         const z = ud._motionZustand;
-        if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
+        // DER AUFTRAG TRÄGT DEN LEIB (mensch-zahlen, nahrung.tier#1): wer für seinen Auftrag unterwegs ist — folgen, holen, bauen,
+        // zum Wasser; der Wunsch seines Auftrags (`aiDir`, im Auftrag schreibt ihn nur dieser) ist nicht null —, trägt keine Aktion
+        // des Gemüts, wie der Fliehende; am Ziel spielt es wieder. Vorher hielt die Spielverbeugung (tempo 0 über 1,2 s) das frohe
+        // folgende Tier an, sein Mensch ging 1,7 m davon: am Hang 29,5° Abstand p95 5,33 m, max 5,51 (GTX 1050, Dorf).
+        const auftrag = this._getCreatureTask(creature);
+        const w = auftrag && auftrag.name !== "wander" ? ud.aiDir : null;
+        if (z === "flucht" || z === "schwimmen" || z === "hetzen" || (w && w.x * w.x + w.z * w.z > 0)) {
             ud._verhaltenAktion = null;
             return;
         }

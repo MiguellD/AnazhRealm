@@ -5387,12 +5387,19 @@
         // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
         // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
         // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
+        // DER GETEILTE ABEND (mensch-zahlen, absicht S1 an der Stadt): ausgeglichen geht aus wie der Gesellige (daheimTreff) und
+        // bleibt `abendTreffH` Stunden am Treff, den Rest seines Abends sitzt er vor seiner Tür (`tagesPlan`); der Häusliche
+        // geht abends nicht aus (treffMal 0: das Los der Nutzen-Wahl kennt keinen Treff außer Haus). Bis hier trug der
+        // Ausgeglichene KEIN Gesetz (`{}`): das Los band ihn an den Treff oder an sein Haus, und er saß dort den ganzen Abend
+        // wie der Gesellige oder der Häusliche — an der Stadt (dorf 7 300, die ersten 100, GTX 1050) las der blinde Zuordner 21
+        // von 27 Ausgeglichenen als gesellig (Treff 3,5–6 h) und 5 von 29 Häuslichen (treffMal 0,1 über Dutzende Treffs der
+        // Stadt: jedes Haus mit Rolle bietet `sonst.treff`), Anteil 0,54.
         zuege: Object.freeze({
             anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
             gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
             fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
-            haeuslich: Object.freeze({ treffMal: 0.1, morgenMal: 0.5 }),
-            ausgeglichen: Object.freeze({}),
+            haeuslich: Object.freeze({ treffMal: 0, morgenMal: 0.5 }),
+            ausgeglichen: Object.freeze({ daheimTreff: 0.5, abendTreffH: 1.5 }),
         }),
     });
     // DER ZUG EINES MENSCHEN (TAGES_GESETZ.zuege): rein aus dem Samen — der Name seines Zugs
@@ -5594,7 +5601,7 @@
         // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
         // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
-        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe };
+        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
     function tagesPlan(same, rolle, stunde, orte, nass) {
         var G = TAGES_GESETZ;
@@ -5628,6 +5635,8 @@
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
+        // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür
+        if (T.abendTreffH != null && h >= (bA ? w1 + G.besuchH : w1) + T.abendTreffH) return aus("heim", "abend", false);
         return aus("abend", "abend", false);
     }
 
@@ -5873,6 +5882,24 @@
             sizeSpeedMul = 1 / sizeHpMul;
         var speed = Math.max((2 / 7) * B.speed.base, (B.speed.base + 0 * B.speed.leicht + 0 * B.speed.mag) * sizeSpeedMul);
         return { speed: speed, sprintSpeed: speed * B.sprintMul, jumpPower: (B.jumpPower.base + 0 * B.jumpPower.leicht + 0 * B.jumpPower.mag) * sizeSpeedMul };
+    }
+    // DAS KÖNNEN DES MENSCHEN aus seinem Leib (mensch-zahlen, rein additiv; Meisterkarte 2 mensch.sport.koennen S1): `kraft` = die
+    // Kraft seiner Beine über seinem Gewicht, am Kanon (START_PARAMS) 1 — die Kraft wächst mit dem Querschnitt des Bein-Muskels
+    // ((legM × Höhe)², `labMorph`: der Muskel-Ton, das Alter, das Geschlecht), das Gewicht mit Größe × Höhe (`leibGroesse`).
+    // `lauf` = √kraft: bei gleicher Anstrengung hält die dynamische Ähnlichkeit v² ÷ (g × L) ∝ Kraft ÷ Gewicht — die
+    // Froude-Einheit des Gangs (tetrapoda `tempoEinheit`) mal `lauf` ist sein Tempo; zwei gleich gebaute Menschen
+    // verschiedener Höhe laufen gleich schnell (die Höhe kürzt sich gegen die Einheit). Leser: der Bewohner (der Wirt
+    // `_bewohnerGenome` → das Tempo seines Gangs). Bis hier trug das Tempo nur die Länge des Beins: 100 Bewohner einer Stadt
+    // liefen 100 m binnen ±1,5 % (Station k2-mensch-sport), der Greis so schnell wie der Athlet.
+    function leibKoennen(dials) {
+        var s = dials || {};
+        if (!isFinite(s.age) || !isFinite(s.gender)) throw new Error("KERN-PFLICHT verletzt: leibKoennen ohne age/gender");
+        var roh = function (d) {
+            var m = labMorph(d).legM;
+            return (m * m * d.height) / leibGroesse(d);
+        };
+        var kraft = roh(s) / roh(START_PARAMS);
+        return { kraft: kraft, lauf: Math.sqrt(kraft) };
     }
     // Der Leib-Zustand (die Felder, die das Gesetz liest und schreibt — dieselben Namen wie im Zustand des Wirts) mit dem
     // schmalen Geschwindigkeits-Speicher (`setValue` · `x()` · `y()` · `z()`, wie der Feld-Vektor des Wirts `_makeFieldVec`)
@@ -10113,6 +10140,7 @@
         leibMasse: leibMasse,
         leibGroesse: leibGroesse,
         leibWerte: leibWerte,
+        leibKoennen: leibKoennen,
         leibVec: leibVec,
         leibZustand: leibZustand,
         leibRichtung: leibRichtung,

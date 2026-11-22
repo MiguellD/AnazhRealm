@@ -406,6 +406,7 @@ class AnazhRealm_siedlung_bewohner {
         const ab = (a, t) => this._bewohnerAbstand(a, t);
 
         if (typeof kc.leibRaumPunkt !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibRaumPunkt");
+        if (typeof kc.leibKoennen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibKoennen");
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
         const tuch = Object.keys(kc.CLOTH_COLORS);
         for (const G of S.gestalten)
@@ -441,6 +442,9 @@ class AnazhRealm_siedlung_bewohner {
             // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — sein Punkt trägt sie in die Menge, die Geburt auf seine Knochen
             const dE = this._dialsAusGenom(gen);
             b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dE[a.achse]]));
+            // SEIN KÖNNEN (mensch-zahlen, koerper `leibKoennen`): die Kraft seiner Beine über seinem Gewicht aus den Dials seines
+            // Genoms und seinem Alter — das Tempo seines Gangs liest `lauf` (`_bewohnerGeburt`)
+            b.koennen = kc.leibKoennen(Object.assign({}, dE, { age: gen.alter }));
             // SEIN PUNKT IM LEIB-RAUM IST DER SEINES NAHEN LEIBS (w28-gestalt, koerper `leibRaumPunkt`): das Weiche seiner GESTALT
             // (Geschlecht, Bau, Muskel, Alter, Haar — `G.dK`, der Guss, in dem er nah steht) auf SEINEN Knochen (`bau`); Breite und
             // Tiefe seines Genoms trägt die Matrix seines Satzes wie die Hüllen seines Leibs (`_bewohnerLeibAn`). Bis hier stand im
@@ -930,7 +934,14 @@ class AnazhRealm_siedlung_bewohner {
                     if (i !== P.heimI && (!st || teilVon(st) !== P.heimTeil)) neu = P.voll.add(i);
                 }
             }
-            return (wo) => (P.bind[wo] < 0 || P.voll.has(P.bind[wo]) ? null : P.am.get(P.bind[wo]) || null);
+            // DAHEIM TRÄGT NUR DAS WERK EINEN STAND (mensch-zahlen): der Abend daheim sitzt vor der Tür, der Tisch daheim ist
+            // drinnen — der Plan ohne Ort (`tagesPlan`). Bis hier reichte der Griff den Stand des Werks vor dem eigenen Haus auch
+            // als Abend und als Tisch durch: wer in einem Haus mit Rolle wohnt, aß mittags draußen an seinem Werk, und sein Abend
+            // daheim las sich als Treff (an stadt-voll 10 der ersten 100, gate:kreatur-takt bewohner „daheim am Werk")
+            return (wo) => {
+                const i = P.bind[wo];
+                return i < 0 || P.voll.has(i) || (i === P.heimI && wo !== "werk") ? null : P.am.get(i) || null;
+            };
         };
         const liste = [];
         const besuche = [];
@@ -1005,7 +1016,7 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, beinL: u, tempo: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1308,7 +1319,9 @@ class AnazhRealm_siedlung_bewohner {
         // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
         this._leibMatrix(g);
         g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags. Die
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags × `lauf`
+        // seines Könnens (mensch-zahlen, koerper `leibKoennen`: die Kraft seiner Beine über seinem Gewicht — bis hier ging der
+        // Greis so schnell wie der Athlet, 100 m binnen ±1,5 % über 100 Bewohner). Die
         // Beinlänge seiner GESTALT in seiner Größe, nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs liest sein
         // wahres Bein (`beinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und die Ankunft spielt
         // einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über ±2 m,
@@ -1316,12 +1329,13 @@ class AnazhRealm_siedlung_bewohner {
         b.beinMass = this._bewohnerBeinMass(G, b);
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
-        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        b.tempoBand = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        b.tempo = b.tempoBand * b.koennen.lauf;
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
         if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
             for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
                 this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
         }
@@ -1863,9 +1877,13 @@ class AnazhRealm_siedlung_bewohner {
     // der Doppelschritt seines Tempos (`_bewohnerSatz`): die Phase geht den Weg, den er geht (der Tick seines Tempos über die
     // Zeit, die sein Weg ihm trüge) — wer eilt oder ausweicht, tritt schneller oder langsamer, nie gleitet sein Fuß. Bis hier
     // lief sie im Takt des gehenden Tempos über den Schritt des gebackenen: der Satz glitt um 0,034, wer eilte, um 0,045.
+    // DAS BAND GEHT DEN GANG DES KANONS (mensch-zahlen, `tempoBand`): EIN Band je Siedlung trägt EINEN Doppelschritt —
+    // den seines Tempos ohne das Können; wer mehr oder weniger kann, tritt ihn im Satz öfter oder seltener (die Phase geht
+    // seinen Weg), die Schrittlänge seines Könnens trägt der nahe Leib (`_gaitTick` an seinem Tempo).
     _bewohnerGangSchritt(b, v, dt, echt, S) {
         const g = b.leib;
-        if (v > 0) this._gaitTakt(b.beinMass.L, b, b.tempo, (dt * v) / b.tempo);
+        const vB = b.tempoBand;
+        if (v > 0) this._gaitTakt(b.beinMass.L, b, vB, (dt * v) / vB);
         else this._gaitTakt(b.beinMass.L, b, 0, dt);
         if (v === 0 && !(b._gaitW > 0.01)) b._gaitW = 0;
         if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);

@@ -10,8 +10,11 @@
 // kein eigener Ort, der Plan nennt die Tür). Je Bewohner `tagesPlan` alle 15 min über 24 h. EIN BLINDER ZUORDNER (er liest
 // den Zug nie, nur seinen Tag und die Rolle seines Hauses) ordnet jeden nach drei Kennzahlen: Stunden am Werk über dem Maß
 // seiner Rolle, Stunden am Treff außer Haus, Stunden daheim in der Freizeit. Soll: Treffer ≥ 0,6 an den ersten 20 und über
-// alle 100; bit-gleich (zwei Läufe, dasselbe Wort je Same und Stunde). Dazu ALTER (generationen S1, unten). Täter: `tagesZug` →
-// immer „ausgeglichen" (der Stand vor dem Zug: der Same verschob jede Wende nur um ±streuH) fällt ROT.
+// alle 100; bit-gleich (zwei Läufe, dasselbe Wort je Same und Stunde). Dazu ALTER (generationen S1, unten). JE ZUG (mensch-zahlen): jeder der vier Züge wird zu
+// ≥ 0,6 erkannt — der Anteil über alle trug einen Zug ohne Gesetz mit (ausgeglichen 2 von 16 bei 0,71 über alle) —, und kein
+// Häuslicher trägt seinen Abend außer Haus. Täter (Selbsttest): der Kern mit `tagesZug` → immer „ausgeglichen" (der Stand
+// vor dem Zug: der Same verschob jede Wende nur um ±streuH), der Ausgeglichene ohne sein Gesetz (`{}`: das Los band ihn den
+// ganzen Abend an Treff oder Haus) und der Häusliche mit dem Los am Abend (treffMal 0,1) fallen ROT an ihrer Zeile.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -71,7 +74,7 @@ function tagDesDorfs(K) {
                 const p = K.tagesPlan(same, rolle, q / 4, O, 0);
                 worte.push(`${p.wo}:${p.akt}:${+p.drinnen}`);
             }
-            leute.push({ same, rolle, worte });
+            leute.push({ same, rolle, worte, abendAus: B.abend >= 0 && B.abend !== s });
         }
     return leute;
 }
@@ -121,17 +124,48 @@ function urteil(K, zugVon) {
     return { t20: t20 / 20, t100: t100 / 100, tafel, leute };
 }
 
-// DER KERN MIT DEM TÄTER: dieselbe Quelle, `tagesZug` liefert immer „ausgeglichen" (frischer Kontext)
-function kernMitTaeter() {
+// DER KERN MIT EINEM TÄTER: dieselbe Quelle, EINE Stelle getauscht (frischer Kontext) — null, wenn die Stelle fehlt
+function kernMitTaeter(stelle, ersatz) {
     const src = fs.readFileSync(path.join(__dirname, "..", "koerper-core.js"), "utf8");
-    const mut = src.replace(
-        /function tagesZug\(same\) \{/,
-        'function tagesZug(same) {\n        return "ausgeglichen";'
-    );
+    const mut = src.replace(stelle, ersatz);
     if (mut === src) return null;
     const ctx = vm.createContext({ console });
     vm.runInContext(mut, ctx);
     return ctx.__koerperCore;
+}
+// DIE TÄTER: der Name, die Stelle im Kern, ihr Ersatz, die Zeile des Urteils, an der er fällt
+const TAETER = [
+    {
+        name: "tagesZug → ausgeglichen (kein Zug ändert den Tag)",
+        stelle: /function tagesZug\(same\) \{/,
+        ersatz: 'function tagesZug(same) {\n        return "ausgeglichen";',
+        faellt: /alle 100 /,
+    },
+    {
+        name: "der Ausgeglichene ohne Gesetz (kein geteilter Abend)",
+        stelle: /ausgeglichen: Object\.freeze\(\{[^}]*abendTreffH[^}]*\}\)/,
+        ersatz: "ausgeglichen: Object.freeze({})",
+        faellt: /ausgeglichen \d+\/\d+ < 0,6/,
+    },
+    {
+        name: "der Häusliche mit dem Los am Abend (treffMal 0,1)",
+        stelle: /treffMal: 0,/,
+        ersatz: "treffMal: 0.1,",
+        faellt: /Häusliche mit dem Abend außer Haus/,
+    },
+];
+// DAS URTEIL: die Zeilen, an denen der Tag ROT fällt
+function rotVon(a) {
+    const rot = [];
+    if (a.t20 < 0.6) rot.push(`erste 20 ${a.t20.toFixed(2)} < 0,6`);
+    if (a.t100 < 0.6) rot.push(`alle 100 ${a.t100.toFixed(2)} < 0,6`);
+    for (const z of ZUEGE) {
+        const T = a.tafel[z];
+        if (!T || T.ok / T.n < 0.6) rot.push(`${z} ${T ? T.ok : 0}/${T ? T.n : 0} < 0,6`);
+    }
+    const aus = a.leute.filter((P) => P.ist === "haeuslich" && P.abendAus).length;
+    if (aus) rot.push(`${aus} Häusliche mit dem Abend außer Haus`);
+    return rot;
 }
 
 const zugVon = (s) => {
@@ -266,29 +300,16 @@ const alterZeile = (u) =>
     `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")}`; // prettier-ignore
 
 if (SELBSTTEST) {
-    const M = kernMitTaeter();
     let fails = 0;
     // DIE TÄTER DES ALTERS: der Stamm mit dem Alter von vorher, der Kern ohne Lebensphase, der Kern ohne Wuchs der Höhe
-    const kernMit = (re, neu) => {
-        const src = fs.readFileSync(path.join(__dirname, "..", "koerper-core.js"), "utf8");
-        const mut = src.replace(re, neu);
-        if (mut === src) return null;
-        const ctx = vm.createContext({ console });
-        vm.runInContext(mut, ctx);
-        return ctx.__koerperCore;
-    };
+    const kernMit = kernMitTaeter;
     const taeter = [
         ["das Alter 0,05–0,5 wie vorher", ALTER_STAMM.replace("const J = this._bewohnerJahre(g, epoche);", 'const J = 18 + 62 * g.range("alter", 0.05, 0.5);'), KC, /Anteil unter 15 J/], // prettier-ignore
         ["die Wahl ohne Lebensphase", ALTER_STAMM, kernMit(/if \(Ja < A\.kindJ !== Jt < A\.kindJ\) return d \+ A\.phase;\n[^\n]*\n/, ""), /Erwachsenen/], // prettier-ignore
         ["der Wuchs ohne Höhe", ALTER_STAMM, kernMit(/g\.kh \*= w\.hoehe;/, ""), /Wuchs außer Band/],
     ];
     for (const [name, T, K, soll] of taeter) {
-        if (T === ALTER_STAMM && K === KC) {
-            console.log(`⛔ Selbsttest: der Täter „${name}“ ließ sich nicht setzen`);
-            fails++;
-            continue;
-        }
-        if (!K || (name.startsWith("das Alter") && T === ALTER_STAMM)) {
+        if (!K || (T === ALTER_STAMM && K === KC)) {
             console.log(`⛔ Selbsttest: der Täter „${name}“ ließ sich nicht setzen`);
             fails++;
             continue;
@@ -300,18 +321,21 @@ if (SELBSTTEST) {
             fails++;
         }
     }
-    if (!M) {
-        console.log("⛔ Selbsttest: der Täter ließ sich nicht setzen (tagesZug fehlt im Kern)");
-        fails++;
-    } else {
-        const u = urteil(M, zugVon);
-        console.log(`  Täter tagesZug → ausgeglichen: Treffer ${u.t20.toFixed(2)} / ${u.t100.toFixed(2)}`);
-        if (u.t20 >= 0.6 || u.t100 >= 0.6) {
-            console.log("⛔ Selbsttest: der Täter (kein Zug ändert den Tag) blieb GRÜN");
+    for (const t of TAETER) {
+        const M = kernMitTaeter(t.stelle, t.ersatz);
+        if (!M) {
+            console.log(`⛔ Selbsttest: der Täter „${t.name}“ ließ sich nicht setzen (die Stelle fehlt im Kern)`);
+            fails++;
+            continue;
+        }
+        const rot = rotVon(urteil(M, zugVon));
+        console.log(`  Täter ${t.name}: ${rot.join(" · ") || "GRÜN"}`);
+        if (!rot.some((r) => t.faellt.test(r))) {
+            console.log(`⛔ Selbsttest: der Täter „${t.name}“ fiel nicht an seiner Zeile (${t.faellt})`);
             fails++;
         }
     }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", "✅ Selbsttest: der Täter „tagesZug → ausgeglichen“ fällt ROT, die drei Täter des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe) fallen ROT an ihrer Stelle.");
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe) fallen ROT an ihrer Zeile.`);
 }
 
 const a = urteil(KC, zugVon);
@@ -319,9 +343,7 @@ const b = urteil(KC, zugVon);
 const gleich = JSON.stringify(a.leute.map((P) => P.worte)) === JSON.stringify(b.leute.map((P) => P.worte));
 console.log(`  ZÜGE ${zeile(a)}`);
 console.log(`  Treffer erste 20: ${a.t20.toFixed(2)} · alle 100: ${a.t100.toFixed(2)} · bit-gleich: ${gleich}`);
-const rot = [];
-if (a.t20 < 0.6) rot.push(`erste 20 ${a.t20.toFixed(2)} < 0,6`);
-if (a.t100 < 0.6) rot.push(`alle 100 ${a.t100.toFixed(2)} < 0,6`);
+const rot = rotVon(a);
 if (!gleich) rot.push("zwei Läufe, verschiedene Worte (der Tag ist nicht rein)");
 if (rot.length) rot.push("Täter: koerper TAGES_GESETZ.zuege / tagesPlan / tagesBindung");
 const al = alterUrteil(ALTER_STAMM, KC);
@@ -330,5 +352,5 @@ rot.push(...alterRot(al));
 urteilEnde(
     rot.length,
     `❌ ROT — ${rot.join(" · ")}`,
-    `✅ DER ZUG ÄNDERT DEN TAG — ${a.t20.toFixed(2)} der ersten 20 und ${a.t100.toFixed(2)} aller 100 blind ihrem Zug zugeordnet, bit-gleich · DAS ALTER DER EPOCHE — ${(al.anteil * 100).toFixed(1)} % unter 15 J (≥ 35 %), kein Kind in Erwachsenen-Gestalt, der Wuchs im Band`
+    `✅ DER ZUG ÄNDERT DEN TAG — ${a.t20.toFixed(2)} der ersten 20 und ${a.t100.toFixed(2)} aller 100 blind ihrem Zug zugeordnet, jeder Zug ≥ 0,6, bit-gleich · DAS ALTER DER EPOCHE — ${(al.anteil * 100).toFixed(1)} % unter 15 J (≥ 35 %), kein Kind in Erwachsenen-Gestalt, der Wuchs im Band`
 );
