@@ -188,7 +188,8 @@ function selbsttest() {
                 // Ankunft der Front mit neu gemessenem Bett (fünf grobe Punkte, alle Gras), in Schritt 4 zwei
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
-                ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
+                ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
+                fenster: { voll: { zellen: 9, koepfe: 3, alle: 0.04, schritte: 60, bilder: 60 }, leer: { zellen: 9, koepfe: 3, alle: 0.04, schritte: 60, bilder: 172 } },
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
@@ -599,7 +600,11 @@ function selbsttest() {
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => Object.entries({ zuendung: 9000, ankuenfte: 1, betten: 1, punkte: 69, kahl: 19, masken: 1, lesungen: 69 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), /BRAND-ZÜNDUNG: Schritt 4 kostete 9000 Einheiten Zündung .*69 Bett-Punkte, davon bis 19 kahl, 1 Masken/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
-        ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
+        // das Fenster zählt Bilder (bis linse-brand-schritte): am langsamsten Läufer gingen dieselben 60 Bilder weniger Schritte
+        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.leer", { zellen: 5, koepfe: 1, alle: 0.03, schritte: 23, bilder: 60 }], /FENSTER-UHR: .* am schnellsten Läufer 9 Zellen, 3 Köpfe, alle 0.04 m\/s in 60 Schritten .* am langsamsten 5 Zellen, 1 Köpfe, alle 0.03 m\/s in 23 Schritten und 60 Bildern/],
+        ["das Fenster erreicht seine Schritte nicht", ["simWecken.brand.deckel=", 15000], /FENSTER-DECKEL: das Fenster mit dem Wind erreichte nach 15000 Bildern/],
+        ["die Probe des Fensters lief nicht", ["simWecken.brand.fenster"], /LEER: die Probe des Fensters/],
+        ["die Front läuft gegen den Wind",["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
         ["ohne Wind läuft die Front", ["simWecken.brand.ohneWind=", 0.9], /BRAND-BLIND: .* 0.9 m\/s/],
         ["der Brand hinterlässt keine Asche", ["simWecken.brand.lebNach=", 0.62], /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
         ["das Overlay fällt, die Asche nicht (der Fraß am Herd ist keine Asche)", ["simWecken.brand", { ovNach: -0.3 }], /BRAND-ASCHE: .*Leben-Overlay 0 → -0.3, die Asche senkt 0,/],
@@ -3525,7 +3530,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             // das Gitter des Betts aus dem Gesetz der Welt: die groben Punkte je Bett, die feinen je Maske
                             const [GROB, FEIN] = [B.bettGrob.length, B.bettGitter ** 2];
                             S.frame();
-                            for (let i = 0; i < n && bf.size; i++) {
+                            const u0 = r._brandUhr;
+                            let i = 0;
+                            for (; i < n && bf.size; i++) {
                                 const vor = bf.size;
                                 r._weltUhrNimm(r._brandUhr + B.schrittS);
                                 takt();
@@ -3573,18 +3580,37 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             for (const h of alle) if (!(kopf.get(h.q)?.v >= h.v)) kopf.set(h.q, h);
                             const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
+                            Object.assign(Z, { schritte: Math.round((r._brandUhr - u0) / B.schrittS), bilder: i });
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
+                        // DAS FENSTER AN DER UHR DES BRANDS (linse-brand-schritte): derselbe Herd ohne Wind zweimal, einmal mit dem
+                        // Budget des schnellsten Läufers (jeder Schritt in einem Bild) und einmal mit dem des langsamsten (je Bild nur
+                        // `mindestJeBild` Stück) — das Gesetz der Welt für diesen einen Lauf getauscht, im `finally` zurück, kein Flag im
+                        // Spiel. Zellen im Feld, Köpfe und Sprünge sind gleich, sonst zählt das Fenster Bilder statt Schritte (FENSTER-UHR)
+                        const [B0, fenster] = [AnazhRealm.BRAND, {}];
                         r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                        const ohneWind = (await lauf(60)).alle;
-                        delete r._windAt;
+                        try {
+                            for (const [art, budgetMs] of [["voll", 1e9], ["leer", 0]]) {
+                                if (art === "leer") ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
+                                AnazhRealm.BRAND = Object.freeze({ ...B0, budgetMs });
+                                try {
+                                    const L = await lauf(60);
+                                    fenster[art] = { zellen: st.brandFeld.size, koepfe: L.koepfe, alle: L.alle, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel };
+                                } finally {
+                                    AnazhRealm.BRAND = B0;
+                                }
+                            }
+                        } finally {
+                            delete r._windAt;
+                        }
+                        const ohneWind = Math.max(fenster.voll.alle, fenster.leer.alle);
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
                         r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
                         st.worldMeta.taten.length = n0;
                         // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
                         const [lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()];
-                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, ovVor, glut, licht }));
+                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, fenster, lebVor, ovVor, glut, licht }));
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
