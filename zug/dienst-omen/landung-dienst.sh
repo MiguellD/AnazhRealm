@@ -474,7 +474,9 @@ for T in "${TT[@]}"; do
         i=$((i + 1))
         [ -f "$X/tod_in" ] && [ "$(cat "$X/tod_in")" = "$i" ] && { rm -f "$X/tod_in"; sleep 2; kill -9 $PPID; exit 9; }
         [ -f "$X/warter_kommt" ] && [ "$(cat "$X/warter_kommt")" = "$i" ] && { echo macher-kommt-und-geht >"$X/warter"; sleep 8; rm -f "$X/warter"; sleep 8; }
-        [ -f "$X/landung_bei" ] && [ "$(cat "$X/landung_bei")" = "$s" ] && { rm -f "$X/landung_bei"; cp "$X/kopf-bei" "$X/main"; sleep 8; } # main zieht weiter, während s misst
+        # main zieht weiter, während s misst: s misst, bis der Dienst die Grenz-Flagge legt (Handschlag statt Uhr — die Prüfung fällt je
+        # vierten Takt, ein Takt dauert unter Last ~40 s), höchstens 240 s (die Mutante schwanz-nie legt sie nie)
+        [ -f "$X/landung_bei" ] && [ "$(cat "$X/landung_bei")" = "$s" ] && { rm -f "$X/landung_bei"; cp "$X/kopf-bei" "$X/main"; e=$((SECONDS + 240)); while [ ! -f "$SPRUNG" ] && [ $SECONDS -lt $e ]; do sleep 1; done; }
         sleep 0.4
         echo "$KOPF:$s" >>"$X/gepusht"
         echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 1 Station(en)" >>"$X/kette.log"
@@ -550,11 +552,13 @@ STUMMEL
     e1=$(feld gtx)
     geraet_durch radeon "$k0" "$(main_kopf)" >/dev/null # das andere Gerät ist auch durch → die nächste Runde
     z=$(feld runde)
-    # die Sitzungen der Runde 1: je Linse EINE (Teile zu je zwei Läufen, s7+s8 ein Zwilling) — nie je Station eine
-    n=$(grep -c " ${k0:0:8} gtx-${k0:0:8}[-w0-9]* Versuch 1 START (.*,.*)" "$KETTE_LOG")
-    w=$(grep -c " ${k0:0:8} gtx-${k0:0:8}[-w0-9]* Versuch 1 START (" "$KETTE_LOG")
-    if [ "$w" -ge 1 ] && [ "$w" -le 5 ] && [ "$n" = "$w" ]; then echo "OK k  Linse: Runde 1 fuhr 8 Stationen in $w Sitzungen, jede mit mehreren Stationen (Zwilling s7+s8 zusammen) — nie je Station eine"
-    else echo "ROT k  Linse: Runde 1 in $w Sitzungen (Soll 1–5), davon mit mehreren Stationen $n (Soll alle)"; fi
+    # die Sitzungen der ersten Fahrt der Runde 1: je Linse EINE (Teile zu je zwei Läufen, s7+s8 ein Zwilling) — nie je Station eine.
+    # Nur die erste Fahrt (Name ohne -w): die Fortsetzung nach dem Weichen trägt, was übrig ist — fiel die Flagge unter Last erst vor s8
+    # (ein Takt der Schleife ~40 s gegen 6–8 s je Stummel-Station), ist sie legitim eine Einzel-Sitzung und urteilt nicht über teile
+    n=$(grep -c " ${k0:0:8} gtx-${k0:0:8}-[0-9]* Versuch 1 START (.*,.*)" "$KETTE_LOG")
+    w=$(grep -c " ${k0:0:8} gtx-${k0:0:8}-[0-9]* Versuch 1 START (" "$KETTE_LOG")
+    if [ "$w" -ge 1 ] && [ "$w" -le 5 ] && [ "$n" = "$w" ]; then echo "OK k  Linse: die erste Fahrt der Runde 1 packte 8 Stationen in $w Sitzungen, jede mit mehreren Stationen (Zwilling s7+s8 zusammen) — nie je Station eine"
+    else echo "ROT k  Linse: die erste Fahrt der Runde 1 in $w Sitzungen (Soll 1–5), davon mit mehreren Stationen $n (Soll alle)"; fi
     if [ "$(am "$k0")" = 8 ] && [ "$(eindeutig "$k0")" = 8 ] && [ "$(am "$k2")" = 0 ] && echo "$e1" | grep -q "^gtx durch 8/8 " && ! grep -q "SPRUNG: main" "$L" &&
         echo "$z" | grep -qx "runde 2 kopf $k2 start [^ ]* vorher $k0"; then
         echo "OK a  Landung nach Station 2 (main ${k0:0:8} → ${k2:0:8}): die Runde fuhr 8 von 8 am Kopf ${k0:0:8} zu Ende, 0 am neuen main; beide durch → Runde 2 am main des Moments, vorher ${k0:0:8}"
