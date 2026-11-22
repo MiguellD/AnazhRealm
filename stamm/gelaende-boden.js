@@ -2780,6 +2780,18 @@ class AnazhRealm_gelaende_boden {
         return (g > B.rasen ? g : B.rasen) * (1 - B.pflaster);
     }
 
+    // DAS GRÜN UNTER DEM KONTAKT (fahrt-weltzeit 22.11.): das Grün des Gesetzes, auf dem ein Rad, ein Fuß oder ein gleitender Leib bei
+    // (x, z) in der Höhe y steht — die EINE Quelle der Wiese für Reibung und Stoff (`_fahrHaft`, `_kontaktStoffAt`). Steht die Karte
+    // des Bodens, reicht sie Höhe und Hang ihrer Zelle (`_bodenSichtAt`, in Stufe 0 dasselbe Grün wie das Gesetz); steht sie noch
+    // nicht, liest das Gesetz am Kontakt — die Höhe des Kontakts, der Hang der Spalte (`_slopeAt` über `_voxelSurfaceY`). Bis hier
+    // galt ohne Karte Grün 0: die Reibung hing am Bau-Stand der Chunks, also am Gerät — der GT fuhr T1 auf der Mess-Wiese (Grün 1)
+    // an der GTX ungedrosselt ohne Karte auf Erde (μ 0,7) 59,32 m / 23,6 m/s, gedrosselt mit Karte auf Gras (μ 0,4) 39,62 m / 17,8 m/s.
+    _bodenGruenUnter(x, z, y) {
+        const aus = this._bodenGruenUnterAus || (this._bodenGruenUnterAus = {});
+        if (this._bodenSichtAt(x, z, aus) !== null) return aus.gruen;
+        return this._bodenGruenAt(x, Number.isFinite(y) ? y : this._voxelSurfaceY(x, z), z, this._slopeAt(x, z));
+    }
+
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt
     // (begehbar über die feld-native Kollision); ein zweiter Aufruf ersetzt den alten.
     _spawnVoxelTestChunk() {
