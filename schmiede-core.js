@@ -2988,16 +2988,41 @@
         //   D = E·d³ ÷ 12·(1 − ν²). So liest der Bruch σ_B, E UND ρ der Zeile: eine kleine Ladung bricht die große dünne Scheibe
         //   weit näher, als ihr Spitzen-Druck allein sagt (1 kg-Äquivalent, Quarz 0,9 m × 3 mm: 11,6 statt 43,6 m), und der
         //   Bruch-Radius wächst steiler als W^(1/3), bis der Puls lang gegen die Platte ist.
-        var DRUCK = { tntJ: 4.184e6, gamma: 1.4, nu: 0.3, endePa: 1000, zMin: 0.05, zMax: 500 };
+        // DER HALM UNTER DER WELLE (druckwelle-bild, additiv — das Bild der Welle aus demselben Gesetz): hinter der Front strömt
+        //   die Luft. Ihr Tempo folgt aus dem Sprung (Rankine–Hugoniot: u = Δp ÷ (ρ0 · U), U = c · M das Tempo der Front), ihr
+        //   WEG in der Überdruck-Phase aus dem Dreieck desselben Pulses: ξ = ½ · u · t = Impuls ÷ (ρ0 · U) — `druckwelle` trägt
+        //   `mach`, `wind` (m/s) und `weg` (m). Der Halm ist ein leichtes flaches Band (Masse je Fläche ρ_s · d, d = 2 ÷ σ aus
+        //   der Oberfläche je Volumen seines Betts): er nimmt das Tempo der Luft an, sobald sie um λ = 2 · ρ_s · d ÷ (ρ0 · c_w)
+        //   an ihm vorbeizog (Zentimeter gegen Dezimeter Luft-Weg) — die Luft TRÄGT ihn. Starr um seinen Fuß gedreht, legt ihn
+        //   das Moment-Gleichgewicht des Staudrucks über seine Länge L: dθ = κ · cos θ · dξ ÷ L, κ die Wurzel von
+        //   κ⁴/4 − 2κ³/3 + κ²/2 = 1/6 (1,5565; bei linearem Widerstand 3/2) → sin θ = tanh(κ · ξ ÷ L). Im Puls wächst der Weg
+        //   wie das Dreieck: ξ · k · (2 − k), k = Zeit seit der Front ÷ Dauer. Danach richtet ihn seine Feder auf (sein Takt ω,
+        //   die Eigen-Kreisfrequenz seines Wiegens), gebremst vom Staudruck der eigenen Drehung: √θ fällt gleichförmig um
+        //   ω · √(λ ÷ 3L) je Sekunde (Feder ↔ Widerstand des gedrehten Bands; die Trägheit zählt erst unter ~0,3 rad, ihr
+        //   Überschwinger bliebe unter 2°) — nach `ruhe` = √(π/2) ÷ Rate steht jeder Halm. `cwBand`: der Widerstands-Beiwert
+        //   des flachen Bands quer zur Strömung (Hoerner, Fluid-Dynamic Drag 1965, Kap. 3: 1,98).
+        //   halmZahlen(z, bett, luft, takt) → { laenge m, mitnahme λ m, traeg κ ÷ L 1/m, rueck 1/s, ruhe s } — z die Zeile des
+        //     Halm-Stoffs (ρ), bett { sigma 1/m, tiefe m }, takt rad/s; null ohne eine der Zahlen.
+        //   halmWinkel(A, weg, dauer, s, hz) → θ (rad) über der Algebra A (k · add · sub · mul · div · min · max · sqrt · tanh ·
+        //     asin): s die Zeit seit der Ankunft der Front (davor steht der Halm). EINE Formel für den Stoff der Welt (TSL) und
+        //     die Zahlen der Linse.
+        //   druckTafel(luft) → die Welle über dem skalierten Abstand an den Stützen der Front (Z_i = zMin · e^(i · lnq),
+        //     i = 0 … n), je Stütze [Ankunft s, Luft-Weg m, Dauer s, 0] je kg^(1/3): eine Welle der Masse W liest sie mit
+        //     W^(1/3) (Hopkinson–Cranz). Zwischen den Stützen linear im Index — so rechnet `frontWeg` die Ankunft selbst.
+        var DRUCK = { tntJ: 4.184e6, gamma: 1.4, nu: 0.3, endePa: 1000, zMin: 0.05, zMax: 500, cwBand: 1.98, nyLuft: 1.51e-5, reKugel: 800 };
         function ueberdruck(Z) {
             return (808 * (1 + (Z / 4.5) * (Z / 4.5))) / Math.sqrt((1 + (Z / 0.048) * (Z / 0.048)) * (1 + (Z / 0.32) * (Z / 0.32)) * (1 + (Z / 1.35) * (Z / 1.35)));
         }
         function impulsZ(Z) {
             return (6.7 * Math.sqrt(1 + Math.pow(Z / 0.23, 4))) / (Z * Z * Math.cbrt(1 + Math.pow(Z / 1.55, 3)));
         }
+        // die Mach-Zahl der Front über dem Überdruck-Verhältnis Δp ÷ p0 (Rankine–Hugoniot)
+        function frontMach(dpP0) {
+            return Math.sqrt(1 + ((DRUCK.gamma + 1) / (2 * DRUCK.gamma)) * dpP0);
+        }
         var FRONT = (function () {
             var n = 240, T = new Float64Array(n + 1), q = Math.pow(DRUCK.zMax / DRUCK.zMin, 1 / n), z = DRUCK.zMin, s = 0;
-            var f = function (x) { return 1 / Math.sqrt(1 + ((DRUCK.gamma + 1) / (2 * DRUCK.gamma)) * ueberdruck(x)); };
+            var f = function (x) { return 1 / frontMach(ueberdruck(x)); };
             for (var i = 1; i <= n; i++) {
                 var z1 = z * q;
                 s += ((z1 - z) / 6) * (f(z) + 4 * f(0.5 * (z + z1)) + f(z1));
@@ -3012,14 +3037,48 @@
             if (i >= FRONT.n) return FRONT.T[FRONT.n] + (Z - DRUCK.zMax);
             return FRONT.T[i] + (FRONT.T[i + 1] - FRONT.T[i]) * (f - i);
         }
-        // die Welle der Energie `energieJ` im Abstand R (m) → { W kg, Z, p0 Pa, dp Pa, impuls Pa·s, dauer s, ankunft s }; null
-        // ohne Energie oder Luft
+        // die Welle der Energie `energieJ` im Abstand R (m) → { W kg, Z, p0 Pa, dp Pa, impuls Pa·s, dauer s, ankunft s, mach,
+        // wind m/s, weg m }; null ohne Energie oder Luft
         function druckwelle(energieJ, R, luft) {
             var W = energieJ / DRUCK.tntJ;
             if (!(W > 0) || !(R >= 0) || !luft || !(luft.rho > 0) || !(luft.c > 0)) return null;
             var w3 = Math.cbrt(W), Zr = R / w3, Z = Math.min(DRUCK.zMax, Math.max(DRUCK.zMin, Zr)), fern = Zr > DRUCK.zMax ? DRUCK.zMax / Zr : 1;
             var p0 = (luft.rho * luft.c * luft.c) / DRUCK.gamma, dp = ueberdruck(Z) * p0 * fern, i = impulsZ(Z) * w3 * fern;
-            return { W: W, Z: Zr, p0: p0, dp: dp, impuls: i, dauer: (2 * i) / dp, ankunft: (frontWeg(Zr) * w3) / luft.c };
+            var mach = frontMach(dp / p0), fahrt = luft.rho * luft.c * mach;
+            return { W: W, Z: Zr, p0: p0, dp: dp, impuls: i, dauer: (2 * i) / dp, ankunft: (frontWeg(Zr) * w3) / luft.c, mach: mach, wind: dp / fahrt, weg: i / fahrt };
+        }
+        var TAFEL = null;
+        function druckTafel(luft) {
+            if (!luft || !(luft.rho > 0) || !(luft.c > 0)) return null;
+            if (TAFEL && TAFEL.rho === luft.rho && TAFEL.c === luft.c) return TAFEL;
+            var n = FRONT.n, daten = new Float32Array(4 * (n + 1)), p0 = (luft.rho * luft.c * luft.c) / DRUCK.gamma;
+            for (var i = 0; i <= n; i++) {
+                var u = ueberdruck(DRUCK.zMin * Math.exp(i * FRONT.lnq)), imp = impulsZ(DRUCK.zMin * Math.exp(i * FRONT.lnq));
+                daten[4 * i] = FRONT.T[i] / luft.c;
+                daten[4 * i + 1] = imp / (luft.rho * luft.c * frontMach(u));
+                daten[4 * i + 2] = (2 * imp) / (u * p0);
+            }
+            return (TAFEL = { rho: luft.rho, c: luft.c, n: n, zMin: DRUCK.zMin, lnq: FRONT.lnq, daten: daten });
+        }
+        var HALM_KAPPA = (function () {
+            var lo = 1, hi = 2;
+            for (var i = 0; i < 60; i++) {
+                var m = 0.5 * (lo + hi);
+                if (m * m * ((m * m) / 4 - (2 * m) / 3 + 0.5) > 1 / 6) hi = m;
+                else lo = m;
+            }
+            return 0.5 * (lo + hi);
+        })();
+        function halmZahlen(z, bett, luft, takt) {
+            if (!z || !(z.rho > 0) || !bett || !(bett.sigma > 0) || !(bett.tiefe > 0) || !luft || !(luft.rho > 0) || !(takt > 0)) return null;
+            var lambda = (4 * z.rho) / (bett.sigma * luft.rho * DRUCK.cwBand), rueck = takt * Math.sqrt(lambda / (3 * bett.tiefe));
+            return { laenge: bett.tiefe, mitnahme: lambda, traeg: HALM_KAPPA / bett.tiefe, rueck: rueck, ruhe: Math.sqrt(Math.PI / 2) / rueck };
+        }
+        function halmWinkel(A, weg, dauer, s, hz) {
+            var k = A.min(A.max(A.div(s, A.max(dauer, A.k(1e-9))), A.k(0)), A.k(1));
+            var theta0 = A.asin(A.tanh(A.mul(A.mul(weg, A.k(hz.traeg)), A.mul(k, A.sub(A.k(2), k)))));
+            var w = A.max(A.sub(A.sqrt(theta0), A.mul(A.max(A.sub(s, dauer), A.k(0)), A.k(hz.rueck))), A.k(0));
+            return A.mul(w, w);
         }
         // der Abstand (m), an dem der Überdruck der Welle auf `dp` Pa fällt (ohne `dp`: ihr Ende, `endePa`) — er fällt monoton
         function druckRadius(energieJ, luft, dp) {
@@ -3034,6 +3093,41 @@
                 else hi = m;
             }
             return Math.sqrt(lo * hi) * Math.cbrt(W);
+        }
+        // DER STAUB UNTER DER WELLE (druckwelle-bild, additiv — das Korn des Bodens aus demselben Gesetz): eine Decke aus losem
+        //   Korn (Bindung „korn": die Krume, die Asche) hält bis zu ihrer Bruchfestigkeit σ_B zusammen; trägt die Welle am Ort
+        //   mehr Überdruck, ist ihr Korn gelöst — jede andere Bindung hält (Faser: die Grasnarbe; Gestein). Was dann fliegt, gibt
+        //   der Wind hinter der Front (`wind` und `weg` der Welle, dieselben Zahlen, die den Halm legen):
+        //   DER SCHUB   die Luft reibt an der rauen Decke mit τ = ½ · c_f · ρ0 · u², c_f der voll rauen Platte (Prandtl–Schlichting,
+        //               lokal: (2,87 + 1,58 · lg(x ÷ k))^(−2,5), x der Luft-Weg über dem Ort, k das Korn; gültig x ÷ k 10² … 10⁶ —
+        //               Schlichting, Grenzschicht-Theorie, Kap. XXI). Über den Dreieck-Puls: ⅓ · c_f · ρ0 · u · ξ Impuls je Fläche.
+        //   DAS KORN    eine Kugel der Dichte ρ und Dicke d nimmt das Tempo der Luft auf wie der Halm: nach dem Luft-Weg
+        //               λ = 4 · ρ · d ÷ (3 · ρ0 · c_w) trägt sie die Hälfte (quadratischer Widerstand: v = u · ξ ÷ (ξ + λ)). c_w der
+        //               Kugel nach Schiller & Naumann (1935): 24 ÷ Re · (1 + 0,15 · Re^0,687), Re = v · d ÷ ν, bis `reKugel`
+        //               (dort steht die Ebene 0,47 des umströmten Balls).
+        //   DIE MASSE   der Schub wird Impuls des Korns: last = ⅓ · c_f · ρ0 · (ξ + λ) kg/m² (langsames Korn: mehr Masse am
+        //               selben Impuls).
+        //   DIE WOLKE   das Korn fliegt, wenn sein Tempo sein Sink-Tempo übertrifft (Gewicht = Widerstand, derselbe c_w); sein
+        //               Bremsweg in ruhender Luft, λ · ln(Tempo ÷ Sink-Tempo), ist der Radius der Wolke über seinem Ort. Sonst
+        //               rollt es (null): die Krume von 2 mm fliegt so nicht, die Asche schon.
+        //   DAS LICHT   ein Korn, groß gegen die Welle des Lichts, löscht das Licht seiner doppelten Fläche (Q = 2):
+        //               km = 3 ÷ (ρ · d) m²/kg.
+        //   staubLast(w, z, korn, luft) → null | { last kg/m², tempo m/s, sinken m/s, wolke m, km m²/kg, mitnahme m } — w die
+        //     Welle am Ort (`druckwelle`), z die Zeile der Decke, korn m (die Körnung, die der Wirt zur Zeile trägt). `nyLuft`:
+        //     die kinematische Zähigkeit der Luft bei 20 °C (m²/s); die Schwere ist die des Kerns (`SEIL_GESETZ.schwere`).
+        function kugelCw(v, d) {
+            var Re = Math.min(DRUCK.reKugel, Math.max(1e-6, (v * d) / DRUCK.nyLuft));
+            return (24 / Re) * (1 + 0.15 * Math.pow(Re, 0.687));
+        }
+        function staubLast(w, z, korn, luft) {
+            if (!w || !z || z.bindung !== "korn" || !(z.sigB > 0) || !(z.rho > 0) || !(korn > 0) || !luft || !(luft.rho > 0)) return null;
+            if (!(w.dp >= z.sigB) || !(w.wind > 0) || !(w.weg > 0)) return null;
+            var k = (4 * z.rho * korn) / (3 * luft.rho), gk = SEIL_GESETZ.schwere * k, sinken = Math.sqrt(gk / kugelCw(Infinity, korn));
+            for (var i = 0; i < 40; i++) sinken = Math.sqrt(gk / kugelCw(sinken, korn));
+            var mitnahme = k / kugelCw(w.wind, korn), tempo = (w.wind * w.weg) / (w.weg + mitnahme);
+            if (!(tempo > sinken)) return null;
+            var reib = Math.pow(2.87 + 1.58 * Math.log10(Math.min(1e6, Math.max(100, w.weg / korn))), -2.5);
+            return { last: (reib * luft.rho * (w.weg + mitnahme)) / 3, tempo: tempo, sinken: sinken, wolke: (k / kugelCw(tempo, korn)) * Math.log(tempo / sinken), km: 3 / (z.rho * korn), mitnahme: mitnahme };
         }
         var BETA = {};
         function plattenBeta(lang, kurz) {
@@ -3059,6 +3153,58 @@
             var a = Math.max(lang, kurz), b = Math.min(lang, kurz), D = (z.E * dick * dick * dick) / (12 * (1 - DRUCK.nu * DRUCK.nu));
             var omega = Math.PI * Math.PI * (1 / (a * a) + 1 / (b * b)) * Math.sqrt(D / (z.rho * dick));
             return (plattenBeta(a, b) * dp * stossFaktor(omega * dauer) * (b / dick) * (b / dick)) / z.sigB;
+        }
+        // DER BRUCH DER PLATTE (`plattenBruch`, druckwelle-bild, additiv): DER RISS IST DIE ENERGIE. Die Dehnungs-Energie der Platte
+        //   am Bruch wächst mit dem Quadrat ihrer Last (σ² ÷ 2E); sie wird Riss-Fläche (Griffith: je Fläche des Risses eine feste
+        //   Energie) — die Riss-Länge ist L = L₁ · last², L₁ = lang + kurz das Kreuz der Mittellinien: das Bild der Platte, die
+        //   gerade bricht (last 1: vier Stücke, auch der lange Streifen). Die Risse teilen sie in möglichst quadratische Zellen
+        //   der Kante e: 2 · lang · kurz ÷ e − (lang + kurz) = L → e = 2 · lang · kurz ÷ ((lang + kurz) · (1 + last²)). Die kurze
+        //   Achse zuerst (ihre Schnitte sind die langen): n_kurz = kurz ÷ e gerundet; die lange trägt, was vom Riss bleibt:
+        //   n_lang = 1 + (L − (n_kurz − 1) · lang) ÷ kurz gerundet — die Riss-Länge des Gitters trifft L auf einen halben Schnitt
+        //   der kurzen Seite. Je Achse mindestens 2 (das Kreuz), höchstens Maß ÷ dick (die Scherbe bleibt Platte) und `achse`
+        //   (so fein trägt der Rufer sie); über `gesamt` Stücken fällt je ein Schnitt der feineren Achse, bis das Gitter passt
+        //   (nie unter das Kreuz).
+        //   DIE SCHNITTE LIEGEN, WO DIE ENERGIE LIEGT: die Biege-Spannung der Grundform der gelenkigen Platte fällt zum Rand wie
+        //   sin(π · x ÷ a), ihre Energie wie sin² — F(x) = x/a − sin(2π · x/a) ÷ 2π; der k-te Schnitt liegt bei F = k ÷ n (die
+        //   Mitte zerspringt fein, der Rand bleibt grob; die Drill-Energie der Ecken zählt das Gesetz nicht).
+        //   plattenBruch(lang, kurz, dick, last, achse, gesamt) → { lang: [0 … 1], kurz: [0 … 1] } die Schnitt-Stellen je Achse als
+        //     Anteil ihres Maßes (n + 1 Werte), oder null (last < 1: die Platte steht). `achse` und `gesamt` sind Zahlen des
+        //     Rufers — ohne Wort (undefined) frei; eine Zahl gilt, auch 0 und darunter: dann bleibt das Kreuz.
+        var SCHNITT = {};
+        function bruchSchnitte(n) {
+            if (SCHNITT[n]) return SCHNITT[n];
+            var s = [0];
+            for (var k = 1; k < n; k++) {
+                // die Grundform ist spiegelgleich: die Mitte liegt in der Mitte, die zweite Hälfte ist das Spiegelbild der ersten
+                if (2 * k >= n) {
+                    s.push(2 * k === n ? 0.5 : 1 - s[n - k]);
+                    continue;
+                }
+                var lo = 0, hi = 0.5;
+                for (var i = 0; i < 48; i++) {
+                    var m = 0.5 * (lo + hi);
+                    if (m - Math.sin(2 * Math.PI * m) / (2 * Math.PI) < k / n) lo = m;
+                    else hi = m;
+                }
+                s.push(0.5 * (lo + hi));
+            }
+            s.push(1);
+            return (SCHNITT[n] = s);
+        }
+        function plattenBruch(lang, kurz, dick, last, achse, gesamt) {
+            if (!(last >= 1) || !(lang > 0) || !(kurz > 0) || !(dick > 0)) return null;
+            var a = Math.max(lang, kurz), b = Math.min(lang, kurz), L = (a + b) * last * last;
+            var zahl = function (n, m) {
+                n = Math.min(Math.max(2, Math.round(n)), Math.max(2, Math.floor(m / dick)));
+                return typeof achse === "number" ? Math.min(n, Math.max(2, Math.floor(achse))) : n;
+            };
+            var nb = zahl(((a + b) * (1 + last * last)) / (2 * a), b), na = zahl(1 + (L - (nb - 1) * a) / b, a);
+            if (typeof gesamt === "number")
+                while (na * nb > gesamt && (na > 2 || nb > 2)) {
+                    if (na >= nb) na--;
+                    else nb--;
+                }
+            return { lang: bruchSchnitte(na), kurz: bruchSchnitte(nb) };
         }
         // DIE ANKER DER WELLE (IATG 01.80, Kingery–Bulmash-Werte der Halbkugel am Boden — hier als freie Ladung der 1,8-fachen
         // Masse gerechnet): [kg, m, Δp bar, Impuls bar·ms, Ankunft ms | null]. → je Anker die Abweichung des Gesetzes in % in der
@@ -3192,7 +3338,8 @@
             zeile: zeile, molMasse: molMasse, mische: mische, brechzahl: brechzahl, kanaele: kanaele, fresnel0: fresnel0,
             bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde,
             DRUCK: DRUCK, druckwelle: druckwelle, druckRadius: druckRadius, plattenBeta: plattenBeta, stossFaktor: stossFaktor,
-            plattenLast: plattenLast, ankerAbweichung: ankerAbweichung
+            plattenLast: plattenLast, plattenBruch: plattenBruch, ankerAbweichung: ankerAbweichung,
+            druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel, staubLast: staubLast
         };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
