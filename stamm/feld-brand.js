@@ -1831,10 +1831,13 @@ AnazhRealm.BRAND = Object.freeze({
 // `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst
 // liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
 // bewegt nichts Sichtbares und fällt; `scherbenAchse` und `scherbenFein`: so fein trägt der Löser der freien Körper den
-// Bruch — je Platte höchstens so viele Stücke je Achse (die Geburt einer Scherbe 0,66 ms, GTX 1050: sechzehn je Platte in
-// einem Bild), je Welle so viele Scherben über dem Kreuz ihrer Platten (sechs Platten ganz fein, je zwölf über dem Kreuz;
-// 0,095 ms je wacher Scherbe und Schritt: höchstens 6,8 ms je Schritt mehr als zuvor, bis sie schlafen; `_druckWerk` —
-// das Gitter selbst ist Gesetz, schmiede `plattenBruch`); `budgetMs` und
+// Bruch — je Platte höchstens so viele Stücke je Achse, je Welle so viele Scherben über dem Kreuz ihrer Platten (sechs
+// Platten ganz fein, je zwölf über dem Kreuz; `_druckWerk` — das Gitter selbst ist Gesetz, schmiede `plattenBruch`).
+// GEMESSEN (GTX 1050, Mess-Wiese, die erste Detonation einer frischen Welt, ganze Bilder bis zum Abschluss der GPU, zwei
+// Paare Kreuz ↔ fein, vier Scheiben in 6–28 m: 16 ↔ 48 Scherben): die Geburt 0,53 ms je Scherbe über dem Kreuz (die
+// sechzehn einer Platte in einem Bild 16–18 ms gegen 9–11 ms); der Löser 0,1 ms je wacher Scherbe und Bild im Flug
+// (+3,2 ms je Bild), im Bild des Bruchs bis 20 ms gegen 7,7 ms; das ganze Bild im Bruch (7 Bilder) im Median 93 → 105 ms,
+// im Flug (52 Bilder) 65 → 68 ms, danach 54 → 55 ms, bis die Scherben schlafen (Ruhe dieser Messung 56–68 ms); `budgetMs` und
 // `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
 // `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist);
 // `bildWellen`: so viele Wellen zugleich liest der Halm im Bild (`_halmWelle`, die Slots des Wind-Satzes) — die jüngsten.
@@ -1842,7 +1845,9 @@ AnazhRealm.BRAND = Object.freeze({
 // ein Ballen: bei 2 m deckt der Kreis seiner Fläche, 1,13 m, die Wolke des Korns bis 3 m ans Fass), höchstens `max` Ballen je
 // Welle und im Bild; `aKill`: darunter trägt ein Ballen kein Bild — der Schleier der Asche ist dünn (über dem Boden deckt er
 // 1,6–4,2 %, im Ballen 5–12 %), das Auge sieht ihn im Streifblick durch viele: 1 % zählt noch; `size`: Radius je Einheit
-// des Satzes.
+// des Satzes. GEMESSEN (GTX 1050, eine Narbe von 3 × 3 Zellen, 383 Ballen im Bild, ein Zustand der Welt mit ↔ ohne Satz):
+// +3,5 ms je Bild am Scheitel (41,3 · 41,5 ↔ 37,7 · 38,1 ms) — Füllung; der Halm liest die Welle ohne messbaren Preis
+// (Front in 15 m, vier Reihen: 40,8 · 40,0 mit ↔ 40,5 · 40,2 ms ohne).
 AnazhRealm.DRUCK = Object.freeze({
     funkeM: 0.5,
     stossMin: 0.05,
