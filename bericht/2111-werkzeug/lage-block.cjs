@@ -1,6 +1,6 @@
 // node lage-block.cjs <block-datei> <ziel-datei> [ersetze-praefix] — baut die neue LAGE.md: der Block (mit @@ZEIT@@ → jetzt) kommt
 // unter die Titelzeile; nennt das dritte Wort den Anfang eines eigenen älteren Blocks (z. B. "**STAND 22.11. 00:44"), fällt
-// dieser Block (bis vor die nächste Zeile, die mit "**STAND" beginnt) — ein Konto schreibt seinen Block fort statt zu stapeln.
+// dieser Block (bis vor die nächste Zeile, die mit "**" beginnt) — ein Konto schreibt seinen Block fort statt zu stapeln.
 // Danach: node ko-datei.cjs <ziel-datei> LAGE.md <betreff-datei>.
 const cp = require("child_process"), fs = require("fs");
 const R = "C:/Users/micha/AnazhRealm-profiband";
@@ -14,7 +14,9 @@ let gefallen = 0;
 if (weg) {
   const a = z.findIndex((x) => x.startsWith(weg));
   if (a < 0) { console.log("FEHLER: kein Block beginnt mit " + weg); process.exit(1); }
-  let b = z.findIndex((x, i) => i > a && x.startsWith("**STAND"));
+  // das Ende des Blocks ist die nächste Zeile, die mit "**" beginnt — JEDER Block der Seite (STAND, GESTEMPELT, NACHTRAG):
+  // am 22.11. schnitt die Suche nach "**STAND" drei Blöcke von Konto 16 mit fort (geheilt aus 8cf57f8d)
+  let b = z.findIndex((x, i) => i > a && x.startsWith("**"));
   if (b < 0) b = z.length;
   gefallen = b - a;
   z.splice(a, gefallen);
