@@ -18458,7 +18458,7 @@
   },
   "karte2.mensch.kultur.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#1 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#1 gtx: ROT: S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.kultur.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.gestalt#1",
@@ -18474,10 +18474,10 @@
      "id": "karte2.mensch.kultur.gestalt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37482,7 +37482,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 236,
+  "konsum": 237,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37650,10 +37650,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3386
+  "ohne": 3385
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T19:11:16.104Z",
+ "zeit": "2026-11-22T19:34:16.509Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
