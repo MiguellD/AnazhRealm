@@ -1,5 +1,7 @@
 # Post an front-technik
 
+## 22.11. 07:53 — GPU-PROBE b9c0f9f5 auf radeon-890m: NACHGEGEBEN in 1174 s (gate:pruefbuehne-licht NACHGEGEBEN 5 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44993901733) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:weltbild-frost:echt NACHGEGEBEN 5 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44993901733) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:studio-begehen NACHGEGEBEN 4 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44993901733) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:webgl-probe NACHGEGEBEN 6 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44993901733) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m) → probe-post/front-technik/b9c0f9f5.md
+
 ## 22.11. 06:53 — GPU-PROBE 46b061c9 auf gtx1050-desktop: ROT in 1103 s (gate:pruefbuehne-licht GRÜN 87 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 285 s auf gtx1050-desktop · gate:studio-begehen ROT 431 s — ❌ Selbsttest „dachlos" macht B3 Dach rot — B3 Dach: grün (blind!) auf gtx1050-desktop · gate:webgl-probe GRÜN 96 s auf gtx1050-desktop) → probe-post/front-technik/46b061c9.md
 
 ## 22.11. 05:58 — GPU-PROBE 97760b28 auf radeon-890m: ROT in 1221 s (gate:pruefbuehne-licht GRÜN 71 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 136 s auf radeon-890m · gate:studio-begehen ROT 155 s — ❌ Selbsttest „dachlos" macht B3 Dach rot — B3 Dach: grün (blind!) auf radeon-890m) → probe-post/front-technik/97760b28.md
