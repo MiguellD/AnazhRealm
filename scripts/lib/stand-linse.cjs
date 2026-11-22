@@ -436,9 +436,10 @@ const BRAND_GANG = 16;
 // das Fenster am langsamsten Läufer (FENSTER-UHR): Median und schnellster Sprung der Köpfe auf 0,02 m/s gleich — zwischen zwei Herden
 // lebt die Welt weiter (lokal 0,305 ↔ 0,307 m/s), die Uhr des Läufers trug 0,06 (0,35 ↔ 0,29 m/s) bis 0,69 (CI)
 const FENSTER_MS = 0.02;
-// DIE TREUE DER FRONT (FRONT-TREUE): das Vorrücken des Kopfs auf dem gesetzten Bett ÷ R des Gesetzes — gemessen 0,963 (35°,
-// Radeon-Laptop): jede Zelle der Kette lief genau ihr Tempo der Ellipse, den Rest trägt der erste Sprung aus der Mitte des Herds
-const FRONT_TREUE = [0.85, 1.15];
+// DIE TREUE DER FRONT (FRONT-TREUE): das Vorrücken des Kopfs auf dem gesetzten Bett ÷ R des Gesetzes — gemessen 1,002 · 1,003 ·
+// 0,989 (0,9° · 23,4° · 44,1°, Radeon-Laptop, Null-Renderer): jede Zelle der Kette läuft genau ihr Tempo der Ellipse. Das Band
+// ±10 % statt ±15 %: das Gitter nur der Diagonalen (die Mutante) verliert an der Achse 11,5 % (0,885)
+const FRONT_TREUE = [0.9, 1.1];
 // DIE DREI STARTS AN DERSELBEN UHR (FENSTER-BETT): mit · alle · Vorrücken · R relativ gleich
 const BETT_GLEICH = 0.02;
 const BRAND_ANKUNFT = 16;
