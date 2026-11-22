@@ -1740,7 +1740,7 @@ L.perspektive("leben", (() => {
                             for (let i = -a.fenster; i <= a.fenster; i += 2) for (let j = -a.fenster; j <= a.fenster; j += 2) if (r._nassAt(fl.x + i, fl.z + j)) n++;
                             return n;
                         };
-                        const jahr = s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400;
+                        const jahr = ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                         const vor = nass();
                         const uhr = s.spielZeit;
                         let nach;
@@ -1868,7 +1868,7 @@ L.perspektive("leben", (() => {
                             for (const L of a.laeufe) laeufe[L.name] = lauf(key, L);
                             je.push({ key, cx: r3(cx), cz: r3(cz), hy: r3(r._terrainMacroSurfaceY(cx, cz, false)), klassen: r._bestandFeld(key).zellen.map((c) => c.klasse), laeufe });
                         }
-                        return { keys, kand: kand.length, seite: SE, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, regionenNachher: Object.keys(F.regionen).length, je };
+                        return { keys, kand: kand.length, seite: SE, jahr: ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()), regionenNachher: Object.keys(F.regionen).length, je };
                     };
                     const planet = async (r, T, a) => {
                         await r._fadenQuelle();
@@ -2506,7 +2506,7 @@ L.perspektive("leben", (() => {
                             for (const L of a.laeufe) laeufe[L.name] = lauf(key, L);
                             je.push({ key, nah: nah.has(key), klassen: r._bestandFeld(key).zellen.map((c) => c.klasse), laeufe });
                         }
-                        return { keys, kand: kand.length, seite: SE, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, regionenNachher: Object.keys(F.regionen).length, je };
+                        return { keys, kand: kand.length, seite: SE, jahr: ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()), regionenNachher: Object.keys(F.regionen).length, je };
                     };
                     const orte = async (r, T, a) => {
                         const s = r.state;
@@ -2527,7 +2527,7 @@ L.perspektive("leben", (() => {
                         const y0 = d0 ? r._voxelSurfaceY(d0.x, d0.z) : 0;
                         return {
                             doerfer,
-                            jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400,
+                            jahr: ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()),
                             staedte: staedte.length,
                             groessteStadt: staedte.reduce((q, x) => Math.max(q, x.nH || 0), 0),
                             kuesteKm: an.kuesteKm,
@@ -5441,7 +5441,7 @@ L.perspektive("erleben", (() => {
                         const SOMMER = Number.isFinite(sp) ? sp : a.sommer;
                         try {
                             s.seasonPhase = SOMMER;
-                            r._saisonAnker = { anker: SOMMER, t: s.spielZeit, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, phase: SOMMER };
+                            r._saisonAnker = { anker: SOMMER, k: r._kalenderZeit(s.spielZeit), phase: SOMMER };
                             r._tickSeason();
                             for (const t of a.uhren) {
                                 r.setTimeOfDay(t, "regler");
@@ -5485,7 +5485,7 @@ L.perspektive("erleben", (() => {
                             r._umweltRingProbe(um, best.x, best.z, um.ring.punkte.length);
                             for (const p of a.phasen) {
                                 s.seasonPhase = p;
-                                r._saisonAnker = { anker: p, t: s.spielZeit, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, phase: p };
+                                r._saisonAnker = { anker: p, k: r._kalenderZeit(s.spielZeit), phase: p };
                                 r._tickSeason();
                                 r._vogelTakt();
                                 const su = s.seasonUniforms;
@@ -6707,7 +6707,7 @@ L.perspektive("same", (() => {
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
                         const aus = M.teil || {};
                         const Z = C.WETTER_ZUG_SEK;
-                        const nZ = Math.round((a.jahre * st.seasonYearSeconds) / Z);
+                        const nZ = Math.round((a.jahre * r._kalender().jahrK) / Z);
                         const tA = st.spielZeit;
                         let [sturm, sonne, sturmNachTrocken, lauf] = [0, 0, 0, 0];
                         for (let k = 0; k < nZ; k++) {
@@ -6766,7 +6766,7 @@ L.perspektive("same", (() => {
                                 }
                             };
                             const basis = tiefe();
-                            aus.fluss = { punkte: flussP.length, basis, sturm30: pegel("stormy", 1800), sonne30: pegel("sunny", 1800), duerre3t: pegel("sunny", 3 * C.PEGEL_TAG_S) };
+                            aus.fluss = { punkte: flussP.length, basis, sturm30: pegel("stormy", 1800), sonne30: pegel("sunny", 1800), duerre3t: pegel("sunny", 3 * r._kalender().tagS) };
                         } finally {
                             if (eigen) r._brandEntfachen = orig;
                             else delete r._brandEntfachen;
@@ -6976,13 +6976,13 @@ L.perspektive("same", (() => {
                         const wm = st.worldMeta;
                         const pm = st.playerMesh.position;
                         const cs = C.LIFE_FIELD.cell;
-                        const jahrH = st.seasonYearSeconds / (C.PEGEL_TAG_S / 24);
+                        const jahrH = ((K) => (K.tagStunden * K.jahrK) / K.normS)(r._kalender());
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
                         const mitte = (v) => (Math.floor(v / cs) + 0.5) * cs;
                         const alt = { L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx, sz: st.spielZeit };
                         const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
                         const bei = (j, f) => {
-                            st.spielZeit = alt.sz + j * st.seasonYearSeconds;
+                            st.spielZeit = alt.sz + j * ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                             try {
                                 return f();
                             } finally {
@@ -7840,7 +7840,7 @@ L.perspektive("same", (() => {
 // den Nachwuchs (`_tickScatterRegrow` — er heilt und pflanzt), die Sukzession (`_sukzession`), das Baum-Alter (`_baumAlter`), das
 // Werk-Alter (`_werkAlter`, `_werkAlterSchluessel`), die Erholung des Pfads (`_trittErholen`), die Narbe (`_narbeAt`). Der Reload geht
 // über den Speicher-Weg: der Stand (`buildStateSnapshot`, als JSON geschrieben und gelesen), das Haus steht aus ihm wieder auf
-// (`_bauAusStand`). Ein Jahr ist 365 Tage der Prozesse (`PEGEL_TAG_S`) — dasselbe Spieljahr wie stoffe.K5 (8 760 Welt-Stunden). Am
+// (`_bauAusStand`). Ein Jahr ist 365 Tage der Prozesse (`_kalender().tagS`) — dasselbe Spieljahr wie stoffe.K5 (8 760 Welt-Stunden). Am
 // Ende fällt alles zurück: Uhr, Taten-Liste und Index (`_tatGen`), die Stümpfe (`_nahStreuTat`), der Wald (`_waldNachwuchs`), die
 // geernteten Kacheln, das Haus, der Pfad, Nässe, Lage des Spielers und der Sicherungs-Ruf.
 // TERRAFORM (Technik formt den Planeten): die Welt trägt keinen Eingriff — gemessen wird, was sie trägt: der Regen des Worts
@@ -7877,7 +7877,7 @@ L.perspektive("same", (() => {
                         const wm = s.worldMeta;
                         const pm = s.playerMesh.position;
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                        const TAG = C.PEGEL_TAG_S;
+                        const TAG = r._kalender().tagS;
                         const JAHR = 365 * TAG;
                         let tk = performance.now();
                         const takt = (n) => {

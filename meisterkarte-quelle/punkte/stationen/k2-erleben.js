@@ -669,7 +669,7 @@ const LEITERN = [];
                     return {
                         proben, breite: anker.breite, samen,
                         tagMin: r.constructor.DAY_LENGTH_MIN_MINUTES, tagMax: r.constructor.DAY_LENGTH_MAX_MINUTES,
-                        jahrSek: st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400, jahrSekGesetzt: st.seasonYearSeconds,
+                        jahrSek: r._kalender().jahrK, jahrSekGesetzt: r._kalender().jahrK,
                         ops: ops.length, saetze: saetze.length, zeitlupe, raffer, achse,
                     };
                 `);
@@ -714,11 +714,11 @@ const LEITERN = [];
                     if (raffer < P.sprossen[3].umfang.verlangt && !z.raffer.length) return L.umfang(3, raffer, "die kürzeste Tag-Länge des Spielers ist " + z.tagMin + " min (stamm/daten.js:146): Raffer " + zahl(raffer, 0) + "×");
                     L.leser(3, "Zustand nach Raffer ↔ nach Echtzeit-Lauf: kein Leser, der Feld, Wetter und Bewohner-Orte eines gerafften Tags gegen den Echtzeit-Tag hält — der Raffer des Spielers ist die Tag-Länge (`setDayLength`, stamm/bild-himmel.js:2774, " + z.tagMin + " min je Tag)", raffer);
                 });
-                // S4 · der Raffer des Jahrs: ein Jahr der Welt dauert seasonYearSeconds Spielzeit (stamm/bild-himmel.js:970)
+                // S4 · der Raffer des Jahrs: ein Jahr der Welt dauert das Jahr des Kalenders (`_kalender().jahrK`, in Welt-Uhr × tagS ÷ normS)
                 const jahrRaffer = (365.25 * 86400) / z.jahrSek;
                 const jahreJeStunde = 3600 / z.jahrSek;
                 await L.je(4, async () => {
-                    if (jahrRaffer < P.sprossen[4].umfang.verlangt) return L.umfang(4, jahrRaffer, "ein Jahr der Welt dauert " + z.jahrSek + " s Spielzeit (seasonYearSeconds " + z.jahrSekGesetzt + ", stamm/bild-himmel.js:970): Raffer " + zahl(jahrRaffer, 0) + "×; kein Verb des Spielers rafft das Jahr auf ≤ 5 min");
+                    if (jahrRaffer < P.sprossen[4].umfang.verlangt) return L.umfang(4, jahrRaffer, "ein Jahr der Welt dauert " + z.jahrSek + " s Spielzeit (Kalender jahrK " + z.jahrSekGesetzt + ", stamm/feld-leben.js `_kalender`): Raffer " + zahl(jahrRaffer, 0) + "×; kein Verb des Spielers rafft das Jahr auf ≤ 5 min");
                     L.leser(4, "Laub-Deckung und Bestand nach Raffer-Jahr gegen den Normal-Lauf: kein Leser (stamm/bild-himmel.js:898 `_tickSeason`)", jahrRaffer);
                 });
                 const ohneSprung = "eine Spielstunde trägt " + zahl(jahreJeStunde, 2) + " Jahre (ein Jahr = " + z.jahrSek + " s); der Sprung der Konsole nimmt nur ganze Ma (stamm/feld-leben.js:1278)";
@@ -855,7 +855,7 @@ const LEITERN = [];
     // ─────────── erleben.spieler.nichtleib — Sein, was kein Leib ist ───────────
     // Zählt an stadt-voll die Perspektiven, die der Spieler einnehmen kann (`playerSoulDefs` + `customSouls`: Seelen ohne Leib), die
     // Maschinen-Rollen der Welt (Baupläne, deren Rolle `_displayRole` machine oder vehicle nennt), die Bewohner der größten Siedlung und
-    // die Jahre je Minute, die die Welt dem Spieler rafft (seasonYearSeconds). Der Fluss und die Stadt als Ganzes trägt die Welt, die
+    // die Jahre je Minute, die die Welt dem Spieler rafft (das Jahr des Kalenders, `_kalender().jahrK`). Der Fluss und die Stadt als Ganzes trägt die Welt, die
     // Perspektive nicht: `L.leser`; S5 schösse das Bildpaar erst bei einem Raffer von 10⁶ Jahren je Minute.
     LEITERN.push(
         leiter({
@@ -926,7 +926,7 @@ const LEITERN = [];
                         }
                         if (n > max) max = n;
                     }
-                    return { saat: st.worldMeta && st.worldMeta.seed, seelen: seelen.map(([k]) => k), ohneLeib, maschinen: maschinen.length, maschinenNamen: maschinen.slice(0, 12), geprueft, bauplaene: bps.length, max, sied, jahrSek: st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400 };
+                    return { saat: st.worldMeta && st.worldMeta.seed, seelen: seelen.map(([k]) => k), ohneLeib, maschinen: maschinen.length, maschinenNamen: maschinen.slice(0, 12), geprueft, bauplaene: bps.length, max, sied, jahrSek: r._kalender().jahrK };
                 `);
                 L.zeile("Perspektiven der Sitzung: " + JSON.stringify(z));
                 const seelenText = z.seelen.length + " Seelen (" + z.seelen.join(", ") + "), " + z.ohneLeib.length + " ohne Leib";

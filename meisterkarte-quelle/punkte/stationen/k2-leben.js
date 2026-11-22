@@ -738,8 +738,9 @@ L.perspektive("pflanzen", (() => {
                             });
                             const gx0 = Math.floor(p.x / C);
                             const gz0 = Math.floor(p.z / C);
-                            const tagS = AnazhRealm.PEGEL_TAG_S;
-                            const jahrS = Math.max(365 * tagS, st.seasonYearSeconds || 0);
+                            const K = r._kalender();
+                            const tagS = K.tagS;
+                            const jahrS = Math.max(365 * tagS, (K.jahrK * K.tagS) / K.normS);
                             const sz0 = st.spielZeit;
                             const lage = {};
                             try {
@@ -1125,7 +1126,7 @@ L.perspektive("pflanzen", (() => {
                         zeugeText: "die Präsenz des Laubs über 52 Wochen gegen die Tages-Einstrahlung am Anker (Breite des Planet-Fadens)",
                         taeter: "voxel-worker.js planetOrtAuftrag (Bahn und Jahr fremder Planeten fehlen)",
                         nicht: "fremde Planeten mit eigenem Jahr",
-                        leser: "voxel-worker.js:1184 planetOrtAuftrag — reicht jahrTage und Bahn nicht durch; stamm/bild-himmel.js _tickSeason — EIN Jahr (seasonYearSeconds)",
+                        leser: "voxel-worker.js:1184 planetOrtAuftrag — reicht jahrTage und Bahn nicht durch; stamm/bild-himmel.js _tickSeason — EIN Jahr (der Kalender `_kalender().jahrK`)",
                         gruen: { werte: { planeten: 100, r: 0.86 }, zeuge: { wochen: 52, sommerLaub: 1, winterLaub: 0.06, arten: 5 } },
                         attrappen: [{ name: "100 Planeten aus einer Liste, das Jahr steht", roh: { werte: { planeten: 100, r: 0.86 }, zeuge: { wochen: 52, sommerLaub: 1, winterLaub: 1, arten: 5 } } }],
                     },
@@ -2801,7 +2802,7 @@ L.perspektive("tiere", (() => {
                         });
                         const vorG = R.tiere.length;
                         const n2 = Math.ceil((a.gegenLeben * maxS) / B.taktS);
-                        for (let k = 0; k < n2; k++) r._bestandSchritt(key, R, true, tode);
+                        window.__raffer(n2, () => r._bestandSchritt(key, R, true, tode), "gegenprobe");
                         aus.gegen = { vor: vorG, nach: R.tiere.length, lebensdauern: a.gegenLeben, alleAlt: R.tiere.length ? r3(Math.min(...R.tiere.map((t) => t.alterS)) / maxS) : null };
                         aus.taktS = B.taktS;
                         aus.lebensdauerS = maxS;
@@ -4855,7 +4856,7 @@ L.perspektive("oeko", (() => {
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
                         if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
-                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const G = Object.keys(A._lebensraumGesetz().L.gattung);
                         const diet = r._bestandDiet();
                         const kg = {};
@@ -4887,7 +4888,7 @@ L.perspektive("oeko", (() => {
                                 return f.call(this, bestand, zellen);
                             }));
                             for (const saat of a.saaten) {
-                                if (performance.now() - t0 > a.budgetMs) break;
+                                if (performance.now() - t0 > a.budgetMs || (laeufe.length && window.__rafferRest() < 1.2 * laeufe[laeufe.length - 1].ms)) break;
                                 r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                 s.faunaBestand = undefined;
                                 s.lifeField = undefined;
@@ -4899,7 +4900,7 @@ L.perspektive("oeko", (() => {
                                 const t1 = performance.now();
                                 const tode = [];
                                 let K0 = 0;
-                                for (let k = 0; k < a.jahre * jahrT; k++) {
+                                window.__raffer(a.jahre * jahrT, (k) => {
                                     r._bestandSchritt(k0, R, true, tode);
                                     if (a.ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === a.ohne) R.tiere.splice(i, 1);
                                     if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
@@ -4908,7 +4909,7 @@ L.perspektive("oeko", (() => {
                                         for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
                                         for (const g of G) reihe[g].push(je[g] || 0);
                                     }
-                                }
+                                }, "netz saat " + saat);
                                 laeufe.push({ saat, reihe, K0: Math.round(K0 * 100) / 100, ms: Math.round(performance.now() - t1) });
                             }
                         } finally {
@@ -4970,7 +4971,7 @@ L.perspektive("oeko", (() => {
                             }));
                             const takte = Math.round((a.minuten * 60) / B.taktS);
                             tiere0 = R.tiere.map((t) => t.id).join(",");
-                            for (let k = 0; k < takte; k++) r._bestandSchritt(key, R, true, []);
+                            window.__raffer(takte, () => r._bestandSchritt(key, R, true, []), "minuten");
                             tiere = R.tiere.length;
                             tiere0 = tiere0 === R.tiere.map((t) => t.id).join(",") ? 0 : 1;
                         } finally {
@@ -5359,7 +5360,7 @@ L.perspektive("oeko", (() => {
                                 return { sig: sig(R), seq: R.seq, n: R.tiere.length };
                             });
                             const jagd0 = jagd;
-                            s.spielZeit = alt.sz + s.seasonYearSeconds;
+                            s.spielZeit = alt.sz + ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                             const nach = orte.map((k) => {
                                 const R = r._bestandRegion(k, true, 0, Infinity, []);
                                 return { sig: sig(R), seq: R.seq, n: R.tiere.length };
@@ -5370,7 +5371,7 @@ L.perspektive("oeko", (() => {
                             s.faunaBestand = kopie();
                             s.lifeField = lfKopie();
                             for (const k of orte.slice(0, a.saisonOrte)) r._bestandRegion(k, true, 0, Infinity, []);
-                            s.spielZeit = alt.sz + s.seasonYearSeconds;
+                            s.spielZeit = alt.sz + ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                             const saison = orte.slice(0, a.saisonOrte).map((k, i) => sig(r._bestandRegion(k, true, 0, Infinity, [])) !== nach[i].sig);
                             aus.rueckkehr = { orte: orte.length, veraendert: vor.filter((v, i) => v.sig !== nach[i].sig).length, zurueck: vor.filter((v, i) => nach[i].seq < v.seq).length, saisonAnders: saison.filter(Boolean).length, saisonOrte: saison.length, jagdJahr, n: vor.map((v) => v.n), nNach: nach.map((v) => v.n) };
                         } finally {
@@ -5560,7 +5561,7 @@ L.perspektive("oeko", (() => {
             },
             // ═══ DIE DYNAMIK: Kaskade im Bild, Schwingung, Ausbruch, Kelp, Front, Zyklus nur mit Paar ═══
             [DY]: {
-                sek: 25,
+                sek: 45,
                 mutiert: true,
                 pfad: PFAD_TIER,
                 ungefahren: "die Bilder (S2 Bildpaar, S4 Luftbild-Reihe) — swiftshader schießt nicht",
@@ -5579,7 +5580,7 @@ L.perspektive("oeko", (() => {
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
                         if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
-                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const G = Object.keys(A._lebensraumGesetz().L.gattung);
                         const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
                         const laeufe = [];
@@ -5589,6 +5590,8 @@ L.perspektive("oeko", (() => {
                             for (const ohne of a.varianten)
                                 for (const saat of a.saaten) {
                                     if (performance.now() - t0 > a.budgetMs * (ohne ? 1 : 0.5) && laeufe.filter((l) => l.ohne === ohne).length >= 2) break;
+                                    // die Front und die Läufe ohne Wolf brauchen ihren Rest: ein Lauf beginnt nur, wenn er und die Front ins Budget passen
+                                    if (laeufe.length && window.__rafferRest() < (ohne ? 2.6 : 4) * laeufe[laeufe.length - 1].ms && laeufe.filter((l) => l.ohne === ohne).length >= 2) break;
                                     r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                     s.faunaBestand = undefined;
                                     s.lifeField = undefined;
@@ -5601,18 +5604,20 @@ L.perspektive("oeko", (() => {
                                     let jung = null;
                                     let kappe = 0;
                                     const t1 = performance.now();
-                                    for (let k = 0; k < a.jahre * jahrT; k++) {
+                                    // Rotwild und Wolf leben seit Leben C2b im Gau: die Region der Altlast trägt kein `deer` — dann ist
+                                    // der Jungwuchs ungemessen (null); der Lauf fährt am Budget der Leiter (`window.__raffer`, k2-planet.js)
+                                    window.__raffer(a.jahre * jahrT, (k) => {
                                         r._bestandSchritt(k0, R, true, []);
                                         if (ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === ohne) R.tiere.splice(i, 1);
                                         if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
-                                        if (k === a.jungJahre * jahrT - 1) jung = r._kreaturBestand(null, k0).deer.K;
+                                        if (k === a.jungJahre * jahrT - 1) jung = (r._kreaturBestand(null, k0).deer || { K: null }).K;
                                         if (k % a.probeT === a.probeT - 1) {
                                             const je = {};
                                             for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
                                             for (const g of G) reihe[g].push(je[g] || 0);
                                             if (K0 > 0 && R.tiere.length > 3 * K0 + 10) kappe++;
                                         }
-                                    }
+                                    }, "dynamik saat " + saat + (ohne ? " ohne " + ohne : ""));
                                     laeufe.push({ saat, ohne, reihe, K0: Math.round(K0 * 100) / 100, jung, kappe, ms: Math.round(performance.now() - t1) });
                                 }
                             // DIE FRONT (S6): eine Zeile aus 5 Regionen östlich des Tals, frisch und leer; je Region der Takt, an dem der erste
@@ -5625,12 +5630,12 @@ L.perspektive("oeko", (() => {
                             const zeile = [0, 1, 2, 3, 4].map((d) => x0 + d + "," + z0);
                             const Rz = zeile.map((k) => r._bestandRegion(k, false));
                             const erst = zeile.map(() => null);
-                            for (let k = 0; k < 2 * jahrT; k++)
+                            window.__raffer(2 * jahrT, (k) =>
                                 zeile.forEach((key, i) => {
                                     if (!r._bestandBereit(key)) return;
                                     r._bestandSchritt(key, Rz[i], true, []);
                                     if (erst[i] === null && Rz[i].tiere.some((t) => t.g === a.front)) erst[i] = k;
-                                });
+                                }), "dynamik front");
                             fern.push(...erst);
                         } finally {
                             s.faunaBestand = alt.fb;
@@ -5807,7 +5812,7 @@ L.perspektive("oeko", (() => {
                         let k0 = ix + "," + iz;
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
-                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
                         const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
                         const eDL = Object.prototype.hasOwnProperty.call(r, "_depositLife");
@@ -5825,7 +5830,7 @@ L.perspektive("oeko", (() => {
                             s.emotionField = new Map();
                             s.spielZeit = 0;
                             const R = r._bestandRegion(k0, false);
-                            for (let k = 0; k < a.fuellT; k++) r._bestandSchritt(k0, R, true, []);
+                            window.__raffer(a.fuellT, () => r._bestandSchritt(k0, R, true, []), "zerfall fuellen");
                             for (const u of ["jagd", "alter", "hunger"]) {
                                 const t = R.tiere.find((x) => !aus.tode.some((d) => d.id === x.id));
                                 if (!t) continue;
@@ -5845,7 +5850,7 @@ L.perspektive("oeko", (() => {
                                 else nahme -= m;
                                 return fDL.call(this, x2, z2, m);
                             };
-                            for (let k = 0; k < jahrT; k++) r._bestandSchritt(k0, R, true, []);
+                            window.__raffer(jahrT, () => r._bestandSchritt(k0, R, true, []), "zerfall jahr");
                             aus.bilanz = { gabe: Math.round(gabe * 1000) / 1000, nahme: Math.round(nahme * 1000) / 1000 };
                         } finally {
                             if (eDL) r._depositLife = fDL;
@@ -5935,7 +5940,7 @@ L.perspektive("oeko", (() => {
                             }
                             s.creatureAnimationTime = altUhr;
                         }
-                        aus.tagS = r.constructor.PEGEL_TAG_S;
+                        aus.tagS = r._kalender().tagS;
                         return aus;
                     };
                     const holz = async (r, T, a) => {
@@ -5970,7 +5975,7 @@ L.perspektive("oeko", (() => {
                             for (let cz = Math.floor((pm.z - a.halb) / C); cz <= Math.floor((pm.z + a.halb) / C); cz++)
                                 for (const d of r._forestCellDarts(cx, cz, r._forestSeedInt()) || []) if (Math.abs(d.x - pm.x) <= a.halb && Math.abs(d.z - pm.z) <= a.halb) baeume++;
                         const W = A.TAT_NARBE;
-                        return { streuBereit: warte < 100 ? 1 : 0, streuWarteMs: warte * 50, je, leer, baeume, pilzArten: arten.filter((x) => /pilz|fung|mush/i.test(x.id + x.kind)).length, rissStunden: W.riss.stunden, wuchsHier: r._wuchsAt(pm.x, pm.z), jahrH: s.seasonYearSeconds / (A.PEGEL_TAG_S / 24), aasGattungen: Object.entries(r._bestandDiet()).filter(([, d]) => d > A._verhaltenGesetz().temperament.gattung.pflanzDiet).map(([g]) => g) };
+                        return { streuBereit: warte < 100 ? 1 : 0, streuWarteMs: warte * 50, je, leer, baeume, pilzArten: arten.filter((x) => /pilz|fung|mush/i.test(x.id + x.kind)).length, rissStunden: W.riss.stunden, wuchsHier: r._wuchsAt(pm.x, pm.z), jahrH: ((K) => (K.tagStunden * K.jahrK) / K.normS)(r._kalender()), aasGattungen: Object.entries(r._bestandDiet()).filter(([, d]) => d > A._verhaltenGesetz().temperament.gattung.pflanzDiet).map(([g]) => g) };
                     };
                     const TD = await seite(tod, { fuellT: 360, dx: 35, dz: -25 });
                     let KD;
@@ -6088,7 +6093,7 @@ L.perspektive("oeko", (() => {
                         const wm = s.worldMeta;
                         const pm = s.playerMesh.position;
                         const cs = A.LIFE_FIELD.cell;
-                        const jahrH = s.seasonYearSeconds / (A.PEGEL_TAG_S / 24);
+                        const jahrH = ((K) => (K.tagStunden * K.jahrK) / K.normS)(r._kalender());
                         const alt = { L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx, sz: s.spielZeit };
                         const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
                         const orte = [];
@@ -6098,7 +6103,7 @@ L.perspektive("oeko", (() => {
                             r._sukzessionNeu = [];
                             const h0 = r._weltStunde();
                             const bei = (j, f) => {
-                                s.spielZeit = alt.sz + j * s.seasonYearSeconds;
+                                s.spielZeit = alt.sz + j * ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                                 try {
                                     return f();
                                 } finally {
@@ -6497,7 +6502,7 @@ L.perspektive("oeko", (() => {
                         const aus = { streuBereit: warte < 100 ? 1 : 0, streuWarteMs: warte * 50 };
                         try {
                             aus.heute = zaehle();
-                            s.spielZeit = altSz + s.seasonYearSeconds;
+                            s.spielZeit = altSz + ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender());
                             aus.folgeMit = zaehle();
                             A._bestaeuberGesetz = () => Object.assign({}, altBG.call(A), { besuch: () => 0, aktiv: () => 0 });
                             r._bestaeuberListe = [];
