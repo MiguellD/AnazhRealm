@@ -89,10 +89,7 @@ class AnazhRealm_stoff_instanz {
         const schluessel = mat.customProgramCacheKey;
         mat.customProgramCacheKey = function () {
             return (
-                schluessel.call(this) +
-                (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
-                (at && at.nadelU ? ":" + at.nadelU.array.length : "") +
-                (narbe ? "|narbe" : "")
+                schluessel.call(this) + (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) + (narbe ? "|narbe" : "")
             );
         };
         mat.userData = mat.userData || {};
@@ -2406,11 +2403,12 @@ class AnazhRealm_stoff_instanz {
         this.log(`INDEX-WACHE (${art}, ${backend}): ${objekt} · Geometrie ${geo} — ${detail}`, "ERROR");
     }
     // DIE GPU-WACHE (Frost 07.10.) — kein WebGPU-Validierungsfehler bleibt still. Zwei Wege führen eine Validierung aus der
-    // GPU: (1) `uncapturederror` je Device (jedes Backend der Seite, nach seinem init) und (2) r184s eigene Fehler-Bereiche —
-    // der async Pipeline-Bau hält `pushErrorScope` über ein await offen, jede Validierung dazwischen (auch ein fremder Draw)
-    // landet dort, wird als THREE-Konsolenzeile gemeldet und markiert DIESE Pipeline für immer als kaputt (`error`, ihr Stoff
-    // zeichnet nie wieder). Beide melden an `_gpuWacheMeldung`: beim Namen ins Log (die ersten 12 verschiedenen ganz, danach
-    // die Zahl bei jeder Zehner-Potenz), gezählt in `_gpuWache`. Ein verworfener Befehlspuffer ist ein verlorenes Bild.
+    // GPU: (1) `uncapturederror` je Device (jedes Backend der Seite, nach seinem init) und (2) r184s eigene Fehler-Bereiche um
+    // den Bau einer Pipeline — sie umspannen genau den Ruf ihres Baus (`_erstAbsageWache` schließt den des asynchronen Baus im
+    // Zug seines Rufs; bis leib-nah-ganz hielt r184 ihn über das await offen, jede fremde Validierung dazwischen markierte DIESE
+    // Pipeline für immer als kaputt, ihr Stoff zeichnete nie wieder) und melden als THREE-Konsolenzeile. Beide melden an
+    // `_gpuWacheMeldung`: beim Namen ins Log (die ersten 12 verschiedenen ganz, danach die Zahl bei jeder Zehner-Potenz),
+    // gezählt in `_gpuWache`. Ein verworfener Befehlspuffer ist ein verlorenes Bild.
     _gpuWacheAn(device, name) {
         if (!device || device.__anazhWache === true || typeof device.addEventListener !== "function") return;
         device.__anazhWache = true;

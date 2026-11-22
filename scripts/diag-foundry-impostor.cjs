@@ -502,9 +502,9 @@ async function kleberProbe(page, fmtWunsch) {
                     v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
                     ...v,
                 ].filter(Boolean);
-                // DIE WACHE DER REIHEN (`_laubLichtStoff`, w27-karte-nadel): die Nadel wächst über ihre Länge (`_karteNadel`), der Neubau
-                // liest je Name EINEN Knoten — sie schweigt; SELBSTTEST: ein zweiter Knoten desselben Namens (das alte Wachsen: die
-                // Albedo hält den alten) nennt sie beim Namen. Vor w27 meldete sie schon das echte Wachsen (zwei Meldungen)
+                // DIE WACHE DER REIHEN (`_laubLichtStoff`, w27-karte-nadel): die Reihen stehen fest (KARTEN_ATLAS_SCHICHTEN, leib-nah-ganz) —
+                // auch bei 99 Schichten trägt `_karteNadel` denselben Knoten, der Neubau liest je Name EINEN — sie schweigt; SELBSTTEST:
+                // ein zweiter Knoten desselben Namens (das alte Wachsen: die Albedo hält den alten) nennt sie beim Namen
                 const [U, b, n0] = [at.nadelU, [], at.n];
                 const z0 = leihe(r, { _bruchMelden: (m) => b.push(m) });
                 at.n = 99;
