@@ -481,7 +481,7 @@ const HAND = async (r, T, arg) => {
     if (!tat) throw new Error("das Pflücken schrieb keine Tat der Welt");
     const dauer = r._tatIndex().dauer.get(tat);
     if (!(dauer > 0)) throw new Error("die Tat der Ernte trägt keine Dauer");
-    const raffe = (stunden) => (s.spielZeit += (stunden * A.PEGEL_TAG_S) / 24);
+    const raffe = (stunden) => (s.spielZeit += (stunden * r._kalender().tagS) / 24);
     const takte = async (n, bis) => {
         for (let i = 0; i < n; i++) {
             await window.__seitenTakt();
