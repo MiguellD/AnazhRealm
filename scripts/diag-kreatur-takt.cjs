@@ -56,7 +56,7 @@ const DAUER_S = {
     lebensraum: 21,
     tagesbudget: 15,
     kaskade: 400,
-    folgen: 42,
+    folgen: 59,
     zielplan: 80,
     gehege: 70,
     // (herde-gesetz: headless an der Laptop-Maschine unter fremder Last, eine Saat, ohne Täter — der Bestand liest den Gau)
