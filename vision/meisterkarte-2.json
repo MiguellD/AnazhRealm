@@ -12080,10 +12080,10 @@
     "kriterien": 40,
     "sprossen": 274,
     "heute": 7,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 2.7,
-    "anteilKern": 0
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -13639,7 +13639,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "keine Messung toter Minuten; ungemessen.",
      "alt": [
@@ -20088,8 +20088,8 @@
   "sprossen": 1718,
   "heute": 44,
   "davonKopplungen": 33,
-  "kern": 8,
-  "kernDazu": 8,
+  "kern": 9,
+  "kernDazu": 9,
   "anteilHeute": 2.6,
   "anteilKern": 0.3,
   "kapitel": 7,
