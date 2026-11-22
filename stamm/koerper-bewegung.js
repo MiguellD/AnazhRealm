@@ -1836,6 +1836,12 @@ class AnazhRealm_koerper_bewegung {
                     const a = (this.state.cameraThirdHeight - 1.0) / this.state.cameraThirdDistance;
                     this.state.pitch = Math.asin(Math.max(-1, Math.min(1, a * Math.cos(e)))) - e;
                 }
+                // DAS VERLASSENE WERK (`_kamAb`): gleitet die Third-Kamera vom Rig eines Wagens zu Fuß, hielt ihr Arm bis hier am
+                // Wagen, sobald der gleitende Wunsch über ihn strich — 7 und 12 Bilder NACH dem Abstieg sprang sie 10,04 und 8,85 m
+                // in einem Bild (gate:fahr-leben T4, die Reihe der Lagen: die Maus hielt das Rig 0,6 und 1,2 rad seitlich). Der
+                // Übergang kennt das Werk, das er verließ; der Arm unten gleitet zu ihm.
+                this._kamAb = (gleiten && !_fahrRitt && this.state.cameraMode === "third" && this._kamRigWerk) || null;
+                this._kamRigWerk = _fahrRitt ? _fahrRitt.ent : null;
                 this.state._kamRig = rig;
                 this.state._kamArm = this.state._kamChase = this.state._kamT = this.state._smoothBodyY = undefined;
                 this.state._kamSteig = this.state._kamSchulter = undefined;
@@ -1851,6 +1857,7 @@ class AnazhRealm_koerper_bewegung {
                 // liest es auch) — hinter dem Wagen, Azimut-Ease auf den Fahrtvektor, Elevation über der Fahrbahn, Arm und FOV atmen das
                 // Tempo (H3); Boden-Clamp + Kollision unten gelten gleich.
                 let camX, camZ, camY;
+                let leibY = player.position.y; // die Höhe des Leibs für das Auge: zu Fuß geglättet (`_augeHoehe`), im Ritt der Sitz
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
                     const K = _fahrRitt.kam;
@@ -1894,9 +1901,12 @@ class AnazhRealm_koerper_bewegung {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;
                     const cosPitch = Math.cos(this.state.pitch);
+                    // Wunsch und Drehpunkt stehen über der Höhe, die das Auge vom Leib liest (EIN Gesetz mit Ego): ein Tritt auf
+                    // eine Stufe hebt den Leib in einem Schritt, die Kamera gleitet nach; Füße, Deckel und Würfe lesen den Leib selbst
+                    [leibY] = this._augeHoehe(player.position.y, currentTime, false);
                     camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
                     camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
-                    camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                    camY = leibY + height - Math.sin(this.state.pitch) * dist;
                 }
                 // DIE KAMERA HAT EINEN LEIB (K06, WE-05/FZ-07): eine Kugel vom Radius `fx.bewegung.kamera.armRadiusM`
                 // (koerper-core). Sie steht nie unter dem SICHTBAREN Boden: der Deckel liest die Boden-Karte des gezeichneten
@@ -1940,7 +1950,7 @@ class AnazhRealm_koerper_bewegung {
                 // eine Box (der Leib unter einer Decke, die er unterläuft), aus seiner Mitte. Bis hier stand er 1 m über der Mitte,
                 // auch unter der Treppe des haus_alemannisch, 1,02 m über der Stufe, auf der der Leib im Sprint stand
                 // (gate:kamera-leib gang2, innen-sprint: die Kugel in 125 von 870 Bildern im Bau).
-                const y1 = player.position.y + 1.0;
+                const y1 = leibY + 1.0;
                 const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
                 // DIE SÄULE TRITT AUS DEM LEIB DES STRAHLS (`_kamSaeule`): steht der Leib im Geländer, steht der Drehpunkt daneben
                 const [bx, bz] = this._kamSaeule(player.position.x, player.position.z, yStufe, y1, kr);
@@ -2023,11 +2033,42 @@ class AnazhRealm_koerper_bewegung {
                 // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß `fx.bewegung.kamera.armRuhe`.
                 // Der Wurf kostet den Mittelstrahl und frei 4 Proben des Rings (berührt er, die Bisektion) — diag-kamera-laub zählt
                 // die Feld-Proben je 3rd-Bild.
-                const wurf = this._fieldRaycast(tx, ty, tz, camX, camY, camZ, { durchPflanzen: true, radius: kr });
-                const t = wurf.t;
+                const ab = this._kamAb;
+                const wurf = this._fieldRaycast(tx, ty, tz, camX, camY, camZ, {
+                    durchPflanzen: true,
+                    radius: kr,
+                    ohne: ab,
+                });
+                let t = wurf.t;
                 const armDt = Math.min(0.1, Math.max(0.0001, currentTime - (kamT || currentTime)));
                 let arm = this.state._kamArm;
-                if (!(arm >= 0) || t <= arm) arm = t;
+                // DER ARM GLEITET ZUM VERLASSENEN WERK (`_kamAb`): solange der Übergang des Rigs lebt, fragt der Wurf des Arms das
+                // Werk nicht (jeder andere Bau und das Gelände ziehen ihn sofort, wie immer); EIN Wurf nur über die Bauten kennt es.
+                // Hält es innerhalb des Arms, fährt der Arm zu ihm mit dem Rest des EINEN Deckels des Übergangs (`vMax` × dt minus
+                // dem Weg, den der Wunsch in diesem Bild glitt, `_kamGleitWeg`) — die Kamera reist je Bild nie weiter als ihr Rig
+                // plus dieser Deckel. Ruht der Übergang und hält das Werk nichts mehr im Arm, gehört es wieder dem Wurf.
+                let gleitet = false;
+                if (ab) {
+                    const tw = Math.min(
+                        t,
+                        this._fieldRaycast(tx, ty, tz, camX, camY, camZ, {
+                            durchPflanzen: true,
+                            radius: kr,
+                            gelaende: false,
+                        }).t
+                    );
+                    const ruht = !this.state._kamVersatz;
+                    if (arm >= 0 && tw < arm) {
+                        const frei = AnazhRealm.KAMERA_UEBERGANG.vMax * armDt - (this.state._kamGleitWeg || 0);
+                        const len = Math.hypot(camX - tx, camY - ty, camZ - tz);
+                        arm = Math.max(tw, arm - Math.max(0, frei) / Math.max(len, 1e-6));
+                        gleitet = true;
+                    } else if (arm >= 0 || ruht) t = tw; // das Werk steht außerhalb des Arms (er fährt nur bis zu ihm hinaus) oder kein Übergang
+                    if (ruht && !(tw < arm)) this._kamAb = null;
+                }
+                if (gleitet) {
+                    // der Arm steht schon
+                } else if (!(arm >= 0) || t <= arm) arm = t;
                 else {
                     const ruhe =
                         _fahrRitt && _fahrRitt.kam && _fahrRitt.kam.posEase > 0 ? _fahrRitt.kam.posEase : KAM.armRuhe;
@@ -2062,10 +2103,6 @@ class AnazhRealm_koerper_bewegung {
                 // View-Height-Smoothing (à la Source `SmoothViewOnStairs`): Füße/Kollision rasten hart auf den Boden,
                 // das AUGE gleitet gedämpft nach → der Körper federt Stufen/Buckel ab. Nur am Boden glätten; in der
                 // Luft exakt tracken (ballistische Kurve 1:1), bei großem Versatz (Fall/Teleport) snappen.
-                const camDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._camSmoothT || currentTime)));
-                this.state._camSmoothT = currentTime;
-                const bodyY = player.position.y;
-                let smoothBodyY = this.state._smoothBodyY;
                 let landDip = this.state._landDip || 0;
                 const pendingImpact = this.state._landImpactPending || 0;
                 // LANDUNG zuerst: der Dip absorbiert den Aufprall (∝ Tempo, gedeckelt); die Glättung
@@ -2073,25 +2110,14 @@ class AnazhRealm_koerper_bewegung {
                 // senkt → sie fechten, der Dip verpufft, gemessen).
                 // DER ZUGANG (spielgang.K4): ohne Kopfwackeln (`state.zugang.wackeln` false) nickt das Auge bei der Landung nicht
                 const nickt = !(this.state.zugang && this.state.zugang.wackeln === false);
+                const [smoothBodyY, camDt] = this._augeHoehe(player.position.y, currentTime, pendingImpact > 0);
                 if (pendingImpact > 0) {
-                    smoothBodyY = bodyY;
                     const kick = nickt
                         ? -Math.min(AnazhRealm.LAND_DIP_MAX, pendingImpact * AnazhRealm.LAND_DIP_SCALE)
                         : 0;
                     if (kick < landDip) landDip = kick;
                     this.state._landImpactPending = 0;
-                } else if (
-                    typeof smoothBodyY !== "number" ||
-                    this.state.isInAir ||
-                    Math.abs(bodyY - smoothBodyY) > AnazhRealm.CAMERA_STEP_MAX_LAG
-                ) {
-                    smoothBodyY = bodyY; // erster Frame / Luft (Flugkurve 1:1) / großer Versatz → snap
-                } else {
-                    // Tiefpass: das Auge folgt dem Fuß gedämpft → das Höhen-Zittern des rauen
-                    // Terrains wird geglättet (der Körper gleicht aus). Ein leichter Lag IST die Dämpfung.
-                    smoothBodyY += (bodyY - smoothBodyY) * (1 - Math.exp(-AnazhRealm.CAMERA_SMOOTH_K * camDt));
                 }
-                this.state._smoothBodyY = smoothBodyY;
                 landDip += (0 - landDip) * (1 - Math.exp(-AnazhRealm.LAND_DIP_RECOVER_K * camDt));
                 if (landDip > -0.001) landDip = 0;
                 this.state._landDip = landDip;
@@ -2220,12 +2246,31 @@ class AnazhRealm_koerper_bewegung {
         return [x + (px - x) * k, z + (pz - z) * k];
     }
 
+    // DIE HÖHE DES LEIBS FÜR DAS AUGE — EIN Gesetz für Ego und Third (à la Source `SmoothViewOnStairs`): Füße und Kollision
+    // rasten hart auf den Boden, das Auge gleitet gedämpft nach (`CAMERA_SMOOTH_K`: der Körper federt Stufen und Buckel ab, ein
+    // leichter Lag IST die Dämpfung). Nur am Boden: in der Luft folgt es 1:1 (die Flugkurve); der erste Frame, ein Versatz über
+    // `CAMERA_STEP_MAX_LAG` (Fall, Teleport) und `schnitt` (die Landung in Ego: ihr Dip trägt den Aufprall) setzen es um. Bis
+    // hier glättete nur Ego: trat der Leib in Third eine Stufe (0,59 m auf die Hülle des verlassenen Wagens, gate:fahr-leben
+    // T4), folgte die Kamera in EINEM Bild 0,55 m. Gibt [Höhe, dt] zurück.
+    _augeHoehe(bodyY, t, schnitt) {
+        const st = this.state;
+        const dt = Math.min(0.1, Math.max(0.0001, t - (st._camSmoothT || t)));
+        st._camSmoothT = t;
+        let y = st._smoothBodyY;
+        if (schnitt || typeof y !== "number" || st.isInAir || Math.abs(bodyY - y) > AnazhRealm.CAMERA_STEP_MAX_LAG)
+            y = bodyY;
+        else y += (bodyY - y) * (1 - Math.exp(-AnazhRealm.CAMERA_SMOOTH_K * dt));
+        st._smoothBodyY = y;
+        return [y, dt];
+    }
+
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem
     // ersten Ort des neuen Rigs schwindet je Bild mit der Ruhe `KAMERA_UEBERGANG.ruheS`, höchstens `vMax` × dt — die Kamera
     // reist je Bild nie weiter als ihr Rig plus dieser Deckel. `p` (der Ort des Rigs) wird verschoben zurückgegeben.
     _kamGleiten(p, t) {
         const st = this.state;
         const U = AnazhRealm.KAMERA_UEBERGANG;
+        st._kamGleitWeg = 0; // der Weg, den der Wunsch in diesem Bild glitt: den Rest des Deckels bekommt der Arm (`_kamAb`)
         if (st._kamVon) {
             const o = st._kamVon.clone().sub(p);
             st._kamVersatz = o.length() <= U.maxM ? { o, t } : null; // weiter ist ein Sprung des Spielers: ein Schnitt
@@ -2236,6 +2281,7 @@ class AnazhRealm_koerper_bewegung {
         if (!g) return p;
         const l = g.o.length();
         const rest = this._kamRest(g, l, t, U.vMax);
+        st._kamGleitWeg = l - rest;
         if (!(rest > 0.01)) st._kamVersatz = null;
         else p.add(g.o.multiplyScalar(rest / l));
         return p;
@@ -2691,7 +2737,10 @@ Object.defineProperties(AnazhRealm, {
         },
     },
 });
-AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
+// Der größte Versatz, den das Auge gleitend nachholt (`_augeHoehe`): der höchste Tritt des Leibs in EINEM Schritt — Stufe +
+// Haftung der Kapsel (koerper-core `LEIB.kapsel`: 0,6 + 0,25 m); darüber ist es ein Fall oder Teleport (Schnitt). Vorher eine
+// eigene Zahl 0,5 m: die höchste legale Stufe galt dem Auge als Teleport.
+AnazhRealm.CAMERA_STEP_MAX_LAG = AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP;
 // DAS GAMEPAD (leib.K5): die Totzone der Sticks (radial; dahinter 0..1 gedehnt, das Tempo folgt der Auslenkung stufenlos), der Blick
 // bei vollem Stick (rad/s, Gier und Neigung) und das Rumble: Abklingen des Stoßes (s), Tempo des vollen Fahrt-Brummens (m/s) und sein
 // Anteil, Reifen-Schlupf vorn + hinten des vollen Rumpelns (rad), der Boden-Stoß des vollen Summens (m/s², vehicle-core
