@@ -2508,15 +2508,31 @@ class AnazhRealm_kreatur_leben {
 
     // EIN TIER DES BESTANDS STIRBT: es verlässt das Verzeichnis jetzt; der Tod am Hunger und am Alter nährt das Feld an seinem
     // Anker (dieselbe Gabe, ob gezeichnet oder nicht), der Riss eines Ungezeichneten prägt seine Furcht dort ein. Ist es
-    // gezeichnet, fällt sein Leib nach dem Gesetz aller Regionen (`tode`, `_bestandTode`).
+    // gezeichnet, fällt sein Leib nach dem Gesetz aller Regionen (`tode`, `_bestandTode`). JEDER Tod — Riss, Hunger, Alter, im
+    // Gehege wie frei — legt seinen Leichnam als Tat in den Boden seines Ankers (`_aasTat`, oeko.zerfall#1).
     _bestandStirbt(R, t, ursache, tode, jaeger) {
         R.tiere.splice(R.tiere.indexOf(t), 1);
+        this._aasTat(t, R.t);
         if (ursache !== "jagd") {
             const leb = Math.min(1, Math.max(0, this._creatureSoulTags(t.soul).lebendig || 0));
             this._depositLife(t.x, t.z, AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + leb), R.t);
         }
         if (t.leib) tode.push({ R, t, ursache, jaeger });
         else if (ursache === "jagd") this._depositEmotion(t.x, t.z, AnazhRealm._furchtGesetz().F.riss, R.t);
+    }
+    // DER TOD DÜNGT (oeko.zerfall#1, stoffe.K5#2): der Leichnam eines Tiers ist die Tat „aas“ an seinem Anker zur Welt-Stunde
+    // seines Takts (`uhr`) — der EINE Schreiber des Nährstoffs (`_tatSchreiben`), der EINE Leser (`_naehrstoffAt` → `_wuchsAt`:
+    // die Narben der Zelle heilen schneller, `_tatDauer`). Derselbe Tod ein zweites Mal (eine ferne Region holt ihre Stunde nach,
+    // ein Reload, der Mitspieler am selben Takt) schreibt nicht: die Tat trägt die Kennung des Tiers; ein Tod, dessen Leichnam
+    // auch im vollen Wuchs schon vergangen wäre (Wuchs 1: die Dauer ist `stunden`), schreibt nicht — ohne den Wuchs des Orts zu
+    // fragen. Bis hier nährte nur der Tod von Spieler-Hand (`riss`) den Boden.
+    _aasTat(t, uhr) {
+        const I = this._tatIndex();
+        const je = I.n ? I.je.get(this._lifeCellKey(t.x, t.z)) : null;
+        if (je && je.some((a) => a.tat === "aas" && a.id === t.id)) return null;
+        const h = Math.round(this._weltStunde(uhr) * 1e4) / 1e4;
+        if (h + AnazhRealm.TAT_NARBE.aas.stunden <= this._weltStunde()) return null;
+        return this._tatSchreiben("aas", t.x, t.z, { h, id: t.id });
     }
 
     // DER FALL DER GEZEICHNETEN, nach dem Gesetz aller Regionen eines Takts (kein Gefühl eines Falls färbt eine Wahl desselben

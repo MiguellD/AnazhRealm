@@ -3654,6 +3654,78 @@ function gauUrteil(L, mutant) {
         }
 }
 
+// ── DER TOD DÜNGT (oeko.zerfall#1): jeder Tod des Bestands (`_bestandStirbt` — Riss, Hunger, Alter) legt seinen Leichnam als Tat
+// „aas“ an seinen Anker (`_aasTat` → `_tatSchreiben`), und der Nährstoff (`_naehrstoffAt`, der EINE Leser) steigt in SEINER
+// 16-m-Zelle um > 0 und NUR dort; derselbe Tod nachgeholt (ferne Region, Reload, Mitspieler) düngt kein zweites Mal. Die
+// Methoden des Stamms laufen am Namen (`methodeAm`, wie gate:regler-wirkt), die Tafeln aus ihrer Quelle; Wirt-Stummel nur für
+// Uhr, Wuchs (1) und die Felder. Mutanten: der Tod ohne Aas-Tat · die Tat ohne Kennung (nachgeholt düngt doppelt).
+function aasUrteil(mutant) {
+    const stammLib = require("./lib/stamm.cjs");
+    const S = stammLib.text(root);
+    const tafel = (name) => {
+        const a = S.indexOf("AnazhRealm." + name + " = Object.freeze(");
+        if (a < 0) throw new Error("die Tafel AnazhRealm." + name + " fehlt im Stamm");
+        const e = S.indexOf("\n});", a);
+        const AnazhRealm = {};
+        new Function("AnazhRealm", S.slice(a, e + 4))(AnazhRealm);
+        return AnazhRealm[name];
+    };
+    const ersetze = { stirbt: ["this._aasTat(t, R.t);", ""], kennung: ["a.tat === \"aas\" && a.id === t.id", "false"] };
+    const fn = (name) => {
+        const m = stammLib.methodeAm(S, name);
+        let rumpf = m.rumpf;
+        for (const [k, [von, zu]] of Object.entries(ersetze))
+            if (mutant === k && rumpf.includes(von)) rumpf = rumpf.split(von).join(zu);
+        return new Function("AnazhRealm", "return function (" + m.args + ") {" + rumpf + "}");
+    };
+    const A = { TAT_NARBE: tafel("TAT_NARBE"), WUCHS: tafel("WUCHS"), LIFE_FIELD: tafel("LIFE_FIELD"), _furchtGesetz: () => ({ F: { riss: {} } }) }; // prettier-ignore
+    const r = { state: { worldMeta: { taten: [] }, spielZeit: 7200 }, _tatGen: 0 };
+    for (const m of ["_bestandStirbt", "_aasTat", "_tatSchreiben", "_tatIndex", "_naehrstoffAt", "_lifeCellKey"]) r[m] = fn(m)(A);
+    Object.assign(r, {
+        _weltStunde: (uhr) => (uhr === undefined ? r.state.spielZeit : uhr) / 150,
+        _tatDauer: (a) => A.TAT_NARBE[a.tat].stunden,
+        _sukzessionNaechste: () => Infinity,
+        _creatureSoulTags: () => ({ lebendig: 0.5 }),
+    });
+    for (const m of ["_weltRegt", "_scheduleEditSave", "_nahStreuTat", "_depositLife", "_depositEmotion"]) r[m] = () => {};
+    const fehl = [];
+    const R = { t: 7190, tiere: [] };
+    const tode = ["jagd", "alter", "hunger"].map((u, i) => [u, { id: "b" + i, g: "fox", soul: "x", x: 40 + 48 * i, z: -40 }]);
+    for (const [, t] of tode) R.tiere.push(t);
+    for (const [u, t] of tode) {
+        const [hier, nachbar] = [[t.x, t.z], [t.x + 16, t.z]];
+        const vor = [r._naehrstoffAt(...hier), r._naehrstoffAt(...nachbar)];
+        r._bestandStirbt(R, t, u, [], []);
+        const nach = [r._naehrstoffAt(...hier), r._naehrstoffAt(...nachbar)];
+        if (!(nach[0] - vor[0] > 0)) fehl.push("der Tod „" + u + "“ hebt den Nährstoff seiner Zelle nicht (" + vor[0] + " → " + nach[0] + ")");
+        if (nach[1] !== vor[1]) fehl.push("der Tod „" + u + "“ düngt die Nachbar-Zelle (" + vor[1] + " → " + nach[1] + ")");
+        r._aasTat(t, R.t);
+        if (r._naehrstoffAt(...hier) !== nach[0]) fehl.push("derselbe Tod „" + u + "“ nachgeholt düngt ein zweites Mal");
+    }
+    return { fehl: fehl.join(" · "), plus: tode.map(([, t]) => +(r._naehrstoffAt(t.x, t.z) - 1).toFixed(3)) };
+}
+{
+    let u;
+    try {
+        u = aasUrteil();
+    } catch (e) {
+        u = { fehl: String(e.message || e), plus: [] };
+    }
+    check(
+        "Zerfall (oeko.zerfall#1): jeder Tod des Bestands (Riss, Alter, Hunger) hebt den Nährstoff SEINER Zelle (+" + u.plus.join(" · +") + "), nur dort, und nachgeholt kein zweites Mal",
+        u.fehl === "",
+        u.fehl
+    );
+    if (u.fehl === "")
+        for (const [m, name] of [
+            ["stirbt", "der Tod ohne Aas-Tat"],
+            ["kennung", "die Aas-Tat ohne Kennung"],
+        ]) {
+            const f = aasUrteil(m).fehl;
+            check("Zerfall, Selbsttest: der Mutant „" + name + "“ fällt ROT", f !== "", f !== "" ? "" : "die Zeile blieb grün");
+        }
+}
+
 urteilEnde(
     errs.length,
     `\n❌ ROT — ${errs.length} Verletzung(en).`,
