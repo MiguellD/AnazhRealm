@@ -125,6 +125,7 @@
     "Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {"s": 29, "n": 7, "p90": 52, "max": 52},
     "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)": {"s": 128, "n": 7, "p90": 144, "max": 144},
     "Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)": {"s": 115, "n": 7, "p90": 172, "max": 172},
+    "Nacht-Lichter auf der Karte (jede sichtbare Quelle in 50 m leuchtet ihren Boden um mindestens 1 EV, die Gasse in der Kelvin-Farbe)": {"s": 138, "n": 1, "p90": 138, "max": 138},
     "Tafeln der Atmosphaere auf der Karte (jede Tafel gezeichnet, die verzoegerte Pipeline von Psi_ms haelt die Kette offen)": {"s": 38, "n": 7, "p90": 54, "max": 54},
     "GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)": {"s": 20, "n": 7, "p90": 26, "max": 26},
     "Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {"s": 16, "n": 7, "p90": 28, "max": 28},
