@@ -5410,13 +5410,14 @@
     // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
     // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
     // (`regenfest`).
-    function tagesPlan(same, rolle, stunde, orte, nass) {
+    // DIE WENDEN DES TAGS EINES MENSCHEN (rein aus Same und Rolle, in den Stunden seiner Rolle — ohne den Versatz `versatzH`): die
+    // EINE Rechnung, die der Plan der Stunde (`tagesPlan`) und das Fenster seiner Arbeit (`tagesFenster`, der Bestand) lesen
+    function _tagesWenden(same, rolle) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         // der Zug (TAGES_GESETZ.zuege): seine Wenden; wer einen Posten hat (regenfest), hält seine Schicht
         var Z = G.zuege[tagesZug(same)],
             post = !!R.regenfest;
-        var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
         var j = function (wort) {
             return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
         };
@@ -5434,6 +5435,21 @@
         // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
         // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
+        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe };
+    }
+    function tagesPlan(same, rolle, stunde, orte, nass) {
+        var G = TAGES_GESETZ;
+        var T = _tagesWenden(same, rolle),
+            R = T.R;
+        var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
+        var wach = T.wach,
+            w0 = T.w0,
+            w1 = T.w1,
+            morgenH = T.morgenH,
+            mittagAmWerk = T.mittagAmWerk,
+            m0 = T.m0,
+            m1 = T.m1,
+            ruhe = T.ruhe;
         var heim = orte.heim,
             besuch = orte.besuch;
         var W = G.regen,
@@ -5454,6 +5470,148 @@
         if (h < w1) return aus("werk", "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
         return aus("abend", "abend", false);
+    }
+
+    // ── DER BESTAND (Meisterkarte 2 mensch.wirtschaft.markt S1 · handel S1, rein additiv): die Ware ist eine ERHALTENE Größe. Je
+    //    Halter (das Werk eines Menschen, der Stand eines Händlers, der Wagen eines Fahrers) ein Satz {ware → Menge} zur Stunde
+    //    seines letzten Ereignisses; dazwischen ist der Bestand eine FUNKTION der Zeit (`bestandAm`), gelesen beim Zugriff — kein
+    //    Takt über die Halter (Gebot 7). Vier Wege, sonst keiner: die HERSTELLUNG füllt das Werk in den Stunden der Arbeit seines
+    //    Menschen (`tagesFenster`: dieselben Wenden wie sein Plan, `_tagesWenden`) mit `jeStunde` seines Berufs, bis an sein Lager;
+    //    der VERBRAUCH leert den Stand in den Stunden seines Händlers — ein voller Stand ist nach einem offenen Tag leer (`anteil`):
+    //    ohne Lieferung leer binnen Tagesfrist; die LIEFERUNG bewegt per Wagen vom Werk zum Stand (`bestandAnkunft`: am Werk lädt
+    //    er, am Stand lädt er ab, `bestandZiel` nennt die nächste Seite); der TAUSCH bewegt zwischen zwei Haltern (`bestandNimm` →
+    //    `bestandGib`), nur, was der eine hat, nur, was der andere fasst. Nichts entsteht, nichts vergeht außer Herstellung und
+    //    Verbrauch: `her` und `ver` je Halter sind ihre Bücher (die Linse rechnet die Erhaltung, gate:koerper-kern BESTAND).
+    //    Die Waren sind Stoffe der Welt (schmiede STOFF_GESETZ: kraut, eisen) — sie gehen in das Inventar des Spielers. Die
+    //    nächste Sprosse (markt S2: zehn Waren, Knappheit treibt Preis) ist eine Zeile je Beruf in `herstellung`, ihr Preis liest
+    //    `bestandAm` gegen das Lager. Leser: der Wirt (`_bestandHalter`, `_bestandTausch`, `_bestandAnkunft`, `_bestandBild`).
+    var BESTAND_GESETZ = Object.freeze({
+        herstellung: Object.freeze({
+            feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
+            schmiede: Object.freeze({ ware: "eisen", jeStunde: 0.5 }),
+        }),
+        lager: Object.freeze({ werk: 24, stand: 24, wagen: 12 }),
+        verbrauch: Object.freeze({ anteil: 1 }),
+        // das Bild des Bestands: so viele Einheiten trägt eine Kiste (der Wirt stellt je angefangene Kiste eine)
+        kiste: 4,
+    });
+    // DAS FENSTER DER ARBEIT eines Menschen: die Stunden des Tags [a, b) (0–24, ohne Versatz in seiner Uhr), in denen sein Plan ihn
+    // bei der Arbeit sieht — Werk zwischen Aufstehen und Ruhe, ohne den Mittag außer Haus (`tagesPlan`; der Regen bleibt draußen)
+    function tagesFenster(same, rolle) {
+        var T = _tagesWenden(same, rolle),
+            v = T.R.versatzH || 0,
+            a = Math.max(T.w0, T.wach),
+            b = Math.min(T.w1, T.ruhe),
+            roh = T.mittagAmWerk || !(T.m1 > a && T.m0 < b) ? [[a, b]] : [[a, T.m0], [T.m1, b]],
+            aus = [];
+        for (var i = 0; i < roh.length; i++) {
+            var x = roh[i][0] + v,
+                y = roh[i][1] + v;
+            if (!(y > x)) continue;
+            var x0 = ((x % 24) + 24) % 24,
+                y0 = x0 + (y - x);
+            if (y0 <= 24) aus.push([x0, y0]);
+            else aus.push([x0, 24], [0, y0 - 24]);
+        }
+        return aus;
+    }
+    // die Stunden in [h0, h1] (absolute Stunden der Welt), die in das tägliche Fenster fallen
+    function bestandStunden(fenster, h0, h1) {
+        if (!(h1 > h0) || !fenster || !fenster.length) return 0;
+        var tag = 0,
+            s = 0,
+            i;
+        for (i = 0; i < fenster.length; i++) tag += fenster[i][1] - fenster[i][0];
+        var d0 = Math.floor(h0 / 24),
+            d1 = Math.floor(h1 / 24);
+        var im = function (d, a, b) {
+            var t = 0;
+            for (var k = 0; k < fenster.length; k++) t += Math.max(0, Math.min(b, d * 24 + fenster[k][1]) - Math.max(a, d * 24 + fenster[k][0]));
+            return t;
+        };
+        if (d1 === d0) return im(d0, h0, h1);
+        s = im(d0, h0, (d0 + 1) * 24) + im(d1, d1 * 24, h1) + Math.max(0, d1 - d0 - 1) * tag;
+        return s;
+    }
+    // EIN HALTER: art „werk" (füllt in seinem Fenster mit `jeStunde` seines Berufs bis `cap`), „stand" (leert in seinem Fenster),
+    // „wagen" (nur, was man ihm gibt); `ware` die Ware seines Werks, seines Stands, seiner Fahrt; zur Stunde h mit `n` Einheiten;
+    // same und rolle sind die seines Menschen (sein Fenster, `tagesFenster`), beruf wählt die Herstellung
+    function bestandHalter(art, ware, h, n, same, rolle, beruf) {
+        var B = BESTAND_GESETZ,
+            L = B.lager,
+            H = { art: art, ware: ware, h: h, n: {}, cap: art === "werk" ? L.werk : art === "stand" ? L.stand : L.wagen, rate: 0, fenster: null, her: 0, ver: 0 };
+        if (art === "werk") {
+            var P = B.herstellung[beruf];
+            H.rate = P && P.ware === ware ? P.jeStunde : 0;
+            H.fenster = tagesFenster(same, rolle);
+        } else if (art === "stand") {
+            H.fenster = tagesFenster(same, rolle);
+            var lang = 0;
+            for (var i = 0; i < H.fenster.length; i++) lang += H.fenster[i][1] - H.fenster[i][0];
+            H.rate = lang > 0 ? (H.cap * B.verbrauch.anteil) / lang : 0;
+        }
+        if (ware) H.n[ware] = Math.max(0, Math.min(H.cap, n || 0));
+        return H;
+    }
+    // DER BESTAND ZUR STUNDE h (rein): die Ware `ware` (ohne: die seine) des Halters H — sein letzter Stand und, für seine Ware,
+    // die Herstellung oder der Verbrauch seither
+    function bestandAm(H, h, ware) {
+        var w = ware || H.ware,
+            n0 = H.n[w] || 0;
+        if (w !== H.ware || !(H.rate > 0) || !(h > H.h)) return n0;
+        var s = bestandStunden(H.fenster, H.h, h) * H.rate;
+        if (H.art === "werk") return n0 >= H.cap ? n0 : Math.min(H.cap, n0 + s);
+        if (H.art === "stand") return Math.max(0, n0 - s);
+        return n0;
+    }
+    // DAS EREIGNIS: der Bestand zur Stunde h wird Stand (seine Herstellung oder sein Verbrauch ins Buch), die Uhr des Halters rückt
+    function bestandFassen(H, h) {
+        if (!(h > H.h)) return;
+        var w = H.ware,
+            n0 = H.n[w] || 0,
+            m = bestandAm(H, h);
+        if (w != null) {
+            if (m > n0) H.her += m - n0;
+            else if (m < n0) H.ver += n0 - m;
+            H.n[w] = m;
+        }
+        H.h = h;
+    }
+    // NIMM (ganze Einheiten): höchstens `menge`, nur, was der Halter hat; liefert die genommene Zahl
+    function bestandNimm(H, ware, menge, h) {
+        bestandFassen(H, h);
+        var k = Math.max(0, Math.min(Math.floor(menge), Math.floor((H.n[ware] || 0) + 1e-9)));
+        if (k) H.n[ware] = (H.n[ware] || 0) - k;
+        return k;
+    }
+    // GIB (ganze Einheiten): höchstens `menge`, nur, was der Halter fasst (seine Ware bis an sein Lager, jede andere ohne Grenze)
+    function bestandGib(H, ware, menge, h) {
+        bestandFassen(H, h);
+        var platz = ware === H.ware ? H.cap - (H.n[ware] || 0) : Infinity;
+        var k = Math.max(0, Math.min(Math.floor(menge), Math.floor(platz + 1e-9)));
+        if (k) H.n[ware] = (H.n[ware] || 0) + k;
+        return k;
+    }
+    // DIE LIEFERUNG: der Wagen W kommt an den Halter `an` (sein Werk: er lädt dessen Ware, so viel er fasst; sein Stand: er gibt
+    // ihm, was er von dessen Ware trägt) — liefert die bewegte Zahl (+ geladen, − abgeladen)
+    function bestandAnkunft(W, an, h) {
+        if (!W || !an) return 0;
+        bestandFassen(W, h);
+        if (an.art === "werk") {
+            if (W.ware !== an.ware && (W.n[W.ware] || 0) >= 1) return 0; // er trägt noch fremde Ware
+            W.ware = an.ware;
+            var k = bestandNimm(an, an.ware, W.cap - (W.n[an.ware] || 0), h);
+            return bestandGib(W, an.ware, k, h);
+        }
+        if (an.art === "stand") {
+            var g = bestandGib(an, an.ware, bestandNimm(W, an.ware, Infinity, h), h);
+            return -g;
+        }
+        return 0;
+    }
+    // DIE NÄCHSTE SEITE DER FAHRT: wer Ware trägt, fährt zum Stand, wer leer ist, zum Werk
+    function bestandZiel(W) {
+        return W && (W.n[W.ware] || 0) >= 1 ? "stand" : "werk";
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -9755,6 +9913,17 @@
         tagesPlan: tagesPlan,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // mensch.wirtschaft markt S1 · handel S1 — DER BESTAND (die erhaltene Größe; Leser: _bestandHalter, _bestandTausch, _bestandAnkunft, _bestandBild)
+        BESTAND_GESETZ: BESTAND_GESETZ,
+        tagesFenster: tagesFenster,
+        bestandStunden: bestandStunden,
+        bestandHalter: bestandHalter,
+        bestandAm: bestandAm,
+        bestandFassen: bestandFassen,
+        bestandNimm: bestandNimm,
+        bestandGib: bestandGib,
+        bestandAnkunft: bestandAnkunft,
+        bestandZiel: bestandZiel,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
