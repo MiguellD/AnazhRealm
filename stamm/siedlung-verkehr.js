@@ -486,7 +486,8 @@ class AnazhRealm_siedlung_verkehr {
                 let d = Infinity;
                 for (const b of werke) {
                     if (b.bestand.ware !== st.bestand.ware || wende(b.orte.werk) === stKi) continue;
-                    const q = Math.hypot(b.orte.werk.x - W.park.x, b.orte.werk.z - W.park.z) + (geholt.has(b) ? 1e6 : 0);
+                    const q =
+                        Math.hypot(b.orte.werk.x - W.park.x, b.orte.werk.z - W.park.z) + (geholt.has(b) ? 1e6 : 0);
                     if (q < d) [wk, d] = [b, q];
                 }
             }
