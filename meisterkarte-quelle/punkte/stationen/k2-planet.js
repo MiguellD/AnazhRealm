@@ -294,9 +294,18 @@ const KERN = (() => {
                     if (!Array.isArray(k) || k.length !== 6 || !k.every(Number.isFinite)) throw new Error("die Kamera des Spiels ist nicht lesbar: " + JSON.stringify(k).slice(0, 80));
                     p = Object.assign({}, p, { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5] });
                 }
-                const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, p, o));
+                // DAS BILD LEIHT DIE BÜHNE (punkte.cjs bildGeliehen, kopplung-front 22.11.; GTX 6066c757: nach dem Bild von aufwaerts
+                // stand die Welt angehalten — Tag-Länge 10¹² min —, gewalt fror die Seite ein, die Familie same.kopplung 6/6 UNGEMESSEN):
+                // nach dem Schuss misst die Leiter in der Welt von vorher. DIE LINSE (bleibt): was danach noch steht, wirft beim Namen an
+                // der Leiter vorbei (UNGEMESSEN beim Grund, nie still): jede Messung nach ihm mäße in der Bühne
+                if (!process.env.PUNKTE_MASCHINE) throw new Error("ohne Sitzung (PUNKTE_MASCHINE fehlt): kein Bild ohne die Leihe der Bühne");
+                const L = await require(process.env.PUNKTE_MASCHINE).bildGeliehen(H.seite, () => H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, p, o)));
+                if (L.bleibt.length) throw Object.assign(new Error("DIE BÜHNE BLIEB nach dem Bild " + name + ": " + L.bleibt.join(" · ").slice(0, 300)), { buehne: true });
+                if (L.fehler) throw L.fehler;
+                const b = L.ergebnis;
                 return { bild: b.datei || datei, pose: JSON.stringify(p) };
             } catch (e) {
+                if (e && e.buehne) throw e;
                 return { bild: null, pose: JSON.stringify(pose), grund: String((e && e.message) || e).slice(0, 200) };
             }
         };
@@ -2871,10 +2880,15 @@ return { wind, hubMaxM: R(r.constructor._wasserHubM()), sichtM: R(r.state.camera
                         if (M.uhr() > 38) break;
                         try {
                             const datei = pfad.join(pfad.dirname(H.aus), "wasser-see-" + wetter + "-" + uhr + ".png");
-                            const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, uhr, wetter, datei, klasse: "^(wasserSatz|farWater|chunk-water-[a-z]+)$" }, pose));
+                            // das Bild leiht die Bühne (punkte.cjs bildGeliehen): Uhr und Wetter des Schusses gelten nur für ihn
+                            const L = await require(process.env.PUNKTE_MASCHINE).bildGeliehen(H.seite, () => H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, uhr, wetter, datei, klasse: "^(wasserSatz|farWater|chunk-water-[a-z]+)$" }, pose)));
+                            if (L.bleibt.length) throw Object.assign(new Error("DIE BÜHNE BLIEB nach dem Bild wasser-see-" + wetter + "-" + uhr + ": " + L.bleibt.join(" · ").slice(0, 300)), { buehne: true });
+                            if (L.fehler) throw L.fehler;
+                            const b = L.ergebnis;
                             const kl = Object.values((b.klasse && b.klasse.klassen) || {}).sort((x, y) => (y.pixel || 0) - (x.pixel || 0))[0] || {};
                             bilder.push({ wetter, uhr, spiegelTreue: kl.spiegelTreue, weiss: kl.weiss, pixel: kl.pixel || 0, datei: b.datei || datei });
                         } catch (e) {
+                            if (e && e.buehne) throw e;
                             bilder.push({ wetter, uhr, fehler: String((e && e.message) || e).slice(0, 160) });
                         }
                     }

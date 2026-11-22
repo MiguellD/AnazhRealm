@@ -2712,13 +2712,14 @@ async function wirtRuf(w, gib, heap) {
 // Funktionen und Zugriffe nimmt die Wache; der Halter, die Uhr des Gangs, die Frist, die Hänger-Linse, die Felder der Grundstellung und die
 // eigenen der Maschine gehören der Sitzung. Was danach noch hält, hält außerhalb von window: die Wache bleibt hart
 const FELDER_DER_SITZUNG = "^__(gehalten|offen|gangUhr|punkte|wirt|probeFrist|haenger)";
-function probeFelder(gib, sitzung, grundSeite) {
+// `slot`: das Fach der Namen (die Leihe der Bühne nimmt ein eigenes, buehneLeihe — das der Sitzung bleibt unberührt)
+function probeFelder(gib, sitzung, grundSeite, slot = "__punkteFelderVor") {
     if (!gib) {
-        window.__punkteFelderVor = Object.getOwnPropertyNames(window);
-        return { n: window.__punkteFelderVor.length };
+        window[slot] = Object.getOwnPropertyNames(window);
+        return { n: window[slot].length };
     }
-    const vor = window.__punkteFelderVor;
-    delete window.__punkteFelderVor;
+    const vor = window[slot];
+    delete window[slot];
     if (!Array.isArray(vor)) return { ohne: true };
     const da = new Set(vor), eigen = new RegExp(sitzung), weg = [];
     for (const k of Object.getOwnPropertyNames(window)) {
@@ -2811,12 +2812,131 @@ function bauAbweichung(vor, nach, grundWege) {
 // deckte den Halt nur nach 3 von 6 haltenden Radeon-Proben. Das Spiel hält nie: die Sitzung leert Halter und Offen-Schalter (`__offen`)
 // vor und nach JEDER Probe, beim Namen. `setz` null: nur lesen · { wetter } setzt den Wetter-Halt · { frei: true } leert den Halter.
 // → { wetter: Zahl|null, gehalten: [Quellen], offen: [Quellen] } oder null (unlesbar, kein Spiel)
+// der Halt in der Seite (s = r.state, W = window): EIN Leser und Setzer, den die Sitzung (messHaltRuf) und die Leihe der Bühne teilen
+function messHaltSeite(s, W, setz) {
+    const H = W.__gehalten, O = W.__offen;
+    if (setz && typeof setz.wetter === "number") s.weatherEffectTime = setz.wetter;
+    if (setz && setz.frei) {
+        if (H) (H.clear(), delete H.t);
+        if (O) O.clear();
+    }
+    return { wetter: typeof s.weatherEffectTime === "number" ? s.weatherEffectTime : null, gehalten: H ? [...H] : [], offen: O ? [...O] : [] };
+}
 const messHaltRuf = (w, setz) =>
-    rufFrist(w, "/eval", { code: "/* __punkteMessHalt */ const s = r.state, H = window.__gehalten, O = window.__offen; " +
-        (setz && typeof setz.wetter === "number" ? "s.weatherEffectTime = " + Number(setz.wetter) + "; " : "") +
-        (setz && setz.frei ? "if (H) { H.clear(); delete H.t; } if (O) O.clear(); " : "") +
-        "return { wetter: typeof s.weatherEffectTime === \"number\" ? s.weatherEffectTime : null, gehalten: H ? [...H] : [], offen: O ? [...O] : [] };" }, 30000)
+    rufFrist(w, "/eval", { code: "/* __punkteMessHalt */ return (" + messHaltSeite + ")(r.state, window, " + JSON.stringify(setz && typeof setz.wetter === "number" ? { wetter: Number(setz.wetter) } : setz && setz.frei ? { frei: true } : null) + ");" }, 30000)
         .then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : null)).catch(() => null);
+// DIE LEIHE DER BÜHNE (kopplung-front, Koordinator 22.11. 19:27; GTX 6066c757: same.kopplung stand still — das Bild von aufwaerts
+// (M.auge → /bild → `__buehne`, scripts/lib/ausgabe-aufnahme.cjs) ließ die Welt bis zur Grundstellung angehalten: Tag-Länge 10¹² min,
+// Bild- und Wolken-Uhr als Getter, das Wetter eingefroren, der Halt −1e9; jede Messung danach maß in einer angehaltenen Welt, gewalt
+// rechnete 100 a als 3,3·10¹³ Wetter-Züge, die Seite fror ein, 6 von 6 Stationen UNGEMESSEN). EIN BILD LEIHT DIE BÜHNE: vor dem Schuss
+// nimmt die Probe den Augenblick, danach gibt sie ihn zurück — über die Rückwege der Sitzung, je einer, keine eigene Liste: der Grund
+// (`_grundstellung` des Spiels: der Stand samt Tag-Länge, Saison, Uhr und Wetter-Wort, die GRUND_TAFEL), die Wirt-Wache
+// (scripts/lib/wirt-wache.cjs `wirtWache` des Spiel-Baums: Getter, Spione, die Hülle des Wetter-Schreibers — mit eigenem Gedächtnis,
+// das der Sitzung bleibt unberührt), der Halt der Messung (`messHaltSeite`), die Felder auf window (`probeFelder`, eigenes Fach).
+// Leihen schachteln (ein Stapel in window.__punkteBuehne). → nimm { tief } · gib { zurueck: [Namen], bleibt: [Name Wert] } — `bleibt`
+// ist die Linse: was nach dem Bild noch steht, beim Namen (DIE BÜHNE BLIEB), nie still. `alt` (der Mutant des Selbsttests): der alte
+// Helfer — gib ohne jede Rückgabe, nur die Linse
+function buehneLeihe(r, W, gib, wirt, felder, sitzung, grundSeite, halt, alt) {
+    const st = r.state;
+    const L = W.__punkteBuehne || (W.__punkteBuehne = []);
+    const fach = (e) => new Proxy(W, { get: (t, k) => (k === "__wirtWache" ? e.m : Reflect.get(t, k)), set: (t, k, v) => (k === "__wirtWache" ? ((e.m = v), true) : Reflect.set(t, k, v)) });
+    // die einfachen Werte eines Glieds (Zahl, Wort, Wahrheit): die Wache gibt Funktionen zurück, nie Daten — machte die Bühne aus einem
+    // Wert einen Getter (`_bildZeit`, `_wolkenZeit`: die Uhren, die der Takt sonst schreibt), fällt der Getter, und der Wert kehrt wieder
+    const werte = (o) => {
+        const m = {};
+        for (const k of Object.getOwnPropertyNames(o)) {
+            const d = Object.getOwnPropertyDescriptor(o, k);
+            if (d && "value" in d && d.value !== null && /^(number|string|boolean)$/.test(typeof d.value)) m[k] = d.value;
+        }
+        return m;
+    };
+    if (!gib) {
+        const g = typeof r._grundstellung === "function" ? r._grundstellung() : null;
+        const e = { m: null, grund: g && g.grund, abdruck: g && g.abdruck, werte: { r: werte(r), "r.state": werte(st) }, halt: halt(st, W, null) };
+        if (wirt) wirt(r, false, fach(e));
+        felder(false, sitzung, grundSeite, "__punkteBuehneFelder" + L.length);
+        L.push(e);
+        return { tief: L.length };
+    }
+    const e = L.pop();
+    if (!L.length) delete W.__punkteBuehne;
+    if (!e) return { fehler: "die Leihe der Bühne fehlt (kein nimm vor dem Bild)" };
+    const zurueck = [], bleibt = [];
+    const zahl = (v) => (typeof v === "number" && Math.abs(v) >= 1e9 ? v.toExponential().replace("+", "") : JSON.stringify(v));
+    const wert = (k) => {
+        const v = k.split(".").reduce((o, x) => (o == null ? o : o[x]), st);
+        return v === undefined || typeof v === "object" ? k : k + " " + zahl(v);
+    };
+    const linse = () => {
+        // was nach dem Bild noch steht: der Abdruck der Welt gegen den beim Nehmen (`_grundstellung().abdruck`, je Größe), jeder einfache
+        // Wert, den die Bühne zum Getter machte (die Uhren) oder fallen ließ, der Halt der Messung — beim Namen und Wert
+        if (e.abdruck) {
+            const a = r._grundstellung().abdruck;
+            bleibt.push(...Object.keys({ ...e.abdruck, ...a }).filter((k) => e.abdruck[k] !== a[k]).map(wert));
+        }
+        for (const [n, o] of [["r", r], ["r.state", st]])
+            for (const k of Object.keys(e.werte[n])) {
+                const d = Object.getOwnPropertyDescriptor(o, k);
+                if (!d) bleibt.push(n + "." + k + " fehlt");
+                else if (d.get || d.set) bleibt.push(n + "." + k + " Getter statt Wert" + (d.get ? " (" + zahl(d.get.call(o)) + ")" : ""));
+            }
+        const hn = halt(st, W, null);
+        if (hn.wetter !== e.halt.wetter) bleibt.push("weatherEffectTime " + zahl(hn.wetter));
+        return { zurueck, bleibt };
+    };
+    if (alt) {
+        delete W["__punkteBuehneFelder" + L.length];
+        return linse();
+    }
+    if (wirt) {
+        const w = wirt(r, true, fach(e));
+        zurueck.push(...w.anders);
+        bleibt.push(...w.bleibt);
+    } else bleibt.push("die Wirt-Wache fehlt im Spiel-Baum (Getter und Spione der Bühne unbewacht)");
+    for (const [n, o] of [["r", r], ["r.state", st]])
+        for (const [k, v] of Object.entries(e.werte[n]))
+            if (!Object.getOwnPropertyDescriptor(o, k)) (o[k] = v, zurueck.push(n + "." + k + " (Wert)"));
+    const f = felder(true, sitzung, grundSeite, "__punkteBuehneFelder" + L.length);
+    if (f && f.weg) zurueck.push(...f.weg.map((k) => "window." + k));
+    if (e.grund) {
+        const g = r._grundstellung(e.grund);
+        if (!g.ok) bleibt.push("der Grund: " + g.grund);
+    } else bleibt.push("der Grund fehlt (der Kopf trägt `_grundstellung` nicht)");
+    const h = halt(st, W, null);
+    if (h.wetter !== e.halt.wetter) (halt(st, W, { wetter: e.halt.wetter }), zurueck.push("weatherEffectTime " + zahl(h.wetter) + " → " + zahl(e.halt.wetter)));
+    if (!e.halt.gehalten.length && !e.halt.offen.length && (h.gehalten.length || h.offen.length)) (halt(st, W, { frei: true }), zurueck.push("der Halter"));
+    // DIE LINSE nach der ganzen Rückgabe
+    return linse();
+}
+// der Code einer Leihe für H.seite (wirtQuelle: der Text von `wirtWache` aus dem Spiel-Baum, oder null; alt: der Mutant)
+const buehneLeiheCode = (gib, wirtQuelle, alt) =>
+    "/* __punkteBuehne */ return (" + buehneLeihe + ")(r, window, " + !!gib + ", " + (wirtQuelle || "null") + ", " + probeFelder + ", " + JSON.stringify(FELDER_DER_SITZUNG) + ", " +
+    JSON.stringify(GRUND_SEITE) + ", " + messHaltSeite + ", " + !!alt + ");";
+// DAS BILD MIT DER LEIHE (für die Probe: require(process.env.PUNKTE_MASCHINE).bildGeliehen): `seite` ist H.seite der Probe, `schuss` der
+// Ruf des Bilds. Die Leihe umschließt den Schuss, auch wenn er wirft; was danach blieb, steht in `bleibt` und wirft nie. Rückgabe
+// { ergebnis, fehler?, zurueck, bleibt }. `wirtQuelle`: der Text der Wache (der Selbsttest gibt den von origin/main), sonst die des
+// Spiel-Baums (cwd der Probe); `o.alt` der Mutant des Selbsttests (der alte Helfer: nur die Linse)
+async function bildGeliehen(seite, schuss, wirtQuelle, o = {}) {
+    let wq = wirtQuelle || null;
+    if (!wq)
+        try {
+            wq = String(require(path.resolve("scripts/lib/wirt-wache.cjs")).wirtWache);
+        } catch (_e) {
+            wq = null;
+        }
+    const n = await seite(buehneLeiheCode(false, wq));
+    if (!n || !n.tief) throw new Error("die Leihe der Bühne nimmt nicht: " + JSON.stringify(n).slice(0, 200));
+    let ergebnis = null, fehler = null;
+    try {
+        ergebnis = await schuss();
+    } catch (e) {
+        fehler = e;
+    }
+    const z = await seite(buehneLeiheCode(true, wq, o.alt));
+    const aus = { ergebnis, zurueck: (z && z.zurueck) || [], bleibt: z && Array.isArray(z.bleibt) ? z.bleibt : ["die Leihe gab nichts zurück: " + JSON.stringify(z).slice(0, 160)] };
+    if (fehler) aus.fehler = fehler;
+    return aus;
+}
 const haltLeer = (h) => !h || (!h.gehalten.length && !h.offen.length);
 // DER STAND DES ORTS (13.11., pm-ernte; schatten.K5#1 Radeon: 0,60:1 mit dem Spieler 3,9 m vom Feuer, am 12.11. 5,28:1 mit 9,4 m —
 // die Probe wählt Quelle und Seite des Pfostens vom Spieler aus, und die Sitzung stellte den Ort `dorf` nur EINMAL um: jede Probe danach
@@ -6344,6 +6464,61 @@ async function selbsttest(o = {}) {
         pruef("ABDRUCK ohne Maß: profiband.K1#1 mit, ohne und mit anderem Maß Byte für Byte derselbe; ein geänderter Befehl der Probe und ein geändertes Urteil machen die Messung alt (Mutanten)",
             typeof st.mass === "function" && gleich.every((x) => x === ab) && befehl !== ab && urteil !== ab, JSON.stringify([ab, gleich, befehl, urteil]));
     }
+    // (1b) DIE LEIHE DER BÜHNE (bildGeliehen, kopplung-front 22.11.; GTX 6066c757: nach dem Bild von aufwaerts stand die Welt angehalten —
+    // Tag-Länge 10¹² min, die Uhren als Getter, das Wetter eingefroren, der Halt −1e9 —, gewalt fror die Seite ein): an einer erfundenen
+    // Seite (vm, die Wache von origin/main des Spiels) stellt der Schuss die Bühne wie scripts/lib/ausgabe-aufnahme.cjs `buehne`; nach der
+    // Leihe steht jedes Glied von r, r.state und window wie vor dem Bild, auch wenn der Schuss wirft, und `bleibt` ist leer. DIE MUTANTE
+    // (der alte Helfer: das Bild ohne Rückgabe, M.auge vor dem Schnitt): die Linse nennt beim Namen, was stehen blieb — ROT
+    {
+        const vm = require("vm");
+        let wq = null;
+        try {
+            const d = path.join(tmp, "wirt-wache.cjs");
+            fs.writeFileSync(d, git(["show", "origin/main:scripts/lib/wirt-wache.cjs"], spielRepo()));
+            wq = String(require(d).wirtWache);
+        } catch (e) {
+            wq = null;
+        }
+        const WELT =
+            "var window = globalThis; class Welt { constructor() { this.state = { dayLengthMinutes: 60, weatherEffectTime: 0, weather: \"sunny\", season: \"summer\", timeOfDay: 0.5, worldMeta: { worldId: \"w\", kalender: null } }; " +
+            "this._bildZeit = 3.5; this._wolkenZeit = 7.25; } _setWeather(w) { this.state.weather = w; } " +
+            "_grundstellung(grund) { const T = [\"dayLengthMinutes\", \"season\", \"timeOfDay\", \"weather\"], s = this.state; if (grund) { const z = JSON.parse(grund); for (const k of T) s[k] = z[k]; s.worldMeta.kalender = z.kalender; } " +
+            "const abdruck = Object.fromEntries(T.map((k) => [k, JSON.stringify(s[k])]).concat([[\"worldMeta.kalender\", JSON.stringify(s.worldMeta.kalender)]])); " +
+            "return { ok: true, grund: grund ? null : JSON.stringify(Object.assign(Object.fromEntries(T.map((k) => [k, s[k]])), { kalender: s.worldMeta.kalender })), abdruck, anders: [] }; } } var r = new Welt();";
+        // die Bühne, wie `buehne` sie stellt: Tag-Länge, Halt, das Wetter als Zugriff, die Uhren als Getter, die Hülle des Wetter-Schreibers,
+        // die Bücher der Spione, der Kalender der Stationen unter der Tag-Länge
+        const BUEHNE =
+            "const st = r.state; st.dayLengthMinutes = 1e12; st.weatherEffectTime = -1e9; st.worldMeta.kalender = [24.4, 6e13]; let w = st.weather; " +
+            "Object.defineProperty(st, \"weather\", { configurable: true, enumerable: true, get: () => w, set: () => {} }); const S = (window.__buehneUhr = { T: 12.5 }); " +
+            "for (const u of [\"_bildZeit\", \"_wolkenZeit\"]) Object.defineProperty(r, u, { configurable: true, enumerable: true, get: () => S.T, set: () => {} }); " +
+            "const alt = r._setWeather; r._setWeather = function (x) { return alt.call(this, x); }; window.__weltaktSpionBuch = { seq: 0, buch: [] }; return { datei: \"bild.png\" };";
+        const BLICK =
+            "const d = (o) => Object.getOwnPropertyNames(o).sort().map((k) => { const x = Object.getOwnPropertyDescriptor(o, k); return k + \":\" + (x.get || x.set ? \"zugriff\" : typeof x.value === \"function\" ? \"fn\" : x.value && typeof x.value === \"object\" ? \"objekt\" : JSON.stringify(x.value)); }).join(\",\"); " +
+            "return { r: d(r), st: d(r.state), wm: d(r.state.worldMeta), w: Object.getOwnPropertyNames(window).filter((k) => k !== \"__wirtWache\").sort().join(\",\") };";
+        const seiteVon = () => {
+            const ctx = vm.createContext({});
+            vm.runInContext(WELT, ctx);
+            return async (code) => JSON.parse(JSON.stringify(vm.runInContext("(function () { " + code + "\n})()", ctx)) || null);
+        };
+        const s1 = seiteVon(), vor = await s1(BLICK);
+        const L = await bildGeliehen(s1, () => s1(BUEHNE), wq);
+        const nach = await s1(BLICK);
+        const s2 = seiteVon(), vor2 = await s2(BLICK);
+        const Lw = await bildGeliehen(s2, async () => (await s2(BUEHNE), Promise.reject(new Error("der Schuss warf"))), wq);
+        const nach2 = await s2(BLICK);
+        const s3 = seiteVon();
+        const La = await bildGeliehen(s3, () => s3(BUEHNE), wq, { alt: true });
+        const mut = ["dayLengthMinutes 1e12", "worldMeta.kalender", "r._bildZeit Getter statt Wert (12.5)", "r._wolkenZeit Getter statt Wert (12.5)", "r.state.weather Getter statt Wert", "weatherEffectTime -1e9"];
+        const fehltMut = mut.filter((x) => !La.bleibt.some((b) => b === x || b.startsWith(x + " ")));
+        pruef("DIE LEIHE DER BÜHNE: nach dem Bild steht jedes Glied von r, r.state und window wie vor ihm (" + L.zurueck.length + " zurück beim Namen), auch wenn der Schuss wirft; bleibt leer; " +
+            "der alte Helfer (ohne Rückgabe) ROT beim Namen: dayLengthMinutes 1e12 nach dem Bild",
+            !!wq && JSON.stringify(vor) === JSON.stringify(nach) && L.bleibt.length === 0 && L.ergebnis && L.ergebnis.datei === "bild.png" && !L.fehler &&
+                JSON.stringify(vor2) === JSON.stringify(nach2) && Lw.bleibt.length === 0 && Lw.fehler && Lw.fehler.message === "der Schuss warf" &&
+                fehltMut.length === 0 && La.zurueck.length === 0,
+            (wq ? "" : "die Wache von origin/main fehlt · ") + "zurück " + L.zurueck.join(" · ") + " · bleibt " + JSON.stringify(L.bleibt) +
+                (JSON.stringify(vor) === JSON.stringify(nach) ? "" : " · ANDERS " + ["r", "st", "wm", "w"].filter((k) => vor[k] !== nach[k]).map((k) => { const [A, B] = [vor[k], nach[k]].map((x) => x.split(",")); return k + ": " + B.filter((x) => !A.includes(x)).concat(A.filter((x) => !B.includes(x)).map((x) => "−" + x)).join(" "); }).join(" | ")) +
+                " · wirft: " + (Lw.fehler && Lw.fehler.message) + " bleibt " + JSON.stringify(Lw.bleibt) + " · alter Helfer: " + La.bleibt.join(" · ") + (fehltMut.length ? " · NICHT GENANNT: " + fehltMut.join(", ") : ""));
+    }
     // (1s) DIE SPERRE DES SPIEL-BAUMS KENNT IHREN HALTER AN pid + START (11.11.: die Radeon wartete 29 min an einer Nummer, die Windows
     // neu vergeben hatte): eine Marke, die älter ist als der Prozess, der ihre Nummer heute trägt, ist verwaist — gelesen am ECHTEN
     // prozessStart dieser Karte (der Selbsttest selbst trägt die Nummer); der lebende Halter und die Frage ohne Antwort halten
@@ -9416,6 +9591,8 @@ if (require.main === module) {
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
     frischUrteil, stempelDateien, stempelDiff, r6Quelle, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, r6Zaehlung, linsenVon, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
+    // DIE LEIHE DER BÜHNE für die Probe (require(process.env.PUNKTE_MASCHINE).bildGeliehen, kopplung-front)
+    bildGeliehen, buehneLeihe, buehneLeiheCode, messHaltSeite,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN,
     // DAS BAND DER RUHE für die Last am Preis der Meisterkarte 2 (vision/buche-2.cjs lastVon) — EINE Quelle mit fremdUrteil
