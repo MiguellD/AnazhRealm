@@ -1,0 +1,81 @@
+{
+ "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
+ "geraet": "gtx",
+ "zeit": "2026-11-22T23:50:46.829Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.sport.koennen#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 14.45 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 91.41 s · Altersgang ρ(Alter, Zeit) 0.4457245724572457 · 1367 mit Können-Profil · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.22,
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 12.3,
+   "fremd": {
+    "s": 15.5,
+    "takte": 7,
+    "fremdS": 4.05,
+    "kerne": 0.262,
+    "fensterKerne": 0.278,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.95
+     ],
+     [
+      "bash.exe messplatz/messplatz.sh",
+      0.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.33
+     ]
+    ],
+    "dienerS": 4.44,
+    "diener": [
+     [
+      "System",
+      2.16
+     ],
+     [
+      "dwm.exe",
+      1.19
+     ]
+    ],
+    "geraetS": 5.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.45
+     ],
+     [
+      "svchost.exe",
+      1.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 37.45,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T23:50:46.829Z",
+   "abdruck": "3b49a99c806f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k38f6093c8b73": "bVRdj5swEPwveeyVWz4PsHQPznFqTmp7yU9YmzVwIRDZEKpU/e8VSUgCZJ+QmfGOZ8f+u9ij3GJGz1+mrhZs8W3xfWHwQJYhfSD9/GUWbBFLxyWP8XMB5/yth0ld7BsDZSEARYX5jqxWN1SUz/JEQ0F+GjHo3nm2BlBwhKR7fZ1SS0FpbTWo6EoMolQFbApsTYaCLGzVqdkFHNieIxSDU0UJ/0zgWt0vzte+8tdRMtlMYJWO1cYvQUgB++g4f+czlWmB1FhlUZmhr5OGsbLZXa8ZR2NnHZHykvSFlIbkxv4gdtnb2VszIaqyNWbULPLSwI0YQDzFZmQKmTfWXteCqgtcxG7oIFvO3c72raXuFaEQGImp1zlSlZEeabA9qV4cBn+i6aZb3JFGq8J88NL2QlfcvAGA1VxLeRJ+ajEIdwJyUI6I/VDhAMCH+B36pdX177CeZPxWm1kzI/NC78Y2KZ9c22M/59JMjilpa1ub5oqOfESKLrcgAb7hfbimwTK3Qw08RIzuggIR8NXMQ1OrpkNNVrZvL0TyKQgDxvnHDNzgbjfkX3m+J6cDNE0f8HsZGAsHUwbwdL4g80Ofr4N1pKIcSEr5fjy7iQeNOwtFpgulhomLQKr4UUA7KhtL1HUzbElhiB4DD6r7If/uelvf72aY+PaPt+WGT+qNT3WfOtS6ub4I4sVWPlN9UDo5Qxe6sTqU+QB3lSCM2QPokXRJGY1sFGEU99Hu5L3S4eNpFNzjbMrHgnqDK9OaYcgSfRGwByPpSG8FVtsLUDq265zjt/zkq7EpyWYdJQDdeNXLej+TnF823pOEva5V0b9+kGNrciyb29P/7z8=",
+  "k54d351397a6d": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuHr3rZ9ff/14u51rt4bSp48qVLq+bATxYCmPqVOncgq+zXVNWpDZ4O4ogRBNSTyiLjDFEY0iCKNO1q28wom94eVuJNrjbMrHHDuCS9OYYcgSPOGf1dEvyefx6mlRbwWU2z5A2pZjdzKMU/7C1zesrPnzm7Vp+f/Zkq+6InuUdK8rlXfbkGbQmAyK+vpb+PsP"
+ }
+}
