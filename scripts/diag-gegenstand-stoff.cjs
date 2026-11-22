@@ -243,6 +243,14 @@ function selbstTest() {
     if (!hoch.some((s) => /ANKER Δp/.test(s))) fehl.push("eine Welle mit 1,5-fachem Überdruck bleibt still");
     const lahm = druckUrteil(mutante((w) => w && { ...w, ankunft: w.ankunft * 2 }));
     if (!lahm.some((s) => /ANKER Ankunft/.test(s))) fehl.push("eine Welle mit halbem Tempo bleibt still");
+    // der Bruch der Platte: drei Mutanten am Gesetz — die Platte fällt immer in ihr Kreuz (der Stand bis druckwelle-bild), die
+    // Schnitte liegen gleich weit, die Zahl des Rufers verhallt
+    const bruch = (f) => druckUrteil(Object.assign(Object.create(SG), { plattenBruch: (...a) => f(SG.plattenBruch(...a), a) }));
+    if (!bruch((B) => B && { lang: [0, 0.5, 1], kurz: [0, 0.5, 1] }).some((s) => /BRUCH Riss/.test(s))) fehl.push("eine Platte, die unter jeder Last in ihr Kreuz fällt, bleibt still");
+    const gleich = (s) => s.map((_, k) => k / (s.length - 1));
+    if (!bruch((B) => B && { lang: gleich(B.lang), kurz: gleich(B.kurz) }).some((s) => /BRUCH Schnitt/.test(s))) fehl.push("ein Bruch mit gleich weiten Schnitten bleibt still");
+    if (!bruch((B, a) => (a.length > 4 ? SG.plattenBruch(a[0], a[1], a[2], a[3]) : B)).some((s) => /BRUCH Rufer/.test(s))) fehl.push("ein Bruch, der die Zahl seines Rufers überhört, bleibt still");
+    if (!bruch((B, a) => B || SG.plattenBruch(a[0], a[1], a[2], 1)).some((s) => /BRUCH Grenze/.test(s))) fehl.push("eine Platte, die unter ihrer Grenze bricht, bleibt still");
     return fehl;
 }
 // DAS URTEIL DER DRUCKWELLE (rein, same.physik.reaktion#2): das Gesetz `SG` (schmiede `STOFF_GESETZ`) gegen seine Anker — die
@@ -250,7 +258,11 @@ function selbstTest() {
 // ±10 %, der Impuls in ±10 % ab Z 1,5 (im Nahfeld darunter bis −40 %: die benannte Grenze der Formel); dazu, was das Gesetz
 // selbst verspricht — Hopkinson–Cranz (achtfache Energie im doppelten Abstand trägt denselben Überdruck und den doppelten
 // Impuls), der Radius als Umkehrung der Welle (an ihm steht `endePa`), die Platte (β quadratisch 0,2874, lang 0,75 — Roark;
-// der Stoß-Faktor u/2 für den kurzen Puls, 2 für die Stufe). → die Täter-Zeilen, leer = grün.
+// der Stoß-Faktor u/2 für den kurzen Puls, 2 für die Stufe) und der Bruch der Platte (`plattenBruch`, druckwelle-bild: an der
+// Grenze fällt JEDE Platte in ihr Kreuz, darunter steht sie; die Riss-Länge des Gitters trifft (lang + kurz) · last² auf einen
+// halben Schnitt der kurzen Seite; jeder Schnitt liegt am Energie-Quantil der Grundform, F(x) = x − sin(2πx) ÷ 2π = k ÷ n,
+// spiegelgleich; die Zahlen des Rufers halten — je Achse, gesamt, nie unter das Kreuz; die Scherbe bleibt Platte).
+// → die Täter-Zeilen, leer = grün.
 function druckUrteil(SG) {
     const v = [];
     const pct = (x) => (x > 0 ? "+" : "") + x.toFixed(1) + " %";
@@ -269,6 +281,38 @@ function druckUrteil(SG) {
     if (!(Math.abs(SG.plattenBeta(1, 1) - 0.2874) < 5e-4 && Math.abs(SG.plattenBeta(40, 1) - 0.75) < 5e-3)) v.push("PLATTE: β " + SG.plattenBeta(1, 1).toFixed(4) + " quadratisch, " + SG.plattenBeta(40, 1).toFixed(4) + " lang (Roark 0,2874 · 0,75)");
     if (!(Math.abs(SG.stossFaktor(1e-3) / 1e-3 - 0.5) < 1e-6 && Math.abs(SG.stossFaktor(1e6) - 2) < 1e-5 && SG.stossFaktor(2.33) < SG.stossFaktor(2.34)))
         v.push("STOSS: der Stoß-Faktor trägt nicht u/2 für den kurzen Puls und 2 für die Stufe");
+    // DER BRUCH DER PLATTE: dünne Platten (die Dicke deckelt kein Gitter) — die Scheibe, das Fensterband, die Wand, der Streifen
+    const F = (x) => x - Math.sin(2 * Math.PI * x) / (2 * Math.PI);
+    const gitter = (B) => (B ? B.lang.length - 1 + " × " + (B.kurz.length - 1) : "steht");
+    const erste = (art, text) => v.some((s) => s.startsWith(art)) || v.push(art + ": " + text);
+    for (const [lang, kurz, dick] of [[0.5, 0.5, 0.004], [2, 0.5, 0.004], [1.2, 0.8, 0.004], [10, 1, 0.004]]) {
+        const wo = "die Platte " + lang + " × " + kurz + " m";
+        const kreuz = SG.plattenBruch(lang, kurz, dick, 1);
+        if (!kreuz || JSON.stringify([kreuz.lang, kreuz.kurz]) !== "[[0,0.5,1],[0,0.5,1]]") erste("BRUCH Kreuz", wo + " fällt an ihrer Grenze (last 1) in " + gitter(kreuz) + " — das Kreuz der Mittellinien sind 2 × 2");
+        if (SG.plattenBruch(lang, kurz, dick, 0.999) !== null) erste("BRUCH Grenze", wo + " bricht unter ihrer Grenze (last 0,999)");
+        for (let last = 1; last <= 6; last += 0.05) {
+            const B = SG.plattenBruch(lang, kurz, dick, last);
+            if (!B) {
+                erste("BRUCH Grenze", wo + " steht über ihrer Grenze (last " + last.toFixed(2) + ")");
+                continue;
+            }
+            const [riss, soll] = [(B.lang.length - 2) * kurz + (B.kurz.length - 2) * lang, (lang + kurz) * last * last];
+            if (!(Math.abs(riss - soll) <= 0.5 * kurz + 1e-9))
+                erste("BRUCH Riss", wo + " unter last " + last.toFixed(2) + " fällt in " + gitter(B) + ", Riss " + riss.toFixed(2) + " m — das Gesetz (der Riss ist die Energie) verlangt " + soll.toFixed(2) + " m ± einen halben Schnitt der kurzen Seite");
+            for (const s of [B.lang, B.kurz]) {
+                const n = s.length - 1;
+                if (!s.every((x, k) => Math.abs(F(x) - k / n) < 1e-9 && Math.abs(x + s[n - k] - 1) < 1e-12))
+                    erste("BRUCH Schnitt", wo + " unter last " + last.toFixed(2) + ": die Schnitte " + s.map((x) => x.toFixed(4)).join(" · ") + " liegen nicht an den Energie-Quantilen der Grundform (F = k ÷ " + n + ", spiegelgleich)");
+            }
+        }
+    }
+    // die Zahlen des Rufers: je Achse, gesamt (auch 0 und darunter: das Kreuz), die Dicke
+    const zahl = (...a) => ((B) => (B ? [B.lang.length - 1, B.kurz.length - 1] : [0, 0]))(SG.plattenBruch(0.5, 0.5, 0.004, ...a));
+    const rufer = [zahl(5.6, 4), zahl(5.6, 4, 9), zahl(5.6, 4, 4), zahl(5.6, 4, -5), zahl(5.6, undefined, 30)];
+    if (!(rufer[0].join() === "4,4" && rufer[1][0] * rufer[1][1] === 9 && rufer.slice(2, 4).every((z) => z.join() === "2,2") && rufer[4][0] * rufer[4][1] <= 30 && rufer[4][0] * rufer[4][1] > 20))
+        v.push("BRUCH Rufer: die Scheibe unter last 5,6 fällt mit achse 4 in " + rufer[0].join(" × ") + ", mit gesamt 9 · 4 · −5 · 30 in " + rufer.slice(1).map((z) => z.join(" × ")).join(" · ") + " (Soll 4 × 4, dann 9 Stücke, das Kreuz, das Kreuz, 21 bis 30 Stücke)");
+    const dick = SG.plattenBruch(0.5, 0.5, 0.2, 5);
+    if (gitter(dick) !== "2 × 2") v.push("BRUCH Dicke: die Platte 0,5 × 0,5 × 0,2 m fällt unter last 5 in " + gitter(dick) + " — die Scherbe bleibt Platte (höchstens Maß ÷ dick, hier das Kreuz)");
     return v;
 }
 

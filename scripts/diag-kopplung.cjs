@@ -9,6 +9,9 @@
 //   F4 GRAS: die uBend-Sphären biegen Halme RADIAL weg, die CPU-Seite (`_tickGrasBend`) füllt Spieler, Ritt, nahe Kreaturen.
 //   F5 DIE BÖE IM BILD (klang.K2#1): ohne Stärke steht jeder Halm, und derselbe Halm wiegt im Verhältnis der Böe am Ort
 //      (`_windAt`) — das Rauschen je Halm verschiebt nur die Phase; die zweite Welle (die Phase wandert mit dem Ort) MUSS rot sehen.
+//   F6 DIE WELLE IM HALM (druckwelle-bild): die Druckwelle im EINEN Wind-Term — die Front im Halm am Radius des Gesetzes, der
+//      Winkel aus dem Luft-Weg der Welle, der Halm steht wieder auf; ohne Welle ist der Term bit-gleich der alte; der Bild-Takt
+//      trägt die Welle ein. Drei Mutanten (ohne Leser, halbe Trägheit, spätere Tafel) MÜSSEN rot sehen.
 // Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm) mit synthetischem Dichtefeld/Wasser) und trägt
 // ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
 // Exit 1 bei jedem Fail.
@@ -180,24 +183,48 @@ hauptLauf(async () => {
             // e (Uhr t, Stärke U, Richtung dx/dz, Lage der Ecke lx/lz, Höhe hy, Slot 0 der Biegung b, das Rauschen des Halms `rausch`
             // (e) — sonst 0,37; seine Ziehung aus dem Fuß rechnet der Stoff in u32, `_ortZiehung`) — die ECHTE Quelle rechnet, kein
             // Nachbau. Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit; an der echten Instanz misst sie gate:foundry-impostor C4.
+            // Eine Größe ist ein Knoten mit seinem Wert; ein `toVar` trägt ihn weiter (`addAssign` schreibt ihn), `Fn` ruft seinen
+            // Rumpf, `If` geht den Zweig nur, wenn die Bedingung gilt — wie die GPU ihn überspringt (F6: die Welle im Halm). Die
+            // Tafel der Welle liest die Probe aus den Daten der ECHTEN Textur (`_wellenTafel`).
             const val = (x) => (x && x.v !== undefined ? x.v : x);
             const N = (v) => {
-                const op = (f) => (b) => N(f(v, val(b)));
-                return { v, mul: op((a, b) => a * b), add: op((a, b) => a + b), sub: op((a, b) => a - b), div: op((a, b) => a / b) };
+                const n = { v };
+                const op = (f) => (b) => N(f(n.v, val(b)));
+                Object.assign(n, { mul: op((a, b) => a * b), add: op((a, b) => a + b), sub: op((a, b) => a - b), div: op((a, b) => a / b) });
+                return Object.assign(n, { greaterThan: op((a, b) => (a > b ? 1 : 0)), toVar: () => n, addAssign: (b) => ((n.v += val(b)), n) });
             };
-            const V = (...a) => Object.fromEntries(a.map((x, i) => ["xyzw"[i], N(val(x))]));
+            const V = (...a) => {
+                const w = Object.fromEntries(a.map((x, i) => ["xyzw"[i], N(val(x))]));
+                Object.defineProperty(w, "add", { value: (b) => V(...a.map((x, i) => val(x) + val(b["xyzw"[i]]))) });
+                return w;
+            };
             const f = (g) => (...a) => N(g(...a.map(val)));
-            const T = { float: f((x) => x), fract: f((x) => x - Math.floor(x)), vec3: V };
-            for (const k of ["sin", "cos", "sqrt", "max", "min"]) T[k] = f(Math[k]);
+            const T = { float: f((x) => x), fract: f((x) => x - Math.floor(x)), vec3: V, ivec2: V, int: f(Math.trunc) };
+            for (const k of ["sin", "cos", "sqrt", "max", "min", "tanh", "asin", "log", "floor", "pow"]) T[k] = f(Math[k]);
+            Object.assign(T, {
+                clamp: f((x, a, b) => Math.min(b, Math.max(a, x))),
+                step: f((kante, x) => (x >= kante ? 1 : 0)),
+                mix: f((a, b, t) => a + (b - a) * t),
+                Fn: (g) => () => g(),
+                If: (c, g) => void (val(c) && g()),
+                textureLoad: (tex, ij) => V(...tex.image.data.subarray(4 * val(ij.x), 4 * val(ij.x) + 4)),
+            });
             const E0 = { t: 3.7, U: 0.4, dx: 1, dz: 0 };
-            const sway = (e, rausch = () => 0.37) => {
+            // e.wellen: die lebenden Druckwellen [{ x, z, w3, alter, radius }] in der Höhe der Ecke; `mut(s)` verdirbt den Leser
+            // (die Selbst-Tests von F6)
+            const sway = (e, rausch = () => 0.37, mut = null) => {
                 const s = Object.create(r);
                 [T.positionWorld, T.positionGeometry] = [V(e.lx, 0.5, e.lz), V(0, e.hy, 0)];
                 s._weltNaht = () => ({ lage: T.positionWorld, vorlage: (x) => x });
                 const uBend = [0, 1, 2, 3, 4, 5].map((i) => V(...((!i && e.b) || [0, -1e6, 0, 0])));
-                s.state = { windUniforms: { uWindTime: N(e.t), uWindStrength: N(e.U), uWindDir: V(e.dx, e.dz), uBend } };
+                const wl = e.wellen || [];
+                const slots = Array.from({ length: AR.DRUCK.bildWellen }, (_, i) => wl[i] || { x: 0, z: 0, w3: 0, alter: 0, radius: 0 });
+                const [uWelle, uWelleUhr] = [slots.map((w) => V(w.x, 0.5, w.z, w.w3)), slots.map((w) => V(w.alter, w.radius))];
+                const windUniforms = { uWindTime: N(e.t), uWindStrength: N(e.U), uWindDir: V(e.dx, e.dz), uBend, uWelleZahl: N(wl.length), uWelle, uWelleUhr };
+                s.state = { windUniforms, materials: r.state.materials };
+                if (mut) mut(s);
                 const o = r._windSwayOffset.call(s, T, { rausch: N(rausch(e)) });
-                return { x: o.x.v, z: o.z.v };
+                return { x: o.x.v, y: o.y.v, z: o.z.v };
             };
             // die Böe längs und quer der Richtung prüft F5 gegen `_windAt` selbst (bis w20-boee-bild hier quer gleich / längs
             // verschieden an drei Punkten)
@@ -330,6 +357,109 @@ hauptLauf(async () => {
                 if (!(welle > 1e-3)) fail("F5-Selbsttest: die zweite Welle bleibt unerkannt");
             }
 
+            // ══ F6 DIE WELLE IM HALM (druckwelle-bild) — die Druckwelle im EINEN Wind-Term (`_halmWelle`), an der Energie eines
+            //    Fasses (60 MJ), ohne Wind (der Versatz ist die Welle allein):
+            //    RUHE      ohne Welle ist der Versatz bit-gleich dem Wind-Term ohne den Leser der Welle, die Höhe genau 0;
+            //    FRONT     zu drei Altern (die Front bei 5 · 15 · 40 m) liegt die Grenze stehender ↔ geneigter Halm am Radius des
+            //              Gesetzes (`druckwelle().ankunft`); vor der Front und jenseits des Radius der Welle steht jeder Halm;
+            //    WINKEL    am Ende des Pulses neigt er um asin(tanh(κ · ξ ÷ L)), ξ der Luft-Weg des Gesetzes (`druckwelle().weg`,
+            //              geschlossen gerechnet, nicht die Tafel) — radial von der Ladung weg, seine Länge bleibt;
+            //    AUFSTEHEN nach Dauer + √θ ÷ Rate steht er (Versatz genau 0), auf halbem Weg dazwischen; zwei Wellen summieren
+            //              (höchstens liegend), zwei gegenüber heben sich auf;
+            //    TAKT      `_druckWelle` trägt die Welle ein, `_tickHalmWelle` füllt Slot 0 (Ort, W^(1/3), Alter auf der Welt-Uhr,
+            //              Radius) und leert ihn nach `bildEnde`.
+            //    Selbst-Tests: der Leser ohne Welle, die halbe Trägheit des Halms und eine um 5 % spätere Tafel MÜSSEN rot sehen. ══
+            {
+                const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+                const [luft, hz, E, hy] = [r._druckLuft(), r._halmZahlen(), 6e7, 0.4];
+                const [w3, radius] = [Math.cbrt(E / SG.DRUCK.tntJ), SG.druckRadius(E, luft)];
+                const still = { ...E0, U: 0, lz: 0, hy };
+                const eine = (alter, x = 0) => ({ x, z: 0, w3, alter, radius });
+                const halm = (R, wellen, mut) => sway({ ...still, lx: R, wellen }, undefined, mut);
+                const neigung = (o) => Math.hypot(o.x, o.z) / hy;
+                const welle = (mut) => {
+                    const z = { front: 0, vor: 0, winkel: 0, form: 0, auf: 0 };
+                    for (const Rf of [5, 15, 40]) {
+                        const alter = SG.druckwelle(E, Rf, luft).ankunft;
+                        let [lo, hi] = [Rf - 2, Rf + 2];
+                        z.vor = Math.max(z.vor, neigung(halm(hi, [eine(alter)], mut)));
+                        if (!(neigung(halm(lo, [eine(alter)], mut)) > 0)) {
+                            z.front = 1e9; // hinter der Front steht der Halm: keine Grenze
+                            continue;
+                        }
+                        for (let k = 0; k < 40; k++) {
+                            const m = 0.5 * (lo + hi);
+                            if (neigung(halm(m, [eine(alter)], mut)) > 0) lo = m;
+                            else hi = m;
+                        }
+                        z.front = Math.max(z.front, Math.abs(0.5 * (lo + hi) - Rf));
+                    }
+                    z.vor = Math.max(z.vor, neigung(halm(radius + 1, [eine(SG.druckwelle(E, radius + 1, luft).ankunft + 0.02)], mut)));
+                    for (const R of [5, 10, 20, 40, 100]) {
+                        const w = SG.druckwelle(E, R, luft);
+                        const soll = Math.asin(Math.tanh(hz.traeg * w.weg));
+                        const o = halm(R, [eine(w.ankunft + w.dauer)], mut);
+                        z.winkel = Math.max(z.winkel, Math.abs(Math.asin(Math.min(1, neigung(o))) - soll));
+                        z.form = Math.max(z.form, Math.abs(o.z), o.x > 0 ? 0 : 1, Math.abs(Math.hypot(hy + o.y, o.x, o.z) - hy));
+                        const steht = w.ankunft + w.dauer + Math.sqrt(soll) / hz.rueck;
+                        const halb = neigung(halm(R, [eine(0.5 * (w.ankunft + w.dauer + steht))], mut));
+                        z.auf = Math.max(z.auf, neigung(halm(R, [eine(steht + 0.01)], mut)), halb > 0 && halb < Math.sin(soll) ? 0 : 1);
+                    }
+                    return z;
+                };
+                const ohne = (s) => (s._halmWelle = () => V(0, 0, 0));
+                const traeg = (s) => (s._halmZahlen = () => ({ ...hz, traeg: hz.traeg / 2 }));
+                const spaet = (s) =>
+                    (s._wellenTafel = function (TT) {
+                        const lies = r._wellenTafel.call(this, TT);
+                        return (Z) => Object.assign(lies(Z), { zeit: lies(Z).zeit.mul(1.05) });
+                    });
+                const [gut, rot] = [welle(null), { ohne: welle(ohne), traeg: welle(traeg), spaet: welle(spaet) }];
+                // RUHE: der Wind allein, mit und ohne den Leser der Welle
+                const wind = { ...E0, lx: 3.3, lz: 1.7, hy: 0.5 };
+                const [a, b] = [sway(wind), sway(wind, undefined, ohne)];
+                const ruhe = a.x === b.x && a.z === b.z && a.y === 0 && Math.hypot(a.x, a.z) > 1e-3;
+                // zwei Wellen am selben Ort (höchstens liegend) und zwei gegenüber (sie heben sich auf)
+                const spitze = SG.druckwelle(E, 5, luft);
+                const [ein, zwei, gegen] = [
+                    halm(5, [eine(spitze.ankunft + spitze.dauer)]),
+                    halm(5, [eine(spitze.ankunft + spitze.dauer), eine(spitze.ankunft + spitze.dauer)]),
+                    halm(5, [eine(spitze.ankunft + spitze.dauer), eine(spitze.ankunft + spitze.dauer, 10)]),
+                ];
+                const summe = neigung(zwei) > neigung(ein) && neigung(zwei) <= 1 + 1e-12 && zwei.y >= -hy - 1e-12 && neigung(gegen) < 1e-9;
+                // TAKT: der echte Schreiber in einer Welt ohne Körper im Radius (keine Frist trifft die Probe-Welt)
+                const wu = r._ensureWindCoupling(THREE.TSL);
+                const w = Object.create(r);
+                // die Probe-Welt trägt je Augenblick IHREN Stand (die Uhr der Welt schreibt die Probe nie — Ein-Schreiber-Wand)
+                const um = (t) => (w.state = Object.assign(Object.create(r.state), { creatures: [], playerMesh: null, spielZeit: t }));
+                um(100);
+                Object.assign(w, { _druckFristen: [], _druckWellen: [], _blockerUmPlatz: () => {} });
+                const P = pm.position;
+                const wl = w._druckWelle({ x: P.x + 7, y: P.y, z: P.z - 3 }, E, 100);
+                um(100.25);
+                w._tickHalmWelle();
+                const [s0, u0] = [wu.uWelle[0].value, wu.uWelleUhr[0].value];
+                const traegtEin =
+                    wu.uWelleZahl.value === 1 && Math.abs(s0.x - P.x - 7) < 1e-6 && Math.abs(s0.z - P.z + 3) < 1e-6 &&
+                    Math.abs(s0.w - w3) < 1e-9 && Math.abs(u0.x - 0.25) < 1e-9 && Math.abs(u0.y - radius) < 1e-9;
+                um(wl.bildEnde + 0.01);
+                w._tickHalmWelle();
+                const leert = wu.uWelleZahl.value === 0 && w._druckWellen.length === 0;
+                o.zahlen.welle = { gut, rot, ruhe, summe, traegtEin, leert, lebtS: wl.bildEnde - 100, radius };
+                if (!ruhe) fail(`F6: ohne Welle ist der Wind-Term nicht der alte (${JSON.stringify([a, b])})`);
+                if (!(gut.front < 1e-3 && gut.vor === 0))
+                    fail(`F6: die Front im Halm liegt nicht am Radius des Gesetzes (±${gut.front} m; vor der Front ${gut.vor})`);
+                if (!(gut.winkel < 5e-4 && gut.form < 1e-9))
+                    fail(`F6: der Halm neigt nicht um den Winkel des Gesetzes (±${gut.winkel} rad; Richtung und Länge ±${gut.form})`);
+                if (!(gut.auf === 0)) fail(`F6: der Halm steht nach seiner Frist nicht wieder auf (${gut.auf})`);
+                if (!summe) fail(`F6: zwei Wellen summieren nicht bis liegend oder heben sich gegenüber nicht auf (${JSON.stringify([ein, zwei, gegen])})`);
+                if (!(traegtEin && leert))
+                    fail(`F6: der Bild-Takt trägt die Welle nicht in Slot 0 oder leert ihn nicht (trägt ${traegtEin}, leert ${leert})`);
+                if (!(rot.ohne.front > 1)) fail("F6-Selbsttest: der Leser ohne Welle bleibt unerkannt");
+                if (!(rot.traeg.winkel > 0.05)) fail(`F6-Selbsttest: die halbe Trägheit des Halms bleibt unerkannt (±${rot.traeg.winkel} rad)`);
+                if (!(rot.spaet.front > 0.05)) fail(`F6-Selbsttest: die spätere Tafel bleibt unerkannt (±${rot.spaet.front} m)`);
+            }
+
             // ══ KONSUM-PROBEN (Lehre 5/6: der Ruf, nie der Text — der Lieferant zählt, der Leser läuft) ══
             {
                 const ruft = (obj, m, prov, key, args) => {
@@ -361,6 +491,11 @@ hauptLauf(async () => {
                         fail(
                             `KONSUM: uWindDir hat nicht EINE Quelle (Gras ${gras}, Rinde ${rinde} Rufe von \`_ensureWindCoupling\`)`
                         );
+                    // die Welle im Halm: der Wind-Term der Welt ruft ihren Leser, der Bild-Takt ihren Schreiber
+                    const leser = ruft(r, "_windSwayOffset", r, "_halmWelle", [THREE.TSL, {}]);
+                    const takt = ruft(r, "_loopRender", r, "_tickHalmWelle", []);
+                    if (!(leser > 0 && takt > 0))
+                        fail(`KONSUM: die Welle erreicht den Halm nicht (\`_halmWelle\` ${leser}, \`_tickHalmWelle\` ${takt} Rufe)`);
                 }
             }
             return o;
@@ -391,6 +526,13 @@ hauptLauf(async () => {
             `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)}`
         );
     if (z.boe) console.log(`  F5 Böe am Ort ±${z.boe.ab} · zweite Welle ±${z.boe.welle}`);
+    if (z.welle) {
+        const [g, m] = [z.welle.gut, z.welle.rot];
+        console.log(
+            `  F6 Welle im Halm: Front ±${(g.front * 1000).toFixed(3)} mm · Winkel ±${g.winkel.toExponential(2)} rad · Form ±${g.form.toExponential(1)} · lebt ${z.welle.lebtS.toFixed(2)} s bis ${z.welle.radius.toFixed(1)} m` +
+                ` · Mutanten: ohne Leser Front ${m.ohne.front} · halbe Trägheit ±${m.traeg.winkel.toFixed(3)} rad · spätere Tafel ±${m.spaet.front.toFixed(3)} m`
+        );
+    }
     console.log("");
     for (const f of out.fails) console.log(`  ❌ ${f}`);
     const ok = out.fails.length === 0;

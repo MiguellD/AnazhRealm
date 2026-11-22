@@ -695,6 +695,94 @@ function gestaltLeben(z, um) {
     return teile;
 }
 
+// DER LEIB GANZ (leib-nah-ganz, 22.11.): jeder Leib im Blick näher als `nahM` (6 m) an der Kamera zeichnet JEDES seiner Teile — gemessen
+// an der TIEFE DES BILDS (`__spiegelDaten`: der Szenen-Pass des Schusses oder des letzten Loop-Bilds), nie am Szenengraph.
+// DAS SOLL nennt die Szene (`leiberNah`): je Leib — Spieler, Bewohner, Tier; die EINE Grenze `__istLeib` — jedes Teil, das die Kamera
+// zeichnet und das Tiefe schreibt, beim Namen des EINEN Gesetzes (`_kopfKlasse`: `bewohner:kopf/haut`, `bewohner:leib/stoff`) und seines
+// Stoffs (`<Stoff>_<id>`; die Pipeline seines Programms trägt die Nummer des ERSTEN Stoffs, der es baute — `renderPipeline_<Stoff>_<id>`
+// in der GPU-Wache —, ein Programm teilen viele Stoffe: an main fehlte so das Haar von Stoff 734 an der Pipeline von 745).
+// DAS IST liest das Bild (`leiberMessen`): je Teil bis zu `proben` Ecken seiner gezeichneten Dreiecke über die Haut der CPU in die Welt
+// und auf ihr Pixel. Steht dort (± 1 Pixel) die Fläche des Bilds an der Ecke (|Δ| ≤ `saumM`), ist sie gezeichnet; steht eine davor,
+// ist sie verdeckt und zählt nicht; sonst zeigt das Bild durch das Teil hindurch (leer). Ein Teil mit ≥ `probenMin` unverdeckten
+// Ecken, von denen ≥ `leerAb` leer sind, ist UNGEZEICHNET — ROT beim Namen: Leib, Teil, Stoff.
+// Bis hier urteilte die Abnahme „Leib im Vordergrund 5,7 %“ GRÜN über ein Bild, in dem von vier Bewohnern nur das Haar stand
+// (stadt-voll, Radeon 6699a813): r184 hielt die Pipelines von Haut und Stoff für immer für kaputt (`_erstAbsageWache`).
+function leiberNah(o) {
+    const T = window.THREE;
+    const cam = st.camera;
+    const nahM = o?.nahM ?? 6;
+    cam.updateMatrixWorld(true);
+    const E = new T.Vector3().setFromMatrixPosition(cam.matrixWorld);
+    const wer = new Map();
+    for (const S of r._bewohnerSiedlungen?.values() || []) for (const b of S?.liste || []) if (b?.leib) wer.set(b.leib, `bewohner ${b.nr}`);
+    (st.creatures || []).forEach((c, i) => c && !wer.has(c) && wer.set(c, `${r._taeterKlasse(c)} ${i}`));
+    const je = new Map();
+    const p = new T.Vector3();
+    st.scene.traverseVisible((c) => {
+        const m = c.material;
+        if (!c.isMesh || c.isInstancedMesh || c.userData?.gang || !m || Array.isArray(m) || !window.__kameraZeichnet(c, cam)) return;
+        if (m.depthWrite === false || m.transparent === true) return; // ohne Tiefe im Bild kein Urteil am Bild
+        const klasse = r._taeterKlasse(c);
+        if (!/^(spieler|bewohner|tier:)/.test(klasse)) return;
+        let top = c,
+            name = null;
+        for (let q = c; q && q !== st.scene; q = q.parent) (top = q), (name = name || wer.get(q) || null);
+        let L = je.get(top);
+        if (!L) {
+            const d = top.getWorldPosition(p).distanceTo(E);
+            je.set(top, (L = { name: name || klasse, d: +d.toFixed(2), teile: [] }));
+        }
+        L.teile.push({ c, teil: r._kopfKlasse ? r._kopfKlasse(c)[1] : klasse, stoff: `${m.name || m.type}_${m.id}` });
+    });
+    return [...je.values()].filter((L) => L.d <= nahM).sort((a, b) => a.d - b.d);
+}
+function leiberMessen(S, nahe, o) {
+    const T = window.THREE;
+    const q = Object.assign({ nahM: 6, proben: 48, probenMin: 6, saumM: 0.06, leerAb: 0.8 }, o || {});
+    const leiber = nahe || window.__leiberNah(q);
+    const E = new T.Vector3().fromArray(S.auge);
+    const vp = S.vp;
+    const [P, W4] = [new T.Vector3(), [0, 0, 0, 0]];
+    // die Fläche des Bilds am Pixel (x, y): ihr Abstand zum Auge (der Himmel: unendlich)
+    const flaeche = (x, y) => (x < 0 || y < 0 || x >= S.tw || y >= S.th ? Infinity : (S.punkt(y * S.tw + x)?.distanceTo(E) ?? Infinity));
+    const aus = { nahM: q.nahM, n: 0, halb: 0, teile: 0, ganz: true, fehlt: [] };
+    for (const L of leiber) {
+        let gemessen = 0,
+            fehlt = 0;
+        for (const t of L.teile) {
+            const g = t.c.geometry;
+            const [idx, pos] = [g.index, g.attributes.position];
+            const von = Math.max(0, g.drawRange.start || 0);
+            const bis = Math.min(idx ? idx.count : pos.count, von + (Number.isFinite(g.drawRange.count) ? g.drawRange.count : Infinity));
+            const schritt = Math.max(1, Math.floor((bis - von) / q.proben));
+            const z = { da: 0, leer: 0, verdeckt: 0 };
+            for (let k = von; k < bis; k += schritt) {
+                const i = idx ? idx.getX(k) : k;
+                (t.c.isSkinnedMesh ? t.c.getVertexPosition(i, P) : P.fromBufferAttribute(pos, i)).applyMatrix4(t.c.matrixWorld);
+                for (let a = 0; a < 4; a++) W4[a] = vp[a] * P.x + vp[4 + a] * P.y + vp[8 + a] * P.z + vp[12 + a];
+                if (!(W4[3] > 1e-3) || Math.abs(W4[0]) > 0.98 * W4[3] || Math.abs(W4[1]) > 0.98 * W4[3]) continue; // außerhalb des Bilds
+                const [x, y] = [Math.floor(((W4[0] / W4[3] + 1) / 2) * S.tw), Math.floor(((1 - W4[1] / W4[3]) / 2) * S.th)];
+                const Ld = P.distanceTo(E);
+                let da = false;
+                for (let dy = -1; dy <= 1 && !da; dy++) for (let dx = -1; dx <= 1 && !da; dx++) da = Math.abs(flaeche(x + dx, y + dy) - Ld) <= q.saumM;
+                z[da ? "da" : flaeche(x, y) < Ld - q.saumM ? "verdeckt" : "leer"]++;
+            }
+            const frei = z.da + z.leer;
+            if (frei < q.probenMin) continue; // verdeckt oder außerhalb des Bilds: kein Urteil über dieses Teil
+            gemessen++;
+            if (z.leer < q.leerAb * frei) continue;
+            fehlt++;
+            aus.fehlt.push(`${L.name} in ${L.d} m: ${t.teil} (${t.stoff}) ${z.da} von ${frei} Ecken im Bild`);
+        }
+        if (!gemessen) continue;
+        aus.n++;
+        aus.teile += gemessen;
+        if (fehlt) aus.halb++;
+    }
+    aus.ganz = aus.fehlt.length === 0;
+    return aus;
+}
+
 function abnahmeMessen(opt) {
     const T = window.THREE;
     const cam = st.camera;
@@ -1072,7 +1160,12 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // DAS BILD AM ZIEL (w18-abnahme-sicht): die Abnahme misst an der Tiefe DIESES Schusses (der Szenen-Pass des gezählten Bilds,
             // `__zielMessen`); der Aufrufer liest sie als `tiefe`, nie neu (das Bild ohne Boden-Schicht kann danach stehen)
             const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__spiegelDaten() : null;
+            // DER LEIB GANZ (leib-nah-ganz, `leiberMessen`): an derselben Tiefe, vor jedem weiteren Bild der Abnahme (`__zielMessen` zeichnet
+            // ohne Boden-Schicht und ohne Leiber). Ein Mess-Frame und ein Bild, das Bürger auslässt (`nurGezeichnete`), urteilen ihn nie
+            const nahe = opt?.satz !== "messung" && !opt?.nurGezeichnete && st.scenePass ? window.__leiberNah() : [];
+            const leiber = nahe.length ? window.__leiberMessen(tiefe || (await window.__spiegelDaten()), nahe) : null;
             const m = tiefe ? await window.__zielMessen(opt, tiefe) : window.__abnahmeMessen(opt);
+            if (leiber && leiber.n) m.leiber = leiber;
             if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
@@ -1985,6 +2078,73 @@ async function bildLinsenSelbsttest() {
         const m = lauf(abnahmeMessen, {});
         if (!(m.sicht.deckung > 0.02 && m.sicht.leib?.taeter["Leib spieler"] > 0.02)) v.push(`L: ohne Ziel zählt der Kopf vor der Linse nicht in der Sicht: ${JSON.stringify(m.sicht)}`); // prettier-ignore
     }
+    // G: der Leib ganz (leib-nah-ganz) — ein Bewohner 4 m vor der Kamera, Kopf (Haut) und Hemd (Stoff) an einem bewegten Knochen; das
+    // Bild ist seine Tiefe (je Pixel der Strahl gegen die Kisten der GEZEICHNETEN Teile, dahinter eine Wand in 30 m). Gezeichnet ist er
+    // ganz; fehlt das Hemd im Bild (stadt-voll an main 6699a813: die Pipeline des Stoffs galt r184 für immer als kaputt), steht es ROT
+    // beim Namen — Bewohner, Teil, Stoff; ein Pfeiler vor dem Hemd verdeckt es (kein Urteil), jenseits von 6 m misst die Linse nicht.
+    // Die Mutante (main: kein Urteil über das Teil) besteht nicht.
+    {
+        const [sz, kam, bein] = [new T.Scene(), new T.PerspectiveCamera(60, 16 / 9, 0.1, 1000), new T.Bone()];
+        const teil = (w, h, y, name) => {
+            const g = new T.BoxGeometry(w, h, 0.3, 4, 4, 2);
+            const n = g.attributes.position.count;
+            g.setAttribute("skinIndex", new T.Uint16BufferAttribute(new Uint16Array(n * 4), 4));
+            g.setAttribute("skinWeight", new T.Float32BufferAttribute(new Float32Array(n * 4).map((_, i) => +!(i % 4)), 4));
+            const c = new T.SkinnedMesh(g, new T.MeshBasicMaterial({ name }));
+            c.position.y = y;
+            return c;
+        };
+        const [kopfG, hemd, leib] = [teil(0.3, 0.3, 1.6, "Haut"), teil(0.5, 0.7, 1.0, "Hemd"), new T.Group()];
+        const pfeiler = new T.Mesh(new T.BoxGeometry(0.9, 0.4, 0.2), new T.MeshBasicMaterial());
+        pfeiler.position.set(0.25, 0, -2);
+        leib.add(kopfG, hemd, bein);
+        leib.position.set(0, -1, -4);
+        sz.add(kam, leib, pfeiler);
+        sz.updateMatrixWorld(true);
+        const skelett = new T.Skeleton([bein]);
+        for (const c of [kopfG, hemd]) c.bind(skelett);
+        bein.position.x = 0.25; // der Knochen trägt beide Teile aus der Ruhelage: die Linse liest die Haut der CPU, nie die Ruhelage
+        sz.updateMatrixWorld(true);
+        const rG = {
+            state: { camera: kam, scene: sz, creatures: [] },
+            _bewohnerSiedlungen: new Map([["dorf", { liste: [{ nr: 7, leib }] }]]),
+            _taeterKlasse: (o) => (o === pfeiler ? "pfeiler" : "bewohner"),
+            _kopfKlasse: (o) => ["bewohner", o === hemd ? "bewohner:leib/stoff" : "bewohner:kopf/haut"],
+        };
+        const weltG = { THREE: T, anazhRealm: rG, __kameraZeichnet: KN.kameraZeichnet, __leiberNah: leiberNah };
+        const bild = (gezeichnet) => {
+            const [tw, th] = [320, 180];
+            const vp = new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
+            const ivp = vp.clone().invert();
+            const kisten = gezeichnet.map((c, _i, _a, k = c.isSkinnedMesh ? c : c.geometry) => (k.computeBoundingBox(), k.boundingBox.clone().applyMatrix4(c.matrixWorld))); // prettier-ignore
+            const strahl = new T.Ray();
+            const punkt = (j) => {
+                strahl.direction.set((2 * (j % tw) + 1) / tw - 1, 1 - (2 * Math.floor(j / tw) + 1) / th, 0.5).applyMatrix4(ivp).normalize();
+                const treffer = kisten.map((k) => strahl.intersectBox(k, new T.Vector3())).filter(Boolean).sort((a, b) => a.length() - b.length())[0]; // prettier-ignore
+                return treffer || strahl.direction.clone().multiplyScalar(-30 / strahl.direction.z);
+            };
+            return { tw, th, vp: vp.elements, auge: [0, 0, 0], punkt };
+        };
+        const laufG = (fn, gezeichnet) => {
+            const alt = [global.window, global.st, global.r];
+            Object.assign(global, { window: weltG, st: rG.state, r: rG });
+            try {
+                return fn(bild(gezeichnet));
+            } finally {
+                [global.window, global.st, global.r] = alt;
+            }
+        };
+        const ganz = laufG(leiberMessen, [kopfG, hemd]);
+        if (!(ganz.ganz && ganz.n === 1 && ganz.halb === 0 && ganz.teile === 2)) v.push(`G: der ganze Leib steht nicht ganz: ${JSON.stringify(ganz)}`);
+        const halbRot = (fn) => ((L) => !(!L.ganz && L.halb === 1 && L.fehlt.length === 1 && /^bewohner 7 in 4\.\d+ m: bewohner:leib\/stoff \(Hemd_\d+\) 0 von \d+ Ecken im Bild$/.test(L.fehlt[0])) && `ohne Hemd im Bild: ${JSON.stringify(L)}`)(laufG(fn, [kopfG])); // prettier-ignore
+        klasse("G Leib ganz", halbRot, leiberMessen, mutante(leiberMessen, "if (z.leer < q.leerAb * frei) continue;", "continue;", {}));
+        const verdeckt = laufG(leiberMessen, [kopfG, pfeiler]);
+        if (!(verdeckt.ganz && verdeckt.n === 1 && verdeckt.teile === 1)) v.push(`G: das Hemd hinter dem Pfeiler ist verdeckt, nie ungezeichnet: ${JSON.stringify(verdeckt)}`);
+        leib.position.z = -9;
+        sz.updateMatrixWorld(true);
+        const fern = laufG(leiberMessen, [kopfG]);
+        if (fern.n !== 0 || !fern.ganz) v.push(`G: jenseits von 6 m misst die Linse nicht: ${JSON.stringify(fern)}`);
+    }
     // F: das Haus im Bild, sein Fuß 40 m tiefer unter dem Bild — der Grund nennt den Fuß mit SEINER Projektion
     const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
     const fussRot = (fn) => ((Z) => !(!Z.imBild && /am Fuß/.test(Z.name) && Z.ndc[1] < -0.95) && `${Z.name} ndc ${Z.ndc}`)(lauf(fn, zielFrage).ziel);
@@ -2086,6 +2246,7 @@ module.exports = {
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
+        `window.__leiberNah = ${leiberNah}; window.__leiberMessen = ${leiberMessen};` +
         `window.__schirmRot = ${schirmRot}; window.__stufenZensus = ${stufenZensus}; window.__stufenOhne = ${STUFEN_OHNE};` +
         `window.__baumStufeZensus = ${baumStufeZensus}; window.__baumFallHaken = ${baumFallHaken}; window.__baumFallWarten = ${baumFallWarten};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
