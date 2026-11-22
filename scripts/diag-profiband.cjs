@@ -480,6 +480,35 @@ function gpuEigenWand(A) {
     return { errs, mb: erst.array.byteLength / 1048576, gelegt: idx().length };
 }
 
+// H14 DER FLUG FOLGT DEM BLICK (heap-register 2): ein Knoten-Bau in Raten, dessen Objekt im Bau fiel (der Spieler ging),
+// verlässt den Flug (`_knotenFlugRaeumen`) — im Kehraus, auch wenn kein neuer Bau einen Flug anlegt. Bis heap-register 2
+// räumte erst der 32. Flug (Radeon, `werkbank runde --nur stadt`: `_erstZeichnung.imFlug` 0 → 7,4 → 16,5 MB je Runde). Die
+// Linse fährt den echten Kehraus an einem stillen Bild mit drei Bauten: verlassen (KNOTEN_FLUG_BILDER + 1 Bilder ohne Leser,
+// fällt), jung (bleibt) und einem, dessen Leser ihn eben weiterging (bleibt).
+function flugWand(A) {
+    const bild = 5000;
+    const imFlug = new Map([
+        ["verlassen", { bild: bild - A.KNOTEN_FLUG_BILDER - 1 }],
+        ["jung", { bild: bild - 10 }],
+        ["eben", { bild }],
+    ]);
+    const rend = {
+        _attributes: { delete() {} },
+        _geometries: { attributeCall: new Map() },
+        info: { memoryMap: new Map() },
+        _nodes: { nodeFrame: { frameId: bild } },
+    };
+    const w = weltVon(A, { renderer: rend, scene: { traverse() {} } });
+    w._erstZeichnung = { imFlug };
+    A.prototype._gpuKehraus.call(w, 0, 1e9);
+    const errs = [];
+    if (imFlug.has("verlassen"))
+        errs.push(`H14 _gpuKehraus: der verlassene Knoten-Bau hält den Flug nach ${A.KNOTEN_FLUG_BILDER + 1} Bildern ohne Leser (Soll: er fällt — _knotenFlugRaeumen)`); // prettier-ignore
+    if (!imFlug.has("jung") || !imFlug.has("eben"))
+        errs.push("H14 _knotenFlugRaeumen: ein Bau mit Leser fiel aus dem Flug");
+    return { errs, flug: imFlug.size };
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
@@ -1890,6 +1919,11 @@ function selbsttest() {
     const g13Kopie = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_sichtZugPuffer", "AnazhRealm._gpuEigen(rend, Z.index, 2);", "rend._attributes.update(Z.index, 2);"))); // prettier-ignore
     const g13Fall = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_gpuAbschied", 'attr.__gpuEigen = "gefallen";', ""))); // prettier-ignore
     t("Puffer der GPU: mit Kopie rot beim Sicht-Index, der Fall ohne Marke rot beim Neu-Legen, der Stamm grün", g13Kopie.errs.some((e) => /hält nach dem Hochladen seine CPU-Kopie/.test(e)) && g13Fall.errs.some((e) => /legte sich nicht neu/.test(e)) && !gpuEigenWand(A).errs.length); // prettier-ignore
+    // DER FLUG (H14): der Kehraus ohne Räumung (der Stand vor heap-register 2: erst der 32. neue Flug räumte) ist rot beim
+    // verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün
+    const f14Alt = flugWand(klasseVon(stammLib.ersetze(st8, "_gpuKehraus", "this._knotenFlugRaeumen(this._erstZeichnung, rend._nodes.nodeFrame.frameId);", ";"))); // prettier-ignore
+    const f14Alle = flugWand(klasseVon(stammLib.ersetze(st8, "_knotenFlugRaeumen", "if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);", "E.imFlug.delete(k);"))); // prettier-ignore
+    t("Flug: der Kehraus ohne Räumung rot beim verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün", f14Alt.errs.some((e) => /verlassene Knoten-Bau hält den Flug/.test(e)) && f14Alle.errs.some((e) => /Bau mit Leser fiel/.test(e)) && !flugWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1953,6 +1987,9 @@ function main() {
     const g13 = gpuEigenWand(A);
     errs.push(...g13.errs);
     console.log(`H13 der Sicht-Index der GPU: CPU-Kopie ${g13.mb.toFixed(2)} MB nach dem Hochladen (Soll 0), ${g13.gelegt}× gelegt über Fall und Neu-Legen (${g13.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const f14 = flugWand(A);
+    errs.push(...f14.errs);
+    console.log(`H14 der Flug der Knoten-Bauten im Kehraus: ${f14.flug} von 3 bleiben (Soll 2: der verlassene fällt) (${f14.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
