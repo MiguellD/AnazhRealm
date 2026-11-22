@@ -78,14 +78,14 @@
       "sha256": "d60b8bbf06da7b9d544b6eccb78f738bedf7a8d2a697a5fc5a760d8a5ce31a43"
     },
     "brunnen-s1-L0": {
-      "objects": 6,
+      "objects": 8,
       "vertices": 6825,
-      "sha256": "b279edaf01e97fa55b8b0a5e9fe84026ae723669aa79868fa676a03f9be18e76"
+      "sha256": "ca37bd3f07d769e3f749f0ba860b6a82c36570c70402dece3022d398d684e0c5"
     },
     "brunnen-s1-L1": {
-      "objects": 6,
+      "objects": 8,
       "vertices": 449,
-      "sha256": "832f971a2f693a3eebd73210c929a76201a86ef321cf911de920799aa126f105"
+      "sha256": "062bd87b87ff5a858c3ca2293c7f2d3b91a02da96912bca2f1559c962bc539e1"
     },
     "brunnen-s1-L3": {
       "objects": 1,
@@ -93,14 +93,14 @@
       "sha256": "acdcd8d66f5ef8f3e59de331617461ca54c5fb2b30487a5fb6c1fff9f55df980"
     },
     "brunnen-s2-L0": {
-      "objects": 6,
+      "objects": 8,
       "vertices": 6825,
-      "sha256": "30447c14f177e0b00dbe8236d6fc72f624da911c8389a23dd1255a8106a708f4"
+      "sha256": "b9175120f320a5e574252b305a9c19fd7d2f4b60d1c03606069ac43fe3c9e6df"
     },
     "brunnen-s2-L1": {
-      "objects": 6,
+      "objects": 8,
       "vertices": 449,
-      "sha256": "8dab472b2bc82a6b37c529057f70cdfba73ea71909b1e54154152ad700dca1b3"
+      "sha256": "0aaa181b72b2bf2fd02c08ec4a5c77a44eb2863ff7f4a70b39d8c4a91875a5da"
     },
     "brunnen-s2-L3": {
       "objects": 1,

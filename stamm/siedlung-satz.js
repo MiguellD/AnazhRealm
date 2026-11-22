@@ -12,7 +12,7 @@ class AnazhRealm_siedlung_satz {
     // Instanz-Attribute der Fassade je Vertex). Die Gruppe bleibt die Wahrheit ihrer Slots (Belegen · Freigeben ·
     // Raycast · Gnadenfrist); sie zeichnet nie selbst — jede Mutation ihrer Draw-Wahrheit meldet der EINE Chokepoint
     // `_archMeshBundleTouch`, der Bereich legt sich im nächsten Satz-Takt neu (Kosten an der Änderung).
-    // Nicht im Satz: was wandert (Tür-Flügel `leaf.tuer`, Fahrzeug), was die Dither-Blende je Instanz trägt und
+    // Nicht im Satz: was wandert (Tür-Flügel `leaf.tuer`, Haspel-Teil `leaf.welle`, Fahrzeug), was die Dither-Blende je Instanz trägt und
     // oft wiederkehrt (Baum, Strauch), die Karte (der EINE Atlas), die Streu (regional), ein Schatten-Zwilling (er lebt
     // auf seiner eigenen Ebene — im Satz stünde er im Hauptbild).
     // DER WURF-SATZ (S3, das Wurf-Gesetz E1): der Schatten-Zwilling einer Satz-Art (die NUR-WURF-Stufe 3 von Haus und
@@ -20,7 +20,7 @@ class AnazhRealm_siedlung_satz {
     // jeden Werfer, nie im Hauptbild (SHADOW_TWIN_LAYER, `_chunkSatzPass` wählt dort nie). Vorher warf jedes Haus mit seiner
     // gezeigten Stufe in die Kaskaden (L0 31 660–101 716 Dreiecke je Haus und Kaskade).
     _bauSatzArt(leaf, regionKey, castShadow) {
-        if (regionKey != null || !leaf || leaf.tuer || !leaf.mat) return null;
+        if (regionKey != null || !leaf || leaf.tuer || leaf.welle || !leaf.mat) return null;
         const m = typeof leaf.leafKey === "string" ? /^f:([^|]+)\|/.exec(leaf.leafKey) : null;
         if (!m) return null;
         const buch = this._foundry && this._foundry.recipes ? this._foundry.recipes : null;
