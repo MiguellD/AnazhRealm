@@ -146,7 +146,7 @@ function jahresringe(FC, o = {}) {
         // die Epoche, die der Stand der Saat trägt (Teil T, `epocheDerSaat`): die Tracht, die Kirchen und der Turm folgen ihr —
         // ein Ort ohne Stahlbeton bleibt in der Gründerzeit
         const ep = (x, k) => x.technik?.epoche || JAHRESRINGE[k];
-        const traegt = (x, c) => FC.bauTechnik({ kultur: c, stil: FC.KULTUR[c].stil }).every((t) => x.technik.stand.includes(t));
+        const traegt = (x, c) => FC.kulturTechnik(c).every((t) => x.technik.stand.includes(t));
         const kirchen = new Set(P.map((x) => x.slots.find((s) => s.rolle === "kirche")?.kultur)).size;
         const epochen = new Set(P.map(ep)).size;
         const heute = o.nH ? FC.DORF(dp("moderne", 0)).groesse : "stadt";

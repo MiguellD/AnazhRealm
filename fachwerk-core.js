@@ -3959,23 +3959,23 @@
       if(TECHNIK.rolle[b.rolle]) n.push(TECHNIK.rolle[b.rolle]);
       return n; }
     function traegt(stand, n){ for(var i=0;i<n.length;i++) if(stand.indexOf(n[i])<0) return false; return true; }
-    // DIE UMLEGUNG am Schreiber-Ende: ein Bau, dessen Technik der Stand nicht trägt, nimmt die jüngste Bauweise der Historie seiner
-    // Region bis zu seinem Baujahr, die er trägt (je Band die Kulturen seines Pools, gewählt nach seinem Samen), sonst den Notbau der
-    // Region; die Kuppel ohne Kupfer fällt, eine Rolle ohne ihre Technik wird Wohnhaus. Das Los (Breite, Tiefe, Geschosse, Grundriss)
-    // bleibt. Ein Bau, den der Stand trägt, bleibt byte-gleich.
+    // die Techniken einer Bauweise, wie ihr Wurf sie plant (die Kuppel des Barock ist Kupfer: ohne Kupfer kein Barock)
+    function kulturTechnik(k){ var K=KULTUR[k]; return bauTechnik({kultur:k, stil:K.stil, kuppel:K.kuppel, dachTyp:K.dachTyp}); }
+    // DIE UMLEGUNG am Schreiber-Ende, vor dem Rezept: eine Rolle ohne ihre Technik wird Wohnhaus; ein Bau, dessen Bauweise der Stand
+    // nicht trägt, wird NEU GEPLANT wie jedes Haus einer Bauweise (`bauRezept` mit `bauweise`, derselbe Wurf über seinem Samen wie die
+    // Kultur einer Viertel-Zeile) — die jüngste Bauweise der Historie seiner Region bis zu seinem Baujahr, die der Stand ganz trägt (je
+    // Band die Kulturen seines Pools, gewählt nach seinem Samen), sonst der Notbau der Region. Kein Teil des alten Plans bleibt halb
+    // stehen (bis 22.11. tauschte die Umlegung nur das Dach: die Barock-Kirche ohne Kuppel trug den Speicherlauf unter dem Sattel,
+    // gate:studio-begehen B3 Kopfraum 1,57 m). Ein Bau, den der Stand trägt, bleibt byte-gleich.
     function technikBau(b, stand, region){
       var n=bauTechnik(b); if(traegt(stand,n)) return b;
       if(TECHNIK.rolle[b.rolle]&&!traegt(stand,[TECHNIK.rolle[b.rolle]])) b.rolle='wohnhaus';
-      if((b.kuppel||b.dachTyp==='zwiebel')&&!traegt(stand,['kupfer'])){ b.kuppel=0; if(b.dachTyp==='zwiebel') b.dachTyp='sattel'; }
-      var tk=TECHNIK.kultur[b.kultur]||TECHNIK.stil[b.stil];
-      if(!traegt(stand,[tk])){
+      if(!traegt(stand,bauTechnik(b))){
         var H=REGION_HIST[region]||REGION_HIST.mitteleuropa, j=0, k=null, y=isFinite(b.baujahr)?b.baujahr:Infinity;
         while(j+1<H.length&&y>=H[j+1][0]) j++;
-        for(;j>=0&&!k;j--){ var c=H[j][1].filter(function(x){ return KULTUR[x]&&traegt(stand,[TECHNIK.kultur[x]||TECHNIK.stil[KULTUR[x].stil]]); }); if(c.length) k=c[(b.seed>>>0)%c.length]; }
+        for(;j>=0&&!k;j--){ var c=H[j][1].filter(function(x){ return KULTUR[x]&&traegt(stand,kulturTechnik(x)); }); if(c.length) k=c[(b.seed>>>0)%c.length]; }
         if(!k) k=TECHNIK.notbau[region]||TECHNIK.notbau.mitteleuropa;
-        var r=_bauweiseWurf(KULTUR[k], b.seed);
-        Object.assign(b,{kultur:k, stil:r.stil, brace:r.brace, col:r.col, pitchDeg:r.pitchDeg, hip:r.hip, roofCurve:r.roofCurve, treppgiebel:r.treppgiebel, bogenTyp:r.bogenTyp,
-          kuppel:traegt(stand,['kupfer'])?r.kuppel:0, dachTyp:r.dachTyp==='zwiebel'&&!traegt(stand,['kupfer'])?'sattel':r.dachTyp}); }
+        Object.assign(b, bauRezept({bauweise:k}, null, b.seed), {kultur:k}); }
       if(!traegt(stand,bauTechnik(b))) throw new Error('fachwerk: die Umlegung trägt den Bau ('+b.rolle+', '+b.kultur+') nicht — der Notbau der Region '+region+' steht nicht im Stand');
       return b; }
     // DIE EPOCHE DER SAAT: die jüngste Epoche der Zeitachse der verlangten, nicht jünger als sie, deren Technik der Stand trägt (null: keine)
@@ -13354,6 +13354,7 @@
         EPOCHEN: EPOCHEN,
         TECHNIK: TECHNIK, // das Technik-Gesetz: Graph, Vorkommen, Bauweise im Bild (Leiter mensch.wirtschaft.technik; Leser: DORF, gate:settlement T)
         technikVorkommen: technikVorkommen, // die Stoffe am Ort einer Saat
+        kulturTechnik: kulturTechnik, // die Techniken einer Bauweise, wie ihr Wurf sie plant (die Umlegung, gate:settlement J)
         technikStand: technikStand, // der Stand einer Saat: welche Technik steht, warum eine fehlt
         bauTechnik: bauTechnik, // die Techniken eines Baus im Bild
         technikImBild: technikImBild, // das Bild eines Plans vor dem Graphen (der Leser der Station)
