@@ -987,6 +987,11 @@ ATTRAPPE
     # erste Schwanz-Station) misst, zieht main weiter: die Fahrt endet an der Grenze nach s3, s2 s1 tragen (getragen 2).
     # Mutanten: schwanz-immer (w1 trägt) · schwanz-nie (w2, w3 messen alles) · klassen-blind (die Liste ohne Klassen)
     local k4 k5 k6 w0 x1 x2 x3 xl xm
+    if [ -z "$k3" ]; then # allein (ST_NUR=e,w): die Runde am Bestand anlegen, die GTX ist an ihrem Kopf durch — wie nach s
+        runde_takt >/dev/null 2>&1
+        k3=$(feld runde | sed -n 's/^runde [0-9]* kopf \([0-9a-f]*\) .*/\1/p')
+        geraet_durch gtx "$k3" "$k3"
+    fi
     MESSUNG_DIR=$X/messung # die Mess-Dateien von e (der Fall n stellte MESSUNG_DIR auf seine leere messung-n; ohne sie las w die Tafel-Reihe ohne Klassen)
     for j in 7 8 9; do git -C "$X/klon" $A0 commit -q --allow-empty -m "main $j"; done
     git -C "$X/klon" push -q origin main
@@ -1039,6 +1044,10 @@ ATTRAPPE
     command rm -rf "$X"
 }
 MUTANTEN=${ST_MUTANTEN-"front-blind klassen-blind schwanz-immer schwanz-nie bucht-am-ende flagge-bleibt deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+# DIE FANG-TAFEL (EINE Stelle, 22.11.): je Mutante die Fälle, an denen sie ROT fallen MUSS — sie fährt nur diese (ST_NUR), nicht alle 24
+# (front-blind fuhr 33 min für ein Urteil an x). Ohne Eintrag fährt eine Mutante alle Fälle.
+FANG="front-blind:x klassen-blind:e schwanz-immer:e,w schwanz-nie:e,w"
+fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
 selbsttest() {
     local O m r rot=0 mr=0 mz=0 ok
     O=$(mktemp -d)
@@ -1046,7 +1055,7 @@ selbsttest() {
     # Wächter Grenzen von 10 s, 12:11–12:55), danach die Mutanten parallel (sie brauchen nur ein ROT)
     # ST_ECHT=0: nur die Mutanten; ST_NUR=<fälle>: nur diese Fälle (je Fall eine ZEIT-Zeile), auch in den Mutanten
     if [ "${ST_ECHT:-1}" = 0 ]; then : >"$O/echt"; else (st_lauf "" >"$O/echt" 2>&1); fi
-    for m in $MUTANTEN; do (st_lauf "$m" >"$O/$m" 2>&1) & done
+    for m in $MUTANTEN; do (ST_NUR=${ST_NUR:-$(fang "$m")}; st_lauf "$m" >"$O/$m" 2>&1) & done
     wait
     grep -E "^(OK|ROT|ZEIT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
