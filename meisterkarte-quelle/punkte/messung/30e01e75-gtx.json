@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T21:33:17.977Z",
+ "zeit": "2026-11-22T22:07:19.363Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -1217,6 +1217,76 @@
    },
    "zeit": "2026-11-22T21:33:17.977Z",
    "abdruck": "e5f3b194c02d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 1 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.32,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Technikstand je Ort: die Epoche eines Jahrs (epocheBei) setzt den Bau, kein Stand wächst aus Bevölkerung und Vernetzung (fachwerk-core.js:4168) · gemessen 1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 17.8,
+   "fremd": {
+    "s": 20.4,
+    "takte": 9,
+    "fremdS": 52.05,
+    "kerne": 2.554,
+    "fensterKerne": 2.961,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      30.73
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.22
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      4.84
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      12.8
+     ],
+     [
+      "dwm.exe",
+      4.7
+     ]
+    ],
+    "geraetS": 11.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.53
+     ],
+     [
+      "svchost.exe",
+      5.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 48.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T22:07:19.363Z",
+   "abdruck": "c9e8993b34e7",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
