@@ -491,6 +491,102 @@ const HAND = async (r, T, arg) => {
     return { art: best.art, ernteStoff: best.ernte, d: +best.d.toFixed(2), weg: weg ? 1 : 0, ernte, dauerH: +dauer.toFixed(3), frueh: frueh ? 1 : 0, zurueck: zurueck ? 1 : 0, takte: tz, aecker: F.length, bodenGeaendert: geaendert };
 };
 
+// DER VORRAT DER SCHEUNE (strom S1): je Hof der Siedlung am Messort (`S.scheunen`: die Scheune, ihre Esser, die Werke ihrer Bauern) die
+// Welt-Uhr gerafft, Stunde für Stunde über `tage` Tage (`_scheuneFassen` wie der Takt des Bilds); gemessen: die Ernten (Anstiege des
+// Vorrats) und die Mahlzeiten (Abstiege) je Hof, hochgerechnet auf ein Jahr — ein Sägezahn nur, wo beides geschieht —, und der Hof,
+// dessen Scheune sowohl voll (≥ eine Kiste) als auch leer (keine Kiste) stand, mit seinen beiden Stunden. `zu` (optional, in
+// Stunden ab dem Anfang): die Welt-Uhr auf diese Stunde stellen und das Bild des Bestands sofort legen (das Bildpaar).
+const STROM = async (r, T, arg) => {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const KC = window.__koerperCore;
+    const SL = [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && S.plan && Array.isArray(S.scheunen) && S.scheunen.length);
+    SL.sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
+    const S = SL[0];
+    if (!S || typeof r._scheuneFassen !== "function") return { hoefe: 0, fehlt: "keine Scheune als Halter des Bestands (S.scheunen, _scheuneFassen)" };
+    const kiste = KC.BESTAND_GESETZ.kiste;
+    const stdJeS = (r._weltStunde(s.spielZeit + 1000) - r._weltStunde(s.spielZeit)) / 1000;
+    if (arg.zu != null) {
+        s.spielZeit = arg.z0 + arg.zu / stdJeS;
+        const H = S.scheunen[arg.hof];
+        r._bestandBild(H, true);
+        for (let i = 0; i < 4; i++) await window.__seitenTakt();
+        return { n: KC.bestandAm(H.bestand, r._weltStunde()), kisten: H.bestandBild ? H.bestandBild.children.filter((c) => c.visible).length * (H.bestandBild.visible ? 1 : 0) : -1, x: H.orte.werk.x, z: H.orte.werk.z, blick: H.orte.werk.blick };
+    }
+    const tage = arg.tage || 2;
+    const z0 = s.spielZeit;
+    const hoefe = S.scheunen.map((H) => ({ leute: H.leute.length, bauern: H.werke.length, e0: H.bestand.ernten, auf: 0, ab: 0, voll: null, leer: null, vor: KC.bestandAm(H.bestand, r._weltStunde()) }));
+    for (let i = 1; i <= 24 * tage; i++) {
+        s.spielZeit = z0 + i / stdJeS;
+        const h = r._weltStunde();
+        S.scheunen.forEach((H, j) => {
+            r._scheuneFassen(H, h);
+            const n = KC.bestandAm(H.bestand, h);
+            const o = hoefe[j];
+            if (n > o.vor + 1e-9) o.auf++;
+            if (n < o.vor - 1e-9) o.ab++;
+            if (n >= kiste && o.voll == null) o.voll = i;
+            if (n < 1e-9 && o.voll != null && o.leer == null) o.leer = i;
+            o.vor = n;
+        });
+    }
+    hoefe.forEach((o, j) => (o.ernten = S.scheunen[j].bestand.ernten - o.e0));
+    const jahr = r._gelaende().ort.klimaHeute.jahrTage || 365;
+    const zahn = hoefe.filter((o) => o.ernten > 0 && o.ab > 0);
+    const paar = hoefe.findIndex((o) => o.voll != null && o.leer != null);
+    return {
+        name: S.plan.name,
+        z0,
+        stdJeS,
+        tage,
+        hoefe: hoefe.length,
+        saegezahn: zahn.length ? Math.min(...zahn.map((o) => o.ernten)) * (jahr / tage) : 0,
+        zahnHoefe: zahn.length,
+        paar,
+        voll: paar >= 0 ? hoefe[paar].voll : null,
+        leer: paar >= 0 ? hoefe[paar].leer : null,
+        je: hoefe.map((o) => [o.leute, o.bauern, o.ernten, o.ab]),
+    };
+};
+
+// DAS BESTELLEN DES ACKERS (hand S2): der nächste Acker des Registers (`state.aecker`), der Spieler 1 m vor seiner Stirn, der Blick
+// längs seiner langen Achse 60° zum Boden auf einen Punkt 1,5 m im Acker — der Klick des Spiels (`tryMouseBreak`, bis die Tat
+// „bestellen“ steht; im Pfad trägt die Mühe mehrere Hiebe), dann der Körper des Ackers (`ackerKoerper.je`): das Stück der Hand, seine
+// Kämme, seine Achse gegen die Zugrichtung. `nur` „pose“: nur die Pose des Bilds (vor dem Klick).
+const BESTELLEN = async (r, T, arg) => {
+    const s = r.state;
+    const A = r.constructor;
+    const pm = s.playerMesh.position;
+    const cam = s.camera;
+    if (!s.aecker || !s.aecker.size || typeof r._ackerAt !== "function") return { fehlt: "kein Register der Äcker (state.aecker, _ackerAt)" };
+    const a = [...s.aecker.values()].sort((p, q) => Math.hypot(p.x - pm.x, p.z - pm.z) - Math.hypot(q.x - pm.x, q.z - pm.z))[0];
+    const [stand, ziel] = [A._ackerWelt(a, -a.ex - 1, 0), A._ackerWelt(a, -a.ex + 1.5, 0)];
+    const y = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
+    const pose = { px: stand[0], pz: stand[1], py: y(stand[0], stand[1]) + 1.7, lx: ziel[0], lz: ziel[1], ly: y(ziel[0], ziel[1]) };
+    if (arg.nur === "pose") return { pose, acker: A._ackerSchluessel(a.x, a.z) };
+    r.setTimeOfDay(10 / 24, "regler");
+    const taten = () => r._tatIndex().bestellen.length;
+    const n0 = taten();
+    let klicks = 0;
+    for (; klicks < 24 && taten() === n0; klicks++) {
+        if (s.player) s.player.stamina = Math.max(s.player.stamina || 0, 100);
+        pm.set(pose.px, pose.py - 1.6 + 1.8, pose.pz);
+        cam.position.set(pose.px, pose.py, pose.pz);
+        cam.lookAt(pose.lx, pose.ly, pose.lz);
+        cam.updateMatrixWorld(true);
+        r.tryMouseBreak();
+    }
+    const tat = r._tatIndex().bestellen[taten() - 1];
+    if (!tat || taten() === n0) return { klicks, tat: 0, fehlt: "der Klick am Acker schrieb keine Tat „bestellen“ (" + klicks + " Klicks)" };
+    if (s.ackerKoerper) s.ackerKoerper.takt = null;
+    for (let i = 0; i < 6; i++) await window.__seitenTakt();
+    const K = s.ackerKoerper;
+    const z = K && K.je.get(tat.acker);
+    const hand = z && z.hand.find((q) => Math.abs(q.x - tat.x) < 0.01 && Math.abs(q.z - tat.z) < 0.01);
+    // die Zugrichtung: der Blick des Klicks längs u (die Achse 0 des Ackers)
+    return { klicks, tat: 1, acker: tat.acker, achse: tat.achse, zug: 0, kaemme: hand ? hand.kaemme : 0, stuecke: z ? z.stuecke : 0, pose };
+};
+
 // der Rumpf jeder Leiter: der Ruf einer Seiten-Funktion mit der Frist der Probe (in messe als Text — die Fabrik reicht nur H und K)
 module.exports = (F) => [
     // ───────── DIE FLUR: die gemalten Äcker der Pläne, ihr Bild am Dorfrand, ihre Fläche je Umfang ─────────
@@ -732,6 +828,7 @@ module.exports = (F) => [
     // ───────── DER STROM DER NAHRUNG: Ernte → Vorrat → Mahl → Markt ─────────
     F.leiter("mensch.nahrung.strom", {
         sek: 40,
+        mutiert: true, // S1 rafft die Welt-Uhr über zwei Tage (die Ernten und Mahle der Scheunen)
         pfad: [...SIEDLUNG, "stamm/siedlung-verkehr.js"],
         messe: async (H, K) => {
             await K.messort("dorf");
@@ -758,17 +855,33 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: z().bewohner, fehlt: "10⁴ Bewohner mit Hunger und Überfluss: " + z().bewohner + " am Messort, keiner isst aus einem Vorrat" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().bewohner, fehlt: "eine Stadt ≥ 10⁸ vom Hinterland: " + z().bewohner + " Bewohner, kein Bissen hat Herkunft" }));
             await K.schritt(6, async () => K.nicht(6, { n: 1, fehlt: "16 Saaten × 100 Jahre: die Sitzung trägt eine Saat über Stunden" }));
-            await K.schritt(1, async () =>
-                K.leser(1, {
-                    n: z().slotRollen.scheune || 0,
-                    fehlt: "kein Vorrat: das Dorf erntet nicht — die Arbeit am Acker setzt nur den Akt (b.akt), keine Ernte und kein Bestand der Scheune (" + (z().slotRollen.scheune || 0) + " Scheunen, " + z().feld10 + " Bewohner um 10 Uhr am Acker)",
-                    wo: "stamm/siedlung-bewohner.js:2299",
-                })
-            );
+            await K.schritt(1, async () => {
+                const V = await ruf("STROM", { tage: 2 });
+                H.zeile("Scheunen " + V.hoefe + " (" + (V.name || "") + "): Sägezahn " + V.saegezahn + " Ernten je Jahr an " + V.zahnHoefe + " Höfen, Paar Hof " + V.paar + " voll " + V.voll + " h, leer " + V.leer + " h · je Hof [Esser, Bauern, Ernten, Mahle] " + JSON.stringify(V.je));
+                let vollLeer = 0, beleg = "";
+                if (V.paar >= 0) {
+                    const bildAn = async (zu, wort) => {
+                        const o = await ruf("STROM", { zu, z0: V.z0, hof: V.paar });
+                        const [fx, fz] = [Math.sin(o.blick), Math.cos(o.blick)];
+                        const b = await K.bild(1 + "-" + wort, { px: o.x + fx * 6 + fz * 2, py: "+1.7", pz: o.z + fz * 6 - fx * 2, lx: o.x + fz * 1.5, ly: "+0.4", lz: o.z - fx * 1.5 });
+                        return { ...o, datei: b.datei };
+                    };
+                    const voll = await bildAn(V.voll, "voll");
+                    const leer = await bildAn(V.leer, "leer");
+                    vollLeer = voll.kisten >= 1 && leer.kisten === 0 ? 1 : 0;
+                    beleg = "voll " + voll.n.toFixed(1) + " (" + voll.kisten + " Kisten, " + voll.datei + ") ↔ leer " + leer.n.toFixed(1) + " (" + leer.kisten + " Kisten, " + leer.datei + ")";
+                }
+                K.zahl(1, {
+                    n: V.zahnHoefe > 0 ? 1 : 0,
+                    werte: { saegezahn: V.saegezahn, vollLeer },
+                    beleg: V.hoefe + " Scheunen, " + V.zahnHoefe + " mit Ernte und Mahl; " + beleg,
+                    taeter: !V.hoefe ? "keine Scheune als Halter (stamm/siedlung-bewohner.js _scheuneAnlegen)" : !V.zahnHoefe ? "keine Ernte in die Scheune (koerper-core scheuneFassen)" : !vollLeer ? "die Scheune steht nie voll und leer (koerper-core BESTAND_GESETZ.mahl)" : null,
+                });
+            });
         },
-        seite: { ZENSUS },
+        seite: { ZENSUS, STROM },
         sprossen: {
-            1: { umfang: { soll: 1, wort: "Dorf mit Scheune, das erntet und lagert" }, masse: [{ key: "saegezahn", wort: "Sägezahn des Scheunen-Vorrats (Ernten je Jahr)", soll: 1, richtung: "≥" }, { key: "vollLeer", wort: "Scheune voll ↔ leer im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "kein Vorrat, keine Ernte", wo: "stamm/siedlung-bewohner.js:2299" },
+            1: { umfang: { soll: 1, wort: "Dorf mit Scheune, das erntet und lagert" }, masse: [{ key: "saegezahn", wort: "Sägezahn des Scheunen-Vorrats (Ernten je Jahr)", soll: 1, richtung: "≥" }, { key: "vollLeer", wort: "Scheune voll ↔ leer im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "zahl" },
             2: { auge: { pose: "8 m diagonal vor der Mitte des Mahls um 12:30 Uhr, Ego 1,7 m", vorbild: "Foto eines realen Dorf-Mahls (Gericht auf dem Teller, Korb vom Feld): ≤ 65 % vom Foto trennbar, der Korb Feld → Teller verfolgt" }, erwartet: "nicht", fehlt: "10² Bewohner beim Mahl und eine Speise" },
             3: { umfang: { soll: 10, wort: "Orte mit Markt" }, masse: [{ key: "preisPlus", wort: "Preis in A nach Missernte", soll: 0.5, richtung: "≥" }, { key: "wagenAusB", wort: "Wagen aus B unterwegs", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10 Orte mit Markt und Preis" },
             4: { umfang: { soll: 1e4, wort: "Bewohner mit Hunger und Überfluss" }, masse: [{ key: "bevDuerre", wort: "Rückgang der Bevölkerung nach Dürre (Anteil)", soll: 0.1, richtung: "≥" }, { key: "wanderstrom", wort: "Wandernde nach der Dürre", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Bewohner, Hunger" },
@@ -810,7 +923,22 @@ module.exports = (F) => [
                 if (!G) throw new Error("keine Messung der Hand: " + gf);
                 return G;
             };
-            await K.schritt(2, async () => K.leser(2, { fehlt: "kein Verb bestellt den Acker: die Kette des Klicks kennt abbau · zuenden · pfluecken · graben · hieb, kein Pflügen und keine Saat — keine Furche", wo: "stamm/kampf.js:2308" }));
+            await K.schritt(2, async () => {
+                const P = await ruf("BESTELLEN", { nur: "pose" });
+                if (P.fehlt) return K.leser(2, { fehlt: P.fehlt, wo: "stamm/kampf.js:2308" });
+                const vor = await K.bild("2-vor", P.pose);
+                const B = await ruf("BESTELLEN", {});
+                H.zeile("bestellt: " + JSON.stringify(B));
+                if (!B.tat) return K.zahl(2, { n: 0, werte: { furchen: 0 }, taeter: B.fehlt || "keine Tat (stamm/kampf.js tryMouseBreak)" });
+                const nach = await K.bild("2-nach", P.pose);
+                const furchen = B.kaemme > 0 && B.achse === B.zug && vor.datei !== nach.datei ? 1 : 0;
+                K.zahl(2, {
+                    n: 1,
+                    werte: { furchen },
+                    beleg: "Acker " + B.acker + ": " + B.klicks + " Klicks, " + B.kaemme + " Kämme in Achse " + B.achse + " (Zug " + B.zug + "); Bildpaar " + vor.datei + " ↔ " + nach.datei,
+                    taeter: !furchen ? (B.kaemme > 0 ? "die Furchen laufen quer zum Zug (stamm/siedlung-wege.js _ackerBestellen)" : "das Stück trägt keinen Kamm (stamm/siedlung-wege.js _ackerKoerperTakt)") : null,
+                });
+            });
             await K.schritt(3, async () => {
                 const n = z().feld10;
                 if (n < 50) return K.nicht(3, { n, fehlt: "50 Bewohner sichtbar bei der Feldarbeit: um 10 Uhr " + n + " am Acker (" + z().bewohner + " Bewohner)" });
@@ -831,10 +959,10 @@ module.exports = (F) => [
                 })
             );
         },
-        seite: { ZENSUS, HAND },
+        seite: { ZENSUS, HAND, BESTELLEN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "gesammelte Wildpflanze im Inventar" }, masse: [{ key: "weg", wort: "Pflanze fort nach dem Pflücken", soll: 1, richtung: "≥" }, { key: "frueh", wort: "Gegenlauf: zurück vor der Nachwuchs-Zeit", soll: 0, richtung: "≤" }, { key: "zurueck", wort: "zurück nach der Nachwuchs-Zeit", soll: 1, richtung: "≥" }] },
-            2: { umfang: { soll: 1, wort: "vom Spieler bestellter Acker" }, masse: [{ key: "furchen", wort: "Furchen in Zugrichtung im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "kein Verb bestellt den Acker", wo: "stamm/kampf.js:2308" },
+            2: { umfang: { soll: 1, wort: "vom Spieler bestellter Acker" }, masse: [{ key: "furchen", wort: "Furchen in Zugrichtung im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "zahl" },
             3: { auge: { pose: "12 m diagonal vor dem ersten Acker um 10 Uhr, Ego 1,7 m", vorbild: "Foto eines realen Erntetags (50 Menschen bei der Ernte): ≤ 65 % trennbar; Fläche je Stunde ± 30 % gegen Agrargeschichte" }, erwartet: "nicht", fehlt: "50 Bewohner bei der Feldarbeit" },
             4: { umfang: { soll: 1, wort: "Feldarbeit, die den Acker ändert (je Werkzeug und Epoche)" }, masse: [{ key: "haTag", wort: "Abweichung ha/Tag gegen Agrargeschichte", soll: 0.3, richtung: "≤" }, { key: "spur", wort: "Spur je Werkzeug erkannt", soll: 0.8, richtung: "≥" }], erwartet: "nicht", fehlt: "die Arbeit ändert den Acker nicht" },
             5: { umfang: { soll: 1000, wort: "Menschen am Fest des Jahres" }, masse: [{ key: "festErnte", wort: "Saaten mit Fest in der Erntezeit der eigenen Frucht", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "kein Fest, keine Erntezeit" },
