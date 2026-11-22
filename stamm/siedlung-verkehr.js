@@ -421,6 +421,13 @@ class AnazhRealm_siedlung_verkehr {
                 ziele: 0,
                 uhr: 0,
                 fahrtAb: 0,
+                // DIE LIEFERUNG (`_verkehrLieferung`): sein Bestand (koerper `bestandHalter` „wagen"), sein Werk und sein Stand, die
+                // Wenden seiner geplanten Ziele in ihrer Folge (`_verkehrZielNeu` legt an, `_verkehrLieferAn` nimmt ab), das Bild
+                // seiner Ladung (`_verkehrLadung`)
+                bestand: null,
+                lieferung: null,
+                zielFolge: [],
+                ladungBild: null,
             };
             // DER FAHRER: seine Rolle und sein Werk — der Stand neben seinem Wagen, auf der Seite fort vom Ring der Wende (nie in
             // seiner Spur), zum Wagen gewandt
@@ -442,7 +449,116 @@ class AnazhRealm_siedlung_verkehr {
         // der Boden der Spur backt ab jetzt (`_verkehrBodenBacken`), nicht erst mit dem ersten Schritt: bis die Fahrer am Steuer
         // sitzen, trägt er (bis hier zahlte die erste Fahrt der Stadt ihn im Sim-Takt, 1,23 gegen 0,91 ms)
         if (VK.wagen.length) this._verkehrBoden(S, VK.wagen[0].entry);
+        this._verkehrLieferung(S);
         return VK;
+    }
+
+    // DIE LIEFERUNG (Meisterkarte 2 mensch.wirtschaft.handel S1; das Gesetz: koerper BESTAND_GESETZ, `bestandAnkunft` ·
+    // `bestandZiel`): je Wagen der Stadt EIN Stand (der Reihe nach über die Händler, `_bestandAnlegen`) und EIN Werk seiner Ware —
+    // das nächste zu seinem Platz, das noch kein Wagen holt; ihre Wenden sind die, die ihnen am nächsten liegen. Der Wagen fährt
+    // leer zum Werk, lädt, was es hat, fährt zum Stand und lädt ab; was er trägt, steht auf seinem Dach (`_verkehrLadung`). Ein
+    // Stand ohne Wagen bekommt nichts — er leert sich binnen seines Tags. Bis hier fuhr jeder Wagen von Wende zu Wende, die sein
+    // Same wählte, und trug nichts (handel#1, GTX c445936d: 21 von 21 mit Fahrer, kein Satz trug eine Ware).
+    _verkehrLieferung(S) {
+        const KC = window.__koerperCore;
+        const VK = S.verkehr;
+        const staende = (S.liste || []).filter((b) => b.bestand && b.bestand.art === "stand");
+        const werke = (S.liste || []).filter((b) => b.bestand && b.bestand.art === "werk");
+        if (!staende.length || !werke.length || !VK.wenden.size) return;
+        const wende = (p) => {
+            let [ki, d] = [null, Infinity];
+            for (const [k, w] of VK.wenden) {
+                const q = Math.hypot(w.x - p.x, w.z - p.z);
+                if (q < d) [ki, d] = [k, q];
+            }
+            return ki;
+        };
+        const h = this._weltStunde();
+        const geholt = new Set();
+        for (const [i, W] of VK.wagen.entries()) {
+            const st = staende[i % staende.length];
+            let [wk, d] = [null, Infinity];
+            for (const b of werke) {
+                if (b.bestand.ware !== st.bestand.ware) continue;
+                const q = Math.hypot(b.orte.werk.x - W.park.x, b.orte.werk.z - W.park.z) + (geholt.has(b) ? 1e6 : 0);
+                if (q < d) [wk, d] = [b, q];
+            }
+            if (!wk) continue;
+            geholt.add(wk);
+            W.bestand = KC.bestandHalter("wagen", st.bestand.ware, h, 0);
+            W.lieferung = {
+                werk: wk,
+                stand: st,
+                werkKi: wende(wk.orte.werk),
+                standKi: wende(st.orte.werk),
+                plan: "werk",
+            };
+        }
+    }
+
+    // DER WAGEN KOMMT AN (die Wende seines Ziels liegt hinter ihm, `_verkehrZonen`): die Wende ist die älteste geplante
+    // (`zielFolge`); ist sie die seines Werks, lädt er, die seines Stands, lädt er ab (beide, wo eine Wende beide trägt)
+    _verkehrLieferAn(S, W) {
+        const ki = W.zielFolge.shift();
+        const L = W.lieferung;
+        if (!L || ki == null) return;
+        const KC = window.__koerperCore;
+        const h = this._weltStunde();
+        const Z = S.verkehr.zahl.ladung;
+        if (ki === L.werkKi) {
+            Z.amWerk++;
+            Z.geladen += KC.bestandAnkunft(W.bestand, L.werk.bestand, h);
+        }
+        if (ki === L.standKi) {
+            Z.amStand++;
+            Z.abgeladen -= KC.bestandAnkunft(W.bestand, L.stand.bestand, h);
+            this._bestandBild(L.stand, true);
+        }
+        this._verkehrLadung(W);
+    }
+
+    // DIE LADUNG IM BILD: je angefangene Kiste seines Bestands (BESTAND_GESETZ.kiste) eine Kiste der Welt (der Bauplan `kiste`) auf
+    // seinem Dach, längs seiner Achse — an der Lage, die sein Bild trägt, in seiner Neigung (`_archEntryWorldMatrix`): die Matrix
+    // schreibt nur `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt, dieselbe, aus der die Instanz ihre Matrix
+    // nimmt) und die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im Takt) zählt nur die Kisten. Bis hier schrieb
+    // auch die Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des Wagens: die Kisten standen neben ihm in der Luft
+    // (stadt-voll, Radeon 22.11.). Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt —
+    // `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut.
+    _verkehrLadung(W, amBild = false) {
+        const e = W.entry;
+        const H = W.bestand;
+        if (!e || !H) return;
+        const KC = window.__koerperCore;
+        const k = Math.ceil((H.n[H.ware] || 0) / KC.BESTAND_GESETZ.kiste - 1e-9);
+        let G = W.ladungBild;
+        if (!G) {
+            const bp = this.state.blueprints && this.state.blueprints.kiste;
+            if (!k || !bp || !this.state.scene) return;
+            G = new THREE.Group();
+            G.matrixAutoUpdate = false;
+            const um = this._fahrUmriss(e);
+            const kM = AnazhRealm.BESTAND_BILD.kisteM;
+            const m = Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste);
+            const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            // (der Rahmen der Gestalt: Bug +x, die Höhe ab dem Ursprung der Instanz — das Dach `dach`, alles ÷ der Größe des Eintrags)
+            for (let j = 0; j < m; j++) {
+                const c = this._buildArchMeshMerged(bp);
+                c.position.set(((um.bug + um.heck) / 2 + (j - (m - 1) / 2) * kM) / sc, um.dach / sc, 0);
+                c.scale.setScalar(1 / sc); // die Kiste trägt ihr Maß der Welt, nie die Größe des Wagens
+                c.updateMatrix();
+                G.add(c);
+            }
+            this.state.scene.add(G);
+            W.ladungBild = G;
+            amBild = true;
+        }
+        if (amBild) {
+            this._archEntryWorldMatrix(e, G.matrix);
+            G.matrixWorldNeedsUpdate = true;
+        }
+        G.userData.kisten = k;
+        G.children.forEach((c, j) => (c.visible = j < k));
+        G.visible = k > 0 && this._archTraegt(e);
     }
 
     // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel, seinem Ausscheren in der Kurve (das fünfte
@@ -689,6 +805,7 @@ class AnazhRealm_siedlung_verkehr {
         if (fz) lege(q, s);
         if (e.instanced) this._archInstanceUpdate(e);
         else if (e.mesh) this._rittMeshPose(e);
+        if (e._verkehrWagen && e._verkehrWagen.ladungBild) this._verkehrLadung(e._verkehrWagen, true); // die Ladung an derselben Lage
         if (fz) lege(s);
         const W = e._verkehrWagen; // wo sein Bild steht (`_verkehrSchritt`: steht es im Blick, zeichnet er nach)
         if (W) {
@@ -754,9 +871,14 @@ class AnazhRealm_siedlung_verkehr {
         const p = this._lodAuge() || pm.position; // das Auge der Stufen: die Nah-Wahl und die Stufe der Fahrer messen von ihm
         for (const S of alle.values()) {
             const VK = S.verkehr;
+            if (S.liste) this._bestandBildTakt(S); // die Kisten der nahen Stände folgen dem Verbrauch (auch im Dorf ohne Wagen)
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
             for (const W of VK.wagen) {
+                // DIE LADUNG ERBT DIE STUFE (das Komposit): gezeichnet nur, wo der Wagen in einer 3D-Stufe steht
+                const G = W.ladungBild;
+                if (G && G.visible !== (G.userData.kisten > 0 && !!W.entry && this._archTraegt(W.entry)))
+                    this._verkehrLadung(W);
                 // DAS BILD DES WAGENS je Bild (`_verkehrSchritt` merkt, wer sich bewegte, `bildAlt`): die Instanz-Matrix samt Rädern
                 // schreibt das Bild, nicht der Schritt — bis w13-verkehr-heil schrieb sie jeder Sim-Schritt (stadt-voll 10 Uhr 0,25 von
                 // 1,53 ms je Schritt, `_archInstanceUpdate`). DAS BILD GLEITET (`_verkehrGleit`): zwischen zwei Schritten zeichnet
@@ -874,6 +996,9 @@ class AnazhRealm_siedlung_verkehr {
         W.zustand = "faehrt";
         W.heim = false;
         W.letzter = null;
+        // die Folge seiner Ziele beginnt neu (die alte Linie fällt); wer Ware trägt, fährt zuerst zum Stand (koerper `bestandZiel`)
+        W.zielFolge.length = 0;
+        if (W.lieferung) W.lieferung.plan = window.__koerperCore.bestandZiel(W.bestand);
         this._verkehrZielNeu(S, W, W.ki); // die erste Fahrt: von der Wende seines Platzes zu einer anderen
         W.fahrtAb = W.uhr;
         this._verkehrLinie(S, W, this._verkehrZuege(S, W), true);
@@ -949,10 +1074,18 @@ class AnazhRealm_siedlung_verkehr {
     // DAS ZIEL DER FAHRT (Leiter mensch.netz.verkehr: jeder Wagen erreicht sein Ziel): eine Wende der Stadt außer der, an der er ist (`von`),
     // gewählt vom Samen seines Wagens — dorthin fährt er den kürzesten Weg (`_verkehrWegZu`), durch ihren Kreis, dann zur nächsten.
     // Bis hier wählte der Same an jeder Kreuzung eine Strecke: der Wagen fuhr, kam aber nirgends an.
+    // DIE LIEFERUNG WÄHLT (handel S1, `_verkehrLieferung`): wer eine Lieferung fährt, fährt im Wechsel zur Wende seines Werks und
+    // seines Stands (`lieferung.plan`, gesetzt beim Einsteigen aus seinem Bestand, koerper `bestandZiel`) — ist sie die, an der er
+    // ist, wählt der Same. Jede geplante Wende geht in die Folge seiner Ziele (`zielFolge`): die Ankunft liest sie in derselben Folge.
     _verkehrZielNeu(S, W, von) {
         const wahl = [...S.verkehr.wenden.keys()].filter((ki) => ki !== von);
         if (!wahl.length) return;
-        W.ziel = wahl[Math.floor(W.gen.axis("ziel" + W.zielN++) * wahl.length) % wahl.length];
+        const L = W.lieferung;
+        const z = L ? (L.plan === "stand" ? L.standKi : L.werkKi) : null;
+        if (L) L.plan = L.plan === "stand" ? "werk" : "stand";
+        const same = wahl[Math.floor(W.gen.axis("ziel" + W.zielN++) * wahl.length) % wahl.length];
+        W.ziel = z != null && z !== von ? z : same;
+        W.zielFolge.push(W.ziel);
         W.zielWeg = this._verkehrWegZu(S, W.ziel);
         S.verkehr.zahl.ziele.gesetzt++;
     }
@@ -1914,7 +2047,10 @@ class AnazhRealm_siedlung_verkehr {
             if (!z.weg && F.s - W.hl > z.aus) {
                 [z.weg, z.hat] = [true, false];
                 if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
-                if (z.ziel) this._verkehrAngekommen(S, W); // die Wende seines Ziels liegt hinter ihm
+                if (z.ziel) {
+                    this._verkehrAngekommen(S, W); // die Wende seines Ziels liegt hinter ihm
+                    this._verkehrLieferAn(S, W); // dort lädt er oder lädt ab
+                }
             }
         const i0 = W.zonen.findIndex((z) => !z.weg);
         if (i0 < 0) return Infinity;
@@ -2195,6 +2331,11 @@ class AnazhRealm_siedlung_verkehr {
             if (W.entry) W.entry._passagiere = null;
             if (W.entry) this.removeArchitecture(W.entry, { still: true });
             W.entry = null;
+            if (W.ladungBild) {
+                this.state.scene.remove(W.ladungBild);
+                this._disposeSoulGroup(W.ladungBild);
+                W.ladungBild = null;
+            }
         }
         S.verkehr = null;
     }
@@ -2338,6 +2479,8 @@ AnazhRealm._verkehrZahl = (soll) => ({
     irrweg: 0,
     stoss: { wagen: 0, bau: 0, leib: 0 },
     ziele: { gesetzt: 0, erreicht: 0, laengsteS: 0 },
+    // DIE LIEFERUNG (handel S1, `_verkehrLieferAn`): die Ankünfte am Werk und am Stand, die geladenen und abgeladenen Einheiten
+    ladung: { amWerk: 0, amStand: 0, geladen: 0, abgeladen: 0 },
     // DIE ARBEIT DES TAKTS (gezählt, nie die Wanduhr): Blicke eines Fahrers (`_verkehrFolge`), die Wagen, die er dabei prüft (die
     // Zellen der Belegung um sein Fenster), die Suchen und die Schritte des Warte-Graphen (`_verkehrKreis`)
     arbeit: { folge: 0, paare: 0, kreise: 0, kreis: 0 },

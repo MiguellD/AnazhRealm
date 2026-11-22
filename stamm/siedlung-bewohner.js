@@ -973,7 +973,7 @@ class AnazhRealm_siedlung_bewohner {
             // Zugriffe wie `b.leib` und `b.d2`. Ein Literal (kein Spread: der trüge die Felder wieder einzeln nach); die Zeilen:
             // wer er ist · der Leib (`_bewohnerGenome`, `_bewohnerGeburt`) · der Takt der Köpfe und sein Raster
             // (`_tickBewohner`, `_bewohnerRasterLage`) · der Tag (`_bewohnerZiel`, `_bewohnerAnkunft`) · der Gang (`_bewohnerWeg`,
-            // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`).
+            // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`) · sein Bestand (`_bestandAnlegen`).
             const u = undefined;
             // prettier-ignore
             liste.push({
@@ -987,7 +987,7 @@ class AnazhRealm_siedlung_bewohner {
                     drehen: u, platz: u, weichen: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
-                    wagen: u, amSteuer: u,
+                    wagen: u, amSteuer: u, bestand: null, bestandBild: null,
                 });
             besuche.push(P);
         }
@@ -1032,8 +1032,160 @@ class AnazhRealm_siedlung_bewohner {
                 stand: P.stand,
             };
         }
+        this._bestandAnlegen(liste);
         S.listeRest = 0;
         return liste;
+    }
+
+    // DER BESTAND DER STADT (koerper BESTAND_GESETZ, Meisterkarte 2 mensch.wirtschaft markt S1 · handel S1): je Mensch, dessen
+    // Beruf herstellt (`herstellung`: der Acker Kraut, die Schmiede Eisen), sein Werk als Halter — leer zur Stunde seiner Geburt,
+    // es füllt sich in den Stunden seiner Arbeit; je Händler sein Stand — voll zur Geburt der Liste, die Waren der Stadt der Reihe
+    // nach, er leert sich in seinen Stunden. Die Uhr ist der Tag der Prozesse (`_weltStunde`): der Bestand altert an der
+    // Welt-Uhr, nie am Regler des Spielers. Der EINE Schreiber jedes Halters ist der Kern (`bestandNimm`, `bestandGib`,
+    // `bestandAnkunft`), gerufen nur vom Tausch (`_bestandTausch`) und der Lieferung (`_bestandAnkunft`); ein Stoff, den die Welt
+    // nicht kennt, bricht laut.
+    _bestandAnlegen(liste) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.bestandHalter !== "function") return AnazhRealm._kernPflichtBruch("koerper:bestandHalter");
+        const B = KC.BESTAND_GESETZ;
+        const h = this._weltStunde();
+        const waren = new Set();
+        for (const b of liste) {
+            const P = B.herstellung[b.beruf];
+            if (!P || !b.orte.werk) continue;
+            if (!this.state.materials || !this.state.materials[P.ware])
+                throw new Error(`BESTAND: die Ware ${P.ware} des Berufs ${b.beruf} ist kein Stoff der Welt`);
+            b.bestand = KC.bestandHalter("werk", P.ware, h, 0, b.same, b.rolle, b.beruf);
+            waren.add(P.ware);
+        }
+        const W = [...waren].sort();
+        let i = 0;
+        for (const b of liste)
+            if (b.rolle === "haendler" && b.orte.werk && b.orte.werk.stand != null && W.length)
+                b.bestand = KC.bestandHalter("stand", W[i++ % W.length], h, B.lager.stand, b.same, b.rolle, b.beruf);
+    }
+
+    // DER TAUSCH (markt S1: Spieler ↔ Bewohner, nur, was er hat): die Taste des Verbs (`einsteigen`, E) vor einem Stand, dessen
+    // Händler an ihm steht — der Spieler gibt EINE Einheit eines Stoffs aus seinem Inventar (den ersten, der nicht die Ware des
+    // Stands ist), der Händler gibt EINE seiner Ware, wenn er sie hat. Beide Seiten gehen durch den Kern (`bestandNimm` ·
+    // `bestandGib`): kein Tausch erzeugt Ware. Liefert true, wenn ein Stand in Reichweite war (die Taste ist dann verbraucht),
+    // auch ohne Tausch (leerer Stand, leeres Inventar — beide laut im Tagebuch).
+    _bestandTausch() {
+        const KC = window.__koerperCore;
+        const st = this.state;
+        const pm = st.playerMesh && st.playerMesh.position;
+        if (!pm || !this._bewohnerSiedlungen || !st.player || !Array.isArray(st.player.inventory)) return false;
+        if (st.player.mountedArch != null) return false; // wer reitet, steigt mit der Taste ab
+        const R = AnazhRealm.BESTAND_BILD.tauschM;
+        let wer = null;
+        let dMin = R;
+        for (const S of this._bewohnerSiedlungen.values())
+            for (const b of S.liste || []) {
+                if (!b.bestand || b.bestand.art !== "stand") continue;
+                const d = Math.hypot(b.orte.werk.x - pm.x, b.orte.werk.z - pm.z);
+                if (d < dMin) [wer, dMin] = [b, d];
+            }
+        if (!wer) return false;
+        const H = wer.bestand;
+        const ware = H.ware;
+        const g = wer.leib;
+        const da =
+            !!g && !wer.drinnen && Math.hypot(g.position.x - wer.orte.werk.x, g.position.z - wer.orte.werk.z) < 1.5;
+        const h = this._weltStunde();
+        const inv = st.player.inventory;
+        const i = inv.findIndex((s) => s && s.kind === "material" && s.material !== ware && (s.count || 0) >= 1);
+        const vorher = KC.bestandAm(H, h);
+        const sag = (k, w) => this.journalAppend("note", [k, w], { ware, bestand: Math.floor(KC.bestandAm(H, h)) });
+        if (!da) return (sag("journal.tausch-zu", { ware }), true);
+        if (i < 0) return (sag("journal.tausch-nichts", { ware }), true);
+        if (KC.bestandNimm(H, ware, 1, h) < 1) return (sag("journal.tausch-leer", { ware }), true);
+        const gabe = inv[i].material;
+        if (!this.addMaterialToInventory(ware, 1)) {
+            KC.bestandGib(H, ware, 1, h); // das Inventar ist voll: die Ware bleibt am Stand
+            return (sag("journal.tausch-voll", { ware }), true);
+        }
+        this.removeFromInventory(i, 1);
+        KC.bestandGib(H, gabe, 1, h);
+        const n = Math.floor(KC.bestandAm(H, h) + 1e-9);
+        this.journalAppend("growth", ["journal.tausch", { gabe, ware, n }], {
+            ware,
+            gabe,
+            vorher,
+            nachher: KC.bestandAm(H, h),
+        });
+        this.log(`Tausch: 1 ${gabe} gegen 1 ${ware} — der Stand trägt noch ${n} ${ware}`, "INFO");
+        this._bestandBild(wer, true);
+        return true;
+    }
+
+    // DAS BILD DES BESTANDS (das Kistenmaß des Gesetzes, BESTAND_GESETZ.kiste): je angefangene Kiste eine Kiste der Welt (der
+    // Bauplan `kiste`, sein Stoff) — am Stand neben dem Händler in zwei Lagen, auf dem Wagen auf seinem Dach (`_verkehrLadung`).
+    // Gezeichnet nur, was nah steht (`BESTAND_BILD.nahM` vom Auge der Stufen): die Kosten trägt der Schirm, nie die Stadt; je
+    // Halter EINE Gruppe, ihre Kisten werden sichtbar oder nicht, nie neu gebaut. `jetzt` zeichnet sofort (nach einem Ereignis),
+    // sonst prüft der Takt (`_bestandBildTakt`) die Stände im Kreis je `taktS`.
+    _bestandBild(b, jetzt = false) {
+        const H = b.bestand;
+        if (!H || H.art !== "stand") return;
+        const KC = window.__koerperCore;
+        const n = KC.bestandAm(H, this._weltStunde());
+        const k = Math.ceil(n / KC.BESTAND_GESETZ.kiste - 1e-9);
+        const G = this._bestandKisten(b, Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste));
+        if (!G) return;
+        if (!jetzt && G.userData.kisten === k) return;
+        G.userData.kisten = k;
+        G.children.forEach((c, j) => (c.visible = j < k));
+        G.visible = k > 0;
+    }
+
+    // die Gruppe der Kisten eines Stands (einmal gebaut, an seinem Ort): seitlich des Händlers, quer zu seinem Blick, in zwei Lagen
+    _bestandKisten(b, m) {
+        if (b.bestandBild) return b.bestandBild;
+        const bp = this.state.blueprints && this.state.blueprints.kiste;
+        if (!bp || !this.state.scene) return null;
+        const w = b.orte.werk;
+        const [fx, fz] = [Math.sin(w.blick), Math.cos(w.blick)];
+        const kM = AnazhRealm.BESTAND_BILD.kisteM;
+        const am = (j) => AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM;
+        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
+        const y = [0, 1, 2].map((j) => this._bodenSichtAt(w.x + fz * am(j), w.z - fx * am(j)));
+        if (y.some((v) => v == null)) return null;
+        const G = new THREE.Group();
+        for (let j = 0; j < m; j++) {
+            const k = this._buildArchMeshMerged(bp);
+            k.position.set(w.x + fz * am(j), y[j % 3] + Math.floor(j / 3) * kM, w.z - fx * am(j));
+            k.rotation.y = w.blick;
+            G.add(k);
+        }
+        G.userData.kisten = -1;
+        this.state.scene.add(G);
+        return (b.bestandBild = G);
+    }
+
+    // DER TAKT DES BILDS DER STÄNDE (je `taktS` der Bild-Uhr, nur die Stände im Kreis `nahM` um das Auge): der Verbrauch leert den
+    // Stand an der Welt-Uhr, das Bild folgt ihm; ein Stand, der den Kreis verlässt, verbirgt seine Kisten
+    _bestandBildTakt(S) {
+        const t = this._bildZeit || 0;
+        if (S.bestandTakt != null && t - S.bestandTakt < AnazhRealm.BESTAND_BILD.taktS) return;
+        S.bestandTakt = t;
+        const p = this._lodAuge() || this.state.playerMesh.position;
+        const R = AnazhRealm.BESTAND_BILD.nahM;
+        for (const b of S.liste || []) {
+            if (!b.bestand || b.bestand.art !== "stand") continue;
+            const nah = Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < R;
+            if (nah) this._bestandBild(b);
+            else if (b.bestandBild && b.bestandBild.visible)
+                [b.bestandBild.visible, b.bestandBild.userData.kisten] = [false, -1];
+        }
+    }
+
+    // die Kisten eines Halters fort (die Liste geht, `_bewohnerFort`)
+    _bestandFort(S) {
+        for (const b of S.liste || [])
+            if (b.bestandBild) {
+                this.state.scene.remove(b.bestandBild);
+                this._disposeSoulGroup(b.bestandBild);
+                b.bestandBild = null;
+            }
     }
 
     // DIE HÄUSER STEHEN MIT IHRER HÜLLE (siedlung.K3): die Liste entsteht, wenn jedes Haus ihres Plans seine Studio-Hülle trägt
@@ -3482,6 +3634,7 @@ class AnazhRealm_siedlung_bewohner {
     // Leib sie hält. Die Liste fällt mit: kehrt der Spieler zurück, entsteht sie neu aus dem Plan (dieselbe Funktion).
     _bewohnerFort(S) {
         this._verkehrFort(S); // die Wagen gehen mit (ihre Fahrer sind Leiber der Liste)
+        this._bestandFort(S); // die Kisten der Stände gehen mit
         S.leibOffen = 0; // (die Nah-Wahl geht mit: kein Leib, auf den die Welt wartet)
         for (const b of S.liste || []) {
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]); // die Palette des Kopfs geht mit ihm (mensch.K4)
@@ -3669,3 +3822,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     spielerRaumM: 0.5,
     zeugeM: 25,
 });
+
+// DAS BILD DES BESTANDS (`_bestandBild`, `_bestandTausch`, `_verkehrLadung`): tauschM = so nah steht der Spieler am Stand (dem
+// Punkt hinter der Theke), damit die Taste des Verbs tauscht · kisteM = der Abstand der Kisten (der Bauplan `kiste`, 0,6 m) ·
+// seiteM = so weit seitlich des Händlers steht die erste Kiste (der Tritt des Stands reicht 1,45 m, fachwerk AUSSTATTUNG
+// marktstand) · nahM = so nah am Auge zeichnet ein Stand seine Kisten · taktS = so oft (Bild-Uhr) prüft der Takt sie
+AnazhRealm.BESTAND_BILD = Object.freeze({ tauschM: 3, kisteM: 0.62, seiteM: 1.9, nahM: 60, taktS: 1 });
