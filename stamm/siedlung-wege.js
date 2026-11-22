@@ -2694,6 +2694,14 @@ class AnazhRealm_siedlung_wege {
                 phi: fd.phi || 0,
                 halb: 0,
             });
+            // DAS REGISTER DER ÄCKER (der Körper des Ackers, `_ackerKoerperTakt`; das Verb `bestellen`, `_ackerAt`)
+            (this.state.aecker || (this.state.aecker = new Map())).set(AnazhRealm._ackerSchluessel(wx, wz), {
+                x: wx,
+                z: wz,
+                phi: fd.phi || 0,
+                ex: fd.ex,
+                ez: fd.ez,
+            });
         }
         if (box.formen.length) {
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
@@ -2855,8 +2863,241 @@ class AnazhRealm_siedlung_wege {
         return n;
     }
 
+    // DER SCHLÜSSEL EINES ACKERS (das Register `state.aecker`, die Tat „bestellen"): seine Mitte auf den Meter
+    static _ackerSchluessel(x, z) {
+        return Math.round(x) + "," + Math.round(z);
+    }
+    // die Lage (u, v) eines Weltpunkts im Acker a und zurück — die Drehung seines Anstrichs (`_wegeFormAbstand`, Kasten)
+    static _ackerLage(a, x, z) {
+        const [c, s, dx, dz] = [Math.cos(a.phi), Math.sin(a.phi), x - a.x, z - a.z];
+        return [c * dx - s * dz, s * dx + c * dz];
+    }
+    static _ackerWelt(a, u, v) {
+        const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
+        return [a.x + c * u + s * v, a.z - s * u + c * v];
+    }
+    // DER ACKER UNTER (x, z): der Eintrag des Registers, dessen Rechteck den Punkt trägt, oder null; `lokal` (optional) trägt die
+    // Lage im Acker (u längs ex, v längs ez — dieselbe Drehung wie sein Anstrich, der Kasten der Wege-Karte `_wegeFormAbstand`)
+    _ackerAt(x, z, lokal) {
+        for (const a of this.state.aecker ? this.state.aecker.values() : []) {
+            const [u, v] = AnazhRealm._ackerLage(a, x, z);
+            if (Math.abs(u) > a.ex || Math.abs(v) > a.ez) continue;
+            if (lokal) [lokal.u, lokal.v] = [u, v];
+            return a;
+        }
+        return null;
+    }
+
+    // DAS BESTELLEN (mensch.nahrung hand S2, das Verb der Klick-Kette nach der Mühe des Grabens, kampf `tryMouseBreak`): ein Hieb
+    // des Geräts, das den Boden öffnet, pflügt und sät am Acker unter dem Fadenkreuz ein Stück (`ACKER_KOERPER` stueckM × bahnM)
+    // — seine Reihen laufen in der Zugrichtung (die Achse des Ackers, die dem Blick am nächsten liegt). Die Tat „bestellen"
+    // trägt den Acker und die Achse; ab ihrer Stunde wächst das Stück nach dem Gesetz der Frucht (`_ackerKoerperTakt`). Ein
+    // zweiter Hieb auf dasselbe Stück bestellt es nicht noch einmal.
+    _ackerBestellen(target) {
+        const lokal = {};
+        const a = this._ackerAt(target.x, target.z, lokal);
+        if (!a) return false;
+        const cam = this.state.camera;
+        const d = cam ? cam.getWorldDirection(this._ackerTmpV || (this._ackerTmpV = new THREE.Vector3())) : { x: 1, z: 0 };
+        const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
+        const achse = Math.abs(d.x * c - d.z * s) >= Math.abs(d.x * s + d.z * c) ? 0 : 1;
+        const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
+        const AK = AnazhRealm.ACKER_KOERPER;
+        for (const q of this._tatIndex().bestellen) {
+            if (q.acker === ak && q.achse === achse && Math.hypot(q.x - target.x, q.z - target.z) < AK.bahnM / 2) {
+                this.log("Bestellen: dieses Stück ist bestellt.", "INFO");
+                return true;
+            }
+        }
+        this._tatSchreiben("bestellen", target.x, target.z, { acker: ak, achse });
+        if (this.state.ackerKoerper) this.state.ackerKoerper.takt = null; // das Bild folgt dem Hieb, nicht dem Takt
+        this.log(`Bestellt: ${AK.stueckM} m × ${AK.bahnM} m, ${Math.floor(AK.bahnM / globalThis.__phytoCore.ACKER_GESETZ.furche.abstandM)} Furchen gesät.`, "INFO");
+        return true;
+    }
+
+    // DER KÖRPER DES ACKERS (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2; das Gesetz: phyto-core ACKER_GESETZ · ackerStand):
+    // über dem gemalten Grund jedes nahen Ackers (`state.aecker`, im Kreis `ACKER_KOERPER.nahM` um das Auge) die Kämme des Pflugs
+    // und auf ihnen die Kulturpflanze in Reihen — im Stand der Tage seit seiner Saat: der Acker des Dorfs sät zur Phase des Jahrs
+    // (`ackerTage`, die EINE Uhr des Jahrs `seasonPhase`), jedes Stück, das eine Hand bestellt hat (die Tat „bestellen",
+    // `_ackerBestellen`), trägt den Stand seit SEINER Stunde und seine Reihen in SEINER Zugrichtung. Gezeichnet in EINEM Pool der
+    // Kiste der Wege (`_kistenPool`: ein Stoff, ein Draw, die Farbe je Instanz) mit dem Prisma des Kamms als Form; je Strecke
+    // `segM` ein Kamm und eine Reihe auf dem gezeichneten Boden (`_bodenSichtAt`, Lehre 22: wo er noch nicht steht, wartet die
+    // Strecke auf den nächsten Takt). Neu gelegt nur, wenn sich das Bild ändert (die nahen Äcker, der Stand auf `stufeTage`, die
+    // Stücke): die Kosten tragen der Schirm und die Änderung, nie die Welt (Gebot 7). Bis hier lag jeder Acker als brauner
+    // Anstrich im Boden: keine Furche, keine Frucht (frucht#1 GTX f68dbf09: 2 Blumen im Acker). `K.je` nennt je Acker die Zahlen
+    // seines Bilds (die Leser: die Stationen der Leiter, gate:koerper-kern).
+    _ackerKoerperTakt(p) {
+        const st = this.state;
+        if (!st.aecker || !st.aecker.size || !st.scene) return;
+        const AK = AnazhRealm.ACKER_KOERPER;
+        const t = this._bildZeit || 0;
+        const K =
+            st.ackerKoerper ||
+            (st.ackerKoerper = { mesh: null, cap: 0, n: 0, takt: null, schluessel: null, fehlt: 0, je: new Map() });
+        if (K.takt != null && t - K.takt < AK.taktS) return;
+        K.takt = t;
+        const P = globalThis.__phytoCore;
+        if (!P || typeof P.ackerStand !== "function") return AnazhRealm._kernPflichtBruch("phyto:ackerStand");
+        const F = P.ACKER_GESETZ.furche;
+        const dorf = P.ackerTage(st.seasonPhase || 0, this._gelaende().ort.klimaHeute.jahrTage);
+        const h = this._weltStunde();
+        const taten = this._tatIndex().bestellen;
+        const nah = [...st.aecker.values()].filter((a) => Math.hypot(a.x - p.x, a.z - p.z) < AK.nahM + Math.max(a.ex, a.ez));
+        const stufe = (d) => Math.floor(d / AK.stufeTage);
+        let key = nah.map((a) => AnazhRealm._ackerSchluessel(a.x, a.z)).join(";") + "|" + stufe(dorf);
+        for (const q of taten) key += "," + q.acker + ":" + stufe((h - q.h) / 24);
+        if (key === K.schluessel && !K.fehlt) return;
+        K.schluessel = key;
+        K.fehlt = 0;
+        K.je.clear();
+        const M = [];
+        const C = [];
+        const boden = AnazhRealm.BODEN_FARBE.dirt; // die gewendete Erde: die Erde der Studio-Palette (PORTAL_GROUND)
+        // EINE Strecke: ein Kamm von a nach b (Welt), darauf die Reihe der Frucht im Stand S (null: brach gepflügt)
+        const strecke = (ax, az, bx, bz, S, z) => {
+            const ya = this._bodenSichtAt(ax, az);
+            const yb = this._bodenSichtAt(bx, bz);
+            if (ya == null || yb == null) return void K.fehlt++;
+            const [dx, dz] = [bx - ax, bz - az];
+            const len = Math.hypot(dx, dz);
+            const ziel = { ax, az, bx, bz, ya, yb, yaw: Math.atan2(dx, dz), pitch: -Math.atan2(yb - ya, len), len };
+            // der Kamm (seine Sohle `sohleM` im Grund: die Strecke folgt der Sehne, der Boden dazwischen nicht)
+            M.push([ziel, F.breiteM, F.hoeheM + AK.sohleM, -AK.sohleM]);
+            C.push(boden);
+            z.kaemme++;
+            if (S && S.hoeheM > 0.01 && S.deckung > 0) {
+                const j = AnazhRealm._ackerZahl(ax, az);
+                M.push([ziel, S.deckung * F.abstandM, S.hoeheM, F.hoeheM * 0.6]);
+                const lin = AnazhRealm._srgbHexLinear(S.farbe);
+                const k = 1 + (j - 0.5) * AK.streuFarbe;
+                C.push([lin[0] * k, lin[1] * k, lin[2] * k]);
+                z.frucht++;
+            }
+        };
+        for (const a of nah) {
+            const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
+            const welt = (u, v) => AnazhRealm._ackerWelt(a, u, v);
+            // die Stücke der Hand an diesem Acker: ihr Rechteck in der Lage des Ackers, die Reihen längs ihrer Achse
+            const stuecke = [];
+            for (const q of taten) {
+                if (q.acker !== ak) continue;
+                const [pu, pv] = AnazhRealm._ackerLage(a, q.x, q.z);
+                const [hu, hv] = q.achse ? [AK.bahnM / 2, AK.stueckM / 2] : [AK.stueckM / 2, AK.bahnM / 2];
+                stuecke.push({ q, u0: pu - hu, u1: pu + hu, v0: pv - hv, v1: pv + hv });
+            }
+            const unter = (u, v, ab) => {
+                for (let i = ab; i < stuecke.length; i++) {
+                    const b = stuecke[i];
+                    if (u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1) return true;
+                }
+                return false;
+            };
+            const z = { kaemme: 0, frucht: 0, reihen: 0, stuecke: stuecke.length, achsen: [], dorfTage: dorf, hand: [] };
+            // die Reihen eines Rechtecks [u0,u1] × [v0,v1] längs der Achse `achse` (0: u, 1: v), im Stand S; `ab` die Stücke, die
+            // über ihm liegen (ein späteres Stück deckt ein früheres)
+            const reihen = (u0, u1, v0, v1, achse, S, ab) => {
+                const [q0, q1, l0, l1] = achse ? [u0, u1, v0, v1] : [v0, v1, u0, u1];
+                const nR = Math.floor((q1 - q0) / F.abstandM);
+                for (let k = 0; k < nR; k++) {
+                    const q = q0 + (k + 0.5) * F.abstandM + (q1 - q0 - nR * F.abstandM) / 2;
+                    z.reihen++;
+                    for (let l = l0; l < l1 - 0.05; l += AK.segM) {
+                        const l2 = Math.min(l1, l + AK.segM);
+                        const m = (l + l2) / 2;
+                        if (achse ? unter(q, m, ab) : unter(m, q, ab)) continue;
+                        const [A, B] = achse ? [welt(q, l), welt(q, l2)] : [welt(l, q), welt(l2, q)];
+                        strecke(A[0], A[1], B[0], B[1], S, z);
+                    }
+                }
+            };
+            reihen(-a.ex, a.ex, -a.ez, a.ez, 0, P.ackerStand(dorf), 0);
+            stuecke.forEach((b, i) => {
+                const tage = (h - b.q.h) / 24;
+                z.hand.push({ x: b.q.x, z: b.q.z, achse: b.q.achse, tage, kaemme0: z.kaemme });
+                reihen(
+                    Math.max(-a.ex, b.u0),
+                    Math.min(a.ex, b.u1),
+                    Math.max(-a.ez, b.v0),
+                    Math.min(a.ez, b.v1),
+                    b.q.achse,
+                    P.ackerStand(tage),
+                    i + 1
+                );
+                z.hand[z.hand.length - 1].kaemme = z.kaemme - z.hand[z.hand.length - 1].kaemme0;
+            });
+            z.stand = P.ackerStand(dorf);
+            K.je.set(ak, z);
+        }
+        // der Pool wächst in Zweier-Potenzen (EIN Draw; die alte Hülle geht durch den Abschied der Instanzen)
+        if (M.length > K.cap || !K.mesh) {
+            const cap = Math.max(1024, 2 ** Math.ceil(Math.log2(Math.max(1, M.length))));
+            if (K.mesh) {
+                st.scene.remove(K.mesh);
+                this._instanzAbschied(K.mesh);
+            }
+            K.mesh = this._kistenPool("siedlung-acker", cap, AnazhRealm._ackerPrisma());
+            st.scene.add(K.mesh);
+            K.cap = cap;
+        }
+        const m = this._stlWegeTmpM || (this._stlWegeTmpM = new THREE.Matrix4());
+        const q = this._stlWegeTmpQ || (this._stlWegeTmpQ = new THREE.Quaternion());
+        const e = this._stlWegeTmpE || (this._stlWegeTmpE = new THREE.Euler());
+        const v = this._stlWegeTmpV || (this._stlWegeTmpV = new THREE.Vector3());
+        const sc = this._stlWegeTmpS || (this._stlWegeTmpS = new THREE.Vector3());
+        const col = this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color());
+        M.forEach(([g, breite, hoehe, sockel], i) => {
+            e.set(g.pitch, g.yaw, 0, "YXZ");
+            q.setFromEuler(e);
+            m.compose(v.set((g.ax + g.bx) / 2, (g.ya + g.yb) / 2 + sockel, (g.az + g.bz) / 2), q, sc.set(breite, hoehe, g.len));
+            K.mesh.setMatrixAt(i, m);
+            K.mesh.setColorAt(i, col.setRGB(C[i][0], C[i][1], C[i][2]));
+        });
+        K.n = M.length;
+        AnazhRealm._instanzZahl(K.mesh, K.n);
+        K.mesh.instanceMatrix.needsUpdate = true;
+        if (K.mesh.instanceColor) K.mesh.instanceColor.needsUpdate = true;
+    }
+    // die Zahl einer Strecke in [0, 1) (rein, aus ihrer Lage: dieselbe Strecke trägt bei jedem Bau denselben Ton)
+    static _ackerZahl(x, z) {
+        let h = (Math.imul(Math.round(x * 10), 73856093) ^ Math.imul(Math.round(z * 10), 19349663)) >>> 0;
+        h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+        h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0;
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    // DAS PRISMA DES KAMMS (die Form des Acker-Pools): Sohle y 0 (x ±0,5), First y 1 (x 0), längs z ±0,5 — zwei Flanken und zwei
+    // Stirnen, Lage, Normale und UV wie die Kiste der Wege (EIN Programm)
+    static _ackerPrisma() {
+        if (AnazhRealm._ackerPrismaGeo) return AnazhRealm._ackerPrismaGeo;
+        const pos = [];
+        const nor = [];
+        const uv = [];
+        const dreieck = (a, b, c) => {
+            const [ux, uy, uz] = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+            const [vx, vy, vz] = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+            const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+            const l = Math.hypot(...n) || 1;
+            for (const p of [a, b, c]) {
+                pos.push(...p);
+                nor.push(n[0] / l, n[1] / l, n[2] / l);
+                uv.push(p[0] + 0.5, p[1]);
+            }
+        };
+        const [L0, R0, F0, L1, R1, F1] = [[-0.5, 0, -0.5], [0.5, 0, -0.5], [0, 1, -0.5], [-0.5, 0, 0.5], [0.5, 0, 0.5], [0, 1, 0.5]];
+        dreieck(L0, L1, F1);
+        dreieck(L0, F1, F0);
+        dreieck(R0, F0, F1);
+        dreieck(R0, F1, R1);
+        dreieck(L0, F0, R0);
+        dreieck(L1, R1, F1);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+        return (AnazhRealm._ackerPrismaGeo = g);
+    }
+
     _stlWegeDispose() {
-        for (const feld of ["stlZaun", "stlMauer"]) {
+        for (const feld of ["stlZaun", "stlMauer", "ackerKoerper"]) {
             const P = this.state[feld];
             if (P && P.mesh) {
                 if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
@@ -2864,6 +3105,7 @@ class AnazhRealm_siedlung_wege {
             }
             this.state[feld] = null;
         }
+        if (this.state.aecker) this.state.aecker.clear(); // die Äcker gehören der alten Welt
         // Die Wege-Karte leert sich (die Formen und die Kronen gehören der alten Welt; die neue pflanzt neu); die
         // Texturen bleiben (kein Re-Compile).
         const wk = this.state.wegeKarte;
@@ -2986,6 +3228,20 @@ AnazhRealm.STADT_FERNE = Object.freeze({
     ueberM: 0.5,
     jeTakte: 6,
     nahM: 300,
+});
+// DER KÖRPER DES ACKERS (`_ackerKoerperTakt`; das Maß der Furche und der Frucht trägt phyto-core ACKER_GESETZ): der Takt des
+// Neulegens in Bild-Sekunden, der Kreis um das Auge, die Länge einer Strecke, die Sohle des Kamms im Grund, die Stufe des
+// Stands in Tagen (darunter legt nichts neu), das Stück einer Hand (längs seiner Reihen · quer: vier Furchen) und die Streuung
+// der Farbe je Reihe.
+AnazhRealm.ACKER_KOERPER = Object.freeze({
+    taktS: 0.5,
+    nahM: 90,
+    segM: 1.5,
+    sohleM: 0.05,
+    stufeTage: 3,
+    stueckM: 3,
+    bahnM: 1.2,
+    streuFarbe: 0.16,
 });
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),

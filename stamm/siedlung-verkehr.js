@@ -515,6 +515,7 @@ class AnazhRealm_siedlung_verkehr {
         const Z = S.verkehr.zahl.ladung;
         if (ki === L.werkKi) {
             Z.amWerk++;
+            this._scheuneFassen(L.werk.bestand, h); // die Ernte des Hofs vor dem Wagen (nach der Uhr, `_scheuneFassen`)
             Z.geladen += KC.bestandAnkunft(W.bestand, L.werk.bestand, h);
         }
         if (ki === L.standKi) {
@@ -1011,6 +1012,7 @@ class AnazhRealm_siedlung_verkehr {
         // Werk gibt ab, was er trägt). Bis hier stand nach jeder Ankunft jeder Wagen leer auf dem Weg zum Werk (handel#1, Radeon
         // 22.11. stadt-voll: nach 48 s der nächste 154 m vor seinem Werk, 0 von 21 trugen eine Ware)
         if (W.ankunft && W.lieferung && W.gen.axis("fracht") < 0.5) {
+            this._scheuneFassen(W.lieferung.werk.bestand); // die Ernte des Hofs vor dem Wagen (`_scheuneFassen`)
             const n = window.__koerperCore.bestandAnkunft(W.bestand, W.lieferung.werk.bestand, this._weltStunde());
             if (n > 0) S.verkehr.zahl.ladung.geladen += n;
             this._verkehrLadung(W);
