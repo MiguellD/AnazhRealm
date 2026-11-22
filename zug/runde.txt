@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 6 kopf 30e01e758cff5c284a4cd591b5dfce7e3664518e start 2026-11-22T18:29:44Z vorher 161ff792cc8d02410bfe44c7e420870d03381ec7
 gtx offen 0/0 station - fortschritt 2026-11-22T18:29:44Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-22T18:29:44Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-22T18:29:44Z alarm - liste -
 notiz 2026-11-22T18:29:44Z Runde 5 am 161ff792 sprang auf 30e01e75 (gtx offen 0/0, radeon wartet 0/0): der GTX-Dienst fuhr die Liste der Runde 4 am 6066c757 weiter (41/246) und las die Runde 5 nie, die Radeon wartete 60 min auf seine Liste; main traegt den Werkbank-Schnitt z675 (Anlauf 74 auf 5 s, Klasse 44 Stationen an stadt-voll)
