@@ -2091,3 +2091,4 @@ omen-gtx-gtx-c445936d-w105016-1-c445936d ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-22 11:59 RUNDE 4 ALARM gtx: OMEN: 4 Messungen ungepusht seit 14:41 — offen 0/0, Station -, Kopf 6066c757; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-22 11:59 landung Runde 4 am 6066c757: misst 179 von 246 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-22 12:15 RUNDE 4 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/246, Station -, Kopf 6066c757) — gesehen von gtx (landung-dienst)
+2026-11-22 12:47 RUNDE 4 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 3/246, Station karte2.erleben.sinn.ziele#1, Kopf 6066c757) — gesehen von gtx (landung-dienst)
