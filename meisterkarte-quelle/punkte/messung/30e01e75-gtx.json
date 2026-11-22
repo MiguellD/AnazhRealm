@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T18:38:22.355Z",
+ "zeit": "2026-11-22T18:44:01.373Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -73,10 +73,215 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#1": {
+   "gruen": true,
+   "zahl": "✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 166 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 6, im Bild 6 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 127 Median 163 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 118 Median 149 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 77 Median 110 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 166↔170 147↔142 133↔126 86↔85; roh 108↔110 75↔78 92↔87 44↔38) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.18,\"Y\":0.0116,\"X\":0.0065,\"rb\":0.00 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 8.95,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke8b175a54d28",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 535.6,
+   "fremd": {
+    "s": 540.1,
+    "takte": 238,
+    "fremdS": 646.39,
+    "kerne": 1.197,
+    "fensterKerne": 2.744,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      256.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      48.42
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      35.11
+     ]
+    ],
+    "dienerS": 337.5,
+    "diener": [
+     [
+      "System",
+      165.78
+     ],
+     [
+      "dwm.exe",
+      70.64
+     ]
+    ],
+    "geraetS": 337.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      161.14
+     ],
+     [
+      "svchost.exe",
+      150.92
+     ],
+     [
+      "SearchIndexer.exe",
+      13.78
+     ]
+    ],
+    "eigenS": 1063.88,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.253,
+     "nach": 1.237,
+     "station": 4.374
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 143.9,
+     "alle": 437.6,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 125.5,
+     "alle": 342.2,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.2,
+     "alle": 229.1,
+     "n": 874,
+     "von": "2026-11-17"
+    },
+    "f": 1.91,
+    "fEin": 1.595,
+    "fAlle": 1.91,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-22T18:44:01.373Z",
+   "abdruck": "f972f2980d44",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k38f6093c8b73": "bVRdj5swEPwveeyVWz4PsHQPznFqTmp7yU9YmzVwIRDZEKpU/e8VSUgCZJ+QmfGOZ8f+u9ij3GJGz1+mrhZs8W3xfWHwQJYhfSD9/GUWbBFLxyWP8XMB5/yth0ld7BsDZSEARYX5jqxWN1SUz/JEQ0F+GjHo3nm2BlBwhKR7fZ1SS0FpbTWo6EoMolQFbApsTYaCLGzVqdkFHNieIxSDU0UJ/0zgWt0vzte+8tdRMtlMYJWO1cYvQUgB++g4f+czlWmB1FhlUZmhr5OGsbLZXa8ZR2NnHZHykvSFlIbkxv4gdtnb2VszIaqyNWbULPLSwI0YQDzFZmQKmTfWXteCqgtcxG7oIFvO3c72raXuFaEQGImp1zlSlZEeabA9qV4cBn+i6aZb3JFGq8J88NL2QlfcvAGA1VxLeRJ+ajEIdwJyUI6I/VDhAMCH+B36pdX177CeZPxWm1kzI/NC78Y2KZ9c22M/59JMjilpa1ub5oqOfESKLrcgAb7hfbimwTK3Qw08RIzuggIR8NXMQ1OrpkNNVrZvL0TyKQgDxvnHDNzgbjfkX3m+J6cDNE0f8HsZGAsHUwbwdL4g80Ofr4N1pKIcSEr5fjy7iQeNOwtFpgulhomLQKr4UUA7KhtL1HUzbElhiB4DD6r7If/uelvf72aY+PaPt+WGT+qNT3WfOtS6ub4I4sVWPlN9UDo5Qxe6sTqU+QB3lSCM2QPokXRJGY1sFGEU99Hu5L3S4eNpFNzjbMrHgnqDK9OaYcgSfRGwByPpSG8FVtsLUDq265zjt/zkq7EpyWYdJQDdeNXLej+TnF823pOEva5V0b9+kGNrciyb29P/7z8=",
-  "k54d351397a6d": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuHr3rZ9ff/14u51rt4bSp48qVLq+bATxYCmPqVOncgq+zXVNWpDZ4O4ogRBNSTyiLjDFEY0iCKNO1q28wom94eVuJNrjbMrHHDuCS9OYYcgSPOGf1dEvyefx6mlRbwWU2z5A2pZjdzKMU/7C1zesrPnzm7Vp+f/Zkq+6InuUdK8rlXfbkGbQmAyK+vpb+PsP"
+  "k54d351397a6d": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuHr3rZ9ff/14u51rt4bSp48qVLq+bATxYCmPqVOncgq+zXVNWpDZ4O4ogRBNSTyiLjDFEY0iCKNO1q28wom94eVuJNrjbMrHHDuCS9OYYcgSPOGf1dEvyefx6mlRbwWU2z5A2pZjdzKMU/7C1zesrPnzm7Vp+f/Zkq+6InuUdK8rlXfbkGbQmAyK+vpb+PsP",
+  "ke8b175a54d28": "dVTbbqMwEP2XPLbrOuFSwFIfnBA1lbar9hPGZgw0BCLblN2s9t9XEEgCtPOE4JyZM2eG+bs4gtxDig8fpioXbHG3+LEw8InEoP5E/fBhFmwRyZWDLuPnoJzzTQuTOj9aQ4tcUBAlZAcktbaYFw+yo4FALwkZbbY8faNU0RONG36JDX96mqYpBCYVsaDwksQPE+WzKbA2KQgkUKuucA++m8AElMlYU/ToB+izlz+cb+f1kxzQkiIvzZBxlQSRWjI6RPM642hoyAkwK1D3pCRAJ/J6Urhum20NmBBVURszKha6ie+EjNJoik3R5DKz5KgrgWUPF5ETrICtm1kf6bEm6lYRCAGhmLqYAZYp6pGGpSvV44rR3+E06R4OqIGUkA1eLt3AEVdvKKW7uZaiE96VKL8Zk5FZrg/j5pSHztJlP+cJTQYJarKvjL2gQw8Aw35DY8rfOedvXjxlXqUMPAAIb8ZLQ8p3s85NpWwDGkl6rHsieugHPuP8ZQa2cDj0KF+5niunthvbruWtDIjEChJG6X183rJZ0+clJifMi4GklOdFPtusvSn4U8OBgEh1rtQwK+FLFX21Wg0WloiqskNaDAJwW0vK28n+6v7c7fX35bG3fN6s3/kknnMez/V3VSptB/G+eFwqj6muWzlD59qSBmQ2wB0lECL2BfSEusAUR3aKIIzaxWzkrdrh4f62LXqaTfuUY2t0aWozDFuCJ/zzlvQH7GV8PBrUewHlvifI1dJZhSzmcUrvt7uxQfH7WxhfEg1B09bbXcbH71/5M+8KHVFSBVogtZASjWp0sduvR12pvL14NIPaZFDYK+Tffw==",
+  "k6571f851edf4": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuH73rZ9ff/14u51rt4bSp48qVLq+bATxYCmPqVOncgq+zXVNWpDZ4O4ogRBNSTyiLjDFEY0iCKNO1q28wom94eVuJNrjbMrHHDuCS9OYYcgSPOGf1dEvyefx6mlRbwWU2z5A2pZjdzKMU/7C1zesrPnzm7Vp+f/Zkq+6InuUdK8rlXfbkGbQmAyK+vpb+PsP"
+ },
+ "ungemessen": {
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,91 (Faden 1,595 · alle Kerne 1,91; vor 143,9/437,6 ms, nach 125,5/342,2 ms, Ruhe 90,2/229,1 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 256,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 48,4 CPU-s · git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac 35,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 161,1 CPU-s · svchost.exe 150,9 CPU-s · SearchIndexer.exe 13,8 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.453 EV (Uhr 0.232→0.234, 200 Uhren) · ❌ Sterne Tag ≥10° max 1 · ≥−3° max 1 · Nacht ≤−18° min 166 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.97 (n 53) · wiese: ❌ Sprung 1.754 EV (Uhr 0.2→0.202, 284 Uhren) · )",
+   "exit": 1,
+   "minuten": 8.95,
+   "grund": "Last: Referenz f 1,91 (Faden 1,595 · alle Kerne 1,91; vor 143,9/437,6 ms, nach 125,5/342,2 ms, Ruhe 90,2/229,1 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 256,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 48,4 CPU-s · git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac 35,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 161,1 CPU-s · svchost.exe 150,9 CPU-s · SearchIndexer.exe 13,8 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.453 EV (Uhr 0.232→0.234, 200 Uhren) · ❌ Sterne Tag ≥10° max 1 · ≥−3° max 1 · Nacht ≤−18° min 166 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.97 (n 53) · wiese: ❌ Sprung 1.754 EV (Uhr 0.2→0.202, 284 Uhren) · )",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke8b175a54d28",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 535.6,
+   "fremd": {
+    "s": 540.1,
+    "takte": 238,
+    "fremdS": 646.39,
+    "kerne": 1.197,
+    "fensterKerne": 2.744,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      256.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      48.42
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      35.11
+     ]
+    ],
+    "dienerS": 337.5,
+    "diener": [
+     [
+      "System",
+      165.78
+     ],
+     [
+      "dwm.exe",
+      70.64
+     ]
+    ],
+    "geraetS": 337.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      161.14
+     ],
+     [
+      "svchost.exe",
+      150.92
+     ],
+     [
+      "SearchIndexer.exe",
+      13.78
+     ]
+    ],
+    "eigenS": 1063.88,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.253,
+     "nach": 1.237,
+     "station": 4.374
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 143.9,
+     "alle": 437.6,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 125.5,
+     "alle": 342.2,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.2,
+     "alle": 229.1,
+     "n": 874,
+     "von": "2026-11-17"
+    },
+    "f": 1.91,
+    "fEin": 1.595,
+    "fAlle": 1.91,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-22T18:44:01.373Z",
+   "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
