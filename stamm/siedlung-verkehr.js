@@ -475,13 +475,20 @@ class AnazhRealm_siedlung_verkehr {
         };
         const h = this._weltStunde();
         const geholt = new Set();
+        // DER WEG LIEGT ZWISCHEN ZWEI WENDEN: ein Werk, dessen Wende die seines Stands ist, liefert nicht — der Wagen lüde und lüde
+        // im selben Halt ab, keine Ware läge je auf einem Weg (handel#1, Radeon 22.11. stadt-voll: 14 von 21 Wagen, 5 geladen, 0 gefahren);
+        // findet sein Stand kein solches Werk, nimmt er den nächsten Stand der Reihe
         for (const [i, W] of VK.wagen.entries()) {
-            const st = staende[i % staende.length];
-            let [wk, d] = [null, Infinity];
-            for (const b of werke) {
-                if (b.bestand.ware !== st.bestand.ware) continue;
-                const q = Math.hypot(b.orte.werk.x - W.park.x, b.orte.werk.z - W.park.z) + (geholt.has(b) ? 1e6 : 0);
-                if (q < d) [wk, d] = [b, q];
+            let [st, wk, stKi] = [null, null, null];
+            for (let j = 0; j < staende.length && !wk; j++) {
+                st = staende[(i + j) % staende.length];
+                stKi = wende(st.orte.werk);
+                let d = Infinity;
+                for (const b of werke) {
+                    if (b.bestand.ware !== st.bestand.ware || wende(b.orte.werk) === stKi) continue;
+                    const q = Math.hypot(b.orte.werk.x - W.park.x, b.orte.werk.z - W.park.z) + (geholt.has(b) ? 1e6 : 0);
+                    if (q < d) [wk, d] = [b, q];
+                }
             }
             if (!wk) continue;
             geholt.add(wk);
@@ -490,7 +497,7 @@ class AnazhRealm_siedlung_verkehr {
                 werk: wk,
                 stand: st,
                 werkKi: wende(wk.orte.werk),
-                standKi: wende(st.orte.werk),
+                standKi: stKi,
                 plan: "werk",
             };
         }
@@ -998,6 +1005,15 @@ class AnazhRealm_siedlung_verkehr {
         W.letzter = null;
         // die Folge seiner Ziele beginnt neu (die alte Linie fällt); wer Ware trägt, fährt zuerst zum Stand (koerper `bestandZiel`)
         W.zielFolge.length = 0;
+        // DIE ERSTE FAHRT TRÄGT, WAS IHR TAG IHR GAB (`ankunft`: die Ankunft der Stadt, der Sprung der Uhr): sein Same wählt das Stück
+        // seiner Lieferung — auf dem Weg zum Stand hat er am Werk geladen, durch den EINEN Schreiber (koerper `bestandAnkunft`, das
+        // Werk gibt ab, was er trägt). Bis hier stand nach jeder Ankunft jeder Wagen leer auf dem Weg zum Werk (handel#1, Radeon
+        // 22.11. stadt-voll: nach 48 s der nächste 154 m vor seinem Werk, 0 von 21 trugen eine Ware)
+        if (W.ankunft && W.lieferung && W.gen.axis("fracht") < 0.5) {
+            const n = window.__koerperCore.bestandAnkunft(W.bestand, W.lieferung.werk.bestand, this._weltStunde());
+            if (n > 0) S.verkehr.zahl.ladung.geladen += n;
+            this._verkehrLadung(W);
+        }
         if (W.lieferung) W.lieferung.plan = window.__koerperCore.bestandZiel(W.bestand);
         this._verkehrZielNeu(S, W, W.ki); // die erste Fahrt: von der Wende seines Platzes zu einer anderen
         W.fahrtAb = W.uhr;
