@@ -523,6 +523,258 @@ function posenLinse() {
     check(`POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`, P.posen.length > 0 && !P.fehl.length, P.fehl.map((u) => u.text).join(" | "));
 }
 
+// ── DIE HASPEL (brunnen-haspel, mensch.fahrzeug.maschine#1): die Welle mit Kurbel des Ziehbrunnens ist Gesetz des Kerns
+//    (fachwerk `HASPEL`), ihr Verb `kurbeln` hängt im EINEN Klick des Wirts. Je Brunnen (Gestalt 1 und 2, dazu Gestalt 1 mit
+//    Fülle 0,2 und Größe 1,2):
+//    H1 DIE TEILE: Stufe 0 und 1 tragen die drei benannten Teile der Maschine (kurbel · seil · eimer, `__schwenk.welle`);
+//    H2 DER KURBELWEG IM WIRT (stamm `ladeKlasse`, ein Wirt im vm): der Eintrag des Brunnens trägt seine Teile als Slots, der
+//       Klick nennt das Verb (H3), die Hand hält es (`_kurbeln` je 0,2 s, `_tickHaspel` je 1/60 s), bis der
+//       Eimer geschöpft hat und wieder oben steht. Je Bild gemessen an den Instanz-Matrizen: der Kurbelwinkel aus der Matrix der
+//       Kurbel, der Hub aus der des Eimers — |Hub − r·Δφ| über den ganzen Weg, r gemessen an der GEZEICHNETEN Trommel (Bauch +
+//       Seil); das Seil endet am Bügel; der Eimer fasst Wasser erst unter dem Spiegel;
+//    H3 DER KLICK: der Weg läuft durch den EINEN Dispatcher des Wirts (`tryMouseBreak`: gedrückt nennt er kurbeln, gehalten
+//       wiederholt er es und ruft `_kurbeln`) — nie an ihm vorbei.
+//    SELBST-TEST: der Eimer an der Fülle (die Teil-Matrix des Eimers bleibt die Ruhe) und ein Wirt ohne Verb am Brunnen sind je
+//    ROT beim Namen. Leser: die Station karte2.mensch.fahrzeug.maschine#1 (hub · folgt), der Koordinator vor dem Landen.
+function haspelLinse() {
+    const stammLib = require("./lib/stamm.cjs");
+    const { AnazhRealm: A, ctx: W } = stammLib.ladeKlasse(root);
+    const vm = require("vm");
+    const T3 = W.THREE;
+    const FALLE = [
+        { name: "brunnen s1", seed: 1, ov: undefined },
+        { name: "brunnen s2", seed: 2, ov: undefined },
+        { name: "brunnen s1 fülle 0,2 · größe 1,2", seed: 1, ov: { fuelle: 0.2, groesse: 1.2 } },
+    ];
+    // die Teile einer gebauten Stufe: Name → Gruppe (die bewegte Gruppe des Kerns)
+    const teileVon = (g) => {
+        const t = {};
+        g.traverse((o) => {
+            const w = o.userData && o.userData.__schwenk && o.userData.__schwenk.welle;
+            if (w) t[w] = o;
+        });
+        return t;
+    };
+    // die Lage einer Gruppe in der Gestalt: [min y, max y] aller Ecken (die Gruppe steht an ihrem Punkt)
+    const spanne = (o, m4) => {
+        let lo = Infinity,
+            hi = -Infinity;
+        o.updateMatrixWorld(true);
+        const v = new THREE.Vector3();
+        o.traverse((x) => {
+            if (!x.isMesh) return;
+            const P = x.geometry.attributes.position;
+            for (let i = 0; i < P.count; i++) {
+                v.fromBufferAttribute(P, i).applyMatrix4(x.matrixWorld);
+                if (m4) v.applyMatrix4(m4);
+                lo = Math.min(lo, v.y);
+                hi = Math.max(hi, v.y);
+            }
+        });
+        return [lo, hi];
+    };
+    // der größte Abstand einer Ecke von einer Achse (Ecken in `fx`), in der Lage der Gestalt
+    const radial = (o, fx, ab) => {
+        let r = 0;
+        o.updateMatrixWorld(true);
+        const v = new THREE.Vector3();
+        o.traverse((x) => {
+            if (!x.isMesh) return;
+            const P = x.geometry.attributes.position;
+            for (let i = 0; i < P.count; i++) {
+                v.fromBufferAttribute(P, i).applyMatrix4(x.matrixWorld);
+                if (fx(v)) r = Math.max(r, ab(v));
+            }
+        });
+        return r;
+    };
+    // der Wickel-Halbmesser der GEZEICHNETEN Trommel: der Bauch (die Ecken der Kurbel um die Mitte, |x| < 0,4 m — die Trommel
+    // trägt 0,9 m um x 0, Arm und Griff stehen außen an den Pfosten — um die Achse yH) + der Halbmesser des gezeichneten Seils
+    // (um seine Lot-Linie x 0,05)
+    const wickelR = (kurbel, seil, yH) =>
+        radial(kurbel, (v) => Math.abs(v.x) < 0.4, (v) => Math.hypot(v.y - yH, v.z)) +
+        radial(seil, () => true, (v) => Math.hypot(v.x - 0.05, v.z));
+    // DER KURBELWEG eines Brunnens im Wirt: `mut` pflanzt einen Täter (der Eimer an der Fülle · kein Verb am Brunnen)
+    const weg = (fall, mut) => {
+        const v = [];
+        const g0 = FC.buildInstance("brunnen", fall.seed, 0, fall.ov);
+        const tl = teileVon(g0);
+        const H = FC.HASPEL;
+        const r = wickelR(tl.kurbel, tl.seil, H.yH);
+        const sp0 = { eimer: spanne(tl.eimer), seil: spanne(tl.seil) };
+        const wirt = vm.runInContext("new AnazhRealm()", W);
+        const st = wirt.state;
+        wirt._weltUhrNeu(0);
+        st.archInstanceGroups = new Map();
+        // die gezeichnete Stufe (`instSlots`) und die Stufe des Bands im Übergang (`instSlotsBand`, sie kommt mitten im Weg)
+        const stufe = (art) => {
+            const s = [];
+            for (const teil of ["kurbel", "seil", "eimer", "aufbau"]) {
+                const mats = [new T3.Matrix4()];
+                const g = {
+                    welle: teil === "aufbau" ? null : { teil },
+                    mesh: {
+                        setMatrixAt: (i, m) => mats[i].copy(m),
+                        getMatrixAt: (i, m) => m.copy(mats[i]),
+                        instanceMatrix: {},
+                        boundingSphere: null,
+                    },
+                    mats,
+                };
+                st.archInstanceGroups.set(art + teil, g);
+                s.push({ key: art + teil, slot: 0 });
+            }
+            return s;
+        };
+        const slots = stufe("f:brunnen:");
+        const bandSlots = stufe("f:brunnen-band:");
+        let bandFehl = 0;
+        const entry = { id: "haspel-" + fall.seed, type: "brunnen", instSlots: slots, studioOv: fall.ov };
+        wirt._foundryPresetForEntry = () => "brunnen";
+        if (mut === "kein-verb") wirt._haspelVon = () => null;
+        // der Leib, der nur die gezeichnete Stufe sammelt (vor brunnen-haspel 2): das Band blendet in der Ruhe-Lage über
+        if (mut === "band")
+            wirt._haspelLeib = function (e) {
+                const b = e.instSlotsBand;
+                e.instSlotsBand = null;
+                try {
+                    return A.prototype._haspelLeib.call(this, e);
+                } finally {
+                    e.instSlotsBand = b;
+                }
+            };
+        if (mut === "fuelle") {
+            const K = W.__fachwerkCore;
+            const echt = K.haspelTeilMatrix;
+            wirt._haspelSetzen = function (e, phi) {
+                K.haspelTeilMatrix = (M, teil, p) => echt(M, teil, teil === "eimer" ? M.phiF : p);
+                try {
+                    return A.prototype._haspelSetzen.call(this, e, phi);
+                } finally {
+                    K.haspelTeilMatrix = echt;
+                }
+            };
+        }
+        wirt._haspelLeib(entry);
+        const M = wirt._haspelMass(entry);
+        const mat = (teil) => st.archInstanceGroups.get("f:brunnen:" + teil).mats[0];
+        let fehlHub = 0,
+            fehlSeil = 0,
+            wegRad = 0,
+            phiAlt = 0,
+            umkehr = 0,
+            nassFrueh = 0,
+            maxHub = 0,
+            richtung = -1,
+            verb = null;
+        // DER KLICK (H3): der EINE Dispatcher `tryMouseBreak` — das Fadenkreuz trifft den Brunnen 1,1 m vor der Hand (kein Bogen,
+        // kein Leib, kein Gerät der Arena); gedrückt nennt er das Verb, gehalten wiederholt er es im Takt der Hand (0,2 s)
+        st.player = {};
+        st.playerMesh = null;
+        wirt._heldBogenRecipe = () => null;
+        wirt._geraetVon = () => false;
+        wirt._pickArchitectureAtCrosshair = () => ({ entry, point: { x: 0, y: 1.2, z: 0.5 } });
+        wirt._fadenkreuzStrahl = () => ({ o: { x: 0, y: 1.6, z: 1.5 }, d: { x: 0, y: 0, z: -1 } });
+        wirt._strikeArchitecture = () => false;
+        let gekurbelt = false;
+        wirt._kurbeln = function (e) {
+            gekurbelt = true;
+            return A.prototype._kurbeln.call(this, e);
+        };
+        for (let bild = 0; bild < 60 * 120 && umkehr < 2; bild++) {
+            if (bild % 12 === 0) {
+                gekurbelt = false;
+                try {
+                    wirt.tryMouseBreak(bild ? st.player._mausVerb : undefined);
+                    verb = st.player._mausVerb;
+                } catch (e) {
+                    verb = "wirft: " + String(e && e.message).slice(0, 80);
+                }
+                if (verb !== "kurbeln" || !gekurbelt) break;
+                const z = entry._haspel;
+                if (z.richtung !== richtung) {
+                    umkehr++;
+                    richtung = z.richtung;
+                    // am Grund beginnt der Übergang: die Stufe des Bands kommt dazu (wie `_archInstancePlace` sie anlegt)
+                    if (umkehr === 1) {
+                        entry.instSlotsBand = bandSlots;
+                        wirt._haspelLeib(entry);
+                    }
+                }
+                const L = W.__fachwerkCore.haspelLage(M, z.phi);
+                if (z.wasser > 0 && !(L.yE + M.innenY < H.spiegel + 1e-9) && !entry._nassGesehen) nassFrueh++;
+                if (z.wasser > 0) entry._nassGesehen = true;
+            }
+            wirt._weltUhrNimm((bild + 1) / 60);
+            wirt._tickHaspel(1 / 60);
+            const e = mat("kurbel").elements;
+            const phi = -Math.atan2(e[6], e[5]);
+            let d = phi - phiAlt;
+            d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+            wegRad += Math.abs(d);
+            const dphi = (phiAlt = phiAlt + d);
+            const hub = mat("eimer").elements[13];
+            maxHub = Math.max(maxHub, Math.abs(hub));
+            fehlHub = Math.max(fehlHub, Math.abs(hub - r * dphi));
+            // das Seil endet am Bügel: Unterkante des Seils = Boden des Eimers + Bügel-Höhe
+            const s = sp0.seil[0] * mat("seil").elements[5] + mat("seil").elements[13];
+            fehlSeil = Math.max(fehlSeil, Math.abs(s - (sp0.eimer[0] + hub + H.buegelH)));
+            // das Band zeigt dasselbe φ wie die gezeichnete Stufe (beide Stufen tragen dieselbe Ruhe)
+            if (entry.instSlotsBand)
+                for (const teil of ["kurbel", "seil", "eimer"]) {
+                    const a = mat(teil).elements,
+                        b = st.archInstanceGroups.get("f:brunnen-band:" + teil).mats[0].elements;
+                    for (let i = 0; i < 16; i++) bandFehl = Math.max(bandFehl, Math.abs(a[i] - b[i]));
+                }
+        }
+        g0.traverse((o) => o.geometry && o.geometry.dispose());
+        if (verb !== "kurbeln") v.push(`kein Verb am Brunnen: der Klick nennt „${verb}“ (${fall.name})`);
+        else {
+            if (umkehr < 2) v.push(`${fall.name}: der Eimer kehrt nicht zweimal um (${umkehr})`);
+            // 1 cm über den ganzen Weg: das Raster der Gestalt (2^-12 m an Trommel und Seil) trägt höchstens 0,4 mm in r
+            if (fehlHub > 0.01) v.push(`|Hub − r·φ| ${(fehlHub * 100).toFixed(2)} cm > 1 cm (${fall.name})`);
+            if (fehlSeil > 0.002) v.push(`das Seil endet ${(fehlSeil * 1000).toFixed(1)} mm neben dem Bügel (${fall.name})`);
+            if (nassFrueh) v.push(`der Eimer fasst Wasser über dem Spiegel (${fall.name})`);
+            if (!(entry._haspel && entry._haspel.wasser > 0.5)) v.push(`der Eimer schöpft nicht (${fall.name})`);
+            if (!entry.instSlotsBand || bandFehl > 1e-6) v.push(`das Band im Übergang zeigt ein anderes φ (Δ ${bandFehl.toExponential(1)}, ${fall.name})`);
+        }
+        return { v, r, fehlHub, wegRad, maxHub, M, z: entry._haspel, kraft: W.__fachwerkCore.haspelKraft(M, 1, Math.abs(st.gravity)).kurbelN, leer: W.__fachwerkCore.haspelKraft(M, 0, Math.abs(st.gravity)).kurbelN };
+    };
+    // H1 — die Teile je Stufe
+    const ohneTeil = [];
+    for (const f of FALLE)
+        for (const lod of [0, 1]) {
+            const g = FC.buildInstance("brunnen", f.seed, lod, f.ov);
+            const t = Object.keys(teileVon(g)).sort().join(",");
+            if (t !== "eimer,kurbel,seil") ohneTeil.push(`${f.name} L${lod}: ${t || "keine"}`);
+            g.traverse((o) => o.geometry && o.geometry.dispose());
+        }
+    check("HASPEL H1: jede gezeigte Stufe des Brunnens trägt die Teile der Maschine (kurbel · seil · eimer)", !ohneTeil.length, ohneTeil.join(" · "));
+    // H2 — der Kurbelweg im Wirt
+    const mess = FALLE.map((f) => weg(f));
+    const rot = mess.flatMap((m) => m.v);
+    check(
+        `HASPEL H2+H3: der Klick (tryMouseBreak) kurbelt, Hub folgt Kurbelweg — ${mess
+            .map(
+                (m, i) =>
+                    `${FALLE[i].name}: |Hub − r·φ| ${(m.fehlHub * 100).toFixed(3)} cm über ${(m.wegRad / (2 * Math.PI)).toFixed(2)} Umdrehungen, r ${(m.r * 100).toFixed(1)} cm (${(2 * Math.PI * m.r).toFixed(3)} m je Umdrehung), Hub ${m.maxHub.toFixed(2)} m, Wasser ${Math.round(m.z.wasser * m.M.volM3 * 1000)} l, Kurbel ${m.leer.toFixed(0)} → ${m.kraft.toFixed(0)} N`
+            )
+            .join(" · ")}`,
+        !rot.length,
+        rot.join(" · ")
+    );
+    // SELBST-TEST — die Täter am ersten Brunnen
+    const fuelle = weg(FALLE[0], "fuelle").v;
+    const ohne = weg(FALLE[0], "kein-verb").v;
+    const band = weg(FALLE[0], "band").v;
+    const nennt =
+        fuelle.some((s) => /^\|Hub − r·φ\|/.test(s)) &&
+        ohne.some((s) => /^kein Verb am Brunnen/.test(s)) &&
+        band.length === 1 &&
+        /^das Band im Übergang/.test(band[0]);
+    check("HASPEL SELBST-TEST: der Eimer an der Fülle, ein Wirt ohne Verb am Brunnen und ein Band in der Ruhe-Lage sind je ROT beim Namen", nennt, `Fülle: ${fuelle.join(" · ") || "grün"} ‖ ohne Verb: ${ohne.join(" · ") || "grün"} ‖ Band: ${band.join(" · ") || "grün"}`);
+}
+
 // ── DAS RAUM-LICHT (w28-innenlicht, Familie siedlung.K1): die sechste Zahl der Decken-Zeile ist der mittlere Tageslicht-Quotient
 //    des Körpers (fachwerk `raumLicht`), der Dach-Pool des Wirts reicht sie dem EINEN Umgebungs-Term und der Kamera
 //    (`_dachTakt` → `_raumHimmel`, `_raumBlendeTakt`). Je Kultur am Mass-Bau:
@@ -1038,26 +1290,23 @@ function raumLinse() {
             (anDerWand ? !(Math.abs(bb.max.x - FC.LICHT_GESETZ.wandlaterne.armM) < 0.01) : !(bb.min.y < -0.02))
         )
             bodenOk = false;
+        // DIE ALBEDO-LINSE (kartenlos trägt der Vertex): je Stoff die mittlere Luminanz der Vertex-Farbe × Stoff-Farbe —
+        // ein Stoff im Band der Natur (0,08–0,45: Holz, Stein, Tuch, Asche nach Kontakt-AO und Erdsaum — schwarz und Creme sind rot), die Glut dunkel
+        // (≤ 0,30 — sie leuchtet durch ihren Stoff, eine helle Glut bleicht in der Sonne zu Creme). Glas misst nicht.
+        // Je STOFF, nie je Mesh: ein bewegtes Teil (die Haspel des Brunnens, `__schwenk`) bäckt seinen Stoff als eigenes Mesh —
+        // gemittelt wird über alle Ecken des Stoffs in der Gestalt (bis brunnen-haspel war jeder Stoff genau ein Mesh).
+        const jeStoff = new Map();
         g.traverse((o) => {
             if (!o.isMesh) return;
             const em = o.material && o.material.emissive;
-            // DIE ALBEDO-LINSE (kartenlos trägt der Vertex): je Stoff die mittlere Luminanz der Vertex-Farbe × Stoff-Farbe —
-            // ein Stoff im Band der Natur (0,08–0,45: Holz, Stein, Tuch, Asche nach Kontakt-AO und Erdsaum — schwarz und Creme sind rot), die Glut dunkel
-            // (≤ 0,30 — sie leuchtet durch ihren Stoff, eine helle Glut bleicht in der Sonne zu Creme). Glas misst nicht.
             const seh = o.material.userData && o.material.userData.__seh;
             const col = o.geometry.attributes.color;
             if (col && seh !== "glas" && !nurWurf) {
                 const mc = o.material.color;
-                let s = 0;
-                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc, undefined, col.itemSize);
-                const Y = s / col.count;
-                const k = `${c.rezeptId}:${seh}`;
-                albedo[k] = Math.max(albedo[k] || 0, Y);
-                const ok = seh === "glut" ? Y <= 0.3 : Y >= 0.08 && Y <= 0.45;
-                if (!ok) {
-                    albedoOk = false;
-                    albedoBeispiel = albedoBeispiel || `${caseKey(c)} ${seh}: Y ${Y.toFixed(3)}`;
-                }
+                const a = jeStoff.get(o.material) || { s: 0, n: 0, seh };
+                for (let i = 0; i < col.count; i++) a.s += luma(col.array, i, mc, undefined, col.itemSize);
+                a.n += col.count;
+                jeStoff.set(o.material, a);
             }
             if (em && em.getHex() !== 0) {
                 if (c.rezeptId === "feuerstelle") glutDa = true;
@@ -1074,6 +1323,16 @@ function raumLinse() {
                     }
             }
         });
+        for (const { s, n, seh } of jeStoff.values()) {
+            const Y = s / n;
+            const k = `${c.rezeptId}:${seh}`;
+            albedo[k] = Math.max(albedo[k] || 0, Y);
+            const ok = seh === "glut" ? Y <= 0.3 : Y >= 0.08 && Y <= 0.45;
+            if (!ok) {
+                albedoOk = false;
+                albedoBeispiel = albedoBeispiel || `${caseKey(c)} ${seh}: Y ${Y.toFixed(3)}`;
+            }
+        }
         disposeGroup(g);
     }
     let stufenAus = true,
@@ -1138,6 +1397,9 @@ function raumLinse() {
 
     // 14) DAS RAUM-LICHT
     raumLinse();
+
+    // 15) DIE HASPEL DES ZIEHBRUNNENS (brunnen-haspel)
+    haspelLinse();
 
     wandEnde(errs, "der Haus-Asset-Vertrag steht (cv:6) — jede Prüfung oben.");
 })();
