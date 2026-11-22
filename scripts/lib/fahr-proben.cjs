@@ -2725,6 +2725,30 @@ async function probeLeben(expected) {
             r._freiLuftPacken = (K, X, x) => (X[x + 38] = X[x + 41] = X[x + 42] = 0);
             S.frei.ohneLuft = wurf(0);
             delete r._freiLuftPacken;
+            // (5) DER FLACHE KÖRPER (same.physik.reaktion#2: der Trümmer, die Scherbe — dünner als der Spalt des Lösers, Ober- und
+            // Unterseite sind zugleich Kontakt): ein Brett 25 × 5 × 25 cm fällt 20 cm und liegt, zwei Scheiben 25 × 0,4 × 25 cm
+            // fallen halb übereinander. Bis alle drei schlafen (null: nach 4 s wach, `wach` ihre Zahl) und wie das Brett liegt
+            // (seine Unterseite gegen den Boden unter seiner Mitte: < 0 liegt es im Boden).
+            const flach = () => {
+                const [x, zz] = [gasse.x + gasse.ux * 12, gasse.z + gasse.uz * 12];
+                const plan = (stoff, dick) => ({
+                    frei: true,
+                    parts: [{ shape: "box", material: stoff, size: { x: 0.25, y: dick, z: 0.25 }, position: { x: 0, y: 0, z: 0 } }],
+                });
+                Object.assign(st.blueprints, { _k3_brett: plan("holz", 0.05), _k3_scheibe: plan("quarz", 0.004) });
+                const setz = (typ, dx, hoch) =>
+                    r.spawnArchitecture(typ, { x: x + dx, y: hh(x + dx, zz) + 0.5 + hoch, z: zz }, { silent: true, precise: true })._frei;
+                const K = [setz("_k3_brett", 0, 0.2), setz("_k3_scheibe", 1, 0.1), setz("_k3_scheibe", 1.12, 0.25)];
+                const o = { ruheS: null };
+                const t0 = tMs;
+                bilder(240, () => (K.every((k) => k.schlaf) && (o.ruheS = (tMs - t0) / 1000), o.ruheS === null));
+                o.wach = K.filter((k) => !k.schlaf).length;
+                o.boden = K[0].p[1] - K[0].hy - r._koerperBodenUnter(K[0].p[0], K[0].p[1], K[0].p[2]);
+                for (const k of K) r.removeArchitecture(k.e, { still: true });
+                for (const n of ["_k3_brett", "_k3_scheibe"]) delete st.blueprints[n];
+                return o;
+            };
+            S.frei.flach = flach();
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({

@@ -2380,6 +2380,7 @@ class AnazhRealm_dirigent_takt {
         this._tickSeason(); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
+        this._tickDruck(); // DRUCKWELLE: die Fristen der Ladungen und der Körper, die eine Welle trifft (same.physik.reaktion#2)
         this._tickCanopyStreaming();
         this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();

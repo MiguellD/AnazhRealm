@@ -2109,7 +2109,8 @@ class AnazhRealm_vegetation_baum {
     // Trittfläche (`fx.tritt` × Größe); beides × die Welt-Skala der Gestalt × die Größe, gemerkt je Gestalt, Same, Größe und
     // Stempel. Ohne `art` die Hülle der Blocker-Boxen eines Baus (`welt`: achsparallel in der Welt, K52); die Flächen des
     // Genesis-Orts sind kein Bau, sie trägt der Plan (`_genesisFlaeche`). Null für Natur, für was
-    // fährt (der Wagen urteilt über `_imWagen`, er räumt nichts), für einen Bau ohne Boxen und ein Werk ohne Grundriss-Gesetz.
+    // fährt (der Wagen urteilt über `_imWagen`, er räumt nichts), für den freien Körper des Lösers (`_frei`), für einen Bau
+    // ohne Boxen und ein Werk ohne Grundriss-Gesetz.
     _grundrissVon(e, art, seed) {
         if (!e) return null;
         const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
@@ -2238,7 +2239,11 @@ class AnazhRealm_vegetation_baum {
         const m = e._grundrissBoxen;
         if (m && m.satz === boxen) return m.fp;
         let fp = null;
-        if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {
+        // DER FREIE KÖRPER DES LÖSERS (`_frei`: Kiste, Fass, Trümmer) wandert wie der Wagen — er trägt keinen Grundriss. Bis
+        // same.physik.reaktion#2 räumte jeder bei seiner Geburt die Natur und baute die Kacheln der Nah-Wiese neu, sein
+        // Grundriss blieb am Ort der Geburt stehen, während er lag, wo der Löser ihn hielt (die Druckwelle an 52 Scheiben:
+        // 260 Geburten, 468 von 1 061 ms in `_grundrissRaeumen`, GTX 1050)
+        if (!(e.affordances && e.affordances.moveable) && !e._frei && !this._istNatur(e)) {
             let x0 = Infinity,
                 x1 = -Infinity,
                 z0 = Infinity,
@@ -2268,9 +2273,41 @@ class AnazhRealm_vegetation_baum {
     // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
     // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
-    _grundrissRaeumen(haus) {
+    // DER GEERBTE GRUND (same.physik.reaktion#2): `gehalten` ist der Kasten [x0, z0, x1, z1], den der Vorgänger des Baus am Ort
+    // bis zu diesem Ruf als Grundriss hielt (der Rest eines Einsturzes steht, wo sein Werk stand — `_werkBricht`). Liegt der
+    // Grundriss des Baus darin, hat die Natur-Wand dort nichts gesetzt: nichts fällt, das Gitter nimmt den Eintrag, und nur
+    // wo der Bau Fläche frei gibt, wächst der Halm neu. Vorher räumte jeder Rest die Fläche seines Werks ein zweites Mal
+    // (GTX 1050, Mess-Wiese, 52 brechende Werke einer Druckwelle: 52 × 1,75 ms, die Kacheln der Wiese und der Streu um jeden
+    // Rest fielen und bauten neu).
+    _grundrissRaeumen(haus, gehalten = null) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
+        if (gehalten && fp.welt) {
+            const p = haus.position;
+            const b = [p.x + fp.ox - fp.ex, p.z + fp.oz - fp.ez, p.x + fp.ox + fp.ex, p.z + fp.oz + fp.ez];
+            const T = 1e-3;
+            if (
+                b[0] >= gehalten[0] - T &&
+                b[1] >= gehalten[1] - T &&
+                b[2] <= gehalten[2] + T &&
+                b[3] <= gehalten[3] + T
+            ) {
+                const g = this._grundrissGitter;
+                if (g && g.liste === this.state.architectures) {
+                    this._grundrissLoesen(haus);
+                    this._grundrissSetzen(g, haus);
+                }
+                const frei = 0.01; // gibt der Bau mehr als 1 cm Fläche frei, fragt der Halm dort die Wand neu
+                if (
+                    b[0] > gehalten[0] + frei ||
+                    b[1] > gehalten[1] + frei ||
+                    b[2] < gehalten[2] - frei ||
+                    b[3] < gehalten[3] - frei
+                )
+                    this._nahWieseNeuIn(gehalten[0] - 3, gehalten[1] - 3, gehalten[2] + 3, gehalten[3] + 3);
+                return 0;
+            }
+        }
         const [x, z, r] = [haus.position.x, haus.position.z, fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3];
         // der Halm fragt den Bau mit Boxen wie die Streu (w20-lack-spiegel): seine Kacheln wachsen mit — das Haus trägt sein Erdbau
         if (fp.welt) this._nahWieseNeuIn(x - r, z - r, x + r, z + r);

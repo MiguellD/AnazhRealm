@@ -152,7 +152,8 @@ async function seitenTakt() {
 // DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
 // Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
 // Konstruktor liest: `_loadKeybindings`). Vorher die Schrift, ihre Größe und ihr Kasten (das HUD mit einem gepflanzten 14-px-Text,
-// einem 2 em engen Kasten und einem Zeichen im px-Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
+// einem 2 em engen Kasten und einem Zeichen im px-Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`
+// — die Werkstatt mit zwei eigenen Stoffen langen Namens in ihrer Material-Palette) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
 // nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
 // Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah. Ein Bild ist am Gerät ein Bild
 // des laufenden Loops, am Null-Renderer EIN Sim-Schritt des Leibs (`_loopFixedStep`: Sammler, Bewegung, Physik) — die Probe
@@ -201,6 +202,14 @@ async function bedienung2(vor) {
             .map(([liste, text]) => `„${text}“ der Hotbar fehlt in ${liste} des Zensus`);
         for (const liste of ["klein", "ueber"])
             schrift.hud[liste] = schrift.hud[liste].filter((z) => !gepflanzt.some(([, text]) => text === z.text));
+        // DIE KARTE TRÄGT JEDES WORT (front-druckwelle: „Donnerkorn“ ragte 116 px in 121 aus seiner Material-Karte): zwei eigene
+        // Stoffe des Spielers (`defineMaterial`: ein Wort bis 40 Zeichen) — eines, das eine Reihe der Palette trägt, eines, das
+        // keine trägt. Der Zensus der Werkstatt misst sie mit (keines ragt), und jedes Wort, das eine Reihe trägt, steht ganz
+        // in EINER Zeile: nur das zweite bricht. Im festen Raster zu 7,5 em (der Stand davor, die Mutante im Lauf) muss das
+        // erste brechen — sonst mäße die Probe nichts. Danach fallen beide, die Palette steht wie zuvor.
+        const langeStoffe = ["Sternenstaubglas", "Wolkenkuckucksheimquarzglasgewebestahl"];
+        for (const n of langeStoffe) r.defineMaterial(n, 0x8899aa, {});
+        r._workshopRenderMaterialPalette();
         for (const d of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
@@ -210,7 +219,32 @@ async function bedienung2(vor) {
             await r._menueSteht();
             await bilder(2);
             schrift[z] = r._schriftZensus(d);
+            if (z !== "werkstatt") continue;
+            const palette = document.getElementById("workshop-material-palette");
+            const bricht = () =>
+                [...palette.querySelectorAll(".workshop-material-card > span:last-child")]
+                    .filter((s) => {
+                        const g = document.createRange();
+                        g.selectNodeContents(s);
+                        return new Set([...g.getClientRects()].map((q) => Math.round(q.top))).size > 1;
+                    })
+                    .map((s) => s.textContent);
+            const heil = bricht();
+            schrift[z].ueber.push(
+                ...heil
+                    .filter((text) => text !== langeStoffe[1])
+                    .map((text) => ({ wo: "#workshop-material-palette", text, grund: "bricht sein Wort, das eine Reihe trägt", n: 1 }))
+            );
+            palette.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr))";
+            const starr = bricht();
+            palette.style.cssText = "";
+            if (!heil.includes(langeStoffe[1]))
+                blind.push(`„${langeStoffe[1]}“ steht in einer Zeile — die Probe der Material-Karte sieht ihre Palette nicht`);
+            if (!starr.includes(langeStoffe[0]))
+                blind.push(`„${langeStoffe[0]}“ bricht im festen Raster der Material-Karten nicht (${starr.join(" ") || "keines"})`);
         }
+        for (const n of langeStoffe) delete st.materials[n];
+        r._workshopRenderMaterialPalette();
         r.resetKeybindings();
         r._menueZeigen("einstellungen");
         document.querySelector('.keybind-rebind[data-action="vor"]').click();

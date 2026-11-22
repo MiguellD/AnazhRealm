@@ -64,6 +64,11 @@ const SIMS = {
     // Tempo, die acht Ankünfte), bucht die Linse hier; unter `brand` bleibt der Gang der brennenden Zellen. Die Marke ist der
     // Ruf selbst (Laufzeit), nie der Name eines Lesers: so urteilt die Brand-Linse Gang und Zündung je an IHRER Einheit.
     zuendung: [["_brandZuenden"], []],
+    // DIE DRUCKWELLE (same.physik.reaktion#2) — ihr Takt (`_tickDruck`: die Fristen der Ladungen und der Körper fallen zu ihrer
+    // Zeit) und ihr EINER Schreiber (`_druckWelle`: je Körper im Radius eine Frist). Eine eigene Marke mit eigenem Soll an IHRER
+    // Einheit (je getroffenem Körper, je gebrochenem Teil — `druckSoll`), nie im Gang des Brands versteckt: die Front, die eine
+    // Ladung erreicht, bucht die Welle hier, nicht unter `zuendung`. Ohne Frist kostet der Takt nichts (Ruhe ist Null).
+    druck: [["_tickDruck", "_druckWelle"], []],
 };
 const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEntfachen"];
 
@@ -134,6 +139,9 @@ function simLinseAn(sims, akte) {
             legen();
             return aus;
         },
+        // der laufende Stand einer Rolle im angefangenen Bild (ein Mitleser misst so EIN Ereignis: Stand danach − Stand davor)
+        stand: (n) => frame[n] | 0,
+        leser: (n) => Object.assign({}, frame.je[n]),
         aus() {
             Object.assign(P, orig);
             for (const o of gehuellt) for (const k of [...ITER, "forEach"]) delete o[k];
@@ -449,6 +457,119 @@ function brandAmSoll(Z) {
         zuendung: eng(Z.zuendung, (k) => brandZuendSoll(Z, k), (k) => ({ ankuenfte: Z.ankuenfte[k], betten: Z.betten[k], punkte: Z.punkte[k], kahl: Z.kahl[k], masken: Z.masken[k], leser: brandLeser(Z.rufeZ && Z.rufeZ[k]) })), // prettier-ignore
     };
 }
+// DIE DRUCKWELLE AN IHRER EINHEIT (same.physik.reaktion#2). Die Welle arbeitet nur, wenn eine Ladung umsetzt, und dann je
+// EREIGNIS — nie je Bild, nie je Zelle des Brands: die Linse misst jedes Ereignis einzeln (der Stand der Rolle `druck` vor und
+// nach ihm, `S.stand`) und urteilt es an seinem eigenen Soll:
+//   UMSATZ  — die Ladung verlässt die Welt (ihr Abschied, ohne ihre Welle): ≤ DRUCK_UMSATZ;
+//   WELLE   — der EINE Schreiber `_druckWelle`: ≤ DRUCK_WELLE + DRUCK_BLICK je Bau im Radius (`blick`: jeder Eintrag des
+//             Platz-Netzes, der weder Natur noch freier Körper ist — ein Blick auf seinen Bauplan und sein Fahr-Profil, am
+//             Eintrag gemerkt; die Natur kostet nichts, je getroffenem Körper EINE Frist);
+//   STOSS   — die Frist eines gestoßenen Körpers (frei, Tier, Spieler, Wagen) und des Ohrs: ≤ DRUCK_STOSS;
+//   WERK    — die Frist eines Werks: ≤ DRUCK_LAST je Teil (die Last seiner Platte), bricht es, dazu DRUCK_BRUCH (der EINE
+//             Einsturz: sein Abschied, der Rest erbt den Grund) + DRUCK_SCHERBE je Scherbe (ihre Geburt, ihr Stoß);
+//   ENDE    — der EINE Satz der Welle im Journal: ≤ DRUCK_ENDE.
+// Was der Takt außerhalb seiner Ereignisse tut, ist Null (`rest`). Die Zahlen sind Ratschen EINER Messung an der Mess-Wiese
+// (GTX 1050, Null-Renderer, die Welt frisch: ein Donnerfass mit 60,6 MJ, sechs Probe-Fenster in 8–48 m — das in 12 m mit zwei
+// Scheiben —, eine Kiste in 6 m, der Spieler in 16 m; 71 Bauten des Dorfs im Radius), gemessen je Ereignis: Umsatz 37 ·
+// Schreiber 2 245 (kalt: je Bau 31 für sein Fahr-Profil; die zweite Welle derselben Welt 231) · Stoß 2–12 · stehendes Werk 6 ·
+// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3.
+// DAS ERBE DES GRUNDS trägt sein eigenes Maß (`raeumt`: die Rufe der Natur-Räumung `_naturRaeumen` unter der Marke, je
+// Ereignis): die Welle räumt keine Natur — der Rest eines Einsturzes erbt den Grund seines Werks (`grundErbe`), der freie
+// Körper trägt keinen Grundriss. In Einheiten hebt die Räumung einen Bruch nur um 7 % (1 041 → 1 109), in Zeit um 43 % (GTX
+// 1050, 52 brechende Werke: 7,1–7,8 → 4,06 ms je Werk) — ihre Arbeit sind Schleifen über Kacheln, die kein Ruf zählt. Die
+// Mutante der Klasse (der Rest räumt den Grund seines Werks ein zweites Mal, `_grundrissRaeumen` ohne `gehalten`) fährt in
+// JEDEM Lauf: sieht die Linse ihre Räumung nicht, ist sie BLIND. `DRUCK_VERZUG_S`: so weit darf die letzte Frist hinter ihrer
+// Ankunft fallen — die Grenze, die der Takt BAUT: `DRUCK.verzugS` 0,25 s (über sein Bild-Budget hinaus fällt je Bild der
+// Anteil, den die älteste Frist schon wartete, nach verzugS alles Fällige) plus EIN Takt am Deckel der Welt-Uhr
+// (`TAKT_DECKEL_S` 0,1 s: so spät kann das Bild kommen, das die Grenze sieht). Das Budget allein hielt den letzten von 52
+// Brüchen 2,6 s, die Grenze 0,27 s; gemessen an der Probe 0,032 s. `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach
+// liegen (gemessen 1,5 s).
+const DRUCK_UMSATZ = 50;
+const DRUCK_WELLE = 80;
+const DRUCK_BLICK = 40;
+const DRUCK_STOSS = 16;
+const DRUCK_LAST = 4;
+const DRUCK_BRUCH = 370;
+const DRUCK_SCHERBE = 230;
+const DRUCK_ENDE = 5;
+const DRUCK_VERZUG_S = 0.35;
+const DRUCK_SCHLAF_S = 3;
+const druckSoll = (e) =>
+    e.art === "umsatz"
+        ? DRUCK_UMSATZ
+        : e.art === "welle"
+          ? DRUCK_WELLE + DRUCK_BLICK * (e.blick | 0)
+          : e.art === "ende"
+            ? DRUCK_ENDE
+            : e.art === "werk"
+              ? DRUCK_LAST * (e.teile | 0) + (e.scherben > 0 ? DRUCK_BRUCH + DRUCK_SCHERBE * e.scherben : 0)
+              : DRUCK_STOSS;
+const druckKlasse = (e) => (e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : ["umsatz", "welle", "ende"].includes(e.art) ? e.art : "stoss");
+const druckNenne = (e) =>
+    ({ umsatz: "der Umsatz der Ladung", welle: "der Schreiber der Welle", ende: "das Ende der Welle", bruch: "die Frist eines brechenden Werks", steht: "die Frist eines stehenden Werks", stoss: `die Frist eines Gestoßenen (${e.art})` })[druckKlasse(e)] +
+    (Number.isFinite(e.R) ? ` in ${e.R} m` : "");
+const druckSollText = (e) =>
+    ({
+        umsatz: `${DRUCK_UMSATZ}`,
+        welle: `${DRUCK_WELLE} + ${DRUCK_BLICK} je Bau im Radius (${e.blick | 0})`,
+        ende: `${DRUCK_ENDE}`,
+        bruch: `${DRUCK_LAST} je Teil (${e.teile | 0}) + ${DRUCK_BRUCH} + ${DRUCK_SCHERBE} je Scherbe (${e.scherben | 0})`,
+        steht: `${DRUCK_LAST} je Teil (${e.teile | 0})`,
+        stoss: `${DRUCK_STOSS}`,
+    })[druckKlasse(e)];
+// DIE SPANNE AM SOLL (die Zeile der Sim): je Klasse das Ereignis, das seinem Soll am nächsten kommt — sein Anteil, seine Leser
+function druckAmSoll(D) {
+    const aus = {};
+    for (const e of (D && D.ereignisse) || []) {
+        const [k, soll] = [druckKlasse(e), druckSoll(e)];
+        const anteil = soll > 0 ? e.einheiten / soll : e.einheiten > 0 ? Infinity : 0;
+        if (!aus[k] || anteil > aus[k].anteil) aus[k] = { anteil: Number.isFinite(anteil) ? +anteil.toFixed(3) : anteil, einheiten: e.einheiten, soll, leser: brandLeser(e.leser) };
+    }
+    return aus;
+}
+// Das Urteil der Druckwelle (ein Teil von `simUrteil`): `D` = simWecken.druck
+function druckUrteil(D, v) {
+    if (!D || !D.start) return void v.push("LEER: an der Mess-Wiese fing der Funke neben der Ladung nicht — keine Druckwelle gemessen");
+    if (!(D.frist > 0)) return void v.push("LEER: die Front des Funkens gab der Ladung keine Frist (`_ladungZuenden`: dieselbe Zelle, ein Bett)");
+    const E = D.ereignisse || [];
+    const welle = E.find((e) => e.art === "welle");
+    if (!welle) return void v.push("LEER: die Frist der Ladung fiel, keine Welle (`_ladungUmsatz` → `_druckWelle`)");
+    if (!(D.einheiten > 0)) v.push(`STUMPF: die Ladung setzte um, die Sim-Linse sieht keinen Takt der Welle (die Marke \`druck\` unter ${SIMS.druck[0].join(" · ")})`);
+    // je Ereignis an seinem Soll — der erste Täter jeder Klasse beim Namen
+    const gesehen = new Set();
+    for (const e of E) {
+        const k = druckKlasse(e);
+        if (gesehen.has(k) || !(e.einheiten > druckSoll(e))) continue;
+        gesehen.add(k);
+        v.push(`DRUCK-SOLL: ${druckNenne(e)} kostete ${e.einheiten} Einheiten (Soll ≤ ${druckSoll(e)}: ${druckSollText(e)}) — seine Leser: ${brandLeser(e.leser, 8)}`);
+    }
+    if (D.rest > 0) v.push(`DRUCK-TAKT: der Takt der Welle arbeitete ${D.rest} Einheiten außerhalb jedes Ereignisses (Umsatz, Welle, Frist, Ende)`);
+    // das Erbe des Grunds: die Welle räumt keine Natur — der erste Täter beim Namen, die Mutante jedes Laufs hält das Maß wach
+    const [raeumt, erster] = [E.reduce((s, e) => s + (e.raeumt | 0), 0), E.find((e) => e.raeumt > 0)];
+    if (erster) v.push(`DRUCK-ERBE: ${druckNenne(erster)} räumte die Natur seines Grunds (\`_naturRaeumen\` ${raeumt}× in der Welle) — der Rest eines Einsturzes erbt den Grund seines Werks (\`grundErbe\`), ein freier Körper trägt keinen Grundriss`);
+    if (!D.mutante || !(D.mutante.raeumt > 0)) v.push(`BLIND: die Mutante der Welle (der Rest räumt den Grund seines Werks ein zweites Mal) blieb ungesehen — \`_naturRaeumen\` unter der Marke \`druck\`: ${D.mutante ? D.mutante.raeumt : "kein Lauf"}`);
+    // das Gesetz am Bild der Welt: die Scheibe bricht diesseits der Grenze des Gesetzes und steht jenseits
+    const S = D.scheiben || [];
+    if (!(D.grenze > 0) || !S.some((s) => s.R < D.grenze) || !S.some((s) => s.R > D.grenze))
+        v.push(`LEER: die Probe trägt keine Scheibe diesseits UND jenseits der Bruch-Grenze des Gesetzes (${D.grenze} m; Scheiben in ${S.map((s) => s.R).join(" · ")} m)`);
+    else
+        for (const s of S)
+            if (s.gebrochen !== s.R < D.grenze)
+                v.push(`DRUCK-BRUCH: die Scheibe in ${s.R} m ${s.gebrochen ? "brach" : "steht"} — die Grenze des Gesetzes (σ der Platte = σ_B ihrer Stoff-Zeile) liegt bei ${D.grenze} m`);
+    const K = D.kiste;
+    if (!K || !(K.soll > 0)) v.push("LEER: die Probe trägt keine freie Kiste im Radius der Welle");
+    else if (!(Math.abs(K.dv / K.soll - 1) <= 0.05))
+        v.push(`DRUCK-STOSS: die Kiste in ${K.R} m trägt ${K.dv} m/s (das Gesetz: Impuls × Schattenfläche ÷ Masse = ${K.soll} m/s, ±5 %)`);
+    else if (!(K.wegM > 0.01)) v.push(`DRUCK-STOSS: die Kiste in ${K.R} m trägt ${K.dv} m/s und liegt danach ${K.wegM} m weiter — der Löser nahm den Stoß nicht`);
+    if (!D.spieler || !(D.spieler.dv > 0)) v.push(`DRUCK-LEIB: der Spieler in ${D.spieler ? D.spieler.R : "?"} m trägt keinen Stoß der Welle (\`_druckStoss\` → \`_stossAuf\`)`);
+    if (!D.ohr || !(D.ohr.dp > 0) || !(D.ohr.dauer > 0)) v.push("DRUCK-OHR: das Ohr hörte die Welle nicht (`_substanzKlang` „knall“ mit Überdruck und Dauer am Ort des Hörers)");
+    // (Lehre 17: `null <= x` ist wahr — ein fehlender Wert ist ROT, nie still grün)
+    if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — der Takt hält die Grenze seines Rückstands nicht (\`_tickDruck\`, \`DRUCK.verzugS\`)`);
+    if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
+    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
+    const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
+    if (!(ruhe === 0)) v.push(`DRUCK-RUHE: nach der Welle arbeitet ihr Takt — ${ruhe} Einheiten`);
+}
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -524,6 +645,8 @@ function simUrteil(b, v) {
         const ruhe = Z.nachher.sims.brand.summe + Z.nachher.sims.zuendung.summe;
         if (ruhe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${ruhe} Einheiten`);
     }
+    // (same.physik.reaktion#2) die Druckwelle arbeitet je Ereignis an ihrem Soll, bricht nach dem Gesetz, stößt, klingt und ruht
+    druckUrteil(W.druck, v);
     const A = W.wasser;
     if (!A || !(A.chunks > 0)) v.push("LEER: am Fluss weckt die Werk-Setzung keinen Chunk des Automaten");
     else
@@ -934,6 +1057,8 @@ module.exports = {
     SIMS,
     standUrteil,
     brandAmSoll,
+    druckAmSoll,
+    druckUrteil,
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__simLinseAn = () => (${simLinseAn.toString()})(${JSON.stringify(SIMS)}, ${JSON.stringify(AKTE)});` +

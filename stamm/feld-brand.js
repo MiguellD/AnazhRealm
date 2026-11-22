@@ -443,20 +443,28 @@ class AnazhRealm_feld_brand {
 
     // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass). `uhr`
     // (s der Welt-Uhr): der Augenblick des Funkens (ein Feld-Akt zu seinem Stempel, `_feldAktWirkt`) — ohne ihn jetzt.
+    // DER FUNKE AN EINER LADUNG (same.physik.reaktion#2): berührt er die Hülle eines Baus, dessen Stoff q trägt, setzt der mit
+    // der Tat um (`_ladungZuenden` → `_tickDruck`: der Rufer mag sein Werk gleich abräumen, das Brennglas) — auch auf einer
+    // Zelle, die schon brennt oder kein Bett trägt (dann → true: nichts fing, eine Ladung setzte um).
     _brandFangen(x, z, ein, uhr = this.state.spielZeit) {
         const st = this.state;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
         const n = bf.get(cx + "," + cz);
-        if (n && n.t0 !== null) return null;
+        if (n && n.t0 !== null) {
+            if (this._ladungZuenden(cx, cz, uhr, x, z, null)) this._tickDruck();
+            return null;
+        }
         // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet: die Aschen, die der erloschene noch trug, liegen
         // zuerst (ohne Feld zündet der Rest nichts mehr) — bis w13-brand-takt fielen sie hier weg
         if (!bf.size) {
             if (this._brandRest) this._brandArbeit(Infinity);
             [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [uhr, null, null, null];
         }
-        return this._brandZuenden(cx, cz, uhr, x, z, ein, uhr);
+        const zelle = this._brandZuenden(cx, cz, uhr, x, z, ein, uhr);
+        this._tickDruck();
+        return zelle;
     }
 
     // Die Front erreicht die Zelle zur Zeit t am Punkt (ex, ez) ihres Rands (der Herd: am Ort der Tat). Ihr Bett und ihr Tempo
@@ -467,7 +475,9 @@ class AnazhRealm_feld_brand {
     // kreuzt, in ihrem Tempo, wie schmal die Ellipse auch ist (an den Mitten gemessen verlor das Gitter der acht Nachbarn 75 %
     // der Spitze). Die Zelle brennt, bis die Spitze sie längs ihres Kopfs durchquert hat (bis an ihre fernste Ecke), und die
     // Flamme ihre Verweilzeit; was langsamer in sie zurückläuft (Flanke, Rückfeuer), trägt die Ankunft ihrer Nachbarinnen, nicht
-    // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null).
+    // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null). DIE LADUNGEN DER ZELLE (same.physik.reaktion#2,
+    // `_ladungZuenden`) tragen die Frist, zu der die Front ihren Ort erreicht; ohne Bett setzt nur die Ladung am Eintrittspunkt
+    // um (→ true statt null).
     _brandZuenden(cx, cz, t, ex, ez, ein = null, uhr = this.state.spielZeit) {
         const bf = this.state.brandFeld;
         const key = cx + "," + cz;
@@ -475,7 +485,7 @@ class AnazhRealm_feld_brand {
         const T = f && this._brandTempo(f, t);
         if (!T || !(T.R > 0)) {
             bf.delete(key);
-            return null;
+            return this._ladungZuenden(cx, cz, t, ex, ez, null) ? true : null;
         }
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const k = 1 / (T.R * (1 - T.ecc));
@@ -540,6 +550,7 @@ class AnazhRealm_feld_brand {
             bett: f.bett, // die Maske ihres Betts (`_brandStoff`): Flammen, Front und Asche stehen auf ihr (`_brandBettFn`)
         });
         bf.set(key, zelle);
+        this._ladungZuenden(cx, cz, t, ex, ez, zeit);
         for (const [dx, dz] of AnazhRealm.BRAND.nachbarn) {
             const nk = cx + dx + "," + (cz + dz);
             const n = bf.get(nk);
@@ -1072,6 +1083,405 @@ class AnazhRealm_feld_brand {
         AnazhRealm._instanzZahl(S.mesh, n);
         if (n > 0) S.mesh.instanceMatrix.needsUpdate = S.achse.needsUpdate = S.phase.needsUpdate = true;
     }
+
+    // ═══ DIE DRUCKWELLE (same.physik.reaktion#2) ═══
+    // EIN STOFF, DESSEN ZEILE q TRÄGT, SETZT IM FEUER SCHLAGARTIG UM (schmiede `STOFF_GESETZ`, die Spalte q in J/kg): seine Masse
+    // mal q ist die Energie der Welle. Ihr Gesetz steht im Kern neben der Trag-Spannung (`druckwelle`: Überdruck, Impuls, Dauer
+    // und Ankunft je Abstand; `plattenLast`: die Platte unter ihr); hier stehen der Auslöser (`_ladungZuenden`: das Feuer
+    // erreicht die Ladung), der EINE Schreiber (`_druckWelle`) und sein Takt (`_tickDruck`: jeder Körper wird zu SEINER Ankunft
+    // getroffen, die Front läuft). Die Leser sind die, die es gab: das Werk bricht über den EINEN Einsturz (`_werkBricht`,
+    // still: die Welle nennt ihn), der freie Körper, das Tier, der Spieler und der Wagen tragen den Stoß des EINEN Impuls-Gesetzes
+    // (`_stossAuf`, durch den Schwerpunkt), das Ohr hört den Knall (`_substanzKlang`). Bis hier brannte jedes Fass wie das Gras
+    // daneben: der Stamm trug 0 Treffer „druck", die Spalte σ_B der Stoff-Zeile hatte keinen Leser.
+
+    // DIE LADUNG EINES BAUS: seine Teile aus einem Stoff, dessen Zeile q trägt — je Bauplan gemerkt (die Teile selbst; Volumen,
+    // ρ und q liest `_ladungJ` beim Umsatz). Wer eine trägt, steht im Verzeichnis unter „ladung" (`_blockerNamen`): der
+    // Auslöser fragt nur sie. Das Verzeichnis fragt nur, OB ein Teil q trägt — es baut keine Gestalt (das Volumen einer Form
+    // ist ihr Netz, `_teilVolumen`; die Stoff-Wand nannte den Weg vom Netz der Blocker zum Netz-Bau beim Namen).
+    _ladungTeile(entry) {
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp || !Array.isArray(bp.parts)) return AnazhRealm.DRUCK.keine;
+        const memo = this._ladungMemo || (this._ladungMemo = new WeakMap());
+        let T = memo.get(bp);
+        if (!T) {
+            T = [];
+            const M = this.state.materials || {};
+            for (const p of bp.parts) {
+                const z = p && M[p.material] ? this._stoff(p.material) : null;
+                if (z && z.q > 0) T.push(p);
+            }
+            if (!T.length) T = AnazhRealm.DRUCK.keine;
+            memo.set(bp, T);
+        }
+        return T;
+    }
+
+    // DIE ENERGIE EINER LADUNG (J): Σ über ihre Teile Volumen × Skala³ × ρ × q — beide Zahlen aus der Zeile des Stoffs (`_stoff`).
+    _ladungJ(entry) {
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        let j = 0;
+        for (const p of this._ladungTeile(entry)) {
+            const z = this._stoff(p.material);
+            if (z && z.q > 0 && z.rho > 0) j += this._teilVolumen(p) * s * s * s * z.rho * z.q;
+        }
+        return j;
+    }
+
+    // DAS FEUER ERREICHT EINE LADUNG: fängt die Zelle (cx, cz) zur Zeit t am Punkt (ex, ez), trägt jede Ladung auf ihr die Frist,
+    // zu der die Front ihren Ort erreicht (`zeit(x, z)` s nach t: die Ellipse der Zelle, `_brandZuenden`); die Ladung, deren
+    // Hülle der Funke selbst berührt (bis `DRUCK.funkeM`), setzt zur Zeit t um — auch auf einer Zelle ohne Bett (`zeit` null:
+    // dort erreicht das Feuer sonst keine). Die frühere Frist gewinnt. → die Zahl der neuen Fristen. Ohne Ladung in der Welt
+    // kostet die Frage einen Blick ins Verzeichnis (`_blockerUmPlatz` mit Namen).
+    _ladungZuenden(cx, cz, t, ex, ez, zeit) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const L = this._ladungAus || (this._ladungAus = []);
+        L.length = 0;
+        this._blockerUmPlatz((cx + 0.5) * cs, (cz + 0.5) * cs, cs / 2, L, "ladung");
+        let n = 0;
+        for (const e of L) {
+            if (!e.position) continue;
+            const [x, z] = [e.position.x, e.position.z];
+            const amFunken = Math.hypot(x - ex, z - ez) <= (e._blockerReach || 0) + AnazhRealm.DRUCK.funkeM;
+            if (!amFunken && !(zeit && Math.floor(x / cs) === cx && Math.floor(z / cs) === cz)) continue;
+            const frist = amFunken ? t : t + zeit(x, z);
+            if (e._ladungFrist != null && e._ladungFrist <= frist) continue;
+            e._ladungFrist = frist;
+            (this._druckFristen || (this._druckFristen = [])).push({
+                t: frist,
+                ladung: e,
+                zelle: amFunken ? null : cx + "," + cz,
+            });
+            n++;
+        }
+        L.length = 0;
+        return n;
+    }
+
+    // DIE LADUNG SETZT UM (ihre Frist ist da): sie verlässt die Welt ohne Stimme, ihre Energie ist die Welle an ihrem Ort
+    // (`_druckWelle`, zur Zeit der Frist; die Welle nennt sie im Journal, wenn sie verklungen ist — `_druckEnde`). Nichts
+    // geschieht, wenn eine frühere Frist sie schon umsetzte, das Werk die Welt vorher verließ, die Zelle erlosch, bevor ihre
+    // Front die Ladung erreichte (der Regen), oder die Ladung die Zelle vorher verließ (eine andere Welle stieß sie fort).
+    _ladungUmsatz(f) {
+        const e = f.ladung;
+        if (e._ladungFrist !== f.t) return;
+        e._ladungFrist = null;
+        if (!this.state.architectures.includes(e)) return;
+        if (f.zelle) {
+            const z = this.state.brandFeld && this.state.brandFeld.get(f.zelle);
+            if (!z || z.t0 === null) return;
+            const cs = AnazhRealm.LIFE_FIELD.cell;
+            if (Math.floor(e.position.x / cs) + "," + Math.floor(e.position.z / cs) !== f.zelle) return;
+        }
+        const energieJ = this._ladungJ(e);
+        if (!(energieJ > 0)) return;
+        const K = e._frei;
+        const b = e.blockerAABBs && e.blockerAABBs[0];
+        const ort = K
+            ? { x: K.p[0], y: K.p[1], z: K.p[2] }
+            : { x: e.position.x, y: b ? (b.botY + b.topY) / 2 : e.position.y, z: e.position.z };
+        const bp = this.state.blueprints[e.type];
+        const name = AnazhRealm._namensKopf((bp && bp.label) || e.type);
+        this.removeArchitecture(e, { still: true });
+        this._druckWelle(ort, energieJ, f.t, { name, type: e.type, id: e.id });
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+    }
+
+    // DIE LUFT DER WELLE: die Dichte des Fahr-Kerns (vehicle `FAHR.luft.rho`, der Wind an der Flanke liest dieselbe) und die
+    // Schallgeschwindigkeit des Klang-Kerns (klang `FAHRT_OHR.c`, der Doppler liest dieselbe) — der Ruhedruck folgt im Gesetz.
+    _druckLuft() {
+        if (this._druckLuftMemo) return this._druckLuftMemo;
+        const V = globalThis.__vehicleCore;
+        const rho = V && V.FAHR && V.FAHR.luft ? V.FAHR.luft.rho : NaN;
+        const c = AnazhRealm._umweltGesetz().kern.FAHRT_OHR.c;
+        if (!(rho > 0) || !(c > 0)) AnazhRealm._kernPflichtBruch("vehicle:FAHR.luft.rho · klang:FAHRT_OHR.c");
+        return (this._druckLuftMemo = Object.freeze({ rho, c }));
+    }
+
+    // DER EINE SCHREIBER DER DRUCKWELLE: die Energie `energieJ` setzt am Ort `ort` zur Welt-Zeit `uhr` um. Das Gesetz gibt je
+    // Abstand Überdruck, Impuls, Dauer und Ankunft; getroffen wird, was im Radius der Welle steht (`druckRadius`: bis ihr
+    // Überdruck unter das Ende des Gesetzes fällt) — jeder Körper zu SEINER Ankunft (`_tickDruck`), nie alle im Bild der
+    // Zündung: ein freier Körper, ein Werk, dessen Form seine Teile sind (`_werkAusTeilen`), ein Wagen, jedes Tier, der
+    // Spieler; das Ohr hört sie auch jenseits ihres Radius (der Kern des Klangs urteilt, ob sie noch hörbar ist). Gewachsenes
+    // und Studio-Werke stehen (ihr Stoff trägt keine Platte, die das Gesetz bricht). Die Kosten trägt die Zündung einmal: je
+    // Eintrag im Radius ein Blick auf seinen Bauplan (gemerkt), je getroffenem Körper EINE Frist. `wer` ({ name, type, id }): was
+    // umsetzte — die Welle nennt es im Journal mit dem, was sie brach, sobald ihre letzte Frist fiel (`_druckEnde`: EIN Satz je
+    // Welle, nie einer je Werk). → die Welle { energieJ, radius, treffer, offen, werke, teile }.
+    _druckWelle(ort, energieJ, uhr = this.state.spielZeit, wer = null) {
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const luft = this._druckLuft();
+        const radius = SG.druckRadius(energieJ, luft);
+        if (!(radius > 0)) return null;
+        const st = this.state;
+        const F = this._druckFristen || (this._druckFristen = []);
+        const welle = {
+            x: ort.x,
+            y: ort.y,
+            z: ort.z,
+            energieJ,
+            uhr,
+            radius,
+            luft,
+            wer,
+            treffer: 0,
+            offen: 0,
+            werke: 0,
+            teile: 0,
+            verzug: 0,
+        };
+        const frist = (art, q, x, y, z) => {
+            const [dx, dz] = [x - ort.x, z - ort.z];
+            const d = Math.hypot(dx, dz);
+            const w = SG.druckwelle(energieJ, Math.hypot(d, y - ort.y), luft);
+            F.push({ t: uhr + w.ankunft, art, q, w, nx: d > 1e-6 ? dx / d : 1, nz: d > 1e-6 ? dz / d : 0, welle });
+            welle.offen++;
+            if (art !== "ohr") welle.treffer++;
+        };
+        const B = this._druckAus || (this._druckAus = []);
+        B.length = 0;
+        this._blockerUmPlatz(ort.x, ort.z, radius, B);
+        const memo = this._druckArtMemo || (this._druckArtMemo = new WeakMap());
+        for (const e of B) {
+            if (!e.position) continue;
+            const K = e._frei;
+            let art = "frei";
+            if (!K) {
+                const bp = st.blueprints[e.type];
+                if (!bp) continue;
+                art = memo.get(bp);
+                if (art === undefined) memo.set(bp, (art = this._druckArt(e, bp)));
+                if (art === "sonst") art = this._fahrStossSatz(e) ? "wagen" : null;
+                if (!art) continue;
+            }
+            const [x, y, z] = K ? [K.p[0], K.p[1], K.p[2]] : [e.position.x, e.position.y, e.position.z];
+            if (Math.hypot(x - ort.x, z - ort.z) > radius + (e._blockerReach || 0)) continue;
+            frist(art, e, x, y, z);
+        }
+        B.length = 0;
+        for (const c of st.creatures || []) {
+            if (!c || !c.position || Math.hypot(c.position.x - ort.x, c.position.z - ort.z) > radius) continue;
+            frist("leib", c, c.position.x, c.position.y, c.position.z);
+        }
+        const pm = st.playerMesh;
+        if (pm && pm.position) {
+            const p = pm.position;
+            if (Math.hypot(p.x - ort.x, p.z - ort.z) <= radius) frist("leib", pm, p.x, p.y, p.z);
+            frist("ohr", null, p.x, p.y, p.z);
+        }
+        if (!welle.offen) this._druckEnde(welle);
+        return welle;
+    }
+
+    // DIE WELLE IST VERKLUNGEN (ihre letzte Frist fiel): setzte eine Ladung um (`wer`), nennt das Journal sie EINMAL — mit den
+    // Teilen und Werken, die die Welle brach. Im ersten Lauf (GTX 1050, ein Fass vor 78 Probe-Fenstern) schrieb jedes der 52
+    // gebrochenen Werke seinen eigenen Satz.
+    _druckEnde(welle) {
+        const wer = welle.wer;
+        if (!wer) return;
+        // die Zeile der Tafel steht AM Ruf (die Wand der Erinnerung liest sie dort, gate:v1-pfad FEIND: ein Name reist als Wert
+        // seiner Zeile, nie in einem fertigen Text, den eine Variable trägt)
+        this.journalAppend(
+            "loss",
+            welle.teile
+                ? ["journal.ladung-bruch", { name: wer.name, teile: welle.teile, werke: welle.werke }]
+                : ["journal.ladung", { name: wer.name }],
+            {
+                type: wer.type,
+                id: wer.id,
+                energieJ: Math.round(welle.energieJ),
+                treffer: welle.treffer,
+                werke: welle.werke,
+                teile: welle.teile,
+            }
+        );
+    }
+
+    // Was ein Bau unter der Welle ist (je Bauplan gemerkt): „werk" (seine Form sind seine Teile: die Platten brechen), „sonst"
+    // (ein Studio-Werk — steht; trägt es einen Fahr-Satz, ist es ein Wagen und wird gestoßen) oder null (Gewachsenes steht).
+    _druckArt(e, bp) {
+        if (this._istNatur(e)) return null;
+        return this._werkAusTeilen(e, bp) ? "werk" : "sonst";
+    }
+
+    // DER TAKT DER WELLE: ohne Frist kein Schritt (Ruhe ist Null). Fällig ist, was die Welt-Uhr erreicht hat, in der Folge
+    // seiner Zeit — eine Ladung setzt um (`_ladungUmsatz`), ein Körper wird getroffen (`_druckTrifft`); was ein Umsatz an
+    // Fristen schreibt, die schon fällig sind (der Körper an der Ladung), fällt im selben Takt.
+    // DAS BILD TRÄGT EIN BUDGET (wie der Brand, `_brandArbeit`): je Bild fallen Fristen, bis `DRUCK.budgetMs` verbraucht sind
+    // (mindestens `DRUCK.mindestJeBild`), der Rest im nächsten Bild — in der Folge ihrer Ankunft, jede mit den Zahlen des
+    // Gesetzes an IHREM Ort; nur ihr Augenblick wartet (`welle.verzug`: der größte Rückstand einer Frist hinter ihrer Ankunft,
+    // s Spielzeit). DER RÜCKSTAND HAT EINE GRENZE: über das Budget hinaus fällt je Bild der Anteil der fälligen Fristen, den
+    // die älteste schon gewartet hat (Rückstand ÷ `DRUCK.verzugS`) — nach verzugS alles Fällige. EINE LADUNG WARTET NIE: ihr
+    // Umsatz fällt im Takt ihrer Frist (wer sie zündet, darf sie danach aus der Welt nehmen — das Brennglas). Vorher fiel
+    // jede fällige Frist im selben Bild: ein Fass vor 78 Probe-Fenstern hielt ein Bild 595 ms (GTX 1050, 52 brechende Werke,
+    // je Werk 7,1–7,8 ms Einsturz); mit dem Budget allein fiel der letzte Bruch 2,6 s nach seiner Ankunft, und die Bilder der
+    // Welle trug zu 48 % der Löser der Scherben, zu 6 % dieser Takt (Profil w9).
+    _tickDruck() {
+        const F = this._druckFristen;
+        if (!F || !F.length) return;
+        const jetzt = this.state.spielZeit;
+        const D = AnazhRealm.DRUCK;
+        const ende = performance.now() + D.budgetMs;
+        for (;;) {
+            F.sort((a, b) => a.t - b.t);
+            let k = 0;
+            while (k < F.length && F[k].t <= jetzt) k++;
+            if (!k) return;
+            const soll = Math.max(D.mindestJeBild, Math.ceil((k * (jetzt - F[0].t)) / D.verzugS));
+            // was ein Umsatz schreibt, hängt hinten an (`_druckWelle`): die fälligen Fristen 0…k−1 stehen fest; was wartet,
+            // rückt in seiner Folge nach vorn
+            let rest = 0;
+            for (let i = 0; i < k; i++) {
+                const f = F[i];
+                if (f.ladung) this._ladungUmsatz(f);
+                else if (i < soll || performance.now() <= ende) {
+                    f.welle.verzug = Math.max(f.welle.verzug, jetzt - f.t);
+                    this._druckTrifft(f);
+                    if (--f.welle.offen === 0) this._druckEnde(f.welle);
+                } else F[rest++] = f;
+            }
+            F.splice(rest, k - rest);
+            if (rest) return;
+        }
+    }
+
+    // DIE WELLE TRIFFT (die Frist eines Körpers ist da): das Ohr hört den Knall mit dem Überdruck und der Dauer an seinem Ort,
+    // das Werk bricht (`_druckWerk`), jeder andere Körper trägt den Stoß (`_druckStoss`). Wer die Welt seit der Zündung
+    // verließ, wird nicht getroffen.
+    _druckTrifft(f) {
+        const { art, q, w } = f;
+        if (art === "ohr") return void this._substanzKlang("knall", { dp: w.dp, dauer: w.dauer });
+        const st = this.state;
+        if (art === "leib" ? q !== st.playerMesh && !st.creatures.includes(q) : !st.architectures.includes(q)) return;
+        if (art === "werk") return void this._druckWerk(q, f.welle);
+        this._druckStoss(q, w.impuls, f.nx, f.nz);
+    }
+
+    // DER STOSS DER WELLE: ihr Impuls je Fläche (Pa·s) mal der Schattenfläche des Körpers quer zu ihr (`_druckFlaeche`), durch
+    // seine Masse — dv längs der Welle durch den SCHWERPUNKT (sie umfließt den Körper: kein Hebel; `_stossAuf` mit `mitte`).
+    // Unter `DRUCK.stossMin` ruht er. → dv in m/s (0: kein Teilnehmer des Impuls-Gesetzes oder zu schwach).
+    _druckStoss(q, impuls, nx, nz) {
+        const K = this._stossKoerper(q, this._druckK || (this._druckK = {}));
+        if (!K) return 0;
+        const m = K.art === "frei" ? q._frei.m : K.m;
+        const dv = (impuls * this._druckFlaeche(K, nx, nz)) / m;
+        if (!(dv >= AnazhRealm.DRUCK.stossMin)) return 0;
+        this._stossAuf(K, nx, nz, dv, true);
+        return dv;
+    }
+
+    // DIE SCHATTENFLÄCHE EINES KÖRPERS quer zur Welle (nx, nz), m²: der freie Körper sein Kasten (Σ Fläche × |Achse · n|; die
+    // Walze Mantel und Deckel), das Tier die Kapsel seines Rumpfs (`_kreaturLeib`: π r² von vorn, dazu 4·r·halb quer), der
+    // Spieler seine Wand-Kapsel (`_spielerKapsel`), der Wagen der Kasten seiner Hülle.
+    _druckFlaeche(K, nx, nz) {
+        const q = K.q;
+        if (K.art === "frei") {
+            const B = q._frei;
+            const a = (k) => Math.abs(nx * B.R[k] + nz * B.R[6 + k]);
+            if (B.kiste) return 4 * (B.hy * B.hz * a(0) + B.hx * B.hz * a(1) + B.hx * B.hy * a(2));
+            const c = Math.min(1, a(1));
+            return 4 * B.r * B.hy * Math.sqrt(1 - c * c) + Math.PI * B.r * B.r * c;
+        }
+        if (K.art === "spieler") {
+            const k = this._spielerKapsel(this._druckKapsel || (this._druckKapsel = {}));
+            return 2 * k.r * (k.y1 - k.y0);
+        }
+        if (K.art === "tier") {
+            const L = this._kreaturLeib(q, 0, this._druckLeib || (this._druckLeib = {}));
+            const laengs = Math.min(1, Math.abs(nx * L.fx + nz * L.fz));
+            return Math.PI * L.radius * L.radius + 4 * L.radius * L.halb * Math.sqrt(1 - laengs * laengs);
+        }
+        let A = 0;
+        for (const b of q.blockerAABBs || [])
+            A = Math.max(A, (b.topY - b.botY) * (Math.abs(nx) * (b.maxZ - b.minZ) + Math.abs(nz) * (b.maxX - b.minX)));
+        return A;
+    }
+
+    // DIE LAST EINES TEILS UNTER DER WELLE → { last, w, cos } oder null (keine Platte: nur der Quader trägt das Platten-Gesetz;
+    // ein Teil ohne Zeile). Der Quader ist die Platte seiner zwei großen Maße, dick sein kleinstes; die Welle am Ort seiner
+    // Mitte (`druckwelle`), ihr Überdruck mal |cos| des Winkels zwischen ihr und dem Lot der Platte (frei stehend umfließt die
+    // Welle sie: nur der Anteil längs des Lots lastet), `last` = σ ÷ σ_B aus der Zeile des Stoffs (`_stoff`: σ_B, E und ρ —
+    // schmiede `plattenLast`); ab 1 bricht sie. Leser: `_druckWerk` und die Linse (gate:gegenstand-stoff `--gesetz`).
+    _druckTeilLast(p, e, welle) {
+        if (!p || p.shape !== "box" || !p.size) return null;
+        const z = p.material ? this._stoff(p.material, "das Teil aus „" + p.material + "“ trägt keine Platte") : null;
+        if (!z) return null;
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const [c, sn] = [Math.cos(ry), Math.sin(ry)];
+        const S = [p.size.x * s, p.size.y * s, p.size.z * s];
+        const d = S.indexOf(Math.min(...S));
+        const lot = new THREE.Vector3(d === 0 ? 1 : 0, d === 1 ? 1 : 0, d === 2 ? 1 : 0);
+        const r = p.rotation;
+        if (r) lot.applyEuler(new THREE.Euler(r.x || 0, r.y || 0, r.z || 0, "XYZ"));
+        const q = p.position || {};
+        const [lx, ly, lz] = [(q.x || 0) * s, (q.y || 0) * s, (q.z || 0) * s];
+        // die Mitte des Teils in der Welt: die Gier des Werks, sein Fuß ein halber Meter unter `position.y` (`_freiKoerperSetzen`)
+        const dx = e.position.x + lx * c + lz * sn - welle.x;
+        const dy = e.position.y - 0.5 + ly - welle.y;
+        const dz = e.position.z - lx * sn + lz * c - welle.z;
+        const R = Math.hypot(dx, dy, dz);
+        const w = SG.druckwelle(welle.energieJ, R, welle.luft || this._druckLuft());
+        if (!w) return null;
+        const [nx, nz] = [lot.x * c + lot.z * sn, -lot.x * sn + lot.z * c];
+        const cos = R > 1e-6 ? Math.abs(dx * nx + dy * lot.y + dz * nz) / R : 1;
+        const [lang, kurz] = S.filter((_, k) => k !== d).sort((a, b) => b - a);
+        return { last: SG.plattenLast(z, lang, kurz, S[d], w.dp * cos, w.dauer), w, cos };
+    }
+
+    // DAS WERK UNTER DER WELLE: je Teil die Last seiner Platte (`_druckTeilLast`). Was bricht, zerfällt in `DRUCK.scherben`²
+    // Scherben in seiner Ebene und fällt aus dem Werk — über den EINEN Einsturz (`_werkBricht`, still — die Welle nennt ihn: der Rest
+    // steht als Werk weiter und urteilt neu, jede Scherbe ist ein freier Körper) —, und jede Scherbe trägt den Stoß der Welle
+    // an ihrem Ort. → die Zahl der gebrochenen Teile.
+    _druckWerk(e, welle) {
+        const g = e._gesetz;
+        const bp = (g && g.plan) || this.state.blueprints[e.type];
+        if (!bp || !Array.isArray(bp.parts)) return 0;
+        const N = AnazhRealm.DRUCK.scherben;
+        const teile = bp.parts.slice();
+        const frei = [];
+        let gebrochen = 0;
+        bp.parts.forEach((p, i) => {
+            const l = this._druckTeilLast(p, e, welle);
+            if (!l || !(l.last >= 1)) return;
+            gebrochen++;
+            const S = [p.size.x, p.size.y, p.size.z];
+            const d = S.indexOf(Math.min(...S));
+            const [a, b] = [0, 1, 2].filter((k) => k !== d);
+            const r = p.rotation;
+            const dreh = r ? new THREE.Euler(r.x || 0, r.y || 0, r.z || 0, "XYZ") : null;
+            const q = p.position || {};
+            const gr = S.slice();
+            gr[a] /= N;
+            gr[b] /= N;
+            for (let u = 0; u < N; u++)
+                for (let v = 0; v < N; v++) {
+                    const o = new THREE.Vector3();
+                    o.setComponent(a, ((u + 0.5) / N - 0.5) * S[a]);
+                    o.setComponent(b, ((v + 0.5) / N - 0.5) * S[b]);
+                    if (dreh) o.applyEuler(dreh);
+                    const t = JSON.parse(JSON.stringify(p));
+                    t.size = { x: gr[0], y: gr[1], z: gr[2] };
+                    t.position = { x: (q.x || 0) + o.x, y: (q.y || 0) + o.y, z: (q.z || 0) + o.z };
+                    if (u || v) frei.push(teile.push(t) - 1);
+                    else frei.push(((teile[i] = t), i));
+                }
+        });
+        if (!gebrochen) return 0;
+        const plan = { ...bp, parts: teile }; // der Plan des Einsturzes: eine Kopie mit den geteilten Platten (`_werkBricht` liest label, parts, connections)
+        const truemmer = this._werkBricht(e, plan, frei, true) || [];
+        welle.werke++;
+        welle.teile += gebrochen;
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        for (const t of truemmer) {
+            const K = t && t._frei;
+            if (!K) continue;
+            const [dx, dz] = [K.p[0] - welle.x, K.p[2] - welle.z];
+            const d = Math.hypot(dx, dz);
+            const w = SG.druckwelle(welle.energieJ, Math.hypot(d, K.p[1] - welle.y), welle.luft);
+            this._druckStoss(t, w.impuls, d > 1e-6 ? dx / d : 1, d > 1e-6 ? dz / d : 0);
+        }
+        return gebrochen;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_feld_brand]);
 
@@ -1187,4 +1597,20 @@ AnazhRealm.BRAND = Object.freeze({
             [-1, -1],
         ].map(Object.freeze)
     ),
+});
+
+// DIE DRUCKWELLE IM WIRT (same.physik.reaktion#2, `_druckWelle`): das Gesetz und seine Zahlen stehen im Kern (schmiede
+// `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst
+// liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
+// bewegt nichts Sichtbares und fällt; `scherben`: eine gebrochene Platte fällt in scherben × scherben Stücke; `budgetMs` und
+// `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
+// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist).
+AnazhRealm.DRUCK = Object.freeze({
+    funkeM: 0.5,
+    stossMin: 0.05,
+    scherben: 2,
+    budgetMs: 4,
+    mindestJeBild: 1,
+    verzugS: 0.25,
+    keine: Object.freeze([]),
 });

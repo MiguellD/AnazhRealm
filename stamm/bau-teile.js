@@ -2485,15 +2485,20 @@ class AnazhRealm_bau_teile {
     // Gesetz), rollt den Hang hinab; eine Mulde der Form (`_gefaessFassung`) fängt Regen und hält ihn. Ein Studio-Werk trägt
     // seine Form aus dem Gesetzbuch (seine Teile sind Spender-Substanz), Natur wurzelt. Befund: das Urteil fiel nur in der
     // Werkstatt — in der Welt stand der überlange Kragarm, die Brücke ohne Pfeiler schwebte.
-    _werkGesetzSetzen(entry, bp, boden = 0) {
-        if (
+    // DIE FORM DES WERKS SIND SEINE TEILE: kein Gewachsenes, kein Studio-Werk (dessen Form sein Gesetzbuch trägt) — die EINE
+    // Frage, ob die Statik über die Teile urteilt (`_werkGesetzSetzen`) und ob die Druckwelle seine Platten bricht (`_druckArt`).
+    _werkAusTeilen(entry, bp) {
+        return !(
             !(Array.isArray(bp.parts) && bp.parts.length) ||
             this._istNatur(entry) ||
             this._foundryPresetForEntry(entry) ||
             typeof bp.studioGestalt === "string" ||
             this._foundryNeedsBookForType(entry.type)
-        )
-            return;
+        );
+    }
+
+    _werkGesetzSetzen(entry, bp, boden = 0) {
+        if (!this._werkAusTeilen(entry, bp)) return;
         const v = this._workshopPhysicsVerdict(bp, boden);
         const faellt = v.floatingParts.length === bp.parts.length;
         const grund = faellt
@@ -2624,7 +2629,9 @@ class AnazhRealm_bau_teile {
     // `<art>_rest_<hash>`, die Verbindungen umgezählt; dieselbe Kennung, derselbe Same) und urteilt neu. Ein Trümmer ist ein
     // Bauplan `truemmer_<hash>` (EIN Teil, `frei`): gleiche Teile teilen ihn, der Stand trägt ihn wie jeden eigenen Bauplan, die
     // Lage und Drehung seines Körpers jeder Bau (`architectures`). Vorher fiel das ganze Werk als ½ g t² und verschwand.
-    _werkBricht(e, bp, frei) {
+    // `still` (same.physik.reaktion#2): der Rufer nennt den Bruch selbst — die Druckwelle schreibt EINEN Satz je Welle
+    // (`_druckEnde`), nie einen je Werk. → die Einträge der Trümmer (ihr Rufer stößt sie).
+    _werkBricht(e, bp, frei, still = false) {
         if (this._werkWaise(e, "der Bruch")) return;
         const fallend = new Set(frei);
         const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
@@ -2716,20 +2723,24 @@ class AnazhRealm_bau_teile {
             ? bauplan(e.type + "_rest", teile, { etikett: ["bau.rest", { name }], connections: verbunden })
             : null;
         const [id, ort] = [e.id, { ...e.position }];
+        // DER REST ERBT DEN GRUND SEINES WERKS: der Kasten, den das Werk bis hier als Grundriss hielt — der Rest steht auf den
+        // Teilen, die es trug, und räumt die Fläche kein zweites Mal (`_grundrissRaeumen`)
+        const g0 = rest ? this._grundrissVon(e) : null;
+        const grundErbe =
+            g0 && g0.welt
+                ? [ort.x + g0.ox - g0.ex, ort.z + g0.oz - g0.ez, ort.x + g0.ox + g0.ex, ort.z + g0.oz + g0.ez]
+                : null;
         this.removeArchitecture(e, { still: true });
-        if (rest) this.spawnArchitecture(rest, ort, { ...opts, id, rotationY: ry });
-        for (const [typ, o, drehung] of truemmer) this.spawnArchitecture(typ, o, { ...opts, drehung });
-        this.journalAppend(
-            "loss",
-            ["journal.einsturz", { name, grund: this._t("bauen.bruch-lastpfad", { n: frei.length }) }],
-            {
-                type: e.type,
-                id,
-                grund: "schwebt",
-                truemmer: truemmer.length,
-            }
-        );
+        if (rest) this.spawnArchitecture(rest, ort, { ...opts, id, rotationY: ry, grundErbe });
+        const koerper = truemmer.map(([typ, o, drehung]) => this.spawnArchitecture(typ, o, { ...opts, drehung }));
+        if (!still)
+            this.journalAppend(
+                "loss",
+                ["journal.einsturz", { name, grund: this._t("bauen.bruch-lastpfad", { n: frei.length }) }],
+                { type: e.type, id, grund: "schwebt", truemmer: truemmer.length }
+            );
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        return koerper;
     }
 
     // Das Werk rollt: der Hang treibt es längs seiner Roll-Richtung (quer zur Achse; die Kugel die Falllinie hinab) mit

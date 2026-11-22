@@ -823,6 +823,45 @@ class AnazhRealm_koerper_frei {
         if (n - n0 <= 4) return n;
         const G = this._freiG;
         const CS = AnazhRealm.FREI_KONTAKT;
+        // WAS ÜBER EINEM TIEFEREN LIEGT, TRÄGT NICHT (same.physik.reaktion#2): ein Kontakt, in dessen Lot ein tieferer derselben
+        // Berührung liegt (näher an seiner Normalen als quer zu ihr: |Δ|² ≤ 2 (Δ·n)²), ist derselbe Stütz-Punkt eine Lage weiter —
+        // er fällt vor der Wahl. Am flachen Körper (dünner als der Spalt: die Scherbe, das Brett) sind Ober- und Unterseite zugleich
+        // Kontakt; „der weiteste“ maß im Raum und nahm die Ecke der Oberseite (um ihre Dicke weiter): die Platte ruhte auf EINEM
+        // tiefen Punkt und drei schwebenden, sank ein und wippte.
+        let faellt = 0;
+        const aus =
+            this._freiVierAus && this._freiVierAus.length >= n - n0
+                ? this._freiVierAus
+                : (this._freiVierAus = new Uint8Array(2 * (n - n0)));
+        for (let k = n0; k < n; k++) {
+            const c = k * CS;
+            const x = G[c + 65];
+            const y = G[c + 66];
+            const z = G[c + 67];
+            const t = G[c + 75];
+            let ueber = 0;
+            for (let j = n0; j < n && !ueber; j++) {
+                const d = j * CS;
+                if (!(G[d + 75] > t)) continue;
+                const v0 = G[d + 65] - x;
+                const v1 = G[d + 66] - y;
+                const v2 = G[d + 67] - z;
+                const dn = v0 * G[c] + v1 * G[c + 1] + v2 * G[c + 2];
+                if (v0 * v0 + v1 * v1 + v2 * v2 <= 2 * dn * dn) ueber = 1;
+            }
+            aus[k - n0] = ueber;
+            faellt += ueber;
+        }
+        if (faellt) {
+            let m = n0;
+            for (let k = n0; k < n; k++) {
+                if (aus[k - n0]) continue;
+                if (m !== k) G.copyWithin(m * CS, k * CS, k * CS + CS);
+                m++;
+            }
+            n = m;
+            if (n - n0 <= 4) return n;
+        }
         // die Wahl je Index (nichts wandert, bis die vier feststehen); der Anker r_a des Kontakts k liegt ab k·CS + 65
         let b = n0;
         for (let k = n0 + 1; k < n; k++) if (G[k * CS + 75] > G[b * CS + 75]) b = k;
@@ -1362,11 +1401,17 @@ class AnazhRealm_koerper_frei {
     // DER STOSS DES IMPULS-GESETZES am freien Körper (`_stossAuf`, Art „frei"): das Gesetz gibt dem Punkt, an dem die Hülle des
     // Wagens den Körper berührt, die Geschwindigkeit dv längs (nx, nz) — die Mitte des Bands, in dem Hülle und Körper sich
     // überlappen (`e._freiStossY`, `_fahrHuelleKontakt`; ohne Hülle seine Mitte), auf der dem Wagen zugewandten Seite. Der Impuls trägt Masse UND Trägheit des Körpers
-    // (j = dv / (1/m + (r×n)·I⁻¹(r×n))): über dem Schwerpunkt getroffen, kippt er.
-    _freiStoss(e, nx, nz, dv) {
+    // (j = dv / (1/m + (r×n)·I⁻¹(r×n))): über dem Schwerpunkt getroffen, kippt er. `mitte` (same.physik.reaktion#2): der Stoß
+    // greift im Schwerpunkt (die Druckwelle umfließt den Körper, `_druckStoss`) — kein Hebel, er dreht nicht.
+    _freiStoss(e, nx, nz, dv, mitte = false) {
         const K = e._frei;
         if (!K || !(dv > 0)) return;
         this._freiWecken(K);
+        if (mitte) {
+            K.v[0] += nx * dv;
+            K.v[2] += nz * dv;
+            return;
+        }
         this._freiLage(K);
         let best = -Infinity;
         let px = K.p[0];

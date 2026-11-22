@@ -74,7 +74,12 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   σ_y, σ_B, n, Abbe-Zahl, c, T_schmelz, η und Rauheit, `metall` folgt der Bindung, n der Dichte), der Wirt verbindet sie mit seinen
   Wirkungs-Spalten (`_defaultMaterials`, EIN Leser `_stoff`); Licht (`_wasserOptik`, `_brennpunkte`, `_stoffOptik`), Bruch
   (`_failsUnderLoad`) und Klang (klang `trefferTon`, `schrittBand`) lesen sie, `gate:gegenstand-stoff` (`--gesetz`) nennt jeden
-  Leser mit eigener Zahl. Heute stehen die Vergütungs-Zustände der Schmiede (`MAT` sigY, KIC), Reibung, Zündung, Körnung, Farbe
+  Leser mit eigener Zahl. Die Druckwelle ist Gesetz derselben Zeile (`druckwelle`: E = m·q → Z → Δp und Impuls, `plattenLast`:
+  σ_B bricht die Platte; die Spalte q trägt die Energie einer Ladung): EIN Schreiber `_druckWelle`, je Körper EINE Frist zu
+  seiner Ankunft (`_tickDruck`: ein Budget je Bild, der Rückstand höchstens `DRUCK.verzugS`), Leser Werk (`_druckWerk` → `_werkBricht`) · freier Körper, Leib, Wagen
+  (`_druckStoss` → `_stossAuf`) · Ohr (klang „knall“); das Feuer zündet die Ladung (`_ladungZuenden`), die Linse ist die Marke
+  `druck` in gate:stand-takt. Heute rechnet sie im freien Feld (keine Abschattung, keine Boden-Reflexion), und nur der Quader
+  ist Platte. Heute stehen die Vergütungs-Zustände der Schmiede (`MAT` sigY, KIC), Reibung, Zündung, Körnung, Farbe
   und Tags in eigenen Tafeln, und das Terrain-Labor liest ein eigenes Fresnel-f0 (`WASSER_GESETZ`).
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
 - LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung, Tag-Achse und die Wolken —

@@ -1065,6 +1065,23 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
+            // DAS DONNERFASS (same.physik.reaktion#2): ein freier Körper aus Donnerkorn, ⌀ 0,4 × 0,55 m — 62 kg mal q der Zeile
+            // (1 MJ/kg) sind 62 MJ, die Welle von 14,9 kg des Energie-Maßes. Erreicht ihn das Feuer, setzt er um (`_ladungZuenden`).
+            donnerfass: {
+                name: "donnerfass",
+                etikett: ["bau.donnerfass"],
+                builtIn: true,
+                frei: true,
+                parts: [
+                    {
+                        shape: "cylinder",
+                        material: "donnerkorn",
+                        segments: 16,
+                        size: { x: 0.4, y: 0.55, z: 0.4 },
+                        position: { x: 0, y: 0.275, z: 0 },
+                    },
+                ],
+            },
             felsbrocken: {
                 name: "felsbrocken",
                 etikett: ["bau.felsbrocken"],
@@ -1661,6 +1678,7 @@ class AnazhRealm_bau_vorlagen {
             glut:     [0.6,  623,    0.6,   0.45, 0.003],
             laub:     [0.4,  523,    0.45,  0.2,  0.000244],
             erde:     [0.6,  null,   0.7,   0.45, 0.002,   0.95],
+            donnerkorn: [0.6, 573,   null,  null, 0.002],
             kraut:    [0.4,  533,    null,  null, 0.001],
             essenz:   [null, null,   null,  null, 0.003],
             blech:    [0.5,  null,   0.6,   0.35, null],
@@ -1930,6 +1948,17 @@ class AnazhRealm_bau_vorlagen {
                 brennbar: 0.7,
                 resoniert: 0.35,
                 lebendig: 1.0,
+            }),
+            // DONNERKORN (same.physik.reaktion#2): ein Stoff der Welt, loses dunkles Korn — der eine Stoff, dessen Zeile im
+            // Stoff-Gesetz die Spalte q trägt (J/kg): erreicht ihn das Feuer, setzt er schlagartig um und seine Masse mal q ist
+            // die Energie der Druckwelle (`_ladungJ` → `_druckWelle`). Er zündet wie Holz (573 K, das Brennglas erreicht ihn).
+            // Die Welt trägt keine Quelle, aus der man ihn sammelt; das Donnerfass (`donnerfass`) steht im Katalog des Schöpfers.
+            make("donnerkorn", "stoff.donnerkorn", 0x3d3a40, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.1,
+                wärmeleitung: 0.15,
+                brennbar: 1.0,
             }),
             make("essenz", "stoff.essenz", 0x9fd8ff, {
                 härte: 0.02,

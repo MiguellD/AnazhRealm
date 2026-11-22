@@ -1455,14 +1455,17 @@ class AnazhRealm_siedlung_satz {
             const sub = this._bauplanSubstanz(bp);
             entry.affordances = Object.assign({}, sub.aff);
             entry.affordanceStrength = Object.assign({}, sub.staerke);
-            this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
             // ein freier Bauplan (Kiste, Fass, ein Trümmer des Einsturzes) ist ein Starrkörper des Lösers (physik.K3); er liegt,
             // wie der Stand oder der Bruch ihn legt: die Drehung (Quaternion [w, x, y, z]) und der Schlaf
             if (bp.frei === true) {
                 if (Array.isArray(opts.drehung) && opts.drehung.length === 4) entry.drehung = opts.drehung.map(Number);
                 if (opts.ruht === true) entry.ruht = true;
             }
-            this._freiKoerperSetzen(entry, bp);
+            // WER DEM LÖSER GEHORCHT, DEN URTEILT DIE STATIK NICHT: erst der Plan ohne Körper des Lösers steht unter der EINEN
+            // Statik der Welt (er steht, stürzt, rollt, fängt Regen). Bis same.physik.reaktion#2 urteilte sie über jeden Trümmer
+            // (Lastpfad, Rollen, die Mulde des Gefäßes), und der Löser warf das Urteil im selben Zug weg (`_werkGesetzAus`):
+            // 0,53 ms je Geburt, 208 Scherben einer Welle 110 ms
+            if (!this._freiKoerperSetzen(entry, bp)) this._werkGesetzSetzen(entry, bp);
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die
@@ -1516,7 +1519,8 @@ class AnazhRealm_siedlung_satz {
         // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung, jeder Bau mit Boxen): was die Natur dort
         // schon geworfen hat, weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Platz, Tore, Spieler, KI
         // und Probe gleich. Nach den Boxen: sie sind der Grundriss eines Baus ohne Haus-Zeile (K52).
-        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
+        // (`opts.grundErbe`: der Kasten, den sein Vorgänger am Ort hielt — der Rest eines Einsturzes räumt ihn kein zweites Mal)
+        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry, opts.grundErbe || null);
         // Voxel-Chunks im Footprint dirty markieren → das Cell-Feld wird mit dem Architektur-Stempel neu
         // gebaut (Damm-Cells SOLID, Wasser-Cells im Stempel überschrieben). Eine Pflanze stempelt nicht
         // (`_stempelSpanne`): ihr Bau lässt die Zellen und den Automaten in Ruhe.
