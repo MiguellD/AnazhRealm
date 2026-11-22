@@ -610,7 +610,8 @@ function gauAuftrag(msg) {
         const s0 = (k % GAU_SPUR) * N * 2;
         if (e.spurT[k % GAU_SPUR] !== k) {
             e.spurTod.fill(0, s0, s0 + 2 * N);
-            for (const d of (z.ereignis && z.ereignis.tod) || []) e.spurTod[s0 + 2 * d.wo + (d.t.g === "jaeger" ? 1 : 0)]++;
+            for (const d of (z.ereignis && z.ereignis.tod) || [])
+                e.spurTod[s0 + 2 * d.wo + (d.t.g === "jaeger" ? 1 : 0)]++;
         }
         const q = (k - e.spurUnten) * N;
         if (q + N > e.spurN.length) {
