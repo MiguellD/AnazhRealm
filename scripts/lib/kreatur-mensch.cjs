@@ -465,6 +465,17 @@ async function menschBuehnen() {
             for (const b of liste) b.tempo = b.tempoBand;
             decke("_bewohnerGeburt", (alt) => (S2, b) => (alt.call(r, S2, b), b.tempoBand > 0 && (b.tempo = b.tempoBand), undefined)); // prettier-ignore
         }
+        // DAHEIM AM WERK (mensch-zahlen, der Griff von `binden`): wessen Werk sein eigenes Haus ist (Beruf = Rolle, kein Posten),
+        // der trägt den Stand seines Werks nie als Abend oder Tisch — der Abend daheim sitzt vor der Tür, der Tisch daheim ist
+        // drinnen (koerper `tagesPlan` ohne Ort)
+        // Täter (Selbsttest): der Stand vor dem Schnitt — der Griff reicht den Stand des Werks als Abend durch
+        const amEigenenWerk = (b) => b.rolle !== "wohnhaus" && b.beruf === b.rolle && !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).regenfest && !!b.orte.werk; // prettier-ignore
+        if (hat("bewohner-abendstand")) for (const b of liste) if (amEigenenWerk(b)) b.orte.abend = b.orte.werk;
+        const daheimWerk = () => {
+            const eigen = liste.filter(amEigenenWerk);
+            const falsch = eigen.filter((b) => b.orte.abend === b.orte.werk || b.orte.mahl === b.orte.werk);
+            return { n: eigen.length, falsch: falsch.length, wer: falsch.slice(0, 3).map(wer) };
+        };
         const koennen = (() => {
             let spur = new Map();
             const paare = [];
@@ -895,6 +906,7 @@ async function menschBuehnen() {
             stationen: stationen.length,
             satzGang: gang.schlupf(),
             koennen: koennen.zahl(),
+            daheimWerk: daheimWerk(),
             haltung,
             gestalt,
             blick: {
@@ -1191,6 +1203,11 @@ function menschUrteil(name, z, soll) {
             kn.n > 0 && kn.ohne === 0 && kn.geher >= 10 && kn.rho >= 0.5,
             `das Können trägt den Gang nicht: ${kn.ohne} von ${kn.n} Bewohnern gehen nicht Einheit × gang × lauf (${kn.wer}), Rang-Korrelation Können ↔ gegangenes Tempo ${kn.rho} über ${kn.geher} Geher (Soll ≥ 0,5; die Hälfte mit mehr Können geht × ${kn.haelften}, Streuung des Tempos ${kn.cv})`
         );
+        const dw = z.daheimWerk || { n: 0, falsch: "ungemessen", wer: [] };
+        soll(
+            dw.n > 0 && dw.falsch === 0,
+            `daheim am Werk: ${dw.falsch} von ${dw.n} Bewohnern, deren Werk ihr Haus ist, tragen den Stand ihres Werks als Abend oder Tisch (${dw.wer}) — der Abend daheim sitzt vor der Tür, der Tisch daheim ist drinnen`
+        );
         const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
         soll(
             ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1,
@@ -1259,6 +1276,7 @@ module.exports = {
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
             ["bewohner-koennen", /das Können trägt den Gang nicht/],
+            ["bewohner-abendstand", /daheim am Werk/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
             ["bewohner-grund", /der Stand nach dem Gang/],

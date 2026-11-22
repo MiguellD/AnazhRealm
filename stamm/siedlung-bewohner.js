@@ -915,7 +915,14 @@ class AnazhRealm_siedlung_bewohner {
                     if (i !== P.heimI && (!st || teilVon(st) !== P.heimTeil)) neu = P.voll.add(i);
                 }
             }
-            return (wo) => (P.bind[wo] < 0 || P.voll.has(P.bind[wo]) ? null : P.am.get(P.bind[wo]) || null);
+            // DAHEIM TRÄGT NUR DAS WERK EINEN STAND (mensch-zahlen): der Abend daheim sitzt vor der Tür, der Tisch daheim ist
+            // drinnen — der Plan ohne Ort (`tagesPlan`). Bis hier reichte der Griff den Stand des Werks vor dem eigenen Haus auch
+            // als Abend und als Tisch durch: wer in einem Haus mit Rolle wohnt, aß mittags draußen an seinem Werk, und sein Abend
+            // daheim las sich als Treff (an stadt-voll 10 der ersten 100, gate:kreatur-takt bewohner „daheim am Werk")
+            return (wo) => {
+                const i = P.bind[wo];
+                return i < 0 || P.voll.has(i) || (i === P.heimI && wo !== "werk") ? null : P.am.get(i) || null;
+            };
         };
         const liste = [];
         const besuche = [];
