@@ -26,7 +26,8 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { probeBefehl } = require("./sitzung-seite.js");
+const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
+const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
 
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
@@ -1509,17 +1510,27 @@ LEITERN.push(
     );
 
     // ─────────── same.physik.reaktion — Chemie ───────────
-    // Die Welt zählt ihre Reaktionen: die Zeilen der Stoff-Tafel mit Brenn-Spalte (die einzige Reaktion, Rothermel); jede verlangte
-    // Masse, Druckwelle, Korrosion je Ort, Schmelze fehlt beim Namen; N Saaten und Planeten zählt die Sitzung.
+    // Die Welt zählt ihre Reaktionen: die Zeilen der Stoff-Tafel mit Brenn-Spalte (die einzige Reaktion, Rothermel). S1 misst die Masse
+    // des Brands an der Mess-Wiese (`masseProbe`: Holz → Asche + Rauch, und der Rauch im Bild proportional zum verzehrten Holz über vier
+    // Herde aus 1 · 3 · 9 · 25 Zellen); Druckwelle, Korrosion je Ort, Schmelze fehlen beim Namen; S5 fährt die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel
+    // am Ort) und zählt je Saat die Stoff-Tafel und die Siedlungen; die Planeten (S6) zählt die Sitzung.
     LEITERN.push(
         leiter({
             leiter: "same.physik.reaktion",
-            sek: 30,
+            sek: 60,
             pfad: ["scripts/werkbank.cjs", "stamm/feld-brand.js", "stamm/bau-buch.js", "stamm/bau-vorlagen.js", "stamm/bild-himmel.js", "stamm/kreatur-verhalten.js", "stamm/siedlung-satz.js"],
             welt: [{ wort: "umgesetzt_kg", ab: 0.1, was: "Masse, die die Reaktion in der Welt umsetzt (kg)" }],
             sprossen: {
                 1: {
-                    soll: [{ wort: "masse_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %", feld: "richter" }],
+                    // BEIDE HÄLFTEN DES SATZES sind gerichtet: die Masse (Asche + Rauch gegen das Holz) und „Rauchmenge sichtbar
+                    // proportional" (die optische Fläche der Fahne je kg verzehrtes Holz über vier Herde, größte Abweichung vom Mittel).
+                    // LESART DER STATION, beim Namen: die Karte nennt EINE Zahl (±10 %), sie steht bei der Masse — für „proportional"
+                    // nennt sie keine eigene; die Station legt dieselbe Zahl an beide Hälften (darum trägt das zweite Wort den ganzen Satz
+                    // als Wortlaut). Gemessen wird an den gezeichneten Ballen (τ·A aus Deckung und Größe), nicht an Pixeln
+                    soll: [
+                        { wort: "masse_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %", feld: "richter" },
+                        { wort: "rauch_prop_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional", feld: "richter" },
+                    ],
                     umfang: { verlangt: 1, einheit: "Reaktion (Stoff-Zeile mit Brenn-Spalte)", wortlaut: "1 Reaktion", feld: "umfang" },
                 },
                 2: { soll: [{ wort: "radius_abw_pct", richtung: "≤", wert: 25, wortlaut: "Schadensradius ∝ W^(1/3) ±25 % bei drei Ladungen", feld: "richter" }] },
@@ -1534,6 +1545,7 @@ LEITERN.push(
                     umfang: { verlangt: 100, einheit: "Planeten", wortlaut: "N = 100 Planeten", feld: "richter" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function reaktionLauf(H, P, L) {
                 function zaehlen(r) {
                     const s = r.state, SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
@@ -1547,18 +1559,186 @@ LEITERN.push(
                     const erz = zeilen.filter((n) => /erz|kupfer|zinn/i.test(n));
                     return { zeilen: zeilen.length, brenn, erz, wetter: s.weather, nassTage: s.worldMeta && s.worldMeta.nassTage, saat: s.worldMeta && s.worldMeta.seed };
                 }
+                // DIE MASSE BLEIBT, DER RAUCH IST PROPORTIONAL (front-brand, stamm/feld-brand.js `_brandMasse` · `_brandStrom` · `_brandRauch`)
+                async function masseProbe(r) {
+                    const st = r.state, C = AnazhRealm, B = C.BRAND, cs = C.LIFE_FIELD.cell, P = Object.getPrototypeOf(r);
+                    // same.physik.reaktion#1 — „Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional": die Probe der Station an der Mess-Wiese
+                    // (Sommer, sonnig, Mittag, trocken). HOLZ: die Station misst das Bett selbst (Last der Zeile × lebendig × Bett-Anteil × Zell-Fläche).
+                    // ASCHE: der Herd brennt allein aus, seine Tat `brand` trägt sie. RAUCH: der Herd brennt 10 s, dann 6 s im Takt von 100 ms — die Masse
+                    // der geborenen Ballen (samt dem, was die Zellen für ihren nächsten halten) gegen das Holz, das die Front im Fenster verzehrte (die
+                    // Ankunft ihrer Ellipse auf einem Gitter über dem Brand), auf das ganze Holz gehoben. PROPORTIONAL: vier Herde verschiedener Masse
+                    // (1 · 3 · 9 · 25 Zellen, jede in ihrer Mitte gezündet, nur sie fangen) — je Herd die optische Fläche, mit der das Bild seine geborenen
+                    // Ballen zeichnet (τ·A aus Deckung und Größe jedes Ballens), je kg Holz, das seine Fronten im Fenster verzehrten: die größte
+                    // Abweichung vom Mittel der vier, und die Folge der Herde nach Holz muss die nach optischer Fläche sein. Kein Wert kommt aus dem
+                    // Buch des Gesetzes.
+                    const r3 = (v) => Math.round(v * 1e3) / 1e3;
+                    r.setSeason("sommer");
+                    if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("Wetter gilt nicht");
+                    r._naesseTakt(1e6);
+                    r.setTimeOfDay(0.5, "regler");
+                    const [hx, hz] = [-248, -1064];
+                    const [cx, cz] = [Math.floor(hx / cs), Math.floor(hz / cs)];
+                    let f = null;
+                    for (let i = 0; i < 20; i++) {
+                        r._brandBett = null;
+                        f = r._brandStoff(cx, cz, st.spielZeit);
+                        if (f && f.anteil >= 0.99) break;
+                        await new Promise((ok) => setTimeout(ok, 1000));
+                    }
+                    if (!f) return { fehler: "an der Mess-Wiese liegt kein Bett (lebendig " + r3(r.auraAt(hx, hz, 0, st.spielZeit).lebendig) + ", nass " + !!r._nassAt(hx, hz) + ", Saison " + st.season + ")" };
+                    const S_T = B.mineral.gesamt;
+                    const holzVon = (q) => {
+                        const g = r._brandStoff(q.cx, q.cz, st.spielZeit);
+                        return g ? g.zeile.brenn.last * Math.min(1, g.leb) * g.anteil * cs * cs : NaN;
+                    };
+                    const holz = f.zeile.brenn.last * Math.min(1, f.leb) * f.anteil * cs * cs;
+                    // die Zellen der vier Herde: der Herd und die nächsten Zellen mit Bett (Ringe um ihn, bis 25 stehen)
+                    const bette = [[cx, cz]];
+                    for (let d = 1; d <= 6 && bette.length < 25; d++)
+                        for (let i = -d; i <= d && bette.length < 25; i++)
+                            for (let j = -d; j <= d && bette.length < 25; j++)
+                                if (Math.max(Math.abs(i), Math.abs(j)) === d && r._brandStoff(cx + i, cz + j, st.spielZeit)) bette.push([cx + i, cz + j]);
+                    const taten = st.worldMeta.taten || (st.worldMeta.taten = []);
+                    const n0 = taten.length;
+                    const leer = () => {
+                        if (r._brandRest) r._brandArbeit(Infinity);
+                        st.brandFeld.clear();
+                        taten.length = n0;
+                        r._tatGen = (r._tatGen | 0) + 1;
+                        (st.wegeKarte ? st.wegeKarte.stufen : []).forEach((s) => s.zentriert && r._ascheStufeMalen(s));
+                    };
+                    // nur die Zellen der Wahl fangen: was die Front über ihren Rand trägt, gehört nicht zum Herd
+                    const nur = (wahl, fn) => {
+                        const darf = new Set(wahl.map(([x, z]) => x + "," + z));
+                        r._brandZuenden = function (x, z, ...a) {
+                            if (darf.has(x + "," + z)) return P._brandZuenden.call(this, x, z, ...a);
+                            st.brandFeld.delete(x + "," + z);
+                            return null;
+                        };
+                        // die Probe schreitet ihre eigene Uhr (je Herd 16 s): die Stunde, die die nahen Regionen danach nachholen, steht dem Entfachen
+                        // nicht voran (`_feldFolgeSteht`, wie gate:stand-takt) — sonst tritt der Akt des nächsten Herds in die Reihe der Folge und
+                        // fängt erst, wenn die Welt ihre Takte nachgeholt hat (gemessen: Herd 2 und 3 mit 0 brennenden Zellen)
+                        r._feldFolgeSteht = () => true;
+                        try {
+                            return fn();
+                        } finally {
+                            delete r._brandZuenden;
+                            delete r._feldFolgeSteht;
+                            leer();
+                        }
+                    };
+                    // ASCHE: der Herd allein, EIN Schritt des Gesetzes an sein Ende
+                    const A = nur([[cx, cz]], () => {
+                        r._brandEntfachen(hx, hz);
+                        const b = st.brandFeld.get(cx + "," + cz);
+                        if (!b || b.t0 === null) return { fehler: "der Herd fing nicht" };
+                        const dauer = b.ende - b.t0;
+                        r._brandSchritt(b.ende + B.schrittS);
+                        r._brandArbeit(Infinity);
+                        const tat = taten.slice(n0).find((a) => a.tat === "brand" && Math.floor(a.x / cs) === cx && Math.floor(a.z / cs) === cz);
+                        return { asche: tat && Number.isFinite(tat.kg) ? tat.kg : null, dauer };
+                    });
+                    if (A.fehler) return A;
+                    const asche = A.asche;
+                    // DIE FAHNE EINES HERDS: 10 s Brand, dann 6 s im Takt von 100 ms
+                    const zeit = (b, x, z) => (Math.hypot(x - b.ex, z - b.ez) - b.ecc * ((x - b.ex) * b.kopf[0] + (z - b.ez) * b.kopf[1])) / (b.R * (1 - b.ecc));
+                    const verzehrtKg = (q, t1, t2, N = 384) => {
+                        const bett = r._brandBettFn(q.bett, q.cx, q.cz);
+                        let m2 = 0;
+                        for (let i = 0; i < 4096; i++) m2 += bett ? bett((q.cx + ((i % 64) + 0.5) / 64) * cs, (q.cz + (Math.floor(i / 64) + 0.5) / 64) * cs) : 1;
+                        m2 *= (cs * cs) / 4096;
+                        const reich = Math.max(0, t2 - q.t0) * q.R;
+                        const [xa, xb, za, zb] = [Math.max(q.cx * cs, q.ex - reich), Math.min((q.cx + 1) * cs, q.ex + reich), Math.max(q.cz * cs, q.ez - reich), Math.min((q.cz + 1) * cs, q.ez + reich)];
+                        if (!(xb > xa && zb > za && m2 > 0)) return 0;
+                        let u = 0;
+                        for (let i = 0; i < N; i++)
+                            for (let j = 0; j < N; j++) {
+                                const [x, z] = [xa + ((i + 0.5) / N) * (xb - xa), za + ((j + 0.5) / N) * (zb - za)];
+                                const an = q.t0 + zeit(q, x, z);
+                                if (an > t1 && an <= t2) u += bett ? bett(x, z) : 1;
+                            }
+                        return (holzVon(q) * u * (xb - xa) * (zb - za)) / (N * N) / m2;
+                    };
+                    const [W, R] = [C.RAUCH_BILD, B.bild.rauch];
+                    const optisch = (p) => (-Math.log(1 - Math.min(W.deckMax, p.a)) * Math.PI * (R.size * p.s) ** 2) / (W.profil + 1);
+                    const takt = (dt) => (r._weltUhrNimm(st.spielZeit + dt), r._tickBrand(), r._brandArbeit(Infinity));
+                    const fahne = (wahl) =>
+                        nur(wahl, () => {
+                            r._brandBett = null;
+                            for (const [x, z] of wahl) r._brandEntfachen((x + 0.5) * cs, (z + 0.5) * cs);
+                            const gefangen = wahl.filter(([x, z]) => ((q) => q && q.t0 !== null)(st.brandFeld.get(x + "," + z))).length;
+                            for (let i = 0; i < 10; i++) takt(B.schrittS);
+                            const T = st.brandRauch.teilchen;
+                            const schuld = () => [...st.brandFeld.values()].reduce((s, q) => s + (q.rauchKg || 0), 0) * (1 - S_T);
+                            takt(0.1);
+                            r._brandBild(0.1);
+                            T.length = st.brandRauch.n = 0;
+                            const [t1, gesehen, geboren, h1] = [st.spielZeit, new Set(), [], schuld()];
+                            for (let i = 0; i < 60; i++) {
+                                takt(0.1);
+                                r._brandBild(0.1);
+                                for (const p of T) if (!gesehen.has(p)) (gesehen.add(p), geboren.push({ m: p.m, o: optisch(p) }));
+                            }
+                            const Z = [...st.brandFeld.values()].filter((q) => q.t0 !== null);
+                            const haelt = schuld() - h1;
+                            const verzehrt = Z.reduce((s, q) => s + verzehrtKg(q, t1, st.spielZeit), 0);
+                            const masse = geboren.reduce((s, g) => s + g.m, 0) + haelt;
+                            return { soll: wahl.length, gefangen, zellen: Z.length, ballen: geboren.length, holz: verzehrt, strom: verzehrt * (1 - S_T), masse, haelt, optisch: geboren.reduce((s, g) => s + g.o, 0) };
+                        });
+                    if (bette.length < 25) return { fehler: "um den Herd tragen nur " + bette.length + " Zellen ein Bett (verlangt 25 für die vier Herde)" };
+                    const H = [1, 3, 9, 25].map((n) => fahne(bette.slice(0, n)));
+                    const lahm = H.find((h) => h.gefangen < h.soll);
+                    if (lahm) return { fehler: "der Herd aus " + lahm.soll + " Zellen fing nur in " + lahm.gefangen + " (jede trägt ein Bett: `_brandStoff`)" };
+                    const F = H[0];
+                    const rauch = Number.isFinite(F.masse) && F.strom > 0 ? holz * (1 - S_T) * (F.masse / F.strom) : null;
+                    // PROPORTIONAL: optische Fläche je kg verzehrtes Holz, je Herd — die größte Abweichung vom Mittel; die Folge nach Holz = die nach Fläche
+                    const q = H.map((h) => (h.holz > 0 && Number.isFinite(h.optisch) ? h.optisch / h.holz : NaN));
+                    const mittel = q.reduce((s, v) => s + v, 0) / q.length;
+                    const rang = H.every((h, i) => !i || (h.holz > H[i - 1].holz * 1.5 && h.optisch > H[i - 1].optisch));
+                    const prop = rang && mittel > 0 ? r3(Math.max(...q.map((v) => (100 * Math.abs(v - mittel)) / mittel))) : null;
+                    return {
+                        holz: r3(holz),
+                        bett: { stoff: f.zeile.name, leb: r3(f.leb), anteil: f.anteil },
+                        asche,
+                        rauch: rauch === null ? null : r3(rauch),
+                        masse_abw_pct: asche === null || rauch === null ? null : r3((100 * Math.abs(asche + rauch - holz)) / holz),
+                        umgesetzt_kg: asche === null || rauch === null ? null : r3(asche + rauch),
+                        rauch_prop_abw_pct: prop,
+                        rang,
+                        dauerS: r3(A.dauer),
+                        herde: H.map((h, i) => ({ zellen: h.zellen, ballen: h.ballen, holz: r3(h.holz), masse: Number.isFinite(h.masse) ? r3(h.masse) : null, strom: r3(h.strom), optisch: r3(h.optisch), jeKg: r3(q[i]) })),
+                    };
+                }
                 const z = await L.ev("return (" + zaehlen + ")(r);", 30);
                 L.zeile("Reaktionen der Stoff-Tafel: " + JSON.stringify(z));
                 L.preisPose("wiese", "ego");
                 await L.je(1, async () => {
                     if (z.brenn.length < P.sprossen[1].umfang.verlangt) return L.umfang(1, z.brenn.length, "keine Zeile der Stoff-Tafel trägt eine Brenn-Spalte");
-                    L.leser(1, "Masse von Asche und Rauch: die Asche ist eine Decke ohne Masse (stamm/feld-brand.js:5 `_ascheAt`), der Rauch ein Bild-Budget (stamm/feld-brand.js:720 `_brandRauch`) — " + z.brenn.join(", ") + " brennen", z.brenn.length);
+                    const m = await L.ev("return await (" + masseProbe + ")(r);", 120);
+                    L.zeile("Masse der Reaktion: " + JSON.stringify(m));
+                    if (m.fehler) return L.umfang(1, 0, m.fehler);
+                    if (m.masse_abw_pct === null)
+                        return L.leser(1, "Masse von Asche und Rauch: " + (m.asche === null ? "die Tat `brand` trägt keine Asche in kg (stamm/feld-brand.js `_brandArbeit`)" : "die Ballen der Fahne tragen keine Masse (stamm/feld-brand.js `_brandRauch`)") + " — " + z.brenn.join(", ") + " brennen", z.brenn.length);
+                    const herde = m.herde.map((h) => h.zellen + " Zellen: " + h.holz + " kg Holz → " + h.optisch + " m² optisch (" + h.jeKg + " m²/kg)").join(" · ");
+                    L.gemessen(1, { masse_abw_pct: m.masse_abw_pct, rauch_prop_abw_pct: m.rauch_prop_abw_pct }, { erzeugt: 1, welt: { umgesetzt_kg: m.umgesetzt_kg }, taeter: "MASSE: Holz " + m.holz + " kg (" + m.bett.stoff + ", Mess-Wiese) → Asche " + m.asche + " kg + Rauch " + m.rauch + " kg · PROPORTIONAL: " + herde + (m.rang ? "" : " — die Folge der Herde nach Holz ist nicht die nach optischer Fläche") });
                 });
                 await L.je(2, async () => L.leser(2, "Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)"));
                 await L.je(3, async () => L.leser(3, "Rost je Ort: die Nässe-Dosis des Alters ist EIN Zähler der Welt (stamm/bild-himmel.js:3060 `_naesseTakt`, worldMeta.nassTage " + z.nassTage + ") — kein Leser der Nässe am See gegen die Wüste"));
                 await L.je(4, async () => L.leser(4, "Verhüttung: kein Ofen-Gesetz liest eine erreichte Temperatur, die Stoff-Tafel trägt " + z.erz.length + " Erz-Zeilen von " + z.zeilen + " (stamm/bau-vorlagen.js:1619)"));
-                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält eine Saat (" + z.saat + ")"));
                 await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (" + z.saat + ")"));
+                // S5 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+                // die Stoff-Tafel (Zeilen, Erz-Zeilen) und die Siedlungen der Welt. Zuletzt; 20 s bleiben dem Gang zur Preis-Pose (R3).
+                await L.je(5, async () => {
+                    const v = P.sprossen[5].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s5", n: v, bis: Date.now() + Math.max(0, (L.rest() - 20) * 1000) };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => { const z = (" + zaehlen + ")(r); return [z.zeilen, z.erz.length, Object.keys((r.state.worldMeta || {}).settlementCells || {}).length]; });", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("reaktion S5 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    const je = "Stoff-Zeilen/Erz-Zeilen/Siedlungen je Saat " + ([...new Set(s.je.map((x) => x.z.join("/")))].join(" · ") || "—");
+                    if (s.je.length < v) return L.umfang(5, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + je + "; " + zeit + "; Ende: " + s.grund + ")");
+                    L.leser(5, "Werkstoff-Inventar je Siedlung: keine Siedlung trägt Werkstoffe aus Lagerstätte und Ofen — die Stoff-Tafel ist EINE für jede Saat (stamm/bau-vorlagen.js:1619), kein Ofen-Gesetz liest eine erreichte Temperatur — in " + v + " Saaten (" + je + "; " + zeit + ")", s.je.length);
+                });
             },
         })
     );
@@ -2397,13 +2577,14 @@ LEITERN.push(
 // ═══════════════════════════════════════ Perspektive massstab ═══════════════════════════════════════
 {
     // ─────────── same.massstab.spanne — Spanne der Größenordnungen ───────────
-    // Die Sitzung hält EINE Saat; S1–S4 verlangen 20 Saaten (gezählt: die Saat der Welt). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
+    // S1–S4 verlangen 20 Saaten: EINE Fahrt über die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel am Ort), je Saat die Kamera der
+    // Welt — dann nennt jede Sprosse ihren Leser (Steigflug, nahe Ebene, Krümmung, Orbit). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
     // gezählt wird die Reichweite der Welt-Kamera (`state.camera.far`, gesetzt in stamm/dirigent-ankunft.js:468) — was hinter ihr liegt,
     // zeichnet die Welt nicht.
     LEITERN.push(
         leiter({
             leiter: "same.massstab.spanne",
-            sek: 30,
+            sek: 50,
             pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "foundry-core.js"],
             welt: [{ wort: "auge_m", ab: 1, was: "Höhe, die das Auge in der Welt flog (m)" }],
             sprossen: {
@@ -2447,18 +2628,57 @@ LEITERN.push(
                     umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function spanneLauf(H, P, L) {
+                const ort0 = Date.now();
                 await L.ort("wiese", "ego");
-                const z = await L.ev(
-                    "const c = r.state.camera; return { far: c.far, near: c.near, fov: c.fov, saat: r.state.worldMeta && r.state.worldMeta.seed, saaten: r.state.worldMeta && r.state.worldMeta.seed != null ? 1 : 0 };",
-                    20
-                );
+                const ortMs = Date.now() - ort0;
+                const z = await L.ev("const c = r.state.camera; return { far: c.far, near: c.near, fov: c.fov, saat: r.state.worldMeta && r.state.worldMeta.seed };", 20);
                 L.zeile("Kamera und Saat der Sitzung: " + JSON.stringify(z));
                 L.preisPose("wiese", "ego");
-                const saaten = "die Sitzung hält " + z.saaten + " Saat (" + z.saat + "), ein Start je Saat braucht eine neue Welt";
-                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.umfang(nr, z.saaten, saaten));
                 const sicht = "die Welt-Kamera reicht " + z.far + " m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht";
                 for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
+                // S1–S4 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): EINE Fahrt für die vier Sprossen (ihr Umfang ist derselbe, N = 20
+                // Saaten) — je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat die Kamera der Welt (nahe und ferne
+                // Ebene) und die Höhe des Auges über dem Gesetz. Die Schleife läuft zuletzt und lässt den Heimweg samt dem doppelten ersten
+                // Gang zur Wiese in der Frist (dort fährt der Preis, R3). Trägt die Welt alle Saaten, nennt jede Sprosse ihren Leser.
+                const v = P.sprossen[1].umfang.verlangt;
+                const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
+                const kamera = function (r) {
+                    const c = r.state.camera;
+                    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
+                };
+                let s = null, wurf = null;
+                try {
+                    s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + kamera + ");", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("spanne S1–S4 Saaten " + JSON.stringify(s));
+                } catch (e) {
+                    if (e && e.messort) throw e;
+                    wurf = e;
+                }
+                if (wurf) {
+                    for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => { throw wurf; });
+                    return;
+                }
+                const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                const nahJe = [...new Set(s.je.map((x) => x.z.near))].join("/") || "—";
+                const augeJe = s.je.map((x) => x.z.auge).join("/") || "—";
+                const in20 = "in " + s.je.length + " Saaten (nahe Ebene je Saat " + nahJe + " m, Auge über dem Grund " + augeJe + " m; " + zeit + ")";
+                const flug = "kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe";
+                // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera — derselbe wie same.massstab.nahe
+                const hfov = 2 * Math.atan(Math.tan((z.fov * Math.PI) / 360) * (1280 / 720));
+                const cm = 0.01 / (2 * Math.tan(hfov / 2));
+                const nahe = Math.max(...s.je.map((x) => x.z.near));
+                const urteil = {
+                    1: () => L.leser(1, "Steigflug 0,5 → 700 m in 30 s: " + flug + " — " + in20, s.je.length),
+                    2: () =>
+                        L.leser(2, nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand — " + in20 : "Spanne 1 cm → 1 km: " + flug + " — " + in20, s.je.length),
+                    3: () => L.leser(3, "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km — " + in20, s.je.length),
+                    4: () => L.leser(4, "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite — " + in20, s.je.length),
+                };
+                for (const nr of [1, 2, 3, 4])
+                    await L.je(nr, async () => (s.je.length < v ? L.umfang(nr, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; Ende: " + s.grund + ")") : urteil[nr]()));
             },
         })
     );
@@ -2466,11 +2686,12 @@ LEITERN.push(
     // ─────────── same.massstab.nahe — der Blick nah an den Boden ───────────
     // An der Mess-Wiese schießt das Auge den Boden vor den Füßen mit der Bildbreite der Sprosse (2 m, 50 cm, 10 cm, 1 cm, 10 µm): die
     // Kamera steht im Abstand d = Breite / (2·tan(hfov/2)) unter 60° auf dem Grund. Liegt d unter der nahen Ebene der Welt-Kamera
-    // (`state.camera.near`), schneidet die Welt ab — dann fehlt der Leser beim Namen. S5/S6 zählen Korn und Planeten-Saaten.
+    // (`state.camera.near`), schneidet die Welt ab — dann fehlt der Leser beim Namen. S5 zählt das Korn; S6 fährt die Planeten-Saaten
+    // (H.seite.SAATEN, der EINE Wechsel am Ort) zuletzt und liest je Saat die nahe Ebene.
     LEITERN.push(
         leiter({
             leiter: "same.massstab.nahe",
-            sek: 50,
+            sek: 60,
             pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "stamm/bau-vorlagen.js", "stamm/gelaende-boden.js", "stamm/kreatur-leben.js"],
             welt: [{ wort: "orte", ab: 1, was: "Orte, an denen die Probe den Boden im Bild las" }],
             sprossen: {
@@ -2511,6 +2732,7 @@ LEITERN.push(
                     auge: { pose: "wiese ego · Bildbreite 10 µm auf dem Grund", vorbild: "Lichtmikroskopie derselben Bodenklasse (Zelle, Pollenwand, Milbe)" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function naheLauf(H, P, L) {
                 // die Kamera und der Grund 1,5 m vor dem Spieler (Blick waagrecht), die Seite rechts davon
                 function grund(r) {
@@ -2522,7 +2744,9 @@ LEITERN.push(
                     const g = r._koerperBodenUnter(gx, fuss + 1, gz);
                     return { near: c.near, fov: c.fov, gx, gz, gy: Number.isFinite(g) ? g : fuss, ux, uz, saat: s.worldMeta && s.worldMeta.seed };
                 }
+                const ort0 = Date.now();
                 await L.ort("wiese", "ego");
+                const ortMs = Date.now() - ort0;
                 L.preisPose("wiese", "ego");
                 const g = await L.ev("return (" + grund + ")(r);", 30);
                 L.zeile("Grund vor dem Spieler und nahe Ebene: " + JSON.stringify(g));
@@ -2546,8 +2770,22 @@ LEITERN.push(
                 await L.je(3, async () => nahe(3, 0.1, "10 cm") || (await schuss(3, 0.1)));
                 await L.je(4, async () => nahe(4, 0.01, "1 cm") || (await schuss(4, 0.01)));
                 await L.je(5, async () => L.leser(5, "Korngröße am Ufer: die Körnung ist EINE Zahl je Stoff (die Krume 2 mm, Tafel SI stamm/bau-vorlagen.js:1619), kein Leser sortiert Korn nach dem Fluss"));
-                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält eine Planeten-Saat (" + g.saat + ")"));
                 await L.je(7, async () => nahe(7, 1e-5, "10 µm") || (await schuss(7, 1e-5)));
+                // S6 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Planeten-Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort;
+                // je Saat die nahe Ebene der Welt-Kamera — der Makro-Vergleich verlangt 0,1 mm Bildbreite. Zuletzt, der Heimweg samt dem
+                // doppelten ersten Gang zur Wiese bleibt in der Frist (dort fährt der Preis, R3).
+                await L.je(6, async () => {
+                    const v = P.sprossen[6].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s6", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => r.state.camera.near);", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("nahe S6 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    if (s.je.length < v) return L.umfang(6, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Planeten-Saaten (" + zeit + "; Ende: " + s.grund + ")");
+                    const near = Math.max(...s.je.map((x) => x.z)), d = abstand(1e-4);
+                    const je = "in " + v + " Planeten-Saaten (nahe Ebene je Saat " + ([...new Set(s.je.map((x) => x.z))].join("/") || "—") + " m; " + zeit + ")";
+                    L.leser(6, d < near ? "Makrofoto 0,1 mm: die Welt-Kamera schneidet unter " + near + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 0,1 mm Bildbreite verlangt " + d.toExponential(2) + " m Abstand — " + je : "Bildvergleich gegen ein Makrofoto: kein Leser der Plausibilität je Ort — " + je, s.je.length);
+                });
             },
         })
     );
@@ -3174,11 +3412,12 @@ LEITERN.push(
     // ─────────── same.gedaechtnis.schicht — Kulturschichten ───────────
     // S1 an der Mess-Wiese: der Spieler gräbt eine Grube 4 m vor sich (die DSL-Op des Spiels `voxel_carve`, r 1,5 m, Mitte 1 m unter dem
     // Grund), die Wand neben ihr wird von oben bis zur Sohle in 10-cm-Schritten nach ihrem Stoff gefragt (`_terrainMaterialAt` mit Tiefe —
-    // „die Farbe, die der Spieler sieht, bleibt das Material, das er bekommt“), dann füllt er sie wieder (`voxel_fill`). S2–S6 zählen.
+    // „die Farbe, die der Spieler sieht, bleibt das Material, das er bekommt“), dann füllt er sie wieder (`voxel_fill`). S2–S5 zählen; S6
+    // fährt die Planeten (H.seite.SAATEN, der EINE Wechsel am Ort) zuletzt und liest je Saat die Säule am Spawn.
     LEITERN.push(
         leiter({
             leiter: "same.gedaechtnis.schicht",
-            sek: 30,
+            sek: 50,
             mutiert: true,
             pfad: ["scripts/werkbank.cjs", "stamm/feld-dsl.js", "stamm/vegetation-wiese.js", "stamm/gelaende-boden.js", "stamm/siedlung-ort.js", "stamm/feld-leben.js"],
             welt: [{ wort: "tiefe_m", ab: 1, was: "Tiefe der gegrabenen Grube (m)" }],
@@ -3213,6 +3452,7 @@ LEITERN.push(
                     umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "auf N = 20 Planeten", feld: "richter" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function schichtLauf(H, P, L) {
                 const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 30);
                 function grube(r) {
@@ -3244,7 +3484,9 @@ LEITERN.push(
                     r.dslRun(["voxel_fill", o.x, o.cy, o.z, o.R], { source: "human" });
                     return { boden: r._voxelSurfaceY(o.x, o.z) };
                 }
+                const ort0 = Date.now();
                 await L.ort("wiese", "ego");
+                const ortMs = Date.now() - ort0;
                 L.preisPose("wiese", "ego");
                 const w = await ev(zaehle);
                 L.zeile("Welt der Sitzung: " + JSON.stringify(w));
@@ -3270,7 +3512,31 @@ LEITERN.push(
                 });
                 await L.je(4, async () => L.umfang(4, 1, "die Welt der Sitzung steht in einer Epoche (zeitMa " + w.zeitMa + "): die Epoche wechselt nur der Satz reise als eigene Welt (stamm/feld-leben.js:1277)"));
                 await L.je(5, async () => L.leser(5, "Gräber, Horte, Wracks, Tunnel: kein Fund liegt im Boden — " + saeule));
-                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (Samen " + w.planet + ")"));
+                // S6 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+                // ihr Planet (`_planetSamen`) und die Säule am Spawn, von oben bis 2 m unter die Stein-Grenze in 25-cm-Schritten nach ihrem
+                // Stoff gefragt (dasselbe `_terrainMaterialAt` wie S1, ohne zu graben). Zuletzt; der Heimweg samt dem doppelten ersten Gang
+                // zur Wiese bleibt in der Frist (dort fährt der Preis, R3).
+                await L.je(6, async () => {
+                    const v = P.sprossen[6].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s6", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
+                    const saeuleJe = function (r) {
+                        const p = r.state.playerMesh.position, vy = r._voxelSurfaceY(p.x, p.z), g = Number.isFinite(vy) ? vy : r.getTerrainHeightAt(p.x, p.z);
+                        const folge = [];
+                        for (let t = 0.05; t <= AnazhRealm.STRATA_STEIN_DEPTH + 2; t += 0.25) {
+                            const m = r._terrainMaterialAt(p.x, p.z, g - t);
+                            if (!folge.length || folge[folge.length - 1][0] !== m) folge.push([m, Math.round(t * 100) / 100]);
+                        }
+                        return { planet: r._planetSamen(), folge: folge.map((f) => f[0] + "@" + f[1]).join(">") };
+                    };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + saeuleJe + ");", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("schicht S6 Saaten " + JSON.stringify(s));
+                    const planeten = new Set(s.je.map((x) => x.z.planet)).size;
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    const folgen = "die Säule am Spawn je Saat " + ([...new Set(s.je.map((x) => x.z.folge))].join(" | ") || "—");
+                    if (planeten < v) return L.umfang(6, planeten, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten, " + planeten + " Planeten (" + zeit + "; Ende: " + s.grund + ")");
+                    L.leser(6, "Bohrkern-Bild, Panel: kein Horizont im Kern — " + saeule + "; " + folgen + " auf " + planeten + " Planeten (" + zeit + ")", planeten);
+                });
             },
         })
     );
@@ -3384,11 +3650,12 @@ LEITERN.push(
     // ─────────── same.preis.bytes — Null Download ───────────
     // Der Zähler der Bytes ist der Netz-Mitschnitt der Kalt-Boots (netzMitschnitt g6.js:1268 in ANKUNFT_VIER, S1 bestehend g6.js:3573) —
     // kein eigener Zähler hier. Die Leiter-Minute bootet nie kalt; gezählt in der Welt: die Service-Worker der Herkunft (der zweite
-    // Besuch offline), Planet und Epoche der Sitzung (`_planetSamen` gelaende-chunks.js:672, `zeitMa` feld-leben.js:1277).
+    // Besuch offline), Planet und Epoche der Sitzung (`_planetSamen` gelaende-chunks.js:672, `zeitMa` feld-leben.js:1277). S7 springt
+    // über die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel am Ort) zu neuen Planeten, derselbe Mitschnitt zählt jedes Byte.
     LEITERN.push(
         leiter({
             leiter: "same.preis.bytes",
-            sek: 15,
+            sek: 45,
             pfad: ["scripts/werkbank.cjs", "save-server.js", "index.html", "stamm/gelaende-chunks.js", "stamm/feld-leben.js", "stamm/speicher-laden.js"],
             welt: [{ wort: "anfragen", ab: 1, was: "Anfragen im Netz-Mitschnitt" }],
             bestehend: [1],
@@ -3413,8 +3680,10 @@ LEITERN.push(
                 7: {
                     soll: [{ wort: "bytes_je_sprung", richtung: "≤", wert: 0, wortlaut: "Netz-Bytes je Sprung = 0", feld: "richter" }],
                     umfang: { verlangt: 20, einheit: "neue Planeten", wortlaut: "20 neue Planeten", feld: "richter" },
+                    welt: [{ wort: "spruenge", ab: 1, was: "Sprünge der Welt zu neuen Planeten im Netz-Mitschnitt" }],
                 },
             },
+            seite: { SAATEN, netz: netzMitschnitt },
             lauf: async function bytesLauf(H, P, L) {
                 const w = await L.ev(
                     "let sw = -1; if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) sw = (await navigator.serviceWorker.getRegistrations()).length;" +
@@ -3441,9 +3710,33 @@ LEITERN.push(
                 await L.je(6, async () =>
                     L.umfang(6, 0, "kein Kalt-Boot an einem Zufallsort: die Leiter-Minute bootet nie neu, die Kalt-Boots der Sitzung (ANKUNFT_VIER) landen am Spawn; die Welt hält eine Epoche (zeitMa " + w.zeitMa + ")")
                 );
-                await L.je(7, async () =>
-                    L.umfang(7, new Set([w.planet]).size, "die Sitzung hält einen Planeten (Same " + w.planet + ") — kein Sprung zu einem neuen Planeten im Lauf")
-                );
+                // S7 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt springt am Ort zu einem
+                // neuen Planeten (`_planetSamen` je Saat); der Netz-Mitschnitt (H.seite.netz = netzMitschnitt, g6.js) hängt vor dem ersten
+                // Sprung an Seite und Fäden und zählt bis das Netz nach dem Heimweg ruht. Je Sprung = Σ roh ÷ (Sprünge + Heimweg).
+                await L.je(7, async () => {
+                    const v = P.sprossen[7].umfang.verlangt;
+                    const { page } = await H.verbinde();
+                    const netz = await H.seite.netz(page);
+                    const arg = { stamm: P.leiter + "-s7", n: v, bis: Date.now() + Math.max(0, (L.rest() - 14) * 1000) };
+                    let s = null, m = null;
+                    try {
+                        s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => r._planetSamen());", Math.max(5, L.rest() - 10));
+                    } finally {
+                        await netz.ruhe(H, 5000);
+                        m = await netz.schluss();
+                    }
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("bytes S7 Saaten " + JSON.stringify(s) + " · Netz " + JSON.stringify(m));
+                    if (m.fehler.length) throw new Error("der Netz-Mitschnitt hängt nicht an: " + m.fehler.join(" · "));
+                    const planeten = new Set(s.je.map((x) => x.z).filter((p) => p !== w.planet)).size;
+                    const spruenge = s.je.length + (s.heimweg.zurueck ? 1 : 0);
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ")" + (s.grund ? "; Ende: " + s.grund : "");
+                    L.gemessen(7, { bytes_je_sprung: spruenge ? Math.round(m.roh / spruenge) : NaN }, {
+                        erzeugt: planeten,
+                        welt: { spruenge },
+                        taeter: "Σ roh " + m.roh + " B, Draht " + m.draht + " B in " + m.n + " Anfragen über " + spruenge + " Sprünge (" + planeten + " neue Planeten, " + m.ziele + " Ziele, Netz ruht " + m.ruht + "; größte " + JSON.stringify(m.groesste) + "; " + zeit + ")",
+                    });
+                });
             },
         })
     );

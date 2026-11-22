@@ -5124,6 +5124,8 @@ module.exports = [
 module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
 module.exports.pbSchrittTraegt = pbSchrittTraegt;
 module.exports.taktRot = taktRot;
+// der EINE Netz-Mitschnitt auch für die Sprünge der Saaten (k2-same.js same.preis.bytes S7)
+module.exports.netzMitschnitt = netzMitschnitt;
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 // DIE FAHRT (p3-stationen-g456, 01.11.): die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s (FAHRT_MAX_S, samt Boot) —

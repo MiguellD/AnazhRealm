@@ -2668,6 +2668,32 @@ async function wirtRuf(w, gib, heap) {
         return { fehler: String((e && e.message) || e).split("\n")[0] };
     }
 }
+// DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT (pm-probe-raeumt 21.11.; GTX an main 1e204f83: kausal#1 + antwort#1 ließen `window.__k4` stehen —
+// stationen/g5.js K4_ORT, die Hügel-Closures über dem eval der Probe, +157,3 MB —, praesenz#1 `window.__zeigerDerProbe`, +120,8 MB; die Wache
+// gibt Funktionen zurück, nie Daten, und ein Daten-Feld hält den Kontext wie ein Haken: UNGEMESSEN). EIN Ort für jeden Rahmen der Probe
+// (seite.cjs, die bash-Sitzung, sitzung-seite.js): nach `nimm` die Namen von window, vor `gib` fällt jedes neue Daten-Feld beim Namen —
+// Funktionen und Zugriffe nimmt die Wache; der Halter, die Uhr des Gangs, die Frist, die Hänger-Linse, die Felder der Grundstellung und die
+// eigenen der Maschine gehören der Sitzung. Was danach noch hält, hält außerhalb von window: die Wache bleibt hart
+const FELDER_DER_SITZUNG = "^__(gehalten|offen|gangUhr|punkte|wirt|probeFrist|haenger)";
+function probeFelder(gib, sitzung, grundSeite) {
+    if (!gib) {
+        window.__punkteFelderVor = Object.getOwnPropertyNames(window);
+        return { n: window.__punkteFelderVor.length };
+    }
+    const vor = window.__punkteFelderVor;
+    delete window.__punkteFelderVor;
+    if (!Array.isArray(vor)) return { ohne: true };
+    const da = new Set(vor), eigen = new RegExp(sitzung), weg = [];
+    for (const k of Object.getOwnPropertyNames(window)) {
+        if (da.has(k) || eigen.test(k) || grundSeite.includes(k)) continue;
+        const d = Object.getOwnPropertyDescriptor(window, k);
+        if (!d || !d.configurable || d.get || d.set || typeof d.value === "function") continue;
+        delete window[k];
+        weg.push(k);
+    }
+    return { weg };
+}
+const PROBE_FELDER = (gib) => "/* __punkteFelder */ return (" + probeFelder + ")(" + !!gib + ", " + JSON.stringify(FELDER_DER_SITZUNG) + ", " + JSON.stringify(GRUND_SEITE) + ");";
 // der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
 const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
 const GRUND_NIMM =
@@ -3461,7 +3487,15 @@ function richterAkten(g, urteile, o) {
         console.log("  KARTE2 die Akte nach " + schluessel(g[0]) + " ROT: " + String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 200));
     }
 }
-const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
+// DER HAKEN HÄLT NIE DEN RUMPF SEINES ZAPFENS (Wirt-Wache 21.11., GTX: wegfindung#1 an main c445936d und die 11 Saat-Stationen UNGEMESSEN
+// an „den Kontext der Probe hält noch: return (function stromSeite …“): die Werkbank setzt jedem /eval zwischen `nimm` und `gib` die
+// Marke in seinen äußersten Kontext. Der Haken (`haken`, `huelle`, `bild`) lebt mit dem Renderer; als Ausdruck IM Rumpf gebaut hielt er
+// dessen Kontext und so die Marke jedes Zapfens, der ihn in einer Probe einzog (eine neue Seite, ein anderer Renderer) — die Wache nannte
+// die Maschine selbst als Halter der Probe. Der Zapfen baut stromSeite über den Function-Konstruktor im globalen Bereich: der Haken hält
+// nur seine eigenen Größen; window und performance reisen als Argument (der Selbsttest stellt beide). Werkbank am OMEN
+// (p3/n2111/wirt/wache-probe.cjs, V1 ↔ V3): der Zapfen, der den Haken einzieht, ließ 1 Marke leben → 0.
+const stromCode = (a) =>
+    "return Function(\"window\", \"performance\", " + JSON.stringify("return (" + stromSeite + ")") + ")(window, performance)(r, " + JSON.stringify(a || {}) + ");";
 // EIN Zapfen: die Zeilen seit dem letzten an den Strom (eine JSON-Zeile je Block, mit der Probe); Rückgabe { ok, n?, grund? } —
 // wirft nie (ein Zapfen, der scheitert, ist eine Lücke im Strom, nie ein Bruch der Probe)
 async function stromZapfen(w, datei, probe, a = {}) {
@@ -4153,10 +4187,23 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const mitPreis = karte2PreisLauf(g);
         const wirtVor = await wirtRuf(W, false, mitPreis);
         if (wirtVor.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: wirtVor.fehler });
+        // DIE FELDER DER PROBE (probeFelder): die Namen von window vor ihr
+        const felderRuf = (gib) => rufFrist(W, "/eval", { code: PROBE_FELDER(gib) }, 30000)
+            .then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: String((a && a.fehler) || JSON.stringify(a)).slice(0, 200) }))
+            .catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
+        const felderVor = await felderRuf(false);
+        if (felderVor.fehler) (kopf.felderBlind = kopf.felderBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: felderVor.fehler });
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
+        // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGTE (probeFelder), VOR der Wache: jedes neue Daten-Feld fällt beim Namen (im Kopf `felder`)
+        const felder = felderVor.fehler || gerissen || tot ? null : await felderRuf(true);
+        if (felder && felder.fehler) (kopf.felderBlind = kopf.felderBlind || []).push({ probe: schluessel(g[0]), wann: "nach", fehler: felder.fehler });
+        else if (felder && Array.isArray(felder.weg) && felder.weg.length) {
+            (kopf.felder = kopf.felder || []).push({ probe: schluessel(g[0]), weg: felder.weg });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ window-Felder stehen: " + felder.weg.join(" · ") + " — zurück vor der Wache");
+        }
         // DIE WIRT-WACHE NACH DER PROBE, VOR DEM PREIS: was die Probe am Wirt stehen ließ, fällt beim Namen — der Preis misst das Spiel;
         // hält die Probe danach noch ihren Kontext über der Schwelle der Linse, misst er es nie: die Stationen der Probe stehen UNGEMESSEN beim Grund
         const wirt = wirtVor.fehler || gerissen || tot ? null : await wirtRuf(W, true, mitPreis);
@@ -4748,13 +4795,22 @@ const stationsEintrag = (e, o) => ({ ...e, zeit: o.zeit, abdruck: o.abdruck, por
 // das Feld nie und steht.
 // DER START (21.11.): ein Lauf, dessen Prozess nie startete („Start: …“, fahreStation), erreichte den Apparat nie — er zählt seine
 // Versuche wie jeder Eintrag oben.
+// DAS SCHLOSS (22.11., pm-schloss-offen; GTX c445936d Runde 3: eine Stations-Sitzung wartete 2 713 s hinter der Tor-Kette
+// 'omen-omen-saat-tore', gab mit Exit 75 auf und legte ihre 35 Front-Stationen „GPU-Schloss blockiert …“ ohne das Feld ab — die
+// Runde zählte 15 → 50 erledigt, keine fuhr nach): ein Lauf, der das GPU-Schloss nie bekam (blockiert: Exit 75 · nie bekommen:
+// gpu-lauf.sh schwieg beim Warten — fahreStation und die Sitzung schreiben beide Texte), erreichte den Apparat nie.
 const START_GRUND = /^Start: /;
-const apparatOffen = (grund) => /— offen, UNGEMESSEN$/.test(grund) || START_GRUND.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
+const SCHLOSS_NIE = /^GPU-Schloss (blockiert|nie bekommen)\b/;
+const apparatOffen = (grund) =>
+    /— offen, UNGEMESSEN$/.test(grund) || START_GRUND.test(grund) || SCHLOSS_NIE.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
 // DIE ALTEN START-FEHLER IM BUCH (startOffen; 31ea3847: GTX 162, Radeon 79; f68dbf09: GTX 162 — bis 21.11. schrieb der Läufer „Start:
 // spawn ENAMETOOLONG“ als ROT nach m.je): jede gelesene Mess-Datei (messungLesen: ladeMessungen, run, vereine) trägt einen solchen
 // Eintrag unter m.ungemessen mit `offen` 1 — frischUrteil, `run --offen`, beruehrt und die Buchung sehen ihn UNGEMESSEN, nie als
 // Urteil; der nächste Schreiber der Datei legt ihn so ab (zug/dienst/runde.cjs `startFehler` liest die Datei am Ursprung dasselbe).
+// DIE ALTEN SCHLOSS-LÜCKEN IM BUCH (pm-schloss-offen; GTX c445936d: 35 Einträge „GPU-Schloss blockiert …“ vor der Regel, ohne
+// `offen`): jede gelesene Mess-Datei trägt sie mit `offen` 1 — der nächste Schreiber legt sie so ab, die Runde fährt sie nach.
 function startOffen(m) {
+    for (const e of Object.values((m && m.ungemessen) || {})) if (e && e.offen === undefined && SCHLOSS_NIE.test(String(e.grund || ""))) e.offen = 1;
     if (!m || !m.je) return m;
     for (const [id, e] of Object.entries(m.je)) {
         if (!e || e.ungemessen || !START_GRUND.test(String(e.grund || ""))) continue;
@@ -6717,7 +6773,7 @@ async function selbsttest(o = {}) {
         eintragen(nachher, "gelaende.K4#1", { gruen: true, zahl: "z", exit: 0, minuten: 1 });
         pruef("LÄUFER GPU-Schloss blockiert (Exit 75) ist UNGEMESSEN beim Namen, nie ROT in der Messung — run --offen misst neu",
             e.ungemessen === true && e.gruen === false && /Schloss blockiert.*Nachtruhe 0325-0415/.test(e.grund) && !mb.je["gelaende.K4#1"] &&
-            !!mb.ungemessen["gelaende.K4#1"] && fr.ungemessen === true && /R10/.test(fr.grund) && nachher.je["gelaende.K4#1"].gruen && !nachher.ungemessen,
+            !!mb.ungemessen["gelaende.K4#1"] && mb.ungemessen["gelaende.K4#1"].offen === 1 && fr.ungemessen === true && /R10/.test(fr.grund) && nachher.je["gelaende.K4#1"].gruen && !nachher.ungemessen,
             JSON.stringify([e, mb, fr]));
         const c3 = { ...ctx("schweigt"), gpuLauf: path.join(tmp, "schweigt.sh"), stillS: 2 };
         fs.writeFileSync(c3.gpuLauf, "#!/bin/bash\necho 'gpu-lauf: probe (bild) wartet auf ?' >&2\nsleep 60\n");
@@ -6728,7 +6784,7 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(c4.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: Schloss $N (bild, Platz 1 von 2) nach 0 s" >&2\nsleep 18\n"$@"\n');
         const e4 = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: lies }, { ...c4, deckelMinS: 120 });
         pruef("LÄUFER ein Schloss, das nie kommt (gpu-lauf.sh schweigt beim Warten), ist UNGEMESSEN; der Deckel zählt erst ab dem Schloss",
-            e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
+            e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && apparatOffen(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
         // (3e) DAS WARTEN: die Minuten bis zur Zeile „gpu-lauf: Schloss …“ stehen als `warten` neben `minuten` (die Arbeit ist die Differenz)
         const c5 = { ...ctx("wartet"), gpuLauf: path.join(tmp, "wartet.sh"), stillS: 30 };
         fs.writeFileSync(c5.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: $N (zeit) wartet auf Vorfahrt" >&2\nsleep 3\necho "gpu-lauf: Schloss $N (zeit) nach 3 s" >&2\n"$@"\n');
@@ -7836,6 +7892,21 @@ async function selbsttest(o = {}) {
             pruef("EINTRAG `offen` zählt die Versuche des Apparats: „— offen, UNGEMESSEN“ und „Läufer starb“ ohne die laufende Probe tragen 1, dann 2; die laufende Probe, der Täter-Ort und die " +
                 "gerissene Frist tragen das Feld nie; ein Urteil räumt den Eintrag (vorher: kein Feld — die Runde zählte jeden als gemessen)",
                 o1 === 1 && o2 === 2 && frei && !mo.ungemessen["a#1"] && mo.je["a#1"].gruen === true, JSON.stringify([o1, o2, mo.ungemessen]));
+            // DAS SCHLOSS IST EINE LÜCKE DES APPARATS (pm-schloss-offen): die Texte wörtlich, wie die Sitzung sie ablegt — der Täter der
+            // GTX-Runde 3 am c445936d (35 Front-Stationen „blockiert“ ohne `offen`, die Runde zählte sie erledigt) und der stille Warter
+            const blockiert = "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-saat-tore' nach 2713 s Warten) — ungemessen";
+            eintragen(mo, "s#1", U(blockiert));
+            const s1 = mo.ungemessen["s#1"].offen;
+            eintragen(mo, "s#1", U(blockiert));
+            pruef("EINTRAG `offen` am blockierten Schloss: „GPU-Schloss blockiert (Exit 75 …)“ trägt 1, dann 2 — UNGEMESSEN, nie ROT, die Runde fährt ihn nach (vorher: kein Feld, 35 Front-Stationen der GTX-Runde 3 zählten erledigt)",
+                s1 === 1 && mo.ungemessen["s#1"].offen === 2 && !mo.je["s#1"] && mo.ungemessen["s#1"].gruen === false, JSON.stringify([s1, mo.ungemessen["s#1"]]));
+            eintragen(mo, "t#1", U("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 900 s beim Warten"));
+            eintragen(mo, "u#1", U("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 900 s beim Warten — beendet, ungemessen"));
+            pruef("EINTRAG `offen` am Schloss, das nie kam: „GPU-Schloss nie bekommen“ (Sitzung und Läufer) trägt 1 — UNGEMESSEN, nie ROT, die Runde fährt ihn nach (vorher: kein Feld)",
+                mo.ungemessen["t#1"].offen === 1 && mo.ungemessen["u#1"].offen === 1 && !mo.je["t#1"] && !mo.je["u#1"], JSON.stringify([mo.ungemessen["t#1"], mo.ungemessen["u#1"]]));
+            const buch = messungLesen(JSON.stringify({ je: {}, ungemessen: { "v#1": U(blockiert), "w#1": U("Frist der Probe gerissen (60 s)"), "x#1": { ...U(blockiert), offen: 2 } } }));
+            pruef("BUCH die alte Schloss-Lücke ohne Feld (die 35 der GTX-Runde 3) liest sich mit offen 1, eine gezählte bleibt, die Frist bleibt ohne Feld",
+                buch.ungemessen["v#1"].offen === 1 && buch.ungemessen["x#1"].offen === 2 && buch.ungemessen["w#1"].offen === undefined, JSON.stringify(buch.ungemessen));
         }
         // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
         const ord = path.join(tmp, "getoetet.konsum");
@@ -8164,9 +8235,10 @@ async function selbsttest(o = {}) {
             // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
             'let geladen = false, seiteTot = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             // DER WEG /wirt (w28-probe-wirt, art „wirt…“; jede andere Art antwortet ohne ihn — die Werkbank vor der Wache): nimm merkt die
-            // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `__haelt` setzt, hält ihren Kontext
+            // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `r.state.__haelt` setzt (ein
+            // Halter außerhalb von window), hält ihren Kontext — ebenso ein Daten-Feld `__gross`, das beim gib noch auf window steht
             'let wirtVor = []; const wirtWeg = (b, s) => { const W = seite.welt; n(b.gib ? "wirt-gib" : "wirt-nimm"); if (!b.gib) { wirtVor = Object.keys(W).filter((k) => typeof W[k] === "function"); return s({ genommen: true }); }',
-            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && seite.win.__haelt ? ["eval#2"] : [];',
+            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && (W.state.__haelt || seite.win.__gross) ? ["eval#2"] : [];',
             '  return s({ anders, wie: Object.fromEntries(anders.map((k) => [k, "neu"])), haelt, heapVor: 100, heapNach: haelt.length ? 200 : 101, ungemessen: haelt.length ? "eine Marke lebt (eval#2), der Heap hält +100 MB über dem Stand vor der Probe (Schwelle 64)" : null, zeile: "r: " + (anders.join(", ") || "—") + (haelt.length ? " · hält " + haelt.join(", ") : "") }); };',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // DER TÄTER-ORT (art „ort-tod“): das Umstellen auf „dach“ reißt die Seite — danach fällt jede Frage an sie wie in der Werkbank
@@ -8174,7 +8246,7 @@ async function selbsttest(o = {}) {
             '  if (seiteTot && q.url !== "/stop") return s({ fehler: "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild stub.dmp" });',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
-            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand/.test(b.code)) return inSeite(b.code);',
+            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand|__punkteFelder/.test(b.code)) return inSeite(b.code);',
             '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" || (art === "anders-ort" && !geladen) ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
@@ -8368,21 +8440,30 @@ async function selbsttest(o = {}) {
         // DIE WIRT-WACHE (wirtRuf, w28-probe-wirt): vor JEDER Probe nimm, nach ihr gib — w1 lässt einen Haken an der Welt stehen, die Wache
         // nimmt ihn beim Namen zurück, w2 findet die Welt ohne ihn; w3 hält ihren Kontext über der Schwelle: UNGEMESSEN beim Grund der Wache,
         // nie GRÜN. DIE MUTANTE (vorher ROT am Täter, Radeon f9cdeca5 vegetation.K4#1: der Haken an `_hausHuelleSetzen` hielt 1 386 statt
-        // 522 MB am Preis): der Haken bleibt → UNGEMESSEN. Eine Werkbank ohne den Weg (die Art „gut“) steht beim Namen in wirtBlind
+        // 522 MB am Preis): der Haken bleibt → UNGEMESSEN. Eine Werkbank ohne den Weg (die Art „gut“) steht beim Namen in wirtBlind.
+        // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT (probeFelder, pm-probe-raeumt): w4 lässt ein 64-MB-Feld `window.__gross` stehen — die
+        // Sitzung nimmt es VOR der Wache beim Namen zurück (Kopf `felder`), w4 misst; der Halter der Sitzung (`__gehalten`, h2) bleibt ihr.
+        // DIE MUTANTE (vorher ROT am Täter, GTX an main 1e204f83: `window.__k4` +157,3 MB, `window.__zeigerDerProbe` +120,8 MB): ohne die
+        // Rücknahme stünde `__gross` beim gib — UNGEMESSEN
         {
             const typU = (j) => ({ gruen: !!j && j.welt === "frei", zahl: "w2 " + JSON.stringify(j) });
             const rw = await lauf([[S("w1.K1", 1, { befehl: [...ruf, "seite: r._loopNexusUpdate = () => {}; return \"warm\";"], sek: 30 }, warm)],
                 [S("w2.K1", 1, { befehl: [...ruf, "seite: return r._loopNexusUpdate ? \"haken\" : \"frei\";"], sek: 30 }, typU)],
-                [S("w3.K1", 1, { befehl: [...ruf, "seite: window.__haelt = 1; r._lofiTick = function () {}; return \"warm\";"], sek: 30 }, warm)]], "wirt-haelt");
-            const w3 = rw.es["w3.K1#1"] || {};
+                [S("w4.K1", 1, { befehl: [...ruf, "seite: window.__gross = { feld: new Float64Array(8388608) }; return \"warm\";"], sek: 30 }, warm)],
+                [S("w3.K1", 1, { befehl: [...ruf, "seite: r.state.__haelt = 1; r._lofiTick = function () {}; return \"warm\";"], sek: 30 }, warm)]], "wirt-haelt");
+            const w3 = rw.es["w3.K1#1"] || {}, w4 = rw.es["w4.K1#1"] || {};
             const gib = rw.z.filter((l) => /^wirt-/.test(l));
             pruef("SITZUNG DIE WIRT-WACHE: nimm vor jeder Probe, gib nach ihr; der Haken von w1 fällt beim Namen (w2 misst ohne ihn), w3 hält ihren Kontext — UNGEMESSEN beim Grund der Wache, nie GRÜN; die Werkbank ohne den Weg steht in wirtBlind",
                 !!rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen === true && !!rw.es["w2.K1#1"] && rw.es["w2.K1#1"].gruen === true &&
                     w3.gruen === false && w3.ungemessen === true && /^Wirt-Wache: eine Marke lebt \(eval#2\)/.test(w3.grund) &&
-                    JSON.stringify(gib) === JSON.stringify(["wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib"]) &&
+                    JSON.stringify(gib) === JSON.stringify(["wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib"]) &&
                     JSON.stringify((rw.kopf.wirt || []).map((x) => [x.probe, x.anders, !!x.ungemessen])) === JSON.stringify([["w1.K1#1", ["_loopNexusUpdate"], false], ["w3.K1#1", ["_lofiTick"], true]]) &&
                     !rw.kopf.wirtBlind && Array.isArray(rt.kopf.wirtBlind) && rt.kopf.wirtBlind.length === 2 && rt.kopf.wirtBlind.every((x) => x.wann === "vor" && /unbekannt/.test(x.fehler)),
                 JSON.stringify([["w1", rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen, "w2", rw.es["w2.K1#1"] && rw.es["w2.K1#1"].zahl, "w3", w3.gruen, w3.ungemessen], w3.grund, gib, rw.kopf.wirt, rw.kopf.wirtBlind, rt.kopf.wirtBlind]));
+            pruef("SITZUNG DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGT: w4 ließ ein 64-MB-Feld stehen — beim Namen zurück vor der Wache (Kopf felder), w4 misst; der Halter der Sitzung (h2) bleibt ihr",
+                w4.gruen === true && !w4.ungemessen && JSON.stringify(rw.kopf.felder) === JSON.stringify([{ probe: "w4.K1#1", weg: ["__gross"] }]) &&
+                    !rw.kopf.felderBlind && !rt.kopf.felder && !rt.kopf.felderBlind,
+                JSON.stringify([w4.gruen, w4.ungemessen, w4.grund, rw.kopf.felder, rw.kopf.felderBlind, rt.kopf.felder, rt.kopf.felderBlind]));
         }
         }
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
