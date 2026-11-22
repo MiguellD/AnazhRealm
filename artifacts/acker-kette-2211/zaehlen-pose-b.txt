@@ -1,0 +1,15 @@
+ "unbenannt": [],
+ "programme": {
+  "vertex": 75,
+  "fragment": 77,
+  "familien": 75,
+  "pipelines": 101
+ },
+ "frameMs": 59,
+ "kaskaden": 3,
+ "kamera": [
+  -681,
+  48.6,
+  -912.7
+ ]
+}
