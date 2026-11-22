@@ -511,7 +511,13 @@ const STROM = async (r, T, arg) => {
         const H = S.scheunen[arg.hof];
         r._bestandBild(H, true);
         for (let i = 0; i < 4; i++) await window.__seitenTakt();
-        return { n: KC.bestandAm(H.bestand, r._weltStunde()), kisten: H.bestandBild ? H.bestandBild.children.filter((c) => c.visible).length * (H.bestandBild.visible ? 1 : 0) : -1, x: H.orte.werk.x, z: H.orte.werk.z, blick: H.orte.werk.blick };
+        // die Pose: 7 m vor dem Tor (gegen den Blick des Hofs, dort stehen die Kisten), 1,5 m zur Seite der Kisten, Ego 1,7 m über dem Grund
+        const w = H.orte.werk;
+        const [fx, fz] = [Math.sin(w.blick), Math.cos(w.blick)];
+        const y = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
+        const [px, pz, lx, lz] = [w.x - fx * 7 + fz * 1.5, w.z - fz * 7 - fx * 1.5, w.x + fz * 1.5, w.z - fx * 1.5];
+        const kam = { px, pz, py: y(px, pz) + 1.7, lx, lz, ly: y(lx, lz) + 0.5 };
+        return { n: KC.bestandAm(H.bestand, r._weltStunde()), kisten: H.bestandBild ? H.bestandBild.children.filter((c) => c.visible).length * (H.bestandBild.visible ? 1 : 0) : -1, kam };
     }
     const tage = arg.tage || 2;
     const z0 = s.spielZeit;
@@ -862,8 +868,7 @@ module.exports = (F) => [
                 if (V.paar >= 0) {
                     const bildAn = async (zu, wort) => {
                         const o = await ruf("STROM", { zu, z0: V.z0, hof: V.paar });
-                        const [fx, fz] = [Math.sin(o.blick), Math.cos(o.blick)];
-                        const b = await K.bild(1 + "-" + wort, { px: o.x + fx * 6 + fz * 2, py: "+1.7", pz: o.z + fz * 6 - fx * 2, lx: o.x + fz * 1.5, ly: "+0.4", lz: o.z - fx * 1.5 });
+                        const b = await K.bild(1 + "-" + wort, o.kam);
                         return { ...o, datei: b.datei };
                     };
                     // die Uhr reist nur vorwärts: das Paar fällt auf dieselben Stunden des Tags nach dem gemessenen Fenster
