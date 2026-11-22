@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "radeon",
- "zeit": "2026-11-22T16:22:10.991Z",
+ "zeit": "2026-11-22T17:15:08.290Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.geist.generationen#1": {
@@ -328,6 +328,70 @@
    },
    "zeit": "2026-11-22T16:19:59.932Z",
    "abdruck": "eb201688ed4e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.maschine#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.75,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.8,
+   "fremd": {
+    "s": 50,
+    "takte": 14,
+    "fremdS": 945.88,
+    "kerne": 18.921,
+    "fensterKerne": 19.767,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
+      612.16
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      233.14
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32012-profil-s0RJ28 --no-p",
+      15.03
+     ]
+    ],
+    "dienerS": 55.44,
+    "diener": [
+     [
+      "System",
+      25.98
+     ],
+     [
+      "dwm.exe",
+      11.84
+     ]
+    ],
+    "geraetS": 34.2,
+    "geraet": [
+     [
+      "svchost.exe",
+      19.22
+     ],
+     [
+      "MsMpEng.exe",
+      11.23
+     ],
+     [
+      "SearchIndexer.exe",
+      2.58
+     ]
+    ],
+    "eigenS": 114.81,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-22T17:15:08.290Z",
+   "abdruck": "6c81432abc1c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
