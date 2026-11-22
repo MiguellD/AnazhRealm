@@ -16580,7 +16580,7 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +22) · karte2.mensch.geist.absicht#1 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +22) · karte2.mensch.geist.absicht#1 gtx: Station seit der Messung geändert — zuletzt an 6066c757: Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
@@ -16599,7 +16599,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 6066c757: Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -25436,7 +25436,7 @@
   },
   "karte2.mensch.wirtschaft.handel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.handel#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +7) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.handel#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.handel#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.handel#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#1 gtx: Station seit der Messung geändert · karte2.mensch.wirtschaft.handel#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.handel#1",
@@ -25444,7 +25444,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -25454,9 +25454,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +7) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -25465,7 +25464,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25474,7 +25473,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25483,7 +25482,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25492,7 +25491,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25501,7 +25500,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25510,7 +25509,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25519,7 +25518,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25528,7 +25527,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25537,7 +25536,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25546,7 +25545,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25555,7 +25554,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25564,14 +25563,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
   },
   "karte2.mensch.wirtschaft.markt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.markt#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.wirtschaft.markt#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +8) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.markt#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#1 gtx: Station seit der Messung geändert · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.markt#1",
@@ -25579,7 +25578,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -25589,9 +25588,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +8) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -25600,7 +25598,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25609,7 +25607,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25618,7 +25616,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25627,7 +25625,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25636,7 +25634,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25645,7 +25643,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25654,7 +25652,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25663,7 +25661,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25672,7 +25670,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25681,7 +25679,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -25822,7 +25820,7 @@
   },
   "karte2.mensch.wirtschaft.technik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.technik#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +7) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.technik#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#1 gtx: Station seit der Messung geändert · karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.technik#1",
@@ -25830,7 +25828,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -25840,9 +25838,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +7) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -25851,7 +25848,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25860,7 +25857,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25869,7 +25866,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25878,7 +25875,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25887,7 +25884,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25896,7 +25893,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25905,7 +25902,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25914,7 +25911,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25923,7 +25920,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25932,7 +25929,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25941,7 +25938,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     },
     {
@@ -25950,7 +25947,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -36242,7 +36239,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +1) · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36260,8 +36257,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37732,7 +37730,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 483,
+  "konsum": 481,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37900,11 +37898,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3139
+  "ohne": 3141
  },
  "kopfVoll": "6699a813707ad97dc857bed070685878af018a67",
- "zeit": "2026-11-22T11:08:07.493Z",
- "vorher": "6066c757",
+ "zeit": "2026-11-22T11:30:20.424Z",
+ "vorher": "6699a813",
  "bilanz": {
   "gewinn": [],
   "fall": [],
