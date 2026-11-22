@@ -883,6 +883,8 @@ class AnazhRealm_stoff_material {
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
             let albedoNode = null;
             let werte = null; // die Werte je Stoff des Werk-Stoffs (der flache Zweig unten)
+            let eingabe = null; // seine Eingabe (Tags, Metall) und was sie schon gebaut hat (`_werkStoffGestalt`)
+            let gemerkt = null;
             try {
                 const _Ta = THREE.TSL;
                 if (opts.vertexColors === true) {
@@ -1835,26 +1837,46 @@ class AnazhRealm_stoff_material {
                     // keinem flachen Teil stand), die Maße seiner Zeile der Kern als Stoff-Wert (`werte`) — Werke gleicher
                     // Gestalt teilen EIN Programm (`_graphTeilen` unten). Bis dahin trug jede Farbe und jede Zeile ihre
                     // Konstanten im Graphen: die Glanz-Bühne (Eisen, Bronze, Quarz, Stahl) übersetzte vier Programme.
-                    werte = mat.userData.stoffWerte = {};
-                    const _r = this._substanceCharacter(_Ta, _Ta.materialColor, {
-                        pos: _Ta.positionLocal,
-                        worldPos: _Ta.positionWorld,
-                        tags: opts.tags || {},
-                        metal: params.metalness || 0,
-                        roughBase: _Ta.materialRoughness,
-                        werte,
-                    });
-                    albedoNode = _r.albedo;
-                    mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
-                    if (_r.roughNode) mat.roughnessNode = _r.roughNode;
+                    // DIE GESTALT JE EINGABE, EINMAL GEBAUT (same.physik.reaktion#2): Tags und Metall bestimmen Graph und Werte
+                    // ganz (das Profil der Antwort folgt den Tags) — der nächste Stoff derselben Eingabe nimmt seine Werte und
+                    // den geteilten Graphen (`_werkStoffGestalt`), statt ihn neu zu bauen und an `_graphTeilen` wegzuwerfen:
+                    // 0,74 ms je Teil und Geburt, an jedem Werk unter sechs Teilen (die 260 Geburten einer Druckwelle 193 ms).
+                    eingabe = JSON.stringify([opts.tags || null, params.metalness || 0]);
+                    gemerkt = (this._werkStoffGestalt || (this._werkStoffGestalt = new Map())).get(eingabe) || null;
+                    if (gemerkt) {
+                        mat.userData.stoffWerte = Object.assign({}, gemerkt.werte);
+                        Object.assign(mat, gemerkt.graph);
+                    } else {
+                        werte = mat.userData.stoffWerte = {};
+                        const _r = this._substanceCharacter(_Ta, _Ta.materialColor, {
+                            pos: _Ta.positionLocal,
+                            worldPos: _Ta.positionWorld,
+                            tags: opts.tags || {},
+                            metal: params.metalness || 0,
+                            roughBase: _Ta.materialRoughness,
+                            werte,
+                        });
+                        albedoNode = _r.albedo;
+                        mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
+                        if (_r.roughNode) mat.roughnessNode = _r.roughNode;
+                    }
                 }
             } catch (_e) {
                 throw this._stoffBruch("der PBR-Stoff (Albedo-Quelle)", _e);
             }
-            this._applySubstanceResponse(mat, responseProfile, werte);
-            // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
-            // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
-            if (werte) this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","));
+            if (!gemerkt) {
+                this._applySubstanceResponse(mat, responseProfile, werte);
+                // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
+                // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
+                if (werte) {
+                    const sig = "werk:" + Object.keys(werte).join(",");
+                    this._graphTeilen(mat, sig);
+                    this._werkStoffGestalt.set(eingabe, {
+                        werte: Object.assign({}, werte),
+                        graph: this._geteilteGraphen.get(sig),
+                    });
+                }
+            }
         }
         // DIE LICHT-NORMALE DES BODENS IST SEINE WAHRE NORMALE (ferne.K4, w10-ferne): der Hang zur Sonne nimmt ihr Licht nach N·L,
         // der abgewandte nicht — nah (der Chunk: −∇d der Dichte, `_voxelGradientNormals`), fern (der Ring: die Normale seiner

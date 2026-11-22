@@ -2744,6 +2744,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_uiPulseQueued",
         "_foundryMats",
         "_geteilteGraphen",
+        "_werkStoffGestalt", // der Merker des Werk-Stoffs hält Knoten der geteilten Graphen: er lebt und fällt mit ihnen
         "_naesseHimmelK",
         "_leuchtOhne",
         "_leuchtKnoten",
