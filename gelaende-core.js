@@ -2732,11 +2732,13 @@
     // `state.waterLevel`), die Hydro-Kachel 2048 m (Stamm `HYDROSPHERE.regionSize`), das Erbgut [wildnis], kein Erdbau.
     // `Noise` ist der SimplexNoise-Bau (vendor/simplex-noise.js), der Strom seed + ":voxel" wie im Wirt. Weicht der Wirt
     // ab, bricht der Plan-Hash Studio = Welt (gate:settlement Teil O) beim Namen. Leser: das Fachwerk-Studio (`buildDorf`),
-    // die Linse.
-    const LAGE_GRUND = Object.freeze({ seed: "anazh-realm-seed", baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
+    // die Linse. Die Saat nennt der Rufer (Welle saat-argument): die der Eingangs-Welt steht EINMAL im Samen-Kern
+    // (`__samenCore.EINGANG`), eine fehlende bricht hier beim Namen, statt still die Eingangs-Welt zu zeichnen.
+    const LAGE_GRUND = Object.freeze({ baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
     function lageGrund(seed, Noise) {
         if (typeof Noise !== "function") throw new Error("gelaende-core: lageGrund braucht den SimplexNoise-Bau");
-        const s = typeof seed === "string" && seed.length ? seed : LAGE_GRUND.seed;
+        if (typeof seed !== "string" || !seed.length) throw new Error("gelaende-core: lageGrund ohne Saat (" + seed + ")");
+        const s = seed;
         const terme = erbgutNormal(undefined);
         return {
             seed: s,
@@ -4363,20 +4365,34 @@
         // an Ort und Stelle: je markierter Zelle ihre Höhe davor (die Reihe der ersten Markierung)
         const altZ = ort ? [] : null,
             altH = ort ? [] : null;
+        // DER RAND DES NETZES TRÄGT (w28-pop-treue): die Ecken eines Surface-Nets-Netzes liegen auf ebenem Boden in der Mitte ihrer
+        // Zelle — auf dem Raster der Karte (Schritt/2 = zwei Raster-Abstände), der Rand des Netzes läuft durch Rasterpunkte. Die Lage
+        // ist float32 (Körnung 3·10⁻⁵ m bei 350 m, 6·10⁻⁵ m bei 1 km), das Raster float64: das Rechteck (ceil/floor) und die
+        // Baryzentrik (≥ −1e-6) schlossen den Rasterpunkt AUF dem Rand beider Netze aus, die sich dort treffen — keine Karte trug
+        // ihn, der Boden-Leser antwortete an der Naht null, wo der Boden gezeichnet ist (Mess-Wiese, GTX 1050: 2 799 von 108 016
+        // Naht-Punkten, mit dem Rand 938; gate:koerper-stand K6). Ein Punkt zählt, liegt er im Grundriss höchstens `RAND` neben dem
+        // Dreieck: das Rechteck reicht so weit, je Ecke die Schwelle ihrer Baryzentrik = RAND / Höhe über der Gegenkante
+        // (höchstens 1e-3: ein Splitter-Dreieck greift nicht aus, mindestens die alte Schwelle). Die Linse: gate:pop „DER WURF
+        // DER STUFE“ — ohne den Rand fällt und kommt am Wechsel der Stufe ein Büschel an der Chunk-Kante (GTX 1050: Kachel
+        // −36,−90, Zelle −592|−1496); im stehenden Ring führt der Leser die Zelle über die Lücke (gate:koerper-stand K6b: 0).
+        const RAND = 1e-4;
         // das Zellen-Rechteck [i0, i1, k0, k1] des Dreiecks q in `pos` (leer, wo es neben der Karte liegt)
         const zellen = (q) => {
             const a = idx[q * 3] * 3,
                 b = idx[q * 3 + 1] * 3,
                 c = idx[q * 3 + 2] * 3;
-            zl[4 * q] = Math.min(M, Math.max(0, Math.ceil((Math.min(pos[a], pos[b], pos[c]) - ox) / h)));
-            zl[4 * q + 1] = Math.max(-1, Math.min(M - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) - ox) / h)));
+            zl[4 * q] = Math.min(M, Math.max(0, Math.ceil((Math.min(pos[a], pos[b], pos[c]) - RAND - ox) / h)));
+            zl[4 * q + 1] = Math.max(
+                -1,
+                Math.min(M - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) + RAND - ox) / h))
+            );
             zl[4 * q + 2] = Math.min(
                 M,
-                Math.max(0, Math.ceil((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+                Math.max(0, Math.ceil((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - RAND - oz) / h))
             );
             zl[4 * q + 3] = Math.max(
                 -1,
-                Math.min(M - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+                Math.min(M - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) + RAND - oz) / h))
             );
         };
         // DIE MASKE: ein Dreieck mit bewegter Ecke markiert sein altes und sein neues Rechteck; die Summen-Tafel `S` sagt in vier
@@ -4465,6 +4481,11 @@
             if (!(Math.abs(ny) >= 0.3 * nl)) continue;
             const d = (bz - qz) * (ax - qx) + (qx - bx) * (az - qz);
             if (Math.abs(d) < 1e-9) continue;
+            // je Ecke die Schwelle ihrer Baryzentrik: `RAND` Meter neben der Gegenkante (ihre Höhe = |d| / Kantenlänge)
+            const rd = RAND / Math.abs(d);
+            const t1 = -Math.max(1e-6, Math.min(1e-3, rd * Math.hypot(bx - qx, bz - qz)));
+            const t2 = -Math.max(1e-6, Math.min(1e-3, rd * Math.hypot(qx - ax, qz - az)));
+            const t3 = -Math.max(1e-6, Math.min(1e-3, rd * Math.hypot(ax - bx, az - bz)));
             for (let k = k0; k <= k1; k++) {
                 const pz = oz + k * h;
                 for (let i = i0; i <= i1; i++) {
@@ -4473,7 +4494,7 @@
                     const w1 = ((bz - qz) * (px - qx) + (qx - bx) * (pz - qz)) / d;
                     const w2 = ((qz - az) * (px - qx) + (ax - qx) * (pz - qz)) / d;
                     const w3 = 1 - w1 - w2;
-                    if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
+                    if (w1 < t1 || w2 < t2 || w3 < t3) continue;
                     const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
                     const m = k * M + i;
                     if (map[m] >= y) continue;
@@ -5422,11 +5443,8 @@
             sz = 0,
             sn = 0;
         for (let i = 0; i < n; i++) {
-            const st = 1 - N[3 * i + 1];
-            let t = (st - o.rockLo) / (o.rockHi - o.rockLo);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const wr = t * t * (3 - 2 * t);
-            const ws = (EW && EW[i] > o.schutt * SW[i] ? EW[i] : o.schutt * SW[i]) * (1 - wr);
+            const wr = felsSteile(o, 1 - N[3 * i + 1]);
+            const ws = felsSchutt(o, wr, EW ? EW[i] : 0, SW[i]);
             SW[i] = ws;
             const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
             if (!(w > 0)) continue;
@@ -5458,6 +5476,41 @@
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
         }
         return { schutt: SW, feuchte: fe };
+    }
+    // Das Gewicht des Felsens aus der Steile st (1 − ny): voll ab `rockHi`, 0 bis `rockLo` (der Fels-Stoff je Vertex und am Punkt).
+    function felsSteile(o, st) {
+        let t = (st - o.rockLo) / (o.rockHi - o.rockLo);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    }
+    // … und der Schutt unter ihm: die Wand des Erdbaus ew (voll) oder der Schutthang sw des Schicht-Gesetzes (× `schutt`), je
+    // das größere, wo der Fels ihn nicht deckt.
+    function felsSchutt(o, wr, ew, sw) {
+        return (ew > o.schutt * sw ? ew : o.schutt * sw) * (1 - wr);
+    }
+    // DER FELS-STOFF AM PUNKT (w28-pop-treue): derselbe Stoff wie `felsStoff` für EINEN Punkt der obersten Fläche (unter dem
+    // Himmel, H = 1) — für den Leser, der das Gesetz an der Welt fragt statt an einem Netz (Stamm `_bodenGruenAt`: der Wurf der
+    // Nah-Wiese, sein Grün unabhängig von der Stufe der Chunks). Was `felsStoff` aus dem NETZ rechnet, liest der Punkt aus dem
+    // Gesetz an ihm selbst: den Schutthang (`hoehe(…, aus).schutt` am Punkt statt auf dem Gitter des Netzes), die Feuchte des
+    // Mooses (am Punkt statt am Schwerpunkt des Felsens im Netz); die Krümmung der Fels-Kante trägt kein Punkt (0: die Rinde
+    // der Kante fehlt, sie hellt nur Fels auf, nie Wiese). Die Wand des Erdbaus fragt er wie der Vertex nur steiler als
+    // `schuttKandidat`. L die Lage · B `felsBasis` · o wie `felsStoff` · (x, y, z) der Punkt · ny das y seiner Normale ·
+    // C [r, g, b] die Säulen-Farbe (wird zum Stoff gemischt) · feuchte(x, z, y) die Feuchte des Wirts → das Gewicht des Stoffs.
+    const _felsPunkt = [0, 0, 0];
+    const _felsPunktAus = {};
+    function felsStoffPunkt(L, B, o, x, y, z, ny, C, feuchte) {
+        const st = 1 - ny;
+        const wr = felsSteile(o, st);
+        hoehe(L, x, z, false, _felsPunktAus);
+        const sw = _felsPunktAus.schutt > 0 ? _felsPunktAus.schutt : 0;
+        const ew = L.erdbau && !(st < o.schuttKandidat) ? erdbauWand(L, x, y, z, ny) : 0;
+        const w = wr + felsSchutt(o, wr, ew, sw);
+        if (!(w > 0)) return 0;
+        const t = felsFarbe(B, x, y, z, 0, ny, 0, 0, 1, feuchte(x, z, y), o.fuss, _felsPunkt);
+        C[0] += (t[0] - C[0]) * w;
+        C[1] += (t[1] - C[1]) * w;
+        C[2] += (t[2] - C[2]) * w;
+        return w;
     }
 
     // DIE MULDE DES GELÄNDES (wetter.K2, das Pfützen-Gesetz; rein additiv): wo Regen stehen bleibt. Die Höhe des Gesetzes
@@ -5700,7 +5753,12 @@
         meer: Object.freeze(["waterLevelM"]),
         wetter: Object.freeze(["regenQuote", "sturmQuote"]),
         wuchs: Object.freeze(["decke", "wald"]),
+        eis: Object.freeze(["zeit"]),
     });
+    // DIE EIS-ZEIT (Karte 2 planet.kopplung.gegenwart, `eis` der Tafel): 1, wo das Eis des Quartärs den Ort trug (planet-core
+    // `ortEisZeit`: polwärts der Eisgrenze des Planeten in einer der `EIS_ZEITEN`), sonst 0. Die Heimat trägt 0 — ihr Anker liegt
+    // nie unter dem Eis (scripts/diag-phyto-tree.cjs fragt den Planeten); am Ziel Heimat + Δ. Leser: der Findling (Stamm
+    // `_rockGeologyClass`).
     // DER WUCHS DES ORTS (Reise, Welle 3: Bewuchs und Grund nach Klima) — ein Teil der EINEN Tafel (`ortGesetz(teil).wuchs`): was
     // Klima und Zeit des Orts an Pflanzen tragen, je Größe ein Faktor ∈ [0, 1]; in der Heimat ist jeder genau 1 (x · 1 und
     // Gewicht 0 in jedem Leser: byte-gleich ohne Bedingung).
@@ -5779,6 +5837,16 @@
     function ortBaum(W, nass, nadel) {
         return (nadel ? W.nadel : W.laub) * (W.wald + (W.oase - W.wald) * nass);
     }
+    // DIE WÄRME-ART AM ORT (die Palme): sie steht nur, wo der Winter an ihrer Höhe y ihren Frost nicht kennt — das Mittel der
+    // Winter-Mitte (`temperaturFeld`: Mittel − Jahres-Amplitude − Kühlung der Höhe) mindestens `WAERME_ART.winterC`. Die Palme
+    // hat kein Ruhe-Meristem gegen Frost: ihre Grenze ist das Mittel des kältesten Monats über 5 °C (Greenwood & Wing 1995,
+    // Geology 23). Die Heimat trägt am Meer einen Winter von −4 °C — dort steht keine; am warmen Ort der Reise steht sie.
+    // Leser: die Art der Streu (Stamm `_scatterSpeciesForCell`).
+    const WAERME_ART = Object.freeze({ winterC: 5 });
+    function waermeTraegt(L, y) {
+        const f = temperaturFeld(L, y);
+        return f.mittel - f.jahr.amp - f.kuehlung >= WAERME_ART.winterC;
+    }
     // DIE LANDUNG DER REISE (K5, w28-reise-ort): trägt das Makro-Gesetz der Lage `L` Grund an der Ankunft — am Ursprung oder auf
     // der Ring-Spirale (je `LANDUNG.ringM` bis `LANDUNG.bisM`, 8 Richtungen; dieselbe Spirale wie der Plan der Ankunft im Faden):
     // die Fläche `LANDUNG.ueberM` über dem Meer der Lage. → {x, z} des ersten tragenden Punkts oder null.
@@ -5853,6 +5921,7 @@
                     klimaHeute,
                     spendeVerh: 1,
                     schneeBandM: 0,
+                    eis: 0,
                     wetter: null,
                     wuchs: ortWuchs(klimaHeute, 0, { decke: 1, wald: 1 }),
                     siedlung: null,
@@ -5887,6 +5956,7 @@
                 if (!(d[g] && Number.isFinite(d[g][f]))) nein(`Δ ${g}.${f} fehlt`);
         if (!(d.klima.spendeVerh >= 0)) nein(`Δ klima.spendeVerh ${d.klima.spendeVerh} (≥ 0)`);
         for (const f of ORT_FELDER.wuchs) if (!(d.wuchs[f] >= 0)) nein(`Δ wuchs.${f} ${d.wuchs[f]} (≥ 0)`);
+        if (![-1, 0, 1].includes(d.eis.zeit)) nein(`Δ eis.zeit ${d.eis.zeit} (−1, 0 oder 1)`);
         if (!d.wildnis || typeof d.wildnis !== "object") nein("Δ wildnis fehlt");
         for (const id of Object.keys(d.wildnis)) {
             if (!LANDFORM_REGLER.some((r) => r.id === id)) nein(`Δ des unbekannten Reglers „${id}"`);
@@ -5917,6 +5987,7 @@
             Object.assign(ohneBand, {
                 spendeVerh: k.spendeVerh,
                 schneeBandM: linie(ohneBand) - linie(H),
+                eis: Math.min(1, Math.max(0, H.eis + d.eis.zeit)),
                 wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
                 wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
                 siedlung: ortSiedlung(teil.zeitMa, ortWuchs(klimaHeute, teil.zeitMa, d.wuchs), false),
@@ -7843,6 +7914,8 @@
         kahlGrund: kahlGrund,
         ortKraut: ortKraut,
         ortBaum: ortBaum,
+        WAERME_ART: WAERME_ART,
+        waermeTraegt: waermeTraegt,
         ortLandung: ortLandung,
         ortSaat: ortSaat,
         ortSaatWahl: ortSaatWahl,
@@ -7873,6 +7946,7 @@
         STUFE_ZIEL: STUFE_ZIEL,
         stufeZiel: stufeZiel,
         felsStoff: felsStoff,
+        felsStoffPunkt: felsStoffPunkt,
         MULDE: MULDE,
         muldeEcken: muldeEcken,
         felsBasis: felsBasis,

@@ -52,6 +52,25 @@ function taktVerdict(m, minWeg = TAKT.wegFahrtMinM) {
         [m.stufe === 0, `stufe ${m.stufe} (geritten nie Grob- oder Kartenstufe)`],
     ]);
 }
+// T6 DIE FAHRT DER WELT-ZEIT (fahrt-weltzeit 22.11.; `weltzeit` in fahr-proben): nach N Sim-Schritten derselbe Weg und dasselbe Tempo
+// über der Karte, vor der Karte und im doppelten Bildtakt — die Schwelle aus der Messung am Schnitt (GTX 1060: alle drei Fahrten
+// 32,253 m / 16,114 m/s, Δ 0; am main d3f43d76 ohne Karte 43,673 m / 21,067 m/s); die zwei gepflanzten Täter liegen weit jenseits
+// von ihr (Dämpfung je Bild 17,69 ↔ 22,50 m, Tor der Karte 43,67 ↔ 32,25 m), sonst ist die Linse blind.
+const WELTZEIT = { sM: 0.05, vMs: 0.05 };
+function weltzeitVerdict(w) {
+    if (!w || !w.karte) return ["T6 ohne Fahrt"];
+    const A = w.karte;
+    const weg = (B) => !B || Math.abs(B.s - A.s) > WELTZEIT.sM || Math.abs(B.v - A.v) > WELTZEIT.vMs;
+    const zahl = (B) => (B ? `${B.s.toFixed(2)} m / ${B.v.toFixed(2)} m/s` : "keine Fahrt");
+    const [d1, d2] = w.taeterBild || [];
+    return urteil([
+        [A.mitKarte, `die Karte kam nicht unter die Bahn (vakuös: ${zahl(A)} ohne Vergleich)`],
+        [!weg(w.ohneKarte), `die Fahrt hängt am Bau-Stand der Karte: ohne Karte ${zahl(w.ohneKarte)} (μ ${w.ohneKarte?.haft}), mit Karte ${zahl(A)} (μ ${A.haft})`], // prettier-ignore
+        [!weg(w.takt2), `die Fahrt hängt am Bildtakt: im doppelten Takt ${zahl(w.takt2)}, im Muster ${zahl(A)}`],
+        [!!d1 && !!d2 && (Math.abs(d1.s - d2.s) > WELTZEIT.sM || Math.abs(d1.v - d2.v) > WELTZEIT.vMs), `der Täter Dämpfung je Bild bleibt unsichtbar (${zahl(d1)} gegen ${zahl(d2)})`], // prettier-ignore
+        [weg(w.taeterKarte), `der Täter Tor der Karte bleibt unsichtbar (${zahl(w.taeterKarte)} gegen ${zahl(A)})`],
+    ]);
+}
 // Am Hang ohne Taste: kein Teleport, der Wagen hält, die Gier steht.
 function haltVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
@@ -75,6 +94,64 @@ const WECHSEL = {
     sprungM: 0.5,
     abV: 7.5,
     fovGrad: 0.5,
+    // die Reihe je Lauf: geradeaus · die Maus hält das Rig 0,6 und 1,2 rad seitlich (der Wagen steht zwischen Kamera und Flanke:
+    // dort sprang sie 10,04 und 8,85 m) · −0,6 rad (die freie Seite) · 10 Bilder rechts gelenkt
+    reihe: [
+        { lenk: 0, bilder: 0 },
+        { lenk: 0, bilder: 0, maus: 0.6 },
+        { lenk: 0, bilder: 0, maus: 1.2 },
+        { lenk: 0, bilder: 0, maus: -0.6 },
+        { lenk: 1, bilder: 10 },
+    ],
+};
+// DER TÄTER DES SPRUNGS (front-brand): je Sicht über dem Soll das Bild des größten Wegs (j, der Abstieg fällt in Bild 3), der
+// Halt des Arm-Wurfs und wer ihn hielt — ein Bau (`bau` ≤ `t`: die Kugel am Werk, im Abstieg der verlassene Wagen) oder das
+// Gelände —, der Arm danach, der Rest des Übergangs und der Wagen, wie er im Bild des Abstiegs stand (Stufe, Maß der
+// gezeichneten Gestalt, Nick · Wank, Boxen). Ohne Wurf im Bild (Ego) nennt die Zeile nur Bild und Rest.
+// Der Halter beim Namen: fällt der Wurf OHNE den verlassenen Wagen frei (`frei` 1), hält ER den Arm.
+const werText = (x) =>
+    `Bild ${x.j}: ` +
+    (x.t == null
+        ? "kein Arm-Wurf"
+        : x.t >= 1
+          ? `der Arm steht frei (${x.arm}, Wurf ${x.len} m)`
+          : `der Arm fällt auf ${x.arm} — der Wurf (${x.len} m) hält bei ${x.t} ${x.frei >= 1 ? "am verlassenen Wagen" : x.bau <= x.t ? "an einem Bau" : `am Gelände (Bau ${x.bau})`}`) +
+    (x.schulter || x.steig ? `, der Drehpunkt rückt (Schulter ${x.schulter} m · Aufstieg ${x.steig} m)` : "") +
+    (Math.abs(x.leib) >= 0.25
+        ? `, der Leib tritt ${x.leib} m in EINEM Bild${x.aufBau ? " auf einen Bau" : ""} — die Kamera geht ${x.hoch} m in der Höhe mit`
+        : Math.abs(x.deckel) >= 0.25
+          ? `, der Boden-Deckel springt ${x.deckel} m`
+          : "") +
+    `, Rest des Übergangs ${x.rest} m` +
+    (x.wagen
+        ? `, der Wagen Stufe ${x.wagen.stufe}${x.wagen.mass ? "" : " OHNE Gestalt-Maß"} · Nick ${x.wagen.nick}° · Wank ${x.wagen.wank}° · ${x.wagen.blocker} Boxen`
+        : "");
+function abWerText(m) {
+    const z = (m.abWer || []).flatMap((x, i) =>
+        x && m.abSprung[i] > WECHSEL.sprungM ? [`${i ? "Ego" : "Third"} ${werText(x)}`] : []
+    );
+    return z.length ? ` — ${z.join(" · ")}` : "";
+}
+// DIE REIHE DER ABSTIEGE (`WECHSEL.reihe`): je Lage ein frischer GT vom Start-Ort — G geradeaus, L/R gelenkt, die Zahl die
+// gelenkten Bilder —, dann der Abstieg in Third. `--reihe n` (die Suche) fährt das Gitter Lenkung × Bilder (je 10) bis n Lagen.
+const wechselReihe = (n) => {
+    if (!(n > 0)) return WECHSEL.reihe;
+    const g = [0.6, -0.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, 3.1].map((maus) => ({ lenk: 0, bilder: 0, maus }));
+    for (let b = 0; g.length < n; b += 10) for (const lenk of b ? [-1, 1, 0] : [0]) if (g.length < n) g.push({ lenk, bilder: b });
+    return g.slice(0, n);
+};
+const reiheText = (m) =>
+    (m.abReihe || [])
+        .filter((a) => !(a.v >= WECHSEL.abV && a.sprung <= WECHSEL.sprungM))
+        .map((a) => `${a.lage} (${a.v} m/s) ${a.sprung} m${a.wer ? ` ${werText(a.wer)}` : ""}`)
+        .join(" · ");
+const wechselBericht = (m) => {
+    const vW = wechselVerdict(m);
+    check(
+        "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
+        vW.length === 0,
+        `${JSON.stringify(m)}${taeter(vW)}`
+    );
 };
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
@@ -92,7 +169,18 @@ function wechselVerdict(m) {
         ],
         [
             m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM),
-            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`,
+            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})${abWerText(m)}`,
+        ],
+        [
+            (m.abReihe || []).length >= W.reihe.length && !reiheText(m),
+            (m.abReihe || []).length >= W.reihe.length
+                ? `absteigen, die Reihe der Lagen (Third, Soll ≤ ${W.sprungM} m je Bild bei ≥ ${W.abV} m/s): ${reiheText(m)}`
+                : `absteigen, die Reihe: ${(m.abReihe || []).length} von ${W.reihe.length} Lagen gefahren (vakuös)`,
+        ],
+        // die Lage, an der die Kamera sprang, ist bewiesen gefahren: in mindestens einer Lage glitt der Arm zum verlassenen Wagen
+        [
+            !W.reihe.length || (m.abReihe || []).some((a) => a.zieht > 0),
+            "absteigen, die Reihe: in keiner Lage stand der verlassene Wagen im Arm (vakuös — die Maus-Lagen treffen ihn nicht mehr)",
         ],
         [
             m.abFov?.length === 3 && m.abFov.every((x) => x <= W.fovGrad),
@@ -534,6 +622,34 @@ function stationVerdict(s) {
             [ruht(fk.kisten), "frei-ruhe: die Kisten ruhen nicht am Boden"],
             [fk.kisten.zittern <= 0.01 && fk.wachZittern <= 0.01, "frei-zittern über 1 cm"],
             [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
+            // same.physik.koerper#1: das Fass aus 4,5 m ruht auf weichem Grund ≤ 2 s nach der Landung — es rollt als Kreis
+            // (`_freiRandFuss`) und hält mit dem Rollwiderstand der Stoffe (`_rollWiderstand`, C_rr > 0 auf weichem Grund); ohne
+            // ihn liegt es anders (der Löser liest ihn)
+            [
+                fk.fassFall && fk.fassFall.ruheS !== null && fk.fassFall.ruheS <= 2 && fk.fassFall.crr > 0,
+                `frei-fass-ruhe: das Fass ruht auf ${fk.fassFall?.boden} ${fk.fassFall ? fk.fassFall.ruheS : "–"} s nach der Landung (≤ 2, C_rr ${fk.fassFall?.crr}) — Täter \`_rollWiderstand\` / \`_freiRandFuss\` (stamm/koerper-frei.js)`,
+            ],
+            // der Löser erfindet keine Arbeit: nach der Landung (ab 0,5 s) steigt die Energie des Fasses nie über ihr Tief (≤ 1 J,
+            // der Wind am Ort trägt weniger) — vorher schaukelte das stehende Fass im Gras ohne Ende, +18 J in 8 s
+            [
+                fk.fassFall && fk.fassFall.anstiegJ <= 1,
+                `frei-energie: das Fass gewinnt nach der Landung ${fk.fassFall?.anstiegJ} J (≤ 1) — Täter \`_freiRandFuss\` (der Anker wandert mit der Neigung) / die Bremse \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.fassFall && fk.fassFallOhneRoll && fk.fassFallOhneRoll.ruheS !== fk.fassFall.ruheS,
+                "frei-mutante: ohne Rollwiderstand ruht das Fass wie mit ihm (vakuös: der Löser liest ihn nicht)",
+            ],
+            // same.physik.flug#1: Stein und Feder fliegen in stiller Luft wie die Rechnung (±10 %), der Wind trägt die Feder
+            // weiter; ohne Luft fliegt die Feder wie der Stein
+            [
+                fk.luft?.stein?.abwPct <= 10 && fk.luft?.feder?.abwPct <= 10,
+                `frei-luft: Wurfweiten gegen die Rechnung mit Luft — Stein ${fk.luft?.stein?.abwPct} %, Feder ${fk.luft?.feder?.abwPct} % (≤ 10) — Täter \`_freiLuftPacken\` / \`_freiZiehen\` (stamm/koerper-frei.js)`,
+            ],
+            [
+                fk.luftWind?.feder?.weite > (fk.luft?.feder?.weite ?? Infinity) + 0.2,
+                `frei-luft-wind: der Wind 2 m/s längs der Bahn trägt die Feder nicht (${fk.luftWind?.feder?.weite} gegen ${fk.luft?.feder?.weite} m) — \`_windAt\` in \`_freiLuftPacken\``,
+            ],
+            [fk.ohneLuft?.feder?.abwPct > 10, "frei-mutante: ohne Luft fliegt die Feder wie die Rechnung (vakuös)"],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
         ]),
@@ -1743,6 +1859,23 @@ hauptLauf(async () => {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
+        // T6: gesund treffen sich die drei Fahrten, die gepflanzten Täter liegen weit weg; jeder Bruch allein beim Namen
+        const wz = (s, v, mitKarte = true, haft = 0.4) => ({ s, v, mitKarte, haft });
+        const w6 = { n: 240, karte: wz(39.62, 17.85), ohneKarte: wz(39.62, 17.85), takt2: wz(39.62, 17.85), taeterBild: [wz(33.1, 14.2), wz(35.4, 15.3)], taeterKarte: wz(59.32, 23.62, true, 0.7) }; // prettier-ignore
+        check("Selbst-Test T6: gesunde Welt-Zeit == 0 Täter", weltzeitVerdict(w6).length === 0, weltzeitVerdict(w6).join(" · "));
+        jeBruch(
+            " T6",
+            weltzeitVerdict,
+            w6,
+            [
+                ["ohne Karte auf Erde", { ohneKarte: wz(59.32, 23.62, true, 0.7) }, "die Fahrt hängt am Bau-Stand der Karte"],
+                ["Bildtakt", { takt2: wz(41.0, 18.3) }, "die Fahrt hängt am Bildtakt"],
+                ["Karte kam nicht", { karte: wz(39.62, 17.85, false) }, "die Karte kam nicht unter die Bahn"],
+                ["Täter Bild blind", { taeterBild: [wz(39.62, 17.85), wz(39.62, 17.85)] }, "der Täter Dämpfung je Bild bleibt unsichtbar"],
+                ["Täter Karte blind", { taeterKarte: wz(39.62, 17.85) }, "der Täter Tor der Karte bleibt unsichtbar"],
+            ],
+            true
+        );
         // W: gesund Tiefe 4 (der Ast über Brand und Licht), jeder Täter beim Namen seines Glieds (je Lage der Bremsweg s, die
         // Glut des Herds, sein Licht); ein gebrochener Grip kürzt die Tiefe nicht. Dieselben Lagen trägt der K8-Selbsttest
         const lg = (regen, naesse, s, brand = 1 - naesse, licht = brand) => ({
@@ -1879,6 +2012,8 @@ hauptLauf(async () => {
             abV: [9.1, 8.6],
             abSprung: [0.31, 0.2],
             abFov: [0.2, 0.4, 0],
+            // die Reihe der Lagen: jede im Soll, in der zweiten glitt der Arm 40 Bilder zum verlassenen Wagen
+            abReihe: WECHSEL.reihe.map((l, i) => ({ lage: `Lage ${i}`, v: 8.9, sprung: 0.2, zieht: i === 1 ? 40 : 0 })),
         });
         check(
             "Selbst-Test T4: der gesunde Wechsel == 0 Täter",
@@ -1900,6 +2035,43 @@ hauptLauf(async () => {
             ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ], 1);
+        // der Täter des Sprungs beim Namen (`abWerText`): das Bild, der Arm und wer den Wurf hielt — Bau oder Gelände
+        const wagenT = { stufe: 2, mass: false, nick: -20.1, wank: 1.2, blocker: 5 };
+        for (const [name, wer, soll] of [
+            ["der Arm fällt an den verlassenen Wagen", { j: 4, arm: 0.015, t: 0.015, bau: 0.015, len: 9.6, rest: 8.2, wagen: wagenT }, "Third Bild 4: der Arm fällt auf 0.015 — der Wurf (9.6 m) hält bei 0.015 an einem Bau, Rest des Übergangs 8.2 m, der Wagen Stufe 2 OHNE Gestalt-Maß · Nick -20.1° · Wank 1.2° · 5 Boxen"],
+            ["der Arm fällt an den Hang", { j: 5, arm: 0.3, t: 0.3, bau: 1, len: 9.6, rest: 7.9 }, "Third Bild 5: der Arm fällt auf 0.3 — der Wurf (9.6 m) hält bei 0.3 am Gelände (Bau 1), Rest des Übergangs 7.9 m"],
+        ]) {
+            const v = wechselVerdict({ ...wechsel, abSprung: [10.15, 0.23], abWer: [wer, null] });
+            check(`Selbst-Test T4: ‚${name}' → die Linse nennt Bild, Arm und Halter`, v.length === 1 && v[0].includes(soll), v.join(" · ")); // prettier-ignore
+        }
+        const stumm = abWerText({ ...wechsel, abWer: [{ j: 4, arm: 0.9, t: 1, bau: 1, len: 9.6, rest: 8.2 }, null] });
+        check("Selbst-Test T4: der gesunde Wechsel nennt keinen Halter (der Wurf im Soll bleibt stumm)", stumm === "", stumm);
+        // DIE REIHE DER ABSTIEGE: die Lage beim Namen, ihr Halter (der verlassene Wagen: der Wurf ohne ihn fällt frei), der Tritt
+        // des Leibs, der Deckel, die fehlende Lage und die Reihe, in der kein Arm mehr zum Wagen glitt (die Lage ist nicht gefahren)
+        const reiheMit = (i, a) => ({ ...wechsel, abReihe: wechsel.abReihe.map((x, k) => (k === i ? { ...x, ...a } : x)) });
+        for (const [name, m, soll] of [
+            [
+                "die Maus hält das Rig 0,6 rad seitlich, der Arm fällt 10,04 m an den verlassenen Wagen",
+                reiheMit(1, { lage: "G0 Maus 0.6", sprung: 10.04, wer: { j: 10, arm: 0.017, t: 0.017, bau: 0.017, frei: 1, len: 9.99, rest: 3.53 } }),
+                "die Reihe der Lagen (Third, Soll ≤ 0.5 m je Bild bei ≥ 7.5 m/s): G0 Maus 0.6 (8.9 m/s) 10.04 m Bild 10: der Arm fällt auf 0.017 — der Wurf (9.99 m) hält bei 0.017 am verlassenen Wagen",
+            ],
+            [
+                "der Leib tritt 0,59 m in einem Bild auf die Hülle des verlassenen Wagens, die Kamera folgt starr 0,55 m",
+                reiheMit(0, { lage: "G0", sprung: 0.57, wer: { j: 27, arm: 1, t: 1, bau: 1, frei: 1, len: 7.9, rest: 1.7, hoch: 0.55, deckel: 0.59, aufBau: true, leib: 0.59 } }), // prettier-ignore
+                "G0 (8.9 m/s) 0.57 m Bild 27: der Arm steht frei (1, Wurf 7.9 m), der Leib tritt 0.59 m in EINEM Bild auf einen Bau — die Kamera geht 0.55 m in der Höhe mit",
+            ],
+            [
+                "der Boden-Deckel springt 0,6 m, der Leib steht still",
+                reiheMit(0, { lage: "G0", sprung: 0.61, wer: { j: 12, arm: 1, t: 1, bau: 1, frei: 1, len: 7.9, rest: 0.4, hoch: 0.6, deckel: 0.6, leib: 0.02 } }),
+                "G0 (8.9 m/s) 0.61 m Bild 12: der Arm steht frei (1, Wurf 7.9 m), der Boden-Deckel springt 0.6 m",
+            ],
+            ["eine Lage fährt unter dem Tempo-Band (6,1 m/s)", reiheMit(4, { lage: "R10", v: 6.1 }), "R10 (6.1 m/s) 0.2 m"],
+            ["die Reihe fuhr 3 von 5 Lagen", { ...wechsel, abReihe: wechsel.abReihe.slice(0, 3) }, "die Reihe: 3 von 5 Lagen gefahren (vakuös)"],
+            ["in keiner Lage glitt der Arm zum verlassenen Wagen", reiheMit(1, { zieht: 0 }), "in keiner Lage stand der verlassene Wagen im Arm (vakuös"],
+        ]) {
+            const v = wechselVerdict(m);
+            check(`Selbst-Test T4: ‚${name}' → die Reihe nennt Lage und Täter`, v.length === 1 && v[0].includes(soll), v.join(" · ")); // prettier-ignore
+        }
         // der Ruck je Bild über ungleiche Bildzeiten (16,7 · 33,3 ms): gleichförmig 1,8 m/s quer ist keiner (je Bild roh 0,03), ein Zittern bleibt
         const [glatt, zittert] = [
             ruckJeBild([
@@ -2000,6 +2172,11 @@ hauptLauf(async () => {
                 schwerelos: { boden: 0.1, fugen: [0.1] },
                 fass: { kipp: 172 },
                 fassOhneStoss: { kipp: 2 },
+                fassFall: { boden: "gras", ruheS: 1.483, crr: 0.3, anstiegJ: 0.12 },
+                fassFallOhneRoll: { boden: "gras", ruheS: null, crr: 0 },
+                luft: { stein: { weite: 11.37, rechnung: 11.402, abwPct: 0.28 }, feder: { weite: 0.504, rechnung: 0.507, abwPct: 0.44 } },
+                luftWind: { stein: { weite: 11.6, rechnung: 11.402, abwPct: 1.7 }, feder: { weite: 2.1, rechnung: 0.507, abwPct: 314 } },
+                ohneLuft: { stein: { weite: 11.9, rechnung: 11.402, abwPct: 4.4 }, feder: { weite: 11.9, rechnung: 0.507, abwPct: 2247 } },
             },
             spielerWagen: {
                 a: {
@@ -2194,6 +2371,35 @@ hauptLauf(async () => {
                 "frei-ruhe",
             ],
             ["die Wagen-Kollision aus: das Fass steht", { frei: { ...gutS.frei, fass: { kipp: 2 } } }, "frei-fass"],
+            // same.physik.koerper#1 an main 9f24b5b8: das Fass schaukelte auf dem Sechzehneck seines Rands, die Bremse des
+            // Fahr-Gesetzes hielt es auf jedem Grund gleich — im Gras 3,1 s nach der Landung
+            [
+                "das Fass ruht im Gras 3,1 s (main)",
+                { frei: { ...gutS.frei, fassFall: { boden: "gras", ruheS: 3.1, crr: null } } },
+                "frei-fass-ruhe",
+            ],
+            // same.physik.flug#1 an main 9f24b5b8: der Löser kannte keine Luft — die Feder flog wie der Stein (Station 2 260 %)
+            [
+                "der Löser ohne Luft (main)",
+                { frei: { ...gutS.frei, luft: gutS.frei.ohneLuft, luftWind: gutS.frei.ohneLuft } },
+                "frei-luft",
+            ],
+            [
+                "die Luft ohne Wind",
+                { frei: { ...gutS.frei, luftWind: gutS.frei.luft } },
+                "frei-luft-wind",
+            ],
+            // der wandernde Fuss an 55a540d7~1: das stehende Fass im Gras gewann +18 J in 8 s und schlief nie
+            [
+                "das stehende Fass gewinnt Energie",
+                { frei: { ...gutS.frei, fassFall: { ...gutS.frei.fassFall, anstiegJ: 18 } } },
+                "frei-energie",
+            ],
+            [
+                "ohne Rollwiderstand ruht das Fass so früh",
+                { frei: { ...gutS.frei, fassFallOhneRoll: { ...gutS.frei.fassFall } } },
+                "frei-mutante: ohne Roll",
+            ],
             [
                 "ohne Schwere ruhen die Kisten am Boden",
                 { frei: { ...gutS.frei, schwerelos: gutS.frei.kisten } },
@@ -2714,6 +2920,15 @@ hauptLauf(async () => {
             },
         ],
         [
+            schalter("--wechsel"), // T4 allein (`--reihe n`: die Suche über n Lagen des Abstiegs)
+            probeLeben,
+            { wechsel: { reihe: wechselReihe(zahlNach("--reihe")) } },
+            (o) => {
+                if (o.err) check("Probe ohne Ausnahme", false, o.err.split("\n")[0]);
+                wechselBericht(o.wechsel);
+            },
+        ],
+        [
             schalter("--kette"),
             probeLeben,
             { nurKette: true, kette: KETTE },
@@ -2745,6 +2960,7 @@ hauptLauf(async () => {
         flugM: STATION.flugM,
         kette: KETTE,
         rueck: RUECK,
+        abReihe: WECHSEL.reihe,
     });
     await page.close();
     const bahn = await bahnLauf();
@@ -2786,11 +3002,13 @@ hauptLauf(async () => {
         vRoss.length === 0,
         `${zeile(out.ross)}${taeter(vRoss, ", ")}`
     );
-    const vW = wechselVerdict(out.wechsel);
+    wechselBericht(out.wechsel);
+    const v6 = weltzeitVerdict(out.weltzeit);
+    const w6 = out.weltzeit || {};
     check(
-        "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
-        vW.length === 0,
-        `${JSON.stringify(out.wechsel)}${taeter(vW)}`
+        "T6 die Fahrt ist eine Funktion der Welt-Zeit: nach N Sim-Schritten derselbe Weg und dasselbe Tempo über der Karte, vor der Karte und im doppelten Bildtakt — beide gepflanzten Täter sichtbar",
+        v6.length === 0,
+        `${w6.n} Schritte · Karte ${JSON.stringify(w6.karte)} · ohne ${JSON.stringify(w6.ohneKarte)} · Takt 2 ${JSON.stringify(w6.takt2)} · Täter Bild ${JSON.stringify(w6.taeterBild)} · Täter Karte ${JSON.stringify(w6.taeterKarte)}${taeter(v6)}`
     );
     const v5 = tempoVerdict(out.tempo && Object.assign(out.tempo, kernTempo(globalThis.__vehicleCore)));
     check(

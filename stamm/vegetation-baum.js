@@ -51,7 +51,7 @@ class AnazhRealm_vegetation_baum {
     // DIE VARIANTEN-SAAT EINER ART — eine Funktion der Welt-Saat: VARIANTS_PER_SPECIES Saaten `<Welt-Saat>-<Art>-var<i>`. Leser:
     // der Pool (`_variantSeedsFor`) und der Stand, der eine Zeile, die ihr gleicht, nie trägt (speicher.K3: Abgeleitetes reist nie).
     static _variantenSaat(wm, species) {
-        const worldSeed = wm.seed || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatVon(wm);
         return Array.from({ length: AnazhRealm.VARIANTS_PER_SPECIES }, (_, i) => `${worldSeed}-${species}-var${i}`);
     }
 
@@ -1086,7 +1086,7 @@ class AnazhRealm_vegetation_baum {
     // Wurf. Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die
     // reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
     _waldDartSetzen(d, alter) {
-        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatJe(this);
         const regionSeed = `${worldSeed}|${d.sp}|${Math.floor(d.x / 256)},${Math.floor(d.z / 256)}`;
         const variantIndex =
             typeof this._treeVariantIndexFor === "function" ? this._treeVariantIndexFor(d.sp, regionSeed) : 0;
@@ -1380,7 +1380,7 @@ class AnazhRealm_vegetation_baum {
                     if (this._genVersion && this._genVersion() >= 4 && this._growTreeBlueprintForSpawn) {
                         const bRegX = Math.floor(bxp / 256);
                         const bRegZ = Math.floor(bzp / 256);
-                        const bSeedW = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                        const bSeedW = AnazhRealm._saatJe(this);
                         try {
                             bushKey = this._growTreeBlueprintForSpawn(artB, `${bSeedW}|${artB}|${bRegX},${bRegZ}`);
                         } catch (_gbe) {
@@ -1425,12 +1425,16 @@ class AnazhRealm_vegetation_baum {
 
     // Stein-Geologie-Klasse (phytogenesis-placeRocks): FLACH → Findling, steil + hoch → Aufschluss (Grat),
     // steil + tief → Talus (Hang-Fuß), Mittelhang → kein Fels; Prüf-Folge Findling → Aufschluss → Talus.
-    // Reine Funktion von (slope, relH) → Γ5-deterministisch.
+    // Reine Funktion von (slope, relH) und dem Ort → Γ5-deterministisch.
+    // DER FINDLING LIEGT, WO DAS EIS LAG (Karte 2 planet.kopplung.gegenwart): der Erratiker ist die Fracht des Inlandeises — am
+    // flachen Grund liegt er nur, wo die Eis-Zeit des Orts (`ort.eis`, gelaende-core: polwärts der Eisgrenze des Planeten im
+    // Quartär) 1 ist; sonst trägt der flache Grund keinen Fels. Bis hier lag er an jedem flachen Ort: an der Heimat (Jahresmittel
+    // 7 °C, nie unter dem Eis) 660 Findlinge an 1 000 Punkten ohne Ursache.
     _rockGeologyClass(slope, relH) {
         const G = AnazhRealm.ROCK_GEOLOGY;
         const s = Number.isFinite(slope) ? slope : 0;
         const h = Number.isFinite(relH) ? relH : 0;
-        if (s <= G.findlingSlopeMax) return "findling"; // flacher Grund
+        if (s <= G.findlingSlopeMax) return this._gelaende().ort.eis ? "findling" : null; // flacher Grund: der Findling des Eises
         if (s > G.aufschlussSlopeMin && h > G.aufschlussHeightMin) return "aufschluss"; // Fels bricht auf dem Grat durch
         if (s > G.talusSlopeMin) return "talus"; // Blockschutt am Steilhang-Fuß
         return null; // Mittelhang → kein Fels (die Nische trägt hier keinen Stein)
@@ -1672,7 +1676,7 @@ class AnazhRealm_vegetation_baum {
                     if (gV2 >= 4) {
                         const regX = Math.floor(sampleX / 256);
                         const regZ = Math.floor(sampleZ / 256);
-                        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                        const worldSeed = AnazhRealm._saatJe(this);
                         const regionSeed = `${worldSeed}|${bushName}|${regX},${regZ}`;
                         const grownKey = this._growTreeBlueprintForSpawn(bushName, regionSeed);
                         if (grownKey) bushSpawnName = grownKey;
@@ -1713,7 +1717,7 @@ class AnazhRealm_vegetation_baum {
             if (!geoCls) return 0; // die Slope-Nische trägt hier keinen Stein (Mittelhang)
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const worldSeed = AnazhRealm._saatJe(this);
             const key = this._rockVariantForGeology(geoCls, regX, regZ, worldSeed);
             if (key && this.state.blueprints && this.state.blueprints[key]) spawnName = key;
             // GRÖSSE nach Nische: Findling groß, Talus klein, Aufschluss aufragend.
@@ -1721,7 +1725,7 @@ class AnazhRealm_vegetation_baum {
         } else if (landmarkPool && landmarkPool.n > 0) {
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const worldSeed = AnazhRealm._saatJe(this);
             // Die Form folgt dem Terrain (`_landmarkVariantIdx`): steil → aufragend (Nadel/Stapel/Druse/tiefe
             // Esse), flach → gedrungen (Brocken/Geröll/Cluster/Lava-See); der Region-Hash bricht Gleichstände
             // (HISM-kohärent). Affinität unberührt (Variante, nicht Art).
@@ -2350,9 +2354,7 @@ class AnazhRealm_vegetation_baum {
             for (let tx = Math.floor((hx - r) / K); tx <= Math.floor((hx + r) / K); tx++)
                 for (let tz = Math.floor((hz - r) / K); tz <= Math.floor((hz + r) / K); tz++) {
                     const k = ns.kacheln.get(`${tx},${tz}`);
-                    if (!k) continue;
-                    this._nahStreuKachelEntsorgen(k);
-                    ns.kacheln.delete(k.key);
+                    if (k) this._nahStreuKachelFaellt(k); // sie steht, bis ihr Neubau sie ablöst
                 }
         }
         return n;
@@ -2745,13 +2747,15 @@ class AnazhRealm_vegetation_baum {
         // Der Scan läuft je Frame (Distanz-Checks trivial), die teuren Builds gehen unter der EINEN Frist der Bau-Arbeit
         // (`_bauFrist("bau")`, unten; sonst baut ein Tick beim Eintritt in eine dichte Region alles auf einmal). Cull (fern) ist
         // billig → ungedeckelt.
-        const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
-        if (!playerPos) return;
+        // das EINE Auge der Stufen (`_lodAuge`, stufe-ein-auge): die Mesh-Zone misst, wo das Bild entsteht, nie am Spieler
+        const a0 = this._lodAuge();
+        const auge = a0 ? { x: a0.x, y: a0.y, z: a0.z } : null;
+        if (!auge) return;
         this._stadtMasseStand();
         // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
         // Bau-Menge, Ankunft, Cull-Radius), träfe er dieselben Urteile — kein Gang (gemessen 07.10., Mess-Wiese, Stand:
         // 1540 Einträge je Takt, 0 Bauten, 0 Räumungen).
-        if (this._standRuht("archCull", 1, { pos: playerPos, rand: AnazhRealm.STAND_RAND_FERN_M }, "bau")) return;
+        if (this._standRuht("archCull", 1, { pos: auge, rand: AnazhRealm.STAND_RAND_FERN_M }, "bau")) return;
         let regung = 0;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
@@ -2778,17 +2782,17 @@ class AnazhRealm_vegetation_baum {
         // den weiteren der Wege beider Enden (ein Schlaf in Metern hält: kein Punkt der Strecke ging weiter). Das Wachsen des
         // Laub-Rands zählt wie das des Radius: der Eintritt eines Wurfs des Felds liegt im Saum vor seinem Rand (der Laub-Rand,
         // nie diesseits der Mesh-Zone, unter dem Ladeschirm der Karten-Horizont, `_archKartenHorizont`) — er wächst nie weiter als er.
-        const vb = this._bedarfVoraus(playerPos) || playerPos;
+        const vb = this._bedarfVoraus(auge) || auge;
         const K = this._cullWache();
         const SR = AnazhRealm.SCATTER.outerM;
         const laub = this._ladeTakt() ? SR : Math.min(SR, Math.max(radius, this._laubRand()));
         K.odo +=
             K.px === null
                 ? 0
-                : Math.max(Math.hypot(playerPos.x - K.px, playerPos.z - K.pz), Math.hypot(vb.x - K.vx, vb.z - K.vz)) +
+                : Math.max(Math.hypot(auge.x - K.px, auge.z - K.pz), Math.hypot(vb.x - K.vx, vb.z - K.vz)) +
                   Math.max(0, radius - K.R) +
                   Math.max(0, laub - K.F);
-        [K.px, K.pz, K.vx, K.vz, K.R, K.F] = [playerPos.x, playerPos.z, vb.x, vb.z, radius, laub];
+        [K.px, K.pz, K.vx, K.vz, K.R, K.F] = [auge.x, auge.z, vb.x, vb.z, radius, laub];
         const Q = AnazhRealm.CULL_EIMER_M;
         const jetzt = Math.floor(K.odo / Q);
         const wecke = (b) => {
@@ -2838,7 +2842,7 @@ class AnazhRealm_vegetation_baum {
                 K.schlaefer.add(entry);
                 continue;
             }
-            const distSq = this._bedarfAbstand(entry.position.x, entry.position.z, playerPos, bahn) ** 2; // entlang der Bahn
+            const distSq = this._bedarfAbstand(entry.position.x, entry.position.z, auge, bahn) ** 2; // entlang der Bahn
             // die Reihe der Wartenden: die Zeit bis Bedarf (`_bedarfWeg`, in Metern zu Fuß), bis w7-rang der Abstand
             const rang = this._spielerD2(entry.position.x, entry.position.z, bahn);
             // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch
@@ -2865,7 +2869,7 @@ class AnazhRealm_vegetation_baum {
                 let rand = this._archKartenHorizont(entry, !this._archIsRendered(entry));
                 const dEin =
                     entry.feldWurf === true
-                        ? Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z)
+                        ? Math.hypot(entry.position.x - auge.x, entry.position.z - auge.z)
                         : Math.sqrt(distSq);
                 if (this._archIsRendered(entry) ? distSq <= rand * rand : dEin <= rand) {
                     if (!this._archIsRendered(entry)) {
@@ -3059,7 +3063,7 @@ class AnazhRealm_vegetation_baum {
         const kalt = this._foundryRewarmColdTrees(K.wach); // die Kalten und Klassischen der Mesh-Zone wachen (oben)
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
-        this._capNexusStructures(playerPos);
+        this._capNexusStructures(auge);
         this._stadtMasseStand();
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
     }

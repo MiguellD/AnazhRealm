@@ -164,7 +164,7 @@ class AnazhRealm_stoff_dach {
     _dachTakt() {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
-        const auge = st.camera && st.camera.position;
+        const auge = this._lodAuge(); // das EINE Auge der Stufen
         const stand = this._grundrissStand();
         const w = this._dachWahl;
         if (!auge || (w && w.stand === stand && Math.hypot(auge.x - w.x, auge.z - w.z) < N.dachSchrittM)) return;

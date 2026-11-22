@@ -1449,6 +1449,7 @@ function planetOrtAuftrag(msg) {
             meer: { waterLevelM: d.meer.waterLevelM },
             wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote },
             wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald },
+            eis: { zeit: d.eis.zeit },
             wildnis: Object.assign({}, d.wildnis),
         },
     };
@@ -1646,10 +1647,18 @@ function editsFillTop() {
     return topY;
 }
 
+// DIE SAAT DES FADENS (Welle saat-argument): der EINE Leser der Saat, die der Stand der Welt brachte (`applyStateSnapshot`) — ein
+// Faden ohne sie bricht beim Namen, statt still die Eingangs-Welt zu rechnen (bis hier zwei Kopien von „anazh-realm-seed“).
+function saatDesFadens() {
+    if (typeof state.seed !== "string" || !state.seed)
+        throw new Error("voxel-worker: der Faden trägt noch keine Saat (vor dem Stand der Welt gelesen)");
+    return state.seed;
+}
+
 // Mirror von `_forestFbm` (der Wald-Rausch am Same + ":forest").
 let waldRausch = null;
 function forestFbm(px, pz) {
-    const seed = state.seed || "anazh-realm-seed";
+    const seed = saatDesFadens();
     if (!waldRausch || waldRausch.seed !== seed) waldRausch = { seed, n: new SimplexNoise(seed + ":forest") };
     const n = waldRausch.n;
     const a = (n.noise2D(px, pz) + 1) * 0.5;
@@ -1758,7 +1767,7 @@ const STREU_LESER = {
 const SAAT_FELD_K = 7;
 let standRausch = null;
 function placementStand(x, z, art, freq) {
-    const seed = state.seed || "anazh-realm-seed";
+    const seed = saatDesFadens();
     if (!standRausch || standRausch.seed !== seed) standRausch = { seed };
     const k = art === "meadow" ? ":meadow" : ":forest";
     const n = standRausch[k] || (standRausch[k] = new SimplexNoise(seed + k));

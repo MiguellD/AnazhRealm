@@ -243,4 +243,145 @@ const hRot = hFaelle.filter((f) => f.fehler || !(f.segs > 0)).map((f) => f.fall 
 for (const z of hRot.slice(0, 6)) console.log("      SKELETT " + z);
 ok(`Skelett im Haupt-Thread: skelettDerGestalt wächst jede Baum- und Strauch-Art ohne die Shell (${new Set(hFaelle.map((f) => f.fall.split("/")[0])).size} Arten × 3 Gestalten × 3 Stufen)`, hFaelle.length > 0 && !hRot.length, hFaelle.length + " Fälle, " + hRot.length + " gebrochen" + (hRot.length ? " — " + hRot[0] : ""));
 
+// DAS UFER UND DIE WÄRME (Karte 2 leben.pflanzen.biome#1, die Station „Uferarten am Wasser ≥ 90 %, Wärme-Arten außerhalb der
+// Wärme 0"): die Uferart (Erle des Walds und der Streu, der Farn des Krautstratums) steht nur über der Feuchte des Saums
+// (`FOREST_PACK.ufer`), die Palme nur, wo der Winter an ihrem Fuß sie trägt (gelaende-core `waermeTraegt`). Die Linse fragt die
+// Wald-Nische (`forestNische`) über die Feuchte 0 … 1 und die Art der Streu (Stamm `_scatterSpeciesForCell` /
+// `_scatterSpeciesForLayer`, aus dem Stamm gezogen) über 4 096 Hashes × Feuchte × Lebendigkeit an der Heimat und an einem
+// warmen Ort — der Täter steht beim Namen.
+require("../gelaende-core.js");
+const GC = globalThis.__gelaendeCore;
+const uferStamm = (mutiere) => {
+    const t = stammLib.text(ROOT);
+    const g = (n) => {
+        const x = stammLib.glieder(t).find((y) => y.name === n && !y.statisch);
+        if (!x) throw new Error("diag-phyto-tree: das Glied " + n + " fehlt im Stamm");
+        return t.slice(x.start, x.ende);
+    };
+    const a = t.indexOf("AnazhRealm.STREU_NADEL = ");
+    const AR = {};
+    new Function("AnazhRealm", t.slice(a, t.indexOf(";", a) + 1))(AR);
+    const quelle = (mutiere || ((s) => s))(g("_scatterSpeciesForCell") + ",\n" + g("_scatterSpeciesForLayer"));
+    return new Function("AnazhRealm", `return ({ ${quelle} });`)(AR);
+};
+function uferWaermeBefunde(nische, artVon) {
+    const P = mainCore.FOREST_PACK;
+    const out = [];
+    const heimat = GC.ortGesetz(null);
+    const T0 = heimat.klimaHeute;
+    const warmOrt = Object.assign({}, heimat, { klimaHeute: Object.assign({}, T0, { sommer: 27, winter: 13 }) });
+    // die Wald-Nische: Erle nur im Saum
+    for (let feu = 0; feu <= 1.0001; feu += 0.02) {
+        const ctx = { F: { dryScale: 18 }, baseH: 0, fbm: () => 0.5, feuchteAt: () => feu, wuchs: heimat.wuchs };
+        const NO = nische(0, 0, 1, 0.5, ctx);
+        if (feu < P.ufer && NO.wW > 0) {
+            out.push(`forestNicheWeights/forestNische: die Erle wiegt wW ${NO.wW.toFixed(3)} bei Feuchte ${feu.toFixed(2)} unter dem Ufer ${P.ufer}`);
+            break;
+        }
+        if (feu >= P.ufer + 0.02 && !(NO.wW > 0)) {
+            out.push(`forestNische: im Saum (Feuchte ${feu.toFixed(2)}) steht keine Erle`);
+            break;
+        }
+    }
+    // die Art der Streu
+    const z = { palmeKalt: 0, palmeKaltT: null, palmeWarm: 0, uferTrocken: 0, uferNass: 0, beispiel: null };
+    for (const [ort, warm] of [[heimat, false], [warmOrt, true]]) {
+        const L = { waterLevel: 0, baseHeight: 0, ort };
+        const wirt = artVon();
+        wirt._gelaende = () => L;
+        wirt._terrainMacroSurfaceY = () => 2;
+        for (const m of [0.1, 0.3, 0.5, P.ufer - 0.01, P.ufer + 0.05, 0.9])
+            for (const lb of [0.3, 0.5, 0.7])
+                for (let h = 0; h < 4096; h += 3)
+                    for (const kind of ["canopy", "under"]) {
+                        const sp = wirt._scatterSpeciesForLayer(kind, lb, m, h * 2654435761 >>> 0, 0, 0);
+                        if (sp === "baum_erle" || sp === "farn_busch") {
+                            if (m <= P.ufer) {
+                                z.uferTrocken++;
+                                z.beispiel = z.beispiel || `${sp} bei Feuchte ${m.toFixed(2)}`;
+                            } else z.uferNass++;
+                        }
+                        if (sp === "baum_palme") {
+                            if (warm) z.palmeWarm++;
+                            else {
+                                const f = GC.temperaturFeld(L, 2);
+                                z.palmeKalt++;
+                                z.palmeKaltT = f.mittel - f.jahr.amp - f.kuehlung;
+                            }
+                        }
+                    }
+    }
+    if (z.uferTrocken) out.push(`_scatterSpeciesForCell/_scatterSpeciesForLayer: ${z.uferTrocken} Uferarten unter dem Ufer ${P.ufer} (${z.beispiel})`);
+    if (!z.uferNass) out.push("_scatterSpeciesForCell/_scatterSpeciesForLayer: im Saum steht keine Uferart");
+    if (z.palmeKalt) out.push(`_scatterSpeciesForCell: ${z.palmeKalt} Palmen im Winter ${z.palmeKaltT.toFixed(1)} °C unter ${GC.WAERME_ART.winterC} °C`);
+    if (!z.palmeWarm) out.push("_scatterSpeciesForCell: auch am warmen Ort (Winter 13 °C) keine Palme");
+    return { out, z };
+}
+{
+    const U = uferWaermeBefunde(mainCore.forestNische ? mainCore.forestNische : null, () => uferStamm());
+    for (const b of U.out) console.log("      UFER/WÄRME " + b);
+    ok(`Ufer und Wärme: die Erle (Wald und Streu) und der Farn nur über der Feuchte ${mainCore.FOREST_PACK.ufer}, die Palme nur im Winter ≥ ${GC.WAERME_ART.winterC} °C`, U.out.length === 0, `Ufer ${U.z.uferNass} im Saum, ${U.z.uferTrocken} trocken · Palmen kalt ${U.z.palmeKalt}, warm ${U.z.palmeWarm}`);
+    // Selbsttest: der Sockel 0,01 der Erle (die Wald-Nische vor dem Schnitt) und die Palme nach `lebendig` allein MÜSSEN beim Namen fallen
+    const alteNische = (x, zz, y, sd, ctx) => {
+        const NO = mainCore.forestNische(x, zz, y, sd, ctx);
+        const feu = ctx.feuchteAt();
+        return Object.assign({}, NO, { wW: NO.wW || 0.01 + feu * feu * 6 });
+    };
+    const alteStreu = () => uferStamm((s) => s.split("&& warm()").join("").split("FOREST_PACK.ufer) return \"farn_busch\"").join("FOREST_PACK.ufer - 0.05) return \"farn_busch\""));
+    const M = uferWaermeBefunde(alteNische, alteStreu).out.join(" | ");
+    ok(
+        "Ufer und Wärme Selbsttest: der Erlen-Sockel fällt an forestNicheWeights, die kalte Palme und der trockene Farn an _scatterSpeciesForCell/_scatterSpeciesForLayer",
+        /^forestNicheWeights\/forestNische: die Erle wiegt wW 0\.01\d* bei Feuchte 0\.00/.test(M) && /_scatterSpeciesForLayer: \d+ Uferarten unter dem Ufer/.test(M) && /_scatterSpeciesForCell: \d+ Palmen im Winter -?\d/.test(M),
+        M.slice(0, 400)
+    );
+}
+
+// DER FINDLING DES EISES (Karte 2 planet.kopplung.gegenwart#1/#6, die Station „Merkmale ohne Ursache = 0"): der Erratiker liegt am
+// flachen Grund nur, wo die Eis-Zeit des Orts (`ort.eis`) 1 ist — die Linse zieht `_rockGeologyClass` aus dem Stamm und fragt sie
+// über die Hänge an der Heimat (eis 0) und an einem Ort unter dem Eis (eis 1); die Eis-Zeit der Heimat fragt sie den Planeten
+// (planet-core `ortEisZeit` am Anker des Welt-Samens).
+const findlingStamm = (mutiere) => {
+    const t = stammLib.text(ROOT);
+    const x = stammLib.glieder(t).find((y) => y.name === "_rockGeologyClass" && !y.statisch);
+    if (!x) throw new Error("diag-phyto-tree: das Glied _rockGeologyClass fehlt im Stamm");
+    const a = t.indexOf("AnazhRealm.ROCK_GEOLOGY = Object.freeze(");
+    const AR = {};
+    new Function("AnazhRealm", t.slice(a, t.indexOf("\n});", a) + 4))(AR);
+    return new Function("AnazhRealm", `return ({ ${(mutiere || ((s) => s))(t.slice(x.start, x.ende))} });`)(AR);
+};
+function findlingBefunde(wirtVon) {
+    const out = [];
+    const heimat = GC.ortGesetz(null);
+    const z = { heimat: 0, eis: 0, punkte: 0 };
+    for (const [ort, n] of [[heimat, "heimat"], [Object.assign({}, heimat, { eis: 1 }), "eis"]]) {
+        const w = wirtVon();
+        w._gelaende = () => ({ ort });
+        for (let s = 0; s <= 1.2; s += 0.01) {
+            if (n === "heimat") z.punkte++;
+            if (w._rockGeologyClass(s, 0) === "findling") z[n]++;
+        }
+    }
+    if (z.heimat) out.push(`_rockGeologyClass: ${z.heimat} Findlinge von ${z.punkte} Hängen an der Heimat ohne Eis (ort.eis 0)`);
+    if (!z.eis) out.push("_rockGeologyClass: auch unter dem Eis (ort.eis 1) kein Findling");
+    return { out, z };
+}
+{
+    globalThis.self = globalThis;
+    require("../planet-core.js");
+    const PC = globalThis.__planetCore;
+    const plan = PC.planetPlan("anazh-realm-seed", PC.PLANET_ERDE);
+    const A = PC.planetAnker(plan, 0, GC.ortGesetz(null));
+    const eisAnker = PC.ortEisZeit(plan, A.breite);
+    ok(
+        "Findling: die Eis-Zeit der Heimat ist die ihres Ankers auf dem Planeten",
+        eisAnker === GC.ortGesetz(null).eis,
+        `Anker ${((A.breite * 180) / Math.PI).toFixed(1)}° · Eisgrenze ${((PC.planetKlimaGlobal(plan, 0).eisBreite * 180) / Math.PI).toFixed(1)}° · Planet ${eisAnker}, Heimat ${GC.ortGesetz(null).eis}`
+    );
+    const F = findlingBefunde(() => findlingStamm());
+    for (const b of F.out) console.log("      FINDLING " + b);
+    ok("Findling: der Erratiker nur, wo das Eis lag (`ort.eis`)", F.out.length === 0, `Heimat ${F.z.heimat}, unter dem Eis ${F.z.eis} von ${F.z.punkte} Hängen`);
+    const M = findlingBefunde(() => findlingStamm((s) => s.replace('this._gelaende().ort.eis ? "findling" : null', '"findling"'))).out.join(" | ");
+    ok("Findling Selbsttest: der Findling am flachen Grund ohne Eis fällt an _rockGeologyClass", /^_rockGeologyClass: \d+ Findlinge von \d+ Hängen an der Heimat ohne Eis/.test(M), M);
+}
+
 wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");

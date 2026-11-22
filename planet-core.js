@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-11';
+  const VERSION = 'planet-h2-12';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2577,12 +2577,17 @@
   // Der Anker: der Ort, an dem die Konstanten des heutigen Ort-Gesetzes (Sommer/Winter am Meer) wahr sind — auf Land, Küste ≤ 300 km,
   // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
   // Runden 3×3-Verfeinerung zu 240 · 120 · 60 km. Bricht beim Namen, wenn kein Ort trägt (K10). Memo je (Plan, Zeit, Konstanten).
+  // DIE TREPPE DER SUCHE (h2-12): 512 Proben trugen 2 986 von 3 000 Saaten des Spiels (Form `w-<12 hex>-<6 base36>`); die 14 ohne Ort
+  // (0,47 %) verloren die ganze Reise — `reise` brach an ihrer Welt mit K10. Dieselbe Wertung sucht dichter (2 048 · 8 192 · 32 768
+  // Proben), je NUR wenn die Stufe davor keinen Ort fand: eine Saat mit Ort bei 512 geht denselben Weg wie zuvor (bitgleich, ihre
+  // Heimat liegt, wo sie lag), gemessen trug Stufe 2 alle 14 in je ≤ 427 ms. Trägt auch die dichteste keinen, bricht der Anker weiter.
+  const ANKER_PROBEN = [512, 2048, 8192, 32768];
   function planetAnker(plan, zeitMa, og) {
     pruefOrtGesetz(og); pruefJahr(plan.koerper, og);
     const M = memoVon(plan); if (!M.anker) M.anker = new Map();
     const kh = og.klimaHeute, key = zeitMa + '|' + ortGesetzSchluessel(og);
     if (M.anker.has(key)) return M.anker.get(key);
-    const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa), N = 512, F = fib(N);
+    const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa);
     const tMitte = 0.5 * (kh.sommer + kh.winter);
     const wert = (x, y, z) => {
       const tZ = G.T0 + G.T2 * (1.5 * y * y - 0.5); if (tZ - tMitte > 14 || tMitte - tZ > 14) return Infinity;   // Zone zuerst (ohne Punkt)
@@ -2596,7 +2601,8 @@
       return dS * dS + dW * dW;
     };
     let best = Infinity, bx = 0, by = 0, bz = 0;
-    for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } }
+    for (let s = 0; s < ANKER_PROBEN.length && best === Infinity; s++) { const N = ANKER_PROBEN[s], F = fib(N);
+      for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } } }
     if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km, Spende, Wuchs, kein E) (K10)');
     const tb = new Float64Array(6);
     for (let runde = 0; runde < 3; runde++) {
@@ -2657,6 +2663,16 @@
   // Reise, Welle 3: der Wuchs des Orts reist als Verhältnis zum Anker wie die Spende — am Anker genau 1 (x / x). Trägt der Anker
   // selbst nichts (0), fehlt das Maß: das Verhältnis ist 1, der Wuchs der Heimat gilt (immer endlich — der Ort reist als JSON).
   const ORT_WUCHS = ['decke', 'wald'];
+  // DIE EIS-ZEIT DES ORTS (Karte 2 planet.kopplung.gegenwart): lag der Ort in einer Zeit des Quartärs (`EIS_ZEITEN`, Ma: heute, das
+  // letzte Hochglazial, 0,1 … 2,6 Ma) polwärts der Eisgrenze des Planeten (`planetKlimaGlobal(plan, t).eisBreite`), trug ihn das Eis
+  // — 1, sonst 0. Sie reist als Δ zum Anker wie jede Größe (am Anker +0); der Leser ist der Findling (Stamm `_rockGeologyClass`: der
+  // Erratiker liegt, wo das Eis ihn ablud).
+  const EIS_ZEITEN = Object.freeze([0, -0.02, -0.1, -0.5, -1, -2, -2.6]);
+  function ortEisZeit(plan, breite) {
+    const ab = breite < 0 ? -breite : breite;
+    for (const t of EIS_ZEITEN) if (ab >= planetKlimaGlobal(plan, t).eisBreite) return 1;
+    return 0;
+  }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
     wuchs: Object.assign({}, o.wuchs), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
   function ortAnkerRoh(plan, og) {
@@ -2689,6 +2705,8 @@
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
     for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
+    const anker = planetAnker(S.plan, 0, og);
+    d.eis = { zeit: ortEisZeit(S.plan, breite) - ortEisZeit(S.plan, anker.breite) };
     o.delta = d; return o;
   }
   function ortRoh(S, breite, laenge, og, aus) {
@@ -2782,7 +2800,7 @@
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte, planetKarteAusschnitt,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
     PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
-    planetAnker, planetFlaeche, planetKarteVon, planetOrt, planetOrtDerZeit, NACHKLANG_MA,
+    planetAnker, planetFlaeche, planetKarteVon, planetOrt, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
     _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;

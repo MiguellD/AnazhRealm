@@ -1460,6 +1460,18 @@ function todesWache(browser, profil) {
 // Linux-Läufer fehlte --no-sandbox und der Start starb ohne Namen, „Failed to launch the browser process: Code: null", 2/2): jede
 // Option kommt aus browserOptionen (das Rezept, `__rezept`) oder nennt ihr Rezept selbst (die Werkbank); ohne Rezept wirft der Start
 // auf JEDER Plattform beim Namen, bevor ein Browser entsteht
+// DIE START-FRIST BEIM NAMEN (z666, 22.11., Lauf 45001797870 Versuch 1: der echt-Job fiel an „The browser is already running for
+// <profil>“ — an einem Profil, das derselbe Start eben anlegte). Gelesen am Vendor (BrowserLauncher.js 173–182): auf Windows heißt
+// JEDER gefallene Start so, sobald die `lockfile` des Profils liegt; gefallen war er an Puppeteers 30-s-Frist (das Gerät unter
+// Last: npm brauchte 109 s bis zur ersten Zeile, der Start riss 60 s danach). Die 30 s sind die Wanduhr des ruhenden Geräts, kein
+// Urteil über den Kandidaten: jeder Start trägt EINE Frist (`START_FRIST_MS`; ein eigenes `timeout` des Rufers gilt), und ein
+// Start, der fällt, nennt Rezept, Dauer und Frist — am eigenen Profil dazu die Tarnung des Vendors
+const START_FRIST_MS = 180000;
+const startTaeter = (e, rezept, ms, frist, eigen) => {
+    const wort = String((e && e.message) || e).split("\n")[0];
+    const tarnung = eigen && /already running for/.test(wort) ? " — „already running“ ist die Tarnung des Vendors: das Profil legte dieser Start an, seine lockfile liegt, der Anschluss des Browsers kam nicht in der Frist" : ""; // prettier-ignore
+    return Object.assign(new Error(`welt-boot: der Browser-Start (Rezept ${rezept}) fiel nach ${(ms / 1000).toFixed(1)} s, Frist ${frist / 1000} s${tarnung}: ${wort}`), { cause: e }); // prettier-ignore
+};
 async function startePuppeteer(rezeptOpt) {
     if (!rezeptOpt || !REZEPTE[rezeptOpt.__rezept])
         throw new Error(`welt-boot: ein Browser ohne Rezept — jeder Start über browserOptionen({ art }) (${Object.keys(REZEPTE).join(" · ")}); ohne Rezept fehlen die Schalter der Plattform (--no-sandbox auf dem Linux-Läufer)`); // prettier-ignore
@@ -1482,12 +1494,16 @@ async function startePuppeteer(rezeptOpt) {
             env: { ...process.env, ...o.env, BREAKPAD_DUMP_LOCATION: ort },
         };
     };
-    if (o.userDataDir) return todesWache(await require("puppeteer").launch(mitAbbild(o.userDataDir)), o.userDataDir);
+    const starte = (opt, eigen) => {
+        const [t0, frist] = [Date.now(), opt.timeout ?? START_FRIST_MS];
+        return require("puppeteer")
+            .launch({ ...opt, timeout: frist })
+            .catch((e) => Promise.reject(startTaeter(e, __rezept, Date.now() - t0, frist, eigen)));
+    };
+    if (o.userDataDir) return todesWache(await starte(mitAbbild(o.userDataDir), false), o.userDataDir);
     const d = tempNeu();
     const weg = () => loesche(d);
-    const browser = await require("puppeteer")
-        .launch(mitAbbild(d))
-        .catch((e) => (weg(), Promise.reject(e)));
+    const browser = await starte(mitAbbild(d), true).catch((e) => (weg(), Promise.reject(e)));
     process.on("exit", weg);
     for (const s of ["SIGINT", "SIGTERM", "SIGHUP"]) process.off(s, signalEnde).on(s, signalEnde);
     const zu = browser.close.bind(browser);
@@ -2635,6 +2651,31 @@ async function selbsttest() {
     {
         const ohne = await startePuppeteer({ headless: true }).then((b) => (b.close().catch(() => {}), "er startete"), (x) => String(x.message)); // prettier-ignore
         todWand.push([/ohne Rezept/.test(ohne), `ein Browser ohne Rezept: ${ohne.slice(0, 120)}`]);
+    }
+    // DIE START-FRIST BEIM NAMEN (z666): der Start reicht dem Vendor EINE Frist (gelesen an dessen `launch`, nie am Text des
+    // Starters); ein Start, der an seiner Frist fällt, nennt Rezept, Dauer und Frist statt des nackten Vendor-Satzes; dessen
+    // „already running“ heißt am eigenen Profil Tarnung, an einem fremden (`profil` des Rufers) bleibt es sein Wort
+    {
+        const pp = require("puppeteer");
+        const [echt, gereicht] = [pp.launch, []];
+        pp.launch = function (opt) {
+            gereicht.push(opt.timeout);
+            return echt.call(this, opt);
+        };
+        const steht = await startePuppeteer(browserOptionen({ art: "null" })).then((b) => b.close().then(() => "er stand"), (x) => String(x.message)); // prettier-ignore
+        const faellt = await startePuppeteer({ ...browserOptionen({ art: "null" }), timeout: 1 }).then((b) => (b.close().catch(() => {}), "er startete in 1 ms"), (x) => String(x.message)); // prettier-ignore
+        pp.launch = echt;
+        const vendor = "The browser is already running for T:/anazh-7-profil-a. Use a different `userDataDir` or stop the running browser first.";
+        const [eigenes, fremdes] = [true, false].map((eigen) => startTaeter(new Error(vendor), "linse", 30012, 30000, eigen).message);
+        todWand.push([
+            steht === "er stand" &&
+                `${gereicht}` === `${START_FRIST_MS},1` &&
+                /^welt-boot: der Browser-Start \(Rezept null\) fiel nach [\d.]+ s, Frist 0\.001 s/.test(faellt) &&
+                /^welt-boot: der Browser-Start \(Rezept linse\) fiel nach 30\.0 s, Frist 30 s — „already running“ ist die Tarnung/.test(eigenes) &&
+                !/Tarnung/.test(fremdes) &&
+                fremdes.endsWith(vendor),
+            `Start-Frist beim Namen (dem Vendor gereicht ${gereicht} ms · der Stand: ${steht.slice(0, 80)} · der Fall an 1 ms: ${faellt.slice(0, 170)} · Tarnung am eigenen/fremden Profil ${/Tarnung/.test(eigenes)}/${/Tarnung/.test(fremdes)})`,
+        ]);
     }
     server.close();
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));

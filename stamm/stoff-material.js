@@ -44,8 +44,10 @@ class AnazhRealm_stoff_material {
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
     // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das `_wieseAugeTakt` je Hauptbild legt), ihr
-    // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
-    // Auges über dem eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
+    // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die EBENE DES GESETZES aus der vierten Zeile der Instanz — `naht.fracht` x, y =
+    // gx, gz, `_wieseHang`: eine Funktion von Ort und Gesetz, nie der Stufe des Bodens; bis w28-pop-treue die Stand-Ebene aus den
+    // waagrechten Achsen der Instanz, sie würfelte an jedem Stufen-Wechsel des Chunks neu —, die Höhe des Auges über dem
+    // eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
     // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), der Anteil a aus dem EINEN
     // Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL). Steht o unter a, steht das
     // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
@@ -73,8 +75,8 @@ class AnazhRealm_stoff_material {
             const ank = naht.anker;
             const auge = this._halmFerneAuge;
             const d = ank.xz.sub(auge.xz).length();
-            // die Ebene des Hangs: die waagrechten Achsen der Instanz liegen in ihr (`_nahWieseKachelDaten`, y += gx·x + gz·z)
-            const n = T.cross(naht.spalte(2), naht.spalte(0));
+            // die Ebene des Gesetzes (`_wieseHang`): ihre Normale (−gx, 1, −gz) aus der Fracht der Instanz (`_nahWieseBestand`)
+            const n = T.vec3(naht.fracht.x.negate(), 1, naht.fracht.y.negate());
             const v0 = ank.sub(auge.xyz);
             const o = AnazhRealm._wieseOrdnung(ank.x, ank.z, AnazhRealm._wortAlgebra(T));
             const A = AnazhRealm._windTsl(T);
@@ -212,7 +214,7 @@ class AnazhRealm_stoff_material {
     // wohin der Wind weht). EIN Wert je Uhr und Saat (w27-takt-gc): der Rauch fragt den Wind je Teilchen, hunderte Male im Bild
     // zur selben Bild-Uhr — dasselbe Objekt, kein Neubau je Frage (die Leser schreiben es nie).
     _windDirAt(tSec) {
-        const saat = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const saat = AnazhRealm._saatJe(this);
         const M = this._windDirMerk || (this._windDirMerk = { t: NaN, saat: null, d: null });
         if (M.t !== tSec || M.saat !== saat) {
             M.d = globalThis.__phytoCore.windRichtung(saat, tSec);
@@ -695,6 +697,9 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DIE LICHT-KARTE (`LICHT_KARTE`): EIN Halb-Float-Gitter in drei Bändern (d0/d1 der Vektor je Lage, d0.w die Höhe des
+            // Bodens; c die Farbe) und seine Mitte in der Welt. EIN Schreiber: `_lichtKarteTakt`.
+            lichtKarte: AnazhRealm._lichtKarteNeu(TSL),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -2013,7 +2018,7 @@ class AnazhRealm_stoff_material {
         // der Boden: Erde (die Poren seines Stoffs, aus denen auch der Film verdunstet, `_trockenRate`), und in seinen Mulden
         // steht der Regen (`_pfuetzeKnoten`)
         if (opts.geomorph) Object.assign(mat.userData, { poren: AnazhRealm.NAESSE.poren.erde, pfuetze: true });
-        this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null, !!opts.fernOrt);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
@@ -2083,7 +2088,10 @@ class AnazhRealm_stoff_material {
     // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
     // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
     // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
-    _leuchtStoff(mat, mp, himmel) {
+    // `fern` (der Fern-Ring): der Pool OHNE die Licht-Karte — ihr Gitter reicht `LICHT_KARTE.texel` × `zelleM` ÷ 2 (72 m) um das
+    // Auge, der Ring ist Horizont und Deckel eines ungebauten Chunks; was er nicht hat, trägt er nicht. Mit der Karte trug sein
+    // Fragment im GL-Rückfall 17 Sampler-Einheiten (Grenze 16, gate:webgl-probe W5/W6: zwei Programme linkten nicht, GTX 1050).
+    _leuchtStoff(mat, mp, himmel, fern) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;
         const atmo = this._ensureAtmoUniforms();
@@ -2103,7 +2111,8 @@ class AnazhRealm_stoff_material {
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
         const licht = mp && mp.licht ? String(mp.licht) : "";
-        if (!knoten[licht]) {
+        const fach = fern ? `${licht}|fern` : licht;
+        if (!knoten[fach]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
             if (licht) {
                 const glut = atmo.lichtGlut[licht];
@@ -2120,9 +2129,9 @@ class AnazhRealm_stoff_material {
                         : glut;
                 em = em.add(jeEcke.div(Te.materialOpacity));
             }
-            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[fach] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, !!fern));
         }
-        mat.emissiveNode = knoten[licht];
+        mat.emissiveNode = knoten[fach];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -2207,10 +2216,15 @@ class AnazhRealm_stoff_material {
         return this._pfuetzeK;
     }
 
-    // DAS GESETZ NASSER OBERFLÄCHEN (Lagarde 2013, „Water drop 3b — Physically based wet surfaces"; Lekner & Dorf 1988): das
-    // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (`faktor` auf die Farbe:
-    // dunkle Stoffe dunkeln stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
-    // im Stoff (`_naesseImStoff`), Zahlen in der Linse (`werkbank licht --naesse`: dicht) — EINE Formel.
+    // DAS GESETZ NASSER OBERFLÄCHEN (Lekner & Dorf 1988, „Why some things are darker when wet", Appl. Opt. 27:1278; Lagarde
+    // 2013, „Water drop 3b"): der Wasserfilm über den Poren fängt das gestreute Licht — was der Stoff zurückwirft, verlässt den
+    // Film nur zum Anteil 1 − r_i, der Rest (die innere Reflexion r_i = 1 − (1 − r_e)/n², n die Brechzahl des Wassers, r_e seine
+    // Reflexion für diffuses Licht von außen) fällt zurück auf den Stoff und wird erneut gestreut: faktor = (1 − r_e)(1 − r_i) ·
+    // Σ_k (r_i · Albedo)^k, die Reihe der Rückwürfe bis `NAESSE.rueckwuerfe` (der Rest unter 1 % bis Albedo 1). Dunkle Stoffe
+    // dunkeln auf ~0,5 ihrer Helle, helle weniger — bis hier ging die Albedo gegen ihr Quadrat (der Boden mit Albedo 0,094 fiel
+    // auf 9 % statt 51 %: Luma nass/trocken 0,265, planet.kopplung.wetter-welt#3). Der Film glättet die Rauheit; Metall hat
+    // keine Poren (Gewicht × 1 − Metall). Über einer Algebra A (k · mul · sub · mix): TSL-Knoten im Stoff (`_naesseImStoff`),
+    // Zahlen in der Linse (`werkbank licht --naesse`: dicht, das Gesetz `naesseGesetzBefunde`) — EINE Formel.
     // DIE PFÜTZE (`pfuetze`, optional, ihre Deckung 0 … 1, `_pfuetzeGesetz`): unter ihr ist der Boden ganz getränkt, ihr Spiegel
     // ist Wasser (`PFUETZE.rauh`); ohne Pfütze dieselben Zahlen wie bisher.
     static _naesseGesetz(A, albedo, rauh, metall, w, pfuetze) {
@@ -2218,8 +2232,12 @@ class AnazhRealm_stoff_material {
         let p = A.mul(w, A.sub(A.k(1), metall));
         if (pfuetze != null) p = A.mix(p, A.k(1), pfuetze);
         const r = A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p);
+        const ri = 1 - (1 - N.wasserR) / (N.wasserN * N.wasserN);
+        const q = A.mul(albedo, A.k(ri));
+        let reihe = A.k(1);
+        for (let k = 0; k < N.rueckwuerfe; k++) reihe = A.sub(A.k(1), A.mul(A.mul(q, reihe), A.k(-1)));
         return {
-            faktor: A.mix(A.k(1), albedo, p),
+            faktor: A.mix(A.k(1), A.mul(reihe, A.k((1 - N.wasserR) * (1 - ri))), p),
             rauh: pfuetze != null ? A.mix(r, A.k(AnazhRealm.PFUETZE.rauh), pfuetze) : r,
         };
     }
@@ -2301,7 +2319,7 @@ class AnazhRealm_stoff_material {
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
     // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
     // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
-    _lichtPoolTerm(Te, atmo, himmel) {
+    _lichtPoolTerm(Te, atmo, himmel, fern) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
             Te.normalView.toVar();
@@ -2319,8 +2337,66 @@ class AnazhRealm_stoff_material {
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
             });
+            if (!fern) summe.addAssign(this._lichtKarteTerm(Te, atmo)); // der Fern-Ring liegt jenseits des Gitters (`_leuchtStoff`)
             return summe;
         })();
+    }
+
+    // DIE LICHT-KARTE IM STOFF (`LICHT_KARTE`): der Vektor der Bestrahlung an der Lage des Fragments (zwischen den zwei Lagen über
+    // dem Boden der Zelle), in den Blick-Raum gedreht und gegen die Normale des Pools (`normalView`) — Lambert der Quellen ohne
+    // Platz, ohne Glanz und Wurf (die trägt der Platz der wichtigsten). Außerhalb des Gitters 0 (der Rand trägt 0).
+    _lichtKarteTerm(Te, atmo) {
+        const K = AnazhRealm.LICHT_KARTE;
+        const LK = atmo.lichtKarte;
+        const pw = Te.positionWorld;
+        // EIN Gitter, EIN Sampler (der Boden trägt 16 je Stufe — drei Gitter rissen die Grenze: 17): die drei Bänder übereinander
+        // (d0 · d1 · c), die Lage im Band auf die Mitte der Rand-Zellen geklemmt (sie tragen 0, kein Band blutet ins nächste)
+        const rand = 0.5 / K.texel;
+        const uv = pw.xz
+            .sub(LK.mitte)
+            .div(K.texel * K.zelleM)
+            .add(0.5)
+            .clamp(rand, 1 - rand);
+        const band = (k) => Te.texture(LK.gitter, Te.vec2(uv.x, uv.y.add(k).div(3)));
+        const a = band(0);
+        const b = band(1);
+        const c = band(2).rgb;
+        const t = pw.y
+            .sub(a.w)
+            .sub(K.lagenM[0])
+            .div(K.lagenM[1] - K.lagenM[0])
+            .clamp();
+        const D = Te.cameraViewMatrix.mul(Te.vec4(Te.mix(a.xyz, b.xyz, t), 0)).xyz;
+        const E = Te.normalView
+            .dot(D)
+            .max(0)
+            .mul(1 / K.skala);
+        return c
+            .mul(E)
+            .mul(Te.diffuseColor.rgb)
+            .mul(Te.metalness.oneMinus())
+            .mul(1 / Math.PI);
+    }
+
+    // DAS GITTER DER LICHT-KARTE (`LICHT_KARTE`): Halb-Float RGBA, n × 3n — die Bänder d0 (Zeilen 0…n−1), d1, c —, linear gefiltert,
+    // am Rand geklemmt (die Rand-Zellen jedes Bands tragen 0).
+    static _lichtKarteNeu(TSL) {
+        const n = AnazhRealm.LICHT_KARTE.texel;
+        const t = new THREE.DataTexture(
+            new Uint16Array(n * 3 * n * 4),
+            n,
+            3 * n,
+            THREE.RGBAFormat,
+            THREE.HalfFloatType
+        );
+        t.name = "licht-karte";
+        t.magFilter = THREE.LinearFilter;
+        t.minFilter = THREE.LinearFilter;
+        t.wrapS = THREE.ClampToEdgeWrapping;
+        t.wrapT = THREE.ClampToEdgeWrapping;
+        t.generateMipmaps = false;
+        t.needsUpdate = true;
+        return { gitter: t, mitte: TSL.uniform(new THREE.Vector2(0, 0)) };
     }
 
     // DIE WAHL DES PLATZES (die Schleifen der Pools): die Glieder `k` (der Zähler der Schleife) ALLER Reihen eines Platzes in
@@ -3306,8 +3382,10 @@ class AnazhRealm_stoff_material {
     // `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`), dort lesen positionLocal,
     // normalLocal und positionWorld den VORLAGEN-Raum. Jede InstancedMesh entsteht in `_instanzMesh`, also gilt das für
     // jeden Stoff einer Instanz. Die Naht trägt Mw = Objekt × Instanz-Matrix: `lage` die Welt-Lage des Vertex, `anker` die
-    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
-    // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
+    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `fracht` die vierte Zeile der Instanz-Matrix
+    // (Element 3, 7, 11 — die Fracht ihres Bestands: die Ferne der Wiese trägt dort die Ebene des Gesetzes und ihre Ordnung,
+    // `_nahWieseBestand`; die Welt-Matrix des Objekts ist affin, ihre vierte Zeile reicht sie durch), `richtung(n)` eine
+    // Vorlagen-Richtung in der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
     // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
     // gate:foundry-impostor C4). Die Wurzel der Reihenfolge im Vendor (three.webgpu.min.js): `setupPosition` legt die
     // Zuweisung des positionNode auf den Stapel; Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal.assign(M × …)`
@@ -3332,6 +3410,7 @@ class AnazhRealm_stoff_material {
             lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
             skala: c0.length(),
             spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
+            fracht: T.vec3(Mw.element(0).w, Mw.element(1).w, Mw.element(2).w),
             richtung: (n) => merk(jeRichtung, n, (r) => T.normalize(Mw.mul(T.vec4(r, 0.0)).xyz)),
             vorlage: (w) =>
                 merk(jeVorlage, w, (v) =>
@@ -3786,13 +3865,35 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 56, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+// DIE LICHT-KARTE (nacht-lichter-2, `_lichtKarteTakt`, `_lichtKarteTerm`): jede Quelle im Umkreis, die keinen Platz des Pools
+// hält (× 1 − ihre Blende, solange sie ein- oder ausblendet), schreibt ihre Bestrahlung als VEKTOR (Σ E · Richtung zur Quelle,
+// Luma) in ein Gitter von `texel`² Zellen à `zelleM` um das Auge — je Zelle in zwei Lagen über dem Boden (`lagenM`, die Höhe des
+// Bodens in d0.w) — und ihre Farbe (Σ E · Farbe ÷ Σ E); Boden und Wand lesen E = max(0, n · D) × Farbe × Albedo ÷ π: drei
+// Abgriffe je Fragment, gleich viele bei 5 wie bei 500 Quellen. Die Kosten an der Änderung (Gebot 7): eine Quelle, deren Stärke
+// um mehr als `stufe` wechselt (die Blende in `blendeStufen` Stufen), die kommt oder geht, trägt nur ihren Fleck ein (je Bild
+// bis `bauMs` und höchstens `zellenJeBild` hochzuladende Zellen, die nächste zuerst, der Rest im nächsten Bild); eine neue
+// Mitte (`nachM` Weg) baut im Hintergrund des Takts — je Bild höchstens `hoehenJeBild` Höhen des Bodens und Arbeit bis `bauMs`,
+// die alte Mitte trägt, bis die neue steht. `texel` 144 deckt die Quellen im Umkreis des Pools (56 m: 50 m um den Spieler, die dritte Person steht dahinter) bei jeder Lage der Mitte
+// (≤ 12 m vom Auge). `skala` hebt E in den Bereich des Halb-Floats.
+AnazhRealm.LICHT_KARTE = Object.freeze({
+    texel: 144,
+    zelleM: 1,
+    nachM: 12,
+    lagenM: [0.1, 2.6],
+    skala: 1000,
+    blendeStufen: 4,
+    hoehenJeBild: 1024,
+    bauMs: 2,
+    zellenJeBild: 6000,
+    stufe: 0.02,
+});
 // DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
 // (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
 // Trocken-Stufe, Penman: die Luft trägt das Wasser ab, solange die Fläche nass ist) — die Rate (sonne · Sonne + wind · Wind + luft)
 // / `verdunstS`, × (1 − versickern + versickern · Poren des Bodens): ein trockener Wind und die Sonne trocknen schneller, ein
 // poröser Boden schluckt den Film (`poren.erde`, der Stoff des Bodens). Klar (Sonne 1, Wind 0,06) trocknet die Nässe des
-// zehnminütigen Regens (0,91) in 9,4 min, bewölkt in 15,7 min — ohne Sprung bis 0. Voll nass geht die Albedo zu ihrem Quadrat,
+// zehnminütigen Regens (0,91) in 9,4 min, bewölkt in 15,7 min — ohne Sprung bis 0. Voll nass fängt der Film das Licht (Lekner & Dorf: `wasserN`, `wasserR`, `rueckwuerfe`),
 // die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs, Haut Fett, der Schatten-Stoff zeichnet
 // keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
@@ -3808,6 +3909,9 @@ AnazhRealm.NAESSE = Object.freeze({
     versickern: 0.3,
     ruhe: 1e-3,
     glatt: 0.5,
+    wasserN: 1.333, // die Brechzahl des Wassers (`_naesseGesetz`, Lekner & Dorf 1988)
+    wasserR: 0.066, // seine Reflexion für diffuses Licht von außen (Lekner & Dorf 1988: 6,6 %)
+    rueckwuerfe: 6, // die Glieder der Reihe der Rückwürfe im Film (der Rest unter 1 % bis Albedo 1)
     poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0, erde: 1 }),
     dachPlaetze: 8,
     dachUmkreisM: 64,

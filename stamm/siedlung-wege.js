@@ -174,12 +174,10 @@ class AnazhRealm_siedlung_wege {
 
     // Nah-Wiese und Nah-Streu lesen das Licht derselben Kronen (`_bodenLichtFeld`): ihre Kacheln, so weit Streu ODER
     // Schatten einer geänderten Krone reichen, fallen und wachsen neu — so weit der WEITERE der beiden Ringe um ihre EINE
-    // Mitte (die Kamera, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
+    // Mitte (das Auge `_lodAuge`, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
     // Reichweite der Wiese (27 m) um den Spieler: die Streu-Kacheln am Ringrand (bis 35 m) behielten das alte Licht.
     _kronenStreuWiese(x, z, radius) {
-        const mitte = this.state.camera
-            ? this.state.camera.position
-            : this.state.playerMesh && this.state.playerMesh.position;
+        const mitte = this._lodAuge(); // das EINE Auge der Stufen
         if (!mitte) return;
         const a = AnazhRealm._kronenReich(radius);
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
@@ -1936,23 +1934,26 @@ class AnazhRealm_siedlung_wege {
             const [tx, tz] = key.split(",").map(Number);
             return !((tx + 1) * K + rand < x0 || tx * K - rand > x1 || (tz + 1) * K + rand < z0 || tz * K - rand > z1);
         };
-        // Die Wiese-Kachel trägt nur Daten (ihr Block im Bestand stirbt und wird neu geboren), die Streu-Kachel tritt aus ihren Senken aus. Die
-        // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
+        // DIE KACHEL FÄLLT ERST MIT IHREM NACHFOLGER (`_nahWieseKachelFaellt`, `_nahStreuKachelFaellt`): ihr Satz gilt HIER als alt,
+        // unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad) — sie steht, bis ihr Takt den
+        // Neubau an ihre Stelle setzt (der Block der Wiese stirbt und wird im selben Gang neu geboren, die Streu tauscht ihre
+        // Blöcke in EINEM Bau). Bis w28-pop-treue fiel sie hier sofort: jeder Tritt, der den Pfad eine Stufe hob, jeder Weg und
+        // jede Krone riss ein Loch in die Wiese, bis der Takt nachbaute (die Nähe eine Kachel je Takt).
         const nw = this.state.nahWiese;
         if (nw)
-            for (const key of [...nw.kacheln.keys()])
+            for (const key of nw.kacheln.keys())
                 if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
         // die Kacheln der Ferne lesen dieselben Felder wie die Nähe (`_nahWieseFernKachel`, ihre Büschel samt Jitter 0,34 m): eine
-        // Kachel, die die Fläche trifft, fällt (bis w28-wiese-schale las sie über ein Gitter auch die acht Nachbarn)
+        // Kachel, die die Fläche trifft, baut neu (bis w28-wiese-schale las sie über ein Gitter auch die acht Nachbarn)
         const KF = AnazhRealm.NAH_WIESE.fern.kachel;
-        for (const key of nw && nw.fern ? [...nw.fern.kacheln.keys()] : [])
-            if (imRechteck(key, KF, 0.34) && nw.fern.kacheln.delete(key)) ((nw.neu = true), n++);
+        for (const [key, k] of nw && nw.fern ? nw.fern.kacheln : [])
+            if (!k.satzAlt && imRechteck(key, KF, 0.34)) ((k.satzAlt = true), n++);
         const ns = this.state.nahStreu;
         if (ns)
-            for (const [key, k] of [...ns.kacheln]) {
+            for (const [key, k] of ns.kacheln) {
                 if (!imRechteck(key, AnazhRealm.NAH_STREU.kachel)) continue;
-                this._nahStreuKachelEntsorgen(k);
-                if (ns.kacheln.delete(key)) n++;
+                this._nahStreuKachelFaellt(k);
+                n++;
             }
         return n;
     }

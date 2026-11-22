@@ -363,7 +363,7 @@ class AnazhRealm_gelaende_chunks {
 
     // Voller State-Snapshot für den Worker (Seed, Gesetz, voxelEdits, …) — reine Daten des Mains, nie empfangene Bytes.
     _voxelWorkerSnapshotState() {
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const seed = AnazhRealm._saatJe(this);
         const snap = {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
@@ -2334,10 +2334,12 @@ class AnazhRealm_gelaende_chunks {
     // Mitte vor der Ebene des Treffers (r + 2 cm) / cos θ) und den Ring der Kugel (4 Punkte, je r quer zum Strahl) nur an der
     // Stelle, an der sie stehen soll; berührt ein Punkt dort Fels, geht er allein rückwärts (wachsende Schritte, Bisektion),
     // bis der ganze Ring frei ist. `t` ist die Stelle der MITTE: sie steht absolut r vor jeder Fläche. Der Gelände-Marsch
-    // endet einen Schritt hinter dem Bau-Treffer. `o.gelaende === false` fragt nur die Bauten.
+    // endet einen Schritt hinter dem Bau-Treffer. `o.gelaende === false` fragt nur die Bauten. `o.ohne`: EIN Bestand, den der
+    // Wurf nicht fragt — das Werk, dessen Rig die Kamera eben verließ (`_kamAb`): ihr Arm gleitet zu ihm, er springt nie.
     _fieldRaycast(sx, sy, sz, ex, ey, ez, o) {
         const durchPflanzen = !!(o && o.durchPflanzen);
         const rad = o && o.radius > 0 ? o.radius : 0;
+        const ohne = (o && o.ohne) || null;
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -2384,7 +2386,7 @@ class AnazhRealm_gelaende_chunks {
                     const e = zelle[i];
                     if (e._blockerFrage === frage) continue;
                     e._blockerFrage = frage;
-                    if (!e.blockerAABBs || !e.position || this._gerittenesWerk(e)) continue;
+                    if (!e.blockerAABBs || !e.position || e === ohne || this._gerittenesWerk(e)) continue;
                     // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
@@ -2810,8 +2812,12 @@ class AnazhRealm_gelaende_chunks {
         const pcz = Math.floor(playerPos.z / span);
         this._ringWaechst(); // der Ring um die Zelle dieses Takts
         const { ringRadius } = this._voxelChunkConfig();
-        // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
-        this._stufeAugeTakt(playerPos);
+        // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs —
+        // das EINE Auge (`_lodAuge`, stufe-ein-auge: in Third die Kamera auf ihrer Kugel, nie der Spieler); der Ring (welche
+        // Chunks stehen) bleibt am Spieler, er trägt seinen Körper
+        const a0 = this._lodAuge();
+        const auge = a0 ? { x: a0.x, y: a0.y, z: a0.z } : playerPos;
+        this._stufeAugeTakt(auge);
         // DIE BAHN (der EINE Rang, w7-rang): der Ring um den Spieler UND der Ring um seinen Ort am Ende des Vorlaufs
         // (`_bedarfVoraus`), geordnet nach der Zeit bis Bedarf (`_bedarfWeg`) — was die Bahn braucht, steht, bevor sie ankommt.
         // Bis w7-rang ging der Ring in Chebyshev-Reihe um den Spieler, und ein Voraus fragte 1–2 Chunks in Laufrichtung an: beim
@@ -2835,7 +2841,9 @@ class AnazhRealm_gelaende_chunks {
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
         const zelleVoraus = voraus ? this._stufenZelle(voraus.x, voraus.z) : "";
-        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z) + "|" + zelleVoraus, "boden")) {
+        const stufenOrt =
+            this._stufenZelle(playerPos.x, playerPos.z) + "|" + zelleVoraus + "|" + this._stufenZelle(auge.x, auge.z);
+        if (this._standRuht("strom", 1, stufenOrt, "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }
@@ -2885,7 +2893,7 @@ class AnazhRealm_gelaende_chunks {
             // nichts (keine Re-Allokation bei stehendem Spieler). N3 — die jetzige LOD fließt in die Wahl (Hysterese am Grat).
             const existing = this.state.voxelChunks.get(key);
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            const desiredLod = this._voxelChunkLodFor(cx, cz, auge.x, auge.z, existingLod, true);
             if (existing && (existing.empty || (existingLod ?? 0) === desiredLod)) return;
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);

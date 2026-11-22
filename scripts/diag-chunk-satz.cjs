@@ -1619,7 +1619,7 @@ const { errs, check } = pruefer();
                 for (let z = 1; z < S; z += 2)
                     for (let x = 1; x < S; x += 2) {
                         const v = K.surfMap ? r._bodenKarteBilinear(K, K.cx, K.cz, K.cx * S + x, K.cz * S + z) : null;
-                        o.push(v ? v.y : NaN);
+                        o.push(v !== null ? v : NaN);
                     }
                 return o;
             };
@@ -1657,6 +1657,9 @@ const { errs, check } = pruefer();
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
                     for (let i = 0; i < n; i++) {
                         p.x += dx;
+                        // das EINE Auge wandert (`_lodAuge`: die Kamera, wo das Rig sie setzt) — der Strom wählt die Stufe an ihm
+                        s.camera.position.set(p.x, s.camera.position.y, p.z);
+                        s.camera.updateMatrixWorld(true);
                         r._stufeAugeTakt(p);
                         const vor = new Map();
                         for (const [key, e] of s.voxelChunks) {

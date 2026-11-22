@@ -279,7 +279,7 @@ class AnazhRealm_siedlung_bauten {
         this._stufenSchirm();
         const st = this.state;
         const liste = st.architectures || [];
-        const epoche = [liste, this._baumGrenzen, this._schirm().hoehe, this._standStempelWunsch()];
+        const epoche = [liste, this._baumGrenzen, this._schirm().wahl, this._standStempelWunsch()];
         const stempel = this._standWache.stempel; // `_standStempelWunsch` las ihn eben
         let W = this._stufenWacheStand;
         if (!W || W.epoche.some((x, i) => x !== epoche[i])) {

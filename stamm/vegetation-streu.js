@@ -25,7 +25,7 @@ class AnazhRealm_vegetation_streu {
     // Der Auftrag einer Region an die EINE Regel: Schichten, Same der Welt, Ort des Spielers und Dichte beim Bau.
     _streuAuftrag(regX, regZ, px, pz, fdScale) {
         const SC = AnazhRealm.SCATTER;
-        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatJe(this);
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
@@ -199,10 +199,16 @@ class AnazhRealm_vegetation_streu {
     // DIE ART NACH KLIMA UND ZEIT DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): das Nadelholz trägt
     // den Anteil `nadel` (es meidet die Tropen — dort steht die Palme, wo es stünde), der Laubbaum `laub` (vor der Zeit der
     // Bedecktsamer steht Nadelholz); ein eigener Wurf aus dem Hash der Zelle entscheidet, in der Heimat fällt er nie.
-    _scatterSpeciesForCell(lebendig, moisture, hash) {
+    // DIE UFERART (`FOREST_PACK.ufer`, phyto-core): die Erle steht im Saum des Wassers wie im Wald — EINE Schwelle der Feuchte.
+    // DIE WÄRME-ART (`waermeTraegt`, gelaende-core): die Palme steht nur, wo der Winter an ihrem Fuß (x, z) über ihrem Frost
+    // liegt — gefragt nur, wenn der Wurf sie zieht; sonst steht an ihrem Platz die Art des Bands. Bis hier folgte die Palme
+    // `lebendig` allein: an der Mess-Wiese 9 Palmen im Winter von −7 bis −8,5 °C.
+    _scatterSpeciesForCell(lebendig, moisture, hash, x, z) {
         const pick = (hash >>> 7) & 0xff;
+        const warm = () =>
+            globalThis.__gelaendeCore.waermeTraegt(this._gelaende(), this._terrainMacroSurfaceY(x, z, false));
         const amFeld = () => {
-            if (moisture > 0.6) {
+            if (moisture > globalThis.__phytoCore.FOREST_PACK.ufer) {
                 return pick < 128 ? "baum_erle" : "baum_birke";
             }
             if (lebendig > 0.62) {
@@ -210,8 +216,8 @@ class AnazhRealm_vegetation_streu {
             }
             if (lebendig > 0.4) {
                 // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
-                // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
-                if (pick >= 232) return "baum_palme";
+                // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich) — nur im warmen Winter.
+                if (pick >= 232 && warm()) return "baum_palme";
                 return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
             }
             // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
@@ -224,7 +230,7 @@ class AnazhRealm_vegetation_streu {
         const W = this._gelaende().ort.wuchs;
         const u = ((hash >>> 15) & 0xff) / 256;
         const nadel = AnazhRealm.STREU_NADEL.includes(art);
-        if (nadel && u >= W.nadel) return W.laub > 0 ? "baum_palme" : art;
+        if (nadel && u >= W.nadel) return W.laub > 0 && warm() ? "baum_palme" : art;
         if (!nadel && u >= W.laub) return (hash >>> 23) & 1 ? "baum_tanne" : "baum_kiefer";
         return art;
     }
@@ -233,9 +239,9 @@ class AnazhRealm_vegetation_streu {
     // Strauch/Kraut/Bodenflora nach Feld (feucht → Farn, lebendig → Blume, sonst Hazel); Fels nach Hash.
     // Die Streu-Schicht „litter" (→ baum_totholz) fiel W1 final: das Studio hat keinen Totholz-Körper, sie
     // zeichnete eine belaubte 21-m-Eiche; die Grammatik-Art Totholz fiel 05.10. mit (kein Erzeuger mehr).
-    _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
+    _scatterSpeciesForLayer(kind, lebendig, moisture, hash, x, z) {
         if (kind === "under") {
-            if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
+            if (moisture > globalThis.__phytoCore.FOREST_PACK.ufer) return "farn_busch"; // Kraut-Stratum (der Saum, `FOREST_PACK.ufer`)
             // Bodenflora (üppige Lichtungen) — die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit (`wuchs.laub` des
             // Orts, die Heimat 1) steht an ihrem Platz der Strauch
             if (lebendig > 0.5)
@@ -248,7 +254,7 @@ class AnazhRealm_vegetation_streu {
             // gewählt). stein_block bleibt der platzierbare Block (nicht gestreut).
             return hash % 100 < 12 ? "felsbrocken" : "kiesel";
         }
-        return this._scatterSpeciesForCell(lebendig, moisture, hash); // Canopy
+        return this._scatterSpeciesForCell(lebendig, moisture, hash, x, z); // Canopy
     }
 
     // Deterministische Cell-Transform — EINE Quelle für Streu UND Promotion, damit der promovierte Baum
@@ -629,7 +635,7 @@ class AnazhRealm_vegetation_streu {
         if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
         if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
-        const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
+        const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h, tf.x, tf.z);
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
         const warten0 = region._wartenN | 0;
         const rec = this._naturSetzen(species, tf, tf, () => {
@@ -1908,10 +1914,14 @@ class AnazhRealm_vegetation_streu {
     // (wer je Leib fragt, liest ihn EINMAL je Takt, `_schirm`).
     _gelenkGrenzen(g, zeilen) {
         const z = zeilen !== undefined ? zeilen : this._schirm().hoehe;
-        if (g.grenzen && g.grenzenZeilen === z) return g.grenzen;
+        const w = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
+        if (g.grenzen && g.grenzenZeilen === z && g.grenzenWahl === w) return g.grenzen;
         const ab = AnazhRealm._wechselGesetz(g.art, 1, 1, z, g.abM);
-        return Object.assign(g, { grenzenZeilen: z, grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] } })
-            .grenzen;
+        return Object.assign(g, {
+            grenzenZeilen: z,
+            grenzenWahl: w,
+            grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] },
+        }).grenzen;
     }
     // die Grenze der Grobstufe eines Leibs in Metern (Gesetz × Größe) — der Takt seines Gangs liest sie (`_creatureAnimDiv`)
     _gelenkAb(gruppe, zeilen) {
@@ -1923,7 +1933,8 @@ class AnazhRealm_vegetation_streu {
         const z = this._schirm().hoehe;
         const F = this._feldG || (this._feldG = [null, null]);
         const alt = F[menge ? 1 : 0];
-        if (alt && alt.z === z) return alt;
+        const w = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
+        if (alt && alt.z === z && alt.w === w) return alt;
         const L = AnazhRealm.LOD_SCHIRM.leib;
         const N =
             menge && z > 0
@@ -1937,6 +1948,7 @@ class AnazhRealm_vegetation_streu {
             ein: N,
             aus: N + hm,
             z,
+            w,
         });
     }
     // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
@@ -1970,8 +1982,8 @@ class AnazhRealm_vegetation_streu {
     _bedeutung(groesse, d, tempo, p) {
         const z = this._schirm().hoehe;
         const B = this._bedeutungF || (this._bedeutungF = { z: NaN, f: 0, v: 0 });
-        if (B.z !== z) {
-            B.z = z;
+        if (B.z !== this._schirm().wahl) {
+            B.z = this._schirm().wahl;
             B.f = AnazhRealm._brennweite(z);
             B.v = AnazhRealm.LOD_SCHIRM.bewegungMS;
         }
@@ -1992,7 +2004,7 @@ class AnazhRealm_vegetation_streu {
     _stufenSchirm() {
         const D = AnazhRealm.LOD_DISTANCES;
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
-        const h = this._schirm().hoehe;
+        const h = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
         const M = D.hysteresis;
         if (!(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM)) {
             [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
@@ -2426,7 +2438,7 @@ class AnazhRealm_vegetation_streu {
         if (!this._waldFadenLebt() || !(this._genVersion && this._genVersion() >= 5)) return false;
         const wm = this.state.worldMeta;
         if (!wm) return false;
-        const worldSeed = wm.seed || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatVon(wm);
         const { span } = this._voxelChunkConfig();
         const R = 256;
         const [r0x, r1x] = [Math.floor((cx * span) / R), Math.floor(((cx + 1) * span) / R)];
@@ -2458,12 +2470,19 @@ class AnazhRealm_vegetation_streu {
         return fehlt;
     }
 
+    // DIE GRAMMATIK DER BÄUME: das Rausch-Feld des Wuchses der Welt, im Gedächtnis ihrer Saat (`_saatJe`) — es fällt mit ihr, auf
+    // jedem Weg über die Weltgrenze (bis hier ein Feld der Seite, das nur das Laden beim Namen räumte: eine Ziel-Welt ohne Stand
+    // wuchs mit der Grammatik der Welt davor). Der Wuchs der Built-ins liest das saat-freie Feld des Konstruktors (`_wuchsRausch`,
+    // bau-vorlagen `_defaultBlueprints`). Leser: `_growTreeBlueprintRich`, `_growTreeBlueprintLegacy`, die Kronen-Hebung des Himmels.
+    _baumGrammatik() {
+        return (
+            this._wuchsRausch ||
+            AnazhRealm._saatJe(this, "baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"))
+        );
+    }
+
     _growTreeBlueprintRich(speciesKey, seed, opts) {
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const n = this._growTreeNoise;
+        const n = this._baumGrammatik();
         // der Plan (Stufe, Schlüssel, Hash, Art, Gestalt, Phänotyp) aus der EINEN Ableitung (`_wuchsPlan`)
         const plan = this._wuchsPlan(speciesKey, seed, opts);
         if (!plan) return null;
@@ -2759,11 +2778,7 @@ class AnazhRealm_vegetation_streu {
         let hash = 2166136261;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
         // Lazy-Init Noise-Stream
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const n = this._growTreeNoise;
+        const n = this._baumGrammatik();
         // Deterministische [0, 1)-RNG je seed: SimplexNoise mit hash als x und step-Zähler als y (eigene
         // Sequenz pro seed, unabhängig von der Position).
         let step = 0;
@@ -3059,12 +3074,15 @@ AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen, haushalt, vo
     const e = vorlage != null ? T[vorlage][stufe] : 0;
     return Math.max(e > 0 ? (e * AnazhRealm._brennweite(zeilen)) / S.px : 0, h) * groesse;
 };
-// DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand): die Höhe des Zeichenpuffers `zeilen` im
-// Ruhe-Sichtfeld KAM_FOV_GRAD, ohne Zeichenpuffer (0) der Schirm des Solls — jede Grenze des Stufen-Gesetzes liest sie.
+// DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand) — die EINE Quelle (stufe-ein-auge): die Höhe des
+// Zeichenpuffers `zeilen` im Sichtfeld, mit dem das Bild GEZEICHNET wird (`_sichtfeldGrad`: das Sichtfeld der Haupt-Kamera,
+// gemessen am Schirm `_schirmMessen`, dem EINEN Schreiber; vor der ersten Messung KAM_FOV_GRAD), ohne Zeichenpuffer (0) der
+// Schirm des Solls. Jede Grenze des Stufen-Gesetzes und der Schirm selbst (`_schirm().pxJeM`) lesen sie. Bis stufe-ein-auge
+// rechnete das Stufen-Gesetz im Ruhe-Sichtfeld 75°, der Schirm im lebenden: das Fernglas (ZOOM_FOV_DEG) zeigte die Stufe der
+// Ruhe vergrößert, ein Sichtfeld des Spielers (`zugang.fov` 60–100°) wählte die Stufen eines anderen Bilds.
 AnazhRealm._brennweite = function (zeilen) {
-    return (
-        (zeilen > 0 ? zeilen : AnazhRealm.LOD_SCHIRM.zeilen) / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360))
-    );
+    const fov = AnazhRealm._sichtfeldGrad > 0 ? AnazhRealm._sichtfeldGrad : AnazhRealm.KAM_FOV_GRAD;
+    return (zeilen > 0 ? zeilen : AnazhRealm.LOD_SCHIRM.zeilen) / (2 * Math.tan((fov * Math.PI) / 360));
 };
 // DER HAUSHALT DES WECHSELS aus dem Buch (live `_studioRenderConfig`, vor dem Umschlag foundry-core): die Grenze `ab` der
 // Budget-Zeile, wo die Art sie nennt (das Tor, B2c), sonst die Distanzen d0 (Stufe 1) und d1 (Stufe 2) des Labors — der Baum

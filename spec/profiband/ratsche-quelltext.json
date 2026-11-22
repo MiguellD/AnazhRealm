@@ -66,6 +66,10 @@
             "zweck": "Messung: führt den save-server aus (der Selbsttest wandelt seine Schreib-Art)",
             "datei": 1
         },
+        "scripts/diag-phyto-tree.cjs": {
+            "zweck": "Messung: führt die Glieder _scatterSpeciesForCell/_scatterSpeciesForLayer und _rockGeologyClass des Stamms in node aus, mit Mutanten (Ufer, Wärme, Findling des Eises)",
+            "stamm": 2
+        },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",
             "stamm": 1
@@ -134,6 +138,10 @@
         "scripts/lib/asset-worker-harness.cjs": {
             "zweck": "Messung: der Kontext eines Kerns im vm (`kernKontext`) trägt den Samen-Baum (samen-core.js) — er lädt in jedem Faden vor jedem Kern (Welle SAMEN)",
             "datei": 1
+        },
+        "scripts/lib/licht-linsen.cjs": {
+            "zweck": "Messung: führt das statische Glied _naesseGesetz des Stamms mit AnazhRealm.NAESSE in node aus, gegen die Mutante Albedo-Quadrat (Lekner–Dorf)",
+            "stamm": 1
         },
         "scripts/lib/speicher-proben.cjs": {
             "zweck": "Struktur: der Runden-Zensus (werkbank runde) nennt je wachsendem Behälter die Zeile seiner Anlage — die Zuweisung im virtuellen Stamm, über ort() auf Datei:Zeile",

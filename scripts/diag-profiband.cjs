@@ -26,7 +26,8 @@
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
 //   P-Ferne DIE FERNE DER NAH-WIESE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne (`WIESE_FERN_TAFEL`) — das Büschel
-//       unverformt (nur ein Anteil, der Block affin), die Lücke des Strahls bis zur Kappe, die Büschel je Pixel ≤ 2× der Übergabe
+//       unverformt (nur ein Anteil, der Block affin, je Büschel die Ebene des Gesetzes), die Lücke des Strahls bis zur Kappe,
+//       die Büschel je Pixel ≤ 2× der Übergabe
 //   H9  DAS SOLL DES TURMS (hochhaus-dach-speicher) am Kern des Werk-Fadens: die Fern-Stufen L2 · L3 · L1 eines frischen
 //       Klinker-Turms (modern, 22 Geschosse) legen zusammen höchstens die Ecken seiner Stufe 0 an — der Warm-Pfad `sollTon`
 //       baut die Stufe 0 je Bau einmal, nie je Auftrag (der Müll von 1,1–1,7 GB je Auftrag brach den Renderer der Metropole)
@@ -523,7 +524,9 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // Glied ist rot); DIE DECKUNG IM BLICK: die Größe steht bis zur Kappe auf 1 (stetig), übersteigt nie `skalaMax`, und solange
 // sie darunter liegt, hält Anteil × Größe² die Lücke (was die Kappe an Zahl nimmt, trägt das Büschel in seiner Fläche); der
 // Block der Ferne trägt die Matrix des Büschels affin
-// (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
+// (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung) und je Büschel SEINE Ebene des
+// Gesetzes (w28-pop-treue: `hang` der Kachel, `_wieseHang` — der Bestand schreibt sie in die vierte Zeile der Instanz, das
+// Gesetz der Ferne misst an ihr; die Ebene eines anderen Büschels ist rot). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
 // radius hält 1 von der Übergabe bis zur Kappe (der Strahl lässt so viel Grund durch wie an der Übergabe); DER SCHIRM: die
 // Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis
 // w14-wiese-saum die Übergabe — absolut dieselbe Wand). Bis w28-wiese-schale streckte das Gesetz das Büschel bis 14-fach, und eine
@@ -562,9 +565,14 @@ function ferneWand(A) {
     try {
         const w = weltVon(A, { nahWiese: { vorlagen: new Map(), reich: 0.775, fern: { kacheln: new Map() } } });
         const b = { x: 30, y: 1.5, z: 30, s: 1.1, rot: 0.3, vorlage: 0, o: 0.1, f: [1, 1, 1], gx: 0.05, gz: -0.02 };
-        const M = w._nahWieseFernBlock({ bloecke: [], ...w._nahWieseKachelDaten(2, 2, [b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }).matrizen[0]; // prettier-ignore
+        // zwei Büschel, das zweite trägt die Vorlage des Blocks: seine Ebene des Gesetzes steht im Block, nie die des ersten
+        const hang = new Float32Array([0.5, 0.5, 0.031, -0.017]);
+        const B = w._nahWieseFernBlock({ bloecke: [], hang, ...w._nahWieseKachelDaten(2, 2, [{ ...b, vorlage: 1, o: 0.05 }, b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }); // prettier-ignore
+        const M = B.matrizen[0];
         if (M[3] !== 0 || M[7] !== 0 || M[11] !== 0 || M[15] !== 1)
             affin = `vierte Zeile ${[M[3], M[7], M[11], M[15]].join(" ")}`;
+        else if (B.hang?.[0] !== hang[2] || B.hang?.[1] !== hang[3])
+            affin = `die Ebene des Gesetzes ${[...(B.hang || [])].join(" ")} statt ${hang[2]} ${hang[3]}`;
     } catch (e) {
         affin = e.message;
     }
@@ -584,6 +592,76 @@ function ferneWand(A) {
     const rot =
         luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
     return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
+}
+
+// P-Fächer — DER FÄCHER DER NAH-WIESE (stufe-ein-auge) an der echten Klasse: die Kacheln der Nähe stehen im Sicht-Kegel des EINEN
+// Auges (`_wieseFaecher` → `_nahWieseWunsch`), nie dahinter. Das Auge in 1,7 m über flachem Grund (die Höhe des Gesetzes 0), Blick
+// waagrecht nach −z, 75° × 16:9. IM STAND: hinter dem Auge (die ganze Kachel samt Weite ≥ 2 m hinter seiner Ebene) steht keine
+// Kachel, im Kegel (Mitte ≤ halbes Bildfeld − 5°, ≤ radius) jede. IN DER DREHUNG (12° in 20 ms, 600°/s): der Saum trägt den
+// Kreis — jede Kachel des Rings steht, bevor die Drehung sie ins Bild bringt. Bis stufe-ein-auge stand der Ring: 70 % hinter dem Auge.
+function faecherWand(A) {
+    const G = A.constructor("return globalThis")();
+    const NW = A.NAH_WIESE;
+    const cam = new G.THREE.PerspectiveCamera(75, 16 / 9, 0.1, 1000);
+    const auge = { x: 3, y: 1.7, z: 3 };
+    cam.position.copy(auge);
+    cam.lookAt(auge.x, auge.y, auge.z - 10);
+    const w = weltVon(A, { camera: cam, nahWiese: { kacheln: new Map(), reich: 0.8 }, lastPlayerVoxelChunk: null });
+    w._terrainMacroSurfaceY = () => 0;
+    const K = NW.kachel;
+    const ring = w._nahWieseWunsch(auge, { voll: true, sicht: null, bau: null, halt: null });
+    const F = w._wieseFaecher(auge);
+    const faecher = w._nahWieseWunsch(auge, F);
+    const da = new Set(faecher.map((k) => k.key));
+    const halbH = Math.atan(Math.tan((37.5 * Math.PI) / 180) * (16 / 9));
+    let [hinten, kegel, fehlt] = [0, 0, 0];
+    for (const k of ring) {
+        const z0 = k.tz * K - 1.2; // der Kasten samt Jitter und Weite der Büschel
+        const [mx, mz] = [(k.tx + 0.5) * K - auge.x, (k.tz + 0.5) * K - auge.z];
+        if (z0 - auge.z >= 2 && da.has(k.key)) hinten++; // der Blick geht nach −z: die Kachel liegt ganz hinter dem Auge
+        if (Math.hypot(mx, mz) <= NW.radius && Math.abs(Math.atan2(mx, -mz)) <= halbH - (5 * Math.PI) / 180) {
+            kegel++;
+            if (!da.has(k.key)) fehlt++;
+        }
+    }
+    // die Drehung: 12° in 20 ms
+    const nw = w.state.nahWiese;
+    cam.lookAt(auge.x + 10 * Math.sin(0.21), auge.y, auge.z - 10 * Math.cos(0.21));
+    nw.faecher.t -= 0.02;
+    const F2 = w._wieseFaecher(auge);
+    const dreh = w._nahWieseWunsch(auge, F2).length;
+    // DIE KOSTEN HÄNGEN AN DER ÄNDERUNG: der echte Takt `_tickNahWiese` je Bild (60 Hz am Stempel des Takts), die Rechnungen
+    // des Wunschs (`nahWiese.rechnungen`) je 100 Bilder — im Stand (das Auge steht, der Blick steht) und in einer Drehung von
+    // 30°/s (0,5° je Bild). Die Wache ist der Anker des Auges auf STAND_RAND_M (ein Zentimeter-Zittern weckt nichts).
+    const takt = (yaw0, gradJeBild, n) => {
+        const v = weltVon(A, { camera: cam, scene: {}, nahWiese: { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), reich: 0.8, offen: 0 }, lastPlayerVoxelChunk: null }); // prettier-ignore
+        v._terrainMacroSurfaceY = () => 0;
+        v._lodAuge = () => auge;
+        v._nahWieseBestand = () => {};
+        let anker = null;
+        v._standRuht = (name, runde, ort) => {
+            const p = ort.pos;
+            if (anker && (p.x - anker.x) ** 2 + (p.y - anker.y) ** 2 + (p.z - anker.z) ** 2 <= ort.rand ** 2)
+                return true;
+            anker = { x: p.x, y: p.y, z: p.z };
+            return false;
+        };
+        let start = 0;
+        for (let i = 0; i < n + 1; i++) {
+            const y = yaw0 + (gradJeBild * i * Math.PI) / 180;
+            cam.lookAt(auge.x + 10 * Math.sin(y), auge.y, auge.z - 10 * Math.cos(y));
+            cam.updateMatrixWorld();
+            v._taktZeit = (i * 1000) / 60;
+            v._tickNahWiese();
+            if (i === 0) start = v.state.nahWiese.rechnungen | 0; // das erste Bild baut den Fächer
+        }
+        return Math.round(((v.state.nahWiese.rechnungen - start) * 100) / n);
+    };
+    const imStand = takt(0, 0, 200);
+    const inDrehung = takt(0, 0.5, 200);
+    const zeile = `Ring ${ring.length} Kacheln · Fächer ${faecher.length} (${((100 * faecher.length) / ring.length).toFixed(1)} %) · hinter dem Auge ${hinten} · im Kegel ${kegel - fehlt} von ${kegel} · Drehung 600°/s ${dreh} von ${ring.length} · Neuberechnungen je 100 Bilder: Stand ${imStand}, Drehung 30°/s ${inDrehung}`; // prettier-ignore
+    const rot = hinten > 0 || fehlt > 0 || !kegel || dreh < ring.length || imStand > 0 || inDrehung > 10;
+    return { errs: rot ? [`P-Fächer: ${zeile} (Soll hinter dem Auge 0 · im Kegel alle · Drehung der Kreis · Neuberechnungen im Stand 0, in der Drehung ≤ 10 je 100 Bilder)`] : [], zeile, hinten, fehlt, dreh, ring: ring.length, imStand, inDrehung }; // prettier-ignore
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
@@ -1552,8 +1630,8 @@ function selbsttest() {
         );
         // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm, Gestalt und Größe; je Glied ein Mutant, der genau seinen Teil
         // rot macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Größe verliert
-        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix (der veränderte Stamm als
-        // Klasse geladen)
+        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix, der Block trägt die Ebene eines
+        // anderen Büschels (der veränderte Stamm als Klasse geladen)
         const stillF = [
             ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
             [
@@ -1567,12 +1645,24 @@ function selbsttest() {
             ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
             ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
             ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
+            ["Ebene eines anderen Büschels", "_nahWieseFernBlock", "k.hang.subarray(i * 2, i * 2 + 2)", "k.hang.subarray(n * 2, n * 2 + 2)", (r) => /Ebene des Gesetzes 0.5 0.5/.test(r.affin)], // prettier-ignore
         ].filter(([, g, a, b, rot]) => {
             const r = ferneWand(klasseVon(stammLib.ersetze(st, g, a, b)));
             return !(r.errs.length && rot(r));
         });
         t(`Ferne der Wiese: das Gesetz hält, je Glied ein Mutant rot ${ferneWand(A).errs}${stillF.map((m) => " — still " + m[0])}`, !ferneWand(A).errs.length && !stillF.length); // prettier-ignore
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
+        // P-Fächer: der Fächer hält; der RING (jede Kachel im Fächer) macht „hinter dem Auge“ rot, der Saum ohne Dreh-Rate die Drehung
+        const fRing = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_imFaecher", "if (!E) return true;", "return true;"))
+        );
+        const fSaum = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_wieseFaecher", "F.rate * FA.vorlaufS", "0 * FA.vorlaufS"))
+        );
+        const fJedes = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_wieseFaecher", "if (!F.neu) return F;", "F.neu = true;"))
+        );
+        t(`Fächer der Wiese: ${faecherWand(A).zeile}; der Ring rot (hinter dem Auge ${fRing.hinten}), der Saum ohne Dreh-Rate rot (Drehung ${fSaum.dreh} von ${fSaum.ring}), „jedes Bild“ rot (Neuberechnungen je 100 Bilder im Stand ${fJedes.imStand})`, !faecherWand(A).errs.length && fRing.hinten > 0 && fSaum.dreh < fSaum.ring && fJedes.errs.length > 0 && fJedes.imStand > 0); // prettier-ignore
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
         t("Rang der Zelle: das Wort über dem Rang reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortRang", "h = W.shr(h, 8);", "h = W.shr(h, 0);"))).errs.some((e) => /Rang-Brüche [1-9]/.test(e))); // prettier-ignore
     }
@@ -1818,6 +1908,10 @@ function main() {
     );
     // P-Ferne — die Ferne der Nah-Wiese: unverformt, die Lücke des Strahls und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
+    // P-Fächer — die Nähe der Wiese steht im Kegel des EINEN Auges, nie dahinter (stufe-ein-auge)
+    const fw = faecherWand(A);
+    errs.push(...fw.errs);
+    console.log(`P-Fächer ${fw.zeile}`);
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)

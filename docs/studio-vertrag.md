@@ -1048,7 +1048,7 @@ Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchlue
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
 sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
-des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
+des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsStoffPunkt` (w28-pop-treue: derselbe Stoff an EINEM Punkt der obersten Fläche — der Wurf der Nah-Wiese liest sein Grün am Gesetz statt am Netz einer Stufe), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
@@ -1113,6 +1113,7 @@ Nah-Streu, der Rasen und die Bäume eines Plans lesen ihn. Die Farbe des Bodens 
 Wüsten-Ocker der Palette, foundry-core `PORTAL_GROUND.wueste`), EINE Formel für Wirt und Faden. Die Wasser-Bilanz `bilanz`
 füllt jeden See nur zu ihrem Anteil (`seeBilanz` in `hydrosphaere`). Am Ort (x, z) mit der Nässe des Bodens: die Krautschicht
 `ortKraut` (Boden-Farbe, Acker, Grund eines Dorfs) und der Baum seines Holzes `ortBaum` (Hof-Baum, Baum des Plans).
+Die Wärme-Art an der Höhe y `waermeTraegt` (die Palme nur im Winter ab `WAERME_ART.winterC`, Greenwood & Wing 1995) liest die Art der Streu.
 DIE SIEDLUNG DES ORTS (`ortGesetz(teil).siedlung`, in der Heimat 1): `bau` (der Mensch baut — nicht vor seiner Zeit, nicht im
 Dauer-Frost) liest die Wahl der Dorf-Zelle, `platz` (der Prüfplatz nur in der Heimat) der Plan des Genesis-Orts; ein Dorf steht,
 wo `ortKraut` in seinem Reich `ORT_SIEDLUNG.naehrt` trägt. DIE LANDUNG: `ortLandung` (Grund an der Ankunft im Makro-Gesetz),
@@ -1131,10 +1132,11 @@ Klima `KLIMA` (`planetKlimaGlobal`, `planetKlima`, `planetKlimaR`) mit den Klass
 `WHITTAKER`; die EINE Verdunstung `planetPet` (Wuchs und Wasser lesen sie); das Wasser auf EINEM Gitter je Scheibe
 `planetWasserGitter` (`PLANET_WASSER_N` Zellen, fest, nie die Weltgröße: Einzugsgebiet, Seen, Überlauf gegen die PET) und an der
 Adresse `planetWasserR` (Abfluss und See-Tiefe, stetig). DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
-`ortGesetz`), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
+`ortGesetz`; JEDE Saat des Spiels trägt ihn: die Suche steigt eine Treppe 512 · 2 048 · 8 192 · 32 768 Proben, je nur wenn die Stufe
+davor keinen Ort fand — eine Saat mit Ort bei 512 behält ihn bitgleich; Richter: Zeile anker.jede-saat), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
 jedes Feld +0, Spende und Wuchs als Verhältnis 1; DER JAHRESZEITEN-VERTRAG: „Sommer“ ist die wärmere Jahreszeit und trägt ihre
 Phase, das Δ des Jahres-Gangs wird zur selben Zeit des Jahres genommen — Heimat + Δ hält Sommer ≥ Winter an jedem Ort, die Phase
-reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
+reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; die Eis-Zeit des Orts `ortEisZeit` (polwärts der Eisgrenze in einer der `EIS_ZEITEN` des Quartärs, als Δ `eis.zeit` im Ort, Leser: der Findling); der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
 Die Bytes sind Gesetz: die eigene Mathe `planetMathe`, der Hash `planetHash` und der zählerbasierte Zufall `planetZufall` —
 der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_intern` reicht ihm die Terme. Der Planet lebt nur
 im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach
@@ -1156,7 +1158,9 @@ Waldes), der EINE Text-Hash `samenHash` (FNV-1a über die UTF-16-Einheiten: Bau-
 Strom eines Samens `samenStrom` (das LCG der Welt: die Würfe eines Akts im Stamm `_samenStrom`, der Bestand des Gaus über den
 Wirt im Gau-Faden), der Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
 der Baum `samenBaum` (Welt-Samen → je benanntem Pfad ein eigener Strom: das Los eines Dorfs `los:<i>`, die Op eines Programms
-`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen). Geladen VOR jedem Kern in jedem Kontext (die erste
+`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen) und die Saat der Eingangs-Welt `EINGANG` (die Wurzel
+der Welt, die ohne genannte Saat geboren wird — EIN Leser der Sitzungs-Saat im Stamm, `_saat`, Welle saat-argument; vor dem Heil
+bricht er beim Namen). Geladen VOR jedem Kern in jedem Kontext (die erste
 Zeile des Manifests, index.html vor phyto-core, die Fäden des Gesetzes `FADEN_QUELLE.kerne`, die Klang-Werkstatt, jede
 Labor-Seite, die Node-Lader); jeder Kern liest ihn je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Jede frühere
 Kopie des Generators ruft ihn mit ihrer Saat-Formel, wie sie stand — die Bytes jeder Welt blieben (die Goldens unberührt); die

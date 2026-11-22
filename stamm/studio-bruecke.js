@@ -2324,8 +2324,8 @@ class AnazhRealm_studio_bruecke {
     // Zeile wäre ein Zwilling der Maske (der Wagen auf L1 ab 3,1 m, seine Maske zeigte die L0 bis 12 m). Am Eintrag gemerkt, je
     // Schirm (die Art eines Eintrags wechselt nie).
     _archStufenGrenzen(entry) {
-        const zeilen = this._schirm().hoehe;
-        if (entry._stufenGrenzen !== undefined && entry._stufenGrenzenZeilen === zeilen) return entry._stufenGrenzen;
+        const wahl = this._schirm().wahl; // Zeilen und Sichtfeld der EINEN Brennweite
+        if (entry._stufenGrenzen !== undefined && entry._stufenGrenzenZeilen === wahl) return entry._stufenGrenzen;
         const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
         const f = this._foundry;
         const rec = preset && f && f.recipes ? f.recipes[preset] : null;
@@ -2340,7 +2340,7 @@ class AnazhRealm_studio_bruecke {
             const ab = this._wechselAbstand(rec.kind, s, 1, preset);
             if (ab != null) grenzen.push({ stufe: s, ab });
         }
-        entry._stufenGrenzenZeilen = zeilen;
+        entry._stufenGrenzenZeilen = wahl;
         const h = art && Number.isFinite(art.hyst) ? art.hyst : AnazhRealm.LOD_SCHIRM.hyst;
         entry._stufenGrenzen = grenzen.length ? { erste: st[0], grenzen, h } : null;
         return entry._stufenGrenzen;

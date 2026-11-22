@@ -3,7 +3,7 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 
 # DER GPU-PROBE-DIENST (w22-gpu-probe): jeder Zweig bekommt in Minuten das Urteil und das Bild einer Wand auf ECHTER GPU — die
 # eigenen Läufer, nie swiftshader (Lehre 17). Der Ruf steht in der Kopf-Commit-Message: `[gpu-probe: <spec>]`, <spec> eine
-# Komma-Liste aus höchstens drei Proben
+# Komma-Liste aus höchstens vier Proben
 #   gate:<npm-skript>       ein Skript aus package.json (z. B. gate:ego-schatten), wie im echt-Job unter LINSE_GPU=karte — auf
 #                           JEDEM Läufer mit dem Label gpu-probe (omen-gtx1060, radeon-890m, gtx1050-desktop; GitHub nimmt den freien)
 #   zeit:gate:<npm-skript>  DASSELBE Skript (der Name nach `zeit:` ist wörtlich das npm-Skript, geprüft wie bei gate:), aber NUR auf
@@ -16,6 +16,10 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 # dem Haupt-Faden 3- bis 8-mal über jedem Budget, sein ms-Urteil ist ROT gleich welcher Code. Bilder und Gates, die ZÄHLEN oder
 # vergleichen (Pixel, Dreiecke, Befehle, Bytes, Treue), rufen `gate:`/`bild:` und gelten auf jedem Läufer. Ein Ruf darf mischen:
 # `[gpu-probe: bild:wiese@0.5, zeit:gate:ankunft]` — das Bild fährt der freie Probe-Läufer, das Zeit-Gate wartet auf ein Band-Gerät.
+# DIE GL-WAND FÄHRT MIT (22.11., der Zug z662 fiel am Kandidaten 52ecb6df): jedes Bein auf gpu-probe trägt hinter den Proben des
+# Rufs `gate:webgl-probe` (W5 jedes Programm linkt im WebGL2-Rückfall, W6 ≤ 16 Sampler-Einheiten je Stoff; an der Radeon 45 s) —
+# eine neue Karte im Stoff (die Licht-Karte: der Fern-Ring trug 17) fiel bis dahin erst im echt-Job des Zugs an der GTX 1050,
+# nach dem Stempel. Kein neues Bein: ein Ruf nur mit `zeit:` weckt keinen Probe-Läufer; die Grenze von vier gilt den Proben des Rufs.
 # Nur diese drei Formen, die Namen gegen package.json und die Tafel geprüft — der EINE Leser ist der Schritt `einlass` unten
 # (EINLASS_JS; gate:apparat Klinge 7 FÄHRT ihn mit freien Befehlen, fremden Namen und gemischten Rufen und hält dieses Gesetz mit
 # Mutanten): nie ein freier Befehl aus der Message, das Repo ist öffentlich.
@@ -80,9 +84,13 @@ jobs:
                                 : "weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]";
                           if (g && !grund) grund = `„${p.slice(0, 80)}“: ${g}`;
                       }
-                      if (!grund && proben.length > 3) grund = `${proben.length} Proben, höchstens 3 je Push`;
+                      if (!grund && proben.length > 4) grund = `${proben.length} Proben, höchstens 4 je Push`;
+                      const GL = "gate:webgl-probe";
+                      if (!grund && !skripte[GL]) grund = `die GL-Wand ${GL} fehlt in package.json`;
+                      const aufProbe = proben.filter((p) => !p.startsWith("zeit:"));
+                      if (aufProbe.length && !aufProbe.includes(GL)) aufProbe.push(GL);
                       const arten = [
-                          ["gpu-probe", proben.filter((p) => !p.startsWith("zeit:"))],
+                          ["gpu-probe", aufProbe],
                           ["gpu-zeit", proben.filter((p) => p.startsWith("zeit:"))],
                       ]
                           .filter(([, l]) => l.length)
@@ -101,8 +109,8 @@ jobs:
             fail-fast: false
             matrix: ${{ fromJSON(needs.einlass.outputs.matrix) }}
         runs-on: [self-hosted, "${{ matrix.label }}"]
-        # der Start-Hook wartet bis 25 min auf das Schloss, je Probe ≤ 8 min (höchstens drei), dazu Baum und npm ci
-        timeout-minutes: 60
+        # der Start-Hook wartet bis 25 min auf das Schloss, je Probe ≤ 8 min (höchstens vier und die GL-Wand), dazu Baum und npm ci
+        timeout-minutes: 70
         permissions:
             contents: read
             actions: read

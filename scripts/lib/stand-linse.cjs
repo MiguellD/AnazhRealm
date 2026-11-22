@@ -60,6 +60,10 @@ const SIMS = {
     wuchs: [["_tickFoliageGrowth"], ["pendingFoliageChunks"]],
     feld: [["_feldTod"], ["lifeField", "emotionField", "wohlBaseline", "lifeField.tod", "emotionField.tod", "wohlBaseline.tod"]],
     brand: [["_tickBrand"], ["brandFeld"]],
+    // DIE ZÜNDUNG — ein Teil des Brands mit EIGENEM Zähler (front-brand): was unter `_brandZuenden` läuft (das Bett messen, das
+    // Tempo, die acht Ankünfte), bucht die Linse hier; unter `brand` bleibt der Gang der brennenden Zellen. Die Marke ist der
+    // Ruf selbst (Laufzeit), nie der Name eines Lesers: so urteilt die Brand-Linse Gang und Zündung je an IHRER Einheit.
+    zuendung: [["_brandZuenden"], []],
 };
 const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEntfachen"];
 
@@ -400,12 +404,51 @@ function standLauf(k) {
 // DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim und kein Akt; ihr Ereignis weckt
 // jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
 // der Brand arbeiten nur in berührten Zellen.
-const BRAND_JE = 64; // je Zelle des Feuers und Schritt: ihr Gang, die Zündung (Bett, Tempo, acht Ankünfte), die Asche
-// je Zelle, die in dem Schritt die MASKE ihres Betts misst (w28-lava-nachlauf: nur eine Zelle mit Brennstoff UND Kahlem, einmal je
-// Brand — ein neuer Eintrag des Gemessenen `_brandBett` mit Anteil zwischen 0 und 1): ihre `BRAND.bettGitter`² = 64 Punkte sind
-// 64 Teile der Zelle, je Punkt dasselbe Soll wie je Zelle (der EINE Stoff-Leser `_kontaktStoffAt` mit seinen Lese-Stellen;
-// gemessen an der Mess-Wiese 2 Masken in einem Schritt mit 79 Zellen: 10 882 Einheiten, ≈ 61 je Punkt)
-const BRAND_MASKE = BRAND_JE * 64;
+// DER BRAND AN SEINEN ZWEI EINHEITEN (front-brand). Bis hier trug er EIN Soll: ≤ 64 Einheiten je brennender Zelle und Schritt
+// (+ 4 096 je gemessener Bett-Maske). Der Preis einer Zündung wächst aber mit den ZÜNDUNGEN eines Schritts, nie mit den brennenden
+// Zellen: zwei Zündungen bei 16 Zellen kosteten 813–895 (Soll 1 024), drei 1 206 (die Radeon-Probe am Stempel w28-front-brand
+// cc19e47a, jeder Leser genau × 1,5) — das Urteil würfelte an main und an jedem Zweig. Jetzt zwei Gesetze, je an der ÄNDERUNG DER WELT:
+//   GANG    — was der Takt außerhalb der Zündung tut (das Feld durchgehen, Glut, Asche, das Bild): ≤ BRAND_GANG je Zelle des Felds;
+//   ZÜNDUNG — was unter `_brandZuenden` läuft (die Laufzeit-Marke `zuendung` der SIMS): ≤ BRAND_ANKUNFT je Ankunft der Front (das
+//             Gemessene lesen, das Tempo-Gesetz, der Weg, die acht Nachbarinnen) + BRAND_BETT je NEU gemessenem Bett (lebendig,
+//             Nässe, EIN Marsch für seine Höhe, das Gefälle, die Feuchte) + BRAND_PUNKT je Bett-Punkt (der EINE Stoff-Leser
+//             `_kontaktStoffAt` mit seinen Lese-Stellen) + BRAND_KAHL je kahlem Punkt (kein Brennstoff: er fragt das Feld unter der
+//             Boden-Karte, EIN Marsch durch seine Säule).
+// Das Soll der Zündung kommt aus dem, was die Welt MASS (die neuen Einträge des Gemessenen `_brandBett`, ihre Punkte nach dem
+// Gesetz `bettGrob` · `bettGitter`², ihre Maske), nie aus der Zahl der Lese-Rufe: ein Soll aus den Rufen wüchse mit dem Täter (eine
+// Zündung, die ihr Bett zweimal liest, bliebe grün). Die Zahlen sind Ratschen der Messung an der Mess-Wiese (Radeon 890M,
+// Null-Renderer, 300 Schritte, 22 Zündungen, 3 Masken; aus den Lesern je Zündung gelöst): der Gang bis 10,8 je Zelle (der
+// Neubau der Wiese im kleinen Feld); eine Zündung mit neuem Bett trägt einen Sockel von 141 (mit Tempo und Nachbarinnen),
+// je Laub-Punkt 15, je Gras-Punkt 52 (die Boden-Karte `_bodenSichtAt`: 37), je kahlem Punkt 116 (dazu das Feld
+// `_terrainMaterialAt` mit EINEM Marsch: 64). Eine Ankunft ohne neues Bett (ein Ort ohne Bett, den eine zweite Nachbarin
+// erreicht: das Gemessene lesen) kam in der Messung nicht vor, an der Quelle gelesen ≤ 5. Die groben Punkte einer Maske und
+// eines Orts ohne Bett zählen als kahl (Obergrenze: der Eintrag des Gemessenen trägt nur das feine Gitter). Die Zeile der
+// Sim nennt in jedem Lauf je Gesetz den Anteil am Soll.
+const BRAND_GANG = 16;
+const BRAND_ANKUNFT = 16;
+const BRAND_BETT = 160;
+const BRAND_PUNKT = 56;
+const BRAND_KAHL = 72;
+const brandGangSoll = (Z, k) => BRAND_GANG * Z.zellen[k];
+const brandZuendSoll = (Z, k) =>
+    BRAND_ANKUNFT * (Z.ankuenfte[k] | 0) + BRAND_BETT * (Z.betten[k] | 0) + BRAND_PUNKT * (Z.punkte[k] | 0) + BRAND_KAHL * (Z.kahl[k] | 0);
+const brandLeser = (je, n = 6) => (je ? simJe({ je: je.slice(0, n) }) : "");
+// DIE SPANNE AM SOLL (die Zeile der Sim, w28-pop-treue): je Gesetz der Schritt, der seinem Soll am nächsten kommt — sein Anteil am
+// Soll und seine Leser. Die Zahl steht in jedem Lauf, nicht erst im Rot.
+function brandAmSoll(Z) {
+    const eng = (werte, soll, mehr) => {
+        let best = null;
+        (werte || []).forEach((e, k) => {
+            const a = e > 0 ? e / soll(k) : 0;
+            if (!best || a > best.anteil) best = { schritt: k + 1, anteil: a, einheiten: e, soll: soll(k), ...mehr(k) };
+        });
+        return best && Object.assign(best, { anteil: +best.anteil.toFixed(3) });
+    };
+    return {
+        gang: eng(Z.gang, (k) => brandGangSoll(Z, k), (k) => ({ zellen: Z.zellen[k], leser: brandLeser(Z.rufe && Z.rufe[k]) })),
+        zuendung: eng(Z.zuendung, (k) => brandZuendSoll(Z, k), (k) => ({ ankuenfte: Z.ankuenfte[k], betten: Z.betten[k], punkte: Z.punkte[k], kahl: Z.kahl[k], masken: Z.masken[k], leser: brandLeser(Z.rufeZ && Z.rufeZ[k]) })), // prettier-ignore
+    };
+}
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -447,16 +490,24 @@ function simUrteil(b, v) {
         // (feld.K5) die Halde der Leben-Stufen trägt jede Zelle höchstens einmal: nach 100 Taten an einem Ort kein Platz über dem Stand
         if (F.ueber !== 0) v.push(`HALDE: ${F.ueber} Plätze über dem Stand der Leben-Stufen — eine Zelle steht mehrfach`);
     }
-    // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen (≤ BRAND_JE je Zelle und Schritt), seine Front läuft mit
-    // dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt
-    // Asche, leuchtet, glüht und schläft danach
+    // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen — sein Gang ≤ BRAND_GANG je Zelle des Felds und Schritt, seine
+    // Zündung am Soll dessen, was die Welt neu maß (`brandZuendSoll`) —, seine Front läuft mit dem Wind 0,5–2 m/s, gegen ihn
+    // ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt Asche, leuchtet, glüht und
+    // schläft danach
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
-        const soll = (k) => BRAND_JE * Z.zellen[k] + BRAND_MASKE * ((Z.masken && Z.masken[k]) || 0);
-        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > soll(k));
-        if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
-        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle${Z.masken && Z.masken[i] ? ` + ${BRAND_MASKE} je gemessene Bett-Maske, hier ${Z.masken[i]}` : ""})`);
+        const summe = (a) => (a || []).reduce((s, x) => s + x, 0);
+        const an = summe(Z.ankuenfte);
+        if (!(summe(Z.gang) > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
+        if (!(an > 0)) v.push("LEER: im Brand erreichte die Front keine Zelle — keine Zündung gemessen");
+        else if (!(summe(Z.zuendung) > 0)) v.push(`STUMPF: die Front erreichte ${an} Zellen, die Sim-Linse sieht keine Zündung (die Marke \`zuendung\` unter ${SIMS.zuendung[0].join(" · ")})`);
+        const i = Z.gang.findIndex((e, k) => e > brandGangSoll(Z, k));
+        if (i >= 0) v.push(`BRAND-GANG: Schritt ${i + 1} kostete ${Z.gang[i]} Einheiten Gang bei ${Z.zellen[i]} Zellen des Felds (Soll ≤ ${BRAND_GANG} je Zelle) — seine Leser: ${brandLeser(Z.rufe && Z.rufe[i])}`);
+        const j = Z.zuendung.findIndex((e, k) => e > brandZuendSoll(Z, k));
+        if (j >= 0)
+            v.push(`BRAND-ZÜNDUNG: Schritt ${j + 1} kostete ${Z.zuendung[j]} Einheiten Zündung für ${Z.ankuenfte[j]} Ankünfte und ${Z.betten[j]} neu gemessene Betten (${Z.punkte[j]} Bett-Punkte, davon bis ${Z.kahl[j]} kahl, ${Z.masken[j]} Masken; ${(Z.lesungen || [])[j] | 0} Stoff-Lesungen) — ` +
+                `Soll ≤ ${brandZuendSoll(Z, j)} (${BRAND_ANKUNFT} je Ankunft + ${BRAND_BETT} je neuem Bett + ${BRAND_PUNKT} je Punkt + ${BRAND_KAHL} je kahlem Punkt) — ihre Leser: ${brandLeser(Z.rufeZ && Z.rufeZ[j])}`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
@@ -470,7 +521,8 @@ function simUrteil(b, v) {
         if (!(Z.asche >= 1) || !(asche > 0.1))
             v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach} (Leben-Overlay ${ov[0]} → ${ov[1]}, die Asche senkt ${asche}, Soll > 0.1)`);
         if (!(Z.glut > 0) || !Z.licht) v.push(`BRAND-LESER: glut am Herd +${Z.glut}, Leuchtquelle ${Z.licht ? "da" : "fehlt"}`);
-        if (Z.nachher.sims.brand.summe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${Z.nachher.sims.brand.summe} Einheiten`);
+        const ruhe = Z.nachher.sims.brand.summe + Z.nachher.sims.zuendung.summe;
+        if (ruhe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${ruhe} Einheiten`);
     }
     const A = W.wasser;
     if (!A || !(A.chunks > 0)) v.push("LEER: am Fluss weckt die Werk-Setzung keinen Chunk des Automaten");
@@ -881,6 +933,7 @@ module.exports = {
     TAKTE,
     SIMS,
     standUrteil,
+    brandAmSoll,
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__simLinseAn = () => (${simLinseAn.toString()})(${JSON.stringify(SIMS)}, ${JSON.stringify(AKTE)});` +

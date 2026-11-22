@@ -5,7 +5,7 @@ class AnazhRealm_kreatur_erbe {
     // selben Ort dieselbe Art an denselben Platz: derselbe Leib, gleich wie viele Leiber vorher kamen und gingen. Der Wertebereich
     // ist der der Kennung im Bestand (1e6 + h mod 9e8, `_bestandLeib`): die Leser (Wander-Kurs, Ruhe-Pegel) sehen eine Nummer.
     _leibLos(ort, art, platz) {
-        const same = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const same = AnazhRealm._saatJe(this);
         const pfad = `leib:${Math.round(ort.x * 10)},${Math.round(ort.z * 10)}:${art}:${platz}`;
         return 1e6 + (globalThis.__samenCore.samenBaum(same).saat(pfad) % 9e8);
     }

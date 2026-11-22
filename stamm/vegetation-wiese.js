@@ -1,11 +1,9 @@
 class AnazhRealm_vegetation_wiese {
     // ===== ATLAS · Vegetation/wiese — Nah-Wiese · Nah-Streu · Affinität · Boden-Material =====
-    // Nah-Wiese und Nah-Streu bauen im Rechteck neu — nur, wenn es den weiteren ihrer Ringe um die EINE Mitte (die Kamera)
+    // Nah-Wiese und Nah-Streu bauen im Rechteck neu — nur, wenn es den weiteren ihrer Ringe um die EINE Mitte (das Auge, `_lodAuge`)
     // berührt; jenseits steht keine Kachel, die Zelle kostet nichts (ein Brand von 2 000 Zellen fern der Kamera).
     _nahRingNeuIn(x0, z0, x1, z1) {
-        const mitte = this.state.camera
-            ? this.state.camera.position
-            : this.state.playerMesh && this.state.playerMesh.position;
+        const mitte = this._lodAuge(); // das EINE Auge der Stufen
         if (!mitte) return 0;
         const d = Math.hypot(Math.max(x0 - mitte.x, 0, mitte.x - x1), Math.max(z0 - mitte.z, 0, mitte.z - z1));
         if (d > AnazhRealm._nahRingReich()) return 0;
@@ -143,7 +141,6 @@ class AnazhRealm_vegetation_wiese {
             const v = this._bodenSichtAt(px, pz);
             return v === null ? NaN : v;
         };
-        const grund = {};
         const licht = this._bodenLichtFeld(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34);
         const GC =
             AnazhRealm.Gesetz("terrain:groundCover", null) || AnazhRealm._kernPflichtBruch("terrain:groundCover");
@@ -172,18 +169,21 @@ class AnazhRealm_vegetation_wiese {
                 const rot = w() * Math.PI * 2;
                 const o = AnazhRealm._wieseOrdnung(x, z);
                 if (o >= anteil) continue;
-                const y = this._bodenSichtAt(x, z, grund);
+                const y = this._bodenSichtAt(x, z);
                 if (y === null) continue;
-                // der Grund der Wiese (`_wieseGrund`: Grün, Pfad, Asche, Wasser) — die Ferne zeichnet dieselben Büschel
-                const wg = this._wieseGrund(x, z, y, grund.gruen);
+                // die Ebene des Hangs (gx, gz) — auf ihr steht das Büschel (`_nahWieseKachelDaten`), über keine Kante gekippt; ihr
+                // Betrag (die zentrale Steile) trägt das Grün des Gesetzes und die Bodenschicht
+                const eb = {};
+                const hang = this._slopeAt(x, z, boden, 1, eb, y);
+                // der Grund der Wiese (`_wieseGrund`: Grün, Pfad, Asche, Wasser) — die Ferne zeichnet dieselben Büschel. Das Grün ist
+                // das des Gesetzes am Fuß (`_bodenGruenAt`), nie das der Boden-Karte einer Stufe (w28-pop-treue: am Wechsel der
+                // Stufe warf die neu gebaute Kachel an derselben Zelle ein anderes Büschel, gate:pop „DER WURF DER STUFE“)
+                const wg = this._wieseGrund(x, z, y, this._bodenGruenAt(x, y, z, hang));
                 if (!(wg > 0)) continue;
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
                 // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
                 const L = licht(x, z);
-                // die Ebene des Hangs (gx, gz) — auf ihr steht das Büschel (`_nahWieseKachelDaten`), über keine Kante gekippt
-                const eb = {};
-                const hang = this._slopeAt(x, z, boden, 1, eb, y);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const p = GC(L, m, rk, Infinity).grass * wg;
                 if (wurf >= p) continue;
@@ -303,19 +303,163 @@ class AnazhRealm_vegetation_wiese {
     // Eine Kachel baut neu (eine Tat, ihr Heilen, ein Weg): sie trägt nur Daten, der Sicht-Satz legt sich neu — und die
     // Kachel der Ferne, die sie umschließt, mit ihr (dieselben Büschel). Verlässt sie nur den Ring der Nähe, fällt sie im
     // Takt allein (`_tickNahWiese`).
+    // DIE KACHEL FÄLLT ERST MIT IHREM NACHFOLGER (w28-pop-treue, die EINE Regel der Nähe, der Ferne und der Nah-Streu): ihr Satz
+    // gilt als alt (`satzAlt`), sie steht mit ihm, bis ihr Takt den Neubau an ihre Stelle setzt — der Bestand tauscht den Block
+    // in EINEM Gang (`_bestandFamilie`: Tod und Geburt), nie ein Bild ohne sie. Bis hier fiel sie sofort (eine Tat, ein Weg, der
+    // Boden, das Wasser, die Weite) und baute unter dem Budget ihres Takts nach: am Wechsel einer Stufe (drei Chunks 2→1, GTX
+    // 1050, Mess-Wiese) fehlten 46 Kacheln der Ferne zwölf Takte später noch, die Wiese vor dem Wald riss auf (287 Pop-Pixel
+    // im Schritt; 74 Kacheln ohne Wechsel der Stufe einmal fallen lassen: 159 statt ~30) — gate:pop „DAS LOCH DER KACHEL“.
     _nahWieseKachelFaellt(key) {
         const nw = this.state.nahWiese;
         if (!nw) return false;
         const n = AnazhRealm.NAH_WIESE.fern.kachel / AnazhRealm.NAH_WIESE.kachel;
         const [tx, tz] = key.split(",").map(Number);
-        const fern = !!nw.fern && nw.fern.kacheln.delete(Math.floor(tx / n) + "," + Math.floor(tz / n));
-        if (!nw.kacheln.delete(key) && !fern) return false;
-        nw.neu = true;
-        return true;
+        const alt = [
+            nw.kacheln.get(key),
+            nw.fern && nw.fern.kacheln.get(Math.floor(tx / n) + "," + Math.floor(tz / n)),
+        ];
+        let neu = false;
+        for (const k of alt) if (k && !k.satzAlt) neu = k.satzAlt = true;
+        return neu;
     }
 
-    // Je Takt (ein Job der Welt-Substanz, prio 1: `nahWiese` im Planer): Kacheln im Ring um die KAMERA anlegen (nah zuerst,
-    // ≤ kachelnJeTakt Neubauten), außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
+    // DER FÄCHER DES AUGES (stufe-ein-auge, das Gesetz der STUFE: gezeichnet wird, was das EINE Auge aus Winkel und Abstand
+    // offenbart): die Sicht-Pyramide der Haupt-Kamera am Auge `p` (`_lodAuge`), ihre vier Seiten je um einen SAUM nach außen
+    // gedreht — `sicht` ohne Saum (was jetzt im Bild steht), `bau` mit dem Saum (dort wächst eine Kachel), `halt` mit dem Saum
+    // und `faecher.fallSaum` dazu (erst jenseits fällt sie: kein Flattern am Rand). Der Saum wächst mit der DREH-RATE des Blicks
+    // (der Winkel der Blick-Richtung je Sekunde, gehalten und mit `abklingS` vergessen): saum = `saum` + Rate × `vorlaufS` —
+    // was die Drehung binnen des Vorlaufs ins Bild trägt, steht schon. Reicht eine Seite samt Saum an `vollRad`, ist der Fächer
+    // der Kreis (`voll`). `neu`: der Fächer rechnete in diesem Bild neu (sonst gelten seine Ebenen weiter). Bis stufe-ein-auge
+    // stand der Ring um die Kamera: 70 % des nahen Bestands hinter dem Auge (Zensus 21.11. §7, Fächer 107,5° = 29,9 %).
+    _wieseFaecher(p) {
+        const st = this.state,
+            cam = st.camera,
+            FA = AnazhRealm.NAH_WIESE.faecher;
+        const nw = st.nahWiese;
+        const F = nw.faecher || (nw.faecher = { f: [0, 0, -1], t: NaN, rate: 0, p: { x: 0, y: 0, z: 0 } });
+        cam.updateMatrixWorld();
+        const e = cam.matrixWorld.elements;
+        const norm = (x, y, z) => {
+            const l = Math.hypot(x, y, z) || 1;
+            return [x / l, y / l, z / l];
+        };
+        const [r, u, f] = [norm(e[0], e[1], e[2]), norm(e[4], e[5], e[6]), norm(-e[8], -e[9], -e[10])];
+        // die Zeit der Drehung: der Stempel des Takts (`_taktZeit`, der rAF-Stempel des Bilds) — die Dreh-Rate ist eine des
+        // gezeichneten Bilds, keine eigene Uhr der Wiese
+        const jetzt = (this._taktZeit || 0) / 1000;
+        const dt = jetzt - F.t;
+        if (!(dt >= 0)) [F.t, F.f] = [jetzt, f];
+        else if (dt >= FA.taktS) {
+            const w = Math.acos(Math.max(-1, Math.min(1, f[0] * F.f[0] + f[1] * F.f[1] + f[2] * F.f[2])));
+            // ein SPRUNG des Blicks (mehr als `sprungRad` je Messung: die Ankunft, ein Tor, eine Sonde) ist keine Drehung — das
+            // neue Bild wächst als Kacheln im Bild (`sicht`, ohne Kappe), kein Saum muss eine Bahn tragen
+            F.rate = w > FA.sprungRad ? 0 : Math.max(w / dt, F.rate * Math.exp(-dt / FA.abklingS));
+            if (F.rate < FA.ruheRad) F.rate = 0;
+            [F.t, F.f] = [jetzt, f];
+        }
+        [F.p.x, F.p.y, F.p.z, F.richtung] = [p.x, p.y, p.z, f];
+        // DIE KOSTEN HÄNGEN AN DER ÄNDERUNG (Lehre 25): der Saum steht in STUFEN (`saumStufe`), der Fächer rechnet neu (`neu`),
+        // nur wenn der Blick seit der letzten Rechnung um mehr als `sektorTeil` des Saums wanderte (der Rest des Saums trägt
+        // die Wanderung: das Bild bleibt im alten Fächer), die Saum-Stufe, Kreis oder Linse wechselten. Im Stand 0-mal je Bild.
+        const stufe = Math.max(0, Math.ceil((F.rate * FA.vorlaufS) / FA.saumStufe - 1e-9));
+        const saum = FA.saum + stufe * FA.saumStufe;
+        const halbV = (cam.fov * Math.PI) / 360;
+        const halbH = Math.atan(Math.tan(halbV) * cam.aspect);
+        const voll = !(Math.max(halbH, halbV) + saum + FA.fallSaum < FA.vollRad);
+        const linse = cam.fov + ":" + cam.aspect;
+        const k = F.schluessel;
+        const wandert = k ? Math.acos(Math.max(-1, Math.min(1, f[0] * k[0] + f[1] * k[1] + f[2] * k[2]))) : Infinity;
+        // (im Kreis zählt weder Blick noch Saum-Stufe: der abklingende Saum einer schnellen Drehung rechnet erst, wenn er den
+        // Kreis verlässt — bis hier je Stufe, 29–52 Rechnungen in 240 Bildern nach einer Drehung)
+        F.neu = !k || voll !== F.voll || linse !== F.linse || (!voll && (stufe !== F.stufe || wandert > FA.sektorTeil * saum)); // prettier-ignore
+        if (!F.neu) return F;
+        [F.schluessel, F.stufe, F.saum, F.voll, F.linse] = [f, stufe, saum, voll, linse];
+        const ebenen = (s) => {
+            const [cA, sA, cB, sB] = [
+                Math.cos(halbH + s),
+                Math.sin(halbH + s),
+                Math.cos(halbV + s),
+                Math.sin(halbV + s),
+            ];
+            const E = [];
+            for (const [k, n, c, sn] of [
+                [1, r, cA, sA],
+                [-1, r, cA, sA],
+                [1, u, cB, sB],
+                [-1, u, cB, sB],
+            ])
+                // prettier-ignore
+                for (let i = 0; i < 3; i++) E.push(k * c * n[i] + sn * f[i]);
+            return E;
+        };
+        F.sicht = ebenen(0);
+        F.bau = F.voll ? null : ebenen(saum);
+        F.halt = F.voll ? null : ebenen(saum + FA.fallSaum);
+        return F;
+    }
+    // LIEGT DER KASTEN IM FÄCHER (rein): die vier Ebenen `E` (je drei Zahlen, die Normale nach innen) durch das Auge `p` — der
+    // Kasten [x0, x1] × [y0, y1] × [z0, z1] liegt außen, sobald seine innerste Ecke hinter einer Ebene liegt. null = der Kreis.
+    static _imFaecher(E, p, x0, y0, z0, x1, y1, z1) {
+        if (!E) return true;
+        for (let i = 0; i < 12; i += 3) {
+            const [a, b, c] = [E[i], E[i + 1], E[i + 2]];
+            if (a * ((a > 0 ? x1 : x0) - p.x) + b * ((b > 0 ? y1 : y0) - p.y) + c * ((c > 0 ? z1 : z0) - p.z) < 0)
+                return false;
+        }
+        return true;
+    }
+    // DER WUNSCH DER NÄHE (je Takt): die Kacheln im Kreis `radius + vorlauf` um das Auge, die der Fächer `F` trägt — gebaut wird
+    // im Fächer mit Saum (`bau`), gehalten bis zum Fächer mit Fall-Saum (`halt`); je Kachel ihr Kasten samt dem Jitter und der
+    // Weite ihrer Büschel (`reich`), lotrecht die Höhe des Gesetzes an ihren Ecken und ihrer Mitte (`_terrainMacroSurfaceY` ohne
+    // Detail, gemerkt je Kachel) ± `faecher.lotM`. Im Bild zuerst (`sicht`), dann nah zuerst.
+    _nahWieseWunsch(cam, F) {
+        const NW = AnazhRealm.NAH_WIESE,
+            K = NW.kachel,
+            nw = this.state.nahWiese;
+        const hoehen = nw.kachelY || (nw.kachelY = new Map());
+        const tcx = Math.floor(cam.x / K);
+        const tcz = Math.floor(cam.z / K);
+        const reichweite = Math.ceil((NW.radius + NW.vorlauf) / K) + 1;
+        const rand = 0.34 + (nw.reich > 0 ? nw.reich : 1);
+        const wunsch = [];
+        const gesehen = new Set();
+        for (let dz = -reichweite; dz <= reichweite; dz++) {
+            for (let dx = -reichweite; dx <= reichweite; dx++) {
+                const tx = tcx + dx;
+                const tz = tcz + dz;
+                const d = Math.hypot((tx + 0.5) * K - cam.x, (tz + 0.5) * K - cam.z);
+                if (d > NW.radius + NW.vorlauf + K * 0.71) continue;
+                // dasselbe Rechteck wie der Bau der Büschel (`_nahWieseKachelBueschel`, Jitter 0,34 m)
+                const x0 = tx * K - 0.34;
+                const z0 = tz * K - 0.34;
+                if (this._bodenKommtNie(x0, z0, x0 + K + 0.68, z0 + K + 0.68)) continue;
+                const key = `${tx},${tz}`;
+                gesehen.add(key);
+                let y = hoehen.get(key);
+                if (!y) {
+                    const hs = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]].map(([i, j]) => this._terrainMacroSurfaceY((tx + i) * K, (tz + j) * K, false)); // prettier-ignore
+                    hoehen.set(key, (y = [Math.min(...hs), Math.max(...hs)]));
+                }
+                const L = NW.faecher.lotM;
+                const box = [
+                    tx * K - rand,
+                    y[0] - L,
+                    tz * K - rand,
+                    (tx + 1) * K + rand,
+                    y[1] + L,
+                    (tz + 1) * K + rand,
+                ];
+                if (!AnazhRealm._imFaecher(F.halt, cam, ...box)) continue;
+                if (!nw.kacheln.has(key) && !AnazhRealm._imFaecher(F.bau, cam, ...box)) continue;
+                wunsch.push({ key, tx, tz, d, sicht: AnazhRealm._imFaecher(F.sicht, cam, ...box) });
+            }
+        }
+        for (const key of hoehen.keys()) if (!gesehen.has(key)) hoehen.delete(key);
+        return wunsch.sort((a, b) => b.sicht - a.sicht || a.d - b.d);
+    }
+
+    // Je Takt (ein Job der Welt-Substanz, prio 1: `nahWiese` im Planer): Kacheln im FÄCHER des EINEN Auges anlegen (im Bild
+    // zuerst, dann nah; ≤ kachelnJeTakt Neubauten im Saum, `_nahWieseWunsch`), außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
     // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
     // (`_nahWieseSicht`) — eine Kachel baut nur, wenn sie den Ring betritt. Rückgabe: Zahl der Neubauten (0 = der Ring
     // steht).
@@ -352,37 +496,31 @@ class AnazhRealm_vegetation_wiese {
         if (!nw.fern) nw.fern = { kacheln: new Map() };
         // der Bestand der Nähe für die Wahl der GPU (eine Senke, die auf ihre Arena wartet, zählt hier ein)
         this._nahWieseBestand();
-        // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
-        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
-            return 0;
+        // DAS EINE AUGE (`_lodAuge`) und sein FÄCHER (`_wieseFaecher`): die Kacheln stehen, wo das Auge hinsieht
+        const a = this._lodAuge();
+        if (!a) return 0;
+        const cam = { x: a.x, y: a.y, z: a.z };
+        const F = this._wieseFaecher(cam);
+        // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang. Der Anker ist das AUGE (auf
+        // STAND_RAND_M); dreht nur der Blick, geht allein der Fächer (`F.neu`: er wanderte über seinen Sektor, der Saum wechselte
+        // die Stufe) — ohne die Prüfung der Karten und ohne die Ferne, die am Blick nichts liest. Bis hier war der Anker der
+        // Blickpunkt, die Drehung brach den Stand alle 1,4° und ging den ganzen Takt samt Ferne (Radeon, Wiese Third: CPU je
+        // Bild 6,0 → 14,4 ms), der abklingende Saum hielt ihn 2,6 s nach jeder Drehung je Bild wach.
+        const ruht = this._standRuht("nahWiese", 1, { pos: cam, rand: AnazhRealm.STAND_RAND_M }, "karte");
+        if (ruht && !F.neu) return 0;
+        nw.rechnungen = (nw.rechnungen | 0) + 1; // die Rechnungen des Wunschs (die Linse P-Fächer zählt sie je 100 Bilder)
         let gefallen = 0;
-        const cam = st.camera.position;
-        const tcx = Math.floor(cam.x / NW.kachel);
-        const tcz = Math.floor(cam.z / NW.kachel);
-        const reichweite = Math.ceil((NW.radius + NW.vorlauf) / NW.kachel) + 1;
         // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
-        // am alten Ufer); die Kachel der Ferne prüft ihre eigenen Karten (`_nahWieseFernTakt`).
+        // am alten Ufer): ihr Satz ist alt, sie stehen, bis der Bau unten sie ablöst (`_nahWieseKachelFaellt`); die Kachel der
+        // Ferne prüft ihre eigenen Karten (`_nahWieseFernTakt`). Nur wer den Ring verlässt, fällt.
         const faellt = (key) => nw.kacheln.delete(key) && (nw.neu = true);
-        for (const [key, k] of nw.kacheln)
-            if ((!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten)) && faellt(key))
-                gefallen++;
-        const wunsch = [];
-        for (let dz = -reichweite; dz <= reichweite; dz++) {
-            for (let dx = -reichweite; dx <= reichweite; dx++) {
-                const tx = tcx + dx;
-                const tz = tcz + dz;
-                const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
-                if (d > NW.radius + NW.vorlauf + NW.kachel * 0.71) continue;
-                // dasselbe Rechteck wie der Bau der Büschel (`_nahWieseKachelBueschel`, Jitter 0,34 m)
-                const x0 = tx * NW.kachel - 0.34;
-                const z0 = tz * NW.kachel - 0.34;
-                if (this._bodenKommtNie(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68)) continue;
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
-            }
-        }
+        if (!ruht)
+            for (const k of nw.kacheln.values())
+                if (!k.satzAlt && (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten)))
+                    k.satzAlt = true;
+        const wunsch = this._nahWieseWunsch(cam, F);
         const gewollt = new Set(wunsch.map((w) => w.key));
         for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && faellt(key)) gefallen++;
-        wunsch.sort((a, b) => a.d - b.d);
         // Buch und Render-Config docken in EINER Nachricht (wie `_nahStreuArten`): solange beide fehlen, wartet die Wiese —
         // ein Budget vor dem Buch ist kein Bruch, sondern noch nicht da. Bis Welle K las sie das Budget im ersten Takt nach
         // dem Boot und warf KERN-PFLICHT, bis das Buch kam (gate:post-kette sah es, sobald der Boot schneller zeichnete).
@@ -423,14 +561,17 @@ class AnazhRealm_vegetation_wiese {
         const reich = weite > 0 ? weite + globalThis.__phytoCore.WIND_GESETZ.blatt.hub : 0;
         if (reich !== nw.reich) {
             nw.reich = reich;
-            for (const [key, k] of nw.kacheln) if (k.reich !== reich && faellt(key)) gefallen++;
+            for (const k of nw.kacheln.values()) if (k.reich !== reich) k.satzAlt = true;
         }
         let gebaut = 0;
         for (const w of wunsch) {
-            if (nw.kacheln.has(w.key)) continue;
-            // das Takt-Budget ist leer, oder die Kachel liegt vor dem ersten Weltbild außer Blick (`_nahKachelWartet`)
+            const alt = nw.kacheln.get(w.key);
+            if (alt && !alt.satzAlt) continue;
+            // das Takt-Budget ist leer, oder die Kachel liegt vor dem ersten Weltbild außer Blick (`_nahKachelWartet`). Eine
+            // Kachel IM BILD (`w.sicht`: im Fächer ohne Saum, ohne Kachel ist dort kahler Boden) wächst unter der Frist allein —
+            // Existenz vor Bildrate (Lehre 13); die Kappe `kachelnJeTakt` gilt dem Saum.
             if (
-                gebaut >= NW.kachelnJeTakt ||
+                (gebaut >= NW.kachelnJeTakt && !(w.sicht && !alt)) ||
                 (deadline && performance.now() > deadline) ||
                 this._nahKachelWartet(w.tx, w.tz, NW.kachel)
             ) {
@@ -456,7 +597,7 @@ class AnazhRealm_vegetation_wiese {
             gebaut++;
         }
         if (gebaut + gefallen) this._nahWieseBestand(); // Geburt und Tod schreiben ihre Blöcke
-        const f = this._nahWieseFernTakt(cam, deadline, reich);
+        const f = ruht ? { gebaut: 0, gefallen: 0, offen: 0 } : this._nahWieseFernTakt(cam, deadline, reich);
         nw.offen += f.offen;
         this._standMeldet("nahWiese", 1, gebaut + gefallen + f.gebaut + f.gefallen > 0, nw.offen > 0);
         return gebaut + f.gebaut;
@@ -464,8 +605,8 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE FERNE JE TAKT (`NAH_WIESE.fern`): die Kacheln der Ferne zwischen der Übergabe und `bis` um das Auge — je Kachel die
     // Büschel ihrer Kacheln der Nähe mit Ordnung unter der SCHRANKE ihrer Lage (`_wieseFernSchranke`: der höchste Anteil, den
-    // das Gesetz einem ihrer Büschel gibt, für jedes Auge bis `vorlauf` näher; `_nahWieseFernKachel`); ihre Lage (Höhe und
-    // Neigung ihres Bodens, `_wieseFernLage`) misst sie vor dem ersten Bau. Eine Kachel, deren Anteil die Schranke des Auges
+    // das Gesetz einem ihrer Büschel gibt, für jedes Auge bis `vorlauf` näher; `_nahWieseFernKachel`); ihre Lage (die Höhe
+    // ihres Bodens, die Spanne der Ebene des Gesetzes, `_wieseFernLage`) misst sie vor dem ersten Bau. Eine Kachel, deren Anteil die Schranke des Auges
     // überholt (es kam näher, stieg ab, sah den Hang steiler an), baut neu, eine, deren Karten oder Wasser sich änderten,
     // auch; eine aus dem Ring fällt. Nah zuerst. → { gebaut, gefallen, offen }
     // DIE PRÜFUNG KOSTET, WAS SICH ÄNDERT (w24-wiese-ferne, Lehre 25): die Prüfung jeder Kachel (Wasser, Karten, Chunk-Ring) und die
@@ -490,25 +631,29 @@ class AnazhRealm_vegetation_wiese {
         let schritte = 0; // die Frist zählt erst nach dem ersten Schritt: jeder Ruf geht ein Stück
         const frei = () => !(schritte++ && performance.now() > bis);
         const pz = this.state.lastPlayerVoxelChunk;
-        const pruef = [this._standStempel(), this._karteRegung | 0, reich, pz ? pz.cx + "," + pz.cz : "", auge.x, auge.z, auge.h].join("|"); // prettier-ignore
+        const ebene = this._wieseEbeneStand().gen; // der Stand der Ebene des Gesetzes (`_wieseHang`)
+        const pruef = [this._standStempel(), this._karteRegung | 0, reich, ebene, pz ? pz.cx + "," + pz.cz : "", auge.x, auge.z, auge.h].join("|"); // prettier-ignore
         if (!G.gang && G.pruef !== pruef) {
             const R = Math.ceil(F.bis / K) + 1;
             const [cx, cz] = [Math.floor(cam.x / K), Math.floor(cam.z / K)];
-            G.gang = { pruef, x: cam.x, z: cam.z, auge, reich, R, cx, cz, i: cz - R, alt: [...fk.keys()], a: 0, bau: [], marke: {} }; // prettier-ignore
+            G.gang = { pruef, x: cam.x, z: cam.z, auge, reich, ebene, R, cx, cz, i: cz - R, alt: [...fk.keys()], a: 0, bau: [], marke: {} }; // prettier-ignore
         }
         const g = G.gang;
         if (g) {
-            // 1 — die alten Kacheln: ihr Wasser, ihre Karten, die Weite, eine Kachel der Nähe jenseits des Rings, die jetzt Boden trägt
+            // 1 — die alten Kacheln: ihr Wasser, ihre Karten, die Weite, die Ebene des Gesetzes, eine Kachel der Nähe jenseits des
+            // Rings, die jetzt Boden trägt
             for (; g.a < g.alt.length && frei(); g.a++) {
                 const k = fk.get(g.alt[g.a]);
                 if (
                     k &&
+                    !k.satzAlt &&
                     (!this._wasserKennungenGleich(k.wasser) ||
                         !this._bodenKartenStehen(k.chunkKarten) ||
                         k.reich !== g.reich ||
+                        k.ebene !== g.ebene ||
                         k.nie.some((r) => !this._bodenKommtNie(...r)))
                 )
-                    fk.delete(g.alt[g.a]) && o.gefallen++;
+                    k.satzAlt = true; // sie steht, bis ihr Neubau sie ablöst (`_nahWieseKachelFaellt`)
             }
             // 2 — der Ring, je Zeile: je gewollte Kachel die Marke dieses Gangs; was baut (keine Kachel oder ihr Anteil vom Auge
             // überholt), wartet in `bau`. Der nächste Punkt der Kachel samt dem Jitter ihrer Büschel (0,34 m, `_nahWieseKachelBueschel`)
@@ -531,9 +676,10 @@ class AnazhRealm_vegetation_wiese {
                     const alt = fk.get(key);
                     if (alt) {
                         alt.marke = g.marke;
-                        if (alt.anteil >= AnazhRealm._wieseFernSchranke(alt.lage, g.auge, 0)) continue;
+                        if (!alt.satzAlt && alt.anteil >= AnazhRealm._wieseFernSchranke(alt.lage, g.auge, 0)) continue;
                     }
-                    g.bau.push({ key, fx, fz, d, lage: alt ? alt.lage : null });
+                    // ein alter Satz misst seine Lage neu (sein Boden wechselte), ein überholter Anteil behält sie
+                    g.bau.push({ key, fx, fz, d, lage: alt && !alt.satzAlt ? alt.lage : null });
                 }
             }
             // 3 — der Gang ist ganz: es fällt, was er nicht sah, die Liste der Bauten gilt
@@ -625,7 +771,7 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DER FUSSABDRUCK-ABSTAND (rein, über der Algebra A — dieselbe Rechnung in Takt, Sicht-Satz und Stoff): (dx, dy, dz) der
-    // Fuß des Büschels vom Auge aus, (nx, ny, nz) die Normale der Ebene seines Hangs (ungenormt: (−gx, 1, −gz)), h die Höhe
+    // Fuß des Büschels vom Auge aus, (nx, ny, nz) die Normale der Ebene des Gesetzes an ihm (`_wieseHang`, ungenormt: (−gx, 1, −gz)), h die Höhe
     // des Auges über dem eigenen Boden. Die Bodenfläche je Pixel am Fuß ist dist²/sin φ = dist³/S (S = |n̂ · (Auge − Fuß)|,
     // die Höhe des Auges über der Ebene), bei `fuss` der flachen Wiese fuss³/h — Q = dist · (h/S)^⅓ ist der Abstand, in dem
     // die flache Wiese dieselbe Fläche je Pixel trägt (flach: S = h, Q = dist).
@@ -660,7 +806,7 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DIE SCHRANKE DER FERNE (Takt und Sicht-Satz, rein): der höchste Anteil, den das Gesetz einem Büschel in der Lage `L`
-    // gibt ({ x0, x1, z0, z1 } seiner Füße, y0–y1 ihre Höhe, gx0–gx1 · gz0–gz1 die Neigung ihrer Hänge) — für jedes Auge, das
+    // gibt ({ x0, x1, z0, z1 } seiner Füße, y0–y1 ihre Höhe, gx0–gx1 · gz0–gz1 die Spanne der Ebene des Gesetzes) — für jedes Auge, das
     // bis `rand` m waagrecht und rand/4 lotrecht vom Auge A steht (der Vorlauf einer Kachel; lotrecht wandern seine Höhe über
     // der Ebene und über dem eigenen Boden gemeinsam). Der kleinste Fußabdruck-Abstand: der nächste Fuß, die höchste Ebene
     // (S ≤ |(−gx, 1, −gz) · (Auge − Fuß)|, die Ecken der Intervalle) — an der Tafel (der Saum zählt nicht: die Schranke hält
@@ -688,22 +834,89 @@ class AnazhRealm_vegetation_wiese {
         return a * (1 + F.rand);
     }
 
-    // DIE LAGE EINER KACHEL DER FERNE (vor ihrem Bau): die Höhe und die Neigung ihres gezeichneten Bodens an 2 × 2 Proben je
-    // Kachel der Nähe, die ihr Bau liest (dieselben Leser: `_bodenSichtAt`, `_slopeAt`; eine Kachel der Nähe jenseits des
-    // Chunk-Rings, `_bodenKommtNie`, trägt nichts und wird nicht gefragt), um den Rand eines Büschels zwischen den Proben
-    // geweitet (0,1 m · 0,02) — die Schranke des Takts (`_wieseFernSchranke`) liest sie. null, solange ein Chunk unter ihr
-    // seine Karte noch bekommt (`_bodenSichtChunks`, wie der Bau); eine Probe ohne Boden zählt nicht.
+    // DIE EBENE DES GESETZES (w28-pop-treue) — die Ebene, an der das Gesetz der Ferne den Fußabdruck eines Büschels misst
+    // (`_wieseFuss`: S, die Höhe des Auges über ihr): der Gradient (gx, gz) der HÖHE DER SAAT (`_terrainSaatY`: das EINE
+    // Gesetzbuch der 2D-Höhe ohne den Erdbau der Orte) über dem Gitter `fern.ebene` — je Knoten die zentrale Differenz über
+    // ±ebene/2, dazwischen bilinear: stetig über jede Kachel und jeden Chunk, eine Funktion von Ort und Saat, NIE einer Stufe
+    // des Bodens und nie der Stunde, in der ein Ort seinen Erdbau legt (wie die Boden-Klasse, `_bodenKlasseAt`: was aus der
+    // Saat würfelt, liest die Saat — ein Erdbau fällt am Ort, K69, und weckt nie den Ring der Ferne; seine Platte liegt unter
+    // dem Maß des Gitters, und der Halm steht neben ihr auf dem Boden der Saat, `_imGrundriss`). Leser:
+    // der Bau der Kachel der Ferne (je Büschel in die vierte Zeile seiner Instanz, `_nahWieseFernKachel` → `_nahWieseBestand`;
+    // der Stoff `_halmFerne` und die Wahl der GPU, Art 6, lesen sie dort) und die Schranke des Takts (`_wieseFernLage`).
+    // Bis hier las das Gesetz die STAND-Ebene des Büschels (`_slopeAt` über ±1 m der gezeichneten Karte, aus den waagrechten
+    // Achsen seiner Instanz): die Karten zweier Stufen weichen um Zentimeter (Mess-Wiese, Wechsel 2→1: Mittel 0,5–0,7 cm, max
+    // ~4 cm), die Ebene über ±1 m damit um bis 0,034 — in 100 m Abstand bewegt 0,01 die Höhe S um 1 m gegen 1,7 m Augenhöhe.
+    // An jedem Wechsel der Stufe würfelte das Gesetz Anteil und Größe der Büschel des Chunks neu (GTX 1050, der Gang von
+    // gate:pop ohne das Lebende: 550 px, davon 434 an den zwei Wechsel-Schritten; mit der Ebene des Gesetzes im Eingriff 294).
+    // Das Gedächtnis hält die Höhen der Stützen unter dem Stand, den die Höhe liest (`_wieseEbeneStand`).
+    _wieseHang(x, z, aus = {}) {
+        const E = AnazhRealm.NAH_WIESE.fern.ebene;
+        const G = this._wieseEbene || this._wieseEbeneStand();
+        // die Höhe an der Stütze (a, b) des halben Gitters (Schritt ebene/2)
+        const H = (a, b) => {
+            const k = a + "," + b;
+            let h = G.h.get(k);
+            if (h === undefined) {
+                h = this._terrainSaatY((a * E) / 2, (b * E) / 2);
+                if (!Number.isFinite(h)) throw new Error(`Ebene der Wiese: die Höhe der Saat ist nicht endlich bei ${(a * E) / 2}, ${(b * E) / 2}`); // prettier-ignore
+                if (G.h.size >= 16384) G.h.clear(); // ~1,2 km²: der Ring der Ferne trägt ~4 000 Stützen
+                G.h.set(k, h);
+            }
+            return h;
+        };
+        const [u, v] = [x / E, z / E];
+        const [i, j] = [Math.floor(u), Math.floor(v)];
+        const [fu, fv] = [u - i, v - j];
+        let [gx, gz] = [0, 0];
+        for (let q = 0; q < 4; q++) {
+            const [a, b] = [2 * (i + (q & 1)), 2 * (j + (q >> 1))];
+            const w = (q & 1 ? fu : 1 - fu) * (q >> 1 ? fv : 1 - fv);
+            gx += (w * (H(a + 1, b) - H(a - 1, b))) / E;
+            gz += (w * (H(a, b + 1) - H(a, b - 1))) / E;
+        }
+        [aus.gx, aus.gz] = [gx, gz];
+        return aus;
+    }
+
+    // DER STAND DER EBENE DES GESETZES (`_wieseHang`): ihr Gedächtnis samt seiner Generation `gen` — sie zählt hoch, wenn sich
+    // ändert, was die Höhe der Saat liest (der Rausch der Saat, die Basis-Höhe, der Wasserspiegel des Netzes, das Erbgut — die
+    // Welt wechselt; nie der Erdbau eines Orts); der Takt der Ferne prüft ihn je Ruf (`_nahWieseFernTakt`): eine Kachel einer
+    // älteren Generation baut neu.
+    _wieseEbeneStand() {
+        const L = this._gelaende(),
+            st = this.state;
+        const jetzt = [L.noise, st.terrainBaseHeight, st.waterLevel, L.erbgut];
+        const G = this._wieseEbene || (this._wieseEbene = { gen: 0, stand: [], h: new Map() });
+        if (jetzt.some((x, i) => x !== G.stand[i])) Object.assign(G, { gen: G.gen + 1, stand: jetzt, h: new Map() });
+        return G;
+    }
+
+    // DIE LAGE EINER KACHEL DER FERNE (vor ihrem Bau): die Höhe ihres gezeichneten Bodens an 2 × 2 Proben je Kachel der Nähe,
+    // die ihr Bau liest (derselbe Leser `_bodenSichtAt`; eine Kachel der Nähe jenseits des Chunk-Rings, `_bodenKommtNie`,
+    // trägt nichts und wird nicht gefragt), um den Rand eines Büschels zwischen den Proben geweitet (0,1 m), und die Spanne
+    // der EBENE DES GESETZES über ihren Büscheln (`_wieseHang`: stückweise bilinear — ihre Ecken und die Knoten des Gitters
+    // dazwischen tragen jedes Extrem, die Spanne ist genau; + 1e-4 für die 32 Bit der Instanz) — die Schranke des Takts
+    // (`_wieseFernSchranke`) liest sie. null, solange ein Chunk unter ihr seine Karte noch bekommt (`_bodenSichtChunks`, wie
+    // der Bau); eine Probe ohne Boden zählt nicht. Bis w28-pop-treue maß sie die Neigung an denselben Proben über ±1 m der
+    // gezeichneten Karte (`_slopeAt`, um 0,02 geweitet).
     _wieseFernLage(fx, fz) {
         const NW = AnazhRealm.NAH_WIESE;
-        const [K, k6] = [NW.fern.kachel, NW.kachel];
+        const [K, k6, E] = [NW.fern.kachel, NW.kachel, NW.fern.ebene];
         const n = K / k6;
         const L = { x0: fx * K - 0.34, x1: (fx + 1) * K + 0.34, z0: fz * K - 0.34, z1: (fz + 1) * K + 0.34 };
         Object.assign(L, { y0: Infinity, y1: -Infinity, gx0: Infinity, gx1: -Infinity, gz0: Infinity, gz1: -Infinity });
-        const boden = (px, pz) => {
-            const v = this._bodenSichtAt(px, pz);
-            return v === null ? NaN : v;
-        };
         const eb = {};
+        const stuetzen = (a, b) => {
+            const s = [a, b];
+            for (let t = Math.floor(a / E) + 1; t * E < b; t++) s.push(t * E);
+            return s;
+        };
+        for (const z of stuetzen(L.z0, L.z1))
+            for (const x of stuetzen(L.x0, L.x1)) {
+                this._wieseHang(x, z, eb);
+                [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 1e-4), Math.max(L.gx1, eb.gx + 1e-4)];
+                [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 1e-4), Math.max(L.gz1, eb.gz + 1e-4)];
+            }
         for (let j = 0; j < n; j++)
             for (let i = 0; i < n; i++) {
                 const [x0, z0] = [(fx * n + i) * k6 - 0.34, (fz * n + j) * k6 - 0.34];
@@ -716,10 +929,7 @@ class AnazhRealm_vegetation_wiese {
                     ];
                     const y = this._bodenSichtAt(x, z);
                     if (y === null) continue; // kein Boden an der Probe (Wasser): dort steht kein Büschel
-                    this._slopeAt(x, z, boden, 1, eb, y); // die Ebene wie die der Büschel (über keine Kante gekippt)
                     [L.y0, L.y1] = [Math.min(L.y0, y - 0.1), Math.max(L.y1, y + 0.1)];
-                    [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 0.02), Math.max(L.gx1, eb.gx + 0.02)];
-                    [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 0.02), Math.max(L.gz1, eb.gz + 0.02)];
                 }
             }
         // ganz jenseits des Rings: keine Probe, die Kachel trägt nichts (ihr Bau überspringt jede Kachel der Nähe)
@@ -754,8 +964,9 @@ class AnazhRealm_vegetation_wiese {
                     nie.push([x0, z0, x0 + k6 + 0.68, z0 + k6 + 0.68]);
                     continue;
                 }
+                // die Büschel der Kachel der Nähe, solange ihr Satz gilt (ein alter steht noch auf dem Boden von vorher)
                 const nah = nw.kacheln.get(tx + "," + tz);
-                const b = nah ? nah.bueschel : this._nahWieseKachelBueschel(tx, tz, anteil);
+                const b = nah && !nah.satzAlt ? nah.bueschel : this._nahWieseKachelBueschel(tx, tz, anteil);
                 const karten = this._bodenSichtChunks(x0, z0, x0 + k6 + 0.68, z0 + k6 + 0.68);
                 if (!b || !karten) return null;
                 AnazhRealm._wieseKarten(chunkKarten, karten);
@@ -766,8 +977,17 @@ class AnazhRealm_vegetation_wiese {
             }
         bueschel.sort((a, b) => a.o - b.o);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
+        // je Büschel die EBENE DES GESETZES (`_wieseHang`: gx, gz) — die vierte Zeile seiner Instanz trägt sie (`_nahWieseBestand`),
+        // das Gesetz der Ferne misst an ihr; `ebene` die Generation ihres Stands (eine ältere baut neu, `_nahWieseFernTakt`)
+        const hang = new Float32Array(bueschel.length * 2);
+        const eb = {};
+        const ebene = this._wieseEbeneStand().gen;
+        bueschel.forEach((b, i) => {
+            this._wieseHang(b.x, b.z, eb);
+            [hang[2 * i], hang[2 * i + 1]] = [eb.gx, eb.gz];
+        });
         return Object.assign(
-            { anteil, reich, chunkKarten, wasser, nie, bloecke: [] },
+            { anteil, reich, chunkKarten, wasser, nie, hang, ebene, bloecke: [] },
             this._nahWieseKachelDaten(fx, fz, bueschel, K)
         );
     }
@@ -824,8 +1044,9 @@ class AnazhRealm_vegetation_wiese {
 
     // DER BLOCK einer Kachel der Ferne je Vorlage v (`_nahWieseBestand`): die Ordnung ihrer Büschel dieser Vorlage, je Teil der
     // Ferne die Matrizen (Basis × Teil) und der Tint — gebaut, wenn die Kachel oder die Vorlage neu kommt; der Bestand kopiert nur.
-    // Die vierte Zeile der Matrix bleibt affin (0 0 0 1 — der Bestand schreibt Element 7 die Ordnung, Element 11 den Tod);
-    // bis w28-wiese-schale trug Element 3 die Grenze der Streckung des Büschels.
+    // Die vierte Zeile der Matrix schreibt der Bestand: Element 3 und 7 die Ebene des Gesetzes (gx, gz, `_wieseHang` — das Gesetz
+    // der Ferne misst an ihr), Element 11 die Ordnung (≥ 0; der Tod −1, `_bestandFamilie`). Bis w28-pop-treue trug Element 7
+    // die Ordnung und Element 11 nur den Tod, bis w28-wiese-schale Element 3 die Grenze der Streckung des Büschels.
     _nahWieseFernBlock(k, v, vl) {
         const alt = k.bloecke[v];
         if (alt && alt.flat === vl.flat) return alt;
@@ -834,9 +1055,11 @@ class AnazhRealm_vegetation_wiese {
         const idx = [];
         for (let i = 0; i < k.bueschel.length; i++) if (k.bueschel[i].vorlage === v) idx.push(i);
         const B = { flat: vl.flat, o: new Float64Array(idx.length), farben: new Float32Array(idx.length * 3) };
+        B.hang = new Float32Array(idx.length * 2);
         B.matrizen = vl.fern.map(() => new Float32Array(idx.length * 16));
         idx.forEach((i, n) => {
             B.o[n] = k.bueschel[i].o;
+            B.hang.set(k.hang.subarray(i * 2, i * 2 + 2), n * 2);
             B.farben.set(k.farben.subarray(i * 3, i * 3 + 3), n * 3);
             m4.fromArray(k.basis, i * 16);
             vl.fern.forEach((a, j) => B.matrizen[j].set(mw.multiplyMatrices(m4, a.lokal).elements, n * 16));
@@ -935,10 +1158,6 @@ class AnazhRealm_vegetation_wiese {
                 const e = lf.localMatrix.elements;
                 if (e[12] !== 0 || e[13] !== 0 || e[14] !== 0)
                     throw new Error(`Nah-Wiese: Vorlage ${kopf} Teil ${p} verschiebt ihren Ursprung — die Ferne liest seine Ordnung dort`); // prettier-ignore
-                // die Ebene des Hangs liest der Stoff aus den waagrechten Achsen der Instanz (`_halmFerne`): das Teil dreht nur
-                // um die Hochachse
-                if (Math.max(Math.abs(e[1]), Math.abs(e[4]), Math.abs(e[6]), Math.abs(e[9])) > 1e-6 * Math.abs(e[5]))
-                    throw new Error(`Nah-Wiese: Vorlage ${kopf} Teil ${p} kippt die Hochachse — die Ferne liest den Hang aus ihren waagrechten Achsen`); // prettier-ignore
                 // der Stoff der Ferne kürzt jeden Halm im Jahr um seinen Fuß (`aCenter`; die Ähre trägt den Fuß ihres Stängels
                 // von Geburt, emitGrass) — eine Vorlage ohne Ecken bricht laut
                 if (!lf.geom.attributes.aCenter)
@@ -989,10 +1208,11 @@ class AnazhRealm_vegetation_wiese {
         const B = nw.bestand || (nw.bestand = {});
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
-        const cam = st.camera.position;
+        const cam = this._lodAuge() || st.camera.position; // das EINE Auge (die Stufe des Platzes aus dem Jetzt)
         const fern = nw.fern ? nw.fern.kacheln : new Map();
         // DIE FAMILIEN: je Vorlage die Nähe (jede Senke beider Stufen, Basis × Teil, der Fuß in Element 3 und 7), je Vorlage die
-        // Ferne (die Teile der Stufe L2 mit dem Gesetz der Ferne, `_nahWieseFernBlock`: die Ordnung in 7). Je Block: Zahl und Schreiber an seinen ersten Platz.
+        // Ferne (die Teile der Stufe L2 mit dem Gesetz der Ferne, `_nahWieseFernBlock`: die Ebene des Gesetzes in 3 und 7, die
+        // Ordnung in 11). Je Block: Zahl und Schreiber an seinen ersten Platz.
         const familien = [];
         for (let v = 0; v < 2; v++) {
             const [l1, l2] = [nw.vorlagen.get(`${v}:L1`) || null, nw.vorlagen.get(`${v}:L2`) || null];
@@ -1038,7 +1258,7 @@ class AnazhRealm_vegetation_wiese {
                             senken.forEach((a, j) => {
                                 const arr = a.mesh.instanceMatrix.array;
                                 arr.set(F.matrizen[j], s0 * 16);
-                                for (let n = 0; n < F.o.length; n++) [arr[(s0 + n) * 16 + 7], arr[(s0 + n) * 16 + 11]] = [F.o[n], 0]; // prettier-ignore
+                                for (let n = 0, o = s0 * 16; n < F.o.length; n++, o += 16) [arr[o + 3], arr[o + 7], arr[o + 11]] = [F.hang[2 * n], F.hang[2 * n + 1], F.o[n]]; // prettier-ignore
                                 a.mesh.instanceColor.array.set(F.farben, s0 * 3);
                             }),
                     };
@@ -1534,9 +1754,17 @@ class AnazhRealm_vegetation_wiese {
         k.zustand = null;
     }
 
+    // Eine Kachel der Nah-Streu würfelt neu (ihr Boden, ihr Wasser, ein Feld, ein Weg, eine Räumung, ein gefällter Baum): ihr
+    // Satz gilt als alt, der nächste Takt würfelt ihn an derselben Kachel und tauscht die Blöcke in EINEM Bau — die alten
+    // Pflanzen stehen bis dahin, kein Loch (`_nahWieseKachelFaellt`: die EINE Regel). Bis w28-pop-treue galt das nur für die
+    // Leben-Stufe (`_nahStreuNeuIn`); Boden, Wasser, Weg, Räumung und Fällen ließen die Kachel sofort fallen.
+    _nahStreuKachelFaellt(k) {
+        k.satzAlt = true;
+        k.zustand = null;
+    }
+
     // Die Streu im Rechteck würfelt neu, wo ein Feld sie anders trägt (die Leben-Stufe, `_lebenStufeMalen`): nur die Kacheln, die
-    // stehen — ihr Satz gilt als alt, der nächste Takt würfelt ihn an derselben Kachel und tauscht die Blöcke in EINEM Bau (die
-    // alten Pflanzen stehen bis dahin, kein Loch). Rückgabe: Zahl der Kacheln.
+    // stehen (`_nahStreuKachelFaellt`). Rückgabe: Zahl der Kacheln.
     _nahStreuNeuIn(x0, z0, x1, z1) {
         const ns = this.state.nahStreu;
         if (!ns || !ns.kacheln.size) return 0;
@@ -1546,8 +1774,7 @@ class AnazhRealm_vegetation_wiese {
             for (let tx = Math.floor(x0 / K); tx < Math.ceil(x1 / K); tx++) {
                 const k = ns.kacheln.get(tx + "," + tz);
                 if (!k) continue;
-                k.satzAlt = true;
-                k.zustand = null;
+                this._nahStreuKachelFaellt(k);
                 n++;
             }
         // nur die Streu liest die Stufe: ihr Takt geht (`_standWecken`) — Wuchs, Stufen-Wahl und Cull schlafen weiter
@@ -1574,22 +1801,20 @@ class AnazhRealm_vegetation_wiese {
         // der Bestand für die Wahl der GPU: jeder Austritt und jede Ernte seit dem letzten Takt (auch aus fremden Takten)
         this._nahStreuBestand();
         // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
-        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
-            return 0;
+        const a = this._lodAuge(); // das EINE Auge der Stufen
+        if (!a) return 0;
+        const cam = { x: a.x, y: a.y, z: a.z };
+        if (this._standRuht("nahStreu", 1, { pos: cam, rand: AnazhRealm.STAND_RAND_M }, "karte")) return 0;
         let gefallen = 0;
-        const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
         // Chunk-Neubau oder neues gezeichnetes Wasser → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten
-        // Boden, am alten Ufer).
-        for (const [key, k] of ns.kacheln) {
-            if (!k.chunks) continue;
-            if (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunks)) {
-                this._nahStreuKachelEntsorgen(k);
-                ns.kacheln.delete(key);
-                gefallen++;
-            }
+        // Boden, am alten Ufer): ihr Satz ist alt, sie stehen, bis der Bau unten ihn tauscht (`_nahStreuKachelFaellt`).
+        for (const k of ns.kacheln.values()) {
+            if (!k.chunks || k.satzAlt) continue;
+            if (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunks))
+                this._nahStreuKachelFaellt(k);
         }
         const wunsch = [];
         for (let dz = -reichweite; dz <= reichweite; dz++) {
@@ -1620,7 +1845,7 @@ class AnazhRealm_vegetation_wiese {
             if (
                 gebaut >= NS.kachelnJeTakt ||
                 (deadline && performance.now() > deadline) ||
-                (!k && this._nahKachelWartet(w.tx, w.tz, NS.kachel))
+                ((!k || k.satzAlt) && this._nahKachelWartet(w.tx, w.tz, NS.kachel))
             ) {
                 ns.offen++;
                 continue;
@@ -1631,7 +1856,7 @@ class AnazhRealm_vegetation_wiese {
                     ns.offen++;
                     continue;
                 }
-                // ein alter Satz (`_nahStreuNeuIn`) würfelt an seiner Kachel neu: die Blöcke tauschen unten in EINEM Bau
+                // ein alter Satz (`_nahStreuKachelFaellt`) würfelt an seiner Kachel neu: die Blöcke tauschen unten in EINEM Bau
                 if (k)
                     k = Object.assign(k, {
                         items: satz.items,
@@ -1810,7 +2035,7 @@ class AnazhRealm_vegetation_wiese {
         const neu = ns.bestandNeu === true;
         ns.bestandNeu = false;
         const B = ns.bestand || (ns.bestand = new Map());
-        const cam = st.camera.position;
+        const cam = this._lodAuge() || st.camera.position; // das EINE Auge
         let anders = false;
         for (const fam of neu ? ns.familien.values() : AnazhRealm.STAND_LEER) {
             let F = B.get(fam.key);
@@ -2301,8 +2526,7 @@ class AnazhRealm_vegetation_wiese {
         const k = ns ? ns.kacheln.get(key) : null;
         if (!k) return;
         if (a.tat !== "faellen") return void (k.zustand = null);
-        this._nahStreuKachelEntsorgen(k);
-        ns.kacheln.delete(key);
+        this._nahStreuKachelFaellt(k);
     }
 
     // DIE STÜMPFE DER TAT (feld.K4): wo ein Baum fiel, steht sein Stumpf — die Studio-Art `stumpf` des Boden-Gesetzes am Ort
@@ -2375,10 +2599,19 @@ class AnazhRealm_vegetation_wiese {
     _terrainMaterialAt(x, z, y) {
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
+        // EIN MARSCH DURCH DIE SÄULE (front-brand): der Höhen-Term der Feuchte und die Strata fragen DIESELBE Oberfläche der
+        // Säule (`_voxelSurfaceY`) — sie wird einmal gelesen und beiden gereicht, das Ergebnis bleibt bit-gleich. Bis hier
+        // marschierte jeder Leser mit `y` (der Stoff unter dem Körper `_kontaktStoffAt`, das Graben, das Rad, das Bett des
+        // Brands) zweimal durch dieselbe Säule, je Marsch 17 Dichte-Proben: an der Mess-Wiese kostete die Zündung einer
+        // Bett-Maske mit 14 kahlen Punkten 29 Märsche und 3 654 Einheiten der Stand-Linse, mit EINEM Marsch 15 und 3 080
+        // (mit 9 kahlen: 19 → 10 Märsche, 3 275 → 2 906). Die Wand: gate:stand-takt --narbe N9-FELD.
+        const tief = typeof y === "number" && Number.isFinite(y);
+        const gen2 = this._genVersion() >= 2;
+        const surfY = (gen2 || tief) && this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
         // Γ1 (genese-plan, Lesart Boden): die FEUCHTE hebt die erde-Achse —
         // Ufer und Niederungen sind grabbar weich (erde schlägt stein), die
         // Farbe, die der Spieler sieht, bleibt das Material, das er bekommt.
-        const fw = this._genVersion() >= 2 ? this._feuchteAt(x, z) : 0;
+        const fw = gen2 ? this._feuchteAt(x, z, surfY) : 0;
         const axes = [
             [(f.lebendig || 0) + fw * AnazhRealm.FEUCHTE.erdeGewicht, "erde"],
             [f.dichte || 0, "stein"],
@@ -2392,8 +2625,7 @@ class AnazhRealm_vegetation_wiese {
         // STRATA: mit y schichtet das Material nach Tiefe — mehr als STRATA_STEIN_DEPTH unter `_voxelSurfaceY`
         // wird es "stein", auch wenn die erde-Achse gewinnt (erde/glut/quarz nur am obersten Band).
         // Ohne y bleibt das Verhalten bit-identisch.
-        if (typeof y === "number" && Number.isFinite(y)) {
-            const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
+        if (tief) {
             if (Number.isFinite(surfY)) {
                 const depth = surfY - y;
                 if (depth > AnazhRealm.STRATA_STEIN_DEPTH) {
@@ -2415,11 +2647,7 @@ class AnazhRealm_vegetation_wiese {
     // Ader-Sampler: Single-Octave-Ridge (1−|noise|)² auf (x,z) → vertikale Säulen in 3D, bewusst nicht
     // rotiert, [0,1]. Eigener Seed-Suffix `-iron-bands` (Γ5: re-rollt keinen anderen Welt-Stream).
     _eisenAderAt(x, z) {
-        if (!this._ironBandsNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._ironBandsNoise = new SimplexNoise(seed + "-iron-bands");
-        }
-        const n = this._ironBandsNoise;
+        const n = AnazhRealm._saatJe(this, "wiese.eisen", (s) => new SimplexNoise(s + "-iron-bands")); // das Gedächtnis der Saat
         const SCALE = AnazhRealm.IRON_BANDS.scale;
         const v = n.noise2D(x * SCALE, z * SCALE);
         const nv = 1 - Math.abs(v);
@@ -2431,11 +2659,10 @@ class AnazhRealm_vegetation_wiese {
     // ist mittelwert-neutral (≈1): die Gesamt-Dichte bleibt, nur die Verteilung ändert sich. Main-only
     // Deko, seed-gebunden (alle Peers gleich); tag-neutral (reiner chance-Skalar, diag-arch-tags wacht).
     _clumpAt(x, z, freq) {
-        if (!this._clumpNoise) {
-            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":clump";
-            this._clumpNoise = new SimplexNoise(seed);
-        }
-        return this._clumpNoise.noise2D(x * freq, z * freq);
+        return AnazhRealm._saatJe(this, "wiese.klump", (s) => new SimplexNoise(s + ":clump")).noise2D(
+            x * freq,
+            z * freq
+        );
     }
 
     // STAND-Klumpung je Zweck (phytogenesis-standDensity): Γ5-Suffix ':forest' für Bäume λ~170 m,
@@ -2443,14 +2670,12 @@ class AnazhRealm_vegetation_wiese {
     // (reiner chance-Skalar, diag-arch-tags wacht).
     _placementStandAt(x, z, purpose) {
         const P = AnazhRealm.PLACEMENT_DENSITY;
-        const suffix = purpose === "meadow" ? ":meadow" : ":forest";
-        if (!this._placementNoise) this._placementNoise = {};
-        if (!this._placementNoise[suffix]) {
-            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + suffix;
-            this._placementNoise[suffix] = new SimplexNoise(seed);
-        }
-        const freq = purpose === "meadow" ? P.meadowFreq : P.forestFreq;
-        return this._placementNoise[suffix].noise2D(x * freq, z * freq);
+        const wiese = purpose === "meadow";
+        const n = wiese
+            ? AnazhRealm._saatJe(this, "wiese.stand:meadow", (s) => new SimplexNoise(s + ":meadow"))
+            : AnazhRealm._saatJe(this, "wiese.stand:forest", (s) => new SimplexNoise(s + ":forest"));
+        const freq = wiese ? P.meadowFreq : P.forestFreq;
+        return n.noise2D(x * freq, z * freq);
     }
 
     // DIE EINE Quelle für „wo wächst wie viel": dicht wo feucht + flach + niedrig, licht an Steilhang +
@@ -2500,15 +2725,11 @@ class AnazhRealm_vegetation_wiese {
     // trägt Darts (mulberry32 aus Zelle × Seed), ein Dart steht gegen die ±2-Nachbarzellen per reiner Wahl
     // (prio-Maximum im Konflikt-Radius, Positions-Tiebreak) → reihenfolge-unabhängig (Chunk A→B == B→A).
 
-    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, kein Snapshot; der Wald-Faden zieht dieselbe
+    // Die geteilte Wald-Noise (im Gedächtnis der Saat `_saatJe`, wie die Klumpung — kein Snapshot; der Wald-Faden zieht dieselbe
     // Noise aus demselben Seed, `waldCtx` in voxel-worker.js, gate:worker-dichte Teil W). EIN Instanz, an verschiedenen Frequenzen/Offsets
     // gelesen (die Vorlage sampelt ihre `fbm2` genauso mehrkanalig). 2-Oktav-fbm → [0,1].
     _forestFbm(px, pz) {
-        if (!this._forestNoise) {
-            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":forest";
-            this._forestNoise = new SimplexNoise(seed);
-        }
-        const n = this._forestNoise;
+        const n = AnazhRealm._saatJe(this, "wiese.wald", (s) => new SimplexNoise(s + ":forest"));
         const a = (n.noise2D(px, pz) + 1) * 0.5;
         const b = (n.noise2D(px * 2.7 + 11.3, pz * 2.7 - 5.9) + 1) * 0.5;
         return a * 0.65 + b * 0.35;
@@ -2584,7 +2805,7 @@ class AnazhRealm_vegetation_wiese {
     // Der Welt-Seed als 32-bit-Int (fnv-1a, gecacht) — treibt die Zell-Hashes → alle
     // Peers/Reloads sehen denselben Wald (Γ5: seed-deterministisch, nie Math.random).
     _forestSeedInt() {
-        const s = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const s = AnazhRealm._saatJe(this);
         if (this._forestSeedStr === s && this._forestSeedVal != null) return this._forestSeedVal;
         this._forestSeedStr = s;
         this._forestSeedVal = globalThis.__samenCore.samenHash(s); // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core)

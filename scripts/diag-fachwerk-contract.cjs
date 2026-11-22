@@ -502,8 +502,8 @@ function posenLinse() {
         }
     };
     const GK = W.__gelaendeCore;
-    const L = GK.lageGrund(GK.LAGE_GRUND.seed, W.SimplexNoise);
-    const plan = W.__fachwerkCore.ortPlan(W.__fachwerkCore.genesisLayout(FC.genesisSaat(GK.LAGE_GRUND.seed), welten), { x: 0, z: 0 }, GK.ortCtx(L));
+    const L = GK.lageGrund(W.__samenCore.EINGANG, W.SimplexNoise);
+    const plan = W.__fachwerkCore.ortPlan(W.__fachwerkCore.genesisLayout(FC.genesisSaat(W.__samenCore.EINGANG), welten), { x: 0, z: 0 }, GK.ortCtx(L));
     const Lb = Object.assign({}, L, { erdbau: GK.erdbauNormal(plan.erdbau) });
     const boden = { hoeheAt: (x, z) => GK.hoehe(Lb, x, z, true) };
     const mit = (n, wert) => abwandlung(plan.stationen.find((q) => q.name === n))("", wert);
