@@ -426,6 +426,60 @@ function verlassenWand(A) {
     return { errs, fort: fort.length };
 }
 
+// H13 DER PUFFER GEHÖRT DER GPU (heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
+// Kopie (`_gpuEigen`). Bis heap-register 2 hielt der Sicht-Index (`_sichtZugPuffer`) seine Nullen ein zweites Mal im Heap
+// (Radeon, Wegenetz-Fahrt am Richter-Preis: `_sichtTiefeZ.auftraege[]` 13,5 MB). Die Linse fährt den echten Auftrag dreimal
+// an einem Zug mit 40 000 Indizes: gelegt (einmal hochgeladen, die Kopie leer, Typ und Zahl stehen), wieder (kein zweites
+// Legen), nach dem Fall auf der GPU (`_gpuAbschied`, der Kehraus) — der Index legt sich neu, nie ein Hochladen aus Leere.
+function gpuEigenWand(A) {
+    const hoch = [];
+    const register = new Map();
+    const rend = {
+        _attributes: {
+            update: (a, typ) => {
+                if (register.has(a)) return;
+                register.set(a, { type: typ === 2 ? "indexAttributes" : "attributes" });
+                hoch.push({ name: a.name, n: a.array.length });
+            },
+            delete: (a) => register.delete(a),
+        },
+        info: { memoryMap: register },
+    };
+    const w = weltVon(A, { renderer: rend });
+    const puffer = (label) => ({ label });
+    const dev = { createBuffer: (d) => puffer(d.label), createBindGroup: () => ({}) };
+    const be = { get: (a) => ({ buffer: register.has(a) ? a : null }) };
+    const Z = {
+        art: "frueh",
+        nIdx: 40000,
+        n: 100,
+        tafelPuffer: puffer("tafel"),
+        auftrag: { name: "sicht:auftrag", array: new Uint32Array(8) },
+    };
+    Object.assign(Z, { geom: { setIndex: (i) => (Z.geom.index = i) }, mesh: {}, zielPuffer: puffer("ziel"), zielKap: 1000, uni: puffer("uni") }); // prettier-ignore
+    const G = { leer: puffer("leer"), satzLayout: {} };
+    const zug = () => A.prototype._sichtZugPuffer.call(w, Z, Z, dev, rend, be, G, puffer("quelle"));
+    const errs = [];
+    zug();
+    const erst = Z.index;
+    const idx = () => hoch.filter((h) => /^sicht:index/.test(h.name));
+    if (erst.array.length > 0)
+        errs.push(`H13 _sichtZugPuffer: der Sicht-Index hält nach dem Hochladen seine CPU-Kopie (${((erst.array.byteLength / 1048576) || 0).toFixed(2)} MB, Soll 0 — _gpuEigen)`); // prettier-ignore
+    if (erst.array.constructor.name !== "Uint32Array" || erst.count < Z.nIdx)
+        errs.push(`H13 _gpuEigen: der Sicht-Index verlor Typ oder Zahl (${erst.array.constructor.name}, count ${erst.count}, Soll Uint32Array ≥ ${Z.nIdx})`); // prettier-ignore
+    if (idx().length !== 1 || idx()[0].n < Z.nIdx)
+        errs.push(`H13 _sichtZugPuffer: ${idx().length}× hochgeladen, zuerst ${idx()[0] ? idx()[0].n : 0} Indizes (Soll 1× mit ≥ ${Z.nIdx})`); // prettier-ignore
+    zug();
+    if (Z.index !== erst || idx().length !== 1) errs.push("H13 _sichtZugPuffer: der stehende Sicht-Index legte sich neu (Soll: er steht)"); // prettier-ignore
+    w._gpuAbschied(erst);
+    zug();
+    if (erst.array.length === 0 && (Z.index === erst || idx().length !== 2 || idx()[1].n < Z.nIdx))
+        errs.push("H13 _gpuAbschied: der gefallene Sicht-Index legte sich nicht neu (Soll: ein frischer, ganz hochgeladen — nie aus der leeren Kopie)"); // prettier-ignore
+    if (erst.array.length === 0 && !register.has(Z.index))
+        errs.push("H13 _sichtZugPuffer: der Zug zeichnet einen Index ohne GPU-Puffer");
+    return { errs, mb: erst.array.byteLength / 1048576, gelegt: idx().length };
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
@@ -1831,6 +1885,11 @@ function selbsttest() {
     const v12Alt = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryLoslassen", "[src._ruheSeit, src._verlassen] = [this.state.spielZeit, true];", "src._ruheSeit = this.state.spielZeit;"))); // prettier-ignore
     const v12Alle = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryRuheDeckel", "const frist = v._verlassen ? kehraus : bestellt;", "const frist = kehraus;"))); // prettier-ignore
     t("Verlassener Körper: ohne Marke rot beim Verlassenen, Kehraus für alle rot beim Bestellten, der Stamm grün", v12Alt.errs.some((e) => /verlassene Körper ruht/.test(e)) && v12Alle.errs.some((e) => /bestellte Körper fiel/.test(e)) && !verlassenWand(A).errs.length); // prettier-ignore
+    // DER PUFFER DER GPU (H13): das Hochladen mit Kopie (der Stand vor heap-register 2) ist rot bei der CPU-Kopie, der Fall
+    // ohne Marke (der Abschied hebt nur die Version) rot beim Neu-Legen, der Stamm grün
+    const g13Kopie = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_sichtZugPuffer", "AnazhRealm._gpuEigen(rend, Z.index, 2);", "rend._attributes.update(Z.index, 2);"))); // prettier-ignore
+    const g13Fall = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_gpuAbschied", 'attr.__gpuEigen = "gefallen";', ""))); // prettier-ignore
+    t("Puffer der GPU: mit Kopie rot beim Sicht-Index, der Fall ohne Marke rot beim Neu-Legen, der Stamm grün", g13Kopie.errs.some((e) => /hält nach dem Hochladen seine CPU-Kopie/.test(e)) && g13Fall.errs.some((e) => /legte sich nicht neu/.test(e)) && !gpuEigenWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1891,6 +1950,9 @@ function main() {
     errs.push(...v12.errs);
     console.log(`H12 der verlassene Foundry-Körper: ${v12.fort} nach dem Kehraus-Gesetz gefallen (Soll 1), bestellt und gehalten bleiben (${v12.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     console.log(`H11 die Vorlage des Bauplans: ${v11.merges}× verschmolzen für zwei Bauten und einen Geist, nach dem letzten gefallen (${v11.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const g13 = gpuEigenWand(A);
+    errs.push(...g13.errs);
+    console.log(`H13 der Sicht-Index der GPU: CPU-Kopie ${g13.mb.toFixed(2)} MB nach dem Hochladen (Soll 0), ${g13.gelegt}× gelegt über Fall und Neu-Legen (${g13.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
