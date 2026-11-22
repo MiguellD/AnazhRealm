@@ -11,3 +11,5 @@ w28-front-planet-leben karte2.planet.kopplung.wetter-welt#3,karte2.planet.kopplu
 # z671 (main 68634ee8, 22.11. 14:30): die Technik wächst aus Voraussetzungen, die Ware liegt auf einem Weg mit Fahrer — beide an der Front; die Runde 5 misst sie
 w28-front-technik karte2.mensch.wirtschaft.technik#1
 w28-wirtschaft-wende karte2.mensch.wirtschaft.handel#1
+# z672 (main e88a0b53, 22.11. 15:30): die Druckwelle als EIN Gesetz — reaktion#2 steht hinter der Front, der Anspruch nennt #1 mit (lückenlose Folge)
+w28-front-druckwelle karte2.same.physik.reaktion#1,karte2.same.physik.reaktion#2
