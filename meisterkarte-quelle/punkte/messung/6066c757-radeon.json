@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "radeon",
- "zeit": "2026-11-22T17:15:08.290Z",
+ "zeit": "2026-11-22T17:45:13.467Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.geist.generationen#1": {
@@ -392,6 +392,198 @@
    },
    "zeit": "2026-11-22T17:15:08.290Z",
    "abdruck": "6c81432abc1c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.strom#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s)",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 33.5,
+   "fremd": {
+    "s": 36.8,
+    "takte": 12,
+    "fremdS": 602.33,
+    "kerne": 16.37,
+    "fensterKerne": 17.11,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
+      484.69
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32012-profil-s0RJ28 --no-p",
+      32.7
+     ],
+     [
+      "sh.exe werkzeug/buche.sh",
+      5.44
+     ]
+    ],
+    "dienerS": 42.59,
+    "diener": [
+     [
+      "System",
+      17.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      15.23
+     ]
+    ],
+    "geraetS": 43.48,
+    "geraet": [
+     [
+      "svchost.exe",
+      19.66
+     ],
+     [
+      "MsMpEng.exe",
+      13.83
+     ],
+     [
+      "SearchIndexer.exe",
+      8.11
+     ]
+    ],
+    "eigenS": 90.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-22T17:40:53.608Z",
+   "abdruck": "9aaf2929b46e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.jenseits#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — im /umstellen dorf seit 28.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — im /umstellen dorf seit 28.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.8,
+   "fremd": {
+    "s": 34.9,
+    "takte": 11,
+    "fremdS": 570.77,
+    "kerne": 16.339,
+    "fensterKerne": 17.331,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
+      450
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32012-profil-s0RJ28 --no-p",
+      28.56
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.45
+     ]
+    ],
+    "dienerS": 33.89,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.92
+     ],
+     [
+      "System",
+      10.03
+     ]
+    ],
+    "geraetS": 38.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      15.63
+     ],
+     [
+      "MsMpEng.exe",
+      13.86
+     ],
+     [
+      "SearchIndexer.exe",
+      7.05
+     ]
+    ],
+    "eigenS": 89.25,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-22T17:41:31.367Z",
+   "abdruck": "238deb088d66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.gestalt#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — im /umstellen stadt-voll seit 78.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau",
+   "exit": 3,
+   "minuten": 1.34,
+   "grund": "Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — im /umstellen stadt-voll seit 78.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 79.5,
+   "fremd": {
+    "s": 84,
+    "takte": 31,
+    "fremdS": 1402.88,
+    "kerne": 16.692,
+    "fensterKerne": 17.271,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
+      1172.72
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32012-profil-s0RJ28 --no-p",
+      74.92
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      16.3
+     ]
+    ],
+    "dienerS": 60.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      31.61
+     ],
+     [
+      "System",
+      15.08
+     ]
+    ],
+    "geraetS": 83.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      38.94
+     ],
+     [
+      "MsMpEng.exe",
+      23.22
+     ],
+     [
+      "SearchIndexer.exe",
+      16.22
+     ]
+    ],
+    "eigenS": 218.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-22T17:45:13.467Z",
+   "abdruck": "8b25433a2a61",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
