@@ -10,6 +10,7 @@
 # faehrt dann deren vorderen Teil in UMGEKEHRTER Reihe; keines misst, was das andere am Kopf ROT urteilte (GRUEN und UNGEMESSEN zaehlen nicht).
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
-runde 5 kopf 161ff792cc8d02410bfe44c7e420870d03381ec7 start 2026-11-22T17:27:47Z vorher 6066c7573242c2abd89f509d7037c181b7efefc6
-gtx offen 0/0 station - fortschritt 2026-11-22T17:27:47Z alarm 2026-11-22T17:50:50Z liste -
-radeon wartet 0/0 station - fortschritt 2026-11-22T17:27:47Z alarm 2026-11-22T17:44:24Z liste -
+runde 6 kopf 30e01e758cff5c284a4cd591b5dfce7e3664518e start 2026-11-22T18:29:44Z vorher 161ff792cc8d02410bfe44c7e420870d03381ec7
+gtx offen 0/0 station - fortschritt 2026-11-22T18:29:44Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-22T18:29:44Z alarm - liste -
+notiz 2026-11-22T18:29:44Z Runde 5 am 161ff792 sprang auf 30e01e75 (gtx offen 0/0, radeon wartet 0/0): der GTX-Dienst fuhr die Liste der Runde 4 am 6066c757 weiter (41/246) und las die Runde 5 nie, die Radeon wartete 60 min auf seine Liste; main traegt den Werkbank-Schnitt z675 (Anlauf 74 auf 5 s, Klasse 44 Stationen an stadt-voll)
