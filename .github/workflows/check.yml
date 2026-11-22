@@ -964,17 +964,18 @@ jobs:
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               # Drei Teile in drei Gruppen (ein Schritt trug 1 069–1 162 s und riss mit seiner Gruppe die 20-min-Frist, Zug 15b
               # 40070549989): jede Probe samt ihren Tätern in GENAU einem Teil, die längste zuerst in den leichtesten nach ihrer
-              # gemessenen Dauer (DAUER_S der Linse); je Teil ein Boot für den Selbsttest, einer für die Proben.
+              # gemessenen Dauer (DAUER_S der Linse); je Teil EIN Boot: der Selbsttest fährt je Probe zuerst den Grund-Lauf (sein
+              # Urteil ist das der Probe), dann jeden Täter nur in den Teilen seines Urteils (Kreatur-Takt 22.11.).
               # `npm run gate:kreatur-takt` fährt alle drei.
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && node scripts/diag-kreatur-takt.cjs --teil=1/3
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3
 
             - name: Die Kreatur-Linse Teil 2
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3 && node scripts/diag-kreatur-takt.cjs --teil=2/3
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3
 
             - name: Die Kreatur-Linse Teil 3
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 4
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3 && node scripts/diag-kreatur-takt.cjs --teil=3/3
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3
 
             - name: Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15
@@ -1322,6 +1323,14 @@ jobs:
               # werkbank licht --tag --kurz: Mitternacht, Mittag und die Grobschritte um den Horizont, der Aufgang im Feinschritt
               # 0,002 (SPRUNG gegen den steilsten Feinschritt des Lichts) — lokal 2,5 min samt Boot (Radeon)
               run: npm run gate:tag-achse:echt
+
+            - name: Nacht-Lichter auf der Karte (jede sichtbare Quelle in 50 m leuchtet ihren Boden um mindestens 1 EV, die Gasse in der Kelvin-Farbe)
+              timeout-minutes: 5
+              if: ${{ !cancelled() && matrix.karte == 'omen' }}
+              # werkbank licht --nacht (erleben.bild.nacht S1 S2, nacht-lichter-2): stadt-voll und Dorf in dritter Person um Mitternacht,
+              # je Quelle der Bodenfleck mit und ohne die Lichter des Orts, die Pose ohne Licht-Karte muss ROT sein (Radeon: Stadt 13 von 13
+              # gegen 3 von 13), Kelvin der Leuchten der Gasse; lokal 3 min samt Boot (Radeon)
+              run: npm run gate:nacht-licht:echt
 
             - name: Tafeln der Atmosphaere auf der Karte (jede Tafel gezeichnet, die verzoegerte Pipeline von Psi_ms haelt die Kette offen)
               timeout-minutes: 5
