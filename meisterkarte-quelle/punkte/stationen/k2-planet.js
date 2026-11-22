@@ -4769,7 +4769,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
             // S2 Schnee- und Baumgrenze (Gesetz) gegen die Erd-Höhe der Breite der Heimat
             aus[2] = {
                 werte: { schneegrenzeM: R(heim.schnee), baumgrenzeM: R(heim.baum), hoechsterM: R(heim.hoechsterM) },
-                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))) },
+                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))), breiteAnkerGrad: R(faden.anker[0]) },
                 auge: await M.auge("wetter-klima-s2", { ort: "wiese" }, { uhr: 0.5 }),
                 nicht: "kein Gebirge in Erd-Höhe: die Höhe ist gestaucht (gelaende-core TEMPERATUR 0,11 K/m statt 0,0065 K/m), der höchste Grund binnen 6 km liegt " + R(heim.hoechsterM) + " m über dem Meer",
             };
@@ -4828,10 +4828,23 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 nicht: "kein Gebirge in Erd-Höhe (Höhe gestaucht)",
                 leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m",
                 // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
-                zeuge: zMin({ grenzen: 2 }),
-                zeugeText: "Schnee- und Baumgrenze am höchsten Grund gefunden",
-                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800 } },
-                attrappen: [{ name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) }],
+                // DIE QUELLE DER ERD-REFERENZ IN DER STATION (pm-front-f1): ref 2 900 / 2 100 m gilt nur für 43–46° N (Alpen, die refQuelle) —
+                // der Zeuge trägt die Breite des Ankers, den der Faden der Welt nennt (planet-anker); steht er außerhalb des Bands (andere
+                // Messungen sahen −45,5°), vergliche die Sprosse gegen eine Erd-Höhe ohne Quelle für ihre Breite
+                zeuge: (roh) => {
+                    const f = zMin({ grenzen: 2 })(roh);
+                    if (f) return f;
+                    const b = roh.zeuge.breiteAnkerGrad;
+                    if (!(typeof b === "number" && Number.isFinite(b))) return "die Breite des Ankers fehlt — die Erd-Referenz 43–46° N hat keinen Ort";
+                    if (b < 43 || b > 46) return "der Anker der Heimat liegt auf " + b + "° — die Erd-Referenz (Alpen, Ohmura 1992 · Körner & Paulsen 2004) gilt für 43–46° N, für diese Breite trägt die Station keine Quelle";
+                    return null;
+                },
+                zeugeText: "Schnee- und Baumgrenze am höchsten Grund gefunden, der Anker auf 43–46° N",
+                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: 43.4 } },
+                attrappen: [
+                    { name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) },
+                    { name: "Erd-Höhe am Anker der Südhalbkugel (−45,5°)", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: -45.5 } } },
+                ],
             },
             3: {
                 u: { orte: 30, radiusGrad: [14, 20] },
