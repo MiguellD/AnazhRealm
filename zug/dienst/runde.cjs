@@ -3,7 +3,10 @@
 //   1 EIN Mess-Kopf je Runde in EINER Datei (zug/runde.txt im Zweig koordination): Kopf, Startzeit, Stand je Geraet. Jedes Geraet
 //     faehrt seine ganze Liste an DIESEM Kopf zu Ende; die naechste Runde nimmt den main-Kopf des Moments, in dem alle Geraete durch
 //     sind — so steht nach jeder Runde jede Station als Paar am SELBEN Kopf (die Karte 2 bucht daraus).
-//   2 die Reihe: zuerst die Stationen OHNE gebucht gruenes Paar (ungemessen, rot, neu in der Tafel), danach die gebucht gruenen.
+//   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht · K2 ohne Urteil · K3 GRUEN · K4 ROT anderes
+//     | der SCHWANZ K5 ROT „Leser fehlt" · K6 ROT „Umfang nicht erzeugbar". Bleibt einem Geraet nur der Schwanz und ist main weiter als
+//     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen); das zweite Geraet misst nur, was das erste am Kopf
+//     GRUEN urteilte, und WARTET (Zustand wartet, kein Alarm), bis jenes K1–K4 hinter sich hat.
 //   3 frisches ROT an einer am vorigen Mess-Kopf gruenen Station: NUR diese Station wird ueber die Koepfe dazwischen halbiert
 //     (`faelle` nennt sie, richter.sh --fall halbiert und nennt den Taeter-Kopf).
 //   4 Halt, Weichen, Neustart: der Stand je Geraet steht in der Datei, die Liste ist eingefroren — es geht an derselben Station weiter.
@@ -13,17 +16,20 @@
 // dazwischen), beginnt es von vorn am neuen Stand. Es gibt nie einen Merge und nie einen Konflikt — dieselbe Klempnerei wie
 // n0611/stufe/melde.cjs und richter-werk.cjs post.
 // Verben (repo = ein Klon mit origin; Zeiten UTC):
-//   lies <repo> <geraet>                    → "<n> <kopf40> <vorher40|-> <zustand> <liste>" oder "-" (keine Runde)
+//   lies <repo> <geraet> [--voll]           → "<n> <kopf40> <vorher40|-> <zustand> <liste>" oder "-" (keine Runde); --voll haengt
+//                                           <getragen|-> an („-": eine Zeile von vor dem 21.11. — ihre Liste kennt keinen Schwanz)
 //   anlegen <repo> <kopf40>                 die erste Runde aus dem Bestand (nur, wenn die Datei keine traegt)
-//   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L]   die eigene Zeile
-//   durch <repo> <geraet> <kopf40> <main40> [--erledigt n]  die eigene Liste ist durch; sind alle durch und main weiter: die naechste Runde
+//   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L] [--getragen n]   die eigene Zeile
+//   durch <repo> <geraet> <kopf40> <main40> [--erledigt n] [--getragen n]  die eigene Liste ist durch (getragen: Schwanz-Stationen, deren
+//                                           rotes Urteil vom frueheren Kopf steht); sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
 //   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
 //   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
-//   reihe <messung-dir> <geraet> <liste> [--kopf <sha> [--erst <geraet>] [--vorher <sha> --beruehrt <json>] [--git <repo> --ref <ref>]]
-//                                           → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund); das Gesetz der Liste
-//                                           (1) nur GRÜN des ersten Geräts, (2) ROT am Vor-Kopf nur mit Berührung — Exit 6 ohne Quelle,
+//   reihe <messung-dir> <geraet> <liste> [--karte <json>] [--anspruch <datei>] [--kopf <sha> --erst <geraet> [--git <repo> --ref <ref>]]
+//                                           --karte: nur die Front der Karte 2 (je Leiter Sprosse heute, Glieder jede ungebuchte)
+//                                           → "<K1–K4,..>|<Schwanz K5 K6,..>" (stderr: die Klassen mit Zahl); mit --erst nur, was das
+//                                           erste Geraet am Kopf GRUEN urteilte (ohne Schwanz) — Exit 6 ohne dessen Mess-Datei,
 //                                           Exit 7 + "gesetz-leer", wenn keine Station bleibt
 //   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
@@ -53,7 +59,7 @@ const zeigIn = (repo) => (ref, pfad) => { try { return cp.execFileSync("git", ["
 // ≈ 50 000 Zeichen über der Windows-Grenze 32 767 — „node: Argument list too long“, die Runde stand `laeuft 0/0 … liste |`). Jedes
 // Listen-Argument darf „@<datei>“ sein (Komma, „|“ oder eine Station je Zeile); der Dienst reicht seine Listen nur noch so.
 const listenText = (s) => (String(s || "").startsWith("@") ? fs.readFileSync(String(s).slice(1), "utf8") : String(s || ""));
-// GESETZ_LEER — die Liste, die das Gesetz der Liste (reihe --erst/--vorher) ganz leerte: keine Station, und doch eine Liste (die Zeile darf
+// GESETZ_LEER — die Liste, die das Gesetz der Liste (reihe --erst) ganz leerte: keine Station, und doch eine Liste (die Zeile darf
 // „durch“ stehen, ohne als Listen-Bruch zu gelten); liste() zählt sie nie als Station
 const GESETZ_LEER = "gesetz-leer";
 const liste = (s) => listenText(s).split(/[,|\s]+/).map((x) => x.trim()).filter((x) => x && x !== "-" && x !== GESETZ_LEER);
@@ -66,7 +72,11 @@ const KOPF = [
     "# sind. Geschrieben NUR von zug/dienst/runde.cjs (frischer Stand von origin/koordination, die eine Zeile ersetzt, commit-tree,",
     "# Push — lehnt er ab, von vorn; nie ein Merge). Von Hand nichts aendern. Je Runde und je Geraet EINE Zeile:",
     "# runde <n> kopf <sha40> start <iso> vorher <sha40|->",
-    "# <geraet> <offen|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <ungebucht,..>|<gebucht gruen,..>",
+    "# <geraet> <offen|wartet|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <K1–K4,..>|<Schwanz,..> getragen <n>",
+    "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN · K4 ROT anderes | Schwanz:",
+    "# K5 ROT Leser fehlt · K6 ROT Umfang nicht erzeugbar. Bleibt nur der Schwanz und ist main weiter, traegt sein ROT vom frueheren Kopf",
+    "# (getragen). Das zweite Geraet wartet (wartet: kein Alarm), bis das erste K1–K4 hinter sich hat, und misst nur dessen GRUEN am Kopf.",
+    "# Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.",
     "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
 function lies(text) {
@@ -78,19 +88,22 @@ function lies(text) {
         else if (w[0] === "runde") r.runde = { n: Number(w[1]), kopf: w[3], start: w[5], vorher: w[7] || "-" };
         else if (GERAETE.includes(w[0])) {
             const [e, s] = String(w[2] || "0/0").split("/");
-            r.g[w[0]] = { zustand: w[1], erledigt: Number(e) || 0, gesamt: Number(s) || 0, station: w[4] || "-", fortschritt: w[6] || "-", alarm: w[8] || "-", liste: w[10] || "-" };
+            // getragen (21.11.): die Zahl der Schwanz-Stationen, deren ROT vom frueheren Kopf steht — und die Marke der Liste „vorn|Schwanz“;
+            // fehlt das Feld, ist es eine Zeile von vor dem 21.11. (null: <ungebucht>|<gebucht gruen>, kein Schwanz)
+            r.g[w[0]] = { zustand: w[1], erledigt: Number(e) || 0, gesamt: Number(s) || 0, station: w[4] || "-", fortschritt: w[6] || "-", alarm: w[8] || "-", liste: w[10] || "-",
+                getragen: w[11] === "getragen" ? Number(w[12]) || 0 : null };
         }
     }
     return r;
 }
-const leer = (zeit) => ({ zustand: "offen", erledigt: 0, gesamt: 0, station: "-", fortschritt: zeit, alarm: "-", liste: "-" });
+const leer = (zeit) => ({ zustand: "offen", erledigt: 0, gesamt: 0, station: "-", fortschritt: zeit, alarm: "-", liste: "-", getragen: null });
 function text(r) {
     const z = [...KOPF];
     if (r.runde) {
         z.push(["runde", r.runde.n, "kopf", r.runde.kopf, "start", r.runde.start, "vorher", r.runde.vorher || "-"].join(" "));
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
-            z.push([g, e.zustand, e.erledigt + "/" + e.gesamt, "station", e.station || "-", "fortschritt", e.fortschritt || "-", "alarm", e.alarm || "-", "liste", e.liste || "-"].join(" "));
+            z.push([g, e.zustand, e.erledigt + "/" + e.gesamt, "station", e.station || "-", "fortschritt", e.fortschritt || "-", "alarm", e.alarm || "-", "liste", e.liste || "-", ...(e.getragen === null || e.getragen === undefined ? [] : ["getragen", e.getragen])].join(" "));
         }
         z.push(...(r.notizen || []));
     }
@@ -184,7 +197,7 @@ if (was === "lies") {
     const r = lies(zeigIn(repo)("refs/runde/koord", DATEI));
     if (!r.runde) { console.log("-"); process.exit(0); }
     const e = r.g[g] || leer(r.runde.start);
-    console.log([r.runde.n, r.runde.kopf, r.runde.vorher || "-", e.zustand, e.liste || "-"].join(" "));
+    console.log([r.runde.n, r.runde.kopf, r.runde.vorher || "-", e.zustand, e.liste || "-", ...(arg.includes("--voll") ? [e.getragen === null ? "-" : e.getragen] : [])].join(" "));
 } else if (was === "anlegen") {
     const [repo, kopf] = arg;
     if (!/^[0-9a-f]{40}$/.test(String(kopf))) { console.error("anlegen: <kopf40> fehlt"); process.exit(2); }
@@ -211,8 +224,9 @@ if (was === "lies") {
                 (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " neu gebaut nach Listen-Bruch: vorher " + vorZ + " " + vor + "/" + vorG + " liste " + e.liste + " seit " + e.fortschritt + " — die leere Fahrt gilt nicht als gemessen");
             e.liste = listenText(opt("liste")).replace(/\s+/g, "") || "-";
         }
-        // FORTSCHRITT: eine Station mehr, der Beginn der Liste, das Ende — nie das blosse Halten oder Weichen
-        if (e.erledigt > vor || (zustand === "laeuft" && vorZ === "offen") || zustand === "durch") { e.fortschritt = z; e.alarm = "-"; }
+        if (opt("getragen") !== null) e.getragen = Number(opt("getragen")) || 0;
+        // FORTSCHRITT: eine Station mehr, der Beginn der Liste (auch nach dem Warten), das Ende — nie das blosse Halten oder Weichen
+        if (e.erledigt > vor || (zustand === "laeuft" && (vorZ === "offen" || vorZ === "wartet")) || zustand === "durch") { e.fortschritt = z; e.alarm = "-"; }
         r.g[g] = e;
         return {};
     });
@@ -230,6 +244,7 @@ if (was === "lies") {
             if (!traegtListe(e)) { leerDurch = true; return false; } // nie „durch“ ohne Liste (LISTE ROT beim Rufer)
             if (e.zustand !== "durch") { e.zustand = "durch"; e.station = "-"; e.fortschritt = iso(jetzt()); e.alarm = "-"; r.g[g] = e; neu = true; }
             if (opt("erledigt") !== null && e.erledigt !== Number(opt("erledigt"))) { e.erledigt = Number(opt("erledigt")); neu = true; } // der Endstand: was am Kopf einen Eintrag trägt
+            if (opt("getragen") !== null && e.getragen !== Number(opt("getragen"))) { e.getragen = Number(opt("getragen")) || 0; neu = true; } // der Schwanz, dessen ROT vom früheren Kopf steht
         }
         if (alleDurch(r) && /^[0-9a-f]{40}$/.test(String(main)) && main !== r.runde.kopf) { oeffne(r, main); neu = true; }
         return neu ? {} : false;
@@ -273,7 +288,8 @@ if (was === "lies") {
         }
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
-            if (e.zustand === "durch") continue;
+            // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K4 des ersten wartet, steht nicht still — kein Alarm
+            if (e.zustand === "durch" || e.zustand === "wartet") continue;
             const seit = Date.parse(e.fortschritt === "-" ? r.runde.start : e.fortschritt), min = Math.floor((t - seit) / 60000);
             if (!(min > ALARM_MIN)) continue;
             if (e.alarm !== "-" && t - Date.parse(e.alarm) < WIEDER_MIN * 60000) continue;
@@ -285,82 +301,102 @@ if (was === "lies") {
     });
     for (const z of zeilen) console.log(z);
 } else if (was === "reihe") {
-    // 2 DIE REIHE: ungebucht vor gebucht gruen; darin wer am laengsten ohne Messung auf diesem Geraet ist zuerst, wessen letzte Fahrt
-    // LANG_MIN oder laenger lief zuletzt (die Reihe von n0611/stufe/reihe.cjs, 12.11., jetzt EINE Quelle fuer beide Geraete).
-    // GEBUCHT GRUEN: am juengsten Kopf, an dem BEIDE Geraete ein Urteil der Station tragen (ein Paar), sind beide GRUEN.
+    // 2 DIE REIHE FOLGT DER ERWARTETEN ÄNDERUNG (Koordinator 21.11.; Befund am 31ea3847: die GTX brauchte 32 h für 1 428 Stationen, 8,0 h
+    // davon für 521 ROT „Umfang nicht erzeugbar“ und 0,7 h für 132 ROT „Leser fehlt“ — Urteile, die am Gerät nicht hängen und sich ohne
+    // die fehlende Fähigkeit nie ändern; 34 GRÜN kosteten 1,1 h). EINE Quelle für beide Geräte. Jede Station bekommt eine Klasse aus
+    // ihrem JÜNGSTEN Eintrag über ALLE Köpfe (dieses Gerät; trägt es keinen, das andere) — nie nur aus dem Vor-Kopf, sonst käme eine
+    // getragene Station in der nächsten Runde als „ohne Urteil“ zurück:
+    //   K1 beansprucht (--anspruch <datei>: zug/anspruch.txt, je Zeile „<zweig> <id,id,…>“, # Kommentar; fehlt sie: leer)
+    //   K2 ohne Urteil (nie gemessen, neu in der Tafel, jüngster Eintrag UNGEMESSEN) · K3 jüngstes Urteil GRÜN · K4 ROT, anderes
+    //   K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — der SCHWANZ (die Fähigkeit fehlt; „Leser fehlt: Umfang nicht erzeugbar“
+    //   ist K6: zuerst wird nach dem Umfang gefragt)
+    // Innerhalb einer Klasse die Reihe von n0611/stufe/reihe.cjs (12.11.): wer am längsten ohne Messung auf diesem Gerät ist zuerst, wessen
+    // letzte Fahrt LANG_MIN oder länger lief zuletzt. Ausgabe „<K1–K4>|<K5 K6>“ — die Grenze reist in der eingefrorenen Liste mit, die
+    // Dienste fahren vorn und Schwanz in getrennten Fahrten (kein Teil mischt beide).
+    // DAS ZWEITE GERÄT (--erst <geraet> --kopf <sha>): nur die Stationen, die das erste Gerät am Kopf GRÜN urteilte (ein Paar wird nur
+    // GRÜN, wenn beide GRÜN sind), ohne Schwanz; die Mess-Datei liest es am Ursprung (--git <repo> --ref <ref>, sonst der Ordner <dir>).
+    // Ohne sie: Exit 6 beim Namen (nie still die ganze Liste); bleibt keine Station: GESETZ_LEER (Exit 7) — durch ohne Fahrt.
     const [dir, g, l] = arg;
-    const ids = liste(l);
-    const koepfe = {};
+    let ids = liste(l);
+    const anders = g === "gtx" ? "radeon" : "gtx";
+    const juengst = { gtx: {}, radeon: {} }, letzt = {};
     let dateien = [];
-    try { dateien = fs.readdirSync(dir).filter((f) => /^[0-9a-f]{8}-(gtx|radeon)\.json$/.test(f)); } catch { /* ohne Baum: die Reihe der Tafel */ }
+    try { dateien = fs.readdirSync(dir).filter((f) => /^[0-9a-f]{8}-(gtx|radeon)\.json$/.test(f)); } catch { /* ohne Baum: alle ohne Urteil */ }
+    const drinIds = new Set(ids);
     for (const f of dateien) {
         let m;
         try { m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); } catch { continue; }
-        (koepfe[f.slice(0, 8)] = koepfe[f.slice(0, 8)] || {})[f.slice(9, -5)] = m;
-    }
-    const letzt = {}, paar = {};
-    for (const [kopf, je] of Object.entries(koepfe)) {
-        const m = je[g];
-        if (m) for (const o of [m.je || {}, m.ungemessen || {}])
+        const gg = f.slice(9, -5), J = juengst[gg];
+        for (const [o, ung] of [[m.je || {}, false], [m.ungemessen || {}, true]])
             for (const [id, e] of Object.entries(o)) {
-                const z = String((e && e.zeit) || m.zeit || "");
-                if (!letzt[id] || z > letzt[id].z) letzt[id] = { z, min: Number(e && e.minuten) || 0 };
+                if (!drinIds.has(id)) continue;
+                const z = String((e && e.zeit) || m.zeit || ""), u = ung || !e || !!e.ungemessen || startFehler(e);
+                // ein jüngeres UNGEMESSEN schlägt den älteren Lauf, bei gleicher Zeit auch (wie urteil())
+                if (!J[id] || z > J[id].z || (z === J[id].z && u)) J[id] = { z, u, e };
+                if (gg === g && (!letzt[id] || z > letzt[id].z)) letzt[id] = { z, min: Number(e && e.minuten) || 0 };
             }
-        if (!je.gtx || !je.radeon) continue;
-        for (const id of ids) {
-            const a = urteil(je.gtx, id), b = urteil(je.radeon, id);
-            if (!a || !b) continue;
-            const z = [String(((je.gtx.je || {})[id] || {}).zeit || je.gtx.zeit || ""), String(((je.radeon.je || {})[id] || {}).zeit || je.radeon.zeit || "")].sort()[1];
-            if (!paar[id] || z > paar[id].z) paar[id] = { z, kopf, gruen: a === "GRUEN" && b === "GRUEN" };
-        }
     }
+    const anspruch = new Set(), jeZweig = new Map();
+    if (opt("anspruch")) {
+        let t = "";
+        try { t = fs.readFileSync(opt("anspruch"), "utf8"); } catch { /* fehlt die Datei: leer */ }
+        // „#“ beginnt einen Kommentar nur am Anfang eines Worts — die Stationen tragen ihn im Namen („…#2“); EIN Anspruch je Zweig
+        for (const z of t.split(/\r?\n/)) { const w = z.trim().split(/\s+/), k = w.findIndex((x) => x.startsWith("#")), v = k < 0 ? w : w.slice(0, k); if (v.length >= 2) { if (!jeZweig.has(v[0])) jeZweig.set(v[0], new Set()); for (const id of v.slice(1).join(",").split(",")) if (id) jeZweig.get(v[0]).add(id); } }
+    }
+    // 0 DIE FRONT DER KARTE 2 (Koordinator 21.11. 15:45; vision/buche-2.cjs zählt je Leiter nur die lückenlose Folge von unten, bei
+    // „glieder“ jede Sprosse für sich): mit --karte <vision/meisterkarte-2.json> steht in der Liste NUR, was beim nächsten Buchen zählen
+    // kann — je Leiter die Sprosse am Index heute, bei Glieder-Leitern jede nicht in heuteSprossen. Eine Sprosse HINTER der Front tritt
+    // nur ein, wenn EIN Anspruch (ein Zweig in zug/anspruch.txt) sie nennt und jede ungebuchte Sprosse unter ihr mit (dann K1); sonst
+    // tritt sie erst ein, wenn ihre Leiter bis zu ihr gebucht ist. Station = "karte2." + id + "#" + nr. Ohne --karte: die ganze Liste,
+    // jeder Anspruch K1. Unlesbare Karte: Exit 6 beim Namen (nie still die ganze Tafel).
+    const front = (k) => {
+        const F = new Set(), K1 = new Set();
+        let hinter = 0;
+        for (const L of k.gruppen.flatMap((gr) => gr.kriterien || [])) {
+            const sp = (L.sprossen || []).map((x) => "karte2." + L.id + "#" + x.nr);
+            if (L.zaehlung === "glieder") { const da = new Set((L.heuteSprossen || []).map((nr) => "karte2." + L.id + "#" + nr)); for (const id of sp) if (!da.has(id)) F.add(id); continue; }
+            const h = Number(L.heute) || 0;
+            if (h >= sp.length) continue;
+            F.add(sp[h]);
+            hinter += sp.length - h - 1;
+            for (const A of jeZweig.values()) for (let i = h; i < sp.length && A.has(sp[i]); i++) { F.add(sp[i]); K1.add(sp[i]); }
+        }
+        return { F, K1, hinter };
+    };
+    if (opt("karte")) {
+        let k;
+        try { k = JSON.parse(fs.readFileSync(opt("karte"), "utf8")); if (!Array.isArray(k.gruppen)) throw new Error("ohne gruppen"); } catch (e) { console.error("reihe: die Front ohne lesbare Karte (--karte " + opt("karte") + "): " + String(e.message).slice(0, 120)); process.exit(6); }
+        const { F, K1, hinter } = front(k), vor = ids.length;
+        ids = ids.filter((id) => F.has(id));
+        for (const id of K1) anspruch.add(id);
+        // eine beanspruchte Sprosse IN der Front (auch Glieder) ist K1, eine dahinter nur über die lückenlose Folge oben
+        for (const A of jeZweig.values()) for (const id of A) if (F.has(id)) anspruch.add(id);
+        process.stderr.write("Front der Karte 2: " + F.size + " Sprossen (" + hinter + " dahinter) · von der Liste " + vor + " → " + ids.length + "\n");
+    } else for (const A of jeZweig.values()) for (const id of A) anspruch.add(id);
+    const SCHWANZ = { K5: /Leser fehlt/, K6: /Umfang nicht erzeugbar/ };
+    const klasse = (id) => { if (anspruch.has(id)) return "K1"; const x = juengst[g][id] || juengst[anders][id]; if (!x || x.u) return "K2"; if (x.e.gruen) return "K3"; const t = String(x.e.grund || x.e.zahl || ""); return SCHWANZ.K6.test(t) ? "K6" : SCHWANZ.K5.test(t) ? "K5" : "K4"; };
     const lang = (id) => (letzt[id] && letzt[id].min >= LANG_MIN ? 1 : 0);
     const ord = (xs) => xs.map((id, i) => ({ id, i })).sort((a, b) => lang(a.id) - lang(b.id) || ((letzt[a.id] || {}).z || "").localeCompare((letzt[b.id] || {}).z || "") || a.i - b.i).map((x) => x.id);
-    // DAS GESETZ DER LISTE (Koordinator 19.11., richter-ohne-urteil; Befund am f68dbf09: die GTX urteilte 3 von 498 GRÜN, die Radeon
-    // fuhr dieselben 498 hinterher — jede ROT-Station misst ein zweites Mal, ohne dass ein Paar GRÜN werden kann). Zwei Sätze, beide
-    // nur mit dem Kopf der Runde (--kopf), beide lesen die Mess-Dateien am Ursprung (--git <repo> --ref <ref>, sonst der Ordner <dir>):
-    //  (1) --erst <geraet>: ist das andere Gerät an DIESEM Kopf durch (der Rufer prüft es in zug/runde.txt), misst dieses Gerät NUR die
-    //      Stationen, die jenes am Kopf GRÜN urteilte — ein Paar wird nur GRÜN, wenn beide GRÜN sind. Ohne Mess-Datei des ersten
-    //      Geräts am Kopf: Exit 6 beim Namen (nie still die ganze Liste).
-    //  (2) --vorher <sha>: eine Station, die am Vor-Kopf auf IRGENDEINEM Gerät ROT mit Grund stand (ein Urteil, nicht UNGEMESSEN),
-    //      kommt nur zurück, wenn ein Commit zwischen Vor-Kopf und Runden-Kopf ihre Leiter BERÜHRT. Berührt heißt: das EINE Frische-
-    //      Gesetz der Buchung (R6: Konsum, Linse, Glob, Abdruck) hielte die ROT-Messung des Vor-Kopfs am Runden-Kopf nicht mehr für
-    //      frisch — `punkte.cjs beruehrt --basis <vorher> --kopf <kopf> --json` (--beruehrt <datei>: je Gerät beruehrt ∪ offen ∪ tot).
-    //      Ohne lesbare Berührungs-Datei: Exit 6 beim Namen.
-    // Bleibt nach beiden Sätzen keine Station: die Liste ist GESETZ_LEER (Exit 7) — das Gerät ist an diesem Kopf durch, ohne Fahrt.
-    const RK = opt("kopf"), RV = opt("vorher"), ERST = opt("erst"), BER = opt("beruehrt");
+    const RK = opt("kopf"), ERST = opt("erst");
     let drin = ids;
-    const fallen = { erst: [], rot: [] };
-    if ((ERST || (RV && RV !== "-")) && !RK) { console.error("reihe: --erst/--vorher nur mit --kopf <sha>"); process.exit(6); }
-    const zeigRef = opt("git") && opt("ref") ? zeigIn(opt("git")) : null;
-    const lade = (k, gg) => {
-        const rel = k8(k) + "-" + gg + ".json";
-        const t = zeigRef ? zeigRef(opt("ref"), MDIR + "/" + rel) : (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })();
-        try { return t ? JSON.parse(t) : null; } catch { return null; }
-    };
     if (ERST) {
-        const m = lade(RK, ERST);
-        if (!m) { console.error("reihe: GESETZ (1) ohne Mess-Datei " + k8(RK) + "-" + ERST + ".json — das erste Gerät ist durch, aber sein Urteil fehlt"); process.exit(6); }
-        fallen.erst = drin.filter((id) => urteil(m, id) !== "GRUEN");
-        drin = drin.filter((id) => urteil(m, id) === "GRUEN");
+        if (!RK) { console.error("reihe: --erst nur mit --kopf <sha>"); process.exit(6); }
+        const zeigRef = opt("git") && opt("ref") ? zeigIn(opt("git")) : null, rel = k8(RK) + "-" + ERST + ".json";
+        const t = zeigRef ? zeigRef(opt("ref"), MDIR + "/" + rel) : (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })();
+        let m = null;
+        try { m = t ? JSON.parse(t) : null; } catch { m = null; }
+        if (!m) { console.error("reihe: das Gesetz der Liste ohne Mess-Datei " + rel + " — das erste Gerät hat K1–K4 hinter sich, aber sein Urteil fehlt"); process.exit(6); }
+        drin = ids.filter((id) => urteil(m, id) === "GRUEN");
+        process.stderr.write("Gesetz der Liste " + g + " am " + k8(RK) + ": " + ids.length + " → " + drin.length + " · nicht GRÜN auf " + ERST + ": " + (ids.length - drin.length) + "\n");
+        if (ids.length && !drin.length) { console.log(GESETZ_LEER); process.exit(7); }
     }
-    if (RV && RV !== "-") {
-        let ber;
-        // die JSON-Zeile von `punkte.cjs beruehrt --json` (die letzte, die mit „{“ beginnt — was der Läufer davor druckt, zählt nicht)
-        try { ber = JSON.parse(fs.readFileSync(String(BER), "utf8").split(/\r?\n/).filter((z) => z.startsWith("{")).pop()).je; if (!ber) throw new Error("ohne Feld je"); } catch (e) { console.error("reihe: GESETZ (2) ohne lesbare Berührung (--beruehrt " + BER + "): " + String(e.message).slice(0, 120)); process.exit(6); }
-        const rotAm = GERAETE.map((gg) => [gg, lade(RV, gg)]).filter(([, m]) => m);
-        const beruehrt = (id, gg) => { const z = (ber || {})[gg] || {}; return (z.beruehrt || []).some((x) => (x && x.id) === id) || (z.offen || []).includes(id) || (z.tot || []).includes(id); };
-        const bleibt = (id) => { const rot = rotAm.filter(([, m]) => urteil(m, id) === "ROT").map(([gg]) => gg); return !rot.length || rot.some((gg) => beruehrt(id, gg)); };
-        fallen.rot = drin.filter((id) => !bleibt(id));
-        drin = drin.filter(bleibt);
-    }
-    if (ERST || (RV && RV !== "-"))
-        process.stderr.write("Gesetz der Liste " + g + " am " + k8(RK) + ": " + ids.length + " → " + drin.length + (ERST ? " · (1) nicht GRÜN auf " + ERST + ": " + fallen.erst.length : "") + (RV && RV !== "-" ? " · (2) ROT am " + k8(RV) + " ohne Berührung: " + fallen.rot.length + (fallen.rot.length ? " (" + fallen.rot.slice(0, 40).join(" ") + (fallen.rot.length > 40 ? " …" : "") + ")" : "") : "") + "\n");
-    if (ids.length && !drin.length) { console.log(GESETZ_LEER); process.exit(7); }
-    const gebucht = drin.filter((id) => paar[id] && paar[id].gruen), ungebucht = drin.filter((id) => !(paar[id] && paar[id].gruen));
-    const u = ord(ungebucht), b = ord(gebucht);
-    process.stderr.write("Reihe " + g + ": ungebucht " + u.length + " (" + u.map((id) => id + (paar[id] ? " Paar " + paar[id].kopf + " ROT" : " ohne Paar")).join(" · ") + ") | gebucht gruen " + b.length + " (" + b.map((id) => id + " " + paar[id].kopf).join(" · ") + ")\n");
-    console.log((u.join(",") || "") + "|" + (b.join(",") || ""));
+    const je = { K1: [], K2: [], K3: [], K4: [], K5: [], K6: [] };
+    for (const id of drin) je[klasse(id)].push(id);
+    // das zweite Gerät kennt keinen Schwanz: was das erste am Kopf GRÜN urteilte, fehlt ihm nicht an Fähigkeit
+    const vorn = [...ord(je.K1), ...ord(je.K2), ...ord(je.K3), ...ord(je.K4)], schwanz = [...ord(je.K5), ...ord(je.K6)];
+    if (ERST) vorn.push(...schwanz.splice(0));
+    process.stderr.write("Reihe " + g + ": " + Object.entries(je).map(([k, v]) => k + " " + v.length).join(" · ") + " → vorn " + vorn.length + " | Schwanz " + schwanz.length + "\n");
+    console.log(vorn.join(",") + "|" + schwanz.join(","));
 } else if (was === "kappe") {
     // kappe <liste|@datei> <zeichen> → der Anfang der Liste, Komma-getrennt höchstens <zeichen> Zeichen (mindestens eine Station): der Teil,
     // der als `--nur` an punkte.cjs reisen darf (radeon-dienst.sh); der Rest fährt in der nächsten Fahrt derselben Runde
@@ -374,7 +410,7 @@ if (was === "lies") {
     // eine eigene Sitzung (kandidat.sh EINZELN=1): am b7ed8419 42 Stationen in 247 min START→GEPUSHT, im Mittel 5,9 min je Station —
     // davon ≥ 252 s je Sitzung Boot, Welt, CPU-Ruhe und Push (247 min − Σ Deckel 4 219 s der 36 Läufe, verteilt auf 42 Sitzungen).
     // Jetzt: die Läufe der Maschine (`punkte.cjs eichtafel --geraet <g>`: je Zeile die Stationen EINES Laufs, Zwillinge mit „+“, und sein
-    // Deckel) werden in der Reihe der Liste (ungebucht zuerst) zu Teilen gepackt, je Teil Σ Deckel ≤ <budget> (Vorgabe FAHRT_MAX_S −
+    // Deckel) werden in der Reihe der Liste (die Klassen der Reihe, K1 zuerst) zu Teilen gepackt, je Teil Σ Deckel ≤ <budget> (Vorgabe FAHRT_MAX_S −
     // Boot = 1 740 s, die Teil-Größe der Maschine selbst); ein Lauf wird nie geteilt; ein Lauf über dem Budget ist ein eigener Teil.
     // Eine Station ohne Zeile in der Tafel fährt allein (ihr Fehler trifft nur sie). Aufruf: teile <eichtafel-datei> <liste> [budget]
     // → "a,b;c;d,e" (";" trennt Teile, Reihe der Liste); stderr: Teile, Läufe, Σ Deckel.

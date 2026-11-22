@@ -1319,7 +1319,7 @@ function rundeVon(text) {
     for (const l of String(text || "").split(/\r?\n/)) {
         const w = l.trim().split(/\s+/);
         if (w[0] === "runde") r.runde = { n: w[1], kopf: w[3] };
-        else if (PULS_GERAETE.includes(w[0])) r.g[w[0]] = { zustand: w[1], stand: w[2], fortschritt: w[6] };
+        else if (PULS_GERAETE.includes(w[0])) r.g[w[0]] = { zustand: w[1], stand: w[2], fortschritt: w[6], getragen: w[11] === "getragen" ? w[12] : null };
     }
     return r;
 }
@@ -1333,14 +1333,15 @@ function rundeVon(text) {
 function pulsUrteil(P) {
     const R = rundeVon(P.runde), steht = [], ungepusht = [], jetzt = +(P.jetzt || Date.now());
     const teile = PULS_GERAETE.map((g) => {
-        const j = P.je[g] || { n: 0, zuletzt: null }, r = R.runde && R.g[g], faehrt = !!(r && r.zustand !== "durch");
+        // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K4 des ersten wartet, fährt nicht — nie STEHT, nie UNGEPUSHT
+        const j = P.je[g] || { n: 0, zuletzt: null }, r = R.runde && R.g[g], faehrt = !!(r && r.zustand !== "durch" && r.zustand !== "wartet");
         const tF = r ? Date.parse(r.fortschritt) : NaN, zaehlt = faehrt && isFinite(tF) && jetzt - tF <= PULS_MIN * 60e3;
         const liegt = zaehlt && !j.n && j.amKopf !== undefined && (!j.amKopf || jetzt - +j.amKopf > UNGEPUSHT_MIN * 60e3);
         if (liegt) ungepusht.push(g);
         else if (faehrt && !j.n) steht.push(g);
         const datei = liegt ? `${R.runde.kopf.slice(0, 8)}-${g}.json` : "";
         const ursprung = liegt ? `, am Ursprung ${j.amKopf ? `${datei} zuletzt ${tag(j.amKopf)} ${hhmm(j.amKopf)}` : `keine ${datei}`}` : "";
-        return `${g} ${j.n}${liegt ? " UNGEPUSHT" : faehrt && !j.n ? " STEHT" : ""} (${r ? `Runde ${R.runde.n} ${r.zustand} ${r.stand}` : "keine Runde"}${ursprung}, zuletzt gebucht ${j.zuletzt ? `${tag(j.zuletzt)} ${hhmm(j.zuletzt)}` : "—"})`;
+        return `${g} ${j.n}${liegt ? " UNGEPUSHT" : faehrt && !j.n ? " STEHT" : ""} (${r ? `Runde ${R.runde.n} ${r.zustand} ${r.stand}${r.getragen && r.getragen !== "0" ? ` getragen ${r.getragen}` : ""}` : "keine Runde"}${ursprung}, zuletzt gebucht ${j.zuletzt ? `${tag(j.zuletzt)} ${hhmm(j.zuletzt)}` : "—"})`;
     });
     const pr = P.pushRot ? (() => { const [t, k, ...g] = P.pushRot.trim().split(/\s+/); const d = new Date(t); return ` · RADEON PUSH ROT${isNaN(d) ? "" : " seit " + hhmm(d)} am ${k}: ${g.join(" ").slice(0, 90)}`; })() : "";
     return { zeile: `PULS gebucht in ${PULS_MIN} min: ${teile.join(" · ")}${pr}`, steht, ungepusht, pushRot: !!P.pushRot };
@@ -1571,6 +1572,9 @@ function selbsttest() {
     if (!(p1.steht.join() === "gtx" && /gtx 0 STEHT \(Runde 1 laeuft 252\/1428/.test(p1.zeile) && !/radeon 0 STEHT/.test(p1.zeile) && !p1.pushRot)) fehler.push("Puls STEHT (V6): " + p1.steht.join() + " · " + p1.zeile);
     if (!(p2.steht.length === 0 && p2.pushRot && /gtx 4 \(/.test(p2.zeile) && /RADEON PUSH ROT .*am f68dbf09: PUSH SCHEITERT 10x: rejected/.test(p2.zeile))) fehler.push("Puls PUSH ROT (V6): " + p2.zeile);
     if (p3.steht.length) fehler.push("Puls ohne Runde (V6): " + p3.steht.join());
+    // (21.11.) DIE RUNDE FOLGT DER ÄNDERUNG: die Radeon, die nach dem Gesetz wartet, STEHT nie; die getragene Zahl steht in der Zeile
+    const pW = pulsUrteil({ je: { gtx: { n: 3, zuletzt: new Date(j) }, radeon: { n: 0, zuletzt: null } }, runde: "runde 3 kopf bbbb start x vorher aaaa\ngtx durch 775/1428 station - fortschritt x alarm - liste a|b getragen 653\nradeon wartet 0/0 station - fortschritt 2026-11-19T10:18:47Z alarm - liste -\n", pushRot: null });
+    if (!(pW.steht.length === 0 && pW.zeile.includes("radeon 0 (Runde 3 wartet 0/0") && pW.zeile.includes("gtx 3 (Runde 3 durch 775/1428 getragen 653"))) fehler.push("Puls wartet/getragen (21.11.): " + pW.steht.join() + " · " + pW.zeile);
     // UNGEPUSHT (21.11.): Zähler frisch + Datei fehlt → UNGEPUSHT mit Datei beim Namen (nie STEHT) · Datei 2 h alt → UNGEPUSHT mit Uhr ·
     // Datei 20 min alt → STEHT (die Radeon zwischen zwei Pushs) · Zähler ruht (1 h) → STEHT, auch ohne Datei
     const tR = Date.parse("2026-11-19T10:18:47Z"), pUng = (amKopf, nach) => pulsUrteil({ je: { gtx: { n: 0, zuletzt: null, amKopf }, radeon: { n: 0, zuletzt: null } }, runde: RT, pushRot: null, jetzt: new Date(tR + nach) });

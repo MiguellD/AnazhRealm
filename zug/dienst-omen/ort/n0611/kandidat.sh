@@ -1,4 +1,6 @@
 #!/bin/bash
+# UNTER sh.exe (wie zug-dienst.sh): gerufen als `bash kandidat.sh` startet es sich EINMAL unter sh.exe neu (Prozess-Start 317 ms statt 2 358 ms)
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # kandidat.sh <name> <alt-sha40> <liste> — Koordinator 07.11.: den Zug-Kandidaten (neuer integ-probe-Kopf != alt) nach SEINEM echt-Ende
 # auf der OMEN messen (--nur Liste, ohne "keine Station auf gtx"), Teile <= 9 direkt hintereinander; ein verdrängter Teil stellt sich
 # ans Ende der Liste (<= 4 Versuche, 12.11.). KOPF=<sha40> misst einen festen Kopf ohne Warten. TEIL_N=<n> (10.11.): Scheiben-Größe,
