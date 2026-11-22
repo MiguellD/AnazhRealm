@@ -383,9 +383,12 @@ async function stufen(H, K, z, liste) {
             const n = d.wert(z);
             if (d.art === "leser" && !d.da(z)) return K.leser(d.n, { fehlt: d.fehlt, wo: d.wo, n });
             if ((d.art === "nicht" || d.art === "auge") && !(n >= um)) return K.nicht(d.n, { n, fehlt: d.fehlt + " (gemessen " + n + " < " + um + ")" });
+            // DIE POSE aus der Station (SPEC.sprossen[n].auge.pose, EINE Quelle): bis pm-frist-messort las jeder Rumpf die Konstante POSE —
+            // dieser Datei, die er im eigenen Prozess nie kennt: „ReferenceError: POSE is not defined“ an jeder
+            // Probe mit einer Augen-Sprosse (sprache, schrift, glaube, gestalt, …), verdeckt von der Frist im Umstellen
             if (d.art === "auge") {
                 const b = await K.bild(d.n, z.pose);
-                return K.auge(d.n, { bild: b.datei, pose: d.pose + " · Kamera " + [z.pose.px, z.pose.py, z.pose.pz].join("/"), mass: d.mass ? d.mass(z) : "Umfang " + n });
+                return K.auge(d.n, { bild: b.datei, pose: (d.pose || (sp.auge && sp.auge.pose) || "die Pose fehlt in der Station") + " · Kamera " + [z.pose.px, z.pose.py, z.pose.pz].join("/"), mass: d.mass ? d.mass(z) : "Umfang " + n });
             }
             const o = d.zahl ? await d.zahl(z) : { n, werte: {} };
             return K.zahl(d.n, { taeter: "der Leser steht in der Welt (" + (d.wo || "Umfang " + n) + "), die Probe misst ihn noch nicht — die Station neu schneiden", ...o });
@@ -454,7 +457,7 @@ module.exports = (F) => [
                 { n: 2, art: "leser", wert: sprachen, da: (z) => z.texte.nahBewohner > 0, wo: "stamm/siedlung-bewohner.js:2109", fehlt: "kein Bewohner spricht einen Satz: die Begegnung dreht den Kopf, kein Wort, keine Sprache eines Sprechers" },
                 { n: 3, art: "nicht", wert: sprachen, fehlt: "Sprachen: je Region EINE Silben-Tafel der Ortsnamen (fachwerk-core NAMEN, 6), keine Wortliste, keine Familie" },
                 { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt" },
-                { n: 5, art: "auge", um: 7000, wert: sprachen, fehlt: "hörbare Sprachen: kein Laut einer Sprache in der Welt", pose: POSE },
+                { n: 5, art: "auge", um: 7000, wert: sprachen, fehlt: "hörbare Sprachen: kein Laut einer Sprache in der Welt" },
                 { n: 6, art: "nicht", wert: sprachen, fehlt: "Sprachstufen über Epochen: die Silben-Tafel ist zeitlos (dieselbe in jedem Jahr)" },
                 { n: 7, art: "nicht", wert: sprachen, fehlt: "Sprachen über Planeten und fremde Medien: eine Welt, keine fremde Art spricht" },
             ]);
@@ -492,8 +495,8 @@ module.exports = (F) => [
                 },
                 { n: 2, art: "nicht", wert: (z) => z.stuecke.grab, fehlt: "Grabsteine: der Kirchhof der Stadt trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof), keine Tafel mit Schrift" },
                 { n: 3, art: "leser", wert: traeger, da: (z) => z.texte.haus > 0, wo: "fachwerk-core.js:4320", fehlt: "keine Hauswand trägt Schrift: die Viertel der Stadt-Grammatik nennen Gewerbe, kein Schild nennt es" },
-                { n: 4, art: "auge", um: 100000, wert: (z) => z.texte.leuchtet, fehlt: "leuchtende Schilder: keines in der Stadt", pose: POSE, mass: (z) => "leuchtende Schilder " + z.texte.leuchtet + " · Schrift-Träger " + z.texte.n },
-                { n: 5, art: "auge", um: 100, wert: traeger, fehlt: "Schrift-Funde (Typus, Träger, Epoche): kein Text-Träger in der Welt", pose: POSE },
+                { n: 4, art: "auge", um: 100000, wert: (z) => z.texte.leuchtet, fehlt: "leuchtende Schilder: keines in der Stadt", mass: (z) => "leuchtende Schilder " + z.texte.leuchtet + " · Schrift-Träger " + z.texte.n },
+                { n: 5, art: "auge", um: 100, wert: traeger, fehlt: "Schrift-Funde (Typus, Träger, Epoche): kein Text-Träger in der Welt" },
                 { n: 6, art: "leser", wert: traeger, da: (z) => z.texte.n > 0, wo: "fachwerk-core.js:4509", fehlt: "kein lesbarer Text: die Chronik des Orts (Jahre, Leute, Wohl) steht in keinem Text der Welt" },
             ]);
         },
@@ -539,7 +542,7 @@ module.exports = (F) => [
             };
             await H.seite.STUFEN(H, K, z, [
                 { n: 1, art: "zahl", wert: (z) => z.ort.kult, zahl: ritusZahl },
-                { n: 2, art: "auge", um: 10, wert: glauben, fehlt: "Glauben: die Kultbauten der Welt tragen eine Rolle (kirche/kapelle), kein Bekenntnis", pose: POSE },
+                { n: 2, art: "auge", um: 10, wert: glauben, fehlt: "Glauben: die Kultbauten der Welt tragen eine Rolle (kirche/kapelle), kein Bekenntnis" },
                 { n: 3, art: "nicht", wert: (z) => z.stuecke.grab, fehlt: "Gräber je Stadt: der Kirchhof trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof)" },
                 { n: 4, art: "nicht", wert: glauben, fehlt: "Glauben mit heiliger Landschaft: kein Kultort außerhalb der Siedlung, kein Pilger" },
                 { n: 5, art: "nicht", wert: glauben, fehlt: "Glaubens-Richtungen: keine Spaltung, kein Synkretismus" },
@@ -576,13 +579,13 @@ module.exports = (F) => [
             const welt = (z) => z.kulturenAlle;
             const mass = (z) => "Kulturen der Stadt " + Object.keys(z.ort.kulturen).join("/") + " · geladen " + z.kulturenAlle;
             await H.seite.STUFEN(H, K, z, [
-                { n: 1, art: "auge", um: 10, wert: stadt, mass, pose: POSE, fehlt: "Kulturen an den Häusern der Stadt" },
-                { n: 2, art: "auge", um: 100, wert: welt, mass, pose: POSE, fehlt: "Kulturen aus dem Samen (alle geladenen Orte; das Gesetz trägt " + z.kulturenGesetz + " Namen)" },
-                { n: 3, art: "auge", um: 1000, wert: welt, mass, pose: POSE, fehlt: "Kulturen auf einem Kontinent" },
-                { n: 4, art: "auge", um: 10000, wert: welt, mass, pose: POSE, fehlt: "Kulturen mit Fest und Alltag (eine Tracht je Epoche, kein Fest)" },
-                { n: 5, art: "auge", um: 100000, wert: welt, mass, pose: POSE, fehlt: "Kulturen über alle Epochen" },
-                { n: 6, art: "auge", um: 1000000, wert: welt, mass, pose: POSE, fehlt: "Kulturen über Planeten und Arten (eine Welt, eine Art)" },
-                { n: 7, art: "auge", um: 1000, wert: (z) => z.haeuserAlle, mass, pose: POSE, fehlt: "irdische Stichproben (stehende Häuser aller geladenen Orte)" },
+                { n: 1, art: "auge", um: 10, wert: stadt, mass, fehlt: "Kulturen an den Häusern der Stadt" },
+                { n: 2, art: "auge", um: 100, wert: welt, mass, fehlt: "Kulturen aus dem Samen (alle geladenen Orte; das Gesetz trägt " + z.kulturenGesetz + " Namen)" },
+                { n: 3, art: "auge", um: 1000, wert: welt, mass, fehlt: "Kulturen auf einem Kontinent" },
+                { n: 4, art: "auge", um: 10000, wert: welt, mass, fehlt: "Kulturen mit Fest und Alltag (eine Tracht je Epoche, kein Fest)" },
+                { n: 5, art: "auge", um: 100000, wert: welt, mass, fehlt: "Kulturen über alle Epochen" },
+                { n: 6, art: "auge", um: 1000000, wert: welt, mass, fehlt: "Kulturen über Planeten und Arten (eine Welt, eine Art)" },
+                { n: 7, art: "auge", um: 1000, wert: (z) => z.haeuserAlle, mass, fehlt: "irdische Stichproben (stehende Häuser aller geladenen Orte)" },
             ]);
         },
         sprossen: {
@@ -619,7 +622,7 @@ module.exports = (F) => [
                     zahl: (z) => ({ n: z.grenze.regionen, werte: { grenze: z.grenze.grenze, abseits: z.grenze.abseits }, beleg: "Paar " + (z.grenze.orte || []).join(" ↔ ") + " (" + z.grenze.d + " m)", taeter: "die Wahl der Kultur je Haus (fachwerk-core REGION_HIST, der Vorrat der Region)" }),
                 },
                 { n: 2, art: "nicht", wert: (z) => z.kulturenAlle, fehlt: "zehn Kulturen mit Wegen zwischen ihnen: die geladenen Orte tragen weniger" },
-                { n: 3, art: "auge", um: 10, wert: herkuenfte, pose: POSE, fehlt: "Herkünfte in der Stadt (Kulturen ihrer Häuser)", mass: (z) => "Herkünfte " + Object.keys(z.ort.kulturen).join("/") },
+                { n: 3, art: "auge", um: 10, wert: herkuenfte, fehlt: "Herkünfte in der Stadt (Kulturen ihrer Häuser)", mass: (z) => "Herkünfte " + Object.keys(z.ort.kulturen).join("/") },
                 { n: 4, art: "nicht", wert: herkuenfte, fehlt: "Herkünfte in der Stadt: die Kulturen des Stadt-Vorrats" },
                 { n: 5, art: "leser", wert: (z) => z.regionen, da: (z) => z.orte.some((o) => o.wanderung), wo: "fachwerk-core.js:3609", fehlt: "keine Wanderung: die Kultur je Region und Jahr ist eine feste Tafel (REGION_HIST), kein Volk zieht" },
                 { n: 6, art: "nicht", wert: (z) => z.bewohner.alle, fehlt: "Bewohner einer Stadt mit Herkünften mehrerer Planeten" },
@@ -711,7 +714,7 @@ module.exports = (F) => [
             };
             await H.seite.STUFEN(H, K, z, [
                 { n: 1, art: "zahl", wert: (z) => z.bewohner.n, zahl: gruss },
-                { n: 2, art: "auge", um: 20, wert: (z) => z.texte.woerter + z.regionen, pose: POSE, fehlt: "Wörter der Welt, die ein Spieler lernen könnte (Wörter der Texte + Ortsnamen-Sprachen)" },
+                { n: 2, art: "auge", um: 20, wert: (z) => z.texte.woerter + z.regionen, fehlt: "Wörter der Welt, die ein Spieler lernen könnte (Wörter der Texte + Ortsnamen-Sprachen)" },
                 { n: 3, art: "leser", wert: (z) => z.stuecke.grab, da: (z) => z.texte.grab > 0, wo: "fachwerk-core.js:6506", fehlt: "keine Inschrift: der Grabstein trägt seine Schrift-Seite ohne Schrift" },
                 { n: 4, art: "leser", wert: (z) => z.bewohner.n, da: (z) => z.orte.some((o) => o.sitten), wo: "stamm/siedlung-bewohner.js:2154", fehlt: "keine Sitte, kein Tabu: der Zeuge weicht der Gewalt, gleich in jeder Kultur (menge.kollektiv misst ihn) — kein Bruch einer Sitte" },
                 { n: 5, art: "leser", wert: (z) => z.regionen, da: (z) => z.orte.some((o) => o.sprache), wo: "fachwerk-core.js:3634", fehlt: "keine Verkehrssprache: je Region die Silben der Ortsnamen (NAMEN), keine Sprache am Handelsort" },
@@ -744,12 +747,12 @@ module.exports = (F) => [
             const werke = (z) => z.kunst;
             await H.seite.STUFEN(H, K, z, [
                 { n: 1, art: "leser", wert: werke, da: (z) => z.kunst > 0, wo: "fachwerk-core.js:6495", fehlt: "kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk" },
-                { n: 2, art: "auge", um: 10, wert: (z) => (z.kunst > 0 ? Object.keys(z.ort.kulturen).length : 0), pose: POSE, fehlt: "Kulturen mit Werken" },
-                { n: 3, art: "auge", um: 1000, wert: (z) => (z.kunst > 0 && z.ort.jahre ? z.ort.jahre.bis - z.ort.jahre.von : 0), pose: POSE, fehlt: "Jahre der Werke eines Orts" },
+                { n: 2, art: "auge", um: 10, wert: (z) => (z.kunst > 0 ? Object.keys(z.ort.kulturen).length : 0), fehlt: "Kulturen mit Werken" },
+                { n: 3, art: "auge", um: 1000, wert: (z) => (z.kunst > 0 && z.ort.jahre ? z.ort.jahre.bis - z.ort.jahre.von : 0), fehlt: "Jahre der Werke eines Orts" },
                 { n: 4, art: "leser", wert: werke, da: (z) => z.kunst > 0, wo: "fachwerk-core.js:6495", fehlt: "kein Werkstoff der Kunst: kein Werk, keine Malerei mit Pigment" },
-                { n: 5, art: "auge", um: 10000, wert: werke, pose: POSE, fehlt: "Werke der Stadt (Tempel, Galerie, Straßenkunst, Grabmal)" },
+                { n: 5, art: "auge", um: 10000, wert: werke, fehlt: "Werke der Stadt (Tempel, Galerie, Straßenkunst, Grabmal)" },
                 { n: 6, art: "nicht", wert: (z) => z.bewohner.alle, fehlt: "Bewohner (10⁶) mit Künstlern als Personen" },
-                { n: 7, art: "auge", um: 1, wert: (z) => z.kreaturen.sprache, pose: POSE, fehlt: "fremde Arten mit Kunst für ihre Sinne" },
+                { n: 7, art: "auge", um: 1, wert: (z) => z.kreaturen.sprache, fehlt: "fremde Arten mit Kunst für ihre Sinne" },
             ]);
         },
         sprossen: {
@@ -780,11 +783,11 @@ module.exports = (F) => [
             await H.seite.STUFEN(H, K, z, [
                 { n: 1, art: "leser", wert: (z) => z.buehnen, da: (z) => z.buehnen > 0, wo: "koerper-core.js:5182", fehlt: "keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum" },
                 { n: 2, art: "leser", wert: werke, da: (z) => z.texte.n > 0, wo: "stamm/siedlung-bewohner.js:2169", fehlt: "kein Werk: die Akten der Taten erzählt kein Text, kein Bild der Welt" },
-                { n: 3, art: "auge", um: 100, wert: werke, pose: POSE, fehlt: "Werke in 5 Gattungen" },
+                { n: 3, art: "auge", um: 100, wert: werke, fehlt: "Werke in 5 Gattungen" },
                 { n: 4, art: "nicht", wert: (z) => (z.buehnen > 0 ? z.bewohner.alle : 0), fehlt: "Besucher eines Theaters, Kinos, Verlags am Tag (Bühnen " + z.buehnen + "; ohne Bühne kein Besucher)" },
                 { n: 5, art: "nicht", wert: (z) => z.videos, fehlt: "Filme: kein bewegtes Bild im Bild (Video-Texturen der Stadt)" },
                 { n: 6, art: "nicht", wert: (z) => (z.texte.n > 0 && z.ort.jahre ? z.ort.jahre.bis - z.ort.jahre.von : 0), fehlt: "Jahre der Werke (ohne Werk keine Spanne)" },
-                { n: 7, art: "auge", um: (z) => z.kulturenGesetz || 32, wert: (z) => (z.texte.n > 0 ? Object.keys(z.ort.kulturen).length : 0), pose: POSE, fehlt: "Kulturen mit Erzählkunst" },
+                { n: 7, art: "auge", um: (z) => z.kulturenGesetz || 32, wert: (z) => (z.texte.n > 0 ? Object.keys(z.ort.kulturen).length : 0), fehlt: "Kulturen mit Erzählkunst" },
             ]);
         },
         sprossen: {
@@ -815,10 +818,10 @@ module.exports = (F) => [
                 { n: 1, art: "nicht", wert: (z) => z.lokale, fehlt: "Lokale in einer Gasse: die Stadt trägt EIN Gasthaus (das Sonderbau-Gesetz), kein Gericht" },
                 { n: 2, art: "leser", wert: (z) => z.lokale, da: (z) => z.orte.some((o) => o.kueche), wo: "koerper-core.js:5182", fehlt: "keine Küche: das Gasthaus bietet das Mahl als Güte (mahl 8), kein Gericht, keine Zutat" },
                 { n: 3, art: "leser", wert: (z) => z.trachten, da: (z) => z.orte.some((o) => o.mode), wo: "fachwerk-core.js:3622", fehlt: "keine Mode: die Tracht ist eine je Epoche (EPOCHEN.tracht), kein Merkmal steigt und klingt" },
-                { n: 4, art: "auge", um: 10000, wert: (z) => z.bewohner.alle, pose: POSE, fehlt: "unterwegs in der Nacht (alle Bewohner der geladenen Orte)" },
+                { n: 4, art: "auge", um: 10000, wert: (z) => z.bewohner.alle, fehlt: "unterwegs in der Nacht (alle Bewohner der geladenen Orte)" },
                 { n: 5, art: "nicht", wert: (z) => z.laeden, fehlt: "Läden und Buden (Marktstände, Kaufhaus, Kontor)" },
-                { n: 6, art: "auge", um: 10, wert: (z) => z.trachten, pose: POSE, fehlt: "Szenen mit eigener Tracht (eine Tracht je Ort)" },
-                { n: 7, art: "auge", um: (z) => z.kulturenGesetz || 32, wert: (z) => Object.keys(z.ort.kulturen).length, pose: POSE, fehlt: "Kulturen mit Straßenleben (die Kulturen der Stadt gegen das Gesetz der Kulturen KULTNAMES)" },
+                { n: 6, art: "auge", um: 10, wert: (z) => z.trachten, fehlt: "Szenen mit eigener Tracht (eine Tracht je Ort)" },
+                { n: 7, art: "auge", um: (z) => z.kulturenGesetz || 32, wert: (z) => Object.keys(z.ort.kulturen).length, fehlt: "Kulturen mit Straßenleben (die Kulturen der Stadt gegen das Gesetz der Kulturen KULTNAMES)" },
             ]);
         },
         sprossen: {
