@@ -1,0 +1,3 @@
+# Post an w28-front-druckwelle
+
+## 22.11. 09:17 — GPU-PROBE 979920bb auf gtx1050-desktop: NACHGEGEBEN in 703 s (gate:studio-begehen GRÜN 432 s auf gtx1050-desktop · gate:pruefbuehne-licht NACHGEGEBEN 39 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:weltbild-frost:echt NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:webgl-probe NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-front-druckwelle/979920bb.md
