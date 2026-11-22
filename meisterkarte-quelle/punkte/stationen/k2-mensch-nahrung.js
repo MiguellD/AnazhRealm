@@ -866,8 +866,9 @@ module.exports = (F) => [
                         const b = await K.bild(1 + "-" + wort, { px: o.x + fx * 6 + fz * 2, py: "+1.7", pz: o.z + fz * 6 - fx * 2, lx: o.x + fz * 1.5, ly: "+0.4", lz: o.z - fx * 1.5 });
                         return { ...o, datei: b.datei };
                     };
-                    const voll = await bildAn(V.voll, "voll");
-                    const leer = await bildAn(V.leer, "leer");
+                    // die Uhr reist nur vorwärts: das Paar fällt auf dieselben Stunden des Tags nach dem gemessenen Fenster
+                    const voll = await bildAn(V.voll + 24 * V.tage, "voll");
+                    const leer = await bildAn(V.leer + 24 * V.tage, "leer");
                     vollLeer = voll.kisten >= 1 && leer.kisten === 0 ? 1 : 0;
                     beleg = "voll " + voll.n.toFixed(1) + " (" + voll.kisten + " Kisten, " + voll.datei + ") ↔ leer " + leer.n.toFixed(1) + " (" + leer.kisten + " Kisten, " + leer.datei + ")";
                 }
