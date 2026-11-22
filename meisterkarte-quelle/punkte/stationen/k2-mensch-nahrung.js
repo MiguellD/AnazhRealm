@@ -277,7 +277,10 @@ const FRUCHT = async (r, T, arg) => {
             if (d <= 0) wiInnen++;
             else if (d >= 2 && d <= 8) wiRing++;
         }
-    return { innen, ring, wiInnen, wiRing, kinds, takte, pose: { px: +ex.toFixed(2), py: "+1.7", pz: +ez.toFixed(2), lx: f.x, ly: "+0.3", lz: f.z } };
+    // Ego 1,7 m über dem GRUND (der gezeichnete Boden): „+1,7“ der Werkbank misst über der obersten Voxel-Fläche — unter einer Krone
+    // stand das Auge im Baum (Bild frucht_1-S1 am e71adb10: 15 m über dem Acker)
+    const grund = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
+    return { innen, ring, wiInnen, wiRing, kinds, takte, pose: { px: +ex.toFixed(2), py: +(grund(ex, ez) + 1.7).toFixed(2), pz: +ez.toFixed(2), lx: f.x, ly: +(grund(f.x, f.z) + 0.3).toFixed(2), lz: f.z } };
 };
 
 // DAS GEBUNDENE TIER ÜBER DEM HANG (tier S1): ein Hang von 10–30° nahe dem Spieler mit ≥ 3 m Anstieg über 16 m (Land, frei von
