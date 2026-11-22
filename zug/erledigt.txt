@@ -2071,3 +2071,4 @@ omen-gtx-gtx-c445936d-w063932-1-c445936d ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-22 06:54 landung Runde 3 am c445936d: misst 112 von 177 Stationen (65 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-22 07:12 RUNDE 3 ALARM radeon: ohne Fortschritt seit 991 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
 2026-11-22 07:55 RUNDE 3 ALARM gtx: ohne Fortschritt seit 63 min (laeuft, 65/177, Station tiere.K5#1, Kopf c445936d) — gesehen von gtx (landung-dienst)
+2026-11-22 08:13 RUNDE 3 ALARM radeon: ohne Fortschritt seit 1053 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
