@@ -197,6 +197,11 @@ const KERN = (() => {
             const roh = roh0;
             const mit = (u) => (vorDeckel ? { ...u, zahl: u.zahl + vorDeckel } : u);
             if (!roh || typeof roh !== "object") return rot("die Sprosse ist im Lauf nicht gemessen", sp.taeter);
+            // DER KURZE RAFFER (rafferStellen): eine Takt-Schleife der Leiter endete am Budget vor ihrem Soll — UNGEMESSEN mit Zahl
+            if (Array.isArray(L.raffer) && L.raffer.length && !roh.nicht) {
+                const grund = "der Raffer trug " + L.raffer.map((z) => z.name + " " + z.n + " von " + z.soll + " Takten in " + deutsch(z.s) + " s").join(", ") + " — am Budget der Leiter (die Leiter lief " + deutsch(L.s) + " s)";
+                return { gruen: false, zahl: kopf + grund, ohneUrteil: grund };
+            }
             const werte = roh.werte || {};
             // DIE HALBE SPROSSE UNTER DEM DECKEL (pm-front-f1): jede Leiter schreibt ihr Ergebnis in M.teil (`const aus = M.teil`), der Deckel
             // kann eine Sprosse treffen, deren Wert noch nicht stand — fehlt unter dem Deckel ein Wert ihres Solls, ist sie UNGEMESSEN beim
@@ -367,6 +372,7 @@ const KERN = (() => {
             M.t0 = Date.now();
             M.teil = {};
             let uhr = null, deckel = false;
+            await rafferStellen(H, L.sek);
             try {
                 const r = await Promise.race([
                     L.mess(H, L.U, M),
@@ -377,10 +383,39 @@ const KERN = (() => {
                 aus.leitern[id] = Object.assign({ s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, deckel ? { deckel: true } : {}, { sprossen: Object.assign({}, M.teil) });
             }
             clearTimeout(uhr);
+            const kurz = await rafferKurz(H);
+            if (kurz.length) aus.leitern[id].raffer = kurz;
             H.schritt(id);
             fs.writeFileSync(H.aus, JSON.stringify(aus));
         }
         return 0;
+        // DER RAFFER AM BUDGET SEINER PROBE (pm-stationen-kalender 22.11.; Radeon 161ff792: die Leiter leben.oeko.dynamik stand 271 s
+        // still — ihr Raffer zählte das Jahr in Welt-Uhr-Sekunden, unter dem angehaltenen Tag der Bühne (10¹² min) 4·10¹² Takte). JEDE
+        // Takt-Schleife einer Leiter fährt über `window.__raffer(soll, schritt, name)`: sie endet am Soll oder am Budget der Leiter
+        // (ihr Deckel weniger 15 s für das, was nach dem Raffen kommt — Auge, Urteil) und meldet { n, soll, s }. Wer sein Soll nicht
+        // schafft, steht in `__rafferKurz`; eine Folge von Läufen fragt `__rafferRest()` (ms bis zum Budget), ehe sie den nächsten
+        // beginnt; die Leiter trägt die Liste (`raffer`), und jede ihrer Sprossen ohne „Umfang nicht erzeugbar“ ist UNGEMESSEN mit Zahl
+        // („n von m Takten in s“, urteilBauen) — nie still, nie hängend, nie ROT an einem Rest. (Im Rumpf: er reist als Text in die Probe.)
+        async function rafferStellen(H, sek) {
+            const ms = Math.max(3, (Number(sek) || 10) - 15) * 1000;
+            await H.seite(
+                "window.__rafferEnde = performance.now() + " + ms + "; window.__rafferKurz = []; " +
+                "window.__raffer = (soll, schritt, name) => { const t0 = performance.now(); let n = 0; " +
+                "for (; n < soll && performance.now() < window.__rafferEnde; n++) schritt(n); " +
+                "const z = { name: String(name || 'raffer'), n, soll, s: Math.round(performance.now() - t0) / 1000 }; " +
+                "if (n < soll) window.__rafferKurz.push(z); return z; }; " +
+                "window.__rafferRest = () => window.__rafferEnde - performance.now(); return 1;"
+            );
+        }
+        // die Seite, die nach der Leiter nicht mehr antwortet, steht als kurzer Raffer beim Grund (nie still)
+        async function rafferKurz(H) {
+            try {
+                const k = await H.seite("const k = window.__rafferKurz || []; window.__rafferKurz = []; return k;");
+                return Array.isArray(k) ? k : [];
+            } catch (e) {
+                return [{ name: "die Seite antwortete nicht: " + String((e && e.message) || e).slice(0, 120), n: 0, soll: 1, s: 0 }];
+            }
+        }
     }
 
     // DIE PERSPEKTIVE: EINE Probe für ihre Leitern, je Sprosse eine Station
@@ -499,7 +534,7 @@ const KERN = (() => {
             stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d).map((st) => mitDeckelProben(st, d))),
         };
     }
-    return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp };
+    return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp, probeRumpf };
 })();
 
 const K = KERN;
@@ -4245,7 +4280,7 @@ L.perspektive("wetter", (() => {
             const welt = await H.seite(`
 const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed;
 const FELD = A.WEATHER_FIELD, nass = (w) => r._weatherIsWet(w), grau = (w) => FELD[w].grey;
-const jahrS = st.seasonYearSeconds || 2400, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, P = globalThis.__phytoCore;
+const jahrS = r._kalender().jahrK, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, P = globalThis.__phytoCore;
 const peil = (d) => { let b = Math.atan2(d.x, -d.z) * 180 / Math.PI; return b < 0 ? b + 360 : b; };
 const dreh = (a, b) => { let d = peil(b) - peil(a); while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
 const out = { Z, jahrS, tagS, passagen: [], spellTage: [], sturmJahr: [], nassAnteil: [], wortZahl: 0 };
@@ -4925,7 +4960,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
             // der Worte (gelaende-core temperaturAus mit dem Feld des Worts), der Pegel, die Sicht im Sturm, die Telekonnektion
             const welt = await H.seite(`
 const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, G = globalThis.__gelaendeCore, P = globalThis.__phytoCore;
-const FELD = A.WEATHER_FIELD, tagS = A.PEGEL_TAG_S, stundeS = tagS / 24, jahrS = st.seasonYearSeconds || 2400, s0 = wm.seed;
+const FELD = A.WEATHER_FIELD, tagS = r._kalender().normS, stundeS = tagS / 24, jahrS = r._kalender().jahrK, s0 = wm.seed;
 const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
 const mmJeTakt = (w) => FELD[w].rain * 10 * (Z / stundeS);
 const jahre = ${Number(u3.jahre) || 100}, jeJahr = Math.max(1, Math.round(jahrS / Z));

@@ -3211,7 +3211,7 @@ LEITERN.push(
                 // DER SPRUNG der Welt-Uhr der Prozesse um `tage` (+ 1 s: nie weicher als die Karte) über den Weg des Spiels für eine spätere Uhr
                 function sprung(r, o) {
                     const s = r.state, t0 = r._weltTag();
-                    r._weltUhrNimm(s.spielZeit + o.tage * AnazhRealm.PEGEL_TAG_S + 1);
+                    r._weltUhrNimm(s.spielZeit + o.tage * r._kalender().tagS + 1);
                     return { vor: t0, nach: r._weltTag() };
                 }
                 function offen(r) {
@@ -3394,7 +3394,7 @@ LEITERN.push(
                     const wagen = (s.architectures || []).filter((e) => e && /^fahrzeug_/.test(e.type)).length;
                     return {
                         siedlung: S && S.key, abstand: Math.round(dS), leiber: S ? zahl(S) : 0, leiberAlle, wagen, linien: linien.length, nah,
-                        zellen, auf, pct: zellen ? Math.round((1000 * auf) / zellen) / 10 : null, tage: Math.round((100 * (s.spielZeit || 0)) / A.PEGEL_TAG_S) / 100, saat: wm.seed,
+                        zellen, auf, pct: zellen ? Math.round((1000 * auf) / zellen) / 10 : null, tage: Math.round((100 * (s.spielZeit || 0)) / r._kalender().tagS) / 100, saat: wm.seed,
                     };
                 }
                 await L.ort("stadt-voll", "third");
