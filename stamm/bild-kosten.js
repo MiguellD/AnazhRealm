@@ -756,6 +756,9 @@ class AnazhRealm_bild_kosten {
                 neubauN: 0,
                 neu: [],
                 bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
+                bereichFrisch: false, // r184 öffnete in DIESEM Zug den Fehler-Bereich eines Pipeline-Baus (`_erstAbsageWache`)
+                bereichFaellig: [], // die Urteile geschlossener Bereiche, deren Bau sich eben entschied: r184s nächster `popErrorScope` holt sie ab
+                bereichN: 0, // so viele Bereiche schloss der Abgriff im Zug ihres Baus
                 offen: new Map(),
                 namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
                 abgesagt: new WeakSet(),
@@ -970,15 +973,60 @@ class AnazhRealm_bild_kosten {
     // gezählt in `_gpuWache` — eine Absage ist eine Validierung wie jede andere, Integration V18.535), und die Erst-Zeichnung
     // trägt die Pipeline aus ihrer Warteschlange aus (`_erstWartet` hält das Versprechen ihres Baus). Gerufen wird je Aufruf
     // der Prototyp — Linsen hängen sich dort ein.
+    // DER FEHLER-BEREICH GEHÖRT SEINEM BAU (leib-nah-ganz, 22.11.): r184 öffnet vor jedem Pipeline-Bau einen Fehler-Bereich am Gerät
+    // (`d.pushErrorScope("validation")`, 6:590301) und schließt ihn im asynchronen Bau erst NACH dem Versprechen (`await
+    // d.popErrorScope()`, 6:590554). Der Stapel der Bereiche gehört dem Gerät, nie dem Bau: jede Validierung IRGENDEINES Befehls
+    // dazwischen (Sekunden lang: ein fremder Draw, ein Puffer-Schreiben) fiel in ihn, r184 markierte DIESE Pipeline für immer als
+    // kaputt (`h.error=!0`), und `backend.draw` kehrte für jedes Render-Objekt jedes Stoffs ihres Programms still um
+    // (`if(!0===a.error)return`, 6:611428). stadt-voll, Radeon 6699a813: die Reihen der Karte wuchsen über ihren geteilten Puffer
+    // (`_karteNadel`), jedes Bild warf Validierungen — 9 von 99 Pipelines trugen die Marke, 4 von 4 Bewohnern näher als 6 m
+    // standen ohne Haut und Stoff oder ganz ohne Leib im Bild, ein Wagen fehlte; welche Pipeline es traf, entschied das Rennen
+    // ihres Baus (in einem Start die Haut, im nächsten der Stoff). Der Abgriff schließt r184s Bereich im SELBEN Zug wie den Ruf
+    // des Baus — er umspannt genau ihn, wie im synchronen Bau (6:590378) — und reicht r184 sein Urteil, sobald es danach fragt:
+    // fällig wird es, wenn das Versprechen des Baus sich entscheidet (die Reaktion des Abgriffs steht an demselben Versprechen
+    // VOR r184s `await`), r184s nächster `popErrorScope` holt es ab. Holt es niemand ab (Vendor-Drift), steht das beim Namen in
+    // der GPU-Wache. Eine fremde Validierung erreicht so `uncapturederror` (die GPU-Wache, `_gpuWacheAn`), nie eine Pipeline.
     _erstAbsageWache(renderer) {
         const be = renderer.backend;
         const dev = be && be.isWebGPUBackend === true ? be.device : null;
         if (!dev || dev.__anazhAbsage || typeof dev.createRenderPipelineAsync !== "function") return;
         const E = this._erstZeichnungStand();
         const welt = this;
+        // r184s Bereich ist FRISCH, solange der Zug läuft, der ihn öffnete (kein `await` zwischen ihm und dem Ruf des Baus)
+        dev.pushErrorScope = function (filter) {
+            if (filter === "validation") {
+                E.bereichFrisch = true;
+                Promise.resolve().then(() => (E.bereichFrisch = false));
+            }
+            return Object.getPrototypeOf(this).pushErrorScope.call(this, filter);
+        };
+        dev.popErrorScope = function () {
+            E.bereichFrisch = false;
+            return E.bereichFaellig.length
+                ? E.bereichFaellig.shift()
+                : Object.getPrototypeOf(this).popErrorScope.call(this);
+        };
         dev.createRenderPipelineAsync = function (desc) {
             const p = Object.getPrototypeOf(this).createRenderPipelineAsync.call(this, desc);
             const label = (desc && desc.label) || "renderPipeline_(ohne Label)";
+            if (E.bereichFrisch) {
+                E.bereichFrisch = false;
+                E.bereichN++;
+                const urteil = Object.getPrototypeOf(this).popErrorScope.call(this);
+                const faellig = () => {
+                    E.bereichFaellig.push(urteil);
+                    Promise.resolve().then(() => {
+                        const i = E.bereichFaellig.indexOf(urteil);
+                        if (i < 0) return;
+                        E.bereichFaellig.splice(i, 1);
+                        welt._gpuWacheMeldung(
+                            "pipeline",
+                            `FEHLER-BEREICH ${label}: r184 holte das Urteil seines Baus nicht ab (Vendor-Drift)`
+                        );
+                    });
+                };
+                p.then(faellig, faellig);
+            }
             E.bau = { p, label };
             p.catch((e) => {
                 E.absagenN++;

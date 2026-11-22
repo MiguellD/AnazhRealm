@@ -30,6 +30,8 @@
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
 //      GPU-Wache des Spiels und der eigene Hörer zählen, und die Bild-Probe sagt BILD STEHT
 //   T3 ein writeBuffer von 6 Bytes → WebGPU wirft, die Puffer-Wache nennt Puffer, Länge, Aufrufer
+//   T4 ein fremder Validierungsfehler im Bau einer Pipeline → keine Pipeline trägt die Fehler-Marke (`_erstAbsageWache` schließt
+//      r184s Fehler-Bereich im Zug des Baus), die GPU-Wache zählt ihn; der Mutant (main: der Bereich bleibt offen) markiert sie
 //
 // EIN Weg (bis w27-swift-raus zwei: headless auf swiftshader zeichnete die CI eine PROBE-BÜHNE mit Rücklese-Bild — der Zwilling
 // der Karte, er fiel mit ihm):
@@ -1043,7 +1045,89 @@ hauptLauf(async () => {
         /frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B .*geworfen: \S/.test(t3),
         t3
     );
-    selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
+    selbsttest("T4 (der fremde Fehler im Bau einer Pipeline) und T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
+    // T4 — DER FREMDE FEHLER IM BAU EINER PIPELINE (leib-nah-ganz, `_erstAbsageWache`): r184 hält den Fehler-Bereich eines asynchronen
+    // Pipeline-Baus über dessen Versprechen offen; die Validierung eines FREMDEN Befehls dazwischen markierte die Pipeline für immer
+    // als kaputt, jeder Stoff ihres Programms zeichnete nie wieder (stadt-voll, main 6699a813: 4 von 4 Bewohnern näher als 6 m ohne
+    // Haut und Stoff). Der Täter wirft im Zug nach jedem Ruf eines Pipeline-Baus eine fremde Validierung (ein writeBuffer über das
+    // Ende seines Puffers), während ein Probe-Mesh mit eigenem Programm baut. Am Spiel trägt KEINE Pipeline die Marke, der Abgriff
+    // schloss r184s Bereich, die GPU-Wache zählt die fremde Validierung; der Mutant (main: der Abgriff am `pushErrorScope` gelöst,
+    // der Bereich bleibt über das Versprechen offen) markiert die Pipeline. Gelesen wird, wenn jeder Bau und jedes Urteil eines
+    // Fehler-Bereichs seit dem Täter sich entschieden hat (das Ereignis, nie die Uhr).
+    const t4 = await page.evaluate(async () => {
+        const T = window.THREE;
+        const F = window.__frostWand;
+        const [cam, rend, E] = [st.camera, st.renderer, r._erstZeichnung];
+        const [be, dev] = [rend.backend, rend.backend.device];
+        const P = Object.getPrototypeOf(dev);
+        const puffer = dev.createBuffer({ label: "frost-taeter-fremd", size: 8, usage: GPUBufferUsage.COPY_DST });
+        const [bauAlt, zuAlt] = [P.createRenderPipelineAsync, P.popErrorScope];
+        const offen = new Set();
+        const haelt = (p) => (offen.add(p), p.then(() => offen.delete(p), () => offen.delete(p)), p); // prettier-ignore
+        let [fremd, bauten] = [0, 0];
+        P.createRenderPipelineAsync = function (d) {
+            bauten++;
+            // der fremde Befehl im NÄCHSTEN Zug: nach dem Ruf des Baus, vor seinem Versprechen
+            queueMicrotask(() => (fremd++, this.queue.writeBuffer(puffer, 0, new Uint8Array(16))));
+            return haelt(bauAlt.call(this, d));
+        };
+        P.popErrorScope = function () {
+            return haelt(zuAlt.call(this));
+        };
+        // die Pipelines, die r184 für kaputt hält (`error`: `backend.draw` kehrt für sie still um)
+        const marken = () => [...rend._pipelines.caches.values()].filter((p) => p && p.vertexProgram && be.get(p).error === true);
+        const lauf = async (name, farbe) => {
+            const geo = new T.BufferGeometry();
+            geo.setAttribute("position", new T.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+            const stoff = new T.MeshBasicNodeMaterial();
+            stoff.name = name;
+            stoff.colorNode = T.TSL.vec3(farbe, 0.25, 1 - farbe); // ein eigenes Programm: kein Stoff der Welt trägt diese Zeile
+            const m = new T.Mesh(geo, stoff);
+            m.name = name;
+            m.frustumCulled = false;
+            m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
+            const vor = { marken: new Set(marken()), fremd, bauten, wache: r._gpuWache ? r._gpuWache.n : 0, bereiche: E.bereichN };
+            F.wurzel.add(m);
+            let bruch = "";
+            try {
+                for (const weiter = __deckel(`der Täter ${name} baut`, 100); (bauten === vor.bauten || F.ungezeichnet(m, cam)) && weiter(); ) await F.zeichne(1);
+                for (const weiter = __deckel(`der Täter ${name}: Bau und Urteil entschieden`, 400); offen.size && weiter(); ) await sleep(50);
+                await F.zeichne(1);
+            } catch (e) {
+                bruch = e.message;
+            }
+            F.wurzel.remove(m);
+            const neu = marken().filter((p) => !vor.marken.has(p)).map((p) => E.namen.get(p) || "?");
+            return { marken: neu, fremd: fremd - vor.fremd, bauten: bauten - vor.bauten, wache: (r._gpuWache ? r._gpuWache.n : 0) - vor.wache, bereiche: E.bereichN - vor.bereiche, bruch };
+        };
+        const aus = {};
+        try {
+            aus.spiel = await lauf("frost-taeter-fremd-spiel", 0.31);
+            const abgriff = Object.hasOwn(dev, "pushErrorScope") ? dev.pushErrorScope : null;
+            delete dev.pushErrorScope;
+            try {
+                aus.mutant = await lauf("frost-taeter-fremd-mutant", 0.73);
+            } finally {
+                if (abgriff) dev.pushErrorScope = abgriff;
+            }
+        } finally {
+            [P.createRenderPipelineAsync, P.popErrorScope] = [bauAlt, zuAlt];
+            puffer.destroy();
+        }
+        return aus;
+    });
+    const t4Zeile = (x) => `${x.bauten} Bauten, ${x.fremd} fremde Validierungen, ${x.bereiche} Bereiche geschlossen, GPU-Wache +${x.wache}, Marken: ${x.marken.join(", ") || "keine"}${x.bruch ? " · " + x.bruch : ""}`;
+    check(
+        "T4 ein fremder Fehler im Bau einer Pipeline markiert keine Pipeline — der Abgriff schließt r184s Bereich, die GPU-Wache zählt den Fehler",
+        t4.spiel.marken.length === 0 && t4.spiel.bauten > 0 && t4.spiel.fremd > 0 && t4.spiel.bereiche > 0 && t4.spiel.wache > 0,
+        t4Zeile(t4.spiel)
+    );
+    check(
+        "T4 der Mutant (main 6699a813: r184s Fehler-Bereich bleibt über das Versprechen des Baus offen) markiert die Pipeline des Täters",
+        t4.mutant.marken.length > 0 && t4.mutant.bereiche === 0,
+        t4Zeile(t4.mutant)
+    );
+    const hoerVor = (await lage()).hoer;
     const t2 = await page.evaluate(() => {
         const be = st.renderer.backend;
         let ziel = null;
@@ -1067,7 +1151,7 @@ hauptLauf(async () => {
         // Pipeline-Baus, der den Fehler-Bereich offen hielt — die Wand zeichnet, solange ein Bau oder Fehler-Bereich offen ist (mindestens 8 Bilder).
         const tWort = Date.now();
         let l = await lage();
-        for (let n = 0; (l.hoer === 0 || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && (n++ < 8 || l.bauOffen || l.bereiche); ) {
+        for (let n = 0; (l.hoer === hoerVor || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && (n++ < 8 || l.bauOffen || l.bereiche); ) {
             await zeichne(1);
             await sleep(250);
             l = await lage();
@@ -1089,8 +1173,8 @@ hauptLauf(async () => {
         );
         check(
             "T2 der eigene Hörer hört die Validierung (Device oder r184-Fehler-Bereich)",
-            l.hoer > 0,
-            `${l.hoer} Meldungen: ${l.hoerErste.slice(0, 2).join(" | ")}`
+            l.hoer > hoerVor,
+            `${l.hoer - hoerVor} Meldungen: ${l.hoerErste.slice(-2).join(" | ")}`
         );
         check(
             "T2 die Bild-Probe erkennt das stehende Bild",
