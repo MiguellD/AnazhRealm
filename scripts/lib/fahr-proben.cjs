@@ -1424,6 +1424,7 @@ async function probeLeben(expected) {
                 nach10: [],
                 abV: [],
                 abSprung: [],
+                abWer: [],
                 abFov: [],
             });
             const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
@@ -1520,15 +1521,56 @@ async function probeLeben(expected) {
                         for (let j = 0; s === "first" && j < 300 && spielerTempo() < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
                         let [m, mf, f] = [0, 0, st.camera.fov];
-                        for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
-                            if (j === 3) {
-                                w.abV.push(+spielerTempo().toFixed(1));
-                                r.dismountArchitecture();
+                        // DER TÄTER DES SPRUNGS BEIM NAMEN (front-brand, T4 fiel in der Cloud 3 von 3 mit 8,12 · 10,15 · 10,15 m und
+                        // nannte nur die Zahl): der Wurf des Arms je Bild (die Kugel vom Blickziel zur Wunsch-Stelle) wird mitgelesen —
+                        // im Bild des größten Wegs stehen sein Halt `t`, der Halt an den Bauten allein `bau` (nur gefragt, wenn der
+                        // Wurf hält: der freie Pfad bleibt byte-alt), der Arm danach und der Rest des Übergangs; dazu der Wagen, wie
+                        // er im Bild des Abstiegs steht (Stufe, Richtungen seiner Hülle, Nick und Wank in Grad)
+                        const wurfRoh = r._fieldRaycast;
+                        let [wurf, wer, wagen] = [null, null, null];
+                        r._fieldRaycast = function (sx, sy, sz, ex, ey, ez, o) {
+                            const out = wurfRoh.call(this, sx, sy, sz, ex, ey, ez, o);
+                            if (o && o.radius > 0 && o.gelaende !== false) {
+                                const len = Math.hypot(ex - sx, ey - sy, ez - sz);
+                                const bau = out.t < 1 ? wurfRoh.call(this, sx, sy, sz, ex, ey, ez, { ...o, gelaende: false }).t : 1;
+                                wurf = { t: +out.t.toFixed(3), bau: +bau.toFixed(3), len: +len.toFixed(2) };
                             }
-                            frame(i++);
-                            mf = Math.max(mf, Math.abs(st.camera.fov - f));
-                            f = st.camera.fov;
+                            return out;
+                        };
+                        try {
+                            for (let j = 0; j < 33; j++, p.copy(c)) {
+                                if (j === 3) {
+                                    w.abV.push(+spielerTempo().toFixed(1));
+                                    const grad = (x) => (Number.isFinite(x) ? +((x * 180) / Math.PI).toFixed(1) : null);
+                                    wagen = {
+                                        stufe: r._foundryLodForEntry ? r._foundryLodForEntry(e) : null,
+                                        mass: !!e._gestaltMass, // das Maß der gezeichneten Gestalt (ohne es: die Stationen)
+                                        nick: grad(e._rideTerrainPitch),
+                                        wank: grad(e._rideRoll),
+                                        boxen: e.blockerAABBs ? e.blockerAABBs.length : 0,
+                                    };
+                                    r.dismountArchitecture();
+                                }
+                                wurf = null;
+                                frame(i++);
+                                const d = c.distanceTo(p);
+                                if (d > m) {
+                                    m = d;
+                                    const g = st._kamVersatz;
+                                    wer = {
+                                        j,
+                                        arm: Number.isFinite(st._kamArm) ? +st._kamArm.toFixed(3) : null,
+                                        ...(wurf || { t: null }),
+                                        rest: g ? +g.o.length().toFixed(2) : 0,
+                                    };
+                                }
+                                mf = Math.max(mf, Math.abs(st.camera.fov - f));
+                                f = st.camera.fov;
+                            }
+                        } finally {
+                            r._fieldRaycast = wurfRoh;
                         }
+                        w.abWer.push(wer && { ...wer, wagen }); // der Wagen steht in jeder Zeile: grün und rot lassen sich vergleichen
                         w.abSprung.push(+m.toFixed(2));
                         w.abFov.push(+mf.toFixed(2));
                     }

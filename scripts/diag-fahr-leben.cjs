@@ -76,6 +76,27 @@ const WECHSEL = {
     abV: 7.5,
     fovGrad: 0.5,
 };
+// DER TÄTER DES SPRUNGS (front-brand): je Sicht über dem Soll das Bild des größten Wegs (j, der Abstieg fällt in Bild 3), der
+// Halt des Arm-Wurfs und wer ihn hielt — ein Bau (`bau` ≤ `t`: die Kugel am Werk, im Abstieg der verlassene Wagen) oder das
+// Gelände —, der Arm danach, der Rest des Übergangs und der Wagen, wie er im Bild des Abstiegs stand (Stufe, Maß der
+// gezeichneten Gestalt, Nick · Wank, Boxen). Ohne Wurf im Bild (Ego) nennt die Zeile nur Bild und Rest.
+function abWerText(m) {
+    const z = (m.abWer || []).flatMap((x, i) =>
+        x && m.abSprung[i] > WECHSEL.sprungM
+            ? [
+                  `${i ? "Ego" : "Third"} Bild ${x.j}: ` +
+                      (x.t == null
+                          ? "kein Arm-Wurf"
+                          : `der Arm fällt auf ${x.arm} — der Wurf (${x.len} m) hält bei ${x.t} ${x.bau <= x.t ? "an einem Bau" : `am Gelände (Bau ${x.bau})`}`) +
+                      `, Rest des Übergangs ${x.rest} m` +
+                      (x.wagen
+                          ? `, der Wagen Stufe ${x.wagen.stufe}${x.wagen.mass ? "" : " OHNE Gestalt-Maß"} · Nick ${x.wagen.nick}° · Wank ${x.wagen.wank}° · ${x.wagen.boxen} Boxen`
+                          : ""),
+              ]
+            : []
+    );
+    return z.length ? ` — ${z.join(" · ")}` : "";
+}
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
@@ -92,7 +113,7 @@ function wechselVerdict(m) {
         ],
         [
             m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM),
-            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`,
+            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})${abWerText(m)}`,
         ],
         [
             m.abFov?.length === 3 && m.abFov.every((x) => x <= W.fovGrad),
@@ -1900,6 +1921,17 @@ hauptLauf(async () => {
             ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ], 1);
+        // der Täter des Sprungs beim Namen (`abWerText`): das Bild, der Arm und wer den Wurf hielt — Bau oder Gelände
+        const wagenT = { stufe: 2, mass: false, nick: -20.1, wank: 1.2, boxen: 5 };
+        for (const [name, wer, soll] of [
+            ["der Arm fällt an den verlassenen Wagen", { j: 4, arm: 0.015, t: 0.015, bau: 0.015, len: 9.6, rest: 8.2, wagen: wagenT }, "Third Bild 4: der Arm fällt auf 0.015 — der Wurf (9.6 m) hält bei 0.015 an einem Bau, Rest des Übergangs 8.2 m, der Wagen Stufe 2 OHNE Gestalt-Maß · Nick -20.1° · Wank 1.2° · 5 Boxen"],
+            ["der Arm fällt an den Hang", { j: 5, arm: 0.3, t: 0.3, bau: 1, len: 9.6, rest: 7.9 }, "Third Bild 5: der Arm fällt auf 0.3 — der Wurf (9.6 m) hält bei 0.3 am Gelände (Bau 1), Rest des Übergangs 7.9 m"],
+        ]) {
+            const v = wechselVerdict({ ...wechsel, abSprung: [10.15, 0.23], abWer: [wer, null] });
+            check(`Selbst-Test T4: ‚${name}' → die Linse nennt Bild, Arm und Halter`, v.length === 1 && v[0].includes(soll), v.join(" · ")); // prettier-ignore
+        }
+        const stumm = abWerText({ ...wechsel, abWer: [{ j: 4, arm: 0.9, t: 1, bau: 1, len: 9.6, rest: 8.2 }, null] });
+        check("Selbst-Test T4: der gesunde Wechsel nennt keinen Halter (der Wurf im Soll bleibt stumm)", stumm === "", stumm);
         // der Ruck je Bild über ungleiche Bildzeiten (16,7 · 33,3 ms): gleichförmig 1,8 m/s quer ist keiner (je Bild roh 0,03), ein Zittern bleibt
         const [glatt, zittert] = [
             ruckJeBild([
