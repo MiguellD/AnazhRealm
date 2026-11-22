@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "gtx",
- "zeit": "2026-11-22T12:46:47.681Z",
+ "zeit": "2026-11-22T13:24:26.087Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.physik.reaktion#1": {
@@ -1915,6 +1915,70 @@
    },
    "zeit": "2026-11-22T12:46:47.681Z",
    "abdruck": "7b2d751994fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.08,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.1,
+   "fremd": {
+    "s": 66,
+    "takte": 30,
+    "fremdS": 22.98,
+    "kerne": 0.348,
+    "fensterKerne": 0.471,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.23
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-6066c757 x listen/kandidat-gtx-6066c757.txt",
+      2.81
+     ]
+    ],
+    "dienerS": 19.84,
+    "diener": [
+     [
+      "dwm.exe",
+      10.86
+     ],
+     [
+      "System",
+      4.78
+     ]
+    ],
+    "geraetS": 18.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.2
+     ],
+     [
+      "svchost.exe",
+      6.56
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 167.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T13:24:26.087Z",
+   "abdruck": "b202406680e6",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
