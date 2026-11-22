@@ -1205,8 +1205,23 @@ class AnazhRealm_siedlung_bewohner {
         const w = b.orte.werk;
         const [fx, fz] = [Math.sin(w.blick), Math.cos(w.blick)];
         const kM = AnazhRealm.BESTAND_BILD.kisteM;
-        const am = (j) => AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM;
-        const tief = (j) => -Math.floor(j / 6) * kM;
+        // DIE KISTEN STEHEN NIE IM HAUS (strom S1, acker-kette 2): die Reihen wachsen vom Werk-Ort fort, seitlich des Blicks —
+        // am Start-Dorf lag die vierte Reihe zweier von drei Scheunen in der Wand des Nachbarn (6 bzw. 4 von 24 Plätzen im
+        // Grundriss „haus“, dort trägt kein gezeichneter Boden), `_bodenSichtAt` antwortete null und das Bild des Vorrats kam
+        // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste). Die Lage wählt nun die erste der vier Seiten (rechts/
+        // links des Blicks × fort vom/zum Tor), deren Plätze alle frei von Haus und Bau sind; die erste ist die bisherige
+        const frei = (s, t) => {
+            for (let j = 0; j < m; j++) {
+                const a = s * (AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM);
+                const d = -t * Math.floor(j / 6) * kM;
+                const g = this._imGrundriss(w.x + fz * a + fx * d, w.z - fx * a + fz * d, kM / 2);
+                if (g === "haus" || g === "bau") return false;
+            }
+            return true;
+        };
+        const [ss, st] = [[1, 1], [-1, 1], [1, -1], [-1, -1]].find(([s, t]) => frei(s, t)) || [1, 1];
+        const am = (j) => ss * (AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM);
+        const tief = (j) => -st * Math.floor(j / 6) * kM;
         const lage = (j) => [w.x + fz * am(j) + fx * tief(j), w.z - fx * am(j) + fz * tief(j)];
         // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
         const fuss = (j) => (j % 3) + 3 * Math.floor(j / 6); // der Platz der Kiste j am Boden
