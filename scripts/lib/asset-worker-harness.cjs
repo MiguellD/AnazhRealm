@@ -228,6 +228,8 @@ function pageHtml() {
       // Scharnier + Gelenk reisen mit (die Draw-Regel liest sie; der Fingerabdruck nicht).
       if (m.tuer) out.tuer = m.tuer;
       if (m.joint) out.joint = m.joint;
+      // die Welle einer Maschine (die Haspel: kurbel · seil · eimer) reist mit — die Zeile hält sie gegen ihr bewegt
+      if (m.welle) out.welle = m.welle;
       // Der Schatten-Teil der Baum-L1 (S3, teil "schatten") reist mit und steht im Fingerabdruck.
       if (m.teil !== undefined) out.teil = m.teil;
       for (const k of Object.keys(m)) {
@@ -318,7 +320,7 @@ function pageHtml() {
       const k = window.__phytoCore.budgetSippen(r.meshes || []);
       // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
       const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
-      const o = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
+      const o = { tris: k.tris, draws: k.draws, bewegt: k.bewegt || 0, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
       if (mitTeilen)
         o.teile = (r.meshes || [])
           .filter((m) => m && m.position && m.position.array)

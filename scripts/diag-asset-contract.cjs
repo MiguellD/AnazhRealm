@@ -164,7 +164,7 @@ function teileAus(meshes) {
         .filter((m) => m.attrs?.position)
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
-            for (const k of ["tuer", "joint", "teil"]) if (m[k]) t[k] = m[k];
+            for (const k of ["tuer", "joint", "teil", "welle"]) if (m[k]) t[k] = m[k];
             // in der Form des Kerns (die Antwort trägt sie): bis einheit-relief las die Linse jedes Attribut als Float32 —
             // der Verband je Ecke (Uint8) zerfiel zu einem Viertel seiner Ecken
             for (const k of Object.keys(m.attrs)) {
@@ -178,7 +178,7 @@ function teileAus(meshes) {
 }
 function kosten(meshes) {
     const k = PC.budgetSippen(teileAus(meshes));
-    return { tris: k.tris, draws: k.draws };
+    return { tris: k.tris, draws: k.draws, bewegt: k.bewegt || 0 };
 }
 // DAS SEH-GESETZ an gelieferten Stufen (Integration W8): jeder Stoff trägt seine Seh-Klasse aus dem Gesetzbuch, und
 // auch auf EINEN Draw gezwungen faltet nichts über die Grenze von Bindung × Seh-Klasse × Glimmen — der Ausgang bleibt
@@ -226,7 +226,10 @@ function kostenUrteil(messungen, budget) {
         }
         if (z.karte) continue;
         if (gegenZeile(mm) > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${gegenZeile(mm)} Dreiecke > ${z.tris}`);
-        if (mm.draws > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.draws} Draws > ${z.draws}`);
+        // die bewegten Teile einer Maschine (die Haspel: Kurbel · Seil · Eimer) zählen gegen `bewegt` der Zeile, nie gegen die ruhenden Draws
+        const bw = mm.bewegt || 0;
+        if (mm.draws - bw > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.draws - bw} Draws > ${z.draws}`);
+        if (bw > (z.bewegt | 0)) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${bw} bewegte Draws > ${z.bewegt | 0}`);
     }
     return v;
 }
@@ -729,8 +732,8 @@ hauptLauf(async () => {
             // Nur GELIEFERTE Stufen: eine nicht deklarierte (die Strauch-L0, der Host klemmt sie auf L1) bleibt
             // ein Byte-Golden ohne Budget.
             if (!Array.isArray(stufen[kind]) || !stufen[kind].includes(c.lod)) return;
-            const k = a.meshes ? kosten(a.meshes) : a;
-            messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
+            const k = a.meshes ? kosten(a.meshes) : a; // der Kosten-Zug trägt `bewegt` wie `kosten`
+            messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, bewegt: k.bewegt || 0, budget: a.budget || null });
             // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
             if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf && budget[kind].fernform === "huelle") {
                 const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
