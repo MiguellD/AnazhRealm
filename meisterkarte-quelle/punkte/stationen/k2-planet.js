@@ -4245,7 +4245,7 @@ L.perspektive("wetter", (() => {
             const welt = await H.seite(`
 const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed;
 const FELD = A.WEATHER_FIELD, nass = (w) => r._weatherIsWet(w), grau = (w) => FELD[w].grey;
-const jahrS = st.seasonYearSeconds || 2400, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, P = globalThis.__phytoCore;
+const jahrS = ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()), tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, P = globalThis.__phytoCore;
 const peil = (d) => { let b = Math.atan2(d.x, -d.z) * 180 / Math.PI; return b < 0 ? b + 360 : b; };
 const dreh = (a, b) => { let d = peil(b) - peil(a); while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
 const out = { Z, jahrS, tagS, passagen: [], spellTage: [], sturmJahr: [], nassAnteil: [], wortZahl: 0 };
@@ -4925,7 +4925,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
             // der Worte (gelaende-core temperaturAus mit dem Feld des Worts), der Pegel, die Sicht im Sturm, die Telekonnektion
             const welt = await H.seite(`
 const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, G = globalThis.__gelaendeCore, P = globalThis.__phytoCore;
-const FELD = A.WEATHER_FIELD, tagS = A.PEGEL_TAG_S, stundeS = tagS / 24, jahrS = st.seasonYearSeconds || 2400, s0 = wm.seed;
+const FELD = A.WEATHER_FIELD, tagS = r._kalender().tagS, stundeS = tagS / 24, jahrS = ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()), s0 = wm.seed;
 const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
 const mmJeTakt = (w) => FELD[w].rain * 10 * (Z / stundeS);
 const jahre = ${Number(u3.jahre) || 100}, jeJahr = Math.max(1, Math.round(jahrS / Z));
