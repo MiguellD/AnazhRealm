@@ -352,7 +352,7 @@ class AnazhRealm_siedlung_verkehr {
         const frei = (si, p) => {
             for (let k = 0; k < nS; k++) {
                 const x = leute.get(`${seed}:${(si + k) % nS}:${p}`);
-                if (x && !x.wagen) return x;
+                if (x && !x.wagen && x.rolle !== "kind") return x; // (kein Kind am Steuer, ALTER_GESETZ)
             }
             return null;
         };

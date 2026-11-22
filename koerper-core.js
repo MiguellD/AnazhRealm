@@ -1649,13 +1649,153 @@
         return Math.max(-BAU_GESETZ.spanne, Math.min(BAU_GESETZ.spanne, (s - n / 2) * Math.sqrt(12 / n)));
     }
 
+    // DAS ALTER DER EPOCHE (Meisterkarte 2 mensch.geist.generationen S1, rein additiv): die Altersstruktur einer Bevölkerung ist ein
+    // Gesetz ihrer Zeit — die Sterbetafel trägt die Pyramide. Je Stichjahr (`pyramide`) der Anteil jedes Alters-Bands [von, bis) J;
+    // dazwischen linear, davor und danach das Rand-Jahr (QUELLE UNGEPRÜFT — Richtwerte aus dem Gedächtnis: Mittelalter um 1300
+    // e0 ~30 J, ~43 % unter 15 J; 1800 ~35 %; 2000 Mitteleuropa ~15 %, ein Viertel über 60). Die Bewohner einer Siedlung gehen:
+    // ab `gehtJ` (jünger trägt man) — das Band, in dem es beginnt, zählt seinen Anteil nur ab dort. Der Haushalt: die erste
+    // Person eines Hauses ist erwachsen (ab `erwachsenJ`); die übrigen tragen die Kinder so, dass der Anteil der Siedlung der
+    // Pyramide folgt (`epochenAlter`). Das Alter im Regler `age` des Körpers: 18 + 62 · age J (PARAMS „Alter": 0–1 = 18–80 J) —
+    // darunter negativ (das Kind; die Wirkung des Alterns im Leib, `labMorph`, beginnt bei 18 J: darunter liest sie 0).
+    // DER WUCHS (`wuchs`): je Alter J des Kindes die Körperhöhe als Anteil der erwachsenen (`hoehe`), der Kopf als Anteil seiner
+    // erwachsenen Größe (`kopf` — der Kopf wächst langsamer als der Leib: ein 6-Jähriger trägt ~89 % des Kopfs auf 68 % der Höhe,
+    // das Verhältnis headRatio steigt um kopf ÷ hoehe), die Länge der Beine als Anteil (`bein`, die Achse bauBein des Baus trägt sie). Ab erwachsenJ 1, 1, 0 —
+    // ein Erwachsener bleibt Byte für Byte. (QUELLE UNGEPRÜFT — Richtwerte nach den Wachstumskurven, Mittel beider Geschlechter;
+    // Schritthöhe ÷ Körperhöhe 2 J ~0,37, 6 J ~0,44, erwachsen ~0,47.) DAS ALTER DES GREISES: das Haar ergraut zwischen `grau`
+    // [45, 75] J (der Anteil der Grauen steigt linear), ab `weissJ` weiß bei jedem Zweiten. DIE LEBENSPHASE TRÄGT DIE GESTALT
+    // (`alterAbstand`): ein Kind (< kindJ) trägt nie die Gestalt eines Erwachsenen und umgekehrt (`phase`); unter Kindern zählt der
+    // Wuchs (`wuchsGewicht` je Anteil der Höhe). Leser: der Wirt (`_rollHumanoidGenome` → das Genom jedes Bewohners und jeder Gestalt;
+    // `_bewohnerAbstand` → die Gestalt eines Bewohners; `_bewohnerListe` → die Rolle des Kinds, TAGES_GESETZ.rollen.kind), der
+    // Leib-Raum der Menge (LEIB_RAUM: die Achsen age und kopf tragen das Kind und den Greis) und gate:mensch-zuege ALTER.
+    // prettier-ignore
+    var ALTER_GESETZ = Object.freeze({
+        gehtJ: 2, erwachsenJ: 18, kindJ: 15, maxJ: 90,
+        regler: Object.freeze({ abJ: 18, spanneJ: 62 }),
+        baender: Object.freeze([0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90]),
+        pyramide: Object.freeze([
+            Object.freeze({ jahr: 1300, anteil: Object.freeze([0.17, 0.14, 0.12, 0.10, 0.14, 0.115, 0.09, 0.065, 0.04, 0.015, 0.005]) }),
+            Object.freeze({ jahr: 1800, anteil: Object.freeze([0.13, 0.12, 0.10, 0.09, 0.16, 0.13, 0.10, 0.08, 0.055, 0.025, 0.01]) }),
+            Object.freeze({ jahr: 2000, anteil: Object.freeze([0.05, 0.05, 0.055, 0.055, 0.12, 0.16, 0.155, 0.125, 0.125, 0.075, 0.03]) }),
+        ]),
+        wuchs: Object.freeze([
+            Object.freeze({ J: 2, hoehe: 0.51, kopf: 0.82, bein: -0.2 }),
+            Object.freeze({ J: 4, hoehe: 0.6, kopf: 0.86, bein: -0.12 }),
+            Object.freeze({ J: 6, hoehe: 0.68, kopf: 0.89, bein: -0.06 }),
+            Object.freeze({ J: 8, hoehe: 0.75, kopf: 0.92, bein: -0.04 }),
+            Object.freeze({ J: 10, hoehe: 0.81, kopf: 0.94, bein: -0.02 }),
+            Object.freeze({ J: 12, hoehe: 0.87, kopf: 0.96, bein: -0.01 }),
+            Object.freeze({ J: 14, hoehe: 0.94, kopf: 0.98, bein: 0 }),
+            Object.freeze({ J: 16, hoehe: 0.98, kopf: 0.99, bein: 0 }),
+            Object.freeze({ J: 18, hoehe: 1, kopf: 1, bein: 0 }),
+        ]),
+        grau: Object.freeze([45, 75]), weissJ: 65,
+        phase: 100, wuchsGewicht: 30,
+    });
+    // das Alter in Jahren ↔ der Regler `age` des Körpers
+    function alterRegler(J) {
+        return (J - ALTER_GESETZ.regler.abJ) / ALTER_GESETZ.regler.spanneJ;
+    }
+    function alterJahre(age) {
+        return ALTER_GESETZ.regler.abJ + ALTER_GESETZ.regler.spanneJ * age;
+    }
+    // die Pyramide des Jahrs: je Band [von, bis, Anteil] ab gehtJ, auf 1 normiert
+    function alterPyramide(jahr) {
+        if (typeof jahr !== "number" || !isFinite(jahr)) throw new Error("ALTER: die Epoche ohne Jahr (fail-closed)");
+        var A = ALTER_GESETZ, P = A.pyramide, B = A.baender, w = [], i, s = 0;
+        var a = P[0], b = P[0], t = 0;
+        for (i = 0; i < P.length - 1; i++) if (jahr >= P[i].jahr) (a = P[i]), (b = P[i + 1]);
+        if (jahr >= P[P.length - 1].jahr) a = b = P[P.length - 1];
+        else if (jahr > a.jahr) t = (jahr - a.jahr) / (b.jahr - a.jahr);
+        for (i = 0; i < B.length - 1; i++) {
+            var lo = Math.max(B[i], A.gehtJ), hi = B[i + 1];
+            if (!(hi > lo)) continue;
+            var x = (a.anteil[i] + (b.anteil[i] - a.anteil[i]) * t) * ((hi - lo) / (B[i + 1] - B[i]));
+            w.push([lo, hi, x]);
+            s += x;
+        }
+        for (i = 0; i < w.length; i++) w[i][2] /= s;
+        return w;
+    }
+    // das Quantil u (0…1) der Pyramide W im Fenster [lo, hi) J
+    function _alterQuantil(W, u, lo, hi) {
+        var teil = [], s = 0, i;
+        for (i = 0; i < W.length; i++) {
+            var a = Math.max(W[i][0], lo), b = Math.min(W[i][1], hi);
+            if (!(b > a)) continue;
+            var x = (W[i][2] * (b - a)) / (W[i][1] - W[i][0]);
+            teil.push([a, b, x]);
+            s += x;
+        }
+        var r = Math.max(0, Math.min(1, u)) * s;
+        for (i = 0; i < teil.length; i++) {
+            if (r < teil[i][2] || i === teil.length - 1) return teil[i][0] + (teil[i][1] - teil[i][0]) * Math.max(0, Math.min(1, r / teil[i][2]));
+            r -= teil[i][2];
+        }
+        return lo;
+    }
+    // der Anteil der Kinder (< kindJ) an der gehenden Bevölkerung des Jahrs
+    function alterKinder(jahr) {
+        var W = alterPyramide(jahr), s = 0;
+        for (var i = 0; i < W.length; i++) s += (W[i][2] * Math.max(0, Math.min(W[i][1], ALTER_GESETZ.kindJ) - W[i][0])) / (W[i][1] - W[i][0]);
+        return s;
+    }
+    // DAS ALTER EINES MENSCHEN (Jahre) aus seiner Epoche und einem Strom u (0…1): ohne Rang das Quantil der Pyramide (die Gestalten
+    // einer Siedlung: geschichtet); mit Rang im Haushalt (`rang` 0 … n − 1) die erste Person erwachsen, die übrigen Kinder mit dem
+    // Anteil, der den der Siedlung hält (K · n ÷ (n − 1), höchstens `kinderMax`)
+    function epochenAlter(jahr, u, rang, n) {
+        var A = ALTER_GESETZ, W = alterPyramide(jahr);
+        if (rang == null) return _alterQuantil(W, u, A.gehtJ, A.maxJ);
+        if (rang === 0 || !(n > 1)) return _alterQuantil(W, u, A.erwachsenJ, A.maxJ);
+        var K = Math.min(0.95, (alterKinder(jahr) * n) / (n - 1));
+        return u < K ? _alterQuantil(W, u / K, A.gehtJ, A.kindJ) : _alterQuantil(W, (u - K) / (1 - K), A.kindJ, A.maxJ);
+    }
+    // DER WUCHS zum Alter J (Jahre): { hoehe, kopf, bein } — ab erwachsenJ die Zeile des Erwachsenen
+    function wuchs(J) {
+        var T = ALTER_GESETZ.wuchs;
+        if (!(J < T[T.length - 1].J)) return T[T.length - 1];
+        if (!(J > T[0].J)) return T[0];
+        for (var i = 1; i < T.length; i++)
+            if (J <= T[i].J) {
+                var a = T[i - 1], b = T[i], t = (J - a.J) / (b.J - a.J);
+                return { J: J, hoehe: a.hoehe + (b.hoehe - a.hoehe) * t, kopf: a.kopf + (b.kopf - a.kopf) * t, bein: a.bein + (b.bein - a.bein) * t };
+            }
+        return T[T.length - 1];
+    }
+    // DER LEIB ZUM ALTER (der Roller der Welt ruft ihn am erwachsenen Genom g, J in Jahren; u = ein Strom für das Haar): die Höhe,
+    // das Verhältnis des Kopfs (headRatio: seine Größe ÷ die Höhe), die Beine des Baus (bauBein in σ, in der Spanne des Baus), das
+    // ergraute Haar, der Regler `alter`. Schreibt g und liefert es; ein Erwachsener trägt nur `alter` und das Haar.
+    function alterLeib(g, J, u, u2) {
+        var A = ALTER_GESETZ;
+        g.alter = alterRegler(J);
+        g.jahre = J;
+        if (J < A.erwachsenJ) {
+            var w = wuchs(J), sp = BAU_GESETZ.spanne;
+            g.kh *= w.hoehe;
+            g.headRatio *= w.kopf / w.hoehe;
+            var bein = w.bein / BAU_GESETZ.achsen[0].last.bein;
+            if (typeof g.bauBein === "number") g.bauBein = Math.max(-sp, Math.min(sp, g.bauBein + bein));
+        }
+        var grau = Math.max(0, Math.min(1, (J - A.grau[0]) / (A.grau[1] - A.grau[0])));
+        if (u < grau) g.hairColor = J >= A.weissJ && u2 < 0.5 ? "white" : "grey";
+        return g;
+    }
+    // DIE NÄHE ZWEIER ALTER (Regler) für die Wahl der Gestalt: der Abstand im Regler; zwischen Kind und Erwachsenem die Grenze der
+    // Lebensphase (`phase`), unter Kindern ihr Wuchs
+    function alterAbstand(a, t) {
+        var A = ALTER_GESETZ, Ja = alterJahre(a), Jt = alterJahre(t);
+        var d = Math.abs(a - t);
+        if (Ja < A.kindJ !== Jt < A.kindJ) return d + A.phase;
+        if (Ja < A.erwachsenJ || Jt < A.erwachsenJ) d += A.wuchsGewicht * Math.abs(wuchs(Ja).hoehe - wuchs(Jt).hoehe);
+        return d;
+    }
+
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
     // additiv): die Achsen, auf denen sich ein Mensch der Menge vom anderen unterscheidet, je Achse ihre Knoten. Der Ofen gießt je
     // Mengen-Stufe EINE Vorlage am Mittel-Knoten jeder Achse (`leibRaumVorlage`) und je Knoten den Weg jeder ihrer Ecken (die
     // Formziel-Tafel, foundry-core `__leibRaumTafel`); eine Person ist ihre Lage auf den Achsen (`leibRaumPunkt`: je Achse der Knoten-
     // Index samt Bruch) — Vorlage + je Achse der Weg zwischen ihren zwei Knoten. Die Kappe des Haars ist ihr Tripel (HAAR_KAPPE:
     // Dicke, Höhe, Front) als drei Achsen über die Spanne der Stile; die Höhe trägt die Skala des Leibs (charScale), die Farben die
-    // Palette (`menschPalette`). Die Spannen sind die des Genoms (Alter, Fülle des Haars: der Roller der Welt liest sie hier).
+    // Palette (`menschPalette`). Die Spannen sind die des Genoms (Fülle des Haars) und des Alters (ALTER_GESETZ).
     var LEIB_RAUM = (function () {
         var fuenf = function (a, b) {
             return Object.freeze([a, a + (b - a) / 4, a + (b - a) / 2, a + (3 * (b - a)) / 4, b]);
@@ -1674,8 +1814,18 @@
                 Object.freeze({ achse: "gender", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "mass", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "tone", knoten: fuenf(0, 1) }),
-                Object.freeze({ achse: "age", knoten: fuenf(0.05, 0.5) }),
-                Object.freeze({ achse: "kopf", knoten: KOPF_MASS.knoten }),
+                // DAS KIND UND DER GREIS (ALTER_GESETZ): je Achse ein Knoten an jedem Rand — das Alter bis 18 J (darunter liest der
+                // Leib 0) und bis 80 J, der Kopf bis zu dem des jüngsten gehenden Kinds (wuchs: kopf ÷ hoehe am Rand des Genoms); der
+                // Mittel-Knoten bleibt (die Vorlage der Menge, der Punkt ohne Wort), darum unten wie oben einer
+                Object.freeze({ achse: "age", knoten: Object.freeze([0].concat(fuenf(0.05, 0.5), [1])) }),
+                Object.freeze({
+                    achse: "kopf",
+                    knoten: Object.freeze(
+                        [2 * KOPF_MASS.knoten[0] - KOPF_MASS.knoten[2]].concat(KOPF_MASS.knoten, [
+                            (KOPF_MASS.knoten[4] * ALTER_GESETZ.wuchs[0].kopf) / ALTER_GESETZ.wuchs[0].hoehe,
+                        ])
+                    ),
+                }),
                 Object.freeze({ achse: "hairVol", knoten: Object.freeze([0.8, 1.05, 1.3]) }),
                 Object.freeze({ achse: "haaransatz", knoten: Object.freeze([0, 0.5, 1]) }),
                 Object.freeze({ achse: "__kappe0", knoten: kappe(0) }),
@@ -2154,6 +2304,9 @@
     // {height,mass,tone,age,gender,arms} → abgeleitete Größen + shell-Closures
     // (base-Skala {x,y,z} → Ziel-Skala; lat setzt ABSOLUT — wie das Original).
     function labMorph(p) {
+        // DAS ALTERN BEGINNT MIT 18 J (ALTER_GESETZ): das Kind (age < 0) trägt die Wirkung des Alters bei 0 — seine Jugend ist der
+        // Wuchs (Höhe, Kopf, Bein), nie ein jenseits gestrecktes Altern (die Muskel-Spannung stiege, der Kopf neigte nach hinten)
+        if (p.age < 0) p = Object.assign({}, p, { age: 0 });
         var h = p.height;
         var effTone = (0.62 + p.tone * 0.53) * (1 - p.age * 0.35);
         var armM = effTone * (0.68 + p.gender * 0.32);
@@ -5170,6 +5323,11 @@
                 haltung: false,
                 regenfest: true,
             }),
+            // DAS KIND (ALTER_GESETZ.kindJ; der Wirt gibt die Rolle jedem Bewohner unter 15 J, `_bewohnerListe`): sein Werk ist das
+            // Spiel vor der eigenen Tür (`spiel`: kein Werk der Wahl, nie das Werk seines Hauses als Arbeit — kein Kind am Amboss),
+            // in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude (`haltung.spiel`). Bis hier ging jeder
+            // Bewohner ans Werk seines Hauses: es gab kein Kind
+            kind: Object.freeze({ werk: Object.freeze([9, 16]), spiel: true }),
         }),
         // DAS ANGEBOT JE ORT (Art → Güte je Bedürfnis): die Rolle eines Slots, der Platz, der Acker; `sonst` jede Rolle, die
         // hier keine Zeile trägt; `daheim` das eigene Haus aus der Sicht seiner Leute (der Tisch, die Bank vor der Tür)
@@ -5204,7 +5362,7 @@
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
+        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy" }),
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5392,7 +5550,8 @@
                 amD = dq;
             }
         }
-        var werk = am >= 0 ? am : eigen ? heimI : wahl("arbeit", H, "werk", null);
+        // (das Kind, `rollen.kind.spiel`: sein Werk ist das Spiel vor der eigenen Tür)
+        var werk = am >= 0 ? am : R.spiel || eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
         var platz = wahl("markt", H, "markt", null);
         return {
@@ -5467,7 +5626,7 @@
         if (h < w0) return aus("heim", "morgen", false);
         // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
-        if (h < w1) return aus("werk", "arbeit", false);
+        if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
         return aus("abend", "abend", false);
     }
@@ -9815,6 +9974,15 @@
         // w28-leib-genom — der Bau als Daten-Gesetz aus dem Genom (Leser: labProportionen · der Roller der Welt · der Leib auf den
         // Knochen seiner Gestalt)
         BAU_GESETZ: BAU_GESETZ,
+        ALTER_GESETZ: ALTER_GESETZ,
+        alterRegler: alterRegler,
+        alterJahre: alterJahre,
+        alterPyramide: alterPyramide,
+        alterKinder: alterKinder,
+        epochenAlter: epochenAlter,
+        wuchs: wuchs,
+        alterLeib: alterLeib,
+        alterAbstand: alterAbstand,
         BAU_SOLL: BAU_SOLL,
         KETTE_GELENKE: KETTE_GELENKE,
         leibBau: leibBau,
