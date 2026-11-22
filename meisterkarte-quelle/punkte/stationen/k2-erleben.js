@@ -2075,6 +2075,8 @@ const LEITERN = [];
                 },
                 2: {
                     soll: [{ wort: "wunde_min", richtung: "≥", wert: 10, wortlaut: "die Wunde mindert die Werte des Spielers messbar über ~10 min", feld: "richter" }],
+                    // ZAHL (auge-klasse.cjs): die Wunde urteilt an der Zeit, das Bildpaar ist Beleg — der Zeuge: Werte, die der Tod wirklich minderte
+                    welt: [{ wort: "gemindert", ab: 1, was: "Werte des Spielers, die der Tod minderte (Stand vor dem Tod gegen nach der Rückkehr)" }],
                     auge: { pose: "der Todesort der Sitzung, Ego — das Bild vor dem Tod (-S2-vor.png) und nach der Rückkehr (-S2.png)", vorbild: "dasselbe Bild vor dem Tod (Bildpaar vor/nach am Todesort: Lebensspur)" },
                 },
                 3: { soll: [{ wort: "nennen_pct", richtung: "≥", wert: 80, wortlaut: "≥ 80 % nennen Ort und Täter", feld: "richter" }] },
@@ -2261,7 +2263,7 @@ const LEITERN = [];
                     if (o.fehler) throw new Error("der Tod warf: " + o.fehler);
                     if (!o.tot) throw new Error("kein Tod in der Sitzung — kein Bildpaar am Todesort");
                     L.zeile("tod S2 Wunde " + JSON.stringify({ gemindert: o.gemindert, sek: o.wundeSek, zurueck: o.zurueck }));
-                    await L.auge(2, { werte: { wunde_min: o.wunde_min } });
+                    await L.auge(2, { werte: { wunde_min: o.wunde_min }, welt: { gemindert: (o.gemindert || []).length } });
                 });
                 const zaehlFn = function (r) {
                     const st = r.state;
@@ -3232,10 +3234,23 @@ const LEITERN = [];
                             Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
                             const ab2 = alarm ? [] : [leihe(r, { _kreaturVerbandAlarm: (c, NAT, von, w) => ((c.userData._alarmEigen = w >= NAT.fleeThreshold), w) })];
                             try {
+                                // DER WURF NACH DEM GESETZ DES SPIELS (pm-front-f1; GTX 31ea3847 „Herde 1“): `_kreaturWurf` stellt jeden
+                                // weiteren Geworfenen nur fern vom Spieler (≥ CREATURE_SPAWN_FAR_MIN 130 m) und außer Blick — der Spieler
+                                // stand 30 m daneben, die Herde der Rothirsche (wesen → deer, Kopfzahl 3–7) fiel auf EIN Tier. Der Spieler
+                                // steht beim Wurf 200 m westlich, der Blick ist leer (kein Frustum: die Kamera der Probe zeigt nicht hin);
+                                // danach beginnt der Gang 30 m vor der Herde wie zuvor
+                                const fern = neben(heim.x - 200, heim.z);
+                                pm.set(fern.x, fern.y, fern.z);
+                                const blick = leihe(r, { _frustumCache: null });
+                                let glieder;
+                                try {
+                                    glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7) || [];
+                                } finally {
+                                    blick();
+                                }
                                 const p0 = neben(heim.x - 30, heim.z);
                                 pm.set(p0.x, p0.y, p0.z);
                                 if (s.playerVel) s.playerVel.setValue(0, 0, 0);
-                                const glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7) || [];
                                 if (!glieder.length) return { fehler: "der Wurf trug kein Glied" };
                                 const alt = glieder.map((c) => c.position.clone());
                                 const beginn = [];

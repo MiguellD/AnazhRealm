@@ -437,18 +437,40 @@ function k2TafelZeile(st) {
     return { station: schluessel(st), leiter: st.kriterium.slice("karte2.".length), sprosse: st.staffel, richter: t.richter, ...(t.richter === "fehlt" ? { grund: t.grund } : {}) };
 }
 // `tafel [--schreibe]`: je Station der Karte 2 ohne Zeile ihre Zeile aus dem Register; belegt eine andere Zeile dieselbe Sprosse, gewinnt
-// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand
+// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand.
+// DAS REGISTER IST DIE QUELLE (pm-auge 21.11.: die Klasse der Auge-Sprossen, auge-klasse.cjs): weicht die Zeile einer Station mit
+// `tafel` in Richter oder Grund vom Register ab, ersetzt `--schreibe` sie durch die des Registers — die Tafel entsteht aus ihrem
+// Erzeuger, nie von Hand (bis 21.11. blieb jede Abweichung stehen: 282 „fehlt“ nach dem alten Vertrag „auge = fehlt“)
 function tafelCli(o) {
     const tafel = ladeTafel();
     const { stationen } = pruefeStationen(ladeStationen(), kriterienDerKarte(), tafel);
+    const { neu, kollision, vonHand, abweichung, ersetze } = tafelFalte(tafel, stationen);
+    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
+    for (const k of kollision) console.log("  KOLLISION " + k);
+    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
+    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
+    if (o.schreibe && (neu.length || ersetze.length)) {
+        for (const [alt, z] of ersetze) tafel.zeilen[tafel.zeilen.indexOf(alt)] = z;
+        tafel.zeilen.push(...neu);
+        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
+        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
+    }
+    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
+    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
+}
+// DIE FALTE DER TAFEL (rein, Selbsttest „TAFEL-FALTE“): je Station der Karte 2 neu · Kollision · von Hand · Abweichung samt Ersatz
+function tafelFalte(tafel, stationen) {
     const da = new Set(tafel.zeilen.map((z) => z.station));
     const belegt = new Map(tafel.zeilen.map((z) => [z.leiter + "#" + z.sprosse, z]));
-    const neu = [], kollision = [], vonHand = [], abweichung = [];
+    const neu = [], kollision = [], vonHand = [], abweichung = [], ersetze = [];
     for (const st of stationen.filter(istKarte2)) {
         const z = k2TafelZeile(st), id = schluessel(st);
         const alt = tafel.zeilen.find((x) => x.station === id);
         if (alt) {
-            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse)) abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter);
+            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse || (alt.grund || null) !== (z.grund || null))) {
+                abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter + (alt.richter === z.richter ? " (Grund)" : ""));
+                ersetze.push([alt, z]);
+            }
             continue;
         }
         if (da.has(id)) continue;
@@ -458,17 +480,7 @@ function tafelCli(o) {
         belegt.set(z.leiter + "#" + z.sprosse, z);
         neu.push(z);
     }
-    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
-    for (const k of kollision) console.log("  KOLLISION " + k);
-    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
-    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
-    if (o.schreibe && neu.length) {
-        tafel.zeilen.push(...neu);
-        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
-        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
-    }
-    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
-    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
+    return { neu, kollision, vonHand, abweichung, ersetze };
 }
 // DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
@@ -721,7 +733,9 @@ function urteilVon(st, j, lauf) {
     try {
         const u = st.urteil(j, lauf);
         if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl) return { fehler: "Urteil ungültig (verlangt { gruen: bool, zahl: Text })" };
-        return { gruen: u.gruen, zahl: u.zahl, ...massDerStation(st, j, lauf, u) };
+        // (f) `ohneUrteil`: die Station sagt selbst, dass sie keinen Wert las (keinUrteil (f)) — der Grund wörtlich, nie an einem GRÜN
+        const ohne = u.gruen === false && typeof u.ohneUrteil === "string" && u.ohneUrteil ? { ohneUrteil: u.ohneUrteil.slice(0, 300) } : {};
+        return { gruen: u.gruen, zahl: u.zahl, ...ohne, ...massDerStation(st, j, lauf, u) };
     } catch (e) {
         return { fehler: "Urteil warf: " + String((e && e.message) || e).split("\n")[0] };
     }
@@ -766,6 +780,9 @@ function massDerStation(st, j, lauf, u) {
 //       Ausgabe, den die Probe nach jeder Sprosse schreibt: steht ihr Ergebnis, trägt sie ihr Urteil über jeden Abbruch der Probe
 //       (Frist, Deckel, Messort) — der Abbruch steht daneben (`abbruch`, er zensiert die Sekunden und ruft die Grundstellung); UNGEMESSEN
 //       bleibt nur die Sprosse ohne Ergebnis. Jede andere Station urteilt nie über den Stand eines abgebrochenen Laufs.
+//   (f) DIE STATION SAGT ES SELBST (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der Leiter warf
+//       nach 25 s: der Deckel der Leiter 25 s“ — die Leiter las keinen Wert, ihr Deckel riss): ein Urteil mit `ohneUrteil: <grund>` (nur
+//       ROT, stationen/k2-planet.js urteilBauen am Deckel der Leiter) ist UNGEMESSEN beim Grund, vor jedem anderen Fall.
 const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
 // der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
@@ -780,6 +797,7 @@ function abbruchVon(stdout, deckel) {
 const liestErgebnis = (u, leer) => !u.fehler && !leer.fehler && !(leer.gruen === false && leer.zahl === u.zahl);
 const sprosseTraegt = (st, u, leer) => !!st && st.karte2 === true && liestErgebnis(u, leer);
 function keinUrteil(u, leer, stdout, st, deckel) {
+    if (u && u.ohneUrteil) return u.ohneUrteil;
     const ab = abbruchVon(stdout, deckel);
     if (ab) return sprosseTraegt(st, u, leer) ? null : ab;
     if (u.gruen || u.fehler || leer.fehler) return null;
@@ -2245,13 +2263,26 @@ function baumAmSha(repo, geraet, sha) {
         git(["checkout", "-q", "--detach", "--force", sha], baum);
         git(["clean", "-fdq", "-e", "node_modules"], baum);
     }
-    const ist = git(["rev-parse", "HEAD"], baum);
+    const ist = baumKopf(baum);
     if (ist !== sha) throw new Error("Spiel-Baum steht auf " + ist + " statt " + sha);
     const nm = path.join(baum, "node_modules");
     const ziel = path.join(repo, "node_modules");
     if (!fs.existsSync(ziel)) throw new Error("node_modules fehlt im Haupt-Klon " + ziel);
     if (!fs.existsSync(nm)) fs.symlinkSync(ziel, nm, "junction");
     return baum;
+}
+// DER KOPF DES SPIEL-BAUMS AM URTEIL (pm-front-f1, 21.11., Koordinator Radeon: der gemeinsame Spiel-Baum punkte-radeon wurde von zwei
+// Läufen gegeneinander umgestellt — ein Urteil, das an einem fremden Kopf entstand, stand unter dem SHA dieses Laufs). baumAmSha prüft
+// den Kopf nur beim Start; VOR JEDEM EINTRAG liest der Lauf den Kopf des Baums, in dem seine Gruppe fuhr (run → melde): weicht er vom
+// --sha ab oder ist er unlesbar, ist jedes Ergebnis der Gruppe UNGEMESSEN beim Grund — „— offen, UNGEMESSEN“ (apparatOffen: die Runde
+// misst nach), nie GRÜN, nie ROT. Der Selbsttest (1t) stellt einen echten git-Baum um.
+function baumKopf(baum) {
+    try { return git(["rev-parse", "HEAD"], baum); } catch (_e) { return null; }
+}
+function amBaumKopf(es, ist, sha) {
+    if (ist === sha) return es;
+    const grund = "der Spiel-Baum stand am Urteil auf " + (ist ? ist.slice(0, 8) : "unlesbar") + " statt " + String(sha).slice(0, 8) + " (ein fremder Lauf stellte ihn um) — offen, UNGEMESSEN";
+    return es.map((e) => ({ ...e, gruen: false, ungemessen: true, grund, zahl: grund + " · die Probe sah: " + String((e && e.zahl) || "").slice(0, 240) }));
 }
 
 // DER HALTER EINER SPERRE IST pid + START, NIE DIE pid ALLEIN (11.11., Koordinator): das System vergibt eine freie Nummer neu. Die
@@ -4705,6 +4736,7 @@ async function run(opt) {
     fs.mkdirSync(rohDir, { recursive: true });
     // je Gruppe die Einträge ihrer Stationen (der Zwilling erbt Lauf und Roh-Ausgabe der ersten)
     const melde = (g, es, aus, wie) => {
+        es = amBaumKopf(es, baumKopf(wie.baum), sha); // DER KOPF DES SPIEL-BAUMS AM URTEIL
         const ids = g.map(schluessel);
         const zeit = wie.zeit;
         g.forEach((st, i) => {
@@ -4730,7 +4762,7 @@ async function run(opt) {
         // DER TÄTER-ORT gilt für den ganzen Lauf: jede Welle und jede Fortsetzung lässt ihn stehen (fahreSitzung)
         const taeterOrte = new Map();
         const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt, taeterOrte },
-            (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
+            (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session", baum }));
         delete m.fortsetzung;
         for (const [i, welle] of w.wellen.entries()) {
             if (w.wellen.length > 1) console.log("  WELLE " + (i + 1) + "/" + w.wellen.length + " " + w.namen[i] + ": " + welle.length + " Läufe — eine Sitzung");
@@ -4754,7 +4786,7 @@ async function run(opt) {
         const zeit = new Date().toISOString();
         akteLaeuft("bahn-" + b, g.map(schluessel));
         const es = await fahreGruppe(g, ctx);
-        melde(g, es, ctx, { zeit, port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen });
+        melde(g, es, ctx, { zeit, port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen, baum: ctx.baum });
         akteLaeuft("bahn-" + b, null);
     });
     console.log("→ " + path.relative(KOORD, datei));
@@ -6420,6 +6452,38 @@ async function selbsttest(o = {}) {
             Number.isFinite(start) && Math.abs(Date.now() - process.uptime() * 1000 - start) < 5000 && neuVergeben === true && alteRegel && lebend === false && tot === true && unlesbar === false,
             JSON.stringify({ start, gegenUptimeMs: Math.round(Date.now() - process.uptime() * 1000 - start), neuVergeben, lebend, tot, unlesbar }));
     }
+    // (1t) DER KOPF DES SPIEL-BAUMS AM URTEIL (amBaumKopf, 21.11.: zwei Läufe stellten punkte-radeon gegeneinander um): ein echter git-Baum
+    // mit zwei Köpfen — am --sha bleibt das Urteil Byte für Byte, ein fremder Lauf stellt den Baum um: GRÜN und ROT werden UNGEMESSEN beim
+    // Grund (offen: die Runde misst nach) und landen in m.ungemessen; ein unlesbarer Baum ebenso. Die Mutante ohne Wand (das Urteil, wie es
+    // kam) trüge das GRÜN des fremden Kopfs unter dem SHA dieses Laufs — ROT am Täter
+    {
+        // der Baum lebt AUSSERHALB von tmp und nur für diesen Fall (am Kopf 5 von 5 Selbsttests 0xC0000409 in der Sitzungs-Phase, solange
+        // er in tmp neben den Stub-Welten stand; ohne ihn 0 von 2) — er fällt gleich nach dem Urteil
+        const r = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-kopf-")), g = (...a) => git(["-c", "user.name=selbst", "-c", "user.email=selbst@punkte", ...a], r);
+        g("init", "-q");
+        fs.writeFileSync(path.join(r, "a.txt"), "a");
+        g("add", "a.txt");
+        g("commit", "-q", "-m", "a");
+        const A = g("rev-parse", "HEAD");
+        fs.writeFileSync(path.join(r, "a.txt"), "b");
+        g("commit", "-q", "-am", "b");
+        const B = g("rev-parse", "HEAD");
+        g("checkout", "-q", "--detach", A);
+        const es = [{ gruen: true, zahl: "GRÜN am Kopf" }, { gruen: false, zahl: "ROT am Kopf", grund: "ROT: x" }];
+        const amA = amBaumKopf(es, baumKopf(r), A);
+        g("checkout", "-q", "--detach", B); // der fremde Lauf
+        const fremd = amBaumKopf(es, baumKopf(r), A);
+        const unlesbar = amBaumKopf(es, baumKopf(path.join(tmp, "kein-baum")), A);
+        const ohneWand = es; // die Mutante: das Urteil, wie es kam
+        const m = { sha: A, geraet: "radeon", je: {} };
+        eintragen(m, "k.K1#1", fremd[0]);
+        const grundOk = (e) => e.ungemessen === true && e.gruen === false && apparatOffen(e.grund) && new RegExp("^der Spiel-Baum stand am Urteil auf " + B.slice(0, 8) + " statt " + A.slice(0, 8)).test(e.grund);
+        pruef("KOPF DES SPIEL-BAUMS am Urteil: am --sha Byte für Byte, ein umgestellter Baum macht GRÜN und ROT UNGEMESSEN beim Grund (offen, m.ungemessen), ein unlesbarer ebenso; die Mutante ohne Wand trüge das fremde GRÜN",
+            amA === es && fremd.every(grundOk) && /^der Spiel-Baum stand am Urteil auf unlesbar statt /.test(unlesbar[0].grund) && unlesbar.every((e) => e.ungemessen) &&
+                !m.je["k.K1#1"] && m.ungemessen["k.K1#1"].offen === 1 && ohneWand[0].gruen === true,
+            JSON.stringify({ A: A.slice(0, 8), B: B.slice(0, 8), fremd: fremd.map((e) => e.grund), unlesbar: unlesbar[0].grund, offen: (m.ungemessen || {})["k.K1#1"] && m.ungemessen["k.K1#1"].offen }));
+        fs.rmSync(r, { recursive: true, force: true });
+    }
     // (1k) WAS EIN ABGEBROCHENER LAUF GEMESSEN HAT, BLEIBT (messungKappen): die Station, die vor dem CI-Job endete, bleibt; die danach
     // endete, weicht ihrem Eintrag im Archiv (oder fällt, wo es keinen gibt); was der Lauf nicht anrührte, bleibt Byte für Byte; ein
     // Eintrag ohne Zeit ist nie sauber. Die Mutante „alles behalten“ (bis = ∞) trüge die Station neben dem Job
@@ -6544,6 +6608,25 @@ async function selbsttest(o = {}) {
             ohneZ.fehler.some((f) => /^karte2\.mensch\.leib\.verschieden#2: keine Zeile in vision\/richter-tafel\.json/.test(f)) && !mitZ.fehler.some((f) => /keine Zeile in vision\/richter-tafel/.test(f)) &&
                 zg && zg.station === "karte2.mensch.leib.verschieden#3" && zg.leiter === "mensch.leib.verschieden" && zg.sprosse === 3 && zf === null && zo === null,
             ohneZ.fehler.concat(mitZ.fehler).join(" | ") + " · " + JSON.stringify([zg, zf, zo]));
+        // DIE FALTE DER TAFEL (pm-auge 21.11.): das Register ist die Quelle — eine Zeile, die in Richter oder Grund vom Register abweicht,
+        // ersetzt die Falte durch die des Registers; eine gleiche bleibt still. Vorher ROT: jede Abweichung blieb stehen (282 „fehlt“ nach
+        // dem alten Vertrag „auge = fehlt“, auch wo die Klasse ZAHL an der Zahl urteilt). Dazu die Klassen-Tafel: PANEL und KORPUS tragen
+        // nie „gleich“, auch mit Soll; ZAHL nur mit Soll
+        const tfZeile = (richter, grund) => ({ station: "karte2.mensch.leib.verschieden#3", leiter: "mensch.leib.verschieden", sprosse: 3, richter, ...(grund ? { grund } : {}) });
+        const tfA = tafelFalte(tz([tfZeile("fehlt", "auge: der alte Vertrag ohne Klasse")]), [mitT({ richter: "gleich" })]);
+        const tfG = tafelFalte(tz([tfZeile("fehlt", "R11 Panel: der alte Grund")]), [mitT({ richter: "fehlt", grund: "R11 Panel: der neue Grund" })]);
+        const tfS = tafelFalte(tz([tfZeile("gleich")]), [mitT({ richter: "gleich" })]);
+        const tfAK = require(path.join(DIR, "stationen", "auge-klasse.cjs"));
+        const tfK = Object.entries(tfAK.KLASSE).map(([k, [c]]) => [k.split("#"), c]);
+        const tfL = (c) => tfK.find((x) => x[1] === c)[0];
+        const tfKlasse = tfAK.tafel(tfL("P")[0], +tfL("P")[1], true).richter === "fehlt" && tfAK.tafel(tfL("K")[0], +tfL("K")[1], true).richter === "fehlt" &&
+            tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], true).richter === "gleich" && tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], false).richter === "fehlt" &&
+            /^R11 Panel: /.test(tfAK.tafel(tfL("P")[0], +tfL("P")[1], false).grund) && /^Korpus fehlt: /.test(tfAK.tafel(tfL("K")[0], +tfL("K")[1], false).grund);
+        let tfWirft = false;
+        try { tfAK.klasse("keine.leiter", 1); } catch { tfWirft = true; }
+        pruef("TAFEL-FALTE: eine abweichende Zeile (Richter oder Grund) ersetzt das Register, eine gleiche bleibt still; die Klassen-Tafel: PANEL und KORPUS nie „gleich“, ZAHL nur mit Soll, eine Sprosse ohne Klasse tfWirft",
+            tfA.ersetze.length === 1 && tfA.ersetze[0][1].richter === "gleich" && tfG.ersetze.length === 1 && tfG.ersetze[0][1].grund === "R11 Panel: der neue Grund" && tfS.ersetze.length === 0 && !tfS.abweichung.length && tfKlasse && tfWirft,
+            JSON.stringify([tfA.abweichung, tfG.abweichung, tfS.abweichung, tfKlasse, tfWirft]));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
@@ -7303,6 +7386,18 @@ async function selbsttest(o = {}) {
                     s2.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: S2 · kein Ergebnis der Sprosse\) · Täter: @@ 1 s · probe S2 warf: Leser erschienen$/.test(s2.grund) &&
                     alt1.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN/.test(alt1.grund) && mut === "Frist der Probe 27 s gerissen",
                 JSON.stringify([s1, s2.grund, alt1.grund, mut]));
+            // (f) DIE STATION SAGT ES SELBST (pm-front-f1; GTX 31ea3847 planet.relief.wandel#1 „die Messung der Leiter warf nach 45 s: der
+            // Deckel der Leiter 45 s“ als ROT): eine Sprosse, deren Urteil `ohneUrteil` trägt, ist UNGEMESSEN beim Grund; dieselbe Sprosse mit
+            // Wert urteilt ROT. DIE MUTANTE (vorher ROT am Täter): keinUrteil ohne (f) — das Feld fällt in urteilVon — lässt sie ROT stehen
+            const deckelU = (j) => (!j ? { gruen: false, zahl: "S1 keine Messung: kein JSON" } : j.wert != null ? { gruen: false, zahl: "S1 · abtrag " + j.wert + " gegen Soll ≥ 1" } : { gruen: false, zahl: "S1 der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse", ohneUrteil: "der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse" });
+            const schreibt = (inhalt) => ["node", "-e", "require('fs').writeFileSync(process.argv[1], " + JSON.stringify(JSON.stringify(inhalt)) + ")", "{AUS}"];
+            const dOhne = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ leer: 1 }) }), ctx("k2-deckel-ohne"));
+            const dMit = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ wert: 0 }) }), ctx("k2-deckel-mit"));
+            const dMut = keinUrteil({ gruen: false, zahl: deckelU({ leer: 1 }).zahl }, deckelU(null), "", k2(1), null);
+            pruef("KEIN URTEIL (f) DER DECKEL DER LEITER: die Sprosse ohne Wert (ohneUrteil) UNGEMESSEN beim Grund, mit Wert ROT; die Mutante (das Feld fehlt) ROT",
+                dOhne.ungemessen === true && /^der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN/.test(dOhne.grund) &&
+                    dMit.gruen === false && !dMit.ungemessen && dMit.grund === "ROT: S1 · abtrag 0 gegen Soll ≥ 1" && dMut === null,
+                JSON.stringify([dOhne.grund, dMit.grund, dMut]));
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {
