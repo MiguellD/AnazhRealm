@@ -633,16 +633,16 @@ function simUrteil(b, v) {
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
         if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
-        // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS (linse-brand-schritte): derselbe Herd ohne Wind mit dem Budget des schnellsten und
-        // des langsamsten Läufers trägt dieselben Zellen, Köpfe und Sprünge — bis hier zählte das Fenster Bilder, und FRONT-MIT
-        // schwankte am selben Gesetz 1,029 ↔ 0,335 m/s mit der Wanduhr des Läufers. Ein Fenster, das seinen Deckel der Bilder
-        // erreicht, endet laut (FENSTER-DECKEL), nie still
+        // DAS FENSTER HÄNGT NIE AM LÄUFER (linse-brand-schritte): derselbe Herd mit dem Budget des Spiels und mit leerem (der
+        // langsamste Läufer) trägt dieselben Zellen, Köpfe und Sprünge — er zählt Schritte des Brands, nie Bilder, und beginnt zur
+        // selben Welt-Uhr, nie zu der, zu der der Läufer ankam. Bis hier schwankte FRONT-MIT am selben Gesetz 0,335–1,029 m/s (CI
+        // voll 15/18). Ein Fenster, das seinen Deckel der Bilder erreicht, endet laut (FENSTER-DECKEL), nie still
         const F = Z.fenster;
-        const fz = (f) => `${f.zellen} Zellen, ${f.koepfe} Köpfe, alle ${f.alle} m/s in ${f.schritte} Schritten und ${f.bilder} Bildern`;
-        if (!F || !F.voll || !F.leer) v.push("LEER: die Probe des Fensters (derselbe Herd mit vollem und leerem Budget des Brands) lief nicht");
-        else if (["zellen", "koepfe", "alle"].some((k) => F.voll[k] !== F.leer[k]))
-            v.push(`FENSTER-UHR: derselbe Herd ohne Wind trägt am schnellsten Läufer ${fz(F.voll)}, am langsamsten ${fz(F.leer)} — das Fenster zählt Bilder, nie Schritte des Brands`);
-        for (const [wo, d] of [["mit dem Wind", Z.deckel], ["im Regen", Z.regenDeckel], ["ohne Wind, volles Budget", F?.voll?.deckel], ["ohne Wind, leeres Budget", F?.leer?.deckel]])
+        const fz = (f) => `${f.zellen} Zellen, ${f.koepfe} Köpfe mit dem Wind (Median ${f.mit} m/s), alle ${f.alle} m/s in ${f.schritte} Schritten und ${f.bilder} Bildern`;
+        if (!F || !F.spiel || !F.leer) v.push("LEER: die Probe des Fensters (derselbe Herd mit dem Budget des Spiels und mit leerem) lief nicht");
+        else if (["zellen", "koepfe", "mit", "alle"].some((k) => F.spiel[k] !== F.leer[k]))
+            v.push(`FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels ${fz(F.spiel)}, mit leerem ${fz(F.leer)} — das Fenster hängt am Läufer`);
+        for (const [wo, d] of [["mit dem Wind", Z.deckel], ["im Regen", Z.regenDeckel], ["mit leerem Budget", F?.leer?.deckel]])
             if (d) v.push(`FENSTER-DECKEL: das Fenster ${wo} erreichte nach ${d} Bildern seine Schritte nicht`);
         // die Asche senkt lebendig am Herd (auraAt, der Leser) — gemessen NETTO des Leben-Overlays, das derselbe Leser im selben
         // Fenster trägt (Fraß und Tod des Bestands, kreatur-leben `_depositLife`): bis laub-messer schrieb die Linse jede Regung

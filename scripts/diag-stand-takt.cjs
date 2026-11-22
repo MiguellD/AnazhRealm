@@ -189,7 +189,7 @@ function selbsttest() {
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
-                fenster: { voll: { zellen: 9, koepfe: 3, alle: 0.04, schritte: 60, bilder: 60 }, leer: { zellen: 9, koepfe: 3, alle: 0.04, schritte: 60, bilder: 172 } },
+                fenster: { spiel: { zellen: 12, koepfe: 3, mit: 0.9, alle: 1.03, schritte: 6, bilder: 6 }, leer: { zellen: 12, koepfe: 3, mit: 0.9, alle: 1.03, schritte: 6, bilder: 17 } },
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
@@ -600,8 +600,10 @@ function selbsttest() {
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => Object.entries({ zuendung: 9000, ankuenfte: 1, betten: 1, punkte: 69, kahl: 19, masken: 1, lesungen: 69 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), /BRAND-ZÜNDUNG: Schritt 4 kostete 9000 Einheiten Zündung .*69 Bett-Punkte, davon bis 19 kahl, 1 Masken/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
-        // das Fenster zählt Bilder (bis linse-brand-schritte): am langsamsten Läufer gingen dieselben 60 Bilder weniger Schritte
-        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.leer", { zellen: 5, koepfe: 1, alle: 0.03, schritte: 23, bilder: 60 }], /FENSTER-UHR: .* am schnellsten Läufer 9 Zellen, 3 Köpfe, alle 0.04 m\/s in 60 Schritten .* am langsamsten 5 Zellen, 1 Köpfe, alle 0.03 m\/s in 23 Schritten und 60 Bildern/],
+        // das Fenster hängt am Läufer (bis linse-brand-schritte): der zweite Herd begann zu einer späteren Welt-Uhr (lokal,
+        // Radeon-Laptop: 0,35 m/s mit 8 Köpfen ↔ 0,29 mit 9), am langsamsten Läufer gingen dieselben Bilder weniger Schritte
+        ["der Herd beginnt zur Uhr des Läufers", ["simWecken.brand.fenster.leer", { zellen: 47, koepfe: 9, mit: 0.29, alle: 0.982 }], /FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels 12 Zellen, 3 Köpfe mit dem Wind \(Median 0.9 m\/s\), alle 1.03 m\/s in 6 Schritten .* mit leerem 47 Zellen, 9 Köpfe mit dem Wind \(Median 0.29 m\/s\)/],
+        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.leer", { zellen: 9, koepfe: 2, mit: 0.5, schritte: 4, bilder: 6 }], /FENSTER-UHR: .* mit leerem 9 Zellen, 2 Köpfe .* in 4 Schritten und 6 Bildern/],
         ["das Fenster erreicht seine Schritte nicht", ["simWecken.brand.deckel=", 15000], /FENSTER-DECKEL: das Fenster mit dem Wind erreichte nach 15000 Bildern/],
         ["die Probe des Fensters lief nicht", ["simWecken.brand.fenster"], /LEER: die Probe des Fensters/],
         ["die Front läuft gegen den Wind",["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
@@ -3344,12 +3346,12 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         for (let i = 0; i < 100; i++) r._depositLife(MESS.x + 4000, MESS.z + 4400, -0.01);
                         F.ueber = r._lebenWecker.length - r._lebenStand.size;
                         // der Brand (stoffe.K2 · feld.K3#2): an der Mess-Wiese über das Wort bewölkt (Wind 0,3; die Bühne hält die Nässe
-                        // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), je Bild genau EIN Schritt. Je Sprung
+                        // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), das Fenster in Schritten des Brands (`brandGehen`). Je Sprung
                         // der Front (die Zelle, von der sie kam → der Punkt, an dem sie ankam, brennend oder unterwegs) sein Tempo und sein
                         // Winkel zum Kopf der Quelle: mit dem Wind der Median der Köpfe (je Gras-Quelle ihr schnellster Sprung, ±20° um den
                         // Kopf), gegen den Wind (±30°) der schnellste Sprung; derselbe Herd mit dem Wind aus (`_windAt` ohne m/s) ist die
-                        // Mutante, an ihrem noch brennenden Herd glut und Licht. Danach das Wort Regen bis zum Erlöschen; gezählt je Schritt
-                        // die Einheiten und die Zellen des Feuers (vor oder nach dem Schritt, die mehr sind: eine Zündung trägt ihre
+                        // Mutante, an ihrem noch brennenden Herd glut und Licht. Danach das Wort Regen bis zum Erlöschen; gezählt je Bild
+                        // die Einheiten und die Zellen des Feuers (vor oder nach dem Bild, die mehr sind: eine Zündung trägt ihre
                         // Ankünfte) und am Herd die Asche
                         const [B, am, n0] = [AnazhRealm.BRAND, () => r.auraAt(MESS.x, MESS.z), (st.worldMeta.taten ||= []).length];
                         wort("cloudy");
@@ -3522,6 +3524,30 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             bruch: DM.ereignisse.filter((e) => e.art === "werk" && e.scherben > 0).map((e) => e.einheiten),
                             ms: DM.ms,
                         };
+                        // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
+                        // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
+                        // mehr Bildern, nie weniger Schritte, und jedes Bild ohne Rest zeigt den ganzen Schritt (`jeBild(vor, ganz)`).
+                        // Nach dem letzten Schritt geht sein Rest zu Ende, ohne dass die Uhr weiter geht. Bis hier zählte das Fenster
+                        // Bilder: dasselbe Gesetz trug auf swiftshader weniger Schritte, und FRONT-MIT schwankte 1,029 ↔ 0,335 m/s. Der
+                        // Deckel der Bilder (50 je Schritt) endet LAUT (`deckel`, FENSTER-DECKEL), nie still
+                        const brandGehen = async (n, solange, jeBild) => {
+                            const [u0, G] = [r._brandUhr, { schritte: 0, bilder: 0 }];
+                            const bild = () => {
+                                const vor = st.brandFeld ? st.brandFeld.size : 0;
+                                takt();
+                                G.bilder++;
+                                G.schritte = Math.round((r._brandUhr - u0) / B.schrittS);
+                                jeBild(vor, !r._brandRest);
+                            };
+                            while (G.schritte < n && solange()) {
+                                if (G.bilder >= 50 * n) return Object.assign(G, { deckel: G.bilder });
+                                if (!r._brandRest) r._weltUhrNimm(r._brandUhr + B.schrittS);
+                                bild();
+                                if (G.bilder % 20 === 0) await sleep(2);
+                            }
+                            for (let k = 0; r._brandRest && k < 50 * n; k++) bild();
+                            return r._brandRest ? Object.assign(G, { deckel: G.bilder }) : G;
+                        };
                         const lauf = async (n) => {
                             const [Z, H, bf] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
                             // das Gemessene, das der Herd schon trägt: sein Bett maß die Tat `_brandEntfachen` (die Linse zählt sie als Tat)
@@ -3529,16 +3555,21 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             const haeufigste = (je, n) => Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, n);
                             // das Gitter des Betts aus dem Gesetz der Welt: die groben Punkte je Bett, die feinen je Maske
                             const [GROB, FEIN] = [B.bettGrob.length, B.bettGitter ** 2];
+                            // DIE SPRÜNGE DER FRONT, gelesen nur an ganzen Schritten (ein Bild mit Rest zeigt einen halben, den der schnelle
+                            // Läufer nie sieht): je Zelle, deren Quelle brennt, ihr Tempo und ihr Winkel zum Kopf der Quelle
+                            const spruenge = () => {
+                                for (const [k, c] of bf) {
+                                    const q = bf.get(c.von);
+                                    const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
+                                    const d = Math.hypot(dx, dz);
+                                    if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
+                                }
+                            };
                             S.frame();
-                            const u0 = r._brandUhr;
-                            let i = 0;
-                            for (; i < n && bf.size; i++) {
-                                const vor = bf.size;
-                                r._weltUhrNimm(r._brandUhr + B.schrittS);
-                                takt();
+                            const G = await brandGehen(n, () => bf.size, (vor, ganz) => {
                                 Z.zellen.push(Math.max(vor, bf.size));
                                 // DER GANG UND DIE ZÜNDUNG, JE AN IHRER EINHEIT (front-brand): der Gang der Zellen (`brand`: alles unter
-                                // `_tickBrand` außerhalb der Zündung) und die Zündung (`zuendung`: alles unter `_brandZuenden`) je Schritt
+                                // `_tickBrand` außerhalb der Zündung) und die Zündung (`zuendung`: alles unter `_brandZuenden`) je Bild
                                 // getrennt, je mit ihren häufigsten Lesern (die Linse nennt den Täter beim Namen); `einheiten` ihre Summe
                                 const bild = S.frame();
                                 Z.gang.push(bild.brand);
@@ -3568,54 +3599,63 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 Z.masken.push(masken);
                                 Z.punkte.push(punkte);
                                 Z.kahl.push(kahl);
-                                for (const [k, c] of bf) {
-                                    const q = bf.get(c.von);
-                                    const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
-                                    const d = Math.hypot(dx, dz);
-                                    if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
-                                }
-                                if (i % 20 === 0) await sleep(2);
-                            }
+                                if (ganz) spruenge();
+                            });
                             const [kopf, alle] = [new Map(), [...H.values()]];
                             for (const h of alle) if (!(kopf.get(h.q)?.v >= h.v)) kopf.set(h.q, h);
                             const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
-                            Object.assign(Z, { schritte: Math.round((r._brandUhr - u0) / B.schrittS), bilder: i });
+                            Object.assign(Z, G);
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
-                        // DAS FENSTER AN DER UHR DES BRANDS (linse-brand-schritte): derselbe Herd ohne Wind zweimal, einmal mit dem
-                        // Budget des schnellsten Läufers (jeder Schritt in einem Bild) und einmal mit dem des langsamsten (je Bild nur
-                        // `mindestJeBild` Stück) — das Gesetz der Welt für diesen einen Lauf getauscht, im `finally` zurück, kein Flag im
-                        // Spiel. Zellen im Feld, Köpfe und Sprünge sind gleich, sonst zählt das Fenster Bilder statt Schritte (FENSTER-UHR)
-                        const [B0, fenster] = [AnazhRealm.BRAND, {}];
-                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                        try {
-                            for (const [art, budgetMs] of [["voll", 1e9], ["leer", 0]]) {
-                                if (art === "leer") ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
-                                AnazhRealm.BRAND = Object.freeze({ ...B0, budgetMs });
-                                try {
-                                    const L = await lauf(60);
-                                    fenster[art] = { zellen: st.brandFeld.size, koepfe: L.koepfe, alle: L.alle, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel };
-                                } finally {
-                                    AnazhRealm.BRAND = B0;
-                                }
+                        // JEDER HERD BEGINNT ZUR SELBEN WELT-UHR (linse-brand-schritte): das Tempo der Front liest Wind und Luft zur
+                        // Uhr des Brands (`_brandTempo` → `_windAt(t)`, `_temperaturAt`), und die Uhr, zu der die Probe hier ankam, trug
+                        // die Bilder der Phasen davor (das Einschwingen, `bisDa` — an der Wanduhr des Läufers): jeder Läufer zündete in
+                        // einem anderen Wind (FRONT-MIT am selben Gesetz 0,335–1,029 m/s mit 9–14 Köpfen, CI voll 15/18). Jeder Herd
+                        // beginnt darum zur Uhr `HERD_UHR` (`_weltUhrNeu`, wie jede Messung, die zu ihrem Anfang zurückkehrt), mit dem
+                        // Budget des Spiels oder einem getauschten (das Gesetz für diesen einen Lauf, im `finally` zurück, kein Flag
+                        // im Spiel); `vor` misst nach dem Stellen der Uhr, vor dem Zünden
+                        const [B0, HERD_UHR] = [AnazhRealm.BRAND, 40000];
+                        const herd = async (n, budgetMs = B0.budgetMs, vor = () => {}) => {
+                            r._weltUhrNeu(HERD_UHR);
+                            vor();
+                            AnazhRealm.BRAND = Object.freeze({ ...B0, budgetMs });
+                            try {
+                                return await lauf(n);
+                            } finally {
+                                AnazhRealm.BRAND = B0;
                             }
+                        };
+                        // von Hand gelöscht: auch sein Rest (ein Herd schreibt keine Asche in den nächsten)
+                        const loeschen = () => ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
+                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
+                        let ohneWind;
+                        try {
+                            ohneWind = (await herd(60)).alle;
                         } finally {
                             delete r._windAt;
                         }
-                        const ohneWind = Math.max(fenster.voll.alle, fenster.leer.alle);
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
-                        r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
-                        st.worldMeta.taten.length = n0;
+                        loeschen();
+                        // DIE MUTANTE DES LANGSAMSTEN LÄUFERS (FENSTER-UHR): derselbe Herd mit leerem Budget (je Bild nur `mindestJeBild`
+                        // Stück) trägt dieselben Zellen, Köpfe und Sprünge wie der Herd des Spiels — sonst hängt das Fenster an Bildern
+                        // oder an der Uhr, zu der der Läufer ankam
+                        const M = await herd(300, 0);
+                        const leer = { zellen: st.brandFeld.size, koepfe: M.koepfe, mit: M.mit, alle: M.alle, schritte: M.schritte, bilder: M.bilder, deckel: M.deckel };
+                        loeschen();
                         // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
-                        const [lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()];
-                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, fenster, lebVor, ovVor, glut, licht }));
+                        let [lebVor, ovVor] = [];
+                        const Z = (W.brand = await herd(300, B0.budgetMs, () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()])));
+                        const spiel = { zellen: st.brandFeld.size, koepfe: Z.koepfe, mit: Z.mit, alle: Z.alle, schritte: Z.schritte, bilder: Z.bilder };
+                        Object.assign(Z, { ohneWind, fenster: { spiel, leer }, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) r._weltUhrNimm(r._brandUhr + B.schrittS), takt();
+                        // der Regen bis zum Erlöschen: höchstens 600 Schritte des Brands (nie Bilder), sein Deckel laut
+                        const R = await brandGehen(600, () => r._brandLebt(), () => {});
+                        Object.assign(Z, { regenS: R.schritte, regenDeckel: R.deckel });
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), ovNach: ovAm(), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);
