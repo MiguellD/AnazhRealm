@@ -1,0 +1,107 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.372",
+  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 5.47,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 10.93,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -623.207,
+   67.902,
+   -850.882
+  ],
+  "blick": [
+   -0.43747,
+   -0.8983,
+   -0.04097
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 96.5,
+  "sigma": 34.6,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 40,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -633.77,
+     57.261,
+     -846.54
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Boden-Schicht in 3.62 m"
+    ],
+    "ms": 151
+   },
+   {
+    "k": 40,
+    "kamera": [
+     -623.207,
+     67.902,
+     -850.882
+    ],
+    "rot": [],
+    "ms": 2985
+   }
+  ],
+  "ms": 3136
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.93 m · Luma 96.5 σ 34.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.372 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
