@@ -751,6 +751,24 @@ const foundryKanal = (() => {
             }
             out[name] = { array: dst, itemSize: is };
         }
+        // DIE ZEILE JE ECKE (haus-gefuege, must-ignore): nennt ein Zweit-Kern je Ecke die Zeile ihres Gefüges (fachwerk
+        // `geometry.userData.__zeile`, GEFUEGE_GESETZ.faser: die Richtung des Balkens), reist sie als `aVerband` — derselbe Kanal wie
+        // die Zeile der fernen Wand; und eine Ecke ohne eigene Zeile (0) trägt die ihres Stoffs (`mat.verband`), nie keine. Stoffe
+        // ohne Zeile und Geometrien ohne beides bleiben byte-alt.
+        if (zweitKern && out.mat && out.mat.verband > 0) {
+            const zz = geo.userData && geo.userData.__zeile && geo.userData.__zeile.length === A.position.count ? geo.userData.__zeile : null;
+            const q = out.aVerband && out.aVerband.itemSize === 1 ? out.aVerband.array : null;
+            if (q) {
+                for (let i = 0; i < q.length; i++) if (!(q[i] > 0)) q[i] = zz ? zz[i] : out.mat.verband;
+            } else if (zz) out.aVerband = { array: Float32Array.from(zz), itemSize: 1 };
+            // DIE LAGE JE ECKE ebenso (fachwerk `geometry.userData.__lage`, GEFUEGE_GESETZ.lauf: die Tiefe unter dem Dach) — sie
+            // reist als `aLage`, wo die Geometrie keine eigene trägt, und mit ihr die Zeile je Ecke (die Welt liest beide als Paar)
+            const ll = geo.userData && geo.userData.__lage;
+            if (!out.aLage && ll && ll.length === A.position.count * 2) {
+                out.aLage = { array: Float32Array.from(ll), itemSize: 2 };
+                if (!out.aVerband) out.aVerband = { array: new Float32Array(A.position.count).fill(out.mat.verband), itemSize: 1 };
+            }
+        }
         if (geo.index) out.index = new Uint32Array(Array.from(geo.index.array));
         // Welt-Transform der Instanz (buildInstance setzt g.position.y; Meshes koennen lokal
         // versetzt sein) in die Vertices backen, damit AnazhRealm den Baum am Ursprung erhaelt.

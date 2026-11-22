@@ -172,7 +172,10 @@ class AnazhRealm_studio_stoff {
     // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (die dunklere je Kanal: der Zuschlag min − Produkt auf das Produkt der
     // Achsen, dieselbe Regel wie `verbandZeilen`) — am Balken wäre das Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel
     // (`eins` rechnet ihn ein). Der Stoff rechnet ihn aus den Fugen-Tönen, die die Kante (unten) schon gewogen hat.
-    _verbandStoff(T, nr, ecke = null) {
+    // `aus` (optional): der Verband nennt dem Gefüge seinen Stein (`_gefuegeStoff`: die Wölbung je Stein) — der Weg durch ihn je
+    // Achse (`fu`, `fv`: 0 … 1), die Achsen der Fläche in der Welt (`t`, `s`), die Steine je Pixel (`sp`) und die Deckung der Fuge
+    // (`fuge`: an der fernen Fachwerk-Wand der Balken).
+    _verbandStoff(T, nr, ecke = null, aus = null) {
         const Z = AnazhRealm.Gesetz("fachwerk:verbandZeilen")();
         if (
             !Array.isArray(Z) ||
@@ -214,12 +217,10 @@ class AnazhRealm_studio_stoff {
             (this._verbandTafel = T.uniformArray([].concat(...Z.map((z) => zeile(z || null0))), "vec4").setName(
                 "verbandTafel"
             ));
-        const i0 = T.int(
-            nr
-                .add(0.5)
-                .floor()
-                .clamp(0.0, Z.length - 1)
-        ).mul(W);
+        // eine Nummer über der Tafel ist ein Stoff ohne Verband (fachwerk GEFUEGE_GESETZ: Holz, Gefach, die Faser je Ecke) — die
+        // Zeile 0, die Identität; bis haus-gefuege klemmte sie auf die letzte Zeile
+        const nrG = nr.add(0.5).floor();
+        const i0 = T.int(T.select(nrG.lessThan(Z.length - 0.5), nrG, T.float(0.0)).clamp(0.0, Z.length - 1)).mul(W);
         const [mass, lage, tonU, tonV, eins] = [0, 1, 2, 3, 4].map((k) => tafel.element(i0.add(k)));
         // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — in der VORLAGE
         // (Einheit E8): das Muster liegt im Raster des Baus, in dem seine Steine liegen (fachwerk `infill`), nie am Ort der Welt; bis hier
@@ -267,6 +268,18 @@ class AnazhRealm_studio_stoff {
             { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
             { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
         );
+        if (aus)
+            Object.assign(aus, {
+                fu: T.fract(u),
+                fv: T.fract(v),
+                t: welt(t),
+                s: welt(s),
+                sp: T.max(T.fwidth(u0), T.fwidth(v0)),
+                fuge: S.fuge,
+                // die zweite Stelle der Ecke einer Zeile, die ihre Lage NICHT aus ihr liest: 1 + die Tiefe unter dem Dach in Metern
+                // (fachwerk `_dachTiefe`; 0 = keine Angabe)
+                tiefe: ecke ? T.select(vonEcke, T.float(0.0), ecke.y) : null,
+            });
         const eine = T.vec3(1.0, 1.0, 1.0);
         const fU = T.mix(eine, tonU.xyz, sicht(t, mass.x, mass.z));
         const fV = T.mix(eine, tonV.xyz, sicht(s, mass.y, mass.w));
@@ -278,6 +291,200 @@ class AnazhRealm_studio_stoff {
             )
             .mul(eins.xyz)
             .mul(T.float(1.0).sub(S.fuge.mul(T.float(1.0).sub(tonV.w))));
+    }
+
+    // DAS GEFÜGE EINER FLÄCHE (haus-gefuege, fachwerk GEFUEGE_GESETZ; Karte 2 mensch.bau.huelle): was der Stoff INNERHALB seines
+    // Verbands trägt — das Korn des Putzes, die Faser des Holzes, die Scherbe der Deckung, der Hieb im Stein — als reine FUNKTION
+    // der Welt-Lage: Farbe, Normale und Rauheit aus EINER Rechnung, ohne Karte, ohne Sampler, ohne Byte je Ecke oder Haus (bis hier
+    // stand jede Fläche des Hauses in EINEM Ton: „weiße Kästen mit Fenstern“). `nr` = die Nummer der Zeile (derselbe Knoten wie der
+    // des Verbands; 0 = kein Gefüge: Faktor 1, die Normale der Geometrie, die Rauheit des Stoffs), `V` = der Stein des Verbands
+    // (`_verbandStoff` `aus`), `doppelt` = der Stoff zeichnet beide Seiten (die Normale folgt der Seite). Je Zeile sechs Wörter
+    // EINER Tafel: EIN Programm für jeden Stoff, die Ecke wählt.
+    // DIE LAGE ist die der WELT im Pixel (`positionWorld`: hinter der Naht `_weltNaht`, die Instanz ist gerechnet — Lehre 22) und
+    // die Normale der Geometrie in der Welt: jede Stufe eines Hauses (Mesh, Instanz, Satz) zeichnet an derselben Stelle dasselbe
+    // Korn, der Wechsel der Stufe verschiebt nichts. In der Ebene der Fläche (t waagrecht, s ihre Falllinie — der Rahmen des
+    // Verbands, in der Welt) dreht die Faser der Zeile (`faser`) oder die der Ecke (eine Nummer ab `GEFUEGE_GESETZ.faser.ab`: die
+    // Richtung ihres Balkens in `klassen` Schritten, fachwerk `faserNummer`) die Achsen: `laengs` läuft mit der Faser, `quer` über sie.
+    // DREI SKALEN (Korn · Zug · Wolke), jede EIN Wert-Rauschen im Raster ihrer Zelle [quer, längs] in Metern — gewürfelt aus den
+    // Zell-Nummern modulo `periode` (kleine ganze Zahlen: dieselbe Rechnung auf jedem Gerät, auch fern vom Ursprung), mittelfrei
+    // (−½ … ½). DER FUSSABDRUCK, EINMAL und am SCHIRM (Gebot 7): eine Skala steht voll ab `fuss.voll` Pixeln je Zelle und ist unter
+    // `fuss.leer` ihr Mittel — Ton 1, Relief 0; was das Relief dann nicht mehr zeigt, trägt die Rauheit (`rauFern`: fern steht die
+    // Fläche nicht glatter als nah). Aus 100 m steht das Haus im Mittel-Ton seiner Rolle, nichts flimmert, und der Flächen-
+    // Mittelwert der Albedo bleibt in jeder Entfernung der des Stoffs (Lehre 21: jeder Term ist mittelfrei).
+    // DAS RELIEF: die Höhe der drei Skalen (Meter) kippt die Normale gegen ihren Gradienten — aus den Ableitungen am Schirm
+    // (Mikkelsen 2010, kein Tangenten-Raum, wie `_steinRahmen`), begrenzt auf `GEFUEGE_KIPP` (im streifenden Blick wächst die
+    // Ableitung über jede Neigung). DIE WÖLBUNG: im Verband steht jeder Stein als Kissen (`woelb` am Rand, zur Fuge fallend), im
+    // Raster des Verbands und mit dessen Fußabdruck. DAS WETTER: die Seite zum Wetter (`wetterVon`) ist gewaschen und gebleicht,
+    // die Lee-Seite dunkler (± `wetter` über den Kompass, mittelfrei); Holz nimmt dort Silber an (`grau`, bei gleicher
+    // Leuchtdichte: die Albedo der Rolle bleibt). DER SPRITZ-SAUM: am Fuß des Baus (die Höhe in der Vorlage) dunkelt die Fläche um
+    // den Anteil ihrer Zeile (`spritz`). DER LÄUFER UNTER DEM DACH: nennt die Ecke ihre Tiefe unter der Dachhaut (`V.tiefe`), steht
+    // die Wolke dort `lauf`-fach stärker (mittelfrei: fern bleibt nichts).
+    // → { farbe(rgb) → rgb, normale (Sicht-Raum, für normalNode; Lehre 26: die Normale der Geometrie × Seite), rauh(r) → r }
+    _gefuegeStoff(T, nr, V, doppelt) {
+        const GG = AnazhRealm.Gesetz("fachwerk:GEFUEGE_GESETZ");
+        const Z = GG && AnazhRealm.Gesetz("fachwerk:gefuegeZeilen")();
+        const paar = (p) => Array.isArray(p) && p.length === 2 && p.every((x) => x > 0);
+        const F = GG && GG.faser;
+        const holz = Array.isArray(Z) && F ? Z.findIndex((z) => z && z.art === F.art) : -1;
+        if (
+            !Array.isArray(Z) ||
+            Z.length < 2 ||
+            Z[0] !== null ||
+            Z.slice(1).some(
+                (z) =>
+                    !z ||
+                    !paar(z.korn) ||
+                    !paar(z.zug) ||
+                    !paar(z.wolke) ||
+                    ![z.ton, z.hub].every((q) => Array.isArray(q) && q.length === 3 && q.every((x) => x >= 0)) ||
+                    !(Array.isArray(z.woelb) && z.woelb.length === 2) ||
+                    !(z.grund > 0) ||
+                    ![z.faser, z.rau, z.rauFern, z.wetter, z.grau, z.fugeGrau, z.spritz, z.lauf].every(Number.isFinite)
+            ) ||
+            !(GG.lauf && GG.lauf.weit > 0) ||
+            !(GG.fuss && GG.fuss.voll > GG.fuss.leer && GG.fuss.leer > 0) ||
+            !(GG.spritz && GG.spritz.aus > GG.spritz.voll && GG.spritz.voll >= 0) ||
+            !(GG.periode >= 16) ||
+            !(holz > 0 && F.ab >= Z.length && F.klassen > 0) ||
+            ![GG.wetterVon, GG.silber].every((q) => Array.isArray(q) && q.length === 3)
+        )
+            throw this._stoffBruch("das Gefüge-Gesetz fehlt in fachwerk:GEFUEGE_GESETZ");
+        // die Tafel: [Korn quer, längs, Zug quer, längs] · [Wolke quer, längs, Faser, Grund] · [Ton Korn, Zug, Wolke, Wetter] ·
+        // [Hub Korn, Zug, Wolke, Grau] · [Wölbung quer, hoch, Rauheit ±, Rauheit fern] · [Grau der Fuge, Spritz-Saum, Läufer] —
+        // die Zeile 0 ist die Identität
+        const W = 6;
+        const zeile = (z) => [
+            new THREE.Vector4(z.korn[0], z.korn[1], z.zug[0], z.zug[1]),
+            new THREE.Vector4(z.wolke[0], z.wolke[1], z.faser, z.grund),
+            new THREE.Vector4(z.ton[0], z.ton[1], z.ton[2], z.wetter),
+            new THREE.Vector4(z.hub[0], z.hub[1], z.hub[2], z.grau),
+            new THREE.Vector4(z.woelb[0], z.woelb[1], z.rau, z.rauFern),
+            new THREE.Vector4(z.fugeGrau, z.spritz, z.lauf, 0),
+        ];
+        const null0 = {
+            korn: [1, 1],
+            zug: [1, 1],
+            wolke: [1, 1],
+            faser: 0,
+            grund: 1,
+            ton: [0, 0, 0],
+            wetter: 0,
+            hub: [0, 0, 0],
+            grau: 0,
+            woelb: [0, 0],
+            rau: 0,
+            rauFern: 0,
+            fugeGrau: 0,
+            spritz: 0,
+            lauf: 0,
+        };
+        // EINE Tafel für jeden Graphen (der feste Name, Lehre 23)
+        const tafel =
+            this._gefuegeTafel ||
+            (this._gefuegeTafel = T.uniformArray([].concat(...Z.map((z) => zeile(z || null0))), "vec4").setName(
+                "gefuegeTafel"
+            ));
+        // die Zeile: die Nummer selbst — oder, trägt die Ecke die Richtung ihres Balkens, die des Holzes mit dieser Richtung
+        const g = nr.add(0.5).floor();
+        const jeEcke = g.greaterThan(F.ab - 0.5);
+        const i0 = T.int(T.select(jeEcke, T.float(holz), g.clamp(0.0, Z.length - 1))).mul(W);
+        const [mass, lage, ton, hub, form, mehr] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
+        const phi = T.select(jeEcke, g.sub(F.ab).mul(Math.PI / F.klassen), lage.z);
+        // der Rahmen der Fläche in der Welt, die Faser darin
+        // (die Normale der Geometrie in der Welt aus der des BLICKS, im Pixel gedreht — `normalWorldGeometry` wäre ein eigenes
+        // Varying, und der Satz-Stoff steht bei 15 von 16 Stellen zwischen Ecke und Pixel: mit ihr und der Seite der Fläche
+        // sagte das Gerät die Pipeline ab, „[EntryPoint main] infringes limits“, Radeon 890M)
+        const wp = T.positionWorld;
+        const nG = T.normalize(T.normalViewGeometry.transformDirection(T.cameraViewMatrix));
+        const h = T.vec3(nG.z, 0.0, nG.x.negate());
+        const t = T.normalize(T.select(h.length().greaterThan(0.02), h, T.vec3(1.0, 0.0, 0.0)));
+        const s = T.cross(nG, t);
+        const [a, b] = [T.dot(wp, t), T.dot(wp, s)];
+        const [cs, sn] = [T.cos(phi), T.sin(phi)];
+        const laengs = a.mul(cs).add(b.mul(sn));
+        const quer = b.mul(cs).sub(a.mul(sn));
+        const [fq, fl] = [T.fwidth(quer), T.fwidth(laengs)];
+        // das Wert-Rauschen einer Zelle: die vier Ecken in EINER Rechnung (vier Stellen), der Würfel aus kleinen ganzen Zahlen
+        const P = GG.periode;
+        const rausch = (x, y) => {
+            const p = T.vec2(x, y);
+            const i = T.floor(p);
+            const f = T.fract(p);
+            const w = f.mul(f).mul(f.mul(-2.0).add(3.0));
+            const i0 = i.sub(T.floor(i.div(P)).mul(P));
+            const j = i0.add(1.0);
+            const i1 = j.sub(T.floor(j.div(P)).mul(P));
+            const px = T.fract(T.vec4(i0.x, i1.x, i0.x, i1.x).mul(0.3183099).add(0.71)).mul(17.0);
+            const py = T.fract(T.vec4(i0.y, i0.y, i1.y, i1.y).mul(0.3183099).add(0.113)).mul(17.0);
+            const e = T.fract(px.mul(py).mul(px.add(py)));
+            return T.mix(T.mix(e.x, e.y, w.x), T.mix(e.z, e.w, w.x), w.y).sub(0.5);
+        };
+        // je Skala: ihr Rauschen (−1 … 1) × wie viel von ihr am Schirm steht (der Fußabdruck: Zellen je Pixel)
+        const [voll, leer] = [1 / GG.fuss.voll, 1 / GG.fuss.leer];
+        const skala = (cq, cl, versatz) => {
+            const steht = T.float(1.0).sub(T.smoothstep(voll, leer, T.max(fq.div(cq), fl.div(cl))));
+            return [
+                rausch(quer.div(cq).add(versatz), laengs.div(cl).add(versatz * 0.37))
+                    .mul(steht)
+                    .mul(2.0),
+                steht,
+            ];
+        };
+        const [korn, kornSteht] = skala(mass.x, mass.y, 17.0);
+        const [zug] = skala(mass.z, mass.w, 59.0);
+        const [wolke] = skala(lage.x, lage.y, 101.0);
+        // das Wetter: die Seite der Fläche gegen die Richtung, aus der es kommt (−1 Lee … 1 Wetterseite)
+        const wl = Math.hypot(...GG.wetterVon) || 1;
+        const wetter = T.dot(nG, T.vec3(...GG.wetterVon.map((x) => x / wl)));
+        // der Spritz-Saum: die Höhe über dem Fuß des Baus (die Vorlage: ihr Fuß steht bei y = 0 — dieselbe in jeder Stufe), sein
+        // Rand von Wolke und Zug gebrochen (fern, wo beide ihr Mittel sind, eine gerade Kante: derselbe Anteil der Fläche)
+        const saum = T.float(1.0).sub(
+            T.smoothstep(GG.spritz.voll, GG.spritz.aus, T.positionGeometry.y.add(wolke.mul(0.12)).add(zug.mul(0.04)))
+        );
+        // der Läufer unter dem Dach: 1 an der Dachhaut, über `lauf.weit` Meter Tiefe auf 0 (ohne Angabe 0)
+        const unterDach = V.tiefe
+            ? T.step(0.5, V.tiefe).mul(T.float(1.0).sub(T.smoothstep(0.0, GG.lauf.weit, V.tiefe.sub(1.0))))
+            : T.float(0.0);
+        const faktor = T.float(1.0)
+            .add(korn.mul(ton.x))
+            .add(zug.mul(ton.y))
+            .add(wolke.mul(ton.z).mul(T.float(1.0).add(mehr.z.mul(unterDach))))
+            .mul(T.float(1.0).add(wetter.mul(ton.w)))
+            .mul(T.float(1.0).sub(mehr.y.mul(saum)))
+            .mul(lage.w);
+        const LUMA = [0.2126, 0.7152, 0.0722];
+        const sl = GG.silber.reduce((q, x, k) => q + x * LUMA[k], 0) || 1;
+        const silber = T.vec3(...GG.silber.map((x) => x / sl));
+        // das Silber der Wetterseite: das der Fläche — in der Fuge des Verbands das der Fuge (der Balken der fernen Fachwerk-Wand)
+        const grau = T.mix(hub.w, mehr.x, V.fuge).mul(wetter.max(0.0)).mul(T.float(1.0).add(wolke)).clamp(0.0, 1.0);
+        // das Relief: der Gradient der Höhe in der Welt aus den Ableitungen am Schirm, die Wölbung des Steins im Verband dazu
+        const hoehe = korn.mul(hub.x).add(zug.mul(hub.y)).add(wolke.mul(hub.z));
+        // die Seite der Fläche zählt nur am doppelseitigen Stoff (wie three's eigene Normale: `front_facing` ist eine Stelle
+        // zwischen Ecke und Pixel)
+        const n = doppelt ? nG.mul(T.faceDirection) : nG;
+        const dpx = T.dFdx(wp);
+        const dpy = T.dFdy(wp);
+        const r1 = T.cross(dpy, n);
+        const det = T.dot(dpx, r1);
+        const grad = r1
+            .mul(T.dFdx(hoehe))
+            .add(T.cross(n, dpx).mul(T.dFdy(hoehe)))
+            .div(T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12)));
+        const K = AnazhRealm.GEFUEGE_KIPP;
+        const kipp = grad.mul(T.float(K).div(grad.length().max(K)));
+        const kissenSteht = T.float(1.0).sub(T.smoothstep(voll, leer, V.sp));
+        const kissen = V.t
+            .mul(V.fu.mul(2.0).sub(1.0).mul(form.x))
+            .add(V.s.mul(V.fv.mul(2.0).sub(1.0).mul(form.y)))
+            .mul(kissenSteht);
+        return {
+            farbe: (rgb) => {
+                const c = T.vec3(rgb.mul(faktor));
+                return T.mix(c, silber.mul(T.dot(c, T.vec3(...LUMA))), grau);
+            },
+            normale: T.cameraViewMatrix.transformDirection(T.normalize(n.sub(kipp).add(kissen))),
+            rauh: (r) => r.add(zug.mul(form.z)).add(T.float(1.0).sub(kornSteht).mul(form.w)).clamp(0.0, 1.0),
+        };
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
@@ -861,7 +1068,16 @@ class AnazhRealm_studio_stoff {
                     : eckLage
                       ? TSL.varying(TSL.attribute("aLage", "vec2"), "vWandLage")
                       : null;
-            mat.colorNode = TSL.vec4(mat.colorNode.rgb.mul(this._verbandStoff(TSL, nr, ecke)), mat.colorNode.a);
+            // DAS GEFÜGE (haus-gefuege, fachwerk GEFUEGE_GESETZ) am selben Ort, aus derselben Nummer: Korn, Faser und Verwitterung in
+            // der Farbe, das Relief in der Normale, seine Spanne in der Rauheit (`_gefuegeStoff`) — der Zweig des Verbands trägt es
+            // immer (EINE Signatur, dieselben Knoten-Plätze)
+            const stein = {};
+            const farbe = mat.colorNode;
+            const fuge = this._verbandStoff(TSL, nr, ecke, stein);
+            const gefuege = this._gefuegeStoff(TSL, nr, stein, sideDouble === true);
+            mat.colorNode = TSL.vec4(gefuege.farbe(farbe.rgb.mul(fuge)), farbe.a);
+            mat.normalNode = gefuege.normale;
+            mat.roughnessNode = gefuege.rauh(mat.roughnessNode || TSL.materialRoughness);
         }
         // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
         // DACH (licht.K1: die Normale des Dachs, Rauheit 1) — EIN Gesetz (`_halmStoff`), hinter dem Satz-Regler (er gilt jeder
@@ -1019,3 +1235,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_studio_stoff]);
 // gemeinsame Steigung (1,7 + 0,73 · 0,5): der Hub der Zeile ist Unruhe / steil, der Abstand zweier Reihen schwankt um die Unruhe
 // und bleibt monoton (Unruhe < 1).
 AnazhRealm.VERBAND_WELLE = Object.freeze({ welle: Object.freeze([1.7, 0.73, 0.5]), phase: 1.3, steil: 2.065 });
+// DIE GRÖSSTE NEIGUNG DES GEFÜGES (`_gefuegeStoff`, haus-gefuege): der Gradient des Reliefs kippt die Normale höchstens um diesen
+// Tangens (≈ 50°) — die Ableitung am Schirm wächst im streifenden Blick über jede Neigung, die das Gesetz trägt (das steilste
+// Korn der Tafel, der Putz: 1,2 · 0,5 mm ÷ 4 mm · 2 ≈ 0,3).
+AnazhRealm.GEFUEGE_KIPP = 1.2;
