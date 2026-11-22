@@ -2547,6 +2547,122 @@ async function probeLeben(expected) {
             r.dslEffects.gravity([0]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
             S.frei.schwerelos = stapel(false);
             r.dslEffects.gravity([schwere]);
+            // (3) DAS FASS FÄLLT (same.physik.koerper#1): aus 4,5 m auf weichem Grund neben der Gasse (der erste Punkt der Ringe 4–63 m, dessen
+            // Grund `_kontaktStoffAt` Gras oder Erde nennt; die Welt der Linse trägt kein Gras), gedreht 0,3 — die Zeit von der Landung bis zum Schlaf, im Löser
+            // (`_freiSchritt`, FIXED_DT). Die Mutante: ohne Rollwiderstand der Stoffe (`_rollWiderstand` 0).
+            const fassFall = () => {
+                let ort = null;
+                const [nah, gesehen] = [[], {}];
+                for (let k = 0; k < 480 && !ort; k++) {
+                    const [d, a] = [4 + (k >> 3), (k * Math.PI) / 4 + (k >> 3) * 0.37];
+                    const [x, zz] = [gasse.x + d * Math.sin(a), gasse.z + d * Math.cos(a)];
+                    const g = hh(x, zz);
+                    const stoff = Number.isFinite(g) && !nass(x, zz) ? r._kontaktStoffAt(x, zz, g) : "nass";
+                    gesehen[stoff] = (gesehen[stoff] || 0) + 1;
+                    if (stoff !== "gras" && stoff !== "erde") continue; // weicher Grund (E 5·10⁷ der Stoff-Tafel)
+                    nah.length = 0;
+                    r._blockerNahe(x, zz, 3, -Infinity, nah); // offener Grund: kein Bau binnen 3 m
+                    if (!nah.some((e) => (e.blockerAABBs || []).some((b) => r._boxAbstand2(b, x, zz) <= 9))) ort = { x, zz, g };
+                    else gesehen.verbaut = (gesehen.verbaut || 0) + 1;
+                }
+                if (!ort) return { boden: null, ruheS: null, crr: null, gesehen };
+                const e = r.spawnArchitecture(
+                    "fass",
+                    { x: ort.x, y: ort.g + 4.5, z: ort.zz },
+                    { silent: true, precise: true, rotationY: 0.3 }
+                );
+                const K = e._frei;
+                const o = { boden: r._kontaktStoffAt(ort.x, ort.zz, ort.g), ruheS: null, crr: null, anstiegJ: 0 };
+                // die Energie des Körpers (Bewegung, Drehung im Rahmen, Lage): nach der Landung wächst sie nie — ein Anstieg über ihr
+                // Tief ist ein Löser, der Arbeit erfindet (der wandernde Fuss am stehenden Fass: +18 J in 8 s)
+                const energie = () => {
+                    const [R, w] = [K.R, K.w];
+                    let e = 0.5 * K.m * (K.v[0] ** 2 + K.v[1] ** 2 + K.v[2] ** 2) + K.m * Math.abs(schwere) * K.p[1];
+                    for (let j = 0; j < 3; j++) e += (0.5 * (R[j] * w[0] + R[3 + j] * w[1] + R[6 + j] * w[2]) ** 2) / K.invI[j];
+                    return e;
+                };
+                let [t, tLand, tief] = [0, null, Infinity];
+                for (let i = 0; i < 600 && o.ruheS === null; i++) {
+                    r._freiSchritt(A.FIXED_DT);
+                    t += A.FIXED_DT;
+                    let mn = Infinity;
+                    for (let j = 1; j < K.pw.length; j += 3) mn = Math.min(mn, K.pw[j]);
+                    if (tLand === null && mn - r._koerperBodenUnter(K.p[0], mn + 0.5, K.p[2]) <= A.FREI.spalt) tLand = t;
+                    if (tLand !== null && t - tLand >= 0.5) {
+                        const e = energie();
+                        tief = Math.min(tief, e);
+                        o.anstiegJ = Math.max(o.anstiegJ, Math.round((e - tief) * 100) / 100);
+                    }
+                    if (tLand !== null && K.schlaf) o.ruheS = Math.round((t - tLand) * 1000) / 1000;
+                }
+                o.crr = K.grund ? K.grund.roll : null;
+                r.removeArchitecture(e, { still: true });
+                return o;
+            };
+            S.frei.fassFall = fassFall();
+            r._rollWiderstand = () => 0;
+            S.frei.fassFallOhneRoll = fassFall();
+            delete r._rollWiderstand;
+            // (4) DIE LUFT (same.physik.flug#1): ein Steinwürfel 0,1 m und eine Federn-Platte 0,25 × 0,003 × 0,05 m aus 1,5 m mit
+            // 10 m/s unter 45° längs der Gasse, in stiller Luft (der Wind am Ort 0) — die Weite bis zum Grund gegen die Rechnung
+            // m dv/dt = −m g − ½ ρ c_w A |v| v (ρ der EINEN Luft vehicle:FAHR.luft, c_w Würfel 1,05, Platte quer 1,17); dazu die
+            // Feder im Wind 2 m/s längs der Bahn (sie fliegt weiter). Die Mutante: ohne Luft (`_freiLuftPacken` leer).
+            const wurf = (wind) => {
+                const windAt = r._windAt;
+                r._windAt = (x, zz, t, aus) =>
+                    Object.assign(aus || {}, { x: gasse.ux, z: gasse.uz, ms: wind, staerke: 0, boe: 1, form: 1 });
+                const [g, h0, v0, c45, rho] = [-st.gravity, 1.5, 10, Math.SQRT1_2, A._fahrSchrittGesetz().vc.FAHR.luft.rho];
+                const g0 = hh(gasse.x, gasse.z);
+                const plan = (name, stoff, sx, sy, sz) => ({
+                    name, label: name, frei: true, builtIn: false,
+                    parts: [{ shape: "box", material: stoff, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: sy / 2, z: 0 } }],
+                });
+                const werfe = (bp, cw, fl) => {
+                    st.blueprints[bp.name] = bp;
+                    const e = r.spawnArchitecture(bp.name, { x: gasse.x, y: g0 + 3, z: gasse.z }, { precise: true, silent: true });
+                    const K = e._frei;
+                    K.p.set([gasse.x, g0 + h0, gasse.z]);
+                    K.v.set([v0 * c45 * gasse.ux, v0 * c45, v0 * c45 * gasse.uz]);
+                    K.w.fill(0);
+                    r._freiWecken(K);
+                    K.grund = null;
+                    r._freiLage(K);
+                    let [t, weite] = [0, null];
+                    for (let i = 0; i < 480 && weite === null; i++) {
+                        r._freiSchritt(A.FIXED_DT);
+                        t += A.FIXED_DT;
+                        let [mn, mx, mz] = [Infinity, 0, 0];
+                        for (let j = 1; j < K.pw.length; j += 3) if (K.pw[j] < mn) [mn, mx, mz] = [K.pw[j], K.pw[j - 1], K.pw[j + 1]];
+                        if (t > 0.1 && K.v[1] <= 0 && mn - r._koerperBodenUnter(mx, mn + 0.5, mz) <= A.FREI.spalt)
+                            weite = (K.p[0] - gasse.x) * gasse.ux + (K.p[2] - gasse.z) * gasse.uz;
+                    }
+                    // die Rechnung (1 ms), bis die Unterkante den Grund der Gasse erreicht
+                    let [x, y, vx, vy] = [0, h0 + g0, v0 * c45, v0 * c45];
+                    for (let i = 0; i < 20000; i++) {
+                        const k = (0.5 * rho * cw * fl * Math.hypot(vx, vy)) / K.m;
+                        [vx, vy] = [vx - k * vx * 0.001, vy - (g + k * vy) * 0.001];
+                        [x, y] = [x + vx * 0.001, y + vy * 0.001];
+                        if (vy < 0 && y - K.hy <= hh(gasse.x + x * gasse.ux, gasse.z + x * gasse.uz)) break;
+                    }
+                    r.removeArchitecture(e, { still: true });
+                    delete st.blueprints[bp.name];
+                    const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                    return { weite: R3(weite), rechnung: R3(x), abwPct: weite === null ? null : R3((100 * Math.abs(weite - x)) / x) };
+                };
+                try {
+                    return {
+                        stein: werfe(plan("k3_wurf_stein", "stein", 0.1, 0.1, 0.1), 1.05, 0.01),
+                        feder: werfe(plan("k3_wurf_feder", "federn", 0.25, 0.003, 0.05), 1.17, 0.0125),
+                    };
+                } finally {
+                    r._windAt = windAt;
+                }
+            };
+            S.frei.luft = wurf(0);
+            S.frei.luftWind = wurf(2);
+            r._freiLuftPacken = (K, X, x) => (X[x + 38] = X[x + 41] = X[x + 42] = 0);
+            S.frei.ohneLuft = wurf(0);
+            delete r._freiLuftPacken;
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({

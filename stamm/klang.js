@@ -262,6 +262,10 @@ class AnazhRealm_klang {
         const buch = this.state.taten;
         const tat = buch && buch.length ? buch[buch.length - 1] : null;
         if (tat !== um.tat) [um.tat, um.ereignis] = [tat, true];
+        // DIE GLUT IST EIN EREIGNIS (erleben.kopplung.ein-ereignis#1): ein Feuer tritt ins Verzeichnis oder geht (`_blockerMit`
+        // reicht eine neue Liste, sobald sich der Name regt) — im selben Bild, in dem es erscheint, hört das Ohr es
+        const glut = this._blockerMit("glut");
+        if (glut !== um.glutListe) [um.glutListe, um.ereignis] = [glut, true];
         if (musik) return void this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
         const jetzt = s.ctx.currentTime;
         if (um.sprung || um.ereignis) {
@@ -270,8 +274,16 @@ class AnazhRealm_klang {
             um.sprung = um.ereignis = false;
             um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
             um.letzteMischung = jetzt;
+            // EIN EREIGNIS, EIN BILD: Lage, Mischung und Graph in diesem Takt (vorher drei Bilder: die Lage, dann die Mischung,
+            // dann der Graph — und das Feuer wartete auf den Misch-Takt mischSek, bis 100 ms hinter dem Bild; die Station hörte
+            // die Glut nach dem Deckel von 50 s nicht für jedes der 20 Feuer). Danach der Ruf-Takt.
             um.naechste = this._umweltLage();
-            um.folge = 1;
+            um.mix = um.kern.umweltMischung(um.naechste);
+            um.lage = um.naechste;
+            um.graph.anwenden(um.mix, jetzt);
+            um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
+            this._untertitelStimmen(um.graph);
+            um.folge = 3;
             return;
         }
         const teil = um.folge;
