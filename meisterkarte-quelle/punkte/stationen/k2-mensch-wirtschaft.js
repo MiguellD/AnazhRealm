@@ -451,7 +451,7 @@ const STROM7 = async (r, T, arg) => {
     const h0 = typeof r._weltStunde === "function" ? r._weltStunde() : null;
     const tage = [bestand()];
     for (let d = 0; d < 7; d++) {
-        s.spielZeit += A.PEGEL_TAG_S;
+        s.spielZeit += r._kalender().tagS;
         await window.__seitenTakt();
         await window.__seitenTakt();
         tage.push(bestand());
