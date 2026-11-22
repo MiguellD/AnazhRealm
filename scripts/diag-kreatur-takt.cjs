@@ -4,7 +4,10 @@
 // Seiten-Funktion läuft hier headless (Null-Renderer, Produktions-Boot) und mit `--werkbank <port>` im sichtbaren
 // Fenster der echten GPU.
 //   node scripts/diag-kreatur-takt.cjs [--proben a,b] [--selftest] [--teil=k/n] [--werkbank <port>]
-//   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
+//   --selftest  je Probe zuerst der Grund-Lauf (sein Urteil ist das der Probe), dann jeder alte Defekt als Täter (TAETER): er muss
+//               sie ROT machen, beim Namen genannt — er fährt nur die Teile seines Urteils (die dritte Spalte; die übrigen liest er aus
+//               dem Grund) und hält, wo sein Wort steht und im Grund an derselben Stelle nicht (Kreatur-Takt 22.11.: am OMEN die drei
+//               Teile 2 659 → 2 045 s Uhr, 132 von 132 Tätern rot beim Namen)
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
 const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullWelt, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
