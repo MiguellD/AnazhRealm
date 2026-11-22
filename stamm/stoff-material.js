@@ -2018,7 +2018,7 @@ class AnazhRealm_stoff_material {
         // der Boden: Erde (die Poren seines Stoffs, aus denen auch der Film verdunstet, `_trockenRate`), und in seinen Mulden
         // steht der Regen (`_pfuetzeKnoten`)
         if (opts.geomorph) Object.assign(mat.userData, { poren: AnazhRealm.NAESSE.poren.erde, pfuetze: true });
-        this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null, !!opts.fernOrt);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
@@ -2088,7 +2088,10 @@ class AnazhRealm_stoff_material {
     // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
     // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
     // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
-    _leuchtStoff(mat, mp, himmel) {
+    // `fern` (der Fern-Ring): der Pool OHNE die Licht-Karte — ihr Gitter reicht `LICHT_KARTE.texel` × `zelleM` ÷ 2 (72 m) um das
+    // Auge, der Ring ist Horizont und Deckel eines ungebauten Chunks; was er nicht hat, trägt er nicht. Mit der Karte trug sein
+    // Fragment im GL-Rückfall 17 Sampler-Einheiten (Grenze 16, gate:webgl-probe W5/W6: zwei Programme linkten nicht, GTX 1050).
+    _leuchtStoff(mat, mp, himmel, fern) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;
         const atmo = this._ensureAtmoUniforms();
@@ -2108,7 +2111,8 @@ class AnazhRealm_stoff_material {
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
         const licht = mp && mp.licht ? String(mp.licht) : "";
-        if (!knoten[licht]) {
+        const fach = fern ? `${licht}|fern` : licht;
+        if (!knoten[fach]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
             if (licht) {
                 const glut = atmo.lichtGlut[licht];
@@ -2125,9 +2129,9 @@ class AnazhRealm_stoff_material {
                         : glut;
                 em = em.add(jeEcke.div(Te.materialOpacity));
             }
-            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[fach] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, !!fern));
         }
-        mat.emissiveNode = knoten[licht];
+        mat.emissiveNode = knoten[fach];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -2306,7 +2310,7 @@ class AnazhRealm_stoff_material {
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
     // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
     // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
-    _lichtPoolTerm(Te, atmo, himmel) {
+    _lichtPoolTerm(Te, atmo, himmel, fern) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
             Te.normalView.toVar();
@@ -2324,7 +2328,7 @@ class AnazhRealm_stoff_material {
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
             });
-            summe.addAssign(this._lichtKarteTerm(Te, atmo));
+            if (!fern) summe.addAssign(this._lichtKarteTerm(Te, atmo)); // der Fern-Ring liegt jenseits des Gitters (`_leuchtStoff`)
             return summe;
         })();
     }
