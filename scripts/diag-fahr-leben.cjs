@@ -53,8 +53,9 @@ function taktVerdict(m, minWeg = TAKT.wegFahrtMinM) {
     ]);
 }
 // T6 DIE FAHRT DER WELT-ZEIT (fahrt-weltzeit 22.11.; `weltzeit` in fahr-proben): nach N Sim-Schritten derselbe Weg und dasselbe Tempo
-// über der Karte, vor der Karte und im doppelten Bildtakt — die Schwelle aus der Messung am Schnitt (die Läufe trafen sich dort auf
-// den Millimeter); die zwei gepflanzten Täter (Dämpfung je Bild, Tor der Karte) liegen jenseits von ihr, sonst ist die Linse blind.
+// über der Karte, vor der Karte und im doppelten Bildtakt — die Schwelle aus der Messung am Schnitt (GTX 1060: alle drei Fahrten
+// 32,253 m / 16,114 m/s, Δ 0; am main d3f43d76 ohne Karte 43,673 m / 21,067 m/s); die zwei gepflanzten Täter liegen weit jenseits
+// von ihr (Dämpfung je Bild 17,69 ↔ 22,50 m, Tor der Karte 43,67 ↔ 32,25 m), sonst ist die Linse blind.
 const WELTZEIT = { sM: 0.05, vMs: 0.05 };
 function weltzeitVerdict(w) {
     if (!w || !w.karte) return ["T6 ohne Fahrt"];
