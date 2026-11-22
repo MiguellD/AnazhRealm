@@ -3678,20 +3678,28 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
                             // (das Overlay `_depositLife`, die Narbe der Taten, der Fraß aus dem Faden des Gaus). Der Herd misst sein Bett
                             // wie das Spiel (Stoff, Boden-Feuchte, Gefälle, Maske), lebendig ist das der Saat (`worldFieldAt`: kein Overlay,
-                            // keine Narbe, kein Gau), und JEDE Zelle mit Bett trägt dieses Bett an ihrem Ort (wo die Welt keins trägt — Fels,
-                            // Wasser, Asche —, bleibt keins); die Nässe hält die Bühne bei 0
+                            // keine Narbe, kein Gau), und JEDE Zelle trägt dieses Bett an ihrem Ort — auch wo die Welt keins trägt (Fels,
+                            // Bach: `loecher`, gezählt; an der Achse hielt der schmale Kopf, R 1,5 m/s, an ihnen und lief 0,46 von R), nur
+                            // die Asche des eigenen Brands nie; die Nässe hält die Bühne bei 0
+                            let loecher = 0;
                             if (bett) {
                                 let F0 = null;
+                                const cs = AnazhRealm.LIFE_FIELD.cell;
                                 r._brandStoff = function (cx, cz, u) {
                                     const f = P._brandStoff.call(this, cx, cz, u);
-                                    if (!f) return f;
-                                    F0 ||= Object.assign({}, f, { leb: this.worldFieldAt(f.x, f.z).lebendig });
-                                    return Object.assign({}, F0, { x: f.x, z: f.z, y: f.y });
+                                    if (!f && (this._tatIndex().je.get(cx + "," + cz) || []).some((a) => a.tat === "brand")) return null;
+                                    const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
+                                    if (!F0) F0 = f && Object.assign({}, f, { leb: this.worldFieldAt(x, z).lebendig });
+                                    if (!F0) return null;
+                                    if (!f) loecher++;
+                                    return Object.assign({}, F0, { x, z, y: f ? f.y : this._voxelSurfaceY(x, z) });
                                 };
                             }
                             AnazhRealm.BRAND = Object.freeze({ ...B0, ...gesetz });
                             try {
-                                return await lauf(n);
+                                const L = await lauf(n);
+                                if (L.bett) L.bett.loecher = loecher;
+                                return L;
                             } finally {
                                 AnazhRealm.BRAND = B0;
                                 delete r._windAt;
