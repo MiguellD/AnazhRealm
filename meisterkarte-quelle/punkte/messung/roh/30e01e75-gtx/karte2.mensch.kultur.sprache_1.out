@@ -1,0 +1,8 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@PUNKTE@@ MESSORT /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen)
+@@ PROBE-FEHLER Error: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen) |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:253:45) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:561:13) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:560:5)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T20:51:47.032Z",
+ "zeit": "2026-11-22T20:51:51.758Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -1156,6 +1156,70 @@
    "ungemessen": true,
    "zeit": "2026-11-22T20:51:47.032Z",
    "abdruck": "2c32cf62903e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "Messort: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen) |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:253:45) |     ",
+   "exit": 2,
+   "minuten": 0.51,
+   "grund": "Messort: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr offen) |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:253:45) |     ",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 30.2,
+   "fremd": {
+    "s": 33.2,
+    "takte": 15,
+    "fremdS": 17.86,
+    "kerne": 0.538,
+    "fensterKerne": 0.743,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.06
+     ],
+     [
+      "Explorer.EXE",
+      2.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.83
+     ]
+    ],
+    "dienerS": 15.8,
+    "diener": [
+     [
+      "dwm.exe",
+      8.17
+     ],
+     [
+      "System",
+      5.36
+     ]
+    ],
+    "geraetS": 13.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.38
+     ],
+     [
+      "svchost.exe",
+      5.59
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 59.75,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T20:51:51.758Z",
+   "abdruck": "bfd211beed4c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
