@@ -16592,7 +16592,7 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Station seit der Messung geändert · karte2.mensch.geist.absicht#1 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Station seit der Messung geändert · karte2.mensch.geist.absicht#1 gtx: ROT: S1 ROT an Anteil ihrem Zug zugeordnet 0.54 verfehlt ≥ 0.6 — Täter: koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt · Anteil ihrem Zug zugeordnet 0.54 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.6, erste 100 0.54 (1367 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":14},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":6},\"gesellig\":{\"n\":15,\"ok\":14} · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
@@ -16608,10 +16608,10 @@
      "id": "karte2.mensch.geist.absicht#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Anteil ihrem Zug zugeordnet 0.54 verfehlt ≥ 0.6 — Täter: koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt · Anteil ihrem Zug zugeordnet 0.54 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.6, erste 100 0.54 (1367 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":14},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":6},\"gesellig\":{\"n\":15,\"ok\":14} · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT an Anteil ihrem Zug zugeordnet 0.54 verfehlt ≥ 0.6 — Täter: koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt · Anteil ihrem Zug zugeordnet 0.54 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.6, erste 100 0.54 (1367 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":14},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":6},\"gesellig\":{\"n\":15,\"ok\":14} · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37483,7 +37483,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 234,
+  "konsum": 235,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37651,10 +37651,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3388
+  "ohne": 3387
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T18:39:39.890Z",
+ "zeit": "2026-11-22T18:50:22.460Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
