@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 12,
-    "kern": 11,
-    "kernDazu": 11,
+    "kern": 12,
+    "kernDazu": 12,
     "anteilHeute": 2.1,
-    "anteilKern": 1.9
+    "anteilKern": 2.1
    },
    "perspektiven": [
     {
@@ -6347,7 +6347,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
      "alt": []
@@ -20088,8 +20088,8 @@
   "sprossen": 1718,
   "heute": 51,
   "davonKopplungen": 33,
-  "kern": 12,
-  "kernDazu": 12,
+  "kern": 13,
+  "kernDazu": 13,
   "anteilHeute": 3,
   "anteilKern": 0.4,
   "kapitel": 7,
