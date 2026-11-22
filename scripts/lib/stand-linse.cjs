@@ -461,27 +461,36 @@ function brandAmSoll(Z) {
 // EREIGNIS — nie je Bild, nie je Zelle des Brands: die Linse misst jedes Ereignis einzeln (der Stand der Rolle `druck` vor und
 // nach ihm, `S.stand`) und urteilt es an seinem eigenen Soll:
 //   UMSATZ  — die Ladung verlässt die Welt (ihr Abschied, ohne ihre Welle): ≤ DRUCK_UMSATZ;
-//   WELLE   — der EINE Schreiber `_druckWelle`: ≤ DRUCK_WELLE + DRUCK_BLICK je Eintrag des Platz-Netzes im Radius (ein Blick auf
-//             seinen Bauplan, gemerkt; je getroffenem Körper EINE Frist);
+//   WELLE   — der EINE Schreiber `_druckWelle`: ≤ DRUCK_WELLE + DRUCK_BLICK je Bau im Radius (`blick`: jeder Eintrag des
+//             Platz-Netzes, der weder Natur noch freier Körper ist — ein Blick auf seinen Bauplan und sein Fahr-Profil, am
+//             Eintrag gemerkt; die Natur kostet nichts, je getroffenem Körper EINE Frist);
 //   STOSS   — die Frist eines gestoßenen Körpers (frei, Tier, Spieler, Wagen) und des Ohrs: ≤ DRUCK_STOSS;
 //   WERK    — die Frist eines Werks: ≤ DRUCK_LAST je Teil (die Last seiner Platte), bricht es, dazu DRUCK_BRUCH (der EINE
 //             Einsturz: sein Abschied, der Rest erbt den Grund) + DRUCK_SCHERBE je Scherbe (ihre Geburt, ihr Stoß);
 //   ENDE    — der EINE Satz der Welle im Journal: ≤ DRUCK_ENDE.
 // Was der Takt außerhalb seiner Ereignisse tut, ist Null (`rest`). Die Zahlen sind Ratschen EINER Messung an der Mess-Wiese
-// (GTX 1050, Null-Renderer: ein Donnerfass, fünf Probe-Fenster, eine Kiste, der Spieler in 10 m), gemessen je Ereignis; die
-// Mutante der Klasse — der Rest räumt den Grund seines Werks ein zweites Mal (der Stand vor dem Erbe, `_grundrissRaeumen`) —
-// steht mit ihrer gemessenen Zahl im Selbsttest. `DRUCK_VERZUG_S`: so weit darf die letzte Frist hinter ihrer Ankunft fallen
-// (das Bild-Budget des Takts, `DRUCK.budgetMs`); `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach liegen.
-const DRUCK_UMSATZ = 0;
-const DRUCK_WELLE = 0;
-const DRUCK_BLICK = 0;
-const DRUCK_STOSS = 0;
-const DRUCK_LAST = 0;
-const DRUCK_BRUCH = 0;
-const DRUCK_SCHERBE = 0;
-const DRUCK_ENDE = 0;
-const DRUCK_VERZUG_S = 0.5;
-const DRUCK_SCHLAF_S = 8;
+// (GTX 1050, Null-Renderer, die Welt frisch: ein Donnerfass mit 60,6 MJ, sechs Probe-Fenster in 8–48 m — das in 12 m mit zwei
+// Scheiben —, eine Kiste in 6 m, der Spieler in 16 m; 71 Bauten des Dorfs im Radius), gemessen je Ereignis: Umsatz 37 ·
+// Schreiber 2 245 (kalt: je Bau 31 für sein Fahr-Profil; die zweite Welle derselben Welt 231) · Stoß 2–12 · stehendes Werk 6 ·
+// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3.
+// DAS ERBE DES GRUNDS trägt sein eigenes Maß (`raeumt`: die Rufe der Natur-Räumung `_naturRaeumen` unter der Marke, je
+// Ereignis): die Welle räumt keine Natur — der Rest eines Einsturzes erbt den Grund seines Werks (`grundErbe`), der freie
+// Körper trägt keinen Grundriss. In Einheiten hebt die Räumung einen Bruch nur um 7 % (1 041 → 1 109), in Zeit um 43 % (GTX
+// 1050, 52 brechende Werke: 7,1–7,8 → 4,06 ms je Werk) — ihre Arbeit sind Schleifen über Kacheln, die kein Ruf zählt. Die
+// Mutante der Klasse (der Rest räumt den Grund seines Werks ein zweites Mal, `_grundrissRaeumen` ohne `gehalten`) fährt in
+// JEDEM Lauf: sieht die Linse ihre Räumung nicht, ist sie BLIND. `DRUCK_VERZUG_S`: so weit darf die letzte Frist hinter ihrer
+// Ankunft fallen (das Bild-Budget des Takts, `DRUCK.budgetMs`; gemessen 0,032 s); `DRUCK_SCHLAF_S`: so lange darf die letzte
+// Scherbe wach liegen (gemessen 1,5 s).
+const DRUCK_UMSATZ = 50;
+const DRUCK_WELLE = 80;
+const DRUCK_BLICK = 40;
+const DRUCK_STOSS = 16;
+const DRUCK_LAST = 4;
+const DRUCK_BRUCH = 370;
+const DRUCK_SCHERBE = 230;
+const DRUCK_ENDE = 5;
+const DRUCK_VERZUG_S = 0.25;
+const DRUCK_SCHLAF_S = 3;
 const druckSoll = (e) =>
     e.art === "umsatz"
         ? DRUCK_UMSATZ
@@ -499,7 +508,7 @@ const druckNenne = (e) =>
 const druckSollText = (e) =>
     ({
         umsatz: `${DRUCK_UMSATZ}`,
-        welle: `${DRUCK_WELLE} + ${DRUCK_BLICK} je Eintrag im Radius (${e.blick | 0})`,
+        welle: `${DRUCK_WELLE} + ${DRUCK_BLICK} je Bau im Radius (${e.blick | 0})`,
         ende: `${DRUCK_ENDE}`,
         bruch: `${DRUCK_LAST} je Teil (${e.teile | 0}) + ${DRUCK_BRUCH} + ${DRUCK_SCHERBE} je Scherbe (${e.scherben | 0})`,
         steht: `${DRUCK_LAST} je Teil (${e.teile | 0})`,
@@ -532,6 +541,10 @@ function druckUrteil(D, v) {
         v.push(`DRUCK-SOLL: ${druckNenne(e)} kostete ${e.einheiten} Einheiten (Soll ≤ ${druckSoll(e)}: ${druckSollText(e)}) — seine Leser: ${brandLeser(e.leser, 8)}`);
     }
     if (D.rest > 0) v.push(`DRUCK-TAKT: der Takt der Welle arbeitete ${D.rest} Einheiten außerhalb jedes Ereignisses (Umsatz, Welle, Frist, Ende)`);
+    // das Erbe des Grunds: die Welle räumt keine Natur — der erste Täter beim Namen, die Mutante jedes Laufs hält das Maß wach
+    const [raeumt, erster] = [E.reduce((s, e) => s + (e.raeumt | 0), 0), E.find((e) => e.raeumt > 0)];
+    if (erster) v.push(`DRUCK-ERBE: ${druckNenne(erster)} räumte die Natur seines Grunds (\`_naturRaeumen\` ${raeumt}× in der Welle) — der Rest eines Einsturzes erbt den Grund seines Werks (\`grundErbe\`), ein freier Körper trägt keinen Grundriss`);
+    if (!D.mutante || !(D.mutante.raeumt > 0)) v.push(`BLIND: die Mutante der Welle (der Rest räumt den Grund seines Werks ein zweites Mal) blieb ungesehen — \`_naturRaeumen\` unter der Marke \`druck\`: ${D.mutante ? D.mutante.raeumt : "kein Lauf"}`);
     // das Gesetz am Bild der Welt: die Scheibe bricht diesseits der Grenze des Gesetzes und steht jenseits
     const S = D.scheiben || [];
     if (!(D.grenze > 0) || !S.some((s) => s.R < D.grenze) || !S.some((s) => s.R > D.grenze))
@@ -550,7 +563,7 @@ function druckUrteil(D, v) {
     // (Lehre 17: `null <= x` ist wahr — ein fehlender Wert ist ROT, nie still grün)
     if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — das Bild-Budget des Takts trägt die Probe nicht`);
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
-    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: ${D.wach} von ${D.scherben} Scherben liegen nach ${DRUCK_SCHLAF_S} s wach (die letzte schlief ${D.schlafS == null ? "nie" : "nach " + D.schlafS + " s"})`);
+    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
     if (!(ruhe === 0)) v.push(`DRUCK-RUHE: nach der Welle arbeitet ihr Takt — ${ruhe} Einheiten`);
 }
