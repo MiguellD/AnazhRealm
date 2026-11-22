@@ -3550,7 +3550,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             return r._brandRest ? Object.assign(G, { deckel: G.bilder }) : G;
                         };
                         const lauf = async (n) => {
-                            const [Z, H, bf] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
+                            const h0 = r._brandEntfachen(MESS.x, MESS.z);
+                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
                             // das Gemessene, das der Herd schon trägt: sein Bett maß die Tat `_brandEntfachen` (die Linse zählt sie als Tat)
                             const gesehen = new Set((r._brandBett || new Map()).keys());
                             const haeufigste = (je, n) => Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, n);
@@ -3564,6 +3565,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
                                     const d = Math.hypot(dx, dz);
                                     if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
+                                    // jede gefangene Zelle mit dem Punkt und der Zeit, zu der die Front sie erreichte (das Vorrücken)
+                                    if (c.t0 !== null && !I.has(k)) I.set(k, { ex: c.ex, ez: c.ez, an: c.t0 });
                                 }
                             };
                             S.frame();
@@ -3607,6 +3610,20 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
                             Object.assign(Z, G);
+                            // DAS VORRÜCKEN DES KOPFS (linse-brand-schritte 2): die vorderste gefangene Zelle längs des Kopfs des Herds
+                            // (`kopf` der Zünd-Zelle, `_brandTempo`), ihr Weg vom Herd durch die Zeit, zu der die Front sie erreichte —
+                            // wie schnell die Front beim Spieler ankommt; dazu R des Herds (die Erwartung) und der Winkel des Kopfs zum
+                            // Gitter der Zellen (0° längs einer Achse, 45° diagonal)
+                            if (h0 && h0.kopf) {
+                                const [kx, kz] = h0.kopf;
+                                let [p, t] = [0, 0];
+                                for (const c of I.values()) {
+                                    const q = (c.ex - h0.ex) * kx + (c.ez - h0.ez) * kz;
+                                    if (q > p) [p, t] = [q, c.an - h0.t0];
+                                }
+                                const w = (((Math.atan2(kz, kx) * 180) / Math.PI) % 90 + 90) % 90;
+                                Object.assign(Z, { vor: t > 0 ? +(p / t).toFixed(3) : 0, vorM: +p.toFixed(1), R: +h0.R.toFixed(3), winkel: +Math.min(w, 90 - w).toFixed(1) });
+                            }
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
                         // JEDER HERD BEGINNT ZUR SELBEN WELT-UHR (linse-brand-schritte): das Tempo der Front liest Wind und Luft zur
@@ -3617,8 +3634,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // Gesetz des Spiels oder einem getauschten (für diesen einen Lauf, im `finally` zurück, kein Flag im Spiel);
                         // `vor` misst nach dem Stellen der Uhr, vor dem Zünden
                         const [B0, HERD_UHR] = [AnazhRealm.BRAND, 40000];
-                        const herd = async (n, gesetz = {}, vor = () => {}) => {
-                            r._weltUhrNeu(HERD_UHR);
+                        const herd = async (n, gesetz = {}, vor = () => {}, uhr = HERD_UHR) => {
+                            r._weltUhrNeu(uhr);
                             vor();
                             AnazhRealm.BRAND = Object.freeze({ ...B0, ...gesetz });
                             try {
@@ -3646,12 +3663,25 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const M = await herd(300, { budgetMs: 0, mindestJeBild: 1 });
                         const langsam = { zellen: st.brandFeld.size, koepfe: M.koepfe, mit: M.mit, alle: M.alle, schritte: M.schritte, bilder: M.bilder, deckel: M.deckel };
                         loeschen();
+                        // DIE FRONT QUER ZUM GITTER (BRAND-RICHTUNG): derselbe Herd zu den ersten Uhren nach `HERD_UHR`, an denen der Wind
+                        // längs einer Achse, unter 22,5° und diagonal zum Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat) —
+                        // das Vorrücken des Kopfs trägt in jeder Lage dasselbe Tempo
+                        const lage = (t) => ((w) => Math.min(w, 90 - w))(((((Math.atan2(r._windDirAt(t).z, r._windDirAt(t).x) * 180) / Math.PI) % 90) + 90) % 90);
+                        const richtung = [];
+                        for (const ziel of [0, 22.5, 45]) {
+                            let uhr = HERD_UHR + 600;
+                            while (uhr < HERD_UHR + 200000 && Math.abs(lage(uhr) - ziel) > 1) uhr += 1;
+                            const L = await herd(300, {}, () => {}, uhr);
+                            richtung.push({ uhr, wind: +lage(uhr).toFixed(1), winkel: L.winkel, mit: L.mit, koepfe: L.koepfe, alle: L.alle, vor: L.vor, vorM: L.vorM, R: L.R });
+                            loeschen();
+                        }
                         // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
                         let [lebVor, ovVor] = [];
                         const Z = (W.brand = await herd(300, {}, () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()])));
                         const spiel = { zellen: st.brandFeld.size, koepfe: Z.koepfe, mit: Z.mit, alle: Z.alle, schritte: Z.schritte, bilder: Z.bilder };
-                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam }, lebVor, ovVor, glut, licht });
+                        richtung.push({ uhr: HERD_UHR, wind: +lage(HERD_UHR).toFixed(1), winkel: Z.winkel, mit: Z.mit, koepfe: Z.koepfe, alle: Z.alle, vor: Z.vor, vorM: Z.vorM, R: Z.R });
+                        Object.assign(Z, { ohneWind, fenster: { spiel, langsam }, richtung, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
