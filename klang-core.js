@@ -1309,12 +1309,70 @@
         abschied: { hzBasis: 220, hzResonanz: 80, resonanzMax: 3, glissEnde: 0.5, hzGlissMin: 110, gain: 0.08, anSek: 0.04, abSek: 0.8, stopSek: 0.85 },
         wasser:   { blasen: 9, sek: 0.6, rVonMm: 3, rBisMm: 11, streuung: 0.15, sigma: 0.1, gain: 0.06, anSek: 0.003, maxSek: 0.4 },
         inventar: { achsenHz: { resoniert: 523, magieleitung: 698, brennbar: 330, lebendig: 440 }, welle: { brennbar: "sawtooth" },
-                    schwelle: 0.5, abstandSek: 0.05, gain: 0.07, anSek: 0.005, abSek: 0.18, stopSek: 0.2 }
+                    schwelle: 0.5, abstandSek: 0.05, gain: 0.07, anSek: 0.005, abSek: 0.18, stopSek: 0.2 },
+        // DER KNALL (same.physik.reaktion#2, rein additiv): die Druckwelle am Ohr. Der Wirt reicht ihren Ueberdruck dp (Pa) und
+        // die Dauer ihrer Ueberdruck-Phase (s) am Ort des Hoerers (schmiede STOFF_GESETZ `druckwelle`). Die Quelle IST ihr
+        // Druck-Zeit-Verlauf — die FRIEDLANDER-Welle p(t) = (1 − t/T)·e^(−t/T): der Sprung der Front, der Abfall durch null bei
+        // T, der Sog danach —, darunter das GROLLEN: Rauschen, tiefgepasst an der Eck-Frequenz des Pulses 1/(2π·T) (zwischen
+        // hzMin und hzMax), das ueber `grollSek` um 60 dB faellt (das Echo des Gelaendes; seine Laenge ist gesetzt, die Welt
+        // traegt kein Hall-Gesetz des Freien). DER PEGEL folgt der Lautheit nach STEVENS (sone ∝ p^0,6): voll bei `dpVoll`
+        // (1 kPa — das Ende der Welle im Gesetz, dort ist sie Schall), darunter (dp/dpVoll)^potenz; unter `still` schweigt sie.
+        // Beide Teile sind Knoten im Audio-Thread, kein Sample im Aufrufer: der Puls eine Gleich-Quelle unter der Huelle der
+        // Friedlander-Kurve (`knallHuelle`, pulsPunkte Stuetzen ueber pulsDauern Dauern), das Grollen der Rausch-Vorrat des
+        // Kerns (`schrittPuffer`) hinter einem Tiefpass.
+        knall:    { dpVoll: 1000, potenz: 0.6, gain: 0.9, still: 0.02, groll: 0.6, grollSek: 1.8, hzMin: 25, hzMax: 400, pulsDauern: 6, pulsPunkte: 64 }
     };
+    // Die Huelle des Knalls: die Friedlander-Welle (1 − x)·e^(−x) ueber x ∈ [0, pulsDauern], ihr Ende auf null gelegt — EINE
+    // Tafel je Kern (pulsPunkte Stuetzen), der Audio-Thread spannt sie ueber die Dauer des Ereignisses (setValueCurveAtTime).
+    var knallTafel = null;
+    function knallHuelle() {
+        if (knallTafel) return knallTafel;
+        var S = SUBSTANZ.knall, n = S.pulsPunkte;
+        knallTafel = new Float32Array(n);
+        for (var i = 0; i < n - 1; i++) {
+            var x = (S.pulsDauern * i) / (n - 1);
+            knallTafel[i] = (1 - x) * Math.exp(-x);
+        }
+        return knallTafel;
+    }
     // substanzKlang(ctx, ausgang, art, tags) → { quelle, hz } — die Einmal-Quelle des Ereignisses.
     function substanzKlang(ctx, ausgang, art, tags) {
         var S = SUBSTANZ[art], T = tags || {}, t = ctx.currentTime;
         if (!S) return null;
+        if (art === "knall") {
+            var pegel = Math.min(1, Math.pow((T.dp > 0 ? T.dp : 0) / S.dpVoll, S.potenz));
+            if (!(pegel >= S.still) || !(T.dauer > 0)) return null;
+            var eck = Math.min(S.hzMax, Math.max(S.hzMin, 1 / (2 * Math.PI * T.dauer)));
+            var kg = ctx.createGain();
+            kg.gain.value = S.gain * pegel;
+            kg.connect(ausgang);
+            // DER PULS: eine Gleich-Quelle, ihre Huelle die Friedlander-Kurve ueber `pulsDauern` Dauern (die Tafel einmal je Kern)
+            var puls = ctx.createConstantSource(), pg = ctx.createGain(), ende = S.pulsDauern * T.dauer;
+            puls.offset.value = 1;
+            pg.gain.setValueCurveAtTime(knallHuelle(), t, ende);
+            puls.connect(pg);
+            pg.connect(kg);
+            puls.start(t);
+            puls.stop(t + ende);
+            // DAS GROLLEN: der Rausch-Vorrat des Kerns in Schleife → Tiefpass an der Eck-Frequenz → e-Abfall um 60 dB ueber
+            // `grollSek`; sein Pegel haelt den Effektivwert gleich, wo immer die Eck-Frequenz liegt (die Rausch-Bandbreite des
+            // Butterworth-Tiefpasses 2. Ordnung: 1,1107 · eck)
+            var gs = ctx.createBufferSource(), tief = ctx.createBiquadFilter(), gg = ctx.createGain(), vorrat = schrittPuffer(ctx);
+            gs.buffer = vorrat;
+            gs.loop = true;
+            tief.type = "lowpass";
+            tief.frequency.value = eck;
+            tief.Q.value = Math.SQRT1_2;
+            gg.gain.setValueAtTime(S.groll * Math.sqrt(ctx.sampleRate / (2.2214 * eck)), t);
+            gg.gain.setTargetAtTime(0, t, S.grollSek / 6.9);
+            gs.connect(tief);
+            tief.connect(gg);
+            gg.connect(kg);
+            gs.onended = function () { try { tief.disconnect(); gg.disconnect(); pg.disconnect(); kg.disconnect(); } catch (_e) {} };
+            gs.start(t, Math.random() * vorrat.duration);
+            gs.stop(t + Math.max(S.grollSek, ende));
+            return { quelle: gs, hz: eck, puls: puls };
+        }
         if (art === "wasser") {
             var rnd = umweltRng(Math.floor(t * 1000) + 1), erste = null, hz0 = 0;
             for (var i = 0; i < S.blasen; i++) {
