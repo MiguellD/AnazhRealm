@@ -1699,8 +1699,7 @@ async function checkBandLookPhysik({ page, check }) {
 // Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die Planeten sind PUNKTE des
 // Sternfelds, die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`, sie schaltet das Feld,
 // `_sterneZeigen`); die Probe liest DIESELBEN Größen wie der Stamm (die Größenklassen `starField.userData.mags` · die Grenzgröße der
-// Achse — licht-eine-skala: der Stern-Knoten trägt keinen Schwellen-Term mehr, jeder Punkt leuchtet in seiner Leuchtdichte der EINEN
-// Skala) und urteilt gegen die Kosmos-Funktion der Saat des Planeten (welt-licht.js `kosmos`, selbst gerechnet, nie aus dem Stand des
+// Achse — sein Licht steht in der EINEN Skala, das Auge (`starFieldUniforms.auge`, stern-sicht) legt es an den Schirm) und urteilt gegen die Kosmos-Funktion der Saat des Planeten (welt-licht.js `kosmos`, selbst gerechnet, nie aus dem Stand des
 // Stamms) und die Grenze des Gesetzes (welt-licht.js `tagAchse`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG die Grenze des Gesetzes,
 // kein Fixstern, sichtbar genau die Punkte, die die Funktion heller zeigt · 3 DÄMMERUNG genau die Punkte der Funktion, unter 5 % ·
 // 4 NACHT genau die Punkte der Funktion, mindestens 90 % (ein Veränderlicher im Minimum fällt unter die Grenze) · 5 MOND die Scheibe
@@ -1713,9 +1712,12 @@ async function checkBandLookPhysik({ page, check }) {
 // das Licht jedes Sterns ist sein Strom in der Farbe SEINER Temperatur (der Planck-Ort fachwerk `lichtFarbe`, Luma 1; bis
 // stern-bild ein eigener milder Ton: 4–8 von 1 000 Punkten getönt) · 11 BAND die Uniforms des Himmels tragen das Band der Funktion
 // (`kosmosBand`: je Klasse Licht, Höhe, Weite; die Lage Welt → Galaxie mit der Drehung des Felds), und es LIEST: Mitte über
-// Nacht-Himmel ÷ Pol über Nacht-Himmel ≥ 1,5. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne ohne
+// Nacht-Himmel ÷ Pol über Nacht-Himmel ≥ 1,5 · 12 SICHT mittags, in der nautischen Dämmerung (−10°) und in klarer Nacht stehen genau
+// die Punkte bis zur Grenzgröße des Gesetzes DIESER Sonne auf der Schwelle des Schirms oder darüber, je Klasse 10^0,4-mal heller (das
+// Glied Auge → Schirm, `_sternAuge`). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne ohne
 // Knoten, der alte Würfel-Himmel (2 800 gleichverteilte Punkte bis kosmos-umfang), die gleiche Kante (`sternPixel` bis stern-bild),
-// der graue Ton und der Himmel ohne Band werden rot — jeder beim Namen seiner Regel.
+// der graue Ton, der Himmel ohne Band, der Punkt als Stück Fläche (ohne das Glied) und der Stern, der am Tag leuchtet (das Auge
+// der Nacht zu jeder Stunde), werden rot — jeder beim Namen seiner Regel.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
         const T = window.THREE;
@@ -1760,6 +1762,15 @@ async function checkBandHimmelTag({ page, check }) {
         if (bandWar) for (const u of bandU.farbe) u.value.set(0, 0, 0);
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
+        // die Mutante von stern-sicht: das Glied Auge → Schirm fällt — der Punkt steht wieder als Leuchtdichte über den
+        // Raumwinkel seines Pixels (lx × PSF ÷ Pixel²/R², belichtet × k: die Kette von licht-eine-skala)
+        const augeWar = stoerung === "glied" ? AnazhRealm._sternAuge : null;
+        if (augeWar)
+            AnazhRealm._sternAuge = (G, pixel, radius) =>
+                (st.renderer ? st.renderer.toneMappingExposure : 1) / ((pixel * pixel) / (radius * radius));
+        // die Mutante „der Stern leuchtet am Tag“: das Auge steht zu jeder Stunde an der Grenzgröße der tiefen Nacht
+        const tagWar = stoerung === "tagstern" ? AnazhRealm._sternAuge : null;
+        if (tagWar) AnazhRealm._sternAuge = (G, pixel, radius) => tagWar(W.tagAchse(-1).grenze, pixel, radius);
         const zeit = (t) => {
             r._uhrSetzen(t, "regler");
             r._setWeather("sunny", "human");
@@ -1921,6 +1932,30 @@ async function checkBandHimmelTag({ page, check }) {
             const liest = (mitte + himmel) / (pol + himmel);
             return { fehl, liest: +liest.toFixed(2), an: B.farbe.some((u) => u.value.x > 0) };
         };
+        // 12 SICHT (stern-sicht): in klarer Nacht steht am Kern-Pixel jedes Punkts sein Licht E (die Luma der Instanz-Farbe) ×
+        // das Auge (`starFieldUniforms.auge`) × die Spitze des Kerns (SB.kern ÷ 2π σ², selbst gerechnet aus `HIMMEL.sternBild` und
+        // dem Pixel) — im belichteten Raum. Im Bild steht er, wenn das die Schwelle des Schirms (`sternBild.schwelle`) erreicht:
+        // genau die Punkte bis zur Grenzgröße des GESETZES (welt-licht.js `tagAchse`), und je Klasse heller 10^0,4-mal so hell
+        const sichtStand = () => {
+            const S = soll();
+            if (!U || !U.auge || !U.pixel) return { fehl: ["das Feld trägt kein Auge (`starFieldUniforms.auge`): ein Punkt ist ein Stück Fläche"] };
+            const SB = AnazhRealm.HIMMEL.sternBild;
+            const G = W.tagAchse(r._sonnenRichtung().y).grenze;
+            const gp = (U.pixel.value / U.radius) * (180 / Math.PI);
+            const spitze = SB.kern / (2 * Math.PI * ((SB.a * SB.a) / 2 / (gp * gp) + 1 / 12));
+            const a = sf.instanceColor && sf.instanceColor.array;
+            let imBild = 0,
+                sollN = 0,
+                abMax = 0;
+            for (let i = 0; a && i < mags.length; i++) {
+                const E = 0.2126 * a[3 * i] + 0.7152 * a[3 * i + 1] + 0.0722 * a[3 * i + 2];
+                const v = E * U.auge.value * spitze;
+                if (v >= SB.schwelle * (1 - 1e-3)) imBild++;
+                if (Math.fround(S.m[i]) <= G + 1e-3) sollN++;
+                if (i < S.H.n && E > 0) abMax = Math.max(abMax, Math.abs(Math.log10(v / SB.schwelle) - 0.4 * (G - mags[i])));
+            }
+            return { G: +G.toFixed(2), grenze: U.grenze ? U.grenze.value : null, imBild, soll: sollN, abKlasse: +abMax.toFixed(4) };
+        };
         const out = { punkte: mags ? mags.length : 0, fremdeKoerper: 0 };
         st.scene.traverse(
             (o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++
@@ -1929,12 +1964,16 @@ async function checkBandHimmelTag({ page, check }) {
         zeit(0.5);
         out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
         out.mondTag = mondStand();
+        out.sichtMittag = sf ? sichtStand() : { fehl: ["kein Feld"] };
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
         out.daemmerung = sichtbar();
+        zeit(0.75 + 10 / 360); // nautische Dämmerung (Sonne −10°): das Auge an der Grenzgröße +3
+        out.sichtDaemmerung = sf ? sichtStand() : { fehl: ["kein Feld"] };
         zeit(0);
         out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
         out.kosmos = sf ? kosmos() : ["kein Feld"];
         out.mondNacht = mondStand();
+        out.sicht = sf ? sichtStand() : { fehl: ["kein Feld"] };
         out.fuss = fussStand();
         out.chroma = sf ? chroma() : { fehl: ["kein Feld"] };
         out.band = sf ? band() : { fehl: ["kein Feld"] };
@@ -1958,6 +1997,8 @@ async function checkBandHimmelTag({ page, check }) {
         if (kanteWar) sfM.userData.kante.array.set(kanteWar);
         if (farbeWar) sfM.instanceColor.array.set(farbeWar);
         if (bandWar) bandU.farbe.forEach((u, i) => u.value.copy(bandWar[i]));
+        if (augeWar) AnazhRealm._sternAuge = augeWar;
+        if (tagWar) AnazhRealm._sternAuge = tagWar;
         zeit(zeitWar);
         return out;
     };
@@ -1987,6 +2028,13 @@ async function checkBandHimmelTag({ page, check }) {
             rot.push(
                 `10 CHROMA: ${S.chroma.fehl ? S.chroma.fehl.join(" · ") : `${S.chroma.falsch} Sterne neben der Farbe ihrer Temperatur (Stern ${S.chroma.arg.i}, ${S.chroma.arg.T} K, ±${S.chroma.arg.ab}), getönt ${S.chroma.getoentJe1000} je 1 000`}`
             );
+        // je Stunde (Mittag · Dämmerung · Nacht): genau die Punkte bis zur Grenzgröße DIESER Sonne stehen über der Schwelle des Schirms
+        for (const [w, z] of [["mittags", S.sichtMittag], ["in der Dämmerung", S.sichtDaemmerung], ["in klarer Nacht", S.sicht]])
+            if (!z || z.fehl) rot.push(`12 SICHT: ${w} ${z ? z.fehl.join(" · ") : "ungelesen"}`);
+            else if (!(Math.abs(z.imBild - z.soll) <= Math.max(2, 0.01 * z.soll) && z.abKlasse <= 0.01 && Math.abs(z.grenze - z.G) <= 0.01))
+                rot.push(
+                    `12 SICHT: ${w} ${z.imBild} Punkte über der Schwelle des Schirms, bis zur Grenzgröße ${z.G} sieht das Auge ${z.soll} (das Feld trägt ${z.grenze}), die Klasse weicht ${z.abKlasse} dex von 0,4 je Klasse`
+                );
         if (S.band.fehl && S.band.fehl.length) rot.push(`11 BAND: ${S.band.fehl.join(" · ")}`);
         else if (!(S.band.liest >= 1.5)) rot.push(`11 BAND: Mitte ÷ Pol über dem Nacht-Himmel ${S.band.liest} (Soll ≥ 1,5)`);
         if (S.mittag.n === 0 && S.mittag.zeichnet)
@@ -2005,7 +2053,7 @@ async function checkBandHimmelTag({ page, check }) {
         rot.join(" · ")
     );
     const s = {};
-    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", "staffel", "grau", "bandlos", null])
+    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", "staffel", "grau", "bandlos", "glied", "tagstern", null])
         s[k] = urteil(await safeEvaluate(page, probe, k));
     const selbst = [
         s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
@@ -2017,10 +2065,12 @@ async function checkBandHimmelTag({ page, check }) {
         s.staffel.some((e) => e.startsWith("8 STAFFEL")) || "die gleiche Kante blieb grün",
         s.grau.some((e) => e.startsWith("10 CHROMA")) || "der graue Ton blieb grün",
         s.bandlos.some((e) => e.startsWith("11 BAND")) || "der Himmel ohne Band blieb grün",
+        s.glied.some((e) => e.startsWith("12 SICHT")) || "der Punkt als Stück Fläche (ohne das Glied Auge → Schirm) blieb grün",
+        s.tagstern.some((e) => e.startsWith("12 SICHT: mittags")) || "der Stern, der am Tag leuchtet (das Auge der Nacht zu jeder Stunde), blieb grün",
         s.null.length === 0 || `nach der Heilung nicht grün: ${s.null.join(" · ")}`,
     ].filter((x) => x !== true);
     check(
-        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten, der Würfel-Himmel, die gleiche Kante, der graue Ton und der Himmel ohne Band werden rot",
+        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten, der Würfel-Himmel, die gleiche Kante, der graue Ton, der Himmel ohne Band, der Punkt als Stück Fläche und der Stern am Tag werden rot",
         selbst.length === 0,
         selbst.join(" · ")
     );
