@@ -2143,3 +2143,4 @@ omen-gtx-gtx-30e01e75-w203948-4-30e01e75 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-22 23:45 RUNDE 6 SPRUNG am 30e01e75 → Runde 7 am 984b490d (gtx halt 26/247, radeon weicht 17/116): z678 gelandet (w28-mensch-zahlen, w28-eis-traegt): die vier Ansprüche fc1c1380 warten hinter 30e01e75 — Koordinator 23:31
 2026-11-22 23:47 landung Runde 7 am 984b490d: misst 107 von 247 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-23 00:02 RUNDE 7 ALARM radeon: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf 984b490d) — gesehen von gtx (landung-dienst)
+2026-11-23 00:02 RUNDE 7 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/247, Station -, Kopf 984b490d) — gesehen von radeon (radeon-dienst)
