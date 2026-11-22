@@ -534,12 +534,13 @@ L.perspektive("planet", (() => {
                 sprossen: {
                     1: {
                         u: {},
-                        soll: [K.soll(B, 1, "Niederschlag Luv/Lee ≥ 2:1", { key: "luvLee" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(B, 1, "Niederschlag Luv/Lee ≥ 2:1", { key: "luvLee" }), K.soll(B, 1, "im Bild grün/braun an der Kammlinie getrennt", { key: "kammGruenDiff", rel: ">", zahl: 0, refQuelle: "der Richter: „grün/braun an der Kammlinie getrennt“ — der Bewuchs-Anteil im Luv minus dem im Lee an der Kammlinie ist > 0", einheit: "Anteil" })],
                         auge: { pose: "die Kammlinie eines Gebirges der Heimat-Saat (heute: Wiese)", vorbild: "im Bild grün/braun an der Kammlinie getrennt (Blindpaar R11)" },
                         zeuge: zeugePlanet(30, 20),
                         taeter: "planet-core.js planetKlimaR (Regenschatten) über voxel-worker.js planetOrtAuftrag",
-                        gruen: { werte: { luvLee: 2.4, gegenLuvLee: 1.05 }, zeuge: PZ(30, 40) },
-                        attrappen: [{ name: "2,4 : 1 ohne Saaten", roh: { werte: { luvLee: 2.4 }, zeuge: {} } }],
+                        gruen: { werte: { luvLee: 2.4, gegenLuvLee: 1.05, kammGruenDiff: 0.3 }, zeuge: PZ(30, 40) },
+                        attrappen: [{ name: "2,4 : 1 ohne Saaten", roh: { werte: { luvLee: 2.4, kammGruenDiff: 0.3 }, zeuge: {} } }],
                     },
                     2: {
                         u: {},
@@ -569,7 +570,8 @@ L.perspektive("planet", (() => {
                     },
                     5: {
                         u: {},
-                        soll: [K.soll(B, 5, "Niederschlag Lee −50 %", { key: "leeProzent", rel: "≤", zahl: -50, einheit: "%" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(B, 5, "Niederschlag Lee −50 %", { key: "leeProzent", rel: "≤", zahl: -50, einheit: "%" }), K.soll(B, 5, "grün → Steppe", { key: "leeGruenDelta", rel: "<", zahl: 0, refQuelle: "der Richter: „Bildpaar Region vor/nach Hebung: grün → Steppe“ — der Bewuchs-Anteil im Lee nach der Hebung minus vorher ist < 0", einheit: "Anteil" })],
                         auge: { pose: "die Region um den höchsten Kamm vor ↔ nach 10⁶ a (heute: Wiese)", vorbild: "Bildpaar grün → Steppe (Blindpaar R11)" },
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
@@ -579,7 +581,7 @@ L.perspektive("planet", (() => {
                             return null;
                         },
                         taeter: "planet-core.js planetScheibe (Hebung über 10⁶ a)",
-                        gruen: { werte: { leeProzent: -55, gegenProzent: -4, hebungM: 300 }, zeuge: { gehoben: 6, gegenlauf: 20, gegenProzent: -4, gegenWirkt: false } },
+                        gruen: { werte: { leeProzent: -55, gegenProzent: -4, hebungM: 300, leeGruenDelta: -0.4 }, zeuge: { gehoben: 6, gegenlauf: 20, gegenProzent: -4, gegenWirkt: false } },
                         attrappen: [
                             { name: "−55 % ohne gehobenen Kamm", roh: { werte: { leeProzent: -55 }, zeuge: {} } },
                             { name: "das flache Land trocknet ebenso (Gegenlauf ohne Unterschied)", roh: { werte: { leeProzent: -55 }, zeuge: { gehoben: 6, gegenlauf: 20, gegenProzent: -50, gegenWirkt: true } } },
@@ -670,13 +672,15 @@ L.perspektive("planet", (() => {
                 sprossen: {
                     2: {
                         u: {},
-                        soll: [K.soll(C, 2, "Jahresamplitude ≤ 10 % der Erd-Saat", { key: "amp0Prozent", einheit: "%" }), K.soll(C, 2, "45°: ≥ 2×", { key: "amp45Faktor" })],
+                        soll: [K.soll(C, 2, "Jahresamplitude ≤ 10 % der Erd-Saat", { key: "amp0Prozent", einheit: "%" }), K.soll(C, 2, "45°: ≥ 2×", { key: "amp45Faktor" }), K.soll(C, 2, "Schneelinie und Laub im Bild", { key: "schneelinieVersatzM", rel: ">", zahl: 0, refQuelle: "der Richter: „Schneelinie und Laub im Bild“ — die Schneelinie am Hang liegt bei 45° Neigung anders als bei 0° (Versatz > 0 m)", einheit: "m" })],
+                        // ZAHL (auge-klasse.cjs): die Amplituden urteilen, das Bild ist Beleg — der Zeuge verlangt die Antwort des Fadens auf die Neigung
+                        zeuge: (roh) => ((roh.zeuge || {}).gleich === false ? null : "der Faden antwortet der Neigung 0 wie der Erd-Saat (keine Antwort auf die Neigung)"),
                         auge: { pose: "Hang mit Schneelinie und Laub, Saat mit Neigung 0° ↔ 45° (heute: Wiese)", vorbild: "Schneelinie und Laub im Bild (Blindpaar R11)" },
                         taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
                         nicht: "der Faden liest keine Neigung",
                         leser: "voxel-worker.js:1159 — planetPlanVon(samen) baut jeden Plan mit P.PLANET_ERDE, kein Auftrag trägt einen Körper",
-                        gruen: { werte: { amp0Prozent: 6, amp45Faktor: 2.3 }, zeuge: { gleich: false } },
-                        attrappen: [{ name: "6 % ohne Antwort des Fadens", roh: { werte: { amp0Prozent: 6, amp45Faktor: 2.3 }, zeuge: {} } }],
+                        gruen: { werte: { amp0Prozent: 6, amp45Faktor: 2.3, schneelinieVersatzM: 400 }, zeuge: { gleich: false } },
+                        attrappen: [{ name: "6 % ohne Antwort des Fadens", roh: { werte: { amp0Prozent: 6, amp45Faktor: 2.3, schneelinieVersatzM: 400 }, zeuge: {} } }],
                     },
                     3: {
                         u: {},
@@ -713,6 +717,8 @@ L.perspektive("planet", (() => {
                     6: {
                         u: {},
                         soll: [K.soll(C, 6, "Energie-Bilanz-Modell ±5 K in ≥ 90 %", { key: "imBandProzent", rel: "≥", zahl: 90, einheit: "%" })],
+                        // ZAHL (auge-klasse.cjs): das Band urteilt an den Meeres-Zonen, das Bild ist Beleg
+                        zeuge: (roh) => ((roh.zeuge || {}).zonen >= 20 ? null : "nur " + ((roh.zeuge || {}).zonen || 0) + " Meeres-Zonen gegen das Energie-Bilanz-Modell gemessen (Soll ≥ 20)"),
                         auge: { pose: "Klima-Zonen im Bild (heute: Wiese)", vorbild: "Zwei-Moden-Modell North 1975: T = 14,97 − 28,0·P₂(sin φ) °C, ±5 K" },
                         taeter: "voxel-worker.js planetPlanVon (eine Bahn für jede Welt)",
                         nicht: "1 000 Welten mit eigener Bahn",
@@ -934,13 +940,15 @@ L.perspektive("planet", (() => {
                     },
                     5: {
                         u: {},
-                        soll: [K.soll(D, 5, "Küstenlinie messbar verändert", { key: "kuesteVerschiebungM", rel: ">", zahl: 0, refQuelle: "der Richter selbst: „messbar verändert“ — jede Verschiebung über 0 an derselben Pose zählt", einheit: "Punkte" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(D, 5, "Küstenlinie messbar verändert", { key: "kuesteVerschiebungM", rel: ">", zahl: 0, refQuelle: "der Richter selbst: „messbar verändert“ — jede Verschiebung über 0 an derselben Pose zählt", einheit: "Punkte" }), K.soll(D, 5, "Dünenversatz in Windrichtung", { key: "duenenVersatzWindM", rel: ">", zahl: 0, refQuelle: "der Richter: „Dünenversatz in Windrichtung“ — die Verschiebung der Dünenkämme, projiziert auf die Windrichtung, ist > 0 m", einheit: "m" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).kuestePunkte >= 20 && (roh.zeuge || {}).wortSturm === "stormy" ? null : "keine 20 Küstenpunkte oder kein Sturm (die Verschiebung ohne Wetter ist keine Kopplung)"),
                         auge: { pose: "die Küste vor ↔ nach 10 Spieljahren an derselben Pose (heute: Wiese)", vorbild: "Bildpaar: Dünenversatz in Windrichtung, Küstenlinie verändert (Blindpaar R11)" },
                         taeter: "gelaende-core.js hoehe (das Relief liest kein Wetter)",
                         nicht: "kein Gelände-Wandel durch Wetter",
                         leser: "gelaende-core.js:2819 hoehe — das Relief ist Saat + Erdbau, kein Leser von Regen, Wind und Landfall",
-                        gruen: { werte: { kuesteVerschiebungM: 6 }, zeuge: {} },
-                        attrappen: [{ name: "6 ohne Sturm", roh: { werte: { kuesteVerschiebungM: 6 }, zeuge: {} } }],
+                        gruen: { werte: { kuesteVerschiebungM: 6, duenenVersatzWindM: 4 }, zeuge: { kuestePunkte: 64, wortSturm: "stormy" } },
+                        attrappen: [{ name: "6 ohne Sturm", roh: { werte: { kuesteVerschiebungM: 6, duenenVersatzWindM: 4 }, zeuge: {} } }],
                     },
                     6: {
                         u: {},
@@ -1039,13 +1047,15 @@ L.perspektive("planet", (() => {
                     },
                     2: {
                         u: {},
-                        soll: [K.soll(E, 2, "Kern ≥ 2 K wärmer", { key: "dK", einheit: "K" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(E, 2, "Kern ≥ 2 K wärmer", { key: "dK", einheit: "K" }), K.soll(E, 2, "Schnee taut im Kern zuerst", { key: "tauVorsprungH", rel: ">", zahl: 0, refQuelle: "der Richter: „Schnee taut im Kern zuerst“ — der Schnee im Kern ist früher weg als am Rand gleicher Höhe (Vorsprung > 0 h)", einheit: "h" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).groesste >= 100 ? null : "keine Stadt mit 10² Häusern geladen (größter Ort " + ((roh.zeuge || {}).groesste || 0) + ")"),
                         auge: { pose: "die Stadt in klarer Winternacht (heute: Wiese)", vorbild: "Bildpaar: Schnee taut im Kern zuerst (Blindpaar R11)" },
                         taeter: "stamm/bild-himmel.js _temperaturAt (nur die Höhe)",
                         nicht: "keine Stadt mit 10² Häusern",
                         leser: "stamm/bild-himmel.js:2874 — _temperaturAt(y, traegTage) liest keinen Ort (x, z), keine Wärmeinsel",
-                        gruen: { werte: { dK: 2.5 }, zeuge: {} },
-                        attrappen: [{ name: "2,5 K ohne Stadt", roh: { werte: { dK: 2.5 }, zeuge: {} } }],
+                        gruen: { werte: { dK: 2.5, tauVorsprungH: 6 }, zeuge: { groesste: 140 } },
+                        attrappen: [{ name: "2,5 K ohne Stadt", roh: { werte: { dK: 2.5, tauVorsprungH: 6 }, zeuge: {} } }],
                     },
                     3: {
                         u: {},
@@ -1159,13 +1169,15 @@ L.perspektive("planet", (() => {
                 sprossen: {
                     1: {
                         u: {},
-                        soll: [K.soll(F, 1, "20 Saaten: Folge tritt ein", { key: "saatenMitFolge", rel: "≥", zahl: 20 })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(F, 1, "20 Saaten: Folge tritt ein", { key: "saatenMitFolge", rel: "≥", zahl: 20 }), K.soll(F, 1, "im Bild sichtbar", { key: "folgeImBild", rel: ">", zahl: 0, refQuelle: "der Richter: „Folge tritt ein und ist im Bild sichtbar“ — die gesperrte Straße steht im Bildausschnitt der Pose (Pixel der Sperre > 0)", einheit: "px" })],
+                        zeuge: (roh) => ((((roh.zeuge || {}).glieder) || {})._rutschung ? null : "kein Glied _rutschung in der Welt (die Folge hat keine Ursache)"),
                         auge: { pose: "die gesperrte Straße nach der Rutschung (heute: Wiese)", vorbild: "die Folge im Bild sichtbar (Blindpaar R11)" },
                         taeter: "stamm/siedlung-ort.js (kein Ereignis sperrt eine Straße)",
                         nicht: "keine Rutschung",
                         leser: "stamm/siedlung-ort.js:3313 — _wegenetzLegen liest kein Ereignis; keine Rutschung im Gelände",
-                        gruen: { werte: { saatenMitFolge: 20 }, zeuge: {} },
-                        attrappen: [{ name: "20 Saaten ohne Welt", roh: { werte: { saatenMitFolge: 20 }, zeuge: {} } }],
+                        gruen: { werte: { saatenMitFolge: 20, folgeImBild: 900 }, zeuge: { glieder: { _rutschung: true } } },
+                        attrappen: [{ name: "20 Saaten ohne Welt", roh: { werte: { saatenMitFolge: 20, folgeImBild: 900 }, zeuge: {} } }],
                     },
                     2: {
                         u: {},
@@ -2011,13 +2023,14 @@ L.perspektive("leben", (() => {
                 sprossen: {
                     2: {
                         u: { radius: 400, n: 12, takte: 20 },
-                        soll: [K.soll(LF, 2, "Erosion gerodet ≥ 5× bewaldet", { key: "erosionVerhaeltnis", einheit: "×" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(LF, 2, "Erosion gerodet ≥ 5× bewaldet", { key: "erosionVerhaeltnis", einheit: "×" }), K.soll(LF, 2, "Rutschung sichtbar", { key: "rutschungM3", rel: ">", zahl: 0, refQuelle: "der Richter: „Rutschung sichtbar“ — am gerodeten Hang ist Material abgegangen (abgerutschtes Volumen > 0 m³)", einheit: "m³" })],
                         auge: { pose: "der offene Hang im Starkregen (stormy), 30 m seitlich und 25 m über dem Hangpunkt", vorbild: "Rutschung sichtbar am gerodeten, nicht am bewaldeten Hang (Prüfer-Satz R11, 2AFC gerodet ↔ bewaldet)" },
                         zeuge: zeugeR7(6, "Erosion gerodet gegen bewaldet"),
                         taeter: "gelaende-core.js hoehe (die Höhe ohne Regen- und Wurzel-Term)",
                         nicht: "kein Abtrag unter Starkregen, keine Rutschung",
                         leser: "stamm/gelaende-boden.js:239 — „keine Erosions-Simulation“: kein Leser trägt Abtrag nach Regen × (1 − Wurzelhalt `_forestStandDensity`) ins Gelände",
-                        ...selbst({ erosionVerhaeltnis: 6.2, erosionGerodetM: 0.31, erosionBewaldetM: 0.05 }, Z(17, 0.6, 0.31, 0.05)),
+                        ...selbst({ erosionVerhaeltnis: 6.2, erosionGerodetM: 0.31, erosionBewaldetM: 0.05, rutschungM3: 40 }, Z(17, 0.6, 0.31, 0.05)),
                     },
                     3: {
                         u: { fenster: 30, jahre: 10 },
@@ -2052,12 +2065,14 @@ L.perspektive("leben", (() => {
                     },
                     6: {
                         u: {},
-                        soll: [K.soll(LF, 6, "Kalkanteil der Kruste wächst mit dem Meeresleben", { key: "kalkSteigung", rel: ">", zahl: 0, refQuelle: "das Wort selbst: „wächst mit“ — die Steigung des Kalkanteils der Kruste gegen das Meeresleben über 10⁸ Jahre > 0" })],
+                        soll: [K.soll(LF, 6, "Kalkanteil der Kruste wächst mit dem Meeresleben", { key: "kalkSteigung", rel: ">", zahl: 0, refQuelle: "das Wort selbst: „wächst mit“ — die Steigung des Kalkanteils der Kruste gegen das Meeresleben über 10⁸ Jahre > 0" }), K.soll(LF, 6, "Kohleflöze in der Felswand sichtbar", { key: "kohlefloeze", rel: ">", zahl: 0, refQuelle: "der Richter: „Kohleflöze in der Felswand sichtbar“ — die Felswand trägt Kohle-Schichten (Anzahl > 0)", einheit: "Flöze" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        zeuge: zeugeR7(10, "Kalk der Kruste mit Meeresleben gegen ohne"),
                         auge: { pose: "eine Felswand (heute keine Schicht im Fels — geschossen an der Wiese)", vorbild: "Kohleflöze in der Felswand sichtbar (Prüfer-Satz R11)" },
                         taeter: "planet-core.js planetPlan (kein Kalk, keine Kohle)",
                         nicht: "kein Kalk, keine Kohle",
                         leser: "planet-core.js:307 — planetPlan(samen, koerperIn) trägt im Körper g, wasserKm, krustenAnteil … — kein Meeresleben, die Kruste kein Kalk",
-                        ...selbst({ kalkSteigung: 0.4 }, Z(30, 900, 2, 0)),
+                        ...selbst({ kalkSteigung: 0.4, kohlefloeze: 3 }, Z(30, 900, 2, 0)),
                     },
                     7: {
                         u: { saaten: 32, reise: [0, -0.2, -0.4, -0.6, -0.8, -1], tief: [0, -20, -40, -60, -80, -100] },
@@ -2686,6 +2701,8 @@ L.perspektive("leben", (() => {
                     5: {
                         u: {},
                         soll: [K.soll(SN, 5, "Algenblüte und Sauerstoffloch stromab im Bildpaar gegen eine Saat ohne Stadt", { key: "algenDiff", rel: ">", zahl: 0, refQuelle: "das Wort selbst: Algenblüte stromab mit Stadt minus ohne Stadt > 0" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        zeuge: zeugeR7(2, "Algen stromab mit Stadt gegen eine Saat ohne Stadt"),
                         auge: { pose: "die Mündung stromab der Stadt (heute keine Stadt — geschossen über dem Ort der Welt)", vorbild: "Bildpaar Algenblüte und Sauerstoffloch gegen eine Saat ohne Stadt (Prüfer-Satz R11)" },
                         taeter: "stamm/siedlung-ort.js _staedte (keine Metropole, keine Stoffströme)",
                         nicht: "keine Metropole, keine Stoffströme",
@@ -2720,12 +2737,14 @@ L.perspektive("leben", (() => {
                     },
                     8: {
                         u: {},
-                        soll: [K.soll(SN, 8, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" })],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — die sichtbare Hälfte des Satzes ist ein eigenes Soll (ungemessen: ROT)
+                        soll: [K.soll(SN, 8, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" }), K.soll(SN, 8, "Umland mit/ohne Stadt im Bildpaar verschieden", { key: "umlandAnders", rel: ">", zahl: 0, refQuelle: "der Richter: „Umland mit/ohne Stadt im Bildpaar verschieden“ — der Anteil geänderter Umland-Zellen mit gegen ohne Stadt ist > 0", einheit: "Anteil" })],
+                        zeuge: zeugeR7(3, "Umland mit Stadt gegen ohne"),
                         auge: { pose: "das Umland des Orts der Welt, mit ↔ ohne Stadt", vorbild: "Umland mit/ohne Stadt im Bildpaar verschieden (Prüfer-Satz R11)" },
                         taeter: "stamm/siedlung-ort.js _staedte (keine Stadt über 10⁸)",
                         nicht: "keine Stadt über 10⁸ Bewohner",
                         leser: "stamm/siedlung-ort.js:1455 — `_staedte` kennt keine Bewohnerzahl und keine Versorgung; kein Leser bilanziert die Stadt gegen die Saat-Ökologie",
-                        ...selbst({ fehlbetragProzent: 0.6 }, Z(3, 1, 1, 0)),
+                        ...selbst({ fehlbetragProzent: 0.6, umlandAnders: 0.2 }, Z(3, 1, 1, 0)),
                     },
                 },
             },
@@ -2915,6 +2934,8 @@ L.perspektive("mensch", (() => {
                     1: {
                         u: {},
                         soll: [sollWort(LEIB, 1, "Lagen-Anteil steigt im Bildpaar", { key: "lagenDelta", rel: ">", zahl: 0 })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.n === "number" && z.n >= 8)) return "zu wenige Bewohner im Dorf der Probe (n " + (z.n === undefined ? "fehlt" : z.n) + ", Soll ≥ 8)"; return null; },
                         auge: { pose: "Third über dem Dorfplatz (32 m, 9 m über Grund), Sonne 12 Uhr ↔ Regen 12 Uhr", vorbild: "Bildpaar Sonne ↔ Regen desselben Platzes: Prüfer-Satz (R11) zählt Lagen und Kapuzen" },
                         taeter: "stamm/siedlung-bewohner.js _bewohnerTracht (die Tracht der Epoche, kein Wetter)",
                         nicht: "die Tracht liest kein Wetter",
@@ -4132,11 +4153,14 @@ L.perspektive("erleben", (() => {
                         soll: [
                             K.soll(E, 1, "nach 6 Spielstunden", { key: "spielStunden", rel: "≥", zahl: 6, einheit: "h" }),
                             K.soll(E, 1, "Jungwuchs sichtbar dünner über ≥ 8 Saaten", { key: "saaten", einheit: "Saaten" }),
+                            K.soll(E, 1, "Jungwuchs sichtbar dünner", { key: "jungwuchsMinusProzent", rel: ">", zahl: 0, refQuelle: "der Richter: „Jungwuchs sichtbar dünner“ — die Jungwuchs-Deckung mit Wölfen liegt unter der ohne (Minus > 0 %)", einheit: "%" }),
                         ],
+                        // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge ist die Kaskade selbst
+                        zeuge: zeugeKaskade,
                         auge: { pose: "150 m westlich der Mitte des Tals der Kaskade, 25 m über dem Boden (das Tal mit der größten Äsung des Rotwilds abseits des Genesis-Orts), Blick auf seine Mitte", vorbild: "Bildpaar desselben Orts mit ↔ ohne Wölfe nach 6 Spielstunden (Prüfer-Satz R11)" },
                         taeter: "stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
-                        gruen: { werte: { saaten: 8, spielStunden: 6 }, zeuge: ZK },
-                        attrappen: [A("acht Saaten aus einer Tabelle, kein Lauf", { saaten: 8, spielStunden: 6 }, { paare: 0 })],
+                        gruen: { werte: { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: 25 }, zeuge: ZK },
+                        attrappen: [A("acht Saaten aus einer Tabelle, kein Lauf", { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: 25 }, { paare: 0 })],
                     },
                     2: {
                         u: {},
@@ -4159,6 +4183,8 @@ L.perspektive("erleben", (() => {
                     4: {
                         u: {},
                         soll: [K.soll(E, 4, "≥ 10² Bewohner an anderem Ort oder in anderer Rolle", { key: "bewohnerGeaendert", einheit: "Bewohner" })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.bewohner === "number" && z.bewohner >= 100)) return "keine 10² Bewohner in der Welt (bewohner " + (z.bewohner === undefined ? "fehlt" : z.bewohner) + ", Soll ≥ 100)"; if (!(typeof z.siedlungen === "number" && z.siedlungen >= 1)) return "keine Siedlung (siedlungen " + (z.siedlungen === undefined ? "fehlt" : z.siedlungen) + ", Soll ≥ 1)"; return null; },
                         auge: { pose: "aus 30 m Höhe schräg über der Mitte der nahen Siedlung, Blick auf ihren Platz (vor ↔ nach)", vorbild: "Bildpaar vor ↔ nach über Tage: leere Häuser, neue Stände (Prüfer-Satz R11)" },
                         taeter: "stamm/siedlung-bewohner.js _bewohnerListe (Rolle und Bindung fest)",
                         nicht: "kein Gesetz versetzt Bewohner über Tage",
@@ -4386,6 +4412,8 @@ L.perspektive("erleben", (() => {
                     6: {
                         u: {},
                         soll: [K.soll(W, 6, "N = 20 Paare ≥ 0,8", { key: "anteil", rel: "≥", zahl: 0.8 }), K.soll(W, 6, "N = 20 Paare", { key: "paare", rel: "≥", zahl: 20 })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.planeten === "number" && z.planeten >= 20)) return "zu wenige Planeten gemessen (planeten " + (z.planeten === undefined ? "fehlt" : z.planeten) + ", Soll ≥ 20)"; if (!(typeof z.mitStern === "number" && z.mitStern >= 20)) return "die Planeten tragen keinen Stern-Typ (mitStern " + (z.mitStern === undefined ? "fehlt" : z.mitStern) + ", Soll ≥ 20)"; return null; },
                         auge: { pose: "Ego am Messort wiese je Planet (roter ↔ heller Stern; heute nur der Stern der Sitzung)", vorbild: "Bildpaar zweier Planeten: Vegetationsfarbe und Augenspektren gesetzmäßig verschieden (Prüfer-Satz R11)" },
                         taeter: "planet-core.js planetPlan (kein Stern-Typ)",
                         nicht: "der Planet trägt keinen Stern-Typ",
@@ -4967,6 +4995,8 @@ L.perspektive("erleben", (() => {
                     1: {
                         u: {},
                         soll: [sollWort(GS, 1, "Bildpaar am Ort bei B zeigt dieselbe Spur", { key: "spurGleich", rel: "=", zahl: 1 })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.spieler === "number" && z.spieler >= 2)) return "kein Spieler B (spieler " + (z.spieler === undefined ? "fehlt" : z.spieler) + ", Soll ≥ 2)"; return null; },
                         auge: { pose: "Ego am Ort der Tat von A, bei A und bei B (dieselbe Saat; heute ein Gerät)", vorbild: "Bildpaar A ↔ B am Ort der Tat zeigt dieselbe Spur (Prüfer-Satz R11)" },
                         taeter: "stamm/netz-p2p.js (keine Gegenstelle in der Sitzung)",
                         nicht: "kein zweiter Spieler in der Sitzung",
@@ -5320,6 +5350,8 @@ L.perspektive("erleben", (() => {
                             K.soll(EE, 4, "±1 % Abstand", { key: "abstandDiffProzent", rel: "≤", zahl: 1, einheit: "%" }),
                             sollWort(EE, 4, "in allen drei Sichten", { key: "sichten", rel: "≥", zahl: 3 }),
                         ],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.sichten === "number" && z.sichten >= 3)) return "nicht drei Sichten in der Welt (sichten " + (z.sichten === undefined ? "fehlt" : z.sichten) + ", Soll ≥ 3)"; return null; },
                         auge: { pose: "Orbit über dem Feuer ↔ Ego am Messort wiese (Orbit ist nicht erzeugbar: geschossen nur Ego)", vorbild: "Bildpaar Orbit ↔ Ego zeigt dieselbe Fahne (Prüfer-Satz R11)" },
                         taeter: "stamm/dirigent-kern.js setCameraMode (nur first/third)",
                         nicht: "kein Orbit, keine Sicht eines Bewohners",
@@ -7127,6 +7159,8 @@ L.perspektive("same", (() => {
                             K.soll(ST, 4, "Kornpreis ×2", { key: "kornpreisFaktor", rel: "≥", einheit: "×" }),
                             K.soll(ST, 4, "Wiederaufbau im Bildpaar nach 50 a", { key: "bildpaarJahre", rel: "≥", einheit: "a" }),
                         ],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.staedte === "number" && z.staedte >= 1)) return "keine Stadt nahe dem Ausbruch (staedte " + (z.staedte === undefined ? "fehlt" : z.staedte) + ", Soll ≥ 1)"; return null; },
                         auge: { pose: "die Stadt am Ausbruch vor ↔ 50 a danach (heute keine Stadt: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Wiederaufbau nach VEI 5 (Pinatubo 1991 / Angeles City)" },
                         taeter: "stamm/siedlung-ort.js `_staedte` (keine Stadt) · stamm/feld-leben.js `_lavaGiessen` (der Ausbruch ist eine Zelle)",
                         nicht: "keine Stadt, kein VEI 5, kein Kornpreis",
@@ -7153,6 +7187,8 @@ L.perspektive("same", (() => {
                     6: {
                         u: { saaten: 100, jahre: 10000 },
                         soll: [K.soll(ST, 6, "100 Saaten", { key: "saaten", rel: "≥" }), K.soll(ST, 6, "r ≥ 0,6", { key: "rGefahrBauten" })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.antworten === "number" && z.antworten >= 100)) return "zu wenige Saaten des Fadens (antworten " + (z.antworten === undefined ? "fehlt" : z.antworten) + ", Soll ≥ 100)"; if (!(typeof z.gefahr === "number" && z.gefahr >= 1)) return "die Saaten tragen keine Gefahr (gefahr " + (z.gefahr === undefined ? "fehlt" : z.gefahr) + ", Soll ≥ 1)"; return null; },
                         auge: { pose: "Siedlung an der Gefahr je Saat (heute keine Gefahr-Saat: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Anteil angepasster Bauten im Bild (Pfahlbau, Erdbebenbau)" },
                         taeter: "voxel-worker.js planetOrtAuftrag (keine Gefahr je Saat) · stamm/siedlung-ort.js `_staedte` (keine angepasste Bauweise)",
                         nicht: "keine Gefahr-Rate, keine angepasste Bauweise",
@@ -7167,6 +7203,8 @@ L.perspektive("same", (() => {
                             K.soll(ST, 7, "Arten-Verlust 50–80 %", { key: "artenVerlustProzent", einheit: "%" }),
                             K.soll(ST, 7, "Erholung in 5–10 Mio. a", { key: "erholungMioA", einheit: "Mio. a" }),
                         ],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(z.geaendert >= 10)) return "keine 10 Glieder am selben Ort geändert (" + (z.geaendert || 0) + ")"; if (z.gegen !== 0) return "der Gegenlauf mit demselben Samen ändert " + z.gegen + " Glieder (Rauschen, keine Mutation)"; return null; },
                         auge: { pose: "Weltkarte vor ↔ nach der Mutation (heute keine Weltkarten-Pose: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Bildpaar Weltkarte, 10 Glieder am selben Ort" },
                         taeter: "voxel-worker.js planetOrtAuftrag (keine Städte, keine Sprachen, kein Einschlag in der Antwort)",
                         nicht: "keine Städte und Sprachen im Faden, kein Einschlag",
@@ -8519,6 +8557,8 @@ L.perspektive("same", (() => {
                             K.soll(TF, 1, "im Lee tiefer", { key: "leeWeniger", rel: "<", zahl: 0, refQuelle: "tiefer: Regen im Lee mit Eingriff minus ohne < 0 (dieselbe Saat, derselbe Ort)" }),
                             K.soll(TF, 1, "Bilanz ±10 %", { key: "bilanzVerh", ref: 1, refQuelle: "Erde: Wolkenimpfung verlagert Niederschlag, Ziel + Lee mit ÷ ohne = 1 (WMO 2017, Weather Modification)" }),
                         ],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; return typeof z.wort === "string" && typeof z.eingriff === "string" && z.wort !== z.eingriff ? null : "kein Eingriff am Wetter-Wort der Region (" + z.wort + " → " + z.eingriff + ")"; },
                         auge: { pose: "2 km über der Stadt, Ziel und Lee im Bild, mit ↔ ohne Eingriff an derselben Saat (heute kein Eingriff: geschossen an der Wiese)", vorbild: "Radar-Bilder geimpfter Wolken (Wolkenimpfung, WMO 2017), Prüfer-Satz R11" },
                         taeter: "stamm/bild-himmel.js `_weatherFieldFor` (der Regen ist ein Wort ohne Ort)",
                         nicht: "kein Eingriff lenkt den Regen einer Region",
@@ -8551,11 +8591,13 @@ L.perspektive("same", (() => {
                     3: {
                         u: { eingriffe: ["spiegel", "aerosol", "kohlenstoff"], jahre: 100 },
                         soll: [K.soll(TF, 3, "2–5 K je Verdopplung", { key: "kJeVerdopplung", einheit: "K" }), K.soll(TF, 3, "≥ 1 ungewollte Folge im Bild", { key: "folgen" })],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.eingriffe === "number" && z.eingriffe >= 1)) return "kein Eingriff im Faden (eingriffe " + (z.eingriffe === undefined ? "fehlt" : z.eingriffe) + ", Soll ≥ 1)"; if (!(typeof z.gegenlauf === "number" && z.gegenlauf >= 1)) return "der Gegenlauf ohne Eingriff fehlt (gegenlauf " + (z.gegenlauf === undefined ? "fehlt" : z.gegenlauf) + ", Soll ≥ 1)"; return null; },
                         auge: { pose: "Orbit über dem Kontinent des Ankers vor ↔ nach dem Eingriff (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Klima-Rechnung 2–5 K je CO₂-Verdopplung (IPCC AR6) und Bilder der Folge (Monsun-Karten), Prüfer-Satz R11" },
                         taeter: "voxel-worker.js planetOrtAuftrag (kein CO₂, kein Spiegel, kein Aerosol) · stamm/bild-himmel.js `_temperaturAt`",
                         nicht: "keine Geo-Technik",
                         leser: "stamm/bild-himmel.js:2874 `_temperaturAt` — liest nur Höhe und Trägheit; voxel-worker.js:1175 planetOrtAuftrag — kein CO₂, kein Spiegel, kein Aerosol im Eingang",
-                        gruen: { werte: { kJeVerdopplung: 3, folgen: 1 }, zeuge: { eingriffe: 1 } },
+                        gruen: { werte: { kJeVerdopplung: 3, folgen: 1 }, zeuge: { eingriffe: 1, gegenlauf: 1 } },
                         attrappen: [{ name: "3 K aus einer Tafel ohne Faden", roh: { werte: { kJeVerdopplung: 3, folgen: 1 }, zeuge: {} } }],
                     },
                     4: {
@@ -8588,6 +8630,8 @@ L.perspektive("same", (() => {
                             K.soll(TF, 5, "in richtiger Folge", { key: "folgeRichtig", rel: "=", zahl: 1, refQuelle: "die Folge, die die Physik verlangt: erst Druck, dann Wasser, dann Bewuchs (1 = jede Folge richtig)" }),
                             K.soll(TF, 5, "die Welt fällt zurück", { key: "faelltZurueck", rel: "=", zahl: 1, refQuelle: "Gegenlauf Eingriff abgebrochen: die Welt kehrt zum Zustand vor dem Eingriff (1 = fällt zurück)" }),
                         ],
+// ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
+                        zeuge: (roh) => { const z = roh.zeuge || {}; if (!(typeof z.halte === "number" && z.halte >= 10)) return "keine 10 Halte der Welt (halte " + (z.halte === undefined ? "fehlt" : z.halte) + ", Soll ≥ 10)"; return null; },
                         auge: { pose: "Orbit über der toten Welt an jedem der 10 Halte (heute keine tote Welt, keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Terraforming-Folgen der Planetologie (Mars: Druck → Wasser → Leben, McKay 1991), Prüfer-Satz R11" },
                         taeter: "voxel-worker.js planetOrtAuftrag (kein Luftdruck, kein Eingriff)",
                         nicht: "keine tote Welt, kein Terraforming",

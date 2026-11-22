@@ -11,8 +11,9 @@
 //   umfang   — die Welt erzeugt den Umfang der Sprosse nicht: ROT „Umfang nicht erzeugbar: <was fehlt>“ mit der gezählten Zahl (ein
 //              Urteil, kein Fehler, kein Überspringen)
 //   leser    — die Welt hätte den Umfang, aber kein Leser des Spiels nennt die Zahl: ROT „Leser fehlt: <Haken> (datei:zeile)“
-//   auge     — die Sprosse urteilt ein Blindpaar gegen ein echtes Vorbild: die Probe schießt das Bild an fester Pose und legt es ab; das
-//              Urteil trägt die Zeile `auge` mit Pose und Vorbild — es zählt nur mit dem Urteil am Gerät (R11), die Station sagt nie GRÜN
+//   auge     — die Probe schießt das Bild an fester Pose und legt es ab. Die Klasse der Sprosse (auge-klasse.cjs, am Wortlaut der Karte)
+//              entscheidet, wer urteilt: ZAHL — die Werte gegen das Soll wie `gemessen` (Welt-Zeugen inklusive), das Bild ist Beleg;
+//              PANEL (R11) und KORPUS — das Urteil fällt am Gerät mit dem Panel bzw. dem eingefrorenen Korpus, die Station sagt nie GRÜN
 // Fehlt das Ergebnis einer Sprosse (die Probe warf, die Frist riss), gleicht ihr Urteil dem über den leeren Lauf: UNGEMESSEN beim Namen
 // (punkte.cjs keinUrteil). Der Preis (R8, die Preis-Treppe der Umfangs-Klasse) misst die Station NIE selbst: ihn liest richter-akte.cjs
 // im SELBEN Lauf aus dem Strom der Sitzung — die Probe endet an der dichtesten Pose ihrer Leiter (`L.preisPose`, R3), dort fährt der
@@ -28,6 +29,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
 const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
+const AUGE = require("./auge-klasse.cjs");
 
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
@@ -67,7 +69,7 @@ function sprosseUrteil(S, j, lauf) {
     const zahl = (x) => (typeof x === "number" && Number.isFinite(x) ? String(+x.toPrecision(6)).replace(".", ",") : "—");
     const um = S.umfang;
     const umText = um ? "verlangt " + zahl(um.verlangt) + " " + um.einheit + ", die Welt erzeugte " + zahl(s.erzeugt) : "";
-    if (s.art === "auge") {
+    if (s.art === "auge" && !S.zahl) {
         if (!S.auge) return { gruen: false, zahl: kopf + "ROT die Probe nennt ein Augen-Urteil, die Sprosse trägt keines (Karte: " + S.leiter + " S" + S.nr + ")" };
         // was die Sprosse neben dem Auge in Zahlen verlangt, steht gemessen daneben — das Urteil fällt trotzdem nur am Gerät
         const mit = S.soll.filter((z) => s.werte && typeof s.werte[z.wort] === "number").map((z) => z.wort + " " + zahl(s.werte[z.wort]) + " (Soll " + z.richtung + " " + zahl(z.wert) + ")");
@@ -80,8 +82,9 @@ function sprosseUrteil(S, j, lauf) {
         return { gruen: false, zahl: kopf + "ROT Umfang nicht erzeugbar: " + (s.was || "?") + " (" + umText + ")" };
     }
     if (s.art === "leser") return { gruen: false, zahl: kopf + "ROT Leser fehlt: " + (s.fehlt || "?") + (um && Number.isFinite(s.erzeugt) ? " (" + umText + ")" : "") };
-    if (s.art !== "gemessen") return LEER;
-    if (S.auge) return { gruen: false, zahl: kopf + "ROT die Sprosse urteilt ein Auge, die Probe nennt nur Zahlen — kein Bild abgelegt" };
+    // ZAHL (auge-klasse.cjs): die Sprosse urteilt an ihren Werten — ob die Probe sie mit Bild (auge) oder ohne (gemessen) ablegt
+    if (s.art !== "gemessen" && !(s.art === "auge" && S.zahl)) return LEER;
+    if (S.auge && !S.zahl) return { gruen: false, zahl: kopf + "ROT die Sprosse urteilt ein Auge, die Probe nennt nur Zahlen — kein Bild abgelegt" };
     const w = s.werte || {}, welt = s.welt || {};
     const teile = [], rot = [];
     for (const z of S.soll) {
@@ -95,6 +98,7 @@ function sprosseUrteil(S, j, lauf) {
     if (!umOk) rot.push("gemessen unter dem Umfang (" + umText + ")");
     const attrappe = S.welt.filter((z) => !(typeof welt[z.wort] === "number" && welt[z.wort] >= z.ab));
     if (attrappe.length) rot.unshift("Attrappe: " + attrappe.map((z) => z.wort + " " + zahl(welt[z.wort]) + " < " + zahl(z.ab) + " (" + z.was + ")").join(" · ") + " — die Welt änderte sich nicht");
+    if (S.zahl) teile.push("Bild (Beleg) " + (s.bild || "fehlt" + (s.grund ? " (" + s.grund + ")" : "")));
     const gruen = rot.length === 0;
     return { gruen, zahl: kopf + (gruen ? "GRÜN " : "ROT ") + teile.join(" · ") + (gruen ? "" : " — Täter: " + (s.taeter ? s.taeter + " · " : "") + rot.join(" · ")) };
 }
@@ -159,10 +163,10 @@ async function leiterRahmen(H, P, lauf) {
                 const kam = await L.ev("r._loopCamera(performance.now()); const c = r.state.camera; return [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()];");
                 const datei = require("path").join(D, P.leiter + "-S" + nr + ".png");
                 const b = await L.wb("/bild", Object.assign({ px: kam[0], py: kam[1], pz: kam[2], lx: kam[3], ly: kam[4], lz: kam[5], w: 1280, h: 720, datei }, (o && o.b) || {}), 120);
-                setze(nr, { art: "auge", bild: (b && b.datei) || datei, werte: (o && o.werte) || null, erzeugt: o && o.erzeugt });
+                setze(nr, { art: "auge", bild: (b && b.datei) || datei, werte: (o && o.werte) || null, erzeugt: o && o.erzeugt, welt: (o && o.welt) || {} });
             } catch (e) {
                 if (e && e.messort) throw e;
-                setze(nr, { art: "auge", bild: null, grund: String((e && e.message) || e).split("\n")[0].slice(0, 160), werte: (o && o.werte) || null, erzeugt: o && o.erzeugt });
+                setze(nr, { art: "auge", bild: null, grund: String((e && e.message) || e).split("\n")[0].slice(0, 160), werte: (o && o.werte) || null, erzeugt: o && o.erzeugt, welt: (o && o.welt) || {} });
             }
         },
         // DER STROM DER SITZUNG (punkte.cjs stromZapfen · stromLesen — dieselbe Quelle, aus der richter-akte.cjs den Preis liest; kein
@@ -249,8 +253,11 @@ function leiter(def) {
             wortlautWand(L, nr, d.umfang, "Umfang");
         }
         if (d.auge && !(d.auge.pose && d.auge.vorbild)) throw new Error(def.leiter + " S" + nr + ": auge ohne Pose und Vorbild");
+        // ZAHL (auge-klasse.cjs): eine Auge-Sprosse, deren Satz eine Zahl aus dem Spiel ist, urteilt an ihrem Soll — mit Welt-Zeugen wie
+        // `gemessen`; ohne Soll bleibt sie „fehlt“ mit dem Grund „ZAHL ohne Soll“
+        const zahl = !!d.auge && soll.length > 0 && AUGE.klasse(def.leiter, nr).klasse === "zahl";
         const welt = d.welt || def.welt || [];
-        if (soll.length && !d.auge && !welt.length) throw new Error(def.leiter + " S" + nr + ": gemessen ohne Welt-Zeugen — die Attrappe fiele nie");
+        if (soll.length && (!d.auge || zahl) && !welt.length) throw new Error(def.leiter + " S" + nr + ": gemessen ohne Welt-Zeugen — die Attrappe fiele nie");
         for (const z of welt) if (!(/^[a-z0-9_]+$/.test(z.wort || "") && Number.isFinite(z.ab) && z.ab > 0 && z.was)) throw new Error(def.leiter + " S" + nr + ": Zeuge " + JSON.stringify(z));
         return {
             leiter: def.leiter,
@@ -259,7 +266,8 @@ function leiter(def) {
             soll: soll.map((z) => ({ wort: z.wort, richtung: z.richtung, wert: z.wert })),
             umfang: d.umfang ? { verlangt: d.umfang.verlangt, einheit: d.umfang.einheit } : null,
             auge: d.auge ? { pose: d.auge.pose, vorbild: d.auge.vorbild } : null,
-            welt: soll.length && !d.auge ? welt.map((z) => ({ wort: z.wort, ab: z.ab, was: z.was })) : [],
+            zahl,
+            welt: soll.length && (!d.auge || zahl) ? welt.map((z) => ({ wort: z.wort, ab: z.ab, was: z.was })) : [],
         };
     });
     const PLAN = { leiter: def.leiter, sprossen: Object.fromEntries(specs.map((s) => [s.nr, { umfang: s.umfang, soll: s.soll, auge: s.auge }])) };
@@ -286,9 +294,8 @@ function leiter(def) {
         };
         if (zeit) st.mass = new Function("j", "lauf", "const S = " + JSON.stringify(S) + ";\nreturn (" + sprosseMass + ")(S, j);");
         // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“, oder „fehlt“, wo ein Auge am Gerät urteilt
-        Object.defineProperty(st, "tafel", { enumerable: false, value: S.auge
-            ? { richter: "fehlt", grund: "Blindpaar: die Station legt das Bild an der Pose " + S.auge.pose + " (Vorbild " + S.auge.vorbild + ") und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge" }
-            : { richter: "gleich" } });
+// — die Klasse der Auge-Sprosse aus auge-klasse.cjs (ZAHL mit Soll „gleich“, PANEL und KORPUS „fehlt“ beim Namen)
+        Object.defineProperty(st, "tafel", { enumerable: false, value: S.auge ? AUGE.tafel(S.leiter, S.nr, S.zahl) : { richter: "gleich" } });
         return st;
     });
 }
@@ -304,7 +311,7 @@ function probenDer(S) {
     const um = S.umfang ? S.umfang.verlangt : undefined;
     const ein = (s, ad = AD) => ({ hw: ad, sprossen: { [S.nr]: s } });
     const p = [{ name: "leer: kein Ergebnis der Sprosse", j: { hw: AD, sprossen: {} }, gruen: false, zahl: /kein Ergebnis der Sprosse/ }];
-    if (S.auge)
+    if (S.auge && !S.zahl)
         return p.concat([
             { name: "auge: das Bild liegt, das Urteil fällt am Gerät", j: ein({ art: "auge", bild: "x/S" + S.nr + ".png", werte: werte((z) => z.wert), erzeugt: um }), gruen: false, zahl: /auge · Pose .* · Vorbild / },
             { name: "auge ohne Bild", j: ein({ art: "auge", bild: null, grund: "bild warf" }), gruen: false, zahl: /keines geschossen/ },
@@ -323,6 +330,13 @@ function probenDer(S) {
     p.push({ name: "DIE ATTRAPPE: der Wortlaut erfüllt, die Welt unverändert", j: ein({ ...gut, welt: welt(() => 0) }), gruen: false, zahl: /Attrappe: / });
     p.push({ name: "die Software-GPU", j: ein(gut, "[linse-gpu] google/swiftshader (Probe)"), gruen: false, zahl: /keine echte GPU/ });
     p.push({ name: "der Leser fehlt", j: ein({ art: "leser", fehlt: "window.__x (stamm/x.js:1)" }), gruen: false, zahl: /Leser fehlt: / });
+    // ZAHL: dieselben Werte mit Bild (auge) urteilen gleich — das Bild ist Beleg, nie Richter; die Attrappe fällt auch mit Bild
+    if (S.zahl)
+        p.push(
+            { name: "ZAHL: gemessen im Soll mit Bild (Beleg)", j: ein({ ...gut, art: "auge", bild: "x/S" + S.nr + ".png" }), gruen: true, zahl: /Bild \(Beleg\) x\// },
+            { name: "ZAHL: gemessen im Soll, das Bild warf", j: ein({ ...gut, art: "auge", bild: null, grund: "bild warf" }), gruen: true, zahl: /Bild \(Beleg\) fehlt/ },
+            { name: "ZAHL: die Attrappe mit Bild", j: ein({ ...gut, art: "auge", bild: "x.png", welt: welt(() => 0) }), gruen: false, zahl: /Attrappe: / },
+        );
     return p;
 }
 

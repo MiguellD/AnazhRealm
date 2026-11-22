@@ -437,18 +437,40 @@ function k2TafelZeile(st) {
     return { station: schluessel(st), leiter: st.kriterium.slice("karte2.".length), sprosse: st.staffel, richter: t.richter, ...(t.richter === "fehlt" ? { grund: t.grund } : {}) };
 }
 // `tafel [--schreibe]`: je Station der Karte 2 ohne Zeile ihre Zeile aus dem Register; belegt eine andere Zeile dieselbe Sprosse, gewinnt
-// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand
+// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand.
+// DAS REGISTER IST DIE QUELLE (pm-auge 21.11.: die Klasse der Auge-Sprossen, auge-klasse.cjs): weicht die Zeile einer Station mit
+// `tafel` in Richter oder Grund vom Register ab, ersetzt `--schreibe` sie durch die des Registers — die Tafel entsteht aus ihrem
+// Erzeuger, nie von Hand (bis 21.11. blieb jede Abweichung stehen: 282 „fehlt“ nach dem alten Vertrag „auge = fehlt“)
 function tafelCli(o) {
     const tafel = ladeTafel();
     const { stationen } = pruefeStationen(ladeStationen(), kriterienDerKarte(), tafel);
+    const { neu, kollision, vonHand, abweichung, ersetze } = tafelFalte(tafel, stationen);
+    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
+    for (const k of kollision) console.log("  KOLLISION " + k);
+    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
+    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
+    if (o.schreibe && (neu.length || ersetze.length)) {
+        for (const [alt, z] of ersetze) tafel.zeilen[tafel.zeilen.indexOf(alt)] = z;
+        tafel.zeilen.push(...neu);
+        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
+        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
+    }
+    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
+    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
+}
+// DIE FALTE DER TAFEL (rein, Selbsttest „TAFEL-FALTE“): je Station der Karte 2 neu · Kollision · von Hand · Abweichung samt Ersatz
+function tafelFalte(tafel, stationen) {
     const da = new Set(tafel.zeilen.map((z) => z.station));
     const belegt = new Map(tafel.zeilen.map((z) => [z.leiter + "#" + z.sprosse, z]));
-    const neu = [], kollision = [], vonHand = [], abweichung = [];
+    const neu = [], kollision = [], vonHand = [], abweichung = [], ersetze = [];
     for (const st of stationen.filter(istKarte2)) {
         const z = k2TafelZeile(st), id = schluessel(st);
         const alt = tafel.zeilen.find((x) => x.station === id);
         if (alt) {
-            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse)) abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter);
+            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse || (alt.grund || null) !== (z.grund || null))) {
+                abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter + (alt.richter === z.richter ? " (Grund)" : ""));
+                ersetze.push([alt, z]);
+            }
             continue;
         }
         if (da.has(id)) continue;
@@ -458,17 +480,7 @@ function tafelCli(o) {
         belegt.set(z.leiter + "#" + z.sprosse, z);
         neu.push(z);
     }
-    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
-    for (const k of kollision) console.log("  KOLLISION " + k);
-    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
-    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
-    if (o.schreibe && neu.length) {
-        tafel.zeilen.push(...neu);
-        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
-        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
-    }
-    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
-    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
+    return { neu, kollision, vonHand, abweichung, ersetze };
 }
 // DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
@@ -6594,6 +6606,25 @@ async function selbsttest(o = {}) {
             ohneZ.fehler.some((f) => /^karte2\.mensch\.leib\.verschieden#2: keine Zeile in vision\/richter-tafel\.json/.test(f)) && !mitZ.fehler.some((f) => /keine Zeile in vision\/richter-tafel/.test(f)) &&
                 zg && zg.station === "karte2.mensch.leib.verschieden#3" && zg.leiter === "mensch.leib.verschieden" && zg.sprosse === 3 && zf === null && zo === null,
             ohneZ.fehler.concat(mitZ.fehler).join(" | ") + " · " + JSON.stringify([zg, zf, zo]));
+        // DIE FALTE DER TAFEL (pm-auge 21.11.): das Register ist die Quelle — eine Zeile, die in Richter oder Grund vom Register abweicht,
+        // ersetzt die Falte durch die des Registers; eine gleiche bleibt still. Vorher ROT: jede Abweichung blieb stehen (282 „fehlt“ nach
+        // dem alten Vertrag „auge = fehlt“, auch wo die Klasse ZAHL an der Zahl urteilt). Dazu die Klassen-Tafel: PANEL und KORPUS tragen
+        // nie „gleich“, auch mit Soll; ZAHL nur mit Soll
+        const tfZeile = (richter, grund) => ({ station: "karte2.mensch.leib.verschieden#3", leiter: "mensch.leib.verschieden", sprosse: 3, richter, ...(grund ? { grund } : {}) });
+        const tfA = tafelFalte(tz([tfZeile("fehlt", "auge: der alte Vertrag ohne Klasse")]), [mitT({ richter: "gleich" })]);
+        const tfG = tafelFalte(tz([tfZeile("fehlt", "R11 Panel: der alte Grund")]), [mitT({ richter: "fehlt", grund: "R11 Panel: der neue Grund" })]);
+        const tfS = tafelFalte(tz([tfZeile("gleich")]), [mitT({ richter: "gleich" })]);
+        const tfAK = require(path.join(DIR, "stationen", "auge-klasse.cjs"));
+        const tfK = Object.entries(tfAK.KLASSE).map(([k, [c]]) => [k.split("#"), c]);
+        const tfL = (c) => tfK.find((x) => x[1] === c)[0];
+        const tfKlasse = tfAK.tafel(tfL("P")[0], +tfL("P")[1], true).richter === "fehlt" && tfAK.tafel(tfL("K")[0], +tfL("K")[1], true).richter === "fehlt" &&
+            tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], true).richter === "gleich" && tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], false).richter === "fehlt" &&
+            /^R11 Panel: /.test(tfAK.tafel(tfL("P")[0], +tfL("P")[1], false).grund) && /^Korpus fehlt: /.test(tfAK.tafel(tfL("K")[0], +tfL("K")[1], false).grund);
+        let tfWirft = false;
+        try { tfAK.klasse("keine.leiter", 1); } catch { tfWirft = true; }
+        pruef("TAFEL-FALTE: eine abweichende Zeile (Richter oder Grund) ersetzt das Register, eine gleiche bleibt still; die Klassen-Tafel: PANEL und KORPUS nie „gleich“, ZAHL nur mit Soll, eine Sprosse ohne Klasse tfWirft",
+            tfA.ersetze.length === 1 && tfA.ersetze[0][1].richter === "gleich" && tfG.ersetze.length === 1 && tfG.ersetze[0][1].grund === "R11 Panel: der neue Grund" && tfS.ersetze.length === 0 && !tfS.abweichung.length && tfKlasse && tfWirft,
+            JSON.stringify([tfA.abweichung, tfG.abweichung, tfS.abweichung, tfKlasse, tfWirft]));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };

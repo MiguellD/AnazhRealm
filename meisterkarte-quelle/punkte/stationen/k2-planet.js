@@ -5,6 +5,8 @@
 const fs = require("fs");
 const path = require("path");
 const { seiteProbe, knapp } = require("./seite.cjs");
+// DIE KLASSE DER AUGE-SPROSSE (ZAHL · PANEL · KORPUS am Wortlaut der Karte, R11) — EIN Ort für alle k2-Register
+const AUGE = require("./auge-klasse.cjs");
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // DER KERN DER LEITER-RICHTER (Meisterkarte 2, 18.11., Zweig richter-planet-leben-zusammenspiel) — geteilt mit k2-leben.js und
@@ -21,8 +23,9 @@ const { seiteProbe, knapp } = require("./seite.cjs");
 //   · GRÜN nur, wenn jedes Soll hält UND der Zeuge der Welt spricht (`zeuge(roh)`: die Welt hat sich beobachtbar geändert, die Zahl
 //     kommt aus N Proben der Welt — die Attrappe, die den Wortlaut erfüllt, ohne die Welt zu ändern, fällt dort);
 //   · ein Umfang, den das Spiel heute nicht erzeugt, urteilt ROT „Umfang nicht erzeugbar: <was fehlt>“ (die Probe meldet `nicht`);
-//   · eine Sprosse mit Auge (Blindpaar, Prüfer-Satz R11) schießt das Bild an der festen Pose, legt es ab und behauptet NIE GRÜN —
-//     ihre Zahl trägt die Zeile `auge` mit Pose und Vorbild;
+//   · eine Sprosse mit Auge schießt das Bild an der festen Pose und legt es ab; ihre Klasse steht am Wortlaut der Karte in
+//     stationen/auge-klasse.cjs: ZAHL — die Station urteilt an Soll und Zeuge, das Bild ist Beleg; PANEL (Prüfer-Satz R11) und
+//     KORPUS (ein Band realer Daten fehlt im Repo) — sie behauptet NIE GRÜN, ihre Zahl trägt die Zeile `auge` mit Pose und Vorbild;
 //   · eine Sprosse, die eine Station der Karte 2 oder eine Zeile der Tafel schon trägt, bekommt KEINEN Zwilling (Gebot 4).
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 const KERN = (() => {
@@ -160,7 +163,14 @@ const KERN = (() => {
     };
 
     // DAS URTEIL EINER SPROSSE über den Lauf der Perspektive
-    function urteilBauen(leiter, nr, sp) {
+    // `zahl`: die Auge-Sprosse ist ZAHL (auge-klasse.cjs) — sie urteilt wie jede Zahl-Sprosse, das Bild steht als Beleg daneben
+    function urteilBauen(leiter, nr, sp, zahl) {
+        const richtetAuge = !!sp.auge && !zahl;
+        const beleg = (roh) => {
+            if (!sp.auge) return "";
+            const a = roh.auge || {};
+            return " · Bild (Beleg) " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 80) + ")" : ""));
+        };
         return (j, lauf) => {
             const kopf = "S" + nr + " ";
             const rot = (text, taeter) => ({ gruen: false, zahl: kopf + text + (taeter ? " · Täter: " + taeter : "") });
@@ -204,36 +214,47 @@ const KERN = (() => {
                 return { ok, text: s.key + " " + (typeof w === "number" && Number.isFinite(w) ? deutsch(w) + (s.einheit && s.rel !== "±%" ? " " + s.einheit : "") : "ungemessen") + " gegen Soll " + sollText(s) + (ok ? " ✓" : " ✗") };
             });
             const mess = teile.map((t) => t.text).join(" · ");
-            if (sp.auge) {
+            if (richtetAuge) {
                 const a = roh.auge || {};
+                const k = AUGE.klasse(leiter, nr);
                 return mit({
                     gruen: false,
                     zahl: kopf + (mess ? mess + " · " : "") + "auge: Pose " + (a.pose || sp.auge.pose) + " · Vorbild " + sp.auge.vorbild + " · Bild " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 120) + ")" : "")) +
-                        " — das Urteil fällt am Gerät im Blindpaar (R11), die Station behauptet kein GRÜN" + (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
+                        (k.klasse === "panel" ? " — R11 Panel („" + k.wort + "“): das Urteil fällt im Panel, die Station behauptet kein GRÜN" : " — Korpus fehlt (" + k.wort + "): die Station behauptet kein GRÜN") +
+                        (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
                 });
             }
-            if (roh.nicht) return mit(rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : ""), roh.taeter || sp.taeter));
+            if (roh.nicht) return mit(rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : "") + beleg(roh), roh.taeter || sp.taeter));
             const fall = teile.find((t) => !t.ok);
-            if (fall) return mit(rot(mess, roh.taeter || sp.taeter));
+            if (fall) return mit(rot(mess + beleg(roh), roh.taeter || sp.taeter));
             let zg;
             try {
                 zg = sp.zeuge(roh);
             } catch (e) {
                 zg = "der Zeuge warf: " + String((e && e.message) || e).slice(0, 120);
             }
-            if (zg) return mit(rot(mess + " · der Zeuge der Welt fehlt: " + zg, roh.taeter || sp.taeter));
-            return mit({ gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) });
+            if (zg) return mit(rot(mess + " · der Zeuge der Welt fehlt: " + zg + beleg(roh), roh.taeter || sp.taeter));
+            return mit({ gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) + beleg(roh) });
         };
     }
 
-    // DIE PROBEN (Selbsttest) einer Sprosse: die Messung im Soll GRÜN (nie an einer Auge-Sprosse), jede Attrappe ROT, dazu die Fälle der Maschine
+    // DIE PROBEN (Selbsttest) einer Sprosse: die Messung im Soll GRÜN (nie an einer PANEL- oder KORPUS-Sprosse; an einer ZAHL-Sprosse
+    // mit Auge auch ohne Bild — das Bild ist Beleg), jede Attrappe ROT, dazu die Fälle der Maschine
     const ZEUGE = "[linse-gpu] amd/rdna-3 (Probe)";
-    function probenBauen(leiter, nr, sp) {
+    function probenBauen(leiter, nr, sp, zahl) {
         const j = (roh) => ({ leitern: { [leiter]: { s: 1, sprossen: { [nr]: roh } } } });
+        const nie = !!sp.auge && !zahl;
         const p = [];
-        p.push({ name: "gemessen im Soll" + (sp.auge ? " (Auge: nie GRÜN)" : ""), j: j(sp.gruen), stdout: ZEUGE, gruen: !sp.auge });
+        p.push({ name: "gemessen im Soll" + (nie ? " (Auge: nie GRÜN)" : sp.auge ? " (ZAHL: das Bild ist Beleg)" : ""), j: j(sp.gruen), stdout: ZEUGE, gruen: !nie });
         for (const a of sp.attrappen) p.push({ name: "ATTRAPPE " + a.name, j: j(a.roh), stdout: ZEUGE, gruen: false });
-        for (const a of sp.proben || []) p.push({ name: a.name, j: j(a.roh), stdout: ZEUGE, gruen: !!a.gruen && !sp.auge });
+        for (const a of sp.proben || []) p.push({ name: a.name, j: j(a.roh), stdout: ZEUGE, gruen: !!a.gruen && !nie });
+        // die ZAHL-Sprosse: jedes Soll einen Schritt daneben ist ROT (die Station urteilt den ganzen Satz, nie einen Teil)
+        if (sp.auge && zahl)
+            for (const s of sp.soll) {
+                const w = sp.gruen.werte || {};
+                const raus = s.rel === "≥" || s.rel === ">" ? s.a - 1 - Math.abs(s.a) : s.rel === "≤" || s.rel === "<" ? s.a + 1 + Math.abs(s.a) : s.rel === "band" ? s.b + 1 + Math.abs(s.b) : s.rel === "=" ? s.a + 1 + Math.abs(s.a) : s.rel === "±" ? s.ref + 2 * s.a + 1 : s.rel === "±%" ? s.ref + Math.abs(s.ref) * (s.a / 50) + 1 : null;
+                if (raus !== null) p.push({ name: "ZAHL: das Soll " + s.key + " reißt", j: j({ ...sp.gruen, werte: { ...w, [s.key]: raus } }), stdout: ZEUGE, gruen: false });
+            }
         p.push({ name: "Umfang nicht erzeugbar", j: j({ ...sp.gruen, nicht: "die Probe" }), stdout: ZEUGE, gruen: false });
         p.push({ name: "swiftshader", j: j(sp.gruen), stdout: "[linse-gpu] google/swiftshader", gruen: false });
         p.push({ name: "die Leiter warf", j: { leitern: { [leiter]: { s: 3, warf: "Error: Probe" } } }, stdout: ZEUGE, gruen: false });
@@ -252,12 +273,22 @@ const KERN = (() => {
         M.nicht = (was, werte) => ({ nicht: String(was), werte: werte || {} });
         // DAS BILD DER AUGE-SPROSSE an der festen Pose: /bild der Werkbank (die Kamera der Pose, 1920 × 1080), Rückgabe { bild, pose } — ein ROT der
         // Seite steht als grund, nie als Wurf
+        // DIE POSE OHNE KAMERA (21.11.): `{ ort: "wiese" }` (57 Rufe) trägt kein px … lz — /bild der Werkbank liest `ort` nur als Inhalt
+        // des Messorts, die Kamera stand auf NaN, und das Bild war schwarz (31ea3847-gtx: 31 Auge-Bilder „bild.schwarz 1 · Ziel
+        // Blickziel nicht im Bild“, pose kamera [null,null,null]). Ohne px schießt das Auge an der Kamera des Spiels, wo der Spieler steht
+        // (wie `--bewegung` in werkbank.cjs /bild); der Ort bleibt das Inhalts-Urteil der Abnahme
         M.auge = async (name, pose, o = {}) => {
             const datei = require("path").join(require("path").dirname(H.aus), "auge-" + name + ".png");
             if (M.swift) return { bild: null, pose: JSON.stringify(pose), grund: "swiftshader: kein Schuss ohne Gerät (ungefahren am Gerät)" };
             try {
-                const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, pose, o));
-                return { bild: b.datei || datei, pose: JSON.stringify(pose) };
+                let p = pose || {};
+                if (!Number.isFinite(Number(p.px))) {
+                    const k = await H.seite("r._loopCamera(performance.now()); const c = r.state.camera; return [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()];");
+                    if (!Array.isArray(k) || k.length !== 6 || !k.every(Number.isFinite)) throw new Error("die Kamera des Spiels ist nicht lesbar: " + JSON.stringify(k).slice(0, 80));
+                    p = Object.assign({}, p, { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5] });
+                }
+                const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, p, o));
+                return { bild: b.datei || datei, pose: JSON.stringify(p) };
             } catch (e) {
                 return { bild: null, pose: JSON.stringify(pose), grund: String((e && e.message) || e).slice(0, 200) };
             }
@@ -395,7 +426,10 @@ const KERN = (() => {
                 }
                 if (!sp) throw new Error(id + " S" + nr + ": keine Sprosse in der Station (jede Sprosse der Leiter urteilt)");
                 if (!Array.isArray(sp.soll) || !sp.soll.length) throw new Error(id + " S" + nr + ": soll leer");
-                if (!sp.auge && typeof sp.zeuge !== "function") throw new Error(id + " S" + nr + ": zeuge fehlt (die Attrappe fiele nie)");
+                // die Klasse der Auge-Sprosse am Wortlaut (auge-klasse.cjs; wirft, wenn sie dort fehlt): eine ZAHL-Sprosse urteilt wie
+                // jede Zahl-Sprosse und braucht ihren Zeugen
+                const zahl = !!sp.auge && AUGE.klasse(id, nr).klasse === "zahl";
+                if ((!sp.auge || zahl) && typeof sp.zeuge !== "function") throw new Error(id + " S" + nr + ": zeuge fehlt (die Attrappe fiele nie)" + (zahl ? " — die Sprosse ist ZAHL (auge-klasse.cjs), ihr Bild ist nur Beleg" : ""));
                 if (sp.auge && !(sp.auge.pose && sp.auge.vorbild)) throw new Error(id + " S" + nr + ": auge verlangt pose und vorbild");
                 if (!sp.gruen || !Array.isArray(sp.attrappen) || !sp.attrappen.length) throw new Error(id + " S" + nr + ": gruen und attrappen (Selbsttest) fehlen");
                 if (typeof sp.taeter !== "string" || sp.taeter.length < 4) throw new Error(id + " S" + nr + ": taeter fehlt (wer beim ROT beim Namen steht)");
@@ -408,19 +442,17 @@ const KERN = (() => {
                     gpu: true,
                     zeit: false,
                     minuten: Math.max(1, Math.ceil(sek / 60)),
-                    urteil: urteilBauen(id, nr, sp),
-                    proben: probenBauen(id, nr, sp),
+                    urteil: urteilBauen(id, nr, sp, zahl),
+                    proben: probenBauen(id, nr, sp, zahl),
                     pfad: L.pfad,
                     quelle: "KARTE2 " + id + " S" + nr + " = " + s.richter,
                 };
                 if (nr === 1) st.beide = true;
                 // DAS BLATT (vision/richter/fabrik-planet-leben-zusammenspiel.md) liest diese Felder; die Maschine nie
                 Object.defineProperty(st, "blatt", { enumerable: false, value: { perspektive: kapitel + "." + pid, auge: sp.auge || null, nicht: sp.nicht || null, leser: sp.leser || null, unklar: sp.unklar || null, ungefahren: L.ungefahren || "ungefahren am Gerät" } });
-                // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“ — die Station urteilt die Sprosse ganz;
-                // „fehlt“ — ein Auge (Blindpaar, R11) urteilt sie am Gerät, die Station schreibt keine Akte
-                Object.defineProperty(st, "tafel", { enumerable: false, value: sp.auge
-                    ? { richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
-                    : { richter: "gleich" } });
+                // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“ — die Station urteilt die Sprosse ganz
+                // (auch die ZAHL-Sprosse mit Bild als Beleg); „fehlt“ — PANEL (R11) oder KORPUS, Grund aus auge-klasse.cjs
+                Object.defineProperty(st, "tafel", { enumerable: false, value: sp.auge ? AUGE.tafel(id, nr, true) : { richter: "gleich" } });
                 stationen.push(st);
             }
         }
@@ -1632,13 +1664,17 @@ L.perspektive("geologie", (() => {
             },
             4: {
                 u: {},
-                soll: [ohneZahl(LA, 4, "Abbau sichtbar und nach Reload bleibend", "abbau"), ohneZahl(LA, 4, "Senkung über Kohle messbar", "senkung")],
+                // ZAHL (auge-klasse.cjs): „sichtbar und bleibend“ und „messbar“ sind Schwellen des Worts selbst — die Grube steht nach dem
+                // Reload (1), die Senkung über dem Flöz ist > 0 m; das Bild ist Beleg
+                soll: [
+                    K.soll(LA, 4, "Abbau sichtbar und nach Reload bleibend", { key: "abbau", rel: "=", zahl: 1, refQuelle: "das Wort selbst: „nach Reload bleibend“ — 1 = die gegrabene Grube steht nach dem Reload an derselben Stelle" }),
+                    K.soll(LA, 4, "Senkung über Kohle messbar", { key: "senkung", rel: ">", zahl: 0, refQuelle: "das Wort selbst: „messbar“ — die Senkung über dem abgebauten Flöz ist > 0 m", einheit: "m" }),
+                ],
                 zeuge: zMin({ antworten: 1000 }),
                 auge: { pose: "Ego an der Grube nach Abbau und Reload (heute: keine Lagerstätte)", vorbild: "Fotos von Gruben, Halden und Bergsenkungen (Ruhrgebiet), Prüfer-Satz R11" },
                 taeter: "die Stoff-Tafel (keine Kohle) — kein Leser einer Senkung",
                 nicht: "keine Kohle, keine Senkung",
                 leser: "stamm/bau-buch.js:1554 _stoff — keine Kohle in der Stoff-Tafel; kein Leser einer Bergsenkung über einem Abbau",
-                unklar: "der Richter nennt keine Zahl — Vorschlag: „Senkung ≥ 0,5 m über einem Flöz nach Abbau, Grube nach Reload byte-gleich“",
                 gruen: gut({ abbau: 1, senkung: 0.8 }, { antworten: 5000 }),
                 attrappen: [{ name: "eine gegrabene Grube ohne Kohle", roh: leer({ abbau: 1, senkung: 0.8 }) }],
             },
@@ -3276,7 +3312,10 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
                 taeter: "planet-core.js planetPlan (kein Mond)",
                 nicht: "kein Doppelmond, kein Eismond",
                 leser: "planet-core.js:312 planetPlan — kein Mond, keine Gezeitenheizung",
-                gruen: gut({ rang: 0.75 }, {}),
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMin({ eismonde: 5 }),
+                zeugeText: "der Rang über ≥ 5 Eismonde mit Wärmefluss und Exzentrizität",
+                gruen: gut({ rang: 0.75 }, { eismonde: 10 }),
                 attrappen: [{ name: "der Rang ohne Mond", roh: leer({ rang: 0.75 }) }],
             },
         },
@@ -4788,6 +4827,9 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 taeter: "gelaende-core.js TEMPERATUR (Höhe gestaucht, 0,11 K/m)",
                 nicht: "kein Gebirge in Erd-Höhe (Höhe gestaucht)",
                 leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m",
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMin({ grenzen: 2 }),
+                zeugeText: "Schnee- und Baumgrenze am höchsten Grund gefunden",
                 gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800 } },
                 attrappen: [{ name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) }],
             },
@@ -4809,6 +4851,9 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 taeter: "welt-licht.js sonnenRichtung (keine Bahn aus Jahr × Breite)",
                 nicht: "keine Sonnenbahn aus Jahr und Breite, eine Breite",
                 leser: "welt-licht.js:711 — sonnenRichtung(winkel) liest weder Saison noch Breite (die Bahn nach Meeus Kap. 13 steht OFFEN)",
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMin({ zurueck: 1 }),
+                zeugeText: "Juli und Januar gesetzt und zurück",
                 gruen: { werte: { breitenRichtig: 3 }, zeuge: { zurueck: 1 } },
                 attrappen: [{ name: "3 Breiten behauptet", roh: leer({ breitenRichtig: 3 }) }],
             },
@@ -4963,12 +5008,19 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
         sprossen: {
             1: {
                 u: { jahre: 100, mmJeStunde: 10 },
-                soll: [K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" })],
+                soll: [
+                    K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" }),
+                    // die zweite Hälfte des Satzes: das Wasser steht über der Aue (die Probe misst sie heute nicht — ungemessen ist ROT)
+                    K.soll(EX, 1, "Überflutung ≥ Aue", { key: "ueberAueM", rel: ">", zahl: 0, refQuelle: "der Richter: „Überflutung ≥ Aue“ — der Spiegel steht über der Aue (Höhe über ihr > 0 m)", einheit: "m" }),
+                ],
                 auge: { pose: "Ego an der Mess-Wiese, Bildpaar vor/nach dem Starkregen (die Bühne setzt stormy)", vorbild: "Bildpaar eines Hochwassers über die Aue (Pegelfotos, z. B. Elbe 2002)" },
                 taeter: "gelaende-core.js pegelHub (an der Krone gedeckelt)",
                 nicht: "der Fluss verlässt das Bett nie",
                 leser: "gelaende-core.js:1569 — der Hub ist an der Krone gedeckelt, die Aue trägt den Überschuss „nicht gerechnet“",
-                gruen: { werte: { regenMaxMm: 120 }, zeuge: { jahre: 100, streu: 12 } },
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMinStreu({ jahre: 1 }, ["streu"]),
+                zeugeText: "die Regen-Jahre der Strecke gewürfelt, mit Streuung",
+                gruen: { werte: { regenMaxMm: 120, ueberAueM: 0.4 }, zeuge: { jahre: 100, streu: 12 } },
                 attrappen: [{ name: "120 mm behauptet", roh: leer({ regenMaxMm: 120 }) }],
             },
             2: {
@@ -5389,6 +5441,9 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
                 taeter: "voxel-worker.js planetPlanVon (immer PLANET_ERDE)",
                 nicht: "Rotation nicht setzbar, kein Orbitbild",
                 leser: "voxel-worker.js:1159 — planetPlanVon setzt P.PLANET_ERDE: die Rotation (planet-core planetKlimaGlobal zellen) ist nie anders als die der Erde",
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMinStreu({ meerOrte: 100 }, ["streuProfil"]),
+                zeugeText: "das Wind-Profil über ≥ 100 Meer-Orten des Fadens",
                 gruen: { werte: { baenderX1: 3, baenderX01: 1, baenderX5: 4 }, zeuge: { meerOrte: 100, streuProfil: 0.1 } },
                 attrappen: [{ name: "Bänder aus der Theorie", roh: leer({ baenderX1: 3, baenderX01: 1, baenderX5: 4 }) }],
             },
