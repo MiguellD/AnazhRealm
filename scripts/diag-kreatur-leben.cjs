@@ -625,6 +625,22 @@ async function lebenBuehnen() {
                         alt.apply(r, a).set(0, 0, 0)
             );
         if (taeter === "folgen-wand") um("_kreaturHuellenKontakt", () => () => {});
+        // der alte Stand: das Gemüt wählt, als trüge das Tier keinen Auftrag · das Gegenteil: wer folgt, spielt nie
+        if (taeter === "folgen-spiel")
+            um("_tickKreaturVerhalten", (alt) => (c, ...a) => {
+                const [ud, auftrag] = [c.userData, c.userData.task];
+                ud.task = null;
+                try {
+                    return alt.call(r, c, ...a);
+                } finally {
+                    ud.task = auftrag;
+                }
+            });
+        if (taeter === "folgen-ernst")
+            um("_tickKreaturVerhalten", (alt) => (c, ...a) => {
+                if ((c.userData.task || {}).name !== "follow_player") return alt.call(r, c, ...a);
+                c.userData._verhaltenAktion = null;
+            });
         if (taeter === "sockel") um("_kreaturAuflage", () => () => -Infinity);
         if (taeter === "gedreht-kontakt")
             um(
@@ -858,6 +874,36 @@ async function lebenBuehnen() {
         const u = hirsch(false);
         gehen(120, () => {});
         z.gegenlauf = { abstandM: rund(ab(u.position, pm), 1) };
+        // DER FROHE BEGLEITER (mensch-zahlen, nahrung.tier#1 — der Auftrag trägt den Leib): ein frohes gebundenes Tier (joy 0,9 je
+        // Takt) folgt 60 s; in keinem Takt, in dem es für seinen Auftrag unterwegs ist (sein Wunsch `aiDir` ist nicht null), hält
+        // es eine Aktion des Gemüts (tempo < 1: Verbeugung, Kreisel). Dann steht der Spieler 30 s: am Ziel spielt es wieder.
+        r.removeCreature(u);
+        pm.set(P.x, boden(P.x, P.z), P.z); // die Geste bindet das Tier neben dem Spieler
+        const f = hirsch(true);
+        if ((f.userData.task || {}).name !== "follow_player") return { fehler: "die Geste bindet das frohe Tier nicht" };
+        const froh = { unterwegs: 0, gehalten: 0, spiel: 0 };
+        const fern = [];
+        // ein ruhiges Wesen trägt kein Gemüt (null): die Freude setzt es je Takt neu
+        const freude = (ud) => (ud.emotions = Object.assign(ud.emotions || {}, { joy: 0.9 }));
+        gehen(60, (k) => {
+            const fu = f.userData;
+            freude(fu);
+            const [w, VA] = [fu.aiDir, fu._verhaltenAktion];
+            if (k % 60 === 59) fern.push(ab(f.position, pm));
+            if (!(w && w.x * w.x + w.z * w.z > 0)) return;
+            froh.unterwegs++;
+            if (VA && s.creatureAnimationTime < VA.bis && VA.def.tempo < 1) froh.gehalten++;
+        });
+        for (let k = 0, vor = null; k < 30 * 60; k++) {
+            ruhigSpieler();
+            r.updateCreatures(dt);
+            freude(f.userData);
+            const VA = f.userData._verhaltenAktion;
+            if (VA && VA !== vor) froh.spiel++;
+            vor = VA;
+        }
+        z.froh = Object.assign(froh, { abstandP95: rund(quantil(fern, 0.95), 2) });
+        r.removeCreature(f);
         return z;
     });
     // ── tagesbudget (Tiere K4, ETHOGRAMM_GESETZ · DURST_GESETZ): je Gattung drei Tiere ohne Verband am Ufer (15–30 m vom Fluss), im
@@ -2527,6 +2573,11 @@ function lebenUrteil(name, z, soll) {
             z.gegenlauf.abstandM >= 30,
             `das ungebundene Tier folgt auch (${z.gegenlauf.abstandM} m nach 2 min, vakuös)`
         );
+        soll(
+            z.froh.unterwegs >= 1800 && z.froh.gehalten === 0,
+            `das Gemüt hält das frohe folgende Tier an: ${z.froh.gehalten} von ${z.froh.unterwegs} Takten unterwegs mit einer haltenden Aktion (Soll 0 von ≥ 1 800; Abstand p95 ${z.froh.abstandP95} m)`
+        );
+        soll(z.froh.spiel >= 1, `am Ziel spielt das frohe Tier nicht: ${z.froh.spiel} Aktionen in 30 s Stand`);
     }
     if (name === "tagesbudget") {
         // DAS ETHOGRAMM (±20 % je Tätigkeit; was die Gattung nicht tut, tut sie nie)
@@ -2677,6 +2728,8 @@ module.exports = {
         folgen: [
             ["folgen", /das gebundene Tier folgt nicht/],
             ["folgen-wand", /die Hindernisse halten nicht/],
+            ["folgen-spiel", /das Gemüt hält das frohe folgende Tier an/],
+            ["folgen-ernst", /am Ziel spielt das frohe Tier nicht/],
             ["hindernis", /Feld-Strahlen/],
             ["hindernis-leib", /benannten Leib/],
             ["sockel", /steht im Sockel/],

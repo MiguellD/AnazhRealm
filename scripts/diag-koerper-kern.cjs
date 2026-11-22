@@ -26,6 +26,7 @@ const { urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 require("../koerper-core.js");
 require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js");
+require("../tetrapoda-core.js"); // die Froude-Einheit des Gangs (das Können, K3)
 const core = globalThis.__koerperCore;
 const { mulberry32 } = globalThis.__phytoCore; // der Test-Strom ist der Strom des Kerns
 
@@ -358,6 +359,47 @@ function bestandUrteil(C0, mutante = null) {
     return { rot, sinkt, ohneHerstellung, geladen, abgeladen, leer24, her: acker.her, ver: stand.ver };
 }
 
+// DAS KÖNNEN AUS DEM LEIB (mensch-zahlen, koerper `leibKoennen`; Meisterkarte 2 mensch.sport.koennen S1): K1 am Kanon
+// (START_PARAMS) exakt 1; K2 je Achse des Leibs die Richtung — mehr Muskel-Ton läuft schneller, mehr Alter und mehr Masse
+// langsamer, über ein Gitter der übrigen Dials; K3 die Höhe kürzt sich: gleich gebaut und verschieden hoch trägt die
+// Froude-Einheit des Gangs (tetrapoda `tempoEinheit` am Bein ∝ Höhe) × `lauf` dasselbe Tempo (1e-9); K4 der Greis ohne
+// Ton läuft höchstens 0,8 des jungen Athleten. Täter (Selbsttest): „ohne Können“ (der Stand vor dem Gesetz: jeder 1),
+// „ohne Alter“, „ohne Masse“, „mit Höhe“ (die Höhe bleibt im Tempo). Leser: der Wirt (`_bewohnerGenome` → das Tempo des Gangs).
+function koennenUrteil(C0, mutante = null) {
+    const S = C0.START_PARAMS;
+    const TC = globalThis.__tetrapodaCore;
+    let K = C0.leibKoennen;
+    if (mutante === "ohneKoennen") K = () => ({ kraft: 1, lauf: 1 });
+    if (mutante === "ohneAlter") K = (d) => C0.leibKoennen(Object.assign({}, d, { age: S.age }));
+    if (mutante === "ohneMasse") K = (d) => C0.leibKoennen(Object.assign({}, d, { mass: S.mass }));
+    if (mutante === "mitHoehe") K = (d) => ((k) => ({ kraft: k.kraft * d.height, lauf: Math.sqrt(k.kraft * d.height) }))(C0.leibKoennen(d));
+    const rot = [];
+    const kanon = K(S);
+    if (!(kanon.kraft === 1 && kanon.lauf === 1)) rot.push(`K1 das Können des Kanons ist nicht 1 (kraft ${kanon.kraft}, lauf ${kanon.lauf})`);
+    const stufen = [0, 0.5, 1];
+    const gitter = [];
+    for (const mass of stufen) for (const tone of stufen) for (const age of [0.05, 0.25, 0.5]) for (const gender of stufen) gitter.push(Object.assign({}, S, { mass, tone, age, gender })); // prettier-ignore
+    const faellt = { tone: 0, age: 0, mass: 0 };
+    for (const d of gitter)
+        for (const [achse, hoch, richtung] of [["tone", 1, 1], ["age", 0.5, -1], ["mass", 1, -1]]) {
+            if (d[achse] >= hoch) continue;
+            const mehr = Object.assign({}, d, { [achse]: achse === "age" ? Math.min(0.5, d.age + 0.2) : d[achse] + 0.5 });
+            if (!((K(mehr).lauf - K(d).lauf) * richtung > 0)) faellt[achse]++;
+        }
+    if (faellt.tone) rot.push(`K2 das Können folgt dem Muskel nicht (${faellt.tone} Gitter-Punkte)`);
+    if (faellt.age) rot.push(`K2 das Können folgt dem Alter nicht (${faellt.age} Gitter-Punkte)`);
+    if (faellt.mass) rot.push(`K2 das Können folgt der Masse nicht (${faellt.mass} Gitter-Punkte)`);
+    const tempo = (d) => TC.tempoEinheit(0.9 * d.height) * K(d).lauf;
+    const hoch = Object.assign({}, S, { height: 1.08, tone: 0.2, age: 0.4 });
+    const klein = Object.assign({}, hoch, { height: 0.92 });
+    const dH = Math.abs(tempo(hoch) / tempo(klein) - 1);
+    if (!(dH < 1e-9)) rot.push(`K3 die Höhe bleibt im Tempo: gleich gebaut, 1,08 gegen 0,92 hoch, Tempo × ${(tempo(hoch) / tempo(klein)).toFixed(4)}`);
+    const greis = K(Object.assign({}, S, { tone: 0.1, age: 0.5 })).lauf / K(Object.assign({}, S, { tone: 0.9, age: 0.05 })).lauf;
+    if (!(greis <= 0.8)) rot.push(`K4 der Greis läuft wie der Athlet (× ${greis.toFixed(3)}, Soll ≤ 0,8)`);
+    const L = gitter.map((d) => K(d).lauf);
+    return { rot, greis, min: Math.min(...L), max: Math.max(...L) };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
@@ -376,12 +418,15 @@ if (SELBSTTEST) {
     // der Bestand: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const bGut = !bestandUrteil(core).rot.length;
     const bestandTaeter = [["ohneHerstellung", "B2 der Bestand füllt sich ohne Herstellung"], ["ohneLadung", "B3 der Wagen fährt ohne Ladung"], ["erzeugt", "B1 der Tausch erzeugt Ware"]].map(([m, z]) => [bGut && bestandUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter])
+    // das Können: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const kGut = !koennenUrteil(core).rot.length;
+    const koennenTaeter = [["ohneKoennen", "K2 das Können folgt dem Muskel nicht"], ["ohneAlter", "K2 das Können folgt dem Alter nicht"], ["ohneMasse", "K2 das Können folgt der Masse nicht"], ["mitHoehe", "K3 die Höhe bleibt im Tempo"]].map(([m, z]) => [kGut && koennenUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...koennenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle dreizehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle siebzehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, vier Täter des Könnens).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -392,5 +437,8 @@ if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.lengt
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
+const kn = koennenUrteil(core);
+for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
+console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Kanon 1) · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);
 console.log(`  BESTAND Tausch ${be.sinkt} · Füllung ohne Herstellung ${be.ohneHerstellung} · Wagen ${be.geladen} geladen, ${be.abgeladen} abgeladen · Stand nach 24 h ${be.leer24} · Herstellung ${be.her.toFixed(2)}, Verbrauch ${be.ver.toFixed(2)}`);
 urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; aus dem Stand ${st.s.map((x) => `${x.dv} m/s → höchstens ${x.vmax.toFixed(2)} m/s, Ruhe nach ${x.ruhe.toFixed(2)} s und ${x.weg.toFixed(1)} m`).join(" · ")}.`);
