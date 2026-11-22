@@ -353,7 +353,10 @@ class AnazhRealm_koerper_frei {
         const b = Number.isFinite(gx0) && Number.isFinite(gx1) ? (gx1 - gx0) / (2 * r) : 0;
         const c = Number.isFinite(gz0) && Number.isFinite(gz1) ? (gz1 - gz0) / (2 * r) : 0;
         const st = Number.isFinite(a)
-            ? this._stoff(this._kontaktStoffAt(p[0], p[2], a), "der Boden unter dem freien Körper reibt nicht")
+            ? this._stoff(
+                  this._kontaktStoffAt(p[0], p[2], a, Math.hypot(b, c)),
+                  "der Boden unter dem freien Körper reibt nicht"
+              )
             : null;
         const z = this._stoff(K.stoff, "der freie Körper aus „" + K.stoff + "“ reibt nicht");
         K.mu = z && z.mu > 0 ? z.mu : 0;
