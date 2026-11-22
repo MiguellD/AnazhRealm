@@ -2033,3 +2033,4 @@ omen-gtx-gtx-c445936d-w222222-2-c445936d ROT 0 GRÜN / 1 ROT / 5 UNGEMESSEN · R
 2026-11-22 00:41 landung Runde 3 am c445936d: misst 121 von 177 Stationen (56 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 omen-gtx-gtx-c445936d-w004126-1-c445936d UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.erleben.spieler.praesenz#1 ‖ karte2.erleben.spieler.praesenz#1 UNGEMESSEN roh: Last: Referenz f 1,629 (Faden 1,531 · alle Kerne 1,629; vor 137,8/372 ms, nach 91,8/245,5 ms, Ruhe 90/228,3 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsm (punkte-maschine 975be3c6 messung/c445936d-gtx.json)
 2026-11-22 01:06 RUNDE 3 ALARM radeon: ohne Fortschritt seit 626 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
+2026-11-22 01:10 landung Runde 3 am c445936d: WEICHT — omen-ab-2a18878ba-2 wartete am GPU-Schloss, BEHALTEN 1, die Liste geht an derselben Station weiter
