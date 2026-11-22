@@ -2127,3 +2127,4 @@ omen-gtx-gtx-30e01e75-w194236-2-30e01e75 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 omen-gtx-gtx-30e01e75-w194236-3-30e01e75 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.mensch.kultur.gestalt#1 ‖ karte2.mensch.kultur.gestalt#1: S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal (punkte-maschine 5e6a37a1 messung/30e01e75-gtx.json)
 2026-11-22 20:32 landung Runde 6 am 30e01e75: WEICHT — dienst-selbsttest-voll wartete am GPU-Schloss, BEHALTEN 4, die Liste geht an derselben Station weiter
 2026-11-22 20:40 landung Runde 6 am 30e01e75: misst 111 von 247 Stationen (vorn; 5 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-22 20:49 RUNDE 6 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 5/247, Station karte2.mensch.kultur.gestalt#1, Kopf 30e01e75) — gesehen von gtx (landung-dienst)
