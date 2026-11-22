@@ -5493,8 +5493,11 @@
         lager: Object.freeze({ werk: 24, stand: 24, wagen: 12, scheune: 96 }),
         verbrauch: Object.freeze({ anteil: 1 }),
         // DAS MAHL AUS DER SCHEUNE (mensch.nahrung.strom S1, `scheuneHalter`): je Kopf und Tag so viele Einheiten, gegessen in den
-        // Stunden des Mittags des Gesetzes (TAGES_GESETZ.mittag)
-        mahl: Object.freeze({ jeKopfTag: 1 }),
+        // Stunden des Mittags des Gesetzes (TAGES_GESETZ.mittag). Ein Bauer bringt am Tag ein volles Lager seines Ackers (24, die
+        // Herstellung `feld` über sein Fenster) und nährt damit vier Köpfe — die Quote der vorindustriellen Landwirtschaft
+        // (Bairoch: rund 80 % der Menschen auf dem Feld): 24 / 4 = 6 je Kopf. Ein Hof mit weniger Bauern, als er Esser trägt,
+        // leert die Scheune am Mittag und füllt sie am Feierabend (der Sägezahn), einer mit mehr füllt sie bis zum Lager.
+        mahl: Object.freeze({ jeKopfTag: 6 }),
         // das Bild des Bestands: so viele Einheiten trägt eine Kiste (der Wirt stellt je angefangene Kiste eine)
         kiste: 4,
     });
