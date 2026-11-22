@@ -512,10 +512,13 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DIE LADUNG IM BILD: je angefangene Kiste seines Bestands (BESTAND_GESETZ.kiste) eine Kiste der Welt (der Bauplan `kiste`) auf
-    // seinem Dach, längs seiner Achse — an der Lage, die sein Bild in diesem Augenblick trägt (gerufen aus `_verkehrBild`, wo die
-    // Lage des Bilds gilt, und nach jeder Ankunft), in seiner Neigung (`_archEntryWorldMatrix`); gezeichnet, wo der Wagen in einer
-    // 3D-Stufe steht (`_archTraegt`, das Komposit erbt — `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut.
-    _verkehrLadung(W) {
+    // seinem Dach, längs seiner Achse — an der Lage, die sein Bild trägt, in seiner Neigung (`_archEntryWorldMatrix`): die Matrix
+    // schreibt nur `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt, dieselbe, aus der die Instanz ihre Matrix
+    // nimmt) und die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im Takt) zählt nur die Kisten. Bis hier schrieb
+    // auch die Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des Wagens: die Kisten standen neben ihm in der Luft
+    // (stadt-voll, Radeon 22.11.). Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt —
+    // `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut.
+    _verkehrLadung(W, amBild = false) {
         const e = W.entry;
         const H = W.bestand;
         if (!e || !H) return;
@@ -535,14 +538,18 @@ class AnazhRealm_siedlung_verkehr {
             for (let j = 0; j < m; j++) {
                 const c = this._buildArchMeshMerged(bp);
                 c.position.set(((um.bug + um.heck) / 2 + (j - (m - 1) / 2) * kM) / sc, um.dach / sc, 0);
+                c.scale.setScalar(1 / sc); // die Kiste trägt ihr Maß der Welt, nie die Größe des Wagens
                 c.updateMatrix();
                 G.add(c);
             }
             this.state.scene.add(G);
             W.ladungBild = G;
+            amBild = true;
         }
-        this._archEntryWorldMatrix(e, G.matrix);
-        G.matrixWorldNeedsUpdate = true;
+        if (amBild) {
+            this._archEntryWorldMatrix(e, G.matrix);
+            G.matrixWorldNeedsUpdate = true;
+        }
         G.userData.kisten = k;
         G.children.forEach((c, j) => (c.visible = j < k));
         G.visible = k > 0 && this._archTraegt(e);
@@ -792,7 +799,7 @@ class AnazhRealm_siedlung_verkehr {
         if (fz) lege(q, s);
         if (e.instanced) this._archInstanceUpdate(e);
         else if (e.mesh) this._rittMeshPose(e);
-        if (e._verkehrWagen && e._verkehrWagen.ladungBild) this._verkehrLadung(e._verkehrWagen); // die Ladung an derselben Lage
+        if (e._verkehrWagen && e._verkehrWagen.ladungBild) this._verkehrLadung(e._verkehrWagen, true); // die Ladung an derselben Lage
         if (fz) lege(s);
         const W = e._verkehrWagen; // wo sein Bild steht (`_verkehrSchritt`: steht es im Blick, zeichnet er nach)
         if (W) {
