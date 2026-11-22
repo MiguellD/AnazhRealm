@@ -28,6 +28,8 @@
 //                                           rotes Urteil vom frueheren Kopf steht); sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
 //   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
+//   sprung <repo> <kopf40> <main40> <grund>   der Koordinator hebt die Runde auf main, gleich wie die Geraete stehen (auch ohne Liste);
+//                                           Notiz und zug/erledigt.txt nennen Stand je Geraet und Grund (22.11.)
 //   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
 //   reihe <messung-dir> <geraet> <liste> [--karte <json>] [--anspruch <datei>] [--erst <geraet> [--kopf <sha>]]
@@ -260,6 +262,26 @@ if (was === "lies") {
     if (leerDurch) { console.log("LEERE LISTE — " + g + " wird nie „durch“ ohne Station (die Zeile bleibt)"); process.exit(5); }
     if (!r.runde) { console.log("-"); process.exit(0); }
     console.log(alleDurch(r) ? "ALLE DURCH runde " + r.runde.n + " " + r.runde.kopf + " (main nicht weiter)" : "runde " + r.runde.n + " " + r.runde.kopf + " " + GERAETE.map((x) => x + "=" + ((r.g[x] || {}).zustand || "offen")).join(" "));
+} else if (was === "sprung") {
+    // sprung <repo> <kopf40> <main40> <grund> — DER SPRUNG DES KOORDINATORS (22.11.): die Runde am <kopf40> endet, die naechste oeffnet
+    // am <main40>, gleich in welchem Zustand die Geraete stehen (auch ohne Liste — dort verweigert „durch“). Fuer den Fall, dass der
+    // Wert HINTER dem Runden-Kopf liegt (Ansprueche gelandeter Zuege, ein Schnitt am Mess-Apparat). Die Notiz und die Zeile in
+    // zug/erledigt.txt nennen den Stand je Geraet und den Grund; Urteile des alten Kopfs bleiben als Mess-Datei stehen.
+    const [repo, kopf, main, grund] = arg;
+    if (!/^[0-9a-f]{40}$/.test(String(kopf)) || !/^[0-9a-f]{40}$/.test(String(main)) || !String(grund || "").trim()) { console.error("sprung: <repo> <kopf40> <main40> <grund> — alle vier, der Grund nie leer"); process.exit(2); }
+    let tat = "";
+    aendere(repo, "Runde SPRUNG " + k8(kopf) + " → " + k8(main), (r) => {
+        if (!r.runde || r.runde.kopf !== kopf) { tat = "ANDERE RUNDE " + (r.runde ? r.runde.n + " " + r.runde.kopf : "-"); return false; }
+        if (main === kopf) { tat = "main ist nicht weiter"; return false; }
+        const n = r.runde.n, g1 = String(grund).replace(/\s+/g, " ").trim();
+        const stand = GERAETE.map((g) => { const e = r.g[g] || leer(r.runde.start); return g + " " + e.zustand + " " + e.erledigt + "/" + e.gesamt; }).join(", ");
+        oeffne(r, main);
+        r.notizen.push("notiz " + iso(jetzt()) + " Runde " + n + " am " + k8(kopf) + " sprang auf " + k8(main) + " (" + stand + "): " + g1);
+        tat = "runde " + r.runde.n + " " + r.runde.kopf;
+        return { zeile: "RUNDE " + n + " SPRUNG am " + k8(kopf) + " → Runde " + (n + 1) + " am " + k8(main) + " (" + stand + "): " + g1 };
+    });
+    console.log(tat);
+    if (/^ANDERE|^main/.test(tat)) process.exit(4);
 } else if (was === "zurueck") {
     // zurueck <repo> <geraet> <kopf40> <grund> — eine Zeile, die OHNE Station „durch“ oder „laeuft“ steht (der Listen-Bruch 19.11. 05:53:
     // „gtx durch 0/0 am f68dbf09“), zurück auf offen; die Notiz-Zeile nennt den Grund. Eine Zeile MIT Liste fasst das Verb nie an.
