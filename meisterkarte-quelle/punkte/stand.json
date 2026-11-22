@@ -10016,7 +10016,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,432 (Faden 1,027 · alle Kerne 1,432; vor 92,5/260,7 ms, nach 89,7/328,6 ms, Ruhe 90,1/229,4 ms seit 2026-11-16) · fremd: Explorer.EXE 0,7 CPU-s · LightStudio-background.exe InvokerP · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10034,7 +10034,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,432 (Faden 1,027 · alle Kerne 1,432; vor 92,5/260,7 ms, nach 89,7/328,6 ms, Ruhe 90,1/229,4 ms seit 2026-11-16) · fremd: Explorer.EXE 0,7 CPU-s · LightStudio-background.exe InvokerP",
      "ungemessen": true,
      "beide": true
     },
@@ -15963,7 +15963,7 @@
   },
   "karte2.mensch.fahrzeug.form": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: ROT: S1 ROT an Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 verfehlt < 1 — Täter: carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich · Masse schwer ÷ leicht 1.8963 (Soll > 1) · Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 (Soll < 1) · Umfang 1 (Soll ≥ 1 Werkstatt-Wagen, in zwei Bauplänen gefahren) · leicht Masse 8.9424 · 23.804 m/s · 72.16 m; schwer Masse 16.9575 · 23.825 m/s · 72.23 m nach 6 s Vollgas · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.form#1",
@@ -15979,10 +15979,10 @@
      "id": "karte2.mensch.fahrzeug.form#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 verfehlt < 1 — Täter: carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich · Masse schwer ÷ leicht 1.8963 (Soll > 1) · Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 (Soll < 1) · Umfang 1 (Soll ≥ 1 Werkstatt-Wagen, in zwei Bauplänen gefahren) · leicht Masse 8.9424 · 23.804 m/s · 72.16 m; schwer Masse 16.9575 · 23.825 m/s · 72.23 m nach 6 s Vollgas · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT an Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 verfehlt < 1 — Täter: carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich · Masse schwer ÷ leicht 1.8963 (Soll > 1) · Tempo nach 6 s Vollgas schwer ÷ leicht 1.0009 (Soll < 1) · Umfang 1 (Soll ≥ 1 Werkstatt-Wagen, in zwei Bauplänen gefahren) · leicht Masse 8.9424 · 23.804 m/s · 72.16 m; schwer Masse 16.9575 · 23.825 m/s · 72.23 m nach 6 s Vollgas · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -18813,7 +18813,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#1 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#1 gtx: ungemessen (R10) — zuletzt an 30e01e75: Messort: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr o · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18831,7 +18831,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 30e01e75: Messort: /umstellen stadt-voll: DIE WELT STEHT NICHT nach 1832 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 1832 Takten — die Welt hat nichts mehr o",
      "ungemessen": true,
      "beide": true
     },
@@ -22523,7 +22523,7 @@
   },
   "karte2.mensch.netz.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: ROT: S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 65 (haus_italienisch bei 893.3,429.8 (d:7@836,438)); wohnstrasse 160 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1644 (haus_provenzalisch bei 873.0,446.6 (d:7@836,438)); feldweg 111 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1980 (Soll ≤ 0) · Netz des Orts km 7.16 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 978, gasse 5071, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.gestalt#1",
@@ -22539,10 +22539,10 @@
      "id": "karte2.mensch.netz.gestalt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 65 (haus_italienisch bei 893.3,429.8 (d:7@836,438)); wohnstrasse 160 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1644 (haus_provenzalisch bei 873.0,446.6 (d:7@836,438)); feldweg 111 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1980 (Soll ≤ 0) · Netz des Orts km 7.16 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 978, gasse 5071, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT an Umfang 1 < 8 Saaten (Orte mit stehendem Plan) — Täter: Gefälle 30 % an d:7@836,438 (fachwerk STRASSENGRAPH) · Wand im Korridor: ortsdurchfahrt 65 (haus_italienisch bei 893.3,429.8 (d:7@836,438)); wohnstrasse 160 (haus_italienisch bei 844.4,474.5 (d:7@836,438)); gasse 1644 (haus_provenzalisch bei 873.0,446.6 (d:7@836,438)); feldweg 111 (haus_italienisch  · Gefälle p95 % (die steilste Saat) 30 (Soll ≤ 9.5) · Wegeklassen 4 (Soll ≥ 4) · Wand-Stellen im Fahrkorridor 1980 (Soll ≤ 0) · Netz des Orts km 7.16 (Soll ≥ 10) · Umfang 1 (Soll ≥ 8 Saaten (Orte mit stehendem Plan)) · Saaten d:7@836,438 30 % · je Klasse m ortsdurchfahrt 678, wohnstrasse 978, gasse 5071, feldweg 432 · der Korridor gelesen, nicht gefahren · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37132,7 +37132,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: ungemessen (R10) · karte2.same.preis.takt#1 gtx: ungemessen (R10) · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: ungemessen (R10) · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,447 (Faden 1,159 · alle Kerne 1,447; vor 104,4/331,9 ms, nach 91,9/309,3 ms, Ruhe 90,1/229,4 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 -- · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37150,7 +37150,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,447 (Faden 1,159 · alle Kerne 1,447; vor 104,4/331,9 ms, nach 91,9/309,3 ms, Ruhe 90,1/229,4 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --",
      "ungemessen": true,
      "beide": true
     },
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 228,
+  "konsum": 230,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37632,10 +37632,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3394
+  "ohne": 3392
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T20:52:45.839Z",
+ "zeit": "2026-11-22T21:02:21.446Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
