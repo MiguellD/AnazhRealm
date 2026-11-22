@@ -1900,7 +1900,7 @@
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
-    dims:{W,D:Dp,eaveY,ridgeY,baseY,egTop:levels[0].top, storeys:P.storeys, hip:P.hip, brace:P.brace, fw, balcDoorX:balcDoor?balcDoor.cx:null, backDoorX:backDoor?backDoor.cx:null,
+    dims:{W,D:Dp,eaveY,ridgeY,baseY,egTop:levels[0].top, storeys:P.storeys, dachRaum,   /*DER DACHRAUM ALS AUSSAGE (front-technik, 22.11.): das Gesetz sagt, ob ueber dem Estrich ein nutzbarer Dachraum steht — gate:studio-begehen B3 Dach misst die Aussage am gebauten Dach, ob der Speicherlauf offen ist oder nicht*/ hip:P.hip, brace:P.brace, fw, balcDoorX:balcDoor?balcDoor.cx:null, backDoorX:backDoor?backDoor.cx:null,
       tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
