@@ -808,7 +808,19 @@ function laufe(cmd, args, env = {}) {
     // npm ist unter Windows ein .cmd und braucht die Shell; node nie (keine Argument-Verkettung)
     const r = cmd === "npm" ? spawnSync(["npm", ...args].join(" "), { ...o, shell: true }) : spawnSync(cmd, args, o);
     const txt = (r.stdout || "") + (r.stderr || "");
-    return { ok: r.status === 0, rest: txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300) };
+    return { ok: r.status === 0, rest: restVon(txt, r.status === 0) };
+}
+// DER TÄTER STEHT IM REST (22.11., z670: gate:welt-boot fiel am Kandidaten, im Protokoll stand allein die vorletzte, GRÜNE Zeile — sie
+// war über 300 Zeichen lang, die rote Urteils-Zeile dahinter fiel am Schnitt weg; beim Nachfahren war der Kandidat GRÜN, der Fall
+// blieb ungenannt): bei ROT die roten Zeilen zuerst — ❌ und ⛔ vor ROT · FEHLER · Error (ein Selbsttest druckt die Fehler seiner
+// gestellten Fälle als FEHLER, sein Urteil als ❌) —, dann der Schluss, je Zeile höchstens 200 Zeichen; bei GRÜN der Schluss wie bisher
+function restVon(txt, ok) {
+    const z = String(txt).trim().split("\n");
+    if (ok) return z.slice(-2).join(" | ").slice(0, 300);
+    const kurz = (s) => (s.trim().length > 200 ? s.trim().slice(0, 199) + "…" : s.trim());
+    const hart = z.filter((s) => /❌|⛔/.test(s));
+    const rot = hart.length ? hart : z.filter((s) => /ROT|FEHLER|Error/.test(s) && !/^\s*✅/.test(s));
+    return [...new Set([...rot.slice(0, 2), ...z.slice(-1)])].map(kurz).join(" | ").slice(0, 600);
 }
 function sauber() {
     git(["merge", "--abort"], ZUG, true);
@@ -2342,6 +2354,15 @@ function selbsttest(args = []) {
         formatGeprueft("stamm/x.js", fp) && formatGeprueft("phyto-core.js", fp) && !formatGeprueft("stamm/u/y.js", fp) && !formatGeprueft("stamm/k.json", fp) && !formatGeprueft("scripts/z.cjs", fp));
     selbsttestTaeter(pr);
     selbsttestPuffer(pr);
+    {
+        // der Fall z670: eine grüne Zeile über 300 Zeichen vor der roten Urteils-Zeile, davor ein roter Fall; die Mutante ist das alte Gesetz
+        const lang = "  ✅ Start-Frist beim Namen (" + "dem Vendor gereicht · ".repeat(20) + ")";
+        const aus = ["  ✅ Fall a", "  ❌ Fall b: der Puls stand 9 s", lang, "ROT — 1 Fall rot"].join("\n");
+        const altesGesetz = (t) => t.trim().split("\n").slice(-2).join(" | ").slice(0, 300);
+        const neu = restVon(aus, false);
+        pr("Rest eines roten Schritts: der rote Fall und das Urteil stehen beim Namen, die lange grüne Zeile davor nicht; das alte Gesetz (die letzten zwei Zeilen auf 300 Zeichen) verliert beide; ein grüner Schritt trägt den Schluss wie bisher",
+            neu.includes("❌ Fall b: der Puls stand 9 s") && neu.includes("ROT — 1 Fall rot") && !neu.includes("Start-Frist") && !/❌|ROT —/.test(altesGesetz(aus)) && restVon("x\ny\nGRÜN — steht", true) === "y | GRÜN — steht");
+    }
     console.log(fall.length ? `zug selbsttest ROT: ${fall.join(" · ")}` : `zug selbsttest grün (${faelle} Fälle)`);
     return fall.length ? 1 : 0;
 }
