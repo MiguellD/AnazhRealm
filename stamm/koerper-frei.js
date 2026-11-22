@@ -43,13 +43,16 @@ class AnazhRealm_koerper_frei {
         const [m, ...I] = voll.map((x, i) => x - hohl[i]);
         if (!(m > 0)) return null;
         // DIE PUNKTE DER GESTALT (im Rahmen des Schwerpunkts): die Kiste ihre 8 Ecken und 12 Kanten-Mitten, das Fass je Rand
-        // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper
+        // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper; dazu je Rand sein FUSS (die letzten zwei: der
+        // tiefste Punkt des Kreises gegen den Grund, `_freiRandFuss` je Schritt) — der Rand rollt als Kreis, nie als Vieleck
         const pk = kiste ? this._freiKistenPunkte(hx, hy, hz) : [];
-        if (!kiste)
+        if (!kiste) {
             for (let i = 0; i < F.rundPunkte; i++) {
                 const a = (2 * Math.PI * i) / F.rundPunkte;
                 pk.push(r * Math.cos(a), hy, r * Math.sin(a), r * Math.cos(a), -hy, r * Math.sin(a));
             }
+            pk.push(r, hy, 0, r, -hy, 0);
+        }
         const um = { x: 0, y: tp0.y || 0, z: 0 };
         const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
         // die Gier des Eintrags wandert in die Drehung des Körpers (die Pose dreht um den Schwerpunkt im Rahmen des Plans)
@@ -251,6 +254,7 @@ class AnazhRealm_koerper_frei {
         const n0 = -gr.b / gr.l;
         const n1 = 1 / gr.l;
         const n2 = -gr.c / gr.l;
+        if (!K.kiste) this._freiRandFuss(K, n0, n1, n2, dt);
         for (let i = 0, j = 0; i < pw.length; i += 3, j += 4) {
             const g = gr.a + gr.b * (pw[i] - gr.x) + gr.c * (pw[i + 2] - gr.z);
             if ((pw[i + 1] - g) * n1 > weg) {
@@ -284,6 +288,42 @@ class AnazhRealm_koerper_frei {
                     for (const b of e.blockerAABBs || [])
                         if (b.topY > B.y - r && b.botY < B.y + r) K.bauten.push(this._freiStatisch(b, e));
             nah.length = 0;
+        }
+    }
+
+    // DER FUSS JE RAND (same.physik.koerper#1): der tiefste Punkt jedes Rand-Kreises gegen die Normale n des Grunds — im Rahmen
+    // des Körpers die Mitte des Rands (0, ±hy, 0) minus r längs der Projektion von n in die Ebene des Rands. Vorher trug das
+    // Fass nur seine FREI.rundPunkte Ecken: auf der Seite lag es auf einem Sechzehneck, die Mitte hob und senkte sich um
+    // r(1 − cos(π/16)) = 5,8 mm je Kante — es schaukelte in der Mulde seiner Fläche, nach der Landung 3,1 s statt zu rollen
+    // und zu ruhen. Steht die Achse näher an n als an der Fläche (|n in der Rand-Ebene| ≤ FREI.fussLiegt, das Fass auf seinem
+    // Boden), tragen die Ecken des Rands und der Fuss bleibt, wo er war: dort dreht ein Grad Neigung ihn um den halben Rand,
+    // der Anker sprang je Schritt — das stehende Fass im Gras schaukelte ohne Ende (+2,2 W, die Mitte stieg 3,6 cm in 8 s).
+    // DER LAUF DES FUSSES (K.fussLauf, rad/s): wie schnell der tiefste Punkt des Rands über den Rand wandert — der Weg der
+    // Berührung über die Fläche, den der Rollwiderstand walkt (`_freiKoerperPacken`): das liegende Fass rollt (der Lauf ist
+    // seine Drehung um die Achse), das taumelnde rollt auf dem Rand, das kippende dreht um einen festen Punkt (Lauf 0).
+    _freiRandFuss(K, n0, n1, n2, dt) {
+        const R = K.R;
+        const lx = R[0] * n0 + R[3] * n1 + R[6] * n2;
+        const lz = R[2] * n0 + R[5] * n1 + R[8] * n2;
+        const q = Math.sqrt(lx * lx + lz * lz);
+        const fr = K.fussRichtung || (K.fussRichtung = [NaN, NaN]);
+        if (q > 1e-3) {
+            const [ux, uz] = [lx / q, lz / q];
+            K.fussLauf =
+                fr[0] === fr[0] && dt > 0
+                    ? Math.abs(Math.atan2(fr[0] * uz - fr[1] * ux, fr[0] * ux + fr[1] * uz)) / dt
+                    : 0;
+            [fr[0], fr[1]] = [ux, uz];
+        } else [K.fussLauf, fr[0], fr[1]] = [0, NaN, NaN];
+        if (!(q > AnazhRealm.FREI.fussLiegt)) return;
+        const pk = K.pk;
+        const pw = K.pw;
+        const p = K.p;
+        const [fx, fz] = [(-K.r * lx) / q, (-K.r * lz) / q];
+        for (let i = pk.length - 6; i < pk.length; i += 3) {
+            pk[i] = fx;
+            pk[i + 2] = fz;
+            for (let k = 0; k < 3; k++) pw[i + k] = p[k] + R[k * 3] * fx + R[k * 3 + 1] * pk[i + 1] + R[k * 3 + 2] * fz;
         }
     }
 
@@ -327,7 +367,20 @@ class AnazhRealm_koerper_frei {
             c,
             l: Math.sqrt(b * b + 1 + c * c),
             mu: st && st.mu > 0 ? st.mu : 0,
+            roll: this._rollWiderstand(z, st),
         });
+    }
+
+    // DER ROLLWIDERSTAND zweier Stoffe (same.physik.koerper#1), C_rr = F/N: der Verlustfaktor η des WEICHEREN Partners
+    // (kleineres E der Stoff-Tafel, schmiede-core STOFF_GESETZ) — er walkt in der Spur und gibt die Arbeit nicht zurück: das
+    // Holz-Fass im Gras 0,3, auf Erde 0,2, das Rad auf Stein und das Fass auf Eis 0,01. Vorher hielt jeden Körper auf jedem
+    // Grund dieselbe Verzögerung des Fahr-Gesetzes (vehicle:FAHR.rollDecel 1 m/s², geteilt durch die Hülle statt den Roll-
+    // Radius): das Fass rollte im Gras wie auf Stein. Leser: der freie Körper (`_freiKoerperPacken`) und das rollende Werk
+    // (`_werkRollSchritt`). Ohne Zeile eines Partners rollt er ohne Widerstand (und der Melder `_stoff` nennt ihn).
+    _rollWiderstand(a, b) {
+        if (!a || !b) return 0;
+        const w = a.E <= b.E ? a : b;
+        return w.eta > 0 ? w.eta : 0;
     }
 
     // EIN ABBAU ODER EDIT WECKT, WAS DORT RUHT: jeder schlafende freie Körper, dessen Hülle den Kasten [x0, x1] × [z0, z1] (± 0,1 m)
@@ -414,7 +467,7 @@ class AnazhRealm_koerper_frei {
     // die Durchdringung drückt sie mit höchstens FREI.schubMs heraus — kein getrennter Lage-Impuls mehr), die Lage (die Anker
     // drehen mit, die Trennung des Punkts folgt seinem Weg), ein Gang ohne Feder (die Entspannung: kein Schub fliegt weg), dann
     // die Stoß-Zahl des starren Paars (STOSS.stossZahl.starr) über FREI.prallMs; Reibung nach Coulomb (μ = √(μ₁ μ₂) der
-    // Stoff-Zeilen), der Rollwiderstand des Fahr-Gesetzes (vehicle:FAHR.rollDecel) am Boden. Ein Körper, der FREI.ruheS ruhig
+    // Stoff-Zeilen), der Rollwiderstand der Stoffe (`_rollWiderstand`) am Boden. Ein Körper, der FREI.ruheS ruhig
     // liegt und dessen Nachbarn ruhen, schläft — der Schlaf kostet nichts: ruht jeder Körper, rechnet der Löser nichts, bis ein
     // Stoß, ein Wort oder ein bewegter Nachbar ihn weckt. Vorher trug jeder der 4 Teil-Schritte seine eigene Kontakt-Suche und
     // 8 + 8 Gänge (Geschwindigkeit und Lage): 100 wache Kisten 24 ms je Schritt (Node, flacher Boden, der Haufen der Bank).
@@ -472,7 +525,8 @@ class AnazhRealm_koerper_frei {
                 K.p0[1] = K.p[1];
                 K.p0[2] = K.p[2];
             }
-        const X = this._freiKoerperPacken(W);
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
+        const X = this._freiKoerperPacken(W, Math.abs(g));
         // DIE KONTAKTE des Schritts: der Boden (je Punkt der Abstand zur Ebene des Gesetzes unter ihm), die Bauten, die Paare
         const o = this._freiInnenAus || (this._freiInnenAus = {});
         let n = 0;
@@ -531,7 +585,6 @@ class AnazhRealm_koerper_frei {
         const CS = AnazhRealm.FREI_KONTAKT;
         for (const K of W) X[K.slot + 26] = K.welt ? 1 : 0;
         for (let k = 0; k < n; k++) this._freiKontaktBereit(k * CS, X, weich, alt);
-        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
         const invH = 1 / h;
         const G = this._freiG;
         for (let t = 0; t < F.teile; t++) {
@@ -1014,16 +1067,19 @@ class AnazhRealm_koerper_frei {
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
     // am Beginn, Quaternion, Dreh-Matrix (0–24), der Rollwiderstand je Drehung und ob er die Welt berührt (25, 26), die inverse
-    // Masse und die Welt-Trägheit⁻¹ (27–36); sein Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
+    // Masse und die Welt-Trägheit⁻¹ (27–36), die Luft je Fläche und der Wind (38–42, `_freiLuftPacken`); sein
+    // Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
     // (`_freiKontakt`, `_freiKontaktBereit`): die Jacobi-Zeilen der Normalen und der zwei Tangenten (je 15), die wirksamen Massen
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
     // Körper (58, 59; −1: Welt), ihre inversen Massen (60, 61), die Anker (62–73: r_a im Rahmen und in der Welt, dasselbe für b),
     // der Schlüssel des Warmstarts (74) und die Tiefe (75).
-    _freiKoerperPacken(W) {
+    _freiKoerperPacken(W, schwere) {
         const KS = AnazhRealm.FREI_KOERPER;
         if (!this._freiX || this._freiX.length < W.length * KS) this._freiX = new Float64Array(W.length * KS * 2);
         const X = this._freiX;
-        const roll = AnazhRealm._fahrSchrittGesetz().vc.FAHR.rollDecel;
+        // der Rollwiderstand je Drehung (rad/s²): das Moment C_rr · m|g| · r um den Fuß durch die Trägheit um ihn (I + m r²) —
+        // r der Roll-Radius (das Fass sein Rand, die Kiste ihre kleinste Halb-Kante), I die kleinste Haupt-Trägheit
+        const rho = AnazhRealm._fahrSchrittGesetz().vc.FAHR.luft.rho;
         for (let i = 0, x = 0; i < W.length; i++, x += KS) {
             const K = W[i];
             K.slot = x;
@@ -1033,12 +1089,47 @@ class AnazhRealm_koerper_frei {
             X.set(K.p, x + 9);
             X.set(K.q, x + 12);
             X.set(K.R, x + 16);
-            X[x + 25] = roll / K.rad;
+            const rr = K.kiste ? Math.min(K.hx, K.hy, K.hz) : K.r;
+            // die Walze walkt nur, soweit ihr Fuss läuft: der Anteil des Laufs an ihrer Drehung (≤ 1; kippt sie um einen festen
+            // Punkt ihres Rands, 0 — vorher hielt die volle Bremse jede Drehung: das Fass stand 0,9° vor dem Kipp-Punkt still)
+            const wm = Math.hypot(K.w[0], K.w[1], K.w[2]);
+            const lauf = K.kiste ? 1 : wm > 1e-9 ? Math.min(1, (K.fussLauf || 0) / wm) : 0;
+            const crr = K.grund ? K.grund.roll : 0;
+            X[x + 25] =
+                (lauf * crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
             X[x + 26] = 0;
             X[x + 27] = K.invM;
             X.set(K.Iw, x + 28);
+            this._freiLuftPacken(K, X, x, rho);
         }
         return X;
+    }
+
+    // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Fläche der Hülle
+    // mit dem größten c_w·A (die Kiste je Flächen-Paar, die Walze quer oder längs ihrer Achse): ein fallender Körper stellt
+    // sie der Strömung entgegen (die Platte, das Blatt fällt quer: der Druckpunkt liegt vor der Mitte, Hoerner 1965 Kap. 3),
+    // und der EINE Wind an seinem Ort (41, 42: m/s in Welt-x/z, `_windAt` zur Uhr des Sim-Schritts). Der Widerstand im
+    // Teil-Schritt (`_freiZiehen`) liest sie gegen das Tempo durch die Luft. Vorher kannte der Löser keine Luft: die Feder
+    // (1,9 g) flog wie der Stein, 2 260 % weiter als die Rechnung.
+    _freiLuftPacken(K, X, x, rho) {
+        const L = AnazhRealm.FREI.luft;
+        const [a, b, c] = [K.hx, K.hy, K.hz];
+        const cwA = K.kiste
+            ? Math.max(
+                  this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c,
+                  this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c,
+                  this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b
+              )
+            : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
+        X[x + 38] = (0.5 * rho * cwA) / K.m;
+        const w = this._windAt(K.p[0], K.p[2], this.state._simZeit, this._freiWindAus || (this._freiWindAus = {}));
+        X[x + 41] = w.x * w.ms;
+        X[x + 42] = w.z * w.ms;
+    }
+    // c_w einer Fläche aus ihrer Tiefe durch ihre Breite: die Platte (0) bis der Würfel (≥ 1), dazwischen gerade
+    _freiLuftZahl(tiefe, breite) {
+        const L = AnazhRealm.FREI.luft;
+        return L.cwPlatte + (L.cwWuerfel - L.cwPlatte) * Math.min(1, tiefe / breite);
     }
 
     // DER GANG über alle Kontakte im Puffer: je Kontakt die Normale (λ ≥ 0, akkumuliert) — die Trennung jetzt aus dem Weg
@@ -1168,12 +1259,24 @@ class AnazhRealm_koerper_frei {
     }
 
     // DIE LAGE im Puffer (jeder Teil-Schritt): x += v·h, die Drehung q += ½ ω ⊗ q · h (normiert, die Dreh-Matrix neu), der
-    // Rollwiderstand des Fahr-Gesetzes am Boden; `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
+    // Rollwiderstand der Stoffe am Boden (die Walze, soweit ihr Fuss läuft); `g` die Schwere davor (`vor`) — die Geschwindigkeit des Teil-Schritts.
     _freiZiehen(X, m, h, g, vor) {
         const KS = AnazhRealm.FREI_KOERPER;
         for (let x = 0; x < m * KS; x += KS) {
             if (vor) {
                 X[x + 1] += g * h;
+                // DER WIDERSTAND DER LUFT (`_freiLuftPacken`): Δv = −c · |u| u · h, u das Tempo durch die Luft (gegen den Wind),
+                // c = ½ ρ c_w A / m der Quer-Fläche — implizit, stabil bei jedem h
+                const ux = X[x] - X[x + 41];
+                const uy = X[x + 1];
+                const uz = X[x + 2] - X[x + 42];
+                const u = Math.sqrt(ux * ux + uy * uy + uz * uz);
+                if (u > 1e-9) {
+                    const f = 1 / (1 + X[x + 38] * u * h);
+                    X[x] = X[x + 41] + ux * f;
+                    X[x + 1] = uy * f;
+                    X[x + 2] = X[x + 42] + uz * f;
+                }
                 continue;
             }
             X[x + 6] += X[x] * h;
@@ -1348,7 +1451,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 AnazhRealm.FREI_KONTAKT = 76;
 // die Marke eines Baus ohne freien Körper (die Stand-Tafel, `architectures`): vier leere Plätze der Drehung
 AnazhRealm.FREI_OHNE_DREHUNG = Object.freeze([null, null, null, null]);
-AnazhRealm.FREI_KOERPER = 40;
+AnazhRealm.FREI_KOERPER = 44;
 AnazhRealm.FREI = Object.freeze({
     teile: 4,
     gaenge: 1,
@@ -1361,6 +1464,13 @@ AnazhRealm.FREI = Object.freeze({
     ruheMs: 0.05,
     ruheS: 0.3,
     rundPunkte: 16,
+    // der Fuss je Rand trägt, sobald die Achse weiter als 45° von der Normale des Grunds steht (das Fass liegt eher, als es steht)
+    fussLiegt: Math.SQRT1_2,
     huelleM: 0.5,
     umweltM: 0.3,
+    // DIE LUFT AM KÖRPER (same.physik.flug#1): der Widerstand je Fläche der Hülle c_w nach Hoerner (Fluid-Dynamic Drag 1965,
+    // 3-12/3-16): die dünne Platte quer 1,17, der Würfel 1,05 — dazwischen nach der Tiefe der Fläche durch ihre Breite
+    // (`_freiLuftZahl`); die kurze Walze quer angeströmt 0,8 (L/D 1–2). Dichte und Wind sind die der EINEN Luft
+    // (vehicle:FAHR.luft.rho, `_windAt`).
+    luft: Object.freeze({ cwPlatte: 1.17, cwWuerfel: 1.05, cwWalzeQuer: 0.8 }),
 });

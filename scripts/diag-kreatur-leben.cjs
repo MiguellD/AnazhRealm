@@ -110,6 +110,8 @@ async function lebenBuehnen() {
             wolf: ["wolf"], // satt
             fuchs: ["fuchs"],
         };
+        // DREI TEILE (Kreatur-Takt 22.11.): das Gedächtnis je Rolle, der Ort des Risses, die Glut — ein Täter fährt den seinen
+        const erinnert = await teil("erinnert", async () => {
         const erinnert = {};
         for (const [rolle, [seele, e, modus]] of Object.entries(rollen)) {
             const R = { abstand: [], naeher: [], erinnerungen: [], flucht: [] };
@@ -167,10 +169,13 @@ async function lebenBuehnen() {
                 erinnerungen: R.erinnerungen,
             };
         }
+        return erinnert;
+        });
         r.setGameMode("pfad");
         const Z = A.LIFE_FIELD.cell;
         const zelle = (x, z, mx, mz) =>
             Math.floor(x / Z) === Math.floor(mx / Z) && Math.floor(z / Z) === Math.floor(mz / Z);
+        const ort = await teil("ort", async () => {
         const ort = { riss: [], gegenlauf: [] };
         for (const gegen of [false, true])
             for (let o = 0; o < 3; o++) {
@@ -205,10 +210,13 @@ async function lebenBuehnen() {
                 ort[gegen ? "gegenlauf" : "riss"].push(rund(drin / 5400 / herde.length, 3));
                 leer(1);
             }
+        return ort;
+        });
         // (C) DIE GLUT IST BEDROHUNG (w28-brand-flucht): eine Herde von fünf, ihr Herd 15 m entfernt (`_brandEntfachen`, das Brennglas
         // der Seite; die Welt trocken) — der Anteil, der binnen 10 s Spielzeit flieht (`_motionZustand` "flucht"), gegen denselben
         // Lauf ohne Brand an denselben Orten. Der Brand geht seinen Takt (`_tickBrand`) je Bild auf der Spiel-Uhr; gezählt werden
         // die ersten drei Orte, an denen der Herd fängt (ein Ort ohne Bett ist kein Lauf).
+        const { brand, orte } = await teil("brand", async () => {
         const brand = { feuer: [], gegenlauf: [], herde: 0 };
         const altNaesse = s.naesse;
         const orte = [];
@@ -254,6 +262,8 @@ async function lebenBuehnen() {
                 leer(1);
             }
         s.naesse = altNaesse;
+        return { brand, orte };
+        });
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
@@ -1237,7 +1247,7 @@ async function lebenBuehnen() {
             st.anker = { x: f.x, z: f.z };
             restore.push(() => (st.anker = alt));
         }
-        const [je, fremd, rollen, bruch, fern] = [{}, new Map(), {}, [], []];
+        const [rollen, bruch] = [{}, []];
         // die lauten Brüche der Bewohner im Tag (kein Weg, kein Ort): je Text einmal
         decke(
             "_bruchMelden",
@@ -1265,6 +1275,10 @@ async function lebenBuehnen() {
         for (const t of tueren)
             if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
         const liste = () => S.liste.filter((b) => b.leib);
+        // DER TAG IST EIN TEIL (Kreatur-Takt 22.11.): fünf Stunden zu 300 Takten — die Täter des Plans (das Los, die Wand) lesen
+        // ihn nicht und nehmen den Tag des Grund-Laufs
+        const tag = await teil("tag", async () => {
+        const [je, fremd, fern] = [{}, new Map(), []];
         for (const h of [6, 10, 13, 18, 23]) {
             await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
             const rest0 = new Map(liste().map((b) => [b, b.weg ? b.wegRest : null]));
@@ -1299,6 +1313,9 @@ async function lebenBuehnen() {
             }
             je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
         }
+        return { je, fremd: [...fremd], fern: fern.map((f) => f.text) };
+        });
+        const [je, fremd, fern] = [tag.je, new Map(tag.fremd), tag.fern];
         // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss): wer zu einem Stand vor einer Tür geht, geht über das
         // Wege-Netz des Orts an seinen Anschluss (`_bewohnerAnschluss`: der erste der `anschlussN` nächsten Knoten, frei in
         // gerader Linie) — der Ursprung jedes Stands erreicht den Punkt vor seiner Tür über das Netz (der kürzeste Weg, hier
@@ -1443,7 +1460,7 @@ async function lebenBuehnen() {
             ringM: q3(ringM),
             fehlt,
             fernN: fern.length,
-            fern: fern.slice(0, 3).map((f) => f.text),
+            fern: fern.slice(0, 3),
             jenseits,
             jenseitsLeben,
             jenseitsSoll: JENSEITS,
@@ -1888,17 +1905,17 @@ async function lebenBuehnen() {
             };
         };
         const z = { regionen: keys.length, takte: TAKTE, saaten: [] };
-        for (let i = 1; i <= SAATEN; i++) {
-            const [an, aus] = [await lauf(i, false), await lauf(i, true)];
-            z.saaten.push({ delta: rund(an.lnM - aus.lnM, 4), an, aus });
-            await sleep(1);
-        }
-        const D = z.saaten.map((q) => q.delta);
-        Object.assign(z, {
-            delta: rund(D.reduce(addiere, 0) / D.length, 4),
-            negativ: D.filter((d) => d < 0).length,
-            wanduhrMaxS: Math.max(...z.saaten.flatMap((q) => [q.an.s, q.aus.s])),
-            riss: {
+        // das Ergebnis am Stand: nach dem Lauf mit Wölfen steht der Riss (der Gegenlauf reißt nicht) — dort hält ein Täter, dessen
+        // Wort schon steht (Kreatur-Takt 22.11.)
+        const ergebnis = () => {
+            const D = z.saaten.filter((q) => q.aus).map((q) => q.delta);
+            return {
+                ...z,
+                saaten: [...z.saaten],
+                delta: rund(D.reduce(addiere, 0) / D.length, 4),
+                negativ: D.filter((d) => d < 0).length,
+                wanduhrMaxS: Math.max(...z.saaten.flatMap((q) => [q.an.s, q.aus ? q.aus.s : 0])),
+                riss: {
                 n: riss.n,
                 aeltest: riss.aeltest,
                 aeltestSoll: rund(riss.pAeltest, 1),
@@ -1907,8 +1924,17 @@ async function lebenBuehnen() {
                 aeltestRel: rund(riss.aeltest / Math.max(1e-9, riss.pAeltest) - 1, 4),
                 kgRel: rund(riss.kg / Math.max(1e-9, riss.kgSoll) - 1, 4),
             },
-        });
-        return z;
+            };
+        };
+        for (let i = 1; i <= SAATEN; i++) {
+            const an = await lauf(i, false);
+            z.saaten.push({ an });
+            await stelle(ergebnis());
+            const aus = await lauf(i, true);
+            z.saaten[i - 1] = { delta: rund(an.lnM - aus.lnM, 4), an, aus };
+            await sleep(1);
+        }
+        return ergebnis();
     });
     // ── gau (Leben C2a): DER GAU IM FADEN — der Bestand unter dem Gesetz der Zeit und der Jagd lebt je Gau im Gau-Faden
     // (`_gauAuftrag` → voxel-worker `gauAuftrag` → leben-core `gauBis`). Die Bühne fragt den Gau (0, 0) der Heimat, mit der Saat
@@ -2404,8 +2430,8 @@ function lebenUrteil(name, z, soll) {
         const Rz = z.riss;
         soll(Rz.n >= 30, `der Riss wählte ${Rz.n}-mal unter ≥ 2 Beuten (Soll ≥ 30, vakuös)`);
         soll(
-            z.saaten.every((q) => q.an.woelfe > 0 && q.aus.woelfe === 0 && q.an.hirsch > 0 && q.aus.hirsch > 0),
-            `der Gegenlauf trägt keinen Unterschied: ${JSON.stringify(z.saaten.map((q) => [q.an.woelfe, q.aus.woelfe, q.an.hirsch, q.aus.hirsch]))} (Wölfe an > 0, aus 0; Hirsche > 0)`
+            z.saaten.every((q) => q.an.woelfe > 0 && q.aus?.woelfe === 0 && q.an.hirsch > 0 && q.aus.hirsch > 0),
+            `der Gegenlauf trägt keinen Unterschied: ${JSON.stringify(z.saaten.map((q) => [q.an.woelfe, q.aus?.woelfe, q.an.hirsch, q.aus?.hirsch]))} (Wölfe an > 0, aus 0; Hirsche > 0)`
         );
         soll(
             Math.abs(Rz.aeltestZ) <= 3 && Math.abs(Rz.kgZ) <= 3,
@@ -2414,7 +2440,7 @@ function lebenUrteil(name, z, soll) {
         soll(z.wanduhrMaxS <= 60, `ein Lauf von ${z.takte} Takten dauert ${z.wanduhrMaxS} s (Soll ≤ 60 s)`);
         // DIE GRÖSSE BLEIBT IM GESETZ: mit und ohne Räuber trägt höchstens jeder zwanzigste reife Hirsch ein M∞ jenseits der
         // Spanne des Gesetzes (+4σ, bs 1,31) — die Nische (`eignung`) und das Wurf-Gewicht halten die Art im Gau
-        const weg = z.saaten.flatMap((q, i) => [["an", q.an], ["aus", q.aus]].filter(([, l]) => !(l.ueberSpanne <= 0.05)).map(([k, l]) => `Saat ${i + 1} ${k}: ln M̄ ${l.lnM}, ${l.ueberSpanne} jenseits`)); // prettier-ignore
+        const weg = z.saaten.flatMap((q, i) => [["an", q.an], ["aus", q.aus]].filter(([, l]) => l && !(l.ueberSpanne <= 0.05)).map(([k, l]) => `Saat ${i + 1} ${k}: ln M̄ ${l.lnM}, ${l.ueberSpanne} jenseits`)); // prettier-ignore
         soll(
             !weg.length,
             `die Größe läuft davon (Rückkraft eignung · Wurf-Gewicht): ${weg.join(" · ")} (Soll ≤ 0,05 der reifen Hirsche jenseits der Spanne)`
@@ -2629,8 +2655,8 @@ module.exports = {
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Tür/],
-            ["zielplan-los", /steht nicht: fiel still/],
-            ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/],
+            ["zielplan-los", /steht nicht: fiel still/, []],
+            ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
@@ -2667,12 +2693,12 @@ module.exports = {
             ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],
         ],
         furcht: [
-            ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
-            ["furcht-ort", /meidet den Riss nicht/],
-            ["furcht-mensch", /das Wild flieht den Menschen nicht/],
-            ["furcht-speicher", /reist nicht über den Speicherstand/],
-            ["furcht-aura", /die Aura treibt die Furcht nicht/],
-            ["brand-flucht", /die Glut ist keine Bedrohung/],
+            ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/, ["erinnert"]],
+            ["furcht-ort", /meidet den Riss nicht/, ["ort"]],
+            ["furcht-mensch", /das Wild flieht den Menschen nicht/, ["erinnert"]],
+            ["furcht-speicher", /reist nicht über den Speicherstand/, ["erinnert"]],
+            ["furcht-aura", /die Aura treibt die Furcht nicht/, ["erinnert"]],
+            ["brand-flucht", /die Glut ist keine Bedrohung/, ["brand"]],
         ],
     },
     urteil: lebenUrteil,

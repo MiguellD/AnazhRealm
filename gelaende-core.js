@@ -2732,11 +2732,13 @@
     // `state.waterLevel`), die Hydro-Kachel 2048 m (Stamm `HYDROSPHERE.regionSize`), das Erbgut [wildnis], kein Erdbau.
     // `Noise` ist der SimplexNoise-Bau (vendor/simplex-noise.js), der Strom seed + ":voxel" wie im Wirt. Weicht der Wirt
     // ab, bricht der Plan-Hash Studio = Welt (gate:settlement Teil O) beim Namen. Leser: das Fachwerk-Studio (`buildDorf`),
-    // die Linse.
-    const LAGE_GRUND = Object.freeze({ seed: "anazh-realm-seed", baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
+    // die Linse. Die Saat nennt der Rufer (Welle saat-argument): die der Eingangs-Welt steht EINMAL im Samen-Kern
+    // (`__samenCore.EINGANG`), eine fehlende bricht hier beim Namen, statt still die Eingangs-Welt zu zeichnen.
+    const LAGE_GRUND = Object.freeze({ baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
     function lageGrund(seed, Noise) {
         if (typeof Noise !== "function") throw new Error("gelaende-core: lageGrund braucht den SimplexNoise-Bau");
-        const s = typeof seed === "string" && seed.length ? seed : LAGE_GRUND.seed;
+        if (typeof seed !== "string" || !seed.length) throw new Error("gelaende-core: lageGrund ohne Saat (" + seed + ")");
+        const s = seed;
         const terme = erbgutNormal(undefined);
         return {
             seed: s,

@@ -380,10 +380,8 @@ class AnazhRealm_speicher_laden {
         if (ort && ort.weltGleich) return;
         if (!ort) {
             // Welt-Wechsel ist eine WELT-IDENTITÄTS-GRENZE: lazy-cached Worldgen-Caches MÜSSEN zurück, sonst trägt
-            // die neue Welt alte Welt-Stempel (P2P-Drift). _growTreeNoise hängt an worldSeed (rebuild lazy),
+            // die neue Welt alte Welt-Stempel (P2P-Drift). Die Grammatik der Bäume fällt mit der Saat (`_saatJe`),
             // _growTreeRing trägt alte Bauplan-Keys; grown_*-Baupläne räumt _loadStateRestoreGrownBlueprints.
-            // Same-World-Reload ist sicher (gleicher Seed → Noise bit-identisch).
-            this._growTreeNoise = null;
             this._growTreeRing = [];
             // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
             // baut den 3×3-Ring der neuen Welt lazy nach.
@@ -1967,9 +1965,9 @@ class AnazhRealm_speicher_laden {
     _weltAusPlan(roh) {
         const G = globalThis.__gelaendeCore;
         const plan = G.planNormal(roh);
-        const meta = this._generateFreshWorldMeta("gelaende");
-        // der Varianten-Pool wächst je Art aus dieser Saat (`_variantSeedsFor`, K24) — die Meta trägt ihn leer
-        meta.seed = plan.saat;
+        // die Saat des Plans durch das Argument des EINEN Schreibers (Welle saat-argument); der Varianten-Pool wächst je Art aus
+        // dieser Saat (`_variantSeedsFor`, K24) — die Meta trägt ihn leer
+        const meta = this._generateFreshWorldMeta("gelaende", plan.saat);
         const snap = this._buildEmptyWorldSnapshot(meta, false);
         snap.worldMeta.gesetz = { gelaende: G.planErbgut(plan) }; // das Gelände ihres Gesetzes (`_weltGesetz`, sonst die Erde)
         snap.worldMeta.voxelTerrain = true;

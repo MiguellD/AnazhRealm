@@ -13,6 +13,8 @@
 //   Umgebung PLANET_KERN=<kern.js>: der Richter liest diesen Kern statt des Baums (vorher ↔ nachher unter gleicher Last)
 //   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte, Wasser)
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
+//   --anker [--selftest]                                      die Wand in der CI (gate:worker-dichte, Familie K6): die Zeile anker.jede-saat allein —
+//                                                             jede Saat des Spiels trägt eine Heimat; der Selbsttest pflanzt beide Täter der Treppe
 //   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
 //                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
@@ -902,7 +904,8 @@ const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c6
   'planet-h2-8': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-9': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-10': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
-  'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee' };   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
+  'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-12': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee' };   // h2-12 (die Treppe der Suche des Ankers: jede Saat des Spiels trägt eine Heimat; eine Saat mit Ort bei 512 Proben bitgleich) — das Relief steht   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1393,6 +1396,12 @@ function gegner2Selbsttest(zeile) {
 //                    Sommer-Mitte auf der Höhe des Orts (Pegel ≥ `SCHMELZE.deckt`) bei Sommer > 10 °C dort 0. ROT nennt Samen, Lage und
 //                    beide Temperaturen. Der Kern vor der Welle hält sie (0 von 1 751: seine vier Anker tragen eine Rest-Spanne ≤ 0) —
 //                    der Selbsttest pflanzt die Täter: die Spanne gedreht, und das Δ am Namen (Sommer − Sommer, die Regel bis h2-10)
+//  anker.jede-saat B5 (h2-12, die Treppe der Suche): Saaten in der Form des Spiels (`w-<12 hex>-<6 base36>`, speicher-welten.js). Die
+//                    sieben ohne Ort bei 512 Proben (gefunden unter 1 000, 22.11.: ihre Welt verlor die Reise, K10) tragen einen Anker
+//                    auf Land im Band des Orts, Küste ≤ 300 km; die drei MIT Ort bei 512 behalten ihn bitgleich (gedruckt am Kern
+//                    h2-11) — eine Treppe, die immer dicht sucht, verlegte die Heimat jeder bestehenden Welt.
+const ANKER_OHNE = ['w-01af28a3778c-joh5qy', 'w-4e5d1f6f6c95-0p5egg', 'w-acbdeb135043-eck84s', 'w-490e6c4ee7e2-tru1nr', 'w-631d83066edb-tnlitu', 'w-7200c43edddf-x7ej0i', 'w-7ce3cc43db86-85pjtx'];
+const ANKER_512 = { 'w-d10e897e3fad-azvhsr': [-0.8198373003353616, 2.82245394031362], 'w-e6ea6c6b804e-mr4t9z': [0.7873001940494889, 1.7348001157121467], 'w-4a2768b6253a-h4uio8': [-0.7858054509523461, 0.38204771205551397] };
 const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
 function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
   const aus = path.join(os.tmpdir(), 'planet-core-' + WELLE1_BASIS + '-' + process.pid + '.js');
@@ -1401,6 +1410,31 @@ function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-c
   return { Q, text };
 }
 function planQ(Q, samen) { return Q.planetPlan(samen, Object.assign({}, Q.PLANET_ERDE)); }
+function ankerJedeSaat(Q, og) { // die Zeile anker.jede-saat: EIN Leser für den Richter welle1 und für die Wand `--anker` (gate:worker-dichte)
+  const ohne = [], meer = [], fremd = [], nL = (l) => l.length + (l.length ? ' (' + l.join(', ') + ')' : '');
+  for (const s of ANKER_OHNE) { try { const pl = planQ(Q, s), An = Q.planetAnker(pl, 0, og), p = {}; Q.planetPunkt(Q.planetScheibe(pl, 0), An.breite, An.laenge, 16, p); if (!(p.hoeheM > 0) || !(An.kuesteKm <= 300)) meer.push(s); } catch (e) { ohne.push(s); } }
+  for (const s of Object.keys(ANKER_512)) { try { const An = Q.planetAnker(planQ(Q, s), 0, og); if (An.breite !== ANKER_512[s][0] || An.laenge !== ANKER_512[s][1]) fremd.push(s); } catch (e) { fremd.push(s); } }
+  return { ok: !ohne.length && !meer.length && !fremd.length, ohne, meer, fremd, wert: 'von ' + ANKER_OHNE.length + ' Saaten ohne Ort bei 512 Proben ohne Anker ' + nL(ohne) + ' · Anker im Meer oder Küste > 300 km ' + nL(meer) + ' · von ' + Object.keys(ANKER_512).length + ' Saaten mit Ort bei 512 verlegt ' + nL(fremd) };
+}
+// die Täter der Treppe, gepflanzt in den Kern des Baums (sein Text, EINE Zeile getauscht, ohne git): `[512]` ist der Kern vor der
+// Treppe (jede der sieben Saaten bricht), `[2048, 8192, 32768]` die Treppe, die immer dicht sucht (sie verlegt bestehende Heimaten)
+function ankerMutant(proben) {
+  const text = fs.readFileSync(KERN, 'utf8'), re = /const ANKER_PROBEN = \[[^\]]*\];/;
+  if (!re.test(text)) return null; // der Kern trägt keine Treppe: der Aufrufer nennt es
+  const aus = path.join(os.tmpdir(), 'planet-core-anker-' + process.pid + '-' + proben.length + '.js'), halt = globalThis.__planetCore;
+  fs.writeFileSync(aus, text.replace(re, 'const ANKER_PROBEN = [' + proben.join(', ') + '];')); delete globalThis.__planetCore;
+  try { return require(aus); } finally { if (halt === undefined) delete globalThis.__planetCore; else globalThis.__planetCore = halt; fs.unlinkSync(aus); }
+}
+function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
+  const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
+  if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)'); return U; }
+  const Q1 = ankerMutant([512]), Q2 = ankerMutant([2048, 8192, 32768]);
+  if (!Q1 || !Q2) { zeile('anker.jede-saat feuert', false, 'der Kern ' + P.VERSION + ' trägt keine Tafel ANKER_PROBEN — die Täter lassen sich nicht pflanzen'); return U; }
+  const J1 = ankerJedeSaat(Q1, og), J2 = ankerJedeSaat(Q2, og);
+  zeile('anker.jede-saat feuert', !J1.ok && J1.ohne.length === ANKER_OHNE.length, 'gepflanzt: die Suche endet bei 512 Proben (der Kern vor der Treppe) → ' + J1.wert);
+  zeile('anker.jede-saat nennt', !J2.ok && J2.fremd.length > 0 && !J2.ohne.length, 'gepflanzt: die Suche beginnt bei 2 048 Proben (immer dicht) → ' + J2.wert);
+  return U;
+}
 function naechsteZelle(W, x, y, z) { // die nächste Zelle des Wasser-Gitters über seinen Raum-Index (27 Würfel)
   const I = W.idx, K = I.K, ze = I.ze, F = W.F, a = Math.floor((x + 1) / ze) + 1, b = Math.floor((y + 1) / ze) + 1, c = Math.floor((z + 1) / ze) + 1; let best = -1, bd = -2;
   for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) { const k0 = a + K * ((b + dy) + K * (c + dz)); for (let e = I.kopf[k0 - 1], e1 = I.kopf[k0 + 2]; e < e1; e++) { const i = I.liste[e], cc = x * F[3 * i] + y * F[3 * i + 1] + z * F[3 * i + 2]; if (cc > bd) { bd = cc; best = i; } } }
@@ -1508,6 +1542,7 @@ function welle1(Q, text) {
   }
   const og = ortGesetz(), F = anker30(Q, og), nA = (k) => F[k].length + (F[k].length ? ' (' + F[k].join(', ') + ')' : '');
   zeile('anker.traegt', Object.values(F).every(l => l.length === 0), 'von ' + SAATEN.length + ' Ankern bei fuss 16 im Meer ' + nA('meer') + ' · Wald 0 ' + nA('wald') + ' · Decke 0 ' + nA('decke') + ' · Spende 0 ' + nA('spende') + ' · Köppen E ' + nA('e'), '0 je Fall (B5)');
+  { const J = ankerJedeSaat(Q, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)'); }
   const plan = planQ(Q, 'erde-01'), S0 = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), wl = Q.planetOrt(S0, A.breite, A.laenge, og), FAELLT = ['kontinentLambda', 'schichtDicke', 'hartAnteil'];
   const traegt = FAELLT.filter(k => k in wl.wildnis || k in wl.delta.wildnis);
   zeile('ort.faellt', traegt.length === 0, 'planetOrt trägt ' + (traegt.length ? traegt.join(', ') : 'keinen der drei Δ ≡ 0') + ' · wildnis ' + Object.keys(wl.wildnis).join(', '), 'keiner (Zensus e217/e222/e223)');
@@ -1602,8 +1637,9 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--kontaktbogen') kontaktbogen(argv[1], argv[2]);
   else if (argv[0] === '--orte') orteDrucken(argv[1]);
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());
+  else if (argv[0] === '--anker') { const selbst = argv.includes('--selftest') || argv.includes('--selbsttest'), a = ns(), U = ankerWand(selbst); drucken('Anker' + (selbst ? ' Selbsttest' : '') + ' · Kern ' + P.VERSION + ' · ' + ((ns() - a) / 1e9).toFixed(1) + ' s', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else if (argv[0] === '--selftest' || argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else if (argv.length === 0) { const a = ns(), U = welle1(P, fs.readFileSync(KERN, 'utf8')); drucken('Richter welle1 · Kern ' + P.VERSION + ' · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
-  else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --selftest (= --selbsttest)'); process.exit(2); }
+  else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --anker [--selftest] | --selftest (= --selbsttest)'); process.exit(2); }
 }
 module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };

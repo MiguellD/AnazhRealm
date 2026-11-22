@@ -103,6 +103,17 @@ class AnazhRealm_bild_himmel {
         return __weltLicht.wolkenMenge(HG, this._himmelUniformen(), dir);
     }
 
+    // DER KÖRPER AM HIMMEL STEHT HINTER DER WOLKE (stern-station): Stern, Planet, Mond und Sonne liegen im Unendlichen, die Wolke
+    // davor — ihr Licht trägt den Durchlass der EINEN Wolke in ihrer Richtung (`_wolkenMenge`, dieselbe Menge, mit der die Kuppel
+    // die Wolke über Himmel und Band mischt: × (1 − Menge)). Bis hier addierten Feld und Mond ihr Licht auf die Wolke, die Sonne
+    // stand deckend über ihr. Ein Faktor der Deckkraft: der additive Stoff trägt ihn als Licht, der deckende als Mischung.
+    _hinterDerWolke(mat) {
+        const T = THREE.TSL;
+        const dir = T.positionWorld.sub(T.cameraPosition).normalize();
+        mat.opacityNode = (mat.opacityNode || T.materialOpacity).mul(T.float(1).sub(this._wolkenMenge(dir)));
+        return mat;
+    }
+
     // DIE KARTE DES WURFS (licht.K4, die Cloud-Shadow-Map von Horizon/MSFS): je Texel die Menge der Wolke an EINEM Punkt der
     // Schicht in Welt-Koordinaten (`_wolkenFeld`, Zelle `zelleM`, `karte`² um den Punkt, an dem das Licht über dem Spieler die
     // Schicht quert) als Deckung der Sonne: die Menge, die die Kuppel als Deckkraft der Wolke zeichnet, gewogen mit dem Wetter
@@ -398,6 +409,14 @@ class AnazhRealm_bild_himmel {
         planeGeo.setAttribute("aKante", aKante);
         const SB = AnazhRealm.HIMMEL.sternBild;
         const GRAD = 180 / Math.PI;
+        // die Fehlerfunktion im Knoten (Abramowitz–Stegun 7.1.26, die Tafel `AnazhRealm.ERF_AS`)
+        const [ep, e1, e2, e3, e4, e5] = AnazhRealm.ERF_AS;
+        const erf = TSL.Fn(([x]) => {
+            const ax = TSL.abs(x);
+            const t = float(1).div(ax.mul(ep).add(1));
+            const poly = t.mul(e5).add(e4).mul(t).add(e3).mul(t).add(e2).mul(t).add(e1).mul(t);
+            return TSL.sign(x).mul(float(1).sub(poly.mul(TSL.exp(ax.mul(ax).negate()))));
+        });
         // die Scheibe in Welt-Einheiten auf der Kugel: der Halbmesser des Punkts, mindestens `minPx` Pixel
         const halb = TSL.max(attribute("aKante", "float").mul(RADIUS / GRAD), uPixel.mul(SB.minPx));
 
@@ -405,7 +424,7 @@ class AnazhRealm_bild_himmel {
         // die Vorlage des Quads wächst VOR der Instanz-Matrix (Lehre 22): die Instanz trägt Ort und Blick, der Stoff die Kante
         starMat.positionNode = TSL.positionLocal.mul(halb.mul(2));
         // DAS BILD EINES PUNKTS IST DIE STREU-FUNKTION DES AUGES (stern-bild; Spencer, Shirley, Zimmerman, Greenberg 1995,
-        // „Physically-Based Glare Effects for Digital Images“): ein Kern (e^(−(θ/0,02°)²), unter dem Pixel als Gauß des Pixels) und
+        // „Physically-Based Glare Effects for Digital Images“): ein Kern (e^(−(θ/0,02°)²), über die Fläche des Pixels integriert) und
         // zwei Säume des Streulichts im Auge, (θ + a)^(−3) und (θ + a)^(−2) — ihre Anteile am Licht bis 10° (`HIMMEL.sternBild`
         // kern · nah · fern) wie im Gesetz des Papiers, jeder Saum auf der Scheibe des Punkts auf 1 normiert (geschlossen), a um
         // das halbe Pixel weicher. Die Scheibe trägt GENAU das Licht der Größenklasse (Fläche × Leuchtdichte = Lichtstrom): der
@@ -416,15 +435,28 @@ class AnazhRealm_bild_himmel {
         const uv = attribute("uv", "vec2");
         const dw = length(uv.sub(vec2(float(0.5), float(0.5)))).mul(halb.mul(2)); // Abstand zur Mitte auf der Kugel
         const gp = uPixel.mul(GRAD / RADIUS); // Grad je Pixel
-        const rPx = dw.div(uPixel);
         const th = dw.mul(GRAD / RADIUS);
         const thR = halb.mul(GRAD / RADIUS);
         const a = gp.mul(0.5).add(SB.a);
-        // der Kern: σ² = (0,02°/√2)² + das Pixel (1/12), in Pixeln
-        const s2 = float((SB.a * SB.a) / 2)
-            .div(gp.mul(gp))
-            .add(1 / 12);
-        const kern = TSL.exp(rPx.mul(rPx).div(s2.mul(-2))).div(s2.mul(2 * Math.PI));
+        // DER KERN ÜBER DIE FLÄCHE DES PIXELS (stern-uhr): der optische Kern allein (σ_o = (0,02°/√2) ÷ Grad je Pixel, unten
+        // `sigmaMin`), exakt über das Pixel integriert — je Achse ½·[erf((d + ½)/(√2 σ_o)) − erf((d − ½)/(√2 σ_o))], d der Abstand
+        // Pixelmitte ↔ Punkt in Pixeln (die uv des Quads über ihre Ableitungen in den Schirm gerechnet). Die Summe über die Pixel
+        // ist 1 in JEDER Lage (Energie). Bis stern-uhr ein Gauß mit σ² = σ_o² + 1/12, an der Mitte abgetastet: die Spitze hing an
+        // der Lage unter dem Raster (Ecke 5 % der Mitte) — der Planet m −5,36 sprang an Nachbar-Uhren zwischen 4,4 und 25,7 Luma
+        // über dem Himmel (Station sternhimmel#1, wiese:third, Radeon) und fiel an einer Uhr aus dem Bild.
+        const sigma = TSL.max(float(SB.a / Math.SQRT2).div(gp), SB.sigmaMin);
+        const du = TSL.dFdx(uv);
+        const dv = TSL.dFdy(uv);
+        const ou = uv.sub(vec2(float(0.5), float(0.5)));
+        const det = du.x.mul(dv.y).sub(dv.x.mul(du.y));
+        const sx = dv.y.mul(ou.x).sub(dv.x.mul(ou.y)).div(det);
+        const sy = du.x.mul(ou.y).sub(du.y.mul(ou.x)).div(det);
+        const k2 = float(1).div(sigma.mul(Math.SQRT2));
+        const achse = (d) =>
+            erf(d.add(0.5).mul(k2))
+                .sub(erf(d.sub(0.5).mul(k2)))
+                .mul(0.5);
+        const kern = achse(sx).mul(achse(sy)); // der Anteil des Kerns in DIESEM Pixel
         // ∫ 2πθ (θ + a)^(−3) dθ und ∫ 2πθ (θ + a)^(−2) dθ von 0 bis θR
         const aR = thR.add(a);
         const I3 = float(1)
@@ -451,14 +483,15 @@ class AnazhRealm_bild_himmel {
         // 18-mal so breit: als Leuchtdichte über den Raumwinkel des Pixels verteilt (bis hier: lx × PSF ÷ Pixel²/R²) stand ein
         // Stern der Klasse 4 an genesis bei 1080 Zeilen unter dem Fuß der Tonkurve, bei 360 Zeilen jeder schwächer als 3 —
         // die Station sah in klarer Nacht 1–4 Sterne statt 62–78. Darum steht der Punkt im Bild genau dann, wenn das angepasste
-        // Auge ihn sähe: sein Licht E an der Grenzgröße G der Tag-Achse (E_G = sternLx0 · 10^(−0,4·G)) steht am Kern-Pixel auf
+        // Auge ihn sähe: das Licht seines Kerns E × SB.kern an der Grenzgröße G der Tag-Achse (E_G = sternLx0 · 10^(−0,4·G)),
+        // summiert über die Pixel (stern-uhr: das Gesamtlicht, in jeder Lage unter dem Raster gleich), steht auf
         // der Schwelle des SCHIRMS (`sternBild.schwelle`, im belichteten Raum: L × k), darüber wächst sein Bild mit E ÷ E_G — die
         // Streu-Scheibe trägt die Spanne (der helle Punkt breiter und glühend). Unabhängig von Auflösung und Belichtung (k
         // kürzt sich mit der Vor-Belichtung); unter G blendet der Punkt in einer halben Klasse aus (die Schwelle des Auges:
-        // ein Punkt ½ Klasse unter der Grenzgröße ist nie gesehen). `uAuge` = Schwelle ÷ (E_G × Spitze des Kerns) im belichteten
-        // Raum; hier ÷ k (die Belichtung DIESES Bilds, derselbe Knoten wie die Vor-Belichtung): die Spitze steht bei E × uAuge ×
-        // Spitze, für jede Belichtung im selben Bild.
-        const kernSpitze = float(SB.kern).div(s2.mul(2 * Math.PI)); // = `kern` oben an der Mitte (rPx 0)
+        // ein Punkt ½ Klasse unter der Grenzgröße ist nie gesehen). `uAuge` = Schwelle ÷ (E_G × SB.kern) im belichteten
+        // Raum; hier ÷ k (die Belichtung DIESES Bilds, derselbe Knoten wie die Vor-Belichtung): das Licht des Kerns steht bei
+        // E × uAuge × SB.kern, für jede Belichtung im selben Bild. Kein Ausgleich der Lage: das Spitzen-Pixel ist nicht das Licht
+        // des Sterns (stern-uhr, Radeon: die Eichung auf die Ecke hob jede Spitze 3–4×, Dämmerung 2 → 5 Punkte).
         // E ÷ E_G des Punkts, nur der Faktor des Ausblendens (die Farbe selbst multipliziert r184 EINMAL hinein): E liest der
         // Halbmesser seiner Scheibe (`_sternKante`: (aKante ÷ θ0)² = 10^(0,4·(feldGrenze − m)), E = sternLx0 ÷ EINHEIT_LX ·
         // 10^(−0,4·feldGrenze) · (aKante ÷ θ0)²) — ein Instanz-Attribut, das Zeichner und Arena tragen. Die Instanz-Farbe liegt dort
@@ -466,10 +499,32 @@ class AnazhRealm_bild_himmel {
         const kq = attribute("aKante", "float").div(SB.theta0);
         const eFeld =
             (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * __weltLicht.KOSMOS.feldGrenze)) / __weltLicht.EINHEIT_LX;
-        const ueber = kq.mul(kq).mul(eFeld).mul(uAuge).mul(kernSpitze).div(SB.schwelle);
+        const ueber = kq.mul(kq).mul(eFeld).mul(uAuge).mul(SB.kern).div(SB.schwelle);
         const gesehen = TSL.smoothstep(float(10 ** -0.2), float(1), ueber);
+        // DIE SCHWELLE VOR DEM HIMMEL (stern-station): `schwelle` trägt über schwarzem Himmel 20 von 255 auf den Schirm; vor dem
+        // Himmel des Tags trägt derselbe belichtete Schritt durch die Tonkurve und die Ausgabe (sRGB) weniger (vor Luma 180 etwa 8)
+        // — der Punkt heller als G stand unter der Schwelle des Schirms: der Planet m −5,36 am Taghimmel (G −5) fehlte an 14 von
+        // 19 freien Uhren (Station sternhimmel#1, Radeon, vier Kurven). `vorHimmel` hebt den Schritt, bis er vor DEM Himmel in
+        // seiner Richtung (die EINE Atmosphäre, `himmelFarbe`, belichtet) auf dem Schirm so weit trägt wie über schwarz: zwei
+        // Sekanten-Schritte an der EINEN Tonkurve (`tonKurve`) und der Ausgabe; über schwarzem Himmel genau 1.
+        const ton = __weltLicht.tonKurve(THREE);
+        const schirm = (x) => TSL.sRGBTransferOETF(ton(TSL.vec3(x), float(1))).x;
+        const blick = TSL.positionWorld.sub(TSL.cameraPosition).normalize();
+        const grund = TSL.dot(this._atmoLutBau().himmelFarbe(blick), TSL.vec3(0.2126, 0.7152, 0.0722))
+            .mul(TSL.toneMappingExposure)
+            .toVar();
+        const stufe = float(SB.schwelle);
+        const ueberSchwarz = schirm(stufe).toVar();
+        const amGrund = schirm(grund).toVar();
+        const f1 = ueberSchwarz
+            .div(TSL.max(schirm(grund.add(stufe)).sub(amGrund), 1e-6))
+            .clamp(1, 64)
+            .toVar();
+        const vorHimmel = f1
+            .mul(ueberSchwarz.div(TSL.max(schirm(grund.add(stufe.mul(f1))).sub(amGrund), 1e-6)))
+            .clamp(1, 64);
         starMat.colorNode = vec4(
-            TSL.vec3(psf.mul(uAuge).div(TSL.toneMappingExposure).mul(gesehen)),
+            TSL.vec3(psf.mul(uAuge).mul(vorHimmel).div(TSL.toneMappingExposure).mul(gesehen)),
             TSL.step(dw, halb).mul(uOpacity)
         );
 
@@ -490,7 +545,7 @@ class AnazhRealm_bild_himmel {
         // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
         // ist dasselbe Bild.
         starMat.forceSinglePass = true;
-        AnazhRealm._himmelImUnendlichen(starMat);
+        AnazhRealm._himmelImUnendlichen(this._hinterDerWolke(starMat));
 
         // Der hellste Punkt des Himmels am Tag des Felds (`kosmosZeit(…).hellste`): liegt die Grenzgröße mehr als ½ Klasse darüber,
         // ist kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
@@ -685,10 +740,7 @@ class AnazhRealm_bild_himmel {
                 }
             }
             const lift = coverage > 0.18 ? coverage * 7 + 11 : 0;
-            let bump = 0;
-            if (this._growTreeNoise) {
-                bump = this._growTreeNoise.noise2D(wx * 0.05, wz * 0.05) * 0.8;
-            }
+            const bump = this._baumGrammatik().noise2D(wx * 0.05, wz * 0.05) * 0.8;
             positions.setY(i, terrainY + lift + bump);
             // Vertex-Position auf Welt-Koord setzen (so kann der Mesh am
             // Welt-Ursprung sitzen, ohne dass eine pro-Chunk-Position-Set
@@ -1905,7 +1957,7 @@ class AnazhRealm_bild_himmel {
             // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
             // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
             const P = globalThis.__phytoCore;
-            const g = P.windGrund((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const g = P.windGrund(AnazhRealm._saatJe(this));
             const HG =
                 AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
                 AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
@@ -2981,7 +3033,7 @@ class AnazhRealm_bild_himmel {
         const wm = this.state.worldMeta || {};
         // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
         const zeile = globalThis.__phytoCore.wetterAt(
-            wm.seed || "anazh-realm-seed",
+            AnazhRealm._saatVon(wm),
             x,
             z,
             t,
@@ -3470,9 +3522,10 @@ AnazhRealm.HIMMEL = Object.freeze({
     // Feldgrenze am Rand seines Kerns (`theta0` 0,03° = 1,5 a): 0,03° an der Feldgrenze, 0,6° bei m 0, 4,5° für Venus;
     // mindestens `minPx` Pixel (der Kern, σ ≈ 0,3 Pixel) — der schwache Punkt deckt so viele Pixel wie bis stern-bild jeder
     // (2 × 2), nur der helle trägt seinen Saum (mit 0,1° deckte das Feld 5- bis 10-mal die Fläche für Säume unter der Grenze)
-    // `schwelle` (stern-sicht): DIE SCHWELLE DES SCHIRMS — der belichtete Wert (L × k) am Kern-Pixel eines Punkts an der Grenzgröße
+    // `schwelle` (stern-sicht): DIE SCHWELLE DES SCHIRMS — der belichtete Wert (L × k) des Kerns eines Punkts an der Grenzgröße, summiert über die Pixel (stern-uhr; bis dahin die Spitze am Kern-Pixel),
     // des Auges: 0,0334 legt die Tonkurve (Fuß 6,25·x²) auf 0,0070 linear = 20 von 255 über schwarzem Himmel, der feinste Punkt,
-    // der auf dem Schirm als Punkt steht; eine Klasse heller 2,5-mal, zwei Klassen bis zur Schulter
+    // der auf dem Schirm als Punkt steht; eine Klasse heller 2,5-mal, zwei Klassen bis zur Schulter. Vor hellem Himmel hebt der
+    // Knoten den Schritt, bis er auf dem Schirm gleich weit trägt (`vorHimmel`, `_buildStarField`)
     sternBild: Object.freeze({
         a: 0.02,
         kern: 0.367,
@@ -3481,6 +3534,10 @@ AnazhRealm.HIMMEL = Object.freeze({
         theta0: 0.03,
         minPx: 1,
         schwelle: 0.0334,
+        // die Untergrenze von σ_o in Pixeln (stern-uhr, Nenner des Knotens): bei 0,01 Pixel steht
+        // erf(½ ÷ (√2 σ_o)) = erf(35) in float32 auf 1 — der ganze Kern in EINEM Pixel, die Grenze ändert keinen Wert, sie hält nur
+        // den Nenner endlich (σ_o → 0 bei groben Pixeln: 0,04 Pixel im Szenen-Ziel des Fensters der Station, 270 Zeilen bei 75°)
+        sigmaMin: 0.01,
     }),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
@@ -3496,16 +3553,18 @@ AnazhRealm.HIMMEL = Object.freeze({
 // Auges fällt mit θ⁻², so steht er am Rand jeder Scheibe gleich hell (der eines Sterns der Feldgrenze G in θ0). Die Fläche wächst
 // mit dem Licht.
 // DAS AUGE EINES PUNKTS (stern-sicht, `_buildStarField`): die Verstärkung Auge → Schirm im belichteten Raum — Schwelle ÷ (E_G ×
-// Spitze des Kerns): ein Punkt an der Grenzgröße G (E_G = sternLx0 · 10^(−0,4·G) ÷ EINHEIT_LX) steht am Kern-Pixel auf
-// `sternBild.schwelle`; die Spitze des Kerns SB.kern ÷ (2π σ²) mit σ² = (a/√2)² ÷ (Grad je Pixel)² + 1/12, dieselbe wie im Knoten.
-// `pixel` die Kante eines Pixels auf der Kugel des Halbmessers `radius`. Leser: `_dayNightApplyStarField`, die Linse 12 SICHT.
-AnazhRealm._sternAuge = (G, pixel, radius) => {
-    const S = AnazhRealm.HIMMEL.sternBild;
-    const gp = (pixel / radius) * (180 / Math.PI);
-    const s2 = (S.a * S.a) / 2 / (gp * gp) + 1 / 12;
+// SB.kern): das Licht des Kerns eines Punkts an der Grenzgröße G (E_G = sternLx0 · 10^(−0,4·G) ÷ EINHEIT_LX), summiert über
+// die Pixel, steht auf `sternBild.schwelle` — das Gesamtlicht (Anteil 1), seit stern-uhr in jeder Lage unter dem Raster gleich
+// und vom Pixel unabhängig (der Kern ist über die Fläche des Pixels integriert); bis stern-uhr las das Auge die Spitze des
+// Gauß an der Pixelmitte. Pixel und Halbmesser bleiben die Rufform der Leser. Leser: `_dayNightApplyStarField`, die Linse 12 SICHT.
+AnazhRealm._sternAuge = (G, _pixel, _radius) => {
     const eG = (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * G)) / __weltLicht.EINHEIT_LX;
-    return S.schwelle / (eG * (S.kern / (2 * Math.PI * s2)));
+    const S = AnazhRealm.HIMMEL.sternBild;
+    return S.schwelle / (eG * S.kern);
 };
+// DIE FEHLERFUNKTION (stern-uhr): Abramowitz–Stegun 7.1.26, Fehler ≤ 1,5·10⁻⁷ — [p, a1 … a5], die Tafel der Funktion `erf`
+// im Stern-Knoten (`_buildStarField`)
+AnazhRealm.ERF_AS = Object.freeze([0.3275911, 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429]);
 AnazhRealm._sternKante = (m) => {
     const S = AnazhRealm.HIMMEL.sternBild;
     return S.theta0 * Math.pow(10, 0.2 * (__weltLicht.KOSMOS.feldGrenze - m));

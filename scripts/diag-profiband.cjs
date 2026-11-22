@@ -523,6 +523,76 @@ function ferneWand(A) {
     return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
 }
 
+// P-Fächer — DER FÄCHER DER NAH-WIESE (stufe-ein-auge) an der echten Klasse: die Kacheln der Nähe stehen im Sicht-Kegel des EINEN
+// Auges (`_wieseFaecher` → `_nahWieseWunsch`), nie dahinter. Das Auge in 1,7 m über flachem Grund (die Höhe des Gesetzes 0), Blick
+// waagrecht nach −z, 75° × 16:9. IM STAND: hinter dem Auge (die ganze Kachel samt Weite ≥ 2 m hinter seiner Ebene) steht keine
+// Kachel, im Kegel (Mitte ≤ halbes Bildfeld − 5°, ≤ radius) jede. IN DER DREHUNG (12° in 20 ms, 600°/s): der Saum trägt den
+// Kreis — jede Kachel des Rings steht, bevor die Drehung sie ins Bild bringt. Bis stufe-ein-auge stand der Ring: 70 % hinter dem Auge.
+function faecherWand(A) {
+    const G = A.constructor("return globalThis")();
+    const NW = A.NAH_WIESE;
+    const cam = new G.THREE.PerspectiveCamera(75, 16 / 9, 0.1, 1000);
+    const auge = { x: 3, y: 1.7, z: 3 };
+    cam.position.copy(auge);
+    cam.lookAt(auge.x, auge.y, auge.z - 10);
+    const w = weltVon(A, { camera: cam, nahWiese: { kacheln: new Map(), reich: 0.8 }, lastPlayerVoxelChunk: null });
+    w._terrainMacroSurfaceY = () => 0;
+    const K = NW.kachel;
+    const ring = w._nahWieseWunsch(auge, { voll: true, sicht: null, bau: null, halt: null });
+    const F = w._wieseFaecher(auge);
+    const faecher = w._nahWieseWunsch(auge, F);
+    const da = new Set(faecher.map((k) => k.key));
+    const halbH = Math.atan(Math.tan((37.5 * Math.PI) / 180) * (16 / 9));
+    let [hinten, kegel, fehlt] = [0, 0, 0];
+    for (const k of ring) {
+        const z0 = k.tz * K - 1.2; // der Kasten samt Jitter und Weite der Büschel
+        const [mx, mz] = [(k.tx + 0.5) * K - auge.x, (k.tz + 0.5) * K - auge.z];
+        if (z0 - auge.z >= 2 && da.has(k.key)) hinten++; // der Blick geht nach −z: die Kachel liegt ganz hinter dem Auge
+        if (Math.hypot(mx, mz) <= NW.radius && Math.abs(Math.atan2(mx, -mz)) <= halbH - (5 * Math.PI) / 180) {
+            kegel++;
+            if (!da.has(k.key)) fehlt++;
+        }
+    }
+    // die Drehung: 12° in 20 ms
+    const nw = w.state.nahWiese;
+    cam.lookAt(auge.x + 10 * Math.sin(0.21), auge.y, auge.z - 10 * Math.cos(0.21));
+    nw.faecher.t -= 0.02;
+    const F2 = w._wieseFaecher(auge);
+    const dreh = w._nahWieseWunsch(auge, F2).length;
+    // DIE KOSTEN HÄNGEN AN DER ÄNDERUNG: der echte Takt `_tickNahWiese` je Bild (60 Hz am Stempel des Takts), die Rechnungen
+    // des Wunschs (`nahWiese.rechnungen`) je 100 Bilder — im Stand (das Auge steht, der Blick steht) und in einer Drehung von
+    // 30°/s (0,5° je Bild). Die Wache ist der Anker des Auges auf STAND_RAND_M (ein Zentimeter-Zittern weckt nichts).
+    const takt = (yaw0, gradJeBild, n) => {
+        const v = weltVon(A, { camera: cam, scene: {}, nahWiese: { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), reich: 0.8, offen: 0 }, lastPlayerVoxelChunk: null }); // prettier-ignore
+        v._terrainMacroSurfaceY = () => 0;
+        v._lodAuge = () => auge;
+        v._nahWieseBestand = () => {};
+        let anker = null;
+        v._standRuht = (name, runde, ort) => {
+            const p = ort.pos;
+            if (anker && (p.x - anker.x) ** 2 + (p.y - anker.y) ** 2 + (p.z - anker.z) ** 2 <= ort.rand ** 2)
+                return true;
+            anker = { x: p.x, y: p.y, z: p.z };
+            return false;
+        };
+        let start = 0;
+        for (let i = 0; i < n + 1; i++) {
+            const y = yaw0 + (gradJeBild * i * Math.PI) / 180;
+            cam.lookAt(auge.x + 10 * Math.sin(y), auge.y, auge.z - 10 * Math.cos(y));
+            cam.updateMatrixWorld();
+            v._taktZeit = (i * 1000) / 60;
+            v._tickNahWiese();
+            if (i === 0) start = v.state.nahWiese.rechnungen | 0; // das erste Bild baut den Fächer
+        }
+        return Math.round(((v.state.nahWiese.rechnungen - start) * 100) / n);
+    };
+    const imStand = takt(0, 0, 200);
+    const inDrehung = takt(0, 0.5, 200);
+    const zeile = `Ring ${ring.length} Kacheln · Fächer ${faecher.length} (${((100 * faecher.length) / ring.length).toFixed(1)} %) · hinter dem Auge ${hinten} · im Kegel ${kegel - fehlt} von ${kegel} · Drehung 600°/s ${dreh} von ${ring.length} · Neuberechnungen je 100 Bilder: Stand ${imStand}, Drehung 30°/s ${inDrehung}`; // prettier-ignore
+    const rot = hinten > 0 || fehlt > 0 || !kegel || dreh < ring.length || imStand > 0 || inDrehung > 10;
+    return { errs: rot ? [`P-Fächer: ${zeile} (Soll hinter dem Auge 0 · im Kegel alle · Drehung der Kreis · Neuberechnungen im Stand 0, in der Drehung ≤ 10 je 100 Bilder)`] : [], zeile, hinten, fehlt, dreh, ring: ring.length, imStand, inDrehung }; // prettier-ignore
+}
+
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
 const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({
     klasse,
@@ -1511,6 +1581,17 @@ function selbsttest() {
         });
         t(`Ferne der Wiese: das Gesetz hält, je Glied ein Mutant rot ${ferneWand(A).errs}${stillF.map((m) => " — still " + m[0])}`, !ferneWand(A).errs.length && !stillF.length); // prettier-ignore
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
+        // P-Fächer: der Fächer hält; der RING (jede Kachel im Fächer) macht „hinter dem Auge“ rot, der Saum ohne Dreh-Rate die Drehung
+        const fRing = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_imFaecher", "if (!E) return true;", "return true;"))
+        );
+        const fSaum = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_wieseFaecher", "F.rate * FA.vorlaufS", "0 * FA.vorlaufS"))
+        );
+        const fJedes = faecherWand(
+            klasseVon(stammLib.ersetze(st, "_wieseFaecher", "if (!F.neu) return F;", "F.neu = true;"))
+        );
+        t(`Fächer der Wiese: ${faecherWand(A).zeile}; der Ring rot (hinter dem Auge ${fRing.hinten}), der Saum ohne Dreh-Rate rot (Drehung ${fSaum.dreh} von ${fSaum.ring}), „jedes Bild“ rot (Neuberechnungen je 100 Bilder im Stand ${fJedes.imStand})`, !faecherWand(A).errs.length && fRing.hinten > 0 && fSaum.dreh < fSaum.ring && fJedes.errs.length > 0 && fJedes.imStand > 0); // prettier-ignore
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
         t("Rang der Zelle: das Wort über dem Rang reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortRang", "h = W.shr(h, 8);", "h = W.shr(h, 0);"))).errs.some((e) => /Rang-Brüche [1-9]/.test(e))); // prettier-ignore
     }
@@ -1737,6 +1818,10 @@ function main() {
     );
     // P-Ferne — die Ferne der Nah-Wiese: unverformt, die Lücke des Strahls und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
+    // P-Fächer — die Nähe der Wiese steht im Kegel des EINEN Auges, nie dahinter (stufe-ein-auge)
+    const fw = faecherWand(A);
+    errs.push(...fw.errs);
+    console.log(`P-Fächer ${fw.zeile}`);
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)

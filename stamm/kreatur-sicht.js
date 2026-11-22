@@ -128,9 +128,9 @@ class AnazhRealm_kreatur_sicht {
             const pxJeM = this._schirm().pxJeM;
             if (!auge || pxJeM == null) return;
             const z = this._schirm().hoehe;
-            if (!tB._fellG || tB._fellG.z !== z || tB._fellG.f !== tB.f) {
+            if (!tB._fellG || tB._fellG.z !== this._schirm().wahl || tB._fellG.f !== tB.f) {
                 const ab = (AnazhRealm._fellHoehe(tB) * AnazhRealm._brennweite(z)) / AnazhRealm.LOD_SCHIRM.px;
-                tB._fellG = { erste: 0, grenzen: [{ stufe: 1, ab, h: AnazhRealm.FELL_BILDSCHIRM.hyst }], z, f: tB.f };
+                tB._fellG = { erste: 0, grenzen: [{ stufe: 1, ab, h: AnazhRealm.FELL_BILDSCHIRM.hyst }], z: this._schirm().wahl, f: tB.f }; // prettier-ignore
             }
             const p = creature.position;
             const m = tB._fellWahl || (tB._fellWahl = AnazhRealm._wahlGedaechtnis());

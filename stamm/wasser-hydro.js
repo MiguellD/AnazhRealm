@@ -708,9 +708,12 @@ class AnazhRealm_wasser_hydro {
         if (!(E.traegtAb < Infinity) || (mitRef && !(y0 >= E.traegtAb))) return null;
         const spiegel = this._koerperWasser(x, z, -Infinity);
         if (!(spiegel >= E.traegtAb) || (mitRef && !(spiegel <= y0 && y0 - spiegel <= maxDist))) return null;
-        if (spiegel >= E.voll[3]) return spiegel;
+        // OHNE SÄULE KEIN EIS (same.physik.feuer#1): wo der Grund des Gesetzes über dem Spiegel liegt (das gezeichnete
+        // Ufer-Blatt reicht über den Rand des Wassers), friert keine Säule — der Körper steht auf dem Grund, nie 0,34 m über
+        // einem Spiegel, den er nie berührt.
         const g = Number.isFinite(grund) ? grund : this._voxelSurfaceY(x, z);
-        return g !== null && spiegel >= this._eisLinieBei(E.voll, spiegel - g) ? spiegel : null;
+        if (!(g < spiegel)) return null;
+        return spiegel >= E.voll[3] || spiegel >= this._eisLinieBei(E.voll, spiegel - g) ? spiegel : null;
     }
 
     // Die Linie (`_eisLinien`: je Knoten der Säule eine Höhe) an der Säule `tiefe` — logarithmisch zwischen den Knoten

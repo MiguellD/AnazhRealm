@@ -2551,7 +2551,14 @@ class AnazhRealm_bau_teile {
                 );
                 const boxen = rollen.map((p) => this._partWorldAABB(p));
                 const r = Math.max(...boxen.map((a) => (a.max.y - a.min.y) / 2));
-                if (achsen.size <= 1) g.roll = { achse: achsen.size ? [...achsen][0] : null, r, v: 0, stempel: null };
+                if (achsen.size <= 1)
+                    g.roll = {
+                        achse: achsen.size ? [...achsen][0] : null,
+                        r,
+                        v: 0,
+                        stempel: null,
+                        stoff: rollen[0].material,
+                    };
                 const n = boxen.length;
                 const mitte = (k) => boxen.reduce((s, a) => s + a.min[k] + a.max[k], 0) / (2 * n);
                 g.pose.um = { x: mitte("x"), y: mitte("y"), z: mitte("z") };
@@ -2737,8 +2744,8 @@ class AnazhRealm_bau_teile {
     }
 
     // Das Werk rollt: der Hang treibt es längs seiner Roll-Richtung (quer zur Achse; die Kugel die Falllinie hinab) mit
-    // g · sin θ · k (k: was rollt statt dreht — Walze 2/3, Kugel 5/7), der Rollwiderstand des Fahr-Gesetzes (vehicle:FAHR
-    // .rollDecel) hält es; es ruht, wo der Hang den Widerstand nicht überwindet, und bleibt am Wasser liegen. Der Boden ist der
+    // g · sin θ · k (k: was rollt statt dreht — Walze 2/3, Kugel 5/7), der Rollwiderstand seines Stoffs gegen den Grund
+    // (`_rollWiderstand`) hält es; es ruht, wo der Hang den Widerstand nicht überwindet, und bleibt am Wasser liegen. Der Boden ist der
     // unter dem Werk (`_werkBoden`), die Drehung um die Achse folgt dem Weg (φ = s / r).
     _werkRollSchritt(e, g, schwere, dt) {
         const R = g.roll;
@@ -2757,8 +2764,18 @@ class AnazhRealm_bau_teile {
         const d = { x: pd.x * c + pd.z * sn, z: -pd.x * sn + pd.z * c };
         const steig = gx * d.x + gz * d.z;
         const kos = 1 / Math.sqrt(1 + steig * steig);
-        const hang = -schwere * steig * kos * (R.achse ? 2 / 3 : 5 / 7);
-        const halt = AnazhRealm._fahrSchrittGesetz().vc.FAHR.rollDecel * kos;
+        const k = R.achse ? 2 / 3 : 5 / 7;
+        const hang = -schwere * steig * kos * k;
+        // der Rollwiderstand der Stoffe (`_rollWiderstand`: η des weicheren von Werk und Grund), C_rr · g · cos θ · k — der Grund
+        // neu gefragt, wo das Werk hinrollte (am Ort gemerkt: das ruhende Werk fragt nie)
+        if (R.crrX !== x || R.crrZ !== z) {
+            const grund = this._stoff(
+                this._kontaktStoffAt(x, z, boden(x, z)),
+                "der Boden unter dem rollenden Werk reibt nicht"
+            );
+            [R.crr, R.crrX, R.crrZ] = [this._rollWiderstand(this._stoff(R.stoff), grund), x, z];
+        }
+        const halt = R.crr * schwere * kos * k;
         if (R.v === 0 && Math.abs(hang) <= halt) return;
         R.v += hang * dt;
         R.v -= Math.sign(R.v) * Math.min(Math.abs(R.v), halt * dt);
