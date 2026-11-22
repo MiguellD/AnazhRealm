@@ -1814,11 +1814,14 @@
                 Object.freeze({ achse: "gender", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "mass", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "tone", knoten: fuenf(0, 1) }),
-                // (DAS KIND UND DER GREIS, ALTER_GESETZ: die Knoten tragen 21–49 J und den Kopf des Erwachsenen — ein Knoten an jedem
-                // Rand bewegt den Beipack der Menge, ofen-Golden mensch-L2/L3; bis zum Vertrags-Akt trägt die Menge die Höhe des
-                // Kinds über die Skala seines Satzes, den Kopf am Rand 1,115)
-                Object.freeze({ achse: "age", knoten: fuenf(0.05, 0.5) }),
-                Object.freeze({ achse: "kopf", knoten: KOPF_MASS.knoten }),
+                // (DAS KIND UND DER GREIS, ALTER_GESETZ: je ein Knoten an jedem Rand — age 0 (18 J) und 1 (80 J) für den Greis,
+                // kopf unten gespiegelt und oben der Kopf des Zweijährigen aus wuchs[0] (Kopf ÷ Höhe am Erwachsenen-Rand); die
+                // Mitte bleibt der mittlere Knoten, der Erwachsene liest dieselben Gewichte. Vertrags-Akt: mensch-L2/L3|beipack)
+                Object.freeze({ achse: "age", knoten: Object.freeze([0].concat(fuenf(0.05, 0.5), [1])) }),
+                Object.freeze({
+                    achse: "kopf",
+                    knoten: Object.freeze([2 * KOPF_MASS.knoten[0] - KOPF_MASS.knoten[2]].concat(KOPF_MASS.knoten, [(KOPF_MASS.knoten[4] * ALTER_GESETZ.wuchs[0].kopf) / ALTER_GESETZ.wuchs[0].hoehe]))
+                }),
                 Object.freeze({ achse: "hairVol", knoten: Object.freeze([0.8, 1.05, 1.3]) }),
                 Object.freeze({ achse: "haaransatz", knoten: Object.freeze([0, 0.5, 1]) }),
                 Object.freeze({ achse: "__kappe0", knoten: kappe(0) }),

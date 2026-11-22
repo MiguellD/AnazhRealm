@@ -188,8 +188,8 @@ const zeile = (u) =>
 // Epoche 1238 (die Stadt der Station, stadt-voll), 8 Gestalten geschichtet über die Pyramide, 420 Häuser mit 1–7 Leuten; je
 // Bewohner die Gestalt seines kleinsten Abstands. Soll: der Anteil unter 15 J an den Jahren der GESTALT (wie die Station sie liest:
 // 18 + 62 · ov.age) ≥ 0,35; kein Kind in der Gestalt eines Erwachsenen; die Höhe des Kinds am Dial (height) gegen sein Alter im
-// Band der Wachstumskurve (±6 %), der Kopf (height · kopf) im Band ±5 %; die Kind-Gestalten am Rand des Kopf-Knotens der Menge
-// werden gezählt (OFFEN: LEIB_RAUM kopf trägt den Kopf des Erwachsenen, der Vertrags-Akt ofen mensch-L2/L3); das Kind im Haus der Schmiede spielt um 10 Uhr (Akt „spiel", Werk daheim), nie „arbeit".
+// Band der Wachstumskurve (±6 %), der Kopf (height · kopf) im Band ±5 %; keine Kind-Gestalt am Rand des Kopf-Knotens der Menge
+// (LEIB_RAUM kopf trägt den Kopf des Zweijährigen, Vertrags-Akt ofen mensch-L2/L3); das Kind im Haus der Schmiede spielt um 10 Uhr (Akt „spiel", Werk daheim), nie „arbeit".
 // Täter (Selbsttest): das Alter wie vor generationen-band (0,05–0,5 auf dem Regler) → ROT am Anteil; die Wahl ohne die Lebensphase
 // (der Abstand im Regler allein) → ROT an der Gestalt; der Wuchs ohne Höhe → ROT an der Körperhöhe.
 const stammLib = require("./lib/stamm.cjs");
@@ -291,6 +291,7 @@ function alterRot(u) {
         rot.push(`${u.kindInErwachsen} Kinder in der Gestalt eines Erwachsenen — Täter: stamm/siedlung-bewohner.js _bewohnerAbstand ohne koerper alterAbstand (die Lebensphase)`); // prettier-ignore
     if (u.wuchsRot.length)
         rot.push(`Wuchs außer Band ${JSON.stringify(u.wuchsRot)} — Täter: koerper wuchs / alterLeib → _dialsAusGenom`);
+    if (u.rand) rot.push(`${u.rand} Kind-Gestalten am Rand des Kopf-Knotens der Menge — Täter: koerper LEIB_RAUM kopf`);
     if (!u.kindWerk) rot.push(`das Kind der Schmiede um 10 Uhr: ${u.spielAkt} — Täter: koerper tagesBindung / tagesPlan rollen.kind`);
     return rot;
 }
