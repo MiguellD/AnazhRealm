@@ -359,12 +359,16 @@ function bestandUrteil(C0, mutante = null) {
     return { rot, sinkt, ohneHerstellung, geladen, abgeladen, leer24, her: acker.her, ver: stand.ver };
 }
 
-// DAS KÖNNEN AUS DEM LEIB (mensch-zahlen, koerper `leibKoennen`; Meisterkarte 2 mensch.sport.koennen S1): K1 am Kanon
-// (START_PARAMS) exakt 1; K2 je Achse des Leibs die Richtung — mehr Muskel-Ton läuft schneller, mehr Alter und mehr Masse
-// langsamer, über ein Gitter der übrigen Dials; K3 die Höhe kürzt sich: gleich gebaut und verschieden hoch trägt die
+// DAS KÖNNEN AUS DEM LEIB (mensch-zahlen, koerper `leibKoennen`; Meisterkarte 2 mensch.sport.koennen S1): K1 am Bezugs-Leib
+// (START_PARAMS + KOENNEN_BEZUG) exakt 1; K2 je Achse des Leibs die Richtung — mehr Muskel-Ton läuft schneller, mehr Alter und
+// mehr Masse langsamer, über ein Gitter der übrigen Dials; K3 die Höhe kürzt sich: gleich gebaut und verschieden hoch trägt die
 // Froude-Einheit des Gangs (tetrapoda `tempoEinheit` am Bein ∝ Höhe) × `lauf` dasselbe Tempo (1e-9); K4 der Greis ohne
-// Ton läuft höchstens 0,8 des jungen Athleten. Täter (Selbsttest): „ohne Können“ (der Stand vor dem Gesetz: jeder 1),
-// „ohne Alter“, „ohne Masse“, „mit Höhe“ (die Höhe bleibt im Tempo). Leser: der Wirt (`_bewohnerGenome` → das Tempo des Gangs).
+// Ton läuft höchstens 0,8 des jungen Athleten. K5 DER BEZUGS-LEIB IST DER ERWACHSENE MEDIAN (eine-huelle): er trägt die Mitte
+// der Achsen, die das Genom rollt (Geschlecht, Gewicht, Muskel-Ton je 0,5), mit 30 J (der Regler `age`: 18–80 J), und über das
+// Gitter dieser Achsen (9³, je Achse gleich verteilt wie der Wurf) liegt der Median von `lauf` mit 30 J bei 1 (± 0,01) — bis
+// hier war der Bezug START_PARAMS (ein Mann von 27 J, Gewicht 0,35): der Median der Dreißigjährigen lief 0,908, die Stadt 0,87.
+// Täter (Selbsttest): „ohne Können“ (der Stand vor dem Gesetz: jeder 1), „ohne Alter“, „ohne Masse“, „mit Höhe“ (die Höhe
+// bleibt im Tempo), „Bezug Start“ (der Bezug vor eine-huelle). Leser: der Wirt (`_bewohnerGenome` → das Tempo des Gangs).
 function koennenUrteil(C0, mutante = null) {
     const S = C0.START_PARAMS;
     const TC = globalThis.__tetrapodaCore;
@@ -373,9 +377,21 @@ function koennenUrteil(C0, mutante = null) {
     if (mutante === "ohneAlter") K = (d) => C0.leibKoennen(Object.assign({}, d, { age: S.age }));
     if (mutante === "ohneMasse") K = (d) => C0.leibKoennen(Object.assign({}, d, { mass: S.mass }));
     if (mutante === "mitHoehe") K = (d) => ((k) => ({ kraft: k.kraft * d.height, lauf: Math.sqrt(k.kraft * d.height) }))(C0.leibKoennen(d));
+    if (mutante === "bezugStart") K = (d) => ((k) => ({ kraft: k, lauf: Math.sqrt(k) }))(C0.leibKoennen(d).kraft / C0.leibKoennen(S).kraft);
     const rot = [];
-    const kanon = K(S);
-    if (!(kanon.kraft === 1 && kanon.lauf === 1)) rot.push(`K1 das Können des Kanons ist nicht 1 (kraft ${kanon.kraft}, lauf ${kanon.lauf})`);
+    const B = C0.KOENNEN_BEZUG;
+    if (!B) rot.push("K1 der Kern trägt keinen Bezugs-Leib (KOENNEN_BEZUG)");
+    const bezug = Object.assign({}, S, B || {});
+    const kanon = K(bezug);
+    if (!(kanon.kraft === 1 && kanon.lauf === 1)) rot.push(`K1 das Können des Bezugs-Leibs ist nicht 1 (kraft ${kanon.kraft}, lauf ${kanon.lauf})`);
+    const bezugJ = 18 + 62 * bezug.age;
+    if (!(Math.abs(bezugJ - 30) < 1e-9 && bezug.gender === 0.5 && bezug.mass === 0.5 && bezug.tone === 0.5 && bezug.height === S.height))
+        rot.push(`K5 der Bezugs-Leib ist nicht die Mitte der Achsen mit 30 J (${bezugJ.toFixed(1)} J, Geschlecht ${bezug.gender}, Gewicht ${bezug.mass}, Ton ${bezug.tone}, Höhe ${bezug.height})`);
+    const achse = Array.from({ length: 9 }, (_, i) => (i + 0.5) / 9);
+    const L30 = [];
+    for (const gender of achse) for (const mass of achse) for (const tone of achse) L30.push(K(Object.assign({}, S, { age: (30 - 18) / 62, gender, mass, tone })).lauf); // prettier-ignore
+    const median30 = L30.sort((a, c) => a - c)[(L30.length - 1) >> 1];
+    if (!(Math.abs(median30 - 1) <= 0.01)) rot.push(`K5 der Median der Bevölkerung mit 30 J läuft ${median30.toFixed(4)} des Bezugs (Gitter 9³ über Geschlecht, Gewicht, Muskel-Ton; Soll 1 ± 0,01)`);
     const stufen = [0, 0.5, 1];
     const gitter = [];
     for (const mass of stufen) for (const tone of stufen) for (const age of [0.05, 0.25, 0.5]) for (const gender of stufen) gitter.push(Object.assign({}, S, { mass, tone, age, gender })); // prettier-ignore
@@ -397,7 +413,7 @@ function koennenUrteil(C0, mutante = null) {
     const greis = K(Object.assign({}, S, { tone: 0.1, age: 0.5 })).lauf / K(Object.assign({}, S, { tone: 0.9, age: 0.05 })).lauf;
     if (!(greis <= 0.8)) rot.push(`K4 der Greis läuft wie der Athlet (× ${greis.toFixed(3)}, Soll ≤ 0,8)`);
     const L = gitter.map((d) => K(d).lauf);
-    return { rot, greis, min: Math.min(...L), max: Math.max(...L) };
+    return { rot, greis, min: Math.min(...L), max: Math.max(...L), median30, start: K(S).lauf };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -420,13 +436,13 @@ if (SELBSTTEST) {
     const bestandTaeter = [["ohneHerstellung", "B2 der Bestand füllt sich ohne Herstellung"], ["ohneLadung", "B3 der Wagen fährt ohne Ladung"], ["erzeugt", "B1 der Tausch erzeugt Ware"]].map(([m, z]) => [bGut && bestandUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
     // das Können: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const kGut = !koennenUrteil(core).rot.length;
-    const koennenTaeter = [["ohneKoennen", "K2 das Können folgt dem Muskel nicht"], ["ohneAlter", "K2 das Können folgt dem Alter nicht"], ["ohneMasse", "K2 das Können folgt der Masse nicht"], ["mitHoehe", "K3 die Höhe bleibt im Tempo"]].map(([m, z]) => [kGut && koennenUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
+    const koennenTaeter = [["ohneKoennen", "K2 das Können folgt dem Muskel nicht"], ["ohneAlter", "K2 das Können folgt dem Alter nicht"], ["ohneMasse", "K2 das Können folgt der Masse nicht"], ["mitHoehe", "K3 die Höhe bleibt im Tempo"], ["bezugStart", "K5 der Median der Bevölkerung mit 30 J"]].map(([m, z]) => [kGut && koennenUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...koennenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle siebzehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, vier Täter des Könnens).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle achtzehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, fünf Täter des Könnens).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -439,6 +455,6 @@ const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
-console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Kanon 1) · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);
+console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Bezugs-Leib 1: die Mitte der Achsen mit 30 J) · der Median der Dreißigjährigen ${kn.median30.toFixed(4)} · START_PARAMS ${kn.start.toFixed(4)} · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);
 console.log(`  BESTAND Tausch ${be.sinkt} · Füllung ohne Herstellung ${be.ohneHerstellung} · Wagen ${be.geladen} geladen, ${be.abgeladen} abgeladen · Stand nach 24 h ${be.leer24} · Herstellung ${be.her.toFixed(2)}, Verbrauch ${be.ver.toFixed(2)}`);
 urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; aus dem Stand ${st.s.map((x) => `${x.dv} m/s → höchstens ${x.vmax.toFixed(2)} m/s, Ruhe nach ${x.ruhe.toFixed(2)} s und ${x.weg.toFixed(1)} m`).join(" · ")}.`);
