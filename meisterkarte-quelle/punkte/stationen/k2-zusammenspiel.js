@@ -3357,7 +3357,10 @@ L.perspektive("mensch", (() => {
             // die Mutation: Regen über `__wetterSetzen` und Schwerkraft 2 g über den Welt-Akt — der Plan derselben Zelle vor ↔ nach;
             // der Tag der Bewohner über 24 Stunden (ein Fest?), die Rollen der Pläne (heiliger Ort). 1 000 Orte zählt die Probe an den Zellen.
             [KULTUR]: {
-                sek: 20,
+                // DER DECKEL TRÄGT DAS PROGRAMM (pm-front-f1, Radeon c445936d: „der Deckel der Leiter riss nach 20,012 s vor dem Wert der
+                // Sprosse“, GTX f68dbf09 ebenso): die Leiter rechnet in EINEM Seiten-Eval 1 000 Zellen und 116 Pläne der Gießerei (32 +
+                // 32 Gegenlauf + 32 Regen + 20 unter 2 g) — M.teil trägt dort nichts, 20 s reichten nie; kein Soll ändert sich
+                sek: 60,
                 dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF.concat(["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "stamm/gelaende-boden.js", "stamm/vegetation-wiese.js", "stamm/kreatur-leben.js"]),
