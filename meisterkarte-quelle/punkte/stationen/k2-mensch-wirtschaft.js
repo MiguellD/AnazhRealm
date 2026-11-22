@@ -10,6 +10,42 @@
 const PROBE = "[linse-gpu] amd/rdna-3 (Probe)";
 const STADT_PFAD = ["stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "stamm/siedlung-wege.js", "fachwerk-core.js", "koerper-core.js"];
 
+// DER STAND DER TECHNIK (mensch.wirtschaft.technik#1): der Leser ruft das Gesetz des Kerns beim Namen und rechnet nichts nach — je Saat
+// 1 … arg.saaten der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)}) vor `technikImBild` (Techniken im Bild, die der Stand
+// der Saat nicht trägt: `ohneVor`), die verschiedenen Stände, der Graph (Techniken mit Vorgänger); dazu der Plan der Stadt am Messort,
+// wie die Welt ihn gebaut hat (`technik` des Plans). Trägt der Kern das Gesetz nicht (main vor front-technik), steht `fehlt`
+const TECHNIK = async (r, T, arg) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.technikImBild !== "function" || !FC.TECHNIK) return { fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan" };
+    const G = FC.TECHNIK.graph, mitVor = Object.keys(G).filter((k) => G[k].vor.length);
+    const o = { mitVor: mitVor.length, ohneVor: 0, ohne: {}, imBild: {}, staende: 0, saaten: 0, welt: null };
+    const st = new Set();
+    for (let seed = 1; seed <= arg.saaten; seed++) {
+        const D = FC.DORF({ seed, nH: arg.nH, epoche: FC.siedlungsEpoche(seed) });
+        if (!D.technik) return { fehlt: "der Plan der Saat " + seed + " trägt keinen Technik-Stand" };
+        const B = FC.technikImBild({ technik: D.technik, slots: D.houses });
+        o.saaten++;
+        o.ohneVor += B.ohneVor;
+        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
+        for (const k in B.imBild) o.imBild[k] = (o.imBild[k] || 0) + B.imBild[k];
+        st.add(D.technik.stand.join(","));
+    }
+    o.staende = st.size;
+    // die Stadt am Messort, wie die Welt sie gebaut hat
+    let S = null, d = Infinity;
+    for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
+        const e = Math.hypot(q.ox - arg.ox, q.oz - arg.oz);
+        if (q && q.plan && e < d) [S, d] = [q, e];
+    }
+    if (S && S.plan.technik) {
+        const B = FC.technikImBild(S.plan);
+        o.welt = { ohneVor: B.ohneVor, ohne: B.ohne, stand: S.plan.technik.stand.length, ohneTechnik: S.plan.technik.fehlt, epoche: S.plan.technik.epoche };
+        o.ohneVor += B.ohneVor;
+        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
+    } else o.welt = { fehlt: S ? "der Plan der Stadt trägt keinen Technik-Stand" : "keine Siedlung am Messort" };
+    return o;
+};
+
 // DER ZENSUS DER STADT (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
 // ist (`__gebautNach`, wie g2 dorfZaehlung), dann je Plan die Rollen der Häuser, die Bewohner mit Werk, Beruf und Rolle, die Händler,
 // die Stände und Märkte, die Wagen (mit Fahrer, ihre gezählten Fahrten, ob einer den Plan verlässt), die Laternen, die Jahre der
@@ -218,6 +254,188 @@ const MUEHLE = async (r, T, arg) => {
     };
 };
 
+// STEHT DIE PROBE SCHON AM ORT? (markt S1 · handel S1, 22.11.): die Sitzung stellt jede Probe vor ihrem Deckel an ihren Messort
+// (punkte.cjs probeOrt liest `K.messort("stadt-voll")` aus dem Befehl); ein zweites `/umstellen` derselben Stadt geht über den Anlauf
+// (400, 400) und die Gründung neu und kostete an der Radeon 42 und 52 s von 54 (Zweig front-wirtschaft d157e52f, zweimal gemessen) —
+// die Probe stellt nur um, wo keine Stadt mit Bewohnern und Ständen um den Spieler steht (200 m um ihre Mitte)
+const AM_ORT = async (r, T, arg) => {
+    const pm = r.state.playerMesh.position;
+    return [...(r._bewohnerSiedlungen || new Map()).values()].some(
+        (S) => S && S.plan && Array.isArray(S.liste) && S.liste.length > 0 && (S.plan.staende || []).length > 0 && Math.hypot(S.ox - pm.x, S.oz - pm.z) < 200
+    );
+};
+
+// DER TAUSCH AM STAND (markt S1, Spieler ↔ Bewohner, nur was er hat; der Leser des Spiels: `_bestandTausch` an der Taste des Verbs E,
+// der Bestand der Stände aus `_bestandAnlegen`, sein Gesetz koerper `bestandAm`). „vor“: der Spieler tritt 1,6 m vor den nächsten Stand,
+// dessen Händler an ihm steht (sonst die Uhr auf 10, dann 14 Uhr, wie BERUF), trägt er keinen Stoff außer der Ware des Stands, legt
+// die Probe EINEN Stein in sein Inventar; der Halter wird als Abzug gemerkt. Die Taste drückt die Probe (echte Eingabe). „nach“: der
+// Tausch ist die Änderung des Stands gegen DENSELBEN Halter ohne Tausch zur selben Stunde (der Abzug, `bestandAm` rein) — der Verbrauch
+// der Sekunde dazwischen zählt nie als Tausch; der Gegenlauf: die größte Füllung eines Stands über 24 h ohne Lieferung (ein Stand
+// stellt nichts her). Fehlt ein Leser im Spiel, sagt „vor“ welcher.
+const TAUSCH = async (r, T, arg) => {
+    const s = r.state;
+    const A = r.constructor;
+    const KC = window.__koerperCore;
+    const pm = s.playerMesh.position;
+    const fehlt = [];
+    if (!KC || typeof KC.bestandAm !== "function") fehlt.push("koerper-core bestandAm");
+    if (typeof r._bestandTausch !== "function") fehlt.push("_bestandTausch");
+    if (typeof r._bestandAnlegen !== "function") fehlt.push("_bestandAnlegen");
+    if (fehlt.length) return { leser: fehlt.join(", ") };
+    const staende = () => [...(r._bewohnerSiedlungen || new Map()).values()].flatMap((S) => (Array.isArray(S.liste) ? S.liste : []).filter((b) => b && b.bestand && b.bestand.art === "stand"));
+    const zahl = (m) => ((s.player && s.player.inventory) || []).reduce((a, x) => a + (x && x.kind === "material" && x.material === m ? x.count || 0 : 0), 0);
+    if (arg.schritt === "nach") {
+        const M = window.__k2Tausch;
+        if (!M) throw new Error("kein Tausch vorbereitet");
+        delete window.__k2Tausch;
+        const h = r._weltStunde();
+        const H = M.b.bestand;
+        const ohneTausch = KC.bestandAm(M.abzug, h, M.ware);
+        const ist = KC.bestandAm(H, h, M.ware);
+        let fuellung = -Infinity;
+        for (const b of staende()) {
+            const a = KC.bestandAm(b.bestand, h, b.bestand.ware);
+            for (let t = 0.5; t <= 24; t += 0.5) fuellung = Math.max(fuellung, KC.bestandAm(b.bestand, h + t, b.bestand.ware) - a);
+        }
+        return {
+            sinkt: +(ist - ohneTausch).toFixed(6),
+            ohneHerstellung: Number.isFinite(fuellung) ? +fuellung.toFixed(6) : null,
+            ware: M.ware,
+            gabe: M.gabe,
+            invWare: [M.invWare, zahl(M.ware)],
+            invGabe: [M.invGabe, zahl(M.gabe)],
+            gabeAmStand: KC.bestandAm(H, h, M.gabe),
+            staende: staende().length,
+        };
+    }
+    const alle = staende();
+    if (!alle.length) return { n: 0, staende: 0 };
+    const da = (b) => b.leib && !b.drinnen && Math.hypot(b.leib.position.x - b.orte.werk.x, b.leib.position.z - b.orte.werk.z) < 1.5;
+    const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
+    let wer = null;
+    for (const uhr of [null, 10, 14]) {
+        if (uhr != null) {
+            for (const t of [uhr + 12, uhr]) (r._uhrSetzen((t % 24) / 24, "regler"), leute(0));
+            for (let k = 0; k < 600 && alle.some((b) => b.ankunft); k++) leute(0);
+            await window.__seitenTakt();
+            await window.__seitenTakt();
+        }
+        wer = alle.filter(da).sort((a, b) => Math.hypot(a.orte.werk.x - pm.x, a.orte.werk.z - pm.z) - Math.hypot(b.orte.werk.x - pm.x, b.orte.werk.z - pm.z))[0];
+        if (wer) break;
+    }
+    if (!wer) return { n: 0, staende: alle.length, keinerDa: true };
+    const w = wer.orte.werk;
+    const x = w.x + Math.sin(w.blick) * 1.6, z = w.z + Math.cos(w.blick) * 1.6;
+    pm.set(x, r._bodenSichtAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+    if (s._fixedSimPos) s._fixedSimPos.copy(pm);
+    const ware = wer.bestand.ware;
+    const inv = (s.player && s.player.inventory) || [];
+    if (!inv.some((i) => i && i.kind === "material" && i.material !== ware && (i.count || 0) >= 1)) r.addMaterialToInventory(ware === "stein" ? "holz" : "stein", 1);
+    const gabe = inv.find((i) => i && i.kind === "material" && i.material !== ware && (i.count || 0) >= 1).material;
+    const h = r._weltStunde();
+    window.__k2Tausch = { b: wer, ware, gabe, abzug: JSON.parse(JSON.stringify(wer.bestand)), invWare: zahl(ware), invGabe: zahl(gabe) };
+    return { n: 1, staende: alle.length, ware, gabe, vorher: KC.bestandAm(wer.bestand, h, ware), h: +h.toFixed(3) };
+};
+
+// DIE LIEFERUNG (handel S1, eine Ware auf einem Weg mit Fahrer; die Leser des Spiels: die Lieferung `_verkehrLieferung` ·
+// `_verkehrLieferAn` an der Ankunft des Wagens, sein Bild `_verkehrLadung`, das Gesetz koerper `bestandAnkunft`). Zuerst der Gegenlauf:
+// die Welt-Uhr springt einen Tag (die Kalender-Zeit der Welt, je Tag `tagS` der Uhr), zwei Takte — in ihnen kommt kein Wagen an —, dann
+// `standLeer` der Anteil der Stände, die ohne Lieferung leer stehen (die Kisten der nahen Stände zählt der Beleg). Nach dem Sprung
+// steigen die Fahrer neu ein (die Ankunft: f(Same, t), ihr Same legt sie auf ein Stück ihrer Lieferung); die Stadt fährt im echten
+// Loop, bis ein Wagen mit Fahrer geladen und einer leer fährt und eine Lieferung am Stand ankam: Umfang die geladen fahrenden,
+// `beladen` die Kisten im Bild des geladenen weniger die des leeren (das Bildpaar). Fehlt ein Leser im Spiel, sagt die Probe welcher.
+const LIEFERUNG = async (r, T, arg) => {
+    const s = r.state;
+    const KC = window.__koerperCore;
+    const fehlt = [];
+    if (!KC || typeof KC.bestandAnkunft !== "function") fehlt.push("koerper-core bestandAnkunft");
+    if (typeof r._verkehrLieferung !== "function") fehlt.push("_verkehrLieferung");
+    if (typeof r._verkehrLadung !== "function") fehlt.push("_verkehrLadung");
+    if (fehlt.length) return { leser: fehlt.join(", ") };
+    const SL = [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && Array.isArray(S.liste) && S.verkehr);
+    const wagen = SL.flatMap((S) => S.verkehr.wagen.filter((W) => W.lieferung && W.bestand));
+    const staende = SL.flatMap((S) => S.liste.filter((b) => b && b.bestand && b.bestand.art === "stand"));
+    const geliefert = () => SL.reduce((a, S) => a + ((S.verkehr.zahl && S.verkehr.zahl.ladung && S.verkehr.zahl.ladung.amStand) || 0), 0);
+    // die Kisten im Bild des Wagens (die Gruppe `_verkehrLadung`: je angefangene Kiste ein sichtbares Kind; die Gruppe selbst folgt der Stufe)
+    const kisten = (W) => (W.ladungBild ? W.ladungBild.children.filter((c) => c.visible).length : 0);
+    const aus = { wagen: wagen.length, staende: staende.length, mitFahrer: wagen.filter((W) => Array.isArray(W.fahrer) && W.fahrer.length).length };
+    if (arg.schritt === "ladung") {
+        // die Ladung: die Stadt fährt (seit dem Tag), bis ein Wagen mit Fahrer an seinem Werk geladen hat
+        const M = window.__k2Lieferung;
+        delete window.__k2Lieferung;
+        if (!M) throw new Error("kein Tag vorbereitet");
+        const vor = new Map(M.vor);
+        const gleich = wagen.filter((W) => vor.has(W));
+        Object.assign(aus, M.aus, { wagenNachUmstellen: gleich.length });
+        // auf dem Weg mit Fahrer: der Wagen fährt, sein Fahrer sitzt am Steuer; geladen trägt er ≥ 1 seiner Ware, leer keine
+        const amWeg = (W) => W.zustand === "faehrt" && W.b && W.b.amSteuer;
+        const last = (W) => KC.bestandAm(W.bestand, r._weltStunde(), W.bestand.ware);
+        const geladen = () => gleich.filter((W) => amWeg(W) && last(W) >= 1);
+        const leerAmWeg = () => gleich.filter((W) => amWeg(W) && last(W) < 1);
+        // die Stadt fährt im echten Loop (die Werkbank hält ihn zwischen den Befehlen an — er läuft, solange die Probe wartet, und
+        // steht danach wieder, wie er stand: lief er, zählten die Takte des Spiels in 300 ms weiter)
+        const takte = () => (r._weltStand ? r._weltStand.takte : -1);
+        const k0 = takte();
+        await window.sleep(300);
+        const lief = takte() !== k0;
+        if (!lief) window.__loop(true);
+        const z0 = SL.map((S) => ({ ...(S.verkehr.zahl && S.verkehr.zahl.ladung) }));
+        const g1 = geliefert();
+        const t0 = performance.now();
+        try {
+            // bis ein Wagen mit Fahrer geladen und einer leer auf dem Weg ist (das Bildpaar) und eine Lieferung am Stand ankam
+            while (!(geladen().length && leerAmWeg().length && geliefert() > g1) && performance.now() - t0 < arg.ms) await window.sleep(250);
+        } finally {
+            if (!lief) window.__loop(false);
+        }
+        aus.wartenS = +((performance.now() - M.t) / 1000).toFixed(1);
+        // der Beleg der Fahrt: lief der Loop, die Takte, die Ankünfte und die Ware an Werk und Stand in der Wartezeit, Werk und Stand
+        // an EINER Wende (dort läge die Ware nie auf einem Weg), die Uhr
+        const dz = (k) => SL.reduce((a, S, i) => a + (S.verkehr.zahl.ladung[k] - (z0[i][k] || 0)), 0);
+        aus.fahrt = { loop: lief ? "lief" : "an", takte: takte() - k0, amWerk: dz("amWerk"), amStand: dz("amStand"), geladen: dz("geladen"), abgeladen: dz("abgeladen"), eineWende: gleich.filter((W) => W.lieferung.werkKi === W.lieferung.standKi).length, uhr: +Number(s.timeOfDay).toFixed(3) };
+        const G = geladen();
+        const L0 = leerAmWeg();
+        aus.leer = L0.length;
+        if (!G.length) return Object.assign(aus, { n: 0, beladen: 0 });
+        // das Bildpaar: der geladene und der leere Wagen mit Fahrer, je der erste im Blick (seine Kisten gezeichnet), sonst der erste
+        const imBlick = (A) => A.find((W) => W.ladungBild && W.ladungBild.visible) || A[0];
+        const W1 = imBlick(G);
+        aus.n = G.length;
+        aus.ware = W1.bestand.ware;
+        aus.last = +last(W1).toFixed(3);
+        aus.kistenLeer = L0.length ? kisten(imBlick(L0)) : null;
+        aus.kistenBeladen = kisten(W1);
+        aus.gezeichnet = !!(W1.ladungBild && W1.ladungBild.visible);
+        aus.beladen = aus.kistenLeer == null ? 0 : aus.kistenBeladen - aus.kistenLeer;
+        return aus;
+    }
+    if (!wagen.length || !staende.length) return Object.assign(aus, { n: 0 });
+    // der Gegenlauf: ein Tag ohne Lieferung
+    const h0 = r._weltStunde();
+    aus.uhrVor = +Number(s.timeOfDay).toFixed(3);
+    aus.vollVor = staende.filter((b) => KC.bestandAm(b.bestand, h0, b.bestand.ware) >= 1).length;
+    const g0 = geliefert();
+    const K = r._kalender();
+    // der Tag springt auf dem Weg des Spiels (`_weltUhrNimm`, die Uhr eines geladenen Stands, eines Mitspielers): ein Sprung der
+    // Welt-Uhr — wer seinen Tag aus der Uhr liest, stellt sich neu (die Fahrer steigen aus, ihre nächste Fahrt ist f(Same, t))
+    if (typeof r._weltUhrNimm !== "function") return Object.assign(aus, { leser: "_weltUhrNimm" });
+    for (let i = 0; i < 4 && r._weltStunde() - h0 < 24; i++) r._weltUhrNimm(s.spielZeit + K.tagS * (24 - (r._weltStunde() - h0)) / 24 + 1e-3);
+    await window.__seitenTakt();
+    await window.__seitenTakt();
+    const h1 = r._weltStunde();
+    aus.tagH = +(h1 - h0).toFixed(3);
+    aus.uhrNach = +Number(s.timeOfDay).toFixed(3);
+    aus.geliefertImTag = geliefert() - g0;
+    const leer = staende.filter((b) => KC.bestandAm(b.bestand, h1, b.bestand.ware) < 1e-9);
+    aus.standLeer = aus.geliefertImTag === 0 && aus.tagH >= 24 ? +(leer.length / staende.length).toFixed(4) : 0;
+    // das Bild der Stände folgt im Takt des Spiels (`_bestandBildTakt`, je Sekunde der Bild-Uhr) — die Probe ruft ihn jetzt
+    for (const S of SL) if (typeof r._bestandBildTakt === "function") (S.bestandTakt = null), r._bestandBildTakt(S);
+    aus.kistenAmStand = staende.filter((b) => b.bestandBild && b.bestandBild.visible).length;
+    // der Stand jedes Wagens nach dem Tag (Kisten im Bild, Ladung): die Ladung misst „ladung“, nachdem die Stadt fuhr
+    window.__k2Lieferung = { aus: { ...aus }, t: performance.now(), vor: wagen.map((W) => [W, { k: kisten(W), n: KC.bestandAm(W.bestand, h1, W.bestand.ware) }]) };
+    return Object.assign(aus, { n: 1 });
+};
+
 // DER STROM DER WAREN ÜBER SIEBEN TAGE (stoffstrom S2): die Bestände, die die Welt trägt (das Inventar des Spielers — kein Bewohner,
 // kein Stand, kein Haus trägt einen), vorher; dann sieben Tage gerafft (die Welt-Uhr `spielZeit` je einen Pegel-Tag, je zwei Takte
 // des Spiels), nachher: je Ware, was hineinfloss und was hinausging
@@ -361,10 +579,11 @@ module.exports = (F) => [
 
     // ───────── DER MARKT: Tausch, Preis, Münze ─────────
     F.leiter("mensch.wirtschaft.markt", {
-        sek: 35,
+        sek: 60,
+        mutiert: true,
         pfad: [...STADT_PFAD, "stamm/bau-vorlagen.js"],
         messe: async (H, K) => {
-            await K.messort("stadt-voll");
+            if (!(await K.welt("return await (" + H.seite.AM_ORT + ")(r, T, {});", 10000))) await K.messort("stadt-voll");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
             let Z = null, zf = "";
@@ -387,9 +606,26 @@ module.exports = (F) => [
                 K.auge(5, { bild: b.datei, pose: "20 m südlich der Mitte der Stadt, Ego 1,7 m", mass: z().maerkte + " Märkte" });
             });
             await K.schritt(6, async () => K.nicht(6, { n: z().maerkte, fehlt: "10⁷ Märkte über Sonnensysteme: " + z().maerkte + " Markt einer Welt" }));
-            await K.schritt(1, async () => K.leser(1, { n: z().haendler, fehlt: "kein Tausch: der Bewohner trägt keinen Bestand (sein Satz: wer er ist, Leib, Tag, Gang, Steuer) — " + z().haendler + " Händler, nichts sinkt, nichts füllt sich aus Herstellung", wo: "stamm/siedlung-bewohner.js:887" }));
+            // S1 zuletzt: der Tausch an der Taste E (die echte Eingabe der Sitzung), gemessen am Bestand des Stands
+            await K.schritt(1, async () => {
+                const v = await ruf("TAUSCH", { schritt: "vor" });
+                if (v.leser) return K.leser(1, { n: z().haendler, fehlt: "kein Tausch: der Bewohner trägt keinen Bestand (es fehlt im Spiel: " + v.leser + ") — " + z().haendler + " Händler, nichts sinkt, nichts füllt sich aus Herstellung", wo: "stamm/siedlung-bewohner.js:887" });
+                if (!v.n) return K.zahl(1, { n: 0, werte: {}, beleg: v.staende + " Stände", taeter: v.staende ? "kein Händler an seinem Stand (jetzt, 10 und 14 Uhr)" : "kein Stand mit Bestand in der Stadt" });
+                if (!H.page) await H.verbinde();
+                await H.page.keyboard.press("KeyE");
+                await H.schlaf(300);
+                const w = await ruf("TAUSCH", { schritt: "nach" });
+                const getauscht = w.invWare[1] - w.invWare[0] === 1 && w.invGabe[0] - w.invGabe[1] === 1;
+                H.zeile("Tausch: 1 " + w.gabe + " gegen 1 " + w.ware + " — Stand " + v.vorher + " → Änderung " + w.sinkt + ", Inventar " + w.ware + " " + w.invWare.join("→") + ", " + w.gabe + " " + w.invGabe.join("→") + ", größte Füllung ohne Herstellung in 24 h " + w.ohneHerstellung);
+                K.zahl(1, {
+                    n: getauscht ? 1 : 0,
+                    werte: { sinkt: w.sinkt, ohneHerstellung: w.ohneHerstellung },
+                    beleg: w.ware + " am Stand " + v.vorher + ", Inventar " + w.ware + " " + w.invWare.join("→") + ", " + w.gabe + " " + w.invGabe.join("→") + " (am Stand " + w.gabeAmStand + "), " + w.staende + " Stände",
+                    taeter: getauscht ? null : "die Taste E tauschte nicht (Inventar " + w.ware + " " + w.invWare.join("→") + ", " + w.gabe + " " + w.invGabe.join("→") + ")",
+                });
+            });
         },
-        seite: { STADT },
+        seite: { STADT, TAUSCH, AM_ORT },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Tausch Spieler ↔ Bewohner" }, masse: [{ key: "sinkt", wort: "Änderung des Bestands des Bewohners beim Tausch", soll: 0, richtung: "<" }, { key: "ohneHerstellung", wort: "Gegenlauf: Füllung ohne Herstellung", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "kein Bestand der Bewohner", wo: "stamm/siedlung-bewohner.js:887" },
             2: { umfang: { soll: 10, wort: "Waren an einem Markt" }, masse: [{ key: "brotPlus", wort: "Brotpreis 3 Tage nach Missernte (relativ)", soll: 0.3, richtung: "≥" }, { key: "nachErnte", wort: "Änderung des Brotpreises nach der Ernte", soll: 0, richtung: "<" }], erwartet: "leser", fehlt: "kein Preis am Stand", wo: "stamm/bau-vorlagen.js:1128" },
@@ -399,18 +635,36 @@ module.exports = (F) => [
             6: { umfang: { soll: 1e7, wort: "Märkte über Sonnensysteme" }, masse: [{ key: "transport", wort: "Abweichung Preisunterschied ↔ Transport", soll: 0.2, richtung: "≤" }], erwartet: "nicht", fehlt: "10⁷ Märkte" },
         },
         proben: {
+            1: [
+                { name: "die Radeon am Zweig front-wirtschaft: 1 Stein gegen 1 Kraut, der Stand 24 → 23, kein Stand füllt sich ohne Herstellung", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { sinkt: -1, ohneHerstellung: 0 } } } }, gruen: true },
+                { name: "TÄTER: der Tausch ohne Abzug (der Händler gibt und behält)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { sinkt: 0, ohneHerstellung: 0 } } } }, gruen: false, zahl: /ROT an Änderung des Bestands des Bewohners beim Tausch 0 / },
+                { name: "TÄTER: der Tausch erzeugt Ware (der Stand wächst beim Tausch)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { sinkt: 1, ohneHerstellung: 0 } } } }, gruen: false, zahl: /ROT an Änderung des Bestands des Bewohners beim Tausch 1 / },
+                { name: "TÄTER: der Stand füllt sich ohne Herstellung (+6 in 24 h)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { sinkt: -1, ohneHerstellung: 6 } } } }, gruen: false, zahl: /ROT an Gegenlauf: Füllung ohne Herstellung 6 / },
+                { name: "TÄTER: die Taste E tauscht nicht (Umfang 0)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { sinkt: 0, ohneHerstellung: 0 }, taeter: "die Taste E tauschte nicht" } } }, gruen: false, zahl: /ROT an Umfang 0 .*Täter: die Taste E tauschte nicht/ },
+                { name: "main 1e204f83: der Bewohner trägt keinen Bestand", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "kein Tausch: der Bewohner trägt keinen Bestand (es fehlt im Spiel: koerper-core bestandAm, _bestandTausch, _bestandAnlegen)", wo: "stamm/siedlung-bewohner.js:887", n: 5 } } }, gruen: false, zahl: /fehlender Leser: kein Tausch: .*_bestandTausch/ },
+            ],
             3: [{ name: "ATTRAPPE: zehn Märkte mit Münze, der Preis folgt keinem Weg (r 0,1)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 10, werte: { r: 0.1 } } } }, gruen: false, zahl: /ROT an Preis ↔ Wegkosten \(r\) 0\.1 / }],
         },
     }),
 
     // ───────── DER HANDEL: Ware auf dem Weg ─────────
     F.leiter("mensch.wirtschaft.handel", {
-        sek: 35,
+        sek: 60,
+        mutiert: true,
         pfad: [...STADT_PFAD],
         messe: async (H, K) => {
-            await K.messort("stadt-voll");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
+            // DER TAG VOR DEM UMSTELLEN (S1): die Sitzung stellte die Probe schon an ihren Messort (punkte.cjs probeOrt) — der Tag ohne
+            // Lieferung springt hier, und die Stadt fährt, während die Probe selbst umstellt (an der Radeon ~40 s): die Werke sind voll,
+            // die Wagen laden. Steht die Welt noch nicht am Ort, springt der Tag nach dem Umstellen
+            let tag = null;
+            try {
+                tag = await ruf("LIEFERUNG", { schritt: "tag" });
+            } catch (e) {
+                tag = null;
+            }
+            if (!(await K.welt("return await (" + H.seite.AM_ORT + ")(r, T, {});", 10000))) await K.messort("stadt-voll");
             let Z = null, zf = "";
             try {
                 Z = await ruf("STADT");
@@ -429,9 +683,24 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: z().fernWagen, fehlt: "10⁵ Routen mit Containern, ≥ 10⁴ Frachtbewegungen: " + z().fahrten + " gezählte Fahrten ohne Fracht, " + z().fernWagen + " Routen aus der Stadt" }));
             await K.schritt(6, async () => K.nicht(6, { n: hafen(), fehlt: "Welthandel auf Seewegen: " + hafen() + " Häfen, keine Seewege" }));
             await K.schritt(7, async () => K.nicht(7, { n: 0, fehlt: "Handel über Sonnensysteme (Startfenster, Hohmann): kein Raumflug" }));
-            await K.schritt(1, async () => K.leser(1, { n: z().fahrer, fehlt: "keine Ladung: der Wagen fährt mit Fahrer (" + z().fahrer + " von " + z().wagen + ", " + z().fahrten + " Fahrten), sein Satz trägt keine Ware, kein Stand wartet auf eine Lieferung", wo: "stamm/siedlung-verkehr.js:384" }));
+            // S1 zuletzt: der Tag ohne Lieferung (vor dem Umstellen gesprungen), dann die Stadt im echten Loop bis zur ersten Ladung am Werk
+            await K.schritt(1, async () => {
+                if (!tag || (!tag.leser && !tag.n)) tag = await ruf("LIEFERUNG", { schritt: "tag" });
+                const l = tag.leser || !tag.n ? tag : await ruf("LIEFERUNG", { schritt: "ladung", ms: Math.max(3000, Math.floor((H.rest() - 6) * 1000)) });
+                if (l.leser) return K.leser(1, { n: z().fahrer, fehlt: "keine Ladung: der Wagen fährt mit Fahrer (" + z().fahrer + " von " + z().wagen + ", " + z().fahrten + " Fahrten), sein Satz trägt keine Ware (es fehlt im Spiel: " + l.leser + "), kein Stand wartet auf eine Lieferung", wo: "stamm/siedlung-verkehr.js:384" });
+                const beleg = l.wagen + " Wagen mit Lieferung (" + l.mitFahrer + " mit Fahrer), " + l.staende + " Stände, voll vor dem Tag " + l.vollVor + ", Tag " + l.tagH + " h, geliefert im Tag " + l.geliefertImTag + ", Kisten am Stand danach " + l.kistenAmStand +
+                    (l.wartenS != null ? ", gewartet " + l.wartenS + " s" : "") + (l.ware ? ", " + l.n + " fahren geladen, " + l.leer + " leer, " + l.last + " " + l.ware + " im ersten, Kisten leer " + l.kistenLeer + " ↔ beladen " + l.kistenBeladen + (l.gezeichnet ? " (gezeichnet)" : " (nicht im Blick)") : "") +
+                    (l.fahrt ? ", in der Fahrt am Werk " + l.fahrt.amWerk + " (+" + l.fahrt.geladen + "), am Stand " + l.fahrt.amStand + " (−" + l.fahrt.abgeladen + ")" : "");
+                H.zeile("Lieferung: " + beleg + " · Uhr " + l.uhrVor + " → " + l.uhrNach + " · Fahrt " + JSON.stringify(l.fahrt || null));
+                K.zahl(1, {
+                    n: l.n || 0,
+                    werte: { beladen: l.beladen, standLeer: l.standLeer },
+                    beleg,
+                    taeter: !l.wagen ? "kein Wagen mit Lieferung" : l.n ? null : (l.fahrt && l.fahrt.eineWende ? "Werk und Stand an EINER Wende bei " + l.fahrt.eineWende + " von " + l.wagen + " Wagen (geladen " + l.fahrt.geladen + ", im selben Halt abgeladen) — " : "") + "kein Wagen mit Fahrer lud binnen " + l.wartenS + " s an seinem Werk",
+                });
+            });
         },
-        seite: { STADT },
+        seite: { STADT, LIEFERUNG, AM_ORT },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Ware auf einem Weg mit Fahrer" }, masse: [{ key: "beladen", wort: "Wagen beladen ↔ leer im Bildpaar", soll: 1, richtung: "≥" }, { key: "standLeer", wort: "Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "der Wagen trägt keine Ware", wo: "stamm/siedlung-verkehr.js:384" },
             2: { umfang: { soll: 10, wort: "Routen zwischen Orten" }, masse: [{ key: "teurer", wort: "Route teurer als die billigste (ORBIS)", soll: 0.1, richtung: "≤" }], erwartet: "nicht", fehlt: "keine Route zwischen Orten" },
@@ -442,14 +711,24 @@ module.exports = (F) => [
             7: { umfang: { soll: 1, wort: "Handel über Sonnensysteme" }, masse: [{ key: "hohmann", wort: "Abweichung Start ↔ Hohmann-Fenster", soll: 0.05, richtung: "≤" }], erwartet: "nicht", fehlt: "kein Raumflug" },
         },
         proben: {
+            1: [
+                { name: "die Radeon am Zweig front-wirtschaft a7541a05: 9 von 21 fahren geladen, Kisten leer 0 ↔ beladen 3, 5 von 5 Ständen leer nach einem Tag ohne Lieferung", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 9, werte: { beladen: 3, standLeer: 1 } } } }, gruen: true },
+                { name: "TÄTER: der Wagen fährt ohne Ladung (Kisten 0 → 0)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { beladen: 0, standLeer: 1 } } } }, gruen: false, zahl: /ROT an Wagen beladen ↔ leer im Bildpaar 0 / },
+                { name: "TÄTER: der Stand füllt sich ohne Lieferung (1 von 5 leer)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { beladen: 2, standLeer: 0.2 } } } }, gruen: false, zahl: /ROT an Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung 0.2 / },
+                { name: "TÄTER: kein Wagen mit Fahrer lädt (Umfang 0)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { beladen: 0, standLeer: 1 }, taeter: "kein Wagen mit Fahrer lud binnen 20 s an seinem Werk" } } }, gruen: false, zahl: /ROT an Umfang 0 .*Täter: kein Wagen mit Fahrer lud/ },
+                { name: "TÄTER: Werk und Stand an einer Wende (front-wirtschaft d157e52f, Radeon: 14 von 21, geladen 5, 0 gefahren)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { beladen: 0, standLeer: 1 }, taeter: "Werk und Stand an EINER Wende bei 14 von 21 Wagen (geladen 5, im selben Halt abgeladen) — kein Wagen mit Fahrer lud binnen 48.3 s an seinem Werk" } } }, gruen: false, zahl: /ROT an Umfang 0 .*Täter: Werk und Stand an EINER Wende bei 14 von 21/ },
+                { name: "main 1e204f83: der Wagen trägt keine Ware", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "keine Ladung: der Wagen fährt mit Fahrer (21 von 21), sein Satz trägt keine Ware (es fehlt im Spiel: koerper-core bestandAnkunft, _verkehrLieferung, _verkehrLadung)", wo: "stamm/siedlung-verkehr.js:384", n: 21 } } }, gruen: false, zahl: /fehlender Leser: keine Ladung: .*_verkehrLieferung/ },
+            ],
             2: [{ name: "ATTRAPPE: zehn Routen, die eine geht den Umweg (35 % teurer)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 10, werte: { teurer: 0.35 } } } }, gruen: false, zahl: /ROT an Route teurer als die billigste \(ORBIS\) 0\.35 / }],
         },
     }),
 
     // ───────── DIE TECHNIK: Voraussetzung, Pfad, Epoche ─────────
+    // DER DECKEL IST OFFEN (22.11.): in der warmen Welt der Runde ungemessen — die einzige Zahl ist die kalte eigene Welt der Radeon
+    // (Ankunft am Messort stadt-voll 101,1 s, die Station danach 0,1 s: der Zensus der Stadt und technikImBild über 20 Saaten). Darum
+    // trägt sie kein eigenes `sek`: es gilt die Vorgabe des Kapitels (SEK_VORGABE 45 s in k2-mensch.js), bis die Eich-Tafel aus ihren Grün-Läufen schreibt
     F.leiter("mensch.wirtschaft.technik", {
-        sek: 35,
-        pfad: [...STADT_PFAD],
+        pfad: [...STADT_PFAD, "schmiede-core.js"],
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
@@ -478,11 +757,31 @@ module.exports = (F) => [
                 K.auge(6, { bild: b.datei, pose: "20 m südlich der Mitte der Stadt, Ego 1,7 m", mass: epochen() + " Epochen" });
             });
             await K.schritt(7, async () => K.nicht(7, { n: 0, fehlt: "fremde Chemie in ≥ 10 Pfaden jenseits unserer: keine Technik, keine fremde Stoffwelt" }));
-            await K.schritt(1, async () => K.leser(1, { n: epochen(), fehlt: "keine Technik mit Voraussetzung: die Epoche ist eine Wahl von Region, Jahr und Tracht (EPOCHEN), keine Technik setzt eine andere voraus — nichts im Bild hat eine Voraussetzung", wo: "fachwerk-core.js:3622" }));
+            // S1: der Stand der Technik je Saat, gelesen am Gesetz des Kerns (`TECHNIK`), dazu der Plan der Stadt am Messort
+            await K.schritt(1, async () => {
+                const t = await ruf("TECHNIK", { saaten: 20, nH: 60, ox: z().nah.ox, oz: z().nah.oz });
+                H.zeile("Technik S1: " + JSON.stringify(t).slice(0, 400));
+                if (t.fehlt) return K.leser(1, { fehlt: t.fehlt, wo: "fachwerk-core.js technikImBild" });
+                if (t.welt && t.welt.fehlt) return K.leser(1, { fehlt: "die Stadt am Messort: " + t.welt.fehlt, wo: "fachwerk-core.js DORF technik" });
+                const ohne = Object.keys(t.ohne).map((k) => k + " " + t.ohne[k]).join(", ");
+                return K.zahl(1, {
+                    n: t.mitVor,
+                    werte: { ohneVor: t.ohneVor, staende: t.staende },
+                    beleg: t.saaten + " Saaten + die Stadt am Messort (" + (t.welt.epoche || "ohne Epoche") + ", ohne " + t.welt.ohneTechnik.join("/") + "); im Bild " + JSON.stringify(t.imBild),
+                    ...(t.ohneVor || t.staende < 2 ? { taeter: (ohne ? "Technik ohne Vorgänger im Bild: " + ohne : "") + (t.staende < 2 ? " jede Saat derselbe Stand" : "") } : {}),
+                });
+            });
         },
-        seite: { STADT },
+        seite: { STADT, TECHNIK },
         sprossen: {
-            1: { umfang: { soll: 10, wort: "Techniken mit Voraussetzung" }, masse: [{ key: "ohneVor", wort: "Techniken ohne Voraussetzung im Bild (20 Saaten)", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "keine Technik", wo: "fachwerk-core.js:3622" },
+            1: {
+                umfang: { soll: 10, wort: "Techniken mit Voraussetzung" },
+                masse: [
+                    { key: "ohneVor", wort: "Techniken ohne Voraussetzung im Bild (20 Saaten)", soll: 0, richtung: "≤" },
+                    { key: "staende", wort: "verschiedene Stände (20 Saaten)", soll: 2, richtung: "≥", herkunft: "„Technik wächst aus Voraussetzungen“: hängt der Stand an Stoff und Ort, tragen 20 Saaten nicht alle denselben — ein Stand für jede Saat ist eine Liste" },
+                ],
+                erwartet: "zahl",
+            },
             2: { umfang: { soll: 100, wort: "Techniken in ≥ 5 Pfaden" }, masse: [{ key: "pfade", wort: "plausible Pfadfolgen (50 Saaten)", soll: 5, richtung: "≥" }, { key: "streuung", wort: "Streuung der Erfindungsjahre", soll: 0.1, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Techniken" },
             3: { umfang: { soll: 1000, wort: "Techniken als sichtbare Dinge" }, masse: [{ key: "passt", wort: "Artefakte passen zum Pfad", soll: 0.8, richtung: "≥" }, { key: "H", wort: "Kettentiefe H", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "10³ Techniken" },
             4: { umfang: { soll: 1e4, wort: "Techniken bis Dampf, Elektrik, Chemie" }, masse: [{ key: "r", wort: "Ausbreitung ↔ Handelsdichte (r)", soll: 0.6, richtung: "≥" }, { key: "front", wort: "Front km/Jahr", von: 0.3, bis: 3 }, { key: "mehrfach", wort: "mehrfach erfunden", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Techniken" },
@@ -491,6 +790,11 @@ module.exports = (F) => [
             7: { auge: { pose: "Ego 1,7 m je fremder Welt", vorbild: "Panel: „folgt aus Stoffen“ ≥ 80 % UND „nicht unsere Geschichte“ ≥ 80 % an ≥ 10 Pfaden" }, erwartet: "nicht", fehlt: "fremde Chemie" },
         },
         proben: {
+            1: [
+                { name: "Technik ohne Vorgänger im Bild (drei Kuppeln ohne Kupfer)", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 3, staende: 4 }, taeter: "Technik ohne Vorgänger im Bild: kupfer 3" } } }, gruen: false, zahl: /ROT an Techniken ohne Voraussetzung im Bild \(20 Saaten\) 3 / },
+                { name: "jede Saat derselbe Stand", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 0, staende: 1 }, taeter: " jede Saat derselbe Stand" } } }, gruen: false, zahl: /ROT an verschiedene Stände \(20 Saaten\) 1 / },
+                { name: "der Leser von main: kein Stand im Plan", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan", wo: "fachwerk-core.js technikImBild" } } }, gruen: false },
+            ],
             4: [{ name: "ATTRAPPE: die Front springt (30 km/Jahr) — Ausbreitung ohne Weg", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 4: { art: "zahl", n: 1e4, werte: { r: 0.7, front: 30, mehrfach: 0.7 } } } }, gruen: false, zahl: /ROT an Front km\/Jahr 30 / }],
         },
     }),

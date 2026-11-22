@@ -1,0 +1,149 @@
+{
+ "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
+ "geraet": "gtx",
+ "zeit": "2026-11-22T11:25:33.544Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.same.physik.reaktion#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Umfang nicht erzeugbar: an der Mess-Wiese liegt kein Bett (lebendig 0.545, nass false, Saison summer) (verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 0) · gemessen vor dem Abbruch: Frist der Probe 87 s gerissen",
+   "exit": 3,
+   "minuten": 1.45,
+   "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: an der Mess-Wiese liegt kein Bett (lebendig 0.545, nass false, Saison summer) (verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 87 s gerissen",
+   "konsum": "k44baf6e6af00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k48e0554e5846",
+   "s": 87.1,
+   "fremd": {
+    "s": 88.7,
+    "takte": 40,
+    "fremdS": 33.52,
+    "kerne": 0.378,
+    "fensterKerne": 0.579,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-6066c757 x listen/kandidat-gtx-6066c757.txt",
+      5.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.02
+     ]
+    ],
+    "dienerS": 36.55,
+    "diener": [
+     [
+      "dwm.exe",
+      18.44
+     ],
+     [
+      "System",
+      11.34
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.84
+     ],
+     [
+      "svchost.exe",
+      12.52
+     ],
+     [
+      "SearchIndexer.exe",
+      0.64
+     ]
+    ],
+    "eigenS": 279.73,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T11:25:33.544Z",
+   "abdruck": "20af0589d171",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "karte2.mensch.geist.absicht#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.1,
+   "fremd": {
+    "s": 68.3,
+    "takte": 31,
+    "fremdS": 28.31,
+    "kerne": 0.415,
+    "fensterKerne": 0.644,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-6066c757 x listen/kandidat-gtx-6066c757.txt",
+      3.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3
+     ]
+    ],
+    "dienerS": 22.64,
+    "diener": [
+     [
+      "dwm.exe",
+      9.47
+     ],
+     [
+      "System",
+      7.98
+     ]
+    ],
+    "geraetS": 24.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.8
+     ],
+     [
+      "svchost.exe",
+      10.33
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 171.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T11:23:55.003Z",
+   "abdruck": "739ac933491e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k44baf6e6af00": "bVVdb5tAEPwvfmxLFvMR4KQ8nEMkW2oUp+pLH/eOPSDGYN1h06bqf68gPttA9sk6z9wOs7Pwd3FAucOc7t5MUy/Y4svi28LgiRxD+kT67s0s2CKRS498xj8KOOePPUzq8tAaqEoBKGos9uQcdUtldScHmreU0TJk0D3xbguwhQhW3cPDlFoJyhqnRUWWiGGcqZBNgUeToyAHj2podgb7mefGksFQccpfUrC16jiHFDh0ctpVYJ2N1Sb3YUQh2/zh/InPVGYlUutUZW1s32UWJcpll2bd84yjsXPekYqK9JmUReQlgRW76u3MtwAToqqOxoyaxX4WejEDSKbYnEwpi9Y56EZQfYaLxIuWyD5xOz8cHXWrCIXAWEy9LpDqnPRIg+tLdb9k8DueXrrDPWl0aiysl64feeLqDQCs51qqQfjQwgrPvFiQGhH7ocIJgNv4nfqj9eVfe57m/Fqvs2ZGFqXej21SAXmuz77PpZkCM9LOrjHtBR0HiBSftyAF/so53wbplHl9KMtDxPgmKBADX888NI1qO9Tk5IfjmUgBhVHION/MwC3u92dUqPzAl9MBmrYP+K0MIYVSg7V5L2I7f+iPdXDeqawsSakgSEL2uMqn4JPGvYMi16VSduoilCr5LKQdVa0jmqa1bwYMhKsY+FBfXImGdXi8GSLfvv349bzi01p9dnujWys6FPeuCpjqgzLf/K7UrdOhLCzcU4Kwlz2byTvpinIa2xjFSR/tTl4FpYH98XUU3Pf5jSX1BtfmaOyQJQYi/EjHeCQd6Z3AemdXY+l7Hg3xW73w9ciRzU93G6cA3dgoP3/ifJN2fHT+OjQ5kISDblTZvwmhwKMpsGqvn4F//wE=",
+  "k48e0554e5846": "jVVNj5swEP0vObZlTfhYwNIenGXV5FBtttpLj2MzBjYEIhviKlX/ewWJkwB76ByiyJnneX7zZvJncQCxgxwfPnRTL+jiy+LbQsMRHY3qiOrhQy/oIhFLD33KzkEYY9/7NKHKQ6tJVXICvIZij06nWiyrBzHAvKWIliEl5oWZLSFbEpGVYddYsaen6TUVx6xxWpBoL4EwzmRIp4mdzoGjA50cCl+S/cxzY0HJEHHKXlNio69MUsKIEdOqHOpszDx5DCMM6cYw9jJnmZWArVOVtbZ1l1mUSJdei5kfM4wC45wAiwrVBZRF6CWBJbvqJcm3hEyAsuq0HhWL/Sz0YkpIMs3NUZeiaJ2DajjWl3SeeNES6MrM3pEfOkfeMwLOIeZTrQvAOkc14uD6Qj4uKfkdTy/dwR4VODUUVkvXjzx+04YQsp5zqQbiQwlLPPNijnIE7Jvaf1oLkWN/tL7+as/T/GYz9jYrpkVRqv1YJhmg5/rTt+sCMlTOrtHtNTMOADC+TENK2BtjbBukU+TtQRYHAPGdSUhM2Hqmn25ka0Chkx+6CxADDKOQsnzmKt3Cfn/JCqUf+GL2gLY39z0NLriUg6x5T2I778V5FJwTlpUFSRkESUifV8E0+ahg7wDPVSml7TgPhUw+M6jBqnV407R2Q0DAXUmJT+qrKlG8YjlL7/bEm1Q/f2XF5u6M9YP5/tntjWot6ZA/ujKgcpjI2dSbUrWOAVHYdE9yhGQq4AlVhTmOJYzipLe0ETc6aWC/fB0Z9jTr8KnEXtxad9o2WEDAw7MzLgtyM147BtWOQ72zo7H0PQ/pYPRXtr5TZc027+7WsP+M/LkvckBBDqqRZb8JSQGdLqBqb38Jf/8B"
+ }
+}
