@@ -281,6 +281,8 @@ class AnazhRealm_dirigent_takt {
                 this._updateDorfRauch(delta);
                 // ### Das Bild des Brands ### (stoffe.K2#2 — Flammen auf der Front, die Fahne des Rauchs)
                 this._brandBild(delta);
+                // ### Der Staub der Druckwelle ### (druckwelle-bild — die Asche der Narbe, die ihre Front hebt; auf der Welt-Uhr)
+                this._druckBild();
                 // ### Funken ### (halten.K2 — die Späne eines Treffers aus dem Stoff-Paar fliegen und verlöschen)
                 this._funkenTakt(delta);
 
@@ -2505,6 +2507,7 @@ class AnazhRealm_dirigent_takt {
             this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
             if (this.state.windUniforms.uWindDir) this.state.windUniforms.uWindDir.value.set(w.x, w.z);
             this._tickGrasBend();
+            this._tickHalmWelle();
         }
         // uLodRef spiegelt live die EINE Quelle `state.lodRef` (Slider ohne Mesh-Rebuild; dieselbe Zahl
         // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT rotiert golden-ratio, wo die

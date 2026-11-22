@@ -1023,9 +1023,17 @@ class AnazhRealm_siedlung_instanz {
         if (Number.isFinite(entry.rotationY) && entry.rotationY !== 0) {
             group.rotation.y = entry.rotationY;
         }
+        // DAS BILD EINES WERKS UNTER DEM GESETZ WIRD IN SEINER POSE GEBOREN (druckwelle-bild): Ort, Gier und Maß oben sind die
+        // Ruhe-Lage des Plans; hält das Gesetz eine Pose (der freie Körper des Lösers — Kiste, Fass, Trümmer, Scherbe —, das
+        // Werk im Sturz, das rollende Werk), zeigt der Bau sie über die EINE Matrix des Eintrags (`_werkPoseZeigen` →
+        // `_archEntryWorldMatrix`), bevor ein Bild das Mesh zeichnet. Bis hier zeigte sie erst der nächste Schritt des
+        // Gesetzes: GTX 1050, echtes Spiel, 4 von 4 Scherben einer Scheibe ein Bild lang 60° neben ihrem Körper; ein
+        // schlafender Körper (die Kiste, wie der Stand sie legt; die Scherbe, deren Bild der Cull-Takt neu baut) blieb so
+        // stehen, bis etwas ihn weckte (gate:stand-takt DRUCK-BILD-LAGE, die Mutante jedes Laufs trägt diesen Stand).
+        entry.mesh = group;
+        if (entry._gesetz) this._werkPoseZeigen(entry);
         this._werkAlterFaerbe(entry, group); // das Alter des Werks an seinen Stoffen (stoffe.K4), in der Lage der Welt
         this.state.scene.add(group);
-        entry.mesh = group;
         this._cullWecken(entry);
         return group;
     }

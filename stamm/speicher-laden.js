@@ -714,6 +714,9 @@ class AnazhRealm_speicher_laden {
                     this._carryUnknown(m, entry, AnazhRealm.MATERIAL_KNOWN_KEYS);
                 }
             }
+            // der Restore schreibt Etikett und Tags NACH dem Bau, den `defineMaterial` rief: wer das Buch der Stoffe schreibt,
+            // ruft den Bau der Werkstatt (ihre Material-Palette liest das Etikett, `_werkstattBau`)
+            if (restoredMats) this._renderWorkshopDOM();
             this.log(`Materialien geladen: ${restoredMats} eigene`);
         }
         if (Array.isArray(state.blueprints)) {

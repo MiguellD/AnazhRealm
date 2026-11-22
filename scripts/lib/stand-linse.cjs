@@ -467,12 +467,21 @@ function brandAmSoll(Z) {
 //   STOSS   — die Frist eines gestoßenen Körpers (frei, Tier, Spieler, Wagen) und des Ohrs: ≤ DRUCK_STOSS;
 //   WERK    — die Frist eines Werks: ≤ DRUCK_LAST je Teil (die Last seiner Platte), bricht es, dazu DRUCK_BRUCH (der EINE
 //             Einsturz: sein Abschied, der Rest erbt den Grund) + DRUCK_SCHERBE je Scherbe (ihre Geburt, ihr Stoß);
-//   ENDE    — der EINE Satz der Welle im Journal: ≤ DRUCK_ENDE.
+//   ENDE    — der EINE Satz der Welle im Journal: ≤ DRUCK_ENDE;
+//   STAUB   — der Staub, den die Welle aus der Asche hebt (`_druckStaub`, unter dem Schreiber gerufen, mit eigenem Maß):
+//             ≤ DRUCK_STAUB + DRUCK_STAUB_ZELLE je Zelle des Lands, die er nach einer Narbe fragt (`zellen`: das Quadrat um
+//             den Radius, in dem der Überdruck die Asche löst, samt Saum) + DRUCK_STAUB_BALLEN je gesätem Ballen.
 // Was der Takt außerhalb seiner Ereignisse tut, ist Null (`rest`). Die Zahlen sind Ratschen EINER Messung an der Mess-Wiese
 // (GTX 1050, Null-Renderer, die Welt frisch: ein Donnerfass mit 60,6 MJ, sechs Probe-Fenster in 8–48 m — das in 12 m mit zwei
 // Scheiben —, eine Kiste in 6 m, der Spieler in 16 m; 71 Bauten des Dorfs im Radius), gemessen je Ereignis: Umsatz 37 ·
 // Schreiber 2 245 (kalt: je Bau 31 für sein Fahr-Profil; die zweite Welle derselben Welt 231) · Stoß 2–12 · stehendes Werk 6 ·
-// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3.
+// Bruch 1 041–1 095 mit vier Scherben, 1 780 mit acht · Ende 3. Seit dem Bruch-Gesetz der Platte (druckwelle-bild) fallen die
+// Scheiben der Probe feiner — dieselben Ratschen halten: Bruch 1 597 mit sechs Scherben (Soll 1 758), 3 183–3 328 mit
+// sechzehn (4 058), 6 091 mit zweiunddreißig (7 742).
+// DER STAUB (druckwelle-bild (b)): ohne Narbe im Radius 172 (81 Zellen, je Zelle EIN Blick in die Brand-Karte, kein Ballen);
+// über einer Narbe von 2 119 m² 4 058 mit 384 Ballen — je Ballen 10,1: der EINE Leser des gezeichneten Bodens
+// (`_bodenSichtAt`, Lehre 22: vier Flächen, die Stufen-Mischung). Der Täter, an dem die Ratsche ROT fiel: die Höhe je Ballen
+// aus dem Säulen-Marsch des Gesetzes (`_voxelSurfaceY`) — 16 902, je Ballen 44.
 // DAS ERBE DES GRUNDS trägt sein eigenes Maß (`raeumt`: die Rufe der Natur-Räumung `_naturRaeumen` unter der Marke, je
 // Ereignis): die Welle räumt keine Natur — der Rest eines Einsturzes erbt den Grund seines Werks (`grundErbe`), der freie
 // Körper trägt keinen Grundriss. In Einheiten hebt die Räumung einen Bruch nur um 7 % (1 041 → 1 109), in Zeit um 43 % (GTX
@@ -483,7 +492,7 @@ function brandAmSoll(Z) {
 // Anteil, den die älteste Frist schon wartete, nach verzugS alles Fällige) plus EIN Takt am Deckel der Welt-Uhr
 // (`TAKT_DECKEL_S` 0,1 s: so spät kann das Bild kommen, das die Grenze sieht). Das Budget allein hielt den letzten von 52
 // Brüchen 2,6 s, die Grenze 0,27 s; gemessen an der Probe 0,032 s. `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach
-// liegen (gemessen 1,5 s).
+// liegen (gemessen 1,5 s mit 20 Scherben, 2,2 s mit den 70 des Bruch-Gesetzes).
 const DRUCK_UMSATZ = 50;
 const DRUCK_WELLE = 80;
 const DRUCK_BLICK = 40;
@@ -492,7 +501,15 @@ const DRUCK_LAST = 4;
 const DRUCK_BRUCH = 370;
 const DRUCK_SCHERBE = 230;
 const DRUCK_ENDE = 5;
+const [DRUCK_STAUB, DRUCK_STAUB_ZELLE, DRUCK_STAUB_BALLEN] = [40, 3, 11];
+// DER STAUB AM GESETZ (druckwelle-bild (b)): `DRUCK_STAUB_MASSE` — so weit darf die gesäte Masse von der Summe des Gesetzes
+// über der Narbe liegen (das Raster des Wirts 2 m gegen das feine ½ m der Probe: der Rand des Radius und der Saum der Narbe
+// fallen zwischen die Punkte); `DRUCK_STAUB_BILD` — so weit darf der Staub, den der gezeichnete Satz trägt, neben dem
+// Stand seiner Ballen liegen (Anteil der gesäten Masse: Float32 im Puffer), und so viel der gesäten Masse muss das Bild
+// zu seinem Höchststand tragen (`DRUCK_STAUB_HOCH`: bis der fernste Ballen geboren ist, sank der nächste ein Stück).
+const [DRUCK_STAUB_MASSE, DRUCK_STAUB_BILD, DRUCK_STAUB_HOCH] = [0.05, 0.002, 0.85];
 const DRUCK_VERZUG_S = 0.35;
+const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen die Lage ihres Körpers
 const DRUCK_SCHLAF_S = 3;
 const druckSoll = (e) =>
     e.art === "umsatz"
@@ -501,18 +518,21 @@ const druckSoll = (e) =>
           ? DRUCK_WELLE + DRUCK_BLICK * (e.blick | 0)
           : e.art === "ende"
             ? DRUCK_ENDE
-            : e.art === "werk"
+            : e.art === "staub"
+              ? DRUCK_STAUB + DRUCK_STAUB_ZELLE * (e.zellen | 0) + DRUCK_STAUB_BALLEN * (e.ballen | 0)
+              : e.art === "werk"
               ? DRUCK_LAST * (e.teile | 0) + (e.scherben > 0 ? DRUCK_BRUCH + DRUCK_SCHERBE * e.scherben : 0)
               : DRUCK_STOSS;
-const druckKlasse = (e) => (e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : ["umsatz", "welle", "ende"].includes(e.art) ? e.art : "stoss");
+const druckKlasse = (e) => (e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : ["umsatz", "welle", "ende", "staub"].includes(e.art) ? e.art : "stoss");
 const druckNenne = (e) =>
-    ({ umsatz: "der Umsatz der Ladung", welle: "der Schreiber der Welle", ende: "das Ende der Welle", bruch: "die Frist eines brechenden Werks", steht: "die Frist eines stehenden Werks", stoss: `die Frist eines Gestoßenen (${e.art})` })[druckKlasse(e)] +
+    ({ umsatz: "der Umsatz der Ladung", welle: "der Schreiber der Welle", ende: "das Ende der Welle", staub: "der Staub der Welle", bruch: "die Frist eines brechenden Werks", steht: "die Frist eines stehenden Werks", stoss: `die Frist eines Gestoßenen (${e.art})` })[druckKlasse(e)] +
     (Number.isFinite(e.R) ? ` in ${e.R} m` : "");
 const druckSollText = (e) =>
     ({
         umsatz: `${DRUCK_UMSATZ}`,
         welle: `${DRUCK_WELLE} + ${DRUCK_BLICK} je Bau im Radius (${e.blick | 0})`,
         ende: `${DRUCK_ENDE}`,
+        staub: `${DRUCK_STAUB} + ${DRUCK_STAUB_ZELLE} je Zelle im Radius (${e.zellen | 0}) + ${DRUCK_STAUB_BALLEN} je Ballen (${e.ballen | 0})`,
         bruch: `${DRUCK_LAST} je Teil (${e.teile | 0}) + ${DRUCK_BRUCH} + ${DRUCK_SCHERBE} je Scherbe (${e.scherben | 0})`,
         steht: `${DRUCK_LAST} je Teil (${e.teile | 0})`,
         stoss: `${DRUCK_STOSS}`,
@@ -526,6 +546,43 @@ function druckAmSoll(D) {
         if (!aus[k] || anteil > aus[k].anteil) aus[k] = { anteil: Number.isFinite(anteil) ? +anteil.toFixed(3) : anteil, einheiten: e.einheiten, soll, leser: brandLeser(e.leser) };
     }
     return aus;
+}
+// DER STAUB DER WELLE (druckwelle-bild (b)): wo der Überdruck der Welle den Boden-Stoff löst und ihr Wind sein Korn trägt,
+// hebt es sich — nach dem Gesetz (schmiede `staubLast`) die Asche der Brand-Narbe, nie die Grasnarbe (Faser), nie die Krume
+// (ihr Korn rollt). Die Probe stellt eine Narbe (östlich des Fasses verbrannt, westlich nie) unter eine zweite Welle durch
+// den EINEN Schreiber (`_druckWelle` → `_druckStaub`) und rechnet ihr Soll aus dem Gesetz auf dem feinen Raster:
+//   MASSE — die gesäte Masse = die Summe des Gesetzes über der Narbe (± DRUCK_STAUB_MASSE), auch über dem Deckel der Ballen
+//           (die Ferne fällt in gröbere Flecken zusammen, nie weg);
+//   RAND  — kein Ballen, wo nichts brannte, keiner jenseits des Radius, in dem der Überdruck die Asche löst;
+//   BILD  — der gezeichnete Satz trägt je Bild den Staub seiner Ballen (sein Puffer gegen ihren Stand), zum Höchststand
+//           die gesäte Masse; nach der letzten Geburt wächst der Staub in der Luft nie (er erfindet keinen);
+//   ENDE  — der Staub liegt wieder, wenn das Sink-Tempo seines Korns seine Wolke geleert hat; danach ruht das Bild.
+// Die Mutante jedes Laufs: die Narbe gilt überall als Asche (Staub, wo die Welle hinkommt) — sieht die Linse keinen Ballen
+// westlich der Narbe, ist sie BLIND.
+function druckStaubUrteil(D, v) {
+    const X = D.staub;
+    if (!X || !(X.sollG > 0) || !(X.narbeM2 > 0)) return void v.push("LEER: die Probe maß den Staub der Welle nicht (eine zweite Welle über einer gestellten Narbe: kein Soll aus dem Gesetz)");
+    const soll = `das Gesetz hebt ${X.sollG} g aus ${X.narbeM2} m² Asche im Radius ${X.randM} m (schmiede \`staubLast\`, Korn ${X.kornMm} mm)`;
+    if (!(X.ballen > 0) || !(X.masseG > 0)) return void v.push(`DRUCK-STAUB: die Welle hob keinen Staub aus der Narbe — ${soll}; der Leser \`_druckStaub\` säte ${X.ballen} Ballen`);
+    if (!(Math.abs(X.masseG / X.sollG - 1) <= DRUCK_STAUB_MASSE))
+        v.push(`DRUCK-STAUB-MASSE: die Welle säte ${X.masseG} g Staub in ${X.ballen} Ballen (${X.grob} davon gröbere Flecken) — ${soll}, ±${DRUCK_STAUB_MASSE * 100} %`);
+    if (!(X.aussen === 0) || !(X.jenseits === 0))
+        v.push(`DRUCK-STAUB-RAND: ${X.aussen} Ballen stehen, wo nichts brannte (mehr als 4 m westlich der Narbe), ${X.jenseits} jenseits des Radius ${X.randM} m, in dem der Überdruck die Asche löst — Staub gibt nur die Narbe des Brands (\`_brandNarbeFn\`), nur wo Δp ≥ σ_B der Zeile asche`);
+    if (!(X.ballen <= X.max)) v.push(`DRUCK-STAUB-DECKEL: die Welle säte ${X.ballen} Ballen (Deckel ${X.max}, \`DRUCK.staub.max\`) — über dem Deckel fällt die Ferne in gröbere Flecken zusammen`);
+    if (X.bilder == null || !(X.bilder > 0)) v.push("LEER: die Probe maß das Bild des Staubs nicht (kein Bild im Takt der Welt nach der Saat)");
+    else {
+        if (!(X.satzMax > 0) || !(X.ohneSatz === 0))
+            v.push(`DRUCK-STAUB-BILD: der Satz des Staubs trägt seine Ballen nicht — in ${X.ohneSatz} von ${X.bilder} Bildern zeichnet er eine andere Zahl als die, die stehen (höchstens ${X.satzMax} im Satz, ${X.ballenMax} Ballen; \`_druckBild\` → \`_rauchZeichnen\`, der Satz \`druckStaubSatz\`)`);
+        else if (X.nebenG == null || !(X.nebenG <= DRUCK_STAUB_BILD * X.masseG) || !(X.satzMaxG >= DRUCK_STAUB_HOCH * X.masseG) || !(X.satzMaxG <= X.masseG * (1 + DRUCK_STAUB_BILD)))
+            v.push(`DRUCK-STAUB-BILD: der gezeichnete Satz trägt zum Höchststand ${X.satzMaxG} g Staub (gesät ${X.masseG} g, Soll ${DRUCK_STAUB_HOCH * 100}–100 %) und liegt bis ${X.nebenG} g neben dem Stand seiner Ballen (Soll ≤ ${DRUCK_STAUB_BILD * 100} % der Saat) — die Deckung des Ballens ist seine Masse (τ = km · Masse · (profil + 1) ÷ π r², \`_druckBild\`)`);
+        if (!(X.steigt === 0)) v.push(`DRUCK-STAUB-BILD: nach der letzten Geburt wuchs der Staub in der Luft in ${X.steigt} Bildern — das Bild erfindet keinen Staub (er sinkt mit dem Sink-Tempo seines Korns)`);
+        if (X.endeS == null || !(X.endeS <= X.lebenS + 1)) v.push(`DRUCK-STAUB-ENDE: der Staub ${X.endeS == null ? "steht noch" : `stand ${X.endeS} s`} — das Sink-Tempo seines Korns leert die höchste Wolke in ${X.lebenS} s (2 · Wolke ÷ Sink-Tempo)`);
+        else if (!X.danach || X.danach.satz !== 0 || X.danach.uhr !== null) v.push(`DRUCK-STAUB-RUHE: nach dem letzten Ballen ruht das Bild des Staubs nicht — im Satz ${X.danach ? X.danach.satz : "?"} Ballen, seine Uhr ${X.danach ? X.danach.uhr : "?"} (Ruhe ist Null: \`_druckBild\` ohne Saat und ohne Ballen)`);
+    }
+    if (D.mutante) {
+        const M = D.mutante.staub;
+        if (!M || !(M.aussen > 0)) v.push(`BLIND: die Mutante des Staubs (die Narbe gilt überall als Asche) blieb ungesehen — ${M ? `Ballen westlich der gestellten Narbe ${M.aussen}, gesät ${M.masseG} g gegen ${M.sollG} g des Gesetzes` : "kein Maß"}`);
+    }
 }
 // Das Urteil der Druckwelle (ein Teil von `simUrteil`): `D` = simWecken.druck
 function druckUrteil(D, v) {
@@ -544,6 +601,8 @@ function druckUrteil(D, v) {
         v.push(`DRUCK-SOLL: ${druckNenne(e)} kostete ${e.einheiten} Einheiten (Soll ≤ ${druckSoll(e)}: ${druckSollText(e)}) — seine Leser: ${brandLeser(e.leser, 8)}`);
     }
     if (D.rest > 0) v.push(`DRUCK-TAKT: der Takt der Welle arbeitete ${D.rest} Einheiten außerhalb jedes Ereignisses (Umsatz, Welle, Frist, Ende)`);
+    if (!E.some((e) => e.art === "staub")) v.push("LEER: die Welle der Probe rief ihren Staub nicht (`_druckWelle` → `_druckStaub`) — kein Ereignis, dessen Kosten die Linse misst");
+    druckStaubUrteil(D, v);
     // das Erbe des Grunds: die Welle räumt keine Natur — der erste Täter beim Namen, die Mutante jedes Laufs hält das Maß wach
     const [raeumt, erster] = [E.reduce((s, e) => s + (e.raeumt | 0), 0), E.find((e) => e.raeumt > 0)];
     if (erster) v.push(`DRUCK-ERBE: ${druckNenne(erster)} räumte die Natur seines Grunds (\`_naturRaeumen\` ${raeumt}× in der Welle) — der Rest eines Einsturzes erbt den Grund seines Werks (\`grundErbe\`), ein freier Körper trägt keinen Grundriss`);
@@ -556,6 +615,45 @@ function druckUrteil(D, v) {
         for (const s of S)
             if (s.gebrochen !== s.R < D.grenze)
                 v.push(`DRUCK-BRUCH: die Scheibe in ${s.R} m ${s.gebrochen ? "brach" : "steht"} — die Grenze des Gesetzes (σ der Platte = σ_B ihrer Stoff-Zeile) liegt bei ${D.grenze} m`);
+    // DAS BILD DES BRUCHS (druckwelle-bild): je gebrochenem Fenster die Scherben seines Bruch-Gesetzes am Ort (schmiede
+    // `plattenBruch`: der Riss ist die Energie) — ihre Zahl in der Welt, dann ihre kleinste und größte Kante (±1 mm: die
+    // Schnitte liegen, wo die Energie liegt). Bis druckwelle-bild fiel jede Scheibe in vier gleiche Stücke: eine Probe, in der
+    // keine feiner als ihr Kreuz bricht, sähe diesen Stand nicht — sie ist LEER.
+    const G = S.filter((s) => s.gebrochen && (s.soll > 0 || s.R < D.grenze)); // die jenseits der Grenze brach, nennt DRUCK-BRUCH
+    for (const s of G) {
+        if (!(s.soll > 0) || s.scherben !== s.soll)
+            v.push(`DRUCK-BRUCH-BILD: das Fenster in ${s.R} m (last ${s.last}) fiel in ${s.scherben} Scherben — sein Bruch-Gesetz verlangt ${s.soll} (schmiede \`plattenBruch\`: der Riss ist die Energie; der Leser \`_druckWerk\`)`);
+        else if (!s.kante || !s.kanteSoll || !s.kante.every((x, k) => Math.abs(x - s.kanteSoll[k]) <= 0.001))
+            v.push(`DRUCK-BRUCH-BILD: die ${s.scherben} Scherben des Fensters in ${s.R} m tragen Kanten von ${s.kante ? s.kante.join(" bis ") : "?"} m — die Schnitte seines Gesetzes liegen, wo die Energie liegt: ${s.kanteSoll ? s.kanteSoll.join(" bis ") : "?"} m (die Mitte fein, der Rand grob)`);
+    }
+    if (G.length && !G.some((s) => s.soll > s.kreuz)) v.push(`LEER: keine Scheibe der Probe bricht feiner als ihr Kreuz (Scherben je Fenster nach dem Gesetz: ${G.map((s) => s.soll).join(" · ")})`);
+    // DIE LAGE IM BILD (druckwelle-bild): das Bild eines freien Körpers steht, wo und wie der Löser ihn hält — bei der Geburt
+    // jeder Scherbe (vor dem ersten Schritt des Lösers), nach dem Neubau ihres Bilds im Schlaf (der Cull-Takt: der Spieler geht
+    // und kommt wieder) und bei der Geburt einer Kiste, wie der Stand sie legt (die zweite Art der Group: gedreht, schlafend —
+    // kein Schritt zeigt sie je). Bis druckwelle-bild setzte der Bau des Bilds (`_rebuildArchitectureMesh`, der Zweig der
+    // Bau-Teile) Ort, Gier und Maß von Hand, ohne die Pose des Gesetzes: GTX 1050, echtes Spiel, 4 von 4 Scherben ein Bild lang
+    // 60° neben ihrem Körper; in der Linse 70 von 70 bei der Geburt (bis 92°), 16 von 16 nach dem Neubau (bis 172°).
+    if (D.scherben > 0)
+        for (const [k, wann] of [["geburt", "bei der Geburt einer Scherbe"], ["neubau", "nach dem Neubau des Bilds einer schlafenden Scherbe (der Cull-Takt: gehen und wiederkommen)"], ["stand", "bei der Geburt einer Kiste, wie der Stand sie legt (gedreht, schlafend)"]]) { // prettier-ignore
+            const L = (D.bildLage || {})[k];
+            if (!L || !(L.n > 0)) v.push(`LEER: die Probe maß die Lage im Bild nicht (${wann}: kein Bild) — der Körper trägt kein Mesh, dessen Lage die Linse liest`);
+            else if (L.grad == null || L.mm == null || !(L.grad <= DRUCK_BILD_GRAD) || !(L.mm <= DRUCK_BILD_MM)) // (Lehre 17: `null <= x` ist wahr)
+                v.push(`DRUCK-BILD-LAGE: ${wann} steht das Bild ${L.grad}° und ${L.mm} mm neben der Lage, die der Löser hält (${L.schief} von ${L.n} Bildern mehr als 1° daneben; Soll ≤ ${DRUCK_BILD_GRAD}° und ${DRUCK_BILD_MM} mm) — der Bau des Bilds zeigt die Pose des Gesetzes nicht (\`_rebuildArchitectureMesh\`, der Zweig der Bau-Teile → \`_werkPoseZeigen\`)`);
+        }
+    // die Mutante jedes Laufs hält das Maß wach: der Bau des Bilds ohne die Pose des Gesetzes steht in allen drei Augenblicken schief
+    if (D.scherben > 0 && D.mutante) {
+        const MB = D.mutante.bild;
+        const schief = (k) => (MB && Array.isArray(MB[k]) ? MB[k][0] : null);
+        if (!MB || !["geburt", "neubau", "stand"].every((k) => schief(k) > 0))
+            v.push(`BLIND: die Mutante des Bilds (der Bau des Bilds zeigt die Pose des Gesetzes nicht) blieb ungesehen — ${MB ? `schiefe Bilder bei der Geburt der Scherbe ${schief("geburt")}, nach dem Neubau ${schief("neubau")}, an der Kiste des Stands ${schief("stand")}` : "kein Maß"}`);
+    }
+    // der Zähler der Welle gegen die Welt: an ihm rechnet ihr Vorrat (`welle.fein`)
+    if (D.scherben > 0 && D.zaehler !== D.scherben) v.push(`DRUCK-ZAHL: die Welle zählte ${D.zaehler} Scherben, in der Welt liegen ${D.scherben} — ihr Vorrat (\`DRUCK.scherbenFein\`) rechnet an der Welt vorbei`);
+    // der Vorrat am echten Rumpf: das Kreuz trägt jede Platte, darüber höchstens den Rest des Vorrats
+    const V = D.vorrat;
+    if (!V || !Array.isArray(V.scherben) || V.scherben.length < 2 || !(V.rest > 0)) v.push("LEER: die Probe maß den Vorrat der Welle nicht (zwei stehende Fenster unter einer Welle von Hand, ihr Vorrat fast verbraucht)");
+    else if (!(V.scherben[0] > 4 && V.scherben[0] <= 4 + V.rest) || V.scherben[1] !== 4)
+        v.push(`DRUCK-VORRAT: unter einer Welle, deren Vorrat bis auf ${V.rest} verbraucht ist, fielen zwei Scheiben in ${V.scherben[0]} und ${V.scherben[1]} Scherben — die erste trägt ihr Kreuz und höchstens den Rest (5 bis ${4 + V.rest}), die zweite ihr Kreuz (4) (\`DRUCK.scherbenFein\`, \`_druckWerk\`)`);
     const K = D.kiste;
     if (!K || !(K.soll > 0)) v.push("LEER: die Probe trägt keine freie Kiste im Radius der Welle");
     else if (!(Math.abs(K.dv / K.soll - 1) <= 0.05))

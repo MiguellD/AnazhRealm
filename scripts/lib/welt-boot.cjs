@@ -153,7 +153,8 @@ async function seitenTakt() {
 // Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
 // Konstruktor liest: `_loadKeybindings`). Vorher die Schrift, ihre Größe und ihr Kasten (das HUD mit einem gepflanzten 14-px-Text,
 // einem 2 em engen Kasten und einem Zeichen im px-Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`
-// — die Werkstatt mit zwei eigenen Stoffen langen Namens in ihrer Material-Palette) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
+// — die Werkstatt mit zwei eigenen Stoffen langen Namens in ihrer Material-Palette, die der Satz der KI bei offener Werkstatt
+// definiert: `stoffSpaet` nennt jeden, der nicht als Karte steht) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
 // nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
 // Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah. Ein Bild ist am Gerät ein Bild
 // des laufenden Loops, am Null-Renderer EIN Sim-Schritt des Leibs (`_loopFixedStep`: Sammler, Bewegung, Physik) — die Probe
@@ -173,6 +174,7 @@ async function bedienung2(vor) {
             ...z.klein.map((k) => `${t}: ${k.px} px — ${k.wo} „${k.text}“ (${k.n}×)`),
             ...z.ueber.map((k) => `${t}: aus dem Kasten — ${k.wo} „${k.text}“ ${k.grund} (${k.n}×)`),
         ]),
+        ...o.stoffSpaet.map((k) => `die Material-Palette: ${k}`),
         ...(o.belegt === "KeyO" && o.platte === "KeyO" && o.nachReload === "KeyO"
             ? []
             : [`die Belegung trägt vor nicht (${o.belegt} · ${o.platte} · ${o.nachReload})`]),
@@ -207,9 +209,14 @@ async function bedienung2(vor) {
         // keine trägt. Der Zensus der Werkstatt misst sie mit (keines ragt), und jedes Wort, das eine Reihe trägt, steht ganz
         // in EINER Zeile: nur das zweite bricht. Im festen Raster zu 7,5 em (der Stand davor, die Mutante im Lauf) muss das
         // erste brechen — sonst mäße die Probe nichts. Danach fallen beide, die Palette steht wie zuvor.
+        // DER STOFF KOMMT SPÄT (palette-stoff-spaet): die Werkstatt steht offen, DANN definiert der Satz der KI die zwei Stoffe
+        // (`define_material` über `dslRun`, das Journal ruht) — jeder steht als Karte, und die Probe ruft die Palette nie selbst.
+        // Der erste kommt unter der Mutante im Lauf (der Bau der Werkstatt zeichnet die Palette nicht: der Stand davor, die
+        // Palette zeichnete einmal je Sitzung) und darf nicht stehen — sonst mäße die Probe nichts; der zweite kommt am Stamm,
+        // dann stehen beide. Am Ende fallen beide aus dem Buch, die Werkstatt baut, keine Karte bleibt.
         const langeStoffe = ["Sternenstaubglas", "Wolkenkuckucksheimquarzglasgewebestahl"];
-        for (const n of langeStoffe) r.defineMaterial(n, 0x8899aa, {});
-        r._workshopRenderMaterialPalette();
+        const karte = (n) => !!document.querySelector(`#workshop-material-palette [data-material="${n}"]`);
+        const stoffSpaet = [];
         for (const d of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
@@ -217,6 +224,26 @@ async function bedienung2(vor) {
             const z = d.dataset.drawer || "ich";
             r._menueZeigen(z, r._menueScheiben(z));
             await r._menueSteht();
+            if (z === "werkstatt") {
+                const satz = (n) => r.dslRun(["define_material", n, 0x8899aa, {}], { source: "probe" }).ok;
+                const journalRuht = leihe(r, { journalAppend: () => {} });
+                const bauOhnePalette = leihe(r, { _workshopRenderMaterialPalette: () => {} });
+                const gesagt = [satz(langeStoffe[0])];
+                if (karte(langeStoffe[0]))
+                    blind.push(`„${langeStoffe[0]}“ steht als Karte, obwohl der Bau der Werkstatt die Palette nicht zeichnete`);
+                bauOhnePalette();
+                gesagt.push(satz(langeStoffe[1]));
+                journalRuht();
+                stoffSpaet.push(
+                    ...langeStoffe.flatMap((n, i) =>
+                        !gesagt[i]
+                            ? [`der Satz define_material „${n}“ scheitert`]
+                            : karte(n)
+                              ? []
+                              : [`„${n}“ steht nicht als Karte — die DSL definierte ihn bei offener Werkstatt`]
+                    )
+                );
+            }
             await bilder(2);
             schrift[z] = r._schriftZensus(d);
             if (z !== "werkstatt") continue;
@@ -238,13 +265,15 @@ async function bedienung2(vor) {
             palette.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr))";
             const starr = bricht();
             palette.style.cssText = "";
+            if (stoffSpaet.length) continue; // die Karten fehlen: der Täter steht beim Namen, die Bruch-Probe hat nichts zu messen
             if (!heil.includes(langeStoffe[1]))
                 blind.push(`„${langeStoffe[1]}“ steht in einer Zeile — die Probe der Material-Karte sieht ihre Palette nicht`);
             if (!starr.includes(langeStoffe[0]))
                 blind.push(`„${langeStoffe[0]}“ bricht im festen Raster der Material-Karten nicht (${starr.join(" ") || "keines"})`);
         }
         for (const n of langeStoffe) delete st.materials[n];
-        r._workshopRenderMaterialPalette();
+        r._renderWorkshopDOM();
+        stoffSpaet.push(...langeStoffe.filter(karte).map((n) => `„${n}“ fiel aus dem Buch der Stoffe, seine Karte steht noch`));
         r.resetKeybindings();
         r._menueZeigen("einstellungen");
         document.querySelector('.keybind-rebind[data-action="vor"]').click();
@@ -254,6 +283,7 @@ async function bedienung2(vor) {
         return {
             schrift,
             blind,
+            stoffSpaet,
             belegt: st.keybindings.vor,
             platte: JSON.parse(localStorage.getItem("anazh.keybindings")).vor,
         };

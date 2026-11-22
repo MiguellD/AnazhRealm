@@ -243,8 +243,15 @@ class AnazhRealm_siedlung_bewohner {
         const ra = this._rauschAtlas();
         const [skala, hub, zug] = W.rausch;
         // das Muster steht in der WELT und steigt mit der Fahne (`steigMs` × `zug`): zwei Ballen, die sich decken, lesen an
-        // derselben Stelle dasselbe Rauschen — ihre Löcher und Wülste gehen ineinander über, die Fahne ist EIN Körper
-        const p = lage.sub(T.vec3(0, uZeit.mul(steigMs * zug), 0)).mul(skala / G.size);
+        // derselben Stelle dasselbe Rauschen — ihre Löcher und Wülste gehen ineinander über, die Fahne ist EIN Körper.
+        // EIN PROGRAMM FÜR JEDEN SATZ (druckwelle-bild): das Steigen der Quelle und die Skala des Musters je Größe sind
+        // Uniformen des Satzes, keine Zahlen im Shader-Text — r184 schlüsselt Programm und Pipeline am Text
+        // (`Pipelines.getForRender`), Kamin, Fahne und Staub der Druckwelle zeichnen mit DEMSELBEN Programm. Bis dahin baute
+        // jeder Satz sein eigenes Fragment-Programm (gate:post-kette (k5): f114 · f115 · f116). Das erste Bild eines Satzes
+        // hält dennoch: sein Ruck ist der Knoten-Bau beim Eintritt der Senke (GTX 1050, Mess-Wiese: Fahne 71 ms, Staub 132 ms
+        // CPU; mit EINEM geteilten Stoff baut die Arena beim Eintritt des zweiten Glieds neu, 110 ms) — nicht das Programm.
+        const [uSteig, uSkala] = [T.uniform(steigMs * zug), T.uniform(skala / G.size)];
+        const p = lage.sub(T.vec3(0, uZeit.mul(uSteig), 0)).mul(uSkala);
         // die grobe Oktave im Raum (6 Texel), die feine als Ebene der Welt (x + z | y, 2 Texel)
         const rausch = ra
             .raum(p)

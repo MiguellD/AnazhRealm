@@ -1213,6 +1213,9 @@ class AnazhRealm_feld_brand {
         if (!(radius > 0)) return null;
         const st = this.state;
         const F = this._druckFristen || (this._druckFristen = []);
+        // das Bild der Welle (`_tickHalmWelle` → `_halmWelle`: der Halm liest sie im Wind-Term): W^(1/3) und die Welt-Zeit, zu
+        // der ihr letzter Halm steht — Ankunft und Dauer an ihrem Radius + die Ruhe des Halms (`_halmZahlen`)
+        const rand = SG.druckwelle(energieJ, radius, luft);
         const welle = {
             x: ort.x,
             y: ort.y,
@@ -1226,8 +1229,13 @@ class AnazhRealm_feld_brand {
             offen: 0,
             werke: 0,
             teile: 0,
+            scherben: 0, // die freien Körper, in die ihre Platten bisher fielen (`_druckWerk`)
+            fein: 0, // davon die über dem Kreuz ihrer Platte: der Vorrat der Welle (`DRUCK.scherbenFein`)
             verzug: 0,
+            w3: Math.cbrt(rand.W),
+            bildEnde: uhr + rand.ankunft + rand.dauer + this._halmZahlen().ruhe,
         };
+        (this._druckWellen || (this._druckWellen = [])).push(welle);
         const frist = (art, q, x, y, z) => {
             const [dx, dz] = [x - ort.x, z - ort.z];
             const d = Math.hypot(dx, dz);
@@ -1267,8 +1275,208 @@ class AnazhRealm_feld_brand {
             if (Math.hypot(p.x - ort.x, p.z - ort.z) <= radius) frist("leib", pm, p.x, p.y, p.z);
             frist("ohr", null, p.x, p.y, p.z);
         }
+        welle.staub = this._druckStaub(welle); // der Staub, den sie aus der Asche hebt (die Saat ihrer Ballen)
         if (!welle.offen) this._druckEnde(welle);
         return welle;
+    }
+
+    // DAS KORN DER ASCHE (m): was vom Halm bleibt — sein Mineral-Anteil (`BRAND.mineral.gesamt`) in der Dichte der Asche (die
+    // Zeilen gras und asche des Stoff-Gesetzes), in jeder Richtung gleich geschrumpft: d · ∛(Anteil · ρ_gras ÷ ρ_asche), d die
+    // Dicke des Halms (seine Körnung, 4 ÷ σ des Betts): 0,348 mm → 0,111 mm — zwischen feinem Sand und Schluff, wo die Asche
+    // des Waldbrands im Median liegt (Gabet & Bookter 2011). Keine eigene Zahl, kein Merker: wer eine der Zeilen ändert,
+    // ändert das Korn.
+    _ascheKorn() {
+        const [halm, z] = [this._stoff("gras"), globalThis.__schmiedeCore.STOFF_GESETZ.zeile("asche")];
+        const d = halm.koernung * Math.cbrt((AnazhRealm.BRAND.mineral.gesamt * halm.rho) / z.rho);
+        if (!(d > 0)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL gras.koernung · schmiede:STOFF_GESETZ asche.rho");
+        return d;
+    }
+
+    // DER STAUB DER WELLE (druckwelle-bild, `_druckWelle` ruft): wo die Welle die Asche-Decke löst (schmiede `staubLast`: ihr
+    // Überdruck trägt σ_B der Zeile asche — an diesem Radius endet der Staub) und ihr Wind das Korn trägt, hebt es sich. Die
+    // Grasnarbe hält (Faser), die Krume rollt (ihr Korn sinkt schneller, als der Wind es trägt): Staub gibt die NARBE DES
+    // BRANDS. Gelesen wird nur, wo eine Zelle brannte oder brennt (`_brandZellen`, sie und ihre acht Nachbarinnen: die Narbe
+    // reicht bis an deren Mitten): je Punkt des Rasters `staub.rasterM` die Narbe an ihrer Quelle (`_brandNarbeFn`: Anteil ×
+    // Asche — nie die gemalte Karte, die der Front nachläuft) und das Gesetz an seinem Abstand. Der Punkt gibt die Masse
+    // seiner Fläche als EINEN Ballen — last × Decke × Raster², höchstens die Asche eines vollen Betts (seine Last × der
+    // Mineral-Anteil) —, um den Luft-Weg seines Korns versetzt, geboren, wenn der Puls über ihm verklungen ist (Ankunft +
+    // Dauer). Sein Radius ist die Wolke seines Korns, mindestens der Kreis seiner Fläche (Raster² ÷ π: er steht für seinen
+    // Flecken, die Säule über dem Boden stimmt); deckt er frisch unter `aKill`, wird er nicht gesät. Höchstens `staub.max`
+    // Ballen je Welle: darüber fällt die Ferne in Flecken des doppelten Rasters zusammen (die Masse bleibt, der ferne Ballen
+    // steht für den größeren Flecken und zeichnet ihn höher, als sein Schleier liegt). Die Kosten trägt die Zündung einmal: je
+    // Zelle im Radius ein Blick in den Speicher, je Punkt einer Narbe die Narbe, je Ballen der gezeichnete Boden. → die Zahl
+    // der gesäten Ballen (`druckStaub.saat`, nach ihrer Zeit; `_druckBild` gebiert).
+    _druckStaub(welle) {
+        const [SG, D, cs, S] = [
+            globalThis.__schmiedeCore.STOFF_GESETZ,
+            AnazhRealm.DRUCK.staub,
+            AnazhRealm.LIFE_FIELD.cell,
+            this.state.druckStaub,
+        ];
+        const z = SG.zeile("asche");
+        const rand = SG.druckRadius(welle.energieJ, welle.luft, z.sigB);
+        if (!(rand > 0)) return 0;
+        const zelle = this._brandZellen();
+        const [c0, c1] = [(v) => Math.floor((v - rand) / cs), (v) => Math.floor((v + rand) / cs)];
+        const narben = [];
+        for (let cz = c0(welle.z); cz <= c1(welle.z); cz++)
+            for (let cx = c0(welle.x); cx <= c1(welle.x); cx++) {
+                let nah = false;
+                for (let k = 0; k < 9 && !nah; k++) nah = !!zelle(cx + (k % 3) - 1, cz + Math.floor(k / 3) - 1);
+                if (nah) narben.push(cx, cz);
+            }
+        if (!narben.length) return 0;
+        const [narbe, korn, g, bett] = [
+            this._brandNarbeFn(zelle),
+            this._ascheKorn(),
+            D.rasterM,
+            this._stoff("gras").brenn,
+        ];
+        const [vorrat, rMin, optik] = [
+            bett.last * AnazhRealm.BRAND.mineral.gesamt,
+            g / Math.sqrt(Math.PI),
+            (AnazhRealm.RAUCH_BILD.profil + 1) / Math.PI,
+        ];
+        let neu = [];
+        for (let n = 0; n < narben.length; n += 2) {
+            const [x0, z0] = [narben[n] * cs, narben[n + 1] * cs];
+            for (let j = Math.ceil(z0 / g - 0.5); (j + 0.5) * g < z0 + cs; j++)
+                for (let i = Math.ceil(x0 / g - 0.5); (i + 0.5) * g < x0 + cs; i++) {
+                    const [x, zz] = [(i + 0.5) * g, (j + 0.5) * g];
+                    const d = Math.hypot(x - welle.x, zz - welle.z);
+                    if (d > rand) continue;
+                    const na = narbe(x, zz);
+                    const decke = na ? na.m * na.asche : 0;
+                    if (!(decke > 0)) continue;
+                    const w = SG.druckwelle(welle.energieJ, d, welle.luft);
+                    const s = SG.staubLast(w, z, korn, welle.luft);
+                    if (!s) continue;
+                    const m = Math.min(s.last, vorrat) * decke * g * g;
+                    const tr2 = s.km * m * optik;
+                    if (1 - Math.exp(-tr2 / (D.size * Math.max(s.wolke, rMin)) ** 2) < D.aKill) continue; // unter der Sicht: er trüge kein Bild
+                    const ab = d > 1e-6 ? (w.weg * s.tempo) / (w.wind * d) : 0; // der Weg seines Korns im Puls, je Meter Abstand
+                    neu.push({
+                        t: welle.uhr + w.ankunft + w.dauer,
+                        d,
+                        x: x + (x - welle.x) * ab,
+                        z: zz + (zz - welle.z) * ab,
+                        m,
+                        tr2,
+                        b: s.wolke,
+                        sink: s.sinken,
+                        fl: g * g,
+                        i,
+                        j,
+                    });
+                }
+        }
+        // ÜBER DEM DECKEL FÄLLT DIE FERNE ZUSAMMEN, NIE WEG: die fernsten Ballen fallen in Flecken des doppelten Rasters (Stufe
+        // um Stufe, bis der Deckel hält) — Masse, Säule und Schwerpunkt bleiben, die nahen stehen fein (dort trägt die Wolke am
+        // höchsten und am längsten). `behalte`: so viele der nächsten bleiben, wie der Deckel mit den Flecken der übrigen trägt.
+        neu.sort((a, b) => a.d - b.d);
+        for (let stufe = 1; neu.length > D.max; stufe++) {
+            const fasse = (ab) => {
+                const [M, teil] = [new Map(), 2 ** stufe];
+                for (let k = ab; k < neu.length; k++) {
+                    const q = neu[k];
+                    const key = (Math.floor(q.i / teil) + 32768) * 65536 + Math.floor(q.j / teil) + 32768;
+                    const a = M.get(key);
+                    if (!a) M.set(key, { ...q });
+                    else {
+                        const [u, v] = [a.m / (a.m + q.m), q.m / (a.m + q.m)];
+                        for (const e of ["t", "x", "z", "b", "sink"]) a[e] = a[e] * u + q[e] * v;
+                        [a.m, a.tr2, a.fl] = [a.m + q.m, a.tr2 + q.tr2, a.fl + q.fl];
+                    }
+                }
+                return neu.slice(0, ab).concat([...M.values()]);
+            };
+            let [behalte, zu] = [0, D.max];
+            if (fasse(0).length <= D.max)
+                while (behalte < zu)
+                    ((m) => (fasse(m).length <= D.max ? (behalte = m) : (zu = m - 1)))((behalte + zu + 1) >> 1);
+            neu = fasse(behalte);
+            for (const q of neu) q.d = Math.hypot(q.x - welle.x, q.z - welle.z);
+            neu.sort((a, b) => a.d - b.d);
+        }
+        // DER BALLEN STEHT AUF DEM GEZEICHNETEN BODEN (`_bodenSichtAt`, Lehre 22: was auf dem Boden steht, liest das Mesh — die
+        // Spalte des Gesetzes, `_voxelSurfaceY`, kostete je Ballen 44 Einheiten, 16 902 für die 384 einer Welle; gate:stand-takt
+        // DRUCK-SOLL); wo kein Boden gezeichnet ist (fern, ungebaut), trägt der Staub kein Bild und wird nicht gesät.
+        const saat = [];
+        for (const q of neu) {
+            q.boden = this._bodenSichtAt(q.x, q.z);
+            if (q.boden === null) continue;
+            q.r = Math.max(q.b, Math.sqrt(q.fl / Math.PI)); // die Wolke seines Korns, mindestens der Kreis seiner Fläche
+            saat.push(q);
+        }
+        if (saat.length) (S.saat.push(...saat), S.saat.sort((a, b) => a.t - b.t));
+        return saat.length;
+    }
+
+    // DAS BILD DES STAUBS (je Bild, nach `_brandBild`): ohne Saat und ohne Ballen kein Schritt (Ruhe ist Null). Es geht auf der
+    // WELT-Uhr wie der Halm unter der Welle (das Standbild der Bühne hält beide an). Fällige Saat wird Ballen: seine Wolke
+    // steht auf dem Boden (ihre Mitte einen Wolken-Radius darüber). Er zieht mit dem Wind am Ort, wächst um `alpha` je Meter
+    // Zug (die Zahl der Fahne: so mischt die Luft ein) und sinkt mit dem Sink-Tempo seines Korns — die Säule seines Staubs
+    // leert sich in den Boden: nach t steht noch der Anteil 1 − sinken · t ÷ (2 · Wolke) in der Luft, ihre Mitte sinkt mit.
+    // Seine Deckung ist die des Rauch-Bilds (τ im Kern = `tr2` × Anteil ÷ r², 1 − e^(−τ); `tr2` = km × Masse × (profil + 1)
+    // ÷ π): er verdünnt im Wachsen und im Sinken, er erfindet keinen Staub; unter `aKill` endet er — sein Korn liegt wieder.
+    // Gezeichnet im EINEN Rauch-Bild (`_rauchZeichnen`, der Satz `druckStaubSatz` in der Albedo der Asche des Bodens,
+    // `BODEN_FARBE.asche`; sein Muster zieht mit dem Sink-Tempo durch die Ballen).
+    _druckBild() {
+        const st = this.state;
+        const S = st.druckStaub;
+        const T = S.teilchen;
+        if (!S.saat.length && !T.length) return;
+        const [D, R, jetzt] = [AnazhRealm.DRUCK.staub, AnazhRealm.BRAND.bild.rauch, st.spielZeit];
+        const s = S.uhr === null ? 0 : Math.min(Math.max(0, jetzt - S.uhr), 0.1);
+        S.uhr = jetzt;
+        let k = 0;
+        for (; k < S.saat.length && S.saat[k].t <= jetzt; k++) {
+            const q = S.saat[k];
+            if (T.length >= D.max) T.shift();
+            S.sink = q.sink;
+            T.push({
+                x: q.x,
+                y: q.boden + q.b,
+                z: q.z,
+                boden: q.boden,
+                b: q.b,
+                s: q.r,
+                m: q.m,
+                tr2: q.tr2,
+                sink: q.sink,
+                a: 0,
+                alt: 0,
+            });
+        }
+        if (k) S.saat.splice(0, k);
+        for (let i = T.length - 1; i >= 0; i--) {
+            const p = T[i];
+            const w = this._windAt(p.x, p.z, jetzt);
+            const zug = w.ms * s;
+            p.x += w.x * zug;
+            p.z += w.z * zug;
+            p.s += R.alpha * zug;
+            p.alt += s;
+            const rest = 1 - (p.sink * p.alt) / (2 * p.b); // der Anteil seiner Säule, der noch in der Luft steht
+            p.y = p.boden + p.b * Math.max(0, rest);
+            [p.zx, p.zy, p.zz] = [w.x * w.ms, -p.sink / 2, w.z * w.ms]; // sein Zug in m/s (`_rauchZeichnen`)
+            p.a = rest > 0 ? 1 - Math.exp((-p.tr2 * rest) / (D.size * p.s) ** 2) : 0;
+            if (p.a < D.aKill) T.splice(i, 1);
+        }
+        if (typeof THREE === "undefined") return; // ohne Bühne kein Bild (`_rauchZeichnen` zeichnete nichts)
+        if (!this._staubSatzG) {
+            const c = AnazhRealm.BODEN_FARBE.asche;
+            this._staubSatzG = Object.freeze({
+                size: D.size,
+                a0: R.a0,
+                aKill: D.aKill,
+                color: new THREE.Color().setRGB(c[0], c[1], c[2]),
+                name: "druck-staub",
+                inventar: "druck",
+            });
+        }
+        this._rauchZeichnen(this._staubSatzG, T, "druckStaubSatz", D.max, S.sink);
+        if (!T.length && !S.saat.length) S.uhr = null;
     }
 
     // DIE WELLE IST VERKLUNGEN (ihre letzte Frist fiel): setzte eine Ladung um (`wer`), nennt das Journal sie EINMAL — mit den
@@ -1428,37 +1636,58 @@ class AnazhRealm_feld_brand {
         return { last: SG.plattenLast(z, lang, kurz, S[d], w.dp * cos, w.dauer), w, cos };
     }
 
-    // DAS WERK UNTER DER WELLE: je Teil die Last seiner Platte (`_druckTeilLast`). Was bricht, zerfällt in `DRUCK.scherben`²
-    // Scherben in seiner Ebene und fällt aus dem Werk — über den EINEN Einsturz (`_werkBricht`, still — die Welle nennt ihn: der Rest
-    // steht als Werk weiter und urteilt neu, jede Scherbe ist ein freier Körper) —, und jede Scherbe trägt den Stoß der Welle
-    // an ihrem Ort. → die Zahl der gebrochenen Teile.
+    // DAS WERK UNTER DER WELLE: je Teil die Last seiner Platte (`_druckTeilLast`). Was bricht, zerfällt nach SEINEM Bruch-Gesetz
+    // (schmiede `plattenBruch`: der Riss ist die Energie — an der Bruch-Grenze das Kreuz der Mittellinien, vier Stücke; unter
+    // mehr Last ein feineres Gitter, die Mitte fein, der Rand grob) in Scherben in seiner Ebene und fällt aus dem Werk — über
+    // den EINEN Einsturz (`_werkBricht`, still — die Welle nennt ihn: der Rest steht als Werk weiter und urteilt neu, jede
+    // Scherbe ist ein freier Körper) —, und jede Scherbe trägt den Stoß der Welle an ihrem Ort. Bis druckwelle-bild fiel jede
+    // Platte in vier gleiche Stücke, die in 6 m wie die an ihrer Grenze in 28 m.
+    // DIE WELLE TRÄGT EINEN VORRAT FEINER SCHERBEN (jede ist ein freier Körper des Lösers): das Kreuz trägt jede Platte, wie
+    // zuvor; darüber je Platte höchstens `DRUCK.scherbenAchse` Stücke je Achse und je Welle `DRUCK.scherbenFein` Scherben über
+    // dem Kreuz (`welle.fein`). Die Fristen fallen in der Reihe ihrer Ankunft: die nahe Scheibe zerspringt fein, ist der Vorrat
+    // verbraucht, fällt die ferne gröber, zuletzt in ihr Kreuz — eine Welle kostet den Löser höchstens `scherbenFein` Körper
+    // mehr als zuvor, wie viele Werke auch in ihrem Radius stehen. → die Zahl der gebrochenen Teile.
     _druckWerk(e, welle) {
         const g = e._gesetz;
         const bp = (g && g.plan) || this.state.blueprints[e.type];
         if (!bp || !Array.isArray(bp.parts)) return 0;
-        const N = AnazhRealm.DRUCK.scherben;
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const D = AnazhRealm.DRUCK;
         const teile = bp.parts.slice();
         const frei = [];
         let gebrochen = 0;
         bp.parts.forEach((p, i) => {
             const l = this._druckTeilLast(p, e, welle);
             if (!l || !(l.last >= 1)) return;
-            gebrochen++;
             const S = [p.size.x, p.size.y, p.size.z];
             const d = S.indexOf(Math.min(...S));
             const [a, b] = [0, 1, 2].filter((k) => k !== d);
+            const B = SG.plattenBruch(
+                Math.max(S[a], S[b]),
+                Math.min(S[a], S[b]),
+                S[d],
+                l.last,
+                D.scherbenAchse,
+                4 + D.scherbenFein - welle.fein
+            );
+            if (!B) return;
+            gebrochen++;
+            const [ua, ub] = S[a] >= S[b] ? [B.lang, B.kurz] : [B.kurz, B.lang];
+            const n = (ua.length - 1) * (ub.length - 1);
+            welle.scherben += n;
+            welle.fein += n - 4;
             const r = p.rotation;
             const dreh = r ? new THREE.Euler(r.x || 0, r.y || 0, r.z || 0, "XYZ") : null;
             const q = p.position || {};
-            const gr = S.slice();
-            gr[a] /= N;
-            gr[b] /= N;
-            for (let u = 0; u < N; u++)
-                for (let v = 0; v < N; v++) {
+            for (let u = 0; u + 1 < ua.length; u++)
+                for (let v = 0; v + 1 < ub.length; v++) {
                     const o = new THREE.Vector3();
-                    o.setComponent(a, ((u + 0.5) / N - 0.5) * S[a]);
-                    o.setComponent(b, ((v + 0.5) / N - 0.5) * S[b]);
+                    o.setComponent(a, (0.5 * (ua[u] + ua[u + 1]) - 0.5) * S[a]);
+                    o.setComponent(b, (0.5 * (ub[v] + ub[v + 1]) - 0.5) * S[b]);
                     if (dreh) o.applyEuler(dreh);
+                    const gr = S.slice();
+                    gr[a] = (ua[u + 1] - ua[u]) * S[a];
+                    gr[b] = (ub[v + 1] - ub[v]) * S[b];
                     const t = JSON.parse(JSON.stringify(p));
                     t.size = { x: gr[0], y: gr[1], z: gr[2] };
                     t.position = { x: (q.x || 0) + o.x, y: (q.y || 0) + o.y, z: (q.z || 0) + o.z };
@@ -1471,7 +1700,6 @@ class AnazhRealm_feld_brand {
         const truemmer = this._werkBricht(e, plan, frei, true) || [];
         welle.werke++;
         welle.teile += gebrochen;
-        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
         for (const t of truemmer) {
             const K = t && t._frei;
             if (!K) continue;
@@ -1602,15 +1830,33 @@ AnazhRealm.BRAND = Object.freeze({
 // DIE DRUCKWELLE IM WIRT (same.physik.reaktion#2, `_druckWelle`): das Gesetz und seine Zahlen stehen im Kern (schmiede
 // `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst
 // liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
-// bewegt nichts Sichtbares und fällt; `scherben`: eine gebrochene Platte fällt in scherben × scherben Stücke; `budgetMs` und
+// bewegt nichts Sichtbares und fällt; `scherbenAchse` und `scherbenFein`: so fein trägt der Löser der freien Körper den
+// Bruch — je Platte höchstens so viele Stücke je Achse, je Welle so viele Scherben über dem Kreuz ihrer Platten (sechs
+// Platten ganz fein, je zwölf über dem Kreuz; `_druckWerk` — das Gitter selbst ist Gesetz, schmiede `plattenBruch`).
+// GEMESSEN (GTX 1050, Mess-Wiese, die erste Detonation einer frischen Welt, ganze Bilder bis zum Abschluss der GPU, zwei
+// Paare Kreuz ↔ fein, vier Scheiben in 6–28 m: 16 ↔ 48 Scherben): die Geburt 0,53 ms je Scherbe über dem Kreuz (die
+// sechzehn einer Platte in einem Bild 16–18 ms gegen 9–11 ms); der Löser 0,1 ms je wacher Scherbe und Bild im Flug
+// (+3,2 ms je Bild), im Bild des Bruchs bis 20 ms gegen 7,7 ms; das ganze Bild im Bruch (7 Bilder) im Median 93 → 105 ms,
+// im Flug (52 Bilder) 65 → 68 ms, danach 54 → 55 ms, bis die Scherben schlafen (Ruhe dieser Messung 56–68 ms); `budgetMs` und
 // `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
-// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist).
+// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist);
+// `bildWellen`: so viele Wellen zugleich liest der Halm im Bild (`_halmWelle`, die Slots des Wind-Satzes) — die jüngsten.
+// `staub` (`_druckStaub`, `_druckBild`): das Raster `rasterM`, in dem die Welle die Narbe des Brands nach Asche fragt (je Punkt
+// ein Ballen: bei 2 m deckt der Kreis seiner Fläche, 1,13 m, die Wolke des Korns bis 3 m ans Fass), höchstens `max` Ballen je
+// Welle und im Bild; `aKill`: darunter trägt ein Ballen kein Bild — der Schleier der Asche ist dünn (über dem Boden deckt er
+// 1,6–4,2 %, im Ballen 5–12 %), das Auge sieht ihn im Streifblick durch viele: 1 % zählt noch; `size`: Radius je Einheit
+// des Satzes. GEMESSEN (GTX 1050, eine Narbe von 3 × 3 Zellen, 383 Ballen im Bild, ein Zustand der Welt mit ↔ ohne Satz):
+// +3,5 ms je Bild am Scheitel (41,3 · 41,5 ↔ 37,7 · 38,1 ms) — Füllung; der Halm liest die Welle ohne messbaren Preis
+// (Front in 15 m, vier Reihen: 40,8 · 40,0 mit ↔ 40,5 · 40,2 ms ohne).
 AnazhRealm.DRUCK = Object.freeze({
     funkeM: 0.5,
     stossMin: 0.05,
-    scherben: 2,
+    scherbenAchse: 4,
+    scherbenFein: 72,
     budgetMs: 4,
     mindestJeBild: 1,
     verzugS: 0.25,
+    bildWellen: 4,
+    staub: Object.freeze({ rasterM: 2, max: 384, aKill: 0.01, size: 1 }),
     keine: Object.freeze([]),
 });

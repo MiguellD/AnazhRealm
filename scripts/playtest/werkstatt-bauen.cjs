@@ -792,7 +792,8 @@ async function checkBandWelle6Keybindings({ page, check }) {
     // Dieselbe Seiten-Probe wie am Gerät (`__bedienung2`, scripts/lib/welt-boot.cjs): jeder sichtbare Text von HUD, Ich und jeder
     // Schublade ≥ 16 px und in seinem Kasten (ein gepflanzter 14-px-Text, ein 2 em enger Kasten und ein Zeichen im px-Kasten in der
     // Hotbar müssen genannt sein; die Material-Karte der Werkstatt trägt zwei eigene Stoffe langen Namens, im festen Raster
-    // bricht das Wort); der Knopf „vor“ der Belegung und KeyO als
+    // bricht das Wort — die DSL definiert sie bei offener Werkstatt, jeder steht als Karte, ein Bau ohne Palette muss ROT
+    // fallen); der Knopf „vor“ der Belegung und KeyO als
     // KeyboardEvent legen das Vorwärts um, die Platte trägt es durch den Reload (`_loadKeybindings`, wie der Konstruktor), KeyO
     // bewegt den Leib ≥ 0,1 m, W nicht mehr — ein festverdrahtetes W (Mutant im Lauf) muss ROT fallen. Dazu der Tausch bei
     // Konflikt, Esc im Fangen, die Liste der Belegung (je Aktion ein Knopf) und der Name einer Liste von Tasten.
@@ -813,12 +814,12 @@ async function checkBandWelle6Keybindings({ page, check }) {
     });
     if (erreichbar(check, "K3#2: die Probe der Bedienung läuft", tafel)) {
         check(
-            `K3#2: Schrift und Tasten im Gesetz (KeyO ${tafel.neuM} m, W ${tafel.altM} m)`,
+            `K3#2: Schrift, Tasten und der späte Stoff der Palette im Gesetz (KeyO ${tafel.neuM} m, W ${tafel.altM} m)`,
             !tafel.taeter.length,
             tafel.taeter.slice(0, 4).join(" | ")
         );
         check(
-            "K3#2: der Selbsttest im Lauf nennt den 14-px-Text, den engen Kasten, das Zeichen im px-Kasten, die langen Stoff-Namen im festen Raster und das festverdrahtete W",
+            "K3#2: der Selbsttest im Lauf nennt den 14-px-Text, den engen Kasten, das Zeichen im px-Kasten, die langen Stoff-Namen im festen Raster, den Bau ohne Palette und das festverdrahtete W",
             !tafel.blind.length,
             tafel.blind.join(" | ")
         );

@@ -154,12 +154,14 @@ hauptLauf(async () => {
         //                    Stempel fiel er je nach Weltzustand als Emitter ohne Identität rot)
         //   funken         — _funkenTakt (die Späne eines Treffers Metall auf Stein, EIN Satz; sichtbar nur, solange sie fliegen)
         //   brand          — _brandFlammenZeichnen, _brandRauch (die Flammen der Front und die Fahne des Brands, je EIN Satz)
+        //   druck          — _druckBild (der Staub, den die Druckwelle aus der Asche der Narbe hebt, EIN Satz; nur, solange er steht)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
             "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
             brand: { b: "substanz", why: "brand (die Flammen und die Fahne des Brands, je ein Satz)" },
+            druck: { b: "substanz", why: "druck (der Staub der Druckwelle, ein Satz)" },
             funken: { b: "substanz", why: "funken (Späne eines Treffers, ein Satz)" },
         };
         // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der

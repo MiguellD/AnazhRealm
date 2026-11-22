@@ -86,6 +86,7 @@ class AnazhRealm {
             bauSatzRaten: null, // Map Gruppen-Schlüssel → der Bereich, der in Raten eintritt (_bauSatzRate)
             dorfRauchSatz: null, // die Rauch-InstancedMesh der Kamine (_rauchZeichnen)
             brandRauchSatz: null, // die Rauch-InstancedMesh der Fahne des Brands (_brandRauch → _rauchZeichnen)
+            druckStaubSatz: null, // die Rauch-InstancedMesh des Staubs der Druckwelle (_druckBild → _rauchZeichnen)
             brandFlammenSatz: null, // die Flammen der Front (_brandFlammenZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
@@ -755,6 +756,9 @@ class AnazhRealm {
             dorfRauch: { quellen: [], teilchen: [] },
             // DIE FAHNE DES BRANDS (stoffe.K2#2, `_brandRauch`): ihre Ballen, der Zähler ihres Samens
             brandRauch: { teilchen: [], n: 0 },
+            // DER STAUB DER DRUCKWELLE (druckwelle-bild, `_druckStaub` · `_druckBild`): die Saat ihrer Ballen (nach ihrer Zeit), die
+            // Ballen in der Luft, die Welt-Uhr ihres letzten Bilds, das Sink-Tempo ihres Korns (das Muster des Satzes zieht mit ihm)
+            druckStaub: { saat: [], teilchen: [], uhr: null, sink: 0 },
             architectureNextId: 1,
             // Φ7 (V18.190) — DIE PORTAL-HALLEN: kuratierte Welt-Verzeichnisse.
             // Ein Eintrag ist eine signierte Sammlung von Welt-Adressen (Φ1),
@@ -2263,7 +2267,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.371";
+AnazhRealm.VERSION = "18.546.372";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

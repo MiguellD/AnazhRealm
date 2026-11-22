@@ -2355,14 +2355,14 @@ AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label
 // DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
 // wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`. Das Blatt des
 // Ich, die Karte des Wesens im Hof und die Stoff- und Werkzeug-Paletten der Werkstatt baute bis hier nur ihr Öffner (die
-// Paletten einmal je Sitzung): nach dem Wechsel standen sie in der alten Sprache, bis der Spieler sie neu öffnete.
+// Paletten einmal je Sitzung): nach dem Wechsel standen sie in der alten Sprache, bis der Spieler sie neu öffnete. Die
+// Stoff-Palette zeichnet der Bau der Werkstatt (`_renderWorkshopDOM` → `_werkstattBau`, ihr EINER Rufer).
 AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
     "renderInventoryUI",
     "_ichRenderSpecSheet",
     "_hofRefreshFocus",
     "_renderHotbarDOM",
     "_renderWorkshopDOM",
-    "_workshopRenderMaterialPalette",
     "_workshopRenderToolPalette",
     "renderLibraryUI",
     "_renderKeybindingsUI",

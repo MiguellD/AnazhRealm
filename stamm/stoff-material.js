@@ -206,7 +206,140 @@ class AnazhRealm_stoff_material {
         const hfB = TSL.min(hf, float(1.0)); // Interaktion wirkt bodennah (Halm/Busch), nicht am Wipfel
         offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
         offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
-        return naht.vorlage(vec3(offX, float(0.0), offZ));
+        // die Druckwelle legt den Halm um seinen Fuß (`_halmWelle`): ohne Welle der Null-Versatz
+        return naht.vorlage(vec3(offX, float(0.0), offZ).add(this._halmWelle(TSL, positionWorld, hf)));
+    }
+
+    // DER HALM UNTER DER WELLE (druckwelle-bild) — der Stoß der Druckwelle im EINEN Wind-Term: jeder Halm-Leser (`_windSwayOffset`:
+    // die Nah-Wiese, ihre Ferne, die Nah-Streu) legt sich mit der Front und steht wieder auf, aus dem Gesetz der Welle
+    // (schmiede-core `STOFF_GESETZ`, „DER HALM UNTER DER WELLE"), kein Effekt daneben. Je lebender Welle (`_tickHalmWelle` füllt
+    // die Slots: Ort, W^(1/3), Alter auf der Welt-Uhr, Radius) liest die Ecke die Tafel der Welle am skalierten Abstand
+    // Z = R ÷ W^(1/3) (`_wellenTafel`: Ankunft, Luft-Weg, Dauer), `halmWinkel` gibt den Winkel θ des Halms zur Zeit seit SEINER
+    // Ankunft, er dreht starr um seinen Fuß von der Ladung weg: Versatz = Höhe · (sin θ · n̂, cos θ − 1) — die Länge des Halms
+    // bleibt. Mehrere Wellen summieren ihre Neigung (höchstens liegend). RUHE IST NULL: ohne Welle überspringt die GPU den Zweig
+    // an EINER Uniform (`uWelleZahl`), der Versatz ist genau 0 und das Bild das alte. `lage` die Welt-Lage der Ecke (die Naht),
+    // `hf` die Höhe über der Wurzel in Metern. → vec3 in Welt-Metern.
+    _halmWelle(T, lage, hf) {
+        const wu = this.state.windUniforms;
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const hz = this._halmZahlen();
+        const lies = this._wellenTafel(T);
+        const A = Object.assign(AnazhRealm._windTsl(T), {
+            sub: (a, b) => a.sub(b),
+            div: (a, b) => a.div(b),
+            tanh: (a) => T.tanh(a),
+            asin: (a) => T.asin(a),
+        });
+        const { float } = T;
+        return T.Fn(() => {
+            const sx = float(0.0).toVar();
+            const sz = float(0.0).toVar();
+            const slot = (i) => {
+                const [o, u] = [wu.uWelle[i], wu.uWelleUhr[i]];
+                const dx = lage.x.sub(o.x);
+                const dy = lage.y.sub(o.y);
+                const dz = lage.z.sub(o.z);
+                const flach = dx.mul(dx).add(dz.mul(dz)).add(float(1e-4));
+                const R = T.sqrt(flach.add(dy.mul(dy)));
+                const tafel = lies(R.div(o.w));
+                // die Welle endet an ihrem Radius (`druckRadius`: dahinter ist sie Schall)
+                const weg = tafel.weg.mul(o.w).mul(T.step(R, u.y));
+                const theta = SG.halmWinkel(A, weg, tafel.dauer.mul(o.w), u.x.sub(tafel.zeit.mul(o.w)), hz);
+                const sin = T.sin(theta).div(T.sqrt(flach));
+                sx.addAssign(dx.mul(sin));
+                sz.addAssign(dz.mul(sin));
+            };
+            const kette = (i) =>
+                T.If(wu.uWelleZahl.greaterThan(i + 0.5), () => {
+                    slot(i);
+                    if (i + 1 < wu.uWelle.length) kette(i + 1);
+                });
+            kette(0);
+            const m2 = sx.mul(sx).add(sz.mul(sz));
+            const g = float(1.0).div(T.sqrt(T.max(m2, float(1.0))));
+            const fall = T.sqrt(T.max(float(1.0).sub(m2.mul(g).mul(g)), float(0.0)));
+            return T.vec3(sx.mul(g).mul(hf), fall.sub(float(1.0)).mul(hf), sz.mul(g).mul(hf));
+        })();
+    }
+
+    // DIE ZAHLEN DES HALMS UNTER DER WELLE (schmiede-core `halmZahlen`): die Zeile gras (ρ) und ihr Brennstoff-Bett (σ, die
+    // Tiefe = GRASS_BLADE_H) — dasselbe Bett, an dem der Brand läuft —, die Luft der Welle (`_druckLuft`) und der Takt des
+    // Wiegens (WIND_WIEGEN.takt, die Eigen-Kreisfrequenz des Halms im Wind-Term). Gemerkt je Stoff-Stand (ρ ist schreibbar).
+    _halmZahlen() {
+        const M = this._halmZahlenMerk;
+        if (M && M.stand === AnazhRealm._stoffStand) return M.hz;
+        const z = this._stoff("gras");
+        const hz =
+            z &&
+            globalThis.__schmiedeCore.STOFF_GESETZ.halmZahlen(
+                z,
+                z.brenn,
+                this._druckLuft(),
+                AnazhRealm.WIND_WIEGEN.takt
+            );
+        if (!hz) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ.halmZahlen · die Zeile gras mit ihrem Bett");
+        this._halmZahlenMerk = { stand: AnazhRealm._stoffStand, hz };
+        return hz;
+    }
+
+    // DIE TAFEL DER WELLE IM STOFF (schmiede-core `druckTafel` an der Luft der Welle): EINE Textur 241 × 1 (rgba32float, roh
+    // geladen — zwei Stützen je Lesung, linear im Index gemischt, wie `frontWeg` die Ankunft rechnet). → lies(Z) → { zeit, weg,
+    // dauer } je kg^(1/3) am skalierten Abstand Z. Die Ladungen stehen im Graph des Stoffs, nie in einer Layout-Funktion
+    // (`_rauschAtlas`: r184 bände die Textur nur dem ersten Programm).
+    _wellenTafel(T) {
+        const tf = globalThis.__schmiedeCore.STOFF_GESETZ.druckTafel(this._druckLuft());
+        let tex = this._wellenTafelTex;
+        if (!tex) {
+            tex = this._wellenTafelTex = new THREE.DataTexture(
+                tf.daten,
+                tf.n + 1,
+                1,
+                THREE.RGBAFormat,
+                THREE.FloatType
+            );
+            tex.name = "wellen-tafel";
+            tex.minFilter = THREE.NearestFilter;
+            tex.magFilter = THREE.NearestFilter;
+            tex.generateMipmaps = false;
+            tex.needsUpdate = true;
+        }
+        return (Z) => {
+            const f = T.clamp(
+                T.log(T.max(Z, T.float(tf.zMin)).div(T.float(tf.zMin))).div(T.float(tf.lnq)),
+                T.float(0.0),
+                T.float(tf.n)
+            );
+            const i0 = T.min(T.floor(f), T.float(tf.n - 1));
+            const t = f.sub(i0);
+            const i = T.int(i0);
+            const a = T.textureLoad(tex, T.ivec2(i, 0));
+            const b = T.textureLoad(tex, T.ivec2(i.add(1), 0));
+            return { zeit: T.mix(a.x, b.x, t), weg: T.mix(a.y, b.y, t), dauer: T.mix(a.z, b.z, t) };
+        };
+    }
+
+    // DIE WELLEN IM BILD (je Bild, neben `_tickGrasBend`): die lebenden Wellen (`_druckWellen`, `_druckWelle` trägt sie ein)
+    // in die Slots des Wind-Satzes — Ort und W^(1/3), ihr Alter auf der WELT-Uhr (`state.spielZeit`: die Bild-Uhr hält die
+    // Bühne an, die Welle liefe im Standbild nicht) und ihr Radius. Eine Welle lebt im Bild, bis ihr letzter Halm steht
+    // (`bildEnde`: Ankunft und Dauer an ihrem Radius + die Ruhe des Halms); sind mehr Wellen am Leben als Slots
+    // (`DRUCK.bildWellen`), tragen die jüngsten. Ohne Welle steht die Zahl auf 0 (`_halmWelle` überspringt).
+    _tickHalmWelle() {
+        const wu = this.state.windUniforms;
+        if (!wu || !wu.uWelle) return;
+        const L = this._druckWellen;
+        let n = 0;
+        if (L && L.length) {
+            const jetzt = this.state.spielZeit;
+            let k = 0;
+            for (const w of L) if (jetzt < w.bildEnde) L[k++] = w;
+            L.length = k;
+            for (let i = k - 1; i >= 0 && n < wu.uWelle.length; i--, n++) {
+                const w = L[i];
+                wu.uWelle[n].value.set(w.x, w.y, w.z, w.w3);
+                wu.uWelleUhr[n].value.set(jetzt - w.uhr, w.radius);
+            }
+        }
+        wu.uWelleZahl.value = n;
     }
 
     // CPU-Seite der EINEN Wind-Richtung: der Kern (phyto-core `windRichtung`, ±~41° Mäander um die Grundrichtung der Saat,
@@ -297,9 +430,10 @@ class AnazhRealm_stoff_material {
     }
 
     // Geteilte Kopplungs-Uniforms auf dem EINEN windUniforms-Slot: `uWindDir` (vec2; Leser: Gras/Streu
-    // via `_windSwayOffset`, Baum-Laub `_applyVegetationResponse`, Impostor) und `uBend`
-    // (GRAS_BEND_SLOTS × vec4). Idempotent; ohne TSL.uniform (Skalar-Mock in gate:kopplung) bleibt ein
-    // gesetztes wu stehen. `_loopRender` speist beide pro Frame (`_windDirAt`, `_tickGrasBend`).
+    // via `_windSwayOffset`, Baum-Laub `_applyVegetationResponse`, Impostor), `uBend`
+    // (GRAS_BEND_SLOTS × vec4) und die Druckwellen (`uWelleZahl`, `uWelle`, `uWelleUhr`: DRUCK.bildWellen Slots).
+    // Idempotent; ohne TSL.uniform (Skalar-Mock in gate:kopplung) bleibt ein gesetztes wu stehen. `_loopRender` speist sie
+    // pro Frame (`_windDirAt`, `_tickGrasBend`, `_tickHalmWelle`).
     _ensureWindCoupling(TSL) {
         const wu = this._windUniformsEnsure();
         if (!wu.uWindDir) {
@@ -310,6 +444,17 @@ class AnazhRealm_stoff_material {
             wu.uBend = [];
             for (let i = 0; i < AnazhRealm.GRAS_BEND_SLOTS; i++) {
                 wu.uBend.push(TSL.uniform(new THREE.Vector4(0, -1e6, 0, 0)));
+            }
+        }
+        // die Druckwellen im Bild (`_halmWelle` liest, `_tickHalmWelle` schreibt): die Zahl der lebenden, je Slot Ort + W^(1/3)
+        // und (Alter s, Radius m)
+        if (!wu.uWelle) {
+            wu.uWelleZahl = TSL.uniform(0.0);
+            wu.uWelle = [];
+            wu.uWelleUhr = [];
+            for (let i = 0; i < AnazhRealm.DRUCK.bildWellen; i++) {
+                wu.uWelle.push(TSL.uniform(new THREE.Vector4(0, 0, 0, 0)));
+                wu.uWelleUhr.push(TSL.uniform(new THREE.Vector2(0, 0)));
             }
         }
         // UNIFORM-HEIMAT: auch die späten Kopplungs-Uniforms (uWindDir/uBend)
