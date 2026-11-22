@@ -146,7 +146,7 @@ selbsttest_beweis() {
     echo "$a" | grep -q "keine Zeile" || return 1
 }
 case "$1" in
-    --selbsttest) selbsttest_lebt && selbsttest_kaputt && selbsttest_beweis && selbsttest_blick && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-probe-lauf && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, beweis, blick, buche, probe-lauf)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
+    --selbsttest) selbsttest_lebt && selbsttest_kaputt && selbsttest_beweis && selbsttest_blick && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-sammeln && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, beweis, blick, buche, sammeln+nachgeben)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
     --blick) blick; exit 0 ;;
     --stopp) stopp "$2"; exit 0 ;;
 esac
