@@ -651,7 +651,9 @@ function raumLinse() {
     // 1b) KOLLISION == OPTIK IN JEDER FERNE: jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
     //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
     //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
-    const NUR_WURF = (l) => !!(LOD_CFG.budget.haus[l] || {}).nurWurf;
+    //     EINE HÜLLE JE HAUS (eine-huelle): JEDE Stufe, auch die NUR-WURF-Stufe — das ferne Haus bestellt nur sie, und der Wirt
+    //     stellte ihm vier Wände aus der Tür-Zeile auf (kam die Hülle der gezeigten Stufe, rückten die Stände der Bewohner). Am
+    //     Stand davor fällt jede Kultur an ihrer Stufe 3 beim Namen (64 von 64); Selbsttest: eine Stufe 3 ohne Hülle wird rot.
     const huellenBruch = (H) => {
         const bruch = [];
         for (const k of KULTUREN)
@@ -663,7 +665,7 @@ function raumLinse() {
                 }
                 const z0 = h0.join(",");
                 for (const l of LODS) {
-                    if (l === 0 || NUR_WURF(l)) continue; // die NUR-WURF-Stufe wird nie gezeigt und trägt keine Kollision
+                    if (l === 0) continue;
                     if (!H[`${k}-s${s}-L${l}`] || H[`${k}-s${s}-L${l}`].join(",") !== z0) bruch.push(`${k}/${s}/L${l}`);
                 }
             }
@@ -671,11 +673,16 @@ function raumLinse() {
     };
     const hb = huellenBruch(huellen);
     // in der EINEN Hüllen-Form (rolle fest), 32 Kulturen × 2 Samen
-    check("Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich", hb.length === 0, hb.slice(0, 4).join(" "));
+    check("Hülle des Gesetzbuchs: JEDE Stufe (auch die NUR-WURF-Stufe) trägt die Solids der Stufe 0 byte-gleich", hb.length === 0, `${hb.length} Brüche: ${hb.slice(0, 4).join(" ")}`);
     {
         const korrupt = Object.assign({}, huellen);
         korrupt["alemannisch-s7-L1"] = [-4, 0, -5, 4, 9, 5]; // die Stufen-Bounding-Box statt der Solids
         check("SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot", huellenBruch(korrupt).length === 1);
+        // der Stand vor eine-huelle: die NUR-WURF-Stufe ohne Hülle — jede Kultur fällt an ihr beim Namen
+        const fernLeer = Object.assign({}, huellen);
+        for (const k of Object.keys(fernLeer)) if (k.endsWith("-L3")) fernLeer[k] = null;
+        const fb = huellenBruch(fernLeer);
+        check("SELBST-TEST: die NUR-WURF-Stufe ohne Hülle wird rot, jede Kultur beim Namen", fb.length === KULTUREN.length * SEEDS.length && fb.every((b) => b.endsWith("/L3")), `${fb.length} von ${KULTUREN.length * SEEDS.length}`);
     }
     {
         // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m)

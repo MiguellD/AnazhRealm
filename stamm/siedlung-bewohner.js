@@ -1210,23 +1210,26 @@ class AnazhRealm_siedlung_bewohner {
     // (`_hausHuelleSetzen`: die Boxen seiner Wände im Blocker-Netz) — ihre Regeln fragen die Wände (`frei`, die Linie zum Netz).
     // Bis siedlung-k3-hang entstand die erste Liste vor den Hüllen (das Start-Dorf am Hang: 18 von 18 Häusern ohne Hülle), jede
     // nach einer Abwesenheit mit ihnen: die erste stellte Stände hinter Hauswände, die zweite andere (die Wiederkehr 21 m).
-    // Es wartet jedes Haus, dessen Hülle kommt: gezeichnet oder in der Mesh-Zone (`architectureCullingRadius`) — ein kaltes
-    // Haus jenseits trägt seine Hülle erst, wenn der Spieler naht, dann prüft die Wache (`_bewohnerWechsel`) die Stände um
-    // es. Bis w3u-stadt-leben wartete die Liste auf jedes Haus: die Metropole an stadt-voll (295 Häuser bis 409 m vom Markt,
-    // 165 kalt) blieb ohne einen Bewohner.
+    // EINE HÜLLE JE HAUS (eine-huelle): es wartet JEDES Haus des Plans, und die Liste holt, worauf sie wartet (`_hausHuelleHolen`:
+    // die Lieferung des Fernkörpers trägt die Hülle wie jede Stufe) — je Takt `huellenJeTakt` Häuser, reihum. Bis hier wartete
+    // sie nur auf die Häuser in der Mesh-Zone (`architectureCullingRadius`) und die gezeichneten: ein kaltes Haus jenseits
+    // stand in vier Wänden aus seiner Tür-Zeile, trug seine Hülle erst, wenn der Spieler nahte, und die Wache rückte dann die
+    // Stände um es (0,3–2,9 m, 28 während einer Zählung am Start-Dorf — die Station menge.bevoelkerung#1 verlor ihr Soll).
+    // Die Ausnahme kam mit w3u-stadt-leben: der Fernkörper trug keine Hülle, die Metropole an stadt-voll (295 Häuser bis 409 m
+    // vom Markt, 165 kalt) blieb ohne einen Bewohner.
     _bewohnerHuellenDa(S) {
         const samen = S.hausSamen || (S.hausSamen = new Set(S.plan.slots.map((sl) => sl.seed >>> 0)));
-        const [p, R] = [this.state.playerMesh.position, this.state.architectureCullingRadius];
+        const offen = [];
         for (const e of this.state.architectures || [])
-            if (
-                e &&
-                e.tuer &&
-                samen.has(e.seed >>> 0) &&
-                !e._hausHuelle &&
-                (this._archIsRendered(e) || (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 <= R * R)
-            )
-                return false;
-        return true;
+            if (e && e.tuer && !e._hausHuelle && samen.has(e.seed >>> 0)) offen.push(e);
+        if (!offen.length) return true;
+        const n = AnazhRealm.BEWOHNER.huellenJeTakt;
+        const ab = (S.huellenAb = (S.huellenAb | 0) % offen.length);
+        let da = 0;
+        for (let i = 0; i < Math.min(n, offen.length); i++)
+            if (this._hausHuelleHolen(offen[(ab + i) % offen.length])) da++;
+        S.huellenAb = ab + n;
+        return da === offen.length;
     }
 
     // DIE VORLAGEN DER GESTALTEN im Faden (der Mensch-Ofen der Foundry, nah zuerst — nie ein Guss im Haupt-Faden): je Stufe
@@ -3776,9 +3779,11 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // rumpfMaxRad = so weit der Rumpf über dem Becken (~25°), jenseits wendet sich, wer steht, mit dem Leib · kopfRadS = so schnell dreht der Kopf (Blickwendungen des Kopfs 200–300°/s,
 // Zangemeister & Stark 1982) · spielerRaumM = der persönliche Raum über zwei Kapseln, den er dem Spieler lässt (Hall 1966:
 // die persönliche Distanz ab 0,45 m), geweitet von der erinnerten Furcht (`_bewohnerSpielerAbstand`) · zeugeM = so weit sieht
-// er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
+// er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`). DIE HÜLLEN (eine-huelle): huellenJeTakt = so viele Häuser
+// ohne Hülle fragt die wartende Liste je Takt nach ihrer Lieferung (`_bewohnerHuellenDa`, reihum).
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
+    huellenJeTakt: 8,
     staende: Object.freeze(["heim", "platz", "werk", "mahl", "abend", "besuch"]),
     restMax: 0.03,
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
