@@ -26,7 +26,7 @@ const {
 } = require("./lib/welt-boot.cjs");
 const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
-const { losProben, huelleProben, wurfProben, brandwandProben } = require("./lib/los-proben.cjs");
+const { losProben, huelleProben, wurfProben, brandwandProben, kernMutante, kernAusText } = require("./lib/los-proben.cjs");
 const {
     gassenGefaelle,
     erdbauMedian,
@@ -143,13 +143,19 @@ function jahresringe(FC, o = {}) {
         });
         const P = JAHRESRINGE.map((epoche, k) => (o.ex || FC.exportSettlement)(dp(epoche, k)));
         J.paare.push(P.slice(1).map((jung, k) => ueberdeckung(FC, P[k], jung)));
+        // die Epoche, die der Stand der Saat trägt (Teil T, `epocheDerSaat`): die Tracht, die Kirchen und der Turm folgen ihr —
+        // ein Ort ohne Stahlbeton bleibt in der Gründerzeit
+        const ep = (x, k) => x.technik?.epoche || JAHRESRINGE[k];
+        const traegt = (x, c) => FC.bauTechnik({ kultur: c, stil: FC.KULTUR[c].stil }).every((t) => x.technik.stand.includes(t));
         const kirchen = new Set(P.map((x) => x.slots.find((s) => s.rolle === "kirche")?.kultur)).size;
+        const epochen = new Set(P.map(ep)).size;
         const heute = o.nH ? FC.DORF(dp("moderne", 0)).groesse : "stadt";
+        if (P.every((x, k) => ep(x, k) === JAHRESRINGE[k])) J.voll = (J.voll || 0) + 1;
         P.forEach((x, k) => {
             const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
-            if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[JAHRESRINGE[k]].tracht))
+            if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[ep(x, k)].tracht))
                 fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
-            if (k === 3 && (x.groesse !== heute || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm")))
+            if (k === 3 && ep(x, k) === "moderne" && (x.groesse !== heute || kirchen < epochen || !x.slots.some((s) => s.rolle === "turm")))
                 fehl(`${x.groesse}, ${kirchen} Kirchen`);
             const quer = x.mauer?.segs.some((g) =>
                 x.slots.some((s) =>
@@ -166,13 +172,106 @@ function jahresringe(FC, o = {}) {
                     s.baujahr < { turm: 1905, halle: 1850 }[s.rolle] ||
                     !(
                         /kirche|scheune/.test(s.rolle) ||
-                        FC.REGION_HIST[x.region].reduce((q, [ab, n]) => (s.baujahr < ab ? q : n), []).includes(s.kultur)
+                        // die Kultur aus der jüngsten Historie bis zum Baujahr, deren Bauweise der Stand trägt (sonst der Notbau)
+                        (FC.REGION_HIST[x.region]
+                            .filter(([ab]) => s.baujahr >= ab)
+                            .map(([, n]) => n.filter((c) => FC.KULTUR[c] && traegt(x, c)))
+                            .filter((n) => n.length)
+                            .pop() || [FC.TECHNIK.notbau[x.region]]
+                        ).includes(s.kultur)
                     )
                 )
                     fehl(`${s.rolle} ${s.kultur} ${s.baujahr}`);
         });
     }
     return Object.assign(J, { min: Math.min(...J.paare.flat()) });
+}
+
+// ===== TEIL T (mensch.wirtschaft.technik): DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN — je Saat 1 … 20 der Ort ihrer Epoche
+// (`siedlungsEpoche`, 60 Häuser) im Export: das Bild fragt den Graphen (fachwerk `technikImBild`: keine Technik im Bild, die der
+// Stand der Saat nicht trägt, kein Vorgänger einer Technik im Bild außer dem Stand), der Stand gehorcht dem Gesetz, nachgerechnet
+// aus den Stoff-Zeilen (jeder Vorgänger steht, jeder Stoff kommt am Ort vor, T_schmelz des Prozesses liegt unter der Grenze der
+// Öfen der Vorgänger; ohne Zinn keine Bronze, ohne Kupfer keine Kuppel), die Saaten tragen verschiedene Stände, die Epoche des
+// Orts trägt ihr Stand. Der Spike an EINEM Ort mit gesetzten Stoffen: alle Stoffe tragen Bronze, ohne Zinn fehlt sie, Eisen am
+// Herd (Grenze Feldstein) statt am Schachtofen fehlt an der Temperatur. Die Mutanten fallen beim Namen (der Selbsttest).
+const TECHNIK_SAATEN = Array.from({ length: 20 }, (_, i) => i + 1);
+const TECHNIK_TAETER = {
+    "Bronze ohne Zinn": [
+        [
+            "bronze:     { stoffe:['kupfer','zinn'], prozess:'bronze',    vor:['kupfer','zinn'],",
+            "bronze:     { stoffe:['kupfer'],        prozess:'bronze',    vor:['kupfer'],",
+        ],
+    ],
+    "Technik ohne Vorgänger im Bild": [
+        [
+            "alle.forEach((b,ai)=>{ technikBau(b,stand,region); schreibe(b,null); for(const f of za[ai].fr){ technikBau(f.v,stand,region); schreibe(f.v,b); } });",
+            "alle.forEach((b,ai)=>{ schreibe(b,null); for(const f of za[ai].fr){ schreibe(f.v,b); } });",
+        ],
+    ],
+    "jede Saat derselbe Stand": [["var s=Math.round(Number(samen)*1000)|0, V={}", "var s=0, V={}"]],
+    "Eisen ohne Schachtofen": [["zuHeiss=T>0&&!(T<g);", "zuHeiss=false;"]],
+};
+function technikGang(FC, o = {}) {
+    const S = globalThis.__schmiedeCore.STOFF_GESETZ, G = FC.TECHNIK.graph, tS = (x) => S.zeile(x).tSchmelz;
+    const T = { ohneVor: 0, ohne: {}, imBild: {}, fehl: [], staende: new Set(), spike: [], bild: o.bild, saaten: o.saaten };
+    const fehl = (w) => T.fehl.push(w);
+    // der Graph: ≥ 10 Techniken mit Vorgänger, jeder Prozess und jedes Futter eine Stoff-Zeile mit T_schmelz
+    const mitVor = Object.keys(G).filter((k) => G[k].vor.length);
+    if (mitVor.length < 10) fehl(`Graph: ${mitVor.length} Techniken mit Vorgänger (Soll ≥ 10)`);
+    for (const [k, t] of Object.entries(G))
+        for (const x of [t.prozess, t.ofen].filter(Boolean)) if (!(tS(x) > 0)) fehl(`Graph: ${k} liest ${x} ohne T_schmelz`);
+    for (const seed of o.saaten || TECHNIK_SAATEN) {
+        const P = o.bild === false ? null : FC.exportSettlement({ seed, nH: 60, epoche: FC.siedlungsEpoche(seed) });
+        // ohne Bild (der Selbsttest der Stände) der Stand der Saat in Mitteleuropa
+        const TS = P ? P.technik : FC.technikStand(seed, "mitteleuropa");
+        if (!TS || !Array.isArray(TS.stand)) {
+            fehl(`${seed}: der Export trägt keinen Technik-Stand`);
+            continue;
+        }
+        const st = TS.stand, V = TS.vorkommen, grenze = {};
+        T.staende.add(st.join(","));
+        // das Gesetz, nachgerechnet aus den Stoff-Zeilen
+        for (const id of Object.keys(G).filter((k) => st.includes(k))) {
+            const t = G[id], g = Math.max(0, ...t.vor.map((v) => grenze[v] || 0));
+            for (const v of t.vor) if (!st.includes(v)) fehl(`${seed}: ${id} steht ohne Vorgänger ${v}`);
+            for (const x of t.stoffe) if (!V[x]) fehl(`${seed}: ${id} steht ohne ${x} am Ort`);
+            if (t.prozess && !(tS(t.prozess) < g)) fehl(`${seed}: ${id} schmilzt ${t.prozess} bei ${tS(t.prozess)} K über der Grenze ${g} K`);
+            grenze[id] = Math.max(g, t.ofen ? tS(t.ofen) : 0);
+        }
+        if (!V.zinn && st.includes("bronze")) fehl(`${seed}: Bronze ohne Zinn am Ort`);
+        if (!P) continue;
+        if (P.technik.epoche && !FC.EPOCHEN[P.technik.epoche].technik.every((k) => st.includes(k)))
+            fehl(`${seed}: die Epoche ${P.technik.epoche} trägt Technik außer dem Stand`);
+        const B = FC.technikImBild(P);
+        T.ohneVor += B.ohneVor;
+        for (const [k, n] of Object.entries(B.ohne)) T.ohne[k] = (T.ohne[k] || 0) + n;
+        for (const [k, n] of Object.entries(B.imBild)) T.imBild[k] = (T.imBild[k] || 0) + n;
+        if (B.vorgaengerFehlt.length) fehl(`${seed}: Vorgänger außer dem Stand ${B.vorgaengerFehlt.join(" ")}`);
+        if (!V.kupfer && B.imBild.kupfer) fehl(`${seed}: Kuppel aus Kupfer ohne Kupfer am Ort`);
+    }
+    // der Spike: EIN Ort, die Stoffe gesetzt
+    const alle = Object.fromEntries(Object.keys(FC.TECHNIK.vorkommen).map((k) => [k, true]));
+    const voll = FC.technikStand(1, "mitteleuropa", alle);
+    const ohneZinn = FC.technikStand(1, "mitteleuropa", { ...alle, zinn: false });
+    const amHerd = FC.technikStand(1, "mitteleuropa", alle, { ...G, eisen: { ...G.eisen, vor: ["feuer"] } });
+    if (!voll.stand.includes("bronze") || voll.stand.length !== Object.keys(G).length)
+        T.spike.push(`alle Stoffe: ${voll.stand.length} von ${Object.keys(G).length} Techniken, Bronze ${voll.stand.includes("bronze")}`);
+    if (ohneZinn.stand.includes("bronze")) T.spike.push("ohne Zinn steht Bronze");
+    if (amHerd.stand.includes("eisen") || !amHerd.fehlt.eisen || amHerd.fehlt.eisen.T < amHerd.fehlt.eisen.grenze)
+        T.spike.push(`Eisen am Herd steht (${JSON.stringify(amHerd.fehlt.eisen || null)})`);
+    return T;
+}
+// das Urteil des Gangs: T1 das Bild, T2 das Gesetz und der Spike, T3 die Saaten (die Namen tragen die Mutanten des Selbsttests)
+function technikUrteil(T, check) {
+    const n = (T.saaten || TECHNIK_SAATEN).length;
+    if (T.bild !== false)
+        check(
+            `T1 BILD (${n} Saaten): ${T.ohneVor} Techniken ohne Voraussetzung im Bild, im Bild ${Object.keys(T.imBild).length} Techniken (Soll 0 · ≥ 5)`,
+            T.ohneVor === 0 && Object.keys(T.imBild).length >= 5,
+            `${JSON.stringify(T.ohne)} · ${JSON.stringify(T.imBild)}`
+        );
+    check(`T2 GESETZ: ${T.fehl.length} Brüche am Stand, Spike ${T.spike.length}`, !T.fehl.length && !T.spike.length, [...T.spike, ...T.fehl.slice(0, 6)].join(" · "));
+    check(`T3 SAATEN: ${T.staende.size} verschiedene Stände über ${n} Saaten (Soll ≥ 2)`, T.staende.size >= 2, [...T.staende].join(" | "));
 }
 
 // ===== TEIL W (siedlung.K4 Staffel 2): DAS WACHSTUM — je Ort (Saat, Zahl) der Ort des Mittelalters über `WACHS_S` s Welt-Uhr in
@@ -1195,6 +1294,17 @@ hauptLauf(async () => {
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
         wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
+        // V-T (mensch.wirtschaft.technik): jede Mutante des Technik-Gesetzes fällt in ihrem Urteil beim Namen
+        const tSoll = { "Bronze ohne Zinn": "T2", "Technik ohne Vorgänger im Bild": "T1", "jede Saat derselbe Stand": "T3", "Eisen ohne Schachtofen": "T2" };
+        for (const [name, R] of Object.entries(TECHNIK_TAETER)) {
+            const m = kernMutante(kernText(), R), rot = [];
+            if (m.text) {
+                const K = kernAusText(m.text, "technik-" + name);
+                const o = tSoll[name] === "T1" ? { saaten: [1, 7] } : { bild: false };
+                technikUrteil(Object.assign(technikGang(K, o), o), (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220)));
+            }
+            check(`Selbst-Test T: „${name}“ fällt in ${tSoll[name]} beim Namen`, rot.some((w) => w.startsWith(tSoll[name])), m.fehlt || rot.join(" · "));
+        }
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1225,7 +1335,18 @@ hauptLauf(async () => {
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
-    if (!nur("z") && !nur("w") && !ww) {
+    if (nur("t") || (!nur("z") && !nur("w") && !nur("j") && !ww)) {
+        console.log("=== TEIL T: DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (mensch.wirtschaft.technik) ===");
+        const t0 = Date.now(), T = technikGang(FC);
+        console.log(
+            "TECHNIK " +
+                JSON.stringify({ ohneVor: T.ohneVor, ohne: T.ohne, imBild: T.imBild, staende: [...T.staende], fehl: T.fehl, spike: T.spike })
+        );
+        technikUrteil(T, check);
+        console.log(`  Teil T: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        if (nur("t")) wandEnde(errs, "DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (Teil T).");
+    }
+    if (!nur("z") && !nur("w") && !nur("t") && !ww) {
         console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
         const mut = (dp) =>
             ((x) => ({ ...x, kleidung: null, mauer: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
@@ -1255,8 +1376,9 @@ hauptLauf(async () => {
             Math.min(J.min, Jz.min) >= 0.8 && Math.max(J0.min, Jz0.min) < 0.8
         );
         check(
-            `J2 EPOCHE: ${fehl.length} Brüche, die Mutante ${Jm.fehl.length}`,
+            `J2 EPOCHE: ${fehl.length} Brüche, die Mutante ${Jm.fehl.length}; ${J.voll || 0} von 8 Saaten tragen die ganze Achse bis zur Moderne (Soll ≥ 1)`,
             !fehl.length &&
+                J.voll >= 1 &&
                 /turm \S+ 1455/.test(Jm.fehl) &&
                 /Kleidung null/.test(Jm.fehl) &&
                 /Mauer fehlt/.test(Jm.fehl),

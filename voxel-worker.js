@@ -41,6 +41,12 @@ const QUELLE = self.__anazhQuelle;
 if (!QUELLE || !Array.isArray(QUELLE.kerne) || !QUELLE.spaet)
     throw new Error("voxel-worker: geboren ohne die Quelle des Wirts (`_fadenQuelle`)");
 importScripts(...QUELLE.kerne);
+// DAS FACHWERK SPÄT, mit dem Kern, den es beim Namen liest: sein Technik-Gesetz (TECHNIK) liest T_schmelz der Stoff-Zeile
+// (schmiede-core `STOFF_GESETZ`) — die Schmiede lädt vor ihm (welt-boot `KERN_LIEST` in Node)
+function fachwerkLaden() {
+    if (!self.__schmiedeCore) importScripts(QUELLE.spaet.schmiede);
+    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+}
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe. Der Worker reicht seinen `state` als Gelände-Lage (seed ·
 // noise · baseHeight · waterLevel · erbgut · regionSize). Fehlt der Kern, wirft der Worker beim Laden (fail-closed, nie still eine
@@ -348,7 +354,7 @@ function nachricht(e) {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im
             // Faden, der Wirt legt die Punkte (`_wegenetzLegen`)
-            if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+            fachwerkLaden();
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             // das Wasser des Gesetzes über die Breite des Wegs (`wegHalbM` um den Punkt des Rasters): das Urteil der Ort-Wahl
             // (`ortNass`, ohne Erdbau) — am Punkt allein fädelte er zwischen zwei Armen eines Bachs, die Räder im Wasser
@@ -1172,7 +1178,7 @@ function platteLege(key, antwort) {
 // Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
 // Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
 function ortWahl(msg) {
-    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+    fachwerkLaden();
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
     const t0 = self.performance.now(); // `ms` je Antwort liest der Wirt (`_ortWahlImFaden` → `_ortWahlMass.ms`, gate:settlement `ortMass`)
@@ -1350,7 +1356,7 @@ function ortNass(msg, E, x, z, L = state) {
 // auf den ersten tragenden Punkt der Ring-Spirale (je 12 m bis 240 m, 8 Richtungen; keiner: 0/0) — eine reine Funktion von
 // Saat und Gesetz (Lehre 7): kein Ort-Faden, keine Hydro-Kachel außer der Heimat. Rückgabe { plan, ms, gerueckt }.
 function genesisPlan(msg) {
-    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+    fachwerkLaden();
     const FC = self.__fachwerkCore;
     const t0 = self.performance.now();
     const v1 = FC.genesisLayout(msg.saat, msg.welten);

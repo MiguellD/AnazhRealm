@@ -3856,17 +3856,143 @@
     // `kleidZonen`) und die Farben (`CLOTH_COLORS`), in die der Genom-Roller der Bewohner fällt — der Export trägt sie als
     // `kleidung` (die Epoche seines Jahrs, `epocheBei`), der Leser ist der Wirt (`_bewohnerGestalten`).
     // prettier-ignore
-    const EPOCHEN={   // Legacy-Wahl → fixiert Region+Zeit (Pool-Override); 'gewuerfelt' überlässt ALLES dem Samen
-  antike:      {region:'antik',        jahr:80,   spanne:70,  groesse:'markt', tracht:{top:'poncho',bottom:'shorts',shoes:'none',farben:['white','sand','burgundy','red']}},
-  mittelalter: {region:'mitteleuropa', jahr:1320, spanne:90,  groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['sand','olive','grey','mustard','burgundy']}},
-  hanse:       {region:'mitteleuropa', jahr:1560, spanne:140, groesse:'markt', pool:['hanseatisch','hollaendisch','niedersaechsisch'], mark:{k:'hanseatisch',set:{turm:1,storeys:4}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','navy','burgundy','sand','white']}},
-  barock:      {region:'mitteleuropa', jahr:1700, spanne:80,  groesse:'markt', pool:['barock','renaissance','franzoesisch'], mark:{k:'barock',set:{kuppel:1,W:14,D:11}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['burgundy','navy','red','mustard','white']}},
-  gruenderzeit:{region:'mitteleuropa', jahr:1860, spanne:60,  groesse:'markt', pool:['viktorianisch','georgian','hanseatisch'], mark:{k:'viktorianisch',set:{turm:1,storeys:3}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','charcoal','grey','navy','white']}},
-  alpin:       {region:'alpin',        jahr:1620, spanne:220, groesse:'dorf',  tracht:{top:'pullover',bottom:'shorts',shoes:'boot',farben:['green','olive','grey','white','red']}},
-  mediterran:  {region:'mediterran',   jahr:1520, spanne:260, groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['white','sand','teal','red']}},
-  fernost:     {region:'fernost',      jahr:1250, spanne:300, groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'none',farben:['navy','teal','red','white','black']}},
-  moderne:     {region:'mitteleuropa', jahr:1935, spanne:70,  groesse:'stadt', pool:['modern','volle_moderne'], mark:{k:'hochhaus',set:{}}, tracht:{top:'tshirt',bottom:'pants',shoes:'sneaker',farben:['navy','blue','grey','white','charcoal','teal','red','black']}},
+    const EPOCHEN={   // Legacy-Wahl → fixiert Region+Zeit (Pool-Override); 'gewuerfelt' überlässt ALLES dem Samen. `technik`: was der Stand der Saat tragen muss, damit die Epoche steht (TECHNIK unten)
+  antike:      {region:'antik',        jahr:80,   spanne:70,  groesse:'markt', technik:['kalkmoertel','eisen'], tracht:{top:'poncho',bottom:'shorts',shoes:'none',farben:['white','sand','burgundy','red']}},
+  mittelalter: {region:'mitteleuropa', jahr:1320, spanne:90,  groesse:'dorf',  technik:['zimmerei','eisen'], tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['sand','olive','grey','mustard','burgundy']}},
+  hanse:       {region:'mitteleuropa', jahr:1560, spanne:140, groesse:'markt', technik:['ziegelei','eisen'], pool:['hanseatisch','hollaendisch','niedersaechsisch'], mark:{k:'hanseatisch',set:{turm:1,storeys:4}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','navy','burgundy','sand','white']}},
+  barock:      {region:'mitteleuropa', jahr:1700, spanne:80,  groesse:'markt', technik:['kalkmoertel','glas','kupfer'], pool:['barock','renaissance','franzoesisch'], mark:{k:'barock',set:{kuppel:1,W:14,D:11}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['burgundy','navy','red','mustard','white']}},
+  gruenderzeit:{region:'mitteleuropa', jahr:1860, spanne:60,  groesse:'markt', technik:['ziegelei','glas','stahl'], pool:['viktorianisch','georgian','hanseatisch'], mark:{k:'viktorianisch',set:{turm:1,storeys:3}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','charcoal','grey','navy','white']}},
+  alpin:       {region:'alpin',        jahr:1620, spanne:220, groesse:'dorf',  technik:['zimmerei'], tracht:{top:'pullover',bottom:'shorts',shoes:'boot',farben:['green','olive','grey','white','red']}},
+  mediterran:  {region:'mediterran',   jahr:1520, spanne:260, groesse:'dorf',  technik:['kalkmoertel'], tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['white','sand','teal','red']}},
+  fernost:     {region:'fernost',      jahr:1250, spanne:300, groesse:'dorf',  technik:['zimmerei'], tracht:{top:'poncho',bottom:'pants',shoes:'none',farben:['navy','teal','red','white','black']}},
+  moderne:     {region:'mitteleuropa', jahr:1935, spanne:70,  groesse:'stadt', technik:['stahlbeton','stahlbau'], pool:['modern','volle_moderne'], mark:{k:'hochhaus',set:{}}, tracht:{top:'tshirt',bottom:'pants',shoes:'sneaker',farben:['navy','blue','grey','white','charcoal','teal','red','black']}},
 };
+    // ════ DAS TECHNIK-GESETZ (mensch.wirtschaft.technik, additiv) — die Technik WÄCHST aus Voraussetzungen, sie ist keine Liste ════
+    //   Eine Technik steht im Stand einer Saat genau dann, wenn
+    //     (a) ihre Stoffe am Ort der Saat vorkommen (`technikVorkommen`),
+    //     (b) die Temperatur ihres Prozesses — T_schmelz des Stoffs, der in ihm schmilzt, gelesen beim Namen aus der EINEN
+    //         Stoff-Zeile (schmiede-core `STOFF_GESETZ`) — UNTER der Grenze des Ofens ihrer Vorgänger liegt: die Wand eines Ofens
+    //         hält bis T_schmelz ihres Futter-Stoffs (`ofen`), die Grenze erbt jeder Nachfolger (die heißeste seiner Vorgänger),
+    //     (c) jeder ihrer Vorgänger steht.
+    //   Eine Technik ohne Vorgänger und ohne Schmelze ist eine Wurzel (Feuer, Lehm, Holz): sie braucht nur ihre Stoffe.
+    //   DAS VORKOMMEN am Ort: ein Erz liegt in Reichweite einer Siedlung mit p = 1 − exp(−λ), λ = Häufigkeit seines Elements in
+    //     der oberen Kruste (ppm, Rudnick & Gao 2003) × MCKELVEY_K — die Zahl der Lagerstätten folgt der Krustenhäufigkeit
+    //     (McKelvey 1960), geeicht an EINER Zahl: jede zweite Siedlung erreicht Kupfer (Cu 28 ppm → p ½; Zinn 2,1 ppm → 5 %,
+    //     Eisen 39 200 ppm → 1). Ein Gestein steht mit p = 1 − (1 − f)^GESTEIN_EINHEITEN, f sein Anteil an der Landfläche der
+    //     Region des Orts, GESTEIN_EINHEITEN die geologischen Einheiten im Einzugsgebiet einer Siedlung (Kalk: am Mittelmeer 97 %,
+    //     in Mitteleuropa 64 %, im Norden 15 %).
+    //     Holz, Erde, Feldstein und Quarzsand trägt jeder Ort. Je Stoff ein eigener Wurf aus der Saat (der Strom des Plans zieht
+    //     nichts davon).
+    //   DAS BILD fragt den Graphen (`bauTechnik`): die Bauweise eines Hauses (sein Stil, Lehm für die Lehmbauten), seine Kuppel
+    //   aus Kupfer, die Esse der Schmiede, die Halle aus Stahl. DORF legt jeden Bau, den der Stand nicht trägt, am Schreiber-Ende
+    //   auf die jüngste getragene Bauweise seiner Region um (`technikBau`); die Epoche einer Siedlung ist die jüngste ihrer
+    //   Zeitachse, deren `technik` der Stand trägt (`epocheDerSaat`). Leser: DORF, der Export (`technik` des Plans), die Linse
+    //   gate:settlement T (Mutanten: Bronze ohne Zinn, Technik ohne Vorgänger im Bild, jede Saat derselbe Stand).
+    // prettier-ignore
+    const TECHNIK={
+      // je Technik: stoffe am Ort · prozess (die Stoff-Zeile, die schmilzt; null: keine Schmelze) · vor · ofen (das Futter, das sie baut)
+      graph:{
+        feuer:      { stoffe:['holz','stein'],  prozess:null,        vor:[],                          ofen:'stein' },   // der Herd aus Feldstein
+        lehmbau:    { stoffe:['erde'],          prozess:null,        vor:[],                          ofen:null },
+        zimmerei:   { stoffe:['holz'],          prozess:null,        vor:[],                          ofen:null },
+        ziegelei:   { stoffe:['erde'],          prozess:'glas',      vor:['feuer'],                   ofen:null },      // der Scherben sintert über seine Glasphase
+        kalkmoertel:{ stoffe:['kalk'],          prozess:null,        vor:['feuer'],                   ofen:null },      // Kalk brennen: Zersetzung, keine Schmelze
+        zinn:       { stoffe:['zinn'],          prozess:'zinn',      vor:['feuer'],                   ofen:null },
+        kupfer:     { stoffe:['kupfer'],        prozess:'kupfer',    vor:['feuer'],                   ofen:null },
+        bronze:     { stoffe:['kupfer','zinn'], prozess:'bronze',    vor:['kupfer','zinn'],           ofen:null },      // ohne Zinn keine Bronze
+        glas:       { stoffe:['quarz','holz'],  prozess:'glas',      vor:['ziegelei'],                ofen:null },      // Waldglas: Quarz + Holzasche im Hafen aus Ton
+        schachtofen:{ stoffe:['quarz','erde'],  prozess:'glas',      vor:['ziegelei'],                ofen:'quarz' },   // das Silika-Futter
+        eisen:      { stoffe:['eisen','holz'],  prozess:'zementit',  vor:['schachtofen'],             ofen:null },      // die Luppe: der Zementit des aufgekohlten Eisens schmilzt
+        stahl:      { stoffe:['eisen','holz'],  prozess:'stahl',     vor:['eisen'],                   ofen:null },
+        stahlbeton: { stoffe:['kalk'],          prozess:null,        vor:['stahl','kalkmoertel'],     ofen:null },
+        stahlbau:   { stoffe:[],                prozess:null,        vor:['stahl','glas'],            ofen:null },
+      },
+      // die Stoffe am Ort: ppm (Erz, McKelvey) · flaeche (Gestein) · immer
+      vorkommen:{ holz:{immer:1}, erde:{immer:1}, stein:{immer:1}, quarz:{immer:1}, eisen:{ppm:39200}, kupfer:{ppm:28}, zinn:{ppm:2.1},
+        // der Karbonat-Anteil der Landfläche je Region (GLiM, Hartmann & Moosdorf 2012: im Mittel 10 %; der Karst des Mittelmeers, die
+        // Kalkalpen, der Granit-Schild des Nordens)
+        kalk:{flaeche:{ mediterran:0.35, antik:0.35, alpin:0.25, mitteleuropa:0.12, fernost:0.10, nordisch:0.02 }} },
+      MCKELVEY_K: Math.LN2/28,
+      GESTEIN_EINHEITEN: 8,
+      // die Bauweise im Bild: der Stil (Lehm-Kulturen beim Namen), die Kuppel, die Rolle
+      stil:{ alt:'zimmerei', huette:'zimmerei', stroh:'zimmerei', stein:'kalkmoertel', klinker:'ziegelei', modern:'stahlbeton', glas:'stahlbau' },
+      kultur:{ pueblo:'lehmbau', marokkanisch:'lehmbau' },
+      rolle:{ schmiede:'eisen', halle:'stahl' },
+      // der Bau jeder Region, den ihre Wurzeln tragen (Holz oder Lehm): dort endet die Umlegung, wenn ihre Historie nichts trägt
+      notbau:{ mitteleuropa:'mittelalterlich', alpin:'holzhuette', mediterran:'marokkanisch', nordisch:'russisch', fernost:'japanisch', antik:'pueblo' },
+    };
+    // die Temperatur eines Prozesses: T_schmelz der Stoff-Zeile beim Namen (schmiede-core) — ohne den Kern bricht das Gesetz laut
+    function technikT(stoff){
+      var S=globalThis.__schmiedeCore;
+      if(!S||!S.STOFF_GESETZ) throw new Error('fachwerk: das Technik-Gesetz liest T_schmelz aus der Stoff-Zeile (schmiede-core STOFF_GESETZ) — der Kern ist nicht geladen');
+      var t=S.STOFF_GESETZ.zeile(stoff).tSchmelz;
+      if(!(t>0)) throw new Error('fachwerk: die Stoff-Zeile '+stoff+' trägt kein T_schmelz');
+      return t; }
+    // die Stoffe am Ort einer Saat in ihrer Region (je Stoff ein eigener Wurf; `p` die Wahrscheinlichkeit des Gesetzes)
+    function technikVorkommen(samen, region){
+      var s=Math.round(Number(samen)*1000)|0, V={}, k=Object.keys(TECHNIK.vorkommen);
+      for(var i=0;i<k.length;i++){ var q=TECHNIK.vorkommen[k[i]], f=q.flaeche&&q.flaeche[region];
+        if(q.flaeche&&!(f>=0)) throw new Error('fachwerk: die Region „'+region+'“ trägt keinen Gesteins-Anteil für '+k[i]+' (TECHNIK.vorkommen)');
+        var p=q.immer?1: q.ppm?1-Math.exp(-q.ppm*TECHNIK.MCKELVEY_K): 1-Math.pow(1-f, TECHNIK.GESTEIN_EINHEITEN);
+        var u=rangSchluessel((Math.imul(s^0x2c1b3c6d, 2654435761)+Math.imul(i+1, 0x9e3779b9))>>>0)/4294967296;
+        V[k[i]]=u<p; }
+      return V; }
+    // DER STAND einer Saat: die Techniken in der Folge der Tafel (jeder Vorgänger steht vor seinem Nachfolger), je fehlender ihr
+    // Grund — die Stoffe, die am Ort fehlen, die Vorgänger, die nicht stehen, die Temperatur über der Grenze des Ofens. `vorkommen`
+    // (optional) setzt die Stoffe am Ort (die Linse, der Spike), `graph` (optional) einen anderen Graphen derselben Form (der Spike:
+    // Eisen am Herd statt am Schachtofen); `grenze` je stehender Technik die Grenze ihres Ofens in K
+    function technikStand(samen, region, vorkommen, graph){
+      var V=vorkommen||technikVorkommen(samen, region), G=graph||TECHNIK.graph, ids=Object.keys(G), steht={}, grenze={}, fehlt={};
+      for(var i=0;i<ids.length;i++){ var id=ids[i], t=G[id], g=0, j;
+        for(j=0;j<t.vor.length;j++){ if(ids.indexOf(t.vor[j])<0||ids.indexOf(t.vor[j])>=i) throw new Error('fachwerk: der Vorgänger '+t.vor[j]+' von '+id+' steht nicht vor ihr in TECHNIK.graph'); if(grenze[t.vor[j]]>g) g=grenze[t.vor[j]]; }
+        var T=t.prozess?technikT(t.prozess):0;
+        var ohneStoff=t.stoffe.filter(function(x){ return !V[x]; }), ohneVor=t.vor.filter(function(v){ return !steht[v]; }), zuHeiss=T>0&&!(T<g);
+        if(ohneStoff.length||ohneVor.length||zuHeiss){ fehlt[id]={stoffe:ohneStoff, vor:ohneVor, T:T, grenze:g}; continue; }
+        steht[id]=true; grenze[id]=Math.max(g, t.ofen?technikT(t.ofen):0); }
+      return {samen:samen, region:region, vorkommen:V, stand:Object.keys(steht), fehlt:fehlt, grenze:grenze}; }
+    // die Techniken eines Baus im Bild (ov oder hp: stil · kultur · kuppel · dachTyp · rolle); ein unbekannter Stil bricht laut
+    function bauTechnik(b){
+      var t=TECHNIK.kultur[b.kultur]||TECHNIK.stil[b.stil];
+      if(!t) throw new Error('fachwerk: der Stil „'+b.stil+'“ ('+b.kultur+') trägt keine Technik in TECHNIK.stil');
+      var n=[t];
+      if(b.kuppel||b.dachTyp==='zwiebel') n.push('kupfer');
+      if(TECHNIK.rolle[b.rolle]) n.push(TECHNIK.rolle[b.rolle]);
+      return n; }
+    function traegt(stand, n){ for(var i=0;i<n.length;i++) if(stand.indexOf(n[i])<0) return false; return true; }
+    // DIE UMLEGUNG am Schreiber-Ende: ein Bau, dessen Technik der Stand nicht trägt, nimmt die jüngste Bauweise der Historie seiner
+    // Region bis zu seinem Baujahr, die er trägt (je Band die Kulturen seines Pools, gewählt nach seinem Samen), sonst den Notbau der
+    // Region; die Kuppel ohne Kupfer fällt, eine Rolle ohne ihre Technik wird Wohnhaus. Das Los (Breite, Tiefe, Geschosse, Grundriss)
+    // bleibt. Ein Bau, den der Stand trägt, bleibt byte-gleich.
+    function technikBau(b, stand, region){
+      var n=bauTechnik(b); if(traegt(stand,n)) return b;
+      if(TECHNIK.rolle[b.rolle]&&!traegt(stand,[TECHNIK.rolle[b.rolle]])) b.rolle='wohnhaus';
+      if((b.kuppel||b.dachTyp==='zwiebel')&&!traegt(stand,['kupfer'])){ b.kuppel=0; if(b.dachTyp==='zwiebel') b.dachTyp='sattel'; }
+      var tk=TECHNIK.kultur[b.kultur]||TECHNIK.stil[b.stil];
+      if(!traegt(stand,[tk])){
+        var H=REGION_HIST[region]||REGION_HIST.mitteleuropa, j=0, k=null, y=isFinite(b.baujahr)?b.baujahr:Infinity;
+        while(j+1<H.length&&y>=H[j+1][0]) j++;
+        for(;j>=0&&!k;j--){ var c=H[j][1].filter(function(x){ return KULTUR[x]&&traegt(stand,[TECHNIK.kultur[x]||TECHNIK.stil[KULTUR[x].stil]]); }); if(c.length) k=c[(b.seed>>>0)%c.length]; }
+        if(!k) k=TECHNIK.notbau[region]||TECHNIK.notbau.mitteleuropa;
+        var r=_bauweiseWurf(KULTUR[k], b.seed);
+        Object.assign(b,{kultur:k, stil:r.stil, brace:r.brace, col:r.col, pitchDeg:r.pitchDeg, hip:r.hip, roofCurve:r.roofCurve, treppgiebel:r.treppgiebel, bogenTyp:r.bogenTyp,
+          kuppel:traegt(stand,['kupfer'])?r.kuppel:0, dachTyp:r.dachTyp==='zwiebel'&&!traegt(stand,['kupfer'])?'sattel':r.dachTyp}); }
+      if(!traegt(stand,bauTechnik(b))) throw new Error('fachwerk: die Umlegung trägt den Bau ('+b.rolle+', '+b.kultur+') nicht — der Notbau der Region '+region+' steht nicht im Stand');
+      return b; }
+    // DIE EPOCHE DER SAAT: die jüngste Epoche der Zeitachse der verlangten, nicht jünger als sie, deren Technik der Stand trägt (null: keine)
+    function epocheDerSaat(name, stand){
+      var E=EPOCHEN[name]; if(!E) return null;
+      var a=zeitachse(E.region), e=null;
+      for(var i=0;i<a.length;i++) if(EPOCHEN[a[i]].jahr<=E.jahr&&traegt(stand,EPOCHEN[a[i]].technik)) e=a[i];
+      return e; }
+    // DAS BILD EINES PLANS vor dem Graphen (der Leser der Station und der Linse): je Slot seine Techniken, gezählt, welche der Stand
+    // des Plans nicht trägt (`ohneVor`: Techniken im Bild ohne Voraussetzung) und welche stehende Technik einen Vorgänger nicht im Stand hat
+    function technikImBild(plan){
+      var st=plan&&plan.technik&&plan.technik.stand; if(!Array.isArray(st)) throw new Error('fachwerk: der Plan trägt keinen Technik-Stand');
+      var imBild={}, ohne={}, n=0;
+      for(var i=0;i<(plan.slots||[]).length;i++){ var o=plan.slots[i].ov||plan.slots[i], t=bauTechnik(o);
+        for(var j=0;j<t.length;j++){ imBild[t[j]]=(imBild[t[j]]||0)+1; if(st.indexOf(t[j])<0){ ohne[t[j]]=(ohne[t[j]]||0)+1; n++; } } }
+      var lose=[]; for(var k in imBild){ var G=TECHNIK.graph[k]; if(G) for(var v=0;v<G.vor.length;v++) if(st.indexOf(G.vor[v])<0) lose.push(k+'←'+G.vor[v]); }
+      return {imBild:imBild, ohneVor:n, ohne:ohne, vorgaengerFehlt:lose}; }
     // prettier-ignore
     const NAMEN={
   mitteleuropa:{v:['Alden','Rot','Stein','Wolfen','Linden','Eber','Grün','Falken','Hohen','Wester'],n:['burg','heim','hausen','dorf','feld','bach','stadt','brück']},
@@ -4252,7 +4378,8 @@
             seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
             nH: n,
             epoche: epoche,
-            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, stadtFormAm(samen, nH, i, k)),
+            // der Same der Stadt reist im Erbe: jedes Viertel trägt den Technik-Stand ihrer Mitte (TECHNIK, DORF)
+            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne, samen: samen }, stadtFormAm(samen, nH, i, k)),
             ring: Math.max(Math.abs(i), Math.abs(k)),
         };
     }
@@ -4402,8 +4529,11 @@
     }
     // die Epoche eines Jahrs t (Saat-Verschiebung d): die jüngste der Achse, deren Spanne bis t endet, sonst die erste; eine
     // Region ohne Epoche liest die Achse aller
-    function epocheBei(region, t, d) {
-        var achse = zeitachse(region);
+    function epocheBei(region, t, d, stand) {
+        // mit dem Technik-Stand einer Saat (`stand`, TECHNIK) nur die Epochen, die er trägt (die erste der Achse bleibt der Boden)
+        var achse = zeitachse(region).filter(function (k, i) {
+            return !stand || !i || traegt(stand, EPOCHEN[k].technik);
+        });
         if (!achse.length)
             achse = Object.keys(EPOCHEN).sort(function (a, b) {
                 return EPOCHEN[a].jahr - EPOCHEN[b].jahr;
@@ -4638,7 +4768,9 @@
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
+  const samenT=DP.erbe&&isFinite(DP.erbe.samen)?DP.erbe.samen:(DP.seed||1), E0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;   /*DER TECHNIK-STAND DER SAAT (TECHNIK) in ihrer Region: die Viertel einer Stadt tragen den ihrer Mitte (`viertelWort` erbe.samen)*/
+  const TS0=E0?technikStand(samenT,E0.region):null, ep0=E0?epocheDerSaat(DP.epoche,TS0.stand):null;          /*die Epoche liest den Stand: die jüngste ihrer Achse bis zur verlangten, die er trägt*/
+  const leg0=ep0?EPOCHEN[ep0]:null, achse=leg0?zeitachse(leg0.region).filter(k=>traegt(TS0.stand,EPOCHEN[k].technik)):[];
   const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   let region,jahr,spanne,d=0;
@@ -4648,6 +4780,7 @@
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
   if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
+  const TS=TS0&&TS0.region===region?TS0:technikStand(samenT,region), stand=TS.stand;   /*der Stand in der Region des Orts (mit Legende ihre)*/
   const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
   const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
@@ -4728,7 +4861,7 @@
   const schreibe=(b,deckel)=>{ const rr={region, jahr, band:bandVon(b.baujahr), dicht:staedtisch};
     b.parzelle={W:b.W, D:b.D, storeys:b.storeys};
     bauRezept({nutzung:b.rolle==='wohnhaus'?wohnNutzung(b,rr):b.rolle, rahmen:rr, los:b, deckel:deckel||(b.rolle==='scheune'?b.parzelle:null)}, haushaltVon(b.seed,b.wohl), b.seed); };
-  alle.forEach((b,ai)=>{ schreibe(b,null); for(const f of za[ai].fr) schreibe(f.v,b); });
+  alle.forEach((b,ai)=>{ technikBau(b,stand,region); schreibe(b,null); for(const f of za[ai].fr){ technikBau(f.v,stand,region); schreibe(f.v,b); } });   /*DAS BILD FRAGT DEN GRAPHEN: was der Stand nicht traegt, steht nicht (`technikBau`, vor dem Rezept)*/
   const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
   /*DER GRUNDRISS WAECHST MIT DEN GESCHOSSEN (STADT_FORM, nach allen Rollen: Kirche, Burg und die Bau-Typen der Viertel setzen ihre Masse selbst — ihr Fuss folgt ihrer Hoehe wie der jedes Hauses): Breite und Tiefe tragen die Traufe / `schlank`, die Breite bis `breitMax` (das Raster der Plaetze), die Tiefe bis `tiefMax` (der Block hinter der Strasse); der Turm der Moderne bleibt ein Turm. Bis hier wuchs im Viertel nur die Hoehe: der Kern stand als Staebe (Traufe / Tiefe 2,6 im Median, 156 von 205 Haeusern ueber 2)*/
   if(DP.erbe&&DP.erbe.hoch>0) for(const v of alle){ if(v.turmbau||!(v.W>0)||!(v.D>0)) continue;
@@ -4746,7 +4879,7 @@
     if(v.baujahr>T) for(const f of za[a].fr) if(f.ab<=T) v=f.v;
     houses.push(v); lose.push(v===alle[a]?null:alle[a]); }
   const nS=houses.filter(h=>h.rolle!=='scheune').length, gS=chronik?groesseVon(nS):groesse;
-  const eT=epocheBei(region,T,d), tracht=EPOCHEN[eT].tracht, j0=chronik?Math.min(T,EPOCHEN[eT].jahr+d):jahr;
+  const eT=epocheBei(region,T,d,stand), tracht=EPOCHEN[eT].tracht, j0=chronik?Math.min(T,EPOCHEN[eT].jahr+d):jahr;
   // DIE CHRONIK DER GESTALT (Staffel 2, der Leser ist `wachstum`): je Los sein Gruendungsjahr und die Leute und der Wohlstand seines
   // ersten Baus (`leuteVon`, `wohl`); das Ende ist die Gegenwart — ohne Chronik (keine Zeitachse) waechst der Ort nicht
   const C=chronik?{gr0, ende:jahr+spanne, jahre:[], leute:[], wohl:[]}:null;
@@ -4756,6 +4889,7 @@
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
+          technik:{stand:stand.slice(), fehlt:Object.keys(TS.fehlt), vorkommen:Object.assign({},TS.vorkommen), epoche:traegt(stand,EPOCHEN[eT].technik)?eT:null},   /*der Stand der Saat (TECHNIK; Leser: der Export, die Station, gate:settlement T)*/
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
 }
     // prettier-ignore
@@ -10587,6 +10721,7 @@
             spanne: plan.schnitt.spanne,
             staedtisch: !!plan.schnitt.staedtisch,
             kleidung: plan.kleidung, // die Tracht der Epoche (siedlung.K4; Leser: der Wirt, `_bewohnerGestalten`)
+            technik: plan.technik, // der Technik-Stand der Saat und die Epoche, die er trägt (TECHNIK; Leser: `technikImBild`, der Wirt)
             spawn: lay.spawn,
             welt: lay.welt,
             slots: slots,
@@ -13217,6 +13352,12 @@
         STADT_GRAMMATIK: STADT_GRAMMATIK, // die Stadt-Grammatik (Viertel · Bau-Typen · Gegenstände; Leser: DORF, dorfLayout, die Linse)
         STADT_DICHTE: STADT_DICHTE,
         EPOCHEN: EPOCHEN,
+        TECHNIK: TECHNIK, // das Technik-Gesetz: Graph, Vorkommen, Bauweise im Bild (Leiter mensch.wirtschaft.technik; Leser: DORF, gate:settlement T)
+        technikVorkommen: technikVorkommen, // die Stoffe am Ort einer Saat
+        technikStand: technikStand, // der Stand einer Saat: welche Technik steht, warum eine fehlt
+        bauTechnik: bauTechnik, // die Techniken eines Baus im Bild
+        technikImBild: technikImBild, // das Bild eines Plans vor dem Graphen (der Leser der Station)
+        epocheDerSaat: epocheDerSaat, // die Epoche, die der Stand einer Saat trägt
         zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")

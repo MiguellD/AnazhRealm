@@ -3462,6 +3462,8 @@ AnazhRealm.FADEN_QUELLE = Object.freeze({
     kerne: Object.freeze(["vendor/simplex-noise.js", "samen-core.js", "phyto-core.js", "gelaende-core.js"]),
     // (leben · tetrapoda: der Gau-Faden, `_gauFrage` — das Gesetz der Zeit und der Jagd am Feld des Gaus)
     spaet: Object.freeze({
+        // die Stoff-Zeile vor dem Fachwerk: sein Technik-Gesetz (TECHNIK) liest T_schmelz beim Namen (schmiede-core `STOFF_GESETZ`)
+        schmiede: "schmiede-core.js",
         fachwerk: "fachwerk-core.js",
         koerper: "koerper-core.js",
         planet: "planet-core.js",
