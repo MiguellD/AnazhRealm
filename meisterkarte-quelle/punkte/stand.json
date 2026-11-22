@@ -18062,7 +18062,7 @@
   },
   "karte2.mensch.kultur.bildkunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#1 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#1 gtx: ROT: S1 ROT: fehlender Leser: kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk (fachwerk-core.js:6495) · gemessen 0 · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.bildkunst#1",
@@ -18078,10 +18078,10 @@
      "id": "karte2.mensch.kultur.bildkunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk (fachwerk-core.js:6495) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT: fehlender Leser: kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk (fachwerk-core.js:6495) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -23311,7 +23311,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.koennen#1 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.koennen#1 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#1 gtx: ROT: S1 ROT an Variationskoeffizient der 100-m-Zeit (%) 1.52 verfehlt 10–20 — Täter: das Tempo der Bewohner folgt nur der Beinlänge (stamm/siedlung-bewohner.js:1051), kein Können-Profil · Variationskoeffizient der 100-m-Zeit (%) 1.52 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 78.58 s · Altersgang ρ(Alter, Zeit) -0.0817041704170417 · 0 mit Können-Profil · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23327,10 +23327,10 @@
      "id": "karte2.mensch.sport.koennen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Variationskoeffizient der 100-m-Zeit (%) 1.52 verfehlt 10–20 — Täter: das Tempo der Bewohner folgt nur der Beinlänge (stamm/siedlung-bewohner.js:1051), kein Können-Profil · Variationskoeffizient der 100-m-Zeit (%) 1.52 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 78.58 s · Altersgang ρ(Alter, Zeit) -0.0817041704170417 · 0 mit Können-Profil · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 ROT an Variationskoeffizient der 100-m-Zeit (%) 1.52 verfehlt 10–20 — Täter: das Tempo der Bewohner folgt nur der Beinlänge (stamm/siedlung-bewohner.js:1051), kein Können-Profil · Variationskoeffizient der 100-m-Zeit (%) 1.52 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 78.58 s · Altersgang ρ(Alter, Zeit) -0.0817041704170417 · 0 mit Können-Profil · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 226,
+  "konsum": 228,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37632,10 +37632,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3396
+  "ohne": 3394
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T20:44:17.559Z",
+ "zeit": "2026-11-22T20:52:45.839Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
