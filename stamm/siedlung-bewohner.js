@@ -3680,22 +3680,19 @@ class AnazhRealm_siedlung_bewohner {
             }
         }
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
-        S.liste = null;
-        // DER TAKT DER KÖPFE GEHT MIT DER LISTE (siedlung-heap): `aktivListe`, `aktiv`, `ruhend`, `raster` und `koepfe` sind
-        // Funktionen der Liste (`_tickBewohner` legt sie neu, sobald `aktivListe !== liste`) — bis hier hielten sie jede ferne
-        // Siedlung mit ihren gegangenen Köpfen samt Leib (Radeon, Messort der Wegenetz-Fahrt: 8 ferne Siedlungen, 434 Köpfe,
-        // `aktivListe[].leib.userData` 88,3 MB nach GC)
-        [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];
+        // DIE FERNE SIEDLUNG IST IHR PLAN (heap-register, „der Speicher folgt dem Blick“): ihr Eintrag behält GENAU das Gedächtnis
+        // der Siedlung (`BEWOHNER_ERINNERUNG`: Schlüssel, Plan, Ursprung und der Grund ihres Netzes, den die Wege zu den Nachbarn
+        // auch fern lesen) — jedes andere Feld ist eine Funktion der Liste, und der Takt legt es neu, sobald sie wiederkehrt
+        // (`_tickBewohner`: Liste, Gestalten, Wache, Uhr und Takt der Köpfe; die Netze, Stände und Samen lazy). Bis hier nullte der
+        // Abschied seine Felder einzeln, und jedes neue entkam ihm: siedlung-heap nahm fünf Takt-Felder, `backt` (die Köpfe, an
+        // denen gebacken wird) hielt weiter jede ferne Siedlung samt Leib (Radeon, Wegenetz-Fahrt: `_bewohnerSiedlungen.backt[]`
+        // 28,9 MB nach GC). Die Klasse fällt am Register, nie Feld für Feld.
+        for (const k of Object.keys(S)) if (!AnazhRealm.BEWOHNER_ERINNERUNG.includes(k)) delete S[k];
+        [S.liste, S.gestalten] = [null, null];
         // … und die Arbeits-Puffer des Takts (`_bewohnerKoepfe`, `_bewohnerBewegt`, `_bewohnerNachbarn`, die Wahl in
         // `_bewohnerNbZahl`): vor jedem Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
         for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;
         if (this._bewohnerNbZahl) this._bewohnerNbZahl.geachtet.length = this._bewohnerNbZahl.naechste.length = 0;
-        S.listeWerk = null;
-        S.lebt = false;
-        S.gestalten = null;
-        S.raum = null;
-        S.satz = null;
-        S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
         this._ofenMemoRaeumen();
     }
     _bewohnerFortAlle() {
@@ -3777,6 +3774,10 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // Zangemeister & Stark 1982) · spielerRaumM = der persönliche Raum über zwei Kapseln, den er dem Spieler lässt (Hall 1966:
 // die persönliche Distanz ab 0,45 m), geweitet von der erinnerten Furcht (`_bewohnerSpielerAbstand`) · zeugeM = so weit sieht
 // er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
+// DAS GEDÄCHTNIS EINER FERNEN SIEDLUNG (heap-register, `_bewohnerFort`): die Felder ihres Eintrags, die der Abschied stehen lässt —
+// was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
+// fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
+AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund"]);
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
     staende: Object.freeze(["heim", "platz", "werk", "mahl", "abend", "besuch"]),
