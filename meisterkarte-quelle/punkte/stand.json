@@ -21924,7 +21924,7 @@
   },
   "karte2.mensch.nahrung.frucht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#1 gtx: Station seit der Messung geändert — zuletzt an 30e01e75: die Fahrt riss 1800 s (vor karte2.mensch.wirtschaft.stoffstrom#1) — offen, UNGEMESSEN · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#1 gtx: ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 227 Pflanzen im Acker (blume 3) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal an 30e01e75 · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.frucht#1",
@@ -21940,10 +21940,10 @@
      "id": "karte2.mensch.nahrung.frucht#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 30e01e75: die Fahrt riss 1800 s (vor karte2.mensch.wirtschaft.stoffstrom#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 227 Pflanzen im Acker (blume 3) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
+     "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 227 Pflanzen im Acker (blume 3) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 231,
+  "konsum": 232,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37632,10 +37632,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3391
+  "ohne": 3390
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T21:24:47.947Z",
+ "zeit": "2026-11-22T21:37:36.382Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
