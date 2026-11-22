@@ -365,8 +365,9 @@ function wurfProben(check, { kernText, taeter = false }) {
 // vier Achsen; die Seite: die dominante Achse von A zu B). Die Zählung ist die von p3/n1911/los-huelle/ursache/haus-im-haus2.cjs:
 // an der Stadt 7/4750 (3 × 3) vor dem Schnitt 26 Paare, an den Fällen der Lose 12 (7/60: 2, 2/120: 10).
 const BW_TIEF = 0.01;
-// die Fälle der Linse: die Fälle der Lose und die Stadt 2/400 — dort rückt das Los-Gesetz einen Körper an den Nachbarn (der Ruf danach)
-const BW_FAELLE = LOSE_FAELLE.concat([{ seed: 2, nH: 400 }]);
+// die Fälle der Linse: die Fälle der Lose und die Stadt 10/400 — dort rückt das Los-Gesetz einen Körper an den Nachbarn (der Ruf danach;
+// bis zum Technik-Gesetz die Stadt 2/400 — ohne Kupfer fiel ihre Kuppel, ihr Plan legte sich neu: 3 Paare → 0, an 10/400 2)
+const BW_FAELLE = LOSE_FAELLE.concat([{ seed: 10, nH: 400 }]);
 // die Täter, je mit dem Fall, an dem sie fallen (der Selbsttest fährt nur ihn)
 const BRANDWAND_TAETER = {
     // die Brandwand vor dem Schnitt: „anliegend“ an den Wänden dims.W/D statt an der Körper-Hülle
@@ -375,7 +376,7 @@ const BRANDWAND_TAETER = {
     // (seit bau-rezept-tuer am Burg-Paar 12/60: die Brandwand urteilt über die ganze seitliche Überdeckung, an 2/120 reicht die Norm allein)
     "ohne Reichweite": { R: [["<Math.max(norm,A.reich[s])", "<norm"]], faelle: [{ seed: 12, nH: 60 }] },
     // nur vor dem Los-Gesetz: die Brandwand urteilt nicht, wo die Lose stehen
-    "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 2, nH: 400 }] },
+    "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 10, nH: 400 }] },
 };
 function oeffnungImNachbarn(K, KH, faelle) {
     const ax = (o) => [[Math.cos(o.phi), -Math.sin(o.phi)], [Math.sin(o.phi), Math.cos(o.phi)]];
