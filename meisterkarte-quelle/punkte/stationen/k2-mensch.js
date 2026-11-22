@@ -77,10 +77,23 @@ function k2Werkzeug(H, SPEC) {
     K.welt = (code, ms) => H.evalWelt(code, ms || 30000);
     // DER MESSORT (spec/profiband/haushalt.json `messorte`): der Aufruf im Text heißt `K.messort("<ort>")` — so liest die Sitzung den Ort
     // und stellt VOR dem Deckel um (punkte.cjs probeOrt); die Sicht vorher über K.sicht ("ego" | "third")
+    // DIE FRIST IM UMSTELLEN (Runde 4 GTX an 6066c757: 5 von 21 Stationen an stadt-voll „Frist der Probe 64 s gerissen“ ohne eine
+    // Zeile nach dem Adapter — die Werkbank ging je Ruf an den Anlauf vor die stehende Stadt, Ruf 2 74,2 s): reißt die Frist, während
+    // /umstellen läuft, sagt K.messort es an ihrem Rand selbst (H.fristRiss, die EINE Marke, mit Weg, Ort und Dauer) — der Läufer
+    // schreibt den Messort in den Grund (punkte.cjs abbruchVon), nie mehr eine stumme Frist. Die Zeile danach nennt die Takte und den
+    // Weg der Werkbank (`anlauf`: „stand“ — die Stadt des Orts stand, kein Anlauf · „gegangen“ — über den Anlauf)
     K.messort = async (ort) => {
-        const a = await H.wb("/umstellen", { ort, sicht: K.sicht }, 120000);
+        const t = H.sek();
+        const rand = setTimeout(() => H.fristRiss("im /umstellen " + ort + " seit " + (H.sek() - t).toFixed(1) + " s (der Ruf ab " + t + " s): der Messort trug die Frist, Abbau"),
+            Math.max(0, (H.rest() - 0.25) * 1000));
+        let a;
+        try {
+            a = await H.wb("/umstellen", { ort, sicht: K.sicht }, 120000);
+        } finally {
+            clearTimeout(rand);
+        }
         if (!a || a.fehler) throw H.messort(new Error("/umstellen " + ort + ": " + ((a && a.fehler) || "ohne Antwort")), "/umstellen");
-        H.zeile("am Messort " + ort + " (" + K.sicht + ")");
+        H.zeile("am Messort " + ort + " (" + K.sicht + ") nach " + (H.sek() - t).toFixed(1) + " s, " + a.takte + " Takte" + (a.anlauf ? ", Anlauf " + a.anlauf : ""));
         return a;
     };
     K.warte = (ms) => H.schlaf(ms);
@@ -506,3 +519,4 @@ if (require.main === module) {
 }
 module.exports.abdeckung = abdeckung;
 module.exports.leitern = leitern;
+module.exports.k2Werkzeug = k2Werkzeug; // der Selbsttest der Maschine (FRIST IM MESSORT) fährt K.messort gegen eine Werkbank-Attrappe

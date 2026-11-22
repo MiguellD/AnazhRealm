@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 11,
-    "kern": 8,
-    "kernDazu": 8,
+    "kern": 9,
+    "kernDazu": 9,
     "anteilHeute": 2,
-    "anteilKern": 1.4
+    "anteilKern": 1.6
    },
    "perspektiven": [
     {
@@ -9275,7 +9275,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "1–2 Äcker je Feldweg-Ende (fachwerk-core.js:4699–4714), als Fleck im Boden-Kanal gemalt (stamm/siedlung-wege.js:1621); in jedem Dorfbild sichtbar — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
      "alt": [
@@ -20088,8 +20088,8 @@
   "sprossen": 1718,
   "heute": 48,
   "davonKopplungen": 33,
-  "kern": 10,
-  "kernDazu": 10,
+  "kern": 11,
+  "kernDazu": 11,
   "anteilHeute": 2.8,
   "anteilKern": 0.4,
   "kapitel": 7,

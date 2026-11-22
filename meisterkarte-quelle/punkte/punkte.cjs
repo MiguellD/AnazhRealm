@@ -783,13 +783,16 @@ function massDerStation(st, j, lauf, u) {
 //   (f) DIE STATION SAGT ES SELBST (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der Leiter warf
 //       nach 25 s: der Deckel der Leiter 25 s“ — die Leiter las keinen Wert, ihr Deckel riss): ein Urteil mit `ohneUrteil: <grund>` (nur
 //       ROT, stationen/k2-planet.js urteilBauen am Deckel der Leiter) ist UNGEMESSEN beim Grund, vor jedem anderen Fall.
-const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
+// DER MESSORT IM FLUG (stationen/sitzung-seite.js H.wb): riss die Frist, während ein Weg des Messorts lief, trägt die Marke ihn —
+// „— im /umstellen stadt-voll seit 62.7 s“ — und der Grund nennt ihn (Runde 4 GTX an 6066c757: fünf Stationen an stadt-voll standen
+// „Frist der Probe 64 s gerissen“, die Zeit lag im zweiten Umstellen, nicht in der Messung)
+const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b(?: — im (\/[a-z]+(?: [a-z0-9_-]+)?) seit (\d+(?:\.\d+)?) s)?/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
 // der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
 function abbruchVon(stdout, deckel) {
     if (deckel) return deckel;
     const f = FRIST_MARKE.exec(String(stdout || ""));
-    if (f) return "Frist der Probe " + f[1] + " s gerissen";
+    if (f) return "Frist der Probe " + f[1] + " s gerissen" + (f[2] ? " im " + f[2] + " (der Ruf lief " + f[3] + " s: der Messort trug die Frist)" : "");
     const mo = MESSORT_MARKE.exec(String(stdout || ""));
     return mo ? "Messort: " + mo[1].trim().slice(0, 300) : null;
 }
@@ -7768,6 +7771,22 @@ async function selbsttest(o = {}) {
         const seiteSt = { ...st0, befehl: probeBefehl(async (H) => { await H.wb("/umstellen", { ort: "wiese" }, 3000); return { n: 0 }; }, 30).befehl.map((a) => (a === "{PORT}" ? String(zuPort - 20000) : a)),
             urteil: (j) => (j ? { gruen: j.n === 0, zahl: "n " + j.n } : { gruen: false, zahl: "keine Ausgabe" }) };
         const sm = await fahreStation(seiteSt, ctx("seite-messort"));
+        // DIE FRIST IM UMSTELLEN (Runde 4 GTX an 6066c757, stadt-voll): K.messort der Karte 2 (k2-mensch k2Werkzeug) gegen eine Werkbank,
+        // die /umstellen annimmt und nie antwortet — die Frist der Probe (Deckel 12 s − 6) reißt im Umstellen, der Grund nennt Weg und
+        // Ort; die Mutante ist die Marke von vorher (der Abbau ohne den Weg), sie liest sich ohne Ort
+        const haengt = require("http").createServer(() => {});
+        await new Promise((ja) => haengt.listen(0, "127.0.0.1", ja));
+        const { k2Werkzeug } = require(path.join(DIR, "stationen", "k2-mensch.js"));
+        const flugFn = async (H) => { const K = H.seite.K(H, H.seite.SPEC); await K.messort("stadt-voll"); return { n: 0 }; }; // prettier-ignore
+        const flugSt = { ...st0, minuten: 0.1, befehl: probeBefehl(flugFn, 12, { K: k2Werkzeug, SPEC: JSON.stringify({ leiter: "mensch.kultur.schrift" }) }).befehl
+            .map((a) => (a === "{PORT}" ? String(haengt.address().port - 20000) : a)), urteil: (j) => (j ? { gruen: j.n === 0, zahl: "n " + j.n } : { gruen: false, zahl: "keine Ausgabe" }) };
+        const fl = await fahreStation(flugSt, ctx("seite-flug"));
+        if (haengt.closeAllConnections) haengt.closeAllConnections();
+        haengt.close();
+        const flugAlt = abbruchVon("@@PUNKTE@@ FRIST 6 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier");
+        pruef("FRIST IM MESSORT reißt die Frist der Probe, während /umstellen läuft, nennt der Grund Weg und Ort (die Marke von vorher: ohne Ort)",
+            fl.ungemessen === true && /^Frist der Probe 6 s gerissen im \/umstellen stadt-voll \(der Ruf lief \d+\.\d s: der Messort trug die Frist\) — /.test(fl.grund) &&
+            flugAlt === "Frist der Probe 6 s gerissen", JSON.stringify([fl.grund, flugAlt]));
         const gs = spawnSync(process.execPath, [__filename, "grundstellung", "--port", String(zuPort), "--grund", path.join(tmp, "kein-grund.json")], { encoding: "utf8", timeout: 60000 });
         pruef("MESSORT das Tor, das Werkzeug der Seite und die Grundstellung tragen die Marke beim Namen; ein Wurf daneben (der Anker der Linse) bleibt ROT, das Maß GRÜN",
             tm.ungemessen === true && /^Messort: \/umstellen: Messort wiese: der Ring 120 m steht nicht nach 300 Takten — kein Urteil, UNGEMESSEN/.test(tm.grund) &&
