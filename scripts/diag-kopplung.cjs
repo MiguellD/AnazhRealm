@@ -430,17 +430,19 @@ hauptLauf(async () => {
                 // TAKT: der echte Schreiber in einer Welt ohne Körper im Radius (keine Frist trifft die Probe-Welt)
                 const wu = r._ensureWindCoupling(THREE.TSL);
                 const w = Object.create(r);
-                w.state = Object.assign(Object.create(r.state), { creatures: [], playerMesh: null, spielZeit: 100 });
+                // die Probe-Welt trägt je Augenblick IHREN Stand (die Uhr der Welt schreibt die Probe nie — Ein-Schreiber-Wand)
+                const um = (t) => (w.state = Object.assign(Object.create(r.state), { creatures: [], playerMesh: null, spielZeit: t }));
+                um(100);
                 Object.assign(w, { _druckFristen: [], _druckWellen: [], _blockerUmPlatz: () => {} });
                 const P = pm.position;
                 const wl = w._druckWelle({ x: P.x + 7, y: P.y, z: P.z - 3 }, E, 100);
-                w.state.spielZeit = 100.25;
+                um(100.25);
                 w._tickHalmWelle();
                 const [s0, u0] = [wu.uWelle[0].value, wu.uWelleUhr[0].value];
                 const traegtEin =
                     wu.uWelleZahl.value === 1 && Math.abs(s0.x - P.x - 7) < 1e-6 && Math.abs(s0.z - P.z + 3) < 1e-6 &&
                     Math.abs(s0.w - w3) < 1e-9 && Math.abs(u0.x - 0.25) < 1e-9 && Math.abs(u0.y - radius) < 1e-9;
-                w.state.spielZeit = wl.bildEnde + 0.01;
+                um(wl.bildEnde + 0.01);
                 w._tickHalmWelle();
                 const leert = wu.uWelleZahl.value === 0 && w._druckWellen.length === 0;
                 o.zahlen.welle = { gut, rot, ruhe, summe, traegtEin, leert, lebtS: wl.bildEnde - 100, radius };

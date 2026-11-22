@@ -270,7 +270,13 @@ class AnazhRealm_stoff_material {
         if (M && M.stand === AnazhRealm._stoffStand) return M.hz;
         const z = this._stoff("gras");
         const hz =
-            z && globalThis.__schmiedeCore.STOFF_GESETZ.halmZahlen(z, z.brenn, this._druckLuft(), AnazhRealm.WIND_WIEGEN.takt);
+            z &&
+            globalThis.__schmiedeCore.STOFF_GESETZ.halmZahlen(
+                z,
+                z.brenn,
+                this._druckLuft(),
+                AnazhRealm.WIND_WIEGEN.takt
+            );
         if (!hz) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ.halmZahlen · die Zeile gras mit ihrem Bett");
         this._halmZahlenMerk = { stand: AnazhRealm._stoffStand, hz };
         return hz;
@@ -284,7 +290,13 @@ class AnazhRealm_stoff_material {
         const tf = globalThis.__schmiedeCore.STOFF_GESETZ.druckTafel(this._druckLuft());
         let tex = this._wellenTafelTex;
         if (!tex) {
-            tex = this._wellenTafelTex = new THREE.DataTexture(tf.daten, tf.n + 1, 1, THREE.RGBAFormat, THREE.FloatType);
+            tex = this._wellenTafelTex = new THREE.DataTexture(
+                tf.daten,
+                tf.n + 1,
+                1,
+                THREE.RGBAFormat,
+                THREE.FloatType
+            );
             tex.name = "wellen-tafel";
             tex.minFilter = THREE.NearestFilter;
             tex.magFilter = THREE.NearestFilter;
@@ -292,7 +304,11 @@ class AnazhRealm_stoff_material {
             tex.needsUpdate = true;
         }
         return (Z) => {
-            const f = T.clamp(T.log(T.max(Z, T.float(tf.zMin)).div(T.float(tf.zMin))).div(T.float(tf.lnq)), T.float(0.0), T.float(tf.n));
+            const f = T.clamp(
+                T.log(T.max(Z, T.float(tf.zMin)).div(T.float(tf.zMin))).div(T.float(tf.lnq)),
+                T.float(0.0),
+                T.float(tf.n)
+            );
             const i0 = T.min(T.floor(f), T.float(tf.n - 1));
             const t = f.sub(i0);
             const i = T.int(i0);
