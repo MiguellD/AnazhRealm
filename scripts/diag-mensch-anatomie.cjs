@@ -907,7 +907,10 @@ function mengeWelt(eingriff, plaene = MENGE_PLAENE) {
     if (eingriff) eingriff(A, ctx);
     const r = Object.assign(Object.create(A.prototype), { state: {} });
     const siedlungen = plaene.map((seed) => {
-        const S = { plan: ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 }), liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}` })) }; // prettier-ignore
+        // je Haus zwei Leute wie `_bewohnerListe` sie stellt: der Same und die Epoche (das Jahr des Plans, Rang im Haus — koerper
+        // ALTER_GESETZ ist fail-closed ohne Jahr)
+        const plan = ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 });
+        const S = { plan, liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}`, epoche: { jahr: plan.jahr, rang: i & 1, n: 2 } })) }; // prettier-ignore
         S.gestalten = r._bewohnerGestalten(S);
         r._bewohnerGenome(S);
         const vorlage = ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, { dials: S.raum.dK });
