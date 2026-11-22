@@ -219,5 +219,6 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Band-Gerät (Label gpu-zeit: OMEN, Radeon — der dritte Läufer gtx1050-desktop liegt 3- bis 8-mal über jedem Budget); Urteil und Bild
   stehen in `origin/koordination:probe-post/<zweig>/<sha8>.md` (je Probe ihr Läufer), die Zeile oben in
   `cloud-post/<zweig>.md`, 2–3 min ab dem Push (07.11.: Radeon 108 s, OMEN 195 s samt npm ci; gate:apparat Klinge 7 hält den Einlass:
-  nur push, nur die drei Formen, `zeit:` nur auf gpu-zeit).
+  nur push, nur die drei Formen, `zeit:` nur auf gpu-zeit; ein Stempel ohne Inhalt erbt die Probe des nächsten baumgleichen Glieds,
+  das sie grün trug — `scripts/ci-kopf.cjs` `probeErbeLesen`, kein Bein, Posten „GEERBT von <sha8>“).
 - Commits klein, deutsch, emoji-frei, die Message ist der Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte.
