@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 8,
+    "heute": 9,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.3,
+    "anteilHeute": 4.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4810,7 +4810,7 @@
        "richter": "32 fremde Saaten: Biosignatur, die ohne Leben verschwände; Bilanzfehler ≤ 1 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "EIN Nährstoff-Skalar je Zelle (stamm/feld-leben.js:3736: Fällen −0,3, Ernte −0,02, Brand +0,4, Riss +0,2); Ernte 15× → 1 → 0,7 belegt, Wuchs im Bild ungemessen; kein ökologischer C, N, O.",
@@ -20086,7 +20086,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 47,
+  "heute": 48,
   "davonKopplungen": 33,
   "kern": 10,
   "kernDazu": 10,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 16
+  "nachwache": 17
  },
  "zusammengelegt": [
   {
