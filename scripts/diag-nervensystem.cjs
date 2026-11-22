@@ -59,8 +59,11 @@ const NEUN_SOLL = [
 const neunTaeter = (m) => NEUN_SOLL.filter(([, ok]) => !ok({ kosten: [], lod: [], ...m })).map(([n]) => n);
 // S — DIE RATSCHEN (30.10., beim Namen): die Werke des Wirts ohne Gesetzbuch und die Teile ohne Ziel (der Waldboden: sein Buch
 // bringt keine Wirts-Zeile B7, die Streu trägt ihn). Sie fallen nur — ein neuer Name taucht auf (ROT), ein geheilter fällt hier.
+// `donnerfass` (front-druckwelle, 22.11.) ist das `fass` des Wirts mit einer Ladung Donnerkorn: der Baum kennt keine Abstammung
+// Bauplan → Bauplan (`_stammbaum`: Eltern sind Studio › Bereich eines Gesetzbuchs), es steht neben `fass` und fällt mit ihm,
+// sobald ein Buch das Fass baut.
 const WAISEN =
-    "brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen trank_lebenssaft waterfall webstuhl";
+    "brennkolben damm donnerfass drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen trank_lebenssaft waterfall webstuhl";
 const OHNE_GRIFF = "farn gestruepp schilf strauch stumpf totstamm";
 // je Soll sein Schlüssel im Befund (der Selbsttest verdirbt ihn), sein Name und sein Urteil; die Ratschen stehen als Gleichheit
 const STAMM_SOLL = [

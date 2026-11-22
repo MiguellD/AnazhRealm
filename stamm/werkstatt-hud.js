@@ -3182,6 +3182,7 @@ AnazhRealm.UNTERTITEL = Object.freeze({
         abschied: "untertitel.substanz.abschied",
         wasser: "untertitel.substanz.wasser",
         inventar: "untertitel.substanz.inventar",
+        knall: "untertitel.substanz.knall",
     },
     schritt: { schritt: "untertitel.schritt.schritt", landung: "untertitel.schritt.landung" },
     fahrt: { motor: "untertitel.fahrt.motor", rollen: "untertitel.fahrt.rollen" },

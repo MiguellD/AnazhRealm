@@ -2299,7 +2299,10 @@ class AnazhRealm_kampf {
                 if (dG <= klinge) geraetPick = { geraet: pick.entry, point: pick.point };
                 else zuWeit = { d: dG, klinge };
             } else if (pick && pick.entry) {
-                verb = "abbau";
+                // DIE GLUT AN EINER LADUNG (same.physik.reaktion#2): wer Glut in der Hand hält und auf einen Bau zielt, dessen
+                // Stoff q trägt (`_ladungTeile`), legt sie an ihn — der Funke an seiner Hülle setzt ihn um (`_brandFangen`); jeder
+                // andere Bau fällt dem Abbau
+                verb = this._ladungTeile(pick.entry).length && this._fackelGlut() ? "zuenden" : "abbau";
                 ort = pick.point;
             } else if (this._fackelGlut()) {
                 // DIE FACKEL (same.physik.feuer S1): wer Glut in der Hand hält, legt sie an den Boden unter dem Fadenkreuz — vor
@@ -2449,7 +2452,9 @@ class AnazhRealm_kampf {
         const bf = this.state.brandFeld;
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const n = bf && bf.get(Math.floor(ort.x / cs) + "," + Math.floor(ort.z / cs));
-        if (n && n.t0 !== null) return true; // die Zelle brennt schon
+        // die Zelle brennt schon: die Fackel schweigt — der Funke geht trotzdem durch die EINE Tür, er mag die Hülle einer
+        // Ladung berühren (`_brandFangen`, same.physik.reaktion#2)
+        if (n && n.t0 !== null) return (this._brandEntfachen(ort.x, ort.z), true);
         if (this._brandEntfachen(ort.x, ort.z)) return true;
         const was = Array.isArray(bp.etikett) ? bp.etikett : AnazhRealm._namensKopf(bp.label || bp.name); // das Etikett wechselt mit
         this._spielerSagt(["welt.fackel-faengt-nicht", { was }]);

@@ -1,5 +1,5 @@
 {
- "quelle": "Die Defekte von gate:haus-welt (scripts/diag-haus-welt.cjs --selftest, dort je Defekt sein Grund): je Defekt [[die Phase seiner Welt, die Proben, die er rot macht („a|b“: eine von beiden)], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]] — der Server liefert statt der geheilten die Basis, GENAU die Probe des Defekts wird rot.",
+ "quelle": "Die Defekte von gate:haus-welt (scripts/diag-haus-welt.cjs --selftest, dort je Defekt sein Grund): je Defekt [[die Phase seiner Welt, die Proben, die er rot macht („a|b“: eine von beiden)], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis] bzw. am Glied { glied, basis: „(alt) => function“ }] — der Server liefert statt der geheilten die Basis (am Glied: die Basis-Form tritt zur Laufzeit an seine Stelle, gefunden am Namen, nie am Text seines Rumpfs), GENAU die Probe des Defekts wird rot.",
  "defekte": {
   "huelle": [
    [
@@ -36,14 +36,10 @@
      "        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));",
      "        return false;"
     ],
-    [
-     "if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);",
-     ""
-    ],
-    [
-     "this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
-     "this.state.architectures.includes(entry)) void 0;"
-    ]
+    {
+     "glied": "_grundrissRaeumen",
+     "basis": "() => function () { return 0; }"
+    }
    ]
   ],
   "streu": [
@@ -144,10 +140,10 @@
     "W8 Bau"
    ],
    [
-    [
-     "if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {",
-     "if (false) {"
-    ]
+    {
+     "glied": "_grundrissVon",
+     "basis": "(alt) => function (...a) { const fp = alt.apply(this, a); return fp && fp.welt ? null : fp; }"
+    }
    ]
   ],
   "weg": [

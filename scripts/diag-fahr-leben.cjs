@@ -476,7 +476,8 @@ function stationVerdict(s) {
     const probe = (x, t, z) => (x ? z(x) : [[false, t]]);
     const flug = (a) => a.imFlug && a.hoehe >= STATION.flugM;
     const hk = s.huelleKonsum || {};
-    const ruht = (k) => k && k.ruheS <= 2 && [k.boden, ...k.fugen].every((d) => Math.abs(d) <= 0.02);
+    // (`ruheS` null: sie schliefen nie ein — `null <= 2` ist wahr, bis same.physik.reaktion#2 fiel der Stapel, der nie ruht, grün)
+    const ruht = (k) => k && Number.isFinite(k.ruheS) && k.ruheS <= 2 && [k.boden, ...k.fugen].every((d) => Math.abs(d) <= 0.02);
     const [fk, sw, ls, sch, rw, sp, lk] = [s.frei, s.spielerWagen, s.lockSchwimmer, s.schwimmer, s.reiter, s.spalt, s.lockstep]; // prettier-ignore
     return urteil([
         ...probe(s.labor?.schritte > 0 && s.labor, "labor keine Spur", (l) => [
@@ -598,10 +599,19 @@ function stationVerdict(s) {
             )
         ),
         // K3 (physik.K3) DER FREIE KÖRPER: die Kisten ruhen ≤ 2 s am Boden und jede auf der darunter (±2 cm), zittern danach und
-        // wach ≤ 1 cm; der Wagen kippt das Fass > 45°; die Mutanten (Schwere 0, ohne Stoß) fallen.
+        // wach ≤ 1 cm; der Wagen kippt das Fass > 45°; die Mutanten (Schwere 0, ohne Stoß) fallen. DER FLACHE KÖRPER (ein Brett,
+        // zwei Scheiben übereinander) schläft ≤ 2 s ein, das Brett liegt auf dem Boden (±5 mm), nie in ihm.
         ...probe(fk?.fass, "frei keine Probe", () => [
             [ruht(fk.kisten), "frei-ruhe: die Kisten ruhen nicht am Boden"],
             [fk.kisten.zittern <= 0.01 && fk.wachZittern <= 0.01, "frei-zittern über 1 cm"],
+            [
+                !!fk.flach && Number.isFinite(fk.flach.ruheS) && fk.flach.ruheS <= 2,
+                `frei-flach: ${fk.flach ? fk.flach.wach : "?"} von 3 flachen Körpern schlafen nach 4 s nicht (die Wahl der vier Kontakte nimmt, was über einem tieferen liegt)`,
+            ],
+            [
+                !!fk.flach && Math.abs(fk.flach.boden) <= 0.005,
+                `frei-flach: das Brett liegt ${fk.flach ? (fk.flach.boden * 1000).toFixed(1) : "?"} mm zum Boden (Soll ±5 mm)`,
+            ],
             [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
@@ -2105,6 +2115,7 @@ hauptLauf(async () => {
             frei: {
                 kisten: { ruheS: 0.8, zittern: 0, boden: 0, fugen: [0] },
                 wachZittern: 0,
+                flach: { ruheS: 1.1, wach: 0, boden: 0 },
                 schwerelos: { boden: 0.1, fugen: [0.1] },
                 fass: { kipp: 172 },
                 fassOhneStoss: { kipp: 2 },
@@ -2301,6 +2312,12 @@ hauptLauf(async () => {
                 { frei: { ...gutS.frei, kisten: { ...gutS.frei.kisten, ruheS: 2.4 } } },
                 "frei-ruhe",
             ],
+            ["die Kisten schlafen nie ein", { frei: { ...gutS.frei, kisten: { ...gutS.frei.kisten, ruheS: null } } }, "frei-ruhe"],
+            // der Stand vor same.physik.reaktion#2 (GTX 1050, die Mess-Wiese): das liegende Brett 25 × 25 × 5 cm wippte auf EINEM
+            // tiefen Punkt (Tempo 0,16 m/s, 18,6 mm im Boden), zwei Scheiben aufeinander schliefen nie
+            ["das Brett wippt, die Scheiben schlafen nie (der Stand 2a18878b)", { frei: { ...gutS.frei, flach: { ruheS: null, wach: 3, boden: -0.0186 } } }, "frei-flach: 3 von 3"],
+            ["das Brett liegt 18,6 mm im Boden", { frei: { ...gutS.frei, flach: { ruheS: 0.6, wach: 0, boden: -0.0186 } } }, "frei-flach: das Brett liegt -18.6 mm"],
+            ["die Probe des flachen Körpers fehlt", { frei: { ...gutS.frei, flach: undefined } }, "frei-flach"],
             ["die Wagen-Kollision aus: das Fass steht", { frei: { ...gutS.frei, fass: { kipp: 2 } } }, "frei-fass"],
             [
                 "ohne Schwere ruhen die Kisten am Boden",
@@ -3028,7 +3045,7 @@ hauptLauf(async () => {
         sz(S.stossBaer)
     );
     check(
-        "K3#1 (physik.K3) DER FREIE KÖRPER: 5 Kisten fallen und ruhen (≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um (> 45°)",
+        "K3#1 (physik.K3) DER FREIE KÖRPER: 5 Kisten fallen und ruhen (≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um (> 45°), der flache Körper schläft ein (≤ 2 s) und liegt auf dem Boden",
         frei("frei"),
         JSON.stringify(S.frei || null)
     );
