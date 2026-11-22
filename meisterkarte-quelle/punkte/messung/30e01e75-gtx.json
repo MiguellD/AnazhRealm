@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T18:44:01.373Z",
+ "zeit": "2026-11-22T19:03:43.986Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -172,6 +172,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.jenseits#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: Gewächshaus und Garten im Ort: keiner unter 31 Häusern (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede) (gemessen 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.43,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Gewächshaus und Garten im Ort: keiner unter 31 Häusern (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede) (gemessen 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 24.6,
+   "fremd": {
+    "s": 27.6,
+    "takte": 12,
+    "fremdS": 43.91,
+    "kerne": 1.59,
+    "fensterKerne": 1.797,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      22.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      2.78
+     ]
+    ],
+    "dienerS": 38.92,
+    "diener": [
+     [
+      "System",
+      15.63
+     ],
+     [
+      "Memory Compression",
+      14.31
+     ]
+    ],
+    "geraetS": 18.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.67
+     ],
+     [
+      "MsMpEng.exe",
+      8.14
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 75.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T19:03:43.986Z",
+   "abdruck": "238deb088d66",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
