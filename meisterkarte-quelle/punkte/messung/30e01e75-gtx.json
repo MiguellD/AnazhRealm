@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T19:15:40.377Z",
+ "zeit": "2026-11-22T20:07:09.124Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -310,6 +310,75 @@
    },
    "zeit": "2026-11-22T19:15:40.377Z",
    "abdruck": "caf77ca94409",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 9.2,
+   "fremd": {
+    "s": 13.5,
+    "takte": 6,
+    "fremdS": 6,
+    "kerne": 0.446,
+    "fensterKerne": 0.458,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh",
+      1.56
+     ],
+     [
+      "Explorer.EXE",
+      0.8
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.77
+     ]
+    ],
+    "dienerS": 6.17,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "dwm.exe",
+      2.36
+     ]
+    ],
+    "geraetS": 6.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.3
+     ],
+     [
+      "svchost.exe",
+      2.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 33.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T20:07:09.124Z",
+   "abdruck": "982bb60551e5",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
