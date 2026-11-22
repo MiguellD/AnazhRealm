@@ -1,0 +1,8 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 84.1 s · am Messort stadt-voll (ego) nach 84.1 s, 1415 Takte
+@@ 84.1 s · Straßenleben: Lokale 1, Läden und Stände 22, Bewohner 1366 (Berufe 23), Trachten 1, Kulturen 5 von 32
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
