@@ -4731,7 +4731,75 @@
             },
             fx: { sig: "brow", heck: "steil" },
         },
+        // DIE GATTUNG LIEFERWAGEN (fahrzeug-gattungen, rein additiv — Karte 2 mensch.fahrzeug.gestalt#1): der Kasten, den ein
+        // Betrachter am Umriss von SUV und Kleinwagen trennt — das Dach am oberen Rand (1,75), der Gürtel hoch (0,95), die Kabine
+        // vorn (kurze Haube, Windschutz steil 0,3), das Dach flach bis ans steile Heck (2-Box ohne Kofferraum), kleine Räder bei
+        // mäßiger Bodenfreiheit; steif gefedert für die Last, schwacher Motor je Tonne (die Gattung des Transporters).
+        transporter: {
+            kind: "vehicle",
+            lab: "Transporter",
+            s: {
+                leistung: 30, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.36,
+                radstand: 3.2,
+                spur: 1.66,
+                ueberhangV: 0.6,
+                ueberhangH: 0.78,
+                radR: 0.33,
+                fahrhoehe: 0.16,
+                guertel: 0.95,
+                dach: 1.75,
+                kabineMitte: 0.15,
+                kabineLaenge: 2.4,
+                tumblehome: 0.04,
+                taille: 0.02,
+                tueren: 4,
+                springRate: 112,
+                coke: 0.04,
+                grilleW: 0.42,
+                grilleDrop: 0.12,
+                lightH: 0.07,
+                lightDrop: 0.14,
+                roofArc: 0.008,
+                pillarCurve: 0.01,
+                pillarProfile: 0.006,
+                haunch: 0.01,
+                hoodArc: 0.02,
+                windshieldRake: 0.3,
+            },
+            fx: { sig: "blade", heck: "steil" },
+        },
     };
+    // ── DIE FLOTTE (fahrzeug-gattungen, rein additiv): welche Gattungen eine Stadt fährt, ist Gesetz des Kerns — die Gattungen
+    // sind seine Fahrzeug-Rezepte (`GATTUNGEN`, nie eine Tafel im Wirt), ihr Anteil am Bestand die Zeile `FLOTTE` (Größenordnung
+    // des Pkw-Bestands nach Segment: Klein-/Kompaktwagen gut ein Drittel, SUV ein Viertel, Mittelklasse ein Fünftel, Transporter
+    // ein Zehntel, Sportwagen wenige Prozent). `flotte(n, same)` legt n Wagen nach dem größten Rest auf die Anteile und
+    // mischt die Folge mit dem Samen der Stadt — dieselbe Stadt, dieselbe Flotte.
+    // Leser: der Verkehr der Siedlung (`_verkehrAnlegen`), der Vorrat der Platte (`_foundryLibraryConfig`).
+    const GATTUNGEN = Object.keys(PRESETS).filter((k) => PRESETS[k].kind === "vehicle");
+    const FLOTTE = { kompakt_fwd: 0.34, suv: 0.24, limousine: 0.18, transporter: 0.12, gt: 0.07, supersport: 0.05 };
+    function flotte(n, same) {
+        n = Math.max(0, Math.floor(n));
+        const ids = GATTUNGEN.filter((k) => FLOTTE[k] > 0);
+        const sum = ids.reduce((a, k) => a + FLOTTE[k], 0);
+        const roh = ids.map((k) => (n * FLOTTE[k]) / sum);
+        const zahl = roh.map(Math.floor);
+        let rest = n - zahl.reduce((a, b) => a + b, 0);
+        const folge = ids.map((_, i) => i).sort((a, b) => roh[b] - zahl[b] - (roh[a] - zahl[a]) || a - b);
+        for (let j = 0; rest > 0; j++, rest--) zahl[folge[j % folge.length]]++;
+        const out = [];
+        ids.forEach((k, i) => {
+            for (let c = 0; c < zahl[i]; c++) out.push(k);
+        });
+        let h = (same >>> 0) ^ 0x9e3779b9;
+        for (let i = out.length - 1; i > 0; i--) {
+            h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+            h = Math.imul(h ^ (h >>> 12), 0x297a2d39) >>> 0;
+            const j = ((h ^ (h >>> 15)) >>> 0) % (i + 1);
+            [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
+    }
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
@@ -5012,6 +5080,10 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
+        // die Flotte (fahrzeug-gattungen, rein additiv): die Gattungen, ihr Anteil am Bestand, die Wagen einer Stadt
+        GATTUNGEN: GATTUNGEN,
+        FLOTTE: FLOTTE,
+        flotte: flotte,
         PARAMS_BY_KIND: { vehicle: PARAMS },
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
         STAMMBAUM: { studio: "Garage", arten: { vehicle: "Fahrzeuge" } },

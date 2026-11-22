@@ -602,6 +602,13 @@ class AnazhRealm_studio_gestalt {
         }
         return false;
     }
+    // DIE GATTUNGEN DER FAHRZEUGE (fahrzeug-gattungen): die Fahrzeug-Rezepte des EINEN Kerns (vehicle-core `GATTUNGEN`) — der
+    // Leser jeder Stelle des Wirts, die Fahrzeug-Arten aufzählt (Vorrat der Platte); die Stadt liest ihre Flotte am Kern selbst.
+    _fahrzeugGattungen() {
+        const VC = globalThis.__vehicleCore;
+        if (!VC || !Array.isArray(VC.GATTUNGEN)) return AnazhRealm._kernPflichtBruch("vehicle:GATTUNGEN");
+        return VC.GATTUNGEN.slice();
+    }
     _foundryLibrarySpec() {
         // Der Vorrat wärmt GENE, keine Körper ohne Leser: Boden-Arten ihre deklarierten Stufen je Gestalt; Karten-Arten
         // (Bäume, Strauch) wärmt er nicht — ihre Karte bestellt ihr Leser, L0/L1 lädt nah auf Abruf (_foundryFlattenFor +
@@ -634,9 +641,10 @@ class AnazhRealm_studio_gestalt {
             // FOUNDRY-WARM (Spawn-tot-Heilung): Garage-Fahrzeuge + Siedlung brauchen
             // warmes Buch/build-asset — sonst stirbt In-Welt-Spawn (fahrzeug_*/dorf)
             // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]). Sie wärmen NUR die Platte
-            // (`_foundryVorrat`): vor dem ersten Spawn liest niemand ihre Körper.
+            // (`_foundryVorrat`): vor dem ersten Spawn liest niemand ihre Körper. Die Arten sind die Gattungen des Fahrzeug-Kerns
+            // (vehicle-core `GATTUNGEN`), nie eine Tafel des Wirts.
             critical: {
-                species: ["gt", "supersport", "limousine", "kompakt_fwd", "suv"],
+                species: this._fahrzeugGattungen(),
                 seeds: [1, 7],
                 lods: [0],
             },

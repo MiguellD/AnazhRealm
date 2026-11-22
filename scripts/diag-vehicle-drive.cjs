@@ -19,6 +19,8 @@ const {
     fehlerText,
     SELBSTTEST,
     stammLib,
+    ROOT,
+    path,
 } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -114,6 +116,39 @@ function ellipseVerdict(m) {
     return out;
 }
 
+// ── A7/B-h DIE GATTUNGEN (fahrzeug-gattungen, Karte 2 mensch.fahrzeug.gestalt#1): welche Gattungen eine Stadt fährt, ist Gesetz
+// des Fahrzeug-Kerns (vehicle-core `GATTUNGEN` · `flotte`). Gezählt wird, was in der Stadt des Messorts stadt-voll wirklich
+// STEHT oder FÄHRT (die Wagen ihres Verkehrs, B-h) — nie, was der Kern kann; jede Stelle des Stamms mit eigener Typ-Liste (ein
+// Feld nur aus Rezept-Namen, A7) heißt beim Namen. Bis fahrzeug-gattungen fuhr die Stadt aus der Tafel `VERKEHR.wagen`
+// (Kleinwagen, Limousine, SUV): 3 Gattungen.
+const GATTUNG = { min: 5 };
+function gattungVerdict(g) {
+    const out = [];
+    if (!g || !(g.kern >= GATTUNG.min)) out.push(`der Kern trägt ${g && g.kern} Gattungen (Soll ≥ ${GATTUNG.min})`);
+    if (g && g.stadt != null && !(g.stadt >= GATTUNG.min)) out.push(`die Stadt fährt ${g.stadt} Gattungen (Soll ≥ ${GATTUNG.min})`);
+    for (const t of (g && g.tafeln) || []) out.push(`eigene Typ-Liste ${t}`);
+    return out;
+}
+// die Felder aus lauter Rezept-Namen (≥ 2) je Datei und Zeile: `quellen` { datei: text }, `ids` die Gattungen des Kerns
+function typTafeln(quellen, ids) {
+    const kenn = new Set(ids);
+    const out = [];
+    for (const [datei, t] of Object.entries(quellen))
+        for (const m of t.matchAll(/\[\s*(?:"[\w-]+"\s*,\s*)+"[\w-]+"\s*,?\s*\]/g)) {
+            const namen = [...m[0].matchAll(/"([\w-]+)"/g)].map((x) => x[1]);
+            if (namen.length >= 2 && namen.every((n) => kenn.has(n)))
+                out.push(`${datei}:${t.slice(0, m.index).split("\n").length} ${m[0].replace(/\s+/g, " ")}`);
+        }
+    return out;
+}
+function stammQuellen() {
+    const fs = require("fs");
+    const dir = path.join(ROOT, "stamm");
+    return Object.fromEntries(
+        fs.readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => ["stamm/" + f, fs.readFileSync(path.join(dir, f), "utf8")])
+    );
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 function expectedFor(presetId) {
@@ -169,6 +204,26 @@ hauptLauf(async () => {
             const v = ellipseVerdict({ ...ellipse, ...b });
             check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
+        // Kern mit 3 sind ROT, ein Wort-Katalog mit Kulturen (kein reines Rezept-Feld) schweigt
+        const tafel = typTafeln(
+            {
+                "stamm/mutante.js": 'AnazhRealm.VERKEHR = Object.freeze({\n    wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),',
+                "stamm/katalog.js": 'dsl: Object.freeze(["gt", "cavallo", "probefahrt"])',
+            },
+            VC.GATTUNGEN || []
+        );
+        check("Selbst-Test typTafeln: die feste Liste mit 3 Typen heißt beim Namen, der Wort-Katalog schweigt", tafel.length === 1 && /^stamm\/mutante\.js:2 /.test(tafel[0]), tafel.join(" · "));
+        const gesund = { kern: 6, stadt: 6, tafeln: [] };
+        for (const [b, n] of [
+            [{}, 0],
+            [{ stadt: 3 }, 1],
+            [{ kern: 3 }, 1],
+            [{ tafeln: tafel }, 1],
+        ]) {
+            const v = gattungVerdict({ ...gesund, ...b });
+            check(`Selbst-Test gattungVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -181,6 +236,16 @@ hauptLauf(async () => {
         "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
         stammLib.fehlt({ ausser: "_loopPlayerMovement" }, /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/),
         stammLib.fehlt.wo
+    );
+
+    // A7: die Gattungen des Kerns und jede eigene Typ-Liste des Stamms (die Stadt zählt B-h im lebenden Draht)
+    const gattungenKern = Array.isArray(VC.GATTUNGEN) ? VC.GATTUNGEN : [];
+    const tafeln = typTafeln(stammQuellen(), gattungenKern);
+    const gA = gattungVerdict({ kern: gattungenKern.length, tafeln });
+    check(
+        `A7: die Gattungen sind Gesetz des Kerns (≥ ${GATTUNG.min}) und kein Stamm-Feld zählt sie selbst auf`,
+        gA.length === 0,
+        gA.join(" · ") || `${gattungenKern.length} Gattungen: ${gattungenKern.join(", ")} · 0 eigene Typ-Listen in stamm/`
     );
 
     const ell = ellipseMessung(VC);
@@ -381,6 +446,38 @@ hauptLauf(async () => {
         return res;
     });
 
+    // ===== B-h: DIE GATTUNGEN DER STADT — die Stadt des Messorts stadt-voll (sein Wort, sein Anker) steht, der Spieler an ihrem
+    // Ursprung, bis ihr Verkehr angelegt ist; gezählt werden die Gattungen ihrer Wagen und die Fahrzeug-Typen, die in der Welt
+    // STEHEN (`state.architectures`, dasselbe Maß wie die Station gestalt#1) =====
+    const stadt = await page.evaluate(async () => {
+        try {
+            const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === "stadt-voll");
+            const w = ort.gruendung.wort.split(" ");
+            const [seed, nH, [ax, az]] = [Number(w[1]), Number(w[2]), ort.gruendung.anker];
+            await __weltDa(() => AnazhRealm._siedlungGesetz());
+            const S0 = () => [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200);
+            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+            const S = S0();
+            if (!S) return { fehler: "keine Stadt am Messort stadt-voll" };
+            const pm = r.state.playerMesh.position;
+            let t = performance.now();
+            for (const weiter = __deckel("B-h: der Verkehr der Stadt", 150000); weiter() && !(S.verkehr && S.verkehr.wagen.length); ) {
+                pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + 0.2, S.oz);
+                r.state.playerVel.setValue(0, 0, 0);
+                for (let k = 0; k < 8; k++) r._gameLoopTick((t += 1000 / 60));
+                await window.sleep();
+            }
+            const VK = S.verkehr;
+            if (!VK || !VK.wagen.length) return { fehler: `die Stadt trägt keinen Verkehr (Soll ${VK && VK.zahl && VK.zahl.soll})` };
+            const typen = {};
+            for (const W of VK.wagen) typen[W.typ] = (typen[W.typ] || 0) + 1;
+            const welt = [...new Set((r.state.architectures || []).filter((e) => e && /^fahrzeug_/.test(e.type)).map((e) => e.type))];
+            return { wagen: VK.wagen.length, soll: VK.zahl.soll, typen, welt };
+        } catch (e) {
+            return { fehler: fehlerText(e) };
+        }
+    });
+
     await browser.close();
     server.close();
 
@@ -391,6 +488,14 @@ hauptLauf(async () => {
         "B-a/B-b: jedes Fahrzeug-Rezept reiste BIT-EXAKT durch Worker+Ingest (Buch == Node-exportDrive)",
         !abw.length,
         out.bookErr || abw.join(",") || Object.keys(out.book).join(",")
+    );
+    // B-h: die Gattungen, die in der Stadt stadt-voll stehen und fahren — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test)
+    const nWelt = stadt.welt ? stadt.welt.length : 0;
+    const gB = stadt.fehler ? [stadt.fehler] : gattungVerdict({ kern: gattungenKern.length, stadt: Math.min(nWelt, Object.keys(stadt.typen).length), tafeln: [] });
+    check(
+        `B-h: die Stadt stadt-voll fährt ≥ ${GATTUNG.min} Gattungen des Kerns (Wagen ihres Verkehrs und Fahrzeug-Typen der Welt)`,
+        gB.length === 0,
+        gB.join(" · ") || `${stadt.wagen} von ${stadt.soll} Wagen · ${JSON.stringify(stadt.typen)} · in der Welt ${stadt.welt.join(", ")}`
     );
     // B-c: das Host-Profil.
     const pg = out.gt;

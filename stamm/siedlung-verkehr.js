@@ -356,6 +356,12 @@ class AnazhRealm_siedlung_verkehr {
             }
             return null;
         };
+        // DIE FLOTTE DER STADT ist Gesetz des Fahrzeug-Kerns (vehicle-core `flotte`: seine Gattungen nach ihrem Anteil am Bestand,
+        // gemischt mit dem Samen der Stadt) — der Wagen w fährt die Gattung w. Bis fahrzeug-gattungen wählte der Same jedes Fahrers
+        // aus einer Tafel des Wirts (Kleinwagen, Limousine, SUV): die Stadt am Messort stadt-voll fuhr 3 Gattungen.
+        const vcF = globalThis.__vehicleCore;
+        if (!vcF || typeof vcF.flotte !== "function") return AnazhRealm._kernPflichtBruch("vehicle:flotte");
+        const flotte = vcF.flotte(von.slots.length, seed);
         for (const [w, si] of von.slots.entries()) {
             const b = frei(si, 0);
             if (!b) {
@@ -380,7 +386,7 @@ class AnazhRealm_siedlung_verkehr {
             const [ki, wende] = wahl;
             const park = wende.frei.shift();
             const gen = this._rollGenome(`${seed}:${si}`, "verkehr");
-            const typ = gen.pick("wagen", V.wagen);
+            const typ = flotte[w];
             const W = {
                 S,
                 b,
@@ -2369,8 +2375,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
     [-1, -1],
 ]);
 // DER VERKEHR DES WIRTS (das Gesetz der Menge, des Netzes, der Wende und des Platzes lebt in fachwerk VERKEHR_GESETZ; hier, wie
-// der Wirt fährt): wagen = die Gestalten des Fahrzeug-Kerns, die die Stadt fährt (der Same des Fahrers wählt; Sport- und
-// Geländewagen fahren nicht in der Stadt) · stufeM = so viel darf der Boden der Spur je halben Meter springen (mehr ist eine
+// der Wirt fährt; welche Gattungen die Stadt fährt, sagt der Fahrzeug-Kern, vehicle-core `flotte`) · stufeM = so viel darf der Boden der Spur je halben Meter springen (mehr ist eine
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
@@ -2410,7 +2415,6 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // aus und ein, umfahrMaxM = so weit schert er höchstens rechts aus (sonst links). Wie nah der Leib sichtbar am Steuer sitzt, sagt
 // die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
 AnazhRealm.VERKEHR = Object.freeze({
-    wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),
     stufeM: 0.2,
     ruheMs: 0.05,
     platzBahnM: 3,
