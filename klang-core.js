@@ -1369,7 +1369,8 @@
             tief.connect(gg);
             gg.connect(kg);
             gs.onended = function () { try { tief.disconnect(); gg.disconnect(); pg.disconnect(); kg.disconnect(); } catch (_e) {} };
-            gs.start(t, Math.random() * vorrat.duration);
+            // die Stelle im Vorrat folgt der Uhr des Ereignisses: zwei Wellen grollen verschieden, ohne Wuerfel (G2.3)
+            gs.start(t, t % vorrat.duration);
             gs.stop(t + Math.max(S.grollSek, ende));
             return { quelle: gs, hz: eck, puls: puls };
         }
