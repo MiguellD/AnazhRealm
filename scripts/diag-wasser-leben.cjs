@@ -301,6 +301,22 @@ function urteil(b) {
             // E6: das Eis trägt am Ufer, wo der Grund über dem Spiegel liegt (keine Säule friert) — der Täter `_eisAt`
             const uf = (k.eis || {}).ufer || {};
             if (!(uf.proben > 0) || uf.traegt) rot("E6 OHNE SÄULE (_eisAt)", uf);
+        }
+    }
+    // E7 DAS EIS TRÄGT AM SPIEGEL (same.physik.feuer#1, `__wasserEis`): je Gewässer der Fuß des Spielers und der Grund jedes
+    // anderen Körpers ±5 cm am Spiegel des Eises, das Eis nie über einem Grund, der über dem Spiegel liegt; LEER unter 3
+    // Gewässern mit Eis. Der Täter beim Namen: der Ort und |Fuß − Spiegel| in cm.
+    if (b.eis) {
+        const orte = b.eis.orte || [];
+        const mitEis = orte.filter((o) => !o.fehler);
+        if (mitEis.length < 3) rot("E7 LEER", orte.map((o) => o.name + (o.fehler ? ": " + o.fehler : "")));
+        for (const o of mitEis)
+            if (!(o.fussCm <= 5 && o.koerperCm <= 5 && o.grundCm < 0))
+                rot(`E7 EIS NEBEN DEM SPIEGEL (_eisAt): ${o.name} Fuß ${o.fussCm} cm · Körper ${o.koerperCm} cm · Grund ${o.grundCm} cm`, o.eis);
+    }
+    if (b.koerper) {
+        const k = b.koerper;
+        if (!k.fehler) {
             // stoffe.K3-2: der Schnee schmilzt über 0 °C und die Grenze liest ihn; die Lava erstarrt, am Wasser schneller
             const sm = k.schmelze || {};
             if (!(sm.pegel > 0.01 && sm.schmilzt > 0) || sm.gegen || !(sm.halt <= 0.001)) rot("S1 EINGEFROREN", sm);
@@ -539,6 +555,14 @@ function selbsttest() {
             bugAb: { afloat: true, nickZielGrad: 0, wankZielGrad: 0, grundGrad: 29.3 },
         },
         ufer: { trocken: 180, geflutet: 0, maxFlutM: 0 },
+        eis: {
+            orte: [
+                ["see", [1866, -6162, 0.93], -68.53],
+                ["mess", [-261.7, -1133.6, 25.78], -28.26],
+                ["fluss", [-258.4, -1132.8, 25.73], -60.05],
+                ["bach", [-269.2, -1127.4, 25.97], -42.13],
+            ].map(([name, eis, grundCm]) => ({ name, eis, fussCm: 0, grundCm, koerperCm: 0 })),
+        },
         leser: {
             spalten: 26000,
             nass: 6000,
@@ -713,6 +737,13 @@ function selbsttest() {
         // über dem Grund (die Station: der Fuß 33,66 cm über dem Spiegel)
         ["E6 OHNE SÄULE (_eisAt)", ["koerper.eis.ufer", { proben: 651, traegt: 651, hochCm: 79.85 }]],
         ["E6 OHNE SÄULE (_eisAt)", ["koerper.eis.ufer.proben=", 0]],
+        // same.physik.feuer#1 am alten `_eisAt` (vor 129e7074, ohne Säulen-Probe): an der Mess-Wiese der Station stand der Fuß
+        // 33,66 cm über dem Spiegel auf dem Grund (33,98 cm), am See 138,03 cm (Grund 146,66 cm); Fluss und Bach trugen
+        ["E7 EIS NEBEN DEM SPIEGEL (_eisAt): mess", ["eis.orte.1", { eis: [-261.7, -1127.5, 25.843], fussCm: 33.66, grundCm: 33.98, koerperCm: 33.98 }]],
+        ["E7 EIS NEBEN DEM SPIEGEL (_eisAt): see", ["eis.orte.0", { eis: [1866, -6168, 0.15], fussCm: 138.03, grundCm: 146.66, koerperCm: 138.05 }]],
+        // der Körper eines Tiers liest einen eigenen Grund neben dem Eis, der Spieler trägt
+        ["E7 EIS NEBEN DEM SPIEGEL (_eisAt): bach", ["eis.orte.3.koerperCm=", 42.13]],
+        ["E7 LEER", ["eis.orte=", [{ name: "see", fehler: "kein tragendes Eis binnen 150 m im Winter" }]]],
         // stoffe.K3-2 an der Basis b2c6c627: die Schneegrenze war Höhe allein (der Pegel stand), die glut-Achse eingefroren
         ["S1 EINGEFROREN", ["koerper.schmelze", { pegel: 0, schmilzt: 0 }]],
         ["S1 EINGEFROREN", ["koerper.schmelze.halt=", 0.16]],
@@ -1045,6 +1076,16 @@ async function lauf() {
                 befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
             if (soll("see"))
                 befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
+            // E7 vor dem Graben (er schneidet den Fluss): das Eis trägt jeden Körper am Spiegel — an der Mess-Wiese der Station,
+            // am See, am Fluss und am Bach
+            if (soll("eis"))
+                befund.eis = await page.evaluate(
+                    (o) =>
+                        window.__wasserEis({
+                            orte: [["see", o.see.ufer], ["mess", o.mess], ["fluss", [o.fluss.x, o.fluss.z]], ["bach", [o.bach.x, o.bach.z]]],
+                        }),
+                    ORTE
+                );
             // ganz zuletzt (sie schneiden und schütten die Welt): der Graben am Fluss (F3), 60 m stromab der Damm (gelaende.K2)
             if (soll("graben")) {
                 await page.evaluate((f) => window.__wasserStrom([f.x, f.z], 0.6), ORTE.fluss);

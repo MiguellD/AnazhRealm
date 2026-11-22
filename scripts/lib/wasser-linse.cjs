@@ -3014,6 +3014,63 @@ function wasserLeib() {
     return leib;
 }
 
+// ── E7: DAS EIS TRÄGT AM SPIEGEL (same.physik.feuer#1) ── an jedem Gewässer der Orte (`o.orte`: [Name, [x, z]] — die
+// Mess-Wiese der Station, See, Fluss, Bach) im Winter (Saison 0,875) das Muster der Station: das nächste tragende Eis
+// (`_eisAt`) binnen 150 m im Ring je 6 m, der Leib 1 m darüber, der Sim-Schritt trägt ihn, bis er ruht (höchstens 180
+// Takte). Gemeldet je Ort |Fuß − Spiegel| (`fussCm`), der Grund des Gesetzes unter dem Eis gegen den Spiegel (`grundCm`:
+// > 0 heißt Eis ohne Säule) und der Grund jedes anderen Körpers (`koerperCm`: |`_koerperBodenUnter` − Spiegel|, von oben
+// und von einer Stufe über dem Eis — Tier, Bewohner und Wagen stehen über ihn). Gestreamt wird je Ort nur, wo der
+// vorige Strom (`strom`) weiter als 300 m lag. An main 31ea3847 stand der Fuß an der Mess-Wiese 33,66 cm über dem Spiegel.
+async function wasserEis(o = {}) {
+    const A = AnazhRealm;
+    const FUSS = A.PLAYER_FOOT_OFFSET;
+    const R = wasserRund(2);
+    const jahr = [st.seasonPhase, st.autoSeason];
+    const leib = window.__wasserLeib();
+    const aus = { orte: [] };
+    let strom = null;
+    try {
+        for (const [name, ort] of o.orte) {
+            if (!strom || Math.hypot(ort[0] - strom[0], ort[1] - strom[1]) > 300)
+                await window.__wasserStrom((strom = ort), 0.6);
+            Object.assign(st, { autoSeason: false, seasonPhase: 0.875 });
+            let E = null;
+            for (let d = 0; d <= 150 && !E; d += 6) {
+                const n = Math.max(1, Math.round(d / 3));
+                for (let k = 0; k < n && !E; k++) {
+                    const [x, z] = [ort[0] + d * Math.sin((2 * Math.PI * k) / n), ort[1] + d * Math.cos((2 * Math.PI * k) / n)];
+                    const y = r._eisAt(x, z, NaN, Infinity);
+                    if (y !== null && Number.isFinite(y)) E = { x, z, y };
+                }
+            }
+            if (!E) {
+                aus.orte.push({ name, ort, fehler: "kein tragendes Eis binnen 150 m im Winter" });
+                continue;
+            }
+            const pm = leib.setze(E.x, E.y + 1 + FUSS, E.z);
+            for (let i = 0, still = 0, y0 = pm.position.y; i < 180 && still < 20; i++) {
+                leib.takt({});
+                still = Math.abs(pm.position.y - y0) < 1e-4 ? still + 1 : 0;
+                y0 = pm.position.y;
+            }
+            const g = r._voxelSurfaceY(E.x, E.z);
+            const kb = [r._koerperBodenUnter(E.x, NaN, E.z), r._koerperBodenUnter(E.x, E.y + 0.1, E.z)];
+            aus.orte.push({
+                name,
+                eis: [R(E.x, 1), R(E.z, 1), R(E.y, 3)],
+                fussCm: R(100 * Math.abs(pm.position.y - FUSS - E.y)),
+                grundCm: R(100 * (g - E.y)),
+                koerperCm: R(100 * Math.max(...kb.map((b) => Math.abs(b - E.y)))),
+            });
+        }
+    } finally {
+        [st.seasonPhase, st.autoSeason] = jahr;
+        r._tickSeason();
+        leib.zurueck();
+    }
+    return aus;
+}
+
 // ── K12 M: DIE MUTATION DER EINEN WAHRHEIT (Meisterkarte Gelände K4, Staffel 1) ──
 // An `n` (50) Zufalls-Punkten trockenen Lands um `ort` trägt der Kern der Wahrheit am Körper (`_koerperWasserSpiegel`) je eine
 // Scheibe von RHO m mit einem Spiegel TIEF m über dem Boden. Jeder Leser (LESER, die Liste steht nur hier; das Trink-Ziel
@@ -3484,6 +3541,7 @@ module.exports = {
             wasserOrte,
             wasserLeser,
             wasserLeib,
+            wasserEis,
             wasserMutation,
             wasserKarte,
             wasserLaeufe,
