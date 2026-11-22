@@ -1299,7 +1299,7 @@ class AnazhRealm_siedlung_wege {
         const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
         const mitAsche = _T.mix(mitStreu, farbe(s), _a);
         const e = P.dirt;
-        const a = P.wet;
+        const a = AnazhRealm._ackerErde(); // der Acker ist frisch gewendete Erde (acker-kette 2), nie die nasse Wiese
         const mitErde = _T.mix(mitAsche, farbe(e), _erde);
         const mitAcker = _T.mix(mitErde, farbe(a), _acker);
         // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein). DER STEIN IST KEIN ERDREICH (w28-stein-kamm): der Boden-Stoff
@@ -2967,10 +2967,10 @@ class AnazhRealm_siedlung_wege {
         const C = [];
         const H = [];
         const HC = [];
-        // DIE FURCHE IST ERDE (acker-kette 2): der Kamm trägt den Stoff des gemalten Ackers — die feuchte, frisch gewendete Erde
-        // der Palette (`BODEN_FARBE.wet`, dieselbe Farbe, die der Boden-Stoff im Kanal Acker mischt, `_wegeBodenFarbe`), je
-        // Strecke um `streuErde` gestreut. Bis acker-kette 1 färbte die Frucht den Kamm (orange Dreiecke unter der Wiese).
-        const erde = AnazhRealm.BODEN_FARBE.wet;
+        // DIE FURCHE IST ERDE (acker-kette 2): der Kamm trägt den Stoff des gemalten Ackers — die frisch gewendete Erde
+        // (`_ackerErde`, dieselbe Farbe, die der Boden-Stoff im Kanal Acker mischt, `_wegeBodenFarbe`), je Strecke um `streuErde`
+        // gestreut. Bis acker-kette 1 färbte die Frucht den Kamm (orange Dreiecke unter der Wiese).
+        const erde = AnazhRealm._ackerErde();
         const nahHalm = (ax, az) => Math.hypot(ax - p.x, az - p.z) < AK.halmNahM;
         // EINE Strecke: ein Kamm von a nach b (Welt), darauf die Reihe der Frucht im Stand S (null: brach gepflügt)
         const strecke = (ax, az, bx, bz, S, z) => {
@@ -3085,6 +3085,14 @@ class AnazhRealm_siedlung_wege {
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
         return M.length;
+    }
+    // DIE ERDE DES ACKERS (linear): die Erde der Studio-Palette (`BODEN_FARBE.dirt`, PORTAL_GROUND) frisch gewendet — die feuchte
+    // Krume aus der Tiefe dunkelt ihre Albedo um `ACKER_KOERPER.erdeFeucht` (trockener Oberboden ~0,2, die frische Scholle ~0,12).
+    // Leser: der Boden-Stoff im Kanal Acker (`_wegeBodenFarbe`) und die Kämme des Körpers (`_ackerKoerperTakt`) — EINE Erde. Bis
+    // acker-kette 2 mischte der Boden den Acker zur nassen Wiese (`wet` 0x33402a, oliv): die Furchen lagen grün.
+    static _ackerErde() {
+        const k = AnazhRealm.ACKER_KOERPER.erdeFeucht;
+        return AnazhRealm.BODEN_FARBE.dirt.map((c) => c * k);
     }
     // die Zahl einer Strecke in [0, 1) (rein, aus ihrer Lage: dieselbe Strecke trägt bei jedem Bau denselben Ton)
     static _ackerZahl(x, z) {
@@ -3330,6 +3338,7 @@ AnazhRealm.ACKER_KOERPER = Object.freeze({
     bahnM: 1.2,
     streuFarbe: 0.16,
     streuErde: 0.12,
+    erdeFeucht: 0.62,
     wieseWeicht: 0.5,
     halmNahM: 45,
     halmSchrittM: 8,
