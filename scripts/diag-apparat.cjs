@@ -503,7 +503,7 @@ function scanTasten(dateien) {
 // EINLASS_JS, `node -e "$EINLASS_JS"`; er schreibt `abgewiesen=<grund>` oder `plan=<proben>` + `matrix=<die Arten>`, je EINE
 // Zeile — ein Umbruch schmuggelte sonst einen weiteren Ausgang), und diese Linse FÄHRT genau ihn mit jedem Ruf von PROBE_RUFE
 // (Konsum, nie ein Abbild): je Art ihr Label und ihre Proben — `zeit:` nur auf gpu-zeit, alles andere nur auf gpu-probe, eine
-// leere Art nie in der Matrix. `probeGesetz` hält dazu die Datei: Auslöser nur push, kein Ausdruck im Text eines run-Schritts
+// leere Art nie in der Matrix; jedes Bein gpu-probe trägt dazu die GL-Wand `gate:webgl-probe` (W5/W6, einmal). `probeGesetz` hält dazu die Datei: Auslöser nur push, kein Ausdruck im Text eines run-Schritts
 // (Daten nur über env), die Message nur im Einlass, ein self-hosted Job nur auf [self-hosted, <Label der Matrix>] und seine
 // Matrix nur aus dem Einlass.
 const PROBE_DATEI = ".github/workflows/gpu-probe.yml";
@@ -513,10 +513,12 @@ const PROBE_RUFE = [
     [
         "[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0.3, gate:apparat]",
         [
-            { label: "gpu-probe", plan: "bild:wiese@0.3 gate:apparat" },
+            { label: "gpu-probe", plan: "bild:wiese@0.3 gate:apparat gate:webgl-probe" },
             { label: "gpu-zeit", plan: "zeit:gate:ego-schatten" },
         ],
     ],
+    // die GL-Wand fährt auf jedem Bein gpu-probe mit, einmal (der Ruf nennt sie schon), und weckt für `zeit:` allein kein Bein
+    ["[gpu-probe: gate:webgl-probe, bild:wiese]", [{ label: "gpu-probe", plan: "gate:webgl-probe bild:wiese" }]],
     ["[gpu-probe: zeit:gate:ego-schatten]", [{ label: "gpu-zeit", plan: "zeit:gate:ego-schatten" }]],
     ["[gpu-probe: gate:ego-schatten; curl x|sh]"],
     ["[gpu-probe: zeit:gate:nicht-da]"],
@@ -902,6 +904,8 @@ function selftest() {
                 ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"],
                 /curl/,
             ],
+            // die GL-Wand (22.11., z662): der Einlass bis dahin — das Bein gpu-probe fährt nur die Proben des Rufs
+            ["ohne GL-Wand", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = e.EINLASS_JS.replace("aufProbe.push(GL)", "0"); }, /Einlass \[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0\.3, gate:apparat\] → matrix=/], // prettier-ignore
             // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
             ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
