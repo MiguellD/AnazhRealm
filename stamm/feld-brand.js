@@ -1091,9 +1091,10 @@ class AnazhRealm_feld_brand {
     // (`_stossAuf`, durch den Schwerpunkt), das Ohr hört den Knall (`_substanzKlang`). Bis hier brannte jedes Fass wie das Gras
     // daneben: der Stamm trug 0 Treffer „druck", die Spalte σ_B der Stoff-Zeile hatte keinen Leser.
 
-    // DIE LADUNG EINES BAUS: seine Teile aus einem Stoff, dessen Zeile q trägt, als [Stoff, Volumen m³] — je Bauplan gemerkt
-    // (die Form; ρ und q der Zeile liest `_ladungJ` je Ruf). Wer eine trägt, steht im Verzeichnis unter „ladung"
-    // (`_blockerNamen`): der Auslöser fragt nur sie.
+    // DIE LADUNG EINES BAUS: seine Teile aus einem Stoff, dessen Zeile q trägt — je Bauplan gemerkt (die Teile selbst; Volumen,
+    // ρ und q liest `_ladungJ` beim Umsatz). Wer eine trägt, steht im Verzeichnis unter „ladung" (`_blockerNamen`): der
+    // Auslöser fragt nur sie. Das Verzeichnis fragt nur, OB ein Teil q trägt — es baut keine Gestalt (das Volumen einer Form
+    // ist ihr Netz, `_teilVolumen`; die Stoff-Wand nannte den Weg vom Netz der Blocker zum Netz-Bau beim Namen).
     _ladungTeile(entry) {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts)) return AnazhRealm.DRUCK.keine;
@@ -1104,7 +1105,7 @@ class AnazhRealm_feld_brand {
             const M = this.state.materials || {};
             for (const p of bp.parts) {
                 const z = p && M[p.material] ? this._stoff(p.material) : null;
-                if (z && z.q > 0) T.push([p.material, this._teilVolumen(p)]);
+                if (z && z.q > 0) T.push(p);
             }
             if (!T.length) T = AnazhRealm.DRUCK.keine;
             memo.set(bp, T);
@@ -1116,9 +1117,9 @@ class AnazhRealm_feld_brand {
     _ladungJ(entry) {
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         let j = 0;
-        for (const [stoff, v] of this._ladungTeile(entry)) {
-            const z = this._stoff(stoff);
-            if (z && z.q > 0 && z.rho > 0) j += v * s * s * s * z.rho * z.q;
+        for (const p of this._ladungTeile(entry)) {
+            const z = this._stoff(p.material);
+            if (z && z.q > 0 && z.rho > 0) j += this._teilVolumen(p) * s * s * s * z.rho * z.q;
         }
         return j;
     }
@@ -1458,7 +1459,7 @@ class AnazhRealm_feld_brand {
                 }
         });
         if (!gebrochen) return 0;
-        const plan = Object.assign(Object.create(bp), { parts: teile });
+        const plan = { ...bp, parts: teile }; // der Plan des Einsturzes: eine Kopie mit den geteilten Platten (`_werkBricht` liest label, parts, connections)
         const truemmer = this._werkBricht(e, plan, frei, true) || [];
         welle.werke++;
         welle.teile += gebrochen;

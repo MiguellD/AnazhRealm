@@ -479,9 +479,11 @@ function brandAmSoll(Z) {
 // 1050, 52 brechende Werke: 7,1–7,8 → 4,06 ms je Werk) — ihre Arbeit sind Schleifen über Kacheln, die kein Ruf zählt. Die
 // Mutante der Klasse (der Rest räumt den Grund seines Werks ein zweites Mal, `_grundrissRaeumen` ohne `gehalten`) fährt in
 // JEDEM Lauf: sieht die Linse ihre Räumung nicht, ist sie BLIND. `DRUCK_VERZUG_S`: so weit darf die letzte Frist hinter ihrer
-// Ankunft fallen (die Grenze des Takts, `DRUCK.verzugS`: über sein Bild-Budget hinaus fällt je Bild der Anteil, den die
-// älteste Frist schon wartete — das Budget allein hielt den letzten von 52 Brüchen 2,6 s, die Grenze 0,27 s; gemessen an
-// der Probe 0,032 s); `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach liegen (gemessen 1,5 s).
+// Ankunft fallen — die Grenze, die der Takt BAUT: `DRUCK.verzugS` 0,25 s (über sein Bild-Budget hinaus fällt je Bild der
+// Anteil, den die älteste Frist schon wartete, nach verzugS alles Fällige) plus EIN Takt am Deckel der Welt-Uhr
+// (`TAKT_DECKEL_S` 0,1 s: so spät kann das Bild kommen, das die Grenze sieht). Das Budget allein hielt den letzten von 52
+// Brüchen 2,6 s, die Grenze 0,27 s; gemessen an der Probe 0,032 s. `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach
+// liegen (gemessen 1,5 s).
 const DRUCK_UMSATZ = 50;
 const DRUCK_WELLE = 80;
 const DRUCK_BLICK = 40;
@@ -490,7 +492,7 @@ const DRUCK_LAST = 4;
 const DRUCK_BRUCH = 370;
 const DRUCK_SCHERBE = 230;
 const DRUCK_ENDE = 5;
-const DRUCK_VERZUG_S = 0.25;
+const DRUCK_VERZUG_S = 0.35;
 const DRUCK_SCHLAF_S = 3;
 const druckSoll = (e) =>
     e.art === "umsatz"

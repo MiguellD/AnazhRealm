@@ -642,7 +642,7 @@ function selbsttest() {
         ["das Ohr hört die Welle nicht", ["simWecken.druck.ohr"], /DRUCK-OHR: das Ohr hörte die Welle nicht/],
         // ein Fass vor 78 Probe-Fenstern (GTX 1050, 52 brechende Werke unter dem Bild-Budget von 4 ms): der letzte Bruch 2,628 s
         // hinter seiner Ankunft
-        ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.25 s\)/],
+        ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
