@@ -281,6 +281,8 @@ class AnazhRealm_dirigent_takt {
                 this._updateDorfRauch(delta);
                 // ### Das Bild des Brands ### (stoffe.K2#2 — Flammen auf der Front, die Fahne des Rauchs)
                 this._brandBild(delta);
+                // ### Der Staub der Druckwelle ### (druckwelle-bild — die Asche der Narbe, die ihre Front hebt; auf der Welt-Uhr)
+                this._druckBild();
                 // ### Funken ### (halten.K2 — die Späne eines Treffers aus dem Stoff-Paar fliegen und verlöschen)
                 this._funkenTakt(delta);
 

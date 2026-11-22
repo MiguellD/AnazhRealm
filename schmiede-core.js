@@ -3009,7 +3009,7 @@
         //   druckTafel(luft) → die Welle über dem skalierten Abstand an den Stützen der Front (Z_i = zMin · e^(i · lnq),
         //     i = 0 … n), je Stütze [Ankunft s, Luft-Weg m, Dauer s, 0] je kg^(1/3): eine Welle der Masse W liest sie mit
         //     W^(1/3) (Hopkinson–Cranz). Zwischen den Stützen linear im Index — so rechnet `frontWeg` die Ankunft selbst.
-        var DRUCK = { tntJ: 4.184e6, gamma: 1.4, nu: 0.3, endePa: 1000, zMin: 0.05, zMax: 500, cwBand: 1.98 };
+        var DRUCK = { tntJ: 4.184e6, gamma: 1.4, nu: 0.3, endePa: 1000, zMin: 0.05, zMax: 500, cwBand: 1.98, nyLuft: 1.51e-5, reKugel: 800 };
         function ueberdruck(Z) {
             return (808 * (1 + (Z / 4.5) * (Z / 4.5))) / Math.sqrt((1 + (Z / 0.048) * (Z / 0.048)) * (1 + (Z / 0.32) * (Z / 0.32)) * (1 + (Z / 1.35) * (Z / 1.35)));
         }
@@ -3093,6 +3093,41 @@
                 else hi = m;
             }
             return Math.sqrt(lo * hi) * Math.cbrt(W);
+        }
+        // DER STAUB UNTER DER WELLE (druckwelle-bild, additiv — das Korn des Bodens aus demselben Gesetz): eine Decke aus losem
+        //   Korn (Bindung „korn": die Krume, die Asche) hält bis zu ihrer Bruchfestigkeit σ_B zusammen; trägt die Welle am Ort
+        //   mehr Überdruck, ist ihr Korn gelöst — jede andere Bindung hält (Faser: die Grasnarbe; Gestein). Was dann fliegt, gibt
+        //   der Wind hinter der Front (`wind` und `weg` der Welle, dieselben Zahlen, die den Halm legen):
+        //   DER SCHUB   die Luft reibt an der rauen Decke mit τ = ½ · c_f · ρ0 · u², c_f der voll rauen Platte (Prandtl–Schlichting,
+        //               lokal: (2,87 + 1,58 · lg(x ÷ k))^(−2,5), x der Luft-Weg über dem Ort, k das Korn; gültig x ÷ k 10² … 10⁶ —
+        //               Schlichting, Grenzschicht-Theorie, Kap. XXI). Über den Dreieck-Puls: ⅓ · c_f · ρ0 · u · ξ Impuls je Fläche.
+        //   DAS KORN    eine Kugel der Dichte ρ und Dicke d nimmt das Tempo der Luft auf wie der Halm: nach dem Luft-Weg
+        //               λ = 4 · ρ · d ÷ (3 · ρ0 · c_w) trägt sie die Hälfte (quadratischer Widerstand: v = u · ξ ÷ (ξ + λ)). c_w der
+        //               Kugel nach Schiller & Naumann (1935): 24 ÷ Re · (1 + 0,15 · Re^0,687), Re = v · d ÷ ν, bis `reKugel`
+        //               (dort steht die Ebene 0,47 des umströmten Balls).
+        //   DIE MASSE   der Schub wird Impuls des Korns: last = ⅓ · c_f · ρ0 · (ξ + λ) kg/m² (langsames Korn: mehr Masse am
+        //               selben Impuls).
+        //   DIE WOLKE   das Korn fliegt, wenn sein Tempo sein Sink-Tempo übertrifft (Gewicht = Widerstand, derselbe c_w); sein
+        //               Bremsweg in ruhender Luft, λ · ln(Tempo ÷ Sink-Tempo), ist der Radius der Wolke über seinem Ort. Sonst
+        //               rollt es (null): die Krume von 2 mm fliegt so nicht, die Asche schon.
+        //   DAS LICHT   ein Korn, groß gegen die Welle des Lichts, löscht das Licht seiner doppelten Fläche (Q = 2):
+        //               km = 3 ÷ (ρ · d) m²/kg.
+        //   staubLast(w, z, korn, luft) → null | { last kg/m², tempo m/s, sinken m/s, wolke m, km m²/kg, mitnahme m } — w die
+        //     Welle am Ort (`druckwelle`), z die Zeile der Decke, korn m (die Körnung, die der Wirt zur Zeile trägt). `nyLuft`:
+        //     die kinematische Zähigkeit der Luft bei 20 °C (m²/s); die Schwere ist die des Kerns (`SEIL_GESETZ.schwere`).
+        function kugelCw(v, d) {
+            var Re = Math.min(DRUCK.reKugel, Math.max(1e-6, (v * d) / DRUCK.nyLuft));
+            return (24 / Re) * (1 + 0.15 * Math.pow(Re, 0.687));
+        }
+        function staubLast(w, z, korn, luft) {
+            if (!w || !z || z.bindung !== "korn" || !(z.sigB > 0) || !(z.rho > 0) || !(korn > 0) || !luft || !(luft.rho > 0)) return null;
+            if (!(w.dp >= z.sigB) || !(w.wind > 0) || !(w.weg > 0)) return null;
+            var k = (4 * z.rho * korn) / (3 * luft.rho), gk = SEIL_GESETZ.schwere * k, sinken = Math.sqrt(gk / kugelCw(Infinity, korn));
+            for (var i = 0; i < 40; i++) sinken = Math.sqrt(gk / kugelCw(sinken, korn));
+            var mitnahme = k / kugelCw(w.wind, korn), tempo = (w.wind * w.weg) / (w.weg + mitnahme);
+            if (!(tempo > sinken)) return null;
+            var reib = Math.pow(2.87 + 1.58 * Math.log10(Math.min(1e6, Math.max(100, w.weg / korn))), -2.5);
+            return { last: (reib * luft.rho * (w.weg + mitnahme)) / 3, tempo: tempo, sinken: sinken, wolke: (k / kugelCw(tempo, korn)) * Math.log(tempo / sinken), km: 3 / (z.rho * korn), mitnahme: mitnahme };
         }
         var BETA = {};
         function plattenBeta(lang, kurz) {
@@ -3304,7 +3339,7 @@
             bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde,
             DRUCK: DRUCK, druckwelle: druckwelle, druckRadius: druckRadius, plattenBeta: plattenBeta, stossFaktor: stossFaktor,
             plattenLast: plattenLast, plattenBruch: plattenBruch, ankerAbweichung: ankerAbweichung,
-            druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel
+            druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel, staubLast: staubLast
         };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
