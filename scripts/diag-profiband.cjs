@@ -402,30 +402,6 @@ function vorlageWand(A) {
     return { errs, merges };
 }
 
-// H12 DER VERLASSENE KÖRPER FOLGT DEM BLICK (heap-register 21.11.): gibt der letzte Halter einen Foundry-Körper zurück
-// (`_foundryLoslassen`), fällt er nach GPU_KEHRAUS_MS (`_foundryRuheDeckel`); der gebaute oder bestellte, den noch kein Halter
-// nahm, wartet die Bestell-Frist (`_foundryRuheMs`). Bis heap-register ruhte jeder Untätige 60 s Spiel-Zeit (Radeon, Wegenetz-
-// Fahrt, Richter-Preis: 95 Verlassene 10–60 s alt = 47,9 MB). Die Linse fährt die echte Rückgabe und den echten Räumer an drei
-// Körpern: verlassen (Kehraus + 1 s später fort), bestellt (bleibt), gehalten (bleibt).
-function verlassenWand(A) {
-    let uhr = 100; // die Welt-Uhr der Probe: ein Leser, kein Schreiber am Stand
-    const w = weltVon(A, { get spielZeit() { return uhr; } }); // prettier-ignore
-    const fort = [];
-    w._disposeFoundryGroupGeom = (g) => fort.push(g);
-    const koerper = (n, halter) => ({ n, _liveRefs: halter, _cacheBytes: 1 << 20, children: [] });
-    const [verl, best, geh] = [koerper("verlassen", 1), koerper("bestellt", 0), koerper("gehalten", 1)];
-    w._foundry = { cache: new Map([["v", verl], ["b", best], ["g", geh]]), cacheBytes: 3 << 20, requested: new Set() }; // prettier-ignore
-    best._ruheSeit = 100;
-    A.prototype._foundryLoslassen.call(w, verl);
-    uhr += A.GPU_KEHRAUS_MS / 1000 + 1;
-    A.prototype._foundryRuheDeckel.call(w);
-    const errs = [];
-    if (w._foundry.cache.has("v")) errs.push(`H12 _foundryRuheDeckel: der verlassene Körper ruht nach ${A.GPU_KEHRAUS_MS / 1000 + 1} s weiter (Soll: fort nach GPU_KEHRAUS_MS)`); // prettier-ignore
-    if (!w._foundry.cache.has("b")) errs.push("H12 _foundryRuheDeckel: der bestellte Körper fiel vor der Bestell-Frist (_foundryRuheMs)"); // prettier-ignore
-    if (!w._foundry.cache.has("g")) errs.push("H12 _foundryRuheDeckel: der gehaltene Körper fiel");
-    return { errs, fort: fort.length };
-}
-
 // H13 DER PUFFER GEHÖRT DER GPU (heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
 // Kopie (`_gpuEigen`). Bis heap-register 2 hielt der Sicht-Index (`_sichtZugPuffer`) seine Nullen ein zweites Mal im Heap
 // (Radeon, Wegenetz-Fahrt am Richter-Preis: `_sichtTiefeZ.auftraege[]` 13,5 MB). Die Linse fährt den echten Auftrag dreimal
@@ -1909,11 +1885,6 @@ function selbsttest() {
     const v11Halt = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "return;"))); // prettier-ignore
     const v11Frueh = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "q.nutzer--;"))); // prettier-ignore
     t("Vorlage: ohne Rückgabe rot bei _archMergeCache und dem Vorbacken, ohne Zählung rot am stehenden Bau, der Stamm grün", v11Halt.errs.some((e) => /H11 _archMergeCache: die Vorlage hält/.test(e)) && v11Halt.errs.some((e) => /H11 _tickBlueprintPrebake/.test(e)) && v11Frueh.errs.some((e) => /fiel, während ein Bau aus ihr steht/.test(e)) && !vorlageWand(A).errs.length); // prettier-ignore
-    // DER VERLASSENE (H12): die Rückgabe ohne Marke (der Stand vor heap-register: der Verlassene wartet die Bestell-Frist) ist rot
-    // beim Verlassenen, das Kehraus-Gesetz für jeden Untätigen rot beim Bestellten, der Stamm grün
-    const v12Alt = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryLoslassen", "[src._ruheSeit, src._verlassen] = [this.state.spielZeit, true];", "src._ruheSeit = this.state.spielZeit;"))); // prettier-ignore
-    const v12Alle = verlassenWand(klasseVon(stammLib.ersetze(st8, "_foundryRuheDeckel", "const frist = v._verlassen ? kehraus : bestellt;", "const frist = kehraus;"))); // prettier-ignore
-    t("Verlassener Körper: ohne Marke rot beim Verlassenen, Kehraus für alle rot beim Bestellten, der Stamm grün", v12Alt.errs.some((e) => /verlassene Körper ruht/.test(e)) && v12Alle.errs.some((e) => /bestellte Körper fiel/.test(e)) && !verlassenWand(A).errs.length); // prettier-ignore
     // DER PUFFER DER GPU (H13): das Hochladen mit Kopie (der Stand vor heap-register 2) ist rot bei der CPU-Kopie, der Fall
     // ohne Marke (der Abschied hebt nur die Version) rot beim Neu-Legen, der Stamm grün
     const g13Kopie = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_sichtZugPuffer", "AnazhRealm._gpuEigen(rend, Z.index, 2);", "rend._attributes.update(Z.index, 2);"))); // prettier-ignore
@@ -1980,9 +1951,6 @@ function main() {
     console.log(`H10 die ferne Siedlung nach dem Abschied: ${fs10.n} Köpfe erreichbar (Soll 0)`);
     const v11 = vorlageWand(A);
     errs.push(...v11.errs);
-    const v12 = verlassenWand(A);
-    errs.push(...v12.errs);
-    console.log(`H12 der verlassene Foundry-Körper: ${v12.fort} nach dem Kehraus-Gesetz gefallen (Soll 1), bestellt und gehalten bleiben (${v12.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     console.log(`H11 die Vorlage des Bauplans: ${v11.merges}× verschmolzen für zwei Bauten und einen Geist, nach dem letzten gefallen (${v11.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const g13 = gpuEigenWand(A);
     errs.push(...g13.errs);

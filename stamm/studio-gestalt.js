@@ -1041,7 +1041,7 @@ class AnazhRealm_studio_gestalt {
         const v = f.cache.get(key);
         f.cache.delete(key);
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
-        if (v && typeof v === "object") [v._ruheSeit, v._verlassen] = [this.state.spielZeit, false]; // bestellt: die Ruhezeit beginnt neu
+        if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // bestellt: die Ruhezeit beginnt neu
         return v;
     }
     // Eintrags-Gewicht: Byte-Längen der Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen.
@@ -1078,7 +1078,7 @@ class AnazhRealm_studio_gestalt {
         if (prev && Number.isFinite(prev._cacheBytes)) f.cacheBytes -= prev._cacheBytes;
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
-        if (v && typeof v === "object") [v._ruheSeit, v._verlassen] = [this.state.spielZeit, false]; // gebaut: die Ruhezeit beginnt
+        if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // gebaut: die Ruhezeit beginnt
         f.cache.set(key, v);
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
@@ -1109,25 +1109,17 @@ class AnazhRealm_studio_gestalt {
     // Cache hielt, hing daran, wie lange die Takte des Geräts dauerten, und mit ihm die Hüllen der Bäume im Netz der Bewohner
     // und die Karten im Atlas (A gegen A an 2a1a6e1c unter Last: buche|3|1 in A gebaut, in B geräumt; `netz.baeume`,
     // `impostor#fimp:atlas` anders). Die Pause (das Portal) hält die Uhr und mit ihr die Ruhe.
-    // DER VERLASSENE FOLGT DEM BLICK (heap-register 21.11.): ein Körper, den sein letzter Halter zurückgab (`_verlassen`, gesetzt
-    // in der EINEN Rückgabe `_foundryLoslassen`), ist aus dem Bild — er fällt nach dem Kehraus-Gesetz der GPU (GPU_KEHRAUS_MS, wie
-    // jede Gestalt, die kein Glied mehr zieht), nicht nach der Frist der Wiederkehr: die hat seine Hülle schon gewartet (der
-    // Reaper hält sie ARCH_LEER_GNADE_MS × Mints, und solange hält sie ihn). Die Bestell-Frist (`_foundryRuheMs`) gilt dem
-    // Gebauten und Bestellten, das noch auf seinen Halter wartet. Bis hier ruhte auch der Verlassene 60 s Spiel-Zeit: Radeon,
-    // Wegenetz-Fahrt nach dem Richter-Preis 95 Verlassene 10–60 s alt = 47,9 MB, kein Bild zeichnete einen.
     _foundryRuheDeckel(schone) {
         const f = this._foundry;
         f.ruheOffen = false;
         const jetzt = this.state.spielZeit;
-        const bestellt = AnazhRealm._foundryRuheMs() / 1000;
-        const kehraus = AnazhRealm.GPU_KEHRAUS_MS / 1000;
+        const frist = AnazhRealm._foundryRuheMs() / 1000;
         let ruhe = 0;
         for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
         let faellig = Infinity;
         for (const [k, v] of f.cache) {
             if (!v || typeof v !== "object" || v._liveRefs > 0) continue;
             if (!(v._ruheSeit >= 0)) v._ruheSeit = jetzt; // ein Eintrag ohne Stempel (am Setzen vorbei) ruht ab jetzt
-            const frist = v._verlassen ? kehraus : bestellt;
             if (k !== schone && (ruhe > AnazhRealm.FOUNDRY_RUHE_BYTES || jetzt - v._ruheSeit >= frist)) {
                 ruhe -= v._cacheBytes || 0;
                 this._foundryCacheEvict(k);
@@ -1142,7 +1134,7 @@ class AnazhRealm_studio_gestalt {
         if (!src) return;
         src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
         if (src._liveRefs > 0) return;
-        [src._ruheSeit, src._verlassen] = [this.state.spielZeit, true]; // verlassen: die Ruhezeit beginnt, nach dem Kehraus-Gesetz
+        src._ruheSeit = this.state.spielZeit; // verlassen: die Ruhezeit beginnt
         if (src._evicted) this._disposeFoundryGroupGeom(src);
         else if (this._foundry) this._foundry.ruheOffen = true;
     }
