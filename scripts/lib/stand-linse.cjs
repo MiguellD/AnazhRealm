@@ -495,6 +495,7 @@ const DRUCK_BRUCH = 370;
 const DRUCK_SCHERBE = 230;
 const DRUCK_ENDE = 5;
 const DRUCK_VERZUG_S = 0.35;
+const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen die Lage ihres Körpers
 const DRUCK_SCHLAF_S = 3;
 const druckSoll = (e) =>
     e.art === "umsatz"
@@ -570,6 +571,26 @@ function druckUrteil(D, v) {
             v.push(`DRUCK-BRUCH-BILD: die ${s.scherben} Scherben des Fensters in ${s.R} m tragen Kanten von ${s.kante ? s.kante.join(" bis ") : "?"} m — die Schnitte seines Gesetzes liegen, wo die Energie liegt: ${s.kanteSoll ? s.kanteSoll.join(" bis ") : "?"} m (die Mitte fein, der Rand grob)`);
     }
     if (G.length && !G.some((s) => s.soll > s.kreuz)) v.push(`LEER: keine Scheibe der Probe bricht feiner als ihr Kreuz (Scherben je Fenster nach dem Gesetz: ${G.map((s) => s.soll).join(" · ")})`);
+    // DIE LAGE IM BILD (druckwelle-bild): das Bild eines freien Körpers steht, wo und wie der Löser ihn hält — bei der Geburt
+    // jeder Scherbe (vor dem ersten Schritt des Lösers), nach dem Neubau ihres Bilds im Schlaf (der Cull-Takt: der Spieler geht
+    // und kommt wieder) und bei der Geburt einer Kiste, wie der Stand sie legt (die zweite Art der Group: gedreht, schlafend —
+    // kein Schritt zeigt sie je). Bis druckwelle-bild setzte der Bau des Bilds (`_rebuildArchitectureMesh`, der Zweig der
+    // Bau-Teile) Ort, Gier und Maß von Hand, ohne die Pose des Gesetzes: GTX 1050, echtes Spiel, 4 von 4 Scherben ein Bild lang
+    // 60° neben ihrem Körper; in der Linse 70 von 70 bei der Geburt (bis 92°), 16 von 16 nach dem Neubau (bis 172°).
+    if (D.scherben > 0)
+        for (const [k, wann] of [["geburt", "bei der Geburt einer Scherbe"], ["neubau", "nach dem Neubau des Bilds einer schlafenden Scherbe (der Cull-Takt: gehen und wiederkommen)"], ["stand", "bei der Geburt einer Kiste, wie der Stand sie legt (gedreht, schlafend)"]]) { // prettier-ignore
+            const L = (D.bildLage || {})[k];
+            if (!L || !(L.n > 0)) v.push(`LEER: die Probe maß die Lage im Bild nicht (${wann}: kein Bild) — der Körper trägt kein Mesh, dessen Lage die Linse liest`);
+            else if (L.grad == null || L.mm == null || !(L.grad <= DRUCK_BILD_GRAD) || !(L.mm <= DRUCK_BILD_MM)) // (Lehre 17: `null <= x` ist wahr)
+                v.push(`DRUCK-BILD-LAGE: ${wann} steht das Bild ${L.grad}° und ${L.mm} mm neben der Lage, die der Löser hält (${L.schief} von ${L.n} Bildern mehr als 1° daneben; Soll ≤ ${DRUCK_BILD_GRAD}° und ${DRUCK_BILD_MM} mm) — der Bau des Bilds zeigt die Pose des Gesetzes nicht (\`_rebuildArchitectureMesh\`, der Zweig der Bau-Teile → \`_werkPoseZeigen\`)`);
+        }
+    // die Mutante jedes Laufs hält das Maß wach: der Bau des Bilds ohne die Pose des Gesetzes steht in allen drei Augenblicken schief
+    if (D.scherben > 0 && D.mutante) {
+        const MB = D.mutante.bild;
+        const schief = (k) => (MB && Array.isArray(MB[k]) ? MB[k][0] : null);
+        if (!MB || !["geburt", "neubau", "stand"].every((k) => schief(k) > 0))
+            v.push(`BLIND: die Mutante des Bilds (der Bau des Bilds zeigt die Pose des Gesetzes nicht) blieb ungesehen — ${MB ? `schiefe Bilder bei der Geburt der Scherbe ${schief("geburt")}, nach dem Neubau ${schief("neubau")}, an der Kiste des Stands ${schief("stand")}` : "kein Maß"}`);
+    }
     // der Zähler der Welle gegen die Welt: an ihm rechnet ihr Vorrat (`welle.fein`)
     if (D.scherben > 0 && D.zaehler !== D.scherben) v.push(`DRUCK-ZAHL: die Welle zählte ${D.zaehler} Scherben, in der Welt liegen ${D.scherben} — ihr Vorrat (\`DRUCK.scherbenFein\`) rechnet an der Welt vorbei`);
     // der Vorrat am echten Rumpf: das Kreuz trägt jede Platte, darüber höchstens den Rest des Vorrats
