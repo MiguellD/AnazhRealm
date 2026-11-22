@@ -5561,7 +5561,7 @@ L.perspektive("oeko", (() => {
             },
             // ═══ DIE DYNAMIK: Kaskade im Bild, Schwingung, Ausbruch, Kelp, Front, Zyklus nur mit Paar ═══
             [DY]: {
-                sek: 25,
+                sek: 45,
                 mutiert: true,
                 pfad: PFAD_TIER,
                 ungefahren: "die Bilder (S2 Bildpaar, S4 Luftbild-Reihe) — swiftshader schießt nicht",
@@ -5602,11 +5602,14 @@ L.perspektive("oeko", (() => {
                                     let jung = null;
                                     let kappe = 0;
                                     const t1 = performance.now();
-                                    for (let k = 0; k < a.jahre * jahrT; k++) {
+                                    // DER DECKEL DES RAFFERS (oeko-front 22.11.): bis der Kalender las, lief er 0 Takte (NaN-Jahr); jetzt
+                                    // trägt ein Lauf 50 Jahre — er endet am Budget der Probe, nie am Deckel der Sitzung. Rotwild und Wolf
+                                    // leben seit Leben C2b im Gau: die Region der Altlast trägt kein `deer` — dann ist der Jungwuchs ungemessen (null)
+                                    for (let k = 0; k < a.jahre * jahrT && performance.now() - t0 < a.budgetMs * 1.5; k++) {
                                         r._bestandSchritt(k0, R, true, []);
                                         if (ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === ohne) R.tiere.splice(i, 1);
                                         if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
-                                        if (k === a.jungJahre * jahrT - 1) jung = r._kreaturBestand(null, k0).deer.K;
+                                        if (k === a.jungJahre * jahrT - 1) jung = (r._kreaturBestand(null, k0).deer || { K: null }).K;
                                         if (k % a.probeT === a.probeT - 1) {
                                             const je = {};
                                             for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
@@ -5626,7 +5629,7 @@ L.perspektive("oeko", (() => {
                             const zeile = [0, 1, 2, 3, 4].map((d) => x0 + d + "," + z0);
                             const Rz = zeile.map((k) => r._bestandRegion(k, false));
                             const erst = zeile.map(() => null);
-                            for (let k = 0; k < 2 * jahrT; k++)
+                            for (let k = 0; k < 2 * jahrT && performance.now() - t0 < a.budgetMs * 1.5; k++)
                                 zeile.forEach((key, i) => {
                                     if (!r._bestandBereit(key)) return;
                                     r._bestandSchritt(key, Rz[i], true, []);
