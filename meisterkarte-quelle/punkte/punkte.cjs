@@ -2916,14 +2916,16 @@ const buehneLeiheCode = (gib, wirtQuelle, alt) =>
 // Ruf des Bilds. Die Leihe umschließt den Schuss, auch wenn er wirft; was danach blieb, steht in `bleibt` und wirft nie. Rückgabe
 // { ergebnis, fehler?, zurueck, bleibt }. `wirtQuelle`: der Text der Wache (der Selbsttest gibt den von origin/main), sonst die des
 // Spiel-Baums (cwd der Probe); `o.alt` der Mutant des Selbsttests (der alte Helfer: nur die Linse)
+// die Wache des Spiel-Baums (cwd der Probe) als Text, oder null (ein Kopf ohne sie: `bleibt` nennt es)
+const wirtQuelleDesBaums = () => {
+    try {
+        return String(require(path.resolve("scripts/lib/wirt-wache.cjs")).wirtWache);
+    } catch (_e) {
+        return null;
+    }
+};
 async function bildGeliehen(seite, schuss, wirtQuelle, o = {}) {
-    let wq = wirtQuelle || null;
-    if (!wq)
-        try {
-            wq = String(require(path.resolve("scripts/lib/wirt-wache.cjs")).wirtWache);
-        } catch (_e) {
-            wq = null;
-        }
+    const wq = wirtQuelle || wirtQuelleDesBaums();
     const n = await seite(buehneLeiheCode(false, wq));
     if (!n || !n.tief) throw new Error("die Leihe der Bühne nimmt nicht: " + JSON.stringify(n).slice(0, 200));
     let ergebnis = null, fehler = null;
@@ -2936,6 +2938,19 @@ async function bildGeliehen(seite, schuss, wirtQuelle, o = {}) {
     const aus = { ergebnis, zurueck: (z && z.zurueck) || [], bleibt: z && Array.isArray(z.bleibt) ? z.bleibt : ["die Leihe gab nichts zurück: " + JSON.stringify(z).slice(0, 160)] };
     if (fehler) aus.fehler = fehler;
     return aus;
+}
+// DIE LEIHE, DIE IHR LAUF NICHT MEHR ZURÜCKGIBT (k2-planet probeRumpf `abbrechen`, kopplung-front 22.11.): riss der Deckel der Leiter
+// mitten im Bild, wirft jeder Ruf des toten Laufs — auch das `gib` seiner Leihe; der Läufer gibt jede offene Leihe des Stapels zurück
+// (die jüngste zuerst) → { n, zurueck, bleibt }
+async function buehneZurueck(seite, wirtQuelle) {
+    const n = Number(await seite("return (window.__punkteBuehne || []).length;")) || 0;
+    const wq = n ? wirtQuelle || wirtQuelleDesBaums() : null, o = { n, zurueck: [], bleibt: [] };
+    for (let i = 0; i < n; i++) {
+        const z = await seite(buehneLeiheCode(true, wq));
+        o.zurueck.push(...((z && z.zurueck) || []));
+        o.bleibt.push(...(z && Array.isArray(z.bleibt) ? z.bleibt : ["die Leihe gab nichts zurück: " + JSON.stringify(z).slice(0, 120)]));
+    }
+    return o;
 }
 const haltLeer = (h) => !h || (!h.gehalten.length && !h.offen.length);
 // DER STAND DES ORTS (13.11., pm-ernte; schatten.K5#1 Radeon: 0,60:1 mit dem Spieler 3,9 m vom Feuer, am 12.11. 5,28:1 mit 9,4 m —
@@ -7623,6 +7638,77 @@ async function selbsttest(o = {}) {
                     ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true,
                     JSON.stringify([ms, ue, kurz.leitern["x.y"], uk]));
             }
+            // (h) DIE LEITER ENDET AN IHREM DECKEL (kopplung-front 22.11.; GTX 30e01e75: same.kopplung.aufwaerts riss ihren Deckel 45 s,
+            // lief weiter, ihr Bild fiel in gewalt, die Bühne stand bis zum Ende der Probe): eine Werkbank-Attrappe über http (wie die
+            // Werkbank: geht der Rufer vor der Antwort, ist es ein Abbruch in der Seite). Die Leiter x.a (Deckel 1 s) hängt in /eval „lang“
+            // (5 s) und ruft danach /bild; x.b misst 6 s. Der Läufer bricht x.a am Deckel ab: die Werkbank sieht den Rufer von „lang“ gehen,
+            // /bild kommt nie, x.a ist zu Ende, ehe x.b beginnt (kein lebender Kontext der toten Leiter neben der nächsten), x.b misst, die
+            // Leiter trägt den Abbruch beim Namen. DIE MUTANTE (der Läufer vor dem Schnitt): „lang“ läuft zu Ende, /bild fällt in x.b
+            {
+                const http = require("http");
+                const KP = require("./stationen/k2-planet.js").kern;
+                const fahre = async (rumpfText) => {
+                    const buch = [], merk = { t0: Date.now() };
+                    const srv = http.createServer((q, a) => {
+                        let d = "";
+                        q.on("data", (c) => (d += c));
+                        q.on("end", () => {
+                            const code = String((d ? JSON.parse(d) : {}).code || "");
+                            const was = q.url === "/eval" ? (code === "lang" || /^x\.b /.test(code) ? code : "eval") : q.url;
+                            if (was === "x.b anfang") merk.bAnfang = Date.now() - merk.t0;
+                            if (was !== "eval") buch.push(was);
+                            if (was !== "lang") return a.end(JSON.stringify({ ergebnis: /__rafferKurz/.test(code) ? [] : 0 }));
+                            let zu = false;
+                            a.on("close", () => a.writableEnded || ((zu = true), buch.push("lang abgebrochen")));
+                            setTimeout(() => zu || (a.end(JSON.stringify({ ergebnis: 1 })), buch.push("lang zu Ende")), 5000);
+                        });
+                    });
+                    await new Promise((ja) => srv.listen(0, "127.0.0.1", ja));
+                    const W = srv.address().port;
+                    const H = { aus: path.join(tmp, "deckel-" + Date.now() + ".json"), W, frist: async () => 0, schritt: () => {} };
+                    H.ruf = (weg, o) =>
+                        new Promise((ja, nein) => {
+                            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", headers: { "Content-Type": "application/json", "x-rufer": "traegt" } }, (r) => {
+                                let d = "";
+                                r.on("data", (c) => (d += c));
+                                r.on("end", () => ja(JSON.parse(d)));
+                            });
+                            q.on("error", nein);
+                            q.end(JSON.stringify(o || {}));
+                        });
+                    H.seite = async (code) => (await H.ruf("/eval", { code })).ergebnis;
+                    const LEITERN = {
+                        "x.a": { sek: 1, mess: async (H2) => {
+                            try {
+                                try {
+                                    await H2.seite("lang");
+                                } catch (_e) {}
+                                await H2.ruf("/bild", {});
+                                return { sprossen: { 1: { werte: { n: 1 } } } };
+                            } finally {
+                                merk.aEnde = Date.now() - merk.t0;
+                            }
+                        } },
+                        "x.b": { sek: 8, mess: async (H2) => (await H2.seite("x.b anfang"), await new Promise((ja) => setTimeout(ja, 6000)), await H2.seite("x.b ende"), { sprossen: { 1: { werte: { n: 2 } } } }) },
+                    };
+                    await eval("(" + rumpfText + ")")(H, {}, LEITERN, null);
+                    await new Promise((ja) => setTimeout(ja, 200));
+                    srv.closeAllConnections();
+                    await new Promise((ja) => srv.close(ja));
+                    return { buch, merk, aus: JSON.parse(fs.readFileSync(H.aus, "utf8")) };
+                };
+                const rumpfText = KP.knapp(KP.probeRumpf), altText = rumpfText.replace("if (e && e.deckel) e.abbruch = await abbrechen(l);", "");
+                const neu = await fahre(rumpfText), alt = altText !== rumpfText ? await fahre(altText) : null;
+                const a = neu.aus.leitern["x.a"] || {}, b = neu.aus.leitern["x.b"] || {};
+                const altB = alt ? alt.buch.indexOf("/bild") : -1;
+                pruef("KEIN URTEIL (h) DIE LEITER ENDET AN IHREM DECKEL: x.a riss nach 1 s — die Werkbank sah ihren Rufer gehen (der Abbruch in der Seite), /bild kam nie, x.a war zu Ende, ehe x.b begann, x.b maß; die Leiter trägt den Abbruch; " +
+                    "der Läufer vor dem Schnitt (Mutante) ließ „lang“ zu Ende laufen und das Bild in x.b fallen",
+                    !neu.buch.includes("/bild") && neu.buch.includes("lang abgebrochen") && !neu.buch.includes("lang zu Ende") && neu.merk.aEnde < neu.merk.bAnfang &&
+                        a.deckel === true && a.warf === "der Deckel der Leiter 1 s" && a.abbruch && a.abbruch.offen === 1 && /^Epoche /.test(String(a.abbruch.seite)) &&
+                        b.sprossen && b.sprossen[1] && b.sprossen[1].werte.n === 2 &&
+                        !!alt && alt.buch.includes("lang zu Ende") && altB > alt.buch.indexOf("x.b anfang") && altB < alt.buch.indexOf("x.b ende") && alt.merk.aEnde > alt.merk.bAnfang,
+                    JSON.stringify([neu.buch, neu.merk, a, b.sprossen, alt && alt.buch, alt && alt.merk]));
+            }
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {
@@ -9612,7 +9698,7 @@ module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPfli
     frischUrteil, stempelDateien, stempelDiff, r6Quelle, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, r6Zaehlung, linsenVon, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
     // DIE LEIHE DER BÜHNE für die Probe (require(process.env.PUNKTE_MASCHINE).bildGeliehen, kopplung-front)
-    bildGeliehen, buehneLeihe, buehneLeiheCode, messHaltSeite,
+    bildGeliehen, buehneZurueck, buehneLeihe, buehneLeiheCode, messHaltSeite,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN,
     // DAS BAND DER RUHE für die Last am Preis der Meisterkarte 2 (vision/buche-2.cjs lastVon) — EINE Quelle mit fremdUrteil

@@ -5757,7 +5757,10 @@ L.perspektive("same", (() => {
     return {
         leitern: {
             [A]: {
-                sek: 45,
+                // DER DECKEL FOLGT DEM BEDARF (Koordinator 22.11.): an der GTX 66,0 s in der Seite (weltStehtNach 2 × 35,7 s — beide gelesen:
+                // das Bildpaar vor ↔ nach dem Haus aus 400 m ist die Pixel-Zahl von S1 sichtHoeheM; planetAuftrag 200 × 24 s: die 100 Saaten von S7/S8)
+                // + ~34 s Bild mit der Leihe der Bühne (S7) — der Deckel 45 s riss jede Fahrt; das Raffer-Budget (Deckel − 15 s) zieht mit
+                sek: 110,
                 mutiert: true,
                 pfad: ["stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/feld-brand.js", "stamm/siedlung-*.js", "stamm/vegetation-wiese.js", "stamm/bild-himmel.js", "stamm/wasser-hydro.js", "stamm/gelaende-chunks.js", "stamm/kreatur-leben.js", "stamm/speicher-welten.js", "voxel-worker.js", "planet-core.js", "gelaende-core.js", "phyto-core.js", "fachwerk-core.js", "scripts/werkbank.cjs"],
                 ungefahren: "das Bildpaar aus 400 m (S1) und die Orbit-Bilder (S7) schießt nur das Gerät; headless steht die Welt nie (__ausgabeAufnahme wartet auf Ruhe)",

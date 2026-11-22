@@ -362,20 +362,72 @@ const KERN = (() => {
     // Frist behält, was gemessen ist
     async function probeRumpf(H, M, LEITERN, DORF) {
         const fs = require("fs");
+        // DIE LEITER ENDET AN IHREM DECKEL (kopplung-front 22.11.; GTX 30e01e75: same.kopplung.aufwaerts riss ihren Deckel 45 s in der
+        // Seite (66 s), lief aber weiter — ihr M.auge schoss bei ~66 s in gewalt hinein, die Bühne stand bis zum Ende der Probe, gewalt ·
+        // stoerung · kaskade · kohaerenz · terraform rissen ohne Wert, die Wirt-Wache hielt ereignis und zeitreise UNGEMESSEN: der
+        // Kontext der gerissenen Leiter lebte, Heap +73,8 MB). Jede Leiter (und das Dorf) läuft in ihrem EIGENEN Lauf (AsyncLocalStorage):
+        // reißt ihr Deckel, ist der Lauf tot — jeder Ruf an die Werkbank aus ihm (H.ruf, H.seite, das Auge) wirft „ABGEBROCHEN“, jeder
+        // ihrer Rufe in der Leitung fällt (der Socket schließt: die Werkbank bricht die Arbeit in der Seite ab, x-rufer → seitenAbbruch,
+        // __abbruchEpoche), eine offene Leihe der Bühne gibt der Läufer zurück — erst dann beginnt die nächste Leiter
+        const LAUF = new (require("async_hooks").AsyncLocalStorage)();
+        for (const k of ["ruf", "seite"])
+            if (typeof H[k] === "function" && !H[k].__lauf) {
+                const f = H[k];
+                H[k] = Object.assign((...a) => {
+                    const l = LAUF.getStore();
+                    return l && l.tot ? Promise.reject(new Error("ABGEBROCHEN: " + l.text + " " + l.id + " riss — kein Ruf an die Werkbank nach ihm")) : f(...a);
+                }, { __lauf: true });
+            }
+        // der Abbruch eines Laufs → { offen: Rufe in der Leitung, s, seite, buehne } (nie still: die Leiter trägt ihn als `abbruch`)
+        const abbrechen = async (l) => {
+            l.tot = true;
+            const A = require("http").globalAgent, t0 = Date.now(), o = { offen: 0 };
+            for (const k of Object.keys(A.sockets || {})) if (k.startsWith("127.0.0.1:" + H.W + ":")) for (const s of A.sockets[k] || []) (s.destroy(), o.offen++);
+            // die Seite antwortet wieder (die Werkbank brach ab), höchstens 30 s
+            for (let i = 0; o.offen && !o.seite && Date.now() - t0 < 30000; i++)
+                try {
+                    o.seite = "Epoche " + (await H.seite("return window.__abbruchEpoche || 0;"));
+                } catch (e) {
+                    await new Promise((ja) => setTimeout(ja, 500));
+                    if (Date.now() - t0 >= 30000) o.seite = "antwortet nicht binnen 30 s: " + String((e && e.message) || e).slice(0, 100);
+                }
+            // die Leihe der Bühne, die der tote Lauf nicht mehr zurückgeben kann (punkte.cjs bildGeliehen: ihr `gib` wirft im toten Lauf)
+            if (process.env.PUNKTE_MASCHINE)
+                try {
+                    const z = await require(process.env.PUNKTE_MASCHINE).buehneZurueck(H.seite);
+                    if (z.n) o.buehne = z;
+                } catch (e) {
+                    o.buehne = { fehler: String((e && e.message) || e).slice(0, 160) };
+                }
+            o.s = (Date.now() - t0) / 1000;
+            return o;
+        };
+        // fn unter dem Deckel in ihrem eigenen Lauf; `beimDeckel` nimmt im Augenblick des Risses, was die Leiter bis dahin trug. Der Riss
+        // wirft „<text> <sek> s“ mit deckel, ms (der Augenblick) und abbruch
+        const unterDeckel = async (text, id, sek, fn, beimDeckel) => {
+            const l = { text, id, tot: false };
+            let uhr = null;
+            try {
+                return await Promise.race([
+                    LAUF.run(l, fn),
+                    new Promise((_, nein) => (uhr = setTimeout(() => (beimDeckel && beimDeckel(), nein(Object.assign(new Error(text + " " + sek + " s"), { deckel: true, ms: Date.now() }))), sek * 1000))),
+                ]);
+            } catch (e) {
+                if (e && e.deckel) e.abbruch = await abbrechen(l);
+                throw e;
+            } finally {
+                clearTimeout(uhr);
+            }
+        };
         await H.frist();
         const aus = { fassung: 1, leitern: {} };
         if (DORF) {
             const t0 = Date.now();
-            let uhr = null;
             try {
-                M.dorf = await Promise.race([
-                    H.seite("return await (" + DORF.code + ")(r, " + JSON.stringify(DORF.a) + ");"),
-                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + DORF.sek + " s")), DORF.sek * 1000))),
-                ]);
+                M.dorf = await unterDeckel("der Deckel des Dorfs", "dorf", DORF.sek, () => H.seite("return await (" + DORF.code + ")(r, " + JSON.stringify(DORF.a) + ");"));
             } catch (e) {
-                M.dorf = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+                M.dorf = Object.assign({ fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, e && e.abbruch ? { abbruch: e.abbruch } : {});
             }
-            clearTimeout(uhr);
             if (!M.dorf || typeof M.dorf !== "object") M.dorf = { fehler: "die Seite gab kein Dorf" };
             aus.dorf = Object.assign({ s: (Date.now() - t0) / 1000 }, M.dorf);
             H.schritt("dorf");
@@ -387,18 +439,16 @@ const KERN = (() => {
             const L = LEITERN[id];
             M.t0 = Date.now();
             M.teil = {};
-            let uhr = null, deckel = false;
+            let teil = null;
             await rafferStellen(H, L.sek);
             try {
-                const r = await Promise.race([
-                    L.mess(H, L.U, M),
-                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + L.sek + " s"))), L.sek * 1000))),
-                ]);
+                const r = await unterDeckel("der Deckel der Leiter", id, L.sek, () => L.mess(H, L.U, M), () => (teil = Object.assign({}, M.teil)));
                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
             } catch (e) {
-                aus.leitern[id] = Object.assign({ s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, deckel ? { deckel: true } : {}, { sprossen: Object.assign({}, M.teil) });
+                const d = !!(e && e.deckel);
+                aus.leitern[id] = Object.assign({ s: (((d && e.ms) || Date.now()) - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) },
+                    d ? { deckel: true, abbruch: e.abbruch } : {}, { sprossen: Object.assign({}, teil || M.teil) });
             }
-            clearTimeout(uhr);
             const kurz = await rafferKurz(H);
             if (kurz.length) aus.leitern[id].raffer = kurz;
             H.schritt(id);
@@ -447,7 +497,9 @@ const KERN = (() => {
             if (x.kapitel !== kapitel) throw new Error(id + " gehört zum Kapitel " + x.kapitel + ", nicht " + kapitel);
             if (perspektiveVon(id) !== pid) throw new Error(id + " gehört zur Perspektive " + perspektiveVon(id) + ", nicht " + pid);
             const L = def.leitern[id];
-            if (!(Number.isInteger(L.sek) && L.sek >= 1 && L.sek <= 60)) throw new Error(id + ": sek " + L.sek + " — eine Leiter misst in ≤ 60 s");
+            // DER DECKEL IST WACHE, KEIN MASS (Koordinator 22.11., kopplung-front): er folgt dem gemessenen Bedarf der Leiter am langsameren
+            // Gerät (same.kopplung.aufwaerts an der GTX: 66 s Seite + ~34 s Bild → 110 s) — bis 120 s; darüber teilt sich die Leiter
+            if (!(Number.isInteger(L.sek) && L.sek >= 1 && L.sek <= 120)) throw new Error(id + ": sek " + L.sek + " — eine Leiter misst in ≤ 120 s");
             if (typeof L.mess !== "function") throw new Error(id + ": mess ist keine Funktion");
             const U = {};
             for (const [nr] of x.sprossen) if (L.sprossen[nr]) U[nr] = L.sprossen[nr].u || {};
