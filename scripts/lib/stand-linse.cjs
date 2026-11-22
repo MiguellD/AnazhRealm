@@ -479,8 +479,9 @@ function brandAmSoll(Z) {
 // 1050, 52 brechende Werke: 7,1–7,8 → 4,06 ms je Werk) — ihre Arbeit sind Schleifen über Kacheln, die kein Ruf zählt. Die
 // Mutante der Klasse (der Rest räumt den Grund seines Werks ein zweites Mal, `_grundrissRaeumen` ohne `gehalten`) fährt in
 // JEDEM Lauf: sieht die Linse ihre Räumung nicht, ist sie BLIND. `DRUCK_VERZUG_S`: so weit darf die letzte Frist hinter ihrer
-// Ankunft fallen (das Bild-Budget des Takts, `DRUCK.budgetMs`; gemessen 0,032 s); `DRUCK_SCHLAF_S`: so lange darf die letzte
-// Scherbe wach liegen (gemessen 1,5 s).
+// Ankunft fallen (die Grenze des Takts, `DRUCK.verzugS`: über sein Bild-Budget hinaus fällt je Bild der Anteil, den die
+// älteste Frist schon wartete — das Budget allein hielt den letzten von 52 Brüchen 2,6 s, die Grenze 0,27 s; gemessen an
+// der Probe 0,032 s); `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach liegen (gemessen 1,5 s).
 const DRUCK_UMSATZ = 50;
 const DRUCK_WELLE = 80;
 const DRUCK_BLICK = 40;
@@ -561,7 +562,7 @@ function druckUrteil(D, v) {
     if (!D.spieler || !(D.spieler.dv > 0)) v.push(`DRUCK-LEIB: der Spieler in ${D.spieler ? D.spieler.R : "?"} m trägt keinen Stoß der Welle (\`_druckStoss\` → \`_stossAuf\`)`);
     if (!D.ohr || !(D.ohr.dp > 0) || !(D.ohr.dauer > 0)) v.push("DRUCK-OHR: das Ohr hörte die Welle nicht (`_substanzKlang` „knall“ mit Überdruck und Dauer am Ort des Hörers)");
     // (Lehre 17: `null <= x` ist wahr — ein fehlender Wert ist ROT, nie still grün)
-    if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — das Bild-Budget des Takts trägt die Probe nicht`);
+    if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — der Takt hält die Grenze seines Rückstands nicht (\`_tickDruck\`, \`DRUCK.verzugS\`)`);
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;

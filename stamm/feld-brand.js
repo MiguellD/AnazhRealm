@@ -1299,34 +1299,38 @@ class AnazhRealm_feld_brand {
     // DAS BILD TRÄGT EIN BUDGET (wie der Brand, `_brandArbeit`): je Bild fallen Fristen, bis `DRUCK.budgetMs` verbraucht sind
     // (mindestens `DRUCK.mindestJeBild`), der Rest im nächsten Bild — in der Folge ihrer Ankunft, jede mit den Zahlen des
     // Gesetzes an IHREM Ort; nur ihr Augenblick wartet (`welle.verzug`: der größte Rückstand einer Frist hinter ihrer Ankunft,
-    // s Spielzeit). Vorher fiel jede fällige Frist im selben Bild: ein Fass vor 78 Probe-Fenstern hielt ein Bild 595 ms
-    // (GTX 1050, 52 brechende Werke, je Werk 7,1–7,8 ms Einsturz).
+    // s Spielzeit). DER RÜCKSTAND HAT EINE GRENZE: über das Budget hinaus fällt je Bild der Anteil der fälligen Fristen, den
+    // die älteste schon gewartet hat (Rückstand ÷ `DRUCK.verzugS`) — nach verzugS alles Fällige. EINE LADUNG WARTET NIE: ihr
+    // Umsatz fällt im Takt ihrer Frist (wer sie zündet, darf sie danach aus der Welt nehmen — das Brennglas). Vorher fiel
+    // jede fällige Frist im selben Bild: ein Fass vor 78 Probe-Fenstern hielt ein Bild 595 ms (GTX 1050, 52 brechende Werke,
+    // je Werk 7,1–7,8 ms Einsturz); mit dem Budget allein fiel der letzte Bruch 2,6 s nach seiner Ankunft, und die Bilder der
+    // Welle trug zu 48 % der Löser der Scherben, zu 6 % dieser Takt (Profil w9).
     _tickDruck() {
         const F = this._druckFristen;
         if (!F || !F.length) return;
         const jetzt = this.state.spielZeit;
         const D = AnazhRealm.DRUCK;
         const ende = performance.now() + D.budgetMs;
-        let n = 0;
         for (;;) {
             F.sort((a, b) => a.t - b.t);
             let k = 0;
             while (k < F.length && F[k].t <= jetzt) k++;
             if (!k) return;
-            // was ein Umsatz schreibt, hängt hinten an (`_druckWelle`): die fälligen Fristen 0…k−1 stehen fest
-            let i = 0;
-            for (; i < k; i++, n++) {
-                if (n >= D.mindestJeBild && performance.now() > ende) break;
+            const soll = Math.max(D.mindestJeBild, Math.ceil((k * (jetzt - F[0].t)) / D.verzugS));
+            // was ein Umsatz schreibt, hängt hinten an (`_druckWelle`): die fälligen Fristen 0…k−1 stehen fest; was wartet,
+            // rückt in seiner Folge nach vorn
+            let rest = 0;
+            for (let i = 0; i < k; i++) {
                 const f = F[i];
                 if (f.ladung) this._ladungUmsatz(f);
-                else {
+                else if (i < soll || performance.now() <= ende) {
                     f.welle.verzug = Math.max(f.welle.verzug, jetzt - f.t);
                     this._druckTrifft(f);
                     if (--f.welle.offen === 0) this._druckEnde(f.welle);
-                }
+                } else F[rest++] = f;
             }
-            F.splice(0, i);
-            if (i < k) return;
+            F.splice(rest, k - rest);
+            if (rest) return;
         }
     }
 
@@ -1590,12 +1594,14 @@ AnazhRealm.BRAND = Object.freeze({
 // `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst
 // liegen, damit sie ohne Front umsetzt (die Länge einer Flamme in der Hand); `stossMin`: ein Stoß unter diesem Tempo (m/s)
 // bewegt nichts Sichtbares und fällt; `scherben`: eine gebrochene Platte fällt in scherben × scherben Stücke; `budgetMs` und
-// `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen.
+// `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
+// `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist).
 AnazhRealm.DRUCK = Object.freeze({
     funkeM: 0.5,
     stossMin: 0.05,
     scherben: 2,
     budgetMs: 4,
     mindestJeBild: 1,
+    verzugS: 0.25,
     keine: Object.freeze([]),
 });
