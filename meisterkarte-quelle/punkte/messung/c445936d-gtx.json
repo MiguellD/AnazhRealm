@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-22T07:01:30.191Z",
+ "zeit": "2026-11-22T09:16:12.953Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -4242,6 +4242,70 @@
    "bahn": "sitzung",
    "modus": "session",
    "offen": 1
+  },
+  "karte2.mensch.geist.generationen#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.1,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.9,
+   "fremd": {
+    "s": 68.8,
+    "takte": 31,
+    "fremdS": 75.17,
+    "kerne": 1.093,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      26.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.03
+     ]
+    ],
+    "dienerS": 42.03,
+    "diener": [
+     [
+      "System",
+      17.61
+     ],
+     [
+      "dwm.exe",
+      10.81
+     ]
+    ],
+    "geraetS": 38.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.7
+     ],
+     [
+      "svchost.exe",
+      12.83
+     ],
+     [
+      "SearchIndexer.exe",
+      3.97
+     ]
+    ],
+    "eigenS": 169.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T09:16:12.953Z",
+   "abdruck": "8f53d567cb87",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
