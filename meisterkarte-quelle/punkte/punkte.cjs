@@ -6457,8 +6457,9 @@ async function selbsttest(o = {}) {
     // Grund (offen: die Runde misst nach) und landen in m.ungemessen; ein unlesbarer Baum ebenso. Die Mutante ohne Wand (das Urteil, wie es
     // kam) trüge das GRÜN des fremden Kopfs unter dem SHA dieses Laufs — ROT am Täter
     {
-        const r = path.join(tmp, "kopf-baum"), g = (...a) => git(["-c", "user.name=selbst", "-c", "user.email=selbst@punkte", ...a], r);
-        fs.mkdirSync(r, { recursive: true });
+        // der Baum lebt AUSSERHALB von tmp und nur für diesen Fall (am Kopf 5 von 5 Selbsttests 0xC0000409 in der Sitzungs-Phase, solange
+        // er in tmp neben den Stub-Welten stand; ohne ihn 0 von 2) — er fällt gleich nach dem Urteil
+        const r = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-kopf-")), g = (...a) => git(["-c", "user.name=selbst", "-c", "user.email=selbst@punkte", ...a], r);
         g("init", "-q");
         fs.writeFileSync(path.join(r, "a.txt"), "a");
         g("add", "a.txt");
@@ -6481,6 +6482,7 @@ async function selbsttest(o = {}) {
             amA === es && fremd.every(grundOk) && /^der Spiel-Baum stand am Urteil auf unlesbar statt /.test(unlesbar[0].grund) && unlesbar.every((e) => e.ungemessen) &&
                 !m.je["k.K1#1"] && m.ungemessen["k.K1#1"].offen === 1 && ohneWand[0].gruen === true,
             JSON.stringify({ A: A.slice(0, 8), B: B.slice(0, 8), fremd: fremd.map((e) => e.grund), unlesbar: unlesbar[0].grund, offen: (m.ungemessen || {})["k.K1#1"] && m.ungemessen["k.K1#1"].offen }));
+        fs.rmSync(r, { recursive: true, force: true });
     }
     // (1k) WAS EIN ABGEBROCHENER LAUF GEMESSEN HAT, BLEIBT (messungKappen): die Station, die vor dem CI-Job endete, bleibt; die danach
     // endete, weicht ihrem Eintrag im Archiv (oder fällt, wo es keinen gibt); was der Lauf nicht anrührte, bleibt Byte für Byte; ein
