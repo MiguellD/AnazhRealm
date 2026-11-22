@@ -2,7 +2,8 @@ class AnazhRealm_bau_buch {
     // ===== ATLAS · Bau/buch — Bauplan-Buch · Rollen · Präzision · Verbindungen · CRUD =====
     // Mutations-Pfad für eigene Materialien. Whitelist auf MATERIAL_TAG_KEYS,
     // Werte ge-clamp 0..1, Built-in-Überschreiben verboten, Cap 32 eigene.
-    // Aufrufer: DSL-Op `define_material` und ggf. spätere UI.
+    // Aufrufer: DSL-Op `define_material` und ggf. spätere UI. Der Stoff steht im Buch, dann baut die Werkstatt neu: ihr Bau
+    // zeichnet die Material-Palette aus dem Buch (`_werkstattBau`) — der späte Stoff der KI steht als Karte, sobald er gilt.
     defineMaterial(name, color, tags) {
         if (typeof name !== "string" || name.length === 0 || name.length > 40) {
             return { ok: false, reason: "invalid_name" };

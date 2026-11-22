@@ -19,9 +19,15 @@ class AnazhRealm_werkstatt_vorschau {
 
     // DIE WERKSTATT IN STÜCKEN (w28-preis-ort, Schnitt 3): EIN Bau für den Ruf der Bedienung (`_renderWorkshopDOM`, am Stück) und
     // für den Vorbau (`_uiVorbau`: bis zur EINEN Frist) — je Teil ein Stück: die Liste, die Top-Leiste (ohne Auswahl der
-    // Rezept-Schwanz), dann jeder Teil des Schwanzes (`_werkstattSchwanz`). Jeder Teil liest den Stand der Werkstatt, wenn er
-    // geht. Bis hier baute der Vorbau sie in EINEM Takt (Radeon, Mess-Wiese 41ec3a96: `_workshopRenderTail` 159,1 ms). Gemalt
-    // (`_werkstattGemalt`) ist sie, wenn der letzte Teil ging. → true: sie steht.
+    // Rezept-Schwanz), die Material-Palette, dann jeder Teil des Schwanzes (`_werkstattSchwanz`). Jeder Teil liest den Stand der
+    // Werkstatt, wenn er geht. Bis hier baute der Vorbau sie in EINEM Takt (Radeon, Mess-Wiese 41ec3a96: `_workshopRenderTail`
+    // 159,1 ms). Gemalt (`_werkstattGemalt`) ist sie, wenn der letzte Teil ging. → true: sie steht.
+    // DIE PALETTE DER STOFFE IST EIN STÜCK DES BAUS (palette-stoff-spaet): sie liest das Buch der Stoffe (`state.materials`), und
+    // jeder Schreiber des Buchs ruft diesen Bau (`defineMaterial`: der Satz der KI, `define_material`; die Rezept-Einfuhr,
+    // `importRecipesFromWorld`; der Stand, der lädt, `_loadStateRestoreCraftingInventory`). Bis hier zeichnete sie EINMAL je
+    // Sitzung, beim Einbau der Zieh-Quellen (`_workshopInstallShapeDragDrop`): ein Stoff, den die DSL bei offener Werkstatt
+    // definierte, stand im Buch und nie als Karte (GTX 1050, Mess-Wiese: 16 → 16 Karten), ein gefallener blieb stehen. Der Bau
+    // ist ihr EINER Rufer, ohne Auswahl wie mit (ein Bau 89,5 ms, sie 0,35 ms); auch der Wechsel der Sprache ruft ihn.
     _werkstattBau(bis) {
         if (typeof document === "undefined") return true;
         const list = document.getElementById("workshop-list");
@@ -40,6 +46,7 @@ class AnazhRealm_werkstatt_vorschau {
                     // KEIN Hotbar-/Platzier-/Fertigen-Fluss (Katalog-Eintrag != Welt-Platzierung).
                     if (!selected && ws.selectedRecipe) this._workshopRenderRecipeTail(ws);
                 },
+                () => this._workshopRenderMaterialPalette(),
                 ...this._werkstattSchwanz().map((teil) => () => {
                     const selected = gewaehlt();
                     if (selected) teil(selected);
