@@ -428,14 +428,15 @@ class AnazhRealm_bild_tiefe {
     // oder 0xffffffff), die Uniform des Auftrags, die Bindegruppe (frisch, wenn ein Puffer wechselt). `frueh`: das Ziel des
     // frühen Zugs liest der späte (Bindung 6); der frühe liest dort die leere Attrappe.
     _sichtZugPuffer(V, Z, dev, rend, be, G, quelle) {
-        if (!Z.index || Z.kap < V.nIdx) {
+        // der Sicht-Index gehört der GPU (`_gpuEigen`: der Compute füllt ihn, kein CPU-Leser) — ein gefallener legt sich neu
+        if (!AnazhRealm._gpuEigenSteht(Z.index) || Z.kap < V.nIdx) {
             const kap = Math.max(3072, Math.ceil((V.nIdx * 1.25) / 3072) * 3072);
             const alt = Z.index;
             Z.index = this._sichtSpeicher(new Uint32Array(kap));
             Z.index.name = "sicht:index:" + Z.art;
             Z.geom.setIndex(Z.index);
             Z.kap = kap;
-            rend._attributes.update(Z.index, 2); // r184 AttributeType.INDEX
+            AnazhRealm._gpuEigen(rend, Z.index, 2); // r184 AttributeType.INDEX
             if (alt) this._gpuAbschied(alt);
             AnazhRealm._renderObjekteFolgen(Z.mesh);
         }
