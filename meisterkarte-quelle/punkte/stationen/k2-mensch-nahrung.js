@@ -827,7 +827,7 @@ module.exports = (F) => [
 
     // ───────── DER STROM DER NAHRUNG: Ernte → Vorrat → Mahl → Markt ─────────
     F.leiter("mensch.nahrung.strom", {
-        sek: 40,
+        sek: 60,
         mutiert: true, // S1 rafft die Welt-Uhr über zwei Tage (die Ernten und Mahle der Scheunen)
         pfad: [...SIEDLUNG, "stamm/siedlung-verkehr.js"],
         messe: async (H, K) => {
@@ -895,7 +895,7 @@ module.exports = (F) => [
 
     // ───────── DIE HAND: der Spieler sammelt, bestellt; die Bewohner arbeiten ─────────
     F.leiter("mensch.nahrung.hand", {
-        sek: 50,
+        sek: 60,
         mutiert: true,
         pfad: [...SIEDLUNG, "stamm/vegetation-wiese.js", "stamm/feld-leben.js", "stamm/kampf.js", "stamm/koerper-seele.js"],
         messe: async (H, K) => {
