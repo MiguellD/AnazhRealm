@@ -75,6 +75,13 @@
 //       (k4) BEIDE LESER zur Laufzeit: die Stoffe der Sätze, die `_brandRauch` und `_updateDorfRauch` anlegen, stammen aus dem
 //       EINEN Bauer `_rauchStoff` (ein Mithörer am Glied), jeder mit dem Steigen seiner Quelle; `_rauchStoff` ohne `steigMs`
 //       bricht laut; außerhalb von `_rauchZeichnen` / `_rauchStoff` liest niemand im Stamm die Attribute des Rauchs (`STAMM.fehlt`).
+//       Der DRITTE Leser (druckwelle-bild): der Staub der Druckwelle (`_druckBild`, Satz `druckStaubSatz`) am selben Soll.
+//       (k5) EIN PROGRAMM (druckwelle-bild): die Sätze der drei Leser zeichnen je einen Ballen vor dem Auge — r184 schlüsselt
+//       Programm und Pipeline am Shader-Text (`Pipelines.getForRender`), gelesen an den Render-Objekten ihrer Zeichner: alle drei
+//       zeichnen mit DEMSELBEN Programm-Paar. DIE KLASSE: eine Zahl des Satzes im Shader-Text — jeder Satz baut dann sein
+//       eigenes Fragment-Programm (der Täter: Steigen und Skala je Satz als Zahl; GTX 1050, 89358da50: f114 · f115 · f116 bei
+//       EINEM Vertex-Programm). MUTANTE-K5: der Stoff des Staubs trägt sein Steigen als Zahl im Text → ein zweites Programm
+//       (sonst blind). Die Linse misst die Programme, nicht den Ruck des ersten Bilds (der ist der Knoten-Bau der Senke).
 //   (l) ZUNGE (front-brand) — EINE echte Zunge durch `_brandFlammenZeichnen` am Mittag, in der Schicht der Probe: (l1) kein
 //       Strahler verdunkelt seinen Grund (vor der Karte), (l2) ihr Leib trägt die Lichtstärke des Gesetzes (fachwerk
 //       `FEUER_LEUCHTDICHTE` × Fläche, vor Schwarz im geraden Teil der Kurve); MUTANTE-L über das Glied `_flammeOptik` (Kommentar
@@ -333,7 +340,7 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // (`_flammenLicht(r, cdM2)`, `_leuchtTakt`) bei der Leuchtdichte, deren Stärke × Belichtung `quelleBild` trägt: die Lage der Probe
 // vor der Welle (Stärke 17,177 × k 1,505 = 25,85 Welt-Einheiten in 1 m, c5713056), an der die Bänder (k1) gemessen sind. Das
 // Bild des Kopfs bei der Leuchtdichte des Gesetzes misst die Probe daneben als Auskunft (`gesetz`, kein Urteil).
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
+const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6, staubSink: 0.19 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
@@ -360,10 +367,12 @@ const RAUCH_GEMESSEN = {
         leser: {
             brand: { teilchen: 1, satz: true, bauer: true, steigMs: 2.5, soll: 2.5, zug: true },
             kamin: { teilchen: 1, satz: true, bauer: true, steigMs: 1.2, soll: 1.2, zug: true },
+            staub: { teilchen: 1, satz: true, bauer: true, steigMs: 0.19, soll: 0.19, zug: true },
             bruch: "_rauchStoff: der Rauch ohne Steigen (m/s) trägt kein Muster",
-            bauten: 4,
+            bauten: 8,
             zwilling: null,
         },
+        programm: { brand: ["v41/f77"], kamin: ["v41/f77"], staub: ["v41/f77"], mutante: ["v41/f93"] },
     },
 };
 // Die Bänder um das Gemessene. (k1) `unten`: Luma unten ÷ oben, Kopf 5,95 (41,4 / 6,96), MUTANTE-K1 3,28 (47,5 / 14,5) — DIE GRENZE
@@ -525,7 +534,7 @@ function rauchUrteil(ra) {
     const le = ra.leser;
     if (!le) v.push("RAUCH: BEIDE LESER — nicht gemessen");
     else {
-        for (const [name, glied, x] of [["die Fahne des Brands", "stamm/feld-leben.js `_brandRauch`", le.brand], ["der Kamin", "stamm/siedlung-bewohner.js `_updateDorfRauch`", le.kamin]]) {
+        for (const [name, glied, x] of [["die Fahne des Brands", "stamm/feld-brand.js `_brandRauch`", le.brand], ["der Kamin", "stamm/siedlung-bewohner.js `_updateDorfRauch`", le.kamin], ["der Staub der Druckwelle", "stamm/feld-brand.js `_druckBild`", le.staub]]) {
             if (!x || !(x.teilchen > 0 && x.satz)) v.push(`RAUCH: BEIDE LESER — ${name} (${glied}) legte keinen Satz an (${JSON.stringify(x)}) — die Probe ist blind`);
             else {
                 if (!x.bauer) v.push(`RAUCH: BEIDE LESER — der Stoff, den ${name} (${glied}) zeichnet, stammt nicht aus \`_rauchStoff\` — ein Zwilling baut den Rauch neben dem EINEN Bild`);
@@ -538,6 +547,22 @@ function rauchUrteil(ra) {
             v.push(`RAUCH: BEIDE LESER — \`_rauchStoff\` ohne \`steigMs\` bricht nicht laut (${le.bruch}) — ein Leser ohne Steigen zeichnete still ein stehendes Muster`);
         if (le.zwilling !== null)
             v.push(`RAUCH: BEIDE LESER — die Attribute des Rauchs liest der Stamm außerhalb von \`_rauchZeichnen\` / \`_rauchStoff\`: ${le.zwilling} — ein Zwilling zeichnet Rauch neben dem EINEN Bild`);
+    }
+    // (k5) EIN PROGRAMM: je Satz die Programm-Paare (Vertex/Fragment) der Render-Objekte seines Zeichners
+    const pg = ra.programm;
+    if (!pg) v.push("RAUCH: EIN PROGRAMM — nicht gemessen");
+    else {
+        const saetze = [["die Fahne des Brands", pg.brand], ["der Kamin", pg.kamin], ["der Staub der Druckwelle", pg.staub]];
+        const leer = saetze.filter(([, x]) => !Array.isArray(x) || !x.length);
+        if (leer.length) v.push(`RAUCH: EIN PROGRAMM — ${leer.map(([n]) => n).join(", ")}: kein Render-Objekt mit Pipeline (${JSON.stringify(pg)}) — die Probe ist blind`);
+        else {
+            const soll = pg.brand.join(" ");
+            const fremd = saetze.filter(([, x]) => x.join(" ") !== soll);
+            if (fremd.length)
+                v.push(`RAUCH: EIN PROGRAMM — ${fremd.map(([n, x]) => `${n} zeichnet mit dem Programm ${x.join(" ")}`).join(", ")} statt mit dem der Fahne (${soll}) — eine Zahl des Satzes steht im Shader-Text (${RAUCH_ORT}: Steigen und Skala sind Uniformen des Satzes), jeder Satz baut beim ersten Ballen sein eigenes Programm`);
+            if (!Array.isArray(pg.mutante) || !pg.mutante.length || pg.mutante.join(" ") === soll)
+                v.push(`RAUCH: EIN PROGRAMM — MUTANTE-K5 (der Stoff des Staubs trägt sein Steigen als Zahl im Shader-Text) zeichnet mit ${JSON.stringify(pg.mutante)} wie die Fahne (${soll}) — die Probe unterscheidet die Programme nicht (blind)`);
+        }
     }
     return v;
 }
@@ -553,6 +578,7 @@ function rauchZeilen(ra) {
         `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
         `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
         `Rauch (k4) BEIDE LESER: ${j(ra.leser)}`,
+        `Rauch (k5) EIN PROGRAMM (Vertex/Fragment je Satz): ${j(ra.programm)}`,
     ];
 }
 
@@ -1085,7 +1111,7 @@ function selbsttest() {
         ["Rauch-Bild rauscht (derselbe Ballen zweimal)", ["rauch.koerper.boden=", 0.6], /RAUCH: EIN KÖRPER — .*derselbe Ballen zweimal 0\.6/],
         ["Rauch ohne Umriss (blind)", ["rauch.zug.quer.masse=", 0], /RAUCH: ZUG — der Ballen deckt 0 /],
         ["Ballen zu klein im Bild (blind)", ["rauch.radiusPx=", 6], /RAUCH: der Ballen misst 6 Pixel/],
-        ["die Fahne zeichnet einen Zwillings-Stoff", ["rauch.leser.brand.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den die Fahne des Brands \(stamm\/feld-leben\.js `_brandRauch`\) zeichnet, stammt nicht aus `_rauchStoff`/],
+        ["die Fahne zeichnet einen Zwillings-Stoff", ["rauch.leser.brand.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den die Fahne des Brands \(stamm\/feld-brand\.js `_brandRauch`\) zeichnet, stammt nicht aus `_rauchStoff`/],
         ["der Kamin zeichnet einen Zwillings-Stoff", ["rauch.leser.kamin.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den der Kamin \(stamm\/siedlung-bewohner\.js `_updateDorfRauch`\) zeichnet, stammt nicht aus `_rauchStoff`/],
         ["der Kamin reicht ein fremdes Steigen", ["rauch.leser.kamin.steigMs=", 2.5], /RAUCH: BEIDE LESER — der Kamin .* das Steigen 2\.5 m\/s statt 1\.2/],
         ["die Fahne ohne Zug an den Teilchen", ["rauch.leser.brand.zug=", false], /RAUCH: BEIDE LESER — die Teilchen von die Fahne des Brands .*tragen keinen Zug/],
@@ -1093,6 +1119,15 @@ function selbsttest() {
         ["der Bauer ohne Steigen bricht still", ["rauch.leser.bruch=", null], /RAUCH: BEIDE LESER — `_rauchStoff` ohne `steigMs` bricht nicht laut/],
         ["ein Zwilling liest die Attribute des Rauchs", ["rauch.leser.zwilling=", "stamm/feld-leben.js:3190 `\"aRauch\"`"], /RAUCH: BEIDE LESER — .*außerhalb von `_rauchZeichnen` \/ `_rauchStoff`: stamm\/feld-leben\.js:3190/],
         ["Rauch-Zwilling ungemessen", ["rauch.leser.zwilling"], /RAUCH: BEIDE LESER — .*außerhalb .*: undefined/],
+        // der DRITTE Leser und (k5) EIN PROGRAMM (druckwelle-bild)
+        ["der Staub zeichnet einen Zwillings-Stoff", ["rauch.leser.staub.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den der Staub der Druckwelle \(stamm\/feld-brand\.js `_druckBild`\) zeichnet, stammt nicht aus `_rauchStoff`/],
+        ["der Staub reicht ein fremdes Steigen", ["rauch.leser.staub.steigMs=", 2.5], /RAUCH: BEIDE LESER — der Staub der Druckwelle .* das Steigen 2\.5 m\/s statt 0\.19/],
+        ["der Staub legt keinen Satz an (blind)", (z) => (z.rauch.leser.staub = { teilchen: 0, satz: false }), /RAUCH: BEIDE LESER — der Staub der Druckwelle .* legte keinen Satz an/],
+        ["der Staub baut sein eigenes Programm", (z) => (z.rauch.programm.staub = ["v41/f88"]), /RAUCH: EIN PROGRAMM — der Staub der Druckwelle zeichnet mit dem Programm v41\/f88 statt mit dem der Fahne \(v41\/f77\) — eine Zahl des Satzes steht im Shader-Text \(stamm\/siedlung-bewohner\.js `_rauchStoff`/],
+        ["jeder Satz baut sein eigenes Programm", (z) => Object.assign(z.rauch.programm, { kamin: ["v52/f81"], staub: ["v60/f88"] }), /RAUCH: EIN PROGRAMM — der Kamin zeichnet mit dem Programm v52\/f81, der Staub der Druckwelle zeichnet mit dem Programm v60\/f88 statt mit dem der Fahne/],
+        ["ein Satz zeichnet kein Render-Objekt (blind)", (z) => (z.rauch.programm.kamin = []), /RAUCH: EIN PROGRAMM — der Kamin: kein Render-Objekt mit Pipeline .* die Probe ist blind/],
+        ["die Programme ungemessen", (z) => delete z.rauch.programm, /RAUCH: EIN PROGRAMM — nicht gemessen/],
+        ["MUTANTE-K5 ungesehen (blind)", (z) => (z.rauch.programm.mutante = ["v41/f77"]), /RAUCH: EIN PROGRAMM — MUTANTE-K5 .* wie die Fahne \(v41\/f77\) — die Probe unterscheidet die Programme nicht \(blind\)/],
         ["GPU-Validierung im Rauch", (z) => (z.rauch.gpuFehler = ["Binding size mismatch"]), /RAUCH: 1 GPU-Validierungs-Fehler/],
         ["Rauch-Probe bricht ab", ["rauch.abbruch=", "TypeError: r._rauchZeichnen is not a function"], /RAUCH: ABBRUCH — TypeError/],
         ["Rauch-Probe fehlt", ["rauch"], /RAUCH: die Probe lief nicht/],
@@ -2055,7 +2090,7 @@ function rauchProbe(ort, P) {
             st[satz] = null;
         };
         const GLIEDER = ["_rauchStoff", "_leuchtQuellen", "_blockerMit", "_weltNaht"];
-        const vor = { brandRauch: st.brandRauch, flammen: r._brandFlammen, dorfRauch: st.dorfRauch, gemeldet: r._dorfRauchLogged };
+        const vor = { brandRauch: st.brandRauch, flammen: r._brandFlammen, dorfRauch: st.dorfRauch, gemeldet: r._dorfRauchLogged, druckStaub: st.druckStaub };
         const fr = st.flightRecorder && typeof st.flightRecorder === "object" ? st.flightRecorder : null;
         const frVor = fr ? [fr.rauchQuellen, fr.rauchStamp] : null;
         try {
@@ -2319,15 +2354,66 @@ function rauchProbe(ort, P) {
             } finally {
                 delete r._weltNaht;
             }
+            // (k4) DER DRITTE LESER + (k5) EIN PROGRAMM: Fahne, Kamin und Staub je mit EINEM Ballen vor dem Auge, jeder Satz von
+            // seinem echten Leser angelegt (die Fahne wie oben, der Kamin über sein Verzeichnis, der Staub aus EINER fälligen Saat)
+            const staubSaat = () => {
+                abschied("druckStaubSatz");
+                st.druckStaub = { saat: [{ t: st.spielZeit, x: M.x + 2.5, z: M.z, boden: M.y - 1, b: 1, r: 1, m: 0.01, tr2: 0.5, sink: P.staubSink }], teilchen: [], uhr: null, sink: 0 };
+                r._druckBild();
+                if (st.druckStaubSatz) Object.assign(st.druckStaubSatz.mesh, { frustumCulled: false }).layers.set(SCHICHT);
+            };
+            // je Satz die Programm-Paare seiner Render-Objekte (r184: `pipeline.vertexProgram` / `.fragmentProgram`)
+            const programme = (satz) => {
+                const S = st[satz];
+                const z = S && (S.mesh.__arena || S.mesh.__zeichner); // die Senke zeichnet aus der Arena ihres Stoffs, sonst über ihren Zeichner
+                const ros = (z && z.__renderObjekte) || [];
+                return Array.from(new Set(ros.filter((ro) => ro.pipeline).map((ro) => `v${ro.pipeline.vertexProgram.id}/f${ro.pipeline.fragmentProgram.id}`))).sort();
+            };
+            const zweiBilder = () => {
+                for (let i = 0; i < 2; i++) {
+                    setzeKamera();
+                    window.__loopBild();
+                }
+            };
+            abschied("brandRauchSatz");
+            zeichne([ballen(M)]);
+            r._blockerMit = function (name) {
+                return name === "rauch" ? [kaminHaus] : blockerAlt.apply(this, arguments);
+            };
+            st.dorfRauch = { quellen: [], teilchen: [] };
+            for (let i = 0; i < 200 && !st.dorfRauch.teilchen.length; i++) {
+                r._updateDorfRauch(0.1);
+                r._weltUhrNimm(st.spielZeit + 0.1);
+            }
+            delete r._blockerMit;
+            if (st.dorfRauchSatz) Object.assign(st.dorfRauchSatz.mesh, { frustumCulled: false }).layers.set(SCHICHT);
+            staubSaat();
+            aus.leser.staub = leser("druckStaubSatz", st.druckStaub.teilchen, P.staubSink);
+            zweiBilder();
+            aus.programm = { brand: programme("brandRauchSatz"), kamin: programme("dorfRauchSatz"), staub: programme("druckStaubSatz") };
+            // MUTANTE-K5: der Stoff des Staubs trägt sein Steigen als Zahl im Shader-Text (die Klasse des Täters)
+            const stoffK5 = r._rauchStoff;
+            r._rauchStoff = function (G, uZeit, steigMs) {
+                const m = stoffK5.apply(this, arguments);
+                m.opacityNode = m.opacityNode.mul(1 - 1e-3 * steigMs);
+                return m;
+            };
+            try {
+                staubSaat();
+                zweiBilder();
+                aus.programm.mutante = programme("druckStaubSatz");
+            } finally {
+                r._rauchStoff = stoffK5;
+            }
             aus.leser.bauten = bauten.length;
         } catch (e) {
             aus.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
         } finally {
             for (const k of GLIEDER) delete r[k];
             AR.RAUCH_BILD = tafelVor;
-            [st.brandRauch, r._brandFlammen, st.dorfRauch, r._dorfRauchLogged] = [vor.brandRauch, vor.flammen, vor.dorfRauch, vor.gemeldet];
+            [st.brandRauch, r._brandFlammen, st.dorfRauch, r._dorfRauchLogged, st.druckStaub] = [vor.brandRauch, vor.flammen, vor.dorfRauch, vor.gemeldet, vor.druckStaub];
             if (fr) [fr.rauchQuellen, fr.rauchStamp] = frVor;
-            for (const satz of ["brandRauchSatz", "dorfRauchSatz"]) {
+            for (const satz of ["brandRauchSatz", "dorfRauchSatz", "druckStaubSatz"]) {
                 try {
                     abschied(satz);
                 } catch (e) {
