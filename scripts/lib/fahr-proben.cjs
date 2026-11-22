@@ -1302,110 +1302,11 @@ async function probeLeben(expected) {
         stossAus();
         return aus;
     };
-    if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
-        try {
-            if (expected.nurRueck) res.rueck = await rueck(expected.rueck);
-            else if (expected.verkehr) res.verkehr = await verkehr(expected.verkehr);
-            else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
-            else res.kette = await kette(expected.kette);
-        } catch (e) {
-            res.err = String(e?.stack || e);
-        }
-        aufraeumen();
-        return res;
-    }
-    try {
-        // (1) Der GT geradeaus, W gehalten (Fahrt +x).
-        const gt = await gtAmStart();
-        res.gt = gt ? fahrt(gt, 240, true) : { gestartet: false };
-        // DIE VERTIKALE SIEHT IHRE TÄTER (am lebenden Ritt): (a) der Reiter 0,3 m über dem Sitz, (b) der geerdete Wagen
-        // 0,3 m über seinem Boden (im Stand, der Kern nennt ihn geerdet) — je 10 Frames mit einem Eingriff nach dem
-        // Ritt-Schritt; die Zählung muss feuern.
-        if (gt) {
-            const eingriff = (fn, w) => {
-                r._rittSchritt = function (dt) {
-                    P._rittSchritt.call(this, dt);
-                    fn();
-                };
-                const m = fahrt(gt, 10, w);
-                delete r._rittSchritt;
-                return m.luft;
-            };
-            res.luftTaeter = {
-                sitz: eingriff(() => {
-                    st.playerMesh.position.y += 0.3;
-                }, true),
-                wagen: (() => {
-                    // erst steht er (die Fahrt fällt, 30 Frames ohne Taste: Halt am Stand)
-                    if (gt._fahr) {
-                        gt._fahr.vlong = 0;
-                        gt._fahr.vlat = 0;
-                        gt._fahr.yawRate = 0;
-                        gt._fahr.vy = 0; // auch die Steig-Rate des Hangs (sonst hüpft er aus dem Stand)
-                    }
-                    st.playerVel.setValue(0, 0, 0);
-                    fahrt(gt, 30, false);
-                    return eingriff(() => {
-                        if (gt._fahr && !gt._fahr.luft) {
-                            gt._fahr.y += 0.3;
-                            gt.position.y += 0.3;
-                            st.playerMesh.position.y += 0.3;
-                        }
-                    }, false);
-                })(),
-            };
-        }
-        if (gt) weg(gt);
-        // (1b) T5 DAS TEMPO DER KAMERA (H3): ein GT aus dem Stand mit W in Third bis 12 m/s, dann zieht die Maus 10 Bilder
-        // (state.yaw/pitch wie das mousemove) und lässt los; dazu die FOV-Schreiber über den Absenz-Helfer (__fehlt).
-        const sicht5 = st.cameraMode;
-        r.setCameraMode("third");
-        const g5 = await gtAmStart();
-        bilder(120, () => st._kamFovVersatz); // der Übergang des Sichtfelds klingt aus (`_kamFov`)
-        if (g5) {
-            const m5 = (res.tempo = window.__tempoSpion(VC, st.camera, (z5) => z5 === g5._fahr));
-            m5.schreiber = [];
-            bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 90, quer: 8, n: 0 };
-            tasten(true);
-            bilder(400, () => !(g5._fahr.speed >= 12));
-            for (let j = 0; j < 110; j++) {
-                if (j < 10) [st.yaw, st.pitch] = [st.yaw + 0.12, st.pitch - 0.02];
-                frame(j);
-            }
-            bahnWache = null;
-            m5.ende();
-            weg(g5);
-            for (const o of [P, AnazhRealm])
-                for (const k of Object.getOwnPropertyNames(o)) {
-                    const f = Object.getOwnPropertyDescriptor(o, k).value;
-                    if (typeof f === "function" && !__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
-                }
-            // R2: Z wiederholt ohne Ziel im Blick, ein Rezept-Satz ohne Tempo-Felder
-            const [fo, mel, ziel] = [r._foundry, [], [true, false]];
-            Object.assign(r, {
-                _hasMagnifyingInSight: () => ziel.shift(),
-                _bruchMelden: (t) => mel.push(t),
-                _foundryPresetFor: () => "k",
-            });
-            m5.zoom = r.setZoomActive(true) && r.setZoomActive(true);
-            r.setZoomActive(false);
-            r._foundry = { recipes: { k: { fx: { fahrprofil: { kamera: { dist: 1 } } } } } };
-            r._vehicleProfile({ type: "k" });
-            m5.laut = mel.some((t) => /fahrprofil\.kamera/.test(t));
-            for (const k of ["_hasMagnifyingInSight", "_bruchMelden", "_foundryPresetFor"]) delete r[k];
-            r._foundry = fo;
-        }
-        r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Hang der Welt, oben vor der Rückmeldung gesucht).
-        if (hang) {
-            const gh = await setzen("fahrzeug_gt", hang.x, hang.z, hang.fahrt);
-            res.gtHang = gh ? fahrt(gh, 180, false) : { gestartet: false };
-            if (gh) weg(gh);
-        }
-        // (2b) T4 DER WECHSEL AM STEILHANG (F1, Kopf von diag-fahr-leben): bergab 8–11 m/s Third → Ego (W + A, Gier ≥ 75°) →
-        // Third → Ego (W + D) → Third; je Bild jede zeichnende Stufe (`instSlots`, `instSlotsBand`, starres Blatt) gegen
-        // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
-        // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
+    // (2b) T4 DER WECHSEL AM STEILHANG (F1, Kopf von diag-fahr-leben): bergab 8–11 m/s Third → Ego (W + A, Gier ≥ 75°) →
+    // Third → Ego (W + D) → Third; je Bild jede zeichnende Stufe (`instSlots`, `instSlotsBand`, starres Blatt) gegen
+    // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
+    // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
+    const wechsel = async (reihe) => {
         const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
         const w = (res.wechsel = {
             gestartet: false,
@@ -1509,16 +1410,30 @@ async function probeLeben(expected) {
                     // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
                     // Kamera und der größte Schritt ihres Sichtfelds (H3: das Tempo-FOV fällt nie in einem Bild) je Bild, 3 Bilder
                     // vor bis 30 nach dem Abstieg
-                    for (const s of ["third", "first"]) {
-                        if (s === "first") {
+                    // EIN ABSTIEG (`lage` null: aus der Fahrt, wie sie steht; sonst neu am Start-Ort, auf ≥ 8,5 m/s, dann `bilder`
+                    // Bilder gelenkt — `lenk` −1 links · +1 rechts — im Tempo-Band des Wechsels)
+                    const absteigen = async (s, lage) => {
+                        if (lage) {
                             // neu am Start-Ort bergab: der verlassene Wagen rutscht am Gras-Hang weiter, jenseits der Talsohle
                             // stand er hangauf (Gras μ 0,4 klettert keine 20°, fahrzeug.K1)
-                            weg(e);
+                            if (e) weg(e);
+                            // Third steht VOR dem Aufstieg: ein Aufstieg in Ego merkt die Vor-Sicht (`_mountVorKamera`), und der
+                            // Abstieg kehrt zu ihr zurück — ein Sicht-Wechsel, der Schnitt des Orts ist dann Gesetz, kein Sprung
+                            r.setCameraMode("third");
                             e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
+                            if (!e) return null;
                             r.setCameraMode(s);
                             tasten(true);
+                            for (let j = 0; j < 300 && spielerTempo() < 8.5; j++) frame(i++);
+                            // … dann zieht die Maus das Rig in 12 Bildern um `maus` rad um den Wagen (H3, `chaseGreif`) und hält:
+                            // der Abstieg fällt in den Griff — die Kamera steht seitlich, der Wagen zwischen ihr und der Flanke
+                            for (let j = 0, n = (lage.bilder || 0) + (lage.maus ? 12 : 0); j < n; j++) {
+                                const v = spielerTempo();
+                                [halt.vor, halt.zurueck, halt.links, halt.rechts] = [v < 8, v > 11, lage.lenk < 0, lage.lenk > 0];
+                                if (j >= (lage.bilder || 0)) st.yaw += lage.maus / 12;
+                                frame(i++);
+                            }
                         }
-                        for (let j = 0; s === "first" && j < 300 && spielerTempo() < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
                         let [m, mf, f] = [0, 0, st.camera.fov];
                         // DER TÄTER DES SPRUNGS BEIM NAMEN (front-brand, T4 fiel in der Cloud 3 von 3 mit 8,12 · 10,15 · 10,15 m und
@@ -1526,42 +1441,72 @@ async function probeLeben(expected) {
                         // im Bild des größten Wegs stehen sein Halt `t`, der Halt an den Bauten allein `bau` (nur gefragt, wenn der
                         // Wurf hält: der freie Pfad bleibt byte-alt), der Arm danach und der Rest des Übergangs; dazu der Wagen, wie
                         // er im Bild des Abstiegs steht (Stufe, Richtungen seiner Hülle, Nick und Wank in Grad)
-                        const wurfRoh = r._fieldRaycast;
-                        let [wurf, wer, wagen] = [null, null, null];
+                        const [wurfRoh, werk] = [r._fieldRaycast, e];
+                        let [wurf, wer, wagen, v] = [null, null, null, 0];
                         r._fieldRaycast = function (sx, sy, sz, ex, ey, ez, o) {
                             const out = wurfRoh.call(this, sx, sy, sz, ex, ey, ez, o);
                             if (o && o.radius > 0 && o.gelaende !== false) {
                                 const len = Math.hypot(ex - sx, ey - sy, ez - sz);
-                                const bau = out.t < 1 ? wurfRoh.call(this, sx, sy, sz, ex, ey, ez, { ...o, gelaende: false }).t : 1;
-                                wurf = { t: +out.t.toFixed(3), bau: +bau.toFixed(3), len: +len.toFixed(2) };
+                                let [bau, frei] = [1, 1];
+                                if (out.t < 1) {
+                                    bau = wurfRoh.call(this, sx, sy, sz, ex, ey, ez, { ...o, gelaende: false }).t;
+                                    // … und derselbe Wurf OHNE den verlassenen Wagen (`frei` 1 bei `t` < 1: ER hält den Arm)
+                                    const b = werk.blockerAABBs;
+                                    werk.blockerAABBs = null;
+                                    frei = wurfRoh.call(this, sx, sy, sz, ex, ey, ez, o).t;
+                                    werk.blockerAABBs = b;
+                                }
+                                wurf = { t: +out.t.toFixed(3), bau: +bau.toFixed(3), frei: +frei.toFixed(3), len: +len.toFixed(2) };
                             }
                             return out;
                         };
+                        // DER GANZE ÜBERGANG: gemessen wird, bis er ruht (der Versatz des Wunschs fort, das verlassene Werk dem Wurf
+                        // zurückgegeben, `_kamAb`) — mindestens 3 Bilder vor bis 30 nach dem Abstieg, höchstens 150. `zieht` zählt die
+                        // Bilder, in denen der Arm zum verlassenen Werk glitt (er steht unter dem Wurf, der es nicht fragt): die Lage
+                        // „der Wagen zwischen Kamera und Flanke" ist damit bewiesen gefahren, nie nur behauptet
+                        let [bilder, zieht, armMin] = [0, 0, 1];
                         try {
-                            for (let j = 0; j < 33; j++, p.copy(c)) {
+                            for (let j = 0; j < 33 || (j < 150 && (st._kamVersatz || r._kamAb)); j++, p.copy(c)) {
+                                bilder = j + 1;
                                 if (j === 3) {
-                                    w.abV.push(+spielerTempo().toFixed(1));
+                                    v = +spielerTempo().toFixed(1);
                                     const grad = (x) => (Number.isFinite(x) ? +((x * 180) / Math.PI).toFixed(1) : null);
                                     wagen = {
                                         stufe: r._foundryLodForEntry ? r._foundryLodForEntry(e) : null,
                                         mass: !!e._gestaltMass, // das Maß der gezeichneten Gestalt (ohne es: die Stationen)
                                         nick: grad(e._rideTerrainPitch),
                                         wank: grad(e._rideRoll),
-                                        boxen: e.blockerAABBs ? e.blockerAABBs.length : 0,
+                                        blocker: e.blockerAABBs ? e.blockerAABBs.length : 0,
                                     };
                                     r.dismountArchitecture();
                                 }
                                 wurf = null;
+                                const [s0, y0, d0] = [st._kamSchulter, st._kamSteig, st._kamBodenY];
+                                const l0 = st.playerMesh.position.y;
                                 frame(i++);
+                                if (Number.isFinite(st._kamArm)) {
+                                    armMin = Math.min(armMin, st._kamArm);
+                                    if (r._kamAb && wurf && st._kamArm < wurf.t - 1e-6) zieht++;
+                                }
                                 const d = c.distanceTo(p);
                                 if (d > m) {
                                     m = d;
                                     const g = st._kamVersatz;
+                                    const mm = (a, b) => (Number.isFinite(a) && Number.isFinite(b) ? +(b - a).toFixed(2) : null);
                                     wer = {
                                         j,
                                         arm: Number.isFinite(st._kamArm) ? +st._kamArm.toFixed(3) : null,
                                         ...(wurf || { t: null }),
                                         rest: g ? +g.o.length().toFixed(2) : 0,
+                                        // der Drehpunkt im selben Bild: die Schulter (rückt vor einem Bau ein) und sein Aufstieg
+                                        schulter: mm(s0, st._kamSchulter),
+                                        steig: mm(y0, st._kamSteig),
+                                        // der Weg der Kamera in der Höhe, ihr Boden-Deckel im selben Bild, der Leib auf einem Bau
+                                        hoch: +(c.y - p.y).toFixed(2),
+                                        deckel: mm(d0, st._kamBodenY),
+                                        aufBau: st._kapselStruktur === true,
+                                        // der Leib selbst im selben Bild (ein Tritt auf eine Stufe hebt ihn in EINEM Sim-Schritt)
+                                        leib: mm(l0, st.playerMesh.position.y),
                                     };
                                 }
                                 mf = Math.max(mf, Math.abs(st.camera.fov - f));
@@ -1570,9 +1515,27 @@ async function probeLeben(expected) {
                         } finally {
                             r._fieldRaycast = wurfRoh;
                         }
-                        w.abWer.push(wer && { ...wer, wagen }); // der Wagen steht in jeder Zeile: grün und rot lassen sich vergleichen
-                        w.abSprung.push(+m.toFixed(2));
-                        w.abFov.push(+mf.toFixed(2));
+                        // der Wagen steht in jeder Zeile: grün und rot lassen sich vergleichen
+                        return {
+                            v,
+                            sprung: +m.toFixed(2),
+                            fov: +mf.toFixed(2),
+                            bilder,
+                            zieht,
+                            armMin: +armMin.toFixed(3),
+                            wer: wer && { ...wer, wagen },
+                        };
+                    };
+                    for (const [s, lage] of [
+                        ["third", null],
+                        ["first", {}],
+                    ]) {
+                        const a = await absteigen(s, lage);
+                        if (!a) throw new Error("T4: der GT des Abstiegs steht nicht");
+                        w.abV.push(a.v);
+                        w.abWer.push(a.wer);
+                        w.abSprung.push(a.sprung);
+                        w.abFov.push(a.fov);
                     }
                     bahnWache = null;
                     tasten(false);
@@ -1586,6 +1549,23 @@ async function probeLeben(expected) {
                         if (st._fixedSimTime === s0) w.wiederauf = wink(e.rotationY - r._rittGier(e, e._rideYaw));
                     }
                     weg(e);
+                    e = null;
+                    // DIE REIHE DER ABSTIEGE (front-brand): der EINE Abstieg oben trifft, was die Kurven-Fahrt davor an Lage
+                    // hinterlässt — über fünf Cloud-Läufe drei feste Zustände (0,39 · 8,12 · 10,15 m bei gleichem Tempo), je nach
+                    // dem Rest des Sim-Takts, den die Probe erbt. Die Reihe fährt die Klasse: je Lage ein frischer GT vom Start-Ort,
+                    // geradeaus oder `bilder` Bilder gelenkt, dann der Abstieg in Third — jede Lage steht mit Tempo, Sprung und Täter
+                    w.abReihe = [];
+                    if (reihe && reihe.length) {
+                        bahnWache = { sx: steil.x - ux * 30, sz: steil.z - uz * 30, ux, uz, len: 90, quer: 45, n: 0 };
+                        for (const lage of reihe) {
+                            const a = await absteigen("third", lage);
+                            if (!a) throw new Error("T4: der GT der Reihe steht nicht");
+                            const name = `${lage.lenk < 0 ? "L" : lage.lenk > 0 ? "R" : "G"}${lage.bilder || 0}`;
+                            w.abReihe.push({ lage: lage.maus ? `${name} Maus ${lage.maus}` : name, ...a });
+                        }
+                        if (e) weg(e);
+                        tasten(false);
+                    }
                 }
             } finally {
                 bahnWache = null;
@@ -1600,6 +1580,109 @@ async function probeLeben(expected) {
             });
             Object.assign(w, { hochN: hoch.length, hochP05: pq(hoch, 0.05) });
         }
+    };
+    if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr || expected.wechsel) {
+        try {
+            if (expected.wechsel) await wechsel(expected.wechsel.reihe);
+            else if (expected.nurRueck) res.rueck = await rueck(expected.rueck);
+            else if (expected.verkehr) res.verkehr = await verkehr(expected.verkehr);
+            else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
+            else res.kette = await kette(expected.kette);
+        } catch (e) {
+            res.err = String(e?.stack || e);
+        }
+        aufraeumen();
+        return res;
+    }
+    try {
+        // (1) Der GT geradeaus, W gehalten (Fahrt +x).
+        const gt = await gtAmStart();
+        res.gt = gt ? fahrt(gt, 240, true) : { gestartet: false };
+        // DIE VERTIKALE SIEHT IHRE TÄTER (am lebenden Ritt): (a) der Reiter 0,3 m über dem Sitz, (b) der geerdete Wagen
+        // 0,3 m über seinem Boden (im Stand, der Kern nennt ihn geerdet) — je 10 Frames mit einem Eingriff nach dem
+        // Ritt-Schritt; die Zählung muss feuern.
+        if (gt) {
+            const eingriff = (fn, w) => {
+                r._rittSchritt = function (dt) {
+                    P._rittSchritt.call(this, dt);
+                    fn();
+                };
+                const m = fahrt(gt, 10, w);
+                delete r._rittSchritt;
+                return m.luft;
+            };
+            res.luftTaeter = {
+                sitz: eingriff(() => {
+                    st.playerMesh.position.y += 0.3;
+                }, true),
+                wagen: (() => {
+                    // erst steht er (die Fahrt fällt, 30 Frames ohne Taste: Halt am Stand)
+                    if (gt._fahr) {
+                        gt._fahr.vlong = 0;
+                        gt._fahr.vlat = 0;
+                        gt._fahr.yawRate = 0;
+                        gt._fahr.vy = 0; // auch die Steig-Rate des Hangs (sonst hüpft er aus dem Stand)
+                    }
+                    st.playerVel.setValue(0, 0, 0);
+                    fahrt(gt, 30, false);
+                    return eingriff(() => {
+                        if (gt._fahr && !gt._fahr.luft) {
+                            gt._fahr.y += 0.3;
+                            gt.position.y += 0.3;
+                            st.playerMesh.position.y += 0.3;
+                        }
+                    }, false);
+                })(),
+            };
+        }
+        if (gt) weg(gt);
+        // (1b) T5 DAS TEMPO DER KAMERA (H3): ein GT aus dem Stand mit W in Third bis 12 m/s, dann zieht die Maus 10 Bilder
+        // (state.yaw/pitch wie das mousemove) und lässt los; dazu die FOV-Schreiber über den Absenz-Helfer (__fehlt).
+        const sicht5 = st.cameraMode;
+        r.setCameraMode("third");
+        const g5 = await gtAmStart();
+        bilder(120, () => st._kamFovVersatz); // der Übergang des Sichtfelds klingt aus (`_kamFov`)
+        if (g5) {
+            const m5 = (res.tempo = window.__tempoSpion(VC, st.camera, (z5) => z5 === g5._fahr));
+            m5.schreiber = [];
+            bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 90, quer: 8, n: 0 };
+            tasten(true);
+            bilder(400, () => !(g5._fahr.speed >= 12));
+            for (let j = 0; j < 110; j++) {
+                if (j < 10) [st.yaw, st.pitch] = [st.yaw + 0.12, st.pitch - 0.02];
+                frame(j);
+            }
+            bahnWache = null;
+            m5.ende();
+            weg(g5);
+            for (const o of [P, AnazhRealm])
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    const f = Object.getOwnPropertyDescriptor(o, k).value;
+                    if (typeof f === "function" && !__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
+                }
+            // R2: Z wiederholt ohne Ziel im Blick, ein Rezept-Satz ohne Tempo-Felder
+            const [fo, mel, ziel] = [r._foundry, [], [true, false]];
+            Object.assign(r, {
+                _hasMagnifyingInSight: () => ziel.shift(),
+                _bruchMelden: (t) => mel.push(t),
+                _foundryPresetFor: () => "k",
+            });
+            m5.zoom = r.setZoomActive(true) && r.setZoomActive(true);
+            r.setZoomActive(false);
+            r._foundry = { recipes: { k: { fx: { fahrprofil: { kamera: { dist: 1 } } } } } };
+            r._vehicleProfile({ type: "k" });
+            m5.laut = mel.some((t) => /fahrprofil\.kamera/.test(t));
+            for (const k of ["_hasMagnifyingInSight", "_bruchMelden", "_foundryPresetFor"]) delete r[k];
+            r._foundry = fo;
+        }
+        r.setCameraMode(sicht5);
+        // (2) Am Hang ohne Taste: der GT steht bergauf (der Hang der Welt, oben vor der Rückmeldung gesucht).
+        if (hang) {
+            const gh = await setzen("fahrzeug_gt", hang.x, hang.z, hang.fahrt);
+            res.gtHang = gh ? fahrt(gh, 180, false) : { gestartet: false };
+            if (gh) weg(gh);
+        }
+        await wechsel(expected.abReihe); // (2b) T4 der Wechsel am Steilhang
         // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).
         st.yaw = Math.PI / 2;
         const ross = await setzen("reittier_holzross", start.x, start.z, Math.PI / 2);
