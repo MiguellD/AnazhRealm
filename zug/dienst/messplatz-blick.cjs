@@ -1333,7 +1333,7 @@ function rundeVon(text) {
 function pulsUrteil(P) {
     const R = rundeVon(P.runde), steht = [], ungepusht = [], jetzt = +(P.jetzt || Date.now());
     const teile = PULS_GERAETE.map((g) => {
-        // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K4 des ersten wartet, fährt nicht — nie STEHT, nie UNGEPUSHT
+        // WARTET NACH DEM GESETZ (22.11., die geteilte Front): das zweite Gerät, das auf die Liste des ersten am Kopf wartet, fährt nicht — nie STEHT, nie UNGEPUSHT
         const j = P.je[g] || { n: 0, zuletzt: null }, r = R.runde && R.g[g], faehrt = !!(r && r.zustand !== "durch" && r.zustand !== "wartet");
         const tF = r ? Date.parse(r.fortschritt) : NaN, zaehlt = faehrt && isFinite(tF) && jetzt - tF <= PULS_MIN * 60e3;
         const liegt = zaehlt && !j.n && j.amKopf !== undefined && (!j.amKopf || jetzt - +j.amKopf > UNGEPUSHT_MIN * 60e3);

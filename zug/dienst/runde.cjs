@@ -5,8 +5,12 @@
 //     sind — so steht nach jeder Runde jede Station als Paar am SELBEN Kopf (die Karte 2 bucht daraus).
 //   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht · K2 ohne Urteil · K3 GRUEN (K4 ROT anderes: seit 22.11. Schwanz)
 //     | der SCHWANZ K5 ROT „Leser fehlt" · K6 ROT „Umfang nicht erzeugbar". Bleibt einem Geraet nur der Schwanz und ist main weiter als
-//     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen); das zweite Geraet misst nur, was das erste am Kopf
-//     GRUEN urteilte, und WARTET (Zustand wartet, kein Alarm), bis jenes K1–K3 hinter sich hat.
+//     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen).
+//   2a DIE GETEILTE FRONT (Koordinator 22.11.; Runde 4: die GTX 21 von 246 nach 3,5 h, die Radeon „wartet 0/0“): beide Geraete teilen
+//     EINE Front. Das zweite Geraet tritt ein, sobald das erste am Kopf eine Liste traegt (bis dahin wartet: kein Alarm) — seine Liste
+//     ist der vordere Teil der Liste des ersten in UMGEKEHRTER Reihe, ohne Schwanz (`reihe --erst`). Eine Station ist fuer ein Geraet
+//     offen, solange es am Kopf keinen Eintrag traegt UND das andere sie am Kopf nicht ROT urteilte (`offen --anders`); GRUEN und
+//     UNGEMESSEN des anderen ueberspringen nie (das Paar entsteht an GRUEN, ein UNGEMESSEN bekommt die zweite Chance).
 //   3 frisches ROT an einer am vorigen Mess-Kopf gruenen Station: NUR diese Station wird ueber die Koepfe dazwischen halbiert
 //     (`faelle` nennt sie, richter.sh --fall halbiert und nennt den Taeter-Kopf).
 //   4 Halt, Weichen, Neustart: der Stand je Geraet steht in der Datei, die Liste ist eingefroren — es geht an derselben Station weiter.
@@ -26,12 +30,14 @@
 //   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
 //   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
-//   reihe <messung-dir> <geraet> <liste> [--karte <json>] [--anspruch <datei>] [--kopf <sha> --erst <geraet> [--git <repo> --ref <ref>]]
+//   reihe <messung-dir> <geraet> <liste> [--karte <json>] [--anspruch <datei>] [--erst <geraet> [--kopf <sha>]]
 //                                           --karte: nur die Front der Karte 2 (je Leiter Sprosse heute, Glieder jede ungebuchte)
-//                                           → "<K1–K3,..>|<Schwanz K5 K6,..>" (stderr: die Klassen mit Zahl); mit --erst nur, was das
-//                                           erste Geraet am Kopf GRUEN urteilte (ohne Schwanz) — Exit 6 ohne dessen Mess-Datei,
-//                                           Exit 7 + "gesetz-leer", wenn keine Station bleibt
-//   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
+//                                           → "<K1–K3,..>|<Schwanz K4 K5 K6,..>" (stderr: die Klassen mit Zahl); mit --erst ist <liste>
+//                                           der vordere Teil der Liste des ersten Geraets → dieselbe in UMGEKEHRTER Reihe + "|" (ohne
+//                                           Schwanz), Exit 7 + "gesetz-leer", wenn sie keine Station traegt
+//   offen <git-dir> <ref> <geraet> <kopf> <liste> [--anders <geraet2>]   → die Stationen der Liste ohne Eintrag in
+//                                           messung/<kopf8>-<geraet>.json am ref; mit --anders auch ohne ROT von <geraet2> am selben Kopf
+//                                           (dessen Mess-Datei am selben ref; stderr: die Zahl der uebersprungenen)
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
 //   paare <repo> [anzahl]                   Paare am selben Kopf aus den Mess-Dateien von punkte-maschine (je Kopf + Summe)
 //   push-pfade <baum> <zweig> <geraet> <kopf|-> <botschaft>   die eigenen Geräte-Pfade nach <zweig>, OHNE Rebase (commit-tree, Retry)
@@ -75,7 +81,8 @@ const KOPF = [
     "# <geraet> <offen|wartet|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <K1–K3,..>|<Schwanz,..> getragen <n>",
     "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN | Schwanz: K4 ROT anderes (22.11.: so viel wie noetig) ·",
     "# K5 ROT Leser fehlt · K6 ROT Umfang nicht erzeugbar. Bleibt nur der Schwanz und ist main weiter, traegt sein ROT vom frueheren Kopf",
-    "# (getragen). Das zweite Geraet wartet (wartet: kein Alarm), bis das erste K1–K3 hinter sich hat, und misst nur dessen GRUEN am Kopf.",
+    "# (getragen). DIE GETEILTE FRONT (22.11.): das zweite Geraet wartet (wartet: kein Alarm) nur, bis das erste am Kopf eine Liste traegt, und",
+    "# faehrt dann deren vorderen Teil in UMGEKEHRTER Reihe; keines misst, was das andere am Kopf ROT urteilte (GRUEN und UNGEMESSEN zaehlen nicht).",
     "# Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.",
     "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
@@ -288,7 +295,8 @@ if (was === "lies") {
         }
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
-            // WARTET NACH DEM GESETZ (21.11.): das zweite Gerät, das auf K1–K3 des ersten wartet, steht nicht still — kein Alarm
+            // WARTET NACH DEM GESETZ (22.11., die geteilte Front): das zweite Gerät, das auf die Liste des ersten am Kopf wartet, steht
+            // nicht still — kein Alarm
             if (e.zustand === "durch" || e.zustand === "wartet") continue;
             const seit = Date.parse(e.fortschritt === "-" ? r.runde.start : e.fortschritt), min = Math.floor((t - seit) / 60000);
             if (!(min > ALARM_MIN)) continue;
@@ -313,11 +321,22 @@ if (was === "lies") {
     // Innerhalb einer Klasse die Reihe von n0611/stufe/reihe.cjs (12.11.): wer am längsten ohne Messung auf diesem Gerät ist zuerst, wessen
     // letzte Fahrt LANG_MIN oder länger lief zuletzt. Ausgabe „<K1–K3>|<K5 K6>“ — die Grenze reist in der eingefrorenen Liste mit, die
     // Dienste fahren vorn und Schwanz in getrennten Fahrten (kein Teil mischt beide).
-    // DAS ZWEITE GERÄT (--erst <geraet> --kopf <sha>): nur die Stationen, die das erste Gerät am Kopf GRÜN urteilte (ein Paar wird nur
-    // GRÜN, wenn beide GRÜN sind), ohne Schwanz; die Mess-Datei liest es am Ursprung (--git <repo> --ref <ref>, sonst der Ordner <dir>).
-    // Ohne sie: Exit 6 beim Namen (nie still die ganze Liste); bleibt keine Station: GESETZ_LEER (Exit 7) — durch ohne Fahrt.
+    // DAS ZWEITE GERÄT — DIE GETEILTE FRONT (Koordinator 22.11.; Befund Runde 4 am 6066c757: die GTX 21 von 246 nach 3,5 h, 6 von 21
+    // Urteilen GRÜN, die Radeon stand die ganze Zeit „wartet 0/0“ — das Gesetz vom 21.11. ließ sie erst nach dem vorderen Teil der GTX
+    // ein und nur an deren GRÜN; die nie beurteilten Sprossen vorn sind die Punkte, und sie maß sie nicht). Mit --erst <geraet> ist
+    // <liste> der vordere Teil (vor dem „|“) der eingefrorenen Liste des ersten Geräts am Kopf: das zweite fährt sie in UMGEKEHRTER
+    // Reihe, ohne Schwanz — beide Geräte arbeiten von zwei Enden auf EINE Front zu; was das andere am Kopf ROT urteilt, fällt in
+    // `offen --anders` (die eine Regel für beide). Keine Mess-Datei des ersten ist nötig; trägt der vordere Teil keine Station:
+    // GESETZ_LEER (Exit 7) — durch ohne Fahrt.
     const [dir, g, l] = arg;
     let ids = liste(l);
+    if (opt("erst")) {
+        const um = ids.slice().reverse();
+        process.stderr.write("Gesetz der Liste " + g + (opt("kopf") ? " am " + k8(opt("kopf")) : "") + ": der vordere Teil von " + opt("erst") + " " + ids.length + " → " + um.length + " in umgekehrter Reihe\n");
+        if (!um.length) { console.log(GESETZ_LEER); process.exit(7); }
+        console.log(um.join(",") + "|");
+        process.exit(0);
+    }
     const anders = g === "gtx" ? "radeon" : "gtx";
     const juengst = { gtx: {}, radeon: {} }, letzt = {};
     let dateien = [];
@@ -377,28 +396,13 @@ if (was === "lies") {
     const klasse = (id) => { if (anspruch.has(id)) return "K1"; const x = juengst[g][id] || juengst[anders][id]; if (!x || x.u) return "K2"; if (x.e.gruen) return "K3"; const t = String(x.e.grund || x.e.zahl || ""); return SCHWANZ.K6.test(t) ? "K6" : SCHWANZ.K5.test(t) ? "K5" : "K4"; };
     const lang = (id) => (letzt[id] && letzt[id].min >= LANG_MIN ? 1 : 0);
     const ord = (xs) => xs.map((id, i) => ({ id, i })).sort((a, b) => lang(a.id) - lang(b.id) || ((letzt[a.id] || {}).z || "").localeCompare((letzt[b.id] || {}).z || "") || a.i - b.i).map((x) => x.id);
-    const RK = opt("kopf"), ERST = opt("erst");
-    let drin = ids;
-    if (ERST) {
-        if (!RK) { console.error("reihe: --erst nur mit --kopf <sha>"); process.exit(6); }
-        const zeigRef = opt("git") && opt("ref") ? zeigIn(opt("git")) : null, rel = k8(RK) + "-" + ERST + ".json";
-        const t = zeigRef ? zeigRef(opt("ref"), MDIR + "/" + rel) : (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })();
-        let m = null;
-        try { m = t ? JSON.parse(t) : null; } catch { m = null; }
-        if (!m) { console.error("reihe: das Gesetz der Liste ohne Mess-Datei " + rel + " — das erste Gerät hat K1–K3 hinter sich, aber sein Urteil fehlt"); process.exit(6); }
-        drin = ids.filter((id) => urteil(m, id) === "GRUEN");
-        process.stderr.write("Gesetz der Liste " + g + " am " + k8(RK) + ": " + ids.length + " → " + drin.length + " · nicht GRÜN auf " + ERST + ": " + (ids.length - drin.length) + "\n");
-        if (ids.length && !drin.length) { console.log(GESETZ_LEER); process.exit(7); }
-    }
     const je = { K1: [], K2: [], K3: [], K4: [], K5: [], K6: [] };
-    for (const id of drin) je[klasse(id)].push(id);
-    // das zweite Gerät kennt keinen Schwanz: was das erste am Kopf GRÜN urteilte, fehlt ihm nicht an Fähigkeit
+    for (const id of ids) je[klasse(id)].push(id);
     // SO VIEL WIE NÖTIG (Koordinator 22.11., Wort des Schöpfers: „so viel messen wie nötig, nicht wie möglich“; Bilanz der 12 h davor:
     // Stations-Zeit GTX 21 min gegen 1 340 min Karten-Zeit der CI, und in der Liste der Runde 4 standen 56 von 179 Stationen vorn als
     // Wiederholung eines bekannten ROT): K4 — ROT aus anderem Grund, von keiner Landung beansprucht — steht im SCHWANZ, vor K5 und K6.
     // Vorn bleibt, was ein Urteil braucht: K1 beansprucht · K2 nie beurteilt · K3 GRÜN und ungebucht (der Preis fehlt oder ist offen).
     const vorn = [...ord(je.K1), ...ord(je.K2), ...ord(je.K3)], schwanz = [...ord(je.K4), ...ord(je.K5), ...ord(je.K6)];
-    if (ERST) vorn.push(...schwanz.splice(0));
     process.stderr.write("Reihe " + g + ": " + Object.entries(je).map(([k, v]) => k + " " + v.length).join(" · ") + " → vorn " + vorn.length + " | Schwanz " + schwanz.length + "\n");
     console.log(vorn.join(",") + "|" + schwanz.join(","));
 } else if (was === "kappe") {
@@ -447,12 +451,24 @@ if (was === "lies") {
     console.log(teile.map((t) => t.join(",")).join(";"));
 } else if (was === "offen") {
     const [dir, ref, g, kopf, l] = arg;
-    let m = {};
-    // ref „-“: die Mess-Datei im Arbeitsbaum (kandidat.sh nach einer gefallenen Sitzung: was sie fertig maß, steht dort)
-    try { m = JSON.parse((ref === "-" ? (() => { try { return fs.readFileSync(path.join(dir, MDIR, k8(kopf) + "-" + g + ".json"), "utf8"); } catch { return null; } })() : zeigIn(dir)(ref, MDIR + "/" + k8(kopf) + "-" + g + ".json")) || "{}"); } catch { m = {}; }
+    // ref „-“: die Mess-Datei im Arbeitsbaum (kandidat.sh nach einer gefallenen Sitzung: was sie fertig maß, steht dort; an der OMEN
+    // stellt pm-stand.cjs den Baum je Takt des Dienstes und zu Beginn jeder Sitzung auf origin/punkte-maschine)
+    const lade = (gg) => {
+        const rel = MDIR + "/" + k8(kopf) + "-" + gg + ".json";
+        try { return JSON.parse((ref === "-" ? (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })() : zeigIn(dir)(ref, rel)) || "null"); } catch { return null; }
+    };
+    const m = lade(g) || {};
+    // DIE GETEILTE FRONT (Koordinator 22.11.): mit --anders <geraet2> ist eine Station nur offen, wenn das andere Gerät sie am SELBEN Kopf
+    // nicht ROT urteilte — ROT in der Lesart von urteil() (kein UNGEMESSEN, kein Start-Fehler, kein jüngeres UNGEMESSEN darüber). GRÜN
+    // des anderen überspringt nie (das Paar entsteht nur an GRÜN), UNGEMESSEN nie (die zweite Chance am anderen Gerät); fehlt seine
+    // Mess-Datei, überspringt nichts. Seine Datei liest offen am selben Ort wie die eigene (ref oder Baum) — kein eigener Netz-Gang.
+    const ANDERS = opt("anders"), ma = ANDERS ? lade(ANDERS) : null;
+    const rotAnders = (s) => !!ma && urteil(ma, s) === "ROT";
     const ids = liste(String(l || "").replace("|", ","));
-    process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length + "\n");
-    console.log(ids.filter((s) => !hatEintrag(m, s)).join(","));
+    const ueber = ids.filter((s) => !hatEintrag(m, s) && rotAnders(s)).length;
+    process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length +
+        (ANDERS ? " · übersprungen, ROT auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") + "\n");
+    console.log(ids.filter((s) => !hatEintrag(m, s) && !rotAnders(s)).join(","));
 } else if (was === "faelle") {
     const [repo, g, vorher, kopf, l] = arg;
     const git = gitIn(repo), zeig = zeigIn(repo);

@@ -179,6 +179,12 @@ GANZ=${#Q[@]}; DA=0; OFFEN=
 while [ ${#Q[@]} -gt 0 ]; do
   [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date '+%T') $NAME SPRUNG: die Grenz-Flagge des Dienstes liegt (WEICHT oder HALT - der Grund steht in stufe/landung.log; seit dem Gesetz der Runde 19.11. nie eine Landung) - die Liste endet nach $DA von $GANZ Teilen (${#Q[@]} nicht gefahren)" >> $L; break; }
   IFS='|' read -r nr v T f <<< "${Q[0]}"; Q=("${Q[@]:1}")
+  # DIE GETEILTE FRONT (Koordinator 22.11.): vor jeder Sitzung fällt aus dem Teil, was die Radeon an DIESEM Kopf ROT urteilte (runde.cjs
+  # offen --anders radeon; ihre Mess-Datei im Baum, wie ihn pm-stand.cjs zu Beginn der vorigen Sitzung von origin holte — ein node je
+  # Sitzung, kein Netz-Gang). In der Sitzung fragen die Grenzen weiter nur nach dem EIGENEN Eintrag (was diese Sitzung fertig maß).
+  T2=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$T" --anders radeon 2>>$L) && [ "$(zahl "$T2")" != "$(zahl "$T")" ] && {
+    echo "$(date '+%T') $NAME-$nr: $(( $(zahl "$T") - $(zahl "$T2") )) Station(en) fallen aus dem Teil — ROT auf der Radeon (oder schon gemessen) am ${K:0:8}" >> $L; T=$T2; }
+  [ -n "$T" ] || { DA=$((DA+1)); continue; }
   TEIL_GEBUCHT=0
   teil $NAME-$nr "$T" $v; rc=$?
   [ $rc = 0 ] && { DA=$((DA+1)); continue; }
