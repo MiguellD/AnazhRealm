@@ -2069,3 +2069,4 @@ omen-gtx-gtx-c445936d-w063932-1-c445936d ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-22 06:52 landung Runde 3 am c445936d: WEICHT — ein Wartender, der inzwischen fort ist wartete am GPU-Schloss, BEHALTEN 1, die Liste geht an derselben Station weiter
 2026-11-22 06:53 RUNDE 3 ALARM gtx: OMEN: 4 Messungen ungepusht seit 14:41 — weicht 65/177, Station tiere.K5#1, Kopf c445936d; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-22 06:54 landung Runde 3 am c445936d: misst 112 von 177 Stationen (65 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-22 07:12 RUNDE 3 ALARM radeon: ohne Fortschritt seit 991 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
