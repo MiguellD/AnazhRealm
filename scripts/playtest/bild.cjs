@@ -1932,24 +1932,23 @@ async function checkBandHimmelTag({ page, check }) {
             const liest = (mitte + himmel) / (pol + himmel);
             return { fehl, liest: +liest.toFixed(2), an: B.farbe.some((u) => u.value.x > 0) };
         };
-        // 12 SICHT (stern-sicht): in klarer Nacht steht am Kern-Pixel jedes Punkts sein Licht E (die Luma der Instanz-Farbe) ×
-        // das Auge (`starFieldUniforms.auge`) × die Spitze des Kerns (SB.kern ÷ 2π σ², selbst gerechnet aus `HIMMEL.sternBild` und
-        // dem Pixel) — im belichteten Raum. Im Bild steht er, wenn das die Schwelle des Schirms (`sternBild.schwelle`) erreicht:
+        // 12 SICHT (stern-sicht): in klarer Nacht steht im Kern jedes Punkts sein Licht E (die Luma der Instanz-Farbe) ×
+        // das Auge (`starFieldUniforms.auge`) × das Licht des Kerns (`HIMMEL.sternBild.kern`, über die Pixel
+        // summiert: seit stern-uhr in jeder Lage gleich) — im belichteten Raum. Im Bild steht er, wenn das die Schwelle des Schirms (`sternBild.schwelle`) erreicht:
         // genau die Punkte bis zur Grenzgröße des GESETZES (welt-licht.js `tagAchse`), und je Klasse heller 10^0,4-mal so hell
         const sichtStand = () => {
             const S = soll();
             if (!U || !U.auge || !U.pixel) return { fehl: ["das Feld trägt kein Auge (`starFieldUniforms.auge`): ein Punkt ist ein Stück Fläche"] };
             const SB = AnazhRealm.HIMMEL.sternBild;
             const G = W.tagAchse(r._sonnenRichtung().y).grenze;
-            const gp = (U.pixel.value / U.radius) * (180 / Math.PI);
-            const spitze = SB.kern / (2 * Math.PI * ((SB.a * SB.a) / 2 / (gp * gp) + 1 / 12));
+            const kernLicht = SB.kern;
             const a = sf.instanceColor && sf.instanceColor.array;
             let imBild = 0,
                 sollN = 0,
                 abMax = 0;
             for (let i = 0; a && i < mags.length; i++) {
                 const E = 0.2126 * a[3 * i] + 0.7152 * a[3 * i + 1] + 0.0722 * a[3 * i + 2];
-                const v = E * U.auge.value * spitze;
+                const v = E * U.auge.value * kernLicht;
                 if (v >= SB.schwelle * (1 - 1e-3)) imBild++;
                 if (Math.fround(S.m[i]) <= G + 1e-3) sollN++;
                 if (i < S.H.n && E > 0) abMax = Math.max(abMax, Math.abs(Math.log10(v / SB.schwelle) - 0.4 * (G - mags[i])));
