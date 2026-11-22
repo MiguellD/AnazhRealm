@@ -66,6 +66,15 @@ function standVerdict(s) {
     return out;
 }
 
+// ── B-g (mensch-zahlen, Karte 2 mensch.fahrzeug.form#1) — DAS FORM-VERDIKT: derselbe GT nach Rezept und mit schwerem Stempel
+// (Radstand, Spur, Dach am oberen Rand), gelesen am Fahr-Satz des Ritts (`_fahrSatz`: was der Fahr-Schritt fährt). Der Stempel
+// baut die Form, nie den Motor (vehicle-core carPhys `motor`): die Leistung [W] = aLeist × Masse bleibt die des Rezepts. Befund
+// 22.11. (GTX 1050, Wiese): Masse × 1,896, Leistung × 1,896 — jede Form zog gleich, Tempo nach 6 s Vollgas × 1,0009.
+function formVerdict(f) {
+    if (!f || !(f.masseQ > 1.05)) return [`der Stempel wiegt nicht (Masse × ${f && f.masseQ})`];
+    return Math.abs(f.wattQ - 1) < 1e-9 ? [] : [`der Stempel baut einen anderen Motor ein (Leistung × ${f.wattQ.toFixed(4)} bei Masse × ${f.masseQ.toFixed(4)})`];
+}
+
 // ── A6 DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse), am Kern je Rezept. Im Bogen (20 m/s, Einschlag 0,25, 1,5 s ohne
 // Gas) voll gebremst und in der Kehre unter Handbremse (15 m/s, Einschlag 0,6, 1 s) tragen die Reifen höchstens μ·g (der
 // Rollwiderstand liegt außerhalb des Reifens: abgezogen). DIE HANDBREMSE sperrt nur das Heck: ihr Zug über dem Ausrollen
@@ -151,6 +160,7 @@ hauptLauf(async () => {
         for (const [V, basis, ...brueche] of [
             [driveVerdict, fahrt, { dist: 0, snapDist: 0 }, { sitzKern: false }, { huelleKern: false }],
             [standVerdict, stand, { spaltM: 0.49 }, { proben: 0 }],
+            [formVerdict, { masseQ: 1.8963, wattQ: 1 }, { wattQ: 1.8963 }, { masseQ: 1 }],
         ])
             for (const b of [{}, ...brueche]) {
                 const v = V({ ...basis, ...b });
@@ -378,6 +388,27 @@ hauptLauf(async () => {
         } catch (e) {
             res.standErr = fehlerText(e);
         }
+        // ===== B-g: DER STEMPEL BAUT DIE FORM, NIE DEN MOTOR — der Fahr-Satz des Ritts am Rezept und am schweren Stempel =====
+        try {
+            const pm = r.state.playerMesh.position;
+            const satz = (ov, dz) => {
+                const e = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: pm.x + 9, y: pm.y, z: pm.z + dz },
+                    Object.assign({ silent: true, precise: true }, ov ? { studioOv: ov } : null)
+                );
+                try {
+                    const S = r._fahrSatz(e, r._vehicleProfile(e));
+                    return { masse: r._fahrzeugGesetzFor(e).drive.mass, aLeist: S.aLeist };
+                } finally {
+                    r.removeArchitecture(e);
+                }
+            };
+            const [L, S] = [satz(null, 0), satz({ radstand: 3.4, spur: 1.9, dach: 1.75 }, 8)];
+            res.form = { masseQ: S.masse / L.masse, wattQ: (S.aLeist * S.masse) / (L.aLeist * L.masse) };
+        } catch (e) {
+            res.formErr = fehlerText(e);
+        }
         return res;
     });
 
@@ -417,6 +448,14 @@ hauptLauf(async () => {
         sv.length === 0,
         out.standErr ||
             `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
+    );
+
+    // B-g: der Motor des Rezepts — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const fv = formVerdict(out.form);
+    check(
+        "B-g: FORM — der schwere Stempel fährt den Motor seines Rezepts (Leistung × 1 am Fahr-Satz des Ritts)",
+        fv.length === 0,
+        out.formErr || `Masse × ${out.form && out.form.masseQ.toFixed(4)}, Leistung × ${out.form && out.form.wattQ.toFixed(6)}${fv.length ? " — Täter: " + fv.join(", ") : ""}`
     );
 
     wandEnde(

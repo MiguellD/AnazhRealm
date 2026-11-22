@@ -3392,12 +3392,18 @@
     //                das Moment im ersten Gang trägt mindestens die Steigfähigkeit: aEngine ≥ g · (sin θ + cr · cos θ))
     //   vmax       = das Gleichgewicht aLeist / v = Reibung + Luft · v² (das Zugtier höchstens in seiner Gangart).
     // Ohne Gas zieht der Motor (Schleppmoment) bzw. hält das Gespann (`schlepp`); das Ausrollen von heute bleibt FAHR.rollDecel.
-    function carPhys(P) {
+    // DER MOTOR IST EIN TEIL DES REZEPTS (mensch-zahlen, rein additiv): `P.leistung` kW/t nennt den Motor der Gattung an der Form
+    // IHRES Rezepts — seine Leistung [W] = kW/t × Masse der Rezept-Form `Pm` (dieselbe Zeit). Ein Stempel, der die Form schwerer
+    // baut, baut keinen größeren Motor ein: die Leistung je Masse fällt um Rezept-Masse ÷ Masse (`motor`), wie beim Gespann, dessen
+    // Kraft schon durch die Masse der Form teilt. Vorher zog jede Form gleich: Masse × 1,896, Tempo nach 6 s Vollgas × 1,0009.
+    // Ohne `Pm` ist die Form ihr eigenes Rezept (das Buch je Gattung, das Teile-Werk): `motor` exakt 1, byte-alt.
+    function carPhys(P, Pm) {
         const A = FAHR.antrieb,
             E = epocheStufe(P),
             Z = (E && E.antrieb) || {};
         const len = P.radstand + P.ueberhangV + P.ueberhangH,
             mass = len * P.spur * P.dach,
+            motor = Pm ? ((Pm.radstand + Pm.ueberhangV + Pm.ueberhangH) * Pm.spur * Pm.dach) / mass : 1,
             kg = mass * FAHR.masseDichte,
             cw = Z.cw != null ? Z.cw : P.cw,
             reibung = (Z.reibung != null ? Z.reibung : A.reibung) * FAHR.G,
@@ -3409,7 +3415,7 @@
             vGang = Z.zug.vGang;
             schlepp = A.zugHalt;
         } else {
-            aLeist = P.leistung * (Z.leistung != null ? Z.leistung : 1) * A.eta; // kW/t = W/kg
+            aLeist = P.leistung * (Z.leistung != null ? Z.leistung : 1) * A.eta * motor; // kW/t = W/kg
             const th = Math.atan(A.steig);
             aEngine = Math.max(aLeist / A.vKnick, FAHR.G * Math.sin(th) + reibung * Math.cos(th));
             vGang = Infinity;
@@ -3448,9 +3454,15 @@
     // REIN + THREE-frei (validator-vm-fest); ein PARTIELLER Regler-Vektor (z. B. pre.s+pre.fx
     // der Presets) mergt ueber DIESELBE Basis wie buildInstance (DEFAULT_P + BASE_P) — die
     // eine Merge-Ordnung, kein Duplikat.
-    function exportDrive(Pin) {
+    // `rezeptId` (mensch-zahlen, rein additiv): die Gattung, deren Motor der Wagen trägt — Pin ist dann ihr Rezept mit Stempel
+    // (s + fx + ov, roh: mit `epoche`, wie der Bau mergt), der Kern formt ihr Rezept in derselben Zeit und reicht es carPhys
+    // (`Pm`). Ein unbekanntes Rezept bricht laut; ohne `rezeptId` ist Pin sein eigenes Rezept.
+    function exportDrive(Pin, rezeptId) {
         const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {})); // dieselbe Zeit-Achse wie der Bau
-        const ph = carPhys(P);
+        const pre = rezeptId != null ? PRESETS[rezeptId] : null;
+        if (rezeptId != null && !pre) throw new Error("exportDrive: unbekanntes Rezept " + rezeptId);
+        const Pm = pre ? epocheForm(Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, Pin && Pin.epoche != null ? { epoche: Pin.epoche } : null)) : null;
+        const ph = carPhys(P, Pm);
         // DONOR-ABSCHIED (18.07., rein additiv): die Stations-Wahrheit des Baus
         // (derive + scal-Y-Linien + seatRow-Anker) reist als DATEN mit — der
         // Wirt setzt Reiter-Sitz und Kollisions-Hülle aus dem Gesetzbuch statt
@@ -4124,8 +4136,8 @@
     // DIE LEISTUNG EINES WAGENS (w11-fahrzeug, rein additiv): das Tempo nach 90 s Vollgas auf der Ebene (km/h) und die Zeit
     // 0 → 50 km/h (s, null: nie), gefahren vom EINEN Fahr-Schritt — die Lehren-Tafel der Garage zeigt sie je Epoche, die
     // Labor-Linse (G9) richtet die Ordnung der Zeit an ihr.
-    function fahrLeistung(P) {
-        const G = fahrGesetz(exportDrive(P));
+    function fahrLeistung(P, rezeptId) {
+        const G = fahrGesetz(exportDrive(P, rezeptId));
         if (!G) return null;
         const z = fahrZustand(0, 0, 0),
             eben = () => 0,

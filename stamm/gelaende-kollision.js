@@ -1291,8 +1291,9 @@ class AnazhRealm_gelaende_kollision {
         if (!g) {
             // s+fx+Stempel ist exakt der Merge des Baus (vehicle-core buildInstance) —
             // der Kern mergt DEFAULT_P+BASE_P intern davor: EINE Merge-Ordnung.
+            // Der Motor ist ein Teil des Rezepts (vehicle-core carPhys): der Kern liest die Gattung, der Stempel baut nur die Form.
             const P = Object.assign({}, pre.s, pre.fx, ov);
-            g = { gestalt, drive: core.exportDrive(P) };
+            g = { gestalt, drive: core.exportDrive(P, gestalt) };
             // V18.491.88 — vehicle LEHREN/messen Host-Leser (fail-soft; exportDrive unverändert).
             if (typeof core.evalLehren === "function") {
                 try {
