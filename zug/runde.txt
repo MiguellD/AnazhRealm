@@ -10,5 +10,5 @@
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 4 kopf 6066c7573242c2abd89f509d7037c181b7efefc6 start 2026-11-22T10:58:48Z vorher c445936d5da0a0f0c78139fbc6d4229524c56093
-gtx offen 0/0 station - fortschritt 2026-11-22T10:58:48Z alarm - liste -
+gtx offen 0/0 station - fortschritt 2026-11-22T10:58:48Z alarm 2026-11-22T10:59:28Z liste -
 radeon offen 0/0 station - fortschritt 2026-11-22T10:58:48Z alarm - liste -
