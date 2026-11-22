@@ -1,7 +1,7 @@
 {
  "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
  "geraet": "gtx",
- "zeit": "2026-11-22T19:03:43.986Z",
+ "zeit": "2026-11-22T19:15:40.377Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.absicht#1": {
@@ -240,6 +240,76 @@
    },
    "zeit": "2026-11-22T19:03:43.986Z",
    "abdruck": "238deb088d66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Kulturen an den Häusern der Stadt (gemessen 4 < 10) (gemessen 4) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k38f6093c8b73",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 13.2,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 40.88,
+    "kerne": 2.507,
+    "fensterKerne": 2.574,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      24.34
+     ],
+     [
+      "node.exe kopplung/rumpf-linse.cjs stationen",
+      4.86
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2
+     ]
+    ],
+    "dienerS": 20.36,
+    "diener": [
+     [
+      "System",
+      13.03
+     ],
+     [
+      "dwm.exe",
+      3.22
+     ]
+    ],
+    "geraetS": 12.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.53
+     ],
+     [
+      "svchost.exe",
+      5.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.66
+     ]
+    ],
+    "eigenS": 44.36,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T19:15:40.377Z",
+   "abdruck": "caf77ca94409",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
