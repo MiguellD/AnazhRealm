@@ -721,6 +721,7 @@ class AnazhRealm_siedlung_instanz {
         if (opts && opts.band) {
             entry.instSlotsBand = slots;
             entry._lodBandLevel = Number.isFinite(opts.bandLod) ? opts.bandLod : null;
+            this._haspelLeib(entry); // die Stufe des Bands zeigt dasselbe φ wie die gezeichnete (brunnen-haspel)
             return;
         }
         entry.instanced = true;

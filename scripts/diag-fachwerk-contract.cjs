@@ -606,25 +606,43 @@ function haspelLinse() {
         const st = wirt.state;
         wirt._weltUhrNeu(0);
         st.archInstanceGroups = new Map();
-        const slots = [];
-        for (const teil of ["kurbel", "seil", "eimer", "aufbau"]) {
-            const mats = [new T3.Matrix4()];
-            const g = {
-                welle: teil === "aufbau" ? null : { teil },
-                mesh: {
-                    setMatrixAt: (i, m) => mats[i].copy(m),
-                    getMatrixAt: (i, m) => m.copy(mats[i]),
-                    instanceMatrix: {},
-                    boundingSphere: null,
-                },
-                mats,
-            };
-            st.archInstanceGroups.set("f:brunnen:" + teil, g);
-            slots.push({ key: "f:brunnen:" + teil, slot: 0 });
-        }
+        // die gezeichnete Stufe (`instSlots`) und die Stufe des Bands im Übergang (`instSlotsBand`, sie kommt mitten im Weg)
+        const stufe = (art) => {
+            const s = [];
+            for (const teil of ["kurbel", "seil", "eimer", "aufbau"]) {
+                const mats = [new T3.Matrix4()];
+                const g = {
+                    welle: teil === "aufbau" ? null : { teil },
+                    mesh: {
+                        setMatrixAt: (i, m) => mats[i].copy(m),
+                        getMatrixAt: (i, m) => m.copy(mats[i]),
+                        instanceMatrix: {},
+                        boundingSphere: null,
+                    },
+                    mats,
+                };
+                st.archInstanceGroups.set(art + teil, g);
+                s.push({ key: art + teil, slot: 0 });
+            }
+            return s;
+        };
+        const slots = stufe("f:brunnen:");
+        const bandSlots = stufe("f:brunnen-band:");
+        let bandFehl = 0;
         const entry = { id: "haspel-" + fall.seed, type: "brunnen", instSlots: slots, studioOv: fall.ov };
         wirt._foundryPresetForEntry = () => "brunnen";
         if (mut === "kein-verb") wirt._haspelVon = () => null;
+        // der Leib, der nur die gezeichnete Stufe sammelt (vor brunnen-haspel 2): das Band blendet in der Ruhe-Lage über
+        if (mut === "band")
+            wirt._haspelLeib = function (e) {
+                const b = e.instSlotsBand;
+                e.instSlotsBand = null;
+                try {
+                    return A.prototype._haspelLeib.call(this, e);
+                } finally {
+                    e.instSlotsBand = b;
+                }
+            };
         if (mut === "fuelle") {
             const K = W.__fachwerkCore;
             const echt = K.haspelTeilMatrix;
@@ -674,7 +692,15 @@ function haspelLinse() {
                 }
                 if (verb !== "kurbeln" || !gekurbelt) break;
                 const z = entry._haspel;
-                if (z.richtung !== richtung) (umkehr++, (richtung = z.richtung));
+                if (z.richtung !== richtung) {
+                    umkehr++;
+                    richtung = z.richtung;
+                    // am Grund beginnt der Übergang: die Stufe des Bands kommt dazu (wie `_archInstancePlace` sie anlegt)
+                    if (umkehr === 1) {
+                        entry.instSlotsBand = bandSlots;
+                        wirt._haspelLeib(entry);
+                    }
+                }
                 const L = W.__fachwerkCore.haspelLage(M, z.phi);
                 if (z.wasser > 0 && !(L.yE + M.innenY < H.spiegel + 1e-9) && !entry._nassGesehen) nassFrueh++;
                 if (z.wasser > 0) entry._nassGesehen = true;
@@ -693,6 +719,13 @@ function haspelLinse() {
             // das Seil endet am Bügel: Unterkante des Seils = Boden des Eimers + Bügel-Höhe
             const s = sp0.seil[0] * mat("seil").elements[5] + mat("seil").elements[13];
             fehlSeil = Math.max(fehlSeil, Math.abs(s - (sp0.eimer[0] + hub + H.buegelH)));
+            // das Band zeigt dasselbe φ wie die gezeichnete Stufe (beide Stufen tragen dieselbe Ruhe)
+            if (entry.instSlotsBand)
+                for (const teil of ["kurbel", "seil", "eimer"]) {
+                    const a = mat(teil).elements,
+                        b = st.archInstanceGroups.get("f:brunnen-band:" + teil).mats[0].elements;
+                    for (let i = 0; i < 16; i++) bandFehl = Math.max(bandFehl, Math.abs(a[i] - b[i]));
+                }
         }
         g0.traverse((o) => o.geometry && o.geometry.dispose());
         if (verb !== "kurbeln") v.push(`kein Verb am Brunnen: der Klick nennt „${verb}“ (${fall.name})`);
@@ -703,6 +736,7 @@ function haspelLinse() {
             if (fehlSeil > 0.002) v.push(`das Seil endet ${(fehlSeil * 1000).toFixed(1)} mm neben dem Bügel (${fall.name})`);
             if (nassFrueh) v.push(`der Eimer fasst Wasser über dem Spiegel (${fall.name})`);
             if (!(entry._haspel && entry._haspel.wasser > 0.5)) v.push(`der Eimer schöpft nicht (${fall.name})`);
+            if (!entry.instSlotsBand || bandFehl > 1e-6) v.push(`das Band im Übergang zeigt ein anderes φ (Δ ${bandFehl.toExponential(1)}, ${fall.name})`);
         }
         return { v, r, fehlHub, wegRad, maxHub, M, z: entry._haspel, kraft: W.__fachwerkCore.haspelKraft(M, 1, Math.abs(st.gravity)).kurbelN, leer: W.__fachwerkCore.haspelKraft(M, 0, Math.abs(st.gravity)).kurbelN };
     };
@@ -732,8 +766,13 @@ function haspelLinse() {
     // SELBST-TEST — die Täter am ersten Brunnen
     const fuelle = weg(FALLE[0], "fuelle").v;
     const ohne = weg(FALLE[0], "kein-verb").v;
-    const nennt = fuelle.some((s) => /^\|Hub − r·φ\|/.test(s)) && ohne.some((s) => /^kein Verb am Brunnen/.test(s));
-    check("HASPEL SELBST-TEST: der Eimer an der Fülle und ein Wirt ohne Verb am Brunnen sind je ROT beim Namen", nennt, `Fülle: ${fuelle.join(" · ") || "grün"} ‖ ohne Verb: ${ohne.join(" · ") || "grün"}`);
+    const band = weg(FALLE[0], "band").v;
+    const nennt =
+        fuelle.some((s) => /^\|Hub − r·φ\|/.test(s)) &&
+        ohne.some((s) => /^kein Verb am Brunnen/.test(s)) &&
+        band.length === 1 &&
+        /^das Band im Übergang/.test(band[0]);
+    check("HASPEL SELBST-TEST: der Eimer an der Fülle, ein Wirt ohne Verb am Brunnen und ein Band in der Ruhe-Lage sind je ROT beim Namen", nennt, `Fülle: ${fuelle.join(" · ") || "grün"} ‖ ohne Verb: ${ohne.join(" · ") || "grün"} ‖ Band: ${band.join(" · ") || "grün"}`);
 }
 
 // ── DAS RAUM-LICHT (w28-innenlicht, Familie siedlung.K1): die sechste Zahl der Decken-Zeile ist der mittlere Tageslicht-Quotient

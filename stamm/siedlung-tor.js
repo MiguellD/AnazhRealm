@@ -892,23 +892,29 @@ class AnazhRealm_siedlung_tor {
     // Die Teile eines Eintrags (aus den Slots seiner Stufe) oder null: ein Bau ohne Haspel kennt das Verb nicht.
     _haspelVon(entry) {
         const t = entry && entry._haspelSlots === entry.instSlots ? entry._haspelTeile : null;
-        return t && t.length ? t : null;
+        return t && t.some((x) => x.quelle === entry.instSlots) ? t : null;
     }
-    // Gerufen, wo die Slots einer Stufe entstehen (`_archInstancePlace`, neben `_fluegelLeib`): sammelt die Haspel-Teile, merkt
-    // ihre Geburts-Matrix und setzt sie in den Zustand des Eintrags (eine neue Stufe dreht nie zurück in die Ruhe-Lage).
+    // Gerufen, wo die Slots einer Stufe entstehen (`_archInstancePlace`: die gezeichnete Stufe neben `_fluegelLeib` UND die
+    // Stufe des Bands im Übergang): sammelt die Haspel-Teile beider, merkt ihre Geburts-Matrix und setzt sie in den Zustand des
+    // Eintrags — eine neue Stufe dreht nie zurück in die Ruhe-Lage, und die Stufe, in die überblendet wird, zeigt dasselbe φ.
+    // Den Wurf trägt dieselbe Instanz (die Gruppe des Teils wirft selbst, `castShadow`): er folgt der Matrix ohne eigenen Werfer.
     _haspelLeib(entry) {
-        const slots = entry.instSlots;
         const groups = this.state.archInstanceGroups;
         const teile = [];
-        for (const s of slots || []) {
-            const g = groups && groups.get(s.key);
-            const w = s.welle || (g && g.welle);
-            if (!g || !w || g.shadowTwin || !(s.slot >= 0)) continue;
-            const ruhe = new THREE.Matrix4();
-            g.mesh.getMatrixAt(s.slot, ruhe);
-            teile.push({ g, ref: s, teil: w.teil, ruhe });
-        }
-        entry._haspelSlots = slots;
+        // ein schon gesammeltes Teil (dieselbe Marke in derselben Gruppe, auch nach einem Umzug des Slots) behält seine Ruhe —
+        // seine Matrix steht schon auf φ
+        const alt = new Map((entry._haspelTeile || []).map((t) => [t.ref, t]));
+        for (const quelle of [entry.instSlots, entry.instSlotsBand])
+            for (const s of quelle || []) {
+                const g = groups && groups.get(s.key);
+                const w = s.welle || (g && g.welle);
+                if (!g || !w || g.shadowTwin || !(s.slot >= 0)) continue;
+                const a = alt.get(s);
+                let ruhe = a && a.g === g ? a.ruhe : null;
+                if (!ruhe) g.mesh.getMatrixAt(s.slot, (ruhe = new THREE.Matrix4()));
+                teile.push({ g, ref: s, teil: w.teil, ruhe, quelle });
+            }
+        entry._haspelSlots = entry.instSlots;
         entry._haspelTeile = teile;
         if (teile.length && entry._haspel) this._haspelSetzen(entry, entry._haspelGezeigt);
     }
@@ -965,7 +971,8 @@ class AnazhRealm_siedlung_tor {
         const M = this._haspelMass(entry);
         const m = this._haspelTmp || (this._haspelTmp = new THREE.Matrix4());
         for (const t of entry._haspelTeile || []) {
-            if (!(t.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): die nächste Stufe sammelt neu
+            // die Marke ist frei (Rebuild) oder ihre Stufe gefallen (das Band endet): die nächste Stufe sammelt neu
+            if (!(t.ref.slot >= 0) || (t.quelle !== entry.instSlots && t.quelle !== entry.instSlotsBand)) continue;
             m.fromArray(FC.haspelTeilMatrix(M, t.teil, phi)).premultiply(t.ruhe);
             t.g.mesh.setMatrixAt(t.ref.slot, m);
             t.g.mesh.instanceMatrix.needsUpdate = true;
