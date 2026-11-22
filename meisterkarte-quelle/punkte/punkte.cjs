@@ -7603,6 +7603,26 @@ async function selbsttest(o = {}) {
                 dOhne.ungemessen === true && /^der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN/.test(dOhne.grund) &&
                     dMit.gruen === false && !dMit.ungemessen && dMit.grund === "ROT: S1 · abtrag 0 gegen Soll ≥ 1" && dMut === null,
                 JSON.stringify([dOhne.grund, dMit.grund, dMut]));
+            // (g) DER RAFFER AM BUDGET (pm-stationen-kalender 22.11.; Radeon 161ff792: leben.oeko.dynamik stand 271 s still, ihr Raffer
+            // zählte 4·10¹² Takte unter dem angehaltenen Tag der Bühne): der Rumpf der Probe (k2-planet probeRumpf) stellt je Leiter
+            // `window.__raffer` an ihr Budget (Deckel − 15 s); ein Raffer ohne Ende (10¹³ Takte) endet dort, die Leiter trägt ihn als kurz,
+            // die Sprosse ist UNGEMESSEN mit Zahl „n von m Takten“. Der Raffer, der sein Soll schafft, bleibt still (GRÜN). Die Seite ist
+            // hier ein Sandkasten mit `window` (der Rumpf reist als Text, wie in die Probe)
+            {
+                const KP = require("./stationen/k2-planet.js").kern;
+                const rumpf = (soll) => {
+                    const datei = path.join(tmp, "raffer-" + soll + ".json"), win = {};
+                    const H = { aus: datei, frist: async () => 0, schritt: () => {}, seite: async (code) => new Function("window", code)(win) };
+                    const LEITERN = { "x.y": { sek: 18, mess: async (H2) => ({ sprossen: { 1: { werte: { n: (await H2.seite("return window.__raffer(" + soll + ", () => {}, 'lauf').n;")) } } } }) } };
+                    return eval("(" + KP.knapp(KP.probeRumpf) + ")")(H, {}, LEITERN, null).then(() => JSON.parse(fs.readFileSync(datei, "utf8")));
+                };
+                const t0 = Date.now(), ewig = await rumpf(1e13), ms = Date.now() - t0, kurz = await rumpf(5);
+                const u = KP.urteilBauen("x.y", 1, { soll: [], zeuge: () => null }, false), lauf = { stdout: "[linse-gpu] amd/rdna-3" };
+                const ue = u(ewig, lauf), uk = u(kurz, lauf);
+                pruef("KEIN URTEIL (g) DER RAFFER AM BUDGET: 10¹³ Takte (100 Jahre unter dem angehaltenen Tag der Bühne) enden am Budget der Leiter (18 − 15 = 3 s), nie hängend — die Sprosse UNGEMESSEN mit „n von 10000000000000 Takten“; 5 Takte schaffen ihr Soll — GRÜN, keine Liste",
+                    ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true,
+                    JSON.stringify([ms, ue, kurz.leitern["x.y"], uk]));
+            }
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {

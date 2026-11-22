@@ -669,7 +669,7 @@ const LEITERN = [];
                     return {
                         proben, breite: anker.breite, samen,
                         tagMin: r.constructor.DAY_LENGTH_MIN_MINUTES, tagMax: r.constructor.DAY_LENGTH_MAX_MINUTES,
-                        jahrSek: ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender()), jahrSekGesetzt: r._kalender().jahrK,
+                        jahrSek: r._kalender().jahrK, jahrSekGesetzt: r._kalender().jahrK,
                         ops: ops.length, saetze: saetze.length, zeitlupe, raffer, achse,
                     };
                 `);
@@ -926,7 +926,7 @@ const LEITERN = [];
                         }
                         if (n > max) max = n;
                     }
-                    return { saat: st.worldMeta && st.worldMeta.seed, seelen: seelen.map(([k]) => k), ohneLeib, maschinen: maschinen.length, maschinenNamen: maschinen.slice(0, 12), geprueft, bauplaene: bps.length, max, sied, jahrSek: ((K) => (K.jahrK * K.tagS) / K.normS)(r._kalender())};
+                    return { saat: st.worldMeta && st.worldMeta.seed, seelen: seelen.map(([k]) => k), ohneLeib, maschinen: maschinen.length, maschinenNamen: maschinen.slice(0, 12), geprueft, bauplaene: bps.length, max, sied, jahrSek: r._kalender().jahrK };
                 `);
                 L.zeile("Perspektiven der Sitzung: " + JSON.stringify(z));
                 const seelenText = z.seelen.length + " Seelen (" + z.seelen.join(", ") + "), " + z.ohneLeib.length + " ohne Leib";

@@ -12079,11 +12079,11 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 9,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 3.4,
-    "anteilKern": 0.3
+    "heute": 10,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 3.7,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -13638,8 +13638,8 @@
        "richter": "Blind-Spieler über 10 h: Bogen gegen AAA-Kampagne ≥ gleichwertig in ≥ 50 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "keine Messung toter Minuten; ungemessen.",
      "alt": [
@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 7,
+    "heute": 8,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 3.7,
+    "anteilHeute": 4.2,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -19320,7 +19320,7 @@
        "richter": "N = 100 Zufallsereignisse aus 10 Saaten: Anteil ohne Widerspruch zwischen allen Kanälen und Perspektiven ≥ 0,95"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Wind gesehen = gehört r 0,81 (§32.K2) ist ein Zwei-Kanal-Same, aber kein Ereignis; nie über Kanäle gemessen.",
@@ -20086,12 +20086,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 48,
+  "heute": 50,
   "davonKopplungen": 33,
-  "kern": 11,
-  "kernDazu": 11,
-  "anteilHeute": 2.8,
-  "anteilKern": 0.4,
+  "kern": 10,
+  "kernDazu": 10,
+  "anteilHeute": 2.9,
+  "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 17
+  "nachwache": 19
  },
  "zusammengelegt": [
   {
