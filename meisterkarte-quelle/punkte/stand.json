@@ -29976,7 +29976,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an c445936d: Last: Referenz f 2,19 (Faden 2,19 · alle Kerne 2,14; vor 112,7/352,9 ms, nach 197,1/488,6 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsm · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,617 (Faden 1,456 · alle Kerne 1,617; vor 112,4/280,3 ms, nach 131,2/371,2 ms, Ruhe 90,1/229,5 ms seit 2026-11-17) · fremd: Explorer.EXE 3,6 CPU-s · LightStudio-background.exe Invoke · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -29994,7 +29994,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c445936d: Last: Referenz f 2,19 (Faden 2,19 · alle Kerne 2,14; vor 112,7/352,9 ms, nach 197,1/488,6 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsm",
+     "grund": "ungemessen (R10) — zuletzt an 30e01e75: Last: Referenz f 1,617 (Faden 1,456 · alle Kerne 1,617; vor 112,4/280,3 ms, nach 131,2/371,2 ms, Ruhe 90,1/229,5 ms seit 2026-11-17) · fremd: Explorer.EXE 3,6 CPU-s · LightStudio-background.exe Invoke",
      "ungemessen": true,
      "beide": true
     },
@@ -37635,7 +37635,7 @@
   "ohne": 3392
  },
  "kopfVoll": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
- "zeit": "2026-11-22T21:02:21.446Z",
+ "zeit": "2026-11-22T21:09:24.944Z",
  "vorher": "30e01e75",
  "bilanz": {
   "gewinn": [],
