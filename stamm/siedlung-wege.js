@@ -2917,7 +2917,7 @@ class AnazhRealm_siedlung_wege {
 
     // DER KÖRPER DES ACKERS (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2; das Gesetz: phyto-core ACKER_GESETZ · ackerStand):
     // über dem gemalten Grund jedes nahen Ackers (`state.aecker`, im Kreis `ACKER_KOERPER.nahM` um das Auge) die Kämme des Pflugs
-    // und auf ihnen die Kulturpflanze in Reihen — im Stand der Tage seit seiner Saat: der Acker des Dorfs sät zur Phase des Jahrs
+    // in Reihen, gefärbt von der Deckung der Frucht (der Halm selbst steht noch nicht) — im Stand der Tage seit seiner Saat: der Acker des Dorfs sät zur Phase des Jahrs
     // (`ackerTage`, die EINE Uhr des Jahrs `seasonPhase`), jedes Stück, das eine Hand bestellt hat (die Tat „bestellen",
     // `_ackerBestellen`), trägt den Stand seit SEINER Stunde und seine Reihen in SEINER Zugrichtung. Gezeichnet in EINEM Pool der
     // Kiste der Wege (`_kistenPool`: ein Stoff, ein Draw, die Farbe je Instanz) mit dem Prisma des Kamms als Form; je Strecke
@@ -2961,18 +2961,19 @@ class AnazhRealm_siedlung_wege {
             const [dx, dz] = [bx - ax, bz - az];
             const len = Math.hypot(dx, dz);
             const ziel = { ax, az, bx, bz, ya, yb, yaw: Math.atan2(dx, dz), pitch: -Math.atan2(yb - ya, len), len };
-            // der Kamm (seine Sohle `sohleM` im Grund: die Strecke folgt der Sehne, der Boden dazwischen nicht)
+            // der Kamm (seine Sohle `sohleM` im Grund: die Strecke folgt der Sehne, der Boden dazwischen nicht); die Frucht auf ihm
+            // färbt ihn nach ihrer Deckung (der Stand des Gesetzes: grün im Schossen, gelb zur Reife, die Stoppel fahl) — als Halm
+            // steht sie nicht (ein Prisma je Reihe zeichnete eine Wand, kein Feld: Bild hand_2-S2-nach am e71adb10)
             M.push([ziel, F.breiteM, F.hoeheM + AK.sohleM, -AK.sohleM]);
-            C.push(boden);
-            z.kaemme++;
-            if (S && S.hoeheM > 0.01 && S.deckung > 0) {
-                const j = AnazhRealm._ackerZahl(ax, az);
-                M.push([ziel, S.deckung * F.abstandM, S.hoeheM, F.hoeheM * 0.6]);
+            let c = boden;
+            if (S && S.deckung > 0) {
                 const lin = AnazhRealm._srgbHexLinear(S.farbe);
-                const k = 1 + (j - 0.5) * AK.streuFarbe;
-                C.push([lin[0] * k, lin[1] * k, lin[2] * k]);
+                const k = 1 + (AnazhRealm._ackerZahl(ax, az) - 0.5) * AK.streuFarbe;
+                c = boden.map((b, i) => b + (lin[i] * k - b) * S.deckung);
                 z.frucht++;
             }
+            C.push(c);
+            z.kaemme++;
         };
         for (const a of nah) {
             const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
