@@ -51,7 +51,10 @@ const BASIS = {
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
     // das flache Dach trug einen Dachraum (vor w28-bau-rezept-tuer): der Speicherlauf des Arkaden-Hauses stieg durch die Platte
     dachlos: [[KERN, "const dachRaum = hasAttic && ROOFMODE!=='flat';", "const dachRaum = hasAttic;"]],
-    austritt: [[KERN, "    if(!frei(dir) && frei(-dir)) dir=-dir;\n    if(frei(dir)){", "    {"]],
+    austritt: [[KERN, "    const LAGE=speicherLage();", "    const LAGE={dir,t:0};"]],
+    // der Speicher fiel, wo ein gerückter Lauf trug (front-technik 97760b28): `frei()` fragte nur die Richtung — die Kirche und das
+    // Pfarrhaus des Mess-Dorfs schlossen ihren Estrich, obwohl ein Versatz zum First den Kopf frei trug
+    ruecken: [[KERN, "    const LAGE=speicherLage();", "    const LAGE=lage(dir,false)||lage(-dir,false);"]],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
@@ -170,6 +173,8 @@ function proben(inj) {
     const b1 = { promoviert: 0, huelleNachPromotion: 0, demotiert: 0, huelleNachDemotion: 0 };
     const b2 = { tueren: 0, hinein: 0, faelle: [] };
     const treppen = [];
+    const dachraum = [];
+    const speicherZu = [];
     const keller = [];
     for (const bi of kandidaten.slice(0, 10)) {
         promoteB(bi);
@@ -192,13 +197,48 @@ function proben(inj) {
             else b2.faelle.push(bi + ":" + (l.z - dm.tuer.z).toFixed(2));
         }
         if (B.H?.cellar) keller.push(bi);
+        // DER DACHRAUM HAT EIN DACH (front-technik, 22.11.): sagt das Gesetz einen Dachraum (`dims.dachRaum`), steht über dem
+        // Estrich ein Dach mit Kopfraum — gemessen am gebauten Haus, ob der Speicherlauf offen ist oder nicht. Bis hier urteilte
+        // B3 Dach nur über Austritte des Speicherlaufs: seit `frei()` den Estrich ohne Stehraum schließt, trug das Arkaden-Haus
+        // der Mutante „dachlos" keinen Lauf mehr und die Probe war blind (GTX 1050 an 46b061c9). Vier Strahlen längs des Firsts
+        // vom Estrich nach oben, der höchste zählt (ein Stiel des Firststuhls verdeckt einen); kein Treffer heißt kein Dach.
+        if (dm?.dachRaum) {
+            const p = B.p || {};
+            let kopf = -1;
+            for (const fx of [-0.3, -0.12, 0.12, 0.3]) {
+                const w = welt(B, fx * dm.W, 0);
+                ray.set(new T.Vector3(w.x, B.q.y + dm.eaveY + 0.1, w.z), new T.Vector3(0, 1, 0));
+                const h = ray.intersectObject(dorfGroup, true).find((x) => x.object.visible !== false);
+                if (h && h.distance + 0.1 > kopf) kopf = +(h.distance + 0.1).toFixed(2);
+            }
+            dachraum.push({ bi, haus: `#${bi} ${p.seed} ${p.kultur || "?"}/${p.rolle || "?"}`, kopf });
+            // DER SPEICHER FÄLLT NICHT, WO EIN GERÜCKTER LAUF TRÄGT (speicher-first): ein Haus mit Dachraum über zwei Geschossen ohne
+            // Speicherlauf nennt seine First-Höhe über dem Estrich und die Stufe des Laufs — zu ist nur Recht, wo auch am First kein
+            // Kopf steht (First < PH + Stufe); gemessen am gebauten Haus, nie am Wort des Planers
+            const fl = B.H.floors || [];
+            if ((dm.storeys || 0) >= 2 && !dm.loft && fl.length) {
+                const lH = dm.eaveY - fl[fl.length - 1];
+                speicherZu.push({
+                    haus: `#${bi} ${p.seed} ${p.kultur || "?"}/${p.rolle || "?"}`,
+                    first: +(dm.ridgeY - dm.eaveY).toFixed(2),
+                    stufe: +(lH / Math.ceil(lH / 0.21)).toFixed(2),
+                    // der Stehraum: die Breite, über der das Dach 1,9 m (SIA kopfSpar) über dem Estrich steht — unter 2 × 0,6 m hält kein
+                    // Kniestock den Körper, der Estrich ist kein Raum
+                    stehraum: +Math.max(0, dm.D * (1 - 1.9 / (dm.ridgeY - dm.eaveY))).toFixed(2),
+                });
+            }
+        }
         // B3 läuft im promovierten Zustand (die Solids des Hauses stehen); die Kellertreppe steigt aus dem Keller (eigene
         // Schwerkraft-Ebene) und ist nicht Teil dieser Probe.
         for (const f of dm?.flights || []) {
             if (f.atLevel === "keller") continue;
             const N = f.N || 0;
             if (!(N > 0)) continue;
-            const t = { bi, loft: !!f.isLoft, eg: f.atLevel === 1, breite: +(f.x1 - f.x0).toFixed(2), N, faelle: [] };
+            // DER TÄTER BEIM NAMEN (front-technik): je Lauf das Haus (Saat · Bauweise · Rolle · Dach), damit ein ROT am Kopfraum
+            // das Haus nennt, nicht nur die Zahl
+            const p = B.p || {};
+            const haus = `#${bi} ${p.seed} ${p.kultur || p.bauweise || "?"}/${p.rolle || "?"} ${p.dachTyp || "?"}${p.kuppel ? "+kuppel" : ""}`;
+            const t = { bi, haus, loft: !!f.isLoft, eg: f.atLevel === 1, breite: +(f.x1 - f.x0).toFixed(2), N, faelle: [] };
             treppen.push(t);
             const go = f.go || 0.26;
             const dir = f.dir || 1;
@@ -340,6 +380,8 @@ function proben(inj) {
     out.b1 = b1;
     out.b2 = b2;
     out.b3 = treppen;
+    out.b3dach = dachraum;
+    out.b3zu = speicherZu;
     out.b4 = b4;
     out.b5 = b5;
     out.b6 = inj ? { faelle: [] } : b6Lauf(); // kein Defekt zielt auf B6 (die Antike kostet je Seite 22–45 s)
@@ -355,6 +397,7 @@ function b3Zahl(o) {
         kopfZu: 0,
         ohneDach: 0, // Speicher-Austritte, über denen der Strahl nichts trifft (der Kopf über dem Dach, 99)
         kopfMin: 99,
+        kopfWer: [],
         ohneAntritt: 0,
         eg: 0,
         egOben: 0,
@@ -377,7 +420,11 @@ function b3Zahl(o) {
             if (c.kopfraum === 99 && t.loft) z.ohneDach++;
             if (c.kopfraum != null) {
                 if (c.kopfraum < z.kopfMin) z.kopfMin = c.kopfraum;
-                if (c.kopfraum < o.PH) z.kopfZu++;
+                if (c.kopfraum < o.PH) {
+                    z.kopfZu++;
+                    const n = `${t.haus} ${t.loft ? "speicher" : t.eg ? "eg" : "og"} ${c.kopfraum}`;
+                    if (!z.kopfWer.includes(n)) z.kopfWer.push(n);
+                }
             }
             if (c.off !== 0) continue;
             const oben = c.steig >= 0.9 * c.soll;
@@ -407,10 +454,25 @@ function urteil(o) {
     if (!(z.laeufe >= 10)) f.push(`B3 zu wenig Treppen-Läufe (${z.laeufe})`);
     if (z.klemm) f.push(`B3 Kopf: ${z.klemm} von ${z.laeufe} Treppen-Läufen enden im Solid`);
     if (z.kopfZu)
-        f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach)`);
+        f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach: ${z.kopfWer.join(" · ")})`);
     // DER SPEICHER LIEGT UNTER SEINEM DACH (w28-bau-rezept-tuer): trifft der Strahl über dem Austritt eines Speicherlaufs nichts,
     // steht der Kopf über dem Dach — bis hier zählte 99 als Kopfraum (das gasthaus #846868 mit flachem Dach, Dorf 7/18)
     if (z.ohneDach) f.push(`B3 Dach: ${z.ohneDach} Speicher-Austritte ohne Dach über dem Kopf (der Lauf steigt durch das Dach)`);
+    const zuOhneGrund = (o.b3zu || []).filter((d) => !(d.first < o.PH + d.stufe) && !(d.stehraum < 1.2));
+    if (zuOhneGrund.length)
+        f.push(
+            `B3 Speicher: ${zuOhneGrund.length} Häuser mit Dachraum ohne Speicherlauf, obwohl am First Kopfraum steht (` +
+                zuOhneGrund.map((d) => `${d.haus} Speicher zu: First ${d.first.toFixed(2)} m, Stufe ${d.stufe} m, Stehraum ${d.stehraum} m`).join(" · ") +
+                `)`
+        );
+    const dachZu = (o.b3dach || []).filter((d) => !(d.kopf >= o.PH));
+    if (!(o.b3dach || []).length) f.push(`B3 Dach: kein Haus mit Dachraum begangen (die Probe sähe kein Dach)`);
+    if (dachZu.length)
+        f.push(
+            `B3 Dach: ${dachZu.length} von ${o.b3dach.length} Häusern mit Dachraum ohne Dach mit Kopfraum über dem Estrich (` +
+                dachZu.map((d) => `${d.haus} ${d.kopf < 0 ? "kein Dach" : d.kopf + " m"}`).join(" · ") +
+                `)`
+        );
     if (!(z.eg >= 3) || !(z.og >= 1) || !(z.speicher >= 1))
         f.push(`B3 Steigen: die Probe trifft zu wenig Läufe (EG→OG ${z.eg} · OG→OG ${z.og} · Speicher ${z.speicher})`);
     if (z.alleOben !== z.alle)
@@ -435,7 +497,7 @@ function zeile(o) {
     const z = b3Zahl(o);
     return (
         `B1 Hülle promoviert ${o.b1.huelleNachPromotion}/${o.b1.promoviert} · demotiert ${o.b1.huelleNachDemotion}/${o.b1.demotiert}` +
-        ` · B2 Tür ${o.b2.hinein}/${o.b2.tueren} · B3 Klemme ${z.klemm}/${z.laeufe} · Kopfraum am Austritt min ${z.kopfMin} m · oben EG→OG ${z.egOben}/${z.eg} · OG→OG ${z.ogOben}/${z.og} · Speicher ${z.speicherOben}/${z.speicher}` +
+        ` · B2 Tür ${o.b2.hinein}/${o.b2.tueren} · B3 Klemme ${z.klemm}/${z.laeufe} · Kopfraum am Austritt min ${z.kopfMin} m · oben EG→OG ${z.egOben}/${z.eg} · OG→OG ${z.ogOben}/${z.og} · Speicher ${z.speicherOben}/${z.speicher} · Dachraum mit Dach ${(o.b3dach || []).filter((d) => d.kopf >= o.PH).length}/${(o.b3dach || []).length} · Speicher zu ${(o.b3zu || []).length}${(o.b3zu || []).length ? " (" + o.b3zu.map((d) => d.haus + " First " + d.first.toFixed(2) + " m · Stehraum " + d.stehraum + " m").join("; ") + ")" : ""}` +
         ` · B4 Platte ${o.b4.platteDecke}/${o.b4.keller} · B5 v${o.b5.v2} ${o.b5.slots}/${o.b5.haeuser} Spanne ${o.b5.spanne} m Fuß ${o.b5.aufBild}/${o.b5.strahlen} Hash ${o.b5.planHash}` +
         ` · B6 ${o.b6.faelle.map((c) => (c.fehler ? "x" : c.haeuser)).join("/")}`
     );
@@ -468,6 +530,7 @@ hauptLauf(async () => {
                 spur: ["B3 Steigen"],
                 austritt: ["B3 Kopfraum"],
                 dachlos: ["B3 Dach"],
+                ruecken: ["B3 Speicher"],
                 platte: ["B4 Keller-Decke"],
                 flach: ["B5 Weltgrund"],
             };

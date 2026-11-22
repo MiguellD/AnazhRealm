@@ -604,43 +604,43 @@
     },
     "georgian-s7-L0": {
       "objects": 17,
-      "vertices": 286278,
-      "sha256": "7d630d2ce360a1c5f0de0dbb0f0431d2389b3dbc15d5cc7dd84a9543a6aa942a"
+      "vertices": 283470,
+      "sha256": "359362103af16f2feaa70c747bb1e305eef922ce2c0c4569fb333619132ab1dd"
     },
     "georgian-s7-L1": {
       "objects": 10,
-      "vertices": 29922,
-      "sha256": "1544e632affe645edfc5f47a7c5b71decc2f3d6b87a1f58ee1da6f4de1b904a5"
+      "vertices": 29850,
+      "sha256": "1ef5b25e6b568444139a1ab01a847652c837119038dac50aecfc2a896a44a093"
     },
     "georgian-s7-L2": {
       "objects": 7,
       "vertices": 2972,
-      "sha256": "1c7591a823d133556b7f50a68e7a7c05c9bb02181a10e6b82aca399990419c33"
+      "sha256": "882ed2504a9bff4d493655234ce8470e804926e0c70fa8440a73e748f152726d"
     },
     "georgian-s7-L3": {
       "objects": 1,
       "vertices": 180,
-      "sha256": "de5da36f40076e2791c0a9936da7926820e2acc8d25767b2c535cbf5918c4a5c"
+      "sha256": "5e34b42961cb6403c2d7071aa8086907fb48dcc3792ed82354587f6d6dc9d39c"
     },
     "georgian-s12345-L0": {
       "objects": 17,
-      "vertices": 206598,
-      "sha256": "6a33f7105b7c0e2c19c94709e5a60a8c7e0bc7011d9f742d8467ace52b6195ad"
+      "vertices": 203790,
+      "sha256": "9e8e92aa8adcb84739c75204a5c0cf84bb3a38e87b11e9b99c79cd17e8883ca9"
     },
     "georgian-s12345-L1": {
       "objects": 10,
-      "vertices": 33522,
-      "sha256": "dc23c1c85e8f3df8cf130af44a9631a4698e636d83895f9c4c66466ffce803e6"
+      "vertices": 33450,
+      "sha256": "14fcf8dfd659145ec9a95199d1388d38bb6f249cbf056c400c244bedb53ce46d"
     },
     "georgian-s12345-L2": {
       "objects": 7,
       "vertices": 2396,
-      "sha256": "e63bebbb020bc10565a665b8d672bcbd107b3e5184661492ebeebef82d68d119"
+      "sha256": "4a569966c3a8c8f23e5e4d77f8d9ea83a2464b7934d37febfb7044d377f383aa"
     },
     "georgian-s12345-L3": {
       "objects": 1,
       "vertices": 180,
-      "sha256": "067e7d2f123d210b3e79fa0992f131b35fc6b414efacf28e093a111ce8c09f4e"
+      "sha256": "0f5e0f7968f8913e5dd69a239c90eec406f60d047ec3e21b8d97b1f70a9c3c60"
     },
     "viktorianisch-s7-L0": {
       "objects": 16,
@@ -1204,43 +1204,43 @@
     },
     "renaissance-s7-L0": {
       "objects": 17,
-      "vertices": 98400,
-      "sha256": "c51d42661361a65cacc43db7575d97f7c479661bf1620a122c11028ba83429bb"
+      "vertices": 95424,
+      "sha256": "2c892e8410f9870764597e5ef60627636b4e9458406c0038c98f618f7704cbfc"
     },
     "renaissance-s7-L1": {
       "objects": 10,
-      "vertices": 18300,
-      "sha256": "2debaee80dde5cca5047e5a0570a8ec7669e0ad04bbc720f443f4df414e69e99"
+      "vertices": 18228,
+      "sha256": "37a0fa2fbd2e84eed36a22b3c9a23fdb0bf1a752d786a214421a1ca61c4aa61a"
     },
     "renaissance-s7-L2": {
       "objects": 6,
       "vertices": 1720,
-      "sha256": "529a729b81a41872b6a7f8b8d0adc374d9c7b528aeab965130ea8d7499161867"
+      "sha256": "32e63afabac3e08397fac161d329c1133f6fa851d835ff0632a9274db9bba583"
     },
     "renaissance-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "82bf8f7a6931a4d1c9836859f7bc8e0670481b288c8fd09d1ff7b9e9f378c0e0"
+      "sha256": "af591a5fa124673f88c9dd8b80c3c3a10bd4bc9bb30b7b70eedb2f62506b45ff"
     },
     "renaissance-s12345-L0": {
       "objects": 17,
-      "vertices": 92040,
-      "sha256": "a5217845ffcfbe878998e6c29e9611be9b5581557f5c468560e6d6218b0dbee2"
+      "vertices": 89064,
+      "sha256": "2b7ce067c3366dd5125befc6fdf7b9eeea88cc17059594c1f0ff52029f4bbcdf"
     },
     "renaissance-s12345-L1": {
       "objects": 10,
-      "vertices": 11124,
-      "sha256": "37b350ce72c8e277d75068c118c1c9f3749c27ff383c9ecc226a0ab860b66954"
+      "vertices": 11052,
+      "sha256": "18a0df6176bf33d4cfe2b0e5813db2b040aeb6a477ddb7900b3bebdc01706210"
     },
     "renaissance-s12345-L2": {
       "objects": 6,
       "vertices": 1048,
-      "sha256": "458bb41f91776d362a595ab0f77f81f3fbf25a28cba453496601ab7b80012ac0"
+      "sha256": "6d707da3731b9b6aec84689a78bdb764434362a07fe1617bc6f9108b5d603f38"
     },
     "renaissance-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "e134e1acbbdf81f8319d376b1e82b854f934728f3b9a8d2b3d8205a9a5526028"
+      "sha256": "159ad47146c8ecde804bb3bbf97bc2dfcdf73c27c3a358275d609060d1a05b50"
     },
     "chinesisch-s7-L0": {
       "objects": 17,
