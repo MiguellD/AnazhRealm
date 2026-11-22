@@ -5812,7 +5812,8 @@
     // ist abgebaut (nach dem Moment des ersten Schritts ruht der Schwerpunkt über dem Fuß, beide Füße auf der neuen Bahn)
     function leibStossSchritt(L, B, K, dt) {
         var S = LEIB_STOSS,
-            w = Math.sqrt(K.g / K.beinM);
+            w = Math.sqrt(K.g / K.beinM),
+            weit = S.schrittBein * K.beinM;
         B.t += dt;
         var xi = [B.e[0] + B.d[0] / w, B.e[1] + B.d[1] / w];
         if (B.t >= B.naechster) {
@@ -5824,7 +5825,6 @@
                 var cx = xi[0] - B.e[0],
                     cz = xi[1] - B.e[1],
                     cl = Math.hypot(cx, cz),
-                    weit = S.schrittBein * K.beinM,
                     k = cl > weit ? weit / cl : 1;
                 var i = B.zuletzt < 0 ? (rx * L.right.x + rz * L.right.z >= 0 ? 0 : 1) : 1 - B.zuletzt;
                 B.p[0] = B.e[0] + cx * k;
@@ -5844,8 +5844,15 @@
             kq = ql > S.fussM ? S.fussM / ql : 1;
         var px = B.p[0] + qx * kq,
             pz = B.p[1] + qz * kq;
-        B.d[0] += w * w * (B.e[0] - px) * dt;
-        B.d[1] += w * w * (B.e[1] - pz) * dt;
+        // DAS BEIN REICHT schrittBein × Bein: so weit vom Schwerpunkt setzt es den Fuß, so weit stützt er — außer Reichweite
+        // trägt kein Fuß, der Schwerpunkt behält seine Fahrt, bis der nächste steht. Bis front-druckwelle schob der Fuß ohne
+        // Grenze (ω²·(e − p)): ab 3,5 m/s Stoß wuchs die Fahrt ohne Ende (die Druckwelle eines Fasses in 1 m, 4,4 m/s: 282 m/s
+        // nach 3,6 s, 326 m Weg — GTX 1050); jetzt gewinnt der Leib höchstens den Fall bis zur Reichweite (v² ≤ dv² +
+        // ω²·(weit + fuss)²) und läuft den Stoß aus (4,4 m/s: 14 m in 5,2 s). Linse: gate:koerper-kern S8.
+        if (Math.hypot(B.e[0] - B.p[0], B.e[1] - B.p[1]) <= weit) {
+            B.d[0] += w * w * (B.e[0] - px) * dt;
+            B.d[1] += w * w * (B.e[1] - pz) * dt;
+        }
         B.e[0] += B.d[0] * dt;
         B.e[1] += B.d[1] * dt;
         // abgebaut erst nach dem Moment des ersten Schritts (bis dahin läuft der Stoß noch ein), dann ruhend über dem Fuß

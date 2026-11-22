@@ -240,8 +240,39 @@ function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, ein
     }
     return { bahn, ausfall, schritte, versetzt };
 }
+// S8 — DER STOSS JENSEITS DER SCHRITT-WEITE (aus dem Stand, dv in EINEM Takt: die Druckwelle, `_druckStoss` → `_spielerStoss`;
+// 4,425 m/s ist der Stoß eines Fasses von 60,6 MJ in 1 m, same.physik.reaktion#2): ein Fuß stützt nur, solange das Bein ihn
+// erreicht (schrittBein × Bein) — der Leib gewinnt höchstens den Fall bis dorthin (v² ≤ dv² + ω²·(weit + fuss)², 2 % Rand
+// des Rechenschritts) und kommt zur Ruhe. Bis front-druckwelle schob der Fuß außer Reichweite weiter (ω²·(e − p) ohne
+// Grenze): ab 3,5 m/s wuchs die Geschwindigkeit ohne Ende (im Spiel 282 m/s nach 3,6 s, 326 m Weg, GTX 1050). Täter
+// (Selbsttest): der Fuß außer Reichweite schiebt. → { vmax, grenze, ruhe, weg }
+function stossStand(C, dv, { beinM = 0.85, mutante = null } = {}) {
+    const L = C.leibZustand();
+    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage: [0, 0, 0], beinM, g: 9.81 };
+    const [p, v, S] = [K.lage, L.playerVel, C.LEIB_STOSS];
+    const [w, weit] = [Math.sqrt(K.g / beinM), S.schrittBein * beinM];
+    let vmax = 0, ruhe = 1 / 0;
+    for (let k = 0; k < 1800 && ruhe === 1 / 0 && Math.abs(p[0]) < 1e4; k++) {
+        if (k === 30) v.setValue(dv, 0, 0);
+        C.leibRichtung(L, 0, 0, 0);
+        C.leibPlan(L, { vor: 0, quer: 0 }, K, k / 60, 1 / 60);
+        const B = L.leibStoss;
+        if (B && mutante === "ohneReich" && Math.hypot(B.e[0] - B.p[0], B.e[1] - B.p[1]) > weit) {
+            const q = B.e[0] + B.d[0] / w - B.p[0];
+            const a = (w * w * (B.e[0] - B.p[0] - Math.sign(q) * Math.min(Math.abs(q), S.fussM))) / 60;
+            B.d[0] += a;
+            v.setValue(v.x() + a, 0, 0);
+        }
+        p[0] += v.x() / 60;
+        C.leibLandung(L, true, false, k / 60);
+        vmax = Math.max(vmax, Math.abs(v.x()));
+        if (k > 30 && !L.leibStoss && Math.abs(v.x()) < 0.02) ruhe = (k - 30) / 60;
+    }
+    return { dv, vmax, grenze: 1.02 * Math.hypot(dv, w * (weit + S.fussM)), ruhe, weg: p[0] };
+}
 function stossUrteil(C, mutante = null) {
     const beinM = mutante === "ohneBein" ? 0 : 0.85;
+    const s = beinM ? [4.425, 7].map((dv) => stossStand(C, dv, { beinM, mutante })) : [];
     const lies = (o) => {
         const [P, B] = [o, { kraft: 0, richtung: o.richtung }].map((x) => stossLauf(C, Object.assign({ beinM, mutante }, x)));
         const q = P.bahn.map((x, k) => x - B.bahn[k]);
@@ -259,8 +290,9 @@ function stossUrteil(C, mutante = null) {
         [!h.schritte, `S5 20 N: ${h.schritte} Schritte`],
         [!stossLauf(C, { kraft: 0, beinM, eingriff: "versetzen", mutante }).versetzt, "S6 das Versetzen trägt einen Stoß (leibStossLesen)"],
         [!stossLauf(C, { kraft: 0, beinM, eingriff: "halt", mutante }).versetzt, "S7 der Halt trägt einen Stoß (leibStossLesen)"],
+        [s.every((x) => x.vmax <= x.grenze && x.ruhe < 1 / 0), `S8 der Fuß außer Reichweite schiebt (leibStossSchritt): ${s.map((x) => `${x.dv} m/s → ${x.vmax.toFixed(2)} m/s (Soll ≤ ${x.grenze.toFixed(2)}), Ruhe ${x.ruhe < 1 / 0 ? x.ruhe.toFixed(2) + " s" : "nie"}, Weg ${x.weg.toFixed(1)} m`).join(" · ")}`],
     ].filter(([ok]) => !ok).map(([, z]) => z);
-    return { rot, a, m };
+    return { rot, a, m, s };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -277,13 +309,13 @@ if (SELBSTTEST) {
     const w = wacheLeer(core.tagesPlan, "waechter");
     // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
     const gut = !stossUrteil(core).rot.length;
-    const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
+    const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7", "ohneReich S8"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neun injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, vier Täter des Stoßes).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -292,4 +324,4 @@ const st = stossUrteil(core);
 const verb = verbKlassen(core.tagesPlan, core.tagesHaltung);
 if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.length} Haltung(en) [${verb.join(", ")}] (Soll ≥ 2) — Täter: koerper tagesHaltung`);
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
-urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);
+urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; aus dem Stand ${st.s.map((x) => `${x.dv} m/s → höchstens ${x.vmax.toFixed(2)} m/s, Ruhe nach ${x.ruhe.toFixed(2)} s und ${x.weg.toFixed(1)} m`).join(" · ")}.`);
