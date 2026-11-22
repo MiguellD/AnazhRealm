@@ -192,7 +192,9 @@ function selbsttest() {
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
-            // Bruch-Grenze des Gesetzes 29,98 m — vier Fenster brechen (das in 12 m mit zwei Scheiben), zwei stehen
+            // Bruch-Grenze des Gesetzes 29,98 m — vier Fenster brechen (das in 12 m mit zwei Scheiben), zwei stehen; nach dem
+            // Bruch-Gesetz der Scheibe (druckwelle-bild) fallen die drei nahen in 4 × 4 Scherben je Scheibe (Kanten 66 bis 184 mm),
+            // das in 24 m in 2 × 3 (85 bis 250 mm); der Vorrat der Welle bis auf fünf verbraucht: 9 Scherben, dann das Kreuz
             druck: ((E) => ({
                 start: true,
                 frist: 2.465,
@@ -200,26 +202,29 @@ function selbsttest() {
                 einheiten: E.reduce((s, e) => s + e.einheiten, 0),
                 rest: 0,
                 grenze: 29.982,
-                scheiben: [[8.031, true], [12.037, true], [16.045, true], [24.064, true], [36.097, false], [48.142, false]].map(([R, gebrochen]) => ({ R, gebrochen })), // prettier-ignore
-                ...{ scherben: 20, wach: 0, schlafS: 1.5, verzug: 0.032 },
+                scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
+                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032 },
+                staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
+                bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
-                mutante: { raeumt: 4, bruch: [1109, 1899, 1164, 1186] },
+                mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
                 { art: "umsatz", einheiten: 37 },
                 { art: "frei", R: 6, einheiten: 11 },
-                { art: "werk", R: 8.013, einheiten: 1041, teile: 2, scherben: 4 },
-                { art: "werk", R: 12.008, einheiten: 1780, teile: 3, scherben: 8 },
+                { art: "werk", R: 8.013, einheiten: 3183, teile: 2, scherben: 16 },
+                { art: "werk", R: 12.008, einheiten: 6091, teile: 3, scherben: 32 },
                 { art: "leib", R: 16, einheiten: 12 },
                 { art: "ohr", R: 16, einheiten: 2 },
-                { art: "werk", R: 16.006, einheiten: 1084, teile: 2, scherben: 4 },
-                { art: "werk", R: 24.004, einheiten: 1095, teile: 2, scherben: 4 },
+                { art: "werk", R: 16.006, einheiten: 3328, teile: 2, scherben: 16 },
+                { art: "werk", R: 24.004, einheiten: 1597, teile: 2, scherben: 6 },
                 { art: "werk", R: 36.003, einheiten: 6, teile: 2 },
                 { art: "werk", R: 48.002, einheiten: 6, teile: 2 },
                 { art: "ende", einheiten: 3 },
+                { art: "staub", einheiten: 180, zellen: 64, ballen: 9 },
             ]),
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
             wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
@@ -619,22 +624,72 @@ function selbsttest() {
         ["der Schreiber an einem Ort mit 200 Bauten: sein Soll wächst mit dem Blick", ["simWecken.druck.ereignisse.0", { einheiten: 60 + 31 * 200, blick: 200 }], null],
         ["ein gestoßener Körper fegt die Welt", ["simWecken.druck.ereignisse.2", { einheiten: 300 }], /DRUCK-SOLL: die Frist eines Gestoßenen \(frei\) in 6 m kostete 300 Einheiten \(Soll ≤ 16: 16\)/],
         ["ein stehendes Werk kostet wie ein Bruch", ["simWecken.druck.ereignisse.9", { einheiten: 1041 }], /DRUCK-SOLL: die Frist eines stehenden Werks in 36.003 m kostete 1041 Einheiten \(Soll ≤ 8: 4 je Teil \(2\)\)/],
-        ["ein Bruch fragt die Welt", ["simWecken.druck.ereignisse.3", { einheiten: 4000 }], /DRUCK-SOLL: die Frist eines brechenden Werks in 8.013 m kostete 4000 Einheiten \(Soll ≤ 1298: 4 je Teil \(2\) \+ 370 \+ 230 je Scherbe \(4\)\)/],
-        ["acht Scherben tragen ihr eigenes Soll (das Doppel-Fenster am Rand)", ["simWecken.druck.ereignisse.4", { einheiten: 2222 }], null],
+        ["ein Bruch fragt die Welt", ["simWecken.druck.ereignisse.3", { einheiten: 6000 }], /DRUCK-SOLL: die Frist eines brechenden Werks in 8.013 m kostete 6000 Einheiten \(Soll ≤ 4058: 4 je Teil \(2\) \+ 370 \+ 230 je Scherbe \(16\)\)/],
+        ["zweiunddreißig Scherben tragen ihr eigenes Soll (das Doppel-Fenster am Rand)", ["simWecken.druck.ereignisse.4", { einheiten: 7700 }], null],
         // im ersten Lauf (GTX 1050, 52 brechende Werke) schrieb jedes Werk seinen Satz: 52 Sätze statt einem
         ["das Ende schreibt je Werk einen Satz", ["simWecken.druck.ereignisse.11", { einheiten: 12 }], /DRUCK-SOLL: das Ende der Welle kostete 12 Einheiten \(Soll ≤ 5: 5\)/],
         ["der Takt arbeitet außerhalb seiner Ereignisse", ["simWecken.druck.rest=", 40], /DRUCK-TAKT: der Takt der Welle arbeitete 40 Einheiten außerhalb jedes Ereignisses/],
-        // DAS ERBE DES GRUNDS: die Mutante des Laufs (der Rest räumt den Grund seines Werks ein zweites Mal — in Einheiten 1 041 →
-        // 1 109, unter dem Soll; ihr Maß ist die Räumung selbst) und der Stand vor dem freien Körper ohne Grundriss (der Rest und
-        // jede der vier Scherben räumten bei ihrer Geburt)
-        ["der Rest räumt den Grund seines Werks ein zweites Mal", ["simWecken.druck.ereignisse.3", { einheiten: 1109, raeumt: 1 }], /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m räumte die Natur seines Grunds \(`_naturRaeumen` 1× in der Welle\)/],
+        // DAS ERBE DES GRUNDS: die Mutante des Laufs (der Rest räumt den Grund seines Werks ein zweites Mal — in Einheiten 3 183 →
+        // 3 254, unter dem Soll; ihr Maß ist die Räumung selbst) und der Stand vor dem freien Körper ohne Grundriss (der Rest und
+        // jede Scherbe räumten bei ihrer Geburt)
+        ["der Rest räumt den Grund seines Werks ein zweites Mal", ["simWecken.druck.ereignisse.3", { einheiten: 3254, raeumt: 1 }], /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m räumte die Natur seines Grunds \(`_naturRaeumen` 1× in der Welle\)/],
         ["jede Scherbe räumt bei ihrer Geburt die Natur", (b) => [3, 7, 8].forEach((k) => (b.simWecken.druck.ereignisse[k].raeumt = 5)), /DRUCK-ERBE: die Frist eines brechenden Werks in 8.013 m .*`_naturRaeumen` 15× in der Welle/],
         ["die Mutante des Laufs bleibt ungesehen", ["simWecken.druck.mutante", { raeumt: 0 }], /BLIND: die Mutante der Welle .* blieb ungesehen — `_naturRaeumen` unter der Marke `druck`: 0/],
-        ["die Mutante lief nicht", ["simWecken.druck.mutante"], /BLIND: die Mutante der Welle .*: kein Lauf/],
+        ["die Mutante des Bilds bleibt an der Scherbe ungesehen", ["simWecken.druck.mutante.bild", { geburt: [0, 0] }], /BLIND: die Mutante des Bilds \(der Bau des Bilds zeigt die Pose des Gesetzes nicht\) blieb ungesehen — schiefe Bilder bei der Geburt der Scherbe 0, nach dem Neubau 16, an der Kiste des Stands 1/],
+        ["die Mutante des Bilds bleibt an der Kiste ungesehen", ["simWecken.druck.mutante.bild", { stand: [0, 0] }], /BLIND: die Mutante des Bilds .* an der Kiste des Stands 0/],
+        ["die Mutante maß das Bild nicht", ["simWecken.druck.mutante", { bild: null }], /BLIND: die Mutante des Bilds .* blieb ungesehen — kein Maß/],
+        ["die Mutante lief nicht", ["simWecken.druck.mutante"],/BLIND: die Mutante der Welle .*: kein Lauf/],
         // das Gesetz am Bild der Welt
         ["die Scheibe jenseits der Grenze bricht", ["simWecken.druck.scheiben.4", { gebrochen: true }], /DRUCK-BRUCH: die Scheibe in 36.097 m brach — die Grenze des Gesetzes .* liegt bei 29.982 m/],
         ["die Scheibe diesseits der Grenze steht", ["simWecken.druck.scheiben.3", { gebrochen: false }], /DRUCK-BRUCH: die Scheibe in 24.064 m steht — die Grenze des Gesetzes/],
         ["keine Scheibe jenseits der Grenze", (b) => (b.simWecken.druck.scheiben.length = 4), /LEER: die Probe trägt keine Scheibe diesseits UND jenseits der Bruch-Grenze des Gesetzes \(29.982 m/],
+        // DAS BILD DES BRUCHS: der Stand bis druckwelle-bild an der Probe gemessen — jede Scheibe fiel in vier gleiche Stücke
+        // (Kanten 250 mm), die in 8 m wie die an ihrer Grenze; dazu der Leser, der nur die Zahl des Gesetzes nimmt und gleich
+        // weit schneidet (4 × 4 Stücke zu 125 mm)
+        ["jede Scheibe fällt in vier gleiche Stücke (der Stand vor dem Bruch-Gesetz)", ["simWecken.druck.scheiben.0", { scherben: 4, kante: [0.25, 0.25] }], /DRUCK-BRUCH-BILD: das Fenster in 8.031 m \(last 5.557\) fiel in 4 Scherben — sein Bruch-Gesetz verlangt 16/],
+        ["der Leser schneidet gleich weit", ["simWecken.druck.scheiben.0", { kante: [0.125, 0.125] }], /DRUCK-BRUCH-BILD: die 16 Scherben des Fensters in 8.031 m tragen Kanten von 0.125 bis 0.125 m — die Schnitte seines Gesetzes liegen, wo die Energie liegt: 0.066 bis 0.184 m/],
+        ["das Doppel-Fenster bricht nur eine seiner Scheiben fein", ["simWecken.druck.scheiben.1", { scherben: 20 }], /DRUCK-BRUCH-BILD: das Fenster in 12.037 m \(last 3.234\) fiel in 20 Scherben — sein Bruch-Gesetz verlangt 32/],
+        ["die Scherben einer Scheibe tragen keine Kante", ["simWecken.druck.scheiben.3", { kante: undefined }], /DRUCK-BRUCH-BILD: die 6 Scherben des Fensters in 24.064 m tragen Kanten von \? m/],
+        ["keine Scheibe der Probe bricht feiner als ihr Kreuz", (b) => b.simWecken.druck.scheiben.forEach((s) => s.gebrochen && Object.assign(s, { scherben: s.kreuz, soll: s.kreuz, kante: [0.25, 0.25], kanteSoll: [0.25, 0.25] })), /LEER: keine Scheibe der Probe bricht feiner als ihr Kreuz \(Scherben je Fenster nach dem Gesetz: 4 · 8 · 4 · 4\)/],
+        ["das Bild der Scherbe steht bei der Geburt in der Ruhe-Lage ihres Plans (der Stand vor druckwelle-bild)", ["simWecken.druck.bildLage.geburt", { schief: 70, grad: 92.148 }], /DRUCK-BILD-LAGE: bei der Geburt einer Scherbe steht das Bild 92.148° und 0 mm neben der Lage, die der Löser hält \(70 von 70 Bildern mehr als 1° daneben/],
+        ["der Neubau des Bilds im Schlaf verliert die Lage", ["simWecken.druck.bildLage.neubau", { schief: 16, grad: 172.125 }], /DRUCK-BILD-LAGE: nach dem Neubau des Bilds einer schlafenden Scherbe .* steht das Bild 172.125° und 0 mm neben .* \(16 von 16 Bildern/],
+        ["die Kiste des Stands steht in der Ruhe-Lage ihres Plans", ["simWecken.druck.bildLage.stand", { schief: 1, grad: 57.296 }], /DRUCK-BILD-LAGE: bei der Geburt einer Kiste, wie der Stand sie legt .* steht das Bild 57.296° und 0 mm neben .* \(1 von 1 Bildern/],
+        ["das Bild liegt neben dem Körper", ["simWecken.druck.bildLage.geburt", { mm: 12 }], /DRUCK-BILD-LAGE: bei der Geburt einer Scherbe steht das Bild 0° und 12 mm neben/],
+        ["die Probe misst die Lage ohne Zahl", ["simWecken.druck.bildLage.geburt", { grad: null }], /DRUCK-BILD-LAGE: bei der Geburt einer Scherbe steht das Bild null° und 0 mm neben/],
+        ["die Probe misst kein Bild", ["simWecken.druck.bildLage"], /LEER: die Probe maß die Lage im Bild nicht \(bei der Geburt einer Scherbe: kein Bild\)/],
+        ["kein Bild wird im Schlaf neu gebaut", ["simWecken.druck.bildLage.neubau", { n: 0 }], /LEER: die Probe maß die Lage im Bild nicht \(nach dem Neubau des Bilds einer schlafenden Scherbe .*: kein Bild\)/],
+        ["die Kiste des Stands trägt kein Bild", ["simWecken.druck.bildLage.stand"], /LEER: die Probe maß die Lage im Bild nicht \(bei der Geburt einer Kiste, wie der Stand sie legt .*: kein Bild\)/],
+        // DER STAUB DER WELLE (druckwelle-bild (b)): das Ereignis an seinem Soll, die Saat am Gesetz, das Bild an seiner Masse
+        ["der Staub fragt die Welt je Texel der Asche-Karte", ["simWecken.druck.ereignisse.12", { einheiten: 4100 }], /DRUCK-SOLL: der Staub der Welle kostete 4100 Einheiten \(Soll ≤ 331: 40 \+ 3 je Zelle im Radius \(64\) \+ 11 je Ballen \(9\)\)/],
+        ["der Ballen fragt seine Höhe am Säulen-Marsch des Gesetzes statt am gezeichneten Boden", ["simWecken.druck.ereignisse.12", { einheiten: 16902, zellen: 81, ballen: 384 }], /DRUCK-SOLL: der Staub der Welle kostete 16902 Einheiten \(Soll ≤ 4507: 40 \+ 3 je Zelle im Radius \(81\) \+ 11 je Ballen \(384\)\)/],
+        ["der Staub einer großen Narbe trägt sein eigenes Soll", ["simWecken.druck.ereignisse.12", { einheiten: 4058, zellen: 81, ballen: 384 }], null],
+        ["die Welle ruft ihren Staub nicht", (b) => b.simWecken.druck.ereignisse.pop(), /LEER: die Welle der Probe rief ihren Staub nicht \(`_druckWelle` → `_druckStaub`\)/],
+        ["die Probe misst den Staub nicht", ["simWecken.druck.staub=", null], /LEER: die Probe maß den Staub der Welle nicht/],
+        ["die gestellte Narbe liegt außerhalb des Radius", ["simWecken.druck.staub", { sollG: 0, narbeM2: 0 }], /LEER: die Probe maß den Staub der Welle nicht .*kein Soll aus dem Gesetz/],
+        ["die Welle hebt keinen Staub", ["simWecken.druck.staub", { ballen: 0, masseG: 0 }], /DRUCK-STAUB: die Welle hob keinen Staub aus der Narbe — das Gesetz hebt 1200 g aus 2300 m² Asche im Radius 43.173 m .*säte 0 Ballen/],
+        // der Stand mit dem Deckel der nächsten Ballen: von 726 Punkten der halben Scheibe blieben die 384 nächsten, die Ferne fehlte
+        ["über dem Deckel fehlt die Ferne (die nächsten 384 von 726)", ["simWecken.druck.staub", { masseG: 720, grob: 0 }], /DRUCK-STAUB-MASSE: die Welle säte 720 g Staub in 384 Ballen \(0 davon gröbere Flecken\) — das Gesetz hebt 1200 g .*±5 %/],
+        ["die Saat trägt keine Masse-Zahl", ["simWecken.druck.staub", { masseG: NaN }], /DRUCK-STAUB: die Welle hob keinen Staub/],
+        ["Staub steht, wo nichts brannte", ["simWecken.druck.staub", { aussen: 180 }], /DRUCK-STAUB-RAND: 180 Ballen stehen, wo nichts brannte .*, 0 jenseits des Radius 43.173 m/],
+        ["Staub steht jenseits des Radius, in dem der Überdruck die Asche löst", ["simWecken.druck.staub", { jenseits: 12 }], /DRUCK-STAUB-RAND: 0 Ballen stehen, wo nichts brannte .*, 12 jenseits des Radius/],
+        ["die Saat sprengt den Deckel", ["simWecken.druck.staub", { ballen: 726 }], /DRUCK-STAUB-DECKEL: die Welle säte 726 Ballen \(Deckel 384/],
+        ["kein Bild im Takt der Welt", ["simWecken.druck.staub", { bilder: undefined }], /LEER: die Probe maß das Bild des Staubs nicht/],
+        ["der Satz zeichnet keinen Ballen", ["simWecken.druck.staub", { satzMax: 0, ohneSatz: 700 }], /DRUCK-STAUB-BILD: der Satz des Staubs trägt seine Ballen nicht — in 700 von 700 Bildern/],
+        ["die Deckung des Ballens hängt nicht an seiner Masse", ["simWecken.druck.staub", { satzMaxG: 4300, nebenG: 3150 }], /DRUCK-STAUB-BILD: der gezeichnete Satz trägt zum Höchststand 4300 g Staub \(gesät 1190 g, Soll 85–100 %\) und liegt bis 3150 g neben/],
+        ["das Bild trägt zum Höchststand die Hälfte der Saat", ["simWecken.druck.staub", { satzMaxG: 600 }], /DRUCK-STAUB-BILD: der gezeichnete Satz trägt zum Höchststand 600 g Staub/],
+        ["der Puffer des Satzes trägt keine Zahl", ["simWecken.druck.staub", { nebenG: null }], /DRUCK-STAUB-BILD: der gezeichnete Satz .* liegt bis null g neben/],
+        ["der Staub wächst im Stehen", ["simWecken.druck.staub", { steigt: 40 }], /DRUCK-STAUB-BILD: nach der letzten Geburt wuchs der Staub in der Luft in 40 Bildern/],
+        ["der Staub steht ewig", ["simWecken.druck.staub", { endeS: null }], /DRUCK-STAUB-ENDE: der Staub steht noch — das Sink-Tempo seines Korns leert die höchste Wolke in 13.9 s/],
+        ["der Staub steht länger, als sein Korn sinkt", ["simWecken.druck.staub", { endeS: 25 }], /DRUCK-STAUB-ENDE: der Staub stand 25 s/],
+        ["nach dem letzten Ballen arbeitet das Bild", ["simWecken.druck.staub", { danach: { satz: 3, uhr: 812.4 } }], /DRUCK-STAUB-RUHE: nach dem letzten Ballen ruht das Bild des Staubs nicht — im Satz 3 Ballen, seine Uhr 812.4/],
+        ["die Mutante des Staubs bleibt ungesehen", ["simWecken.druck.mutante.staub", { aussen: 0 }], /BLIND: die Mutante des Staubs \(die Narbe gilt überall als Asche\) blieb ungesehen — Ballen westlich der gestellten Narbe 0, gesät 2400 g gegen 1200 g/],
+        ["die Mutante maß den Staub nicht", ["simWecken.druck.mutante", { staub: null }], /BLIND: die Mutante des Staubs .* blieb ungesehen — kein Maß/],
+        ["der Zähler der Welle rechnet an der Welt vorbei", ["simWecken.druck.zaehler=", 20],/DRUCK-ZAHL: die Welle zählte 20 Scherben, in der Welt liegen 70/],
+        ["die Welle zählt ihre Scherben nicht", ["simWecken.druck.zaehler=", null], /DRUCK-ZAHL: die Welle zählte null Scherben, in der Welt liegen 70/],
+        // der Vorrat: ohne ihn fielen beide Scheiben der Hand-Welle in 4 × 4
+        ["der Vorrat hält die Welle nicht", ["simWecken.druck.vorrat", { scherben: [16, 16] }], /DRUCK-VORRAT: unter einer Welle, deren Vorrat bis auf 5 verbraucht ist, fielen zwei Scheiben in 16 und 16 Scherben/],
+        ["der Vorrat nimmt der Platte ihr Kreuz", ["simWecken.druck.vorrat", { scherben: [9, 0] }], /DRUCK-VORRAT: .* fielen zwei Scheiben in 9 und 0 Scherben/],
+        ["die Probe misst den Vorrat nicht", ["simWecken.druck.vorrat"], /LEER: die Probe maß den Vorrat der Welle nicht/],
         ["die Kiste trägt den halben Stoß", ["simWecken.druck.kiste", { dv: 0.771 }], /DRUCK-STOSS: die Kiste in 6 m trägt 0.771 m\/s \(das Gesetz: Impuls × Schattenfläche ÷ Masse = 1.542 m\/s/],
         ["der Löser nimmt den Stoß der Kiste nicht", ["simWecken.druck.kiste", { wegM: 0 }], /DRUCK-STOSS: die Kiste in 6 m trägt 1.542 m\/s und liegt danach 0 m weiter — der Löser nahm den Stoß nicht/],
         ["die Probe ohne Kiste", ["simWecken.druck.kiste"], /LEER: die Probe trägt keine freie Kiste im Radius der Welle/],
@@ -645,8 +700,8 @@ function selbsttest() {
         ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
-        ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
-        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 20 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
+        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
@@ -3363,13 +3418,19 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // diesseits seiner Bruch-Grenze (schmiede `plattenLast` = 1, hier gerechnet) brechen, die jenseits stehen; die Kiste
                         // trägt Impuls × Schattenfläche ÷ Masse; der Spieler wird gestoßen, das Ohr hört den Knall; die Scherben schlafen ein.
                         // Die Probe räumt hinter sich auf (ihre Bauten, Pläne, das Feuer des Funkens), der Brand danach beginnt im leeren Feld.
-                        // Ein Doppel-Fenster in 12 m (zwei Scheiben auf einem Bock) trägt die zweite Zahl des Bruchs: acht Scherben statt vier.
+                        // DAS BILD DES BRUCHS (druckwelle-bild): je gebrochenem Fenster die Scherben, die in der Welt liegen (die freien
+                        // Körper, die seine Frist gebar), und ihre kleinste und größte Kante — gegen das Bruch-Gesetz seiner Scheibe an
+                        // ihrem Ort (schmiede `plattenBruch` unter `DRUCK.scherbenAchse`: nah das feine Gitter, die Mitte fein, der Rand
+                        // grob; zur Grenze hin das Kreuz); das Doppel-Fenster in 12 m trägt zwei Scheiben auf einem Bock. Der Zähler der
+                        // Welle (`welle.scherben`) steht gegen die Welt. DER VORRAT am echten Rumpf: die zwei stehenden Fenster (36 · 48 m)
+                        // unter einer Welle von Hand mit dreißigfacher Energie, ihr Vorrat (`DRUCK.scherbenFein`) bis auf fünf verbraucht —
+                        // das erste trägt sein Kreuz und höchstens den Rest, das zweite sein Kreuz.
                         // `mutante` (in JEDEM Lauf die zweite Probe): der Rest eines Einsturzes räumt den Grund seines Werks ein zweites Mal
                         // (der Stand vor dem geerbten Grund, `_grundrissRaeumen` ohne `gehalten`) — die Linse zählt ihre Natur-Räumungen
                         // unter der Marke (`raeumt`), an ihr fällt DRUCK-ERBE; sieht sie keine, ist die Linse BLIND.
                         const druckProbe = async (mutante) => {
                             const t0 = performance.now();
-                            const [SG, cs, N] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK.scherben];
+                            const [SG, cs, DR] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK];
                             const O = { x: MESS.x - cs, z: MESS.z };
                             const r3 = (v) => +(+v).toFixed(3);
                             const [plaeneVor, bautenVor] = [new Set(Object.keys(st.blueprints)), new Set(st.architectures)];
@@ -3384,7 +3445,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 const [x, z] = [O.x - d, O.z + (k % 2 ? 0.45 : -0.45)];
                                 return setz(d === 12 ? "_druck_doppel" : "_druck_fenster", x, z, { seed: 7000 + k, rotationY: Math.atan2(O.x - x, O.z - z) });
                             });
-                            const D = { start: false, frist: null, ereignisse: [], einheiten: 0, rest: 0, scheiben: [], scherben: 0, wach: 0, schlafS: null, verzug: null };
+                            const D = { start: false, frist: null, ereignisse: [], einheiten: 0, rest: 0, scheiben: [], scherben: 0, zaehler: null, vorrat: null, staub: null, bildLage: null, wach: 0, schlafS: null, verzug: null };
                             if (fass && kiste && kiste._frei && fenster.every(Boolean)) {
                                 const [energieJ, luft] = [r._ladungJ(fass), r._druckLuft()];
                                 // der Blick des Schreibers: die Bauten im Radius der Welle — jeder Eintrag des Platz-Netzes, der weder Natur
@@ -3394,7 +3455,28 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 const taten0 = st.worldMeta.taten.length;
                                 const E = D.ereignisse;
                                 const wellen = [];
-                                let [inWelle, gebrochen] = [0, 0];
+                                let [inWelle, inStaub] = [0, 0];
+                                // die freien Körper der Probe außer der Kiste: die Scherben in der Welt; `geburt`: je Werk die, die seine Frist gebar
+                                const freie = () => st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste);
+                                const geburt = new Map();
+                                // DIE LAGE IM BILD (druckwelle-bild): das Bild eines freien Körpers (sein Mesh: Drehung, und wo es seinen
+                                // Schwerpunkt zeichnet) gegen die Lage, die der Löser hält (`_frei.q`, `_frei.p`) — hier gerechnet, ohne Ruf
+                                // in den Stamm (ein Ruf zählte im Takt der Welle mit). Drei Augenblicke: `geburt` jede Scherbe, vor dem ersten
+                                // Schritt des Lösers; `neubau` das Bild schlafender Scherben neu gebaut (was der Cull-Takt tut, wenn der Spieler
+                                // geht und wiederkommt); `stand` eine Kiste, wie der Stand sie legt (gedreht, schlafend: die zweite Art der
+                                // Group). Je Augenblick: `n` gemessene Bilder, `schief` mehr als 1° daneben, `grad` und `mm` der schlimmsten.
+                                const BL = (D.bildLage = Object.fromEntries(["geburt", "neubau", "stand"].map((k) => [k, { n: 0, schief: 0, grad: 0, mm: 0 }])));
+                                const bildLage = (wann, x) => {
+                                    const [K, m, L] = [x._frei, x.mesh, BL[wann]];
+                                    if (!K || !m) return;
+                                    const [q, um] = [m.quaternion, x._gesetz.pose.um];
+                                    const grad = (2 * Math.acos(Math.min(1, Math.abs(K.q[0] * q.w + K.q[1] * q.x + K.q[2] * q.y + K.q[3] * q.z))) * 180) / Math.PI;
+                                    const c = new THREE.Vector3(um.x, um.y, um.z).multiplyScalar(K.s).applyQuaternion(q).add(m.position);
+                                    L.n++;
+                                    if (grad > 1) L.schief++;
+                                    L.grad = Math.max(L.grad, r3(grad));
+                                    L.mm = Math.max(L.mm, r3(Math.hypot(c.x - K.p[0], c.y - K.p[1], c.z - K.p[2]) * 1000));
+                                };
                                 // EIN Ereignis messen: der Stand der Rolle und ihre Leser davor und danach
                                 const mess = (e, ruf) => {
                                     const [a0, l0] = [S.stand("druck"), S.leser("druck")];
@@ -3413,21 +3495,35 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 };
                                 r._druckWelle = function (...a) {
                                     const e = { art: "welle", blick, netz: imRadius.length - 1 };
+                                    const [s0, k0] = [inStaub, E.length];
                                     const w = mess(e, () => P._druckWelle.apply(this, a));
-                                    inWelle += e.einheiten;
+                                    e.einheiten -= inStaub - s0; // ohne ihren Staub (er misst sich selbst — seine Einheiten, seine Leser)
+                                    for (const x of E.slice(k0, -1)) for (const m in x.d) e.d[m] -= x.d[m];
+                                    inWelle += e.einheiten + inStaub - s0;
                                     if (w) wellen.push(w), Object.assign(e, { radius: r3(w.radius), treffer: w.treffer, energieMJ: r3(w.energieJ / 1e6) });
                                     return w;
                                 };
-                                r._druckWerk = function (...a) {
-                                    return (gebrochen = P._druckWerk.apply(this, a));
+                                // DER STAUB DER WELLE als eigenes Ereignis (`_druckStaub`, unter dem Schreiber gerufen): `zellen` die Zellen
+                                // des Lands, die er nach einer Narbe fragt (das Quadrat um den Radius, in dem ihr Überdruck die Asche löst,
+                                // samt dem Saum der Nachbarinnen — hier gerechnet), `ballen` die Saat, die er legt
+                                r._druckStaub = function (w) {
+                                    const rand = SG.druckRadius(w.energieJ, w.luft, SG.zeile("asche").sigB);
+                                    const breit = (v) => Math.floor((v + rand) / cs) - Math.floor((v - rand) / cs) + 3;
+                                    const e = { art: "staub", zellen: rand > 0 ? breit(w.x) * breit(w.z) : 0 };
+                                    e.ballen = mess(e, () => P._druckStaub.call(this, w));
+                                    inStaub += e.einheiten;
+                                    return e.ballen;
                                 };
                                 r._druckTrifft = function (f) {
                                     const plan = f.art === "werk" && f.q ? (f.q._gesetz && f.q._gesetz.plan) || st.blueprints[f.q.type] : null;
                                     const p = f.q ? (f.q._frei ? { x: f.q._frei.p[0], z: f.q._frei.p[2] } : f.q.position) : st.playerMesh.position;
                                     const e = { art: f.art, R: r3(Math.hypot(p.x - f.welle.x, p.z - f.welle.z)), teile: plan && plan.parts ? plan.parts.length : 0 };
-                                    gebrochen = 0;
+                                    const vor = new Set(freie());
                                     mess(e, () => P._druckTrifft.call(this, f));
-                                    e.scherben = gebrochen * N * N;
+                                    const neu = freie().filter((x) => !vor.has(x));
+                                    e.scherben = neu.length;
+                                    for (const x of neu) bildLage("geburt", x);
+                                    if (f.q && neu.length) geburt.set(f.q, neu);
                                 };
                                 r._druckEnde = function (w) {
                                     mess({ art: "ende" }, () => P._druckEnde.call(this, w));
@@ -3443,7 +3539,18 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     return P._substanzKlang.call(this, art, tags, ...a);
                                 };
                                 if (mutante) r._grundrissRaeumen = (haus) => P._grundrissRaeumen.call(r, haus);
-                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckWerk", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen"];
+                                // die zweite Mutante desselben Laufs: der Bau des Bilds zeigt die Pose des Gesetzes nicht (der Stand vor
+                                // druckwelle-bild) — `_werkPoseZeigen` schweigt, solange `_rebuildArchitectureMesh` baut
+                                if (mutante)
+                                    r._rebuildArchitectureMesh = function (e) {
+                                        this._werkPoseZeigen = () => {};
+                                        try {
+                                            return P._rebuildArchitectureMesh.call(this, e);
+                                        } finally {
+                                            delete this._werkPoseZeigen;
+                                        }
+                                    };
+                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3469,13 +3576,40 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             let [lo, hi] = [0.5, 400];
                                             for (let i = 0; i < 60; i++) ((m) => (last(m) >= 1 ? (lo = m) : (hi = m)))(Math.sqrt(lo * hi));
                                             D.grenze = r3(Math.sqrt(lo * hi));
-                                            D.scheiben = fenster.map((e) => ({ R: r3(Math.hypot(e.position.x - w.x, e.position.y - 0.5 + 0.37 - w.y, e.position.z - w.z)), gebrochen: !st.architectures.includes(e) }));
+                                            // je Fenster: was das Bruch-Gesetz seiner Scheibe am Ort verlangt (`soll` Scherben, ihre kleinste und
+                                            // größte Kante; `kreuz`: vier je Scheibe) und was in der Welt liegt (die freien Körper seiner Frist)
+                                            D.scheiben = fenster.map((e) => {
+                                                const R = Math.hypot(e.position.x - w.x, e.position.y - 0.5 + 0.37 - w.y, e.position.z - w.z);
+                                                const [n, neu] = [e.type === "_druck_doppel" ? 2 : 1, geburt.get(e) || []];
+                                                const s = { R: r3(R), gebrochen: !st.architectures.includes(e), last: r3(last(R)), kreuz: 4 * n, scherben: neu.length };
+                                                const B = SG.plattenBruch(0.5, 0.5, 0.004, last(R), DR.scherbenAchse);
+                                                if (B) {
+                                                    const breit = [B.lang, B.kurz].flatMap((u) => u.slice(1).map((x, k) => (x - u[k]) * 0.5));
+                                                    Object.assign(s, { soll: n * (B.lang.length - 1) * (B.kurz.length - 1), kanteSoll: [r3(Math.min(...breit)), r3(Math.max(...breit))] });
+                                                }
+                                                if (neu.length) {
+                                                    const halb = neu.map((x) => Array.from(x._frei.halb).sort((a, b) => b - a));
+                                                    s.kante = [r3(2 * Math.min(...halb.map((h) => h[1]))), r3(2 * Math.max(...halb.map((h) => h[0])))];
+                                                }
+                                                return s;
+                                            });
                                             loesche();
                                             // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
-                                            D.scherben = st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste).length;
+                                            D.scherben = freie().length;
+                                            D.zaehler = w.scherben;
                                             while (st.spielZeit - tW < 10 && wachN() > 0) bild();
                                             D.wach = wachN();
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
+                                            for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {
+                                                r._cullArchitectureMesh(x);
+                                                r._rebuildArchitectureMesh(x);
+                                                bildLage("neubau", x);
+                                            }
+                                            // die zweite Art der Group: eine Kiste, wie der Stand sie legt — 57° um ihre Längsachse gedreht, schlafend
+                                            // (kein Schritt des Lösers zeigt sie je, bis etwas sie weckt)
+                                            const lieg = setz("kiste", O.x + 4, O.z + 10, { seed: 7907, ruht: true, drehung: [Math.cos(0.5), Math.sin(0.5), 0, 0] });
+                                            if (lieg) bildLage("stand", lieg), r.removeArchitecture(lieg, { still: true });
                                             D.verzug = r3(w.verzug);
                                             const K = kiste._frei;
                                             const [dx, dz] = [kiste0[0] - w.x, kiste0[2] - w.z];
@@ -3486,6 +3620,101 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             const A = 4 * (K.hy * K.hz * a(0) + K.hx * K.hz * a(1) + K.hx * K.hy * a(2));
                                             D.kiste = { R: r3(d), dv: r3(stoss.get(kiste) || 0), soll: r3((x.impuls * A) / K.m), wegM: r3(Math.hypot(K.p[0] - kiste0[0], K.p[2] - kiste0[2])) };
                                             D.spieler = { R: r3(Math.hypot(MESS.x - w.x, MESS.z - w.z)), dv: r3(stoss.get(st.playerMesh) || 0) };
+                                            // der Vorrat am echten Rumpf (`_druckWerk`): die Welle von Hand, ihr Vorrat bis auf `rest` verbraucht
+                                            const rest = 5;
+                                            const hand = { ...w, energieJ: w.energieJ * 30, scherben: 0, fein: DR.scherbenFein - rest, werke: 0, teile: 0 };
+                                            const bricht = (e) => {
+                                                const vor = new Set(freie());
+                                                P._druckWerk.call(r, e, hand);
+                                                return freie().filter((x) => !vor.has(x)).length;
+                                            };
+                                            D.vorrat = { rest, scherben: fenster.slice(4).map(bricht) };
+                                            // DER STAUB IM ECHTEN TAKT (druckwelle-bild (b): `_druckStaub` sät, `_druckBild` zeichnet): eine ZWEITE
+                                            // Welle am Ort des Fasses durch den EINEN Schreiber (`_druckWelle`, ohne Ladung: kein Satz im Journal; ihre
+                                            // Fristen fallen im Takt, jedes Ereignis an seinem Soll — der Staub mit seinen Ballen) über einer
+                                            // GESTELLTEN Narbe — jede Zelle östlich der Zelle des Fasses ist
+                                            // verbrannt (Asche voll), westlich brannte nie etwas. Gestellt ist der EINGANG (der Speicher der Narbe,
+                                            // `_brandZellen`), keine Tat geschrieben; die Narbe rechnet ihre Quelle (`_brandNarbeFn`). Das Soll
+                                            // rechnet die Probe aus dem Gesetz, auf dem feinen Raster ½ m: je Fläche die Last, die die Welle an
+                                            // ihrem Abstand hebt (schmiede `staubLast`, das Korn aus den Zeilen gras und asche) × die Decke der
+                                            // Narbe — ihre Summe ist die Masse, die aufsteigt. Gemessen: die Saat (`druckStaub.saat`: Ballen, Masse,
+                                            // Ballen westlich der Narbe und jenseits des Radius, in dem der Überdruck die Asche löst), dann das
+                                            // BILD im Takt der Welt — je Bild der Staub in der Luft nach dem Stand der Ballen (Masse × der Anteil
+                                            // ihrer Säule, der noch steht) gegen den Staub, den der gezeichnete Satz trägt (sein Puffer `aRauch`:
+                                            // Σ −ln(1 − a) · π r² ÷ (profil + 1) ÷ km), bis kein Ballen mehr steht.
+                                            // `mutante`: die Narbe gilt überall als Asche (der Stand „Staub, wo die Welle hinkommt“) — nur die Saat.
+                                            {
+                                                const [A, halm, SB, g, cO] = [SG.zeile("asche"), r._stoff("gras"), st.druckStaub, DR.staub.rasterM, Math.floor(O.x / cs)];
+                                                const [rand, korn] = [SG.druckRadius(w.energieJ, luft, A.sigB), halm.koernung * Math.cbrt((AnazhRealm.BRAND.mineral.gesamt * halm.rho) / A.rho)];
+                                                const [vorratKg, km, ost] = [halm.brenn.last * AnazhRealm.BRAND.mineral.gesamt, 3 / (A.rho * korn), (cO + 1) * cs];
+                                                const brannte = { asche: 1, busch: 0, wald: 0 };
+                                                const zelleH = (cx) => (cx > cO ? brannte : null);
+                                                const narbeH = P._brandNarbeFn.call(r, zelleH);
+                                                const f = 0.5;
+                                                let [soll, flaeche] = [0, 0];
+                                                for (let z = O.z - rand + f / 2; z < O.z + rand; z += f)
+                                                    for (let x = Math.max(O.x - rand, ost - cs) + f / 2; x < O.x + rand; x += f) {
+                                                        const d = Math.hypot(x - O.x, z - O.z);
+                                                        const na = d <= rand ? narbeH(x, z) : null;
+                                                        const decke = na ? na.m * na.asche : 0;
+                                                        const s = decke > 0 ? SG.staubLast(SG.druckwelle(w.energieJ, d, luft), A, korn, luft) : null;
+                                                        if (s) (soll += Math.min(s.last, vorratKg) * decke * f * f), (flaeche += decke * f * f);
+                                                    }
+                                                // der Staub der echten Welle (am Feuer des Funkens): gezählt, dann von Hand geräumt
+                                                const echt = { ballen: w.staub, lebend: SB.saat.length + SB.teilchen.length };
+                                                [SB.saat.length, SB.teilchen.length, SB.uhr] = [0, 0, null];
+                                                r._brandZellen = () => zelleH;
+                                                if (mutante) r._brandNarbeFn = () => () => ({ m: 1, asche: 1, busch: 0, wald: 0 });
+                                                let gesaet = null;
+                                                try {
+                                                    const w2 = r._druckWelle({ x: w.x, y: w.y, z: w.z }, w.energieJ, st.spielZeit, null);
+                                                    gesaet = w2 ? w2.staub : null;
+                                                } finally {
+                                                    delete r._brandZellen;
+                                                    delete r._brandNarbeFn;
+                                                }
+                                                const saat = SB.saat.slice();
+                                                const X = (D.staub = {
+                                                    ...{ randM: r3(rand), kornMm: r3(korn * 1000), ostM: r3(ost - O.x), narbeM2: r3(flaeche), sollG: r3(soll * 1000), echt },
+                                                    ...{ gesaet, ballen: saat.length, max: DR.staub.max, grob: saat.filter((q) => q.fl > g * g * 1.5).length },
+                                                    masseG: r3(saat.reduce((s, q) => s + q.m, 0) * 1000),
+                                                    aussen: saat.filter((q) => q.x < ost - 4).length,
+                                                    jenseits: saat.filter((q) => Math.hypot(q.x - O.x, q.z - O.z) > rand + 0.5).length,
+                                                });
+                                                if (!mutante && saat.length) {
+                                                    const [lebenS, tS, profil] = [Math.max(...saat.map((q) => (2 * q.b) / q.sink)), st.spielZeit, AnazhRealm.RAUCH_BILD.profil];
+                                                    const luftKg = () => SB.teilchen.reduce((s, p) => s + p.m * Math.max(0, 1 - (p.sink * p.alt) / (2 * p.b)), 0);
+                                                    const satzKg = () => {
+                                                        const Z = st.druckStaubSatz;
+                                                        if (!Z || !Z.mesh) return null;
+                                                        let m = 0;
+                                                        for (let k = 0, d = Z.daten.array; k < Z.mesh.count; k++) m += (-Math.log(1 - d[3 * k]) * Math.PI * d[3 * k + 1] ** 2) / (profil + 1) / km;
+                                                        return m;
+                                                    };
+                                                    Object.assign(X, { lebenS: r3(lebenS), bilder: 0, ballenMax: 0, satzMax: 0, luftMaxG: 0, satzMaxG: 0, ohneSatz: 0, nebenG: 0, steigt: 0 });
+                                                    let zuletzt = Infinity;
+                                                    while (st.spielZeit - tS < lebenS + 2 && (SB.saat.length || SB.teilchen.length)) {
+                                                        bild();
+                                                        const [n, Z, luftG, sG] = [SB.teilchen.length, st.druckStaubSatz, luftKg() * 1000, satzKg()];
+                                                        const imSatz = Z && Z.mesh ? Z.mesh.count : 0;
+                                                        X.bilder++;
+                                                        [X.ballenMax, X.satzMax, X.luftMaxG] = [Math.max(X.ballenMax, n), Math.max(X.satzMax, imSatz), Math.max(X.luftMaxG, luftG)];
+                                                        if (imSatz !== n) X.ohneSatz++;
+                                                        else if (n) (X.satzMaxG = Math.max(X.satzMaxG, sG * 1000)), (X.nebenG = Math.max(X.nebenG, Math.abs(sG * 1000 - luftG)));
+                                                        if (!SB.saat.length) {
+                                                            if (luftG > zuletzt + 1e-9) X.steigt++; // nach der letzten Geburt wächst der Staub in der Luft nie
+                                                            zuletzt = luftG;
+                                                        }
+                                                    }
+                                                    X.endeS = SB.saat.length || SB.teilchen.length ? null : r3(st.spielZeit - tS);
+                                                    for (const k of ["luftMaxG", "satzMaxG", "nebenG"]) X[k] = r3(X[k]);
+                                                    bild();
+                                                    bild(); // danach ruht das Bild: kein Ballen im Satz, die Uhr des Staubs steht
+                                                    X.danach = { satz: st.druckStaubSatz && st.druckStaubSatz.mesh ? st.druckStaubSatz.mesh.count : null, uhr: SB.uhr };
+                                                }
+                                                [SB.saat.length, SB.teilchen.length, SB.uhr] = [0, 0, null];
+                                            }
+                                            S.frame(); // die Einheiten dieser Probe gehören keinem Bild des Takts
                                         }
                                         D.rest = D.einheiten - E.reduce((s, e) => s + e.einheiten, 0);
                                     }
@@ -3515,6 +3744,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         W.druck.mutante = {
                             raeumt: DM.ereignisse.reduce((s, e) => s + (e.raeumt | 0), 0),
                             bruch: DM.ereignisse.filter((e) => e.art === "werk" && e.scherben > 0).map((e) => e.einheiten),
+                            // je Augenblick der Lage im Bild [schief, Grad]: der Bau ohne die Pose des Gesetzes
+                            bild: DM.bildLage ? Object.fromEntries(Object.entries(DM.bildLage).map(([k, L]) => [k, [L.schief, L.grad]])) : null,
+                            // der Staub unter der Narbe, die überall als Asche gilt: Ballen westlich der gestellten Narbe, seine Masse gegen das Soll
+                            staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
                         };
                         const lauf = async (n) => {
@@ -3703,7 +3936,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
             ereignisse: (w.ereignisse || []).map((e) =>
                 e.art === "welle"
                     ? ["welle", e.einheiten, `${e.blick} Bauten`, `${e.netz} im Netz`]
-                    : [e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : e.art, e.R, e.einheiten, e.teile, e.scherben, e.raeumt ? `räumt ${e.raeumt}` : undefined].filter((x) => x !== undefined)
+                    : e.art === "staub"
+                      ? ["staub", e.einheiten, `${e.zellen} Zellen`, `${e.ballen} Ballen`]
+                      : [e.art === "werk" ? (e.scherben > 0 ? "bruch" : "steht") : e.art, e.R, e.einheiten, e.teile, e.scherben, e.raeumt ? `räumt ${e.raeumt}` : undefined].filter((x) => x !== undefined)
             ),
             nachher: undefined,
             amSoll: STAND.druckAmSoll(w),

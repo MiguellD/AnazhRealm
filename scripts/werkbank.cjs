@@ -2163,7 +2163,13 @@ async function starte() {
                     ordnerFuer(datei);
                     await page.screenshot({ path: datei });
                     await loopAus();
-                    return send({ datei });
+                    // DER LEIB GANZ AM SCHIRM (leib-nah-ganz, ausgabe-aufnahme `leiberMessen`): die Tiefe des letzten Bilds des echten Loops —
+                    // jeder Leib näher als 6 m zeichnet jedes seiner Teile, sonst steht er ROT beim Namen (Leib, Teil, Stoff)
+                    const leiber = await page.evaluate(async () => {
+                        const nahe = anazhRealm.state.scenePass ? __leiberNah() : [];
+                        return nahe.length ? __leiberMessen(await __spiegelDaten(), nahe) : null;
+                    });
+                    return send({ datei, leiber });
                 }
                 // DAS FENSTER (scripts/lib/schirm-proben.cjs `fensterRoute`): Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) —
                 // wechselte der Schirm seit dem letzten Takt der Welt, lebt sie an ihm, ehe der Befehl antwortet; sonst `takte: 0`, sofort
@@ -3550,8 +3556,9 @@ hauptLauf(async () => {
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
-        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
-        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe und den Baum, der nach dem Sprung im Saum seines Orts fällt, ROT beim Namen, jede Mutante von main besteht nicht");
+        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche,
+        // der Leib ganz (leib-nah-ganz)
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe, den Baum, der nach dem Sprung im Saum seines Orts fällt, und den nahen Leib ohne sein Teil ROT beim Namen, jede Mutante von main besteht nicht");
         selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")
@@ -4448,7 +4455,12 @@ hauptLauf(async () => {
         console.log(o.tabelle + "\n\n" + o.datei);
         if (o.befunde.length) console.log("\nLINSE ROT:\n  " + o.befunde.join("\n  "));
         process.exit(o.befunde.length ? 1 : 0);
-    } else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
+    } else if (cmd === "schirm") {
+        o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
+        const L = o && o.leiber;
+        if (L && L.n) console.log(`LEIBER ${L.ganz ? "GRÜN" : "ROT"}: ${L.n - L.halb} von ${L.n} Leibern näher als ${L.nahM} m ganz (${L.teile} Teile)${L.ganz ? "" : " — " + L.fehlt.join(", ")}`);
+        if (L && !L.ganz) endeMit(o, false);
+    }
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
     else if (cmd === "gpu-fehler") {
         o = await rufe("/gpu-fehler", { selbsttest: SELBST });

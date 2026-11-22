@@ -2102,10 +2102,10 @@ class AnazhRealm_werkstatt_bauen {
         if (ws._shapeDnDInstalled) return;
         ws._shapeDnDInstalled = true;
 
-        // V8.03 — Material- und Farb-Palette zusätzlich rendern.
+        // V8.03 — die Farb-Palette zusätzlich rendern (die Material-Palette zeichnet der Bau der Werkstatt, `_werkstattBau`:
+        // sie liest das Buch der Stoffe, das nach diesem Einbau wächst).
         // V8.05 — Werkzeug-Palette als dritte Sub-Palette (Werkzeug-Drag-Drop
         // auf Part wendet die Op an wie applyOpToPart).
-        this._workshopRenderMaterialPalette();
         this._workshopRenderColorPalette();
         this._workshopRenderToolPalette();
 
@@ -2364,7 +2364,7 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // Material-Palette aus state.materials: je Material eine Card (Swatch + Name + Glyph wie die
-    // Inventar-Slots), Marker data-material.
+    // Inventar-Slots), Marker data-material. Ihr EINER Rufer ist der Bau der Werkstatt (`_werkstattBau`).
     _workshopRenderMaterialPalette() {
         if (typeof document === "undefined") return;
         const palette = document.getElementById("workshop-material-palette");
