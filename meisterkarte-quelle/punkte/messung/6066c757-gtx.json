@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "gtx",
- "zeit": "2026-11-22T12:29:23.860Z",
+ "zeit": "2026-11-22T12:30:11.529Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.physik.reaktion#1": {
@@ -661,6 +661,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.sinn.tod#2": {
+   "gruen": true,
+   "zahl": "S2 · GRÜN ✅ wunde_min 10,05 (Soll ≥ 10) · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\6066c757-gtx\\karte2.erleben.sinn.tod_2-bilder\\erleben.sinn.tod-S2.png",
+   "exit": 0,
+   "minuten": 0.13,
+   "gpu": "nvidia/pascal",
+   "konsum": "k88a6b6d6f2d3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k48e0554e5846",
+   "s": 7.5,
+   "fremd": {
+    "s": 9.2,
+    "takte": 4,
+    "fremdS": 7.78,
+    "kerne": 0.844,
+    "fensterKerne": 0.844,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.19
+     ],
+     [
+      "sh.exe dienst-omen/landung-dienst.sh",
+      1.02
+     ]
+    ],
+    "dienerS": 4.8,
+    "diener": [
+     [
+      "dwm.exe",
+      2.39
+     ],
+     [
+      "System",
+      1.45
+     ]
+    ],
+    "geraetS": 7.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.28
+     ],
+     [
+      "svchost.exe",
+      3.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.19
+     ]
+    ],
+    "eigenS": 34.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T12:30:11.529Z",
+   "abdruck": "702b735058a1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -892,20 +961,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.erleben.sinn.tod#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 106 s unter dem Grund-Deckel 93 s von karte2.erleben.sinn.tod#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 106 s unter dem Grund-Deckel 93 s von karte2.erleben.sinn.tod#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-22T12:29:23.721Z",
-   "abdruck": "702b735058a1",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.leben.oeko.netz#2": {
    "gruen": false,
@@ -1469,7 +1524,8 @@
   "ke686fecfba78": "bVRdj5swEPwveWzLmfBxGKR78B0npVKr4/rWx7VZAxcCkQ1xlar/vYLgJMDtI8x4xrO7/rs5gthDgQ8fum02yebL5ttGwwkdjeqE6uFDb5JNLLYe+gm7FGGMvQwwoapjp0ldcQK8gfKATq86rOoHMdK8rYi2YULMKzMZIRmJyLN5elpSa45563Qg0RIhpLkMkyWw1wVwdKCXo9gE9nPPpSIhY9GUvaXE1s4wRlLCiBFLVQ5NPncbP4YRhuMlX9nKZV4Bdk5dNdrqbvMolm5yFTM/VxwFxjkDljWqiZRH6MWBNfs8iBUZIQuirHutZ2LUz0OPJoTES2yBuhJl5xxVy7GZ4Dz2oi0kn6RdHHtH3jsCzoHyZdYlYFOgmnlwfSEftwn5Q5eH7uGACpwGSpul60cev2Uz9mLlpR6NjxLWeO5RjnJGHJpKToQwO36n4dPu+td+Twt2q/eVmBZlpQ7zmGSAnusnP9bWdAk5Kmff6u6KpgEA0mkLUsLeGWNZkC6Zt0tZHgDQu0EhlLDdKkPdys6AQqc49hMRAwyjYSK/r8AdHA4TKpR+4ItlA3U3DPi9DS64lGO0xWAiW1/6sg7OGavakqQMgni1iScFBwd4oSopbcd5KGT82YAarDuHt21nXwUIuCsTcibNNZFoXIWXuwayTP36nZds6XE8rVWdNRjyR1cGiRyGYr3lplKdY0CUFu5JjjDYXOV/RlVjgfPIIhoPY2zkxeaZMpZF07rLr7MhPa9PrHAIs9G9tg0VEPDwMgnz+A2qPYdmb9dg63sejqP2/MZ297mwl/Q9C4Y3Lprp++aVFd93hpkR9cZYSuUkckRBjqqV1fDqkRJ6XULd3Z78f/8B",
   "kb3f056f6d011": "bVRdj5swEPwveWzLOXwdBukefEfVVGp1XN/6uDZr4EIgsiGuUvW/VxCcBLh9hBnveHbWfzdHEHso8OFdt80m2XzafNloOKGjUZ1QPbzrTbKJheuhn7BLEcbYywATqjp2mtQVJ8AbKA/o9KrDqn4QI81zReSGCTFfmckIyUhEns3T05Jac8xbpwOJlgghzWWYLIG9LoCjA70cm01gP/e2VCRkLJqy15TY2hnGSEoYMWLZlUOTz9XGj2GE4XjJr2ylMq8AO6euGm37unkUy21ybWZ+rjgKjHMGLGtUEymP0IsDK/Z5aFZkhCyIsu61njWjfh56NCEkXmIL1JUoO+eoWo7NBOexF7mQfOB2cewdea8IOAfKl16XgE2BaqZh6wv56CbkD10euocDKnAaKK2XWz/y+M2bcRYrLfUofGxhhece5ShnxGGo5EQIs/E7DZ9217/2e1qwW72tmmlRVuowt0kG6G395Mdami4hR+XsW91d0TQAQDptQUrYG2MsC9Il83YpywMAehcUQgnbrTzUrewMKHSKYz8RMcAwGhL5fQXu4HCYUKH0A18sB6i7IeD3MrjgUo7WFoOIbH3pyzo4Z6xqS5IyCOLVJp4UHBzghaqktBPnoZDxRwE1WHcOb9vOvgoQ8K1MyJk0V0eicRVe7gbIMvXrd16ypcbxtFZ1VmDIH7cySOQQivWWm0p1jgFRWrgnOUKcEH/l/xlVjQXOLYtoPMTYyIvMM2Usi6Z1l59nIT2vT6xwMLPRvbYDFRDw8JKEuf0G1Z5Ds7dr4Pqeh2PUnl/Z7j7Y7CV9y4LhjYtm/X3zjRXBzjAz4l4ZS6mcmhxRkKNqZTW8eqSEXpdQd7cn/99/",
   "k3154bad92518": "bVVdc5swEPwvfmxLhPkIoJk8yHGmzrSdkE5f+ngSJyDG4JHA6qTT/94BI9tA7hF2dcvenvi7OoLYQ453b7qpV3T1afVlpeGEjkZ1QnX3pld0lYi1hz5l5yKMscceJlR5bDWpSk6A11Ac0OlUi2V1JwaatxbROqTEPDGTEpKSiGzMw8OcWnHMGqcFiZYIYZzJkM6Bnc6BowOdHJqNYD/z3FhQMlS8ZS9bYmtnGCNbwogR864c6myqNrkPIwzps2HsiS1UZiVg61RlrW3fdRYl0qWXZubHgqPAOO+ARYVqJGUReklgxW56O/OUkBlRVp3Wk2axn4VeTAlJ5tgcdSmK1jmqhmM9wnniRWugH7idHztH3ioCziHmc68LwDpHNdHg+kLeryn5E88P3cMBFTg1FNZL1488fvVmmMVCSzUIH1pY4ZkXc5QTYj9UciKE2fid+ke7y1v7fJuza70ummlRlOowtUkG6Lk+/b6UpgvIUDn7RrcXdBwAYDxuwZawV8ZYGmznzOtHWR4AxDdBITFhu4WHupGtAYVOfuxGIgYYRiFl7HkBbuFwGFGh9ANfzAeo2z7gtzK44FIO1ua9iHT50ed1cN6xrCxJyiBIQvq4yefgk4KDAzxXpZR26jwUMvkopAar1uFN09qbAQLuSkp8Ul9ciYZ1eLwZIkvVz99Zwea1+ej0RrVWdMjvXRlQ2QdlufmmVK1jQBQW7kmOkFDiL2byjqrCHKc2RnHSR9vIs+y3mLE0Gq8A+XkS3PfliSX2Bte603bIAgIentMxHYlBtedQ7+1qrH3PwyF+mxe2mzjy7Zebxv29F036++Yry4OdYWZAvTC2jeXY5IiCHFUjy/4mJAV0uoCqvf4G/v0H",
-  "k85dbcb091871": "rVVNk6M2EP0vPibLCPMxCFXtQR5c8STZGiaVS44t0QLWGFwSjBKn9r+nwLA2MFs1h/RJh37dr19/6N/NGeQRcnz4app6wzY/bT5tDLyhY1C/oX74ajZsE8uthz7jVyOc86feTery3BqSlZA7R43QdtqpUGD9IAcYFRgHkpH/wfhkz5bzHX/9UfoWju2YXWJG1Zbtcs4t//z5DlGVgoCooTih0+kWy2qEeFsZbUNG7J7blJCURGRnv6fmT++EqQRmjdOCwikIhDRTIVs6diYHgQ50akg8OvuZ59JJIprwl+R7yQfLOUkIJ1ZyngT7RUABdTZnHz+GEYbs+R/O92umWQnYOlVZmyn3Noti5d7aY7+sMBqscwEsKtQjKIvQi4OJ8K6XJU8JWQBV1RkzS0b9LPQoIyRe+uZoSlm0zlk3t9ERsRdtge3sqo783DnqnhEIAVQs9S4A6xz1jIPrS/W4ZeRvugx6hBNqcGooJi1dP/LEbHQPay7T1J2wNvIGDbMw/ODUr5mMIedqPFLfDRn/sL3enruPo+wXvqRTDa0ZRJzIZB4VqBb10YS83ba0fxN6WG1vkt9zXMlpZFHq07x0FaDn+uz3tfimgAy1c2xMe7s4AQDSUaiEDDqkQbJE3oqacABA71aBUMIPq96YRrUWNDr5uRuBGGAY9Z15Xjm3cDqNXqHyA1++2793Jty0/Wrf0xNSKDVInvfk0jXmegicC5bVBFIqCOKQPe2CpfObhpMDItelUtPQilCq+L31tFi1jmia6ax6EAh34FLfybUbzuOdpfqPv7JiUeyep4Tvl3SGDI1uJ+KheHRVwNRwk+TKu9StY0EWk7unBELMiL/q1wV1hTnOpYxo3C+2VVfmF8p5Go0HUP08G+rLOmKJvci16cw0ABICMW77vC0W9VFAfZzWZut7HrJf+56/8MNMl9/+dFOakJXZX3geHC78+ge9cJ5QZV+HJGeU5KwbVfb/ACmgMwVU7ewXv7p0qESHRY39XLVlU2N98/r2Hw=="
+  "k85dbcb091871": "rVVNk6M2EP0vPibLCPMxCFXtQR5c8STZGiaVS44t0QLWGFwSjBKn9r+nwLA2MFs1h/RJh37dr19/6N/NGeQRcnz4app6wzY/bT5tDLyhY1C/oX74ajZsE8uthz7jVyOc86feTery3BqSlZA7R43QdtqpUGD9IAcYFRgHkpH/wfhkz5bzHX/9UfoWju2YXWJG1Zbtcs4t//z5DlGVgoCooTih0+kWy2qEeFsZbUNG7J7blJCURGRnv6fmT++EqQRmjdOCwikIhDRTIVs6diYHgQ50akg8OvuZ59JJIprwl+R7yQfLOUkIJ1ZyngT7RUABdTZnHz+GEYbs+R/O92umWQnYOlVZmyn3Noti5d7aY7+sMBqscwEsKtQjKIvQi4OJ8K6XJU8JWQBV1RkzS0b9LPQoIyRe+uZoSlm0zlk3t9ERsRdtge3sqo783DnqnhEIAVQs9S4A6xz1jIPrS/W4ZeRvugx6hBNqcGooJi1dP/LEbHQPay7T1J2wNvIGDbMw/ODUr5mMIedqPFLfDRn/sL3enruPo+wXvqRTDa0ZRJzIZB4VqBb10YS83ba0fxN6WG1vkt9zXMlpZFHq07x0FaDn+uz3tfimgAy1c2xMe7s4AQDSUaiEDDqkQbJE3oqacABA71aBUMIPq96YRrUWNDr5uRuBGGAY9Z15Xjm3cDqNXqHyA1++2793Jty0/Wrf0xNSKDVInvfk0jXmegicC5bVBFIqCOKQPe2CpfObhpMDItelUtPQilCq+L31tFi1jmia6ax6EAh34FLfybUbzuOdpfqPv7JiUeyep4Tvl3SGDI1uJ+KheHRVwNRwk+TKu9StY0EWk7unBELMiL/q1wV1hTnOpYxo3C+2VVfmF8p5Go0HUP08G+rLOmKJvci16cw0ABICMW77vC0W9VFAfZzWZut7HrJf+56/8MNMl9/+dFOakJXZX3geHC78+ge9cJ5QZV+HJGeU5KwbVfb/ACmgMwVU7ewXv7p0qESHRY39XLVlU2N98/r2Hw==",
+  "k88a6b6d6f2d3": "bVRNj5swEP0vObZlJ+FjAUt7cDYrZatWy/bW49iMgQ2ByIZQpep/ryBxEmDnZMEbz/ObN/N3cUC5w4wePkxdLdjiy+LbwuCRHEP6SPrhwyzYIpYrlzzGzwGc8+ceJnVxaAyUhQAUFeZ7clrdUFE+yCHNXclwFTDoXniXACQQwrrj13jmT0/Ta0pBae00qMhegkGUqoBNga3JUJCDrRoKX8Be6i4jyWCIaMPfNmCjrwwb4NBJznk2rSywSsfs48cgpGB49MucaVogNU5ZVMbWXqVhrJbsWrD7OcvR2DknpLwkfUlKQ3Jj3xJe98WyBGCSqMrWmFGxyEsDN2IA8RSbkSlk3jgHXQuqLnARu+EK2bqbvSM7tI66Z4RCYCSmeudIVUZ6xGHpSfW4YvAnml66wz1pdCrMrZZLL3TFTRsA2M65lAPxoYQlnrqRIDVK7BsLRwBro/4M0fb6137fZDer8fdZMSPzQu/HMimf3KXHfsypmRxT0s6uNs0VHfmIFF2mYgP8nXOe+Jtp5u1RNg8RozujQAR8O9PQ1KrpUJOTHdpLIvkUhL0jX2fgBvf7CypQnu/JaQNN0xv8noaQQqlB2qwnkcwffR4H50RFaZOU8v14No1HjXsHRaYLpWzHRSBV/JlBOyobR9R1Y7cE+mKpGIRQ3UmyHhbEXSQfv36/rvmU43BbrRtLMBCPS+Uz1ZuikzN0oRunQ5lbuKsEYcw+gZ5Il5TRWLIwinsbDyvE2sy3h68jk55mHT0V1ItZmdbYhkr0RXB2wlj+jvROYLWzY7DyXJfYd875+o1v+Sg270m/VZPxkHjdC+ev285a/0ASDrpWRb/pIMfW5Fg2t7X/7z8="
  },
  "sitzung": {
   "start": "2026-11-22T12:01:03.464Z",
