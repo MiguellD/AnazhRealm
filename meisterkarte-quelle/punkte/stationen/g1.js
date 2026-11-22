@@ -1931,6 +1931,13 @@ async function flegelSicht(r, T, W, H) {
     const cam = s.camera;
     const stellen = () => (cam.position.set(kam[0], kam[1], kam[2]), cam.lookAt(kam[3], kam[4], kam[5]), cam.updateMatrixWorld(true));
     stellen();
+    const schuss = async () => (stellen(), (await window.__ausgabeAufnahme(W, H)).u8);
+    // DER VORSCHUSS (pm-front-f1; GTX 31ea3847 „Seil-Teile zu sehen 2/8“, das Bild zeigt die Kette hängend und ganz): das Seil rechnet
+    // nur nah am Auge (`_seilTakt`, SEIL_NAH_M) — vor dem ersten Bild an der nahen Kamera lagen die Teile noch in der Lage der Vorlage
+    // (waagrecht, der Ausschnitt endete bei y 298, der Kopf hing im Bild bei y ≈ 325), die Mitten der Teile wurden dort projiziert. Ein
+    // Bild an derselben Kamera VOR dem Messen legt das Seil nach dem Gesetz; erst danach stehen Box, Ausschnitt und Mitten
+    await schuss();
+    pm.updateMatrixWorld(true);
     const auf = (v) => ((q) => [((q.x + 1) / 2) * W, ((1 - q.y) / 2) * H])(v.clone().project(cam));
     const ecken = (b) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => auf(new T.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z)));
     const inH = (m) => {
@@ -1955,7 +1962,6 @@ async function flegelSicht(r, T, W, H) {
     ];
     const teile = [];
     h.traverse((m) => m.isMesh && m.userData && Number.isInteger(m.userData.__seil) && teile.push(auf(new T.Box3().setFromObject(m).getCenter(new T.Vector3()))));
-    const schuss = async () => (stellen(), (await window.__ausgabeAufnahme(W, H)).u8);
     // DIE WELT STEHT UM DEN FLEGEL (Vorarbeiter 10, 17.11.; GTX 7de938ab: Gestalt 180 px über dem Rauschen 1 464 — am ee9c1965 647 über 0,
     // Figur 284 px und Seil-Teile 8/8 gleich; dazwischen landete w28-wander-revier, die Tiere ziehen durch ihr Revier): zwischen den drei
     // Schüssen hält der Halter der Aufnahme Tiere, Bewohner, Wagen, die Bild-Uhr (Wind, Wolken, Wasser) und das Zittern (`__halten`) — das

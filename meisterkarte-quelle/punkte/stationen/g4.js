@@ -1180,7 +1180,13 @@ const taktUrteil = (j, lauf) => {
     const tot = M.filter((m) => m.tot).length;
     const ohneBild = M.filter((m) => !(m.bilder > 0)).length;
     const ganz = M.length === TAKT_SOLL.minuten;
+    // DIE MINUTEN, DIE FEHLEN (pm-front-f1; GTX 31ea3847 „0/4 Minuten tot (0 %, … NICHT GANZ)“ stand ROT — die Frist der Probe riss nach
+    // 4 von 10 Minuten, kein toter Anteil war gemessen): fehlen Minuten und könnte der Rest das Soll noch halten, ist es kein Urteil
+    // (`ohneUrteil`, punkte.cjs keinUrteil (f)); reißt der tote Anteil schon über 10 Minuten gerechnet, ist es ROT
+    const offenM = TAKT_SOLL.minuten - M.length;
+    const ohne = !ganz && offenM > 0 && tot <= TAKT_SOLL.totAnteil * TAKT_SOLL.minuten ? "nur " + M.length + " von " + TAKT_SOLL.minuten + " Minuten gegangen (die Frist der Probe riss), " + tot + " tot" : null;
     return {
+        ...(ohne ? { ohneUrteil: ohne } : {}),
         gruen: hw && lauf.exit === 0 && ganz && ohneBild === 0 && tot / M.length <= TAKT_SOLL.totAnteil,
         zahl:
             tot + "/" + M.length + " Minuten tot (" + ((100 * tot) / M.length).toFixed(0) + " %, Soll ≤ 50 % über " + TAKT_SOLL.minuten + " Minuten" + (ganz ? "" : ", NICHT GANZ") + ")" +
@@ -3181,7 +3187,8 @@ const alle = [
             { name: "gesund: 3 von 10 Minuten tot", j: taktRoh(3), stdout: PAAR_KARTE, gruen: true },
             { name: "die Grenze: 5 von 10 Minuten tot", j: taktRoh(5), stdout: PAAR_KARTE, gruen: true },
             { name: "6 von 10 Minuten tot", j: taktRoh(6), stdout: PAAR_KARTE, gruen: false },
-            { name: "nur 4 Minuten gelaufen (die Frist), keine tot", j: { ...taktRoh(0), minuten: taktRoh(0).minuten.slice(0, 4) }, stdout: PAAR_KARTE, gruen: false },
+            { name: "nur 4 Minuten gelaufen (die Frist), keine tot — kein Urteil (ohneUrteil)", j: { ...taktRoh(0), minuten: taktRoh(0).minuten.slice(0, 4) }, stdout: PAAR_KARTE, gruen: false },
+            { name: "nur 7 Minuten gelaufen, 6 davon tot — ROT schon über 10 Minuten", j: { ...taktRoh(6), minuten: taktRoh(6).minuten.slice(0, 7) }, stdout: PAAR_KARTE, gruen: false },
             { name: "eine Minute ohne gezeichnetes Bild", j: { ...taktRoh(0), minuten: taktRoh(0).minuten.map((m, i) => (i === 7 ? { ...m, bilder: 0 } : m)) }, stdout: PAAR_KARTE, gruen: false },
             { name: "swiftshader", j: taktRoh(3), stdout: "[linse-gpu] google/swiftshader", gruen: false },
         ],

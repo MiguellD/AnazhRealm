@@ -47,6 +47,7 @@
 const fs = require("fs");
 const path = require("path");
 const { probeBefehl } = require("./sitzung-seite.js");
+const AUGE = require("./auge-klasse.cjs");
 
 const KOORD = path.resolve(__dirname, "..", "..", "..");
 const KAPITEL = "mensch";
@@ -358,11 +359,11 @@ function leiter(id, def) {
     const probe = { ...probeBefehl(rumpf(def.messe), sek, { K: k2Werkzeug, SPEC: JSON.stringify(SPEC), ...seite }), ...(def.mutiert ? { mutiert: true } : {}) };
     leitern.push({ id, def, nrn });
     // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): ein Augen-Richter, dessen Umfang die Welt nicht trägt,
-    // urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“; jeder andere Augen-Richter „fehlt“
+    // urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“; jeder andere Augen-Richter „fehlt“ mit seiner Klasse
     const tafel = (n) => {
         const sp = sprossen[n];
         return sp.auge && sp.erwartet !== "nicht"
-            ? { richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
+            ? AUGE.tafel(id, n, false) // die Klasse am Wortlaut (auge-klasse.cjs): dieses Gerüst trägt kein Soll — PANEL, KORPUS oder „ZAHL ohne Soll“ beim Namen
             : { richter: "gleich" };
     };
     return nrn.map((n) => Object.defineProperty({

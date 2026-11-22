@@ -224,7 +224,7 @@ L.perspektive("pflanzen", (() => {
                         for (const k of Object.keys(b)) a[k] = (a[k] || 0) + b[k];
                         return a;
                     };
-                    const aus = {};
+                    const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) aus[nr] = { werte: {}, zeuge: { fehler } };
                         return { sprossen: aus };
@@ -350,7 +350,7 @@ L.perspektive("pflanzen", (() => {
                 ungefahren: "das Bild am Gipfel und im Luftbild, das Orbitbild gegen das Satellitenmosaik, die Blindbewertung „lebendige Welt“",
                 mess: async function (H, U, M) {
                     const seite = (fn, A) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(A || {}) + ");");
-                    const aus = {};
+                    const aus = M.teil || {};
                     let lok = null;
                     let lokFehler = null;
                     try {
@@ -770,7 +770,7 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
-                    const aus = {};
+                    const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
                             aus[nr] = { werte: {}, zeuge: { fehler } };
@@ -999,7 +999,7 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
-                    const aus = {};
+                    const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
                             aus[nr] = { werte: {}, zeuge: { fehler } };
@@ -1208,7 +1208,7 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         zl = { fehler: String((e && e.message) || e).slice(0, 160) };
                     }
-                    const aus = {};
+                    const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
                             aus[nr] = { werte: {}, zeuge: { fehler } };
@@ -1260,12 +1260,14 @@ L.perspektive("pflanzen", (() => {
                     },
                     3: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(D_ID, 3, "Pop-Zähler unter Bewegung = 0", { key: "pops", einheit: "Pops" })],
+                        soll: [K.soll(D_ID, 3, "Pop-Zähler unter Bewegung = 0", { key: "pops", einheit: "Pops" }), K.soll(D_ID, 3, "Bildpaar 1 km", { key: "gangKm", rel: "≥", zahl: 1, einheit: "km" })],
                         auge: { pose: "gehend und fahrend über 1 km (Werkbank /gang)", vorbild: "Bildpaar 1 km gegen Foto (Prüfer-Satz R11)" },
                         taeter: "stamm/gelaende-fern.js (die Ferne als Kronen-Mittel) + stamm/vegetation-streu.js (die Reichweite der Streu)",
                         nicht: "jede Pflanze bis 1 km",
                         leser: "stamm/vegetation-streu.js:1603 _streuRegionInReichweite — keine einzelne Pflanze jenseits der Streu-Region",
-                        gruen: { werte: { pops: 0, fernstePflanzeM: 1200 }, zeuge: { pflanzen: 300, fernsteM: 1200, bilder: 60 } },
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeFrame,
+                        gruen: { werte: { pops: 0, gangKm: 1.2, fernstePflanzeM: 1200 }, zeuge: { pflanzen: 300, fernsteM: 1200, bilder: 60 } },
                         attrappen: [{ name: "0 Pops ohne Gang", roh: { werte: { pops: 0 }, zeuge: { pflanzen: 0 } } }],
                     },
                     4: {
@@ -1377,7 +1379,7 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
-                    const aus = {};
+                    const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
                             aus[nr] = { werte: {}, zeuge: { fehler } };
@@ -1816,7 +1818,7 @@ L.perspektive("tiere", (() => {
                     const auge = augeNoetig ? await M.auge("tiere-arten", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
                     const zeuge = { antworten: z.leiber, streuung: z.pxStreu, vor: 0, nach: z.biome, biome: z.biome };
                     const welt = "die Welt trägt " + z.artenWelt + " Arten (Land " + z.katalog.land + ", Luft " + z.katalog.luft + ", Wasser " + z.katalog.wasser + ")";
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -2127,7 +2129,7 @@ L.perspektive("tiere", (() => {
                     const zeuge = { antworten: z.laeufe, streuung: z.schlupfStreu, vor: 0, nach: z.laeufe };
                     const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
                     const auge = augeNoetig ? await M.auge("tiere-bewegung", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge, z2) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge: z2 || zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -2487,7 +2489,7 @@ L.perspektive("tiere", (() => {
                     const basis = fremdMed.length ? fremdMed.reduce((x, y) => x + y, 0) / fremdMed.length : null;
                     const meide = (L) => (basis ? Math.round((1000 * L.filter((x) => Number.isFinite(x.d) && x.d > 1.2 * basis).length) / L.length) / 1000 : null);
                     const windRatio = Number.isFinite(z.wind.mit.d) && Number.isFinite(z.wind.gegen.d) && z.wind.gegen.d > 0 ? Math.round((1000 * z.wind.mit.d) / z.wind.gegen.d) / 1000 : null;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -2679,7 +2681,7 @@ L.perspektive("tiere", (() => {
                     const probe = async function (r, T, a, G) {
                         const { s, A, pm, r3, welt, takt, land, tier, stelle, stillFeld, ruhigSpieler, flick } = G;
                         stillFeld();
-                        const aus = {};
+                        const aus = M.teil || {};
                         const maxS = A.FAUNA_MAX_AGE_MS / 1000;
                         const F = r._bestandRegionen().regionen;
                         let [jung, alle] = [0, 0];
@@ -2809,7 +2811,7 @@ L.perspektive("tiere", (() => {
                     const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
                     const auge = augeNoetig ? await M.auge("tiere-lebenszyklus", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
                     const zeuge = { antworten: z.region.schritte + z.jung.alle, streuung: z.region.ende !== z.region.nachAufholen || z.region.wuerfe > 1 ? Math.abs(z.region.ende - z.region.nachAufholen) + z.region.wuerfe : 0, vor: z.gegen.vor, nach: z.gegen.nach };
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -2995,7 +2997,7 @@ L.perspektive("tiere", (() => {
                         stillFeld();
                         if (window.__wetterSetzen) window.__wetterSetzen("sunny");
                         r._uhrSetzen(0.42, "regler");
-                        const aus = {};
+                        const aus = M.teil || {};
                         const sk = r._schwarmKarte;
                         const zellen = sk && sk.zellen ? [...sk.zellen.values()] : [];
                         let ziel = null;
@@ -3120,7 +3122,7 @@ L.perspektive("tiere", (() => {
                     const auge = augeNoetig ? await M.auge("tiere-masse", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
                     const zeuge = { antworten: z.trupp.n + z.herde.trittZellen, streuung: z.trupp.nnMedian || z.herde.wegM || 0, vor: 0, nach: z.herde.trittZellen + z.trupp.n };
                     const dichteAbw = z.dichte.gesetz > 0 ? Math.round(Math.abs(z.dichte.gezeichnet / z.dichte.gesetz - 1) * 1000) / 10 : null;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -3411,7 +3413,7 @@ L.perspektive("tiere", (() => {
                     const km2 = z.tag.flaecheM2 / 1e6;
                     const faktor = km2 > 0 ? Math.round(1000 * (km2 < 1 ? 1 / km2 : km2 > 10 ? km2 / 10 : 1)) / 1000 : null;
                     const tageLeben = Math.round((100 * z.lebensdauerS) / z.dayS) / 100;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(nicht ? { nicht } : {}) };
@@ -3704,7 +3706,7 @@ L.perspektive("tiere", (() => {
                     const mT = tAbw.reduce((x, y) => x + y, 0) / Math.max(1, tAbw.length);
                     const zeuge = { antworten: je.length * 240 + z.spur.reduce((x, y) => x + y.getreten, 0), streuung: Math.round(Math.sqrt(tAbw.reduce((x, y) => x + (y - mT) * (y - mT), 0) / Math.max(1, tAbw.length)) * 1000) / 1000 || z.spur.reduce((x, y) => x + y.getreten, 0), vor: 0, nach: je.length };
                     const findeQuote = z.spur.filter((x) => x.gefunden).length / z.spur.length;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
@@ -3970,7 +3972,7 @@ L.perspektive("wasser", (() => {
                     const faunen = W.artFelder.length ? mitFisch.length : mitFisch.length ? 1 : 0;
                     const eigene = Math.min(mitFisch.length, faunen);
                     const P = W.planet;
-                    const aus = {};
+                    const aus = M.teil || {};
                     const art = hn.map((k) => k + " " + hab[k].staende + " Stände/" + hab[k].fische + " Fische (Körper " + hab[k].art + ")").join(", ");
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
@@ -4234,7 +4236,7 @@ L.perspektive("wasser", (() => {
                     };
                     const tiefe = B.tiefe || [];
                     const je100 = tiefe.filter((e) => e.d >= 100 && e.unter);
-                    const aus = {};
+                    const aus = M.teil || {};
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
                         let roh;
@@ -4410,7 +4412,7 @@ L.perspektive("wasser", (() => {
                             }
                             return L;
                         };
-                        const aus = {};
+                        const aus = M.teil || {};
                         try {
                             if (!O.bach) throw new Error("kein Bach an der Mess-Wiese (__wasserOrte)");
                             await __weltDa(() => !r._ensureHydroTilesAround(O.bach.x, O.bach.z, 64));
@@ -4511,7 +4513,7 @@ L.perspektive("wasser", (() => {
                     const d = N.dichte || [];
                     const dm = d.reduce((q, x) => q + x, 0) / Math.max(1, d.length);
                     const dStreu = Math.sqrt(d.reduce((q, x) => q + (x - dm) * (x - dm), 0) / Math.max(1, d.length));
-                    const aus = {};
+                    const aus = M.teil || {};
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
                         let roh;
@@ -4708,7 +4710,7 @@ L.perspektive("wasser", (() => {
                     const jz = (Z.jahr || []).map((x) => x[1]);
                     const jm = jz.reduce((q, x) => q + x, 0) / Math.max(1, jz.length);
                     const jahrHub = jz.length && jm > 0 ? Math.round(((Math.max(...jz) - Math.min(...jz)) / jm) * 1000) / 1000 : undefined;
-                    const aus = {};
+                    const aus = M.teil || {};
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
                         let roh;
@@ -5078,7 +5080,7 @@ L.perspektive("oeko", (() => {
                     const sd = Math.sqrt(alle.reduce((q, x) => q + (x - mittel) * (x - mittel), 0) / Math.max(1, alle.length));
                     const zeuge = { antworten: n, streuung: Math.round(sd * 100) / 100, vor: Object.values(R.ursache).reduce((q, x) => q + x, 0), nach: 0, tal: R.k0, saaten: n, jahre: 100, ms: R.laeufe.map((l) => l.ms), risse: R.paare, ursache: R.ursache, aesung: R.frass, kg: R.kg, wieder: R.wieder };
                     const nArten = G.length;
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[2] = { werte: { saaten: n, jahre: 100, wiederProzent: wiederMin, paareJeArt }, zeuge: Object.assign({ jeArt: wieder, links }, zeuge) };
                     if (nArten < 10 || ebenen < 4) aus[2].nicht = "10¹ Arten in 4 Ebenen — der Bestand trägt " + nArten + " Gattungen (" + G.join(", ") + ") in " + ebenen + " Ebenen; im Deckel " + n + " von 32 Saaten × 100 Spieljahre";
                     aus[3] = { werte: { ebenen, omnivorie, massenVerhaeltnis: massen, paarTrennProzent: trenn }, zeuge: Object.assign({ ebene, paare: paarL.length }, zeuge) };
@@ -5402,7 +5404,7 @@ L.perspektive("oeko", (() => {
                     };
                     const I = await seite(inventar, { ringM: 500, halbe: [50, 100, 150], streuHalbMax: 100, saaten: 4, betaPaare: 20, orte: 100, saisonOrte: 20 });
                     const ME = await seite(meridian, { breiten: [0, 10, 20, 30, 40, 50, 60, 70, 80], laenge: 10 });
-                    const aus = {};
+                    const aus = M.teil || {};
                     const haArten = I.sets.jetzt.length;
                     const faktor = (w, ref) => (w > 0 ? Math.round(Math.max(w / ref, ref / w) * 100) / 100 : 1e6);
                     const pfl = Object.keys(I.streu.je).length + Object.keys(I.wald).length;
@@ -5695,7 +5697,7 @@ L.perspektive("oeko", (() => {
                     const mj = (v) => v.reduce((q, x) => q + x, 0) / Math.max(1, v.length);
                     const jungMinus = jm.length && jo.length ? Math.round((1e4 * (mj(jm) - mj(jo))) / Math.max(1e-9, mj(jm))) / 100 : null;
                     const zg = { antworten: R.laeufe.length, streuung: sd, vor: mit.length ? mit[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, nach: ohne.length ? ohne[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, tal: R.k0, mit: mit.length, ohne: ohne.length, ms: R.laeufe.map((l) => l.ms) };
-                    const aus = {};
+                    const aus = M.teil || {};
                     aus[2] = { werte: jungMinus === null ? {} : { jungwuchsMinusProzent: jungMinus }, zeuge: Object.assign({ jungMit: jm, jungOhne: jo }, zg), auge: await M.auge("oeko-dynamik-s2", { ort: "wiese" }) };
                     aus[3] = { werte: { periodeJahre: med(per), verzugJahre: med(verz) }, zeuge: Object.assign({ perioden: per, verzug: verz }, zg, { antworten: mit.length }) };
                     const aSaaten = mit.filter((l) => l.kappe > 0).length;
@@ -5719,6 +5721,8 @@ L.perspektive("oeko", (() => {
                         soll: [K.soll(DY, 2, "Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf", { key: "jungwuchsMinusProzent", einheit: "%" })],
                         auge: { pose: "Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe", vorbild: "Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11)" },
                         taeter: "stamm/kreatur-leben.js _kreaturFrass (die Äsung der Herde am Jungwuchs)",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(2, true),
                         gruen: gut({ jungwuchsMinusProzent: 26 }, 16),
                         attrappen: [{ name: "−26 % aus dem Kaskaden-Lauf ohne Bild", roh: flach({ jungwuchsMinusProzent: 26 }) }],
                     },
@@ -5976,7 +5980,7 @@ L.perspektive("oeko", (() => {
                         KD = { fehler: String((e && e.message) || e).slice(0, 200), rate: {} };
                     }
                     const HO = await seite(holz, { halb: 50 });
-                    const aus = {};
+                    const aus = M.teil || {};
                     const plus = TD.tode.map((d) => Math.round((d.nach - d.vor) * 1000) / 1000);
                     const verh = KD.rate[1] > 0 ? Math.round((KD.rate[3] / KD.rate[1]) * 100) / 100 : null;
                     aus[1] = { werte: Object.assign({ naehrMinPlus: plus.length >= 4 ? Math.min(...plus) : null }, verh !== null ? { fresserVerhaeltnis: verh } : {}), zeuge: { antworten: TD.tode.length + Object.keys(KD.rate).length, streuung: new Set(plus).size > 1 || (KD.rate[1] || 0) !== (KD.rate[3] || 0) ? 1 : 0, vor: KD.fleisch0 || 0, nach: KD.rest ? KD.rest[1] : KD.fleisch0 || 0, tode: TD.tode, kadaver: KD, tal: TD.tal } };
@@ -6028,6 +6032,8 @@ L.perspektive("oeko", (() => {
                         taeter: "foundry-core.js Totholz (zeitlose Gestalt)",
                         nicht: "Totholz ohne Zeit",
                         leser: "foundry-core.js:2045 __totholzSchnitt — Totholz als zeitlose Gestalt (Krone gebrochen, Reisig ab), keine Zerfallsklasse, die mit den Jahren fortschreitet",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
                         gruen: gut({ totholzProzent: 18 }, 120),
                         attrappen: [{ name: "18 % aus der Forst-Inventur", roh: flach({ totholzProzent: 18 }) }],
                     },
@@ -6053,12 +6059,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(ZE, 6, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" })],
+                        soll: [K.soll(ZE, 6, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" }), K.soll(ZE, 6, "Walfall-Gemeinschaft über 50 Spieljahre", { key: "walfallJahre", rel: "≥", zahl: 50, einheit: "a" })],
                         auge: { pose: "Tiefsee am Walfall (heute: die Wiese)", vorbild: "Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe (Prüfer-Satz R11)" },
                         taeter: "stamm/feld-leben.js _depositLife (das Leben-Feld verblasst, keine Bilanz)",
                         nicht: "keine Stoffbilanz, kein Walfall",
                         leser: "stamm/feld-leben.js:2047 _depositLife — schreibt Leben, das verblasst; kein Stoff wird gezählt, kein Meer-Kadaver",
-                        gruen: gut({ fehlbetragProzent: 0.6 }, 240),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
+                        gruen: gut({ fehlbetragProzent: 0.6, walfallJahre: 60 }, 240),
                         attrappen: [{ name: "Fehlbetrag behauptet", roh: flach({ fehlbetragProzent: 0.6 }) }],
                     },
                 },
@@ -6140,7 +6148,7 @@ L.perspektive("oeko", (() => {
                     const F = await seite(folge, { orte: 16, abstand: [40, 70, 100, 130], jahre: [0, 0.5, 1, 2, 3, 5, 10, 25, 100, 1000] });
                     const O = F.orte;
                     const at = (o, j) => o.kurve.find((k) => k.j === j);
-                    const aus = {};
+                    const aus = M.teil || {};
                     // S1: die Folge in ihrer Ordnung (Asche liegt → Gras kehrt → Busch → Wald) und die Asche düngt
                     const ordnung = (o) => {
                         const t = (f) => {
@@ -6349,7 +6357,7 @@ L.perspektive("oeko", (() => {
                     const vor = Math.min(...O.map((o) => o.vor));
                     const nach = Math.max(...O.map((o) => o.nach));
                     const wMinus = Math.min(...O.map((o) => (o.wv - o.wn) / Math.max(1e-9, o.wv)));
-                    const aus = {};
+                    const aus = M.teil || {};
                     const ws = O.map((o) => o.wv);
                     aus[1] = { werte: { naehrVor: Math.round(vor * 1000) / 1000, naehrNach: Math.round(nach * 1000) / 1000, wuchsMinus: Math.round(wMinus * 1e4) / 1e4 }, zeuge: { antworten: O.length, streuung: Math.round((Math.max(...ws) - Math.min(...ws)) * 1e4) / 1e4, vor: Math.round(vor * 1000) / 1000, nach: Math.round(nach * 1000) / 1000, orte: O }, auge: await M.auge("oeko-stoffe-s1", { ort: "wiese" }) };
                     aus[2] = { werte: { naehrKanaele: E.kanal === "number" ? 1 : 0, jahre: 0 }, zeuge: { antworten: O.length, streuung: 0 }, auge: await M.auge("oeko-stoffe-s2", { ort: "wiese" }), nicht: "N und P getrennt — der Boden trägt EINEN Nährstoff (vegetation-wiese.js:2097), keine Leguminose, keine Erle bindet N" };
@@ -6371,6 +6379,8 @@ L.perspektive("oeko", (() => {
                         ],
                         auge: { pose: "Ego am Acker der Wiese vor und nach 15 Ernten", vorbild: "Bildpaar gleicher Kamera: Wuchs sinkt sichtbar (Prüfer-Satz R11)" },
                         taeter: "stamm/vegetation-wiese.js _naehrstoffAt · _wuchsAt",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }, 8),
                         attrappen: [{ name: "0,7 aus dem Beleg ohne Ernte", roh: flach({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }) }],
                     },
@@ -6381,6 +6391,8 @@ L.perspektive("oeko", (() => {
                         taeter: "stamm/vegetation-wiese.js _naehrstoffAt (EIN Skalar, kein N und P)",
                         nicht: "N und P nicht getrennt",
                         leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — ein Nährstoff; keine Bindung von N durch Leguminosen, kein P aus Gestein",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, 8),
                         attrappen: [{ name: "Klee-Effekt behauptet", roh: flach({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }) }],
                     },
@@ -6420,12 +6432,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(ST, 6, "in ≥ 70 % erdähnlicher Saaten", { key: "saatenProzent", einheit: "%" }), K.soll(ST, 6, "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre", { key: "sprungGa", rel: "band", zahl: 2, bis: 2.5, einheit: "Ga" })],
+                        soll: [K.soll(ST, 6, "in ≥ 70 % erdähnlicher Saaten", { key: "saatenProzent", einheit: "%" }), K.soll(ST, 6, "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre", { key: "sprungGa", rel: "band", zahl: 2, bis: 2.5, einheit: "Ga" }), K.soll(ST, 6, "Bändereisen im Gestein sichtbar", { key: "baendereisen", rel: ">", zahl: 0, refQuelle: "der Richter: Bändereisen im Gestein sichtbar (Bändereisen-Lagen im Aufschluss > 0)" })],
                         auge: { pose: "Gestein der Wiese (Aufschluss)", vorbild: "Bändereisen im Gestein sichtbar (Prüfer-Satz R11)" },
                         taeter: "planet-core.js planetOrt (keine Atmosphäre über die Äonen)",
                         nicht: "kein Sauerstoff-Sprung",
                         leser: "planet-core.js:2290 planetOrt — liest die Zeit für das Gelände, keine Photosynthese, kein Eisen, kein Methan",
-                        gruen: gut({ saatenProzent: 75, sprungGa: 2.3 }, 32),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
+                        gruen: gut({ saatenProzent: 75, sprungGa: 2.3, baendereisen: 3 }, 32),
                         attrappen: [{ name: "GOE aus dem Lehrbuch", roh: flach({ saatenProzent: 75, sprungGa: 2.3 }) }],
                     },
                     7: {
@@ -6513,7 +6527,7 @@ L.perspektive("oeko", (() => {
                         return aus;
                     };
                     const P = await seite(partner, { halb: 50, punkte: 200, schattenLicht: 0.35 });
-                    const aus = {};
+                    const aus = M.teil || {};
                     const minus = P.streuBereit && P.folgeMit.n > 0 ? Math.round((1000 * (P.folgeMit.n - P.folgeOhne.n)) / P.folgeMit.n) / 10 : null;
                     aus[2] = { werte: minus === null ? {} : { blutenMinusProzent: minus, blueten: P.heute.n }, zeuge: { antworten: P.streuBereit ? P.heute.k : 0, streuung: P.heute.n > 0 ? 1 : 0, vor: P.folgeMit.n, nach: P.folgeOhne.n, streuBereit: P.streuBereit, streuWarteMs: P.streuWarteMs }, auge: await M.auge("oeko-partner-s2", { ort: "wiese" }) };
                     if (minus === 0) aus[2].nicht = "Einbahn: ohne Bestäuber stehen im Folgejahr " + P.folgeOhne.n + " von " + P.folgeMit.n + " Blüten — die Nah-Streu (vegetation-wiese.js:1249) liest keinen Besuch";
@@ -6533,6 +6547,8 @@ L.perspektive("oeko", (() => {
                         auge: { pose: "Ego an der Mess-Wiese, dieselbe Kamera im Folgejahr mit und ohne Bestäuber", vorbild: "Bildpaar: Blüten-Dichte im Folgejahr −≥ 30 % ohne Bestäuber (Prüfer-Satz R11)" },
                         taeter: "stamm/vegetation-wiese.js _nahStreuKachel (die Blüte liest keinen Besuch)",
                         leser: "stamm/kreatur-fauna.js:656 _bestaeuberBlueten — liest die Blüten, nie umgekehrt; kein Samenansatz aus dem Besuch",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ blutenMinusProzent: 41, blueten: 180 }, 600),
                         attrappen: [{ name: "−41 % aus einer Studie", roh: flach({ blutenMinusProzent: 41, blueten: 180 }) }],
                     },
@@ -6572,12 +6588,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(PA, 6, "Fischarten −≥ 50 %", { key: "fischMinusProzent", einheit: "%" })],
+                        soll: [K.soll(PA, 6, "Korallenfarbe kippt", { key: "korallenKipp", rel: "=", zahl: 1, refQuelle: "der Richter: Wärme-Gegenlauf — die Korallenfarbe kippt (1 = gekippt)" }), K.soll(PA, 6, "Fischarten −≥ 50 %", { key: "fischMinusProzent", einheit: "%" })],
                         auge: { pose: "das Riff im Bild (heute: Ego an der Wiese)", vorbild: "Bildpaar im Wärme-Gegenlauf: Korallenfarbe kippt (Prüfer-Satz R11)" },
                         taeter: "tetrapoda-core.js FISCH_GESETZ (kein Riff, keine Wärme)",
                         nicht: "kein Riff",
                         leser: "tetrapoda-core.js:2818 FISCH_GESETZ — eine Gestalt ohne Art und ohne Wärme; keine Koralle",
-                        gruen: gut({ fischMinusProzent: 55, fischArten: 40 }, 40),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
+                        gruen: gut({ korallenKipp: 1, fischMinusProzent: 55, fischArten: 40 }, 40),
                         attrappen: [{ name: "Riff-Studie abgeschrieben", roh: flach({ fischMinusProzent: 55, fischArten: 40 }) }],
                     },
                     7: {

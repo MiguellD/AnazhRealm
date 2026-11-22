@@ -145,7 +145,11 @@ const FLUR_BLICK = async (r, T, arg) => {
             const t = k / 24;
             const x = ax + (bx - ax) * t, y = ay + (by - ay) * t, z = az + (bz - az) * t;
             if (h(x, z) > y + 0.05) return false;
-            if (typeof r._imGrundriss === "function" && r._imGrundriss(x, z)) return false;
+            // nur ein Grundriss, der steht, verdeckt (pm-front-f1; GTX 31ea3847 „4 Äcker als Fläche gemalt, bestes Bild 0,00 %“):
+            // `_imGrundriss` nennt auch „weg“ und „lichtung“ (stamm/vegetation-baum.js) — flacher Grund, das Auge stand auf dem Feldweg,
+            // und jeder Strahl galt als verdeckt. Es sperren „haus“ und „bau“ wie in k2-mensch-geist.js
+            const g = typeof r._imGrundriss === "function" ? r._imGrundriss(x, z) : false;
+            if (g === "haus" || g === "bau") return false;
         }
         return true;
     };

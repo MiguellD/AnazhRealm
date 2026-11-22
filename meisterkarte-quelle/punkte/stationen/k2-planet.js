@@ -5,6 +5,8 @@
 const fs = require("fs");
 const path = require("path");
 const { seiteProbe, knapp } = require("./seite.cjs");
+// DIE KLASSE DER AUGE-SPROSSE (ZAHL · PANEL · KORPUS am Wortlaut der Karte, R11) — EIN Ort für alle k2-Register
+const AUGE = require("./auge-klasse.cjs");
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // DER KERN DER LEITER-RICHTER (Meisterkarte 2, 18.11., Zweig richter-planet-leben-zusammenspiel) — geteilt mit k2-leben.js und
@@ -21,8 +23,9 @@ const { seiteProbe, knapp } = require("./seite.cjs");
 //   · GRÜN nur, wenn jedes Soll hält UND der Zeuge der Welt spricht (`zeuge(roh)`: die Welt hat sich beobachtbar geändert, die Zahl
 //     kommt aus N Proben der Welt — die Attrappe, die den Wortlaut erfüllt, ohne die Welt zu ändern, fällt dort);
 //   · ein Umfang, den das Spiel heute nicht erzeugt, urteilt ROT „Umfang nicht erzeugbar: <was fehlt>“ (die Probe meldet `nicht`);
-//   · eine Sprosse mit Auge (Blindpaar, Prüfer-Satz R11) schießt das Bild an der festen Pose, legt es ab und behauptet NIE GRÜN —
-//     ihre Zahl trägt die Zeile `auge` mit Pose und Vorbild;
+//   · eine Sprosse mit Auge schießt das Bild an der festen Pose und legt es ab; ihre Klasse steht am Wortlaut der Karte in
+//     stationen/auge-klasse.cjs: ZAHL — die Station urteilt an Soll und Zeuge, das Bild ist Beleg; PANEL (Prüfer-Satz R11) und
+//     KORPUS (ein Band realer Daten fehlt im Repo) — sie behauptet NIE GRÜN, ihre Zahl trägt die Zeile `auge` mit Pose und Vorbild;
 //   · eine Sprosse, die eine Station der Karte 2 oder eine Zeile der Tafel schon trägt, bekommt KEINEN Zwilling (Gebot 4).
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 const KERN = (() => {
@@ -160,7 +163,14 @@ const KERN = (() => {
     };
 
     // DAS URTEIL EINER SPROSSE über den Lauf der Perspektive
-    function urteilBauen(leiter, nr, sp) {
+    // `zahl`: die Auge-Sprosse ist ZAHL (auge-klasse.cjs) — sie urteilt wie jede Zahl-Sprosse, das Bild steht als Beleg daneben
+    function urteilBauen(leiter, nr, sp, zahl) {
+        const richtetAuge = !!sp.auge && !zahl;
+        const beleg = (roh) => {
+            if (!sp.auge) return "";
+            const a = roh.auge || {};
+            return " · Bild (Beleg) " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 80) + ")" : ""));
+        };
         return (j, lauf) => {
             const kopf = "S" + nr + " ";
             const rot = (text, taeter) => ({ gruen: false, zahl: kopf + text + (taeter ? " · Täter: " + taeter : "") });
@@ -169,46 +179,82 @@ const KERN = (() => {
             if (kz) return rot(kz);
             const L = j.leitern[leiter];
             if (!L) return rot("die Leiter " + leiter + " ist im Lauf nicht gemessen (die Probe endete vor ihr)");
-            if (L.warf) return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
-            const roh = L.sprossen && L.sprossen[nr];
+            // DER DECKEL DER LEITER IST KEIN URTEIL (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der
+            // Leiter warf nach 25 s: der Deckel der Leiter 25 s“, ohne dass ein Wert gelesen war). Die Sprosse ist die Einheit des Ergebnisses
+            // (punkte.cjs keinUrteil (e)): was die Leiter vor dem Deckel in `M.teil` schrieb, urteilt wie jede Messung, der Deckel steht
+            // daneben; die Sprosse ohne Wert ist UNGEMESSEN beim Namen (`ohneUrteil`, keinUrteil (f)), nie ROT. Ein anderer Wurf der
+            // Leiter (die Welt warf, der Code der Leiter warf) bleibt ROT mit seinem Text.
+            const roh0 = L.sprossen && L.sprossen[nr];
+            const deckelL = L.warf && (L.deckel === true || /^der Deckel der Leiter \d+ s$/.test(String(L.warf)));
+            if (L.warf && !(roh0 && typeof roh0 === "object")) {
+                if (deckelL) {
+                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s vor dem Wert der Sprosse";
+                    return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                }
+                return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
+            }
+            const vorDeckel = L.warf ? " · gemessen vor dem Wurf der Leiter nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 120) : "";
+            const roh = roh0;
+            const mit = (u) => (vorDeckel ? { ...u, zahl: u.zahl + vorDeckel } : u);
             if (!roh || typeof roh !== "object") return rot("die Sprosse ist im Lauf nicht gemessen", sp.taeter);
             const werte = roh.werte || {};
+            // DIE HALBE SPROSSE UNTER DEM DECKEL (pm-front-f1): jede Leiter schreibt ihr Ergebnis in M.teil (`const aus = M.teil`), der Deckel
+            // kann eine Sprosse treffen, deren Wert noch nicht stand — fehlt unter dem Deckel ein Wert ihres Solls, ist sie UNGEMESSEN beim
+            // Namen des Werts, nie ROT „ungemessen ✗“ (ohne Deckel bleibt ein fehlender Wert ROT: die Leiter lief durch und las ihn nicht)
+            if (L.warf && deckelL) {
+                const offen = sp.soll.filter((s) => werte[s.key] == null || (typeof werte[s.key] === "number" && !Number.isFinite(werte[s.key]))).map((s) => s.key);
+                if (offen.length) {
+                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s, ehe " + offen.join(", ") + " der Sprosse stand";
+                    return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                }
+            }
             const teile = sp.soll.map((s) => {
                 const w = werte[s.key];
                 const ok = haelt(s, w);
                 return { ok, text: s.key + " " + (typeof w === "number" && Number.isFinite(w) ? deutsch(w) + (s.einheit && s.rel !== "±%" ? " " + s.einheit : "") : "ungemessen") + " gegen Soll " + sollText(s) + (ok ? " ✓" : " ✗") };
             });
             const mess = teile.map((t) => t.text).join(" · ");
-            if (sp.auge) {
+            if (richtetAuge) {
                 const a = roh.auge || {};
-                return {
+                const k = AUGE.klasse(leiter, nr);
+                return mit({
                     gruen: false,
                     zahl: kopf + (mess ? mess + " · " : "") + "auge: Pose " + (a.pose || sp.auge.pose) + " · Vorbild " + sp.auge.vorbild + " · Bild " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 120) + ")" : "")) +
-                        " — das Urteil fällt am Gerät im Blindpaar (R11), die Station behauptet kein GRÜN" + (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
-                };
+                        (k.klasse === "panel" ? " — R11 Panel („" + k.wort + "“): das Urteil fällt im Panel, die Station behauptet kein GRÜN" : " — Korpus fehlt (" + k.wort + "): die Station behauptet kein GRÜN") +
+                        (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
+                });
             }
-            if (roh.nicht) return rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : ""), roh.taeter || sp.taeter);
+            if (roh.nicht) return mit(rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : "") + beleg(roh), roh.taeter || sp.taeter));
             const fall = teile.find((t) => !t.ok);
-            if (fall) return rot(mess, roh.taeter || sp.taeter);
+            if (fall) return mit(rot(mess + beleg(roh), roh.taeter || sp.taeter));
             let zg;
             try {
                 zg = sp.zeuge(roh);
             } catch (e) {
                 zg = "der Zeuge warf: " + String((e && e.message) || e).slice(0, 120);
             }
-            if (zg) return rot(mess + " · der Zeuge der Welt fehlt: " + zg, roh.taeter || sp.taeter);
-            return { gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) };
+            if (zg) return mit(rot(mess + " · der Zeuge der Welt fehlt: " + zg + beleg(roh), roh.taeter || sp.taeter));
+            return mit({ gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) + beleg(roh) });
         };
     }
 
-    // DIE PROBEN (Selbsttest) einer Sprosse: die Messung im Soll GRÜN (nie an einer Auge-Sprosse), jede Attrappe ROT, dazu die Fälle der Maschine
+    // DIE PROBEN (Selbsttest) einer Sprosse: die Messung im Soll GRÜN (nie an einer PANEL- oder KORPUS-Sprosse; an einer ZAHL-Sprosse
+    // mit Auge auch ohne Bild — das Bild ist Beleg), jede Attrappe ROT, dazu die Fälle der Maschine
     const ZEUGE = "[linse-gpu] amd/rdna-3 (Probe)";
-    function probenBauen(leiter, nr, sp) {
+    function probenBauen(leiter, nr, sp, zahl) {
         const j = (roh) => ({ leitern: { [leiter]: { s: 1, sprossen: { [nr]: roh } } } });
+        const nie = !!sp.auge && !zahl;
         const p = [];
-        p.push({ name: "gemessen im Soll" + (sp.auge ? " (Auge: nie GRÜN)" : ""), j: j(sp.gruen), stdout: ZEUGE, gruen: !sp.auge });
+        p.push({ name: "gemessen im Soll" + (nie ? " (Auge: nie GRÜN)" : sp.auge ? " (ZAHL: das Bild ist Beleg)" : ""), j: j(sp.gruen), stdout: ZEUGE, gruen: !nie });
         for (const a of sp.attrappen) p.push({ name: "ATTRAPPE " + a.name, j: j(a.roh), stdout: ZEUGE, gruen: false });
-        for (const a of sp.proben || []) p.push({ name: a.name, j: j(a.roh), stdout: ZEUGE, gruen: !!a.gruen && !sp.auge });
+        for (const a of sp.proben || []) p.push({ name: a.name, j: j(a.roh), stdout: ZEUGE, gruen: !!a.gruen && !nie });
+        // die ZAHL-Sprosse: jedes Soll einen Schritt daneben ist ROT (die Station urteilt den ganzen Satz, nie einen Teil)
+        if (sp.auge && zahl)
+            for (const s of sp.soll) {
+                const w = sp.gruen.werte || {};
+                const raus = s.rel === "≥" || s.rel === ">" ? s.a - 1 - Math.abs(s.a) : s.rel === "≤" || s.rel === "<" ? s.a + 1 + Math.abs(s.a) : s.rel === "band" ? s.b + 1 + Math.abs(s.b) : s.rel === "=" ? s.a + 1 + Math.abs(s.a) : s.rel === "±" ? s.ref + 2 * s.a + 1 : s.rel === "±%" ? s.ref + Math.abs(s.ref) * (s.a / 50) + 1 : null;
+                if (raus !== null) p.push({ name: "ZAHL: das Soll " + s.key + " reißt", j: j({ ...sp.gruen, werte: { ...w, [s.key]: raus } }), stdout: ZEUGE, gruen: false });
+            }
         p.push({ name: "Umfang nicht erzeugbar", j: j({ ...sp.gruen, nicht: "die Probe" }), stdout: ZEUGE, gruen: false });
         p.push({ name: "swiftshader", j: j(sp.gruen), stdout: "[linse-gpu] google/swiftshader", gruen: false });
         p.push({ name: "die Leiter warf", j: { leitern: { [leiter]: { s: 3, warf: "Error: Probe" } } }, stdout: ZEUGE, gruen: false });
@@ -227,12 +273,22 @@ const KERN = (() => {
         M.nicht = (was, werte) => ({ nicht: String(was), werte: werte || {} });
         // DAS BILD DER AUGE-SPROSSE an der festen Pose: /bild der Werkbank (die Kamera der Pose, 1920 × 1080), Rückgabe { bild, pose } — ein ROT der
         // Seite steht als grund, nie als Wurf
+        // DIE POSE OHNE KAMERA (21.11.): `{ ort: "wiese" }` (57 Rufe) trägt kein px … lz — /bild der Werkbank liest `ort` nur als Inhalt
+        // des Messorts, die Kamera stand auf NaN, und das Bild war schwarz (31ea3847-gtx: 31 Auge-Bilder „bild.schwarz 1 · Ziel
+        // Blickziel nicht im Bild“, pose kamera [null,null,null]). Ohne px schießt das Auge an der Kamera des Spiels, wo der Spieler steht
+        // (wie `--bewegung` in werkbank.cjs /bild); der Ort bleibt das Inhalts-Urteil der Abnahme
         M.auge = async (name, pose, o = {}) => {
             const datei = require("path").join(require("path").dirname(H.aus), "auge-" + name + ".png");
             if (M.swift) return { bild: null, pose: JSON.stringify(pose), grund: "swiftshader: kein Schuss ohne Gerät (ungefahren am Gerät)" };
             try {
-                const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, pose, o));
-                return { bild: b.datei || datei, pose: JSON.stringify(pose) };
+                let p = pose || {};
+                if (!Number.isFinite(Number(p.px))) {
+                    const k = await H.seite("r._loopCamera(performance.now()); const c = r.state.camera; return [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()];");
+                    if (!Array.isArray(k) || k.length !== 6 || !k.every(Number.isFinite)) throw new Error("die Kamera des Spiels ist nicht lesbar: " + JSON.stringify(k).slice(0, 80));
+                    p = Object.assign({}, p, { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5] });
+                }
+                const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, datei }, p, o));
+                return { bild: b.datei || datei, pose: JSON.stringify(p) };
             } catch (e) {
                 return { bild: null, pose: JSON.stringify(pose), grund: String((e && e.message) || e).slice(0, 200) };
             }
@@ -304,18 +360,21 @@ const KERN = (() => {
             H.schritt("dorf");
             fs.writeFileSync(H.aus, JSON.stringify(aus));
         }
+        // DIE SPROSSE IST DIE EINHEIT (pm-front-f1): eine Leiter legt jedes fertige Ergebnis in `M.teil[nr]`, sobald es steht; reißt ihr
+        // Deckel, bleibt es gemessen (`deckel: true` daneben) — die Sprosse ohne Wert ist UNGEMESSEN (urteilBauen), nie ROT
         for (const id of Object.keys(LEITERN)) {
             const L = LEITERN[id];
             M.t0 = Date.now();
-            let uhr = null;
+            M.teil = {};
+            let uhr = null, deckel = false;
             try {
                 const r = await Promise.race([
                     L.mess(H, L.U, M),
-                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel der Leiter " + L.sek + " s")), L.sek * 1000))),
+                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + L.sek + " s"))), L.sek * 1000))),
                 ]);
                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
             } catch (e) {
-                aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+                aus.leitern[id] = Object.assign({ s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, deckel ? { deckel: true } : {}, { sprossen: Object.assign({}, M.teil) });
             }
             clearTimeout(uhr);
             H.schritt(id);
@@ -367,7 +426,10 @@ const KERN = (() => {
                 }
                 if (!sp) throw new Error(id + " S" + nr + ": keine Sprosse in der Station (jede Sprosse der Leiter urteilt)");
                 if (!Array.isArray(sp.soll) || !sp.soll.length) throw new Error(id + " S" + nr + ": soll leer");
-                if (!sp.auge && typeof sp.zeuge !== "function") throw new Error(id + " S" + nr + ": zeuge fehlt (die Attrappe fiele nie)");
+                // die Klasse der Auge-Sprosse am Wortlaut (auge-klasse.cjs; wirft, wenn sie dort fehlt): eine ZAHL-Sprosse urteilt wie
+                // jede Zahl-Sprosse und braucht ihren Zeugen
+                const zahl = !!sp.auge && AUGE.klasse(id, nr).klasse === "zahl";
+                if ((!sp.auge || zahl) && typeof sp.zeuge !== "function") throw new Error(id + " S" + nr + ": zeuge fehlt (die Attrappe fiele nie)" + (zahl ? " — die Sprosse ist ZAHL (auge-klasse.cjs), ihr Bild ist nur Beleg" : ""));
                 if (sp.auge && !(sp.auge.pose && sp.auge.vorbild)) throw new Error(id + " S" + nr + ": auge verlangt pose und vorbild");
                 if (!sp.gruen || !Array.isArray(sp.attrappen) || !sp.attrappen.length) throw new Error(id + " S" + nr + ": gruen und attrappen (Selbsttest) fehlen");
                 if (typeof sp.taeter !== "string" || sp.taeter.length < 4) throw new Error(id + " S" + nr + ": taeter fehlt (wer beim ROT beim Namen steht)");
@@ -380,23 +442,44 @@ const KERN = (() => {
                     gpu: true,
                     zeit: false,
                     minuten: Math.max(1, Math.ceil(sek / 60)),
-                    urteil: urteilBauen(id, nr, sp),
-                    proben: probenBauen(id, nr, sp),
+                    urteil: urteilBauen(id, nr, sp, zahl),
+                    proben: probenBauen(id, nr, sp, zahl),
                     pfad: L.pfad,
                     quelle: "KARTE2 " + id + " S" + nr + " = " + s.richter,
                 };
                 if (nr === 1) st.beide = true;
                 // DAS BLATT (vision/richter/fabrik-planet-leben-zusammenspiel.md) liest diese Felder; die Maschine nie
                 Object.defineProperty(st, "blatt", { enumerable: false, value: { perspektive: kapitel + "." + pid, auge: sp.auge || null, nicht: sp.nicht || null, leser: sp.leser || null, unklar: sp.unklar || null, ungefahren: L.ungefahren || "ungefahren am Gerät" } });
-                // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“ — die Station urteilt die Sprosse ganz;
-                // „fehlt“ — ein Auge (Blindpaar, R11) urteilt sie am Gerät, die Station schreibt keine Akte
-                Object.defineProperty(st, "tafel", { enumerable: false, value: sp.auge
-                    ? { richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
-                    : { richter: "gleich" } });
+                // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“ — die Station urteilt die Sprosse ganz
+                // (auch die ZAHL-Sprosse mit Bild als Beleg); „fehlt“ — PANEL (R11) oder KORPUS, Grund aus auge-klasse.cjs
+                Object.defineProperty(st, "tafel", { enumerable: false, value: sp.auge ? AUGE.tafel(id, nr, true) : { richter: "gleich" } });
                 stationen.push(st);
             }
         }
         return stationen;
+    }
+
+    // DER DECKEL DER LEITER IM SELBSTTEST (pm-front-f1): je Station zwei Proben aus ihrer ersten („gemessen im Soll“) — ohne Wert der
+    // Sprosse UNGEMESSEN beim Namen (`ohneUrteil`, nie ROT „warf“); mit Wert aus `M.teil` urteilt die Sprosse wie gemessen, der Deckel daneben
+    function mitDeckelProben(st, def) {
+        const leiter = st.kriterium.slice(7), nr = st.staffel, p0 = st.proben[0];
+        const roh = p0.j.leitern[leiter].sprossen[nr];
+        const j = (sprossen) => ({ leitern: { [leiter]: { s: 25, warf: "der Deckel der Leiter 25 s", deckel: true, sprossen } } });
+        const sp = def && def.leitern && def.leitern[leiter] && def.leitern[leiter].sprossen && def.leitern[leiter].sprossen[nr];
+        const w0 = (roh && roh.werte) || {};
+        // trägt schon die erste Probe nicht jeden Wert ihres Solls, ist sie unter dem Deckel die halbe Sprosse (unten)
+        const halb = !!(sp && Array.isArray(sp.soll) && sp.soll.some((s) => w0[s.key] == null || (typeof w0[s.key] === "number" && !Number.isFinite(w0[s.key]))));
+        st.proben = st.proben.concat([
+            { name: "der Deckel der Leiter riss vor dem Wert", j: j({}), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse/ },
+            halb
+                ? { name: "gemessen vor dem Deckel der Leiter, ohne jeden Wert des Solls", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s, ehe .+ der Sprosse stand/ }
+                : { name: "gemessen vor dem Deckel der Leiter", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: p0.gruen, zahl: /gemessen vor dem Wurf der Leiter nach 25 s/ },
+        ]);
+        // die halbe Sprosse: der Deckel traf sie, ehe ihre Werte standen (M.teil trägt das Objekt ohne Werte) — UNGEMESSEN beim Namen des Werts
+        if (sp && Array.isArray(sp.soll) && sp.soll.length && roh && typeof roh === "object")
+            st.proben.push({ name: "der Deckel der Leiter traf die halbe Sprosse", j: j({ [nr]: { ...roh, werte: {} } }), stdout: p0.stdout, gruen: false,
+                zahl: /der Deckel der Leiter riss nach 25 s, ehe .+ der Sprosse stand/ });
+        return st;
     }
 
     // DAS KAPITEL: sammelt die Perspektiven, die Datei exportiert `stationen()`. EINE Perspektive darf aus mehreren Teilen kommen
@@ -413,7 +496,7 @@ const KERN = (() => {
                 }
                 defs.set(pid, d);
             },
-            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d)),
+            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d).map((st) => mitDeckelProben(st, d))),
         };
     }
     return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp };
@@ -529,7 +612,7 @@ L.perspektive("geologie", (() => {
                 }
                 return b;
             };
-            const aus = {};
+            const aus = M.teil || {};
             const A = U[2];
             // ── A: die Stichprobe je Saat (S2, S4, S9; Grundlage von S1, S5): A.punkte Fibonacci-Lagen zur Zeit 0 — gezogen von der Leiter
             // gebirge DERSELBEN Probe über denselben Faden (window.__geoStich); was ihr Deckel nicht trug, zieht diese Leiter bis A.bis nach
@@ -1208,7 +1291,7 @@ L.perspektive("geologie", (() => {
                 }
                 return b;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // ── DIE STICHPROBE DER PROBE (S6; dieselbe liest die Leiter platten für S1, S2, S4, S5, S9): je Saat erde-01 … S6.punkte
             // Fibonacci-Lagen zur Zeit 0 über den Planet-Faden, abgelegt in window.__geoStich (die Probe räumt es am Ende)
             const S6 = U[6];
@@ -1581,13 +1664,17 @@ L.perspektive("geologie", (() => {
             },
             4: {
                 u: {},
-                soll: [ohneZahl(LA, 4, "Abbau sichtbar und nach Reload bleibend", "abbau"), ohneZahl(LA, 4, "Senkung über Kohle messbar", "senkung")],
+                // ZAHL (auge-klasse.cjs): „sichtbar und bleibend“ und „messbar“ sind Schwellen des Worts selbst — die Grube steht nach dem
+                // Reload (1), die Senkung über dem Flöz ist > 0 m; das Bild ist Beleg
+                soll: [
+                    K.soll(LA, 4, "Abbau sichtbar und nach Reload bleibend", { key: "abbau", rel: "=", zahl: 1, refQuelle: "das Wort selbst: „nach Reload bleibend“ — 1 = die gegrabene Grube steht nach dem Reload an derselben Stelle" }),
+                    K.soll(LA, 4, "Senkung über Kohle messbar", { key: "senkung", rel: ">", zahl: 0, refQuelle: "das Wort selbst: „messbar“ — die Senkung über dem abgebauten Flöz ist > 0 m", einheit: "m" }),
+                ],
                 zeuge: zMin({ antworten: 1000 }),
                 auge: { pose: "Ego an der Grube nach Abbau und Reload (heute: keine Lagerstätte)", vorbild: "Fotos von Gruben, Halden und Bergsenkungen (Ruhrgebiet), Prüfer-Satz R11" },
                 taeter: "die Stoff-Tafel (keine Kohle) — kein Leser einer Senkung",
                 nicht: "keine Kohle, keine Senkung",
                 leser: "stamm/bau-buch.js:1554 _stoff — keine Kohle in der Stoff-Tafel; kein Leser einer Bergsenkung über einem Abbau",
-                unklar: "der Richter nennt keine Zahl — Vorschlag: „Senkung ≥ 0,5 m über einem Flöz nach Abbau, Grube nach Reload byte-gleich“",
                 gruen: gut({ abbau: 1, senkung: 0.8 }, { antworten: 5000 }),
                 attrappen: [{ name: "eine gegrabene Grube ohne Kohle", roh: leer({ abbau: 1, senkung: 0.8 }) }],
             },
@@ -1896,7 +1983,7 @@ return { laeufe: lf.length, hack, bif: rb.length ? Math.exp(rb.reduce((s, v) => 
             const streu = (a) => (a.length > 1 ? Math.sqrt(mittel(a.map((x) => (x - mittel(a)) ** 2))) : 0);
             const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : NaN);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE SAATEN DES NETZES (S2 20 Lagen, 10 × 10 km; S5 10 Lagen, 30 × 30 km) und DER HANG (S3 50 Lagen, 100 × 100 km, 9 Felder
             // je 5 × 5 Punkte im 30-m-Raster): alles aus dem Gelände-Gesetz der Reise-Welt am Ort
             const w = await H.seite(KOPF + `
@@ -2174,7 +2261,7 @@ return { orte: orte.length, je, mae, wasserfaelle: wf, kacheln, breiteMin: R3(br
             const klassen = { vtal: hat((x) => x[0] !== null && x[0] < 1.5), trog: hat((x) => x[0] !== null && x[0] >= 1.5), aue: hat((x) => x[1] !== null && x[1] >= 20), schichtstufe: hat((x) => x[2] === 1), maeander: hat((x) => x[4] !== null && x[4] >= 1.5), talsee: hat((x) => x[5] > 0), wasserfall: (w.wasserfaelle || 0) > 0 };
             const gefunden = Object.keys(klassen).filter((k) => klassen[k]);
             const drei = ["vtal", "trog", "aue", "schichtstufe"].filter((k) => klassen[k]);
-            const aus = {};
+            const aus = M.teil || {};
             const zeugeS = { saaten: je.length, klassen: gefunden.length, streuung: R3(Math.sqrt(je.filter((x) => x[0] !== null).reduce((s, x, i, a) => s + (x[0] - a.reduce((t, y) => t + y[0], 0) / a.length) ** 2, 0) / Math.max(1, je.filter((x) => x[0] !== null).length))) };
             aus[1] = { werte: { saaten: s20.length, klassenDerDrei: ["vtal", "trog"].some((k) => klassen[k]) + klassen.aue + klassen.schichtstufe, schichtstufeSaaten: s20.filter((x) => x[2]).length, talExponentMedian: R3(med(s20.filter((x) => x[0] !== null).map((x) => x[0]))) }, zeuge: Object.assign({ gefunden: drei }, zeugeS), auge: await M.auge("relief-formschatz-s1", w.poseSchicht || { ort: "wiese" }) };
             aus[2] = {
@@ -2325,7 +2412,7 @@ return { posen, laeufe, paare, klassen, strata: r.constructor.STRATA_STEIN_DEPTH
             const pa = w.paare || [];
             const mitDick = pa.filter((x) => x[1] !== null && x[3] !== null);
             const stoffe = new Set((w.laeufe || []).flat().filter(Boolean));
-            const aus = {};
+            const aus = M.teil || {};
             aus[1] = { werte: { posen: P.length / 9, schuttSteilProzent: anteil(steil, (x) => x[1] > 0.5), schuttFlachProzent: anteil(flach, (x) => x[1] > 0.5), feuchtProzent: anteil(P, (x) => x[2] > 0.5), steilePunkte: steil.length }, zeuge: { posen: P.length / 9, klassen: [...new Set(P.map((x) => x[3]))] }, auge: await M.auge("relief-boden-s1", { ort: "wiese" }) };
             aus[2] = { werte: { laeufe: (w.laeufe || []).length, stoffeDerSohle: stoffe.size }, zeuge: { laeufe: (w.laeufe || []).length, stoffe: [...stoffe] }, nicht: "keine Korngröße in der Welt: der Boden kennt Stoffe (" + [...stoffe].join(", ") + "), kein Korn nach Herkunft (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)" };
             aus[3] = {
@@ -2517,7 +2604,7 @@ aus.hoehen = pk.slice(0, 5).map((p, i) => ep.length);
 aus.ms = Math.round(performance.now() - t0);
 return aus;
 `);
-            const aus = {};
+            const aus = M.teil || {};
             // je Lauf [Wetter, Regenmenge (Regen 1 · Sturm 2 je min), Minuten, Σ|Δ| m, geänderte Zellen > 5 cm]
             const dz = (zeit && zeit.d) || [];
             const z10 = dz.find((x) => x[0] === "10min");
@@ -2740,7 +2827,7 @@ window.__pwMeer = m;
 `;
             const meer = await H.seite(MEER + "return m;");
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
-            const aus = {};
+            const aus = M.teil || {};
             const ziel = Object.keys(U);
             if (!meer || !meer.gefunden) {
                 for (const nr of ziel) aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn (gelaende-core hoehe unter dem Spiegel)");
@@ -3026,7 +3113,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DER SPIEGEL ÜBER 25 STUNDEN der Welt-Uhr (`spielZeit`, der Pegel nachgezogen) an der Küste und quer übers Watt (41 Punkte vom
             // Ufer zur Tiefe, `_nassAt`), der Mond gegen die Sonne an 31 Tagen (`__weltLicht`), der Spiegel im Sturm gegen die Flaute
             const w = await H.seite(MEER + `
@@ -3225,7 +3312,10 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
                 taeter: "planet-core.js planetPlan (kein Mond)",
                 nicht: "kein Doppelmond, kein Eismond",
                 leser: "planet-core.js:312 planetPlan — kein Mond, keine Gezeitenheizung",
-                gruen: gut({ rang: 0.75 }, {}),
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMin({ eismonde: 5 }),
+                zeugeText: "der Rang über ≥ 5 Eismonde mit Wärmefluss und Exzentrizität",
+                gruen: gut({ rang: 0.75 }, { eismonde: 10 }),
                 attrappen: [{ name: "der Rang ohne Mond", roh: leer({ rang: 0.75 }) }],
             },
         },
@@ -3277,7 +3367,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE FLÜSSE DER HEIMAT: 12 Posen auf den Läufen des Gesetzes (`flussLaeufe` ±1 km, ≥ 150 m auseinander, im Kanal), je Pose die
             // Strömung der Welt (`_waterFlowAt`) gegen die Richtung des Laufs; DAS MEER: die Strömung an seinen Punkten (Küste und innen)
             const w = await H.seite(MEER + `
@@ -3472,7 +3562,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
             // `_schneeVersatz` der Saison, gelaende-core schneeTrittAm), gegen die Nullgrad-Höhe des Tagesmittels (temperaturAus über
             // `_temperaturFeld`, vier Stunden); der Tritt des Fußes am Gelände der Pose
@@ -3699,7 +3789,7 @@ return { meer, kalt, felder: Object.keys(a) };
         mess: async function (H, U, M) {
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DIE GRUBEN AM SEE (der See der Soll-Tafel): 20 Gruben 40–200 m vom Ufer, ihr Boden 1 m unter dem Spiegel des Sees — wie hoch
             // füllt die Welt sie (`_atlasWaterLevelAt`, der Spiegel, den die Zellen des Wassers lesen)?
             const gruben = await H.seite(`
@@ -3911,7 +4001,7 @@ window.__pwMeer = m;
 `;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
-            const aus = {};
+            const aus = M.teil || {};
             // DAS MEDIUM DER KAMERA UNTER WASSER: die Kamera an der tiefsten Stelle der Bucht 0,1 m · 5 m · (Grund − 0,3 m) unter dem
             // Spiegel, der Tag der Welt angewandt (`_applyDayNightToScene` — derselbe Leser, der jedes Bild färbt): die Farbe des Lichts
             // (`luft.U.farbe`), der Abfall je Kanal, die Sicht (`_luftSichtM`); danach steht die Kamera, wo sie stand
@@ -4242,7 +4332,7 @@ return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[
                 for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
                 return b > 0 && c > 0 ? a / Math.sqrt(b * c) : NaN;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S2 die Frontpassage: Abfolge (die Bedeckung steigt aus dünner Decke zur Decke bewölkt, nach dem Regen ein Schauer) und
             // Winddrehung (rechtsdrehend ≥ 15° über ±3 Takte, Nordhalbkugel); einen Druck trägt die Welt nicht
             const pas = welt.passagen.filter(Boolean);
@@ -4438,7 +4528,7 @@ return { korrelation: best[0], texel: px, dt: b.t - a.t, ms: b.t > a.t ? (px * W
 } finally { window.__wetterSetzen(alt); }
 `).catch((e) => ({ grund: String((e && e.message) || e).slice(0, 200) }));
             }
-            const aus = {};
+            const aus = M.teil || {};
             const zug = welt.wolkeZugMs;
             const sch = Number.isFinite(schatten.ms) ? schatten.ms : null;
             // S1 die Schicht: Zug der Wolke (Uniform) und des Wurfs (Karte, am Gerät), Versatz; das 2AFC am Gerät
@@ -4675,11 +4765,11 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 for (let k = 0; k < a.length; k++) (s += (a[k] - ma) * (b[k] - mb)), (sa += (a[k] - ma) ** 2), (sb += (b[k] - mb) ** 2);
                 return sa > 0 && sb > 0 ? s / Math.sqrt(sa * sb) : NaN;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S2 Schnee- und Baumgrenze (Gesetz) gegen die Erd-Höhe der Breite der Heimat
             aus[2] = {
                 werte: { schneegrenzeM: R(heim.schnee), baumgrenzeM: R(heim.baum), hoechsterM: R(heim.hoechsterM) },
-                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))) },
+                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))), breiteAnkerGrad: R(faden.anker[0]) },
                 auge: await M.auge("wetter-klima-s2", { ort: "wiese" }, { uhr: 0.5 }),
                 nicht: "kein Gebirge in Erd-Höhe: die Höhe ist gestaucht (gelaende-core TEMPERATUR 0,11 K/m statt 0,0065 K/m), der höchste Grund binnen 6 km liegt " + R(heim.hoechsterM) + " m über dem Meer",
             };
@@ -4737,8 +4827,24 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 taeter: "gelaende-core.js TEMPERATUR (Höhe gestaucht, 0,11 K/m)",
                 nicht: "kein Gebirge in Erd-Höhe (Höhe gestaucht)",
                 leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m",
-                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800 } },
-                attrappen: [{ name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) }],
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                // DIE QUELLE DER ERD-REFERENZ IN DER STATION (pm-front-f1): ref 2 900 / 2 100 m gilt nur für 43–46° N (Alpen, die refQuelle) —
+                // der Zeuge trägt die Breite des Ankers, den der Faden der Welt nennt (planet-anker); steht er außerhalb des Bands (andere
+                // Messungen sahen −45,5°), vergliche die Sprosse gegen eine Erd-Höhe ohne Quelle für ihre Breite
+                zeuge: (roh) => {
+                    const f = zMin({ grenzen: 2 })(roh);
+                    if (f) return f;
+                    const b = roh.zeuge.breiteAnkerGrad;
+                    if (!(typeof b === "number" && Number.isFinite(b))) return "die Breite des Ankers fehlt — die Erd-Referenz 43–46° N hat keinen Ort";
+                    if (b < 43 || b > 46) return "der Anker der Heimat liegt auf " + b + "° — die Erd-Referenz (Alpen, Ohmura 1992 · Körner & Paulsen 2004) gilt für 43–46° N, für diese Breite trägt die Station keine Quelle";
+                    return null;
+                },
+                zeugeText: "Schnee- und Baumgrenze am höchsten Grund gefunden, der Anker auf 43–46° N",
+                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: 43.4 } },
+                attrappen: [
+                    { name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) },
+                    { name: "Erd-Höhe am Anker der Südhalbkugel (−45,5°)", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: -45.5 } } },
+                ],
             },
             3: {
                 u: { orte: 30, radiusGrad: [14, 20] },
@@ -4758,6 +4864,9 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 taeter: "welt-licht.js sonnenRichtung (keine Bahn aus Jahr × Breite)",
                 nicht: "keine Sonnenbahn aus Jahr und Breite, eine Breite",
                 leser: "welt-licht.js:711 — sonnenRichtung(winkel) liest weder Saison noch Breite (die Bahn nach Meeus Kap. 13 steht OFFEN)",
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMin({ zurueck: 1 }),
+                zeugeText: "Juli und Januar gesetzt und zurück",
                 gruen: { werte: { breitenRichtig: 3 }, zeuge: { zurueck: 1 } },
                 attrappen: [{ name: "3 Breiten behauptet", roh: leer({ breitenRichtig: 3 }) }],
             },
@@ -4862,7 +4971,7 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
                 for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
                 return b > 0 && c > 0 ? a / Math.sqrt(b * c) : 0;
             };
-            const aus = {};
+            const aus = M.teil || {};
             // S1 die Flut: der größte Regen einer nassen Strecke in 100 Jahren am Ort; der Hub ist an der Krone gedeckelt
             aus[1] = {
                 werte: { regenMaxMm: R(welt.maxAll), kroneM: R(welt.krone) },
@@ -4912,12 +5021,19 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
         sprossen: {
             1: {
                 u: { jahre: 100, mmJeStunde: 10 },
-                soll: [K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" })],
+                soll: [
+                    K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" }),
+                    // die zweite Hälfte des Satzes: das Wasser steht über der Aue (die Probe misst sie heute nicht — ungemessen ist ROT)
+                    K.soll(EX, 1, "Überflutung ≥ Aue", { key: "ueberAueM", rel: ">", zahl: 0, refQuelle: "der Richter: „Überflutung ≥ Aue“ — der Spiegel steht über der Aue (Höhe über ihr > 0 m)", einheit: "m" }),
+                ],
                 auge: { pose: "Ego an der Mess-Wiese, Bildpaar vor/nach dem Starkregen (die Bühne setzt stormy)", vorbild: "Bildpaar eines Hochwassers über die Aue (Pegelfotos, z. B. Elbe 2002)" },
                 taeter: "gelaende-core.js pegelHub (an der Krone gedeckelt)",
                 nicht: "der Fluss verlässt das Bett nie",
                 leser: "gelaende-core.js:1569 — der Hub ist an der Krone gedeckelt, die Aue trägt den Überschuss „nicht gerechnet“",
-                gruen: { werte: { regenMaxMm: 120 }, zeuge: { jahre: 100, streu: 12 } },
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMinStreu({ jahre: 1 }, ["streu"]),
+                zeugeText: "die Regen-Jahre der Strecke gewürfelt, mit Streuung",
+                gruen: { werte: { regenMaxMm: 120, ueberAueM: 0.4 }, zeuge: { jahre: 100, streu: 12 } },
                 attrappen: [{ name: "120 mm behauptet", roh: leer({ regenMaxMm: 120 }) }],
             },
             2: {
@@ -5044,7 +5160,7 @@ return out;
 `);
             const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
             const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
-            const aus = {};
+            const aus = M.teil || {};
             // S1 Regen kommt aus der Windrichtung: die Bedeckung im Luv (Zug × 1 h gegen den Wind) eine Stunde vor dem Beginn höher als
             // am Ort, und sie stieg am Ort binnen der Stunde
             const B = welt.beginne;
@@ -5247,7 +5363,7 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
                 const lNah = links.length ? links[links.length - 1] : -Infinity, rNah = rechts.length ? rechts[0] : -Infinity;
                 if (p[i] >= lNah && p[i] >= rNah && p[i] - Math.max(lMin, rMin) >= 0.02) baender++;
             }
-            const aus = {};
+            const aus = M.teil || {};
             const E = welt.je.erde, F = welt.je.ferne;
             // S1 die Erde: der Farbton der Sonne Mittag/Abend durch die Atmosphäre der Welt; die Himmelsfarbe im Bild am Gerät
             aus[1] = {
@@ -5338,6 +5454,9 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
                 taeter: "voxel-worker.js planetPlanVon (immer PLANET_ERDE)",
                 nicht: "Rotation nicht setzbar, kein Orbitbild",
                 leser: "voxel-worker.js:1159 — planetPlanVon setzt P.PLANET_ERDE: die Rotation (planet-core planetKlimaGlobal zellen) ist nie anders als die der Erde",
+                // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                zeuge: zMinStreu({ meerOrte: 100 }, ["streuProfil"]),
+                zeugeText: "das Wind-Profil über ≥ 100 Meer-Orten des Fadens",
                 gruen: { werte: { baenderX1: 3, baenderX01: 1, baenderX5: 4 }, zeuge: { meerOrte: 100, streuProfil: 0.1 } },
                 attrappen: [{ name: "Bänder aus der Theorie", roh: leer({ baenderX1: 3, baenderX01: 1, baenderX5: 4 }) }],
             },
@@ -5489,7 +5608,7 @@ aus.super.push([z, land, gross, land ? R3(gross / land) : null]);
 aus.ms = Math.round(performance.now() - t0);
 return aus;
 `);
-            const aus = {};
+            const aus = M.teil || {};
             const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
             // S1: +100 a — die Wärme, die Schneegrenze, die Küste (Bruun: Rückzug = Δh / Neigung)
             const [z0, t0, , , m0, sn0] = a.heute, [, t1, , , m1, sn1] = a.plus100;
@@ -5768,7 +5887,7 @@ return { tafel, heimY: R3(y0), lagen3m: lg.size, stetigM: stetig, stetigVoll, gr
             const mil = w.milieu || [];
             const wechsel = mil.reduce((s, r) => s + r.slice(1).filter((m, i) => m !== r[i]).length, 0);
             const arten = new Set(mil.flat());
-            const aus = {};
+            const aus = M.teil || {};
             aus[1] = {
                 werte: Object.assign({ tafelSaaten: alle.length, mitKliff: tf.length }, alle.length ? { kliffGrad: R3(med(alle.map((x) => x[4] || 0))), kliffP90Grad: R3(med(alle.map((x) => x[5] || 0))), schuttZellen: tf.reduce((s, x) => s + x[6], 0) } : {}),
                 zeuge: { tafelSaaten: tf.length, kliffZellen: tf.reduce((s, x) => s + x[3], 0), schuttZellen: tf.reduce((s, x) => s + x[6], 0), je: alle.map((x) => x.slice(0, 8)) },
@@ -5922,7 +6041,7 @@ L.perspektive("erde", (() => {
                         );
                     // der Schlüssel der Erd-Saat (R4): ein Leser im Spiel, der ihn trägt — heute keiner (die Probe fragt die Welt, nicht den Text)
                     const schluessel = await H.seite("const G = r._gelaende && r._gelaende(); return !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel);");
-                    const aus = {};
+                    const aus = M.teil || {};
                     for (const nr of Object.keys(U)) {
                         const u = U[nr];
                         const werte = {};
