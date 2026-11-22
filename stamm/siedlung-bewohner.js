@@ -1208,26 +1208,41 @@ class AnazhRealm_siedlung_bewohner {
         // DIE KISTEN STEHEN NIE IM HAUS (strom S1, acker-kette 2): die Reihen wachsen vom Werk-Ort fort, seitlich des Blicks —
         // am Start-Dorf lag die vierte Reihe zweier von drei Scheunen in der Wand des Nachbarn (6 bzw. 4 von 24 Plätzen im
         // Grundriss „haus“, dort trägt kein gezeichneter Boden), `_bodenSichtAt` antwortete null und das Bild des Vorrats kam
-        // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste). Die Lage wählt nun die erste der vier Seiten (rechts/
-        // links des Blicks × fort vom/zum Tor), deren Plätze alle frei von Haus und Bau sind; die erste ist die bisherige
-        const frei = (s, t) => {
-            for (let j = 0; j < m; j++) {
-                const a = s * (AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM);
-                const d = -t * Math.floor(j / 6) * kM;
-                const g = this._imGrundriss(w.x + fz * a + fx * d, w.z - fx * a + fz * d, kM / 2);
-                if (g === "haus" || g === "bau") return false;
-            }
-            return true;
+        // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste; keine der vier Seiten war ganz frei, die Reihen dahinter
+        // liefen bis 7 m tief durch das Nachbarhaus). Nun nimmt jede Kiste den nächsten FREIEN Fuß: zuerst die bisherigen
+        // Reihen (drei breit, nach hinten), danach das Feld daneben (seitlich bis 8 Füße, 4 nach hinten, 2 zum Tor) nach
+        // Abstand vom ersten Fuß; ein Fuß ohne gezeichneten Boden im Grundriss eines Hauses oder Baus fällt aus. Wo nichts im Weg
+        // steht, ist die Lage die bisherige
+        const fussLage = ([c, r]) => {
+            const a = AnazhRealm.BESTAND_BILD.seiteM + c * kM;
+            const d = r * kM;
+            return [w.x + fz * a + fx * d, w.z - fx * a + fz * d];
         };
-        const [ss, st] = [[1, 1], [-1, 1], [1, -1], [-1, -1]].find(([s, t]) => frei(s, t)) || [1, 1];
-        const am = (j) => ss * (AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM);
-        const tief = (j) => -st * Math.floor(j / 6) * kM;
-        const lage = (j) => [w.x + fz * am(j) + fx * tief(j), w.z - fx * am(j) + fz * tief(j)];
-        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
-        const fuss = (j) => (j % 3) + 3 * Math.floor(j / 6); // der Platz der Kiste j am Boden
+        const fuss = (j) => (j % 3) + 3 * Math.floor(j / 6); // der Platz der Kiste j am Boden (die Folge der freien Füße)
+        const n = m > 0 ? fuss(m - 1) + 1 : 0;
+        const plaetze = [];
+        for (let q = 0; q < n; q++) plaetze.push([q % 3, -Math.floor(q / 3)]);
+        const feld = [];
+        for (let c = 0; c < 8; c++) for (let r = -4; r <= 2; r++) feld.push([c, r]);
+        feld.sort((A, B) => Math.hypot(A[0], A[1]) - Math.hypot(B[0], B[1]));
+        for (const P of feld) if (!plaetze.some((Q) => Q[0] === P[0] && Q[1] === P[1])) plaetze.push(P);
+        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt;
+        // ein Fuß ohne gezeichneten Boden am Grundriss eines Hauses oder Baus — das Loch des Bodens um seine Wand — fällt aus)
+        const fuesse = [];
         const y = [];
-        for (let j = 0; j < m; j++) if (y[fuss(j)] === undefined) y[fuss(j)] = this._bodenSichtAt(...lage(j));
-        if (y.some((v) => v == null)) return null;
+        for (let q = 0; fuesse.length < n && q < plaetze.length; q++) {
+            const p = fussLage(plaetze[q]);
+            const h = this._bodenSichtAt(...p);
+            if (h == null) {
+                const g = this._imGrundriss(...p, kM);
+                if (g === "haus" || g === "bau") continue;
+                return null;
+            }
+            fuesse.push(p);
+            y.push(h);
+        }
+        if (fuesse.length < n) return null;
+        const lage = (j) => fuesse[fuss(j)];
         const G = new THREE.Group();
         for (let j = 0; j < m; j++) {
             const k = this._buildArchMeshMerged(bp);
