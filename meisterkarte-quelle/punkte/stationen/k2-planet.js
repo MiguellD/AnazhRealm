@@ -182,8 +182,11 @@ const KERN = (() => {
             // DER DECKEL DER LEITER IST KEIN URTEIL (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der
             // Leiter warf nach 25 s: der Deckel der Leiter 25 s“, ohne dass ein Wert gelesen war). Die Sprosse ist die Einheit des Ergebnisses
             // (punkte.cjs keinUrteil (e)): was die Leiter vor dem Deckel in `M.teil` schrieb, urteilt wie jede Messung, der Deckel steht
-            // daneben; die Sprosse ohne Wert ist UNGEMESSEN beim Namen (`ohneUrteil`, keinUrteil (f)), nie ROT. Ein anderer Wurf der
-            // Leiter (die Welt warf, der Code der Leiter warf) bleibt ROT mit seinem Text.
+            // daneben; die Sprosse ohne Wert ist UNGEMESSEN beim Namen (`ohneUrteil`, keinUrteil (f)), nie ROT.
+            // DIE MESSUNG, DIE WIRFT, IST KEIN URTEIL (kopplung-front, Koordinator 22.11.; GTX c445936d: gewalt#1 stand ROT „die Messung
+            // der Leiter warf nach 0,008 s: /eval: M is not defined“ — der Rumpf der Seite las den Node-Namen M, keinen Wert der Welt):
+            // jeder Wurf der Leiter vor dem Wert der Sprosse ist UNGEMESSEN beim Grund, wie in k2-mensch und k2-same; der fehlende Name
+            // steht vorn („der Rumpf liest M, den sein Ort nicht kennt“). Was die Leiter vor dem Wurf schrieb, urteilt (unten).
             const roh0 = L.sprossen && L.sprossen[nr];
             const deckelL = L.warf && (L.deckel === true || /^der Deckel der Leiter \d+ s$/.test(String(L.warf)));
             if (L.warf && !(roh0 && typeof roh0 === "object")) {
@@ -191,7 +194,10 @@ const KERN = (() => {
                     const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s vor dem Wert der Sprosse";
                     return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
                 }
-                return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
+                const name = /\b([A-Za-z_$][\w$]*) is not defined\b/.exec(String(L.warf));
+                const grund = "die Messung der Leiter warf nach " + deutsch(L.s) + " s vor dem Wert der Sprosse" +
+                    (name ? " — der Rumpf liest „" + name[1] + "“, den sein Ort nicht kennt (ein Fehler der Probe)" : "") + ": " + String(L.warf).slice(0, 160);
+                return { gruen: false, zahl: kopf + grund, ohneUrteil: grund };
             }
             const vorDeckel = L.warf ? " · gemessen vor dem Wurf der Leiter nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 120) : "";
             const roh = roh0;
@@ -257,7 +263,8 @@ const KERN = (() => {
             }
         p.push({ name: "Umfang nicht erzeugbar", j: j({ ...sp.gruen, nicht: "die Probe" }), stdout: ZEUGE, gruen: false });
         p.push({ name: "swiftshader", j: j(sp.gruen), stdout: "[linse-gpu] google/swiftshader", gruen: false });
-        p.push({ name: "die Leiter warf", j: { leitern: { [leiter]: { s: 3, warf: "Error: Probe" } } }, stdout: ZEUGE, gruen: false });
+        p.push({ name: "die Leiter warf", j: { leitern: { [leiter]: { s: 3, warf: "Error: Probe" } } }, stdout: ZEUGE, gruen: false, ohne: true, zahl: /die Messung der Leiter warf nach 3 s vor dem Wert der Sprosse: Error: Probe/ });
+        p.push({ name: "der Rumpf liest einen Namen, den die Seite nicht kennt", j: { leitern: { [leiter]: { s: 0.008, warf: "Error: /eval: {\"ms\":6,\"fehler\":\"M is not defined\"}" } } }, stdout: ZEUGE, gruen: false, ohne: true, zahl: /der Rumpf liest „M“, den sein Ort nicht kennt/ });
         p.push({ name: "die Sprosse ungemessen", j: { leitern: { [leiter]: { s: 1, sprossen: {} } } }, stdout: ZEUGE, gruen: false });
         return p;
     }

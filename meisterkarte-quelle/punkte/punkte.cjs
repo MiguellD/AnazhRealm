@@ -839,6 +839,10 @@ function probenUrteil(stationen) {
             // Grund verschweigt („ohne Abnahme (Exit 0)" über einem geurteilten Schuss, siedlung.K4#2), ist eine falsche Probe
             else if (p.zahl && !p.zahl.test(String(u.zahl || "")))
                 falsch.push(schluessel(st) + " " + p.name + ": die Zahl nennt nicht " + p.zahl + " (" + String(u.zahl || "").slice(-160) + ")");
+            // KEIN URTEIL (`ohne`, kopplung-front): eine Probe kann sagen, dass ihr Lauf UNGEMESSEN ist — ein Wurf der Messung trägt
+            // `ohneUrteil` (keinUrteil (f)), nie ein bloßes ROT
+            else if (p.ohne === true && !(typeof u.ohneUrteil === "string" && u.ohneUrteil))
+                falsch.push(schluessel(st) + " " + p.name + ": ROT statt UNGEMESSEN beim Grund (" + String(u.zahl || "").slice(-160) + ")");
             // DAS MASS (das Gesetz der Fremd-Last, massDerStation): das Feld der Station über dieselbe Probe — wohlgeformt, im Einklang mit
             // ihrem Urteil (nie ein reißendes Maß unter einem GRÜN), nie ein Wurf
             else if (typeof st.mass === "function") {
