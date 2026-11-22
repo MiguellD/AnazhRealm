@@ -2145,3 +2145,4 @@ omen-gtx-gtx-30e01e75-w203948-4-30e01e75 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-23 00:02 RUNDE 7 ALARM radeon: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf 984b490d) — gesehen von gtx (landung-dienst)
 2026-11-23 00:02 RUNDE 7 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/247, Station -, Kopf 984b490d) — gesehen von radeon (radeon-dienst)
 2026-11-23 00:16 RUNDE 7 SPRUNG am 984b490d → Runde 8 am c1236fa8 (gtx laeuft 2/247, radeon offen 0/0): z679 gelandet (w28-brunnen-haspel, w28-check-format): ein Durchgang misst die Ansprüche von w28-mensch-zahlen und fahrzeug.maschine#1 — Koordinator 00:16
+2026-11-23 00:33 RUNDE 8 ALARM gtx: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf c1236fa8) — gesehen von radeon (radeon-dienst)
