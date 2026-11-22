@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "gtx",
- "zeit": "2026-11-22T15:27:04.900Z",
+ "zeit": "2026-11-22T16:32:17.643Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.physik.reaktion#1": {
@@ -2182,6 +2182,70 @@
    },
    "zeit": "2026-11-22T15:23:51.733Z",
    "abdruck": "ec6f6ca7fd54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 1.57,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 93.2,
+   "fremd": {
+    "s": 96.1,
+    "takte": 43,
+    "fremdS": 92.59,
+    "kerne": 0.964,
+    "fensterKerne": 1.535,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.39
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.45
+     ]
+    ],
+    "dienerS": 57.31,
+    "diener": [
+     [
+      "System",
+      27.97
+     ],
+     [
+      "dwm.exe",
+      15.39
+     ]
+    ],
+    "geraetS": 40.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.97
+     ],
+     [
+      "svchost.exe",
+      12.52
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 226.69,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T16:32:17.643Z",
+   "abdruck": "d058398a21cc",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
