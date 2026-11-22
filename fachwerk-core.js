@@ -432,7 +432,10 @@
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
     const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
     const zBandTritt=(Dp/2)*(1-(NORM.kopfSpar-lRise)/Math.max(0.6,ridgeY-eaveY));                   // DIE LETZTE STUFE (w28-bau-rezept-tuer): wer auf ihr steht (eine Steigung unter dem Estrich), hat kopfSpar über sich — bis hier galt nur das Podest-Ende; lief der Lauf zum First, stand die letzte Stufe unter der Schräge (Dorf 25 Slots, Haus D 9 m mit drei Geschossen: Stufe bei 0,88 m, Band ±0,85 m, am Kopf 1,5 m Dach, der Körper fiel 4,9 m in den Schacht)
-    const frei=(d)=>austritt(d)<=zBandTop && Math.abs(((d>0)?stZ0:wz1)+d*(lRun-lGo))<=zBandTritt;
+    // DER KÖRPER STEHT HINTER SEINEM RAND (front-technik, 22.11.): auf die letzte Stufe tritt der Körper mit dem Rand, seine Mitte steht einen
+    // Körper-Radius (BEGEH_GESETZ.radius) vor der Stufen-Kante, der Kopf ÜBER der Mitte — bis hier maß das Band an der Kante: die Kirche 7/18
+    // (provenzalisch, D 11, Sattel 26°) trug ihren Speicherlauf bis z 1,88 bei Band 2,01, der Kopf stand bei z 2,15 unter 1,68 m Dach
+    const frei=(d)=>austritt(d)<=zBandTop && Math.abs(((d>0)?stZ0:wz1)+d*(lRun-lGo-BEGEH_GESETZ.radius))<=zBandTritt;
     if(!frei(dir) && frei(-dir)) dir=-dir;
     if(frei(dir)){                                                            // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);

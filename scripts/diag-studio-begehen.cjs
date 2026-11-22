@@ -198,7 +198,11 @@ function proben(inj) {
             if (f.atLevel === "keller") continue;
             const N = f.N || 0;
             if (!(N > 0)) continue;
-            const t = { bi, loft: !!f.isLoft, eg: f.atLevel === 1, breite: +(f.x1 - f.x0).toFixed(2), N, faelle: [] };
+            // DER TÄTER BEIM NAMEN (front-technik): je Lauf das Haus (Saat · Bauweise · Rolle · Dach), damit ein ROT am Kopfraum
+            // das Haus nennt, nicht nur die Zahl
+            const p = B.p || {};
+            const haus = `#${bi} ${p.seed} ${p.kultur || p.bauweise || "?"}/${p.rolle || "?"} ${p.dachTyp || "?"}${p.kuppel ? "+kuppel" : ""}`;
+            const t = { bi, haus, loft: !!f.isLoft, eg: f.atLevel === 1, breite: +(f.x1 - f.x0).toFixed(2), N, faelle: [] };
             treppen.push(t);
             const go = f.go || 0.26;
             const dir = f.dir || 1;
@@ -355,6 +359,7 @@ function b3Zahl(o) {
         kopfZu: 0,
         ohneDach: 0, // Speicher-Austritte, über denen der Strahl nichts trifft (der Kopf über dem Dach, 99)
         kopfMin: 99,
+        kopfWer: [],
         ohneAntritt: 0,
         eg: 0,
         egOben: 0,
@@ -377,7 +382,11 @@ function b3Zahl(o) {
             if (c.kopfraum === 99 && t.loft) z.ohneDach++;
             if (c.kopfraum != null) {
                 if (c.kopfraum < z.kopfMin) z.kopfMin = c.kopfraum;
-                if (c.kopfraum < o.PH) z.kopfZu++;
+                if (c.kopfraum < o.PH) {
+                    z.kopfZu++;
+                    const n = `${t.haus} ${t.loft ? "speicher" : t.eg ? "eg" : "og"} ${c.kopfraum}`;
+                    if (!z.kopfWer.includes(n)) z.kopfWer.push(n);
+                }
             }
             if (c.off !== 0) continue;
             const oben = c.steig >= 0.9 * c.soll;
@@ -407,7 +416,7 @@ function urteil(o) {
     if (!(z.laeufe >= 10)) f.push(`B3 zu wenig Treppen-Läufe (${z.laeufe})`);
     if (z.klemm) f.push(`B3 Kopf: ${z.klemm} von ${z.laeufe} Treppen-Läufen enden im Solid`);
     if (z.kopfZu)
-        f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach)`);
+        f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach: ${z.kopfWer.join(" · ")})`);
     // DER SPEICHER LIEGT UNTER SEINEM DACH (w28-bau-rezept-tuer): trifft der Strahl über dem Austritt eines Speicherlaufs nichts,
     // steht der Kopf über dem Dach — bis hier zählte 99 als Kopfraum (das gasthaus #846868 mit flachem Dach, Dorf 7/18)
     if (z.ohneDach) f.push(`B3 Dach: ${z.ohneDach} Speicher-Austritte ohne Dach über dem Kopf (der Lauf steigt durch das Dach)`);
