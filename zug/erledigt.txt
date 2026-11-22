@@ -2077,3 +2077,4 @@ omen-gtx-gtx-c445936d-w065352-1-c445936d ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-22 08:16 RUNDE 3 ALARM gtx: OMEN: 4 Messungen ungepusht seit 14:41 — weicht 66/177, Station karte2.leben.tiere.masse#1, Kopf c445936d; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-22 09:14 RUNDE 3 ALARM radeon: ohne Fortschritt seit 1114 min (offen, 0/0, Station -, Kopf c445936d) — gesehen von gtx (landung-dienst)
 2026-11-22 09:16 RUNDE 3 ALARM gtx: ohne Fortschritt seit 61 min (weicht, 66/177, Station karte2.leben.tiere.masse#1, Kopf c445936d) — gesehen von gtx (landung-dienst)
+2026-11-22 09:17 RUNDE 3 ALARM gtx: OMEN: 4 Messungen ungepusht seit 14:41 — weicht 66/177, Station karte2.leben.tiere.masse#1, Kopf c445936d; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
