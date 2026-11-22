@@ -1,0 +1,3 @@
+# Post an w28-heap-register-2
+
+## 22.11. 23:46 — GPU-PROBE b48b35d7 auf gtx1050-desktop: NACHGEGEBEN in 1007 s (gate:pruefbuehne-licht GRÜN 76 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 275 s auf gtx1050-desktop · gate:studio-begehen GRÜN 420 s auf gtx1050-desktop · bild:stadt-voll@0 NACHGEGEBEN 108 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45079471560) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:webgl-probe NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 45079471560) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-heap-register-2/b48b35d7.md
