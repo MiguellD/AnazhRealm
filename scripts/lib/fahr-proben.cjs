@@ -1356,6 +1356,68 @@ async function probeLeben(expected) {
             };
         }
         if (gt) weg(gt);
+        // (1a) T6 DIE FAHRT DER WELT-ZEIT (fahrt-weltzeit 22.11.): derselbe GT von derselben Linie, W gehalten, genau N Sim-Schritte —
+        // (a) über der Karte des Bodens (gewartet, bis sie unter der Bahn steht), (b) als stünde sie noch nicht (`_bodenSichtAt` null:
+        // die Welt vor dem Faden des Chunks), (c) im doppelten Bildtakt (33,3 ms: je Bild zwei Sim-Schritte). Strecke und Tempo sind
+        // Funktionen der Welt-Zeit, an jedem Gerät dieselben. Bis hier hing die Haftung an der Karte: am main ad4dede4 fuhr der GT an
+        // der GTX ohne Karte auf Erde 59,32 m / 23,6 m/s, mit Karte auf Gras 39,62 m / 17,85 m/s. Dazu zwei gepflanzte Täter, die die
+        // Linse sehen muss: die Dämpfung je Bild (das Tempo fällt je Bild 1 %, nicht je Sim-Schritt — (a) und (c) gehen auseinander)
+        // und das Tor der Karte (ohne Karte Grün 0, der Leser bis 22.11. — (b) geht von (a) weg).
+        {
+            const N6 = 240;
+            const bahn = [0, 15, 30, 45, 60].map((d) => [start.x + d, start.z]);
+            const weltFahrt = async ({ ms, ohneKarte, taeterBild, taeterKarte }) => {
+                const g = await gtAmStart();
+                if (!g) return null;
+                // die Karte unter der Bahn: der Wagen steht, die Welt tickt höchstens 600 Bilder, dann urteilt die Linse vakuös
+                for (let t = 0; t < 600 && !bahn.every(([x, zz]) => r._bodenSichtAt(x, zz) !== null); t++) {
+                    frame(t);
+                    await sleep(20);
+                }
+                const mitKarte = bahn.every(([x, zz]) => r._bodenSichtAt(x, zz) !== null);
+                const tausch = {};
+                if (ohneKarte) tausch._bodenSichtAt = () => null;
+                if (taeterKarte)
+                    tausch._bodenGruenUnter = function (x, zz) {
+                        const a = {};
+                        return this._bodenSichtAt(x, zz, a) === null ? 0 : a.gruen;
+                    };
+                const tick = r._gameLoopTick; // der Takt des Bilds ist ein Feld der Welt, nicht des Prototyps
+                if (taeterBild)
+                    tausch._gameLoopTick = function (t) {
+                        tick.call(this, t);
+                        const v = st.playerVel;
+                        v.setValue(v.x() * 0.99, v.y(), v.z() * 0.99);
+                    };
+                const zurueck = leihe(r, tausch);
+                let m = null;
+                const ab = nachSchritt(() => {
+                    if (z.an && z.schritte === N6) m = { s: +z.simWeg.toFixed(3), v: +spielerTempo().toFixed(3) };
+                });
+                tasten(true);
+                Object.assign(z, { teleport: 0, schritte: 0, luft: 0, simWeg: 0, an: true });
+                for (let i = 0; !m && i < 4 * N6; i++) {
+                    tMs += ms || MUSTER[i % MUSTER.length];
+                    r._gameLoopTick(tMs);
+                    raeumen();
+                }
+                z.an = false;
+                tasten(false);
+                ab();
+                zurueck();
+                const haft = g._fahr && g._fahr._haft ? +g._fahr._haft.trocken.toFixed(3) : null;
+                weg(g);
+                return m && { ...m, mitKarte, haft };
+            };
+            res.weltzeit = {
+                n: N6,
+                karte: await weltFahrt({}),
+                ohneKarte: await weltFahrt({ ohneKarte: true }),
+                takt2: await weltFahrt({ ms: 100 / 3 }),
+                taeterBild: [await weltFahrt({ taeterBild: true }), await weltFahrt({ ms: 100 / 3, taeterBild: true })],
+                taeterKarte: await weltFahrt({ ohneKarte: true, taeterKarte: true }),
+            };
+        }
         // (1b) T5 DAS TEMPO DER KAMERA (H3): ein GT aus dem Stand mit W in Third bis 12 m/s, dann zieht die Maus 10 Bilder
         // (state.yaw/pitch wie das mousemove) und lässt los; dazu die FOV-Schreiber über den Absenz-Helfer (__fehlt).
         const sicht5 = st.cameraMode;
