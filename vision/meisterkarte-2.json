@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 11,
-    "kern": 9,
-    "kernDazu": 9,
+    "kern": 10,
+    "kernDazu": 10,
     "anteilHeute": 2,
-    "anteilKern": 1.6
+    "anteilKern": 1.8
    },
    "perspektiven": [
     {
@@ -10089,7 +10089,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Werkstoff-Tafeln im Studio, Epochen-Tafel der Stadt (fachwerk-core.js:3294) — Liste, nicht gewachsen; jede Saat hat dieselbe Epochenfolge",
      "alt": []
@@ -20088,10 +20088,10 @@
   "sprossen": 1718,
   "heute": 50,
   "davonKopplungen": 33,
-  "kern": 10,
-  "kernDazu": 10,
+  "kern": 11,
+  "kernDazu": 11,
   "anteilHeute": 2.9,
-  "anteilKern": 0.3,
+  "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {

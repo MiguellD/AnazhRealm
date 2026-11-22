@@ -954,6 +954,24 @@ function exporteAm(repo, kopf) {
         return memo.get(datei);
     };
 }
+// DIE WAND LÄNGE (oeko-front 22.11.): eine Station liest eine eigene Tag- oder Jahr-Länge neben dem EINEN Kalender der Welt — das
+// Muster `laenge-fest` der Ein-Schreiber-Wand AM KOPF (spec/stamm/grundgroessen.json, sein `lies` ist der Kanon). Befund GTX 6066c757:
+// zeit-ein-kalender (ef13918c, 19.11.) strich `PEGEL_TAG_S` und `state.seasonYearSeconds`, 38 Leser in sieben Registern lasen undefined
+// — die Sukzession rechnete jede Stufe NaN (leben.oeko.sukzession#1 „uebergaengeInFolge 3“), die Raffer von netz und dynamik liefen
+// 0 Takte („ungemessen“), jeder Rückfall `|| 2400` hielt eine tote Zahl. Gelesen werden die NAMEN des Musters (`\bName\b`): ein Literal
+// wie `tagStunden: 8760` bestellt in einer Probe den Körper eines fremden Planeten (planet.kopplung S5), keinen Zwilling der Uhr.
+// Ohne Muster oder ohne Namen am Kopf ist die Wand blind — beim Namen, nie still.
+function laengeAm(repo, kopf) {
+    let m = null;
+    try {
+        m = (JSON.parse(git(["show", kopf + ":spec/stamm/grundgroessen.json"], repo)).muster || {})["laenge-fest"] || null;
+    } catch (e) {}
+    const namen = m && typeof m.rx === "string" ? m.rx.split("|").filter((a) => /^\\b\w+\\b$/.test(a)) : [];
+    return namen.length ? { rx: new RegExp(namen.join("|"), "g"), lies: m.lies } : null;
+}
+const toteLaengen = (stationen, L, text) =>
+    !L ? ["Wand LÄNGE blind: kein Name im Muster laenge-fest in spec/stamm/grundgroessen.json am Kopf"]
+        : stationen.flatMap((st) => [...new Set([...text(st).matchAll(L.rx)].map((m) => m[0]))].map((w) => schluessel(st) + " liest `" + w + "` — lies stattdessen " + L.lies)); // prettier-ignore
 // der Quelltext einer Station: ihr Eintrag (Befehl, Probe, env) samt jeder Datei, die er unter @KOORD@ oder {KOORD} nennt
 function stationText(st) {
     let t = JSON.stringify(st, (k, v) => (typeof v === "function" ? String(v) : v));
@@ -7157,6 +7175,11 @@ async function selbsttest(o = {}) {
         const ex = { "scripts/diag-mensch-anatomie.cjs": exportVon("const x = 1;\nmodule.exports = { messe };"), "scripts/lib/y.cjs": exportVon("module.exports.z = 1;"), "scripts/w.cjs": exportVon("module.exports = baue();") }; // prettier-ignore
         const te = toteExporte([{ kriterium: "mensch.K4", staffel: 2, t: JSON.stringify(["node -e 'const A = require(\"./scripts/diag-mensch-anatomie.cjs\"), sb = A.ladeWelt(); A.messe(sb); const Y = require(\"./scripts/lib/y.cjs\"); Y.z; const W = require(\"./scripts/w.cjs\"); W.q'"]) }], (d) => ex[d], (st) => st.t); // prettier-ignore
         pruef("WAND EXPORT der gestrichene Export beim Namen, jeder exportierte still", te.join() === "mensch.K4#2 liest A.ladeWelt aus scripts/diag-mensch-anatomie.cjs", te.join());
+        // DIE WAND LÄNGE: die gestrichene Jahr-Länge beim Namen (6066c757: `s.seasonYearSeconds`), der Kalender still, ohne Muster blind
+        const LL = { rx: /\bPEGEL_TAG_S\b|\bseasonYearSeconds\b/g, lies: "den Kalender" };
+        const tl = toteLaengen([{ kriterium: "karte2.leben.oeko.sukzession", staffel: 1, t: "const jahrH = s.seasonYearSeconds / 24; const K = r._kalender(); K.jahrK * K.tagS / K.normS" }], LL, (st) => st.t); // prettier-ignore
+        const tb = toteLaengen([{ kriterium: "x.K1", staffel: 1, t: "" }], null, (st) => st.t);
+        pruef("WAND LÄNGE die gestrichene Jahr-Länge beim Namen, der Kalender still, ohne Muster am Kopf blind beim Namen", tl.join() === "karte2.leben.oeko.sukzession#1 liest `seasonYearSeconds` — lies stattdessen den Kalender" && /^Wand LÄNGE blind/.test(tb.join()), tl.join() + " | " + tb.join()); // prettier-ignore
         // DIE WAND ANKER: jeder Griff in ein Werkzeug des Spiels am Kopf — der fehlende Anker, der doppelte, die fehlende Deklaration, der
         // Griff, den die Wand nicht lesen kann, je beim Namen; die stehenden still (Konstante, `.map`, `for … of`, `H.seite`, JSON `seite`)
         {
@@ -7450,6 +7473,26 @@ async function selbsttest(o = {}) {
                 dOhne.ungemessen === true && /^der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN/.test(dOhne.grund) &&
                     dMit.gruen === false && !dMit.ungemessen && dMit.grund === "ROT: S1 · abtrag 0 gegen Soll ≥ 1" && dMut === null,
                 JSON.stringify([dOhne.grund, dMit.grund, dMut]));
+            // (g) DER RAFFER AM BUDGET (pm-stationen-kalender 22.11.; Radeon 161ff792: leben.oeko.dynamik stand 271 s still, ihr Raffer
+            // zählte 4·10¹² Takte unter dem angehaltenen Tag der Bühne): der Rumpf der Probe (k2-planet probeRumpf) stellt je Leiter
+            // `window.__raffer` an ihr Budget (Deckel − 15 s); ein Raffer ohne Ende (10¹³ Takte) endet dort, die Leiter trägt ihn als kurz,
+            // die Sprosse ist UNGEMESSEN mit Zahl „n von m Takten“. Der Raffer, der sein Soll schafft, bleibt still (GRÜN). Die Seite ist
+            // hier ein Sandkasten mit `window` (der Rumpf reist als Text, wie in die Probe)
+            {
+                const KP = require("./stationen/k2-planet.js").kern;
+                const rumpf = (soll) => {
+                    const datei = path.join(tmp, "raffer-" + soll + ".json"), win = {};
+                    const H = { aus: datei, frist: async () => 0, schritt: () => {}, seite: async (code) => new Function("window", code)(win) };
+                    const LEITERN = { "x.y": { sek: 18, mess: async (H2) => ({ sprossen: { 1: { werte: { n: (await H2.seite("return window.__raffer(" + soll + ", () => {}, 'lauf').n;")) } } } }) } };
+                    return eval("(" + KP.knapp(KP.probeRumpf) + ")")(H, {}, LEITERN, null).then(() => JSON.parse(fs.readFileSync(datei, "utf8")));
+                };
+                const t0 = Date.now(), ewig = await rumpf(1e13), ms = Date.now() - t0, kurz = await rumpf(5);
+                const u = KP.urteilBauen("x.y", 1, { soll: [], zeuge: () => null }, false), lauf = { stdout: "[linse-gpu] amd/rdna-3" };
+                const ue = u(ewig, lauf), uk = u(kurz, lauf);
+                pruef("KEIN URTEIL (g) DER RAFFER AM BUDGET: 10¹³ Takte (100 Jahre unter dem angehaltenen Tag der Bühne) enden am Budget der Leiter (18 − 15 = 3 s), nie hängend — die Sprosse UNGEMESSEN mit „n von 10000000000000 Takten“; 5 Takte schaffen ihr Soll — GRÜN, keine Liste",
+                    ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true,
+                    JSON.stringify([ms, ue, kurz.leitern["x.y"], uk]));
+            }
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {
@@ -9413,6 +9456,8 @@ if (require.main === module) {
             for (const h of toteHaken(stationen, hakenAm(repo, kopf), stationText)) fehler.push(h + " — niemand setzt ihn am Kopf " + kopf.slice(0, 8) + " (Wand HAKEN)");
             // DIE WAND EXPORT am Kopf: jedes Glied, das eine Station aus einem Werkzeug des Spiels liest, exportiert es
             for (const x of toteExporte(stationen, exporteAm(repo, kopf), stationText)) fehler.push(x + " — der Kopf " + kopf.slice(0, 8) + " exportiert es nicht (Wand EXPORT)");
+            // DIE WAND LÄNGE am Kopf: keine Station liest eine Tag- oder Jahr-Länge neben dem Kalender der Welt
+            for (const x of toteLaengen(stationen, laengeAm(repo, kopf), stationText)) fehler.push(x + " — am Kopf " + kopf.slice(0, 8) + " (Wand LÄNGE)");
             // DIE WAND ANKER am Kopf: jede Deklaration und jeder Text-Anker, den eine Station aus einem Werkzeug des Spiels liest, steht dort
             for (const x of toteAnker(stationen, ankerLeser(repo, kopf), acornVon(repo))) fehler.push(x + " — am Kopf " + kopf.slice(0, 8) + " (Wand ANKER)");
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
