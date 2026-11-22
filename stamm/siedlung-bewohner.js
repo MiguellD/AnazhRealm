@@ -1089,7 +1089,8 @@ class AnazhRealm_siedlung_bewohner {
         const H = wer.bestand;
         const ware = H.ware;
         const g = wer.leib;
-        const da = !!g && !wer.drinnen && Math.hypot(g.position.x - wer.orte.werk.x, g.position.z - wer.orte.werk.z) < 1.5;
+        const da =
+            !!g && !wer.drinnen && Math.hypot(g.position.x - wer.orte.werk.x, g.position.z - wer.orte.werk.z) < 1.5;
         const h = this._weltStunde();
         const inv = st.player.inventory;
         const i = inv.findIndex((s) => s && s.kind === "material" && s.material !== ware && (s.count || 0) >= 1);
@@ -1106,7 +1107,12 @@ class AnazhRealm_siedlung_bewohner {
         this.removeFromInventory(i, 1);
         KC.bestandGib(H, gabe, 1, h);
         const n = Math.floor(KC.bestandAm(H, h) + 1e-9);
-        this.journalAppend("growth", ["journal.tausch", { gabe, ware, n }], { ware, gabe, vorher, nachher: KC.bestandAm(H, h) });
+        this.journalAppend("growth", ["journal.tausch", { gabe, ware, n }], {
+            ware,
+            gabe,
+            vorher,
+            nachher: KC.bestandAm(H, h),
+        });
         this.log(`Tausch: 1 ${gabe} gegen 1 ${ware} — der Stand trägt noch ${n} ${ware}`, "INFO");
         this._bestandBild(wer, true);
         return true;
@@ -1167,7 +1173,8 @@ class AnazhRealm_siedlung_bewohner {
             if (!b.bestand || b.bestand.art !== "stand") continue;
             const nah = Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < R;
             if (nah) this._bestandBild(b);
-            else if (b.bestandBild && b.bestandBild.visible) [b.bestandBild.visible, b.bestandBild.userData.kisten] = [false, -1];
+            else if (b.bestandBild && b.bestandBild.visible)
+                [b.bestandBild.visible, b.bestandBild.userData.kisten] = [false, -1];
         }
     }
 

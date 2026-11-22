@@ -486,7 +486,13 @@ class AnazhRealm_siedlung_verkehr {
             if (!wk) continue;
             geholt.add(wk);
             W.bestand = KC.bestandHalter("wagen", st.bestand.ware, h, 0);
-            W.lieferung = { werk: wk, stand: st, werkKi: wende(wk.orte.werk), standKi: wende(st.orte.werk), plan: "werk" };
+            W.lieferung = {
+                werk: wk,
+                stand: st,
+                werkKi: wende(wk.orte.werk),
+                standKi: wende(st.orte.werk),
+                plan: "werk",
+            };
         }
     }
 
