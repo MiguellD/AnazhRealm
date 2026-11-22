@@ -718,10 +718,7 @@ class AnazhRealm_bild_himmel {
                 }
             }
             const lift = coverage > 0.18 ? coverage * 7 + 11 : 0;
-            let bump = 0;
-            if (this._growTreeNoise) {
-                bump = this._growTreeNoise.noise2D(wx * 0.05, wz * 0.05) * 0.8;
-            }
+            const bump = this._baumGrammatik().noise2D(wx * 0.05, wz * 0.05) * 0.8;
             positions.setY(i, terrainY + lift + bump);
             // Vertex-Position auf Welt-Koord setzen (so kann der Mesh am
             // Welt-Ursprung sitzen, ohne dass eine pro-Chunk-Position-Set
@@ -1938,7 +1935,7 @@ class AnazhRealm_bild_himmel {
             // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
             // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
             const P = globalThis.__phytoCore;
-            const g = P.windGrund((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const g = P.windGrund(AnazhRealm._saatJe(this));
             const HG =
                 AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
                 AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
@@ -3014,7 +3011,7 @@ class AnazhRealm_bild_himmel {
         const wm = this.state.worldMeta || {};
         // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
         const zeile = globalThis.__phytoCore.wetterAt(
-            wm.seed || "anazh-realm-seed",
+            AnazhRealm._saatVon(wm),
             x,
             z,
             t,

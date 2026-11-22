@@ -851,41 +851,66 @@ class AnazhRealm_bau_vorlagen {
         // FELS-GENOM: Pool gewürfelter Fels-Formationen (Brocken/Stapel/Nadel/Geröll), die der Scatter NACH
         // dem stein_block-Affinitäts-Sieg seed-deterministisch wählt (`_rockVariant`). Tag-frozen
         // (noiserock+stein = stein_block-Tags, kein Affinitäts-Shift); persistiert trivial als Built-in.
-        const felsWorldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        // DIE FORMATIONEN DER WELT (Welle saat-argument): Fels und Kristall wachsen aus der Saat der WELT, beim ersten Leser und im
+        // Gedächtnis der Saat (`_saatJe`) — Teile und Form-Klasse lesen je Zugriff die Saat von jetzt und fallen mit ihr. Bis hier
+        // wuchsen sie im Konstruktor, wo die Welt noch keine Saat trägt: jede Welt stand auf den Felsen der Eingangs-Welt.
+        const formation = (bp, art, i) => {
+            // der Name im Gedächtnis der Saat — gefügt, nie als Vorlage `bau.${…}`: die liest gate:sprache als Familie der Text-Tafel
+            const name = "bau." + art + ":" + i;
+            const je = () =>
+                AnazhRealm._saatJe(this, name, (s) => {
+                    const parts =
+                        art === "fels"
+                            ? this._rockVariant(`${s}-fels-${i}`)
+                            : this._crystalVariant(`${s}-kristall-${i}`);
+                    const form = this._lastLandmarkForm; // der Seiten-Kanal des Wuchses (T-FULLSTACK)
+                    this._teileGrund(parts); // Material und Kette wie jedes Built-in (der Konstruktor geht ein wachsendes Feld nie)
+                    for (const p of parts) AnazhRealm._etikett(p);
+                    return { parts, form };
+                });
+            for (const [k, f] of [
+                ["parts", "parts"],
+                ["_formClass", "form"],
+            ])
+                Object.defineProperty(bp, k, { get: () => je()[f], enumerable: true, configurable: true });
+            return bp;
+        };
         const landmarkVariants = {};
         for (let i = 0; i < AnazhRealm.ROCK_VARIANTS; i++) {
             const key = `fels_var${i}`;
-            const parts = this._rockVariant(`${felsWorldSeed}-fels-${i}`);
-            landmarkVariants[key] = {
-                name: key,
-                etikett: ["bau.felsformation"],
-                builtIn: true,
-                instanced: true,
-                // ABSCHIED DER ALT-DOPPEL — Studio-Pendant sediment/findling/zacken/geroell
-                // (via _formClass, diag-v1-resolve): Scatter nutzt sie weiter, kein Katalog-Auftritt.
-                donorOnly: true,
-                _altDoppel: "rock (_formClass)",
-                parts,
-                _formClass: this._lastLandmarkForm, // T-FULLSTACK: der Scatter wählt die Form nach dem Feld
-            };
+            landmarkVariants[key] = formation(
+                {
+                    name: key,
+                    etikett: ["bau.felsformation"],
+                    builtIn: true,
+                    instanced: true,
+                    // ABSCHIED DER ALT-DOPPEL — Studio-Pendant sediment/findling/zacken/geroell
+                    // (via _formClass, diag-v1-resolve): Scatter nutzt sie weiter, kein Katalog-Auftritt.
+                    donorOnly: true,
+                    _altDoppel: "rock (_formClass)",
+                },
+                "fels",
+                i
+            ); // parts und _formClass (T-FULLSTACK: der Scatter wählt die Form nach dem Feld) wachsen am Leser
         }
         // wahrerwuchs §4.3 S4 — DAS KRISTALL-GENOM (Habitus/Größe/Facetten, quarz, tag-frozen
         // zu kristall_geode). Dieselbe Pool-Mechanik wie der Fels. (Das Glut-Genom fiel 05.10.: die Feuerstelle trägt
         // ihre Gestalten im Gesetzbuch, `glutbrunnen` streut ohne Pool.)
         for (let i = 0; i < AnazhRealm.CRYSTAL_VARIANTS; i++) {
             const key = `kristall_var${i}`;
-            const parts = this._crystalVariant(`${felsWorldSeed}-kristall-${i}`);
-            landmarkVariants[key] = {
-                name: key,
-                etikett: ["bau.kristall-formation"],
-                builtIn: true,
-                instanced: true,
-                // ABSCHIED DER ALT-DOPPEL — Studio-Pendant: das EINE kristalle-Rezept.
-                donorOnly: true,
-                _altDoppel: "kristalle",
-                parts,
-                _formClass: this._lastLandmarkForm,
-            };
+            landmarkVariants[key] = formation(
+                {
+                    name: key,
+                    etikett: ["bau.kristall-formation"],
+                    builtIn: true,
+                    instanced: true,
+                    // ABSCHIED DER ALT-DOPPEL — Studio-Pendant: das EINE kristalle-Rezept.
+                    donorOnly: true,
+                    _altDoppel: "kristalle",
+                },
+                "kristall",
+                i
+            );
         }
 
         // DIE SECHS BAUM-ARTEN als Built-in-Identität (EINE Baum-Quelle): ~6 Subsysteme keyen auf den NAMEN
@@ -905,15 +930,13 @@ class AnazhRealm_bau_vorlagen {
         // DER WUCHS AM ERSTEN LESER (w16-lade-atem, ankunft.K5): die Gestalt einer Art wächst, wenn einer ihre Teile oder ihr
         // Skelett liest — nie im Konstruktor. Bis hier wuchsen alle sieben im Init-Task vor der ersten Zeichnung (headless kalt
         // `_defaultBlueprints` 118–260 ms Haupt-Faden, in der längsten Aufgabe des Boots), auch die, die keine Sitzung liest.
-        // Der Wuchs ist derselbe Bit für Bit: fester kanonischer Seed und das Rausch-Feld des Konstruktors (`_growTreeNoise`,
-        // gestellt wie bisher hier, vor jeder Welt — der Wuchs liest es, auch wenn die Welt ihr eigenes Feld schon trägt);
+        // Der Wuchs ist derselbe Bit für Bit: fester kanonischer Seed und das Rausch-Feld des Konstruktors (`rausch`, gestellt hier,
+        // vor jeder Welt — der Wuchs liest es über `_wuchsRausch`, auch wenn die Welt ihre eigene Grammatik schon trägt);
+        // BEWUSST SAAT-FREI (Welle saat-argument): die sieben Built-ins sind die Identität der Art in JEDER Welt (Katalog, Kosten,
+        // Archetyp-Bank keyen auf sie) — sie wachsen aus der Saat der Eingangs-Welt, nie aus der Saat der Welt;
         // Instanz-Varianz im Worldgen über scale/yaw/tint. Der erste Leser schreibt `parts` und `_skeleton` als Werte zurück
         // (Material, Kette und Etikett wie jedes Built-in); ein Wuchs, der wirft oder keine Gestalt trägt, bricht laut.
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const rausch = this._growTreeNoise;
+        const rausch = new SimplexNoise(globalThis.__samenCore.EINGANG + "-veg-grammatik");
         // die Arten, deren Wuchs noch auf seinen Leser wartet (Art → Same): die Saat bestellt ihr Skelett beim Wald-Faden, bevor
         // ihre Affinität sie liest (`_wuchsFehlt`) — der Haupt-Faden setzt dann nur noch zusammen
         const offen = (this._builtinWuchsOffen = new Map());
@@ -925,15 +948,15 @@ class AnazhRealm_bau_vorlagen {
             const wachse = () => {
                 if (w) return w;
                 offen.delete(species);
-                const welt = this._growTreeNoise;
-                this._growTreeNoise = rausch;
+                const welt = this._wuchsRausch;
+                this._wuchsRausch = rausch;
                 let parts = null;
                 try {
                     parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`); // das Skelett aus dem Vorrat, wenn bestellt
                 } catch (e) {
                     this._bruchMelden(`BAUM-BUILTIN ${species}: der Wuchs warf (${(e && e.message) || e})`);
                 } finally {
-                    this._growTreeNoise = welt;
+                    this._wuchsRausch = welt;
                 }
                 this._wuchsVerbraucht(species, `builtin-${species}-v1`); // sein Wuchs im Vorrat hat keinen Leser mehr
                 const sk = this._lastTreeSkeleton;
@@ -977,6 +1000,10 @@ class AnazhRealm_bau_vorlagen {
             );
         }
 
+        // BEWUSST SAAT-FREI (Welle saat-argument): Werkstätten, Tor-Stationen, Rüstung und Trank sind Werkzeuge des Spielers — ihre
+        // Gestalt ist die Identität des Bauplans in JEDER Welt (Kosten, Hotbar, gespeicherte Werke keyen auf sie); sie wachsen im
+        // Konstruktor aus der Saat der Eingangs-Welt, wie bisher Bit für Bit (die Welt trägt dort noch keine Saat).
+        const kanon = globalThis.__samenCore.EINGANG;
         const defaults = {
             ...landmarkVariants,
             ...treeSpeciesBlueprints,
@@ -1283,7 +1310,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(esseParts, felsWorldSeed + "-esse"),
+                parts: this._stationVariant(esseParts, kanon + "-esse"),
             },
             // V17.77 — die craftbare MEISTER-Esse (Eisen): eine bessere Werkstatt → höherer Präzisions-Cap.
             // Die „bessere Esse", die der Schöpfer suchte; sie lehrt das Prinzip (besseres Material → feiner).
@@ -1293,7 +1320,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(esseMeisterParts, felsWorldSeed + "-essemeister"),
+                parts: this._stationVariant(esseMeisterParts, kanon + "-essemeister"),
             },
             brennkolben: {
                 name: "brennkolben",
@@ -1301,7 +1328,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(brennkolbenParts, felsWorldSeed + "-brennkolben"),
+                parts: this._stationVariant(brennkolbenParts, kanon + "-brennkolben"),
             },
             webstuhl: {
                 name: "webstuhl",
@@ -1309,7 +1336,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(webstuhlParts, felsWorldSeed + "-webstuhl"),
+                parts: this._stationVariant(webstuhlParts, kanon + "-webstuhl"),
             },
             seelenstein_altar: {
                 name: "seelenstein_altar",
@@ -1317,7 +1344,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(seelenstein_altarParts, felsWorldSeed + "-altar"),
+                parts: this._stationVariant(seelenstein_altarParts, kanon + "-altar"),
             },
             drehbank: {
                 name: "drehbank",
@@ -1325,7 +1352,7 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: this._stationVariant(drehbankParts, felsWorldSeed + "-drehbank"),
+                parts: this._stationVariant(drehbankParts, kanon + "-drehbank"),
             },
             // Welt-Portal: Rolle "portal" (emergiert sonst aus einem magie-leitenden Ring, _isPortalShaped), hier
             // als Built-in deklariert; portalMeta nennt das Ziel (Skelett-Welt).
@@ -1340,7 +1367,7 @@ class AnazhRealm_bau_vorlagen {
                 // Parts bleiben unsichtbare SUBSTANZ-Wahrheit (computeCompoundTags · blockerAABBs · Portal-Trigger) —
                 // wie beim Baum. Skelett-Welt + arkane Membran → geisttor.
                 studioGestalt: "geisttor",
-                parts: this._stationVariant(weltPortalParts, felsWorldSeed + "-portal1"),
+                parts: this._stationVariant(weltPortalParts, kanon + "-portal1"),
             },
             // Strom-Welt-Portal: Sub-Welt three-fluid-fx (fremde Engine, gebündelt in worlds/fluid/).
             // dsl = Manifest: Kern-Ops (weather/skybox_color) + welt-eigene Wörter (sturm/ruhe/set_turbulence).
@@ -1354,7 +1381,7 @@ class AnazhRealm_bau_vorlagen {
                 // porta-Gestalt (s. welt_portal): Fluss/Turbulenz → drachentor (wBraid = Strömungslinien). Jede
                 // Gestalt bleibt UNVERWECHSELBAR (porta-buildInstance ist seed-invariant: gleiches Preset = Tor).
                 studioGestalt: "drachentor",
-                parts: this._stationVariant(weltStromParts, felsWorldSeed + "-portal2"),
+                parts: this._stationVariant(weltStromParts, kanon + "-portal2"),
             },
             // Terrain-Portal → PHYTOGENESIS & LITHOS (Morphologie-Labor: Bäume/Blumen/Felsen aus Gesetzen).
             // Bauplan-NAME welt_terrain + Registry-id "terrain" bleiben load-bearing (Saves, Katalog, Tests:
@@ -1371,7 +1398,7 @@ class AnazhRealm_bau_vorlagen {
                 // (Phytogenesis & Lithos — gewachsene/mineralische Formen) -> verkalkt
                 // (Mauerwerk × Geflecht, weather 0.4 = das organisch-mineralische Tor).
                 studioGestalt: "verkalkt",
-                parts: this._stationVariant(weltTerrainParts, felsWorldSeed + "-portal3"),
+                parts: this._stationVariant(weltTerrainParts, kanon + "-portal3"),
             },
             // Garage-Portal (08.07.2026) — führt ins Fahrzeug-Labor des
             // Schöpfers (garage.txt: Rahmen · Gelenke · Lehren · Probefahrt).
@@ -1387,7 +1414,7 @@ class AnazhRealm_bau_vorlagen {
                 // trug schon den eisernen Rad-Reif -> maschine (metal 0.95 · reflect 0.8 ·
                 // energy 0.78 = das technische Tor, die eindeutigste Zuordnung der fuenf).
                 studioGestalt: "maschine",
-                parts: this._stationVariant(weltGarageParts, felsWorldSeed + "-portal4"),
+                parts: this._stationVariant(weltGarageParts, kanon + "-portal4"),
             },
             // Portale-Portal (08.07.2026) — führt ins Tor-Labor des Schöpfers
             // (Portal.txt: sieben Ordnungen · Stich→Schub→Dicke · Türen E/R).
@@ -1402,7 +1429,7 @@ class AnazhRealm_bau_vorlagen {
                 // traegt die hoechste Ordnung der Tor-Baukunst -> kathedrale (orders 4 ·
                 // wLace 0.8 · realm 0.7 — die Alt-Form war der schlichte Architrav).
                 studioGestalt: "kathedrale",
-                parts: this._stationVariant(weltPortaleParts, felsWorldSeed + "-portal5"),
+                parts: this._stationVariant(weltPortaleParts, kanon + "-portal5"),
             },
             // Schmiede-Portal → Klingen-Labor (worlds/schmiede/); schmiede-core.js ist die EINE Quelle.
             // Wie alle welt_*: die Registry trägt Pfad + DSL-Manifest.
@@ -1417,7 +1444,7 @@ class AnazhRealm_bau_vorlagen {
                 // Stein-Handwerk × Glut -> maurentor (das steinerne Handwerks-Tor, war
                 // frei; ruine bleibt frei — jede Gestalt bleibt UNVERWECHSELBAR).
                 studioGestalt: "maurentor",
-                parts: this._stationVariant(weltSchmiedeParts, felsWorldSeed + "-portal6"),
+                parts: this._stationVariant(weltSchmiedeParts, kanon + "-portal6"),
             },
             // Fachwerk-Portal → Haus-Labor (worlds/fachwerk/); fachwerk-core.js ist die EINE Quelle, auch für das
             // Dorf (exportSettlement). Die Registry trägt Pfad + DSL-Manifest.
@@ -1431,7 +1458,7 @@ class AnazhRealm_bau_vorlagen {
                 // porta-Gestalt: das Haus-Labor trägt die RUINE (letzte freie der sieben Tor-Ordnungen; geisttor/
                 // drachentor/verkalkt/maschine/kathedrale/maurentor sind vergeben — jede bleibt unverwechselbar).
                 studioGestalt: "ruine",
-                parts: this._stationVariant(weltFachwerkParts, felsWorldSeed + "-portal7"),
+                parts: this._stationVariant(weltFachwerkParts, kanon + "-portal7"),
             },
             // Klang-Portal → Musik-Labor (worlds/klang/); klang-core.js ist die EINE Musik-Daten-Quelle (der
             // Host-Lofi liest Tempo + Skala). Die Render-Gestalt ist die porta-Leier (w4-tore-teile), die Parts bleiben Substanz.
@@ -1443,7 +1470,7 @@ class AnazhRealm_bau_vorlagen {
                 roleManual: true,
                 portalMeta: portalTo("klang"),
                 studioGestalt: "lyra",
-                parts: this._stationVariant(weltKlangParts, felsWorldSeed + "-portal8"),
+                parts: this._stationVariant(weltKlangParts, kanon + "-portal8"),
             },
             // Körperstudio-Portal → Menschen-Labor (worlds/koerperstudio/); koerper-core.js ist die EINE
             // Gestalt-/Motion-Quelle, der Host bleibt der OFEN. Die Render-Gestalt ist das porta-Vitruv-Tor (w4-tore-teile).
@@ -1455,7 +1482,7 @@ class AnazhRealm_bau_vorlagen {
                 roleManual: true,
                 portalMeta: portalTo("koerperstudio"),
                 studioGestalt: "vitruv",
-                parts: this._stationVariant(weltKoerperParts, felsWorldSeed + "-portal9"),
+                parts: this._stationVariant(weltKoerperParts, kanon + "-portal9"),
             },
             // Tetrapoda-Portal → Kreaturen-Labor (worlds/tetrapoda/); tetrapoda-core.js ist die EINE
             // Gestalt-/Motion-Quelle. Die Render-Gestalt ist das porta-Tier-Tor (w4-tore-teile).
@@ -1467,7 +1494,7 @@ class AnazhRealm_bau_vorlagen {
                 roleManual: true,
                 portalMeta: portalTo("tetrapoda"),
                 studioGestalt: "tiertor",
-                parts: this._stationVariant(weltTetrapodaParts, felsWorldSeed + "-portal10"),
+                parts: this._stationVariant(weltTetrapodaParts, kanon + "-portal10"),
             },
             // BIBLIOTHEK: craftbare Beispiel-Baupläne der Mach-Akte. Rüstung + Trank sind die ehrliche Wand:
             // kein Lab exportiert Rüstungs-/Trank-Presets — nichts erfinden. Werkzeuge/Klingen = die
@@ -1480,7 +1507,7 @@ class AnazhRealm_bau_vorlagen {
                 roleManual: true,
                 // T4 — das dedizierte RÜSTUNGS-Genom (Platten-Größe/Artikulation/Material),
                 // nicht mehr scale+tint einer fixen Liste (§9 T4).
-                parts: this._armorVariant(felsWorldSeed + "-armor"),
+                parts: this._armorVariant(kanon + "-armor"),
             },
             trank_lebenssaft: {
                 name: "trank_lebenssaft",
@@ -1489,7 +1516,7 @@ class AnazhRealm_bau_vorlagen {
                 role: "consumable",
                 roleManual: true,
                 // T4 — das dedizierte TRANK-Genom (Phiole-Form + Glasur aus der Wirkung).
-                parts: this._potionVariant(felsWorldSeed + "-trank"),
+                parts: this._potionVariant(kanon + "-trank"),
             },
             // REITTIER aus dem Skelett-GUSS: _creatureSkeleton (horse-Archetyp, REITTIER_SKELETON_G) + Quarz-Kern
             // (Antrieb); Rolle vehicle + rideable (sitz-connection auf dem Torso-Kern, Part 0). Heißt PFERD; der

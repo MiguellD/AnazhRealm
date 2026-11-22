@@ -138,9 +138,6 @@ class AnazhRealm_klang {
                 punkte.push({ r, ux: Math.sin(a), uz: Math.cos(a) });
             }
         }
-        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":umwelt";
-        let saat = 0;
-        for (let i = 0; i < seedStr.length; i++) saat = (saat * 31 + seedStr.charCodeAt(i)) >>> 0;
         // Eine hörbare Stimme ohne Puffer bestellt ihr Paket bei der Werkstatt; die Antwort nimmt der Graph auf.
         const liefern = (name) => {
             um.bestellt++;
@@ -152,8 +149,7 @@ class AnazhRealm_klang {
             letzteMischung: -Infinity,
             folge: 0, // der Teil des Misch-Takts im nächsten Bild (4 Lage · 1 Mischung · 2 Graph · 3 Tier-Rufe, `_umweltKlangTick`)
             lageEins: null, // die erste Hälfte der Lage (`_umweltLageEins`), geschlossen im nächsten Bild
-            rufDt: 0,
-            rufSaat: saat || 1,
+            rufDt: 0, // der Ruf-Strom steht im Gedächtnis der Saat (`_klangStrom("umwelt")`), nie im Klang-Zustand der Seite
             tat: null, // die jüngste Tat im Buch, die der Takt hörte (eine neue ist ein Ereignis)
             naechste: null, // die Lage im Takt, bis der Graph sie spielt
             lage: null, // die Lage, die der Graph spielt
@@ -523,7 +519,7 @@ class AnazhRealm_klang {
             stimmung: stimmung || this._tierStimmung(creature),
             d,
             pan: this._umweltPanorama()(dx, dz),
-            saat: (um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0),
+            saat: this._klangZug("umwelt"),
             verdeckung: this._klangVerdeckung(pm, creature),
         };
         um.rufeBestellt++;
@@ -792,8 +788,8 @@ class AnazhRealm_klang {
             if (!c || !c.position) continue;
             if (Math.hypot(c.position.x - pm.position.x, c.position.z - pm.position.z) > T.hoerweiteM) continue;
             const stimmung = this._tierStimmung(c);
-            um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0;
-            if (um.rufSaat / 4294967296 < ((T.rufProMin[stimmung] || 0) / 60) * dt) this._tierRuf(c, stimmung);
+            if (this._klangZug("umwelt") / 4294967296 < ((T.rufProMin[stimmung] || 0) / 60) * dt)
+                this._tierRuf(c, stimmung);
         }
     }
 
@@ -1201,12 +1197,6 @@ class AnazhRealm_klang {
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
         for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
-        // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
-        // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
-        // ":lofi"-Suffix entkoppelt die Akkordfolge vom Stern-Muster).
-        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":lofi";
-        let seedNum = 0;
-        for (let i = 0; i < seedStr.length; i++) seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
         return {
             duck, // der Duck-Bus (`_musikDuck`); duckBis/duckZiel: der laufende Duck
             duckBis: -Infinity,
@@ -1224,8 +1214,8 @@ class AnazhRealm_klang {
             noiseBuffer,
             degree: 0,
             bar: 0, // ZENSUS-REST V18.488 — der Takt-Zähler der progressionDeg-Wanderung
-            lastChordAt: -Infinity,
-            rngState: seedNum,
+            lastChordAt: -Infinity, // der Harmonie-Strom: `_klangStrom("lofi")` (jede Welt ihr eigenes Lied)
+            anfang: true, // das Lied beginnt mit seiner Schicht: der erste Zug setzt den Harmonie-Strom an den Anfang der Saat
         };
     }
 
@@ -1237,7 +1227,29 @@ class AnazhRealm_klang {
     _lofiRandom() {
         const lofi = this.state.symphony && this.state.symphony.lofi;
         if (!lofi) throw new Error("Lofi: der Harmonie-Strom zieht ohne Lofi-Zustand (state.symphony.lofi fehlt)");
-        return globalThis.__samenCore.mulberrySchritt(lofi, "rngState");
+        // DAS LIED BEGINNT MIT SEINER SCHICHT (bis saat-argument `rngState` je Schicht): der erste Zug einer neuen Lofi-Schicht
+        // stellt den Strom an den Anfang ihrer Saat — dieselbe Schicht spielt dasselbe Lied (gate:regler-wirkt, das Ohr: der Grund
+        // klingt zweimal gleich; ohne den Anfang lief der Strom über jede neue Schicht weiter, das Ohr hörte jede Klang-Zeile tot)
+        const anfang = lofi.anfang === true;
+        lofi.anfang = false;
+        return globalThis.__samenCore.mulberrySchritt(this._klangStrom("lofi", anfang), "zustand");
+    }
+
+    // DIE STRÖME DES KLANGS (Welle saat-argument): der Ruf der Tiere (`umwelt`, ein LCG) und die Harmonie (`lofi`, mulberry32)
+    // ziehen aus der Saat der Welt; ihr Zustand steht im Gedächtnis der Saat (`_saatJe`) und fällt mit ihr. Bis hier stand er im
+    // Klang-Zustand der Seite — `symphony` reist über jeden Wechsel (`WELT_GRENZE.seite`): die Welt danach rief und spielte mit der
+    // Saat der Welt davor. Der Same ist der EINE Text-Hash (`samenHash`; bis hier ein eigener ×31-Hash je Strom).
+    // `anfang`: der Strom steht wieder am Anfang seiner Saat (die neue Lofi-Schicht, `_lofiRandom`)
+    _klangStrom(zweck, anfang = false) {
+        const start = (s) => globalThis.__samenCore.samenHash(s + ":" + zweck) || 1;
+        const R = AnazhRealm._saatJe(this, "klang." + zweck, (s) => ({ saat: s, zustand: start(s) }));
+        if (anfang) R.zustand = start(R.saat);
+        return R;
+    }
+    // ein Zug des Ruf-Stroms (LCG) → der neue Zustand (uint32)
+    _klangZug(zweck) {
+        const R = this._klangStrom(zweck);
+        return (R.zustand = (Math.imul(R.zustand, 1664525) + 1013904223) >>> 0);
     }
 
     // DIE EINE SKALEN-QUELLE: das Studio-Klang-Rezept führt die SKALA (fx.klang.scale, im Kern aus

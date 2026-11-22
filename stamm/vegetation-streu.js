@@ -25,7 +25,7 @@ class AnazhRealm_vegetation_streu {
     // Der Auftrag einer Region an die EINE Regel: Schichten, Same der Welt, Ort des Spielers und Dichte beim Bau.
     _streuAuftrag(regX, regZ, px, pz, fdScale) {
         const SC = AnazhRealm.SCATTER;
-        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatJe(this);
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
@@ -2426,7 +2426,7 @@ class AnazhRealm_vegetation_streu {
         if (!this._waldFadenLebt() || !(this._genVersion && this._genVersion() >= 5)) return false;
         const wm = this.state.worldMeta;
         if (!wm) return false;
-        const worldSeed = wm.seed || "anazh-realm-seed";
+        const worldSeed = AnazhRealm._saatVon(wm);
         const { span } = this._voxelChunkConfig();
         const R = 256;
         const [r0x, r1x] = [Math.floor((cx * span) / R), Math.floor(((cx + 1) * span) / R)];
@@ -2458,12 +2458,19 @@ class AnazhRealm_vegetation_streu {
         return fehlt;
     }
 
+    // DIE GRAMMATIK DER BÄUME: das Rausch-Feld des Wuchses der Welt, im Gedächtnis ihrer Saat (`_saatJe`) — es fällt mit ihr, auf
+    // jedem Weg über die Weltgrenze (bis hier ein Feld der Seite, das nur das Laden beim Namen räumte: eine Ziel-Welt ohne Stand
+    // wuchs mit der Grammatik der Welt davor). Der Wuchs der Built-ins liest das saat-freie Feld des Konstruktors (`_wuchsRausch`,
+    // bau-vorlagen `_defaultBlueprints`). Leser: `_growTreeBlueprintRich`, `_growTreeBlueprintLegacy`, die Kronen-Hebung des Himmels.
+    _baumGrammatik() {
+        return (
+            this._wuchsRausch ||
+            AnazhRealm._saatJe(this, "baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"))
+        );
+    }
+
     _growTreeBlueprintRich(speciesKey, seed, opts) {
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const n = this._growTreeNoise;
+        const n = this._baumGrammatik();
         // der Plan (Stufe, Schlüssel, Hash, Art, Gestalt, Phänotyp) aus der EINEN Ableitung (`_wuchsPlan`)
         const plan = this._wuchsPlan(speciesKey, seed, opts);
         if (!plan) return null;
@@ -2759,11 +2766,7 @@ class AnazhRealm_vegetation_streu {
         let hash = 2166136261;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
         // Lazy-Init Noise-Stream
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const n = this._growTreeNoise;
+        const n = this._baumGrammatik();
         // Deterministische [0, 1)-RNG je seed: SimplexNoise mit hash als x und step-Zähler als y (eigene
         // Sequenz pro seed, unabhängig von der Position).
         let step = 0;

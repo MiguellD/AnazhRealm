@@ -1523,7 +1523,8 @@ async function checkBandV18199GammaMLichen({ page, check }) {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        const noise2D = r._voxelNoise ? (x, z) => r._voxelNoise.noise2D(x, z) : null;
+        const N = r._gelaende().noise;
+        const noise2D = (x, z) => N.noise2D(x, z);
         const LCH = A.LICHEN;
         const calcLichen = (feuchte, dichte, x, z) => {
             const cluster = noise2D ? (noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5 : 0.5;

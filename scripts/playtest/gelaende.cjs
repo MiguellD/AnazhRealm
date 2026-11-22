@@ -442,8 +442,9 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
     const wave6c2Results = await safeEvaluate(page, () => {
         const out = {};
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
-        // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
-        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+        // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad). Die Welt kommt aus der EINEN Geburt
+        // (`_generateFreshWorldMeta`, sie trägt ihre Saat) — ein loses `{ slug }` ohne Saat liest der Journal-Eintrag vor dem Heil.
+        const fresh = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta("test-fresh"), false);
         out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
         out.canonicalDefaultIsFrieden = AnazhRealm.GAME_MODES[0] === "frieden";
         out.worldMetaHasGameMode = typeof st.worldMeta.gameMode === "string";
