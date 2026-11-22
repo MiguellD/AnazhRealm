@@ -263,6 +263,69 @@ function stossUrteil(C, mutante = null) {
     return { rot, a, m };
 }
 
+// TEIL B — DER BESTAND (Meisterkarte 2 mensch.wirtschaft markt S1 · handel S1; koerper BESTAND_GESETZ): eine Stadt im Kleinen in der
+// Folge des Wirts (`_bestandTausch`, `_verkehrLieferAn`) über die Funktionen des Kerns — ein Acker (Kraut, ein Bauer), ein Stand
+// (voll), ein Wagen (leer), der Spieler mit 5 Stein; Tag 3, 6 Uhr. B1 der Tausch: der Stand gibt 1 Kraut und nimmt 1 Stein, Kraut
+// und Stein von Stand + Spieler bleiben je gleich (Soll: der Bestand des Händlers sinkt um 1); B2 der Bestand füllt sich nur aus
+// Herstellung: der Stand steigt ohne Lieferung nie (je Stunde über zwei Tage), der Acker steigt nur in den Stunden seines Bauern
+// (nachts 0); B3 die Lieferung: der Wagen lädt am Acker (> 0) und gibt dem Stand genau, was er trug; B4 ohne Lieferung ist der Stand
+// binnen 24 h leer; B5 die Erhaltung: Σ Bestand am Ende − am Anfang = Herstellung − Verbrauch (die Bücher `her` · `ver`), auf 1e-9.
+// Täter (Selbsttest): „der Bestand füllt sich ohne Herstellung" (der Stand wächst ohne Lieferung), „der Wagen fährt ohne Ladung" (die
+// Ankunft am Acker lädt nichts), „der Tausch erzeugt Ware" (der Stand gibt, ohne zu verlieren). Leser: der Wirt (`_bestandAnlegen`,
+// `_bestandTausch`, `_verkehrLieferung`, `_verkehrLieferAn`, `_bestandBild`).
+function bestandUrteil(C0, mutante = null) {
+    const C = Object.assign({}, C0);
+    if (mutante === "ohneHerstellung") C.bestandAm = (H, h, w) => C0.bestandAm(H, h, w) + (H.art === "stand" && h > H.h ? (h - H.h) * 0.25 : 0);
+    if (mutante === "ohneLadung") C.bestandAnkunft = (W, an, h) => (an.art === "werk" ? 0 : C0.bestandAnkunft(W, an, h));
+    if (mutante === "erzeugt") C.bestandNimm = (H, w, m, h) => (C0.bestandFassen(H, h), Math.min(m, Math.floor(H.n[w] || 0)));
+    const h0 = 3 * 24 + 6;
+    const acker = C.bestandHalter("werk", "kraut", h0, 0, 12345, "wohnhaus", "feld");
+    const stand = C.bestandHalter("stand", "kraut", h0, C.BESTAND_GESETZ.lager.stand, 777, "haendler", "haendler");
+    const wagen = C.bestandHalter("wagen", "kraut", h0, 0);
+    const spieler = { kraut: 0, stein: 5 };
+    const summe = (w) => [acker, stand, wagen].reduce((a, H) => a + C.bestandAm(H, ht, w), 0) + (spieler[w] || 0);
+    const rot = [];
+    // B1 der Tausch (10 Uhr)
+    let ht = h0 + 4;
+    const [k0, s0, vor] = [summe("kraut"), summe("stein"), C.bestandAm(stand, ht)];
+    const k = C.bestandNimm(stand, "kraut", 1, ht);
+    spieler.kraut += k;
+    if (k) [spieler.stein] = [spieler.stein - C.bestandGib(stand, "stein", 1, ht)];
+    const sinkt = C.bestandAm(stand, ht) - vor;
+    if (!(sinkt < 0)) rot.push(`B1 der Bestand des Händlers sinkt beim Tausch nicht (${sinkt})`);
+    if (Math.abs(summe("kraut") - k0) > 1e-9 || Math.abs(summe("stein") - s0) > 1e-9)
+        rot.push(`B1 der Tausch erzeugt Ware: Kraut ${k0} → ${summe("kraut")}, Stein ${s0} → ${summe("stein")}`);
+    // B2 nur Herstellung füllt: der Stand steigt ohne Lieferung nie, der Acker nur in den Stunden seines Bauern
+    let ohneHerstellung = 0;
+    const fenster = C.tagesFenster(12345, "wohnhaus");
+    const imFenster = (h) => fenster.some(([a, b]) => (h % 24) >= a && (h % 24) < b);
+    for (let h = ht; h < ht + 48; h += 0.5) {
+        ohneHerstellung = Math.max(ohneHerstellung, C.bestandAm(stand, h + 0.5) - C.bestandAm(stand, h));
+        if (!imFenster(h) && !imFenster(h + 0.49)) ohneHerstellung = Math.max(ohneHerstellung, C.bestandAm(acker, h + 0.5) - C.bestandAm(acker, h));
+    }
+    if (!(ohneHerstellung <= 0)) rot.push(`B2 der Bestand füllt sich ohne Herstellung (+${ohneHerstellung.toFixed(3)} je halbe Stunde)`);
+    // B3 die Lieferung (18 Uhr am Acker, 19 Uhr am Stand)
+    ht = h0 + 12;
+    const geladen = C.bestandAnkunft(wagen, acker, ht);
+    ht = h0 + 13;
+    const standVor = C.bestandAm(stand, ht);
+    const abgeladen = -C.bestandAnkunft(wagen, stand, ht);
+    if (!(geladen > 0)) rot.push(`B3 der Wagen fährt ohne Ladung (am Acker ${geladen} geladen, der Acker trug ${C.bestandAm(acker, h0 + 12).toFixed(2)})`);
+    if (Math.abs(C.bestandAm(stand, ht) - standVor - abgeladen) > 1e-9 || abgeladen !== geladen)
+        rot.push(`B3 der Stand erhält nicht, was der Wagen trug (${geladen} geladen, ${abgeladen} abgeladen)`);
+    // B4 ohne Lieferung leer binnen der Tagesfrist
+    const leer24 = C.bestandAm(stand, ht + 24);
+    if (!(leer24 === 0)) rot.push(`B4 der Stand ist 24 h ohne Lieferung nicht leer (${leer24.toFixed(2)})`);
+    // B5 die Erhaltung über alles: Σ Ende − Σ Anfang = Herstellung − Verbrauch
+    const he = ht + 30;
+    const anfang = C.BESTAND_GESETZ.lager.stand + 5; // Kraut am Stand + Stein beim Spieler
+    for (const H of [acker, stand, wagen]) C.bestandFassen(H, he);
+    const ende = [acker, stand, wagen].reduce((a, H) => a + Object.values(H.n).reduce((x, y) => x + y, 0), 0) + spieler.kraut + spieler.stein;
+    const buch = [acker, stand, wagen].reduce((a, H) => a + H.her - H.ver, 0);
+    if (Math.abs(ende - anfang - buch) > 1e-9) rot.push(`B5 die Erhaltung bricht: Ende − Anfang ${(ende - anfang).toFixed(4)} ≠ Herstellung − Verbrauch ${buch.toFixed(4)}`);
+    return { rot, sinkt, ohneHerstellung, geladen, abgeladen, leer24, her: acker.her, ver: stand.ver };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
@@ -278,12 +341,15 @@ if (SELBSTTEST) {
     // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
     const gut = !stossUrteil(core).rot.length;
     const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter])
+    // der Bestand: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const bGut = !bestandUrteil(core).rot.length;
+    const bestandTaeter = [["ohneHerstellung", "B2 der Bestand füllt sich ohne Herstellung"], ["ohneLadung", "B3 der Wagen fährt ohne Ladung"], ["erzeugt", "B1 der Tausch erzeugt Ware"]].map(([m, z]) => [bGut && bestandUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neun injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, vier Täter des Stoßes).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zwölf injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, vier Täter des Stoßes, drei Täter des Bestands).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -292,4 +358,7 @@ const st = stossUrteil(core);
 const verb = verbKlassen(core.tagesPlan, core.tagesHaltung);
 if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.length} Haltung(en) [${verb.join(", ")}] (Soll ≥ 2) — Täter: koerper tagesHaltung`);
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
+const be = bestandUrteil(core);
+for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
+console.log(`  BESTAND Tausch ${be.sinkt} · Füllung ohne Herstellung ${be.ohneHerstellung} · Wagen ${be.geladen} geladen, ${be.abgeladen} abgeladen · Stand nach 24 h ${be.leer24} · Herstellung ${be.her.toFixed(2)}, Verbrauch ${be.ver.toFixed(2)}`);
 urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);
