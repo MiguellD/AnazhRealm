@@ -254,6 +254,12 @@ function selbsttest() {
         const p = preisVon({ bilder: schwer, referenz: ref(1.84) });
         return p.urteil === "UNGEMESSEN unter Last ×1,84" ? true : JSON.stringify(p).slice(0, 300);
     });
+    // DAS RUHE-TOR (pm-referenz-nach-anlauf): riss es vor der Fahrt „vor“, heißt dieselbe Zahl „im Anlauf der eigenen Welt“ — nie „unter Last“
+    pruefe("LAST Täter Referenz im Anlauf (das Tor riss vor „vor“) + Preis über Soll: UNGEMESSEN im Anlauf der eigenen Welt ×1,84", () => {
+        const anlauf = { wo: "vor", ruhig: false, s: 60, kerne: 4.02, soll: 3, reihe: [4.4, 4.1, 3.9] };
+        const p = preisVon({ bilder: schwer, referenz: { ...ref(1.84), anlauf } });
+        return p.urteil === "UNGEMESSEN im Anlauf der eigenen Welt ×1,84" ? true : JSON.stringify(p).slice(0, 300);
+    });
     pruefe("LAST Mutant Preis unter Soll: GRÜN, egal welche Last (ruhig, gerissen, ohne Referenz)", () =>
         [ref(1.05), ref(3.5), undefined].every((r) => preisVon({ referenz: r }).urteil === "GRÜN") ? true : "nicht GRÜN");
     pruefe("LAST Mutant ohne Referenz + Preis über Soll: UNGEMESSEN, nie ROT ohne Maßstab", () => {
