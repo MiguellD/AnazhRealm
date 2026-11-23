@@ -491,28 +491,7 @@ class AnazhRealm_siedlung_bewohner {
         // Frage eines Punkts geht Ring um Ring, bis seine n nächsten näher liegen als der nächste Ring — dieselben n wie die
         // Reihe über alle, nah zuerst. Bis w28-ziel-plan ordnete jede Probe eines Stands jeden Knoten des Plans (an der
         // Metropole 1 765), mit den Ständen der Bindung (bis zu drei mehr je Kopf) trug die Liste 135 statt 80 s Probe.
-        const knotenRaster = (K, Z = 3 * BW.gasseZelleM) => {
-            const R = new Map();
-            K.forEach((k, i) => {
-                const c = Math.floor(k.x / Z) * 2097152 + Math.floor(k.z / Z);
-                const l = R.get(c);
-                if (l) l.push(i);
-                else R.set(c, [i]);
-            });
-            return (x, z, n) => {
-                const [ix, iz, L] = [Math.floor(x / Z), Math.floor(z / Z), []];
-                for (let ring = 0; ring < 96; ring++) {
-                    for (let a = -ring; a <= ring; a++)
-                        for (let c = -ring; c <= ring; c += Math.abs(a) === ring ? 1 : 2 * ring || 1)
-                            for (const i of R.get((ix + a) * 2097152 + iz + c) || [])
-                                L.push({ i, k: K[i], d: (K[i].x - x) ** 2 + (K[i].z - z) ** 2 });
-                    if (L.length < n) continue;
-                    L.sort((p, q) => p.d - q.d || p.i - q.i);
-                    if (L[n - 1].d <= (ring * Z) ** 2) break;
-                }
-                return L.sort((p, q) => p.d - q.d || p.i - q.i).slice(0, n);
-            };
-        };
+        const knotenRaster = AnazhRealm._knotenRaster;
         const G2 = BW.gasseFreiM * BW.gasseFreiM;
         // DAS RASTER DER GASSEN (Lehre 25: der billige Filter zuerst, nie über alle): jede Gasse liegt in jeder Zelle
         // (`gasseZelleM`), die ihr Rahmen samt `gasseFreiM` deckt — die Frage eines Punkts liest nur die Gassen seiner Zelle, das
@@ -573,49 +552,11 @@ class AnazhRealm_siedlung_bewohner {
         // Klippe, frei erreicht hing jeder an einem Knoten unten — der Weg von der Tür ging 630–730 m um den Ring, 21 ihrer
         // Leute kamen um 10 Uhr nicht an (mit der Bindung nach dem Weg 22 → 1 von 1 336 nicht angekommen; der Richter:
         // gate:kreatur-takt zielplan „Stand jenseits der Wand", an der Stadt dorf 7 120 ohne diese Frage 231 von 1 902).
-        let grundRaster = null;
-        const grundLaengen = new Map();
-        // (in Raten: je Knoten hinter einer Wand ein Schritt der Liste, wie die Frage des Stands, `frei`)
-        const amGrundGang = function* (p) {
-            const G = S.netzGrund || (S.netzGrund = realm._wegeNetzGrund(plan, S.ox, S.oz));
-            for (const c of (grundRaster || (grundRaster = knotenRaster(G.knoten)))(p.x, p.z, BW.anschlussN)) {
-                if (!realm._bewohnerWand(p, c.k)) return c;
-                yield;
-            }
-            return null;
-        };
-        const amGrund = (p) => {
-            const it = amGrundGang(p);
-            for (let w = it.next(); ; w = it.next()) if (w.done) return w.value;
-        };
-        // DIE TÜR AM NETZ: der Punkt vor ihr an seinem ersten Knoten hinter keiner Wand — sieht er keinen (die Tür öffnet in einen
-        // Winkel, 2 m vor ihr die Wand des Nachbarn), tritt man vor ihr zur Seite: der nächste freie Punkt im Umkreis bis zur Naht
-        // (je 2 m, 16 Richtungen), den die Gerade von der Tür frei erreicht und der selbst einen Knoten sieht; {i, k, d} mit
-        // d = der Weg bis zum Knoten. An der Stadt dorf 7 sah die Tür von 4 der 5 Scheunen keinen der 48 nächsten Knoten.
-        const amTuer = (p) => {
-            const ab = (u, v) => Math.hypot(u.x - v.x, u.z - v.z);
-            const c = amGrund(p);
-            if (c) return { i: c.i, k: c.k, d: ab(p, c.k) };
-            for (let r = 2; r <= BW.naehtM; r += 2)
-                for (let w = 0; w < 16; w++) {
-                    const q = { x: p.x + r * Math.cos((w * Math.PI) / 8), z: p.z + r * Math.sin((w * Math.PI) / 8) };
-                    if (realm._bewohnerWand(q, q, true) || realm._bewohnerWand(p, q)) continue;
-                    const e = amGrund(q);
-                    if (e) return { i: e.i, k: e.k, d: r + ab(q, e.k) };
-                }
-            return null;
-        };
-        const tuerNetz = new Map();
-        // die Tür am Netz, gemerkt je Tür (`amTuer`)
-        const tuerAm = (tuer) => {
-            const wo = tuer.x + "," + tuer.z;
-            let a = tuerNetz.get(wo);
-            if (a === undefined) tuerNetz.set(wo, (a = amTuer(tuer)));
-            return a;
-        };
-        // (e: der Knoten, an dem der Stand q hängt — `frei` fragt ihn EINMAL, `amGrundGang`; das Gesetz: `_bewohnerAnTuer`)
-        const nahAnTuer = (q, tuer, e) => realm._bewohnerAnTuer(S, { tuerAm: tuerAm(tuer), tuerVor: tuer }, q, e.i, grundLaengen); // prettier-ignore
-        let freiK = -1;
+        // EIN INDEX IN EIN NETZ ÜBERLEBT SEIN NETZ NIE (netz-index): die Liste fragt den Grund, der JETZT gilt (`grundVon`), und
+        // hält von ihm nur Orte — den Punkt vor der Tür (`tuerVor`) und den Knoten des Stands als Punkt (`tuerKnoten`); die Tür am
+        // Netz und ihre Längen merkt der Grund selbst (`_bewohnerTuerAm`, `_bewohnerAnTuer`)
+        const grundVon = () => S.netzGrund || (S.netzGrund = realm._wegeNetzGrund(plan, S.ox, S.oz));
+        let freiKnoten = null;
         const frei = function* (x, z, amRand = true, tuer = null) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
@@ -639,14 +580,15 @@ class AnazhRealm_siedlung_bewohner {
             // 478 von 765 Proben, unter swiftshader-Last eine Probe bis 180 ms
             if (!knoten.length) return true;
             // DER STAND AN EINER TÜR HÄNGT AM NETZ, DAS MAN GEHT (pendler-anschluss): sein Knoten ist der erste frei erreichte des
-            // Grunds (`amGrundGang`, `S.netzGrund` — das Netz des Gangs, `_bewohnerNetz`), und an ihm misst die Tür ihren Weg
-            // (`nahAnTuer`). Bis hier fragte der Stand erst die Punkte der Straßen des Plans und danach den Grund noch einmal:
+            // Grunds (`_bewohnerGrundGang`, `S.netzGrund` — das Netz des Gangs, `_bewohnerNetz`), und an ihm misst die Tür ihren
+            // Weg (`_bewohnerAnTuer`). Bis hier fragte der Stand erst die Punkte der Straßen des Plans und danach den Grund noch einmal:
             // zwei Netze, die Wände je Probe doppelt — an stadt-voll 15 621 statt 7 208 Läufe über die Knoten, 245 480 statt
             // 114 335 Wände, die Liste 10,6 s gegen 7,2 s an main (Radeon headless, je drei Läufe)
             if (tuer) {
-                const e = yield* amGrundGang(q);
-                freiK = e ? e.i : -1; // (sein Knoten: der Stand merkt ihn, `ringStand` — die Wache prüft den Strich zu ihm)
-                return !!e && nahAnTuer(q, tuer, e);
+                const G = grundVon();
+                const e = yield* realm._bewohnerGrundGang(G, q);
+                freiKnoten = e ? e.k : null; // (sein Knoten als Ort: der Stand merkt ihn, `ringStand` — die Wache prüft den Strich zu ihm)
+                return !!e && realm._bewohnerAnTuer(G, { tuerVor: tuer }, q, e.i);
             }
             for (const c of (naheKnoten || (naheKnoten = knotenRaster(knoten)))(x, z, BW.anschlussN)) {
                 if (!realm._bewohnerWand(q, c.k)) return true;
@@ -812,7 +754,7 @@ class AnazhRealm_siedlung_bewohner {
                                 blick: Math.atan2(ux, uz) + (g.axis(wort + "dreh") - 0.5) * 1.6,
                                 anker, // er sieht von seiner Tür fort
                                 // seine Tür am Netz (`_bewohnerAnTuer`: auch gerückt hängt er nahe ihr am Netz)
-                                ...(knoten.length && { tuerAm: tuerAm(tuer), tuerVor: tuer, tuerK: freiK }),
+                                ...(knoten.length && { tuerVor: tuer, tuerKnoten: freiKnoten }),
                             },
                             amRand
                         );
@@ -869,14 +811,14 @@ class AnazhRealm_siedlung_bewohner {
         const zerfaellt = teile.some((t) => t > 0);
         const teilVon = (o) => {
             if (!zerfaellt || !o) return 0;
-            const c = amGrund(o);
+            const c = realm._bewohnerGrundAn(NG, o);
             return c ? teile[c.i] : -1;
         };
         // DER ANSCHLUSS EINES ORTS ANS NETZ (pendler-anschluss): ein Haus hängt dort, wo man vor seine Tür tritt (der Punkt vor dem
-        // Eingang, die Stände), an seinem ersten Knoten hinter keiner Wand (`amGrund`) — Platz und Acker an ihrer Mitte. Bis
+        // Eingang, die Stände), an seinem ersten Knoten hinter keiner Wand (`_bewohnerGrundAn`) — Platz und Acker an ihrer Mitte. Bis
         // pendler-anschluss nahmen Bindung und Teil den nächsten Knoten der Mitte des Hauses: an der Werkstatt an der Kante der
         // Klippe lag er am Fuß der Wand (36 m), die Wahl sah dort den kurzen Weg, der Mensch ging 640 m. Sieht der Punkt vor der
-        // Tür keinen Knoten, tritt man zur Seite (`amTuer`) — ohne auch das an keinem: laut, und keiner wählt es (`tagesWege`:
+        // Tür keinen Knoten, tritt man zur Seite (`_bewohnerTuerAm`) — ohne auch das an keinem: laut, und keiner wählt es (`tagesWege`:
         // Infinity). Die erste Fassung wog ein solches Haus nach der Luftlinie: an stadt-voll band eine Scheune, deren Tür keinen
         // Knoten sah, 9 Leute der Terrasse 60–122 m Luft, 536–644 m Weg — keiner kam um 10 Uhr an.
         let ortTeil = null;
@@ -888,7 +830,7 @@ class AnazhRealm_siedlung_bewohner {
                 yield;
                 const T = o.art === "platz" || o.art === "feld" ? null : tuerVon.get(o.slot);
                 const p = T ? { x: T.ex + T.ux * BW.vorM, z: T.ez + T.uz * BW.vorM } : { x: S.ox + o.x, z: S.oz + o.z };
-                const c = amTuer(p);
+                const c = realm._bewohnerTuerAm(NG, p);
                 if (!c) realm._bruchMelden(`BEWOHNER: ${o.art} #${(plan.slots[o.slot] || {}).seed >>> 0} in „${plan.name || "?"}" hängt an keinem Knoten des Netzes`); // prettier-ignore
                 ortAm.push(c ? { k: c.i, d: c.d } : null);
             }
@@ -2402,7 +2344,7 @@ class AnazhRealm_siedlung_bewohner {
         if (von._wegeStand !== stand) {
             von._wegeStand = stand;
             von._direkt = null;
-            von._knoten = von._ausweg = undefined;
+            // (Anschluss und Ausweg merkt das Netz selbst, `N.anschluss` · `N.ausweg`)
         }
         let direkt = von._direkt ? von._direkt.get(ziel) : undefined;
         if (direkt === undefined) {
@@ -2420,7 +2362,6 @@ class AnazhRealm_siedlung_bewohner {
         if (ziel._wegeStand !== stand) {
             ziel._wegeStand = stand;
             ziel._direkt = null;
-            ziel._knoten = ziel._ausweg = undefined;
         }
         // DER AUSWEG (mensch.K3 Staffel 2): erreicht ein Ort keinen Knoten frei (der Baum, der Fels des Wald-Takts kam nach der
         // Liste), geht der Weg über den nächsten freien Punkt bei ihm, der einen erreicht (`_bewohnerAusweg`)
@@ -2428,8 +2369,8 @@ class AnazhRealm_siedlung_bewohner {
         let e = this._bewohnerAnschluss(N, ziel);
         const ausA = a < 0 ? this._bewohnerAusweg(N, von, !!this._bewohnerWand(von, von)) : null;
         const ausE = e < 0 ? this._bewohnerAusweg(N, ziel) : null;
-        if (ausA) a = ausA._knoten;
-        if (ausE) e = ausE._knoten;
+        if (ausA) a = this._bewohnerAnschluss(N, ausA);
+        if (ausE) e = this._bewohnerAnschluss(N, ausE);
         const kette = a >= 0 && e >= 0 ? globalThis.__tetrapodaCore.wegKette(this._bewohnerBaum(N, a), a, e) : null;
         if (!kette) {
             this._bruchMelden(
@@ -3244,7 +3185,8 @@ class AnazhRealm_siedlung_bewohner {
             kanten[j].push(i, w);
         };
         const kanten = G.kanten.map((k) => k.slice());
-        const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
+        // (`grund`: der Grund, in dem jede Knoten-Zahl dieses Netzes gilt — die Tür am Netz, ihre Längen, `_bewohnerAnTuer`)
+        const N = { knoten, kanten, grund: G, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
         const teil = new Int32Array(knoten.length);
         const N2 = AnazhRealm.BEWOHNER.naehtM ** 2;
         for (;;) {
@@ -3367,25 +3309,72 @@ class AnazhRealm_siedlung_bewohner {
     // erreicht (`_bewohnerWand`). Kein Knoten: laut, und -1 (die Strecke trägt
     // keinen Weg, `_bewohnerStrecke`: er bleibt) — nie durch die Wand zum nächsten.
     // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss) — das EINE Gesetz der Geburt (`_bewohnerListe` frei) und des
-    // gerückten Stands (`_bewohnerStandPruefen`): wer an einer Tür steht (o.tuerAm: ihr Knoten {i, k, d}, o.tuerVor: der Punkt vor
-    // ihr), erreicht sie vom Punkt q über seinen Knoten i des Grunds (`S.netzGrund`) höchstens auf `standUmweg` × der Luftlinie
-    // plus einer Naht. `laengen`: die Längen je Knoten einer Tür (tetrapoda `wegLaengen`), gemerkt beim Leser. Bis hier hielt nur
-    // die Geburt das Gesetz: der gerückte Stand fragte allein den Anschluss — an der Stadt dorf 7 30 rückten zwei Stände an
-    // haus#134516 16,7 m Luft, 182 m über das Netz (gate:kreatur-takt zielplan „Stand jenseits der Wand", die Liste nach dem Tag)
-    _bewohnerAnTuer(S, o, q, i, laengen) {
-        const a = o.tuerAm;
+    // gerückten Stands (`_bewohnerStandPruefen`): wer an einer Tür steht (o.tuerVor: der Punkt vor ihr — ein ORT, ihr Knoten am
+    // Grund G ist `_bewohnerTuerAm`), erreicht sie vom Punkt q über seinen Knoten i DESSELBEN Grunds höchstens auf `standUmweg` ×
+    // der Luftlinie plus einer Naht; die Längen je Knoten einer Tür (tetrapoda `wegLaengen`) merkt der Grund (`G.laengen`). Bis
+    // hier hielt nur die Geburt das Gesetz: der gerückte Stand fragte allein den Anschluss — an der Stadt dorf 7 30 rückten zwei
+    // Stände an haus#134516 16,7 m Luft, 182 m über das Netz (gate:kreatur-takt zielplan „Stand jenseits der Wand").
+    // EIN INDEX IN EIN NETZ ÜBERLEBT SEIN NETZ NIE (netz-index): bis hier trug der Stand seine Tür als Knoten-Zahl {i, k, d}
+    // des Grunds seiner Geburt (`tuerAm`), dazu `tuerK`, und der Leser fragte sie am Grund, der JETZT galt — rechnete der Ort
+    // seinen Plan neu (`_ortNeuRechnen`: das Netz fällt), zeigte die Zahl über das neue Netz hinaus, und tetrapoda `wegBaum`
+    // warf im Spiel-Loop (am Start-Dorf nach dem Fremd-Slot: Tür-Knoten 415 im Grund von 406 Knoten, geboren an 419)
+    _bewohnerAnTuer(G, o, q, i) {
+        const a = this._bewohnerTuerAm(G, o.tuerVor);
         if (!a) return true; // die Tür hängt an keinem Knoten (laut, `_bewohnerListe`): es urteilt die Gerade allein
-        const G = S.netzGrund;
-        const K = G && G.knoten[i];
+        const K = G.knoten[i];
         if (!K) return false;
-        let L = laengen.get(a.i);
-        if (!L) laengen.set(a.i, (L = globalThis.__tetrapodaCore.wegLaengen(G.knoten.length, G.kanten, a.i)));
+        const LL = G.laengen || (G.laengen = new Map());
+        let L = LL.get(a.i);
+        if (!L) LL.set(a.i, (L = globalThis.__tetrapodaCore.wegLaengen(G.knoten.length, G.kanten, a.i)));
         const [BW, T] = [AnazhRealm.BEWOHNER, o.tuerVor];
         return a.d + L[i] + Math.hypot(q.x - K.x, q.z - K.z) <= BW.standUmweg * Math.hypot(T.x - q.x, T.z - q.z) + BW.naehtM; // prettier-ignore
     }
 
+    // DER ERSTE KNOTEN DES GRUNDS G, den p frei erreicht (die `anschlussN` nächsten, `G.raster`) — in Raten: je Knoten hinter
+    // einer Wand ein Schritt (`yield`, die Frage des Stands in `_bewohnerListe`); `_bewohnerGrundAn` geht den Gang ganz.
+    *_bewohnerGrundGang(G, p) {
+        const raster = G.raster || (G.raster = AnazhRealm._knotenRaster(G.knoten));
+        for (const c of raster(p.x, p.z, AnazhRealm.BEWOHNER.anschlussN)) {
+            if (!this._bewohnerWand(p, c.k)) return c;
+            yield;
+        }
+        return null;
+    }
+    _bewohnerGrundAn(G, p) {
+        const it = this._bewohnerGrundGang(G, p);
+        for (let w = it.next(); ; w = it.next()) if (w.done) return w.value;
+    }
+
+    // DIE TÜR AM NETZ: der Punkt vor ihr an seinem ersten Knoten des Grunds G hinter keiner Wand — sieht er keinen (die Tür
+    // öffnet in einen Winkel, 2 m vor ihr die Wand des Nachbarn), tritt man vor ihr zur Seite: der nächste freie Punkt im
+    // Umkreis bis zur Naht (je 2 m, 16 Richtungen), den die Gerade von der Tür frei erreicht und der selbst einen Knoten sieht;
+    // {i, k, d} mit d = der Weg bis zum Knoten, null: keiner. An der Stadt dorf 7 sah die Tür von 4 der 5 Scheunen keinen der
+    // 48 nächsten Knoten. Gemerkt je Tür AM GRUND (`G.tueren`): fällt der Grund, fällt die Zahl mit ihm.
+    _bewohnerTuerAm(G, p) {
+        const T = G.tueren || (G.tueren = new Map());
+        const wo = p.x + "," + p.z;
+        let a = T.get(wo);
+        if (a !== undefined) return a;
+        const ab = (u, v) => Math.hypot(u.x - v.x, u.z - v.z);
+        const c = this._bewohnerGrundAn(G, p);
+        a = c ? { i: c.i, k: c.k, d: ab(p, c.k) } : null;
+        for (let r = 2; !a && r <= AnazhRealm.BEWOHNER.naehtM; r += 2)
+            for (let w = 0; !a && w < 16; w++) {
+                const q = { x: p.x + r * Math.cos((w * Math.PI) / 8), z: p.z + r * Math.sin((w * Math.PI) / 8) };
+                if (this._bewohnerWand(q, q, true) || this._bewohnerWand(p, q)) continue;
+                const e = this._bewohnerGrundAn(G, q);
+                if (e) a = { i: e.i, k: e.k, d: r + ab(q, e.k) };
+            }
+        T.set(wo, a);
+        return a;
+    }
+
+    // Der Anschluss ist gemerkt AM NETZ N (`N.anschluss`, je Ort für seinen Punkt und den Stand der Wache, `N.stand`): fällt
+    // das Netz, fällt die Zahl mit ihm (netz-index — bis hier lag sie am Ort, `o._knoten`, und überlebte den Tausch des Plans).
     _bewohnerAnschluss(N, o) {
-        if (o._knoten !== undefined) return o._knoten;
+        const M = N.anschluss || (N.anschluss = new WeakMap());
+        const m = M.get(o);
+        if (m && m.stand === N.stand && m.x === o.x && m.z === o.z) return m.k;
         const nah = N.knoten
             .map((q, i) => ({ i, d: (q.x - o.x) ** 2 + (q.z - o.z) ** 2 }))
             .sort((a, b) => a.d - b.d)
@@ -3393,7 +3382,7 @@ class AnazhRealm_siedlung_bewohner {
         const frei = nah.find((c) => !this._bewohnerWand(o, N.knoten[c.i]));
         const k = frei ? frei.i : -1;
         if (k < 0) this._bruchMelden(`BEWOHNER: der Ort ${o.x.toFixed(1)}/${o.z.toFixed(1)} erreicht keinen Weg frei`);
-        o._knoten = k;
+        M.set(o, { k, stand: N.stand, x: o.x, z: o.z });
         return k;
     }
 
@@ -3402,7 +3391,7 @@ class AnazhRealm_siedlung_bewohner {
     // erreicht — `ausDerWand`: steht er selbst in einer Hülle, zählt die Linie nicht —, der frei steht (mit `rand` Raum), Land
     // ist, in keinem Grundriss liegt, `raum` (die Probe der Stände, `_bewohnerStandPruefen`: wahr, wo einer näher als `raumM`
     // steht) nicht trägt und selbst einen Knoten frei erreicht.
-    // Gemerkt je Stand der Wache (`o._ausweg`); null: keiner. Bis w4-genesis-ort-wirt5 fragte jeder Ring zwölf Richtungen: in
+    // Gemerkt je Stand der Wache am Netz (`N.ausweg`); null: keiner. Bis w4-genesis-ort-wirt5 fragte jeder Ring zwölf Richtungen: in
     // 15 m (`spurAuswegM`) lagen sie 7,9 m auseinander, und der gerückte Stand übersprang die Lücke neben der Fahrbahn.
     // `gesetz` (x, z): das Gesetz des Stands (`gilt`) — jeder Punkt hält es, und ein Ring, auf dem keiner es hält, beendet die
     // Suche: dort endet sein Gesetz (der Platz und sein Rand um den Ursprung auf ihm), weiter draußen liegt keiner mehr.
@@ -3430,7 +3419,10 @@ class AnazhRealm_siedlung_bewohner {
         gesetz = null,
         amTuer = null
     ) {
-        if (o._ausweg !== undefined) return o._ausweg;
+        // (gemerkt AM NETZ wie der Anschluss, `N.ausweg`: sein Punkt hängt an einem Knoten dieses Netzes)
+        const M = N.ausweg || (N.ausweg = new WeakMap());
+        const m = M.get(o);
+        if (m && m.stand === N.stand && m.x === o.x && m.z === o.z) return m.p;
         const BW = AnazhRealm.BEWOHNER;
         let gefunden = null;
         let punkte = 0;
@@ -3460,7 +3452,8 @@ class AnazhRealm_siedlung_bewohner {
                 else yield;
             }
         }
-        return (o._ausweg = gefunden);
+        M.set(o, { p: gefunden, stand: N.stand, x: o.x, z: o.z });
+        return gefunden;
     }
 
     // DER STAND WEICHT DER HÜLLE (mensch.K3 Staffel 2): bei der Geburt der Liste und wenn eine Hülle wechselt (`trifft`,
@@ -3504,7 +3497,12 @@ class AnazhRealm_siedlung_bewohner {
         // DER VORRANG DER REIHE (mensch.K2): jeder Ursprung sperrt jeden, der gerückte Ort nur Spätere der Reihe — der Ort ist Funktion der
         // Früheren, nie der Folge der Gänge (bis hier stellte dieselbe Saat kaufhaus #1295281832 je nach Vorgeschichte anders, VK-V)
         const rang = new Map([...staende].map((p, i) => [p, i]));
-        const laengen = new Map(); // die Längen je Tür-Knoten (`_bewohnerAnTuer`), für diesen Gang
+        // DER GRUND DIESES GANGS ist der des Netzes N (`N.grund`): jede Knoten-Zahl des Gangs gilt in ihm, auch wenn der Ort seinen
+        // Plan zwischen zwei Schritten neu rechnet (netz-index). Ein NEUER Grund (der Plan wechselte) urteilt jeden Stand neu
+        // wie der erste Gang — sein Ort hing am alten Netz
+        const G = N.grund;
+        const grundNeu = S.standGrund !== G;
+        S.standGrund = G;
 
         const legen = (x, z, p, urs) => {
             const k = zelle(Math.floor(x / RM), Math.floor(z / RM));
@@ -3553,13 +3551,14 @@ class AnazhRealm_siedlung_bewohner {
             for (const p of vorher) if (!staende.has(p)) merke(p, true);
             for (const p of staende) if (!vorher.has(p)) merke(p, false);
         }
-        if (trifft || wechsel.length || !vorher)
+        if (trifft || wechsel.length || !vorher || grundNeu)
             for (const p of staende) {
                 if (!haengt(p) || p._standSchmutz === true) continue;
                 const R = scheibe(p);
-                const K = N.knoten[p._standK];
+                const K = p._standKnoten;
                 let schmutz =
                     !vorher ||
+                    grundNeu ||
                     (trifft &&
                         (trifft({ x: p.ur.x - R, z: p.ur.z - R }, { x: p.ur.x + R, z: p.ur.z + R }) ||
                             (K && trifft(p, K))));
@@ -3572,8 +3571,8 @@ class AnazhRealm_siedlung_bewohner {
         for (const o of staende) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z, blick: o.blick });
-            const urK = o.tuerK >= 0 ? N.knoten[o.tuerK] : null; // der Knoten seiner Geburt (`_bewohnerListe`, `tuerK`)
-            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(urK && trifft(ur, urK)) && !(haengt(o) && o._standSchmutz !== false)) continue; // prettier-ignore
+            const urK = o.tuerKnoten || null; // der Knoten seiner Geburt als Ort (`_bewohnerListe`, `tuerKnoten`)
+            if (!grundNeu && trifft && !trifft(o, o) && !trifft(ur, ur) && !(urK && trifft(ur, urK)) && !(haengt(o) && o._standSchmutz !== false)) continue; // prettier-ignore
             if (!gitter) {
                 gitter = new Map();
                 for (const p of staende) {
@@ -3593,7 +3592,7 @@ class AnazhRealm_siedlung_bewohner {
             // `R` misst die Scheibe, die seine Suche ging
             let R = 0;
             const realm = this;
-            const amTuer = o.tuerAm ? (q, k) => realm._bewohnerAnTuer(S, o, q, k, laengen) : null;
+            const amTuer = o.tuerVor ? (q, k) => realm._bewohnerAnTuer(G, o, q, k) : null;
             const neu = function* (rand, frei, weit = BW.auswegM, gesetz = o.gilt) {
                 const p = yield* realm._bewohnerAuswegGang(
                     N,
@@ -3609,8 +3608,11 @@ class AnazhRealm_siedlung_bewohner {
                 R = Math.max(R, p ? Math.hypot(p.x - ur.x, p.z - ur.z) : weit);
                 return p;
             };
-            const gemerkt = (q) =>
-                Object.assign(o, { _standR: R, _standK: q ? q._knoten : undefined, _standSchmutz: false });
+            // (sein Knoten als Ort: der Anschluss, den die Suche am Netz N fand, `N.anschluss`)
+            const gemerkt = (q) => {
+                const m = q && N.anschluss && N.anschluss.get(q);
+                Object.assign(o, { _standR: R, _standKnoten: m && m.k >= 0 ? N.knoten[m.k] : undefined, _standSchmutz: false }); // prettier-ignore
+            };
             // DER STAND WEICHT DER SPUR (Leiter mensch.netz.verkehr): wer stundenlang steht, steht nie in der Spur eines Wagens
             // (`_verkehrAufSpur`) — er sucht den nächsten Ort, der sein Gesetz UND den Raum zu jedem Stand hält: erst die Gasse
             // daneben (`spurAuswegM`, die Lücke zwischen zwei Häusern), dann so weit sein Gesetz reicht (`gesetzAuswegM`, der
@@ -3692,9 +3694,7 @@ class AnazhRealm_siedlung_bewohner {
                         A && Number.isFinite(ur.blick)
                             ? ur.blick + Math.atan2(q.x - A.x, q.z - A.z) - Math.atan2(ur.x - A.x, ur.z - A.z)
                             : o.blick,
-                    _knoten: undefined,
                     _direkt: null,
-                    _ausweg: undefined,
                     _wegeStand: undefined,
                 });
                 for (const b of S.liste)
@@ -3946,3 +3946,31 @@ AnazhRealm.BEWOHNER = Object.freeze({
 // seiteM = so weit seitlich des Händlers steht die erste Kiste (der Tritt des Stands reicht 1,45 m, fachwerk AUSSTATTUNG
 // marktstand) · nahM = so nah am Auge zeichnet ein Stand seine Kisten · taktS = so oft (Bild-Uhr) prüft der Takt sie
 AnazhRealm.BESTAND_BILD = Object.freeze({ tauschM: 3, kisteM: 0.62, seiteM: 1.9, nahM: 60, taktS: 1 });
+
+// DIE NÄCHSTEN KNOTEN AUS DEM RASTER (Lehre 25: der billige Filter zuerst): je Zelle (`gasseZelleM` × 3) ihre Knoten; die
+// Frage eines Punkts geht Ring um Ring, bis seine n nächsten näher liegen als der nächste Ring — dieselben n wie die
+// Reihe über alle, nah zuerst. Bis w28-ziel-plan ordnete jede Probe eines Stands jeden Knoten des Plans (an der
+// Metropole 1 765), mit den Ständen der Bindung (bis zu drei mehr je Kopf) trug die Liste 135 statt 80 s Probe.
+// Leser: `_bewohnerListe`, `_bewohnerGrundGang` (das Raster des Grunds, gemerkt AM Grund: `G.raster`).
+AnazhRealm._knotenRaster = (K, Z = 3 * AnazhRealm.BEWOHNER.gasseZelleM) => {
+    const R = new Map();
+    K.forEach((k, i) => {
+        const c = Math.floor(k.x / Z) * 2097152 + Math.floor(k.z / Z);
+        const l = R.get(c);
+        if (l) l.push(i);
+        else R.set(c, [i]);
+    });
+    return (x, z, n) => {
+        const [ix, iz, L] = [Math.floor(x / Z), Math.floor(z / Z), []];
+        for (let ring = 0; ring < 96; ring++) {
+            for (let a = -ring; a <= ring; a++)
+                for (let c = -ring; c <= ring; c += Math.abs(a) === ring ? 1 : 2 * ring || 1)
+                    for (const i of R.get((ix + a) * 2097152 + iz + c) || [])
+                        L.push({ i, k: K[i], d: (K[i].x - x) ** 2 + (K[i].z - z) ** 2 });
+            if (L.length < n) continue;
+            L.sort((p, q) => p.d - q.d || p.i - q.i);
+            if (L[n - 1].d <= (ring * Z) ** 2) break;
+        }
+        return L.sort((p, q) => p.d - q.d || p.i - q.i).slice(0, n);
+    };
+};

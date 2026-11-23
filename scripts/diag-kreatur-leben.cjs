@@ -1447,7 +1447,7 @@ async function lebenBuehnen() {
                     N++;
                     if (!LW.has(a)) LW.set(a, laengen(a));
                     const [weg, luft] = [ab(v, K[a]) + LW.get(a)[e] + ab(p, K[e]), ab(v, p)];
-                    if (weg > JENSEITS.umweg * luft + JENSEITS.nahtM) aus.push(`${wer(b)} an ${t.k}: ${q3(luft)} m Luft, ${Math.round(weg)} m über das Netz, die Tür am Netz bei der Geburt: ${q.tuerAm ? "Knoten " + q.tuerAm.i : q.tuerAm === null ? "keiner" : "-"}${q.ur && (q.x !== q.ur.x || q.z !== q.ur.z) ? ", gerückt" : ""}`); // prettier-ignore
+                    if (weg > JENSEITS.umweg * luft + JENSEITS.nahtM) aus.push(`${wer(b)} an ${t.k}: ${q3(luft)} m Luft, ${Math.round(weg)} m über das Netz, die Tür am Netz: ${q.tuerVor ? ((ta) => (ta ? "Knoten " + ta.i : "keiner"))(r._bewohnerTuerAm(G, q.tuerVor)) : "-"}${q.ur && (q.x !== q.ur.x || q.z !== q.ur.z) ? ", gerückt" : ""}`); // prettier-ignore
                 }
             return { N, n: aus.length, erste: aus.slice(0, 3) };
         };
