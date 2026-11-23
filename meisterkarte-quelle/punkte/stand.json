@@ -15054,7 +15054,7 @@
   },
   "karte2.leben.wasser.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: der Deckel der Leiter riss nach 10,111 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,111 s, ehe sichtFlussM der Sprosse stand · d · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.bild#1",
@@ -15072,7 +15072,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: der Deckel der Leiter riss nach 10,111 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,111 s, ehe sichtFlussM der Sprosse stand · d",
      "ungemessen": true,
      "beide": true
     },
@@ -15302,7 +15302,7 @@
   },
   "karte2.leben.wasser.netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.netz#1 radeon: ungemessen (R10) · karte2.leben.wasser.netz#1 gtx: Station seit der Messung geändert · karte2.leben.wasser.netz#2 radeon: ungemessen (R10) · karte2.leben.wasser.netz#2 gtx: ungemessen (R10) · karte2.leben.wasser.netz#3 radeon: ungemessen (R10) · karte2.leben.wasser.netz#3 gtx: ungemessen (R10) · karte2.leben.wasser.netz#4 radeon: ungemessen (R10) · karte2.leben.wasser.netz#4 gtx: ungemessen (R10) · karte2.leben.wasser.netz#5 radeon: ungemessen (R10) · karte2.leben.wasser.netz#5 gtx: ungemessen (R10) · karte2.leben.wasser.netz#6 radeon: ungemessen (R10) · karte2.leben.wasser.netz#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.netz#1 radeon: ungemessen (R10) · karte2.leben.wasser.netz#1 gtx: ROT: S1 fischHubJePegelHub 0,383 × Pegel-Hub gegen Soll ≥ 0,8 × Pegel-Hub ✗ · fluchtAbstandM 8,365 m gegen Soll ≥ 3 m ✓ · Täter: tetrapoda-core.js FISCH_GESETZ.tiefe 0,4 (stamm/kreatur-fauna.js _fischTiefeY: der Fisch hält 0,4 der Säule, steigt mit 0,4 × Pegel-Hub) an 5b36f69a · karte2.leben.wasser.netz#2 radeon: ungemessen (R10) · karte2.leben.wasser.netz#2 gtx: ungemessen (R10) · karte2.leben.wasser.netz#3 radeon: ungemessen (R10) · karte2.leben.wasser.netz#3 gtx: ungemessen (R10) · karte2.leben.wasser.netz#4 radeon: ungemessen (R10) · karte2.leben.wasser.netz#4 gtx: ungemessen (R10) · karte2.leben.wasser.netz#5 radeon: ungemessen (R10) · karte2.leben.wasser.netz#5 gtx: ungemessen (R10) · karte2.leben.wasser.netz#6 radeon: ungemessen (R10) · karte2.leben.wasser.netz#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.netz#1",
@@ -15318,10 +15318,10 @@
      "id": "karte2.leben.wasser.netz#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 fischHubJePegelHub 0,383 × Pegel-Hub gegen Soll ≥ 0,8 × Pegel-Hub ✗ · fluchtAbstandM 8,365 m gegen Soll ≥ 3 m ✓ · Täter: tetrapoda-core.js FISCH_GESETZ.tiefe 0,4 (stamm/kreatur-fauna.js _fischTiefeY: der Fisch hält 0,4 der Säule, steigt mit 0,4 × Pegel-Hub)",
+     "sha": "5b36f69a78690dd2661aae017fef04106778125c",
+     "grund": "ROT: S1 fischHubJePegelHub 0,383 × Pegel-Hub gegen Soll ≥ 0,8 × Pegel-Hub ✗ · fluchtAbstandM 8,365 m gegen Soll ≥ 3 m ✓ · Täter: tetrapoda-core.js FISCH_GESETZ.tiefe 0,4 (stamm/kreatur-fauna.js _fischTiefeY: der Fisch hält 0,4 der Säule, steigt mit 0,4 × Pegel-Hub)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37504,7 +37504,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 275,
+  "konsum": 276,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37672,10 +37672,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3347
+  "ohne": 3346
  },
  "kopfVoll": "5b36f69a78690dd2661aae017fef04106778125c",
- "zeit": "2026-11-23T09:07:41.627Z",
+ "zeit": "2026-11-23T09:21:17.362Z",
  "vorher": "5b36f69a",
  "bilanz": {
   "gewinn": [],
