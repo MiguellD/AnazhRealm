@@ -32201,7 +32201,7 @@
   },
   "karte2.planet.zeit.archiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.archiv#1 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#1 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.archiv#1 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.zeit.archiv#1",
@@ -32219,8 +32219,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37521,7 +37522,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 272,
+  "konsum": 273,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37689,10 +37690,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3350
+  "ohne": 3349
  },
  "kopfVoll": "4019a2ad0565310f56cfc461672c173d8ba8e2b2",
- "zeit": "2026-11-23T01:41:38.164Z",
+ "zeit": "2026-11-23T01:58:51.466Z",
  "vorher": "4019a2ad",
  "bilanz": {
   "gewinn": [],

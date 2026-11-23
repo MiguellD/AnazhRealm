@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 4,
+    "heute": 5,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 1.7,
+    "anteilHeute": 2.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -2193,7 +2193,7 @@
        "richter": "100 Welten: aus 5 Aufschlüssen die Geschichte (Meer/Land/Eis/Vulkan je Epoche) ≥ 80 % getroffen"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Mechanik von Sprosse 1 steht: Schicht-Gesetz T5 Pediment → Schutthang → Kliff (gelaende-core.js:374-375, schichtMass :1028), nicht mit eigenem Auge belegt; Lagen ohne Alter und Stoff. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -20088,11 +20088,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 53,
+  "heute": 54,
   "davonKopplungen": 33,
   "kern": 16,
   "kernDazu": 16,
-  "anteilHeute": 3,
+  "anteilHeute": 3.2,
   "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 22
+  "nachwache": 23
  },
  "zusammengelegt": [
   {
