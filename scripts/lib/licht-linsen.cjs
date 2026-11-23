@@ -3068,7 +3068,7 @@ function naesseSicht(o) {
         if (o.ort === "dorf" && !e) throw new Error("NÄSSE: kein Haus mit Hülle und Tür am Ort");
         const k = e ? e._hausHuelleSkala || 1 : 1;
         const [co, si] = e ? [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0)] : [1, 0];
-        // DER RAHMEN DER HÜLLE: haus-lokal über Lage − 0,5 m, wie die Kollision (`_hausObb`) und die Decken des Pools (`_dachTakt`)
+        // DER RAHMEN DER HÜLLE: haus-lokal über Lage − 0,5 m, wie die Kollision (`HausBox`) und die Decken des Pools (`_dachTakt`)
         // — bis hier rechnete die Probe über der Lage: ihre Strahlen trafen jede Box der Hülle 0,5 m zu hoch (an der Schwelle des
         // haus_griechisch die Diele bei −3,3 m, gezeichnet die Stufe vor der Wand im Regen: 246 nasse „Innen"-Punkte)
         const welt = (x, y, z) => new T.Vector3(e.position.x + (x * co + z * si) * k, e.position.y - 0.5 + y * k, e.position.z + (z * co - x * si) * k);

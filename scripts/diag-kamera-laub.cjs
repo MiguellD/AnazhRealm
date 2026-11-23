@@ -718,12 +718,12 @@ async function leibGang(G) {
         const baum = L.je.baum.filter(stamm).sort((u, v) => stamm(v).dick - stamm(u).dick)[0];
         // DER ANLAUF an eine Schwelle d ({cx, cz}) mit der Richtung n hinaus: der Gang beginnt startM vor ihr, der Rücken zu ihr
         const anlauf = (typ, d, n, m = d) => ({ typ, d, n, m, v: { x: d.cx + n[0] * G.startM, z: d.cz + n[1] * G.startM, gier: Math.atan2(...n) } });
-        // DIE TÜR: die Tür-Zeile (`tuer`, haus-lokal, die Front −z) durch die EINE Lage der Haus-Hülle (`_hausObb`) — die
+        // DIE TÜR: die Tür-Zeile (`tuer`, haus-lokal, die Front −z) durch die EINE Lage der Haus-Hülle (`_hausLage`, `HausBox`) — die
         // Schwelle, hinaus (Länge: die Skala des Hauses), die Mitte auf ihrer Achse
         const tuer = (a) => {
             const e = a && eintrag(a);
             const t = e && e.tuer;
-            const P = (dz) => r._hausObb(e, t.x - 1, 0, t.z - dz - 1, t.x + 1, 1, t.z - dz + 1).obb;
+            const P = (dz) => new r.constructor.HausBox({ R: r._hausLage(e).R, F: Float32Array.of(t.x, 0.5, t.z - dz, 1, 0.5, 1) }, 0, -1);
             return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
         };
         const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };

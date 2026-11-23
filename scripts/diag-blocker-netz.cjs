@@ -107,6 +107,55 @@ function boxWand(quelle) {
     return { befunde, zuweisungen };
 }
 
+// (H) DIE HÜLLE GEPACKT (heap-huelle-gepackt, Node, ohne Browser): 16 Häuser des Fachwerk-Buchs (je Kultur eins, Stufe 0) treten
+// über den Eingang `_hausHuelleSetzen` des echten Wirts ein, wie die Lieferung sie bringt (`_huellePacken`), und jeder fragt einmal
+// den Strahl (`_strahlBoxenVon`). Rot beim Namen: „Objekt-Liste gehalten" (ein Eintrag hält `teile` als Array), „Geländer ohne
+// Frage gehalten" (die Strahl-Boxen stehen, bevor ein Strahl fragt), „Byte je Hüll-Teil" über HUELLE_DECKEL_B (gehaltener Heap
+// nach dem Collector je Teil: Hülle, Blocker, das geliehene Geländer und ihre Netz-Zellen zusammen — gepackt 102, die Objekt-Liste
+// darüber 310). Die Basis ddaf883d hielt hier 408 Byte je Teil, rot an allen drei Namen (die Metropole an stadt-voll: 26,4 + 19,3 +
+// 10,3 MB über 132 012 Teile, Radeon j1). Leser: `npm run check` (der Selbsttest dieser Datei).
+const HUELLE_DECKEL_B = 128;
+function huellenWand(mutant) {
+    const v8 = require("v8");
+    const vm = require("vm");
+    v8.setFlagsFromString("--expose-gc");
+    const gc = vm.runInNewContext("gc");
+    const { studioKern } = require("./lib/welt-boot.cjs");
+    const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
+    const { AnazhRealm: A, ctx: W } = stammLib.ladeKlasse(root);
+    const r = vm.runInContext("new AnazhRealm()", W);
+    r._foundryPresetForEntry = () => null;
+    r._torBlockerAABBs = () => null;
+    r._grundrissRaeumen = () => {};
+    r._voxelChunkConfig = () => ({ step: 0.5 });
+    const taeter = [];
+    if (typeof A._huellePacken !== "function") taeter.push("kein gepackter Eintritt (`_huellePacken` fehlt)");
+    const kulturen = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "haus").slice(0, 16);
+    const roh = kulturen.map((k) => FC.buildInstance(k, 7, 0).userData.__huelle);
+    const ein = roh.map((h) => (taeter.length ? h : A._huellePacken(h, "linse")));
+    let teile = 0;
+    for (const h of roh) teile += h.teile.length;
+    roh.length = 0;
+    const E = kulturen.map((type, i) => ({ type, position: { x: 4100 + i * 61, y: 37, z: -5230 }, rotationY: i * 0.4, scale: 1 }));
+    r.state.architectures = E;
+    for (let d = 0; d < 3; d++) gc();
+    const m0 = v8.getHeapStatistics().used_heap_size;
+    for (let i = 0; i < E.length; i++) r._hausHuelleSetzen(E[i], ein[i]);
+    ein.length = 0;
+    if (E.some((e) => Array.isArray(e._strahlGelaender) && e._strahlGelaender.length))
+        taeter.push("Geländer ohne Frage gehalten (`_strahlGelaender` steht vor dem Strahl)");
+    for (const e of E) r._strahlBoxenVon(e);
+    if (mutant) for (const e of E) e._hausHuelle.teile = A._huelleVon(e._hausHuelle, "fest").concat(A._huelleVon(e._hausHuelle, "strahl"));
+    for (let d = 0; d < 3; d++) gc();
+    const proTeil = (v8.getHeapStatistics().used_heap_size - m0) / teile;
+    const liste = E.filter((e) => e._hausHuelle && Array.isArray(e._hausHuelle.teile)).length;
+    if (liste) taeter.push(`Objekt-Liste gehalten (\`_hausHuelle.teile\` an ${liste} von ${E.length} Häusern)`);
+    if (!(proTeil <= HUELLE_DECKEL_B)) taeter.push(`Byte je Hüll-Teil ${proTeil.toFixed(0)} über dem Deckel ${HUELLE_DECKEL_B}`);
+    const boxen = E.reduce((s, e) => s + (e.blockerAABBs ? e.blockerAABBs.length : 0), 0);
+    const wort = `${E.length} Häuser · ${teile} Teile · ${boxen} Blocker · ${proTeil.toFixed(0)} Byte je Teil (Deckel ${HUELLE_DECKEL_B})${taeter.length ? " — ROT: " + taeter.join(" · ") : ""}`;
+    return { taeter, wort };
+}
+
 if (SELBSTTEST) {
     console.log("=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===");
     const v = [];
@@ -130,9 +179,17 @@ if (SELBSTTEST) {
         )
     );
     if (ok.befunde.length) v.push(`gestempelt: die Wand meldet ${JSON.stringify(ok.befunde)}`);
+    // (H) DIE HÜLLE GEPACKT — am Stamm grün, der Mutant (die Objekt-Liste wieder gehalten) rot beim Namen
+    const H = huellenWand(false);
+    console.log(`  [H Stamm] ${H.wort}`);
+    for (const t of H.taeter) v.push(`STAMM (H): ${t}`);
+    const M = huellenWand(true);
+    console.log(`  [H Mutant Objekt-Liste] ${M.wort}`);
+    if (!M.taeter.some((t) => t.includes("Objekt-Liste gehalten")) || !M.taeter.some((t) => t.includes("Byte je Hüll-Teil")))
+        v.push(`H Mutant: die gehaltene Objekt-Liste fällt nicht rot beim Namen (${M.taeter.join(" · ") || "still"})`);
     selbsttestEnde(
         v,
-        `der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs gesehen), drei eingeschleuste Schreiber rot, ein gestempelter grün.`
+        `der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs gesehen), drei eingeschleuste Schreiber rot, ein gestempelter grün; die Hülle gepackt (${H.wort}), die gehaltene Objekt-Liste rot.`
     );
     process.exit(0);
 }

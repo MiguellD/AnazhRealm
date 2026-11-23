@@ -2373,7 +2373,61 @@ class AnazhRealm_studio_bruecke {
     // für beide; "strahl" der Leib, an dem nur der Strahl hält (das Geländer der Treppe: die Kamera-Kugel, der Hieb — die Kapsel des
     // Gangs liest "fest"); "wurf" liest hier niemand (das Teil wirft nur: die NUR-WURF-Stufe ist die ganze Liste, das Tor 1110-9) —,
     // fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine Hülle.
+    // DER GEPACKTE SPEICHER (heap-huelle-gepackt): der Wirt hält die Hülle nie als Objekt-Liste — sie tritt EINMAL ein
+    // (`_huellePacken` an der Gruppe der Lieferung, `_foundryBuildGroup`) und liegt dann als `{ code: Uint16Array, f: Float32Array }`
+    // asset-lokal (Lehre 22: der Anker des Hauses bleibt double am Eintrag) neben ihren Zeilen (`stufe`, `kamin`, `tuer`, `decken`).
+    // Der EINE Leser ist `_huelleLauf` (je Teil der Rolle: Art, Versatz in `f`, Code); `_huelleVon` gibt dieselben Teile als
+    // flüchtige Objekte (das Fernbild, ≤ 24 Teile). Bis hier hielt jedes Haus der Metropole seine Liste (308 Häuser, 132 012 Teile,
+    // 1,7 Mio. Objekte, 26,4 MB an stadt-voll, Radeon j1 am ddaf883d) — 158 davon doppelt gehalten über den Cache der Lieferung.
     static _huelleVon(h, rolle, quelle) {
+        if (!h) return null;
+        const out = [];
+        const n = AnazhRealm._huelleLauf(h, rolle, quelle, (art, o, code) => {
+            const F = h.f;
+            const v = (i) => [F[o + i], F[o + i + 1], F[o + i + 2]];
+            const t = { art: AnazhRealm.HUELLE_ART[art], rolle: AnazhRealm.HUELLE_ROLLE[(code >> 2) & 7] };
+            let k = 6;
+            if (art === 2) {
+                Object.assign(t, { a: v(0), b: v(3), r: F[o + 6] });
+                k = 7;
+            } else Object.assign(t, { c: v(0), h: v(3) });
+            if (art === 1) t.first = AnazhRealm.HUELLE_FIRST[(code >> 5) & 3];
+            if (code & 128) t.walm = F[o + k++];
+            if (code & 256) t.farbe = v(k);
+            out.push(t);
+        });
+        return n == null ? null : out;
+    }
+    // DER EINE LESER DES SPEICHERS: je Teil der Rolle `rolle` (und jedes "beide") `fn(art, o, code)` — art 0 Kasten · 1 Keil ·
+    // 2 Kapsel, `o` der Versatz seiner Zahlen in `h.f` (Kasten/Keil c·h, Kapsel a·b·r, danach walm, danach farbe), `code` die Bits
+    // (art 0–1, rolle 2–4, first 5–6, walm 7, farbe 8). Gibt die Zahl der Teile der Rolle; null: keine Hülle. Eine Hülle, die nicht
+    // gepackt eintrat, ist ein Bruch beim Namen (der Wirt hält die Objekt-Liste nie).
+    static _huelleLauf(h, rolle, quelle, fn) {
+        if (!h) return null;
+        if (!(h.f instanceof Float32Array) || !(h.code instanceof Uint16Array))
+            return AnazhRealm._kernPflichtBruch(
+                (quelle || "huelle") + " (Hüllen-Form: ungepackt — `_huellePacken` am Eintritt)"
+            );
+        const ri = AnazhRealm.HUELLE_ROLLE.indexOf(rolle);
+        let o = 0;
+        let n = 0;
+        for (let i = 0; i < h.code.length; i++) {
+            const code = h.code[i];
+            const art = code & 3;
+            const r = (code >> 2) & 7;
+            if ((r === ri || r === 3) && (rolle !== "sicht" || code & 256)) {
+                n++;
+                if (fn) fn(art, o, code);
+            } else if (rolle === "sicht" && (r === ri || r === 3))
+                return AnazhRealm._kernPflichtBruch((quelle || "huelle") + " (Hüllen-Form: farbe)");
+            o += (art === 2 ? 7 : 6) + (code & 128 ? 1 : 0) + (code & 256 ? 3 : 0);
+        }
+        return n;
+    }
+    // DER EINTRITT DER HÜLLE (die Form N5 aus dem Gesetzbuch → der gepackte Speicher): fail-closed geprüft wie die Form es fordert
+    // (Rolle, Art, c/h · a/b/r endlich, Keil mit First, Walm 0..1) — eine kaputte Hülle bricht hier mit Quelle. Die Zeilen neben den
+    // Teilen reisen unverändert mit. Leser: `_foundryBuildGroup` (der EINE Eintritt im Spiel), die Linsen, die eine Hülle des Kerns lesen.
+    static _huellePacken(h, quelle) {
         if (!h) return null;
         const bruch = (was) => AnazhRealm._kernPflichtBruch((quelle || "huelle") + " (Hüllen-Form: " + was + ")");
         if (!Array.isArray(h.teile)) return bruch("teile");
@@ -2383,31 +2437,50 @@ class AnazhRealm_studio_bruecke {
             Number.isFinite(v[0]) &&
             Number.isFinite(v[1]) &&
             Number.isFinite(v[2]);
-        const out = [];
-        for (const t of h.teile) {
-            if (
-                !t ||
-                !(
-                    t.rolle === "fest" ||
-                    t.rolle === "sicht" ||
-                    t.rolle === "wurf" ||
-                    t.rolle === "beide" ||
-                    t.rolle === "strahl"
-                )
-            )
-                return bruch("rolle");
+        const code = new Uint16Array(h.teile.length);
+        const zahlen = [];
+        for (let i = 0; i < h.teile.length; i++) {
+            const t = h.teile[i];
+            const r = t ? AnazhRealm.HUELLE_ROLLE.indexOf(t.rolle) : -1;
+            if (r < 0) return bruch("rolle");
+            let c = r << 2;
             if (t.art === "box" || t.art === "keil") {
                 if (!v3(t.c) || !v3(t.h)) return bruch(t.art + " c/h");
-                if (t.art === "keil" && AnazhRealm.HUELLE_KEIL_TYP[t.first] == null) return bruch("keil first");
+                if (t.art === "keil") {
+                    const fi = AnazhRealm.HUELLE_FIRST.indexOf(t.first);
+                    if (fi < 0 || AnazhRealm.HUELLE_KEIL_TYP[t.first] == null) return bruch("keil first");
+                    c |= 1 | (fi << 5);
+                }
                 if (t.walm != null && !(t.walm >= 0 && t.walm <= 1)) return bruch("keil walm");
+                zahlen.push(...t.c, ...t.h);
             } else if (t.art === "kapsel") {
                 if (!v3(t.a) || !v3(t.b) || !(t.r > 0)) return bruch("kapsel a/b/r");
+                c |= 2;
+                zahlen.push(...t.a, ...t.b, t.r);
             } else return bruch("art " + t.art);
-            if (t.rolle !== rolle && t.rolle !== "beide") continue;
-            if (rolle === "sicht" && !v3(t.farbe)) return bruch("farbe");
-            out.push(t);
+            if (t.art !== "kapsel" && t.walm != null) {
+                c |= 128;
+                zahlen.push(t.walm);
+            }
+            if (v3(t.farbe)) {
+                c |= 256;
+                zahlen.push(...t.farbe);
+            }
+            code[i] = c;
         }
+        const out = {};
+        for (const k of Object.keys(h)) if (k !== "teile") out[k] = h[k];
+        out.code = code;
+        out.f = Float32Array.from(zahlen);
         return out;
+    }
+    // Tragen zwei gepackte Hüllen dieselben Teile (Codes und Zahlen)? Leser: `_hausHuelleSetzen` (ein Stufen-Wechsel mit derselben
+    // Hülle schreibt die Blocker nicht neu).
+    static _huelleGleich(a, b) {
+        if (!a || !b || a.code.length !== b.code.length || a.f.length !== b.f.length) return false;
+        for (let i = 0; i < a.code.length; i++) if (a.code[i] !== b.code[i]) return false;
+        for (let i = 0; i < a.f.length; i++) if (a.f[i] !== b.f[i]) return false;
+        return true;
     }
     // DIE HÜLLE FERN (w28-march-schirm): eine Lese-Regel des Wirts über der Liste des Gesetzbuchs, kein Fit und kein zweites Haus —
     // jenseits der Mesh-Zone trägt ein Bau im Welt-March jeden Kasten ab einem Viertel seines größten (Turm, Flügel) und jeden
