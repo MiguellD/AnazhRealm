@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 00:27 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 76 von 1 718 (`karte-2-stand.json`: kern 5 · beide 50 · nachwache 26).**
+**STAND 24.11. 00:48 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; die Tafel trägt den Stand 22:30 am 5b36f69a und ist
   nach Runde 13 neu zu schreiben) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
   tore, decken, alles deine definitionen“): Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band · M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen
@@ -8,7 +8,8 @@
 - GEBUCHT am 23.11.: 58 → 68 um 23:14 (buche 29f6bc4e: planet.wasser.eis#1 · planet.wetter.vorhersage#1 · leben.oeko.zerfall#1 · mensch.stadt.vertikal#1 ·
   mensch.stadt.siedlungsnetz#1 · mensch.nahrung.flur#1 · mensch.wirtschaft.technik#1 · same.physik.reaktion#1 und #2 · planet.kopplung.gegenwart#1) und
   68 → 76 um 23:49 (buche 3fde4469, aus dem Heap-Entscheid, ohne Neumessung: mensch.menge.kollektiv 0→1 · mensch.netz.verkehr 0→1 · mensch.bau.innen 0→1 ·
-  mensch.fahrzeug.maschine 0→1 · mensch.nahrung.hand 1→2 · mensch.wirtschaft.markt 0→1 · planet.kopplung.wetter-welt 1→2 · leben.kopplung.stadt-im-netz 0→1).
+  mensch.fahrzeug.maschine 0→1 · mensch.nahrung.hand 1→2 · mensch.wirtschaft.markt 0→1 · planet.kopplung.wetter-welt 1→2 · leben.kopplung.stadt-im-netz 0→1). Am 24.11.: 76 → 77 um 00:09 (buche 892e671e:
+  mensch.wirtschaft.handel 0→1).
 - ZWEI PREIS-ENTSCHEIDE des Koordinators, BEIDE IN KRAFT (widerrufbar durch den Schöpfer), nach EINEM Satz: EIN Defekt kostet EINE Leiter, nie eine
   Schranke in jeder Sprosse. (1) ANKUNFT: die Kalt-Ankunft der Klassen Stadt, Megastadt/Kontinent, Planet/Welten ist gestuft in `same.preis.ankunft`
   4–5 · 6 · 7–8 (Schnitt 40ec52fe). (2) HEAP UND WACHSTUM: gestuft in `same.preis.speicher` 1–2 · 3 · 4 · 5–6 (Schnitt 186aa331, preisFassung 2026-11-23b,
@@ -20,31 +21,51 @@
 - ZUG: LANDUNG ≤ 10 MIN ist in Kraft (Dienst-Stand 468faae1, installiert 23:26). ERSTER ZUG z699 `w28-echt-ein-bein`: bau 23:39:03 → GELANDET 23:48:19 =
   9 min 16 s (bau 2:32 · urteil 6:24 · landen 0:20), main → a8a9ab16; Vergleich z698 37 min. Offen: z699 trug kein Spiel-Byte, mit Spiel-Code maß die
   Bau-Phase bis 11,6 min (Adresse: fahre.sh Stufe 1); vom Stempel (23:29:37) bis zur Abholung (23:38) vergingen 9 min. 
-- NACHWACHE ROT main a8a9ab16 (24.11. 00:12; Lauf 45283121007, Job voll 18/18): `gate:foundry-crossfade`, Prüfung „SLOT-BILANZ: kein slotEntry-/Feld-Rest“,
+- NACHWACHE main a8a9ab16: ROT um 00:12, GRÜN um 00:42 AM SELBEN KOPF (Lauf 45283121007, Job voll 18/18): `gate:foundry-crossfade`, Prüfung „SLOT-BILANZ: kein slotEntry-/Feld-Rest“,
   1 Verletzung ohne Zahl, die 20 anderen Jobs grün. Die Spiel-Bytes und die Linse sind seit 8544438f unverändert (Diff: 5 Werkzeug-Dateien), dort urteilte
-  die volle Batterie auf integ-probe grün (Lauf 45273252006) — dasselbe Byte, zwei Urteile; z699 trug kein Spiel-Byte. IN FAHRT: Versuch 2 des Jobs
-  (00:21) und `linse-slot-rest` b2747d90 (die Prüfung nennt slotEntry, Gruppen, beide Felder und removeLief; Vorprüfung Lauf 45288504946, GPU-Probe
-  45288504794). Zeile im FUND-REGISTER (koordination 63ec31b9). Der Täter ist nicht benannt; die Nachwache nennt nur, sie hält keinen Zug auf.
+  die volle Batterie auf integ-probe grün (Lauf 45273252006) — dasselbe Byte, zwei Urteile; z699 trug kein Spiel-Byte. VERSUCH 2 IST GRÜN (00:39, Job
+  138089422222, derselbe Kopf): die Prüfung ist nicht deterministisch — drei Messungen, zwei grün, eine rot; die Nachwache liest a8a9ab16 seither grün,
+  das Grün steht auf Versuch 2. Offen: ob die Linse wackelt oder der Abbau im Spiel selten einen Rest lässt; die Rate ist ungemessen.
+  GESTEMPELT 00:47: `w28-linse-slot-rest` 272721d5 (die Prüfung nennt slotEntry, Gruppen, beide Felder und removeLief; Vorprüfung b2747d90 grün:
+  Code-Check 45288504946 mit 21 Jobs, GPU-Probe 45288504794 an der GTX 1050; ein Werkzeug-Zug ohne Spiel-Byte) — das nächste Rot nennt den Rest.
+  Zeile im FUND-REGISTER (koordination eca87360).
+- VORPRÜFUNGEN vom 24.11. 00:36 (leere Commits von mir, nach der Lese-Liste der Cloud-Ernte: 0 von 33 Zweigen stempelreif): `erbe-geburt` 3fd5e0cc
+  (`[gpu-probe: gate:kreatur-leben, bild:wiese@0.5]`; erbe#1 und zivilisation#1 laut Arbeiter headless grün) · `wetter-am-ort` 447d65b4 (die vier
+  Pflicht-Tore; die Marke trägt höchstens VIER Proben je Push, das Bild der Wiese folgt als eigener Blick). Gestempelt wird nach grüner CI und meinem
+  Blick aufs Bild. `front-leben` e47bec8f (vier Front-Sprossen) holt ein Arbeiter an der Radeon heim (Agent a1c595927fd400089; um 00:45 lief bei ihm
+  `npm run check:statik`). Die Rohdaten der Ernte liegen nur im Scratch dieser Sitzung (ernte/ernte.txt, ernte/ci.txt); die Lese-Liste: `pm-beobachter`
+  (Richter-Lauf, dann Merge) · `acker-furche` 9c776e7f (S0 über dem Budget, Bild rot) · `stoffstrom-kette-2` 6ef21842 (im Bild vom Schöpfer abgelehnt) ·
+  `leib-ausdruck` 13ef2e76 (K7 rot) · `saat-vor-heil` (DRUCK-SCHLAF rot) · sechs Zweige im Konflikt, deren Ersatz nicht bewiesen ist (w28-strahler,
+  w28-strahler-messer, w28-licht-spike, vorrat8-ankunft, bau-oeffnungen, einheit-stufe-wirt) · neun Archiv-Kandidaten, die in main stehen oder ersetzt sind.
 - RADEON NEU GESTARTET 24.11. 00:16 (der Schöpfer, auf mein „jetzt“): der Speicher lag in den Kern-Pools von Windows (Laufzeit 140 h; Treiber und Pool-Tag
   nicht benannt) — verfügbar 6,7 → 20,3 von 31,1 GB, Pools paged 20,7 → 0,50 und nonpaged 8,7 → 0,71 GB. Die fünf Schleifen laufen seit 00:19
   (`bash artifacts/profiband/dienst/start.sh`: Dienst-Stand 5ce15405, 65 Dateien, zug.cjs 72 Fälle und sammeln 18 von 18 grün; `radeon-dienst.sh` ist
   mitgetauscht). Nach rund fünf Tagen Laufzeit die Pools wieder lesen und den Neustart vorschlagen.
-- IN FAHRT: OMEN `heap-loslassen` e1ce3b13 (WIP 23:22; Halter benannt: die Bauten der fernen Siedlung bleiben, `state.architectures` 2 454 → 3 267, Runde
-  genesis 225,7 → stadt-voll 458,3 → zurück 387,9 MB; Auftrag: Schnitt am EINEN Abschied der Siedlung mit Runde 2× vorher ↔ nachher, Bildpaar, Vorprüfung;
-  danach `pm-speicher-runde` für same.preis.speicher#1–#3) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
-  (30 offen, ~4 min je Station), Schwanz 191; zwei Alarme „16 min ohne Fortschritt“ (23:04, 23:44) lösten sich von selbst · GTX 1050 `front-stoff` 5d53fa6e
-  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; ihre Meldung kurz nach Mitternacht, von mir nicht nachgemessen: am lokalen Kopf 88c870cd5 Seiten-Delta
+- IN FAHRT: OMEN `heap-loslassen` 9077e404 (ihre Meldung nach Mitternacht, von mir nicht nachgemessen: der Schnitt am Abschied der Siedlung gibt an der
+  GTX NICHTS frei — Runde zweimal auf main 225,8 → 398,1 → 468,2 MB (R2 − R1 +70,1 MB bei 3 267 Einträgen), mit Schnitt 227,0 → 407,5 → 492,5 (+85,0);
+  Linse H17 grün, sechs Mutanten rot. Meine Antwort: eine dritte Runde, R3 − R2 entscheidet Leck gegen begrenzten Cache; kein weiterer Schnitt, bevor der
+  Halter-Diff EINEN Halter nennt; daneben die Station `pm-speicher-runde` für same.preis.speicher#1–#3. Die Zustellung ist nicht bestätigt) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
+  (30 offen, ~4 min je Station), Schwanz 191; 33/246 um 00:38 laut der Runden-Zeile in koordination; zwei Alarme „16 min ohne Fortschritt“ (23:04,
+  23:44) lösten sich von selbst · GTX 1050 `front-stoff` 5d53fa6e
+  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; ihre Meldung 00:05, von mir nicht nachgemessen: am lokalen Kopf 88c870cd5 Seiten-Delta
   0,0027 → 0,0132 bei Soll 0,02 — alter#1 hängt am Gesetz in dieser Saat; sie setzt die Putz-Zeitkonstanten aus der Quelle und gibt mit alter#1 offen
-  ab), danach nacht-laterne · die OMEN antwortete auf die Frage von 23:59 (blockiert die Runde ihre Messung?) bis 00:27 nicht · VIER
-  CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` hat 3d3f0b24 gepusht (23:49: „der Fächer als EINE Bauart
-  (M4), technik#1 urteilt auf ihm“); `bewohner-satz`, `ort-ausstattung`, `nerv-bewegung` hatten um 23:56 noch keinen Zweig am Remote. Bericht je Zweig in
+  ab), danach nacht-laterne · VIER
+  CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` steht um 00:43 auf 1d638433 (laut Ernte am 23da5766:
+  zehn Richter auf dem Fächer, `stationen/faecher.js`; es fasst `k2-erleben.js` nur in den Zeilen 7–558 an); `bewohner-satz`, `ort-ausstattung`,
+  `nerv-bewegung` hatten um 00:43 noch keinen Zweig am Remote. DOPPEL-ZIEL: `nerv-bewegung` zielt auf leben.tiere.bewegung#1, das `front-leben` schon
+  bei 8 % trägt (Soll-Abweichung 26 → 8 %) — front-leben landet zuerst, die Nachricht geht per `cloud-post/nerv-bewegung.md`, sobald der Zweig steht. Bericht je Zweig in
   `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht. Aus Konto 17: `leib-ausdruck` 13ef2e76 (WIP, Tiefe 3; offen K7 und das Bild) —
   `bewohner-satz` fasst dieselben zwei Stamm-Dateien an.
 - RADEON-REGEL (Schöpfer 23.11.: „direkt die radeon ans limit gefahren... altes learning vergessen“): höchstens ZWEI lokale Arbeiter, keiner mit schwerem
   Lauf, solange Runde oder Zug messen; Macher gehen in die Cloud; die Schwelle RAM ≥ 8 GB an `AvailableBytes` lesen, nie an `FreePhysicalMemory`.
-- AN DER RADEON nach 00:25 wieder aufgenommen (per SendMessage an die Agent-Id): pm-Buchhalter (a1568895388f16a7b, wartende pm-Zweige) und Cloud-Ernte
-  (a8edb190197973084, nur lesen: die Liste der ungelandeten Zweige zum Stempeln). WARTEND: Stations-Heiler (a019f448dd2c13b4d; 16 am Apparat rote Fronten,
-  10 × „spawn ENAMETOOLONG“; nicht die Abschnitte, die `pm-beobachter` anfasst) — erst nach dem pm-Buchhalter, beide schreiben in punkte-maschine.
+  GEMESSEN 24.11. 00:44–00:46: EIN `git worktree add` (darunter `git reset --hard`) hält bei 67 Packs und 27 GB im Haupt-Klon rund drei Minuten lang
+  14,1 GB Arbeitsmenge (Datei-Abbild, privat 0,3 GB) — verfügbar 20,3 → 2,2 → 19,1 GB. Ein neuer Baum je Arbeiter ist die Last-Spitze; nie zwei Bäume
+  gleichzeitig anlegen, einen bestehenden Baum wiederverwenden.
+- AN DER RADEON: pm-Buchhalter (a1568895388f16a7b) DURCH um 00:43 — `pm-nacht-front` gebucht als 41fbb2ea (am Remote bestätigt; Selbsttest laut
+  Arbeiter 268 Fälle grün vor und nach dem Merge, dieselben fünf KONSUM-Fälle rot am Auszug), die sieben anderen Zweige standen schon in
+  punkte-maschine; Anspruchs-Zeile `pm-nacht-front karte2.erleben.bild.nacht#1,#2` (koordination 0e8f5281; laut Zweig #1 rot am Pfosten 2,36 gegen
+  3:1, #2 rot ohne Fotosatz). Cloud-Ernte (a8edb190197973084) DURCH. Stations-Heiler (a019f448dd2c13b4d; 16 am Apparat rote Fronten, 10 × „spawn
+  ENAMETOOLONG“; nicht `stationen/faecher.js` und nicht `k2-erleben.js` Zeilen 7–558) wieder aufgenommen um 00:48.
 - GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen). `pm-innen-ein-haus`: Rebase,
   Selbsttest und ein Lauf bau.innen#1 fehlen. Zu archivieren: `w28-iperka-arbeiter` 327a6ad5 und `iperka-arbeiter` 15a712f3 (gelandet als -2 in z698).
 - DANACH (steht auf `bewohner-satz` und `ort-ausstattung`): Tiefe 4, der Alltag aus Angebot × Antrieb → sport.regeln#1 · sport.geistspiel#1 ·
