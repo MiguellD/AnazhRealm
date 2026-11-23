@@ -604,11 +604,48 @@ L.perspektive("planet", (() => {
             // S3 die Reihe von Meeresspiegel und Sommer an der Heimat über 0 … −1 Ma (Zyklen = Extrema), S4 den Versatz der Jahres-Phase je Breitengrad
             // (die Blüte folgt `_saisonPraesenz` der Phase) und den Leser des Laichs, S5 die gebundene Bahn, S6 die Zonen gegen das Zwei-Moden-Modell.
             [C]: {
-                sek: 20,
+                sek: 30,
+                faecher: true,
                 pfad: PLANET_PFAD,
                 ungefahren: "Schneelinie und Laub im Bild (S2) und die Klima-Zonen im Bild (S6) schießt nur das Gerät",
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Planeten-Saaten und die Erd-Saat × jede dritte Breite (15° · 45° · 75°);
+                    // je Saat ihre eigene Neigung aus dem Gesetz des Körpers (planet-core.js:312 planetPlan ohne Vorgabe, :323 neigungRad),
+                    // je Adresse die Jahresamplitude, die der Planet-Faden der Welt antwortet (`_planetAuftrag` planet-ort, voxel-worker.js:1429
+                    // planetPlanVon). Die Saat der kleinsten Neigung urteilt „0°“, die der größten „45°“ — gegen die Erd-Saat an denselben Breiten
+                    const PC = require(require("path").resolve("planet-core.js"));
+                    const grad = (x) => (x * 180) / Math.PI;
+                    const erdSamen = await H.seite("return r._planetSamen();");
+                    const saaten2 = Array.from({ length: 20 }, (_, i) => "planet.kopplung.bahn-klima-s2-" + (i + 1));
+                    const neig = Object.fromEntries(saaten2.map((q) => [q, grad(PC.planetPlan(q).koerper.neigungRad)]));
+                    neig[erdSamen] = grad(PC.PLANET_ERDE.neigungRad);
+                    const BAHN_AN = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const kh = r._gelaende().ort.klimaHeute;
+                        const an = await r._planetAnker();
+                        const o = await r._planetAuftrag({ type: "planet-ort", samen: a.saat, breite: a.ort, laenge: (an.laenge * 180) / Math.PI, zeitMa: 0 });
+                        if (!o || !o.delta || !o.delta.klima) return { fehlt: "planet-ort antwortet ohne Klima (voxel-worker.js planet-ort)" };
+                        return { amp: kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter), land: !!o.land };
+                    };
+                    const R2 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: BAHN_AN, export: "planet-core.js:312 planetPlan (Körper je Saat)", leser: "voxel-worker.js:1429 planetPlanVon" },
+                        adressen: { saaten: [erdSamen, ...saaten2], orte: [15, 45, 75] },
+                        ms: 15000,
+                        masse: { amp: { wie: "mittel", feld: "amp" }, saaten: { wie: "verschieden", nur: "saat" } },
+                        schlecht: { feld: "amp", richtung: "min" },
+                        pose: (a) => "Hang mit Schneelinie und Laub, Saat " + a.saat + " (Neigung " + Math.round(neig[a.saat] * 10) / 10 + "°) bei " + a.ort + "° Breite",
+                        ungemessen: ["Schneelinie und Laub im Bild (am Gerät)", "45° Neigung: keine Saat trägt sie (planet-core.js:323 neigungRad = 0,7·Z ≤ 40,1°)"],
+                    });
+                    const ampJe = (q) => {
+                        const x = R2.je.filter((e) => e.a.saat === q).map((e) => e.w.amp);
+                        return x.length ? x.reduce((u, v) => u + v, 0) / x.length : null;
+                    };
+                    const saatMin = saaten2.reduce((u, q) => (neig[q] < neig[u] ? q : u)), saatMax = saaten2.reduce((u, q) => (neig[q] > neig[u] ? q : u));
+                    const ampErde = ampJe(erdSamen), amp0 = ampJe(saatMin), amp45 = ampJe(saatMax);
+                    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                    const ampSaaten = saaten2.map(ampJe).filter(Number.isFinite);
+                    const s2 = { ampErde: r3(ampErde), amp0: r3(amp0), amp45: r3(amp45), neigMin: r3(neig[saatMin]), neigMax: r3(neig[saatMax]), spanneSaatenK: ampSaaten.length ? r3(Math.max(...ampSaaten) - Math.min(...ampSaaten)) : null, gleich: ampSaaten.length > 1 && Math.max(...ampSaaten) - Math.min(...ampSaaten) < 1e-9, akte: R2.akte };
                     const seite = async (r, a) => {
                         await r._fadenQuelle();
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
@@ -621,9 +658,6 @@ L.perspektive("planet", (() => {
                         const amp = (o) => kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter);
                         const aus = {};
                         const erde = await ort(45, L0);
-                        const null0 = await ort(45, L0, 0, { koerper: { neigungRad: 0 }, neigungRad: 0 });
-                        const n45 = await ort(45, L0, 0, { koerper: { neigungRad: 0.7854 }, neigungRad: 0.7854 });
-                        aus.s2 = { ampErde: r3(amp(erde)), amp0: r3(amp(null0)), amp45: r3(amp(n45)), gleich: JSON.stringify(erde.delta) === JSON.stringify(null0.delta) };
                         const reihe = await Promise.all(Array.from({ length: 51 }, (_, i) => ort(B0, L0, -i * 0.02)));
                         const wl = reihe.map((o) => o.delta.meer.waterLevelM);
                         const so = reihe.map((o) => o.delta.klima.sommer);
@@ -652,12 +686,12 @@ L.perspektive("planet", (() => {
                     };
                     const w = await S(seite, {});
                     const aus = M.teil || {};
-                    const s2 = w.s2;
                     aus[2] = {
                         werte: { amp0Prozent: s2.ampErde ? Math.round((1000 * s2.amp0) / s2.ampErde) / 10 : null, amp45Faktor: s2.ampErde ? Math.round((1000 * s2.amp45) / s2.ampErde) / 1000 : null },
                         zeuge: s2,
                         auge: await M.auge("bahn-klima-s2", { ort: "wiese" }),
-                        ...(s2.gleich ? { nicht: "der Planet-Faden liest keine Neigung: derselbe Auftrag mit Neigung 0 antwortet wie die Erd-Saat (Amplitude " + s2.ampErde + " K)" } : {}),
+                        // der Faden baut jeden Plan mit dem Körper der Erde: die eigene Neigung der Saat erreicht die Antwort nie
+                        nicht: "der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung " + s2.neigMin + "° → Amplitude " + s2.amp0 + " K, Neigung " + s2.neigMax + "° → " + s2.amp45 + " K, Erd-Saat " + s2.ampErde + " K (Spanne der Saaten " + s2.spanneSaatenK + " K: das Relief der Saat unter dem Körper der Erde, nie ihre Neigung) · " + R2.akte,
                     };
                     const s3 = w.s3;
                     aus[3] = { werte: { zyklen: s3.zyklenMeer, spanneMeerM: s3.spanneMeerM }, zeuge: s3, nicht: "kein Milanković-Antrieb: über 1 Ma " + s3.zyklenMeer + " Extrema des Meeres (Spanne " + s3.spanneMeerM + " m), keine Juni-Insolation 65° N und keine Laskar-Reihe in der Welt" };

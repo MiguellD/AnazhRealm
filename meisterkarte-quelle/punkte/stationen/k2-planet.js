@@ -7,6 +7,9 @@ const path = require("path");
 const { seiteProbe, knapp } = require("./seite.cjs");
 // DIE KLASSE DER AUGE-SPROSSE (ZAHL · PANEL · KORPUS am Wortlaut der Karte, R11) — EIN Ort für alle k2-Register
 const AUGE = require("./auge-klasse.cjs");
+// DER FÄCHER (M4: der Richter ist selbst eine Adresse, stationen/faecher.js) — eine Leiter mit `faecher: true` findet ihn in ihrer
+// Probe als `FAECHER(ev, f)`; die Probe einer Perspektive ohne ihn bleibt Byte für Byte, wie sie war (ihr Abdruck misst nichts neu)
+const { FAECHER } = require("./faecher.js");
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // DER KERN DER LEITER-RICHTER (Meisterkarte 2, 18.11., Zweig richter-planet-leben-zusammenspiel) — geteilt mit k2-leben.js und
@@ -426,6 +429,7 @@ const KERN = (() => {
         let sek = 10;
         let mutiert = false;
         let dorf = false;
+        let faecher = false;
         for (const id of ids) {
             const x = leiterVon(id);
             if (x.kapitel !== kapitel) throw new Error(id + " gehört zum Kapitel " + x.kapitel + ", nicht " + kapitel);
@@ -439,6 +443,7 @@ const KERN = (() => {
             sek += L.sek;
             mutiert = mutiert || !!L.mutiert;
             dorf = dorf || !!L.dorf;
+            faecher = faecher || !!L.faecher;
         }
         // das Dorf der Probe: sein Deckel zählt zur Probe, und die Gründung mutiert die Welt (die Sitzung spielt danach den Grund zurück)
         if (dorf) {
@@ -446,7 +451,7 @@ const KERN = (() => {
             mutiert = true;
         }
         const DORF = dorf ? "{ code: " + JSON.stringify(knapp(dorfSeite)) + ", a: " + JSON.stringify(DORF_A) + ", sek: " + DORF_S + " }" : "null";
-        const art = "async (H) => { const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN, " + DORF + "); }";
+        const art = "async (H) => { " + (faecher ? "const FAECHER = " + knapp(FAECHER) + "; " : "") + "const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN, " + DORF + "); }";
         const probe = seiteProbe(sek, art, mutiert ? { mutiert: true } : {});
         const stationen = [];
         const B = belegt();
