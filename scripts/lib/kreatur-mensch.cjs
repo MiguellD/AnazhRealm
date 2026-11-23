@@ -700,6 +700,7 @@ async function menschBuehnen() {
         // `leser.menge`). Bis hier stand der Satz am Punkt des eigenen Genoms, schmal gegossen, und der Leib an der nächsten Gestalt:
         // Taille bis 39 %, Schulter bis 17,5 % neben dem Leib (40 Bewohner, Ofen).
         const gestalt = { n: 0, gestalten: 0, max: 0, wer: "", mass: "", je: [0, 0, 0] };
+        const gestaltK = { n: 0, gestalten: 0, max: 0, wer: "", mass: "", je: [0, 0, 0] }; // (das Konto des Täters bewohner-kreuz)
         const gestaltMessen = () => {
             const Z = S.satz;
             const kc = window.__koerperCore;
@@ -761,7 +762,7 @@ async function menschBuehnen() {
                 });
                 if (T3.length) nahAkte.set(gi, { T3, gel });
             });
-            gestalt.gestalten = nah.size;
+            gestalt.gestalten = gestaltK.gestalten = nah.size;
             // die Achsen des Baus am Kanon (der Punkt seiner Gestalt: sie gießt im Kanon des Skeletts), jede andere aus der Zeile des Bewohners
             const kanon = S.gestalten.map((G) => kc.leibRaumPunkt(G.dK));
             const bau = kc.LEIB_RAUM.achsen.map((a) => kc.BAU_GESETZ.achsen.some((q) => q.achse === a.achse));
@@ -772,6 +773,7 @@ async function menschBuehnen() {
             const [m4, p3, q4, s3] = [new T.Matrix4(), new T.Vector3(), new T.Quaternion(), new T.Vector3()];
             const NAMEN = ["Schulter", "Taille", "Hüfte"];
             const lage = new Float32Array(tafel.n * 3);
+            const ki = kc.LEIB_RAUM.achsen.findIndex((a) => a.kreuz);
             for (const b of liste) {
                 if (!b.leib || b.leib.userData._satz !== true || !b.satzOrt || !(b.satzOrt[1] >= 0) || !nah.has(b.gestalt)) continue;
                 const o = (Math.round(aG.getZ(b.satzOrt[1])) * breiteT + nT) * 4;
@@ -779,14 +781,24 @@ async function menschBuehnen() {
                 const punkt = mitte.map((m, ai) => (bau[ai] ? kanon[b.gestalt][ai] : hat("bewohner-gestalt") ? m : D[o + ai]));
                 Z.leib.getMatrixAt(b.satzOrt[1], m4);
                 m4.decompose(p3, q4, s3);
-                const fern = masse(dreiecke(A._leibRaumLeib(tafel, punkt, lage), ix2)).map((x) => (x * s3.x) / s3.y);
                 const n0 = nah.get(b.gestalt).map((x) => x * b.breite);
-                gestalt.n++;
-                fern.forEach((x, k) => {
-                    const pct = Math.abs((x - n0[k]) / n0[k]) * 100;
-                    gestalt.je[k] = Math.max(gestalt.je[k], q3(pct));
-                    if (pct > gestalt.max) [gestalt.max, gestalt.wer, gestalt.mass] = [q3(pct), `${wer(b)} (Gestalt ${b.gestalt})`, NAMEN[k]];
-                });
+                // je Bewohner das Maß des Satzes gegen nah, ins Konto G; die Zelle des Leib-Raums am Schlimmsten: Ton, Masse und der
+                // Wert der Ecke Ton × Masse (koerper LEIB_RAUM `kreuz`)
+                const zaehle = (G, P) => {
+                    const fern = masse(dreiecke(A._leibRaumLeib(tafel, P, lage), ix2)).map((x) => (x * s3.x) / s3.y);
+                    G.n++;
+                    fern.forEach((x, k) => {
+                        const pct = Math.abs((x - n0[k]) / n0[k]) * 100;
+                        G.je[k] = Math.max(G.je[k], q3(pct));
+                        const d = b.genom ? r._dialsAusGenom(b.genom) : {};
+                        const zelle = ki >= 0 ? `; Ton ${q3(d.tone)}, Masse ${q3(d.mass)}, Achse ${kc.LEIB_RAUM.achsen[ki].achse} ${q3(P[ki] * 2 - 1)}` : ""; // prettier-ignore
+                        if (pct > G.max) [G.max, G.wer, G.mass] = [q3(pct), `${wer(b)} (Gestalt ${b.gestalt})`, NAMEN[k] + zelle];
+                    });
+                    return fern;
+                };
+                const fern = zaehle(gestalt, punkt);
+                // Täter (Selbsttest): die Tafel ohne die Ecke Ton × Masse — ihre Achse liest die Mitte (0), im eigenen Konto
+                if (hat("bewohner-kreuz")) zaehle(gestaltK, mitte.map((m, ai) => (ai === ki ? m : bau[ai] ? kanon[b.gestalt][ai] : D[o + ai])));
                 // die Akte (nur gelesen, kein Urteil): je Gestalt das Höchste je Maß, das schlechteste Kind und der schlechteste Erwachsene
                 const pcts = fern.map((x, k) => ((x - n0[k]) / n0[k]) * 100);
                 const zl = akte.zeilen.get(b.gestalt) || [0, 0, 0];
@@ -1026,6 +1038,7 @@ async function menschBuehnen() {
             }
             sicht["bewohner-sprung"] = { wege: SP.zahl() };
         }
+        if (hat("bewohner-kreuz")) sicht["bewohner-kreuz"] = { gestalt: gestaltK };
         return Object.assign(z, {
             haeuser: haeuser.length,
             sollSumme,
@@ -1423,6 +1436,7 @@ module.exports = {
             ["bewohner-abendstand", /daheim am Werk/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
+            ["bewohner-kreuz", /die Gestalt des Stands im Satz: [\d.]+ % zum nahen Leib an kind\/kind #\d+ \(Gestalt \d+\) \(Hüfte; Ton [\d.]+, Masse [\d.]+, Achse __tonMasse/], // prettier-ignore
             ["bewohner-grund", /der Stand nach dem Gang/],
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
