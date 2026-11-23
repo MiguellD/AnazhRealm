@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 122.7 s · Werke und Welt der Sitzung: {"werke":136,"max":2,"typ":"haus_provenzalisch (holz, stein)","alle":887,"siedlungen":1,"saat":"anazh-realm-seed","planet":"anazh-realm-seed","zeitMa":0,"tag":0.00593185277852977,"wind":{"x":0.6071803777547629,"z":0.7945640243992824}}
+@@ 122.7 s · same.gedaechtnis.alter S3 umfang {"art":"umfang","erzeugt":887,"was":"die Welt trägt 887 Werke","t":122.7}
+@@ 122.7 s · same.gedaechtnis.alter S4 umfang {"art":"umfang","erzeugt":887,"was":"die Welt trägt 887 Werke","t":122.7}
+@@ 122.7 s · same.gedaechtnis.alter S5 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält eine Saat (anazh-realm-seed) und damit eine Stoff-Tafel; dahinter fehlt der Bruch am Alter (stamm/siedlung-satz.js:800 `_werkAlterOv` treibt nur den Regler `verwitterun
+@@ 122.7 s · same.gedaechtnis.alter S6 umfang {"art":"umfang","erzeugt":887,"was":"die Welt trägt 887 Werke","t":122.7}
+@@ 122.7 s · same.gedaechtnis.alter S7 leser {"art":"leser","fehlt":"verschwundene Siedlung: eine Siedlung wird einmal in ihre Zelle geschrieben und vergeht nie (stamm/siedlung-ort.js:2020 `settlementCells`) — die Welt trägt 1 Siedlungen","t":122.7}
+@@ 122.7 s · same.gedaechtnis.alter S8 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält einen Planeten (Samen anazh-realm-seed), keine fremde Umwelt","t":122.7}
+@@ 191.6 s · Alter 30 d: Sprung {"vor":0.00593185277852977,"nach":30.005931852778545} · Loop {"gelaufen":true,"werke":0,"satz":298,"lauf_s":6} · {"albedo":0.0584,"seiten":0.0021,"wo":"satz:bauSatz nord Δ 0.0584 (Rauschen 0)","wos":"satz:bauSatz nord Δ 0.0584 · wetter Δ 0.0563","klassen":2}
+@@ 191.6 s · same.gedaechtnis.alter S1 gemessen {"art":"gemessen","werte":{"albedo_delta":0.0584,"seiten_delta":0.0021},"erzeugt":2,"welt":{"tage":30,"werke":136},"taeter":"größtes Δ satz:bauSatz nord Δ 0.0584 (Rauschen 0) · Seiten satz:bauSatz nord Δ 0.0584 · wetter 
+@@ 236.9 s · Alter 1 a: Sprung {"vor":30.005931852778545,"nach":365.0059318527786} · Loop {"gelaufen":true,"werke":0,"satz":381,"lauf_s":4} · {"albedo":0.0965,"seiten":0.0062,"wo":"satz:bauSatz oben Δ 0.0965 (Rauschen 0)","wos":"satz:bauSatz nord Δ 0.0602 · wetter Δ 0.054","klassen":2}
+@@ 252 s · same.gedaechtnis.alter S2 auge {"art":"auge","bild":"C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5b36f69a-gtx\\karte2.same.gedaechtnis.alter_1-bilder\\same.gedaechtnis.alter-S2.png","werte":{"albedo
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
