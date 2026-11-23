@@ -10016,7 +10016,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64 · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,397 (Faden 1,373 · alle Kerne 1,397; vor 123,6/305,6 ms, nach 116,1/320,9 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: Explorer.EXE 0,8 CPU-s · LightStudio-background.exe InvokerP · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64 · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,254 (Faden 1,167 · alle Kerne 1,254; vor 105/265,3 ms, nach 102,4/287,8 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-f0a89f7e x listen/kandidat-gtx-f0 · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10034,7 +10034,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,397 (Faden 1,373 · alle Kerne 1,397; vor 123,6/305,6 ms, nach 116,1/320,9 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: Explorer.EXE 0,8 CPU-s · LightStudio-background.exe InvokerP",
+     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,254 (Faden 1,167 · alle Kerne 1,254; vor 105/265,3 ms, nach 102,4/287,8 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-f0a89f7e x listen/kandidat-gtx-f0",
      "ungemessen": true,
      "beide": true
     },
@@ -19097,7 +19097,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) — zuletzt an f0a89f7e: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19105,7 +19105,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -25415,7 +25415,7 @@
   },
   "karte2.mensch.wirtschaft.markt": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 5 Stände · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.markt#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 5 Stände · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.markt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js) · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.markt#1",
@@ -25423,8 +25423,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -32184,7 +32185,7 @@
   },
   "karte2.planet.zeit.archiv": {
    "punkte": 0,
-   "beleg": "Maschine: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s an f0a89f7e radeon — offen: karte2.planet.zeit.archiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s an f0a89f7e radeon · S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,011 s: der Deckel der Leiter 25 s an f0a89f7e gtx — offen: karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.zeit.archiv#1",
@@ -32199,11 +32200,10 @@
     {
      "id": "karte2.planet.zeit.archiv#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,011 s: der Deckel der Leiter 25 s",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37504,7 +37504,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 267,
+  "konsum": 268,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37672,10 +37672,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3355
+  "ohne": 3354
  },
  "kopfVoll": "07783ef21c5aa850536481c099a7cae8cbb56214",
- "zeit": "2026-11-23T07:48:03.903Z",
+ "zeit": "2026-11-23T07:55:57.900Z",
  "vorher": "07783ef2",
  "bilanz": {
   "gewinn": [],
