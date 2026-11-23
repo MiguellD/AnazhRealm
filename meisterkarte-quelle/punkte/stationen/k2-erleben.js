@@ -5,7 +5,34 @@
 "use strict";
 const { leiter } = require("./k2-same.js").geruest;
 const { SAATEN } = require("./sitzung-seite.js");
+const { FAECHER } = require("./faecher.js");
 const LEITERN = [];
+
+// DIE LANDMARKE AN EINER ADRESSE (erleben.spieler.wegfindung#1, das Gesetz des Fächers, stationen/faecher.js): a.saat ist die Saat.
+// Der Wurf der Landmarke (stamm/vegetation-baum.js:1534, im Landmarken-Pass von `_vegetationSampleSpawn` :1482, gerufen je Probe des
+// Chunks :2607) liest die GELADENE Welt — das Feld über `_saatJe(this)` = worldMeta.seed (stamm/feld-leben.js:1805), das Land der Spalte
+// (`_landAt`), die Feuchte aus der Hydrosphäre des Fadens (`_hydroDistAt`, stamm/gelaende-boden.js:1619) und die Höhe des gebauten
+// Meshs (`_voxelSurfaceY`). An der geladenen Saat zählt das Gesetz, was der Wurf trug (r.state.architectures: felsturm/felsbogen in
+// 1–3 km, davon im Kegel der Kamera); jede andere Saat ist keine Funktion, die die warme Welt rufen kann — sie nennt das Fehlende
+const LANDMARKE_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+        return { fehlt: "der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY)" };
+    r._loopCamera(performance.now());
+    const cam = st.camera;
+    cam.updateMatrixWorld(true);
+    const F = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    const p = st.playerMesh.position;
+    let n13 = 0, imBild = 0;
+    for (const e of st.architectures || []) {
+        if (!e || typeof e.type !== "string" || !e.position || !(e.type.indexOf("felsturm") === 0 || e.type.indexOf("felsbogen") === 0)) continue;
+        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+        if (d < 1000 || d > 3000) continue;
+        n13++;
+        if (F.containsPoint(new T.Vector3(e.position.x, e.position.y, e.position.z))) imBild++;
+    }
+    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
+};
 
 // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
 {
@@ -418,7 +445,7 @@ const LEITERN = [];
                     umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
                 },
             },
-            seite: { SAATEN },
+            seite: { FAECHER, LANDMARKE_AN },
             lauf: async function wegfindungLauf(H, P, L) {
                 const path = require("path");
                 const tOrt = Date.now();
@@ -512,50 +539,27 @@ const LEITERN = [];
                     L.leser(6, "Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche", umfangKm);
                 });
                 await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
-                // S1 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort, ihr
-                // Spawn ist der Spawn-Ort der Karte; gezählt je Saat die Landmarken (felsturm/felsbogen, stamm/vegetation-baum.js:1519) in
-                // 1–3 km und davon die im Kegel der Kamera. Der Anteil mit ≥ 1 im Bild ist die Obergrenze des Solls (der Kontrast fehlt
-                // als Leser): verfehlt er 0,9, ist S1 ROT gemessen; hält er an allen Saaten, nennt S1 den Leser des Kontrasts. Gezählt ist
-                // nur die Saat, deren Welt gewachsen ist (≥ 1 Architektur geladen): die Landmarken sät der Chunk-Pump erst unter Bildern
-                // (`_enqueueVegetationSpawn`, stamm/vegetation-baum.js:1522) — eine Welt ohne Wuchs ist kein „0 Landmarken“. Die Schleife
-                // läuft zuletzt (S2–S7 lesen die Wiese vorher in ihrer Zeit) und nur, solange der Heimweg in die Frist passt: nach der
-                // Rückkehr wächst die Wiese neu (die Preis-Pose der Leiter, `/umstellen`) — die Probe misst ihn an ihrem ersten Gang zur Wiese
-                // (`ortMs`) und hält das Doppelte frei (headless 17 s → nach dem Heimweg 19–30 s).
+                // S1 ÜBER DEN FÄCHER (stationen/faecher.js; vorher die Bühne H.seite.SAATEN, je Saat ein Welt-Wechsel am Ort): die 50 Saaten der
+                // Sprosse (dieselben Namen wie die Bühne, P.leiter-s1-i) und die geladene Saat; je Adresse der Wurf der Landmarke an der Wiese.
+                // Der Anteil mit ≥ 1 Landmarke in 1–3 km im Kegel ist die Obergrenze des Solls (der Kontrast ist ein Bild, ungemessen); eine Saat,
+                // die die warme Welt nicht rufen kann, zählt ohne Fähigkeit — trägt keine der 50 Saaten, bleibt S1 beim Namen offen
                 await L.je(1, async () => {
                     const v = P.sprossen[1].umfang.verlangt;
-                    const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
-                    const zaehl = function (r) {
-                        r._loopCamera(performance.now());
-                        const cam = r.state.camera;
-                        cam.updateMatrixWorld(true);
-                        const F = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-                        const p = r.state.playerMesh.position;
-                        let n13 = 0, imBild = 0;
-                        for (const e of r.state.architectures || []) {
-                            if (!e || typeof e.type !== "string" || !e.position || !(e.type.indexOf("felsturm") === 0 || e.type.indexOf("felsbogen") === 0)) continue;
-                            const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
-                            if (d < 1000 || d > 3000) continue;
-                            n13++;
-                            if (F.containsPoint(new T.Vector3(e.position.x, e.position.y, e.position.z))) imBild++;
-                        }
-                        return { n13, imBild, geladen: (r.state.architectures || []).length };
-                    };
-                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + zaehl + ");", Math.max(5, L.rest() - 2));
-                    if (s.fehler) throw new Error(s.fehler);
-                    L.zeile("wegfindung S1 Saaten " + JSON.stringify(s));
-                    const gewachsen = s.je.filter((x) => x.z.geladen > 0);
-                    const treffer = gewachsen.filter((x) => x.z.imBild > 0).length;
-                    const anteil = gewachsen.length ? treffer / gewachsen.length : 0;
-                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)" + (s.grund ? "; Ende: " + s.grund : "");
-                    if (gewachsen.length < v && !(gewachsen.length && anteil < P.sprossen[1].soll[0].wert))
-                        return L.umfang(1, gewachsen.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten, gewachsen (≥ 1 Architektur am Erwachen) " + gewachsen.length + " — Architekturen je Saat " + (s.je.map((x) => x.z.geladen).join("/") || "—") + "; " + zeit + "; die Wiese wuchs in " + ortMs + " ms, der Heimweg hält das Doppelte frei");
-                    if (anteil >= P.sprossen[1].soll[0].wert)
-                        return L.leser(1, "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund im Bild: kein Leser des Pixel-Kontrasts je Saat — " + zeit, gewachsen.length);
-                    L.gemessen(1, { anteil_landmarke: +anteil.toFixed(3) }, {
-                        erzeugt: gewachsen.length,
-                        welt: { saaten: gewachsen.length },
-                        taeter: treffer + " von " + gewachsen.length + " gewachsenen Saaten mit Landmarke in 1–3 km im Kegel (je Saat in 1–3 km " + gewachsen.map((x) => x.z.n13).join("/") + "; " + zeit + ")",
+                    const geladen = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;", 10);
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.LANDMARKE_AN, export: "stamm/vegetation-baum.js:1534 Landmarken-Pass", leser: "stamm/vegetation-baum.js:2607" },
+                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: geladen }] },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: { saaten: { wie: "anzahl", nur: "saat" }, anteil_landmarke: { wie: "mittel", feld: "treffer" }, n13: { wie: "min", feld: "n13" }, geladen: { wie: "min", feld: "geladen" } },
+                        schlecht: { feld: "n13", richtung: "min" },
+                        pose: (a) => "Saat " + a.saat + " an der Wiese, ego, Blick in den Kegel der Landmarke (Kontrast im Bild)",
+                        ungemessen: ["Kontrast ≥ 0,1 der Landmarke gegen ihren Grund (ein Bild je Saat, am Gerät)"],
                     });
+                    L.zeile("wegfindung S1 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
+                    const w = R.werte;
+                    if (R.gemessen >= v && w.anteil_landmarke < P.sprossen[1].soll[0].wert)
+                        return L.gemessen(1, { anteil_landmarke: +w.anteil_landmarke.toFixed(3) }, { erzeugt: R.gemessen, welt: { saaten: R.gemessen }, taeter: "Landmarke im Kegel in 1–3 km: Anteil " + w.anteil_landmarke + " · " + R.akte });
+                    L.leser(1, (R.gemessen >= v ? "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund im Bild: kein Leser des Pixel-Kontrasts je Saat" : (R.fehlt || "keine Saat gemessen") + " — gemessen " + R.gemessen + " von " + (v + 1) + " Adressen (die geladene " + geladen + ": " + (w.n13 == null ? "—" : w.n13) + " Landmarken in 1–3 km, im Kegel-Anteil " + (w.anteil_landmarke == null ? "—" : w.anteil_landmarke) + ")") + " · " + R.akte, R.gemessen);
                 });
             },
         })
