@@ -1014,7 +1014,8 @@ class AnazhRealm_siedlung_bewohner {
         // Tisch drinnen die Tür (koerper-core `tagesPlan`). Liefert (wo) → sein Stand dort oder null.
         const binden = function* (P, namen) {
             for (let v = 0, neu = true; neu && v < 8; v++) {
-                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil), wegZu); // prettier-ignore
+                // (`freund`: ein Haus, das Besuch bietet, nimmt ihn nur, wenn dort einer der Seinen wohnt — unten, der Besuch)
+                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil) || (P.freund && i !== P.heimI && o.bietet && o.bietet.besuch > 0 && !P.freund.has(i)), wegZu); // prettier-ignore
                 neu = false;
                 for (const wo of namen) {
                     const i = P.bind[wo];
@@ -1084,6 +1085,7 @@ class AnazhRealm_siedlung_bewohner {
                 platz,
                 am: new Map(),
                 voll: new Set(),
+                freund: null,
                 bind: null,
             };
             const ort = yield* binden(P, ["werk", "mahl", "abend"]);
@@ -1125,8 +1127,14 @@ class AnazhRealm_siedlung_bewohner {
             yield;
             S.listeRest--;
             // DER BESUCH (koerper-core `tagesBindung`: die Tür eines anderen Hauses, `besuchFernM` fern von seiner Tür und seinem
-            // Markt) — gebunden, wenn jeder seinen Stand vor der eigenen Tür, am Platz und am Werk hat (er nimmt keinem den Platz)
-            b.orte.besuch = (yield* binden(besuche[i], ["besuch"]))("besuch");
+            // Markt) — gebunden, wenn jeder seinen Stand vor der eigenen Tür, am Platz und am Werk hat (er nimmt keinem den Platz).
+            // DER BESUCH GILT DEN SEINEN (mensch.geist.netz#1, bewohner-satz): nur ein Haus, in dem einer seiner Sympathie-Gruppe
+            // wohnt (`b.freunde`, der Lebenslauf) — unter ihnen wählt der Kern wie bisher nach Weg und Angebot. Bis hier wählte er
+            // jedes Haus fern von Heim und Platz: am Messstand Steintal 0 von 89 Besuchen bei einem Bekannten.
+            const P = besuche[i];
+            P.freund = new Set();
+            for (const f of b.freunde) if (ortVon.has(f.si)) P.freund.add(ortVon.get(f.si));
+            b.orte.besuch = (yield* binden(P, ["besuch"]))("besuch");
         }
         // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik; koerper TAGES_GESETZ.rollen.haendler, fachwerk `platzAnziehung`
         // „haendler"): je Stand des Plans EIN Bewohner mit der Rolle des Händlers — sein Werk ist der Punkt hinter der Theke,
