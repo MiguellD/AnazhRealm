@@ -1023,25 +1023,30 @@ class AnazhRealm_siedlung_satz {
             const vor = e._alter ? e._alter.ov : this._artifactStudioOv({ studioOv: e.studioOv });
             if (this._artifactStudioOv(e) !== vor) offen.add(e);
         }
-        // DER GESETZTE BAU IM SATZ (`_satzAlter`): jede Gruppe, deren Stoff altert, wartet auf ihren Abgleich (`_satzAltern`),
-        // nah zuerst; die Gruppen, die der Satz nicht zeichnet, kosten nichts (sie lesen ihr Alter, wenn sie gelegt werden)
+        // DER GESETZTE BAU IM SATZ (`_satzAlter`): jeder SLOT einer Gruppe, deren Stoff altert, wartet auf seinen Abgleich
+        // (`_satzAltern`), NAH ZUERST nach der Lage SEINER Instanz (Lehre 14: die Kosten am Schirm); die Gruppen, die der Satz nicht
+        // zeichnet, kosten nichts (sie lesen ihr Alter, wenn sie gelegt werden). Die Reihe steht fern → nah: ihr Ende ist das
+        // nächste Stück (`pop`, nie `shift` über tausende Slots). Bis front-stoff wartete je Gruppe EIN Eintrag, gereiht nach
+        // ihrer ersten Instanz, und ihre Slots liefen der Nummer nach — eine Gruppe, deren Slot 0 am Rand der Stadt stand, legte
+        // ihre Häuser vor dem Spieler zuletzt (stadt-voll, GTX, 30 d: nach 6 s Loop warteten 298 Gruppen, Nord Δ 0,0584 · Wetter
+        // Δ 0,0563). Gemessen (stadt-voll headless, 30 d mit 10 Regen-Tagen, je Takt EIN Fenster): nach 50 Fenstern binnen 60 m
+        // Nord Δ 0,0653 · Wetter Δ 0,0622 (Seiten 0,0031, gealtert bis 75 %) → 0,1285 · 0,1017 (Seiten 0,0268, ganz).
         const gruppen = this.state.archInstanceGroups;
         if (!gruppen) return;
         const reihe = [];
         for (const g of gruppen.values())
             if (g.satz && (g.liveCount || 0) > 0 && this._satzAlter(g)) {
                 const im = g.mesh.instanceMatrix.array;
-                reihe.push([this._spielerD2(im[12], im[14]), g]);
+                for (let i = 0, n = g.liveCount | 0; i < n; i++)
+                    reihe.push({ d: this._spielerD2(im[i * 16 + 12], im[i * 16 + 14]), g, i, v: 0, stand: 0 });
             }
         // eine Arbeit mitten im Slot bleibt vorn (ihr Stempel trägt die neue Stufe schon)
         const alt = this._satzAltertOffen;
-        const halb = alt && alt.length && alt[0].v > 0 ? alt[0] : null;
-        reihe.sort((a, b) => a[0] - b[0]);
-        this._satzAltertOffen = (halb ? [halb] : []).concat(
-            reihe.filter((x) => !halb || x[1] !== halb.g).map((x) => ({ g: x[1], i: 0, v: 0, stand: 0 }))
-        );
+        const halb = alt && alt.length && alt[alt.length - 1].v > 0 ? alt[alt.length - 1] : null;
+        reihe.sort((a, b) => b.d - a.d);
+        this._satzAltertOffen = halb ? reihe.filter((x) => x.g !== halb.g || x.i !== halb.i).concat([halb]) : reihe;
     }
-    // DER ABGLEICH DES ALTERS IM SATZ (Lehre 14 und 25, Kosten an der Änderung): je Takt die wartenden Gruppen, nah zuerst, Slot
+    // DER ABGLEICH DES ALTERS IM SATZ (Lehre 14 und 25, Kosten an der Änderung): je Takt die wartenden Slots, nah zuerst, Slot
     // für Slot — ein Slot, dessen Stufen nicht sprangen, kostet den Vergleich mit seinem Stempel (`_satzAlterStempel`); einer,
     // dessen Stufe sprang, trägt die neue in seinen Stempel und legt seine Ecken AM ORT neu, in Fenstern unter dem Deckel des
     // Takts (die EINE Frist der Bau-Arbeit in Stücken von BAU_SATZ_STUECK; `_chunkSatzLege` am Ort lädt nur den Lauf, der sich änderte — die
@@ -1055,7 +1060,7 @@ class AnazhRealm_siedlung_satz {
         const st = this.state;
         const frist = st._weltbildDa == null ? Infinity : this._bauFrist("satz");
         for (let erst = true; reihe.length && (erst || performance.now() < frist);) {
-            const a = reihe[0];
+            const a = reihe[reihe.length - 1];
             const g = a.g;
             const s = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
             const b = s ? s.bloecke.get(g.key) : null;
@@ -1073,17 +1078,17 @@ class AnazhRealm_siedlung_satz {
                     AnazhRealm._satzAlterUngueltig(bau);
                     this._bauSatzMarke(g.key, g.satz);
                 }
-                reihe.shift();
+                reihe.pop();
                 continue;
             }
             if (!steht) {
-                reihe.shift();
+                reihe.pop();
                 continue;
             }
             if (a.v === 0) {
-                while (a.i < bau.cnt && !this._satzAlterStempel(bau, g, a.i)) a.i++;
-                if (a.i >= bau.cnt) {
-                    reihe.shift();
+                // der Slot, dessen Stufen nicht sprangen, kostet den Vergleich mit seinem Stempel
+                if (a.i >= bau.cnt || !this._satzAlterStempel(bau, g, a.i)) {
+                    reihe.pop();
                     continue;
                 }
                 a.stand = g.slotStand;
@@ -1109,10 +1114,8 @@ class AnazhRealm_siedlung_satz {
             );
             this._chunkSatzLege(s, b.vStart + a.i * n + a.v, A, v1 - a.v, true);
             erst = false;
-            if (v1 === n) {
-                a.i++;
-                a.v = 0;
-            } else a.v = v1;
+            if (v1 === n) reihe.pop();
+            else a.v = v1;
         }
     }
     // Die Stufen des Alters im Stempel von Slot `i` (`_bauSatzStempel`): sprang eine, trägt der Stempel die neue — true.
