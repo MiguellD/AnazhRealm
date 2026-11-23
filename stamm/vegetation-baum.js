@@ -2859,7 +2859,15 @@ class AnazhRealm_vegetation_baum {
         // 6,3–7,4 s); der Ziegel fragte je Takt („lädt noch — der nächste Tick fragt wieder").
         const wunsch = this._foundryEnabled() ? this._bereitStand(this._lodAuge(), true) : -1;
         const Z = this._cullZusagen || (this._cullZusagen = new Map());
-        const zurueck = (e) => this._cullWecken(e);
+        // DIE ZUSAGE WECKT DEN TAKT (march-warter, das Muster der Streu: `_standWecken("streuLod")`): kam sie, geht der nächste
+        // Gang — auch für den, der IN der Wache schlief (der Satz eines Hauses der Mesh-Zone; `_cullWecken` weckt den Takt nur
+        // beim Eintritt in die Wache). Bis march-warter verhallte sie dort: der Platz-Takt regte die Welt im selben Takt, der
+        // Gang ging den noch Schlafenden und ruhte, der Geweckte fragte nie (Mess-Wiese, Null-Renderer mit Feld: 600 Takte bei
+        // 192 freien Feldern ohne Satz, die Reserve steht bei 128).
+        const zurueck = (e) => {
+            this._cullWecken(e);
+            this._standWecken("archCull");
+        };
         if (K.wunsch !== wunsch) {
             K.wunsch = wunsch;
             for (const e of K.schlaefer) this._cullWecken(e);
@@ -2988,9 +2996,17 @@ class AnazhRealm_vegetation_baum {
             }
         }
         // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt. Wartet nur ein Satz
-        // (die Bake-Uhr, seine Flat, das Buch), weckt ihn ihr nächstes Fenster oder der Stempel, kein Bild (`_standRuht`).
-        const offen = nahOffen.length + ziegelOffen.length;
-        const nurSatz = !nahOffen.length;
+        // auf die Bake-Uhr, weckt ihn ihr nächstes Fenster, kein Bild (`_standRuht`, „felder“).
+        // OFFEN IST, WER OHNE ZUSAGE WARTET (march-warter): ein Satz, der auf seiner Zusage schläft (der Platz im Welt-March, seine
+        // Flat, das Buch), zählt in keinem Gang — ihn weckt, was er nannte (`_schlafen` › `_cullWecken`, die Welt regt sich mit
+        // der Lieferung); so hält es der ferne Zweig oben und der Leib (`_weltOffen`: `_kzVorabVoll`). Bis march-warter zählte der
+        // Gang die Länge der Schlange: ein Haus der Mesh-Zone, dessen vorgebackenes Feld an der Reserve einer vollen Stadt fiel
+        // (`_weltLeibTakt` › `_weltStillWeicht`), stand als Vorbacker je Gang wieder in ihr, schlief auf dem Platz über der
+        // Reserve — und der Gang meldete „felder“, die keine Bake-Uhr je weckt (GTX 1050, stadt-voll 20 Uhr, Auge 804,9 / 62,8 /
+        // 402,8: frei 128 = Reserve 128, „Fege-Takt archCull wartet“ über 1 970 Takte, das Bild der Werkbank verweigert; am Tag
+        // ruht dieselbe Stadt in 181).
+        const nahN = nahOffen.length;
+        let satzOffen = 0;
         // Mesh-Bauten NAH ZUERST (die Mesh-Zone, dahinter die Karten-Zone der Karten-Dinge): budgetiert; über Budget
         // mit Takt-Garantie (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die
         // Mesh-Zone für immer Feld.
@@ -3086,7 +3102,7 @@ class AnazhRealm_vegetation_baum {
                 if (this._schlaeft(zs, wunsch)) continue;
                 if (this._zusagenVon(entry.position, () => this._archZiegelFern(entry), Z))
                     regung++; // selbst-getaktet (Bake-Garantie)
-                else this._schlafen(zs, Z, wunsch, () => zurueck(entry));
+                else if (!this._schlafen(zs, Z, wunsch, () => zurueck(entry))) satzOffen++; // ohne Zusage: die Bake-Uhr weckt ihn
                 if (entry._ziegelNah && entry._ziegelSlot)
                     this._weltFeldAktiv(entry._ziegelSlot, !this._archIsRendered(entry));
             }
@@ -3100,7 +3116,7 @@ class AnazhRealm_vegetation_baum {
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(auge);
         this._stadtMasseStand();
-        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
+        this._standMeldet("archCull", 1, regung > 0, nahN + satzOffen + kalt > 0 && (kalt || nahN > 0 || "felder"));
     }
 
     // DER VORBAU DER MESH-ZONE (w13-dorf-strom, die Zeit bis Bedarf): holt die Bahn einen Eintrag jenseits der Zone binnen

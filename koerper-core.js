@@ -5664,8 +5664,14 @@
             feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
             schmiede: Object.freeze({ ware: "eisen", jeStunde: 0.5 }),
         }),
-        lager: Object.freeze({ werk: 24, stand: 24, wagen: 12 }),
+        lager: Object.freeze({ werk: 24, stand: 24, wagen: 12, scheune: 96 }),
         verbrauch: Object.freeze({ anteil: 1 }),
+        // DAS MAHL AUS DER SCHEUNE (mensch.nahrung.strom S1, `scheuneHalter`): je Kopf und Tag so viele Einheiten, gegessen in den
+        // Stunden des Mittags des Gesetzes (TAGES_GESETZ.mittag). Ein Bauer bringt am Tag ein volles Lager seines Ackers (24, die
+        // Herstellung `feld` über sein Fenster) und nährt damit vier Köpfe — die Quote der vorindustriellen Landwirtschaft
+        // (Bairoch: rund 80 % der Menschen auf dem Feld): 24 / 4 = 6 je Kopf. Ein Hof mit weniger Bauern, als er Esser trägt,
+        // leert die Scheune am Mittag und füllt sie am Feierabend (der Sägezahn), einer mit mehr füllt sie bis zum Lager.
+        mahl: Object.freeze({ jeKopfTag: 6 }),
         // das Bild des Bestands: so viele Einheiten trägt eine Kiste (der Wirt stellt je angefangene Kiste eine)
         kiste: 4,
     });
@@ -5735,7 +5741,7 @@
         if (w !== H.ware || !(H.rate > 0) || !(h > H.h)) return n0;
         var s = bestandStunden(H.fenster, H.h, h) * H.rate;
         if (H.art === "werk") return n0 >= H.cap ? n0 : Math.min(H.cap, n0 + s);
-        if (H.art === "stand") return Math.max(0, n0 - s);
+        if (H.art === "stand" || H.art === "scheune") return Math.max(0, n0 - s);
         return n0;
     }
     // DAS EREIGNIS: der Bestand zur Stunde h wird Stand (seine Herstellung oder sein Verbrauch ins Buch), die Uhr des Halters rückt
@@ -5786,6 +5792,59 @@
     // DIE NÄCHSTE SEITE DER FAHRT: wer Ware trägt, fährt zum Stand, wer leer ist, zum Werk
     function bestandZiel(W) {
         return W && (W.n[W.ware] || 0) >= 1 ? "stand" : "werk";
+    }
+    // ── DIE SCHEUNE (Meisterkarte 2 mensch.nahrung.strom S1, rein additiv): der Vorrat des Hofs ist ein HALTER des Bestands —
+    //    dieselbe erhaltene Größe wie Werk, Stand und Wagen, kein zweiter Vorrat. Zwei Wege, sonst keiner: DIE ERNTE — am Ende
+    //    jedes Fensters der Arbeit eines Menschen, dessen Werk herstellt (`tagesFenster`: zur Mittagspause und am Feierabend),
+    //    trägt er, was sein Werk hält, in die Scheune seines Hofs (`bestandNimm` → `bestandGib`, nur, was sie fasst; der Rest
+    //    bleibt am Werk); DAS MAHL — die Leute des Hofs (`esser`) essen in den Stunden des Mittags des Gesetzes `mahl.jeKopfTag`
+    //    Einheiten je Kopf (der Verbrauch des Halters, `bestandAm`, wie am Stand). Die Scheune ist eine FUNKTION der Zeit wie
+    //    jeder Halter: `scheuneFassen` legt die Ernten seit ihrer Uhr der Reihe nach an — kein Takt über das Dorf (Gebot 7). Der
+    //    Sägezahn: sie steigt am Ende der Arbeit, sie fällt am Mittag. `ernten` zählt die Ernten, die etwas brachten.
+    //    Leser: der Wirt (`_scheuneAnlegen`, `_bestandBild`) und gate:koerper-kern BESTAND.
+    function scheuneHalter(ware, h, n, esser) {
+        var B = BESTAND_GESETZ,
+            M = TAGES_GESETZ.mittag,
+            H = { art: "scheune", ware: ware, h: h, n: {}, cap: B.lager.scheune, rate: 0, fenster: [[M[0], M[1]]], her: 0, ver: 0, ernten: 0 };
+        H.rate = Math.max(0, esser || 0) * B.mahl.jeKopfTag / (M[1] - M[0]);
+        H.n[ware] = Math.max(0, Math.min(H.cap, n || 0));
+        return H;
+    }
+    // DIE ERNTEN BIS ZUR STUNDE h: je Werk (`werke`, Halter art „werk" mit der Ware der Scheune) das Ende jedes Fensters seiner
+    // Arbeit in (S.h, h] — in der Folge der Uhr; dann der Verbrauch bis h. Liefert die Zahl der Ernten dieses Rufs.
+    function scheuneFassen(S, werke, h) {
+        if (!(h > S.h)) return 0;
+        var ev = [],
+            d0 = Math.floor(S.h / 24),
+            d1 = Math.floor(h / 24),
+            i,
+            d,
+            k;
+        for (i = 0; i < werke.length; i++) {
+            var W = werke[i];
+            if (!W || W.art !== "werk" || W.ware !== S.ware || !W.fenster) continue;
+            for (d = d0; d <= d1; d++)
+                for (k = 0; k < W.fenster.length; k++) {
+                    var t = d * 24 + W.fenster[k][1];
+                    if (t > S.h && t <= h) ev.push({ t: t, W: W });
+                }
+        }
+        ev.sort(function (a, b) {
+            return a.t - b.t;
+        });
+        var n = 0;
+        for (i = 0; i < ev.length; i++) {
+            var e = ev[i];
+            bestandFassen(S, e.t);
+            // nur, was die Scheune fasst, verlässt das Werk
+            var g = bestandGib(S, S.ware, bestandNimm(e.W, S.ware, S.cap - (S.n[S.ware] || 0), e.t), e.t);
+            if (g > 0) {
+                S.ernten++;
+                n++;
+            }
+        }
+        bestandFassen(S, h);
+        return n;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -10136,6 +10195,8 @@
         bestandGib: bestandGib,
         bestandAnkunft: bestandAnkunft,
         bestandZiel: bestandZiel,
+        scheuneHalter: scheuneHalter,
+        scheuneFassen: scheuneFassen,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,

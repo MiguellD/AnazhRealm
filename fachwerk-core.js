@@ -2072,6 +2072,313 @@
     }
     // DIE NUMMER DES VERBANDS EINER ROLLE (0: sie trägt keinen)
     function verbandReihe(rolle) { var i = VERBAND_GESETZ.reihe.indexOf(VERBAND_GESETZ.rolle[rolle] || "?"); return i > 0 ? i : 0; }
+    // DAS GEFÜGE-GESETZ (haus-gefuege; Karte 2 mensch.bau.huelle 1–2: „Fuge, Maserung, Verwitterung; Stufenwechsel unsichtbar“) — was
+    // eine Fläche INNERHALB ihres Verbands trägt: Korn, Zug und Wolke ihres Stoffs, ihr Relief, ihre Verwitterung. Je Stoff-Art EINE
+    // Zeile; die Welt rechnet sie als reine Funktion der Welt-Lage (stamm/studio-stoff.js `_gefuegeStoff`: Farbe, Normale, Rauheit —
+    // keine Karte, kein Sampler, kein Byte je Ecke oder Haus), in JEDER Stufe dieselbe. Drei Skalen je Zeile, jede ein Wert-Rauschen
+    // in der Ebene der Fläche: [Maß quer zur Faser, Maß längs der Faser] in METERN je Zelle (das Maß des Dings: ein Korn, ein
+    // Kellenzug, ein Läufer). `ton` = die Spanne der Albedo je Skala (± um 1, MITTELFREI: der Flächen-Mittelwert der Rolle bleibt,
+    // Lehre 21), `hub` = die Höhe des Reliefs je Skala in Metern (halbe Spanne Berg–Tal), `woelb` = die Neigung am Rand eines Steins
+    // im Verband [quer, hoch] (Bogenmaß; nur wo die Zeile einen Verband trägt: sein Raster trägt den Stein), `rau` = die Spanne der
+    // Rauheit (± um die des Stoffs), `wetter` = der Ton der Wetterseite (± über den Kompass, mittelfrei: die Wetterseite gewaschen
+    // und gebleicht, die Lee-Seite feucht und dunkel), `grau` = der Anteil Silber, den die Wetterseite annimmt (Leuchtdichte bleibt),
+    // `grund` = der Faktor der Fläche (nur das Hirnholz ≠ 1: seine offenen Poren trinken, es steht dunkler), `faser` = die Richtung
+    // der Faser in der Fläche (Bogenmaß gegen ihre Waagrechte; π/2 = längs der Falllinie).
+    // DIE ANKER der Zahlen:
+    //   putz      Korn 4 mm: Oberputz mit Größtkorn 2–4 mm (DIN EN 13914-1 / DIN 18550-1, Reibe- und Kellenwurfputz), Hub 0,5 mm =
+    //             die halbe Rautiefe eines 2-mm-Korns; Ton 0,05 = der Sprenkel des Karten-Malers (VERBAND_GESETZ.putz: deck 0,5 ×
+    //             Spanne 0,2 ÷ 2 — Labor = Welt). Zug 28 cm quer × 6 cm hoch: die Glättkelle 280 × 130 mm, waagrecht gezogen; Hub 1,5 mm: die
+    //             Ebenheit der Wand lässt 3 mm auf 0,1 m zu (DIN 18202 Tab. 3 Z. 6), ein Hand-Putz nutzt sie zur Hälfte. Wolke
+    //             0,18 × 1,6 m: der Läufer des Regens unter Traufe und Fensterbank (lotrecht, schmal), Hub 3 mm auf 1 m (ebd. 5 mm)
+    //   lehmputz  das Gefach: Lehm- oder Kalkputz mit Häcksel von Hand (Korn 5 mm: Strohhäcksel und Sand bis 4 mm, Lehmbau Regeln
+    //             des Dachverbands Lehm, Kap. 4), der Kalkanstrich wolkig (Ton 0,07)
+    //   holz      Korn 3 mm quer × 9 cm längs: die Jahrringbreite (Bauholz S10 ≤ 6 mm, DIN 4074-1; Eiche 1–4 mm); Hub 0,4 mm: das
+    //             Frühholz wittert vor dem Spätholz aus (Waschbrett; Abtrag ~6 mm je Jahrhundert, USDA Wood Handbook 2021 Kap. 16).
+    //             Zug 4,5 × 90 cm: Fladern und Schwindrisse längs der Faser (die Fladerung eines Balkens im Tangentialschnitt
+    //             steht 3–6 cm weit, ein Schwindriss läuft 0,5–1,5 m; Risstiefe bis ¼ der Dicke zulässig, ebd.; Hub 1,2 mm im
+    //             Bild) — bis 2,5 cm stand der Zug aus 10 m unter zwei Pixeln, der Balken blieb EIN Ton. `grau` 0,55: bewittertes Holz vergraut in 1–2 Jahren (ebd.), der Ton `silber` ist der des Alters der
+    //             Vorlagen (worlds/bau-vorlagen.js ALTER.holz 0x6b665e)
+    //   hirnholz  das Ende des Balkens: kein Faser-Lauf (Korn rund), `grund` 0,78 — OHNE Messung: die Schätzung des Karten-Malers
+    //   deckung   der Biberschwanz 18 × 38 cm (das Raster trägt VERBAND_GESETZ.deckung): Wölbung quer 0,09 = 4 mm Stich auf 9 cm
+    //             (DIN EN 1304 lässt 1,5–2 % Verformung zu), hoch 0,08 = die Scherbe von 12 mm liegt auf der Reihe darunter (12 ÷ 155 mm
+    //             Decklänge); Zug 5 × 45 cm: Flechte und Ablauf längs der Falllinie
+    //   stein     der gespitzte Naturstein des Sockels: Korn 6 mm (Hiebe des Spitzeisens 5–10 mm), Bosse 4 mm, Kissen 0,12 am Rand;
+    //             die Wolke 30 × 40 cm ist der Fleck der Spritzwasser-Zone (bis 30 cm über Gelände, DIN 18533-1) — der Sockel steht ganz in ihr
+    //   ziegelstein  der Handstrich-Backstein NF (das Raster trägt VERBAND_GESETZ.mauerwerk)
+    //   fachwerkwand  die ferne Wand als Funktion (VERBAND_GESETZ.fachwerk): das Gefach wie `lehmputz`; ihre Balken stehen in der Fuge
+    //             des Verbands und nehmen dort das Silber des Holzes an (`fugeGrau`) — der Wechsel der Stufe färbt den Balken nicht um
+    //   stroh     das Reet- und Strohdach: der Halm 4 mm, 12 cm sichtbar, längs der Falllinie
+    // DIE NUMMER einer Zeile setzt die des Verbands fort (EIN Kanal vom Kern bis zur Ecke: `mat.verband` → der Schlüssel des Stoffs →
+    // `aVerband` der gefalteten Stufe → die vierte Stelle von `aRegler` im Satz): 1–5 sind die Zeilen des Verbands (ihr Gefüge steht
+    // in `reihe` am selben Platz), ab 6 die Stoffe ohne Verband (`rolle`). `fuss`: eine Skala steht voll ab `voll` Pixeln je Zelle
+    // und ist unter `leer` ihr Mittel (Ton 1, Relief 0) — am Schirm, nie in Metern; `periode`: die Zellen des Rauschens wiederholen
+    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). `wetterVon`: woher das Wetter kommt (Welt: +x Ost,
+    // +z Süd — die Sonnenbahn `welt-licht.js sonnenRichtung`; Mitteleuropa: West-Südwest).
+    // DER SPRITZ-SAUM (`spritz`): der Regen wirft den Grund an den Fuß der Wand — voll bis `voll` Meter über dem Fuß des Baus (der
+    // Spritzwasser-Bereich reicht mindestens 30 cm über Gelände, DIN 18533-1), aus ab `aus`; je Art der Anteil, um den die Fläche
+    // dort dunkelt (Putz und Gefach 0,14, Holz 0,10 — am Bild gestellt, OHNE Messung; der Stein des Sockels 0: er steht ganz in
+    // der Zone, sein Ton ist der geeichte; der Backstein 0, GESTRICHEN: seine nahe Stufe steht Stein für Stein, 168 576 Ecken je
+    // Haus trügen 1,35 MB für ihre Höhe, und ein Saum nur in den fernen Stufen wäre ein Sprung am Wechsel). Er senkt das Mittel
+    // der Rolle um Anteil × Saum ÷ Wandhöhe (≈ 1–2 %). Sein Rand ist gebrochen: Wolke und Zug der Art heben und senken ihn um
+    // bis zu `rand` Meter (¾ die Wolke, ¼ der Zug; fern, wo beide ihr Mittel sind, eine gerade Kante: derselbe Anteil der Fläche).
+    // DIE HÖHE ÜBER DEM FUSS nennt die Ecke (`_eckLage`, erste Stelle): die Welt trägt ihre Ecken im Satz in Welt-Lage, die Höhe
+    // am Bau kennt dort nur die Ecke — und nur die Rolle trägt sie, die mit einer Ecke unter `aus` + `rand` in den Saum reicht.
+    // DER LÄUFER UNTER DEM DACH (`lauf`): wo die Dachhaut über der Wand endet, läuft ihr Wasser die Wand hinab und zieht Schmutz
+    // und Auswaschung in Bahnen — die Wolke der Art (ihr lotrechter Läufer) steht unter dem Dach `lauf`-fach stärker und fällt über
+    // `weit` Meter Tiefe auf ihr Maß (1,5 m: eine Bahn läuft so weit, bis die Wand sie getrunken hat — am Bild gestellt, OHNE
+    // Messung). Mittelfrei wie die Wolke: fern, wo sie ihr Mittel ist, bleibt nichts — die ferne Stufe (ohne die Tiefe) springt nicht.
+    // Putz und Gefach 0,75 (unter der Dachhaut 1,75-fach): mit 2,5 las der Giebel bei Stärke 2 aus 13,5 m als Schmier-Rauschen
+    // (er liegt ganz unter dem Ortgang) — am Bild gestellt, Radeon 890M, 23.11.
+    // DIE TIEFE UNTER DEM DACH rechnet der Kern je Ecke jeder Rolle, deren Art einen Läufer trägt (`lauf` > 0: Putz und Gefach),
+    // gegen die Unterseite der Dach-Rollen (`dach`: Deckung, Stroh; ein Dach aus Holz nennt sich nicht: seine Rolle trägt auch
+    // jeden Balken) über ihr — `vor` Meter vor der Wand, im Raster `zelle` (`_eckLage`, zweite Stelle).
+    // DIE KANTE DES BALKENS (`kante` der Art: [Anteil, Breite in Metern, höchster Anteil an der Breite der Fläche]): wo der Balken
+    // an das Gefach stößt, steht eine Schattenfuge — die Ausfachung schwindet vom Holz (die Anschlussfuge des Sichtfachwerks,
+    // WTA-Merkblatt 8-3 „Ausfachungen von Sichtfachwerk“), die Kante ist gefast, Staub und Algen sitzen im Winkel. Die Fläche des
+    // Balkens dunkelt längs ihrer beiden langen Kanten über `Breite` (1,5 cm: Fuge und Fase zusammen) um `Anteil` (0,45) — beide
+    // am Bild gestellt, OHNE Messung; an schmalen Teilen höchstens über `höchster Anteil` ihrer Breite (¼: die Latte von 5 cm
+    // trägt je Seite 6 mm).
+    // Mittel-treu je Fläche: die Mitte hebt, was die Kante nimmt — fern, wo der Balken unter dem Pixel liegt, steht sein Ton.
+    // WO DIE KANTE IST nennt die Ecke (`_eckLage`, zweite Stelle: 1 an der einen langen Kante ihrer Fläche, 3 an der anderen,
+    // 0 = keine Angabe — das Holz trägt keinen Läufer, die Stelle ist frei; eine Art trägt Läufer ODER Kante).
+    // DIE STÄRKE (`staerke`): der EINE Faktor auf Ton, Hub und Rauheit jeder Art (`gefuegeZeilen`). Die Zahlen der Arten nennen
+    // das Maß am Ding; `staerke` ist am Bild gestellt (die Stufen × 1 · 2 · 3 in EINER Welt, die Tafel des Stoffs live getauscht,
+    // Radeon 890M, 23.11.): × 1 liest aus 13,5 m als glatte Fläche (Luma σ fein im Ausschnitt der Fassade 10,4 → 11,2), × 3 der
+    // Putz als Rauschen; × 2 ist die stärkste Stufe, die als Putz, Holz und Stein liest (σ fein 11,4). Aus 100 m steht jede Stufe
+    // ruhig: der Rest zweier Bilder mit 1 Pixel Schwenk, mittlere |ΔLuma| im Ausschnitt des Hauses, 1,73 ohne Gefüge · 1,93 bei × 2
+    // · 1,98 bei × 3 (der Kontrast wächst, kein Flimmern).
+    var GEFUEGE_GESETZ = {
+        staerke: 2,
+        fuss: { voll: 3, leer: 1.4 },
+        spritz: { voll: 0.3, aus: 0.6, rand: 0.16 },
+        lauf: { weit: 1.5, vor: 0.2, zelle: 0.25, dach: [2, 9] },
+        periode: 256,
+        wetterVon: [-0.92, 0, 0.39],
+        silber: [0.147, 0.133, 0.112],
+        art: {
+            putz:        { korn: [0.004, 0.004], zug: [0.28, 0.06], wolke: [0.18, 1.6], faser: 1.5708, ton: [0.05, 0.03, 0.06], hub: [0.0005, 0.0015, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
+            lehmputz:    { korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
+            holz:        { korn: [0.003, 0.09], zug: [0.045, 0.9], wolke: [0.12, 1.2], faser: 1.5708, ton: [0.12, 0.1, 0.08], hub: [0.0004, 0.0012, 0.002], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 1, spritz: 0.1, kante: [0.45, 0.015, 0.25] },
+            hirnholz:   { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.12, 0.12], faser: 0, ton: [0.1, 0.08, 0.05], hub: [0.0004, 0.0008, 0.001], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 0.78, spritz: 0.1 },
+            deckung:     { korn: [0.004, 0.004], zug: [0.05, 0.45], wolke: [0.5, 1.2], faser: 1.5708, ton: [0.05, 0.07, 0.09], hub: [0.0003, 0.0008, 0.002], woelb: [0.09, 0.08], rau: 0.04, wetter: 0.05, grau: 0, grund: 1 },
+            stein:       { korn: [0.006, 0.006], zug: [0.04, 0.05], wolke: [0.3, 0.4], faser: 1.5708, ton: [0.08, 0.07, 0.1], hub: [0.0012, 0.004, 0.004], woelb: [0.12, 0.12], rau: 0.05, wetter: 0.05, grau: 0, grund: 1 },
+            ziegelstein: { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.4, 0.6], faser: 1.5708, ton: [0.05, 0.05, 0.06], hub: [0.0003, 0.0006, 0.002], woelb: [0.03, 0.03], rau: 0.03, wetter: 0.05, grau: 0, grund: 1 },
+            fachwerkwand:{ korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, fugeGrau: 0.55, spritz: 0.14 },
+            stroh:       { korn: [0.004, 0.12], zug: [0.03, 0.5], wolke: [0.4, 1.0], faser: 1.5708, ton: [0.14, 0.1, 0.1], hub: [0.0015, 0.004, 0.006], woelb: [0, 0], rau: 0.02, wetter: 0.08, grau: 0.3, grund: 1 },
+        },
+        // die Nummer → die Art (0: keine; 1–5 am Platz der Verband-Zeilen mauerwerk · deckung · putz · naturstein · fachwerk)
+        reihe: ["", "ziegelstein", "deckung", "putz", "stein", "fachwerkwand", "lehmputz", "holz", "hirnholz", "stroh"],
+        // die Rollen ohne Verband → ihre Nummer (zwei Rollen EINES Stoff-Schlüssels tragen dieselbe: die Faltung bleibt, wie sie war)
+        rolle: { gefach: 6, lehm: 6, holz: 7, blockholz: 7, lattung: 7, nagel: 7, moebel: 7, boden: 7, stamm: 7, stroh: 9 },
+        // DIE FASER JE TEIL: ab dieser Nummer trägt die Ecke die Richtung ihres Balkens — `klassen` Schritte über den Halbkreis gegen
+        // die Waagrechte ihrer Fläche (`faserNummer`); `hirn` = die Zeile der Stirn, `hirnAb` = |Achse · Normale| ab dem sie gilt.
+        // DER TON JE BALKEN: über der Richtung trägt die Nummer die Klasse seines Tons (`toene` Klassen, gewürfelt aus der Mitte
+        // des Balkens am Bau im Raster `tonRaster` Meter — dieselbe in jeder Stufe, die ihn als Teil führt): jeder Balken steht bis
+        // ± `ton` heller oder dunkler als das Mittel der Rolle, mittelfrei über die Klassen. 0,26: am Bild gestellt, OHNE eigene
+        // Messung — mit 0,13 (Kern- gegen Splintholz EINES Stamms: L* ± 5–6 an Eiche, ≈ ± 13 % der Leuchtdichte bei L* 45) lasen
+        // die Balken aus 13,5 m als EIN Ton (sieben Klassen in Schritten von 4 %, im dunklen Holz ± 3 Stufen sRGB); ein Gefüge
+        // trägt Hölzer verschiedenen Alters und Wetters. Die größte Nummer ab + klassen · toene − 1 = 121 bleibt in den sieben
+        // Bits der Ecke (≤ 127). `tafelAb`: ab diesem Verhältnis der zweiten zur größten Streuung seiner Ecken ist das Teil eine
+        // Tafel (0,5: Seiten ab 1 : 1,4 — das Brett-Feld 1,8 × 1,5 m; der Riegel 1,8 × 0,9 m bleibt ein Balken), `_faserAchse`.
+        faser: { ab: 10, klassen: 16, toene: 7, ton: 0.26, tonRaster: 0.05, tafelAb: 0.5, art: "holz", hirn: 8, hirnAb: 0.7 },
+    };
+    // DIE ZEILEN DES GEFÜGES für den Stoff der Welt, der Platz = die Nummer (0 = null: kein Gefüge). Je Zeile die Zahlen ihrer Art,
+    // dazu `rauFern`: was die Rauheit trägt, wenn das Relief unter dem Pixel liegt (die Streuung seiner Neigung geht in die Rauheit
+    // — energie-treu: fern steht die Fläche nicht glatter als nah; Neigung je Skala ≈ 1,2 · Hub ÷ kleinstes Maß, ½ σ², höchstens 0,05).
+    function gefuegeZeilen() {
+        var G = GEFUEGE_GESETZ, k = G.staerke, mal = function (x) { return x * k; };
+        if (!(k > 0)) throw new Error("fachwerk GEFUEGE_GESETZ: die Stärke fehlt");
+        return G.reihe.map(function (name) {
+            if (!name) return null;
+            var a = G.art[name], s2 = 0;
+            if (!a) throw new Error("fachwerk GEFUEGE_GESETZ: die Art " + name + " fehlt");
+            if (a.kante && a.lauf > 0) throw new Error("fachwerk GEFUEGE_GESETZ: die Art " + name + " trägt Läufer und Kante (EINE Stelle der Ecke)");
+            var ton = a.ton.map(mal), hub = a.hub.map(mal);
+            [[a.korn, hub[0]], [a.zug, hub[1]]].forEach(function (q) { var s = (1.2 * q[1]) / Math.min(q[0][0], q[0][1]); s2 += s * s; });
+            return { art: name, korn: a.korn, zug: a.zug, wolke: a.wolke, faser: a.faser, ton: ton, hub: hub, woelb: a.woelb, rau: a.rau * k, rauFern: Math.min(0.05, 0.5 * s2), wetter: a.wetter, grau: a.grau, grund: a.grund, fugeGrau: a.fugeGrau || 0, spritz: a.spritz || 0, lauf: a.lauf || 0, balken: name === G.faser.art ? G.faser.ton : 0, kante: a.kante || [0, 0, 0] };
+        });
+    }
+    // DIE NUMMER DES GEFÜGES EINER ROLLE: die ihres Verbands, sonst die ihrer Art (0: sie trägt keines)
+    function gefuegeReihe(rolle) { return verbandReihe(rolle) || GEFUEGE_GESETZ.rolle[rolle] || 0; }
+    // DIE NUMMER EINER FASER-ECKE (`GEFUEGE_GESETZ.faser`): die Achse des Balkens (ax, ay, az) gegen die Normale der Fläche (nx, ny,
+    // nz), beide im Raum des Baus. Der Rahmen der Fläche ist der des Stoffs (t waagrecht in ihr, s ihre Falllinie; eine liegende
+    // Fläche nimmt +x) — er dreht mit dem Haus um die Lotrechte, die Nummer gilt in der Vorlage wie in der Welt. Steht die Achse
+    // auf der Fläche (|a · n| ≥ `hirnAb`), ist sie Hirnholz. `klasse` (optional, 0 … `toene` − 1): die Klasse des Tons ihres
+    // Balkens (`_faserAchse`) — sie steht über der Richtung: Nummer = ab + Richtung + klassen · Klasse.
+    function faserNummer(ax, ay, az, nx, ny, nz, klasse) {
+        var F = GEFUEGE_GESETZ.faser, la = Math.hypot(ax, ay, az), ln = Math.hypot(nx, ny, nz);
+        if (!(la > 1e-9) || !(ln > 1e-9)) return GEFUEGE_GESETZ.rolle.holz;
+        ax /= la; ay /= la; az /= la; nx /= ln; ny /= ln; nz /= ln;
+        if (Math.abs(ax * nx + ay * ny + az * nz) >= F.hirnAb) return F.hirn;
+        var hx = nz, hz = -nx, hl = Math.hypot(hx, hz), tx = hl > 0.02 ? hx / hl : 1, tz = hl > 0.02 ? hz / hl : 0;
+        var sx = ny * tz, sy = nz * tx - nx * tz, sz = -ny * tx;                                   // s = n × t (t liegt waagrecht: t.y = 0)
+        var w = Math.atan2(ax * sx + ay * sy + az * sz, ax * tx + az * tz);
+        var k = Math.round(((w % Math.PI) + Math.PI) % Math.PI / (Math.PI / F.klassen)) % F.klassen;
+        var kl = klasse > 0 ? Math.min(F.toene - 1, Math.floor(klasse)) : 0;
+        return F.ab + k + F.klassen * kl;
+    }
+    // DIE ACHSE EINES TEILS, dessen Rolle Faser trägt (`GEFUEGE_GESETZ.rolle` = die des Holzes; sonst null): die Hauptachse seiner
+    // Ecken im Raum des Baus (die Streuung der Ecken um ihre Mitte, ihre größte Richtung durch Potenz-Iteration) — der Balken als
+    // Kasten, der verformte Balken aus Segmenten und die Strebe unter 45° nennen so alle ihre Länge. `pa` = die Lagen des Teils,
+    // `e` = seine Matrix (Vorlage → Bau). Die vierte Stelle: die Klasse seines Tons (`GEFUEGE_GESETZ.faser.toene`) — gewürfelt
+    // aus seiner Mitte am Bau im Raster `tonRaster` (ganze Zahlen: derselbe Balken trägt in jeder Stufe und auf jedem Gerät
+    // dieselbe; zwei Balken an verschiedenen Orten würfeln unabhängig).
+    function _faserAchse(rolle, pa, e) {
+        if (GEFUEGE_GESETZ.rolle[rolle] !== GEFUEGE_GESETZ.rolle.holz || !(pa.count > 1)) return null;
+        var n = pa.count, m = [0, 0, 0], P = new Array(n * 3), v, k;
+        for (v = 0; v < n; v++) {
+            var x = pa.getX(v), y = pa.getY(v), z = pa.getZ(v);
+            P[v * 3] = e[0] * x + e[4] * y + e[8] * z; P[v * 3 + 1] = e[1] * x + e[5] * y + e[9] * z; P[v * 3 + 2] = e[2] * x + e[6] * y + e[10] * z;
+            m[0] += P[v * 3]; m[1] += P[v * 3 + 1]; m[2] += P[v * 3 + 2];
+        }
+        var C = [0, 0, 0, 0, 0, 0];                                                                   // xx, yy, zz, xy, xz, yz
+        for (v = 0; v < n; v++) {
+            var a = P[v * 3] - m[0] / n, b = P[v * 3 + 1] - m[1] / n, c = P[v * 3 + 2] - m[2] / n;
+            C[0] += a * a; C[1] += b * b; C[2] += c * c; C[3] += a * b; C[4] += a * c; C[5] += b * c;
+        }
+        var q = C[0] >= C[1] && C[0] >= C[2] ? [1, 0, 0] : C[1] >= C[2] ? [0, 1, 0] : [0, 0, 1];
+        for (k = 0; k < 24; k++) {
+            var r = [C[0] * q[0] + C[3] * q[1] + C[4] * q[2], C[3] * q[0] + C[1] * q[1] + C[5] * q[2], C[4] * q[0] + C[5] * q[1] + C[2] * q[2]];
+            var l = Math.hypot(r[0], r[1], r[2]);
+            if (!(l > 1e-12)) return null;
+            q = [r[0] / l, r[1] / l, r[2] / l];
+        }
+        // DIE TAFEL (`faser.tafelAb`): steht die zweite Streuung nahe der größten (das Brett-Feld der Wand, das Türblatt, die
+        // Diele als Platte), ist die Hauptachse Zufall der Rechnung — an der Wand des Dorfs lief die Faser diagonal (Radeon, 23.11.).
+        // Dort läuft sie die Falllinie der Tafel (lotrechte Bretter an der Wand, den Sparren entlang am Dach), in der liegenden
+        // Tafel die breitere Achse des Baus. Die zweite Achse: dieselbe Iteration, je Schritt senkrecht zur ersten gehalten.
+        var l1 = Math.hypot(C[0] * q[0] + C[3] * q[1] + C[4] * q[2], C[3] * q[0] + C[1] * q[1] + C[5] * q[2], C[4] * q[0] + C[5] * q[1] + C[2] * q[2]);
+        var p = Math.abs(q[0]) <= Math.abs(q[1]) && Math.abs(q[0]) <= Math.abs(q[2]) ? [1, 0, 0] : Math.abs(q[1]) <= Math.abs(q[2]) ? [0, 1, 0] : [0, 0, 1], l2 = 0, d;
+        for (k = 0; k < 24; k++) {
+            d = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+            p = [p[0] - d * q[0], p[1] - d * q[1], p[2] - d * q[2]];
+            d = Math.hypot(p[0], p[1], p[2]);
+            if (!(d > 1e-12)) { l2 = 0; break; }
+            p = [p[0] / d, p[1] / d, p[2] / d];
+            r = [C[0] * p[0] + C[3] * p[1] + C[4] * p[2], C[3] * p[0] + C[1] * p[1] + C[5] * p[2], C[4] * p[0] + C[5] * p[1] + C[2] * p[2]];
+            l2 = Math.hypot(r[0], r[1], r[2]);
+            if (!(l2 > 1e-12)) { l2 = 0; break; }
+            p = [r[0] / l2, r[1] / l2, r[2] / l2];
+        }
+        if (l2 >= GEFUEGE_GESETZ.faser.tafelAb * l1) {
+            d = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+            p = [p[0] - d * q[0], p[1] - d * q[1], p[2] - d * q[2]];
+            d = Math.hypot(p[0], p[1], p[2]) || 1;
+            p = [p[0] / d, p[1] / d, p[2] / d];
+            var vy = [q[0] * q[1] + p[0] * p[1], q[1] * q[1] + p[1] * p[1], q[2] * q[1] + p[2] * p[1]], vl = Math.hypot(vy[0], vy[1], vy[2]);
+            if (!(vl >= 0.3)) {
+                var ix = C[0] >= C[2] ? 0 : 2;
+                vy = [q[0] * q[ix] + p[0] * p[ix], q[1] * q[ix] + p[1] * p[ix], q[2] * q[ix] + p[2] * p[ix]];
+                vl = Math.hypot(vy[0], vy[1], vy[2]);
+            }
+            if (vl > 1e-6) q = [vy[0] / vl, vy[1] / vl, vy[2] / vl];
+        }
+        var F = GEFUEGE_GESETZ.faser, kx = Math.round((m[0] / n + e[12]) / F.tonRaster), ky = Math.round((m[1] / n + e[13]) / F.tonRaster), kz = Math.round((m[2] / n + e[14]) / F.tonRaster);
+        var w = (Math.imul(kx, 73856093) ^ Math.imul(ky, 19349663) ^ Math.imul(kz, 83492791)) >>> 0;
+        w = Math.imul(w ^ (w >>> 15), 0x2c1b3c6d) >>> 0; w = (w ^ (w >>> 13)) >>> 0;                   // die Bits mischen: Nachbarn im Raster würfeln nicht im Takt
+        q[3] = w % F.toene;
+        return q;
+    }
+    // DIE LAGE DER ECKE AM BAU (`GEFUEGE_GESETZ.spritz` · `lauf`) → eine Funktion, die je Ecke einer Rolle [1 + Höhe über dem
+    // Fuß des Baus, 1 + Tiefe unter dem Dach] in Metern liefert (`aLage` der Welt; 0 = keine Angabe) — oder null, wo die Art der
+    // Rolle (`z`: ihre Zeile aus `gefuegeZeilen`) weder Saum noch Läufer trägt. DIE HÖHE: die der Ecke im Raum des Baus (sein
+    // Fuß bei y = 0, wie die Kontakt-AO des Bakes sie liest). DIE TIEFE: die Unterseite der Dach-Rollen als Höhen-Raster (je
+    // Zelle die tiefste Dachfläche über ihr); die Ecke fragt `vor` Meter vor ihrer Fläche (unter dem Überstand), sonst an sich
+    // selbst und in den Nachbar-Zellen; 0 = über ihr steht kein Dach. Ein Dreieck, dem eine Ecke ohne Dach bleibt, trägt ganz
+    // 0: die Welt mittelt die Ecken, eine halbe Angabe wäre eine falsche Tiefe.
+    // DIE KANTE (`kante` der Art, das Holz: die zweite Stelle ist dort frei): je Dreieck einer Faser-Fläche (`G.faser` ab
+    // `faser.ab`: die Richtung ihres Balkens; flach — die drei Normalen sind eine) ist die längste Seite die Diagonale; von den
+    // beiden anderen läuft eine mit der Faser (höchstens 30° ab) und eine quer (mindestens 60°) — die Ecken der Längs-Seite
+    // stehen an der einen langen Kante der Fläche, die dritte an der anderen: 1 und 3 (die Seite gegen Normale × Faser — zwei
+    // Dreiecke EINER Fläche nennen dieselbe). Aus dem Dreieck selbst, nie aus der Mitte des Teils: der verformte Balken aus
+    // Segmenten trägt sie je Segment. Rundholz (die Normalen einer Seite sind verschieden), Hirnholz und jede Ecke mit zwei
+    // Aussagen tragen 0.
+    function _eckLage(geoms) {
+        var L = GEFUEGE_GESETZ.lauf, c = L.zelle, karte = Object.create(null), hat = false, role, G, i;
+        for (role in geoms) {
+            G = geoms[role];
+            if (!G || !G.vo || L.dach.indexOf(gefuegeReihe(role)) < 0) continue;
+            var P = G.pos, I = G.idx;
+            for (i = 0; i + 2 < I.length; i += 3) {
+                var a = I[i] * 3, b = I[i + 1] * 3, d = I[i + 2] * 3;
+                var x0 = P[a], y0 = P[a + 1], z0 = P[a + 2], x1 = P[b] - x0, y1 = P[b + 1] - y0, z1 = P[b + 2] - z0, x2 = P[d] - x0, y2 = P[d + 1] - y0, z2 = P[d + 2] - z0;
+                var det = x1 * z2 - x2 * z1;
+                if (!(Math.abs(det) > 1e-9)) continue;                                              // eine lotrechte Fläche deckt nichts
+                var ix0 = Math.floor(Math.min(P[a], P[b], P[d]) / c), ix1 = Math.floor(Math.max(P[a], P[b], P[d]) / c);
+                var iz0 = Math.floor(Math.min(P[a + 2], P[b + 2], P[d + 2]) / c), iz1 = Math.floor(Math.max(P[a + 2], P[b + 2], P[d + 2]) / c);
+                for (var ix = ix0; ix <= ix1; ix++) for (var iz = iz0; iz <= iz1; iz++) {
+                    var px = (ix + 0.5) * c - x0, pz = (iz + 0.5) * c - z0, u = (px * z2 - x2 * pz) / det, v = (x1 * pz - px * z1) / det;
+                    if (u < -0.05 || v < -0.05 || u + v > 1.05) continue;
+                    var y = y0 + u * y1 + v * y2, key = ix + "," + iz;
+                    if (karte[key] === undefined || y < karte[key]) karte[key] = y;
+                    hat = true;
+                }
+            }
+        }
+        var ueber = function (x, z) {
+            var ix = Math.floor(x / c), iz = Math.floor(z / c), y = karte[ix + "," + iz], dx, dz, q;
+            if (y !== undefined) return y;
+            y = Infinity;
+            for (dx = -1; dx <= 1; dx++) for (dz = -1; dz <= 1; dz++) { q = karte[(ix + dx) + "," + (iz + dz)]; if (q !== undefined && q < y) y = q; }
+            return y;
+        };
+        return function (G, z) {
+            var saum = !!z && z.spritz > 0, laeufer = hat && !!z && z.lauf > 0, P = G.pos, n = P.length / 3, k;
+            // (der Saum: nur wo die Rolle in ihn reicht — über ihm ist jede Höhe dieselbe Aussage wie keine)
+            if (saum) { var oben = GEFUEGE_GESETZ.spritz.aus + GEFUEGE_GESETZ.spritz.rand; saum = false; for (k = 0; k < n && !saum; k++) saum = P[k * 3 + 1] < oben; }
+            var kante = !!z && z.kante[0] > 0 && !!G.faser && G.faser.length === n;
+            if (!saum && !laeufer && !kante) return null;
+            var N = G.nrm, I = G.idx, aus = new Float32Array(n * 2), weiter = laeufer || kante;
+            if (kante) {
+                var F = GEFUEGE_GESETZ.faser, FS = G.faser, Q = new Int8Array(n), setze = function (i, s) { Q[i] = Q[i] === 0 || Q[i] === s ? s : 2; };
+                for (k = 0; k + 2 < I.length; k += 3) {
+                    var ia = I[k], ib = I[k + 1], ic = I[k + 2], nr = FS[ia];
+                    if (nr < F.ab || FS[ib] !== nr || FS[ic] !== nr) continue;
+                    var nx = N[ia * 3], ny = N[ia * 3 + 1], nz = N[ia * 3 + 2], nn = Math.hypot(nx, ny, nz);
+                    if (!(nn > 1e-9)) continue;
+                    nx /= nn; ny /= nn; nz /= nn;
+                    var nb = Math.hypot(N[ib * 3], N[ib * 3 + 1], N[ib * 3 + 2]), nc = Math.hypot(N[ic * 3], N[ic * 3 + 1], N[ic * 3 + 2]);
+                    if (!(nx * N[ib * 3] + ny * N[ib * 3 + 1] + nz * N[ib * 3 + 2] > 0.999 * nb) || !(nx * N[ic * 3] + ny * N[ic * 3 + 1] + nz * N[ic * 3 + 2] > 0.999 * nc)) continue;
+                    // (der Rahmen der Fläche und die Faser darin: wie `faserNummer`)
+                    var hx = nz, hz = -nx, hl = Math.hypot(hx, hz), tx = hl > 0.02 ? hx / hl : 1, tz = hl > 0.02 ? hz / hl : 0;
+                    var sx = ny * tz, sy = nz * tx - nx * tz, sz = -ny * tx, w = ((nr - F.ab) % F.klassen) * (Math.PI / F.klassen);
+                    var ax = Math.cos(w) * tx + Math.sin(w) * sx, ay = Math.sin(w) * sy, az = Math.cos(w) * tz + Math.sin(w) * sz;
+                    var qx = ny * az - nz * ay, qy = nz * ax - nx * az, qz = nx * ay - ny * ax;                 // quer = Normale × Faser
+                    // die drei Seiten: [gegenüber der Ecke, von, nach]
+                    var E = [[ic, ia, ib], [ia, ib, ic], [ib, ic, ia]], lg3 = [0, 0, 0], M = [0, 0, 0], j, lang = 0;
+                    for (j = 0; j < 3; j++) {
+                        var dx = P[E[j][2] * 3] - P[E[j][1] * 3], dy = P[E[j][2] * 3 + 1] - P[E[j][1] * 3 + 1], dz = P[E[j][2] * 3 + 2] - P[E[j][1] * 3 + 2];
+                        lg3[j] = Math.hypot(dx, dy, dz);
+                        M[j] = lg3[j] > 1e-9 ? Math.abs(dx * ax + dy * ay + dz * az) / lg3[j] : 0;
+                        if (lg3[j] > lg3[lang]) lang = j;
+                    }
+                    var s1 = (lang + 1) % 3, s2 = (lang + 2) % 3, laengs = M[s1] >= M[s2] ? s1 : s2, querS = laengs === s1 ? s2 : s1;
+                    if (!(M[laengs] >= 0.866) || !(M[querS] <= 0.5) || !(lg3[querS] > 0.001)) continue;
+                    var o = E[laengs][0], a0 = E[laengs][1];
+                    var seite = (P[o * 3] - P[a0 * 3]) * qx + (P[o * 3 + 1] - P[a0 * 3 + 1]) * qy + (P[o * 3 + 2] - P[a0 * 3 + 2]) * qz > 0 ? 1 : -1;
+                    setze(o, seite); setze(a0, -seite); setze(E[laengs][2], -seite);
+                }
+                for (k = 0; k < n; k++) if (Q[k] === 1 || Q[k] === -1) aus[k * 2 + 1] = 2 + Q[k];
+            }
+            if (saum) for (k = 0; k < n; k++) aus[k * 2] = 1 + Math.max(0, P[k * 3 + 1]);
+            if (laeufer) for (k = 0; k < n; k++) {
+                var nl = Math.hypot(N[k * 3], N[k * 3 + 2]), y = Infinity;
+                if (nl > 0.2) y = ueber(P[k * 3] + (N[k * 3] / nl) * L.vor, P[k * 3 + 2] + (N[k * 3 + 2] / nl) * L.vor);
+                if (y === Infinity) y = ueber(P[k * 3], P[k * 3 + 2]);
+                if (y < Infinity) aus[k * 2 + 1] = 1 + Math.max(0, y - P[k * 3 + 1]);
+            }
+            while (weiter) {
+                weiter = false;
+                for (k = 0; k + 2 < I.length; k += 3) {
+                    var e0 = aus[I[k] * 2 + 1], e1 = aus[I[k + 1] * 2 + 1], e2 = aus[I[k + 2] * 2 + 1];
+                    if ((e0 === 0 || e1 === 0 || e2 === 0) && (e0 > 0 || e1 > 0 || e2 > 0)) { aus[I[k] * 2 + 1] = aus[I[k + 1] * 2 + 1] = aus[I[k + 2] * 2 + 1] = 0; weiter = true; }
+                }
+            }
+            if (saum) return aus;
+            for (k = 0; k < n; k++) if (aus[k * 2 + 1] > 0) return aus;
+            return null;
+        };
+    }
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -2220,6 +2527,7 @@
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M) if(verbandReihe(_k)) M[_k].userData.__verband=verbandReihe(_k);   // DAS VERBAND-GESETZ: die Nummer des Verbands reist mit dem Stoff (mat.verband) — die Welt webt ihn als Funktion, wo das Labor seine Karte trägt
+      for(const _k in M) if(!M[_k].userData.__verband&&gefuegeReihe(_k)) M[_k].userData.__verband=gefuegeReihe(_k);   // DAS GEFÜGE-GESETZ (haus-gefuege): ein Stoff ohne Verband trägt die Nummer seines Gefüges im selben Kanal (Holz, Gefach, Lehm, Stroh) — die Welt rechnet Korn, Faser und Verwitterung als Funktion
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
@@ -2589,6 +2897,7 @@
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE — EIN Bake-Gesetz, beide Pfade identisch
+    const fa=_faserAchse(role,pa,e); if(fa||G.faser){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser): die Achse des Balkens reist als Nummer je Ecke (Beipack, kein Attribut: die Bytes des Baus bleiben)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
       const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/AO_KNIE)) : 1;   // EIN-BAKE-GESETZ: dieselbe Kontakt-AO wie bakeLOD (vorher: ao UNDEFINIERT → latenter Crash)
       G.pos.push(e[0]*x+e[4]*y+e[8]*z+e[12], wy, e[2]*x+e[6]*y+e[10]*z+e[14]);
@@ -2596,6 +2905,7 @@
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;
       G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);
+      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):gefuegeReihe(role));
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -2629,6 +2939,7 @@
     const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
     const wa=o.geometry.attributes.aWand, wr0=verbandReihe(role);   // DIE LAGE IM GEFÜGE (`_wandLage`): trägt ein Teil der Rolle sie, trägt jede Ecke der Rolle [u, v, Zeile] — ohne eigene die Zeile ihres Stoffs
     if(wa||G.wand){ G.wand=G.wand||[]; while(G.wand.length<G.vo*3) G.wand.push(0,0,wr0); }
+    const fa=_faserAchse(role,pa,e); if(fa||G.faser){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser), wie bakeHaus
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2640,6 +2951,7 @@
       const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
       G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       if(G.wand){ if(wa) G.wand.push(wa.getX(v),wa.getY(v),wa.getZ(v)); else G.wand.push(0,0,wr0); }
+      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):gefuegeReihe(role));
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -3762,6 +4074,8 @@
   else G.uv.length=0;
   if(S.wand||G.wand){ const r0=verbandReihe(role); G.wand=G.wand||[]; while(G.wand.length<off*3) G.wand.push(0,0,r0);   // die Lage im Gefüge reist mit (`_wandLage`): eine Quelle ohne sie trägt die Zeile ihres Stoffs
     if(S.wand) for(let i=0;i<S.wand.length;i++) G.wand.push(S.wand[i]); else for(let i=0;i<S.vo;i++) G.wand.push(0,0,r0); }
+  if(S.faser||G.faser){ const f0=gefuegeReihe(role); G.faser=G.faser||[]; while(G.faser.length<off) G.faser.push(f0);   // die Faser je Ecke reist mit (GEFUEGE_GESETZ.faser): eine Quelle ohne sie trägt die Zeile ihres Stoffs
+    if(S.faser&&S.faser.length===S.vo) for(let i=0;i<S.vo;i++) G.faser.push(S.faser[i]); else for(let i=0;i<S.vo;i++) G.faser.push(f0); }
   for(let i=0;i<I.length;i++) G.idx.push(I[i]+off);
   G.vo+=S.vo; } }
     // prettier-ignore
@@ -6800,6 +7114,7 @@
     function geomsZuGruppe(geoms) {
         materials();
         var g = new THREE.Group();
+        var eckLage = _eckLage(geoms), zeilen = gefuegeZeilen();
         for (var role in geoms) {
             var G = geoms[role];
             if (!G || !G.vo) continue; // ein Beipack ohne Wert (die Tür-Zeile des Rundbaus ist null) ist keine Rolle — bis w28-innenlicht warf der Rundbau hier
@@ -6820,6 +7135,16 @@
                 }
                 bg.setAttribute("aVerband", new THREE.BufferAttribute(vb, 1));
                 bg.setAttribute("aLage", new THREE.BufferAttribute(la, 2));
+            }
+            // DIE FASER JE ECKE (GEFUEGE_GESETZ.faser, haus-gefuege): die Nummer der Zeile je Ecke als BEIPACK der Geometrie — kein
+            // Attribut (die Bytes des Baus bleiben, gate:fachwerk-contract); die Brücke reicht ihn der Welt als `aVerband`
+            if (G.faser && G.faser.length === G.pos.length / 3) bg.userData.__zeile = Uint8Array.from(G.faser);
+            // DIE LAGE DER ECKE AM BAU (GEFUEGE_GESETZ.spritz · lauf, `_eckLage`): je Ecke einer Rolle, deren Art Saum oder Läufer
+            // trägt, die Höhe über dem Fuß und die Tiefe unter dem Dach, ebenso als Beipack — die Brücke reicht ihn als `aLage`;
+            // die ferne Wand trägt dort schon ihre Felder und bleibt, wie sie ist
+            if (!bg.attributes.aLage) {
+                var lg = eckLage(G, zeilen[gefuegeReihe(role)] || null);
+                if (lg) bg.userData.__lage = lg;
             }
             bg.setIndex(G.idx);
             var mm = new THREE.Mesh(bg, _mmFor(role));
@@ -13418,6 +13743,10 @@
         // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZeilen: verbandZeilen,
+        // DAS GEFÜGE-GESETZ (haus-gefuege): Korn, Faser, Relief und Verwitterung je Stoff-Art und die Zeilen für die Welt (Leser:
+        // der Wirt, `_gefuegeStoff`)
+        GEFUEGE_GESETZ: GEFUEGE_GESETZ,
+        gefuegeZeilen: gefuegeZeilen,
         // das Leucht-Gesetz der Flamme (Leuchtdichte = lineare Farbe × FEUER_LEUCHT_JE_LUMA, cd/m²) und das Licht der Leuchte aus ihrer
         // Lichtstärke: ihr Leib, die Bestrahlung ihres Glases und der Ton je Ecke (nacht-lichter)
         FEUER_LEUCHT_JE_LUMA: FEUER_LEUCHT_JE_LUMA,

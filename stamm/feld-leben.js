@@ -2776,6 +2776,7 @@ class AnazhRealm_feld_leben {
                 dauer: new Map(),
                 lava: [], // die Lava-Taten (das Licht fragt sie, `_leuchtQuellen`)
                 brand: [], // die Aschen (die Boden-Decke malt sie, `_ascheStufeMalen`; die Sukzession weckt sie)
+                bestellen: [], // die bestellten Stücke der Äcker (der Körper des Ackers legt sie, `_ackerKoerperTakt`)
             };
         const N = AnazhRealm.TAT_NARBE;
         J.baut = true; // der Nährstoff jeder neuen Tat liest nur die Taten vor ihr (`_naehrstoffAt`)
@@ -2788,6 +2789,7 @@ class AnazhRealm_feld_leben {
             J.je.get(k).push(a);
             if (a.tat === "lava") J.lava.push(a);
             if (a.tat === "brand") J.brand.push(a);
+            if (a.tat === "bestellen") J.bestellen.push(a);
             if (a.tat === "ernten" && typeof a.kachel === "string") {
                 if (!J.kachel.has(a.kachel)) J.kachel.set(a.kachel, new Set());
                 J.kachel.get(a.kachel).add(a.id);
@@ -3207,6 +3209,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     brand: Object.freeze({ tiefe: 0.3, stunden: 72, naehr: 0.4 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht; sie düngt
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
     riss: Object.freeze({ tiefe: 0.03, stunden: 24, naehr: 0.2 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort, sein Leichnam nährt ihn
+    bestellen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Stück Acker, gepflügt und gesät (`_ackerBestellen`): es trägt seine Frucht ab seiner Stunde (phyto ackerStand)
     aas: Object.freeze({ tiefe: 0, stunden: 24, naehr: 0.2 }), // der Leichnam jedes Tods des Bestands (`_aasTat`, keine Tat: ein Feld des Lebens): er nährt wie der des Risses; das Leben gibt der Tod selbst (`_bestandStirbt`)
     max: 0.6,
     lebMin: 0.1,

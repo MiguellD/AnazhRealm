@@ -1017,6 +1017,8 @@ class AnazhRealm_vegetation_wiese {
         // wo die Decke der Lava liegt, auch in ihrem dünnen Rand, steht kein Halm (w28-lava-zuendet: bis hier dünnte sie nur —
         // Büschel standen grün im glühenden Rand)
         if (!(gruen > 0) || this._nassAt(x, z, 0.1, y) || this._lavaDeckeAt(x, z) > 0) return 0;
+        // DER ACKER TRÄGT KEINE WIESE (acker-kette 2, `_ackerGrund`): auf ihm steht die Frucht, nie ein Halm des Felds
+        if (this._ackerGrund(x, z)) return 0;
         const pfad = 1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt;
         return gruen * pfad * (1 - this._ascheAt(x, z));
     }
@@ -1559,6 +1561,7 @@ class AnazhRealm_vegetation_wiese {
                 const y = this._bodenSichtAt(x, z);
                 if (y === null) continue;
                 if (this._pfadFeldAt(x, z, y) > 0.5) continue; // Ufer-Pfad und Siedlungs-Weg bleiben frei (Labor: trailAt < 3 m)
+                if (this._ackerGrund(x, z)) continue; // der Acker trägt keine Wildpflanze (`_ackerGrund`)
                 const feucht = this._feuchteAt(x, z, y);
                 const feld = this.worldFieldAt(x, z);
                 // Die Höhe über dem Wasser: für das Ufer-Band (Schilf) über beiden Bezügen (`_waterLevelAt` → see · fluss ·
