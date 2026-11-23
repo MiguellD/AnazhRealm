@@ -442,9 +442,9 @@ async function lebenBuehnen() {
         // der Täter des Risses: der Gau reißt nicht (der Riss des Kerns fällt aus — der Wolf jagt ins Leere)
         if (taeter === "kaskade-riss")
             await fadenKern("leben-core.js", [["const o = zug(list, wahl, rng);", "const o = (rng(), null);"]]);
-        // der Täter des Aussterbens (erbe-geburt): der Gau gebiert nicht — das Rotwild stirbt über 18 Jahre aus
+        // der Täter des Aussterbens (erbe-geburt): die Rate der Geburt im Gau falsch geeicht, × ¼ — das Rotwild bricht ein
         if (taeter === "kaskade-geburt")
-            await fadenKern("leben-core.js", [["const p = ((t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;", "const p = 0;"]]); // prettier-ignore
+            await fadenKern("leben-core.js", [["const p = ((t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;", "const p = (0.25 * (t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;"]]); // prettier-ignore
         // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
         // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
         // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
@@ -598,7 +598,8 @@ async function lebenBuehnen() {
             if (L[b]) richtungen[k] = richtung(b, g, soll);
         const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort(aufsteigend)];
         return {
-            saaten: G.map((l) => Object.fromEntries(GATTUNGEN.map((g) => [g, [l.mittel(80, 160, g), l.mittel(GRUND - 80, GRUND, g)]]))), // prettier-ignore
+            // je Saat und Gattung [Anfang 80–160, Ende, Gründer 0–10] (der Gründer-Bestand: das Rotwild des Gaus steht von Takt 0 an)
+            saaten: G.map((l) => Object.fromEntries(GATTUNGEN.map((g) => [g, [l.mittel(80, 160, g), l.mittel(GRUND - 80, GRUND, g), l.mittel(0, 10, g)]]))), // prettier-ignore
             kappe: Object.values(L)
                 .flat()
                 .reduce((p, l) => p + l.kappe, 0),
@@ -2786,22 +2787,24 @@ function lebenUrteil(name, z, soll) {
         // ab 4 Köpfen; darunter ist das Verhältnis der Zufall weniger Leben (1,61 → 0,2 Bären ist ein Bär, der starb — an main
         // a615ab5d über 40 Saaten 1, am Kopf 3 solche Brüche, je 8er-Fenster mal ROT, mal grün, ohne dass eine Gattung sich
         // bewegte: Σe/Σa je Fenster Fuchs 0,88–1,32, Bär 0,95–1,72). Jede Gattung urteilt als Ensemble über alle Saaten
-        // (Σ Ende / Σ Anfang im Band), ein Bestand aus dem Nichts (Anfang < 1) bricht über 3 Köpfe aus.
+        // (Σ Ende / Σ Anfang im Band), ein Bestand aus dem Nichts (Anfang < 1) bricht über 3 Köpfe aus. Das Aussterben urteilt
+        // die Gattung auch gegen ihren Gründer-Bestand (Takte 0–10, Σ über die Saaten): ein Rotwild, das schon VOR dem Anfang
+        // einbricht, war dem Band blind (Täter kaskade-geburt, die Geburt des Gaus × ¼: 1,7 statt ~9 Köpfe am Anfang, 2,8 am Ende)
         const paare = z.saaten.flatMap((je, i) =>
-            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, g, a, e }))
+            Object.entries(je).map(([g, [a, e, n0]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, g, a, e, n0: n0 || 0 }))
         );
         const band = (a, e) => (a >= 1 ? e >= a / 3 && e <= 3 * a : e <= 3);
         const da = paare.filter((p) => p.a >= 1).length;
-        const summe = paare.reduce((S, p) => ((S[p.g] = S[p.g] || [0, 0]), (S[p.g][0] += p.a), (S[p.g][1] += p.e), S), {});
+        const summe = paare.reduce((S, p) => ((S[p.g] = S[p.g] || [0, 0, 0]), (S[p.g][0] += p.a), (S[p.g][1] += p.e), (S[p.g][2] += p.n0), S), {}); // prettier-ignore
         const bruch = [
             ...paare.filter((p) => (p.a >= 4 || p.a < 1) && !band(p.a, p.e)).map((p) => p.wo),
             ...Object.entries(summe)
-                .filter(([, [a, e]]) => !band(a, e))
-                .map(([g, [a, e]]) => `${g} Σ ${a.toFixed(1)} → ${e.toFixed(1)}`),
+                .filter(([, [a, e, n0]]) => !band(a, e) || e < n0 / 3)
+                .map(([g, [a, e, n0]]) => `${g} Σ ${a.toFixed(1)} → ${e.toFixed(1)} (Gründer ${n0.toFixed(1)})`),
         ];
         soll(
             z.saaten.length >= 8 && da >= 16 && !bruch.length,
-            `der Bestand bricht aus oder stirbt aus: ${bruch.join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Saat ab 4 Köpfen und je Gattung Σ über die Saaten in [⅓×, 3×], 8 Saaten)`
+            `der Bestand bricht aus oder stirbt aus: ${bruch.join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Saat ab 4 Köpfen und je Gattung Σ über die Saaten in [⅓×, 3×], Σ Ende ≥ ⅓ der Gründer, 8 Saaten)`
         );
         // DER BESTAND (oekologie.K2#2)
         const B = z.bestand;
