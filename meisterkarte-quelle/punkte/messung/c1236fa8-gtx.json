@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T01:00:05.074Z",
+ "zeit": "2026-11-23T01:02:03.181Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -3249,17 +3249,67 @@
   },
   "karte2.same.gedaechtnis.alter#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 182 s von karte2.same.gedaechtnis.alter#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 182 s von karte2.same.gedaechtnis.alter#1) — offen, UNGEMESSEN",
+   "zahl": "Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 176 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 2.94,
+   "grund": "Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 176 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-23T00:58:50.047Z",
+   "s": 176.1,
+   "fremd": {
+    "s": 179.1,
+    "takte": 80,
+    "fremdS": 51.55,
+    "kerne": 0.288,
+    "fensterKerne": 0.585,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.27
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.36
+     ]
+    ],
+    "dienerS": 60.09,
+    "diener": [
+     [
+      "dwm.exe",
+      31.55
+     ],
+     [
+      "System",
+      15.55
+     ]
+    ],
+    "geraetS": 62.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.88
+     ],
+     [
+      "svchost.exe",
+      18.56
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 609.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T01:02:03.181Z",
    "abdruck": "09046e3f4f69",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.preis.eingabe#2": {
    "gruen": false,
