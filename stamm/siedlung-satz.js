@@ -870,15 +870,19 @@ class AnazhRealm_siedlung_satz {
     //   lauf — der REGEN-LAUF: die senkrechte Fläche (1 − |n_y|/steil), × die Lauf-Länge des Wassers über der Ecke (`lauf` m:
     //          wie viel Werk über ihr steht, voll ab `m`), × der Schlagregen: auf der WETTERSEITE (die Fläche, die den Fronten
     //          entgegenschaut — phyto-core `windGrund` (gx, gz), `_alterWind`) voll, im Lee `lee`.
+    //   regen — die Fläche, die der Regen erreicht: von oben voll (max(0, n_y)), die senkrechte (1 − |n_y|) im Schlagregen der
+    //          Wetterseite voll, im Lee `lauf.lee` (derselbe Rest des Schlagregens wie im Lauf), die Unterseite nie.
     static _alterLage(lage, nx, ny, nz, lauf, gx, gz) {
         const A = AnazhRealm.WERK_ALTER;
         if (lage === 0) return A.frei[0] + A.frei[1] * Math.max(0, ny);
         if (lage === 1) return Math.max(0, -nz);
         if (lage === 2) return Math.max(0, Math.min(1, (ny - A.oben[0]) / (A.oben[1] - A.oben[0])));
         const L = A.lauf;
+        const schlag = L.lee + (1 - L.lee) * Math.max(0, -(nx * gx + nz * gz));
+        if (lage === 4) return Math.max(0, ny) + (1 - Math.abs(ny)) * schlag;
         const senk = 1 - Math.abs(ny) / L.steil;
         if (!(senk > 0) || !(lauf > 0)) return 0;
-        return senk * Math.min(1, lauf / L.m) * (L.lee + (1 - L.lee) * Math.max(0, -(nx * gx + nz * gz)));
+        return senk * Math.min(1, lauf / L.m) * schlag;
     }
     // DIE SCHICHTEN EINES STOFFS für den Kern (`_alterKern`): je Schicht ihre Lage als Index und ihr Ziel auf der Stoff-Farbe
     // `mc` (die Welt liest Vertex-Farbe × Stoff-Farbe, Lehre 19: die Ecke trägt Ziel/Stoff-Farbe), dazu die Wetterseite.
@@ -1141,10 +1145,8 @@ class AnazhRealm_siedlung_satz {
         for (let i = 0; i < bau.cnt; i++) for (let l = 0; l < L; l++) bau.stempel[i * bau.K + bau.K - L + l] = -1;
     }
     // DAS ALTER IM SATZ (stoffe.K4): ein gesetzter Bau zeichnet im Satz seines Stoffs (`_bauSatzArt`) — dort, wo seine Albedo
-    // entsteht (`_satzBlockEcken`: Farbe × Instanz-Farbe in Welt-Lage), altert er nach dem EINEN Gesetz der Stoff-Tafel: die
-    // Seh-Klasse seines Studio-Stoffs (phyto-core `BUDGET_GESETZ.seh`) nennt den Stoff der Welt (`WERK_ALTER.seh`: das Matte eines
-    // Baus — Putz, Stein, Ziegel — altert wie Stein, sein Metall wie Eisen; Glas und Glut altern nicht), dessen Schichten
-    // (`_stoff(...).alter`) altern je Slot mit dem Alter seines Werks (`_werkAlter`: die Zeit seit dem Bau-Akt und die
+    // entsteht (`_satzBlockEcken`: Farbe × Instanz-Farbe in Welt-Lage), altert er nach dem EINEN Gesetz des Alters (`_alterGesetz`):
+    // die Art seines Studio-Stoffs nennt die Tafel (`_satzAlterStoff`: Holz, Putz, Stein, Eisen), deren Schichten altern je Slot mit dem Alter seines Werks (`_werkAlter`: die Zeit seit dem Bau-Akt und die
     // Nässe-Dosis, beide aus dem Stand). Nur der Bau-Satz (der Fels ist alt, als die Welt begann; der Wurf zeichnet keine
     // Farbe), und nie ein Werk, dessen Studio den Regler `verwitterung` trägt (`_werkAlterZeile`: es altert in seinem Kern, der
     // seine Rollen kennt). Gemerkt an der Gruppe (Stoff und Art wechseln nie); null: sie altert nicht.
@@ -1156,7 +1158,7 @@ class AnazhRealm_siedlung_satz {
         const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         const preset = /^f:([^|]+)\|/.exec(String(g.key));
         const u = g.mesh && g.mesh.material && g.mesh.material.userData;
-        const name = u && u.foundryMp ? AnazhRealm.WERK_ALTER.seh[u.foundryMp.seh] : null;
+        const name = u && u.foundryMp ? this._satzAlterStoff(u.foundryMp) : null;
         if (
             sts &&
             sts.name === "bauSatz" &&
@@ -1165,11 +1167,26 @@ class AnazhRealm_siedlung_satz {
             name &&
             !this._werkAlterZeile(preset[1])
         ) {
-            const zeile = this._stoff(name, "der Bau-Satz aus „" + name + "“ altert ohne Zeile");
-            if (zeile && zeile.alter && zeile.alter.length) al = this._alterSchichten(zeile.alter, sts.mat.color);
+            const schichten = AnazhRealm._alterGesetz()[name];
+            if (!schichten) throw this._stoffBruch("der Bau-Satz altert ohne Tafel im Gesetz des Alters", new Error(name));
+            al = Object.assign(this._alterSchichten(schichten, sts.mat.color), { stoff: name });
         }
         g._satzAlter = al;
         return al;
+    }
+    // DIE ART, ALS DIE EIN GESETZTER BAU ALTERT (stoffe.K4, `_satzAlter`): die ART SEINES GEFÜGES nennt ihn — die Nummer
+    // seines Studio-Stoffs (`mp.verband`, fachwerk `GEFUEGE_GESETZ.reihe`: dieselbe, die sein Korn, seine Faser und seine
+    // Wetterseite trägt) über `WERK_ALTER.art`; ein Metall altert als Eisen, das Matte ohne Art als Stein (`WERK_ALTER.seh`), Glas
+    // und Glut altern nicht. Eine Art, die das Gesetz nicht nennt, ist ein Bruch beim Namen. Bis front-stoff nannte die Seh-Klasse
+    // allein den Stoff: jeder Balken, jede Bohle, jedes Strohdach und jeder Putz alterte wie Stein — Moos und Flechte statt Silber
+    // und Grünbelag.
+    _satzAlterStoff(mp) {
+        const A = AnazhRealm.WERK_ALTER;
+        const GG = mp.verband > 0 && mp.seh === "stoff" ? AnazhRealm.Gesetz("fachwerk:GEFUEGE_GESETZ") : null;
+        const art = GG ? GG.reihe[mp.verband | 0] : null;
+        if (!art) return A.seh[mp.seh] || null;
+        if (!A.art[art]) throw this._stoffBruch("das Alter der Gefüge-Art", new Error(String(art)));
+        return A.art[art];
     }
     // Die Ecken der Instanzen [ab, ab + cnt) eines Bau-Bereichs im Alter ihres Werks (`_satzBlockEcken`, nach Lage · Normale ·
     // Farbe): je Instanz ihre Stufen aus dem Stempel ihres Slots (`bau.stempel`, `_bauSatzStempel`), die Lauf-Länge von der
@@ -1994,16 +2011,31 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // die Unterseite den Sockel). `oben`: die Fläche unter dem Himmel, n_y von 0,3 (73°: ein steiles Dach trägt sie kaum) bis 0,9
 // voll. `lauf`: der Regen-Lauf — senkrecht bis |n_y| < steil, voll ab `m` Metern Werk über der Ecke (anderthalb Geschosse: der
 // Lauf eines Würfels am Boden bleibt kurz, der Fuß einer Hauswand trägt ihn ganz), im Lee `lee` des Schlagregens der Wetterseite.
-// `seh`: der Stoff der Welt je Seh-Klasse eines Studio-Stoffs (`_satzAlter`; phyto-core `BUDGET_GESETZ.seh`) — das Matte eines
-// gesetzten Baus altert wie Stein, sein Metall wie Eisen, Glas und Glut tragen keine Zeile.
+// `art`: die Tafel des Gesetzes des Alters (`_alterGesetz`) je Art des Gefüges eines Studio-Stoffs (`_satzAlterStoff`; fachwerk
+// `GEFUEGE_GESETZ.reihe`) — Holz, Hirnholz und Stroh (Lignin und Zellulose: sie vergrauen, wo der Regen sie wäscht, USDA Wood
+// Handbook 2021 Kap. 16) altern als Holz, Putz, Lehmputz und die ferne Fachwerk-Wand (ihr Gefach trägt die Fläche) als Putz
+// (der Grünbelag), Naturstein, Backstein und Deckung (Moos, Flechte, Algen) als Stein.
+// `seh`: der Stoff der Welt je Seh-Klasse, wo der Studio-Stoff keine Art trägt (phyto-core `BUDGET_GESETZ.seh`) — das Matte
+// eines gesetzten Baus altert wie Stein, sein Metall wie Eisen, Glas und Glut tragen keine Zeile.
 AnazhRealm.WERK_ALTER = Object.freeze({
     tauTage: 40,
     nassMin: 1,
     regen: 1,
     stufen: 32,
-    lagen: Object.freeze(["frei", "nord", "oben", "lauf"]),
+    lagen: Object.freeze(["frei", "nord", "oben", "lauf", "regen"]),
     frei: Object.freeze([0.7, 0.3]),
     oben: Object.freeze([0.3, 0.9]),
     lauf: Object.freeze({ m: 6, lee: 0.35, steil: 0.5 }),
+    art: Object.freeze({
+        holz: "holz",
+        hirnholz: "holz",
+        stroh: "holz",
+        putz: "putz",
+        lehmputz: "putz",
+        fachwerkwand: "putz",
+        stein: "stein",
+        ziegelstein: "stein",
+        deckung: "stein",
+    }),
     seh: Object.freeze({ stoff: "stein", metall: "eisen" }),
 });

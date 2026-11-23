@@ -2133,8 +2133,8 @@
     // `aVerband` der gefalteten Stufe → die vierte Stelle von `aRegler` im Satz): 1–5 sind die Zeilen des Verbands (ihr Gefüge steht
     // in `reihe` am selben Platz), ab 6 die Stoffe ohne Verband (`rolle`). `fuss`: eine Skala steht voll ab `voll` Pixeln je Zelle
     // und ist unter `leer` ihr Mittel (Ton 1, Relief 0) — am Schirm, nie in Metern; `periode`: die Zellen des Rauschens wiederholen
-    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). `wetterVon`: woher das Wetter kommt (Welt: +x Ost,
-    // +z Süd — die Sonnenbahn `welt-licht.js sonnenRichtung`; Mitteleuropa: West-Südwest).
+    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). Woher das Wetter kommt, trägt die Welt (der Zug ihrer
+    // Fronten, Stamm `uWetterVon`) — bis front-stoff stand hier `wetterVon` fest auf West-Südwest.
     // DER SPRITZ-SAUM (`spritz`): der Regen wirft den Grund an den Fuß der Wand — voll bis `voll` Meter über dem Fuß des Baus (der
     // Spritzwasser-Bereich reicht mindestens 30 cm über Gelände, DIN 18533-1), aus ab `aus`; je Art der Anteil, um den die Fläche
     // dort dunkelt (Putz und Gefach 0,14, Holz 0,10 — am Bild gestellt, OHNE Messung; der Stein des Sockels 0: er steht ganz in
@@ -2190,7 +2190,6 @@
         bett: { nr: 127, rolle: "lehm", verband: "mauerwerk" },
         stein: { nr: 126, verband: "mauerwerk" },
         periode: 256,
-        wetterVon: [-0.92, 0, 0.39],
         silber: [0.147, 0.133, 0.112],
         art: {
             putz:        { korn: [0.004, 0.004], zug: [0.14, 0.022], wolke: [0.7, 0.9], faser: 1.5708, ton: [0.05, 0.03, 0.05], hub: [0.0005, 0.0006, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.16, unruhe: 1.5, tonImStoff: 1 },
