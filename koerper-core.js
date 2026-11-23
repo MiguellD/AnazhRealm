@@ -7574,6 +7574,7 @@
     // THREE-Rotationen; M = die Bein-Maße (l1, l2, wpl, wz, L), Z = die Gang-Zeile der Welt-Schwere, TC = der tetrapoda-Kern.
     // DIE RUHE DER ARME HÄLT (w28-mensch-samen): nach jedem Delta — Kontrapost, Emotion, Gang — steht die Schulter nie unter ihrer
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
+    // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose).
     function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
@@ -7681,12 +7682,17 @@
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
+        // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
+        // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
+        // die Profile entstanden (die neutrale Pose stellte jede Schulter auf 0). Die Schulter steht auf dem größeren von Ruhe und
+        // Profil — der Arm hängt am Rumpf, bis ein Profil ihn weiter hebt (joy 0,6 rad: 34°). Bis hier lag das Profil AUF der Ruhe:
+        // mittags (showcase 0,15 rad) stand die Menge der Linse mit p95 29° in der A-Haltung, das spielende Kind (joy) mit 58,5°.
         var sL = r.armL.shoulder,
             sR = r.armR.shoulder,
             uL = r.armRuhe[0].shoulder,
             uR = r.armRuhe[1].shoulder;
-        if (sL && uL && sL.rotation.z < uL[2]) sL.rotation.z = uL[2];
-        if (sR && uR && sR.rotation.z > uR[2]) sR.rotation.z = uR[2];
+        if (sL && uL) sL.rotation.z = Math.max(uL[2], sL.rotation.z - uL[2]);
+        if (sR && uR) sR.rotation.z = Math.min(uR[2], sR.rotation.z - uR[2]);
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
