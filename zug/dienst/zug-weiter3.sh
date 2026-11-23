@@ -4,7 +4,7 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 # zug-weiter.sh <zid> — der Zug, den ein WACKLER abschoss, fährt weiter statt neu (Schöpfer 07.11.: „nach vorn“, Wackler blockieren nicht).
 # Wartet auf das Urteil von fahre (/tmp/claude/fahre-<zid>.log). GELANDET → schreibt „[<zid>w] GELANDET“.
 # FAHRT ROT → liest die roten Schritte des Laufs (letzter Versuch je Job). Sind ALLE rot nur an benannten Wackel-Wänden
-# (ohne Bezug zu den Zweigen), fährt GitHub nur die gefallenen Jobs neu (bis 3×), danach zug.sh landen (echt grün, ff, ABAB-Regel).
+# (ohne Bezug zu den Zweigen), fährt GitHub nur die gefallenen Jobs neu (bis 3×), danach zug.sh landen (kopf und Puls grün, ff, ABAB-Regel).
 # Sonst „[<zid>w] FAHRT ROT <schritte>“. Die nächste Schlange wartet auf <zid>w.
 Z="$1"; L=/tmp/claude/fahre-$Z.log; O=/tmp/claude/fahre-${Z}w.log
 R=MiguellD/AnazhRealm

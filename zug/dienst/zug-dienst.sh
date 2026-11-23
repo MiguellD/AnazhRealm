@@ -130,6 +130,59 @@ nachgeben_neu() {
         echo "$(date +%H:%M) $b $h: GPU-Probe NACHGEGEBEN → neu angestoßen (Lauf $pl, HTTP $pc)" >>"$L"
     done <"$W/nachgeben.faellig"
 }
+# DIE NACHWACHE OHNE GERÄT (LANDUNG ≤ 10 MIN, 23.11.): nach der Landung fährt check.yml auf main die volle Batterie auf ubuntu, nie
+# blockierend — der Zug wartet nicht auf sie und hält nie. nachwache_takt fragt höchstens alle NACHWACHE_FRIST_S (zug.sh nachwache:
+# das Urteil des jüngsten fertigen Laufs auf main) und schreibt nur ein NEUES Urteil (je Wort und main-Kopf, Marke
+# $W/nachwache.letzt): ins Dienst-Log, ein ROT dazu in die Täter-Spur ($W/zug-taeter.txt) — es nennt jede Landung seit dem letzten
+# grünen main beim Namen. Den Puls trägt die Zeile, solange das Rot steht (nachwache_rot hängt sie an den Puls der Schleife).
+# NACHWACHE_BEFEHL ersetzt den Ruf nur im Selbsttest.
+NACHWACHE_FRIST_S=${NACHWACHE_FRIST_S:-300}
+nachwache_takt() {
+    local m=$W/nachwache.letzt nz k
+    [ -f "$m.zeit" ] && [ $(($(date +%s) - $(mzeit "$m.zeit"))) -lt $NACHWACHE_FRIST_S ] && return 0
+    touch "$m.zeit"
+    if [ -n "$NACHWACHE_BEFEHL" ]; then nz=$(sh -c "$NACHWACHE_BEFEHL" </dev/null 2>&1)
+    else nz=$(sh "$WZ/zug.sh" nachwache </dev/null 2>&1); fi
+    nz=$(echo "$nz" | grep -E "^(NACHWACHE |zug nachwache FEHLER)" | tail -1 | cut -c1-600)
+    [ -n "$nz" ] || return 0
+    k=${nz%% (*}
+    [ "$k" = "$(head -1 "$m" 2>/dev/null)" ] && return 0
+    printf '%s\n%s\n' "$k" "$nz" >"$m"
+    echo "$(date +%H:%M) $nz" >>"$L"
+    case "$nz" in "NACHWACHE ROT"*) echo "$(date +%H:%M) $nz" >>"$W/zug-taeter.txt" ;; esac
+}
+# nachwache_rot — „ · NACHWACHE ROT main <sha8> …“ für den Puls, solange das jüngste Urteil der Nachwache rot ist
+nachwache_rot() {
+    case "$(sed -n 2p "$W/nachwache.letzt" 2>/dev/null)" in "NACHWACHE ROT"*) echo " · $(sed -n 2p "$W/nachwache.letzt" | cut -c1-200)" ;; esac
+}
+# --selbsttest-nachwache: ohne Netz — ein gestelltes Urteil; dasselbe Urteil schreibt nie zweimal, ein ROT geht in die Täter-Spur und
+# an den Puls, die Frist hält den zweiten Ruf, ein neues Urteil am selben Kopf (nur die Klammer anders) schreibt nicht
+if [ "$1" = "--selbsttest-nachwache" ]; then
+    X=$(mktemp -d)
+    W=$X L=$X/log NACHWACHE_FRIST_S=0
+    n=0 ok=0
+    pr() { n=$((n + 1)); if [ "$2" = 0 ]; then ok=$((ok + 1)); echo "OK   $1"; else echo "ROT  $1"; fi; }
+    NACHWACHE_BEFEHL="echo 'NACHWACHE GRÜN main aaaa0000 (voll 18/18, Lauf 1)'"
+    nachwache_takt; nachwache_takt
+    pr "ein grünes Urteil steht einmal im Log" $([ "$(grep -c "NACHWACHE GRÜN main aaaa0000" "$X/log")" = 1 ] && [ ! -s "$X/zug-taeter.txt" ] && echo 0 || echo 1)
+    NACHWACHE_BEFEHL="echo 'NACHWACHE ROT main bbbb0000 (Lauf 2: voll 3/18/Haus der Welt) · Landungen seit grünem main aaaa0000 (Lauf 1): w28-a@11111111'"
+    nachwache_takt
+    NACHWACHE_BEFEHL="echo 'NACHWACHE ROT main bbbb0000 (Lauf 2: voll 3/18/Haus der Welt) · Landungen seit grünem main aaaa0000 (Lauf 1): w28-a@11111111 · main cccc0000 fährt noch (Lauf 3)'"
+    nachwache_takt
+    pr "das Rot nennt die Landung in der Täter-Spur, einmal je main-Kopf" $([ "$(grep -c "NACHWACHE ROT main bbbb0000.*w28-a@11111111" "$X/zug-taeter.txt")" = 1 ] && [ "$(grep -c "NACHWACHE ROT" "$X/log")" = 1 ] && echo 0 || echo 1)
+    pr "das Rot steht am Puls" $(nachwache_rot | grep -q "^ · NACHWACHE ROT main bbbb0000" && echo 0 || echo 1)
+    NACHWACHE_FRIST_S=3600
+    NACHWACHE_BEFEHL="echo 'NACHWACHE GRÜN main dddd0000 (voll 18/18, Lauf 4)'"
+    nachwache_takt
+    pr "die Frist hält den nächsten Ruf" $(grep -q "dddd0000" "$X/log" && echo 1 || echo 0)
+    NACHWACHE_FRIST_S=0
+    nachwache_takt
+    pr "das neue Grün löst das Rot am Puls" $(grep -q "NACHWACHE GRÜN main dddd0000" "$X/log" && [ -z "$(nachwache_rot)" ] && echo 0 || echo 1)
+    rm -rf "$X"
+    echo "zug-dienst selbsttest-nachwache: $ok von $n grün"
+    [ $ok = $n ]
+    exit
+fi
 # --selbsttest-taeter: ohne Karte — eine gestellte Suche (sleep) läuft, der Anstoß kehrt sofort zurück, eine zweite startet nicht,
 # nach ihrem Ende (Sperre weg) und an einer toten PID startet sie wieder
 if [ "$1" = "--selbsttest-taeter" ]; then
@@ -438,6 +491,8 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         # fährt zug.cjs taeter je Stempel allein jede rote echt-Wand an der Radeon (gpu-lauf.sh, Deckel 4 × 3, je Lauf 600 s, Frist 90 min) als eigener Prozess, schreibt je
         # Stempel EINE Zeile TÄTER/UNSCHULDIG ins Fahrt-Log und nach zug-taeter.txt und setzt den Unschuldigen neue Köpfe — nur, wenn ein
         # Täter steht. Ein Abbruch steht als „TÄTER-SUCHE ABGEBROCHEN: <grund>“, und kein Kopf wird gesetzt.
+        # LANDUNG ≤ 10 MIN (23.11.): kein Zug-Lauf trägt mehr ein echt-Bein (check.yml: echt nur auf Abruf, gate:ci-deckung (E)) —
+        # aus dem Zug stößt diese Zeile nie mehr an; die Suche bleibt der Ruf von Hand (zug.sh taeter) an einem Lauf mit rotem Bein.
         if [ -n "$lauf" ] && grep -q "^ROT echt" "$W/zug-rot-$id.txt" 2>/dev/null; then
             puls zug "$id stößt die Täter-Suche an den echt-Wänden an (Radeon, eigener Prozess)"
             taeter_anstoss "$id" "$lauf" "$F"
@@ -562,23 +617,17 @@ while true; do
         echo "$(date +%H:%M) Packs gefaltet: $packs → $(ls "$R/.git/objects/pack/" 2>/dev/null | grep -c ".pack$")" >>"$L"
     fi
     nachgeben_neu
-    puls zug "sammelt (jüngster Zug z$n)"
+    nachwache_takt
+    puls zug "sammelt (jüngster Zug z$n)$(nachwache_rot)"
     B=$(bereit | tr "\n" " ")
     B=$(vorn "$B")
     Z=""
     [ -n "$B" ] && Z=$(buendel "$B")
-    # EIN ZUG TRÄGT, WAS GLEICH BEREIT IST (12.11. z409: ein Zweig fuhr allein über 60 min, drei weitere standen Minuten vor „bereit“ —
-    # jeder Zug kostet jede Karte einen echt-Job von ~15 min; die Mess-Liste der OMEN kam an zwei Köpfen nur 5/30 und 8/31 weit).
-    # Steht genau EIN Zweig bereit und laufen für andere noch Check oder Probe, wartet der Dienst höchstens zweimal 5 min auf sie.
-    if [ -n "$Z" ] && [ "$(echo $Z | wc -w)" = 1 ] && [ ${einzel:-0} -lt 2 ] && grep -qE "queued|in_progress|angestoßen" "$W/zug-nie-leer.wartet" 2>/dev/null; then
-        einzel=$((${einzel:-0} + 1))
-        puls zug "ein Zweig bereit ($Z), $(grep -cE "queued|in_progress|angestoßen" "$W/zug-nie-leer.wartet") weitere kurz davor — wartet 5 min ($einzel/2)"
-        sleep 300
-        continue
-    fi
-    einzel=0
+    # EIN BEREITER ZWEIG FÄHRT SOFORT (LANDUNG ≤ 10 MIN, 23.11.): bis hier wartete ein einzelner bereiter Zweig bis zweimal 5 min auf
+    # andere (12.11. z409), weil jeder Zug jede Karte einen echt-Job von ~15 min kostete — die Karten fahren in keinem Zug mehr, ein
+    # Zug kostet kopf und Puls (~5 min), der nächste nimmt mit, was dann bereit ist.
     if [ -z "$Z" ]; then
-        puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)$(nicht_gelandet)"
+        puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)$(nicht_gelandet)$(nachwache_rot)"
         sleep 300
         continue
     fi
