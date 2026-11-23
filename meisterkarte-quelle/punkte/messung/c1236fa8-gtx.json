@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T02:02:53.054Z",
+ "zeit": "2026-11-23T02:04:25.618Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -4099,6 +4099,114 @@
    "ungemessen": true,
    "zeit": "2026-11-23T02:02:49.002Z",
    "abdruck": "2c32cf62903e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.takt#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt 12,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf 11,3 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 10,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 47,2 CPU-s · svchost.exe 23,1 CPU-s · SearchIndexer.exe 1,5 CPU-s — kein Maß reißt (1 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT ✅ frame_p95_ms 25,3 (Soll ≤ 33) · ❌ Umfang verlangt 4 Boots je Gerät, die Welt erzeugte 1 — Täter: Wiese Ego stehend p95 25.3 ms · gemessen unter dem Umfang (verlangt 4 Boots je Gerät, die Welt erzeugte 1))",
+   "exit": 0,
+   "minuten": 3.98,
+   "grund": "Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt 12,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf 11,3 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 10,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 47,2 CPU-s · svchost.exe 23,1 CPU-s · SearchIndexer.exe 1,5 CPU-s — kein Maß reißt (1 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT ✅ frame_p95_ms 25,3 (Soll ≤ 33) · ❌ Umfang verlangt 4 Boots je Gerät, die Welt erzeugte 1 — Täter: Wiese Ego stehend p95 25.3 ms · gemessen unter dem Umfang (verlangt 4 Boots je Gerät, die Welt erzeugte 1))",
+   "mass": [
+    {
+     "wort": "frame_p95_ms",
+     "wert": 25.3,
+     "soll": 33
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k2a59194c0cac",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 238.4,
+   "fremd": {
+    "s": 242.8,
+    "takte": 110,
+    "fremdS": 88.7,
+    "kerne": 0.365,
+    "fensterKerne": 0.833,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      12.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      11.28
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      10.89
+     ]
+    ],
+    "dienerS": 93.67,
+    "diener": [
+     [
+      "dwm.exe",
+      46.16
+     ],
+     [
+      "System",
+      29.88
+     ]
+    ],
+    "geraetS": 73.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.17
+     ],
+     [
+      "svchost.exe",
+      23.11
+     ],
+     [
+      "SearchIndexer.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 607.94,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.201,
+     "nach": 0.674,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 95.8,
+     "alle": 355.3,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 105.5,
+     "alle": 234,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 229.7,
+     "n": 994,
+     "von": "2026-11-16"
+    },
+    "f": 1.547,
+    "fEin": 1.172,
+    "fAlle": 1.547,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-23T02:04:25.618Z",
+   "abdruck": "99ff8c872f75",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
