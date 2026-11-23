@@ -283,7 +283,155 @@ class AnazhRealm_siedlung_bewohner {
         if (!plan || !Array.isArray(plan.slots) || !origin || !key) return;
         const B = this._bewohnerSiedlungen || (this._bewohnerSiedlungen = new Map());
         if (B.has(key)) return;
-        B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null });
+        B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null, wirt: this });
+    }
+
+    // ═══ DER LEBENSLAUF (bewohner-satz): der Satz des Bewohners ist eine FUNKTION seines Samens ═══
+    // Lebenslauf(Orts-Same, Bewohner-Index, Jahr): wer er ist (sein Name in der Sprache seines Orts, seine Familie — der Haushalt
+    // seines Hauses), wen er kennt (die Sympathie-Gruppe), was er kann (die Übung in drei Künsten), wohin er will (das Ziel über
+    // Jahre), ob er an diesem Tag krank ist, welche Waffe er als Wache trägt. KEIN Feld liegt im Satz: es rechnet, wenn ein Leser
+    // fragt — jeder Satz trägt die EINE Tafel `BEWOHNER_SATZ`, deren Getter hierher fragen (`b.name`, `b.freunde`, `b.waffe` …);
+    // die Kosten gehören dem Leser, nie der Zahl der Köpfe. `feld` nennt das Feld, `tag` (die Krankheit) den Tag der Sicht (ohne
+    // ihn: heute). Die Bänder und ihre Quellen: `LEBENSLAUF`. Leser: der Besuch und die Wache (`_bewohnerListe`), das Soll
+    // (`_bewohnerSoll`: der Kranke bleibt daheim), das Werk (`_bestandAnlegen`: das Können), die Hand (`_stoffstromHand`: die
+    // Waffe), der Zeuge (`_bewohnerZeuge`: die Wache naht), der Ruf und die Persona (`_findCreatureByName`,
+    // `_buildCreaturePersonaPrompt`).
+    _bewohnerLauf(S, b, feld, tag) {
+        const L = AnazhRealm.LEBENSLAUF;
+        if (feld === "krank") {
+            // je Spanne von `krank.tage` Tagen (versetzt um seinen Samen) EIN Wurf: krank mit dem Anteil der Kranken-Kassen
+            const wm = this.state.worldMeta;
+            const d = Number.isFinite(tag) ? tag : +(wm && wm.tag) || 0;
+            const sp = Math.floor((d + (b.same % L.krank.tage)) / L.krank.tage);
+            let h = (b.same ^ Math.imul(sp, 0x9e3779b1)) >>> 0;
+            h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+            h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+            return ((h ^ (h >>> 16)) >>> 0) / 4294967296 < L.krank.anteil;
+        }
+        if (feld === "waffe") {
+            if (!L.wache.rollen.includes(b.rolle)) return null;
+            return L.wache.waffe.find((w) => b.epoche.jahr < w.bis).art;
+        }
+        const plan = S.plan;
+        const ps = plan.seed >>> 0;
+        if (feld === "vorname" || feld === "familie" || feld === "name") {
+            // DIE SPRACHE DES ORTS (aus seinem Samen): die Größe ihres Inventars und die Form ihrer Silbe nach den Anteilen der
+            // Sprachen der Welt; die häufigsten Laute trägt jede, den Rest wählt ihr Same
+            const N = L.namen;
+            const gS = this._rollGenome(ps, "sprache");
+            const klasse = (A, u) => {
+                let a = u * A.reduce((s, x) => s + x, 0);
+                for (let i = 0; i < A.length; i++) if ((a -= A[i]) < 0) return i;
+                return A.length - 1;
+            };
+            // (jeder Strom nennt seinen Zähler VORN und ein Wort dahinter: der Hash des Rollers mischt die letzten Zeichen kaum —
+            // „s" + m streute 15 Freunde auf 3 Häuser, die Ströme zweier Silben trugen zu 0,93 denselben Vokal)
+            const K = N.konsonanten;
+            const rest = K.zeichen.slice(K.kern).map((z, i) => [gS.axis(`${i}:konsonant`), z]);
+            const C = [...K.zeichen.slice(0, K.kern), ...rest.sort((x, y) => x[0] - y[0]).map((e) => e[1])].slice(0, K.n[klasse(K.anteil, gS.axis("konsonanten"))]); // prettier-ignore
+            const V = N.vokale.zeichen.slice(0, N.vokale.n[klasse(N.vokale.anteil, gS.axis("vokale"))]);
+            const form = klasse(N.silbe.anteil, gS.axis("silbenform")); // 0 (C)V · 1 (C)(C)V(C) · 2 (C)(C)(C)V(C)(C)
+            const fluss = N.fluss.filter((z) => C.includes(z));
+            const koda = N.koda.filter((z) => C.includes(z));
+            const wort = (g, w, n) => {
+                let s = "";
+                for (let i = 0; i < n; i++) {
+                    const a = (k) => g.axis(`${i}:${k}:${w}:silbe`);
+                    const zug = (A, k) => A[Math.floor(a(k) * A.length) % A.length];
+                    // der Anlaut: ein Vokal beginnt die Silbe nur nach einer Koda; vor dem Fluss-Laut steht ein Geräusch-Laut, nie ein
+                    // Klinger (die Sonorität steigt zum Vokal), das s nur vor einem einfachen Laut
+                    const auf = i === 0 || /[aeiouäü]$/.test(s) || a("anlaut") < 0.85 ? zug(C, "anlaut") : "";
+                    if (form === 2 && /^[kptmnlw]$/.test(auf) && a("szisch") < 0.15) s += "s";
+                    s += auf;
+                    const fl = fluss.filter((z) => z !== auf);
+                    if (form >= 1 && auf && !N.klinger.includes(auf) && fl.length && a("fluss") < 0.25)
+                        s += zug(fl, "fluss");
+                    s += zug(V, "vokal");
+                    if (!(form >= 1 && koda.length && a("koda") < (i === n - 1 ? 0.5 : 0.25))) continue;
+                    const kd = zug(koda, "koda");
+                    s += kd;
+                    // die zweite Koda nur nach einem Klinger (-nt, -ls, -rk)
+                    const k2 = koda.filter((z) => z !== kd && !N.klinger.includes(z));
+                    if (form === 2 && N.klinger.includes(kd) && k2.length && a("koda2") < 0.2) s += zug(k2, "koda2");
+                }
+                return s;
+            };
+            const gross = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+            const gV = this._rollGenome(b.seed, "vorname");
+            const vorname = gross(wort(gV, "v", gV.axis("silbenzahl") < 0.35 ? 3 : 2));
+            // die Familie ist der Haushalt (Laslett): der Stamm aus dem Samen des Hauses, die Endung aus dem der Sprache
+            const familie = gross(wort(this._rollGenome(`${ps}:${b.heim}`, "familie"), "f", 2) + wort(gS, "e", 1));
+            return feld === "vorname" ? vorname : feld === "familie" ? familie : `${vorname} ${familie}`;
+        }
+        if (feld === "freunde") {
+            // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt
+            const FC = globalThis.__fachwerkCore;
+            const g = this._rollGenome(b.seed, "freunde");
+            const aus = [];
+            for (let m = 0, F = Math.max(0, L.freunde.gruppe - (b.epoche.n - 1)); m < F; m++) {
+                const si = Math.floor(g.axis(`${m}:haus:freund`) * plan.slots.length) % plan.slots.length;
+                const sl = plan.slots[si];
+                const n = sl ? FC.leuteVon(sl.ov) : 0;
+                if (!(n > 0) || sl.seed >>> 0 === b.heim) continue;
+                // ein Mensch zählt einmal: ein zweiter Zug auf denselben Kopf fällt (die Gruppe ist eine Obergrenze)
+                const k = Math.floor(g.axis(`${m}:kopf:freund`) * n) % n;
+                if (!aus.some((f) => f.si === si && f.k === k)) aus.push({ si, k, heim: sl.seed >>> 0 });
+            }
+            return aus;
+        }
+        // das Alter, das sein Leib zeigt (die Epoche des Plans), und die Jahre, die die Welt seither lebt (der Kalender)
+        const alter = this._bewohnerJahre(this._rollGenome(b.seed, "humanoid"), b.epoche);
+        if (feld === "alter") return alter;
+        const seit = this._kalenderZeit() / this._kalender().jahrK;
+        const U = L.uebung;
+        if (feld === "uebung") {
+            // die Stunden je Kunst: die Kunst seines Werks im Band der Profis (Lehrer bis die Besten), jede andere im Band der
+            // Liebhaber — je Jahr seit ihrem Beginn; das Können ist das Potenzgesetz der Übung, 1 = das Band der Guten
+            const haupt = L.wache.rollen.includes(b.rolle) ? "kampf" : b.rolle === "kind" || b.beruf === "hof" ? null : "handwerk"; // prettier-ignore
+            const g = this._rollGenome(b.seed, "uebung");
+            const aus = { haupt };
+            for (const art of U.kuenste) {
+                const proJ = (art === haupt ? U.lehrerH + g.axis(art) * (U.besteH - U.lehrerH) : g.axis(art) * U.amateurH) / U.ueberJ; // prettier-ignore
+                const h = proJ * Math.max(0, alter + seit - U.ab[art]);
+                aus[art] = { h, koennen: Math.pow(Math.max(h, 1) / U.guteH, U.alpha) };
+            }
+            return aus;
+        }
+        if (feld === "absicht") {
+            // DAS ZIEL ÜBER JAHRE: das Kind bis zum Beginn seiner Lehre, der Lehrling bis zum Gesellen (die Jahre der Lehre), der
+            // Geselle bis zum Meister (die Stunden der Besten) — der Fortschritt wächst mit dem Kalender der Welt
+            const k = this._bewohnerLauf(S, b, "uebung");
+            const J = alter + seit;
+            if (!k.haupt) return { ziel: "lehre", art: "handwerk", fortschritt: Math.min(1, J / U.ab.handwerk) };
+            const lehrJ = Math.max(0, J - U.ab[k.haupt]);
+            if (lehrJ < L.ziel.lehreJ) return { ziel: "geselle", art: k.haupt, fortschritt: lehrJ / L.ziel.lehreJ };
+            return { ziel: "meister", art: k.haupt, fortschritt: Math.min(1, k[k.haupt].h / U.besteH) };
+        }
+        if (feld === "satz") {
+            // DER LEBENSLAUF IN WORTEN (die Persona des Gesprächs): jede Angabe aus diesem Gesetz, keine erfunden
+            const k = this._bewohnerLauf(S, b, "uebung");
+            const z = this._bewohnerLauf(S, b, "absicht");
+            const L0 = S.liste || [];
+            const fr = this._bewohnerLauf(S, b, "freunde").map((f) => L0.find((x) => x.seed === `${ps}:${f.si}:${f.k}`)).filter(Boolean); // prettier-ignore
+            const haus = L0.filter((x) => x !== b && x.heim === b.heim).map((x) => x.vorname);
+            const q = (x) => x.toFixed(2);
+            const waffe = b.waffe;
+            return (
+                `Du heißt ${b.name}, bist ${Math.round(alter + seit)} Jahre alt und lebst in „${plan.name || "?"}" im Jahr ` +
+                `${Math.round(plan.jahr + seit)}; dein Werk: ${b.beruf}. In deinem Haus (Familie ${b.familie}) leben: ` +
+                `${haus.join(", ") || "nur du"}. Deine Freunde: ${
+                    fr
+                        .slice(0, 5)
+                        .map((x) => x.name)
+                        .join(", ") || "keine im Ort"
+                }. ` +
+                `Dein Ziel: ${z.ziel} (${z.art}, ${Math.round(z.fortschritt * 100)} %). Dein Können: Handwerk ${q(k.handwerk.koennen)} · ` +
+                `Tanz ${q(k.tanz.koennen)} · Kampf ${q(k.kampf.koennen)}.` +
+                (this._bewohnerLauf(S, b, "krank") ? " Du bist heute krank." : "") +
+                (waffe ? ` Du hältst die Wache, deine Waffe: ${waffe}.` : "")
+            );
+        }
+        throw new Error(`LEBENSLAUF: das Feld „${feld}" kennt das Gesetz nicht`);
     }
 
     // DIE GESTALTEN EINER SIEDLUNG: `BEWOHNER.gestalten` Genome aus dem Samen des Plans (beide Geschlechter im Wechsel), je
@@ -955,7 +1103,9 @@ class AnazhRealm_siedlung_bewohner {
             // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`) · sein Bestand (`_bestandAnlegen`).
             const u = undefined;
             // prettier-ignore
-            liste.push({
+            // (der Lebenslauf: seine Siedlung `sied` und die EINE Tafel `BEWOHNER_SATZ` — jedes ihrer Felder rechnet beim Lesen)
+            const satz = {
+                    sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
@@ -967,7 +1117,8 @@ class AnazhRealm_siedlung_bewohner {
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
-                });
+                };
+            liste.push(Object.defineProperties(satz, AnazhRealm.BEWOHNER_SATZ));
             besuche.push(P);
         }
         for (const [i, b] of liste.entries()) {
@@ -4079,7 +4230,64 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // DAS GEDÄCHTNIS EINER FERNEN SIEDLUNG (heap-register, `_bewohnerFort`): die Felder ihres Eintrags, die der Abschied stehen lässt —
 // was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
 // fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
-AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund"]);
+AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund", "wirt"]);
+// DER LEBENSLAUF (bewohner-satz, `_bewohnerLauf`): die Bänder, aus denen der Satz eines Bewohners rechnet — je Feld EINE äußere Quelle.
+AnazhRealm.LEBENSLAUF = Object.freeze({
+    namen: Object.freeze({
+        // WALS 1A/2A/12A (Maddieson 2013): Konsonanten 563 Sprachen 89 klein · 122 mäßig klein · 201 mittel · 94 mäßig groß · 57 groß; Vokale 564: 93 klein · 288 mittel · 183 groß; Silbe 486: 61 einfach · 274 mäßig · 151 komplex
+        konsonanten: Object.freeze({
+            anteil: Object.freeze([89, 122, 201, 94, 57]),
+            n: Object.freeze([9, 12, 15, 18, 21]), // die Klassen auf die 21 Zeichen der Schrift gestaucht
+            kern: 6, // die häufigsten Laute trägt jede Sprache
+            zeichen: Object.freeze(["m", "k", "n", "p", "t", "s", "j", "l", "b", "w", "g", "d", "h", "f", "r", "v", "z", "ch", "sch", "ts", "c"]), // prettier-ignore
+        }),
+        vokale: Object.freeze({ anteil: Object.freeze([93, 288, 183]), n: Object.freeze([3, 5, 7]), zeichen: Object.freeze(["a", "i", "u", "e", "o", "ä", "ü"]) }), // prettier-ignore
+        silbe: Object.freeze({ anteil: Object.freeze([61, 274, 151]) }),
+        fluss: Object.freeze(["r", "l", "j", "w"]), // der zweite Laut eines Anlauts
+        klinger: Object.freeze(["m", "n", "l", "r", "j", "w"]), // die Sonoranten: die Sonorität steigt zum Vokal (Clements 1990)
+        koda: Object.freeze(["n", "m", "l", "r", "s", "t", "k"]),
+    }),
+    // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
+    freunde: Object.freeze({ gruppe: 15 }),
+    // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit ∝ N^−α, α gesetzt)
+    uebung: Object.freeze({
+        besteH: 10000,
+        guteH: 7500,
+        lehrerH: 4000,
+        amateurH: 2000,
+        ueberJ: 15,
+        alpha: 0.4,
+        kuenste: Object.freeze(["handwerk", "tanz", "kampf"]),
+        ab: Object.freeze({ handwerk: 17, tanz: 5, kampf: 15 }), // die Lehre (unten) · die Übung der Kindheit · die Waffenpflicht ab 15 (Winchester)
+    }),
+    // Statute of Artificers 1563: die Lehre dauert sieben Jahre und endet nicht vor dem 24. Lebensjahr
+    ziel: Object.freeze({ lehreJ: 7, bisJ: 24 }),
+    // die Kranken-Kassen der Friendly Societies (Neuseeland 1890): 1,416 Krankheits-Wochen je Mitglied und Jahr — 2,7 % der Zeit, je Spanne eine Woche
+    krank: Object.freeze({ anteil: 0.027, tage: 7 }),
+    // Statute of Winchester 1285 (jedes Tor bewacht, die Wache hält den Fremden an) · die Londoner Ward-Wache ~1 Posten je 400 Köpfe · die Waffe: das Schwert bis zum Metropolitan Police Act 1829, danach der Knüppel
+    wache: Object.freeze({
+        jeKoepfe: 400,
+        rollen: Object.freeze(["waechter", "nachtwaechter"]),
+        nahM: 1.5, // so nah tritt die Wache an die Tat
+        torInnenM: 6, // der Posten steht so weit innerhalb des Tors
+        waffe: Object.freeze([Object.freeze({ bis: 1829, art: "langschwert" }), Object.freeze({ bis: Infinity, art: "keule" })]), // prettier-ignore
+    }),
+});
+// DIE GETTER DES SATZES (bewohner-satz): jeder Satz der Liste (`_bewohnerListe`) trägt sie als EIGENE Felder — sie rechnen beim
+// Lesen (`_bewohnerLauf`), über die Siedlung des Satzes (`sied`) und ihren Wirt; nichts liegt je Kopf. Eine Sicht, kein Erbe: ein
+// Prototyp gäbe dem Satz eine zweite Form (die Rückkehr-Wand), die EINE Tafel geteilter Getter hält alle Sätze in EINER Klasse.
+AnazhRealm.BEWOHNER_SATZ = Object.freeze(
+    Object.fromEntries(
+        ["vorname", "familie", "name", "freunde", "alter", "uebung", "absicht", "krank", "waffe"].map((f) => [
+            f,
+            Object.freeze({
+                get() {
+                    return this.sied.wirt._bewohnerLauf(this.sied, this, f);
+                },
+            }),
+        ])
+    )
+);
 // DIE ARBEITS-PUFFER DES TAKTS (heap-blick-folgt, „der Speicher folgt dem Blick“): jede Liste, die der Bewohner-Takt am Reich lazy
 // anlegt und vor jedem Lesen neu schreibt — der Abschied (`_bewohnerFort`) leert GENAU dieses Register. Bis hier leerte er drei beim
 // Namen; `_bewohnerNah` (die Nah-Wahl), `_bewohnerHalter` (die Halter der Arme) und `_bewohnerWandKand` (die Kästen am Schritt)
