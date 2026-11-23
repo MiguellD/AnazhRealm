@@ -2909,7 +2909,9 @@ class AnazhRealm_siedlung_wege {
         const a = this._ackerAt(target.x, target.z, lokal);
         if (!a) return false;
         const cam = this.state.camera;
-        const d = cam ? cam.getWorldDirection(this._ackerTmpV || (this._ackerTmpV = new THREE.Vector3())) : { x: 1, z: 0 };
+        const d = cam
+            ? cam.getWorldDirection(this._ackerTmpV || (this._ackerTmpV = new THREE.Vector3()))
+            : { x: 1, z: 0 };
         const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
         const achse = Math.abs(d.x * c - d.z * s) >= Math.abs(d.x * s + d.z * c) ? 0 : 1;
         const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
@@ -2922,7 +2924,10 @@ class AnazhRealm_siedlung_wege {
         }
         this._tatSchreiben("bestellen", target.x, target.z, { acker: ak, achse });
         if (this.state.ackerKoerper) this.state.ackerKoerper.takt = null; // das Bild folgt dem Hieb, nicht dem Takt
-        this.log(`Bestellt: ${AK.stueckM} m × ${AK.bahnM} m, ${Math.floor(AK.bahnM / globalThis.__phytoCore.ACKER_GESETZ.furche.abstandM)} Furchen gesät.`, "INFO");
+        this.log(
+            `Bestellt: ${AK.stueckM} m × ${AK.bahnM} m, ${Math.floor(AK.bahnM / globalThis.__phytoCore.ACKER_GESETZ.furche.abstandM)} Furchen gesät.`,
+            "INFO"
+        );
         return true;
     }
 
@@ -2953,7 +2958,9 @@ class AnazhRealm_siedlung_wege {
         const dorf = P.ackerTage(st.seasonPhase || 0, this._gelaende().ort.klimaHeute.jahrTage);
         const h = this._weltStunde();
         const taten = this._tatIndex().bestellen;
-        const nah = [...st.aecker.values()].filter((a) => Math.hypot(a.x - p.x, a.z - p.z) < AK.nahM + Math.max(a.ex, a.ez));
+        const nah = [...st.aecker.values()].filter(
+            (a) => Math.hypot(a.x - p.x, a.z - p.z) < AK.nahM + Math.max(a.ex, a.ez)
+        );
         const stufe = (d) => Math.floor(d / AK.stufeTage);
         // die Zelle des Auges (`halmSchrittM`): der Kreis der Halme wandert mit ihm, in Schritten — nie je Bild
         const zelle = Math.round(p.x / AK.halmSchrittM) + ":" + Math.round(p.z / AK.halmSchrittM);
@@ -3013,7 +3020,15 @@ class AnazhRealm_siedlung_wege {
                 }
                 return false;
             };
-            const z = { kaemme: 0, frucht: 0, reihen: 0, stuecke: stuecke.length, achsen: [], dorfTage: dorf, hand: [] };
+            const z = {
+                kaemme: 0,
+                frucht: 0,
+                reihen: 0,
+                stuecke: stuecke.length,
+                achsen: [],
+                dorfTage: dorf,
+                hand: [],
+            };
             // die Reihen eines Rechtecks [u0,u1] × [v0,v1] längs der Achse `achse` (0: u, 1: v), im Stand S; `ab` die Stücke, die
             // über ihm liegen (ein späteres Stück deckt ein früheres)
             const reihen = (u0, u1, v0, v1, achse, S, ab) => {
@@ -3077,7 +3092,11 @@ class AnazhRealm_siedlung_wege {
         M.forEach(([g, breite, hoehe, sockel], i) => {
             e.set(g.pitch, g.yaw, 0, "YXZ");
             q.setFromEuler(e);
-            m.compose(v.set((g.ax + g.bx) / 2, (g.ya + g.yb) / 2 + sockel, (g.az + g.bz) / 2), q, sc.set(breite, hoehe, g.len));
+            m.compose(
+                v.set((g.ax + g.bx) / 2, (g.ya + g.yb) / 2 + sockel, (g.az + g.bz) / 2),
+                q,
+                sc.set(breite, hoehe, g.len)
+            );
             mesh.setMatrixAt(i, m);
             mesh.setColorAt(i, col.setRGB(C[i][0], C[i][1], C[i][2]));
         });
@@ -3119,7 +3138,14 @@ class AnazhRealm_siedlung_wege {
                 uv.push(p[0] + 0.5, p[1]);
             }
         };
-        const [L0, R0, F0, L1, R1, F1] = [[-0.5, 0, -0.5], [0.5, 0, -0.5], [0, 1, -0.5], [-0.5, 0, 0.5], [0.5, 0, 0.5], [0, 1, 0.5]];
+        const [L0, R0, F0, L1, R1, F1] = [
+            [-0.5, 0, -0.5],
+            [0.5, 0, -0.5],
+            [0, 1, -0.5],
+            [-0.5, 0, 0.5],
+            [0.5, 0, 0.5],
+            [0, 1, 0.5],
+        ];
         dreieck(L0, L1, F1);
         dreieck(L0, F1, F0);
         dreieck(R0, F0, F1);

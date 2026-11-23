@@ -7255,14 +7255,29 @@
             }
             return r;
         };
-        if (tage >= F.ernteTag) return { tage: tage, hoeheM: F.stoppel.hoeheM, reife: 1, deckung: F.stoppel.deckung, stoppel: true, farbe: F.stoppelFarbe };
+        if (tage >= F.ernteTag)
+            return {
+                tage: tage,
+                hoeheM: F.stoppel.hoeheM,
+                reife: 1,
+                deckung: F.stoppel.deckung,
+                stoppel: true,
+                farbe: F.stoppelFarbe,
+            };
         var i = 0;
         while (i < S.length - 2 && tage >= S[i + 1][0]) i++;
         var a = S[i],
             b = S[i + 1],
             t = Math.max(0, Math.min(1, (tage - a[0]) / (b[0] - a[0])));
         var reife = a[2] + (b[2] - a[2]) * t;
-        return { tage: tage, hoeheM: a[1] + (b[1] - a[1]) * t, reife: reife, deckung: a[3] + (b[3] - a[3]) * t, stoppel: false, farbe: mische(F.gruen, F.reif, reife) };
+        return {
+            tage: tage,
+            hoeheM: a[1] + (b[1] - a[1]) * t,
+            reife: reife,
+            deckung: a[3] + (b[3] - a[3]) * t,
+            stoppel: false,
+            farbe: mische(F.gruen, F.reif, reife),
+        };
     }
     // DIE TAGE SEIT DER SAAT DES DORFS zur Phase des Jahrs `phase` (0–1, SAISON_GESETZ) in einem Jahr von `jahrTage` Tagen
     function ackerTage(phase, jahrTage) {
