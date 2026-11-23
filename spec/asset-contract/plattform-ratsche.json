@@ -22,20 +22,20 @@
         },
         "v3": {
             "kern": "vehicle-core.js",
-            "faelle": 17,
+            "faelle": 20,
             "kippt": {
-                "atan2": 17,
-                "sin": 17,
-                "cos": 17,
+                "atan2": 20,
+                "sin": 20,
+                "cos": 20,
                 "hypot": 5
             },
             "taeter": {
-                "atan2": "vehicle-core.js:754 atan2 (Awin, der Windschutz-Winkel)",
-                "sin": "vehicle-core.js:392 sin (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
-                "cos": "vehicle-core.js:392 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
-                "hypot": "vehicle-core.js:1769 hypot (lenA, die A-Saeule)"
+                "atan2": "vehicle-core.js:940 atan2 (Awin, der Windschutz-Winkel)",
+                "sin": "vehicle-core.js:484 sin (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "cos": "vehicle-core.js:484 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "hypot": "vehicle-core.js:1964 hypot (lenA, die A-Saeule)"
             },
-            "soll": "0 - das Raster kommt mit dem v3-Akt der W3; K43-2 trug die Fahrzeug-Stufe 1 dazu (12 -> 17 Faelle, dieselben Taeter je Fall, das Raster steht offen)"
+            "soll": "0 - das Raster kommt mit dem v3-Akt der W3; K43-2 trug die Fahrzeug-Stufe 1 dazu (12 -> 17 Faelle), fahrzeug-gattungen den Transporter als sechste Gattung (17 -> 20 Faelle: der Nenner waechst, dieselben Taeter je Fall, hypot unveraendert 5; das Raster steht offen)"
         },
         "v4": {
             "kern": "porta-core.js",

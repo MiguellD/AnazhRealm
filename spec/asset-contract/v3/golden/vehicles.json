@@ -52,6 +52,16 @@
       "vertices": 29272,
       "sha256": "931285a4c1f2dcf86feb6b1248d942121ca5baaf1322de7a38ebfde87afe08a1"
     },
+    "transporter-s7-L0": {
+      "objects": 333,
+      "vertices": 29788,
+      "sha256": "4ba5fbcabe53df33bac59182fb23f6898579164cb6161f57dd213c3f29538f64"
+    },
+    "transporter-s12345-L0": {
+      "objects": 333,
+      "vertices": 29788,
+      "sha256": "7f96ff7f4427a10427b8a39738e25b85140d64d17c62effcacd0a981415dca93"
+    },
     "gt-s7-L1": {
       "objects": 328,
       "vertices": 13094,
@@ -76,6 +86,11 @@
       "objects": 355,
       "vertices": 14020,
       "sha256": "7c5354a38aa8a2089485ea3ea8229c35f417521bad1271be1ee2e9df98fa0a49"
+    },
+    "transporter-s7-L1": {
+      "objects": 333,
+      "vertices": 13776,
+      "sha256": "4f32aa0940aff80d45ffcf39795a9b2702e3ae1730f4ad13caa2c9a468b7e74e"
     },
     "gt-s7-L0-ov_toro": {
       "objects": 387,
