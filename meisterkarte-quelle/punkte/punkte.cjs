@@ -6269,6 +6269,209 @@ const TOTE_FELDER = [
     [/\b(HIMMEL\.wandelsterne|HIMMEL\.sternZaehlung|HIMMEL\.sternMagSchwach|_sternMag|STERN_HELLSTE)\b/,
         "seit kosmos-umfang: der Himmel ist die Sicht der Kosmos-Funktion (welt-licht.js kosmos), die Planeten liest r._kosmosJetzt().zeit.planeten"],
 ];
+// DIE SEITE KENNT DIE KNOTEN-SEITE NICHT (pm-seite-ohne-m, 23.11.): eine Funktion, die als Text in die Seite reist (`String(fn)`,
+// `fn.toString()`, `"…" + fn`, `${fn}` und jeder Helfer, der seinen Parameter so verwandelt — `seite(fn, a)`, `lauf(fn, a)`), lebt dort
+// ohne die Bindungen der Knoten-Seite: liest sie frei einen Namen, den eine umgebende Funktion oder die Datei bindet (H, U, M, eine
+// `const` der mess-Funktion), WIRFT die Seite („M is not defined“) — kein Urteil über die Welt. acorn, echte Bereiche (Funktion, Block,
+// catch), keine Zeilen-Suche. Ergebnis: je Täter „Datei:Zeile Leiter liest Name“.
+function seitenBindungen(texte, acorn) {
+    const taeter = [];
+    const FN = new Set(["FunctionExpression", "ArrowFunctionExpression", "FunctionDeclaration"]);
+    for (const [datei, text] of texte) {
+        let ast;
+        try { ast = acorn.parse(text, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true, locations: true }); }
+        catch (e) { taeter.push(datei + ": Parser " + String(e.message).slice(0, 80)); continue; }
+        // 1) die Bereiche und ihre Bindungen (name → { scope, init })
+        const scopeOf = new Map(); // Knoten → Bereich
+        const mk = (node, up, fn) => { const s = { node, up, fn, namen: new Map() }; scopeOf.set(node, s); return s; };
+        const muster = (p, aus = []) => {
+            if (!p) return aus;
+            if (p.type === "Identifier") aus.push(p.name);
+            else if (p.type === "ObjectPattern") for (const q of p.properties) muster(q.type === "RestElement" ? q.argument : q.value, aus);
+            else if (p.type === "ArrayPattern") for (const q of p.elements) muster(q, aus);
+            else if (p.type === "RestElement") muster(p.argument, aus);
+            else if (p.type === "AssignmentPattern") muster(p.left, aus);
+            return aus;
+        };
+        const eltern = new Map();
+        const kinder = (n) => {
+            const k = [];
+            for (const key of Object.keys(n)) {
+                if (key === "loc" || key === "start" || key === "end") continue;
+                const v = n[key];
+                if (Array.isArray(v)) { for (const x of v) if (x && typeof x.type === "string") k.push(x); }
+                else if (v && typeof v.type === "string") k.push(v);
+            }
+            return k;
+        };
+        const binde = (s, name, wert) => { if (!s.namen.has(name)) s.namen.set(name, wert); };
+        const sammle = (n, block, fns) => {
+            for (const c of kinder(n)) eltern.set(c, n);
+            let b = block, f = fns;
+            if (FN.has(n.type)) {
+                if (n.type === "FunctionDeclaration" && n.id) binde(block, n.id.name, { init: n });
+                f = mk(n, block, true);
+                if (n.type === "FunctionExpression" && n.id) binde(f, n.id.name, { init: n });
+                for (const p of n.params) for (const x of muster(p)) binde(f, x, { param: true });
+                b = f;
+                if (n.body.type === "BlockStatement") { scopeOf.set(n.body, f); for (const c of n.body.body) { eltern.set(c, n.body); sammle(c, f, f); } for (const p of n.params) sammle(p, f, f); return; }
+            } else if (n.type === "BlockStatement" || n.type === "ForStatement" || n.type === "ForInStatement" || n.type === "ForOfStatement" || n.type === "SwitchStatement") {
+                if (!scopeOf.has(n)) b = mk(n, block, false);
+            } else if (n.type === "CatchClause") {
+                b = mk(n, block, false);
+                for (const x of muster(n.param)) binde(b, x, { param: true });
+            } else if (n.type === "ClassDeclaration" && n.id) binde(block, n.id.name, { init: n });
+            else if (n.type === "VariableDeclaration") {
+                const ziel = n.kind === "var" ? fns : block;
+                for (const d of n.declarations) for (const x of muster(d.id)) binde(ziel, x, { init: d.id.type === "Identifier" ? d.init : null });
+            }
+            for (const c of kinder(n)) sammle(c, b, f);
+        };
+        const prog = mk(ast, null, true);
+        sammle(ast, prog, prog);
+        // 2) jeder lesende Name → seine Bindung (Bereich + Wert)
+        const istRef = (n, p) => {
+            if (!p) return true;
+            if ((p.type === "MemberExpression") && p.property === n && !p.computed) return false;
+            if ((p.type === "Property" || p.type === "MethodDefinition" || p.type === "PropertyDefinition") && p.key === n && !p.computed) return p.type === "Property" && p.shorthand && p.value === n;
+            if (p.type === "VariableDeclarator" && p.id === n) return false;
+            if (FN.has(p.type) && (p.id === n || p.params.includes(n))) return false;
+            if ((p.type === "LabeledStatement" || p.type === "BreakStatement" || p.type === "ContinueStatement") && p.label === n) return false;
+            if ((p.type === "ClassDeclaration" || p.type === "ClassExpression") && p.id === n) return false;
+            if (p.type === "CatchClause" && p.param === n) return false;
+            if (p.type === "ImportSpecifier" || p.type === "ExportSpecifier") return false;
+            if (p.type === "MetaProperty") return false;
+            if (p.type === "ArrayPattern" || p.type === "ObjectPattern" || p.type === "RestElement" || p.type === "AssignmentPattern" && p.left === n) {
+                // ein Muster in einer Deklaration bindet, kein Lesen
+                let q = p, a = eltern.get(p);
+                while (a && (a.type === "ArrayPattern" || a.type === "ObjectPattern" || a.type === "Property" || a.type === "RestElement" || a.type === "AssignmentPattern")) { q = a; a = eltern.get(a); }
+                if (a && (a.type === "VariableDeclarator" && a.id === q || FN.has(a.type) && a.params.includes(q) || a.type === "CatchClause")) return false;
+            }
+            if (p.type === "Property" && p.value === n) {
+                const o = eltern.get(p), a = o && eltern.get(o);
+                if (o && o.type === "ObjectPattern") {
+                    let q = o, b = a;
+                    while (b && (b.type === "ArrayPattern" || b.type === "ObjectPattern" || b.type === "Property" || b.type === "RestElement" || b.type === "AssignmentPattern")) { q = b; b = eltern.get(b); }
+                    if (b && (b.type === "VariableDeclarator" && b.id === q || FN.has(b.type) && b.params.includes(q) || b.type === "CatchClause")) return false;
+                }
+            }
+            return true;
+        };
+        const bereich = (n) => { let x = n; while (x && !scopeOf.has(x)) x = eltern.get(x); return x ? scopeOf.get(x) : prog; };
+        const loese = (n) => { for (let s = bereich(n); s; s = s.up) if (s.namen.has(n.name)) return { s, w: s.namen.get(n.name) }; return null; };
+        const refs = [];
+        (function geh(n) { if (n.type === "Identifier" && istRef(n, eltern.get(n))) refs.push(n); for (const c of kinder(n)) geh(c); })(ast);
+        const bindung = new Map(refs.map((r) => [r, loese(r)]));
+        // 3) was als Text reist: eine Funktion (oder ein Name, der an eine gebunden ist) in String(·), ·.toString(), „+“, `${·}` — und
+        // als Argument eines Helfers, dessen Parameter an dieser Stelle so reist (bis zum Fixpunkt: der Helfer eines Helfers)
+        const zuFn = (x) => {
+            if (!x) return null;
+            if (FN.has(x.type)) return x;
+            if (x.type === "Identifier") { const b = bindung.get(x); return b && b.w.init && FN.has(b.w.init.type) ? b.w.init : null; }
+            return null;
+        };
+        const reist = (x) => {
+            const p = eltern.get(x);
+            if (!p) return false;
+            if (p.type === "CallExpression" && p.callee.type === "Identifier" && p.callee.name === "String" && p.arguments[0] === x && !bindung.get(p.callee)) return true;
+            if (p.type === "MemberExpression" && p.object === x && !p.computed && p.property.name === "toString") { const c = eltern.get(p); return !!(c && c.type === "CallExpression" && c.callee === p); }
+            if (p.type === "BinaryExpression" && p.operator === "+") return true;
+            if (p.type === "TemplateLiteral") return true;
+            return false;
+        };
+        const seiten = new Set();
+        const helfer = new Map(); // Funktion → Set der reisenden Parameter-Stellen
+        for (const r of refs) {
+            const b = bindung.get(r);
+            if (!b || !b.w.param || !FN.has(b.s.node.type) || !reist(r)) continue;
+            const f = b.s.node;
+            const i = f.params.findIndex((p) => p.type === "Identifier" && p.name === r.name);
+            if (i >= 0) { if (!helfer.has(f)) helfer.set(f, new Set()); helfer.get(f).add(i); }
+        }
+        const liste = new Map(); // Funktion → Set der Parameter-Stellen, deren Liste Glied für Glied reist (`seiten.map((f) => … + f)`)
+        const paramStelle = (x) => {
+            const b = x && x.type === "Identifier" ? bindung.get(x) : null;
+            if (!b || !b.w.param || !FN.has(b.s.node.type)) return null;
+            const j = b.s.node.params.findIndex((p) => (p.type === "AssignmentPattern" ? p.left : p).type === "Identifier" && (p.type === "AssignmentPattern" ? p.left : p).name === x.name);
+            return j >= 0 ? [b.s.node, j] : null;
+        };
+        const stelle = (M, f, i) => { if (!M.has(f)) M.set(f, new Set()); if (M.get(f).has(i)) return false; M.get(f).add(i); return true; };
+        for (let neu = true; neu;) {
+            neu = false;
+            (function geh(n) {
+                if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed) {
+                    const m = n.callee.property.name;
+                    // die Seite selbst: H.seite(fn, …) · page.evaluate(fn, …) — die Funktion reist
+                    if (/^(seite|evaluate|evaluateOnNewDocument)$/.test(m)) { const f = zuFn(n.arguments[0]); if (f && !seiten.has(f)) { seiten.add(f); neu = true; } }
+                    // eine Liste, deren Glieder ein reisender Rückruf verwandelt
+                    const cb = zuFn(n.arguments[0]), ps = paramStelle(n.callee.object);
+                    if ((m === "map" || m === "forEach") && cb && helfer.has(cb) && helfer.get(cb).has(0) && ps && stelle(liste, ps[0], ps[1])) neu = true;
+                }
+                if (n.type === "CallExpression") {
+                    const lh = zuFn(n.callee);
+                    if (lh && liste.has(lh)) for (const i of liste.get(lh)) {
+                        const a = n.arguments[i];
+                        if (a && a.type === "ArrayExpression") for (const e of a.elements) { const f = zuFn(e); if (f && !seiten.has(f)) { seiten.add(f); neu = true; } }
+                    }
+                }
+                if (n.type === "CallExpression") {
+                    const h = zuFn(n.callee);
+                    if (h && helfer.has(h)) for (const i of helfer.get(h)) {
+                        const a = n.arguments[i];
+                        const f = zuFn(a);
+                        if (f && !seiten.has(f)) { seiten.add(f); neu = true; }
+                        // ein Parameter, der an einen Helfer weiterreicht, reist selbst
+                        if (a && a.type === "Identifier") {
+                            const b = bindung.get(a);
+                            if (b && b.w.param && FN.has(b.s.node.type)) {
+                                const j = b.s.node.params.findIndex((p) => p.type === "Identifier" && p.name === a.name);
+                                if (j >= 0) { if (!helfer.has(b.s.node)) helfer.set(b.s.node, new Set()); if (!helfer.get(b.s.node).has(j)) { helfer.get(b.s.node).add(j); neu = true; } }
+                            }
+                        }
+                    }
+                }
+                for (const c of kinder(n)) geh(c);
+            })(ast);
+        }
+        for (const r of refs) if (reist(r)) { const f = zuFn(r); if (f) seiten.add(f); }
+        (function geh(n) { if (FN.has(n.type) && reist(n)) seiten.add(n); for (const c of kinder(n)) geh(c); })(ast);
+        // nur die äußerste reisende Funktion zählt (eine innere reist mit ihr)
+        const innen = (n, f) => n.start >= f.start && n.end <= f.end;
+        const aussen = [...seiten].filter((f) => ![...seiten].some((g) => g !== f && innen(f, g)));
+        // 4) die Leiter der Stelle: die nächste Eigenschaft, deren Schlüssel eine Leiter nennt (Literal oder an ein Literal gebundener Name)
+        const leiterVon = (n) => {
+            for (let x = eltern.get(n); x; x = eltern.get(x)) {
+                if (x.type !== "Property") continue;
+                let k = null;
+                if (x.key.type === "Literal") k = x.key.value;
+                else if (x.computed && x.key.type === "Identifier") { const b = bindung.get(x.key); k = b && b.w.init && b.w.init.type === "Literal" ? b.w.init.value : null; }
+                if (typeof k === "string" && /^[a-z]+(\.[a-z0-9-]+)+$/.test(k)) return k;
+            }
+            return "?";
+        };
+        // DER TEXT TRÄGT DIE BINDUNG MIT: eine Funktion, die selbst reist (`"const offen = " + offen`, sitzungBefehl(lauf, [seiten])), oder
+        // ein Name, den ein Literal der Datei als Deklaration vor den Text setzt (`"const PB_ZELLEN = " + JSON.stringify(…)`)
+        const traegt = new Set();
+        (function geh(n) {
+            const s = n.type === "Literal" && typeof n.value === "string" ? n.value : n.type === "TemplateElement" ? n.value.cooked || "" : null;
+            if (s) for (const m of s.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\(?\s*$/g)) traegt.add(m[1]);
+            for (const c of kinder(n)) geh(c);
+        })(ast);
+        const istRefSet = new Set(refs);
+        for (const f of aussen) {
+            const inF = [];
+            (function geh(n) { if (istRefSet.has(n)) inF.push(n); for (const c of kinder(n)) geh(c); })(f);
+            for (const r of inF) {
+                const b = bindung.get(r);
+                if (!b) continue; // global der Seite (window, Math, __weltDa …)
+                if (innen(b.s.node, f)) continue; // in der reisenden Funktion gebunden
+                if (b.w.init && seiten.has(b.w.init) || traegt.has(r.name)) continue;
+                taeter.push(datei + ":" + r.loc.start.line + " " + leiterVon(f) + " liest " + r.name);
+            }
+        }
+    }
+    return taeter;
+}
 async function selbsttest(o = {}) {
     const ohne = new Set(String(o.ohne || "").split(",").filter(Boolean));
     for (const t of ohne) if (!SELBST_TEILE.includes(t)) throw new Error("--ohne " + t + ": nur " + SELBST_TEILE.join(", "));
@@ -6539,6 +6742,17 @@ async function selbsttest(o = {}) {
             "und „HIMMEL.wandelsterne gelesen“ fallen beim Namen",
             heute.length === 0 && mut.length === 1 && /wetterWunsch/.test(mut[0]) && himmel.length === 1 && /^k2-kosmos\.js liest .*wandelsterne/.test(himmel[0]),
             JSON.stringify({ heute, mut, himmel }));
+        // DIE SEITE KENNT DIE KNOTEN-SEITE NICHT (pm-seite-ohne-m, seitenBindungen): keine Funktion, die als Text in die Seite reist, liest
+        // eine Bindung der Knoten-Seite (2b32fa1842 setzte `const aus = M.teil || {};` in neun Seiten-Funktionen — leben.wasser.netz#1
+        // warf „M is not defined“ statt zu messen). Die Mutante: dieselbe Zeile zurück in die Seiten-Funktion `netz` fällt beim Namen
+        const acS = acornVon(spielRepo()), seitenHeute = seitenBindungen(texte, acS);
+        const kl = (texte.find(([f]) => f === "k2-leben.js") || [])[1] || "";
+        const kNetz = "                        };\n                        const aus = {};\n                        try {\n                            if (!O.bach)";
+        const seitenMut = kl.split(kNetz).length === 2 ? seitenBindungen([["k2-leben.js", kl.replace(kNetz, () => kNetz.replace("const aus = {};", "const aus = M.teil || {};"))]], acS) : ["Anker der Mutante fehlt in k2-leben.js"];
+        pruef("SEITE OHNE KNOTEN keine Seiten-Funktion liest eine Bindung der Knoten-Seite (" + texte.length + " Dateien, " + seitenHeute.length + " Täter); die Mutante " +
+            "„const aus = M.teil || {}“ in der Seite von leben.wasser.netz fällt beim Namen",
+            seitenHeute.length === 0 && seitenMut.length === 1 && /^k2-leben\.js:\d+ leben\.wasser\.netz liest M$/.test(seitenMut[0]),
+            JSON.stringify({ heute: seitenHeute.slice(0, 12), mut: seitenMut }));
     }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
@@ -9431,7 +9645,7 @@ if (require.main === module) {
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
     frischUrteil, stempelDateien, stempelDiff, r6Quelle, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, r6Zaehlung, linsenVon, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
-    griffeVon, toteAnker, ankerLeser, acornVon,
+    griffeVon, toteAnker, ankerLeser, acornVon, seitenBindungen,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN,
     // DAS BAND DER RUHE für die Last am Preis der Meisterkarte 2 (vision/buche-2.cjs lastVon) — EINE Quelle mit fremdUrteil

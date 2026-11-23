@@ -2682,7 +2682,7 @@ L.perspektive("tiere", (() => {
                     const probe = async function (r, T, a, G) {
                         const { s, A, pm, r3, welt, takt, land, tier, stelle, stillFeld, ruhigSpieler, flick } = G;
                         stillFeld();
-                        const aus = M.teil || {};
+                        const aus = {};
                         const maxS = A.FAUNA_MAX_AGE_MS / 1000;
                         const F = r._bestandRegionen().regionen;
                         let [jung, alle] = [0, 0];
@@ -2998,7 +2998,7 @@ L.perspektive("tiere", (() => {
                         stillFeld();
                         if (window.__wetterSetzen) window.__wetterSetzen("sunny");
                         r._uhrSetzen(0.42, "regler");
-                        const aus = M.teil || {};
+                        const aus = {};
                         const sk = r._schwarmKarte;
                         const zellen = sk && sk.zellen ? [...sk.zellen.values()] : [];
                         let ziel = null;
@@ -4413,7 +4413,7 @@ L.perspektive("wasser", (() => {
                             }
                             return L;
                         };
-                        const aus = M.teil || {};
+                        const aus = {};
                         try {
                             if (!O.bach) throw new Error("kein Bach an der Mess-Wiese (__wasserOrte)");
                             await __weltDa(() => !r._ensureHydroTilesAround(O.bach.x, O.bach.z, 64));
