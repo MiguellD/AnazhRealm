@@ -841,10 +841,7 @@ class AnazhRealm_bild_kosten {
             let R = null;
             if (s !== undefined) E.imFlug.delete(key);
             else if (!(R = d.rate || E.imFlug.get(key))) {
-                // ein Bau, den seit KNOTEN_FLUG_BILDER kein Leser weiterging (sein Objekt fiel im Bau), verlässt den Flug
-                if (E.imFlug.size >= 32)
-                    for (const [k, x] of E.imFlug)
-                        if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
+                this._knotenFlugRaeumen(E, bild);
                 E.imFlug.set(
                     key,
                     (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 })
@@ -901,6 +898,16 @@ class AnazhRealm_bild_kosten {
         [d.rate, d.nodeBuilderState] = [undefined, s];
         s.usedTimes++;
         return true;
+    }
+    // DER FLUG FOLGT DEM BLICK (heap-register 2): ein Bau in Raten, den seit KNOTEN_FLUG_BILDER kein Leser weiterging (sein
+    // Objekt fiel im Bau — der Spieler ging), verlässt den Flug; sein Knoten-Bauer hielt das Render-Objekt samt Geometrie und
+    // Stoff. Bis heap-register 2 räumte erst der 32. Flug, und nur beim nächsten neuen: Radeon, die Runde an stadt-voll
+    // (`werkbank runde --nur stadt`), `_erstZeichnung.imFlug` 0 → 7,4 → 16,5 MB je Runde. Die Räumung geht bei jedem neuen
+    // Flug (`_knotenRate`) und im Kehraus (`_gpuKehraus`: steht das Bild still, legt kein Bau einen Flug an). `bild`: r184
+    // `nodeFrame.frameId`.
+    _knotenFlugRaeumen(E, bild) {
+        if (!E || !E.imFlug.size) return;
+        for (const [k, x] of E.imFlug) if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {
@@ -1409,6 +1416,8 @@ class AnazhRealm_bild_kosten {
         if (!rend || !rend._attributes || !rend._geometries || !rend.info || !st.scene) return 0;
         if (st._gpuKehrausT && jetzt - st._gpuKehrausT < AnazhRealm.GPU_KEHRAUS_MS) return 0;
         st._gpuKehrausT = jetzt;
+        if (rend._nodes && rend._nodes.nodeFrame)
+            this._knotenFlugRaeumen(this._erstZeichnung, rend._nodes.nodeFrame.frameId);
         const lebt = new Set();
         const sammle = (o) => {
             // eine Senke in der Arena (G1) zeichnet nicht: ihre Gestalt trägt das Lager, ihre Instanzen die Arena

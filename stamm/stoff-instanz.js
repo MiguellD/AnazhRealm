@@ -1410,10 +1410,14 @@ class AnazhRealm_stoff_instanz {
                 // Abschnitten; kam eine Kamera hinzu, wuchs sie neu — r184 erneuert eine Bindegruppe nur mit ihrer Gruppen-Version
                 // (`Nodes.updateGroup`, unter der Observer-Diät nie), die Render-Objekte zogen die gefallene („used in submit while
                 // destroyed", renderContext_2, GTX 8008fbf1 dreimal je Boot)
+                // Die Liste gehört der GPU (`_gpuEigen`: der Compute der Wahl füllt sie, der Zug liest sie) — eine gefallene legt
+                // sich neu
                 const L = q.liste || (q.liste = new Map());
-                if (!(zug.liste = L.get(camera))) {
+                if (!AnazhRealm._gpuEigenSteht((zug.liste = L.get(camera)))) {
+                    if (zug.liste) weg(rend, zug.liste);
                     L.set(camera, (zug.liste = new IND(new Uint32Array(this._nCap), 1)));
-                    rend._attributes.update(zug.liste, 3); // r184 AttributeType.STORAGE
+                    zug.liste.name = "wahl:liste";
+                    AnazhRealm._gpuEigen(rend, zug.liste, 3); // r184 AttributeType.STORAGE
                 }
                 this._auftraege(zug, camera, rend, false, lage);
                 zug.bereit = true;
@@ -2033,12 +2037,35 @@ class AnazhRealm_stoff_instanz {
         if (!attr || attr.isInterleavedBufferAttribute || !rend || !rend._attributes || !rend.info) return false;
         if (!rend.info.memoryMap.has(attr)) return false;
         rend._attributes.delete(attr);
+        // ein Puffer der GPU (`_gpuEigen`) hat keine CPU-Kopie, die ihn neu hochlüde: er fällt ganz, sein Eigner legt ihn neu
+        if (attr.__gpuEigen === true) {
+            attr.__gpuEigen = "gefallen";
+            return true;
+        }
         // Die Version steigt: zeichnet ein altes Render-Objekt das Attribut wieder, sieht der Beobachter (r184 equals,
         // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer. Der Sprung zählt mit
         // (`__abschiede`): wer den INHALT an der Version misst (das Lager der Arena), zieht ihn ab.
         attr.needsUpdate = true;
         attr.__abschiede = (attr.__abschiede | 0) + 1;
         return true;
+    }
+    // DER PUFFER GEHÖRT DER GPU (heap-register 2, „der Speicher folgt dem Blick“): was nur die GPU schreibt und liest — der
+    // Sicht-Index, den der Compute dicht füllt (`_sichtZugPuffer`), die Liste der Wahl je Kamera (`_wahlVor`) —, lädt r184 EINMAL
+    // hoch (`_attributes.update`, mappedAtCreation), danach fällt die CPU-Kopie: an ihrer Stelle ein leeres Array desselben Typs
+    // (r184 liest nach dem Hochladen nur den Typ — das Index-Format je Zug `instanceof Uint16Array`, die Vertex-Form —, die
+    // Zahl steht in `count`, die Bindegruppe nimmt den GPU-Puffer, `getArrayBufferAsync` liest die GPU). Nie steigt seine
+    // Version (ein Nachschreiben schriebe nichts); fällt er dort (`_gpuAbschied`), trägt er „gefallen“ und sein Eigner legt ihn
+    // neu (`_gpuEigenSteht`). Bis hier hielt jeder dieser Puffer seine Nullen ein zweites Mal im Heap: Radeon, Wegenetz-Fahrt am
+    // Richter-Preis `_sichtTiefeZ.auftraege[]` 13,5 MB, die nie ein Leser las. `typ`: r184 AttributeType (2 Index, 3 Speicher).
+    static _gpuEigen(rend, attr, typ) {
+        rend._attributes.update(attr, typ);
+        attr.array = new attr.array.constructor(0);
+        attr.__gpuEigen = true;
+        return attr;
+    }
+    // steht der Puffer der GPU noch? (ein gefallener lädt nie neu hoch: sein Eigner legt ihn neu)
+    static _gpuEigenSteht(attr) {
+        return !!attr && attr.__gpuEigen === true;
     }
     // DER ABSCHIED EINES VERSCHRÄNKTEN PUFFERS (die Jahres-Ecken, `_jahrEcken`): er fällt nur GANZ — jede seiner Sichten im
     // Register (`sichten`, der Kehraus gibt sie, wenn keine zeichnet) verlässt r184s Register, der geteilte GPU-Puffer fällt

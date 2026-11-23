@@ -591,9 +591,9 @@ class AnazhRealm_bild_wahl {
     // der sie zieht, je Pass in ihrer eigenen Liste: das Auge im Frustum, der Wurf je Kaskade mit seiner Licht-Kapsel, das
     // Fenster ihrer Stufe (`__wahlFenster`, `PASS_WAHL_WGSL`). Bis hier wählte die CPU die Pflanzen-Stufen und die Karte je
     // Pass, ordnete ihre Slots und zählte sie zurück — eine Gruppe, die in beiden Pass-Arten zeichnete, zog jede Instanz.
-    // Regional (im Region-Bündel, sein Cull) und Tür-Flügel wählt niemand je Instanz.
+    // Regional (im Region-Bündel, sein Cull), Tür-Flügel und Haspel-Teile wählt niemand je Instanz.
     _instanzWahlArt(leaf, castShadow, regional) {
-        if (regional || !leaf || leaf.tuer) return null;
+        if (regional || !leaf || leaf.tuer || leaf.welle) return null;
         return leaf.geom && leaf.geom.attributes ? "gpu" : null;
     }
 
