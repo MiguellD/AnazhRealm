@@ -430,9 +430,10 @@ takt() {
 # Regel bis 19.11.) · bild (git add -A nimmt jedes Roh-Bild mit, die Regel bis 19.11.) — jede ROT.
 # g · g0  DIE GETEILTE FRONT (22.11.): solange die GTX am Kopf keine Liste trägt, WARTET die Radeon (Zustand wartet, keine Fahrt, kein
 #    Runden-Alarm nach 20 min); sobald sie eine trägt, tritt die Radeon SOFORT ein — mit dem vorderen Teil in umgekehrter Reihe, ohne
-#    was die GTX am Kopf ROT urteilte (GRÜN, UNGEMESSEN und ein Start-Fehler der GTX überspringen nicht); trägt der vordere Teil keine
-#    Station → durch ohne Fahrt. o  das Verb offen, auch mit --anders. Mutanten: offen-blind (das ROT des anderen zählt nicht: Doppel-
-#    Messung) · offen-gruen (auch GRÜN des anderen überspringt: kein Paar) · offen-ungemessen (auch UNGEMESSEN des anderen überspringt:
+#    was die GTX am Kopf urteilte (GRÜN wie ROT seit 23.11.: JEDE STATION EINMAL; UNGEMESSEN und ein Start-Fehler der GTX überspringen
+#    nicht); trägt der vordere Teil keine Station → durch ohne Fahrt. o  das Verb offen, auch mit --anders. Mutanten: offen-blind (das
+#    Urteil des anderen zählt nicht: Doppel-Messung) · offen-nur-rot (die Regel bis 23.11.: nur ROT überspringt, GRÜN wird nachgemessen)
+#    · offen-ungemessen (auch UNGEMESSEN des anderen überspringt:
 #    nie beurteilt) · reihe-gtx (die Liste in der Reihe der GTX) · altes-gesetz (die Regel bis 22.11.: warten, bis die GTX vorn hinter sich
 #    hat) · warten-still (die Radeon wartet ohne den Zustand wartet — der Alarm feuert).
 # pm_leg <datei> <json> — eine Mess-Datei (auch eines anderen Geräts) an den Ursprung, über einen eigenen Klon (der Mess-Baum bleibt unberührt)
@@ -461,7 +462,8 @@ st_gesetz() {
     # g — (1) die GTX trägt am Kopf noch keine Liste: die Radeon WARTET (keine Fahrt, Zeile „radeon wartet“, nach 20 min kein ALARM
     # radeon); (2) die GTX trägt die Liste „g.K1–g.K5 | g.K6 g.K7“ und hat erst vier Urteile: g.K1 GRÜN, g.K2 ROT, g.K3 UNGEMESSEN, g.K4
     # ein Start-Fehler, g.K5 nichts — die Radeon tritt SOFORT ein (die GTX ist mitten im vorderen Teil), friert „g.K5 … g.K1|“ ein (umgekehrt,
-    # ohne Schwanz) und misst in EINER Fahrt g.K5 g.K4 g.K3 g.K1 (g.K2 fällt: ROT der GTX), dann durch; die Runde bleibt.
+    # ohne Schwanz) und misst in EINER Fahrt g.K5 g.K4 g.K3 (g.K1 GRÜN und g.K2 ROT der GTX fallen: jede Station einmal, 23.11.), dann
+    # durch; die Runde bleibt.
     # g0 — trägt der vordere Teil der GTX keine Station (nur Schwanz), ist die Radeon durch ohne Fahrt (Liste gesetz-leer, kein Listen-Bruch).
     local gk g1 g2 gw ga gp t0
     if nur g; then
@@ -486,10 +488,10 @@ st_gesetz() {
     for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
     g1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
     if [ "$g2" = 0 ] && [ "$gw" = wartet ] && [ "$ga" = 0 ] && echo "$gp" | grep -q "wartet nach dem Gesetz .*gtx offen, noch ohne Liste am ${gk:0:8}" &&
-        [ "$g1" = "g.K5#1,g.K4#1,g.K3#1,g.K1#1" ] && feld radeon | grep -q "^radeon durch .* liste g.K5#1,g.K4#1,g.K3#1,g.K2#1,g.K1#1| getragen 0$" && feld runde | grep -q "kopf $gk " &&
-        grep -qF "übersprungen, ROT auf gtx am Kopf: 1" "$L"; then
-        echo "OK g  geteilte Front: ohne Liste der GTX WARTET die Radeon (Zeile wartet, 0 Fahrten, nach 20 min kein Alarm); mit der Liste tritt sie mitten im vorderen Teil der GTX ein, umgekehrt, und misst „$g1“ (g.K2 fällt: ROT der GTX; GRÜN, UNGEMESSEN und Start-Fehler bleiben), dann durch, die Runde bleibt"
-    else echo "ROT g  geteilte Front: Fahrten beim Warten $g2 (Soll 0), Zeile „$gw“ (Soll wartet), ALARM radeon $ga (Soll 0), Puls „$(echo "$gp" | cut -c21-140)“, danach gemessen „$g1“ (Soll „g.K5#1,g.K4#1,g.K3#1,g.K1#1“), Zeile „$(feld radeon | cut -c1-130)“, offen-Zeile: $(grep -h "übersprungen" "$L" 2>/dev/null | tail -1 | cut -c1-160)"; fi
+        [ "$g1" = "g.K5#1,g.K4#1,g.K3#1" ] && feld radeon | grep -q "^radeon durch .* liste g.K5#1,g.K4#1,g.K3#1,g.K2#1,g.K1#1| getragen 0$" && feld runde | grep -q "kopf $gk " &&
+        grep -qF "übersprungen, geurteilt auf gtx am Kopf: 2" "$L"; then
+        echo "OK g  geteilte Front: ohne Liste der GTX WARTET die Radeon (Zeile wartet, 0 Fahrten, nach 20 min kein Alarm); mit der Liste tritt sie mitten im vorderen Teil der GTX ein, umgekehrt, und misst „$g1“ (g.K1 GRÜN und g.K2 ROT der GTX fallen: jede Station einmal; UNGEMESSEN und Start-Fehler bleiben), dann durch, die Runde bleibt"
+    else echo "ROT g  geteilte Front: Fahrten beim Warten $g2 (Soll 0), Zeile „$gw“ (Soll wartet), ALARM radeon $ga (Soll 0), Puls „$(echo "$gp" | cut -c21-140)“, danach gemessen „$g1“ (Soll „g.K5#1,g.K4#1,g.K3#1“), Zeile „$(feld radeon | cut -c1-130)“, offen-Zeile: $(grep -h "übersprungen" "$L" 2>/dev/null | tail -1 | cut -c1-160)"; fi
     fi
     [ -n "$ST_NUR_G" ] && return # die Mutanten des zweiten Geräts prüfen nur g
     nur g0 || return 0
@@ -516,9 +518,9 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     [ "$1" = pid ] && schloss_pid() { grep -m1 "^pid=" "$1" 2>/dev/null | tr -dc 0-9; } # die alte Quelle bis 14.11.: nur Zeile „pid=…“
     # die Mutanten der geteilten Front: eine Abschrift von runde.cjs mit EINER Zeile alt (offen · reihe --erst)
     case "$1" in
-    offen-blind) sed 's|^    const rotAnders = .*$|    const rotAnders = () => false;|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # das ROT des anderen zählt nicht
-    offen-gruen) sed 's|^    const rotAnders = .*$|    const rotAnders = (s) => urteil(ma \|\| {}, s) !== null;|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # auch GRÜN überspringt
-    offen-ungemessen) sed 's|^    const rotAnders = .*$|    const rotAnders = (s) => (urteil(ma \|\| {}, s) === "GRUEN" ? false : !!(((ma \|\| {}).je \|\| {})[s] \|\| ((ma \|\| {}).ungemessen \|\| {})[s]));|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # jeder Eintrag außer GRÜN überspringt
+    offen-blind) sed 's|^    const urteilAnders = .*$|    const urteilAnders = () => false;|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # das Urteil des anderen zählt nicht
+    offen-nur-rot) sed 's|^    const urteilAnders = .*$|    const urteilAnders = (s) => !!ma \&\& urteil(ma, s) === "ROT";|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # die Regel bis 23.11.: GRÜN wird nachgemessen
+    offen-ungemessen) sed 's|^    const urteilAnders = .*$|    const urteilAnders = (s) => !!(((ma \|\| {}).je \|\| {})[s] \|\| ((ma \|\| {}).ungemessen \|\| {})[s]);|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # jeder Eintrag überspringt, auch UNGEMESSEN
     reihe-gtx) sed 's|^        const um = ids.slice().reverse();$|        const um = ids.slice();|' "$RUNDE_CJS" >"$X/runde-alt.cjs" ;; # die Liste in der Reihe der GTX
     esac
     if [ -f "$X/runde-alt.cjs" ]; then
@@ -556,7 +558,7 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
         >"$X/o/meisterkarte-quelle/punkte/messung/aaaaaaaa-radeon.json"
     o1=$(node "$RUNDE_CJS" offen "$X/o" - radeon aaaaaaaa00000000000000000000000000000000 "a#1,b#1,c#1|d#1,e#1,f#1" 2>/dev/null)
     # DIE GETEILTE FRONT (22.11.): --anders gtx am Kopf bbbbbbbb — die GTX urteilte p ROT, q GRÜN, r UNGEMESSEN, s einen Start-Fehler,
-    # t ROT unter einem jüngeren UNGEMESSEN, u nichts: offen lässt nur p fallen (o2); ohne --anders (o3) und ohne Mess-Datei der GTX
+    # t ROT unter einem jüngeren UNGEMESSEN, u nichts: offen lässt p und q fallen (o2, jede Station einmal seit 23.11.); ohne --anders (o3) und ohne Mess-Datei der GTX
     # (o4, Kopf cccccccc) fällt nichts
     printf '%s\n' '{"je":{"p#1":{"gruen":false,"grund":"ROT: Wert"},"q#1":{"gruen":true},"r#1":{"gruen":false,"ungemessen":true},"s#1":{"gruen":false,"grund":"Start: spawn x"},"t#1":{"gruen":false,"zeit":"2026-11-22T01:00:00Z"}},"ungemessen":{"r#1":{"ungemessen":true,"offen":1},"t#1":{"ungemessen":true,"offen":1,"zeit":"2026-11-22T02:00:00Z"}}}' \
         >"$X/o/meisterkarte-quelle/punkte/messung/bbbbbbbb-gtx.json"
@@ -564,7 +566,7 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     o2=$(node "$RUNDE_CJS" offen "$X/o" - radeon bbbbbbbb00000000000000000000000000000000 "p#1,q#1,r#1,s#1,t#1,u#1|" --anders gtx 2>/dev/null)
     o3=$(node "$RUNDE_CJS" offen "$X/o" - radeon bbbbbbbb00000000000000000000000000000000 "p#1,q#1,r#1,s#1,t#1,u#1|" 2>/dev/null)
     o4=$(node "$RUNDE_CJS" offen "$X/o" - radeon cccccccc00000000000000000000000000000000 "p#1,q#1,r#1,s#1,t#1,u#1|" --anders gtx 2>/dev/null)
-    if [ "$o1" = "a#1,b#1,f#1" ] && [ "$o2" = "q#1,r#1,s#1,t#1,u#1" ] && [ "$o3" = "p#1,q#1,r#1,s#1,t#1,u#1" ] && [ "$o4" = "$o3" ]; then echo "OK o  das Verb offen: 1 und 2 Versuche des Apparats bleiben in der Liste, 3 Versuche, ein Eintrag beim Namen und ein Urteil stehen; mit --anders fällt nur das ROT des anderen (GRÜN, UNGEMESSEN, Start-Fehler, ROT unter jüngerem UNGEMESSEN bleiben), ohne dessen Datei nichts"
+    if [ "$o1" = "a#1,b#1,f#1" ] && [ "$o2" = "r#1,s#1,t#1,u#1" ] && [ "$o3" = "p#1,q#1,r#1,s#1,t#1,u#1" ] && [ "$o4" = "$o3" ]; then echo "OK o  das Verb offen: 1 und 2 Versuche des Apparats bleiben in der Liste, 3 Versuche, ein Eintrag beim Namen und ein Urteil stehen; mit --anders fallen ROT und GRÜN des anderen (UNGEMESSEN, Start-Fehler, ROT unter jüngerem UNGEMESSEN bleiben), ohne dessen Datei nichts"
     else echo "ROT o  das Verb offen gab '$o1' (Soll a#1,b#1,f#1: ein Eintrag mit offen < 3 ist keine Messung) · --anders '$o2' (Soll q#1,r#1,s#1,t#1,u#1) · ohne --anders '$o3' · ohne Datei des anderen '$o4' (Soll beide die ganze Liste)"; fi
     fi
     nur - # das Bett des Sandkastens zählt keinem Fall
@@ -710,7 +712,7 @@ STUMMEL
     else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
     fi
     [ "$1" = reihe ] && { nur -; command rm -rf "$X"; return; } # die Mutante prüft nur d
-    case "$1" in offen-blind | offen-gruen | offen-ungemessen | reihe-gtx | altes-gesetz | warten-still) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
+    case "$1" in offen-blind | offen-nur-rot | offen-ungemessen | reihe-gtx | altes-gesetz | warten-still) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
     f=0 T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
     if nur a; then
@@ -909,11 +911,11 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-gruen offen-ungemessen reihe-gtx altes-gesetz warten-still"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warten-still"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # DIE FANG-TAFEL (22.11., wie landung-dienst.sh): jede Mutante fährt nur den Fall, an dem sie fällt — ST_NUR wählt die Fälle von
     # echt; ST_ECHT=0 fährt nur die Mutanten. Höchstens VIER Sandkästen zugleich (Koordinator 22.11. 09:11: 14 nebeneinander verstopften
     # den Laptop 2 h 13 min) — die Mutanten in Gruppen per ST_MUTANTEN
-    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-gruen:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warten-still:g"
+    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warten-still:g"
     fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
     if [ "${ST_ECHT:-1}" = 0 ]; then : >"$O/echt"; else (st_lauf "" >"$O/echt" 2>&1) & fi
     for m in $MUT; do (ST_NUR=${ST_NUR:-$(fang "$m")}; st_lauf "$m" >"$O/$m" 2>&1) & done
