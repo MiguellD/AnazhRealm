@@ -1162,9 +1162,14 @@ class AnazhRealm_siedlung_bauten {
         // GEOMETRIE-CACHE: ein Bauplan ist je Spawn geometrisch identisch → EINMAL mergen (Tempel ~14 ms),
         // je Bauplan cachen (WeakMap → auto-GC), je Spawn nur die Geometrie KLONEN (~0,5 ms). Sicher, weil
         // _disposeSoulGroup NUR Geometrie disposed: Material geteilt, jeder Spawn besitzt seinen Klon.
-        if (!this._archMergeCache) this._archMergeCache = new WeakMap();
-        let leaves = this._archMergeCache.get(bp);
-        if (!leaves) {
+        // DIE VORLAGE FOLGT DEM BLICK (heap-register 21.11.): sie lebt, solange ein Bau aus ihr steht (`nutzer`, die Gruppe trägt
+        // `archMergeQuelle`, die EINE Rückgabe in `_disposeSoulGroup`); mit dem letzten fällt sie. Bis hier hielt die WeakMap je
+        // Bauplan die Vorlage, solange der Bauplan lebte — der Bauplan lebt immer (state.blueprints), und das Vorbacken
+        // (`_tickBlueprintPrebake`) verschmolz die ganze Bibliothek: Radeon, Wegenetz-Fahrt nach dem Richter-Preis
+        // `_archMergeCache[].geom` 15,7 MB, kein Bau davon im Bild. Der nächste Bau verschmilzt neu (5–14 ms, einmal).
+        if (!this._archMergeCache) this._archMergeCache = new Map();
+        let quelle = this._archMergeCache.get(bp);
+        if (!quelle) {
             let merged = null;
             try {
                 merged = this._mergeBlueprintByMaterial(bp);
@@ -1174,11 +1179,11 @@ class AnazhRealm_siedlung_bauten {
             if (!merged || !Array.isArray(merged.leaves) || merged.leaves.length === 0) {
                 return this._buildFromBlueprint(bp); // nested/animate → Per-Teil-Wahrheit
             }
-            leaves = merged.leaves;
-            this._archMergeCache.set(bp, leaves);
+            quelle = { bp, leaves: merged.leaves, nutzer: 0 };
+            this._archMergeCache.set(bp, quelle);
         }
         const group = new THREE.Group();
-        for (const leaf of leaves) {
+        for (const leaf of quelle.leaves) {
             if (!leaf || !leaf.geom || !leaf.mat) continue;
             // Geometrie KLONEN (disposal-sicher), Material TEILEN (Singleton, nie disposed).
             const m = new THREE.Mesh(leaf.geom.clone(), leaf.mat);
@@ -1189,7 +1194,15 @@ class AnazhRealm_siedlung_bauten {
         }
         if (group.children.length === 0) return this._buildFromBlueprint(bp); // defensive
         group.userData.archMerged = true;
+        group.userData.archMergeQuelle = quelle;
+        quelle.nutzer++;
         return group;
+    }
+    // die Rückgabe eines Baus an seine Vorlage (`_disposeSoulGroup`): der letzte nimmt sie mit
+    _archMergeLoslassen(q) {
+        if (--q.nutzer > 0) return;
+        if (this._archMergeCache && this._archMergeCache.get(q.bp) === q) this._archMergeCache.delete(q.bp);
+        for (const leaf of q.leaves) if (leaf && leaf.geom) this._queueDispose(leaf.geom);
     }
 
     // Der Platzier-GHOST liest den GETEILTEN Merge-Cache (`_buildArchMeshMerged`) — derselbe Pfad wie die
@@ -1723,7 +1736,7 @@ class AnazhRealm_siedlung_bauten {
     _archLeavesVerschmelzen(leaves) {
         const sig = (lf) => {
             const g = lf.geom;
-            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.shadowTwin) return null;
+            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.welle || lf.shadowTwin) return null;
             // nur Lichtquellen (castShadow false aus _archTeilLeuchtet) ohne Instanz-Farb-Kanal
             if (lf.castShadow !== false || lf.tint !== undefined) return null;
             if (g.groups && g.groups.length) return null;

@@ -6451,9 +6451,24 @@
     // Sippe (null): je Teil ein Draw. gate:sippen-wirt misst Gesetz gegen Leaves an jeder Art und Stufe.
     // Ein RAD-Teil (Welle L, Q13 F-D8: `m.rad`, die Gestalt der Ecke 0, je Ecke eine Instanz) ist seine eigene Sippe je
     // Dreh-Klasse (drehend · stehend): es verschmilzt mit seinesgleichen, nie mit dem Aufbau.
+    // Ein TEIL DER MASCHINE (brunnen-haspel: `m.welle`, kurbel · seil · eimer der Haspel, je Teil EINE Matrix des Wirts) ist seine
+    // eigene Sippe je Teil: es verschmilzt mit seinesgleichen, nie mit dem Aufbau und nie mit einem anderen Teil.
     function budgetSippe(m) {
         if (!_budgetTeil(m) || m.tuer || (m.skinIndex && m.skinIndex.array)) return null;
-        return (m.rad ? (m.rad.dreht ? "R:d|" : "R:s|") : "") + budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+        return (
+            (m.rad ? (m.rad.dreht ? "R:d|" : "R:s|") : "") +
+            (m.welle ? "W:" + m.welle.teil + "|" : "") +
+            budgetStoff(m.kind, m.mat) +
+            "#" +
+            _budgetForm(m)
+        );
+    }
+    // DIE ZAHL DER BEWEGTEN TEILE (brunnen-haspel): je benanntem Teil einer Maschine (`m.welle.teil`) EIN Befehl, den die Zeile
+    // ausdrücklich trägt (`bewegt`) — er zählt nie gegen die Draws des Aufbaus, die Faltung kann ihn nicht falten.
+    function _budgetBewegt(meshes) {
+        const t = new Set();
+        for (const m of meshes || []) if (_budgetTeil(m) && m.welle) t.add(m.welle.teil);
+        return t.size;
     }
     // Wie oft ein Teil gezeichnet wird: ein Rad je Ecke (`m.rad.raeder`), jedes andere Teil einmal.
     function _budgetMal(m) {
@@ -6515,13 +6530,19 @@
                 continue;
             }
             let g = gr.get(k);
-            if (!g) gr.set(k, (g = { n: 0, v: 0, gelenk: false }));
+            if (!g) gr.set(k, (g = { n: 0, v: 0, gelenk: false, welle: !!m.welle }));
             g.n++;
             g.v += nv;
             if (m.joint) g.gelenk = true;
         }
-        for (const g of gr.values()) draws += g.gelenk || g.n < 2 || g.v <= BUDGET_GESETZ.verschmelzVerts ? 1 : g.n;
-        return { tris: tris, verts: verts, draws: draws };
+        // `bewegt`: die Draws der Teile einer Maschine (in `draws` enthalten) — die Zeile hält sie gegen ihr `bewegt`
+        let bewegt = 0;
+        for (const g of gr.values()) {
+            const n = g.gelenk || g.n < 2 || g.v <= BUDGET_GESETZ.verschmelzVerts ? 1 : g.n;
+            draws += n;
+            if (g.welle) bewegt += n;
+        }
+        return { tris: tris, verts: verts, draws: draws, bewegt: bewegt };
     }
     // Der Wurf einer gelieferten Stufe (S3, das EINE Wurf-Gesetz): die Teile `teil: "schatten"` — Dreiecke und Teile (je
     // Teil ein Befehl je Kaskade, der Wirt zeichnet es mit EINEM Schatten-Stoff).
@@ -6760,8 +6781,17 @@
         for (const m of teile) {
             const haut = !!(m.skinIndex && m.skinIndex.array);
             const klasse =
-                (m.tuer ? "T:" + JSON.stringify(m.tuer) : m.rad ? (m.rad.dreht ? "R:d" : "R:s") : haut ? "H" : "S") +
-                (m.aWurzel || m.aSchale ? "|schale" : "");
+                (m.tuer
+                    ? "T:" + JSON.stringify(m.tuer)
+                    : m.rad
+                      ? m.rad.dreht
+                          ? "R:d"
+                          : "R:s"
+                      : m.welle
+                        ? "W:" + m.welle.teil
+                        : haut
+                          ? "H"
+                          : "S") + (m.aWurzel || m.aSchale ? "|schale" : "");
             const stoff = budgetStoff(m.kind, m.mat);
             const key = klasse + "#" + stoff;
             let g = nachSchluessel.get(key);
@@ -6925,6 +6955,7 @@
                     if (j) e.joint = j;
                     if (stueck[0].m.tuer) e.tuer = stueck[0].m.tuer;
                     if (stueck[0].m.rad) e.rad = stueck[0].m.rad;
+                    if (stueck[0].m.welle) e.welle = stueck[0].m.welle;
                     out.push(e);
                 }
             }
@@ -6969,10 +7000,19 @@
         const ohne = new Set();
         for (const m of meshes || []) if (_budgetTeil(m) && !budgetSeh(m.mat)) ohne.add(budgetStoff(m.kind, m.mat));
         for (const st of ohne) bericht.bruch.push({ feld: "seh", stoff: st });
-        const out = vor.draws > zeile.draws ? _budgetFalten(meshes || [], zeile.draws, bericht) : meshes;
+        // DIE TEILE EINER MASCHINE (brunnen-haspel) tragen je Teil einen Befehl außer den Draws des Aufbaus — so viele, wie die
+        // Zeile ausdrücklich nennt (`bewegt`); ohne das Feld ist jedes bewegte Teil ein Bruch beim Namen. Ohne bewegte Teile
+        // faltet der Ausgang wie bis hier (die Antworten byte-alt).
+        const nb = _budgetBewegt(meshes),
+            bz = zeile.bewegt | 0,
+            ziel = zeile.draws + Math.min(nb, bz);
+        const out = vor.draws > ziel ? _budgetFalten(meshes || [], ziel, bericht) : meshes;
         const nach = budgetSippen(out);
         bericht.nachher = { tris: nach.tris, draws: nach.draws };
-        if (nach.draws > zeile.draws) bericht.bruch.push({ feld: "draws", ist: nach.draws, soll: zeile.draws });
+        if (nb) bericht.nachher.bewegt = nach.bewegt;
+        if (nach.draws - nach.bewegt > zeile.draws)
+            bericht.bruch.push({ feld: "draws", ist: nach.draws - nach.bewegt, soll: zeile.draws });
+        if (nach.bewegt > bz) bericht.bruch.push({ feld: "bewegt", ist: nach.bewegt, soll: bz });
         if (nach.tris - frei > zeile.tris)
             bericht.bruch.push({ feld: "tris", ist: nach.tris - frei, soll: zeile.tris });
         return { meshes: out, bericht: bericht };

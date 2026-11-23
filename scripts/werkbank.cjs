@@ -3034,6 +3034,21 @@ async function starte() {
                     if (b.stichprobe) o.js = await heapStichprobe((stichCdp = stichCdp || (await page.target().createCDPSession())), b.stichprobe); // prettier-ignore
                     return send(o);
                 }
+                // DIE HALDE NACH HALTER (scripts/lib/halde-halter.cjs): nach zwei GC EIN Schnappschuss der V8-Halde als Datei, jede
+                // Selbst-Größe auf dem Pfad ab r, über den sie zuerst erreicht wird — die Tafel der Halter über alle Bytes, nicht nur Typed-Arrays
+                if (req.url === "/halde") {
+                    const datei = path.resolve(b.datei || "halde.heapsnapshot");
+                    const cdp = await page.target().createCDPSession();
+                    for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
+                    const u = await cdp.send("Runtime.getHeapUsage");
+                    const ws = fs.createWriteStream(datei);
+                    cdp.on("HeapProfiler.addHeapSnapshotChunk", (e) => ws.write(e.chunk));
+                    await cdp.send("HeapProfiler.takeHeapSnapshot", { reportProgress: false });
+                    await new Promise((ok) => ws.end(ok));
+                    await cdp.detach();
+                    const o = require("./lib/halde-halter.cjs").halter(datei, { tiefe: Number(b.tiefe) || 3, top: Number(b.top) || 60, tief: b.tief || [] }); // prettier-ignore
+                    return send(Object.assign(o, { datei, heapMB: +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1) })); // prettier-ignore
+                }
                 if (req.url === "/faeden") return send(await require("./lib/speicher-proben.cjs").fadenHeap(page, !!b.gc));
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
@@ -4197,7 +4212,9 @@ hauptLauf(async () => {
         o = await rufe("/gang", { min: opt("--gang") });
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
-    } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    } else if (cmd === "puffer" && hat("halde"))
+        o = await rufe("/halde", { datei: opt("--halde"), tiefe: opt("--tiefe"), top: opt("--top"), tief: argv.filter((x, k) => argv[k - 1] === "--tief") }); // prettier-ignore
+    else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "wirt" && SELBST) {
         selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, hält sie ihn über der Schwelle, ist der Preis UNGEMESSEN — die Welt, die sie baute, nicht; die Mutante von main (der Haken der Hülle) besteht nicht");
         process.exit(0);

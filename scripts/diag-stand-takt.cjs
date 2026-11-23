@@ -187,8 +187,18 @@ function selbsttest() {
                 // sechs Schritte eines Felds von 9–16 Zellen (die Mess-Wiese, Radeon 890M): der Gang je Schritt; in Schritt 3 EINE
                 // Ankunft der Front mit neu gemessenem Bett (fünf grobe Punkte, alle Gras), in Schritt 4 zwei
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
+                // in Schritt 4 fällt die Wiese über EINER Zelle (±½ Zelle, 1 024 m²): 98 Kacheln der Streu, 24 der Wiese stehen darin
+                ...{ kachel: [0, 0, 0, 122, 0, 0], kachelSoll: [0, 0, 0, 122, 0, 0], ringe: [0, 0, 0, 1, 0, 0], ringM2: [0, 0, 0, 1024, 0, 0], rufeK: [[], [], [], [["_nahStreuKachelFaellt", 98], ["_nahWieseKachelFaellt", 24]], [], []] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
-                ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
+                ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
+                // die Herde auf dem gesetzten Bett (Gras, Last 0,092, im gesetzten Wind): das Vorrücken trägt R, die drei Starts der
+                // Diagonale dieselben Zahlen, das grobe Gitter (nur Diagonalen) verliert die Hälfte; der Herd des Spiels verzehrte 17
+                // fremde Betten von 21 (sein Bett ungesetzt)
+                ...((b) => {
+                    const h = (winkel, vor, R, mehr) => ({ zellen: 44, koepfe: 9, mit: 0.58, alle: 0.63, vor, R, winkel, schritte: 300, bilder: 300, bett: { ...b }, ...mehr });
+                    const wahr = { achse: h(0.8, 0.62, 0.64), schraeg: h(23.5, 0.6, 0.63), diagonal: h(44.1, 0.6, 0.63), wieder: h(44.1, 0.6, 0.63), langsam: h(44.1, 0.6, 0.63, { bilder: 371 }), grob: h(44.1, 0.3, 0.63) };
+                    return { wahr, fenster: { spiel: wahr.diagonal, langsam: wahr.langsam }, uhrRueck: [], bett: { ...b, zellen: 21, abweichend: 17, erste: "Last 0.061" } };
+                })({ stoff: "gras", w: 0.092, boden: 0.1, naesse: 0, zellen: 51, abweichend: 0, erste: null }),
                 ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // die Druckwelle der Probe (die Mess-Wiese, GTX 1050, Null-Renderer, die Welt frisch): ein Fass mit 60,6 MJ, die
@@ -592,7 +602,16 @@ function selbsttest() {
         ["die Marke der Zündung ist blind", (b) => b.simWecken.brand.zuendung.fill(0), /STUMPF: die Front erreichte 3 Zellen, die Sim-Linse sieht keine Zündung/],
         // DER GANG: was der Takt außerhalb der Zündung tut, je Zelle des Felds
         ["der Brand fegt die Welt", ["simWecken.brand.gang.3=", 4000], /BRAND-GANG: Schritt 4 kostete 4000 Einheiten Gang bei 16 Zellen des Felds/],
-        ["der Gang misst das Bett jeder Zelle je Schritt neu (16 Zellen × fünf Punkte)", ["simWecken.brand.gang.4=", 113 + 16 * 254], /BRAND-GANG: Schritt 5 kostete 4177 Einheiten Gang bei 16 Zellen/],
+        // DER FALL DER KACHELN (linse-brand-schritte 4): CI c8e95d38 und Radeon wortgleich — Schritt 4 168 Einheiten bei 9 Zellen,
+        // davon 122 Kacheln über EINER Zelle: der Gang trägt 46 (≤ 144), die Kacheln ihr eigenes Soll
+        ["der Fall der Wiese über einer Zelle in einem kleinen Feld (CI c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 46, 113, 36] }), null],
+        ["der Gang trägt die Kacheln ungetrennt (der Täter von c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 168, 113, 36], kachel: [0, 0, 0, 0, 0, 0] }), /BRAND-GANG: Schritt 4 kostete 168 Einheiten Gang bei 9 Zellen des Felds \(Soll ≤ 16 je Zelle\)/],
+        ["jede Kachel fällt zweimal",["simWecken.brand.kachel.3=", 244], /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 122 \(je Kachel im Rechteck der Asche eine\), 1 Neubau von 1024 m² .* seine Leser: _nahStreuKachelFaellt 98, _nahWieseKachelFaellt 24/],
+        ["zwei Zellen fallen im selben Bild (der gebündelte Neubau)", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 2, 0, 0], kachel: [0, 0, 0, 244, 0, 0], kachelSoll: [0, 0, 0, 244, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 244 .*2 Neubauten/],
+        ["der Neubau fällt über ±1 Zelle", ["simWecken.brand.ringM2.3=", 4096], /KACHEL-FALL: .*1 Neubau von 4096 m² \(Soll ≤ 1 je Bild, ≤ 1024 m²/],
+        ["die Kacheln fallen ohne Asche", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 0, 0, 0], kachelSoll: [0, 0, 0, 0, 0, 0], ringM2: [0, 0, 0, 0, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 122 Kacheln fallen — Soll ≤ 0/],
+        ["die Kachel-Probe des Brands lief nicht", ["simWecken.brand.kachel"], /LEER: die Kachel-Probe des Brands/],
+        ["der Gang misst das Bett jeder Zelle je Schritt neu (16 Zellen × fünf Punkte)",["simWecken.brand.gang.4=", 113 + 16 * 254], /BRAND-GANG: Schritt 5 kostete 4177 Einheiten Gang bei 16 Zellen/],
         // DIE ZÜNDUNG: ihr Soll kommt aus dem, was die Welt neu maß — eine Zündung, die ihr Bett zweimal liest, hebt es nicht
         ["die Zündung liest ihr Bett zweimal", ["simWecken.brand.zuendung.2=", 395 + 254], /BRAND-ZÜNDUNG: Schritt 3 kostete 649 Einheiten Zündung für 1 Ankünfte und 1 neu gemessene Betten \(5 Bett-Punkte/],
         // die Zündung marschiert für Höhe und Gefälle dreimal durch ihre Säule (der Stand von 8e2d76d1, GPU-Probe 44943679460 und
@@ -603,8 +622,28 @@ function selbsttest() {
         ["drei Zündungen in einem Schritt (die Radeon-Probe cc19e47a)", (b) => Object.entries({ zuendung: 1156, ankuenfte: 3, betten: 3, punkte: 15, lesungen: 15 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), null],
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => Object.entries({ zuendung: 9000, ankuenfte: 1, betten: 1, punkte: 69, kahl: 19, masken: 1, lesungen: 69 }).forEach(([k, w]) => (b.simWecken.brand[k][3] = w)), /BRAND-ZÜNDUNG: Schritt 4 kostete 9000 Einheiten Zündung .*69 Bett-Punkte, davon bis 19 kahl, 1 Masken/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
-        ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
-        ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
+        // die Front auf dem gesetzten Bett (linse-brand-schritte 2): das Vorrücken des Kopfs kriecht, das Gitter verliert das
+        // Gesetz, das grobe Gitter hält (die Linse blind), das Bett ist nicht gesetzt, die drei Starts würfeln (lokal derselbe Herd
+        // zur Uhr 40 000: 0,31 · 1,03 · 0,458 m/s), die Uhr ging rückwärts; der Median am Herd des Spiels ist ein Lesewert
+        ["die Front kriecht mit dem Wind", ["simWecken.brand.wahr.achse", { vor: 0.3, R: 0.31 }], /FRONT-MIT: achse \(Kopf 0.8° zum Gitter\): Vorrücken 0.3 m\/s bei R 0.31 m\/s \(Soll 0,5–2\)/],
+        ["der Median der Köpfe am Herd des Spiels ist ein Lesewert", ["simWecken.brand.mit=", 0.3], null],
+        ["das Gitter verliert das Gesetz (32–48 % von R)", ["simWecken.brand.wahr.schraeg.vor=", 0.27], /FRONT-TREUE: schraeg \(Kopf 23.5° zum Gitter\): Vorrücken 0.27 m\/s bei R 0.63 m\/s — 0.429 von R/],
+        ["das Gitter nur der Diagonalen verliert an der Achse 11,5 % (lokal 0,928 bei R 1,048)", ["simWecken.brand.wahr.grob", { vor: 0.928, R: 1.048 }], null],
+        ["das grobe Gitter hält die Treue",["simWecken.brand.wahr.grob.vor=", 0.6], /BLIND: das grobe Gitter \(nur Diagonalen\)/],
+        ["der Herd verzehrt das Bett der Welt", ["simWecken.brand.wahr.achse.bett", { abweichend: 17, erste: "Last 0.061" }], /FENSTER-BETT: achse zündete auf gras .* 17 von 51 Zellen verzehrten ein anderes Bett \(zuerst Last 0.061\)/],
+        ["der Herd zündet im nassen Bett", ["simWecken.brand.wahr.diagonal.bett.naesse=", 0.4], /FENSTER-BETT: diagonal zündete auf gras \(Last 0.092, Boden 0.1, Nässe 0.4\)/],
+        ["drei Starts an derselben Uhr würfeln", ["simWecken.brand.wahr.wieder", { mit: 1.03, vor: 0.95 }], /FENSTER-BETT: drei Starts an derselben Uhr des Winds tragen mit 0.58 · 1.03 · 0.58, vor 0.6 · 0.95 · 0.6/],
+        ["ein Herd stellt die Uhr zurück", ["simWecken.brand.uhrRueck=", [[40300, 40000]]], /FENSTER-BETT: die Welt-Uhr stand vor dem Herd schon später \(40300 s statt 40000 s\)/],
+        ["das Bett des Spiels ist das des Herds", ["simWecken.brand.bett.abweichend=", 0], /BLIND: der Herd des Spiels/],
+        ["die Herde auf dem gesetzten Bett liefen nicht", ["simWecken.brand.wahr"], /LEER: die Herde auf dem gesetzten Bett/],
+        // das Fenster hängt am Läufer (bis linse-brand-schritte, lokal am Radeon-Laptop): der zweite Herd begann zu einer späteren
+        // Welt-Uhr, 0,35 m/s mit 8 Köpfen ↔ 0,29 mit 9; am langsamsten Läufer gingen dieselben Bilder weniger Schritte
+        ["der Herd beginnt zur Uhr des Läufers", ["simWecken.brand.fenster", { spiel: { zellen: 42, koepfe: 8, mit: 0.35, alle: 0.978, schritte: 300, bilder: 300 }, langsam: { zellen: 47, koepfe: 9, mit: 0.29, alle: 0.982, schritte: 300, bilder: 300 } }], /FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels 42 Zellen, 8 Köpfe \(Median 0.35 m\/s\), alle 0.978 m\/s in 300 Schritten und 300 Bildern, am langsamsten Läufer 47 Zellen, 9 Köpfe \(Median 0.29 m\/s\)/],
+        ["das Fenster zählt Bilder, nie Schritte des Brands", ["simWecken.brand.fenster.langsam", { schritte: 212, bilder: 300 }], /FENSTER-UHR: .* am langsamsten Läufer 44 Zellen, 9 Köpfe \(Median 0.58 m\/s\), alle 0.63 m\/s in 212 Schritten und 300 Bildern/],
+        ["der Median am langsamsten Läufer liegt 0,03 m/s daneben", ["simWecken.brand.fenster.langsam.mit=", 0.335], /FENSTER-UHR: .* \(Median 0.335 m\/s\)/],
+        ["das Fenster erreicht seine Schritte nicht", ["simWecken.brand.deckel=", 15000], /FENSTER-DECKEL: das Fenster mit dem Wind erreichte nach 15000 Bildern/],
+        ["die Probe des Fensters lief nicht", ["simWecken.brand.fenster"], /LEER: die Probe des Fensters/],
+        ["die Front läuft gegen den Wind",["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
         ["ohne Wind läuft die Front", ["simWecken.brand.ohneWind=", 0.9], /BRAND-BLIND: .* 0.9 m\/s/],
         ["der Brand hinterlässt keine Asche", ["simWecken.brand.lebNach=", 0.62], /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
         ["das Overlay fällt, die Asche nicht (der Fraß am Herd ist keine Asche)", ["simWecken.brand", { ovNach: -0.3 }], /BRAND-ASCHE: .*Leben-Overlay 0 → -0.3, die Asche senkt 0,/],
@@ -3394,12 +3433,12 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         for (let i = 0; i < 100; i++) r._depositLife(MESS.x + 4000, MESS.z + 4400, -0.01);
                         F.ueber = r._lebenWecker.length - r._lebenStand.size;
                         // der Brand (stoffe.K2 · feld.K3#2): an der Mess-Wiese über das Wort bewölkt (Wind 0,3; die Bühne hält die Nässe
-                        // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), je Bild genau EIN Schritt. Je Sprung
+                        // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), das Fenster in Schritten des Brands (`brandGehen`). Je Sprung
                         // der Front (die Zelle, von der sie kam → der Punkt, an dem sie ankam, brennend oder unterwegs) sein Tempo und sein
                         // Winkel zum Kopf der Quelle: mit dem Wind der Median der Köpfe (je Gras-Quelle ihr schnellster Sprung, ±20° um den
                         // Kopf), gegen den Wind (±30°) der schnellste Sprung; derselbe Herd mit dem Wind aus (`_windAt` ohne m/s) ist die
-                        // Mutante, an ihrem noch brennenden Herd glut und Licht. Danach das Wort Regen bis zum Erlöschen; gezählt je Schritt
-                        // die Einheiten und die Zellen des Feuers (vor oder nach dem Schritt, die mehr sind: eine Zündung trägt ihre
+                        // Mutante, an ihrem noch brennenden Herd glut und Licht. Danach das Wort Regen bis zum Erlöschen; gezählt je Bild
+                        // die Einheiten und die Zellen des Feuers (vor oder nach dem Bild, die mehr sind: eine Zündung trägt ihre
                         // Ankünfte) und am Herd die Asche
                         const [B, am, n0] = [AnazhRealm.BRAND, () => r.auraAt(MESS.x, MESS.z), (st.worldMeta.taten ||= []).length];
                         wort("cloudy");
@@ -3750,27 +3789,101 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
                         };
+                        // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
+                        // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
+                        // mehr Bildern, nie weniger Schritte, und jedes Bild ohne Rest zeigt den ganzen Schritt (`jeBild(vor, ganz)`).
+                        // Nach dem letzten Schritt geht sein Rest zu Ende, ohne dass die Uhr weiter geht. Bis hier zählte das Fenster
+                        // Bilder: dasselbe Gesetz trug auf swiftshader weniger Schritte, und FRONT-MIT schwankte 1,029 ↔ 0,335 m/s. Der
+                        // Deckel der Bilder (50 je Schritt) endet LAUT (`deckel`, FENSTER-DECKEL), nie still
+                        const brandGehen = async (n, solange, jeBild) => {
+                            const [u0, G] = [r._brandUhr, { schritte: 0, bilder: 0 }];
+                            const bild = () => {
+                                const vor = st.brandFeld ? st.brandFeld.size : 0;
+                                takt();
+                                G.bilder++;
+                                G.schritte = Math.round((r._brandUhr - u0) / B.schrittS);
+                                jeBild(vor, !r._brandRest);
+                            };
+                            while (G.schritte < n && solange()) {
+                                if (G.bilder >= 50 * n) return Object.assign(G, { deckel: G.bilder });
+                                if (!r._brandRest) r._weltUhrNimm(r._brandUhr + B.schrittS);
+                                bild();
+                                if (G.bilder % 20 === 0) await sleep(2);
+                            }
+                            for (let k = 0; r._brandRest && k < 50 * n; k++) bild();
+                            return r._brandRest ? Object.assign(G, { deckel: G.bilder }) : G;
+                        };
                         const lauf = async (n) => {
-                            const [Z, H, bf] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
+                            const h0 = r._brandEntfachen(MESS.x, MESS.z);
+                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], kachel: [], kachelSoll: [], ringe: [], ringM2: [], rufeK: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
+                            // DER FALL DER KACHELN AN SEINEM MASS (linse-brand-schritte 4): die Asche malt je Bild EIN Viertel EINER
+                            // glühenden Zelle (`_brandMalen`), und je Zelle höchstens alle `BRAND.wieseS` fällt die Nah-Wiese und Nah-Streu
+                            // über dem Rechteck ihrer geänderten Viertel (`_nahRingNeuIn`, ±½ Zelle) — je Kachel im Rechteck EIN Ruf des
+                            // Fall-Lesers. Das ist Arbeit am Schirm, nie am Feld: sie wächst mit dem Rechteck, nicht mit den Zellen des
+                            // Brands (CI c8e95d38: 98 + 24 Kacheln bei 9 Zellen). Die Probe zählt je Bild die Neubauten, ihre Fläche und
+                            // die Kacheln, die in ihren Rechtecken stehen (vor dem Fall gezählt, an den Karten vorbei: keine Einheit)
+                            const [P0, KF] = [Object.getPrototypeOf(r), { malen: false, ringe: 0, m2: 0, kacheln: 0 }];
+                            const stehen = (map, K, x0, z0, x1, z1) => {
+                                let n = 0;
+                                if (map)
+                                    for (const key of Map.prototype.keys.call(map)) {
+                                        const [tx, tz] = key.split(",").map(Number);
+                                        if (!((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1)) n++;
+                                    }
+                                return n;
+                            };
+                            r._brandMalen = function (...a) {
+                                KF.malen = true;
+                                try {
+                                    return P0._brandMalen.apply(this, a);
+                                } finally {
+                                    KF.malen = false;
+                                }
+                            };
+                            r._nahRingNeuIn = function (x0, z0, x1, z1) {
+                                const [nw, ns] = [st.nahWiese, st.nahStreu];
+                                const soll = stehen(nw && nw.kacheln, AnazhRealm.NAH_WIESE.kachel, x0, z0, x1, z1) + stehen(ns && ns.kacheln, AnazhRealm.NAH_STREU.kachel, x0, z0, x1, z1);
+                                const n = P0._nahRingNeuIn.call(this, x0, z0, x1, z1);
+                                if (KF.malen && n > 0) (KF.ringe++, (KF.m2 = Math.max(KF.m2, (x1 - x0) * (z1 - z0))), (KF.kacheln += soll));
+                                return n;
+                            };
                             // das Gemessene, das der Herd schon trägt: sein Bett maß die Tat `_brandEntfachen` (die Linse zählt sie als Tat)
                             const gesehen = new Set((r._brandBett || new Map()).keys());
                             const haeufigste = (je, n) => Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, n);
                             // das Gitter des Betts aus dem Gesetz der Welt: die groben Punkte je Bett, die feinen je Maske
                             const [GROB, FEIN] = [B.bettGrob.length, B.bettGitter ** 2];
+                            // DIE SPRÜNGE DER FRONT, gelesen nur an ganzen Schritten (ein Bild mit Rest zeigt einen halben, den der schnelle
+                            // Läufer nie sieht): je Zelle, deren Quelle brennt, ihr Tempo und ihr Winkel zum Kopf der Quelle
+                            const spruenge = () => {
+                                for (const [k, c] of bf) {
+                                    const q = bf.get(c.von);
+                                    const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
+                                    const d = Math.hypot(dx, dz);
+                                    if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
+                                    // jede gefangene Zelle mit dem Punkt und der Zeit, zu der die Front sie erreichte (das Vorrücken)
+                                    if (c.t0 !== null && !I.has(k)) I.set(k, { ex: c.ex, ez: c.ez, an: c.t0, stoff: c.stoff, w: c.w, boden: c.boden, gx: c.gx, gz: c.gz });
+                                }
+                            };
                             S.frame();
-                            for (let i = 0; i < n && bf.size; i++) {
-                                const vor = bf.size;
-                                r._weltUhrNimm(r._brandUhr + B.schrittS);
-                                takt();
-                                Z.zellen.push(Math.max(vor, bf.size));
+                            const G = await brandGehen(n, () => bf.size, (vor, ganz) => {                                Z.zellen.push(Math.max(vor, bf.size));
                                 // DER GANG UND DIE ZÜNDUNG, JE AN IHRER EINHEIT (front-brand): der Gang der Zellen (`brand`: alles unter
-                                // `_tickBrand` außerhalb der Zündung) und die Zündung (`zuendung`: alles unter `_brandZuenden`) je Schritt
+                                // `_tickBrand` außerhalb der Zündung) und die Zündung (`zuendung`: alles unter `_brandZuenden`) je Bild
                                 // getrennt, je mit ihren häufigsten Lesern (die Linse nennt den Täter beim Namen); `einheiten` ihre Summe
                                 const bild = S.frame();
-                                Z.gang.push(bild.brand);
+                                // der Gang ohne den Fall der Kacheln (sein eigenes Maß: `kachel` gegen die Kacheln der Rechtecke)
+                                const kf = (bild.je.brand._nahStreuKachelFaellt | 0) + (bild.je.brand._nahWieseKachelFaellt | 0);
+                                Z.gang.push(bild.brand - kf);
+                                Z.kachel.push(kf);
+                                Z.kachelSoll.push(KF.kacheln);
+                                Z.ringe.push(KF.ringe);
+                                Z.ringM2.push(KF.m2);
+                                Object.assign(KF, { ringe: 0, m2: 0, kacheln: 0 });
                                 Z.zuendung.push(bild.zuendung);
                                 Z.einheiten.push(bild.brand + bild.zuendung);
-                                Z.rufe.push(haeufigste(bild.je.brand, 6));
+                                const [jeK, jeG] = [{}, {}];
+                                for (const [m, c] of Object.entries(bild.je.brand)) (/^_nah(Streu|Wiese)KachelFaellt$/.test(m) ? jeK : jeG)[m] = c;
+                                Z.rufe.push(haeufigste(jeG, 6));
+                                Z.rufeK.push(haeufigste(jeK, 2));
                                 Z.rufeZ.push(haeufigste(bild.je.zuendung, 12));
                                 // DIE ARBEIT DER ZÜNDUNG AUS DER ÄNDERUNG DER WELT, nie aus der Zahl ihrer Lese-Rufe (ein Soll aus den Rufen
                                 // wüchse mit dem Täter): die Ankünfte der Front (je fällige Zelle EIN Ruf von `_brandZuenden`), die Betten, die
@@ -3794,35 +3907,130 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 Z.masken.push(masken);
                                 Z.punkte.push(punkte);
                                 Z.kahl.push(kahl);
-                                for (const [k, c] of bf) {
-                                    const q = bf.get(c.von);
-                                    const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
-                                    const d = Math.hypot(dx, dz);
-                                    if (d > 1) H.set(k, { q: c.von, v: d / (c.an - q.t0), c: (dx * q.kopf[0] + dz * q.kopf[1]) / d, gras: q.stoff === "gras" });
-                                }
-                                if (i % 20 === 0) await sleep(2);
-                            }
+                                if (ganz) spruenge();
+                            }).finally(() => (delete r._brandMalen, delete r._nahRingNeuIn));
                             const [kopf, alle] = [new Map(), [...H.values()]];
                             for (const h of alle) if (!(kopf.get(h.q)?.v >= h.v)) kopf.set(h.q, h);
                             const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
+                            Object.assign(Z, G);
+                            // DAS VORRÜCKEN DES KOPFS (linse-brand-schritte 2): die vorderste gefangene Zelle längs des Kopfs des Herds
+                            // (`kopf` der Zünd-Zelle, `_brandTempo`), ihr Weg vom Herd durch die Zeit, zu der die Front sie erreichte —
+                            // wie schnell die Front beim Spieler ankommt; dazu R des Herds (die Erwartung) und der Winkel des Kopfs zum
+                            // Gitter der Zellen (0° längs einer Achse, 45° diagonal)
+                            if (h0 && h0.kopf) {
+                                const [kx, kz] = h0.kopf;
+                                let [p, t] = [0, 0];
+                                for (const c of I.values()) {
+                                    const q = (c.ex - h0.ex) * kx + (c.ez - h0.ez) * kz;
+                                    if (q > p) [p, t] = [q, c.an - h0.t0];
+                                }
+                                const w = (((Math.atan2(kz, kx) * 180) / Math.PI) % 90 + 90) % 90;
+                                Object.assign(Z, { vor: t > 0 ? +(p / t).toFixed(3) : 0, vorM: +p.toFixed(1), R: +h0.R.toFixed(3), winkel: +Math.min(w, 90 - w).toFixed(1) });
+                                // DAS BETT, WIE DIE FRONT ES VERZEHRTE (FENSTER-BETT): je gefangene Zelle Stoff, Last (`w`: Last × lebendig),
+                                // Boden-Feuchte und Gefälle, wie `_brandZuenden` sie aus `_brandStoff` las — gegen die des Herds
+                                const fern = (c) =>
+                                    c.stoff !== h0.stoff ? `Stoff ${c.stoff}` : Math.abs(c.w - h0.w) > 1e-9 ? `Last ${+c.w.toFixed(4)}` : c.boden !== h0.boden ? `Boden ${+(+c.boden).toFixed(3)}` : c.gx !== h0.gx || c.gz !== h0.gz ? "Gefälle" : null;
+                                const ab = [...I.values()].map(fern).filter(Boolean);
+                                Z.bett = { stoff: h0.stoff, w: +h0.w.toFixed(4), boden: +(+h0.boden).toFixed(3), naesse: st.naesse, zellen: I.size, abweichend: ab.length, erste: ab[0] || null };
+                            }
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
-                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                        const ohneWind = (await lauf(60)).alle;
-                        delete r._windAt;
+                        // JEDER HERD BEGINNT ZU SEINER WELT-UHR, NIE RÜCKWÄRTS (linse-brand-schritte): das Tempo der Front liest Wind und
+                        // Luft zur Uhr des Brands (`_brandTempo` → `_windAt(t)`, `_temperaturAt`), und die Uhr, zu der die Probe hier ankam,
+                        // trug die Bilder der Phasen davor (`bisDa`, an der Wanduhr des Läufers: lokal 12 235 s). Jeder Herd stellt die Uhr
+                        // darum VORWÄRTS auf seine feste Uhr (`_weltUhrNeu`; steht die Welt schon später, bleibt sie und `uhrRueck` nennt
+                        // es) und die Stunde auf Mittag (`setTimeOfDay`: die Luft der Zünd-Wärme). Bis hier kehrten drei Herde zur selben
+                        // Uhr 40 000 zurück: Overlay, Fraß des Gaus und Narbe tragen Stempel der Welt-Uhr, und derselbe Herd trug
+                        // 0,31 · 1,03 · 0,458 m/s. `gesetz` tauscht das Gesetz des Brands für diesen einen Lauf (im `finally` zurück, kein
+                        // Flag im Spiel), `wind` „aus" (ohne m/s) oder die Uhr des GESETZTEN Winds (`_windAt` am Herd zu dieser Uhr, überall
+                        // und jederzeit derselbe), `bett` das GESETZTE BETT (s. u.), `vor` misst nach dem Stellen der Uhr, vor dem Zünden
+                        const [B0, uhrRueck] = [AnazhRealm.BRAND, []];
+                        const herd = async (n, uhr, { gesetz = {}, wind, bett = false, vor = () => {} } = {}) => {
+                            if (st.spielZeit > uhr) uhrRueck.push([+st.spielZeit.toFixed(1), uhr]);
+                            r._weltUhrNeu(Math.max(uhr, st.spielZeit));
+                            r.setTimeOfDay(0.5, "regler");
+                            vor();
+                            if (wind === "aus") r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
+                            // der gesetzte Wind GANZ: `_brandTempo` teilt die Stärke durch die Böen-Drift zur Uhr des Brands
+                            // (`_windWob(t)`) — trägt der Wind sie zur Uhr des Winds, teilt die Drift auch dort (lokal streute R sonst
+                            // an derselben Uhr des Winds 0,935 · 0,871 · 0,875)
+                            else if (wind != null) {
+                                r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
+                                r._windWob = () => P._windWob.call(r, wind);
+                            }
+                            // DAS GESETZTE BETT (FENSTER-BETT): der EINE Schreiber des Betts im Brand ist `_brandStoff` (stamm/feld-brand.js,
+                            // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
+                            // (das Overlay `_depositLife`, die Narbe der Taten, der Fraß aus dem Faden des Gaus). Der Herd misst sein Bett
+                            // wie das Spiel (Stoff, Boden-Feuchte, Gefälle, Maske), lebendig ist das der Saat (`worldFieldAt`: kein Overlay,
+                            // keine Narbe, kein Gau), und JEDE Zelle trägt dieses Bett an ihrem Ort — auch wo die Welt keins trägt (Fels,
+                            // Bach: `loecher`, gezählt; an der Achse hielt der schmale Kopf, R 1,5 m/s, an ihnen und lief 0,46 von R), nur
+                            // die Asche des eigenen Brands nie; die Nässe hält die Bühne bei 0
+                            let loecher = 0;
+                            if (bett) {
+                                let F0 = null;
+                                const cs = AnazhRealm.LIFE_FIELD.cell;
+                                r._brandStoff = function (cx, cz, u) {
+                                    const f = P._brandStoff.call(this, cx, cz, u);
+                                    if (!f && (this._tatIndex().je.get(cx + "," + cz) || []).some((a) => a.tat === "brand")) return null;
+                                    const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
+                                    if (!F0) F0 = f && Object.assign({}, f, { leb: this.worldFieldAt(x, z).lebendig });
+                                    if (!F0) return null;
+                                    if (!f) loecher++;
+                                    return Object.assign({}, F0, { x, z, y: f ? f.y : this._voxelSurfaceY(x, z) });
+                                };
+                            }
+                            AnazhRealm.BRAND = Object.freeze({ ...B0, ...gesetz });
+                            try {
+                                const L = await lauf(n);
+                                if (L.bett) L.bett.loecher = loecher;
+                                return L;
+                            } finally {
+                                AnazhRealm.BRAND = B0;
+                                delete r._windAt;
+                                delete r._windWob;
+                                delete r._brandStoff;
+                            }
+                        };
+                        // von Hand gelöscht: auch sein Rest (ein Herd schreibt keine Asche in den nächsten)
+                        const loeschen = () => ((r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = n0));
+                        const ohneWind = (await herd(60, 36900, { wind: "aus" })).alle;
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
-                        r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
-                        st.worldMeta.taten.length = n0;
-                        // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
+                        loeschen();
+                        // DIE WAHRHEIT DER FRONT (FRONT-TREUE · FRONT-MIT · FENSTER-BETT · FENSTER-UHR): derselbe Herd auf dem gesetzten
+                        // Bett im gesetzten Wind zu drei Uhren des Winds, an denen sein Kopf längs einer Achse, schräg und diagonal zum
+                        // Gitter der Zellen steht (`_windDirAt`, der Mäander der Saat: 41 150 · 40 766 · 40 713) — das Vorrücken des Kopfs
+                        // ist R des Gesetzes; der diagonale noch zweimal: wieder (dieselbe Uhr des Winds, eine spätere der Welt) und am
+                        // langsamsten Läufer (leeres Budget, EIN Stück je Bild) — drei Starts, dieselben Zahlen; dazu die Mutante des
+                        // groben Gitters (nur die vier diagonalen Nachbarn: längs der Achse zackt die Front), an der FRONT-TREUE fallen
+                        // muss — vier Nachbarn längs der Achsen bissen nicht (eine Gerade durchs Gitter kreuzt Kanten, nie Ecken)
+                        const VIER = B0.nachbarn.slice(4);
+                        const wahr = {};
+                        for (const [name, uhr, wind, gesetz] of [
+                            ["achse", 37100, 41150],
+                            ["schraeg", 37500, 40766],
+                            ["diagonal", 37900, 40713],
+                            ["wieder", 38300, 40713],
+                            ["langsam", 38700, 40713, { budgetMs: 0, mindestJeBild: 1 }],
+                            ["grob", 39100, 41150, { nachbarn: VIER }],
+                        ]) {
+                            const L = await herd(300, uhr, { wind, bett: true, gesetz });
+                            wahr[name] = { windUhr: wind, zellen: st.brandFeld.size, koepfe: L.koepfe, mit: L.mit, alle: L.alle, vor: L.vor, R: L.R, winkel: L.winkel, schritte: L.schritte, bilder: L.bilder, deckel: L.deckel, bett: L.bett };
+                            loeschen();
+                        }
+                        // DER HERD DES SPIELS (die Kosten des Brands, Asche, Regen): sein Bett und sein Wind, wie die Welt sie trägt — seine
+                        // Abweichung vom Bett des Herds ist die Mutante von FENSTER-BETT (ein ungesetztes Bett muss sie sehen)
                         const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
-                        const [lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()];
-                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, ovVor, glut, licht }));
+                        let [lebVor, ovVor] = [];
+                        const Z = (W.brand = await herd(300, 40000, { vor: () => ([lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()]) }));
+                        Object.assign(Z, { ohneWind, wahr, uhrRueck, fenster: { spiel: wahr.diagonal, langsam: wahr.langsam }, lebVor, ovVor, glut, licht });
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) r._weltUhrNimm(r._brandUhr + B.schrittS), takt();
+                        // der Regen bis zum Erlöschen: höchstens 600 Schritte des Brands (nie Bilder), sein Deckel laut
+                        const R = await brandGehen(600, () => r._brandLebt(), () => {});
+                        Object.assign(Z, { regenS: R.schritte, regenDeckel: R.deckel });
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), ovNach: ovAm(), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);
@@ -3964,8 +4172,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                               einheiten: Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1))),
                               gang: Math.max(0, ...w.gang.map((e, i) => +(e / w.zellen[i]).toFixed(1))),
                               zuendung: Math.max(0, ...w.zuendung),
+                              ...{ kachel: Math.max(0, ...(w.kachel || [])), kachelSoll: Math.max(0, ...(w.kachelSoll || [])), ringe: Math.max(0, ...(w.ringe || [])), ringM2: Math.max(0, ...(w.ringM2 || [])) },
                               ...Object.fromEntries(["ankuenfte", "betten", "masken", "punkte", "kahl"].map((k) => [k, w[k].reduce((a, b) => a + b, 0)])),
-                              ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, nachher: undefined },
+                              ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, rufeK: undefined, nachher: undefined },
                               amSoll: STAND.brandAmSoll(w),
                           }) + ` — nachher ${simZeile(w.nachher)}`
                         : n === "druck"

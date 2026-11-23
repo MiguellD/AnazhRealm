@@ -312,7 +312,10 @@ function sollWand(jeAuftrag) {
 // `aktivListe` · `aktiv` · `ruhend` · `raster` · `koepfe` neu aus dem Plan. Bis siedlung-heap hielten die fünf Takt-Felder jede
 // ferne Siedlung samt Leib (Radeon, Ziel der Wegenetz-Fahrt: 8 ferne Siedlungen, 434 Köpfe, `aktivListe[].leib.userData`
 // 88,3 MB nach GC). Die Linse fährt den echten Abschied der Klasse an einer Siedlung im Takt-Stand und sucht jeden Kopf, der
-// von ihrem Eintrag aus noch erreichbar ist, beim Pfad.
+// von ihrem Eintrag aus noch erreichbar ist, beim Pfad. DIE KLASSE, NICHT DAS FELD (heap-register): der Abschied nullte seine
+// Felder einzeln, und `backt` (die Köpfe, an denen gebacken wird) entkam ihm — Radeon, Wegenetz-Fahrt: `_bewohnerSiedlungen.backt[]`
+// 28,9 MB nach GC. Darum trägt der Stand hier auch ein Feld, das kein Abschied beim Namen kennt (`zukunft`): nur das Register
+// (`BEWOHNER_ERINNERUNG`) räumt es. Und das Gedächtnis bleibt — Plan, Ursprung und Netz-Grund stehen nach dem Abschied.
 function fernSiedlungWand(A) {
     const w = weltVon(A, {});
     for (const n of [
@@ -330,7 +333,8 @@ function fernSiedlungWand(A) {
         tonZeilen: null,
     }));
     const liste = koepfe.slice();
-    const S = { key: "1,1", ox: 900, oz: 900, liste, aktivListe: liste, aktiv: liste.slice(0, 2), ruhend: [koepfe[2]], raster: new Map([["9,9", [koepfe[0]]]]), koepfe: [koepfe[0]], plan: { slots: [] }, satz: null, gestalten: [], raum: null, verkehr: null }; // prettier-ignore
+    const netzGrund = { knoten: [], kanten: [] };
+    const S = { key: "1,1", ox: 900, oz: 900, liste, aktivListe: liste, aktiv: liste.slice(0, 2), ruhend: [koepfe[2]], raster: new Map([["9,9", [koepfe[0]]]]), koepfe: [koepfe[0]], backt: [koepfe[1]], zukunft: { kopf: koepfe[2] }, plan: { slots: [] }, netzGrund, satz: null, gestalten: [], raum: null, verkehr: null }; // prettier-ignore
     // die Arbeits-Puffer des Takts hielten die Köpfe der zuletzt getakteten Siedlung
     Object.assign(w, { _bewohnerKoepfe: [koepfe[0]], _bewohnerBewegt: [koepfe[1]], _bewohnerNachbarn: [koepfe[2]], _bewohnerNbZahl: { geachtet: [koepfe[2]], naechste: [koepfe[1]] } }); // prettier-ignore
     A.prototype._bewohnerFort.call(w, S);
@@ -352,7 +356,133 @@ function fernSiedlungWand(A) {
             if (v && typeof v === "object" && !gesehen.has(v)) (gesehen.add(v), q.push([v, pp]));
     }
     const ziel = [...new Set(pfade)];
-    return { errs: ziel.length ? [`H10 _bewohnerFort: die ferne Siedlung hält ${pfade.length} Köpfe (Soll 0) — ${ziel.join(" · ")}`] : [], n: pfade.length }; // prettier-ignore
+    const errs = ziel.length ? [`H10 _bewohnerFort: die ferne Siedlung hält ${pfade.length} Köpfe (Soll 0) — ${ziel.join(" · ")}`] : []; // prettier-ignore
+    const vergessen = [["key", "1,1"], ["ox", 900], ["oz", 900], ["netzGrund", netzGrund]].filter(([k, v]) => S[k] !== v).map(([k]) => k); // prettier-ignore
+    if (!(S.plan && Array.isArray(S.plan.slots))) vergessen.unshift("plan");
+    if (vergessen.length)
+        errs.push(`H10 _bewohnerFort: die ferne Siedlung vergaß ihr Gedächtnis — ${vergessen.join(" · ")}`);
+    return { errs, n: pfade.length };
+}
+
+// H11 DIE VORLAGE FOLGT DEM BLICK (heap-register 21.11.): die verschmolzene Vorlage eines Bauplans (`_buildArchMeshMerged`,
+// `_archMergeCache`) lebt, solange ein Bau aus ihr steht; die Rückgabe des letzten (`_disposeSoulGroup` → `_archMergeLoslassen`)
+// nimmt sie mit, der nächste Bau verschmilzt neu. Bis heap-register hielt eine WeakMap je Bauplan die Vorlage, solange der
+// Bauplan lebte — und der lebt immer (state.blueprints); das Vorbacken der Geister verschmolz die ganze Bibliothek (Radeon,
+// Wegenetz-Fahrt nach dem Richter-Preis: `_archMergeCache[].geom` 15,7 MB). Die Linse fährt zwei Bauten und das Vorbacken
+// (bauen, gleich zurückgeben) am echten Stamm und zählt, was die Vorlage nach jeder Rückgabe hält.
+function vorlageWand(A) {
+    const w = weltVon(A, {});
+    const weg = [];
+    let merges = 0;
+    w._queueDispose = (g) => weg.push(g);
+    w._foundryLoslassen = w._ofenVorlageLoesen = () => {};
+    w._buildFromBlueprint = () => null;
+    // die Geometrie der Probe: genug für den Bau (`new THREE.Mesh(geom.clone(), mat)`), markiert als Vorlage oder Klon
+    const geo = (art) => ({ h11: art, morphAttributes: {}, attributes: {}, clone: () => geo("klon") });
+    w._mergeBlueprintByMaterial = () => (merges++, { leaves: [{ geom: geo("vorlage"), mat: {}, stoff: null }] });
+    const bp = { name: "h11", parts: Array.from({ length: 6 }, () => ({})) };
+    const errs = [];
+    const haelt = () => (w._archMergeCache && w._archMergeCache.get ? !!w._archMergeCache.get(bp) : false);
+    const a = A.prototype._buildArchMeshMerged.call(w, bp);
+    const b = A.prototype._buildArchMeshMerged.call(w, bp);
+    if (merges !== 1)
+        errs.push(
+            `H11 _buildArchMeshMerged: zwei stehende Bauten verschmolzen ${merges}× (Soll 1 — die Vorlage teilt)`
+        );
+    A.prototype._disposeSoulGroup.call(w, a);
+    if (!haelt()) errs.push("H11 _disposeSoulGroup: die Vorlage fiel, während ein Bau aus ihr steht");
+    A.prototype._disposeSoulGroup.call(w, b);
+    if (haelt()) errs.push("H11 _archMergeCache: die Vorlage hält nach dem letzten Bau (Soll: sie fällt mit ihm)");
+    // das Vorbacken: ein Geist, gebaut und gleich zurückgegeben (`_tickBlueprintPrebake`)
+    A.prototype._disposeSoulGroup.call(w, A.prototype._buildArchMeshMerged.call(w, bp));
+    if (haelt())
+        errs.push("H11 _tickBlueprintPrebake: das Vorbacken hält die Vorlage (Soll: der Geist gibt sie zurück)");
+    const vorlagen = weg.filter((g) => g && g.h11 === "vorlage").length;
+    if (vorlagen !== 2) errs.push(`H11 _archMergeLoslassen: ${vorlagen} Vorlagen entsorgt (Soll 2: nach dem letzten Bau und nach dem Geist)`); // prettier-ignore
+    return { errs, merges };
+}
+
+// H13 DER PUFFER GEHÖRT DER GPU (heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
+// Kopie (`_gpuEigen`). Bis heap-register 2 hielt der Sicht-Index (`_sichtZugPuffer`) seine Nullen ein zweites Mal im Heap
+// (Radeon, Wegenetz-Fahrt am Richter-Preis: `_sichtTiefeZ.auftraege[]` 13,5 MB). Die Linse fährt den echten Auftrag dreimal
+// an einem Zug mit 40 000 Indizes: gelegt (einmal hochgeladen, die Kopie leer, Typ und Zahl stehen), wieder (kein zweites
+// Legen), nach dem Fall auf der GPU (`_gpuAbschied`, der Kehraus) — der Index legt sich neu, nie ein Hochladen aus Leere.
+function gpuEigenWand(A) {
+    const hoch = [];
+    const register = new Map();
+    const rend = {
+        _attributes: {
+            update: (a, typ) => {
+                if (register.has(a)) return;
+                register.set(a, { type: typ === 2 ? "indexAttributes" : "attributes" });
+                hoch.push({ name: a.name, n: a.array.length });
+            },
+            delete: (a) => register.delete(a),
+        },
+        info: { memoryMap: register },
+    };
+    const w = weltVon(A, { renderer: rend });
+    const puffer = (label) => ({ label });
+    const dev = { createBuffer: (d) => puffer(d.label), createBindGroup: () => ({}) };
+    const be = { get: (a) => ({ buffer: register.has(a) ? a : null }) };
+    const Z = {
+        art: "frueh",
+        nIdx: 40000,
+        n: 100,
+        tafelPuffer: puffer("tafel"),
+        auftrag: { name: "sicht:auftrag", array: new Uint32Array(8) },
+    };
+    Object.assign(Z, { geom: { setIndex: (i) => (Z.geom.index = i) }, mesh: {}, zielPuffer: puffer("ziel"), zielKap: 1000, uni: puffer("uni") }); // prettier-ignore
+    const G = { leer: puffer("leer"), satzLayout: {} };
+    const zug = () => A.prototype._sichtZugPuffer.call(w, Z, Z, dev, rend, be, G, puffer("quelle"));
+    const errs = [];
+    zug();
+    const erst = Z.index;
+    const idx = () => hoch.filter((h) => /^sicht:index/.test(h.name));
+    if (erst.array.length > 0)
+        errs.push(`H13 _sichtZugPuffer: der Sicht-Index hält nach dem Hochladen seine CPU-Kopie (${((erst.array.byteLength / 1048576) || 0).toFixed(2)} MB, Soll 0 — _gpuEigen)`); // prettier-ignore
+    if (erst.array.constructor.name !== "Uint32Array" || erst.count < Z.nIdx)
+        errs.push(`H13 _gpuEigen: der Sicht-Index verlor Typ oder Zahl (${erst.array.constructor.name}, count ${erst.count}, Soll Uint32Array ≥ ${Z.nIdx})`); // prettier-ignore
+    if (idx().length !== 1 || idx()[0].n < Z.nIdx)
+        errs.push(`H13 _sichtZugPuffer: ${idx().length}× hochgeladen, zuerst ${idx()[0] ? idx()[0].n : 0} Indizes (Soll 1× mit ≥ ${Z.nIdx})`); // prettier-ignore
+    zug();
+    if (Z.index !== erst || idx().length !== 1) errs.push("H13 _sichtZugPuffer: der stehende Sicht-Index legte sich neu (Soll: er steht)"); // prettier-ignore
+    w._gpuAbschied(erst);
+    zug();
+    if (erst.array.length === 0 && (Z.index === erst || idx().length !== 2 || idx()[1].n < Z.nIdx))
+        errs.push("H13 _gpuAbschied: der gefallene Sicht-Index legte sich nicht neu (Soll: ein frischer, ganz hochgeladen — nie aus der leeren Kopie)"); // prettier-ignore
+    if (erst.array.length === 0 && !register.has(Z.index))
+        errs.push("H13 _sichtZugPuffer: der Zug zeichnet einen Index ohne GPU-Puffer");
+    return { errs, mb: erst.array.byteLength / 1048576, gelegt: idx().length };
+}
+
+// H14 DER FLUG FOLGT DEM BLICK (heap-register 2): ein Knoten-Bau in Raten, dessen Objekt im Bau fiel (der Spieler ging),
+// verlässt den Flug (`_knotenFlugRaeumen`) — im Kehraus, auch wenn kein neuer Bau einen Flug anlegt. Bis heap-register 2
+// räumte erst der 32. Flug (Radeon, `werkbank runde --nur stadt`: `_erstZeichnung.imFlug` 0 → 7,4 → 16,5 MB je Runde). Die
+// Linse fährt den echten Kehraus an einem stillen Bild mit drei Bauten: verlassen (KNOTEN_FLUG_BILDER + 1 Bilder ohne Leser,
+// fällt), jung (bleibt) und einem, dessen Leser ihn eben weiterging (bleibt).
+function flugWand(A) {
+    const bild = 5000;
+    const imFlug = new Map([
+        ["verlassen", { bild: bild - A.KNOTEN_FLUG_BILDER - 1 }],
+        ["jung", { bild: bild - 10 }],
+        ["eben", { bild }],
+    ]);
+    const rend = {
+        _attributes: { delete() {} },
+        _geometries: { attributeCall: new Map() },
+        info: { memoryMap: new Map() },
+        _nodes: { nodeFrame: { frameId: bild } },
+    };
+    const w = weltVon(A, { renderer: rend, scene: { traverse() {} } });
+    w._erstZeichnung = { imFlug };
+    A.prototype._gpuKehraus.call(w, 0, 1e9);
+    const errs = [];
+    if (imFlug.has("verlassen"))
+        errs.push(`H14 _gpuKehraus: der verlassene Knoten-Bau hält den Flug nach ${A.KNOTEN_FLUG_BILDER + 1} Bildern ohne Leser (Soll: er fällt — _knotenFlugRaeumen)`); // prettier-ignore
+    if (!imFlug.has("jung") || !imFlug.has("eben"))
+        errs.push("H14 _knotenFlugRaeumen: ein Bau mit Leser fiel aus dem Flug");
+    return { errs, flug: imFlug.size };
 }
 
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
@@ -1744,9 +1874,27 @@ function selbsttest() {
     const sollRot = sollWand(true);
     const sollGruen = sollWand();
     t("Soll des Turms: die Stufe 0 je Auftrag ist rot bei sollTon, je Bau einmal grün", /^H9 sollTon: /.test(sollRot.errs[0] || "") && !sollGruen.errs.length); // prettier-ignore
-    // DIE FERNE SIEDLUNG (H10): der Abschied, der die Takt-Felder stehen lässt (der Stand vor siedlung-heap), ist rot beim Pfad
-    const fernRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", "[S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];", ""))); // prettier-ignore
-    t("Ferne Siedlung: der Abschied ohne die Takt-Felder ist rot bei aktivListe, der Stamm grün", /^H10 _bewohnerFort: .*S\.aktivListe\[\]/.test(fernRot.errs[0] || "") && !fernSiedlungWand(A).errs.length); // prettier-ignore
+    // DIE FERNE SIEDLUNG (H10): der Abschied Feld für Feld (der Stand vor heap-register: die fünf Takt-Felder genullt, `backt` und
+    // jedes neue Feld stehen) ist rot beim Pfad, das Register ohne Gedächtnis (es räumt auch den Plan) rot beim Namen, der Stamm grün
+    const REGISTER = "for (const k of Object.keys(S)) if (!AnazhRealm.BEWOHNER_ERINNERUNG.includes(k)) delete S[k];";
+    const fernRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", REGISTER, "[S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];"))); // prettier-ignore
+    const fernLeer = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", REGISTER, "for (const k of Object.keys(S)) delete S[k];"))); // prettier-ignore
+    t("Ferne Siedlung: der Abschied Feld für Feld ist rot bei backt und zukunft, ohne Gedächtnis rot beim Plan, der Stamm grün", /^H10 _bewohnerFort: .*S\.backt\[\].*S\.zukunft\.kopf/.test(fernRot.errs[0] || "") && /vergaß ihr Gedächtnis — plan · key/.test(fernLeer.errs.join(" ")) && !fernSiedlungWand(A).errs.length); // prettier-ignore
+    // DIE VORLAGE (H11): die Vorlage ohne Rückgabe (der Stand vor heap-register: sie hält, solange der Bauplan lebt) ist rot
+    // beim Halter, die Rückgabe ohne Zählung (der erste Bau nimmt sie mit) rot beim stehenden Bau, der Stamm grün
+    const v11Halt = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "return;"))); // prettier-ignore
+    const v11Frueh = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "q.nutzer--;"))); // prettier-ignore
+    t("Vorlage: ohne Rückgabe rot bei _archMergeCache und dem Vorbacken, ohne Zählung rot am stehenden Bau, der Stamm grün", v11Halt.errs.some((e) => /H11 _archMergeCache: die Vorlage hält/.test(e)) && v11Halt.errs.some((e) => /H11 _tickBlueprintPrebake/.test(e)) && v11Frueh.errs.some((e) => /fiel, während ein Bau aus ihr steht/.test(e)) && !vorlageWand(A).errs.length); // prettier-ignore
+    // DER PUFFER DER GPU (H13): das Hochladen mit Kopie (der Stand vor heap-register 2) ist rot bei der CPU-Kopie, der Fall
+    // ohne Marke (der Abschied hebt nur die Version) rot beim Neu-Legen, der Stamm grün
+    const g13Kopie = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_sichtZugPuffer", "AnazhRealm._gpuEigen(rend, Z.index, 2);", "rend._attributes.update(Z.index, 2);"))); // prettier-ignore
+    const g13Fall = gpuEigenWand(klasseVon(stammLib.ersetze(st8, "_gpuAbschied", 'attr.__gpuEigen = "gefallen";', ""))); // prettier-ignore
+    t("Puffer der GPU: mit Kopie rot beim Sicht-Index, der Fall ohne Marke rot beim Neu-Legen, der Stamm grün", g13Kopie.errs.some((e) => /hält nach dem Hochladen seine CPU-Kopie/.test(e)) && g13Fall.errs.some((e) => /legte sich nicht neu/.test(e)) && !gpuEigenWand(A).errs.length); // prettier-ignore
+    // DER FLUG (H14): der Kehraus ohne Räumung (der Stand vor heap-register 2: erst der 32. neue Flug räumte) ist rot beim
+    // verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün
+    const f14Alt = flugWand(klasseVon(stammLib.ersetze(st8, "_gpuKehraus", "this._knotenFlugRaeumen(this._erstZeichnung, rend._nodes.nodeFrame.frameId);", ";"))); // prettier-ignore
+    const f14Alle = flugWand(klasseVon(stammLib.ersetze(st8, "_knotenFlugRaeumen", "if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);", "E.imFlug.delete(k);"))); // prettier-ignore
+    t("Flug: der Kehraus ohne Räumung rot beim verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün", f14Alt.errs.some((e) => /verlassene Knoten-Bau hält den Flug/.test(e)) && f14Alle.errs.some((e) => /Bau mit Leser fiel/.test(e)) && !flugWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1801,6 +1949,15 @@ function main() {
     const fs10 = fernSiedlungWand(A);
     errs.push(...fs10.errs);
     console.log(`H10 die ferne Siedlung nach dem Abschied: ${fs10.n} Köpfe erreichbar (Soll 0)`);
+    const v11 = vorlageWand(A);
+    errs.push(...v11.errs);
+    console.log(`H11 die Vorlage des Bauplans: ${v11.merges}× verschmolzen für zwei Bauten und einen Geist, nach dem letzten gefallen (${v11.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const g13 = gpuEigenWand(A);
+    errs.push(...g13.errs);
+    console.log(`H13 der Sicht-Index der GPU: CPU-Kopie ${g13.mb.toFixed(2)} MB nach dem Hochladen (Soll 0), ${g13.gelegt}× gelegt über Fall und Neu-Legen (${g13.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const f14 = flugWand(A);
+    errs.push(...f14.errs);
+    console.log(`H14 der Flug der Knoten-Bauten im Kehraus: ${f14.flug} von 3 bleiben (Soll 2: der verlassene fällt) (${f14.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);

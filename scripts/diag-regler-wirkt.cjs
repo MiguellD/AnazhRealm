@@ -45,7 +45,7 @@
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
 const { statikServer, nullSeite, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
-const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE, gegenZeile } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
 const BILD_SCHWELLE = 0.01;
@@ -582,15 +582,17 @@ async function stufenMessen(h, opts) {
         // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A): am Regler-Rand richtet der WURF
         // DER STEIN AUSSER DER ZEILE (E8.1): gegen die Zeile zählen die Dreiecke ohne die freien — die Zahl des Ausgangs (phyto-core
         // `budgetFrei` vor der Faltung, Bericht `frei`; nach der Faltung trägt kein Teil mehr seinen Verband allein)
-        const gegen = { tris: pl.k.tris - (pl.k.budget?.frei || 0), draws: pl.k.draws };
-        const zu = ["tris", "draws"].filter(
-            (f) =>
-                Number.isFinite(pl.zeile[f]) && !(gegen[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)
+        // DIE BEWEGTEN TEILE einer Maschine (die Haspel) zählen gegen `bewegt` der Zeile, nie gegen die ruhenden Draws — dieselbe
+        // Zählung wie gate:asset-contract (`gegenZeile` des Harness)
+        const gegen = gegenZeile(pl.k);
+        const zeile = Object.assign({ bewegt: 0 }, pl.zeile);
+        const zu = ["tris", "draws", "bewegt"].filter(
+            (f) => Number.isFinite(zeile[f]) && !(gegen[f] <= zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)
         );
         const n = `${kerne[pl.art] || "phyto"}:${pl.art}:${pl.r ? pl.r[0] : "(Rezept)"}`;
         if (zu.length)
             (bruch[n] = bruch[n] || []).push(
-                `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${gegen[f]} > ${pl.zeile[f]}`).join(", ")}`
+                `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${gegen[f]} > ${zeile[f]}`).join(", ")}`
             );
     });
     // DIE KLASSE BEIM NAMEN (w28-putz-wand): gerichtet wird das Höchste, genannt JEDER Fall über dem Soll (`ueber`) — hinter

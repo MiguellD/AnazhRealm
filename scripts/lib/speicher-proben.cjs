@@ -45,7 +45,7 @@ async function wegFahrt({ umstellen, rufe }) {
 // zwei GC (`/puffer`): Heap, `renderer.info.memory.geometries`, der Behälter-Zensus (`__behaelterZensus`) und die Geburt der
 // Geometrien (`__geburtLinse`, eingesetzt vor der Start-Lesung). (a) Wiese · Wiese-Ost · Dorf · West · Wiese (die Posen der
 // Ratsche des Wegs); (b) Platz → jedes Haus des Start-Dorfs bis zu seiner Stufe 0 → Platz (Genesis, Ego); (reise) Wiese → zwei
-// ferne Orte → Wiese, die Würfe der Fluss-Probe gelaende.K4#2 (±6 km, je ≥ 1,5 km auseinander, ihre Saat): Runde 1 die ersten
+// ferne Orte → Wiese, (stadt) dasselbe ab stadt-voll (nur mit `--nur stadt`), die Würfe der Fluss-Probe gelaende.K4#2 (±6 km, je ≥ 1,5 km auseinander, ihre Saat): Runde 1 die ersten
 // zwei, Runde 2 die nächsten zwei — was mit dem WEG wächst (die Hydro-Kachel je Ort), wächst von Runde zu Runde. Der Bild-Strom
 // zählt je rAF bei laufendem Loop, nie im Umstellen und nie im GC, daneben die längste Aufgabe der Seite (longtask; `langeAufgabeUmstellen` samt dem Umstellen, dem Wieder-Bestellen der Kacheln). Ein Bildpaar
 // Start ↔ Rückkehr an derselben Kamera. → { text, gruen }
@@ -182,7 +182,18 @@ async function rundeFahrt({ umstellen, rufe }) {
                 return { orte };
             },
         },
-    ].filter((x) => !nur || x.name === nur);
+        {
+            // (stadt) der Messort der Karte-2-Preise: stadt-voll → zwei ferne Orte der Reise → stadt-voll (heap-register 22.11.)
+            name: "stadt",
+            start: () => geh({ ort: "stadt-voll" }),
+            runde: async (i) => {
+                const orte = (await ev(REISE)).slice(2 * i, 2 * i + 2);
+                for (const [x, z] of orte) await geh({ x, z });
+                await geh({ ort: "stadt-voll" });
+                return { orte };
+            },
+        },
+    ].filter((x) => (nur ? x.name === nur : x.name !== "stadt"));
     const DZ = require("./draw-zaehler.cjs");
     const anlage = anlageVon(root);
     const aus = { datum: new Date().toISOString(), runden: [] };

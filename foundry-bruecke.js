@@ -644,6 +644,15 @@ const foundryKanal = (() => {
         // DAS SEIL REIST MIT (physik.K4, additiv, must-ignore): ein Glied oder der Kopf eines Seils der Schmiede (schmiede-core
         // `bauSeil`, userData.__seil = seine Nummer) — der Leser der Welt bewegt jedes Teil nach dem EINEN Seil-Gesetz.
         if (mesh.userData && Number.isInteger(mesh.userData.__seil)) out.seil = mesh.userData.__seil;
+        // DAS TEIL DER MASCHINE REIST MIT (brunnen-haspel, additiv, must-ignore): ein Mesh unter einer bewegten Gruppe, die ihr
+        // Teil einer Maschine nennt (fachwerk `__schwenk.welle`: kurbel · seil · eimer der Haspel), trägt den Namen — der Wirt
+        // zeichnet es als eigene Instanz und setzt seine Matrix aus dem Gesetz der Maschine (`haspelTeilMatrix`). Andere
+        // schwingende Teile (die Geräte des Spielplatzes) und jede andere Gestalt tragen das Feld nie (byte-alt).
+        for (let anc = mesh.parent; anc; anc = anc.parent)
+            if (anc.userData && anc.userData.__schwenk && typeof anc.userData.__schwenk.welle === "string") {
+                out.welle = { teil: anc.userData.__schwenk.welle };
+                break;
+            }
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut

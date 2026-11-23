@@ -185,7 +185,7 @@ class AnazhRealm_siedlung_menge {
             },
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
             (Z) => {
-                Object.assign(Z, { gebacken: 0, tempo: b.tempo });
+                Object.assign(Z, { gebacken: 0, tempo: b.tempoBand });
                 for (let h = 0; h < Z.staende; h++) this._bewohnerGangPose(b.leib, Z, Z.n + h, S);
             }
         );

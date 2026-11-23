@@ -2213,6 +2213,12 @@ class AnazhRealm_feld_leben {
             return kacheln.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
         };
         const feld = [...(st.lifeField || [])].filter(([k]) => nah(k)).map(([k, e]) => [k, e.a, e.t]);
+        // die Leichname (oeko.zerfall#1, `_aasTat`): je nahe Zelle ihre liegenden [Kennung, Stunde, Wuchs]
+        const h = this._weltStunde();
+        const aas = [...(st.aasFeld || [])]
+            .filter(([k]) => nah(k))
+            .map(([k, L]) => [k, L.filter((c) => c[1] + this._tatDauer({ tat: "aas", w: c[2] }) > h)])
+            .filter(([, L]) => L.length);
         const akte = (st.feldAkte || []).map(({ k: _k, ...a }) =>
             a.art === "annahme" ? { ...a, tier: { ...a.tier } } : a
         );
@@ -2224,6 +2230,7 @@ class AnazhRealm_feld_leben {
         // Funktion von Saat, Akten und Takt — ein Stand ohne Akte trägt das Feld nicht (seine Bytes bleiben, wie sie waren)
         const gaue = this._gauImStand();
         if (gaue.length) stand.gaue = gaue;
+        if (aas.length) stand.aas = aas;
         return stand;
     }
     _lebenAusStand(v) {
@@ -2254,6 +2261,19 @@ class AnazhRealm_feld_leben {
             const tod = z[2] + Math.max(0, Math.log(Math.abs(z[1]) / L.epsilon)) / L.decayPerSec;
             this._feldTod(lf, z[0], zelle, tod, -Infinity);
             AnazhRealm._lebenWecken(this, z[0], jetzt);
+        }
+        // die Leichname des Stands (oeko.zerfall#1): je Zelle ihre liegenden [Kennung, Stunde, Wuchs]; die Frist rechnet der
+        // nächste Tod neu (`_aasTat`)
+        const aas = (st.aasFeld = new Map());
+        this._aasFrist = null;
+        for (const z of Array.isArray(v.aas) ? v.aas : []) {
+            if (!Array.isArray(z) || typeof z[0] !== "string" || !Array.isArray(z[1])) continue;
+            const L = z[1].filter((c) => Array.isArray(c) && typeof c[0] === "string" && zahl(c[1]) && zahl(c[2]));
+            if (L.length)
+                aas.set(
+                    z[0],
+                    L.map(([id, hi, w]) => [id, hi, w])
+                );
         }
         const R = this._bestandRegionen().regionen;
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
@@ -3190,6 +3210,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
     riss: Object.freeze({ tiefe: 0.03, stunden: 24, naehr: 0.2 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort, sein Leichnam nährt ihn
     bestellen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Stück Acker, gepflügt und gesät (`_ackerBestellen`): es trägt seine Frucht ab seiner Stunde (phyto ackerStand)
+    aas: Object.freeze({ tiefe: 0, stunden: 24, naehr: 0.2 }), // der Leichnam jedes Tods des Bestands (`_aasTat`, keine Tat: ein Feld des Lebens): er nährt wie der des Risses; das Leben gibt der Tod selbst (`_bestandStirbt`)
     max: 0.6,
     lebMin: 0.1,
 });

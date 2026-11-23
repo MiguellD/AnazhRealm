@@ -394,6 +394,7 @@ class AnazhRealm_siedlung_bewohner {
             (a.schnitt === t.schnitt ? 0 : 0.5) +
             0.25 * (Math.abs(a.auge - t.auge) + Math.abs(a.mund - t.mund) + Math.abs(a.braue - t.braue) + Math.abs(a.haaransatz - t.haaransatz)); // prettier-ignore
         if (typeof kc.leibRaumPunkt !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibRaumPunkt");
+        if (typeof kc.leibKoennen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibKoennen");
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
         const tuch = Object.keys(kc.CLOTH_COLORS);
         for (const G of S.gestalten)
@@ -429,6 +430,9 @@ class AnazhRealm_siedlung_bewohner {
             // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — sein Punkt trägt sie in die Menge, die Geburt auf seine Knochen
             const dE = this._dialsAusGenom(gen);
             b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dE[a.achse]]));
+            // SEIN KÖNNEN (mensch-zahlen, koerper `leibKoennen`): die Kraft seiner Beine über seinem Gewicht aus den Dials seines
+            // Genoms und seinem Alter — das Tempo seines Gangs liest `lauf` (`_bewohnerGeburt`)
+            b.koennen = kc.leibKoennen(Object.assign({}, dE, { age: gen.alter }));
             // SEIN PUNKT IM LEIB-RAUM IST DER SEINES NAHEN LEIBS (w28-gestalt, koerper `leibRaumPunkt`): das Weiche seiner GESTALT
             // (Geschlecht, Bau, Muskel, Alter, Haar — `G.dK`, der Guss, in dem er nah steht) auf SEINEN Knochen (`bau`); Breite und
             // Tiefe seines Genoms trägt die Matrix seines Satzes wie die Hüllen seines Leibs (`_bewohnerLeibAn`). Bis hier stand im
@@ -918,7 +922,14 @@ class AnazhRealm_siedlung_bewohner {
                     if (i !== P.heimI && (!st || teilVon(st) !== P.heimTeil)) neu = P.voll.add(i);
                 }
             }
-            return (wo) => (P.bind[wo] < 0 || P.voll.has(P.bind[wo]) ? null : P.am.get(P.bind[wo]) || null);
+            // DAHEIM TRÄGT NUR DAS WERK EINEN STAND (mensch-zahlen): der Abend daheim sitzt vor der Tür, der Tisch daheim ist
+            // drinnen — der Plan ohne Ort (`tagesPlan`). Bis hier reichte der Griff den Stand des Werks vor dem eigenen Haus auch
+            // als Abend und als Tisch durch: wer in einem Haus mit Rolle wohnt, aß mittags draußen an seinem Werk, und sein Abend
+            // daheim las sich als Treff (an stadt-voll 10 der ersten 100, gate:kreatur-takt bewohner „daheim am Werk")
+            return (wo) => {
+                const i = P.bind[wo];
+                return i < 0 || P.voll.has(i) || (i === P.heimI && wo !== "werk") ? null : P.am.get(i) || null;
+            };
         };
         const liste = [];
         const besuche = [];
@@ -987,7 +998,7 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, beinL: u, tempo: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1286,23 +1297,26 @@ class AnazhRealm_siedlung_bewohner {
     // (`_hausHuelleSetzen`: die Boxen seiner Wände im Blocker-Netz) — ihre Regeln fragen die Wände (`frei`, die Linie zum Netz).
     // Bis siedlung-k3-hang entstand die erste Liste vor den Hüllen (das Start-Dorf am Hang: 18 von 18 Häusern ohne Hülle), jede
     // nach einer Abwesenheit mit ihnen: die erste stellte Stände hinter Hauswände, die zweite andere (die Wiederkehr 21 m).
-    // Es wartet jedes Haus, dessen Hülle kommt: gezeichnet oder in der Mesh-Zone (`architectureCullingRadius`) — ein kaltes
-    // Haus jenseits trägt seine Hülle erst, wenn der Spieler naht, dann prüft die Wache (`_bewohnerWechsel`) die Stände um
-    // es. Bis w3u-stadt-leben wartete die Liste auf jedes Haus: die Metropole an stadt-voll (295 Häuser bis 409 m vom Markt,
-    // 165 kalt) blieb ohne einen Bewohner.
+    // EINE HÜLLE JE HAUS (eine-huelle): es wartet JEDES Haus des Plans, und die Liste holt, worauf sie wartet (`_hausHuelleHolen`:
+    // die Lieferung des Fernkörpers trägt die Hülle wie jede Stufe) — je Takt `huellenJeTakt` Häuser, reihum. Bis hier wartete
+    // sie nur auf die Häuser in der Mesh-Zone (`architectureCullingRadius`) und die gezeichneten: ein kaltes Haus jenseits
+    // stand in vier Wänden aus seiner Tür-Zeile, trug seine Hülle erst, wenn der Spieler nahte, und die Wache rückte dann die
+    // Stände um es (0,3–2,9 m, 28 während einer Zählung am Start-Dorf — die Station menge.bevoelkerung#1 verlor ihr Soll).
+    // Die Ausnahme kam mit w3u-stadt-leben: der Fernkörper trug keine Hülle, die Metropole an stadt-voll (295 Häuser bis 409 m
+    // vom Markt, 165 kalt) blieb ohne einen Bewohner.
     _bewohnerHuellenDa(S) {
         const samen = S.hausSamen || (S.hausSamen = new Set(S.plan.slots.map((sl) => sl.seed >>> 0)));
-        const [p, R] = [this.state.playerMesh.position, this.state.architectureCullingRadius];
+        const offen = [];
         for (const e of this.state.architectures || [])
-            if (
-                e &&
-                e.tuer &&
-                samen.has(e.seed >>> 0) &&
-                !e._hausHuelle &&
-                (this._archIsRendered(e) || (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 <= R * R)
-            )
-                return false;
-        return true;
+            if (e && e.tuer && !e._hausHuelle && samen.has(e.seed >>> 0)) offen.push(e);
+        if (!offen.length) return true;
+        const n = AnazhRealm.BEWOHNER.huellenJeTakt;
+        const ab = (S.huellenAb = (S.huellenAb | 0) % offen.length);
+        let da = 0;
+        for (let i = 0; i < Math.min(n, offen.length); i++)
+            if (this._hausHuelleHolen(offen[(ab + i) % offen.length])) da++;
+        S.huellenAb = ab + n;
+        return da === offen.length;
     }
 
     // DIE VORLAGEN DER GESTALTEN im Faden (der Mensch-Ofen der Foundry, nah zuerst — nie ein Guss im Haupt-Faden): je Stufe
@@ -1377,7 +1391,9 @@ class AnazhRealm_siedlung_bewohner {
         // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
         this._leibMatrix(g);
         g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags. Die
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags × `lauf`
+        // seines Könnens (mensch-zahlen, koerper `leibKoennen`: die Kraft seiner Beine über seinem Gewicht — bis hier ging der
+        // Greis so schnell wie der Athlet, 100 m binnen ±1,5 % über 100 Bewohner). Die
         // Beinlänge seiner GESTALT in seiner Größe, nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs liest sein
         // wahres Bein (`beinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und die Ankunft spielt
         // einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über ±2 m,
@@ -1385,12 +1401,13 @@ class AnazhRealm_siedlung_bewohner {
         b.beinMass = this._bewohnerBeinMass(G, b);
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
-        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        b.tempoBand = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        b.tempo = b.tempoBand * b.koennen.lauf;
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
         if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
             for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
                 this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
         }
@@ -1932,9 +1949,13 @@ class AnazhRealm_siedlung_bewohner {
     // der Doppelschritt seines Tempos (`_bewohnerSatz`): die Phase geht den Weg, den er geht (der Tick seines Tempos über die
     // Zeit, die sein Weg ihm trüge) — wer eilt oder ausweicht, tritt schneller oder langsamer, nie gleitet sein Fuß. Bis hier
     // lief sie im Takt des gehenden Tempos über den Schritt des gebackenen: der Satz glitt um 0,034, wer eilte, um 0,045.
+    // DAS BAND GEHT DEN GANG DES KANONS (mensch-zahlen, `tempoBand`): EIN Band je Siedlung trägt EINEN Doppelschritt —
+    // den seines Tempos ohne das Können; wer mehr oder weniger kann, tritt ihn im Satz öfter oder seltener (die Phase geht
+    // seinen Weg), die Schrittlänge seines Könnens trägt der nahe Leib (`_gaitTick` an seinem Tempo).
     _bewohnerGangSchritt(b, v, dt, echt, S) {
         const g = b.leib;
-        if (v > 0) this._gaitTakt(b.beinMass.L, b, b.tempo, (dt * v) / b.tempo);
+        const vB = b.tempoBand;
+        if (v > 0) this._gaitTakt(b.beinMass.L, b, vB, (dt * v) / vB);
         else this._gaitTakt(b.beinMass.L, b, 0, dt);
         if (v === 0 && !(b._gaitW > 0.01)) b._gaitW = 0;
         if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
@@ -3749,22 +3770,19 @@ class AnazhRealm_siedlung_bewohner {
             }
         }
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
-        S.liste = null;
-        // DER TAKT DER KÖPFE GEHT MIT DER LISTE (siedlung-heap): `aktivListe`, `aktiv`, `ruhend`, `raster` und `koepfe` sind
-        // Funktionen der Liste (`_tickBewohner` legt sie neu, sobald `aktivListe !== liste`) — bis hier hielten sie jede ferne
-        // Siedlung mit ihren gegangenen Köpfen samt Leib (Radeon, Messort der Wegenetz-Fahrt: 8 ferne Siedlungen, 434 Köpfe,
-        // `aktivListe[].leib.userData` 88,3 MB nach GC)
-        [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];
+        // DIE FERNE SIEDLUNG IST IHR PLAN (heap-register, „der Speicher folgt dem Blick“): ihr Eintrag behält GENAU das Gedächtnis
+        // der Siedlung (`BEWOHNER_ERINNERUNG`: Schlüssel, Plan, Ursprung und der Grund ihres Netzes, den die Wege zu den Nachbarn
+        // auch fern lesen) — jedes andere Feld ist eine Funktion der Liste, und der Takt legt es neu, sobald sie wiederkehrt
+        // (`_tickBewohner`: Liste, Gestalten, Wache, Uhr und Takt der Köpfe; die Netze, Stände und Samen lazy). Bis hier nullte der
+        // Abschied seine Felder einzeln, und jedes neue entkam ihm: siedlung-heap nahm fünf Takt-Felder, `backt` (die Köpfe, an
+        // denen gebacken wird) hielt weiter jede ferne Siedlung samt Leib (Radeon, Wegenetz-Fahrt: `_bewohnerSiedlungen.backt[]`
+        // 28,9 MB nach GC). Die Klasse fällt am Register, nie Feld für Feld.
+        for (const k of Object.keys(S)) if (!AnazhRealm.BEWOHNER_ERINNERUNG.includes(k)) delete S[k];
+        [S.liste, S.gestalten] = [null, null];
         // … und die Arbeits-Puffer des Takts (`_bewohnerKoepfe`, `_bewohnerBewegt`, `_bewohnerNachbarn`, die Wahl in
         // `_bewohnerNbZahl`): vor jedem Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
         for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;
         if (this._bewohnerNbZahl) this._bewohnerNbZahl.geachtet.length = this._bewohnerNbZahl.naechste.length = 0;
-        S.listeWerk = null;
-        S.lebt = false;
-        S.gestalten = null;
-        S.raum = null;
-        S.satz = null;
-        S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
         this._ofenMemoRaeumen();
     }
     _bewohnerFortAlle() {
@@ -3845,9 +3863,15 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // rumpfMaxRad = so weit der Rumpf über dem Becken (~25°), jenseits wendet sich, wer steht, mit dem Leib · kopfRadS = so schnell dreht der Kopf (Blickwendungen des Kopfs 200–300°/s,
 // Zangemeister & Stark 1982) · spielerRaumM = der persönliche Raum über zwei Kapseln, den er dem Spieler lässt (Hall 1966:
 // die persönliche Distanz ab 0,45 m), geweitet von der erinnerten Furcht (`_bewohnerSpielerAbstand`) · zeugeM = so weit sieht
-// er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
+// er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`). DIE HÜLLEN (eine-huelle): huellenJeTakt = so viele Häuser
+// ohne Hülle fragt die wartende Liste je Takt nach ihrer Lieferung (`_bewohnerHuellenDa`, reihum).
+// DAS GEDÄCHTNIS EINER FERNEN SIEDLUNG (heap-register, `_bewohnerFort`): die Felder ihres Eintrags, die der Abschied stehen lässt —
+// was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
+// fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
+AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund"]);
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
+    huellenJeTakt: 8,
     staende: Object.freeze(["heim", "platz", "werk", "mahl", "abend", "besuch"]),
     restMax: 0.03,
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),

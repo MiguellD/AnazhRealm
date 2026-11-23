@@ -277,7 +277,7 @@ let _zeitSchl='',_zeitHtml='',_zeitUhr=0;
 function zeitTafel(){if(!document.body.classList.contains('lehren'))return '';const schl=JSON.stringify(P);
   if(schl!==_zeitSchl){_zeitSchl=schl;clearTimeout(_zeitUhr);_zeitUhr=setTimeout(()=>{
     _zeitHtml='<div class="lr"><div class="lr-h"><span class="lr-lab">Die Zeit · Tempo der Technik</span><span class="lr-val">km/h · 0–50</span></div>'+
-      VC.EPOCHE_GESETZ.map((E,i)=>{const l=VC.fahrLeistung(Object.assign({},P,{epoche:i}));return `<div class="lr-hint"${Math.round(+P.epoche)===i?' style="color:var(--steel-bright)"':''}>${E.lab}: ${l.kmh} km/h · ${l.t50===null?'—':l.t50+' s'}</div>`;}).join('')+'</div>';
+      VC.EPOCHE_GESETZ.map((E,i)=>{const l=VC.fahrLeistung(Object.assign({},P,{epoche:i}),presetId);return `<div class="lr-hint"${Math.round(+P.epoche)===i?' style="color:var(--steel-bright)"':''}>${E.lab}: ${l.kmh} km/h · ${l.t50===null?'—':l.t50+' s'}</div>`;}).join('')+'</div>';
     renderTafel(evalLehren(VC.epocheForm(P)));},250);}
   return _zeitHtml;}
 
@@ -577,7 +577,7 @@ function updateTrack(dt){const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
 const car=VC.fahrZustand(0,0,0);
 const input={throttle:0,brake:0,steer:0,hand:0};
 const FAHR=VC.FAHR;  // N6.1 — die Fahr-Konstanten leben im KERN: EINE Quelle fuer Probefahrt UND exportDrive
-function fahrGesetzLab(){return VC.fahrGesetz(VC.exportDrive(P));}   // die Regler wirken live (P je Frame)
+function fahrGesetzLab(){return VC.fahrGesetz(VC.exportDrive(P,presetId));}   // die Regler wirken live (P je Frame); der Motor ist der der Gattung (Labor = Welt)
 // DIE PRÜFFAHRT: der Fahrer der Linie (VC.fahrerLinie) steuert; eine Taste (W A S D, Pfeile) nimmt ihm das Steuer
 let pruef=null,ein=input;
 function updateVehicle(dt,t){
