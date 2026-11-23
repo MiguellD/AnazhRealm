@@ -56,8 +56,9 @@
             "datei": 1
         },
         "scripts/diag-mensch-zuege.cjs": {
-            "zweck": "Messung: führt koerper-core im vm mit dem eingeschmuggelten Täter aus (tagesZug liefert immer ausgeglichen)",
-            "datei": 1
+            "zweck": "Messung: führt koerper-core im vm mit dem eingeschmuggelten Täter aus (tagesZug liefert immer ausgeglichen); ALTER führt die Glieder des Rollers (_rollHumanoidGenome, _bewohnerJahre, _bewohnerAbstand, _dialsAusGenom) aus dem virtuellen Stamm aus, der Täter tauscht die Zeile des Alters",
+            "datei": 1,
+            "stamm": 1
         },
         "scripts/diag-ofen-contract.cjs": {
             "zweck": "Messung: führt die Foundry-Brücke als Ofen im vm aus",

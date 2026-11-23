@@ -7,13 +7,18 @@ class AnazhRealm_koerper_leib {
     // Das Haar der Natur: die Töne, deren Farbton im Braun-Orange liegt (≤ 50°) oder die kaum gesättigt sind (Schwarz, Grau,
     // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Gestalten jeder
     // Siedlung (`_bewohnerGestalten`) und jeder Bewohner (`_bewohnerGenome`). Kalter Kern → lauter Bruch (fail-closed).
-    _rollHumanoidGenome(seed) {
+    // DAS ALTER (koerper ALTER_GESETZ, mensch.geist.generationen): `epoche` = { jahr } der Siedlung, dazu entweder `gestalt`/`von`
+    // (die Gestalten: geschichtet über die Pyramide) oder `rang`/`n` (der Bewohner: sein Platz im Haushalt seines Hauses).
+    _rollHumanoidGenome(seed, epoche) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS || !core.HAAR_KAPPE)
             return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS/HAAR_KAPPE");
         if (!core.BAU_GESETZ || typeof core.bauWurf !== "function")
             return AnazhRealm._kernPflichtBruch("koerper:BAU_GESETZ");
+        if (!core.ALTER_GESETZ || typeof core.alterLeib !== "function")
+            return AnazhRealm._kernPflichtBruch("koerper:ALTER_GESETZ");
+        const J = this._bewohnerJahre(g, epoche);
         const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
             const c = core.HAIR_COLORS[k].base >>> 0;
             const r = (c >> 16) & 255,
@@ -52,7 +57,8 @@ class AnazhRealm_koerper_leib {
             schnitt: g.pick("schnitt", Object.keys(core.HAAR_KAPPE)),
             haarLaenge: g.range("haarLaenge", 0.7, 1.4),
             haarFuelle: g.range("haarFuelle", 0.8, 1.3),
-            alter: g.range("alter", 0.05, 0.5),
+            // (das Alter der Epoche, koerper ALTER_GESETZ — bis generationen-band 0,05–0,5 auf dem Regler, 21–49 J: kein Kind, kein Greis)
+            alter: core.alterRegler(J),
             // DAS GESICHT (mensch.K4): die Achsen des Gesichts-Gesetzes (koerper GESICHT_GENOM) — die Größe des Auges, die Breite
             // des Munds, die Höhe der Brauen, der Haar-Ansatz; der Kern rechnet ihre Bereiche, die Dials tragen sie in den Guss
             auge: g.axis("auge"),
@@ -70,7 +76,17 @@ class AnazhRealm_koerper_leib {
             gen[a.achse] = core.bauWurf(
                 Array.from({ length: core.BAU_GESETZ.wurf }, (_, i) => g.axis(i + ":" + a.achse))
             );
-        return gen;
+        // DER LEIB ZUM ALTER (koerper `alterLeib`): das Kind trägt seinen Wuchs — die Höhe, den Kopf über ihr, die kürzeren Beine des
+        // Baus —, der Greis sein ergrautes Haar; die Dials tragen beides in jeden Leser des Leibs (Guss, Menge, Knochen)
+        return core.alterLeib(gen, J, g.axis("grau"), g.axis("weiss"));
+    }
+    // DIE JAHRE EINES MENSCHEN (koerper `epochenAlter`) aus dem Strom „alter" seines Genoms g und seiner Epoche — die EINE Rechnung,
+    // die sein Genom (`_rollHumanoidGenome`) und seine Rolle (`_bewohnerListe`: das Kind) lesen
+    _bewohnerJahre(g, epoche) {
+        const core = window.__koerperCore;
+        const E = epoche || {};
+        if (E.gestalt != null) return core.epochenAlter(E.jahr, (E.gestalt + 0.5) / E.von);
+        return core.epochenAlter(E.jahr, g.axis("alter"), E.rang, E.n);
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
     // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit; die Paletten-Schlüssel des
