@@ -1375,8 +1375,11 @@
         kopplung: 0.3,
         // DIE HYSTERESE DES WECHSELS: wer geht, wechselt erst über froudeTrab × (1 + hysterese) in den Trab, wer trabt, erst
         // unter froudeTrab × (1 − hysterese) zurück (ebenso am Galopp) — ein Folger, der um die Schwelle pendelt, wechselt
-        // nicht je Takt (Säuger wechseln hinauf später als hinab; Hoyt & Taylor 1981)
-        hysterese: 0.2,
+        // nicht je Takt (Säuger wechseln hinauf später als hinab; Hoyt & Taylor 1981). DAS BAND LIEGT IN DER STREUUNG DER NATUR
+        // (front-leben, Karte 2 leben.tiere.bewegung S1: Wechsel bei der Froude-Zahl der Natur ±10 %): die Fr der Natur ist die
+        // Mitte, hinauf und hinab je 10 %. Mit 0,2 lief der anlaufende Leib erst bei Fr 0,6 in den Trab und bei 3,0 in den
+        // Galopp — 26 % neben Alexander & Jayes 1983 (froudeAbw, GTX 5b36f69a).
+        hysterese: 0.1,
     });
     // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese
     function gangArt(vh, vorher) {

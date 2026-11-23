@@ -3267,13 +3267,24 @@ class AnazhRealm_kreatur_leben {
                 B.t = 0;
                 B.k = -1;
             }
-            if (B.k < 0) {
+            if (B.k === -1) {
                 schritt(AnazhRealm.FIXED_DT);
                 if (++B.schritt < K.einschwingen) continue;
                 const T = (2 * Math.PI) / Math.max(1e-3, tb._gang.omega);
                 B.m = Math.max(1, Math.ceil((T / S.n) * 60));
                 B.dt = T / S.n / B.m;
                 Z.schritt[B.band] = Z.tempo[B.band] * T;
+                B.k = -2;
+                B.sub = 0;
+                continue;
+            }
+            // DER VORLAUF IM SCHRITT DES BACKENS (KREATUR_SATZ.vorlauf): die Glieder folgen ihrem Ziel je Schritt (legA aus dt)
+            // — wechselte der Takt erst am ersten Bild des Zyklus von FIXED_DT auf B.dt, lag der Einschwung des neuen Schritts
+            // IN den Posen, je nach der Phase, an der das Einschwingen endete (gate:tier-gang Satz Bär im Trab 0,036 → 0,053 an
+            // einer Hysterese 0,2 → 0,1; Satz Fuchs im Trab 0,035–0,059 über einschwingen 150/300/450, der Leib 0,014).
+            if (B.k === -2) {
+                schritt(B.dt);
+                if (++B.sub < K.vorlauf * S.n * B.m) continue;
                 Z.ph0[B.band] = tb._gang.ph[0];
                 B.k = 0;
                 B.sub = 0;
@@ -3954,7 +3965,9 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
 // Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
 // Stands, gate:tier-gang Satz Wolf im Schritt 0,054, mit 32 0,033), die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
 // jeder Gangart: Schritt unter froudeTrab 0,5, Trab bis froudeGalopp 2,5, Galopp darüber); `einschwingen` Gang-Schritte vor dem
-// Zyklus, `backJeTakt` Schritte je Takt (Lehre 14), `cap` Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
+// Zyklus, dann `vorlauf` Zyklen im Schritt des Backens (der Einschwung des Schritt-Wechsels liegt vor den Posen, nie in ihnen:
+// gate:tier-gang Satz im Trab Wolf/Fuchs/Bär/Wesen 0,018–0,053 → 0,013–0,018), `backJeTakt` Schritte je Takt (Lehre 14), `cap`
+// Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
 AnazhRealm.KREATUR_SATZ = Object.freeze({
     nahLeiber: 4,
     phasen: 32,
@@ -3962,6 +3975,7 @@ AnazhRealm.KREATUR_SATZ = Object.freeze({
     baender: Object.freeze(["schritt", "trab", "galopp"]),
     froude: Object.freeze([0.25, 1.5, 4]),
     einschwingen: 150,
+    vorlauf: 2,
     backJeTakt: 40,
     cap: 256,
     leerTakte: 1800,
