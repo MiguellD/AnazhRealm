@@ -459,10 +459,12 @@ async function menschBuehnen() {
         if (hat("bewohner-grund"))
             decke("_koerperBodenUnter", (alt) => (x, y, z) => (Number.isFinite(y) ? alt.call(r, Math.round(x * 2) / 2, y, Math.round(z * 2) / 2) : alt.call(r, x, y, z))); // prettier-ignore
         const SD = wegeMesser(liste);
-        // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
-        // tempoEinheit an seinem Bein × TAGES_GESETZ.gang × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
-        // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
-        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher
+        // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen` · mensch.leib.ausdruck, koerper `leibAusdruck`): je Bewohner das
+        // Tempo seines Gangs gegen das Gesetz (tetrapoda tempoEinheit an seinem Bein × TAGES_GESETZ.gang × `tempo` seines Ausdrucks:
+        // das Alter nach Bohannon & Andrews, `lauf` seines Könnens gegen den Median seines Alters, das Hinken — aus den Dials seines
+        // Genoms, seinem Alter und seinem Samen) und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück
+        // des Fensters): wer mehr kann, kommt weiter — die Rang-Korrelation des Gesetzes ↔ gegangenes Tempo über die Geher (bis
+        // leib-ausdruck las sie `lauf` selbst: das Kind trägt hohes `lauf` bei mittlerem Tempo, statisch 0,891 → 0,512)
         // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins
         if (hat("bewohner-koennen")) {
             for (const b of liste) b.tempo = b.tempoBand;
@@ -480,6 +482,13 @@ async function menschBuehnen() {
             const falsch = eigen.filter((b) => b.orte.abend === b.orte.werk || b.orte.mahl === b.orte.werk);
             return { n: eigen.length, falsch: falsch.length, wer: falsch.slice(0, 3).map(wer) };
         };
+        // das Tempo seines Ausdrucks, aus dem Genom und dem Samen neu gerechnet (nie aus dem Stand des Wirts)
+        const ausdruckTempo = (b) =>
+            KC.leibAusdruck({
+                jahre: KC.alterJahre(b.genom.alter),
+                dials: Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter }),
+                same: b.same,
+            }).tempo;
         const koennen = (() => {
             let spur = new Map();
             const paare = [];
@@ -501,14 +510,13 @@ async function menschBuehnen() {
                     }
                 },
                 ende: () => {
-                    for (const [b, q] of spur) if (q.s >= 5 && b.koennen) paare.push([b.koennen.lauf, q.m / q.s]);
+                    for (const [b, q] of spur) if (q.s >= 5 && b.koennen) paare.push([ausdruckTempo(b), q.m / q.s]);
                 },
                 zahl: () => {
                     const TC = window.__tetrapodaCore;
                     const ohne = liste.filter((b) => {
                         if (!b.koennen || !(b.tempo > 0)) return true;
-                        const d = Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter });
-                        return Math.abs(b.tempo - TC.tempoEinheit(b.beinL) * KC.TAGES_GESETZ.gang * KC.leibKoennen(d).lauf) > 1e-9;
+                        return Math.abs(b.tempo - TC.tempoEinheit(b.beinL) * KC.TAGES_GESETZ.gang * ausdruckTempo(b)) > 1e-9;
                     });
                     const [ra, rb, m] = [rang(paare.map((q) => q[0])), rang(paare.map((q) => q[1])), (paare.length - 1) / 2];
                     let [sab, sa, sb] = [0, 0, 0];
@@ -1361,7 +1369,7 @@ function menschUrteil(name, z, soll) {
         const kn = z.koennen || { n: 0, ohne: "ungemessen", wer: [], geher: 0, rho: "ungemessen", haelften: "ungemessen" };
         soll(
             kn.n > 0 && kn.ohne === 0 && kn.geher >= 10 && kn.rho >= 0.5,
-            `das Können trägt den Gang nicht: ${kn.ohne} von ${kn.n} Bewohnern gehen nicht Einheit × gang × lauf (${kn.wer}), Rang-Korrelation Können ↔ gegangenes Tempo ${kn.rho} über ${kn.geher} Geher (Soll ≥ 0,5; die Hälfte mit mehr Können geht × ${kn.haelften}, Streuung des Tempos ${kn.cv})`
+            `das Können trägt den Gang nicht: ${kn.ohne} von ${kn.n} Bewohnern gehen nicht Einheit × gang × Ausdruck (${kn.wer}), Rang-Korrelation Können ↔ gegangenes Tempo ${kn.rho} über ${kn.geher} Geher (Soll ≥ 0,5; die Hälfte mit mehr Können geht × ${kn.haelften}, Streuung des Tempos ${kn.cv})`
         );
         soll(
             kn.bezugN >= 10 && Math.abs(kn.bezug - 1) <= kn.bezugTol,

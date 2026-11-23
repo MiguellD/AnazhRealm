@@ -446,6 +446,16 @@ class AnazhRealm_siedlung_bewohner {
             // SEIN KÖNNEN (mensch-zahlen, koerper `leibKoennen`): die Kraft seiner Beine über seinem Gewicht aus den Dials seines
             // Genoms und seinem Alter — das Tempo seines Gangs liest `lauf` (`_bewohnerGeburt`)
             b.koennen = kc.leibKoennen(Object.assign({}, dE, { age: gen.alter }));
+            // SEIN STAND DES AUSDRUCKS (mensch.leib.ausdruck, koerper `leibAusdruck`): seine Jahre, sein Bau (die Dials mit dem Alter), sein
+            // Same (das Los seines Hinkens) — das Profil seines Gemüts und die Last in seiner Hand trägt der Takt nach (`_bewohnerAusdruck`)
+            const st =
+                b.ausdruckStand ||
+                (b.ausdruckStand = { profil: null, jahre: 0, dials: null, same: 0, lastKg: 0, masseKg: 0 });
+            [st.jahre, st.dials, st.same] = [
+                kc.alterJahre(gen.alter),
+                Object.assign({}, dE, { age: gen.alter }),
+                b.same,
+            ];
             // SEIN PUNKT IM LEIB-RAUM IST DER SEINES NAHEN LEIBS (w28-gestalt, koerper `leibRaumPunkt`): das Weiche seiner GESTALT
             // (Geschlecht, Bau, Muskel, Alter, Haar — `G.dK`, der Guss, in dem er nah steht) auf SEINEN Knochen (`bau`); Breite und
             // Tiefe seines Genoms trägt die Matrix seines Satzes wie die Hüllen seines Leibs (`_bewohnerLeibAn`). Bis hier stand im
@@ -959,14 +969,14 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, ausdruck: u, ausdruckStand: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u, weichen: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
-                    wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
+                    wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null, lastKg: 0,
                 });
             besuche.push(P);
         }
@@ -1159,6 +1169,7 @@ class AnazhRealm_siedlung_bewohner {
         while (Z.gegeben < Z.K.haende) {
             const b = Z.haende[Z.gegeben++];
             b.werkzeug = globalThis.__schmiedeCore.STOFFSTROM.werkzeug;
+            b.lastKg = Z.K.werkzeugKg; // das Eisen seines Werkzeugs ist die Last seiner Hand (`_bewohnerAusdruck`)
             this._stoffstromHand(b);
         }
         return n;
@@ -1522,9 +1533,10 @@ class AnazhRealm_siedlung_bewohner {
         // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
         this._leibMatrix(g);
         g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags × `lauf`
-        // seines Könnens (mensch-zahlen, koerper `leibKoennen`: die Kraft seiner Beine über seinem Gewicht — bis hier ging der
-        // Greis so schnell wie der Athlet, 100 m binnen ±1,5 % über 100 Bewohner). Die
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags × `tempo`
+        // seines Ausdrucks (mensch.leib.ausdruck, koerper `leibAusdruck`: das Alter nach Bohannon & Andrews, der Bau als `lauf` seines
+        // Könnens gegen den Median seines Alters, das Hinken — bis mensch-zahlen ging der Greis so schnell wie der Athlet, bis
+        // leib-ausdruck fiel das Tempo mit `lauf` gerade ab 18 J: der 45-Jährige ging 0,91 des 30-Jährigen, die Welt 1,02). Die
         // Beinlänge seiner GESTALT in seiner Größe, nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs liest sein
         // wahres Bein (`beinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und die Ankunft spielt
         // einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über ±2 m,
@@ -1533,7 +1545,7 @@ class AnazhRealm_siedlung_bewohner {
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
         b.tempoBand = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
-        b.tempo = b.tempoBand * b.koennen.lauf;
+        b.tempo = b.tempoBand * this._bewohnerAusdruck(b).tempo;
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
@@ -1916,7 +1928,10 @@ class AnazhRealm_siedlung_bewohner {
                     if (div !== 0 && (b.takt = (b.takt + 1) % div) === 0) {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
-                        const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
+                        // sein Gang und seine Pose lesen den Ausdruck seines Stands (mensch.leib.ausdruck, `_bewohnerAusdruck`)
+                        const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, {
+                            ausdruck: this._bewohnerAusdruck(b),
+                        });
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2327,6 +2342,22 @@ class AnazhRealm_siedlung_bewohner {
         g.haltung = KC.tagesHaltung(b.akt, b.rolle);
         g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
         return g;
+    }
+
+    // DER AUSDRUCK DES BEWOHNERS (Leiter mensch.leib.ausdruck, koerper `leibAusdruck`): der Wirt reicht nur seinen Stand — das Profil
+    // seines Gemüts (die EINE Brücke `_koerperMotionName` über `_bewohnerGemuet`), seine Jahre, seinen Bau, seinen Samen
+    // (`_bewohnerGenome`), die Last in seiner Hand (`lastKg`, `_stoffstromFassen`) gegen die Masse seines Leibs (`_leibMasse`, einmal,
+    // sobald er ihn trägt — ohne Leib zeichnet keine Pose die Last); Haltung, Gang und Tempo sind Gesetz des Kerns. Leser: das Tempo
+    // seines Tags (`_bewohnerGeburt`), sein naher Gang und seine Pose (`_tickBewohner` → `_gaitTick`).
+    _bewohnerAusdruck(b) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.leibAusdruck !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibAusdruck");
+        const st = b.ausdruckStand;
+        if (!st) return AnazhRealm._kernPflichtBruch("koerper:leibAusdruck ohne Stand (_bewohnerGenome)");
+        st.profil = this._koerperMotionName(false, this._bewohnerGemuet(b));
+        st.lastKg = b.lastKg || 0;
+        if (st.lastKg > 0 && !(st.masseKg > 0) && b.leib && b.leib.userData.rig) st.masseKg = this._leibMasse(b.leib);
+        return (b.ausdruck = KC.leibAusdruck(st));
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und

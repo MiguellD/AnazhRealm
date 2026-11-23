@@ -559,7 +559,7 @@ class AnazhRealm_koerper_leib {
         const rig = mesh && mesh.userData && mesh.userData.rig;
         if (!rig || !halter) return null;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        const g = this._gaitTakt(this._gaitBeinMass(rig).L, halter, speed, dt, emoF);
+        const g = this._gaitTakt(this._gaitBeinMass(rig).L, halter, speed, dt, emoF, (opts && opts.ausdruck) || null);
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
         // der Stoß-Zustand des Leibs (physik.K5) reist mit dem Gang des lokalen Avatars zur Pose (der Ausfallschritt)
@@ -573,7 +573,9 @@ class AnazhRealm_koerper_leib {
     // `_gaitBeinMass`) — wer ohne Leib geht (der Bewohner jenseits des Nah-Rings: sein Stand trägt die Zahl seines Baus,
     // `_bewohnerBeinMass`), geht ihn hier mit derselben Phase und demselben Gewicht; `_gaitTick` ist dieser Takt am Rig, dazu
     // die Fuß-IK des lokalen Avatars. Kein Fuß-Ziel am Boden, kein Stoß (`ik`, `stossLeib` null).
-    _gaitTakt(L, halter, speed, dt, emoF = 1) {
+    // A = der Ausdruck des Leibs (koerper `leibAusdruck`, der nahe Bewohner): der Takt kürzt mit ihm die Kadenz des Alters und
+    // reicht ihn der Pose (`gait.ausdruck`); die Gang-Zeile der Welt geht mit.
+    _gaitTakt(L, halter, speed, dt, emoF = 1, A = null) {
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const gs = this._gaitGesetz(null, v, L);
@@ -587,7 +589,18 @@ class AnazhRealm_koerper_leib {
             Number(this.state.speed) ||
                 AnazhRealm._bewegungsKoeff("speed").base + AnazhRealm._bewegungsKoeff("speed").leicht
         );
-        const g = AnazhRealm._leibTakt().leibGangTakt(window.__tetrapodaCore, halter, gs, v, d, emoF, vRef, L);
+        const g = AnazhRealm._leibTakt().leibGangTakt(
+            window.__tetrapodaCore,
+            halter,
+            gs,
+            v,
+            d,
+            emoF,
+            vRef,
+            L,
+            A,
+            A ? this._gangZeile(true) : undefined
+        );
         [g.ik, g.stossLeib] = [null, null];
         return g;
     }
@@ -942,7 +955,11 @@ class AnazhRealm_koerper_leib {
         // der Neutralpunkt; MOTION_RIG_MAP) — und Gehen ×w: die Beine auf dem Ziel des Gang-Gesetzes (tetrapoda gangFuss, das Becken
         // gangBecken, die Zwei-Knochen-IK auf die gebauten Beine `_gaitBeinMass`), die Arme gegen die Beine, die Becken-Senke.
         const wB = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
-        const mp = wB < 0.999 ? this._koerperMotionProfile(false, emotions) : null;
+        // das Profil des Gemüts liest auch der Gang, wenn sein Ausdruck es trägt (koerper `leibAusdruck` gang: Kopf und Brust)
+        const mp =
+            wB < 0.999 || (gait && gait.ausdruck && gait.ausdruck.gang > 0)
+                ? this._koerperMotionProfile(false, emotions)
+                : null;
         const mref = mp ? this._koerperMotionProfile(false, null) : null;
         const SB = wB > 0.001 && gait && gait.S > 0 ? gait.S : 0;
         AnazhRealm._leibTakt().leibRigPose(

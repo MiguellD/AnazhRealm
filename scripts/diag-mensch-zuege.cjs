@@ -307,6 +307,311 @@ const ALTER_STAMM = stammLib.text(path.join(__dirname, ".."));
 const alterZeile = (u) =>
     `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Kind-Gestalten am Kopf-Rand der Menge ${u.rand}, Kind-Gestalten ohne Reife ${u.reifeRot.length}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")}`; // prettier-ignore
 
+// ── DER AUSDRUCK DES LEIBS (Meisterkarte 2, Leiter mensch.leib.ausdruck S1 „Haltung nach Akt und Gemüt: der Prüfer errät Akt/Gemüt aus
+// der Silhouette ≥ 60 %" und S2 „Gang nach Alter, Bau, Last, Verletzung: Lichtpunkt-Gang, Alter ± 15 J, verletzt ≥ 80 %"): das Gesetz
+// koerper `leibAusdruck` (MOTION.arbeit, TAGES_GESETZ.haltung, AUSDRUCK_GESETZ), seine Leser der Takt (`leibGangTakt`: die Kadenz des
+// Alters) und die Pose (`leibRigPose`: Beugung, die Haltung des Gemüts im Gang, Armschwung, die Standzeit je Bein, der Flug des
+// Hüpfens), im Spiel der Wirt `_bewohnerAusdruck` → `_gaitTick` → `_animateHuman` (stamm/siedlung-bewohner.js, der nahe Bewohner) und
+// das Tempo seines Tags (`_bewohnerGeburt`). DIE PROBE am echten Stamm (`ladeKlasse`): eine Siedlung (exportSettlement 0x51ed) mit
+// 2000 Bewohnern (Genom, Gestalt, Stand des Ausdrucks), je Bewohner das Skelett seiner Gestalt aus dem Ofen in seiner Größe. ZWEI
+// BLINDE PRÜFER lesen nur, was ein Zuschauer sieht:
+//   S1 DIE SILHOUETTE (10 Erwachsene × morgen · arbeit · mittag · besuch · abend · spiel · Furcht nach Bedrohung; eingeschwungen): Rumpf
+//      ≥ 20° vor dem Lot → arbeit (OWAS, Karhu 1977) · Kopf ≥ 10° gesenkt → müde · Kopf ≥ 8° gehoben → froh · Ellbogen ≥ 25° → Furcht ·
+//      sonst ruhig. Soll: je Stand ≥ 0,6; im GANG (4 s, das Mittel der Silhouette) liest er müde und froh wie im Stand (Gross 2012).
+//   S2 DER LICHTPUNKT-GANG (jeder fünfte Bewohner und jeder Lahme, 7 s; das Kind spielt, der Erwachsene geht zur Arbeit): das Alter aus
+//      dem Hüpfen (Becken-Hub ≥ 0,08 Beinlängen → 8 J), der Größe (Bein unter 0,85 des Medians → die Wachstumskurve ALTER_REF) und der
+//      Rumpf-Beugung im Gang (Zappalá 2021: 50 J + 40 J × Beugung ÷ 11,5°, ungebeugt 32 J) — Soll: der mittlere Fehler je Band (Kind,
+//      Erwachsen, Alt) ≤ 15 J; verletzt aus dem Symmetrie-Index der Standdauer je Bein > 10 % (Robinson 1987) — Soll ≥ 0,8 der Lahmen
+//      bei ≤ 0,1 Fehlalarm; das Kind (4–12 J) hüpft im Spiel ≥ 0,8. Dazu das TEMPO je Jahrzehnt ÷ Mitte 30–59 J im Band von Bohannon &
+//      Andrews 2011 (± 0,10), das HINKEN über 60 J bei 17,4 % (Mahlknecht 2013, ± 8 Punkte) und DAS GLEITEN: Schlupf (das EINE Maß von
+//      gate:tier-gang `SCHLUPF`: Weg des Stand-Fußes ÷ Weg des Leibs, Ferse und Ballen, Stand = die untersten 5 % der Beinlänge) ≤ 0,05.
+// IST (1feab29, vor leib-ausdruck): arbeit 0/10 (der Rumpf 5,0°, pwalk), müde und froh im Gang 0/10 (Kopf 0,0°), das Alter der Alten
+// 37,9 J daneben, das Kind hüpft 14/98, kein Lahmer, das Tempo 15–30 J 1,13 der Mitte (Bohannon 0,97), Schlupf 0,014.
+// Täter (Selbsttest): die Arbeit in pwalk · das Gemüt nicht im Gang · das Alter ohne die Kurve (Tempo aus `lauf`) · kein Hinken ·
+// kein Hüpfen · der Fußweg je Bein ohne seine Standzeit (der stehende Fuß gleitet) · der Wirt reicht den Ausdruck nicht → ROT an der Zeile.
+const AUSDRUCK = { seed: 0x51ed, n: 2000, zehn: 10, dt: 1 / 60, je: 5, jeTaeter: [25, 3] };
+const WUCHS = Object.keys(ALTER_REF).map((J) => [Number(J), ALTER_REF[J][0]]);
+const BOHANNON = [[20, 30, 1.35], [30, 40, 1.385], [40, 50, 1.41], [50, 60, 1.37], [60, 70, 1.29], [70, 80, 1.195], [80, 120, 0.955]]; // prettier-ignore
+const BOHANNON_MITTE = 1.39;
+// der Kern mit einem Täter als Quelle (im Kontext des Stamms gerechnet) — null, wenn die Stelle fehlt
+function kernQuelle(stelle, ersatz) {
+    const src = fs.readFileSync(path.join(__dirname, "..", "koerper-core.js"), "utf8");
+    const mut = src.replace(stelle, ersatz);
+    return mut === src ? null : mut;
+}
+// o = {lade (der geladene Stamm, `ladeKlasse`), kern (die Quelle des Kerns mit einem Täter, im Kontext des Stamms gerechnet), je
+// ([jeder wievielte geht im Lichtpunkt, jeder wievielte Lahme] — der Täter sieht weniger Geher)}
+function ausdruckUrteil(o = {}) {
+    const { AnazhRealm: A, ctx } = o.lade || stammLib.ladeKlasse(path.join(__dirname, ".."));
+    if (o.kern) {
+        new vm.Script(o.kern, { filename: "koerper-core.js" }).runInContext(ctx);
+        A._leibTaktMemo = null;
+    }
+    const [K, T, TCx] = [ctx.__koerperCore, ctx.THREE, ctx.__tetrapodaCore];
+    const r = Object.assign(Object.create(A.prototype), { state: { gravity: -9.81, speed: 0 } });
+    r._foundry = { recipes: { [A.KOERPER_HOST_RECIPE]: { fx: { motion: { presets: K.MOTION } } } } };
+    let furcht = 0;
+    r._kreaturFurchtErinnert = () => furcht; // die erinnerte Bedrohung (Leser `_bewohnerGemuet`)
+    const plan = ctx.__fachwerkCore.exportSettlement({ seed: AUSDRUCK.seed, nH: 12 });
+    const N = AUSDRUCK.n;
+    const liste = [...Array(N)].map((_, i) => ({
+        seed: `${AUSDRUCK.seed}:${i >> 1}:${i & 1}`,
+        epoche: { jahr: plan.jahr, rang: i & 1, n: 2 },
+        same: (Math.imul(i + 1, 0x9e3779b1) ^ 0x5bd1e995) >>> 0,
+        rolle: "wohnhaus",
+        akt: "arbeit",
+        lastKg: 0,
+    }));
+    const S = { plan, liste };
+    S.gestalten = r._bewohnerGestalten(S);
+    r._bewohnerGenome(S);
+    const jahre = (b) => K.alterJahre(b.genom.alter);
+    // das Skelett seiner Gestalt aus dem Ofen in seiner Größe (die Skala des Mensch-Baus, `_bewohnerGangPose`)
+    const f = (8 * A.PLAYER_KH) / 6;
+    const skelette = new Map();
+    const rigVon = (b) => {
+        const G = S.gestalten[b.gestalt];
+        if (!skelette.has(G))
+            skelette.set(G, ctx.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials: G.dK }).userData.__skelett);
+        const sk = skelette.get(G);
+        const kn = {};
+        for (const j of sk.joints) {
+            const n = (kn[j.name] = new T.Object3D());
+            [n.position.set(...j.pos), n.quaternion.set(...j.quat), n.scale.set(...j.scale)];
+        }
+        for (const j of sk.joints) if (kn[j.parent]) kn[j.parent].add(kn[j.name]);
+        const wrap = new T.Group();
+        wrap.scale.setScalar(f * (b.groesse || 1));
+        wrap.add(kn[sk.root]);
+        wrap.updateMatrixWorld(true);
+        const rig = K.leibRig(kn);
+        b.leib = { userData: { rig }, rotation: { x: 0 } };
+        return Object.assign(rig, { _kn: kn, _wrap: wrap });
+    };
+    const v = new T.Vector3();
+    const q = new T.Quaternion();
+    const welt = (o2) => v.setFromMatrixPosition(o2.matrixWorld).toArray();
+    const grad = (x) => (x * 180) / Math.PI;
+    const silhouette = (rig) => {
+        rig._wrap.updateMatrixWorld(true);
+        const P = {};
+        for (const n of ["arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1"])
+            P[n] = welt(rig._kn[n]);
+        rig._kn.head.getWorldQuaternion(q);
+        const auf = new T.Vector3(0, 1, 0).applyQuaternion(q);
+        const mitte = (a, c) => a.map((x, i) => (x + c[i]) / 2);
+        const [sh, hp] = [mitte(P.arm1, P["arm-1"]), mitte(P.hip1, P["hip-1"])];
+        const ell = [1, -1].map((s) => {
+            const [a, e, h] = [P["arm" + s], P["elbow" + s], P["hand" + s]];
+            const [u, w] = [e.map((x, i) => x - a[i]), h.map((x, i) => x - e[i])];
+            return grad(
+                Math.acos(
+                    Math.max(
+                        -1,
+                        Math.min(1, (u[0] * w[0] + u[1] * w[1] + u[2] * w[2]) / Math.hypot(...u) / Math.hypot(...w))
+                    )
+                )
+            );
+        });
+        return {
+            rumpf: grad(Math.atan2(sh[2] - hp[2], sh[1] - hp[1])),
+            kopf: grad(Math.atan2(auf.z, auf.y)),
+            ell: (ell[0] + ell[1]) / 2,
+        };
+    };
+    const sieht = (s) =>
+        s.rumpf >= 20 ? "arbeit" : s.kopf >= 10 ? "müde" : s.kopf <= -8 ? "froh" : s.ell >= 25 ? "Furcht" : "ruhig";
+    const WAHR = {
+        morgen: "ruhig",
+        arbeit: "arbeit",
+        mittag: "ruhig",
+        besuch: "ruhig",
+        abend: "müde",
+        spiel: "froh",
+        Furcht: "Furcht",
+    };
+    // EIN TAKT DES WIRTS (wie `_tickBewohner` den nahen Bewohner führt): sein Ausdruck, sein Gang-Tick, seine Pose
+    const takt = (b, rig, tempo, dt, t) => {
+        const gang = r._gaitTick(b.leib, b, tempo, dt, { ausdruck: r._bewohnerAusdruck(b) });
+        r._animateHuman(b.leib, t, b.walkPhase || 0, tempo > 0, false, r._bewohnerGemuet(b), gang);
+        return gang;
+    };
+    const tempoBand = (rig) => TCx.tempoEinheit(r._gaitBeinMass(rig).L) * K.TAGES_GESETZ.gang;
+    // S1: die Silhouette im Stand und im Gang
+    const stand = [];
+    const gang = [];
+    for (const b of liste.filter((x) => jahre(x) >= 18).slice(0, AUSDRUCK.zehn)) {
+        const rig = rigVon(b);
+        for (const akt of Object.keys(WAHR)) {
+            [b.akt, furcht, b.walkPhase] = [akt === "Furcht" ? "arbeit" : akt, akt === "Furcht" ? 0.8 : 0, 0];
+            K.leibRigEingeschwungen(rig);
+            for (let k = 0; k < 30; k++) takt(b, rig, 0, 0.1, 3 + k * 0.1);
+            stand.push({ akt, wahr: WAHR[akt], ...silhouette(rig) });
+        }
+        for (const akt of ["abend", "spiel"]) {
+            [b.akt, furcht, b.walkPhase] = [akt, 0, 0];
+            K.leibRigEingeschwungen(rig);
+            const m = { rumpf: 0, kopf: 0, ell: 0 };
+            for (let k = 0; k < 240; k++) {
+                takt(b, rig, tempoBand(rig) * r._bewohnerAusdruck(b).tempo, AUSDRUCK.dt, k * AUSDRUCK.dt);
+                if (k >= 60) for (const [x, y] of Object.entries(silhouette(rig))) m[x] += y / 180;
+            }
+            gang.push({ akt, wahr: WAHR[akt], ...m });
+        }
+    }
+    const treffer = (X) => {
+        const je = {};
+        for (const x of X) (je[x.akt] ||= [0, 0])[sieht(x) === x.wahr ? 0 : 1]++;
+        return Object.fromEntries(Object.entries(je).map(([k, [a, c]]) => [k, +(a / (a + c)).toFixed(2)]));
+    };
+    const mittel = (X, k) => +(X.reduce((a, x) => a + x[k], 0) / Math.max(1, X.length)).toFixed(1);
+    // das Tempo je Jahrzehnt (das Bein seiner Gestalt × Größe, wie `_bewohnerGeburt`: Einheit × gang × Ausdruck)
+    const beinG = new Map();
+    const alle = liste.map((b) => {
+        if (!beinG.has(b.gestalt)) beinG.set(b.gestalt, r._gaitBeinMass(rigVon({ gestalt: b.gestalt, groesse: 1 })).L);
+        [b.leib, furcht] = [undefined, 0];
+        const A2 = r._bewohnerAusdruck(b);
+        return { b, J: jahre(b), v: TCx.tempoEinheit(beinG.get(b.gestalt) * b.groesse) * K.TAGES_GESETZ.gang * A2.tempo, wunde: A2.wunde }; // prettier-ignore
+    });
+    const mw = (X) => X.reduce((a, x) => a + x.v, 0) / Math.max(1, X.length);
+    const imBand = (lo, hi) => alle.filter((x) => x.J >= lo && x.J < hi);
+    const vMitte = mw(imBand(30, 60));
+    const tempo = BOHANNON.map(([lo, hi, ms]) => {
+        const X = imBand(lo, hi);
+        return {
+            band: `${lo}–${hi}`,
+            n: X.length,
+            ist: +(mw(X) / vMitte).toFixed(3),
+            soll: +(ms / BOHANNON_MITTE).toFixed(3),
+        };
+    }).filter((x) => x.n >= 5);
+    const alt = alle.filter((x) => x.J >= 60);
+    const hinken60 = alt.filter((x) => x.wunde > 0).length / Math.max(1, alt.length);
+    // S2: der Lichtpunkt-Gang — je Bein Ferse und Ballen (gate:tier-gang LEIB), der tiefere trägt
+    const lichtpunkt = (b) => {
+        const rig = rigVon(b);
+        const tempoB = tempoBand(rig) * r._bewohnerAusdruck(b).tempo;
+        [b.walkPhase, furcht] = [0, 0];
+        K.leibRigEingeschwungen(rig);
+        const M = r._gaitBeinMass(rig);
+        const Z = r._gangZeile(true);
+        const ballen = Z && Z.ballen > 0 ? Z.ballen * TCx.gangReich(M.l1 + M.l2) : 0;
+        const kn = [rig.legL.ankle, rig.legR.ankle];
+        const lokal = kn.map((a) => {
+            const w = new T.Vector3().setFromMatrixPosition(a.matrixWorld);
+            w.y = 0;
+            const p = a.worldToLocal(w.clone());
+            return [p, p.clone().add(new T.Vector3(0, 0, ballen))];
+        });
+        const [spur, leib, huefte, rumpf] = [[[], []], [], [], []];
+        for (let k = 0; k < 480; k++) {
+            rig._wrap.position.z += tempoB * AUSDRUCK.dt;
+            takt(b, rig, tempoB, AUSDRUCK.dt, k * AUSDRUCK.dt);
+            rig._wrap.updateMatrixWorld(true);
+            for (let i = 0; i < 2; i++) spur[i].push(lokal[i].map((p) => p.clone().applyMatrix4(kn[i].matrixWorld)));
+            leib.push(rig._wrap.position.z);
+            if (k < 60) continue;
+            huefte.push(welt(rig.hips)[1]);
+            rumpf.push(silhouette(rig).rumpf);
+        }
+        let [wegFuss, wegLeib, staende] = [0, 0, 0];
+        const dauer = spur.map((sp) => {
+            let ymin = Infinity;
+            for (let i = 60; i < sp.length; i++) ymin = Math.min(ymin, sp[i][0].y, sp[i][1].y);
+            const lo = ymin + 0.05 * M.L;
+            const d = [];
+            let n = 0;
+            for (let i = 61; i < sp.length; i++) {
+                const k = sp[i][1].y < sp[i][0].y - 1e-4 ? 1 : 0;
+                const [a, c] = [sp[i - 1][k], sp[i][k]];
+                if (a.y <= lo && c.y <= lo) [wegFuss, wegLeib] = [wegFuss + Math.hypot(c.x - a.x, c.z - a.z), wegLeib + leib[i] - leib[i - 1]]; // prettier-ignore
+                if (Math.min(sp[i][0].y, sp[i][1].y) <= lo) n++;
+                else if (n) [n] = [0, d.push(n)];
+            }
+            staende += d.length;
+            if (Math.min(sp[61][0].y, sp[61][1].y) <= lo) d.shift(); // der angeschnittene erste Stand
+            return d.length ? d.reduce((a, c) => a + c, 0) / d.length : 0;
+        });
+        const si = dauer[0] + dauer[1] > 0 ? Math.abs(dauer[0] - dauer[1]) / ((dauer[0] + dauer[1]) / 2) : 0;
+        return {
+            J: jahre(b),
+            L: M.L,
+            wunde: b.ausdruck.wunde,
+            hub: (Math.max(...huefte) - Math.min(...huefte)) / M.L,
+            rumpf: rumpf.reduce((a, c) => a + c, 0) / rumpf.length,
+            si,
+            wegFuss,
+            wegLeib,
+            staende,
+        };
+    };
+    const [je, jeLahm] = o.je || [AUSDRUCK.je, 1];
+    const wahl = alle.filter((x, i) => i % je === 0 || (x.wunde > 0 && i % jeLahm === 0));
+    const LP = wahl.map((x) => {
+        [x.b.akt, x.b.rolle] = x.J < 15 ? ["spiel", "kind"] : ["arbeit", "wohnhaus"];
+        return lichtpunkt(x.b);
+    });
+    const Lmed = LP.map((x) => x.L).sort((a, c) => a - c)[LP.length >> 1];
+    const wuchsJ = (h) => {
+        for (let i = 1; i < WUCHS.length; i++)
+            if (h <= WUCHS[i][1]) return WUCHS[i - 1][0] + ((WUCHS[i][0] - WUCHS[i - 1][0]) * (h - WUCHS[i - 1][1])) / (WUCHS[i][1] - WUCHS[i - 1][1]); // prettier-ignore
+        return WUCHS[WUCHS.length - 1][0];
+    };
+    const schaetzt = (x) => (x.hub >= 0.08 ? 8 : x.L / Lmed < 0.85 ? Math.max(2, wuchsJ(x.L / Lmed)) : x.rumpf < 0.5 ? 32 : 50 + 40 * Math.min(1, x.rumpf / 11.5)); // prettier-ignore
+    const alter = Object.entries({ Kind: [0, 15], Erwachsen: [15, 60], Alt: [60, 200] }).map(([band, [lo, hi]]) => {
+        const e = LP.filter((x) => x.J >= lo && x.J < hi).map((x) => Math.abs(schaetzt(x) - x.J));
+        return { band, n: e.length, mae: +(e.reduce((a, c) => a + c, 0) / Math.max(1, e.length)).toFixed(1) };
+    });
+    const kinder = LP.filter((x) => x.J >= 4 && x.J <= 12);
+    const [lahm, heil] = [LP.filter((x) => x.wunde > 0), LP.filter((x) => !(x.wunde > 0))];
+    const sum = (k) => LP.reduce((a, x) => a + x[k], 0);
+    return {
+        stand: treffer(stand),
+        standMittel: Object.fromEntries(Object.keys(WAHR).map((k) => [k, [mittel(stand.filter((x) => x.akt === k), "rumpf"), mittel(stand.filter((x) => x.akt === k), "kopf")]])), // prettier-ignore
+        gang: treffer(gang),
+        kopfGang: [
+            mittel(
+                gang.filter((x) => x.akt === "abend"),
+                "kopf"
+            ),
+            mittel(
+                gang.filter((x) => x.akt === "spiel"),
+                "kopf"
+            ),
+        ],
+        tempo,
+        hinken60: +hinken60.toFixed(3),
+        alt: alt.length,
+        geher: LP.length,
+        alter,
+        huepft: +(kinder.filter((x) => x.hub >= 0.08).length / Math.max(1, kinder.length)).toFixed(2),
+        kinder: kinder.length,
+        lahm: lahm.length,
+        erkannt: +(lahm.filter((x) => x.si > 0.1).length / Math.max(1, lahm.length)).toFixed(2),
+        fehlalarm: +(heil.filter((x) => x.si > 0.1).length / Math.max(1, heil.length)).toFixed(3),
+        schlupf: +(sum("wegFuss") / Math.max(1e-9, sum("wegLeib"))).toFixed(4),
+        gleitCm: +((100 * sum("wegFuss")) / Math.max(1, sum("staende"))).toFixed(2),
+    };
+}
+function ausdruckRot(u) {
+    const rot = [];
+    for (const [k, t] of Object.entries(u.stand))
+        if (!(t >= 0.6)) rot.push(`S1 Silhouette ${k} ${t} < 0,6 (Rumpf ${u.standMittel[k][0]}°, Kopf ${u.standMittel[k][1]}°) — Täter: koerper MOTION.arbeit / TAGES_GESETZ.haltung`); // prettier-ignore
+    for (const [k, t] of Object.entries(u.gang))
+        if (!(t >= 0.6)) rot.push(`S1 im Gang ${k} ${t} < 0,6 (Kopf müde ${u.kopfGang[0]}° gegen froh ${u.kopfGang[1]}°) — Täter: koerper AUSDRUCK_GESETZ.gang / leibRigPose (das Gemüt im Gang)`); // prettier-ignore
+    const tempoRot = u.tempo.filter((x) => Math.abs(x.ist - x.soll) > 0.1);
+    if (tempoRot.length) rot.push(`S2 Tempo je Jahrzehnt außer Bohannon ± 0,10: ${tempoRot.map((x) => `${x.band} J ${x.ist}/${x.soll}`).join(" · ")} — Täter: koerper AUSDRUCK_GESETZ.alter / leibAusdruck tempo`); // prettier-ignore
+    if (Math.abs(u.hinken60 - 0.174) > 0.08) rot.push(`S2 Hinken über 60 J ${u.hinken60} außer 0,174 ± 0,08 (Mahlknecht 2013) — Täter: koerper AUSDRUCK_GESETZ.wunde`); // prettier-ignore
+    const alterRot = u.alter.filter((x) => !(x.mae <= 15));
+    if (alterRot.length) rot.push(`S2 Lichtpunkt-Alter daneben: ${alterRot.map((x) => `${x.band} ${x.mae} J`).join(" · ")} (Soll ≤ 15 J) — Täter: koerper AUSDRUCK_GESETZ (kind, alter.beugeJ)`); // prettier-ignore
+    if (!(u.huepft >= 0.8)) rot.push(`S2 das Kind hüpft ${u.huepft} von ${u.kinder} < 0,8 — Täter: koerper AUSDRUCK_GESETZ.kind / der Flug in leibRigPose`); // prettier-ignore
+    if (!(u.lahm > 0 && u.erkannt >= 0.8 && u.fehlalarm <= 0.1)) rot.push(`S2 verletzt erkannt ${u.erkannt} von ${u.lahm} Lahmen (Soll ≥ 0,8), Fehlalarm ${u.fehlalarm} (≤ 0,1) — Täter: koerper AUSDRUCK_GESETZ.wunde / die Standzeit je Bein`); // prettier-ignore
+    if (!(u.schlupf <= 0.05)) rot.push(`S2 der Fuß gleitet: Schlupf ${u.schlupf} > 0,05 (${u.gleitCm} cm je Stand) — Täter: koerper leibRigPose (der Fußweg je Bein) / leibAusdruckSchritt`); // prettier-ignore
+    return rot;
+}
+const ausdruckZeile = (u) =>
+    `Silhouette ${JSON.stringify(u.stand)} · im Gang ${JSON.stringify(u.gang)} (Kopf müde ${u.kopfGang[0]}° / froh ${u.kopfGang[1]}°) · Tempo ÷ Mitte ${u.tempo.map((x) => `${x.band} ${x.ist}/${x.soll}`).join(" ")} · Hinken über 60 J ${u.hinken60} (n ${u.alt}) · Lichtpunkt ${u.geher} Geher: Alter-MAE ${u.alter.map((x) => `${x.band} ${x.mae} J (n ${x.n})`).join(" ")}, das Kind hüpft ${u.huepft} (n ${u.kinder}), verletzt ${u.erkannt} (n ${u.lahm}, Fehlalarm ${u.fehlalarm}), Schlupf ${u.schlupf} (${u.gleitCm} cm je Stand)`; // prettier-ignore
+
 if (SELBSTTEST) {
     let fails = 0;
     // DIE TÄTER DES ALTERS: der Stamm mit dem Alter von vorher, der Kern ohne Lebensphase, der Kern ohne Wuchs der Höhe
@@ -345,7 +650,38 @@ if (SELBSTTEST) {
             fails++;
         }
     }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe, Kind ohne Reife, Spiel vor der Tür) fallen ROT an ihrer Zeile.`);
+    // DIE TÄTER DES AUSDRUCKS: der Kern mit einer getauschten Stelle im Kontext EINES geladenen Stamms, der Wirt mit seinem Glied
+    const lade = stammLib.ladeKlasse(path.join(__dirname, ".."));
+    const wirt = (datei, alt, neu) => {
+        const teile = stammLib.teileVon(path.join(__dirname, ".."));
+        const t = teile.find((x) => x.pfad === datei);
+        if (!t || !t.text.includes(alt)) return null;
+        t.text = t.text.replace(alt, neu);
+        return stammLib.ladeKlasse(path.join(__dirname, ".."), { teile });
+    };
+    const ausdruckTaeter = [
+        ["die Arbeit in pwalk (der Stand vor S1)", { kern: kernQuelle('haltung: Object.freeze({ arbeit: "arbeit",', 'haltung: Object.freeze({ arbeit: "pwalk",') }, /S1 Silhouette arbeit/], // prettier-ignore
+        ["das Gemüt nicht im Gang", { kern: kernQuelle("gang: gm ? gm.haltung : 0,", "gang: 0,") }, /S1 im Gang/],
+        ["das Tempo aus `lauf` (das Alter ohne die Kurve)", { kern: kernQuelle("tempo: tJ * bau * (wunde ? G.wunde.tempo : 1),", "tempo: (s.dials ? leibKoennen(s.dials).lauf : 1) * (wunde ? G.wunde.tempo : 1),") }, /S2 Tempo je Jahrzehnt/], // prettier-ignore
+        ["kein Hinken", { kern: kernQuelle('if (_tagZahl(same, "hinken") < _ausdruckTafel(G.wunde.J, G.wunde.p, J))', "if (false)") }, /S2 verletzt erkannt/], // prettier-ignore
+        ["kein Hüpfen", { kern: kernQuelle("hf = J >= G.kind.J[0] && J <= G.kind.J[1] && s.profil === G.kind.profil ? G.kind.tast : 0,", "hf = 0,") }, /das Kind hüpft/], // prettier-ignore
+        ["der Fußweg ohne die Standzeit des Beins", { kern: kernQuelle("var FL = TC.gangFuss(walkPhase, (Sl * tL) / tast, tL, Z, R);", "var FL = TC.gangFuss(walkPhase, Sl, tL, Z, R);") }, /der Fuß gleitet/], // prettier-ignore
+        ["der Wirt reicht den Ausdruck nicht (`_gaitTick`)", { lade: wirt("stamm/koerper-leib.js", "(opts && opts.ausdruck) || null", "null") }, /S1 im Gang/], // prettier-ignore
+    ];
+    for (const [name, o, soll] of ausdruckTaeter) {
+        if (!(o.kern || o.lade)) {
+            console.log(`⛔ Selbsttest: der Täter „${name}“ ließ sich nicht setzen (die Stelle fehlt)`);
+            fails++;
+            continue;
+        }
+        const rot = ausdruckRot(ausdruckUrteil({ lade: o.lade || lade, kern: o.kern, je: AUSDRUCK.jeTaeter }));
+        console.log(`[Selbsttest] Täter ${name}: ${rot.length ? "ROT — " + rot.join(" · ").slice(0, 200) : "GRÜN"}`);
+        if (!rot.some((x) => soll.test(x))) {
+            console.log(`⛔ Selbsttest: der Täter „${name}“ blieb an seiner Zeile GRÜN (${soll})`);
+            fails++;
+        }
+    }
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs, die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe, Kind ohne Reife, Spiel vor der Tür) und die ${ausdruckTaeter.length} des Ausdrucks (Arbeit in pwalk, Gemüt nicht im Gang, Tempo aus lauf, kein Hinken, kein Hüpfen, Fußweg ohne Standzeit, Wirt ohne Ausdruck) fallen ROT an ihrer Zeile.`);
 }
 
 const a = urteil(KC, zugVon);
@@ -359,8 +695,11 @@ if (rot.length) rot.push("Täter: koerper TAGES_GESETZ.zuege / tagesPlan / tages
 const al = alterUrteil(ALTER_STAMM, KC);
 console.log(`  ALTER ${alterZeile(al)}`);
 rot.push(...alterRot(al));
+const au = ausdruckUrteil();
+console.log(`  AUSDRUCK ${ausdruckZeile(au)}`);
+rot.push(...ausdruckRot(au));
 urteilEnde(
     rot.length,
     `❌ ROT — ${rot.join(" · ")}`,
-    `✅ DER ZUG ÄNDERT DEN TAG — ${a.t20.toFixed(2)} der ersten 20 und ${a.t100.toFixed(2)} aller 100 blind ihrem Zug zugeordnet, jeder Zug ≥ 0,6, bit-gleich · DAS ALTER DER EPOCHE — ${(al.anteil * 100).toFixed(1)} % unter 15 J (≥ 35 %), kein Kind in Erwachsenen-Gestalt, der Wuchs im Band`
+    `✅ DER ZUG ÄNDERT DEN TAG — ${a.t20.toFixed(2)} der ersten 20 und ${a.t100.toFixed(2)} aller 100 blind ihrem Zug zugeordnet, jeder Zug ≥ 0,6, bit-gleich · DAS ALTER DER EPOCHE — ${(al.anteil * 100).toFixed(1)} % unter 15 J (≥ 35 %), kein Kind in Erwachsenen-Gestalt, der Wuchs im Band · DER AUSDRUCK — Silhouette je Stand ≥ 0,6 (arbeit ${au.stand.arbeit}, Furcht ${au.stand.Furcht}), müde/froh im Gang (Kopf ${au.kopfGang[0]}° / ${au.kopfGang[1]}°), Lichtpunkt-Alter ${au.alter.map((x) => x.mae).join("/")} J, das Kind hüpft ${au.huepft}, verletzt ${au.erkannt}, Schlupf ${au.schlupf}`
 );

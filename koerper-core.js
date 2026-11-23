@@ -78,6 +78,13 @@
     // ── Die Emotions-/Gang-Profile (byte-treu Lab Z.118) — das motion-Feld ──
     // prettier-ignore
     var MOTION = {idle:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5},joy:{headY:0,headX:-0.14,headZ:0.04,spineY:0,spineX:-0.08,spineZ:0,bodyX:-0.05,bodyZ:0,armL:0.6,armR:0.6,armLX:-0.2,armRX:-0.2,elbowL:0.55,elbowR:0.55,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.07,sway:0.04,freq:3.2,kpMul:0.35,irisSpeed:1.0,blinkRate:0.8},sad:{headY:0,headX:0.18,headZ:0.04,spineY:0,spineX:0.07,spineZ:0.02,bodyX:0.05,bodyZ:0,armL:0.08,armR:0.08,armLX:0.05,armRX:0.05,elbowL:0.3,elbowR:0.3,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.012,sway:0.003,freq:0.5,kpMul:2.2,irisSpeed:0.04,blinkRate:0.18},angry:{headY:0,headX:-0.08,headZ:0,spineY:0,spineX:-0.06,spineZ:0,bodyX:-0.06,bodyZ:0,armL:0.15,armR:0.15,armLX:-0.15,armRX:-0.15,elbowL:0.5,elbowR:0.5,hipLX:0,hipRX:0,hipLZ:-0.08,hipRZ:0.08,kneeL:0,kneeR:0,breath:0.048,sway:0.006,freq:2.5,kpMul:1.3,irisSpeed:0.03,blinkRate:0.5},fear:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.08,spineZ:0.02,bodyX:0.06,bodyZ:0,armL:-0.08,armR:-0.08,armLX:0.12,armRX:0.12,elbowL:0.6,elbowR:0.6,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.022,freq:4.5,kpMul:1.8,irisSpeed:1.5,blinkRate:0.25},run:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.012,freq:2.0,kpMul:1.1,irisSpeed:0.12,blinkRate:0.35},pwalk:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:0.05,spineZ:0,bodyX:0.04,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0.01,freq:1.6,kpMul:1.0,irisSpeed:0.2,blinkRate:0.45},slide:{headY:0,headX:-0.2,headZ:0,spineY:0,spineX:0.3,spineZ:0,bodyX:0.2,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0,freq:2.0,kpMul:1.4,irisSpeed:0.1,blinkRate:0.3},fight:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.06,spineZ:0,bodyX:-0.04,bodyZ:0,armL:0.1,armR:0.1,armLX:-0.45,armRX:-0.45,elbowL:1.35,elbowR:1.35,hipLX:0,hipRX:0,hipLZ:-0.12,hipRZ:0.12,kneeL:0,kneeR:0,breath:0.04,sway:0.01,freq:2.8,kpMul:1.25,irisSpeed:0.08,blinkRate:0.35},showcase:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:-0.02,spineZ:0,bodyX:-0.02,bodyZ:0,armL:0.15,armR:0.15,armLX:0,armRX:0,elbowL:0.2,elbowR:0.2,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.025,sway:0.015,freq:1.0,kpMul:1.0,irisSpeed:0.4,blinkRate:0.4}};
+    // DIE HALTUNG AM WERK (mensch.leib.ausdruck S1, additiv zur Tafel darüber; Leser: TAGES_GESETZ.haltung.arbeit): wer arbeitet,
+    // steht über sein Werk gebeugt — der Rumpf in der Hüfte vor (das Becken vor, die Beine zurück ins Lot: bodyX gegen hipLX/hipRX),
+    // die Brust weiter vor, der Kopf zum Werk, die Arme vor dem Leib mit gebeugtem Ellbogen, die Knie weich.
+    // Karhu, Kansi, Kuorinka 1977 (Appl Ergon, OWAS): der Rücken gilt ab 20° Beugung als gebeugt — Soll: der Rumpf 20–45° vor dem Lot.
+    // Bis hier stand die Arbeit in pwalk (der Rumpf 3,9° vor dem Lot, an zehn Bewohnern): sie las sich wie der Morgen.
+    // prettier-ignore
+    MOTION.arbeit = {headY:0,headX:0.16,headZ:0,spineY:0,spineX:0.3,spineZ:0,bodyX:0.22,bodyZ:0,armL:0.05,armR:0.05,armLX:-0.45,armRX:-0.45,elbowL:0.65,elbowR:0.65,hipLX:-0.22,hipRX:-0.22,hipLZ:0,hipRZ:0,kneeL:0.14,kneeR:0.14,breath:0.05,sway:0.008,freq:1.4,kpMul:1.0,irisSpeed:0.2,blinkRate:0.45};
 
     // ═══════════════════════════════════════════════════════════════════════
     //  B4 PARAMS — die acht numerischen Lab-Slider als DATEN (worlds/
@@ -5384,8 +5391,9 @@
         // VERB): je Akt des Tags (`tagesPlan`) die Haltung, in der sein Leib steht — ein Profil der Bewegung (MOTION): bei der
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
-        // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy" }),
+        // jeder Bewohner stand zu jeder Stunde in derselben Haltung. Die Arbeit steht in ihrer eigenen Zeile (MOTION.arbeit,
+        // mensch.leib.ausdruck S1: der Rumpf über OWAS 20° gebeugt) — bis hier in pwalk, 3,9° vor dem Lot.
+        haltung: Object.freeze({ arbeit: "arbeit", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy" }),
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -7612,25 +7620,28 @@
     }
     // DER GANG-TAKT je Bild: die Phase am Halter (der stehende Fuß hält, tetrapoda gangPhaseHaelt), das Blend-Gewicht, die
     // Amplitude mit dem Tempo. TC = der tetrapoda-Kern, gs = gangSchritt(v, L, Zeile), L = die Beinlänge (m), vRef = das
-    // Bezugs-Tempo der Amplitude (das Geh-Tempo der Seele).
-    function leibGangTakt(TC, halter, gs, v, d, emoF, vRef, L) {
+    // Bezugs-Tempo der Amplitude (das Geh-Tempo der Seele). A = der Ausdruck des Leibs (`leibAusdruck`, der Bewohner) mit seiner
+    // Gang-Zeile Z: die Kadenz des Alters kürzt Schritt und Takt zugleich (`leibAusdruckSchritt`), die Pose liest A (`g.ausdruck`).
+    function leibGangTakt(TC, halter, gs, v, d, emoF, vRef, L, A, Z) {
         var g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
-        var S1 = gs.S / emoF;
+        var sA = A ? leibAusdruckSchritt(TC, A, gs, v, L, Z) : 1;
+        var S1 = (gs.S * sA) / emoF;
         if (gs.omega > 0) {
             var steht = !(halter._gaitW > 0.05) || !(g.S > 0);
             var S0 = steht ? 0 : g.S;
             if (steht || Math.abs(S0 - S1) > 1e-9 || g.tast !== gs.tast)
                 halter.walkPhase = TC.gangPhaseHaelt(Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0, S0, g.tast, S1, gs.tast);
         }
-        halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
+        halter.walkPhase = (halter.walkPhase || 0) + (d * gs.omega * emoF) / sA;
         halter._gaitW = root.__koerperCore.leibGangBlend(halter._gaitW, v, d);
         g.w = halter._gaitW;
         g.S = S1;
         g.tast = gs.tast;
         g.hub = gs.hub;
         g.auf = 2 * Math.PI * (1 - gs.tast);
-        g.omega = gs.omega * emoF;
+        g.omega = (gs.omega * emoF) / sA;
         g.L = L;
+        g.ausdruck = A || null;
         g.amp = Math.max(0.7, Math.min(1.3, 0.55 + 0.45 * (v / vRef)));
         return g;
     }
@@ -7760,6 +7771,126 @@
     function leibGesteZeit(k, n) {
         return GESTE.takt * (k + (k + 0.5) / n);
     }
+    // ── DER AUSDRUCK DES LEIBS (Leiter mensch.leib.ausdruck, Meisterkarte 2 S1 und S2): Haltung und Gang als Funktion des Stands —
+    // Akt und Gemüt (das Profil der Bewegung, das die EINE Brücke des Wirts nach beiden wählt), Alter, Bau, Last, Verletzung. Der
+    // Wirt reicht nur den Stand (`leibAusdruck`: profil, jahre, dials, same, lastKg, masseKg); der Takt (`leibGangTakt`: die Kadenz
+    // des Alters) und die Pose (`leibRigPose`: Beugung, Haltung des Gemüts im Gang, Armschwung, die Standzeit je Bein, das Hüpfen)
+    // lesen das Ergebnis, das Tempo des Tags liest `tempo`. Die Quellen, je eine Zeile (Autor, Jahr, Zahl):
+    // Gross, Crane, Fredrickson 2012 (Hum Mov Sci): Hals- und Brust-Beugung in Trauer, Streckung in Freude — bei jedem Tempo gleich
+    // Michalak u. a. 2009 (Psychosom Med 71): der Traurige geht langsamer, mit weniger Armschwung, gesunkenem Kopf, fallender Haltung
+    // Bohannon, Andrews 2011 (Physiotherapy 97, 23 111 Leute): Gehtempo m/s je Jahrzehnt 20–29 … 80–99, Männer 1,36 · 1,43 · 1,43 ·
+    //   1,43 · 1,34 · 1,26 · 0,97, Frauen 1,34 · 1,34 · 1,39 · 1,31 · 1,24 · 1,13 · 0,94 — der Greis (80–99) geht 0,68 des Mittels 30–59
+    // Winter u. a. 1990 (Phys Ther 70): der Ältere hält die Kadenz des Jungen, sein Schritt wird kürzer
+    // Zappalá, Lightbourne, Heneghan 2021 (J Orthop Surg Res 16, 7 633 Leute): die Brust-Kyphose wächst mit dem Alter (r 0,52), über 70 J
+    //   tragen 55 % mehr als 40° (normal 20–40°)
+    // Montepare, Zebrowitz-McArthur 1988 (J Pers Soc Psychol 55): jung liest sich der Gang an Armschwung, Kniebeugung, langem Schritt
+    // Goh, Thambyah, Bose 1998 (Clin Biomech 13): der Rumpf neigt sich mit der Last vor, −8,4° → +4,3° bei 0 → 30 % Körpergewicht (0,42° je %)
+    // Mahlknecht u. a. 2013 (PLoS One 8, 488 Leute 60–97 J): 32,2 % gehen gestört, 17,4 % nicht-neurologisch (Schmerz, Gelenk), ab 80 J 61,7 %
+    // Robinson, Herzog, Nigg 1987 (J Manipulative Physiol Ther 10): ein Symmetrie-Index der Standzeit über 10 % ist ungleich
+    // Minetti 1998 (Proc R Soc B 265): Kinder hüpfen ab 4–5 J — das Hüpfen ist ein Gang mit Flugphasen, wie der Lauf
+    var AUSDRUCK_GESETZ = Object.freeze({
+        // das Gemüt trägt seine Haltung in den Gang (Gross 2012): der Anteil des Profils an Kopf und Brust (headX, spineX gegen das
+        // idle) bei voller Fahrt, und der Armschwung (Michalak 2009) — nur die Profile des Gemüts: die Haltung eines Akts (arbeit,
+        // showcase) ist die des Stehens am Werk, nie die des Wegs dorthin
+        gang: Object.freeze({
+            sad: Object.freeze({ haltung: 1, arme: 0.55 }),
+            fear: Object.freeze({ haltung: 1, arme: 0.6 }),
+            angry: Object.freeze({ haltung: 1, arme: 1.15 }),
+            joy: Object.freeze({ haltung: 1, arme: 1.25 }),
+        }),
+        gangSchluessel: Object.freeze([Object.freeze(["headX", "head"]), Object.freeze(["spineX", "spine"])]),
+        alter: Object.freeze({
+            // Bohannon & Andrews 2011, das Mittel beider Geschlechter je Mitte des Jahrzehnts (80–99: 90 J), gegen das Mittel 30–59 J
+            tempoJ: Object.freeze([25, 35, 45, 55, 65, 75, 90]),
+            tempoMS: Object.freeze([1.35, 1.385, 1.41, 1.37, 1.29, 1.195, 0.955]),
+            mitteMS: 1.39,
+            // die Kadenz hält ab dem Ende der Mitte (Winter 1990): der Schritt folgt dem Tempo, nicht der Froude-Kurve
+            kadenzAbJ: 55,
+            // die Beugung des Alters (Zappalá 2021: die Kyphose wächst um 10–20° vom jungen zum alten Rücken): Brust und Kopf vor, ab
+            // `beugeJ[0]` bis zum vollen Maß bei `beugeJ[1]`
+            beugeJ: Object.freeze([50, 90]),
+            rumpf: 0.2,
+            kopf: 0.1,
+            // der Armschwung des Alters (Montepare 1988: der junge Gang schwingt): auf `arme` bei `armeJ[1]`
+            armeJ: Object.freeze([60, 90]),
+            arme: 0.5,
+        }),
+        // die Last (Goh 1998): die Neigung je Anteil am Körpergewicht (0,42° je %)
+        last: Object.freeze({ radJeAnteil: (0.42 * 100 * Math.PI) / 180 }),
+        // das Hinken (Mahlknecht 2013): der Anteil, der nicht-neurologisch gestört geht, je Alter — im Mittel über 60–97 J 17,4 %, ab
+        // 80 J der Anteil 17,4 / 32,2 der 61,7 % (0,33); unter 60 J 3 % (eigene Setzung: die alte Wunde, der Bruch). Das betroffene Bein
+        // steht kürzer (`tast`: ± Anteil der Standzeit je Grad — Grad 0,5 … 1, der Symmetrie-Index 16–32 % über Robinsons 10 %), das
+        // Tempo fällt (`tempo`)
+        wunde: Object.freeze({ J: Object.freeze([40, 60, 70, 80]), p: Object.freeze([0.03, 0.08, 0.16, 0.33]), tast: 0.16, tempo: 0.85 }),
+        // das Kind hüpft im Spiel (Minetti 1998): von `J[0]` bis `J[1]` im Profil `profil` steht jedes Bein `tast` seiner Standzeit
+        // (der Tastgrad 0,6 → 0,27, eigene Setzung: zwischen zwei Ständen fliegt der Leib, zwei Flüge je Doppelschritt); das Becken
+        // fliegt ballistisch unter der Schwere der Welt — die Höhe g·T²/8 folgt aus der Dauer T des Flugs, keine eigene Zahl
+        kind: Object.freeze({ J: Object.freeze([4, 12]), profil: "joy", tast: 0.45 }),
+    });
+    function _ausdruckTafel(X, Y, x) {
+        if (!(x > X[0])) return Y[0];
+        for (var i = 1; i < X.length; i++) if (x <= X[i]) return Y[i - 1] + ((Y[i] - Y[i - 1]) * (x - X[i - 1])) / (X[i] - X[i - 1]);
+        return Y[Y.length - 1];
+    }
+    function _ausdruckRampe(x, J) {
+        return Math.max(0, Math.min(1, (x - J[0]) / (J[1] - J[0])));
+    }
+    // DER AUSDRUCK EINES STANDS st = {profil (der Name des Profils der Bewegung, das die Brücke wählt, oder null), jahre, dials (die
+    // Dials des Genoms mit `age`: der Bau), same (der Same des Menschen: das Los seines Hinkens, fehlt er, hinkt keiner), lastKg,
+    // masseKg}: {tempo (Anteil am Tempo-Band des Wirts: Alter × Bau × Hinken), alter (Anteil des Alters am Tempo, die Kadenz),
+    // rumpf/kopf (rad vor), gang (Anteil der Haltung des Gemüts im Gang), arme (Anteil am Armschwung), tast ([links, rechts] Anteil
+    // der Standzeit, null: gleich), wunde (0 | Grad 0,5 … 1), seite (0 links, 1 rechts), huepf (Anteil der Standzeit im Hüpfen, 0: es
+    // geht), last (Anteil am Körpergewicht)}. Der Bau: `lauf` des Könnens (`leibKoennen`) gegen den Median seines Alters und Geschlechts — das Alter selbst
+    // trägt die Kurve von Bohannon & Andrews, nie das Können (bis hier fiel das Tempo des Tags mit `lauf` gerade ab 18 J: der 45-Jährige
+    // ging 0,91 des 30-Jährigen, die Zahl der Welt 1,02).
+    function leibAusdruck(st) {
+        var s = st || {},
+            G = AUSDRUCK_GESETZ,
+            A = G.alter;
+        if (!isFinite(s.jahre)) throw new Error("KERN-PFLICHT verletzt: leibAusdruck ohne jahre");
+        var J = s.jahre;
+        var tJ = _ausdruckTafel(A.tempoJ, A.tempoMS, J) / A.mitteMS;
+        var bau = 1;
+        if (s.dials) {
+            var d0 = Object.assign({}, START_PARAMS, KOENNEN_BEZUG, { age: s.dials.age, gender: s.dials.gender });
+            bau = leibKoennen(s.dials).lauf / leibKoennen(d0).lauf;
+        }
+        var wunde = 0,
+            seite = 0;
+        if (s.same != null && isFinite(s.same)) {
+            var same = s.same >>> 0;
+            if (_tagZahl(same, "hinken") < _ausdruckTafel(G.wunde.J, G.wunde.p, J)) wunde = 0.5 + 0.5 * _tagZahl(same, "hinkenGrad");
+            seite = _tagZahl(same, "hinkenSeite") < 0.5 ? 0 : 1;
+        }
+        var gm = (s.profil && G.gang[s.profil]) || null,
+            beuge = _ausdruckRampe(J, A.beugeJ),
+            last = s.masseKg > 0 && s.lastKg > 0 ? s.lastKg / s.masseKg : 0,
+            k = G.wunde.tast * wunde,
+            hf = J >= G.kind.J[0] && J <= G.kind.J[1] && s.profil === G.kind.profil ? G.kind.tast : 0,
+            f = hf || 1;
+        return {
+            tempo: tJ * bau * (wunde ? G.wunde.tempo : 1),
+            alter: J > A.kadenzAbJ ? Math.min(1, tJ) : 1,
+            rumpf: beuge * A.rumpf + last * G.last.radJeAnteil,
+            kopf: beuge * A.kopf,
+            gang: gm ? gm.haltung : 0,
+            arme: (gm ? gm.arme : 1) * (1 - (1 - A.arme) * _ausdruckRampe(J, A.armeJ)),
+            tast: wunde || hf ? (seite ? [(1 + k) * f, (1 - k) * f] : [(1 - k) * f, (1 + k) * f]) : null,
+            wunde: wunde,
+            seite: seite,
+            huepf: hf,
+            last: last,
+        };
+    }
+    // DIE KADENZ DES ALTERS (Winter 1990): der Ältere tritt mit der Kadenz, die sein Tempo der Mitte trüge (v ÷ alter), sein Schritt
+    // wird kürzer — der Faktor des Schritts gegen das Gang-Gesetz an seinem Tempo (≤ 1; Takt und Fußweg zusammen, der Fuß gleitet nie).
+    // Z = die Gang-Zeile des Menschen (die Welt: `_gangZeile`)
+    function leibAusdruckSchritt(TC, A, gs, v, L, Z) {
+        if (!A || !(A.alter < 1) || !(gs.omega > 0) || !(gs.schritt > 0)) return 1;
+        if (!Z) throw new Error("KERN-PFLICHT verletzt: die Kadenz des Alters ohne Gang-Zeile (leibAusdruckSchritt)");
+        var g0 = TC.gangSchritt(v / A.alter, L, Z);
+        return Math.min(1, (g0.schritt * A.alter) / gs.schritt);
+    }
     // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
     // Gang-Gesetzes (tetrapoda gangFuss, das Becken gangBecken, die Zwei-Knochen-IK), die Arme gegen die Beine, die Becken-Senke.
@@ -7821,10 +7952,23 @@
                 add(r.hips, "x", Math.sin(t * 0.7) * swayA * 0.35 * wi);
             }
         }
+        // DER AUSDRUCK (`leibAusdruck`, der Bewohner): die Beugung von Alter und Last in Stand und Gang, die Haltung des Gemüts im Gang
+        // (der Anteil `gang` des Profils an Kopf und Brust, über dem Anteil der Ruhe: Stand ×(1−w) und Gang ×w ergeben sie ganz)
+        var Ax = gait && gait.ausdruck ? gait.ausdruck : null;
+        if (Ax) {
+            add(r.spine, "x", Ax.rumpf);
+            add(r.head, "x", Ax.kopf);
+            if (Ax.gang > 0 && mp && mref && w > 0.001)
+                for (var gi = 0; gi < AUSDRUCK_GESETZ.gangSchluessel.length; gi++) {
+                    var gk = AUSDRUCK_GESETZ.gangSchluessel[gi];
+                    add(r[gk[1]], "x", ((Number(mp[gk[0]]) || 0) - (Number(mref[gk[0]]) || 0)) * w * Ax.gang);
+                }
+        }
         var S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
         var MM = S > 0 ? M : null;
         var sw = Math.sin(walkPhase);
         r._gangSenke = 0;
+        r._gangHuepf = 0;
         if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true;
         if (r._gangRoll) r._gangRoll[0] = r._gangRoll[1] = null;
         if (MM && MM.l1 > 0 && MM.l2 > 0) {
@@ -7833,21 +7977,34 @@
             var hubL = (gait.hub * MM.L) / MM.wpl;
             var L12 = MM.l1 + MM.l2;
             var R = TC.gangReich(L12);
-            var FL = TC.gangFuss(walkPhase, Sl, tast, Z, R);
-            var FR = TC.gangFuss(walkPhase + Math.PI, Sl, tast, Z, R);
+            // DIE STANDZEIT JE BEIN (das Hinken, `leibAusdruck` tast): das betroffene Bein steht kürzer, das andere länger; der Fußweg
+            // je Bein ist seine Standzeit × Schritt (S = tast·λ), so trägt jeder stehende Fuß das Tempo des Leibs — keiner gleitet
+            var tA = Ax && Ax.tast,
+                tL = tA ? tast * tA[0] : tast,
+                tR = tA ? tast * tA[1] : tast;
+            var FL = TC.gangFuss(walkPhase, (Sl * tL) / tast, tL, Z, R);
+            var FR = TC.gangFuss(walkPhase + Math.PI, (Sl * tR) / tast, tR, Z, R);
             var roll = r._gangRoll || (r._gangRoll = [null, null]);
             var Zs = r._sohle && (r._sohleZ || (r._sohleZ = Object.assign({}, Z, { ballen: r._sohle[0] / R, knoechel: r._sohle[1] / R })));
-            roll[0] = Zs ? TC.gangFuss(walkPhase, Sl, tast, Zs, R) : FL;
-            roll[1] = Zs ? TC.gangFuss(walkPhase + Math.PI, Sl, tast, Zs, R) : FR;
+            roll[0] = Zs ? TC.gangFuss(walkPhase, (Sl * tL) / tast, tL, Zs, R) : FL;
+            roll[1] = Zs ? TC.gangFuss(walkPhase + Math.PI, (Sl * tR) / tast, tR, Zs, R) : FR;
             var tief = L12 - R + TC.gangBecken(walkPhase, Sl, tast, R, gait.omega, Z, MM.wpl);
             r._gangSenke = tief;
-            var auf = 2 * Math.PI * (1 - tast);
             var uu = function (p) {
                 return ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             };
             r._gangStand = r._gangStand || [false, false];
-            r._gangStand[0] = uu(walkPhase) >= auf;
-            r._gangStand[1] = uu(walkPhase + Math.PI) >= auf;
+            r._gangStand[0] = uu(walkPhase) >= 2 * Math.PI * (1 - tL);
+            r._gangStand[1] = uu(walkPhase + Math.PI) >= 2 * Math.PI * (1 - tR);
+            // DER FLUG DES HÜPFENS (`leibAusdruck` huepf): steht keins der Beine, fliegt das Becken ballistisch — zwischen dem Stand
+            // des einen und dem des anderen Beins (Dauer T), die Höhe g·t·(T − t)/2 unter der Schwere der Zeile, ins Maß des Beins
+            if (Ax && Ax.huepf > 0 && !r._gangStand[0] && !r._gangStand[1] && gait.omega > 0) {
+                if (!(Z && Z.g > 0)) throw new Error("leibRigPose: der Flug des Hüpfens ohne die Schwere der Zeile (Z.g) — fail-closed");
+                var pf = uu(walkPhase),
+                    fT = Math.PI * (1 - 2 * (pf < Math.PI ? tR : tL)),
+                    ft = pf < Math.PI ? pf : pf - Math.PI;
+                if (fT > 0 && ft < fT) r._gangHuepf = (Z.g * (ft / gait.omega) * ((fT - ft) / gait.omega)) / 2 / MM.wpl;
+            }
             var unten = function (F, h) {
                 return Math.min(L12 - tief - h, Math.sqrt(Math.max(0, R * R - F.dz * F.dz)));
             };
@@ -7868,8 +8025,9 @@
             var GA = GANG_ARME,
                 lauf = gait && Number.isFinite(gait.tast) ? Math.max(0, Math.min(1, (GA.tastGehen - gait.tast) / (GA.tastGehen - GA.tastLauf))) : 0;
             var ell = GA.ellbogenGehen + (GA.ellbogenLauf - GA.ellbogenGehen) * lauf;
-            add(r.armL.shoulder, "x", -0.4 * sw * wa);
-            add(r.armR.shoulder, "x", 0.4 * sw * wa);
+            var wArm = Ax ? wa * Ax.arme : wa; // der Armschwung des Ausdrucks (Gemüt, Alter)
+            add(r.armL.shoulder, "x", -0.4 * sw * wArm);
+            add(r.armR.shoulder, "x", 0.4 * sw * wArm);
             add(r.armL.elbow, "x", (-ell - 0.2 * Math.max(0, -sw) * amp) * w);
             add(r.armR.elbow, "x", (-ell - 0.2 * Math.max(0, sw) * amp) * w);
             add(r.spine, "z", 0.05 * sw * wa);
@@ -7893,9 +8051,11 @@
         lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
         if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
         if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
+        // die Lagen des Beckens (Senke, Flug) stehen im Maß des Beins, die Beine hängen im Maß der Hüfte: ins Maß ihrer Eltern mit
+        // `hips.scale` (mensch.leib.ausdruck: bis hier sank das Becken des Kindes, Skala 0,75, um das 1,34-Fache seines Gesetzes)
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
-            r.hips.position.y = r._baseHipY - r._gangSenke * w;
+            r.hips.position.y = r._baseHipY + (r._gangHuepf - r._gangSenke) * w * r.hips.scale.y;
         }
     }
 
@@ -10478,6 +10638,9 @@
         leibGangBlend: leibGangBlend,
         leibZweiKnochen: leibZweiKnochen,
         leibGangTakt: leibGangTakt,
+        AUSDRUCK_GESETZ: AUSDRUCK_GESETZ,
+        leibAusdruck: leibAusdruck,
+        leibAusdruckSchritt: leibAusdruckSchritt,
         leibRig: leibRig,
         leibRigNeutral: leibRigNeutral,
         leibRigEingeschwungen: leibRigEingeschwungen,
