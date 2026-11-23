@@ -510,6 +510,7 @@ async function runPartB() {
             const perKey = {};
             let inconsistent = 0,
                 entryRefs = 0;
+            const entryKeys = []; // die Gruppen, die den Eintrag noch tragen — der Rest beim Namen
             if (st.archInstanceGroups)
                 for (const [k, g] of st.archInstanceGroups) {
                     live += g.liveCount || 0;
@@ -522,9 +523,13 @@ async function runPartB() {
                         const ref = g.slotRef[i];
                         if (i < n ? !ref || ref.slot !== i : !!ref) inconsistent++;
                     }
-                    for (const se of g.slotEntry) if (se === entry) entryRefs++;
+                    for (const se of g.slotEntry) {
+                        if (se !== entry) continue;
+                        entryRefs++;
+                        if (!entryKeys.includes(k)) entryKeys.push(k);
+                    }
                 }
-            return { live, perKey, inconsistent, entryRefs };
+            return { live, perKey, inconsistent, entryRefs, entryKeys };
         };
         // Spieler an die erste Probe-Position, DANN Baseline (vor der Erst-Platzierung).
         const dnTargets = [6, 14, 18, 22, 26, 31, 36, 42, 55, 36, 26, 18, 6];
@@ -1118,15 +1123,18 @@ async function runPartB() {
         }
         // visStretchMax UNGEDECKELT: dn(100, 36) = 100·12/36 = 33.33 (der alte Deckel gab 80).
         res.stretchProbe = +r._lodPerceptionDistance(100, 36).toFixed(2);
-        r.removeArchitecture(entry); // Default-Remove räumt Primär + Band
+        const entfernt = r.removeArchitecture(entry); // Default-Remove räumt Primär + Band
         const after = balance();
         res.balance = {
             liveBefore: before.live,
             liveAfter: after.live,
             inconsistentAfter: after.inconsistent,
             entryRefsAfter: after.entryRefs,
+            entryKeysAfter: after.entryKeys.slice(0, 4),
             slotsAfter: !!entry.instSlots,
             bandAfter: !!entry.instSlotsBand,
+            // removeArchitecture antwortet false, wenn der Eintrag nicht in der Liste der Bauten steht — dann lief kein Abbau
+            removeLief: entfernt === true,
         };
         return res;
     });
@@ -1472,7 +1480,14 @@ async function main() {
         check("SLOT-BILANZ: je Gruppe dicht (count == liveCount, Marke i trägt Slot i)", B.inconsistentAfter === 0);
         check(
             "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
-            B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false
+            B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false,
+            {
+                slotEntry: B.entryRefsAfter,
+                gruppen: B.entryKeysAfter,
+                instSlots: B.slotsAfter,
+                instSlotsBand: B.bandAfter,
+                removeLief: B.removeLief,
+            }
         );
         if (out.samples?.length) {
             console.log(
