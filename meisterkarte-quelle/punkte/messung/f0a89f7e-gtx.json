@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "gtx",
- "zeit": "2026-11-23T07:16:19.561Z",
+ "zeit": "2026-11-23T07:27:31.142Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -731,6 +731,118 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.spieler.praesenz#1": {
+   "gruen": false,
+   "zahl": "❌ Taste→Bild p95 ego/gehen 50.2 ms (n 15) · third/gehen 68.2 ms (n 15) · Bild 16.37 ms · ✅ Fuß p95 wiese fuss 0.9 (n 200) · wiese falllinie 0.4 (n 200) · hang fuss 1 (n 200) · hang falllinie 0.8 (n 200) cm am Hang 24.4° · ✅ Kamera im Fels: Third 0 von 7467 Bildern · Ego 0 von 960 · ✅ Gang 155.7 s (Soll ≥ 120)",
+   "exit": 1,
+   "minuten": 8.57,
+   "grund": "ROT: ❌ Taste→Bild p95 ego/gehen 50.2 ms (n 15) · third/gehen 68.2 ms (n 15) · Bild 16.37 ms · ✅ Fuß p95 wiese fuss 0.9 (n 200) · wiese falllinie 0.4 (n 200) · hang fuss 1 (n 200) · hang falllinie 0.8 (n 200) cm am Hang 24.4° · ✅ Kamera im Fels: Third 0 von 7467 Bildern · Ego 0 von 960 · ✅ Gang 155.7 s (Soll ≥ 120)",
+   "mass": [
+    {
+     "wort": "ego/gehen p95 ms",
+     "wert": 50.2,
+     "soll": 50
+    },
+    {
+     "wort": "third/gehen p95 ms",
+     "wert": 68.2,
+     "soll": 50
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcb8508ed2eeb",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 514.2,
+   "fremd": {
+    "s": 517.4,
+    "takte": 237,
+    "fremdS": 153.03,
+    "kerne": 0.296,
+    "fensterKerne": 0.552,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-f0a89f7e x listen/kandidat-gtx-f0a89f7e.txt",
+      21.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      20.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      17.63
+     ]
+    ],
+    "dienerS": 120.31,
+    "diener": [
+     [
+      "dwm.exe",
+      54.17
+     ],
+     [
+      "System",
+      34.72
+     ]
+    ],
+    "geraetS": 131.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      79.91
+     ],
+     [
+      "svchost.exe",
+      45.83
+     ],
+     [
+      "SearchIndexer.exe",
+      2.36
+     ]
+    ],
+    "eigenS": 883.17,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.477,
+     "nach": 0.382,
+     "station": 0.902
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 101,
+     "alle": 231.9,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 87.7,
+     "alle": 208.2,
+     "cpuEin": 93
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 229.6,
+     "n": 1066,
+     "von": "2026-11-23"
+    },
+    "f": 1.122,
+    "fEin": 1.122,
+    "fAlle": 1.01,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-23T07:17:31.970Z",
+   "abdruck": "c0dad0a0880d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -743,7 +855,8 @@
   "k57c235ba1ae3": "bVVNj5swEP0vOXbLmgQIxtIenLBqtt1qE6mn3sZmDGwIRDaENlX/+8pJSALsnBC8mXnz5oN/kz3ILaT4+G6qcsImXyZfJwYO6BjUB9SP72bCJpGcztBj/GyEc760MKnzfW1IkQsCooRsh06ja8yLR3lyA4F+Qhlpn3m6JkSRI4lbfrVn/vQ0DFMITCqnBoXXIAFNVMCGwMakINCBRp0SX8CB602FYuRkNOZvMblaSzlf+8pf05ivqeLpKLuAMulXEM2DEAP20n7KNskBa6fIS9PlnyZhpFx2y/lz5KOhdY6AWYH64pSEOIv8jvTCSmPlGjiqojGml4x6STCjjJBoiE3R5DKrnb2uBJYXuIhm4RTYoh3Vke4bR90zAiGAiqHmGWCZou5xcD2p5lNG/tBh0C3sUINTQtZp6XrhTNy0IYSsxlyKE/FTio74NMApyJ6jbS45ENKNkn0mdHX92r2P09u48c0omZFZrnd9mZSPM9djr2NqJoMEtbOtTH1FUx8A6WUzYsI33A5ZPPS8FdX5AQC9GxRCCV+NNDSVqlvQ6KT75uKIPgZhwDh/GYFr2O26PVCe78lhA01tB/yeRhB6is4ZIQ/nRRkXfV4H54h50Tkp5ftRwJYLfwg+aNg5IFKdK9V1XQRSRZ8NaYtF7YiqqruwGIbgWUnK+0av2/OtuFnsu99ef282vG/LpRuP+Z+yVLq+VizmrvKZsgPTyhE617XTgsw6+EwJBEt/1Jsj6gJT7MkpQhrZEW/VmfvRnpzwcgrUQ2+Aj+OIOVqhS9OYrtkSfBGwT1rTot4KKLcdTTeUc8q+c84Xb3zV0+XHL3dNYzKy9pnzl9dycb7I0i4L+Xu+V3uUZK8rlduLSDJoTAZFfftF/P8A",
   "kb3bb525fc2ef": "bVXBjpswFPyXHLtlTQIEY2kPzrJqVt12E6mn3p7NM7AhENkQqlT998okJAH2nRDM+I3njc3f2QHkDlJ8/DBVOWOzL7OvMwNHdAzqI+rHDzNjs0jOF+gxvuW2COf82cKkzg+1IUUuCIgSsj06ja4xLx5lRwOBfkIZaV94uiFEkROJ26enMbUQmFRODQqvxIAmKmBjYGNSEOhAo7pmF3DgenOhGOmKxvw9JtdqKecbX/kbGo8WE1AmQ7XRMggxYK8t5y98ojLJAWunyEvT950nYaRcduv1Y8LR0DonwKxAfSElIS4ivxe7snZaa0ZEVTTGDJpRLwkWlBESjbEpmlxmtXPQlcDyAhfRIpwDW03dTg+No+4VgRBAxdjrDLBMUQ80uJ5Uyzkjf+h40R3sUYNTQtZ76XrhQty8IYSsp1qKTnjXohc+D3AOckC0QyVHQvil7DOh6+vX/n2c8lttJ82MzHK9H9qkfFy4HnubSjMZJKidXWXqK5r6AEjZpRvpTsPGHwfL3DbV8wCA3gWFUMLXEw9NpeoWNDrpobkQ0ccgDBjnrxNwDft9n3/l+Z4cD9DUNuD3MoLQU3TJCHk4H5Dpps/HwTlhXvQkpXw/CtjzKh2Djxr2DohU50r1UxeBVNFnIW2xqB1RVXW/LIYheIx4pLwf9M/WWvtyN8fYd7+9/d5u+bCe+VhO16HS9XW3YukqnykbllZO0LmunRZk1sMXSiBY6ZO5nFAXmOLAShHSyMa7VWfdJ3vNhJdrQD0MwnuarpijNbk0jekHLcEXAftkLC3qnYBy18t0Q7k8R3D1ztcDT77/cjc0JqQdWuWl1s84W53fS3tQ+rvqgJIcdKVyexuSDBqTQVHffgX//gM=",
   "k2a2710b2161f": "bVXBjpswFPyXHLtlDQGCsbQHZ1k1q267idRTb8/mGdgQiGwIVar+e+UkJAH2Hc2M33je2Pyd7UFuIcPHD1NXMzb7Mvs6M3BAx6A+oH78MDM2i6U3R5/xcxHO+bOFSV3sG0PKQhAQFeQ7dFrdYFE+yhMNBAYpZaR74dmaEEWOJOmensbUUmBaOw0ovBJDmqqQjYGtyUCgA606NbuAQ9f3hGLkVDTh7wm5Vkc5XwcqWNNktJmAKh2qjRdhhCF77Th/4ROVaQHYOGVRmb6vl0axctmt148JR0PnHAHzEvWFlEY4j4Ne7NLaaa0ZEVXZGjNoRv00nFNGSDzGZmgKmTfOXtcCqwtcxPPIA7acup3tW0fdKwIhgIqx1zlglaEeaHB9qRYeI3/oeNMt7FCDU0Hee+n60VzcvCGErKZaypPwU4teuBeiB3JAtEMlB0J4H7+DXVpdv/brScZvtZk0MzIv9G5okwpw7vrsbSrN5JCidra1aa5oGgAgvdyChPANt+EaB8vcDtXzAIDeBYVQwlcTD02tmg40Otm+vRAxwDAKGeevE3ADu12ff+UHvhwP0DQ24PcywshXdMEIeThfkOmhz9fBOWJR9iSlgiAO2fMyG4MPGnYOiEwXSvVTF6FU8Wch7bBsHFHXTb8tRhH4jPikuh/0z85a+3I3xyRwv7393mz4sJ75WM6pQ62b62nFwlUBUzYsnZygC904Hci8h8+VQLDSJ3M5oi4xw4GVIqKxjXenzro/7DMTXZ4B9TAI73G6Y4HW5Mq0ph+0hECE7JOxdKi3AqptL9ON5OIcweU7Xw08+f7LXdOEkG5olZ9ZP5N8eV6X9qL0b9UeJdnrWhX2NSQ5tCaHsrn9Cv79Bw==",
-  "k2882eaca9b59": "bVVNj5swEP0vOXbrNQkQwNIenGW1idSPrNRLj2MzBjYEIhuWNlX/e2UCSYDOgYPzZubNm2fnz+IE8gApPr6bqlywxafF54WBDyQG9Qfqx3ezYItILlfoMn4Jyjl/tjCp81NtaJELCqKE7Iik0TXmxaPs0kCgl4SMti883VOq6JnGLb/GM396mpYpBCYVqUHhtYgfJspnU2BjUhBIoFFd4x7sO+5SKEa7CGP+PabXaL9yvveUtw/jSTEBZTJmHq39AH22+835y5xlkgPWpMhLM/RdJkGkHHbXa5ajoSVnwKxA3SclAa4ibyC7sZJYmSaJqmiMGTUL3cRfhYzSaIpN0eQyq8lJVwLLHi6iVbAEtmlnc6Snhqh7RiAEhGKqdQZYpqhHHBxXqvWS0V/htOgBjqiBlJANWjpusBI3bSil2zmXoiPetRiIL31cghwl2qXa72Ah+mGPttdfh/M4vdmMv82aGZnl+jiWSXm4clz2ZU7NZJCgJofK1Fd06AFg2N+ImPI3bs01NZa5DTXkAUB4ZxQaUr6daWgqVbegkaSnpk9ED/3AZ5zvZuAajsfB/8r1XDldoKmtwe9p+IGrwjWj9OFyQeZDX64DOWNeDElKeV7ks+eNNwV/aDgSEKnOlRq2Lnypov+ZtMWiJqKq6qEsBgG4jLq0vF/0t+6leLnbY+w5r/HmjU/iNefxnH/XpdL1dWKxdpTHVDetnKFzXZMWZDbAV0ogWPqz3ZxRF5jiSE4RhJG1eCt7ptYNQf8UqIeRgc/zijlaoUvTmGHZEjzhX1zSP5i78TPUoj4IKA8DXSeQa2vHOP3ywLcjfXY/nL29Ne1YNppabbfZ5nL+s/+0tskJJT3pSuX2ZaQZNCaDor79Rfz9Bw=="
+  "k2882eaca9b59": "bVVNj5swEP0vOXbrNQkQwNIenGW1idSPrNRLj2MzBjYEIhuWNlX/e2UCSYDOgYPzZubNm2fnz+IE8gApPr6bqlywxafF54WBDyQG9Qfqx3ezYItILlfoMn4Jyjl/tjCp81NtaJELCqKE7Iik0TXmxaPs0kCgl4SMti883VOq6JnGLb/GM396mpYpBCYVqUHhtYgfJspnU2BjUhBIoFFd4x7sO+5SKEa7CGP+PabXaL9yvveUtw/jSTEBZTJmHq39AH22+835y5xlkgPWpMhLM/RdJkGkHHbXa5ajoSVnwKxA3SclAa4ibyC7sZJYmSaJqmiMGTUL3cRfhYzSaIpN0eQyq8lJVwLLHi6iVbAEtmlnc6Snhqh7RiAEhGKqdQZYpqhHHBxXqvWS0V/htOgBjqiBlJANWjpusBI3bSil2zmXoiPetRiIL31cghwl2qXa72Ah+mGPttdfh/M4vdmMv82aGZnl+jiWSXm4clz2ZU7NZJCgJofK1Fd06AFg2N+ImPI3bs01NZa5DTXkAUB4ZxQaUr6daWgqVbegkaSnpk9ED/3AZ5zvZuAajsfB/8r1XDldoKmtwe9p+IGrwjWj9OFyQeZDX64DOWNeDElKeV7ks+eNNwV/aDgSEKnOlRq2Lnypov+ZtMWiJqKq6qEsBgG4jLq0vF/0t+6leLnbY+w5r/HmjU/iNefxnH/XpdL1dWKxdpTHVDetnKFzXZMWZDbAV0ogWPqz3ZxRF5jiSE4RhJG1eCt7ptYNQf8UqIeRgc/zijlaoUvTmGHZEjzhX1zSP5i78TPUoj4IKA8DXSeQa2vHOP3ywLcjfXY/nL29Ne1YNppabbfZ5nL+s/+0tskJJT3pSuX2ZaQZNCaDor79Rfz9Bw==",
+  "kcb8508ed2eeb": "dVVNc5swFPwvPiZVBAaM0EwOcvDUmemHM9NLj0/iCYgxeCQIrTv97x1scAykOnCAXb3Vvn3iz+IIag8pPrzaqlzwxd3i08LCGxKL5g3Nw6td8EWk3CV6XFwWFUI8dTBl8mNtaZJDSvZwQAOkgEY+qDPpbgap0BzREFtDmXwAKnJJQZaQHZA0psa86EEg0U8Yp+1GpDtKNT3RuH18nFILiUlFatB4JQYs0QGfAhubgkQCjT4X68GB47lSc3peLBbfY3pd7Vchdr72dyyebCahTMZqo1UQYsCffwuxETOVSQ5YkyIv7VDXTcJIO/ym1oxjoCUnwKxA05OSEJeRP4hdd23prJkQddFYOyrGvCRYMk5pNMWmaHOV1eRoKollD5fRMnSBr+dup8eG6FtFICUwOfU6AyxTNCMNjqf0yuX0FxP/W/SN0l27mRbtQ1ZCNnjteOFSvntHKd3OtRbng50lDAdzA3RBjYhd07u6txoo216/Du/j9Eboy6yYVVluDmMbtY9Lx+Nf5tJsBgkasq9sfUUzHwBZP20xFS+iC980ePb9UAMPANhNkCijYstmFStdt2CQpMemJ6KPQRhwIZ5n4BoOh2E+tOd7atrg8zCPZAShp9mKU3p/GaD5oS/jQk6YFwNJa9+PAv609qfgNwMHAjI1udZD12WgdPRRiFuwdpI2N3LVKpx0erJaJuhunITpxljURFZVPejFMASPU4+Wt7xvbdezzU1AYt/5HK9fpgF/ehIfXGHnKpWpr1bKlaN9rs8a1Qydm5q0oLIBvtQSofNl1vQTmgJTHBkjQxZ1s9OqXmkXs7A3RN+PDDrNd8yx62BpGzukSIEvA/5Bz1s0ewnlfpDphGp1yff6u9iOfHn+4exYTGk7uQ/MZi3ENltf3v+8PC5Fjqjo0VQ6765imkFjMyjq9//Z338="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1578,6 +1691,122 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.wetter.lagen#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.740Z",
+   "abdruck": "a5b48cf8e58b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.wetter.klimazonen#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.740Z",
+   "abdruck": "6a0cf2f23ec8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.wetter.extreme#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.740Z",
+   "abdruck": "a08eb6b74041",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.wetter.vorhersage#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.740Z",
+   "abdruck": "1d1dbcc29cc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.kopplung.leben-formt-planet#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.leben.kopplung.leben-formt-planet#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.leben.kopplung.leben-formt-planet#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.774Z",
+   "abdruck": "c37665bfa346",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.leben.kopplung.leben-formt-planet#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 247 s von karte2.leben.kopplung.leben-formt-planet#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.774Z",
+   "abdruck": "8b1c999632a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.leben-formt-planet#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.spieler.hand#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 93 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 93 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:30.804Z",
+   "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.kopplung.emergenz#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.emergenz#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 98 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.emergenz#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T07:27:31.142Z",
+   "abdruck": "971363182bc1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
   }
  }
 }
