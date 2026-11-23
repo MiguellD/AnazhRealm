@@ -1,0 +1,43 @@
+{
+ "ms": 987,
+ "ergebnis": {
+  "ladungen": [
+   {
+    "mass": 0.4,
+    "energieMJ": 3.879,
+    "scheiben": 46,
+    "gebrochen": 20,
+    "innenM": 7.613,
+    "aussenM": 7.669,
+    "radiusM": 7.641,
+    "jeW3": 0.04863
+   },
+   {
+    "mass": 0.63,
+    "energieMJ": 15.157,
+    "scheiben": 46,
+    "gebrochen": 24,
+    "innenM": 15.85,
+    "aussenM": 15.964,
+    "radiusM": 15.907,
+    "jeW3": 0.06428
+   },
+   {
+    "mass": 1,
+    "energieMJ": 60.617,
+    "scheiben": 46,
+    "gebrochen": 26,
+    "innenM": 29.772,
+    "aussenM": 29.987,
+    "radiusM": 29.879,
+    "jeW3": 0.07606
+   }
+  ],
+  "gemessen": 3,
+  "radius_abw_pct": 22.8,
+  "hoch": 0.496,
+  "gebrochen": 70,
+  "bautenRest": 0,
+  "ms": 981
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "ms": 6,
+ "ergebnis": {
+  "auge": [
+   -280,
+   30,
+   -1046
+  ],
+  "spieler": [
+   -280,
+   28,
+   -1046
+  ],
+  "abstandAugeHerd": 37,
+  "weiteM": 160
+ }
+}

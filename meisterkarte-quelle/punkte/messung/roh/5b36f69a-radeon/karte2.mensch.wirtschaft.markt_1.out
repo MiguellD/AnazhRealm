@@ -1,0 +1,8 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 0 s · Markt: 1 Markt/Märkte, 10 Stände, 10 Händler unter 477 Bewohnern
+@@ 0.9 s · Tausch: 1 stein gegen 1 eisen — Stand 24 → Änderung -1, Inventar eisen 0→1, stein 1→0, größte Füllung ohne Herstellung in 24 h 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

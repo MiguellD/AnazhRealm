@@ -1,0 +1,57 @@
+{
+ "ms": 1568,
+ "ergebnis": {
+  "holz": 21.692,
+  "augeM": 37,
+  "bett": {
+   "stoff": "gras",
+   "leb": 0.51,
+   "anteil": 1
+  },
+  "asche": 1.204,
+  "rauch": 20.645,
+  "masse_abw_pct": 0.725,
+  "umgesetzt_kg": 21.849,
+  "rauch_prop_abw_pct": 7.269,
+  "rang": true,
+  "dauerS": 573.117,
+  "herde": [
+   {
+    "zellen": 1,
+    "ballen": 41,
+    "holz": 0.07,
+    "masse": 0.067,
+    "strom": 0.067,
+    "optisch": 5.127,
+    "jeKg": 72.764
+   },
+   {
+    "zellen": 3,
+    "ballen": 91,
+    "holz": 0.228,
+    "masse": 0.217,
+    "strom": 0.216,
+    "optisch": 18.149,
+    "jeKg": 79.438
+   },
+   {
+    "zellen": 9,
+    "ballen": 77,
+    "holz": 0.529,
+    "masse": 0.502,
+    "strom": 0.5,
+    "optisch": 39.495,
+    "jeKg": 74.68
+   },
+   {
+    "zellen": 25,
+    "ballen": 75,
+    "holz": 1.729,
+    "masse": 1.641,
+    "strom": 1.633,
+    "optisch": 119.917,
+    "jeKg": 69.339
+   }
+  ]
+ }
+}

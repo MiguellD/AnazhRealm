@@ -1,0 +1,2 @@
+vorher: probeOrt → null · Text 221215 Zeichen
+nachher: probeOrt → wiese (Muster 5) · Text 235906 Zeichen

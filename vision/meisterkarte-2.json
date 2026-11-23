@@ -205,11 +205,11 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 4,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 1.7,
-    "anteilKern": 1
+    "heute": 5,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 2.7,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -2193,8 +2193,8 @@
        "richter": "100 Welten: aus 5 Aufschlüssen die Geschichte (Meer/Land/Eis/Vulkan je Epoche) ≥ 80 % getroffen"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Mechanik von Sprosse 1 steht: Schicht-Gesetz T5 Pediment → Schutthang → Kliff (gelaende-core.js:374-375, schichtMass :1028), nicht mit eigenem Auge belegt; Lagen ohne Alter und Stoff. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": []
@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 9,
+    "heute": 10,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.7,
+    "anteilHeute": 5.2,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4654,7 +4654,7 @@
        "richter": "Stoffbilanz eines Bioms über 100 Spieljahre: Fehlbetrag ≤ 1 %; Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Kadaver wird gewittert, gefressen, sinkt (tetrapoda-core.js:168); gedüngt wird nur ein Tod von Spieler-Hand (stamm/kreatur-leben.js:918); Totholz und Konsolen-Pilze als zeitlose Gestalt (foundry-core.js:5155).",
@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 15,
+    "heute": 16,
     "kern": 14,
     "kernDazu": 14,
-    "anteilHeute": 2.7,
+    "anteilHeute": 2.9,
     "anteilKern": 2.5
    },
    "perspektiven": [
@@ -6346,8 +6346,8 @@
        "richter": "100-m-Rekordkurve gegen 1900–2009 ≤ 3 % je Jahrzehnt"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
      "alt": []
@@ -7278,7 +7278,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "81/81 Häuser bewohnt, Test-Stadt 118 Bewohner (14.11.); Dorfplatz Radeon 26,9 fps ≈ 37 ms — Preis ROT (mensch.K1)",
      "alt": [
@@ -20088,12 +20088,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 55,
+  "heute": 58,
   "davonKopplungen": 33,
-  "kern": 17,
-  "kernDazu": 17,
-  "anteilHeute": 3.1,
-  "anteilKern": 0.7,
+  "kern": 16,
+  "kernDazu": 16,
+  "anteilHeute": 3.3,
+  "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20102,8 +20102,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 32,
-  "nachwache": 23
+  "beide": 33,
+  "nachwache": 25
  },
  "zusammengelegt": [
   {

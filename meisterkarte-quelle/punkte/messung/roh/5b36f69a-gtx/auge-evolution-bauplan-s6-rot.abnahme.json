@@ -1,0 +1,98 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 1,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.3063,
+  "taeter": {
+   "Gelände": 0.3063
+  },
+  "vordergrund": {
+   "radius": 2.89,
+   "deckung": 0.4497,
+   "taeter": {
+    "Gelände": 0.3663,
+    "Rinde baum_eiche": 0.0833
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Boden-Schicht",
+  "vorAbstand": 1.87,
+  "leiber": null,
+  "abstand": 5.78,
+  "gestalt": [
+   "tier:fuchs 0"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -196.72,
+   98.295,
+   -77.699
+  ],
+  "blick": [
+   -0.69172,
+   -0.20752,
+   -0.69171
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 74.8,
+  "sigma": 54.8,
+  "schwarz": 0.0081,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 30.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 30.6 % · Vordergrund 45.0 % näher als 2.89 m (der halbe Ziel-Abstand): Gelände 36.6 %, Rinde baum_eiche 8.3 % · Ziel Blickziel verdeckt von Boden-Schicht in 1.87 m] · beweis · Sicht 30.6 % (Gelände 30.6 %) · Ziel Blickziel im Bild VERDECKT 5.78 m · Luma 74.8 σ 54.8 schwarz 0.8 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 30.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 30.6 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 45.0 % näher als 2.89 m (der halbe Ziel-Abstand): Gelände 36.6 %, Rinde baum_eiche 8.3 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Boden-Schicht in 1.87 m"
+  }
+ ],
+ "urteil": "ROT"
+}
