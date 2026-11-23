@@ -485,6 +485,103 @@ function flugWand(A) {
     return { errs, flug: imFlug.size };
 }
 
+// H15 DIE CPU-KOPIE FÄLLT MIT DEM HOCHLADEN (heap-dorf-spiegel): ein statischer Puffer hält nach dem Weg auf die GPU keine
+// Kopie im Heap (`_cpuKopieFrei` an r184s `Attributes.update`, gesetzt von `_backendGesetz`). Bis hier hielt jede gezeichnete
+// Geometrie ihre Bytes zweimal (GTX 1060 am Dorf, c1236fa8: `r.state.renderer` 90,5 MB Typed-Arrays). Die Linse fährt das
+// echte Backend-Gesetz an einem Renderer aus Attrappen: Lage und Index fallen (das Register bucht vorher, die Index-Wache hat
+// ihr Maximum), Instanz-Puffer und benannter Leser behalten ihre Kopie, ein Lesen und ein Nachschreiben werfen beim Namen,
+// der Kehraus lässt den Puffer gefallen — ein neues Zeichnen wirft, nie ein Hochladen aus Leere.
+function cpuKopieWand(A) {
+    const errs = [];
+    const hoch = [];
+    class Be {
+        constructor() {
+            this.daten = new Map();
+            this.isWebGPUBackend = true;
+        }
+        get(a) {
+            if (!this.daten.has(a)) this.daten.set(a, {});
+            return this.daten.get(a);
+        }
+        createAttribute(a) {
+            this.get(a).buffer = { size: a.array.byteLength };
+            hoch.push(a.name);
+        }
+        createIndexAttribute(a) {
+            this.get(a).buffer = { size: a.array.byteLength };
+            hoch.push(a.name);
+        }
+        updateAttribute(a) {
+            hoch.push(a.name + ":nach:" + a.array.length);
+        }
+        draw() {}
+        async init() {}
+    }
+    class Attrs {
+        constructor(be, info) {
+            Object.assign(this, { backend: be, info, stand: new Map() });
+        }
+        update(a, typ) {
+            if (!this.stand.has(a)) {
+                if (typ === 2) this.backend.createIndexAttribute(a);
+                else this.backend.createAttribute(a);
+                this.info.memoryMap.set(a, { size: a.array.byteLength, type: typ === 2 ? "indexAttributes" : "attributes" });
+                this.stand.set(a, a.version);
+            } else if (this.stand.get(a) < a.version) {
+                this.backend.updateAttribute(a);
+                this.stand.set(a, a.version);
+            }
+        }
+        delete(a) {
+            this.stand.delete(a);
+            this.info.memoryMap.delete(a);
+        }
+    }
+    const be = new Be();
+    const info = { memoryMap: new Map() };
+    const rend = { backend: be, info, _attributes: new Attrs(be, info) };
+    const w = weltVon(A, { renderer: rend });
+    A.prototype._backendGesetz.call(w, rend);
+    let id = 0;
+    const puffer = (name, arr, itemSize, mehr) => Object.assign({ name, array: arr, itemSize, count: arr.length / itemSize, version: 0, id: ++id }, mehr); // prettier-ignore
+    const lage = puffer("lage", new Float32Array(300), 3);
+    const index = puffer("index", Uint32Array.from({ length: 600 }, (_, i) => i % 100), 1);
+    const inst = puffer("instanz", new Float32Array(64), 16, { isInstancedBufferAttribute: true });
+    const leser = A._cpuLeser(puffer("leser", new Float32Array(30), 3), "H15-Probe diag-profiband.cjs");
+    for (const [p, typ] of [[lage, 1], [index, 2], [inst, 1], [leser, 1]]) rend._attributes.update(p, typ);
+    const wirft = (f, re) => {
+        try {
+            f();
+        } catch (e) {
+            return re.test(String(e && e.message));
+        }
+        return false;
+    };
+    const mb = (x) => ((x.byteLength || 0) / 1048576).toFixed(3);
+    for (const p of [lage, index])
+        if (!wirft(() => p.array.length, new RegExp(`CPU-KOPIE FREI: ${p.name} #`)))
+            errs.push(`H15 _cpuKopieFrei: der statische Puffer „${p.name}“ hält nach dem Hochladen seine CPU-Kopie (${wirft(() => p.array.byteLength, /./) ? "?" : mb(p.array)} MB, Soll 0 — oder ein Lesen bleibt still)`); // prettier-ignore
+    if (lage.array.constructor !== Float32Array || lage.array.BYTES_PER_ELEMENT !== 4 || lage.count !== 100)
+        errs.push("H15 _freieKopie: die freie Lage verlor Typ oder Zahl (r184 liest das Vertex-Format aus ihnen)");
+    if (!info.memoryMap.has(lage) || info.memoryMap.get(lage).size !== 1200)
+        errs.push(`H15 _cpuKopieFrei: das Register buchte die Lage mit ${(info.memoryMap.get(lage) || {}).size} B (Soll 1200 — die Kopie fällt nach der Buchung)`); // prettier-ignore
+    if (be.get(index).__indexMax !== 99 || be.get(index).__indexBytes !== 2400)
+        errs.push(`H15 _cpuKopieFrei: die Index-Wache buchte beim Anlegen nicht (Maximum ${be.get(index).__indexMax}, Soll 99)`); // prettier-ignore
+    for (const p of [inst, leser])
+        if (!(p.array instanceof Float32Array) || p.array.length === 0)
+            errs.push(`H15 _cpuKopieFrei: „${p.name}“ verlor seine Kopie (Instanz-Puffer und benannte Leser behalten sie)`);
+    const ro = { geometry: { attributes: { position: lage } }, object: null, getDrawParameters: () => null };
+    if (wirft(() => w._indexWacheDraw(be, ro, index), /./))
+        errs.push("H15 _indexWacheDraw: die Index-Wache liest den freien Index am Draw");
+    lage.version++;
+    if (!wirft(() => rend._attributes.update(lage, 1), /CPU-KOPIE FREI: lage .*nachgeschrieben/))
+        errs.push("H15 updateAttribute: ein Nachschreiben der freien Lage bleibt still (Soll: es wirft beim Namen)");
+    w._gpuAbschied(index);
+    if (!wirft(() => rend._attributes.update(index, 2), /CPU-KOPIE FREI: index .*fiel im Kehraus/))
+        errs.push("H15 _gpuAbschied: der Index ohne Kopie lud nach dem Kehraus wieder hoch (Soll: das Zeichnen wirft, sein Eigner baut neu)"); // prettier-ignore
+    return { errs, frei: hoch.filter((n) => n === "lage" || n === "index").length };
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
@@ -1895,6 +1992,11 @@ function selbsttest() {
     const f14Alt = flugWand(klasseVon(stammLib.ersetze(st8, "_gpuKehraus", "this._knotenFlugRaeumen(this._erstZeichnung, rend._nodes.nodeFrame.frameId);", ";"))); // prettier-ignore
     const f14Alle = flugWand(klasseVon(stammLib.ersetze(st8, "_knotenFlugRaeumen", "if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);", "E.imFlug.delete(k);"))); // prettier-ignore
     t("Flug: der Kehraus ohne Räumung rot beim verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün", f14Alt.errs.some((e) => /verlassene Knoten-Bau hält den Flug/.test(e)) && f14Alle.errs.some((e) => /Bau mit Leser fiel/.test(e)) && !flugWand(A).errs.length); // prettier-ignore
+    // DIE CPU-KOPIE (H15): das Hochladen mit Kopie (der Stand vor heap-dorf-spiegel) ist rot bei Lage und Index, der Kehraus
+    // ohne Marke (der freie Puffer hebt nur die Version) rot beim Hochladen aus Leere, der Stamm grün
+    const c15Kopie = cpuKopieWand(klasseVon(stammLib.ersetze(st8, "_cpuKopieFrei", "attr.array = AnazhRealm._freieKopie(attr, arr.constructor);", ";"))); // prettier-ignore
+    const c15Fall = cpuKopieWand(klasseVon(stammLib.ersetze(st8, "_gpuAbschied", "attr.__cpuGefallen = true;", ";"))); // prettier-ignore
+    t("CPU-Kopie: mit Kopie rot bei Lage und Index, der Kehraus ohne Marke rot beim Hochladen aus Leere, der Stamm grün", c15Kopie.errs.some((e) => /„lage“ hält nach dem Hochladen/.test(e)) && c15Kopie.errs.some((e) => /„index“ hält nach dem Hochladen/.test(e)) && c15Fall.errs.some((e) => /lud nach dem Kehraus wieder hoch/.test(e)) && !cpuKopieWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1958,6 +2060,9 @@ function main() {
     const f14 = flugWand(A);
     errs.push(...f14.errs);
     console.log(`H14 der Flug der Knoten-Bauten im Kehraus: ${f14.flug} von 3 bleiben (Soll 2: der verlassene fällt) (${f14.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const c15 = cpuKopieWand(A);
+    errs.push(...c15.errs);
+    console.log(`H15 die CPU-Kopie fällt mit dem Hochladen: ${c15.frei} statische Puffer hochgeladen, Kopie 0 B, Lesen und Nachschreiben laut (${c15.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
