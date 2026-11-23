@@ -1,14 +1,18 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 23.11. 22:35 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 58 von 1 718 (Kern 19).**
+**STAND 23.11. 22:44 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 58 von 1 718 (Kern 19).**
 - KURS: die FRONT führt. Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs` (koordination 32cb7691). 253 Leitern = 253 Fronten:
   18 Richter GRÜN und nur am Preis rot (11 Klasse Ort am gehaltenen Heap 402–522 MB, sechs ≤ 10 MB über 400; 6 Klasse Stadt Preis FEHLT an der Ankunft) ·
   4 GRÜN mit Preis, ungebucht · 16 am Apparat rot (10 × „spawn ENAMETOOLONG“ seit 20.11., nie neu gemessen) · 63 „Umfang nicht erzeugbar“ ·
   etwa 47 „Leser fehlt“ (11 am Satz des Bewohners, 8 an den Akten des Tages-Gesetzes) · 55 ohne Station. Hinter der Front tragen nur 6 Sprossen GRÜN.
 - IN FAHRT seit 22:18 (die Briefe an die Geräte tragen im Kopf „22:45“ — geschätzt statt gelesen, die Uhr stand auf 22:18): OMEN `heap-loslassen` (die Preis-Wurzel: 11 Front-Sprossen Klasse Ort + 3 von front-stoff) · GTX 1050 `front-stoff` 5d53fa6e zur
-  Abgabe (same.gedaechtnis.alter#1), danach nacht-laterne · an der Radeon fünf Opus-Arbeiter: Zug-Gesetz `echt-ein-bein` bis zur grünen Vorprüfung
+  Abgabe (same.gedaechtnis.alter#1), danach nacht-laterne · an der Radeon ZWEI Opus-Arbeiter (Zug-Gesetz und Ankunft der Preis-Klassen; die drei übrigen um 22:42 gestoppt, einzeln wieder aufzunehmen): Zug-Gesetz `echt-ein-bein` bis zur grünen Vorprüfung
   (Tausch der Dienst-Dateien und Stempel setzt der Koordinator) · wartende pm-Zweige nach punkte-maschine buchen · Apparat-rote Front-Stationen heilen
   und per `zug/anspruch.txt` neu messen · Ankunft der Preis-Klassen in die Leiter · Lese-Liste der ungelandeten Zweige zum Stempeln.
+- RADEON-REGEL (Schöpfer 23.11. ~22:40: „direkt die radeon ans limit gefahren... altes learning vergessen“): die Radeon ist Richter und Lande-Bahn, keine
+  Werkbank für Schwärme. Höchstens ZWEI lokale Arbeiter, keiner mit schwerem Lauf, solange die Runde misst; Macher gehen in die Cloud. Gemessen 22:42
+  nach dem Start von fünf Arbeitern: RAM frei 3 von 31,1 GB, ein git-Prozess 2,2 GB, 23 bash, 17 node, 13 git; ein einzelnes `git show` über 90 s.
+  Mein Fehler: 22 bash gezählt und trotzdem fünf gestartet.
 - GESTEMPELT 22:20: `w28-iperka-arbeiter-2` 2787b443 auf c303fc0e (Code-Check 45263181448 grün, main 1feab29c im Kopf, probe-tag OK).
 - ENTSCHEID des Koordinators (widerrufbar durch den Schöpfer): die Ankunfts-Schranke der Klassen Stadt, Megastadt/Kontinent und Planet/Welten liegt wie
   bei Klasse Ort gestuft in der Leiter `same.preis.ankunft`, nicht in jeder Sprosse. Grund: sein Wort 19.11. (die Kalt-Ankunft ist kein Tor, bis die Karte
