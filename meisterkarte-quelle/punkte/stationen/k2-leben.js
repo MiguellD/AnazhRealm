@@ -4870,7 +4870,7 @@ L.perspektive("oeko", (() => {
                                 else delete r[m];
                             };
                         };
-                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, af: s.aasFeld, aq: r._aasFrist, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
                         const paare = {};
                         const ursache = {};
                         const frass = {};
@@ -4892,6 +4892,7 @@ L.perspektive("oeko", (() => {
                                 r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                 s.faunaBestand = undefined;
                                 s.lifeField = undefined;
+                                [s.aasFeld, r._aasFrist] = [new Map(), null]; // die Leichname der Probe (`_aasTat`) bleiben in ihr
                                 s.emotionField = new Map();
                                 s.spielZeit = 0;
                                 const R = r._bestandRegion(k0, false);
@@ -4916,6 +4917,7 @@ L.perspektive("oeko", (() => {
                             for (const f of zurueck.reverse()) f();
                             s.faunaBestand = alt.fb;
                             s.lifeField = alt.lf;
+                            [s.aasFeld, r._aasFrist] = [alt.af, alt.aq];
                             s.emotionField = alt.ef;
                             r._faunaStroeme = alt.fs;
                             s.spielZeit = alt.sz;
@@ -4948,7 +4950,7 @@ L.perspektive("oeko", (() => {
                             };
                         };
                         const F = s.faunaBestand;
-                        const alt = { fb: F, lf: s.lifeField, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const alt = { fb: F, lf: s.lifeField, af: s.aasFeld, aq: r._aasFrist, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
                         const aktiv = new Set();
                         const zurueck = [];
                         let tiere = 0;
@@ -4956,6 +4958,7 @@ L.perspektive("oeko", (() => {
                         try {
                             s.faunaBestand = F && F.regionen ? { seed: F.seed, regionen: Object.fromEntries(Object.entries(F.regionen).map(([k, R]) => [k, Object.assign({}, R, { tiere: R.tiere.map((t) => Object.assign({}, t, { leib: null })) })])) } : undefined;
                             s.lifeField = s.lifeField instanceof Map ? new Map([...s.lifeField].map(([k, v]) => [k, v && typeof v === "object" ? Object.assign({}, v) : v])) : undefined;
+                            [s.aasFeld, r._aasFrist] = [new Map([...(alt.af || [])].map(([k, L]) => [k, L.slice()])), null]; // die Leichname als Kopie
                             s.emotionField = new Map();
                             const R = r._bestandRegion(key, true, 0, Infinity, []);
                             zurueck.push(leihe("_bestandStirbt", (f) => function (R2, t, u, tode, jaeger) {
@@ -4978,6 +4981,7 @@ L.perspektive("oeko", (() => {
                             for (const f of zurueck.reverse()) f();
                             s.faunaBestand = alt.fb;
                             s.lifeField = alt.lf;
+                            [s.aasFeld, r._aasFrist] = [alt.af, alt.aq];
                             s.emotionField = alt.ef;
                             s.spielZeit = alt.sz;
                             r._lebenGen = alt.gen;
@@ -5253,9 +5257,13 @@ L.perspektive("oeko", (() => {
                         };
                         const seed0 = r._forestSeedInt();
                         const F = s.faunaBestand;
-                        const alt = { fb: F, lf: s.lifeField, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, season: s.season, tod: s.timeOfDay };
+                        const alt = { fb: F, lf: s.lifeField, af: s.aasFeld, aq: r._aasFrist, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, season: s.season, tod: s.timeOfDay };
                         const kopie = () => (F && F.regionen ? { seed: F.seed, regionen: Object.fromEntries(Object.entries(F.regionen).map(([k, R]) => [k, Object.assign({}, R, { tiere: R.tiere.map((t) => Object.assign({}, t, { leib: null })) })])) } : undefined);
-                        const lfKopie = () => (alt.lf instanceof Map ? new Map([...alt.lf].map(([k, v]) => [k, v && typeof v === "object" ? Object.assign({}, v) : v])) : undefined);
+                        // das Feld des Lebens als Kopie — samt den Leichnamen (`_aasTat`), die der Takt der Probe legt
+                        const lfKopie = () => {
+                            [s.aasFeld, r._aasFrist] = [new Map([...(alt.af || [])].map(([k, L]) => [k, L.slice()])), null];
+                            return alt.lf instanceof Map ? new Map([...alt.lf].map(([k, v]) => [k, v && typeof v === "object" ? Object.assign({}, v) : v])) : undefined;
+                        };
                         const aus = { t0: performance.now() };
                         const ix = Math.floor(X / S);
                         const iz = Math.floor(Z / S);
@@ -5379,6 +5387,7 @@ L.perspektive("oeko", (() => {
                             else delete r._bestandStirbt;
                             s.faunaBestand = alt.fb;
                             s.lifeField = alt.lf;
+                            [s.aasFeld, r._aasFrist] = [alt.af, alt.aq];
                             s.emotionField = alt.ef;
                             s.spielZeit = alt.sz;
                             r._lebenGen = alt.gen;
@@ -5582,7 +5591,7 @@ L.perspektive("oeko", (() => {
                         if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
                         const jahrT = Math.round(r._kalender().jahrK / B.taktS);
                         const G = Object.keys(A._lebensraumGesetz().L.gattung);
-                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, af: s.aasFeld, aq: r._aasFrist, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
                         const laeufe = [];
                         const t0 = performance.now();
                         const fern = [];
@@ -5595,6 +5604,7 @@ L.perspektive("oeko", (() => {
                                     r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                     s.faunaBestand = undefined;
                                     s.lifeField = undefined;
+                                    [s.aasFeld, r._aasFrist] = [new Map(), null]; // die Leichname der Probe (`_aasTat`) bleiben in ihr
                                     s.emotionField = new Map();
                                     s.spielZeit = 0;
                                     const R = r._bestandRegion(k0, false);
@@ -5625,6 +5635,7 @@ L.perspektive("oeko", (() => {
                             r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng("front-" + String(k)) : (o[k] = r._streamRng("front-" + String(k)))) }) };
                             s.faunaBestand = undefined;
                             s.lifeField = undefined;
+                            [s.aasFeld, r._aasFrist] = [new Map(), null];
                             s.spielZeit = 0;
                             const [x0, z0] = k0.split(",").map(Number);
                             const zeile = [0, 1, 2, 3, 4].map((d) => x0 + d + "," + z0);
@@ -5640,6 +5651,7 @@ L.perspektive("oeko", (() => {
                         } finally {
                             s.faunaBestand = alt.fb;
                             s.lifeField = alt.lf;
+                            [s.aasFeld, r._aasFrist] = [alt.af, alt.aq];
                             s.emotionField = alt.ef;
                             r._faunaStroeme = alt.fs;
                             s.spielZeit = alt.sz;
@@ -5813,7 +5825,7 @@ L.perspektive("oeko", (() => {
                         for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
                         for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
                         const jahrT = Math.round(r._kalender().jahrK / B.taktS);
-                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, af: s.aasFeld, aq: r._aasFrist, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
                         const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
                         const eDL = Object.prototype.hasOwnProperty.call(r, "_depositLife");
                         const fDL = r._depositLife;
@@ -5829,15 +5841,32 @@ L.perspektive("oeko", (() => {
                             s.lifeField = undefined;
                             s.emotionField = new Map();
                             s.spielZeit = 0;
+                            [s.aasFeld, r._aasFrist] = [new Map(), null];
                             const R = r._bestandRegion(k0, false);
                             window.__raffer(a.fuellT, () => r._bestandSchritt(k0, R, true, []), "zerfall fuellen");
+                            // JE URSACHE EIN TIER, erzwungen: trägt das Tal nach dem Füllen weniger als drei, füllen die Regionen westwärts
+                            // nach (ddaf883d: nur ein Bär im Tal — Alter und Hunger fielen aus, naehrMinPlus ungemessen)
+                            const tiere = R.tiere.map((t) => [R, t]);
+                            for (let n = 1, jx = ix - 1; tiere.length < 3 && n < 6; n++, jx--) {
+                                const k = jx + "," + iz;
+                                if (park(k)) continue;
+                                for (let i = 0; i < 100 && !r._bestandBereit(k); i++) await new Promise((f) => setTimeout(f, 50));
+                                if (!r._bestandBereit(k)) continue;
+                                const R2 = r._bestandRegion(k, false);
+                                window.__raffer(a.fuellT, () => r._bestandSchritt(k, R2, true, []), "zerfall fuellen " + k);
+                                for (const t of R2.tiere) tiere.push([R2, t]);
+                            }
+                            // DER BODEN DER MESSUNG: die Leichname des Füllens legten sich in die Zellen der Tiere, die nun sterben —
+                            // ddaf883d stand ihre Zelle schon an der Kappe des Nährstoffs (1,6 = WUCHS.naehrMax), kein Tod konnte sie
+                            // heben. Gemessen wird nach dem Füllen auf frischem Feld der Leichname: der Leser bleibt `_naehrstoffAt`.
+                            [s.aasFeld, r._aasFrist] = [new Map(), null];
                             for (const u of ["jagd", "alter", "hunger"]) {
-                                const t = R.tiere.find((x) => !aus.tode.some((d) => d.id === x.id));
+                                const [RT, t] = tiere.shift() || [];
                                 if (!t) continue;
                                 const vor = r._naehrstoffAt(t.x, t.z);
                                 const aeVor = r._kreaturNahrung(t.x, t.z);
-                                const jaeger = R.tiere.filter((x) => x !== t && x.g === "wolf").slice(0, 1);
-                                r._bestandStirbt(R, t, u, [], jaeger);
+                                const jaeger = RT.tiere.filter((x) => x !== t && x.g === "wolf").slice(0, 1);
+                                r._bestandStirbt(RT, t, u, [], jaeger);
                                 aus.tode.push({ u, id: t.id, g: t.g, vor, nach: r._naehrstoffAt(t.x, t.z), aeVor, aeNach: r._kreaturNahrung(t.x, t.z) });
                             }
                             const x = pm.x + a.dx;
@@ -5865,6 +5894,7 @@ L.perspektive("oeko", (() => {
                             }
                             s.faunaBestand = alt.fb;
                             s.lifeField = alt.lf;
+                            [s.aasFeld, r._aasFrist] = [alt.af, alt.aq];
                             s.emotionField = alt.ef;
                             r._faunaStroeme = alt.fs;
                             s.spielZeit = alt.sz;
