@@ -10,7 +10,7 @@
   "uhr": 0.95,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 43,
+  "weltTakte": 150,
   "zeilen": 1080
  },
  "geraet": {
@@ -106,12 +106,12 @@
    "pixel": 0,
    "max": 0
   },
-  "misch": 30686,
+  "misch": 30685,
   "kenn": {
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 2450,
+   "ms": 1666,
    "wechsel": 815531
   },
   "rinde": null,
@@ -132,16 +132,16 @@
    },
    "nahWiese:L2": {
     "objekte": 2,
-    "pixel": 119803,
+    "pixel": 119810,
     "farbe": [
-     0.03031,
+     0.03032,
      0.02206,
      0.01186
     ]
    },
    "nahWiese:Lf": {
     "objekte": 2,
-    "pixel": 30224,
+    "pixel": 30220,
     "farbe": [
      0.02006,
      0.01959,
