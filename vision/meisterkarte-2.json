@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 5,
+    "heute": 6,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 2.7,
+    "anteilHeute": 3.2,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -1935,7 +1935,7 @@
        "richter": "Zeit bis Skill ≈ 0 gegen Fehlerwachstum aus Rotation und Wärmegefälle ±50 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: das Wetter ist drei Sinus-Wellen, ohne Vorlauf und ohne Chaos.",
@@ -20088,11 +20088,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 58,
+  "heute": 59,
   "davonKopplungen": 33,
   "kern": 19,
   "kernDazu": 19,
-  "anteilHeute": 3.3,
+  "anteilHeute": 3.4,
   "anteilKern": 0.7,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20102,7 +20102,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 33,
+  "beide": 34,
   "nachwache": 25
  },
  "zusammengelegt": [
