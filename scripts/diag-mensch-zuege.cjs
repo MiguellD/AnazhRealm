@@ -191,7 +191,8 @@ const zeile = (u) =>
 // Band der Wachstumskurve (±6 %), der Kopf (height · kopf) im Band ±5 %; keine Kind-Gestalt am Rand des Kopf-Knotens der Menge
 // (LEIB_RAUM kopf trägt den Kopf des Zweijährigen, Vertrags-Akt ofen mensch-L2/L3); das Kind im Haus der Schmiede spielt um 10 Uhr (Akt „spiel", Werk daheim), nie „arbeit".
 // Täter (Selbsttest): das Alter wie vor generationen-band (0,05–0,5 auf dem Regler) → ROT am Anteil; die Wahl ohne die Lebensphase
-// (der Abstand im Regler allein) → ROT an der Gestalt; der Wuchs ohne Höhe → ROT an der Körperhöhe.
+// (der Abstand im Regler allein) → ROT an der Gestalt; der Wuchs ohne Höhe → ROT an der Körperhöhe; das Kind ohne Reife (die
+// Kind-Gestalt unter 10 J trägt sex fern der Mitte: die kleine Frau, das Bild K1 am 23.11.) → ROT an der Form des Geschlechts.
 const stammLib = require("./lib/stamm.cjs");
 const ALTER_JAHR = 1238;
 // die Wachstumskurve (Mittel beider Geschlechter, Höhe ÷ 172 cm; Kopf ÷ erwachsen) — die Referenz der Linse, nicht die des Gesetzes
@@ -218,7 +219,7 @@ function alterUrteil(T, K) {
     const gestalten = [];
     for (let gi = 0; gi < 8; gi++) {
         const gen = r._rollHumanoidGenome(`${seed}:${gi}`, { jahr: ALTER_JAHR, gestalt: gi, von: 8 });
-        gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
+        gen.sex = K.alterGeschlecht(gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25, gen.jahre);
         gestalten.push(gen);
     }
     const jahreG = (G) => 18 + 62 * G.alter;
@@ -264,6 +265,8 @@ function alterUrteil(T, K) {
         const p = K.leibRaumPunkt(Object.assign({}, K.START_PARAMS, r._dialsAusGenom(G), { age: G.alter, haaransatz: G.haaransatz, hairVol: G.haarFuelle, hairStyle: G.schnitt }));
         return !(p[ki] < K.LEIB_RAUM.achsen[ki].knoten.length - 1);
     }).length;
+    // die Reife: Kind-Gestalten unter 10 J tragen die Form keines Geschlechts (sex an der Mitte, koerper alterGeschlecht)
+    const reifeRot = gestalten.filter((G) => jahreG(G) < 10 && Math.abs(G.sex - 0.5) > 0.06).map((G) => [+jahreG(G).toFixed(1), +G.sex.toFixed(3)]); // prettier-ignore
     // das Kind im Haus der Schmiede: um 10 Uhr spielt es daheim
     const orte = K.tagesOrte({ slots: [{ x: 0, z: 0, rolle: "schmiede" }, { x: 30, z: 0, rolle: "wohnhaus" }], platz: { cx: 15, cz: 20 } }); // prettier-ignore
     const B = K.tagesBindung(TC, 4242, "kind", 0, orte, null);
@@ -279,6 +282,7 @@ function alterUrteil(T, K) {
         wuchs,
         wuchsRot,
         rand,
+        reifeRot,
         kindWerk: B.werk === 0 && spiel.akt === "spiel",
         spielAkt: spiel.akt,
     };
@@ -291,13 +295,15 @@ function alterRot(u) {
         rot.push(`${u.kindInErwachsen} Kinder in der Gestalt eines Erwachsenen — Täter: stamm/siedlung-bewohner.js _bewohnerAbstand ohne koerper alterAbstand (die Lebensphase)`); // prettier-ignore
     if (u.wuchsRot.length)
         rot.push(`Wuchs außer Band ${JSON.stringify(u.wuchsRot)} — Täter: koerper wuchs / alterLeib → _dialsAusGenom`);
+    if (u.reifeRot.length)
+        rot.push(`Kind-Gestalten unter 10 J mit der Form eines Geschlechts ${JSON.stringify(u.reifeRot)} (J, sex) — Täter: koerper alterGeschlecht / alterLeib (reife)`); // prettier-ignore
     if (u.rand) rot.push(`${u.rand} Kind-Gestalten am Rand des Kopf-Knotens der Menge — Täter: koerper LEIB_RAUM kopf`);
     if (!u.kindWerk) rot.push(`das Kind der Schmiede um 10 Uhr: ${u.spielAkt} — Täter: koerper tagesBindung / tagesPlan rollen.kind`);
     return rot;
 }
 const ALTER_STAMM = stammLib.text(path.join(__dirname, ".."));
 const alterZeile = (u) =>
-    `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Kind-Gestalten am Kopf-Rand der Menge ${u.rand}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")}`; // prettier-ignore
+    `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Kind-Gestalten am Kopf-Rand der Menge ${u.rand}, Kind-Gestalten ohne Reife ${u.reifeRot.length}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")}`; // prettier-ignore
 
 if (SELBSTTEST) {
     let fails = 0;
@@ -307,6 +313,7 @@ if (SELBSTTEST) {
         ["das Alter 0,05–0,5 wie vorher", ALTER_STAMM.replace("const J = this._bewohnerJahre(g, epoche);", 'const J = 18 + 62 * g.range("alter", 0.05, 0.5);'), KC, /Anteil unter 15 J/], // prettier-ignore
         ["die Wahl ohne Lebensphase", ALTER_STAMM, kernMit(/if \(Ja < A\.kindJ !== Jt < A\.kindJ\) return d \+ A\.phase;\n[^\n]*\n/, ""), /Erwachsenen/], // prettier-ignore
         ["der Wuchs ohne Höhe", ALTER_STAMM, kernMit(/g\.kh \*= w\.hoehe;/, ""), /Wuchs außer Band/],
+        ["das Kind ohne Reife", ALTER_STAMM, kernMit(/return J < ALTER_GESETZ\.erwachsenJ \? 0\.5 \+ \(s - 0\.5\) \* wuchs\(J\)\.reife : s;/, "return s;"), /Form eines Geschlechts/], // prettier-ignore
     ];
     for (const [name, T, K, soll] of taeter) {
         if (!K || (T === ALTER_STAMM && K === KC)) {
@@ -335,7 +342,7 @@ if (SELBSTTEST) {
             fails++;
         }
     }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe) fallen ROT an ihrer Zeile.`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe, Kind ohne Reife) fallen ROT an ihrer Zeile.`);
 }
 
 const a = urteil(KC, zugVon);

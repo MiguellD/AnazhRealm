@@ -309,9 +309,10 @@ class AnazhRealm_siedlung_bewohner {
         const von = AnazhRealm.BEWOHNER.gestalten;
         for (let gi = 0; gi < von; gi++) {
             // (DAS ALTER DER GESTALT, koerper ALTER_GESETZ: geschichtet über die Pyramide der Epoche des Plans — die Gestalten
-            // tragen die Lebensphasen ihrer Siedlung, Kind bis Greis)
+            // tragen die Lebensphasen ihrer Siedlung, Kind bis Greis; das Geschlecht der Gestalt in der Reife ihres Alters,
+            // koerper `alterGeschlecht`)
             const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`, { jahr: S.plan.jahr, gestalt: gi, von });
-            gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
+            gen.sex = kc.alterGeschlecht(gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25, gen.jahre);
             const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch), {
                 hairStyle: gen.schnitt,
                 hairLen: gen.haarLaenge,

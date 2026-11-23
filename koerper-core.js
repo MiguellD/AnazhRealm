@@ -1661,7 +1661,9 @@
     // erwachsenen Größe (`kopf` — der Kopf wächst langsamer als der Leib: ein 6-Jähriger trägt ~89 % des Kopfs auf 68 % der Höhe,
     // das Verhältnis headRatio steigt um kopf ÷ hoehe), die Länge der Beine als Anteil (`bein`, die Achse bauBein des Baus trägt sie). Ab erwachsenJ 1, 1, 0 —
     // ein Erwachsener bleibt Byte für Byte. (QUELLE UNGEPRÜFT — Richtwerte nach den Wachstumskurven, Mittel beider Geschlechter;
-    // Schritthöhe ÷ Körperhöhe 2 J ~0,37, 6 J ~0,44, erwachsen ~0,47.) DAS ALTER DES GREISES: das Haar ergraut zwischen `grau`
+    // Schritthöhe ÷ Körperhöhe 2 J ~0,37, 6 J ~0,44, erwachsen ~0,47.) DIE REIFE (`reife`, `alterGeschlecht`): die Form des
+    // Geschlechts (Regler gender aus der Achse sex — Brust, Hüfte, Schulter) wächst erst mit der Pubertät (ab ~10 J, voll mit 18):
+    // das Kind trägt sex = 0,5 + (sex − 0,5) · reife, nie den Leib einer kleinen Frau oder eines kleinen Manns. DAS ALTER DES GREISES: das Haar ergraut zwischen `grau`
     // [45, 75] J (der Anteil der Grauen steigt linear), ab `weissJ` weiß bei jedem Zweiten. DIE LEBENSPHASE TRÄGT DIE GESTALT
     // (`alterAbstand`): ein Kind (< kindJ) trägt nie die Gestalt eines Erwachsenen und umgekehrt (`phase`); unter Kindern zählt der
     // Wuchs (`wuchsGewicht` je Anteil der Höhe). Leser: der Wirt (`_rollHumanoidGenome` → das Genom jedes Bewohners und jeder Gestalt;
@@ -1678,15 +1680,15 @@
             Object.freeze({ jahr: 2000, anteil: Object.freeze([0.05, 0.05, 0.055, 0.055, 0.12, 0.16, 0.155, 0.125, 0.125, 0.075, 0.03]) }),
         ]),
         wuchs: Object.freeze([
-            Object.freeze({ J: 2, hoehe: 0.51, kopf: 0.82, bein: -0.2 }),
-            Object.freeze({ J: 4, hoehe: 0.6, kopf: 0.86, bein: -0.12 }),
-            Object.freeze({ J: 6, hoehe: 0.68, kopf: 0.89, bein: -0.06 }),
-            Object.freeze({ J: 8, hoehe: 0.75, kopf: 0.92, bein: -0.04 }),
-            Object.freeze({ J: 10, hoehe: 0.81, kopf: 0.94, bein: -0.02 }),
-            Object.freeze({ J: 12, hoehe: 0.87, kopf: 0.96, bein: -0.01 }),
-            Object.freeze({ J: 14, hoehe: 0.94, kopf: 0.98, bein: 0 }),
-            Object.freeze({ J: 16, hoehe: 0.98, kopf: 0.99, bein: 0 }),
-            Object.freeze({ J: 18, hoehe: 1, kopf: 1, bein: 0 }),
+            Object.freeze({ J: 2, hoehe: 0.51, kopf: 0.82, bein: -0.2, reife: 0 }),
+            Object.freeze({ J: 4, hoehe: 0.6, kopf: 0.86, bein: -0.12, reife: 0 }),
+            Object.freeze({ J: 6, hoehe: 0.68, kopf: 0.89, bein: -0.06, reife: 0 }),
+            Object.freeze({ J: 8, hoehe: 0.75, kopf: 0.92, bein: -0.04, reife: 0 }),
+            Object.freeze({ J: 10, hoehe: 0.81, kopf: 0.94, bein: -0.02, reife: 0.1 }),
+            Object.freeze({ J: 12, hoehe: 0.87, kopf: 0.96, bein: -0.01, reife: 0.35 }),
+            Object.freeze({ J: 14, hoehe: 0.94, kopf: 0.98, bein: 0, reife: 0.7 }),
+            Object.freeze({ J: 16, hoehe: 0.98, kopf: 0.99, bein: 0, reife: 0.9 }),
+            Object.freeze({ J: 18, hoehe: 1, kopf: 1, bein: 0, reife: 1 }),
         ]),
         grau: Object.freeze([45, 75]), weissJ: 65,
         phase: 100, wuchsGewicht: 30,
@@ -1757,7 +1759,7 @@
         for (var i = 1; i < T.length; i++)
             if (J <= T[i].J) {
                 var a = T[i - 1], b = T[i], t = (J - a.J) / (b.J - a.J);
-                return { J: J, hoehe: a.hoehe + (b.hoehe - a.hoehe) * t, kopf: a.kopf + (b.kopf - a.kopf) * t, bein: a.bein + (b.bein - a.bein) * t };
+                return { J: J, hoehe: a.hoehe + (b.hoehe - a.hoehe) * t, kopf: a.kopf + (b.kopf - a.kopf) * t, bein: a.bein + (b.bein - a.bein) * t, reife: a.reife + (b.reife - a.reife) * t }; // prettier-ignore
             }
         return T[T.length - 1];
     }
@@ -1774,10 +1776,15 @@
             g.headRatio *= w.kopf / w.hoehe;
             var bein = w.bein / BAU_GESETZ.achsen[0].last.bein;
             if (typeof g.bauBein === "number") g.bauBein = Math.max(-sp, Math.min(sp, g.bauBein + bein));
+            if (typeof g.sex === "number") g.sex = alterGeschlecht(g.sex, J);
         }
         var grau = Math.max(0, Math.min(1, (J - A.grau[0]) / (A.grau[1] - A.grau[0])));
         if (u < grau) g.hairColor = J >= A.weissJ && u2 < 0.5 ? "white" : "grey";
         return g;
+    }
+    // DIE FORM DES GESCHLECHTS zum Alter J: die Achse sex (0…1) zur Mitte gezogen, so weit die Reife fehlt — ab erwachsenJ unberührt
+    function alterGeschlecht(s, J) {
+        return J < ALTER_GESETZ.erwachsenJ ? 0.5 + (s - 0.5) * wuchs(J).reife : s;
     }
     // DIE NÄHE ZWEIER ALTER (Regler) für die Wahl der Gestalt: der Abstand im Regler; zwischen Kind und Erwachsenem die Grenze der
     // Lebensphase (`phase`), unter Kindern ihr Wuchs
@@ -10005,6 +10012,7 @@
         epochenAlter: epochenAlter,
         wuchs: wuchs,
         alterLeib: alterLeib,
+        alterGeschlecht: alterGeschlecht,
         alterAbstand: alterAbstand,
         BAU_SOLL: BAU_SOLL,
         KETTE_GELENKE: KETTE_GELENKE,
