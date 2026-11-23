@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 26,
-    "kern": 4,
-    "kernDazu": 4,
-    "anteilHeute": 4.8,
-    "anteilKern": 0.6
+    "heute": 27,
+    "kern": 3,
+    "kernDazu": 3,
+    "anteilHeute": 4.9,
+    "anteilKern": 0.4
    },
    "perspektiven": [
     {
@@ -10011,8 +10011,8 @@
        "richter": "Start nur im Fenster, Hohmann ± 5 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Wagen ohne Ladung (hausJeWagen 15); Hafen, Lager: Grep 0",
      "alt": []
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 76,
+  "heute": 77,
   "davonKopplungen": 33,
-  "kern": 5,
-  "kernDazu": 5,
-  "anteilHeute": 4.1,
+  "kern": 4,
+  "kernDazu": 4,
+  "anteilHeute": 4.2,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 50,
-  "nachwache": 26
+  "nachwache": 27
  },
  "zusammengelegt": [
   {
