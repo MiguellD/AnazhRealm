@@ -575,9 +575,9 @@ if (require.main === module) hauptLauf(async () => {
                     _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)
                         : -1;
-                // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
-                // frame-budgetiert) baut kalt gebliebene Baum-Einträge in Reichweite —
-                // ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
+                // Kurzer Settle-Pump: der Takt des Culls (`_foundryRewarmColdTrees`, sein EINER
+                // Rufer; das Ende des Vorrats markiert nur) baut kalt gebliebene Baum-Einträge in
+                // Reichweite — ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
                 await __takte(40, 0);
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad

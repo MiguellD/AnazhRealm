@@ -439,8 +439,8 @@ class AnazhRealm_dirigent_takt {
 
     // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
     // ruht ihn, Lehre 17, die Werkbank zwischen ihren Befehlen; wer dann tickt, ruft `_gameLoopTick` selbst). Was nur ein Takt
-    // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
-    // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
+    // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`); die Ankunft eines
+    // Körpers platziert nie von selbst (der Rewarm hat EINEN Rufer, den Takt des Culls) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
     // VOR DEM INIT DES RENDERERS KOMMT KEIN TAKT (w28-loop-vor-init): r184 legt die Bild-Schleife erst in `init()` an
     // (`_animation`), sein `getAnimationLoop()` wirft davor (TypeError auf null) — und `setAnimationLoop` wartet auf das init. Die
@@ -450,7 +450,7 @@ class AnazhRealm_dirigent_takt {
     // `_leibBereit` gab den Bau trotzdem frei, und er goss beide Stufen des Leibs im Haupt-Faden („FADEN-UMGANGEN: Guss
     // „mensch“ …“). GTX 1050, main e6f0cf7e: in 7 von 126 Zweit-Boots kam die Vorlage 44–64 ms vor `rendererReady` — EINE
     // Aufgabe 3,3–3,9 s (`_ofenMenschTemplate` 2 813 + 496 ms), das Weltbild 15,3–19,8 statt 12,4–15,8 s. Jeder Leser fällt mit
-    // (`_bauFristOhneEnde`, `_foundryRewarmColdTrees`). Linsen: gate:ankunft L2a (`loopVorInit`), die Kalt-Zeile von
+    // (`_bauFristOhneEnde`). Linsen: gate:ankunft L2a (`loopVorInit`), die Kalt-Zeile von
     // gate:boot-stage („die Ankunft bricht nicht“).
     _loopRuht() {
         // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter

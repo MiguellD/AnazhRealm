@@ -746,12 +746,13 @@ class AnazhRealm_studio_gestalt {
             f._settlementWarm = false;
             this.log(`FOUNDRY WARM: Settlement-Probe warf (${e && e.message})`, "ERROR");
         }
+        // DAS ENDE DES VORRATS MARKIERT NUR (saat-vor-heil): die Bibliothek steht (`_warmCritical`), jede ihrer Antworten zählte schon
+        // die Ankunft (`f.ankunft`, im Stand-Stempel) — die kalten Einträge setzt der Takt der STEHENDEN Welt (`tickArchitectureCulling`
+        // → `_foundryRewarmColdTrees`). Bis hier setzte das Ende sie selbst, am Takt vorbei: endete der Vorrat im Fenster eines Tauschs
+        // (nach `_weltAbschied`, vor dem Heil in `_weltVorlauf`), las der Rewarm die Saat einer Welt, die keine trug (CI 45204422670,
+        // gate:weltgrenze Weg „saat“; die Linse dort legt das Ende in dieses Fenster).
         f._warmCritical = true;
         f._vorrat = false;
-        // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
-        // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
-        // hoffen (unter Last baut der NICHTS -> die Baeume blieben cold).
-        this._foundryRewarmColdTrees();
     }
     // DOCK-PEEK (nicht-triggernd): ist das Studio-Asset für den AKTUELLEN LOD dieses Eintrags gedockt
     // (Cache/Atlas-Zelle)? Rein lesend, löst KEINEN Bake aus (anders als `_foundryFlattenFor`) → der
@@ -841,26 +842,25 @@ class AnazhRealm_studio_gestalt {
         return f.cache.has(key) && f.cache.get(key) != null;
     }
     // `menge`: die Einträge, die er fragt — der Cull reicht seine wachen (`_cullWache`: jeder Kalte und Klassische der
-    // Mesh-Zone wacht), sonst der Bestand.
+    // Mesh-Zone wacht). DER REWARM GEHÖRT DER STEHENDEN WELT (saat-vor-heil): sein EINER Rufer ist der Takt des Culls
+    // (`tickArchitectureCulling`), der in einem Tausch ruht — Ende des Vorrats, Körper- und Karten-Ankunft markieren nur
+    // (`_warmCritical`, `f.ankunft` im Stand-Stempel, die Zusage des Schläfers). Bis hier rief jede Ankunft ihn ohne `menge`
+    // über den ganzen Bestand, mit eigenem Ruhe-Wächter — und im Fenster eines Tauschs las er die Saat vor dem Heil.
+    // Linse: gate:weltgrenze (Fenster des Heils, Absenz „ein Rufer des Rewarm neben dem Takt“).
     _foundryRewarmColdTrees(menge) {
         // Regime-Quelle = `_foundryEnabled`: Foundry aus → Rewarm ist No-op (sonst läuft er im Gate-Hook-
         // Fenster mit, Burst über dem Cull-Budget). `!f || !f.ready` unten deckt jeden foundry-losen Zustand.
         // Rückgabe: die Zahl der Kandidaten (kalt oder vor dem Studio platziert) — die Stand-Wache des Culling-Takts hält
         // sich wach, solange einer wartet; ein Platzieren regt die Welt.
         if (!this._foundryEnabled()) return 0;
-        // DIE ANKUNFT BAUT IM TAKT (lod.K5, `_loopRuht`): ruht der Loop, platziert der Ruf der Ankunft (ohne `menge`) nichts — die
-        // ruhende Welt ändert sich nur, wo einer fragt; der Takt des Culls platziert, sobald einer geht (er ruft mit `menge`). Mit
-        // dem Wächter, der bei ruhendem Loop nichts mehr hält, setzte sonst jede Ankunft einen kalten Eintrag ins Bild einer
-        // ruhenden Linse — den eben geräumten Bau der Stufen-Linse in ihren Schuss ohne Exemplar.
-        if (!menge && this._loopRuht()) return 0;
+        // DIE ANKUNFT BAUT IM TAKT (lod.K5): die ruhende Welt ändert sich nur, wo einer fragt — die Ankunft ruft ihn nicht mehr,
+        // also setzt keine einen kalten Eintrag ins Bild einer ruhenden Linse; der Takt des Culls platziert, sobald einer geht.
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
         // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis die Terrain-zuerst-Regel den Scan trägt.
         if (this._dekoWartet()) return 1;
         const f = this._foundry;
         if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
-        const archs = menge || this.state.architectures;
-        if (!archs) return 0;
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
         const rad = this.state.architectureCullingRadius || 200;
         const radiusSq = rad * rad;
@@ -889,7 +889,7 @@ class AnazhRealm_studio_gestalt {
         // dann die Distanz, erst dann die Preset-Auflösung (sie baut je Ruf ihre Namens-Tafel) — eingeschwungen fragt
         // der Scan nur noch die Ungeplatzten der Mesh-Zone (gemessen 05.10., echte GPU, Mess-Wiese, 1563 Einträge:
         // 1563 → 87 Auflösungen je Scan).
-        for (const entry of archs) {
+        for (const entry of menge) {
             if (!entry) continue;
             if (!(!entry.instanced && !entry.mesh) && entry.instFoundry) continue; // schon foundry-platziert
             let d2 = 0;
@@ -1285,10 +1285,9 @@ class AnazhRealm_studio_gestalt {
                     const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
                     if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
                 },
-                nach: (ok) => {
-                    if (ok) this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset → wartende Einträge bauen
-                },
+                // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen; die wartenden Einträge setzt der Takt (die
+                // Ankunft zählt `f.ankunft`, seine Zusage weckt den Eintrag — `_foundryRewarmColdTrees` hat EINEN Rufer)
+                nach: (ok) => ok && (this._scatterRefillPending = true),
             });
             return null;
         }

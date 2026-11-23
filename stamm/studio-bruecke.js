@@ -2561,14 +2561,12 @@ class AnazhRealm_studio_bruecke {
         if (group === undefined) {
             if (!this._ensureAssetFoundry()) return null;
             const zug = this._foundryZug(gkey, preset, variant, bakeLod, ov, wer ? wer.wo : undefined, {
+                // Im Ankunfts-Moment die Zelle anlegen (Cache-Hit → Rahmen) — sonst entsteht sie erst beim nächsten zufälligen
+                // Leser. Die wartenden Einträge setzt der Takt (die Ankunft zählt `f.ankunft`, die Zusage weckt den Schläfer).
                 nach: (ok) => {
-                    if (ok) {
-                        this._scatterRefillPending = true;
-                        // Im Ankunfts-Moment die Zelle anlegen (Cache-Hit → Rahmen) — sonst entsteht sie erst beim
-                        // nächsten zufälligen Leser.
-                        this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
-                    }
-                    this._foundryRewarmColdTrees();
+                    if (!ok) return;
+                    this._scatterRefillPending = true;
+                    this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
                 },
             });
             if (wer) wer.wecke(zug);

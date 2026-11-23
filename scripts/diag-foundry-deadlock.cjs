@@ -94,7 +94,7 @@ hauptLauf(async () => {
                 st._frameChunksBuilt = false; // das terrain-first-Gate offen halten
                 try {
                     r._tickWaldPlan(4);
-                    r._foundryRewarmColdTrees();
+                    r._foundryRewarmColdTrees(archs()); // die Menge, die der Takt reicht (der Rewarm hat EINEN Rufer)
                 } catch (e) {
                     // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt
                     out.err = out.err || "Takt " + i + ": " + fehlerText(e);
