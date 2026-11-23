@@ -17604,7 +17604,7 @@
   },
   "karte2.mensch.kopplung.kultur": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: Station seit der Messung geändert — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers · karte2.mensch.kopplung.kultur#2 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +5) · karte2.mensch.kopplung.kultur#2 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.kultur#1",
@@ -17632,8 +17632,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +5)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kopplung.kultur#2",
@@ -17854,7 +17855,7 @@
   },
   "karte2.mensch.kopplung.leib": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers · karte2.mensch.kopplung.leib#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +5) · karte2.mensch.kopplung.leib#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.leib#1",
@@ -17862,8 +17863,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +5)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -24922,7 +24924,7 @@
   },
   "karte2.mensch.stadt.vertikal": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.vertikal#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers · karte2.mensch.stadt.vertikal#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2715 s Warten) — ungemessen · karte2.mensch.stadt.vertikal#2 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#2 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.vertikal#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +4) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.stadt.vertikal#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2715 s Warten) — ungemessen · karte2.mensch.stadt.vertikal#2 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#2 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.vertikal#1",
@@ -24930,8 +24932,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +4) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -34821,7 +34824,7 @@
   },
   "karte2.same.kopplung.zeitreise": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers · karte2.same.kopplung.zeitreise#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +2) · karte2.same.kopplung.zeitreise#2 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +2) · karte2.same.kopplung.zeitreise#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +2) · karte2.same.kopplung.zeitreise#2 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.zeitreise#1",
@@ -34829,8 +34832,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher ers",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/draw-zaehler.cjs +2)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37561,7 +37565,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 312,
+  "konsum": 316,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37729,10 +37733,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3310
+  "ohne": 3306
  },
  "kopfVoll": "26456680f8635fe80599f37007029e500c9c9063",
- "zeit": "2026-11-23T16:22:07.458Z",
+ "zeit": "2026-11-23T16:39:18.116Z",
  "vorher": "26456680",
  "bilanz": {
   "gewinn": [],
