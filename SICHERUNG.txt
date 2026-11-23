@@ -1,0 +1,33 @@
+Sicherung der GTX 1050 (Konto-Wechsel 23.11. 21:55): je Zeile ein lokaler Zweig, dessen Commits auf keinem Remote-Ref stehen; jeder ist ein Elter dieses Commits.
+Nicht hier (Regel 16.11., Siegel-Rumpf; Inhalt in main per Squash w28-ankunft-stapel): w28-ankunft-faden 49c76cdc4, w28-feld-fuss 92b819b8f, w28-licht-kern 1062f8987.
+Siegel-Wort im Rumpf: w27-wald-saum (2), w28-programm-vor-bild (1) — nie in einen Zug mischen.
+
+palette-alt-0029 93a0446c39541a62ad15a40d84fb7d0aeee61c44 offen=2 · WIP palette-stoff-spaet: die Material-Palette ist ein Stück des EINEN Werkstatt-Baus — der späte Stoff der
+sicherung-leben-vorbau-21b6190e 21b6190ede36df1a442e1f170d2c47e2dbb1d95e offen=6 · WIP w28-leben-vorbau: der Gast der Kamm-Krone steht als Besitzer seines Dreiecks in der Entsorgungs-Wand [skip
+w27-belegung 002051cb77f27daeddd9ae368496f2198525940e offen=1 · Abgabe w27-belegung: die Rezept-Zeilen tragen content-visibility: auto nur im offenen Ich — das verborgene I
+w27-belegung-boden 761d8a144ca5501e6659f95458eb4cd36c9da67e offen=1 · Abgabe w27-belegung-boden: die Belegung urteilt das Spiel als Überschuss über dem Boden des Geräts, gemesse
+w27-karte-nadel 18d6d1a745b222137c0f6902794cd680e3e8e5fa offen=1 · Abgabe w27-karte-nadel: Nadel und Jahr der Karte wachsen in EINEM Knoten je Atlas; die Wache der Reihen nennt 
+w27-mensch-k4-5e0d2f31 5e0d2f31f843d01edea2ca1e920b13ecd6aa4aa0 offen=1 · Abgabe w27-mensch-k4: das Auge urteilt erst aufgelöst — unter 2 × 2 reinen Pixeln ist augeFrei ungemessen 
+w27-ort-pose-1a15ff93 1a15ff93b5febdd3affbfb6f531fe277988768c7 offen=1 · Abgabe w27-ort-pose: die Modul-Karte steht wieder, wie ihr Erzeuger sie schreibt [gpu-probe: bild:dorf@0.5, bi
+w27-ort-pose-87609a64 87609a647de570bf342e5401c37cb81da2aec95d offen=2 · Abgabe w27-ort-pose: die Nässe-Linse trifft jeden Bau mit Decke, die Pfütze ist ihre eigene Klasse [gpu-prob
+w27-ort-pose-a3266b41 a3266b41620e95c9b7c82f96413ab4c1eee6872e offen=1 · Abgabe w27-ort-pose: dorf und stadt stehen auf dem Platz ihrer Siedlung, die Pose kommt aus dem Plan [gpu-prob
+w27-ort-pose-a3782a65 fa74f1dfdecab9862947bd63a9cbae4d4ef29f66 offen=1 · Zwischenstand w27-ort-pose: ein Commit vor dem Umzug auf main a3782a65 [skip ci]
+w27-ort-pose-merge-067 752ebaaf200b3bf03a475b82dd93534fa3c5d588 offen=1 · Merge origin/main 067bd771 in w27-ort-pose
+w27-ort-pose-voll-35a0870b 35a0870b2579c51180799259db85fc5112f4b420 offen=1 · Abgabe w27-ort-pose-voll: stadt-voll steht aus der Spur auf dem Platz, ein Leib ist nie Fläche der Linse, EIN
+w27-ort-pose-voll-366f7a59 366f7a597320817d6562aa87a7268f63838fe803 offen=2 · WIP w27-ort-pose-voll: Kegel spurfrei als Vorrang, der Leib ist nie Fläche der Linse, imBild stadt-voll
+w27-ort-pose-voll-845180cb 845180cb5649cf16b5f94c274acd3cb15c080461 offen=1 · WIP w27-ort-pose-voll: erst der Stand aus der Spur, dann der Kegel ohne Spur, EIN Familien-Leser (geparkt, nic
+w27-stadt-bild 436bdf73b338e830ee09a0e770a5bb4eda867ffe offen=1 · Abgabe w27-stadt-bild: die Gründung der Probe wartet auf den Akt des Worts, nie unter dem Deckel; die Anker v
+w27-stadt-bild-bericht df22c9c566bf5b3e8941cc5fcc4af6c851df742a offen=1 · Berichte 0911-stadt-bild und 0911-karte-nadel: Täter des Proben-Deckels (werkbank:1090, 436bdf73) und der dop
+w27-traa-fenster 999da48a089c36ce64be127df8479345efb7bca4 offen=1 · Abgabe w27-traa-fenster: das Mess-Fenster der zeitlichen Auflösung — der Kopf an der Kamera des Spiels übe
+w27-wald-saum a41f3edda654ee216fd1a3b118e884112aadf961 offen=2 · Merge main 4e2df19b in w27-wald-saum [skip ci]
+w28-augenhoehle a2d5a44840cf5a4f73f8c0d1acd2ce23438db70b offen=1 · WIP w28-augenhoehle: die Linse misst den Sitz des Auges in der Höhle am Guss L0 (orbitaOben · orbitaUnten ·
+w28-baum-probe-kaskade d53a9c47ccbec8da9de9b90b283e3d609da7dde4 offen=1 · WIP Probe kaskade [skip ci]
+w28-baum-probe-kette 31a85cf062e0814d4f477ff9734a9d51dff26898 offen=3 · WIP Probe: die Plätze der Pools als select-Kette [skip ci]
+w28-baum-probe-pool f8d49bf7fc6568f9f51a4c96f4c8982f01c4692c offen=1 · WIP Probe pool [skip ci]
+w28-baum-probe-puffer 17abf74900a4088caa2773bd67f284cfbb68fc3a offen=3 · WIP Probe: die Plätze der Pools als Uniform-Reihe [skip ci]
+w28-baum-programm-wip 1269b8f90d99089217b01b75510ac1f01fb7bd87 offen=5 · WIP w28-baum-programm: Nadel ≡ Laub (die Krone ohne Jahres-Ecken trägt die stehende Ecke), ohne die Schleif
+w28-fruehbild 313303c409cfee8c0173afaea6634e0db7db4a64 offen=3 · WIP w28-fruehbild: der Radius über den Durchlass am nächsten offenen Posten (5 %), der Dunst hebt sich gleit
+w28-programm-vor-bild 970d6871700e58a7e3ac5e3dea2023e15aa2beea offen=2 · WIP w28-programm-vor-bild: die Linsen des Gasts des Bilds — gate:fern-ring 7 (frisch geboren Gast, nach dem 
+w28-stoff-stufe-null 0343f9e836d98f59908b64c4ef9fff283668d4ee offen=1 · WIP w28-stoff-stufe-null: Spike — die Stufe 0 der Stoffe als Kandidat im Kern (kein Abgabe-Kopf) [skip ci]
+w28-weltbild-kalt bdb060adb646e66064789d435fcd9911614b3fff offen=1 · WIP w28-weltbild-kalt: das Buch des Spielers hält die Platte — der Start reicht der Schale seinen Text, die
+stash@{0} 91500ae8231e70b7d9dec2e55acafb81ef9d2a80 offen=2 · On w28-krone-vor-kachel: w28-krone-vor-kachel WIP (Ansage-Variante) 3

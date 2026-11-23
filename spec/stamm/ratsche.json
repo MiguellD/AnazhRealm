@@ -1,4 +1,0 @@
-{
-    "quelle": "Stamm-Zerlegung 13.10. (plan section 7), Domaene D2 16.10.: R2 keine Stamm-Datei ueber decke_zeilen; R7 jedes Glied in der Datei seines Moduls (spec/stamm/modul-karte.json); gelesen von scripts/diag-atlas.cjs --check",
-    "decke_zeilen": 6000
-}
