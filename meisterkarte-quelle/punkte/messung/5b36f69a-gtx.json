@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T13:43:45.185Z",
+ "zeit": "2026-11-23T13:44:50.812Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -3355,17 +3355,66 @@
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\6bddb214-3043-47d1-b11c-49a5858ae04c.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\6bddb214-3043-47d1-b11c-49a5858ae04c.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-23T13:43:00.462Z",
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.5 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.5 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.1,
+   "fremd": {
+    "s": 358.9,
+    "takte": 161,
+    "fremdS": 131.45,
+    "kerne": 0.366,
+    "fensterKerne": 0.849,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      16.94
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f69a.txt",
+      14.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      13.67
+     ]
+    ],
+    "dienerS": 131.11,
+    "diener": [
+     [
+      "dwm.exe",
+      57.47
+     ],
+     [
+      "System",
+      43.97
+     ]
+    ],
+    "geraetS": 132.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      82.66
+     ],
+     [
+      "svchost.exe",
+      42.56
+     ],
+     [
+      "SearchIndexer.exe",
+      3.31
+     ]
+    ],
+    "eigenS": 1229.61,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T13:44:50.812Z",
    "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.mensch.leib.gesicht#1": {
    "gruen": false,
