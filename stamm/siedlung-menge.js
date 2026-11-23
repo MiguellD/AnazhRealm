@@ -204,7 +204,12 @@ class AnazhRealm_siedlung_menge {
                 for (let i = 0; i < 40; i++) Z.gang = this._gaitTick(g, h, Z.tempo, 0.1, null);
             }
             this._animateHuman(g, 0, (2 * Math.PI * k) / Z.n, true, false, null, Z.gang);
-        } else this._animateHuman(g, 0, 0, false, false, this._bewohnerStandGemuet(k - Z.n));
+        } else {
+            // (der Stand einer Geste zur Uhr seiner Phase, `_bewohnerStandZeit`; jeder andere bei 0 — eingeschwungen, ohne die Zeile davor)
+            const h = k - Z.n;
+            window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
+            this._animateHuman(g, this._bewohnerStandZeit(h), 0, false, false, this._bewohnerStandGemuet(h));
+        }
         this._leibMatrix(g);
         if (S) {
             const P = this._bewohnerRaumStellen(S, g);
@@ -252,15 +257,20 @@ class AnazhRealm_siedlung_menge {
     // Winkel des gestellten Leibs `g` über seiner Ruhe (`_tierBaum.ruhe`; das Pose-Gesetz koerper `leibRigPose` ADDIERT sie) auf der Ruhe
     // der Vorlage — wo beide gleich ruhen, seine Drehung —, dazu der Schritt seiner Lage und das Maß seiner Skala (die Gelenke weichen quer
     // höchstens 21 mm ab: Schulter, Geschlecht). Bis hier galt die Drehung auch, wo der Arm nach seinem Bau anders ruht (`leibBauArme`): der
-    // Pfarrer #16036 (1,2° anders) stand in sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner, die Haltung)
+    // Pfarrer #16036 (1,2° anders) stand in sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner, die Haltung).
+    // DIE ABSPREIZUNG DER SCHULTER ist keine Summe über der Ruhe (a-haltung): die Pose nennt ihren Winkel vom Lot (`rig.armLot`), die
+    // Ruhe ist der Boden — auf der Vorlage steht sie auf deren Ruhe. Bis hier trug die Vorlage den Winkel über der Ruhe des gestellten
+    // Leibs: der Satz stand in joy und showcase 3,1° anders als der nahe Leib (gate:kreatur-takt bewohner an c42df2b0).
     _bewohnerRaumStellen(S, g) {
         const [P, tb] = [this._bewohnerRaumPose(S), g.userData._tierBaum];
         const [q, eR, eS] = this._bewohnerRaumQ || (this._bewohnerRaumQ = [new THREE.Quaternion(), new THREE.Euler(), new THREE.Euler()]); // prettier-ignore
+        const rig = g.userData.rig;
+        const lot = rig && rig.armLot && rig.armLot.length === 2 ? rig.armLot : null;
         for (const nm in P.teile) {
             const [d, r, s, sr] = [P.teile[nm], P.ruhe[nm], tb.teile[nm], tb.ruhe[nm]];
             if (!s || !sr) continue;
             if (Math.abs(r.quaternion.dot(sr.quaternion)) > 1 - 1e-9) d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion)); // prettier-ignore
-            else d.rotation.set(eR.setFromQuaternion(r.quaternion, s.rotation.order).x + s.rotation.x - eS.setFromQuaternion(sr.quaternion, s.rotation.order).x, eR.y + s.rotation.y - eS.y, eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
+            else d.rotation.set(eR.setFromQuaternion(r.quaternion, s.rotation.order).x + s.rotation.x - eS.setFromQuaternion(sr.quaternion, s.rotation.order).x, eR.y + s.rotation.y - eS.y, lot && s === rig.armL.shoulder ? Math.max(eR.z, lot[0]) : lot && s === rig.armR.shoulder ? Math.min(eR.z, lot[1]) : eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
             d.position.copy(r.position).add(s.position).sub(sr.position);
             d.scale.copy(r.scale).multiply(s.scale).divide(sr.scale);
         }

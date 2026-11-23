@@ -645,8 +645,11 @@ async function menschBuehnen() {
                 const o = A._gangOrt(Z, zeile, p);
                 return mB.set(D[o], D[o + 1], D[o + 2], D[o + 3], D[o + 4], D[o + 5], D[o + 6], D[o + 7], D[o + 8], D[o + 9], D[o + 10], D[o + 11], 0, 0, 0, 1).decompose(p3, q, s3); // prettier-ignore
             };
-            const pose = (gm, je) => {
-                r._animateHuman(g, 0, 0, false, false, gm);
+            // (der Stand einer Geste zur Uhr seiner Zeile, `_bewohnerStandZeit` — a-haltung 2; jeder andere bei 0; eingeschwungen wie das
+            // Backen, `leibRigEingeschwungen`)
+            const pose = (gm, je, t = 0) => {
+                window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
+                r._animateHuman(g, t, 0, false, false, gm);
                 r._leibMatrix(g);
                 const P = r._bewohnerRaumStellen(S, g);
                 inv.copy(P.wurzel.matrixWorld).invert();
@@ -673,15 +676,20 @@ async function menschBuehnen() {
                 if (!b.satzOrt || !(b.satzOrt[1] >= 0)) continue;
                 const gm = r._bewohnerGemuet(b);
                 const name = r._koerperMotionName(false, gm);
-                const zeile = Z.n * Z.baender + Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                const h = Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                const zeile = Z.n * Z.baender + h;
                 // die Haltung als Drehung GEGEN den neutralen Stand — am nahen Weg und im Satz dieselbe (die Körper-Ruhe fällt heraus)
                 let grad = 0;
-                pose(gm, (p, q) => {
-                    lies(zeile, p, qB);
-                    const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
-                    const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
-                    grad = Math.max(grad, winkel(dN, dS));
-                });
+                pose(
+                    gm,
+                    (p, q) => {
+                        lies(zeile, p, qB);
+                        const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
+                        const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
+                        grad = Math.max(grad, winkel(dN, dS));
+                    },
+                    r._bewohnerStandZeit(h)
+                );
                 haltung.n++;
                 if (name !== neutral) haltung.mit++;
                 haltung.je[name] = Math.max(haltung.je[name] || 0, q3(grad));
