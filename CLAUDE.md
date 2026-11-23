@@ -47,7 +47,9 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 
 **DIE WEITERGABE.** Jeder Arbeiter-Prompt (Agent/Workflow) beginnt mit: „Lies zuerst DIE GOLDENE
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
-(.claude/agents/champion.md), nie als Standard-Arbeiter.
+(.claude/agents/champion.md), nie als Standard-Arbeiter. Jeder Arbeiter arbeitet nach IPERKA (champion.md):
+INFORMIEREN heißt die eigene Quelle UND die Profis — eine äußere Quelle mit Zahl wird ein Band, das Gesetz
+zitiert sie, nie ein kopiertes Asset (Schöpfer 23.11.: „lernt von den Profis und wird selber Profi“).
 
 ## DAS BETRIEBSGESETZ (bindend — die Maschine gegen den Agenten-Betriebsmodus)
 
