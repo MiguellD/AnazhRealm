@@ -55,6 +55,10 @@
             "zweck": "Messung: führt die Klasse von stamm/bau-buch.js im vm auf einem Wirt mit dem echten schmiede-core aus, dazu mit den zwei Mutanten (Eichfaktor 500 zurück · Lagerung beta 2)",
             "datei": 1
         },
+        "scripts/diag-kreatur-leben.cjs": {
+            "zweck": "Messung: führt leben-core im vm mit zwei Mutanten seines Selbsttests aus (erbe-geburt: das gewürfelte Kind · die Rate ohne EIGNUNG_EICH) — beide müssen ROT beim Namen fallen",
+            "datei": 1
+        },
         "scripts/diag-mensch-zuege.cjs": {
             "zweck": "Messung: führt koerper-core im vm mit dem eingeschmuggelten Täter aus (tagesZug liefert immer ausgeglichen); ALTER führt die Glieder des Rollers (_rollHumanoidGenome, _bewohnerJahre, _bewohnerAbstand, _dialsAusGenom) aus dem virtuellen Stamm aus, der Täter tauscht die Zeile des Alters",
             "datei": 1,
