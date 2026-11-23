@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-23T21:30:57.233Z",
+ "zeit": "2026-11-23T21:34:06.517Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -346,6 +346,76 @@
    },
    "zeit": "2026-11-23T21:30:57.233Z",
    "abdruck": "3483eaa85bc2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kd831bf891087",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 41.2,
+   "fremd": {
+    "s": 44,
+    "takte": 19,
+    "fremdS": 26.06,
+    "kerne": 0.593,
+    "fensterKerne": 0.71,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      6.45
+     ],
+     [
+      "Explorer.EXE",
+      2.17
+     ],
+     [
+      "conhost.exe 0x4",
+      1.72
+     ]
+    ],
+    "dienerS": 19.64,
+    "diener": [
+     [
+      "System",
+      8.56
+     ],
+     [
+      "dwm.exe",
+      6.39
+     ]
+    ],
+    "geraetS": 32.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.25
+     ],
+     [
+      "svchost.exe",
+      12.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 134.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:34:06.517Z",
+   "abdruck": "c23e51a638e2",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
