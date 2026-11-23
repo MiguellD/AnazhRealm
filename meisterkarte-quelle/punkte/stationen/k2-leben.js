@@ -7735,6 +7735,7 @@ L.perspektive("evolution", (() => {
             [FP]: {
                 sek: 25,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_TIER.concat(["stamm/speicher-welten.js", "planet-core.js", "voxel-worker.js"]),
                 ungefahren: "die Bilder der Statik (S1) und die Fremdwelt-Probe (S7) — auf swiftshader kein Schuss",
                 mess: async function (H, U, M) {
@@ -7744,46 +7745,9 @@ L.perspektive("evolution", (() => {
                             const m = mittel(l);
                             return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
                         };
-                        const steigung = (xs, ys) => {
-                            const mx = mittel(xs), my = mittel(ys);
-                            let a = 0, b = 0;
-                            for (let i = 0; i < xs.length; i++) {
-                                a += (xs[i] - mx) * (ys[i] - my);
-                                b += (xs[i] - mx) * (xs[i] - mx);
-                            }
-                            return b > 0 ? a / b : NaN;
-                        };
                         const s = r.state;
                         const C = r.constructor;
-                        const TC = globalThis.__tetrapodaCore;
                         const aus = { fehler: null };
-                        const g0 = s.gravity;
-                        const B = new T.Box3();
-                        const V = new T.Vector3();
-                        try {
-                            const je = [];
-                            for (const f of A.g) {
-                                s.gravity = -9.81 * f;
-                                const g = r._buildCreatureGroup("wolf");
-                                g.updateMatrixWorld(true);
-                                const tb = g.userData._tierBaum || {};
-                                const q = (tb.quer || []).filter((x) => x > 0);
-                                const radius = q.length ? (q.reduce((a, b) => a + b, 0) / q.length) * (tb.f || 1) : NaN;
-                                const Z = r._gangZeile(false);
-                                const gs = TC.gangSchritt(1.5, tb.beinL, Z);
-                                je.push({ f, A: radius * radius, schritt: gs.schritt, omega: gs.omega });
-                                r._disposeSoulGroup(g);
-                            }
-                            aus.je = je;
-                            aus.steigung = steigung(je.map((x) => Math.log(x.f)), je.map((x) => Math.log(x.A)));
-                            aus.gangStreuung = sd(je.map((x) => x.omega));
-                            aus.gMin = Math.min(...A.g);
-                            aus.gMax = Math.max(...A.g);
-                        } catch (e) {
-                            aus.fehler = String((e && e.message) || e).slice(0, 200);
-                        } finally {
-                            s.gravity = g0;
-                        }
                         try {
                             const G = C._weltGesetz(s.worldMeta);
                             aus.gesetzTeile = Object.keys(G);
@@ -7812,15 +7776,58 @@ L.perspektive("evolution", (() => {
                         }
                         return aus;
                     };
-                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ g: [0.3, 1, 3], saaten: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => "evo-saat-" + i) }) + ");");
-                    const je = a.je || [];
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ saaten: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => "evo-saat-" + i) }) + ");");
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): 50 Saaten und die Saat der Welt × die Schweren 0,3 · 1 · 3 g; je Adresse der Guss
+                    // des Leibs (stamm/koerper-leib.js:2574 `_buildCreatureGroup` „wolf“, der Ofen der Welt) unter der Schwere der Adresse
+                    // (state.gravity, das Wort der Welt) — sein Bein-Querschnitt und sein Gang (tetrapoda `gangSchritt`). Die Schwere setzt das
+                    // Gesetz der Welt, nie die Saat: eine andere Saat zählt ohne Fähigkeit
+                    const FP_AN = async (r, T, a) => {
+                        const s = r.state;
+                        if (!s.worldMeta || a.saat !== s.worldMeta.seed)
+                            return { fehlt: "keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen)" };
+                        const TC = globalThis.__tetrapodaCore;
+                        const g0 = s.gravity;
+                        try {
+                            s.gravity = -9.81 * a.ort;
+                            const g = r._buildCreatureGroup("wolf");
+                            g.updateMatrixWorld(true);
+                            const tb = g.userData._tierBaum || {};
+                            const q = (tb.quer || []).filter((x) => x > 0);
+                            const radius = q.length ? (q.reduce((u, v) => u + v, 0) / q.length) * (tb.f || 1) : NaN;
+                            const gs = TC.gangSchritt(1.5, tb.beinL, r._gangZeile(false));
+                            r._disposeSoulGroup(g);
+                            return { f: a.ort, A: radius * radius, schritt: gs.schritt, omega: gs.omega };
+                        } finally {
+                            s.gravity = g0;
+                        }
+                    };
+                    const geladen = await H.seite("return r.state.worldMeta && r.state.worldMeta.seed;");
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: FP_AN, export: "stamm/koerper-leib.js:2574 _buildCreatureGroup (Guss unter state.gravity)", leser: "stamm/koerper-leib.js:492 _gangZeile" },
+                        adressen: { saaten: [geladen, ...Array.from({ length: 50 }, (_, i) => "evo-g-saat-" + (i + 1))], orte: [0.3, 1, 3] },
+                        ms: 8000,
+                        masse: { gMin: { wie: "min", feld: "f" }, gMax: { wie: "max", feld: "f" }, guesse: { wie: "anzahl", nur: "saat" } },
+                        schlecht: { feld: "A", richtung: "max" },
+                        pose: (q) => "der Wolf unter " + q.ort + " g im Profil (Bein-Querschnitt im Bild), Saat " + q.saat,
+                        ungemessen: ["die Regression aus Bildern (am Gerät)"],
+                    });
+                    const je = R1.je.map((e) => e.w).sort((u, v) => u.f - v.f);
+                    const mw = (l) => (l.length ? l.reduce((u, v) => u + v, 0) / l.length : NaN);
+                    const lx = je.map((x) => Math.log(x.f)), ly = je.map((x) => Math.log(x.A));
+                    const sxx = lx.reduce((u, v) => u + (v - mw(lx)) ** 2, 0);
+                    a.steigung = sxx > 0 ? lx.reduce((u, v, i) => u + (v - mw(lx)) * (ly[i] - mw(ly)), 0) / sxx : NaN;
+                    const om = je.map((x) => x.omega);
+                    a.gangStreuung = om.length > 1 ? Math.sqrt(om.reduce((u, v) => u + (v - mw(om)) ** 2, 0) / (om.length - 1)) : 0;
+                    a.gMin = R1.werte.gMin;
+                    a.gMax = R1.werte.gMax;
+                    const saatenJeG = Math.min(...[0.3, 1, 3].map((g) => new Set(R1.je.filter((e) => e.a.ort === g).map((e) => e.a.saat)).size));
                     const n = (a.saaten || []).length;
                     const gesetz = "das Gesetz der Welt trägt " + (a.gesetzTeile || []).join(", ");
                     const p1 = a.steigung >= 0.75 && a.steigung <= 1;
                     const pruef = [p1, a.luft > 0, a.stern > 0, a.loesung > 0].filter(Boolean).length;
                     return {
                         sprossen: {
-                            1: { werte: { steigung: a.steigung, saatenJeG: 1, gMin: a.gMin, gMax: a.gMax }, zeuge: { fehler: a.fehler, antworten: je.length, streuung: a.gangStreuung || 0, vor: je[0] && je[0].A, nach: je.length && je[je.length - 1].A }, nicht: "eine Saat je g: die Schwere setzt das Gesetz der Welt, keine Planeten-Saat trägt ihr g; das Quer-Maß des Leibs unter g × " + je.map((x) => x.f).join(" / ") + ": " + je.map((x) => Math.round(x.A * 1e4) / 1e4).join(" / ") + " m², der Gang (ω) " + je.map((x) => Math.round(x.omega * 100) / 100).join(" / ") + " rad/s" },
+                            1: { werte: { steigung: a.steigung, saatenJeG, gMin: a.gMin, gMax: a.gMax }, zeuge: { fehler: R1.fehler ? R1.fehler + " Adressen warfen" : null, antworten: je.length, streuung: a.gangStreuung || 0, vor: je[0] && je[0].A, nach: je.length && je[je.length - 1].A }, nicht: (R1.fehlt || "") + " — " + saatenJeG + " Saat je g; das Quer-Maß des Leibs unter g × " + je.map((x) => x.f).join(" / ") + ": " + je.map((x) => Math.round(x.A * 1e4) / 1e4).join(" / ") + " m², der Gang (ω) " + je.map((x) => Math.round(x.omega * 100) / 100).join(" / ") + " rad/s · " + R1.akte },
                             2: { werte: { saaten: a.luft > 0 ? n : 0, fliegerAnteil: a.fliegerAnteil }, zeuge: { fehler: a.fehler, antworten: a.arten || 0, streuung: a.fliegerAnteil || 0 }, nicht: gesetz + " — keine Luftdichte" },
                             3: { werte: { sternKlassen: a.stern }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Stern, keine gezeitengebundene Welt" },
                             4: { werte: { milieus: 1 + a.loesung }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Lösungsmittel; die Lebensdauer ist eine Zahl der Welt (" + a.lebensS + " s), kein Tempo liest die Temperatur" },
