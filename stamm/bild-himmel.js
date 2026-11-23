@@ -2686,7 +2686,7 @@ class AnazhRealm_bild_himmel {
                 // exp(−kd · Tiefe) × das Tageslicht —
                 // die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN Atmosphäre,
                 // `_himmelsIrradianz`): mittags unter dem Spiegel hell, mit jedem Meter dunkler und blauer, nachts dunkler als die
-                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~15 m). Bis w12-unterwasser
+                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~8 m, seine Secchi-Tiefe). Bis w12-unterwasser
                 // trug die Farbe die festen ersten 0,3 m (Radeon: Szenen-Luma 2,5 m ÷ 0,5 m = 1,24, kein Abfall) und β eine
                 // Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`): ein blauer Filter vor klarer Sicht auf Berge und Himmel.
                 const WGu =
