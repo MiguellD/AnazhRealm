@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 16,
-    "kern": 13,
-    "kernDazu": 13,
+    "kern": 14,
+    "kernDazu": 14,
     "anteilHeute": 2.9,
-    "anteilKern": 2.3
+    "anteilKern": 2.5
    },
    "perspektiven": [
     {
@@ -7278,7 +7278,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "81/81 Häuser bewohnt, Test-Stadt 118 Bewohner (14.11.); Dorfplatz Radeon 26,9 fps ≈ 37 ms — Preis ROT (mensch.K1)",
      "alt": [
@@ -20090,8 +20090,8 @@
   "sprossen": 1718,
   "heute": 58,
   "davonKopplungen": 33,
-  "kern": 15,
-  "kernDazu": 15,
+  "kern": 16,
+  "kernDazu": 16,
   "anteilHeute": 3.3,
   "anteilKern": 0.5,
   "kapitel": 7,
