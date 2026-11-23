@@ -10018,7 +10018,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64 · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,254 (Faden 1,167 · alle Kerne 1,254; vor 105/265,3 ms, nach 102,4/287,8 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-f0a89f7e x listen/kandidat-gtx-f0 · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,32 (Faden 1,32 · alle Kerne 1,109; vor 105,7/291,4 ms, nach 102/276,2 ms, Ruhe 80,1/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 1,3 CPU-s · bash.exe -c source  · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,254 (Faden 1,167 · alle Kerne 1,254; vor 105/265,3 ms, nach 102,4/287,8 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-f0a89f7e x listen/kandidat-gtx-f0 · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10026,7 +10026,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64",
+     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,32 (Faden 1,32 · alle Kerne 1,109; vor 105,7/291,4 ms, nach 102/276,2 ms, Ruhe 80,1/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 1,3 CPU-s · bash.exe -c source ",
      "ungemessen": true,
      "beide": true
     },
@@ -32208,7 +32208,7 @@
      "gruen": true,
      "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s",
      "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs, stamm/gelaende-boden.js, stamm/gelaende-kollision.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs, stamm/gelaende-boden.js, stamm/gelaende-kollision.js) — zuletzt an 5b36f69a: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const  · zeichner.renderer._renderScen",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -36029,7 +36029,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#1 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36037,8 +36037,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36057,8 +36058,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.physik.reaktion#2",
@@ -37521,7 +37523,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 272,
+  "konsum": 274,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37689,11 +37691,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3350
+  "ohne": 3348
  },
  "kopfVoll": "2264aeab045c089be9974bec895118e64ee2b8af",
- "zeit": "2026-11-23T10:58:56.812Z",
- "vorher": "db52c8e4",
+ "zeit": "2026-11-23T11:48:28.933Z",
+ "vorher": "2264aeab",
  "bilanz": {
   "gewinn": [],
   "fall": [],
