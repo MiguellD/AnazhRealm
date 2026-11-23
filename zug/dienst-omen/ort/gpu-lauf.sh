@@ -33,7 +33,7 @@ worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi 
 # der freie Commit des Systems in GB (physischer Speicher + Auslagerung, was noch zugesagt werden kann) — nur gelesen, wenn ein CI-Job eintrifft
 commit_frei() { local k; k=$(powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory" 2>/dev/null | tr -dc 0-9); [ -n "$k" ] && echo "$(( k / 1048576 )),$(( k % 1048576 * 10 / 1048576 )) GB" || echo "?"; }
 # DER PLATZ IN DER SCHLANGE (23.11., pm-runde-in-der-schlange; gpu-schloss.sh GPU_SCHLANGE): die Karte nimmt nur, wer vorn steht.
-# Der Platz ist GPU_LAUF_PLATZ, der stehende Platz des Rufers (die Runde: kandidat.sh hält ihn über alle Sitzungen einer Fahrt) — oder
+# Der Platz ist GPU_LAUF_PLATZ, der stehende Platz des Rufers (die Runde: landung-dienst.sh stellt ihn je Takt, kandidat.sh reicht ihn) — oder
 # ein eigener `<name>-<pid>` mit der Ankunft GPU_LAUF_ANKUNFT (punkte.cjs reicht die Ankunft seines Laufs weiter), sonst der von jetzt.
 # Den eigenen frischt jede Warte-Runde auf; er fällt mit dem Schloss (wer hält, wartet nicht mehr) und am Ende. Den stehenden berührt der
 # Lauf nie — er meldet nur, wann er die Karte nahm: das erste Mal je Datei in GPU_LAUF_GENOMMEN (kandidat.sh rückt danach den Platz vor).

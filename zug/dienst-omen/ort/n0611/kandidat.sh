@@ -113,10 +113,11 @@ buche() { local name=$1 v=$2 B=$3 o rc
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
 # was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
 teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
-  # die Sitzung wartet wie jede Hand IN gpu-lauf.sh (die Schlange, die Vorfahrt der CI, die CI-Ruhe) — kein Fragen davor
+  # die Sitzung wartet wie jede Hand IN gpu-lauf.sh (die Schlange, die Vorfahrt der CI, die CI-Ruhe) — kein Fragen davor, und ohne die
+  # Frist von gpu-lauf.sh (2 700 s, Exit 75 „blockiert“ verbrauchte sonst Versuche): die Runde wartet, bis sie dran ist, wie vor dem Schnitt
   local d0=$(verdr) a0=$(date +%s) ank=; rm -f "$GENOMMEN"; [ -f "$PLATZ" ] && ank=$(head -n 1 "$PLATZ" | tr -d '\r')
   echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
-  TEIL=$name-v$v NUR=$R GPU_LAUF_PLATZ=${ank:+$PLATZ} GPU_LAUF_ANKUNFT=$ank GPU_LAUF_GENOMMEN=$GENOMMEN node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
+  TEIL=$name-v$v NUR=$R GPU_LAUF_PLATZ=${ank:+$PLATZ} GPU_LAUF_ANKUNFT=$ank GPU_LAUF_GENOMMEN=$GENOMMEN GPU_LAUF_WARTE_S=${KANDIDAT_WARTE_S:-86400} node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
   WK=$(cat /proc/$LP/winpid 2>/dev/null)
   local s=0 k=0 t0=$(date +%s) wv= w AUS=$N/punkte-offen-${K:0:8}-$name-v$v.out
   while kill -0 $LP 2>/dev/null; do
@@ -127,9 +128,12 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
     # die erste Station einer (Fortsetzungs-)Sitzung nennt punkte.cjs beim Beginn („SITZUNG die Welt vor <id>“): eine Zeile mit Uhr
     w=$(tail -c 20000 "$AUS" 2>/dev/null | sed -n 's/^  SITZUNG die Welt vor \([^:]*\): .*/\1/p' | tail -n 1)
     [ -n "$w" ] && [ "$w" != "$wv" ] && { wv=$w; echo "$(date '+%T') $name STATION $w beginnt" >> $L; }
+    # VOR DEM NEHMEN DER KARTE gehört dieser Sitzung keine Zeile VERDRÄNGT (alle Sitzungen heißen omen-punkte-gtx-sitzung — die einer
+    # Hand, die vor ihr in der Schlange stand und die ein CI-Job verdrängte, zählte sonst als die eigene, 10.11.), und keine Station ist
+    # geurteilt: kein node je Takt, solange die Sitzung in der Schlange wartet (CPU-Ruhe der CI); die Zählung und die Uhr der Sitzung
+    # (DECKEL) beginnen beim Nehmen — wer 30 min in der Schlange stand, misst danach seine volle Sitzung
+    [ -s "$GENOMMEN" ] || { d0=$(verdr); t0=$(date +%s); continue; }
     [ $(verdr) -gt $d0 ] && { grund="VERDRÄNGT von einem CI-Job"; halte_an; break; }
-    # vor dem Nehmen der Karte ist keine Station geurteilt: kein node je Takt, solange die Sitzung in der Schlange wartet (CPU-Ruhe der CI)
-    [ -s "$GENOMMEN" ] || continue
     rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>/dev/null) || continue
     neu=$(ohne "$R" "$rest" "$B")
     [ -n "$neu" ] || continue

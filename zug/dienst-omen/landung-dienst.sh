@@ -65,7 +65,8 @@ export PUNKTE_WER=landung
 #   jede Marke trägt ihre Ankunft, ein Schloss nimmt nur die vorderste lebende (punkte.cjs baumSperre, gpu-lauf.sh vorn). Will die
 #   Runde messen, stellt sie `runde-<pid>` mit der Ankunft JETZT (einmal je Takt) und hält ihn frisch (je 30 s, solange der Dienst
 #   lebt; tot nach 120 s ohne Auffrischung oder mit totem Prozess); kandidat.sh reicht ihn jeder Sitzung und rückt ihn nach jedem
-#   Nehmen vor. Am Ende des Takts fällt er (platz_fort) — kein zweites Schloss, kein Flag: er ist eine Marke wie die einer Hand.
+#   Nehmen vor. Nach den Fahrten des Takts fällt er (platz_fort; die Schleife räumt ihn auch nach jedem anderen Ende des Takts) — kein
+#   zweites Schloss, kein Flag: er ist eine Marke wie die einer Hand.
 SCHLANGE=${GPU_LAUF_SCHLANGE:-/c/Users/micha/Desktop/AnazhRealm-OMEN/AnazhRealm-mess/.claude/worktrees/punkte-gtx.wartet}
 PLATZ= PLATZ_HERZ=
 platz_fort() {
@@ -416,6 +417,9 @@ runde_takt() {
         SREST=$(teil_von "$REST" "$SCHW" schwanz)
         [ -n "$SREST" ] && main_weiter && GETRAGEN=$(zahl "$SREST")
     fi
+    # die Fahrten sind gefahren: der Platz fällt, bevor Summe und Richter laufen (der Richter wartet als Hand mit eigener Ankunft — hinter
+    # dem eigenen Platz stünde er bis zum Ende des Takts)
+    platz_fort
     [ "$GETRAGEN" != 0 ] && log "Runde $RN am ${RK:0:8}: main ist weiter — der Schwanz TRÄGT: $GETRAGEN Station(en) behalten ihr ROT vom früheren Kopf (K5 Leser fehlt · K6 Umfang nicht erzeugbar), keine Fahrt"
     [ -n "$REST" ] && [ "$(zahl "$REST")" != "$GETRAGEN" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(($(zahl "$REST") - GETRAGEN)) (kandidat.sh OFFEN nach 4 Versuchen): ${REST:0:400}"
     # nie ein Null-Bericht (Live 06:17: „0 grün / 0 rot / 0 ungemessen“ ging hinaus) und nie „durch“ ohne Station: LISTE ROT davor
@@ -532,12 +536,14 @@ st_lauf() { # $1 = Mutante (leer = echt)
 case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder STATION (wie kandidat.sh seit 19.11.: Grenze je
 # Station in der Sitzung), je Station 0,4 s; jede geurteilte Station ist sofort gebucht (im „Baum“ gepusht, eine GEPUSHT-Zeile je Station).
-# platz.log: der Platz der Runde, den die Fahrt mitbekam (KANDIDAT_PLATZ, sein Inhalt, ob er steht). warter_kommt=<i>: in Station i
+# platz.log: der Platz der Runde, den die Fahrt mitbekam (KANDIDAT_PLATZ, sein Inhalt, ob er steht); platz_frisch: sein Alter 2,5 s
+# nach einem Zurückstellen um 1 min (platz_alter, s). warter_kommt=<i>: in Station i
 # kommt ein Wartender in die Schlange und geht wieder (je 8 s: lang genug für einen Takt unter Last), bevor die Station endet
 X=$(dirname "$0"); i=0; t=0
 LL=$3; [ "${LL#@}" != "$LL" ] && LL=$(<"${LL#@}") # die Liste reist als Datei, wie an kandidat.sh
 IFS=';' read -ra TT <<<"$LL"
 echo "${KANDIDAT_PLATZ:--} $(head -n 1 "${KANDIDAT_PLATZ:-$X/nix}" 2>/dev/null || echo -) $([ -f "${KANDIDAT_PLATZ:-$X/nix}" ] && echo da || echo fehlt)" >>"$X/platz.log"
+[ -f "$X/platz_frisch" ] && [ -f "$KANDIDAT_PLATZ" ] && { touch -d '1 minute ago' "$KANDIDAT_PLATZ"; sleep 2.5; echo "$(( $(date +%s) - $(date -r "$KANDIDAT_PLATZ" +%s) ))" >"$X/platz_alter"; }
 for T in "${TT[@]}"; do
     t=$((t + 1))
     echo "$(date +%T) ${KOPF:0:8} $1-$t Versuch 1 START ($T)" >>"$X/kette.log"
@@ -668,13 +674,14 @@ STUMMEL
     # b — DIE RUNDE IN DER SCHLANGE (Runde 3 am k1, Koordinator 23.11. 16:03): macher_vor steht seit 30 s in der Schlange, als die
     # Runde ankommt → sie fährt trotzdem (kein Tor vor der Fahrt: die Schlange entscheidet in gpu-lauf.sh am Schloss); ihr Platz
     # runde-<pid> steht mit der Ankunft DIESES Takts in der Schlange und reist an kandidat.sh (KANDIDAT_PLATZ); nach Station 2 kommt eine
-    # Hand — keine Flagge, 8 von 8 in diesem Takt. Danach: der Auffrischer hält den Platz frisch (PLATZ_FRISCH_S), am Ende des Takts
-    # fällt er samt Auffrischer (platz_fort, die Schleife)
-    local b1 b2 b3 b4 b5 b6 b7 t0 p0 ph pp
+    # Hand — keine Flagge, 8 von 8 in diesem Takt. Während der Fahrt hält der Auffrischer den Platz frisch (PLATZ_FRISCH_S), nach den
+    # Fahrten fällt er (platz_fort im Takt, vor Summe und Richter)
+    local b1 b2 b3 b4 b5 b6 b7 t0 p0
     echo "$k1" >"$X/main"
     geraet_durch radeon "$k2" "$k1" >/dev/null
     date -u -d '30 seconds ago' +%FT%T.%3NZ >"$SCHLANGE/macher_vor-1"
     echo 2 >"$X/warter_nach"
+    : >"$X/platz_frisch"; rm -f "$X/platz_alter"
     j=$(wc -l <"$KETTE_LOG")
     w=$(wc -l <"$L")
     p0=$(cat "$X/platz.log" 2>/dev/null | wc -l)
@@ -685,19 +692,14 @@ STUMMEL
     b2=$(tail -n +$((w + 1)) "$L" | grep -c "^PULS landung steht an")
     b3=$(tail -n +$((j + 1)) "$KETTE_LOG" | grep -c " SPRUNG")
     read -r b4 b5 b6 <<<"$(tail -n +$((p0 + 1)) "$X/platz.log" 2>/dev/null | head -n 1)"
-    touch -d '1 minute ago' "$PLATZ" 2>/dev/null
-    sleep 2.5
-    b7=$([ -f "$PLATZ" ] && [ $(($(date +%s) - $(date -r "$PLATZ" +%s))) -lt 30 ] && echo frisch || echo alt)
-    ph=$PLATZ_HERZ pp=$PLATZ
-    platz_fort
-    sleep 0.5
-    b7=$b7:$([ -e "${pp:-$X/nix}" ] && echo steht || echo fort):$([ -n "$ph" ] && kill -0 "$ph" 2>/dev/null && echo lebt || echo tot):${KANDIDAT_PLATZ:-leer}
-    rm -f "$SCHLANGE/macher_vor-1" "$SCHLANGE/macher_hand-1" "$X/warter_nach"
+    b7=$([ -n "$(cat "$X/platz_alter" 2>/dev/null)" ] && [ "$(cat "$X/platz_alter")" -lt 30 ] && echo frisch || echo "alt($(cat "$X/platz_alter" 2>/dev/null))")
+    b7=$b7:$([ -e "${b4:-$X/nix}" ] && echo steht || echo fort):${PLATZ:-leer}:${KANDIDAT_PLATZ:-leer}
+    rm -f "$SCHLANGE/macher_vor-1" "$SCHLANGE/macher_hand-1" "$X/warter_nach" "$X/platz_frisch"
     if [ "$b1" -ge 1 ] && [ "$b2" = 0 ] && echo "$e1" | grep -q "^gtx durch 8/8 " && [ "$(am "$k1")" = 8 ] && [ "$(eindeutig "$k1")" = 8 ] && [ "$b3" = 0 ] &&
         ! grep -q "WEICHT|WEITER: " "$L" && echo "$b4" | grep -qE "/runde-[0-9]+$" && [ "$(dirname "$b4")" = "$SCHLANGE" ] && ! [[ "$b5" < "$t0" ]] && [ "$b6" = da ] &&
-        [ "$b7" = frisch:fort:tot:leer ]; then
-        echo "OK b  Runde in der Schlange: macher_vor stand vor ihr — sie fuhr trotzdem ($b1 Sitzungen, kein „steht an“), ihr Platz ${b4##*/} stand mit der Ankunft des Takts ($b5) und reiste an kandidat.sh; die Hand nach Station 2 legte keine Flagge: 8 von 8; der Platz blieb frisch und fiel mit dem Takt"
-    else echo "ROT b  Runde in der Schlange: Sitzungen $b1 (Soll ≥ 1), Puls „steht an“ $b2 (Soll 0), Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k1") (Soll 8), SPRUNG $b3 (Soll 0), Platz an kandidat.sh „$b4 $b5 $b6“ (Soll $SCHLANGE/runde-<pid>, Ankunft ≥ $t0, da), frisch:nach dem Takt „$b7“ (Soll frisch:fort:tot:leer)"; fi
+        [ "$b7" = frisch:fort:leer:leer ]; then
+        echo "OK b  Runde in der Schlange: macher_vor stand vor ihr — sie fuhr trotzdem ($b1 Sitzungen, kein „steht an“), ihr Platz ${b4##*/} stand mit der Ankunft des Takts ($b5) und reiste an kandidat.sh; die Hand nach Station 2 legte keine Flagge: 8 von 8; der Platz blieb frisch und fiel nach den Fahrten"
+    else echo "ROT b  Runde in der Schlange: Sitzungen $b1 (Soll ≥ 1), Puls „steht an“ $b2 (Soll 0), Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k1") (Soll 8), SPRUNG $b3 (Soll 0), Platz an kandidat.sh „$b4 $b5 $b6“ (Soll $SCHLANGE/runde-<pid>, Ankunft ≥ $t0, da), frisch:nach dem Takt „$b7“ (Soll frisch:fort:leer:leer)"; fi
     fi
     if nur c; then
     # c — Neustart (Runde 4 am k2b): der Dienst stirbt in Station 4 ohne Push, ein neuer Prozess ohne Gedächtnis setzt dort fort
