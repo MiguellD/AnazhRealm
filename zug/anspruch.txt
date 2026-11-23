@@ -19,3 +19,5 @@ w28-mensch-zahlen karte2.mensch.sport.koennen#1,karte2.mensch.geist.absicht#1,ka
 w28-brunnen-haspel karte2.mensch.fahrzeug.maschine#1
 # z681 (main e4895630, 23.11. 03:03): jeder Tod des Bestands düngt die Zelle seines Ankers und zerfällt nach dem Gesetz des Risses (Nährstoff je Tod 0 → +0,18..0,20) — zerfall#1 steht an der Front, die Station liegt in k2-leben.js
 w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
+# z682 (main ddaf883d, 23.11. 03:41): EINE Hülle je Haus — die Stände rücken während einer Zählung nicht mehr (49 → 0), Σ Soll 18 → 21; die Station pm-fahrer-soll liegt seit 66e016e5 in punkte-maschine
+w28-eine-huelle karte2.mensch.menge.bevoelkerung#1
