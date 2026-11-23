@@ -678,7 +678,8 @@ class AnazhRealm_gelaende_fern {
             geo.setAttribute("aKahl", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
-            geos.push(geo);
+            // die Schalen wandern mit dem Spieler: ihre Puffer schreibt der Ring je Stand fort (`_cpuKopieFrei`)
+            geos.push(AnazhRealm._cpuLeserGeo(geo, "Fern-Ring-Schale gelaende-fern.js"));
             if (s > 0) zeichne(geo, material);
         }
         // DIE SCHALE 0 IN ZWEI TEILEN (`_fernRingTeilung`): ihr Träger (`geos[0]`, das volle Index-Muster — Normalen und Linsen
@@ -690,7 +691,7 @@ class AnazhRealm_gelaende_fern {
             const g = new THREE.BufferGeometry();
             for (const k of ["position", "color", "aKrone", "aNass", "aLaub", "aKahl", "normal"])
                 g.setAttribute(k, geos[0].attributes[k]);
-            g.setIndex(new THREE.BufferAttribute(index, 1));
+            g.setIndex(AnazhRealm._cpuLeser(new THREE.BufferAttribute(index, 1), "Fern-Ring-Teil gelaende-fern.js"));
             return g;
         };
         const frei0 = zeichne(teil(voll0.slice()), material);
@@ -1080,8 +1081,13 @@ class AnazhRealm_gelaende_fern {
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
         // Normale und Farbe im Eck-Format der Gestalt (`_eckForm`): snorm8 × 4 und half × 4, Float32 trägt nur die Lage
         geo.setAttribute("normal", AnazhRealm._eckForm("normal", nor, nv));
-        geo.setAttribute("color", AnazhRealm._eckForm("color", new Float32Array(nv * 3), nv));
-        geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
+        // Farbe und Deckung färbt die Saison fort (`_kammKroneSaison`): sie behalten ihre CPU-Kopie (`_cpuKopieFrei`)
+        const wer = "Kamm-Krone-Saison gelaende-fern.js";
+        geo.setAttribute(
+            "color",
+            AnazhRealm._cpuLeser(AnazhRealm._eckForm("color", new Float32Array(nv * 3), nv), wer)
+        );
+        geo.setAttribute("aDeckt", AnazhRealm._cpuLeser(new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1), wer)); // prettier-ignore
         geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
         return geo;
     }

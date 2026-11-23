@@ -523,9 +523,8 @@ function cpuKopieWand(A) {
         }
         update(a, typ) {
             if (!this.stand.has(a)) {
-                if (typ === 2) this.backend.createIndexAttribute(a);
-                else this.backend.createAttribute(a);
-                this.info.memoryMap.set(a, { size: a.array.byteLength, type: typ === 2 ? "indexAttributes" : "attributes" });
+                if (typ === 2) this.backend.createIndexAttribute(a), this.info.createIndexAttribute(a);
+                else this.backend.createAttribute(a), this.info.createAttribute(a);
                 this.stand.set(a, a.version);
             } else if (this.stand.get(a) < a.version) {
                 this.backend.updateAttribute(a);
@@ -537,11 +536,25 @@ function cpuKopieWand(A) {
             this.info.memoryMap.delete(a);
         }
     }
+    // r184 Info: das Register bucht nach dem Anlegen und liest die Größe aus dem Array
+    class Info {
+        constructor() {
+            this.memoryMap = new Map();
+        }
+        createAttribute(a) {
+            this.memoryMap.set(a, { size: a.array.byteLength, type: "attributes" });
+        }
+        createIndexAttribute(a) {
+            this.memoryMap.set(a, { size: a.array.byteLength, type: "indexAttributes" });
+        }
+    }
     const be = new Be();
-    const info = { memoryMap: new Map() };
-    const rend = { backend: be, info, _attributes: new Attrs(be, info) };
+    const info = new Info();
+    // wie r184: das Gesetz läuft nach dem Bau des Renderers, die Attribut-Verwaltung entsteht erst in init
+    const rend = { backend: be, info, _attributes: null };
     const w = weltVon(A, { renderer: rend });
     A.prototype._backendGesetz.call(w, rend);
+    rend._attributes = new Attrs(be, info);
     let id = 0;
     const puffer = (name, arr, itemSize, mehr) => Object.assign({ name, array: arr, itemSize, count: arr.length / itemSize, version: 0, id: ++id }, mehr); // prettier-ignore
     const lage = puffer("lage", new Float32Array(300), 3);

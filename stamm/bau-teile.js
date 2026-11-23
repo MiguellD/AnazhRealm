@@ -2217,7 +2217,8 @@ class AnazhRealm_bau_teile {
         // schwingt statt absolut zur 0.
         if (waveTargets.length > 0) {
             const captured = waveTargets.map((mesh) => {
-                const positions = mesh.geometry.attributes.position;
+                // die Welle schreibt die Lage je Bild: sie behält ihre CPU-Kopie (`_cpuKopieFrei`)
+                const positions = AnazhRealm._cpuLeser(mesh.geometry.attributes.position, "Wasser-Welle bau-teile.js");
                 const baseY = new Float32Array(positions.count);
                 for (let i = 0; i < positions.count; i++) baseY[i] = positions.getY(i);
                 return { mesh, positions, baseY };

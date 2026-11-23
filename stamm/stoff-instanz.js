@@ -2113,19 +2113,34 @@ class AnazhRealm_stoff_instanz {
         attr.__cpuLeser = wer;
         return attr;
     }
+    // … eine ganze Geometrie, deren Puffer ihr Eigner nach dem Hochladen fortschreibt (jedes Attribut und der Index)
+    static _cpuLeserGeo(geo, wer) {
+        for (const k in geo.attributes) AnazhRealm._cpuLeser(geo.attributes[k], wer);
+        if (geo.index) AnazhRealm._cpuLeser(geo.index, wer);
+        return geo;
+    }
     static _pufferName(attr) {
         return `${attr.name || "Puffer"} #${attr.id} (${attr.count}×${attr.itemSize})`;
     }
     // DIE FREIE KOPIE: ein leeres Array desselben Typs hinter einer Wand — r184 liest nur `constructor` und `BYTES_PER_ELEMENT`
     // (`_getVertexFormat`, `createShaderVertexBuffers`, `instanceof` des Index-Formats); jeder andere Zugriff wirft beim Namen.
     static _freieKopie(attr, C) {
+        const wand = (was, p) =>
+            new Error(
+                `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} ${was} „${String(p)}“ nach dem Hochladen${attr.__cpuGefallen ? " und dem Kehraus" : ""} — der Leser benennt sich (_cpuLeser) oder liest die Quelle`
+            );
         return new Proxy(new C(0), {
             get(t, p) {
                 if (p === "constructor") return C;
                 if (p === "BYTES_PER_ELEMENT") return C.BYTES_PER_ELEMENT;
-                throw new Error(
-                    `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} liest „${String(p)}“ nach dem Hochladen${attr.__cpuGefallen ? " und dem Kehraus" : ""} — der Leser benennt sich (_cpuLeser) oder liest die Quelle`
-                );
+                throw wand("liest", p);
+            },
+            // ein Schreiben in ein leeres Array verschwände still (ein Index außerhalb wird verworfen)
+            set(t, p) {
+                throw wand("schreibt", p);
+            },
+            defineProperty(t, p) {
+                throw wand("schreibt", p);
             },
         });
     }
@@ -2397,6 +2412,25 @@ class AnazhRealm_stoff_instanz {
     _backendGesetz(renderer) {
         const be = renderer && renderer.backend;
         if (!be || be.isWebGPUBackend !== true) return;
+        // die Kopie fällt NACH dem Anlegen samt Buchung im Register (r184 `Attributes.update`: Backend, dann `info` — das
+        // Register liest die Größe aus dem Array): an der Buchung des Registers je Renderer (`info` steht ab dem Bau, die
+        // Attribut-Verwaltung erst nach init) — 3 STORAGE und 4 INDIRECT schreibt und liest die GPU selbst
+        const info = renderer.info;
+        if (info && info.__anazhFrei !== true && typeof info.createAttribute === "function") {
+            info.__anazhFrei = true;
+            const buchV = info.createAttribute,
+                buchI = info.createIndexAttribute;
+            info.createAttribute = function (attr) {
+                const aus = buchV.call(this, attr);
+                AnazhRealm._cpuKopieFrei(be, attr, false);
+                return aus;
+            };
+            info.createIndexAttribute = function (attr) {
+                const aus = buchI.call(this, attr);
+                AnazhRealm._cpuKopieFrei(be, attr, true);
+                return aus;
+            };
+        }
         const P = Object.getPrototypeOf(be);
         if (!P || P.__anazhGesetz === true) return;
         P.__anazhGesetz = true;
@@ -2424,20 +2458,6 @@ class AnazhRealm_stoff_instanz {
             gefallen(attr);
             return anlegenV.call(this, attr);
         };
-        // die Kopie fällt NACH dem Anlegen samt Buchung im Register (r184 `Attributes.update`: Backend, dann `info` — das
-        // Register liest die Größe aus dem Array): an der Klasse der Attribut-Verwaltung, für jeden Renderer der Seite
-        const A = renderer._attributes && Object.getPrototypeOf(renderer._attributes);
-        if (A && A.__anazhFrei !== true && typeof A.update === "function") {
-            A.__anazhFrei = true;
-            const hoch = A.update;
-            // r184 AttributeType: 1 VERTEX · 2 INDEX (3 STORAGE und 4 INDIRECT schreibt und liest die GPU selbst)
-            A.update = function (attr, typ) {
-                const aus = hoch.call(this, attr, typ);
-                if ((typ === 1 || typ === 2) && attr.__cpuFrei === undefined)
-                    AnazhRealm._cpuKopieFrei(this.backend, attr, typ === 2);
-                return aus;
-            };
-        }
         const nachschreiben = P.updateAttribute;
         P.updateAttribute = function (attr) {
             const fq = attr.isInterleavedBufferAttribute ? attr.data : attr;
