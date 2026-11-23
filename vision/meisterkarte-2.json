@@ -53,7 +53,7 @@
   {
    "id": "R8",
    "name": "Die Preis-Treppe",
-   "satz": "Der Preis hat EIN Heim (same.preis.*, die Sprung-Zeit in same.massstab.sprung) und wächst dort mit dem Umfang; jede Inhalts-Sprosse trägt als P die Stufe ihrer Umfangs-Klasse am Standardgerät — Bild, Speicher, Bytes, Sprung und, ab der Klasse Stadt, die Ankunft kalt am Ort ihres Richters ≤ 5 s (Tafel der Preis-Treppe) —, und ihre Spalte Preis nennt nur P, die Pose und die Antwortzeit, die der Spieler fühlt, nie ein Budget je Teilsystem."
+   "satz": "Der Preis hat EIN Heim (same.preis.*, die Sprung-Zeit in same.massstab.sprung) und wächst dort mit dem Umfang; jede Inhalts-Sprosse trägt als P die Stufe ihrer Umfangs-Klasse am Standardgerät — Bild, Speicher, Bytes, Sprung — (Tafel der Preis-Treppe); die Ankunft ist Schranke KEINER Inhalts-Sprosse, sie steht in ihrer Leiter same.preis.ankunft gemessen und gestuft (Ort 1–3, Stadt 4–5, Megastadt und Kontinent 6, Planet und Welten 7–8) —, und ihre Spalte Preis nennt nur P, die Pose und die Antwortzeit, die der Spieler fühlt, nie ein Budget je Teilsystem."
   },
   {
    "id": "R9",
@@ -124,7 +124,7 @@
    "klasse": "Stadt",
    "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
    "bild": "wie Ort",
-   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 4–5)",
    "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
    "bytes": "0"
   },
@@ -132,7 +132,7 @@
    "klasse": "Megastadt und Kontinent",
    "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
    "bild": "wie Ort",
-   "ankunft": "≤ 5 s",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 6)",
    "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
    "bytes": "0"
   },
@@ -140,12 +140,12 @@
    "klasse": "Planet und Welten",
    "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
    "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
-   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 7–8)",
    "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
    "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
   }
  ],
- "preisFassung": "2026-11-15",
+ "preisFassung": "2026-11-23",
  "umfangsKlassen": [
   {
    "wort": "Weiler, Dorf",
@@ -17019,7 +17019,7 @@
      "name": "Ankunft",
      "art": "kriterium",
      "perspektive": "preis",
-     "misst": "Sekunden vom Klick (leere Platte, Netz der Sprosse) bis zur ersten angenommenen Eingabe in einem ganzen Bild (≤ 2 % Lücke gegen 60 s Ruhe) im vollen Bild der Auslieferung, beim Welt-Umfang der Sprosse. Achse: 60 s → 1 s, Dorf → viele Planeten, Standardgerät → G0–G7. Ab der Klasse Stadt ist ≤ 5 s Teil von P jeder Inhalts-Sprosse (R8); die Zeit eines Sprungs im laufenden Spiel stuft same.massstab.sprung.",
+     "misst": "Sekunden vom Klick (leere Platte, Netz der Sprosse) bis zur ersten angenommenen Eingabe in einem ganzen Bild (≤ 2 % Lücke gegen 60 s Ruhe) im vollen Bild der Auslieferung, beim Welt-Umfang der Sprosse. Achse: 60 s → 1 s, Dorf → viele Planeten, Standardgerät → G0–G7. Die Ankunft ist Schranke keiner Inhalts-Sprosse — jede Klasse der Preis-Treppe ist HIER gestuft (Ort 1–3, Stadt 4–5, Megastadt und Kontinent 6, Planet und Welten 7–8; R8, Fassung 23.11.); die Zeit eines Sprungs im laufenden Spiel stuft same.massstab.sprung.",
      "sprossen": [
       {
        "nr": 1,
