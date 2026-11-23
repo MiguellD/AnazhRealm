@@ -18,6 +18,9 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 3. Eine Zeile: **Chokepoint + was stirbt.**
 4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des Koordinators (≤ 25 Zeilen, `koordination/auftrag/`)
    ist Auftrag, kein Plan-Doc.
+5. OFFEN AM ORT lesen — was frühere Abgaben und das FUND-REGISTER in deinen Dateien liegen ließen (Block im Brief, oder selbst:
+   `git show origin/koordination:bericht/2111-werkzeug/offen-ernte.cjs | node - --ort <pfad,pfad>`). Liegt dort
+   deine Klasse, fällt sie in deiner Welle (G3).
 
 ---
 
@@ -32,7 +35,7 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 | **G5** | Fertig = eingefädelt im Spielpfad | nur headless; Erlebnis ignoriert |
 | **G6** | Miss zuerst: vorher↔nachher, gleiche Bedingung, Zahl im Bericht | Theater-Gates, kein Maß |
 | **G7** | Entscheide und baue | Optionslisten, „könnte man" |
-| **G8** | Bericht = genau 3 Sätze: geschnitten · gemessen · offen | Essay, Siegel-Lyrik |
+| **G8** | Bericht = genau 3 Sätze: geschnitten · gemessen · offen — jeder Offen-Punkt mit ADRESSE | Essay, Siegel-Lyrik, Offen ohne Leser |
 
 **Maßstab:** Studio-Gesetzbuch · HOLZ-Profile · Bänder (tris/dc/ms/Absenz).
 **Schöpfer = Scope**, nicht Pixel-Polizist. Nicht warten auf Auge.
@@ -75,6 +78,10 @@ Zwischen A und C: **kein** Docs-only-Commit.
 - Gates: Beweis von G1/G4/G5 — keine Diag-Flut
 - Abdruck: jede Abgabe belegt „außerhalb von X byte-gleich" mit `node scripts/werkbank.cjs abdruck --gegen <Basis-sha>` — die Dinge, die er nennt, sind genau die, die sie ändern wollte.
 - Ende: was der Spieler **sieht/hört/fühlt** (ein Halbsatz), nicht nur Gate
+- **Offen hat eine Adresse:** jeder Punkt hinter „Offen:“ im Commit-Rumpf nennt, WER ihn liest — eine Sprosse der Karte 2
+  (`leiter#n`: die Punkte-Maschine), eine Wand oder Station (`gate:…`, `pm-…`: ihr Dienst) oder seine Zeile im FUND-REGISTER
+  (Zweig koordination). Ein Bild-Fehler in deiner Domäne ist kein Offen-Punkt, er ist deine Klasse. Ohne Adresse liest ihn
+  niemand (gemessen 23.11.: 42 von 66 Offen-Punkten in 42 Landungen, „die Kisten lesen als dunkle Quader“ dreimal genannt).
 
 ---
 
