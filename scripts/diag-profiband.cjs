@@ -335,15 +335,21 @@ function fernSiedlungWand(A) {
     const liste = koepfe.slice();
     const netzGrund = { knoten: [], kanten: [] };
     const S = { key: "1,1", ox: 900, oz: 900, liste, aktivListe: liste, aktiv: liste.slice(0, 2), ruhend: [koepfe[2]], raster: new Map([["9,9", [koepfe[0]]]]), koepfe: [koepfe[0]], backt: [koepfe[1]], zukunft: { kopf: koepfe[2] }, plan: { slots: [] }, netzGrund, satz: null, gestalten: [], raum: null, verkehr: null }; // prettier-ignore
-    // die Arbeits-Puffer des Takts hielten die Köpfe der zuletzt getakteten Siedlung
-    Object.assign(w, { _bewohnerKoepfe: [koepfe[0]], _bewohnerBewegt: [koepfe[1]], _bewohnerNachbarn: [koepfe[2]], _bewohnerNbZahl: { geachtet: [koepfe[2]], naechste: [koepfe[1]] } }); // prettier-ignore
+    // die Arbeits-Puffer des Takts hielten die Köpfe der zuletzt getakteten Siedlung — JEDE Liste, die der Stamm am Reich lazy
+    // anlegt (`this._bewohner… || (this._bewohner… = [])`, gelesen aus den Methoden der Klasse, heap-blick-folgt): eine neue, die
+    // das Register `BEWOHNER_TAKT_PUFFER` nicht kennt, hält ihren Kopf und steht hier beim Namen
+    const puffer = new Set();
+    for (const n of Object.getOwnPropertyNames(A.prototype)) {
+        const f = Object.getOwnPropertyDescriptor(A.prototype, n).value;
+        if (typeof f === "function")
+            for (const m of String(f).matchAll(/this\.(_bewohner\w+) \|\| \(this\.\1 = \[\]\)/g)) puffer.add(m[1]);
+    }
+    for (const [i, n] of [...puffer].entries()) w[n] = [koepfe[i % 3]];
+    w._bewohnerNbZahl = { geachtet: [koepfe[2]], naechste: [koepfe[1]] };
     A.prototype._bewohnerFort.call(w, S);
     const kopf = new Set(koepfe);
     const gesehen = new WeakSet();
-    const q = [
-        [S, "S"],
-        ...["_bewohnerKoepfe", "_bewohnerBewegt", "_bewohnerNachbarn", "_bewohnerNbZahl"].map((n) => [w[n], "r." + n]),
-    ];
+    const q = [[S, "S"], ...[...puffer, "_bewohnerNbZahl"].map((n) => [w[n], "r." + n])];
     const pfade = [];
     for (let i = 0; i < q.length; i++) {
         const [o, p] = q[i];
@@ -361,7 +367,8 @@ function fernSiedlungWand(A) {
     if (!(S.plan && Array.isArray(S.plan.slots))) vergessen.unshift("plan");
     if (vergessen.length)
         errs.push(`H10 _bewohnerFort: die ferne Siedlung vergaß ihr Gedächtnis — ${vergessen.join(" · ")}`);
-    return { errs, n: pfade.length };
+    if (puffer.size < 6) errs.push(`H10 _bewohnerFort: die Linse fand nur ${puffer.size} Takt-Puffer im Stamm (Soll ≥ 6) — blind`); // prettier-ignore
+    return { errs, n: pfade.length, puffer: [...puffer] };
 }
 
 // H11 DIE VORLAGE FOLGT DEM BLICK (heap-register 21.11.): die verschmolzene Vorlage eines Bauplans (`_buildArchMeshMerged`,
@@ -1880,6 +1887,11 @@ function selbsttest() {
     const fernRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", REGISTER, "[S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];"))); // prettier-ignore
     const fernLeer = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", REGISTER, "for (const k of Object.keys(S)) delete S[k];"))); // prettier-ignore
     t("Ferne Siedlung: der Abschied Feld für Feld ist rot bei backt und zukunft, ohne Gedächtnis rot beim Plan, der Stamm grün", /^H10 _bewohnerFort: .*S\.backt\[\].*S\.zukunft\.kopf/.test(fernRot.errs[0] || "") && /vergaß ihr Gedächtnis — plan · key/.test(fernLeer.errs.join(" ")) && !fernSiedlungWand(A).errs.length); // prettier-ignore
+    // die Takt-Puffer beim Namen (heap-blick-folgt): der Abschied, der drei beim Namen leert (der Stand vor dem Register), ist rot
+    // bei `_bewohnerNah`, `_bewohnerHalter` und `_bewohnerWandKand`
+    const PUFFER = "for (const k of AnazhRealm.BEWOHNER_TAKT_PUFFER) if (this[k]) this[k].length = 0;";
+    const pufRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", PUFFER, "for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;"))); // prettier-ignore
+    t("Ferne Siedlung: drei Takt-Puffer beim Namen geleert ist rot bei _bewohnerNah, _bewohnerHalter und _bewohnerWandKand", ["_bewohnerNah", "_bewohnerHalter", "_bewohnerWandKand"].every((n) => (pufRot.errs[0] || "").includes("r." + n + "[]"))); // prettier-ignore
     // DIE VORLAGE (H11): die Vorlage ohne Rückgabe (der Stand vor heap-register: sie hält, solange der Bauplan lebt) ist rot
     // beim Halter, die Rückgabe ohne Zählung (der erste Bau nimmt sie mit) rot beim stehenden Bau, der Stamm grün
     const v11Halt = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "return;"))); // prettier-ignore

@@ -1050,7 +1050,6 @@ class AnazhRealm_studio_gestalt {
         const v = f.cache.get(key);
         f.cache.delete(key);
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
-        if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // bestellt: die Ruhezeit beginnt neu
         return v;
     }
     // Eintrags-Gewicht: Byte-Längen der Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen.
@@ -1087,7 +1086,6 @@ class AnazhRealm_studio_gestalt {
         if (prev && Number.isFinite(prev._cacheBytes)) f.cacheBytes -= prev._cacheBytes;
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
-        if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // gebaut: die Ruhezeit beginnt
         f.cache.set(key, v);
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
@@ -1103,49 +1101,33 @@ class AnazhRealm_studio_gestalt {
             if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
             this._foundryCacheEvict(oldest);
         }
-        this._foundryRuheDeckel(key);
     }
-    // DER RUHE-DECKEL (profiband K5, Gebot 7): ein Körper, den keine Senke zeichnet (`_liveRefs` 0), ist kein Besitz — das
-    // Gesetz leitet ihn neu ab, die Platte trägt ihn. Zwei Wände an EINEM Räumer: (1) DIE RUHEZEIT — ein Untätiger, den seit
-    // `_foundryRuheMs()` niemand bestellt (`_foundryCacheGet`), gebaut (`_foundryCacheSet`) oder verlassen hat
-    // (`_foundryLoslassen`), fällt; bis w28-foundry-ruhe lag er an einem stehenden Ort für immer (Radeon 16.11., Dorfplatz
-    // 8 Uhr Third, 77 Bewohner: 134 Untätige = 36,8 MB von 63,0 MB, unter der Gewichts-Wand). (2) DAS GEWICHT — die ältesten
-    // Untätigen fallen, bis ihr Gewicht unter FOUNDRY_RUHE_BYTES steht (Gang 6 min: 110 untätige = 146,5 MB neben 40,6 MB
-    // lebenden). Die Jüngsten (eben gewärmt, eben verlassen) hält nur die Gewichts-Wand an; `schone` ist der eben gesetzte
-    // Schlüssel. Gerufen beim Setzen, im Takt nach jeder Rückgabe (`ruheOffen`) und wenn der nächste Untätige fällig wird
-    // (`ruheFaellig`, die früheste Ruhezeit des letzten Rufs — ein stehender Ort ruft ihn so, ohne Ereignis).
-    // DIE RUHE ZÄHLT AN DER WELT-UHR (w28-funktion-welt-2, `spielZeit` in s): bis hier an der Wanduhr — wie viele Körper der
-    // Cache hielt, hing daran, wie lange die Takte des Geräts dauerten, und mit ihm die Hüllen der Bäume im Netz der Bewohner
-    // und die Karten im Atlas (A gegen A an 2a1a6e1c unter Last: buche|3|1 in A gebaut, in B geräumt; `netz.baeume`,
-    // `impostor#fimp:atlas` anders). Die Pause (das Portal) hält die Uhr und mit ihr die Ruhe.
-    _foundryRuheDeckel(schone) {
+    // DER CACHE FOLGT DEM BLICK SEINER LESER (heap-blick-folgt, Gebot 7): ein Körper, den keine Senke mehr zeichnet, ist kein
+    // Besitz — das Gesetz leitet ihn neu ab, die Platte trägt ihn. Löst `_foundryLoslassen` den LETZTEN Leser, merkt der Cache ihn
+    // (`verlassen`), und der nächste Takt (`_tickFoundryIngest`) räumt ihn über die EINE Naht `_foundryCacheEvict` — nie im selben
+    // Ruf (ein Umbau gibt zurück und holt gleich wieder: hält er ihn bis zum Takt, bleibt er). Kein Timer, kein MB-Deckel: die Ruhe
+    // eines Lesers, der am Rand seines Rings pendelt, liegt in SEINEM Ring (die Gnade der leeren Hülle, `ARCH_LEER_GNADE_MS`, hält
+    // `_liveRefs`), nie im Cache. Bis hier hielt der Ruhe-Deckel bis zu 64 MB Untätige je Frist von 60 s (Radeon, Wiese nach der
+    // Stadt: `r._foundry.cache` 68,1 MB nach GC, Körper der verlassenen Stadt).
+    _foundryVerlassenRaeumen() {
         const f = this._foundry;
-        f.ruheOffen = false;
-        const jetzt = this.state.spielZeit;
-        const frist = AnazhRealm._foundryRuheMs() / 1000;
-        let ruhe = 0;
-        for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
-        let faellig = Infinity;
-        for (const [k, v] of f.cache) {
-            if (!v || typeof v !== "object" || v._liveRefs > 0) continue;
-            if (!(v._ruheSeit >= 0)) v._ruheSeit = jetzt; // ein Eintrag ohne Stempel (am Setzen vorbei) ruht ab jetzt
-            if (k !== schone && (ruhe > AnazhRealm.FOUNDRY_RUHE_BYTES || jetzt - v._ruheSeit >= frist)) {
-                ruhe -= v._cacheBytes || 0;
-                this._foundryCacheEvict(k);
-            } else if (v._ruheSeit + frist < faellig) faellig = v._ruheSeit + frist;
-        }
-        f.ruheFaellig = faellig;
+        const V = f && f.verlassen;
+        if (!V || !V.size) return 0;
+        f.verlassen = null;
+        let n = 0;
+        for (const [k, v] of f.cache) if (V.has(v) && !(v._liveRefs > 0) && this._foundryCacheEvict(k)) n++;
+        f.verlassenN = (f.verlassenN || 0) + n;
+        return n;
     }
     // DIE EINE RÜCKGABE einer Cache-Gruppe durch ihren Halter (Senke, Leib, Schatten-Stellvertreter): war sie WÄHREND des
-    // Haltens geräumt (`_evicted`), fällt ihre Geometrie mit dem letzten Halter (nie mitten im Leben, nie geleakt); wird sie
-    // untätig, wiegt der nächste Takt sie gegen den Ruhe-Deckel (nie im selben Ruf — ein Umbau holt sie gleich wieder).
+    // Haltens geräumt (`_evicted`), fällt ihre Geometrie mit dem letzten Halter (nie mitten im Leben, nie geleakt); löst er sie
+    // als letzter, verlässt sie den Cache im nächsten Takt (`_foundryVerlassenRaeumen`).
     _foundryLoslassen(src) {
         if (!src) return;
         src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
         if (src._liveRefs > 0) return;
-        src._ruheSeit = this.state.spielZeit; // verlassen: die Ruhezeit beginnt
         if (src._evicted) this._disposeFoundryGroupGeom(src);
-        else if (this._foundry) this._foundry.ruheOffen = true;
+        else if (this._foundry) (this._foundry.verlassen || (this._foundry.verlassen = new Set())).add(src);
     }
     // DIE EINE RÄUMUNGS-NAHT — jede Räumung (LRU-Überlauf UND präge-Flush) geht hier durch, nie rohes
     // f.cache.delete: (a) Dispose nur ohne lebende InstancedMesh-Gruppe (_liveRefs 0), sonst `_evicted`-
@@ -1577,17 +1559,6 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // (~351 MB @ Ring 4) — darunter fallen gewärmte Assets vor dem Konsum (gate:foundry-crossfade).
 // Räumung graziös (re-anfragbar; _liveRefs: nie ein sichtbarer Baum).
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
-// Der RUHE-DECKEL: das Gewicht der Körper ohne lebende Senke (`_liveRefs` 0), das der Cache hält (`_foundryCacheSet`).
-AnazhRealm.FOUNDRY_RUHE_BYTES = 64 * 1024 * 1024;
-// DIE RUHEZEIT des Ruhe-Deckels: die längste Rückkehr, die das Spiel einer verlassenen Senke gewährt — die Gnade der leeren
-// Instanz-Hülle mal dem Mint-Deckel der Churn-Linse (`ARCH_LEER_GNADE_MS` × `ARCH_LEER_MINT_DECKEL` = 60 s, vegetation-streu).
-// Die Hülle hält ihren Körper (`_liveRefs`), solange sie wartet; erst danach ruht er, und wer nach dieser Frist zurückkehrt, baut
-// auch seine Hülle neu. Kein eigenes Literal: wächst die Gnade, wächst die Ruhezeit mit. Fehlt eine der beiden, bricht der Ruf laut.
-AnazhRealm._foundryRuheMs = function () {
-    const ms = AnazhRealm.ARCH_LEER_GNADE_MS * AnazhRealm.ARCH_LEER_MINT_DECKEL;
-    if (!(ms > 0)) throw new Error("RUHE-DECKEL: keine Ruhezeit (ARCH_LEER_GNADE_MS × ARCH_LEER_MINT_DECKEL)");
-    return ms;
-};
 // Proaktiver Dock, zwei Kosten: ein GEDOCKTES Asset (schon im Cache) ist ein billiger
 // WebGPU-Instance → viele je Idle-Tick; ein nicht gedocktes löst einen Studio-Bake aus (das iframe
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.
