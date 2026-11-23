@@ -1999,8 +1999,13 @@ class AnazhRealm_bau_vorlagen {
     //          lange nass stehen: an der Nordseite auch trocken — der Tau der Nacht (die Fassade strahlt unter die Luft ab, Fraunhofer
     //          IBP) nährt ihn jeden Tag —, und im Regen-Lauf der Wetterseite schneller als am Stein (der Putz hält das Wasser in
     //          seinen Poren); West- und Nordfassaden tragen ihn signifikant häufiger als Ost und Süd (Umweltbundesamt Texte 17/2016,
-    //          Feldbestand von Wärmedämm-Verbundsystemen). Keine Flechte oben: die Putzfläche steht senkrecht. Die Tage am Bild
-    //          gestellt, OHNE Messung. Bis front-stoff alterte der Putz als Stein.
+    //          Feldbestand von Wärmedämm-Verbundsystemen). Keine Flechte oben: die Putzfläche steht senkrecht. DIE ZEIT: der
+    //          Aufwuchs zeigt sich „meistens in den ersten Jahren nach Fertigstellung" (Fraunhofer IBP, Krus · Fitz · Holm ·
+    //          Sedlbauer) — gelesen als ein Viertel des Wegs zum vollen Belag (P = 0,25) nach ZWEI Jahren, je zur Hälfte aus dem Tau
+    //          (`zeitTage` 5 000: 730 d ÷ 0,144) und aus dem Regen (`nassTage` 1 500: 2 × 111,7 Regen-Tage des Dorfs ÷ 0,144). Der
+    //          Ablauf trägt dieselbe Zeit, seine Lage sammelt das Wasser. Bis hier standen die Tage am Bild (Tau 400, Regen 50/40):
+    //          das Dorf trug nach EINEM Jahr eine einheitlich olivgrüne Wetterseite (Bildpaar front-stoff, römisches Haus).
+    //          Bis front-stoff alterte der Putz als Stein.
     // Leser: die Zeile jedes Stoffs der Welt mit derselben Art (`_defaultMaterials`: Holz, Eisen, Stein — das Bau-Teil
     // `_werkAlterFaerbe`; ein eigener Stoff altert wie sein Verwandter, `_stoff`) und jeder gesetzte Bau im Satz seines Stoffs
     // (`_satzAlter`: die Art seines Gefüges nennt die Tafel, `WERK_ALTER.art`, sonst seine Seh-Klasse). Gemerkt; die Zeilen sind
@@ -2025,13 +2030,15 @@ class AnazhRealm_bau_vorlagen {
                 { ziel: MOOS, zeitTage: null, nassTage: 60, lage: "lauf" },
             ],
             putz: [
-                { ziel: MOOS, zeitTage: 400, nassTage: 50, lage: "nord" },
-                { ziel: MOOS, zeitTage: null, nassTage: 40, lage: "lauf" },
+                { ziel: MOOS, zeitTage: 5000, nassTage: 1500, lage: "nord" },
+                { ziel: MOOS, zeitTage: null, nassTage: 1500, lage: "lauf" },
             ],
         };
         const out = {};
         for (const [art, sch] of Object.entries(ALTER))
-            out[art] = Object.freeze(sch.map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel.slice()) }))));
+            out[art] = Object.freeze(
+                sch.map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel.slice()) })))
+            );
         return (AnazhRealm._alterGesetzMerk = Object.freeze(out));
     }
 

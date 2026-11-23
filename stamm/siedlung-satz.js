@@ -1168,7 +1168,8 @@ class AnazhRealm_siedlung_satz {
             !this._werkAlterZeile(preset[1])
         ) {
             const schichten = AnazhRealm._alterGesetz()[name];
-            if (!schichten) throw this._stoffBruch("der Bau-Satz altert ohne Tafel im Gesetz des Alters", new Error(name));
+            if (!schichten)
+                throw this._stoffBruch("der Bau-Satz altert ohne Tafel im Gesetz des Alters", new Error(name));
             al = Object.assign(this._alterSchichten(schichten, sts.mat.color), { stoff: name });
         }
         g._satzAlter = al;
