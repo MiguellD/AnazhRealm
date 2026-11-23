@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 13,
-    "kern": 13,
-    "kernDazu": 13,
+    "kern": 14,
+    "kernDazu": 14,
     "anteilHeute": 2.4,
-    "anteilKern": 2.3
+    "anteilKern": 2.5
    },
    "perspektiven": [
     {
@@ -7106,7 +7106,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
      "alt": []
@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 8,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 2,
+    "kernDazu": 2,
     "anteilHeute": 4.2,
-    "anteilKern": 0.8
+    "anteilKern": 1.3
    },
    "perspektiven": [
     {
@@ -18209,12 +18209,14 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
      "alt": [],
      "heuteSprossen": [],
-     "kernSprossen": []
+     "kernSprossen": [
+      6
+     ]
     },
     {
      "id": "leben.kopplung.leben-formt-planet",
@@ -20088,10 +20090,10 @@
   "sprossen": 1718,
   "heute": 53,
   "davonKopplungen": 33,
-  "kern": 14,
-  "kernDazu": 14,
+  "kern": 16,
+  "kernDazu": 16,
   "anteilHeute": 3,
-  "anteilKern": 0.4,
+  "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {

@@ -16430,7 +16430,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1) · karte2.mensch.fahrzeug.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16460,8 +16460,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.fahrzeug.medium#2",
@@ -16584,7 +16585,7 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Station seit der Messung geändert · karte2.mensch.geist.absicht#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1) · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.absicht#1 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1) · karte2.mensch.geist.absicht#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1) · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
@@ -16592,8 +16593,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/koerper-fahrt.js, stamm/siedlung-bauten.js +1)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -20744,7 +20746,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -20774,8 +20776,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.macht.wehrbau#2",
@@ -22808,7 +22811,7 @@
   },
   "karte2.mensch.netz.stoffwechsel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bauten.js, stamm/siedlung-bewohner.js) · karte2.mensch.netz.stoffwechsel#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.stoffwechsel#1",
@@ -22816,8 +22819,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bauten.js, stamm/siedlung-bewohner.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -27976,7 +27980,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#2 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -28015,8 +28019,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.bahn-klima#3",
@@ -28210,7 +28215,7 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#6 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#6 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.gegenwart#6 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#6 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
@@ -28228,8 +28233,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -28247,8 +28253,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.gegenwart#3",
@@ -28301,8 +28308,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.gegenwart#6",
@@ -28319,14 +28327,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.kaskade#1 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.kaskade#2 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#6 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.kaskade#1 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bauten.js, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.kaskade#2 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#6 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.kaskade#1",
@@ -28344,8 +28353,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bauten.js, stamm/siedlung-bewohner.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -28460,7 +28470,7 @@
   },
   "karte2.planet.kopplung.land-meer-luft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#3 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#3 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#4 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#4 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.land-meer-luft#3 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#3 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.land-meer-luft#4 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#4 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.land-meer-luft#1",
@@ -28478,8 +28488,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -28497,8 +28508,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.land-meer-luft#3",
@@ -28515,8 +28527,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.land-meer-luft#4",
@@ -28533,8 +28546,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.land-meer-luft#5",
@@ -28551,8 +28565,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.land-meer-luft#6",
@@ -28569,14 +28584,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.kopplung.siedlungslage": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.siedlungslage#1 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.siedlungslage#2 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#2 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.siedlungslage#3 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#4 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#5 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#6 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#6 gtx: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.siedlungslage#1 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.siedlungslage#2 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.kopplung.siedlungslage#3 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#4 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#5 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#6 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#6 gtx: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.siedlungslage#1",
@@ -28594,8 +28610,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -28613,8 +28630,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.siedlungslage#3",
@@ -28710,7 +28728,7 @@
   },
   "karte2.planet.kopplung.stadtklima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.stadtklima#1 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#1 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.stadtklima#1 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.stadtklima#1",
@@ -28728,8 +28746,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -28826,7 +28845,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#2 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#3 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#3 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.wetter-welt#3 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#3 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js) · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -28865,8 +28884,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.wetter-welt#3",
@@ -28883,8 +28903,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.wetter-welt#4",
@@ -28901,8 +28922,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.wetter-welt#5",
@@ -28919,8 +28941,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.wetter-welt#6",
@@ -28937,8 +28960,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -37490,7 +37514,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 241,
+  "konsum": 265,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37658,10 +37682,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3381
+  "ohne": 3357
  },
  "kopfVoll": "4019a2ad0565310f56cfc461672c173d8ba8e2b2",
- "zeit": "2026-11-23T00:20:42.366Z",
+ "zeit": "2026-11-23T00:32:39.676Z",
  "vorher": "4019a2ad",
  "bilanz": {
   "gewinn": [],
