@@ -5327,17 +5327,19 @@
                 regenfest: true,
             }),
             // DAS KIND (ALTER_GESETZ.kindJ; der Wirt gibt die Rolle jedem Bewohner unter 15 J, `_bewohnerListe`): sein Werk ist das
-            // Spiel vor der eigenen Tür (`spiel`: kein Werk der Wahl, nie das Werk seines Hauses als Arbeit — kein Kind am Amboss),
-            // in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude (`haltung.spiel`). Bis hier ging jeder
-            // Bewohner ans Werk seines Hauses: es gab kein Kind
+            // Spiel (`spiel`: der Ort seiner Wahl nach dem Angebot `spiel` — der Platz, die Wiese am Acker —, nie das Werk seines
+            // Hauses als Arbeit: kein Kind am Amboss), in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude
+            // (`haltung.spiel`). Bis hier ging jeder Bewohner ans Werk seines Hauses: es gab kein Kind; die erste Fassung band das
+            // Spiel an die eigene Tür — an der Stadt (Probe zielplan) standen um 10 Uhr 21,4 % ohne Ziel vor einem Wohnhaus
+            // ohne Werk, und die Kinder nahmen den Ring der Türen
             kind: Object.freeze({ werk: Object.freeze([9, 16]), spiel: true }),
         }),
         // DAS ANGEBOT JE ORT (Art → Güte je Bedürfnis): die Rolle eines Slots, der Platz, der Acker; `sonst` jede Rolle, die
         // hier keine Zeile trägt; `daheim` das eigene Haus aus der Sicht seiner Leute (der Tisch, die Bank vor der Tür)
         angebot: Object.freeze({
             wohnhaus: Object.freeze({ besuch: 1 }),
-            platz: Object.freeze({ arbeit: 5, markt: 1, mahl: 3, treff: 6 }),
-            feld: Object.freeze({ arbeit: 1 }),
+            platz: Object.freeze({ arbeit: 5, markt: 1, mahl: 3, treff: 6, spiel: 4 }),
+            feld: Object.freeze({ arbeit: 1, spiel: 1 }),
             scheune: Object.freeze({ arbeit: 2 }),
             schmiede: Object.freeze({ arbeit: 2 }),
             gasthaus: Object.freeze({ arbeit: 2, mahl: 8, treff: 8 }),
@@ -5352,7 +5354,7 @@
         // (bis hier ging er mittags heim, wie weit es auch war: an der Metropole war um 13 Uhr jeder Zweite unterwegs, und der
         // Strom über die Fahrbahn hielt einen Wagen eine Minute lang auf 27 m, gate:fahr-leben --verkehr)
         amWerk: Object.freeze({ mahl: 2 }),
-        wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45 }),
+        wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45, spiel: 120 }),
         besuchFernM: 40,
         // DER MARKT ZIEHT MIT SEINEN STÄNDEN (w28-stadt-grammatik): das Angebot eines Platzes an Arbeit, Mittagstisch und
         // Morgengang wächst mit der Zahl der Stände seines Plans — je `staendeBasis` Stände einmal das Angebot der Tafel
@@ -5560,8 +5562,9 @@
                 amD = dq;
             }
         }
-        // (das Kind, `rollen.kind.spiel`: sein Werk ist das Spiel vor der eigenen Tür)
-        var werk = am >= 0 ? am : R.spiel || eigen ? heimI : wahl("arbeit", H, "werk", null);
+        // (das Kind, `rollen.kind.spiel`: sein Werk ist der Ort seines Spiels — die Wahl nach dem Angebot `spiel`, das eigene
+        // Haus bietet keins)
+        var werk = am >= 0 ? am : R.spiel ? wahl("spiel", H, "werk", null) : eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
         var platz = wahl("markt", H, "markt", null);
         return {
