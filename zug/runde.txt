@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 10 kopf f0a89f7e12a26d84104ab0f613e86f3eae01102a start 2026-11-23T04:57:49Z vorher ddaf883df80ffaeb188dba6714e6a55e3a239d06
 gtx offen 0/0 station - fortschritt 2026-11-23T04:57:49Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-23T04:57:49Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-23T04:57:49Z alarm - liste -
 notiz 2026-11-23T04:57:49Z Runde 9 am ddaf883d sprang auf f0a89f7e (gtx laeuft 25/246, radeon weicht 15/81): z683 gelandet (w28-acker-kette): ein Durchgang misst zuerst die Ansprüche mensch.nahrung.strom#1, hand#2, frucht#1; die Station liegt seit 0e0d0d69 in punkte-maschine
