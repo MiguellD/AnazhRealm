@@ -2537,6 +2537,9 @@ const neunStation = (kriterium, quelle, urteil, proben) => ({
 });
 // die REF real-mischwald der Proben (spec/abnahme/real-mischwald.json im Spiel-Baum, wörtlich die Bänder; das Urteil liest sie aus der Zeile)
 const WALD_REF = { staemmeJeHa: [370, 900], ego: { fovGrad: 75, seite: 1.7778, nahM: 20 }, staemmeJeBildbreite: [14, 34], unterholzDeckung: [0.25, 0.78], flecken: { cv: 0.3, gegenOffen: 2, wandernMax: 0.8 } };
+// DIE GÜLTIGKEIT DES PFOSTEN-MASSES (schatten.K5 und karte2.erleben.bild.nacht#1, EINE Regel): der Pfosten im Blick, die Quelle im Pool,
+// die Kontrolle ohne Pfosten ruhig (0,67–1,5: keine gemalte Schatten-Textur, kein Wurf des Steinrings), mindestens 6 Punkte
+const k5Gilt = (t) => t.pfosten === true && !!t.imPool && t.kontrolle != null && t.kontrolle >= 0.67 && t.kontrolle <= 1.5 && t.n >= 6;
 const NEUN = [
     neunStation(
         "schatten.K2",
@@ -2592,7 +2595,7 @@ const NEUN = [
         "1 = Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer an einem Gerät",
         // DIE POSE (w6-g3-linsen): das Auge lotrecht über den Messpunkten, der Pfosten im Blick (sein Plättchen gesehen) — von der Seite stand
         // es im Schilf (GTX b4bb2f62); `boden` nennt den Anteil gesehenen Bodens (in Gras misst die Säule den Halm, der den Wurf fängt)
-        (t) => [t.pfosten === true && t.imPool && t.kontrast != null && t.kontrast >= 3 && t.kontrolle != null && t.kontrolle >= 0.67 && t.kontrolle <= 1.5 && t.n >= 6, `Kontrast ${t.kontrast}:1 (Soll ≥ 3:1) am Pfosten 2 m von ${t.quelle} (${t.abM} m vom Spieler, im Pool ${t.imPool}, im Blick ${t.pfosten}, Boden gesehen ${t.boden}), ohne Pfosten ${t.kontrolle}, Uhr ${t.uhr}`],
+        (t) => [k5Gilt(t) && t.kontrast != null && t.kontrast >= 3, `Kontrast ${t.kontrast}:1 (Soll ≥ 3:1) am Pfosten 2 m von ${t.quelle} (${t.abM} m vom Spieler, im Pool ${t.imPool}, im Blick ${t.pfosten}, Boden gesehen ${t.boden}), ohne Pfosten ${t.kontrolle}, Uhr ${t.uhr}`],
         neunProben("schatten.K5", { quelle: "glutbrunnen", abM: 6.27, imPool: true, uhr: 0, boden: 0, pfosten: true, Llicht: 0.0657, Lschatten: 0.0071, kontrast: 9.26, kontrolle: 1.45, n: 12 }, [
             ["das Auge sieht den Pfosten nicht (im Schilf, GTX b4bb2f62)", { quelle: "glutbrunnen", abM: 6.27, imPool: true, uhr: 0, boden: 0, pfosten: false, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }],
             ["das alte Maß ohne Sicht (die Pose von der Seite)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }],
@@ -4699,6 +4702,10 @@ Object.defineProperty(stationen, "neunSeite", { value: NEUN_SEITE, enumerable: f
 // der Saum am Kamm und seine Grenze (ferne.K3), nicht aufzählbar: der Selbsttest urteilt dieselbe Funktion (punkte.cjs SAUM)
 Object.defineProperty(stationen, "kammSaum", { value: kammSaum, enumerable: false });
 Object.defineProperty(stationen, "kammKroneM", { value: NEUN_C.kammKroneM, enumerable: false });
+// die Maße der NEUN (Fenster, Feuer-Umkreis, Pose des Pfostens), nicht aufzählbar: die Station karte2.erleben.bild.nacht#1 fährt den
+// Teil schatten.K5 mit DENSELBEN Maßen (k2-erleben.js) — kein zweiter Pfosten-Leser
+Object.defineProperty(stationen, "neunC", { value: NEUN_C, enumerable: false });
+Object.defineProperty(stationen, "k5Gilt", { value: k5Gilt, enumerable: false });
 
 // ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
 // je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
