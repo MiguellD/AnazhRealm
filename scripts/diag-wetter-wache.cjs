@@ -463,7 +463,7 @@ function ortMessung(P) {
                     }
             bilanz.push(mit / ohne);
         }
-    bilanz.sort((a, b) => a - b);
+    bilanz.sort(aufsteigend); // der EINE Vergleich und der EINE Rang der Boot-Lib (`aufsteigend`, `rang`: Node global)
     const gr = P.windGrund("o1");
     const hang = (s) => (x, z) => s * 0.05 * (x * gr.x + z * gr.z);
     let [luv, flach, lee] = [0, 0, 0];
@@ -478,7 +478,7 @@ function ortMessung(P) {
         gleich,
         sprung: r3(sprung),
         hier,
-        bilanz: { min: r3(bilanz[0]), median: r3(bilanz[bilanz.length >> 1]), max: r3(bilanz[bilanz.length - 1]) },
+        bilanz: { min: r3(bilanz[0]), median: r3(rang(bilanz)), max: r3(bilanz[bilanz.length - 1]) },
         imBand: r3(bilanz.filter((v) => Math.abs(v - 1) <= ORT_BILANZ.band).length / bilanz.length),
         relief: { luv: r3(luv), flach: r3(flach), lee: r3(lee) },
     };
