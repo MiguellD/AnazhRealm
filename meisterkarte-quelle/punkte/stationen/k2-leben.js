@@ -7094,15 +7094,18 @@ L.perspektive("evolution", (() => {
                     const E = (await M.kreaturProbe(["erbe"])).erbe;
                     const [eb, em] = [E.erbe || {}, E.mutante || {}];
                     const h2 = (x) => (Number.isFinite(x) ? Math.round(2000 * x) / 1000 : undefined);
-                    const mutAus = Math.abs(h2(em.steigung)) <= 0.05;
-                    const ohneErbe1 = !(eb.n > 0) ? "kein Erbe: 0 Mutter-Kind-Paare am Takt des Bestands (" + (E.fehler || "die Probe erbe") + ")" : !mutAus ? "die Mutante „Erbe aus“ erbt: 2·b " + h2(em.steigung) + " (Soll |·| ≤ 0,05)" : null;
+                    // die Mutante „Erbe aus“ urteilt nach der EINEN Regel der Probe erbe (scripts/diag-kreatur-leben.cjs: |b| ≤ max(0,1;
+                    // 3·se)) — bis zur Vorprüfung stand hier eine zweite, |2·b| ≤ 0,05: bei se 0,017 fiel eine Null-Mutante in ≈ 14 % der Läufe ROT
+                    const mutTol = Math.max(0.1, 3 * (em.se || 0));
+                    const mutAus = Number.isFinite(em.steigung) && Math.abs(em.steigung) <= mutTol;
+                    const ohneErbe1 = !(eb.n > 0) ? "kein Erbe: 0 Mutter-Kind-Paare am Takt des Bestands (" + (E.fehler || "die Probe erbe") + ")" : !mutAus ? "die Mutante „Erbe aus“ erbt: b " + em.steigung + " ± " + em.se + " (Soll |b| ≤ " + Math.round(1000 * mutTol) / 1000 + ", die Regel der Probe erbe)" : null;
                     const ohneErbe = !(a.mitEltern > 0) ? "kein Erbe: " + (a.geburten || 0) + " Geburten im Zeitraffer, " + (a.mitEltern || 0) + " mit Eltern — die Größe des Kindes würfelt der Strom der Region" : null;
                     const und = (...l) => l.filter(Boolean).join("; ") || undefined;
                     const pr = (x, n) => (n > 0 && Number.isFinite(x) ? (100 * x) / n : undefined);
                     const sel = a.selektion || {};
                     return {
                         sprossen: {
-                            1: { werte: { ekRegression: h2(eb.steigung), generationen: E.gen }, zeuge: { fehler: E.fehler, antworten: eb.n || 0, streuung: eb.sdY || 0, erbe: eb.n > 0 && mutAus }, nicht: und(ohneErbe1, "2·b " + h2(eb.steigung) + " ± " + h2(eb.se) + " an " + (eb.n || 0) + " Paaren, " + E.gen + " Generationen, Mutante 2·b " + h2(em.steigung)) },
+                            1: { werte: { ekRegression: h2(eb.steigung), generationen: E.gen, mutante: h2(em.steigung), paare: eb.n }, zeuge: { fehler: E.fehler, antworten: eb.n || 0, streuung: eb.sdY || 0, erbe: eb.n > 0 && mutAus }, nicht: und(ohneErbe1) },
                             2: { werte: { wiedererkanntProzent: pr(a.wiedererkannt, a.markiert), herde: a.herdeMax, spieltage: 1 }, zeuge: { fehler: a.fehler, antworten: a.markiert || 0, streuung: a.bsStreuung || 0, vor: a.markiert, nach: a.wiedererkannt }, nicht: und(a.herdeMax < 100 ? "die größte Herde trägt " + a.herdeMax + " Tiere (tetrapoda-core.js:289 herde.wurf), und ein Tier trägt nur die Größe — kein Muster, keine Narbe, kein Gang je Individuum" : null) },
                             3: { werte: { antwortAbwProzent: a.antwortAbwProzent, generationen: a.generationen }, zeuge: { fehler: a.fehler, antworten: sel.n || 0, streuung: sel.sd || 0, vor: sel.m0, nach: Number.isFinite(sel.R) ? sel.m0 + sel.R : undefined, erbe: a.mitEltern > 0 }, nicht: und(!(a.zuchtAkte > 0) ? "der Spieler züchtet nicht: kein Akt der Zucht im Spiel" : null, ohneErbe) },
                             4: { werte: { cvProzent: a.cvProzent, imSchirm: a.imSchirm }, zeuge: { fehler: a.fehler, antworten: a.tiere || 0, streuung: a.bsStreuung || 0 }, nicht: und(a.imSchirm < 1e4 ? "10⁴ Individuen im Schirm: die Welt zeichnet " + a.imSchirm + " Leiber (maxCreatures " + a.maxCreatures + ")" : null) },
@@ -7120,7 +7123,7 @@ L.perspektive("evolution", (() => {
                         taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (die Größe aus dem Strom, kein Erbe)",
                         nicht: "kein Erbe",
                         leser: L_ERBE,
-                        unklar: "„Mutante „Erbe aus“ → ≈ 0“ nennt keine Toleranz — gewählt: |2·b der Mutante| ≤ 0,05 (die Probe erbe, scripts/diag-kreatur-leben.cjs)",
+                        unklar: "„Mutante „Erbe aus“ → ≈ 0“ nennt keine Toleranz — gewählt: die Regel der Probe erbe, |b der Mutante| ≤ max(0,1; 3·se) (scripts/diag-kreatur-leben.cjs)",
                     }),
                     2: S({
                         soll: [K.soll(ER, 2, "ein Individuum nach 1 Spieltag aus 100 wiedererkannt ≥ 90 %", { key: "wiedererkanntProzent", einheit: "%" }), K.soll(ER, 2, "aus 100", { key: "herde", rel: "≥", zahl: 100 }), K.soll(ER, 2, "nach 1 Spieltag", { key: "spieltage", rel: "≥", zahl: 1 })],
@@ -8022,7 +8025,7 @@ L.perspektive("evolution", (() => {
                     const fehler1 = PZ.erbe.fehler || mz.fehler || null;
                     return {
                         sprossen: {
-                            1: { werte: { rEltern: sc.r == null ? undefined : sc.r, scheuDelta: mz.scheuDelta == null ? undefined : mz.scheuDelta }, zeuge: { fehler: fehler1, antworten: sc.n || 0, streuung: Number.isFinite(hm.p90 - hm.p10) ? hm.p90 - hm.p10 : 0, gegenlauf: mz.scheuDelta > 0 }, nicht: sc.r == null ? "Verhalten nicht erblich: die Fluchtdistanz ist eine Zahl je Gattung " + JSON.stringify(a.fluchtJeGattung || {}) + " (Streuung innerhalb " + (a.fluchtStreuungInnen || 0) + "), kein Tier trägt sie von den Eltern" : "Fluchtdistanz Mutter ↔ Kind r " + sc.r + " an " + sc.n + " Paaren (Mutante " + sc.mutante + "), Hirsche " + hm.p10 + "/" + hm.p50 + "/" + hm.p90 + " m; mit Wolf " + (q1.an || {}).fluchtM + " m, ohne " + (q1.aus || {}).fluchtM + " m" },
+                            1: { werte: { rEltern: sc.r == null ? undefined : sc.r, scheuDelta: mz.scheuDelta == null ? undefined : mz.scheuDelta, paare: sc.n, mutante: sc.mutante, hirschP50: hm.p50, fluchtMit: (q1.an || {}).fluchtM, fluchtOhne: (q1.aus || {}).fluchtM }, zeuge: { fehler: fehler1, antworten: sc.n || 0, streuung: Number.isFinite(hm.p90 - hm.p10) ? hm.p90 - hm.p10 : 0, gegenlauf: mz.scheuDelta > 0 }, nicht: sc.r == null ? "Verhalten nicht erblich: die Fluchtdistanz ist eine Zahl je Gattung " + JSON.stringify(a.fluchtJeGattung || {}) + " (Streuung innerhalb " + (a.fluchtStreuungInnen || 0) + "), kein Tier trägt sie von den Eltern" : !(Math.abs(sc.mutante) <= 0.1) ? "die Mutante „Erbe aus“ erbt die Scheu: r " + sc.mutante + " (Soll |r| ≤ 0,1, die Regel der Probe erbe)" : undefined },
                             2: { werte: { saaten: 1, rho: a.rho }, zeuge: { fehler: a.fehler, antworten: a.regionen || 0, streuung: a.herdeStreuung || 0 }, nicht: "Sozialität evolviert nicht: die Herde ist ein Wurf aus VERHALTEN.herde.wurf (deer 3–7) — keine Selektion; " + (a.regionen || 0) + " Regionen gelesen" },
                             3: { werte: { aucGesang: a.aucGesang, aucInnen: a.aucInnen, werkzeugProzent: a.koerper ? (100 * a.mitWerkzeug) / a.koerper : undefined }, zeuge: z, nicht: "keine Tradition: der Ruf folgt nur dem Körper (stamm/klang.js _tierRuf: Länge und Stimmung), die Trennung zweier Rufer-Gruppen (" + (a.rufer || []).join(" / ") + " Hirsche) ist die Streuung ihrer gewürfelten Größe; kein Werkzeug an " + (a.koerper || 0) + " Tieren" },
                             4: { werte: {}, zeuge: z, nicht: "keine kumulative Kultur: " + (a.mitWerkzeug || 0) + " Tiere mit Werkzeug, die Epoche der Siedlung würfelt der Samen (" + (a.epochen || 0) + " Epochen aus " + (a.saaten || 0) + " Saaten)" },
