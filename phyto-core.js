@@ -7255,6 +7255,21 @@
             }
             return r;
         };
+        // das Relief der Furche (acker-furche, `ACKER_FURCHE`): ab dem `pflugTag` die frische Herbstfurche, davor das Saatbett,
+        // das sich setzt
+        var Z = ACKER_FURCHE;
+        if (tage >= Z.pflugTag)
+            return {
+                tage: tage,
+                hoeheM: 0,
+                reife: 0,
+                deckung: 0,
+                stoppel: false,
+                gepfluegt: true,
+                farbe: F.stoppelFarbe,
+                relief: 1,
+            };
+        var relief = Z.setzung.rest + (Z.saatbett - Z.setzung.rest) * Math.exp(-tage / Z.setzung.tauTage);
         if (tage >= F.ernteTag)
             return {
                 tage: tage,
@@ -7263,6 +7278,7 @@
                 deckung: F.stoppel.deckung,
                 stoppel: true,
                 farbe: F.stoppelFarbe,
+                relief: relief,
             };
         var i = 0;
         while (i < S.length - 2 && tage >= S[i + 1][0]) i++;
@@ -7277,12 +7293,56 @@
             deckung: a[3] + (b[3] - a[3]) * t,
             stoppel: false,
             farbe: mische(F.gruen, F.reif, reife),
+            relief: relief,
         };
     }
     // DIE TAGE SEIT DER SAAT DES DORFS zur Phase des Jahrs `phase` (0–1, SAISON_GESETZ) in einem Jahr von `jahrTage` Tagen
     function ackerTage(phase, jahrTage) {
         var p = (((phase - ACKER_GESETZ.saatPhase) % 1) + 1) % 1;
         return p * jahrTage;
+    }
+    // DIE FURCHE IM BODEN (acker-furche, additiv): der Acker trägt die Arbeit des Pflugs als RELIEF DES BODENS selbst, nie als
+    // Körper über ihm. Quer zur Zugrichtung (q, m) folgt die Höhe dem Kamm, ein erhabener Kosinus im Abstand `furche.abstandM`,
+    // so hoch wie `furche.hoeheM` × `relief` (`ackerStand`: die frische Herbstfurche 1, das Saatbett `saatbett`, das sich unter
+    // dem Regen auf `setzung.rest` setzt). Der Leser liefert die Breite seines Pixels quer zu den Furchen (`w`, m — am Schirm die
+    // Ableitung, im Labor seine Masche): das Gesetz mittelt den Kamm über sie (der Kasten-Filter des Kosinus, sin x ÷ x mit
+    // x = π·w ÷ Abstand, ab einer Periode 0) — fern fällt die Furche in ihr Mittel, nie in ein Moiré. `scholle` (−1 … 1, das
+    // Rauschen des Lesers) bricht den Kamm in Schollen. Die Frucht steht in Reihen auf dem First (`deckung` der Reihe quer,
+    // `ackerStand`): `reihe` ist ihr Anteil am Pixel, gemittelt ihre Deckung. Der Rain (`rainM`) bleibt am Rand jedes Ackers
+    // ungepflügt, die Wiese steht auf ihm. Die Spur des Pflugs schlingert um `schlagM` (das Rauschen des Lesers, auf q). Die
+    // Erde trägt ihr Relief im Ton (`hell`): der First trocken und hell, die Sohle feucht und dunkel, um `ton` × Relief. Über einer
+    // Algebra (WIND_ZAHLEN das Labor und die Linse, die TSL-Algebra der Boden-Stoff der Welt): { hoehe (m über der Sohle),
+    // steigung (dh/dq), kamm (0 Sohle … 1 First, gemittelt), hell (der Faktor der Erde), reihe (0 … 1) }.
+    var ACKER_FURCHE = Object.freeze({
+        rainM: 0.9,
+        saatbett: 0.7,
+        setzung: Object.freeze({ tauTage: 45, rest: 0.35 }),
+        pflugTag: 190,
+        scholle: 0.45,
+        kante: 0.12,
+        schlagM: 0.05,
+        ton: 0.3,
+    });
+    function furcheImAcker(A, q, w, relief, scholle, deckung) {
+        var F = ACKER_GESETZ.furche,
+            Z = ACKER_FURCHE,
+            om = (2 * Math.PI) / F.abstandM,
+            vt = Math.PI / 2;
+        var x = A.max(A.mul(w, A.k(Math.PI / F.abstandM)), A.k(1e-4));
+        var filt = A.mul(A.sin(A.min(x, A.k(Math.PI))), A.pow(x, A.k(-1)));
+        var phi = A.mul(q, A.k(om));
+        var cr = A.sin(A.add(phi, A.k(vt)));
+        var H = A.mul(A.mul(A.k(F.hoeheM), relief), A.add(A.k(1), A.mul(scholle, A.k(Z.scholle))));
+        var kamm = A.add(A.k(0.5), A.mul(A.mul(cr, filt), A.k(0.5)));
+        var cd = A.sin(A.add(A.mul(deckung, A.k(Math.PI)), A.k(vt)));
+        var scharf = A.min(A.max(A.mul(A.add(cr, A.mul(cd, A.k(-1))), A.k(1 / Z.kante)), A.k(0)), A.k(1));
+        return {
+            hoehe: A.mul(H, kamm),
+            steigung: A.mul(A.mul(H, A.k(-0.5 * om)), A.mul(A.sin(phi), filt)),
+            kamm: kamm,
+            hell: A.add(A.k(1), A.mul(A.mul(A.mul(cr, filt), relief), A.k(Z.ton))),
+            reihe: A.add(deckung, A.mul(A.add(scharf, A.mul(deckung, A.k(-1))), filt)),
+        };
     }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
@@ -7748,6 +7808,8 @@
         ACKER_GESETZ: ACKER_GESETZ, // acker-kette — der bestellte Acker: Furchen des Pflugs, die Kulturpflanze in Reihen, ihr Wuchs je Tag
         ackerStand: ackerStand, // acker-kette — der Stand des Ackers n Tage nach der Saat (Höhe, Reife, Deckung, Stoppel, Farbe)
         ackerTage: ackerTage, // acker-kette — die Tage seit der Saat des Dorfs zur Phase des Jahrs
+        ACKER_FURCHE: ACKER_FURCHE, // acker-furche — Rain, Saatbett, Setzung, Herbstfurche, Scholle, Kante der Reihe
+        furcheImAcker: furcheImAcker, // acker-furche — DIE FURCHE als Relief des Bodens über einer Algebra (Welt-Stoff, Labor, Linse)
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

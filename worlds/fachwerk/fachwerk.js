@@ -362,11 +362,12 @@ function buildDorf(dp){
     for(const ry of [0.55,0.9]){ const ra=new THREE.Mesh(new THREE.BoxGeometry(len,0.07,0.06),M.lattung);
       ra.position.set(mx,ry,mz); ra.rotation.y=ang; ra.castShadow=true; dorfGroup.add(ra); }
     solids.push({min:[-len/2,0,-0.08],max:[len/2,0.95,0.08], th:ang, tx:mx, tz:mz}); });
-  lay.felder.forEach(f=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(f.ex*2,0.1,f.ez*2),mLay('lehm'));
-    m.position.set(f.cx,0.05,f.cz); m.rotation.y=f.phi; m.receiveShadow=true; dorfGroup.add(m);
-    const nfu=Math.max(2,(f.ez*2/1.6)|0); for(let q2=1;q2<nfu;q2++){ const fu=new THREE.Mesh(new THREE.BoxGeometry(f.ex*2-0.8,0.05,0.28),mLay('boden'));
-      const lz=-f.ez+q2*2*f.ez/nfu, c2=Math.cos(f.phi), s3=Math.sin(f.phi);
-      fu.position.set(f.cx+lz*s3,0.11,f.cz+lz*c2); fu.rotation.y=f.phi; fu.receiveShadow=true; dorfGroup.add(fu); } });
+  const PC=window.__phytoCore, AZ=PC.ACKER_FURCHE, AF=PC.ACKER_GESETZ.furche, AS=PC.ackerStand(AZ.pflugTag);    // DIE FURCHE IST GESETZ (acker-furche): das Labor zeigt den Acker der Welt — phyto-core `furcheImAcker` im Stand der Herbstfurche
+  lay.felder.forEach(f=>{ const lang=f.ex>=f.ez, hl=(lang?f.ex:f.ez)-AZ.rainM, hq=(lang?f.ez:f.ex)-AZ.rainM; if(hl<=0||hq<=0) return;   // längs der langen Achse, der Rain am Rand bleibt Wiese
+    const nq=Math.max(2,Math.round(2*hq/AF.abstandM))*6, g=new THREE.PlaneGeometry(2*hl,2*hq,1,nq); g.rotateX(-Math.PI/2);   // je Furche sechs Maschen quer, der Kamm aus den Ecken
+    const pa=g.attributes.position; for(let i=0;i<pa.count;i++){ const F=PC.furcheImAcker(PC.WIND_ZAHLEN,pa.getZ(i),0,AS.relief,0,AS.deckung); pa.setY(i,0.02+F.hoehe); }
+    g.computeVertexNormals(); const m=new THREE.Mesh(g,mLay('lehm'));
+    m.position.set(f.cx,0,f.cz); m.rotation.y=f.phi+(lang?0:Math.PI/2); m.receiveShadow=true; dorfGroup.add(m); });
   lay.staende.forEach(st=>{ const pz=lay.platz;                                                 // AUSSTATTUNG: der Marktstand kommt aus dem Gesetzbuch, die Front schaut zur Platz-Mitte (dieselbe Regel wie die Welt)
     const ry=Number.isFinite(st.th)? st.th : (pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0);   // die Reihen des Markts der Stadt tragen ihre Front (STADT_GRAMMATIK), der Stand des Dorfs schaut zur Mitte
     dorfGroup.add(ausstattungAm('marktstand', st.x, st.z, ry));

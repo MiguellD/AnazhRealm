@@ -988,6 +988,7 @@ class AnazhRealm_stoff_material {
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
         let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr ruht das Mikro-Relief
         let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
+        let _ackerKipp = null; // die Furche des Ackers (`_wegeBodenFarbe` → `aus.acker`): der Kipp der Normale im Relief des Pflugs
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -1084,6 +1085,7 @@ class AnazhRealm_stoff_material {
                         // standen (die Ankunft, Radeon 7f778d44). Unter dem Belag aus Stein steht seine Albedo, wie der Kamm sie
                         // rechnet, bis auf den Teil, den das Korn seiner Zeile dem Erdreich lässt (`korn` 0: keinen); ihre Treiber
                         // (Grün, Feuchte, Rauheit) liest die Geologie weiter am Stein, darum mischt er davor UND danach.
+                        if (_weg.acker) _ackerKipp = _weg.acker.kipp; // die Furche (acker-furche): Relief des Bodens selbst
                         if (_weg.stein) {
                             const S = _weg.stein;
                             _steinBelag = {
@@ -2091,6 +2093,7 @@ class AnazhRealm_stoff_material {
                         _baseN = _baseN.add(_mk.neigung.mul(_mkK));
                         if (_steinBelag && _steinBelag.kipp)
                             _baseN = _baseN.add(_steinBelag.kipp.mul(_steinBelag.deckung));
+                        if (_ackerKipp) _baseN = _baseN.add(_ackerKipp.mul(_flatGate));
                         _mikroH = [_mk.hoehe, _mkK];
                     }
                     // DIE PFÜTZE (wetter.K2, `_pfuetzeKnoten`): ihr Spiegel steht waagrecht über der Mulde, im Regen kippen ihn die

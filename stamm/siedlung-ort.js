@@ -1014,15 +1014,15 @@ class AnazhRealm_siedlung_ort {
 
     // DIE POSE AM ACKER (acker-furche, Leiter mensch.nahrung flur · frucht): der größte Acker der Siedlung `S`, den die Welt trägt
     // (`state.aecker`, gemalt aus ihrem Plan), das Auge auf der Achse seiner Furchen (der langen, `ACKER_POSE`) und mit dem Blick
-    // längs ihr — „acker“ am Rand des Ackers (die Furche auf 3 m), „acker-fern“ `fernM` vor seiner Mitte, auf der Seite des Dorfs
-    // zuerst. Der Stand meidet jeden Grundriss des Plans, Wasser und den wilden Bestand (`_istNatur`), die Sichtlinie jeden Bau und
+    // längs ihr, am Rand des Ackers (auf dem Rain), auf der Seite des Dorfs zuerst — „acker“ blickt auf die Furche 3 m vor dem
+    // Auge, „acker-fern“ 30 m weit in den Acker (höchstens bis vor seinen anderen Rand). Der Stand meidet jeden Grundriss des Plans, Wasser und den wilden Bestand (`_istNatur`), die Sichtlinie jeden Bau und
     // das Gelände; die Achse dreht sich um ±`drehRad` je Schritt, bis ein Stand frei ist. { x, z, gier, nick, ziel, acker } — ohne
     // Acker im Plan bricht sie beim Namen, solange der Plan seine Äcker noch nicht gemalt hat, mit der Marke `warten`.
     _ackerPose(S, nahe, regel) {
         if (!S) throw new Error(`_ortPose: keine Siedlung binnen 200 m um ${nahe.join(" ")}`);
         const AP = AnazhRealm.ACKER_POSE;
         const art = AP[regel];
-        if (!art) throw new Error(`_ortPose: keine Regel „${regel}“ am Acker (${Object.keys(AP).filter((k) => AP[k].nickM).join(", ")})`); // prettier-ignore
+        if (!art) throw new Error(`_ortPose: keine Regel „${regel}“ am Acker (${Object.keys(AP).filter((k) => AP[k].zielM).join(", ")})`); // prettier-ignore
         const felder = (S.plan.felder || []).filter((f) => f && Number.isFinite(f.cx));
         if (!felder.length) throw new Error(`_ortPose: die Siedlung ${S.key || "?"} trägt keinen Acker im Plan`);
         const reg = this.state.aecker || new Map();
@@ -1056,15 +1056,16 @@ class AnazhRealm_siedlung_ort {
                 for (let i = 0; i <= 2 * AP.drehSchritte; i++) {
                     const w = ((i + 1) >> 1) * (i & 1 ? 1 : -1) * AP.drehRad;
                     const [dx, dz] = [L[0] * Math.cos(w) - L[1] * Math.sin(w), L[0] * Math.sin(w) + L[1] * Math.cos(w)];
-                    const abst = art.fernM != null ? art.fernM : eL + art.randM;
+                    const abst = eL + AP.randM;
+                    const zd = Math.min(art.zielM, 2 * eL + AP.randM - 1);
                     const q = { x: a.x + seite * dx * abst, z: a.z + seite * dz * abst };
-                    const ziel = { x: q.x - seite * dx * art.zielM, z: q.z - seite * dz * art.zielM };
+                    const ziel = { x: q.x - seite * dx * zd, z: q.z - seite * dz * zd };
                     if (!frei(q, { x: a.x, z: a.z })) continue;
                     return {
                         x: q.x,
                         z: q.z,
                         gier: this._blickGierZu(-seite * dx, -seite * dz),
-                        nick: -Math.atan2(AnazhRealm.EGO_AUGE_M, art.nickM),
+                        nick: -Math.atan2(AnazhRealm.EGO_AUGE_M, art.nickM || zd),
                         ziel,
                         acker: { x: a.x, z: a.z, phi: a.phi, ex: a.ex, ez: a.ez },
                     };
@@ -3872,13 +3873,14 @@ AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // ein
 // bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
 AnazhRealm.SICHT_SCHRITT_M = 0.5;
 AnazhRealm.SICHT_GELAENDE_M = 0.25;
-// DIE POSE AM ACKER (`_ackerPose`): je Regel der Stand (`randM` vor dem Rand der langen Achse oder `fernM` vor der Mitte), der
-// Boden-Abstand, auf den der Blick sinkt (`nickM`: das Auge `EGO_AUGE_M` über ihm), und das Blickziel `zielM` vor dem Auge (über
-// der Frucht: der Strahl trifft es, bevor er sinkt); der Stand hält `standR` frei, die Achse dreht sich je Schritt um `drehRad`
+// DIE POSE AM ACKER (`_ackerPose`): der Stand `randM` vor dem Rand der langen Achse; je Regel das Blickziel `zielM` vor dem Auge
+// längs der Furchen (höchstens bis 1 m vor dem anderen Rand) und der Boden-Abstand, auf den der Blick sinkt (`nickM`, ohne ihn
+// das Ziel: das Auge `EGO_AUGE_M` über ihm); der Stand hält `standR` frei, die Achse dreht sich je Schritt um `drehRad`
 AnazhRealm.ACKER_POSE = Object.freeze({
     standR: 0.6,
+    randM: 0.3,
     drehRad: 0.2,
     drehSchritte: 3,
-    acker: Object.freeze({ randM: 0.3, nickM: 7, zielM: 2 }),
-    "acker-fern": Object.freeze({ fernM: 30, nickM: 30, zielM: 12 }),
+    acker: Object.freeze({ nickM: 4, zielM: 3 }),
+    "acker-fern": Object.freeze({ zielM: 30 }),
 });
