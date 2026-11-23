@@ -2170,7 +2170,13 @@ class AnazhRealm_siedlung_bauten {
         const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
         let iBedarf = 0;
         for (const a of s.abschnitte.values()) if (s.takt - a.takt <= R) iBedarf += this._chunkSatzKap(a.hoch);
-        const hoch = s.ueberSeit < 0 ? s.vInhalt : Math.max(s.ueberHoch, s.vInhalt);
+        // DER SATZ, DER SICH LEERT (heap-blick-folgt, „der Speicher folgt dem Blick“): fiel sein Inhalt in der Frist unter den
+        // Stand ihres Beginns ÷ `schwelle` (ein Drittel ging — der Spieler verließ das Dorf, die Bereiche traten über IHREN Ring
+        // aus), schrumpft er sofort auf den Inhalt: die Frist schützt den Satz, der füllt oder pendelt, nie das Hochwasser eines
+        // Orts, den keiner mehr sieht. Bis hier wartete er 600 Takte (Radeon, Wiese nach dem Dorf: der Bau-Satz 22,33 MB für
+        // 14 490 Ecken, nach 10 s 1,02 MB; renderer 63,9 → 29,5 MB)
+        const leert = s.ueberSeit >= 0 && s.vInhalt * V.schwelle < s.ueberStart;
+        const hoch = s.ueberSeit < 0 || leert ? s.vInhalt : Math.max(s.ueberHoch, s.vInhalt);
         const vZiel = Math.max(V.vMin, Math.ceil(hoch * V.luft));
         const iZiel = Math.max(V.iMin, Math.ceil(iBedarf * V.luft));
         const vNeu = s.vKap > vZiel * V.schwelle ? vZiel : s.vKap;
@@ -2184,7 +2190,7 @@ class AnazhRealm_siedlung_bauten {
             s.ueberStart = s.vInhalt;
         }
         s.ueberHoch = hoch;
-        if (s.takt - s.ueberSeit <= R) return false;
+        if (!leert && s.takt - s.ueberSeit <= R) return false;
         s.ueberSeit = -1;
         if (vNeu < s.vKap) {
             // dicht nach vorn, in Lage-Folge: jedes Ziel liegt vor seiner Quelle, kein Bereich überschreibt einen ungezogenen

@@ -492,6 +492,28 @@ function flugWand(A) {
     return { errs, flug: imFlug.size };
 }
 
+// H15 DER SATZ FOLGT DEM BLICK (heap-blick-folgt): ein Bau-Satz, dessen Inhalt in der Frist um mehr als ein Drittel fiel (der
+// Spieler verließ das Dorf), schrumpft sofort auf seinen Inhalt — ein Satz, der nur pendelt, wartet die Frist. Bis hier hielt
+// der Bau-Satz an der Wiese nach dem Dorf 22,33 MB für 14 490 Ecken, 600 Takte lang (Radeon). Die Linse fährt den echten
+// `_chunkSatzVerdichten` an zwei gestellten Sätzen mitten in der Frist: geleert (Kapazität 442 905, Inhalt 14 490, Beginn
+// 307 482 — fällt auf Inhalt × luft) und pendelnd (Inhalt 220 000, ein Viertel unter dem Beginn — bleibt bis zum Ende der Frist).
+function satzBlickWand(A) {
+    const V = A.CHUNK_SATZ_VERDICHTEN;
+    const satz = (vInhalt) => ({ reserviert: 0, abschnitte: new Map(), bloecke: new Map(), takt: 1000, ueberSeit: 990, ueberStart: 307482, ueberHoch: 307482, vInhalt, vKap: 442905, iKap: 3072, vEnde: vInhalt, vFrei: [], attr: [], geom: { index: null, attributes: {}, setDrawRange() {} } }); // prettier-ignore
+    const w = weltVon(A, {});
+    w._chunkSatzGeometrie = (s, v, i) => ([s.vKap, s.iKap] = [v, i]);
+    w._gpuAbschied = () => {};
+    const [leer, pendelt] = [satz(14490), satz(220000)];
+    A.prototype._chunkSatzVerdichten.call(w, leer);
+    A.prototype._chunkSatzVerdichten.call(w, pendelt);
+    const ziel = Math.max(V.vMin, Math.ceil(14490 * V.luft));
+    const errs = [];
+    if (leer.vKap !== ziel)
+        errs.push(`H15 bauSatz: der geleerte Satz hält seine Kapazität über den Inhalt — ${leer.vKap} Ecken für 14 490, Soll ${ziel} (_chunkSatzVerdichten: die Frist schützt nur den Satz, der füllt oder pendelt)`); // prettier-ignore
+    if (pendelt.vKap !== 442905) errs.push(`H15 bauSatz: der pendelnde Satz schrumpfte mitten in der Frist (${pendelt.vKap} Ecken)`); // prettier-ignore
+    return { errs, vKap: leer.vKap, ziel };
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
@@ -1909,6 +1931,11 @@ function selbsttest() {
     // verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün
     const f14Alt = flugWand(klasseVon(stammLib.ersetze(st8, "_gpuKehraus", "this._knotenFlugRaeumen(this._erstZeichnung, rend._nodes.nodeFrame.frameId);", ";"))); // prettier-ignore
     const f14Alle = flugWand(klasseVon(stammLib.ersetze(st8, "_knotenFlugRaeumen", "if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);", "E.imFlug.delete(k);"))); // prettier-ignore
+    // DER SATZ (H15): das Verdichten ohne den geleerten Fall (der Stand vor heap-blick-folgt: jeder Satz wartet die Frist) ist
+    // rot beim Bau-Satz, das Verdichten ohne Frist (jeder Satz schrumpft sofort) rot beim pendelnden, der Stamm grün
+    const s15Alt = satzBlickWand(klasseVon(stammLib.ersetze(st8, "_chunkSatzVerdichten", "const leert = s.ueberSeit >= 0 && s.vInhalt * V.schwelle < s.ueberStart;", "const leert = false;"))); // prettier-ignore
+    const s15Alle = satzBlickWand(klasseVon(stammLib.ersetze(st8, "_chunkSatzVerdichten", "const leert = s.ueberSeit >= 0 && s.vInhalt * V.schwelle < s.ueberStart;", "const leert = s.ueberSeit >= 0;"))); // prettier-ignore
+    t("Satz: ohne den geleerten Fall rot beim Bau-Satz, ohne Frist rot beim pendelnden, der Stamm grün", s15Alt.errs.some((e) => /H15 bauSatz: der geleerte Satz hält/.test(e)) && s15Alle.errs.some((e) => /pendelnde Satz schrumpfte/.test(e)) && !satzBlickWand(A).errs.length); // prettier-ignore
     t("Flug: der Kehraus ohne Räumung rot beim verlassenen Bau, die Räumung ohne Frist rot beim Bau mit Leser, der Stamm grün", f14Alt.errs.some((e) => /verlassene Knoten-Bau hält den Flug/.test(e)) && f14Alle.errs.some((e) => /Bau mit Leser fiel/.test(e)) && !flugWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
@@ -1973,6 +2000,9 @@ function main() {
     const f14 = flugWand(A);
     errs.push(...f14.errs);
     console.log(`H14 der Flug der Knoten-Bauten im Kehraus: ${f14.flug} von 3 bleiben (Soll 2: der verlassene fällt) (${f14.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const s15 = satzBlickWand(A);
+    errs.push(...s15.errs);
+    console.log(`H15 der geleerte Bau-Satz mitten in der Frist: ${s15.vKap} Ecken (Soll ${s15.ziel}: er folgt seinem Inhalt) (${s15.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
