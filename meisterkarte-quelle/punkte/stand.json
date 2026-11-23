@@ -14493,7 +14493,7 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +54) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +50) · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +54) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.leben.tiere.masse#1 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal an ddaf883d · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -14510,10 +14510,9 @@
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +50)",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -21806,7 +21805,7 @@
   },
   "karte2.mensch.nahrung.flur": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.flur#1 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.flur#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2) · karte2.mensch.nahrung.flur#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.nahrung.flur#1 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.flur#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.flur#1",
@@ -21821,11 +21820,10 @@
     {
      "id": "karte2.mensch.nahrung.flur#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -36029,7 +36027,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-satz.js) · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-satz.js) · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.075 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.266 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.637 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.243 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10 an ddaf883d · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525) an ddaf883d · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36045,10 +36043,9 @@
      "id": "karte2.same.physik.reaktion#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-satz.js)",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.075 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.266 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.637 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.243 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.075 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.266 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.637 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.243 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10",
      "r6": "konsum",
      "beide": true
     },
@@ -36065,10 +36062,9 @@
      "id": "karte2.same.physik.reaktion#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-satz.js)",
-     "ungemessen": true,
+     "zahl": "S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)",
      "r6": "konsum"
     },
     {
@@ -37694,7 +37690,7 @@
   "ohne": 3345
  },
  "kopfVoll": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
- "zeit": "2026-11-23T03:03:55.438Z",
+ "zeit": "2026-11-23T03:11:47.786Z",
  "vorher": "ddaf883d",
  "bilanz": {
   "gewinn": [],
