@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T14:54:10.552Z",
+ "zeit": "2026-11-23T15:02:40.424Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -2550,6 +2550,359 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "S2 brennendHa 1,05 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 0 % gegen Soll = 100 % ✗ · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S2 brennendHa 1,05 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 0 % gegen Soll = 100 % ✗ · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 173.9,
+   "fremd": {
+    "s": 179.1,
+    "takte": 75,
+    "fremdS": 427.97,
+    "kerne": 2.39,
+    "fensterKerne": 3.299,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      265.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.05
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      20.61
+     ]
+    ],
+    "dienerS": 190.84,
+    "diener": [
+     [
+      "System",
+      104.33
+     ],
+     [
+      "dwm.exe",
+      36.5
+     ]
+    ],
+    "geraetS": 118.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.33
+     ],
+     [
+      "svchost.exe",
+      38.66
+     ],
+     [
+      "SearchIndexer.exe",
+      8.02
+     ]
+    ],
+    "eigenS": 570.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:02:40.424Z",
+   "abdruck": "569d05e3c105",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 268 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 268 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 173.9,
+   "fremd": {
+    "s": 179.1,
+    "takte": 75,
+    "fremdS": 427.97,
+    "kerne": 2.39,
+    "fensterKerne": 3.299,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      265.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.05
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      20.61
+     ]
+    ],
+    "dienerS": 190.84,
+    "diener": [
+     [
+      "System",
+      104.33
+     ],
+     [
+      "dwm.exe",
+      36.5
+     ]
+    ],
+    "geraetS": 118.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.33
+     ],
+     [
+      "svchost.exe",
+      38.66
+     ],
+     [
+      "SearchIndexer.exe",
+      8.02
+     ]
+    ],
+    "eigenS": 570.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:02:40.424Z",
+   "abdruck": "038be8b6ca11",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte) — an dieser: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steigen 0 · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte) — an dieser: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steigen 0 · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 173.9,
+   "fremd": {
+    "s": 179.1,
+    "takte": 75,
+    "fremdS": 427.97,
+    "kerne": 2.39,
+    "fensterKerne": 3.299,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      265.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.05
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      20.61
+     ]
+    ],
+    "dienerS": 190.84,
+    "diener": [
+     [
+      "System",
+      104.33
+     ],
+     [
+      "dwm.exe",
+      36.5
+     ]
+    ],
+    "geraetS": 118.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.33
+     ],
+     [
+      "svchost.exe",
+      38.66
+     ],
+     [
+      "SearchIndexer.exe",
+      8.02
+     ]
+    ],
+    "eigenS": 570.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:02:40.424Z",
+   "abdruck": "9883c185a917",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": true,
+   "zahl": "S1 baumAnteilProzent 16,667 % gegen Soll ≤ 30 % ✓ · stuempfe 10 gegen Soll ≥ 10 ✓ · Zeuge: zehn Fällungen über die Ernte, Taten im Feld, der Gegenlauf ohne Fällung bleibt Wald",
+   "exit": 0,
+   "minuten": 2.92,
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 173.9,
+   "fremd": {
+    "s": 179.1,
+    "takte": 75,
+    "fremdS": 427.97,
+    "kerne": 2.39,
+    "fensterKerne": 3.299,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      265.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.05
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      20.61
+     ]
+    ],
+    "dienerS": 190.84,
+    "diener": [
+     [
+      "System",
+      104.33
+     ],
+     [
+      "dwm.exe",
+      36.5
+     ]
+    ],
+    "geraetS": 118.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.33
+     ],
+     [
+      "svchost.exe",
+      38.66
+     ],
+     [
+      "SearchIndexer.exe",
+      8.02
+     ]
+    ],
+    "eigenS": 570.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:02:40.424Z",
+   "abdruck": "cc44d536ca59",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: kein Eingriff lenkt den Regen einer Region: das Wetter ist EIN Wort der ganzen Welt (Feld „sunny“ Regen 0, mit dem Wort „rainy“ 0.6 — an Ziel und Lee derselbe Leser ohne Ort); der Planet trägt Regen je Lage (Ziel 0, Lee -0.002), ohne Eingang für einen Eingriff · zielMehr 0,6 gegen Soll > 0 ✓ · leeWeniger 0,6 gegen Soll < 0 ✗ · bilanzVerh ungemessen gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":13303,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 11.0 % (Laub · Rinde · ) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (der Regen ist ein Wort ohne Ort)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: kein Eingriff lenkt den Regen einer Region: das Wetter ist EIN Wort der ganzen Welt (Feld „sunny“ Regen 0, mit dem Wort „rainy“ 0.6 — an Ziel und Lee derselbe Leser ohne Ort); der Planet trägt Regen je Lage (Ziel 0, Lee -0.002), ohne Eingang für einen Eingriff · zielMehr 0,6 gegen Soll > 0 ✓ · leeWeniger 0,6 gegen Soll < 0 ✗ · bilanzVerh ungemessen gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":13303,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 11.0 % (Laub · Rinde · ) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (der Regen ist ein Wort ohne Ort)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 173.9,
+   "fremd": {
+    "s": 179.1,
+    "takte": 75,
+    "fremdS": 427.97,
+    "kerne": 2.39,
+    "fensterKerne": 3.299,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      265.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.05
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      20.61
+     ]
+    ],
+    "dienerS": 190.84,
+    "diener": [
+     [
+      "System",
+      104.33
+     ],
+     [
+      "dwm.exe",
+      36.5
+     ]
+    ],
+    "geraetS": 118.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.33
+     ],
+     [
+      "svchost.exe",
+      38.66
+     ],
+     [
+      "SearchIndexer.exe",
+      8.02
+     ]
+    ],
+    "eigenS": 570.55,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:02:40.424Z",
+   "abdruck": "5789ccbca7c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2586,83 +2939,10 @@
   "k1ea3ffdc3eff": "bVVNj5swEP0vOXbLmgQTwNIenGW1idSPrNRLj2MzBjYEIhuWNlX/e2UCSYDOIQfnzcybN8/mz+IE8gApPr6bqlywxafF54WBD3QM6g/Uj+9mwRaRXK7QY/wShHP+bGFS56fakCIXBEQJ2RGdRteYF4+ySwOBNAkZaV94uidEkTOJW36NZ/70NC1TCEwqpwaF1yJ+mCifTYGNSUGgA43qGvdg3/WWQjHSRRjz7zG5RvuV8z1VdB/Gk2ICymTMPFr7Afps95vzlznLJAesnSIvzdB3mQSRctldr1mOhtY5A2YF6j4pCXAV0YHsxkpiZZokqqIxZtQs9BJ/FTJCoik2RZPLrHZOuhJY9nARrYIlsE07myM9NY66ZwRCQCimWmeAZYp6xMH1pFovGfkVTose4IganBKyQUvXC1bipg0hZDvnUnTEuxY34tRPYJRol2p/BwuRD3u0vf47nMfpzWb8bdbMyCzXx7FMiuLK9diXOTWTQYLaOVSmvqJDCoBhfyNiwt+4NdfUWOY21JAHAOGdUUhI+HamoalU3YJGJz01fSJS9AOfcb6bgWs4Hgf/K496crpAU1uD39PwA0+Fa0bIw+WCzIe+XAfnjHkxJClFaeSz5w2dgj80HB0Qqc6VGrYufKmi/5m0xaJ2RFXVQ1kMAvAY8Uh5v+hv3UvxcrfHmLqv8eaNT+I15/Gcf9el0vV1YrF2FWWqm1bO0LmunRZkNsBXSiBY+rPdnFEXmOJIThGEkbV4K3um1g1B/xSoh5GBz/OKOVqhS9OYYdkSqPAvLukfzN34GWpRHwSUh4GuG8i1tWOcfnng25E+ux/u3t6adiwbSa2222xzd/6T89Y2OaEkJ12p3L6MJIPGZFDUt0/E338=",
   "ke367b0db88a7": "bVXBcpswEP0XH5uSxQaM0EwOcsjUmaaNM9NTbytYATEGj4RN407/vSPb2AayR/Ge9untk/g72WKyxozu301dTfjky+TrxOCeHEN6T/r+3Uz4JEqmM/K4OBUIIR4tLNHFtjFQFhJQVphvyNnphoryPjnSUJKfMg7tk8hWAAoOELcPD0NqKSmtnQYVXYgBS1XAh8CdyVCSgzt1bHYGB643lYrDsVgsXmO4VMuEWPnKX7F4sJnEKu2rjeZBSAF//hDiSYxUpgVS45RFZbq+0zSMlMuvvX6MOBpb54CUl6TPpDSkWeR3YhfWTmvNgKjKnTG9ZsxLgxnjANEQm5EpkrxxtrqWVJ3hMpqFU+SLsdvZdueoW0UoJTI59DpHqjLSPQ2ul6j5lMMfNtx0jRvS6FSYd166XjiTV28AYDnWUh6FH1tchftBij2iHSrsAUQXv71dWl6+dutxJq71NmpmkrzQm75NyqeZ6/GXsTSTY0raWdemuaCZj0jsfAtiEG/ChmsYLHM9VMdDRHYTFGAgliMPTa2aFjU52XZ3JpJPQRhwIZ5H4AY3my7/yvO9ZDhA09iA38oIQk+xOQe4O12Q8aFP18E5UFF2JKV8Pwr44yIbgvcaNw7KTBdKdVOXQaKiz0LaUtk4sq6bblsKQ/Q4eFDdDvpna619uplj7LvfXn6/vYl+PYqhnGOHWjeX08q5q3yubFjaZIQudOO0mOQdfKYkoZU+msuBdEkZ9ayUIYtsvFt10n2wz0x4fgbUXS+8h/GOBVmTK7Mz3aAT9GXAPxlLS3otsVp3Mt0wmZ8iuHgVy54n33+5KxYDtH2rvMz6ucwXp/XEXhT4OL1VW0pgq2tV2NcQctyZHMvm+iv49x8=",
   "ka4aedc8b7b9b": "dVXBcpswEP0XH5MqwgaM0EwOcsjUmaaNPdNTbyuxAmIMHgmbxp3+ewdsbAPpHsV7u09vd8WfyQ7UBhJ8eLdlMeGTu8mXiYUDEovmgObh3U74JFTTGbpcnIIKIZ4amDLZrrI0ziAhGlJDcpRYPKiWc3eDyDNJQRaQbpHsTYVZfgaBRC9mnNbPIllRqumRRvXj45CaS4xLUoHGC9Fnsfb5ELi3CUgksNdtsTPYd9yp1Jy2wSLxFtFL1EyIlae9FYsGySQUcV9tOPcD9PnLhxDPYqQyzgArkmeF7epO4yDUDr/W+j7iGKjJETDN0ZxJcYCz0OvELhrDG2sGxNbunSn/77fO99b25DA39meMUxoOsyVoM5VW/YQynAVT4ItxP5LdnuhbzSAlMDnsRgpYJGh6GhxX6fmU099smHQDWzRACkg7tx03mMmre5TS5VhL3gpvS1yFe34MPWLTdnqgVHQjfGiOlpev3XmUiGusR8WsSjOz7dukPZw5Ln8dS7MpxGjIprTVBc08AGTnTYqoWItm/IajZ6+X6ngAwG5GiTIqliMPbamrGgySZLc/E9FDP/C5EC8jcAXbbbch2vVcNWygrZoVuJXhB65mc07p/WmFxpc+LQw5YpZ3JK09L/T508Ibgg8GtgRkYjKtu65LX+nwsyGtwdrBNE3DqZoHg04PomaCrvqTMEyMeUVkWVadXgwCcDl1aXHL+1E3PXu+GZDIc76+/lqvRT+exPCebYXSVBcb5dzRHtetPjVCZ6YiNai0g8+0RGg8GTX8iCbHBHumyICFzd7U+qT7vXnhgrMZ+r5nznGcMcOme4Xd226CFHjS55/0u0azkVBsOplOoOan2V68ieXtJolvP50Viyit+1a5ybNY1Mt0cTpXzQbSj9MzuUNFd6bUWfMQ0xT2NoW8uv6n/v4D",
-  "k128649b55503": "bVZdk6o4EP0vPq4XoxIkpGoewmCNc3ecwa3dh923AB1g5MNKcDLl1v73rYCowM0DGnK6+/RJusO/s7iWoBYlr3IBqll8qrqa0dlvsx8zweNMgzxaBrL4VDM6S9ZYbARFLkIIeTkWHmJ730zQ3DwuhAXyYpuprxn7eGXhPESIaXYdQQtrh+5+tsmcIRsRpPcHVvxVIp9c2NZgNWMBht4SvfeG89B2PCRC5rgICU/vDxVjW7YP0A7hP1rwe4DGw2V7xljss8fxyny39hFj7CVlhLGwswu1g9GH8Fh6h/rs9Wn2Y5ZXCXwvsqYsriqdeHzkKTwKp3gJ1YNqHl9u+Ia+afzUrn6BpUB+gbwux6s12LTPkzH2bGBxVuaQwIMfWG9sh1N26JDb7s8W++iwPTCs/n7/JAHZGdn81Ej4zCq8Z+yFtXFjmZ8ahZKcp5aCpimghKpZxK3vFV4tXUF1SEKT62AMpttHX0UeIR5VPCvBOssG8uLqjkeAE0KR3rI0REigCwr03ckLe5q4KSJIaqvhAm5OHJIIh46BZ5XyCCx+Fm3gK9hZ2qtI0G6zScA+Ho6ANluLBQ5JYDIYOYx4lQzZexvHBYe+aiPyhGmSc2isIq9UH3uVuJ5Y0nu8/cRGcm1dOGQFyKtR4sLawz3hVmMj1chQFGelBsGInThrQhHyxtgUVB5njXWSdQTVFR55a3fFqa8neaSnsyUeGfEo4iQa651xqFKQAw5LOxabFUXfZOz0yEuQ3Kp41mu5tN11RB9LcTflUrTE2xB34thJ+MDQbKx53nrCl3m1u63eusxD3bLDNFithhoR1/WIPU68liMpMXARL+nNc/g93gEVZ7ksh1YCw3pp07dp0irjCUjrWKvmTgVzDuQaI0BtiYc4GFve5ertOOfk4QgigthusjuqFo3mEqz0dL4aAgbHdSjr2tsA3PBkpIBYCXtakarhZdmXobCxHf8CUSUDvo5rC7KhCM27Op2q01WkdYG86I2EwNhz6LOPx+AvkEfIpKqguQwpu7HnrrwxoS/JS4tHqcyF6A9q5MTC+1VdaSgaK6rrvlcKcF1uG62rweHUcduV7yPAy5e3fw6H24uuBb7kLJjm20apZXNTKNosBaai8zxB57KxNI+zHr4WEXBDf7LpF5AFpDCQP3KJZ6pSi476xXRI95qGmA/Sukw95mA2plJn1Z+imOPI6Y6f7u/WQYrmSyLi1bGnu3TjDaE/WZD+nLPd4L75/c9lSKY3uLlMfB1mfhcgNnWO9F6bICeI0UnWIjfNHGX8rDJeDL5mvqBKaomaTAIs2ju1zKvuXp0sl3VyLh4A3OZesqaz//4H"
+  "k128649b55503": "bVZdk6o4EP0vPq4XoxIkpGoewmCNc3ecwa3dh923AB1g5MNKcDLl1v73rYCowM0DGnK6+/RJusO/s7iWoBYlr3IBqll8qrqa0dlvsx8zweNMgzxaBrL4VDM6S9ZYbARFLkIIeTkWHmJ730zQ3DwuhAXyYpuprxn7eGXhPESIaXYdQQtrh+5+tsmcIRsRpPcHVvxVIp9c2NZgNWMBht4SvfeG89B2PCRC5rgICU/vDxVjW7YP0A7hP1rwe4DGw2V7xljss8fxyny39hFj7CVlhLGwswu1g9GH8Fh6h/rs9Wn2Y5ZXCXwvsqYsriqdeHzkKTwKp3gJ1YNqHl9u+Ia+afzUrn6BpUB+gbwux6s12LTPkzH2bGBxVuaQwIMfWG9sh1N26JDb7s8W++iwPTCs/n7/JAHZGdn81Ej4zCq8Z+yFtXFjmZ8ahZKcp5aCpimghKpZxK3vFV4tXUF1SEKT62AMpttHX0UeIR5VPCvBOssG8uLqjkeAE0KR3rI0REigCwr03ckLe5q4KSJIaqvhAm5OHJIIh46BZ5XyCCx+Fm3gK9hZ2qtI0G6zScA+Ho6ANluLBQ5JYDIYOYx4lQzZexvHBYe+aiPyhGmSc2isIq9UH3uVuJ5Y0nu8/cRGcm1dOGQFyKtR4sLawz3hVmMj1chQFGelBsGInThrQhHyxtgUVB5njXWSdQTVFR55a3fFqa8neaSnsyUeGfEo4iQa651xqFKQAw5LOxabFUXfZOz0yEuQ3Kp41mu5tN11RB9LcTflUrTE2xB34thJ+MDQbKx53nrCl3m1u63eusxD3bLDNFithhoR1/WIPU68liMpMXARL+nNc/g93gEVZ7ksh1YCw3pp07dp0irjCUjrWKvmTgVzDuQaI0BtiYc4GFve5ertOOfk4QgigthusjuqFo3mEqz0dL4aAgbHdSjr2tsA3PBkpIBYCXtakarhZdmXobCxHf8CUSUDvo5rC7KhCM27Op2q01WkdYG86I2EwNhz6LOPx+AvkEfIpKqguQwpu7HnrrwxoS/JS4tHqcyF6A9q5MTC+1VdaSgaK6rrvlcKcF1uG62rweHUcduV7yPAy5e3fw6H24uuBb7kLJjm20apZXNTKNosBaai8zxB57KxNI+zHr4WEXBDf7LpF5AFpDCQP3KJZ6pSi476xXRI95qGmA/Sukw95mA2plJn1Z+imOPI6Y6f7u/WQYrmSyLi1bGnu3TjDaE/WZD+nLPd4L75/c9lSKY3uLlMfB1mfhcgNnWO9F6bICeI0UnWIjfNHGX8rDJeDL5mvqBKaomaTAIs2ju1zKvuXp0sl3VyLh4A3OZesqaz//4H",
+  "k415d7fe28c22": "bVVdk6IwEPwvPt5dNihBQqr2IcrWuVd7tfoTJjABVgQrAbny6v77FSrKh/NEaXe6p2cCf2dHiPaQ4MuXLYuZmH2b/ZhZOCGxaE5oXr7sTMyCaL5AV8hrUSnluoVFJjtWluaZoqAKSA9IalNhlr9EFxooZDEXtHmTyZZSTc80bOS93uTr6/iYXGFckgo03g/xeKw9MQbWNgGFBGp9Eb6BPcedKy3opXgoP0N6r+a3lFum2ZaHcsu1TCbqCop42EGw9Hz0xHvz1G2cAVYkzwrb6c9jP9CO6GlOOAYacgZMczQ3UuzjImCd6VUbTRvXiKjz2tqBGHdjb8EFpcEYm6DNorQiR1MqLG5wFSz8OYhVM+kjOdZE9x2BUsDVOPMUsEjQDDw4bqSXc0H/8PGhezigAVJA2mXpuP5CPbKhlG6mXvKL8YvEwzjzYhgQ2+HSE6XdKrXPlG/u/3a/h8lj3eRuImajNDOHYUya4cJxxcfUmk0hRkP2pa3uaM4AkN9uRkjlTrZLFo6Zj6Y6HgDw3qJQTuVmkqEtddWAQZIc6xsRGXq+J6R8n4ArOBy6e6Bd5kbjAdqqXfC+Dc93NV8KSr9fL8q06et1IGfM8o6kNWOBJ9YrNgafDBwIqMRkWndTV16kg2dL2mBeEVWWVXcs+j64bSRFf9Db5vqueFTInJ/r1U6Oar2W4dT/RaU01b1jtXQ0E7pdmCaaoDNTkQaitIMvtEIIxBPoGU2OCQ7iVD4P2hVvor7b7uH7YIHPk2mfM2yDLmxtu2FHwJQnnoymQbNXUOw7m44fLbn4JaVcfcrNMJhwt+UhnVTzJuX7RyGbfobyInLEiB5NqbP2jUhTqG0KefX4RPz7Dw=="
  },
  "ungemessen": {
-  "karte2.same.kopplung.ereignis#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T09:00:44.898Z",
-   "abdruck": "569d05e3c105",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.gewalt#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T09:00:44.898Z",
-   "abdruck": "038be8b6ca11",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.kohaerenz#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T09:00:44.898Z",
-   "abdruck": "9883c185a917",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.zeitreise#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T09:00:44.898Z",
-   "abdruck": "cc44d536ca59",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.terraform#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T09:00:44.898Z",
-   "abdruck": "5789ccbca7c6",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.ereignis#2",
-   "modus": "session",
-   "offen": 1
-  },
   "karte2.planet.kopplung.bahn-klima#2": {
    "gruen": false,
    "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",

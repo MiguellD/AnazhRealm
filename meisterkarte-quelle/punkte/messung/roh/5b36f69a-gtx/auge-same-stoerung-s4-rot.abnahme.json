@@ -1,0 +1,142 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   76,
+   85.045,
+   52
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 93.7,
+  "sigma": 33.6,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME ROT [kein nahWiese im Bild: 4.2 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 93.7 σ 33.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 4.2 % (≥ 15.0 %) h 107° Luma 123",
+ "rot": [],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 4.2 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 4.2 % (≥ 15.0 %) h 107° Luma 123"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1736,
+   "wechsel": 738138
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 159,
+    "farbe": [
+     0.53158,
+     0.29925,
+     0.07026
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 6507,
+    "farbe": [
+     0.11967,
+     0.13922,
+     0.01509
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 81333,
+    "farbe": [
+     0.21404,
+     0.22835,
+     0.02717
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5b36f69a-gtx\\auge-same-stoerung-s4-rot.maske.png"
+ }
+}
