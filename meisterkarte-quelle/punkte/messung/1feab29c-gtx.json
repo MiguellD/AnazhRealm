@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-23T21:19:31.620Z",
+ "zeit": "2026-11-23T21:21:45.733Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -72,10 +72,81 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (207 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.35 m · Luma 99.8 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (90 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.25,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (207 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.35 m · Luma 99.8 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (90 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k76cd619085d1",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 74.9,
+   "fremd": {
+    "s": 78.7,
+    "takte": 35,
+    "fremdS": 60.92,
+    "kerne": 0.774,
+    "fensterKerne": 1.103,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.84
+     ],
+     [
+      "conhost.exe 0x4",
+      4.81
+     ]
+    ],
+    "dienerS": 33.67,
+    "diener": [
+     [
+      "System",
+      14.53
+     ],
+     [
+      "dwm.exe",
+      11.97
+     ]
+    ],
+    "geraetS": 56.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      34.56
+     ],
+     [
+      "svchost.exe",
+      20.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 174.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:21:45.733Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "keb55c8f1f18b": "bVRdb6MwEPwvebwe3SRAMJb64JZIqXQfzU9YmzXQEIhsCKec7r+fSOIkQPcJmRnveHbsv7MDqh1m9Pxp62rGZ99m32cWj+RZMkcyz592xmexWizJ5+JSIIR462HKFIfGQllIQFlhvievNQ0V5bM601BSkDIO3VpkHwAaTpB0Ly9jaikprb0GNd2IIUt1yMfA1mYoycNWn5tdweHcX0jN4VwsEb8TuFX3U4iPQAcfLBltJrFKh2rjVRhRyN87IdZiojItkBqvLCrr+i7SKNZz/tBrwjHYeSekvCRzJRFbLALpxL72dvbWjIi6bK0dNGN+Gi4ZB4jH2IxsofLGO5haUnWFy3gZLZC/Tt3ODq2nHxWhlMjk2OscqcrIDDTMfaVXCw5/2HjTHe7JoFdh7ryc+9FS3r0BgM1US3kWfm5xFx6EKQ6I/VDhCCBc/I790ub2160nmbjXdtLMqrww+6FNOqDl3Oc/ptJsjikZb1fb5oZmASKx6y1IQGxFH65xsOz9UI6HiOwhKMBAbCYe2lo3HRryskPrwhJQGIVciPcJuMH93uVf+4GvxgO0TR/wRxlh5Gu24gBPlwsyPfTlOngnKkpH0joI4slNPBrceygzU2jtJi5DpeOvAtpR2Xiyrhtnh2SkiYMP1eOQf3W9reuHGSZdrdZv2VYMay3Gus8datPcTipXcx1w3QelUxN0YRqvQ5U7+FJLwph/AT2RKSmjgY0yYnEf7U49KA3cx9MguKfJlE8F9QZXtrVuyAoDGfIvRtKR2Umsdk7mPFKrS/xef4vN0JRk+8ESgG646me9n0kurhsfSMHB1LroXz/IsbU5ls396f/3Hw==",
-  "kec8d4d7e00d6": "jVXBjpswEP2XHNuyJsEEY2kPzhI1e+huVqrU89iMgQ2ByIbQTdV/r0hCCLCHzgEh88bz5s2z+TM7gNpBgg/vtixmfPZl9m1m4YiORXNE8/BuZ3wWqvkCPS4uQYQQ31uYMtmhsiTPJAFZQLpHpzYVZvmDOqeBRBozTpq1SLaEaHIiUSNu8SQeH8fb5BLj0qlA420Tn8Xa52NgbROQ6ECtz4WvYN/15lJzcg4WideI3KL5IcSWarpl0WgzCUU8ZB4u/QB9/twIsZ6yjDPAysmzwnZ153EQapff1ZrkGGicE2Cao7kmIZvPqezIrlpJWplGiTqvrR0UY17sLxgnJBxjE7SZSivnYEqJxRUuw0UwB75qJn0kh9rR94xASmByrHUKWCRoBhxcT+nlnJPfbLzpDvZowCkg7bR0vWAhe20IIZspl/xM/FyiJ079GAaJ7VDbZ2chcmyXNrev3XqU9DYTb5NiVqWZ2Q9l0hQXrjfu3aYQo3F2pa1uSEYBkF1PQ0TEm2iNNTaV7Rvq8gCA3ZmEMCI2E/1sqasGDDrJoe6MQtEPfC6SiatsBft9533tUU9NGqhac9/T8ANPsyUn5OvlcExncTkKzgmzvEvSmtLQ508rOgYfDewdkInJtO4mLn2lw88M2mBeObIsq04SyVAjJx4p7of80ohVItb9CLfRR8l+few8MYwXsf6sQmmqW7dy6WrK9blTNSbfZKZyGlBpB19oiRCORTyhyTHBgYwyYGFr60b1dCLavXwdmPY0mfIpw1bgwta2G7ICKv2LO66X5PPw6mnQ7CQUu46qG6hla8MoEa9ic6fKRjz/dLeN+L9Yi7e2yAEVOZhSZ+1tSFKobQp51f8W/v4D"
+  "kec8d4d7e00d6": "jVXBjpswEP2XHNuyJsEEY2kPzhI1e+huVqrU89iMgQ2ByIbQTdV/r0hCCLCHzgEh88bz5s2z+TM7gNpBgg/vtixmfPZl9m1m4YiORXNE8/BuZ3wWqvkCPS4uQYQQ31uYMtmhsiTPJAFZQLpHpzYVZvmDOqeBRBozTpq1SLaEaHIiUSNu8SQeH8fb5BLj0qlA420Tn8Xa52NgbROQ6ECtz4WvYN/15lJzcg4WideI3KL5IcSWarpl0WgzCUU8ZB4u/QB9/twIsZ6yjDPAysmzwnZ153EQapff1ZrkGGicE2Cao7kmIZvPqezIrlpJWplGiTqvrR0UY17sLxgnJBxjE7SZSivnYEqJxRUuw0UwB75qJn0kh9rR94xASmByrHUKWCRoBhxcT+nlnJPfbLzpDvZowCkg7bR0vWAhe20IIZspl/xM/FyiJ079GAaJ7VDbZ2chcmyXNrev3XqU9DYTb5NiVqWZ2Q9l0hQXrjfu3aYQo3F2pa1uSEYBkF1PQ0TEm2iNNTaV7Rvq8gCA3ZmEMCI2E/1sqasGDDrJoe6MQtEPfC6SiatsBft9533tUU9NGqhac9/T8ANPsyUn5OvlcExncTkKzgmzvEvSmtLQ508rOgYfDewdkInJtO4mLn2lw88M2mBeObIsq04SyVAjJx4p7of80ohVItb9CLfRR8l+few8MYwXsf6sQmmqW7dy6WrK9blTNSbfZKZyGlBpB19oiRCORTyhyTHBgYwyYGFr60b1dCLavXwdmPY0mfIpw1bgwta2G7ICKv2LO66X5PPw6mnQ7CQUu46qG6hla8MoEa9ic6fKRjz/dLeN+L9Yi7e2yAEVOZhSZ+1tSFKobQp51f8W/v4D",
+  "k76cd619085d1": "rVVNj6M4EP0vOe4sbQgQDNIcnKal7tXMDn2ac9mUgQ6ByIb2dEbz31ckcQiQlWalrRNK6lW9evXhn6sDiB0U+PCm22aVrP5Y/bnS8I6ORvWO6uFNr5JVLLw1+gl7ZYNljLHHwU2o6tBpkldQODuF0PXKqZFj8yBOMEAJMU3I/2VHyqy9GMa27PXzv9HoYNddWLjI49xLtgVjhn2+RdQVJ8AbKPfo9KrDqrbEOQY5TYh5YkVGiCRHkpprbvZ0J0zNMW+dDiReg4Q0l2Eyd+x1ARwd6OUp8cU5dH2Py4tUNGXf0rFsQxnLAhlkNGWMSVYssnNo8mkF8SaMMExePu6yzSvAzqmrRtv8Xh7F0h1bZb4uMAqMcwQsa1QXEFLPC7glvR2kGeSaAWXdaz1JRv08XA9zEc99C9SVKDvnoNpxjHi8jjxItmZRR3HoHXnLCDgHyueal4BNgWrCwfWF3HgJ+UHnQXewRwVOA6XV0vWjNZ+M8fOSi528PTZaWKhHhQv+f9wAOlfFhp6qsqG+Gybst+11/Nz+Psp8ZfNK61OLTmKOLQrCHGZ10pS8E2IDDd+EPl//tb+nxS3HhaxalJXaT0uXAa5dP/mybIIuIUfl7FrdXb1pAID0IlRKTjpkQTpHjkVZHADQm5UglLDnxbToVnYGFDrFobdrEWAYDZ15WTh3sN/bjZd+4Iu7/bsz6bobVvyWXhj5km4SQj6dT8UScz4IzhGr2oKkDII4TB63wdz5XcHeAV6oSko79zwUMr63pgbrzuFta08s5RQlDlI1twOQmfO1HC01rfj+UZhZwX+z1F/yP2VpVXetmG9cGSTyVK1YeFeqcwyI0rqvJUcY6C96dkRVY4ETOXlE42HJjRzfmiy6HEP5afYOLSJWOAjd6F7bIRAQ8DC50xqDaseh2VmabiQ2NPlr6Ps39jzR5TF9zWhKFmYGTbNme9ZRDEtEPs4X+4CCHFQrq+FNICX0uoS6m7zuZ5ceJe+xbHCYra5qG2xGr1//AA=="
  }
 }
