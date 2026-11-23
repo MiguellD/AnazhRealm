@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "radeon",
- "zeit": "2026-11-23T12:44:27.359Z",
+ "zeit": "2026-11-23T13:43:49.650Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#2": {
@@ -768,6 +768,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.kollektiv#1": {
+   "gruen": true,
+   "zahl": "22 Zeugen, 22 in beiden Gängen · Abstand-Median vorher 5.78 m → nachher 13.505 m · Furcht 0 → 1 · third · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.8,
+   "gpu": "amd/rdna-3",
+   "konsum": "k65ca814fb05e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 46.9,
+   "fremd": {
+    "s": 52.5,
+    "takte": 21,
+    "fremdS": 82.7,
+    "kerne": 1.577,
+    "fensterKerne": 2.08,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh fh-kette-kopf bash scratchpad/fh-sitzung.sh fh-kopf kopf ket",
+      7.98
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      7.86
+     ],
+     [
+      "claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.31
+     ]
+    ],
+    "dienerS": 50.11,
+    "diener": [
+     [
+      "System",
+      27.61
+     ],
+     [
+      "dwm.exe",
+      11.42
+     ]
+    ],
+    "geraetS": 39.19,
+    "geraet": [
+     [
+      "svchost.exe",
+      19.55
+     ],
+     [
+      "MsMpEng.exe",
+      18.27
+     ],
+     [
+      "SearchIndexer.exe",
+      1.27
+     ]
+    ],
+    "eigenS": 260.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T13:41:43.005Z",
+   "abdruck": "dbc25f2bff4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -784,7 +853,8 @@
   "kfa3ffbc3d8e0": "bVXRjpswEPyXPLb1mQQIxtI9OMepueqqSz5hbdbAhUBkQ1yl6r9X5EISIPtkwYx3dnYX/s4OoHaQ4dOnrasZn32b/ZhZOCKxaI5onj7tjM9iNV+gz8VXUCHESwdTpjg0lpaFpCAryPdIWtNgUT6pMw0kBinj1L2KbEOppieaOHGNV/H8PL6mlJjWpAGN10tCluqQj4GtzUAigVafE1/AoefPpeb0HCwRHwm9hvstxCbQwYYlQggtskl2CVU6rCBehhGG/M09VJsWgA0pi8r2+edpFGuP3+WccAw4cgLMSzQXUhrhIg560avOms6uEVGXrbWDZMxPwwXjlMZjbIa2UHlDDqaWWF3gMl5Ec+ArN6kjO7RE3ysCKYHJsec5YJWhGWjwfKWXc07/sPGlO9ijAVJB3nvp+dFC3ryhlK6nWsqz8HOKm/AgTGFA7JpLj5T2o9SdKVtf3/bPk+w2bmI7SWZVXpj90CYd4MLz+ftUms0hRUN2tW2uaBYAILtsRkLFVnRDloyZt6J6HgCwu0GhjIr1xENb68aBQZId2gsRAwyjkAvxNgE3sN/3e6D9wFfjBtqmG/B7GWHka7bklH7/WpRp0V/rQE5YlD1J6yCIJxt5NLAnIDNTaN13XIZKx48G1GHZEFnXTX8lRhH4nR3VfZM37us7cYsk8H6+rLZiFC9irPucoTbNtVK59HTAdTcoTk3QhWmIA5X38IWWCDF/AD2hKTHDgY0yYnE32k7dK+0P3weDe5p0+VRgZ3BlW9s3WUEgQ/6gJQ7NTkK162V6kVoy/ksIsfoQ66EpyXbDEjoO33V+vlfCTf07oKIHU+ui+xLSHFqbQ9ncfg3//gM=",
   "kc8bbca048401": "bVXBjpswEP2XHLv1mgQIxtIenGXVbNVqs1IvPY7NGNgQiGwIVar+e+UkJAF2Dgglb2ae3zwPf2d7UFvI8PHD1tWMz77Mvs4sHJBYNAc0jx92xmexmi/Q5+IcVAjx7GDKFPvG0rKQFGQF+Q5Jaxosykd1SgOJQco47V5EtqFU0yNNOnGNF/H0NC5TSkxr0oDGa5GQpTrkY2BrM5BIoNWnxhdw6PlzqTk9BUvEW0Kv0f0UYhPoYMMS13xUUEKVDtnHyzDCkL92nzJNC8CGlEVl+97zNIq1x+/6TXIMdOQImJdoLklphIs46AmvnCxOqlGiLltrB82Yn4YLximNx9gMbaHyhuxNLbG6wGW8iObAV93kHNm+JfqeEUgJTI71zgGrDM2Ag+crvZxz+oeNi25hhwZIBXmvpedHC3nThlK6nnIpT8RPLW7EgzCFQaIbLD1Q2tvIvVO2vv7b/55kN6uJ90kzq/LC7IYy6QAXns9/TKnZHFI0ZFvb5opmAQCyy61IqHgXzmDJOPN2qD4PANidUSijYj3R0Na66cAgyfbtJREDDKOQC/E6ATew2/V3QPuBr8YDtI0z+D2NMPI1W3JKH86XZHro83UgRyzKPknrIIhD/rzKxuCDgR0BmZlC637qMlQ6/sykHZYNkXXd9GUxisB3klT3g9505z1xiyTwviWrdzGKZzGmc+pQm+Z6Wrn0dMC1M0unJujCNKQDlffwhZYIjvpkLkc0JWY4kFJGLHb27tSFpXNCdFkD+mFg3uO0YoFO5Mq2th+0gkCG/JOxdGi2EqptT9OL1JLx70KI1ZtYDzR5/eVtWELH4XdOz02+Om/i3+fHuckeFd2bWhduG9IcWptD2dw+Df/+Aw==",
   "k452807ab6ddc": "bVXBjpswEP2XHLv1mgQIxtIenGXVbLvVJlJPvY1hDGwIRDaEKlX/vXISQoCdU5S8mXl+82byd3aAeAcpPn6Yqpzx2ZfZ15mBIxKD+oj68cPM+CyM5wt0ubgEFUI8W1is80NtaJFLCrKEbI+k0TXmxWN8TgOJXsI4bV9EuqFU0RONWnGLF/H0NC5TSEwqUoPCWxGfJcrnY2BjUpBIoFHnxlew77hzqTg9B4vEe0Rv0TIhNp7yNiyyzUcFJZTJkH249AP0+Wv7KdMkB6xJkZem6z1PglA5vO/3c5KjoSUnwKxAfU1KAlyEXkd4ZWWxUo0SVdEYM2jG3MRfME5pOMamaPI4q8lBVxLLK1yGi2AOfNVO3pEeGqLuGYGUwORY7wywTFEPODhurJZzTv+wcdEd7FEDKSHrtHTcYCF7bSil6ymX4kz83KIn7vkJDBLtYOmR0s5G9jNl69uv3fdR2ltNbCfNTJzlej+USXm4cFz+NqVmMkhQk11l6huaeQDIrlsRUbEV1mDROLN/VJcHAOzOKJRRsZ5oaCpVt6CRpIfmmoge+oHPhXidgGvY77sdUK7nxuMBmtoa/J6GH7iKLTmlD5clmT76sg7khHnRJSnleaHPn1fpGHzUsCcgU50r1U1d+rEKPzNpi0VNZFXVXVkMAnCtJOX9oDft5U70EXnOt7ff260YxrMY0zl3qHR9e61cOsrjypqljSfoXNekhTjr4AslESz1yVxOqAtMcSClDFho7d2qC++TPTXB9Qyoh4F5T9OKOVqRS9OYbtAxeNLnn4ylRb2TUO46mk4QLxn/LoRYvYv1QJMfv5wNi+g43NbquclWl0sc20XpbtUBY3rQlcrtNaQZNCaDou7/Gv79Bw==",
-  "k6543516e307d": "bVXBjpswFPyXHLv1mgQIxtIenM2qWXXbTaSeens2z8CGQGRDqFL13ysnIQmw72hm/MbzxubvZA9qCyk+ftiqnPDJl8nXiYUDEovmgObxw074JFbTGfpcnIsKIZ4dTJl8X1ta5JKCLCHbIWlMjXnxqE40kBgkjNP2RaRrSjU90mX79DSkFhKTitSg8UoMWaJDPgQ2NgWJBBp9anYBh54/lZrTU7GleF/Sa7VMiHWggzVbDjaTUCZ9tfE8jDDkr60QL2KkMskBa1Lkpe36TpMo1h6/9fox4hhoyREwK9BcSEmEszjoxC6cnc6aAVEXjbW9ZsxPwhnjlMZDbIo2V1lN9qaSWF7gMp5FU+CLsdvpviH6XhFICUwOvc4AyxRNT4PnKz2fcvqHDTfdwg4NkBKyzkvPj2by5g2ldDXWUpyEn1rchAdhAj2iGyo9UCq6+B3c0ur6tVtfpuJWm1Ezq7Lc7Po26QBnns/fxtJsBgkasq1sfUWzAADZ5RYsqdgIF65hsOztUB0PANhdUCijYjXy0Fa6bsEgSffNhYgBhlHIhXgdgWvY7br8az/w1XCAtnYBv5cRRr5mc07pw/mCjA99vg7kiHnRkbQOgjjkz4t0CD4Y2BGQqcm17qYuQ6Xjz0LaYlETWVV1ty1GEfic+rS8H/TP1ln7cjfHZeB9e/u92Yh+PYuhnFOHytTX08q5pwOuXVhaNULnpiYtqKyDz7REcNJHczmiKTDFnpUyYrGLd6vPuo/umYkuz4B+6IX3ON4xR2dyaRvbDVpBIEP+yVhaNFsJ5baT6UVqfo7g4l2sep58/+WtmRtt1Ovvt87PdbY4eSuUuyjdW7VHRfem0rl7DWkGjc2gqG+/gn//AQ=="
+  "k6543516e307d": "bVXBjpswFPyXHLv1mgQIxtIenM2qWXXbTaSeens2z8CGQGRDqFL13ysnIQmw72hm/MbzxubvZA9qCyk+ftiqnPDJl8nXiYUDEovmgObxw074JFbTGfpcnIsKIZ4dTJl8X1ta5JKCLCHbIWlMjXnxqE40kBgkjNP2RaRrSjU90mX79DSkFhKTitSg8UoMWaJDPgQ2NgWJBBp9anYBh54/lZrTU7GleF/Sa7VMiHWggzVbDjaTUCZ9tfE8jDDkr60QL2KkMskBa1Lkpe36TpMo1h6/9fox4hhoyREwK9BcSEmEszjoxC6cnc6aAVEXjbW9ZsxPwhnjlMZDbIo2V1lN9qaSWF7gMp5FU+CLsdvpviH6XhFICUwOvc4AyxRNT4PnKz2fcvqHDTfdwg4NkBKyzkvPj2by5g2ldDXWUpyEn1rchAdhAj2iGyo9UCq6+B3c0ur6tVtfpuJWm1Ezq7Lc7Po26QBnns/fxtJsBgkasq1sfUWzAADZ5RYsqdgIF65hsOztUB0PANhdUCijYjXy0Fa6bsEgSffNhYgBhlHIhXgdgWvY7br8az/w1XCAtnYBv5cRRr5mc07pw/mCjA99vg7kiHnRkbQOgjjkz4t0CD4Y2BGQqcm17qYuQ6Xjz0LaYlETWVV1ty1GEfic+rS8H/TP1ln7cjfHZeB9e/u92Yh+PYuhnFOHytTX08q5pwOuXVhaNULnpiYtqKyDz7REcNJHczmiKTDFnpUyYrGLd6vPuo/umYkuz4B+6IX3ON4xR2dyaRvbDVpBIEP+yVhaNFsJ5baT6UVqfo7g4l2sep58/+WtmRtt1Ovvt87PdbY4eSuUuyjdW7VHRfem0rl7DWkGjc2gqG+/gn//AQ==",
+  "k65ca814fb05e": "bVXRkqIwEPwXH28vG5QgkKp9iLK1btXenX7CBCbAimAlIHde3b9fBUUFdh4sK/bM9PR04t/ZEeI9pPj8aapyxmffZt9nBk5IDOoT6udPM+OzMJ4v0OXiElQIsbawWOfH2tAilxRkCdkBSaNrzIvnuEsDiSwJOG1fRbqlVNEzjVpxi7V4eRmXKSQmFalB4a2IFyTK42NgY1KQSKBRXeMr2HPcuVScdhFE4ldEb9H+EGLLFNsG0aiYhDIZMg+Xno8ef/8jxOuUZZID1qTIS9P3nSd+qBz+0GuSo6ElZ8CsQH1NSnxchKwnu7KSWJlGiapojBk0C9zEWwSc0nCMTdHkcVaTo64klle4DBf+HPiqncyRHhuiHhmBlBDIsdYZYJmiHnBw3Fgt55z+DsZF93BADaSErNfScf2FvGtDKd1MuRQd8a7FnTjzEhgk2qXaz95C9GSPNrdf+/MovdtM7CbNTJzl+jCUSTFcOC7/mFIzGSSoyb4y9Q0dMAAMrjciomInrLnGxjL3ofo8AAgejEIDKjYTDU2l6hY0kvTYXBORoed7XIj3CbiGw6H3v3KZG48XaGpr8Ecanu+qYMkpfbpckOnQl+tAzpgXfZJSjIUeX6/YGHzScCAgU50r1W9derEKvzJpi0VNZFXVfVn0fXA5dWn5uOif3Uvx+rDHiDlv69VOjOItF9GUf9el0vVtYrl0FOOqmzaeoHNdkxbirIcvlEQI+RfQM+oCUxzIKf0gtBZv40e2/ZengYHPk22fc7RCl6Yx/bJjYNK7uOT6YL4Pn6EW9V5Cue/pOn68tHaM0o8nsRkKFO229ta0w1OaWm2jTAzPW9vkiDE96krl9mWkGTQmg6K+/0X8+w8="
  },
  "ungemessen": {
   "karte2.erleben.spieler.gemeinsam#1": {
