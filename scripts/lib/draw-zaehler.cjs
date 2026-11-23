@@ -999,16 +999,32 @@ function geburtZensus() {
 // ein Typed-Halter (`heapHalter`, Pfad Tiefe 3) wächst um ≥ 1 MB (wenige schwere Einträge, die Hydro-Kachel: 1 MB je Eintrag) ·
 // ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
 // 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
-const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1 };
+const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1, blickMB: 4 };
 // WAS MIT DEM WEG WÄCHST, WÄCHST IN JEDER RUNDE (w28-halter-register): ein Behälter oder Halter ist rot, wenn er in BEIDEN Runden um
 // die Schwelle wächst (`schwelle(vorher)`, Start → Runde 1 und Runde 1 → Runde 2) — jede Runde fährt neue Orte, der Sack wächst
 // je Ort. Ein Halter, der über die Runde sinkt oder schwankt, ist nie rot: zwei Läufe am selben Stamm (Radeon 18.11., d7f31d1a und
 // 99421fca, Stamm byte-gleich) nannten `_foundry.cache` 16,4 → 3,2 → 4,4 MB, `renderer.info.memoryMap` 22,5 → 20,8 → 23,4 MB und
 // `_teilVolumenMemo` 1 600 → 1 680 → 1 918 einmal rot, einmal nicht — bis hier urteilte allein Runde 1 → Runde 2.
 const RUNDE_WACHS = { wachsend: ([s, a, b], schwelle) => a - s >= schwelle(s) && b - a >= schwelle(a) };
-function rundenUrteil({ name, stand }, anlage) {
-    const [s, a, b] = stand;
+// DER BLICK IST VERLASSEN (heap-blick-folgt, „der Speicher folgt dem Blick“): eine Runde mit `blick` startet an einem Ort, den
+// noch nichts Fremdes sah (Wiese frisch), fährt in einen anderen Blick (die Stadt) und kehrt zurück — kein Halter trägt danach mehr
+// als frisch: was die Stadt in ihm ließ, überlebte den Blick seiner Leser. ROT je Halter (`heapHalter`, Pfad) mit frisch → nach der
+// Runde in MB, ab `RUNDE.blickMB` (über dem Wackeln zweier Läufe am selben Stamm, 18.11.: `_foundry.cache` ±3,2 MB). Befund vor dem
+// Schnitt (Radeon, Wiese nach der Stadt 436,2 MB): `_bewohnerNah[]` 22,3 MB, `_foundry.cache` 68,1 MB.
+function blickUrteil(name, [s, a, b]) {
+    const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
     const f = [];
+    for (const x of [a, b].filter(Boolean))
+        for (const [k] of x.halter || []) {
+            const d = mb(x, k) - mb(s, k);
+            if (d >= RUNDE.blickMB && !f.some((z) => z.includes(" " + k + " ")))
+                f.push(`${name}: Halter ${k} überlebt den Blick — frisch ${mb(s, k).toFixed(1)} → nach der Runde ${mb(x, k).toFixed(1)} MB (+${d.toFixed(1)})`); // prettier-ignore
+        }
+    return f;
+}
+function rundenUrteil({ name, stand, blick }, anlage) {
+    const [s, a, b] = stand;
+    const f = blick ? blickUrteil(name, stand) : [];
     const dh = b.heapMB - a.heapMB;
     if (dh > RUNDE.heapMB) f.push(`${name}: Heap Runde 2 − Runde 1 = +${dh.toFixed(1)} MB > ${RUNDE.heapMB}`);
     const tafel = Object.entries(b.zensus)
@@ -1179,6 +1195,14 @@ function rundenSelbsttest() {
         f.push("der Mutant des Ein-Schritt-Urteils nennt die sinkenden Halter nicht: " + (einSchritt || "GRÜN"));
     if (!/JS-Heap beim Besteller spaet/.test(heapEin) || spaet())
         f.push("der JS-Heap urteilt nicht am EINEN Wachs-Urteil: Mutant " + (heapEin || "GRÜN") + " · richtig " + (spaet() || "GRÜN"));
+    // DER BLICK (heap-blick-folgt): der Stand vor dem Register — die Nah-Wahl der Stadt hält nach der Rückkehr 22,3 MB — ist rot beim
+    // Halter und seinen MB; ein Cache, der um 2 MB wackelt, und der geräumte Stand nicht
+    const frisch = { halter: [["r._bewohnerNah[]", 0.2], ["r._foundry.cache", 10]] };
+    const nach = (nah) => ({ halter: [["r._bewohnerNah[]", nah], ["r._foundry.cache", 12]] });
+    const blickRot = blickUrteil("blick", [frisch, nach(22.3), nach(22.3)]).join(" | ");
+    const blickGruen = blickUrteil("blick", [frisch, nach(0.2), nach(0.3)]).join(" | ");
+    if (blickRot !== "blick: Halter r._bewohnerNah[] überlebt den Blick — frisch 0.2 → nach der Runde 22.3 MB (+22.1)" || blickGruen)
+        f.push("der Blick urteilt nicht beim Halter: Mutant " + (blickRot || "GRÜN") + " · geräumt " + (blickGruen || "GRÜN"));
     return f;
 }
 

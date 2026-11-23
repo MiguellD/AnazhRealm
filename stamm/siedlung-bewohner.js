@@ -3798,9 +3798,9 @@ class AnazhRealm_siedlung_bewohner {
         // 28,9 MB nach GC). Die Klasse fällt am Register, nie Feld für Feld.
         for (const k of Object.keys(S)) if (!AnazhRealm.BEWOHNER_ERINNERUNG.includes(k)) delete S[k];
         [S.liste, S.gestalten] = [null, null];
-        // … und die Arbeits-Puffer des Takts (`_bewohnerKoepfe`, `_bewohnerBewegt`, `_bewohnerNachbarn`, die Wahl in
-        // `_bewohnerNbZahl`): vor jedem Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
-        for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;
+        // … und die Arbeits-Puffer des Takts (das Register `BEWOHNER_TAKT_PUFFER`, die Wahl in `_bewohnerNbZahl`): vor jedem
+        // Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
+        for (const k of AnazhRealm.BEWOHNER_TAKT_PUFFER) if (this[k]) this[k].length = 0;
         if (this._bewohnerNbZahl) this._bewohnerNbZahl.geachtet.length = this._bewohnerNbZahl.naechste.length = 0;
         this._ofenMemoRaeumen();
     }
@@ -3888,6 +3888,23 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
 // fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
 AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund"]);
+// DIE ARBEITS-PUFFER DES TAKTS (heap-blick-folgt, „der Speicher folgt dem Blick“): jede Liste, die der Bewohner-Takt am Reich lazy
+// anlegt und vor jedem Lesen neu schreibt — der Abschied (`_bewohnerFort`) leert GENAU dieses Register. Bis hier leerte er drei beim
+// Namen; `_bewohnerNah` (die Nah-Wahl), `_bewohnerHalter` (die Halter der Arme) und `_bewohnerWandKand` (die Kästen am Schritt)
+// entkamen ihm: Radeon, Wiese nach der Stadt, `_bewohnerNah[]` 22,3 MB nach GC (die Köpfe samt Leib der zuletzt getakteten
+// Siedlung). Der Verkehr geht mit (`_verkehrFort`), also auch seine Puffer: `_verkehrKandidaten` (die Wagen um das Fenster) hielt
+// danach die Wagen der Stadt, 17,96 MB an der Wiese nach der Stadt. Die Linse (H10, diag-profiband) legt jede lazy Liste
+// `this._bewohner… / this._verkehr… || (… = [])` des Stamms an und nennt die, die hält.
+AnazhRealm.BEWOHNER_TAKT_PUFFER = Object.freeze([
+    "_bewohnerKoepfe",
+    "_bewohnerBewegt",
+    "_bewohnerNachbarn",
+    "_bewohnerNah",
+    "_bewohnerHalter",
+    "_bewohnerWandKand",
+    "_verkehrKandidaten",
+    "_verkehrProben",
+]);
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
     huellenJeTakt: 8,
