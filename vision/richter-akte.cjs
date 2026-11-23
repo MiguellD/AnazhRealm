@@ -92,9 +92,11 @@ function preisImFenster(bilder, station, von, bis, stueck) {
 function referenzFuerAkte(r) {
     if (!r || typeof r !== "object") return { fehler: "die Sitzung fuhr keine Referenz um den Preis-Lauf" };
     if (r.fehler) return { fehler: String(r.fehler).slice(0, 160) };
-    const zwei = (x) => (x ? { ein: x.ein, alle: x.alle } : null);
+    // DAS RUHE-TOR (pm-referenz-nach-anlauf, punkte.cjs ruheTor): je Fahrt ihr Tor, und riss es, `anlauf` — buche-2 lastVon nennt ihn
+    const tor = (t) => (!t ? null : t.blind ? { blind: String(t.blind).slice(0, 120) } : { ruhig: t.ruhig, s: t.s, kerne: t.kerne, soll: t.soll, reihe: t.reihe });
+    const zwei = (x) => (x ? { ein: x.ein, alle: x.alle, ...(x.tor ? { tor: tor(x.tor) } : {}) } : null);
     return { f: r.f, fEin: r.fEin, fAlle: r.fAlle, vor: zwei(r.vor), nach: zwei(r.nach), ruhe: r.ruhe ? { ein: r.ruhe.ein, alle: r.ruhe.alle, n: r.ruhe.n, von: r.ruhe.von } : null,
-        umfeld: r.umfeld, rechner: r.rechner };
+        ...(r.anlauf ? { anlauf: { wo: r.anlauf.wo, ...tor(r.anlauf) } } : {}), umfeld: r.umfeld, rechner: r.rechner };
 }
 
 function akten(o) {
