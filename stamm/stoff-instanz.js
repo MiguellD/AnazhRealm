@@ -957,7 +957,9 @@ class AnazhRealm_stoff_instanz {
         const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
         // in die Warteschlange vor dem Submit dieses Passes über die EINE Wort-Schrift; ohne GPU-Puffer lädt r184 beim
         // ersten Zug das ganze Array
-        // ein verschränkter Puffer liegt bei r184 unter seinen Daten (je Zug lädt EIN Attribut sie, `attributeCall`)
+        // ein verschränkter Puffer liegt bei r184 unter seinen Daten (je Zug lädt EIN Attribut sie, `attributeCall`).
+        // Die Puffer des Lagers schreibt sie Strecke um Strecke aus ihrer CPU-Kopie: sie sind benannte Leser (`_cpuLeser`).
+        const LAGER = "Arena-Lager kopie/schreib stoff-instanz.js";
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
             const v = a && a.isInterleavedBufferAttribute ? a.data : null;
@@ -1020,6 +1022,8 @@ class AnazhRealm_stoff_instanz {
                 if (b) b.nutzer++;
                 else {
                     const nv = p.count;
+                    // die Gestalt ist Vorlage: das Lager kopiert aus ihr, sooft es neu baut (`kopie`)
+                    AnazhRealm._cpuLeserGeo(g, "Arena-Vorlage nehmen stoff-instanz.js");
                     this.gestalten.set(key, {
                         geo: g,
                         bv: -1,
@@ -1154,9 +1158,10 @@ class AnazhRealm_stoff_instanz {
                         continue;
                     }
                     const arr = new a.array.constructor(this.vCap * a.itemSize);
-                    this.attr[k] = new T.BufferAttribute(arr, a.itemSize, a.normalized);
+                    this.attr[k] = AnazhRealm._cpuLeser(new T.BufferAttribute(arr, a.itemSize, a.normalized), LAGER);
                 }
-                this.index = new T.BufferAttribute(breit ? new Uint32Array(this.iCap) : new Uint16Array(this.iCap), 1);
+                const ix = new T.BufferAttribute(breit ? new Uint32Array(this.iCap) : new Uint16Array(this.iCap), 1);
+                this.index = AnazhRealm._cpuLeser(ix, LAGER);
                 this.vFrei = [0, this.vCap];
                 this.iFrei = [0, this.iCap];
                 this.spaet.length = 0;
@@ -2136,8 +2141,9 @@ class AnazhRealm_stoff_instanz {
                 `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} ${was} „${String(p)}“ nach dem Hochladen${attr.__cpuGefallen ? " und dem Kehraus" : ""} — der Leser benennt sich (_cpuLeser) oder liest die Quelle`
             );
             const B = (AnazhRealm.__cpuWuerfe = AnazhRealm.__cpuWuerfe || new Map());
-            const ort = (String(e.stack).split("\n").find((z) => /stamm\//.test(z) && !/_freieKopie|stoff-instanz/.test(z)) || "?").trim(); // prettier-ignore
-            const k = `${attr.name || "×" + attr.itemSize} ${was} @ ${ort.replace(/^at /, "").replace(/\?v=[^:]*/, "")}`;
+            // Rahmen 1 die Wand, 2 die Falle des Proxys, ab 3 der Leser und sein Rufer
+            const ort = String(e.stack).split("\n").slice(3, 5).map((z) => z.trim().replace(/^at /, "").replace(/https?:\/\/[^/]+\//, "").replace(/\?v=[^:]*/, "")).join(" < "); // prettier-ignore
+            const k = `${attr.name || "×" + attr.itemSize} ${was} @ ${ort}`;
             if (B.has(k) || B.size < 64) B.set(k, (B.get(k) || 0) + 1);
             return e;
         };
