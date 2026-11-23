@@ -2276,7 +2276,7 @@ async function lebenBuehnen() {
     // Leichname und das Speichern ruhen in der Bühne.
     await buehne("zerfall", async () => {
         const wm = s.worldMeta;
-        aufraeumen.push(leihe(wm, { taten: [] }), leihe(s, { aasFeld: new Map() }), leihe(r, { _tatIdx: null, _sukzessionNeu: null, _nachwuchsFaellig: Infinity })); // prettier-ignore
+        aufraeumen.push(leihe(wm, { taten: [] }), leihe(s, { aasFeld: new Map() }), leihe(r, { _tatIdx: null, _sukzessionNeu: null, _nachwuchsFaellig: Infinity, _aasFrist: null })); // prettier-ignore
         decke("_scheduleEditSave", () => () => {});
         decke("_nahStreuTat", () => () => {});
         decke("_weltRegt", () => () => {});
@@ -2286,6 +2286,38 @@ async function lebenBuehnen() {
         const cs = A.LIFE_FIELD.cell;
         const N = (x, z0) => +r._naehrstoffAt(x, z0).toFixed(4);
         const z = { tode: [], gau: {} };
+        // (G) EIN GESETZ: derselbe Leichnam als Riss (die Tat von Spieler-Hand) und als Aas (das Feld des Lebens), gleiche Stunde,
+        // gleicher Ort → derselbe Nährstoff zur Stunde 0, zur halben Dauer und zur Dauer (die Welt-Stunde der Leser um `dh` gerückt);
+        // nach der Dauer heilt das Feld: der nächste Tod fegt, die Zelle ohne liegenden Leichnam ist aus ihm
+        {
+            const [gx, gz] = [(Math.floor(pm.x / cs) + 3.5) * cs, (Math.floor(pm.z / cs) + 0.5) * cs];
+            const alt = r._weltStunde;
+            const um = (dh) => leihe(r, { _weltStunde: function (uhr) { return alt.call(this, uhr) + (uhr === undefined ? dh : 0); } }); // prettier-ignore
+            const riss = r._tatSchreiben("riss", gx, gz);
+            const d = r._tatIndex().dauer.get(riss);
+            const mess = () =>
+                [0, d / 2, d].map((dh) => {
+                    const zurueck = um(dh);
+                    const v = r._naehrstoffAt(gx, gz);
+                    zurueck();
+                    return +v.toFixed(6);
+                });
+            const vRiss = mess();
+            wm.taten = [];
+            r._tatIdx = null;
+            r._aasTat({ id: "probe-gesetz", x: gx, z: gz });
+            const vAas = mess();
+            const abw = Math.max(...vRiss.map((v, i) => Math.abs(v - vAas[i])));
+            z.gesetz = { dauerH: +d.toFixed(3), riss: vRiss, aas: vAas, abw: +abw.toFixed(6) };
+            const zurueck = um(d + 1e-3);
+            r._aasTat({ id: "probe-feger", x: gx - 2 * cs, z: gz });
+            const jetzt = r._weltStunde();
+            const liegend = [...s.aasFeld].filter(([, L]) => L.some((c) => c[1] + r._tatDauer({ tat: "aas", w: c[2] }) > jetzt)).length; // prettier-ignore
+            z.feld = { zellen: s.aasFeld.size, liegend, alte: s.aasFeld.has(r._lifeCellKey(gx, gz)) };
+            zurueck();
+            s.aasFeld.clear();
+            r._aasFrist = null;
+        }
         // (A) die Altlast
         const S = r._bestandSeite();
         let ix = Math.floor(pm.x / S);
@@ -2328,9 +2360,9 @@ async function lebenBuehnen() {
         }
         const G = { reviere: 0, takte: 0, tode: 0, lebend: 0, gedungt: 0, naehr: 0, doppel: 0, ms: 0 };
         const stunden = A.TAT_NARBE.aas ? A.TAT_NARBE.aas.stunden : A.TAT_NARBE.riss.stunden;
-        // je Zelle des Felds der Leichname die Kennungen des Kopfs
-        const aasZellen = (kopf) => [...(s.aasFeld || [])].filter(([, e]) => e.ids.some(([id]) => id.startsWith(kopf)));
-        const aasVon = (kopf) => aasZellen(kopf).reduce((n, [, e]) => n + e.ids.filter(([id]) => id.startsWith(kopf)).length, 0);
+        // je Zelle des Felds der Leichname die des Kopfs
+        const aasZellen = (kopf) => [...(s.aasFeld || [])].filter(([, L]) => L.some(([id]) => id.startsWith(kopf)));
+        const aasVon = (kopf) => aasZellen(kopf).reduce((n, [, L]) => n + L.filter(([id]) => id.startsWith(kopf)).length, 0);
         for (const { o, lesen } of je.values()) {
             lesen.sort((p, q) => p - q);
             const takt = Math.floor(s.spielZeit / T) + 300; // der Gau eine Stunde voraus: die Spur trägt die Tode ab dem Takt der Altlast
@@ -2400,6 +2432,15 @@ function lebenUrteil(name, z, soll) {
         );
         soll(G.doppel === 0, `dieselbe Spur ein zweites Mal düngt ${G.doppel} Köpfe doppelt`);
         soll(z.taten === 0, `die Tode schreiben ${z.taten} Taten in worldMeta.taten — ein Welt-Prozess ist keine Tat des Spielers`);
+        const Ge = z.gesetz;
+        soll(
+            Ge.abw === 0 && Ge.riss[0] > Ge.riss[2],
+            `zwei Gesetze für denselben Leichnam: Riss ${Ge.riss.join(" → ")} ↔ Aas ${Ge.aas.join(" → ")} (Dauer ${Ge.dauerH} h, Abweichung ${Ge.abw})`
+        );
+        soll(
+            z.feld.zellen === z.feld.liegend && z.feld.liegend > 0 && !z.feld.alte,
+            `das Feld der Leichname heilt nicht: ${z.feld.zellen} Zellen, ${z.feld.liegend} mit liegendem Leichnam, die vergangene ${z.feld.alte ? "steht noch" : "fiel"}`
+        );
     }
     if (name === "gau") {
         const B = GAU_B4;

@@ -2213,12 +2213,12 @@ class AnazhRealm_feld_leben {
             return kacheln.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
         };
         const feld = [...(st.lifeField || [])].filter(([k]) => nah(k)).map(([k, e]) => [k, e.a, e.t]);
-        // die Leichname (oeko.zerfall#1, `_aasTat`): je nahe Zelle, die noch einen liegen hat, Betrag, Stunde, Kennungen
+        // die Leichname (oeko.zerfall#1, `_aasTat`): je nahe Zelle ihre liegenden [Kennung, Stunde, Wuchs]
         const h = this._weltStunde();
-        const aasS = AnazhRealm.TAT_NARBE.aas.stunden;
         const aas = [...(st.aasFeld || [])]
-            .filter(([k, e]) => nah(k) && e.ids.some(([, hi]) => hi + aasS > h))
-            .map(([k, e]) => [k, e.n, e.h, e.ids.filter(([, hi]) => hi + aasS > h)]);
+            .filter(([k]) => nah(k))
+            .map(([k, L]) => [k, L.filter((c) => c[1] + this._tatDauer({ tat: "aas", w: c[2] }) > h)])
+            .filter(([, L]) => L.length);
         const akte = (st.feldAkte || []).map(({ k: _k, ...a }) =>
             a.art === "annahme" ? { ...a, tier: { ...a.tier } } : a
         );
@@ -2262,12 +2262,14 @@ class AnazhRealm_feld_leben {
             this._feldTod(lf, z[0], zelle, tod, -Infinity);
             AnazhRealm._lebenWecken(this, z[0], jetzt);
         }
-        // die Leichname des Stands (oeko.zerfall#1): je Zelle Betrag, Stunde und die Kennungen, die nicht zweimal düngen
+        // die Leichname des Stands (oeko.zerfall#1): je Zelle ihre liegenden [Kennung, Stunde, Wuchs]; die Frist rechnet der
+        // nächste Tod neu (`_aasTat`)
         const aas = (st.aasFeld = new Map());
+        this._aasFrist = null;
         for (const z of Array.isArray(v.aas) ? v.aas : []) {
-            if (!Array.isArray(z) || typeof z[0] !== "string" || !zahl(z[1]) || !zahl(z[2]) || !Array.isArray(z[3])) continue;
-            const ids = z[3].filter((p) => Array.isArray(p) && typeof p[0] === "string" && zahl(p[1])).map(([id, hi]) => [id, hi]);
-            aas.set(z[0], { n: Math.max(0, z[1]), h: z[2], ids });
+            if (!Array.isArray(z) || typeof z[0] !== "string" || !Array.isArray(z[1])) continue;
+            const L = z[1].filter((c) => Array.isArray(c) && typeof c[0] === "string" && zahl(c[1]) && zahl(c[2]));
+            if (L.length) aas.set(z[0], L.map(([id, hi, w]) => [id, hi, w]));
         }
         const R = this._bestandRegionen().regionen;
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
