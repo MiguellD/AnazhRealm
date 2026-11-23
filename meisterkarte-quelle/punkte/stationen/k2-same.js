@@ -30,6 +30,20 @@ const crypto = require("crypto");
 const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
 const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
 const AUGE = require("./auge-klasse.cjs");
+const { FAECHER } = require("./faecher.js"); // der Fächer (M4: der Richter ist selbst eine Adresse) — same.massstab.spanne S1–S4
+
+// DAS AUGE AN EINER ADRESSE (same.massstab.spanne S1–S4, das Gesetz des Fächers): a.saat ist die Saat. Die Kamera der Welt folgt dem Leib
+// (`_loopCamera`, stamm/koerper-bewegung.js:1759), ihr Grund ist das Gelände der Saat — gelaende-core `hoehe` über die Lage
+// `_gelaende()` (stamm/gelaende-boden.js:833: eine lebende Sicht auf state, ihre Saat `_saatJe` = worldMeta.seed, Hydrosphäre und Erdbau
+// aus dem Faden). An der geladenen Saat misst das Gesetz die nahe und die ferne Ebene und das Auge über dem Grund; jede andere Saat
+// trägt keine Lage, die die warme Welt rufen kann — sie nennt das Fehlende
+const AUGE_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+        return { fehlt: "die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)" };
+    const c = st.camera;
+    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
+};
 
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
@@ -2761,7 +2775,7 @@ LEITERN.push(
 // ═══════════════════════════════════════ Perspektive massstab ═══════════════════════════════════════
 {
     // ─────────── same.massstab.spanne — Spanne der Größenordnungen ───────────
-    // S1–S4 verlangen 20 Saaten: EINE Fahrt über die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel am Ort), je Saat die Kamera der
+    // S1–S4 verlangen 20 Saaten: EIN Fächer über die Saaten (stationen/faecher.js, das Gesetz AUGE_AN), je Saat die Kamera der
     // Welt — dann nennt jede Sprosse ihren Leser (Steigflug, nahe Ebene, Krümmung, Orbit). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
     // gezählt wird die Reichweite der Welt-Kamera (`state.camera.far`, gesetzt in stamm/dirigent-ankunft.js:468) — was hinter ihr liegt,
     // zeichnet die Welt nicht.
@@ -2812,7 +2826,7 @@ LEITERN.push(
                     umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
                 },
             },
-            seite: { SAATEN },
+            seite: { FAECHER, AUGE_AN },
             lauf: async function spanneLauf(H, P, L) {
                 const ort0 = Date.now();
                 await L.ort("wiese", "ego");
@@ -2822,21 +2836,23 @@ LEITERN.push(
                 L.preisPose("wiese", "ego");
                 const sicht = "die Welt-Kamera reicht " + z.far + " m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht";
                 for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
-                // S1–S4 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): EINE Fahrt für die vier Sprossen (ihr Umfang ist derselbe, N = 20
-                // Saaten) — je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat die Kamera der Welt (nahe und ferne
-                // Ebene) und die Höhe des Auges über dem Gesetz. Die Schleife läuft zuletzt und lässt den Heimweg samt dem doppelten ersten
-                // Gang zur Wiese in der Frist (dort fährt der Preis, R3). Trägt die Welt alle Saaten, nennt jede Sprosse ihren Leser.
+                // S1–S4 ÜBER DEN FÄCHER (stationen/faecher.js; vorher die Bühne H.seite.SAATEN, je Saat ein Welt-Wechsel am Ort): EIN Fächer
+                // für die vier Sprossen (ihr Umfang ist derselbe, N = 20 Saaten, dieselben Namen wie die Bühne) und die geladene Saat — je
+                // Adresse die Kamera der Welt (nahe und ferne Ebene) und die Höhe des Auges über dem Grund. Trägt die Welt alle Saaten, nennt
+                // jede Sprosse ihren Leser; sonst bleibt sie beim Namen der fehlenden Fähigkeit offen.
                 const v = P.sprossen[1].umfang.verlangt;
-                const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
-                const kamera = function (r) {
-                    const c = r.state.camera;
-                    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
-                };
-                let s = null, wurf = null;
+                let R = null, wurf = null;
                 try {
-                    s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + kamera + ");", Math.max(5, L.rest() - 2));
-                    if (s.fehler) throw new Error(s.fehler);
-                    L.zeile("spanne S1–S4 Saaten " + JSON.stringify(s));
+                    R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.AUGE_AN, export: "gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833)", leser: "stamm/koerper-bewegung.js:1759 _loopCamera" },
+                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: z.saat }] },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: { saaten: { wie: "anzahl", nur: "saat" }, near: { wie: "max", feld: "near" }, auge: { wie: "max", feld: "auge" } },
+                        schlecht: { feld: "auge", richtung: "min" },
+                        pose: (a) => "Saat " + a.saat + " an der Wiese, ego (das Auge am Leib)",
+                        ungemessen: ["Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)"],
+                    });
+                    L.zeile("spanne S1–S4 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
                 } catch (e) {
                     if (e && e.messort) throw e;
                     wurf = e;
@@ -2845,24 +2861,20 @@ LEITERN.push(
                     for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => { throw wurf; });
                     return;
                 }
-                const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
-                const nahJe = [...new Set(s.je.map((x) => x.z.near))].join("/") || "—";
-                const augeJe = s.je.map((x) => x.z.auge).join("/") || "—";
-                const in20 = "in " + s.je.length + " Saaten (nahe Ebene je Saat " + nahJe + " m, Auge über dem Grund " + augeJe + " m; " + zeit + ")";
+                const in20 = "in " + R.gemessen + " von " + (v + 1) + " Adressen (nahe Ebene " + R.werte.near + " m, Auge über dem Grund " + R.werte.auge + " m; " + R.akte + ")";
                 const flug = "kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe";
                 // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera — derselbe wie same.massstab.nahe
                 const hfov = 2 * Math.atan(Math.tan((z.fov * Math.PI) / 360) * (1280 / 720));
                 const cm = 0.01 / (2 * Math.tan(hfov / 2));
-                const nahe = Math.max(...s.je.map((x) => x.z.near));
-                const urteil = {
-                    1: () => L.leser(1, "Steigflug 0,5 → 700 m in 30 s: " + flug + " — " + in20, s.je.length),
-                    2: () =>
-                        L.leser(2, nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand — " + in20 : "Spanne 1 cm → 1 km: " + flug + " — " + in20, s.je.length),
-                    3: () => L.leser(3, "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km — " + in20, s.je.length),
-                    4: () => L.leser(4, "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite — " + in20, s.je.length),
+                const nahe = R.werte.near;
+                // je Sprosse ihr Leser; trägt der Fächer nicht alle Saaten, steht das Fehlende der Saat daneben
+                const grund = {
+                    1: "Steigflug 0,5 → 700 m in 30 s: " + flug,
+                    2: nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand" : "Spanne 1 cm → 1 km: " + flug,
+                    3: "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km",
+                    4: "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite",
                 };
-                for (const nr of [1, 2, 3, 4])
-                    await L.je(nr, async () => (s.je.length < v ? L.umfang(nr, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; Ende: " + s.grund + ")") : urteil[nr]()));
+                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.leser(nr, grund[nr] + (R.gemessen < v ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen));
             },
         })
     );
