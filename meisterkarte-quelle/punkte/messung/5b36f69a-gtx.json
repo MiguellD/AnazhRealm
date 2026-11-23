@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T15:02:40.424Z",
+ "zeit": "2026-11-23T15:13:09.920Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -2903,6 +2903,360 @@
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.ereignis#2",
    "modus": "session"
+  },
+  "karte2.planet.wasser.gezeiten#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Gezeit: der Meeresspiegel an die Bucht 11.072 km vom Spawn (1.925 km²) steht über 25 Stunden der Welt-Uhr (Hub 0 m, benetzt 39–39 von 41) — gelaende-core.js:5816 waterLevel = Basis − meerUnterBasisM, kein Leser der Himmels-Uhr · periodeH ungemessen gegen Soll 12,42 ± 2 % ✗ · Täter: gelaende-core.js waterLevel (eine Konstante, kein Leser der Himmels-Uhr)",
+   "exit": 0,
+   "minuten": 2.46,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Gezeit: der Meeresspiegel an die Bucht 11.072 km vom Spawn (1.925 km²) steht über 25 Stunden der Welt-Uhr (Hub 0 m, benetzt 39–39 von 41) — gelaende-core.js:5816 waterLevel = Basis − meerUnterBasisM, kein Leser der Himmels-Uhr · periodeH ungemessen gegen Soll 12,42 ± 2 % ✗ · Täter: gelaende-core.js waterLevel (eine Konstante, kein Leser der Himmels-Uhr)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
+   "abdruck": "abf120002d27",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.stroemung#2": {
+   "gruen": false,
+   "zahl": "S2 laengsQuer ungemessen gegen Soll ≥ 1,5 ✗ · richtungAbwGrad ungemessen gegen Soll 0 ± 20 ° ✗ · bildPosen ungemessen gegen Soll ≥ 12 ✗ · Täter: scripts/werkbank.cjs /bild (kein optischer Fluss)",
+   "exit": 0,
+   "minuten": 2.46,
+   "grund": "ROT: S2 laengsQuer ungemessen gegen Soll ≥ 1,5 ✗ · richtungAbwGrad ungemessen gegen Soll 0 ± 20 ° ✗ · bildPosen ungemessen gegen Soll ≥ 12 ✗ · Täter: scripts/werkbank.cjs /bild (kein optischer Fluss)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
+   "abdruck": "dc82773e1e14",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.eis#1": {
+   "gruen": true,
+   "zahl": "S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer",
+   "exit": 0,
+   "minuten": 2.46,
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
+   "abdruck": "995bea42b323",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.kreislauf#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: kein Grundwasser-Spiegel: 20 Gruben 40–200 m vom See (Boden 1 m unter seinem Spiegel 1.13 m) bleiben trocken (gelaende-core.js:7728 atlasSpiegel füllt nur den Rand 3×3 eines Körpers); keine Quelle am Spiegel, kein Brunnen · grubeAbwM 1 m gegen Soll 0 ± 0,1 m ✗ · quellenProzent ungemessen gegen Soll ≥ 90 % ✗ · Täter: gelaende-core.js atlasSpiegel (kein Grundwasser jenseits des Rands)",
+   "exit": 0,
+   "minuten": 2.46,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: kein Grundwasser-Spiegel: 20 Gruben 40–200 m vom See (Boden 1 m unter seinem Spiegel 1.13 m) bleiben trocken (gelaende-core.js:7728 atlasSpiegel füllt nur den Rand 3×3 eines Körpers); keine Quelle am Spiegel, kein Brunnen · grubeAbwM 1 m gegen Soll 0 ± 0,1 m ✗ · quellenProzent ungemessen gegen Soll ≥ 90 % ✗ · Täter: gelaende-core.js atlasSpiegel (kein Grundwasser jenseits des Rands)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
+   "abdruck": "cd297a63b19d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.tiefsee#1": {
+   "gruen": false,
+   "zahl": "S1 rotProzent5m 10,963 % gegen Soll ≤ 30 % ✓ · sichtM 15,648 gegen Soll 8 ± 30 % ✗ · Täter: stamm/bild-himmel.js _dayNightApplyHemiUndLuft (das Medium unter Wasser) · foundry-core.js WASSER_GESETZ.koerper",
+   "exit": 0,
+   "minuten": 2.46,
+   "grund": "ROT: S1 rotProzent5m 10,963 % gegen Soll ≤ 30 % ✓ · sichtM 15,648 gegen Soll 8 ± 30 % ✗ · Täter: stamm/bild-himmel.js _dayNightApplyHemiUndLuft (das Medium unter Wasser) · foundry-core.js WASSER_GESETZ.koerper",
+   "gpu": "nvidia/pascal",
+   "konsum": "k415d7fe28c22",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
+   "abdruck": "8c3fc0824078",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3184,92 +3538,67 @@
   },
   "karte2.planet.wasser.seegang#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 60,017 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 60,017 s vor dem Wert der Sprosse · der Deckel der Leiter 60 s) · Täter: @@PUNKTE@@ PROBE 143.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.46,
+   "grund": "der Deckel der Leiter riss nach 60,017 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 60,017 s vor dem Wert der Sprosse · der Deckel der Leiter 60 s) · Täter: @@PUNKTE@@ PROBE 143.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
+   "s": 146.5,
+   "fremd": {
+    "s": 150.9,
+    "takte": 65,
+    "fremdS": 281.14,
+    "kerne": 1.863,
+    "fensterKerne": 2.576,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      166.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      15.8
+     ]
+    ],
+    "dienerS": 156.25,
+    "diener": [
+     [
+      "System",
+      78.58
+     ],
+     [
+      "dwm.exe",
+      33.14
+     ]
+    ],
+    "geraetS": 83.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.81
+     ],
+     [
+      "svchost.exe",
+      32.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 486.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:13:09.920Z",
    "abdruck": "9bbbae9d88a3",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.gezeiten#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
-   "abdruck": "abf120002d27",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.stroemung#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
-   "abdruck": "dc82773e1e14",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.eis#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
-   "abdruck": "995bea42b323",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.kreislauf#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
-   "abdruck": "cd297a63b19d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.tiefsee#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.731Z",
-   "abdruck": "8c3fc0824078",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.leben.tiere.verhalten#1": {
    "gruen": false,
