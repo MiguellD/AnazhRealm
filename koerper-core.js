@@ -5890,13 +5890,13 @@
         return { speed: speed, sprintSpeed: speed * B.sprintMul, jumpPower: (B.jumpPower.base + 0 * B.jumpPower.leicht + 0 * B.jumpPower.mag) * sizeSpeedMul };
     }
     // DER BEZUGS-LEIB DES GANGS (eine-huelle, additiv): der erwachsene Median der Bevölkerung mit 30 Jahren — die Mitte der
-    // Achsen, die das Genom rollt (Geschlecht, Gewicht, Muskel-Ton je 0,5), im Alter 30 J (der Regler `age`: 18–80 J), in der
+    // Achsen, die das Genom rollt (Geschlecht, Gewicht, Muskel-Ton je 0,5), im Alter 30 J (der Regler `age` des ALTER_GESETZ, `alterRegler`), in der
     // Höhe des Kanons (sie kürzt sich gegen die Froude-Einheit des Gangs). An ihm ist `kraft` 1: der mittlere Dreißigjährige
     // geht das Tempo des Kanons. Bis hier war der Bezug START_PARAMS — ein Mann von 27 J mit Gewicht 0,35: die Stadt lief im
     // Median 0,87 des Kanons (vom Abstand trug das Geschlecht 44 %, das Alter 35 %, das Gewicht 12 %, Muskel-Ton und Höhe je
     // 5 %), der mittlere Dreißigjährige 0,908. Die Streuung bleibt: das Verhältnis zweier Menschen ist dasselbe. Linse:
     // gate:koerper-kern K1 (am Bezug exakt 1) · K5 (der Median der Dreißigjährigen über die Achsen des Genoms 1 ± 0,01).
-    var KOENNEN_BEZUG = Object.freeze({ age: (30 - 18) / 62, gender: 0.5, mass: 0.5, tone: 0.5 });
+    var KOENNEN_BEZUG = Object.freeze({ age: alterRegler(30), gender: 0.5, mass: 0.5, tone: 0.5 });
     var _koennenBezugRoh = 0;
     // DAS KÖNNEN DES MENSCHEN aus seinem Leib (mensch-zahlen, rein additiv; Meisterkarte 2 mensch.sport.koennen S1): `kraft` = die
     // Kraft seiner Beine über seinem Gewicht, am Bezugs-Leib (KOENNEN_BEZUG) 1 — die Kraft wächst mit dem Querschnitt des Bein-Muskels
