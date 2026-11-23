@@ -27,6 +27,7 @@ require("../koerper-core.js");
 require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js");
 require("../tetrapoda-core.js"); // die Froude-Einheit des Gangs (das Können, K3)
+require("../schmiede-core.js"); // das Stoff-Gesetz der Stoffstrom-Kette (Verhüttung, das Eisen des Werkzeugs, Teil D)
 const core = globalThis.__koerperCore;
 const { mulberry32 } = globalThis.__phytoCore; // der Test-Strom ist der Strom des Kerns
 
@@ -481,6 +482,117 @@ function koennenUrteil(C0, mutante = null) {
     return { rot, greis, min: Math.min(...L), max: Math.max(...L), median30, start: K(S).lauf };
 }
 
+// TEIL D — DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1; koerper `stoffstromHalter` · `stoffstromFassen`,
+// schmiede `STOFFSTROM`): Erz → Barren → Werkzeug. Zwei Öfen (die Werke zweier Schmiede, Same 4242 und 12345), die Halde aus dem
+// Samen 7, zwölf Hände; sieben Tage ab Tag 3, 6 Uhr, Stunde für Stunde über den Kern, wie der Wirt ihn ruft. D0 die Kette steht:
+// der Kern trägt sie, und das Werk der Schmiede ist ihr Ofen (`herstellung.schmiede.aus` das Erz) — sonst schmilzt die Esse kein
+// Erz; D1 die Halde schrumpft (nie steigt sie, an jedem Tag fällt sie, solange sie trägt); D2 Barren am Ofen ≥ 1 am Ende;
+// D3 Werkzeug in der Hand ≥ 1; D4 die Erhaltung: Halde vorher − nachher = verhüttetes Erz (1e-9), das Eisen der Luppen = Erz ×
+// Ausbeute, und es steckt ganz in Luppe + Barren · barrenKg + Anbruch + Werkzeug · werkzeugKg; D5 die Verhüttung erhält die Masse
+// (Erz + Kohle = Eisen + Schlacke + CO₂, relativ 1e-12) und die Ausbeute ist ein Anteil des Erzes; D6 kein Eisen aus dem Nichts:
+// ein Werk der Schmiede ohne Kette bleibt über einen Tag leer; D7 die Kette ist eine Funktion der Zeit: in 0,37-h-Rufen gelesen
+// trägt sie dasselbe wie in Stunden-Rufen. Täter (Selbsttest): „die Esse schmilzt kein Erz" (der Kern ohne Kette, der Stand vor
+// stoffstrom-kette: die Schmiede stellte 0,5 Eisen je Stunde aus dem Nichts her), „das Eisen entsteht aus dem Nichts" (das Werk
+// stellt her), „die Kette erzeugt Eisen" (ein Barren ohne Luppe), „die Halde schrumpft nicht", „kein Werkzeug in der Hand", „die
+// Verhüttung erzeugt Masse". Leser: der Wirt (`_stoffstromAnlegen`, `_stoffstromFassen`, `_stoffstromZensus`, `_stoffstromBild`).
+function stoffstromUrteil(C0, S0, mutante = null) {
+    const C = Object.assign({}, C0);
+    const ST = S0 && S0.STOFFSTROM ? Object.assign({}, S0.STOFFSTROM) : null;
+    const B = C0.BESTAND_GESETZ;
+    const rot = [];
+    if (mutante === "ohneKette") C.stoffstromHalter = undefined;
+    if (mutante === "ausNichts")
+        C.bestandHalter = (...a) => {
+            const H = C0.bestandHalter(...a);
+            if (H.art === "werk") H.rate = 0.5;
+            return H;
+        };
+    if (mutante === "erzeugt")
+        C.stoffstromFassen = (K, h) => {
+            const n = C0.stoffstromFassen(K, h);
+            if (n) C0.bestandGib(K.oefen[0], K.oefen[0].ware, 1, K.h);
+            return n;
+        };
+    if (mutante === "haldeVoll")
+        C.stoffstromFassen = (K, h) => {
+            const n = C0.stoffstromFassen(K, h);
+            K.haldeKg = K.halde0;
+            return n;
+        };
+    if (mutante === "ohneHand") C.stoffstromHalter = (o, h, a, w, m, s) => C0.stoffstromHalter(o, h, a, w, 0, s);
+    if (mutante === "bilanz" && ST)
+        ST.verhuettung = (kg, erz) => Object.assign({}, S0.STOFFSTROM.verhuettung(kg, erz), { eisen: S0.STOFFSTROM.verhuettung(kg, erz).eisen * 1.1 });
+    const h0 = 3 * 24 + 6;
+    const ofen = (same) => C.bestandHalter("werk", "eisen", h0, 0, same, "schmiede", "schmiede");
+    // D6 kein Eisen aus dem Nichts: das Werk der Schmiede allein, einen Tag
+    const W0 = ofen(4242);
+    const leer = C.bestandAm(W0, h0 + 24);
+    if (leer > 1e-9) rot.push(`D6 das Eisen entsteht aus dem Nichts: das Werk der Schmiede trägt nach 24 h ohne Erz ${leer.toFixed(2)} Eisen (BESTAND_GESETZ.herstellung.schmiede.jeStunde ${B.herstellung.schmiede.jeStunde})`);
+    // D0 die Kette steht
+    const P = B.herstellung.schmiede;
+    if (typeof C.stoffstromHalter !== "function" || typeof C.stoffstromFassen !== "function" || !ST || !P.aus || !B.stoffstrom) {
+        rot.push(`D0 die Esse schmilzt kein Erz: keine Kette Erz → Barren → Werkzeug im Kern (koerper stoffstromHalter ${typeof C.stoffstromHalter}, schmiede STOFFSTROM ${!!ST}, herstellung.schmiede.aus ${P.aus || "—"}) — die Schmiede stellt ${P.jeStunde} Eisen je Stunde aus dem Nichts her, keine Halde, kein Barren`);
+        return { rot };
+    }
+    // D5 die Verhüttung erhält die Masse
+    const v = ST.verhuettung(100, ST.erz);
+    const ein = v.erz + v.kohle;
+    const aus = v.eisen + v.schlacke + v.co2;
+    if (Math.abs(ein - aus) > 1e-12 * ein) rot.push(`D5 die Verhüttung erzeugt Masse: Erz + Kohle ${ein.toFixed(6)} kg ≠ Eisen + Schlacke + CO₂ ${aus.toFixed(6)} kg`);
+    const ausbeute = ST.ausbeute(ST.erz);
+    if (!(ausbeute > 0 && ausbeute < 1)) rot.push(`D5 die Ausbeute ${ausbeute} ist kein Anteil des Erzes`);
+    const werkzeugKg = ST.werkEisen(ST.werkzeug);
+    const lauf = (schritt) => {
+        const oefen = [ofen(4242), ofen(12345)];
+        let K = null;
+        try {
+            K = C.stoffstromHalter(oefen, h0, ausbeute, werkzeugKg, 12, 7);
+        } catch (e) {
+            return { fehler: String((e && e.message) || e) };
+        }
+        const tage = [];
+        for (let h = h0 + schritt; h <= h0 + 7 * 24 + 1e-9; h += schritt) {
+            C.stoffstromFassen(K, h);
+            const d = Math.floor((h - h0 - 1e-9) / 24);
+            tage[d] = K.haldeKg;
+        }
+        C.stoffstromFassen(K, h0 + 7 * 24);
+        return { K, oefen, tage };
+    };
+    const L = lauf(1);
+    if (L.fehler) {
+        rot.push(`D0 die Esse schmilzt kein Erz: der Kern legt keine Kette an (${L.fehler})`);
+        return { rot };
+    }
+    const { K, oefen, tage } = L;
+    const he = h0 + 7 * 24;
+    // D1 die Halde schrumpft
+    let vor = K.halde0, stieg = 0, flach = 0;
+    for (const x of tage) {
+        if (x > vor + 1e-9) stieg++;
+        if (x > vor - 1e-9 && vor > 1e-9) flach++;
+        vor = x;
+    }
+    if (stieg || flach || !(K.haldeKg < K.halde0))
+        rot.push(`D1 die Halde schrumpft nicht: ${K.halde0.toFixed(1)} → ${K.haldeKg.toFixed(1)} kg, ${flach} Tage ohne Abbau, ${stieg} Tage steigend`);
+    // D2 Barren am Ofen
+    const barren = oefen.reduce((a, O) => a + C.bestandAm(O, he), 0);
+    if (!(barren >= 1)) rot.push(`D2 kein Barren am Ofen: ${barren} Barren nach 7 Tagen (gegossen ${K.barren})`);
+    // D3 Werkzeug in der Hand
+    if (!(K.haende >= 1)) rot.push(`D3 kein Werkzeug in der Hand: ${K.haende} Hände tragen eines (geschmiedet ${K.werkzeug})`);
+    // D4 die Erhaltung
+    const G = B.stoffstrom;
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    const imEisen = sum(K.luppe) + barren * G.barrenKg + sum(K.anbruch) + K.werkzeug * K.werkzeugKg;
+    if (Math.abs(K.halde0 - K.haldeKg - K.erz) > 1e-9 || Math.abs(K.eisen - K.erz * K.ausbeute) > 1e-9 || Math.abs(imEisen - K.eisen) > 1e-9)
+        rot.push(`D4 die Kette erzeugt Eisen: Halde ${(K.halde0 - K.haldeKg).toFixed(4)} kg ab, Erz ${K.erz.toFixed(4)} kg verhüttet, Eisen der Luppen ${K.eisen.toFixed(4)} kg (Soll ${(K.erz * K.ausbeute).toFixed(4)}), im Ofen, im Anbruch und in den Werkzeugen ${imEisen.toFixed(4)} kg`);
+    // D7 die Kette ist eine Funktion der Zeit
+    const M = lauf(0.37);
+    const gleich = !M.fehler && Math.abs(M.K.haldeKg - K.haldeKg) < 1e-9 && M.K.werkzeug === K.werkzeug && M.K.haende === K.haende && M.K.barren === K.barren;
+    if (!gleich) rot.push(`D7 die Kette hängt am Rufmuster: in 0,37-h-Rufen Halde ${M.K ? M.K.haldeKg.toFixed(3) : "—"} kg, ${M.K ? M.K.werkzeug : "—"} Werkzeuge gegen ${K.haldeKg.toFixed(3)} kg, ${K.werkzeug}`);
+    return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
@@ -505,12 +617,16 @@ if (SELBSTTEST) {
     // das Können: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const kGut = !koennenUrteil(core).rot.length;
     const koennenTaeter = [["ohneKoennen", "K2 das Können folgt dem Muskel nicht"], ["ohneAlter", "K2 das Können folgt dem Alter nicht"], ["ohneMasse", "K2 das Können folgt der Masse nicht"], ["mitHoehe", "K3 die Höhe bleibt im Tempo"], ["bezugStart", "K5 der Median der Bevölkerung mit 30 J"]].map(([m, z]) => [kGut && koennenUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter])
+    // die Stoffstrom-Kette: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const sc = globalThis.__schmiedeCore;
+    const sGut = !stoffstromUrteil(core, sc).rot.length;
+    const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einundzwanzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle siebenundzwanzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -526,6 +642,9 @@ const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phyto
     : { rot: ["C0 der Kern trägt keine Acker-Kette (koerper scheuneHalter/scheuneFassen, phyto ackerStand)"] };
 for (const z of ak.rot) st.rot.push("ACKER " + z + " — Täter: koerper scheuneFassen · phyto ACKER_GESETZ");
 if (!ak.rot.length) console.log(`  ACKER Scheune: ${ak.ernten} Ernten in 5 Tagen, steigt an ${ak.steigt}, fällt an ${ak.faellt} Tagen, am Ende ${ak.voll.toFixed(2)} · Frucht bis ${ak.hoch.toFixed(2)} m`);
+const sk = stoffstromUrteil(core, globalThis.__schmiedeCore);
+for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper stoffstromHalter · stoffstromFassen · schmiede STOFFSTROM");
+if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Bezugs-Leib 1: die Mitte der Achsen mit 30 J) · der Median der Dreißigjährigen ${kn.median30.toFixed(4)} · START_PARAMS ${kn.start.toFixed(4)} · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);

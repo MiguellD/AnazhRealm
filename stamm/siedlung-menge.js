@@ -92,6 +92,7 @@ class AnazhRealm_siedlung_menge {
         // das Bein seines Baus ist EINE Zahl (`_bewohnerBeinMass`): sein Rig liest sie, wie sein Stand sie las
         rig._beinMass = b.beinMass || undefined;
         b.armeOffen = true; // die Ruhe der Arme seines Baus stellt die Nah-Wahl an DIESEM Leib (`_tickBewohner`)
+        this._stoffstromHand(b); // trägt er ein Werkzeug der Kette, hängt es an seiner Hand (mensch.wirtschaft.stoffstrom#1)
         this._leibMatrix(g);
         return true;
     }
@@ -106,7 +107,7 @@ class AnazhRealm_siedlung_menge {
         const k = new THREE.Group();
         while (g.children.length) k.add(g.children[0]);
         for (const n of u._leibTeile) delete u[n];
-        for (const n of ["_leibTeile", "_tierBaum", "_trefferGlieder", "_gaitIK"]) delete u[n];
+        for (const n of ["_leibTeile", "_tierBaum", "_trefferGlieder", "_gaitIK", "werkzeugMesh"]) delete u[n];
         this._disposeSoulGroup(k);
         b.armeOffen = false;
         g.visible = false;
