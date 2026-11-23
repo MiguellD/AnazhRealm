@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "radeon",
- "zeit": "2026-11-23T07:36:17.682Z",
+ "zeit": "2026-11-23T07:48:47.467Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#2": {
@@ -632,6 +632,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 10 Stände · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.05,
+   "gpu": "amd/rdna-3",
+   "konsum": "k3e837de0d204",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ke3f5f1865d95",
+   "s": 1.8,
+   "fremd": {
+    "s": 5.3,
+    "takte": 2,
+    "fremdS": 49.11,
+    "kerne": 9.296,
+    "fensterKerne": 9.296,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      17.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-21996-profil-VBqmBe --no-p",
+      16.23
+     ],
+     [
+      "node.exe scripts/diag-settlement.cjs",
+      8.39
+     ]
+    ],
+    "dienerS": 7.83,
+    "diener": [
+     [
+      "System",
+      5.97
+     ],
+     [
+      "dwm.exe",
+      0.98
+     ]
+    ],
+    "geraetS": 3.5,
+    "geraet": [
+     [
+      "svchost.exe",
+      1.73
+     ],
+     [
+      "MsMpEng.exe",
+      1.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 12.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T07:45:49.534Z",
+   "abdruck": "394fd1e1aaf0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -646,7 +715,8 @@
   "k1d270909e1a7": "bVXBjpswEP2XHLtlhwQIxtIenCVqVtq2ybW3MYyBDYHIhtBS9d8rkpAE2Dma9zzPb57N39kRoz0m9PxhymLGZ19mX2cGT2QZ0ifSzx9mxmdBNF+Qw8WlQAjx2sEinR0rA3kmAWWB6YGsWleU5c/RmYaS3JhxaNYi2QIoaCFsXl7G1FxSXFoVKroRPRYrj4+BtUlQkoW1Oje7gj3bmUvF4VwsFD9DuFXDhNi6yt2ycLSZxCIeqg2Wnk8ef/sjxFpMVMYZUmXlWWH6vvPYD5TN772+TzgaG6tFSnPSV1Ls0yJwe7Grzs7OmhFR5bUxg2bMib0F4wDBGJuQyaK0so66lFRc4TJY+HPkq6nbybG21KMilBKZHHudIhUJ6YEG24nUcs7hNxtvuscDabQKTHsvbcdfyLs3ALCZasnPws8teuFzj+YYDYjdUOEEIPr4nbqlze1rvx4m4l67STMTpZk+DG1SLi1sh78nU3SKMWlrX5rqhmYuIrHrLQhB7EQXrnGwzP1QPQ8R2UNQgIHYTDw0paoa1GQlx/pKJJc83+NCvE3AFR4Off6V4zrReICm6gL+KMPzHcWWHODpckGm87hcB6ulLO9JSrluMLmJJ40HC2WiM6X6iUsvUsFnAW0oryxZllW/Jfk+OhwcKB6H/KPpbF0/zDB07W/vv3Y7MaxXMdZ97lDq6nZSubSVy1UXlCaaoDNdWQ1GaQ9fKEkYcGjdMbQlnVNCAxulz4Iu2o266G67J8a/PgHqaRDcdjLlNqPO4MLUph9yhK70+CcjaUjvJRb7XqbtR8tL/FY/xWboSbjbshCgGVrlJJ2f63R1Ww+T/p06UgRHXaqsewkhxdqkmFf338C//w==",
   "kbdf5d7f3bac8": "bVRdk6IwEPwvPt5eNiggIVX7EJetc6vuQ3/CJEyAFcFKQO68uv9+hRoV2HmiQnem09PJ39kB1A4yfP6wdTXjsy+zrzMLRyQWzRHN84ed8Vms5gv0ubgUFUK89jBlikNjaVlICrKCfI+kNQ0W5bM600BikDJOuzeRbSjV9EST7uVlTC0lpjVpQOONGLJUh3wMbG0GEgm0+tzsCg49fy41p+diifiV0Ft1P4TYBDrYsGS0mYQqHaqNl2GEIX//I8SbmKhMC8CGlEVlXd95GsXa4w+9JhwDHTkB5iWaKymNcBEHTuyqt7O3ZkTUZWvtoBnz03DBOKXxGJuhLVTekIOpJVZXuIwX0Rz4aup2dmiJflQEUgKTY69zwCpDM9Dg+Uov55z+ZuNNd7BHA6SC3Hnp+dFC3r2hlK6nWsqz8HMLJ3we4hzUgNgPlR4pFS5+x35pffvr1pNM3Gs7aWZVXpj90CYd4MLz+fepNJtDiobsatvc0CwAQHa9BQkVW9GHaxwsez+U4wEAewgKZVSsJx7aWjcdGCTZob0SMcAwCrkQ7xNwA/u9y7/2A1+NB2ibPuCPMsLI12zJKX26XJDpoS/XgZywKB1J6yCIJzfxaGBPQGam0NpNXIZKx58FtMOyIbKuG7clRhH4nPq0ehzyz6639e1hhkngfXtdbcWoXsVY97lDbZrbSeXS0wHXfVA6NUEXpiEdqNzBF1oixPwT6AlNiRkObJQRi/tod+pRqft4GgT3NJnyqcDe4Mq21g1ZQSBD/slIOjQ7CdXOyfQitbzEb/VLrIemJNsNSyjthqt+1vu5zsV14wMqejC1LvrXj+bQ2hzK5v70//sP",
   "k25cabf6be5ff": "bVVNj5swEP0vObZlTQIEY2kPTlg12261ROqpt7EZAxsCkQ1Lm6r/vXISkgA7JwRvZt68+eDv7AByBxk+vJm6mrHZp9mXmYF3dAzqd9QPb2bGZpGcL9BjfMutEc752sKkLg6NIWUhCIgK8j06rW6wKB/kyQ0E+illpHviWUKIIkcSd/xqT/zxcRymFJjWTgMKr0ECmqqAjYGtyUCgA606Jb6AA9ebC8XIyWjMX2NytY5ynvjKT2jMEyp5NskuoEqHFUTLIMSAPXcfsk0LwMYpi8r0+edpGCmX3XL+mPho6JwjYF6ivjilIS4ivye9stJYuUaOqmyNGSSjXhosKCMkGmMzNIXMG+ega4HVBS6iRTgHtuomdWSH1lH3jEAIoGKseQ5YZagHHFxPquWckd90HHQHe9TgVJD3WrpeuBA3bQghmymX8kT8lKInPg9wDnLgaJtL3gnpR8k+E7q5fu3fx9lt3Ph2kszIvND7oUzKx4XrsZcpNZNDitrZ1aa5oqkPgJRdspHThiR+PPa8FdX7AQC9GxRCCd9MNDS1ajrQ6GSH9uKIPgZhwDh/noAb2O/7PVCe78lxA01jB/yeRhB6ii4ZIZ/PizIt+rwOzhGLsndSyvejgK1X/hj8rmHvgMh0oVTfdRFIFX00pB2WjSPquunDYhiCZyWp7huddOdbcbPYd7++/Npu+dDWazee8j9lqXVzrVgsXeUzZQemkxN0oRunA5n38IUSCJb+pDdH1CVmOJBThDSyI96pM/ejPTnh5RSoz4MBPk4jFmiFrkxr+mZL8EXAPmhNh3onoNr1NN1QLin7xjlfvfLNQJfvP92ExmRi3RPnz0m+Ol9kaZeF/DnfqwNKctC1KuxFJDm0Joeyuf0i/v0H",
-  "kd2c71c11a1b8": "bVXRjpswEPyXPPbqMwkQjKV7cI5Tc1WrJp+wNmvgQiCy4WhT9d8rkjgJkH2yYMY7O7sLf2cHUDvI8PnD1tWMz77Mvs4sfCKxaD7RPH/YGZ/Far5An4tzUCHEaw9Tpjg0lpaFpCAryPdIWtNgUT6rEw0kBinjtHsT2YZSTY806cQ13sTLy/iaUmJakwY0Xi8JWapDPga2NgOJBFp9SnwBh54/l5rTU7BE/EroNbqfQmwCHWxYIoTQIptkl1ClwwriZRhhyN//PFSbFoANKYvKuvzzNIq1x+9yTjgGOnIEzEs0F1Ia4SIOnOhVb01v14ioy9baQTLmp+GCcUrjMTZDW6i8IQdTS6wucBkvojnwVTepIzu0RN8rAimBybHnOWCVoRlo8Hyll3NOf7PxpTvYowFSQe689PxoIW/eUErXUy3lSfgphRM+D3EOakDsm0s/KXWj1J8pW1/fuudJdhs3sZ0ksyovzH5okw5w4fn8x1SazSFFQ3a1ba5oFgAgu2xGQsVW9EOWjJm3ohwPANjdoFBGxXrioa1104FBkh3aCxEDDKOQC/E+ATew37s90H7gq3EDbdMP+L2MMPI1W3JKn86LMi36vA7kiEXpSFoHQTzZyE8DewIyM4XWruMyVDp+NKAdlg2Rdd24KzGKwO/tqO6bvOnO34lbJIH37XW1FaN4FWPdpwy1aa6VyqWnA677QenUBF2YhnSgcgdfaIkQ8wfQI5oSMxzYKCMW96PdqXul7vA0GNzjpMvHAnuDK9ta12QFgQz5g5Z0aHYSqp2T6UVqyfh3IcTql1gPTUm2G5bQcfhd7+emEt3UvwMqejC1LvovIc2htTmUze3X8O8/"
+  "kd2c71c11a1b8": "bVXRjpswEPyXPPbqMwkQjKV7cI5Tc1WrJp+wNmvgQiCy4WhT9d8rkjgJkH2yYMY7O7sLf2cHUDvI8PnD1tWMz77Mvs4sfCKxaD7RPH/YGZ/Far5An4tzUCHEaw9Tpjg0lpaFpCAryPdIWtNgUT6rEw0kBinjtHsT2YZSTY806cQ13sTLy/iaUmJakwY0Xi8JWapDPga2NgOJBFp9SnwBh54/l5rTU7BE/EroNbqfQmwCHWxYIoTQIptkl1ClwwriZRhhyN//PFSbFoANKYvKuvzzNIq1x+9yTjgGOnIEzEs0F1Ia4SIOnOhVb01v14ioy9baQTLmp+GCcUrjMTZDW6i8IQdTS6wucBkvojnwVTepIzu0RN8rAimBybHnOWCVoRlo8Hyll3NOf7PxpTvYowFSQe689PxoIW/eUErXUy3lSfgphRM+D3EOakDsm0s/KXWj1J8pW1/fuudJdhs3sZ0ksyovzH5okw5w4fn8x1SazSFFQ3a1ba5oFgAgu2xGQsVW9EOWjJm3ohwPANjdoFBGxXrioa1104FBkh3aCxEDDKOQC/E+ATew37s90H7gq3EDbdMP+L2MMPI1W3JKn86LMi36vA7kiEXpSFoHQTzZyE8DewIyM4XWruMyVDp+NKAdlg2Rdd24KzGKwO/tqO6bvOnO34lbJIH37XW1FaN4FWPdpwy1aa6VyqWnA677QenUBF2YhnSgcgdfaIkQ8wfQI5oSMxzYKCMW96PdqXul7vA0GNzjpMvHAnuDK9ta12QFgQz5g5Z0aHYSqp2T6UVqyfh3IcTql1gPTUm2G5bQcfhd7+emEt3UvwMqejC1LvovIc2htTmUze3X8O8/",
+  "k3e837de0d204": "bVRdj5swEPwveezVZxIgGEv34BxRc1LbS37C2qyBC4HIhlCl6n+vSELCR/YJmRnveHbsv7MjqD0k+Pply2LGZ99m32cWTkgsmhOa1y8747NQzRfocnEtKoR4b2HKZMfK0jyTFGQB6QFJbSrM8ld1oYFEL2acNmuRbCnV9Eyj5u1tTM0lxiWpQOOd6LNY+3wMrG0CEgnU+tLsBvYddy41p5dikfiM6L2aX0JsPe1tWTTaTEIRD9WGSz9An380QqzFRGWcAVYkzwrb9Z3HQagd3us14RhoyBkwzdHcSHGAi9DrxK5aO1trRkSd19YOmjE39heMUxqOsQnaTKUVOZpSYnGDy3ARzIGvpm4nx5roviKQEpgce50CFgmagQbHVXo55/QPG2+6hwMaIAWknZeOGyzkwxtK6WaqJb8Iv7TohM99nIMaENuh0hOloovfqV3a3P9261EiHrWbNLMqzcxhaJP2cOG4/OdUmk0hRkP2pa3uaOYBILvdgoiKnWjDNQ6WfRyq4wEA6wWFMio2Ew9tqasGDJLkWN+I6KEf+FyIjwm4gsOhy792PVeNB2irNuB9GX7garbklL5cL8j00NfrQM6Y5R1Ja88LJzfxZOBAQCYm07qbuPSVDp8FtMG8IrIsq25LDAJwOXVp0R/y76a1dd2bYeQ5P95XOzGqdzHWfelQmup+Url0tMd1G5RGTdCZqUgDKu3gCy0RQv4EekaTY4IDG2XAwjbajeor7T5eBsE9T6Z8zrA1uLC17YaswJM+fzKSBs1eQrHvZDqBWl7jt/oUm37YhYh2WxZR2gytcpO1WDVRKm4bH1HRoyl11r5+NIXappBXj6f/338="
  },
  "ungemessen": {
   "karte2.erleben.spieler.gemeinsam#1": {
@@ -1364,6 +1434,70 @@
    },
    "zeit": "2026-11-23T07:36:17.682Z",
    "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.67,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 40.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 188.66,
+    "kerne": 4.478,
+    "fensterKerne": 5.049,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      65.84
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41056-profil-hLGuDI --no-p",
+      13.39
+     ],
+     [
+      "git stash create",
+      8.95
+     ]
+    ],
+    "dienerS": 23.95,
+    "diener": [
+     [
+      "System",
+      10.42
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.11
+     ]
+    ],
+    "geraetS": 36.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.33
+     ],
+     [
+      "svchost.exe",
+      11.27
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 79.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T07:48:47.467Z",
+   "abdruck": "9b1c46fdbef1",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
