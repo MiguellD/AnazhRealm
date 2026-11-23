@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 8,
+    "heute": 9,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.3,
+    "anteilHeute": 4.6,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15632,7 +15632,7 @@
        "richter": "N = 100 Planeten-Saaten: Phase sichtbarer Oberflächen-Stoffe stimmt mit Phasendiagramm ≥ 95 %; Saat mit O₂ 30 %: Brandfläche ≥ 3× der heutigen"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Rothermel 1972 + Albini + Anderson auf dem Feld (stamm/feld-leben.js:2477-2620), Halt an Fluss und Fels, Asche als Tat; Phasen nur Eis und Wasser (bau-vorlagen.js:1610). Alle Belege headless (stoffe.K2/K3 an d3708675), Bild-p95 im Brand nie gemessen; nur Vegetation brennt.",
@@ -20086,7 +20086,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 52,
+  "heute": 53,
   "davonKopplungen": 33,
   "kern": 14,
   "kernDazu": 14,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 21
+  "nachwache": 22
  },
  "zusammengelegt": [
   {
