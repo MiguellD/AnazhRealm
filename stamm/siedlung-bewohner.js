@@ -1251,6 +1251,11 @@ class AnazhRealm_siedlung_bewohner {
             if (!this.state.materials || !this.state.materials[P.ware])
                 throw new Error(`BESTAND: die Ware ${P.ware} des Berufs ${b.beruf} ist kein Stoff der Welt`);
             b.bestand = KC.bestandHalter("werk", P.ware, h, 0, b.same, b.rolle, b.beruf);
+            // DAS KÖNNEN TRÄGT DAS WERK (mensch.sport.koennen#2, bewohner-satz): die Herstellung je Stunde ist die des Gesetzes mal
+            // dem Können seiner Kunst (der Lebenslauf, `uebung.handwerk`: das Potenzgesetz der Übung, 1 = das Band der Guten) — der
+            // Meister füllt sein Werk schneller als der Lehrling, und jedes Jahr der Welt hebt es (`absicht`). Bis hier stellte
+            // jeder Mensch desselben Berufs gleich viel her.
+            b.bestand.rate *= b.uebung.handwerk.koennen;
             waren.add(P.ware);
         }
         const W = [...waren].sort();
