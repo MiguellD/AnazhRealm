@@ -1376,9 +1376,15 @@ async function lebenBuehnen() {
         // 182 m über das Netz); seit die Tür zur Seite tritt (stamm `amTuer`) 0 von 562. Täter (Selbsttest): der Stand fragt das
         // Netz nicht (tetrapoda `wegLaengen` trägt 0).
         const JENSEITS = { umweg: 2, nahtM: 25 };
+        // Der Täter greift am Chokepoint der Längen (netz-index: der lebende Grund merkt sie, `G.laengen`, `_bewohnerAnTuer`):
+        // sein Trocken-Lauf rechnet an einem Grund OHNE Gemerktes und gibt ihm danach seine Längen zurück — sonst träfe die
+        // Null-Tafel den gemerkten Wert nie, und der Täter wirkte nicht
         const trocken = (mut) => {
             const TC0 = globalThis.__tetrapodaCore;
+            const G = S.netzGrund;
+            const LL0 = G && G.laengen;
             if (mut) globalThis.__tetrapodaCore = Object.assign(Object.create(TC0), { wegLaengen: (n) => new Float64Array(n) }); // prettier-ignore
+            if (mut && G) G.laengen = new Map();
             try {
                 const it = r._bewohnerListe(S);
                 let w;
@@ -1386,6 +1392,9 @@ async function lebenBuehnen() {
                 return w.value || [];
             } finally {
                 globalThis.__tetrapodaCore = TC0;
+                if (mut && G) G.laengen = LL0;
+                // ein Grund, den erst der Trocken-Lauf legte, vergisst die Null-Längen des Täters
+                if (mut && S.netzGrund && S.netzGrund !== G) S.netzGrund.laengen = null;
             }
         };
         const standListe = trocken(taeter === "zielplan-jenseits");
