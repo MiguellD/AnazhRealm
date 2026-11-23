@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 13 s · am Messort dorf (third) nach 13.0 s, 507 Takte
+@@ 13 s · Zensus dorf: 101 Bewohner · Alter [21.582727195625193,48.84104134261142] J. · im Gespräch (treff) 0
+@@ 33.4 s · am Messort wiese (third) nach 18.5 s, 787 Takte
+@@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
