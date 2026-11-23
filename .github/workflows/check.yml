@@ -392,7 +392,11 @@ jobs:
               # speicher.K1: der Browser stirbt hart (im Schreiber oder zufällig), der nächste Boot lädt EIN Schreiben, <= 10 s alt,
               # keine halbe Welt, jedes Loch steht (die Linie über 256, K23); der Selbsttest schreibt den Platz in zwei Zügen und
               # sieht ROT. Dazu der Korpus (speicher.K5: je Versions-Stufe ein Stand ihrer Version lädt am Kopf, daraus (U) (W) (K)),
-              # (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb.
+              # (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb. Der Korpus in ZWEI Anteilen (PERSISTENCE_KORPUS,
+              # Teil 1 die Stände mit geradem Index samt Kopf, Teil 2 die ungeraden): je CI-Lauf lädt jeder Stand GENAU EINMAL — bis
+              # hier luden beide Teile alle 317 (1449 s und 1392 s, je Landung ~4 s mehr); gate:ci-deckung (O) hält die Deckung.
+              env:
+                  PERSISTENCE_KORPUS: "1/2"
               run: npm run gate:persistence
 
             - name: Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)
@@ -401,6 +405,7 @@ jobs:
               env:
                   PERSISTENCE_TABTOD: 8-19
                   PERSISTENCE_WEG: 0-0
+                  PERSISTENCE_KORPUS: "2/2"
               run: node scripts/diag-persistence.cjs
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
