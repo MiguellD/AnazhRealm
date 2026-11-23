@@ -7722,7 +7722,7 @@
   },
   "karte2.erleben.schoepfen.satz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,438 (Faden 1,438 · alle Kerne 1,192; vor 102/273,5 ms, nach 129,4/253,9 ms, Ruhe 90/229,5 ms seit 2026-11-22) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --use · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 2,014 (Faden 2,014 · alle Kerne 1,879; vor 120,6/399,3 ms, nach 181,3/431,7 ms, Ruhe 90/229,8 ms seit 2026-11-23) · fremd: Explorer.EXE 0,7 CPU-s · git-credential-manager-core get 0,7 · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.satz#1",
@@ -7740,7 +7740,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,438 (Faden 1,438 · alle Kerne 1,192; vor 102/273,5 ms, nach 129,4/253,9 ms, Ruhe 90/229,5 ms seit 2026-11-22) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --use",
+     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 2,014 (Faden 2,014 · alle Kerne 1,879; vor 120,6/399,3 ms, nach 181,3/431,7 ms, Ruhe 90/229,8 ms seit 2026-11-23) · fremd: Explorer.EXE 0,7 CPU-s · git-credential-manager-core get 0,7",
      "ungemessen": true,
      "beide": true
     },
@@ -10960,7 +10960,7 @@
   },
   "karte2.leben.evolution.bauplan": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.bauplan#1 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.bauplan#2 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#2 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#3 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#3 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#4 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#4 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#5 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#5 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#6 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.bauplan#1 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.bauplan#2 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#2 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#3 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#3 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#4 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#4 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#5 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#5 gtx: ungemessen (R10) · karte2.leben.evolution.bauplan#6 radeon: ungemessen (R10) · karte2.leben.evolution.bauplan#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.bauplan#1",
@@ -10978,8 +10978,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11076,7 +11077,7 @@
   },
   "karte2.leben.evolution.erbe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#2 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#2 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.erbe#1",
@@ -11094,8 +11095,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11192,7 +11194,7 @@
   },
   "karte2.leben.evolution.fossil": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fossil#1 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fossil#2 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#2 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#3 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#3 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#4 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#4 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#5 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#5 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#6 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fossil#1 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fossil#2 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#2 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#3 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#3 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#4 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#4 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#5 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#5 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#6 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fossil#1",
@@ -11210,8 +11212,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11308,7 +11311,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11326,8 +11329,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11558,7 +11562,7 @@
   },
   "karte2.leben.evolution.muster": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.muster#1 radeon: ungemessen (R10) · karte2.leben.evolution.muster#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.muster#2 radeon: ungemessen (R10) · karte2.leben.evolution.muster#2 gtx: ungemessen (R10) · karte2.leben.evolution.muster#3 radeon: ungemessen (R10) · karte2.leben.evolution.muster#3 gtx: ungemessen (R10) · karte2.leben.evolution.muster#4 radeon: ungemessen (R10) · karte2.leben.evolution.muster#4 gtx: ungemessen (R10) · karte2.leben.evolution.muster#5 radeon: ungemessen (R10) · karte2.leben.evolution.muster#5 gtx: ungemessen (R10) · karte2.leben.evolution.muster#6 radeon: ungemessen (R10) · karte2.leben.evolution.muster#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.muster#1 radeon: ungemessen (R10) · karte2.leben.evolution.muster#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.muster#2 radeon: ungemessen (R10) · karte2.leben.evolution.muster#2 gtx: ungemessen (R10) · karte2.leben.evolution.muster#3 radeon: ungemessen (R10) · karte2.leben.evolution.muster#3 gtx: ungemessen (R10) · karte2.leben.evolution.muster#4 radeon: ungemessen (R10) · karte2.leben.evolution.muster#4 gtx: ungemessen (R10) · karte2.leben.evolution.muster#5 radeon: ungemessen (R10) · karte2.leben.evolution.muster#5 gtx: ungemessen (R10) · karte2.leben.evolution.muster#6 radeon: ungemessen (R10) · karte2.leben.evolution.muster#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.muster#1",
@@ -11576,8 +11580,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11674,7 +11679,7 @@
   },
   "karte2.leben.evolution.stammbaum": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.stammbaum#1 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.stammbaum#2 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#2 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#3 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#3 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#4 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#4 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#5 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#5 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#6 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#6 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#7 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.stammbaum#1 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.stammbaum#2 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#2 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#3 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#3 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#4 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#4 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#5 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#5 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#6 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#6 gtx: ungemessen (R10) · karte2.leben.evolution.stammbaum#7 radeon: ungemessen (R10) · karte2.leben.evolution.stammbaum#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.stammbaum#1",
@@ -11692,8 +11697,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11960,7 +11966,7 @@
   },
   "karte2.leben.evolution.zivilisation": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/welt-boot.cjs, stamm/siedlung-bewohner.js +1) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.zivilisation#1",
@@ -11978,8 +11984,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/welt-boot.cjs, stamm/siedlung-bewohner.js +1) — zuletzt an f0a89f7e: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37534,7 +37541,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 285,
+  "konsum": 292,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37702,10 +37709,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3337
+  "ohne": 3330
  },
  "kopfVoll": "9f3fe35f4a6f7860b04264831bc20ffc70aa7d14",
- "zeit": "2026-11-23T13:36:10.254Z",
+ "zeit": "2026-11-23T13:43:46.872Z",
  "vorher": "9f3fe35f",
  "bilanz": {
   "gewinn": [],
