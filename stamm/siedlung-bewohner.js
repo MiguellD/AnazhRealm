@@ -2483,6 +2483,13 @@ class AnazhRealm_siedlung_bewohner {
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
         const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
+        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1, bewohner-satz): ist er an diesem Tag der Sicht krank (der Lebenslauf,
+        // `krank`), sitzt er in jeder Stunde, die ihn fortführte — Werk, Markt, Mahl, Besuch —, vor seiner Tür im Akt seines Abends
+        if (!soll.drinnen && soll.ort !== o.heim && !b.amSteuer) {
+            const wm = this.state.worldMeta;
+            if (this._bewohnerLauf(null, b, "krank", (+(wm && wm.tag) || 0) + Math.floor(stunde / 24)))
+                return { ziel: o.heim, drinnen: false, akt: "abend" };
+        }
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
