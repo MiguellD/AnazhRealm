@@ -4806,7 +4806,43 @@
     // Leser: der Verkehr der Siedlung (`_verkehrAnlegen`), der Vorrat der Platte (`_foundryLibraryConfig`).
     const GATTUNGEN = Object.keys(PRESETS).filter((k) => PRESETS[k].kind === "vehicle");
     const FLOTTE = { kompakt_fwd: 0.34, suv: 0.24, limousine: 0.18, transporter: 0.12, gt: 0.07, supersport: 0.05 };
-    function flotte(n, same) {
+    // DIE FLOTTE IM JAHR (flotte-jahr): mit dem Jahr der Stadt `jahr` gibt `flotte` je Wagen {gattung, epoche} — die Gattung
+    // aus derselben Folge wie ohne Jahr, die Zeit aus dem BESTAND des Jahrs (`bestandImJahr`, der Wandel jeder Stufe unten):
+    // je Wagen ein geschichtetes Quantil u (eigener Strom des Samens) — seine Stufe ist die Zahl der Stufen s ≥ 1, deren
+    // Anteil F_s(jahr) u übersteigt. Gleichgerichtet: ein Wagen, der 1910 Motorwagen ist, ist es 1920 auch. Die Achse ist das
+    // Jahr (`epocheAusJahr`, gerastert auf 0,05 wie der Regler), geklemmt in das Band seiner Stufe [s − 0,5, s + 0,45] — so
+    // trägt Math.round in `epocheZeit` genau seine Stufe. „heute" auf der Achse 4 trägt epoche null: der Bau von heute,
+    // byte-gleich. Ohne Jahr bleibt das Wort von gestern: die Folge der Gattungen.
+    function flotte(n, same, jahr) {
+        const gattungen = flotteGattungen(n, same);
+        if (jahr == null) return gattungen;
+        if (!Number.isFinite(+jahr)) throw new Error("vehicle-core flotte: Jahr " + jahr + " ist keine Zahl");
+        const F = bestandImJahr(+jahr).ab;
+        const nW = gattungen.length;
+        const rang = mische(
+            gattungen.map((_, i) => i),
+            (same >>> 0) ^ 0x85ebca6b,
+        );
+        const achse = Math.round(epocheAusJahr(+jahr) * 20) / 20;
+        return gattungen.map((gattung, w) => {
+            const u = (rang[w] + 0.5) / nW;
+            let s = 0;
+            for (let k = 1; k < F.length; k++) if (F[k] > u) s = k;
+            const e = Math.max(s - 0.5, Math.min(s + 0.45, achse));
+            return { gattung, epoche: s === EPOCHE_HEUTE && e === EPOCHE_HEUTE ? null : Math.round(e * 100) / 100 };
+        });
+    }
+    // die Hash-Mischung der Flotte (Fisher–Yates über den Samen): dieselbe Folge wie fahrzeug-gattungen für die Gattungen
+    function mische(out, h) {
+        for (let i = out.length - 1; i > 0; i--) {
+            h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+            h = Math.imul(h ^ (h >>> 12), 0x297a2d39) >>> 0;
+            const j = ((h ^ (h >>> 15)) >>> 0) % (i + 1);
+            [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
+    }
+    function flotteGattungen(n, same) {
         n = Math.max(0, Math.floor(n));
         const ids = GATTUNGEN.filter((k) => FLOTTE[k] > 0);
         const sum = ids.reduce((a, k) => a + FLOTTE[k], 0);
@@ -4819,14 +4855,7 @@
         ids.forEach((k, i) => {
             for (let c = 0; c < zahl[i]; c++) out.push(k);
         });
-        let h = (same >>> 0) ^ 0x9e3779b9;
-        for (let i = out.length - 1; i > 0; i--) {
-            h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
-            h = Math.imul(h ^ (h >>> 12), 0x297a2d39) >>> 0;
-            const j = ((h ^ (h >>> 15)) >>> 0) % (i + 1);
-            [out[i], out[j]] = [out[j], out[i]];
-        }
-        return out;
+        return mische(out, (same >>> 0) ^ 0x9e3779b9);
     }
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
@@ -4874,7 +4903,7 @@
             s: { radstand: 2.0, spur: 1.0, ueberhangV: 0.55, ueberhangH: 0.25, taille: 0, radR: 0.2, fahrhoehe: 0.22, guertel: 0.6, dach: 1.0, kabineMitte: -0.1, kabineLaenge: 1.2, tumblehome: 0, windshieldRake: 0.3 },
             gestuft: { rad: "kufe", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
             // die Schleife: zwei Ochsen ziehen Kufen über die Erde (Gleitreibung 0,2) — die Zugkraft trägt kaum mehr als die Reibung
-            antrieb: { zug: { tiere: 2, kraftN: 700, leistungW: 450, vGang: 1.6 }, cw: 1.1, reibung: 0.2 },
+            antrieb: { zug: { art: "rind", tiere: 2, kraftN: 700, leistungW: 450, vGang: 1.6 }, cw: 1.1, reibung: 0.2 },
             stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "holzDunkel", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
         },
         {
@@ -4886,7 +4915,9 @@
             s: { radstand: 2.1, spur: 1.2, ueberhangV: 0.5, ueberhangH: 0.4, taille: 0, radR: 0.42, fahrhoehe: 0.42, guertel: 0.92, dach: 1.3, kabineMitte: -0.1, kabineLaenge: 1.4, tumblehome: 0, windshieldRake: 0.3 },
             gestuft: { rad: "voll", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
             // das Vollrad rollt (0,06), die Ochsen gehen ihren Schritt (2,3 m/s)
-            antrieb: { zug: { tiere: 2, kraftN: 700, leistungW: 550, vGang: 2.3 }, cw: 1.1, reibung: 0.06 },
+            antrieb: { zug: { art: "rind", tiere: 2, kraftN: 700, leistungW: 550, vGang: 2.3 }, cw: 1.1, reibung: 0.06 },
+            // der Wandel (flotte-jahr): das Rad löst die Schleife ab, um 3300 v. Chr. zur Hälfte, in sechs Jahrhunderten
+            wandel: { halb: -3300, dauer: 600 },
             stoffe: { rimM: "holz", rimD: "bronze", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "bronze", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
         },
         {
@@ -4898,7 +4929,9 @@
             s: { radstand: 2.5, spur: 1.36, ueberhangV: 0.3, ueberhangH: 0.66, taille: 0, radR: 0.66, radVorn: 0.72, fahrhoehe: 0.55, guertel: 1.55, dach: 2.3, kabineMitte: -0.25, kabineLaenge: 1.5, tumblehome: 0, windshieldRake: 0.08, verdeck: 1 },
             gestuft: { rad: "speiche", radFrei: true, antrieb: "zugtier", topo: "kutsche" },
             // vier Pferde im Trab und Galopp (7 m/s), das Speichenrad mit Eisenreif (0,035)
-            antrieb: { zug: { tiere: 4, kraftN: 800, leistungW: 1100, vGang: 7 }, cw: 0.95, reibung: 0.035 },
+            antrieb: { zug: { art: "pferd", tiere: 4, kraftN: 800, leistungW: 1100, vGang: 7 }, cw: 0.95, reibung: 0.035 },
+            // das Pferd mit Kummet löst den Ochsen ab (Hochmittelalter bis früher Neuzeit): halb um 1400, 10 → 90 % in 400 Jahren
+            wandel: { halb: 1400, dauer: 400 },
             gestalt: ["kasten", "bock", "bank", "verdeck", "laterne", "unterwagen"],
             stoffe: { rimM: "holz", rimD: "messing", tire: "eisen" },
         },
@@ -4912,10 +4945,13 @@
             gestuft: { rad: "speiche", radFrei: true, antrieb: "motor", topo: "motorwagen" },
             // der frühe Motor: 0,15 der Leistung von heute je Tonne, das aufrechte Blech (cw 0,8), Vollgummi (0,02)
             antrieb: { leistung: 0.15, cw: 0.8, reibung: 0.02 },
+            // der Motor löst das Gespann in zwei Jahrzehnten ab: 1905 ein Zehntel, 1915 die Hälfte, 1925 neun Zehntel
+            wandel: { halb: 1915, dauer: 20 },
             gestalt: ["kuehler", "haube", "kotfluegel", "trittbrett", "scheinwerfer", "windschutz", "lenkrad", "rahmen"],
             stoffe: { rimM: "holz", rimD: "messing" },
         },
-        { id: "heute", lab: "heute", jahr: 2025 },
+        // die Form von heute löst den frühen Motorwagen ab (1945–1965); sie trägt nichts als ihren Wandel
+        { id: "heute", lab: "heute", jahr: 2025, wandel: { halb: 1955, dauer: 20 } },
         {
             id: "zukunft",
             lab: "Zukunft",
@@ -4926,6 +4962,7 @@
             gestuft: { rad: "aero", radInnen: 0.08, antrieb: "leise", topo: "kanzel" },
             // der leise Antrieb: anderthalbfache Leistung je Tonne, die Kanzel (cw 0,2), der Leichtlauf-Reifen (0,009)
             antrieb: { leistung: 1.5, cw: 0.2, reibung: 0.009 },
+            wandel: { halb: 2120, dauer: 40 },
             gestalt: ["monocoque", "kanzel", "lichtKante", "radVerkleidung"],
         },
     ];
@@ -4985,6 +5022,23 @@
     }
     function epocheStufe(P) {
         return EPOCHE_GESETZ.find((E) => E.id === (P && P.epocheStufe)) || null;
+    }
+    // DER BESTAND IM JAHR (flotte-jahr): der Anteil des Bestands, der die Stufe s schon erreicht hat — die Substitution nach
+    // Fisher–Pry, je Stufe ihr `wandel` {halb, dauer}: F_s(J) = 1 / (1 + 81^((halb − J) / dauer)), von 10 % zu 90 % in `dauer`
+    // Jahren; unter 1 ‰ ist ein Anteil null, über 999 ‰ ganz. Die Schleife trägt alles (F_0 = 1); was eine spätere Stufe
+    // erreicht hat, hat jede frühere erreicht (F_s ≥ F_s+1, von oben gezogen: der Motor löst auch den letzten Ochsenkarren ab).
+    // `ab[s]` = F_s, `je[s]` = der Anteil genau der Stufe s (Summe 1).
+    const EPOCHE_HEUTE = EPOCHE_GESETZ.findIndex((E) => E.id === "heute");
+    function bestandImJahr(jahr) {
+        if (!Number.isFinite(+jahr)) throw new Error("vehicle-core bestandImJahr: Jahr " + jahr + " ist keine Zahl");
+        const ab = EPOCHE_GESETZ.map((E, s) => {
+            if (s === 0) return 1;
+            const f = 1 / (1 + Math.pow(81, (E.wandel.halb - +jahr) / E.wandel.dauer));
+            return f < 0.001 ? 0 : f > 0.999 ? 1 : f;
+        });
+        for (let s = ab.length - 2; s >= 1; s--) ab[s] = Math.max(ab[s], ab[s + 1]);
+        const je = ab.map((f, s) => f - (s + 1 < ab.length ? ab[s + 1] : 0));
+        return { ab, je };
     }
     function presetPatch(id) {
         const pre = PRESETS[id];
@@ -5138,6 +5192,7 @@
         EPOCHE_GESETZ: EPOCHE_GESETZ,
         epocheForm: epocheForm,
         epocheAusJahr: epocheAusJahr,
+        bestandImJahr: bestandImJahr,
         presetPatch: presetPatch,
         buildInstance: buildInstance,
         // Mess- & Physik-Fläche (Shell + Wirt lesen dieselben Gesetze)

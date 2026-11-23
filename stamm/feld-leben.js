@@ -1024,12 +1024,10 @@ class AnazhRealm_feld_leben {
                 // „dorf 7 300 jahr 1560" oder die Epoche beim Namen („dorf 7 300 hanse"); die Zahl ist die Größe der Gegenwart.
                 // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
                 example: "dorf [seed] [häuser] [jahr 1560]",
-                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?(?:\s+(?:jahr\s+(\d{1,4})|([a-zäöü]+)))?$/i,
+                re: AnazhRealm.DORF_WORT, // der EINE Leser des Worts (`_dorfWort`, Siedlung/ort)
                 run: (m, append) => {
-                    const opts = { verlangt: "human" };
-                    if (m[1] !== undefined) opts.seed = Number(m[1]);
-                    if (m[2] !== undefined) opts.nH = Number(m[2]);
-                    if (m[3] !== undefined) opts.jahr = Number(m[3]);
+                    const opts = Object.assign({ verlangt: "human" }, AnazhRealm._dorfWort(m[0]));
+                    delete opts.epoche;
                     const EP = globalThis.__fachwerkCore && globalThis.__fachwerkCore.EPOCHEN;
                     if (m[4] !== undefined && !(EP && Object.hasOwn(EP, m[4].toLowerCase()))) {
                         append(

@@ -917,6 +917,22 @@ class AnazhRealm_siedlung_ort {
                     if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q) && frei(q, e))
                         return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
             }
+        // DIE STADT, DEREN WAGEN STEHEN (flotte-jahr): zieht jeden ihrer Wagen ein Tier, das das Gesetz der Tiere nicht trägt
+        // (`S.verkehr.stehen`, die Stadt von 1290 am Messort stadt), fährt keiner — der Stand sieht den Wagen ohne Gespann auf
+        // seinem Platz an der Trasse: quer zu ihm 6–12 m, außer jeder Spur und jedem Grundriss, der Blick frei auf ihn, der
+        // Nächste dem Auge zuerst. Bis hier wartete die Pose auf einen Wagen in Fahrt, der in ihr nie kam
+        if (regel === "trasse" && !kandidaten.length && S.verkehr && S.verkehr.stehen.length) {
+            const nah = (w) => Math.hypot(w.entry.position.x - A.x, w.entry.position.z - A.z);
+            for (const W of S.verkehr.stehen
+                .filter((w) => w.entry && inStadt(w.entry.position))
+                .sort((a, b) => nah(a) - nah(b))) {
+                const [e, f] = [W.entry.position, W.entry._rideYaw || 0];
+                for (let o = 6; o <= 12; o += 0.25)
+                    for (const q of [1, -1].map((v) => ({ x: e.x + Math.cos(f) * o * v, z: e.z - Math.sin(f) * o * v })))
+                        if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q) && frei(q, e))
+                            return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
+            }
+        }
         if (regel === "trasse")
             throw Object.assign(
                 new Error(
@@ -3702,6 +3718,22 @@ AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
 AnazhRealm.SIEDLUNG_WACHS = Object.freeze({ taktS: 300 });
+// DAS WORT DER GRÜNDUNG (N5.7 · siedlung.K4 · flotte-jahr): „dorf" · „dorf 7" · „dorf 7 300" · „dorf 7 300 jahr 1560" · „dorf 7 300
+// hanse" — der EINE Leser des Worts für den Chat (feld-leben, der Akt des Spielers) und für jeden Messort mit Gründung
+// (spec/profiband/haushalt.json `gruendung.wort`: Werkbank, Proben). Bis flotte-jahr zerlegte jede Probe das Wort selbst
+// (`split(" ")`, Same und Häuser) — ein Jahr im Wort wäre still gefallen. → {seed, nH, jahr, epoche} (nur, was das Wort trägt;
+// die Epoche beim Namen ungeprüft — die prüft der Chat gegen fachwerk EPOCHEN) oder null.
+AnazhRealm.DORF_WORT = /^dorf(?:\s+(\d+))?(?:\s+(\d+))?(?:\s+(?:jahr\s+(\d{1,4})|([a-zäöü]+)))?$/i;
+AnazhRealm._dorfWort = function (wort) {
+    const m = AnazhRealm.DORF_WORT.exec(String(wort).trim());
+    if (!m) return null;
+    const o = {};
+    if (m[1] !== undefined) o.seed = Number(m[1]);
+    if (m[2] !== undefined) o.nH = Number(m[2]);
+    if (m[3] !== undefined) o.jahr = Number(m[3]);
+    if (m[4] !== undefined) o.epoche = m[4].toLowerCase();
+    return o;
+};
 // DAS REICH EINES KOMMENDEN ORTS (`_imReichEinesOrts`): so viele Zellen um die eigene fragt die Geburt. Der Anker einer Zelle
 // liegt in ihrer Mitte ± ¼ Zelle (fachwerk `siedlungsZelle`), ihre Stelle bis zur weitesten Probe daneben (`siteProbeR` 0,3 Zelle)
 // — eine Zelle k Zellen fort trägt ihren Ort mindestens (k − 1,05) × 256 m weit, die nächste jenseits von 3 also ≥ 755 m; die

@@ -33,6 +33,12 @@ class AnazhRealm_siedlung_verkehr {
         const von = FC.verkehrVon(S.plan);
         const VK = (S.verkehr = {
             wagen: [],
+            // DIE WAGEN OHNE GESPANN (flotte-jahr): ein Wagen der Zeit vor dem Motor zieht ein Tier (vehicle-core
+            // EPOCHE_GESETZ `antrieb.zug.art`); trägt das Gesetz der Tiere es nicht, steht er auf seinem Platz — ohne Fahrer, ohne
+            // Fahrt, ohne Lieferung. Er fährt nie leer.
+            stehen: [],
+            // das Jahr der Stadt: die Gegenwart ihres Plans (`jahr` + `spanne`, dieselbe, in der sie wächst — `_ortWachsAnfang`)
+            jahr: S.plan.jahr + S.plan.spanne,
             zonen: [],
             strecken: [],
             kp: [],
@@ -367,10 +373,35 @@ class AnazhRealm_siedlung_verkehr {
         // DIE FLOTTE DER STADT ist Gesetz des Fahrzeug-Kerns (vehicle-core `flotte`: seine Gattungen nach ihrem Anteil am Bestand,
         // gemischt mit dem Samen der Stadt) — der Wagen w fährt die Gattung w. Bis fahrzeug-gattungen wählte der Same jedes Fahrers
         // aus einer Tafel des Wirts (Kleinwagen, Limousine, SUV): die Stadt am Messort stadt-voll fuhr 3 Gattungen.
+        // IM JAHR DER STADT (flotte-jahr): der Kern gibt je Wagen auch seine Zeit (`epoche`, aus dem Bestand des Jahrs
+        // `bestandImJahr`), der Wirt reicht nur das Jahr und baut mit ihr. Bis hier fuhr jede Stadt die Flotte von heute: die
+        // Stadt von 1290 am Messort stadt-voll fuhr SUV und Supersport.
         const vcF = globalThis.__vehicleCore;
         if (!vcF || typeof vcF.flotte !== "function") return AnazhRealm._kernPflichtBruch("vehicle:flotte");
-        const flotte = vcF.flotte(von.slots.length, seed);
-        for (const [w, si] of von.slots.entries()) {
+        if (!Number.isFinite(VK.jahr)) return AnazhRealm._kernPflichtBruch("fachwerk:plan.jahr+spanne (" + S.key + ")");
+        const flotte = vcF.flotte(von.slots.length, seed, VK.jahr);
+        // WER FÄHRT, WÄHLT ZUERST: der Platz an der Wende ist der Anfang jeder Fahrt — ein Wagen ohne Gespann nimmt, was die
+        // Fahrenden lassen (die Stadt von 1922 am Messort stadt-1910: 21 Wagen auf 20 Plätzen, der fehlende ein Motorwagen)
+        const reihe = [...von.slots.entries()].map(([w, si]) => [w, si, this._verkehrGespann(flotte[w].epoche)]);
+        for (const [w, si, zug] of [...reihe.filter((r) => !r[2]), ...reihe.filter((r) => r[2])]) {
+            const { gattung: typ, epoche } = flotte[w];
+            if (zug) {
+                // OHNE GESPANN: der Platz an der Wende nächst seinem Haus, der Bau seiner Zeit, kein Fahrer
+                const sl = S.plan.slots[si];
+                const haus = { x: S.ox + sl.x, z: S.oz + sl.z };
+                const wahl = [...VK.wenden.entries()]
+                    .filter(([, x]) => x.frei.length)
+                    .sort((p, q) => Math.hypot(p[1].x - haus.x, p[1].z - haus.z) - Math.hypot(q[1].x - haus.x, q[1].z - haus.z))[0]; // prettier-ignore
+                if (!wahl) {
+                    VK.zahl.ohnePlatz++;
+                    continue;
+                }
+                const [ki, wende] = wahl;
+                const W = { S, nr: w, gen: this._rollGenome(`${seed}:${si}`, "verkehr"), typ, epoche, zug, ki, wende, park: wende.frei.shift(), fahrer: [], entry: null, zustand: "steht", grund: "ohneGespann" }; // prettier-ignore
+                if (this._verkehrWagenStellen(W)) VK.stehen.push(W);
+                else VK.zahl.ohnePlatz++;
+                continue;
+            }
             const b = frei(si, 0);
             if (!b) {
                 VK.zahl.ohneFahrer++;
@@ -394,7 +425,6 @@ class AnazhRealm_siedlung_verkehr {
             const [ki, wende] = wahl;
             const park = wende.frei.shift();
             const gen = this._rollGenome(`${seed}:${si}`, "verkehr");
-            const typ = flotte[w];
             const W = {
                 S,
                 b,
@@ -402,6 +432,7 @@ class AnazhRealm_siedlung_verkehr {
                 nr: w,
                 gen,
                 typ,
+                epoche,
                 ki,
                 wende,
                 park,
@@ -756,6 +787,29 @@ class AnazhRealm_siedlung_verkehr {
 
     // DER WAGEN STEHT AUF SEINEM PLATZ: das Werk des Gesetzes (`fahrzeug_<typ>`, ausGesetz, präzise — die Wende ist sein Platz),
     // sein Fahr-Zustand auf der Ebene seiner Räder (vehicle-core fahrZustand · fahrStand), seine Lage, sein Bild.
+    // DAS GESPANN EINES WAGENS (flotte-jahr): der Wagen der Zeit vor dem Motor zieht ein Tier — die Stufe seiner Epoche
+    // (vehicle-core EPOCHE_GESETZ, Math.round wie `epocheZeit`) trägt `antrieb.zug` (Art, Zahl, Kraft, Gang). Er fährt nur mit
+    // seinem Tier: das Gesetz der Tiere (tetrapoda `GATTUNGEN`) trägt heute Wolf, Fuchs, Bär und Hirsch — kein Rind, kein Pferd;
+    // dann steht er (zurück kommt die Zeile `zug`). Trägt das Gesetz eines Tages sein Tier, meldet dieser Weg den Bruch beim
+    // Namen: das Gespann (das Tier vor der Deichsel, sein Schritt im Gang des Wagens) ist nicht gebaut. Ohne Epoche oder mit
+    // Motor: null — er fährt.
+    _verkehrGespann(epoche) {
+        if (epoche == null) return null;
+        const VC = globalThis.__vehicleCore;
+        const E = VC && Array.isArray(VC.EPOCHE_GESETZ) ? VC.EPOCHE_GESETZ[Math.round(epoche)] : null;
+        if (!E) return AnazhRealm._kernPflichtBruch("vehicle:EPOCHE_GESETZ[" + epoche + "]");
+        const zug = E.antrieb && E.antrieb.zug;
+        if (!zug) return null;
+        const TC = globalThis.__tetrapodaCore;
+        if (!TC || !TC.GATTUNGEN) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN");
+        if (TC.GATTUNGEN[zug.art])
+            this._bruchMelden(`VERKEHR: das Zugtier „${zug.art}“ steht im Gesetz der Tiere, das Gespann ist nicht gebaut — der Wagen der Stufe „${E.id}“ steht`); // prettier-ignore
+        return zug;
+    }
+
+    // DIE ZEIT DES WAGENS (flotte-jahr): `W.epoche` (vehicle-core `flotte`) reist als Parameter seines Rezepts (`studioOv`) in
+    // den Bau UND in sein Fahr-Gesetz (`_fahrzeugGesetzFor` → exportDrive → carPhys: das Zugtier trägt seinen Gang `vGang`);
+    // ohne Epoche baut er wie bisher, byte-gleich.
     _verkehrWagenStellen(W) {
         const p = W.park;
         const e = this.spawnArchitecture(
@@ -767,6 +821,7 @@ class AnazhRealm_siedlung_verkehr {
                 silent: true,
                 precise: true,
                 ausGesetz: true,
+                ...(W.epoche == null ? null : { studioOv: { epoche: W.epoche } }),
             }
         );
         if (!e) return false;
@@ -809,6 +864,12 @@ class AnazhRealm_siedlung_verkehr {
         const c = fzg.drive.zweispur && fzg.drive.zweispur.c;
         if (!(c > 0)) return AnazhRealm._kernPflichtBruch("vehicle:exportDrive.zweispur.c (" + e.type + ")");
         W.c = c * sc;
+        // DAS TEMPO SEINER ZEIT (flotte-jahr): das Fahr-Gesetz trägt das Höchst-Tempo des Wagens (carPhys `vmax`: der Gang des
+        // Zugtiers `antrieb.zug.vGang`, sonst das Gleichgewicht von Leistung und Widerstand) — der Deckel des Fahrers liest es
+        // (`_verkehrFolge`), nie fordert die Stadt mehr, als der Ochse geht
+        const vmax = fzg.drive.vmax;
+        if (!(vmax > 0)) return AnazhRealm._kernPflichtBruch("vehicle:exportDrive.vmax (" + e.type + ")");
+        W.vmax = vmax;
     }
 
     // DAS AUSSCHEREN DES LEIBS IM BOGEN der Krümmung k (fahrzeug-gattungen 2): so weit ragt der Leib über seine halbe Breite hinaus
@@ -1791,7 +1852,7 @@ class AnazhRealm_siedlung_verkehr {
         const e = W.entry;
         const fz = e._fahr;
         const v = Math.max(0, fz.vlong);
-        let deckel = V.tempoMs;
+        let deckel = Math.min(V.tempoMs, W.vmax);
         [W.grund, W.wer, W.umfahr] = [null, null, null];
         // DIE ANKUNFT (die Uhr sprang, `_tickBewohner` stellt jeden Leib, wo sein Tag ihn sieht — `ankunftJeTakt` je Takt): bis
         // jeder steht, hält der Wagen — bis hier stand einer 2 m vor einem Wagen mit 6,5 m/s, den er nie kommen sah
@@ -2396,7 +2457,7 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrFort(S) {
         const VK = S.verkehr;
         if (!VK) return;
-        for (const W of VK.wagen) {
+        for (const W of [...VK.wagen, ...VK.stehen]) {
             for (const f of W.fahrer) {
                 f.amSteuer = false;
                 f.wagen = null;

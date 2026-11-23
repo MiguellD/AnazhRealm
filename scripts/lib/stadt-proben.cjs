@@ -11,13 +11,14 @@
 async function stadtBreite(o) {
     await __weltDa(() => r.constructor._siedlungGesetz());
     const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === o.ort);
-    const [, seed, nH] = ort.gruendung.wort.split(" ").map(Number);
+    const wort = r.constructor._dorfWort(ort.gruendung.wort); // der EINE Parser des Worts (Same, Häuser, Jahr)
+    const seed = wort.seed;
     const [ax, az] = ort.gruendung.anker;
     const S0 = () =>
         [...(r._bewohnerSiedlungen || new Map()).values()].find(
             (q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200
         );
-    if (!S0()) await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+    if (!S0()) await r.spawnSettlement({ ...wort, position: { x: ax, y: 0, z: az } });
     const S = S0();
     if (!S) throw new Error(`keine Stadt am Messort ${o.ort}`);
     const [plan, ox, oz] = [S.plan, S.ox, S.oz];

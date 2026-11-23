@@ -169,12 +169,13 @@ function messortePruefen(h) {
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
         // DER ANLAUF (`anlauf` [x, z]): dort steht der Spieler zuerst und schwingt ein, dann am Ort — mit `dach` (m) auf dem Dach. DIE
-        // GRÜNDUNG (die Stadt): das Wort des Spielers am Anlauf (`dorf <same> <häuser>`), der Anker der Siedlung, und die Bahn — eine
+        // GRÜNDUNG (die Stadt): das Wort des Spielers am Anlauf (`dorf <same> <häuser> [jahr <jahr>]`, seit flotte-jahr mit dem Jahr der
+        // Stadt — ihre Flotte ist Gesetz ihres Jahrs), der Anker der Siedlung, und die Bahn — eine
         // Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
         const g = o.gruendung;
         if ((g || o.dach || o.anlauf) !== undefined && !xz(o.anlauf)) f.push(`${o.id}: anlauf ist kein [x, z]`);
-        if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || !xz(g.anker)))
-            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>" oder anker [x, z]`);
+        if (g !== undefined && (!g || !/^dorf \d+ \d+(?: jahr \d{1,4})?$/.test(g.wort) || !xz(g.anker)))
+            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser> [jahr <jahr>]" oder anker [x, z]`);
         if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && (o.ortPose || `${o.bahn[0]}` === `${o.spieler}`)))
             f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];

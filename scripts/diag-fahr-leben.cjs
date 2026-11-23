@@ -986,7 +986,10 @@ const TAKT_EICH = { eichN: 6000, k8: Math.round((0.05 / EICH_RUHE_MS) * 1000) };
 // (`paare` × Soll der Wagen), eine Suche des Warte-Graphen im Mittel höchstens `kreis` Schritte (die Tiefe seines Gangs). Gemessen
 // 600 s: 10 Uhr 4,17 Wagen je Blick, 3,03 Schritte je Suche, 23 Uhr 3,91 / 2,89; die Mutante 222,73 Wagen je Blick bei 0,755 ms (die Wanduhr sah sie nicht)
 const ARBEIT = { paare: 0.25, kreis: 12 };
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohrMs: 0.35, ruckM: 0.15, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
+// DER ORT DES VERKEHRS (flotte-jahr): die Metropole am Anker von stadt-voll im Jahr 1910 (`stadt-1910`, ihre Gegenwart 1922) — ihre
+// Flotte ist Gesetz ihres Jahrs: 17 Motorwagen fahren, 4 Kutschen stehen ohne Gespann; stadt-voll selbst lebt 1290, ihre Wagen
+// zieht ein Tier, das das Gesetz der Tiere nicht trägt (sie stehen alle — OFFEN, VK-E nennt sie)
+const VERKEHR = { ort: "stadt-1910", stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohrMs: 0.35, ruckM: 0.15, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
 // sich trennt]. Am 11.11. (main e6f0cf7e) trennte sich 10 Uhr nach 300 Bildern Vorlauf in Bild 307 (Gehende) und 2197 (Wagen),
@@ -998,6 +1001,10 @@ const vorgeschichteVerdict = (vg) =>
         // wer noch ankommt, steigt nicht ein (`_tickVerkehr`, der Fall des Sprungs vor dem ersten Lauf): ein Name = er stieg ein
         [!vg || vg.einAnkunft === false, `wer noch ankommt, steigt ein: ${vg && vg.einAnkunft === null ? "keine Probe" : vg && vg.einAnkunft} — mit der Lage von vor dem Sprung (\`_tickVerkehr\` ohne \`ankunft\`)`], // prettier-ignore
     ]);
+// DAS SOLL DER FAHRENDEN (flotte-jahr) ist Gesetz: die Wagen des Gesetzes, deren Stufe kein Tier zieht (`epochen.fahrSoll`, aus
+// vehicle-core `flotte` im Jahr der Stadt neu gerechnet, nie aus dem Stand) — der Wagen ohne Gespann steht und ist in VK-E beim
+// Namen; ungemessen gilt das ganze Soll
+const fahrSoll = (m) => (m.epochen ? m.epochen.fahrSoll : m.soll);
 const verkehrVerdict = (m) =>
     urteil([
         // DER TAKT WARF NICHT (w27-ort-pose-voll, zuerst: jede Zahl darunter ist seine Folge): die Fehler-Grenze des Loops fing
@@ -1012,7 +1019,7 @@ const verkehrVerdict = (m) =>
         // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
         // Minute, sein Wagen, volle Minuten, die Minute, der Grund am Kopf seiner Reihe — `spieler`: die Stadt floss nicht um den
         // stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
-        [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
+        [m.amSteuer[0] >= fahrSoll(m), `am Steuer ${JSON.stringify(m.amSteuer)} von ${fahrSoll(m)}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
         [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
         // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei —
@@ -1047,8 +1054,8 @@ const verkehrVerdict = (m) =>
             `Strecken außer dem Netz in seiner Richtung ${m.netz.ausNetz}, Irrweg ${m.netz.irrweg}× (kein Abbieger trägt das Ziel)`,
         ],
         [
-            m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
-            `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
+            m.soll >= VERKEHR.wagen && m.wagen === fahrSoll(m) && (m.stehen || 0) === m.soll - fahrSoll(m) && !m.ohneNacht,
+            `Wagen ${m.wagen} von ${fahrSoll(m)} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht}, ohne Gespann ${m.stehen || 0} von ${m.soll - fahrSoll(m)})`, // prettier-ignore
         ],
         [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
         // DAS FENSTER TRÄGT DIE FRIST (w28-verkehr-graph, GPU-Probe 23b87e81): „jeder erreicht sein Ziel“ gilt erst in einem Fenster,
@@ -1113,6 +1120,90 @@ const verkehrVerdict = (m) =>
             `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`,
         ],
     ]);
+
+// ════ VK-E — DIE ZEIT DER FLOTTE (mensch.fahrzeug.gestalt#1, flotte-jahr; Schöpfer 23.11.: „bei den fahrzeugen ein bus integriert
+// statt jahrtausende, die epochen über jahrhunderte"): die Flotte einer Stadt ist Gesetz ihres Jahrs (vehicle-core `flotte(n,
+// same, jahr)`: je Wagen Gattung UND Epoche aus dem Bestand des Jahrs `bestandImJahr`, der Wandel je Stufe eine Fisher-Pry-Kurve
+// `wandel`). Bis hier fuhr jede Stadt die Flotte von heute (die Stadt von 1290 am Messort stadt-voll: SUV und Supersport). ════
+// DAS GESETZ (Node, am Kern): je Jahr die Stufen, die tragen müssen [Jahr, {Stufe: Anteil ≥}, erlaubte Stufen]; der Wandel
+// stetig — kein Anteil einer Stufe springt in einem Jahr um mehr als `sprung`, kein Wagen fällt mit den Jahren in eine ältere
+// Stufe zurück; ohne Jahr die alte Liste der Gattungen (byte-gleich), heute ohne Epoche (byte-gleich).
+const FLOTTE_JAHR = {
+    jahre: [
+        [1300, { ochsenkarren: 0.5 }, ["ochsenkarren", "kutsche"]],
+        [1750, { kutsche: 0.9 }, ["ochsenkarren", "kutsche"]],
+        [1910, { kutsche: 0.4, motorwagen: 0.15 }, ["ochsenkarren", "kutsche", "motorwagen"]],
+        [2025, { heute: 1 }, ["heute"]],
+    ],
+    n: 21,
+    saaten: [1, 7, 99],
+    sprung: 0.08,
+};
+const flotteGesetzProbe = (VC) => {
+    const stufe = (w) => (w.epoche == null ? "heute" : VC.EPOCHE_GESETZ[Math.round(w.epoche)].id);
+    const zeilen = [];
+    for (const [J, muss, darf] of FLOTTE_JAHR.jahre)
+        for (const same of FLOTTE_JAHR.saaten) {
+            const f = VC.flotte(FLOTTE_JAHR.n, same, J);
+            const zahl = {};
+            for (const w of f) zahl[stufe(w)] = (zahl[stufe(w)] || 0) + 1;
+            const fehlt = Object.entries(muss).filter(([s, a]) => (zahl[s] || 0) / f.length < a);
+            const fremd = Object.keys(zahl).filter((s) => !darf.includes(s));
+            const alt = VC.flotte(FLOTTE_JAHR.n, same);
+            const gattungen = Array.isArray(alt) && alt.every((g, i) => g === f[i].gattung);
+            zeilen.push([J, same, zahl, fehlt, fremd, gattungen, J === 2025 ? f.every((w) => w.epoche === null) : true]);
+        }
+    let [sprung, rueck] = [[0], [0]];
+    for (let J = -4000, vor = null, vorF = null; J <= 2200; J++) {
+        const je = VC.bestandImJahr(J).je;
+        if (vor) je.forEach((x, s) => Math.abs(x - vor[s]) > sprung[0] && (sprung = [+Math.abs(x - vor[s]).toFixed(4), J, VC.EPOCHE_GESETZ[s].id])); // prettier-ignore
+        vor = je;
+        if (J % 5) continue;
+        const f = VC.flotte(FLOTTE_JAHR.n, 7, J).map((w) => (w.epoche == null ? 4 : Math.round(w.epoche)));
+        if (vorF) f.forEach((s, i) => s < vorF[i] && rueck[0]++ < 1 && (rueck = [rueck[0], J, i, vorF[i], s]));
+        vorF = f;
+    }
+    return { zeilen, sprung, rueck };
+};
+const flotteGesetzVerdict = (g) =>
+    urteil([
+        ...g.zeilen.map(([J, same, zahl, fehlt, fremd]) => [!fehlt.length && !fremd.length, `im Jahr ${J} (Same ${same}) fährt ${JSON.stringify(zahl)} — es fehlt ${JSON.stringify(fehlt)}, fremd ${JSON.stringify(fremd)}`]), // prettier-ignore
+        [g.zeilen.every((z) => z[5]), `die Gattungen hängen am Jahr (ohne Jahr eine andere Liste): ${JSON.stringify(g.zeilen.filter((z) => !z[5]).map((z) => z.slice(0, 2)))}`], // prettier-ignore
+        [g.zeilen.every((z) => z[6]), `heute baut nicht byte-gleich (eine Epoche im Jahr 2025)`],
+        [g.sprung[0] <= FLOTTE_JAHR.sprung, `der Bestand springt ${JSON.stringify(g.sprung)} in einem Jahr (Soll ≤ ${FLOTTE_JAHR.sprung}: stetig über Jahrhunderte)`], // prettier-ignore
+        [!g.rueck[0], `ein Wagen fällt mit den Jahren zurück ${JSON.stringify(g.rueck)} [Zahl, Jahr, Wagen, Stufe vorher, nachher]`],
+    ]);
+// DIE ZEIT JE WAGEN DER STADT (Seite, `epochen` in fahr-proben VK): das Gesetz neu gerechnet gegen jeden gestellten Wagen —
+// Gattung, Epoche und Stempel seines Baus beim Namen; ein Wagen, dessen Stufe ein Tier zieht, fährt nie leer (fährt er, oder
+// rollt er auf seinem Platz, ist er der Täter); das Fahr-Gesetz des Eintrags trägt die Zeit (vmax wie der Kern zu ihr), kein
+// Fahrender ist schneller als sein Gesetz. Ungemessen ist ROT.
+const zeitVerdict = (m) => {
+    const z = m && m.epochen;
+    if (!z) return ["die Zeit der Flotte ungemessen"];
+    const W = z.wagen || [];
+    const falsch = W.filter(([nr, typ, ep, st]) => {
+        const g = z.gesetz[nr];
+        return !g || g[0] !== typ || g[1] !== ep || st !== ep;
+    });
+    const leer = W.filter(([, , , , wie, , zug, weg]) => zug && (wie === "faehrt" || weg > 0.05));
+    const antrieb = W.filter(([, , , , , , , , vE, vK]) => !(vE > 0) || !(Math.abs(vE - vK) <= 0.001));
+    const name = ([nr, typ, ep, , , stufe]) => `Wagen ${nr} (${typ}, ${stufe}${ep == null ? "" : "@" + ep})`;
+    return urteil([
+        [z.vkJahr === z.jahr && Number.isFinite(z.jahr), `der Verkehr liest das Jahr ${z.vkJahr}, die Stadt lebt ${z.jahr}`],
+        [W.length > 0, "kein Wagen gemessen"],
+        [!falsch.length, falsch.map((w) => `${name(w)} in der Stadt von ${z.jahr} — das Gesetz: ${z.gesetz[w[0]] ? z.gesetz[w[0]][0] + " " + z.gesetz[w[0]][2] + "@" + z.gesetz[w[0]][1] : "kein Wagen"}, sein Bau: Stempel ${w[3]}`).slice(0, 4).join(" · ")], // prettier-ignore
+        [!leer.length, leer.map((w) => `${name(w)} fährt leer: sein Zugtier „${w[6]}“ ${w[4] === "faehrt" ? "fehlt, er fährt" : `fehlt, er rollte ${w[7]} m`}`).slice(0, 4).join(" · ")], // prettier-ignore
+        [!antrieb.length, antrieb.map((w) => `${name(w)}: das Fahr-Gesetz des Eintrags trägt vmax ${w[8]}, der Kern zu seiner Zeit ${w[9]} — die Zeit fehlt dem Antrieb`).slice(0, 4).join(" · ")], // prettier-ignore
+        [!!z.vUeber && z.vUeber[0] <= 0.3, z.vUeber ? `Wagen ${z.vUeber[1]} fährt ${z.vUeber[3]} m/s, ${z.vUeber[0]} über seinem Gesetz (vmax ${z.vUeber[4]}) in Probe ${z.vUeber[2]}` : "das Tempo ungemessen"], // prettier-ignore
+    ]);
+};
+// der Stand der Zeit für den Bericht: je Stufe fahrend/stehend, das OFFEN des Gespanns mit Adresse
+const zeitBericht = (z) => {
+    const zahl = {};
+    for (const w of z.wagen) zahl[`${w[5]} ${w[4] === "faehrt" ? "fährt" : "steht"}`] = (zahl[`${w[5]} ${w[4] === "faehrt" ? "fährt" : "steht"}`] || 0) + 1; // prettier-ignore
+    const ohne = z.wagen.filter((w) => w[6]).length;
+    return `Jahr ${z.jahr}: ${Object.entries(zahl).map(([k, n]) => `${n} ${k}`).join(", ")}${ohne ? ` — OFFEN: ${ohne} ohne Gespann (tetrapoda-core GATTUNGEN trägt kein Zugtier; der Ofen \`_ofenKreaturDials\`)` : ""}`; // prettier-ignore
+};
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
 // und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
@@ -2849,6 +2940,49 @@ hauptLauf(async () => {
                 !vorgeschichteVerdict(vg).length && !vgBrueche.length && vorgeschichteVerdict(undefined).length === 1,
                 JSON.stringify(vgBrueche)
             );
+            // VK mit der Zeit (flotte-jahr): das Soll der Fahrenden ist Gesetz — 16 fahren, 4 stehen ohne Gespann GRÜN; steht
+            // einer weniger (er fährt außer dem Gesetz oder fehlt), oder sitzen weniger am Steuer, ROT beim Namen
+            const gz = { ...g, epochen: { fahrSoll: 16 }, wagen: 16, stehen: 4, amSteuer: [16, 0] };
+            const zeitVk = [
+                [{}, null],
+                [{ stehen: 3 }, /^Wagen 16 von 16 .*ohne Gespann 3 von 4\)$/],
+                [{ amSteuer: [15, 9, [4, "steht"]] }, /am Steuer \[15,9,\[4,"steht"\]\] von 16/],
+            ].filter(([an, soll]) => ((v) => (soll ? !(v.length === 1 && soll.test(v[0])) : v.length))(verkehrVerdict({ ...gz, ...an }))); // prettier-ignore
+            // VK-E: die Stadt von 1922 (zwei Motorwagen fahren, die Kutsche steht ohne Gespann) GRÜN; jeder Täter allein beim Namen
+            const ez = {
+                jahr: 1922,
+                vkJahr: 1922,
+                fahrSoll: 2,
+                gesetz: [["suv", 3.2, "motorwagen"], ["kompakt_fwd", 2.45, "kutsche"], ["limousine", 3.2, "motorwagen"]],
+                wagen: [[0, "suv", 3.2, 3.2, "faehrt", "motorwagen", null, 0, 13.1, 13.1], [1, "kompakt_fwd", 2.45, 2.45, "steht", "kutsche", "pferd", 0, 7, 7], [2, "limousine", 3.2, 3.2, "faehrt", "motorwagen", null, 0, 14.2, 14.2]], // prettier-ignore
+                vUeber: [-0.4, 0, 120, 8.3, 8.7],
+            };
+            const mit = (an) => ({ epochen: { ...ez, ...an } });
+            const wagenMit = (i, an) => ez.wagen.map((w, j) => (j === i ? Object.assign([...w], an) : w));
+            const eBrueche = [
+                // DER TÄTER DES BEFUNDS (Schöpfer 23.11.): der Wagen von heute in der Stadt von 1290 — stadt-voll bis flotte-jahr
+                [{ jahr: 1290, vkJahr: 1290, gesetz: [["suv", 1.45, "ochsenkarren"]], wagen: [[0, "suv", null, null, "faehrt", "heute", null, 0, 40.2, 40.2]] }, /^Wagen 0 \(suv, heute\) in der Stadt von 1290 — das Gesetz: suv ochsenkarren@1.45, sein Bau: Stempel null$/], // prettier-ignore
+                [{ wagen: wagenMit(1, { 4: "faehrt" }) }, /^Wagen 1 \(kompakt_fwd, kutsche@2.45\) fährt leer: sein Zugtier „pferd“ fehlt, er fährt$/],
+                [{ wagen: wagenMit(1, { 7: 3.2 }) }, /^Wagen 1 .*fährt leer: .*er rollte 3.2 m$/],
+                [{ wagen: wagenMit(0, { 3: null }) }, /^Wagen 0 \(suv, motorwagen@3.2\) in der Stadt von 1922 — .*Stempel null$/],
+                [{ wagen: wagenMit(2, { 8: 41.7 }) }, /^Wagen 2 .*vmax 41.7, der Kern zu seiner Zeit 14.2 — die Zeit fehlt dem Antrieb$/],
+                [{ vUeber: [5.9, 0, 300, 8.2, 2.3] }, /^Wagen 0 fährt 8.2 m\/s, 5.9 über seinem Gesetz \(vmax 2.3\)/],
+                [{ vUeber: null }, /^das Tempo ungemessen$/],
+                [{ vkJahr: 2025 }, /^der Verkehr liest das Jahr 2025, die Stadt lebt 1922$/],
+            ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(zeitVerdict(mit(an))));
+            // DAS GESETZ (Node): der Kern selbst GRÜN; der Täter des Befunds — der Bus von heute in jedem Jahrhundert (die Flotte
+            // ohne ihr Jahr) — nennt 1300, 1750 und 1910; der Sprung (der Bestand wechselt in EINEM Jahr) nennt den Sprung
+            require(path.join(root, "vehicle-core.js"));
+            const VCz = globalThis.__vehicleCore;
+            const gesetzGut = flotteGesetzVerdict(flotteGesetzProbe(VCz));
+            const bus = flotteGesetzVerdict(flotteGesetzProbe({ ...VCz, flotte: (n, same, J) => (J == null ? VCz.flotte(n, same) : VCz.flotte(n, same, 2025)) })); // prettier-ignore
+            const sprung = flotteGesetzVerdict(flotteGesetzProbe({ ...VCz, bestandImJahr: (J) => ({ je: J < 1900 ? [0, 0, 1, 0, 0, 0] : [0, 0, 0, 1, 0, 0] }) })); // prettier-ignore
+            const busRot = [1300, 1750, 1910].every((J) => bus.some((x) => x.startsWith(`im Jahr ${J} `) && /heute/.test(x)));
+            check(
+                "Selbst-Test VK-E: die Zeit der Flotte nennt den Wagen von heute in der alten Stadt, den Wagen ohne Tier, der fährt, den Antrieb ohne Zeit (ungemessen ROT) — und am Kern den Bus in jedem Jahrhundert und den Sprung",
+                !zeitVerdict(mit({})).length && !eBrueche.length && !zeitVk.length && zeitVerdict({}).length === 1 && !gesetzGut.length && busRot && sprung.length === 1 && /springt \[1,1900,"kutsche"\]/.test(sprung[0]), // prettier-ignore
+                JSON.stringify({ eBrueche, zeitVk, gut: zeitVerdict(mit({})), gesetzGut, bus: busRot || bus, sprung })
+            );
         }
         {
             // RM — DIE RÜCKMELDUNG: gute Maße == 0 Täter; je gekappte Kopplung genau ihr Kanal (Stimme · Feder · Rumble)
@@ -2888,6 +3022,11 @@ hauptLauf(async () => {
     const kern = kernProbe(globalThis.__vehicleCore);
     for (const [name, ok, detail] of kern) check(name, ok, detail);
     console.log("REIFEN " + JSON.stringify(kern.reifen));
+    {
+        const fg = flotteGesetzProbe(globalThis.__vehicleCore);
+        const v = flotteGesetzVerdict(fg);
+        check("VK-E (mensch.fahrzeug.gestalt#1) das Gesetz der Flotte: je Jahr die Epochen seiner Zeit, stetig über Jahrhunderte", !v.length, v.join(" · ") || fg.zeilen.filter((z) => z[1] === 7).map(([J, , zahl]) => `${J} ${JSON.stringify(zahl)}`).join(" · ") + ` · Sprung ≤ ${fg.sprung[0]}/Jahr`); // prettier-ignore
+    }
     if (schalter("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
@@ -2954,7 +3093,11 @@ hauptLauf(async () => {
                 for (const h of TAETER ? [10] : STUNDE != null ? [STUNDE] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    // die Täter beim Namen ihrer Nummer (`taeterNr`: die ersten vier fahrenden Wagen — seit flotte-jahr steht die
+                    // Kutsche ohne Gespann außer der Liste, die Nummer des Gesetzes ist nicht der Platz in ihr)
+                    const tn = (m && m.taeterNr) || [0, 1, 2, 3];
+                    check(`VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [new RegExp(`am Steuer \\[${m ? fahrSoll(m) - 1 : 19},\\d+,\\[${tn[0]},`), new RegExp(`Trasse \\[\\d+,[1-9]\\d*,\\[\\[${tn[1]},`), new RegExp(`Wagen an Wagen \\[-[\\d.]+,"${tn[2]}\\|${tn[3]}"`), /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    if (!TAETER) check(`VK-E (mensch.fahrzeug.gestalt#1) die Zeit der Flotte um ${h} Uhr: jeder Wagen in der Epoche des Jahrs seiner Stadt`, !!m && !zeitVerdict(m).length, m ? zeitVerdict(m).join(" · ") || zeitBericht(m.epochen) : o.err); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },

@@ -692,29 +692,33 @@ async function probeLeben(expected) {
             taeter,
         };
     };
-    // ── VK — DER VERKEHR DER STADT (Leiter mensch.netz.verkehr): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
+    // ── VK — DER VERKEHR DER STADT (Leiter mensch.netz.verkehr): die Metropole des Messorts `o.ort` (seit flotte-jahr `stadt-1910`,
+    // „dorf 7 300 jahr 1910" am Anker von stadt-voll: ihre Gegenwart 1922 fährt Motorwagen, ihre Kutschen stehen ohne Gespann), der
     // Spieler an ihrem Markt neben der Trasse; je Stunde (`stunden`: Tag und Nacht) bis jeder Bewohner seinen Leib trägt und jeder
     // Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend), ihr Weg, wer
     // steckt, jeder Stoß der Hülle, jede Berührung eines Wagens mit einem Bewohner (die Kapsel tiefer als 0,1 m im Rechteck der
     // Hülle) und zweier Wagen (ihre Rechtecke), wer ohne Schlüssel in der Kreuzung ist, die Ablage von der Spur (außer im Ort, den
     // er allein hält) und die Kosten des Sim-Takts; wer weniger als 30 m fuhr oder am Ende steht, beim Namen.
     const verkehr = async (o) => {
-        const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find(
-            (m) => m.id === "stadt-voll"
-        );
-        const [seed, [ax, az]] = [Number(ort.gruendung.wort.split(" ")[1]), ort.gruendung.anker];
+        const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === o.ort);
+        if (!ort || !ort.gruendung) throw new Error(`verkehr: kein Messort ${o.ort} mit Gründung in spec/profiband/haushalt.json`);
+        // DAS WORT DER GRÜNDUNG liest der EINE Parser des Stamms (`_dorfWort`, derselbe, den der Chat ruft): Same, Häuser, Jahr
+        const wort = A._dorfWort(ort.gruendung.wort);
+        if (!wort || !(wort.seed >= 0)) throw new Error(`verkehr: das Wort „${ort.gruendung.wort}“ des Messorts ${o.ort} gründet keine Stadt`);
+        const [seed, [ax, az]] = [wort.seed, ort.gruendung.anker];
         await __weltDa(() => A._siedlungGesetz());
         let i = 0;
         const S0 = () =>
             [...(r._bewohnerSiedlungen || new Map()).values()].find(
                 (q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200
             );
-        // DIE STADT DES WORTS: die Spec trägt den Ort, an dem „dorf 7 300“ sie gründet (werkbank `umstellen --ort`, auf 1 mm; der
+        // DIE STADT DES WORTS: die Spec trägt den Ort, an dem ihr Wort sie gründet (werkbank `umstellen --ort`, auf 1 mm; der
         // Anker folgt dem Bildwinkel des Sprechers, `_siedlungsAnker` — die Null-Seite sähe einen anderen), und dort steht sie hier.
-        // Bis w12-verkehr stand sie 0,28 m daneben: 295 statt 300 Häuser, vier statt einer Wende, 20/20 statt der 7/20 der Radeon
-        if (!S0()) await r.spawnSettlement({ seed, nH: 300, position: { x: ax, y: 0, z: az } });
+        // Bis w12-verkehr stand sie 0,28 m daneben: 295 statt 300 Häuser, vier statt einer Wende, 20/20 statt der 7/20 der Radeon.
+        // Seit flotte-jahr trägt das Wort das Jahr der Stadt (`jahr`): ihre Flotte ist Gesetz ihres Jahrs (vehicle-core `flotte`)
+        if (!S0()) await r.spawnSettlement({ ...wort, position: { x: ax, y: 0, z: az } });
         const S = S0();
-        if (!S) throw new Error("keine Stadt am Messort stadt-voll");
+        if (!S) throw new Error(`keine Stadt am Messort ${o.ort}`);
         const R = A.PLAYER_WALL_RADIUS;
         const P = Object.getPrototypeOf(r);
         // im Ort, den er allein hält (er ist eingefahren, sein Schlüssel hält ihn): dort begegnet ihm keiner — weder „neben der
@@ -763,7 +767,7 @@ async function probeLeben(expected) {
         // Stand des Richters; der Fund steht im Register
         const bahn0 = Array.isArray(ort.bahn) ? ort.bahn[0] : null;
         if (!Array.isArray(bahn0) || bahn0.length !== 2 || !bahn0.every(Number.isFinite))
-            throw new Error(`Messort stadt-voll trägt keinen Anfang der Bahn (bahn[0] = ${JSON.stringify(bahn0)}): dort steht der Richter`);
+            throw new Error(`Messort ${o.ort} trägt keinen Anfang der Bahn (bahn[0] = ${JSON.stringify(bahn0)}): dort steht der Richter`);
         const [sx, sz] = o.stand === "platz" ? [S.ox + S.plan.platz.cx, S.oz + S.plan.platz.cz] : o.stand || bahn0;
         // DER TAKT WIRFT NIE STILL: die Fehler-Grenze des Loops fängt jeden Wurf eines Bilds (`_loopErrorBoundary`, die Welt läuft
         // weiter) — die Stunde zählt die Würfe und nennt den ersten. Am 11.11. hieß die Pose in der Schleife der Stunden wie der
@@ -886,7 +890,7 @@ async function probeLeben(expected) {
             // die Stadt ohne Wagen beim Namen (bis hier ein TypeError der Minuten-Probe: der kürzeste Weg von keinem Wagen)
             if (!VK.wagen.length)
                 throw new Error(
-                    `die Stadt stellt keinen Wagen (Soll ${VK.zahl.soll}, ohne Platz ${VK.zahl.ohnePlatz}, ` +
+                    `die Stadt stellt keinen fahrenden Wagen (Soll ${VK.zahl.soll}, ohne Gespann ${VK.stehen.length}, ohne Platz ${VK.zahl.ohnePlatz}, ` +
                         `Wenden ${VK.wenden.size} an ${VK.kp.filter((K) => K.ende).length} Enden, Netz ${Math.round(VK.zahl.laengeM)} m)`
                 );
             const m = {
@@ -1040,6 +1044,9 @@ async function probeLeben(expected) {
             // Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse 20 m neben seiner Lage, Wagen 2 1 m hinter Wagen 3, der
             // Sitz-Knochen des ersten gemessenen Fahrers 1,3 m höher (auf dem Dach, wie um 23 Uhr an der Radeon)
             const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], lh: new Map(), lhMax: [0] }; // prettier-ignore
+            // DIE ZEIT DES WAGENS (VK-E, flotte-jahr): je fahrendem Wagen das Tempo über seinem Fahr-Gesetz (`W.vmax`, der Gang seiner
+            // Zeit) — das schlimmste [m/s darüber, Wagen, Probe, m/s, vmax]; je Wagen ohne Gespann seine Lage am Anfang der Stunde
+            [T.vUeber, T.steh0] = [[-Infinity], new Map(VK.stehen.map((W) => [W, W.entry && [W.entry.position.x, W.entry.position.z]]))]; // prettier-ignore
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
@@ -1132,7 +1139,7 @@ async function probeLeben(expected) {
                 const [a, sp] = [r._lodAuge(), st.playerMesh.position];
                 for (const [n, W] of fahrend.entries()) {
                     const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
-                    const x = L[n].x + (o.taeter && W.nr === 1 ? 20 : 0);
+                    const x = L[n].x + (o.taeter && W === VK.wagen[1] ? 20 : 0);
                     if (T.tr[0]++ >= 0 && !r._aufWeg(x, L[n].z, 0)) T.tr[1]++ < 6 && T.tr[2].push([W.nr, ...ort2({ x, z: L[n].z }), k]); // prettier-ignore
                     const sv = r._archIsRendered(e) ? e._servedLod : 9;
                     SK.nah += d < LD.thresh12 - LD.hysteresis;
@@ -1167,6 +1174,7 @@ async function probeLeben(expected) {
                             m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, halter ? "halter" : Z.art, ...ort2(L[n])]);
                     }
                     if (!haeltAllein(W) && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    if (e._fahr && e._fahr.vlong - W.vmax > T.vUeber[0]) T.vUeber = [+(e._fahr.vlong - W.vmax).toFixed(2), W.nr, k, +e._fahr.vlong.toFixed(2), +W.vmax.toFixed(2)]; // prettier-ignore
                     for (const b of S.liste)
                         if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z))
                             m.leib++ < 6 && m.leibOrte.push([b.seed + "|" + W.nr, k, ...ort2(L[n]), W.grund, b.weg ? "geht" : "steht"]); // prettier-ignore
@@ -1209,7 +1217,8 @@ async function probeLeben(expected) {
                 // als 1 cm ineinander stecken. Bis pflicht.C#1 nur die Fahrenden, 5 cm Rand: Wagen 1, 2 und 5 steckten an der Radeon
                 // um 10 Uhr bei 828/441 0,1–0,22 m ineinander, Tempo 0; bis w23-verkehr begegneten sich an der Wende 908/289
                 // Hineinfahrende und Herausfahrende auf 0,08 m, in jeder Stunde, und der Zug sah „Wagen in Wagen"
-                const LA = VK.wagen.filter((W) => W.entry).map((W) => [W, lage(W)]);
+                // (seit flotte-jahr auch jeder Wagen ohne Gespann auf seinem Platz: er steht, die Stadt fährt an ihm vorbei)
+                const LA = [...VK.wagen, ...VK.stehen].filter((W) => W.entry).map((W) => [W, lage(W)]);
                 if (o.taeter && LA.length > 3) Object.assign(LA[2][1], { x: LA[3][1].x + LA[3][1].fx, z: LA[3][1].z + LA[3][1].fz }); // prettier-ignore
                 for (let a = 0; a < LA.length; a++)
                     for (let b = a + 1, t; b < LA.length; b++) {
@@ -1281,7 +1290,7 @@ async function probeLeben(expected) {
             // (vehicle-core `exportDrive.huelle` × Größe, hl = max(Bug, −Heck), `_verkehrMass`), je Wagen am Ende der Stunde; wer ein
             // anderes trägt, beim Namen [Wagen, Gattung, hl im Verkehr, hl der Gattung, hw, hw]. Bis hier fror das Stellen das Mittel
             // (Bug − Heck)/2 ein: das Rechteck trug den Bug nicht (4|8 um 23 Uhr: 0,17 m im Rechteck, ein Stoß am Leib)
-            const massZwilling = VK.wagen
+            const massZwilling = [...VK.wagen, ...VK.stehen]
                 .filter((X) => X.entry)
                 .map((X) => {
                     const h = r._fahrzeugGesetzFor(X.entry).drive.huelle;
@@ -1293,9 +1302,37 @@ async function probeLeben(expected) {
             // der Täter der längsten Fahrt beim Namen: sein Grund, sein Ort, wer vor ihm steht (Wagen oder Leib)
             const W = m.fahrtWer;
             const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
+            // DIE ZEIT JE WAGEN (VK-E, flotte-jahr; `epochen`, denn `zeit` ist der Schalter der Wanduhr): das Gesetz der Flotte im
+            // Jahr der Stadt — hier neu gerechnet aus dem Kern (vehicle-core `flotte` über die Fahrer des Plans, fachwerk
+            // `verkehrVon`, und dem Jahr ihres Plans), nie aus dem Stand
+            // des Verkehrs — gegen jeden gestellten Wagen [Nr., Gattung, Epoche des Verkehrs, Epoche im Stempel des Baus, fährt|steht,
+            // Stufe, Zugtier der Stufe, Weg des Stehenden in der Stunde m, vmax im Fahr-Gesetz des Eintrags, vmax des Kerns zu seiner
+            // Zeit]; das Gesetz je Wagen [Gattung, Epoche, Stufe]; `fahrSoll`: die Wagen des Gesetzes, deren Stufe kein Tier zieht
+            const epochen = (() => {
+                const [VC, FC] = [globalThis.__vehicleCore, globalThis.__fachwerkCore];
+                const jahr = S.plan.jahr + S.plan.spanne;
+                const gesetz = VC.flotte(FC.verkehrVon(S.plan).slots.length, S.plan.seed >>> 0, jahr);
+                const stufe = (ep) => (ep == null ? "heute" : VC.EPOCHE_GESETZ[Math.round(ep)].id);
+                const zugVon = (ep) => (ep == null ? null : (VC.EPOCHE_GESETZ[Math.round(ep)].antrieb || {}).zug || null);
+                const kernVmax = (W) => {
+                    const P = VC.PRESETS[W.typ];
+                    return P ? +VC.exportDrive({ ...P.s, ...P.fx, ...(W.epoche == null ? null : { epoche: W.epoche }) }, W.typ).vmax.toFixed(3) : null; // prettier-ignore
+                };
+                const wagen = [...VK.wagen.map((W) => [W, "faehrt"]), ...VK.stehen.map((W) => [W, "steht"])].map(([W, wie]) => {
+                    const z = zugVon(W.epoche);
+                    const p0 = T.steh0.get(W);
+                    const weg = wie === "steht" && p0 && W.entry ? +Math.hypot(W.entry.position.x - p0[0], W.entry.position.z - p0[1]).toFixed(3) : 0; // prettier-ignore
+                    const ov = W.entry && W.entry.studioOv;
+                    const vE = W.entry ? +r._fahrzeugGesetzFor(W.entry).drive.vmax.toFixed(3) : null;
+                    return [W.nr, W.typ, W.epoche ?? null, ov && ov.epoche != null ? ov.epoche : null, wie, stufe(W.epoche), z ? z.art : null, weg, vE, kernVmax(W)]; // prettier-ignore
+                });
+                return { jahr, vkJahr: VK.jahr, gesetz: gesetz.map((w) => [w.gattung, w.epoche, stufe(w.epoche)]), fahrSoll: gesetz.filter((w) => !zugVon(w.epoche)).length, wagen, vUeber: Number.isFinite(T.vUeber[0]) ? T.vUeber : null }; // prettier-ignore
+            })();
             aus[stunde] = {
                 soll: VK.zahl.soll,
                 wagen: VK.wagen.length,
+                stehen: VK.stehen.length,
+                epochen,
                 ohnePlatz: VK.zahl.ohnePlatz,
                 ohneFahrer: VK.zahl.ohneFahrer,
                 ohneNacht: VK.zahl.ohneNacht,
@@ -1347,6 +1384,9 @@ async function probeLeben(expected) {
                     ende: VK.wagen.map((W) => [W.nr, W.zustand, W.grund, W.entry && W.entry._fahr ? +W.entry._fahr.vlong.toFixed(1) : null, W.ziele, W.wartet ? W.wartet.auf.map((x) => x[0].nr + x[1][0]).join(",") : W.wer ? (W.wer.nr != null ? "w" + W.wer.nr : "L") : ""]), // prettier-ignore
                 },
                 stand: [+sx.toFixed(2), +sz.toFixed(2)],
+                // die Täter beim Namen (`o.taeter`): die Nummern der ersten vier FAHRENDEN Wagen — seit flotte-jahr ist die Nummer
+                // des Gesetzes nicht ihr Platz in der Liste (die Kutsche ohne Gespann steht außer ihr)
+                ...(o.taeter && { taeterNr: VK.wagen.slice(0, 4).map((W) => W.nr) }),
             };
         }
         wurfAus();

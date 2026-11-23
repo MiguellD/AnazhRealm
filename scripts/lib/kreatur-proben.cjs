@@ -3735,12 +3735,13 @@ async function kreaturProben(r, T, opts) {
     const stadtAm = async (ort, wo) => {
         const voll = ort !== "stadt";
         const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
-        const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
+        const w = A._dorfWort(o.gruendung.wort); // der EINE Parser des Worts (Same, Häuser, Jahr)
+        const [seed, [x, z], nH] = [w.seed, o.gruendung.anker, voll ? 300 : 30];
         const S0 = () =>
             [...(r._bewohnerSiedlungen || new Map()).values()].find(
                 (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
             );
-        if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
+        if (!S0()) await r.spawnSettlement({ seed, nH, ...(w.jahr != null && { jahr: w.jahr }), position: { x, y: 0, z } });
         const S = S0();
         if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
             return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };

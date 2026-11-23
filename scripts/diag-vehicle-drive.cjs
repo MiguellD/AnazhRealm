@@ -734,27 +734,30 @@ hauptLauf(async () => {
     const stadt = await page.evaluate(async () => {
         try {
             const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === "stadt-voll");
-            const w = ort.gruendung.wort.split(" ");
-            const [seed, nH, [ax, az]] = [Number(w[1]), Number(w[2]), ort.gruendung.anker];
+            const w = AnazhRealm._dorfWort(ort.gruendung.wort); // der EINE Parser des Worts (Same, Häuser, Jahr)
+            const [seed, [ax, az]] = [w.seed, ort.gruendung.anker];
             await __weltDa(() => AnazhRealm._siedlungGesetz());
             const S0 = () => [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200);
-            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+            if (!S0()) await r.spawnSettlement({ ...w, position: { x: ax, y: 0, z: az } });
             const S = S0();
             if (!S) return { fehler: "keine Stadt am Messort stadt-voll" };
             const pm = r.state.playerMesh.position;
             let t = performance.now();
-            for (const weiter = __deckel("B-h: der Verkehr der Stadt", 150000); weiter() && !(S.verkehr && S.verkehr.wagen.length); ) {
+            // (seit flotte-jahr: die Stadt von 1290 zieht ein Tier, das das Gesetz der Tiere nicht trägt — ihre Wagen stehen,
+            // `VK.stehen`; der Verkehr steht, sobald er angelegt ist, gezählt wird jeder gestellte Wagen)
+            for (const weiter = __deckel("B-h: der Verkehr der Stadt", 150000); weiter() && !(S.verkehr && S.verkehr.wagen.length + S.verkehr.stehen.length); ) {
                 pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + 0.2, S.oz);
                 r.state.playerVel.setValue(0, 0, 0);
                 for (let k = 0; k < 8; k++) r._gameLoopTick((t += 1000 / 60));
                 await window.sleep();
             }
             const VK = S.verkehr;
-            if (!VK || !VK.wagen.length) return { fehler: `die Stadt trägt keinen Verkehr (Soll ${VK && VK.zahl && VK.zahl.soll})` };
+            const alle = VK ? [...VK.wagen, ...VK.stehen] : [];
+            if (!alle.length) return { fehler: `die Stadt trägt keinen Verkehr (Soll ${VK && VK.zahl && VK.zahl.soll})` };
             const typen = {};
-            for (const W of VK.wagen) typen[W.typ] = (typen[W.typ] || 0) + 1;
+            for (const W of alle) typen[W.typ] = (typen[W.typ] || 0) + 1;
             const welt = [...new Set((r.state.architectures || []).filter((e) => e && /^fahrzeug_/.test(e.type)).map((e) => e.type))];
-            return { wagen: VK.wagen.length, soll: VK.zahl.soll, typen, welt };
+            return { wagen: alle.length, fahren: VK.wagen.length, soll: VK.zahl.soll, typen, welt };
         } catch (e) {
             return { fehler: fehlerText(e) };
         }
@@ -777,7 +780,7 @@ hauptLauf(async () => {
     check(
         `B-h: die Stadt stadt-voll fährt ≥ ${GATTUNG.min} Gattungen des Kerns (Wagen ihres Verkehrs und Fahrzeug-Typen der Welt)`,
         gB.length === 0,
-        gB.join(" · ") || `${stadt.wagen} von ${stadt.soll} Wagen · ${JSON.stringify(stadt.typen)} · in der Welt ${stadt.welt.join(", ")}`
+        gB.join(" · ") || `${stadt.wagen} von ${stadt.soll} Wagen (${stadt.fahren} fahren) · ${JSON.stringify(stadt.typen)} · in der Welt ${stadt.welt.join(", ")}`
     );
     // B-c: das Host-Profil.
     const pg = out.gt;

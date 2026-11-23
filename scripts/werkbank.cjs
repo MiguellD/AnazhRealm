@@ -1004,9 +1004,13 @@ async function starte() {
                 // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o?.gruendung;
+                // das Wort liest der EINE Parser des Stamms (`_dorfWort`, derselbe wie der Chat): Same, Häuser und — seit flotte-jahr —
+                // das Jahr der Stadt (`stadt-1910`: „dorf 7 300 jahr 1910")
+                const wort = g ? AnazhRealm._dorfWort(g.wort) : null;
+                if (g && !(wort && wort.seed >= 0)) throw new Error(`Messort ${o.ort}: „${g.wort}" gründet keine Stadt`);
                 const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
                 const steht = () =>
-                    !!g && !!zellen().find((c) => String(c.seed) === g.wort.split(" ")[1] && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
+                    !!g && !!zellen().find((c) => String(c.seed) === String(wort.seed) && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                 // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m).
                 // DER ANLAUF GRÜNDET, ER MISST NICHTS (Runde 4 GTX an 6066c757: 5 von 21 Stationen an stadt-voll „Frist der Probe 64 s
@@ -1025,7 +1029,6 @@ async function starte() {
                         // Windows-Läufers rückte die Stadt um 5,3 mm (GTX 048c472e: 662,7171/422,3055 statt 662,7200/422,3099), und
                         // jede Probe am Ort stand still. Gegründet wird mit dem Ort des Ankers, wie der Richter des Verkehrs
                         // (fahr-proben `verkehr`); ein Wunsch-Ort, der den Spieler nicht berührt, bleibt, wie er ist.
-                        const [, seed, nH] = g.wort.split(" ").map(Number);
                         // DER AKT IST DIE BEREIT-BEDINGUNG (w27-ort-pose): die Probe wartet auf sein Versprechen (`spawnSettlement`,
                         // Buch · Export · Ort-Wahl im Faden · Zug), dann urteilt sie mit den Zellen. Bis hier zählte ein Deckel jeden
                         // Gang ohne Takt (120 × 250 ms): 30 s Wanduhr, und die GTX 1050 brauchte länger — „DER BAU STEHT NICHT: die
@@ -1033,7 +1036,7 @@ async function starte() {
                         // Das Gesetz der Siedlung im Buch zuerst (wie der Richter des Verkehrs): sonst gab der Akt nach seiner Frist
                         // (45 s) an der kalten GTX 1050 ohne Stadt auf
                         await __weltDa(() => AnazhRealm._siedlungGesetz());
-                        await r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
+                        await r.spawnSettlement({ verlangt: "human", ...wort, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
