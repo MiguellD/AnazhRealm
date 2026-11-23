@@ -3031,14 +3031,14 @@ class AnazhRealm_bild_himmel {
     // Wetter-Tafel ihres Gesetzes (`worldMeta.gesetz.wetter`; die Erde: `WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
     _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
-        // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
-        const zeile = globalThis.__phytoCore.wetterAt(
-            AnazhRealm._saatVon(wm),
-            x,
-            z,
-            t,
-            this._gelaende().ort.wetter
-        ).zeile;
+        // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat); der Kalender der
+        // Lage (planet.wetter.extreme#1): das Jahr und die Stunde des Kalenders (`_kalender`, in Sekunden des Standard-Tags — das
+        // Wetter zieht an der Welt-Uhr wie die Front)
+        const K = this._kalender();
+        const zeile = globalThis.__phytoCore.wetterAt(AnazhRealm._saatVon(wm), x, z, t, this._gelaende().ort.wetter, {
+            jahrS: K.jahrK,
+            stundeS: K.normS / K.tagStunden,
+        }).zeile;
         const wort = AnazhRealm._weltGesetz(wm).wetter[zeile]; // die Wetter-Tafel des Gesetzes DIESER Welt (ultiversum.K1)
         if (!wort)
             throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");

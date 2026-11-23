@@ -2549,7 +2549,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                 await __weltStehtNach(takt);
                 // (WN) DAS WASSERNETZ AM BACH STEHT (wetter.K3): je Takt das Netz jedes Chunks binnen 96 m um den Bach nächst der
                 // Mess-Wiese (`_wasserNetz`, das Wasser, das Körper und Nah-Wiese lesen) — nach dem Stand 600 Takte ohne Wechsel;
-                // die Mutante: der Pegel pendelt je Sekunde der Welt-Uhr (sein Takt, `_pegelUhr`) zwischen Ruhe und Krone
+                // die Mutante: der Pegel pendelt je Sekunde der Welt-Uhr (sein Takt, `_pegelUhr`) zwischen Ruhe und dem Hub des
+                // Abflusses 1 — über der Krone (flut-aue: der Deckel fiel, die Aue flutet mit)
                 const Wn = { takte: 600, wechsel: 0 };
                 for (const B of (await window.__seite()).fluss(MESS).slice(0, 1)) {
                     Wn.ort = [Math.round(B.x), Math.round(B.z)];

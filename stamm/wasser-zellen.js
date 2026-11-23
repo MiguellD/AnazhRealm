@@ -58,20 +58,9 @@ class AnazhRealm_wasser_zellen {
                     }
                 }
             }
-            // (3) Fluss-Bucket im Footprint
-            if (h.kanal) {
-                const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-                const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-                const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-                const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-                for (let bj = b0j; bj <= b1j; bj++) {
-                    for (let bi = b0i; bi <= b1i; bi++) {
-                        if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                        const kb = bi + bj * h.bucketsDim;
-                        if (h.kanal.ab[kb + 1] > h.kanal.ab[kb]) return true;
-                    }
-                }
-            }
+            // (3) Fluss-Bucket im Footprint — in der Flut mit der Aue (EIN Gesetz mit dem Faden: `kanalImFenster`)
+            if (globalThis.__gelaendeCore.kanalImFenster(this._gelaende(), h, ox, oz, ox + span, oz + span))
+                return true;
         }
         // (4) Makro-Dip-Predicate für Wasser jenseits des Atlas: der globale Ozean jenseits der ±1024-Region
         // und Küsten-Aquifer (Roughness-Senken, die der 16-m-Atlas nicht sieht). Dippt das Makro-Terrain im

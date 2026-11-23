@@ -4039,19 +4039,8 @@ function chunkHasAnyWater(cx, cz, lod) {
                 }
             }
         }
-        if (h.kanal) {
-            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-            for (let bj = b0j; bj <= b1j; bj++) {
-                for (let bi = b0i; bi <= b1i; bi++) {
-                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const kb = bi + bj * h.bucketsDim;
-                    if (h.kanal.ab[kb + 1] > h.kanal.ab[kb]) return true;
-                }
-            }
-        }
+        // der Fluss-Bucket im Footprint — in der Flut mit der Aue (EIN Gesetz mit dem Stamm: `kanalImFenster`)
+        if (G.kanalImFenster(state, h, ox, oz, ox + span, oz + span)) return true;
     }
     // (4) V17.117 (H3) + V18.125 — Mirror des MAKRO-DIP-Predicates (siehe
     // `_voxelChunkHasAnyWater`): globaler Ozean beyond-region UND der Küsten-

@@ -3309,6 +3309,8 @@ const _w1 = new THREE.Color(),
     _w3 = new THREE.Color(),
     _wSun = new THREE.Color(),
     _wSunPos = new THREE.Vector3();
+// der Zeitraffer des Wetterspiels (die Wetter-Uhr läuft × 30: eine Front von 6,6 km zieht in 20 s vorbei)
+const WX_RAFFER = 30;
 let _lastShadowSun = null,
     _wxUhr = 0,
     _camUnder = false,
@@ -3408,8 +3410,13 @@ function updateWorld(dt) {
         // DAS WETTERSPIEL ist die Front des Kerns (phyto-core wetterAt, wetter.K1 — dieselbe Funktion wie die Welt) ueber dem
         // Auge, im Zeitraffer x30 (eine Front von 6,6 km zieht in 20 s vorbei): ihre Zeile ist das Ziel, die Kanaele gleiten
         // wie bei der Preset-Wahl. Bis wetter.K1 drifteten hier drei eigene Sinus um das Preset.
-        _wxUhr += dt * 30;
-        WWEATHER = window.__phytoCore.wetterAt("labor:" + SEED, camera.position.x, camera.position.z, _wxUhr).zeile;
+        _wxUhr += dt * WX_RAFFER;
+        // der Kalender des Labors (die Lage, planet.wetter.extreme#1) aus seinen Reglern: seine Stunde (1 ÷ WSPEED s) und sein
+        // Jahr (1 ÷ WSEASONSPEED s) in Sekunden der Wetter-Uhr (× WX_RAFFER) — keine eigene Länge neben dem Tag-Regler
+        WWEATHER = window.__phytoCore.wetterAt("labor:" + SEED, camera.position.x, camera.position.z, _wxUhr, null, {
+            jahrS: WX_RAFFER / WSEASONSPEED,
+            stundeS: WX_RAFFER / WSPEED,
+        }).zeile;
         _wxBase = _wxPick(WWEATHER);
     }
     wxFogT = _wxBase.fog;

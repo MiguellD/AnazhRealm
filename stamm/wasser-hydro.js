@@ -322,6 +322,9 @@ class AnazhRealm_wasser_hydro {
     // die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die gezeichneten Chunks mit
     // Wasser, deren Marke wechselt (ihr Lauf, ihr See, ihre Höhen), und die Netze im Vorrat mit Wasser und gewechselter Marke
     // fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser, kein Wasser eines anderen Laufs.
+    // DIE FLUT (planet.wetter.extreme#1): flutet die alte oder die neue Tafel (`flut`, ein Lauf über der Krone, gelaende-core
+    // `flutAm`), zählt auch der trockene Chunk, dessen Marke wechselt — die Aue liegt jenseits der Chunks mit Wasser (am Bach der
+    // Mess-Wiese bis 60 m quer); bis flut-aue zeichnete der Faden die Flut nur in den Chunks, die schon Wasser trugen.
     _pegelTakt() {
         const alt = this._pegelTafelGilt;
         if (alt === undefined) return;
@@ -331,12 +334,14 @@ class AnazhRealm_wasser_hydro {
         this._voxelZustandPost({ type: "state-update", delta: { pegel: neu } });
         const st = this.state;
         const WATER = AnazhRealm.CELL_STATE.WATER;
-        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser, und wechselt die Marke seines Chunks?
+        const flut = !!((alt && alt.flut) || (neu && neu.flut));
+        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser — oder flutet die Aue —, und wechselt die
+        // Marke seines Chunks?
         const trifft = (e, key) => {
-            const w = e && e.waterCells;
-            if (!w || !w.length) return false;
-            if (e._nass === undefined) e._nass = w.includes(WATER);
-            if (!e._nass) return false;
+            if (!e) return false;
+            const w = e.waterCells;
+            if (e._nass === undefined) e._nass = !!(w && w.length && w.includes(WATER));
+            if (!e._nass && !flut) return false;
             const [cx, cz] = key.split(",").map(Number);
             return this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
         };

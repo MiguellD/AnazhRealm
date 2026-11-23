@@ -1087,7 +1087,9 @@ DIE 3D-DICHTE UND DER WASSER-SPIEGEL (gelaende-k1k4): die Region einer Stelle `h
 See-Becken `seeBecken` und ihre Form im Gelände `gewaesserForm`; die Dichte `dichte` aus dem Spalten-Kontext `dichteSpalte` und
 der Basis `dichteBasis`, ihr Gitter `dichteGitter` und `gitterMitEdits`; die Edit-Karte je Chunk `editKarte` mit `editsNah`,
 `editsAm`, `editsImKasten` und ihr Stand `editKarteSteht` (die Probe fragt die stehende Karte für zwei Vergleiche); der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
-die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, der Stau der Werke im Spiegel des Atlas (die Felder
+die Krone `spiegelQuer`, in der Aue die Flut über der Krone `flutAm` (planet.wetter.extreme#1: HAND am nächsten Segment, der
+Überschuss des Hubs, den `atlasSpiegel` im Land trägt) und ihr Fenster `kanalImFenster` (das Trocken-Tor der Wasser-Zellen in
+Stamm und Faden: der Kanal-Bucket im Footprint, in der Flut einer mehr), am Rand `flussRand` und im Schnitt `schnittSpiegel`, der Stau der Werke im Spiegel des Atlas (die Felder
 `L.stau`, gelaende.K2) — Stamm-Leser und Worker-Feld rufen sie, die
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
 `stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden

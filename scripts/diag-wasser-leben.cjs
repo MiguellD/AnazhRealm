@@ -332,8 +332,12 @@ function urteil(b) {
             // ohne Jahres-Welle hält das Feld den Spiegel gegen den Lauf mit stehendem Jahr bis auf EINE Stufe des Hubs (gelaende-core
             // `PEGEL.stufe` 0,01 m: der Lauf des Regens geht im Tag des Kalenders, zeit-ein-kalender, und kippt an der Stufe)
             if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.01 + 1e-9) rot("P3 TAKT", p);
-            const rg = p.regen || {}; // wetter.K3: 20 min Sturm heben Bach und gezeichneten See ≥ 0,2 m, das gehaltene Regen-Feld nichts
-            if (!(rg.hub >= 0.2 && rg.koerper >= rg.hub - 0.03 && rg.post > 0 && rg.fest <= 0.001)) rot("P4 REGEN", rg);
+            // wetter.K3: 20 min Sturm heben den Bach ≥ 0,2 m und den See nach seinem eigenen Gesetz (`see` > 0), das gezeichnete
+            // Wasser am See trägt diesen Spiegel (± 3 cm), das gehaltene Regen-Feld hebt nichts. Bis flut-aue standen Bach und See
+            // gedeckelt an derselben Krone, die Probe verglich den See mit dem Bach; der Bach über der Krone ist nicht der See
+            const rg = p.regen || {};
+            if (!(rg.hub >= 0.2 && rg.see > 0 && Math.abs(rg.koerper - rg.see) <= 0.03 && rg.post > 0 && rg.fest <= 0.001))
+                rot("P4 REGEN", rg);
             // P5 die Knoten des Regens: der Weg von main, die Rampe an ihrem Knoten; der Zug ohne Wechsel legt keinen, der Lauf
             // des Pegels bleibt byte-gleich
             const kn = p.knoten || {};
@@ -349,6 +353,22 @@ function urteil(b) {
             if (!see.unter || oben.unter !== false || !bach.unter) rot("K5 MEDIUM", k.medium || null);
             else if (see.art + bach.art !== "seebach" || [see, bach].some((x) => !(Math.abs(x.sichtM / x.soll - 1) <= 0.01)) || !(bach.sichtM >= S.bachSicht))
                 rot("K5 TRÜBUNG", k.medium);
+        }
+    }
+    // P6 DIE FLUT IN DER AUE (planet.wetter.extreme#1, flut-aue; die Probe `__wasserFlut`): der Regen des Jahrhunderts am Ort der
+    // Station (100 Jahre Wetter-Zug, phyto-core `wetterAt` mit der Lage des Klimas) ≥ 100 mm; an der Spitze seiner nassen Strecke
+    // steht der Bach der Mess-Wiese über der Krone (`ueberAueM` > 0, gelaende-core `pegelHubVon`) und die Aue quer zum Lauf ist
+    // nasser als einen Tag danach (`_atlasWaterLevelAt` → `atlasSpiegel` · `flutAm`); danach liegt sie wieder im Bett. Der Täter
+    // beim Namen: der Fluss verlässt das Bett nie — bis flut-aue der Hub an der Krone gedeckelt und der Regen des Jahrhunderts
+    // 14,72 mm (die Lage des Klimas fehlte)
+    if (b.flut !== undefined) {
+        const fa = b.flut;
+        if (!fa || fa.fehler || !fa.spitze || !(fa.proben > 0)) rot("P6 LEER", fa);
+        else {
+            if (!(fa.regenMaxMm >= 100)) rot("P6 REGEN: der Regen des Jahrhunderts fehlt (wetterAt)", fa);
+            if (!(fa.spitze.ueberAueM > 0 && fa.spitze.nass > fa.danach.nass))
+                rot("P6 FLUT: der Fluss verlässt das Bett nie (pegelHubVon · flutAm)", fa);
+            else if (!(fa.danach.ueberAueM === 0)) rot("P6 STEHT: die Flut fällt nie", fa);
         }
     }
     // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
@@ -634,9 +654,9 @@ function selbsttest() {
                 { ab: 2, frei: 0.4, reihe: [{ glut: 1, stoff: "glut", licht: true }, { glut: 0.4, stoff: "stein" }] },
                 { ab: 1, reihe: [{ dampf: true }] },
             ],
-            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0, regen: { hub: 0.2, post: 20, koerper: 0.2, fest: 0 }, knoten: { weg: "0,0,200,0,245,0.6", main: "0,0,200,0,245,0.6", lauf: true, zug: 6, zugLauf: true } },
-            gluehen: { feuer: { wechsel: 17, glut: 0.55, kelvin: 1373, esse: "esse" }, kalt: { wechsel: 119, T: 25, luft: -1, glut: 0 }, feld: 9.8 },
+            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0, regen: { hub: 2.4, post: 20, koerper: 1.05, see: 1.05, fest: 0 }, knoten: { weg: "0,0,200,0,245,0.6", main: "0,0,200,0,245,0.6", lauf: true, zug: 6, zugLauf: true } },            gluehen: { feuer: { wechsel: 17, glut: 0.55, kelvin: 1373, esse: "esse" }, kalt: { wechsel: 119, T: 25, luft: -1, glut: 0 }, feld: 9.8 },
         },
+        flut: { regenMaxMm: 144, x100Mm: 113.8, strecke: [5400, 5420], bach: { x: -396.5, z: -878.3, breite: 4.2 }, spitze: { ueberAueM: 1.61, nass: 51, flutAm: 1.61 }, danach: { ueberAueM: 0, nass: 2, flutAm: null }, proben: 60 },
         licht: {
             nachtOben: 0.03,
             nachtUnten: 0.004,
@@ -758,6 +778,13 @@ function selbsttest() {
         ["P4 REGEN", ["koerper.pegel.regen", { hub: 0, post: 0 }]],
         ["P4 REGEN", ["koerper.pegel.regen.fest=", 0.2]],
         ["P4 REGEN", ["koerper.pegel.regen.koerper=", 0]],
+        ["P4 REGEN", ["koerper.pegel.regen.see=", 0]],
+        // planet.wetter.extreme#1 an main ff88b82d: der Hub an der Krone gedeckelt, der Regen des Jahrhunderts 14,72 mm
+        ["P6 REGEN", ["flut.regenMaxMm=", 14.72]],
+        ["P6 FLUT: der Fluss verlässt das Bett nie", ["flut.spitze", { ueberAueM: 0, nass: 2, flutAm: null }]],
+        ["P6 STEHT", ["flut.danach", { ueberAueM: 1.61 }]],
+        ["P6 LEER", ["flut=", null]],
+        ["P6 LEER", ["flut", { fehler: "kein Bach" }]],
         // w28-halter-register am 545894d3: der Weg verwarf den Knoten am Beginn der Rampe aus gehaltenem Wetter — der Regen stieg ab
         // dem letzten alten Knoten
         ["P5 KNOTEN", ["koerper.pegel.knoten", { weg: "0,0,245,0.6", lauf: false }]],
@@ -1045,6 +1072,9 @@ async function lauf() {
                     (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte, meer: o.meer, fluss: o.fluss }),
                     ORTE
                 );
+            // P6 die Flut in der Aue: der Regen des Jahrhunderts und der Bach der Mess-Wiese über der Krone (die Probe stellt Uhr,
+            // Wetter und Pegel zurück)
+            if (soll("flut")) befund.flut = await page.evaluate((o) => window.__wasserFlut({ fluss: o.fluss }), ORTE);
             // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
             if (soll("wagen"))

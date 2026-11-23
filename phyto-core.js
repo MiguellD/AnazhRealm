@@ -4727,6 +4727,7 @@
             wellen: WIND_FELD.front.wellen.map(lcg),
             biege: lcg(),
             feuchte: lcg(),
+            lage: saatFnv(saat + "-lage"),
         };
         _windSaatMerk.saat = saat;
         _windSaatMerk.w = w;
@@ -4801,9 +4802,77 @@
         _wetterVersatzJe.set(ort, vs);
         return vs;
     }
-    function wetterAt(saat, x, z, t, ort) {
+    // DIE STARKREGEN-LAGE (planet.wetter.extreme#1): die Front kennt keine Extreme — drei Wellen wiederholen sich, der größte Regen
+    // einer nassen Strecke in 100 Jahren war 14,7 mm. Das Klima kennt sie: über einer Schwelle kommen die Lagen als Poisson-Prozess
+    // (`rate` je Jahr), ihre Tiefe über der Schwelle ist GENERALISIERT-PARETO (σ, ξ) — so sind die Jahresmaxima GEV mit derselben
+    // Form ξ (Pickands 1975; Coles 2001, Kap. 4); ξ = 0,114 ist die Form der Jahresmaxima des Tagesregens über 15 000 Stationen der
+    // Erde (Papalexiou & Koutsoyiannis 2013). Die Tiefen zählen in Stunden der Stärke 1 (1 = 10 mm, gelaende-core `PEGEL.regenMm`):
+    // Schwelle 40 mm, σ 30,5 mm — der 100-jährliche Regen der Lage x100 = u + σ/ξ·((λ/y)^ξ − 1), y = −ln(1 − 1/100): 120 mm, die
+    // Mehrtages-Tiefe des Flachlands (KOSTRA-DWD 2020, D = 72 h, T = 100 a: 110–130 mm); nach oben hält sie der wahrscheinlich
+    // größte Niederschlag (`pmp` 400 mm, WMO 2009, 72 h Mitteleuropa). Die Lage steht (der Vb-Typ zieht nicht, darum sammelt sie):
+    // je Feld von `zelleM` (300 km, die Weite einer Vb-Lage) und je Jahr des Kalenders des Wirts EIN Wurf der Saat — fällt er,
+    // beginnt die Lage im Jahr an der Stelle des zweiten Wurfs und regnet die Tiefe des dritten (die GP-Quantile) bei der Stärke der
+    // Lage (regen, wo die Front stürmt Sturm: die mittlere Stärke aus dem Anteil des Sturms am Ort) — so lang, wie die Tiefe
+    // braucht. Am Ort (Reise) skaliert die Tiefe mit dem Anteil der nassen Zeit (die Wüste kennt keine Lage). Der Kalender ist der des
+    // Wirts (`kal`: das Jahr `jahrS` und die Stunde `stundeS` in Sekunden der Uhr, an der das Wetter zieht); ohne ihn wirft `wetterAt`
+    // beim Namen. Leser: `wetterAt` (die Welt `_wetterAmOrt`, das Labor das Wetterspiel).
+    var WETTER_LAGE = Object.freeze({ rate: 0.1, schwelle: 4, sigma: 3.05, xi: 0.114, pmp: 40, zelleM: 300000 });
+    var _lageHeim = null;
+    var _lageJe = new WeakMap();
+    // das Klima der Lage am Ort: { skala (die Tiefe zur Heimat), staerke (die mittlere Stärke der Lage) }
+    function lageKlima(ort) {
+        var K = ort ? _lageJe.get(ort) : _lageHeim;
+        if (K) return K;
+        var V = frontVerteilung(),
+            st = WIND_FELD.front.stufen;
+        var a = frontAnteil(V, st.regen),
+            s = frontAnteil(V, st.sturm);
+        var an = ort ? Math.min(1, Math.max(0, a + ort.regenQuote)) : a;
+        var as = ort ? Math.min(an, Math.max(0, s + ort.sturmQuote)) : s;
+        K = { skala: an / a, staerke: WX_GESETZ.regen.rain * (1 - as) + WX_GESETZ.sturm.rain * as };
+        if (ort) _lageJe.set(ort, K);
+        else _lageHeim = K;
+        return K;
+    }
+    // ein Wurf der Saat [0, 1) je Jahr k, Feld (cx, cz) und Nummer n (FNV-Basis gemischt, der Murmur-Abschluss)
+    function lageWurf(b, k, cx, cz, n) {
+        var h =
+            (b ^ Math.imul(k | 0, 0x9e3779b1) ^ Math.imul(cx | 0, 0x85ebca77) ^ Math.imul(cz | 0, 0xc2b2ae3d)) >>> 0;
+        h = (h ^ Math.imul(n + 1, 0x27d4eb2f)) >>> 0;
+        h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+        h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    // regnet die Lage an (x, z) zur Zeit t? (die Würfe der Jahre, deren Lage bis t reichen kann)
+    function lageAm(saat, x, z, t, kal, ort) {
+        var G = WETTER_LAGE;
+        var K = lageKlima(ort);
+        if (!(K.skala > 0)) return false;
+        var b = windSaat(saat).lage;
+        var cx = Math.floor(x / G.zelleM),
+            cz = Math.floor(z / G.zelleM);
+        var J = kal.jahrS,
+            H = kal.stundeS;
+        var k = Math.floor(t / J);
+        var p = 1 - Math.exp(-G.rate);
+        var zurueck = Math.ceil(((G.pmp * K.skala) / K.staerke) * (H / J));
+        for (var i = k - zurueck; i <= k; i++) {
+            if (lageWurf(b, i, cx, cz, 0) >= p) continue;
+            var beginn = (i + lageWurf(b, i, cx, cz, 1)) * J;
+            if (beginn > t) continue;
+            var u = lageWurf(b, i, cx, cz, 2);
+            var D = Math.min(G.pmp, G.schwelle + (G.sigma / G.xi) * (Math.pow(1 - u, -G.xi) - 1)) * K.skala;
+            if (t < beginn + (D / K.staerke) * H) return true;
+        }
+        return false;
+    }
+    function wetterAt(saat, x, z, t, ort, kal) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
+        if (!(kal && kal.jahrS > 0 && kal.stundeS > 0))
+            throw new Error(
+                "wetterAt: der Kalender des Wirts fehlt (jahrS, stundeS — die Lage zählt in Jahren und Stunden)"
+            );
         var F = WIND_FELD.front;
         var w = windSaat(saat);
         var dx = Math.sin(w.t0),
@@ -4831,7 +4900,9 @@
         else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= st.nebel) zeile = "nebel";
-        return { zeile: zeile, front: f, feuchte: feuchte };
+        var lage = lageAm(saat, x, z, t, kal, ort || null);
+        if (lage) zeile = f >= stSturm ? "sturm" : "regen";
+        return { zeile: zeile, front: f, feuchte: feuchte, lage: lage };
     }
 
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
@@ -7668,6 +7739,7 @@
         windRichtung: windRichtung, // wetter.K5 — DIE EINE Wind-Richtung (Saat, Zeit)
         windGrund: windGrund, // wetter.K1 — die Grundrichtung, mit der die Fronten ziehen
         wetterAt: wetterAt, // wetter.K1 — DAS Wetter am Ort (Saat, Ort, Zeit) → Zeile von WX_GESETZ
+        WETTER_LAGE: WETTER_LAGE, // planet.wetter.extreme#1 — die Starkregen-Lage (Poisson-GP, die Jahresmaxima GEV)
         treePhenotype: treePhenotype,
         artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)

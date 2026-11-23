@@ -570,7 +570,9 @@ function wasserSchmelze(r, x, z, P) {
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
             for (let k = 0; k < 240; k++) (r._weltUhrNimm(st.spielZeit + 5), r._tickRain());
-            const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0, koerper: koerper(0.375)[0] };
+            const hub = R(r._waterLevelAt(...P.fluss) - vor);
+            const [kw, , see] = koerper(0.375); // der gezeichnete See und der Spiegel seines Gesetzes (wie P2)
+            const aus = { hub, post: pg.post - p0, koerper: kw, see };
             return (wort("sunny", 1e6), (st.regenStempel = []), aus);
         };
         pg.regen = sturm();
@@ -822,6 +824,76 @@ function __wasserKroneVon(r, p) {
     const D = A._flussTiefe(p);
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
+}
+
+// ── P6: DIE FLUT IN DER AUE (planet.wetter.extreme#1, flut-aue) ──
+// Der Regen des Jahrhunderts am Ort der Station: 100 Jahre Wetter-Zug am Ort (0, 0) (`_wetterAmOrt` → phyto-core `wetterAt`
+// samt der Lage des Klimas), je Zug sein Regen in mm (das Feld des Worts × 10 mm/h × Zug/Stunde), die größte Summe einer nassen
+// Strecke (`regenMaxMm`; dazu der Jahrhundert-Wert nach Gumbel aus den Jahres-Maxima, `x100Mm`). An ihr der Bach des Befunds
+// (`o.fluss`): je Zug der Strecke die Welt-Uhr dort, das Wort des Orts, die Vergangenheit des Regens neu (`_pegelVergangenheit`)
+// und die Tafel neu (`_pegelGilt`) — der Spiegel des Bachs (`flussAm`) über Ruhe und Krone (`ueberAueM`), die Aue quer zum Lauf
+// (je 2 m bis 60 m beidseits) nass, wo der Spiegel der EINEN Wahrheit über dem Boden steht (`_atlasWaterLevelAt` → gelaende-core
+// `atlasSpiegel` · `flutAm`: dasselbe Gesetz, das der Faden in Zellen zeichnet), und `flutAm` selbst 20 m quer (fehlt sie, null);
+// dasselbe einen Tag nach der Strecke (`danach`). Die Welt kehrt zu ihrer Uhr, ihrem Wetter und ihrem Regen zurück.
+async function wasserFlut(o = {}) {
+    const [A, G, K] = [r.constructor, window.__gelaendeCore, r._kalender()];
+    const [FELD, Z] = [A.WEATHER_FIELD, A.WETTER_ZUG_SEK];
+    const [stundeS, jeJahr] = [K.normS / K.tagStunden, Math.round(K.jahrK / Z)];
+    const mm = (w) => FELD[w].rain * 10 * (Z / stundeS);
+    const R = wasserRund(3);
+    let [lauf, max, beg, iBeg, iEnd] = [0, 0, 0, 0, 0];
+    const jm = [];
+    for (let y = 0; y < 100; y++) {
+        let m = 0;
+        for (let i = y * jeJahr; i < (y + 1) * jeJahr; i++) {
+            const v = mm(r._wetterAmOrt(0, 0, i * Z));
+            if (v > 0 && lauf === 0) beg = i;
+            lauf = v > 0 ? lauf + v : 0;
+            if (lauf > m) m = lauf;
+            if (lauf > max) [max, iBeg, iEnd] = [lauf, beg, i];
+        }
+        jm.push(m);
+    }
+    const mittel = jm.reduce((a, b) => a + b, 0) / jm.length;
+    const beta = (Math.sqrt(jm.reduce((a, b) => a + (b - mittel) ** 2, 0) / jm.length) * Math.sqrt(6)) / Math.PI;
+    const aus = { regenMaxMm: wasserRund(2)(max), x100Mm: wasserRund(1)(mittel - 0.5772 * beta - beta * Math.log(-Math.log(0.99))) };
+    const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+    await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0));
+    const { p: P, vor } = __wasserFlussNah(r, fl.x, fl.z);
+    if (!P || !vor || !(max > 0)) return { ...aus, fehler: !P ? "kein Bach" : "kein Regen" };
+    const tl = Math.hypot(P.x - vor.x, P.z - vor.z) || 1;
+    const [nx, nz] = [-(P.z - vor.z) / tl, (P.x - vor.x) / tl]; // quer zum Lauf
+    const ruhe = G.flussAm({ ...r._gelaende(), pegel: null }, P.x, P.z).surfaceY;
+    Object.assign(aus, { strecke: [iBeg, iEnd], bach: { x: R(P.x), z: R(P.z), breite: R(P.width) }, proben: 60 });
+    const alt = [st.spielZeit, st.weather, st.pegelZustand, st.regenStempel, r._pegelStand, r._pegelTafelGilt];
+    const stand = (i) => {
+        r._weltUhrNeu(i * Z);
+        st.weather = r._wetterAmOrt(P.x, P.z, i * Z);
+        [st.pegelZustand, st.regenStempel, r._pegelStand, r._pegelTafelGilt] = [null, [], null, undefined];
+        r._pegelVergangenheit(P.x, P.z);
+        const T = r._pegelGilt();
+        const L = r._gelaende();
+        let nass = 0;
+        for (const s of [-1, 1])
+            for (let d = 2; d <= 60; d += 2) {
+                const [x, z] = [P.x + s * nx * d, P.z + s * nz * d];
+                const y = r._voxelSurfaceY(x, z);
+                nass += r._atlasWaterLevelAt(x, z, y) > y + 0.02;
+            }
+        const f = G.flutAm ? G.flutAm(L, P.x + nx * 20, P.z + nz * 20) : null;
+        const ueber = G.flussAm(L, P.x, P.z).surfaceY - ruhe - (T ? T.krone : 0);
+        return { i, wort: st.weather, ueberAueM: R(Math.max(0, ueber)), nass, flutAm: f && R(f.ueberAue) };
+    };
+    try {
+        const reihe = [];
+        for (let i = iBeg; i <= iEnd + 6; i++) reihe.push(stand(i));
+        aus.spitze = reihe.reduce((m, s) => (s.ueberAueM > m.ueberAueM || (s.ueberAueM === m.ueberAueM && s.nass > m.nass) ? s : m));
+        aus.danach = stand(iEnd + Math.ceil(K.normS / Z)); // ein Tag nach der Strecke
+    } finally {
+        r._weltUhrNeu(alt[0]);
+        [st.weather, st.pegelZustand, st.regenStempel, r._pegelStand, r._pegelTafelGilt] = alt.slice(1);
+    }
+    return aus;
 }
 
 // ── Q6: die Ufer-Flut (W-W1) ──
@@ -3558,6 +3630,7 @@ module.exports = {
             wasserFluss,
             __wasserKroneVon,
             wasserUfer,
+            wasserFlut,
             wasserStrom,
             __wasserFlussNah,
             wasserGraben,
