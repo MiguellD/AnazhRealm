@@ -254,7 +254,7 @@ async function probeLeben(expected) {
     // Rechteck, 16 Richtungen). `__gebautNach` allein fragt „gezeichnet“: lädt die Mesh-Stufe noch, steht der Wagen als Karte,
     // und ein Ritt ohne Warten (`frame`) bekommt sie nie. Befund (laub-kante, L8 Lockstep, 8 von 12 Läufen ROT, main 0 von 5):
     // beim zweiten Setzen lag die L0 des GT nicht mehr im Foundry-Cache (`_foundryStufeBereit` false — der erste war abgebaut,
-    // sein Körper untätig, `_foundryRuheDeckel`), der gemischte Lauf fuhr die Karte: Stufe 2 statt 0, Hülle 16 statt 64
+    // sein Körper ohne Halter, `_foundryOhneLeser`), der gemischte Lauf fuhr die Karte: Stufe 2 statt 0, Hülle 16 statt 64
     // Richtungen, der Bär einen Sim-Schritt später berührt — Wagen 0,08644 m · Bär 0,613841 m, in jedem roten Lauf dieselbe Zahl.
     // Gewartet wird nur, wo der Abstand eine Mesh-Stufe wählt (`_foundryLodForEntry` < 2) und das Maß fehlt: wählt er die
     // Karte, stehen die Stationen zu Recht; steht das Maß, kostet die Naht keinen Takt und keine Bestellung.
