@@ -2123,7 +2123,9 @@ class AnazhRealm_siedlung_bauten {
                           : new Float32Array(vKap * gis);
                 const alt = g.attributes[name];
                 if (alt) arr.set(alt.array.subarray(0, Math.min(s.vEnde, vKap) * gis));
-                g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
+                // die Spalte lebt auf der CPU: jeder Block schreibt in sie und lädt nur seinen Bereich (`_cpuKopieFrei`)
+                const sp = new THREE.BufferAttribute(arr, gis, form === "snorm8");
+                g.setAttribute(name, AnazhRealm._cpuLeser(sp, "Satz-Spalte _chunkSatzGeometrie siedlung-bauten.js"));
             }
             s.vKap = vKap;
             for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
