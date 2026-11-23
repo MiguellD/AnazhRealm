@@ -1,0 +1,97 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 1.685971530008701,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1.69,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 3.37,
+  "gestalt": [
+   "brunnen_dorf 2439"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -613.252,
+   44.017,
+   -1152.555
+  ],
+  "blick": [
+   -0.29657,
+   -0.56349,
+   -0.77106
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 69.9,
+  "sigma": 31.3,
+  "schwarz": 0.0045,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -613.252,
+     44.017,
+     -1152.555
+    ],
+    "rot": [],
+    "ms": 1326
+   }
+  ],
+  "ms": 1326
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 3.37 m · Luma 69.9 σ 31.3 schwarz 0.4 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
