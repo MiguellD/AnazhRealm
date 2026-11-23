@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "radeon",
- "zeit": "2026-11-23T16:36:32.297Z",
+ "zeit": "2026-11-23T21:09:21.822Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#2": {
@@ -1886,6 +1886,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#1": {
+   "gruen": true,
+   "zahl": "S1 windrichtungProzent 80 % gegen Soll ≥ 70 % ✓ · beginne 100 gegen Soll ≥ 100 ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 1.24,
+   "gpu": "amd/rdna-3",
+   "konsum": "k63cc51570412",
+   "konsumN": 33,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 6
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 74.5,
+   "fremd": {
+    "s": 78.2,
+    "takte": 33,
+    "fremdS": 91.19,
+    "kerne": 1.166,
+    "fensterKerne": 2.298,
+    "namen": [
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.8
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      6.94
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      6.77
+     ]
+    ],
+    "dienerS": 32.95,
+    "diener": [
+     [
+      "System",
+      15.52
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.66
+     ]
+    ],
+    "geraetS": 46.72,
+    "geraet": [
+     [
+      "svchost.exe",
+      25
+     ],
+     [
+      "MsMpEng.exe",
+      19.33
+     ],
+     [
+      "SearchIndexer.exe",
+      2.13
+     ]
+    ],
+    "eigenS": 119.75,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T21:06:21.612Z",
+   "abdruck": "1d1dbcc29cc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1914,7 +1983,12 @@
   "k9cce71ed4b6d": "bVXRkpowFP0XHrvNBgUkZGYfou7UnW67OtOX9u0GboAVwUlAWjv9905UVGDvYzgn9+Tck/DX2UO8hRQf301VOtz55Hx2DByQGNQH1I/vxuFOFE+m6HFxLiqEWFhYrPN9bWiRSwqyhGyHpNE15sVjfKKBRD9hnLbPIl1TquiRLtunpyG1kJhUpAaFV2LAEhXwIbAxKUgk0KhTsws4cL2JVJyeii3F25Jeq2VCrH3lr9lysJmEMumrjWZBiAF/+SPEsxipTHLAmhR5abq+kySMlMtvvb6NOBpacgTMCtQXUhLiNPI7sXNrp7VmQFRFY0yvGfOSYMo4pdEQm6LJ46wme11JLC9wGU3DCfD52O103xB1rwikBCaHXmeAZYq6p8H1YjWbcPqbDTfdwg41kBKyzkvXC6fy5g2ldDXWUpyEn1rchPtBAj2iHSo9UCq6+B3s0ur6tVtfpuJWm1EzE2e53vVtUj5OXY+/jqWZDBLUZFuZ+opmPgCyyy1YUrERNlzDYJnboToeALC7oFBGxWrkoalU3YJGku6bCxF9DMKAC/EyAtew23X5V57vxcMBmtoG/F5GEHqKzTilD+cLMj70+TqQI+ZFR1LK96OAL+bpEHzQsCMgU50r1U1dBrGKPgppi0VNZFXV3bYYhuBx6tHyftDfW2vt890cl7775fXXZiP6tRBDOacOla6vp5UzV/lc2bC08Qid65q0EGcdfKokgpU+mssRdYEp9qyUIYtsvFt11n20z0x4eQbUQy+8x/GOOVqTS9OYbtAx+DLgH4ylRb2VUG47mW4Yz84RnL+JVc+Trz/cNbOjDXv9vdb6uc7mJ2/FT3tRurdqjzHd60rl9jWkGTQmg6K+/Qr+/Qc=",
   "k6b59a2e249fc": "bVXBjpswEP2XHLtlTYIJxtIenLBqUrXarNRLj2MzBjYEIhtClar/XkFCEmDngFDyZubNm2fzd3YEtYcEnz9sWcz47Mvs68zCCR2L5oTm+cPO+CxU8wV6XFyCCCHWLUyZ7FhZkmeSgCwgPaBTmwqz/Fl1aSCRxoyT5lUkO0I0OZOoEbd4FS8v4zK5xLh0KtB4K+KzWPt8DKxtAhIdqHXX+Ar2XW8uNSddsEi8ReQWzU8hdlTTHYvEjmmRTLpLKOLhBOHSD9Dn2+ZTtnEGWDl5Vti+/zwOQu3yh56THAONcwZMczTXpDjARUh70qtWmlauUaLOa2sHzZgX+wvGCQnH2ARtptLKOZpSYnGFy3ARzIGvmskcybF29CMjkBKYHGueAhYJmgEH11N6OefkDxsX3cMBDTgFpL2Wrhcs5F0bQshmyiXviHct7sSpH8MgsV0uORHSW6l9J2xz+7f/PUrudhPvk2ZWpZk5DGXSFBeux39MqdkUYjTOvrTVDc0oALLryYiIeBetyaJx5n2oPg8A2INRCCNiM9HQlrpqwKCTHOtrIlL0A58LsZ2AKzgc+nOgPeqp8QJt1Rr8kYYfeJotOSFPl4MyHfpyHJwzZnmfpDWloc/XKzoGnwwcHJCJybTuty59pcPPTNpgXjmyLKu+LAYBeK0kxeOid83lrrhHRN1v0epdjGK9FtGUf9elNNVtYrl0NeW6NUyjJujMVE4DKu3hCy0RWvqT3ZzR5JjgQE4ZsLC1eKOuTFs3BNerQD8NDHyeVsywFbqwte2XrYBKn3+ymgbNXkKx72m6gVoy/l0IsXoTm4Eu21/ujkVkEs2rENtdsbrcyL+7x1p0TY6oyNGUOmtvRJJCbVPIq/sn4t9/",
   "k98f299eecb91": "bVVNj5swEP0vOXbLmgQTjKU9OGHVbLvVJlJPvY1hDGwIRDaENlX/+8pJSALsnBC8mXnz5oN/kz3EW0jx8d1U5YRPvky+Tgwc0DGoD6gf382ET8J4OkOPi42wRoQQSwuLdb6vDSlySUCWkO3QaXSNefEYn9xAIk0YJ+2zSNeEKHIkUSuu9iyenoZhColJ5dSg8BrEZ4ny+RDYmBQkOtCoU+IL2He9qVScnIxF4i0iV2uZEGuq6JpFYs2USEfZJZRJv4Jw7gfo85f2U7ZJDlg7RV6aLv80CULl8lvOnyMfDa1zBMwK1BenJMBZSDvSCyuNlWvgqIrGmF4y5iX+jHFCwiE2RZPHWe3sdSWxvMBlOAumwBftqI503zjqnhFICUwONc8AyxR1j4PrxWo+5eQPGwbdwg41OCVknZauF8zkTRtCyGrMpTgRP6W4Ead+Aj1H21xyIKQbJftM2Or6tXsfpbdxE5tRMhNnud71ZVIUZ67HX8fUTAYJamdbmfqKZhQAGb9kI6cNWdNo6HkrqvMDAHY3KIQRsRppaCpVt6DRSffNxREp+oHPhXgZgWvY7bo9UB714mEDTW0H/J6GH3iKzTkhD+dFGRd9XgfniHnROSlFaejz5YIOwQcNOwdkqnOluq5LP1bhZ0PaYlE7sqrqLiwGAXhWkvK+0ev2fCtuFlH32+vvzUb0bbkU0Zj/KUul62vFcu4qypUdmDYeoXNdOy3EWQefKYlg6Y96c0RdYIo9OWXAQjvirTpzf7cnJ7icAvXQG+DjOGKOVujSNKZrdgxU+vyT1rSotxLKbUfTDeI549+FEIs3serp8uOXu2YRGVn7LMTLa7k4X+TYLgv5e75Xe4zJXlcqtxeRZNCYDIr69ov4/wE=",
-  "k2438d28c6a3e": "bVTBjpswEP2XHNt6TQIEY2kPzmbVVN12s1JPvY3NGNgQiGwIVar+e2USkgA7R3jP8/zmjf/ODqB2kOLDu63KGZ99mn2ZWTgisWiOaB7e7YzPYjVfoM/FuagQ4snBlMkPtaVFLinIErI9ksbUmBcPqqOBxCBhnLbPIt1SqumJrtvHxzG1kJhUpAaNV2LIEh3yMbCxKUgk0Oiu2QUcev5cak67YmvxuqbXapkQ20AHW7YeHSahTIZq42UYYdhd8llMVCY5YE2KvLR933kSxdrjt14/JhwDLTkBZgWaCymJcBEHvdiVa+asGRF10Vg7aMb8JFwwTmk8xqZoc5XV5GAqieUFLuNFNAe+mrqdHhqi7xWBlMDk2OsMsEzRDDR4vtLLOad/2PjQHezRACkh6730/Gghb95QSjdTLUUnvGtxEx6ECQyIbqj0SKno43d0nzbXv/33dSpu9TZpZlWWm/3QJh3gwvP5y1SazSBBQ3aVra9oFgAgu2zBmoo34cI1Dpa9XarnAQC7CwplVGwmHtpK1y0YJOmhuRAxwDByifw2Adew3/f5137gq/EAbe0Cfi8jjHzNlpzSz+cFmV76vA7khHnRk7QOgjjkT6t0DD4a2BOQqcm17qcuQ6Xjj0LaYlETWVV1fyxGEficnmh5P+if7Xn7brUOvK8vv9+m4+xOrEx9vZ1cejrg2oWjVRN0bmrSgsp6+EJLBCd1MocTmgJTHFgnIxa7OLf6rPPknpXosvb68yCsp+mJOTpTS9vYfrAKAhnyD8bQotlJKHe9TC9Sy3PkVq9iI+7r+y9vG7hRRoP+fuv8e8lWnZdCucXo36YDKnowlc7d60czaGwGRX17+v/9Bw=="
+  "k2438d28c6a3e": "bVTBjpswEP2XHNt6TQIEY2kPzmbVVN12s1JPvY3NGNgQiGwIVar+e2USkgA7R3jP8/zmjf/ODqB2kOLDu63KGZ99mn2ZWTgisWiOaB7e7YzPYjVfoM/FuagQ4snBlMkPtaVFLinIErI9ksbUmBcPqqOBxCBhnLbPIt1SqumJrtvHxzG1kJhUpAaNV2LIEh3yMbCxKUgk0Oiu2QUcev5cak67YmvxuqbXapkQ20AHW7YeHSahTIZq42UYYdhd8llMVCY5YE2KvLR933kSxdrjt14/JhwDLTkBZgWaCymJcBEHvdiVa+asGRF10Vg7aMb8JFwwTmk8xqZoc5XV5GAqieUFLuNFNAe+mrqdHhqi7xWBlMDk2OsMsEzRDDR4vtLLOad/2PjQHezRACkh6730/Gghb95QSjdTLUUnvGtxEx6ECQyIbqj0SKno43d0nzbXv/33dSpu9TZpZlWWm/3QJh3gwvP5y1SazSBBQ3aVra9oFgAgu2zBmoo34cI1Dpa9XarnAQC7CwplVGwmHtpK1y0YJOmhuRAxwDByifw2Adew3/f5137gq/EAbe0Cfi8jjHzNlpzSz+cFmV76vA7khHnRk7QOgjjkT6t0DD4a2BOQqcm17qcuQ6Xjj0LaYlETWVV1fyxGEficnmh5P+if7Xn7brUOvK8vv9+m4+xOrEx9vZ1cejrg2oWjVRN0bmrSgsp6+EJLBCd1MocTmgJTHFgnIxa7OLf6rPPknpXosvb68yCsp+mJOTpTS9vYfrAKAhnyD8bQotlJKHe9TC9Sy3PkVq9iI+7r+y9vG7hRRoP+fuv8e8lWnZdCucXo36YDKnowlc7d60czaGwGRX17+v/9Bw==",
+  "k59ba11768f94": "bVVdb6MwEPwveWzPNQkQwFIfnFJdKl3VVLo/sDZroCEQ2Saccrr/foKEhI/uEzIz3vHsGP4uZKXRPB2gzBUa+/RlqnLBFg+LH4sjyD2kOFwycEJiUJ9QP32ZBVtEcrlCl/FLUc75SwuTOj9aQ5McUiKqyhJj251kx3kYIIpcUBAlZAcktbaYF1cQCPSSkNHmnac7ShU907h5fp5SC4FJRSwovBH9MFE+mwJrk4JAArXqml3BvuMuhWK0qzDmHzG9VfPO+c5T3i6MJ5sJKJOx2mjtB+h3NrzymcokB7SkyEvT910mQaQcNug142hoyBkwK1BfSUmAq8jrxW7aZq01E6IqamNGzUI38VchozSaYlM0ucwsOepKYHmFi2gVLIFt5m6nx5qooSIQAkIx9ToDLFPUIw2OK9V6yeifcLrpHg6ogZSQ9V46brASd28opdu5lqIT3rW4C/f8BEbEdqj0RCnvA3pql7a3t/16nPJ7fc6aGZnl+jC2SXm4clz2ay7NZJCgJvvK2Bs69AAwvN6TmPJP3oZrGixzP1TPA4BwEBQaUr6deWgqZRvQSNJjfSWih37QJvJtBrZwOPT5V67nyukAjW0DPpThB64K14zSx8sFmR/6ch3IGfOiJynleZHPXjbeFHzScCAgUp0r1U9d+FJF34W0wcJ2H5F+WwwCcBk903I46F3DN+3tu1fsOT/jzSef1Cufyuk6VNreTivWjvKYasPSyBk615Y0ILMevlICIWLfQM+oC0xxZKUIwqiNdyOHSvuHx1F4z7NJn3NsTS5NbfpBS/CEz74ZS4N6L6Dc9zKdQK4vEdx88O0w8Pztt7NrpkZx7qavfNPEGR++e7n4d0RJj7pSefs1pBnUJoNi8P/49x8=",
+  "k54ff7a8c172d": "lVXBjtowEP0Xjm29DiQhjqUezGbVbbvVZqWeehsnYydLSJAdcEvVf68CBEiyh3ZOCN7ze/NmbH7PtpCtQePdq23qGZ+9m32YWdgjsWj2aO5e7YzP4my+QJ+LF9EVFULcd7DMlNvW0qqUFGQNxQbJzrRYVnfZkQYSg5xx6h6ETilV9EATJy71ID5+HB9TScwb0oLCyyEhy1XIx8Cd1SCRwE4dhc/g0PPnUnF6LJaI54ReyjEh0kAFKUuEEEroibqEOh92EC/DCEMOCybUPkoLRZVyiU7dhJuXgC2pytr2XuZ5FCuPX/W/TTgGHDkAFhWaMymPcBEHfQOrLqYuuhFRVTtrB2LMz8MF45TGY6xGW2ZFS7amkVif4TJeRHPgq2kfersj6tYRSAlMjvMvAGuNZuDB8zO1nHP6k40PXcMGDZAaij5Xz48W8poNpfRx6qU6Gj9KXI0HYQ4DYjdouqe0X6vuM2WPl1/77xN9XT3xMhGzWVGazTAmFeDC8/nT1JotIEdD1o1tL2gWACDjZzV6vC1pkIyZ16Z6HgCwm0WhjIrHSYa2Ua0Dg0Rvd2ciBhhGIRfi8wTcwmbT3wnlB342HqBtu2W/tRFGvmJLTun706WZNn26GuSAZdWTlAqCOOT3Kz0G7w1sCEhtSqX6qcswU/FbS+qwaolsmrY/FqMI/C6S+nbQqTu9G9dKAu/T04+XFzGsezG2c1RoTHvpVi49FXDVLYvLJujStMRBVvTwhZIInfXJXA5oKtQ4iFJGLO7W26mT70P39ET0zTpMTyyxC7m2O9sPOoNAhvyNsTg0awn1urfpRdmS8S9CiNVzQm8SceLrdy+lyUTfdw9i5dJ6dXqZM6ofNf11equ2mNGtaVTZvYy0gJ0toGoHfxVDiIHWZgUSjTXa0hIDOTY1Qd38P6ktSpP/A82VaPH/lAaUkc6fvw==",
+  "k421ddec6630a": "lVRdj5swEPwveWzrMwkQwNI9OMepV6kfOakv97iGNfhCANkmVKn63ytISAKcqt4+wszueHbs34sakh1kePdqqnLBFh8WnxYGDkgM6gPqu1ezYIsoWa7QZfxUlHP+0MESrWpraKEEBVFCvkfSaIuquEt6Ggj00pDR9pFnW0olPdK4vb+fUguBaUUsSLwQ/TCVPpsCG5OBQAKN7Iedwb7jLoVktK8w5j9ieqn2G+dbT3rbMJ40E1CmY7XR2g/Q7w/5yGcqUwVoSaFKM8xdpkEkHXYza8bR0JIjYF6gPpPSAFeRN4jddMM6ayZEWTTGjIaFbuqvQkZpNMVmaFSSW1LrSmB5hotoFSyBbeZuZ3VD5K0iEAJCMfU6Bywz1CMNjpvI9ZLRX+G06Q72qIGUkA9eOm6wEldvKKVPcy1FL7wfcRXu+SmMiN1S6YFSPsTv0H16uvwdvscZv9bzbJhJcqX3Y5ukhyvHZV/n0kwOKWqyq4y9oEMPAMPzLYgpf+ZduKbBMtdDDTwACG+CQkPKn2YemkraFjSSrG7ORPTQD7pEfpmBLez3Q/6l67nJdIHGdgG/leEHrgzXjNKPpwsyP/TpOpAjqmIgSel5kc8eNtkUfNCwJyAyraQcti78REZvhbTFwhJRVXZoi0EALqNHWt4u+nt7un3Xij3nc7x5nt/HvmOl7eV0Yu1Ij8kuHG0yQyttSQtJPsBXUiB0Umd7OKIuMMORdSIIoy7ObXJW1W0+oG/Wcd5RYWdqaRozLDYBT/jsjTW0qHcCyt0g0wmS9Slymx8x5bf15aezXXerHAtx20e+abf5pveSv4iM85ezfzUmw0tNd4rsKl03ZvTyd4haV1J17yPNoTE5FPYfEA3WJDmSDEs0yhANKVYlwax6P8nmSqf/QWsVGnzfpBFlMufPXw==",
+  "k7c80366533fd": "lVVdc5swEPwvfmyrCBswQjN5kIOnyUzb2I95PMEJiDF4JBFad/rfOxDj8JHONHqEXe3e3h38XpwgPkCKN8+mKhd88WnxZWHgBYlB/YL65tks+CKMlyt0efsq1vnJGlrkkoIsITsiqbXFvLiJOyhI9BLGabMV6Y5SRc80am5vp9RCYlIRCwqvRJ8lyp9p1CYFiQRq1YldwL7jLqXitDssEo8RvZ7muxA7T3k7Fk0uk1AmY7fh2g/Q5w+/hNiKmcskB7SkyEvT6y6TIFQOH2jNOBoacgbMCtQXUhLgKvR6sxshRBfNhKiK2piRGHMTf8U4peEUm6LJ48ySk64klhe4DFfBEvhmnnZ6qokaOgIpgclp1hlgmaIeeXDcWK2XnP5k4l+HvrRBbKeiBziiBlJC1mftuMFKvmVHKb2fey26wjoLb4V5fgIjYtv0Vnfkgd1f3/bPo3RgdD8TM3GW6+M4RuXhynH5t7k1k0GCmhwqY69o5gEg4xc1KvaiHb7p4Jm3onoeALDBIFFGxT2bKVbKNqCRpKf6QkQP/cDnQjzMwBaOx34/lOu58bTBxrYLMLThB65ia07p59cFmhf9ui7kjHnRk5TyvHC2qS8ajgRkqnOl+o5LP1bhewPcYGGJrCrbX4lBAC6nLi2HTf7RtLFuBz2MPOfr3WY/ncE7MfXdKVTaXiuVa0d5XHXDGs/QubakgTjr4SslEUJO3VlPzqgLTHEUowxY2I52E19ctlMQ0HfPeX5jjm3ApalN3+QYPOnzd1rSoD5IKA+9TSeI16/jt3mM6CCRvRDRfte1dWzEDbabTbPLNl224kmmQjxdvn0njOlJVypvv5Q0g9pkUNjRr2EM0WBNnCFJsUSTG6IhwaokmFYfJ9ks18l/0JocDX5MaUSZ6Pz5Cw==",
+  "k63cc51570412": "lVXBjpswEP2XHNt6TQIEY2kPJqy6W7XarNTLHscwBjYEItuEKlX/vSIJSYCt1J0jec/vzZux83u2g2QDGd69mbqa8dmn2ZeZgT0Sg3qP+u7NzPgsTOYLdLk4FRVCrDpYooudNbQsJAVZQb5F0miLRXmXHGkg0UsZp+2DyNaUKnqgcSsu9SDu78fHlBLTmlhQeDnEZ6ny+RjYmAwkEmjUUfgM9h13LhWnx2KxeI7ppdofQqw95a1ZLNZMiWyiLqFKhx2ESz9Anz+177pNC0BLyqIyvf48DULl8BvNCUdDSw6AeYn6TEoDXIRebzrqouniGhFV2RgzEGNu6i8YpzQcYzM0RZJbstO1xOoMl+EimAOP2kkf2a4h6tYRSAlMjjPPAasM9cCD4yZqOef0FxP/KrpnY38b2KIGUkHe5+y4wUJec6OUPk59lsemjvLXpjw/hQGxGzzdU3rV7z49Xn7tv8fZjcmXiZhJ8kJvhxEqDxeOy79PrZkcUtRkUxt7QTMPANn51sRUvIhuAeMx89pUzwMAdrNElFHxyCaKtbItaCTZrjkT0UM/8LkQTxOwhe22vyPK9dxkPFxju+W/teEHrmJLTunn0yWaNn26KuSARdmTlPK80OeryBuD9xq2BGSmC6X6qUs/UeF7C9xiaYmsa9sfi0EAbhdJdTvodXt6R64Ve87XOHoZ7+BqJeKp/6NKre2lY7l0lMdVtzBtMkEX2pIWkryHL5RE6OxPZnNAXWKGgzhlwMJuxdvk7LTbhoC+W4fpiQV2QVemMf2wE/Ckz98ZTYt6I6Ha9DadIFky/k0IET3HdJDL009nvYynBpYPUeStq+j0Wr/KTIjXlTiK7DChO12ronstaQ6NyaG0g7+PIUSDNUmOJMMKTWGIhhTrimBWf5xk80Kn/0FrCzT4MaUBZaTz5y8="
  },
  "ungemessen": {
   "karte2.erleben.spieler.gemeinsam#1": {
@@ -3299,31 +3373,270 @@
   },
   "karte2.same.preis.ankunft#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,572 (Faden 1,572 · alle Kerne 1,496; vor 102,6/271,4 ms, nach 126,9/393,2 ms, Ruhe 80,7/262,9 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 12,8 CPU-s · claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,4 CPU-s · claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,8 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 31,1 CPU-s · MsMpEng.exe 25,6 CPU-s · SearchIndexer.exe 2,8 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: 4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 13.84 s von außen (Eigenmeldung 13.48 s), Bild 2.43 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild de)",
+   "exit": 0,
+   "minuten": 1.58,
+   "grund": "Last: Referenz f 1,572 (Faden 1,572 · alle Kerne 1,496; vor 102,6/271,4 ms, nach 126,9/393,2 ms, Ruhe 80,7/262,9 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 12,8 CPU-s · claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,4 CPU-s · claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,8 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 31,1 CPU-s · MsMpEng.exe 25,6 CPU-s · SearchIndexer.exe 2,8 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: 4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 13.84 s von außen (Eigenmeldung 13.48 s), Bild 2.43 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild de)",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "k59ba11768f94",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 93.8,
+   "fremd": {
+    "s": 100.3,
+    "takte": 41,
+    "fremdS": 72.55,
+    "kerne": 0.723,
+    "fensterKerne": 1.034,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      12.78
+     ],
+     [
+      "claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.42
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.81
+     ]
+    ],
+    "dienerS": 76.98,
+    "diener": [
+     [
+      "System",
+      32.95
+     ],
+     [
+      "dwm.exe",
+      27.81
+     ]
+    ],
+    "geraetS": 59.72,
+    "geraet": [
+     [
+      "svchost.exe",
+      31.09
+     ],
+     [
+      "MsMpEng.exe",
+      25.56
+     ],
+     [
+      "SearchIndexer.exe",
+      2.81
+     ]
+    ],
+    "eigenS": 581.11,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.62,
+     "nach": 0.787,
+     "station": 1.574
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 102.6,
+     "alle": 271.4,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.46,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       1.64,
+       10.94,
+       8.44,
+       6.51,
+       3.92,
+       3.11
+      ]
+     },
+     "spanne": [
+      1795467486914,
+      1795467487455
+     ]
+    },
+    "nach": {
+     "ein": 126.9,
+     "alle": 393.2,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 5.65,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.03,
+       4.79,
+       7.76,
+       7.53,
+       5.49,
+       3.94
+      ]
+     },
+     "spanne": [
+      1795467582192,
+      1795467582915
+     ]
+    },
+    "ruhe": {
+     "ein": 80.7,
+     "alle": 262.9,
+     "n": 846,
+     "von": "2026-11-17"
+    },
+    "f": 1.572,
+    "fEin": 1.572,
+    "fAlle": 1.496,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-23T16:06:24.183Z",
+   "zeit": "2026-11-23T20:58:06.912Z",
    "abdruck": "624782505670",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-23T16:06:24.230Z",
+   "zahl": "Deckel 197 s gerissen: Stille seit 18.2 s nach 197 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third-geht 178.6 s)",
+   "exit": 1,
+   "minuten": 3.29,
+   "grund": "Deckel 197 s gerissen: Stille seit 18.2 s nach 197 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third-geht 178.6 s)",
+   "s": 197.3,
+   "fremd": {
+    "s": 202,
+    "takte": 83,
+    "fremdS": 187.11,
+    "kerne": 0.926,
+    "fensterKerne": 1.98,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      23.63
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.22
+     ],
+     [
+      "claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.13
+     ]
+    ],
+    "dienerS": 167.03,
+    "diener": [
+     [
+      "dwm.exe",
+      74.38
+     ],
+     [
+      "System",
+      60.5
+     ]
+    ],
+    "geraetS": 118.45,
+    "geraet": [
+     [
+      "svchost.exe",
+      62.08
+     ],
+     [
+      "MsMpEng.exe",
+      50.72
+     ],
+     [
+      "SearchIndexer.exe",
+      5.06
+     ]
+    ],
+    "eigenS": 552.83,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.582,
+     "nach": 0.348,
+     "station": 2.792
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 102.5,
+     "alle": 270.7,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.15,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       5.75,
+       6.92,
+       3.38,
+       3.52,
+       2.96,
+       2.94
+      ]
+     },
+     "spanne": [
+      1795467607489,
+      1795467608026
+     ]
+    },
+    "nach": {
+     "ein": 141.5,
+     "alle": 342.4,
+     "cpuEin": 141,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.31,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.98,
+       4.77,
+       3.03,
+       3.29,
+       3.19,
+       3.45
+      ]
+     },
+     "spanne": [
+      1795467805363,
+      1795467806048
+     ]
+    },
+    "ruhe": {
+     "ein": 80.7,
+     "alle": 262.9,
+     "n": 848,
+     "von": "2026-11-17"
+    },
+    "f": 1.753,
+    "fEin": 1.753,
+    "fAlle": 1.302,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-23T21:00:07.487Z",
    "abdruck": "a16a54631e99",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.leben.tiere.verhalten#1": {
    "gruen": false,
@@ -3341,152 +3654,591 @@
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,347 (Faden 1,347 · alle Kerne 1,02; vor 108,7/250,5 ms, nach 103,5/268,1 ms, Ruhe 80,7/262,8 ms seit 2026-11-17) · fremd: claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,9 CPU-s · sh.exe dienst/radeon-dienst.sh 5,2 CPU-s · claude.exe 1,7 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 8,7 CPU-s · MsMpEng.exe 4,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Leser fehlt: Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); Trefferpunkt ↔ Z)",
+   "exit": 0,
+   "minuten": 0.44,
+   "grund": "Last: Referenz f 1,347 (Faden 1,347 · alle Kerne 1,02; vor 108,7/250,5 ms, nach 103,5/268,1 ms, Ruhe 80,7/262,8 ms seit 2026-11-17) · fremd: claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,9 CPU-s · sh.exe dienst/radeon-dienst.sh 5,2 CPU-s · claude.exe 1,7 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 8,7 CPU-s · MsMpEng.exe 4,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Leser fehlt: Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); Trefferpunkt ↔ Z)",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "k54ff7a8c172d",
+   "konsumN": 33,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 6
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 26.2,
+   "fremd": {
+    "s": 29.1,
+    "takte": 12,
+    "fremdS": 27.23,
+    "kerne": 0.936,
+    "fensterKerne": 1.482,
+    "namen": [
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.91
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.23
+     ],
+     [
+      "claude.exe",
+      1.7
+     ]
+    ],
+    "dienerS": 17.39,
+    "diener": [
+     [
+      "System",
+      7.56
+     ],
+     [
+      "dwm.exe",
+      5.42
+     ]
+    ],
+    "geraetS": 14.03,
+    "geraet": [
+     [
+      "svchost.exe",
+      8.69
+     ],
+     [
+      "MsMpEng.exe",
+      4.58
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 111.2,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.386,
+     "nach": 0.591,
+     "station": 2.256
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 108.7,
+     "alle": 250.5,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.04,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       6.54,
+       6.19,
+       3,
+       3.41,
+       2.98,
+       2.75
+      ]
+     },
+     "spanne": [
+      1795467833656,
+      1795467834157
+     ]
+    },
+    "nach": {
+     "ein": 103.5,
+     "alle": 268.1,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.11,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.05,
+       3.53,
+       3.25,
+       2.68,
+       1.35,
+       2.32
+      ]
+     },
+     "spanne": [
+      1795467860574,
+      1795467861095
+     ]
+    },
+    "ruhe": {
+     "ein": 80.7,
+     "alle": 262.8,
+     "n": 850,
+     "von": "2026-11-17"
+    },
+    "f": 1.347,
+    "fEin": 1.347,
+    "fAlle": 1.02,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-23T16:06:24.327Z",
+   "zeit": "2026-11-23T21:03:53.656Z",
    "abdruck": "94ecb21f3b9a",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.satz#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,713 (Faden 1,713 · alle Kerne 1,312; vor 138,4/331,6 ms, nach 130,5/344,9 ms, Ruhe 80,8/262,9 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --origin-trial-disabled-features=Canvas… --no-pre-read-main-dll 11,4 CPU-s · chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF 2,9 CPU-s · chrome.exe --type=renderer --extension-process --origin-trial-disabled-features=Canvas… -- 2,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 3,1 CPU-s · svchost.exe 2,5 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Umfang nicht erzeugbar: der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, an false, Schlüssel false; stamm/dienst.js:93–96) — 0 von 41 Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell (verlangt 40 Sätze de)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Last: Referenz f 1,713 (Faden 1,713 · alle Kerne 1,312; vor 138,4/331,6 ms, nach 130,5/344,9 ms, Ruhe 80,8/262,9 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --origin-trial-disabled-features=Canvas… --no-pre-read-main-dll 11,4 CPU-s · chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF 2,9 CPU-s · chrome.exe --type=renderer --extension-process --origin-trial-disabled-features=Canvas… -- 2,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 3,1 CPU-s · svchost.exe 2,5 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Umfang nicht erzeugbar: der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, an false, Schlüssel false; stamm/dienst.js:93–96) — 0 von 41 Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell (verlangt 40 Sätze de)",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "k421ddec6630a",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 7
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 0.8,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 23.53,
+    "kerne": 4.282,
+    "fensterKerne": 4.282,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --origin-trial-disabled-features=Canvas… --no-pre-read-main-dll",
+      11.38
+     ],
+     [
+      "chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF",
+      2.86
+     ],
+     [
+      "chrome.exe --type=renderer --extension-process --origin-trial-disabled-features=Canvas… --",
+      2.84
+     ]
+    ],
+    "dienerS": 14.17,
+    "diener": [
+     [
+      "System",
+      9.41
+     ],
+     [
+      "dwm.exe",
+      2.05
+     ]
+    ],
+    "geraetS": 5.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.11
+     ],
+     [
+      "svchost.exe",
+      2.52
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 32.8,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 4.282,
+     "nach": 1.92,
+     "station": 1.92
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 138.4,
+     "alle": 331.6,
+     "cpuEin": 141,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.45,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       6.31,
+       3.16,
+       3.86,
+       3.24,
+       3.41,
+       3.69
+      ]
+     },
+     "spanne": [
+      1795467893894,
+      1795467894606
+     ]
+    },
+    "nach": {
+     "ein": 130.5,
+     "alle": 344.9,
+     "cpuEin": 141,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.88,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.16,
+       3.86,
+       3.24,
+       3.41,
+       3.69,
+       4.51
+      ]
+     },
+     "spanne": [
+      1795467895630,
+      1795467896324
+     ]
+    },
+    "ruhe": {
+     "ein": 80.8,
+     "alle": 262.9,
+     "n": 852,
+     "von": "2026-11-16"
+    },
+    "f": 1.713,
+    "fEin": 1.713,
+    "fAlle": 1.312,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-23T21:04:53.892Z",
+   "abdruck": "8a4236ccba5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,744 (Faden 1,744 · alle Kerne 1,272; vor 140,9/334,3 ms, nach 106,7/258,2 ms, Ruhe 80,8/262,8 ms seit 2026-11-16) · fremd: claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,8 CPU-s · claude.exe 17,5 CPU-s · chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF 13,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 39,5 CPU-s · svchost.exe 24,7 CPU-s · SearchIndexer.exe 8,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "Last: Referenz f 1,744 (Faden 1,744 · alle Kerne 1,272; vor 140,9/334,3 ms, nach 106,7/258,2 ms, Ruhe 80,8/262,8 ms seit 2026-11-16) · fremd: claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,8 CPU-s · claude.exe 17,5 CPU-s · chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF 13,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 39,5 CPU-s · svchost.exe 24,7 CPU-s · SearchIndexer.exe 8,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "k7c80366533fd",
+   "konsumN": 33,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 6
+   },
+   "konsumBoot": "k5c6f6d52146f",
+   "s": 48.4,
+   "fremd": {
+    "s": 53.9,
+    "takte": 21,
+    "fremdS": 139.95,
+    "kerne": 2.598,
+    "fensterKerne": 4.349,
+    "namen": [
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      31.81
+     ],
+     [
+      "claude.exe",
+      17.48
+     ],
+     [
+      "chrome.exe --single-argument login/app-google-auth?open_in_browser=1&hop_nonce=DGZKWQerTJF",
+      13
+     ]
+    ],
+    "dienerS": 61.7,
+    "diener": [
+     [
+      "System",
+      34.38
+     ],
+     [
+      "dwm.exe",
+      13.58
+     ]
+    ],
+    "geraetS": 73.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      39.45
+     ],
+     [
+      "svchost.exe",
+      24.67
+     ],
+     [
+      "SearchIndexer.exe",
+      8.73
+     ]
+    ],
+    "eigenS": 182.64,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.316,
+     "nach": 0.666,
+     "station": 5.643
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 140.9,
+     "alle": 334.3,
+     "cpuEin": 140,
+     "tor": {
+      "ruhig": true,
+      "kerne": 5.21,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.41,
+       3.69,
+       4.51,
+       7.6,
+       3.8,
+       4.16
+      ]
+     },
+     "spanne": [
+      1795467904856,
+      1795467905557
+     ]
+    },
+    "nach": {
+     "ein": 106.7,
+     "alle": 258.2,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.24,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.54,
+       2.36,
+       3.02,
+       2.57,
+       2.13,
+       2.01
+      ]
+     },
+     "spanne": [
+      1795467954118,
+      1795467954605
+     ]
+    },
+    "ruhe": {
+     "ein": 80.8,
+     "alle": 262.8,
+     "n": 854,
+     "von": "2026-11-16"
+    },
+    "f": 1.744,
+    "fEin": 1.744,
+    "fAlle": 1.272,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-23T21:05:04.854Z",
+   "abdruck": "efc887d0020e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 3.02,
+   "grund": "Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 180.9,
+   "fremd": {
+    "s": 185,
+    "takte": 76,
+    "fremdS": 246.7,
+    "kerne": 1.333,
+    "fensterKerne": 2.055,
+    "namen": [
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      35.91
+     ],
+     [
+      "claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.5
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      25.25
+     ]
+    ],
+    "dienerS": 118.02,
+    "diener": [
+     [
+      "System",
+      52.63
+     ],
+     [
+      "dwm.exe",
+      31.64
+     ]
+    ],
+    "geraetS": 139.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      64.89
+     ],
+     [
+      "svchost.exe",
+      64.2
+     ],
+     [
+      "SearchIndexer.exe",
+      10.13
+     ]
+    ],
+    "eigenS": 589.45,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T21:09:21.822Z",
+   "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-23T15:50:24.612Z",
-  "ordner": "sitzung-20261123-165024",
+  "start": "2026-11-23T20:56:47.530Z",
+  "ordner": "sitzung-20261123-215647",
   "port": 7804,
-  "warten": 1.39,
-  "bootS": 5.5,
+  "warten": 0.68,
+  "bootS": 5.7,
   "grundstellungS": [
-   2.5,
-   4.6,
-   2.4,
-   2.7,
-   4
+   2.3,
+   4.8,
+   5.5,
+   0.1,
+   5,
+   3.5
   ],
-  "proben": 6,
+  "proben": 7,
   "freigaben": [],
-  "offen": [
-   "karte2.mensch.kopplung.leib#1",
-   "karte2.mensch.kopplung.kultur#2",
-   "karte2.same.kopplung.zeitreise#1",
-   "karte2.mensch.stadt.vertikal#1",
-   "karte2.same.preis.ankunft#2",
-   "karte2.same.entfaltung.schirm#1",
-   "karte2.leben.tiere.verhalten#1",
-   "karte2.leben.tiere.wanderung#1",
-   "karte2.erleben.spieler.hand#1",
-   "karte2.erleben.schoepfen.satz#1",
-   "karte2.same.preis.eingabe#2",
-   "karte2.planet.wetter.vorhersage#1",
-   "karte2.mensch.stadt.siedlungsnetz#1",
-   "karte2.planet.relief.grossform#1",
-   "karte2.mensch.fahrzeug.maschine#1"
-  ],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.planet.wasser.seegang#1",
-    "s": 25.4,
-    "takte": 1089,
+    "vor": "karte2.same.preis.ankunft#2",
+    "s": 24.6,
+    "takte": 1106,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": null,
-    "vor": "karte2.same.physik.feuer#2",
-    "s": 18,
-    "takte": 642,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.massstab.sprung#1",
-    "s": 16.2,
-    "takte": 653,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.gedaechtnis.alter#1",
-    "s": 19.2,
-    "takte": 645,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.planet.kopplung.bahn-klima#2",
-    "s": 18.1,
-    "takte": 640,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "s": 19.1,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 19.8,
     "takte": 650,
     "chunks": 81,
     "nach": "der Tür"
-   }
-  ],
-  "wegeTueren": [
+   },
    {
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "wege": "wege +2 [-1.2,-31.2,206.5,0/2] [-27.7,-58.3,231.6,16/91]",
-    "s": 4
+    "ort": null,
+    "vor": "karte2.erleben.spieler.hand#1",
+    "s": 19.2,
+    "takte": 644,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.erleben.schoepfen.satz#1",
+    "s": 24.6,
+    "takte": 701,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.preis.eingabe#2",
+    "s": 6.5,
+    "takte": 238,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.planet.wetter.vorhersage#1",
+    "s": 19.7,
+    "takte": 702,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "karte2.planet.relief.grossform#1",
+    "s": 27.1,
+    "takte": 816,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
+  "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.planet.wasser.seegang#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "weg": [
-     "__rafferEnde",
-     "__rafferKurz",
-     "__pwMeer",
-     "__wetterSpionBuch",
      "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__bandDecke",
+     "__zensusCalls"
+    ]
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "weg": [
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
      "__buehneUhr",
      "__imSchuss",
      "__nahSpeicher",
-     "__letzteSpiegel",
-     "__letzteTeilung"
+     "__letzteSpiegel"
     ]
    },
    {
-    "probe": "karte2.same.physik.feuer#2",
+    "probe": "karte2.same.preis.eingabe#2",
     "weg": [
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
-     "__buehneUhr"
+     "__buehneUhr",
+     "__latenz"
     ]
    },
    {
-    "probe": "karte2.same.massstab.sprung#1",
+    "probe": "karte2.planet.wetter.vorhersage#1",
     "weg": [
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "weg": [
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.planet.kopplung.bahn-klima#2",
-    "weg": [
-     "__dorfDerProbe",
      "__rafferEnde",
      "__rafferKurz",
      "__weltaktSpionBuch",
@@ -3496,41 +4248,22 @@
      "__nahSpeicher",
      "__letzteSpiegel",
      "__letzteTeilung"
+    ]
+   },
+   {
+    "probe": "karte2.planet.relief.grossform#1",
+    "weg": [
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__abbruchEpoche"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.planet.wasser.seegang#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._setWeather",
-     "r._weltaktGehalten",
-     "r.state.weather",
-     "window.__raffer",
-     "window.__rafferRest",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r.state.weather": "neu: () => wert",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     191.8,
-     219.1
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.physik.feuer#2",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -3553,13 +4286,13 @@
     },
     "haelt": [],
     "heap": [
-     194.2,
-     233.6
+     195,
+     292
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.massstab.sprung#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -3580,23 +4313,23 @@
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [
-     "return (function springe(r, o) { const s = r.state, m = s.playerMesh; const v = "
-    ],
+    "haelt": [],
     "heap": [
-     192.9,
-     204.2
+     194.8,
+     234.8
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.gedaechtnis.alter#1",
+    "probe": "karte2.same.preis.eingabe#2",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
      "r._weltaktGehalten",
      "r._setWeather",
      "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
@@ -3605,17 +4338,19 @@
      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
      "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     194.2,
-     419.9
+     240.5,
+     297.7
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#2",
+    "probe": "karte2.planet.wetter.vorhersage#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -3623,8 +4358,7 @@
      "r._setWeather",
      "r.state.weather",
      "window.__raffer",
-     "window.__rafferRest",
-     "window.__ortSchritt"
+     "window.__rafferRest"
     ],
     "wie": {
      "r._bildZeit": "neu: () => S.T",
@@ -3633,25 +4367,143 @@
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
      "r.state.weather": "neu: () => wert",
      "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
     },
     "haelt": [],
     "heap": [
-     202.5,
-     536.3
+     194.9,
+     197.1
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.planet.relief.grossform#1",
+    "anders": [
+     "window.luma709",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__ortSchritt",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserEis",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen",
+     "window.__vorBild"
+    ],
+    "wie": {
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserEis": "neu: async function wasserEis(o = {}) { const A = AnazhRealm; const FUSS = A.PLAYER_F",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
+     "window.__vorBild": "neu: async (x, z) => { await G.stehen(x + 8, z); return { nass: r._nassAt(x, z) }; }"
+    },
+    "haelt": [],
+    "heap": [
+     233,
+     253.1
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.wasser.seegang#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.planet.wasser.seegang#1",
+    "probe": "karte2.erleben.spieler.hand#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.same.preis.eingabe#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.preis.eingabe#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.planet.wetter.vorhersage#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.wetter.vorhersage#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -3660,45 +4512,17 @@
     "offen": []
    },
    {
-    "probe": "karte2.same.physik.feuer#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.massstab.sprung#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.massstab.sprung#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.kopplung.bahn-klima#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.kopplung.bahn-klima#2",
+    "probe": "karte2.planet.relief.grossform#1",
     "gehalten": [
      "skala",
-     "spiegel",
-     "tiere"
+     "spiegel"
     ],
     "offen": []
    }
   ],
   "anOrt": [
    {
-    "vor": "karte2.same.physik.feuer#2",
+    "vor": "karte2.erleben.schoepfen.satz#1",
     "anders": [
      "worldMeta.kalender"
     ],
@@ -3707,7 +4531,7 @@
     }
    },
    {
-    "vor": "karte2.same.massstab.sprung#1",
+    "vor": "karte2.planet.wetter.vorhersage#1",
     "anders": [
      "worldMeta.kalender"
     ],
@@ -3716,7 +4540,7 @@
     }
    },
    {
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "vor": "karte2.planet.relief.grossform#1",
     "anders": [
      "playerPathBuckets",
      "worldMeta.kalender"
@@ -3727,75 +4551,56 @@
     }
    }
   ],
-  "felderBlind": [
+  "wanderung": [
    {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp"
+    "probe": "karte2.planet.relief.grossform#1",
+    "ort": "wiese",
+    "m": 1583.97,
+    "dreh": 0
    }
   ],
-  "wirtBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp"
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.mensch.kopplung.leib#1: die Tür zurück in die Welt abc1cbec-f945-4cc3-b966-1ac794f09a2f: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\ — offen: karte2.mensch.kopplung.leib#1, karte2.mensch.kopplung.kultur#2, karte2.same.kopplung.zeitreise#1, karte2.mensch.stadt.vertikal#1, karte2.same.preis.ankunft#2, karte2.same.entfaltung.schirm#1, karte2.leben.tiere.verhalten#1, karte2.leben.tiere.wanderung#1, karte2.erleben.spieler.hand#1, karte2.erleben.schoepfen.satz#1, karte2.same.preis.eingabe#2, karte2.planet.wetter.vorhersage#1, karte2.mensch.stadt.siedlungsnetz#1, karte2.planet.relief.grossform#1, karte2.mensch.fahrzeug.maschine#1",
-  "ciBlicke": 7,
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4947,
-   "frameP95": 41.88,
-   "taktP95": 22.37,
-   "vramMax": 133,
-   "seiten": 6,
+   "bilder": 5087,
+   "frameP95": 50.38,
+   "taktP95": 30.89,
+   "vramMax": 142.4,
+   "seiten": 11,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kopplung.bahn-klima#2",
-     "m": 17778,
+     "probe": "karte2.planet.relief.grossform#1",
+     "m": 4958,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1089,
      "ringVor": 4,
      "ringMin": 0
     },
     {
-     "probe": "karte2.planet.wasser.seegang#1",
-     "m": 11072,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "karte2.same.physik.feuer#2",
+     "probe": "karte2.erleben.spieler.hand#1",
      "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "karte2.same.massstab.sprung#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "karte2.same.gedaechtnis.alter#1",
-     "m": 956,
      "ringVor": 4,
      "ringMin": 0
     },
     {
-     "probe": "karte2.leben.kopplung.evolution-planet#1",
-     "m": 443,
+     "probe": "karte2.same.preis.eingabe#2",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 700,
-   "luecken": 17,
-   "letzteLuecke": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\85cdde52-7fd5-4b9f-b1f3-0f7e88a326b0.dmp"
+   "zapfen": 881,
+   "luecken": 5,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 874.3,
-  "minuten": 16.15
+  "fahrtS": 893.8,
+  "minuten": 15.74
  }
 }
