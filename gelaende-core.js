@@ -1588,6 +1588,13 @@
     //       Schauer, erst die lange Strecke läuft ab. Die Faltung trägt den WIRKSAMEN Regen (`regenWirksam`: je Stück die Stufen,
     //       deren Fläche Q(P1) − Q(P0) ist, in Schritten von `scsSchritt` mm der Tiefe). Bis flut-aue floss von jedem Regen 0,3 ab
     //       (der Beiwert): jeder Schauer hob den Bach an die Krone.
+    //       WAS VERSICKERT (NRCS NEH-630 Kap. 7, Musgrave 1955 — die Gruppe des Bodens IST die kleinste Versickerung des nassen
+    //       Bodens, B: 3,8–7,6 mm/h): nie fließt mehr ab als der Regen über `versickerung` mm/h (die untere Grenze der Gruppe B) —
+    //       der Niesel (bewölkt, 1,2 mm/h) versickert ganz, der Regen (6 mm/h) gibt höchstens 2,2, der Sturm 6,2 mm/h. SCS-CN ist
+    //       ein Gesetz des Ereignisses: allein ließ es von jeder langen Strecke alles abfließen (Q/P → 1, ohne je zu ruhen) — bis
+    //       flut-aue-2 stand der Bach der Mess-Wiese unter dem Niesel der Front bei 20 mm Abfluss am Tag (22-mal das Mittel), über
+    //       der Krone, und stieg je 50–100 s um eine Stufe (gate:stand-takt: die Welt stand nie). Die Lage des Starkregens hebt
+    //       weiter: die Klamm der Prüfbühne (Einzug 2 km², Klasse 9) ist 600 s nach dem Ende einer Lage geboren, 0,24 m über der Aue.
     //   B der Grund (das Grundwasser, ein linearer Speicher der Rückgangs-Konstante `LAUF.trocken`, Maillet): der Regen der
     //       letzten `LAUF.fenster` Tage gegen das Mittel des Klimas (`mittel`, der Regen der Front im Mittel), davor das Klima
     //       selbst — B = 1, solange die Welt regnet wie ihr Klima; 14 Tage ohne Regen senken ihn auf e^(−14/20) (der Spiegel
@@ -1616,6 +1623,7 @@
         regenMm: 240,
         cn: 58,
         ia: 0.2,
+        versickerung: 3.8,
         scsSchritt: 2,
         aue: 10,
         rauh: 0.7,
@@ -1737,6 +1745,7 @@
     function regenWirksam(stempel, tagS, p0, jetzt) {
         const M = PEGEL.regenMm;
         const Ia = PEGEL.ia * SCS_S;
+        const fc = (24 * PEGEL.versickerung) / M; // die Versickerung in der Stärke des Regens
         const n = stempel.length >> 1;
         const aus = [];
         const stufe = (a, b, c) => {
@@ -1769,7 +1778,10 @@
                 for (let i = 1; i <= k; i++) {
                     const s1 = t0 + ((d - t0) * i) / k;
                     const q1 = scsAbfluss(Pt(s1));
-                    stufe(a + s0 * tagS, i === k ? b : a + s1 * tagS, (q1 - q0) / (M * (s1 - s0)));
+                    // wirksam: was SCS-CN abfließen lässt, nie mehr als der Regen über der Versickerung
+                    const w = M * (s1 - s0);
+                    const c = Math.min((q1 - q0) / w, Math.max(0, (Pt(s1) - Pt(s0)) / w - fc));
+                    stufe(a + s0 * tagS, i === k ? b : a + s1 * tagS, c);
                     [s0, q0] = [s1, q1];
                 }
             } else stufe(a, b, 0);
@@ -7660,6 +7672,90 @@
         const hub = pegelHub(L, sp, j);
         return hub > T.krone ? { spiegel: sp + hub, ueberAue: hub - T.krone } : null;
     }
+    // DIE QUELLEN DER FLUT IM FENSTER [x0, x1] × [z0, z1] (flut-aue-2): `fluss` — jedes Segment, das `flutAm` an einem Punkt des
+    // Fensters fragen kann (die 3×3-Buckets um jeden Punkt, die Regionen seiner Ecken) und dessen Reichweite (wie `flutAm`: Krone +
+    // Damm-Krone + `bankWeite` + ein Bucket, am weiteren Ende) das Rechteck berührt, je Segment [Ruhe-Spiegel an beiden Enden,
+    // Lag-Klasse]; `see` — jede See-Zelle, deren Spiegel `atlasSpiegel` an einem Punkt des Fensters als Rand liest (3×3 der Zellen),
+    // je Zelle [Ruhe-Spiegel, Lag-Klasse]. Unabhängig von der Tafel (ein Chunk merkt sie sich, `_pegelOrt`). Leser: `flutUeber`.
+    function flutQuellen(L, x0, z0, x1, z1) {
+        const H = L.hydroGesetz;
+        const aus = [];
+        const see = [];
+        const gesehen = new Set();
+        for (const [x, z] of [
+            [x0, z0],
+            [x1, z0],
+            [x0, z1],
+            [x1, z1],
+        ]) {
+            const h = hydroRegion(L, x, z);
+            if (!h || !h.ready || gesehen.has(h)) continue;
+            gesehen.add(h);
+            const W = h.water;
+            if (W && W.waterKind) {
+                const c = h.cell;
+                const i0 = Math.max(0, Math.floor((x0 - h.originX) / c) - 1);
+                const i1 = Math.min(h.dim - 1, Math.floor((x1 - h.originX) / c) + 1);
+                const j0 = Math.max(0, Math.floor((z0 - h.originZ) / c) - 1);
+                const j1 = Math.min(h.dim - 1, Math.floor((z1 - h.originZ) / c) + 1);
+                for (let j = j0; j <= j1; j++)
+                    for (let i = i0; i <= i1; i++)
+                        if (W.waterKind[i + j * h.dim] === 2) see.push(W.waterY[i + j * h.dim], W.waterLauf[i + j * h.dim]);
+            }
+            if (!h.kanal) continue;
+            const { seg, idx, ab } = h.kanal;
+            const [bs, bd] = [h.bucketSize, h.bucketsDim];
+            const nr = new Set();
+            const i0 = Math.max(0, Math.floor((x0 - h.originX) / bs) - 1);
+            const i1 = Math.min(bd - 1, Math.floor((x1 - h.originX) / bs) + 1);
+            const j0 = Math.max(0, Math.floor((z0 - h.originZ) / bs) - 1);
+            const j1 = Math.min(bd - 1, Math.floor((z1 - h.originZ) / bs) + 1);
+            for (let bj = j0; bj <= j1; bj++)
+                for (let bi = i0; bi <= i1; bi++)
+                    for (let q = ab[bj * bd + bi]; q < ab[bj * bd + bi + 1]; q++) {
+                        if (nr.has(idx[q])) continue;
+                        nr.add(idx[q]);
+                        const o = idx[q] * KANAL_FELDER;
+                        const weit =
+                            Math.max(seg[o + 4] + seg[o + 6] / H.bankNeigung, seg[o + 5] + seg[o + 7] / H.bankNeigung) +
+                            H.dammBreite +
+                            H.bankWeite +
+                            bs;
+                        // der Abstand des Segment-Rahmens zum Fenster (nie größer als der des Segments: eine obere Schranke)
+                        const dx = Math.max(0, Math.min(seg[o], seg[o + 2]) - x1, x0 - Math.max(seg[o], seg[o + 2]));
+                        const dz = Math.max(0, Math.min(seg[o + 1], seg[o + 3]) - z1, z0 - Math.max(seg[o + 1], seg[o + 3]));
+                        if (Math.hypot(dx, dz) <= weit) aus.push(seg[o + 8], seg[o + 9], seg[o + 10]);
+                    }
+        }
+        return { fluss: aus, see };
+    }
+    // DER HÖCHSTE SPIEGEL DER FLUT über den Quellen `Q` (`flutQuellen`) unter der Tafel `T`: je Segment Ruhe-Spiegel + Hub an seinen
+    // Enden und an jedem Meter der Tafel dazwischen (der Hub ist zwischen den Metern linear: das Maximum liegt dort), wo der Hub über
+    // der Krone steht — eine obere Schranke dessen, was `flutAm` im Fenster trägt —, und je See-Zelle ihr Spiegel samt Hub (wie
+    // `koerperY`: der Rand, den `atlasSpiegel` dem Land daneben gibt); −Infinity, wo keine Flut steht. Leser: der Takt des Pegels
+    // (`_pegelTakt`: ein Chunk ohne Wasser zählt nur, wo die Flut seinen tiefsten Boden erreicht).
+    function flutUeber(T, Q) {
+        if (!T || !T.flut) return -Infinity;
+        const P = { pegel: T };
+        let hoch = -Infinity;
+        const an = (y, j) => {
+            const hub = pegelHub(P, y, j);
+            if (hub > T.krone && y + hub > hoch) hoch = y + hub;
+        };
+        const F = Q.fluss;
+        for (let k = 0; k < F.length; k += 3) {
+            const [a, b, j] = [Math.min(F[k], F[k + 1]), Math.max(F[k], F[k + 1]), F[k + 2]];
+            an(a, j);
+            an(b, j);
+            for (let i = Math.ceil((a - T.y0) / T.dy); T.y0 + i * T.dy < b; i++) an(T.y0 + i * T.dy, j);
+        }
+        const S = Q.see;
+        for (let k = 0; k < S.length; k += 2) {
+            const y = S[k] + pegelHub(P, S[k], S[k + 1]);
+            if (y > hoch) hoch = y;
+        }
+        return hoch;
+    }
     // DER SPIEGEL QUER: der Spiegel des nächsten Segments an (x, z), auch jenseits der Krone (der Fluss-Spiegel liegt quer
     // waagrecht); −Infinity ohne Segment im Bucket. Leser: das Wasser-Sheet am Rand eines Schnitts.
     function spiegelQuer(L, x, z) {
@@ -8260,6 +8356,8 @@
         flussAm: flussAm,
         spiegelQuer: spiegelQuer,
         flutAm: flutAm,
+        flutQuellen: flutQuellen,
+        flutUeber: flutUeber,
         kanalImFenster: kanalImFenster,
         schnittSpiegel: schnittSpiegel,
         flussRand: flussRand,

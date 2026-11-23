@@ -287,21 +287,7 @@ class AnazhRealm_wasser_hydro {
         const key = cx + "," + cz;
         if (je.has(key)) return je.get(key);
         const K = globalThis.__gelaendeCore;
-        const L = this._gelaende();
-        const { span } = this._voxelChunkConfig();
-        const [x0, z0, x1, z1] = [cx * span, cz * span, (cx + 1) * span, (cz + 1) * span];
-        const reg = [
-            [x0, z0],
-            [x1, z0],
-            [x0, z1],
-            [x1, z1],
-        ].map(([x, z]) => K.hydroRegion(L, x, z));
-        if (!this._pegelOrte) this._pegelOrte = new Map();
-        let o = this._pegelOrte.get(key);
-        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
-            const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
-            this._pegelOrte.set(key, (o = { reg, erd, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
-        }
+        const o = this._pegelOrt(cx, cz);
         const R = AnazhRealm.PEGEL_RAND_M;
         const n = T.a.length;
         const i0 = Math.max(0, Math.floor((o.y - R - T.y0) / T.dy));
@@ -317,6 +303,61 @@ class AnazhRealm_wasser_hydro {
         je.set(key, marke);
         return marke;
     }
+    // Der Ort des Chunks (cx, cz) für den Pegel: seine Hydro-Regionen (an den Ecken), der Stand des Erdbaus, die Makro-Höhe seiner
+    // Mitte samt Erdbau (`_terrainMacroSurfaceY`) und die Lag-Klassen, die ihn erreichen (gelaende-core `pegelKlassen`) — neu, wenn
+    // eine Region oder der Erdbau wechselt. Dazu, erst auf Frage, die Quellen der Flut (`flutQuellen`, `_pegelFlutVon`).
+    _pegelOrt(cx, cz) {
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const erd = this._erdbauStand | 0;
+        const { span } = this._voxelChunkConfig();
+        const [x0, z0, x1, z1] = [cx * span, cz * span, (cx + 1) * span, (cz + 1) * span];
+        const reg = [
+            [x0, z0],
+            [x1, z0],
+            [x0, z1],
+            [x1, z1],
+        ].map(([x, z]) => K.hydroRegion(L, x, z));
+        const key = cx + "," + cz;
+        if (!this._pegelOrte) this._pegelOrte = new Map();
+        let o = this._pegelOrte.get(key);
+        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
+            const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
+            this._pegelOrte.set(key, (o = { reg, erd, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1), quellen: null }));
+        }
+        return o;
+    }
+    // DIE FLUT AM CHUNK (cx, cz) unter der Tafel T (flut-aue-2): der höchste Spiegel, den die Flut der Läufe und Seen, die ihn
+    // erreichen können, dort trägt (gelaende-core `flutQuellen` · `flutUeber`, eine obere Schranke dessen, was `atlasSpiegel` dort
+    // zeichnet) — −Infinity ohne Flut. Je Tafel und Chunk gemerkt wie die Marke. Leser: der Takt des Pegels (`_pegelTakt`).
+    _pegelFlutVon(T, cx, cz) {
+        if (!T || !T.flut) return -Infinity;
+        if (!this._pegelFluten) this._pegelFluten = new WeakMap();
+        let je = this._pegelFluten.get(T);
+        if (!je) this._pegelFluten.set(T, (je = new Map()));
+        const key = cx + "," + cz;
+        if (je.has(key)) return je.get(key);
+        const K = globalThis.__gelaendeCore;
+        const o = this._pegelOrt(cx, cz);
+        if (!o.quellen) {
+            const { span } = this._voxelChunkConfig();
+            o.quellen = K.flutQuellen(this._gelaende(), cx * span, cz * span, (cx + 1) * span, (cz + 1) * span);
+        }
+        const hoch = K.flutUeber(T, o.quellen);
+        je.set(key, hoch);
+        return hoch;
+    }
+    // Der tiefste gezeichnete Boden eines Eintrags (ein gezeichneter Chunk: `surfMap`; ein Netz im Vorrat: seine Karte) — gemerkt
+    // je Karte; −Infinity ohne Karte (dann kann die Flut ihn nie verfehlen).
+    _pegelTief(e) {
+        const m = e.surfMap || (e.karte && e.karte.hoehe) || null;
+        if (e._tiefVon === m && e._tief !== undefined) return e._tief;
+        let t = Infinity;
+        if (m) for (let i = 0; i < m.length; i++) if (m[i] < t && m[i] > -Infinity) t = m[i];
+        e._tiefVon = m;
+        e._tief = m && t < Infinity ? t : -Infinity;
+        return e._tief;
+    }
 
     // DER TAKT DES PEGELS (stoffe.K3-2, wetter.K3): ändert der neue Tag, der Lauf des Regens oder die Dürre den Hub, trägt die Welt
     // die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die gezeichneten Chunks mit
@@ -325,6 +366,12 @@ class AnazhRealm_wasser_hydro {
     // DIE FLUT (planet.wetter.extreme#1): flutet die alte oder die neue Tafel (`flut`, ein Lauf über der Krone, gelaende-core
     // `flutAm`), zählt auch der trockene Chunk, dessen Marke wechselt — die Aue liegt jenseits der Chunks mit Wasser (am Bach der
     // Mess-Wiese bis 60 m quer); bis flut-aue zeichnete der Faden die Flut nur in den Chunks, die schon Wasser trugen.
+    // DIE FLUT KOSTET, WAS SIE ERREICHT (flut-aue-2): der trockene Chunk zählt nur, wo der Spiegel der Flut (alt oder neu,
+    // `_pegelFlutVon`) über seinem tiefsten gezeichneten Boden steht (`_pegelTief`) — `flut` ist EIN Wort der ganzen Welt (irgendein
+    // Lauf, irgendeine Höhe der Schmelze). Bis hier baute jede Stufe jeder Flut jeden trockenen Chunk neu, dessen Marke wechselte,
+    // auch fern jeder Aue: an der Wiese der Körper-Linse stand die Flut ab dem ersten Takt (die Schmelze des Gebirges), der Chunk
+    // 2,-3 (Stufe 1) baute sich trocken neu, und an seiner Ecke riss die Naht gegen die Netze der Stufe 2 (gate:koerper-stand K6:
+    // 48 von 35 144 Punkten null); hinter dem Sprung der Uhr der Stand-Linse kamen je Stufe 1,7 trockene Chunks in den Bau.
     _pegelTakt() {
         const alt = this._pegelTafelGilt;
         if (alt === undefined) return;
@@ -335,15 +382,17 @@ class AnazhRealm_wasser_hydro {
         const st = this.state;
         const WATER = AnazhRealm.CELL_STATE.WATER;
         const flut = !!((alt && alt.flut) || (neu && neu.flut));
-        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser — oder flutet die Aue —, und wechselt die
-        // Marke seines Chunks?
+        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser — oder erreicht ihn die Flut —, und wechselt
+        // die Marke seines Chunks?
         const trifft = (e, key) => {
             if (!e) return false;
             const w = e.waterCells;
             if (e._nass === undefined) e._nass = !!(w && w.length && w.includes(WATER));
             if (!e._nass && !flut) return false;
             const [cx, cz] = key.split(",").map(Number);
-            return this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
+            if (this._pegelMarkeVon(alt, cx, cz) === this._pegelMarkeVon(neu, cx, cz)) return false;
+            if (e._nass) return true;
+            return Math.max(this._pegelFlutVon(alt, cx, cz), this._pegelFlutVon(neu, cx, cz)) > this._pegelTief(e);
         };
         if (st.voxelChunks && st.voxelChunks.size) {
             if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
