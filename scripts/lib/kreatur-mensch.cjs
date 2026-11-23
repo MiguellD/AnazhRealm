@@ -741,7 +741,7 @@ async function menschBuehnen() {
                 return aus;
             };
             // der nahe Leib je Gestalt: die Hüllen mit Skelett (ohne Haar und Auge), am Kanon ihrer Breite
-            const nah = new Map();
+            const [nah, nahAkte] = [new Map(), new Map()];
             // (die Vorlage des Ofens, aus der `_buildHumanGroup` jeden nahen Leib dieser Gestalt stellt — gelesen, nie gegossen)
             S.gestalten.forEach((G, gi) => {
                 const da = A._tierOfenMemo && A._tierOfenMemo.get(G.keys[0]);
@@ -753,6 +753,13 @@ async function menschBuehnen() {
                     dreiecke(o.geometry.attributes.position.array, o.geometry.index.array, T3);
                 });
                 if (T3.length) nah.set(gi, masse(T3));
+                // (für die Akte: die Dreiecke und die Gelenke des nahen Leibs in SEINEM Raum — die Bind-Lage jedes Knochens)
+                const gel = new Map();
+                da.root.traverse((o) => {
+                    if (!o.isSkinnedMesh || !o.skeleton) return;
+                    o.skeleton.bones.forEach((bn, i) => gel.has(bn.name) || gel.set(bn.name, new T.Matrix4().copy(o.skeleton.boneInverses[i]).invert().elements[13])); // prettier-ignore
+                });
+                if (T3.length) nahAkte.set(gi, { T3, gel });
             });
             gestalt.gestalten = nah.size;
             // die Achsen des Baus am Kanon (der Punkt seiner Gestalt: sie gießt im Kanon des Skeletts), jede andere aus der Zeile des Bewohners
@@ -780,8 +787,70 @@ async function menschBuehnen() {
                     gestalt.je[k] = Math.max(gestalt.je[k], q3(pct));
                     if (pct > gestalt.max) [gestalt.max, gestalt.wer, gestalt.mass] = [q3(pct), `${wer(b)} (Gestalt ${b.gestalt})`, NAMEN[k]];
                 });
+                // die Akte (nur gelesen, kein Urteil): je Gestalt das Höchste je Maß, das schlechteste Kind und der schlechteste Erwachsene
+                const pcts = fern.map((x, k) => ((x - n0[k]) / n0[k]) * 100);
+                const zl = akte.zeilen.get(b.gestalt) || [0, 0, 0];
+                akte.zeilen.set(b.gestalt, zl.map((v, k) => (Math.abs(pcts[k]) > Math.abs(v) ? q3(pcts[k]) : v)));
+                const schlimm = Math.max(...pcts.map(Math.abs));
+                const art = b.rolle === "kind" ? "kind" : "gross";
+                if (!akte[art] || schlimm > akte[art].schlimm) akte[art] = { b, schlimm, pcts, punkt: punkt.slice(), s3: s3.clone() };
+            }
+            // DIE SCHEIBE AM LEIB? je Maß die Höhe y, an der das Band seine Breite fand (von–bis des Bands, der Kanon `:710`), die Breite
+            // nah und im Satz (E), die Körperhöhe des nahen Leibs (E, und in cm über die Höhen-Skala der Instanz) und die Gelenke des
+            // nahen Leibs (Bind-Lage, E) — liegt die Scheibe am Kind an Hüfte und Schulter, oder an Hand und Oberschenkel?
+            const bandY = (T3, a, e, min) => {
+                let [w, y0] = [min ? Infinity : -Infinity, a];
+                for (let y = a; y <= e + 1e-6; y += 0.05) {
+                    const v = breite(T3, y);
+                    if (min ? v < w : v > w) [w, y0] = [v, y];
+                }
+                return [w, y0];
+            };
+            const BAENDER = [[4.4, 4.9, false], [3.5, 4.1, true], [2.9, 3.3, false]]; // prettier-ignore
+            // (die Akte urteilt nicht: bricht ihr Lesen, steht der Bruch in ihr, das Urteil der Gestalt bleibt)
+            try {
+                akteLesen(BAENDER, bandY, nahAkte, tafel, lage, ix2, dreiecke, NAMEN, breite);
+            } catch (e) {
+                akte.fehler = String((e && e.message) || e);
+            }
+            gestalt.akte = {
+                zeilen: [...akte.zeilen].sort((p, q) => p[0] - q[0]).map(([gi, v]) => `G${gi} (${q3(S.gestalten[gi].J ?? NaN)} J): ${v.join(" · ")}`),
+                kind: akte.kindZeile || null,
+                gross: akte.grossZeile || null,
+                kindProfil: akte.kindProfil || null,
+                grossProfil: akte.grossProfil || null,
+                fehler: akte.fehler || null,
+            };
+        };
+        const akteLesen = (BAENDER, bandY, nahAkte, tafel, lage, ix2, dreiecke, NAMEN, breite) => {
+            for (const art of ["kind", "gross"]) {
+                const a = akte[art];
+                if (!a) continue;
+                const { b, s3: sk } = a;
+                const N = nahAkte.get(b.gestalt);
+                const TF = dreiecke(A._leibRaumLeib(tafel, a.punkt, lage), ix2);
+                let [lo, hi] = [Infinity, -Infinity];
+                for (const t of N.T3) for (const p of t) [lo, hi] = [Math.min(lo, p[1]), Math.max(hi, p[1])];
+                const H = hi - lo;
+                // (cm: E × das Maß des Leibs — der Wrap des Rigs trägt f = 8 · PLAYER_KH / 6 m je E (`_buildHumanoidRig`), seine
+                // Größe zur Gestalt `groesse` (die Kopf-Höhe seines Genoms über der ihren, `_bewohnerGenome`))
+                const mjE = ((8 * A.PLAYER_KH) / 6) * (b.groesse > 0 ? b.groesse : NaN);
+                const cm = (e) => Math.round(e * mjE * 100);
+                const mass = BAENDER.map(([u, o, min], k) => {
+                    const [wN, yN] = bandY(N.T3, u, o, min);
+                    const [wF, yF] = bandY(TF, u, o, min);
+                    const [n1, f1] = [wN * b.breite, (wF * sk.x) / sk.y];
+                    return `${NAMEN[k]} ${q3(a.pcts[k])} % y ${u}–${o} E (nah bei ${q3(yN)}, Satz bei ${q3(yF)}): nah ${q3(n1)} E = ${cm(n1)} cm, Satz ${q3(f1)} E = ${cm(f1)} cm, Δ ${cm(f1 - n1)} cm`; // prettier-ignore
+                });
+                const gel = [...N.gel].map(([nm, y]) => `${nm} ${q3(y)}`);
+                // das Profil der bedeckten Breite (E, nah / Satz) von 2,5 bis 5,0 E je 0,1 — wo die Scheibe auf dem Leib liegt
+                const prof = [];
+                for (let y = 2.5; y <= 5.0 + 1e-6; y += 0.1) prof.push(`${q3(y)}:${q3(breite(N.T3, y) * b.breite)}/${q3((breite(TF, y) * sk.x) / sk.y)}`);
+                akte[art + "Profil"] = prof.join(" ");
+                akte[art + "Zeile"] = `${wer(b)} (Gestalt ${b.gestalt}, Alter ${q3(b.genom ? b.genom.alter : NaN)}, m je E ${q3(mjE)}, Satz-Skala ${q3(sk.y)}): Körperhöhe ${q3(H)} E = ${cm(H)} cm (Fuß ${q3(lo)}) · ${mass.join(" · ")} · Gelenke ${gel.slice(0, 40).join(", ")}`; // prettier-ignore
             }
         };
+        const akte = { zeilen: new Map(), kind: null, gross: null };
         // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus) — auch
         // wo die Spur der Wagen ihn trifft: trägt der Platz neben ihr keinen Ort seines Gesetzes, fällt der Stand
         // (`_bewohnerOhneStand`), und die Linse nennt den Plan, der zu wenig Platz bietet, an seinen Leuten
@@ -795,13 +864,40 @@ async function menschBuehnen() {
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
         const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
         const blieb = new Map();
+        // DIE ZERLEGUNG DER WIEDERKEHR (je Prüf-Stunde, nur gelesen): der Rückstand des Bleibenden hinter seinem Tag (`rueck`,
+        // `_bewohnerGehen` — die Länge, um die ihn die Ankunft weiter längs seines Wegs stellt), sein gegangener Weg seit der Wende
+        // und die Sekunden, die er mit Weg stand (Vorrang der Fahrbahn, Ausweichen) seit der letzten Prüf-Stunde
+        const [zuege, warten] = [new Map(), new Map()];
+        const zug = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, { rueck: b.rueck || 0, gegangen: b.gegangen || 0, warten: warten.get(b) || 0, tempo: b.tempo }])); // prettier-ignore
         let haendlerFehlt = [];
+        // ENG GESCHNITTEN (`--art gestalt`: die Akte der Gestalt neben dem echt-Job, Deckel 180 s — Form und Lage, keine Zeit): kein
+        // Tag, nur die Gestalt des Stands im Satz am Tag-Beginn (12,5 Uhr, wie die Messung des Tags um 12,5 Uhr), bis der Satz steht
+        if (opts && opts.art === "gestalt") {
+            for (let k = 0; k < 600 && !gestalt.n; k++) {
+                takt(DT, SD);
+                if (k % 10 === 9) gestaltMessen();
+            }
+            return { nur: "gestalt", gestalt };
+        }
+        // ENG GESCHNITTEN (`--art wiederkehr`: die Zerlegung der Wiederkehr neben dem echt-Job): derselbe Tag, ohne Gang-Fenster und
+        // ohne die Messungen der Stunde — nur die Lagen der Prüf-Stunden und die Wiederkehr
+        // (`--art wiederkehr:<id>`: dazu je Prüf-Stunde die Zeile jedes Leibs, dessen Name die id trägt)
+        const eng = opts && /^wiederkehr(:|$)/.test(String(opts.art || ""));
+        const engWer = eng ? String(opts.art).split(":")[1] || null : null;
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             const um = (h) => Math.abs(stunde - h) < 0.05;
             const SZ = saetze();
-            for (let k = 0; k < takte; k++) takt(DT, SD);
-            // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s
+            for (let k = 0; k < takte; k++) {
+                takt(DT, SD);
+                for (const b of Sx()) if (b.weg && !b.drinnen && !(b.tempoJetzt > 0)) warten.set(b, (warten.get(b) || 0) + DT);
+            }
+            // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s (eng: derselbe Gang, ohne seine Messer)
+            if ([7.5, 12, 17.2].some(um) && eng) for (let k = 0; k < 600; k++) takt(1 / 60, SD);
+            if (eng) {
+                if (i % 15 === 0) [blieb.set(s.timeOfDay * 24, lagen()), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
+                continue;
+            }
             if ([7.5, 12, 17.2].some(um)) {
                 gang.luecke(); // das Fenster beginnt jede Spur neu
                 koennen.fenster();
@@ -847,7 +943,11 @@ async function menschBuehnen() {
             if ([10, 12.5, 19].some(um)) gestaltMessen();
             if (um(12.5)) haendlerFehlt = ohneHaendler(S, true);
             if (um(2)) z.schmiede2 = anStation();
-            if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
+            if (i % 15 === 0) {
+                blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
+                zuege.set(s.timeOfDay * 24, zug());
+                warten.clear();
+            }
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
         const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
@@ -866,8 +966,8 @@ async function menschBuehnen() {
         const wiederkehr = async () => {
             const ab0 = [];
             if (hat("bewohner-wiederkehr")) decke("_bewohnerAnkunft", () => () => {}, ab0);
-            const [ueber, P] = [[], pm.clone()];
-            let [n, maxM] = [0, 0];
+            const [ueber, P, je] = [[], pm.clone(), new Map()];
+            let [n, maxM, weit] = [0, 0, null];
             for (const [T, sah] of blieb) {
                 pm.x = P.x + A.AUTO_SETTLEMENT.nearM * A.BEWOHNER.fernFaktor + 80;
                 r._uhrSetzen(((T + 23) / 24) % 1, "regler");
@@ -886,13 +986,20 @@ async function menschBuehnen() {
                 const kam = lagen();
                 for (const [id, v] of sah) {
                     const d = v && kam.get(id) ? kam.get(id).distanceTo(v) : NaN;
+                    if (d > maxM) weit = id;
                     [n, maxM] = [n + 1, Math.max(maxM, d)];
-                    if (!(d <= 2)) ueber.push(`${id} um ${q3(T)} Uhr ${q3(d)} m`);
+                    const zg = (zuege.get(T) || new Map()).get(id);
+                    const zl = zg ? ` (Rückstand ${q3(zg.rueck)} m, gegangen ${q3(zg.gegangen)} m, gewartet ${q3(zg.warten)} s, Tempo ${q3(zg.tempo)} m/s)` : ""; // prettier-ignore
+                    (je.get(id) || je.set(id, []).get(id)).push(`${q3(T)} Uhr ${q3(d)} m${zl}`);
+                    if (!(d <= 2)) ueber.push(`${id} um ${q3(T)} Uhr ${q3(d)} m${zl}`);
                 }
             }
             for (const f of ab0) f();
-            return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5) };
+            // der Weiteste je Prüf-Stunde: die Lage des Bleibenden gegen die der Ankunft (aus Plan und Uhr), zerlegt
+            const ueberWer = [...new Set(ueber.map((u) => u.split(" um ")[0]))];
+            return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5), weitester: weit ? `${weit}: ${je.get(weit).join(" · ")}` : null, ueberJe: ueberWer.map((id) => `${id}: ${je.get(id).join(" · ")}`), gesucht: engWer ? [...je].filter(([id]) => id.includes(engWer)).map(([id, z]) => `${id}: ${z.join(" · ")}`) : undefined }; // prettier-ignore
         };
+        if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr() };
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
         if (hat("bewohner-sprung")) {
@@ -1212,7 +1319,7 @@ function menschUrteil(name, z, soll) {
         soll(z.wege.sprungN === 0, `Sprung im Nahbereich: ${z.wege.sprungN} Takte > 2 m`);
         soll(
             wk.n > 0 && wk.ueberN === 0,
-            `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
+            `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber}; der Weiteste je Prüf-Stunde ${wk.weitester})`
         );
         soll(sg.schlupf <= 0.05 && sg.wegLeib >= 10, `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m`);
         const kn = z.koennen || { n: 0, ohne: "ungemessen", wer: [], geher: 0, rho: "ungemessen", haelften: "ungemessen" };
