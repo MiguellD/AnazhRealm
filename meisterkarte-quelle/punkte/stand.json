@@ -36029,7 +36029,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#1 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#2 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36048,8 +36048,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36068,8 +36069,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.physik.reaktion#3",
@@ -37523,7 +37525,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 274,
+  "konsum": 276,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37691,10 +37693,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3348
+  "ohne": 3346
  },
  "kopfVoll": "2264aeab045c089be9974bec895118e64ee2b8af",
- "zeit": "2026-11-23T11:48:28.933Z",
+ "zeit": "2026-11-23T12:15:46.437Z",
  "vorher": "2264aeab",
  "bilanz": {
   "gewinn": [],
