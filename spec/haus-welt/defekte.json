@@ -435,6 +435,18 @@
     ]
    ]
   ],
+  "netzindex": [
+   [
+    "fremd",
+    "W11 Netz-Index"
+   ],
+   [
+    [
+     "const T = G.tueren || (G.tueren = new Map());",
+     "const T = this._tuerenAlt || (this._tuerenAlt = new Map());"
+    ]
+   ]
+  ],
   "waise": [
    [
     "grund",
