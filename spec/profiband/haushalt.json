@@ -216,7 +216,7 @@
         },
         {
             "id": "acker-fern",
-            "titel": "Der Acker des Dorfs der Zelle −4,−4 im Herbst aus 30 m (acker-furche, Leiter mensch.nahrung flur): wie `acker`; die Pose „acker-fern“ stellt das Auge 30 m vor die Mitte des Ackers, auf der Seite des Dorfs zuerst, der Blick längs seiner Furchen — der gepflügte Acker als Fläche am Dorfrand (flur#1), die Furche auf 30 m lesbar (Herbst: die Erde liegt nackt).",
+            "titel": "Der Acker des Dorfs der Zelle −4,−4 im Herbst auf 30 m (acker-furche, Leiter mensch.nahrung flur): wie `acker`; die Pose „acker-fern“ stellt das Auge an denselben Rand und blickt 30 m weit längs der Furchen in den Acker (höchstens bis vor seinen anderen Rand) — der Acker als Fläche am Dorfrand (flur#1), die frische Herbstfurche auf 30 m lesbar (phyto ACKER_FURCHE.pflugTag: die Erde liegt gewendet und nackt).",
             "anlauf": [
                 -841,
                 -861
