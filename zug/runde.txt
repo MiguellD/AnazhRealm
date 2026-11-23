@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 12 kopf 5b36f69a78690dd2661aae017fef04106778125c start 2026-11-23T08:30:12Z vorher 07783ef21c5aa850536481c099a7cae8cbb56214
 gtx offen 0/0 station - fortschritt 2026-11-23T08:30:12Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-23T08:30:12Z alarm 2026-11-23T08:31:00Z liste -
+radeon wartet 0/0 station - fortschritt 2026-11-23T08:30:12Z alarm 2026-11-23T08:31:00Z liste -
 notiz 2026-11-23T08:30:12Z Runde 11 am 07783ef2 sprang auf 5b36f69a (gtx laeuft 0/247, radeon wartet 0/0): z687 gelandet 09:28 (w28-heap-huelle-gepackt, stadt-voll gehalten 530 auf 469 MB): die Runde 11 trug noch keine Liste, sie misst am Kopf mit dem Heap-Schnitt; Ansprueche: Preis in Ruhe (archiv#1, technik#1, markt#1), Heap (flur#1, koennen#1), neun geheilte Stationen
