@@ -487,6 +487,15 @@ async function proben(phasen) {
             return !!(S && S.netzGrund && S.netzGrund !== G0 && S.standGrund === S.netzGrund && !S.listeWerk);
         };
         await warteBis(amNeuen, 4, 400);
+        // (ging die Wache ihren Gang am neuen Grund nicht von selbst — kein Wechsel einer Hülle nach dem Tausch —, geht ihn die
+        // Probe: derselbe Gang `_bewohnerStandPruefen`, den die Wache treibt; ein Wurf in ihm ist der Wurf im Spiel-Loop)
+        let wurf = null;
+        if (!amNeuen() && ortS() && ortS().liste && !ortS().listeWerk)
+            try {
+                for (const g = r._bewohnerStandPruefen(ortS(), null); !g.next().done; );
+            } catch (x) {
+                wurf = String((x && x.message) || x).slice(0, 160);
+            }
         const G1 = ortS() && ortS().netzGrund;
         const fremdeTuer = G1
             ? staendeVon(ortS()).filter(([, q]) => {
@@ -498,9 +507,10 @@ async function proben(phasen) {
         Object.assign(w.netz, {
             nach: G1 ? G1.knoten.length : null,
             neu: !!G1 && G1 !== G0,
-            gang: amNeuen(),
+            gang: amNeuen() || (wurf ? "wurf" : false),
+            wurf,
             fremd: fremdeTuer.length,
-            erster: fq ? `${fb.name || "#" + (fb.seed >>> 0)} am Stand ${fq.x.toFixed(1)}/${fq.z.toFixed(1)}: Tür-Knoten ${r._bewohnerTuerAm(G1, fq.tuerVor).i}` : null, // prettier-ignore
+            erster: fq ? `${fb.beruf || fb.rolle} #${fb.seed} am Stand ${fq.x.toFixed(1)}/${fq.z.toFixed(1)}: Tür-Knoten ${r._bewohnerTuerAm(G1, fq.tuerVor).i}` : null, // prettier-ignore
         });
         const sl = fe && slotVon(kv, fe);
         if (sl)
@@ -2301,11 +2311,13 @@ function urteil(o) {
         const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
         const { netz: nz, ...w0 } = w;
         if (!(w0.vorher > 0 && w0.nachher === 0 && w0.byte && w0.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w0)}`);
+        const umfang = nz ? `Grund vor dem Tausch ${nz.vor} Knoten, danach ${nz.nach}` : "";
         if (!nz || !(nz.staende > 0) || !nz.neu || !nz.gang)
             f.push(`W11 Netz-Index: blind — kein Gang der Wache an einem neuen Grund des Orts (${JSON.stringify(nz)})`);
-        else if (nz.fremd)
+        if (nz && nz.wurf) f.push(`W11 Netz-Index: der Gang der Wache am neuen Grund wirft — ${nz.wurf} (${umfang}; ${nz.erster || "-"})`); // prettier-ignore
+        if (nz && nz.fremd)
             f.push(
-                `W11 Netz-Index: ${nz.fremd} von ${nz.staende} Türen der Stände hängen an einem Knoten außerhalb des lebenden Grunds — ${nz.erster} (Grund vor dem Tausch ${nz.vor} Knoten, danach ${nz.nach})`
+                `W11 Netz-Index: ${nz.fremd} von ${nz.staende} Türen der Stände hängen an einem Knoten außerhalb des lebenden Grunds — ${nz.erster} (${umfang})`
             );
         if (!(g?.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
             f.push(`W10 Anti-Clip-Hub im Fremd-Slot: ${JSON.stringify(g)}`);
