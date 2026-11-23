@@ -2423,8 +2423,16 @@ async function baumSperre(repo, geraet, o = {}) {
     // „macher“; die Dienste nennen sich). Der Leser: landung-dienst.sh `baum_wartende` und kandidat.sh `baum_wartet` (eine Marke jünger
     // als eine Minute, die nicht der Landung oder dem Wächter gehört) — die Liste endet an der Stations-Grenze, die nächste Station
     // beginnt nicht vor dem Wartenden. Mit dem Baum und am Prozess-Ende fällt die Marke.
-    const wer = String((o.env || process.env).PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "") || "macher";
+    const env = o.env || process.env;
+    const wer = String(env.PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "") || "macher";
     const marke = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".wartet", wer + "-" + process.pid);
+    // DIE ANKUNFT (pm-runde-in-der-schlange, 23.11.; Befund OMEN: die Runde 12 stand 10:19–13:38 ohne Sitzung — jede Hand wartete im
+    // Schloss und nahm die Karte, sobald sie frei wurde): Baum und Karte haben EINE Schlange, diesen Ordner, und ihre Ordnung ist die
+    // Zeit der Ankunft. GPU_LAUF_ANKUNFT trägt sie — die Runde reicht die Zeit ihres stehenden Platzes (kandidat.sh), sonst setzt sie
+    // dieser Lauf beim ersten Griff nach dem Baum, und gpu-lauf.sh (OMEN) liest dieselbe an der Karte. GPU_LAUF_PLATZ ist der stehende
+    // Platz des Rufers in diesem Ordner: er wartet nie vor sich selbst
+    if (!env.GPU_LAUF_ANKUNFT) env.GPU_LAUF_ANKUNFT = new Date().toISOString();
+    const platz = env.GPU_LAUF_PLATZ ? path.basename(env.GPU_LAUF_PLATZ) : "";
     const markeFort = () => { try { fs.rmSync(marke, { force: true }); } catch (_e) {} };
     // DIE GERECHTE SCHLANGE (16.11., Radeon: pid 11860, seit 22:04 mit EINER Station am Baum, wartete 53 min, während der Lauf von 22:31
     // den Baum bekam — wer nach dem Freiwerden zuerst pollte, gewann): die Marke trägt die Zeit, SEIT der Lauf wartet (das mtime frischt
@@ -2433,30 +2441,34 @@ async function baumSperre(repo, geraet, o = {}) {
     // Prozess trägt, der nach der Marke begann (halterLebt). Die Fassung vor diesem Schnitt schrieb je Runde die JETZT-Zeit in die Marke —
     // ihre Läufe erscheinen hier stets frisch, also jünger als jeder, der länger wartet, und nehmen frei wie bisher: kein Verklemmen.
     const ordner = path.dirname(marke), ich = path.basename(marke), startVon = o.startVon || prozessStart, starts = new Map();
-    let seit = 0; // ms, seit dieser Lauf wartet; 0 = er wartet noch nicht
+    let seit = Date.parse(env.GPU_LAUF_ANKUNFT) || 0, markeDa = false; // ms: die Ankunft dieses Laufs (oben, nie 0 außer bei einer unlesbaren Zeit)
     const lebtPid = (pid) => { if (o.startVon) return true; try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
     const aelterWartet = () => {
         let namen;
         try { namen = fs.readdirSync(ordner).sort(); } catch (_e) { return null; }
         const meins = seit || Date.now();
         for (const n of namen) {
-            if (n === ich) continue;
+            if (n === ich || n === platz) continue;
             const datei = path.join(ordner, n), m = /-(\d+)$/.exec(n), fort = () => { try { fs.rmSync(datei, { force: true }); } catch (_e) {} };
-            let mtime, t;
-            try { mtime = fs.statSync(datei).mtimeMs; t = Date.parse(fs.readFileSync(datei, "utf8").trim()); } catch (_e) { continue; }
+            let mtime, geboren, t;
+            try { const st = fs.statSync(datei); mtime = st.mtimeMs; geboren = st.birthtimeMs; t = Date.parse(fs.readFileSync(datei, "utf8").trim()); } catch (_e) { continue; }
             if (Date.now() - mtime > 120000) { fort(); continue; }
             if (!m) continue;
             if (!Number.isFinite(t)) t = mtime;
             if (!(t < meins || (t === meins && n < ich))) continue; // jünger als dieser Lauf: er zählt hier nicht
             const pid = Number(m[1]);
             if (!starts.has(pid)) starts.set(pid, startVon(pid));
-            if (!lebtPid(pid) || !halterLebt(starts.get(pid), t)) { fort(); starts.delete(pid); continue; }
+            // lebt der Halter? gemessen am ANLEGEN der Marke (birthtime), nie an der Ankunft, die sie trägt: ein Platz trägt eine Ankunft,
+            // die älter sein darf als sein Schreiber (gpu-lauf.sh erbt die Ankunft seines Laufs) — die Nummer neu vergeben heißt: der Prozess
+            // begann nach dem Anlegen
+            if (!lebtPid(pid) || !halterLebt(starts.get(pid), Math.max(t, geboren || 0))) { fort(); starts.delete(pid); continue; }
             return n;
         }
         return null;
     };
     const warteRunde = async () => {
-        if (!seit) { seit = Date.now(); process.on("exit", markeFort); }
+        if (!seit) seit = Date.now();
+        if (!markeDa) { markeDa = true; process.on("exit", markeFort); }
         try { fs.mkdirSync(ordner, { recursive: true }); fs.writeFileSync(marke, new Date(seit).toISOString()); } catch (_e) {} // die Marke stört nie das Warten
         await new Promise((r) => setTimeout(r, o.wartMs || 10000)); // 10 s (bis 14.11. 30 s: zwischen zwei Stationen der Landung blieb dem Wartenden keine Runde)
     };
@@ -3082,6 +3094,9 @@ const ciWartet = (o) => {
 async function sitzungStarten(o) {
     const schloss = o.gpuLauf ? await schlossNehmen(o, 0) : null;
     if (schloss && !schloss.ok) return schloss;
+    // der Zeuge der Fremd-Last legt seinen Grund, ehe die erste Station misst (Windows: der PowerShell-Lauf braucht seinen ersten Takt) —
+    // erst HIER, mit dem Schloss in der Hand: wer wartet, lädt nicht (run)
+    await maschinenZeuge().bereit();
     return new Promise((fertig) => {
         const t0 = Date.now();
         const argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
@@ -4769,8 +4784,8 @@ function wellenDerFahrt(opt, sha, proben) {
 async function run(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
-    // der Zeuge der Fremd-Last legt seinen Grund, ehe die erste Station misst (Windows: der PowerShell-Lauf braucht seinen ersten Takt)
-    if (!opt.trocken) await maschinenZeuge().bereit();
+    // der Zeuge der Fremd-Last erwacht erst unter dem Schloss (sitzungStarten, die Leihe der Referenz): WER WARTET, LÄDT NICHT — bis
+    // 23.11. lief sein PowerShell-Takt vom Start an, auch die 35 min, die ein Lauf hinter einem CI-Job oder der Runde am Schloss stand
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen — unter
     // EINER Leihe des Schlosses und hinter dem Ruhe-Tor (echteReferenz; bis 23.11. fuhr sie hier VOR jedem Schloss)
     if (!opt.trocken) await referenzAuffuellen("allein");
@@ -6702,6 +6717,36 @@ async function selbsttest(o = {}) {
             pruef("SPERRE die gerechte Schlange: der freie Baum geht an die älteste lebende Marke, ein jüngerer überholt nie (die Fassung davor: er überholte); tote Marken (keine pid, pid neu vergeben, 3 min ohne Auffrischung) zählen nicht und fallen",
                 aNahm === false && aDa && bNahm === true && !bDa && cNahm === true && !cDa && dNahm === true && !dDa && nachFrei.join(",") === "erster" && ordnung.join(",") === "erster,zweiter",
                 JSON.stringify({ a: [aNahm, aDa], b: [bNahm, bDa], c: [cNahm, cDa], d: [dNahm, dDa], nachFrei, ordnung }));
+            // DIE ANKUNFT ORDNET (pm-runde-in-der-schlange, 23.11.): eine fremde lebende Marke seit 30 s · (f) ein Lauf, der vor 60 s ankam
+            // (GPU_LAUF_ANKUNFT), nimmt den freien Baum — er kam vor ihr; (g) einer, der vor 10 s ankam, wartet hinter ihr; (h) der stehende
+            // Platz des Rufers (GPU_LAUF_PLATZ, älter als jede Marke) hält ihn nie auf; (i) ein Platz, dessen Ankunft älter ist als sein
+            // lebender Schreiber (gpu-lauf.sh erbt die Ankunft seines Laufs), lebt — er hält den jüngeren Lauf auf; (j) ohne Ankunft setzt
+            // der Lauf sie beim Griff nach dem Baum (die Kinder erben sie). Selbstprobe: die Fassung davor nahm in (g), wartete in (f) und
+            // (h) und räumte in (i) den lebenden Platz
+            const vor = (s) => new Date(Date.now() - s * 1000).toISOString(), mitAnk = (env, sf = seitFremd - 1000) => ({ ...mit(sf), env });
+            const ankFall = async (env, sf, name = "macher-" + FREMD, inhalt = new Date(seitFremd).toISOString()) => {
+                fs.rmSync(sp, { recursive: true, force: true }); fs.mkdirSync(wOrdner, { recursive: true });
+                const f = path.join(wOrdner, name); fs.writeFileSync(f, inhalt);
+                const r = await nimm(mitAnk(env, sf)), da = fs.existsSync(f);
+                fs.rmSync(sp, { recursive: true, force: true }); fs.rmSync(wOrdner, { recursive: true, force: true }); return [r, da]; };
+            const [fNahm] = await ankFall({ GPU_LAUF_ANKUNFT: vor(60) }), [gNahm, gDa] = await ankFall({ GPU_LAUF_ANKUNFT: vor(10) });
+            const platzName = "runde-" + FREMD, [hNahm, hDa] = await ankFall({ GPU_LAUF_ANKUNFT: vor(10), GPU_LAUF_PLATZ: path.join(wOrdner, platzName) }, seitFremd - 1000, platzName, vor(120));
+            const [iNahm, iDa] = await ankFall({ GPU_LAUF_ANKUNFT: vor(10) }, Date.now() - 5000, "omen_punkte_gtx_sitzung-" + FREMD, vor(60));
+            const jEnv = {};
+            fs.rmSync(sp, { recursive: true, force: true });
+            const jNahm = await nimm({ env: jEnv }), jAnk = Date.parse(jEnv.GPU_LAUF_ANKUNFT);
+            fs.rmSync(sp, { recursive: true, force: true });
+            pruef("SPERRE die Ankunft ordnet: wer vor der fremden Marke ankam (GPU_LAUF_ANKUNFT), nimmt den freien Baum, wer nach ihr kam, wartet; der eigene Platz (GPU_LAUF_PLATZ) hält nie auf; ein Platz mit geerbter Ankunft lebt, solange sein Schreiber lebt; ohne Ankunft setzt der Lauf sie selbst",
+                fNahm === true && gNahm === false && gDa && hNahm === true && hDa && iNahm === false && iDa && jNahm === true && Math.abs(Date.now() - jAnk) < 60000,
+                JSON.stringify({ f: fNahm, g: [gNahm, gDa], h: [hNahm, hDa], i: [iNahm, iDa], j: [jNahm, jEnv.GPU_LAUF_ANKUNFT] }));
+        }
+        // WER WARTET, LÄDT NICHT (pm-runde-in-der-schlange): der Zeuge der Fremd-Last (PowerShell je 2 s) erwacht erst mit dem Schloss —
+        // run() ruft ihn nie (bis 23.11. lief er vom Start an, auch die 35 min einer Hand hinter dem CI-Job), sitzungStarten erst nach
+        // schlossNehmen
+        {
+            const r = run.toString(), s = sitzungStarten.toString(), iS = s.indexOf("schlossNehmen("), iZ = s.indexOf("maschinenZeuge().bereit()");
+            pruef("ZEUGE wer wartet, lädt nicht: run() weckt den Zeugen der Fremd-Last nie, sitzungStarten erst mit dem Schloss in der Hand",
+                !/maschinenZeuge\(\)/.test(r) && iS > 0 && iZ > iS, JSON.stringify({ runRuft: /maschinenZeuge\(\)/.test(r), iS, iZ }));
         }
         // DER LÄUFER NENNT SEINEN TOD (laeuferWache, 16.11. EXIT=127): ein Kind legt die Akte (a, b, c), urteilt c, schreibt eine Zeile und
         // endet mit 0xC0000409 ohne exit-Haken — a und b stehen UNGEMESSEN beim Namen (Exit, Name, letzte Zeile), das alte GRÜN von a in
