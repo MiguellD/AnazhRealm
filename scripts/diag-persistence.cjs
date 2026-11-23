@@ -10,6 +10,9 @@
 // Grund, jede Grube am Boden, jeden Slot — daraus (U) der Boden-Umzug (K16), (W) die Lichtung, (K) das kalte Buch. Der Save
 // des Kopfs aus dem jüngsten Stand lädt im selben Lauf, `--stufe` (bump-version.cjs) schreibt ihn als Stand der Stufe.
 // `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
+// PERSISTENCE_KORPUS=k/n: der Anteil k von n (die Stände mit Index i mod n = k - 1 im nach Version sortierten Korpus; der Kopf
+// fährt im Anteil des jüngsten Stands) — die CI lädt jeden Stand GENAU EINMAL (Teil 1 und 2 je ein Anteil, gate:ci-deckung (O));
+// ohne den Schalter alle, ein leerer oder unlesbarer Schalter ist ROT.
 //
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -19,7 +22,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { fehlerText, loesche, statikServer, starteBrowser, tempNeu, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs");
+const { fehlerText, loesche, statikServer, starteBrowser, tempNeu, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen, teilVon } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -31,6 +34,7 @@ const NUR_STUFE = process.argv.includes("--stufe");
 const NUR_WEG = process.argv.includes("--weg");
 const [WEG_KM, WEG_MIN] = (process.env.PERSISTENCE_WEG || "1-6").split("-").map(Number);
 const EDITS = Number(process.env.PERSISTENCE_EDITS || 0);
+const ANTEIL = process.env.PERSISTENCE_KORPUS === undefined ? null : teilVon(process.env.PERSISTENCE_KORPUS, "PERSISTENCE_KORPUS");
 
 // (S) Der Tod an einem Schreib-Punkt: ein Vorlade-Haken (`node -r`) im Sandbox-Prozess zählt jeden Datei-Schreiber des
 // Servers (writeFile · copyFile · rename, Rückruf-, Sync- und Promise-Form). Je Schreiber zwei Punkte: MITTEN (ein
@@ -633,14 +637,21 @@ function korpusHaken(feld) {
         },
     });
 }
-// Je Stand eine Seite in seinem Kontext, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
-async function korpusLauf(selbst) {
-    const alle = fs
+// DER INDEX des Korpus: je Datei ihre Version, nach Version sortiert — der Anteil (ANTEIL) wählt daraus, nur er wird gelesen.
+const korpusIndex = () =>
+    fs
         .readdirSync(KORPUS)
-        .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
+        .map((f) => f.replace(/\.json\.br$/, ""))
+        .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+// Je Stand eine Seite in seinem Kontext, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
+async function korpusLauf(selbst, index = korpusIndex()) {
+    const wahl = selbst
+        ? index.slice(0, VERLUST.length)
+        : NUR_STUFE
+          ? index.slice(-1)
+          : index.filter((_, i) => !ANTEIL || i % ANTEIL.n === ANTEIL.k - 1);
+    const liste = wahl.map((v) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, v + ".json.br")))));
     const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
-    alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
-    const liste = selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle;
     // DREI STÄNDE ZUGLEICH, je in seinem Kontext (localStorage, IndexedDB): 46 Boots je 4,5 s trugen 60 % von Teil 2 der CI, je
     // Versions-Stufe einer mehr (27.10., Karte lange-stationen); der Kopf (aus dem jüngsten Stand) bootet danach in dessen Bahn
     const stand = async (k, i) => {
@@ -673,12 +684,12 @@ async function korpusLauf(selbst) {
         ];
         z.soll = [s.bauten.length, s.edits.length, s.inventar.length];
         z.ganz = z.soll.every((x, j) => x > 0 && z.n[j] === x);
-        if (!k.kopf && z.ganz && k === alle.at(-1)) {
+        if (!k.kopf && !selbst && z.ganz && k.version === index.at(-1)) {
             const datei = path.join(KORPUS, ist.neu.version + ".json.br");
             const neu = { ...ist.neu, bauten: bauten.map((a) => a.id) };
             if (NUR_STUFE && !fs.existsSync(datei))
                 fs.writeFileSync(datei, zlib.brotliCompressSync(JSON.stringify(neu)));
-            alle.push({ ...neu, kopf: true });
+            else if (!NUR_STUFE) liste.push({ ...neu, kopf: true });
         }
         console.log(`  [V] ${z.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
         zeilen[i] = z;
@@ -692,21 +703,24 @@ const korpusZahl = (l) =>
     ["Bauten", "Gruben", "Inventar"]
         .map((w, j) => `${w} ${l.reduce((s, x) => s + x.n[j], 0)}/${l.reduce((s, x) => s + x.soll[j], 0)}`)
         .join(" · ");
-function korpusUrteil(z, selbst) {
+// Der Anteil urteilt seine Stände ganz; dass der Stand der Stufe im Korpus steht, urteilt der Index (er lädt in seinem Anteil).
+function korpusUrteil(z, selbst, index) {
     const zeile = (name, f, l = z) => ({
         name: `${name} ${l.filter(f).length}/${l.length}`,
         pass: l.length > 0 && l.every(f),
     });
     const [alt, gleich, licht] = [z.filter((x) => x.alt), z.filter((x) => !x.alt), (x) => x.da[0] && x.da[1]];
     const alte = z.filter((x) => !x.kopf).map((x) => x.version);
+    const anteil = ANTEIL ? `, Anteil ${ANTEIL.k}/${ANTEIL.n} (Index mod ${ANTEIL.n} = ${ANTEIL.k - 1})` : "";
+    const stufeIn = index.indexOf(STUFE);
     return [
         zeile(
-            `(V) Korpus: ${alte.length} Stände ${alte[0]} … ${alte.at(-1)} und ${z.length - alte.length} Kopf laden am Kopf — ${korpusZahl(z)} · ganz`,
+            `(V) Korpus: ${alte.length} von ${index.length} Ständen${anteil} ${alte[0]} … ${alte.at(-1)} und ${z.length - alte.length} Kopf laden am Kopf — ${korpusZahl(z)} · ganz`,
             (x) => x.ganz
         ),
         {
-            name: `(V) Versions-Stufe ${STUFE}: ihr Stand steht im Korpus (bump-version.cjs)`,
-            pass: alte.includes(STUFE),
+            name: `(V) Versions-Stufe ${STUFE}: ihr Stand steht im Korpus (bump-version.cjs)${ANTEIL && stufeIn >= 0 ? ` — er lädt im Anteil ${(stufeIn % ANTEIL.n) + 1}/${ANTEIL.n}` : ""}`,
+            pass: stufeIn >= 0,
         },
         zeile("(U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen", (x) => x.ganz && x.umzug, alt),
         zeile("(U) Gegenprobe: Stände desselben Bodens ziehen nicht um", (x) => !x.umzug, gleich),
@@ -759,7 +773,12 @@ function korpusUrteil(z, selbst) {
     if (NUR_WEG) urteile(wegChecks);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
-    const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
+    const index = korpusIndex();
+    const korpus = korpusUrteil(
+        await korpusLauf(false, index),
+        SELBSTTEST ? await korpusLauf(true, index) : null,
+        index
+    );
     server.close();
 
     // (S) Der save-server schreibt ganz, (C) sein Cache-Kopf — im Selbsttest je die alte Art in der Kopie, die rot werden MUSS:
