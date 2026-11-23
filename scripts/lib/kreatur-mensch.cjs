@@ -161,9 +161,12 @@ async function menschBuehnen() {
                         if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
                         else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
                     }
+                    // (die Höhe des Leibs ist die seines Genoms, 8 Kopf-Einheiten `kh` — die Höhe seiner Gestalt × `groesse`; bis
+                    // generationen-band las die Linse 1,7 m × `groesse`, die Höhe eines Erwachsenen: das Kind, 1,22 × seine
+                    // Gestalt von 8 J, stieß als 2,07 m großer Leib in jeder Tür an den Sturz 1,96 m über der Sohle)
                     const fuss = P.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
                     const imLeib = (box) =>
-                        box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 1.7 * (b.groesse || 1);
+                        box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 8 * b.genom.kh;
                     const wand = kandW.find((e) =>
                         (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
                     );
@@ -469,7 +472,8 @@ async function menschBuehnen() {
         // der trägt den Stand seines Werks nie als Abend oder Tisch — der Abend daheim sitzt vor der Tür, der Tisch daheim ist
         // drinnen (koerper `tagesPlan` ohne Ort)
         // Täter (Selbsttest): der Stand vor dem Schnitt — der Griff reicht den Stand des Werks als Abend durch
-        const amEigenenWerk = (b) => b.rolle !== "wohnhaus" && b.beruf === b.rolle && !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).regenfest && !!b.orte.werk; // prettier-ignore
+        // (wer spielt, `rollen.kind.spiel`, hat kein Werk in seinem Haus: sein Werk ist der Ort seines Spiels, koerper `tagesBindung`)
+        const amEigenenWerk = (b) => b.rolle !== "wohnhaus" && b.beruf === b.rolle && !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).regenfest && !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).spiel && !!b.orte.werk; // prettier-ignore
         if (hat("bewohner-abendstand")) for (const b of liste) if (amEigenenWerk(b)) b.orte.abend = b.orte.werk;
         const daheimWerk = () => {
             const eigen = liste.filter(amEigenenWerk);
