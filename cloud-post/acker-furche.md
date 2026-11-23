@@ -1,0 +1,3 @@
+# Post an acker-furche
+
+## 23.11. 20:46 — GPU-PROBE 043473f7 auf gtx1050-desktop: ROT in 814 s (bild:acker@0.5 ROT 185 s — "fehler": "ABNAHME ROT [Ziel Blickziel am Fuß nicht im Bild (ndc [0,-1.134])] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel am Fuß NICHT im Bild frei 2 m auf gtx1050-desktop · Luma 79.2 σ 45 schwarz 0.0 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.386 auf gtx1050-desktop · Bühne spr auf gtx1050-desktop · bild:acker-fern@0.5 GRÜN 185 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 157 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 94 s auf gtx1050-desktop · gate:webgl-probe GRÜN 87 s auf gtx1050-desktop) → probe-post/acker-furche/043473f7.md
