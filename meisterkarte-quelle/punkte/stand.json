@@ -37210,7 +37210,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +3) — zuletzt an 5b36f69a: Last: Referenz f 1,443 (Faden 1,443 · alle Kerne 1,313; vor 115,7/286 ms, nach 112,7/345 ms, Ruhe 80,2/262,7 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/p · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,447 (Faden 1,447 · alle Kerne 1,349; vor 130,2/251 ms, nach 94,1/309,5 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +3) — zuletzt an 5b36f69a: Last: Referenz f 1,443 (Faden 1,443 · alle Kerne 1,313; vor 115,7/286 ms, nach 112,7/345 ms, Ruhe 80,2/262,7 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/p · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,268 (Faden 1,122 · alle Kerne 1,268; vor 101/274,9 ms, nach 91/291,2 ms, Ruhe 90/229,7 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37229,7 +37229,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,447 (Faden 1,447 · alle Kerne 1,349; vor 130,2/251 ms, nach 94,1/309,5 ms, Ruhe 90/229,5 ms seit 2026-11-23) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user",
+     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,268 (Faden 1,122 · alle Kerne 1,268; vor 101/274,9 ms, nach 91/291,2 ms, Ruhe 90/229,7 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f",
      "ungemessen": true,
      "beide": true
     },
@@ -37714,7 +37714,7 @@
   "ohne": 3328
  },
  "kopfVoll": "9f3fe35f4a6f7860b04264831bc20ffc70aa7d14",
- "zeit": "2026-11-23T14:30:06.411Z",
+ "zeit": "2026-11-23T14:45:29.622Z",
  "vorher": "9f3fe35f",
  "bilanz": {
   "gewinn": [],
