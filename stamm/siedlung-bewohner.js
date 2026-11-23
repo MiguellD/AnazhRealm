@@ -1170,6 +1170,61 @@ class AnazhRealm_siedlung_bewohner {
                 stand: P.stand,
             };
         }
+        // DIE WACHE (mensch.macht.recht#1, bewohner-satz; koerper TAGES_GESETZ.rollen.waechter · nachtwaechter): je Posten ein Wächter
+        // am Tag und einer in der Nacht. Die Zahl der Posten ist das Band des Lebenslaufs (LEBENSLAUF.wache: ein Posten je `jeKoepfe`
+        // Köpfe, die ummauerte Siedlung mindestens einen), ihre Orte nennt der Plan: das erste Tor der Mauer, der Platz, die
+        // übrigen Tore, dann wieder der Platz. Gewählt wie der Händler: der Erwachsene, dessen Tür dem Posten am nächsten liegt (wer
+        // im Wohnhaus wohnt vor dem Werk eines Hauses, nie die ersten zwei eines Hauses der Stadt); sein Werk ist sein Stand am
+        // Posten, seine Waffe trägt der Lebenslauf (`waffe`, die Hand: `_stoffstromHand`). Bis hier trug kein Bewohner die Rolle,
+        // die das Gesetz des Tags kennt: am Messstand Steintal (89 Köpfe, vier Tore) 0 Wachen.
+        const WL = AnazhRealm.LEBENSLAUF.wache;
+        const tore = [];
+        for (const t of (plan.mauer && plan.mauer.gates) || []) {
+            const R = plan.mauer.R || 0;
+            const [gx, gz] = Number.isFinite(t.x) ? [t.x, t.z] : [Math.cos(t.th) * R, Math.sin(t.th) * R];
+            const l = Math.hypot(gx, gz);
+            if (!(l > WL.torInnenM)) continue;
+            const k = 1 - WL.torInnenM / l;
+            tore.push({ x: S.ox + gx * k, z: S.oz + gz * k, fort: Math.atan2(gx, gz) });
+        }
+        const amPlatz = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
+        const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
+        const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
+        const postenStand = function* (g, P) {
+            for (let v = 0; v < 120; v++) {
+                const r = 1.5 + Math.floor(v / 12) * 1.2;
+                const a = g.axis(`${v}:postenstand`) * 2 * Math.PI;
+                const [x, z] = [P.x + Math.cos(a) * r, P.z + Math.sin(a) * r];
+                // am Tor sieht er hinaus
+                if (yield* frei(x, z)) return nimm({ x, z, blick: P.fort, anker: { x: P.x, z: P.z } });
+                yield;
+            }
+            return null;
+        };
+        for (let pi = 0; pi < nPosten && posten.length; pi++) {
+            const P = posten[pi % posten.length];
+            for (const rolle of WL.rollen) {
+                // am Platz hält ihn, wer dort schon steht: sein Stand ist der, den ihm das Gesetz des Platzes gab (`platzStand` — der
+                // Platz der Stadt ist voll, wenn die Wache gewählt wird); am Tor ein freier Stand im Ring um den Posten
+                const amPl = P === amPlatz;
+                let [wer, dMin, guete] = [null, Infinity, 0];
+                for (const b of liste) {
+                    if (b.rolle === "kind" || b.rolle === "haendler" || WL.rollen.includes(b.rolle)) continue;
+                    const q = amPl ? b.orte.platz : b.orte.tuer;
+                    if (!q || +b.seed.split(":")[2] < frueh) continue;
+                    const g = b.rolle === "wohnhaus" ? 2 : 1;
+                    const d = Math.hypot(q.x - P.x, q.z - P.z);
+                    if (g > guete || (g === guete && d < dMin)) [wer, dMin, guete] = [b, d, g];
+                }
+                const st = wer && (amPl ? wer.orte.platz : yield* postenStand(this._rollGenome(wer.seed, "posten"), P));
+                if (!st) {
+                    this._bruchMelden(`BEWOHNER: der Posten ${pi} in „${plan.name || "?"}" — ${wer ? "kein freier Stand" : "keiner trägt ihn"}`); // prettier-ignore
+                    continue;
+                }
+                wer.rolle = wer.beruf = rolle;
+                wer.orte.werk = st;
+            }
+        }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
         this._stoffstromAnlegen(S, liste);
@@ -2330,7 +2385,12 @@ class AnazhRealm_siedlung_bewohner {
                 if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
                     this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
                     sah = true;
-                    this._bewohnerWeichen(S, b, o, stunde, (belegt = belegt || new Set(S.liste.map((x) => x.ziel))));
+                    if (b.waffe) {
+                        this._bewohnerNahen(S, b, o, stunde); // die Wache flieht nicht, sie naht
+                        continue;
+                    }
+                    belegt = belegt || new Set(S.liste.map((x) => x.ziel));
+                    this._bewohnerWeichen(S, b, o, stunde, belegt);
                 }
             const c = sah && cells[S.key];
             if (!c || !c.wachs) continue;
@@ -2353,6 +2413,28 @@ class AnazhRealm_siedlung_bewohner {
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
         b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
         belegt.add(ort);
+        this._bewohnerUhrNach(S, b);
+        this._bewohnerZiel(b, stunde, true);
+        this._bewohnerWecken(S, b);
+        return true;
+    }
+
+    // DIE WACHE NAHT (mensch.macht.recht#1, bewohner-satz): wer die Waffe der Wache trägt (`b.waffe`, der Lebenslauf), flieht die Tat
+    // am Ort o nicht — er geht zu ihr (Statute of Winchester 1285: die Wache hält den Fremden an). Sein Soll nennt bis zur Wende
+    // seines Plans den Punkt `wache.nahM` vor der Tat auf seiner Seite, über Land ohne Grundriss und Wand — dieselbe Mechanik wie
+    // das Weichen (`b.weichen`, gelesen von `_bewohnerSoll`). Bis hier wich die Wache wie jeder Zeuge. Am Steuer bleibt er.
+    _bewohnerNahen(S, b, o, stunde) {
+        if (b.amSteuer || b.ankunft || !b.ziel) return false;
+        const p = b.leib.position;
+        const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
+        const nah = AnazhRealm.LEBENSLAUF.wache.nahM;
+        const q = { x: o.x + ((p.x - o.x) / d) * nah, z: o.z + ((p.z - o.z) / d) * nah, blick: Math.atan2(o.x - p.x, o.z - p.z) }; // prettier-ignore
+        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || this._bewohnerWand(p, q)) return false; // prettier-ignore
+        b.weichen = null;
+        const soll = this._bewohnerSoll(b, stunde);
+        if (soll.drinnen) return false;
+        const bis = this._bewohnerWende(b, stunde, stunde + 24);
+        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
         this._bewohnerUhrNach(S, b);
         this._bewohnerZiel(b, stunde, true);
         this._bewohnerWecken(S, b);
