@@ -62,4 +62,5 @@ in ihre Leitern; „erreicht“ ist `heute` der Leiter am selben Stand:
 | F Prüfplatz | `mensch.sport.regeln`, `mensch.sport.arena`, `mensch.macht.krieg` | 0/8 · 0/7 · 1/9 | der Ort selbst (EIN Plan: Rondell mit zehn Toren, Park und Teich, Zoo), die Schaukel nach dem Pendel, die Strecke (Runde 55–65 s, 18–22 m Flug) |
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
--Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main.
+-Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main. **Abgabe eines
+Arbeiter-Zweigs** (Kopf, je Sprosse Stand mit Zahl, Offenes mit Leser): `cloud-post/wetter-am-ort.md` (Zweig `wetter-am-ort`).
