@@ -1,0 +1,87 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.387",
+  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 1700,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   -0.561,
+   -0.305
+  ],
+  "frei": false,
+  "vor": "Rinde baum_kiefer",
+  "vorAbstand": 75.74,
+  "leiber": null,
+  "abstand": 174.14,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   224,
+   61.756,
+   128
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 95.8,
+  "sigma": 38.9,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [-0.561,-0.305]) · Ziel Blickziel verdeckt von Rinde baum_kiefer in 75.74 m] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild VERDECKT 174.14 m · Luma 95.8 σ 38.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [-0.561,-0.305])"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde baum_kiefer in 75.74 m"
+  }
+ ],
+ "urteil": "ROT"
+}
