@@ -1042,10 +1042,31 @@ class AnazhRealm_studio_gestalt {
         const f = this._foundry;
         if (!f || !f.cache.has(key)) return undefined;
         const v = f.cache.get(key);
+        // WAS WIEDERKEHRT, WÄCHST AUS DEM SAMEN (heap-dorf-spiegel): eine Gestalt, deren Puffer ohne CPU-Kopie der Kehraus von
+        // der GPU nahm (`_cpuKopieFrei` → `__cpuGefallen`), trägt nichts mehr, das ein Neues zeichnen könnte — sie fällt, die
+        // Bestellung holt sie neu (Platte oder Faden), nie ein Zeichnen aus Leere
+        if (this._foundryGestaltGefallen(v)) {
+            this._foundryCacheEvict(key);
+            return undefined;
+        }
         f.cache.delete(key);
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
         if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // bestellt: die Ruhezeit beginnt neu
         return v;
+    }
+    // Trägt die Gestalt einen Puffer, der nach dem Kehraus nur noch ein Name ist? (Kinder und verschmolzene Leaves)
+    _foundryGestaltGefallen(g) {
+        if (!g || typeof g !== "object") return false;
+        const fiel = (geo) => {
+            if (!geo || !geo.attributes) return false;
+            if (geo.index && geo.index.__cpuGefallen === true) return true;
+            for (const k in geo.attributes) if (geo.attributes[k].__cpuGefallen === true) return true;
+            return false;
+        };
+        for (const ch of g.children || []) if (fiel(ch.geometry)) return true;
+        const fl = g._foundryFlat;
+        if (fl && Array.isArray(fl.leaves)) for (const lf of fl.leaves) if (fiel(lf.geom)) return true;
+        return false;
     }
     // Eintrags-Gewicht: Byte-Längen der Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen.
     // Nicht-Gruppen wiegen 0 (für sie wacht FOUNDRY_CACHE_CAP). Flach wie `_disposeFoundryGroupGeom`.

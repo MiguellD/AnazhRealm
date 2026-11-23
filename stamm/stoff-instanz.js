@@ -2042,6 +2042,12 @@ class AnazhRealm_stoff_instanz {
             attr.__gpuEigen = "gefallen";
             return true;
         }
+        // ein Puffer ohne CPU-Kopie (`_cpuKopieFrei`) hatte nur noch die GPU: er fällt ganz, zeichnet ihn einer wieder, wirft das
+        // Backend beim Namen (nie ein Hochladen aus Leere) — sein Eigner baut ihn neu
+        if (attr.__cpuFrei !== undefined) {
+            attr.__cpuGefallen = true;
+            return true;
+        }
         // Die Version steigt: zeichnet ein altes Render-Objekt das Attribut wieder, sieht der Beobachter (r184 equals,
         // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer. Der Sprung zählt mit
         // (`__abschiede`): wer den INHALT an der Version misst (das Lager der Arena), zieht ihn ab.
@@ -2066,6 +2072,62 @@ class AnazhRealm_stoff_instanz {
     // steht der Puffer der GPU noch? (ein gefallener lädt nie neu hoch: sein Eigner legt ihn neu)
     static _gpuEigenSteht(attr) {
         return !!attr && attr.__gpuEigen === true;
+    }
+    // DIE CPU-KOPIE FÄLLT MIT DEM HOCHLADEN (heap-dorf-spiegel, „der Speicher folgt dem Blick“; Vorbild Kachel-Engines und
+    // 3D-Tiles: hochladen, dann die Kopie freigeben, was wiederkehrt, wächst aus dem Samen). Am EINEN Weg eines statischen
+    // Puffers auf die GPU (`_backendGesetz`: `createAttribute`, `createIndexAttribute`) fällt seine CPU-Kopie: r184 liest
+    // danach nur den Typ (Vertex-Format, Index-Format) — die Zahl steht in `count`, die Grenzen der Geometrie sind gerechnet,
+    // das Index-Maximum der Index-Wache gebucht. Bis hier hielt jede gezeichnete Geometrie ihre Bytes zweimal: GTX 1060 am
+    // Dorf (c1236fa8, Preis von mensch.sport.koennen#1) 90,5 MB Typed-Arrays am Register `renderer.info.memoryMap`.
+    // Es bleibt, wer nach dem Hochladen schreibt oder liest: Instanz-, Speicher- und verschränkte Puffer (fallen hier nie
+    // durch), und jeder Puffer, den sein Eigner als Leser benennt (`AnazhRealm._cpuLeser(attr, wer)` VOR dem ersten Zeichnen —
+    // die Liste der Leser steht dort). Kein stiller Rückfall: liest danach jemand die Kopie, wirft sie mit dem Namen des
+    // Puffers (`_freieKopie`); ein Nachschreiben wirft im Backend (`updateAttribute`), ein Wieder-Hochladen nach dem Kehraus
+    // ebenso (`createAttribute`). `be` das Backend, `index` ob es der Index ist.
+    static _cpuKopieFrei(be, attr, index) {
+        if (!attr || attr.__cpuFrei !== undefined || attr.__cpuLeser !== undefined || attr.__gpuEigen !== undefined)
+            return 0;
+        if (attr.isInterleavedBufferAttribute || attr.isInstancedBufferAttribute) return 0;
+        if (attr.isStorageBufferAttribute || attr.isStorageInstancedBufferAttribute) return 0;
+        const arr = attr.array;
+        if (!ArrayBuffer.isView(arr) || arr.byteLength === 0) return 0;
+        const d = be.get(attr);
+        if (!d || !d.buffer) return 0;
+        // die Index-Wache bucht beim Anlegen, nie am Draw: danach gibt es kein Array mehr, das sie lesen könnte
+        if (index) {
+            d.__indexBytes = d.buffer.size;
+            AnazhRealm._indexMaxBuchen(d, arr, null);
+        }
+        attr.array = AnazhRealm._freieKopie(attr, arr.constructor);
+        attr.__cpuFrei = arr.byteLength;
+        AnazhRealm.__cpuFreiBytes = (AnazhRealm.__cpuFreiBytes || 0) + arr.byteLength;
+        return arr.byteLength;
+    }
+    // Ein Leser, der die Kopie nach dem Hochladen braucht, benennt sich (`wer`: „Name datei:zeile“) — sein Puffer behält sie.
+    static _cpuLeser(attr, wer) {
+        if (!attr) return attr;
+        if (attr.__cpuFrei !== undefined)
+            throw new Error(
+                `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} ist schon hochgeladen — ${wer} benennt sich zu spät`
+            );
+        attr.__cpuLeser = wer;
+        return attr;
+    }
+    static _pufferName(attr) {
+        return `${attr.name || "Puffer"} #${attr.id} (${attr.count}×${attr.itemSize})`;
+    }
+    // DIE FREIE KOPIE: ein leeres Array desselben Typs hinter einer Wand — r184 liest nur `constructor` und `BYTES_PER_ELEMENT`
+    // (`_getVertexFormat`, `createShaderVertexBuffers`, `instanceof` des Index-Formats); jeder andere Zugriff wirft beim Namen.
+    static _freieKopie(attr, C) {
+        return new Proxy(new C(0), {
+            get(t, p) {
+                if (p === "constructor") return C;
+                if (p === "BYTES_PER_ELEMENT") return C.BYTES_PER_ELEMENT;
+                throw new Error(
+                    `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} liest „${String(p)}“ nach dem Hochladen${attr.__cpuGefallen ? " und dem Kehraus" : ""} — der Leser benennt sich (_cpuLeser) oder liest die Quelle`
+                );
+            },
+        });
     }
     // DER ABSCHIED EINES VERSCHRÄNKTEN PUFFERS (die Jahres-Ecken, `_jahrEcken`): er fällt nur GANZ — jede seiner Sichten im
     // Register (`sichten`, der Kehraus gibt sie, wenn keine zeichnet) verlässt r184s Register, der geteilte GPU-Puffer fällt
@@ -2339,8 +2401,14 @@ class AnazhRealm_stoff_instanz {
         if (!P || P.__anazhGesetz === true) return;
         P.__anazhGesetz = true;
         const realm = this;
+        // ein Puffer ohne Kopie, den der Kehraus von der GPU nahm, lädt nie aus Leere hoch: sein Eigner baut ihn neu
+        const gefallen = (attr) => {
+            if (attr && attr.__cpuGefallen === true)
+                throw new Error(`CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} fiel im Kehraus und wird wieder gezeichnet — sein Eigner baut ihn neu`); // prettier-ignore
+        };
         const anlegen = P.createIndexAttribute;
         P.createIndexAttribute = function (attr) {
+            gefallen(attr);
             const schmal = !!attr && attr.array instanceof Uint16Array && attr.normalized === false;
             if (schmal) attr.normalized = true;
             let aus;
@@ -2351,8 +2419,30 @@ class AnazhRealm_stoff_instanz {
             }
             return aus;
         };
+        const anlegenV = P.createAttribute;
+        P.createAttribute = function (attr) {
+            gefallen(attr);
+            return anlegenV.call(this, attr);
+        };
+        // die Kopie fällt NACH dem Anlegen samt Buchung im Register (r184 `Attributes.update`: Backend, dann `info` — das
+        // Register liest die Größe aus dem Array): an der Klasse der Attribut-Verwaltung, für jeden Renderer der Seite
+        const A = renderer._attributes && Object.getPrototypeOf(renderer._attributes);
+        if (A && A.__anazhFrei !== true && typeof A.update === "function") {
+            A.__anazhFrei = true;
+            const hoch = A.update;
+            // r184 AttributeType: 1 VERTEX · 2 INDEX (3 STORAGE und 4 INDIRECT schreibt und liest die GPU selbst)
+            A.update = function (attr, typ) {
+                const aus = hoch.call(this, attr, typ);
+                if ((typ === 1 || typ === 2) && attr.__cpuFrei === undefined)
+                    AnazhRealm._cpuKopieFrei(this.backend, attr, typ === 2);
+                return aus;
+            };
+        }
         const nachschreiben = P.updateAttribute;
         P.updateAttribute = function (attr) {
+            const fq = attr.isInterleavedBufferAttribute ? attr.data : attr;
+            if (fq.__cpuFrei !== undefined)
+                throw new Error(`CPU-KOPIE FREI: ${AnazhRealm._pufferName(fq)} wird nachgeschrieben (Version ${fq.version}) — der Schreiber benennt sich (_cpuLeser)`); // prettier-ignore
             const d = this.get(attr);
             if (d.__indexMax !== undefined) AnazhRealm._indexMaxBuchen(d, attr.array, attr.updateRanges);
             const ba = attr.isInterleavedBufferAttribute ? attr.data : attr;
@@ -2399,7 +2489,13 @@ class AnazhRealm_stoff_instanz {
         const bytes = d.__indexBytes;
         let art = null,
             detail = null;
-        if (arr.byteLength > bytes) {
+        // ein Index ohne CPU-Kopie (`_cpuKopieFrei`) trägt sein Format aus dem Anlegen und sein Maximum über das ganze Array
+        if (idx.__cpuFrei !== undefined) {
+            const pos = ro.geometry.attributes.position;
+            if (!pos || !(d.__indexMax >= pos.count)) return;
+            art = "bereich";
+            detail = `Index ${d.__indexMax} ≥ ${pos.count} Vertices (Maximum beim Anlegen, ohne CPU-Kopie)`;
+        } else if (arr.byteLength > bytes) {
             art = "format";
             detail = `${idx.count} × ${arr.constructor.name} = ${arr.byteLength} B gebunden, der Puffer trägt ${bytes} B`;
         } else {
