@@ -1,5 +1,30 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
+**STAND 23.11. 22:31 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 58 von 1 718 (Kern 19).**
+- KURS: die FRONT führt. Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs` (koordination 32cb7691). 253 Leitern = 253 Fronten:
+  18 Richter GRÜN und nur am Preis rot (11 Klasse Ort am gehaltenen Heap 402–522 MB, sechs ≤ 10 MB über 400; 6 Klasse Stadt Preis FEHLT an der Ankunft) ·
+  4 GRÜN mit Preis, ungebucht · 16 am Apparat rot (10 × „spawn ENAMETOOLONG“ seit 20.11., nie neu gemessen) · 63 „Umfang nicht erzeugbar“ ·
+  etwa 47 „Leser fehlt“ (11 am Satz des Bewohners, 8 an den Akten des Tages-Gesetzes) · 55 ohne Station. Hinter der Front tragen nur 6 Sprossen GRÜN.
+- IN FAHRT seit 22:45: OMEN `heap-loslassen` (die Preis-Wurzel: 11 Front-Sprossen Klasse Ort + 3 von front-stoff) · GTX 1050 `front-stoff` 5d53fa6e zur
+  Abgabe (same.gedaechtnis.alter#1), danach nacht-laterne · an der Radeon fünf Opus-Arbeiter: Zug-Gesetz `echt-ein-bein` bis zur grünen Vorprüfung
+  (Tausch der Dienst-Dateien und Stempel setzt der Koordinator) · wartende pm-Zweige nach punkte-maschine buchen · Apparat-rote Front-Stationen heilen
+  und per `zug/anspruch.txt` neu messen · Ankunft der Preis-Klassen in die Leiter · Lese-Liste der ungelandeten Zweige zum Stempeln.
+- GESTEMPELT 22:58: `w28-iperka-arbeiter-2` 2787b443 auf c303fc0e (Code-Check 45263181448 grün, main 1feab29c im Kopf, probe-tag OK).
+- ENTSCHEID des Koordinators (widerrufbar durch den Schöpfer): die Ankunfts-Schranke der Klassen Stadt, Megastadt/Kontinent und Planet/Welten liegt wie
+  bei Klasse Ort gestuft in der Leiter `same.preis.ankunft`, nicht in jeder Sprosse. Grund: sein Wort 19.11. (die Kalt-Ankunft ist kein Tor, bis die Karte
+  über 1 000 steht); `ankunft_kalt_s` hat keinen Schreiber, der Preis urteilte FEHLT, grüne Sprossen buchten nie. Der Anspruch bleibt in der Leiter gemessen.
+- GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen; Hände ≤ 10 min und WEICH 0 halten
+  den Schaden; wieder auf, wenn eine gemessene Verdrängung Sprossen kostet). `pm-innen-ein-haus`: Rebase, Selbsttest und ein Lauf bau.innen#1 fehlen.
+- NÄCHSTE WELLEN (EIN Arbeiter je fehlender Fähigkeit, nie je Sprosse; Start, sobald Arbeiter frei werden):
+  (1) der Satz des Bewohners als Funktion des Samens — Name, Alter mit Kindern, Verwandtschaft, Können und Übung, Krankheit, Rolle Wache, Waffe, Ziel,
+  ansprechbar → Front-Sprossen kultur.sprache#1 · geist.netz#1 · geist.absicht#2 · sport.koennen#2 · sport.kunst#1 · menge.seuche#1 · macht.krieg#1 ·
+  macht.recht#1 · macht.megastadt#1 · geist.generationen#1 · geist.gespraech#2 (alle mensch.*);
+  (2) die Akte des Tages-Gesetzes — Wettkampf, Brettspiel, Kultgang und Festtag, Bühne, Arena, Wochentag → sport.regeln#1 · sport.geistspiel#1 ·
+  kultur.glaube#1 · kultur.erzaehlkunst#1 · sport.arena#1 · sport.mannschaft#1 · geist.tag#2 · menge.rhythmus#2;
+  (3) die Ausstattung des Orts — Schild, Werk, Leitung, Grenze, Technikstand, Linie → kultur.schrift#1 · kultur.bildkunst#1 · netz.stoffwechsel#1 ·
+  macht.grenze#1 · kultur.wissen#1 · netz.massenverkehr#1.
+- OFFEN beim Schöpfer (gestellt, nicht neu fragen): wer bildet das Panel für R11 (198 PANEL-Sprossen).
+
 **STAND 23.11. 18:20 (Konto 17, Koordinator an der Radeon) — Karte 2 gebucht 58 von 1 718 (Kern 19, an beiden Geräten 33, Nachwache 25).**
 - DURCHSATZ GEMESSEN (Schöpfer 18:0x: „da geht deutlich mehr, nicht?“): Buchungen je Tag 18.–20.11. +4, seit 21.11. +7 bis +8 (44 → 51 → 58);
   nötig ~70 je Tag bis 17.12. 14 Landungen am 23.11. bewegten 7 Sprossen (0,5 je Landung) — die Arbeit zielte auf Preis und Apparat, nicht
