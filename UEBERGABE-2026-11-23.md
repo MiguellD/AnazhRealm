@@ -57,6 +57,12 @@ Lokal an der Radeon (angewiesen 21:48, WIP-Köpfe kommen nach):
   Prüfbühne wird 600 s nach Starkregen geboren, die Klamm steht nach dem Gesetz schon 0,24 m über der Aue; die Linse setzt einen Bach im
   Bett voraus, das Flut-Gesetz nicht → die LINSE ist am Gesetz auszurichten (Damm im Bach-Zustand der Bühne prüfen), Sprosse
   `planet.wetter.extreme#1`. Danach Bildpaar Bach −258,4 | −1132,8, Abdruck gegen d12f86bd, merge-tree gegen main, Vorprüfung „flut-aue 2“.
+- **front-leben e47bec8f** (WIP) — vier Abgabe-Commits je Sprosse: `tiere.bewegung#1` GRÜN an der Radeon-Station (froudeAbw 26 → 8 %,
+  `GANG_FOLGE.hysterese` 0,2 → 0,1); `wasser.netz#1` 0,387 → 0,84 (`FISCH_GESETZ.tiefe` 0,4 → 0,85, nur Werkbank-Probe); `kopplung.ereignis#2`
+  meiden 0 → 100 % (`_bewohnerBrandSchau`, nur Werkbank-Probe); `leib.gesicht#1` ROT 7 → 4 von 10 Samen (`HAAR_GRENZE.stirn`, Vertrags-Akt am
+  Ofen, 7 Zeilen neu gemintet; offen: Haarfarbe unabhängig von der Haut `stamm/koerper-leib.js:50`, Lippe/Augenhöhle in `KOPF_TON`, die Station
+  bricht ohne Epoche ab `k2-mensch-leib.js:183`). Nächster Handgriff: netz#1 und ereignis#2 an 31564750 ohne parallele Last fahren, dann
+  Vorprüfung [ci voll]. Die Sperre des Spiel-Baums nennt die tote PID 27948 — der nächste `punkte.cjs`-Lauf löst sie.
 Cloud (Bericht je `cloud-post/<zweig>.md` auf dem Zweig; der Schöpfer hat sie zum Sichern angestoßen):
 - **acker-furche** b9b40c2d — Acker als Furchen-Relief, Frucht in Reihen (`mensch.nahrung.flur#1`, `frucht#1`); zwei GPU-Proben 21:14/21:22 an der
   Radeon failure — Job-Log lesen, bevor jemand „rot“ sagt.
