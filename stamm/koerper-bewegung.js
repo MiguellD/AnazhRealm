@@ -410,14 +410,14 @@ class AnazhRealm_koerper_bewegung {
     // `_resolveCapsuleVsAABB`): das Stütz-Polygon der Hülle (um pos, `_fahrHuelleStellen`) gegen die Box, getrennt auf den
     // Richtungen der Hülle (ihre Stütz-Weite gegen die Box) und den vier Seiten der Box (die Ecken der Hülle ihr entgegen);
     // überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den Wagen heraus (pos mutiert, der Schub reist in h.schub
-    // für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`,
+    // für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle `HausBox`): ihre Achsen und Halb-Maße sind die der `obb`,
     // die Welt-AABB bleibt der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand
     // 12 × 0,8 m: der Wagen hielt 2,36 m vor der Wand), bis physik.K2 Staffel 2 als Rechteck (die runde Ecke des Bugs stand
     // an der 11°-Mauer 8,8 cm vor ihr, sobald das Rechteck die Gestalt umschloss).
     _resolveHuelleVsAABB(box, pos, h) {
         if (!(box.topY > h.unten && box.botY < h.oben)) return;
         const ob = box.obb;
-        // die Achsen der Box in der Welt (lokal x → (c, −s), lokal z → (s, c); `_hausObb`) und ihre Halb-Maße
+        // die Achsen der Box in der Welt (lokal x → (c, −s), lokal z → (s, c); `HausBox`) und ihre Halb-Maße
         const b1x = ob ? ob.c : 1;
         const b1z = ob ? -ob.s : 0;
         const b2x = ob ? ob.s : 0;
@@ -2231,7 +2231,7 @@ class AnazhRealm_koerper_bewegung {
                     const az = hz + r - Math.abs(lz);
                     if (!(ax > 0 && az > 0)) continue;
                     rein = true;
-                    // lokal (dx, dz) → Welt (dx·c + dz·s, −dx·s + dz·c), wie `_hausObb`
+                    // lokal (dx, dz) → Welt (dx·c + dz·s, −dx·s + dz·c), wie `HausBox`
                     const quer = hx <= hz;
                     const dx = quer ? (lx < 0 ? -1 : 1) * (ax + AnazhRealm.KAMERA_SPIEL_M) : 0;
                     const dz = quer ? 0 : (lz < 0 ? -1 : 1) * (az + AnazhRealm.KAMERA_SPIEL_M);

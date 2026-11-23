@@ -90,7 +90,7 @@ class AnazhRealm_gelaende_kollision {
             if (wy > topY) topY = wy;
             if (wy < botY) botY = wy;
         }
-        // DIE GEDREHTE BOX (D5, Welle L — dieselbe Form wie die Haus-Hülle `_hausObb`): ein Teil, das nur um die Hoch-Achse
+        // DIE GEDREHTE BOX (D5, Welle L — dieselbe Form wie die Haus-Hülle `HausBox`): ein Teil, das nur um die Hoch-Achse
         // dreht, ist in der Ebene ein Rechteck mit der Gier Eintrag + Teil; quer zu den Welt-Achsen trägt es seine `obb`, und
         // Kapsel, Tier-Leib, Wagen-Hülle, Strahl und Zellen-Stempel lösen in ihrem Rahmen (die Welt-AABB bleibt Vorfilter).
         // Vorher stand jedes gedrehte Teil als seine Welt-AABB (eine 34° gedrehte Mauer aus einem Teil 12 × 0,8 m: die Hülle
@@ -281,11 +281,12 @@ class AnazhRealm_gelaende_kollision {
         if (entry.tuer === undefined && huelle.tuer !== undefined) entry.tuer = huelle.tuer;
         const alt = entry._hausHuelle;
         if (alt === huelle) return;
-        const fest = AnazhRealm._huelleVon(huelle, "fest", "fachwerk:__huelle");
-        if (!fest || !fest.length) return;
+        // die Hülle tritt gepackt ein (`_huellePacken` an der Gruppe der Lieferung): der Eintrag hält DENSELBEN Speicher wie der
+        // Cache, nie eine eigene Objekt-Liste
+        if (!AnazhRealm._huelleLauf(huelle, "fest", "fachwerk:__huelle")) return;
         entry._hausHuelle = huelle;
         this._dachWahl = null; // die Hülle trägt die Decken des Hauses: der Dach-Pool wählt neu (w28-innenlicht — bis hier erst nach `dachSchrittM` Weg)
-        if (alt && JSON.stringify(alt.teile) === JSON.stringify(huelle.teile)) return;
+        if (alt && AnazhRealm._huelleGleich(alt, huelle)) return;
         const pr = this._foundryPresetForEntry(entry);
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
@@ -509,57 +510,62 @@ class AnazhRealm_gelaende_kollision {
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
     // Gesetz) mit ihrer Welt-AABB als Vorfilter. null: keine Hülle (kein Haus, oder sie kommt noch — `_hausHuelleKommt`).
+    // DIE BOXEN SIND EINE SICHT IN DEN SPEICHER (heap-huelle-gepackt): je Kasten der Rolle "fest" eine `HausBox` über EINEM
+    // Zahlen-Block des Hauses (`S.W`: je Box Mitte, Halb-Maße, Rahmen, Ober- und Unterkante in double — Lehre 22, der Anker fern vom
+    // Ursprung) — keine Box trägt eigene Zahlen oder ein obb-Objekt. Bis hier hielt jedes Haus je Kasten zwei Objekte (43 815 Boxen,
+    // 10,3 MB an stadt-voll, Radeon j1).
     _hausBlockerBoxen(entry) {
         const hu = entry && entry._hausHuelle;
-        const fest = hu ? AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") : null;
-        if (!fest || !fest.length) return null;
-        const boxen = [];
-        for (const q of fest)
-            if (q.art === "box")
-                boxen.push(
-                    q.c[0] - q.h[0],
-                    q.c[1] - q.h[1],
-                    q.c[2] - q.h[2],
-                    q.c[0] + q.h[0],
-                    q.c[1] + q.h[1],
-                    q.c[2] + q.h[2]
-                );
-        const k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
-        const out = [];
-        for (let i = 0; i + 5 < boxen.length; i += 6) {
-            const b = this._hausObb(
-                entry,
-                boxen[i],
-                boxen[i + 1],
-                boxen[i + 2],
-                boxen[i + 3],
-                boxen[i + 4],
-                boxen[i + 5],
-                k
-            );
-            if (b) out.push(b);
-        }
+        if (!hu || !AnazhRealm._huelleLauf(hu, "fest", "fachwerk:__huelle")) return null;
+        const R = (entry._hausLage = this._hausLage(entry));
+        const out = AnazhRealm._hausBoxenDer(R, hu.f, (fn) => AnazhRealm._huelleLauf(hu, "fest", "", fn), true);
         // DER LEIB DES STRAHLS (leib.K4 Staffel 2): die Teile der Rolle "strahl" (das Geländer der Treppe: Wange, Handlauf, Stab,
-        // Pfosten) als gedrehte Boxen derselben Matrix — der Strahl liest sie nach den Boxen des Gangs (`_strahlBoxenVon`), die
-        // Kapsel nie (ihre Spur ist so breit wie der Leib)
-        const gel = [];
-        for (const q of AnazhRealm._huelleVon(hu, "strahl", "fachwerk:__huelle") || []) {
-            const b =
-                q.art === "box" &&
-                this._hausObb(
-                    entry,
-                    q.c[0] - q.h[0],
-                    q.c[1] - q.h[1],
-                    q.c[2] - q.h[2],
-                    q.c[0] + q.h[0],
-                    q.c[1] + q.h[1],
-                    q.c[2] + q.h[2],
-                    k
-                );
-            if (b) gel.push(b);
-        }
-        entry._strahlGelaender = gel.length ? gel : AnazhRealm.KEIN_FLUEGEL;
+        // Pfosten) leben nur, solange ein Strahl sie fragt (`_strahlBoxenVon`) — die neue Lage nimmt die alten
+        this._gelaenderFrei(entry);
         return out.length ? out : null;
+    }
+    // DIE LAGE EINES HAUSES: T(x, y−0,5, z) · R_y(rotationY) · S(scale·k) — dieselbe Matrix wie die Instanz (`_archEntryWorldMatrix`),
+    // als [x, y−0,5, z, cos, sin, Skala, |cos|, |sin|] in double.
+    _hausLage(entry) {
+        const k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
+        const sc = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (k || 1);
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const c = Math.cos(ry);
+        const s = Math.sin(ry);
+        const p = entry.position;
+        return Float64Array.of(p.x, p.y - 0.5, p.z, c, s, sc, Math.abs(c), Math.abs(s));
+    }
+    // DAS GELÄNDER LEBT AN DER FRAGE (heap-huelle-gepackt): die Strahl-Boxen eines Hauses entstehen beim ersten Strahl, der es fragt,
+    // und stehen in der Leihe (`_gelaenderLeihe`, höchstens GELAENDER_LEIHE Häuser) — das Haus, das am längsten kein Strahl fragte,
+    // gibt sie zurück. Bis hier hielt jedes Haus sein Geländer (90 030 Boxen, 19,3 MB an stadt-voll, Radeon j1); der Strahl fragt
+    // nur im Nah-Cull (80 m + Reichweite um seinen Start), die Säule der Kamera um das Auge.
+    _gelaenderVon(e) {
+        let gel = e._strahlGelaender;
+        if (gel === undefined) {
+            const R = e._hausLage;
+            const hu = e._hausHuelle;
+            gel =
+                R && hu ? AnazhRealm._hausBoxenDer(R, hu.f, (fn) => AnazhRealm._huelleLauf(hu, "strahl", "", fn)) : [];
+            if (!gel.length) gel = AnazhRealm.KEIN_FLUEGEL;
+            e._strahlGelaender = gel;
+            if (gel.length) {
+                const leihe = this._gelaenderLeihe || (this._gelaenderLeihe = new Set());
+                leihe.add(e);
+                if (leihe.size > AnazhRealm.GELAENDER_LEIHE) {
+                    let alt = null;
+                    for (const x of leihe) if (x !== e && (!alt || x._gelaenderUhr < alt._gelaenderUhr)) alt = x;
+                    this._gelaenderFrei(alt);
+                }
+            }
+        }
+        if (gel.length) e._gelaenderUhr = this._gelaenderUhrStand = (this._gelaenderUhrStand | 0) + 1;
+        return gel;
+    }
+    _gelaenderFrei(e) {
+        if (!e) return;
+        e._strahlGelaender = undefined;
+        e._strahlZusammen = undefined;
+        if (this._gelaenderLeihe) this._gelaenderLeihe.delete(e);
     }
 
     // DIE HÜLLE KOMMT (eine-huelle): ein Haus des Studios (das Gesetzbuch der Architektur führt seine Art, das Buch ist warm)
@@ -583,35 +589,6 @@ class AnazhRealm_gelaende_kollision {
         const bf = this._foundryFlattenFor(entry, preset, this._foundryFernStufe(preset));
         if (bf && bf.huelle) this._hausHuelleSetzen(entry, bf.huelle);
         return !!entry._hausHuelle;
-    }
-
-    // Eine haus-lokale Box → die GEDREHTE Blocker-Box der Welt: T(x, y−0,5, z) · R_y(rotationY) · S(scale·k) — dieselbe
-    // Matrix wie die Instanz (`_archEntryWorldMatrix`). Felder: die Welt-AABB (minX…botY, der Vorfilter jedes Lesers)
-    // und `obb` { cx, cz, c, s, hx, hz } — lokal = (Δx·c − Δz·s, Δx·s + Δz·c). Entartete Boxen (Breite ≤ 0) fallen.
-    _hausObb(entry, x0, y0, z0, x1, y1, z1, k) {
-        const sc = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (k || 1);
-        const hx = ((x1 - x0) / 2) * sc;
-        const hz = ((z1 - z0) / 2) * sc;
-        if (!(hx > 1e-4) || !(hz > 1e-4) || !(y1 > y0)) return null;
-        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
-        const c = Math.cos(ry);
-        const sn = Math.sin(ry);
-        const lx = ((x0 + x1) / 2) * sc;
-        const lz = ((z0 + z1) / 2) * sc;
-        const cx = entry.position.x + lx * c + lz * sn;
-        const cz = entry.position.z - lx * sn + lz * c;
-        const oy = entry.position.y - 0.5;
-        const ex = hx * Math.abs(c) + hz * Math.abs(sn);
-        const ez = hx * Math.abs(sn) + hz * Math.abs(c);
-        return {
-            minX: cx - ex,
-            maxX: cx + ex,
-            minZ: cz - ez,
-            maxZ: cz + ez,
-            topY: oy + y1 * sc,
-            botY: oy + y0 * sc,
-            obb: { cx, cz, c, s: sn, hx, hz },
-        };
     }
 
     // Horizontale REICHWEITE der Blocker-Hülle (max. Abstand einer AABB-Kante vom Entry-Ursprung). Die
@@ -956,7 +933,7 @@ class AnazhRealm_gelaende_kollision {
     // nimmt sie) — die Liste hält, bis einer der beiden wechselt (der Schwenk schreibt die Flügel je Bild neu)
     _strahlBoxenVon(e) {
         const fl = (e._fluegelSlots === e.instSlots && e._fluegelBoxen) || AnazhRealm.KEIN_FLUEGEL;
-        const gel = e._strahlGelaender || AnazhRealm.KEIN_FLUEGEL;
+        const gel = e._hausLage ? this._gelaenderVon(e) : AnazhRealm.KEIN_FLUEGEL;
         if (!gel.length) return fl;
         if (!fl.length) return gel;
         const z = e._strahlZusammen;
@@ -1461,4 +1438,92 @@ AnazhRealm.BLOCKER_ZELLEN_MAX = 1024;
 AnazhRealm.BLOCKER_RIESE = -0.5;
 // Die Strahl-Boxen eines Eintrags ohne Flügel und Geländer (`_strahlBoxenVon`): eine Liste, die nie wächst.
 AnazhRealm.KEIN_FLUEGEL = Object.freeze([]);
+// Die Leihe des Geländers (`_gelaenderVon`): so viele Häuser halten ihre Strahl-Boxen zugleich (je Haus der Metropole im Mittel
+// 292 Boxen zu 28 Byte); ein Strahl fragt nur die Häuser seines Nah-Culls (80 m + Reichweite um seinen Start).
+AnazhRealm.GELAENDER_LEIHE = 64;
+// DIE ZAHLEN EINER HAUS-BOX: der Kasten (c bei o, h bei o+3, asset-lokal in F) in der Lage R (`_hausLage`) → W ab i: Mitte cx, cz,
+// Halb-Maße hx, hz, die halben Kanten des Welt-Rahmens ex, ez, Ober- und Unterkante — lokal = (Δx·c − Δz·s, Δx·s + Δz·c). Die EINE
+// Formel jeder Blocker- und Strahl-Box eines Hauses (bis heap-huelle-gepackt `_hausObb`).
+AnazhRealm._hausBoxZahlen = (R, F, o, W, i) => {
+    const sc = R[5];
+    const hx = F[o + 3] * sc;
+    const hz = F[o + 5] * sc;
+    W[i] = R[0] + F[o] * sc * R[3] + F[o + 2] * sc * R[4];
+    W[i + 1] = R[2] - F[o] * sc * R[4] + F[o + 2] * sc * R[3];
+    W[i + 2] = hx;
+    W[i + 3] = hz;
+    W[i + 4] = hx * R[6] + hz * R[7];
+    W[i + 5] = hx * R[7] + hz * R[6];
+    W[i + 6] = R[1] + (F[o + 1] + F[o + 4]) * sc;
+    W[i + 7] = R[1] + (F[o + 1] - F[o + 4]) * sc;
+};
+// Die Kästen, die `lauf(fn)` nennt (je Teil `fn(art, o)`), als Haus-Boxen über EINEM Zahlen-Block; entartete (Breite ≤ 0,1 mm,
+// Höhe ≤ 0) fallen. `fuge`: die Boxen tragen ihre Fugen-Marke (`gedeckt`, `_blockerFugen` — die Boxen des Gangs).
+AnazhRealm._hausBoxenDer = (R, F, lauf, fuge) => {
+    const o = [];
+    lauf((art, x) => {
+        if (art === 0 && F[x + 3] * R[5] > 1e-4 && F[x + 5] * R[5] > 1e-4 && F[x + 4] > 0) o.push(x);
+    });
+    const S = { R, W: new Float64Array(o.length * 8), g: fuge ? new Uint8Array(o.length) : null };
+    const out = new Array(o.length);
+    for (let j = 0; j < o.length; j++) {
+        AnazhRealm._hausBoxZahlen(R, F, o[j], S.W, j * 8);
+        out[j] = new AnazhRealm.HausBox(S, j);
+    }
+    return out;
+};
+// DIE HAUS-BOX (heap-huelle-gepackt): die Sicht auf EINE Box im Zahlen-Block ihres Hauses (`S.W`, je Box acht Zahlen) — die Felder
+// jeder Blocker-Box (die Welt-AABB minX…botY, der Vorfilter jedes Lesers, und `obb` { cx, cz, c, s, hx, hz }); `obb` ist die Box
+// selbst, c und s die Drehung der Lage `S.R`. `gedeckt` (die Fuge, `_blockerFugen`) liegt in `S.g`; das Geländer trägt keine.
+AnazhRealm.HausBox = class HausBox {
+    constructor(S, j) {
+        this.S = S;
+        this.i = j * 8;
+    }
+    get obb() {
+        return this;
+    }
+    get c() {
+        return this.S.R[3];
+    }
+    get s() {
+        return this.S.R[4];
+    }
+    get cx() {
+        return this.S.W[this.i];
+    }
+    get cz() {
+        return this.S.W[this.i + 1];
+    }
+    get hx() {
+        return this.S.W[this.i + 2];
+    }
+    get hz() {
+        return this.S.W[this.i + 3];
+    }
+    get minX() {
+        return this.S.W[this.i] - this.S.W[this.i + 4];
+    }
+    get maxX() {
+        return this.S.W[this.i] + this.S.W[this.i + 4];
+    }
+    get minZ() {
+        return this.S.W[this.i + 1] - this.S.W[this.i + 5];
+    }
+    get maxZ() {
+        return this.S.W[this.i + 1] + this.S.W[this.i + 5];
+    }
+    get topY() {
+        return this.S.W[this.i + 6];
+    }
+    get botY() {
+        return this.S.W[this.i + 7];
+    }
+    get gedeckt() {
+        return this.S.g ? this.S.g[this.i >> 3] === 1 : undefined;
+    }
+    set gedeckt(v) {
+        if (this.S.g) this.S.g[this.i >> 3] = v ? 1 : 0;
+    }
+};
 AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;
