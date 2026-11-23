@@ -384,13 +384,15 @@ module.exports = (F) => [
         },
     }),
 
-    // ═══ TALENT, ÜBUNG UND REKORD: die Lauf-Zeiten der vollen Stadt, was die Welt an Übung und Wettkampf trägt ═══
+    // ═══ TALENT, ÜBUNG UND REKORD: die Lauf-Zeiten der Stadt, was die Welt an Übung und Wettkampf trägt ═══
+    // DER MESSORT IM UMFANG (k2-mensch.js K.messort, 23.11.): S1 „10² Bewohner mit Können-Profil“ (Klasse Ort) — die Stadt (91 Häuser im
+    // Plan); das Dorf (50 Bewohner) trägt 10² nicht, die volle Stadt (1 365 Bewohner) maß den Preis am 13-fachen (538,0 MB gehalten)
     F.leiter("mensch.sport.koennen", {
         sek: 30,
         pfad: PFAD,
         seite: { SPORT },
         messe: async (H, K) => {
-            await K.messort("stadt-voll");
+            await K.messort("stadt");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Können: " + z.n + " Bewohner · Lauf " + JSON.stringify(z.lauf) + " · mit Können-Profil " + z.koennen);
             await K.schritt(1, async () =>

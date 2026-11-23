@@ -578,12 +578,15 @@ module.exports = (F) => [
     }),
 
     // ───────── DER MARKT: Tausch, Preis, Münze ─────────
+    // DER MESSORT IM UMFANG (k2-mensch.js K.messort, 23.11.): S1 „Tausch Spieler ↔ Bewohner“ (Klasse Ort, Preis „P · Markt“) braucht EINEN
+    // Stand mit seinem Händler — der Markt der Stadt (91 Häuser im Plan, die Reihen der Stände fachwerk-core.js `marktstand`), nie die volle
+    // Stadt (1 365 Bewohner, 5 Stände: der Preis maß 538,3 MB gehalten am 13-fachen Umfang)
     F.leiter("mensch.wirtschaft.markt", {
         sek: 60,
         mutiert: true,
         pfad: [...STADT_PFAD, "stamm/bau-vorlagen.js"],
         messe: async (H, K) => {
-            if (!(await K.welt("return await (" + H.seite.AM_ORT + ")(r, T, {});", 10000))) await K.messort("stadt-voll");
+            if (!(await K.welt("return await (" + H.seite.AM_ORT + ")(r, T, {});", 10000))) await K.messort("stadt");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
             let Z = null, zf = "";
@@ -727,10 +730,13 @@ module.exports = (F) => [
     // DER DECKEL IST OFFEN (22.11.): in der warmen Welt der Runde ungemessen — die einzige Zahl ist die kalte eigene Welt der Radeon
     // (Ankunft am Messort stadt-voll 101,1 s, die Station danach 0,1 s: der Zensus der Stadt und technikImBild über 20 Saaten). Darum
     // trägt sie kein eigenes `sek`: es gilt die Vorgabe des Kapitels (SEK_VORGABE 45 s in k2-mensch.js), bis die Eich-Tafel aus ihren Grün-Läufen schreibt
+    // DER MESSORT IM UMFANG (k2-mensch.js K.messort, 23.11.): S1 „10 Techniken mit Voraussetzung“ (Klasse Ort) — 20 Saaten im Gesetz und der
+    // Plan EINER Stadt im Bild: die Stadt (91 Häuser im Plan), deren Bauten die Techniken zeigen (das Dorf, 13 Fachwerk-Häuser, zeigt kaum
+    // eine); die volle Stadt maß den Preis am 13-fachen Umfang (600,3 MB gehalten)
     F.leiter("mensch.wirtschaft.technik", {
         pfad: [...STADT_PFAD, "schmiede-core.js"],
         messe: async (H, K) => {
-            await K.messort("stadt-voll");
+            await K.messort("stadt");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
             let Z = null, zf = "";
