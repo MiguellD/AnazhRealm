@@ -834,6 +834,9 @@ const FORBIDDEN = [
     // die gleiche Kante je Punkt, die Lichtzahl im Stamm und der Leser je Punkt mit Luma 1 fielen
     ...["kTon", "sternAbfall", "_sternLicht", "kernPx", "HIMMEL.sternLx0"].map((t) => [t, "stern-bild — das Licht je Punkt schreibt _sternPunkt (Temperatur, KOSMOS.sternLx0, Streu-Funktion des Auges)", ["scripts/playtest.cjs"]]), // prettier-ignore
     ...["_sternMag", "STERN_HELLSTE", "sternMagSchwach", "sternZaehlung", "wandelsterne", "_sternPixel", "FIX_COUNT"].map((t) => [t, "kosmos-umfang — die Punkte des Himmels sind die Sicht der Kosmos-Funktion (_kosmosJetzt)", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
+    // foundry-halten — DER CACHE HÄLT NICHTS ÜBER SEINE LESER HINAUS: der Ruhe-Deckel (jeder Untätige 60 s über seinen letzten
+    // Leser hinaus, bis 64 MB) fiel; ein losgelassener Körper fällt im nächsten Takt, ein Leser ohne Senke nach der Gnade einer Hülle
+    ...["_foundryRuheDeckel", "FOUNDRY_RUHE_BYTES", "_foundryRuheMs"].map((t) => [t, "foundry-halten — der Cache hält nichts über seine Leser hinaus (_foundryOhneLeser)"]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

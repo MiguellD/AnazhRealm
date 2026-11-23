@@ -501,6 +501,11 @@ function main() {
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
     if (!champ.includes("Karte 2: <gebucht> von 1 718"))
         errs.push("champion.md trägt die Schluss-Zeile „Karte 2: <gebucht> von 1 718“ nicht mehr");
+    // IPERKA (Schöpfer 23.11.): der Arbeiter informiert sich bei den Profis — ohne Web-Werkzeug kann er es nicht.
+    if (!champ.includes("I — INFORMIEREN"))
+        errs.push("champion.md trägt den Schritt „I — INFORMIEREN“ nicht mehr — der Arbeiter baut ohne die Profis (IPERKA)");
+    if (!/^tools:(?=.*\bWebSearch\b)(?=.*\bWebFetch\b)/m.test(champ))
+        errs.push("champion.md gibt dem Arbeiter WebSearch und WebFetch nicht — er kann die Profis nicht lesen (IPERKA I)");
 
     // 5) ARCHIV-WAND (Lehre 15: git ist das Archiv, kein Doppel-Archiv im Baum): keine verfolgte Datei, die .gitignore
     // ausschließt.

@@ -209,10 +209,12 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `npm run format:check` · `npm run atlas` (+ `--find`).
 - Lokal der Puls der berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je
   Version; gemergt bei grüner Zweig-CI.
-- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 CPU-Gruppen (Playtest = Gruppe 1) auf
-  integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; die GPU-Klasse fährt NUR auf der Karte
-  (Job `echt`, drei Beine zugleich: omen · radeon · gtx1050, Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader im
-  Zug) auf integ-probe, zug-a, zug-b und nachts; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
+- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 CPU-Gruppen (Playtest = Gruppe 1) bei
+  `[ci voll]` in der Commit-Message (die Vorprüfung am Zweig-Kopf) und auf main (die Nachwache nach jeder Landung, nie blockierend,
+  ihr Rot nennt die Nachwache des Zug-Diensts beim Namen der Landungen), hinter dem Kopf-Richter — LANDUNG ≤ 10 MIN: im Zug urteilen nur kopf und Puls, voll erbt vom
+  Zweig-Kopf (der Einlass verlangt ihn); die GPU-Klasse fährt NUR auf der Karte (Job `echt`, drei Beine: omen · radeon · gtx1050,
+  Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader) und nur auf Abruf — den GPU-Beweis eines Kopfs trägt die
+  GPU-Probe seiner Vorprüfung; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
   und die Klasse ((K): ein Echt-Rezept in der vollen Batterie ist ROT beim Namen); `[skip ci]` überspringt beides.
 - EIN Werk ohne die Welt sehen: `npm run blick:werk -- <rezept> [--lod n] [--uhr frueh|mittag|spaet] [--nackt]` — vier Blicke im
   Streiflicht auf der EINEN Bühne (Engine, Licht und Stoff der Welt), swiftshader ~8–11 s; ein Studio: `npm run blick:studio -- <name>`.

@@ -47,7 +47,9 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 
 **DIE WEITERGABE.** Jeder Arbeiter-Prompt (Agent/Workflow) beginnt mit: „Lies zuerst DIE GOLDENE
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
-(.claude/agents/champion.md), nie als Standard-Arbeiter.
+(.claude/agents/champion.md), nie als Standard-Arbeiter. Jeder Arbeiter arbeitet nach IPERKA (champion.md):
+INFORMIEREN heißt die eigene Quelle UND die Profis — eine äußere Quelle mit Zahl wird ein Band, das Gesetz
+zitiert sie, nie ein kopiertes Asset (Schöpfer 23.11.: „lernt von den Profis und wird selber Profi“).
 
 ## DAS BETRIEBSGESETZ (bindend — die Maschine gegen den Agenten-Betriebsmodus)
 
@@ -70,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Karte 2 = 1 718 von 1 718** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.385 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was die Meisterkarte 2 trägt; die Chronik ist `git log`)
+## Stand (V18.546.387 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was die Meisterkarte 2 trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
