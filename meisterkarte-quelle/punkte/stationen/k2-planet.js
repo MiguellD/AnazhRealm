@@ -300,6 +300,25 @@ const KERN = (() => {
         };
         // die Uhr der Leiter: Sekunden seit ihrem Start (die Messung teilt ihren Deckel selbst)
         M.uhr = () => (Date.now() - M.t0) / 1000;
+        // DIE PROBE DER KREATUR-LINSE AN DER SEITE (erbe-geburt): dieselbe Seiten-Funktion wie gate:kreatur-takt (scripts/lib/
+        // kreatur-proben.cjs KREATUR_PROBEN_SRC, die Bühnen von scripts/diag-kreatur-leben.cjs) über `/eval` am Baum des SHA → je Probe
+        // ihr Ergebnis (wirft die Bühne, trägt es `fehler`). EIN Lauf je Probe und Sitzung: die Leitern einer Perspektive teilen M und
+        // dasselbe Versprechen (leben.evolution: ER fährt erbe, MU muster, ZV liest beide) — bis erbe-geburt zählten sie im eigenen
+        // Zeitraffer der Station (FAUNA_MAX_AGE_MS: 0 Takte, Eltern ohne die Kennung der Mutter, Hirsch und Wolf ohne den Gau)
+        M.kreaturProbe = async (proben) => {
+            const memo = M.kreaturMemo || (M.kreaturMemo = {});
+            const fehlt = proben.filter((p) => !memo[p]);
+            if (fehlt.length) {
+                const pfad = require("path");
+                const { KREATUR_PROBEN_SRC } = require(pfad.resolve("scripts/lib/kreatur-proben.cjs"));
+                const { CODE_OF_SEITE } = require(pfad.resolve("scripts/lib/welt-boot.cjs"));
+                const lauf = H.seite("if (!window.__fehlt) { " + CODE_OF_SEITE + " } return await (" + KREATUR_PROBEN_SRC + ")(r, T, " + JSON.stringify({ proben: fehlt }) + ");");
+                for (const p of fehlt)
+                    memo[p] = lauf.then((aus) => (aus && aus[p]) || { fehler: "die Probe " + p + " antwortete nicht" }, (e) => ({ fehler: String((e && e.message) || e).slice(0, 300) }));
+            }
+            const l = await Promise.all(proben.map((p) => memo[p]));
+            return Object.fromEntries(proben.map((p, i) => [p, l[i]]));
+        };
         // DAS DORF DER PROBE für die Leiter (`dorf: true`): was der Rumpf vor den Leitern gründete — sein Fehler wirft die Leiter mit
         // dem Grund, nie still ohne Bewohner
         M.dorfDa = () => {
