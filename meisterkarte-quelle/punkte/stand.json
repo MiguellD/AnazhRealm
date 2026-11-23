@@ -23344,7 +23344,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.34 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.99 s · Altersgang ρ(Alter, Zeit) 0.2451965196519652 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 07783ef2 gtx — offen: karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23361,8 +23361,8 @@
      "id": "karte2.mensch.sport.koennen#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.34 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.99 s · Altersgang ρ(Alter, Zeit) 0.2451965196519652 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal",
-     "sha": "07783ef21c5aa850536481c099a7cae8cbb56214",
+     "zahl": "S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal",
+     "sha": "5b36f69a78690dd2661aae017fef04106778125c",
      "grund": null,
      "r6": "konsum",
      "beide": true
@@ -25671,7 +25671,7 @@
   },
   "karte2.mensch.wirtschaft.technik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an f0a89f7e gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.technik#1",
@@ -25689,9 +25689,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
-     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js)",
-     "gehalten": true,
+     "sha": "5b36f69a78690dd2661aae017fef04106778125c",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -32190,7 +32189,7 @@
   },
   "karte2.planet.zeit.archiv": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s an f0a89f7e radeon · gehalten: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,011 s: der Deckel der Leiter 25 s an f0a89f7e gtx — offen: karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s an f0a89f7e radeon · S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,018 s: der Deckel der Leiter 25 s an 5b36f69a gtx — offen: karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.zeit.archiv#1",
@@ -32207,10 +32206,9 @@
      "id": "karte2.planet.zeit.archiv#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,011 s: der Deckel der Leiter 25 s",
-     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/gelaende-boden.js, stamm/gelaende-kollision.js)",
-     "gehalten": true,
+     "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,018 s: der Deckel der Leiter 25 s",
+     "sha": "5b36f69a78690dd2661aae017fef04106778125c",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37682,7 +37680,7 @@
   "ohne": 3351
  },
  "kopfVoll": "5b36f69a78690dd2661aae017fef04106778125c",
- "zeit": "2026-11-23T08:40:16.366Z",
+ "zeit": "2026-11-23T08:48:24.987Z",
  "vorher": "5b36f69a",
  "bilanz": {
   "gewinn": [],
