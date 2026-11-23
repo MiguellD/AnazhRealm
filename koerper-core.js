@@ -7700,6 +7700,7 @@
     // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in ihrer Ruhe (`_rigRuhe`).
     function leibRigNeutral(r) {
         _rigRuhe(r);
+        if (r.armLot) r.armLot.length = 0; // (der Winkel vom Lot gilt der Pose, die ihn setzt: `leibRigPose`)
         var mitte = [r.hips, r.spine, r.chest, r.neck, r.head],
             seiten = [r.armL, r.armR, r.legL, r.legR],
             i,
@@ -7711,6 +7712,54 @@
                 if (seiten[i][k]) seiten[i][k].rotation.set(u ? u[0] : 0, u ? u[1] : 0, u ? u[2] : 0);
             }
     }
+    // DIE NÄCHSTE POSE EINGESCHWUNGEN: `leibRigPose` glättet das Delta des Gemüts über die Uhr (kpMul, joy 0,35); wer eine Pose
+    // backt oder misst (der Satz der Menge je Stand-Zeile zu ihrer Uhr, `_bewohnerGangPose`), stellt sie ohne die vorige. Bis hier
+    // glättete das Backen die Zeile einer Geste aus der Zeile davor: der Satz stand in joy 10,7° anders als der nahe Leib.
+    function leibRigEingeschwungen(r) {
+        r._kpmulT = null;
+    }
+    // DIE GESTE (a-haltung 2, Leiter mensch.leib.ausdruck S1 — Akt und Gemüt aus der Silhouette lesbar, nie jede gleich): hebt ein
+    // Profil eine Seite über das Band der Ruhe (MOTION_RIG_MAP armL / armR gegen das Labor-idle, vom Lot, mehr als
+    // ARM_RUHE.spreizGrad: joy 0,6 rad = 34°), ist ihre Abspreizung keine Haltung, sondern eine Geste in der Zeit: je Seite ein Bogen
+    // (sin²) über `hub` des Takts, die rechte um `versatz` versetzt (die Arme heben im Wechsel), der Ausschlag je Geste aus der Uhr
+    // (`ausschlag`, Anteil der Abspreizung des Profils) — dazwischen hängt der Arm in seiner Ruhe. Die Uhr ist die des Leibs (die
+    // Welt reicht `uhr + atem`, die Phase aus seinem Samen): Phase und Ausschlag trägt jeder Leib selbst, im Mittel hängt der Arm im
+    // Band. Der ferne Satz backt je Stand mit Geste `phasen` Zeilen (`leibGesteZeit`), jeder Leib liest die Zeile seiner Phase
+    // (`leibGestePhase`). Bis hier hielt joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment
+    // mit 34–39° (gate:mensch-anatomie haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
+    var GESTE = Object.freeze({
+        takt: 2.4, // s je Geste
+        hub: 0.3, // der Anteil des Takts, in dem der Arm gehoben ist
+        versatz: 0.5, // die rechte Seite gegen die linke (Anteil des Takts)
+        ausschlag: Object.freeze([0.3, 1]), // der Ausschlag je Geste (Anteil der Abspreizung des Profils)
+        phasen: 4, // die Zeilen des Satzes je Stand mit Geste
+    });
+    // die Seite s (0 links, 1 rechts) des Profils mp gegen mref trägt eine Geste: ihre Abspreizung vom Lot über dem Band der Ruhe
+    function leibGeste(mp, mref, s) {
+        if (!mp || !mref) return false;
+        var k = s ? "armR" : "armL";
+        return (Number(mp[k]) || 0) - (Number(mref[k]) || 0) > (ARM_RUHE.spreizGrad[1] * Math.PI) / 180;
+    }
+    // der Anteil der Abspreizung, den die Geste zur Uhr t an der Seite s hebt (0 … 1): der Bogen in seinem Takt, der Ausschlag je
+    // Takt aus der Zahl des Takts (dieselbe Uhr, derselbe Ausschlag)
+    function leibGesteWert(t, s) {
+        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt + (s ? GESTE.versatz : 0),
+            n = Math.floor(x),
+            u = x - n;
+        if (!(u < GESTE.hub)) return 0;
+        var h = Math.sin((n + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+            b = Math.sin((Math.PI * u) / GESTE.hub);
+        return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
+    }
+    // die Phase (0 … n−1) der Uhr t: die Zeile, die ein ferner Leib liest — und die Uhr der Zeile k (die Mitte ihrer Phase, je Zeile
+    // ein eigener Takt: ihr eigener Ausschlag)
+    function leibGestePhase(t, n) {
+        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt;
+        return Math.min(n - 1, Math.floor((x - Math.floor(x)) * n));
+    }
+    function leibGesteZeit(k, n) {
+        return GESTE.takt * (k + (k + 0.5) / n);
+    }
     // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
     // Gang-Gesetzes (tetrapoda gangFuss, das Becken gangBecken, die Zwei-Knochen-IK), die Arme gegen die Beine, die Becken-Senke.
@@ -7718,6 +7767,8 @@
     // THREE-Rotationen; M = die Bein-Maße (l1, l2, wpl, wz, L), Z = die Gang-Zeile der Welt-Schwere, TC = der tetrapoda-Kern.
     // DIE RUHE DER ARME HÄLT (w28-mensch-samen): nach jedem Delta — Kontrapost, Emotion, Gang — steht die Schulter nie unter ihrer
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
+    // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose); über dem Band der Ruhe ist
+    // sie eine Geste zur Uhr t (`leibGeste`).
     function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
@@ -7825,12 +7876,23 @@
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
+        // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
+        // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
+        // die Profile entstanden (die neutrale Pose stellte jede Schulter auf 0). Die Schulter steht auf dem größeren von Ruhe und
+        // Profil — der Arm hängt am Rumpf, bis ein Profil ihn weiter hebt (joy 0,6 rad: 34°). Bis hier lag das Profil AUF der Ruhe:
+        // mittags (showcase 0,15 rad) stand die Menge der Linse mit p95 29° in der A-Haltung, das spielende Kind (joy) mit 58,5°.
+        // Hebt das Profil eine Seite über das Band der Ruhe, ist ihre Abspreizung die Geste zur Uhr t (`leibGesteWert`, a-haltung 2).
+        // `r.armLot` merkt je Seite den Winkel vom Lot: wer die Pose auf einen anderen Leib legt (die Vorlage der Menge,
+        // `_bewohnerRaumStellen`), stellt ihn auf dessen Ruhe — die Pose ist der Winkel vom Lot, der Boden der des Leibs.
         var sL = r.armL.shoulder,
             sR = r.armR.shoulder,
             uL = r.armRuhe[0].shoulder,
-            uR = r.armRuhe[1].shoulder;
-        if (sL && uL && sL.rotation.z < uL[2]) sL.rotation.z = uL[2];
-        if (sR && uR && sR.rotation.z > uR[2]) sR.rotation.z = uR[2];
+            uR = r.armRuhe[1].shoulder,
+            lot = r.armLot || (r.armLot = []);
+        lot[0] = sL && uL ? (sL.rotation.z - uL[2]) * (leibGeste(mp, mref, 0) ? leibGesteWert(t, 0) : 1) : 0;
+        lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
+        if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
+        if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -10418,6 +10480,11 @@
         leibGangTakt: leibGangTakt,
         leibRig: leibRig,
         leibRigNeutral: leibRigNeutral,
+        leibRigEingeschwungen: leibRigEingeschwungen,
+        GESTE: GESTE,
+        leibGeste: leibGeste,
+        leibGestePhase: leibGestePhase,
+        leibGesteZeit: leibGesteZeit,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,

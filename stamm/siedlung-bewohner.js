@@ -2261,12 +2261,29 @@ class AnazhRealm_siedlung_bewohner {
         if (AnazhRealm._bewohnerStaendeListe) return AnazhRealm._bewohnerStaendeListe;
         const KC = window.__koerperCore;
         if (!KC || !KC.TAGES_GESETZ) return AnazhRealm._kernPflichtBruch("koerper:TAGES_GESETZ");
+        if (typeof KC.leibGeste !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibGeste");
         const L = [AnazhRealm.MOTION_PROFILE_MAP.koerper.idle];
         const nimm = (nm) => nm && !L.includes(nm) && L.push(nm);
         Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
         for (const r of AnazhRealm.MOTION_EMOTION_PROFILES)
             if (r.koerper && AnazhRealm.BEWOHNER.gemuet.includes(r.axis)) nimm(r.koerper.idle);
+        // DIE PHASEN DER GESTE (a-haltung 2): ein Stand, dessen Profil eine Seite über das Band der Ruhe hebt (koerper `leibGeste`
+        // gegen das idle des Buchs: joy), backt `GESTE.phasen` Zeilen — die erste an seinem Platz, die übrigen hinten an (jede andere
+        // Zeile bleibt, wo sie stand); `_bewohnerStandZeilen` nennt je Namen seine Zeilen
+        const M = KC.MOTION;
+        const Z = new Map(L.map((nm, h) => [nm, [h]]));
+        for (const nm of L.slice())
+            if (KC.leibGeste(M[nm], M[L[0]], 0) || KC.leibGeste(M[nm], M[L[0]], 1))
+                for (let k = 1; k < KC.GESTE.phasen; k++) Z.get(nm).push(L.push(nm) - 1);
+        AnazhRealm._bewohnerStandZeilen = Z;
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
+    }
+    // DIE UHR DES STANDS h (das Backen, a-haltung 2): die Zeile einer Geste steht zur Uhr ihrer Phase (koerper `leibGesteZeit`),
+    // jede andere bei 0 (der Kontrapost des Atems bei 0, wie bisher)
+    _bewohnerStandZeit(h) {
+        const nm = AnazhRealm._bewohnerStaende()[h];
+        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
+        return zeilen.length > 1 ? window.__koerperCore.leibGesteZeit(zeilen.indexOf(h), zeilen.length) : 0;
     }
     // DAS GEMÜT DES STANDS h (das Backen): das Gemüt, das die Brücke auf den Namen des Stands h führt (0: neutral, wie bisher);
     // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen
@@ -2280,12 +2297,17 @@ class AnazhRealm_siedlung_bewohner {
         return e;
     }
     // DER STAND DES BEWOHNERS: die Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
-    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
+    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut. Trägt der Stand eine Geste, die Zeile
+    // seiner Phase (a-haltung 2, koerper `leibGestePhase`: seine Uhr bei der Geburt, `atem` aus seinem Samen)
     _bewohnerStandVon(b) {
         const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
-        const h = AnazhRealm._bewohnerStaende().indexOf(nm);
-        if (h < 0) this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
-        return Math.max(0, h);
+        AnazhRealm._bewohnerStaende();
+        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
+        if (!zeilen) {
+            this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
+            return 0;
+        }
+        return zeilen.length > 1 ? zeilen[window.__koerperCore.leibGestePhase(b.atem || 0, zeilen.length)] : zeilen[0];
     }
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
