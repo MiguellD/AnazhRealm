@@ -29358,7 +29358,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,375 (Faden 1,163 · alle Kerne 1,375; vor 101,2/316,1 ms, nach 104,7/266,8 ms, Ruhe 90/229,9 ms seit 2026-11-18) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --u · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f0a89f7e: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 48.8 s · 365.7 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,375 (Faden 1,163 · alle Kerne 1,375; vor 101,2/316,1 ms, nach 104,7/266,8 ms, Ruhe 90/229,9 ms seit 2026-11-18) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --u · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29366,7 +29366,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an f0a89f7e: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 48.8 s · 365.7 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -29768,7 +29768,7 @@
      "gruen": true,
      "zahl": "✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an f0a89f7e: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 48.8 s · 365.7 s)",
      "gehalten": true,
      "beide": true
     },
@@ -32200,16 +32200,15 @@
   },
   "karte2.planet.zeit.archiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.archiv#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3) · karte2.planet.zeit.archiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s an f0a89f7e radeon — offen: karte2.planet.zeit.archiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.archiv#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.zeit.archiv#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +3)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 kliffGrad 62,319 ° gegen Soll 60–85 ° ✓ · Zeuge: ≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster · gemessen vor dem Wurf der Leiter nach 25,016 s: der Deckel der Leiter 25 s",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -36033,16 +36032,16 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.075 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.266 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.637 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.243 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10 an ddaf883d · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525) an ddaf883d · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.076 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.269 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.649 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.321 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10 an f0a89f7e · karte2.same.physik.reaktion#1 gtx: ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.075 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.266 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.637 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.243 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10 an ddaf883d · karte2.same.physik.reaktion#2 radeon: ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525) an f0a89f7e · karte2.same.physik.reaktion#2 gtx: ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525) an ddaf883d · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.076 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.269 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.649 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.321 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10 · gemessen vor dem Abbruch: Frist der Probe 54 s gerissen",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": "ROT: S1 · ROT ❌ masse_abw_pct 94,45 (Soll ≤ 10) · ❌ rauch_prop_abw_pct — (Soll ≤ 10) · ✅ Umfang verlangt 1 Reaktion (Stoff-Zeile mit Brenn-Spalte), die Welt erzeugte 1 — Täter: MASSE: Holz 23.172 kg (gras, Mess-Wiese) → Asche 1.286 kg + Rauch 0 kg · PROPORTIONAL: 1 Zellen: 0.076 kg Holz → 0 m² optisch (0 m²/kg) · 3 Zellen: 0.269 kg Holz → 0 m² optisch (0 m²/kg) · 9 Zellen: 0.649 kg Holz → 0 m² optisch (0 m²/kg) · 25 Zellen: 2.321 kg Holz → 0 m² optisch (0 m²/kg) — die Folge der Herde nach Holz ist nicht die nach optischer Fläche · masse_abw_pct 94,45 statt ≤ 10 · rauch_prop_abw_pct — statt ≤ 10",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36059,10 +36058,10 @@
      "id": "karte2.same.physik.reaktion#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525) · gemessen vor dem Abbruch: Frist der Probe 54 s gerissen",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": "ROT: S2 · ROT Leser fehlt: Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.physik.reaktion#2",
@@ -37525,7 +37524,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 282,
+  "konsum": 284,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37693,11 +37692,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3340
+  "ohne": 3338
  },
  "kopfVoll": "07783ef21c5aa850536481c099a7cae8cbb56214",
- "zeit": "2026-11-23T06:46:26.598Z",
- "vorher": "ad836273",
+ "zeit": "2026-11-23T06:53:26.862Z",
+ "vorher": "07783ef2",
  "bilanz": {
   "gewinn": [],
   "fall": [],
