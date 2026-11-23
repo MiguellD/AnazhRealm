@@ -26,10 +26,6 @@ SCHLOSS=${KANDIDAT_SCHLOSS:-$O/p3/gpu-schloss.sh}; SCHLAF=${KANDIDAT_SCHLAF:-20}
 RUNDE_CJS=${RUNDE_CJS:-$O/p3/dienst-omen/runde.cjs}
 BILD_ABLAGE=${KANDIDAT_ABLAGE:-$N/roh-bilder} # die Roh-Bilder mit gehaltenem Urteil bleiben hier am Gerät (nie gelöscht)
 ROH=$PM/meisterkarte-quelle/punkte/messung/roh
-sperre_lebt() { local p; p=$(cat $M/.claude/worktrees/punkte-gtx.sperre/pid 2>/dev/null | tr -dc 0-9); [ -n "$p" ] && tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; }  # nur eine Sperre, deren Halter lebt (23:19–23:31 stand die Kette vor einer toten)
-baum_wartet() { [ -n "$(find $M/.claude/worktrees/punkte-gtx.wartet -maxdepth 1 -type f -mmin -1 ! -name 'landung-*' ! -name 'dauer-*' 2>/dev/null | head -n 1)" ]; }  # 14.11.: ein Macher wartet an der Baum-Sperre (Marke von punkte.cjs, jünger als 1 min) — die nächste Station beginnt nicht vor ihm
-frei() { sperre_lebt && return 1; baum_wartet && return 1; . $SCHLOSS; gpu_frei; }  # 10.11. 23:10: nie IN der Baum-Sperre eines fremden punkte-Laufs warten (Richter-Schritt) — dessen Verdrängung zählte sonst als die eigene;  # 10.11. (Auftrag gpu-stufe K10): die EINE Schloss-Quelle entscheidet und bricht ein verwaistes Schloss mit; das eigene frei() von vorher wartete vor toten Haltern
-enden() { grep -acE " ende .* (echt|probe):" $H; }
 verdr() { grep -ac "omen-punkte-gtx-sitzung VERDR" $D; }
 zahl() { echo "$1" | tr ',' '\n' | grep -c .; }
 if [ -n "$KOPF" ]; then K=$KOPF; echo "$(date '+%T') $NAME fester Kopf ${K:0:8}" >> $L; else
@@ -65,6 +61,16 @@ VERSUCHE=${VERSUCHE:-4}
 #            VERDRÄNGT (er fing die Sitzung nach dem Job von vorn an), fällt ebenso sofort — der Rest stellt sich hinten an.
 # Ein Teil, der Stationen buchte, verbraucht keinen Versuch (die VERSUCHE zählen nur Sitzungen ohne eine einzige Station).
 TAKT=${KANDIDAT_TAKT:-5}
+# DIE RUNDE IN DER SCHLANGE (Koordinator 23.11. 16:03, pm-runde-in-der-schlange; Befund: die Runde 12 stand 10:19–13:38 ohne Sitzung —
+# sie fragte alle 10 s `frei`, und jede Hand, die im Schloss wartete, nahm die Karte, sobald sie frei wurde): die Sitzung wartet wie
+# jede Hand IN gpu-lauf.sh, in DER Schlange (punkte-gtx.wartet, erste Ankunft zuerst; die CI behält ihre Vorfahrt). Die Ankunft der
+# Runde ist ihr stehender PLATZ (KANDIDAT_PLATZ, gestellt von landung-dienst.sh platz_stellen): jede Sitzung reicht ihn an gpu-lauf.sh
+# (GPU_LAUF_PLATZ) und an die Baum-Sperre (GPU_LAUF_ANKUNFT), und nach jeder Sitzung, die die Karte nahm, rückt er auf die Zeit dieses
+# Nehmens (GPU_LAUF_GENOMMEN) — eine Hand, die während der Sitzung kam, steht hinter der NÄCHSTEN Station der Runde, nie davor. Ohne
+# KANDIDAT_PLATZ (ein Lauf von Hand) wartet jede Sitzung mit ihrer eigenen Ankunft wie jede andere Hand.
+PLATZ=${KANDIDAT_PLATZ:-}
+GENOMMEN=$N/kandidat-genommen.$$
+trap 'rm -f "$GENOMMEN"' EXIT
 DECKEL=${KANDIDAT_DECKEL_S:-1740} # die Uhr der Sitzung (= TEIL_BUDGET_S des Dienstes): an der ersten Stations-Grenze danach endet sie
 # ohne <liste> <a> <b> — die Stationen der Liste, die weder in a noch in b stehen (alles mit Komma)
 ohne() { echo "$1" | tr ',' '\n' | grep . | grep -vxF -f <(echo "$2,$3" | tr ',' '\n' | grep .) | paste -sd, -; }
@@ -107,9 +113,11 @@ buche() { local name=$1 v=$2 B=$3 o rc
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
 # was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
 teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
-  until frei; do sleep 10; done; local d0=$(verdr)
+  # nie neben einem CI-Job (das Gesetz der CPU-Ruhe, gpu-schloss.sh cpu_ruhe) — wer danach die Karte nimmt, entscheidet die Schlange
+  . $SCHLOSS; cpu_ruhe 2>> $L
+  local d0=$(verdr) a0=$(date +%s) ank=; rm -f "$GENOMMEN"; [ -f "$PLATZ" ] && ank=$(head -n 1 "$PLATZ" | tr -d '\r')
   echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
-  TEIL=$name-v$v NUR=$R node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
+  TEIL=$name-v$v NUR=$R GPU_LAUF_PLATZ=${ank:+$PLATZ} GPU_LAUF_ANKUNFT=$ank GPU_LAUF_GENOMMEN=$GENOMMEN node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
   WK=$(cat /proc/$LP/winpid 2>/dev/null)
   local s=0 k=0 t0=$(date +%s) wv= w AUS=$N/punkte-offen-${K:0:8}-$name-v$v.out
   while kill -0 $LP 2>/dev/null; do
@@ -139,6 +147,12 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
     fi
   done
   wait $LP 2>/dev/null
+  # DER PLATZ RÜCKT VOR: nahm die Sitzung die Karte, steht die Runde ab jetzt mit der Zeit dieses Nehmens in der Schlange — wer während
+  # der Sitzung kam, bleibt hinter der nächsten, wer davor kam, geht vor; nahm sie nie, bleibt der Platz, wo er war
+  if [ -s "$GENOMMEN" ]; then
+    [ -n "$ank" ] && [ -f "$PLATZ" ] && cat "$GENOMMEN" > "$PLATZ"
+    echo "$(date '+%T') $name SCHLANGE: die Karte nach $(( $(date -d "$(<"$GENOMMEN")" +%s) - a0 )) s Warten${ank:+, der Platz der Runde rückt auf $(<"$GENOMMEN")}" >> $L
+  fi
   # der Roh-Ordner DIESER Sitzung (14.11.: jede Sitzung schreibt in ihren eigenen `sitzung-<kennung>`, der jüngste Name ist der letzte)
   SO=$(ls -d $ROH/${K:0:8}-gtx/sitzung-* 2>/dev/null | tail -n 1); rm -rf "${N:?}/punkte-sitzung-${name:?}-v$v"; [ -n "$SO" ] && cp -r "$SO" "$N/punkte-sitzung-$name-v$v" 2>/dev/null
   REST_TEIL=
@@ -199,8 +213,6 @@ while [ ${#Q[@]} -gt 0 ]; do
   else
     echo "$(date '+%T') $NAME-$nr Versuch $v VERDRÄNGT - OFFEN nach $VERSUCHE Versuchen ($T): der Lauf überdauert $GPU_LAUF_WEICH_S s neben einem wartenden CI-Job" >> $L; OFFEN="$OFFEN $T"
   fi
-  # der Job, der verdrängte, fährt erst zu Ende (sein Ende steht in hook.log): die nächste Sitzung beginnt nie in seine Ruhe
-  e0=$(enden); w=0; until [ $(enden) -gt $e0 ] || { [ $w -ge 6 ] && frei; }; do sleep $SCHLAF; w=$((w+1)); done
 done
 [ -n "$OFFEN" ] && echo "$(date '+%T') $NAME OFFEN nach $VERSUCHE Versuchen:$OFFEN" >> $L
 echo "$(date '+%T') $NAME ENDE ${K:0:8}" >> $L

@@ -13,8 +13,15 @@
 #   f  (15.11.) ein fremder, lebender Halter hat das Schloss 24 s, GPU_LAUF_WORT_S=3 → der Wartende sagt mindestens zweimal
 #      „gpu-lauf: wartet seit …“, jede Zeile VOR „gpu-lauf: Schloss …“, Exit 0 (punkte.cjs gibt nach 600 s Schweigen auf: am 3e4f99cd
 #      hielt ein CI-Job die Karte 17 min 48 s, 18 von 23 Stationen blieben ungemessen). Die Fassung bis 15.11. schweigt: f ROT.
+#   g  (23.11., pm-runde-in-der-schlange) Täter „Runde verdrängt“: ein fremder lebender Halter hat das Schloss 8 s; die Runde steht seit
+#      Sekunde 0 mit ihrem stehenden Platz in der Schlange (GPU_LAUF_PLATZ, ihr Halter lebt), ihr Lauf greift ab Sekunde 3; eine Hand
+#      kommt in Sekunde 1 (eigener Platz, jünger) → die Runde nimmt die Karte zuerst, die Hand danach, ohne Überlappung; der stehende
+#      Platz bleibt unberührt, der eigene der Hand fällt, GPU_LAUF_GENOMMEN trägt die Zeit des Nehmens. Die Fassung bis 23.11.: wer nach
+#      dem Freiwerden zuerst griff, nahm — die Hand (Sekunde 16 gegen 18): ROT „Runde verdrängt“.
+#   h  (23.11.) die Ankunft gilt für alle: eine Hand, die VOR dem Platz der Runde ankam, geht vor ihr; ein Platz mit toter pid hält
+#      nie auf und fällt beim Lesen.
 # Gegenprobe: die Fassung vor dem Schnitt reißt a (sie verdrängt sofort) — `gpu-lauf-selbsttest.sh <alte gpu-lauf.sh>` ist ROT;
-# die Fassung vom 12.–14.11. reißt e.
+# die Fassung vom 12.–14.11. reißt e, die bis 23.11. reißt g.
 GL=${1:-$(cd "$(dirname "$0")" && pwd)/gpu-lauf.sh}
 T=$(mktemp -d); rot=0
 tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker && { echo "UNGEMESSEN: ein Runner.Worker lebt — der Selbsttest wartete am echten CI-Job"; exit 2; }
@@ -28,10 +35,10 @@ fall() { # $1 Name · $2 WEICH ("" = Vorgabe) · $3 erste Dauer s · $4 Sekunden
     if [ -n "$6" ]; then
         printf '#!/bin/bash\nexec node -e "let i=0;const t=setInterval(()=>{console.log(String(++i));if(i>=%s)clearInterval(t)},500)"\n' "$(($3 * 2))" >"$d/befehl.sh"
         ( set -o pipefail
-          GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
+          GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_SCHLANGE=$d/schlange GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
               GPU_LAUF_WARTE_S=120 GPU_LAUF_MAX_S=120 GPU_LAUF_VERDRAENGT_MAX=1 GPU_LAUF_WEICH_S=$2 bash "$GL" selbsttest bash "$d/befehl.sh" 2>&1 | cat >"$d/aus.txt" )
     else
-        GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
+        GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_SCHLANGE=$d/schlange GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
             GPU_LAUF_WARTE_S=120 GPU_LAUF_MAX_S=120 GPU_LAUF_VERDRAENGT_MAX=1 GPU_LAUF_WEICH_S=$2 bash "$GL" selbsttest bash "$d/befehl.sh" >"$d/aus.txt" 2>&1
     fi
     E=$?; S=$(($(date +%s) - t0)); wait
@@ -60,11 +67,37 @@ d=$T/f; mkdir -p "$d/schloss"; : >"$d/dienst.log"; echo "2026-01-01 00:00:00 sta
 printf 'fremd\npid=%s\n' "$(cat /proc/$$/winpid 2>/dev/null)" >"$d/schloss/besitzer.txt"
 ( sleep 24; rm -rf "$d/schloss" ) &
 t0=$(date +%s)
-GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
+GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_SCHLANGE=$d/schlange GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
     GPU_LAUF_WARTE_S=120 GPU_LAUF_MAX_S=120 GPU_LAUF_WORT_S=3 bash "$GL" selbsttest true >"$d/aus.txt" 2>&1
 E=$?; S=$(($(date +%s) - t0)); wait
 WO=$(grep -c "^gpu-lauf: wartet seit " "$d/aus.txt"); GEN=$(grep -n "^gpu-lauf: Schloss " "$d/aus.txt" | head -1 | cut -d: -f1); LETZT=$(grep -n "^gpu-lauf: wartet seit " "$d/aus.txt" | tail -1 | cut -d: -f1)
 if [ "$E" = 0 ] && [ "$WO" -ge 2 ] && [ -n "$GEN" ] && [ "${LETZT:-999}" -lt "$GEN" ] && [ "$S" -ge 22 ] && [ ! -d "$d/schloss" ]; then echo "GRÜN f  der Wartende sprach $WO-mal in $S s am fremden Schloss, dann nahm er es, Exit 0"
 else echo "ROT f  Exit $E (Soll 0) · „wartet seit“ $WO (Soll ≥ 2) · „Schloss“ in Zeile ${GEN:-?}, letztes Warte-Wort in Zeile ${LETZT:-?} · $S s (Soll ≥ 22)"; rot=1; fi
+# die Schlange: <fall> <frei-nach-s> — ein Sandkasten mit fremdem lebendem Halter (gibt nach frei-nach-s frei); lauf <wer> <ab-s> [platz]
+# fährt `gpu-lauf <wer>` ab Sekunde ab-s im Hintergrund (Befehl: „S wer“ / 2 s / „E wer“ ins Log), mit platz als GPU_LAUF_PLATZ
+WP=$(cat /proc/$$/winpid 2>/dev/null)
+sandkasten() { d=$T/$1; mkdir -p "$d/schloss" "$d/schlange"; : >"$d/dienst.log"; : >"$d/log"
+    echo "2026-01-01 00:00:00 start ci-runner 1/1 echt: Schloss genommen (alt)" >"$d/hook.log"
+    printf 'fremd\npid=%s\n' "$WP" >"$d/schloss/besitzer.txt"; ( sleep "$2"; rm -rf "$d/schloss" ) & }
+lauf() { ( sleep "$2"; GPU_LAUF_PLATZ=$3 GPU_LAUF_GENOMMEN=$d/genommen-$1 GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_SCHLANGE=$d/schlange GPU_LAUF_HOOKLOG=$d/hook.log \
+    GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie GPU_LAUF_WARTE_S=120 GPU_LAUF_MAX_S=60 bash "$GL" "$1" bash -c "echo \"S $1\" >>\"$d/log\"; sleep 2; echo \"E $1\" >>\"$d/log\"" >"$d/aus-$1.txt" 2>&1
+    echo "$?" >"$d/exit-$1" ) & }
+reihe() { grep -o '^[SE] [a-z]*' "$d/log" | tr '\n' ' ' | sed 's/ $//'; }
+sandkasten g 8
+date -u +%FT%T.%3NZ >"$d/schlange/runde-$WP"   # der stehende Platz der Runde seit Sekunde 0 (sein Halter: dieser Selbsttest, er lebt)
+t0=$(date +%s); lauf hand 1; lauf runde 3 "$d/schlange/runde-$WP"; wait; S=$(($(date +%s) - t0))
+R=$(reihe); EIG=$(ls "$d/schlange" | grep -vc "^runde-$WP$")
+if [ "$R" = "S runde E runde S hand E hand" ] && [ "$(cat "$d/exit-hand")$(cat "$d/exit-runde")" = 00 ] && [ -f "$d/schlange/runde-$WP" ] && [ "$EIG" = 0 ] && [ -s "$d/genommen-runde" ]; then
+    echo "GRÜN g  die Runde wartete mit ihrem Platz: sie nahm die Karte vor der jüngeren Hand ($R, $S s); ihr Platz steht, der der Hand fiel, das Nehmen ist gemeldet"
+else echo "ROT g  Runde verdrängt: Reihe „$R“ (Soll S runde E runde S hand E hand) · Exit Hand $(cat "$d/exit-hand") Runde $(cat "$d/exit-runde") · Platz der Runde $([ -f "$d/schlange/runde-$WP" ] && echo steht || echo fort) · fremde Plätze übrig $EIG (Soll 0) · gemeldet $([ -s "$d/genommen-runde" ] && echo ja || echo nein) · $S s"; rot=1; fi
+sandkasten h 6
+t0=$(date +%s); lauf hand 0
+( sleep 2; date -u +%FT%T.%3NZ >"$d/schlange/runde-$WP" ) & sleep 2.5; lauf runde 0 "$d/schlange/runde-$WP"; wait; S=$(($(date +%s) - t0))
+R=$(reihe)
+TOT=$(bash -c 'cat /proc/$$/winpid'); : >"$d/log"; date -u -d '-1 hour' +%FT%T.%3NZ >"$d/schlange/runde-$TOT"
+t1=$(date +%s); lauf allein 0; wait; S2=$(($(date +%s) - t1)); R2=$(reihe)
+if [ "$R" = "S hand E hand S runde E runde" ] && [ "$R2" = "S allein E allein" ] && [ "$S2" -lt 12 ] && [ ! -f "$d/schlange/runde-$TOT" ]; then
+    echo "GRÜN h  wer vor dem Platz der Runde kam, ging vor ihr ($R); ein Platz mit toter pid hielt nicht auf ($S2 s) und fiel"
+else echo "ROT h  Reihe „$R“ (Soll S hand E hand S runde E runde) · allein neben totem Platz „$R2“ nach $S2 s (Soll < 12) · toter Platz $([ -f "$d/schlange/runde-$TOT" ] && echo liegt || echo fort)"; rot=1; fi
 rm -rf "$T"
 exit $rot

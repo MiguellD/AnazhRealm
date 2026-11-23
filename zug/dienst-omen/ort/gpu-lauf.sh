@@ -32,21 +32,38 @@ VMAX=${GPU_LAUF_VERDRAENGT_MAX:-3}; VERDR=0; WEICH=${GPU_LAUF_WEICH_S:-0}; DLOG=
 worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
 # der freie Commit des Systems in GB (physischer Speicher + Auslagerung, was noch zugesagt werden kann) — nur gelesen, wenn ein CI-Job eintrifft
 commit_frei() { local k; k=$(powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory" 2>/dev/null | tr -dc 0-9); [ -n "$k" ] && echo "$(( k / 1048576 )),$(( k % 1048576 * 10 / 1048576 )) GB" || echo "?"; }
-versuch() { ! worker && ! ci_wartet && [ "$(ci_ruhe_rest)" -le 0 ] && mkdir "$GPU_SCHLOSS" 2>/dev/null; }
+# DER PLATZ IN DER SCHLANGE (23.11., pm-runde-in-der-schlange; gpu-schloss.sh GPU_SCHLANGE): die Karte nimmt nur, wer vorn steht.
+# Der Platz ist GPU_LAUF_PLATZ, der stehende Platz des Rufers (die Runde: kandidat.sh hält ihn über alle Sitzungen einer Fahrt) — oder
+# ein eigener `<name>-<pid>` mit der Ankunft GPU_LAUF_ANKUNFT (punkte.cjs reicht die Ankunft seines Laufs weiter), sonst der von jetzt.
+# Den eigenen frischt jede Warte-Runde auf; er fällt mit dem Schloss (wer hält, wartet nicht mehr) und am Ende. Den stehenden berührt der
+# Lauf nie — er meldet nur, wann er die Karte nahm: das erste Mal je Datei in GPU_LAUF_GENOMMEN (kandidat.sh rückt danach den Platz vor).
+# Ein Lauf, den ein CI-Job verdrängte, stellt sich mit SEINER Ankunft wieder an — der Job hatte Vorfahrt, keine Hand nimmt ihm den Platz.
+mkdir -p "$GPU_SCHLANGE" 2>/dev/null
+if [ -n "$GPU_LAUF_PLATZ" ] && [ -f "$GPU_LAUF_PLATZ" ]; then PLATZ=$GPU_LAUF_PLATZ EIGEN=
+else PLATZ=$GPU_SCHLANGE/$(printf '%s' "$NAME" | tr -c 'A-Za-z0-9_' '_')-$(cat /proc/$$/winpid 2>/dev/null || echo $$) EIGEN=1 ANK=${GPU_LAUF_ANKUNFT:-$(date -u +%FT%T.%3NZ)}; fi
+platz_auf() { [ -z "$EIGEN" ] || printf '%s\n' "$ANK" >"$PLATZ"; }
+platz_fort() { [ -z "$EIGEN" ] || rm -f "$PLATZ"; }
+platz_ms() { local m; m=$(schlange_ms "$PLATZ"); echo "${m:-$(date +%s%3N)}"; }   # ein verlorener stehender Platz: wie jetzt angekommen
+vorn() { [ -z "$(schlange_vor "${PLATZ##*/}" "$(platz_ms)")" ]; }
+versuch() { ! worker && ! ci_wartet && [ "$(ci_ruhe_rest)" -le 0 ] && vorn && mkdir "$GPU_SCHLOSS" 2>/dev/null; }
 nimm() { # $1 spätester Zeitpunkt (s) — wartet auf das Schloss und das Ende der CI-Ruhe (VOR dem Schloss, 25.10.), nimmt es, Herzschlag;
   # ein verwaistes Schloss bricht der Wartende selbst und übernimmt es sofort (gs_uebernimm, 10.11.)
   # DAS WORT DES WARTENDEN (15.11.): alle GPU_LAUF_WORT_S (240) s eine Zeile auf stderr, solange das Schloss nicht frei ist. punkte.cjs
   # gibt das Schloss nach 600 s Schweigen auf (SCHLOSS_STILL_S) — am 3e4f99cd hielt ein CI-Job die Karte 17 min 48 s, dieser Warter
   # schwieg, 18 von 23 Stationen der Sitzung blieben ungemessen. Die Zeile beginnt nie mit „gpu-lauf: Schloss “ (das läse der Warter
   # als genommen); sie fällt nur hier, wo kein Kind lebt (vor dem Start und nach der Verdrängung) — das Gesetz der Leitung oben bleibt.
-  local w0=$(date +%s) wort=${GPU_LAUF_WORT_S:-240} j
+  local w0=$(date +%s) wort=${GPU_LAUF_WORT_S:-240} j v
+  platz_auf
   until versuch; do
     gs_uebernimm versuch "$NAME" && break
     j=$(date +%s)
     [ $j -ge "$1" ] && { echo "SCHLOSS BLOCKIERT von '$(schloss_erster)' nach $(( j - T0 )) s Warten" >&2; exit 75; }
-    [ $(( j - w0 )) -ge "$wort" ] && { w0=$j; echo "gpu-lauf: wartet seit $(( j - T0 )) s ('$(schloss_erster)' hält das Schloss, ein CI-Job läuft oder wartet, oder CI-Ruhe)" >&2; }
+    [ $(( j - w0 )) -ge "$wort" ] && { w0=$j; v=$(schlange_vor "${PLATZ##*/}" "$(platz_ms)"); echo "gpu-lauf: wartet seit $(( j - T0 )) s ('$(schloss_erster)' hält das Schloss, ein CI-Job läuft oder wartet, oder CI-Ruhe${v:+; vor ihm in der Schlange: $v})" >&2; }
     sleep $(( wort < 15 ? wort : 15 ))
+    platz_auf
   done
+  platz_fort
+  [ -n "$GPU_LAUF_GENOMMEN" ] && [ ! -s "$GPU_LAUF_GENOMMEN" ] && date -u +%FT%T.%3NZ >"$GPU_LAUF_GENOMMEN"
   printf '%s\npid=%s\n' "$NAME" "$(cat /proc/$$/winpid 2>/dev/null)" > "$GPU_SCHLOSS/besitzer.txt"
   # DIE MELDUNG (30.10.) — dasselbe Protokoll wie die kanonische artifacts/profiband/werkzeug/gpu-lauf.sh: punkte.cjs wartet auf genau
   # „gpu-lauf: Schloss …“ (und liest „SCHLOSS BLOCKIERT …“ beim Exit 75). Ohne die Zeile starb der stille Warter der Mess-Sitzung nach
@@ -56,7 +73,7 @@ nimm() { # $1 spätester Zeitpunkt (s) — wartet auf das Schloss und das Ende d
   # der Herzschlag ohne Ausgabe-Kanal (11.11.: sein `sleep 300` hielt die Leitung einer Kette `gpu-lauf … | uhr > log` nach dem Lauf bis zu 5 min offen)
   ( while sleep 300; do [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt"; done ) >/dev/null 2>&1 & HERZ=$!
 }
-trap 'kill $HERZ 2>/dev/null; schloss_loesen "$NAME"' EXIT
+trap 'kill $HERZ 2>/dev/null; schloss_loesen "$NAME"; platz_fort' EXIT
 nimm $(( T0 + WARTE ))
 while :; do
   TS=$(( $(date +%s) - 1 )); W0=

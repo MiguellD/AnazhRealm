@@ -17,6 +17,26 @@ GPU_SCHLOSS=$(printf '%s' "$GPU_SCHLOSS_W" | sed 's|\\|/|g; s|^\([A-Za-z]\):|/\L
 # VORFAHRT (16.10.): wartet ein CI-Job (letzte Zeile von hooks/hook.log „… wartet auf Schloss …"), nimmt keine OMEN-Serie das
 # Schloss — eine Serie, die in einer Schleife sofort wieder nimmt, hungerte den Job sonst aus
 GPU_HOOK_LOG=/c/actions-runner/hooks/hook.log
+# DIE SCHLANGE (23.11., Koordinator 16:03, pm-runde-in-der-schlange; Befund: die Runde 12 stand 10:19–13:38 ohne Sitzung — sie fragte
+# alle 10 s, ob die Karte frei ist, jede Hand wartete IN gpu-lauf.sh und nahm sie zuerst): EINE Reihe der Ankunft für jeden, der Baum
+# oder Karte will — dieselbe Ablage wie die gerechte Schlange am Spiel-Baum (punkte.cjs baumSperre, 16.11.): je Wartendem eine Datei
+# `<wer>-<pid>` (pid = die Windows-PID des Halters), Inhalt die Zeit der Ankunft (ISO), aufgefrischt ≤ 120 s. Die älteste lebende Ankunft
+# nimmt zuerst; ein Platz ohne Auffrischung oder mit toter pid fällt. Die CI behält ihre Vorfahrt (gpu-lauf.sh versuch).
+GPU_SCHLANGE=${GPU_LAUF_SCHLANGE:-/c/Users/micha/Desktop/AnazhRealm-OMEN/AnazhRealm-mess/.claude/worktrees/punkte-gtx.wartet}
+# schlange_ms <datei> — die Ankunft eines Platzes in ms (leer, wenn unlesbar)
+schlange_ms() { local z; z=$(head -n 1 "$1" 2>/dev/null | tr -d '\r'); [ -n "$z" ] && date -d "$z" +%s%3N 2>/dev/null; }
+# schlange_vor <ich> <ankunft-ms> — ein lebender Platz VOR <ich> (sein Name; leer: <ich> ist vorn). Älter heißt: frühere Ankunft, bei
+# gleicher der kleinere Name (wie aelterWartet in punkte.cjs); was nicht lebt, räumt der Leser (keine Auffrischung seit 120 s, pid tot)
+schlange_vor() { local ich=$1 m=$2 f n p t
+  for f in "$GPU_SCHLANGE"/*; do
+    [ -f "$f" ] || continue; n=${f##*/}; [ "$n" = "$ich" ] && continue
+    p=${n##*-}; case "$p" in '' | *[!0-9]*) continue ;; esac
+    [ $(( $(date +%s) - $(stat -c %Y "$f" 2>/dev/null || echo 0) )) -gt 120 ] && { rm -f "$f"; continue; }
+    t=$(schlange_ms "$f"); [ -n "$t" ] || continue
+    { [ "$t" -lt "$m" ] || { [ "$t" = "$m" ] && [[ "$n" < "$ich" ]]; }; } || continue
+    pid_lebt "$p" || { rm -f "$f"; continue; }
+    echo "$n"; return 0
+  done; return 0; }
 ci_wartet() { tail -n 1 "$GPU_HOOK_LOG" 2>/dev/null | grep -q "wartet auf Schloss"; }
 ci_worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
 schloss_erster() { head -n 1 "$GPU_SCHLOSS/besitzer.txt" 2>/dev/null | tr -d '\r'; }
