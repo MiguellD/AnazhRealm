@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "radeon",
- "zeit": "2026-11-23T07:12:16.824Z",
+ "zeit": "2026-11-23T07:36:17.682Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#2": {
@@ -1300,6 +1300,70 @@
    },
    "zeit": "2026-11-23T07:12:16.824Z",
    "abdruck": "fb4b789ad9e1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 45.4 von 2500000000000 s in 1925 Takten, 36.7 s Wand (19.1 ms je Takt)",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 45.4 von 2500000000000 s in 1925 Takten, 36.7 s Wand (19.1 ms je Takt)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 48.4,
+   "fremd": {
+    "s": 52,
+    "takte": 21,
+    "fremdS": 194.38,
+    "kerne": 3.737,
+    "fensterKerne": 3.883,
+    "namen": [
+     [
+      "node.exe scripts/diag-settlement.cjs",
+      63.8
+     ],
+     [
+      "git stash create",
+      18.09
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      11.14
+     ]
+    ],
+    "dienerS": 52.05,
+    "diener": [
+     [
+      "System",
+      31.52
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.73
+     ]
+    ],
+    "geraetS": 41.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.28
+     ],
+     [
+      "svchost.exe",
+      14.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.22
+     ]
+    ],
+    "eigenS": 128.38,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T07:36:17.682Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
