@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T02:11:20.271Z",
+ "zeit": "2026-11-23T02:15:00.210Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -3328,6 +3328,75 @@
    },
    "zeit": "2026-11-23T02:11:20.271Z",
    "abdruck": "21ca17360a36",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.kollektiv#1": {
+   "gruen": true,
+   "zahl": "21 Zeugen, 21 in beiden Gängen · Abstand-Median vorher 5.77 m → nachher 12.5 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.68,
+   "gpu": "nvidia/pascal",
+   "konsum": "k447fe4530b88",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 40.9,
+   "fremd": {
+    "s": 45,
+    "takte": 20,
+    "fremdS": 17.81,
+    "kerne": 0.396,
+    "fensterKerne": 0.53,
+    "namen": [
+     [
+      "Explorer.EXE",
+      4.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      2.83
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.72
+     ]
+    ],
+    "dienerS": 20.84,
+    "diener": [
+     [
+      "System",
+      8.42
+     ],
+     [
+      "dwm.exe",
+      8.39
+     ]
+    ],
+    "geraetS": 18.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.36
+     ],
+     [
+      "svchost.exe",
+      6.16
+     ],
+     [
+      "SearchIndexer.exe",
+      1.22
+     ]
+    ],
+    "eigenS": 191.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T02:15:00.210Z",
+   "abdruck": "dbc25f2bff4c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
