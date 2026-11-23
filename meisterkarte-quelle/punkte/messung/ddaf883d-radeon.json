@@ -1,0 +1,292 @@
+{
+ "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+ "geraet": "radeon",
+ "zeit": "2026-11-23T03:57:41.478Z",
+ "host": "MiguellD",
+ "je": {
+  "karte2.mensch.geist.absicht#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.13,
+   "gpu": "amd/rdna-3",
+   "konsum": "kcf2d1f50c90a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 7.3,
+   "fremd": {
+    "s": 10,
+    "takte": 4,
+    "fremdS": 22.59,
+    "kerne": 2.261,
+    "fensterKerne": 2.261,
+    "namen": [
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… EXIT tasks/bs23ry0gn.output; do sleep",
+      3.73
+     ],
+     [
+      "sh.exe werkzeug/buche.sh",
+      2.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      2.33
+     ]
+    ],
+    "dienerS": 10.17,
+    "diener": [
+     [
+      "System",
+      6.44
+     ],
+     [
+      "dwm.exe",
+      1.97
+     ]
+    ],
+    "geraetS": 6.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.2
+     ],
+     [
+      "svchost.exe",
+      2.2
+     ],
+     [
+      "SearchIndexer.exe",
+      0.19
+     ]
+    ],
+    "eigenS": 31.89,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T03:53:05.712Z",
+   "abdruck": "76fb7d39e23c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.stoffwechsel#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (451 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 451 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (451 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 451 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k303ee5af34b5",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 11.5,
+   "fremd": {
+    "s": 14.5,
+    "takte": 6,
+    "fremdS": 23.19,
+    "kerne": 1.6,
+    "fensterKerne": 1.713,
+    "namen": [
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… EXIT tasks/bs23ry0gn.output; do sleep",
+      5.3
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… _huelle/b stamm worlds scripts --incl",
+      1.72
+     ],
+     [
+      "bash.exe scratchpad/gpu-lauf.sh generationen-dump node scripts/diag-kreatur-takt.cjs --pro",
+      1.58
+     ]
+    ],
+    "dienerS": 7.28,
+    "diener": [
+     [
+      "dwm.exe",
+      3.14
+     ],
+     [
+      "System",
+      2.11
+     ]
+    ],
+    "geraetS": 4.78,
+    "geraet": [
+     [
+      "svchost.exe",
+      2.38
+     ],
+     [
+      "MsMpEng.exe",
+      2.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.09
+     ]
+    ],
+    "eigenS": 29.36,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T03:54:35.577Z",
+   "abdruck": "7172cf5c24fe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: 20 Saaten bis 130 km/h mit eigener Physik: die Welt trägt 5 Fahr-Rezepte (je Typ EINE Physik, die Saat eines Wagens ändert sie nicht) und keine Spurrinne (gemessen 5, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: 20 Saaten bis 130 km/h mit eigener Physik: die Welt trägt 5 Fahr-Rezepte (je Typ EINE Physik, die Saat eines Wagens ändert sie nicht) und keine Spurrinne (gemessen 5, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kceaaff8e3925",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 9.5,
+   "fremd": {
+    "s": 12.5,
+    "takte": 5,
+    "fremdS": 47.81,
+    "kerne": 3.839,
+    "fensterKerne": 3.839,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      18.38
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      8.67
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 22.81,
+    "diener": [
+     [
+      "System",
+      17.16
+     ],
+     [
+      "dwm.exe",
+      2.27
+     ]
+    ],
+    "geraetS": 6.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.44
+     ],
+     [
+      "svchost.exe",
+      2.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.08
+     ]
+    ],
+    "eigenS": 22.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T03:56:11.212Z",
+   "abdruck": "8b6814ea1629",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "gpu": "amd/rdna-3",
+   "konsum": "kceaaff8e3925",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 8.3,
+   "fremd": {
+    "s": 12,
+    "takte": 5,
+    "fremdS": 26.78,
+    "kerne": 2.239,
+    "fensterKerne": 2.239,
+    "namen": [
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… EXIT tasks/bs23ry0gn.output; do sleep",
+      3.3
+     ],
+     [
+      "node.exe dienst/runde.cjs stand micha/AnazhRealm-profiband radeon ddaf883df80ffaeb188dba67",
+      2.16
+     ],
+     [
+      "bash.exe scratchpad/gpu-lauf.sh generationen-dump node scripts/diag-kreatur-takt.cjs --pro",
+      2.03
+     ]
+    ],
+    "dienerS": 6.56,
+    "diener": [
+     [
+      "System",
+      2.42
+     ],
+     [
+      "dwm.exe",
+      1.84
+     ]
+    ],
+    "geraetS": 8.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.86
+     ],
+     [
+      "svchost.exe",
+      3.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 22.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-23T03:57:41.478Z",
+   "abdruck": "982bb60551e5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kcf2d1f50c90a": "bVTRjpswEPyXPPbqMwkQjKV7cI5Tc1LbSz5hbdbAhUBkQ6hS9d8rkjgJcPuEzIx3PDv239kB1A4yfP60dTXjs2+z7zMLRyQWzRHN86ed8Vms5gv0ubgUFUK89jBlikNjaVlICrKCfI+kNQ0W5bM600BikDJOuzeRbSjV9EST7uVlTC0lpjVpQOONGLJUh3wMbG0GEgm0+tzsCg49fy41p+diifhI6K26X0JsAh1sWDLaTEKVDtXGyzDCkL93QryJicq0AGxIWVTW9Z2nUaw9/tBrwjHQkRNgXqK5ktIIF3HgxK56O3trRkRdttYOmjE/DReMUxqPsRnaQuUNOZhaYnWFy3gRzYGvpm5nh5boR0UgJTA59joHrDI0Aw2er/RyzukfNt50B3s0QCrInZeeHy3k3RtK6XqqpTwLP7dwwuchzkENiP1Q6ZFS4eJ37JfWt79uPcnEvbaTZlblhdkPbdIBLjyf/5xKszmkaMiuts0NzQIAZNdbkFCxFX24xsGy90M5HgCwh6BQRsV64qGtddOBQZId2isRAwyjkAvxPgE3sN+7/Gs/8NV4gLbpA/4oI4x8zZac0qfLBZke+nIdyAmL0pG0DoJ4chOPBvYEZGYKrd3EZah0/FVAOywbIuu6cVtiFIHPqU+rxyH/7npb3x5mmATej9fVVozqVYx1nzvUprmdVC49HXDdB6VTE3RhGtKByh18oSVCzL+AntCUmOHARhmxuI92px6Vuo+nQXBPkymfCuwNrmxr3ZAVBDLkX4ykQ7OTUO2cTC9Sy0v8Vh9iPTQl2W5YQmk3XPWz3s8kF9eND6jowdS66F8/mkNrcyib+9P/7z8=",
+  "kd0d2ef0090ca": "jVVNj5swEP0vOXbrNQkQwNIenCVqVmq7ibpSpd7GZgxsCEQ2hCpV/3tFEicB9tA5IGTm482b5+HPZA9yCyk+vpuqnLDJp8nniYEDEoP6gPrx3UzYJJLTGbqMn41yzr90blLn+9rQIhcURAnZDkmja8yLR3kKA4FeEjLaLnm6plTRI41bfrVn/vQ0TFMITCpSg8JrEj9MlM+Gjo1JQSCBRp0KX5x9x50KxejJwpi/xvRq7TfO157y1mE8SCagTPrIo7kfoM9eWs6XY5RJDliTIi+NrTtNgkg57K7WKEZDS46AWYH6EpQEOIs8C3bRUdLRNAhURWNMr1joJv4sZJRGQ98UTS6zmux1JbC8uItoFkyBLdpRH+m+IeoeEQgBoRhynQGWKeoeBseVaj5l9Hc4TLqFHWogJWSWS8cNZuLGDaV0NcZSnICfSljgUx+nIHuB3VC7p5UQPXRHq+tXex6nN5nxzaiYkVmud32alIczxx32bjJIUJNtZeqrZ+gBYHi5DTHlG94Jaygqc2vIxgFAeCcSGlK+GvFnKlW3oJGk++YSiB76gc94OlKVqWG3s9pXrufKUQN1J+57GH7gqnDOKH04X47xLM5XgRwxL2yQUp4X+ex54Q2dDxp2BESqc6XsxIUvVfSRQFssaiKqqrZpMQjAZdSl5f2Qv7d8kfLlbYTLd9/5+fXXj7f7uXZrKH3+qEKl62u3Yu4oj6lTp3IIvs11TVqQmXWfKYEQDUk8oi4wxR6NIgijTtatvMGJPfvy0BPtcTTlY44dwaVpjB2yBE/4Z3VcluRLf/W0qLcCyq2F6gRy3skwTvkrX92xsuIvb8665f9nS77piuxR0r2uVN5tQ5pBYzIo6ttv4e8/",
+  "k303ee5af34b5": "bVXBcpswEP0XH5sqwgaM0EwOcsjUmUkb+9rbSqyAGINHgtBxp//ekW1sA9kTA+/tPr3dFX9nB1A7yPDxw9bVjM++zb7PLHwisWg+0Tx+2BmfxWq+QJ+LrXCxEUI8O5gyxaGxtCwkBVlBvkfSmgaL8lGdaCAxSBmn3YvINpRqeqRJ9/Q0ppYS05o0oPFKDFmqQz4GtjYDiQRafSp2AYeeP5ea01OwRLwn9BodE2IT6GDDklEyCVU6VBsvwwhD/toJ8SImKtMCsCFlUdm+7jyNYu3xW62fE46BjhwB8xLNhZRGuIiDXuzK2emsGRF12Vo7KMb8NFwwTmk8xmZoC5U35GBqidUFLuNFNAe+mrqdHVqi7xWBlMDk2OscsMrQDDR4vtLLOad/2DjpDvZogFSQ9156frSQN28opeuplvIk/FSiFz4PcQ5qQHRNpZ+Uiku4Z8rW16/9+yQTt9hOilmVF2Y/tEkHuPB8/jaVZnNI0ZBdbZsrmgUAyPilGj1twyYYD5a9HarnAQC7GxTKqFhPPLS1bjowSLJDeyFigGEUciFeJ+AG9vt+/rUf+GrcQNu4Ab+XEUa+ZktO6cN5QaaHPq8DOWJR9iStgyCebOKngT0BmZlC677jMlQ6/mpAOywbIuu66VNiFIHPqU+r+yb/6pytL3c9TALvx9vv7VYM41mMdZ8q1Ka5nlQuPR1w7QalUxN0YRrSgcp7+EJLBCd90pMjmhIzHNgoIxa70e70WffRXTHR5QrQD4PBPU4zFugMrmxr+yYrCGTIv2hJh2Ynodr1Mr1ILc/jt3oX66EnyXbDEkq7oVV+5vxM8tX5vXJL0t9TB1T0YGpduJuQ5tDaHMrm9hv49x8=",
+  "kceaaff8e3925": "bVXBcpswEP0XH5sSYQNGaCYHOWSazKSNfe1tJVZAjMEjgem403/vyLZsA9mj2Lf79Pat+Dvbg9xCjo+fpqlnbPZt9n1m4ICeQX1A/fhpZmyWyPkCA8bPQTjnzzZN6nLfGlKVgoCoodih1+kWy+pRnmAgMMwoI/0Lz9eEKHIkaf/0NIZWArPGa0HhFRjRTEVsnNiZHAR60KlTs0ty5AdzoRg5BU35R0qu0VPO16EK1zQdFRNQZ0O2yTKKMWJvPecvfMIyKwFbrypr4/rOszhRPrv1+jnBaOi9I2BRob6AshgXSejIrqycVpoRUFWdMYNmNMiiBWWEJOPcHE0pi9bb60ZgfUkXySKeA1tN1c73nafuGYEQQMVY6wKwzlEPOPiBVMs5I3/ouOgWdqjBq6FwWvpBvBA3bQghr1Mu1Yn4qYUjPo9wDnIAtEMlB0K4s9/BHr1ev7rzNOe32EyaGVmUejeUSYW48AP2PqVmCshQe9vGtNdsGgIgvWxBSviGW3ONjWVul3I4AKB3RiGU8NeJhqZRbQ8avXzfXYAYYhRHjPO3SXILu53zvwrCQI4HaFpr8HsaURwoumSEPJwXZHrp8zp4RywrB1IqDJPJJh407DwQuS6VchMXkVTJVwbtsWo90TStK4lxDAEjAanvh/yrt7K+3M0wDf0f7783Gz6MZz7mferQ6PZ6U7H0VciUNUovJ9mlbr0eZOHSF0ogWOqTmRxRV5jjQEYR08Rau1dn3kf7xMSXJ0A9DIx7nFYs0Qpcm864IUsIRcS+GEmPeiug3jqafiyXZ/utPvjrUJN0s6YpIf1QqiC3eqbF6nwu7ZK4d2qPkux1o0r7EpICOlNA1d5+A//+Aw=="
+ }
+}
