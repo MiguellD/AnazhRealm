@@ -4,6 +4,33 @@
 // aus dem Strom der Sitzung (richter-akte.cjs), an der dichtesten Pose, an der die Probe endet.
 "use strict";
 const { leiter } = require("./k2-same.js").geruest;
+const { FAECHER } = require("./faecher.js");
+
+// DER HIMMEL AN EINER ADRESSE (planet.kosmos.systeme#1, das Gesetz des Fächers, stationen/faecher.js): a.zeit ist der Tag der Welt.
+// Gerufen wird der Leser des Spiels selbst (stamm/bild-himmel.js:327 `_kosmosJetzt`: die Bahnen in Stufen von HIMMEL.kosmosSchrittTage,
+// welt-licht `kosmosZeit`) an der Uhr dieser Adresse, gegen die Ephemeride der eigenen Bahn im selben Augenblick (welt-licht
+// `kosmosZeit` am Tag a.zeit, ohne Stufe): je Planet der Winkel zwischen Himmel und Bahn. Die Uhr der Welt kehrt danach zurück
+const HIMMEL_AN = async (r, T, a) => {
+    const st = r.state, wm = st.worldMeta, WL = window.__weltLicht;
+    if (!WL || typeof WL.kosmosZeit !== "function" || typeof r._kosmosJetzt !== "function") return { fehlt: "kein Kosmos-Gesetz (welt-licht kosmosZeit) oder kein Leser (_kosmosJetzt)" };
+    const tag0 = wm.tag, uhr0 = st.timeOfDay;
+    let k;
+    try {
+        wm.tag = Math.floor(a.zeit);
+        st.timeOfDay = a.zeit - Math.floor(a.zeit);
+        k = r._kosmosJetzt();
+    } finally {
+        if (tag0 === undefined) delete wm.tag;
+        else wm.tag = tag0;
+        st.timeOfDay = uhr0;
+    }
+    const himmel = k.zeit.planeten, bahn = WL.kosmosZeit(k.K, a.zeit).planeten;
+    const grad = himmel.map((p, i) => {
+        const q = bahn[i].richtung, d = p.richtung[0] * q[0] + p.richtung[1] * q[1] + p.richtung[2] * q[2];
+        return (Math.acos(Math.max(-1, Math.min(1, d))) * 180) / Math.PI;
+    });
+    return { abw: Math.max(0, ...grad), planeten: himmel.length, stufe: k.zeit.t, jahrTage: k.jahrTage };
+};
 const LEITERN = [];
 
 // ═══════════════════════════════════════ Perspektive kosmos ═══════════════════════════════════════
@@ -361,6 +388,7 @@ const LEITERN = [];
                     umfang: { verlangt: 1e11, einheit: "Systeme", wortlaut: "10¹¹ Systeme, keines gespeichert", feld: "umfang" },
                 },
             },
+            seite: { FAECHER, HIMMEL_AN },
             lauf: async function systemeLauf(H, P, L) {
                 const z = await L.ev(
                     `const st = r.state, koerper = [];
@@ -374,7 +402,25 @@ const LEITERN = [];
                 );
                 L.zeile("Systeme der Sitzung: " + JSON.stringify(z));
                 const sys = "die Welt trägt EIN System (Saat " + z.saat + "): Körper " + z.koerper.join(", ") + ", " + z.planeten + " Planeten mit eigener Bahn — die Wandelsterne " + JSON.stringify(z.wandel) + " sind Punkte des Sternfelds (stamm/bild-himmel.js:312)";
-                await L.je(1, async () => L.umfang(1, z.planeten, sys));
+                // S1 ÜBER DEN FÄCHER (stationen/faecher.js): ein Spieljahr, je Tag kurz vor der nächsten Stufe des Himmels (der Ort der
+                // größten Abweichung), der Leser des Spiels gegen die Ephemeride; der Mond trägt keine eigene Bahn (welt-licht.js:814
+                // `mondRichtung` = −Sonne: stets Vollmond) — die Sprosse bleibt beim Namen offen, die Planeten stehen gemessen daneben
+                await L.je(1, async () => {
+                    const jahr = (await L.ev("return r._kosmosJetzt().jahrTage;", 10)) || 365;
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.HIMMEL_AN, export: "welt-licht.js:2020 kosmosZeit (Kepler, kBahn)", leser: "stamm/bild-himmel.js:327" },
+                        adressen: { zeiten: Array.from({ length: Math.round(jahr) }, (_, d) => d + 0.999) },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: { ephemeride_abw_grad: { wie: "max", feld: "abw" }, planeten: { wie: "min", feld: "planeten" } },
+                        schlecht: { feld: "abw", richtung: "max" },
+                        pose: (a) => "Himmel bei Nacht am Tag " + a.zeit + " (worldMeta.tag + Uhr), Blick zum Planeten der größten Abweichung",
+                        ungemessen: ["Mondphase je Woche im Bildpaar (am Gerät; der Mond der Welt hat keine Phase)"],
+                    });
+                    L.zeile("Systeme S1: " + R.akte.slice(0, 400));
+                    if (R.fehlt) return L.leser(1, R.fehlt, 0);
+                    L.leser(1, "der Mond hat keine eigene Bahn: welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 (stets Vollmond, keine Phase je Woche) — Planeten: " + R.werte.planeten + " mit eigener Bahn, " +
+                        "Himmel gegen Ephemeride über " + R.gemessen + " Tage max " + (Math.round(R.werte.ephemeride_abw_grad * 1e4) / 1e4) + "° (Soll ≤ 0,5°) · " + R.akte, R.werte.planeten);
+                });
                 await L.je(2, async () => L.umfang(2, z.planeten, sys));
                 await L.je(3, async () => L.umfang(3, 0, "kein Riesenplanet: " + z.planeten + " Planeten, also 0 Monde je Riese (der EINE Mond der Welt kreist um keinen Riesen)"));
                 await L.je(4, async () => L.umfang(4, 1, sys));
