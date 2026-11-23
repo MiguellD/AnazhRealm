@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "gtx",
- "zeit": "2026-11-23T06:05:33.659Z",
+ "zeit": "2026-11-23T06:36:44.507Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -309,6 +309,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.flur#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.33,
+   "gpu": "nvidia/pascal",
+   "konsum": "kcf2d1f50c90a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd0d2ef0090ca",
+   "s": 17.8,
+   "fremd": {
+    "s": 22.9,
+    "takte": 10,
+    "fremdS": 8.5,
+    "kerne": 0.371,
+    "fensterKerne": 0.419,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.73
+     ],
+     [
+      "sh.exe dienst-omen/landung-dienst.sh",
+      1.06
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.05
+     ]
+    ],
+    "dienerS": 9.38,
+    "diener": [
+     [
+      "dwm.exe",
+      4.33
+     ],
+     [
+      "System",
+      3.28
+     ]
+    ],
+    "geraetS": 7.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.34
+     ],
+     [
+      "svchost.exe",
+      2.13
+     ],
+     [
+      "SearchIndexer.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 93.73,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T06:36:44.507Z",
+   "abdruck": "46998f7af7ec",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
