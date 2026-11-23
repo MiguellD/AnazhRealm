@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 10.2 s · am Messort stadt-voll (ego) nach 10.2 s, 251 Takte, Anlauf stand
-@@ 181 s · Verkehr: {"n":21,"wagen":21,"fahrer":42,"kollisionen":0,"stillstand":0,"reisetempo":0.6167193233401304,"zeitluecke":2.7601067562965294,"luecken":60945,"stunden":0,"stundeS":2500000000000,"verkehrS":1221.5,"spielS":1221.5,"wandS":170.8,"msJeTakt":14,"takte":12215,"fehler":0,"wegM":131304}
-@@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 1221.5 von 2500000000000 s in 12215 Takten, 170.8 s Wand (14 ms je Takt)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal
