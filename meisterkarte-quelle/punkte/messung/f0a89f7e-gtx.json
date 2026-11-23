@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "gtx",
- "zeit": "2026-11-23T07:08:42.067Z",
+ "zeit": "2026-11-23T07:12:45.519Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -1411,6 +1411,70 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.leben.evolution.stammbaum#1",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 1221.5 von 2500000000000 s in 12215 Takten, 170.8 s Wand (14 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 1221.5 von 2500000000000 s in 12215 Takten, 170.8 s Wand (14 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.2,
+   "fremd": {
+    "s": 183.3,
+    "takte": 84,
+    "fremdS": 54.05,
+    "kerne": 0.295,
+    "fensterKerne": 0.483,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      9.14
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.16
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.08
+     ]
+    ],
+    "dienerS": 54.95,
+    "diener": [
+     [
+      "dwm.exe",
+      26.98
+     ],
+     [
+      "System",
+      17.08
+     ]
+    ],
+    "geraetS": 46.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.33
+     ],
+     [
+      "svchost.exe",
+      15.13
+     ],
+     [
+      "SearchIndexer.exe",
+      0.91
+     ]
+    ],
+    "eigenS": 264.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T07:12:45.519Z",
+   "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  }
