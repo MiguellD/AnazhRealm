@@ -485,9 +485,17 @@ function leibInstall(cfg) {
         st.yaw = gier;
         st.pitch = 0;
         pm.position.set(x, y + 1.0, z);
+        // DER WAGEN STEHT, WIE DIE WELT IHN AN DIESER STELLE STELLT (foundry-halten 3): ein Ritt an neuer Stelle beginnt mit frischem
+        // Fahr-Zustand (wie `mountArchitecture`), der Stand ohne Zeit des Ritts (`_rittSchritt`) stellt Ebene, Höhe und Sitz HIER. Bis
+        // hier trug der Wagen den Fahr-Zustand der Stelle, an der er zuletzt Takte fuhr: die Verfolger-Kamera las am 30°-Hang die
+        // Ebene der ersten Stelle in der Gier jeder Pose, stand im Hang und rückte auf 2,6–3,8 m ein (hang ritt 8,0 %, 21 von 112
+        // Stellungen) — ein Zustand, den das Spiel nie hat (der Fahr-Schritt stellt die Ebene je Takt an seiner Lage); main maß ihn
+        // nicht, weil der Wagen dort ohne Takt ohne Fahr-Zustand blieb und die Kamera eine flache Fahrbahn las.
+        gt._fahr = null;
+        r._rittSchritt(0);
         if (gt.instanced) r._archInstanceUpdate(gt);
         if (gt.mesh) {
-            gt.mesh.position.set(x, y + 0.5, z);
+            gt.mesh.position.set(x, gt.position.y, z);
             gt.mesh.rotation.y = gt.rotationY;
             gt.mesh.updateMatrixWorld(true);
         }
