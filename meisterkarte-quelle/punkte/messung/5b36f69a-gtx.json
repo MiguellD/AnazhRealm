@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T16:11:42.598Z",
+ "zeit": "2026-11-23T18:07:27.826Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -4983,210 +4983,42 @@
   },
   "karte2.planet.wetter.vorhersage#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.vorhersage#1) — offen, UNGEMESSEN",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.vorhersage#1) — offen, UNGEMESSEN",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-23T14:53:19.467Z",
+   "zeit": "2026-11-23T18:07:27.790Z",
    "abdruck": "1d1dbcc29cc5",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.massstab.sprung#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 357 s von karte2.same.massstab.sprung#1) — offen, UNGEMESSEN",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 357 s von karte2.same.massstab.sprung#1) — offen, UNGEMESSEN",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-23T14:53:19.501Z",
+   "zeit": "2026-11-23T18:07:27.826Z",
    "abdruck": "7f54477500db",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   }
  },
  "sitzung": {
-  "start": "2026-11-23T16:04:33.086Z",
-  "ordner": "sitzung-20261123-170433",
+  "start": "2026-11-23T17:22:20.315Z",
+  "ordner": "sitzung-20261123-182220",
   "port": 7804,
-  "warten": 0.04,
-  "bootS": 7.3,
-  "grundstellungS": [
-   3.8
-  ],
-  "proben": 2,
+  "warten": 45.12,
+  "grundstellungS": [],
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": null,
-    "vor": "karte2.same.gedaechtnis.alter#1",
-    "s": 27.8,
-    "takte": 830,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.entfaltung.schirm#1",
-    "s": 22.6,
-    "takte": 585,
-    "chunks": 81,
-    "nach": "der Tür"
-   }
-  ],
-  "wegeTueren": [
-   {
-    "vor": "karte2.same.entfaltung.schirm#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] …",
-    "s": 3.8
-   }
-  ],
-  "felder": [
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "weg": [
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__nahSpeicher",
-     "__imSchuss",
-     "__letzteSpiegel"
-    ]
-   },
-   {
-    "probe": "karte2.same.entfaltung.schirm#1",
-    "weg": [
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__bandDecke",
-     "__zensusCalls"
-    ]
-   }
-  ],
-  "wirt": [
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     191.3,
-     443.1
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.entfaltung.schirm#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     192.5,
-     277.2
-    ],
-    "ungemessen": null
-   }
-  ],
-  "messHalt": [
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.gedaechtnis.alter#1",
-    "gehalten": [
-     "tiere",
-     "skala",
-     "spiegel"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.entfaltung.schirm#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   }
-  ],
-  "anOrt": [
-   {
-    "vor": "karte2.same.entfaltung.schirm#1",
-    "anders": [
-     "worldMeta.kalender"
-    ],
-    "wie": {
-     "worldMeta.kalender": "undefined → undefined"
-    }
-   }
-  ],
-  "ciBlicke": 3,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 3355,
-   "frameP95": 33.42,
-   "taktP95": 31.55,
-   "vramMax": 207.9,
-   "seiten": 2,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.same.entfaltung.schirm#1",
-     "m": 1090,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.gedaechtnis.alter#1",
-     "m": 956,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 509,
-   "luecken": 4,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-  },
-  "fahrtS": 586.4,
-  "minuten": 9.93
+  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
+  "minuten": 45.13
  }
 }
