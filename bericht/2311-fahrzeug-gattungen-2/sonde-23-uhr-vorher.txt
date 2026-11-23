@@ -1,0 +1,31 @@
+Stunde 23 Proben 3 knapp [0.07,"8|15",33356,840,438,null,"wagen","transporter:faehrt:3.1:1586°:2.60×0.96@839.9,437.7","kompakt_fwd:faehrt:0.0:134
+k33356 t=0.065
+W8 transporter v3.147 grund=null vorne=null umf=7 Fs=24.526 Fi=38
+  W am Fuß s=24.63 quer=0.091 gier−tang=1425.5° rund=0.615
+  O15 kompakt_fwd v0 zu=faehrt grund=wagen hl=2.02 hw=0.905
+    O-Punkt 0: s=27.91 (vor 3.38) quer=3.741 Schwelle 1.602 frei
+    O-Punkt 1: s=26.68 (vor 2.15) quer=1.887 Schwelle 1.675 frei
+    O-Punkt 2: s=28.50 (vor 3.98) quer=1.597 Schwelle 1.522 frei
+    O-Punkt 3: s=27.33 (vor 2.81) quer=5.879 Schwelle 1.602 frei
+    O-Punkt 4: s=29.30 (vor 4.78) quer=5.569 Schwelle 1.413 frei
+    W-Ecken zu O: 1.720 0.066 5.585 5.221
+k33360 t=0.105
+W8 transporter v3.499 grund=null vorne=null umf=7 Fs=24.85 Fi=38
+  W am Fuß s=24.91 quer=0.069 gier−tang=1428.6° rund=0.615
+  O15 kompakt_fwd v0 zu=faehrt grund=wagen hl=2.02 hw=0.905
+    O-Punkt 0: s=27.91 (vor 3.06) quer=3.741 Schwelle 1.602 frei
+    O-Punkt 1: s=26.68 (vor 1.83) quer=1.887 Schwelle 1.675 frei
+    O-Punkt 2: s=28.50 (vor 3.65) quer=1.597 Schwelle 1.522 frei
+    O-Punkt 3: s=27.33 (vor 2.48) quer=5.879 Schwelle 1.602 frei
+    O-Punkt 4: s=29.30 (vor 4.45) quer=5.569 Schwelle 1.413 frei
+    W-Ecken zu O: 1.808 0.105 5.364 4.902
+k33364 t=0.149
+W8 transporter v3.784 grund=null vorne=null umf=7 Fs=25.087 Fi=39
+  W am Fuß s=25.15 quer=0.047 gier−tang=1428.0° rund=0.615
+  O15 kompakt_fwd v0 zu=faehrt grund=wagen hl=2.02 hw=0.905
+    O-Punkt 0: s=27.91 (vor 2.82) quer=3.741 Schwelle 1.602 frei
+    O-Punkt 1: s=26.68 (vor 1.59) quer=1.887 Schwelle 1.675 frei
+    O-Punkt 2: s=28.50 (vor 3.42) quer=1.597 Schwelle 1.522 frei
+    O-Punkt 3: s=27.33 (vor 2.25) quer=5.879 Schwelle 1.602 frei
+    O-Punkt 4: s=29.30 (vor 4.21) quer=5.569 Schwelle 1.413 frei
+    W-Ecken zu O: 1.890 0.149 5.172 4.622

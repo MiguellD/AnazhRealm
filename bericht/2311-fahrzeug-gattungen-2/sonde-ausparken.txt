@@ -1,0 +1,49 @@
+Stunde 23 Ereignisse 12 ausscheren [1.196,16,"transporter",18424,751,580,0.924,-22.4]
+k396 W8 transporter über 0.503 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.47943650475364163
+   Bild 663.54,452.95 Sim 663.54,452.95,1.94 (Bild−Sim 0.00 m) · F.s 2.99 F.i 3/224 lang 173.8 Fenster 0..9
+   Fuß Bild: s 3.11 quer 0.52 · Fuß Sim: s 3.11 quer 0.52 · Ecke 663.07,455.69 bq 2.387 bi 5
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k400 W8 transporter über 0.536 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.561620058842839
+   Bild 663.62,453.2 Sim 663.62,453.2,1.94 (Bild−Sim 0.00 m) · F.s 3.23 F.i 3/224 lang 173.8 Fenster 0..10
+   Fuß Bild: s 3.43 quer 0.59 · Fuß Sim: s 3.43 quer 0.59 · Ecke 663.25,455.95 bq 2.42 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k404 W8 transporter über 0.55 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.5954439635486476
+   Bild 663.66,453.32 Sim 663.66,453.32,1.94 (Bild−Sim 0.00 m) · F.s 3.43 F.i 4/224 lang 173.8 Fenster 0..10
+   Fuß Bild: s 3.55 quer 0.61 · Fuß Sim: s 3.55 quer 0.61 · Ecke 663.34,456.08 bq 2.434 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k408 W8 transporter über 0.562 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.616155825190069
+   Bild 663.7,453.45 Sim 663.7,453.45,1.94 (Bild−Sim 0.00 m) · F.s 3.55 F.i 4/224 lang 173.8 Fenster 0..10
+   Fuß Bild: s 3.68 quer 0.64 · Fuß Sim: s 3.68 quer 0.64 · Ecke 663.44,456.2 bq 2.446 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k412 W8 transporter über 0.57 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.6344329013568203
+   Bild 663.75,453.57 Sim 663.75,453.57,1.94 (Bild−Sim 0.00 m) · F.s 3.68 F.i 4/224 lang 173.8 Fenster 0..10
+   Fuß Bild: s 3.81 quer 0.66 · Fuß Sim: s 3.81 quer 0.66 · Ecke 663.54,456.33 bq 2.454 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k416 W8 transporter über 0.576 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.6502686181327895
+   Bild 663.8,453.69 Sim 663.8,453.69,1.94 (Bild−Sim 0.00 m) · F.s 3.81 F.i 4/224 lang 173.8 Fenster 0..10
+   Fuß Bild: s 3.94 quer 0.67 · Fuß Sim: s 3.94 quer 0.67 · Ecke 663.64,456.45 bq 2.46 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k420 W8 transporter über 0.581 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.663657279153169
+   Bild 663.85,453.8 Sim 663.85,453.8,1.94 (Bild−Sim 0.00 m) · F.s 3.94 F.i 4/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.07 quer 0.68 · Fuß Sim: s 4.07 quer 0.68 · Ecke 663.75,456.57 bq 2.465 bi 6
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k424 W8 transporter über 0.591 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.6745940677888446
+   Bild 663.9,453.92 Sim 663.9,453.92,1.94 (Bild−Sim 0.00 m) · F.s 4.07 F.i 4/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.16 quer 0.69 · Fuß Sim: s 4.16 quer 0.69 · Ecke 663.85,456.69 bq 2.474 bi 7
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k428 W8 transporter über 0.598 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.6844006523608346
+   Bild 663.96,454.04 Sim 663.96,454.04,1.94 (Bild−Sim 0.00 m) · F.s 4.16 F.i 4/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.25 quer 0.71 · Fuß Sim: s 4.25 quer 0.71 · Ecke 663.96,456.81 bq 2.482 bi 7
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k432 W8 transporter über 0.604 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.7249844776369242
+   Bild 664.08,454.27 Sim 664.08,454.27,1.94 (Bild−Sim 0.00 m) · F.s 4.37 F.i 5/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.50 quer 0.74 · Fuß Sim: s 4.50 quer 0.74 · Ecke 664.18,457.04 bq 2.488 bi 7
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k436 W8 transporter über 0.604 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.7249844776369242
+   Bild 664.08,454.27 Sim 664.08,454.27,1.94 (Bild−Sim 0.00 m) · F.s 4.37 F.i 5/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.50 quer 0.74 · Fuß Sim: s 4.50 quer 0.74 · Ecke 664.18,457.04 bq 2.488 bi 7
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
+k440 W8 transporter über 0.598 zu=faehrt grund=null stufe=4 imBlick=false bildAlt=true heim=false umf=0 Fende=false Fquer=0.7572024818834869
+   Bild 664.2,454.5 Sim 664.2,454.5,1.94 (Bild−Sim 0.00 m) · F.s 4.62 F.i 5/224 lang 173.8 Fenster 0..11
+   Fuß Bild: s 4.76 quer 0.78 · Fuß Sim: s 4.76 quer 0.78 · Ecke 664.42,457.26 bq 2.482 bi 7
+   Linie: 0:663.44,449.7 4:664.11,452.86 8:666.14,455.47 12:669.13,457.64 16:672.59,458.97 20:676.17,458.8 24:679.7,457.66 28:683.37,456.29 32:687.07,454.91
