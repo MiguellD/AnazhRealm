@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-23T23:13:07.189Z",
+ "zeit": "2026-11-23T23:20:40.865Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -2369,200 +2369,323 @@
   },
   "karte2.leben.pflanzen.biome#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 86 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 86 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 30,007 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,007 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 113.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "exit": 0,
+   "minuten": 1.89,
+   "grund": "der Deckel der Leiter riss nach 30,007 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,007 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 113.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-23T23:01:24.783Z",
+   "s": 113.4,
+   "fremd": {
+    "s": 116.9,
+    "takte": 51,
+    "fremdS": 194.73,
+    "kerne": 1.665,
+    "fensterKerne": 2.374,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      49.39
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      22.11
+     ],
+     [
+      "node scripts/diag-blocker-netz.cjs --selftest",
+      19.92
+     ]
+    ],
+    "dienerS": 52.48,
+    "diener": [
+     [
+      "System",
+      19.94
+     ],
+     [
+      "dwm.exe",
+      19.14
+     ]
+    ],
+    "geraetS": 86.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.67
+     ],
+     [
+      "svchost.exe",
+      35.7
+     ],
+     [
+      "SearchProtocolHost.exe",
+      1.11
+     ]
+    ],
+    "eigenS": 285.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T23:20:40.865Z",
    "abdruck": "715011cc2e19",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-23T22:32:45.542Z",
-  "ordner": "sitzung-20261123-233245",
+  "start": "2026-11-23T23:06:42.265Z",
+  "ordner": "sitzung-20261124-000642",
   "port": 7804,
-  "warten": 0.02,
+  "warten": 0.07,
   "bootS": 7.9,
   "grundstellungS": [
-   7,
-   4.4,
-   3.7
+   3.9,
+   5.4,
+   7.4
   ],
-  "proben": 5,
+  "proben": 4,
   "freigaben": [],
-  "offen": [
-   "karte2.mensch.menge.bevoelkerung#1",
-   "karte2.planet.kosmos.welten#1",
-   "karte2.leben.tiere.verhalten#2",
-   "karte2.mensch.kopplung.leib#1",
-   "karte2.mensch.kopplung.kultur#2",
-   "karte2.leben.pflanzen.biome#1"
-  ],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
-    "s": 31.5,
-    "takte": 622,
+    "ort": "wiese",
+    "vor": "karte2.planet.kosmos.welten#1",
+    "s": 36,
+    "takte": 610,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "dorf",
-    "vor": "karte2.mensch.fahrzeug.maschine#1",
-    "s": 58.5,
-    "takte": 1542,
-    "chunks": 95,
-    "nach": "der Wanderung von karte2.planet.kosmos.himmelsmechanik#1"
-   },
-   {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.wirtschaft.handel#1",
-    "s": 147.3,
-    "takte": 1849,
+    "ort": null,
+    "vor": "karte2.leben.tiere.verhalten#2",
+    "s": 26.2,
+    "takte": 775,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.kultur.verstaendigung#1",
-    "s": 127.4,
-    "takte": 1545,
+    "ort": null,
+    "vor": "karte2.mensch.kopplung.leib#1",
+    "s": 27.3,
+    "takte": 783,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.fahrzeug.lenker#1",
-    "s": 119,
-    "takte": 1381,
+    "ort": null,
+    "vor": "karte2.leben.pflanzen.biome#1",
+    "s": 28.8,
+    "takte": 697,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "karte2.mensch.wirtschaft.handel#1",
-    "wege": "wege +10 [-119.1,-274.9,279.2,201/278] [-467.8,-1426.1,-347.1,-1284.2/3] [-505.1,-1436.3,-350.4,-1281.3/24] …",
-    "s": 7
-   },
-   {
-    "vor": "karte2.mensch.kultur.verstaendigung#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] …",
-    "s": 4.4
-   },
-   {
-    "vor": "karte2.mensch.fahrzeug.lenker#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] …",
-    "s": 3.7
+    "vor": "karte2.leben.pflanzen.biome#1",
+    "wege": "wege +2 [-1.2,-31.2,206.5,0/2] [-27.7,-58.3,231.6,16/91]",
+    "s": 7.4
    }
   ],
   "felder": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "karte2.planet.kosmos.welten#1",
     "weg": [
-     "__aufnahmeRuhig",
-     "__imSchuss",
-     "__ruheBilder"
+     "__imSchuss"
     ]
    },
    {
-    "probe": "karte2.mensch.fahrzeug.maschine#1",
+    "probe": "karte2.leben.tiere.verhalten#2",
     "weg": [
-     "__nahSpeicher",
+     "__rafferEnde",
+     "__rafferKurz",
+     "__wetterSpionBuch",
+     "__weltaktSpionBuch",
+     "__buehneUhr",
      "__imSchuss",
-     "__letzteSpiegel"
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung"
+    ]
+   },
+   {
+    "probe": "karte2.mensch.kopplung.leib#1",
+    "weg": [
+     "__dorfDerProbe",
+     "__rafferEnde",
+     "__rafferKurz",
+     "__wetterSpionBuch",
+     "__weltaktSpionBuch",
+     "__buehneUhr",
+     "__abbruchEpoche"
+    ]
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "weg": [
+     "__rafferEnde",
+     "__rafferKurz",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__zensusCalls",
+     "__abbruchEpoche"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "karte2.planet.kosmos.welten#1",
     "anders": [
+     "r._editGen",
+     "r._wegAnFn",
+     "r._wegBordFn",
+     "r._lavaKrusteFn",
+     "r._feuchteLeser",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "r._editGen": "getauscht: () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1)",
+     "r._wegAnFn": "getauscht: [object Function]",
+     "r._wegBordFn": "getauscht: [object Function]",
+     "r._lavaKrusteFn": "getauscht: [object Function]",
+     "r._feuchteLeser": "getauscht: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._wolkenZeit": "fehlt",
+     "r._weltaktGehalten": "fehlt",
+     "r._setWeather": "fehlt",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     223.9,
-     286.8
+     228.3,
+     325.7
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.mensch.fahrzeug.maschine#1",
+    "probe": "karte2.leben.tiere.verhalten#2",
     "anders": [
-     "window.__ortSchritt"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._setWeather",
+     "r._weltaktGehalten",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest"
     ],
     "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
     },
     "haelt": [],
     "heap": [
-     401.4,
-     465.8
+     194.5,
+     204.1
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.mensch.kultur.verstaendigung#1",
+    "probe": "karte2.mensch.kopplung.leib#1",
     "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._setWeather",
+     "r._weltaktGehalten",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest",
      "window.__ortSchritt"
     ],
     "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [],
+    "haelt": [
+     "return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime };"
+    ],
     "heap": [
-     447.8,
-     528.3
+     193.7,
+     244.6
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.mensch.fahrzeug.lenker#1",
+    "probe": "karte2.leben.pflanzen.biome#1",
     "anders": [
-     "window.__ortSchritt"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._tickNahWiese",
+     "r._ruheImBild",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest"
     ],
     "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._tickNahWiese": "neu: () => 0",
+     "r._ruheImBild": "neu: () => 0",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
     },
     "haelt": [],
     "heap": [
-     439.5,
-     439.9
+     193.3,
+     190.4
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "ort": "genesis",
-    "m": 1082.54,
-    "dreh": 0.401
-   },
-   {
-    "probe": "karte2.mensch.fahrzeug.maschine#1",
-    "ort": "dorf",
-    "m": 243.12,
-    "dreh": 0
+    "probe": "karte2.planet.kosmos.welten#1",
+    "ort": "wiese",
+    "m": 0,
+    "dreh": 1.972
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "karte2.planet.kosmos.welten#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.leben.tiere.verhalten#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.tiere.verhalten#2",
     "gehalten": [
      "skala",
      "spiegel",
@@ -2571,25 +2694,37 @@
     "offen": []
    },
    {
-    "probe": "karte2.mensch.fahrzeug.maschine#1",
-    "gehalten": [
-     "skala",
-     "spiegel",
-     "tiere"
-    ],
-    "offen": []
+    "probe": "karte2.mensch.kopplung.leib#1",
+    "halt": -1000000000,
+    "zurueck": 0
    },
    {
-    "probe": "karte2.mensch.wirtschaft.handel#1",
+    "probe": "karte2.mensch.kopplung.leib#1",
     "gehalten": [
-     "tiere"
+     "skala",
+     "spiegel"
+    ],
+    "offen": [
+     "skala"
+    ]
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
     ],
     "offen": []
    }
   ],
   "anOrt": [
    {
-    "vor": "karte2.mensch.wirtschaft.handel#1",
+    "vor": "karte2.leben.tiere.verhalten#2",
     "anders": [
      "worldMeta.kalender"
     ],
@@ -2598,7 +2733,7 @@
     }
    },
    {
-    "vor": "karte2.mensch.kultur.verstaendigung#1",
+    "vor": "karte2.mensch.kopplung.leib#1",
     "anders": [
      "worldMeta.kalender"
     ],
@@ -2607,7 +2742,7 @@
     }
    },
    {
-    "vor": "karte2.mensch.fahrzeug.lenker#1",
+    "vor": "karte2.leben.pflanzen.biome#1",
     "anders": [
      "worldMeta.kalender"
     ],
@@ -2616,38 +2751,52 @@
     }
    }
   ],
-  "felderBlind": [
+  "zeichner": [
    {
-    "probe": "karte2.mensch.kultur.verstaendigung#1",
-    "wann": "nach",
-    "fehler": "/eval ohne Antwort binnen 30 s"
+    "probe": "karte2.mensch.kopplung.leib#1",
+    "anders": [
+     "zeichner.renderer._renderObjectDirect",
+     "zeichner.renderer._renderScene"
+    ],
+    "wie": {
+     "zeichner.renderer._renderObjectDirect": "getauscht: function (object, material, scene, camera, ...rest) { const ",
+     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
+    }
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "anders": [
+     "zeichner.renderer._handleObjectFunction"
+    ],
+    "wie": {
+     "zeichner.renderer._handleObjectFunction": "getauscht: function (object, material, scene, camera, lightsNode, group"
+    }
    }
   ],
-  "ciBlicke": 6,
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 9213,
-   "frameP95": 41.7,
-   "taktP95": 39.75,
-   "vramMax": 223.2,
+   "bilder": 5755,
+   "frameP95": 33.42,
+   "taktP95": 28.63,
+   "vramMax": 143.9,
    "seiten": 4,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "probe": "karte2.planet.kosmos.welten#1",
      "m": 1083,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 1397,
-   "luecken": 21,
+   "zapfen": 849,
+   "luecken": 1,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1713.6,
-  "grund": "die Fahrt riss 1800 s am Grund-Deckel von karte2.mensch.menge.bevoelkerung#1, karte2.planet.kosmos.welten#1, karte2.leben.tiere.verhalten#2, karte2.mensch.kopplung.leib#1, karte2.leben.pflanzen.biome#1 — offen: karte2.mensch.menge.bevoelkerung#1, karte2.planet.kosmos.welten#1, karte2.leben.tiere.verhalten#2, karte2.mensch.kopplung.leib#1, karte2.mensch.kopplung.kultur#2, karte2.leben.pflanzen.biome#1",
-  "minuten": 28.71
+  "fahrtS": 946,
+  "minuten": 16
  }
 }
