@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T01:33:30.715Z",
+ "zeit": "2026-11-23T01:35:07.186Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -2909,6 +2909,76 @@
    },
    "zeit": "2026-11-23T01:33:30.715Z",
    "abdruck": "d154d4f5f3cb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift (fachwerk-core.js:2182) · gemessen 68 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift (fachwerk-core.js:2182) · gemessen 68 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4b98baf480a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k1669917f368e",
+   "s": 11.9,
+   "fremd": {
+    "s": 15.4,
+    "takte": 7,
+    "fremdS": 7.52,
+    "kerne": 0.489,
+    "fensterKerne": 0.605,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.78
+     ],
+     [
+      "silentConfig",
+      1.38
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx c12",
+      0.78
+     ]
+    ],
+    "dienerS": 5.2,
+    "diener": [
+     [
+      "dwm.exe",
+      2.34
+     ],
+     [
+      "System",
+      1.67
+     ]
+    ],
+    "geraetS": 5.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.5
+     ],
+     [
+      "svchost.exe",
+      1.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 26.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T01:35:07.186Z",
+   "abdruck": "f99ab870b106",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
