@@ -2269,7 +2269,11 @@ class AnazhRealm_feld_leben {
         for (const z of Array.isArray(v.aas) ? v.aas : []) {
             if (!Array.isArray(z) || typeof z[0] !== "string" || !Array.isArray(z[1])) continue;
             const L = z[1].filter((c) => Array.isArray(c) && typeof c[0] === "string" && zahl(c[1]) && zahl(c[2]));
-            if (L.length) aas.set(z[0], L.map(([id, hi, w]) => [id, hi, w]));
+            if (L.length)
+                aas.set(
+                    z[0],
+                    L.map(([id, hi, w]) => [id, hi, w])
+                );
         }
         const R = this._bestandRegionen().regionen;
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;

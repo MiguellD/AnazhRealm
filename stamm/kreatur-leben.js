@@ -2565,7 +2565,8 @@ class AnazhRealm_kreatur_leben {
         if (!L) return 0;
         const naehr = AnazhRealm.TAT_NARBE.aas.naehr;
         let n = 0;
-        for (const c of L) n += naehr * Math.min(1, Math.max(0, 1 - (h - c[1]) / this._tatDauer({ tat: "aas", w: c[2] })));
+        for (const c of L)
+            n += naehr * Math.min(1, Math.max(0, 1 - (h - c[1]) / this._tatDauer({ tat: "aas", w: c[2] })));
         return n;
     }
 
