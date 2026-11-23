@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 23.11. 23:59 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 76 von 1 718 (`karte-2-stand.json`: kern 5 · beide 50 · nachwache 26).**
+**STAND 24.11. 00:27 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 76 von 1 718 (`karte-2-stand.json`: kern 5 · beide 50 · nachwache 26).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; die Tafel trägt den Stand 22:30 am 5b36f69a und ist
   nach Runde 13 neu zu schreiben) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
   tore, decken, alles deine definitionen“): Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band · M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen
@@ -19,26 +19,32 @@
   (Radeon „UNGEMESSEN unter Last ×1,47“, p95 41,85 ms → neu messen in Ruhe); `planet.kosmos.sternhimmel#1` bucht nicht (die Radeon urteilt den Richter ROT).
 - ZUG: LANDUNG ≤ 10 MIN ist in Kraft (Dienst-Stand 468faae1, installiert 23:26). ERSTER ZUG z699 `w28-echt-ein-bein`: bau 23:39:03 → GELANDET 23:48:19 =
   9 min 16 s (bau 2:32 · urteil 6:24 · landen 0:20), main → a8a9ab16; Vergleich z698 37 min. Offen: z699 trug kein Spiel-Byte, mit Spiel-Code maß die
-  Bau-Phase bis 11,6 min (Adresse: fahre.sh Stufe 1); vom Stempel (23:29:37) bis zur Abholung (23:38) vergingen 9 min. NACHWACHE auf a8a9ab16: Lauf
-  45283121007 fuhr um 23:54 mit 18 voll-Beinen auf GitHub-Läufern (echt übersprungen); der Dienst meldet seit 23:26 „OHNE URTEIL: 20 Läufe auf main,
-  keiner trug die Batterie zu Ende“ — das erste Urteil unter dem neuen Gesetz steht aus.
-- RADEON, SPEICHER: der Speicher liegt in den Kern-Pools von Windows (paged 20,7 + nonpaged 8,7 GB; verfügbar 6,7 von 31,1 GB; Laufzeit 140 h seit 18.11.;
-  die Prozesse halten ~6 GB; Treiber und Pool-Tag nicht benannt). Nur ein Neustart gibt ihn frei; der Schöpfer startet neu („ja sag mir wann“, 23:55).
-  DANACH: `bash artifacts/profiband/dienst/start.sh`, dann `--blick`; der Neustart tauscht auch `radeon-dienst.sh` (alle fünf Schleifen neu). Ein Zug in
-  Fahrt fällt dabei ohne Urteil und fährt als nächster Zug von selbst. Die verwaiste Welt an Port 4407 (Wache 23:39) fällt mit.
+  Bau-Phase bis 11,6 min (Adresse: fahre.sh Stufe 1); vom Stempel (23:29:37) bis zur Abholung (23:38) vergingen 9 min. 
+- NACHWACHE ROT main a8a9ab16 (24.11. 00:12; Lauf 45283121007, Job voll 18/18): `gate:foundry-crossfade`, Prüfung „SLOT-BILANZ: kein slotEntry-/Feld-Rest“,
+  1 Verletzung ohne Zahl, die 20 anderen Jobs grün. Die Spiel-Bytes und die Linse sind seit 8544438f unverändert (Diff: 5 Werkzeug-Dateien), dort urteilte
+  die volle Batterie auf integ-probe grün (Lauf 45273252006) — dasselbe Byte, zwei Urteile; z699 trug kein Spiel-Byte. IN FAHRT: Versuch 2 des Jobs
+  (00:21) und `linse-slot-rest` b2747d90 (die Prüfung nennt slotEntry, Gruppen, beide Felder und removeLief; Vorprüfung Lauf 45288504946, GPU-Probe
+  45288504794). Zeile im FUND-REGISTER (koordination 63ec31b9). Der Täter ist nicht benannt; die Nachwache nennt nur, sie hält keinen Zug auf.
+- RADEON NEU GESTARTET 24.11. 00:16 (der Schöpfer, auf mein „jetzt“): der Speicher lag in den Kern-Pools von Windows (Laufzeit 140 h; Treiber und Pool-Tag
+  nicht benannt) — verfügbar 6,7 → 20,3 von 31,1 GB, Pools paged 20,7 → 0,50 und nonpaged 8,7 → 0,71 GB. Die fünf Schleifen laufen seit 00:19
+  (`bash artifacts/profiband/dienst/start.sh`: Dienst-Stand 5ce15405, 65 Dateien, zug.cjs 72 Fälle und sammeln 18 von 18 grün; `radeon-dienst.sh` ist
+  mitgetauscht). Nach rund fünf Tagen Laufzeit die Pools wieder lesen und den Neustart vorschlagen.
 - IN FAHRT: OMEN `heap-loslassen` e1ce3b13 (WIP 23:22; Halter benannt: die Bauten der fernen Siedlung bleiben, `state.architectures` 2 454 → 3 267, Runde
   genesis 225,7 → stadt-voll 458,3 → zurück 387,9 MB; Auftrag: Schnitt am EINEN Abschied der Siedlung mit Runde 2× vorher ↔ nachher, Bildpaar, Vorprüfung;
   danach `pm-speicher-runde` für same.preis.speicher#1–#3) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
   (30 offen, ~4 min je Station), Schwanz 191; zwei Alarme „16 min ohne Fortschritt“ (23:04, 23:44) lösten sich von selbst · GTX 1050 `front-stoff` 5d53fa6e
-  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; START 22:30 in `zug/sitzung.txt`; seither kein Push), danach nacht-laterne · VIER
+  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; ihre Meldung kurz nach Mitternacht, von mir nicht nachgemessen: am lokalen Kopf 88c870cd5 Seiten-Delta
+  0,0027 → 0,0132 bei Soll 0,02 — alter#1 hängt am Gesetz in dieser Saat; sie setzt die Putz-Zeitkonstanten aus der Quelle und gibt mit alter#1 offen
+  ab), danach nacht-laterne · die OMEN antwortete auf die Frage von 23:59 (blockiert die Runde ihre Messung?) bis 00:27 nicht · VIER
   CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` hat 3d3f0b24 gepusht (23:49: „der Fächer als EINE Bauart
   (M4), technik#1 urteilt auf ihm“); `bewohner-satz`, `ort-ausstattung`, `nerv-bewegung` hatten um 23:56 noch keinen Zweig am Remote. Bericht je Zweig in
   `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht. Aus Konto 17: `leib-ausdruck` 13ef2e76 (WIP, Tiefe 3; offen K7 und das Bild) —
   `bewohner-satz` fasst dieselben zwei Stamm-Dateien an.
 - RADEON-REGEL (Schöpfer 23.11.: „direkt die radeon ans limit gefahren... altes learning vergessen“): höchstens ZWEI lokale Arbeiter, keiner mit schwerem
   Lauf, solange Runde oder Zug messen; Macher gehen in die Cloud; die Schwelle RAM ≥ 8 GB an `AvailableBytes` lesen, nie an `FreePhysicalMemory`.
-- WARTEND an der Radeon, einzeln aufzunehmen NACH dem Neustart: Stations-Heiler (16 am Apparat rote Fronten, 10 × „spawn ENAMETOOLONG“; nicht die Abschnitte,
-  die `pm-beobachter` anfasst) · Cloud-Ernte (Lese-Liste der ungelandeten Zweige zum Stempeln) · pm-Buchhalter (wartende pm-Zweige).
+- AN DER RADEON nach 00:25 wieder aufgenommen (per SendMessage an die Agent-Id): pm-Buchhalter (a1568895388f16a7b, wartende pm-Zweige) und Cloud-Ernte
+  (a8edb190197973084, nur lesen: die Liste der ungelandeten Zweige zum Stempeln). WARTEND: Stations-Heiler (a019f448dd2c13b4d; 16 am Apparat rote Fronten,
+  10 × „spawn ENAMETOOLONG“; nicht die Abschnitte, die `pm-beobachter` anfasst) — erst nach dem pm-Buchhalter, beide schreiben in punkte-maschine.
 - GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen). `pm-innen-ein-haus`: Rebase,
   Selbsttest und ein Lauf bau.innen#1 fehlen. Zu archivieren: `w28-iperka-arbeiter` 327a6ad5 und `iperka-arbeiter` 15a712f3 (gelandet als -2 in z698).
 - DANACH (steht auf `bewohner-satz` und `ort-ausstattung`): Tiefe 4, der Alltag aus Angebot × Antrieb → sport.regeln#1 · sport.geistspiel#1 ·
