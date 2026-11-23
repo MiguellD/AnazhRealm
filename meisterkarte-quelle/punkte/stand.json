@@ -20748,7 +20748,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#2 gtx: ROT: S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal an ddaf883d · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -20786,10 +20786,9 @@
      "id": "karte2.mensch.macht.wehrbau#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "ROT: S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -37687,7 +37686,7 @@
   "ohne": 3340
  },
  "kopfVoll": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
- "zeit": "2026-11-23T03:39:02.029Z",
+ "zeit": "2026-11-23T03:45:40.248Z",
  "vorher": "ddaf883d",
  "bilanz": {
   "gewinn": [],
