@@ -2128,7 +2128,19 @@
     // DIE TIEFE UNTER DEM DACH rechnet der Kern je Ecke jeder Rolle, deren Art einen Läufer trägt (`lauf` > 0: Putz und Gefach),
     // gegen die Unterseite der Dach-Rollen (`dach`: Deckung, Stroh; ein Dach aus Holz nennt sich nicht: seine Rolle trägt auch
     // jeden Balken) über ihr — `vor` Meter vor der Wand, im Raster `zelle` (`_eckLage`, zweite Stelle).
+    // DIE KANTE DES BALKENS (`kante` der Art: [Anteil, Breite in Metern, höchster Anteil an der Breite der Fläche]): wo der Balken
+    // an das Gefach stößt, steht eine Schattenfuge — die Ausfachung schwindet vom Holz (die Anschlussfuge des Sichtfachwerks,
+    // WTA-Merkblatt 8-3 „Ausfachungen von Sichtfachwerk“), die Kante ist gefast, Staub und Algen sitzen im Winkel. Die Fläche des
+    // Balkens dunkelt längs ihrer beiden langen Kanten über `Breite` (1,5 cm: Fuge und Fase zusammen) um `Anteil` (0,45) — beide
+    // am Bild gestellt, OHNE Messung; an schmalen Teilen höchstens über `höchster Anteil` ihrer Breite (¼: die Latte von 5 cm
+    // trägt je Seite 6 mm).
+    // Mittel-treu je Fläche: die Mitte hebt, was die Kante nimmt — fern, wo der Balken unter dem Pixel liegt, steht sein Ton.
+    // WO DIE KANTE IST nennt die Ecke (`_eckLage`, zweite Stelle: 1 an der einen langen Kante ihrer Fläche, 3 an der anderen,
+    // 0 = keine Angabe — das Holz trägt keinen Läufer, die Stelle ist frei; eine Art trägt Läufer ODER Kante).
+    // DIE STÄRKE (`staerke`): der EINE Faktor auf Ton, Hub und Rauheit jeder Art (`gefuegeZeilen`). Die Zahlen der Arten nennen
+    // das Maß am Ding; `staerke` ist am Bild gestellt (die Stufen × 1 · 2 · 3 in EINER Welt, Radeon 890M, 23.11.).
     var GEFUEGE_GESETZ = {
+        staerke: 1,
         fuss: { voll: 3, leer: 1.4 },
         spritz: { voll: 0.3, aus: 0.6, rand: 0.16 },
         lauf: { weit: 1.5, vor: 0.2, zelle: 0.25, dach: [2, 9] },
@@ -2138,8 +2150,8 @@
         art: {
             putz:        { korn: [0.004, 0.004], zug: [0.28, 0.06], wolke: [0.18, 1.6], faser: 1.5708, ton: [0.05, 0.03, 0.06], hub: [0.0005, 0.0015, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 2.5 },
             lehmputz:    { korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 2.5 },
-            holz:        { korn: [0.003, 0.09], zug: [0.045, 0.9], wolke: [0.12, 1.2], faser: 1.5708, ton: [0.12, 0.1, 0.08], hub: [0.0004, 0.0012, 0.002], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 1, spritz: 0.1 },
-            hirnholz:    { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.12, 0.12], faser: 0, ton: [0.1, 0.08, 0.05], hub: [0.0004, 0.0008, 0.001], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 0.78, spritz: 0.1 },
+            holz:        { korn: [0.003, 0.09], zug: [0.045, 0.9], wolke: [0.12, 1.2], faser: 1.5708, ton: [0.12, 0.1, 0.08], hub: [0.0004, 0.0012, 0.002], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 1, spritz: 0.1, kante: [0.45, 0.015, 0.25] },
+            hirnholz:   { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.12, 0.12], faser: 0, ton: [0.1, 0.08, 0.05], hub: [0.0004, 0.0008, 0.001], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 0.78, spritz: 0.1 },
             deckung:     { korn: [0.004, 0.004], zug: [0.05, 0.45], wolke: [0.5, 1.2], faser: 1.5708, ton: [0.05, 0.07, 0.09], hub: [0.0003, 0.0008, 0.002], woelb: [0.09, 0.08], rau: 0.04, wetter: 0.05, grau: 0, grund: 1 },
             stein:       { korn: [0.006, 0.006], zug: [0.04, 0.05], wolke: [0.3, 0.4], faser: 1.5708, ton: [0.08, 0.07, 0.1], hub: [0.0012, 0.004, 0.004], woelb: [0.12, 0.12], rau: 0.05, wetter: 0.05, grau: 0, grund: 1 },
             ziegelstein: { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.4, 0.6], faser: 1.5708, ton: [0.05, 0.05, 0.06], hub: [0.0003, 0.0006, 0.002], woelb: [0.03, 0.03], rau: 0.03, wetter: 0.05, grau: 0, grund: 1 },
@@ -2163,13 +2175,16 @@
     // dazu `rauFern`: was die Rauheit trägt, wenn das Relief unter dem Pixel liegt (die Streuung seiner Neigung geht in die Rauheit
     // — energie-treu: fern steht die Fläche nicht glatter als nah; Neigung je Skala ≈ 1,2 · Hub ÷ kleinstes Maß, ½ σ², höchstens 0,05).
     function gefuegeZeilen() {
-        var G = GEFUEGE_GESETZ;
+        var G = GEFUEGE_GESETZ, k = G.staerke, mal = function (x) { return x * k; };
+        if (!(k > 0)) throw new Error("fachwerk GEFUEGE_GESETZ: die Stärke fehlt");
         return G.reihe.map(function (name) {
             if (!name) return null;
             var a = G.art[name], s2 = 0;
             if (!a) throw new Error("fachwerk GEFUEGE_GESETZ: die Art " + name + " fehlt");
-            [[a.korn, a.hub[0]], [a.zug, a.hub[1]]].forEach(function (q) { var s = (1.2 * q[1]) / Math.min(q[0][0], q[0][1]); s2 += s * s; });
-            return { art: name, korn: a.korn, zug: a.zug, wolke: a.wolke, faser: a.faser, ton: a.ton, hub: a.hub, woelb: a.woelb, rau: a.rau, rauFern: Math.min(0.05, 0.5 * s2), wetter: a.wetter, grau: a.grau, grund: a.grund, fugeGrau: a.fugeGrau || 0, spritz: a.spritz || 0, lauf: a.lauf || 0, balken: name === G.faser.art ? G.faser.ton : 0 };
+            if (a.kante && a.lauf > 0) throw new Error("fachwerk GEFUEGE_GESETZ: die Art " + name + " trägt Läufer und Kante (EINE Stelle der Ecke)");
+            var ton = a.ton.map(mal), hub = a.hub.map(mal);
+            [[a.korn, hub[0]], [a.zug, hub[1]]].forEach(function (q) { var s = (1.2 * q[1]) / Math.min(q[0][0], q[0][1]); s2 += s * s; });
+            return { art: name, korn: a.korn, zug: a.zug, wolke: a.wolke, faser: a.faser, ton: ton, hub: hub, woelb: a.woelb, rau: a.rau * k, rauFern: Math.min(0.05, 0.5 * s2), wetter: a.wetter, grau: a.grau, grund: a.grund, fugeGrau: a.fugeGrau || 0, spritz: a.spritz || 0, lauf: a.lauf || 0, balken: name === G.faser.art ? G.faser.ton : 0, kante: a.kante || [0, 0, 0] };
         });
     }
     // DIE NUMMER DES GEFÜGES EINER ROLLE: die ihres Verbands, sonst die ihrer Art (0: sie trägt keines)
@@ -2230,6 +2245,13 @@
     // Zelle die tiefste Dachfläche über ihr); die Ecke fragt `vor` Meter vor ihrer Fläche (unter dem Überstand), sonst an sich
     // selbst und in den Nachbar-Zellen; 0 = über ihr steht kein Dach. Ein Dreieck, dem eine Ecke ohne Dach bleibt, trägt ganz
     // 0: die Welt mittelt die Ecken, eine halbe Angabe wäre eine falsche Tiefe.
+    // DIE KANTE (`kante` der Art, das Holz: die zweite Stelle ist dort frei): je Dreieck einer Faser-Fläche (`G.faser` ab
+    // `faser.ab`: die Richtung ihres Balkens; flach — die drei Normalen sind eine) ist die längste Seite die Diagonale; von den
+    // beiden anderen läuft eine mit der Faser (höchstens 30° ab) und eine quer (mindestens 60°) — die Ecken der Längs-Seite
+    // stehen an der einen langen Kante der Fläche, die dritte an der anderen: 1 und 3 (die Seite gegen Normale × Faser — zwei
+    // Dreiecke EINER Fläche nennen dieselbe). Aus dem Dreieck selbst, nie aus der Mitte des Teils: der verformte Balken aus
+    // Segmenten trägt sie je Segment. Rundholz (die Normalen einer Seite sind verschieden), Hirnholz und jede Ecke mit zwei
+    // Aussagen tragen 0.
     function _eckLage(geoms) {
         var L = GEFUEGE_GESETZ.lauf, c = L.zelle, karte = Object.create(null), hat = false, role, G, i;
         for (role in geoms) {
@@ -2263,8 +2285,40 @@
             var saum = !!z && z.spritz > 0, laeufer = hat && !!z && z.lauf > 0, P = G.pos, n = P.length / 3, k;
             // (der Saum: nur wo die Rolle in ihn reicht — über ihm ist jede Höhe dieselbe Aussage wie keine)
             if (saum) { var oben = GEFUEGE_GESETZ.spritz.aus + GEFUEGE_GESETZ.spritz.rand; saum = false; for (k = 0; k < n && !saum; k++) saum = P[k * 3 + 1] < oben; }
-            if (!saum && !laeufer) return null;
-            var N = G.nrm, I = G.idx, aus = new Float32Array(n * 2), weiter = laeufer;
+            var kante = !!z && z.kante[0] > 0 && !!G.faser && G.faser.length === n;
+            if (!saum && !laeufer && !kante) return null;
+            var N = G.nrm, I = G.idx, aus = new Float32Array(n * 2), weiter = laeufer || kante;
+            if (kante) {
+                var F = GEFUEGE_GESETZ.faser, FS = G.faser, Q = new Int8Array(n), setze = function (i, s) { Q[i] = Q[i] === 0 || Q[i] === s ? s : 2; };
+                for (k = 0; k + 2 < I.length; k += 3) {
+                    var ia = I[k], ib = I[k + 1], ic = I[k + 2], nr = FS[ia];
+                    if (nr < F.ab || FS[ib] !== nr || FS[ic] !== nr) continue;
+                    var nx = N[ia * 3], ny = N[ia * 3 + 1], nz = N[ia * 3 + 2], nn = Math.hypot(nx, ny, nz);
+                    if (!(nn > 1e-9)) continue;
+                    nx /= nn; ny /= nn; nz /= nn;
+                    var nb = Math.hypot(N[ib * 3], N[ib * 3 + 1], N[ib * 3 + 2]), nc = Math.hypot(N[ic * 3], N[ic * 3 + 1], N[ic * 3 + 2]);
+                    if (!(nx * N[ib * 3] + ny * N[ib * 3 + 1] + nz * N[ib * 3 + 2] > 0.999 * nb) || !(nx * N[ic * 3] + ny * N[ic * 3 + 1] + nz * N[ic * 3 + 2] > 0.999 * nc)) continue;
+                    // (der Rahmen der Fläche und die Faser darin: wie `faserNummer`)
+                    var hx = nz, hz = -nx, hl = Math.hypot(hx, hz), tx = hl > 0.02 ? hx / hl : 1, tz = hl > 0.02 ? hz / hl : 0;
+                    var sx = ny * tz, sy = nz * tx - nx * tz, sz = -ny * tx, w = ((nr - F.ab) % F.klassen) * (Math.PI / F.klassen);
+                    var ax = Math.cos(w) * tx + Math.sin(w) * sx, ay = Math.sin(w) * sy, az = Math.cos(w) * tz + Math.sin(w) * sz;
+                    var qx = ny * az - nz * ay, qy = nz * ax - nx * az, qz = nx * ay - ny * ax;                 // quer = Normale × Faser
+                    // die drei Seiten: [gegenüber der Ecke, von, nach]
+                    var E = [[ic, ia, ib], [ia, ib, ic], [ib, ic, ia]], lg3 = [0, 0, 0], M = [0, 0, 0], j, lang = 0;
+                    for (j = 0; j < 3; j++) {
+                        var dx = P[E[j][2] * 3] - P[E[j][1] * 3], dy = P[E[j][2] * 3 + 1] - P[E[j][1] * 3 + 1], dz = P[E[j][2] * 3 + 2] - P[E[j][1] * 3 + 2];
+                        lg3[j] = Math.hypot(dx, dy, dz);
+                        M[j] = lg3[j] > 1e-9 ? Math.abs(dx * ax + dy * ay + dz * az) / lg3[j] : 0;
+                        if (lg3[j] > lg3[lang]) lang = j;
+                    }
+                    var s1 = (lang + 1) % 3, s2 = (lang + 2) % 3, laengs = M[s1] >= M[s2] ? s1 : s2, querS = laengs === s1 ? s2 : s1;
+                    if (!(M[laengs] >= 0.866) || !(M[querS] <= 0.5) || !(lg3[querS] > 0.001)) continue;
+                    var o = E[laengs][0], a0 = E[laengs][1];
+                    var seite = (P[o * 3] - P[a0 * 3]) * qx + (P[o * 3 + 1] - P[a0 * 3 + 1]) * qy + (P[o * 3 + 2] - P[a0 * 3 + 2]) * qz > 0 ? 1 : -1;
+                    setze(o, seite); setze(a0, -seite); setze(E[laengs][2], -seite);
+                }
+                for (k = 0; k < n; k++) if (Q[k] === 1 || Q[k] === -1) aus[k * 2 + 1] = 2 + Q[k];
+            }
             if (saum) for (k = 0; k < n; k++) aus[k * 2] = 1 + Math.max(0, P[k * 3 + 1]);
             if (laeufer) for (k = 0; k < n; k++) {
                 var nl = Math.hypot(N[k * 3], N[k * 3 + 2]), y = Infinity;

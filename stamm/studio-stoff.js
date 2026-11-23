@@ -275,7 +275,8 @@ class AnazhRealm_studio_stoff {
                 sp: T.max(T.fwidth(u0), T.fwidth(v0)),
                 fuge: S.fuge,
                 // DIE ECKE EINER ZEILE, DIE IHRE LAGE NICHT AUS IHR LIEST (fachwerk `_eckLage`; 0 = keine Angabe): die erste Stelle
-                // 1 + ihre Höhe über dem Fuß des Baus, die zweite 1 + ihre Tiefe unter dem Dach, beide in Metern. Der Satz trägt
+                // 1 + ihre Höhe über dem Fuß des Baus, die zweite 1 + ihre Tiefe unter dem Dach, beide in Metern (das Holz trägt in
+                // der zweiten die lange Kante seiner Fläche: 1 · 3, `_gefuegeStoff` DIE KANTE). Der Satz trägt
                 // seine Ecken in Welt-Lage (`_satzBlockEcken`) — die Höhe am Bau kennt dort nur die Ecke; die ferne Fachwerk-Wand
                 // zählt sie in Riegel-Feldern, ein Stoff ohne Ecke (die Vorlage: ihr Fuß bei y = 0) liest die Höhe der Vorlage.
                 hoch: ecke ? T.select(vonEcke, ecke.y.mul(mass.y), ecke.x.sub(1.0)) : T.positionGeometry.y,
@@ -300,7 +301,7 @@ class AnazhRealm_studio_stoff {
     // der Welt-Lage: Farbe, Normale und Rauheit aus EINER Rechnung, ohne Karte, ohne Sampler, ohne Byte je Ecke oder Haus (bis hier
     // stand jede Fläche des Hauses in EINEM Ton: „weiße Kästen mit Fenstern“). `nr` = die Nummer der Zeile (derselbe Knoten wie der
     // des Verbands; 0 = kein Gefüge: Faktor 1, die Normale der Geometrie, die Rauheit des Stoffs), `V` = der Stein des Verbands
-    // (`_verbandStoff` `aus`). Je Zeile sechs Wörter EINER Tafel: EIN Programm für jeden Stoff, die Ecke wählt.
+    // (`_verbandStoff` `aus`). Je Zeile sieben Wörter EINER Tafel: EIN Programm für jeden Stoff, die Ecke wählt.
     // DIE SEITE DER FLÄCHE liest der Graph beim BAU des Programms (`directionToFaceDirection`, r184s eigene Regel: der Stoff, der
     // beide Seiten zeichnet, wendet die Normale der Rückseite) — nie als Zweig beim Bau des Graphen: ein Graph gilt jedem Stoff
     // seiner Signatur (`_graphTeilen`), dem einseitigen wie dem doppelseitigen Satz-Stoff. Mit der Seite als Zweig trug der
@@ -327,7 +328,9 @@ class AnazhRealm_studio_stoff {
     // die Wolke dort `lauf`-fach stärker (mittelfrei: fern bleibt nichts). DER TON JE BALKEN: die Nummer der Ecke eines Balkens
     // trägt über seiner Richtung die Klasse seines Tons (`faser.toene` Klassen, fachwerk `faserNummer`: gewürfelt aus seiner Mitte
     // am Bau) — jeder Balken steht ± `faser.ton` heller oder dunkler als das Mittel der Rolle (mittelfrei über die Klassen; die
-    // Zahl reist als `balken` in der Zeile des Holzes).
+    // Zahl reist als `balken` in der Zeile des Holzes). DIE KANTE DES BALKENS: wo er an das Gefach stößt, dunkelt seine Fläche
+    // längs ihrer langen Kanten (die Schattenfuge, `kante` der Zeile; die Ecke nennt die Kante in der Stelle, die dem Putz die
+    // Tiefe unter dem Dach trägt — kein neues Varying).
     // → { farbe(rgb) → rgb, normale (Sicht-Raum, für normalNode; Lehre 26: die Normale der Geometrie × Seite), rauh(r) → r }
     _gefuegeStoff(T, nr, V) {
         const GG = AnazhRealm.Gesetz("fachwerk:GEFUEGE_GESETZ");
@@ -347,6 +350,7 @@ class AnazhRealm_studio_stoff {
                     !paar(z.wolke) ||
                     ![z.ton, z.hub].every((q) => Array.isArray(q) && q.length === 3 && q.every((x) => x >= 0)) ||
                     !(Array.isArray(z.woelb) && z.woelb.length === 2) ||
+                    !(Array.isArray(z.kante) && z.kante.length === 3 && z.kante.every((x) => x >= 0 && x < 1)) ||
                     !(z.grund > 0) ||
                     ![z.faser, z.rau, z.rauFern, z.wetter, z.grau, z.fugeGrau, z.spritz, z.lauf, z.balken].every(
                         Number.isFinite
@@ -363,8 +367,8 @@ class AnazhRealm_studio_stoff {
             throw this._stoffBruch("das Gefüge-Gesetz fehlt in fachwerk:GEFUEGE_GESETZ");
         // die Tafel: [Korn quer, längs, Zug quer, längs] · [Wolke quer, längs, Faser, Grund] · [Ton Korn, Zug, Wolke, Wetter] ·
         // [Hub Korn, Zug, Wolke, Grau] · [Wölbung quer, hoch, Rauheit ±, Rauheit fern] · [Grau der Fuge, Spritz-Saum, Läufer,
-        // Ton je Balken] — die Zeile 0 ist die Identität
-        const W = 6;
+        // Ton je Balken] · [Kante: Anteil, Breite, höchster Anteil der Breite] — die Zeile 0 ist die Identität
+        const W = 7;
         const zeile = (z) => [
             new THREE.Vector4(z.korn[0], z.korn[1], z.zug[0], z.zug[1]),
             new THREE.Vector4(z.wolke[0], z.wolke[1], z.faser, z.grund),
@@ -372,6 +376,7 @@ class AnazhRealm_studio_stoff {
             new THREE.Vector4(z.hub[0], z.hub[1], z.hub[2], z.grau),
             new THREE.Vector4(z.woelb[0], z.woelb[1], z.rau, z.rauFern),
             new THREE.Vector4(z.fugeGrau, z.spritz, z.lauf, z.balken),
+            new THREE.Vector4(z.kante[0], z.kante[1], z.kante[2], 0),
         ];
         const null0 = {
             korn: [1, 1],
@@ -390,6 +395,7 @@ class AnazhRealm_studio_stoff {
             spritz: 0,
             lauf: 0,
             balken: 0,
+            kante: [0, 0, 0],
         };
         // EINE Tafel für jeden Graphen (der feste Name, Lehre 23)
         const tafel =
@@ -402,7 +408,7 @@ class AnazhRealm_studio_stoff {
         const g = nr.add(0.5).floor();
         const jeEcke = g.greaterThan(F.ab - 0.5);
         const i0 = T.int(T.select(jeEcke, T.float(holz), g.clamp(0.0, Z.length - 1))).mul(W);
-        const [mass, lage, ton, hub, form, mehr] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
+        const [mass, lage, ton, hub, form, mehr, rand2] = [0, 1, 2, 3, 4, 5, 6].map((k) => tafel.element(i0.add(k)));
         const ueber = g.sub(F.ab).max(0.0);
         const tonKlasse = T.floor(ueber.div(F.klassen));
         const richtung = ueber.sub(tonKlasse.mul(F.klassen));
@@ -474,6 +480,29 @@ class AnazhRealm_studio_stoff {
         const unterDach = V.tiefe
             ? T.step(0.5, V.tiefe).mul(T.float(1.0).sub(T.smoothstep(0.0, GG.lauf.weit, V.tiefe.sub(1.0))))
             : T.float(0.0);
+        // DIE KANTE DES BALKENS (`kante` der Zeile, fachwerk `_eckLage`): die Ecke nennt die lange Kante ihrer Fläche (die zweite
+        // Stelle: 1 an der einen, 3 an der anderen; 0 = keine Angabe) — q läuft quer über die Fläche von −1 bis 1. Der Saum steht
+        // an beiden Rändern, `Breite` Meter breit (in q: Breite × |∇q| ÷ |∇quer| — die Fläche nennt ihre Breite am Schirm selbst),
+        // höchstens der `höchste Anteil`; die Wolke bricht seine Breite (± ½, mittelfrei). Die Deckung ist das Integral über den
+        // Pixel (ein Kasten der Breite |∇q|, auf die Fläche geklemmt): nah die scharfe Linie, auf einem Pixel ihr Anteil, und liegt
+        // der Balken ganz unter dem Pixel, das Mittel der Fläche — der Faktor teilt durch dieses Mittel (mittel-treu: der Ton des
+        // Balkens bleibt in jeder Entfernung, die Stufe ohne die Angabe springt nicht).
+        let kante = T.float(1.0);
+        if (V.tiefe) {
+            const da = T.step(0.5, V.tiefe);
+            const q = V.tiefe.sub(2.0).clamp(-1.0, 1.0);
+            const fw = T.fwidth(V.tiefe).max(1e-5);
+            const mittel = T.min(rand2.y.mul(fw).div(fq.max(1e-7)), rand2.z);
+            const breit = mittel.mul(T.float(1.0).add(wolke.mul(0.5)));
+            const lo = T.max(q.sub(fw.mul(0.5)), -1.0);
+            const hi = T.min(q.add(fw.mul(0.5)), 1.0);
+            const links = T.min(hi, breit.sub(1.0)).sub(lo).max(0.0);
+            const rechts = hi.sub(T.max(lo, T.float(1.0).sub(breit))).max(0.0);
+            const deckung = links.add(rechts).div(hi.sub(lo).max(1e-5)).min(1.0);
+            kante = T.float(1.0)
+                .sub(rand2.x.mul(deckung).mul(da))
+                .div(T.float(1.0).sub(rand2.x.mul(mittel).mul(da)));
+        }
         const faktor = T.float(1.0)
             .add(korn.mul(ton.x))
             .add(zug.mul(ton.y))
@@ -481,6 +510,7 @@ class AnazhRealm_studio_stoff {
             .mul(T.float(1.0).add(wetter.mul(ton.w)))
             .mul(T.float(1.0).sub(mehr.y.mul(saum)))
             .mul(T.float(1.0).add(balken.mul(mehr.w)))
+            .mul(kante)
             .mul(lage.w);
         const LUMA = [0.2126, 0.7152, 0.0722];
         const sl = GG.silber.reduce((q, x, k) => q + x * LUMA[k], 0) || 1;
