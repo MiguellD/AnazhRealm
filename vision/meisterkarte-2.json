@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 20,
-    "kern": 10,
-    "kernDazu": 10,
-    "anteilHeute": 3.5,
-    "anteilKern": 1.8
+    "heute": 26,
+    "kern": 4,
+    "kernDazu": 4,
+    "anteilHeute": 4.8,
+    "anteilKern": 0.6
    },
    "perspektiven": [
     {
@@ -7662,8 +7662,8 @@
        "richter": "Besiedlungsfront je Jahrtausend log-Fehler ≤ 0,3"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Furcht weitet den Abstand 1,335 → 1,952 m (mensch.K5, Radeon), Preis unbelegt",
      "alt": [
@@ -8385,8 +8385,8 @@
        "richter": "5 Orte × 3 Welten × 3 Epochen: Anlass erklärt ≥ 95 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "VERKEHR_GESETZ 1 Wagen je 15 Häuser (fachwerk-core.js:4070), Fahrer würfelt eine Wende (_verkehrZielNeu siedlung-verkehr.js:934); pflicht.C 0/3; GTX reißt bei 36 km/h (35,4 ms)",
      "alt": [
@@ -8761,8 +8761,8 @@
        "richter": "Körpergröße und Gang aus 100 Räumen ≥ 70 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Tür → Keller → Dachboden ganz in 1 von 8 Gängen, headless (siedlung.K1); Raumteilung mit Herd (fachwerk-core.js:576–620)",
      "alt": [
@@ -9197,8 +9197,8 @@
        "richter": "Nachtseite ↔ Energie- und Rohstoffkarte Rang-r ≥ 0,7"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Haspel des Ziehbrunnens als Gestalt ohne Wirkung (fachwerk-core.js:5314)",
      "alt": []
@@ -9640,8 +9640,8 @@
        "richter": "20 Zufallsrollen ≤ 5 s spielbar, Tat ändert Welt ≥ 80 %"
       }
      ],
-     "heute": 1,
-     "kern": 1,
+     "heute": 2,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Nah-Streu: Kraut, Stein, Holz pflücken, Mahd, Nachwachsen (stamm/vegetation-wiese.js:1741, 2710) — KARTE: 0 — Beleg ist ein Code-Zitat (R2); halten.K3 headless.",
      "alt": [
@@ -9934,8 +9934,8 @@
        "richter": "Preisunterschied ≈ Transport ± 20 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Spieler-Inventar 27 Plätze (stamm/dirigent-kern.js:736); Preis/Münze/Geld in stamm/: 0 Treffer",
      "alt": []
@@ -17586,11 +17586,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 9,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 4.6,
-    "anteilKern": 1.6
+    "heute": 11,
+    "kern": 1,
+    "kernDazu": 1,
+    "anteilHeute": 5.8,
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -17918,11 +17918,9 @@
        "richter": "Dachneigung ↔ Schneelast r ≥ 0,5; Innenhof, Stelzen, Windturm ≥ 3× häufiger in ihrer Klimazone"
       }
      ],
-     "heute": 1,
-     "kern": 1,
-     "kernSprossen": [
-      3
-     ],
+     "heute": 2,
+     "kern": 0,
+     "kernSprossen": [],
      "fuss": "kern",
      "beleg": "Mechanik von Sprosse 1 und 3 steht (wetter.K2 2/2), Wind-Leser halb (wetter.K5: 6 Leser im Code, Bild-Richter nie gefahren). Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen. — KARTE: Kern 2 — die Front im Licht (licht.K5) und die Nässe (wetter.K2) stehen je an beiden Geräten im Bild; als Glieder zählt jede für sich (Z3). Der Wind-Leser ist nur headless; Bild-Preis im Sturm an der Radeon nicht gemessen.",
      "alt": [
@@ -17931,7 +17929,8 @@
       "licht.K5"
      ],
      "heuteSprossen": [
-      1
+      1,
+      3
      ]
     },
     {
@@ -18449,8 +18448,8 @@
        "richter": "Versorgung schließt aus der Saat-Ökologie mit Fehlbetrag ≤ 1 %; Umland mit/ohne Stadt im Bildpaar verschieden"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Alte Vegetation K4 Staffel 1 an einem Gerät: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild, Halm 0 px, Boden 0 px; Staffel 2 (jedes Haus, jedes Wasser, beide Geräte) offen. Fischer, Hafen, Kulturfolger, Stoffströme der Stadt: nichts. — KARTE: 0 — die Natur-Wand ist an der Radeon ROT, nur an der GTX gehalten (vegetation.K4).",
      "alt": [
@@ -20090,12 +20089,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 68,
+  "heute": 76,
   "davonKopplungen": 33,
-  "kern": 13,
-  "kernDazu": 13,
-  "anteilHeute": 3.8,
-  "anteilKern": 0.5,
+  "kern": 5,
+  "kernDazu": 5,
+  "anteilHeute": 4.1,
+  "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20104,8 +20103,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 40,
-  "nachwache": 28
+  "beide": 50,
+  "nachwache": 26
  },
  "zusammengelegt": [
   {
