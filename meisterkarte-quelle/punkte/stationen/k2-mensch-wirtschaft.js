@@ -356,8 +356,8 @@ const LIEFERUNG = async (r, T, arg) => {
     const wagen = SL.flatMap((S) => S.verkehr.wagen.filter((W) => W.lieferung && W.bestand));
     const staende = SL.flatMap((S) => S.liste.filter((b) => b && b.bestand && b.bestand.art === "stand"));
     const geliefert = () => SL.reduce((a, S) => a + ((S.verkehr.zahl && S.verkehr.zahl.ladung && S.verkehr.zahl.ladung.amStand) || 0), 0);
-    // die Ware im Bild des Wagens (die Gruppe `_verkehrLadung`: die Stücke ihres Stapels, `userData.stuecke` — je angefangene Einheit
-    // eines; vor stoffstrom-kette-2 je angefangene Kiste ein sichtbares Kind; die Gruppe selbst folgt der Stufe)
+    // die Ware im Bild des Wagens (die Gruppe `_verkehrLadung`: die Stücke in ihren Kisten, `userData.stuecke` — je angefangene
+    // Einheit eines; vor stoffstrom-kette-2 je angefangene Kiste ein sichtbares Kind; die Gruppe selbst folgt der Stufe)
     const kisten = (W) => (W.ladungBild ? (W.ladungBild.userData.stuecke != null ? W.ladungBild.userData.stuecke : W.ladungBild.children.filter((c) => c.visible).length) : 0);
     const aus = { wagen: wagen.length, staende: staende.length, mitFahrer: wagen.filter((W) => Array.isArray(W.fahrer) && W.fahrer.length).length };
     if (arg.schritt === "ladung") {
@@ -474,9 +474,9 @@ const STROM7 = async (r, T, arg) => {
 // DIE KETTE IM ZEITRAFFER (stoffstrom S1): die Siedlung am Messort mit einer Kette Erz → Barren → Werkzeug (`S.stoffstrom`), ihr
 // Zensus (`_stoffstromZensus`: die Halde in kg, die Barren an den Öfen, die Werkzeuge in den Händen) und ihr BILD, wie der Takt des
 // Spiels es legt (`_bestandBildTakt` mit dem Auge an der Schmiede): die Stücke am Ofen und die Stoffe ihrer Meshes (die Barren im
-// Bild — ihr Stoff ist die Ware des Ofens, nie Holz: bis stoffstrom-kette-2 lag jede Ware als dunkle Holzkiste), die Stoffe der
-// Halde (das Erz, bis dahin Stein). `tage` (optional) rafft die Welt-Uhr vorher um so viele Tage, Stunde für Stunde über die Kette
-// (`_stoffstromFassen`). Die Pose des Bildpaars: 2,5 m hinter dem Stapel des ersten Ofens, vom Schmied her gesehen, Ego 1,5 m.
+// Bild — Stücke aus der Ware des Ofens in ihrer Kiste aus Holz auf ihrem Bock: bis stoffstrom-kette-2 lag jede Ware als dunkle Holzkiste ohne
+// Inhalt), die Stoffe der Halde (das Erz, bis dahin Stein). `tage` (optional) rafft die Welt-Uhr vorher um so viele Tage, Stunde für Stunde über die Kette
+// (`_stoffstromFassen`). Die Pose des Bildpaars: 1,5 m vor den Kisten des ersten Ofens, vom Schmied her gesehen, Ego 1,6 m.
 const KETTE = async (r, T, arg) => {
     const s = r.state;
     const pm = s.playerMesh.position;
@@ -513,18 +513,21 @@ const KETTE = async (r, T, arg) => {
         const stuecke = G && G.visible ? (G.userData.stuecke != null ? G.userData.stuecke : G.children.filter((c) => c.visible).length) : 0;
         return { n, stuecke, stoffe: st, ware: b.bestand.ware };
     });
-    // die Barren im Bild: die Stücke eines Ofens, dessen Bild ganz aus der Ware des Ofens ist
-    const barrenImBild = oefen.reduce((a, o) => a + (o.stoffe.length && o.stoffe.every((x) => x === o.ware) ? o.stuecke : 0), 0);
-    // die Pose: 1,5 m vor dem Stapel des ersten Ofens mit Bild, 1,6 m über dem Grund — zuerst vom Werk her, über dem getretenen Gang
-    // des Schmieds zum Stapel (`_bestandWare`: dort steht kein Halm vor den Barren), sonst im Kreis um den Stapel die erste, deren
-    // Strahl zum Stapel frei ist (der Strahl des Felds und der Bauten, `_fieldRaycast`: ein Zaunpfahl, eine Wand davor fällt aus —
+    // die Barren im Bild: die Stücke eines Ofens, dessen Bild seine Ware trägt (in ihrer Kiste aus Holz, nichts sonst)
+    const inKiste = (o) => o.stoffe.includes(o.ware) && o.stoffe.every((x) => x === o.ware || x === "holz");
+    const barrenImBild = oefen.reduce((a, o) => a + (inKiste(o) ? o.stuecke : 0), 0);
+    // die Pose: 1,5 m vor den Kisten des ersten Ofens mit Bild, 1,6 m über dem Grund — zuerst vom Werk her, über dem getretenen Gang
+    // des Schmieds zu ihnen (`_bestandWare`: dort steht kein Halm vor den Kisten), sonst im Kreis um sie die erste, deren
+    // Strahl zu ihnen frei ist (der Strahl des Felds und der Bauten, `_fieldRaycast`: ein Zaunpfahl, eine Wand davor fällt aus —
     // durch Pflanzen hindurch) und an der kein Leib der Siedlung steht (das Auge stünde in ihm)
     const b = Z.schmiede.find((x) => x.bestandBild && x.bestandBild.userData.platz) || Z.schmiede[0];
     const P = (b.bestandBild && b.bestandBild.userData.platz) || { x: b.orte.werk.x + 1.9, z: b.orte.werk.z };
     const w = b.orte.werk;
     const y = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
     const a0 = Math.atan2(w.z - P.z, w.x - P.x);
-    const ly = y(P.x, P.z) + 0.05;
+    // der Blick in die Kisten: 5 cm unter ihren Rand (`userData.oben`, der Rand über dem Fuß — auf dem Bock 0,75 m)
+    const rand = b.bestandBild && b.bestandBild.userData.oben;
+    const ly = y(P.x, P.z) + (rand ? rand - 0.05 : 0.05);
     let kam = null;
     for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6]) {
         const a = a0 + (k * Math.PI) / 6;
@@ -604,7 +607,7 @@ module.exports = (F) => [
                 const [a, e] = [v.zensus, n.zensus];
                 const erzBild = n.halde.stoffe.length > 0 && n.halde.stoffe.every((x) => x === n.erz);
                 const halde = e.haldeKg < a.haldeKg && erzBild ? 1 : 0;
-                const kiste = n.oefen.filter((o) => o.n > 0 && !(o.stoffe.length && o.stoffe.every((x) => x === o.ware)));
+                const kiste = n.oefen.filter((o) => o.n > 0 && !(o.stoffe.includes(o.ware) && o.stoffe.every((x) => x === o.ware || x === "holz")));
                 H.zeile("Kette am Dorf " + (n.name || "") + " (" + n.tage + " Tage gerafft): Halde " + a.haldeKg + " → " + e.haldeKg + " kg aus " + (n.halde.stoffe.join("/") || "—") + " · Barren am Ofen " + a.barren + " → " + e.barren + ", im Bild " + n.barrenImBild + " Stück [" + n.oefen.map((o) => o.n + ":" + o.stuecke + " " + (o.stoffe.join("/") || "—")).join(", ") + "] · Werkzeug in der Hand " + a.werkzeug + " → " + e.werkzeug);
                 K.zahl(1, {
                     n: e.oefen,
