@@ -1,0 +1,81 @@
+{
+ "sha": "5b36f69a78690dd2661aae017fef04106778125c",
+ "geraet": "gtx",
+ "zeit": "2026-11-23T08:38:17.449Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf5e56480105d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 12.1,
+   "fremd": {
+    "s": 15.5,
+    "takte": 7,
+    "fremdS": 4.03,
+    "kerne": 0.259,
+    "fensterKerne": 0.273,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.48
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f69a.txt",
+      0.42
+     ]
+    ],
+    "dienerS": 6.7,
+    "diener": [
+     [
+      "System",
+      3.33
+     ],
+     [
+      "dwm.exe",
+      2.39
+     ]
+    ],
+    "geraetS": 4.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.69
+     ],
+     [
+      "svchost.exe",
+      1.59
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 37,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T08:38:17.449Z",
+   "abdruck": "5b4222f307b2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kf5e56480105d": "bVTRjpswEPyXPPbKLQkQjKV7cI5Tc1LbSz5hbdbAhUBkQ6hS9d8rkpAEuH1CZsY7nh377+yAaocpPX/aqpzx2bfZ95nFIzmWzJHM86ed8Vmk5gvyuLgUCCFeO5gy+aG2UOQSUJaY7clpTE158azONJTkJ4xD+ybSDYCGE8Tty8uYWkhKKqdGTTdiwBId8DGwsSlKcrDR52ZXcOB6c6k5nIvF4iOGW7W/hNj42t+weLSZxDIZqo2WQUgBf2+FeBMTlUmOVDtFXtq+7zwJI+3yh14TjsHWOSFlBZkrKQlpEfm92FVnZ2fNiKiLxtpBM+YlwYJxgGiMTcnmKqudg6kklVe4jBbhHPlq6nZ6aBz9qAilRCbHXmdIZUpmoMH1lF7OOfxh4013uCeDTolZ76XrhQt59wYA1lMtxVn4ucVduB8kOCB2Q4UjgOjjd+yW1re//XqcinttJ82synKzH9qkfVq4Hv85lWYzTMg4u8rWNzTzEYldb0EMYiu6cI2DZe+H6nmIyB6CAgzEeuKhrXTdoiEnPTRXIvkUhAEX4n0CrnG/7/OvPd9T4wHaugv4o4wg9DRbcoCnywWZHvpyHZwT5UVP0tr3o8lNPBrcOyhTk2vdT1wGSkdfBbSlonZkVdX9lhSG6HHwoHwc8u+2s/XtYYax7/54XW3FqF7FWPe5Q2Xq20nl0tU+111QWjVB56Z2WlRZD19oSRjxL6AnMgWlNLBRhizqot2qR6X9x9MguKfJlE85dQaXtrH9kBX6MuBfjKQls5NY7nqZbqiWl/itPsR6aEq83bAYoB2uemnnZ5yJ68YHUnAwlc671w8ybGyGRX1/+v/9Bw==",
+  "kd1ae10eb2a80": "jVVNj5swEP0vOXbrNQkmgKU9OEvUrNR2E3WlSr2NzRjYEIhsCFWq/veKJCQB9tA5IGTm482b5+HPZA9qCwk+vtuymPDJp8nniYUDEovmgObx3U74JFTTGbpcnI0KIb60bspk+8rSPJMUZAHpDkltKszyR3UKA4ksDjhtliJZU6rpkUaNuNqzeHoapsklxiWpQOM1iRfE2uNDx9omIJFArU+FL86e406l5vRkQSReI3q15psQa6bZOogGySQUcR95OPd89PhLI8RyjDLOACuSZ4Xt6k5jP9QOv6s1ijHQkCNgmqO5BMU+zkLWgV20lLQ0DQJ1XlvbKxa4sTcLOKXh0DdBm6m0IntTSiwu7jKc+VPgi2bUR7Kvib5HBFJCIIdcp4BFgqaHwXGVnk85/R0Mk25hhwZIAWnHpeP6M3njhlK6GmPJT8BPJW7AmRdDL7AdavvsJEQP7dHq+rU7j5KbzMRmVMyqNDO7Pk2a4cxxh73bFGI0ZFva6uoZMAAMLrchomIjWmENRWVvDXVxABDciYQGVKxG/NlSVw0YJMm+vgQiQ8/3uEhGqrIV7Had9rXLXDVqoGrFfQ/D810dzDmlD+fLMZ7F+SqQI2Z5F6Q1Y6HHnxds6HwwsCMgE5Np3U1cekqHHwm0wbwisiyrLi36PricurS4H/L3RiwSsbyNcPXuOT+//vrxdj/Xdg0lzx9VKE117VbOHc24PnWqhuCbzFSkAZV27jMtEcIhiUc0OSbYo1H6QdjKulE3OBHrXh56oj2OpnzMsCW4sLXthqyASe+sjsuSfOmvngbNVkKx7aA6vpq3MowS8SpWd6ysxMubs27E/9lSbNoie1R0b0qdtduQplDbFPLq9lv4+w8="
+ }
+}
