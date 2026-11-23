@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 23.6 s · Zeit der Welt: {"proben":200,"breite":-0.7938545327273835,"samen":"anazh-realm-seed","tagMin":1,"tagMax":60,"jahrSek":2400,"jahrSekGesetzt":2400,"ops":69,"saetze":29,"zeitlupe":[],"raffer":[],"achse":[{"zeitMa":-4500,"ok":false,"grund":"planet: zeitMa -4500 liegt außerhalb der Schlüsselbilder [-4000, 1061.3404700628196] (K10)"},{"zeitMa":-4000,"ok":true,"land":false},{"zeitMa":1000,"ok":true,"land":false},{"zeitMa":5000,"ok":false,"grund":"planet: zeitMa 5000 liegt außerhalb der Schlüsselbilder [-4000, 1061.3404700628196] (K10)"}]}
+@@ 23.7 s · Sonnenbahn bei Breite -45,48°: Fehler 46,13° (108 Proben, Nord 354°, Spiegel 1, am größten winter t 0.5)
+@@ 23.7 s · erleben.spieler.zeit S2 umfang {"art":"umfang","erzeugt":1,"was":"kein Verb des Spielers dehnt die Zeit: 69 DSL-Ops (stamm/feld-dsl.js:926) und 29 Sätze der Konsole (stamm/feld-leben.js:1004) tragen keine Zeitlupe — die Welt läuft im Takt 1×","t":23.7
+@@ 23.7 s · erleben.spieler.zeit S3 leser {"art":"leser","fehlt":"Zustand nach Raffer ↔ nach Echtzeit-Lauf: kein Leser, der Feld, Wetter und Bewohner-Orte eines gerafften Tags gegen den Echtzeit-Tag hält — der Raffer des Spielers ist die Tag-Länge (`setDayLength
+@@ 23.7 s · erleben.spieler.zeit S4 umfang {"art":"umfang","erzeugt":13149,"was":"ein Jahr der Welt dauert 2400 s Spielzeit (Kalender jahrK 2400, stamm/feld-leben.js `_kalender`): Raffer 13149×; kein Verb des Spielers rafft das Jahr auf ≤ 5 min","t":23.7}
+@@ 23.7 s · erleben.spieler.zeit S5 umfang {"art":"umfang","erzeugt":1.5,"was":"eine Spielstunde trägt 1,5 Jahre (ein Jahr = 2400 s); der Sprung der Konsole nimmt nur ganze Ma (stamm/feld-leben.js:1278)","t":23.7}
+@@ 23.7 s · erleben.spieler.zeit S6 umfang {"art":"umfang","erzeugt":1.5,"was":"eine Spielstunde trägt 1,5 Jahre (ein Jahr = 2400 s); der Sprung der Konsole nimmt nur ganze Ma (stamm/feld-leben.js:1278)","t":23.7}
+@@ 23.7 s · erleben.spieler.zeit S7 leser {"art":"leser","fehlt":"Raffer an Zufallsdatum anhalten: die Zeitachse des Planeten hat keinen Raffer — die Zeit ist ein Sprung der Konsole in ganzen Ma in eine neue Welt (stamm/feld-leben.js:1278 → stamm/netz-portal.js:
+@@ 23.7 s · erleben.spieler.zeit S8 umfang {"art":"umfang","erzeugt":1,"was":"die Zeitachse des Planeten (planet-core im Planet-Faden) antwortet an -4500 Ma nein · -4000 Ma ja · 1000 Ma ja · 5000 Ma nein — kein Raffer, die Zukunft endet vor +5 Ga, der Anfang nach
+@@ 23.7 s · erleben.spieler.zeit S9 umfang {"art":"umfang","erzeugt":5,"was":"die Zeitachse des Planeten (planet-core im Planet-Faden) antwortet an -4500 Ma nein · -4000 Ma ja · 1000 Ma ja · 5000 Ma nein — 5 Ga, nicht bis zum ersten Licht; der Sprung nimmt nur ga
+@@ 37.9 s · erleben.spieler.zeit S1 gemessen {"art":"gemessen","werte":{"sonnenbahn_fehler_grad":46.132},"erzeugt":60,"welt":{"sonnen_proben":108,"saison_bild_delta":70.666},"taeter":"die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
