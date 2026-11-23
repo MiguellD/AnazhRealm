@@ -206,10 +206,10 @@
     "kriterien": 26,
     "sprossen": 180,
     "heute": 5,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 2.7,
-    "anteilKern": 0
+    "anteilKern": 0.4
    },
    "perspektiven": [
     {
@@ -1420,7 +1420,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Mechanik halb: See-Eis nach Stefan (gelaende-core.js:1341-1422) trägt headless 1 151 Schritte; Schneedecke mit Tiefe 1/2 (wetter.K4); kein Gletscher, kein Meereis. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": [
@@ -20090,10 +20090,10 @@
   "sprossen": 1718,
   "heute": 57,
   "davonKopplungen": 33,
-  "kern": 18,
-  "kernDazu": 18,
+  "kern": 19,
+  "kernDazu": 19,
   "anteilHeute": 3.3,
-  "anteilKern": 0.6,
+  "anteilKern": 0.7,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
