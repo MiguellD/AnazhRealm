@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T00:09:40.766Z",
+ "zeit": "2026-11-23T00:15:06.058Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -697,6 +697,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Wagen beladen ↔ leer im Bildpaar 3 (Soll ≥ 1) · Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung 1 (Soll ≥ 1) · Umfang 7 (Soll ≥ 1 Ware auf einem Weg mit Fahrer) · 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 54.2 s, 7 fahren geladen, 14 leer, 12 kraut im ersten, Kisten leer 0 ↔ beladen 3 (gezeichnet), in der Fahrt am Werk 1 (+0), am Stand 1 (−12) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.01,
+   "gpu": "nvidia/pascal",
+   "konsum": "ka72776fa9377",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k54d351397a6d",
+   "s": 60.5,
+   "fremd": {
+    "s": 64.3,
+    "takte": 29,
+    "fremdS": 20.64,
+    "kerne": 0.321,
+    "fensterKerne": 0.684,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      4.02
+     ],
+     [
+      "Explorer.EXE",
+      2.28
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.97
+     ]
+    ],
+    "dienerS": 23.44,
+    "diener": [
+     [
+      "dwm.exe",
+      10.13
+     ],
+     [
+      "System",
+      8.23
+     ]
+    ],
+    "geraetS": 24.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.17
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.66
+     ]
+    ],
+    "eigenS": 205.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:12:44.791Z",
+   "abdruck": "7fccbe85c59b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -709,6 +778,308 @@
   "kba794a586a60": "bVVNj5swFPwvObZlzediLO3B2ayaVbfdROqpt2fzDGwIRDaENlX/e+UkJAHyjmbGbzxvbP7OdiA3kOHDh6mrGZt9mn2ZGdijY1DvUT98mBmbJdLzMWD8VIRz/mxhUhe7xpCyEAREBfkWnVY3WJQP8kgDgWFKGeleeLYiRJEDWXRPT2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrg7wtyqY5yvgpVuKKL0WYCqnSoNnmMYozY6x/OX/hEZVoANk5ZVKbv66Vxolx27fV9wtHQOQfAvER9JqUx+knYi51bO601I6IqW2MGzWiQRj5lhCRjbIamkHnj7HQtsDrDReLHHrD51O1s1zrqVhEIAVSMvc4Bqwz1QIMbSPXoMfKbjjfdwBY1OBXkvZduEPvi6g0hZDnVUh6FH1v0wr0IPZADoh0q2RPC+/jt7dLy8rVfX2T8WutJMyPzQm+HNqkQfTdgb1NpJocUtbOpTXNB0xAA6fkWLAhfcxuucbDM9VA9DwDoTVAIJXw58dDUqulAo5Pt2jMRQ4ziiHH+OgE3sN32+VdBGEjG79Sd+ZvGBv9WHiTCg5QR8vl0caac0zVxDliUPUmpMEwi9jzPxuC9hq0DItOFUn0aRCRVci+8HZaNI+q66bfFOIaAkYBUtwH40dnTvNycbBG6X99+rdejAz/zsZxjh1o3l9dCPLoqZMqGqJMTdKEbpwOZ93BfCQQrfTKvA+oSMxxYKWKa2Nh36qT7wz4/8fl5UJ8HoT5MdyzQmlyZ1vQBkBCKiN0ZS4d6I6DanIHSc33vFM35O18OPPn2011RO9p40D/orJ+rfH70lkvrad9kh5LsdK0K+0qSHFqTQ9lcfxH//gM=",
   "k341e8c017d8a": "bVVNj5swFPwvOXbLms/FWNqDs1k1q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtK98mxFiCIHsuien8fUUmBaOw0ovBAjmqqIjYGtyUCgA606NjuDIzfwhGLkWHTBPxbkUh3lfBWqcEUXo80EVOlQbfIUxRixt47zVz5RmRaAjVMWlen7emmcKJdde/2YcDR0zgEwL1GfSWmMfhL2YufWTmvNiKjK1phBMxqkkU8ZIckYm6EpZN44O10LrM5wkfixB2w+dTvbtY66VQRCABVjr3PAKkM90OAGUj15jPyh4003sEUNTgV576UbxL64ekMIWU61lEfhxxa9cC9CD+SAaIdK9oTwPn57u7S8fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCV9OPDS1ajrQ6GS79kzEEKM4Ypy/TcANbLd9/lUQBpLxO3Vn/qaxwb+VB4nwIGWEPJwuzpRzuibOAYuyJykVhknEXubZGLzXsHVAZLpQqk+DiKRK7oW3w7JxRF03/bYYxxAwEpDqNgA/O3ua15uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgWClT+Z1QF1ihgMrRUwTG/tOnXQf7PMTn58H9TAI9WG6Y4HW5Mq0pg+AhFBE7M5YOtQbAdXmDJSe63unaM4/+HLgyfdf7ora0caD/kFn/Vzl86O3XFpPSXca5w4l2elaFfaVJDm0Joeyuf4i/v0H",
   "k89b96e8b884f": "bVVdj9owEPwvPPaacz4vjqV7MJdTufaqA6lPfVs76yRHSJAdSEXV/14ZCJCEfUIwszsej5e/sy3INeT4+GmaesZmX2ZfZwb26BjUe9SPn2bGZon0fAwYPxXhnL9YmNTltjWkKgUBUUOxQWenWyyrR3mkgcAwo4x0rzxfEqLIgaQdv9Qrf34et6kEZo3TgsJLk4hmKmJj4M7kINCBnToOPoMjN/CEYuRYNOUfKblURzlfhipc0tQOHzUUUGdD9clTFGPE3rq7SrMSsHWqsjb9bC+LE+Wy67yfE46GzjkAFhXqMymL0U/CXvDc2mKtGhFVtTNmMIwGWeRTRkgyxuZoSlm0zlY3AuszXCR+7AGbd5Nz5Nudo24VgRBAxdjvArDOUQ80uIFUTx4jf+i46Ro2qMGpoei9dIPYF1dvCCGLqZbqKPw4ohfuReiBHBDtxZI9IX2M7GdCF5df++/T/Bo1vpoMM7Io9WZokwrRdwP2PpVmCshQO+vGtBc0DQGQnl9FSviK24ClY+b1UD0PAOhNUAglfDHx0DSq7UCjk293ZyKGGMUR4/xtAm5hs+nfgArCQDJ+p+7cv2lt8G/lQSI8yBghD6fHM+WcnolzwLLqSUqFYRKxl3k+Bu81bBwQuS6V6tMgIqmSe+HtsGod0TRt3xbjGAJrVX0bgGV32h/XSkP32/vv1Wp04Bc+lnOc0Oj2sjHEk6tCpmyIOjlBl7p1OpBFD/eVQLDSJ/d1QF1hjgMrRUwTG/tOnXQf7AqKz+tBPQxCfZh2LNGaXJud6QMgIRQRu3MtHeq1gHp9BkrP9T3Kvts7/+CLgSc/frlLmpJxBZ31c1nMTxtaWk/7IVuUZKsbVdotSQrYmQKq9vqX8e8/",
-  "k2404d7ddd73e": "bVVNj5swFPwvOXbLms/FWNqDs4m6q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtItebYiRJEDWXTPz2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrgHwtyqY5yvgpVuKKL0WYCqnSoNnmKYozYW8f5kk9UpgVg45RFZfq+XhonymXXXj8mHA2dcwDMS9RnUhqjn4S92Lm101ozIqqyNWbQjAZp5FNGSDLGZmgKmTfOTtcCqzNcJH7sAZtP3c52raNuFYEQQMXY6xywylAPNLiBVE8eI3/oeNMNbFGDU0Hee+kGsS+u3hBCXqdayqPwY4teuBehB3JAtEMle0J4H7+9XXq9fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCX+deGhq1XSg0cl27ZmIIUZxxDh/m4Ab2G77/KsgDCTjd+rO/E1jg38rDxLhQcoIeThdnCnndE2cAxZlT1IqDJOIvcyzMXivYeuAyHShVJ8GEUmV3Atvh2XjiLpu+m0xjiFgJCDVbQB+dvY0y5uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgWClT+Z1QF1ihgMrRUwTG/tOnXQf7PMTn58H9TAI9WG6Y4HW5Mq0pg+AhFBE7M5YOtQbAdXmDJSe63unaM4/+OvtReDff7krakcbD/oH3ZLPu1U+P3rLpfW0b7JDSXa6VoV9JUkOrcmhbK6/iH//AQ=="
+  "k2404d7ddd73e": "bVVNj5swFPwvOXbLms/FWNqDs4m6q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtItebYiRJEDWXTPz2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrgHwtyqY5yvgpVuKKL0WYCqnSoNnmKYozYW8f5kk9UpgVg45RFZfq+XhonymXXXj8mHA2dcwDMS9RnUhqjn4S92Lm101ozIqqyNWbQjAZp5FNGSDLGZmgKmTfOTtcCqzNcJH7sAZtP3c52raNuFYEQQMXY6xywylAPNLiBVE8eI3/oeNMNbFGDU0Hee+kGsS+u3hBCXqdayqPwY4teuBehB3JAtEMle0J4H7+9XXq9fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCX+deGhq1XSg0cl27ZmIIUZxxDh/m4Ab2G77/KsgDCTjd+rO/E1jg38rDxLhQcoIeThdnCnndE2cAxZlT1IqDJOIvcyzMXivYeuAyHShVJ8GEUmV3Atvh2XjiLpu+m0xjiFgJCDVbQB+dvY0y5uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgWClT+Z1QF1ihgMrRUwTG/tOnXQf7PMTn58H9TAI9WG6Y4HW5Mq0pg+AhFBE7M5YOtQbAdXmDJSe63unaM4/+OvtReDff7krakcbD/oH3ZLPu1U+P3rLpfW0b7JDSXa6VoV9JUkOrcmhbK6/iH//AQ==",
+  "ka72776fa9377": "bVVNj5swFPwvOXbLms/FWNqDs4m6q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtItebYiRJEDWXTPz2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrgHwtyqY5yvgpVuKKL0WYCqnSoNnmKYozYW8f5kk9UpgVg45RFZfq+XhonymXXXj8mHA2dcwDMS9RnUhqjn4S92Lm101ozIqqyNWbQjAZp5FNGSDLGZmgKmTfOTtcCqzNcJH7sAZtP3c52raNuFYEQQMXY6xywylAPNLiBVE8eI3/oeNMNbFGDU0Hee+kGsS+u3hBCXqdayqPwY4teuBehB3JAtEMle0J4H7+9XXq9fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCX+deGhq1XSg0cl27ZmIIUZxxDh/m4Ab2G77/KsgDCTjd+rO/E1jg38rDxLhQcoIeThdnCnndE2cAxZlT1IqDJOIvcyzMXivYeuAyHShVJ8GEUmV3Atvh2XjiLpu+m0xjiFgJCDVbQB+dvY0y5uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgZAwEkzmdUBdYoYDK0VMExv7Tp10f9rnJz4/D+phEOrDdMcCrcmVaU0fAAmhiNidsXSoNwKqzRkoPdf3TtGcf/DXgSfff7krakcbD/oH3ZLPu1U+P3rLpfW0b7JDSXa6VoV9JUkOrcmhbK6/iH//AQ=="
+ },
+ "ungemessen": {
+  "karte2.planet.kopplung.siedlungslage#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "302f9b408dfa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.siedlungslage#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "dfcbffee2f54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "de29bb180b6f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "ef2dfca614bc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "9ef122ef3a2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "f9dd14373880",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "d87835bf7be2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "fcda1a6deb05",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "92f2af2faf21",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "163a2b156d2c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "2fb36d3acf29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#4": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "1762b26583ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "8de381e03394",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "ddd94b4d3b70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "e9af3ab2c936",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "2c0ad4f8ae9b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "463ab7abd767",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "9cacd305cdfb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#5": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "426a4faeb90f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T00:15:06.058Z",
+   "abdruck": "a54f1c335d2a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session",
+   "offen": 1
+  }
  }
 }
