@@ -39,8 +39,41 @@ const STAND = require("./lib/stand-linse.cjs");
 // (WN) DAS WASSERNETZ AM BACH STEHT: nach dem Stand wechselt in den Takten der Wache kein Netz (sonst der Chunk und die Ecke beim
 // Namen), und der Pendel des Pegels (die Mutante) wechselt es
 const N = (b) => b.netz || {};
+// (V) DER VORBACKER AM VOLLEN WELT-MARCH (march-warter): das schweigende Feld eines Hauses mit Mesh fällt an der Reserve der
+// Feld-Liste — das Haus fragt selbst nach Platz (sein Gang geht), die Welt steht, während es wartet (es hält keinen Fege-Takt
+// wach), Platz über der Reserve weckt es (es bäckt), und unter der Mutante „nie geweckt“ (der Platz-Takt schweigt) bäckt es nicht
+const vorbackerUrteil = (V) =>
+    !V
+        ? ["LEER: keine Vorbacker-Phase (der volle Welt-March)"]
+        : !(V.satz > 0 && V.fiel > 0)
+          ? [
+                `LEER: kein schweigendes Feld fiel am vollen Welt-March (das Haus trug Mesh und Satz: ${V.satz | 0}, sein Feld ` +
+                    `fiel: ${V.fiel | 0}, frei ${V.frei} bei Reserve ${V.reserve}; die Welt davor: ${V.stehtVor})`,
+            ]
+          : [].concat(
+                V.fragteSelbst > 0
+                    ? []
+                    : `NIE GEFRAGT: das schweigende Feld eines Hauses mit Mesh fiel an der Reserve des Welt-March (Reserve ` +
+                          `${V.reserve}), und das Haus fragte in ${V.fragtTakte} Takten nicht nach Platz — kein Warter steht am ` +
+                          "Platz, freier Platz weckt keinen (`_archZiegelWeicht`)",
+                !(V.n > 0 && V.fragten > 0 && V.wartet)
+                    ? `LEER: kein Vorbacker wartet am vollen Welt-March (${V.n | 0} Haus mit Mesh ohne Satz, ${V.fragten | 0} ` +
+                          `Fragen nach Platz über der Reserve, frei ${V.frei} bei Reserve ${V.reserve})`
+                    : [].concat(
+                          typeof V.steht === "number"
+                              ? []
+                              : `VORBACKER HÄLT WACH: ein Haus mit Mesh wartet an der Reserve des Welt-March (frei ${V.frei}, ` +
+                                    `Reserve ${V.reserve}) auf Platz — ${V.steht}`,
+                          V.gebacken > 0
+                              ? []
+                              : `NIE GEWECKT: Platz über der Reserve (frei ${V.freiNach}, Reserve ${V.reserve}) weckte den ` +
+                                    `Vorbacker in ${V.takte} Takten nicht — er bäckt nie (\`_weltPlatzTakt\`, die Zusage weckt den Takt)`,
+                          V.mutante > 0 ? "BLIND: unter der Mutante „nie geweckt“ (der Platz-Takt schweigt) bäckt der Vorbacker" : []
+                      )
+            );
 const urteil = (b) =>
     STAND.standUrteil(b).concat(
+        vorbackerUrteil(b.vorbacker),
         b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`,
         !N(b).ort ? "LEER: keine Netz-Wache am Bach" : [],
         N(b).wechsel ? `WASSERNETZ OHNE FIXPUNKT: ${N(b).wechsel} Wechsel nach dem Stand, zuletzt ${N(b).wo}` : [],
@@ -173,6 +206,7 @@ function selbsttest() {
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         fuehrung: { x: 700, z: -800, abstand: 1044, steht: true, takte: 23, grund: null },
         dorf: { steht: 41, placed: 12 },
+        vorbacker: { satz: 1, stehtVor: 80, fiel: 1, fragtTakte: 0, fragteSelbst: 1, n: 1, fragten: 1, wartet: true, reserve: 128, frei: 128, steht: 30, freiNach: 192, mutante: 0, takte: 2, gebacken: 1 }, // prettier-ignore
         wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
         schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
         simRuhe: Object.assign(simPh(0, 3600), { vorher: { ernte: {}, leben: 9 } }),
@@ -535,6 +569,25 @@ function selbsttest() {
         ],
         ["keine Führungs-Phase", ["fuehrung"], /LEER: keine Führungs-Phase/],
         ["das Dorf fliegt (die Basis)", ["dorf.placed"], /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
+        [
+            "der Vorbacker am vollen Welt-March hält die Welt wach",
+            ["vorbacker.steht=", "DIE WELT STEHT NICHT nach 121 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet"],
+            /VORBACKER HÄLT WACH: ein Haus mit Mesh wartet an der Reserve des Welt-March \(frei 128, Reserve 128\) auf Platz — DIE WELT STEHT NICHT nach 121 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet/,
+        ],
+        [
+            "der Platz-Takt weckt den Vorbacker nie",
+            ["vorbacker", { gebacken: 0, takte: 600 }],
+            /NIE GEWECKT: Platz über der Reserve \(frei 192, Reserve 128\) weckte den Vorbacker in 600 Takten nicht — er bäckt nie/,
+        ],
+        ["die Mutante „nie geweckt“ bäckt doch", ["vorbacker", { mutante: 1 }], /BLIND: unter der Mutante „nie geweckt“ \(der Platz-Takt schweigt\) bäckt der Vorbacker/],
+        [
+            "das schweigende Feld fällt, das Haus fragt nie nach Platz",
+            ["vorbacker", { fragteSelbst: 0, fragtTakte: 120 }],
+            /NIE GEFRAGT: das schweigende Feld eines Hauses mit Mesh fiel an der Reserve des Welt-March \(Reserve 128\), und das Haus fragte in 120 Takten nicht nach Platz/,
+        ],
+        ["kein Vorbacker wartet am vollen Welt-March", ["vorbacker", { fragten: 0 }], /LEER: kein Vorbacker wartet am vollen Welt-March \(1 Haus mit Mesh ohne Satz, 0 Fragen/],
+        ["kein schweigendes Feld fällt am vollen Welt-March", ["vorbacker", { fiel: 0 }], /LEER: kein schweigendes Feld fiel am vollen Welt-March \(das Haus trug Mesh und Satz: 1, sein Feld fiel: 0/],
+        ["keine Vorbacker-Phase", ["vorbacker"], /LEER: keine Vorbacker-Phase/],
         ["ein wartender Fege-Takt hält die Welt nicht wach", ["wach=", "steht nach 31 Takten"], /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
         ["die Welt steht, während die Bake-Uhr abweist (die Basis)", ["schuld", { grund: "Welt-Regung", takte: 1, rest: 8 }], /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
         [
@@ -3305,6 +3358,96 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                 const D = (aus.dorf = {});
                 r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x?.placed));
                 D.steht = await __weltStehtNach(takt).catch((x) => x.message);
+                // (V) DER VORBACKER AM VOLLEN WELT-MARCH (march-warter): ein Haus, dessen Mesh zeichnet, bäckt seinen Satz nur vor —
+                // sinkt die Feld-Liste unter ihre Reserve, fällt sein schweigendes Feld (`_weltLeibTakt` › `_weltStillWeicht`). Es
+                // FRAGT SELBST nach Platz (der fallende Satz weckt den Gang, `_archZiegelWeicht`), wartet auf Platz ÜBER der Reserve
+                // (`_archZiegelFern` › `_weltPlatzWarten(true)`) und schläft auf dieser Zusage. Die Welt STEHT dabei (er schuldet dem
+                // Bild nichts: kein Fege-Takt wartet für ihn), und Platz über der Reserve WECKT ihn (`_weltPlatzTakt`, die Zusage
+                // weckt den Takt): er bäckt. Das Haus tritt ein und trägt Mesh und Satz, dann nimmt der echte Nehmer
+                // (`_weltKapselSpawn`) die Liste bis ein Feld unter die Reserve, der echte Geber (`_weltFeldFrei`) gibt sie zurück.
+                // Die Null-Wand fällt nur für die Satz-Schlange DIESES Hauses (Lehre 16: der Null-Renderer trägt keinen Satz —
+                // Feld-Liste und Kapseln sind CPU-Daten, der Pass steht unter dem Haken des Fern-Rings); die Wiese und das Dorf
+                // bleiben hinter ihr. Die Linse richtet die MELDUNG des Gangs (wer zählt als offen, wer weckt), nie das Bild des
+                // Satzes: das richtet die Werkbank am echten Renderer (stadt-voll, 20 Uhr, 804,9 / 62,8 / 402,8 — die Zahlen am
+                // Schnitt, `tickArchitectureCulling`). Die Mutante „nie geweckt“: der Platz-Takt schweigt — kein Vorbacker bäckt,
+                // obwohl Platz über der Reserve frei ist.
+                {
+                    const V = (aus.vorbacker = { n: 0, fragten: 0 });
+                    const [WM, wm, T3] = [AnazhRealm.WELT_MARCH, r._weltMarchEnsure(), window.THREE];
+                    const recs = r._foundry?.recipes || {};
+                    const kultur = Object.keys(recs).find(
+                        (k) => AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind]?.prefix === "haus_" && st.blueprints["haus_" + k]
+                    );
+                    const p = st.playerMesh.position;
+                    const [hx, hz] = [p.x + 30, p.z + 18];
+                    const [ab, halter] = [[], []];
+                    const wand = (an) => (st.renderer._isHeadlessNull = an);
+                    const langsam = async () => (takt(), await sleep(12)); // Platz- und Leib-Takt gehen an der Wanduhr (`platzMs`)
+                    let e = null;
+                    try {
+                        if (kultur && wm) {
+                            ab.push(huelle(r, "_weltPlatzWarten", (ruf, a) => (a[0] === true && V.fragten++, ruf())));
+                            // die Wand fällt für EIN Haus: der Gang liest sie EINMAL (`ohneFeld`) — jeder andere Eintrag antwortet in
+                            // ihm wie hinter ihr (er trägt für den Gang „kein Satz“, seine Satz-Fragen bleiben an der Wand), Bau,
+                            // Räumung und Rewarm stehen hinter ihr
+                            const fremd = (x) => x !== e;
+                            ab.push(huelle(r, "tickArchitectureCulling", (ruf) => {
+                                const ohne = r._cullWache().liste.filter((x) => fremd(x) && !x._ziegelSlot && !x._ziegelGebacken);
+                                for (const x of ohne) x._ziegelGebacken = true;
+                                wand(false);
+                                try { return ruf(); } finally { wand(true); for (const x of ohne) delete x._ziegelGebacken; }
+                            })); // prettier-ignore
+                            ab.push(huelle(r, "_archZiegelFern", (ruf, a) => (fremd(a[0]) ? false : ruf())));
+                            ab.push(huelle(r, "_archSatzFern", (ruf, a) => (fremd(a[0]) ? 0 : ruf())));
+                            for (const k of ["_standStempel", "_rebuildArchitectureMesh", "_cullArchitectureMesh", "_foundryRewarmColdTrees", "_capNexusStructures"])
+                                ab.push(huelle(r, k, (ruf) => { const war = st.renderer._isHeadlessNull; wand(true); try { return ruf(); } finally { wand(war); } })); // prettier-ignore
+                            e = r.spawnArchitecture("haus_" + kultur, { x: hx, y: r._voxelSurfaceY(hx, hz) + 0.5, z: hz }, { silent: true });
+                        }
+                        if (e) {
+                            await bisDa("das Haus trägt Mesh und Satz", () => r._archIsRendered(e) && !!e._ziegelSlot, 900, langsam);
+                            V.satz = r._archIsRendered(e) && e._ziegelSlot ? 1 : 0;
+                            V.stehtVor = await __weltStehtNach(takt).catch((x) => String(x.message).slice(0, 160));
+                            // die Liste sinkt ein Feld unter ihre Reserve: der Leib-Takt lässt das schweigende Feld des Hauses fallen
+                            const box = () => [{ box: true, c: new T3.Vector3(0, 1, 0), h: new T3.Vector3(1, 1, 1) }];
+                            const M = new T3.Matrix4().makeTranslation(p.x, -900, p.z);
+                            while (wm.freiFelder.length > WM.reserve - 1) {
+                                const h = r._weltKapselSpawn("stand-takt:voll", M, box);
+                                if (!h) break;
+                                halter.push(h);
+                            }
+                            await bisDa("das schweigende Feld fällt", () => !e._ziegelSlot, 300, langsam);
+                            V.fiel = e._ziegelSlot ? 0 : 1;
+                            // das Haus fragt SELBST (sein fallender Satz weckt den Gang); fragt es nicht, regt die Linse die Welt
+                            // (ein fremdes Ereignis), damit die übrigen Urteile messen
+                            const wartet = () => r._archIsRendered(e) && !e._ziegelSlot && !!wm.platz && V.fragten > 0;
+                            V.fragtTakte = await bisDa("der Vorbacker fragt nach Platz", wartet, 120, langsam);
+                            V.fragteSelbst = wartet() ? 1 : 0;
+                            if (!wartet()) {
+                                r._weltRegt();
+                                await bisDa("der Vorbacker fragt nach Platz (die Welt regt sich)", wartet, 120, langsam);
+                            }
+                            V.n = r._archIsRendered(e) && !e._ziegelSlot ? 1 : 0;
+                            [V.reserve, V.frei, V.wartet] = [WM.reserve, wm.freiFelder.length, !!(wm.platz && !wm.platz.echt)];
+                            V.steht = await __weltStehtNach(takt, 120).catch((x) => String(x.message).slice(0, 200));
+                            // die Mutante „nie geweckt“: Platz über der Reserve, der Platz-Takt schweigt
+                            const stumm = leihe(r, { _weltPlatzTakt() {} });
+                            for (const h of halter.splice(0, 64)) r._weltFeldFrei(h);
+                            V.freiNach = wm.freiFelder.length;
+                            for (let i = 0; i < 50; i++) await langsam();
+                            stumm();
+                            V.mutante = e._ziegelSlot ? 1 : 0;
+                            // der Platz-Takt der Welt weckt: der Vorbacker fragt und bäckt
+                            V.takte = await bisDa("der Vorbacker bäckt", () => !!e._ziegelSlot, 600, langsam);
+                            V.gebacken = e._ziegelSlot ? 1 : 0;
+                        }
+                    } finally {
+                        ab.forEach((f) => f());
+                        wand(true);
+                        for (const h of halter) r._weltFeldFrei(h);
+                        if (e) r.removeArchitecture(e);
+                    }
+                    await __weltStehtNach(takt);
+                }
                 // (RS) DIE SIMS IN RUHE (feld.K3): an der Mess-Wiese 60 s Spielzeit nach einer Tat (eine Ernte der Nah-Streu über
                 // den echten Schreiber, ein Leben am Spieler), Wetter und Saison ruhen; danach (WS) je Sim ihr Ereignis
                 {

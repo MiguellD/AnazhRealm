@@ -3019,11 +3019,16 @@ class AnazhRealm_studio_bruecke {
         if (entry._satzA > 0) wm.ansichtTyp.set(entry.type, entry._satzA);
         return true;
     }
-    // Der Satz fällt, der Bau darf wieder fragen (am Pixel-Horizont, oder er wich einem Näheren).
+    // Der Satz fällt, der Bau darf wieder fragen (am Pixel-Horizont, oder er wich einem Näheren) — UND SEIN GANG GEHT
+    // (march-warter): fällt er außerhalb des Gangs (`_weltStillWeicht` aus dem Leib-Takt, `_weltSatzWeichen` für einen Leib),
+    // weckt er den Takt des Culls; `_cullWecken` weckt ihn nur für den, der in die Wache tritt. Bis march-warter fragte ein
+    // Haus der Mesh-Zone, dessen schweigendes Feld an der Reserve fiel, nie wieder: der Gang ruhte, kein Warter stand am Platz,
+    // freier Platz weckte keinen (Mess-Wiese, Null-Renderer mit Feld: 120 Takte ohne Frage, 600 ohne Satz bei 192 freien Feldern).
     _archZiegelWeicht(entry) {
         this._archZiegelTod(entry);
         entry._ziegelGebacken = false;
         entry._ziegelVersuche = 0;
+        this._standWecken("archCull");
     }
     // VOLL HEISST WARTEN: der fernste Halter weicht (→ true: der nächste Gang fragt neu), sonst nennt der Bau die Zusage „Platz
     // im Welt-March“ und schläft auf ihr (→ false, wie „lädt noch“: nichts verbrannt). Wer sein Mesh zeigt, backt nur vor (für
