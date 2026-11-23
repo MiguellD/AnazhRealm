@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T01:05:31.809Z",
+ "zeit": "2026-11-23T01:06:44.303Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -2703,6 +2703,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.stadt.vertikal#1": {
+   "gruen": true,
+   "zahl": "dorf 7 9310: höchstes Haus 27,0 m bis zum First (Kachel 1/-5) · im Bild 3 von 5 Punkten seiner Achse (Soll ≥ 2, im Rahmen 3) vom Straßenpunkt 18,8 m · begehbare Ebenen 1 (Überführungen 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.15,
+   "gpu": "nvidia/pascal",
+   "konsum": "k32cb426466a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 69.1,
+   "fremd": {
+    "s": 71.6,
+    "takte": 30,
+    "fremdS": 34.45,
+    "kerne": 0.481,
+    "fensterKerne": 0.678,
+    "namen": [
+     [
+      "Explorer.EXE",
+      4.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.19
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.56
+     ]
+    ],
+    "dienerS": 39.59,
+    "diener": [
+     [
+      "dwm.exe",
+      16.52
+     ],
+     [
+      "System",
+      15.34
+     ]
+    ],
+    "geraetS": 32.5,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.13
+     ],
+     [
+      "svchost.exe",
+      11.94
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 560.52,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T01:06:44.303Z",
+   "abdruck": "c74671988637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2729,7 +2798,8 @@
   "k85d94296cc03": "bVRNc5swEP0vPrZVxGcAzeQgx5mm07RxZnrqbSVWQIyBkcB03Ol/7wgb20D2CG93n96+3b+rBuQOMrx7N3W1YqtPqy8rAwckBvUB9d27WbFVIl0PfcZPQTnnjxYmddG0hpaFoCAqyPdIOt1iUd7JIQ0EBmnMaP/Esy2lih7ppn94mKeWAtOatKDwkhjGqQrZHNiZDAQS6NTQ7AwOHd8VitEh4g1/3dBL9DHn20AF23gzKyagSqdsk/swwnB45BNfsEwLwJaURWXGvm4aJcph114/FjkaenIEzEvU56Q0Qi8JRrJr28xKM0tUZWfMpFnsp6EXM0qTOTZDU8i8JY2uBVZnuEi8yAW2XqqdNR1Rt4xACIjFXOscsMpQTzg4vlT3LqN/4nnRHexRA6kgH7V0/MgTV20opc9LLuVAfGgxEndDdEFOEu1Q6YFSPtrvYD89X/6O3zcZv8bbopmReaH3U5lUgJ7js5clNZNDiprsatNe0HEAgPF5CzaUv3FrrrmxzPVRYx4AxDdGoTHlzwsNTa3aHjSSrOnOiRhgGFlHfluAW9jvR/8rP/DlfICmtQa/pQGJcCFllH4+Lcjy0ad1IEcsyjFJqSBIQva4zubgg4Y9AZHpQqlx6iKUKvnIpD2WLRF13Y5lMYrAZ/RIq9tB/+xP23eNTeB8ffn9thznULHW7eUKiHtHBUxZc/RygS50S3qQ+Qj3lECwVBdzOKIuMcOJdCKKE2vnXp14Hu1Zic5rrz5PzHpcVizQilqZzoyDlRCIkH0whh71TkC1OwOl63juyXLrV/7Mb+P7L2cb2FFGk/5+b/Xb5utBSy6thmOTBuV4qemuILtaN52ZXH6LaHStCnsfaQ6dyaFsr5B//wE=",
   "k95cead91ba33": "bVVNc5swFPwvPjYl4jMIzeQgh0yTmbSxj+3tSTwBMQaPBKZ1p/+9I9vYBvKOYldvtW8l/i52IDeQ4/2HaeoFW3xZfF0Y2KNjUO9R33+YBVsk0vMxYPxUhHP+ZGFSl7vWkKoUBEQNxRadTrdYVvfySAOBYUYZ6Z95viJEkQNJ+8fHKbUSmDVOCwovxIhmKmJTYGdyEOhAp47NzuDIDTyhGDkWTfl7Si7VU85XoQpXNJ1sJqDOxmqThyjGiL3+4fyZz1RmJWDrVGVthr5eFifKZdde32ccDb1zACwq1GdSFqOfhIPYpbXTWjMhqqozZtSMBlnkU0ZIMsXmaEpZtM5ONwLrM1wkfuwBW87dznedo24VgRBAxdTrArDOUY80uIFUDx4jv+l00w1sUYNTQzF46QaxL67eEEJe5lqqo/Bji0G4F6EHckS0QyV7QvgQv71derl8HdbTnF9rPWtmZFHq7dgmFaLvBuxtLs0UkKF2No1pL2gaAiA934KU8DW34ZoGy1wPNfAAgN4EhVDCX2Yemka1PWh08l13JmKIURwxzl9n4Ba22yH/KggDOR2gaW3Ab2VAIjzIGCF3pwsyP/TpOjgHLKuBpFQYJrObuNewdUDkulRqmLiIpEo+C2iPVeuIpmmHLTGOIWAkIPXtkH/01tbnmxmmofvt7dd6zcf1xKe6jx0a3V5eBPHgqpApG5ReztClbp0eZDHAfSUQEkaC2UwOqCvMcWSjiGlio92rk+6DfWLi8xOg7kbBPcx3LNEaXJvODEOWEIqIfTKSHvVGQL05A6Xn+t4pfst3/jL2JF2vqB1rPOof9NbPVbE8est/Wk+HJjuUZKcbVdqXkBTQmQKq9vob+Pcf",
   "k03da00943956": "bVXbbqMwFPyXPLbrmmsBS31wSrWptFUTaX/g2BwDDYHIhrDKav99BQkJl54nZGZ8hjlj83clK43m6QBlrtDUT1+mKlds9bD6sTqC3EOK4yUDJyQG9Qn105dZsVUkbQddxi9FOeevHUzq/FgbmuSQElFVNTF1t5PsOQ8jRJELCqKE7ICk0TXmxRUEAr0kZLT94OmWUkXPNG5fXubUQmBSkRoU3oh+mCifzYGNSUEggUb1za5g33JtoRjtK4z5Z0xv1X5wvvWUtw3j2WYCymSqNnr2A/R7G974QmWSA9akyEsz9LWTIFIWG/VacDS05AyYFaivpCRAJ/IGseuuWWfNjKiKxphJs9BNfCdklEZzbIoml1lNjroSWF7hInICG9h66XZ6bIgaKwIhIBRzrzPAMkU90WC5Uj3bjP4J55vu4YAaSAnZ4KXlBo64e0Mp3Sy1FL3wvsUg3PbRBjkhdkOlJ0r5ENBTt7S5vR3W45Tfa7doZmSW68PUJuWhY7ns11KaySBBTfaVqW/o0APA8HpOYsp3vAvXPFjm/lEDDwDCUVBoSPlm4aGpVN2CRpIemysRPfSDLpHvC3ANh8OQf+V6rpwP0NRdwMcyIBI2JIzSx8sBWX705TiQM+bFQFLK8yKfva69Ofik4UBApDpXapi68KWKvgtpi0XdXyLDthgE4DJ6puV40NuWr7vTd6/Ys37G6x2f1Rufy+k7VLq+3Qri2VIeU11YWrlA57omLchsgDtKIETsG+gZdYEpTqwUQRh18W7lWOnw8DgJ73kx6XOOncmlacwwaAme8Nk3Y2lR7wWU+ytQ2pZjXyK4/uSbceD5+29r286N4txN3/i6jTM+eZf2TY4o6VFXKu9uQ5pBYzIoRv+Pf/8B",
-  "ke186dd5eb9af": "dVXbcpswFPwXP7ZVxDUIzeRBDp4600ucTn/gSBwBMQaPBKF1p//ewTa2gVSPeFe72rOS/yz2oLaQ4d2rrasFX3xYfFpYeENi0byhuXu1C76Ileuhz8VpUSHEYw9Tptg3lpaFpCAryHdIWtNgUd6pIw0kBinjtFuJbEOppgeadA8PU2opMa1JAxovxJClOuRTYGszkEig1UexMzh0fFdqTo+LJeI5oZfVMSE2gQ42LJlsJqFKx27j+zDCkD/9FmIlZi7TArAhZVHZQddNo1g7/Kr1bcYx0JEDYF6iOZPSCL04GMwu+zj7aCZEXbbWjsSYn4Ye45TGU2yGtlB5Q/amllid4TL2Ihf4cp52tm+JvnUEUgKT06xzwCpDM/Lg+Erfu5z+YuJ/i771QaymolvYoQFSQT5k7fiRJ6/ZUUrXc6/l8WBHC8PB3BBdUCNiP/Red+SBrS+/Dt+T7Mboy0zMqrwwu3GMOkDP8fnXuTWbQ4qGbGvbXNAsAEB2viUJFS+iL9+0ePZ6qIEHAOymSJRRsWYzxVo3HRgk2b49EzHAMAq5EE8zcAO73XA/tB/4ajpg2/QX4NYGxNKFlFP68XSB5oc+XRdywKIcSFoHQRzyx2U2Bb8Z2BGQmSm0HqYuQ6Xj90rcYdkQWdfNsC1GEfic+rS6HfT3ro92dTPHJHA+Jz9epj18FFM7R4XaNJdXQ947OuD6WFg1QxemIR2ofIB7WiL01mdzOaApMcNRlDJicV/vTp98H/pnKDo/E/rjqLyH+Y4F9iFXtrXDoBUEMuTvjKVDs5VQbc9A5Tqee6rg8lmsbwsvvvx0NiyhtBtH5ZvVctmt8+XlexIMIntUdG9qXfSvJc2htTmUzfWv4u8/"
+  "ke186dd5eb9af": "dVXbcpswFPwXP7ZVxDUIzeRBDp4600ucTn/gSBwBMQaPBKF1p//ewTa2gVSPeFe72rOS/yz2oLaQ4d2rrasFX3xYfFpYeENi0byhuXu1C76Ileuhz8VpUSHEYw9Tptg3lpaFpCAryHdIWtNgUd6pIw0kBinjtFuJbEOppgeadA8PU2opMa1JAxovxJClOuRTYGszkEig1UexMzh0fFdqTo+LJeI5oZfVMSE2gQ42LJlsJqFKx27j+zDCkD/9FmIlZi7TArAhZVHZQddNo1g7/Kr1bcYx0JEDYF6iOZPSCL04GMwu+zj7aCZEXbbWjsSYn4Ye45TGU2yGtlB5Q/amllid4TL2Ihf4cp52tm+JvnUEUgKT06xzwCpDM/Lg+Erfu5z+YuJ/i771QaymolvYoQFSQT5k7fiRJ6/ZUUrXc6/l8WBHC8PB3BBdUCNiP/Red+SBrS+/Dt+T7Mboy0zMqrwwu3GMOkDP8fnXuTWbQ4qGbGvbXNAsAEB2viUJFS+iL9+0ePZ6qIEHAOymSJRRsWYzxVo3HRgk2b49EzHAMAq5EE8zcAO73XA/tB/4ajpg2/QX4NYGxNKFlFP68XSB5oc+XRdywKIcSFoHQRzyx2U2Bb8Z2BGQmSm0HqYuQ6Xj90rcYdkQWdfNsC1GEfic+rS6HfT3ro92dTPHJHA+Jz9epj18FFM7R4XaNJdXQ947OuD6WFg1QxemIR2ofIB7WiL01mdzOaApMcNRlDJicV/vTp98H/pnKDo/E/rjqLyH+Y4F9iFXtrXDoBUEMuTvjKVDs5VQbc9A5Tqee6rg8lmsbwsvvvx0NiyhtBtH5ZvVctmt8+XlexIMIntUdG9qXfSvJc2htTmUzfWv4u8/",
+  "k32cb426466a7": "dVXbbptAEP0XPzYlwzXASnmAEMWR2saR+gOzyywQY3B3wVSu+u8VNtgG0nlcztk5M3Nm+bPao9hiRvcfuq5WbPVl9XWl8UCGJnUgdf+hV2wVCssmh0XngCiKnnqYUMW+0VAWHJBXmO/IaFVDRXkvTjTk5KYBg+45yjYAEo6QdI+Pc2rJKa2NBiVdiF6QSo/Nga3OkJOBrTwlG8Ce6VhcMjhFkERvCVyi+x5FG1e6myCZXcaxSqdqwwfPJ+9U5HO0UJkWSI1RFpUe81qpH0qT3eRacBR2xhEpL0kNpNQnO3RHsXGfrG/NjCjLVutJssBJPTtgAOEcm5EuRN4Ye1VzqgY4D23fQhYvu53tW0PeKkLOMeDzXudIVUZqosF0hHywGPwOov8FHIK5vi3uSKFRYT722XR8m1/7BgDrpc7yVNQp/ViU5ZGFYkLsBw4HgGv+/mh9+TqeJ9mNyPdFMi3yQu2mLZQu2abDvi2l6RxTUsa21s0FHbiIFAwbkkD0HvXGm5tOX4saeYgY3JgIAojWwSJjLZsOFRnZvh2I5JLn9259XYAb3O3G3ZCO64j5cHXTm/9WBobcwpQB3J2XZ1n0eVWMIxXlSJLSdUOPPcXZHHxQuDOQZ6qQcpw694QMPzNwR2Vj8LpuxmvJ99FhcITqdtA/uvNmXiNxzZckfl/u6unGWjWXF4I/mNJlsjdHJxboQjVGhyIf4bbkhL3UxRyOpErKaNI67gdhb+dODKr6yfvDkyDvJmY9Lm8sqG9qpVs9Dlagyz32yRg6UluO1XYACsu0rbPl4rdoPdnD15/mxk0Auul6Or+e47hb5/HN+cvQvz0J2KtaFv3LCDm2Oseyuf4W/v4D"
  },
  "ungemessen": {
   "karte2.leben.pflanzen.biome#1": {
@@ -3413,20 +3483,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.stadt.vertikal#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:58:50.109Z",
-   "abdruck": "c74671988637",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.planet.relief.wandel#1": {
    "gruen": false,
