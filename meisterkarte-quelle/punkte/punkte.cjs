@@ -7880,7 +7880,7 @@ async function selbsttest(o = {}) {
             const SA = attrappe(), SO = attrappe();
             const mitS = scheinReferenz({ mdir: ablage("schloss"), fahrt: roh(SA.z), tor: torStill, schloss: SA.schloss, rechner: "schein" });
             const ohneS = scheinReferenz({ mdir: ablage("frei"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ loesen: async () => {} }), rechner: "schein" }); // der Mutant
-            const aMit = await mitS.auffuellen("allein"), aOhne = await ohneS.auffuellen("allein"), eine = await mitS.fahrt();
+            const aMit = await mitS.auffuellen("allein"), zAuf = { ...SA.z }, aOhne = await ohneS.auffuellen("allein"), eine = await mitS.fahrt(); // zAuf: der Stand nach der Auffüllung, vor der einzelnen Fahrt
             const verweigert = await scheinReferenz({ mdir: ablage("nein"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ fehler: "die Referenz bekam kein Schloss: Nachtruhe" }), rechner: "schein" }).fahrt();
             const schlossGilt = (a, z) => (a.n === REFERENZ_RUHE_MIN && z.frei === 0 && z.leihen === 1 ? true : "Auffüllung ohne Schloss: " + z.frei + " von " + a.n + " Fahrten frei, " + z.leihen + " Leihen");
             const haeltVorher = process.env.GPU_LAUF_HAELT;
@@ -7891,10 +7891,10 @@ async function selbsttest(o = {}) {
             if (haeltVorher == null) delete process.env.GPU_LAUF_HAELT;
             else process.env.GPU_LAUF_HAELT = haeltVorher;
             pruef("TOR (c) Täter-Fall „Auffüllung ohne Schloss“: die zehn Fahrten der Auffüllung laufen unter EINER Leihe, eine einzelne Fahrt leiht selbst, ein verweigertes Schloss ist ein Wurf beim Namen; ohne Schloss → ROT beim Namen; GPU_LAUF_HAELT zählt als gehalten",
-                schlossGilt(aMit, SA.z) === true && SA.z.tief === 0 && /^Auffüllung ohne Schloss: 10 von 10 Fahrten frei/.test(String(schlossGilt(aOhne, SO.z))) &&
+                schlossGilt(aMit, zAuf) === true && SA.z.tief === 0 && /^Auffüllung ohne Schloss: 10 von 10 Fahrten frei/.test(String(schlossGilt(aOhne, SO.z))) &&
                     !eine.fehler && SA.z.leihen === 2 && Array.isArray(eine.spanne) && eine.tor && eine.tor.ruhig === true &&
                     verweigert.fehler === "die Referenz bekam kein Schloss: Nachtruhe" && frei0 && unter0,
-                JSON.stringify([schlossGilt(aMit, SA.z), schlossGilt(aOhne, SO.z), SA.z, eine, verweigert, frei0, unter0]));
+                JSON.stringify([schlossGilt(aMit, zAuf), schlossGilt(aOhne, SO.z), SA.z, eine, verweigert, frei0, unter0]));
         }
         // DAS GESETZ AN GESETZTEN EINGABEN: je Satz Station, Ergebnis (mit Maß), Bericht des Zeugen, Bericht der Referenz und sein Soll; die
         // MUTANTEN fallen je an ihrem Satz, jeder Satz fällt an einem von ihnen
