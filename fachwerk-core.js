@@ -123,8 +123,10 @@
                 // Die L0 wirft selbst (nah, höchstens drei im Bild), die L1 die Stufe 3 (nurWurf: Feuerstelle ≤ 32, Marktstand
                 // und Brunnen ≤ 48 Dreiecke) — vorher warf jede L1 sich selbst (die Feuerstelle 440 je Kaskade).
                 ausstattung: {
-                    0: { tris: 3400, draws: 2, schatten: 0 },
-                    1: { tris: 620, draws: 2, schatten: 3 },
+                    // `bewegt` (brunnen-haspel): die Teile einer Maschine, je Teil ein Befehl außer dem Aufbau — die Haspel des
+                    // Ziehbrunnens dreht Kurbel, Seil und Eimer (HASPEL), in jeder Stufe, in der man sie sieht
+                    0: { tris: 3400, draws: 2, schatten: 0, bewegt: 3 },
+                    1: { tris: 620, draws: 2, schatten: 3, bewegt: 3 },
                     3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
@@ -6679,9 +6681,13 @@
         if (st.topH) solAus(st.topH, st.off || 0);
         return solL;
     }
+    // DIE SOLIDS BRAUCHEN KEIN GITTER (eine-huelle): der Bau der Hülle teilt je Maß EINE Box-Geometrie ohne Tint (`__nurMass`,
+    // die Regel des Mass-Baus) — er liest nur, was `addSolid` und `addStrahl` sammeln. Dieselben Solids byte-gleich
+    // (gate:fachwerk-contract 1b, 32 Kulturen × 2 Samen × jede Stufe), 32,2 → 12,7 ms je Haus (Node, 21 Häuser des Dorfs).
     function hausSolids(p) {
         var hp = stufe0Param(p);
         hp.nur = Object.assign({}, SOLIDLOS, hp.nur);
+        hp.__nurMass = true;
         var st = stufe0Bau(hp);
         var z = { fest: solidZeile(st), strahl: solidZeile(st, "strahl") };
         st.g.traverse(function (o) {
@@ -6752,9 +6758,16 @@
         } else if (stufe === 3) {
             // DIE STUFE 3 (nurWurf, S3): der Fernkörper des Gesetzbuchs. Der Warm-Pfad misst den Fassaden-Ton (wie die L2),
             // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
-            // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe). Ihre Massen
-            // kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
+            // Beipack `__fern`. Ihre Massen kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
+            // EINE HÜLLE JE HAUS (eine-huelle, additiv, must-ignore): auch sie trägt die Solids des Gesetzbuchs (nach dem Gitter:
+            // der Stufen-Bau bleibt byte-gleich) — das ferne Haus, das nur sie bestellt, steht in derselben Hülle wie das nahe.
+            // Bis hier trug sie keine: jenseits der Mesh-Zone stellte der Wirt vier Wände aus der Tür-Zeile auf (seine Kern-Hülle),
+            // an jedem Haus des Dorfs 7–10 Solids am Boden bis 0,73 m daneben, am Hof-Haus 60 bis 9,07 m — kam die Hülle der
+            // gezeigten Stufe, rückten die Stände der Bewohner um 0,3–2,9 m (28 Stände während einer Zählung am Start-Dorf).
             geoms = wurfVon(planBau(p));
+            var hs3 = hausSolids(p);
+            geoms.__solids = hs3.fest;
+            geoms.__strahl = hs3.strahl;
         } else {
             var B = massBau(p);
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
@@ -7916,6 +7929,132 @@
         }
     }
 
+    // ═══ DIE EINFACHE MASCHINE — WELLE MIT KURBEL (brunnen-haspel, rein additiv): die Haspel des Ziehbrunnens ist eine Welle
+    //     mit dem Wickel-Halbmesser r (Bauch der Trommel + Halbmesser des Seils). Der Zustand ist der Kurbelwinkel φ (rad,
+    //     0 = das Seil ganz abgewickelt, der Eimer taucht `eintauch` unter den Spiegel); der Hub des Eimers IST r·φ, begrenzt
+    //     durch die Seillänge (der Bügel stößt unter der Trommel an, `yEmax`) und den Grund der Schöpftiefe (`yEmin`). Der
+    //     Eimer fasst Wasser erst, wenn sein Boden unter dem Spiegel liegt — die Füllung ist Folge des Wegs, nie Ursache der
+    //     Lage (bis hier hob der Regler `fuelle` den Eimer, und kein Verb drehte die Kurbel). Die Kraft an der Kurbel folgt
+    //     dem Hebel: F = Last · r ÷ Kurbelarm; die Hand dreht mit ihrer Dauerleistung (`menschW`), höchstens `kurbelMaxUmdrS`.
+    //     EINE Quelle der Maße: `ausBrunnen` zeichnet aus denselben Zahlen (Achse, Trommel, Seil, Kurbel, Bügel, Spiegel).
+    //     Die Gestalt (der Regler `fuelle`) bestimmt nur die Ruhe-Lage, in der die Teile gebacken sind (`phiF`); die drei
+    //     bewegten Teile (Kurbel samt Welle und Trommel · Seil · Eimer) reisen als benannte Teile (`__schwenk.welle`), der Wirt
+    //     setzt je Teil die Matrix, die `haspelTeilMatrix` rechnet. Leser: der Wirt (`_kurbeln`, `_tickHaspel`), die Linse
+    //     gate:fachwerk-contract HASPEL. Die Kraft trägt die Leiter mensch.fahrzeug.maschine weiter (Sprosse 2: dieselbe Welle
+    //     an Wasser und Wind).
+    var HASPEL = Object.freeze({
+        yH: 1.5, // die Achse der Welle über dem Boden
+        welleR: 0.055, // die Welle durch beide Pfosten
+        trommelR: 0.115, // der Bauch der Trommel (an den Enden 0,11)
+        seilR: 0.013, // der Halbmesser des Hanfseils
+        seilAb: 0.11, // das Seil verlässt die Trommel so tief unter der Achse
+        kurbelArm: 0.3, // der Griff liegt so weit von der Achse (Arm 0,34 m, Griff am Ende)
+        buegelH: 0.3, // der Bügel über dem Boden des Eimers
+        spiegel: -0.55, // der Wasserspiegel unter dem Boden (der Schacht zeichnet ihn dort)
+        eintauch: 0.26, // so tief taucht der Boden des Eimers unter den Spiegel, ehe das Seil abgewickelt ist (der Rand 1,5 cm unter ihm)
+        ruheY: [0.86, 0.22], // die Ruhe-Lage des Eimer-Bodens der Gestalt: 0,86 + fuelle · 0,22 m
+        eimerProfil: [[0, 0], [0.125, 0], [0.15, 0.24], [0.138, 0.245], [0.114, 0.02], [0, 0.02]], // außen, Rand, innen
+        eimerKg: 2.2, // Daube und zwei Eisenbänder
+        rhoWasser: 1000,
+        menschW: 60, // die Dauerleistung eines Menschen an der Kurbel
+        kurbelMaxUmdrS: 0.8, // schneller dreht die Hand nicht
+    });
+    // Die Maße einer Haspel aus den Reglern der Gestalt (p.fuelle): Wickel-Halbmesser, Grenzen des Hubs, Ruhe-Lage, Volumen.
+    function haspelMass(p) {
+        var H = HASPEL,
+            F = p && typeof p.fuelle === "number" && isFinite(p.fuelle) ? p.fuelle : 0.6;
+        var r = H.trommelR + H.seilR,
+            yEmin = H.spiegel - H.eintauch,
+            yEmax = H.yH - H.seilAb - H.buegelH - 0.01,
+            yF = H.ruheY[0] + F * H.ruheY[1];
+        var a = H.eimerProfil[4],
+            b = H.eimerProfil[3],
+            h = b[1] - a[1];
+        var vol = (Math.PI * h * (a[0] * a[0] + a[0] * b[0] + b[0] * b[0])) / 3;
+        return {
+            r: r,
+            yEmin: yEmin,
+            yEmax: yEmax,
+            phiMax: (yEmax - yEmin) / r,
+            phiF: (Math.min(yEmax, yF) - yEmin) / r,
+            yF: Math.min(yEmax, yF), // der Boden des Eimers in der Ruhe-Lage (die Gestalt bäckt ihn dort)
+            yT: H.yH - H.seilAb, // das Seil hängt an der Trommel
+            innenY: a[1], // der innere Boden über dem äußeren
+            innenH: h,
+            volM3: vol,
+            kurbelArm: H.kurbelArm,
+        };
+    }
+    // Die Lage bei φ: der Boden des Eimers, sein Hub (r·φ), die Länge des freien Seils, ob er im Wasser steht.
+    function haspelLage(M, phi) {
+        var f = Math.max(0, Math.min(M.phiMax, +phi || 0));
+        var yE = M.yEmin + M.r * f;
+        return { phi: f, hub: M.r * f, yE: yE, seilL: M.yT - (yE + HASPEL.buegelH), nass: yE + M.innenY < HASPEL.spiegel };
+    }
+    // Last, Moment an der Welle und Kraft an der Kurbel bei der Füllung `wasser` (0 … 1 des Eimers) unter der Schwere `g`
+    // (m/s², der Betrag — die Schwere der Welt, die der Wirt trägt; der Kern kennt keine eigene).
+    function haspelKraft(M, wasser, g) {
+        if (!(g > 0)) throw new Error("fachwerk haspelKraft: keine Schwere (" + g + ")");
+        var H = HASPEL,
+            w = Math.max(0, Math.min(1, +wasser || 0));
+        var last = (H.eimerKg + H.rhoWasser * M.volM3 * w) * g;
+        return { lastN: last, momentNm: last * M.r, kurbelN: (last * M.r) / M.kurbelArm };
+    }
+    // Der Anfang: die Kurbel in der Ruhe-Lage der Gestalt, der Eimer leer, die Hand senkt ihn zuerst.
+    function haspelStart(M) {
+        return { phi: M.phiF, wasser: 0, richtung: -1 };
+    }
+    // EIN Schritt der Hand an der Kurbel über dt Sekunden: die Kurbel dreht in `z.richtung` mit ω = min(ω_max, P ÷ Moment);
+    // der Hub folgt φ; an den Enden kehrt die Hand um (unten schöpft der Eimer, oben steht er zum Ausgießen). Unter dem
+    // Spiegel füllt er sich bis zur Tiefe, in der er steht. Gibt den neuen Zustand mit Hub, Kraft und Kurbelweg dieses Schritts.
+    function haspelSchritt(M, z, dt, g) {
+        var H = HASPEL,
+            s = z || haspelStart(M),
+            d = Math.max(0, Math.min(0.5, +dt || 0));
+        var K = haspelKraft(M, s.wasser, g);
+        var om = Math.min(2 * Math.PI * H.kurbelMaxUmdrS, H.menschW / Math.max(1e-6, K.momentNm));
+        var ri = s.richtung < 0 ? -1 : 1;
+        var phi = s.phi + ri * om * d;
+        if (phi <= 0) {
+            phi = 0;
+            ri = 1;
+        } else if (phi >= M.phiMax) {
+            phi = M.phiMax;
+            ri = -1;
+        }
+        var L = haspelLage(M, phi),
+            wasser = s.wasser;
+        if (L.nass) wasser = Math.max(wasser, Math.min(1, (H.spiegel - (L.yE + M.innenY)) / M.innenH));
+        return { phi: L.phi, wasser: wasser, richtung: ri, hub: L.hub, weg: Math.abs(L.phi - s.phi), kurbelN: haspelKraft(M, wasser, g).kurbelN };
+    }
+    // Die Matrix eines bewegten Teils (Spalten-Folge wie THREE.Matrix4.elements) im Raum der Gestalt bei φ, bezogen auf die
+    // Ruhe-Lage, in der es gebacken ist: die Kurbel dreht um die Achse der Welle (x durch yH; Aufwickeln dreht das Seil an der
+    // Trommel nach oben), der Eimer steigt um r·(φ − φF), das Seil streckt sich von seiner Aufhängung bis zum Bügel.
+    function haspelTeilMatrix(M, teil, phi) {
+        var L = haspelLage(M, phi),
+            d = L.phi - M.phiF,
+            yH = HASPEL.yH;
+        if (teil === "kurbel") {
+            var c = Math.cos(-d),
+                s = Math.sin(-d);
+            return [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, yH - c * yH, -s * yH, 1];
+        }
+        if (teil === "eimer") return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, M.r * d, 0, 1];
+        if (teil === "seil") {
+            var lF = haspelLage(M, M.phiF).seilL,
+                k = L.seilL / lF;
+            return [1, 0, 0, 0, 0, k, 0, 0, 0, 0, 1, 0, 0, M.yT * (1 - k), 0, 1];
+        }
+        throw new Error("fachwerk haspelTeilMatrix: kein Teil " + teil);
+    }
+    // Die bewegte Gruppe eines Haspel-Teils (die Mechanik der schwingenden Teile, `_gSchwenk`: sie verlässt den Bau des
+    // Gestells und bäckt als eigenes Teil um ihren Punkt); `welle` nennt das Teil der Maschine, das die Brücke trägt.
+    function _haspelTeil(g, welle, punkt, achse) {
+        var s = _gSchwenk(g, "haspel", punkt, achse);
+        s.userData.__schwenk.welle = welle;
+        return s;
+    }
+
     // ── DER ZIEHBRUNNEN: Steinkranz aus Quadern in drei Lagen (fern ein Drehkörper) · Deckplatten · dunkler Schacht ·
     //    Wasserspiegel · zwei Pfosten · Haspel mit Kurbel · Seil und Eimer · Satteldach aus Schindeln ──
     function ausBrunnen(g, p, seed, stufe) {
@@ -7995,42 +8134,49 @@
             })(tonP[i]));
             ausTeil(g, pfo, "holz");
         }
-        // DIE HASPEL — Welle durch beide Pfosten, Trommel in der Mitte, Kurbel rechts.
-        var yH = 1.5;
-        var welle = ausDreh([[0.055, 0], [0.055, 2 * px + 0.34]], fein ? 8 : 5, true, true);
+        // DIE HASPEL — Welle durch beide Pfosten, Trommel in der Mitte, Kurbel rechts: EIN bewegtes Teil um die Achse der Welle
+        // (die Maße aus HASPEL, dem Gesetz der Maschine).
+        var HS = HASPEL,
+            yH = HS.yH,
+            M = haspelMass(p);
+        var kTeil = _haspelTeil(g, "kurbel", [0, yH, 0], [1, 0, 0]);
+        var welle = ausDreh([[HS.welleR, 0], [HS.welleR, 2 * px + 0.34]], fein ? 8 : 5, true, true);
         ausSetze(welle, 0, 0, 0, 0, 0, Math.PI / 2);
         ausSetze(welle, px + 0.17, yH, 0, 0, 0, 0);
         ausFaerbe(welle, "holz", W, null);
-        ausTeil(g, welle, "holz");
-        var trommel = ausDreh([[0.11, 0], [0.115, 0.45], [0.11, 0.9]], fein ? 10 : 6, true, true);
+        ausTeil(kTeil, welle, "holz");
+        var trommel = ausDreh([[0.11, 0], [HS.trommelR, 0.45], [0.11, 0.9]], fein ? 10 : 6, true, true);
         ausSetze(trommel, 0, 0, 0, 0, 0, Math.PI / 2);
         ausSetze(trommel, 0.45, yH, 0, 0, 0, 0);
         ausFaerbe(trommel, "lattung", W, null);
-        ausTeil(g, trommel, "lattung");
+        ausTeil(kTeil, trommel, "lattung");
         var arm = ausKiste(0.045, 0.34, 0.045, fa * 0.6);
-        ausSetze(arm, px + 0.2, yH - 0.15, 0, 0, 0, 0);
+        ausSetze(arm, px + 0.2, yH - HS.kurbelArm / 2, 0, 0, 0, 0);
         ausFaerbe(arm, "holz", W, null);
-        ausTeil(g, arm, "holz");
+        ausTeil(kTeil, arm, "holz");
         var griff = ausDreh([[0.024, 0], [0.024, 0.2]], fein ? 6 : 4, true, true);
         ausSetze(griff, 0, 0, 0, 0, 0, -Math.PI / 2);
-        ausSetze(griff, px + 0.2, yH - 0.3, 0, 0, 0, 0);
+        ausSetze(griff, px + 0.2, yH - HS.kurbelArm, 0, 0, 0, 0);
         ausFaerbe(griff, "holz", W, null);
-        ausTeil(g, griff, "holz");
-        // SEIL und EIMER — die Fülle hebt den Eimer (leer am Kranz, voll am Seil hoch).
-        var yE = 0.86 + F * 0.22;
-        var seil = ausDreh([[0.013, 0], [0.013, yH - 0.11 - (yE + 0.3)]], fein ? 5 : 4, false, false);
-        ausSetze(seil, 0.05, yE + 0.3, 0, 0, 0, 0);
+        ausTeil(kTeil, griff, "holz");
+        // SEIL und EIMER — gebacken in der Ruhe-Lage der Gestalt (die Fülle stellt die Kurbel, `haspelMass` phiF); der Wirt
+        // hebt den Eimer um r·φ, das Seil streckt sich von der Trommel bis zum Bügel (`haspelTeilMatrix`).
+        var yE = M.yF;
+        var sTeil = _haspelTeil(g, "seil", [0, M.yT, 0], [0, 1, 0]);
+        var seil = ausDreh([[HS.seilR, 0], [HS.seilR, M.yT - (yE + HS.buegelH)]], fein ? 5 : 4, false, false);
+        ausSetze(seil, 0.05, yE + HS.buegelH, 0, 0, 0, 0);
         ausFaerbe(seil, "ware", 0, function () {
             return { ton: [0.42, 0.36, 0.25] }; // Hanf
         });
-        ausTeil(g, seil, "ware");
-        var eimer = ausDreh([[0, 0], [0.125, 0], [0.15, 0.24], [0.138, 0.245], [0.114, 0.02], [0, 0.02]], fein ? 10 : 6, false, false);
+        ausTeil(sTeil, seil, "ware");
+        var eTeil = _haspelTeil(g, "eimer", [0.05, yE, 0], [0, 1, 0]);
+        var eimer = ausDreh(HS.eimerProfil, fein ? 10 : 6, false, false);
         ausSetze(eimer, 0.05, yE, 0, 0, 0, 0);
         ausFaerbe(eimer, "holz", W, function (x, y, zz) {
             var d = (Math.floor((Math.atan2(zz, x - 0.05) + Math.PI) * 2.2) % 2) * 0.07;
             return { ton: [1.08 - d, 1.02 - d, 0.95 - d] };
         });
-        ausTeil(g, eimer, "holz");
+        ausTeil(eTeil, eimer, "holz");
         if (fein) {
             for (i = 0; i < 2; i++) {
                 var er = ausDreh([[0.131 + i * 0.016, -0.012], [0.135 + i * 0.016, 0], [0.131 + i * 0.016, 0.012]], 10, false, false);
@@ -8038,14 +8184,14 @@
                 ausFaerbe(er, "metall", 0, function () {
                     return { ton: [0.42, 0.4, 0.38] }; // Eisenband, dunkel angelaufen (Stoff Eisen, Draw des Eimers)
                 });
-                ausTeil(g, er, "holz");
+                ausTeil(eTeil, er, "holz");
             }
             var buegel = ausKiste(0.3, 0.012, 0.012, 0);
-            ausSetze(buegel, 0.05, yE + 0.3, 0, 0, 0, 0);
+            ausSetze(buegel, 0.05, yE + HS.buegelH, 0, 0, 0, 0);
             ausFaerbe(buegel, "metall", 0, function () {
                 return { ton: [0.42, 0.4, 0.38] }; // der Bügel: Eisen wie die Bänder
             });
-            ausTeil(g, buegel, "holz");
+            ausTeil(eTeil, buegel, "holz");
         }
         // DAS DACH — First auf den Pfosten, Sparren-Paare, Schindeln in Reihen (fern zwei Flächen) mit Moos am Fuß.
         var hz = 0.86,
@@ -13232,6 +13378,14 @@
         geraetAngebotIn: geraetAngebotIn,
         // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen) — das Labor-Dorf baut seine Brunnen und Stände hierüber
         AUSSTATTUNG: AUSSTATTUNG,
+        // brunnen-haspel — die einfache Maschine: Welle mit Kurbel (Hub = r·φ, Kraft = Last · r ÷ Arm); der Wirt dreht sie
+        HASPEL: HASPEL,
+        haspelMass: haspelMass,
+        haspelLage: haspelLage,
+        haspelKraft: haspelKraft,
+        haspelStart: haspelStart,
+        haspelSchritt: haspelSchritt,
+        haspelTeilMatrix: haspelTeilMatrix,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)

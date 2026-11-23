@@ -2310,6 +2310,144 @@ async function lebenBuehnen() {
         z.haupt = { maxMs: rund(haupt.maxMs, 2), wo: haupt.wo, rufe: haupt.rufe };
         return z;
     });
+
+    // ── zerfall (oeko.zerfall#1): JEDER TOD DÜNGT SEINE ZELLE — gemessen am Verhalten, nie am Namen. (A) die Altlast: die Region
+    // des Tals (westlich der Ankunft, keine Zelle im Genesis-Ort) aus ihren Strömen gefüllt, dann je Ursache (Riss, Alter, Hunger)
+    // ein Tier durch `_bestandStirbt`: der Nährstoff (`_naehrstoffAt`, der EINE Leser) seiner 16-m-Zelle vorher ↔ nachher, die
+    // Nachbar-Zelle ↔ und derselbe Tod ein zweites Mal (nachgeholt) — er düngt nicht doppelt. (B) der Gau: die nahen Reviere
+    // lesen ihre Spur aus dem Faden (`_gauBis` → `_gauAntwort`, der Ruf des Spiels); gezählt: die Tode der Spur, deren Leichnam
+    // noch liegt, davon gedüngt (Leichname mit der Kennung des Gaus im Feld des Lebens, `state.aasFeld`), der Nährstoff je Kopf
+    // an den Ankern, und dieselbe Antwort ein zweites Mal düngt nicht. Kein Tod schreibt eine Tat (`worldMeta.taten`: ein
+    // Welt-Prozess ist Funktion der Zeit, kein Eintrag im Stand des Spielers). Die Taten der Welt, ihr Index, das Feld der
+    // Leichname und das Speichern ruhen in der Bühne.
+    await buehne("zerfall", async () => {
+        const wm = s.worldMeta;
+        aufraeumen.push(leihe(wm, { taten: [] }), leihe(s, { aasFeld: new Map() }), leihe(r, { _tatIdx: null, _sukzessionNeu: null, _nachwuchsFaellig: Infinity, _aasFrist: null })); // prettier-ignore
+        decke("_scheduleEditSave", () => () => {});
+        decke("_nahStreuTat", () => () => {});
+        decke("_weltRegt", () => () => {});
+        decke("_gauTakt", () => () => {});
+        if (taeter === "zerfall-aas") decke("_aasTat", () => () => null);
+        if (taeter === "zerfall-gau") decke("_gauAas", () => () => {});
+        const cs = A.LIFE_FIELD.cell;
+        const N = (x, z0) => +r._naehrstoffAt(x, z0).toFixed(4);
+        const z = { tode: [], gau: {} };
+        // (G) EIN GESETZ: derselbe Leichnam als Riss (die Tat von Spieler-Hand) und als Aas (das Feld des Lebens), gleiche Stunde,
+        // gleicher Ort → derselbe Nährstoff zur Stunde 0, zur halben Dauer und zur Dauer (die Welt-Stunde der Leser um `dh` gerückt);
+        // nach der Dauer heilt das Feld: der nächste Tod fegt, die Zelle ohne liegenden Leichnam ist aus ihm
+        {
+            const [gx, gz] = [(Math.floor(pm.x / cs) + 3.5) * cs, (Math.floor(pm.z / cs) + 0.5) * cs];
+            const alt = r._weltStunde;
+            const um = (dh) => leihe(r, { _weltStunde: function (uhr) { return alt.call(this, uhr) + (uhr === undefined ? dh : 0); } }); // prettier-ignore
+            const riss = r._tatSchreiben("riss", gx, gz);
+            const d = r._tatIndex().dauer.get(riss);
+            const mess = () =>
+                [0, d / 2, d].map((dh) => {
+                    const zurueck = um(dh);
+                    const v = r._naehrstoffAt(gx, gz);
+                    zurueck();
+                    return +v.toFixed(6);
+                });
+            const vRiss = mess();
+            wm.taten = [];
+            r._tatIdx = null;
+            r._aasTat({ id: "probe-gesetz", x: gx, z: gz });
+            const vAas = mess();
+            const abw = Math.max(...vRiss.map((v, i) => Math.abs(v - vAas[i])));
+            z.gesetz = { dauerH: +d.toFixed(3), riss: vRiss, aas: vAas, abw: +abw.toFixed(6) };
+            const zurueck = um(d + 1e-3);
+            r._aasTat({ id: "probe-feger", x: gx - 2 * cs, z: gz });
+            const jetzt = r._weltStunde();
+            const liegend = [...s.aasFeld].filter(([, L]) => L.some((c) => c[1] + r._tatDauer({ tat: "aas", w: c[2] }) > jetzt)).length; // prettier-ignore
+            z.feld = { zellen: s.aasFeld.size, liegend, alte: s.aasFeld.has(r._lifeCellKey(gx, gz)) };
+            zurueck();
+            s.aasFeld.clear();
+            r._aasFrist = null;
+        }
+        // (A) die Altlast
+        const S = r._bestandSeite();
+        let ix = Math.floor(pm.x / S);
+        const iz = Math.floor(pm.z / S);
+        const park = (k) => r._bestandFeld(k).zellen.filter((c) => r._genesisFlaeche(c.x, c.z)).length;
+        // je Ursache ein Tier: die Regionen des Tals westwärts, bis jede Ursache ihren Tod hat
+        const tiere = [];
+        const tal = [];
+        for (let n = 0; tiere.length < 3 && n < 24; n++, ix--) {
+            const k0 = ix + "," + iz;
+            if (park(k0)) continue;
+            for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await sleep(50);
+            const R = r._bestandRegion(k0, false);
+            for (let k = 0; k < 360; k++) r._bestandSchritt(k0, R, true, []);
+            for (const t of r._bestandFreie(R).slice(0, 3 - tiere.length)) tiere.push([R, t]);
+            tal.push(k0);
+        }
+        const t1 = performance.now();
+        for (const u of ["jagd", "alter", "hunger"]) {
+            if (!tiere.length) break;
+            const [R, t] = tiere.shift();
+            const vor = [N(t.x, t.z), N(t.x + cs, t.z)];
+            r._bestandStirbt(R, t, u, [], []);
+            const nach = [N(t.x, t.z), N(t.x + cs, t.z)];
+            R.tiere.push(t);
+            r._bestandStirbt(R, t, u, [], []);
+            const d = { u, id: t.id, g: t.g, vor: vor[0], nach: nach[0], nachbar: +(nach[1] - vor[1]).toFixed(4) };
+            z.tode.push(Object.assign(d, { plus: +(nach[0] - vor[0]).toFixed(4), doppel: +(N(t.x, t.z) - nach[0]).toFixed(4) }));
+        }
+        z.msJeTod = z.tode.length ? +((performance.now() - t1) / (2 * z.tode.length)).toFixed(3) : null;
+        z.tal = tal.join(" ");
+        // (B) der Gau am Schirm
+        const gz0 = performance.now();
+        const T = A._bestandGesetz().B.taktS;
+        const nah = r._bestandNah();
+        const je = new Map();
+        for (const key of nah) {
+            const o = r._gauOrt(...key.split(",").map(Number));
+            (je.get(o.gx + "," + o.gz) || je.set(o.gx + "," + o.gz, { o, lesen: [] }).get(o.gx + "," + o.gz)).lesen.push(o.revier);
+        }
+        const G = { reviere: 0, takte: 0, tode: 0, lebend: 0, gedungt: 0, naehr: 0, doppel: 0, ms: 0 };
+        const stunden = A.TAT_NARBE.aas ? A.TAT_NARBE.aas.stunden : A.TAT_NARBE.riss.stunden;
+        // je Zelle des Felds der Leichname die des Kopfs
+        const aasZellen = (kopf) => [...(s.aasFeld || [])].filter(([, L]) => L.some(([id]) => id.startsWith(kopf)));
+        const aasVon = (kopf) => aasZellen(kopf).reduce((n, [, L]) => n + L.filter(([id]) => id.startsWith(kopf)).length, 0);
+        for (const { o, lesen } of je.values()) {
+            lesen.sort((p, q) => p - q);
+            const takt = Math.floor(s.spielZeit / T) + 300; // der Gau eine Stunde voraus: die Spur trägt die Tode ab dem Takt der Altlast
+            const b = r._gauBild(o.gx, o.gz);
+            b.bestellt = Math.max(b.bestellt, takt);
+            const a = await r._gauBis(o.gx, o.gz, takt, { lesen });
+            const kopf = r._gauKopf(o.gx, o.gz);
+            const sp = a.spur;
+            if (sp && sp.tod)
+                for (let q = 0; q < sp.tod.length; q += 2) {
+                    const n = Math.max(0, sp.tod[q]) + Math.max(0, sp.tod[q + 1]);
+                    const k = sp.von + Math.floor(q / 2 / lesen.length);
+                    G.tode += n;
+                    if (r._weltStunde(k * T) + stunden > r._weltStunde()) G.lebend += n;
+                }
+            G.reviere += lesen.length;
+            G.takte = Math.max(G.takte, sp ? sp.beute.length / lesen.length : 0);
+            const g0 = performance.now();
+            r._gauAntwort(b, a, lesen.join(), 0);
+            G.ms += performance.now() - g0;
+            const n1 = aasVon(kopf);
+            r._gauAntwort(b, a, lesen.join(), 0);
+            G.doppel += aasVon(kopf) - n1;
+            G.gedungt += n1;
+            const zellen = new Set(aasZellen(kopf).map(([k]) => k));
+            G.zellen = (G.zellen || 0) + zellen.size;
+            for (const c of zellen) {
+                const [cx, cz] = c.split(",").map(Number);
+                G.naehr += r._naehrstoffAt((cx + 0.5) * cs, (cz + 0.5) * cs) - 1;
+            }
+        }
+        G.naehrJeKopf = G.gedungt ? +(G.naehr / G.gedungt).toFixed(4) : 0;
+        G.ms = +G.ms.toFixed(2);
+        G.fahrtMs = Math.round(performance.now() - gz0);
+        G.naehr = +G.naehr.toFixed(4);
+        z.gau = G;
+        z.taten = (wm.taten || []).length; // kein Tod schreibt eine Tat
+        return z;
+    });
 }
 // die Leere einer Rolle, die das Gesetz der Bindung trägt (zielplan `gesetzLeer`): so wahrscheinlich bleibt sie nach dem Gesetz
 // ohne Fremden — darunter ist die leere Rolle der Täter
@@ -2325,6 +2463,31 @@ const GAU_B4 = {
     feld: { land: 2240, zellen: 10884, kSumme: 33989 },
 };
 function lebenUrteil(name, z, soll) {
+    if (name === "zerfall") {
+        soll(z.tode.length >= 3, `nur ${z.tode.length} Tode der Altlast im Tal ${z.tal} (Soll je Ursache einer: Riss, Alter, Hunger)`);
+        for (const d of z.tode) {
+            soll(d.plus > 0, `der Tod ${d.u} düngt seine Zelle nicht (${d.g}: Nährstoff ${d.vor} → ${d.nach})`);
+            soll(d.nachbar === 0, `der Tod ${d.u} düngt die Nachbar-Zelle (+${d.nachbar})`);
+            soll(d.doppel === 0, `derselbe Tod ${d.u} nachgeholt düngt ein zweites Mal (+${d.doppel})`);
+        }
+        const G = z.gau;
+        soll(G.lebend > 0, `der Gau fällt keinen Kopf in der Spur der Reviere am Schirm (${G.reviere} Reviere, ${G.takte} Takte, Tode ${G.tode})`); // prettier-ignore
+        soll(
+            G.gedungt === G.lebend && G.naehrJeKopf > 0,
+            `Gau-Tode ohne Aas: ${G.gedungt} gedüngt von ${G.lebend} Toten, deren Leichnam liegt (Spur ${G.tode} Tode), Nährstoff je Kopf ${G.naehrJeKopf}`
+        );
+        soll(G.doppel === 0, `dieselbe Spur ein zweites Mal düngt ${G.doppel} Köpfe doppelt`);
+        soll(z.taten === 0, `die Tode schreiben ${z.taten} Taten in worldMeta.taten — ein Welt-Prozess ist keine Tat des Spielers`);
+        const Ge = z.gesetz;
+        soll(
+            Ge.abw === 0 && Ge.riss[0] > Ge.riss[2],
+            `zwei Gesetze für denselben Leichnam: Riss ${Ge.riss.join(" → ")} ↔ Aas ${Ge.aas.join(" → ")} (Dauer ${Ge.dauerH} h, Abweichung ${Ge.abw})`
+        );
+        soll(
+            z.feld.zellen === z.feld.liegend && z.feld.liegend > 0 && !z.feld.alte,
+            `das Feld der Leichname heilt nicht: ${z.feld.zellen} Zellen, ${z.feld.liegend} mit liegendem Leichnam, die vergangene ${z.feld.alte ? "steht noch" : "fiel"}`
+        );
+    }
     if (name === "gau") {
         const B = GAU_B4;
         const feld = (f) => `Land ${f.land} · Zellen ${f.zellen} · Σ K ${f.kSumme}`;
@@ -2681,7 +2844,7 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})();`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster", "gau"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster", "gau", "zerfall"],
     // die Probe mit EINEM Lauf im Selbsttest (alle Täter in ihm, das Urteil je Täter an seiner Sicht)
     EIN_LAUF: ["gau"],
     TAETER: {
@@ -2692,6 +2855,10 @@ module.exports = {
             ["gau-reihe", /der Stand der Seite trägt die Akte des Gaus nicht/],
         ],
         erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
+        zerfall: [
+            ["zerfall-aas", /der Tod \w+ düngt seine Zelle nicht[\s\S]*Gau-Tode ohne Aas/],
+            ["zerfall-gau", /Gau-Tode ohne Aas: 0 gedüngt/],
+        ],
         muster: [
             ["riss-aeltester", /nicht nach der Verwundbarkeit \(ZEIT_JAGD jagd\)/],
             ["rueckkraft", /die Größe läuft davon/],
@@ -3706,7 +3873,6 @@ function gauUrteil(L, mutant) {
             );
         }
 }
-
 urteilEnde(
     errs.length,
     `\n❌ ROT — ${errs.length} Verletzung(en).`,

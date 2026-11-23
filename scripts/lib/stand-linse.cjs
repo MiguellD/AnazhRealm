@@ -433,11 +433,27 @@ function standLauf(k) {
 // eines Orts ohne Bett zählen als kahl (Obergrenze: der Eintrag des Gemessenen trägt nur das feine Gitter). Die Zeile der
 // Sim nennt in jedem Lauf je Gesetz den Anteil am Soll.
 const BRAND_GANG = 16;
+// das Fenster am langsamsten Läufer (FENSTER-UHR): Median und schnellster Sprung der Köpfe auf 0,02 m/s gleich — zwischen zwei Herden
+// lebt die Welt weiter (lokal 0,305 ↔ 0,307 m/s), die Uhr des Läufers trug 0,06 (0,35 ↔ 0,29 m/s) bis 0,69 (CI)
+const FENSTER_MS = 0.02;
+// DIE TREUE DER FRONT (FRONT-TREUE): das Vorrücken des Kopfs auf dem gesetzten Bett ÷ R des Gesetzes — gemessen 1,002 · 1,003 ·
+// 0,989 (0,9° · 23,4° · 44,1°, Radeon-Laptop, Null-Renderer): jede Zelle der Kette läuft genau ihr Tempo der Ellipse. Das Band
+// ±10 % statt ±15 %: das Gitter nur der Diagonalen (die Mutante) verliert an der Achse 11,5 % (0,885)
+const FRONT_TREUE = [0.9, 1.1];
+// DIE DREI STARTS AN DERSELBEN UHR (FENSTER-BETT): mit · alle · Vorrücken · R relativ gleich
+const BETT_GLEICH = 0.02;
 const BRAND_ANKUNFT = 16;
 const BRAND_BETT = 160;
 const BRAND_PUNKT = 56;
 const BRAND_KAHL = 72;
 const brandGangSoll = (Z, k) => BRAND_GANG * Z.zellen[k];
+// DER FALL DER KACHELN (linse-brand-schritte 4): der Gang je Zelle (BRAND_GANG) trägt ihn nicht — er ist die Änderung am Schirm,
+// gemessen an seiner Quelle (`_brandMalen` → `_nahRingNeuIn`): je Bild höchstens EIN Rechteck der Asche über ±½ Zelle
+// (2 × 16 m)², je Kachel darin EIN Ruf (`_nahStreuKachelFaellt`, `_nahWieseKachelFaellt`). CI c8e95d38 und Radeon wortgleich:
+// 98 + 24 Kacheln in EINEM Rechteck, im Gang lagen sie bei 9 Zellen über 144
+const BRAND_KACHEL = 1;
+const BRAND_RING_M2 = 1024;
+const brandKachelSoll = (Z, k) => BRAND_KACHEL * (Z.kachelSoll[k] | 0);
 const brandZuendSoll = (Z, k) =>
     BRAND_ANKUNFT * (Z.ankuenfte[k] | 0) + BRAND_BETT * (Z.betten[k] | 0) + BRAND_PUNKT * (Z.punkte[k] | 0) + BRAND_KAHL * (Z.kahl[k] | 0);
 const brandLeser = (je, n = 6) => (je ? simJe({ je: je.slice(0, n) }) : "");
@@ -454,6 +470,7 @@ function brandAmSoll(Z) {
     };
     return {
         gang: eng(Z.gang, (k) => brandGangSoll(Z, k), (k) => ({ zellen: Z.zellen[k], leser: brandLeser(Z.rufe && Z.rufe[k]) })),
+        kachel: Z.kachel && eng(Z.kachel, (k) => Math.max(1, brandKachelSoll(Z, k)), (k) => ({ ringe: Z.ringe[k], m2: Z.ringM2[k], leser: brandLeser(Z.rufeK && Z.rufeK[k]) })),
         zuendung: eng(Z.zuendung, (k) => brandZuendSoll(Z, k), (k) => ({ ankuenfte: Z.ankuenfte[k], betten: Z.betten[k], punkte: Z.punkte[k], kahl: Z.kahl[k], masken: Z.masken[k], leser: brandLeser(Z.rufeZ && Z.rufeZ[k]) })), // prettier-ignore
     };
 }
@@ -723,14 +740,66 @@ function simUrteil(b, v) {
         else if (!(summe(Z.zuendung) > 0)) v.push(`STUMPF: die Front erreichte ${an} Zellen, die Sim-Linse sieht keine Zündung (die Marke \`zuendung\` unter ${SIMS.zuendung[0].join(" · ")})`);
         const i = Z.gang.findIndex((e, k) => e > brandGangSoll(Z, k));
         if (i >= 0) v.push(`BRAND-GANG: Schritt ${i + 1} kostete ${Z.gang[i]} Einheiten Gang bei ${Z.zellen[i]} Zellen des Felds (Soll ≤ ${BRAND_GANG} je Zelle) — seine Leser: ${brandLeser(Z.rufe && Z.rufe[i])}`);
+        // DER FALL DER KACHELN an seinem Maß (linse-brand-schritte 4): je Bild höchstens EIN Neubau über ±½ Zelle (`_brandMalen` malt
+        // EINE Zelle je Bild), je Kachel, die in seinem Rechteck steht, EIN Ruf des Fall-Lesers — nie je Zelle des Felds
+        if (!Z.kachel) v.push("LEER: die Kachel-Probe des Brands lief nicht (der Fall der Wiese unter der Asche ungezählt)");
+        else {
+            const k = Z.kachel.findIndex((e, s) => e > brandKachelSoll(Z, s) || Z.ringe[s] > 1 || Z.ringM2[s] > BRAND_RING_M2);
+            if (k >= 0)
+                v.push(`KACHEL-FALL: Schritt ${k + 1} ließ ${Z.kachel[k]} Kacheln fallen — Soll ≤ ${brandKachelSoll(Z, k)} (je Kachel im Rechteck der Asche eine), ${Z.ringe[k]} ${Z.ringe[k] === 1 ? "Neubau" : "Neubauten"} von ${Z.ringM2[k]} m² (Soll ≤ 1 je Bild, ≤ ${BRAND_RING_M2} m² = ±½ Zelle) — seine Leser: ${brandLeser(Z.rufeK && Z.rufeK[k])}`);
+        }
         const j = Z.zuendung.findIndex((e, k) => e > brandZuendSoll(Z, k));
         if (j >= 0)
             v.push(`BRAND-ZÜNDUNG: Schritt ${j + 1} kostete ${Z.zuendung[j]} Einheiten Zündung für ${Z.ankuenfte[j]} Ankünfte und ${Z.betten[j]} neu gemessene Betten (${Z.punkte[j]} Bett-Punkte, davon bis ${Z.kahl[j]} kahl, ${Z.masken[j]} Masken; ${(Z.lesungen || [])[j] | 0} Stoff-Lesungen) — ` +
                 `Soll ≤ ${brandZuendSoll(Z, j)} (${BRAND_ANKUNFT} je Ankunft + ${BRAND_BETT} je neuem Bett + ${BRAND_PUNKT} je Punkt + ${BRAND_KAHL} je kahlem Punkt) — ihre Leser: ${brandLeser(Z.rufeZ && Z.rufeZ[j])}`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
-        if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
         if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
+        // DIE WAHRHEIT DER FRONT (linse-brand-schritte 2): derselbe Herd auf dem GESETZTEN Bett im gesetzten Wind, sein Kopf längs
+        // einer Achse, schräg und diagonal zum Gitter der Zellen. FRONT-MIT urteilt das Vorrücken des Kopfs (der Weg der vordersten
+        // Zelle längs des Kopfs durch die Zeit, zu der die Front sie erreichte) — `mit`, `alle` am Herd des Spiels sind Lesewerte:
+        // sein Bett trägt R 0,05–0,98 m/s je Zelle (Overlay, Fraß des Gaus, Narbe), und der Mäander dreht den Kopf. FRONT-TREUE:
+        // das Vorrücken ist R des Gesetzes (`_brandTempo`) auf FRONT_TREUE in jedem Winkel — die Mutante des groben Gitters (vier
+        // Nachbarn) fällt, sonst ist die Linse BLIND. FENSTER-BETT: jede Zelle verzehrte das gesetzte Bett (Stoff Gras, Last, Boden,
+        // Gefälle des Herds; die Nässe 0), die drei Starts an derselben Uhr des Winds tragen dieselben Zahlen auf BETT_GLEICH, keine
+        // Uhr ging rückwärts — und der Herd des Spiels (sein Bett ungesetzt) weicht ab, sonst ist sie BLIND
+        const WA = Z.wahr || {};
+        const WINKEL = ["achse", "schraeg", "diagonal"];
+        const wz = (n, h) => `${n} (Kopf ${h.winkel}° zum Gitter): Vorrücken ${h.vor} m/s bei R ${h.R} m/s`;
+        if (![...WINKEL, "wieder", "langsam", "grob"].every((n) => WA[n] && WA[n].bett)) v.push("LEER: die Herde auf dem gesetzten Bett (achse · schraeg · diagonal · wieder · langsam · grob) liefen nicht");
+        else {
+            for (const n of WINKEL) {
+                const h = WA[n];
+                if (!(h.vor >= 0.5 && h.vor <= 2)) v.push(`FRONT-MIT: ${wz(n, h)} (Soll 0,5–2)`);
+                const q = h.R > 0 ? h.vor / h.R : 0;
+                if (!(q >= FRONT_TREUE[0] && q <= FRONT_TREUE[1])) v.push(`FRONT-TREUE: ${wz(n, h)} — ${+q.toFixed(3)} von R (Soll ${FRONT_TREUE.join("–")}): das Gitter verliert das Gesetz`);
+            }
+            const g = WA.grob;
+            if (g.R > 0 && g.vor / g.R >= FRONT_TREUE[0]) v.push(`BLIND: das grobe Gitter (nur Diagonalen) trägt ${wz("grob", g)} — FRONT-TREUE sieht das Gitter nicht`);
+            for (const n of [...WINKEL, "wieder", "langsam"]) {
+                const b = WA[n].bett;
+                if (b.abweichend || b.stoff !== "gras" || b.naesse !== 0)
+                    v.push(`FENSTER-BETT: ${n} zündete auf ${b.stoff} (Last ${b.w}, Boden ${b.boden}, Nässe ${b.naesse}), ${b.abweichend} von ${b.zellen} Zellen verzehrten ein anderes Bett (zuerst ${b.erste}) — Soll: jede Zelle das gesetzte Gras-Bett, Nässe 0`);
+            }
+            const drei = ["diagonal", "wieder", "langsam"].map((n) => WA[n]);
+            const weg = ["mit", "alle", "vor", "R"].filter((k) => drei.some((h) => !(Math.abs(h[k] - drei[0][k]) <= BETT_GLEICH * Math.abs(drei[0][k]))));
+            if (weg.length)
+                v.push(`FENSTER-BETT: drei Starts an derselben Uhr des Winds tragen ${weg.map((k) => `${k} ${drei.map((h) => h[k]).join(" · ")}`).join(", ")} (Soll gleich auf ±${BETT_GLEICH * 100} %) — der Herd hängt an der Welt, die er antrifft`);
+            if ((Z.uhrRueck || []).length) v.push(`FENSTER-BETT: die Welt-Uhr stand vor dem Herd schon später (${Z.uhrRueck.map(([a, b]) => `${a} s statt ${b} s`).join(", ")}) — ein Herd begann nicht zu seiner Uhr`);
+            if (!(Z.bett && Z.bett.abweichend > 0)) v.push("BLIND: der Herd des Spiels (sein Bett ungesetzt) verzehrte überall das Bett seines Herds — FENSTER-BETT sieht kein Bett");
+        }
+        // DAS FENSTER HÄNGT NIE AM LÄUFER (linse-brand-schritte): derselbe Herd mit dem Wind mit dem Budget des Spiels und am
+        // langsamsten Läufer (ein Stück je Bild) trägt dieselben Köpfe und Schritte, Median und schnellsten Sprung auf FENSTER_MS
+        // gleich (die Welt lebt zwischen beiden Herden weiter) — bis hier zählte das Fenster Bilder und begann zur Uhr, zu der der
+        // Läufer ankam: FRONT-MIT schwankte am selben Gesetz 0,335–1,029 m/s (CI voll 15/18), lokal 0,35 ↔ 0,29 m/s zwischen zwei
+        // Herden. Ein Fenster, das seinen Deckel der Bilder erreicht, endet laut (FENSTER-DECKEL)
+        const F = Z.fenster;
+        const fz = (f) => `${f.zellen} Zellen, ${f.koepfe} Köpfe (Median ${f.mit} m/s), alle ${f.alle} m/s in ${f.schritte} Schritten und ${f.bilder} Bildern`;
+        if (!F || !F.spiel || !F.langsam) v.push("LEER: die Probe des Fensters (derselbe Herd mit dem Budget des Spiels und am langsamsten Läufer) lief nicht");
+        else if (F.spiel.koepfe !== F.langsam.koepfe || F.spiel.schritte !== F.langsam.schritte || !(Math.abs(F.spiel.mit - F.langsam.mit) <= FENSTER_MS) || !(Math.abs(F.spiel.alle - F.langsam.alle) <= FENSTER_MS))
+            v.push(`FENSTER-UHR: derselbe Herd trägt mit dem Budget des Spiels ${fz(F.spiel)}, am langsamsten Läufer ${fz(F.langsam)} (Soll: gleiche Köpfe und Schritte, Median und alle ±${FENSTER_MS} m/s) — das Fenster hängt am Läufer`);
+        for (const [wo, d] of [["mit dem Wind", Z.deckel], ["im Regen", Z.regenDeckel], ["am langsamsten Läufer", F?.langsam?.deckel]])
+            if (d) v.push(`FENSTER-DECKEL: das Fenster ${wo} erreichte nach ${d} Bildern seine Schritte nicht`);
         // die Asche senkt lebendig am Herd (auraAt, der Leser) — gemessen NETTO des Leben-Overlays, das derselbe Leser im selben
         // Fenster trägt (Fraß und Tod des Bestands, kreatur-leben `_depositLife`): bis laub-messer schrieb die Linse jede Regung
         // des Overlays der Asche zu — Vorprüfung 00520c2e (CI): 0,75 → 0,725 bei Asche 0,3 und Overlay −0,09 → +0,19; lokal

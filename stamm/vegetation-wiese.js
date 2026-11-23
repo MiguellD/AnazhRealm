@@ -2326,7 +2326,7 @@ class AnazhRealm_vegetation_wiese {
         );
     }
 
-    // DER NÄHRSTOFF am Ort (stoffe.K5#2) — EINE Funktion der Taten seiner 16-m-Zelle, kein Speicher daneben: 1 ist der eigene
+    // DER NÄHRSTOFF am Ort (stoffe.K5#2) — EINE Funktion der Taten seiner 16-m-Zelle und ihrer Leichname: 1 ist der eigene
     // Grund; jede Tat verschiebt ihn um ihr `naehr` (TAT_NARBE: die Ernte und das Fällen tragen ihn mit der Pflanze davon, die
     // Asche des Brands und der Leichnam eines Risses geben ihn dem Boden zurück) und klingt mit ihrer Narbe ab (der Rest fällt
     // linear über ihre Dauer: der Boden mineralisiert nach). Jeder Peer und jeder Reload rechnet dasselbe (die Taten reisen).
@@ -2335,10 +2335,11 @@ class AnazhRealm_vegetation_wiese {
     _naehrstoffAt(x, z) {
         const J = this._tatIdx && this._tatIdx.baut ? this._tatIdx : this._tatIndex();
         const je = J.n ? J.je.get(this._lifeCellKey(x, z)) : null;
-        if (!je) return 1;
-        const N = AnazhRealm.TAT_NARBE;
         const h = this._weltStunde();
-        let n = 1;
+        // die Leichname der Zelle (oeko.zerfall#1, `_aasNaehrAt`): ein Feld des Lebens, keine Tat
+        let n = 1 + this._aasNaehrAt(x, z, h);
+        if (!je) return Math.max(0, Math.min(AnazhRealm.WUCHS.naehrMax, n));
+        const N = AnazhRealm.TAT_NARBE;
         for (const a of je) {
             const d = J.dauer.get(a);
             if (N[a.tat].naehr && d) n += N[a.tat].naehr * Math.min(1, Math.max(0, 1 - (h - a.h) / d));
