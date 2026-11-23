@@ -2176,8 +2176,9 @@
         // Messung — mit 0,13 (Kern- gegen Splintholz EINES Stamms: L* ± 5–6 an Eiche, ≈ ± 13 % der Leuchtdichte bei L* 45) lasen
         // die Balken aus 13,5 m als EIN Ton (sieben Klassen in Schritten von 4 %, im dunklen Holz ± 3 Stufen sRGB); ein Gefüge
         // trägt Hölzer verschiedenen Alters und Wetters. Die größte Nummer ab + klassen · toene − 1 = 121 bleibt in den sieben
-        // Bits der Ecke (≤ 127).
-        faser: { ab: 10, klassen: 16, toene: 7, ton: 0.26, tonRaster: 0.05, art: "holz", hirn: 8, hirnAb: 0.7 },
+        // Bits der Ecke (≤ 127). `tafelAb`: ab diesem Verhältnis der zweiten zur größten Streuung seiner Ecken ist das Teil eine
+        // Tafel (0,5: Seiten ab 1 : 1,4 — das Brett-Feld 1,8 × 1,5 m; der Riegel 1,8 × 0,9 m bleibt ein Balken), `_faserAchse`.
+        faser: { ab: 10, klassen: 16, toene: 7, ton: 0.26, tonRaster: 0.05, tafelAb: 0.5, art: "holz", hirn: 8, hirnAb: 0.7 },
     };
     // DIE ZEILEN DES GEFÜGES für den Stoff der Welt, der Platz = die Nummer (0 = null: kein Gefüge). Je Zeile die Zahlen ihrer Art,
     // dazu `rauFern`: was die Rauheit trägt, wenn das Relief unter dem Pixel liegt (die Streuung seiner Neigung geht in die Rauheit
@@ -2239,6 +2240,36 @@
             var l = Math.hypot(r[0], r[1], r[2]);
             if (!(l > 1e-12)) return null;
             q = [r[0] / l, r[1] / l, r[2] / l];
+        }
+        // DIE TAFEL (`faser.tafelAb`): steht die zweite Streuung nahe der größten (das Brett-Feld der Wand, das Türblatt, die
+        // Diele als Platte), ist die Hauptachse Zufall der Rechnung — an der Wand des Dorfs lief die Faser diagonal (Radeon, 23.11.).
+        // Dort läuft sie die Falllinie der Tafel (lotrechte Bretter an der Wand, den Sparren entlang am Dach), in der liegenden
+        // Tafel die breitere Achse des Baus. Die zweite Achse: dieselbe Iteration, je Schritt senkrecht zur ersten gehalten.
+        var l1 = Math.hypot(C[0] * q[0] + C[3] * q[1] + C[4] * q[2], C[3] * q[0] + C[1] * q[1] + C[5] * q[2], C[4] * q[0] + C[5] * q[1] + C[2] * q[2]);
+        var p = Math.abs(q[0]) <= Math.abs(q[1]) && Math.abs(q[0]) <= Math.abs(q[2]) ? [1, 0, 0] : Math.abs(q[1]) <= Math.abs(q[2]) ? [0, 1, 0] : [0, 0, 1], l2 = 0, d;
+        for (k = 0; k < 24; k++) {
+            d = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+            p = [p[0] - d * q[0], p[1] - d * q[1], p[2] - d * q[2]];
+            d = Math.hypot(p[0], p[1], p[2]);
+            if (!(d > 1e-12)) { l2 = 0; break; }
+            p = [p[0] / d, p[1] / d, p[2] / d];
+            r = [C[0] * p[0] + C[3] * p[1] + C[4] * p[2], C[3] * p[0] + C[1] * p[1] + C[5] * p[2], C[4] * p[0] + C[5] * p[1] + C[2] * p[2]];
+            l2 = Math.hypot(r[0], r[1], r[2]);
+            if (!(l2 > 1e-12)) { l2 = 0; break; }
+            p = [r[0] / l2, r[1] / l2, r[2] / l2];
+        }
+        if (l2 >= GEFUEGE_GESETZ.faser.tafelAb * l1) {
+            d = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+            p = [p[0] - d * q[0], p[1] - d * q[1], p[2] - d * q[2]];
+            d = Math.hypot(p[0], p[1], p[2]) || 1;
+            p = [p[0] / d, p[1] / d, p[2] / d];
+            var vy = [q[0] * q[1] + p[0] * p[1], q[1] * q[1] + p[1] * p[1], q[2] * q[1] + p[2] * p[1]], vl = Math.hypot(vy[0], vy[1], vy[2]);
+            if (!(vl >= 0.3)) {
+                var ix = C[0] >= C[2] ? 0 : 2;
+                vy = [q[0] * q[ix] + p[0] * p[ix], q[1] * q[ix] + p[1] * p[ix], q[2] * q[ix] + p[2] * p[ix]];
+                vl = Math.hypot(vy[0], vy[1], vy[2]);
+            }
+            if (vl > 1e-6) q = [vy[0] / vl, vy[1] / vl, vy[2] / vl];
         }
         var F = GEFUEGE_GESETZ.faser, kx = Math.round((m[0] / n + e[12]) / F.tonRaster), ky = Math.round((m[1] / n + e[13]) / F.tonRaster), kz = Math.round((m[2] / n + e[14]) / F.tonRaster);
         var w = (Math.imul(kx, 73856093) ^ Math.imul(ky, 19349663) ^ Math.imul(kz, 83492791)) >>> 0;
