@@ -1211,8 +1211,9 @@ class AnazhRealm_siedlung_bewohner {
         // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste; keine der vier Seiten war ganz frei, die Reihen dahinter
         // liefen bis 7 m tief durch das Nachbarhaus). Nun nimmt jede Kiste den nächsten FREIEN Fuß: zuerst die bisherigen
         // Reihen (drei breit, nach hinten), danach das Feld daneben (seitlich bis 8 Füße, 4 nach hinten, 2 zum Tor) nach
-        // Abstand vom ersten Fuß; ein Fuß ohne gezeichneten Boden im Grundriss eines Hauses oder Baus fällt aus. Wo nichts im Weg
-        // steht, ist die Lage die bisherige
+        // Abstand vom ersten Fuß (beide Seiten des Händlers, sein Fuß bleibt frei); ein Fuß im Grundriss eines Hauses oder Baus
+        // (mit dem Rand einer halben Kiste) fällt aus — auch dort, wo Boden gezeichnet ist (am Start-Dorf standen so 12 von 24
+        // Kisten des dritten Hofs in einer Wand). Wo nichts im Weg steht, ist die Lage die bisherige
         const fussLage = ([c, r]) => {
             const a = AnazhRealm.BESTAND_BILD.seiteM + c * kM;
             const d = r * kM;
@@ -1223,21 +1224,19 @@ class AnazhRealm_siedlung_bewohner {
         const plaetze = [];
         for (let q = 0; q < n; q++) plaetze.push([q % 3, -Math.floor(q / 3)]);
         const feld = [];
-        for (let c = 0; c < 8; c++) for (let r = -4; r <= 2; r++) feld.push([c, r]);
+        const s0 = AnazhRealm.BESTAND_BILD.seiteM / kM; // (der Fuß des Händlers: a = 0 bleibt frei)
+        for (let c = -8; c < 8; c++) for (let r = -6; r <= 4; r++) if (Math.abs(s0 + c) >= 1) feld.push([c, r]);
         feld.sort((A, B) => Math.hypot(A[0], A[1]) - Math.hypot(B[0], B[1]));
         for (const P of feld) if (!plaetze.some((Q) => Q[0] === P[0] && Q[1] === P[1])) plaetze.push(P);
-        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt;
-        // ein Fuß ohne gezeichneten Boden am Grundriss eines Hauses oder Baus — das Loch des Bodens um seine Wand — fällt aus)
+        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
         const fuesse = [];
         const y = [];
         for (let q = 0; fuesse.length < n && q < plaetze.length; q++) {
             const p = fussLage(plaetze[q]);
+            const g = this._imGrundriss(...p, kM / 2);
+            if (g === "haus" || g === "bau") continue;
             const h = this._bodenSichtAt(...p);
-            if (h == null) {
-                const g = this._imGrundriss(...p, kM);
-                if (g === "haus" || g === "bau") continue;
-                return null;
-            }
+            if (h == null) return null;
             fuesse.push(p);
             y.push(h);
         }
