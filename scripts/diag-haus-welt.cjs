@@ -10,8 +10,8 @@
 //       im Grundriss. Alle Quellen setzen durch EINE Wand (`_naturSetzen`); gewartet wird auf den Konsum, nie auf Takte.
 //   W5  KOLLISION == OPTIK: an jedem Punkt eines 0,5-m-Rasters im Kern-Grundriss urteilt die Welt-Kapsel (der Löser
 //       `_resolveCapsuleVsAABB` gegen die Boxen des Hauses) wie das Gesetzbuch (dieselbe Wand-Regel gegen seine Solids) ≥ 97 %
-//   W6  DER FRONTALE ANLAUF: je Kultur läuft der Körper von 6 m vor der Front durch die Tür — vor der ersten Studio-Stufe
-//       (Kern-Hülle) und während die Fernstufe 2 bzw. 1 steht; vor der Schwelle höchstens 1,3 m über dem Boden, nie 1 m
+//   W6  DER FRONTALE ANLAUF: je Kultur läuft der Körper von 6 m vor der Front durch die Tür — mit der Hülle des Fernkörpers allein
+//       (EINE Hülle je Haus: davor keine Blocker) und während die Fernstufe 2 bzw. 1 steht; vor der Schwelle höchstens 1,3 m über dem Boden, nie 1 m
 //       darunter, der Korridor ist begehbar (stetig, solide)
 //   W7  BAU IM BAU: kein Haus des Drehbuch-Dorfs steht in einem Bau, der vor ihm stand, vor keiner Haustür dessen Wand;
 //       derselbe Akt ein zweites Mal am selben Anker: kein Haus, Brunnen oder Stand des zweiten Dorfs steht im ersten
@@ -56,7 +56,7 @@ const BILD = process.argv.includes("--bild");
 // DIE DEFEKTE (spec/haus-welt/defekte.json, die Folge der Selbsttests): je Defekt [[die Phase seiner Welt, die Proben, die er
 // rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis] bzw. am Glied { glied, basis }].
 // Was jeder bricht:
-//   huelle: ohne die Hülle des Gesetzbuchs: nur die vier EG-Wände der Tür-Zeile, keine Böden, Tritte, Innenwände
+//   huelle: die Blocker lesen die Hülle des Gesetzbuchs nicht (am Glied `_hausBlockerBoxen`): keine Böden, Tritte, Innenwände
 //   obb: die gedrehte Box als achsparallele Welt-AABB gelesen
 //   grundriss: die Natur wirft in den Grundriss, und das Dorf räumt nicht · die Wand des Orts (`_ortWand`) trägt den
 //       Grundriss für die Natur-Wand und den Solitär · die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der
@@ -79,8 +79,10 @@ const BILD = process.argv.includes("--bild");
 //       Plattform UND im Haus
 //   stumm: die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
 //   fernstufe: die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den
-//       Worker)
-//   kern: vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
+//       Worker — auch der Fernkörper: der Anlauf am kalten Haus stößt an seine Box)
+//   zweithuelle: das Haus des Studios trägt vor seiner ersten Lieferung Blocker aus einer zweiten Quelle (am Glied
+//       `_hausHuelleKommt`: der Bauplan der Art statt keiner Hülle — bis eine-huelle vier Wände aus der Tür-Zeile)
+//   fernleer: der Fernkörper trägt keine Hülle (der Stand vor eine-huelle): das kalte Haus bekommt sie nie
 //   bauwand: die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle, die
 //       Ort-Wahl (`_ortTraegtWirt`) und ihr Urteil vor dem Plan im Faden (fachwerk `ortImBau`, w28-stadt-grammatik) lesen
 //       dieselbe Wand — der Defekt nimmt sie allen dreien (mit zweien wich der Ort im Faden aus: der Selbsttest war blind, z397)
@@ -1667,7 +1669,7 @@ async function proben(phasen) {
     if (P.has("w6")) {
         wartet("Phase w6");
         // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf;
-        // der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis
+        // der Lauf beginnt 6 m vor der Front, (a) mit der Hülle des Fernkörpers allein, (b) 60 m bzw. 20 m vor der Mitte, bis
         // die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
         o.w6 = [];
         const KULT = ["marokkanisch", "viktorianisch", "alemannisch"];
@@ -1818,7 +1820,7 @@ async function proben(phasen) {
                 }
                 return rund(lokal(e, pm.position.x, pm.position.z).z - tu.z);
             };
-            // (a) die Kern-Hülle: der Slot geht den Weg jedes Siedlungs-Hauses (`_spawnSettlementSlot`: Ecken, Podest, Grundriss
+            // (a) das Haus des Slots: er geht den Weg jedes Siedlungs-Hauses (`_spawnSettlementSlot`: Ecken, Podest, Grundriss
             // räumt) — Spawn und Anlauf im selben Takt
             const c = Math.cos(ort.gier);
             const sn = Math.sin(ort.gier);
@@ -1860,9 +1862,23 @@ async function proben(phasen) {
                 if (Math.abs(lq.x - tu.x) <= 2 && lq.z >= z0 - 7 && lq.z <= z0) r.removeArchitecture(q);
             }
             w.gierGrad = Math.round((ort.gier * 180) / Math.PI);
-            w.kernBoxen = e.blockerAABBs ? e.blockerAABBs.length : 0;
-            w.kernHuelle = huelleVon(e);
-            w.kernDrinM = anlauf(e);
+            // EINE HÜLLE JE HAUS (eine-huelle): im Takt des Spawns trägt das Haus keine Hülle und KEINE Blocker (vier Wände aus
+            // der Tür-Zeile waren eine zweite Hülle desselben Hauses). DAS KALTE HAUS: der Spieler wartet jenseits der Mesh-Zone,
+            // keine Stufe wird gezeigt — die Lieferung des Fernkörpers allein bringt die Solids des Gesetzbuchs
+            // (`_hausHuelleHolen`), dann der Anlauf durch die Tür
+            w.vorBoxen = e.blockerAABBs ? e.blockerAABBs.length : 0;
+            w.vorHuelle = huelleVon(e);
+            const kalt = welt(e, fu.ox, fu.oz - ((s.architectureCullingRadius || 150) + 40));
+            stell(kalt.x, (hh(kalt.x, kalt.z) || e.position.y) + 3, kalt.z);
+            wartet(`W6 Anlauf ${k}: die Hülle aus der Lieferung des Fernkörpers`);
+            const holen = typeof r._hausHuelleHolen === "function" ? () => r._hausHuelleHolen(e) : () => false;
+            await window.__gebautNach(e, { fertig: holen, bau: () => {}, takt: () => pumpe(10), max: 60 }).catch(() => null);
+            const fernPreset = r._foundryPresetForEntry(e);
+            const fernFlat = fernPreset ? r._foundryFlattenFor(e, fernPreset, r._foundryFernStufe(fernPreset)) : null;
+            w.fernLiefert = fernFlat && fernFlat.huelle && Array.isArray(fernFlat.huelle.teile) ? fernFlat.huelle.teile.length : 0;
+            w.fernHuelle = huelleVon(e);
+            w.fernGezeigt = r._archIsRendered(e) ? e._servedLod : null;
+            w.fernDrinM = anlauf(e);
             // (b) die Fernstufen: der Spieler wartet 60 m (Stufe 2) bzw. 20 m (Stufe 1) vor der Mitte, bis die Foundry liefert
             w.fern = [];
             for (const abstand of [60, 20]) {
@@ -2079,7 +2095,7 @@ function urteil(o) {
             f.push(
                 `W6 Aufbau: ${w6.length} von 3 Häusern (${(o.w6 || []).map((w) => w.kultur + ":" + (w.fehler || "ok")).join(" ")})`
             );
-        if (!w6.some((w) => w.kernHuelle === 0)) f.push("W6 Aufbau: kein Haus vor der ersten Studio-Stufe angelaufen");
+        if (!w6.some((w) => w.vorHuelle === 0)) f.push("W6 Aufbau: kein Haus vor der ersten Lieferung des Studios gemessen");
         const ueberMauer = w6.filter((w) => !(w.hochM <= 1.3));
         if (ueberMauer.length)
             f.push(
@@ -2090,10 +2106,22 @@ function urteil(o) {
             f.push(
                 `W6 Aufbau: der Körper fiel unter das Gelände (${imLoch.map((w) => w.kultur + " " + w.tiefM + " m @" + w.tiefOrt + " Feld " + w.tiefFeld).join(" ")} — der Ort trägt nicht, kein Tür-Befund)`
             );
-        const kernZu = w6.filter((w) => w.kernHuelle === 0 && !(w.kernDrinM >= 1));
-        if (kernZu.length)
+        // EINE HÜLLE JE HAUS (eine-huelle): vor der ersten Lieferung keine Blocker; am kalten Haus bringt die Lieferung des
+        // Fernkörpers die Hülle, und der Körper geht mit ihr durch die Tür
+        const zweite = w6.filter((w) => w.vorHuelle === 0 && w.vorBoxen > 0);
+        if (zweite.length)
             f.push(
-                `W6 Kern-Hülle: vor der ersten Stufe ${kernZu.map((w) => w.kultur + " " + w.kernDrinM + " m").join(", ")} vor bzw. hinter der Schwelle (Soll ≥ 1)`
+                `W6 EINE Hülle: vor der ersten Lieferung des Studios trägt ${zweite.map((w) => w.kultur + " " + w.vorBoxen + " Boxen").join(", ")} (eine zweite Hülle neben der des Gesetzbuchs; Soll 0)`
+            );
+        const fernOhne = w6.filter((w) => !(w.fernLiefert > 0) || !(w.fernHuelle > 0));
+        if (fernOhne.length)
+            f.push(
+                `W6 EINE Hülle: die Lieferung des Fernkörpers bringt dem kalten Haus keine Hülle (${fernOhne.map((w) => w.kultur + " Lieferung " + w.fernLiefert + " Teile, am Haus " + w.fernHuelle).join(", ")}; Soll die Solids des Gesetzbuchs)`
+            );
+        const fernZuA = w6.filter((w) => w.fernHuelle > 0 && !(w.fernDrinM >= 1));
+        if (fernZuA.length)
+            f.push(
+                `W6 Fern-Hülle: am kalten Haus (die Hülle des Fernkörpers) ${fernZuA.map((w) => w.kultur + " " + w.fernDrinM + " m").join(", ")} vor bzw. hinter der Schwelle (Soll ≥ 1)`
             );
         const fernAlle = [];
         for (const w of w6) for (const fz of w.fern || []) fernAlle.push(Object.assign({ kultur: w.kultur }, fz));

@@ -2102,7 +2102,7 @@ class AnazhRealm_vegetation_baum {
     // liegt bis 1,8 m neben dem Haus-Ursprung, das Hof-Haus 4 m), gedreht in den Rahmen des Hauses. Das FUNDAMENT eines
     // Eintrags oder der Optionen eines Werks (die Siedlung reicht es aus der obb des Exports). Beide tragen `saum`: das Haus
     // eines Orts steht auf der Platte seines Erdbaus, dem Grundriss samt dem Saum des Orts-Gesetzes (fachwerk
-    // `ORT_GESETZ.saumM`). Die HÜLLE eines Hauses, dann der Kern seiner TÜR-Zeile (`tuer` reist mit). Mit `art` (der Typ eines
+    // `ORT_GESETZ.saumM`). Die HÜLLE eines Hauses (bis sie kommt, trägt es keinen: `_hausHuelleKommt`). Mit `art` (der Typ eines
     // Werks VOR seinem Bau, `seed` sein Same) spricht danach das Gesetzbuch der Architektur: ein HAUS misst seinen Mass-Bau
     // (fachwerk `massBau(hausParams(Rezept, Stempel))` mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export sein
     // obb und seine Tür nimmt, und der Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre
@@ -2141,8 +2141,9 @@ class AnazhRealm_vegetation_baum {
             };
         // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament-Zeile (gesetzt vom Spieler, der KI,
         // einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der Mess-Wiese). Die festen Boxen
-        // der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle — vor dem Kern der Tür-Zeile, die die
-        // Hülle dem Solo-Haus mitbringt (bauen.K5: der Hof des Hof-Hauses liegt außerhalb seines Kerns).
+        // der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle (bauen.K5: der Hof des Hof-Hauses liegt
+        // außerhalb seines Kerns). EINE HÜLLE JE HAUS (eine-huelle): bis sie kommt, trägt das Haus keinen — der Kern seiner
+        // Tür-Zeile (W × D) war ein zweiter Grundriss desselben Hauses; die Hülle räumt bei ihrer Ankunft (`_grundrissRaeumen`).
         const hu = e._hausHuelle;
         if (hu) {
             const m = e._grundrissHuelle;
@@ -2172,9 +2173,6 @@ class AnazhRealm_vegetation_baum {
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
         }
-        const t = e.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
-            return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0, tuer: t };
         if (art !== undefined) {
             const g = this._grundrissGesetz(art);
             if (!g) return null;

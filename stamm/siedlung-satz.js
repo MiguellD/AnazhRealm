@@ -1414,8 +1414,8 @@ class AnazhRealm_siedlung_satz {
             }
         }
         // TÜR-ZEILE des Settlement-Exports am Eintrag (Snapshot + Restore): Tür-Rect + Kern-Footprint W/D,
-        // haus-lokal. Konsumenten: `_hausBlockerBoxen` (die Kern-Hülle, bis das Studio die Hülle der Stufe liefert) +
-        // `_tickHausTueren`.
+        // haus-lokal. Konsumenten: `_tickHausTueren` und die Liste der Bewohner (`_bewohnerHuellenDa`: das Haus eines Plans); die
+        // Hülle des Hauses kommt NUR aus dem Gesetzbuch (EINE Hülle je Haus, `_hausHuelleSetzen`), nie aus dieser Zeile.
         if (opts.tuer && Number.isFinite(opts.tuer.w) && Number.isFinite(opts.tuer.W) && Number.isFinite(opts.tuer.D)) {
             try {
                 entry.tuer = JSON.parse(JSON.stringify(opts.tuer));

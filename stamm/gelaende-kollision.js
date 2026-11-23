@@ -151,9 +151,14 @@ class AnazhRealm_gelaende_kollision {
             return;
         }
         // HAUS (Welle L, Kollision == Optik): die Solids des Gesetzbuchs, die JEDE Studio-Stufe trägt (`_hausHuelleSetzen`),
-        // gedreht wie das Haus (OBB); bis die erste Stufe liefert, die Kern-Hülle aus der Tür-Zeile mit Tür-Lücke. Vorher
-        // vier EG-Riegel als achsparallele Welt-AABB: gedrehte Häuser 18–35 % begehbar, Kletterwand statt Treppe, der Fuß
-        // 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an `haus_basis` (3,09 m in der Wand).
+        // gedreht wie das Haus (OBB). Vorher vier EG-Riegel als achsparallele Welt-AABB: gedrehte Häuser 18–35 % begehbar,
+        // Kletterwand statt Treppe, der Fuß 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an
+        // `haus_basis` (3,09 m in der Wand).
+        // EINE HÜLLE JE HAUS (eine-huelle): das Haus des Studios steht ohne Blocker, bis seine erste Lieferung die Hülle bringt
+        // (jede Stufe trägt sie, auch der Fernkörper; wer sie vorher braucht, holt sie: `_hausHuelleHolen`). Bis hier stand es
+        // so lange in vier Wänden aus seiner Tür-Zeile (die Kern-Hülle, eine zweite Wahrheit desselben Hauses): an jedem Haus
+        // des Dorfs lagen 7–10 Solids am Boden bis 0,73 m daneben, am Hof-Haus 60 bis 9,07 m, und kam die Hülle, rückten die
+        // Stände der Bewohner um 0,3–2,9 m (28 während einer Zählung am Start-Dorf, GTX 1050).
         const hausBoxes = this._hausBlockerBoxen(entry);
         if (hausBoxes) {
             if (hausBoxes.length) {
@@ -161,7 +166,7 @@ class AnazhRealm_gelaende_kollision {
                 this._blockerStampReach(entry);
                 return;
             }
-        }
+        } else if (this._hausHuelleKommt(entry)) return;
         // Fahrzeug-Gestalt: die Kollision deckt die SICHTBARE Studio-Form (exportDrive.huelle: Unterkörper
         // + Greenhouse + Räder). Fail-closed: kein Kern/keine Gestalt → generischer Parts-Pfad.
         const fzgParts = this._fahrzeugBlockerParts(entry);
@@ -272,8 +277,7 @@ class AnazhRealm_gelaende_kollision {
             this._blockerNetzSetzen(entry);
         }
         // DIE TÜR DES GEBAUTEN HAUSES (bauen.K5): ebenso die Tür-Zeile (`tuer`, haus-lokal, null = keine Haustür) — mit ihr
-        // öffnet der Tür-Takt (`_tickHausTueren`) die Tür des Solo-Hauses dem Spieler wie die des Dorfs, und nach dem Reload
-        // trägt die Kern-Hülle die Tür-Lücke, bis die Studio-Hülle liefert; sie reist durch den Save.
+        // öffnet der Tür-Takt (`_tickHausTueren`) die Tür des Solo-Hauses dem Spieler wie die des Dorfs; sie reist durch den Save.
         if (entry.tuer === undefined && huelle.tuer !== undefined) entry.tuer = huelle.tuer;
         const alt = entry._hausHuelle;
         if (alt === huelle) return;
@@ -504,30 +508,23 @@ class AnazhRealm_gelaende_kollision {
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
-    // Gesetz) mit ihrer Welt-AABB als Vorfilter; ohne Studio-Hülle die Kern-Hülle aus der Tür-Zeile (`_hausKernHuelle`).
-    // null: kein Haus.
+    // Gesetz) mit ihrer Welt-AABB als Vorfilter. null: keine Hülle (kein Haus, oder sie kommt noch — `_hausHuelleKommt`).
     _hausBlockerBoxen(entry) {
         const hu = entry && entry._hausHuelle;
-        const t = entry && entry.tuer;
-        let boxen = null;
-        let k = 1;
         const fest = hu ? AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") : null;
-        if (fest && fest.length) {
-            boxen = [];
-            for (const q of fest)
-                if (q.art === "box")
-                    boxen.push(
-                        q.c[0] - q.h[0],
-                        q.c[1] - q.h[1],
-                        q.c[2] - q.h[2],
-                        q.c[0] + q.h[0],
-                        q.c[1] + q.h[1],
-                        q.c[2] + q.h[2]
-                    );
-            k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
-        } else if (t && Number.isFinite(t.W) && Number.isFinite(t.D) && t.W > 1.5 && t.D > 1.5) {
-            boxen = this._hausKernHuelle(t);
-        } else return null;
+        if (!fest || !fest.length) return null;
+        const boxen = [];
+        for (const q of fest)
+            if (q.art === "box")
+                boxen.push(
+                    q.c[0] - q.h[0],
+                    q.c[1] - q.h[1],
+                    q.c[2] - q.h[2],
+                    q.c[0] + q.h[0],
+                    q.c[1] + q.h[1],
+                    q.c[2] + q.h[2]
+                );
+        const k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
         const out = [];
         for (let i = 0; i + 5 < boxen.length; i += 6) {
             const b = this._hausObb(
@@ -546,7 +543,7 @@ class AnazhRealm_gelaende_kollision {
         // Pfosten) als gedrehte Boxen derselben Matrix — der Strahl liest sie nach den Boxen des Gangs (`_strahlBoxenVon`), die
         // Kapsel nie (ihre Spur ist so breit wie der Leib)
         const gel = [];
-        for (const q of (hu && fest ? AnazhRealm._huelleVon(hu, "strahl", "fachwerk:__huelle") : null) || []) {
+        for (const q of AnazhRealm._huelleVon(hu, "strahl", "fachwerk:__huelle") || []) {
             const b =
                 q.art === "box" &&
                 this._hausObb(
@@ -565,35 +562,27 @@ class AnazhRealm_gelaende_kollision {
         return out.length ? out : null;
     }
 
-    // DIE KERN-HÜLLE vor der ersten Studio-Stufe: die Tür-Zeile des Gesetzbuchs (Export: Tür-Rechteck, Kern-W/D, Hintertür)
-    // — vier EG-Wände mit Haus- und Hintertür-Lücke, Sturz darüber, und die Diele als Sockel bis zur Schwelle; haus-lokal
-    // [x0,y0,z0,x1,y1,z1]…. Vorher eine geschlossene Box W × D (die Tür zu, bis das Studio lieferte).
-    _hausKernHuelle(t) {
-        const H = 3.1;
-        const dick = 0.35;
-        const W2 = t.W / 2;
-        const D2 = t.D / 2;
-        const out = [];
-        const box = (x0, y0, z0, x1, y1, z1) => {
-            if (x1 - x0 > 0.05 && y1 - y0 > 0.05 && z1 - z0 > 0.02) out.push(x0, y0, z0, x1, y1, z1);
-        };
-        if (Number.isFinite(t.y) && t.y > 0.05) box(-W2, 0, -D2, W2, t.y, D2); // die Diele bis zur Schwelle
-        const wandX = (zF, l) => {
-            const z0 = zF - dick / 2;
-            const z1 = zF + dick / 2;
-            if (!l) return box(-W2, 0, z0, W2, H, z1);
-            const g0 = Math.max(-W2, l.x - l.w / 2 - 0.15);
-            const g1 = Math.min(W2, l.x + l.w / 2 + 0.15);
-            box(-W2, 0, z0, g0, H, z1);
-            box(g1, 0, z0, W2, H, z1);
-            box(g0, (Number.isFinite(l.y) ? l.y : 0.55) + (Number.isFinite(l.h) ? l.h : 2.05) + 0.1, z0, g1, H, z1);
-        };
-        wandX(t.z, Number.isFinite(t.x) && Number.isFinite(t.w) ? t : null); // die Front mit der Haustür
-        const hi = t.hinten;
-        wandX(-t.z, hi && Number.isFinite(hi.x) && Number.isFinite(hi.w) ? { x: hi.x, w: hi.w, y: t.y, h: t.h } : null);
-        box(-W2 - dick / 2, 0, -D2, -W2 + dick / 2, H, D2);
-        box(W2 - dick / 2, 0, -D2, W2 + dick / 2, H, D2);
-        return out;
+    // DIE HÜLLE KOMMT (eine-huelle): ein Haus des Studios (das Gesetzbuch der Architektur führt seine Art, das Buch ist warm)
+    // trägt noch keine Hülle — seine erste Lieferung bringt sie. Bei kaltem Buch und für jede andere Art falsch: dort ist der
+    // Bauplan das Bild und trägt die Kollision.
+    _hausHuelleKommt(entry) {
+        if (!entry || entry._hausHuelle || typeof entry.type !== "string" || !this._foundryEnabled()) return false;
+        const g = this._grundrissGesetz(entry.type);
+        return !!(g && g.rec.kind === "haus");
+    }
+
+    // DIE HÜLLE HOLEN (eine-huelle): wer die Hülle eines Hauses braucht, bevor eine gezeigte Stufe sie bringt — die Liste der
+    // Bewohner (`_bewohnerHuellenDa`: ihre Stände fragen die Wände), der Fernkörper im Welt-March (`_archFoundryZiegel`) —,
+    // nimmt sie aus der Lieferung des Fernkörpers (die NUR-WURF-Stufe trägt die Solids des Gesetzbuchs wie jede Stufe) und
+    // bestellt diese, wo sie fehlt (`_foundryFlattenFor`). true: die Hülle steht am Eintrag.
+    _hausHuelleHolen(entry) {
+        if (!entry) return false;
+        if (entry._hausHuelle) return true;
+        const preset = this._foundryPresetForEntry(entry);
+        if (!preset || this._foundryFernForm(preset) !== "huelle") return false;
+        const bf = this._foundryFlattenFor(entry, preset, this._foundryFernStufe(preset));
+        if (bf && bf.huelle) this._hausHuelleSetzen(entry, bf.huelle);
+        return !!entry._hausHuelle;
     }
 
     // Eine haus-lokale Box → die GEDREHTE Blocker-Box der Welt: T(x, y−0,5, z) · R_y(rotationY) · S(scale·k) — dieselbe
@@ -978,7 +967,7 @@ class AnazhRealm_gelaende_kollision {
 
     // DIE WACHE DES NETZES (mensch.K3): wer sich merkt, was er im Netz las (die Wege der Bewohner einer Siedlung), stellt
     // eine Wache über sein Rechteck { x0, x1, z0, z1, stand } in `_blockerWachen`; jede Hülle, die dort ein- oder austritt
-    // oder neu gestempelt wird (die Studio-Hülle nach der Kern-Hülle, das Haus des Spielers, der gefällte Baum), zählt ihren
+    // oder neu gestempelt wird (die Hülle des Studios an ihrem Haus, das Haus des Spielers, der gefällte Baum), zählt ihren
     // Stand hoch — vor dem Stempel die alte Hülle, danach die neue. Der Leser vergleicht den Stand, nie den Bestand; DAS BUCH
     // der Wache (`wechsel`, die letzten 256) trägt je Stand die Hülle, die ihn zählte — ein Leser urteilt nur neu, was sie
     // berührt (`_bewohnerWechsel`, Lehre 25). Der fahrende Wagen des Verkehrs (`verkehr`) meldet sich nur einer Wache, die ihn hört

@@ -2886,6 +2886,9 @@ class AnazhRealm_studio_bruecke {
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
             if (huelle && !bf.fern)
                 return AnazhRealm._kernPflichtBruch("fachwerk:__fern (" + preset + ", Stufe " + stufe + ")");
+            // EINE HÜLLE JE HAUS (eine-huelle): die Lieferung des Fernkörpers trägt die Solids des Gesetzbuchs wie jede Stufe —
+            // das ferne Haus steht mit ihr in seiner Hülle (`_hausHuelleSetzen`; dieselbe Zeile wie die der gezeigten Stufe)
+            if (bf.huelle) this._hausHuelleSetzen(entry, bf.huelle);
             // DER FIT-TAKT ZÄHLT FITS (sk5-haus, Gebot 7): die Hülle ist die Liste des Gesetzbuchs, kein Fit im Wirt — sie
             // kostet, was ein Treffer kostet, und wartet nie am Takt. Bis sk5-haus wartete das erste Haus des kleinen Dorfs
             // (nH 12, Hülle in 234 m, Flat vorgebacken) hinter den näheren Fits der Streu auf die zweite Fenster-Hälfte
