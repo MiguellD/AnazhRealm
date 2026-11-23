@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 16,
-    "kern": 14,
-    "kernDazu": 14,
-    "anteilHeute": 2.9,
-    "anteilKern": 2.5
+    "heute": 18,
+    "kern": 12,
+    "kernDazu": 12,
+    "anteilHeute": 3.2,
+    "anteilKern": 2.1
    },
    "perspektiven": [
     {
@@ -9274,8 +9274,8 @@
        "richter": "64 Welten: „bewirtschaftet“ ≥ 70 %, Lagerente r ≥ 0,7"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "1–2 Äcker je Feldweg-Ende (fachwerk-core.js:4699–4714), als Fleck im Boden-Kanal gemalt (stamm/siedlung-wege.js:1621); in jedem Dorfbild sichtbar — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
      "alt": [
@@ -10088,8 +10088,8 @@
        "richter": "„folgt aus Stoffen“ ≥ 80 % UND „nicht unsere Geschichte“ ≥ 80 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Werkstoff-Tafeln im Studio, Epochen-Tafel der Stadt (fachwerk-core.js:3294) — Liste, nicht gewachsen; jede Saat hat dieselbe Epochenfolge",
      "alt": []
@@ -20088,10 +20088,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 59,
+  "heute": 61,
   "davonKopplungen": 33,
-  "kern": 19,
-  "kernDazu": 19,
+  "kern": 17,
+  "kernDazu": 17,
   "anteilHeute": 3.4,
   "anteilKern": 0.7,
   "kapitel": 7,
@@ -20102,8 +20102,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 34,
-  "nachwache": 25
+  "beide": 35,
+  "nachwache": 26
  },
  "zusammengelegt": [
   {
