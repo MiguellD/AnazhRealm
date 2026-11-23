@@ -1,0 +1,713 @@
+{
+ "kopf": "18.546.377 echt",
+ "teil": "stadt-voll:abend+cull",
+ "zeit": "2026-11-23T03:33:09.830Z",
+ "orte": {
+  "stadt-voll": {
+   "s": 254,
+   "exit": 0,
+   "aus": "}"
+  }
+ },
+ "abend": {
+  "s": 20.2,
+  "h": 20,
+  "ankunftTakte": 170,
+  "n": 1365,
+  "tafel": {
+   "haeuslich": {
+    "unterwegs": 5,
+    "tuer": 335,
+    "sonst": 2
+   },
+   "fleissig": {
+    "werk": 5,
+    "tuer": 197,
+    "unterwegs": 57,
+    "treff": 89,
+    "besuch": 1
+   },
+   "ausgeglichen": {
+    "werk": 2,
+    "tuer": 323,
+    "treff": 5,
+    "unterwegs": 29,
+    "besuch": 2,
+    "sonst": 1
+   },
+   "gesellig": {
+    "treff": 182,
+    "unterwegs": 8,
+    "tuer": 122
+   }
+  },
+  "geher": 99,
+  "tempoGeher": [
+   0.34,
+   1.16,
+   1.59
+  ],
+  "pose": [
+   804.86,
+   62.83,
+   402.81,
+   792.86,
+   62.69,
+   402.81
+  ],
+  "dicht": null
+ },
+ "cull": {
+  "s": 12.8,
+  "posen": [
+   {
+    "pose": [
+     804.86,
+     62.83,
+     402.81,
+     792.86,
+     62.69,
+     402.81
+    ],
+    "steht": false,
+    "takte": 179,
+    "ms": 12495,
+    "ruhe": 30,
+    "grund": "Fege-Takt nahWiese 0/1",
+    "wurf": null,
+    "gaenge": 16,
+    "wartet": 4,
+    "felder": 0,
+    "regt": 0,
+    "kaltGaenge": 4,
+    "kaltSumme": 4,
+    "R": 150,
+    "auge": [
+     804.9,
+     402.8
+    ],
+    "fenster": [
+     {
+      "n": 150,
+      "ruhe": 1,
+      "grund": "Fege-Takt nahWiese 0/1",
+      "gaenge": 16,
+      "wartet": 4,
+      "felder": 0,
+      "regt": 0,
+      "kaltGaenge": 4,
+      "kaltSumme": 4,
+      "bauN": 0,
+      "satzN": 536,
+      "offen": {}
+     }
+    ],
+    "platz": {
+     "felder": 4096,
+     "freiFelder": 137,
+     "reserve": 128,
+     "kapselVoll": false,
+     "wartet": false,
+     "echt": false,
+     "platzFrei": false,
+     "platzGen": 12,
+     "halter": 764,
+     "bakeSchuld": 0,
+     "warten": 0,
+     "vorab": 0,
+     "weichtJa": 0,
+     "weichtNein": 0,
+     "halterTyp": [
+      [
+       "laterne_dorf",
+       244
+      ],
+      [
+       "haus_provenzalisch",
+       153
+      ],
+      [
+       "haus_italienisch",
+       147
+      ],
+      [
+       "wandlaterne_dorf",
+       85
+      ],
+      [
+       "grabstein_dorf",
+       32
+      ],
+      [
+       "felsturm",
+       17
+      ],
+      [
+       "haus_schwarzwald",
+       10
+      ],
+      [
+       "glutbrunnen",
+       10
+      ],
+      [
+       "fahrzeug_limousine",
+       9
+      ],
+      [
+       "felsbogen",
+       9
+      ]
+     ],
+     "vollTyp": [],
+     "foundryNein": [],
+     "ohneSatz": [
+      {
+       "typ": "wandlaterne_dorf",
+       "n": 100,
+       "dMin": 89.3,
+       "dMax": 1083.4
+      },
+      {
+       "typ": "laterne_dorf",
+       "n": 63,
+       "dMin": 223.8,
+       "dMax": 1105.6
+      },
+      {
+       "typ": "grabstein_dorf",
+       "n": 24,
+       "dMin": 1026.2,
+       "dMax": 1042.9
+      },
+      {
+       "typ": "felsbogen",
+       "n": 8,
+       "dMin": 145.8,
+       "dMax": 250.9
+      },
+      {
+       "typ": "felsturm",
+       "n": 6,
+       "dMin": 131.8,
+       "dMax": 231.4
+      },
+      {
+       "typ": "welt_koerperstudio",
+       "n": 1,
+       "dMin": 904.2,
+       "dMax": 904.2
+      },
+      {
+       "typ": "brunnen_dorf",
+       "n": 1,
+       "dMin": 1022.2,
+       "dMax": 1022.2
+      },
+      {
+       "typ": "glutbrunnen",
+       "n": 1,
+       "dMin": 219.5,
+       "dMax": 219.5
+      }
+     ],
+     "fragen": [
+      {
+       "typ": "wandlaterne_dorf",
+       "d": 89.3,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": 0.17324066162109375,
+       "horizont": 73.2,
+       "ansichtTyp": 0.17324066162109375,
+       "preset": "wandlaterne",
+       "variant": 1,
+       "fernForm": "huelle",
+       "cache": true,
+       "flat": {
+        "inst": true,
+        "leaves": 2,
+        "lod": 3,
+        "fern": true
+       }
+      },
+      {
+       "typ": "laterne_dorf",
+       "d": 223.8,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": 1.6816210746765137,
+       "horizont": 228.1,
+       "ansichtTyp": 1.6816210746765137,
+       "preset": "laterne",
+       "variant": 1,
+       "fernForm": "huelle",
+       "cache": true,
+       "flat": null
+      },
+      {
+       "typ": "grabstein_dorf",
+       "d": 1026.2,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": 0.5712707042694092,
+       "horizont": 133,
+       "ansichtTyp": 0.5712707042694092,
+       "preset": "grabstein",
+       "variant": 1,
+       "fernForm": "huelle",
+       "cache": true,
+       "flat": {
+        "inst": true,
+        "leaves": 2,
+        "lod": 3,
+        "fern": true
+       }
+      },
+      {
+       "typ": "felsbogen",
+       "d": 145.8,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": null,
+       "horizont": 215.9,
+       "ansichtTyp": 1.5064182465076448,
+       "preset": "zacken",
+       "variant": 11,
+       "fernForm": "gesetz",
+       "cache": false,
+       "flat": {
+        "inst": true,
+        "leaves": 1,
+        "lod": 0,
+        "fern": false
+       }
+      },
+      {
+       "typ": "felsturm",
+       "d": 131.8,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": null,
+       "horizont": 179.8,
+       "ansichtTyp": 1.0448996257305148,
+       "preset": "zacken",
+       "variant": 13,
+       "fernForm": "gesetz",
+       "cache": true,
+       "flat": {
+        "inst": true,
+        "leaves": 1,
+        "lod": 0,
+        "fern": false
+       }
+      },
+      {
+       "typ": "welt_koerperstudio",
+       "d": 904.2,
+       "schlaf": false,
+       "versuche": 0,
+       "nah": false,
+       "masse": false,
+       "satzA": 13.25901460647583,
+       "horizont": 640.6,
+       "ansichtTyp": 13.25901460647583,
+       "preset": "vitruv",
+       "variant": 1,
+       "fernForm": "huelle",
+       "cache": false,
+       "flat": null
+      }
+     ]
+    },
+    "bauTypen": [],
+    "bauTop": [],
+    "satzNeinTypen": [
+     [
+      "laterne_dorf",
+      3520
+     ],
+     [
+      "wandlaterne_dorf",
+      1360
+     ],
+     [
+      "haus_provenzalisch",
+      1360
+     ],
+     [
+      "haus_italienisch",
+      1056
+     ],
+     [
+      "grabstein_dorf",
+      512
+     ],
+     [
+      "glutbrunnen",
+      144
+     ],
+     [
+      "felsturm",
+      144
+     ],
+     [
+      "marktstand_dorf",
+      80
+     ]
+    ],
+    "satzTop": [
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "marktstand_dorf",
+      "d": 58.8,
+      "gez": true,
+      "stufe": 1,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": true,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "marktstand"
+     },
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "marktstand_dorf",
+      "d": 62.2,
+      "gez": true,
+      "stufe": 1,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": true,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "marktstand"
+     },
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "laterne_dorf",
+      "d": 130.7,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "laterne"
+     },
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "laterne_dorf",
+      "d": 113.9,
+      "gez": true,
+      "stufe": 1,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": true,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "laterne"
+     },
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "laterne_dorf",
+      "d": 106.6,
+      "gez": true,
+      "stufe": 1,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": true,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "laterne"
+     },
+     {
+      "ja": 0,
+      "nein": 16,
+      "typ": "laterne_dorf",
+      "d": 117.4,
+      "gez": true,
+      "stufe": 1,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": true,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "laterne"
+     }
+    ],
+    "zone": 471,
+    "nichtGez": 47,
+    "nichtGezTypen": [
+     [
+      "laterne_dorf",
+      12
+     ],
+     [
+      "wandlaterne_dorf",
+      9
+     ],
+     [
+      "felsbogen",
+      7
+     ],
+     [
+      "haus_italienisch",
+      6
+     ],
+     [
+      "haus_provenzalisch",
+      6
+     ],
+     [
+      "fahrzeug_limousine",
+      2
+     ],
+     [
+      "felsturm",
+      2
+     ],
+     [
+      "haus_gotisch",
+      1
+     ],
+     [
+      "fahrzeug_suv",
+      1
+     ],
+     [
+      "fahrzeug_kompakt_fwd",
+      1
+     ]
+    ],
+    "nichtGezProben": [
+     {
+      "typ": "wandlaterne_dorf",
+      "d": 89.3,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": false,
+      "gebacken": false,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "wandlaterne"
+     },
+     {
+      "typ": "wandlaterne_dorf",
+      "d": 93.7,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": false,
+      "gebacken": false,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "wandlaterne"
+     },
+     {
+      "typ": "laterne_dorf",
+      "d": 97.1,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "laterne"
+     },
+     {
+      "typ": "wandlaterne_dorf",
+      "d": 98.1,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": false,
+      "gebacken": false,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "wandlaterne"
+     },
+     {
+      "typ": "wandlaterne_dorf",
+      "d": 98.9,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": false,
+      "gebacken": false,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "wandlaterne"
+     },
+     {
+      "typ": "wandlaterne_dorf",
+      "d": 99,
+      "gez": false,
+      "stufe": null,
+      "huelle": false,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": false,
+      "gebacken": false,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": false,
+      "preset": "wandlaterne"
+     },
+     {
+      "typ": "haus_italienisch",
+      "d": 100.6,
+      "gez": false,
+      "stufe": null,
+      "huelle": true,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": true,
+      "preset": "italienisch"
+     },
+     {
+      "typ": "haus_italienisch",
+      "d": 101.1,
+      "gez": false,
+      "stufe": null,
+      "huelle": true,
+      "huelleWartet": false,
+      "grundOffen": false,
+      "slot": true,
+      "gebacken": true,
+      "nahWartet": false,
+      "platzNein": null,
+      "instFoundry": null,
+      "feldWurf": false,
+      "tuer": true,
+      "preset": "italienisch"
+     }
+    ],
+    "hausOhneHuelle": 0,
+    "haeuser": 326
+   }
+  ],
+  "stunde": 0.8341666666666655,
+  "log": {
+   "n": 50,
+   "max": 50,
+   "ohneStand": []
+  },
+  "bruch": {
+   "buch": 64,
+   "ohneStandZeilen": 64,
+   "ohneStandN": 202,
+   "rollen": {
+    "der": 202
+   },
+   "proben": [
+    "der Ort 737.6/597.3 erreicht keinen Weg frei ×4",
+    "der Ort 738.0/597.0 erreicht keinen Weg frei ×4",
+    "der Ort 738.6/596.9 erreicht keinen Weg frei ×5",
+    "der Ort 736.7/598.4 erreicht keinen Weg frei ×4",
+    "der Ort 736.7/597.8 erreicht keinen Weg frei ×4",
+    "der Ort 736.9/597.3 erreicht keinen Weg frei ×4",
+    "der Ort 737.3/596.8 erreicht keinen Weg frei ×4",
+    "der Ort 737.7/596.5 erreicht keinen Weg frei ×4",
+    "der Ort 738.3/596.3 erreicht keinen Weg frei ×4",
+    "der Ort 738.9/596.4 erreicht keinen Weg frei ×5",
+    "der Ort 736.3/599.2 erreicht keinen Weg frei ×4",
+    "der Ort 736.1/598.7 erreicht keinen Weg frei ×4",
+    "der Ort 736.1/598.1 erreicht keinen Weg frei ×4",
+    "der Ort 736.1/597.6 erreicht keinen Weg frei ×4",
+    "der Ort 736.3/597.0 erreicht keinen Weg frei ×4",
+    "der Ort 736.7/596.5 erreicht keinen Weg frei ×4",
+    "der Ort 737.1/596.2 erreicht keinen Weg frei ×4",
+    "der Ort 737.6/595.9 erreicht keinen Weg frei ×4",
+    "der Ort 738.2/595.8 erreicht keinen Weg frei ×4",
+    "der Ort 736.8/600.6 erreicht keinen Weg frei ×5",
+    "der Ort 736.3/600.3 erreicht keinen Weg frei ×5",
+    "der Ort 736.0/599.8 erreicht keinen Weg frei ×4",
+    "der Ort 735.7/599.3 erreicht keinen Weg frei ×4",
+    "der Ort 735.5/598.7 erreicht keinen Weg frei ×4"
+   ]
+  },
+  "bewohner": 1365
+ }
+}
