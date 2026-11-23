@@ -494,7 +494,13 @@ class AnazhRealm_studio_gestalt {
                 // der Welt-March liest sie über `_huelleVon`); der Flat reicht beide weiter.
                 if (m && typeof m.kind === "string" && m.kind.startsWith("__")) {
                     const feld = AnazhRealm.FOUNDRY_BEIPACK[m.kind];
-                    if (feld && m.huelle && typeof m.huelle === "object") group[feld] = m.huelle;
+                    // die Hüllen (`__huelle`, `__fern`) treten HIER gepackt ein (`_huellePacken`) — der Cache der Lieferung und
+                    // jedes Haus, das sie trägt, teilen denselben Speicher; die Objekt-Liste des Fadens lebt nicht weiter
+                    if (feld && m.huelle && typeof m.huelle === "object")
+                        group[feld] =
+                            feld === "_huelle" || feld === "_fern"
+                                ? AnazhRealm._huellePacken(m.huelle, (stage && stage.preset) + ":" + m.kind)
+                                : m.huelle;
                     continue;
                 }
                 const mesh = this._foundryBuildMesh(m, baum);

@@ -37,7 +37,8 @@ const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 // ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` des geladenen Wirts (die Fernform liest, was er liest; bis w25-lod-pop
 //    aus dem Quelltext nachgebaut, mit einem Zwilling von HUELLE_KEIL_TYP und `_kernPflichtBruch`) ──
 const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
-const huelleVon = (h, rolle, q) => WIRT._huelleVon(h, rolle, q);
+// die Hülle des Kerns tritt wie im Spiel gepackt ein (`_huellePacken`, der Eintritt an der Gruppe der Lieferung)
+const huelleVon = (h, rolle, q) => WIRT._huelleVon(WIRT._huellePacken(h, q), rolle, q);
 
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
 const RASTER = 0.05;
