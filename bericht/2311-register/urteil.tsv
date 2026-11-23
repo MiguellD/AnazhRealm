@@ -1,0 +1,453 @@
+Nr	Datum	Anfang (80 Zeichen)	Adresse	Beleg
+1	23.11.	23.11. 10:57 · `koerper-core.js:2740` (`ARM_RUHE`) · `koerper-core.js:7546–7569`	sprosse mensch.menge.bild#4	Nachtrag zu Nr 355: koerper-core.js:2740 ARM_RUHE, nahe Bewohner in A-Haltung (main: ARM_RUHE steht noch)
+2	23.11.	23.11. 10:57 · Schnappschuss `hk/nachher-archiv/snap-nachdorf.tafel.geo.json` (R	sprosse same.preis.speicher#1	bauSatz 32 MB CPU-Felder an der Wiese, Preis Heap
+3	23.11.	23.11. 10:57 · mein Brief an `generationen-band` von 09:39 („vier Bilder vorher 	apparat gpu-lauf	Bild-Sitzung Radeon: Schloss gpu-lauf Exit 75, 640x360 statt Spiel-Schirm
+4	23.11.	23.11. 10:57 · CI am Kandidaten db52c8e4 (z688, Lauf 45147175966 Versuch 1, omen	sprosse erleben.bild.nacht#2	gate:nacht-licht:echt Bodenfleck >= 1 EV 11 von 13 (Soll 0,9) = Richter nacht#2 (Familie Nr 419)
+5	23.11.	23.11. 10:36 · Akten `vision/richter/planet.zeit.archiv.1.{f0a89f7e,5b36f69a}-gt	sprosse same.preis.speicher#2	Dorf-Rest reist an den Archiv-Ort (+127,5 MB); w28-heap-blick-folgt 4f25e605 senkt +192,9 -> +170,1 MB, nicht geschnitten
+6	23.11.	23.11. 10:36 · `scripts/diag-persistence.cjs` `korpusLauf` (main 5b36f69a: `list	apparat ci	check.yml Persistenz-Haertung Teil 1+2 laden den Korpus doppelt
+7	23.11.	23.11. 10:36 · `zug/dienst/werkzeug/zug.cjs:1883` (`PROBE_PFLICHT`) · `zug/diens	apparat zug-dienst	zug.cjs PROBE_PFLICHT erst am Stempel
+8	23.11.	23.11. 10:36 · Runden-Dienst am OMEN, Regel VERDRÄNGT (Meldung des OMEN 10:2x) ·	apparat runden-dienst	Regel VERDRAENGT: CI-Probe beendet die Sitzung
+9	23.11.	23.11. 09:35 · `scripts/diag-stand-takt.cjs:3782` (`while (st.spielZeit - tW < 1	apparat wand	stand-linse.cjs DRUCK_SCHLAF_S wackelt am Laeufer
+10	23.11.	23.11. 09:35 · Punkte-Maschine, Referenz „vor“ einer Probe (Befund des OMEN an `	apparat punkte-maschine	Referenz der ersten Probe im Anlauf der eigenen Welt
+11	23.11.	23.11. 08:30 · `scripts/lib/welt-boot.cjs:1392` (`abbild`) · `:1413` (`ereignis`	apparat welt-boot	Nachtrag zu Nr 363 (abbild: leeres Abbild, z686)
+12	23.11.	23.11. 08:30 · Arbeiter-Brief für `pm-*` (mein Brief `pm-seite-ohne-m`) · EIN VO	apparat werkzeug	Arbeiter-Brief pm-*: voller Checkout punkte-maschine
+13	23.11.	23.11. 08:10 · Radeon-Dienst der Runde · DIE PREIS-MESSUNG LÄUFT NEBEN ARBEITER-	apparat runden-dienst	Preis-Messung neben Arbeiter-Laeufen
+14	23.11.	23.11. 07:30 · `scripts/werkbank.cjs abdruck` · bricht im Temp-Baum, weil puppet	apparat werkbank	werkbank abdruck: puppeteer fehlt im Temp-Baum
+15	23.11.	23.11. 07:00 · Buchung der Klasse Ort · EINE LANDUNG KANN GEBUCHTE SPROSSEN ZURÜ	apparat buchung	Ratsche fehlt: Landung wirft gebuchte Ort-Sprossen zurueck
+16	23.11.	23.11. 06:35 · OMEN-Bein nach `npm ci` · das erste Tor am kalten Gerät (`diag-fe	apparat ci	OMEN-Bein kalt: diag-fern-ring 30 s Navigation
+17	14.11.	14.11. 18:02 · STAU-FELD IM HAUPT-FADEN UNTER LAST (gate:worker-dichte K4, „Dich	apparat wand	gate:worker-dichte Stau-Feld unter CI-Last
+18	14.11.	14.11. 18:02 · WACKLER im vollen Playtest: „(M7a) Game-Loop-Regen wirkt (mana st	apparat wand	Playtest M7a Wackler (60 Ticks)
+19	14.11.	14.11. 17:06 · ABSTURZ DER RADEON 16:56:45 (Bugcheck 0x4E PFN_LIST_CORRUPT, Abbi	apparat geraet	Radeon Bugcheck 0x4E, Dienste ohne Autostart
+20	ohne	`punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K	apparat punkte-maschine	punkte.cjs deckel.json 10-s-Grenze
+21	ohne	volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Rade	apparat punkte-maschine	volle Radeon-Fahrt <= 30 min
+22	ohne	`_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haenger	apparat punkte-maschine	_standRueckspielen Grundstellung der Probe
+23	ohne	`package.json:20` check:statik (Puls 1, lokal `npm run check`) · eine `&&`-Kette	apparat ci	package.json check:statik &&-Kette
+24	ohne	`meisterkarte-quelle/punkte/stationen/g6.js:1023` ANKUNFT_KALT ohne `ausnahme` (	apparat punkte-maschine	stationen/g6.js ANKUNFT_KALT fristRiss
+25	ohne	`scripts/lib/welt-boot.cjs:83` `loopBild` · die Bilder jeder Aufnahme lösen den 	apparat werkbank	welt-boot.cjs loopBild Stempel-Pool
+26	ohne	`scripts/diag-boot-stage.cjs:75`, `scripts/diag-pruefbuehne.cjs:1379/:1394` · zw	apparat wand	diag-boot-stage / diag-pruefbuehne Doppel-Aufnahme
+27	ohne	`scripts/diag-takt.cjs` T9 Nah-Gang ROT an main ac85ccab (tickArchitectureCullin	sprosse same.preis.takt#3	diag-takt T9 Nah-Gang tickArchitectureCulling (main ac85ccab, alt) (unsicher)
+28	ohne	gate:fenster-wechsel (voll 15/18, ES Selbsttest) · ohne Wächter stirbt je Lauf e	apparat wand	gate:fenster-wechsel Selbsttest wackelt
+29	ohne	meisterkarte-quelle/punkte/stationen/sitzung-seite.js / proben-welt.cjs (Ortswec	apparat punkte-maschine	sitzung-seite.js Ortswechsel der Sitzung
+30	ohne	`meisterkarte-quelle/punkte/stationen/g1.js` stoffe.K2#2 FELS und DECKUNG hängen	apparat punkte-maschine	stationen/g1.js stoffe.K2#2 an der Schwelle
+31	ohne	`scripts/diag-haus-welt.cjs` W9 Zug · die Linse ist lokal (24 Kerne, 4 Werk-Fäde	apparat wand	diag-haus-welt W9 lokal blind
+32	ohne	`phyto-core.js:2016` LC (birch `0x8ab84a`, conifer `0x2e5526`) · die Krone der B	sprosse erleben.bild.flaeche#1	phyto-core.js:2016 LC Albedo Birke/Fichte gegen Band (Richter Albedo +-0,05)
+33	ohne	`stamm/bild-himmel.js` `_belichtungAusLicht` × der Wasser-Stoff von unten (`stam	sprosse leben.wasser.bild#1	_belichtungAusLicht unter Wasser, Totalreflexion
+34	ohne	`stamm/studio-bruecke.js:956` `_foundrySchale` × `stamm/stoff-material.js:84` `_	sprosse same.massstab.spanne#1	_foundrySchale streicht aCenter/aType am Halm (Aehre streckt sich in der Ferne) (unsicher)
+35	ohne	`stamm/stoff-material.js:2036` `_lichtPoolTerm` · die Karte unter einem nahen Fe	sprosse erleben.bild.nacht#1	stoff-material.js _lichtPoolTerm: Karte wirft nie am Feuer
+36	ohne	`stamm/feld-nexus.js` (die Mutation der Nexus-Gesetze) · setzt Effekt-Ops als Or	sprosse erleben.sinn.takt#2	feld-nexus.js Effekt-Ops als Ort, 49 Welt-Taten verpuffen (unsicher)
+37	ohne	`stamm/koerper-fahrt.js:337` `_tuchLoesen` / `koerper-core.js` `tuchDrapieren` ·	sprosse mensch.leib.stoff#1	koerper-fahrt.js _tuchLoesen: 543 Ecken hinter der Haut (Richter 0 Durchstiche)
+38	ohne	`koerper-core.js` `_tuchKollision` (w12-g2-spiel 2042ef47) · jeder hautnahe Punk	sprosse same.preis.takt#2	koerper-core.js _tuchKollision 12,5 -> 15,8 ms je Takt
+39	ohne	`stamm/dirigent-ankunft.js:1528` `_horizontSichtImBild` · Bild-Arbeit läuft als 	faellt Code existiert nicht mehr	_horizontSichtImBild fehlt auf main (git grep 0)
+40	ohne	`meisterkarte-quelle/punkte/stationen/g2.js` mensch.K4#1 · an der Kamera des Spi	geheilt ad7ca7db47	Abgabe w28-iris-frei: mensch.K4#1 GRUEN am Kopf, Iris-Flaeche gezaehlt, Hoehle vorn um das Auge
+41	ohne	`scripts/diag-mensch-anatomie.cjs` RUHE · main ba87b158 + w11-koerper 16fd2f49 (	sprosse mensch.leib.verschieden#1	diag-mensch-anatomie RUHE Arm-Ecken im Rumpf (Merge-Stand 05.11.) (unsicher)
+42	ohne	Licht am Gesicht im Schatten · die Haut liest die EINE Umgebung samt Boden-Rücks	sprosse mensch.leib.gesicht#5	_spiegelUmgebung: Mahagoni-Wange L* 4,5 im Schatten (Richter: Gesicht in jedem Licht)
+43	ohne	`scripts/diag-studio-uebergabe.cjs:207` (K) KANAL · tree: eiche Same 3 baut im S	apparat wand	diag-studio-uebergabe.cjs:207 Saat aus Date.now
+44	ohne	`stamm/wasser-zellen.js:574` `_stampArchitectureSolidCellsInto` · die Wasser-Zel	sprosse same.physik.fluid#1	wasser-zellen.js:574 SOLID-Zellen veralten gegen die Werke (unsicher)
+45	ohne	Heap-Leck `nodeBuilderCache` +30,6 MB/min · profiband.K5, E · in Arbeit (funde-6	sprosse same.preis.speicher#1	nodeBuilderCache +30,6 MB/min (main: 10 Treffer, keine Abgabe nennt es)
+46	ohne	Wege-Karte: erstes Zentrieren am Genesis-Ort 112 ms Haupt-Faden, Flächen ohne Ba	sprosse same.preis.takt#3	Wege-Karte 112 ms Haupt-Faden je Umzug
+47	ohne	Metropole `platzVoll: 87` — 87 Marktstände ohne Platz neben der Trasse (alle Pun	faellt Code existiert nicht mehr	platzVoll fehlt auf main (git grep 0)
+48	ohne	Orte stellen keine Wagen ihrer Epoche: Leser `ov.epoche = epocheAusJahr(EPOCHEN[	sprosse mensch.zeit.spanne#1	siedlung-ort.js:1136 ov.epoche: Orte stellen keine Wagen ihrer Epoche
+49	ohne	Fahr-Gesetz kennt kein Zugtier (Kutsche fährt mit Motor-Kraft), Zugtier-Leib nic	sprosse mensch.fahrzeug.form#2	Fahr-Gesetz ohne Zugtier, Kutsche mit Motor-Kraft
+50	ohne	Kalesche: Verdeck liest sich als Fächer, Landau-Eisen + Tür fehlen; Zukunft: Exp	sprosse mensch.fahrzeug.gestalt#1	Kalesche: Verdeck, Landau-Eisen, Tuer (Richter: als Wagen der Gattung erkannt)
+51	ohne	`tore.K3`: `r._genesisPortalRing is not a function` · tore.K3 · S	faellt Code existiert nicht mehr	_genesisPortalRing fehlt auf main (git grep 0), Station tore.K3 der alten Karte
+52	ohne	`bild-sicht.js` `_hoehlenRiss` reicht nur einen Nachbar-Chunk, kein eigener Muta	sprosse planet.geologie.unterwelt#1	bild-sicht.js _hoehlenRiss nur ein Nachbar-Chunk
+53	ohne	haar.K2 Radeon: Albedo-Zeile veraltet seit baf9d828 · haar.K2 (gebucht!) · S, br	apparat punkte-maschine	haar.K2 Albedo-Zeile der Probe veraltet
+54	ohne	fahrzeug.K3#1 Anker in `diag-garage-labor.cjs` veraltet → UNGEMESSEN · fahrzeug.	apparat punkte-maschine	fahrzeug.K3#1 Anker in diag-garage-labor veraltet
+55	ohne	studios.K4 Probe liest `gruen` von undefined · studios.K4 (0!) · in Arbeit (heil	apparat punkte-maschine	studios.K4 Probe liest gruen von undefined
+56	ohne	physik.K2#2 „DER BAU STEHT NICHT: haus_alemannisch#429“, siedlung.K4#2 ROT · in 	sprosse same.physik.tragen#1	physik.K2#2 DER BAU STEHT NICHT haus_alemannisch#429 (unsicher)
+57	ohne	B Ankunft ≤ 5 s: 55 strukturelle Programm-Varianten vor Kontrolle (bauSatz, aren	sprosse same.preis.ankunft#2	55 Programm-Varianten vor der Kontrolle (Ankunft)
+58	ohne	stamm/stoff-instanz.js `_renderObjekteLoesen`/`_renderObjektRegister` · eine gel	sprosse same.preis.ausdauer#1	stoff-instanz.js gelöste Sampler-Bindung gelesen (texture = null, Leinwand stirbt)
+59	ohne	`stamm/stoff-karte.js:881` Karten-Sonne der Nadel-Karte L2 · die Karte (fimp) le	sprosse same.massstab.spanne#1	stoff-karte.js:881 Karten-Sonne L2 heller als L0 am Wechsel
+60	ohne	`stamm/siedlung-ort.js:2469` `wachs.uhr` · ein Ort mit Chronik reist mit seinem 	sprosse same.entfaltung.abwesenheit#1	siedlung-ort.js:2469 wachs.uhr: Wachstum haengt am Weg, nicht an der Uhr
+61	ohne	`scripts/diag-persistence.cjs:416` (D) und `stamm/vegetation-baum.js:3024` MAX_N	apparat wand	diag-persistence.cjs:416 (D) urteilt Nexus-Bauten als ohne Leben
+62	ohne	`stamm/siedlung-wege.js:920` `_trittSchwach` · das flüchtige Gedächtnis unter de	sprosse same.preis.speicher#2	siedlung-wege.js:920 _trittSchwach waechst im RAM mit dem Weg (Richter: kein Wachstum mit dem Weg)
+63	ohne	Nachwuchs in der Brand-Narbe (main b62542c9, Mess-Wiese −256/−1082, 90 h nach de	geheilt c1667e9440	Abgabe w12-riesenhalm 05.11.: die Jugend traegt keinen Schaft, der Jungwuchs der Narbe waechst in seiner Form
+64	ohne	`stamm/siedlung-*.js` (der Dorf-Zug in der Fahrt) · seit w12-dorf-probe misst di	sprosse same.entfaltung.reise#2	Dorf-Zug in der Fahrt: 606 von 4 042 Bildern mit Luecke
+65	ohne	Verwitterung der Häuser · am Dorf −4,−4 (16 Häuser im 60-m-Kreis der Ort-Mitte −	sprosse same.gedaechtnis.alter#1	Albedo nach 30 d <= 0,008 je Lage (Richter Delta >= 0,02)
+66	05.11.	`stamm/daten.js:488-512` NAH_WIESE / `stamm/vegetation-wiese.js:409-452` `_wiese	sprosse same.massstab.spanne#1	daten.js NAH_WIESE / vegetation-wiese.js _wieseFern: Streckung nur am Abstand
+67	ohne	`foundry-core.js:2544` (die Nadel der L2) · `vegFarbe(0x2e5526)` ist ein Zwillin	sprosse same.massstab.spanne#1	foundry-core.js:2626/2735 vegFarbe(0x2e5526) Zwilling von phyto LC conifer (main: steht noch)
+68	ohne	material.K3#2 an der Radeon · Fichte@0,27 L1/L0 0,997 (22148924) gegen 1,158 (7a	apparat punkte-maschine	material.K3#2 Uhr 0,27 wackelt bei byte-gleicher Fichte
+69	ohne	`stamm/feld-leben.js` `_brandBild` × `_brandRauch` · ZWEI WIND-UHREN: Front und 	sprosse planet.kopplung.wetter-welt#2	feld-leben.js _brandBild x _brandRauch: zwei Wind-Uhren (w28-zeit-ein-kalender 584c2060 nennt die Wind-Uhr nicht; _bildZeit lebt in 10 stamm-Dateien)
+70	ohne	`meisterkarte-quelle/punkte/punkte.cjs` fahrtSumme · die GPU-Fahrt steht Radeon 	apparat punkte-maschine	punkte.cjs fahrtSumme 1798 von 1800 s
+71	ohne	lod.K4 (GTX-Blick w5-stufen) · Täter `f:birke`: 63 % der Wechsel-Pixel, die Kron	sprosse same.massstab.spanne#1	lod.K4 Taeter f:birke 63 % der Wechsel-Pixel
+72	ohne	haar.K5 · an der GTX steht kein Wolf der Herde im Bild (0 Befehle tier:wolf) — d	apparat punkte-maschine	haar.K5 Grenze tier <= 30 Befehle urteilt blind
+73	ohne	scripts/diag-takt-atem.cjs (Zweig w5-affekt-linse cdcf338f) · die Leinen-Linse (	faellt Atom-Decke fiel am 10.11.	diag-takt-atem Leinen-Linse kostet Atome der Decke; die Decke urteilt nicht mehr
+74	ohne	stamm/feld-nexus.js:332 `_composeNexusRule` · nur `source === "nexus"` sind Elte	sprosse erleben.schoepfen.gesetz#2	feld-nexus.js:332 _composeNexusRule: LLM-Regel vererbt nie
+75	ohne	spec/abnahme/ki-korpus.json:78 · der Bezug `gefuettert` enthält das nackte „gege	apparat wand	spec/abnahme/ki-korpus.json:78 Bezug gefuettert
+76	ohne	stamm/koerper-bewegung.js (freier Körper des Werks) · Steinplatte 4×4 m auf vier	sprosse erleben.schoepfen.hebel#1	koerper-bewegung.js Steinplatte auf vier Pfosten kippt und verschwindet (Richter: steht, traegt)
+77	ohne	/tmp/claude/w3/radeon-punkte.sh (Punkte-Worktree pm) · räumt nur UNGETRACKTE Mes	apparat punkte-maschine	radeon-punkte.sh raeumt nur ungetrackte Mess-Kopien
+78	05.11.	05.11. 20:05 Koordinator: gate:fenster-wechsel E Lauf (swiftshader, Kappe 1,25, 	sprosse same.entfaltung.reise#1	gate:fenster-wechsel Ufer: Wasser-Flaeche zeichnet nie (DER BAU STEHT NICHT) (unsicher)
+79	05.11.	05.11. 20:50 Koordinator (aus w12-proben-tempo2): streaming.K1#1/K2#1 headless R	apparat punkte-maschine	streaming.K1#1/K2#1 Fahrt mit wachsenden Orten
+80	05.11.	05.11. 20:50 Koordinator (aus w12-proben-tempo2 174365e5): fahrzeug.K2#1 (~290 s	apparat punkte-maschine	fahrzeug.K2/tiere.K5 Deckel durch Spiel-Takte
+81	05.11.	05.11. 21:25 Koordinator (OMEN f5db8d90): material.K1#2 und K3#2 auf der GTX 106	apparat punkte-maschine	material.K1#2/K3#2 GTX Frist reisst (Labor + Welt parallel)
+82	05.11.	05.11. 22:40 Koordinator (aus w12-unterwasser-probe 4f926fc1): leib.K3#2 Höhle m	sprosse erleben.bild.auge#2	leib.K3#2 Hoehle 0,03 statt 0,13, Spiel oder Probe ungeklaert (unsicher)
+83	05.11.	05.11. 23:35 Koordinator (aus w12-brand-halt 505d2704): seit w12-riesenhalm (z23	apparat wand	diag-stand-takt --brand MUTANTE-GESTALT nach w12-riesenhalm (unsicher)
+84	06.11.	06.11. Vorprüfung w12-menue (landet z243): `_schriftZensus().ueber` am Gerät 0 ·	sprosse same.preis.zugang#4	_schriftZensus ueber: Glyphen in px statt em (werkstatt-hud.js) (unsicher)
+85	06.11.	06.11. Vorprüfung w12-studio-buehne: die Garage auf der echten Radeon hängt an m	sprosse erleben.schoepfen.hebel#1	Garage haengt 120 s in createRenderPipeline auf der Radeon (Studio auf dem Spieler-Geraet nicht pruefbar)
+86	06.11.	06.11. w13-bach-klar: `stamm/bild-sicht.js:1417` und `:227` · der Wasser-Stoff v	sprosse leben.wasser.bild#1	bild-sicht.js:1417 und :227 zwei Optiken eines Wassers (Familie mit Nr 33)
+87	06.11.	06.11. w13-bach-klar: `scripts/lib/wasser-linse.cjs` wasserHoehle · K10 LEER, am	apparat wand	wasser-linse.cjs wasserHoehle K10 LEER am See
+88	06.11.	06.11. w13-haus-alter: `scripts/diag-chunk-satz.cjs:408` · das Einschwingen häng	apparat wand	diag-chunk-satz.cjs:408 Einschwingen haengt in der Cloud
+89	06.11.	06.11. w13-haus-alter: `phyto-core.js:5177` · die Faltung je Seh-Klasse tilgt di	sprosse same.gedaechtnis.alter#2	phyto-core.js Faltung je Seh-Klasse tilgt die Rolle je Ecke (Putz, Holz, Ziegel altern als EIN Stoff)
+90	06.11.	06.11. w13-jung-gestalt: `scripts/diag-pflanzen-nah.cjs:468` · baut P von Hand (	apparat wand	diag-pflanzen-nah.cjs:468 baut P von Hand (Zwilling der Praegung)
+91	06.11.	06.11. w13-kreatur-blick: die Nexus-Geburt fragt den Blick noch am Fuß-Punkt (`_	sprosse same.entfaltung.reise#1	Nexus-Geburt fragt den Blick am Fuss-Punkt (_kreaturImBlick) statt am Leib
+92	06.11.	06.11. w13-buehne-lack (landet z247, Labor = Welt): der Lack spiegelt den Himmel	sprosse erleben.bild.flaeche#5	Lack spiegelt den Himmel kaum (Glanz im Band)
+93	06.11.	06.11. w13-buehne-lack: 46 Pipelines der Garage synchron gebaut (35 im ersten Bi	sprosse erleben.schoepfen.hebel#1	Nachtrag zu Nr 85: 46 Pipelines der Garage synchron gebaut
+94	06.11.	06.11. w13-ankunft-faden: `stamm/koerper-leib.js:1970` feiner Leib (Ego: kein Pi	sprosse same.preis.ankunft#2	koerper-leib.js:1970 feiner Leib vor der Kontrolle gegossen
+95	06.11.	06.11. w13-ankunft-faden: `stamm/studio-gestalt.js:55` `_tickHuellenNach` 124–29	sprosse same.preis.ankunft#2	studio-gestalt.js:55 _tickHuellenNach 124-296 ms vor der Kontrolle
+96	06.11.	06.11. w13-ankunft-faden: `stamm/gelaende-fern.js:1782` `_fernRingDeckWache`/`_f	sprosse same.preis.ankunft#2	gelaende-fern.js _fernRingDeckWache/_fernRingY 202 ms vor dem Bild
+97	06.11.	06.11. w13-ankunft-faden: `stamm/bild-kosten.js:1304` die zwei Resolve-Stoffe de	sprosse same.preis.ankunft#2	bild-kosten.js:1304 zwei Resolve-Stoffe der TRAA bauen dasselbe Programm
+98	06.11.	06.11. w13-ankunft-faden: `stamm/bild-himmel.js:750` das erste Lade-Bild trägt H	sprosse same.preis.ankunft#2	bild-himmel.js:750 erstes Lade-Bild 953-1460 ms in EINER Aufgabe
+99	06.11.	06.11. 03:50 z245 (w13-kreatur-blick) ROT an zwei Main-Wacklern, je Versuch 1 un	apparat wand	Main-Wackler BRAND-ASCHE und Garage G10 (swiftshader-Zeit)
+100	06.11.	06.11. w13-dorf-strom: seit z244 (w11-fahrzeug, Antriebs-Gesetz) fährt der GT de	sprosse same.entfaltung.reise#2	Streaming-GT 63,8 m/s: Luecken-Bilder an main wie am Kopf
+101	06.11.	06.11. w13-dorf-strom: `voxel-worker.js:1001` der Wald-Faden setzt sein Gedächtn	sprosse same.entfaltung.gleichheit#2	voxel-worker.js:1001 Wald-Faden setzt Dart-Gedaechtnis bei jedem Erdbau neu (unsicher)
+102	06.11.	06.11. Verkehr (bericht/0611-verkehr.md): die VK-Linse (voll 8, Fahr-Linse des L	apparat wand	VK-Linse urteilt nicht deterministisch
+103	06.11.	06.11. Verkehr: Fußgänger gehen auf der Fahrbahn der Trasse östlich des Markts (	sprosse mensch.netz.verkehr#2	Fussgaenger auf der Fahrbahn, Fussweg und Trasse nicht aus EINER Wege-Quelle (Station pflicht.C#1 -> verkehr#2)
+104	06.11.	06.11. w13-fels-korn: keine Linse nennt einen Bau-Zweig des geteilten Stoff-Grap	apparat wand	keine Linse nennt einen Bau-Zweig, der in _sig (studio-stoff.js:531) fehlt
+105	06.11.	06.11. w13-wetter-gleich: `stamm/dirigent-takt.js:1514` der Wetter-Zug nimmt den	sprosse same.entfaltung.gleichheit#3	dirigent-takt.js:1514 Wetter-Zug nimmt den Wunsch je Seite (Wetter VERSCHIEDEN an Peers)
+106	06.11.	06.11. w13-wetter-gleich: `wetterSchreiber` bleibt „front“, wenn der Zug einen s	sprosse same.entfaltung.gleichheit#3	Nachtrag zu Nr 105: wetterSchreiber bleibt front
+107	06.11.	06.11. w13-wetter-gleich: Leben je Seite 9 → 1172 Zellen verschieden seit w13-br	sprosse same.entfaltung.gleichheit#3	Nachtrag zu Nr 105: Leben je Seite 9 -> 1172 Zellen verschieden
+108	06.11.	06.11. w13-wetter-gleich: diag-mp-sync (h) „Wurf in 40 Scheiben gleich false — T	sprosse same.entfaltung.gleichheit#3	Nachtrag zu Nr 105: diag-mp-sync (h) Taeter _worldRuleSeed
+109	06.11.	06.11. w13-erdbau-funktion: `stamm/gelaende-boden.js:478` der Genesis-Erdbau zie	sprosse same.entfaltung.gleichheit#2	gelaende-boden.js:478 Genesis-Erdbau zieht bei jedem Laden um (vor <-> nach Reload)
+110	06.11.	06.11. speicher.K3 (D) „jeder Stand des Speicher-Fadens ist die volle Serialisie	apparat wand	speicher.K3 (D) worldMeta Wackler
+111	07.11.	07.11. 00:00 WACKLER Erst-Zeichnungs-Wand Teil 2 BEWEIS-AUFNAHME (diag-hitch-tel	apparat wand	Erst-Zeichnungs-Wand Teil 2 Frist als Wanduhr
+112	07.11.	07.11. 04:40 klang.K2#1 BILD-Seite: das Laub/Gras-Bild der Station korreliert nu	sprosse leben.pflanzen.kraft#1	klang.K2#1 Bild-Seite: Laub/Gras korreliert 0,39-0,65 mit der Boee (Richter: Boee als wandernde Front)
+113	07.11.	07.11. 05:55 WACKLER Kreatur-Linse Teil 2 (voll 5/18 cpu), Selbsttest jagd: Muta	apparat wand	Kreatur-Linse Teil 2 Selbsttest jagd nicht trennscharf
+114	07.11.	07.11. 09:20 SCHÖPFER-AUGE (4 Funde) → Cloud w21: (1) ferne Wiesenstufe streckt 	sprosse same.massstab.spanne#1	Schoepfer-Auge 07.11.: ferne Wiesenstufe streckt sich, Baum-Stufen ohne Winter, Laub-Unterseite flackert
+115	07.11.	07.11. 13:40 Erst-Zeichnungs-Wand Teil 1 „UPLOAD-BYTES (Konsum)“ fällt in der CI	apparat wand	Erst-Zeichnungs-Wand Teil 1 UPLOAD-BYTES nur in der CI
+116	07.11.	07.11. 19:05 w22-pop-heil (Kopf b9f48350): lod.K2#1 Radeon bleibt ROT 0,0576/0,0	geheilt 4042a0c4aa	Abgabe w28-pop-treue: lod.K2#1 0,0592 -> 0,014 % (Soll 0,05 %), der ferne Wiesen-Saum am Stufen-Wechsel misst an der Saat
+117	07.11.	07.11. 20:25 Koordinator: Nachtrag zu w22-pop-heil — der Rest in Schritt 7 ist b	geheilt 4042a0c4aa	Nachtrag zu Nr 116 (Familie lod.K2#1 unter Soll)
+118	07.11.	07.11. 21:20 Koordinator (aus w22-t4-heil): stamm/koerper-bewegung.js _kamSaeule	sprosse erleben.spieler.praesenz#1	koerper-bewegung.js _kamSaeule eckige Huelle an Kanten (Richter: Kamera nie im Fels)
+119	07.11.	07.11. 23:10 Koordinator (aus w22-wiese-nachzug): stamm/wasser-zellen.js _wasser	sprosse same.preis.takt#2	wasser-zellen.js _wasserNetzGleichIn: Fern-Kacheln am Ufer bauen jeden Takt neu
+120	07.11.	07.11. Spielplatz-Bewegung flackert im Tier-Gang-Schritt ("❌ Bewegung: 35 Phasen	apparat wand	Spielplatz-Bewegung flackert auf swiftshader
+121	08.11.	08.11. Prüf-Bühne ≠ Spieler-Welt: Nexus wirkt in Linsen nach Wanduhr (24 s, diri	apparat wand	Pruef-Buehne != Spieler-Welt: Nexus in Linsen nach Wanduhr
+122	08.11.	08.11. Lf-Büschel der Nah-Wiese tragen ihre Grenze in Element 3 der vierten Matr	apparat wand	kamera-nah.cjs jeInstanz liest die vierte Matrix-Zeile verzerrt
+123	09.11.	09.11. 21:05 Koordinator: `meisterkarte-quelle/punkte/punkte.cjs` Fremd-Last-Zeu	apparat punkte-maschine	punkte.cjs Fremd-Last-Zeuge zaehlt Laeufer-Hilfsprozesse
+124	09.11.	09.11. 23:10 GTX-Läufer: `gate:pruefbuehne-licht` S0 Nacht ROT schon an main 78d	sprosse erleben.bild.auge#3	gate:pruefbuehne-licht S0 Nacht GTX 1050 abgesoffen 6,4 % (unsicher)
+125	10.11.	10.11. 02:00 Koordinator (aus w27-k7-l2-rand 71367ab5): `scripts/diag-koerper-st	apparat wand	diag-koerper-stand K7 loest nur +-40 % auf
+126	ohne	`spec/farbe/albedo-tafel.json` Mensch-Zeilen · ihre Quell-Stempel sind veraltet 	apparat wand	albedo-tafel.json Quell-Stempel veraltet
+127	ohne	`stamm/daten.js` TERRAIN_BUMP mulde/kavitaet/krume (w27-boden-nah-2, z358) · Him	sprosse erleben.bild.flaeche#1	daten.js TERRAIN_BUMP: Welt ~6 % heller als Labor (Albedo-Richter)
+128	ohne	Gesicht an der Kamera des Spiels im tiefen Schatten (Third, 6 m): Iris-Pixel R+G	geheilt ad7ca7db47	Nachtrag zu Nr 40 (Iris, Lippe, Hoehle im tiefen Schatten; mensch.K4#1 GRUEN)
+129	ohne	BELEGUNG im Ego-Lauf dorf (GTX 1050, an main): Pflicht außerhalb des Takts p95 2	sprosse same.preis.takt#2	BELEGUNG Ego dorf: Pflicht ausserhalb des Takts p95 2,6-3,1 ms
+130	ohne	`gate:naesse:echt` Wiese am ersten Ort der frischen Welt: einmal „Regenbild 1,27	apparat wand	gate:naesse:echt flattert (Regenbild 1,276 x Sonne)
+131	ohne	Probe/Werkbank: keine deterministische Aufnahme (Wind, Laub, Bewohner, Dunkel-Ra	apparat werkbank	keine deterministische Aufnahme, Basis gegen Basis 3,1-4,1 % verschieden
+132	ohne	TRAA-Fenster-Grenze: Bild-Leser nach dem Durchlauf (Kontakt-Pass, Spiegel/Rückst	sprosse erleben.bild.auge#1	TRAA-Fenster: Bild-Leser nach dem Durchlauf rechnen mit der ungefensterten Ansicht (unsicher)
+133	ohne	`scripts/lib/kamera-nah.cjs` Kronen-Hülle der Eintrags-Kiefer ±10 m gegen das Kr	apparat wand	kamera-nah.cjs Kronen-Huelle der Eintrags-Kiefer
+134	ohne	`zug.cjs` CI-Zeiten-Schritt (`scripts/ci-zeiten.cjs:102`): ein neuer, nie gemess	apparat ci	ci-zeiten.cjs:102 neuer Schritt ohne geschaetzt
+135	ohne	Fremd-Last-Zeuge (`punkte.cjs fremdUrteil`) machte jedes ROT unter Last UNGEMESS	apparat punkte-maschine	Fremd-Last-Zeuge fremdUrteil
+136	11.11.	11.11. foundry-halter (GTX 1050, Start-Spur von Chrome 148 ohne DevTools an 4e2d	sprosse same.preis.ankunft#2	studio-bruecke.js _foundryStart x Chrome Code-Cache-Faden 25,4 s (GTX 1050)
+137	11.11.	11.11. OMEN (horizont-gtx): `scripts/lib/shader-kosten.cjs` STOFFE.boden ist an 	apparat wand	shader-kosten.cjs STOFFE.boden ROT ohne CI-Leser
+138	11.11.	11.11. Koordinator: der Zug-Dienst lässt eine Abgabe im KONFLIKT gegen main stil	apparat zug-dienst	Abgabe im KONFLIKT bleibt still draussen
+139	11.11.	11.11. Koordinator (Radeon an 7aa4802d): Station ferne.K3#1 misst am Ort [-704.2	apparat punkte-maschine	ferne.K3#1 misst am Ort des Auto-Dorfs nichts
+140	11.11.	11.11. Koordinator: `scripts/diag-weltbild-frost.cjs` S2 zählt JEDES createShade	apparat wand	diag-weltbild-frost.cjs S2 zaehlt fremde createShaderModule
+141	11.11.	11.11. OMEN (frost-wand, main ab2f2eed, Größe M, zählt für Ankunft B): jedes geh	sprosse same.preis.ankunft#2	eigenes Vertex-Programm je Knochenzahl, Schweif und Straehne kommen Bilder spaeter
+142	11.11.	11.11. foundry-frueh (GTX 1050, Chrome 148 ohne DevTools, Start-Spur und Init-Pr	sprosse same.preis.ankunft#2	dirigent-ankunft.js _weltAnkunft baut den Avatar am Stueck (2,5 s)
+143	11.11.	11.11. foundry-frueh (GTX 1050), MEINE LESART, NICHT BEWIESEN: mit einem Gesetzb	sprosse same.preis.ankunft#2	_foundrySchale holt Gesetzbuch per Blob-URL, connect-src ohne blob: (index.html:35 auf main unveraendert), Platte still aus (fail-soft)
+144	11.11.	11.11. foundry-frueh (GTX 1050, echter Renderer, kalt, HDD): nach dem Schnitt st	sprosse same.preis.ankunft#2	18 s zwischen Buch und Weltbild nicht zerlegt
+145	11.11.	11.11. OMEN (frost-waerme, der CI-Deckel der Frost-Wand): `.github/workflows/che	apparat ci	check.yml:1310 timeout der Frost-Wand
+146	11.11.	11.11. OMEN (frost-waerme, der NaN-Abdruck in anderen Linsen): EIN grep über scr	apparat wand	NaN-Abdruck zaehler += a && b in Linsen
+147	11.11.	11.11. weltbild-kalt (GTX 1050, echter Renderer, 9c10af87): DAS ENDE JEDER ANKUN	sprosse same.preis.ankunft#2	42-48 createRenderPipelineAsync je Boot, Ende der Ankunft wartet auf Pipelines
+148	11.11.	11.11. weltbild-kalt (GTX 1050): die Foundry-Arbeit bis zum ersten Bild ist kalt	sprosse same.preis.ankunft#2	phyto-core.js bakeLeafAtlasBild / blattAtlasFracht 6-9 s Faden-Zeit
+149	11.11.	11.11. foundry-frueh / weltbild-kalt (GTX 1050) BEWIESEN (ersetzt meine Lesart v	sprosse same.preis.ankunft#2	Nachtrag zu Nr 143 (BEWIESEN: NetworkError unter der CSP)
+150	11.11.	11.11. weltbild-kalt (GTX 1050, echter Renderer, Zweit-Boot und kalt, Sonde FREI	sprosse same.preis.ankunft#2	jedes Standard-Programm uebersetzt denselben Kern von 65,5 KB neu
+151	11.11.	11.11. baum-programm Vorarbeit (GTX 1050, uebersetz-sonde: jeder Fragment-Text e	sprosse same.preis.ankunft#2	Nachtrag zu Nr 150: Uebersetzungszeit folgt dem Rumpf
+152	11.11.	11.11. OMEN (putz-wand, Offline-Prüfung des Fachwerk-Kerns unter 41 Regler-Sätze	sprosse mensch.bau.huelle#1	fachwerk-core.js geomsZuGruppe: Rundbau-Regler wirft TypeError in jeder Stufe (3733677a nennt nur den Taeter der Probe)
+153	11.11.	11.11. Verkehr, stadt-voll (Radeon, `node scripts/diag-fahr-leben.cjs --verkehr`	sprosse mensch.netz.verkehr#1	Stadt fliesst nur um den stehenden Spieler (edf321b0 versetzt den Richter, nicht den Verkehr) (unsicher)
+154	11.11.	11.11. Karten-Linie, gesehen am Bild (GTX 1050, main 523e3a38, echter Renderer, 	sprosse erleben.bild.auge#1	helle Karten-Linie in Horizont-Hoehe = Nachhall der TRAA-Geschichte (mit Berichtigung Nr 156)
+155	11.11.	11.11. Koordinator (Radeon, 12:01–12:30): EINE pid IST KEIN HALTER — Windows ver	apparat punkte-maschine	Baum-Sperre: pid ist kein Halter
+156	11.11.	11.11. BERICHTIGUNG zur Karten-Linie (die Zeile darüber, b1bf5f178): die helle w	sprosse erleben.bild.auge#1	Nachtrag zu Nr 154 (Berichtigung: Nachhall des Resolve)
+157	11.11.	11.11. Koordinator (Punkte-Maschine, die Mess-Dateien beider Karten gelesen): DE	faellt laut Zeile selbst geschnitten	vier Wurzeln des Mess-Apparats, alle in punkte-maschine geschnitten (punkte.cjs, Selbsttest je Fall)
+158	11.11.	11.11. Wurf im Gang, von außen gezählt (GTX 1050, echter Renderer, main e699a834	sprosse same.entfaltung.reise#1	dsl-insel zeichnet 1-2 Bilder lang nicht im Wurf-Pass (fieldAABB auf main nicht mehr gefunden) (unsicher)
+159	11.11.	11.11. GTX 1050 (w28-leben-vorbau, je 4 ↔ 4 kalt und Zweit-Boot gegen c0dc9417, 	sprosse same.preis.ankunft#2	GPU-Prozess uebersetzt in einer Schlange, Vorbau verschiebt das Weltbild +1,2 s
+160	11.11.	11.11. w28-loop-wurf (Zug z385 Radeon + Null-Seite, main e699a834): EIN STAND MI	sprosse same.entfaltung.akte#2	koerper-leib.js _koerperStudioDials: Stand mit Mensch-Praegung erwacht nicht (keine Abgabe nennt es) (unsicher)
+161	11.11.	11.11. BERICHTIGUNG zum Wurf der `dsl-insel` (die Zeile 816f5018): es entsteht N	sprosse same.entfaltung.reise#1	Nachtrag zu Nr 158 (Berichtigung: EIN Bau des Wurf-Programms)
+162	11.11.	11.11. OMEN (GTX 1060, z386 am Kandidaten 2cb2865b, echt-Job 43026236456 in drei	apparat geraet	OMEN echt-Job bis 2,1 GB an der Zusage-Grenze
+163	11.11.	11.11. Mischen der Pose-Wartenden (w27-traa-fenster 0710a518, Lauf 42823498092, 	apparat ci	gpu-probe.yml:300 Post verschweigt den fehler-Text von umstellen
+164	11.11.	11.11. Koordinator, das eigene Auge an der Stadt (Radeon 890M, echter Renderer, 	sprosse mensch.menge.bild#2	Bewohner im Stadt-Bild ab 10-15 m grobe Block-Figuren (Attrappen)
+165	11.11.	11.11. Koordinator, BERICHTIGUNG zu Punkt (4) der Zeile „das eigene Auge an der 	sprosse mensch.menge.bild#2	Nachtrag zu Nr 164 (Berichtigung Punkt 4: Geruest in Wandfarbe, fachwerk-core.js:176)
+166	11.11.	11.11. Cloud w28-baum-wechsel (lod.K5, Zwischenstände 1–3 in cloud-post/w28-baum	sprosse same.massstab.spanne#1	w28-baum-wechsel lod.K5: Vorlage reisst das Dreiecks-Band
+167	11.11.	11.11. BERICHTIGUNG der Kalt-Zahl von w28-bild-ganz und ein Fehler des Läufers (	apparat werkzeug	gc-zweit-ab.sh Kalt-Boot direkt nach Profil-Loeschen
+168	11.11.	11.11. Zweit-Boot, EINE lange Aufgabe gleich nach dem Buch (GTX 1050, echter Ren	sprosse same.preis.ankunft#2	Zweit-Boot: EINE Aufgabe 3,3-3,5 s nach dem Buch (unsicher)
+169	11.11.	11.11. Der Kern jedes Standard-Programms nach Bausteinen (GTX 1050, echter Rende	sprosse same.preis.ankunft#2	elf Standard-Programme Sigma 12,83 s Uebersetzung
+170	11.11.	11.11. Sage a, tue a — die Anker-Farben des Menschen lesen einen Seed ohne Schre	sprosse mensch.leib.verschieden#1	koerper-leib.js:1505 _menschAnkerFarben liest state.worldSeed ohne Schreiber (main: kein Schreiber in stamm/)
+171	11.11.	11.11. Berichtigung und Stand zu 9610f42d (die lange Aufgabe am Zweit-Boot, GTX 	sprosse same.preis.ankunft#2	Nachtrag zu Nr 168 (Berichtigung: 6 von 119 Zweit-Boots)
+172	11.11.	11.11. Berichtigung zu d14bd2e8 (der Kern nach Bausteinen, GTX 1050, main e6f0cf	sprosse same.preis.ankunft#2	Nachtrag zu Nr 169 (Berichtigung: drei Durchgaenge, Sigma 9,15 s)
+173	11.11.	11.11. Für den Zensus „jedes [ERROR] in den EINEN Sammler" (vergibt der Koordina	apparat welt-boot	welt-boot.cjs fehlerSammler: jedes [ERROR] in den EINEN Sammler
+174	11.11.	11.11. OMEN, der zweite Mess-Fall zum Fund „der echt-Job fährt allein bis 2,1 GB	apparat geraet	Nachtrag zu Nr 162 (OMEN zweiter Mess-Fall Zusage)
+175	11.11.	11.11. Die Shader-Kosten-Linse des Bodens ist am Kopf ROT, und kein Tor liest si	apparat wand	Nachtrag zu Nr 137 (Shader-Budget Boden ROT, kein Tor liest es)
+176	11.11.	11.11. w28-verkehr-takt (main bc0a4aed): die Wand VK wackelte NICHT am Takt (ged	sprosse mensch.netz.verkehr#1	siedlung-verkehr.js:719 _verkehrAnkunft sah ankommende Leiber vor dem Sprung (unsicher)
+177	11.11.	11.11. Berichtigung zu 2089115e (das Shader-Budget des Bodens): w28-baum-program	apparat wand	Nachtrag zu Nr 137 (Berichtigung zu 2089115e, Kaskaden-Schleife)
+178	11.11.	11.11. siedlung.K5#1 ist auf der GTX KEIN FALL DER KETTE 2d5f4146..2cb2865b (Kon	sprosse same.preis.ankunft#2	siedlung.K5#1 GTX: erstes Haus nach 6 497 ms (Soll <= 500)
+179	12.11.	12.11. Die Zerlegung je Faden an der schweren Welt des echt-Jobs (OMEN GTX, gb/h	apparat geraet	Nachtrag zu Nr 162 (Zerlegung je Faden am echt-Job)
+180	12.11.	12.11. w28-sim-takt-eich, die Kosten von w27-verkehr-leib (gelesen an main b1531	faellt Fehlmessung	keine Regression +35 %: Zahlen stammten aus Laeufen unter verschiedener Last (Zeile widerlegt sich selbst)
+181	12.11.	12.11. Eine Krone der Herbst-Wiese hat je Boot einen von ZWEI Zuständen, schon a	sprosse same.entfaltung.gleichheit#2	Herbst-Wiese: Krone traegt je Boot einen von zwei Zustaenden
+182	12.11.	12.11. gate:foundry-impostor ist an main lokal ROT (GTX 1050, `LINSE_GPU=softwar	apparat wand	gate:foundry-impostor C5 Wache der Reihen lokal ROT (swiftshader)
+183	12.11.	12.11. Der Graph der Lebens-Arena (Vögel, Fische, Bestäuber: `Arena[vogel, vogel	sprosse same.preis.ankunft#2	Graph der Lebens-Arena haengt am Gang des Boots (Fragment-Bytes wechseln) (unsicher)
+184	12.11.	12.11. Ein wiederholter „Kalt-Boot" ist an der GTX 1050 nicht kalt für die Karte	apparat werkzeug	wiederholter Kalt-Boot der GTX 1050 nicht kalt
+185	12.11.	12.11. Am Dorf steht je Boot ein blasser Fächer im Himmel oder nicht, schon an m	sprosse erleben.bild.himmel#1	Dorf: blasser Faecher im Himmel je Boot (unsicher)
+186	12.11.	**Die Nah-Wiese trägt zwei Programm-Formen (GTX 1050, 12.11., main 3552f058 und 	sprosse same.preis.ankunft#2	nahWiese zwei Programm-Formen je Boot (unsicher)
+187	12.11.	12.11. `mensch.K4#1` (Gesicht, Radeon) steht am RAND seines Bands und kippt je L	geheilt ad7ca7db47	Nachtrag zu Nr 40 (hoehleA am Rand; w28-iris-frei GRUEN)
+188	12.11.	12.11. `lod.K2#1` (Pop-Pixel beim Gehen, Radeon) streut um sein Soll 0,05 %/s: 0	geheilt 4042a0c4aa	Familie lod.K2#1 (Nr 116, 117): Abgabe w28-pop-treue lod.K2#1 0,0592 -> 0,014 % unter Soll 0,05 %
+189	12.11.	12.11. EINE Soll-Zahl in einer geteilten Linsen-Bibliothek macht nach R6 alle ih	apparat punkte-maschine	R6: Soll-Zahl in geteilter Linsen-Bibliothek macht 24 Stationen alt
+190	12.11.	12.11. Im geteilten Mess-Baum der OMEN (`n0611-pm`) reißen sich mehrere Mess-Ket	apparat punkte-maschine	geteilter Mess-Baum n0611-pm: Ketten reissen sich die Eintraege
+191	12.11.	12.11. Feldweg-Stummel und Gassen laufen in Häuser und sperren Kanten des Wege-N	sprosse mensch.netz.verkehr#1	Feldweg-Stummel laufen in Haeuser, 15 gesperrte Kanten an 5 Haeusern
+192	12.11.	12.11. Die Wagen der Stadt fielen gleichmäßig über JEDES Los, auch die Vorstadt 	sprosse mensch.netz.verkehr#1	Wagen fallen ueber jedes Los (496 m Fussweg zum Wagen); Rumpf 20f15043 nennt den Schnitt nicht (unsicher)
+193	12.11.	12.11. Ein Mess-Lauf der OMEN starb dreimal binnen 2 s nach dem Eintreffen eines	faellt Taeter geschnitten (Nr 328)	OMEN Exit 139 beim Weichen: gpu-lauf.sh faellte das Kind selbst
+194	12.11.	12.11. KORREKTUR zum Exit 139 der OMEN (18:36): belegt sind ZWEI Abstürze (17:33	faellt Taeter geschnitten (Nr 328)	Nachtrag zu Nr 193
+195	12.11.	12.11. Exit 139 der OMEN, Stand 19:20: DREI Fälle belegt (17:33:50, 17:58:53, 18	faellt Taeter geschnitten (Nr 328)	Nachtrag zu Nr 193
+196	12.11.	12.11. Zweite Wurzel der roten Verkehrs-Linse am Zweig w28-stadt-grammatik (OMEN	sprosse mensch.netz.verkehr#1	Wende des Torplatzes zuerst: Flotte reiht sich (Zweig w28-stadt-grammatik) (unsicher)
+197	12.11.	12.11. Exit 139 der OMEN, VIERTER Fall 22:33:22 (OMEN, roh `p3/n1211/sg/z54/bewo	faellt Taeter geschnitten (Nr 328)	Nachtrag zu Nr 193
+198	12.11.	12.11. `scripts/diag-haus-welt.cjs:2161` „W9 Plan: 0 Gründe bei der Ankunft der 	apparat wand	diag-haus-welt.cjs:2161 W9 Plan haengt an der Reihenfolge zweier Ankuenfte
+199	12.11.	12.11. `bild:stadt@0.5` fällt an main b560adaf auf der GTX 1060 durch die Abnahm	apparat wand	bild:stadt@0.5 Abnahme haengt am Stand der Wagen um 12 Uhr
+200	13.11.	13.11. 00:45 TÄTER lod.K4#1 (Radeon, aus den Mess-Dateien `messung/<kopf>-radeon	sprosse same.massstab.spanne#1	lod.K4#1 Luma-Sprung 2,19-2,26 % seit w28-laub-deckung (Soll < 2 %)
+201	13.11.	13.11. 00:45 vegetation.K1#1 (Radeon): die Naht bei 5 m sprang schon vor dem Tri	sprosse leben.pflanzen.dichte#1	vegetation.K1#1 Naht bei 5 m -18,3 % (Soll <= 15 %)
+202	13.11.	13.11. 00:45 tiere.K3#2 (Radeon, EINE Messung am 350e6b11, 12.11. 20:55): Gangar	apparat punkte-maschine	tiere.K3#2 Bild-Schritt ohne Abnahme-Datei
+203	13.11.	13.11. 00:45 spielgang.K3#1 (Radeon, 507beba6): INP Menü 376 ms (Soll 200), HUD 	sprosse same.preis.eingabe#1	spielgang.K3#1 INP Menue 376 ms (Soll 200), unter Last (unsicher)
+204	13.11.	13.11. 01:10 Der Stand der Mess-Profile trägt Tiere, die Wiederkehr gießt sie VO	sprosse same.preis.ankunft#2	kreatur-verhalten.js:2355 _bootDeferCreatures giesst Tiere vor dem ersten Bild (2,95 s)
+205	13.11.	13.11. 01:10 Cloud-Befund „Gesetz live tauschen" liegt vor (`w28-samen-live-taus	sprosse erleben.schoepfen.gesetz#2	Befund Gesetz live tauschen: Platte baut 113 von 121 neu, 46 von 49 Lese-Stellen am Chokepoint vorbei
+206	13.11.	13.11. Die Pose des Messorts stadt (`ortPose` „trasse", `stamm/siedlung-ort.js` 	apparat wand	Messort stadt: _ortPose trasse wandert 50 m zwischen zwei Laeufen
+207	13.11.	13.11. 02:40 Abgabe w28-leib-kanon cd256be6 im Code-Check ROT (Lauf 43337269631)	geheilt 10bb674280	Familie w28-leib-kanon (Nr 213, 219): Merge w28-leib-kanon in integ-probe 13.11. (z423), Masse und menge.gleich im Zweig geschnitten
+208	13.11.	13.11. 02:40 GTX 1050, Abgabe w28-tiere-nach-bild 0916311a: `stamm/speicher-welt	sprosse same.preis.ankunft#2	speicher-welten.js OFEN_MEMO_RUHEND: Wiederkehr giesst laut im Haupt-Faden (unsicher)
+209	13.11.	13.11. GEPARKT `w28-laub-luma` (WIP 8f62f28f, davor 1611b54b; Opus-Arbeiter, zwe	sprosse same.massstab.spanne#1	Nachtrag zu Nr 200 (GEPARKT w28-laub-luma: karteSaumSchluessel phyto-core.js:4340)
+210	13.11.	13.11. DER ORT VON lod.K4#1 HÄNGT AN DER SITZUNG, nicht an der Station: `station	apparat punkte-maschine	stationen/g3.js:928 Ort von lod.K4#1 haengt an der Sitzung
+211	13.11.	13.11. RICHTER VON HAND (Opus-Arbeiter, Radeon, Kopf 1cd1c408; roh im Scratch `r	faellt laut Nr 218 in punkte-maschine geschnitten	Richter von Hand: drei Werkzeug-Taeter, gezogen nach punkte-maschine 19e30d5d
+212	13.11.	13.11. w28-tiere-nach-bild 0916311a landet NICHT allein (Koordinator): die Bildf	sprosse same.preis.ankunft#2	Stand-Tiere 6,8-11,0 s nach dem Bild gezeichnet (Fuchs laeuft ungesehen heran)
+213	13.11.	13.11. w28-leib-kanon cd256be6, zwei echte Blocker (Schulter-Arbeiter, 3. Berich	geheilt 10bb674280	Nachtrag zu Nr 207 (zwei Blocker von w28-leib-kanon)
+214	13.11.	13.11. Der hohe glatte Block rechts im Bild `bild:stadt-voll@0.5` am Zweig w28-s	sprosse mensch.bau.huelle#1	haus_provenzalisch in Stufe 2 auf 25,9 m: fuenf Geschosse ohne Fenster und Dach
+215	13.11.	13.11. Die Flanke der Stadtmauer (`siedlung-mauer`, `stamm/siedlung-wege.js` `_k	sprosse erleben.bild.flaeche#2	Stadtmauer (_stlMauerBuild) im Eigenschatten fast schwarz, Hauswaende beige
+216	13.11.	13.11. Ein Bewohner liegt quer über der Motorhaube eines stehenden Wagens am Tor	sprosse mensch.fahrzeug.lenker#1	Bewohner liegt quer ueber der Motorhaube (_verkehrAnlegen) (unsicher)
+217	13.11.	13.11. Die Abnahme des Messorts stadt (`ortPose` „trasse", `scripts/lib/ausgabe-	apparat wand	ausgabe-aufnahme.cjs Abnahme stadt: Blickziel frei UND Fahrzeug >= 0,5 %
+218	13.11.	13.11. 03:52 GEZOGEN nach punkte-maschine (19e30d5d, linear auf 161d317b, ohne Z	faellt in punkte-maschine gezogen	19e30d5d, Selbsttest 226/226 (Chronik)
+219	13.11.	13.11. ABGABE w28-leib-kanon 49175b32 (Opus-Arbeiter, 65 min): (1) Der Kanon hat	geheilt 10bb674280	Nachtrag zu Nr 207 (Abgabe-Bericht w28-leib-kanon: Masse 83,7 -> 48,8 kg im Zweig geheilt, gelandet z423)
+220	13.11.	13.11. ZWEI ABGABEN des Mensch-Arbeiters (Opus): `w28-guss-bruch` 789feed8 (von 	geheilt 8f085847c2	Abgabe w28-guss-bruch: ein Guss, der wirft, bleibt gebrochen und wird beim Namen genannt (Merge 2eb03218)
+221	13.11.	13.11. KORREKTUR zu „W9 Plan kippte einmal": `scripts/diag-haus-welt.cjs:2161` „	apparat wand	Nachtrag zu Nr 198 (W9 Plan zweites Mal)
+222	13.11.	13.11. Exit 139 der OMEN, Stand 08:00: SECHS Fälle (12.11. 17:33, 17:58, 18:38, 	faellt Taeter geschnitten (Nr 328)	Nachtrag zu Nr 193
+223	13.11.	13.11. RICHTER 2 (Opus) zu bauen.K5#2: ZWEI Werkzeug-Täter, KEIN Bruch im Spiel.	apparat punkte-maschine	bauen.K5#2: #frage-dialog statt window.confirm, wetterHalten bleibt stehen
+224	13.11.	13.11. GEPARKT `w28-griff-ellbogen` (WIP dce88a79, von a071dc5e): Glied-Maß als 	sprosse erleben.spieler.hand#1	GEPARKT w28-griff-ellbogen: Unterarme kreuzen an der Schaukel (unsicher)
+225	13.11.	13.11. Das GPU-Schloss wurde zweimal als verwaist gelöst, während sein Halter li	faellt in koordination 5249422a geheilt	GPU-Schloss als verwaist geloest (Heilung steht in Nr 270)
+226	13.11.	13.11. WERKZEUG-TÄTER an der GPU-Probe (kein Zweig schuld): seit 87fc3d2e (12.11	geheilt 8f95537e85	Abgabe w28-leib-kanon: die Etikett-Zeile des Selbsttests ist kein Urteil im Kopf der Probe
+227	13.11.	13.11. BEFUND KARTEN-STUFE gelesen (Cloud, `w28-samen-karten-stufe` 5d6f899e, `s	sprosse leben.pflanzen.arten#1	Befund Karten-Stufe: Fichte Nadel-Grate, Buche Stern ohne Stamm (Silhouette)
+228	13.11.	13.11. pm: `bauen-K5-halt-faellt` (8afcd41a) steht in punkte-maschine (b9ca1de8,	faellt Chronik	pm bauen-K5-halt-faellt steht in punkte-maschine b9ca1de8
+229	13.11.	13.11. 11:34 GTX 1050 meldet „nach einem Neustart des Geräts wieder da" — Ursach	faellt durch Nr 233 geklaert	Neustart der GTX 1050 war der Schoepfer selbst
+230	13.11.	13.11. 11:59 ZUG SAH DEN GUSS-BRUCH NIE: der Betreff von 789feed8 begann mit ein	apparat zug-dienst	zug-dienst.sh bereit() schweigt bei Betreff ohne Abgabe
+231	13.11.	13.11. 11:59 Der Schnitt am Probe-Kopf steht: 8f95537e auf w28-leib-kanon (nur `	geheilt 8f95537e85	Nachtrag zu Nr 226 (Schnitt am Probe-Kopf)
+232	13.11.	13.11. 13:35 z423 GELANDET (main 1e00bfdb): w28-leib-kanon + w28-guss-bruch im S	sprosse mensch.leib.verschieden#1	z423 OFFEN im Bild: Schulter-Kugeln ohne Hals, Gesicht, Haende (Hemd fiel mit 19b8793e) (unsicher)
+233	13.11.	13.11. Der Neustart der GTX 1050 um 11:21 war der Schöpfer selbst (Start-Menü, E	faellt Chronik	Klaerung zu Nr 229, kein Fund
+234	13.11.	13.11. 14:05 Befund w28-karte-gestalt (WIP 8e308c2b, Code ed6d5371, KEINE Abgabe	sprosse same.massstab.spanne#1	Nachtrag zu Nr 200 (Befund w28-karte-gestalt geparkt)
+235	13.11.	13.11. Die Station lod.K1#1 ist an main aus ZWEI Gründen rot: Strauch 0,275 > 0,	sprosse leben.pflanzen.arten#1	lod.K1#1 Strauch laub-kante 0,275 > 0,22 (echt); Tafel-Pose ohne Bild (Werkzeug)
+236	13.11.	13.11. Ein Arbeiter ließ den Mess-Baum `.claude/worktrees/punkte-radeon` auf sei	apparat punkte-maschine	Mess-Baum punkte-radeon auf fremdem Kandidaten
+237	13.11.	13.11. 14:35 Abgabe w28-wesen-offen fd14dbea (GTX 1050): `_tickBootPhase3` warte	sprosse same.preis.takt#2	w28-wesen-offen: laengste Aufgabe nach dem Bild 219 -> 294-298 ms, keine Linse haelt sie (unsicher)
+238	13.11.	13.11. Exit 139 der OMEN, SIEBTER Fall 14:34:19 (roh `p3/n1211/sg/z94/kreatur-1.	faellt Taeter geschnitten (Nr 328)	Nachtrag zu Nr 193
+239	13.11.	13.11. Mehrspieler-Wand kippt in der CI (voll 14/18, Linux): „(f) Peers: Teil-Si	geheilt 2c9cc799f9	Familie Mehrspieler-Wand (Nr 242, 244, 253, 257): Abgabe w28-mp-boden (Merge 11ae29ce 14.11.), Wurzel _bodenKlasseAt benannt, gate:mp-sync 322/322
+240	13.11.	**13.11. 16:21 DER LAPTOP ZAHLT JE PROZESS-START UNTER `bash.exe` 1–2,6 s (Fakto	apparat geraet	Laptop: bash.exe 1-2,6 s je Prozess-Start
+241	13.11.	13.11. Stoff-Spike GTX 1050 (bericht/1113-stoff-stufe-null.md, WIP w28-stoff-stu	sprosse same.preis.ankunft#2	Stoff-Spike: 43 Pipelines, 1,99 MB Programm-Text vor dem ersten Bild
+242	13.11.	13.11. Mehrspieler-Wand kippt in der CI ohne Täter beim Namen („(f) Peers: leben	geheilt 2c9cc799f9	Nachtrag zu Nr 239
+243	13.11.	13.11. 16:45 Zweite Welle sh.exe eingebaut (11a2485f, 61 Dateien, Einbau 163 s s	apparat werkzeug	Nachtrag zu Nr 240 (zweite Welle sh.exe)
+244	13.11.	13.11. BERICHTIGUNG Mehrspieler-Wand an w28-stadt-grammatik 22872718: KEIN Kippe	geheilt 2c9cc799f9	Nachtrag zu Nr 239 (Berichtigung)
+245	13.11.	13.11. 16:39 Acht verwaiste Wächter beendet (Shell-Prozesse 117 → 92): vier wart	apparat werkzeug	verwaiste Waechter fertiger Arbeiter, kein Raeumer
+246	13.11.	13.11. 16:50 BEFUND „Worauf wartet das erste Bild" (GTX 1050, main a41ce72d, kal	sprosse same.preis.ankunft#2	Befund worauf wartet das erste Bild: 43 Pipelines, 16 fuer Buerger unter 0,1 %
+247	13.11.	13.11. 17:40 BEFUND w28-leib-nah (GTX 1050, bericht/1113-leib-nah-befund.md): di	geheilt 19b8793ec9	Abgabe w28-leib-nah: Poncho und Schuh entstehen aus der Haut, die Voxel-Huelle fiel (koerper-core.js:254 dicke-Zeile auf main fort)
+248	13.11.	13.11. ~17:15 Wort des Schöpfers (zweites): Stadt seit Tagen gleich, Kleider zer	faellt Chronik	Wort des Schoepfers 13.11. und sieben Lese-Arbeiter; der Kurs fiel am 19.11. in die Karte 2
+249	13.11.	**13.11. 17:58 DER KURS aus den sieben Blättern des Schwarms (bericht/1113-kurs-	faellt Plan ersetzt durch Karte 2	DER KURS 13.11. (Befund, Gesetzt, Kette Stadt, Tot-Liste); Scope ist allein die Meisterkarte 2
+250	13.11.	13.11. 18:33 `gate:kamera-leib:echt` K6 kippt auf der GTX 1050 am BAUM-GLEICHEN 	apparat wand	gate:kamera-leib:echt K6 kippt am baum-gleichen Kopf
+251	13.11.	13.11. 19:14 z425 GELANDET 18:47 (w28-platte-fein, main 36f9d45a); z426 fährt se	faellt Chronik	z425 gelandet, Zug-Code e197f391
+252	13.11.	13.11. 20:01 STUDIO (w28-studio-welt 6039dc13, Arbeiter 1): die EINE Bühne der H	sprosse erleben.schoepfen.hebel#1	Studio-Buehne: Fachwerkhaus Labor klar, Welt dunkelrot und flach (Labor = Welt) (unsicher)
+253	13.11.	13.11. 20:01 STADT-KETTE: die OMEN nennt die Wurzel der Mehrspieler-Wand — laten	geheilt 2c9cc799f9	Nachtrag zu Nr 239 (Wurzel _bodenKlasseAt, Schnitt _terrainSaatY)
+254	13.11.	13.11. 20:01 w28-karte-stamm 9597ffb2 neu abgegeben: Code-Check d730ad9d war ROT	faellt Chronik	karte-stamm (Merge e32b931b) und ziel-plan (Merge 543b5ed4) gelandet
+255	13.11.	13.11. 20:11 z426 GELANDET 20:02 (w28-leib-genom, main ec281422). MEIN AUGE am D	sprosse mensch.leib.verschieden#1	z426 Auge am Dorf: Ballon-Oberkoerper, schwebender Gehender, Haeuser als Kaesten (unsicher)
+256	13.11.	13.11. 20:11 BUCHUNGS-STAU (Fund): die Radeon-Fahrt 18:53–19:01 am 36f9d45a schr	faellt in punkte-maschine 191f0684 geloest	Buchungs-Stau (Loesung Nr 258)
+257	13.11.	13.11. KORREKTUR zur Mehrspieler-Wand (oben: „Ursache offen"): die Ursache ist b	geheilt 2c9cc799f9	Nachtrag zu Nr 239 (Korrektur: Ursache benannt)
+258	13.11.	13.11. 20:19 BUCHUNGS-STAU gelöst: punkte-maschine 191f0684 (Werkbank ohne Wort 	faellt Chronik	Buchungs-Stau geloest, Schleifen neu
+259	13.11.	13.11. 20:19 w28-tor-bruch daeaf9df: Code-Check voll 18/18 GRÜN, der Zug lässt i	faellt Zweig gelandet	w28-tor-bruch gelandet 14.11. (Merge 29e368d7), Wachstums-Wand neu als Wochen-Wand (z428)
+260	13.11.	13.11. 20:58 WORT DES SCHÖPFERS: „bei 98% fablenutzung alles beginnen zu sichern	faellt Chronik	Wort des Schoepfers zur Sicherung bei 98 %
+261	13.11.	13.11. 21:04 GESICHERT bei Fable 97 % (94 % um 20:55): vier lokale Arbeiter gest	faellt Chronik	gesichert bei Fable 97 %
+262	13.11.	13.11. 22:20 KONTO 13 beginnt (Fable 1 %, Reset 19.11. 19:00 MEZ). Der Plan blei	faellt Chronik	Konto 13 beginnt, KURS-KONTO13 ersetzt durch Karte 2
+263	13.11.	13.11. 22:56 SCHNITT 3b gelandet (Kurs Konto 13): die Buchung urteilt je Kriteri	apparat buchung	Schnitt 3b: Buchung je Kriterium, offen die Heil-Regel aus Schnitt 3
+264	13.11.	13.11. 22:37 git-Last am Laptop: 148 fsmonitor-Dämonen (1,5 GB) + ein verwaister	apparat geraet	148 fsmonitor-Daemonen am Laptop
+265	ohne	`punkte.cjs` Selbsttest „LEBENSZEICHEN DES ZEUGEN“ (um :7416) · fiel 1 von 2 Läu	apparat punkte-maschine	punkte.cjs Selbsttest LEBENSZEICHEN DES ZEUGEN unter Last
+266	ohne	`foundry-core.js:9294` `km = "stoff_" + hex` · die Stoff-Klasse des Kleids ist a	sprosse mensch.leib.stoff#1	foundry-core.js:9294 km = stoff_ + hex: Stoff-Klasse des Kleids ist allein die Farbe (unsicher)
+267	ohne	`stamm/koerper-fahrt.js:271`, `stamm/koerper-leib.js:444` · der Tuch-Löser nimmt	sprosse mensch.leib.stoff#2	koerper-fahrt.js:271 Tuch-Loeser nimmt jedes geskinnte stoff-Mesh, Schuh der L1 folgt dem Kleid
+268	14.11.	14.11. 03:08 z428 GELANDET, main 69bdc04c (V18.546.277): w28-wand-woche (die Wac	faellt Chronik	z428 gelandet
+269	14.11.	14.11. 00:15 FUND Himmel (Spike Schnitt 11): `_einmalRender` (stamm/bild-kosten.	geheilt a965cd36a8	Abgabe w28-tafel-ganz (Psi_ms leer 6 von 6 -> 0 von 6) und w28-wolke-licht 61eb11d0 (Kern 5,8 -> 1,3 x Karte)
+270	14.11.	14.11. 02:12 GPU-SCHLOSS geheilt (koordination 5249422a, installiert, Radeon-Sch	faellt in koordination 5249422a geheilt	GPU-Schloss verwaist() (Chronik der Heilung)
+271	14.11.	14.11. 02:40 Zug-Sammeln 679 s → 403 s (koordination fe0f4a6a, NOCH NICHT instal	apparat zug-dienst	diag-betriebsgesetz.cjs rechnet den Wochen-Stand je Kandidat neu
+272	ohne	gtx1050-Läufer, `bild:genesis@0.5` als ERSTER Schuss: „kein portal-membran im Bi	geheilt 7b6751c6c8	Abgabe w28-welt-steht: das Fenster jedes wachen Tors zaehlt im EINEN _weltOffen
+273	ohne	Wackler der vollen Batterie, je im Neulauf GRÜN: Mehrspieler-Wand (w28-kampf-lin	apparat wand	Wackler der vollen Batterie (Nexus-Erneuerung, biss-reh, klick-horizont)
+274	ohne	`scripts/lib/abnahme-urteil.cjs:408` `klassenTeilung` teilt die Klasse nach Bild	apparat wand	abnahme-urteil.cjs:408 klassenTeilung nach Bild-Differenz
+275	ohne	w28-baum-ganz (WIP 850bfcf2, NICHT landen): Karte nach eigener Deckung + `hd` to	sprosse leben.pflanzen.arten#1	w28-baum-ganz WIP: Fichte als gestapelte Teller am Pfahl, Rand der Laub-Gestalt fehlt
+276	14.11.	14.11. 09:00 STAND: main 90c90181, sechs Züge seit 03:08 (z428 wand-woche · ziel	faellt Chronik	STAND 14.11. 09:00, sechs Zuege
+277	14.11.	PFLICHT E, VERWORFEN NACH GEGENPROBE (14.11., Radeon, je ABAB — nicht noch einma	faellt verworfen nach Gegenprobe	PFLICHT E: drei Hebel gemessen und verworfen (Negativ-Befund)
+278	ohne	PFLICHT E, GEMESSENE LAGE: Wiese Ego GPU ~28 ms je Bild, davon Laub 18,2 ms (Bau	sprosse same.preis.takt#1	Wiese Ego GPU ~28 ms, Laub 18,2 ms, Karten 14,6-fach gestapelt
+279	ohne	PFLICHT E, OFFENE HEBEL an der Wiese (ungemessen, je erst Spike): Karten-/Laub-I	sprosse same.preis.takt#1	Nachtrag zu Nr 278 (offene Hebel an der Wiese)
+280	ohne	Wiese: die Zacken im Bild sind die SCHALE (`stamm/daten.js:571–581`, `_wieseScha	geheilt 7ccf62000c	Abgabe w28-wiese-schale (Merge 46aa6437 14.11.): die Zacken der Schale _wieseSchale fielen
+281	ohne	„Welt steht“ zählte nur Gesetztes, nie Gezeichnetes: die Tor-Membran entsteht er	sprosse same.preis.ankunft#2	Rest nach 7b6751c6 (w28-welt-steht): Fege-Takt _standGeht 38 Stellen falsches nichts mehr offen (unsicher)
+282	14.11.	Soll-Tafel an main 5096d179 (14.11., alt ↔ exakter Richter in EINER Welt): kein 	apparat wand	Soll-Tafel: vier Stationen neben ihrem Mass
+283	ohne	Mensch (GTX 1050, an main): der Afro trägt den Haar-Ton über Wange, Kiefer und H	geheilt 73113dc97b	Abgabe w28-gesicht (Lid, Haar-Grenze in allen Stufen) und w28-gesicht-grob 285780f3 (Grobstufe giesst den Kopf wie die nahe)
+284	13.11.	**OMEN, Wurzel des Stillstands:** landung-dienst und Macher teilen EIN GPU-Schlo	faellt in koordination 1f82cb33 geheilt	landung-dienst und Macher teilen das GPU-Schloss (Heilung Nr 317)
+285	ohne	**Kette statt Spuren:** stadt-grammatik → stoff-fuge → Stadt an die Ankunft lag 	faellt Chronik	Kette statt Spuren (Grammatik gelandet 20f15043)
+286	13.11.	**Messplatz-Blick (koordination dbcb53aa):** (1) der Blick holte den Puls nach `	faellt in koordination dbcb53aa geschnitten	Messplatz-Blick refs/blick-puls
+287	ohne	**Lehre für den Koordinator:** ein Auftrag an ein Gerät ohne Wecker ist kein Auf	faellt Lehre kein Fund	Lehre fuer den Koordinator (Wecker je Auftrag)
+288	ohne	**`w28-wiese-schale` 97df3853 gehalten** (WIP darüber): am Dorf-Hang sind die Sä	geheilt 7ccf62000c	w28-wiese-schale: Boden-Pixel 20-40 m 15,8 % -> 1,7 %, gelandet 14.11.
+289	ohne	**STADT-MASSSTAB (Mess-Spike, Radeon, im Spiel, Messort stadt-voll, Wort „dorf 7	geheilt b0f25c2db4	Familie Stadt-Massstab (Nr 296-299): Abgabe w28-stadt-funktion (Stadt als Funktion ueber Vierteln) und w28-gruendung-flach 0c2a21b7 (Export 3000 Haeuser 70-81 s -> 22 s)
+290	ohne	**HIMMEL, graue Platte (GTX 1050, main cec92db1, dorf Uhr 0.5, 4 von 13 frischen	sprosse erleben.bild.himmel#1	bild-sicht.js Panorama-Draw des Feld-Passes: graue Platte im Himmel (4 von 13 Starts) (unsicher)
+291	ohne	**WIESE, VERWORFEN NACH MESSUNG (nicht noch einmal versuchen):** den Ring 20–40 	faellt verworfen nach Messung	Ring 20-40 m mit echten Bueschen: 5 x Dreiecke, Negativ-Befund
+292	ohne	**MENSCH, Begegnung in der Gruppe (OMEN, an der Grammatik gefunden):** der Fünft	sprosse mensch.geist.gespraech#1	der Fuenfte einer Gruppe dreht den Kopf nicht (nahLeiber 4, Richter Kopf-Zuwendung)
+293	ohne	**DORF-BODEN liest als Rauschen** (Bildpaare stoff-fuge, Ego am Dorf): die Fläch	sprosse same.gedaechtnis.pfad#2	Dorf-Boden liest als Rauschen: kein Weg, Tritt, Hof
+294	14.11.	**PULS-AUSFALL (14.11. früh):** `schloss-puls.cjs` initialisierte sein Bare-Repo	faellt in koordination c4e05444 geheilt	schloss-puls.cjs Bare-Repo halb angelegt
+295	ohne	**ROT-TEXT (dieser Commit):** `rot-text.cjs` blendete jede Zeile mit „Selbst-Tes	faellt im selben Commit geschnitten	rot-text.cjs blendete Selbsttest-Zeilen aus (koordination)
+296	ohne	**TÄTER der 171 s:** `wandLaternen` → `fremd` (`fachwerk-core.js:7900`) prüft je	geheilt 0c2a21b714	Nachtrag zu Nr 289: Taeter der 171 s wandLaternen N^2, Abgabe w28-gruendung-flach
+297	ohne	**SPIKE, drei Fälle:** (1) Abfrage „welche Viertel im Radius 500 m“ bei 10⁴ / 10	geheilt b0f25c2db4	Nachtrag zu Nr 289 (Spike Viertel)
+298	ohne	**ENTSCHEIDUNG:** der Schnitt sitzt an `exportSettlement` (`fachwerk-core.js:827	geheilt b0f25c2db4	Nachtrag zu Nr 289 (Entscheidung exportSettlement -> viertel())
+299	ohne	**Ungemessen:** Worker-Transfer, Trassen-Runden je Wort, `_ortWahl` am echten Gr	geheilt b0f25c2db4	Nachtrag zu Nr 289 (Ungemessenes der Viertel-Gruendung)
+300	ohne	**begegnung, das Gesetz steht aus:** wen der Spieler anläuft und ansieht, ist ei	sprosse mensch.geist.gespraech#1	Nachtrag zu Nr 292 (begegnung: nahLeiber 4, Bedeutung schlaegt den Blick)
+301	ohne	**Fenster, Port, pid:** 10:58:33–15:16, `node scripts/werkbank.cjs start --port 	faellt im Dienst geschnitten	verwaiste Werkbank-Welt neben dem Schloss; welt-wache.sh und Puls melden Welten (Nr 303, 304)
+302	ohne	**Folge:** jede Millisekunden-Zahl der GTX 1060 aus dem Fenster zählt als UNGEME	faellt im Dienst geschnitten	Nachtrag zu Nr 301 (Folge fuer die Zahlen der GTX 1060)
+303	ohne	**Lehre, an der Wurzel:** eine Welt lebt nie ohne Schloss. `zug/dienst-omen/welt	faellt im Dienst geschnitten	Nachtrag zu Nr 301 (welt-wache.sh, kette-zurueck.sh)
+304	14.11.	**14.11. Wächter (Puls je Gerät):** `schloss-puls.cjs` trägt `welten` (lauschend	faellt im Dienst geschnitten	Nachtrag zu Nr 301 (schloss-puls.cjs welten, wache-geraete.cjs)
+305	ohne	**Drei Fehler, ein Dienst:** (1) `landung-dienst.sh` und der Macher teilten das 	faellt im Dienst geschnitten	drei Fehler im OMEN-Dienst, Schnitt gemein.sh schleife_lebt (Nr 306, Heilung Nr 317)
+306	ohne	**Schnitt:** `gemein.sh schleife_lebt` = EINE lebt-Regel (pid + Start, Abbild ge	faellt im Dienst geschnitten	Nachtrag zu Nr 305 (Schnitt)
+307	11.11.	**Was steht:** `p3/dienst-omen/zustand/landung.out` trägt genau zwei Zeilen — „d	faellt Fehlmessung	landung.out: drei Tage alte fork-Zeilen, kein Befund
+308	14.11.	14.11. 18:41 `gate:kamera-leib:echt` K6 „DIE WELT STEHT NICHT … Fege-Takt nahWie	apparat wand	gate:kamera-leib:echt K6 zweiter Fall (Familie Nr 250)
+309	14.11.	14.11. 19:40 VERDACHT an der zeitlichen Auflösung (TAAU, Skala 0,75; GTX 1050, w	sprosse mensch.leib.gesicht#1	TAAU: helle Teil-Bildpunkte (Augenweiss) kommen im Bild nicht an (unsicher)
+310	14.11.	14.11. 20:45 WANDUHR `voxel-worker ortWahl` (spec/uhr/geraetezeit.json, Grund me	apparat wand	spec/uhr/geraetezeit.json voxel-worker ortWahl 6 Leser
+311	14.11.	14.11. 18:25 EINMAL ROT UNTER FREMDER LAST, kein Neulauf verlangt (GTX 1050, w28	apparat welt-boot	Nachtrag zu Nr 11 (Absturz: Prozess unbekannt)
+312	14.11.	14.11. 22:44 WACKLER `gate:chunk-satz` (e) „der Wiederaufbau kehrt in den Satz z	apparat wand	gate:chunk-satz (e): Tier wird waehrend des Wartens geboren
+313	14.11.	14.11. 22:40 DIE WARTEZAHL DES MACHERS nach dem Fall von landung.halt (21:44, Wo	faellt in koordination 1f82cb33 geheilt	Wartezahl des Machers 1080 s -> 48 s (Nr 317)
+314	14.11.	14.11. 23:13 ZIEGEL-RELIEF ALS LICHT (w28-stoff-fuge, drei Versuche, Zweig gehal	sprosse mensch.bau.huelle#1	Ziegel-Relief als Licht: drei Versuche an w28-stoff-fuge, nicht gelandet (unsicher)
+315	14.11.	14.11. 23:30 ENTSCHEID DACH (Koordinator): `w28-stoff-fuge` (Kopf fe5d33aa = b4a	sprosse mensch.bau.huelle#1	Nachtrag zu Nr 314 (Entscheid Dach: stoff-fuge springt am Stufen-Wechsel)
+316	15.11.	15.11. 00:30 FUND, der den Spieler trifft (GTX 1050, w28-probe-schirm 68df6ac0 ü	faellt Fehlmessung	Pop 30-fach: Berichtigung Nr 320 (eigenes /fenster als Ursache)
+317	15.11.	15.11. 00:40 GEHEILT (koordination 1f82cb33 + 8e4b5af1, Dienst installiert 1f82c	faellt Chronik der Heilung	koordination 1f82cb33 + 8e4b5af1
+318	15.11.	15.11. 00:55 OFFEN nach w28-probe-schirm (GTX 1050, 68df6ac0), zwei Reste dersel	apparat wand	ausgabe-aufnahme.cjs Mess-Satz wartet weder __weltStehtWarten noch schirmRot
+319	15.11.	15.11. 00:50 FUND am Gesicht, der den Spieler trifft (GTX 1050, w28-gesicht-grob	sprosse mensch.leib.gesicht#2	foundry-core hautTonAn: Untergesicht des hellen Bewohners dunkel
+320	15.11.	15.11. 02:40 BERICHTIGUNG zur Zeile vom 15.11. 00:30 (Pop 1,6–1,7 % statt 0,05 %	faellt Fehlmessung	Berichtigung zu Nr 316
+321	15.11.	15.11. 02:40 OFFEN am Gesicht des Bewohners, benannt vom Koordinator am Bild pro	sprosse mensch.leib.gesicht#2	Block-Kiefer und Schnipsel-Kappe (Richter: Haar ohne Helm)
+322	15.11.	15.11. 03:01 RÜCKFALL nach w28-probe-schirm (Koordinator Radeon, main 01a6714a),	geheilt 5c311a6840	Abgabe w28-fenster-wechsel: /fenster laesst die Welt nur nach einem Wechsel leben, Mess-Sitzung antwortet in 34-216 ms
+323	15.11.	15.11. 03:01 FUND aus der Abgabe w28-stadt-funktion (OMEN, bericht/1115-stadt-fu	sprosse same.entfaltung.reise#1	stadt-funktion _bauer: Zug wartet ohne Ende, Viertel steht nie vor dem Blick
+324	15.11.	15.11. 03:20 GEGENPROBE gate:kamera-leib:echt K6 (GTX 1050, zwei getrennte Bäume	apparat wand	Nachtrag zu Nr 250 (K6 Gegenprobe)
+325	15.11.	15.11. 03:55 OFFEN am getragenen Leib der zeitlichen Auflösung (GTX 1050, main 0	sprosse erleben.bild.auge#1	_traegerPassung / _traegerTakt: Kopf nicht getragen (1 von 128) (unsicher)
+326	15.11.	15.11. 06:00 STARB BEIM WEICHEN, weiter ungeklärt (OMEN, `p3/messplatz/dienst.lo	faellt Taeter geschnitten (Nr 328)	STARB BEIM WEICHEN 12 Faelle
+327	15.11.	15.11. 07:30 FUND aus w28-himmel-korn (lokaler Champion Radeon, vision/licht/ber	apparat wand	gate:schatten-terminator (T): ausgabe-aufnahme.cjs:323 wendet den Tag neu an
+328	15.11.	15.11. 12:10 STARB BEIM WEICHEN — TÄTER GEFUNDEN UND GESCHNITTEN (OMEN; schließt	faellt Taeter geschnitten	gpu-lauf.sh faellte das Kind selbst (stderr in geteilter Leitung), geschnitten im Dienst
+329	15.11.	15.11. 12:20 „`/bild` wartet vergebens — Fege-Takt streuLod wartet“ in der Netz-	sprosse mensch.stadt.groesse#3	Welt-March: Kapsel-Liste 8187 von 8192 erschoepft (dienst.js:2042) (unsicher)
+330	15.11.	15.11. 12:32 K6 (gate:kamera-leib:echt) KIPPT UNTER LAST, AN MAIN WIE AM ZWEIG —	apparat wand	Nachtrag zu Nr 250 (K6 kippt unter Last an main wie am Zweig)
+331	15.11.	15.11. 13:35 DIE FELD-LISTE DES WELT-MARCH STEHT AN DER DECKE — an main, nicht g	sprosse mensch.stadt.groesse#3	Nachtrag zu Nr 329: Feld-Liste des Welt-March 4089 von 4096 (dienst.js:204)
+332	15.11.	15.11. 13:35 gelaende.K2#1 (Sprosse erdbau der Meisterkarte 2) BLEIBT AN DER GTX	sprosse mensch.nahrung.erdbau#1	Station gelaende.K2#1 ohne Akte an der GTX: Ferne wirft Cannot read properties
+333	15.11.	15.11. 14:26 DIE PASS-STEMPEL SIND AN DER RADEON 890M KEINE GPU-ZEIT — nicht ges	apparat werkzeug	Pass-Stempel an der Radeon 890M sind keine GPU-Zeit
+334	15.11.	15.11. 14:26 „Bild p95 ≤ 33 ms“ REISST AM RASTER DES SCHIRMS — nicht entschieden	apparat buchung	Bild p95 <= 33 ms reisst am Raster des Schirms (richter-akte)
+335	15.11.	15.11. 14:55 JEDE DRITTE PRÄGUNG KEHRT HEIM, EIN VIERTEL DAVON AN ORDNUNG — nich	apparat wand	jede dritte Praegung kehrt heim, ein Viertel an Ordnungs-Waenden
+336	15.11.	15.11. 16:10 ZWEI GRÜNE ZWEIGE SUMMIEREN SICH AN DER WERKBANK ZU ROT — an `w28-p	apparat wand	werkbank.cjs Decke 4000 Zeilen: zwei gruene Zweige summieren sich zu ROT
+337	15.11.	15.11. 16:05 DIE STREU HÄNGT VON DER REIHENFOLGE AB — nicht geschnitten (Arbeite	sprosse same.entfaltung.gleichheit#2	_disposeAllScatterRegions: Streu haengt von der Reihenfolge ab
+338	15.11.	15.11. 16:50 DER WECKRUF DES CULLS WECKT SEINEN TAKT NICHT — beim Namen, geschni	geheilt 19ac21b3a8	Abgabe w28-cull-weckruf: der Weckruf des Culls weckt seinen Takt
+339	15.11.	15.11. 16:45 DER BESONNTE FELS VERLIERT SEIN KORN HINTER DEM STOFF (`himmel-korn	sprosse erleben.bild.flaeche#1	besonnter Fels verliert sein Korn (offen abgegeben mit w28-himmel-korn bcef4644)
+340	15.11.	15.11. 16:42 DER WELT-WECHSEL HÄLT DIE ALTE WELT (`reise:speicher-am-sprung`) — 	sprosse same.preis.speicher#5	Welt-Wechsel haelt die alte Welt: Heap 500 -> 1 975 MB ueber fuenf Spruenge (w28-reise-raeumt nicht gelandet)
+341	15.11.	15.11. 16:42 WAS AM ORT STEHT, LIEST DEN ORT NICHT (`reise:ort-liest-klima`) — i	geheilt eb8f82c7ad	Abgabe w28-reise-ort: was am Ort steht, liest das Gesetz des Orts
+342	15.11.	15.11. 16:49 FABLE BRENNT ZEHN PUNKTE JE STUNDE — Regel gesetzt, nicht gebaut: W	faellt Chronik	Fable-Verbrauch, Modell-Regel
+343	15.11.	15.11. 19:40 DIE RANG-WAHL DES WALD-FADENS HATTE NIE EINE WAHL — beim Namen, ges	geheilt b249949b22	Abgabe w28-wald-rang: der Wald-Faden rechnet wieder nah zuerst
+344	15.11.	15.11. 20:27 18 538 PACK-DATEIEN IM HAUPT-KLON, JEDER git-RUF 9 s (`maschine:git	apparat geraet	18 538 Pack-Dateien im Haupt-Klon
+345	15.11.	15.11. 20:27 DIE ALTEN RENDER-OBJEKTE HÄNGEN AN GETEILTEN HÖRERN (`reise:speiche	sprosse same.preis.speicher#5	Nachtrag zu Nr 340 (alte Render-Objekte an geteilten Hoerern)
+346	15.11.	15.11. 20:27 DER ROTE TEXT VERSCHWEIGT DEN WIRKLICHEN TÄTER HINTER EINEM MEHRZEI	apparat zug-dienst	rot-text.cjs verschweigt den Taeter hinter mehrzeiligem Stapel
+347	15.11.	15.11. 21:25 DER STAND-LAUF DIREKT NACH DEM ERWACHEN MISST DEN REGLER, NICHT DIE	apparat wand	stadt:takt-groesse: Stand-Lauf nach dem Erwachen misst den Regler
+348	15.11.	15.11. 21:45 DER KNOTEN-BAU VERHUNGERT IN DER FRIST DES LADE-BILDS — beim Namen,	sprosse same.preis.ankunft#2	bild-kosten.js _knotenRate: Knoten-Bau verhungert in der Frist des Lade-Bilds
+349	15.11.	15.11. 22:00 DAS BILD-BUDGET GANZ FÜR DEN KNOTEN-BAU BEWEGT DIE ANKUNFT NICHT, E	faellt verworfen nach Messung	Bild-Budget ganz fuer den Knoten-Bau verlaengert die Ankunft (gesetzt und zurueckgenommen)
+350	15.11.	15.11. 22:20 DAS SPÄTESTE GLIED DER FOUNDRY IN DREI ZAHLEN — sie rechnet, sie wa	sprosse same.preis.ankunft#2	spaetestes Glied der Foundry: 13 Baum-Koerper L1 spaet bestellt
+351	15.11.	15.11. 23:20 DIE PUMPE DER FOUNDRY BINDET VOR DEM BILD ZWÖLF AUFTRÄGE AN EINE BA	sprosse same.preis.ankunft#2	studio-bruecke.js _foundryPumpe bindet zwoelf Auftraege an eine Bahn (WIP w28-ankunft-faden, nicht gelandet)
+352	15.11.	15.11. 23:58 DIE KALTE ANKUNFT IST AN DER GANZEN MASCHINE GESÄTTIGT, NICHT AM HA	sprosse same.preis.ankunft#2	kalte Ankunft an der ganzen Maschine gesaettigt (130 CPU-s in 21 s)
+353	16.11.	16.11. 00:40 DIE STUDIOLOSEN ALTLASTEN BEIM NAMEN — 24 Funde, 10 heute sichtbar,	sprosse erleben.schoepfen.hebel#1	24 studiolose Altlasten beim Namen (Teile ohne Studio-Gesetzbuch) (unsicher)
+354	16.11.	16.11. 00:58 DIE FERN-BAHNEN VOR DEM BILD, UND DIE BERICHTIGUNG DER ZEILE VOM 15	sprosse same.preis.ankunft#2	Feld-Bahn vor dem Bild: zelleNeu baut Talprofile (6,4-6,7 CPU-s hoehe)
+355	16.11.	16.11. 01:55 NAHE BEWOHNER STEHEN MIT ABGESPREIZTEN ARMEN, FERNE MIT ARMEN AM KÖ	sprosse mensch.menge.bild#4	nahe Bewohner Arme 35 Grad ab, ferne am Koerper: Sprung an der Nah-Grenze (Richter: 0 Ploppen am Uebergang)
+356	16.11.	16.11. 02:45 DAS TUCH-GITTER WIRD AM DORFPLATZ LAUFEND NEU GEBAUT — 9,5 MB/s Mül	sprosse same.preis.speicher#1	koerper-core.js _tuchGitterStufe: Tuch-Gitter am Dorfplatz 9,5 MB/s Muell
+357	16.11.	16.11. 02:20 · `gelaende-core.js` `netzStufe` / voxel-worker `fernAuftrag` „feld	sprosse erleben.bild.ferne#3	gelaende-core.js netzStufe: Ebene 1 des Netzes jenseits 24 km (p95 38 m Abweichung) (unsicher)
+358	16.11.	16.11. 03:00 · `stamm/gelaende-fern.js` `_fernRingRefresh` :1984–1992 · `_fernRi	faellt offen gestrichen	Ring-Rang am 16.11. 02:55 offen gestrichen (Entscheidung steht in der Zeile)
+359	16.11.	16.11. 04:05 · Siedlungs-Plan im Zeitsprung (Station `karte2.mensch.zeit.palimps	sprosse mensch.zeit.palimpsest#2	Station karte2.mensch.zeit.palimpsest#2: im Plan von 1960 ein Los ohne Haus
+360	16.11.	16.11. 04:05 · `meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh` um `punkte.cjs 	apparat punkte-maschine	gpu-lauf.sh um punkte.cjs run: zwei Schloesser in verkehrter Reihe
+361	16.11.	16.11. 11:10 · DIE HAUS-GEOMETRIE AUF DER CPU, ~175 MB nach dem Innen-Gang `kart	sprosse mensch.bau.innen#1	Haus-Geometrie auf der CPU ~175 MB nach dem Innen-Gang (604,6 MB gegen Preis 400)
+362	16.11.	16.11. 11:35 · `foundry-core.js` Netz der Menge (mensch-L2, 1 700 Dreiecke, Kant	sprosse mensch.menge.bild#4	foundry-core.js Netz der Menge: Rest unter dem Poncho, Taille +12,7 % (nach w28-gestalt 25fbeb9a)
+363	16.11.	16.11. 13:35 · `scripts/lib/welt-boot.cjs` `abbild()` :1352–1368 · EIN LEERES AB	apparat welt-boot	welt-boot.cjs abbild(): leeres Abbild gilt als geschrieben (Familie Nr 11, 311)
+364	16.11.	16.11. 15:45 · `scripts/lib/kreatur-mensch.cjs` `gestaltMessen` (w28-gestalt, ga	apparat wand	kreatur-mensch.cjs gestaltMessen liest den nahen Leib in der Groesse seiner Gestalt
+365	17.11.	17.11. 17:25 · Bewohner im Dorf, Nah-Stufe (GTX 1050, main 16f45362, Messort Dor	sprosse planet.kopplung.siedlungslage#1	Bewohner schwebt eine Handbreit ueber dem Boden (ungeprueft, nach w28-stand-hoehe 60e23437) (unsicher)
+366	17.11.	17.11. 19:55 PRÜFBÜHNE S0, DER SCHÄRFERE WEG FÜR DIE MUTANTE „GLUT-PALETTE“ (nic	apparat wand	gate:pruefbuehne-licht S0 Mutante Glut-Palette
+367	17.11.	17.11. 23:30 · Dorf am Messort, Mittag (OMEN GTX 1060, main 08a8397b; Bilder `be	sprosse erleben.bild.flaeche#2	lila Schleier auf dem Weg-Boden (ungeprueft) (unsicher)
+368	17.11.	17.11. 23:30 · Hang rechts neben dem Dorf (`bericht/1711-haus-stoff/welt-tag-nah	sprosse erleben.bild.flaeche#1	steiler Hang verschmiert laengs der Fall-Linie (ungeprueft) (unsicher)
+369	17.11.	17.11. 23:30 · Nachthimmel am Dorf (`bericht/1711-haus-stoff/welt-nacht-nah.jpg`	sprosse planet.kosmos.sternhimmel#1	Sterne als fette Ovale (ungeprueft, bild-himmel.js) (unsicher)
+370	17.11.	17.11. 23:58 · `stamm/feld-brand.js`, Brand an der Mess-Wiese (GTX 1050, w28-lav	sprosse same.physik.feuer#2	feld-brand.js: Brand endet am Brennstoff, Deckel flammenMax 384 zeichnet 94 von 112
+371	18.11.	18.11. 00:20 · `stamm/dirigent-ankunft.js:160–168` die Tonkurve der Welt (Khrono	sprosse erleben.bild.auge#3	dirigent-ankunft.js:160 Tonkurve: dunkle Flaeche im Schatten faellt unter das Knie und wird braun
+372	18.11.	18.11. 00:20 · `scripts/diag-blick.cjs --werk russisch --lod 2` (OMEN GTX 1060, 	apparat wand	diag-blick --werk russisch --lod 2 stuerzt an 1 von 64 (ungeprueft)
+373	18.11.	18.11. 15:47 · `stamm/gelaende-boden.js:2740` (Stufe 0 = Schritt 1,8 m) gegen fa	sprosse mensch.nahrung.erdbau#1	gelaende-boden.js:2740 Stufe 0 1,8 m gegen graben 3 m: Graben des Geheges flache Mulde
+374	18.11.	18.11. 15:47 · `scripts/werkbank.cjs` `--ort genesis` (Haken `__anazhAutoSettlem	apparat werkbank	werkbank --ort genesis ruft _genesisOrt nie
+375	18.11.	18.11. 15:50 · `stamm/gelaende-boden.js:2740` (Stufe 0 = Schritt 1,8 m) gegen fa	sprosse mensch.nahrung.erdbau#1	Nachtrag zu Nr 373 (Doppel 15:50)
+376	18.11.	18.11. 15:50 · `scripts/werkbank.cjs` `--ort genesis` (Haken `__anazhAutoSettlem	apparat werkbank	Nachtrag zu Nr 374 (Doppel 15:50)
+377	18.11.	18.11. 17:05 · `stamm/stoff-material.js` `_lichtPoolTerm` gegen `stamm/bild-himm	sprosse erleben.bild.nacht#1	stoff-material.js _lichtPoolTerm: Zuschlag der Quellen an der Karte 0,3 EV unter der Rechnung
+378	18.11.	18.11. 17:05 · `scripts/lib/licht-linsen.cjs` `TAG_SOLL.nacht` [−5, −3] · DIE NA	sprosse erleben.bild.auge#2	licht-linsen.cjs TAG_SOLL.nacht: Nacht am Genesis-Ort ueber dem Band, an main
+379	18.11.	18.11. 18:25 · `welt-licht.js` `augeMesser` (Leser `stamm/bild-himmel.js` `_beli	sprosse erleben.bild.nacht#2	welt-licht.js augeMesser: Sprung des Messers als Wurzel der Lava-Schwaerze (w28-strahler nicht gelandet)
+380	18.11.	18.11. 18:25 · `welt-licht.js` `AUGE.p` 0,2 (Konstante, `augeS`) · DIE SKALA S S	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (AUGE.p staucht x12 auf x1,65)
+381	18.11.	18.11. 18:25 · main e4e3f363 gegen w28-strahler · MAIN TRÄGT DEN KREIS NUR MIT N	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (main traegt den Laternen-Kreis nur mit nicht-physikalischem Licht)
+382	18.11.	18.11. 20:20 · `fachwerk-core.js:6433` `LICHT_GESETZ.laterne.candela` 100 über `	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (laterne.candela 100 ueber Vollmond)
+383	18.11.	18.11. 20:20 · Spike `augeMesser` stetig, Anteil a · DER ANTEIL a IST EIN BELICH	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (Spike Anteil a)
+384	18.11.	18.11. 20:20 · `welt-licht.js:117` der obere Ast von `augeZeig` (S(ak + E)·E÷(ak	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (oberer Ast von augeZeig)
+385	18.11.	18.11. 20:20 · `welt-licht.js:134` `augeMesser` · DER STETIGE MESSER HEBT DIE LA	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (stetiger Messer)
+386	18.11.	18.11. 20:20 · `fachwerk-core.js:6433` · DIE LATERNE MIT 10 cd (Docht statt Glüh	sprosse erleben.bild.nacht#2	Nachtrag zu Nr 379 (Laterne mit 10 cd)
+387	18.11.	18.11. 18:40 · punkte-maschine `stationen` tiere.K5#1 (GTX) · DIE LINSE HÄNGT AM	apparat punkte-maschine	tiere.K5#1 haengt am Zufall des Tiers im Ego-Bild
+388	18.11.	18.11. 18:41 · `stamm/koerper-leib.js:2545` `_creatureBodySize` ← `tetrapoda-cor	sprosse leben.evolution.erbe#1	Groesse des Wolfs ist ein Wurf aus der netId in vier Baendern, Masse streut x91 (_creatureBodySize auf main nicht mehr gefunden) (unsicher)
+389	19.11.	19.11. 01:37 · punkte-maschine `stationen` karte2.same.preis.ausdauer#1 (GTX, ma	apparat punkte-maschine	Station karte2.same.preis.ausdauer#1: Heap-Kurve blind, Dauer traegt ihre Minute nicht
+390	19.11.	19.11. 01:45 · `fachwerk-core.js:429–442` Sockel 0,55 m (main b7ed8419, Bildpaar	sprosse planet.kopplung.siedlungslage#1	fachwerk-core.js:429 Sockelplatte ragt am Hang, hang in ortPlan hat 0 Leser
+391	19.11.	19.11. 01:45 · `fachwerk-core.js:211–215` gegen `:4072` / `:4120` (`STADT_MASSEN	sprosse same.massstab.spanne#1	fachwerk-core.js:211 gegen :4072 STADT_MASSEN: zwei Traufe-Regeln nah/fern (Zwilling)
+392	19.11.	19.11. 05:49 · `stamm/bild-himmel.js:1150` Mond = −Sonne (GTX, licht-eine-skala 	sprosse planet.kosmos.himmelsmechanik#3	bild-himmel.js:1150 Mond = -Sonne: keine Phase, keine mondlose Nacht
+393	19.11.	19.11. 05:57 · `tetrapoda-core.js:3692` / `foundry-core.js:8443, 9650` (GTX, lic	sprosse erleben.bild.nacht#1	Tierauge leuchtet emissiv statt Rueckstrahl (Tapetum) (unsicher)
+394	19.11.	19.11. 09:23 · `stamm/bild-kosten.js:1556–1580` / `stamm/dirigent-takt.js:2538` 	sprosse erleben.bild.himmel#1	bild-kosten.js:1556 Godrays als Zuschlag ohne Quelle (ATMO_GESETZ traegt die Keule schon)
+395	19.11.	19.11. 09:23 · `stamm/dirigent-ankunft.js:340–349` / `stamm/bild-himmel.js:3290`	sprosse planet.kosmos.himmelsmechanik#3	Mondscheibe 2,71 Grad statt 0,52, traegt 27-mal das Licht
+396	19.11.	19.11. 09:23 · `vehicle-core.js:162–186, 227–230, 340–341, 360–364` ← `stamm/stu	sprosse erleben.bild.nacht#4	vehicle-core.js Fahrzeug-Licht als Laborzahl (Tagfahrlicht unter ECE R87, Ruecklicht ueber R7)
+397	19.11.	19.11. 09:23 · `fachwerk-core.js:6540, 2081, 2108` ← `stamm/dirigent-kern.js:160	sprosse erleben.bild.nacht#2	fachwerk-core.js:6540 Fenster leuchtet, wirft kein Licht (147 m2 Glas ohne Empfaenger)
+398	19.11.	19.11. 09:23 · `fachwerk-core.js:1021–1024` windowSash, Flächen-Stufe (GTX, lich	sprosse mensch.bau.huelle#1	fachwerk-core.js:1021 windowSash: Sprosse der Flaechen-Stufe zwei Flaechen ohne Kante
+399	19.11.	19.11. 09:23 · `stamm/bild-kosten.js` `_vorBelichtung` (GTX, licht-eine-skala 5e	faellt Fehlmessung	berichtigt durch Nr 407: die Sterne stehen im Bild
+400	19.11.	19.11. 09:38 · `stamm/bild-himmel.js` `_ensureRainSystem` / `_tickRain` (GTX, li	sprosse erleben.bild.nacht#2	bild-himmel.js _tickRain: Regen-Schliere liest nur den offenen Himmel
+401	19.11.	19.11. 11:48 · `fachwerk-core.js:2726` `tonUebertrag` ← `tonFaktoren` :2706–2723	sprosse same.massstab.spanne#1	fachwerk-core.js:2726 tonUebertrag: Haus-L2 traegt je Stoff 5-14 lin x255 Abstand zu L0
+402	19.11.	19.11. 11:48 · `fachwerk-core.js:2823–2834` / `stamm/stoff-material.js` Fensterg	sprosse erleben.bild.nacht#3	offenes Fenster: Scheibe des Fluegels leuchtet orange, Raum dahinter schwarz (Raum als Quelle fehlt)
+403	19.11.	19.11. 11:48 · Werkbank `bild` / `spawnCreatureAt` (GTX, licht-eine-skala, Bild 	apparat werkbank	spawnCreatureAt: Tier steht ueber Koepfe nicht an fester Pose
+404	19.11.	19.11. 11:48 · `scripts/diag-altlasten.cjs` Selbsttest der Wand Schein-Emissiv (	apparat wand	diag-altlasten.cjs Selbsttest stand einen Commit lang ROT
+405	19.11.	19.11. 11:48 · `stamm/bau-teile.js:1757` `_buildForgeParts` → `stamm/siedlung-ba	sprosse erleben.bild.nacht#1	bau-teile.js:1757 _buildForgeParts -> stoff-material.js: Weg Bauplan-Teil -> Stoff verliert leuchtdichte (Esse)
+406	19.11.	19.11. 11:48 · `gate:tag-achse:echt` Genesis (Fund des Koordinators, main) · AN 	sprosse planet.kosmos.himmelsmechanik#1	gate:tag-achse:echt Genesis: Bild springt 0,34 EV zwischen Uhr 0,31 und 0,32 (Richter: Sprung <= 0,1 EV je Uhrschritt)
+407	19.11.	19.11. 11:48 · Berichtigung zur Zeile 19.11. 09:23 „IM DORF STEHEN NEBEN DEN QUE	faellt Fehlmessung	Berichtigung zu Nr 399: die Sterne stehen im Bild, k folgt der Szene war geraten
+408	19.11.	19.11. 12:19 · `fachwerk-core.js:2799–2802` (RAHMEN_TIEFE · SCHEIBE_RAND · KREUZ	sprosse same.massstab.spanne#1	fachwerk-core.js:2799 das ferne Fenster traegt seine Masse als eigene Zahlen (Zwilling zu windowSash)
+409	22.11.	22.11. 05:50 · `scripts/lib/stand-linse.cjs:822` WECKEN ← `scripts/diag-stand-ta	apparat wand	stand-linse.cjs:822 WECKEN unter CPU-Last
+410	22.11.	22.11. 08:00 · `stamm/feld-leben.js:2091` `_feldAkt` / `:2107` `_feldFolgeSteht`	apparat wand	voller Playtest unter Last rot an _feldAkt / _feldFolgeSteht (Familie mit Nr 413, 417, 431, 441, 451)
+411	22.11.	22.11. 08:00 · `stamm/werkstatt-bauen.js:2102` `_workshopInstallShapeDragDrop` (	geheilt a26e71e426	Abgabe w28-palette-stoff-spaet: der spaete Stoff der DSL steht als Karte der Werkstatt (16 -> 17 Karten)
+412	22.11.	22.11. 10:54 · `stamm/bau-buch.js:31` `defineMaterial` → `stamm/werkstatt-vorsch	sprosse same.preis.takt#2	bau-buch.js:31 defineMaterial: jeder Schreiber des Stoff-Buchs faehrt einen ganzen Werkstatt-Bau (unsicher)
+413	22.11.	22.11. 10:54 · Nachtrag zur Zeile 22.11. 08:00 (`stamm/feld-leben.js:2091` `_fel	apparat wand	Nachtrag zu Nr 410
+414	22.11.	22.11. 13:55 · `stamm/stoff-instanz.js:648` `_arenaNimmt` (`:672` die neue Arena	sprosse same.preis.takt#2	stoff-instanz.js:648 _arenaNimmt: erstes Bild eines Rauch-Satzes haelt am Knoten-Bau seiner Arena
+415	22.11.	22.11. 13:55 · `stamm/koerper-fahrt.js:1531` `_rittMeshPose` · `stamm/siedlung-t	sprosse leben.tiere.mensch#2	drei Hand-Zeilen neben _archEntryWorldMatrix (Ritt, Tor-Membran, Neubau) (unsicher)
+416	22.11.	22.11. 15:29 · `scripts/diag-persistence.cjs:263` (T) der Tab-Tod ← `speicher-fa	sprosse same.entfaltung.akte#2	diag-persistence (T) Tab-Tod am Ende der IDB-Transaktion: naechster Boot laedt still eine frische Welt
+417	22.11.	22.11. 15:30 · zweiter Nachtrag zur Zeile 22.11. 08:00 (`stamm/feld-leben.js:209	apparat wand	Nachtrag zu Nr 410
+418	22.11.	22.11. 16:02, berichtigt 18:00 und 18:30 · `scripts/diag-stand-takt.cjs` (der He	sprosse same.physik.feuer#2	feld-brand.js:395 _brandTempo: Richter front-mit wuerfelt 1,029 / 0,761 / 0,503 / 0,335 (Soll 0,5-2 m/s)
+419	22.11.	22.11. 17:40 · `scripts/lib/licht-linsen.cjs:3704` `nachtUrteil` (Anteil sichtba	sprosse erleben.bild.nacht#2	licht-linsen.cjs:3704 nachtUrteil an der Kante, LICHT_KARTE zellenJeBild (Familie Nr 4)
+420	22.11.	22.11. 18:06 · `meisterkarte-quelle/punkte/stationen/k2-*.js` (38 Leser in siebe	apparat punkte-maschine	Stationen lasen seasonYearSeconds / PEGEL_TAG_S nach dem Fall der Uhr
+421	22.11.	22.11. 18:38 · `stamm/dirigent-takt.js:644` (zählt die Aufträge des Spiegel-Feld	sprosse same.preis.ankunft#4	dirigent-takt.js:644 Spiegel-Feld offen, _spiegelFeldTakt nur ohne Ruhe: am Ort stadt haengt die Welt (unsicher)
+422	22.11.	22.11. 19:25 · `meisterkarte-quelle/punkte/stationen/k2-planet.js` probeHilfen `	apparat punkte-maschine	stationen/k2-planet.js M.auge: Buehne bleibt nach dem Bild stehen
+423	22.11.	22.11. 19:31 · der Runden-Dienst der GTX (landung, Stations-Schleife) ← `zug/die	apparat runden-dienst	Dienst faehrt seine Liste am alten Kopf weiter, wenn die Runde sprang
+424	22.11.	22.11. 19:33 · `zug/dienst/radeon-dienst.sh` (die Punkte-Sitzung der Radeon, Zus	apparat runden-dienst	43 min Karte ohne Arbeit, zwei Haende am Schloss
+425	22.11.	22.11. 20:05 · `vision/buche-2.cjs` preisUrteil (Pflicht `ankunft_kalt_s` ab Kla	apparat buchung	buche-2.cjs preisUrteil verlangt ankunft_kalt_s, kein Schreiber
+426	22.11.	22.11. 20:10 · `meisterkarte-quelle/punkte/stationen/k2-planet.js` probeRumpf (d	apparat punkte-maschine	stationen/k2-planet.js probeRumpf: Leiter handelt nach ihrem Deckel weiter
+427	22.11.	22.11. 20:30 · `stamm/gelaende-kollision.js:509` `_hausBlockerBoxen` (Studio-Hül	geheilt 8c53bff6df	Abgabe w28-eine-huelle: jedes Haus steht in EINER Huelle aus dem Gesetzbuch (Merge dd33ca8f 23.11.)
+428	22.11.	22.11. 20:30 · `meisterkarte-quelle/punkte/stationen/g2.js:1910` `dorfZaehlung` 	faellt in punkte-maschine geheilt	dorfZaehlung: Stations-Kopf pm-fahrer-soll (Nr 436)
+429	22.11.	22.11. 20:30 · `meisterkarte-quelle/punkte/stationen/k2-mensch-geist.js:100` `ZU	apparat punkte-maschine	stationen/k2-mensch-geist.js:100 ZUEGE: blinder Zuordner liest den Ort am ersten gleichen Stand-Objekt
+430	22.11.	22.11. 20:30 · `meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js:288` `	apparat punkte-maschine	stationen/k2-mensch-nahrung.js:288 TIER misst den zweiten Folger gegen <= 5 m
+431	22.11.	22.11. 20:30 · dritter Nachtrag zur Zeile 22.11. 08:00 (`stamm/feld-leben.js:209	apparat wand	Nachtrag zu Nr 410
+432	22.11.	22.11. 20:30 · `stamm/dirigent-takt.js:495` (die Ruhe nennt „Fege-Takt archCull 	geheilt e328926a92	Abgabe w28-march-warter: stadt-voll 20 Uhr ruht an der Pose nach 179 Takten (vorher nie in 1 970)
+433	22.11.	22.11. 20:50 · `stamm/siedlung-bewohner.js:1998` `_bewohnerSoll` (das Soll des B	sprosse same.kopplung.ereignis#2	siedlung-bewohner.js:1998 _bewohnerSoll liest kein Brand-Feld: meidenProzent 0 % gegen 100 %
+434	22.11.	22.11. 20:50 · `stamm/vegetation-wiese.js:2535` `_tatStuempfe` (der Stumpf der T	sprosse same.kopplung.zeitreise#1	vegetation-wiese.js:2535 _tatStuempfe: Zeitreise laesst den Wald stehen (baumAnteil 74,4 % gegen <= 30 %)
+435	23.11.	23.11. 02:14 · Nachtrag zur Zeile 22.11. 20:30 (`stamm/gelaende-kollision.js` `_	geheilt 8c53bff6df	Nachtrag zu Nr 427 (Wurzel: Nur-Wurf-Stufe ohne Solids)
+436	23.11.	23.11. 02:14 · Nachtrag zur Zeile 22.11. 20:30 (`meisterkarte-quelle/punkte/stat	faellt in punkte-maschine geheilt	Nachtrag zu Nr 428 (pm-fahrer-soll)
+437	23.11.	23.11. 02:14 · `stamm/dienst.js:582` `_bruchBuch` (BRUCH_BUCH_MAX 64) und `stamm	sprosse mensch.menge.bevoelkerung#1	dienst.js:582 _bruchBuch: mit der Huelle zwei Bewohner weniger, kein Buch nennt die Haeuser (unsicher)
+438	23.11.	23.11. 02:14 · Nachtrag zur Zeile 22.11. 20:30 (`stamm/dirigent-takt.js` „Fege-T	geheilt e328926a92	Nachtrag zu Nr 432 (Ursache benannt)
+439	23.11.	23.11. 02:14 · `stamm/siedlung-bewohner.js:1318` (`b.tempo = b.tempoBand * b.koe	geheilt 8c53bff6df	Abgabe w28-eine-huelle: der Bezugs-Leib des Gangs ist der erwachsene Median
+440	23.11.	23.11. 05:18 · Nachtrag zur Zeile 23.11. 02:14 (`stamm/dirigent-takt.js` „Fege-T	geheilt e328926a92	Nachtrag zu Nr 432 (Weckruf)
+441	23.11.	23.11. 05:18 · vierter Nachtrag zur Zeile 22.11. 08:00 (`stamm/feld-leben.js` `_	apparat wand	Nachtrag zu Nr 410
+442	23.11.	23.11. 10:50 · `meisterkarte-quelle/punkte/stationen/k2-same.js` `masseProbe` (L	apparat punkte-maschine	stationen/k2-same.js masseProbe mass, wo die Probe davor das Auge liess
+443	23.11.	23.11. 10:50 · `stamm/feld-brand.js:766` (`_brandGlutUm(auge.x, auge.z, B.weiteM	sprosse same.physik.reaktion#1	feld-brand.js:766 jenseits 160 m traegt ein Brand weder Flamme noch Rauch (Masse verschwindet fuer das ferne Auge)
+444	23.11.	23.11. 10:50 · `schmiede-core.js:3151` `plattenLast` (× `stossFaktor`, `:3146`) 	sprosse same.physik.reaktion#2	schmiede-core.js:3151 plattenLast: Bruch-Radius waechst mit W^0,50, Richter W^(1/3)
+445	23.11.	23.11. 10:50 · `meisterkarte-quelle/punkte/punkte.cjs:3636` `ORT_MUSTER` (`probe	apparat punkte-maschine	punkte.cjs:3636 ORT_MUSTER: die Sitzung liest aus keiner Leiter einen Ort
+446	23.11.	23.11. 12:24 · zweiter Nachtrag zur Zeile 23.11. 02:14 (`stamm/dirigent-takt.js`	geheilt e328926a92	Nachtrag zu Nr 432 (die Wache fiel auch am Tag; mit dem Weckruf liefert es)
+447	23.11.	23.11. 12:24 · `scripts/werkbank.cjs:2434` (die Leinwand von `bild`) ← der Schri	apparat werkbank	werkbank.cjs:2434 bild-Streifen 1600x520 gestreckt
+448	23.11.	23.11. 12:24 · `vehicle-core.js:1283` `bowedQuad` ← `vehicle-core.js:2090` (das 	sprosse mensch.fahrzeug.gestalt#1	vehicle-core.js:1283 bowedQuad: Blech-Seitenfeld von einer Seite offen
+449	23.11.	23.11. 12:24 · `vehicle-core.js` `PARAMS_BY_KIND.vehicle` (die Bänder `guertel` 	sprosse mensch.fahrzeug.gestalt#1	vehicle-core.js PARAMS_BY_KIND Baender absolut: GT Glas-Hoehe 0 (w28-fahrzeug-gattungen nicht gelandet)
+450	23.11.	23.11. 12:24 · `scripts/diag-vehicle-contract.cjs` (die Liste der Gattungen) · `	apparat wand	diag-vehicle-contract.cjs Hand-Liste: Byte-Vertrag fror fuenf von sechs Gattungen
+451	23.11.	23.11. 12:24 · fünfter Nachtrag zur Zeile 22.11. 08:00 (`stamm/feld-leben.js` `_	apparat wand	Nachtrag zu Nr 410 (fuenfter)
+452	23.11.	23.11. 12:24 · `scripts/diag-studio-begehen.cjs --selftest` (zehn Boote) · `scri	apparat wand	gate:studio-begehen / diag-fahr-leben am Hand-Halt von 8 min, Abbruch liest wie Absturz
