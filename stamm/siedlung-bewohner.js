@@ -1345,7 +1345,7 @@ class AnazhRealm_siedlung_bewohner {
         if (!lager) return;
         const w = schmiede[0].orte.werk;
         const haende = liste
-            .filter((b) => b.rolle !== "kind")
+            .filter((b) => b.rolle !== "kind" && !b.waffe) // (die Wache hält ihre Waffe, `_stoffstromHand`)
             .map((b) => [b, Math.hypot(b.orte.tuer.x - w.x, b.orte.tuer.z - w.z)])
             .sort((a, b) => a[1] - b[1])
             .map((e) => e[0]);
@@ -1408,11 +1408,14 @@ class AnazhRealm_siedlung_bewohner {
 
     // DAS WERKZEUG IN DER HAND (der nahe Leib, `_bewohnerLeibAn`): wer ein Werkzeug der Kette hält und einen Leib mit Handgelenk
     // trägt, dem hängt die EINE Hand des Spiels (`_geraetInHand`, derselbe Bau wie das Gerät des Spielers) den Bauplan der Schmiede
-    // an die rechte Hand; ohne Leib trägt er es im Zustand (`b.werkzeug`), sein Leib zeigt es, sobald er ihn trägt.
+    // an die rechte Hand; ohne Leib trägt er es im Zustand (`b.werkzeug`), sein Leib zeigt es, sobald er ihn trägt. DIE WACHE TRÄGT
+    // IHRE WAFFE (mensch.macht.krieg#1, bewohner-satz): wer kein Werkzeug der Kette hält, dem hängt dieselbe Hand die Waffe seines
+    // Lebenslaufs an (`b.waffe`: die Waffe der Epoche, nur die Wache) — die Klinge der Schmiede, derselbe Bau wie die des Spielers.
     _stoffstromHand(b) {
         const g = b && b.leib;
-        if (!b.werkzeug || !g || !g.userData.rig || g.userData.werkzeugMesh) return;
-        const bp = this._stoffstromBauplan(b.werkzeug);
+        const art = b.werkzeug || b.waffe;
+        if (!art || !g || !g.userData.rig || g.userData.werkzeugMesh) return;
+        const bp = this._stoffstromBauplan(art);
         if (!bp) return;
         g.userData.werkzeugMesh = this._geraetInHand(g, bp, "right") || null;
     }
