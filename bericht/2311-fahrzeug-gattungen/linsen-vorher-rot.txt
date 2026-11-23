@@ -1,0 +1,32 @@
+Die Linsen ROT am Täter — vor dem jeweiligen Schnitt (GTX 1050, 23.11., Zweig fahrzeug-gattungen)
+
+== gate:vehicle-contract vor dem Vertrags-Akt (Liste aus dem Kern, Golden noch 17 Fälle; die Golden-Wand nennt jeden Fall ohne Golden)
+=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===
+  ✅ Determinismus: jeder der 20 Fälle baut doppelt byte-gleich
+  ✅ Seed-Invarianz der Geometrie: seed 7 == seed 12345 je Gattung (kein stochastischer Term)
+  ❌ Golden vehicles.json trägt cv:3 + alle 20 Fälle
+  ❌ Goldens vehicles.json byte-exakt (17 Fälle) — transporter-s7-L0: fehlt im Golden (ohne Byte-Beweis)
+      ↳ transporter-s12345-L0: fehlt im Golden (ohne Byte-Beweis)
+      ↳ transporter-s7-L1: fehlt im Golden (ohne Byte-Beweis)
+  ❌ PLATTFORM-PROBE v3: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (20 Fälle; benannt: atan2 17 · sin 17 · cos 17 · hypot 5; Nenner pow 188461 · atan2 670 · sin 192733 · cos 188683 · hypot 802 · exp 1018219) — v3: 20 Probe-Fälle statt 17 (der Nenner der Ratsche) · v3 atan2 kippt 20 > 17 ← vehicle-core.js:940 atan2 · v3 sin kippt 20 > 17 ← vehicle-core.js:484 sin · v3 cos kippt 20 > 17 ← vehicle-core.js:484 cos
+  ✅ SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau
+  ✅ SELBST-TEST: die Ratsche v3 reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen
+  ✅ SELBST-TEST: korruptes Golden (sha256) wird erkannt
+  ✅ SELBST-TEST: objects-Drift wird erkannt
+  ✅ SELBST-TEST: ein Fall ohne Golden steht beim Namen
+
+❌ ROT — 3 Verletzung(en): Golden vehicles.json trägt cv:3 + alle 20 Fälle · Goldens vehicles.json byte-exakt (17 Fälle) · PLATTFORM-PROBE v3: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (20 Fälle; benannt: atan2 17 · sin 17 · cos 17 · hypot 5; Nenner pow 188461 · atan2 670 · sin 192733 · cos 188683 · hypot 802 · exp 1018219)
+
+== gate:regler-wirkt Teil 1 am Kopf vor kabineGesetz (a23ed5d54-Vorgänger): der GT am Regler-Rand guertel = 1,2
+✅ SELBST-TEST Täter (ov erreicht die Brücke nicht): 16/16 Regler der Art vehicle tot → rot (neu tot: vehicle:vehicle:dach, vehicle:vehicle:damping, vehicle:vehicle:epoche …) · ohne Täter 1 tot
+❌ SELBST-TEST Täter (ein Regler bricht den Bau): vehicle:vehicle:radstand BRICHT — radstand=2.2 an gt: 0 Teile (der Bau wirft oder liefert nichts) · radstand=3.4 an gt: 92013 nicht-endliche Werte (NaN/Inf) in den Puffern · andere BRICHT 1 · ohne Täter BRICHT 1
+
+== gate:sprache F (check:statik) vor der Tafel-Zeile
+❌ ROT — 1 Verletzung(en): F: stamm/studio-wort.js:96 „gestalt.transporter“ fehlt in der Tafel
+
+== gate:altlasten Zwillings-Wand (check:statik) vor dem EINEN Dreiecks-Raster im Seitenriss
+   ❌ Zwillings-Wand: scripts/diag-vehicle-drive.cjs:201 trägt wieder „Math.min(W - 1, Math.ceil(Math.max(" (fiel: Decke w3w-studios — das Dreiecks-Raster wohnt in kronen-linse)
+
+== gate:source-probes Quelltext-Wand (check:statik) vor dem EINEN Datei-Leser der Linse A8
+gate:source-probes ROT (1)
+  - QUELLTEXT-WAND: scripts/diag-vehicle-drive.cjs:453 liest Quelltext (datei 1 > 0: readFileSync(path.join(ROOT, "vehicle-core.js"), "utf8")) — eine Absenz liest über __fehlt / stammLib.fehlt, ein Struktur-Leser steht mit Zweck in der Liste, Präsenz beweist Konsum
