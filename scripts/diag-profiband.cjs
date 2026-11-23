@@ -342,7 +342,7 @@ function fernSiedlungWand(A) {
     for (const n of Object.getOwnPropertyNames(A.prototype)) {
         const f = Object.getOwnPropertyDescriptor(A.prototype, n).value;
         if (typeof f === "function")
-            for (const m of String(f).matchAll(/this\.(_bewohner\w+) \|\| \(this\.\1 = \[\]\)/g)) puffer.add(m[1]);
+            for (const m of String(f).matchAll(/this\.(_(?:bewohner|verkehr)\w+) \|\| \(this\.\1 = \[\]\)/g)) puffer.add(m[1]);
     }
     for (const [i, n] of [...puffer].entries()) w[n] = [koepfe[i % 3]];
     w._bewohnerNbZahl = { geachtet: [koepfe[2]], naechste: [koepfe[1]] };
@@ -367,7 +367,7 @@ function fernSiedlungWand(A) {
     if (!(S.plan && Array.isArray(S.plan.slots))) vergessen.unshift("plan");
     if (vergessen.length)
         errs.push(`H10 _bewohnerFort: die ferne Siedlung vergaß ihr Gedächtnis — ${vergessen.join(" · ")}`);
-    if (puffer.size < 6) errs.push(`H10 _bewohnerFort: die Linse fand nur ${puffer.size} Takt-Puffer im Stamm (Soll ≥ 6) — blind`); // prettier-ignore
+    if (puffer.size < 8) errs.push(`H10 _bewohnerFort: die Linse fand nur ${puffer.size} Takt-Puffer im Stamm (Soll ≥ 8) — blind`); // prettier-ignore
     return { errs, n: pfade.length, puffer: [...puffer] };
 }
 
@@ -1892,6 +1892,9 @@ function selbsttest() {
     const PUFFER = "for (const k of AnazhRealm.BEWOHNER_TAKT_PUFFER) if (this[k]) this[k].length = 0;";
     const pufRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", PUFFER, "for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;"))); // prettier-ignore
     t("Ferne Siedlung: drei Takt-Puffer beim Namen geleert ist rot bei _bewohnerNah, _bewohnerHalter und _bewohnerWandKand", ["_bewohnerNah", "_bewohnerHalter", "_bewohnerWandKand"].every((n) => (pufRot.errs[0] || "").includes("r." + n + "[]"))); // prettier-ignore
+    // … und das Register ohne den Verkehr (der Stand vor der Messung an der Wiese nach der Stadt) ist rot bei `_verkehrKandidaten`
+    const pufVk = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", PUFFER, "for (const k of AnazhRealm.BEWOHNER_TAKT_PUFFER) if (this[k] && !k.startsWith(\"_verkehr\")) this[k].length = 0;"))); // prettier-ignore
+    t("Ferne Siedlung: das Register ohne den Verkehr ist rot bei _verkehrKandidaten und _verkehrProben", ["_verkehrKandidaten", "_verkehrProben"].every((n) => (pufVk.errs[0] || "").includes("r." + n + "[]"))); // prettier-ignore
     // DIE VORLAGE (H11): die Vorlage ohne Rückgabe (der Stand vor heap-register: sie hält, solange der Bauplan lebt) ist rot
     // beim Halter, die Rückgabe ohne Zählung (der erste Bau nimmt sie mit) rot beim stehenden Bau, der Stamm grün
     const v11Halt = vorlageWand(klasseVon(stammLib.ersetze(st8, "_archMergeLoslassen", "if (--q.nutzer > 0) return;", "return;"))); // prettier-ignore
