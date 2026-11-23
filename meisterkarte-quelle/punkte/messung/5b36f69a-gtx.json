@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T12:39:02.168Z",
+ "zeit": "2026-11-23T13:19:10.369Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -1936,6 +1936,70 @@
    "zwilling": "karte2.mensch.kopplung.leib#1",
    "modus": "session",
    "offen": 1
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.85,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 50.2,
+   "fremd": {
+    "s": 54.1,
+    "takte": 24,
+    "fremdS": 107.7,
+    "kerne": 1.99,
+    "fensterKerne": 2.972,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      69.28
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      7.06
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ]
+    ],
+    "dienerS": 36.8,
+    "diener": [
+     [
+      "System",
+      18.14
+     ],
+     [
+      "dwm.exe",
+      9.27
+     ]
+    ],
+    "geraetS": 28.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.89
+     ],
+     [
+      "svchost.exe",
+      10.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.66
+     ]
+    ],
+    "eigenS": 95.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T13:19:10.369Z",
+   "abdruck": "9b1c46fdbef1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
