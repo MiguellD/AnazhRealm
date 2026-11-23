@@ -3073,7 +3073,8 @@ function naesseSicht(o) {
         // haus_griechisch die Diele bei −3,3 m, gezeichnet die Stufe vor der Wand im Regen: 246 nasse „Innen"-Punkte)
         const welt = (x, y, z) => new T.Vector3(e.position.x + (x * co + z * si) * k, e.position.y - 0.5 + y * k, e.position.z + (z * co - x * si) * k);
         const lokal = (v) => [((v.x - e.position.x) * co - (v.z - e.position.z) * si) / k, (v.y - e.position.y + 0.5) / k, ((v.x - e.position.x) * si + (v.z - e.position.z) * co) / k];
-        const boxen = e ? e._hausHuelle.teile.filter((t) => t.art === "box" && t.rolle === "fest") : [];
+        const festBoxen = (h) => (r.constructor._huelleVon(h, "fest", "naesse") || []).filter((b) => b.art === "box" && b.rolle === "fest");
+        const boxen = e ? festBoxen(e._hausHuelle) : [];
         const t = e && e.tuer;
         if (o.haus) return { schwelle: welt(t.x + 1.3, 0, t.z - 0.8).toArray() };
         for (const f of (e?.instSlots || []).map((s) => s.tuer || (st.archInstanceGroups.get(s.key) || {}).tuer).filter((f) => f && Math.abs(f.zf - t.z) < 0.5)) {
@@ -3116,7 +3117,7 @@ function naesseSicht(o) {
         // Kästen: ein Strahl, der sie verfehlt, prüft ihre Kästen nicht
         const bauten = !e ? [] : st.architectures.flatMap((q) => {
             if (q === e || !q.position || Math.hypot(q.position.x - cam.position.x, q.position.z - cam.position.z) > 80) return [];
-            const fest = q._hausHuelle && q._hausHuelle.teile.filter((b) => b.art === "box" && b.rolle === "fest");
+            const fest = q._hausHuelle && festBoxen(q._hausHuelle);
             const K = !q._hausHuelle && q._dachKasten;
             const [kq, oy, kaesten] = fest && fest.length ? [q._hausHuelleSkala || 1, q.position.y - 0.5, fest] : K ? [K.k, q.position.y + K.dy, [K]] : [];
             if (!kaesten) return [];

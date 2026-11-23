@@ -3110,7 +3110,7 @@ async function WELLE_L(ort) {
                 const [s0, M] = [e.instSlots[0], new THREE.Matrix4()];
                 const matrix = () => (s.archInstanceGroups.get(s0.key).mesh.getMatrixAt(s0.slot, M), M.elements.join());
                 const vorher = matrix();
-                Object.assign(a, { blocker: e.blockerAABBs?.length, huelle: e._hausHuelle?.teile.length });
+                Object.assign(a, { blocker: e.blockerAABBs?.length, huelle: e._hausHuelle?.code.length });
                 ausruesten("klinge_langschwert");
                 const ball = V3().set(e.position.x, e.position.y - 1.76, e.position.z);
                 zielen(ball);
