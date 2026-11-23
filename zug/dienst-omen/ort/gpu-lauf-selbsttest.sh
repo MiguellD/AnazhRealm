@@ -30,7 +30,7 @@ tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Work
 # EIN Runner.Worker WÄHREND des Tests (23.11. 17:21: ein CI-Job wartete am echten Schloss, gpu-lauf.sh fragt worker() am echten — g und
 # h warteten 120 s und endeten mit Exit 75, „ROT“ ohne Schuld des Kopfs): dann UNGEMESSEN, nie ein Urteil
 ( while [ -d "$T" ]; do tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker && : >"$T/worker-sah"; sleep 3; done ) >/dev/null 2>&1 &
-WW=$!
+WW=$!; disown "$WW" 2>/dev/null # nie ein Job der Fälle: ihr `wait` wartete sonst auf den Wächter (23.11. 21:36 hing gl-kopf so)
 fall() { # $1 Name · $2 WEICH ("" = Vorgabe) · $3 erste Dauer s · $4 Sekunden bis der Job „genommen“ meldet (0 = nie) · $5 stirbt · $6 rohr (Kind = node, Ausgabe durch eine Leitung)
     local n=$1 d=$T/$1; mkdir -p "$d"; : >"$d/dienst.log"
     echo "2026-01-01 00:00:00 start ci-runner 1/1 echt: Schloss genommen (alt)" >"$d/hook.log"
