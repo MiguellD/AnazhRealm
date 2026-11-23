@@ -456,9 +456,9 @@ H.fahre(async (H) => {
     return K.ende();
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\c1236fa8-radeon\karte2.mensch.wirtschaft.technik_1.json 45
 [linse-gpu] amd/rdna-3
-@@ 7.1 s · am Messort stadt-voll (ego) nach 7.1 s, 218 Takte, Anlauf stand
-@@ 7.1 s · Technik: Jahre der Pläne 1238, 19 Bauformen
-@@ 7.1 s · Technik S1: {"mitVor":11,"ohneVor":0,"ohne":{},"imBild":{"ziegelei":54,"zimmerei":867,"eisen":17,"stahlbau":10,"kalkmoertel":335,"stahlbeton":19,"stahl":18,"kupfer":4},"staende":4,"saaten":20,"welt":{"ohneVor":0,"ohne":{},"stand":11,"ohneTechnik":["zinn","kupfer","bronze"],"epoche":"mediterran"}}
+@@ 23.3 s · am Messort stadt-voll (ego) nach 23.3 s, 305 Takte, Anlauf stand
+@@ 23.3 s · Technik: Jahre der Pläne 1238, 19 Bauformen
+@@ 23.4 s · Technik S1: {"mitVor":11,"ohneVor":0,"ohne":{},"imBild":{"ziegelei":54,"zimmerei":867,"eisen":17,"stahlbau":10,"kalkmoertel":335,"stahlbeton":19,"stahl":18,"kupfer":4},"staende":4,"saaten":20,"welt":{"ohneVor":0,"ohne":{},"stand":11,"ohneTechnik":["zinn","kupfer","bronze"],"epoche":"mediterran"}}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
