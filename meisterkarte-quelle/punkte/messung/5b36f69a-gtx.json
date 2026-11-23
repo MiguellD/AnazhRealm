@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T14:53:19.501Z",
+ "zeit": "2026-11-23T14:54:10.552Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -2481,6 +2481,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.stadt.vertikal#1": {
+   "gruen": true,
+   "zahl": "dorf 7 9310: höchstes Haus 27,0 m bis zum First (Kachel 1/-5) · im Bild 3 von 5 Punkten seiner Achse (Soll ≥ 2, im Rahmen 3) vom Straßenpunkt 18,8 m · begehbare Ebenen 1 (Überführungen 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "gpu": "nvidia/pascal",
+   "konsum": "kddb41cd80eeb",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 66.9,
+   "fremd": {
+    "s": 70.7,
+    "takte": 29,
+    "fremdS": 33.69,
+    "kerne": 0.476,
+    "fensterKerne": 0.766,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.72
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f69a.txt",
+      4.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.39
+     ]
+    ],
+    "dienerS": 35.45,
+    "diener": [
+     [
+      "dwm.exe",
+      17.39
+     ],
+     [
+      "System",
+      11.86
+     ]
+    ],
+    "geraetS": 35.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.59
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 554.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T14:54:10.552Z",
+   "abdruck": "c74671988637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -4010,20 +4079,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.stadt.vertikal#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T14:53:19.439Z",
-   "abdruck": "c74671988637",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.planet.wetter.vorhersage#1": {
    "gruen": false,
