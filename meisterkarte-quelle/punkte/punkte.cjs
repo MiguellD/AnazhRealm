@@ -1386,6 +1386,7 @@ const istZeit = (sts) => sts.some((st) => st.zeit === true);
 // Last allein auf der Karte (ein fremdes Spiel) sieht f nicht.
 const FREMD_TAKT_MS = 2000;
 const FREMD_FENSTER_S = 10;
+const EIGEN_REIHE_MAX = 120; // die Takte der eigenen Last, die der Zeuge hält (≥ 4 min bei 2 s)
 const REFERENZ_RUNDEN = 1200;
 const REFERENZ_RUHE_BAND = 1.2;
 const REFERENZ_SCHWANKT = 0.25;
@@ -1559,12 +1560,25 @@ function zeugenQuelle(taktMs) {
 function fremdZeuge(o = {}) {
     const taktMs = o.taktMs || FREMD_TAKT_MS, wurzel = o.wurzel || process.pid;
     const q = o.quelle || zeugenQuelle(taktMs);
-    const z = { blind: q.blind || null, letzter: null, offen: new Set(), warten: [], uhr: null, takte: 0 };
+    const z = { blind: q.blind || null, letzter: null, offen: new Set(), warten: [], uhr: null, takte: 0, eigenCpu: null, eigen: [] };
     const verarbeite = (S) => {
         if (!S.p.size) return; // ein leerer Takt bezeugt nichts — ein Fenster ohne Takt ist blind
         z.takte++;
         const eigen = eigenerBaum(S.p, wurzel);
         const art = (pid, x) => (eigen.has(pid) ? "eigen" : x.diener || FREMD_DIENER.test(x.name) ? "diener" : FREMD_GERAET.test(x.name) ? "geraet" : "fremd");
+        // DIE EIGENE LAST je Takt (pm-referenz-nach-anlauf, das Ruhe-Tor liest sie): die CPU-Sekunden des eigenen Baums seit dem Takt davor —
+        // ein Prozess, der vor dem letzten Takt entstand und dort fehlte, hat keinen Anfang und zählt erst ab dem nächsten
+        const jetzt = new Map();
+        let dE = 0;
+        for (const pid of eigen) {
+            const x = S.p.get(pid);
+            if (!x) continue;
+            const k = pid + ":" + Math.round(x.start), a = z.eigenCpu && z.eigenCpu.has(k) ? z.eigenCpu.get(k) : z.letzter && x.start >= z.letzter.t - 50 ? 0 : null;
+            jetzt.set(k, x.cpu);
+            if (a != null) dE += Math.max(0, x.cpu - a);
+        }
+        if (z.eigenCpu && z.letzter && S.t > z.letzter.t) z.eigen = [...z.eigen, [z.letzter.t, S.t, dE]].slice(-EIGEN_REIHE_MAX);
+        z.eigenCpu = jetzt;
         for (const f of z.offen) {
             if (f.tA == null) f.tA = f.basis ? f.basis.t : S.t;
             let dF = 0;
@@ -1622,6 +1636,15 @@ function fremdZeuge(o = {}) {
             z.offen.delete(f);
             return fremdBericht(f, t1, taktMs, z.blind, marken);
         },
+        // die eigenen Kerne über die letzten `sek` Sekunden (die jüngsten Takte, bis sie die Spanne decken) — null, solange die Takte sie
+        // nicht decken; `reihe` die Kerne je Takt (das Ruhe-Tor nennt sie)
+        eigenKerne(sek) {
+            let d = 0, von = null;
+            const bis = z.eigen.length ? z.eigen[z.eigen.length - 1][1] : null;
+            for (let i = z.eigen.length - 1; i >= 0 && (von == null || bis - von < sek * 1000); i--) [von, d] = [z.eigen[i][0], d + z.eigen[i][2]];
+            return von == null || bis - von < sek * 1000 ? null : d / ((bis - von) / 1000);
+        },
+        eigenReihe: (n) => z.eigen.slice(-n).map(([a, b, d]) => +(d / ((b - a) / 1000)).toFixed(2)),
         stop() {
             clearInterval(z.uhr);
             q.stop();
@@ -1778,11 +1801,53 @@ function referenzPoolLaden(mdir) {
     }
     return pool;
 }
-// DIE REFERENZ DER MASCHINE: fahrt() · merke(umfeld, werte) legt Fahrten in Pool und Ablage · ruhe(umfeld, werte) merkt und gibt die Ruhe ·
-// auffuellen(umfeld) fährt nach, bis REFERENZ_RUHE_MIN frische im Pool liegen (Rückgabe die Zahl der nachgefahrenen). o = { mdir, ablage,
-// fahrt, rechner } — der Selbsttest stellt Ordner und Fahrt
+// DAS RUHE-TOR (pm-referenz-nach-anlauf, der Koordinator 23.11.; Befund GTX 1060 am f0a89f7e: archiv#1, die ERSTE Probe der frischen
+// sitzung-20261123-084636 — bereit 08:46:49, die Referenz „vor“ 08:47:19 mit Faden 115,6 gegen Ruhe 90 ms, der Baum des Schlosses zog
+// 241 CPU-s in 60 s; „nach“ 08:49:45 ×1,06 — hieß „UNGEMESSEN unter Last ×1,28“, obwohl nichts Fremdes lief, und fiel aus der Buchung).
+// Die Referenz misst die UMGEBUNG der Station; die eigene Welt im Anlauf (Ströme, Bäcker, Schatten einer frischen Welt) ist keine
+// Umgebung. VOR JEDER Fahrt (EINE Stelle: `fahrt` der Referenz der Maschine — vor, nach, Preis-Lauf, Auffüllung, von Hand) wartet das
+// Tor, bis der EIGENE Baum (fremdZeuge `eigenKerne`: dieser Läufer, seine Werkbank, ihr Browser) über REFERENZ_TOR_S Sekunden unter
+// REFERENZ_TOR_ANTEIL der Kerne des Rechners zieht — höchstens REFERENZ_TOR_MAX_S. Reißt es, fährt die Referenz trotzdem und trägt
+// `anlauf` beim Namen: das Urteil heißt dann „Anlauf der eigenen Welt“, nie „Last“ und nie „fremd“ (fremdUrteil, buche-2 lastVon).
+// Kein Anheben des Bands, kein Sonder-Pfad für die erste Probe. Ein blinder Zeuge lässt das Tor offen und steht beim Namen (`tor.blind`).
+const REFERENZ_TOR_ANTEIL = 0.25;
+const REFERENZ_TOR_S = 6;
+const REFERENZ_TOR_MAX_S = 60;
+// → { ruhig: true|false, s (gewartet), kerne (die eigenen über das Fenster), soll, reihe (Kerne je Takt, die jüngsten) } oder { blind }
+async function ruheTor(zeuge, o = {}) {
+    const soll = +(o.kerne != null ? o.kerne : REFERENZ_TOR_ANTEIL * os.cpus().length).toFixed(2), fenster = o.s || REFERENZ_TOR_S, maxS = o.maxS || REFERENZ_TOR_MAX_S;
+    const t0 = Date.now(), aus = (x) => ({ ...x, s: +((Date.now() - t0) / 1000).toFixed(1), soll, reihe: zeuge.eigenReihe ? zeuge.eigenReihe(6) : [] });
+    for (;;) {
+        if (!zeuge || zeuge.blind || typeof zeuge.eigenKerne !== "function") return { blind: (zeuge && zeuge.blind) || "kein Zeuge der eigenen Last" };
+        const k = zeuge.eigenKerne(fenster);
+        if (k != null && k <= soll) return aus({ ruhig: true, kerne: +k.toFixed(2) });
+        if (Date.now() - t0 >= maxS * 1000) return aus({ ruhig: false, kerne: k == null ? null : +k.toFixed(2) });
+        await warteMs(Math.max(100, Math.min(zeuge.taktMs || FREMD_TAKT_MS, maxS * 1000 - (Date.now() - t0))));
+    }
+}
+const torText = (t) => (!t ? "" : t.blind ? "Tor blind (" + t.blind + ")" : (t.ruhig ? "ruhig" : "Anlauf der eigenen Welt") + " nach " + fz1(t.s) + " s (eigen " + (t.kerne == null ? "?" : fzW(t.kerne)) + " Kerne, Soll ≤ " + fzW(t.soll) + ")");
+// DIE LEIHE DER REFERENZ (pm-referenz-nach-anlauf (b); 23.11. 09:50, OMEN: ein Hand-`run` fuhr die Auffüllung „allein“ VOR dem Schloss
+// — zehn Fahrten über alle Kerne im gezählten Preis-Stück von markt#1 der Runde 12): hält der Läufer das Schloss nicht (haeltSchloss),
+// nimmt er es für die Fahrt über dieselbe gpu-lauf.sh (schlossNehmen: das ganze Schloss, die CI-Ruhe inbegriffen) und gibt es danach
+// frei. → { loesen } oder { fehler } beim Namen
+let referenzLeihen = 0;
+async function referenzSchloss() {
+    if (haeltSchloss()) return { loesen: async () => {} };
+    const h = await schlossNehmen({ bash: findeBash(), gpuLauf: GPU_LAUF, name: "punkte-referenz", baum: DIR, stop: path.join(os.tmpdir(), "punkte-referenz-" + process.pid) }, referenzLeihen++);
+    if (!h.ok) return { fehler: "die Referenz bekam kein Schloss: " + h.grund };
+    return { loesen: () => schlossLoesen(h) };
+}
+// DIE REFERENZ DER MASCHINE: fahrt() (unter dem Schloss, durch das Ruhe-Tor) · merke(umfeld, werte) legt Fahrten in Pool und Ablage ·
+// ruhe(umfeld, werte) merkt und gibt die Ruhe · auffuellen(umfeld) fährt unter EINER Leihe nach, bis REFERENZ_RUHE_MIN frische im Pool
+// liegen (Rückgabe die Zahl der nachgefahrenen). o = { mdir, ablage, fahrt, tor, schloss, rechner } — der Selbsttest stellt Ordner, Fahrt,
+// Tor und Schloss; die Maschine fährt das Tor am Zeugen der Maschine (maschinenZeuge) und leiht das Schloss (referenzSchloss).
+// DAS GESETZ (EINE Stelle): jede Fahrt — vor, nach, Preis-Lauf, Auffüllung, von Hand — läuft unter dem Schloss und hinter dem Ruhe-Tor;
+// `spanne` nennt die Zeit der Fahrt selbst (ohne Schloss und Tor)
 function echteReferenz(o = {}) {
-    const mdir = o.mdir || path.join(DIR, "messung"), ablage = o.ablage || referenzAblageVon(mdir), fahrt = o.fahrt || referenzFahrt, rechner = o.rechner || REFERENZ_RECHNER;
+    const mdir = o.mdir || path.join(DIR, "messung"), ablage = o.ablage || referenzAblageVon(mdir), rechner = o.rechner || REFERENZ_RECHNER;
+    const roh = o.fahrt || referenzFahrt, tor = o.tor || (() => ruheTor(maschinenZeuge())), schloss = o.schloss || referenzSchloss;
+    const unter = async (fn) => { const s = await schloss(); if (s.fehler) return { fehler: s.fehler }; try { return await fn(); } finally { await s.loesen(); } }; // prettier-ignore
+    const fahrt = () => unter(async () => { const t = await tor(), a = Date.now(), x = await roh(); return x && !x.fehler ? { ...x, tor: t, spanne: [a, Date.now()] } : x; }); // prettier-ignore
     let pool = null;
     const liste = (umfeld) => {
         if (!pool) pool = referenzPoolLaden(mdir);
@@ -1813,14 +1878,18 @@ function echteReferenz(o = {}) {
             return referenzRuheAus(liste(umfeld));
         },
         async auffuellen(umfeld) {
-            let n = 0;
-            for (let i = 0; i < REFERENZ_RUHE_MIN && frisch(umfeld) < REFERENZ_RUHE_MIN; i++) {
-                const x = await fahrt();
-                if (x.fehler) return { n, fehler: x.fehler };
-                merke(umfeld, [x]);
-                n++;
-            }
-            return { n, im: frisch(umfeld) };
+            if (frisch(umfeld) >= REFERENZ_RUHE_MIN) return { n: 0, im: frisch(umfeld) };
+            const a = await unter(async () => {
+                let n = 0;
+                for (let i = 0; i < REFERENZ_RUHE_MIN && frisch(umfeld) < REFERENZ_RUHE_MIN; i++) {
+                    const x = await fahrt();
+                    if (x.fehler) return { n, fehler: x.fehler };
+                    merke(umfeld, [x]);
+                    n++;
+                }
+                return { n, im: frisch(umfeld) };
+            });
+            return a.fehler && a.n == null ? { n: 0, fehler: a.fehler } : a;
         },
     };
 }
@@ -1847,8 +1916,11 @@ function referenzBericht(vor, nach, ruhe, umfeld) {
     const sK = (k) => Math.max(vor[k], nach[k]) / Math.min(vor[k], nach[k]) - 1;
     const vEin = Math.max(verdraengung(vor), verdraengung(nach));
     const fEin = +Math.max(fK("ein"), vEin).toFixed(3), fAlle = +fK("alle").toFixed(3);
+    // DAS RUHE-TOR (oben): riss es vor einer der zwei Fahrten, ist ihr Grund der Anlauf der eigenen Welt — beim Namen, mit Ort und Zahl
+    const riss = ["vor", "nach"].find((w) => ({ vor, nach })[w].tor && ({ vor, nach })[w].tor.ruhig === false);
+    const anlauf = riss ? { wo: riss, ...({ vor, nach })[riss].tor } : null;
     return { vor, nach, ruhe, f: Math.max(fEin, fAlle), fEin, fAlle, verdraengt: +Math.max(1, vEin).toFixed(3), schwankt: Math.max(sK("ein"), sK("alle")) > REFERENZ_SCHWANKT,
-        rechner: REFERENZ_RECHNER, umfeld };
+        ...(anlauf ? { anlauf } : {}), rechner: REFERENZ_RECHNER, umfeld };
 }
 // DER STOSS (die OMEN 11.11., Falle 8): eine Last, die mitten in der Station kam und vor der Fahrt danach ging, sieht die Referenz nie —
 // der Zeuge sieht sie: liegt die Spitze eines Takts IN der Station um mehr als REFERENZ_STOSS_KERNE über den fremden Kernen beider
@@ -1872,10 +1944,11 @@ function fremdUrteil(st, e, b, r) {
     if (f != null && f <= REFERENZ_RUHE_BAND) return mit;
     const namen = !b.blind && (b.namen || []).length ? " · fremd: " + fremdNamen(b) : "";
     const geraet = !b.blind && b.geraetS > 0 ? " · Gerät (Grund-Last, nie fremd) " + (b.geraet || []).map(([n, s]) => n + " " + fz1(s) + " CPU-s").join(" · ") : "";
+    // riss das Ruhe-Tor vor einer Fahrt (referenzBericht `anlauf`), heißt der Grund „Anlauf der eigenen Welt“ — die Zahlen dieselben
     const was = f == null ? "Last ohne Referenz (" + ((r && r.fehler) || "keine Fahrt") + ")" + namen + geraet
-        : "Last: Referenz f " + fzW(f) + " (Faden " + fzW(r.fEin) + " · alle Kerne " + fzW(r.fAlle) + (stoss && stoss > r.f ? " · Stoß in der Station " + fz2(sp.station) + " Kerne fremd → " + fzW(stoss) : "") +
+        : (r.anlauf ? "Anlauf der eigenen Welt: " : "Last: ") + "Referenz f " + fzW(f) + " (Faden " + fzW(r.fEin) + " · alle Kerne " + fzW(r.fAlle) + (stoss && stoss > r.f ? " · Stoß in der Station " + fz2(sp.station) + " Kerne fremd → " + fzW(stoss) : "") +
             "; vor " + fzW(r.vor.ein) + "/" + fzW(r.vor.alle) + " ms, nach " + fzW(r.nach.ein) + "/" + fzW(r.nach.alle) + " ms, Ruhe " + fzW(r.ruhe.ein) + "/" + fzW(r.ruhe.alle) +
-            " ms seit " + r.ruhe.von + ")" + namen + geraet;
+            " ms seit " + r.ruhe.von + (r.anlauf ? "; Tor " + r.anlauf.wo + ": " + torText(r.anlauf) : "") + ")" + namen + geraet;
     const ab = ABBRUCH_GRUND.test(e.grund || ""); // eine Sprosse, die ihr Urteil über den Abbruch trug (keinUrteil (e)), urteilt die Last wie jede
     if (e.gruen === true && !ab) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "GRÜN trotz " + was };
     const ms = f != null && !ab ? massVon(e.mass) : [];
@@ -1887,7 +1960,7 @@ function fremdUrteil(st, e, b, r) {
         ", Schwelle " + (m.richtung || "≤") + " " + fzW(m.soll);
     const reisst = ms.filter((m) => massReisst(m)), hart = reisst.filter((m) => massReisst(m, entlastet(m)));
     if (hart.length) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "ROT trotz " + was + " — auch entlastet: " + hart.slice(0, 3).map(nenn).join(" · ") };
-    const warum = f == null || ab ? "" : reisst.length ? " — unscharf unter Last: " + reisst.slice(0, 3).map(nenn).join(" · ")
+    const warum = f == null || ab ? "" : reisst.length ? " — unscharf " + (r.anlauf ? "im Anlauf der eigenen Welt" : "unter Last") + ": " + reisst.slice(0, 3).map(nenn).join(" · ")
         : ms.length ? " — kein Maß reißt (" + ms.length + " gemessen): das ROT liegt in einer Bedingung ohne Zahl"
             : e.massFehler ? " — das Maß fehlt: " + e.massFehler : st.ohneMass ? " — ohne Maß: " + st.ohneMass
                 : Array.isArray(e.mass) ? " — kein Maß gemessen (die Probe trug keine Zahl)" : " — die Station nennt kein Maß";
@@ -1899,7 +1972,7 @@ function fremdUrteil(st, e, b, r) {
 let zeugeDerMaschine = null;
 const maschinenZeuge = () => zeugeDerMaschine || (zeugeDerMaschine = fremdZeuge());
 // der stille Zeuge des Selbsttests: jedes Fenster ohne Last (die Attrappen, das Gesetz und der Leser stehen in (5f) beim Namen)
-const stillerZeuge = () => ({ taktMs: FREMD_TAKT_MS, bereit: async () => {}, beginn: () => ({}), stop() {}, blind: null,
+const stillerZeuge = () => ({ taktMs: FREMD_TAKT_MS, bereit: async () => {}, beginn: () => ({}), stop() {}, blind: null, eigenKerne: () => 0, eigenReihe: () => [],
     ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 0, still: true }) });
 // DER ZEUGE ÜBER EINE SPANNE (`node punkte.cjs fremdlast [--sek 60] [--takt 2000]`): die fremden Kerne über --sek Sekunden beim Namen
 async function fremdlastCli(o) {
@@ -1927,7 +2000,7 @@ async function fremdlastCli(o) {
 async function referenzCli(o) {
     const n = Number(o.n) || 10, umfeld = o.umfeld || "allein", fahrten = [], ref = maschinenReferenz();
     for (let i = 0; i < n; i++) {
-        const t = Date.now(), x = await referenzFahrt();
+        const t = Date.now(), x = await ref.fahrt();
         if (x.fehler) {
             console.log("REFERENZ Fahrt " + (i + 1) + " warf: " + x.fehler);
             return 1;
@@ -1935,7 +2008,7 @@ async function referenzCli(o) {
         ref.merke(umfeld, [x]);
         fahrten.push({ ...x, wandMs: Date.now() - t });
         console.log("  Fahrt " + (i + 1) + ": Faden " + fzW(x.ein) + " ms (CPU " + (x.cpuEin != null ? fzW(x.cpuEin) : "?") + " ms) · alle " + os.cpus().length + " Kerne " + fzW(x.alle) +
-            " ms · Wanduhr " + (Date.now() - t) + " ms");
+            " ms · Wanduhr " + (Date.now() - t) + " ms" + (x.tor ? " · Tor " + torText(x.tor) : ""));
     }
     const ruhe = ref.ruhe(umfeld, []);
     const streu = (k) => Math.max(...fahrten.map((x) => x[k])) / Math.min(...fahrten.map((x) => x[k])) - 1;
@@ -1982,7 +2055,7 @@ function fahreGruppeEinmal(sts, ctx) {
     const fenster = zeuge.beginn();
     // DIE REFERENZFAHRT (nur an einer Zeit-Gruppe): unmittelbar vor dem Start und nach dem Ende, die Spannen als Marken des Zeugen
     const ref = istZeit(sts) ? ctx.referenz || maschinenReferenz() : null, marken = {};
-    const fahrt = (wo) => { const t = Date.now(); return ref.fahrt().then((x) => ((marken[wo] = [t, Date.now()]), x)); }; // prettier-ignore
+    const fahrt = (wo) => { const t = Date.now(); return ref.fahrt().then((x) => ((marken[wo] = x && x.spanne ? x.spanne : [t, Date.now()]), x)); }; // prettier-ignore
     return (ref ? fahrt("vor") : Promise.resolve(null)).then((rVor) => new Promise((ganz0) => {
         const t0 = Date.now();
         // DIE SEKUNDEN DER PROBE (w4-sitzung-eichen): in der Sitzung trägt jedes Ergebnis `s`, vom Start bis zum Ende ihres Prozesses (nie
@@ -2940,7 +3013,7 @@ function schlossNehmen(o, nr) {
             'try { process.kill(Number(p), 0); } catch (e) { da = e.code === "EPERM"; } if (fs.existsSync(los) || !da) process.exit(0); }, 500);';
         const env = { ...process.env, GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) };
         delete env.NODE_OPTIONS;
-        const kind = spawn(o.bash, [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
+        const kind = spawn(o.bash, [o.gpuLauf, o.name || "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
             { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
         let out = "", gemeldet = false, uhr = null;
         const h = { kind, los, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out };
@@ -2953,7 +3026,11 @@ function schlossNehmen(o, nr) {
         const still = o.stillS || SCHLOSS_STILL_S;
         const lies = (d) => {
             out += String(d);
-            if (/^gpu-lauf: Schloss /m.test(out)) return melde({ ok: true });
+            if (/^gpu-lauf: Schloss /m.test(out)) {
+                // DAS SCHLOSS DIESES LÄUFERS (haeltSchloss): gehalten, bis der Wartende endet (gelöst, verdrängt oder tot)
+                if (!schlossDa.has(h)) (schlossDa.add(h), h.ende.then(() => schlossDa.delete(h)));
+                return melde({ ok: true });
+            }
             clearTimeout(uhr);
             uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, ungemessen: true, grund: "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + still + " s beim Warten" })), still * 1000);
         };
@@ -2968,6 +3045,10 @@ function schlossNehmen(o, nr) {
         }, 300));
     });
 }
+// die GPU-Schlösser, die dieser Läufer gerade hält (schlossNehmen trägt ein, das Ende des Wartenden trägt aus)
+const schlossDa = new Set();
+// hält dieser Läufer das GPU-Schloss? Sein eigenes (Sitzung, Leihe der Referenz) oder das eines gpu-lauf.sh um ihn (GPU_LAUF_HAELT)
+const haeltSchloss = () => schlossDa.size > 0 || !!process.env.GPU_LAUF_HAELT;
 // gibt das Schloss frei: der Wartende endet, gpu-lauf.sh löst (trap); sonst fällt sein Baum
 async function schlossLoesen(h) {
     if (!h || !h.kind || h.kind.exitCode != null) return;
@@ -3456,6 +3537,7 @@ async function preisLauf(W, namen) {
     const posten = await preisPosten(W);
     console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe · Referenz " +
         (referenz.fehler ? "fehlt: " + referenz.fehler : "f " + referenz.f + " (Faden " + referenz.fEin + " · alle " + referenz.fAlle + ")") +
+        (rVor && rVor.tor ? " · Tor vor " + torText(rVor.tor) : "") + (rNach && rNach.tor ? " · Tor nach " + torText(rNach.tor) : "") +
         (posten.fehler ? " · Posten fehlen: " + posten.fehler : " · nach GC VRAM " + posten.vram_mb + " MB, Heap " + posten.heap_mb + " MB") +
         (gcVor && gcVor.fehler ? " · DER GC DAVOR FEHLT (" + String(gcVor.fehler).split(String.fromCharCode(10))[0].slice(0, 80) + ") — die Schuld der Probe liegt im Fenster" : "") +
         (r && r.ruhe ? " · Ruhe " + (r.ruhe.ruhig ? "nach " + r.ruhe.sek + " s" : "FEHLT nach " + r.ruhe.sek + " s (Karten " + r.ruhe.karten + " · Foundry " + r.ruhe.foundry + " · Chunks " + r.ruhe.chunks + " · Mesh offen " + r.ruhe.meshOffen + ")") : "") +
@@ -4689,7 +4771,8 @@ async function run(opt) {
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
     // der Zeuge der Fremd-Last legt seinen Grund, ehe die erste Station misst (Windows: der PowerShell-Lauf braucht seinen ersten Takt)
     if (!opt.trocken) await maschinenZeuge().bereit();
-    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen
+    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen — unter
+    // EINER Leihe des Schlosses und hinter dem Ruhe-Tor (echteReferenz; bis 23.11. fuhr sie hier VOR jedem Schloss)
     if (!opt.trocken) await referenzAuffuellen("allein");
     const gpuLauf = gpuLaufFuer(opt.geraet, opt.farm);
     const bahnenSoll = Number(opt.bahnen || 3);
@@ -7708,7 +7791,12 @@ async function selbsttest(o = {}) {
         // die Referenz-Attrappe: die Fahrten der Reihe nach (die letzte wiederholt sich), z.n zählt sie
         const refA = (folge) => { const z = { n: 0 }; return { z, fahrt: async () => folge[Math.min(z.n++, folge.length - 1)], ruhe: () => RUHE }; }; // prettier-ignore
         const LAST = { ein: 180, alle: 150 }, STILL = { ein: 100, alle: 100 };
-        const mitZeuge = (n, quelle, referenz = refA([STILL])) => ({ ...ctx(n), referenz, zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ })) - 1] });
+        // die Referenz der Maschine im Selbsttest: Tor und Schloss der Attrappe, je Fall überschreibbar — ein Selbsttest leiht nie das
+        // echte Schloss und wartet nie am Zeugen der Maschine (23.11. OMEN: unter p3/gpu-lauf.sh, das GPU_LAUF_HAELT nicht mitgibt, lieh
+        // TOR (a) das Schloss, das der Selbsttest selbst hielt, und stand bis zum Deckel 2400 s)
+        const torStill = async () => ({ ruhig: true, s: 0, kerne: 0, soll: 3 });
+        const scheinReferenz = (o) => echteReferenz({ rechner: "schein", tor: torStill, schloss: async () => ({ loesen: async () => {} }), ...o });
+        const mitZeuge =(n, quelle, referenz = refA([STILL])) => ({ ...ctx(n), referenz, zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ })) - 1] });
         const rotSt = { ...zeitSt, befehl: [...zeitSt.befehl.slice(0, 4), "3"] };
         const massSt = (n) => ({ ...zeitSt, urteil: (j) => ({ gruen: j.n <= 33, zahl: "n " + j.n }), mass: (j) => [{ wort: "n", wert: j.n, soll: 33 }],
             befehl: [...zeitSt.befehl.slice(0, 4), String(n)] });
@@ -7747,6 +7835,67 @@ async function selbsttest(o = {}) {
                 JSON.stringify((gb.geraet || []).map(([n]) => n)) === JSON.stringify(["AppHelperCap.exe", "MsMpEng.exe", "OmenCap.exe"]) && gb.geraetS > gb.fremdS &&
                 !(gb.namen || []).some(([n]) => /AppHelperCap|MsMpEng|OmenCap/.test(n)),
             JSON.stringify([geraetRot.grund, gb]));
+        // DAS RUHE-TOR (pm-referenz-nach-anlauf; Befund GTX archiv#1 am f0a89f7e: die Referenz „vor“ der ersten Probe fiel in den Anlauf der
+        // eigenen Welt, „UNGEMESSEN unter Last ×1,28“ ohne Fremdes). Die Attrappe der eigenen Welt: ihr Browser zieht 5 Kerne bis `bisMs`, danach
+        // 1 Kern (Wurzel WZ, Takt 300 ms); die Roh-Fahrt rechnet im Anlauf 180/150 ms, danach 100/100. Das Tor im Maßstab des Falls: Soll ≤ 3
+        // Kerne über 0,9 s, höchstens 4 s. (a) der TÄTER-FALL: dieselbe erste Fahrt ohne Tor misst im Anlauf f 1,8 und urteilt „Last“ — mit
+        // Tor wartet sie den Anlauf ab und misst f 1; (b) ein Anlauf über die Obergrenze: die Fahrt geht, das Urteil heißt „Anlauf der eigenen
+        // Welt“ mit Tor, Kernen und Soll, nie „Last:“ und nie „fremd“
+        {
+            const welt = (bisMs) => { const t0 = Date.now(); return { schnapp: () => { const t = Date.now(), s = (t - t0) / 1000, a = Math.min(s, bisMs / 1000); return { t, p: new Map([[WZ, { pp: 1, cpu: 0.02 * s, start: t0 - 1e6, name: "node", cmd: "node punkte.cjs run" }], [WZ + 1, { pp: WZ, cpu: 5 * a + Math.max(0, s - a), start: t0 - 5e5, name: "chrome", cmd: "chrome --type=renderer" }]]) }; }, stop() {} }; }; // prettier-ignore
+            const TOR = { kerne: 3, s: 0.9, maxS: 4 };
+            const ablage = (n) => fs.mkdtempSync(path.join(tmp, "tor-" + n + "-"));
+            const lauf = (bisMs) => { const z = fremdZeuge({ quelle: welt(bisMs), taktMs: 300, wurzel: WZ }), bis = Date.now() + bisMs; return { z, roh: async () => (Date.now() < bis ? { ...LAST } : { ...STILL }) }; }; // prettier-ignore
+            const A = lauf(1500), B = lauf(1e9);
+            await warteMs(700); // zwei Takte: der Zeuge hat eine Reihe
+            const ohne = scheinReferenz({ mdir: ablage("ohne"), fahrt: A.roh, tor: async () => null }); // der Mutant: kein Tor
+            const mit = scheinReferenz({ mdir: ablage("mit"), fahrt: A.roh, tor: () => ruheTor(A.z, TOR) });
+            const vOhne = await ohne.fahrt(), vMit = await mit.fahrt(), nMit = await mit.fahrt();
+            const gerissen = scheinReferenz({ mdir: ablage("riss"), fahrt: B.roh, tor: () => ruheTor(B.z, TOR) });
+            const vRiss = await gerissen.fahrt();
+            [A.z, B.z].forEach((z) => z.stop());
+            const rOhne = referenzBericht(vOhne, vOhne, RUHE, "sitzung"), rMit = referenzBericht(vMit, nMit, RUHE, "sitzung"), rRiss = referenzBericht(vRiss, vRiss, RUHE, "sitzung");
+            const e40 = { gruen: false, zahl: "n 40", grund: "ROT: n 40", mass: [{ wort: "n", wert: 40, soll: 33 }] };
+            const uOhne = fremdUrteil(zeitSt, e40, { s: 4, takte: 9, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 18 }, rOhne);
+            const uMit = fremdUrteil(zeitSt, e40, { s: 4, takte: 9, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 18 }, rMit);
+            const uRiss = fremdUrteil(zeitSt, e40, { s: 4, takte: 9, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 18 }, rRiss);
+            // die Lese-Regel des Tors an einem Lauf: ruhig nach dem Anlauf, f 1, das Urteil wie gemessen — sonst der Name des Täters
+            const torGilt = (r, u) => (r.f === 1 && r.vor.tor && r.vor.tor.ruhig === true && r.vor.tor.s >= 1 && !r.anlauf && u.grund === "ROT: n 40" && !u.ungemessen ? true
+                : "Referenz im Anlauf: f " + r.f + ", Tor " + JSON.stringify(r.vor.tor || null) + " · " + String(u.grund).slice(0, 90));
+            const tOhne = torGilt(rOhne, uOhne);
+            pruef("TOR (a) Täter-Fall „Referenz im Anlauf“: ohne Tor misst die erste Fahrt im Anlauf der eigenen Welt f 1,8 → ROT beim Namen; mit Tor wartet sie den Anlauf ab (≥ 1 s), f 1, ROT 40 wie gemessen",
+                torGilt(rMit, uMit) === true && typeof tOhne === "string" && /^Referenz im Anlauf: f 1\.8, Tor null/.test(tOhne) && /unscharf unter Last/.test(uOhne.grund) && nMit.tor.ruhig === true,
+                JSON.stringify([torGilt(rMit, uMit), tOhne, vMit.tor, nMit.tor]));
+            pruef("TOR (b) der Anlauf reißt die Obergrenze (4 s): die Fahrt geht und trägt `anlauf`, das Urteil heißt „Anlauf der eigenen Welt“ mit Tor, Kernen und Soll — nie „Last:“, nie „fremd“",
+                rRiss.anlauf && rRiss.anlauf.wo === "vor" && rRiss.anlauf.ruhig === false && rRiss.anlauf.s >= 4 && rRiss.anlauf.kerne > 3 && rRiss.f === 1.8 &&
+                    /^Anlauf der eigenen Welt: Referenz f 1,8 .*; Tor vor: Anlauf der eigenen Welt nach 4[,0-9]* s \(eigen [0-9,]+ Kerne, Soll ≤ 3\)\)/.test(uRiss.grund) && uRiss.ungemessen === true &&
+                    !/Last:|fremd/.test(uRiss.grund),
+                JSON.stringify([rRiss.anlauf, uRiss.grund]));
+            // (c) DER TÄTER „Auffüllung ohne Schloss“ (23.11. 09:50: `run` fuhr die Auffüllung „allein“ vor dem Schloss, im Preis-Stück von
+            // markt#1): das Attrappen-Schloss zählt Leihen und hält eine Tiefe, jede Roh-Fahrt notiert, ob sie frei lief. Soll: die zehn
+            // Fahrten unter EINER Leihe, eine einzelne Fahrt leiht es selbst, ein verweigertes Schloss ist ein Wurf beim Namen; der Mutant
+            // ohne Schloss (das alte Gesetz) fällt ROT beim Namen. Dazu haeltSchloss: GPU_LAUF_HAELT (ein gpu-lauf.sh um den Läufer) zählt
+            const attrappe = () => { const z = { leihen: 0, tief: 0, frei: 0 }; return { z, schloss: async () => (z.tief ? { loesen: async () => {} } : (z.leihen++, z.tief++, { loesen: async () => { z.tief--; } })) }; }; // prettier-ignore
+            const roh = (z) => async () => { if (!z.tief) z.frei++; return { ...STILL }; }; // prettier-ignore
+            const SA = attrappe(), SO = attrappe();
+            const mitS = scheinReferenz({ mdir: ablage("schloss"), fahrt: roh(SA.z), tor: torStill, schloss: SA.schloss, rechner: "schein" });
+            const ohneS = scheinReferenz({ mdir: ablage("frei"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ loesen: async () => {} }), rechner: "schein" }); // der Mutant
+            const aMit = await mitS.auffuellen("allein"), zAuf = { ...SA.z }, aOhne = await ohneS.auffuellen("allein"), eine = await mitS.fahrt(); // zAuf: der Stand nach der Auffüllung, vor der einzelnen Fahrt
+            const verweigert = await scheinReferenz({ mdir: ablage("nein"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ fehler: "die Referenz bekam kein Schloss: Nachtruhe" }), rechner: "schein" }).fahrt();
+            const schlossGilt = (a, z) => (a.n === REFERENZ_RUHE_MIN && z.frei === 0 && z.leihen === 1 ? true : "Auffüllung ohne Schloss: " + z.frei + " von " + a.n + " Fahrten frei, " + z.leihen + " Leihen");
+            const haeltVorher = process.env.GPU_LAUF_HAELT;
+            delete process.env.GPU_LAUF_HAELT;
+            const frei0 = schlossDa.size === 0 && haeltSchloss() === false;
+            process.env.GPU_LAUF_HAELT = "selbst";
+            const unter0 = haeltSchloss() === true;
+            if (haeltVorher == null) delete process.env.GPU_LAUF_HAELT;
+            else process.env.GPU_LAUF_HAELT = haeltVorher;
+            pruef("TOR (c) Täter-Fall „Auffüllung ohne Schloss“: die zehn Fahrten der Auffüllung laufen unter EINER Leihe, eine einzelne Fahrt leiht selbst, ein verweigertes Schloss ist ein Wurf beim Namen; ohne Schloss → ROT beim Namen; GPU_LAUF_HAELT zählt als gehalten",
+                schlossGilt(aMit, zAuf) === true && SA.z.tief === 0 && /^Auffüllung ohne Schloss: 10 von 10 Fahrten frei/.test(String(schlossGilt(aOhne, SO.z))) &&
+                    !eine.fehler && SA.z.leihen === 2 && Array.isArray(eine.spanne) && eine.tor && eine.tor.ruhig === true &&
+                    verweigert.fehler === "die Referenz bekam kein Schloss: Nachtruhe" && frei0 && unter0,
+                JSON.stringify([schlossGilt(aMit, zAuf), schlossGilt(aOhne, SO.z), SA.z, eine, verweigert, frei0, unter0]));
+        }
         // DAS GESETZ AN GESETZTEN EINGABEN: je Satz Station, Ergebnis (mit Maß), Bericht des Zeugen, Bericht der Referenz und sein Soll; die
         // MUTANTEN fallen je an ihrem Satz, jeder Satz fällt an einem von ihnen
         {
@@ -7839,10 +7988,10 @@ async function selbsttest(o = {}) {
                 fs.writeFileSync(path.join(md, "referenz-anderer.json"), JSON.stringify({ rechner: RR, fahrten: [...Array(12)].map((_, i) => ({ umfeld: "allein", ein: 100 + i, alle: 200 + i, zeit: jetzt })) }));
                 fs.writeFileSync(path.join(md, "kandidat-gtx.json"), JSON.stringify({ je: { "a.K1#1": { referenz: { rechner: RR, umfeld: "allein", vor: { ein: 1, alle: 1 }, nach: { ein: 1, alle: 1 } }, zeit: jetzt } } }));
                 const zaehl = { n: 0 }, fahrtA = async () => (zaehl.n++, { ein: 180, alle: 150, cpuEin: 170 });
-                const ra = echteReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA });
+                const ra = scheinReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA });
                 const rhA = ra.ruhe("allein", []);
                 fs.rmSync(path.join(md, "kandidat-gtx.json"));
-                const rhA2 = echteReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA }).ruhe("allein", []);
+                const rhA2 = scheinReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA }).ruhe("allein", []);
                 const aufA = await ra.auffuellen("allein");
                 pruef("LAST die Ablage wird gelesen: 12 Fahrten aus referenz-anderer.json → Ruhe 101/201 aus 12 (der Vermerk einer Kandidaten-Datei zählt nie, ihr Wandern ändert nichts); ein voller Pool fährt nichts nach",
                     rhA && rhA.n === 12 && rhA.ein === 101 && rhA.alle === 201 && rhA2 && rhA2.n === 12 && rhA2.ein === 101 && aufA.n === 0 && zaehl.n === 0, JSON.stringify([rhA, rhA2, aufA, zaehl.n]));
@@ -7850,7 +7999,7 @@ async function selbsttest(o = {}) {
                 // in der eigenen Ablage) urteilt es ROT trotz Last; die Mutante, deren Auffüllung nichts fährt, bleibt UNGEMESSEN
                 const zaehl2 = { n: 0 }, ablage2 = path.join(md2, "referenz-selbst.json");
                 const fahrtB = async () => (zaehl2.n++, { ein: 100, alle: 100, cpuEin: 99 });
-                const leer = echteReferenz({ mdir: md2, rechner: RR, ablage: ablage2, fahrt: fahrtB });
+                const leer = scheinReferenz({ mdir: md2, rechner: RR, ablage: ablage2, fahrt: fahrtB });
                 const urteil = (ref) => fremdUrteil(zeitSt, rotM(M(990, 33)), L, referenzBericht(LAST, LAST, ref.ruhe("allein", []), "allein"));
                 const vorher = urteil(leer);
                 const mutante = { ...leer, auffuellen: async () => ({ n: 0 }) };
@@ -7866,6 +8015,8 @@ async function selbsttest(o = {}) {
                         nachher.gruen === false && !nachher.ungemessen && /ROT trotz Last/.test(nachher.grund) &&
                         quelle.includes("referenzAuffuellen(\"allein\")") && quelle.includes("referenzAuffuellen(\"sitzung\")"),
                     JSON.stringify([vorher.grund.slice(0, 120), mutUrteil.ungemessen, auf, zaehl2.n, datei2.fahrten.length, nachher.grund.slice(0, 160)]));
+                pruef("LEIHE der Selbsttest lieh nie das echte Schloss: jede seiner Referenzen trägt Tor und Schloss der Attrappe (scheinReferenz)",
+                    referenzLeihen === 0, "Leihen " + referenzLeihen);
                 // DIE VERDRÄNGUNG: Wanduhr 220 bei Faden-CPU 156,4 gegen eine Ruhe von 220 (unter Last gelernt) → der Faden trägt dennoch f
                 // = 220 ÷ (156,4 + ein Schritt); ohne Faden-CPU bleibt sie 1; die Mutante ohne Verdrängung urteilt dort f 1 (Ruhe → ROT wie gemessen)
                 const vor = { ein: 220, alle: 100, cpuEin: 156.4 }, rv = referenzBericht(vor, vor, { ein: 220, alle: 100, n: 20, von: "x" }, "allein");

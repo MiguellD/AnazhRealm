@@ -1,0 +1,142 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 365,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   159.38,
+   0.222
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   76,
+   84.952,
+   52
+  ],
+  "blick": [
+   0.16991,
+   0.98546,
+   0
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 94.1,
+  "sigma": 34.5,
+  "schwarz": 0.0004,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [159.38,0.222])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 20 m · Luma 94.1 σ 34.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 49.7 % (≥ 15.0 %) h 89° Luma 85",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [159.38,0.222])"
+  }
+ ],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt nahWiese 49.7 % (≥ 15.0 %) h 89° Luma 85"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.984387,
+   "pixel": 2041224,
+   "max": 695
+  },
+  "misch": 1278460,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 3251,
+   "wechsel": 735917
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 935985,
+    "farbe": [
+     0.10412,
+     0.07677,
+     0.05088
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 6990,
+    "farbe": [
+     0.12903,
+     0.14437,
+     0.01827
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 86873,
+    "farbe": [
+     0.2197,
+     0.23155,
+     0.02972
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5b36f69a-gtx\\auge-same-aufwaerts-s7-rot.maske.png"
+ }
+}

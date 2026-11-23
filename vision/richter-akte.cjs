@@ -92,9 +92,11 @@ function preisImFenster(bilder, station, von, bis, stueck) {
 function referenzFuerAkte(r) {
     if (!r || typeof r !== "object") return { fehler: "die Sitzung fuhr keine Referenz um den Preis-Lauf" };
     if (r.fehler) return { fehler: String(r.fehler).slice(0, 160) };
-    const zwei = (x) => (x ? { ein: x.ein, alle: x.alle } : null);
+    // DAS RUHE-TOR (pm-referenz-nach-anlauf, punkte.cjs ruheTor): je Fahrt ihr Tor, und riss es, `anlauf` — buche-2 lastVon nennt ihn
+    const tor = (t) => (!t ? null : t.blind ? { blind: String(t.blind).slice(0, 120) } : { ruhig: t.ruhig, s: t.s, kerne: t.kerne, soll: t.soll, reihe: t.reihe });
+    const zwei = (x) => (x ? { ein: x.ein, alle: x.alle, ...(x.tor ? { tor: tor(x.tor) } : {}) } : null);
     return { f: r.f, fEin: r.fEin, fAlle: r.fAlle, vor: zwei(r.vor), nach: zwei(r.nach), ruhe: r.ruhe ? { ein: r.ruhe.ein, alle: r.ruhe.alle, n: r.ruhe.n, von: r.ruhe.von } : null,
-        umfeld: r.umfeld, rechner: r.rechner };
+        ...(r.anlauf ? { anlauf: { wo: r.anlauf.wo, ...tor(r.anlauf) } } : {}), umfeld: r.umfeld, rechner: r.rechner };
 }
 
 function akten(o) {
@@ -253,6 +255,12 @@ function selbsttest() {
     pruefe("LAST Mutant Referenz gerissen + Preis über Soll: UNGEMESSEN unter Last ×1,84", () => {
         const p = preisVon({ bilder: schwer, referenz: ref(1.84) });
         return p.urteil === "UNGEMESSEN unter Last ×1,84" ? true : JSON.stringify(p).slice(0, 300);
+    });
+    // DAS RUHE-TOR (pm-referenz-nach-anlauf): riss es vor der Fahrt „vor“, heißt dieselbe Zahl „im Anlauf der eigenen Welt“ — nie „unter Last“
+    pruefe("LAST Täter Referenz im Anlauf (das Tor riss vor „vor“) + Preis über Soll: UNGEMESSEN im Anlauf der eigenen Welt ×1,84", () => {
+        const anlauf = { wo: "vor", ruhig: false, s: 60, kerne: 4.02, soll: 3, reihe: [4.4, 4.1, 3.9] };
+        const p = preisVon({ bilder: schwer, referenz: { ...ref(1.84), anlauf } });
+        return p.urteil === "UNGEMESSEN im Anlauf der eigenen Welt ×1,84" ? true : JSON.stringify(p).slice(0, 300);
     });
     pruefe("LAST Mutant Preis unter Soll: GRÜN, egal welche Last (ruhig, gerissen, ohne Referenz)", () =>
         [ref(1.05), ref(3.5), undefined].every((r) => preisVon({ referenz: r }).urteil === "GRÜN") ? true : "nicht GRÜN");

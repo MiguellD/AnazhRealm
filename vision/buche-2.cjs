@@ -191,11 +191,18 @@ const URTEIL = new Set(["GRÜN", "ROT"]);
 const REFERENZ_RUHE_BAND = require(path.join(__dirname, "..", "meisterkarte-quelle", "punkte", "punkte.cjs")).REFERENZ_RUHE_BAND;
 if (!(REFERENZ_RUHE_BAND >= 1)) bruch("punkte.cjs exportiert kein REFERENZ_RUHE_BAND — die Last am Preis hätte keinen Maßstab");
 const komma = (x, n) => (+x).toFixed(n).replace(".", ",");
+//   Zeit-Zahl > Soll, f > Band, das Ruhe-Tor riss (R.anlauf, punkte.cjs ruheTor) → „UNGEMESSEN im Anlauf der eigenen Welt ×f“ — dieselbe
+//     Klasse wie die Last (LAST_WORT), nie „unter Last“: die eigene Welt lief noch an, nichts Fremdes (pm-referenz-nach-anlauf)
 function lastVon(R) {
     if (!R || typeof R !== "object") return { ruhig: false, wort: "UNGEMESSEN ohne Referenz" };
     if (R.fehler || !Number.isFinite(R.f)) return { ruhig: false, wort: "UNGEMESSEN ohne Referenz (" + String(R.fehler || "f fehlt").slice(0, 80) + ")" };
-    return R.f <= REFERENZ_RUHE_BAND ? { ruhig: true } : { ruhig: false, wort: "UNGEMESSEN unter Last ×" + komma(R.f, 2) };
+    if (R.f <= REFERENZ_RUHE_BAND) return { ruhig: true };
+    return { ruhig: false, wort: "UNGEMESSEN " + (R.anlauf ? "im Anlauf der eigenen Welt" : "unter Last") + " ×" + komma(R.f, 2) };
 }
+// DIE KLASSE DER LAST-FAHRT (EINE Quelle für jede Stelle, die sie liest): unter Last oder im Anlauf der eigenen Welt; `lastKurz` lässt
+// „unter Last“ fallen und behält den Anlauf beim Namen
+const LAST_WORT = /^UNGEMESSEN (unter Last|im Anlauf der eigenen Welt) ×/;
+const lastKurz = (p) => p.replace(/^UNGEMESSEN (unter Last )?/, "");
 const treppenZeile = (T, n) => Object.keys(T).find((k) => k === n || k.startsWith(n + " ")); // „Megastadt“ = „Megastadt und Kontinent“
 // GEHALTEN, nicht Spitze (REGELN.md „Die Zählweise des Speichers“): Heap und VRAM urteilen nach dem erzwungenen Aufräumen
 // (`preis.posten`: was die Welt HÄLT); die Spitze des Stroms ist der Lesewert daneben und urteilt nur, wo die Akte kein Aufräumen
@@ -273,7 +280,7 @@ function fahrtUrteil(f, sprosse, T, wo) {
     };
     // die LAST-FAHRT (Kopf-Kommentar): jeder Preis, der nicht GRÜN ist, ist „UNGEMESSEN unter Last ×f“ — kein gemessenes ROT, keine fehlende Zahl
     const offen = je.map((g, i) => [g, preise[i]]).filter(([, p]) => p !== "GRÜN");
-    const last = offen.every(([, p]) => /^UNGEMESSEN unter Last ×/.test(p)) ? offen.map(([g, p]) => `${g.geraet} ${p.replace(/^UNGEMESSEN unter Last /, "")}`).join(" · ") : null;
+    const last = offen.every(([, p]) => LAST_WORT.test(p)) ? offen.map(([g, p]) => `${g.geraet} ${lastKurz(p)}`).join(" · ") : null;
     return { u: "KERN", warum: `Richter GRÜN ${an}, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)`, last };
 }
 
@@ -316,8 +323,8 @@ function fahrtenJeSha(liste, preisVon) {
                         vor = g.get(k);
                     if (preisVon && vor && gruen(vor) && gruen(x) && preisVon(vor) === "GRÜN") {
                         const p = preisVon(x);
-                        if (/^UNGEMESSEN unter Last ×/.test(p)) {
-                            lastGehalten.push(`${x.geraet} ${p.replace(/^UNGEMESSEN unter Last /, "")}`);
+                        if (LAST_WORT.test(p)) {
+                            lastGehalten.push(`${x.geraet} ${lastKurz(p)}`);
                             continue;
                         }
                     }
@@ -1450,6 +1457,20 @@ function selbsttest() {
     pruefe("LAST-FAHRT: 0 + Last-Fahrt → KERN, nie PUNKT", () => {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: lastPreis }) });
         return L(A).heute === 0 && L(A).kern === 1 && !z.bericht[0].notiz.length && /UNGEMESSEN unter Last ×1,84/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].notiz}`;
+    });
+    // DAS RUHE-TOR (pm-referenz-nach-anlauf): dieselbe Zahl, das Tor riss vor „vor“ — der Grund heißt „im Anlauf der eigenen Welt“, die
+    // Klasse bleibt die der Last-Fahrt (der Punkt hält beim Namen); der Mutant „Anlauf ist ROT“ nähme ihn
+    const anlaufRef = { ...unterLast, anlauf: { wo: "vor", ruhig: false, s: 60, kerne: 4.02, soll: 3 } };
+    const anlaufPreis = { ...lastPreis, referenz: anlaufRef, urteil: "UNGEMESSEN im Anlauf der eigenen Welt ×1,84" };
+    pruefe("ANLAUF: das Tor riss + Bild über Soll → „UNGEMESSEN im Anlauf der eigenen Welt ×f“, nie „unter Last“", () => {
+        const u = preisUrteil(preis({ bild_p95_ms: 58.8, bild_max_ms: 134, referenz: anlaufRef, urteil: undefined }), treppeLesen(neu()), "t", "Ort");
+        return u === "UNGEMESSEN im Anlauf der eigenen Welt ×1,84" || u;
+    });
+    pruefe("ANLAUF-FAHRT: PUNKT + Anlauf-Fahrt → PUNKT hält, laut mit dem Anlauf beim Namen", () => {
+        const { L, z } = lauf(punktDann(fahrt(A, 1, { preis: anlaufPreis })));
+        const b = z.bericht[0];
+        return L(A).heute === 1 && b.stand === "PUNKT" && /Preis am Kopf offen \(Last\): a635bfee Radeon 890M im Anlauf der eigenen Welt ×1,84/.test(b.notiz.join(" | "))
+            ? true : `heute ${L(A).heute} · ${b.warum} · ${b.notiz}`;
     });
     pruefe("LAST-FAHRT Mutant: PUNKT + Preis GEMESSEN ROT (Referenz im Band) → KERN", () => {
         const { L } = lauf(punktDann(fahrt(A, 1, { preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" } })));
