@@ -1,7 +1,7 @@
 // diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI: jede Art, einen Schritt zu verlieren, zu vervielfachen oder stumm zu
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
 // (S) STUMM · (K) KLASSE (die volle Batterie cpu, die Karte gpu — kein swiftshader-Schritt im Zug) · (E) ECHT (die Karten: je
-// Schritt GENAU ein Bein) · (T) WAAGE · (P) PLAYTEST · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
+// Schritt GENAU ein Bein) · (T) WAAGE · (P) PLAYTEST · (O) KORPUS-ANTEIL · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
 // Job nennt jeden roten) · (B) BRUCH AM LANDE-TOR (nur BRUCH sperrt, die Tafel spec/ci/tor-klassen.json), je Regel an ihrer
 // Funktion erklärt. check.yml trägt die Jobs puls (je Push), kopf und voll (unter VOLL_WENN) und echt (die Karten); ein weiterer
 // Job ist ROT.
@@ -23,6 +23,7 @@ const {
     path,
     fs,
     jsonLesen,
+    teilVon,
     ROOT: root,
 } = require("./lib/welt-boot.cjs");
 
@@ -497,6 +498,37 @@ function playtestUrteil(docs, skripte) {
                     "Befehl greift es aus dem Log, das tee aus dem Playtest schreibt)"
             );
     }
+    return v;
+}
+// (O) DER KORPUS-ANTEIL (ci-korpus-einmal, 23.11.): jeder Schritt von check.yml, der den Speicher-Korpus fährt (diag-persistence.cjs
+// ohne --stufe/--weg), trägt seinen Anteil k/n (env PERSISTENCE_KORPUS; ohne ihn 1/1 = alle) — die Anteile decken den Korpus
+// lückenlos und ohne Doppel: jedes k von n GENAU einmal. Bis hier luden Teil 1 und Teil 2 je alle Stände (1449 s und 1392 s).
+const KORPUS_LAUF = /^node scripts\/diag-persistence\.cjs(?!.*\s--(?:stufe|weg)\b)/;
+function korpusAnteilUrteil(doc, skripte) {
+    const [v, traeger] = [[], []];
+    for (const J of Object.values(jobsVon(doc)))
+        for (const s of gates(J)) {
+            if (!aufloesen(s.run, skripte).some((t) => KORPUS_LAUF.test(t.t))) continue;
+            const roh = { ...doc.env, ...J.env, ...s.env }.PERSISTENCE_KORPUS;
+            try {
+                traeger.push({ name: name(s), ...teilVon(roh === undefined ? "1/1" : roh, "PERSISTENCE_KORPUS") });
+            } catch (e) {
+                v.push(`(O) Korpus-Anteil unlesbar: „${name(s)}" — ${e.message}`);
+            }
+        }
+    const ns = [...new Set(traeger.map((t) => t.n))];
+    const wer = (l) => l.map((t) => `„${t.name}"`).join(" · ");
+    if (!traeger.length && !v.length) v.push("(O) Korpus-Anteil fehlt: kein Schritt fährt den Korpus (diag-persistence.cjs)");
+    if (ns.length > 1)
+        v.push(
+            `(O) Korpus-Anteil doppelt: ${traeger.map((t) => `„${t.name}" ${t.k}/${t.n}`).join(" · ")} teilen in verschiedene n — ein Stand lädt mehrmals oder nie`
+        );
+    else if (ns.length)
+        for (let k = 1; k <= ns[0]; k++) {
+            const bei = traeger.filter((t) => t.k === k);
+            if (bei.length > 1) v.push(`(O) Korpus-Anteil doppelt: ${k}/${ns[0]} in ${wer(bei)}`);
+            if (!bei.length) v.push(`(O) Korpus-Anteil fehlt: ${k}/${ns[0]} fährt kein Schritt`);
+        }
     return v;
 }
 
@@ -1469,6 +1501,7 @@ function selbsttest() {
         selbsttestWaage(),
         selbsttestGegenrichtung(),
         selbsttestPlaytest(),
+        selbsttestKorpus(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
         selbsttestKopf(),
@@ -1940,6 +1973,47 @@ function selbsttestPlaytest() {
     return f;
 }
 
+// (O) Der Korpus-Anteil gegen ein Fixture: Teil 1 und Teil 2 je ein Anteil, der Stufen-Lauf zählt nicht; die alte Art (beide
+// Teile ohne Schalter, main 5b36f69a), derselbe Anteil zweimal, ein fehlender, ein leerer Schalter und verschiedene n — ROT.
+function selbsttestKorpus() {
+    const skripte = { "gate:persistence": "node scripts/diag-persistence.cjs --selftest" };
+    const docs = () => ({
+        jobs: {
+            voll: {
+                steps: prep(
+                    { name: "Teil 1", if: gr(2), env: { PERSISTENCE_KORPUS: "1/2" }, run: "npm run gate:persistence" },
+                    { name: "Teil 2", if: gr(3), env: { PERSISTENCE_KORPUS: "2/2" }, run: "node scripts/diag-persistence.cjs" },
+                    { name: "Stufe", if: gr(4), run: "node scripts/diag-persistence.cjs --stufe" }
+                ),
+            },
+        },
+    });
+    const T = (d, n) => d.jobs.voll.steps.find((s) => s.name === "Teil " + n);
+    const faelle = [
+        ["der gute Stand", () => {}, null],
+        [
+            "beide Teile ohne Anteil (main 5b36f69a: je Lauf 2 × 317 Stände)",
+            (d) => [1, 2].forEach((n) => delete T(d, n).env.PERSISTENCE_KORPUS),
+            /\(O\) Korpus-Anteil doppelt: 1\/1 in „Teil 1" · „Teil 2"/,
+        ],
+        [
+            "zwei Schritte mit demselben Anteil",
+            (d) => (T(d, 2).env.PERSISTENCE_KORPUS = "1/2"),
+            [/\(O\) Korpus-Anteil doppelt: 1\/2 in „Teil 1" · „Teil 2"/, /\(O\) Korpus-Anteil fehlt: 2\/2/],
+        ],
+        [
+            "ein fehlender Anteil",
+            (d) => d.jobs.voll.steps.splice(d.jobs.voll.steps.indexOf(T(d, 2)), 1),
+            /\(O\) Korpus-Anteil fehlt: 2\/2 fährt kein Schritt/,
+        ],
+        ["ein leerer Schalter", (d) => (T(d, 1).env.PERSISTENCE_KORPUS = ""), /\(O\) Korpus-Anteil unlesbar: „Teil 1"/],
+        ["verschiedene n", (d) => (T(d, 2).env.PERSISTENCE_KORPUS = "2/3"), /\(O\) Korpus-Anteil doppelt: .*verschiedene n/],
+    ];
+    const f = [];
+    taeterFaelle(faelle, (d) => korpusAnteilUrteil(d, skripte), { fehler: f, klon: docs });
+    return f;
+}
+
 // ci-zeiten: liefert die API keinen Lauf, endet die Messung ROT (nie eine leere Tafel)
 async function selbsttestZeiten() {
     const leer = async (p) => (p.includes("/runs?per_page") ? { total_count: 0, workflow_runs: [] } : { jobs: [] });
@@ -2086,6 +2160,7 @@ function hauptlauf() {
     v.push(...schluesselUrteil(alleWorkflows));
     v.push(...einlassTeil(alleWorkflows));
     v.push(...playtestUrteil(alleWorkflows, skripte));
+    v.push(...korpusAnteilUrteil(doc, skripte));
     const zeitenDatei = path.join(root, ZEITEN);
     const w = fs.existsSync(zeitenDatei)
         ? waage(doc, jsonLesen(zeitenDatei))
@@ -2118,7 +2193,7 @@ function hauptlauf() {
         );
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) (B) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge, liegt im Plan unter seinem Deckel und trägt seine Tor-Klasse`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (O) (Z) (B) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge, liegt im Plan unter seinem Deckel und trägt seine Tor-Klasse`
     );
 }
 if (SELBSTTEST) selbsttestLauf();

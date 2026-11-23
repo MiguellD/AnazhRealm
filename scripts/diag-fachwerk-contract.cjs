@@ -1077,6 +1077,11 @@ function raumLinse() {
     //     Gerüst unter der Farbe (Riegel · Streben · Zimmermann, in der Flächen-Stufe der Ständer-Ring), und die Felder stehen als
     //     Platten in EINEM Ton: kein Teil mit der Patina je Brett, höchstens jedes fünfte im Stein-Maß (größte Fläche < 0,05 m²) —
     //     außer der Stil zeigt Backstein. Vorher 20 Rezepte (griechisch: 61 % der L0). Selbsttest: das Fachwerk als Putz-Stil.
+    //     DER FREMDE VERBAND (haus-ziegel-putz): Putz, Lehmputz und Backstein tragen ihren Ton im Stoff, nie als Patina je Teil
+    //     (fachwerk `tonImStoff`) — die Fläche im Verband der Flächen-Stufe trägt keine Farbe je Ecke mehr, an der der Fühler
+    //     „Patina“ sie nennt. Der Verband unter der Farbe steht seither im Stoff des Teils: ein Wand-Teil, dessen Stoff eine andere
+    //     Zeile des Verband-Gesetzes webt als der Stoff der Wand (`H.raum`), ist umgemalter Verband.
+    const wandZeile = (rolle) => Math.max(0, FC.VERBAND_GESETZ.reihe.indexOf(FC.VERBAND_GESETZ.rolle[rolle] || "?"));
     const wandBefund = (K, rezepte) => {
         const bruch = [];
         let n = 0;
@@ -1091,9 +1096,10 @@ function raumLinse() {
                 const gef = teile("gefache");
                 const patina = gef.filter((o) => (o.geometry.attributes.color || { array: [] }).array.some((v) => v !== 1)).length;
                 const stein = gef.filter((o) => { const d = new THREE.Box3().setFromBufferAttribute(o.geometry.attributes.position).getSize(new THREE.Vector3()).toArray().sort((x, y) => y - x); return d[0] * d[1] < 0.05; }).length; // prettier-ignore
-                const verband = H.raum !== "backstein" && (patina || stein > 0.2 * gef.length);
+                const fremd = gef.filter((o) => { const z = (o.material && o.material.userData && o.material.userData.__verband) || 0; return z > 0 && z < FC.VERBAND_GESETZ.reihe.length && z !== wandZeile(H.raum); }).length; // prettier-ignore
+                const verband = H.raum !== "backstein" && (patina || fremd || stein > 0.2 * gef.length);
                 if (ger.length || verband || (H.grundriss !== "rund" && !gef.length))
-                    bruch.push(`${k} L${stufe}: Gerüst [${ger}] · Verband ${!!verband} (von ${gef.length} Wand-Teilen ${patina} mit Patina, ${stein} im Stein-Maß) unter „${H.raum}“`); // prettier-ignore
+                    bruch.push(`${k} L${stufe}: Gerüst [${ger}] · Verband ${!!verband} (von ${gef.length} Wand-Teilen ${patina} mit Patina, ${fremd} in fremdem Verband, ${stein} im Stein-Maß) unter „${H.raum}“`); // prettier-ignore
             }
         return { bruch, n };
     };

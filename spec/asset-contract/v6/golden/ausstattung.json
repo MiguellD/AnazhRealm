@@ -5,12 +5,12 @@
     "feuerstelle-s1-L0": {
       "objects": 4,
       "vertices": 1068,
-      "sha256": "209b36aa541b928843dcdb1848b7df60445e46298a3d525a7a0dae3e5447829b"
+      "sha256": "24499af4620d1efc49daccbc9b0b7b5594c8c9a9c1c5c93fe3782cc9b114f44e"
     },
     "feuerstelle-s1-L1": {
       "objects": 4,
       "vertices": 405,
-      "sha256": "500505ca2793e307235ff9b2f8f7e4ec6d598eeb1ce6771190b299cbb0f7d97b"
+      "sha256": "d7181d2abe5cdff5a84fce7c081067e2aa6da8f93fa013e73f69872098949037"
     },
     "feuerstelle-s1-L3": {
       "objects": 1,
@@ -20,12 +20,12 @@
     "feuerstelle-s2-L0": {
       "objects": 4,
       "vertices": 1068,
-      "sha256": "c14ee6d8a4513b4afa739f0fb6a9e0c97f68647d0b293242a157f5f18d610da0"
+      "sha256": "d1fe1dfc69690dcc1f1daddbb706d89cbc82eca4adb63c9c09acba60f85509f5"
     },
     "feuerstelle-s2-L1": {
       "objects": 4,
       "vertices": 405,
-      "sha256": "01b2275a65fdb48759aaf7a0245cd35c679720e501acfd8855c3ce39de77e996"
+      "sha256": "b0ac55331520e1f82583519d9e69942ca2bd70822da42d2eb23dd8d7e5d429bd"
     },
     "feuerstelle-s2-L3": {
       "objects": 1,
@@ -185,7 +185,7 @@
     "feuerstelle-s1-L0-ov_fuelle": {
       "objects": 4,
       "vertices": 906,
-      "sha256": "fd73c5666099f1b34e85655f037b48ba04299887048669cbf987d907387277c3"
+      "sha256": "f8c2ebb962e5f3c8ad64dce8bec1e5af634d1b6c541eb7031e2bf7340556e7e7"
     }
   }
 }

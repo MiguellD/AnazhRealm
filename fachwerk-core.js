@@ -297,7 +297,7 @@
   const WOODSET={holz:1,blockholz:1,boden:1,moebel:1,lattung:1,stamm:1,nagel:1};   // reine Box-Rollen → Vertex-Tint sicher (Ziegel/Lehm nutzen poly(), bleiben aussen vor)
   function woodTint(x,y,z){ let h=(((x*131.7+y*57.2+z*97.3)*1000)|0); h=(h^(h>>>13))>>>0; h=(Math.imul(h,2246822519))>>>0; h=(h^(h>>>15))>>>0;   // deterministisches Patina-Feld je Brett — kein Zufall pro Frame
     const r1=(h&255)/255, r2=((h>>>8)&255)/255; const Lum=0.86+0.22*r1, warm=(r2-0.5)*0.12; return [Math.min(1.15,Lum+warm), Lum, Math.max(0.78,Lum-warm*0.6)]; }   // Helligkeit ±, Kern=wärmer / verwittert=kühler
-  function tintWood(m,role,x,y,z){ const g=m.geometry; if(m.material&&m.material.vertexColors&&g&&g.attributes&&g.attributes.position){ const n=g.attributes.position.count, t=woodTint(x,y,z), c=new Float32Array(n*3); for(let i=0;i<n;i++){c[i*3]=t[0];c[i*3+1]=t[1];c[i*3+2]=t[2];} g.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); } return m; }   // MATERIAL-basiert statt rollenbasiert: jedes vertexColors-Material kriegt Vertexfarben, auch wenn die Rolle via RM gemappt wurde (ziegel->stamm, backstein->blockholz) -> sonst schwarz. Vertexzahl aus Geometrie -> korrekt auch bei unterteilten/gebogenen Meshes.
+  function tintWood(m,role,x,y,z){ const g=m.geometry; if(m.material&&m.material.vertexColors&&g&&g.attributes&&g.attributes.position){ const n=g.attributes.position.count, t=gefuegeTonImStoff(_roleByMat.get(m.material)||role)?[1,1,1]:woodTint(x,y,z), c=new Float32Array(n*3); for(let i=0;i<n;i++){c[i*3]=t[0];c[i*3+1]=t[1];c[i*3+2]=t[2];} g.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); } return m; }   // MATERIAL-basiert statt rollenbasiert: jedes vertexColors-Material kriegt Vertexfarben, auch wenn die Rolle via RM gemappt wurde (ziegel->stamm, backstein->blockholz) -> sonst schwarz. Vertexzahl aus Geometrie -> korrekt auch bei unterteilten/gebogenen Meshes. DER TON IM STOFF (GEFUEGE_GESETZ `tonImStoff`, die Rolle des STOFFS): Putz und Backstein tragen keine Patina je Teil.
   const NOSHADOW={ziegel:1,ziegel2:1,lattung:1,backstein:1,nagel:1};   // PERF: tausende Deko-Prims werfen redundante Schatten → aus (Unterhaut/Wand trägt den Schatten); Geometrie unverändert
   // ════ EIN VERFORMUNGS-FELD · jeder Punkt jedes Bauteils läuft hindurch (Schwung + Biegung) — kein Subsystem kann vergessen werden ════
   const DEF_bk=(P.bend>0)?P.bend*2.0/Math.max(8,W):0, DEF_R=DEF_bk>0?1/DEF_bk:0;
@@ -688,15 +688,15 @@
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick,dick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;   // dick (nur die glatte Wand, GLATT): die Zelle in voller Wandstärke, als Platte in EINEM Ton
     if(brick===false){ if(dick){ platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick); return; } if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
     const [bw,bh,m]=lage(true), bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen; EINE Quelle des Steins: das Verband-Gesetz (der Stoff webt dasselbe Maß; bis E8 0,32 × 0,15 m, Fuge 0,025 — heute das Maß der Bohle, `lage`)
-    if(P.flaechig||(!STEIN_ECHT&&UEBER_GROSSFORMAT())){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
-      const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
-    const _hinter=bt-2*VERBAND_GESETZ.mauerwerk.tiefeM; if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',_hinter); else if(horiz)beam(g,ac,yc,fixed,al,yl,_hinter,'lehm'); else beam(g,fixed,yc,ac,_hinter,yl,al,'lehm');   // zurückgesetzte Hinterfüllung: der Stein steht `tiefeM` vor ihr (das Relief des Verband-Gesetzes, dieselbe Kante webt die Stufe ohne Steine; bis einheit-relief stand er im Fachwerk 1,25 cm, in der glatten Wand 1,5 cm)
+    if(P.flaechig||(!STEIN_ECHT&&UEBER_GROSSFORMAT())){   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche — sie trägt das Mittel ihres Verbands (`_baseFor`: Stein ÷ eins; bis haus-ziegel-putz reiste der Stein-Anteil des Gefachs als `__fuge` mit und der Bake mischte den Lehm der Kultur ein)
+      if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick); else if(horiz)beam(g,ac,yc,fixed,al,yl,bt,'backstein'); else beam(g,fixed,yc,ac,bt,yl,al,'backstein'); return; }
+    const _hinter=bt-2*VERBAND_GESETZ.mauerwerk.tiefeM; const _bett=dick?platte(g,horiz,fixed,a0,a1,y0,y1,GEFUEGE_GESETZ.bett.rolle,_hinter):horiz?beam(g,ac,yc,fixed,al,yl,_hinter,GEFUEGE_GESETZ.bett.rolle):beam(g,fixed,yc,ac,_hinter,yl,al,GEFUEGE_GESETZ.bett.rolle); if(_bett) _bett.userData.__bett=1;   // DAS FUGENBETT (GEFUEGE_GESETZ.bett, Beipack: kein Byte des Baus) — die zurückgesetzte Hinterfüllung: der Stein steht `tiefeM` vor ihr (das Relief des Verband-Gesetzes, dieselbe Kante webt die Stufe ohne Steine; bis einheit-relief stand er im Fachwerk 1,25 cm, in der glatten Wand 1,5 cm)
     // DIE LAGEN IM RASTER DES HAUSES (Einheit E8, die Phase der L0): die Lage k steht bei k · bh ab dem Grund des Hauses, am Gefach geklippt — wie
     // die Stoßfugen längs der Wand; der Stoff webt dasselbe Raster in der Vorlage (`_verbandStoff`), Stein und Muster liegen deckungsgleich.
     // Bis hier streckte jedes Gefach seine Lagen auf seine Höhe (rh = yl / nr): das Muster lag gegen die Steine verschoben.
     for(let k=Math.floor(y0/bh); k*bh<y1-0.02; k++){ const ya=Math.max(y0,k*bh), yb=Math.min(y1,(k+1)*bh), hh=yb-ya-m; if(hh<0.03)continue; const by=(ya+yb)/2, ox=(((k%2)+2)%2)*bw*0.5;
       for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w<0.05)continue; const cc=(cl+cr)/2;   // FIX: Backstein auf GLOBALES Raster (Ursprung 0) statt Feldkante a0 → Wandfelder UND Giebel teilen EIN Raster, Stossfugen fluchten durchgehend
-        if(horiz)beam(g,cc,by,fixed,w,hh,bt,'backstein'); else beam(g,fixed,by,cc,bt,hh,w,'backstein'); } } }
+        (horiz?beam(g,cc,by,fixed,w,hh,bt,'backstein'):beam(g,fixed,by,cc,bt,hh,w,'backstein')).userData.__stein=1; } } }   // DER STEIN FÜR STEIN (GEFUEGE_GESETZ.stein, Beipack: kein Byte des Baus)
 
   function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
@@ -798,11 +798,11 @@
       if(gbrick){ const nr=Math.max(1,Math.round((apexY-eaveY)/bh)),rh=(apexY-eaveY)/nr;                  // Backstein im Dreieck (geklippt, Fensteröffnung ausgespart)
         // die Lagen im Raster des Hauses wie `infill` (Einheit E8): Lage k bei k · bh, am Giebel geklippt — `rh` ist die Höhe DIESER Lage
         for(let k=Math.floor(eaveY/bh); k*bh<apexY-0.02; k++){ const ya=Math.max(eaveY,k*bh), yb=Math.min(apexY,(k+1)*bh); if(yb-ya-m<0.03)continue; const rh=yb-ya, by=(ya+yb)/2, zh=zHalf(by), ox=(((k%2)+2)%2)*bw*0.5;
-          if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein').userData.__fuge={mat:mat('lehm'),anteil:(bw-m)/bw}; };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (die Stoßfugen reisen als Fugen-Ton), die Öffnung bleibt frei
+          if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein'); };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (eine Fläche im Verband: das Mittel, `_baseFor`), die Öffnung bleibt frei
             if(gw && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05){ band(-zh,Math.min(zh,gw.z0-0.05)); band(Math.max(-zh,gw.z1+0.05),zh); } else band(-zh,zh); continue; }
           for(let z0=Math.floor((-zh-ox)/bw)*bw+ox; z0<zh-0.02; z0+=bw){ const cl=Math.max(-zh,z0),cr=Math.min(zh,z0+bw),wz=cr-cl-m; if(wz<0.06)continue;   // FIX: Backstein-Spalten auf festem z-Raster (Ursprung 0, Phase ox) → senkrechte Stossfugen wie die Hauptwand, an der Schräge geschnitten (vorher: Ursprung −zh wanderte je Zeile → seitliche Drift)
             if(gw && cr>gw.z0-0.05 && cl<gw.z1+0.05 && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05) continue;     // Öffnung frei
-            beam(g,xf,by,(cl+cr)/2,bt,rh-m,wz,'backstein'); } } }
+            beam(g,xf,by,(cl+cr)/2,bt,rh-m,wz,'backstein').userData.__stein=1; } } }
       const nn=Math.max(2,Math.round(eaveZ/0.85));                                                        // Ständer (vorstehend), ums Fenster geklippt
       if(!GLATT) for(let i=-nn;i<=nn;i++){ const z=i*eaveZ/nn; const t=Math.min(apexY,(Math.abs(z)<=half)?apexY:ridgeY-Math.abs(z)*dY/eaveZ); if(t<=eaveY+0.3)continue;
         if(gw && Math.abs(z)<gw.z1+0.07){ if(gw.y0-0.05>eaveY+0.12) beam(g,xf,(eaveY+gw.y0-0.05)/2,z,0.1,gw.y0-0.05-eaveY,0.12,'holz');
@@ -1470,7 +1470,7 @@
         const zWall=sz*(Dp/2+depth);                                                                      // FIX Issue1: Giebel-Ebene = Flügelwand (Dp/2+depth), NICHT der 0.3-Dachüberstand zOuter
         if(GLATT&&!VERBAND){ const zG=zWall+sz*post/2; eben(tri(g,[uc-half,eYw,zG],[uc+half,eYw,zG],[uc,rYw,zG],'gefach')); }   // GLATT: der Außengiebel in der Flucht der glatten Wand, EIN Ton — kein Verband, kein Ständer
         else poly(g,[[uc-half,eYw,zWall],[uc+half,eYw,zWall],[uc,rYw,zWall]],'gefach');                          // Außengiebel (glatt) — bündig mit der Flügelwand
-        if(VERBAND){ const [bw2,bh2,mm]=lage(false),bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let k=Math.floor(eYw/bh2); k*bh2<rYw-0.02; k++){ const ya=Math.max(eYw,k*bh2), yb=Math.min(rYw,(k+1)*bh2); if(yb-ya-mm<0.03)continue; const by=(ya+yb)/2, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(((k%2)+2)%2)*bw2*0.5; for(let x0b=Math.floor((uc-xh-ox)/bw2)*bw2+ox; x0b<uc+xh-0.02; x0b+=bw2){ const cl=Math.max(uc-xh,x0b),cr=Math.min(uc+xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,(cl+cr)/2,by,zWall+sz*0.03,wx,yb-ya-mm,bt2,'backstein'); } } }   // die Lagen und Stoßfugen im Raster des Hauses wie `infill` (Einheit E8)   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
+        if(VERBAND){ const [bw2,bh2,mm]=lage(false),bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let k=Math.floor(eYw/bh2); k*bh2<rYw-0.02; k++){ const ya=Math.max(eYw,k*bh2), yb=Math.min(rYw,(k+1)*bh2); if(yb-ya-mm<0.03)continue; const by=(ya+yb)/2, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(((k%2)+2)%2)*bw2*0.5; for(let x0b=Math.floor((uc-xh-ox)/bw2)*bw2+ox; x0b<uc+xh-0.02; x0b+=bw2){ const cl=Math.max(uc-xh,x0b),cr=Math.min(uc+xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,(cl+cr)/2,by,zWall+sz*0.03,wx,yb-ya-mm,bt2,'backstein').userData.__stein=1; } } }   // die Lagen und Stoßfugen im Raster des Hauses wie `infill` (Einheit E8)   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
         if(!GLATT){ const ns=Math.max(2,Math.round(breadth/0.95)); for(let i=0;i<=ns;i++){ const xx=uc-half+breadth*i/ns, top=Math.min(rYw-Math.abs(xx-uc)*wPit, roofUnderY(xx,zWall+sz*0.02)-0.06); if(top>eYw+0.28)beam(g,xx,(eYw+top)/2,zWall+sz*0.02,0.1,top-eYw,0.1,'holz'); } }   // Giebel-Ständer — in der Wandebene, Außenfläche bündig mit den Wandständern
         [-1,1].forEach(s3=>strut(g,uc+s3*half,eYw+0.05,zOuter+sz*0.02, uc,rYw+0.05,zOuter+sz*0.02, 0.09,TRIMR));   // ORTGANG-GESETZ: die RAKE ist die Außengiebel-Kante (konstant zOuter) — vorher D→B = Flächendiagonale (dein Foto)
         [-1,1].forEach(s3=>{ const zF2=sz*(Dp/2-(eYw-eaveY)/mS); strut(g,uc+s3*half,eYw+0.03,zF2, uc,rYw+0.03,zRidge, 0.26,'dunkel'); });   // KEHLBLECH-GESETZ: breite dunkle Rinne exakt AUF der Talformel (Feld-Schnitt + Blech = echte Kehle)
@@ -1958,10 +1958,20 @@
     //                    Ecke in IHRER Wand (in Feldern, `_wandLage`) reist mit ihr: der Ständer steht an der Ecke des Hauses,
     //                    die Schwelle an seinem Fuß — nie am Raster der Welt.
     //   reihe            die NUMMER eines Verbands (0 = keiner): sie reist je Ecke zur Welt · rolle: welche Rolle welchen trägt
+    // DER HANDSTRICH-BACKSTEIN (haus-ziegel-putz, Karte 2 mensch.bau.huelle): steinM · hoeheM das Normalformat 240 × 71 mm (DIN 105,
+    // NF 240 × 115 × 71); fugeM 11 mm ist EIN Maß für beide Achsen zwischen der Stoßfuge 10 mm und der Lagerfuge 12 mm der
+    // Maßordnung (DIN 4172: 240 + 10 = 250 mm, zwölf Schichten 71 + 12,3 mm je Meter); tiefeM 12,5 mm — am Bild gestellt, OHNE
+    // Messung (die ausgewitterte Fuge im Kalkmörtel). `fase` [Breite m, Fall]: die Kante des Handstrichs ist weich — die Stirn
+    // fällt über 4 mm zur Fuge (Fall 1 = 45°), am Bild gestellt, OHNE Messung; der Stoff kippt dort die Normale (der EINE Kamm,
+    // über den Pixel integriert: fern heben beide Kanten sich auf). `brand` [R, G, B]: die Brandhaut — der Ton je Stein (`ton`)
+    // wiegt je Kanal verschieden: der dunkle Stein (reduzierend gebrannt) steht blauer, der helle satter rot; mittelfrei, am Bild
+    // gestellt, OHNE Messung. `grund`: die lineare Albedo des gebrannten Ziegels am Anker (physicallybased.info, Material „Brick“:
+    // 0,262 · 0,095 · 0,061, Y 0,128) — dieselbe Zahl wie die Palette (`DEFCOL.backstein`).
     var VERBAND_GESETZ = {
         fachwerk: { feldM: 1.7, riegelM: 0.85, staenderM: 0.16, riegelStarkM: 0.13 },
         pxJeM: 128,
-        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, tiefeM: 0.0125, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
+        lageGrund: 32, // `lage` 2: die zweite Stelle der Ecke zählt die Lagen ab so vielen unter dem Grund des Baus (ab 0,5 eine Angabe — der tiefste Stein der Bauten liegt 2,52 m unter ihm, 30,7 Lagen)
+        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, tiefeM: 0.0125, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x8c5746, fase: [0.004, 1], brand: [1.15, 1, 0.7] },
         deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
         putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff, zugWelt: 0 },
         naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
@@ -2000,6 +2010,10 @@
     //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
     //   unruhe           die Reihen stehen ungleich weit: ihr Abstand schwankt um diesen Anteil (der Kellenzug des Putzes)
     //   lage             1: die Lage in der Fläche trägt die Ecke selbst (`_wandLage`, in Feldern) — sonst ist sie die der Welt
+    //                    2: die Ecke trägt sie, wo ihr Bau Steine setzt (`_steinLage`: Steine längs · `lageGrund` + Lagen hoch, im Raster
+    //                    des Baus) — eine Ecke ohne Angabe (0) liest die der Welt. Das Mauerwerk (haus-ziegel-putz): die Welt trägt
+    //                    ihre Bauten im Satz in Welt-Lage, das Raster der Welt lag je Standort verschoben gegen die Steine der
+    //                    Stufe mit Steinen (Genesis: der Ton wechselte 69 mm neben dem Spalt, der Spalt stand in Stein-Farbe)
     //   tiefe · licht    DIE KANTE (einheit-relief): der Stein steht `tiefe` Meter vor seiner Fuge. Schräg gesehen verdeckt seine
     //                    Kante die Fuge um tiefe · tan(Winkel des Blicks) je Achse (der Wirt rechnet es je Pixel); `licht` ist der
     //                    Anteil des Lichts, den der Grund der Fuge als Schlitz der Breite w und Tiefe t noch sieht (der Sicht-Faktor
@@ -2015,7 +2029,7 @@
                 eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]) + cU * cV * kreuz[k]);
             }
             var tiefe = (mehr && mehr.tiefe) || 0, w = 2 * Math.min(fU, fV), q = w > 0 ? tiefe / w : 0;
-            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0, tiefe: tiefe, licht: tiefe > 0 ? Math.sqrt(1 + q * q) - q : 1 };
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: (mehr && mehr.lage) || 0, tiefe: tiefe, licht: tiefe > 0 ? Math.sqrt(1 + q * q) - q : 1, fase: mehr && mehr.fase ? mehr.fase[1] : 0, faseM: mehr && mehr.fase ? mehr.fase[0] : 0, brand: (mehr && mehr.brand) || [1, 1, 1] };
         };
         var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
         var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein, f = V.fachwerk, fB = gegen(_colFor("holz", null), _colFor("gefach", null));
@@ -2037,7 +2051,7 @@
         }
         return [
             null,
-            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF, { tiefe: m.tiefeM }),
+            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF, { tiefe: m.tiefeM, fase: m.fase, brand: m.brand, lage: 2 }),
             zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
             // (der Maler setzt seine Züge alle zug[0] … zug[0] + zug[1] − 1 Pixel: die halbe Spanne gegen ihr Mittel ist die Unruhe)
             zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ, { unruhe: ((p.zug[1] - 1) / 2) * px / zugM }),
@@ -2087,11 +2101,16 @@
     // DIE ANKER der Zahlen:
     //   putz      Korn 4 mm: Oberputz mit Größtkorn 2–4 mm (DIN EN 13914-1 / DIN 18550-1, Reibe- und Kellenwurfputz), Hub 0,5 mm =
     //             die halbe Rautiefe eines 2-mm-Korns; Ton 0,05 = der Sprenkel des Karten-Malers (VERBAND_GESETZ.putz: deck 0,5 ×
-    //             Spanne 0,2 ÷ 2 — Labor = Welt). Zug 28 cm quer × 6 cm hoch: die Glättkelle 280 × 130 mm, waagrecht gezogen; Hub 1,5 mm: die
-    //             Ebenheit der Wand lässt 3 mm auf 0,1 m zu (DIN 18202 Tab. 3 Z. 6), ein Hand-Putz nutzt sie zur Hälfte. Wolke
-    //             0,18 × 1,6 m: der Läufer des Regens unter Traufe und Fensterbank (lotrecht, schmal), Hub 3 mm auf 1 m (ebd. 5 mm)
+    //             Spanne 0,2 ÷ 2 — Labor = Welt). DER KELLENZUG 14 cm quer × 2,2 cm hoch (haus-ziegel-putz): der Grat zwischen zwei
+    //             Zügen der Kelle, waagrecht gezogen und von der Wolke verzogen (`unruhe`: um so viele Zellen — kein Zug liegt
+    //             gerade über dem anderen); Hub 0,6 mm. Das Maß ist am Schirm gestellt, OHNE Messung: es steht aus 3 m voll (5 Pixel
+    //             je Zelle) und ist ab 11 m sein Mittel (1,4 Pixel) — die Wand steht aus 13,5 m ruhig. DIE WOLKE 0,7 × 0,9 m: der
+    //             Fleck des Anstrichs und der Feuchte, ohne Richtung; Hub 3 mm (die Ebenheit der Wand lässt 5 mm auf 1 m zu, DIN
+    //             18202 Tab. 3 Z. 6). Bis haus-ziegel-putz trug die Wolke den Läufer (0,18 × 1,6 m) und der Zug die Glättkelle
+    //             (28 × 6 cm): am Giebel standen aus 13,5 m 9–16 Pixel breite lotrechte Spalten mit ± 21–25 % Ton (unter dem Dach
+    //             1,75-fach) über 3 Pixel hohen waagrechten Zeilen — das feste Raster las als Rippen-Stoff (Radeon 890M, 23.11.).
     //   lehmputz  das Gefach: Lehm- oder Kalkputz mit Häcksel von Hand (Korn 5 mm: Strohhäcksel und Sand bis 4 mm, Lehmbau Regeln
-    //             des Dachverbands Lehm, Kap. 4), der Kalkanstrich wolkig (Ton 0,07)
+    //             des Dachverbands Lehm, Kap. 4), der Kalkanstrich wolkig (Ton 0,06); Zug und Wolke wie der Putz, von Hand gröber
     //   holz      Korn 3 mm quer × 9 cm längs: die Jahrringbreite (Bauholz S10 ≤ 6 mm, DIN 4074-1; Eiche 1–4 mm); Hub 0,4 mm: das
     //             Frühholz wittert vor dem Spätholz aus (Waschbrett; Abtrag ~6 mm je Jahrhundert, USDA Wood Handbook 2021 Kap. 16).
     //             Zug 4,5 × 90 cm: Fladern und Schwindrisse längs der Faser (die Fladerung eines Balkens im Tangentialschnitt
@@ -2104,7 +2123,9 @@
     //             Decklänge); Zug 5 × 45 cm: Flechte und Ablauf längs der Falllinie
     //   stein     der gespitzte Naturstein des Sockels: Korn 6 mm (Hiebe des Spitzeisens 5–10 mm), Bosse 4 mm, Kissen 0,12 am Rand;
     //             die Wolke 30 × 40 cm ist der Fleck der Spritzwasser-Zone (bis 30 cm über Gelände, DIN 18533-1) — der Sockel steht ganz in ihr
-    //   ziegelstein  der Handstrich-Backstein NF (das Raster trägt VERBAND_GESETZ.mauerwerk)
+    //   ziegelstein  der Handstrich-Backstein NF (das Raster, die Kante und die Brandhaut je Stein trägt VERBAND_GESETZ.mauerwerk): der
+    //             Zug 5 cm längs der Lage × 1,8 cm hoch ist die Quetschfalte und der Sandstrich der Form (Hub 0,5 mm), von der Wolke
+    //             verzogen — am Bild gestellt, OHNE Messung; bis haus-ziegel-putz stand jeder Stein aus 3 m als EINE Farbfläche
     //   fachwerkwand  die ferne Wand als Funktion (VERBAND_GESETZ.fachwerk): das Gefach wie `lehmputz`; ihre Balken stehen in der Fuge
     //             des Verbands und nehmen dort das Silber des Holzes an (`fugeGrau`) — der Wechsel der Stufe färbt den Balken nicht um
     //   stroh     das Reet- und Strohdach: der Halm 4 mm, 12 cm sichtbar, längs der Falllinie
@@ -2124,11 +2145,25 @@
     // DIE HÖHE ÜBER DEM FUSS nennt die Ecke (`_eckLage`, erste Stelle): die Welt trägt ihre Ecken im Satz in Welt-Lage, die Höhe
     // am Bau kennt dort nur die Ecke — und nur die Rolle trägt sie, die mit einer Ecke unter `aus` + `rand` in den Saum reicht.
     // DER LÄUFER UNTER DEM DACH (`lauf`): wo die Dachhaut über der Wand endet, läuft ihr Wasser die Wand hinab und zieht Schmutz
-    // und Auswaschung in Bahnen — die Wolke der Art (ihr lotrechter Läufer) steht unter dem Dach `lauf`-fach stärker und fällt über
-    // `weit` Meter Tiefe auf ihr Maß (1,5 m: eine Bahn läuft so weit, bis die Wand sie getrunken hat — am Bild gestellt, OHNE
-    // Messung). Mittelfrei wie die Wolke: fern, wo sie ihr Mittel ist, bleibt nichts — die ferne Stufe (ohne die Tiefe) springt nicht.
-    // Putz und Gefach 0,75 (unter der Dachhaut 1,75-fach): mit 2,5 las der Giebel bei Stärke 2 aus 13,5 m als Schmier-Rauschen
-    // (er liegt ganz unter dem Ortgang) — am Bild gestellt, Radeon 890M, 23.11.
+    // und Auswaschung in Bahnen — DIE BAHN (`lauf.bahn`: 2,2 cm quer × 1,1 m lotrecht je Zelle, ein eigenes Wert-Rauschen, von der
+    // Wolke der Art verzogen: keine Bahn läuft gerade neben der anderen) steht direkt unter der Dachhaut mit ± `lauf` Ton und fällt
+    // über `weit` Meter Tiefe auf 0 (1,5 m: eine Bahn läuft so weit, bis die Wand sie getrunken hat). Mittelfrei: fern, wo sie ihr
+    // Mittel ist, bleibt nichts — die ferne Stufe (ohne die Tiefe) springt nicht. Putz und Gefach ± 0,16; Breite, Länge und Ton am
+    // Bild gestellt, OHNE Messung: die Bahn steht aus 3 m voll und ist ab 11 m ihr Mittel. Bis haus-ziegel-putz trug die Wolke
+    // der Art den Läufer (unter dem Dach 1,75-fach): der Giebel liegt ganz unter dem Ortgang und las aus 13,5 m als Rippen.
+    // DAS FUGENBETT (`bett`): die Stufe, die Stein für Stein steht, trägt hinter ihren Steinen die Hinterfüllung (`infill`, Rolle
+    // `rolle`) — der Grund der Fuge. Ihre Ecken tragen die Nummer `nr` (über den Nummern der Faser, in den sieben Bits der Ecke;
+    // Beipack wie die Faser: die Bytes des Baus bleiben): der Stoff rechnet dort das Gefüge ihrer Rolle und das Licht im Schlitz
+    // des Verbands `verband` (`tiefe` · `licht` seiner Zeile) — dieselbe Rechnung, die in der Stufe ohne Steine die Fuge trägt.
+    // Wo dort kein Stein steht (am Ständer bleibt ein Rest unter 5 cm frei), webt der Stoff den Stein des Rasters auf das Bett.
+    // DER STEIN FÜR STEIN (`stein`): die Farbe einer Mauerwerk-Rolle (die Palette der Kultur) IST der Stein — sein Ton steht am
+    // Anker. Eine FLÄCHE im Verband trägt das Mittel aus Stein und Fuge (`_baseFor`: Stein ÷ `eins` der Zeile), der Stoff webt
+    // Stein und Fuge darin mit dem Mittel 1 (× `eins`: der Stein der Fläche ist wieder der Stein). Ein Teil, das selbst EIN
+    // Stein ist (`infill` und die Giebel in der Stufe Stein für Stein), trägt seine Farbe unvermischt und die Nummer `nr` je Ecke
+    // (Beipack wie das Bett: die Bytes des Baus bleiben): der Stoff liest die Zeile seines Verbands OHNE `eins`. Bis
+    // haus-ziegel-putz trug der Stein die Nummer seiner Fläche und nahm `eins` wie sie — der Stein der nahen Stufe stand um
+    // `eins` (0,87 · 0,61 · 0,54) dunkler und satter als derselbe Stein der Fläche (Radeon, Genesis, dieselbe Pose 9 m in beiden
+    // Stufen: das Gefach der Fläche 1,39-fach so hell im Streiflicht, 1,49-fach am Mittag).
     // DIE TIEFE UNTER DEM DACH rechnet der Kern je Ecke jeder Rolle, deren Art einen Läufer trägt (`lauf` > 0: Putz und Gefach),
     // gegen die Unterseite der Dach-Rollen (`dach`: Deckung, Stroh; ein Dach aus Holz nennt sich nicht: seine Rolle trägt auch
     // jeden Balken) über ihr — `vor` Meter vor der Wand, im Raster `zelle` (`_eckLage`, zweite Stelle).
@@ -2151,19 +2186,21 @@
         staerke: 2,
         fuss: { voll: 3, leer: 1.4 },
         spritz: { voll: 0.3, aus: 0.6, rand: 0.16 },
-        lauf: { weit: 1.5, vor: 0.2, zelle: 0.25, dach: [2, 9] },
+        lauf: { weit: 1.5, vor: 0.2, zelle: 0.25, dach: [2, 9], bahn: [0.022, 1.1] },
+        bett: { nr: 127, rolle: "lehm", verband: "mauerwerk" },
+        stein: { nr: 126, verband: "mauerwerk" },
         periode: 256,
         wetterVon: [-0.92, 0, 0.39],
         silber: [0.147, 0.133, 0.112],
         art: {
-            putz:        { korn: [0.004, 0.004], zug: [0.28, 0.06], wolke: [0.18, 1.6], faser: 1.5708, ton: [0.05, 0.03, 0.06], hub: [0.0005, 0.0015, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
-            lehmputz:    { korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
+            putz:        { korn: [0.004, 0.004], zug: [0.14, 0.022], wolke: [0.7, 0.9], faser: 1.5708, ton: [0.05, 0.03, 0.05], hub: [0.0005, 0.0006, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.16, unruhe: 1.5, tonImStoff: 1 },
+            lehmputz:    { korn: [0.005, 0.005], zug: [0.12, 0.024], wolke: [0.6, 0.8], faser: 1.5708, ton: [0.06, 0.04, 0.06], hub: [0.0006, 0.0008, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.16, unruhe: 1.5, tonImStoff: 1 },
             holz:        { korn: [0.003, 0.09], zug: [0.045, 0.9], wolke: [0.12, 1.2], faser: 1.5708, ton: [0.12, 0.1, 0.08], hub: [0.0004, 0.0012, 0.002], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 1, spritz: 0.1, kante: [0.45, 0.015, 0.25] },
             hirnholz:   { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.12, 0.12], faser: 0, ton: [0.1, 0.08, 0.05], hub: [0.0004, 0.0008, 0.001], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 0.78, spritz: 0.1 },
             deckung:     { korn: [0.004, 0.004], zug: [0.05, 0.45], wolke: [0.5, 1.2], faser: 1.5708, ton: [0.05, 0.07, 0.09], hub: [0.0003, 0.0008, 0.002], woelb: [0.09, 0.08], rau: 0.04, wetter: 0.05, grau: 0, grund: 1 },
             stein:       { korn: [0.006, 0.006], zug: [0.04, 0.05], wolke: [0.3, 0.4], faser: 1.5708, ton: [0.08, 0.07, 0.1], hub: [0.0012, 0.004, 0.004], woelb: [0.12, 0.12], rau: 0.05, wetter: 0.05, grau: 0, grund: 1 },
-            ziegelstein: { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.4, 0.6], faser: 1.5708, ton: [0.05, 0.05, 0.06], hub: [0.0003, 0.0006, 0.002], woelb: [0.03, 0.03], rau: 0.03, wetter: 0.05, grau: 0, grund: 1 },
-            fachwerkwand:{ korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, fugeGrau: 0.55, spritz: 0.14 },
+            ziegelstein: { korn: [0.003, 0.003], zug: [0.05, 0.018], wolke: [0.4, 0.6], faser: 1.5708, ton: [0.05, 0.07, 0.05], hub: [0.0003, 0.0005, 0.001], woelb: [0.03, 0.03], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, unruhe: 1, tonImStoff: 1 },
+            fachwerkwand:{ korn: [0.005, 0.005], zug: [0.12, 0.024], wolke: [0.6, 0.8], faser: 1.5708, ton: [0.06, 0.04, 0.06], hub: [0.0006, 0.0008, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, fugeGrau: 0.55, spritz: 0.14, unruhe: 1.5 },
             stroh:       { korn: [0.004, 0.12], zug: [0.03, 0.5], wolke: [0.4, 1.0], faser: 1.5708, ton: [0.14, 0.1, 0.1], hub: [0.0015, 0.004, 0.006], woelb: [0, 0], rau: 0.02, wetter: 0.08, grau: 0.3, grund: 1 },
         },
         // die Nummer → die Art (0: keine; 1–5 am Platz der Verband-Zeilen mauerwerk · deckung · putz · naturstein · fachwerk)
@@ -2195,11 +2232,21 @@
             if (a.kante && a.lauf > 0) throw new Error("fachwerk GEFUEGE_GESETZ: die Art " + name + " trägt Läufer und Kante (EINE Stelle der Ecke)");
             var ton = a.ton.map(mal), hub = a.hub.map(mal);
             [[a.korn, hub[0]], [a.zug, hub[1]]].forEach(function (q) { var s = (1.2 * q[1]) / Math.min(q[0][0], q[0][1]); s2 += s * s; });
-            return { art: name, korn: a.korn, zug: a.zug, wolke: a.wolke, faser: a.faser, ton: ton, hub: hub, woelb: a.woelb, rau: a.rau * k, rauFern: Math.min(0.05, 0.5 * s2), wetter: a.wetter, grau: a.grau, grund: a.grund, fugeGrau: a.fugeGrau || 0, spritz: a.spritz || 0, lauf: a.lauf || 0, balken: name === G.faser.art ? G.faser.ton : 0, kante: a.kante || [0, 0, 0] };
+            return { art: name, korn: a.korn, zug: a.zug, wolke: a.wolke, faser: a.faser, ton: ton, hub: hub, woelb: a.woelb, rau: a.rau * k, rauFern: Math.min(0.05, 0.5 * s2), wetter: a.wetter, grau: a.grau, grund: a.grund, fugeGrau: a.fugeGrau || 0, spritz: a.spritz || 0, lauf: a.lauf || 0, balken: name === G.faser.art ? G.faser.ton : 0, kante: a.kante || [0, 0, 0], unruhe: a.unruhe || 0 };
         });
     }
     // DIE NUMMER DES GEFÜGES EINER ROLLE: die ihres Verbands, sonst die ihrer Art (0: sie trägt keines)
     function gefuegeReihe(rolle) { return verbandReihe(rolle) || GEFUEGE_GESETZ.rolle[rolle] || 0; }
+    // DER TON IM STOFF (`tonImStoff` der Art, haus-ziegel-putz): kein Bauteil der Rolle trägt eine eigene Patina im Bake
+    // (`tintWood`: ± 11 % Helligkeit je Teil ist das Gesetz des Bretts) — den Ton trägt der Stoff der Welt, je Pixel und in jeder
+    // Stufe derselbe. PUTZ ist EIN Auftrag über die ganze Fläche (seinen Ton trägt die Wolke der Art). Bis hier trug die Patina
+    // jedes Teil jedes Stoffs mit Ecken-Farbe: die Hinterfüllung des Giebels steht in Streifen von 0,24 m quer hinter allen
+    // Ständern, jeder Streifen in seinem Ton — der Giebel las aus 13,5 m als waagrechte Bänder (15 Pixel je Streifen, Mittel je
+    // Streifen Y 0,387 … 0,484; Radeon, Genesis K1, auch mit dem Gefüge des Stoffs auf null). Der BACKSTEIN trägt den Ton je
+    // Stein im Verband (`ton` · `brand` seiner Zeile, gewürfelt aus der Zelle des Rasters: in der Stufe Stein für Stein wie in
+    // der Fläche derselbe Stein derselbe Ton) — die Patina je Stein stand nur in der Stufe mit Steinen: am Wechsel der Stufe
+    // sprang jeder Stein um bis zu ± 11 %.
+    function gefuegeTonImStoff(rolle) { var a = GEFUEGE_GESETZ.art[GEFUEGE_GESETZ.reihe[gefuegeReihe(rolle)]]; return !!(a && a.tonImStoff); }
     // DIE NUMMER EINER FASER-ECKE (`GEFUEGE_GESETZ.faser`): die Achse des Balkens (ax, ay, az) gegen die Normale der Fläche (nx, ny,
     // nz), beide im Raum des Baus. Der Rahmen der Fläche ist der des Stoffs (t waagrecht in ihr, s ihre Falllinie; eine liegende
     // Fläche nimmt +x) — er dreht mit dem Haus um die Lotrechte, die Nummer gilt in der Vorlage wie in der Welt. Steht die Achse
@@ -2379,6 +2426,27 @@
             return null;
         };
     }
+    // DIE LAGE IM VERBAND JE ECKE (haus-ziegel-putz, VERBAND_GESETZ `lage` 2): jede Ecke einer Rolle im Mauerwerk — die Fläche, der
+    // Stein für Stein — und jede Ecke des Fugenbetts (GEFUEGE_GESETZ.bett) nennt ihre Lage im Raster des Baus, in dem `infill` seine
+    // Steine setzt: [Steine längs der Wand, `lageGrund` + Lagen über dem Grund des Baus] (0 in der zweiten Stelle = keine Angabe). Der Rahmen
+    // ist der des Stoffs (t = (n.z, 0, −n.x), die Höhe ist die der Vorlage) — der Wirt liest sie statt der Welt-Lage seines Satzes.
+    // Als Beipack (`__lage`, wie die Höhe am Bau): kein Byte des Baus. `aus` = die Lage der Ecke am Bau, wo die Rolle eine trägt
+    // (`_eckLage`: das Bett einer Rolle mit Saum) — die Ecke im Verband ersetzt sie (ihre Höhe liest der Wirt aus den Lagen).
+    function _steinLage(G, role, aus) {
+        var reihe = VERBAND_GESETZ.reihe.indexOf("mauerwerk"), ganz = verbandReihe(role) === reihe, F = G.faser, n = G.pos.length / 3;
+        if (!ganz && !(F && F.length === n)) return aus;
+        var z = _steinLageZeile || (_steinLageZeile = verbandZeilen()[reihe]), P = G.pos, N = G.nrm, B = GEFUEGE_GESETZ.bett.nr, i;
+        for (i = 0; i < n; i++) {
+            if (!ganz && F[i] !== B) continue;
+            if (!aus) aus = new Float32Array(n * 2);
+            var nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2], nn = Math.hypot(nx, ny, nz) || 1, hl = Math.hypot(nz, nx) / nn;
+            var tx = hl > 0.02 ? nz / (hl * nn) : 1, tz = hl > 0.02 ? -nx / (hl * nn) : 0;
+            aus[i * 2] = (P[i * 3] * tx + P[i * 3 + 2] * tz) / z.lM;
+            aus[i * 2 + 1] = VERBAND_GESETZ.lageGrund + P[i * 3 + 1] / z.hM;
+        }
+        return aus;
+    }
+    var _steinLageZeile = null;
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -2510,7 +2578,7 @@
   nagel:  new THREE.MeshStandardMaterial({color:0x402c1c,roughness:.9,metalness:0,vertexColors:true}),
   lattung:new THREE.MeshStandardMaterial({color:0x967852,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),
   ziegel2:new THREE.MeshStandardMaterial({color:0x803a28,map:_texZi2||null,roughness:.85,metalness:0,side:THREE.DoubleSide}),
-  backstein:new THREE.MeshStandardMaterial({vertexColors:true,color:0x964e3e,map:_texBk||null,roughness:.92,metalness:0,side:THREE.DoubleSide}),
+  backstein:new THREE.MeshStandardMaterial({vertexColors:true,color:0x8c5746,map:_texBk||null,roughness:.92,metalness:0,side:THREE.DoubleSide}),
   lehm:   new THREE.MeshStandardMaterial({vertexColors:true,color:0xbfb09a,roughness:.98,metalness:0,side:THREE.DoubleSide}),
   putz:   new THREE.MeshStandardMaterial({vertexColors:true,color:0xe7e3da,map:_texPu||null,roughness:.94,metalness:0,side:THREE.DoubleSide}),   /*Kellenwurf-Karte × wandTon-Vertex — Putz atmet*/
   dachmod:new THREE.MeshStandardMaterial({color:0x3b3e44,roughness:.62,metalness:.08,side:THREE.DoubleSide}), // STIL modern: anthrazit Dach
@@ -2553,7 +2621,7 @@
     //  bleibt Shell-Glue — sie liest bauRezept aus DIESER Quelle.
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
-    const DEFCOL={holz:0x5a4632, gefach:0xd9d0c1, ziegel:0x9c4a35, ziegel2:0x803a28, putz:0xe7e3da, dachmod:0x3b3e44, stamm:0x5b4327, glas:0x33576a, glasfern:0x46687e, metall:0x6b6b73, backstein:0x964e3e, lehm:0xbfb09a, stein:0x8d857a, stroh:0xcaa44e, kupfer:0x5a917c}; // alle kultur-tragenden Materialien
+    const DEFCOL={holz:0x5a4632, gefach:0xd9d0c1, ziegel:0x9c4a35, ziegel2:0x803a28, putz:0xe7e3da, dachmod:0x3b3e44, stamm:0x5b4327, glas:0x33576a, glasfern:0x46687e, metall:0x6b6b73, backstein:0x8c5746, lehm:0xbfb09a, stein:0x8d857a, stroh:0xcaa44e, kupfer:0x5a917c}; // alle kultur-tragenden Materialien
     // prettier-ignore
     const KULTUR={
   alemannisch:     { label:'Alemannisch · steil, hell',   pitch:55, W:8,  D:9,  st:2, brace:'andreas', stil:'alt',    col:{holz:0x6e4f30, gefach:0xe9e3d6, ziegel:0x9c4a35, ziegel2:0x7e3826} },
@@ -2571,10 +2639,10 @@
   alpenchalet:     { label:'Alpenchalet · Holz, breit',    pitch:32, W:11, D:8,  st:2, brace:'k',       stil:'huette', col:{holz:0x8a6638, stamm:0x6e5030, ziegel:0x6e5030} },                       // breit, flacher, weite Dachüberstände, warmes Holz
   japanisch:       { label:'Japanisch · Minka, geschwungen',pitch:34, W:12, D:8,  st:1, brace:'k',       stil:'huette',  hip:0.7,  curve:0.5,  col:{holz:0x6e5030, stamm:0x6b655e} },
   chinesisch:      { label:'Chinesisch · Schwungdach',       pitch:30, W:12, D:9,  st:1, brace:'none',    stil:'stein',   hip:0.85, curve:0.95, col:{putz:0xe8dcc8, ziegel:0x4a5560, ziegel2:0x3a444e} },
-  hollaendisch:    { label:'Holländisch · Klinker',     pitch:54, W:7,  D:9,  st:3, brace:'none', stil:'klinker', treppgiebel:1, col:{backstein:0x9a4f3a, ziegel:0x7a3f2c, ziegel2:0x60301f} },
-  hanseatisch:     { label:'Hanseatisch · Backstein',   pitch:50, W:8,  D:10, st:3, brace:'none', stil:'klinker', treppgiebel:1, col:{backstein:0x8c4636, ziegel:0x6e3828, ziegel2:0x552a1d} },
-  georgian:        { label:'Georgianisch · symm.',      pitch:30, W:11, D:8,  st:2, brace:'none', stil:'klinker', portikus:1, col:{backstein:0x9c5a44, putz:0xece4d4, ziegel:0x6e3a2a} },
-  viktorianisch:   { label:'Viktorianisch · steil',     pitch:52, W:9,  D:8,  st:2, brace:'none', stil:'klinker', veranda:1, col:{backstein:0x7e4636, ziegel:0x5e3326, ziegel2:0x472418} },
+  hollaendisch:    { label:'Holländisch · Klinker',     pitch:54, W:7,  D:9,  st:3, brace:'none', stil:'klinker', treppgiebel:1, col:{backstein:0x905841, ziegel:0x7a3f2c, ziegel2:0x60301f} },
+  hanseatisch:     { label:'Hanseatisch · Backstein',   pitch:50, W:8,  D:10, st:3, brace:'none', stil:'klinker', treppgiebel:1, col:{backstein:0x834e3d, ziegel:0x6e3828, ziegel2:0x552a1d} },
+  georgian:        { label:'Georgianisch · symm.',      pitch:30, W:11, D:8,  st:2, brace:'none', stil:'klinker', portikus:1, col:{backstein:0x92644c, putz:0xece4d4, ziegel:0x6e3a2a} },
+  viktorianisch:   { label:'Viktorianisch · steil',     pitch:52, W:9,  D:8,  st:2, brace:'none', stil:'klinker', veranda:1, col:{backstein:0x754e3d, ziegel:0x5e3326, ziegel2:0x472418} },
   griechisch:      { label:'Griechisch · Kykladen',     pitch:12, W:8,  D:7,  st:2, brace:'none', stil:'stein', col:{putz:0xf2f0ea, ziegel:0x5a7f9a, ziegel2:0x46637a} },
   spanisch:        { label:'Spanisch · Terrakotta',     pitch:24, W:10, D:8,  st:2, brace:'none', stil:'stein', col:{putz:0xecdcc0, ziegel:0xb5673c, ziegel2:0x8c4a2a} },
   andalusisch:     { label:'Andalusisch · weiß',        pitch:18, W:9,  D:9,  st:2, brace:'none', stil:'stein', bogenTyp:'hufeisen', col:{putz:0xf4f1ea, ziegel:0xb05f38, ziegel2:0x884526} },
@@ -2796,7 +2864,12 @@
     // prettier-ignore
     const AO_KNIE=2.6;
     // prettier-ignore
-    const NOISEAMP={putz:0.07,stein:0.08,lehm:0.07,backstein:0.055,gefach:0.055,ziegel:0.045,ziegel2:0.045,stroh:0.08,boden:0.06,holz:0.035,stamm:0.05,blockholz:0.04,lattung:0.03,dachmod:0.025,kupfer:0.02,weg:0.05,gras:0.05,moebel:0.02}; // MATERIAL-ILLUSIONS-GESETZ: rollenklassige Rausch-Amplitude — Mineral atmet, Holz fein, Glas/Metall/dunkel NIE
+    // (haus-ziegel-putz, Vertrags-Akt 23.11.: Putz · Lehm · Gefach · Backstein tragen KEIN Rauschen je Ecke mehr — ihre Wolke ist die
+    // des Gefüge-Gesetzes (`wolke` der Art), je Pixel aus der Welt-Lage und in jeder Stufe dieselbe. Das Rauschen je Ecke war ihr
+    // Zwilling und hing an der Zerlegung der Stufe: Raster 0,59 m, gelesen nur an den Ecken — die Stufe 0 je Stein und Streifen,
+    // die Stufe 1 an den vier Ecken einer Fläche von bis zu 8 m; bis hier 0,07 · 0,07 · 0,055 · 0,055. Die Bänder des Giebels
+    // selbst trug die Patina je Teil: GEFUEGE_GESETZ `tonImStoff`.)
+    const NOISEAMP={stein:0.08,ziegel:0.045,ziegel2:0.045,stroh:0.08,boden:0.06,holz:0.035,stamm:0.05,blockholz:0.04,lattung:0.03,dachmod:0.025,kupfer:0.02,weg:0.05,gras:0.05,moebel:0.02}; // MATERIAL-ILLUSIONS-GESETZ: rollenklassige Rausch-Amplitude — Mineral atmet, Holz fein, Glas/Metall/dunkel NIE
     // prettier-ignore
     function _noise01(x,y,z){ const h=Math.sin(x*12.9898+y*78.233+z*37.719)*43758.5453; return h-Math.floor(h); }
     // prettier-ignore
@@ -2813,8 +2886,14 @@
     // prettier-ignore
     function _linHex(hx){ return [_lin(((hx>>16)&255)/255), _lin(((hx>>8)&255)/255), _lin((hx&255)/255)]; }
     // prettier-ignore
-    function _baseFor(o,role,kol){ const b=_colFor(role,kol), f=o.userData&&o.userData.__fuge; if(!f||(M[role]&&M[role].map)) return b;   // FUGEN-TON (Flächen-Stufe, kartenlos): Stein-Anteil × Stein-Ton + Rest × Fugen-Ton — der Mittelton, den der Verband aus der Ferne zeigt
-  const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil; return [b[0]*a+m2[0]*(1-a), b[1]*a+m2[1]*(1-a), b[2]*a+m2[2]*(1-a)]; }
+    function _baseFor(o,role,kol){ const b=_colFor(role,kol), u=o.userData; if(verbandReihe(role)!==_mauerReihe()) return b;   // DIE FLÄCHE IM MAUERWERK (GEFUEGE_GESETZ.stein): sie trägt das Mittel aus Stein und Fuge — Stein ÷ `eins` der Zeile; der Stoff der Welt webt mit × eins den Stein zurück, die Karte des Labors ebenso (`_karte`: Karte × `__eins` mittelt auf 1 — dort trägt JEDES Teil der Rolle das Mittel, auch der Stein für Stein: die Karte liegt im Raster seiner Steine). Bis haus-ziegel-putz mischte nur das Gefach der Stufe 1 der Welt den Lehm der Kultur nach dem Stein-Anteil ein (`__fuge`), jede andere Fläche (Schornstein, Klinker-Wand, das Labor) stand um `eins` zu dunkel
+  const z=_mauerZeile(), e=z.eins, t=z.tonU, karte=M[role]&&M[role].map;
+  if(!karte&&u&&u.__stein) return b;   // die Welt: der Stein für Stein trägt seine Farbe selbst (der Stoff liest ihn ohne `eins`)
+  if(!karte&&u&&u.__bett) return [b[0]*t[0], b[1]*t[1], b[2]*t[2]];   // die Welt: das Bett, dessen Rolle der Stil auf den Stein legt (der Klinker), ist der Mörtel des Gesetzes — Stein × Ton der Fuge, wie die Fläche ihn webt (bis hier stand die Fuge der Steine im Ton des Steins, die der Fläche im Ton des Mörtels)
+  return [b[0]/e[0], b[1]/e[1], b[2]/e[2]]; }
+    var _mauerZeileWert=null;
+    function _mauerReihe(){ return VERBAND_GESETZ.reihe.indexOf("mauerwerk"); }
+    function _mauerZeile(){ return _mauerZeileWert||(_mauerZeileWert=verbandZeilen()[_mauerReihe()]); }
     // DER INNEN-STOFF (w28-innenlicht): die Außenseite einer Holzwand ist von Sonne und Wetter gebräunt (die Rollen-Farbe der
     // Kultur), die Innenseite derselben Balken bleibt hell, die gescheuerte Diele heller. EINE Zahl je Kultur, aus ihrem eigenen
     // `holz` (dieselbe Tönung wie `tintM`): der Farbton des Holzes, seine lineare Helle × `frisch` in das Band des unverwitterten
@@ -2897,7 +2976,8 @@
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE — EIN Bake-Gesetz, beide Pfade identisch
-    const fa=_faserAchse(role,pa,e); if(fa||G.faser){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser): die Achse des Balkens reist als Nummer je Ecke (Beipack, kein Attribut: die Bytes des Baus bleiben)
+    const bett=!o.userData?0:o.userData.__bett?GEFUEGE_GESETZ.bett.nr:o.userData.__stein?GEFUEGE_GESETZ.stein.nr:0;   // DAS FUGENBETT · DER STEIN FÜR STEIN (GEFUEGE_GESETZ.bett · stein): die Hinterfüllung der Steine und jeder Stein nennen sich je Ecke
+    const fa=_faserAchse(role,pa,e); if(fa||G.faser||bett){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser): die Achse des Balkens reist als Nummer je Ecke (Beipack, kein Attribut: die Bytes des Baus bleiben)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
       const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/AO_KNIE)) : 1;   // EIN-BAKE-GESETZ: dieselbe Kontakt-AO wie bakeLOD (vorher: ao UNDEFINIERT → latenter Crash)
       G.pos.push(e[0]*x+e[4]*y+e[8]*z+e[12], wy, e[2]*x+e[6]*y+e[10]*z+e[14]);
@@ -2905,7 +2985,7 @@
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;
       G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);
-      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):gefuegeReihe(role));
+      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):bett||gefuegeReihe(role));
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -2939,7 +3019,8 @@
     const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
     const wa=o.geometry.attributes.aWand, wr0=verbandReihe(role);   // DIE LAGE IM GEFÜGE (`_wandLage`): trägt ein Teil der Rolle sie, trägt jede Ecke der Rolle [u, v, Zeile] — ohne eigene die Zeile ihres Stoffs
     if(wa||G.wand){ G.wand=G.wand||[]; while(G.wand.length<G.vo*3) G.wand.push(0,0,wr0); }
-    const fa=_faserAchse(role,pa,e); if(fa||G.faser){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser), wie bakeHaus
+    const bett=!o.userData?0:o.userData.__bett?GEFUEGE_GESETZ.bett.nr:o.userData.__stein?GEFUEGE_GESETZ.stein.nr:0;   // DAS FUGENBETT, wie bakeHaus
+    const fa=_faserAchse(role,pa,e); if(fa||G.faser||bett){ G.faser=G.faser||[]; while(G.faser.length<G.vo) G.faser.push(gefuegeReihe(role)); }   // DIE FASER JE TEIL (GEFUEGE_GESETZ.faser), wie bakeHaus
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2951,7 +3032,7 @@
       const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
       G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       if(G.wand){ if(wa) G.wand.push(wa.getX(v),wa.getY(v),wa.getZ(v)); else G.wand.push(0,0,wr0); }
-      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):gefuegeReihe(role));
+      if(G.faser) G.faser.push(fa?faserNummer(fa[0],fa[1],fa[2],G.nrm[G.nrm.length-3],G.nrm[G.nrm.length-2],G.nrm[G.nrm.length-1],fa[3]):bett||gefuegeReihe(role));
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -7142,8 +7223,9 @@
             // DIE LAGE DER ECKE AM BAU (GEFUEGE_GESETZ.spritz · lauf, `_eckLage`): je Ecke einer Rolle, deren Art Saum oder Läufer
             // trägt, die Höhe über dem Fuß und die Tiefe unter dem Dach, ebenso als Beipack — die Brücke reicht ihn als `aLage`;
             // die ferne Wand trägt dort schon ihre Felder und bleibt, wie sie ist
+            // — und DIE LAGE IM VERBAND (`_steinLage`): die Ecke im Mauerwerk und die des Fugenbetts nennt ihre Lage in Steinen
             if (!bg.attributes.aLage) {
-                var lg = eckLage(G, zeilen[gefuegeReihe(role)] || null);
+                var lg = _steinLage(G, role, eckLage(G, zeilen[gefuegeReihe(role)] || null));
                 if (lg) bg.userData.__lage = lg;
             }
             bg.setIndex(G.idx);
