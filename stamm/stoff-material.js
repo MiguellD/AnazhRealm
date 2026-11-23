@@ -62,11 +62,16 @@ class AnazhRealm_stoff_material {
     // die Füße der Halme um die Streckung des Gesetzes (bis 14-fach, begrenzt von `_wieseFernGrenzen` in der vierten Zeile der
     // Instanz-Matrix), bis w22-strauch-karte wurde der Halm quer um sie breiter (Keile von 2,5 m Breite im mittleren Gras), bis
     // w14-wiese-saum streckte er jede waagrechte Lage (der Halm lag 12° über dem Boden).
-    _halmFerne(mat) {
+    // DIE FRUCHT IN DER FERNE (acker-furche, `frucht`): derselbe Knoten der Ferne über dem Stoff der Frucht (`_halmFrucht`), der
+    // Halm kürzt sich im Stand des Ackers statt im Jahr der Wiese (`_fruchtJahr`) — EIN Programm je Art.
+    _halmFerne(mat, frucht = false) {
+        if (frucht) mat = this._halmFrucht(mat);
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
         const T = THREE.TSL;
-        if (!this._halmFerneKnoten) {
+        const art = frucht ? "frucht" : "wiese";
+        this._halmFerneKnoten = this._halmFerneKnoten || {};
+        if (!this._halmFerneKnoten[art]) {
             const NW = AnazhRealm.NAH_WIESE;
             const F = NW.fern;
             // das Auge der Wiese (`_wieseAuge`): xyz die Lage, w die Höhe über dem eigenen Boden
@@ -95,23 +100,23 @@ class AnazhRealm_stoff_material {
             const ql = quer.length();
             const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
             // der Pixel der Szene in Metern je Meter Abstand (0 ohne Schirm: dann bleibt der Halm des Studios)
-            this._halmFernePixel = T.uniform(0);
+            this._halmFernePixel = this._halmFernePixel || T.uniform(0);
             const u = T.uv().x;
             const halb = u.abs().mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk);
             const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.mul(s).max(1e-6));
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(t.mul(breit));
             // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen Fuß
-            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
+            const ha = frucht ? this._fruchtJahr(T).ha : this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
-            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z), lage);
+            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z), lage, frucht ? ha : null);
             // die Deckung im Blick (`_wieseFern` skala): das Büschel wächst gleichförmig um seinen Fuß, sein Wiegen mit ihm
-            this._halmFerneKnoten = jahr.add(sway).mul(v.mul(s));
-            this._halmFerneStoffe = new Map();
+            this._halmFerneKnoten[art] = jahr.add(sway).mul(v.mul(s));
+            this._halmFerneStoffe = this._halmFerneStoffe || new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
         const m = mat.clone();
-        m.positionNode = this._halmFerneKnoten;
+        m.positionNode = this._halmFerneKnoten[art];
         this._halmFerneStoffe.set(mat, m);
         return m;
     }
@@ -123,13 +128,60 @@ class AnazhRealm_stoff_material {
     // Ganzes um den Fuß ihres Stängels (ihr Anker, geboren in emitGrass). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
     // und ihre Ferne (`_halmFerne`). Bis hierher staute jeder Leser nur y: Neigung und Fußabdruck blieben, die Wiese deckte im
     // Winter von oben wie im Sommer (Radeon 87537d3f: LAI 2–10 m Winter 0,567 × Sommer).
-    _halmImJahr(T, fuss, lage) {
-        const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
+    _halmImJahr(T, fuss, lage, haFrucht = null) {
+        const ha = haFrucht || this._ensureSeasonUniforms().uLaubPraesenz.z;
         const n = T.normalGeometry;
         const o = lage.sub(fuss);
         const aehre = T.step(1e-4, T.attribute("aCenter", "vec3").y);
         const J = globalThis.__phytoCore.halmImJahr(AnazhRealm._windTsl(T), ha, o.x, o.y, o.z, n.x, n.z, aehre);
         return fuss.add(T.vec3(J.x, J.y, J.z));
+    }
+
+    // DER STAND DER FRUCHT IM STOFF (acker-furche; phyto-core `fruchtImJahr`, geschrieben von `_ackerKoerperTakt` in
+    // `uAckerFrucht`: Höhe ÷ hoeheMaxM, Ähre, Reife, Stoppel): `ha` je Ecke — der Halm im Stand, die Ähre (aCenter y > 0) dazu
+    // im Schieben (× aehre: vor dem Ährenschieben und nach der Ernte fällt sie auf ihren Fuß) —, die Farbe der Frucht (grün →
+    // reif → Stoppel, ACKER_GESETZ.frucht, linear).
+    _fruchtJahr(T) {
+        const U = this._ackerRahmenU().uAckerFrucht;
+        const G = globalThis.__phytoCore.ACKER_GESETZ.frucht;
+        const aehre = T.step(1e-4, T.attribute("aCenter", "vec3").y);
+        const lin = (hex) => {
+            const v = AnazhRealm._srgbHexLinear(hex).map(AnazhRealm._f32);
+            return T.vec3(v[0], v[1], v[2]);
+        };
+        return {
+            ha: U.x.mul(T.mix(T.float(1), U.y, aehre)),
+            farbe: T.mix(T.mix(lin(G.gruen), lin(G.reif), U.z), lin(G.stoppelFarbe), U.w),
+        };
+    }
+    // DER HALM DER FRUCHT (acker-furche, die dritte Vorlage der Nah-Wiese `FRUCHT_VORLAGE`): der Gras-Stoff der Nähe (Halm-Stoff,
+    // Narbe, Dach, Wind) im Stand des Ackers statt im Jahr der Wiese — der Halm kürzt sich um seinen Fuß mit `ha` der Frucht
+    // (`_fruchtJahr`), der Wind wiegt die Höhe im Stand, die Albedo ist die Farbe der Frucht × die Adern des Halms (`halmAder`,
+    // derselbe Filter wie `_halmStoff`); die Tönung des Jahrs der Wiese (uSeasonMul) liest sie nicht — ihr Jahr ist der Stand.
+    _halmFrucht(mat) {
+        const da = this._halmFruchtStoffe && this._halmFruchtStoffe.get(mat);
+        if (da) return da;
+        const T = THREE.TSL;
+        const PC = globalThis.__phytoCore;
+        if (!this._halmFruchtKnoten) {
+            this._windUniformsEnsure();
+            const J = this._fruchtJahr(T);
+            const sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            const c = T.attribute("aCenter", "vec3");
+            const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(J.ha) });
+            const uv = T.uv();
+            const fw = T.fwidth(uv.x).mul(this._ensureAtmoUniforms().schirmJeSzene);
+            this._halmFruchtKnoten = {
+                lage: this._halmImJahr(T, T.vec3(c.x, 0, c.z), T.positionLocal, J.ha).add(sway),
+                farbe: T.vec4(J.farbe.mul(PC.halmAder(AnazhRealm._windTsl(T), uv.x, fw)), 1.0),
+            };
+            this._halmFruchtStoffe = new Map();
+        }
+        const m = mat.clone();
+        m.positionNode = this._halmFruchtKnoten.lage;
+        m.colorNode = this._halmFruchtKnoten.farbe;
+        this._halmFruchtStoffe.set(mat, m);
+        return m;
     }
 
     // DAS WIEGEN IM EINEN WIND (w20-boee-bild) — die KANONISCHE Wind-Größe des Halms, jeder Halm-Leser LIEST sie (die Nah-Wiese,

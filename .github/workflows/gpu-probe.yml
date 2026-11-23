@@ -323,7 +323,8 @@ jobs:
                       [ -n "$kam" ] || rc=1
                       if [ $rc = 0 ]; then
                           node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} --ort "$1" > "$OUT/bild-$1.json" || rc=1
-                          grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
+                          # die Kosten des Bilds stehen im Post (acker-furche: Dreiecke und Befehle vorher↔nachher, Lehre 18)
+                          grep -E '"(abnahme|fehler|gesamtMs|dc|dreiecke)"' "$OUT/bild-$1.json"
                           # BEKANNT (w28-linse-wahr): jedes ROT steht in `bekannt` des Orts — der Leser des Urteils liest „ROT wie an main (bekannt)“
                           grep -qE '"abnahme": "ABNAHME (GRÜN|BEKANNT)' "$OUT/bild-$1.json" || rc=1
                       fi

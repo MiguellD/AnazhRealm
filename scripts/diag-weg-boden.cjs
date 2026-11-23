@@ -65,14 +65,18 @@ function probe(stoerung) {
     }
     const wieseOhne = wiese(o);
     // 11 ACKER: die Büschel der Nah-Wiese und die Pflanzen der Nah-Streu im ersten Acker des Plans (Mitte −18, −18, 6 × 4 m, innen
-    // 0,5 m vor seiner Kante) — dieselben Bauten der Kacheln, die das Spiel zeichnet
+    // 0,5 m vor der Kante seines gepflügten Rechtecks — der Rain am Rand, phyto-core ACKER_FURCHE.rainM, trägt Wiese) — dieselben
+    // Bauten der Kacheln, die das Spiel zeichnet
+    const RAIN = globalThis.__phytoCore.ACKER_FURCHE.rainM;
     const imAcker = () => {
         let [w, s] = [0, 0];
-        const [x0, x1, z0, z1] = [o.x - 23.5, o.x - 12.5, o.z - 21.5, o.z - 14.5];
+        const [hx, hz] = [6 - RAIN - 0.5, 4 - RAIN - 0.5];
+        const [x0, x1, z0, z1] = [o.x - 18 - hx, o.x - 18 + hx, o.z - 18 - hz, o.z - 18 + hz];
         const arten = r._nahStreuArten() || [];
         for (let tx = Math.floor(x0 / KW); tx <= Math.floor(x1 / KW); tx++)
             for (let tz = Math.floor(z0 / KW); tz <= Math.floor(z1 / KW); tz++)
-                for (const b of r._nahWieseKachelBueschel(tx, tz) || []) if (b.x > x0 && b.x < x1 && b.z > z0 && b.z < z1) w++;
+                // die Frucht des Ackers (acker-furche, die Vorlage `FRUCHT_VORLAGE`) ist Kultur, kein Wildwuchs der Wiese
+                for (const b of r._nahWieseKachelBueschel(tx, tz) || []) if (b.vorlage !== A.FRUCHT_VORLAGE && b.x > x0 && b.x < x1 && b.z > z0 && b.z < z1) w++;
         const KS = A.NAH_STREU.kachel;
         for (let tx = Math.floor(x0 / KS); tx <= Math.floor(x1 / KS); tx++)
             for (let tz = Math.floor(z0 / KS); tz <= Math.floor(z1 / KS); tz++) {
@@ -137,10 +141,10 @@ function probe(stoerung) {
     out.platz = +kanal(o.x + 10, o.z + 14, 0).toFixed(3);
     out.acker = +kanal(o.x - 18, o.z - 18, 1).toFixed(3);
     out.feldweg = +kanal(o.x, o.z - 15, 0).toFixed(3);
-    // 5 ECKE: die Ecke des 45°-Quadrats (Halbachse 5 m) liegt 7,07 m entlang +x; 6,6 m liegen innen, im weichen Rand
-    // der Ecke (der Texel nächst der Probe liest 0,56). Die alte Ausdehnung max(ex, ez) + Rand endete bei 5,6 m (+ ein
-    // Texel Schlupf): dort las dieselbe Probe 0 — die Ecke fehlte.
-    out.ecke = +kanal(o.x + 22 + 6.6, o.z - 22, 1).toFixed(3);
+    // 5 ECKE: die Ecke des 45°-Quadrats (Halbachse 5 m, gepflügt 5 m − Rain) liegt √2 · (5 − rainM) entlang +x; 0,47 m davor
+    // liegen innen, im weichen Rand der Ecke. Die alte Ausdehnung max(ex, ez) + Rand endete √2-fach zu früh (+ ein Texel
+    // Schlupf): dort las dieselbe Probe 0 — die Ecke fehlte.
+    out.ecke = +kanal(o.x + 22 + Math.SQRT2 * (5 - RAIN) - 0.47, o.z - 22, 1).toFixed(3);
     // 6 FERNE: der Fern-Weg (300 m) liest die Karte (die nahe Stufe endet bei 208 m, die ferne trägt)
     out.fernWeg = fern ? +r._wegeFeldAt(o.x + fern.x + 15, o.z + fern.z).toFixed(3) : -1;
     // 4 KONSUM: das Chunk-Material liest die Karte, die Wiese das Pfad-Feld

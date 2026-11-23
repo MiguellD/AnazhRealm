@@ -205,6 +205,8 @@ class AnazhRealm_vegetation_wiese {
                 out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }
         }
+        // DIE FRUCHT DES ACKERS (acker-furche): die dritte Vorlage, je Kamm der Furche ein Reihenstück (`_ackerFruchtStuecke`)
+        for (const b of this._ackerFruchtStuecke(x0, z0, NW.kachel, anteil, gemaeht)) out.push(b);
         out.sort((a, b) => a.o - b.o);
         return out;
     }
@@ -538,9 +540,15 @@ class AnazhRealm_vegetation_wiese {
         // Der Rang der Vorlage ist der Ort ihres Lesers, das Auge (`wo`, B5): ohne Ort stand sie auf ∞ und wartete vor dem
         // ersten Bild auf eine leere Bahn (GTX kalt 8,5 s), während die Streu-Lücke im Blick auf sie wartete.
         let weite = 0; // die weiteste Halm-Spitze der Vorlagen beider Stufen — NaN, solange eine fehlt
+        // DIE DRITTE VORLAGE ist die Frucht des Ackers (acker-furche, `AnazhRealm.FRUCHT_VORLAGE`): dasselbe Gras-Gesetz unter
+        // dem Stempel der Kulturart (phyto-core ACKER_FRUCHT.gestalt) — ein Reihenstück; sie steht nur auf dem Acker
+        // (`_ackerFruchtStuecke`), ihre Weite trägt der Kreis der Wiese vor den Häusern nicht (der Acker ist selbst Grundriss).
+        const frucht = { reihe: globalThis.__phytoCore.ACKER_FRUCHT.gestalt };
         for (const stufe of [1, 2]) {
-            for (let v = 0; v < 2; v++) {
-                const fl = this._foundryFlattenFor({ seed: v + 1, wo: cam }, "gras", stufe);
+            for (let v = 0; v <= AnazhRealm.FRUCHT_VORLAGE; v++) {
+                const ein = { seed: v + 1, wo: cam };
+                if (v === AnazhRealm.FRUCHT_VORLAGE) ein.studioOv = frucht.reihe;
+                const fl = this._foundryFlattenFor(ein, "gras", stufe);
                 if (fl && Array.isArray(fl.leaves) && fl.leaves.length) {
                     if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
                         throw new Error(
@@ -548,6 +556,7 @@ class AnazhRealm_vegetation_wiese {
                         );
                     this._nahWieseSenken(v, stufe, fl);
                 } else nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
+                if (v === AnazhRealm.FRUCHT_VORLAGE) continue;
                 const vl = nw.vorlagen.get(`${v}:L${stufe}`);
                 weite = vl ? Math.max(weite, vl.weite) : NaN;
             }
@@ -1155,7 +1164,9 @@ class AnazhRealm_vegetation_wiese {
                 nw.senken.set(a.key, a);
                 return a;
             };
-            senken.push(senke(`${kopf}:${p}`, `nahWiese:L${stufe}:${v}:${p}`, lf.mat));
+            // die Frucht trägt ihren Stand im Jahr statt des Jahrs der Wiese (`_halmFrucht`, der Stand des Ackers)
+            const frucht = v === AnazhRealm.FRUCHT_VORLAGE;
+            senken.push(senke(`${kopf}:${p}`, `nahWiese:L${stufe}:${v}:${p}`, frucht ? this._halmFrucht(lf.mat) : lf.mat)); // prettier-ignore
             if (stufe === 2) {
                 const e = lf.localMatrix.elements;
                 if (e[12] !== 0 || e[13] !== 0 || e[14] !== 0)
@@ -1164,7 +1175,7 @@ class AnazhRealm_vegetation_wiese {
                 // von Geburt, emitGrass) — eine Vorlage ohne Ecken bricht laut
                 if (!lf.geom.attributes.aCenter)
                     throw new Error(`Nah-Wiese: Vorlage ${kopf} ohne Ecken (aCenter) — die Ferne kürzt ihre Halme um ihre Füße`); // prettier-ignore
-                fern.push(senke(`fern:${v}:${p}`, `nahWiese:Lf:${v}:${p}`, this._halmFerne(lf.mat)));
+                fern.push(senke(`fern:${v}:${p}`, `nahWiese:Lf:${v}:${p}`, this._halmFerne(lf.mat, frucht)));
             }
             if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
             kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
@@ -1216,7 +1227,7 @@ class AnazhRealm_vegetation_wiese {
         // Ferne (die Teile der Stufe L2 mit dem Gesetz der Ferne, `_nahWieseFernBlock`: die Ebene des Gesetzes in 3 und 7, die
         // Ordnung in 11). Je Block: Zahl und Schreiber an seinen ersten Platz.
         const familien = [];
-        for (let v = 0; v < 2; v++) {
+        for (let v = 0; v <= AnazhRealm.FRUCHT_VORLAGE; v++) {
             const [l1, l2] = [nw.vorlagen.get(`${v}:L1`) || null, nw.vorlagen.get(`${v}:L2`) || null];
             familien.push({
                 key: "nah" + v,

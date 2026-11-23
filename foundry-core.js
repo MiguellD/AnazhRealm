@@ -3242,12 +3242,15 @@ function emitGrass(P) {
             spz = Math.pow(farbStrom(), 2) * WH.spitze;
         const a = i * GOLDEN,
             rr = Math.sqrt(i / N) * P.clump;
-        const bx = Math.cos(a) * rr,
+        // DIE REIHE (acker-furche, additiv; phyto-core ACKER_FRUCHT.gestalt): ein Stempel mit `reihe` (Labor-Einheiten) setzt die
+        // Füße längs x über die Länge der Reihe (die goldene Folge, kein Wurf — der Strom der Füße bleibt), quer die Scheibe; der
+        // Anteil der Ährenstängel `aehrenAnteil` und die Neigung `neigung` (× die gewürfelte) ebenso. Ohne sie: Byte für Byte das Gras.
+        const bx = P.reihe > 0 ? (((i * GOLDEN) / (2 * Math.PI)) % 1 - 0.5) * P.reihe : Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
-        const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Aehrenstaengel
+        const isCulm = SH > 0 && rnd() < (P.aehrenAnteil != null ? P.aehrenAnteil : SH * 0.5); // Teil der Halme -> Aehrenstaengel
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             wWurf = rrange(0.8, 1.1);
-        const lean = rrange(0.1, 0.4),
+        const lean = rrange(0.1, 0.4) * (P.neigung != null ? P.neigung : 1),
             la = rnd() * 6.28;
         // die Blätter des Triebs, wie die Stufe sie zeichnet: [Richtung, θ0, Θ, Länge, relative Breite, Stützen, Platz]
         const blaetter = [];

@@ -2905,6 +2905,100 @@ class AnazhRealm_siedlung_wege {
         return B.acker >= AnazhRealm.ACKER_KOERPER.wieseWeicht;
     }
 
+    // DIE FRUCHT IN DER KACHEL (acker-furche; Leser `_nahWieseKachelBueschel`, die dritte Vorlage der Nah-Wiese
+    // `FRUCHT_VORLAGE`): je Acker des Dorfs, der im Stand seiner Saat Frucht trägt (phyto-core `fruchtImJahr` über `ackerStand`,
+    // die EINE Uhr `seasonPhase`), ein Reihenstück (`ACKER_FRUCHT.stueckM`) je Kamm der Furche (q = k · abstandM, quer zur
+    // langen Achse — derselbe Rahmen wie `_ackerFurche`) im gepflügten Rechteck ohne den Rain; die Kachel trägt das Stück, dessen
+    // Mitte in ihr liegt. Dieselben Wände wie das Büschel: der Grund der Häuser, der Wagen, der Bau, die Mahd (`gemaeht`); ein
+    // Stück, das eine Hand neu bestellt hat, trägt die Frucht des Dorfs nicht (sein Boden zeigt den eigenen Stand). Die Ferne:
+    // nur Stücke unter ihrem Anteil (`_wieseOrdnung`). Der Stand selbst (Höhe, Ähre, Reife) steht im Stoff (`uAckerFrucht`).
+    _ackerFruchtStuecke(x0, z0, K, anteil, gemaeht) {
+        const st = this.state;
+        const P = globalThis.__phytoCore;
+        if (!st.aecker || !st.aecker.size || !P || !P.fruchtImJahr) return [];
+        const AF = P.ACKER_FRUCHT;
+        const lam = P.ACKER_GESETZ.furche.abstandM;
+        const rain = P.ACKER_FURCHE.rainM;
+        const dorf = P.ackerTage(st.seasonPhase || 0, this._gelaende().ort.klimaHeute.jahrTage);
+        if (!(P.fruchtImJahr(P.ackerStand(dorf)).ha > 0)) return [];
+        const hand = this._tatIndex().bestellen;
+        const Gb = globalThis.__gelaendeCore;
+        const E = this._erdbauLage();
+        const r = AF.stueckM / 2;
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
+        };
+        const out = [];
+        let ai = 0;
+        for (const a of st.aecker.values()) {
+            ai++;
+            const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
+            const lang = a.ex >= a.ez ? 0 : 1;
+            const L = lang ? [s, c] : [c, -s];
+            const Q = [L[1], -L[0]]; // q = d · Q (die Lage quer zu den Furchen, `_ackerFurche`)
+            const [hl, hq] = (lang ? [a.ez, a.ex] : [a.ex, a.ez]).map((h) => h - rain);
+            if (!(hl > r) || !(hq > 0)) continue;
+            // die Kachel in der Lage des Ackers (p längs, q quer) — ihr Rahmen begrenzt Kämme und Stücke
+            let [p0, p1, q0, q1] = [Infinity, -Infinity, Infinity, -Infinity];
+            for (const [ex, ez] of [
+                [x0, z0],
+                [x0 + K, z0],
+                [x0, z0 + K],
+                [x0 + K, z0 + K],
+            ]) {
+                const [dx, dz] = [ex - a.x, ez - a.z];
+                const [p, q] = [dx * L[0] + dz * L[1], dx * Q[0] + dz * Q[1]];
+                [p0, p1, q0, q1] = [Math.min(p0, p), Math.max(p1, p), Math.min(q0, q), Math.max(q1, q)];
+            }
+            const nm = Math.floor((2 * hl) / AF.stueckM);
+            const ak = AnazhRealm._ackerSchluessel(a.x, a.z);
+            for (let k = Math.ceil(Math.max(q0, -hq) / lam); k * lam <= Math.min(q1, hq); k++) {
+                for (let m = 0; m < nm; m++) {
+                    const p = -hl + (m + 0.5) * AF.stueckM + (hl * 2 - nm * AF.stueckM) / 2;
+                    if (p < p0 - r || p > p1 + r) continue;
+                    const q = k * lam;
+                    const x = a.x + L[0] * p + Q[0] * q;
+                    const z = a.z + L[1] * p + Q[1] * q;
+                    if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
+                    const [gi, gj] = ["a" + ai + "." + k, m];
+                    if (gemaeht.has(gi + "|" + gj)) continue;
+                    const o = AnazhRealm._wieseOrdnung(x, z);
+                    if (o >= anteil) continue;
+                    if (hand.some((h) => h.acker === ak && this._ackerImStueck(h, a, x, z))) continue;
+                    const y = this._bodenSichtAt(x, z);
+                    if (y === null) continue;
+                    if (Gb.erdbauGrund(E, x, z, r) || this._imWagen(x, z, r) || this._imGrundriss(x, z, r) === "bau")
+                        continue;
+                    const eb = {};
+                    this._slopeAt(x, z, boden, 1, eb, y);
+                    // der Ton je Stück (±6 %, aus der Ordnung — kein Wurf), versengt im Saum der Narbe wie das Büschel
+                    const t = 0.94 + 0.12 * ((o * 7919) % 1);
+                    const f = [t, t, t];
+                    const av = this._ascheAt(x, z);
+                    if (av > 0) {
+                        const [V, w] = [AnazhRealm.BRAND.versengt, Math.min(1, av * 2)];
+                        for (let i = 0; i < 3; i++) f[i] *= 1 + (V[i] - 1) * w;
+                    }
+                    const rot = Math.atan2(-L[1], L[0]); // die x-Achse der Vorlage (die Reihe) längs L
+                    out.push({ x, y, z, s: 1, rot, vorlage: AnazhRealm.FRUCHT_VORLAGE, o, f, gi, gj, gx: eb.gx, gz: eb.gz, acker: ak }); // prettier-ignore
+                }
+            }
+        }
+        return out;
+    }
+    // liegt (x, z) im Stück der Tat „bestellen" h (Acker a)? Die Mitte der Tat, ihre Achse (0: u, 1: v des Ackers), halb
+    // `ACKER_KOERPER.stueckM` längs und `bahnM` quer
+    _ackerImStueck(h, a, x, z) {
+        const AK = AnazhRealm.ACKER_KOERPER;
+        const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
+        const L = h.achse ? [s, c] : [c, -s];
+        const [dx, dz] = [x - h.x, z - h.z];
+        const p = dx * L[0] + dz * L[1];
+        const q = dx * L[1] - dz * L[0];
+        return Math.abs(p) <= AK.stueckM / 2 && Math.abs(q) <= AK.bahnM / 2;
+    }
+
     // DAS BESTELLEN (mensch.nahrung hand S2, das Verb der Klick-Kette nach der Mühe des Grabens, kampf `tryMouseBreak`): ein Hieb
     // des Geräts, das den Boden öffnet, pflügt und sät am Acker unter dem Fadenkreuz ein Stück (`ACKER_KOERPER` stueckM × bahnM)
     // — seine Reihen laufen in der Zugrichtung (die Achse des Ackers, die dem Blick am nächsten liegt). Die Tat „bestellen"
@@ -2992,12 +3086,23 @@ class AnazhRealm_siedlung_wege {
             .sort((u, v) => u[1] - v[1])
             .map(([, i]) => rahmen[i]);
         key += nah.map((r) => r.x.toFixed(1) + ":" + r.z.toFixed(1)).join(";");
+        // DIE FRUCHT IN DER NAH-WIESE (`_ackerFruchtStuecke`): ob das Dorf Frucht trägt und welche Stücke eine Hand bestellt hat,
+        // legt die Stücke der Kacheln — ändert es sich, wachsen die Kacheln über jedem Acker neu (die Änderung, nie der Takt)
+        const fs = (P.fruchtImJahr(P.ackerStand(dorf)).ha > 0 ? 1 : 0) + "|" + this._tatIndex().bestellen.map((q) => q.x + ":" + q.z).join(","); // prettier-ignore
+        if (K.fruchtSchluessel != null && fs !== K.fruchtSchluessel)
+            for (const a of st.aecker.values()) {
+                const w = Math.hypot(a.ex, a.ez);
+                this._nahWieseNeuIn(a.x - w, a.z - w, a.x + w, a.z + w);
+            }
+        K.fruchtSchluessel = fs;
         if (key === K.schluessel) return;
         K.schluessel = key;
         const U = this._ackerRahmenU();
         const S0 = P.ackerStand(dorf);
         const stand = (S) => [S.relief, S.deckung, S.reife, S.stoppel ? 1 : 0];
         U.uAckerDorf.value.fromArray(stand(S0));
+        const J = P.fruchtImJahr(S0);
+        U.uAckerFrucht.value.set(J.ha, J.aehre, J.reife, J.stoppel);
         const W = U.uAckerRahmen.array;
         for (let i = 0; i < AK.rahmen; i++) {
             const r = nah[i];
@@ -3012,13 +3117,32 @@ class AnazhRealm_siedlung_wege {
         }
         K.rahmen = nah.length;
         K.je.clear();
-        for (const [ak, a] of st.aecker)
+        const lam = P.ACKER_GESETZ.furche.abstandM;
+        for (const [ak, a] of st.aecker) {
+            const hq = Math.min(a.ex, a.ez) - P.ACKER_FURCHE.rainM;
+            const zaehl = () => this._ackerFruchtGezeichnet(ak);
             K.je.set(ak, {
                 dorfTage: dorf,
                 stand: S0,
+                fruchtStand: J,
                 rahmen: nah.some((r) => !r.ak && r.x === a.x && r.z === a.z),
                 hand: nah.filter((r) => r.ak === ak).length,
+                kaemme: hq > 0 ? 2 * Math.floor(hq / lam) + 1 : 0,
+                // die gezeichneten Reihenstücke der Frucht auf diesem Acker (die Kacheln der Nah-Wiese, gezählt beim Lesen)
+                get frucht() {
+                    return zaehl();
+                },
             });
+        }
+    }
+    // die Reihenstücke der Frucht, die die Nah-Wiese auf dem Acker `ak` trägt (je gebaute Kachel ihre Einträge der Vorlage der
+    // Frucht) — der Leser: `ackerKoerper.je` (die Stationen der Leiter)
+    _ackerFruchtGezeichnet(ak) {
+        const nw = this.state.nahWiese;
+        let n = 0;
+        for (const k of nw ? nw.kacheln.values() : [])
+            for (const b of k.bueschel || []) if (b.acker === ak && b.vorlage === AnazhRealm.FRUCHT_VORLAGE) n++;
+        return n;
     }
     // DIE REIHE DER RAHMEN (`_ackerKoerperTakt` schreibt, `_ackerFurche` liest): je Rahmen drei vec4 — (Mitte x, z, die lange
     // Achse x, z) · (halbe Länge, halbe Breite, Relief, Deckung der Reihe) · (Reife, Stoppel, 0, 0); ein leerer Rahmen trägt die
@@ -3034,6 +3158,7 @@ class AnazhRealm_siedlung_wege {
         this._ackerRahmenSatz = this._uniformHeimatTeilen({
             uAckerRahmen: THREE.TSL.uniformArray(W, "vec4"),
             uAckerDorf: THREE.TSL.uniform(new THREE.Vector4(0, 0, 0, 0)),
+            uAckerFrucht: THREE.TSL.uniform(new THREE.Vector4(0, 0, 0, 0)),
         });
         return this._ackerRahmenSatz;
     }
@@ -3254,6 +3379,9 @@ AnazhRealm.ACKER_KOERPER = Object.freeze({
     erdeFeucht: 0.62,
     wieseWeicht: 0.5,
 });
+// DIE VORLAGE DER FRUCHT in der Nah-Wiese (acker-furche): die Vorlagen 0 und 1 sind das Gras der Wiese, die dritte das Reihenstück
+// der Kulturart (`_ackerFruchtStuecke` legt es, `_halmFrucht` trägt seinen Stand im Jahr)
+AnazhRealm.FRUCHT_VORLAGE = 2;
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),
     dichte: 0.6,

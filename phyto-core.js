@@ -7344,6 +7344,45 @@
             reihe: A.add(deckung, A.mul(A.add(scharf, A.mul(deckung, A.k(-1))), filt)),
         };
     }
+    // DIE FRUCHT IN REIHEN (acker-furche, additiv): die Kulturart ist ein STEMPEL des EINEN Gras-Gesetzes (foundry-core
+    // `emitGrass` über `__praegeP`, Preset „gras“) — keine eigene Gestalt neben dem Halm: `gestalt` trägt die Halm-Länge
+    // (Labor-Einheiten × Welt-Skala des Grases 0,24 → der Ährenstängel 0,9 m), die Breite des Blatts, die Dichte, die Füße
+    // längs einer Reihe der Länge `reihe` (Labor; die Welt-Länge `stueckM`) statt in der Scheibe des Büschels, den Anteil der
+    // Ährenstängel und die Neigung (Weizen steht, das Gras fächert). Je Instanz ein Reihenstück auf dem Kamm der Furche
+    // (`ACKER_GESETZ.furche`: der First bei q = k · abstandM). Die LOD-Kette ist die des Grases (L1, L2, die Ferne der
+    // Nah-Wiese), dahinter trägt der Boden die Reihe als Farbe (`furcheImAcker` reihe). DAS JAHR liest der Stoff aus dem
+    // Stand (`fruchtImJahr` über `ackerStand`): der Halm kürzt sich um seinen Fuß (`halmImJahr` mit ha = hoeheM / hoeheMaxM),
+    // die Ähre schiebt zwischen `aehreTage` (BBCH 51–59) und fällt mit der Ernte, gepflügt steht keine Frucht.
+    var ACKER_FRUCHT = Object.freeze({
+        stueckM: 1.2,
+        hoeheMaxM: 0.9,
+        aehreTage: Object.freeze([70, 90]),
+        gestalt: Object.freeze({
+            bladeLen: 2.6,
+            bladeW: 0.05,
+            density: 0.2,
+            clump: 0.17,
+            droop: 0.3,
+            seedHead: 1,
+            seedTan: 0xc9a456,
+            reihe: 5,
+            aehrenAnteil: 0.6,
+            neigung: 0.35,
+        }),
+    });
+    // der Stand der Frucht im Jahr (rein, Zahlen): { ha (Höhe ÷ hoeheMaxM), aehre (0..1), reife, stoppel (0|1) } — vor der Saat
+    // und gepflügt alles 0 (der Halm fällt auf seinen Fuß)
+    function fruchtImJahr(S) {
+        var Z = ACKER_FRUCHT;
+        if (!S || S.gepfluegt) return { ha: 0, aehre: 0, reife: 0, stoppel: 0 };
+        var t = (S.tage - Z.aehreTage[0]) / (Z.aehreTage[1] - Z.aehreTage[0]);
+        return {
+            ha: S.hoeheM / Z.hoeheMaxM,
+            aehre: S.stoppel ? 0 : Math.min(1, Math.max(0, t)),
+            reife: S.reife,
+            stoppel: S.stoppel ? 1 : 0,
+        };
+    }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
         k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
@@ -7810,6 +7849,8 @@
         ackerTage: ackerTage, // acker-kette — die Tage seit der Saat des Dorfs zur Phase des Jahrs
         ACKER_FURCHE: ACKER_FURCHE, // acker-furche — Rain, Saatbett, Setzung, Herbstfurche, Scholle, Kante der Reihe
         furcheImAcker: furcheImAcker, // acker-furche — DIE FURCHE als Relief des Bodens über einer Algebra (Welt-Stoff, Labor, Linse)
+        ACKER_FRUCHT: ACKER_FRUCHT, // acker-furche — die Frucht in Reihen: Stempel des Gras-Gesetzes, Reihenstück, Ähre im Jahr
+        fruchtImJahr: fruchtImJahr, // acker-furche — der Stand der Frucht im Jahr (Höhe, Ähre, Reife, Stoppel) aus `ackerStand`
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
