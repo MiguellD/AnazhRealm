@@ -25,7 +25,7 @@
 //       "richter": { "wert": <Zahl|Text>, "urteil": "GRÜN" | "ROT" },
 //       "preis":   { "stufe": "Ort",   // optional; die Zeile der Preis-Treppe nennt die KARTE (sprosse.klasse, R8) — weicht sie ab: Bruch
 //                    "bild_p95_ms": 21.4, "bild_max_ms": 61, "heap_mb": 310, "vram_mb": 104,
-//                    "ankunft_kalt_s": 4.2,                       // Pflicht ab Stufe Stadt
+//                    "ankunft_kalt_s": 4.2,                       // Lesewert; keine Klasse verlangt ihn (die Ankunft urteilt same.preis.ankunft)
 //                    "wachstum_mb_min": 1.1, "ton_aussetzer": 0,   // geprüft, wenn angegeben
 //                    "referenz": { "f": 1.08, … },               // die Referenzfahrt derselben Sitzung (DIE LAST AM PREIS, unten)
 //                    "urteil": "GRÜN" | "ROT" | "UNGEMESSEN …" } },
@@ -170,8 +170,24 @@ function treppeLesen(karte) {
             s.vram = +v[1];
             s.wachstum = w ? zahl(w[1]) : 0; // „kein Wachstum mit dem Weg“
         }
+        // DIE ANKUNFT HAT EIN HEIM (23.11., Entscheid des Koordinators nach dem Wort des Schöpfers 18.11. — Sprossen vor Kennzahl — und
+        // 19.11. „du schneidest wieder dinge wegen diesem verdammten kaltstart?“): jede Klasse trägt „keine Schranke in der Sprosse (gestuft in same.preis.ankunft a–b)“ — der
+        // Anspruch fällt nicht, er steht gemessen in der Leiter same.preis.ankunft, deren Sprossen a–b dieselbe Klasse tragen müssen.
+        // Bis 23.11. verlangte die Treppe ab Stadt `ankunft_kalt_s` ≤ 5 s in JEDER Sprosse; die Zahl hatte keinen Schreiber, 956 von
+        // 1 718 Sprossen endeten bei Richter GRÜN auf „Preis FEHLT“. Ein Text, der weder die Stufung noch „≤ N s“ trägt, bricht laut.
+        const st = /^keine Schranke in der Sprosse \(gestuft in ([\w.-]+) (\d+)(?:–(\d+))?\)$/.exec(t.ankunft);
         const a = /≤ (\d+(?:,\d+)?) s/.exec(t.ankunft);
-        s.ankunft = a ? zahl(a[1]) : null; // null: keine Schranke in der Sprosse
+        if (st) {
+            const L = (karte.gruppen || []).flatMap((g) => g.kriterien).find((k) => k.id === st[1]);
+            if (!L) bruch(`Preis-Treppe ${t.klasse}: die Ankunft ist in „${st[1]}“ gestuft, die Leiter steht nicht in der Karte`);
+            for (let nr = +st[2]; nr <= +(st[3] || st[2]); nr++) {
+                const sp = L.sprossen.find((x) => x.nr === nr);
+                if (!sp || sp.klasse !== t.klasse) bruch(`Preis-Treppe ${t.klasse}: ${st[1]} S ${nr} trägt die Klasse „${sp ? sp.klasse : "—"}“, nicht „${t.klasse}“ — die Stufung zeigt ins Leere`);
+            }
+            s.ankunft = null; // keine Schranke in der Sprosse: die Ankunft urteilt ihre eigene Leiter
+            Object.defineProperty(s, "ankunftLeiter", { value: { leiter: st[1], von: +st[2], bis: +(st[3] || st[2]) } });
+        } else if (a) s.ankunft = zahl(a[1]);
+        else bruch(`Preis-Treppe ${t.klasse}: Ankunft unlesbar („${t.ankunft}“) — weder „≤ N s“ noch „keine Schranke in der Sprosse (gestuft in <Leiter> a–b)“`);
         T[t.klasse] = s;
     }
     // DIE FASSUNG DER TREPPE (15.11.): das Urteil einer Akte gilt unter der Fassung, unter der sie geschrieben wurde (`preis.treppe`).
@@ -1260,7 +1276,8 @@ function selbsttest() {
     const A = "planet.geologie.platten"; // Leiter ohne Brücken-Kern
     const B = "leben.pflanzen.kraft"; // Leiter mit Brücken-Kern auf Sprosse 1, Klasse Ort in der Karte
     const G = "planet.kopplung.wetter-welt"; // Glieder-Leiter, Brücken-Kern 1 und 3
-    const FASSUNG = treppeLesen(neu()).fassung;
+    const T0Vor = treppeLesen(neu());
+    const FASSUNG = T0Vor.fassung;
     const preis = (x = {}) => Object.assign({ stufe: "Ort", bild_p95_ms: 24, bild_max_ms: 70, heap_mb: 300, vram_mb: 100, urteil: "GRÜN", treppe: FASSUNG }, x);
     const fahrt = (id, nr, o = {}) => ({
         leiter: id,
@@ -1510,9 +1527,43 @@ function selbsttest() {
         const { L } = lauf(punktDann(fahrt(A, 1, { preis: lastPreis, rot: "GTX 1060" })));
         return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
-    pruefe("Mutant Stadt-Preis ohne Ankunft: Kern statt Punkt", () => {
-        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", urteil: undefined } }) }, { klasse: "Stadt" });
-        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    // DIE ANKUNFT IN IHRER LEITER (23.11.): eine Stadt-Akte mit grünem Bild, Speicher und Bytes und ohne ankunft_kalt_s urteilt GRÜN und
+    // bucht; dieselbe mit gehaltenem Heap 601 MB urteilt ROT. Vor dem Schnitt stand hier „Kern statt Punkt“ — der Preis FEHLTE.
+    const stadtPreis = (x = {}) => Object.assign(preis({ stufe: "Stadt", heap_mb: 560, vram_mb: 175, urteil: undefined, treppe: undefined }), x);
+    pruefe("ANKUNFT IN DER LEITER: Stadt-Preis ohne ankunft_kalt_s (Bild, Speicher, Bytes grün) urteilt GRÜN und bucht", () => {
+        const u = preisUrteil(stadtPreis(), T0Vor, "probe", "Stadt");
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: stadtPreis() }) }, { klasse: "Stadt" });
+        return u === "GRÜN" && L(A).heute === 1 ? true : `Preis ${u} · heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("ANKUNFT IN DER LEITER Mutant: dieselbe Stadt-Akte mit gehaltenem Heap 601 MB urteilt ROT, nur Kern", () => {
+        const p = stadtPreis({ heap_mb: 640, posten: { heap_mb: 601, vram_mb: 175 } });
+        const u = preisUrteil(p, T0Vor, "probe", "Stadt");
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: p }) }, { klasse: "Stadt" });
+        return u === "ROT" && L(A).heute === 0 && L(A).kern === 1 ? true : `Preis ${u} · heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("ANKUNFT IN DER LEITER: jede Klasse stuft in same.preis.ankunft, keine trägt eine Schranke in der Sprosse", () => {
+        const f = Object.keys(T0Vor).filter((k) => T0Vor[k].ankunft !== null || !T0Vor[k].ankunftLeiter || T0Vor[k].ankunftLeiter.leiter !== "same.preis.ankunft");
+        return f.length ? "Schranke in der Sprosse: " + f.join(", ") : true;
+    });
+    pruefe("ANKUNFT IN DER LEITER Mutant: eine Stufung, die auf Sprossen fremder Klasse zeigt, bricht laut", () => {
+        const k = neu();
+        k.preisTreppe.find((t) => t.klasse === "Stadt").ankunft = "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)";
+        try {
+            treppeLesen(k);
+            return "bricht nicht";
+        } catch (e) {
+            return /S 1 trägt die Klasse „Ort“, nicht „Stadt“/.test(e.message) || e.message;
+        }
+    });
+    pruefe("ANKUNFT IN DER LEITER Mutant: ein Ankunfts-Text ohne Zahl und ohne Stufung bricht laut (nie still keine Schranke)", () => {
+        const k = neu();
+        k.preisTreppe.find((t) => t.klasse === "Planet und Welten").ankunft = "kurz";
+        try {
+            treppeLesen(k);
+            return "bricht nicht";
+        } catch (e) {
+            return /Ankunft unlesbar/.test(e.message) || e.message;
+        }
     });
     pruefe("Mutant frisches ROT nimmt den Punkt zurück (Ratsche)", () => {
         const { L, z } = lauf({ [A + ".1"]: [fahrt(A, 1, { datum: "2026-11-20T10:00:00Z", rot: "GTX 1060" }), fahrt(A, 1, { datum: "2026-11-14T10:00:00Z" })] });
