@@ -369,7 +369,9 @@ hauptLauf(async () => {
         // Budget 512 MB = ~2x Kopfraum, KEIN Arbeits-Mengen-Churn [der Crossfade-Sweep
         // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
         // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege mit lebender Senke deckeln am
-        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel), 80 untaetige am RUHE-Deckel (64/8 = 8, profiband K5);
+        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel); der Cache haelt nichts ueber seine Leser hinaus
+        // (foundry-halten, `_foundryOhneLeser`): 40 zurueckgegebene bleiben im selben Takt und fallen im naechsten, ein
+        // gehaltener bleibt, ein Leser ohne Senke haelt die Wiederkehr einer Huelle (ARCH_LEER_GNADE_MS x ARCH_LEER_MINT_DECKEL);
         // Deckel + 44 leichte deckeln an der Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
         const f2 = r._ensureAssetFoundry();
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
@@ -397,9 +399,28 @@ hauptLauf(async () => {
         res.heavyBytesOk = f2.cacheBytes <= BYTES;
         f2.cache = new Map();
         f2.cacheBytes = 0;
-        for (let i = 0; i < 80; i++) r._foundryCacheSet("ruhe8|" + i, mkFake(8));
-        res.ruheSize = f2.cache.size;
-        res.ruheSoll = r.constructor.FOUNDRY_RUHE_BYTES / (8 << 20);
+        const uhr = { zeit: r.state.spielZeit, takt: r.state.weltTakt };
+        const los = [];
+        for (let i = 0; i < 41; i++) {
+            const v = mkFake(8, true);
+            r._foundryCacheSet("halt8|" + i, v);
+            if (i < 40) los.push(v);
+        }
+        for (const v of los) r._foundryLoslassen(v);
+        r._foundryOhneLeser();
+        res.losSelberTakt = f2.cache.size; // 41: die Rückgabe fällt nie im selben Takt
+        r.state.weltTakt = uhr.takt + 1;
+        r._foundryOhneLeser();
+        res.losNaechsterTakt = f2.cache.size; // 1: der gehaltene bleibt
+        r._foundryCacheSet("leser8", mkFake(8));
+        r._foundryOhneLeser();
+        res.leserInGnade = f2.cache.has("leser8");
+        r.state.spielZeit =
+            uhr.zeit + (r.constructor.ARCH_LEER_GNADE_MS * r.constructor.ARCH_LEER_MINT_DECKEL) / 1000 + 0.1;
+        r._foundryOhneLeser();
+        res.leserNachGnade = f2.cache.has("leser8");
+        r.state.spielZeit = uhr.zeit;
+        r.state.weltTakt = uhr.takt;
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
@@ -488,9 +509,14 @@ hauptLauf(async () => {
             `ring=${out.l1RingDist}m level=${out.l1Level} served=${out.l1Served} slot=${out.l1Slot}`
         );
         check(
-            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap}), untaetige am RUHE-Deckel (${out.ruheSoll})`,
-            out.heavySize === 64 && out.heavyBytesOk === true && out.ruheSoll >= 1 && out.ruheSize === out.ruheSoll,
-            `size=${out.heavySize} ruhe=${out.ruheSize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
+            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap}); der Cache haelt nichts ueber seine Leser hinaus (40 zurueckgegebene fallen im naechsten Takt, der Leser nach der Gnade)`,
+            out.heavySize === 64 &&
+                out.heavyBytesOk === true &&
+                out.losSelberTakt === 41 &&
+                out.losNaechsterTakt === 1 &&
+                out.leserInGnade === true &&
+                out.leserNachGnade === false,
+            `size=${out.heavySize} los=${out.losSelberTakt}->${out.losNaechsterTakt} leser=${out.leserInGnade}/${out.leserNachGnade} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
         );
         check(
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
