@@ -11,7 +11,10 @@ Arbeit mit Adresse und die ehrliche Liste meiner Fehler.
 - Zug: **z697 fiel 21:37 ohne Kandidat** — `w28-iperka-arbeiter` Konflikt `.claude/agents/champion.md:16` gegen offen-adresse (zwei meiner
   Schnitte an derselben Datei, kein merge-tree vor dem Stempel). Neu gebaut auf main: **`iperka-arbeiter-2` c303fc0e** (Vorprüfung [ci voll] läuft).
 - Fluss: Zug-Wand p50 46 min (z696: 73 min), Abgabe → Landung p50 1 h 10, CI je Zug 10 h 37 min Läufer-Zeit.
-- Geräte: OMEN misst Runde 12 (gtx 69/247); Radeon Runde 12 weicht 66/76; **GTX 1050 FREI seit ~12:48** (Uhr gelb) — ungenutzt.
+- Geräte: OMEN misst Runde 12 (gtx 74/247); Radeon Runde 12 weicht 66/76. **GTX 1050 „frei seit 12:48“ war eine Lüge des Blicks**: sie lag
+  394 von 542 min unter Schloss (Hand-Arbeit), die Uhr sieht Hand-Arbeit nur über `zug/sitzung.txt` (`messplatz-uhr.cjs:46/:298`), und die
+  Aufträge vom 23.11. trugen dort keine START-Zeile → die Uhr muss das Schloss selbst lesen, nicht die Sitzungs-Datei (Blatt
+  `bericht/2311-uebergabe-gtx1050.md`, Archiv `sicherung-gtx1050-2311` 3bc472bc).
 - Alle Geräte und Arbeiter sind 21:48 angewiesen: WIP pushen, Blatt schreiben, stoppen; Dienste (Zug, Runde, landung) laufen weiter.
   Blätter der Geräte: `bericht/2311-uebergabe-omen.md`, `bericht/2311-uebergabe-gtx1050.md` (falls geschrieben).
 
@@ -85,7 +88,7 @@ Archivierbar (gefallen/ersetzt): `w28-iperka-arbeiter` 327a6ad5, `iperka-arbeite
    Zorn. Muster: „nötig messen“ (22.11.) lebte als Satz in der Memory, nicht am selben Tag im Leser (`runde.cjs`, `zug.cjs`).
 2. **Eine entschiedene Frage gestellt** (Buchung mit einem Gerät — seit 18.11. gebaut). Muster: gefragt vor dem Code-Lesen.
 3. **Zu viele Fäden**: 5 lokale Arbeiter, 5–6 Cloud-Sitzungen, 2 Geräte, Monitore — ich reagierte auf Ereignisse, statt die Front zu treiben;
-   die GTX 1050 stand ~9 h ungenutzt, ohne dass ich es sah. Muster: der Apparat frisst die Sitzung (die Regel ≤ 30 min Apparat am Stück gebrochen).
+   ich las die GTX 1050 als 9 h still, sie arbeitete 394 von 542 min unter Schloss — ich prüfte den Blick nicht gegen das Schloss. Muster: der Apparat frisst die Sitzung (die Regel ≤ 30 min Apparat am Stück gebrochen).
 4. **Das Bild nicht selbst geprüft**: Dreiecke als Acker, ein Bus statt der Epochen, feste Pose — der Schöpfer sah sie zuerst. Muster: grüne Zahl
    als Beweis gelesen; Verbot „mach den Schöpfer nie zum ersten Messgerät“ gebrochen.
 5. **Keine Recherche**: die Arbeiter hatten kein Web-Werkzeug, Gesetze entstanden nach Gefühl. Jetzt IPERKA (noch nicht gelandet).
