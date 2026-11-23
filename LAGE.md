@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 00:48 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
+**STAND 24.11. 00:54 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; die Tafel trägt den Stand 22:30 am 5b36f69a und ist
   nach Runde 13 neu zu schreiben) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
   tore, decken, alles deine definitionen“): Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band · M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen
@@ -37,6 +37,18 @@
   (Richter-Lauf, dann Merge) · `acker-furche` 9c776e7f (S0 über dem Budget, Bild rot) · `stoffstrom-kette-2` 6ef21842 (im Bild vom Schöpfer abgelehnt) ·
   `leib-ausdruck` 13ef2e76 (K7 rot) · `saat-vor-heil` (DRUCK-SCHLAF rot) · sechs Zweige im Konflikt, deren Ersatz nicht bewiesen ist (w28-strahler,
   w28-strahler-messer, w28-licht-spike, vorrat8-ankunft, bau-oeffnungen, einheit-stufe-wirt) · neun Archiv-Kandidaten, die in main stehen oder ersetzt sind.
+- ABGABE `front-stoff` 39b52932 (GTX 1050, 24.11. 00:49; 14 Dateien, EIN Gesetz des Alters je Art, die Wetterseite aus dem Wind des Orts, der Sprung
+  trägt den Regen der Front): am Remote bestätigt (main drin, merge-tree sauber, probe-tag OK, vier Pflicht-Tore in der Marke), Bildpaar von mir gesehen
+  (koordination `bericht/2311-front-stoff/`: keine Brüche; die Alterung liegt gleichmäßig je Ecke, kein Fleck), die CI läuft — Stempel bei Grün.
+  Zahlen der GTX (nicht nachgemessen): reaktion#1 4,98 % · wehrbau#2 0,75 · tiefsee#1 sichtM 8,323 gleich · alter#1 OFFEN (Albedo 0,028 → 0,037 ✓,
+  Seiten 0,0045 von 0,02: Wetter aus N37W, Nord- und Wetter-Fach decken sich auf 83 von 120°, beide dunkeln mit demselben Moos). Stationen `pm-front-stoff` 5f62727a.
+- ZWEI ENTSCHEIDE des Koordinators 24.11. (an die Geräte gesendet bis 00:54, Zustellung nicht bestätigt): (1) alter#1 — der Richter urteilt „Nord- und
+  Wetterseite verschieden“ an DISJUNKTEN Fächern (nur-Nord gegen nur-Wetter; decken sie sich ganz: UNGEMESSEN „Fächer decken sich“, nie ROT für einen
+  Zufall der Saat) und als sichtbaren Farbabstand ΔE*ab ≥ Wahrnehmungs-Schwelle aus der Quelle statt als Albedo-Differenz; erst messen, trägt es
+  nicht, bekommt der Regenlauf ein eigenes Pigment (Algen, Sprosse 2 nennt sie) mit Quelle — sonst Register-Zeile und offen; Bildpaar wörtlich
+  vor ↔ nach 30 d an derselben Pose und Uhr. (2) `pm-speicher-runde` (OMEN-Block: eine Runde stadt-voll + genesis kostet 121 s, das Leiter-Gesetz
+  verlangt ≤ 60 s) — Weg (a): EINE g-Station mit drei Teilen, Richter R3 gegen R2, Deckel ~150 s als benannte Ausnahme an dieser einen Station, sie
+  ist der EINE Schreiber der Leiter same.preis.speicher 1–6 (die alte S1-Probe fällt mit), sie fährt nur auf Anspruch oder nie Beurteiltes.
 - RADEON NEU GESTARTET 24.11. 00:16 (der Schöpfer, auf mein „jetzt“): der Speicher lag in den Kern-Pools von Windows (Laufzeit 140 h; Treiber und Pool-Tag
   nicht benannt) — verfügbar 6,7 → 20,3 von 31,1 GB, Pools paged 20,7 → 0,50 und nonpaged 8,7 → 0,71 GB. Die fünf Schleifen laufen seit 00:19
   (`bash artifacts/profiband/dienst/start.sh`: Dienst-Stand 5ce15405, 65 Dateien, zug.cjs 72 Fälle und sammeln 18 von 18 grün; `radeon-dienst.sh` ist
@@ -46,10 +58,8 @@
   Linse H17 grün, sechs Mutanten rot. Meine Antwort: eine dritte Runde, R3 − R2 entscheidet Leck gegen begrenzten Cache; kein weiterer Schnitt, bevor der
   Halter-Diff EINEN Halter nennt; daneben die Station `pm-speicher-runde` für same.preis.speicher#1–#3. Die Zustellung ist nicht bestätigt) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
   (30 offen, ~4 min je Station), Schwanz 191; 33/246 um 00:38 laut der Runden-Zeile in koordination; zwei Alarme „16 min ohne Fortschritt“ (23:04,
-  23:44) lösten sich von selbst · GTX 1050 `front-stoff` 5d53fa6e
-  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; ihre Meldung 00:05, von mir nicht nachgemessen: am lokalen Kopf 88c870cd5 Seiten-Delta
-  0,0027 → 0,0132 bei Soll 0,02 — alter#1 hängt am Gesetz in dieser Saat; sie setzt die Putz-Zeitkonstanten aus der Quelle und gibt mit alter#1 offen
-  ab), danach nacht-laterne · VIER
+  23:44) lösten sich von selbst · GTX 1050: `front-stoff` abgegeben (Zeile oben), weiter alter#1 nach
+  dem Entscheid, danach nacht-laterne (Karten-Takt ≤ 9,43 ms) · VIER
   CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` steht um 00:43 auf 1d638433 (laut Ernte am 23da5766:
   zehn Richter auf dem Fächer, `stationen/faecher.js`; es fasst `k2-erleben.js` nur in den Zeilen 7–558 an); `bewohner-satz`, `ort-ausstattung`,
   `nerv-bewegung` hatten um 00:43 noch keinen Zweig am Remote. DOPPEL-ZIEL: `nerv-bewegung` zielt auf leben.tiere.bewegung#1, das `front-leben` schon
