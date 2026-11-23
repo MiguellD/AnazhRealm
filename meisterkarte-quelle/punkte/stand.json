@@ -22294,7 +22294,7 @@
   },
   "karte2.mensch.nahrung.strom": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js) · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.strom#1",
@@ -22312,8 +22312,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37504,7 +37505,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 268,
+  "konsum": 269,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37672,10 +37673,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3354
+  "ohne": 3353
  },
  "kopfVoll": "07783ef21c5aa850536481c099a7cae8cbb56214",
- "zeit": "2026-11-23T08:14:42.850Z",
+ "zeit": "2026-11-23T08:22:32.631Z",
  "vorher": "07783ef2",
  "bilanz": {
   "gewinn": [],

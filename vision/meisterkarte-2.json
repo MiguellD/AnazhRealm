@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 14,
+    "heute": 15,
     "kern": 13,
     "kernDazu": 13,
-    "anteilHeute": 2.6,
+    "anteilHeute": 2.7,
     "anteilKern": 2.3
    },
    "perspektiven": [
@@ -9570,7 +9570,7 @@
        "richter": "16 Saaten × 100 J: kein Hunger ohne Ursache"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Bewohner mit Rolle feld geht zum Acker (koerper-core.js:4907), nichts wird geerntet, niemand isst",
@@ -20088,7 +20088,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 54,
+  "heute": 55,
   "davonKopplungen": 33,
   "kern": 16,
   "kernDazu": 16,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 32,
-  "nachwache": 22
+  "nachwache": 23
  },
  "zusammengelegt": [
   {
