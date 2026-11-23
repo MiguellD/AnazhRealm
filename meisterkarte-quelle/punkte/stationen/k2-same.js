@@ -3307,17 +3307,19 @@ LEITERN.push(
                         if (set.size) werke++;
                         if (set.size > max) [max, typ] = [set.size, e.type + " (" + [...set].join(", ") + ")"];
                     }
-                    // die Studio-Werke im Bau-Satz: je Rezept die Stoffe seiner alternden Gruppen (`_satzAlter`, WERK_ALTER.seh)
+                    // die Studio-Werke im Bau-Satz: je Rezept die Arten seiner alternden Gruppen — der Name, als den das Spiel die Gruppe
+                    // altert (`_satzAlter(g).stoff`: die Tafel des Gesetzes des Alters je Art des Gefüges), nie eine eigene Zuordnung
                     const jeRezept = new Map();
                     for (const g of (s.archInstanceGroups || new Map()).values()) {
                         if (!g || !g.satz || !(g.liveCount > 0) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const im = g.mesh.instanceMatrix.array;
-                        if (Math.hypot(im[12] - P.x, im[14] - P.z) > o.R || !r._satzAlter(g)) continue;
-                        const pre = /^f:([^|]+)\|/.exec(String(g.key)), u = g.mesh.material && g.mesh.material.userData;
-                        const name = u && u.foundryMp ? AnazhRealm.WERK_ALTER.seh[u.foundryMp.seh] : null;
-                        if (!pre || !name) continue;
+                        const al = Math.hypot(im[12] - P.x, im[14] - P.z) > o.R ? null : r._satzAlter(g);
+                        if (!al) continue;
+                        if (typeof al.stoff !== "string" || !al.stoff) throw new Error("same.gedaechtnis.alter: _satzAlter(g) nennt die Art nicht (" + String(g.key) + ")");
+                        const pre = /^f:([^|]+)\|/.exec(String(g.key));
+                        if (!pre) continue;
                         if (!jeRezept.has(pre[1])) jeRezept.set(pre[1], new Set());
-                        jeRezept.get(pre[1]).add(name);
+                        jeRezept.get(pre[1]).add(al.stoff);
                     }
                     for (const [k, set] of jeRezept) if (set.size > max) [max, typ] = [set.size, k + " (" + [...set].join(", ") + ")"];
                     werke += jeRezept.size;
