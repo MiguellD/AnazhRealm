@@ -1826,14 +1826,28 @@ async function ruheTor(zeuge, o = {}) {
     }
 }
 const torText = (t) => (!t ? "" : t.blind ? "Tor blind (" + t.blind + ")" : (t.ruhig ? "ruhig" : "Anlauf der eigenen Welt") + " nach " + fz1(t.s) + " s (eigen " + (t.kerne == null ? "?" : fzW(t.kerne)) + " Kerne, Soll ≤ " + fzW(t.soll) + ")");
-// DIE REFERENZ DER MASCHINE: fahrt() (durch das Ruhe-Tor) · merke(umfeld, werte) legt Fahrten in Pool und Ablage · ruhe(umfeld, werte)
-// merkt und gibt die Ruhe · auffuellen(umfeld) fährt nach, bis REFERENZ_RUHE_MIN frische im Pool liegen (Rückgabe die Zahl der
-// nachgefahrenen). o = { mdir, ablage, fahrt, tor, rechner } — der Selbsttest stellt Ordner, Fahrt und Tor; die Maschine fährt das Tor am
-// Zeugen der Maschine (maschinenZeuge)
+// DIE LEIHE DER REFERENZ (pm-referenz-nach-anlauf (b); 23.11. 09:50, OMEN: ein Hand-`run` fuhr die Auffüllung „allein“ VOR dem Schloss
+// — zehn Fahrten über alle Kerne im gezählten Preis-Stück von markt#1 der Runde 12): hält der Läufer das Schloss nicht (haeltSchloss),
+// nimmt er es für die Fahrt über dieselbe gpu-lauf.sh (schlossNehmen: das ganze Schloss, die CI-Ruhe inbegriffen) und gibt es danach
+// frei. → { loesen } oder { fehler } beim Namen
+let referenzLeihen = 0;
+async function referenzSchloss() {
+    if (haeltSchloss()) return { loesen: async () => {} };
+    const h = await schlossNehmen({ bash: findeBash(), gpuLauf: GPU_LAUF, name: "punkte-referenz", baum: DIR, stop: path.join(os.tmpdir(), "punkte-referenz-" + process.pid) }, referenzLeihen++);
+    if (!h.ok) return { fehler: "die Referenz bekam kein Schloss: " + h.grund };
+    return { loesen: () => schlossLoesen(h) };
+}
+// DIE REFERENZ DER MASCHINE: fahrt() (unter dem Schloss, durch das Ruhe-Tor) · merke(umfeld, werte) legt Fahrten in Pool und Ablage ·
+// ruhe(umfeld, werte) merkt und gibt die Ruhe · auffuellen(umfeld) fährt unter EINER Leihe nach, bis REFERENZ_RUHE_MIN frische im Pool
+// liegen (Rückgabe die Zahl der nachgefahrenen). o = { mdir, ablage, fahrt, tor, schloss, rechner } — der Selbsttest stellt Ordner, Fahrt,
+// Tor und Schloss; die Maschine fährt das Tor am Zeugen der Maschine (maschinenZeuge) und leiht das Schloss (referenzSchloss).
+// DAS GESETZ (EINE Stelle): jede Fahrt — vor, nach, Preis-Lauf, Auffüllung, von Hand — läuft unter dem Schloss und hinter dem Ruhe-Tor;
+// `spanne` nennt die Zeit der Fahrt selbst (ohne Schloss und Tor)
 function echteReferenz(o = {}) {
     const mdir = o.mdir || path.join(DIR, "messung"), ablage = o.ablage || referenzAblageVon(mdir), rechner = o.rechner || REFERENZ_RECHNER;
-    const roh = o.fahrt || referenzFahrt, tor = o.tor || (() => ruheTor(maschinenZeuge()));
-    const fahrt = async () => { const t = await tor(); const x = await roh(); return x && !x.fehler ? { ...x, tor: t } : x; }; // prettier-ignore
+    const roh = o.fahrt || referenzFahrt, tor = o.tor || (() => ruheTor(maschinenZeuge())), schloss = o.schloss || referenzSchloss;
+    const unter = async (fn) => { const s = await schloss(); if (s.fehler) return { fehler: s.fehler }; try { return await fn(); } finally { await s.loesen(); } }; // prettier-ignore
+    const fahrt = () => unter(async () => { const t = await tor(), a = Date.now(), x = await roh(); return x && !x.fehler ? { ...x, tor: t, spanne: [a, Date.now()] } : x; }); // prettier-ignore
     let pool = null;
     const liste = (umfeld) => {
         if (!pool) pool = referenzPoolLaden(mdir);
@@ -1864,14 +1878,18 @@ function echteReferenz(o = {}) {
             return referenzRuheAus(liste(umfeld));
         },
         async auffuellen(umfeld) {
-            let n = 0;
-            for (let i = 0; i < REFERENZ_RUHE_MIN && frisch(umfeld) < REFERENZ_RUHE_MIN; i++) {
-                const x = await fahrt();
-                if (x.fehler) return { n, fehler: x.fehler };
-                merke(umfeld, [x]);
-                n++;
-            }
-            return { n, im: frisch(umfeld) };
+            if (frisch(umfeld) >= REFERENZ_RUHE_MIN) return { n: 0, im: frisch(umfeld) };
+            const a = await unter(async () => {
+                let n = 0;
+                for (let i = 0; i < REFERENZ_RUHE_MIN && frisch(umfeld) < REFERENZ_RUHE_MIN; i++) {
+                    const x = await fahrt();
+                    if (x.fehler) return { n, fehler: x.fehler };
+                    merke(umfeld, [x]);
+                    n++;
+                }
+                return { n, im: frisch(umfeld) };
+            });
+            return a.fehler && a.n == null ? { n: 0, fehler: a.fehler } : a;
         },
     };
 }
@@ -2037,7 +2055,7 @@ function fahreGruppeEinmal(sts, ctx) {
     const fenster = zeuge.beginn();
     // DIE REFERENZFAHRT (nur an einer Zeit-Gruppe): unmittelbar vor dem Start und nach dem Ende, die Spannen als Marken des Zeugen
     const ref = istZeit(sts) ? ctx.referenz || maschinenReferenz() : null, marken = {};
-    const fahrt = (wo) => { const t = Date.now(); return ref.fahrt().then((x) => ((marken[wo] = [t, Date.now()]), x)); }; // prettier-ignore
+    const fahrt = (wo) => { const t = Date.now(); return ref.fahrt().then((x) => ((marken[wo] = x && x.spanne ? x.spanne : [t, Date.now()]), x)); }; // prettier-ignore
     return (ref ? fahrt("vor") : Promise.resolve(null)).then((rVor) => new Promise((ganz0) => {
         const t0 = Date.now();
         // DIE SEKUNDEN DER PROBE (w4-sitzung-eichen): in der Sitzung trägt jedes Ergebnis `s`, vom Start bis zum Ende ihres Prozesses (nie
@@ -2995,7 +3013,7 @@ function schlossNehmen(o, nr) {
             'try { process.kill(Number(p), 0); } catch (e) { da = e.code === "EPERM"; } if (fs.existsSync(los) || !da) process.exit(0); }, 500);';
         const env = { ...process.env, GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) };
         delete env.NODE_OPTIONS;
-        const kind = spawn(o.bash, [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
+        const kind = spawn(o.bash, [o.gpuLauf, o.name || "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
             { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
         let out = "", gemeldet = false, uhr = null;
         const h = { kind, los, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out };
@@ -3008,7 +3026,11 @@ function schlossNehmen(o, nr) {
         const still = o.stillS || SCHLOSS_STILL_S;
         const lies = (d) => {
             out += String(d);
-            if (/^gpu-lauf: Schloss /m.test(out)) return melde({ ok: true });
+            if (/^gpu-lauf: Schloss /m.test(out)) {
+                // DAS SCHLOSS DIESES LÄUFERS (haeltSchloss): gehalten, bis der Wartende endet (gelöst, verdrängt oder tot)
+                if (!schlossDa.has(h)) (schlossDa.add(h), h.ende.then(() => schlossDa.delete(h)));
+                return melde({ ok: true });
+            }
             clearTimeout(uhr);
             uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, ungemessen: true, grund: "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + still + " s beim Warten" })), still * 1000);
         };
@@ -3023,6 +3045,10 @@ function schlossNehmen(o, nr) {
         }, 300));
     });
 }
+// die GPU-Schlösser, die dieser Läufer gerade hält (schlossNehmen trägt ein, das Ende des Wartenden trägt aus)
+const schlossDa = new Set();
+// hält dieser Läufer das GPU-Schloss? Sein eigenes (Sitzung, Leihe der Referenz) oder das eines gpu-lauf.sh um ihn (GPU_LAUF_HAELT)
+const haeltSchloss = () => schlossDa.size > 0 || !!process.env.GPU_LAUF_HAELT;
 // gibt das Schloss frei: der Wartende endet, gpu-lauf.sh löst (trap); sonst fällt sein Baum
 async function schlossLoesen(h) {
     if (!h || !h.kind || h.kind.exitCode != null) return;
@@ -4745,7 +4771,8 @@ async function run(opt) {
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
     // der Zeuge der Fremd-Last legt seinen Grund, ehe die erste Station misst (Windows: der PowerShell-Lauf braucht seinen ersten Takt)
     if (!opt.trocken) await maschinenZeuge().bereit();
-    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen
+    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen — unter
+    // EINER Leihe des Schlosses und hinter dem Ruhe-Tor (echteReferenz; bis 23.11. fuhr sie hier VOR jedem Schloss)
     if (!opt.trocken) await referenzAuffuellen("allein");
     const gpuLauf = gpuLaufFuer(opt.geraet, opt.farm);
     const bahnenSoll = Number(opt.bahnen || 3);
@@ -7839,6 +7866,31 @@ async function selbsttest(o = {}) {
                     /^Anlauf der eigenen Welt: Referenz f 1,8 .*; Tor vor: Anlauf der eigenen Welt nach 4[,0-9]* s \(eigen [0-9,]+ Kerne, Soll ≤ 3\)\)/.test(uRiss.grund) && uRiss.ungemessen === true &&
                     !/Last:|fremd/.test(uRiss.grund),
                 JSON.stringify([rRiss.anlauf, uRiss.grund]));
+            // (c) DER TÄTER „Auffüllung ohne Schloss“ (23.11. 09:50: `run` fuhr die Auffüllung „allein“ vor dem Schloss, im Preis-Stück von
+            // markt#1): das Attrappen-Schloss zählt Leihen und hält eine Tiefe, jede Roh-Fahrt notiert, ob sie frei lief. Soll: die zehn
+            // Fahrten unter EINER Leihe, eine einzelne Fahrt leiht es selbst, ein verweigertes Schloss ist ein Wurf beim Namen; der Mutant
+            // ohne Schloss (das alte Gesetz) fällt ROT beim Namen. Dazu haeltSchloss: GPU_LAUF_HAELT (ein gpu-lauf.sh um den Läufer) zählt
+            const attrappe = () => { const z = { leihen: 0, tief: 0, frei: 0 }; return { z, schloss: async () => (z.tief ? { loesen: async () => {} } : (z.leihen++, z.tief++, { loesen: async () => { z.tief--; } })) }; }; // prettier-ignore
+            const roh = (z) => async () => { if (!z.tief) z.frei++; return { ...STILL }; }; // prettier-ignore
+            const torStill = async () => ({ ruhig: true, s: 0, kerne: 0, soll: 3 });
+            const SA = attrappe(), SO = attrappe();
+            const mitS = echteReferenz({ mdir: ablage("schloss"), fahrt: roh(SA.z), tor: torStill, schloss: SA.schloss, rechner: "schein" });
+            const ohneS = echteReferenz({ mdir: ablage("frei"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ loesen: async () => {} }), rechner: "schein" }); // der Mutant
+            const aMit = await mitS.auffuellen("allein"), aOhne = await ohneS.auffuellen("allein"), eine = await mitS.fahrt();
+            const verweigert = await echteReferenz({ mdir: ablage("nein"), fahrt: roh(SO.z), tor: torStill, schloss: async () => ({ fehler: "die Referenz bekam kein Schloss: Nachtruhe" }), rechner: "schein" }).fahrt();
+            const schlossGilt = (a, z) => (a.n === REFERENZ_RUHE_MIN && z.frei === 0 && z.leihen === 1 ? true : "Auffüllung ohne Schloss: " + z.frei + " von " + a.n + " Fahrten frei, " + z.leihen + " Leihen");
+            const haeltVorher = process.env.GPU_LAUF_HAELT;
+            delete process.env.GPU_LAUF_HAELT;
+            const frei0 = schlossDa.size === 0 && haeltSchloss() === false;
+            process.env.GPU_LAUF_HAELT = "selbst";
+            const unter0 = haeltSchloss() === true;
+            if (haeltVorher == null) delete process.env.GPU_LAUF_HAELT;
+            else process.env.GPU_LAUF_HAELT = haeltVorher;
+            pruef("TOR (c) Täter-Fall „Auffüllung ohne Schloss“: die zehn Fahrten der Auffüllung laufen unter EINER Leihe, eine einzelne Fahrt leiht selbst, ein verweigertes Schloss ist ein Wurf beim Namen; ohne Schloss → ROT beim Namen; GPU_LAUF_HAELT zählt als gehalten",
+                schlossGilt(aMit, SA.z) === true && SA.z.tief === 0 && /^Auffüllung ohne Schloss: 10 von 10 Fahrten frei/.test(String(schlossGilt(aOhne, SO.z))) &&
+                    !eine.fehler && SA.z.leihen === 2 && Array.isArray(eine.spanne) && eine.tor && eine.tor.ruhig === true &&
+                    verweigert.fehler === "die Referenz bekam kein Schloss: Nachtruhe" && frei0 && unter0,
+                JSON.stringify([schlossGilt(aMit, SA.z), schlossGilt(aOhne, SO.z), SA.z, eine, verweigert, frei0, unter0]));
         }
         // DAS GESETZ AN GESETZTEN EINGABEN: je Satz Station, Ergebnis (mit Maß), Bericht des Zeugen, Bericht der Referenz und sein Soll; die
         // MUTANTEN fallen je an ihrem Satz, jeder Satz fällt an einem von ihnen
