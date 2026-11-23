@@ -1,0 +1,306 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.34999999999999437,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.35,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 0.7,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -279.697,
+   29.338,
+   -1045.554
+  ],
+  "blick": [
+   -0.99792,
+   0,
+   -0.06443
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 1,
+  "halb": 0,
+  "teile": 6,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 89.8,
+  "sigma": 43,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Leiber näher als 6 m: 1 von 1 ganz (6 Teile) · Ziel Blickziel im Bild frei 0.7 m · Luma 89.8 σ 43 schwarz 0.0 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^spieler:kopf/",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 1503,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1397,
+   "wechsel": 930995
+  },
+  "rinde": null,
+  "toene": [
+   "spieler:kopf/auge=255/80/80",
+   "spieler:kopf/hair=80/255/80",
+   "spieler:kopf/haut=80/120/255",
+   "spieler:kopf/skin=255/220/60"
+  ],
+  "klassen": {
+   "spieler:kopf/auge": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.329,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 13.4,
+    "pixel": 284,
+    "luma": 46.22,
+    "kante": null,
+    "kr": 0,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/hair": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.412,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0004,
+    "wt": 2,
+    "wtZiel": null,
+    "bunt": 27.74,
+    "pixel": 4559,
+    "luma": 197.09,
+    "kante": 0.4325,
+    "kr": 352,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 5,
+    "glatt": 0.4,
+    "glattDunkel": 0,
+    "nyquist": 0.061,
+    "beta": 1.7148
+   },
+   "spieler:kopf/haut": {
+    "objekte": 2,
+    "spiegelTreue": 0.6096,
+    "spiegelEbene": 29.308,
+    "sp": [
+     73,
+     0,
+     0,
+     21679.37,
+     21679.37,
+     13214.71
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 27.55,
+    "pixel": 26341,
+    "luma": 105.85,
+    "kante": 0.8885,
+    "kr": 399,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.6311,
+    "si": 16266,
+    "bloecke": 342,
+    "glatt": 0.6462,
+    "glattDunkel": 0,
+    "nyquist": 0.0411,
+    "beta": 3.4621
+   },
+   "spieler:kopf/skin": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.326,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 26.68,
+    "pixel": 1090,
+    "luma": 69.15,
+    "kante": null,
+    "kr": 0,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": {
+   "augeFrei": 1,
+   "augeFreiGrund": null,
+   "lidDecke": 0.116,
+   "lippeL": -19.26,
+   "lippeA": 11.73,
+   "hoehleL": -2.68,
+   "hoehleA": 4.8,
+   "haarDeckung": 0.987,
+   "weiss": 0.4235,
+   "proben": {
+    "iris": 104,
+    "irisSicht": 56,
+    "lippe": 47,
+    "hoehle": 22,
+    "wange": 586,
+    "kalotte": 230,
+    "haarPixel": 70789
+   },
+   "zeilen": {
+    "auge": 498.2,
+    "mund": 820
+   },
+   "irisDecke": {
+    "spieler:kopf/lid": 81
+   },
+   "fenster": {
+    "k": 4,
+    "mitte": [
+     0.4999,
+     0.5178
+    ],
+    "getragen": 117,
+    "wahl": {
+     "gen": [
+      378,
+      378,
+      378
+     ],
+     "steht": true,
+     "kaskaden": 0
+    }
+   },
+   "ungefenstert": {
+    "augeFrei": 1,
+    "augeFreiGrund": null,
+    "lidDecke": 0.116,
+    "lippeL": -17.15,
+    "lippeA": 12.18,
+    "hoehleL": -5.26,
+    "hoehleA": 5,
+    "haarDeckung": 0.961,
+    "weiss": 0.2562,
+    "proben": {
+     "iris": 104,
+     "irisSicht": 56,
+     "lippe": 47,
+     "hoehle": 20,
+     "wange": 560,
+     "kalotte": 230,
+     "haarPixel": 4559
+    },
+    "zeilen": {
+     "auge": 548.4,
+     "mund": 628.9
+    }
+   }
+  },
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5b36f69a-gtx\\karte2.mensch.leib.gesicht_1-S1-9.maske.png"
+ }
+}
