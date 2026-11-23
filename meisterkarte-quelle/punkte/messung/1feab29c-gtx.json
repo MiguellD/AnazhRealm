@@ -1,0 +1,432 @@
+{
+ "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
+ "geraet": "gtx",
+ "zeit": "2026-11-23T21:34:06.517Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.5,
+   "gpu": "nvidia/pascal",
+   "konsum": "keb55c8f1f18b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 28.7,
+   "fremd": {
+    "s": 32.6,
+    "takte": 14,
+    "fremdS": 36.28,
+    "kerne": 1.113,
+    "fensterKerne": 1.504,
+    "namen": [
+     [
+      "git.exe archive origin/koordination vision/richter",
+      3.92
+     ],
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      3.47
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      2.98
+     ]
+    ],
+    "dienerS": 19,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      5.58
+     ]
+    ],
+    "geraetS": 34.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.86
+     ],
+     [
+      "svchost.exe",
+      13.06
+     ],
+     [
+      "SearchIndexer.exe",
+      2.56
+     ]
+    ],
+    "eigenS": 93.89,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:19:31.620Z",
+   "abdruck": "5b4222f307b2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (207 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.35 m · Luma 99.8 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (90 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.25,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (207 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.35 m · Luma 99.8 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (90 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k76cd619085d1",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 74.9,
+   "fremd": {
+    "s": 78.7,
+    "takte": 35,
+    "fremdS": 60.92,
+    "kerne": 0.774,
+    "fensterKerne": 1.103,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.84
+     ],
+     [
+      "conhost.exe 0x4",
+      4.81
+     ]
+    ],
+    "dienerS": 33.67,
+    "diener": [
+     [
+      "System",
+      14.53
+     ],
+     [
+      "dwm.exe",
+      11.97
+     ]
+    ],
+    "geraetS": 56.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      34.56
+     ],
+     [
+      "svchost.exe",
+      20.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 174.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:21:45.733Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · kraut am Stand 24, Inventar kraut 0→1, stein 1→0 (am Stand 1), 10 Stände · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.03,
+   "gpu": "nvidia/pascal",
+   "konsum": "k61bfdb3c8465",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 1.4,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 3.06,
+    "kerne": 0.689,
+    "fensterKerne": 0.689,
+    "namen": [
+     [
+      "bash.exe -lc exec bash /c/Users/micha/Desktop/AnazhR…",
+      0.92
+     ],
+     [
+      "Explorer.EXE",
+      0.64
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.36
+     ]
+    ],
+    "dienerS": 1.28,
+    "diener": [
+     [
+      "System",
+      0.38
+     ],
+     [
+      "dwm.exe",
+      0.31
+     ]
+    ],
+    "geraetS": 3.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.22
+     ],
+     [
+      "svchost.exe",
+      1.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.09
+     ]
+    ],
+    "eigenS": 4.64,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:25:48.056Z",
+   "abdruck": "394fd1e1aaf0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.flur#1": {
+   "gruen": true,
+   "zahl": "S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "nvidia/pascal",
+   "konsum": "k1dfe9ef2c2a4",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 21.8,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 17.8,
+    "kerne": 0.672,
+    "fensterKerne": 0.832,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      3.31
+     ],
+     [
+      "Explorer.EXE",
+      1.78
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-1feab29c x listen/kandidat-gtx-1feab29c.txt",
+      1.56
+     ]
+    ],
+    "dienerS": 11.67,
+    "diener": [
+     [
+      "System",
+      5.08
+     ],
+     [
+      "dwm.exe",
+      3.75
+     ]
+    ],
+    "geraetS": 19.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.23
+     ],
+     [
+      "svchost.exe",
+      7.25
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 102.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:28:15.352Z",
+   "abdruck": "46998f7af7ec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.hand#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · Furchen in Zugrichtung im Bildpaar (ja = 1) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 vom Spieler bestellter Acker) · Acker -628,-851: 1 Klicks, 8 Kämme in Achse 0 (Zug 0); Bildpaar C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\karte2.mensch.nahrung.hand_2-S2-vor.png ↔ C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.76,
+   "gpu": "nvidia/pascal",
+   "konsum": "kd831bf891087",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 45.3,
+   "fremd": {
+    "s": 48.4,
+    "takte": 21,
+    "fremdS": 34.72,
+    "kerne": 0.717,
+    "fensterKerne": 0.952,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      6.83
+     ],
+     [
+      "conhost.exe 0x4",
+      2.95
+     ],
+     [
+      "Explorer.EXE",
+      2.66
+     ]
+    ],
+    "dienerS": 28.84,
+    "diener": [
+     [
+      "System",
+      13.91
+     ],
+     [
+      "dwm.exe",
+      8.94
+     ]
+    ],
+    "geraetS": 40.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.84
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 177.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:30:57.233Z",
+   "abdruck": "3483eaa85bc2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kd831bf891087",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 41.2,
+   "fremd": {
+    "s": 44,
+    "takte": 19,
+    "fremdS": 26.06,
+    "kerne": 0.593,
+    "fensterKerne": 0.71,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      6.45
+     ],
+     [
+      "Explorer.EXE",
+      2.17
+     ],
+     [
+      "conhost.exe 0x4",
+      1.72
+     ]
+    ],
+    "dienerS": 19.64,
+    "diener": [
+     [
+      "System",
+      8.56
+     ],
+     [
+      "dwm.exe",
+      6.39
+     ]
+    ],
+    "geraetS": 32.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.25
+     ],
+     [
+      "svchost.exe",
+      12.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 134.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T21:34:06.517Z",
+   "abdruck": "c23e51a638e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "keb55c8f1f18b": "bVRdb6MwEPwvebwe3SRAMJb64JZIqXQfzU9YmzXQEIhsCKec7r+fSOIkQPcJmRnveHbsv7MDqh1m9Pxp62rGZ99m32cWj+RZMkcyz592xmexWizJ5+JSIIR462HKFIfGQllIQFlhvievNQ0V5bM601BSkDIO3VpkHwAaTpB0Ly9jaikprb0GNd2IIUt1yMfA1mYoycNWn5tdweHcX0jN4VwsEb8TuFX3U4iPQAcfLBltJrFKh2rjVRhRyN87IdZiojItkBqvLCrr+i7SKNZz/tBrwjHYeSekvCRzJRFbLALpxL72dvbWjIi6bK0dNGN+Gi4ZB4jH2IxsofLGO5haUnWFy3gZLZC/Tt3ODq2nHxWhlMjk2OscqcrIDDTMfaVXCw5/2HjTHe7JoFdh7ryc+9FS3r0BgM1US3kWfm5xFx6EKQ6I/VDhCCBc/I790ub2160nmbjXdtLMqrww+6FNOqDl3Oc/ptJsjikZb1fb5oZmASKx6y1IQGxFH65xsOz9UI6HiOwhKMBAbCYe2lo3HRryskPrwhJQGIVciPcJuMH93uVf+4GvxgO0TR/wRxlh5Gu24gBPlwsyPfTlOngnKkpH0joI4slNPBrceygzU2jtJi5DpeOvAtpR2Xiyrhtnh2SkiYMP1eOQf3W9reuHGSZdrdZv2VYMay3Gus8datPcTipXcx1w3QelUxN0YRqvQ5U7+FJLwph/AT2RKSmjgY0yYnEf7U49KA3cx9MguKfJlE8F9QZXtrVuyAoDGfIvRtKR2Umsdk7mPFKrS/xef4vN0JRk+8ESgG646me9n0kurhsfSMHB1LroXz/IsbU5ls396f/3Hw==",
+  "kec8d4d7e00d6": "jVXBjpswEP2XHNuyJsEEY2kPzhI1e+huVqrU89iMgQ2ByIbQTdV/r0hCCLCHzgEh88bz5s2z+TM7gNpBgg/vtixmfPZl9m1m4YiORXNE8/BuZ3wWqvkCPS4uQYQQ31uYMtmhsiTPJAFZQLpHpzYVZvmDOqeBRBozTpq1SLaEaHIiUSNu8SQeH8fb5BLj0qlA420Tn8Xa52NgbROQ6ECtz4WvYN/15lJzcg4WideI3KL5IcSWarpl0WgzCUU8ZB4u/QB9/twIsZ6yjDPAysmzwnZ153EQapff1ZrkGGicE2Cao7kmIZvPqezIrlpJWplGiTqvrR0UY17sLxgnJBxjE7SZSivnYEqJxRUuw0UwB75qJn0kh9rR94xASmByrHUKWCRoBhxcT+nlnJPfbLzpDvZowCkg7bR0vWAhe20IIZspl/xM/FyiJ079GAaJ7VDbZ2chcmyXNrev3XqU9DYTb5NiVqWZ2Q9l0hQXrjfu3aYQo3F2pa1uSEYBkF1PQ0TEm2iNNTaV7Rvq8gCA3ZmEMCI2E/1sqasGDDrJoe6MQtEPfC6SiatsBft9533tUU9NGqhac9/T8ANPsyUn5OvlcExncTkKzgmzvEvSmtLQ508rOgYfDewdkInJtO4mLn2lw88M2mBeObIsq04SyVAjJx4p7of80ohVItb9CLfRR8l+few8MYwXsf6sQmmqW7dy6WrK9blTNSbfZKZyGlBpB19oiRCORTyhyTHBgYwyYGFr60b1dCLavXwdmPY0mfIpw1bgwta2G7ICKv2LO66X5PPw6mnQ7CQUu46qG6hla8MoEa9ic6fKRjz/dLeN+L9Yi7e2yAEVOZhSZ+1tSFKobQp51f8W/v4D",
+  "k76cd619085d1": "rVVNj6M4EP0vOe4sbQgQDNIcnKal7tXMDn2ac9mUgQ6ByIb2dEbz31ckcQiQlWalrRNK6lW9evXhn6sDiB0U+PCm22aVrP5Y/bnS8I6ORvWO6uFNr5JVLLw1+gl7ZYNljLHHwU2o6tBpkldQODuF0PXKqZFj8yBOMEAJMU3I/2VHyqy9GMa27PXzv9HoYNddWLjI49xLtgVjhn2+RdQVJ8AbKPfo9KrDqrbEOQY5TYh5YkVGiCRHkpprbvZ0J0zNMW+dDiReg4Q0l2Eyd+x1ARwd6OUp8cU5dH2Py4tUNGXf0rFsQxnLAhlkNGWMSVYssnNo8mkF8SaMMExePu6yzSvAzqmrRtv8Xh7F0h1bZb4uMAqMcwQsa1QXEFLPC7glvR2kGeSaAWXdaz1JRv08XA9zEc99C9SVKDvnoNpxjHi8jjxItmZRR3HoHXnLCDgHyueal4BNgWrCwfWF3HgJ+UHnQXewRwVOA6XV0vWjNZ+M8fOSi528PTZaWKhHhQv+f9wAOlfFhp6qsqG+Gybst+11/Nz+Psp8ZfNK61OLTmKOLQrCHGZ10pS8E2IDDd+EPl//tb+nxS3HhaxalJXaT0uXAa5dP/mybIIuIUfl7FrdXb1pAID0IlRKTjpkQTpHjkVZHADQm5UglLDnxbToVnYGFDrFobdrEWAYDZ15WTh3sN/bjZd+4Iu7/bsz6bobVvyWXhj5km4SQj6dT8UScz4IzhGr2oKkDII4TB63wdz5XcHeAV6oSko79zwUMr63pgbrzuFta08s5RQlDlI1twOQmfO1HC01rfj+UZhZwX+z1F/yP2VpVXetmG9cGSTyVK1YeFeqcwyI0rqvJUcY6C96dkRVY4ETOXlE42HJjRzfmiy6HEP5afYOLSJWOAjd6F7bIRAQ8DC50xqDaseh2VmabiQ2NPlr6Ps39jzR5TF9zWhKFmYGTbNme9ZRDEtEPs4X+4CCHFQrq+FNICX0uoS6m7zuZ5ceJe+xbHCYra5qG2xGr1//AA==",
+  "k61bfdb3c8465": "bVVdj9owEPwvPPaacyAJcSzdgzmQOPWLkyr1ee2skxwhQXaCW6r+98pAgCTsY5jxzs6Ozd/JHuQWMnz+MHU1YZNPk88TAwf0DOoD6ucPM2GTRE5nGDB+LsI5f3UwqYt9Y0hZCAKignyHXqsbLMpneaKBwDCljNgVzzaEKHIkS/vyMqSWAtPaa0DhlRjRVEVsCGxNBgI9aNWp2QUc+cFUKEZORZf8x5Jcy1LON6EKN3Q5OExAlfbVJvMoxoi9Wc5XfKQyLQAbrywq0/WdpnGifHbr9W3E0WC9I2Beor6QkE6noejELpydzpoBUZWtMb1mNEijGWWEJENshqaQeePtdS2wusBFMounwBZjt7N966l7RSAEUDH0OgesMtQ9DX4g1XzKyG86PHQLO9TgVZB3XvpBPBM3bwgh67GW8iT81OImPIxS6BHdUsmBEN7F7+A+ra+/dt+XGb/V+6iZkXmhd32bVIgzP2Bfx9JMDilqb1ub5oqmIQDSyy1YEv7OXbiGwTK3oToeANC7oBBK+HrkoalVY0Gjl+3bLiwhRnHEOH8bgRvY7br8qyAMJOMP6sH+TeOCfy8vigNF54yQp/PFGXPO18Q7YlF2JKXCMInY6yIbgg8adh6ITBdKdWkQkVTJo/BaLBtP1HXTWSUoKmQkINV9AL5bN83qbrKlreWvP5kdDLziQzmnDrVurtOKua9CplyIrByhC914FmTewWdKIDjpo30dUZeYYc9KEdPExd6qs+6je37iy/OgnnqhPo5PLNCZXJnWdAGQEIqIPViLRb0VUG07mX4s5+doLn7w9f1F4F9++hvqVhv3+gd2xRd2ky/OHkp3gbo3bI+S7HWtCvdKkhxak0PZ3P4i/v0H",
+  "k1dfe9ef2c2a4": "bVVdj9owEPwvPPaacyAJcSzdgzmQOPWLkyr1ee2skxwhQXaCW6r+98pAgCTsY5jxzs6Ozd/JHuQWMnz+MHU1YZNPk88TAwf0DOoD6ucPM2GTRE5nGDB+LsI5f3UwqYt9Y0hZCAKignyHXqsbLMpneaKBwDCljNgVzzaEKHIkS/vyMqSWAtPaa0DhlRjRVEVsCGxNBgI9aNWp2QUc+cFUKEZORZf8x5Jcy1LON6EKN3Q5OExAlfbVJvMoxoi9Wc5XfKQyLQAbrywq0/WdpnGifHbr9W3E0WC9I2Beor6QkE6noejELpydzpoBUZWtMb1mNEijGWWEJENshqaQeePtdS2wusBFMounwBZjt7N966l7RSAEUDH0OgesMtQ9DX4g1XzKyG86PHQLO9TgVZB3XvpBPBM3bwgh67GW8iT81OImPIxS6BHdUsmBEN7F7+A+ra+/dt+XGb/V+6iZkXmhd32bVIgzP2Bfx9JMDilqb1ub5oqmIQDSyy1YEv7OXbiGwTK3oToeANC7oBBK+HrkoalVY0Gjl+3bLiwhRnHEOH8bgRvY7br8qyAMJOMP6sH+TeOCfy8vigNF54yQp/PFGXPO18Q7YlF2JKXCMInY6yIbgg8adh6ITBdKdWkQkVTJo/BaLBtP1HXTWSUoKmQkINV9AL5bN83qbrKlreWvP5kdDLziQzmnDrVurtOKua9CplyIrByhC914FmTewWdKICSMBKN9HVGXmGHPShHTxMXeqrPuo3t+4svzoJ56oT6OTyzQmVyZ1nQBkBCKiD1Yi0W9FVBtO5l+LOfnaC5+8HXPky8//Q11q417/QO74gu7yRdnD6W7QN0btkdJ9rpWhXslSQ6tyaFsbn8R//4D",
+  "kd831bf891087": "bVVdj9owEPwvPPaacyAJcSzdg7kgcf1QOalSn9fOOskREmQH3FL1v1cGAiRhnxDM7o5nZ5e/kx3IDeT4/GGaesImnyafJwYO6BnUB9TPH2bCJomczjBg/ByEc/7qYFKXu9aQqhQERA3FFr29brGsnuUpDQSGGWXELnm+JkSRI0ktv8aSv7wMy1QCs8ZrQeG1SEQzFbEhcG9yEOjBXp0aX8CRH0yFYuQUNOU/UnINSzlfhypc09Q1HxQUUGd99sk8ijFib/Yh06wEbL2qrE3Xe5rFifLZrd/3UY4G6x0Biwr1JQnpdBqKjvDCyeKkGiSqam9MrxkNsmhGGSHJEJujKWXRejvdCKwvcJHM4imwhR29I9/tPXXPCIQAKoZ6F4B1jrrHwQ+kmk8Z+U2HRTewRQ1eDUWnpR/EM3HThhCyGnOpTsRPLW7EwyiDXqIbLDkQ0tnIfSZ0df21+z7Nb1bj76NmRhal3vZlUiHO/IB9G1MzBWSovU1j2iuahgBIL1uREv7OncHSYebtUV0eANA7oxBK+GqkoWlUa0Gjl+/2nVlCjOKIcf42Arew3XY7oIIwkIw/iAfzN60z/j29KA4UnTNCns7LM845r4l3xLLqkpQKwyRir4t8CD5o2Hogcl0q1blBRFIlj8xrsWo90TRtJ5WgqNBJVd8bYG3P9+MWqW3krz+5HTx4yYd0Th0a3V5fK+a+CplyJrJyhC5161mQRQefKYHgqI/mdURdYY49KUVME2d7q868j+4ExZfzoJ56pj6OK5boRK7N3nQGkBCKiD0Yi0W9EVBvOpp+LOeUfXEz/8FXPU2+/vTXNCXDCOySL+y6WJw1lG6Buhu2Q0l2ulGlu5KkgL0poGpvfxn//gM="
+ }
+}
