@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T18:07:27.826Z",
+ "zeit": "2026-11-23T19:49:06.444Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -3548,18 +3548,17 @@
   },
   "karte2.planet.kopplung.wetter-welt#3": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-23T09:00:45.241Z",
+   "zeit": "2026-11-23T19:49:06.444Z",
    "abdruck": "b8aef8b214e0",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.kopplung.gegenwart#1": {
    "gruen": false,
@@ -3578,18 +3577,18 @@
   },
   "karte2.planet.kopplung.gegenwart#6": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-23T09:00:45.241Z",
+   "zeit": "2026-11-23T19:49:06.444Z",
    "abdruck": "50c971118209",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "zwilling": "karte2.planet.kopplung.wetter-welt#3",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.leben.wasser.bild#1": {
    "gruen": false,
@@ -5011,14 +5010,14 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-23T17:22:20.315Z",
-  "ordner": "sitzung-20261123-182220",
+  "start": "2026-11-23T19:03:49.389Z",
+  "ordner": "sitzung-20261123-200349",
   "port": 7804,
-  "warten": 45.12,
+  "warten": 45.28,
   "grundstellungS": [],
   "proben": 0,
   "freigaben": [],
-  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
-  "minuten": 45.13
+  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
+  "minuten": 45.29
  }
 }
