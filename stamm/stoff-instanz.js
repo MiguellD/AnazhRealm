@@ -2106,10 +2106,14 @@ class AnazhRealm_stoff_instanz {
     // Ein Leser, der die Kopie nach dem Hochladen braucht, benennt sich (`wer`: „Name datei:zeile“) — sein Puffer behält sie.
     static _cpuLeser(attr, wer) {
         if (!attr) return attr;
-        if (attr.__cpuFrei !== undefined)
+        if (attr.__cpuFrei !== undefined) {
+            const B = (AnazhRealm.__cpuWuerfe = AnazhRealm.__cpuWuerfe || new Map());
+            const k = `${attr.name || "×" + attr.itemSize} zu spät @ ${wer}`;
+            if (B.has(k) || B.size < 64) B.set(k, (B.get(k) || 0) + 1);
             throw new Error(
                 `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} ist schon hochgeladen — ${wer} benennt sich zu spät`
             );
+        }
         attr.__cpuLeser = wer;
         return attr;
     }
@@ -2125,10 +2129,18 @@ class AnazhRealm_stoff_instanz {
     // DIE FREIE KOPIE: ein leeres Array desselben Typs hinter einer Wand — r184 liest nur `constructor` und `BYTES_PER_ELEMENT`
     // (`_getVertexFormat`, `createShaderVertexBuffers`, `instanceof` des Index-Formats); jeder andere Zugriff wirft beim Namen.
     static _freieKopie(attr, C) {
-        const wand = (was, p) =>
-            new Error(
+        // jeder Wurf steht im Täter-Buch (`AnazhRealm.__cpuWuerfe`, Puffer · Art · erster Rahmen des Stamms → Zahl): ein
+        // Fänger weiter oben (der Bau-Takt fängt seine Würfe) verschluckt die Meldung nie ohne Namen
+        const wand = (was, p) => {
+            const e = new Error(
                 `CPU-KOPIE FREI: ${AnazhRealm._pufferName(attr)} ${was} „${String(p)}“ nach dem Hochladen${attr.__cpuGefallen ? " und dem Kehraus" : ""} — der Leser benennt sich (_cpuLeser) oder liest die Quelle`
             );
+            const B = (AnazhRealm.__cpuWuerfe = AnazhRealm.__cpuWuerfe || new Map());
+            const ort = (String(e.stack).split("\n").find((z) => /stamm\//.test(z) && !/_freieKopie|stoff-instanz/.test(z)) || "?").trim(); // prettier-ignore
+            const k = `${attr.name || "×" + attr.itemSize} ${was} @ ${ort.replace(/^at /, "").replace(/\?v=[^:]*/, "")}`;
+            if (B.has(k) || B.size < 64) B.set(k, (B.get(k) || 0) + 1);
+            return e;
+        };
         return new Proxy(new C(0), {
             get(t, p) {
                 if (p === "constructor") return C;

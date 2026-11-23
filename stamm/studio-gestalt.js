@@ -1042,31 +1042,21 @@ class AnazhRealm_studio_gestalt {
         const f = this._foundry;
         if (!f || !f.cache.has(key)) return undefined;
         const v = f.cache.get(key);
-        // WAS WIEDERKEHRT, WÄCHST AUS DEM SAMEN (heap-dorf-spiegel): eine Gestalt, deren Puffer ohne CPU-Kopie der Kehraus von
-        // der GPU nahm (`_cpuKopieFrei` → `__cpuGefallen`), trägt nichts mehr, das ein Neues zeichnen könnte — sie fällt, die
-        // Bestellung holt sie neu (Platte oder Faden), nie ein Zeichnen aus Leere
-        if (this._foundryGestaltGefallen(v)) {
-            this._foundryCacheEvict(key);
-            return undefined;
-        }
         f.cache.delete(key);
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
         if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // bestellt: die Ruhezeit beginnt neu
         return v;
     }
-    // Trägt die Gestalt einen Puffer, der nach dem Kehraus nur noch ein Name ist? (Kinder und verschmolzene Leaves)
-    _foundryGestaltGefallen(g) {
-        if (!g || typeof g !== "object") return false;
-        const fiel = (geo) => {
-            if (!geo || !geo.attributes) return false;
-            if (geo.index && geo.index.__cpuGefallen === true) return true;
-            for (const k in geo.attributes) if (geo.attributes[k].__cpuGefallen === true) return true;
-            return false;
-        };
-        for (const ch of g.children || []) if (fiel(ch.geometry)) return true;
+    // DIE GESTALT IST VORLAGE (heap-dorf-spiegel): ihre Geometrien zeichnet die Instanz-Gruppe, und das Arena-Lager
+    // (`_arenaLager`, stoff-instanz.js), die Verschmelzung und der Satz kopieren aus ihnen, solange sie im Cache liegt —
+    // sie behalten ihre CPU-Kopie (`_cpuLeser`); ihr Preis ist der Ruhe-Deckel. Kinder und verschmolzene Leaves.
+    _foundryVorlage(g) {
+        if (!g || typeof g !== "object") return;
+        const wer = "Foundry-Vorlage _foundryCacheSet studio-gestalt.js";
+        for (const ch of g.children || []) if (ch.geometry) AnazhRealm._cpuLeserGeo(ch.geometry, wer);
         const fl = g._foundryFlat;
-        if (fl && Array.isArray(fl.leaves)) for (const lf of fl.leaves) if (fiel(lf.geom)) return true;
-        return false;
+        if (fl && Array.isArray(fl.leaves))
+            for (const lf of fl.leaves) if (lf.geom) AnazhRealm._cpuLeserGeo(lf.geom, wer);
     }
     // Eintrags-Gewicht: Byte-Längen der Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen.
     // Nicht-Gruppen wiegen 0 (für sie wacht FOUNDRY_CACHE_CAP). Flach wie `_disposeFoundryGroupGeom`.
@@ -1103,6 +1093,7 @@ class AnazhRealm_studio_gestalt {
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         if (v && typeof v === "object") v._ruheSeit = this.state.spielZeit; // gebaut: die Ruhezeit beginnt
+        this._foundryVorlage(v);
         f.cache.set(key, v);
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
@@ -1444,6 +1435,7 @@ class AnazhRealm_studio_gestalt {
                       wurfKosten,
                   }
                 : false;
+            this._foundryVorlage(group); // die verschmolzenen Leaves sind Vorlage wie die Kinder
         }
         return group._foundryFlat;
     }
