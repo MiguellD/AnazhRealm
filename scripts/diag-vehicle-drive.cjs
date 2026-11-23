@@ -23,6 +23,7 @@ const {
     path,
 } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 
 const server = statikServer();
 
@@ -194,20 +195,14 @@ function seitenRiss(K, id, ov, gegen) {
     const px = UMRISS.px, W = Math.ceil((u1 - u0) / px) + 1, H = Math.ceil((v1 - v0) / px) + 1;
     const kl = new Uint8Array(W * H), tief = new Float32Array(W * H).fill(-Infinity);
     const s = gegen ? -1 : 1; // das Auge steht auf +z (die rechte Wagenseite) oder, `gegen`, auf −z — dasselbe Gitter (x, y)
+    const R = { u0, v0, r: px, nu: W, nv: H }; // das EINE Dreiecks-Raster (kronen-linse `rasterDreieck`), der Tiefen-Puffer wählt
     for (const [A, B, C, k, einseitig] of tris) {
-        const ax = (A[0] - u0) / px, ay = (A[1] - v0) / px, bx = (B[0] - u0) / px, by = (B[1] - v0) / px, cx = (C[0] - u0) / px, cy = (C[1] - v0) / px;
-        const fl = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-        if (Math.abs(fl) < 1e-9 || (einseitig && fl * s < 0)) continue; // einseitiges Blech, das vom Auge wegblickt, zeichnet niemand
-        const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx))), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, bx, cx)));
-        const y0 = Math.max(0, Math.floor(Math.min(ay, by, cy))), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, by, cy)));
-        for (let y = y0; y <= y1; y++)
-            for (let x = x0; x <= x1; x++) {
-                const qx = x + 0.5, qy = y + 0.5;
-                const w0 = ((bx - qx) * (cy - qy) - (by - qy) * (cx - qx)) / fl, w1 = ((cx - qx) * (ay - qy) - (cy - qy) * (ax - qx)) / fl, w2 = 1 - w0 - w1;
-                if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
-                const t = s * (w0 * A[2] + w1 * B[2] + w2 * C[2]); // die Fläche am nächsten zum Auge gewinnt
-                if (t > tief[y * W + x]) (tief[y * W + x] = t), (kl[y * W + x] = k);
-            }
+        const fl = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+        if (einseitig && fl * s < 0) continue; // einseitiges Blech, das vom Auge wegblickt, zeichnet niemand
+        rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], R, (o, w0, w1, w2) => {
+            const t = s * (w0 * A[2] + w1 * B[2] + w2 * C[2]); // die Fläche am nächsten zum Auge gewinnt
+            if (t > tief[o]) (tief[o] = t), (kl[o] = k);
+        }, 1e-6);
     }
     return { W, H, kl, glas: kl.reduce((s, k) => s + (k === 2), 0), belegt: kl.reduce((s, k) => s + (k > 0), 0) };
 }
@@ -262,6 +257,50 @@ function umrissMessen(K, ids, ovJe) {
     const paare = [];
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) paare.push({ a: ids[i], b: ids[j], abw: rissAbweichung(risse[i], risse[j]) });
     return { risse, paare, seiten };
+}
+
+// ── A8 DAS GESETZ DER KABINE (fahrzeug-gattungen): der Gürtel bleibt `glasMin` unter dem Dach. Die Regler-Bänder sind je Art
+// absolut (der Kasten weitete `guertel` bis 1,2 und `dach` bis 2,1) — erst ihre Beziehung trägt den Bau: bei Gürtel = Dach
+// teilt die Kabine durch null (der GT am Rand 1,2: nicht-endliche Werte in den Puffern, gate:regler-wirkt nannte ihn als
+// BRICHT), darüber stülpt sie sich um und baut endlich — den Umsturz sieht kein NaN-Zähler. Gemessen an jeder Gattung an
+// jeder Ecke des Regler-Paars (die Ränder aus `PARAMS_BY_KIND`, dazu jeder Rand am Rezept-Maß des anderen): die Glas-Höhe des
+// geformten P (Leser: `epocheForm`, der EINE Durchgang jedes Baus) und die Puffer des Baus (Leser: `buildInstance`).
+const KABINE = { glasMin: 0.1, eps: 1e-9 };
+function nichtEndlich(g) {
+    let n = 0;
+    if (!g) return NaN;
+    g.traverse((o) => {
+        if (!o.geometry) return;
+        for (const k in o.geometry.attributes) for (const w of o.geometry.attributes[k].array) if (!Number.isFinite(w)) n++;
+    });
+    return n;
+}
+function kabineMessen(K) {
+    const band = (id) => K.PARAMS_BY_KIND.vehicle.find((p) => p.id === id);
+    const [G, D] = [band("guertel"), band("dach")];
+    const faelle = [];
+    for (const id of K.GATTUNGEN)
+        for (const g of [null, G.min, G.max])
+            for (const d of [null, D.min, D.max]) {
+                if (g == null && d == null) continue;
+                const ov = Object.assign({}, g != null && { guertel: g }, d != null && { dach: d });
+                const P = K.epocheForm(Object.assign({}, K.DEFAULT_P, K.BASE_P, K.PRESETS[id].s, K.PRESETS[id].fx, ov));
+                faelle.push({ id, ov, glas: P.dach - P.guertel, nan: nichtEndlich(K.buildInstance(id, 7, 1, ov)) });
+            }
+    return faelle;
+}
+function kabineVerdict(faelle, gattungen) {
+    const rot = [];
+    for (const f of faelle || []) {
+        const wo = `${f.id} ${Object.entries(f.ov)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(" ")}`;
+        if (!(f.glas >= KABINE.glasMin - KABINE.eps)) rot.push(`KABINE: ${wo} — Glas-Höhe ${Number(f.glas).toFixed(3)} m (Soll ≥ ${KABINE.glasMin})`);
+        if (!(f.nan === 0)) rot.push(`KABINE: ${wo} — der Bau trägt ${f.nan} nicht-endliche Werte`);
+    }
+    const soll = 8 * (gattungen || []).length;
+    if (!soll || (faelle || []).length !== soll) rot.push(`das Gesetz der Kabine maß ${(faelle || []).length} Ecken von ${soll}`);
+    return rot;
 }
 
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
@@ -394,6 +433,36 @@ hauptLauf(async () => {
             loch > UMRISS.seite * 5 && heil === 0,
             `eine Fläche ${(100 * loch).toFixed(1)} % · Gegen-Umlauf ${(100 * heil).toFixed(1)} %`
         );
+        // A8 das Gesetz der Kabine: gesund schweigt es; ein Fenster ohne Höhe, ein umgestülptes, ein Bau mit nicht-endlichen
+        // Werten und eine ungemessene Ecke heißen beim Namen
+        const eckenK = (b) => ["a", "b"].flatMap((id) => Array.from({ length: 8 }, (_, i) => ({ id, ov: { guertel: i }, glas: 0.4, nan: 0, ...(b[id + i] || {}) })));
+        for (const [b, n, wort] of [
+            [{}, 0, null],
+            [{ a3: { glas: 0.02 } }, 1, /^KABINE: a guertel=3 — Glas-Höhe 0\.020 m/],
+            [{ b5: { glas: -0.15 } }, 1, /^KABINE: b guertel=5 — Glas-Höhe -0\.150 m/],
+            [{ a0: { glas: 0, nan: 7668 } }, 2, /der Bau trägt 7668 nicht-endliche Werte/],
+            [{ b1: { nan: NaN } }, 1, /der Bau trägt NaN nicht-endliche Werte/],
+        ]) {
+            const v = kabineVerdict(eckenK(b), ["a", "b"]);
+            check(`Selbst-Test kabineVerdict ${JSON.stringify(b)}`, v.length === n && (!wort || v.some((z) => wort.test(z))), v.join(" · "));
+        }
+        const eckeFehlt = kabineVerdict(eckenK({}).slice(1), ["a", "b"]);
+        check("Selbst-Test kabineVerdict: eine ungemessene Ecke ist ROT", eckeFehlt.length === 1 && /15 Ecken von 16/.test(eckeFehlt[0]), eckeFehlt.join(" · "));
+        // die Mutante am ECHTEN Kern (sein Text ohne das Gesetz, der EINE Lader `kernAusText`): der GT am Rand Gürtel 1,2 steht mit
+        // nicht-endlichen Werten und ohne Glas-Höhe beim Namen, der Sportwagen mit dem Gürtel über dem Dach als umgestülpt
+        const kernText = require("fs").readFileSync(path.join(ROOT, "vehicle-core.js"), "utf8");
+        const ankerK = "return kabineGesetz(epocheZeit(P));";
+        const mutK =
+            kernText.split(ankerK).length === 2
+                ? kabineVerdict(kabineMessen(require("./lib/asset-worker-harness.cjs").kernAusText(kernText.replace(ankerK, "return epocheZeit(P);"), "__vehicleCore")), VC.GATTUNGEN)
+                : [`Anker fehlt: ${ankerK}`];
+        check(
+            "Selbst-Test Kabine am Kern: ohne das Gesetz heißt der GT am Rand Gürtel 1,2 beim Namen (kein Glas, nicht-endliche Werte), der Sportwagen umgestülpt",
+            mutK.some((z) => /^KABINE: gt guertel=1\.2 — der Bau trägt [1-9]\d* nicht-endliche Werte/.test(z)) &&
+                mutK.some((z) => /^KABINE: gt guertel=1\.2 — Glas-Höhe 0\.000 m/.test(z)) &&
+                mutK.some((z) => /^KABINE: supersport guertel=1\.2 — Glas-Höhe -0\.080 m/.test(z)),
+            `${mutK.length} Zeilen · ${mutK.slice(0, 3).join(" · ") || "die Mutante schweigt"}`
+        );
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -429,6 +498,14 @@ hauptLauf(async () => {
                 gattungenKern.map((id, i) => `${id} ${Math.round((100 * umriss.risse[i].glas) / umriss.risse[i].belegt)} %`).join(", ") +
                 ` · links ≠ rechts: ` +
                 gattungenKern.map((id) => `${id} ${(100 * umriss.seiten[id]).toFixed(2)} %`).join(", ")
+    );
+    // A8: das Gesetz der Kabine — an jeder Gattung trägt jede Ecke des Regler-Paars Gürtel × Dach ein Fenster mit Höhe
+    const kabine = kabineMessen(VC);
+    const kV = kabineVerdict(kabine, gattungenKern);
+    check(
+        `A8: das Gesetz der Kabine — an jeder Gattung hält jede Ecke des Regler-Paars Gürtel × Dach die Glas-Höhe (≥ ${KABINE.glasMin} m) und baut endlich`,
+        kV.length === 0,
+        kV.join(" · ") || `${kabine.length} Ecken an ${gattungenKern.length} Gattungen · kleinste Glas-Höhe ${Math.min(...kabine.map((f) => f.glas)).toFixed(3)} m`
     );
 
     const ell = ellipseMessung(VC);

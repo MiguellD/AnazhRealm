@@ -4936,9 +4936,24 @@
         if (ref == null) return P[k] != null ? P[k] : E.s[k]; // ein Maß nur der Zeit (Vorderrad, Verdeck): das Wort des Rezepts gilt
         return E.s[k] + (P[k] != null && ref != null ? (P[k] - ref) * E.erbe : 0);
     }
+    // DIE FORM EINES P — der EINE Durchgang jedes Baus, der Fahr-Physik und des Labors: erst die Zeit, dann das Gesetz der Kabine.
+    function epocheForm(P) {
+        return kabineGesetz(epocheZeit(P));
+    }
+    // DAS GESETZ DER KABINE (fahrzeug-gattungen): der Gürtel bleibt `GLAS_MIN` unter dem Dach — ein Fenster hat Höhe. Die
+    // Bänder der Regler sind je Art absolut (`guertel` bis 1,2 für den Kasten, `dach` ab 1,05 für den Sportwagen), erst ihre
+    // Beziehung trägt den Bau: bei Gürtel = Dach teilt die Kabine durch null (der GT am Rand 1,2: 7 668 nicht-endliche
+    // Werte), darüber stülpt sie sich um. Das Dach führt, der Gürtel folgt. 0,10 m ist die kleinste Glas-Höhe, die die
+    // Bänder vor dem Kasten zuließen (1,05 − 0,95) — jeder Bau jener Bänder bleibt byte-gleich; hält die Beziehung, geht
+    // DASSELBE Objekt durch. Sie steht im EINEN Durchgang jedes P (Bau, Fahr-Physik, Labor), nie an einem Aufrufer.
+    const GLAS_MIN = 0.1;
+    function kabineGesetz(P) {
+        if (!P || !(P.guertel > P.dach - GLAS_MIN)) return P;
+        return Object.assign({}, P, { guertel: P.dach - GLAS_MIN });
+    }
     // P (gemergt) → P der Epoche. Ohne `epoche` und auf „heute" genau DASSELBE Objekt (byte-gleich); sonst ein neues, das
     // `epoche` VERBRAUCHT hat (idempotent: ein geformtes P formt nie zweimal) und seine Stufe beim Namen trägt (`epocheStufe`).
-    function epocheForm(P) {
+    function epocheZeit(P) {
         if (!P || P.epoche == null || !Number.isFinite(+P.epoche)) return P;
         const n = EPOCHE_GESETZ.length - 1;
         const e = Math.max(0, Math.min(n, +P.epoche));
