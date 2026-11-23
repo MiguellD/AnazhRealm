@@ -2082,13 +2082,16 @@ function werkbankRuf(port, weg, nutzlast) {
         req.end(JSON.stringify(nutzlast || {}));
     });
 }
-// --teil=k/n: Teil k von n Gruppen der CI, ohne --teil null (alles)
+// --teil=k/n: Teil k von n Gruppen der CI, ohne --teil null (alles); `teilVon(text, wer)` liest EIN „k/n" (auch den Korpus-
+// Anteil PERSISTENCE_KORPUS und die Linse, die ihn in check.yml wiegt) — Unlesbares wirft, nie „dann eben alles"
+function teilVon(text, wer) {
+    const m = /^(\d+)\/(\d+)$/.exec(String(text));
+    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${wer}=${text}: erwartet k/n mit 1 <= k <= n`);
+    return { k: +m[1], n: +m[2] };
+}
 function teilAus(argv) {
     const a = argv.find((x) => x.startsWith("--teil="));
-    if (!a) return null;
-    const m = /^--teil=(\d+)\/(\d+)$/.exec(a);
-    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
-    return { k: +m[1], n: +m[2] };
+    return a ? teilVon(a.slice(7), "--teil") : null;
 }
 // DIE WERKBANK ALS TOR: `werkbank start`, bereit am Ereignis; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout der Seite)
 function werkbankTor(port, zusatz = []) {
@@ -2335,6 +2338,7 @@ module.exports = {
     werkbankRuf,
     seitenAbbruch,
     teilAus,
+    teilVon,
     selbsttest: (name) => (sammlung.selbsttest = name),
     taeter,
     bruchBuch,
