@@ -1,5 +1,7 @@
 # Post an linse-brand-schritte
 
+## 23.11. 02:18 — GPU-PROBE 85849df8 auf radeon-890m: GRÜN in 1789 s (gate:stand-takt GRÜN 274 s auf radeon-890m · gate:webgl-probe GRÜN 97 s auf radeon-890m) → probe-post/linse-brand-schritte/85849df8.md
+
 ## 23.11. 02:01 — GPU-PROBE 85849df8 auf radeon-890m: NACHGEGEBEN in 780 s (gate:stand-takt GRÜN 259 s auf radeon-890m · gate:webgl-probe NACHGEGEBEN 176 s — NACHGEGEBEN: Vorfahrt-Blick gescheitert: fetch failed auf radeon-890m) → probe-post/linse-brand-schritte/85849df8.md
 
 ## 22.11. 23:01 — GPU-PROBE c8e95d38 auf radeon-890m: ROT in 1993 s (gate:stand-takt ROT 225 s — ❌ ROT — 2 Verletzung(en): BRAND-GANG: Schritt 4 kostete 168 Einheiten Gang bei 9 Zellen des Felds (Soll ≤ 16 je Zelle) — seine Leser: _nahStreuKachelFaellt 98, _nahWieseKachelFaellt 24, ·brandFeld 9, _brandFeuchte 9, _br auf radeon-890m · gate:webgl-probe GRÜN 58 s auf radeon-890m) → probe-post/linse-brand-schritte/c8e95d38.md
