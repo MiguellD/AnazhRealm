@@ -202,6 +202,32 @@
             ]
         },
         {
+            "id": "acker",
+            "titel": "Der Acker des Dorfs der Zelle −4,−4 im Frühling, das Auge an seinem Rand (acker-furche, Leiter mensch.nahrung flur · frucht): der Dorf-Zug LÄUFT wie am Ort `dorf`, der Spieler kommt am Zell-Ort an (`anlauf`, wie `dorf`; ein Bild-Ort, kein Band-Ort); die Pose aus dem Plan (`ortPose` „acker“, `_ackerPose`) stellt ihn an den Rand des größten Ackers, den die Welt trägt, und blickt längs seiner langen Achse — die Furchen laufen vom Auge weg, die junge Saat steht in Reihen auf ihren Kämmen (das Jahr der Bühne: `saison`). Die Furche auf 3 m, die Reihen im Bildspektrum (frucht#1).",
+            "anlauf": [
+                -841,
+                -861
+            ],
+            "ortPose": "acker",
+            "saison": "fruehling",
+            "imBild": { "bodenSatz": 0.15 },
+            "dorfZug": true,
+            "ortTakt": []
+        },
+        {
+            "id": "acker-fern",
+            "titel": "Der Acker des Dorfs der Zelle −4,−4 im Herbst aus 30 m (acker-furche, Leiter mensch.nahrung flur): wie `acker`; die Pose „acker-fern“ stellt das Auge 30 m vor die Mitte des Ackers, auf der Seite des Dorfs zuerst, der Blick längs seiner Furchen — der gepflügte Acker als Fläche am Dorfrand (flur#1), die Furche auf 30 m lesbar (Herbst: die Erde liegt nackt).",
+            "anlauf": [
+                -841,
+                -861
+            ],
+            "ortPose": "acker-fern",
+            "saison": "herbst",
+            "imBild": { "bodenSatz": 0.15 },
+            "dorfZug": true,
+            "ortTakt": []
+        },
+        {
             "id": "buehne",
             "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms. Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
             "welt": "pruefbuehne/welt.json",

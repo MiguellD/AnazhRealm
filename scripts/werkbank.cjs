@@ -1148,6 +1148,7 @@ async function starte() {
                     steht: r._weltSteht(),
                     spieler: [x, z],
                     blick: P && [P.ziel.x, P.ziel.z],
+                    acker: (P && P.acker) || null, // der Acker der Pose (`_ackerPose`): sein Rechteck für die Reihen im Bild
                     chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
                     gier: +r.state.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
@@ -2424,6 +2425,9 @@ async function starte() {
                     // ROT. Der Anteil gilt der Leinwand der Klasse (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`). DIE FAMILIE EINES
                     // SCHLÜSSELS (`inhaltFamilie`), EIN Leser für den Ausdruck und das Urteil
                     const spec = b.ort ? BAND.ladeSpec(b.ort) : null;
+                    // DIE JAHRESZEIT DES ORTS (`saison`, acker-furche): ein Ort, dessen Inhalt an einer Zeit des Jahrs hängt (der
+                    // gepflügte Acker im Herbst, die junge Saat im Frühling), trägt sie — das Wort `--saison` geht vor
+                    if (spec?.ort.saison && b.saison == null) b.saison = spec.ort.saison;
                     const inhalt = spec?.ort.imBild;
                     if (b.ort && !(inhalt && Object.keys(inhalt).length)) throw new Error(`ABNAHME ROT [der Messort ${b.ort} trägt kein imBild — sein Inhalt bliebe ungefragt]`); // prettier-ignore
                     // der Inhalt liest je Klasse Pixel und Farbe — die Maße der Tafel (`nurPixel` aus) nur, wo sie geschrieben wird

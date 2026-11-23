@@ -814,6 +814,7 @@ class AnazhRealm_siedlung_ort {
             if (d < dMin) [S, dMin] = [q, d];
         }
         const p = S && S.plan;
+        if (/^acker/.test(regel)) return this._ackerPose(S, nahe, regel);
         const pz = p && p.platz;
         if (!pz || !Number.isFinite(pz.cx))
             throw new Error(
@@ -1009,6 +1010,67 @@ class AnazhRealm_siedlung_ort {
                     `Gelände ${fiel.gelaende} · Spur ${fiel.spur})`
             );
         return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
+    }
+
+    // DIE POSE AM ACKER (acker-furche, Leiter mensch.nahrung flur · frucht): der größte Acker der Siedlung `S`, den die Welt trägt
+    // (`state.aecker`, gemalt aus ihrem Plan), das Auge auf der Achse seiner Furchen (der langen, `ACKER_POSE`) und mit dem Blick
+    // längs ihr — „acker“ am Rand des Ackers (die Furche auf 3 m), „acker-fern“ `fernM` vor seiner Mitte, auf der Seite des Dorfs
+    // zuerst. Der Stand meidet jeden Grundriss des Plans, Wasser und den wilden Bestand (`_istNatur`), die Sichtlinie jeden Bau und
+    // das Gelände; die Achse dreht sich um ±`drehRad` je Schritt, bis ein Stand frei ist. { x, z, gier, nick, ziel, acker } — ohne
+    // Acker im Plan bricht sie beim Namen, solange der Plan seine Äcker noch nicht gemalt hat, mit der Marke `warten`.
+    _ackerPose(S, nahe, regel) {
+        if (!S) throw new Error(`_ortPose: keine Siedlung binnen 200 m um ${nahe.join(" ")}`);
+        const AP = AnazhRealm.ACKER_POSE;
+        const art = AP[regel];
+        if (!art) throw new Error(`_ortPose: keine Regel „${regel}“ am Acker (${Object.keys(AP).filter((k) => AP[k].nickM).join(", ")})`); // prettier-ignore
+        const felder = (S.plan.felder || []).filter((f) => f && Number.isFinite(f.cx));
+        if (!felder.length) throw new Error(`_ortPose: die Siedlung ${S.key || "?"} trägt keinen Acker im Plan`);
+        const reg = this.state.aecker || new Map();
+        const da = felder
+            .map((f) => reg.get(AnazhRealm._ackerSchluessel(S.ox + f.cx, S.oz + f.cz)))
+            .filter(Boolean)
+            .sort((a, b) => b.ex * b.ez - a.ex * a.ez || a.x - b.x || a.z - b.z);
+        if (!da.length)
+            throw Object.assign(new Error(`_ortPose: die ${felder.length} Äcker der Siedlung ${S.key || "?"} sind noch nicht gemalt`), { warten: true }); // prettier-ignore
+        const bau = (S.plan.slots || []).filter((q) => q && q.obb).map((q) => ({ ...q.obb, cx: S.ox + q.obb.cx, cz: S.oz + q.obb.cz })); // prettier-ignore
+        const imBau = (x, z, r) => bau.some((o) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), x - o.cx, z - o.cz]; return Math.abs(dx * c - dz * s) < o.ex + r && Math.abs(dx * s + dz * c) < o.ez + r; }); // prettier-ignore
+        const augeY = (x, z) => this.getTerrainHeightAt(x, z) + AnazhRealm.EGO_AUGE_M;
+        const frei = (q, e) => {
+            if (!this._landAt(q.x, q.z, AP.standR) || imBau(q.x, q.z, AP.standR)) return false;
+            if (this._blockerUmPlatz(q.x, q.z, AP.standR + 1, []).some((b) => this._istNatur(b))) return false;
+            const [dx, dz, y0] = [e.x - q.x, e.z - q.z, augeY(q.x, q.z)];
+            const d = Math.hypot(dx, dz);
+            for (let w = AnazhRealm.SICHT_SCHRITT_M; w < d; w += AnazhRealm.SICHT_SCHRITT_M) {
+                const [x, z] = [q.x + (dx * w) / d, q.z + (dz * w) / d];
+                if (imBau(x, z, 0) || this.getTerrainHeightAt(x, z) > y0 - AnazhRealm.SICHT_GELAENDE_M) return false;
+            }
+            return true;
+        };
+        for (const a of da) {
+            const [c, s] = [Math.cos(a.phi), Math.sin(a.phi)];
+            // die lange Achse in der Welt (u: (c, −s), v: (s, c) — `_ackerWelt`) und ihre halbe Länge
+            const [L, eL] = a.ex >= a.ez ? [[c, -s], a.ex] : [[s, c], a.ez];
+            // die Seite des Dorfs zuerst: das Auge kommt vom Ort
+            const sg = (S.ox - a.x) * L[0] + (S.oz - a.z) * L[1] >= 0 ? 1 : -1;
+            for (const seite of [sg, -sg])
+                for (let i = 0; i <= 2 * AP.drehSchritte; i++) {
+                    const w = ((i + 1) >> 1) * (i & 1 ? 1 : -1) * AP.drehRad;
+                    const [dx, dz] = [L[0] * Math.cos(w) - L[1] * Math.sin(w), L[0] * Math.sin(w) + L[1] * Math.cos(w)];
+                    const abst = art.fernM != null ? art.fernM : eL + art.randM;
+                    const q = { x: a.x + seite * dx * abst, z: a.z + seite * dz * abst };
+                    const ziel = { x: q.x - seite * dx * art.zielM, z: q.z - seite * dz * art.zielM };
+                    if (!frei(q, { x: a.x, z: a.z })) continue;
+                    return {
+                        x: q.x,
+                        z: q.z,
+                        gier: this._blickGierZu(-seite * dx, -seite * dz),
+                        nick: -Math.atan2(AnazhRealm.EGO_AUGE_M, art.nickM),
+                        ziel,
+                        acker: { x: a.x, z: a.z, phi: a.phi, ex: a.ex, ez: a.ez },
+                    };
+                }
+        }
+        throw new Error(`_ortPose: kein freier Stand an den ${da.length} Äckern der Siedlung ${S.key || "?"} (Regel ${regel})`); // prettier-ignore
     }
 
     // DAS DORF VOR DIR (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler — die Mitte 16 m bei cos +0,56, die drei
@@ -3810,3 +3872,13 @@ AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // ein
 // bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
 AnazhRealm.SICHT_SCHRITT_M = 0.5;
 AnazhRealm.SICHT_GELAENDE_M = 0.25;
+// DIE POSE AM ACKER (`_ackerPose`): je Regel der Stand (`randM` vor dem Rand der langen Achse oder `fernM` vor der Mitte), der
+// Boden-Abstand, auf den der Blick sinkt (`nickM`: das Auge `EGO_AUGE_M` über ihm), und das Blickziel `zielM` vor dem Auge (über
+// der Frucht: der Strahl trifft es, bevor er sinkt); der Stand hält `standR` frei, die Achse dreht sich je Schritt um `drehRad`
+AnazhRealm.ACKER_POSE = Object.freeze({
+    standR: 0.6,
+    drehRad: 0.2,
+    drehSchritte: 3,
+    acker: Object.freeze({ randM: 0.3, nickM: 7, zielM: 2 }),
+    "acker-fern": Object.freeze({ fernM: 30, nickM: 30, zielM: 12 }),
+});
