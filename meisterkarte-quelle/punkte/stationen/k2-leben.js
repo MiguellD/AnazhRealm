@@ -4836,14 +4836,16 @@ L.perspektive("oeko", (() => {
             [NE]: {
                 sek: 35,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_TIER.concat(["stamm/wasser-hydro.js", "stamm/vegetation-wiese.js"]),
                 ungefahren: "das Bild der Fremdwelt-Probe (S7) — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
                     const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
-                    // DER RAFFER: je Saat das Tal der Wildnis (ganze Regionen westlich der Ankunft, keine Zelle auf dem Genesis-Ort), der
-                    // Bestand frisch aus den Strömen der Saat, Takt um Takt `_bestandSchritt` — im Sandkasten (Bestand, Leben, Gefühl, Uhr
-                    // getauscht); je Tod die Ursache und das Fraß-Paar (`_bestandStirbt`), je Takt die äsenden Gattungen (`_kreaturFrass`)
-                    const raffer = async (r, T, a) => {
+                    // DER RAFFER AN EINER ADRESSE (S2 über den Fächer, stationen/faecher.js; a.saat die Saat): das Tal der Wildnis (ganze Regionen
+                    // westlich der Ankunft, keine Zelle auf dem Genesis-Ort), der Bestand frisch aus den Strömen der Saat, Takt um Takt
+                    // `_bestandSchritt` (stamm, der Takt des Bestands) — im Sandkasten (Bestand, Leben, Gefühl, Uhr getauscht); je Tod die Ursache
+                    // und das Fraß-Paar (`_bestandStirbt`), je Takt die äsenden Gattungen (`_kreaturFrass`)
+                    const NETZ_AN = async (r, T, q, a) => {
                         const s = r.state;
                         const A = r.constructor;
                         const B = A._bestandGesetz().B;
@@ -4887,8 +4889,8 @@ L.perspektive("oeko", (() => {
                                 for (const g in bestand) if (bestand[g].n * bestand[g].frass > 0) frass[g] = (frass[g] || 0) + 1;
                                 return f.call(this, bestand, zellen);
                             }));
-                            for (const saat of a.saaten) {
-                                if (performance.now() - t0 > a.budgetMs || (laeufe.length && window.__rafferRest() < 1.2 * laeufe[laeufe.length - 1].ms)) break;
+                            {
+                                const saat = q.saat;
                                 r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
                                 s.faunaBestand = undefined;
                                 s.lifeField = undefined;
@@ -4924,7 +4926,7 @@ L.perspektive("oeko", (() => {
                             r._lebenGen = alt.gen;
                             s._creatureNetSeq = alt.seq;
                         }
-                        return { k0, jahrT, G, diet, kg, laeufe, paare, ursache, frass, wieder: Object.prototype.hasOwnProperty.call(r, "_bestandStirbt") || Object.prototype.hasOwnProperty.call(r, "_kreaturFrass") };
+                        return { k0, jahrT, G, diet, kg, lauf: laeufe[0], paare, ursache, frass, wieder: Object.prototype.hasOwnProperty.call(r, "_bestandStirbt") || Object.prototype.hasOwnProperty.call(r, "_kreaturFrass"), t: Math.round(performance.now() - t0) };
                     };
                     // DER ZUFALLSORT (S4): eine bereite Region im Ring der Ankunft, ihr Bestand als Kopie ohne Leib nachgeholt, dann 10
                     // Spielminuten Takt — gezählt jede Gattung, die frisst (äst oder reißt) oder gefressen wird
@@ -5028,7 +5030,20 @@ L.perspektive("oeko", (() => {
                         }
                         return { punkte: pkt.length, mit, ohne };
                     };
-                    const R = await seite(raffer, { saaten: Array.from({ length: 32 }, (_, i) => i + 1), jahre: 100, probeT: 24, budgetMs: 26000, praefix: "netz-", ohne: null });
+                    // S2 ÜBER DEN FÄCHER: 32 Saaten je 100 Spieljahre, die Frist des Fächers statt des Budgets der Schleife
+                    const RF = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: NETZ_AN, export: "stamm _bestandSchritt (der Takt des Bestands, LEBENSRAUM_GESETZ tetrapoda-core.js:2072)", leser: "stamm _kreaturFrass · _bestandStirbt" },
+                        adressen: { saaten: 32 },
+                        mit: { jahre: 100, probeT: 24, praefix: "netz-", ohne: null },
+                        ms: 26000,
+                        masse: { paare: { wie: "zaehle", feld: "paare" }, ursache: { wie: "zaehle", feld: "ursache" }, frass: { wie: "zaehle", feld: "frass" }, saaten: { wie: "anzahl", nur: "saat" } },
+                        schlecht: { feld: "lauf.K0", richtung: "min" },
+                        pose: (q) => "Waldrand der Saat " + q.saat + " nach 100 Spieljahren, ≥ 5 Arten im Bild",
+                        ungemessen: ["Fressen und Gefressenwerden im Bild (am Gerät)"],
+                    });
+                    if (!RF.je.length) throw new Error("der Fächer des Netzes trägt keine Saat: " + RF.akte.slice(0, 300));
+                    const w0 = RF.je[0].w;
+                    const R = { k0: w0.k0, jahrT: w0.jahrT, G: w0.G, diet: w0.diet, kg: w0.kg, laeufe: RF.je.map((e) => e.w.lauf), paare: RF.werte.paare || {}, ursache: RF.werte.ursache || {}, frass: RF.werte.frass || {}, wieder: RF.je.some((e) => e.w.wieder) };
                     const Z = await seite(zufall, { minuten: 10, wurf: Math.random() });
                     const UF = await seite(ufer, { radiusM: 900, uferM: 4, n: 12 });
                     const G = R.G;
@@ -5087,7 +5102,7 @@ L.perspektive("oeko", (() => {
                     const nArten = G.length;
                     const aus = M.teil || {};
                     aus[2] = { werte: { saaten: n, jahre: 100, wiederProzent: wiederMin, paareJeArt }, zeuge: Object.assign({ jeArt: wieder, links }, zeuge) };
-                    if (nArten < 10 || ebenen < 4) aus[2].nicht = "10¹ Arten in 4 Ebenen — der Bestand trägt " + nArten + " Gattungen (" + G.join(", ") + ") in " + ebenen + " Ebenen; im Deckel " + n + " von 32 Saaten × 100 Spieljahre";
+                    if (nArten < 10 || ebenen < 4) aus[2].nicht = "10¹ Arten in 4 Ebenen — der Bestand trägt " + nArten + " Gattungen (" + G.join(", ") + ") in " + ebenen + " Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer " + n + " von 32 Saaten × 100 Spieljahre · " + RF.akte;
                     aus[3] = { werte: { ebenen, omnivorie, massenVerhaeltnis: massen, paarTrennProzent: trenn }, zeuge: Object.assign({ ebene, paare: paarL.length }, zeuge) };
                     if (nArten < 100) aus[3].nicht = "10² Arten je Biom — der Bestand trägt " + nArten + " Gattungen; ein Netz realer Breite fehlt (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072)";
                     aus[4] = { werte: { artenFressen: Z.arten.length }, zeuge: { antworten: Z.kandidaten, streuung: Z.tiere, vor: 0, nach: Z.anders, tiere: Z.tiere, ort: Z.key, arten: Z.arten } };
