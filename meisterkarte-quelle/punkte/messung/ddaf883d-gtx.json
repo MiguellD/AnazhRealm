@@ -1,7 +1,7 @@
 {
  "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
  "geraet": "gtx",
- "zeit": "2026-11-23T04:01:53.006Z",
+ "zeit": "2026-11-23T05:06:30.681Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -1426,6 +1426,76 @@
    },
    "zeit": "2026-11-23T03:58:20.474Z",
    "abdruck": "7cd224169c08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.netz.stoffwechsel#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (451 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 451 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S1 ROT: fehlender Leser: die Laterne brennt ohne Leitung: keine Trennung, von der ein Licht abhinge (451 Laternen in der Szene, 0 Leitungen) (stamm/siedlung-ort.js:562) · gemessen 451 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcf2d1f50c90a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ke3f5f1865d95",
+   "s": 12.7,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 35.08,
+    "kerne": 2.151,
+    "fensterKerne": 2.383,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.03
+     ],
+     [
+      "git.exe",
+      1.89
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.84
+     ]
+    ],
+    "dienerS": 18.03,
+    "diener": [
+     [
+      "System",
+      11.55
+     ],
+     [
+      "dwm.exe",
+      3.11
+     ]
+    ],
+    "geraetS": 11.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.06
+     ],
+     [
+      "svchost.exe",
+      4.14
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 50.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T05:06:30.681Z",
+   "abdruck": "7172cf5c24fe",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
