@@ -723,7 +723,11 @@ async function leibGang(G) {
         const tuer = (a) => {
             const e = a && eintrag(a);
             const t = e && e.tuer;
-            const P = (dz) => new r.constructor.HausBox({ R: r._hausLage(e).R, F: Float32Array.of(t.x, 0.5, t.z - dz, 1, 0.5, 1) }, 0, -1);
+            const P = (dz) => {
+                const W = new Float64Array(8);
+                r.constructor._hausBoxZahlen(r._hausLage(e), Float64Array.of(t.x, 0.5, t.z - dz, 1, 0.5, 1), 0, W, 0);
+                return { cx: W[0], cz: W[1] };
+            };
             return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
         };
         const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };

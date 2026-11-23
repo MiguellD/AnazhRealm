@@ -111,8 +111,8 @@ function boxWand(quelle) {
 // über den Eingang `_hausHuelleSetzen` des echten Wirts ein, wie die Lieferung sie bringt (`_huellePacken`), und jeder fragt einmal
 // den Strahl (`_strahlBoxenVon`). Rot beim Namen: „Objekt-Liste gehalten" (ein Eintrag hält `teile` als Array), „Geländer ohne
 // Frage gehalten" (die Strahl-Boxen stehen, bevor ein Strahl fragt), „Byte je Hüll-Teil" über HUELLE_DECKEL_B (gehaltener Heap
-// nach dem Collector je Teil: Hülle, Blocker, das geliehene Geländer und ihre Netz-Zellen zusammen — gepackt 102, die Objekt-Liste
-// darüber 310). Die Basis ddaf883d hielt hier 408 Byte je Teil, rot an allen drei Namen (die Metropole an stadt-voll: 26,4 + 19,3 +
+// nach dem Collector je Teil: Hülle, Blocker, das geliehene Geländer und ihre Netz-Zellen zusammen — gepackt 95, die Objekt-Liste
+// darüber 304). Die Basis ddaf883d hielt hier 408 Byte je Teil, rot an allen drei Namen (die Metropole an stadt-voll: 26,4 + 19,3 +
 // 10,3 MB über 132 012 Teile, Radeon j1). Leser: `npm run check` (der Selbsttest dieser Datei).
 const HUELLE_DECKEL_B = 128;
 function huellenWand(mutant) {
