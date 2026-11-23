@@ -4834,6 +4834,237 @@
         return { zeile: zeile, front: f, feuchte: feuchte };
     }
 
+    // DAS WETTER-FELD AM ORT (wetter-am-ort, rein additiv — `wetterAt`, WIND_FELD und jede Zahl davor stehen byte-gleich). Das
+    // Wetter ist kein Wort der Welt, es ist ein FELD: je Ort (x, z) zur Zeit t die fünf Kanäle {fog, sun, grey, wind, rain} der
+    // Front über ihm (`wetterAt`: Saat, Ort, Uhr und das Δ des Planeten `ort` — Lage und Neigung der Achse, planet-core) —
+    // stetig über die Stufen der Front (die Zeile wechselt über ±`kante` der Front-Stärke, in der Mitte jeder Stufe steht ihre
+    // Zeile), der Regen geformt vom Relief (`relief`: der Hang, den der Grundwind hinaufsteigt — Δh über `schrittM` windauf —
+    // hebt ihn um `hub` × Steigung, im Lee sinkt er: Steigungsregen) und gelenkt vom EINGRIFF `ein.hier` {x, z, feld}: das Feld,
+    // das die Region um (x, z) trägt (in der Welt das Wort am Spieler: sein Übergang, sein Wort, ein Wunsch der Welt), gilt voll
+    // bis `hierM[0]` und läuft bis `hierM[1]` in die Natur aus. DER LEE-AUSGLEICH: was der Eingriff an Regen in seine Region
+    // zieht (Σ g·(feld.rain − Natur) über sie), fehlt windab (die Grundrichtung der Saat, `windGrund`, mit der die Fronten
+    // ziehen) in einer Region derselben Gestalt im Abstand `leeM` — der Regen dort sinkt um denselben Betrag (× (1 − c·gL),
+    // c ≤ 1: mehr, als das Lee trägt, nimmt kein Eingriff); nimmt der Eingriff Regen weg, fällt er im Lee. Die Summen laufen
+    // über `spirale` Punkte (Vogel-Spirale, flächentreu), gemerkt je Eingriff und Uhr; das Relief formt nur den Ort, nie die
+    // Summen. `ein.zeilen`: die Zeilen der Welt je Zeile der Front (die Welt spricht aus IHRER Tafel), ohne sie WX_GESETZ.
+    // `ein.hoehe(x, z)`: die Höhe des Gesetzes (ohne sie kein Relief). `aus`: ein Leser, der je Bild hunderte Male fragt, gibt
+    // sein Objekt mit. `profil`: der Wind über der Höhe (Hellmann, neutral geschichtet über offenem Land: u(h) = u(bezugM) ·
+    // (h / bezugM)^alpha, unter `minM` steht der Wert von minM). `maeander`: die Zahlen des Mäanders von `windRichtung` (dort
+    // stehen sie als Literale, byte-treu; gate:wetter-wache prüft d/dt `windWeg` = `windRichtung`). Leser: die Welt
+    // (`_wetterFeldAm`: Wind, Wolke, Rauch, Tracht, Plan) und gate:wetter-wache (O: gleiche Saat → gleiches Feld, Bilanz, Relief).
+    var WETTER_ORT = Object.freeze({
+        kante: 0.04,
+        hierM: Object.freeze([3300, 6600]),
+        leeM: 13200,
+        spirale: 96,
+        relief: Object.freeze({ schrittM: 600, hub: 6, min: 0.4, max: 1.8 }),
+        profil: Object.freeze({ bezugM: 10, alpha: 1 / 7, minM: 1 }),
+        maeander: Object.freeze({ a: 0.5, w1: 0.009, b: 0.22, w2: 0.0257, n: 7, m: 5 }),
+    });
+    var WX_KANAELE = Object.freeze(["fog", "sun", "grey", "wind", "rain"]);
+    function wxGlatt(a, b, v) {
+        if (v <= a) return 0;
+        if (v >= b) return 1;
+        var u = (v - a) / (b - a);
+        return u * u * (3 - 2 * u);
+    }
+    // (eine eingefrorene Tafel prüft der Kern einmal — der Wirt reicht je Welt EINE, je Ruf des Felds; eine offene je Ruf)
+    var _wxGeprueft = null;
+    function wxZeilen(Z) {
+        if (Z === _wxGeprueft) return Z;
+        for (var z in WX_GESETZ)
+            for (var i = 0; i < WX_KANAELE.length; i++)
+                if (!(Z[z] && Number.isFinite(Z[z][WX_KANAELE[i]])))
+                    throw new Error("wetterFeldAm: die Zeile " + z + " trägt " + WX_KANAELE[i] + " nicht");
+        var fest = Object.isFrozen(Z);
+        for (var k in WX_GESETZ) fest = fest && Object.isFrozen(Z[k]);
+        if (fest) _wxGeprueft = Z;
+        return Z;
+    }
+    // Die Natur am Ort: die Front (`wetterAt`) stetig über ihre Stufen — klar ↔ nebel über der Feuchte, dann bewoelkt · regen ·
+    // sturm über der Front-Stärke, je Schwelle ±kante weich (die Schwellen des Orts: `wetterVersatz`).
+    function wetterNatur(saat, x, z, t, ort, Z, o) {
+        var w = wetterAt(saat, x, z, t, ort);
+        var st = WIND_FELD.front.stufen,
+            k = WETTER_ORT.kante;
+        var stSturm = st.sturm,
+            stRegen = st.regen;
+        if (ort) {
+            var vs = wetterVersatz(ort);
+            stSturm += vs.sturm;
+            stRegen += vs.regen;
+        }
+        var n = wxGlatt(st.nebel - k, st.nebel + k, w.feuchte);
+        var s1 = wxGlatt(st.bewoelkt - k, st.bewoelkt + k, w.front);
+        var s2 = wxGlatt(stRegen - k, stRegen + k, w.front);
+        var s3 = wxGlatt(stSturm - k, stSturm + k, w.front);
+        for (var i = 0; i < WX_KANAELE.length; i++) {
+            var c = WX_KANAELE[i];
+            var v = Z.klar[c] + (Z.nebel[c] - Z.klar[c]) * n;
+            v += (Z.bewoelkt[c] - v) * s1;
+            v += (Z.regen[c] - v) * s2;
+            v += (Z.sturm[c] - v) * s3;
+            o[c] = v;
+        }
+        o.front = w.front;
+        o.feuchte = w.feuchte;
+        o.zeile = w.zeile;
+        return o;
+    }
+    // Der Steigungsregen am Ort: der Faktor des Regens aus dem Hang windauf (Grundrichtung der Saat)
+    function wetterRelief(saat, x, z, hoehe) {
+        var R = WETTER_ORT.relief,
+            g = windGrund(saat);
+        var h0 = hoehe(x, z),
+            h1 = hoehe(x - g.x * R.schrittM, z - g.z * R.schrittM);
+        if (!(Number.isFinite(h0) && Number.isFinite(h1)))
+            throw new Error("wetterFeldAm: die Höhe am Ort ist endlich (" + h0 + ", " + h1 + ")");
+        var f = 1 + (R.hub * (h0 - h1)) / R.schrittM;
+        return f < R.min ? R.min : f > R.max ? R.max : f;
+    }
+    var _wxSpirale = null;
+    function wxSpirale() {
+        if (_wxSpirale) return _wxSpirale;
+        var N = WETTER_ORT.spirale,
+            p = new Float64Array(2 * N);
+        for (var i = 0; i < N; i++) {
+            var r = Math.sqrt((i + 0.5) / N),
+                a = i * Math.PI * (3 - Math.sqrt(5));
+            p[2 * i] = r * Math.cos(a);
+            p[2 * i + 1] = r * Math.sin(a);
+        }
+        return (_wxSpirale = p);
+    }
+    // Die Summen des Eingriffs (gemerkt je Saat, Uhr, Ort, Regen des Felds, Δ und Tafel): `zug` Σ g·(feld.rain − Natur) über die
+    // Region, `lee` Σ gL·Natur über die Region windab, `c` der Anteil des Lee-Regens, den der Eingriff nimmt (≤ 1)
+    var _wxEingriff = { saat: null };
+    function wetterEingriff(saat, t, ort, Z, H) {
+        var M = _wxEingriff;
+        if (
+            M.saat === saat &&
+            M.t === t &&
+            M.x === H.x &&
+            M.z === H.z &&
+            M.rain === H.feld.rain &&
+            M.ort === ort &&
+            M.Z === Z
+        )
+            return M;
+        var W = WETTER_ORT,
+            R = W.hierM[1],
+            P = wxSpirale(),
+            g = windGrund(saat),
+            o = {};
+        var lx = H.x + g.x * W.leeM,
+            lz = H.z + g.z * W.leeM;
+        var zug = 0,
+            lee = 0;
+        for (var i = 0; i < P.length; i += 2) {
+            var wg = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(P[i], P[i + 1]) * R);
+            zug += wg * (H.feld.rain - wetterNatur(saat, H.x + P[i] * R, H.z + P[i + 1] * R, t, ort, Z, o).rain);
+            lee += wg * wetterNatur(saat, lx + P[i] * R, lz + P[i + 1] * R, t, ort, Z, o).rain;
+        }
+        var c = lee > 0 ? Math.min(1, zug / lee) : 0;
+        _wxEingriff = { saat: saat, t: t, x: H.x, z: H.z, rain: H.feld.rain, ort: ort, Z: Z, zug: zug, lee: lee, c: c };
+        return _wxEingriff;
+    }
+    function wetterFeldAm(saat, x, z, t, ort, ein, aus) {
+        if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
+            throw new Error("wetterFeldAm: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
+        var E = ein || {},
+            Z = E.zeilen || WX_GESETZ,
+            o = aus || {},
+            H = E.hier,
+            W = WETTER_ORT,
+            g = 0,
+            i;
+        if (Z !== WX_GESETZ) wxZeilen(Z);
+        if (H) {
+            if (!(Number.isFinite(H.x) && Number.isFinite(H.z) && H.feld))
+                throw new Error("wetterFeldAm: der Eingriff trägt x, z, feld");
+            for (i = 0; i < WX_KANAELE.length; i++)
+                if (!Number.isFinite(H.feld[WX_KANAELE[i]]))
+                    throw new Error("wetterFeldAm: das Feld des Eingriffs trägt " + WX_KANAELE[i] + " nicht");
+            g = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(x - H.x, z - H.z));
+        }
+        // IM KERN DES EINGRIFFS (g = 1, bis hierM[0]) IST DAS FELD SEIN WORT: die Natur trägt dort nichts bei und wird nicht
+        // gerechnet (die Leser am Spieler — Rauch je Teilchen, die Wende-Suche des Tagesplans — zahlen das Wort, nie Front und
+        // Relief); ihre Kennzeichen (front, feuchte, zeile) stehen null
+        if (g >= 1) {
+            for (i = 0; i < WX_KANAELE.length; i++) o[WX_KANAELE[i]] = H.feld[WX_KANAELE[i]];
+            o.front = o.feuchte = o.zeile = null;
+            o.hier = 1;
+            o.lee = 0;
+            return o;
+        }
+        wetterNatur(saat, x, z, t, ort, Z, o);
+        if (E.hoehe) o.rain = Math.min(1, o.rain * wetterRelief(saat, x, z, E.hoehe));
+        o.hier = 0;
+        o.lee = 0;
+        if (!H) return o;
+        if (g > 0) {
+            for (i = 0; i < WX_KANAELE.length; i++) o[WX_KANAELE[i]] += (H.feld[WX_KANAELE[i]] - o[WX_KANAELE[i]]) * g;
+            o.hier = g;
+            return o;
+        }
+        var gw = windGrund(saat);
+        var gl = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(x - H.x - gw.x * W.leeM, z - H.z - gw.z * W.leeM));
+        if (gl > 0) {
+            var M = wetterEingriff(saat, t, ort, Z, H);
+            o.rain = Math.min(1, o.rain * (1 - M.c * gl));
+            o.lee = M.c * gl;
+        }
+        return o;
+    }
+    // DER WEG DES WINDS (wetter-am-ort): ∫ windRichtung(saat, τ) dτ von t0 bis t1 in Metern je m/s — geschlossen (Jacobi–Anger:
+    // e^{i·a·sin φ} = Σ J_n(a)·e^{i·n·φ}, je Glied ein Integral der Uhr, n < maeander.n, m < maeander.m: der Rest < 1e-7 m/s).
+    // Eine reine Funktion von Saat und Uhr, keine Summe über Bilder: die Wolken-Schicht zieht mit dem EINEN Wind (dieselbe
+    // Richtung wie Gras, Krone und Rauch), auf jeder Seite einer Uhr am selben Ort. Leser: die Welt (`_wolkenWeg`).
+    function wxBessel(n, x) {
+        var k = n < 0 ? -n : n,
+            s = 0,
+            f = 1;
+        for (var j = 1; j <= k; j++) f *= j;
+        var term = Math.pow(x / 2, k) / f;
+        for (var i = 0; i < 12; i++) {
+            s += term;
+            term *= -(x * x) / 4 / ((i + 1) * (i + 1 + k));
+        }
+        return n < 0 && k % 2 ? -s : s;
+    }
+    function windWeg(saat, t0, t1) {
+        if (!(Number.isFinite(t0) && Number.isFinite(t1)))
+            throw new Error("windWeg: die Uhr ist endlich (" + t0 + ", " + t1 + ")");
+        var w = windSaat(saat),
+            Mq = WETTER_ORT.maeander;
+        var re = 0,
+            im = 0;
+        for (var n = 1 - Mq.n; n < Mq.n; n++) {
+            var jn = wxBessel(n, Mq.a);
+            for (var m = 1 - Mq.m; m < Mq.m; m++) {
+                var j = jn * wxBessel(m, Mq.b),
+                    om = n * Mq.w1 + m * Mq.w2,
+                    ph = n * w.p1 + m * w.p2;
+                if (om === 0) {
+                    re += j * Math.cos(ph) * (t1 - t0);
+                    im += j * Math.sin(ph) * (t1 - t0);
+                } else {
+                    re += (j * (Math.sin(om * t1 + ph) - Math.sin(om * t0 + ph))) / om;
+                    im -= (j * (Math.cos(om * t1 + ph) - Math.cos(om * t0 + ph))) / om;
+                }
+            }
+        }
+        var c = Math.cos(w.t0),
+            s = Math.sin(w.t0);
+        return { x: s * re + c * im, z: c * re - s * im };
+    }
+    // Der Wind über der Höhe h (m über Grund) als Faktor des Winds am Ort (Hellmann, `profil`)
+    function windProfil(h) {
+        var Pf = WETTER_ORT.profil;
+        if (!Number.isFinite(h)) throw new Error("windProfil: die Höhe ist endlich (" + h + ")");
+        return Math.pow(Math.max(h, Pf.minM) / Pf.bezugM, Pf.alpha);
+    }
+
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts: die V Ansichten VERTIKAL gestapelt, wie der
     // Welt-Renderer sie backt (S2, `_karteWeltBacken`: Zeile 0 oben). Die GPU-Ablage des Hosts (`KARTE_RECHNER_WGSL`: Mips,
@@ -7668,6 +7899,10 @@
         windRichtung: windRichtung, // wetter.K5 — DIE EINE Wind-Richtung (Saat, Zeit)
         windGrund: windGrund, // wetter.K1 — die Grundrichtung, mit der die Fronten ziehen
         wetterAt: wetterAt, // wetter.K1 — DAS Wetter am Ort (Saat, Ort, Zeit) → Zeile von WX_GESETZ
+        WETTER_ORT: WETTER_ORT, // wetter-am-ort — das Maß des Felds am Ort (Kante, Eingriff, Lee, Relief, Profil, Mäander)
+        wetterFeldAm: wetterFeldAm, // wetter-am-ort — DAS Feld am Ort {fog, sun, grey, wind, rain} mit Relief und Eingriff
+        windWeg: windWeg, // wetter-am-ort — ∫ windRichtung dτ geschlossen (der Zug der Wolken-Schicht)
+        windProfil: windProfil, // wetter-am-ort — der Wind über der Höhe (Hellmann) als Faktor des Winds am Ort
         treePhenotype: treePhenotype,
         artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)

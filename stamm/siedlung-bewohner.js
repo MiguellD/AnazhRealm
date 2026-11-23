@@ -99,6 +99,7 @@ class AnazhRealm_siedlung_bewohner {
                     x: qq.x,
                     y: qq.y,
                     z: qq.z,
+                    g: this._terrainMacroSurfaceY(qq.x, qq.z, false), // der Grund unter dem Kamin: die Höhe des Teilchens über ihm
                     s: 1,
                     vy: G.vyBase + w() * G.vyRange,
                     dx: (w() - 0.5) * G.dxSpread,
@@ -106,14 +107,15 @@ class AnazhRealm_siedlung_bewohner {
                     q: qq.id,
                 });
         }
-        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen in seiner Höhe über dem Grund des Kamins,
+        // `_rauchWindAt`, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
         // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
         // eine eigene — bis hier zog der Rauch am Objekt vorbei mit dem ungeformten Wind (L.rauch 1,75 → 1,75)
         const aus = this._rauchWind || (this._rauchWind = {});
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            const w = this._windAt(T2.x, T2.z, this._bildZeit, aus);
+            const w = this._rauchWindAt(T2.x, T2.z, this._bildZeit, T2.y - T2.g, null, aus); // der Wind in seiner Höhe
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
@@ -2057,8 +2059,10 @@ class AnazhRealm_siedlung_bewohner {
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
     // Hauses und den Orten seiner Bindung (`_bewohnerListe`) — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
     // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
-    // den Kanal `rain` des EINEN Wetter-Felds der Welt (`_weatherFieldFor`: das Wort am Spieler samt seinem Übergang, wie Himmel,
-    // Tropfen und Nässe ihn lesen); je planH liest jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz.
+    // den Kanal `rain` des EINEN Wetter-Felds an seiner Tür (`_wetterFeldAm`, wetter-am-ort: nah am Spieler das Feld seines Worts
+    // samt Übergang, wie Himmel, Tropfen und Nässe es lesen, fern die Front über dem Dorf und sein Steigungsregen); je planH liest
+    // jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz. Bis wetter-am-ort regnete es in jedem Dorf der Welt
+    // im Wort am Spieler.
     // AM STEUER IST SEIN WERK SEIN WAGEN (Leiter mensch.netz.verkehr, w28-fahrer-am-steuer): wen sein Plan am Werk sieht und wer am Steuer
     // sitzt, ist, wo sein Wagen ist — die EINE Lage, die der Verkehr schreibt und an der sein Leib sitzt (`_verkehrSitz`); der
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
@@ -2068,7 +2072,13 @@ class AnazhRealm_siedlung_bewohner {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
+        const regen = this._wetterFeldAm(
+            o.tuer.x,
+            o.tuer.z,
+            undefined,
+            this._tuerFeldAus || (this._tuerFeldAus = {})
+        ).rain;
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
