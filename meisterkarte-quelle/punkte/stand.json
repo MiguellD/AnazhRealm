@@ -24890,7 +24890,7 @@
   },
   "karte2.mensch.stadt.vertikal": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.vertikal#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.stadt.vertikal#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN · karte2.mensch.stadt.vertikal#2 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#2 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.vertikal#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.stadt.vertikal#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2715 s Warten) — ungemessen · karte2.mensch.stadt.vertikal#2 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#2 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#3 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#4 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#5 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#6 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#7 gtx: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 radeon: ungemessen (R10) · karte2.mensch.stadt.vertikal#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.vertikal#1",
@@ -24908,7 +24908,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 462 s von karte2.mensch.stadt.vertikal#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2715 s Warten) — ungemessen",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -33358,7 +33358,7 @@
   },
   "karte2.same.gedaechtnis.alter": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.alter#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 182 s von karte2.same.gedaechtnis.alter#1) — offen, UNGEMESSEN · karte2.same.gedaechtnis.alter#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#2 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.alter#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 176 s der Probe gerissen —  · karte2.same.gedaechtnis.alter#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#2 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.alter#1",
@@ -33376,7 +33376,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 182 s von karte2.same.gedaechtnis.alter#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an c1236fa8: Frist der Probe 176 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.gedaechtnis.alter) · Täter: @@PUNKTE@@ FRIST 176 s der Probe gerissen — ",
      "ungemessen": true,
      "beide": true
     },
@@ -36936,7 +36936,7 @@
   },
   "karte2.same.preis.eingabe": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 93 s von karte2.same.preis.eingabe#2) — offen, UNGEMESSEN · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,351 (Faden 1,351 · alle Kerne 1,213; vor 119,4/273,7 ms, nach 121,6/278,9 ms, Ruhe 90/229,9 ms seit 2026-11-18) · fremd: Explorer.EXE 3,0 CPU-s · LightStudio-background.exe InvokerP · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.eingabe#1",
@@ -36973,7 +36973,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 93 s von karte2.same.preis.eingabe#2) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,351 (Faden 1,351 · alle Kerne 1,213; vor 119,4/273,7 ms, nach 121,6/278,9 ms, Ruhe 90/229,9 ms seit 2026-11-18) · fremd: Explorer.EXE 3,0 CPU-s · LightStudio-background.exe InvokerP",
      "ungemessen": true
     },
     {
@@ -37689,7 +37689,7 @@
   "ohne": 3353
  },
  "kopfVoll": "4019a2ad0565310f56cfc461672c173d8ba8e2b2",
- "zeit": "2026-11-23T01:04:29.705Z",
+ "zeit": "2026-11-23T01:13:12.338Z",
  "vorher": "4019a2ad",
  "bilanz": {
   "gewinn": [],
