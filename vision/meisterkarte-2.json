@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 12,
-    "kern": 12,
-    "kernDazu": 12,
-    "anteilHeute": 2.1,
-    "anteilKern": 2.1
+    "heute": 13,
+    "kern": 13,
+    "kernDazu": 13,
+    "anteilHeute": 2.4,
+    "anteilKern": 2.3
    },
    "perspektiven": [
     {
@@ -8991,7 +8991,7 @@
        "richter": "Leistung je Masse steigt; Ahnen im Nachfahren erkannt ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Teile-Werk fährt mit seiner Hülle (stamm/koerper-fahrt.js:550), Preis nicht gemessen",
@@ -9198,7 +9198,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Haspel des Ziehbrunnens als Gestalt ohne Wirkung (fachwerk-core.js:5314)",
      "alt": []
@@ -20086,10 +20086,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 51,
+  "heute": 52,
   "davonKopplungen": 33,
-  "kern": 13,
-  "kernDazu": 13,
+  "kern": 14,
+  "kernDazu": 14,
   "anteilHeute": 3,
   "anteilKern": 0.4,
   "kapitel": 7,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 20
+  "nachwache": 21
  },
  "zusammengelegt": [
   {
