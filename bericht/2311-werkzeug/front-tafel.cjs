@@ -10,8 +10,11 @@ const rd=path.join(dir,'vision/richter');
 const je={};
 for(const f of fs.readdirSync(rd)){
   const m=f.match(/^(.+)\.(\d+)\.([0-9a-f]{8})-(gtx|radeon)\.json$/); if(!m)continue;
-  let a; try{a=JSON.parse(fs.readFileSync(path.join(rd,f),'utf8'));}catch(e){continue;}
-  for(const g of a.geraete||[]){
+  let inhalt; try{inhalt=JSON.parse(fs.readFileSync(path.join(rd,f),'utf8'));}catch(e){continue;}
+  // EINE Fahrt (Objekt) ODER eine Folge von Fahrten (Array) — dieselbe Form wie vision/buche-2.cjs (Kopf, DIE AKTE). Die Tafel las bis
+  // 24.11. nur das Objekt: 199 von 2 976 Akten (je Gerät und Kopf die zweite Fahrt) fielen still weg, die zehn Fronten mit dem
+  // Neulauf am 31ea3847 (21.11.) standen mit ihrer alten Akte „Start: spawn ENAMETOOLONG“ (f68dbf09) am Apparat statt an der Welt
+  for(const a of [].concat(inhalt)) for(const g of a.geraete||[]){
     const p=g.preis||{}; const zeit=(p.fenster&&p.fenster.bis)||a.datum||'';
     const r=g.richter||{};
     const e={key:m[1]+'#'+m[2],kopf:m[3],ger:m[4],zeit:String(zeit),datum:String(a.datum||''),richter:r.urteil,preis:p.urteil,wert:String(r.wert||''),station:a.station,heap:(p.posten&&p.posten.heap_mb)||p.heap_mb};
@@ -32,9 +35,11 @@ const art=(t)=>{
   return 'SONST';
 };
 const rows=[];
-for(const g of mk.gruppen||[])for(const k of g.kriterien||[]){
-  const sp=k.sprossen||[]; const nr=(k.heute||0)+1; if(nr>sp.length)continue;
-  const key=k.id+'#'+nr; const l=je[key]; const s=sp[nr-1]||{};
+// DIE FRONT wie zug/dienst/runde.cjs `front` (und buche-2): je Leiter die Sprosse am Index heute, bei „glieder“ JEDE nicht in heuteSprossen
+const fronten=(k)=>{const sp=k.sprossen||[]; if(k.zaehlung==='glieder'){const da=new Set(k.heuteSprossen||[]); return sp.map((x,i)=>x.nr!=null?x.nr:i+1).filter((nr)=>!da.has(nr));} const nr=(k.heute||0)+1; return nr>sp.length?[]:[nr];};
+for(const g of mk.gruppen||[])for(const k of g.kriterien||[])for(const nr of fronten(k)){
+  const sp=k.sprossen||[];
+  const key=k.id+'#'+nr; const l=je[key]; const s=sp.find((x)=>x.nr===nr)||sp[nr-1]||{};
   // tiefe: wie viele Sprossen hinter der Front tragen schon GRÜN (jüngste Akte)
   let tiefe=0; for(let i=nr+1;i<=sp.length;i++){const x=je[k.id+'#'+i]; if(x&&x[x.length-1].richter==='GRÜN')tiefe++;}
   if(!l){rows.push({l:k.id,nr,n:sp.length,klasse:s.klasse,st:'KEINE STATION',tiefe});continue;}
