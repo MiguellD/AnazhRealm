@@ -113,8 +113,7 @@ buche() { local name=$1 v=$2 B=$3 o rc
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
 # was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
 teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
-  # nie neben einem CI-Job (das Gesetz der CPU-Ruhe, gpu-schloss.sh cpu_ruhe) — wer danach die Karte nimmt, entscheidet die Schlange
-  . $SCHLOSS; cpu_ruhe 2>> $L
+  # die Sitzung wartet wie jede Hand IN gpu-lauf.sh (die Schlange, die Vorfahrt der CI, die CI-Ruhe) — kein Fragen davor
   local d0=$(verdr) a0=$(date +%s) ank=; rm -f "$GENOMMEN"; [ -f "$PLATZ" ] && ank=$(head -n 1 "$PLATZ" | tr -d '\r')
   echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
   TEIL=$name-v$v NUR=$R GPU_LAUF_PLATZ=${ank:+$PLATZ} GPU_LAUF_ANKUNFT=$ank GPU_LAUF_GENOMMEN=$GENOMMEN node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
@@ -129,6 +128,8 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
     w=$(tail -c 20000 "$AUS" 2>/dev/null | sed -n 's/^  SITZUNG die Welt vor \([^:]*\): .*/\1/p' | tail -n 1)
     [ -n "$w" ] && [ "$w" != "$wv" ] && { wv=$w; echo "$(date '+%T') $name STATION $w beginnt" >> $L; }
     [ $(verdr) -gt $d0 ] && { grund="VERDRÄNGT von einem CI-Job"; halte_an; break; }
+    # vor dem Nehmen der Karte ist keine Station geurteilt: kein node je Takt, solange die Sitzung in der Schlange wartet (CPU-Ruhe der CI)
+    [ -s "$GENOMMEN" ] || continue
     rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>/dev/null) || continue
     neu=$(ohne "$R" "$rest" "$B")
     [ -n "$neu" ] || continue

@@ -23,6 +23,8 @@
 # Gegenprobe: die Fassung vor dem Schnitt reißt a (sie verdrängt sofort) — `gpu-lauf-selbsttest.sh <alte gpu-lauf.sh>` ist ROT;
 # die Fassung vom 12.–14.11. reißt e, die bis 23.11. reißt g.
 GL=${1:-$(cd "$(dirname "$0")" && pwd)/gpu-lauf.sh}
+# das Paar: gpu-lauf.sh mit SEINER gpu-schloss.sh daneben (die Schlange lebt dort), nie mit der installierten einer anderen Fassung
+export GPU_LAUF_SCHLOSS_SH=${GPU_LAUF_SCHLOSS_SH:-$(cd "$(dirname "$GL")" && pwd)/gpu-schloss.sh}
 T=$(mktemp -d); rot=0
 tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker && { echo "UNGEMESSEN: ein Runner.Worker lebt — der Selbsttest wartete am echten CI-Job"; exit 2; }
 fall() { # $1 Name · $2 WEICH ("" = Vorgabe) · $3 erste Dauer s · $4 Sekunden bis der Job „genommen“ meldet (0 = nie) · $5 stirbt · $6 rohr (Kind = node, Ausgabe durch eine Leitung)
