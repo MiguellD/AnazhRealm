@@ -819,6 +819,8 @@ async function menschBuehnen() {
                 gross: akte.grossZeile || null,
                 kindProfil: akte.kindProfil || null,
                 grossProfil: akte.grossProfil || null,
+                kindBau: akte.kindBau || null,
+                grossBau: akte.grossBau || null,
                 fehler: akte.fehler || null,
             };
         };
@@ -847,6 +849,8 @@ async function menschBuehnen() {
                 const prof = [];
                 for (let y = 2.5; y <= 5.0 + 1e-6; y += 0.1) prof.push(`${q3(y)}:${q3(breite(N.T3, y) * b.breite)}/${q3((breite(TF, y) * sk.x) / sk.y)}`);
                 akte[art + "Profil"] = prof.join(" ");
+                // (für den Nachbau in Node: die Dials seiner Gestalt, sein Punkt im Leib-Raum, seine Breite und die der Vorlage der Siedlung)
+                akte[art + "Bau"] = { dK: S.gestalten[b.gestalt].dK, f: S.gestalten[b.gestalt].f, punkt: Array.from(a.punkt), breite: b.breite, sx: sk.x, sy: sk.y, raum: S.raum && S.raum.dK, raumF: S.raum && S.raum.f }; // prettier-ignore
                 akte[art + "Zeile"] = `${wer(b)} (Gestalt ${b.gestalt}, Alter ${q3(b.genom ? b.genom.alter : NaN)}, m je E ${q3(mjE)}, Satz-Skala ${q3(sk.y)}): Körperhöhe ${q3(H)} E = ${cm(H)} cm (Fuß ${q3(lo)}) · ${mass.join(" · ")} · Gelenke ${gel.slice(0, 40).join(", ")}`; // prettier-ignore
             }
         };
@@ -884,6 +888,12 @@ async function menschBuehnen() {
         // (`--art wiederkehr:<id>`: dazu je Prüf-Stunde die Zeile jedes Leibs, dessen Name die id trägt)
         const eng = opts && /^wiederkehr(:|$)/.test(String(opts.art || ""));
         const engWer = eng ? String(opts.art).split(":")[1] || null : null;
+        // (`--art wiederkehr:<id>:<messung>`: GENAU EINE Messung der Stunde zugeschaltet — haltung · blick · gestalt)
+        const engMit = eng ? String(opts.art).split(":")[2] || null : null;
+        // (… `:gang`: das Gang-Fenster mit seinen Messern — Können und Gang des Satzes)
+        const engGang = engMit === "gang";
+        const engMessung = { haltung: () => haltungMessen(), blick: () => blickMessen(), gestalt: () => gestaltMessen() }[engMit] || null; // prettier-ignore
+        if (engMit && !engMessung && !engGang) throw new Error(`bewohner: --art wiederkehr:<id>:${engMit} — keine Messung dieses Namens`);
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             const um = (h) => Math.abs(stunde - h) < 0.05;
@@ -893,8 +903,9 @@ async function menschBuehnen() {
                 for (const b of Sx()) if (b.weg && !b.drinnen && !(b.tempoJetzt > 0)) warten.set(b, (warten.get(b) || 0) + DT);
             }
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s (eng: derselbe Gang, ohne seine Messer)
-            if ([7.5, 12, 17.2].some(um) && eng) for (let k = 0; k < 600; k++) takt(1 / 60, SD);
-            if (eng) {
+            if ([7.5, 12, 17.2].some(um) && eng && !engGang) for (let k = 0; k < 600; k++) takt(1 / 60, SD);
+            if (eng && !engGang) {
+                if (engMessung && [10, 12.5, 19].some(um)) engMessung();
                 if (i % 15 === 0) [blieb.set(s.timeOfDay * 24, lagen()), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
                 continue;
             }
@@ -913,6 +924,10 @@ async function menschBuehnen() {
                     gangMessen(SZ);
                 }
                 koennen.ende();
+            }
+            if (eng) {
+                if (i % 15 === 0) [blieb.set(s.timeOfDay * 24, lagen()), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
+                continue;
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible && !g.userData._drinnen).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür) · unterwegs (sein Weg zu DIESEM Soll begann
@@ -999,7 +1014,7 @@ async function menschBuehnen() {
             const ueberWer = [...new Set(ueber.map((u) => u.split(" um ")[0]))];
             return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5), weitester: weit ? `${weit}: ${je.get(weit).join(" · ")}` : null, ueberJe: ueberWer.map((id) => `${id}: ${je.get(id).join(" · ")}`), gesucht: engWer ? [...je].filter(([id]) => id.includes(engWer)).map(([id, z]) => `${id}: ${z.join(" · ")}`) : undefined }; // prettier-ignore
         };
-        if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr() };
+        if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr(), gestalt: engMit === "gestalt" ? gestalt : undefined };
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
         if (hat("bewohner-sprung")) {
