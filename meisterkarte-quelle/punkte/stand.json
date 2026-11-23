@@ -21342,7 +21342,7 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +39) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.kollektiv#2 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#2 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 31 Zeugen, 31 in beiden Gängen · Abstand-Median vorher 5.77 m → nachher 13.02 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an 1feab29c gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +39) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.kollektiv#2 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#2 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
@@ -21359,10 +21359,9 @@
      "id": "karte2.mensch.menge.kollektiv#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
-     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +36)",
-     "gehalten": true,
+     "zahl": "31 Zeugen, 31 in beiden Gängen · Abstand-Median vorher 5.77 m → nachher 13.02 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
+     "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37216,7 +37215,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 1feab29c: Last: Referenz f 1,455 (Faden 1,455 · alle Kerne 1,176; vor 117,6/309,1 ms, nach 109,7/300 ms, Ruhe 80,8/262,8 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,268 (Faden 1,122 · alle Kerne 1,268; vor 101/274,9 ms, nach 91/291,2 ms, Ruhe 90/229,7 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 1feab29c: Last: Referenz f 1,455 (Faden 1,455 · alle Kerne 1,176; vor 117,6/309,1 ms, nach 109,7/300 ms, Ruhe 80,8/262,8 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 2,078 (Faden 2,078 · alle Kerne 1,302; vor 187/289,2 ms, nach 136,4/299,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: sh.exe dienst-omen/landung-dienst.sh --selbsttest 35,1 CPU-s · · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37235,7 +37234,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,268 (Faden 1,122 · alle Kerne 1,268; vor 101/274,9 ms, nach 91/291,2 ms, Ruhe 90/229,7 ms seit 2026-11-23) · fremd: sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 2,078 (Faden 2,078 · alle Kerne 1,302; vor 187/289,2 ms, nach 136,4/299,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: sh.exe dienst-omen/landung-dienst.sh --selbsttest 35,1 CPU-s ·",
      "ungemessen": true,
      "beide": true
     },
@@ -37720,7 +37719,7 @@
   "ohne": 3299
  },
  "kopfVoll": "a8a9ab164da4ba47211c39fef2cdd4ce4d14a26e",
- "zeit": "2026-11-23T23:41:18.937Z",
+ "zeit": "2026-11-23T23:52:38.742Z",
  "vorher": "a8a9ab16",
  "bilanz": {
   "gewinn": [],
