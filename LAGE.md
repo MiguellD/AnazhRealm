@@ -1,37 +1,46 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 23.11. 23:30 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 68 von 1 718 (Kern 13).**
+**STAND 23.11. 23:59 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 76 von 1 718 (`karte-2-stand.json`: kern 5 · beide 50 · nachwache 26).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; die Tafel trägt den Stand 22:30 am 5b36f69a und ist
   nach Runde 13 neu zu schreiben) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
   tore, decken, alles deine definitionen“): Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band · M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen
   0 Adresse · 1 Gestalt · 2 Nerv · 3 Antrieb · 4 Absicht · 5 Geschichte. Jeder Brief nennt seine Tiefe und seine Front-Sprossen.
-- GEBUCHT 23:14 (buche-dienst 29f6bc4e): 58 → 68 — planet.wasser.eis#1 · planet.wetter.vorhersage#1 · leben.oeko.zerfall#1 · mensch.stadt.vertikal#1 ·
-  mensch.stadt.siedlungsnetz#1 · mensch.nahrung.flur#1 · mensch.wirtschaft.technik#1 · same.physik.reaktion#1 und #2 · planet.kopplung.gegenwart#1.
-- ZWEI PREIS-ENTSCHEIDE des Koordinators (widerrufbar durch den Schöpfer) nach EINEM Satz: EIN Defekt kostet EINE Leiter, nie eine Schranke in jeder Sprosse.
-  (1) ANKUNFT, in Kraft: die Kalt-Ankunft der Klassen Stadt, Megastadt/Kontinent, Planet/Welten ist gestuft in `same.preis.ankunft` 4–5 · 6 · 7–8
-  (Schnitt 40ec52fe, preisFassung 2026-11-23, Selbsttest 97 Fälle; +4 Sprossen aus alten Akten, ohne Neumessung).
-  (2) HEAP, im Schnitt (Buchungs-Arbeiter an der Radeon): die absolute Heap-Decke (Ort 400 · Stadt 600 MB · Megastadt 1 GB) fällt aus der Sprosse und ist
-  gestuft in `same.preis.speicher` 1–2 · 3 · 4 · 5–6; in der Sprosse bleiben Bild-Takt, VRAM und Wachstum. Schöpfer 23.11.: „jagen wir einen deckel der
-  unnötig uns vom vorankommen hindert, nutzwert nicht vergessen“. Gründe: die 400 ist eine gesetzte Annahme (`vision/preis/ENTSCHEID.md` Schnitt 2); sie
-  misst die Reihe in der Sitzung (archiv#1 280,8 MB als erste Station, über 400 als dritte) und Rauschen an der Linie (flur#1 407,9 → 394,2 ohne Schnitt);
-  der echte Defekt ist EINER (genesis nach stadt-voll 522 statt frisch 226,6 MB, der JS-Heap fällt nicht) und bleibt rot in seiner Leiter.
-- ZUG: LANDUNG ≤ 10 MIN ist seit 23:26 installiert (Dienst-Stand 468faae1: zug.cjs 59f36d59 · fahre.sh c77cc1b0 · zug.md 4644096e · zug-dienst.sh 15c83295 ·
-  zug-weiter3.sh 531fdfe9; Werkzeug-Beweis grün; `radeon-dienst.sh` blieb alt, die Schleife lebt). GESTEMPELT 23:29 `w28-echt-ein-bein` 1aa0dfb7 auf 588d607b
-  (Code-Check 45275141678 und GPU-Probe 45275141671 success, merge-tree gegen main 8544438f sauber). Der erste Zug unter dem Gesetz ist der Richter; der
-  Vergleich: z698 landete `w28-iperka-arbeiter-2` um 23:10 in 37 min (bau 11,6). `zug.cjs bereit` aus der Hand: API 401 (kein Schlüssel in der Hülle).
-- IN FAHRT: OMEN `heap-loslassen` e1ce3b13 (WIP, kein Schnitt; Ziel seit 23:28 `same.preis.speicher#3`, dann #2 und #1, gemessen an der Runde frisch →
-  stadt-voll → zurück) · GTX 1050 `front-stoff` 5d53fa6e zur Abgabe (START 22:30 in `zug/sitzung.txt`), danach nacht-laterne · VIER CLOUD-SITZUNGEN, vom
-  Schöpfer am Abend des 23.11. gestartet (die App startet sie nie von selbst): `bewohner-satz` (11 Fronten) · `ort-ausstattung` (5) · `nerv-bewegung`
-  (leben.tiere.bewegung#1 froudeAbw 26 % → ≤ 10 %; mensch.sport.koerper#1 3 → 11 Verben; dazu `pm-nerv-bewegung`) · `pm-beobachter` (M4: der Adress-Fächer,
-  9 Fronten „BUEHNE Saaten“). Bericht je Zweig in `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht. Aus Konto 17: `leib-ausdruck` 13ef2e76 (WIP,
-  Tiefe 3 mit Quellen; offen K7 und das Bild) — `bewohner-satz` fasst dieselben zwei Stamm-Dateien an. Runde 13 am 1feab29c: Radeon durch, GTX läuft.
-- RADEON-REGEL (Schöpfer 23.11. ~22:40: „direkt die radeon ans limit gefahren... altes learning vergessen“): höchstens ZWEI lokale Arbeiter, keiner mit
-  schwerem Lauf, solange Runde oder Zug messen; Macher gehen in die Cloud. Die Last kostet Sprossen: unter meinen fünf Arbeitern maß die Radeon
-  „UNGEMESSEN unter Last ×1,42 / ×1,56“ (planet.kopplung.gegenwart, mensch.wirtschaft.handel#1 — letztere bucht darum nicht).
-- WARTEND an der Radeon, einzeln aufzunehmen nach dem ersten Zug: Stations-Heiler (16 am Apparat rote Fronten, 10 × „spawn ENAMETOOLONG“, neu messen über
-  `zug/anspruch.txt`) · Cloud-Ernte (Lese-Liste der ungelandeten Zweige zum Stempeln) · pm-Buchhalter (wartende pm-Zweige).
+- GEBUCHT am 23.11.: 58 → 68 um 23:14 (buche 29f6bc4e: planet.wasser.eis#1 · planet.wetter.vorhersage#1 · leben.oeko.zerfall#1 · mensch.stadt.vertikal#1 ·
+  mensch.stadt.siedlungsnetz#1 · mensch.nahrung.flur#1 · mensch.wirtschaft.technik#1 · same.physik.reaktion#1 und #2 · planet.kopplung.gegenwart#1) und
+  68 → 76 um 23:49 (buche 3fde4469, aus dem Heap-Entscheid, ohne Neumessung: mensch.menge.kollektiv 0→1 · mensch.netz.verkehr 0→1 · mensch.bau.innen 0→1 ·
+  mensch.fahrzeug.maschine 0→1 · mensch.nahrung.hand 1→2 · mensch.wirtschaft.markt 0→1 · planet.kopplung.wetter-welt 1→2 · leben.kopplung.stadt-im-netz 0→1).
+- ZWEI PREIS-ENTSCHEIDE des Koordinators, BEIDE IN KRAFT (widerrufbar durch den Schöpfer), nach EINEM Satz: EIN Defekt kostet EINE Leiter, nie eine
+  Schranke in jeder Sprosse. (1) ANKUNFT: die Kalt-Ankunft der Klassen Stadt, Megastadt/Kontinent, Planet/Welten ist gestuft in `same.preis.ankunft`
+  4–5 · 6 · 7–8 (Schnitt 40ec52fe). (2) HEAP UND WACHSTUM: gestuft in `same.preis.speicher` 1–2 · 3 · 4 · 5–6 (Schnitt 186aa331, preisFassung 2026-11-23b,
+  laut Arbeiter Selbsttest 102 Fälle); in der Sprosse bleiben NUR Bild-Takt (p95 ≤ 34 ms, kein Frame > 101 ms) und VRAM. Das Wachstum ging mit, weil
+  `wachstum_mb_min` in 0 von 3 171 Akten einen Schreiber hat — eine Schranke ohne Messwert. Schöpfer 23.11.: „jagen wir einen deckel der unnötig uns vom
+  vorankommen hindert, nutzwert nicht vergessen“. EHRLICH OFFEN: die Leiter `same.preis.speicher` steht bei 0 und ist ungemessen (der echte Defekt, genesis
+  nach stadt-voll 522 statt frisch 226,6 MB, bleibt dort rot); das Wachstum hat nirgends einen Schreiber; `mensch.menge.bevoelkerung#1` bucht nicht
+  (Radeon „UNGEMESSEN unter Last ×1,47“, p95 41,85 ms → neu messen in Ruhe); `planet.kosmos.sternhimmel#1` bucht nicht (die Radeon urteilt den Richter ROT).
+- ZUG: LANDUNG ≤ 10 MIN ist in Kraft (Dienst-Stand 468faae1, installiert 23:26). ERSTER ZUG z699 `w28-echt-ein-bein`: bau 23:39:03 → GELANDET 23:48:19 =
+  9 min 16 s (bau 2:32 · urteil 6:24 · landen 0:20), main → a8a9ab16; Vergleich z698 37 min. Offen: z699 trug kein Spiel-Byte, mit Spiel-Code maß die
+  Bau-Phase bis 11,6 min (Adresse: fahre.sh Stufe 1); vom Stempel (23:29:37) bis zur Abholung (23:38) vergingen 9 min. NACHWACHE auf a8a9ab16: Lauf
+  45283121007 fuhr um 23:54 mit 18 voll-Beinen auf GitHub-Läufern (echt übersprungen); der Dienst meldet seit 23:26 „OHNE URTEIL: 20 Läufe auf main,
+  keiner trug die Batterie zu Ende“ — das erste Urteil unter dem neuen Gesetz steht aus.
+- RADEON, SPEICHER: der Speicher liegt in den Kern-Pools von Windows (paged 20,7 + nonpaged 8,7 GB; verfügbar 6,7 von 31,1 GB; Laufzeit 140 h seit 18.11.;
+  die Prozesse halten ~6 GB; Treiber und Pool-Tag nicht benannt). Nur ein Neustart gibt ihn frei; der Schöpfer startet neu („ja sag mir wann“, 23:55).
+  DANACH: `bash artifacts/profiband/dienst/start.sh`, dann `--blick`; der Neustart tauscht auch `radeon-dienst.sh` (alle fünf Schleifen neu). Ein Zug in
+  Fahrt fällt dabei ohne Urteil und fährt als nächster Zug von selbst. Die verwaiste Welt an Port 4407 (Wache 23:39) fällt mit.
+- IN FAHRT: OMEN `heap-loslassen` e1ce3b13 (WIP 23:22; Halter benannt: die Bauten der fernen Siedlung bleiben, `state.architectures` 2 454 → 3 267, Runde
+  genesis 225,7 → stadt-voll 458,3 → zurück 387,9 MB; Auftrag: Schnitt am EINEN Abschied der Siedlung mit Runde 2× vorher ↔ nachher, Bildpaar, Vorprüfung;
+  danach `pm-speicher-runde` für same.preis.speicher#1–#3) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
+  (30 offen, ~4 min je Station), Schwanz 191; zwei Alarme „16 min ohne Fortschritt“ (23:04, 23:44) lösten sich von selbst · GTX 1050 `front-stoff` 5d53fa6e
+  (WIP 21:50: drei von vier Front-Sprossen GRÜN, alter#1 ROT; START 22:30 in `zug/sitzung.txt`; seither kein Push), danach nacht-laterne · VIER
+  CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` hat 3d3f0b24 gepusht (23:49: „der Fächer als EINE Bauart
+  (M4), technik#1 urteilt auf ihm“); `bewohner-satz`, `ort-ausstattung`, `nerv-bewegung` hatten um 23:56 noch keinen Zweig am Remote. Bericht je Zweig in
+  `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht. Aus Konto 17: `leib-ausdruck` 13ef2e76 (WIP, Tiefe 3; offen K7 und das Bild) —
+  `bewohner-satz` fasst dieselben zwei Stamm-Dateien an.
+- RADEON-REGEL (Schöpfer 23.11.: „direkt die radeon ans limit gefahren... altes learning vergessen“): höchstens ZWEI lokale Arbeiter, keiner mit schwerem
+  Lauf, solange Runde oder Zug messen; Macher gehen in die Cloud; die Schwelle RAM ≥ 8 GB an `AvailableBytes` lesen, nie an `FreePhysicalMemory`.
+- WARTEND an der Radeon, einzeln aufzunehmen NACH dem Neustart: Stations-Heiler (16 am Apparat rote Fronten, 10 × „spawn ENAMETOOLONG“; nicht die Abschnitte,
+  die `pm-beobachter` anfasst) · Cloud-Ernte (Lese-Liste der ungelandeten Zweige zum Stempeln) · pm-Buchhalter (wartende pm-Zweige).
 - GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen). `pm-innen-ein-haus`: Rebase,
-  Selbsttest und ein Lauf bau.innen#1 fehlen.
+  Selbsttest und ein Lauf bau.innen#1 fehlen. Zu archivieren: `w28-iperka-arbeiter` 327a6ad5 und `iperka-arbeiter` 15a712f3 (gelandet als -2 in z698).
 - DANACH (steht auf `bewohner-satz` und `ort-ausstattung`): Tiefe 4, der Alltag aus Angebot × Antrieb → sport.regeln#1 · sport.geistspiel#1 ·
   kultur.glaube#1 · kultur.erzaehlkunst#1 · sport.arena#1 · sport.mannschaft#1 · geist.tag#2 · menge.rhythmus#2. Kein Arbeiter für Kalt-Ankunft,
   die Uhr der GTX 1050, den Schlangen-Beweis des OMEN.
