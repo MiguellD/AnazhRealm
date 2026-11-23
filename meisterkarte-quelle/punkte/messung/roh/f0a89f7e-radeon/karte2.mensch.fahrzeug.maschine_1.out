@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 43.8 s · am Messort dorf (ego) nach 43.8 s, 914 Takte
+@@ 43.9 s · Zensus: Werke {"brunnen":88,"quelle":0,"fabrik":0,"werft":0,"ketten":0}
+@@ 53 s · Haspel: Brunnen 2439, 35 Griffe, Verb kurbeln, unten true, oben true, 11 l, Weg 4.43 Umdr., Hub-Spanne 1.890 m
+@@PUNKTE@@ FRIST 80 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
