@@ -23,3 +23,5 @@ w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
 w28-eine-huelle karte2.mensch.menge.bevoelkerung#1
 # z683 (main f0a89f7e, 23.11. 05:54): der Acker als Kette — Vorrat als Sägezahn, ein Klick bestellt, Halme der Frucht im Körper des Ackers
 w28-acker-kette karte2.mensch.nahrung.strom#1,karte2.mensch.nahrung.hand#2,karte2.mensch.nahrung.frucht#1
+# z681 (main f0a89f7e, 23.11. 06:05): Nachmessung — die Station erzwingt je Todes-Ursache ein Tier und misst auf frischem Feld der Leichname (pm-oeko-zerfall c59a83f2 in punkte-maschine c32539e8; Radeon naehrMinPlus 0,2, Preis grün)
+w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
