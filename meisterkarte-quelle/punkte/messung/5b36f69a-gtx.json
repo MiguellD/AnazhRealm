@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T15:13:09.920Z",
+ "zeit": "2026-11-23T15:17:34.444Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -3257,6 +3257,154 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wasser.seegang#1",
    "modus": "session"
+  },
+  "karte2.leben.tiere.verhalten#1": {
+   "gruen": true,
+   "zahl": "4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.503/0.5 · deer ziehen 0.098/0.1 · bear ruhen 0.447/0.45 · bear nahrung 0.4/0.4 · bear ziehen 0.153/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wolf ziehen 0.399/0.4 · Trünke 10,10,10,10,8,10,10,10,10,10,10,10 (am Wasser 118, Durst aus 0) · Ruhe bewegt 6826/655404 · Riss je Jagd einWolf 0/20 (HP 167) · rudel 16/60 (HP 167) · kitz 20/20 (HP 60) · erster Riss 39.1 s · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 4.46,
+   "gpu": "nvidia/pascal",
+   "konsum": "k751582e0b757",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 134.2,
+   "teile": [
+    134.2,
+    133
+   ],
+   "fremd": {
+    "s": 270.2,
+    "takte": 121,
+    "fremdS": 426.41,
+    "kerne": 1.578,
+    "fensterKerne": 3.276,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      254.34
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.69
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      22.33
+     ]
+    ],
+    "dienerS": 164.73,
+    "diener": [
+     [
+      "System",
+      84.47
+     ],
+     [
+      "dwm.exe",
+      35.05
+     ]
+    ],
+    "geraetS": 127.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      75.25
+     ],
+     [
+      "svchost.exe",
+      47.59
+     ],
+     [
+      "SearchIndexer.exe",
+      2.31
+     ]
+    ],
+    "eigenS": 331.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:17:34.444Z",
+   "abdruck": "35c8dcc2e643",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.tiere.wanderung#1": {
+   "gruen": false,
+   "zahl": "4 Gattungen · ✗ deer 96 m² = 0.48× π·8², im Lebensraum 0.99, 1440 Punkte · deer 121 m² = 0.60× π·8², im Lebensraum 0.992, 1440 Punkte · deer 120 m² = 0.60× π·8², im Lebensraum 0.999, 1440 Punkte · ✗ bear 1152 m² = 0.47× π·28², im Lebensraum 0.995, 1440 Punkte · bear 1814 m² = 0.74× π·28², im Lebensraum 0.999, 1440 Punkte · bear 1745 m² = 0.71× π·28², im Lebensraum 1, 1440 Punkte · fox 193 m² = 0.96× π·8², im Lebensraum 0.954, 1440 Punkte · fox 188 m² = 0.94× π·8², im Lebensraum 0.978, 1440 Punkte · fox 203 m² = 1.01× π·8², im Lebensraum 0.994, 1440 Punkte · wolf 1026 m² = 0.54× π·24.67², im Lebensraum 0.992, 1440 Punkte · wolf 1465 m² = 0.77× π·24.67², im Lebensraum 0.963, 1440 Punkte · wolf 1382 m² = 0.72× π·24.67², im Lebensraum 0.974, 1440 Punkte · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 4.46,
+   "grund": "ROT: 4 Gattungen · ✗ deer 96 m² = 0.48× π·8², im Lebensraum 0.99, 1440 Punkte · deer 121 m² = 0.60× π·8², im Lebensraum 0.992, 1440 Punkte · deer 120 m² = 0.60× π·8², im Lebensraum 0.999, 1440 Punkte · ✗ bear 1152 m² = 0.47× π·28², im Lebensraum 0.995, 1440 Punkte · bear 1814 m² = 0.74× π·28², im Lebensraum 0.999, 1440 Punkte · bear 1745 m² = 0.71× π·28², im Lebensraum 1, 1440 Punkte · fox 193 m² = 0.96× π·8², im Lebensraum 0.954, 1440 Punkte · fox 188 m² = 0.94× π·8², im Lebensraum 0.978, 1440 Punkte · fox 203 m² = 1.01× π·8², im Lebensraum 0.994, 1440 Punkte · wolf 1026 m² = 0.54× π·24.67², im Lebensraum 0.992, 1440 Punkte · wolf 1465 m² = 0.77× π·24.67², im Lebensraum 0.963, 1440 Punkte · wolf 1382 m² = 0.72× π·24.67², im Lebensraum 0.974, 1440 Punkte · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k751582e0b757",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 134.2,
+   "teile": [
+    134.2,
+    133
+   ],
+   "fremd": {
+    "s": 270.2,
+    "takte": 121,
+    "fremdS": 426.41,
+    "kerne": 1.578,
+    "fensterKerne": 3.276,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      254.34
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.69
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      22.33
+     ]
+    ],
+    "dienerS": 164.73,
+    "diener": [
+     [
+      "System",
+      84.47
+     ],
+     [
+      "dwm.exe",
+      35.05
+     ]
+    ],
+    "geraetS": 127.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      75.25
+     ],
+     [
+      "svchost.exe",
+      47.59
+     ],
+     [
+      "SearchIndexer.exe",
+      2.31
+     ]
+    ],
+    "eigenS": 331.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T15:17:34.444Z",
+   "abdruck": "20881f1f0c89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.tiere.verhalten#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3294,7 +3442,8 @@
   "ke367b0db88a7": "bVXBcpswEP0XH5uSxQaM0EwOcsjUmaaNM9NTbytYATEGj4RN407/vSPb2AayR/Ge9untk/g72WKyxozu301dTfjky+TrxOCeHEN6T/r+3Uz4JEqmM/K4OBUIIR4tLNHFtjFQFhJQVphvyNnphoryPjnSUJKfMg7tk8hWAAoOELcPD0NqKSmtnQYVXYgBS1XAh8CdyVCSgzt1bHYGB643lYrDsVgsXmO4VMuEWPnKX7F4sJnEKu2rjeZBSAF//hDiSYxUpgVS45RFZbq+0zSMlMuvvX6MOBpb54CUl6TPpDSkWeR3YhfWTmvNgKjKnTG9ZsxLgxnjANEQm5EpkrxxtrqWVJ3hMpqFU+SLsdvZdueoW0UoJTI59DpHqjLSPQ2ul6j5lMMfNtx0jRvS6FSYd166XjiTV28AYDnWUh6FH1tchftBij2iHSrsAUQXv71dWl6+dutxJq71NmpmkrzQm75NyqeZ6/GXsTSTY0raWdemuaCZj0jsfAtiEG/ChmsYLHM9VMdDRHYTFGAgliMPTa2aFjU52XZ3JpJPQRhwIZ5H4AY3my7/yvO9ZDhA09iA38oIQk+xOQe4O12Q8aFP18E5UFF2JKV8Pwr44yIbgvcaNw7KTBdKdVOXQaKiz0LaUtk4sq6bblsKQ/Q4eFDdDvpna619uplj7LvfXn6/vYl+PYqhnGOHWjeX08q5q3yubFjaZIQudOO0mOQdfKYkoZU+msuBdEkZ9ayUIYtsvFt10n2wz0x4fgbUXS+8h/GOBVmTK7Mz3aAT9GXAPxlLS3otsVp3Mt0wmZ8iuHgVy54n33+5KxYDtH2rvMz6ucwXp/XEXhT4OL1VW0pgq2tV2NcQctyZHMvm+iv49x8=",
   "ka4aedc8b7b9b": "dVXBcpswEP0XH5MqwgaM0EwOcsjUmaaNPdNTbyuxAmIMHgmbxp3+ewdsbAPpHsV7u09vd8WfyQ7UBhJ8eLdlMeGTu8mXiYUDEovmgObh3U74JFTTGbpcnIIKIZ4amDLZrrI0ziAhGlJDcpRYPKiWc3eDyDNJQRaQbpHsTYVZfgaBRC9mnNbPIllRqumRRvXj45CaS4xLUoHGC9Fnsfb5ELi3CUgksNdtsTPYd9yp1Jy2wSLxFtFL1EyIlae9FYsGySQUcV9tOPcD9PnLhxDPYqQyzgArkmeF7epO4yDUDr/W+j7iGKjJETDN0ZxJcYCz0OvELhrDG2sGxNbunSn/77fO99b25DA39meMUxoOsyVoM5VW/YQynAVT4ItxP5LdnuhbzSAlMDnsRgpYJGh6GhxX6fmU099smHQDWzRACkg7tx03mMmre5TS5VhL3gpvS1yFe34MPWLTdnqgVHQjfGiOlpev3XmUiGusR8WsSjOz7dukPZw5Ln8dS7MpxGjIprTVBc08AGTnTYqoWItm/IajZ6+X6ngAwG5GiTIqliMPbamrGgySZLc/E9FDP/C5EC8jcAXbbbch2vVcNWygrZoVuJXhB65mc07p/WmFxpc+LQw5YpZ3JK09L/T508Ibgg8GtgRkYjKtu65LX+nwsyGtwdrBNE3DqZoHg04PomaCrvqTMEyMeUVkWVadXgwCcDl1aXHL+1E3PXu+GZDIc76+/lqvRT+exPCebYXSVBcb5dzRHtetPjVCZ6YiNai0g8+0RGg8GTX8iCbHBHumyICFzd7U+qT7vXnhgrMZ+r5nznGcMcOme4Xd226CFHjS55/0u0azkVBsOplOoOan2V68ieXtJolvP50Viyit+1a5ybNY1Mt0cTpXzQbSj9MzuUNFd6bUWfMQ0xT2NoW8uv6n/v4D",
   "k128649b55503": "bVZdk6o4EP0vPq4XoxIkpGoewmCNc3ecwa3dh923AB1g5MNKcDLl1v73rYCowM0DGnK6+/RJusO/s7iWoBYlr3IBqll8qrqa0dlvsx8zweNMgzxaBrL4VDM6S9ZYbARFLkIIeTkWHmJ730zQ3DwuhAXyYpuprxn7eGXhPESIaXYdQQtrh+5+tsmcIRsRpPcHVvxVIp9c2NZgNWMBht4SvfeG89B2PCRC5rgICU/vDxVjW7YP0A7hP1rwe4DGw2V7xljss8fxyny39hFj7CVlhLGwswu1g9GH8Fh6h/rs9Wn2Y5ZXCXwvsqYsriqdeHzkKTwKp3gJ1YNqHl9u+Ia+afzUrn6BpUB+gbwux6s12LTPkzH2bGBxVuaQwIMfWG9sh1N26JDb7s8W++iwPTCs/n7/JAHZGdn81Ej4zCq8Z+yFtXFjmZ8ahZKcp5aCpimghKpZxK3vFV4tXUF1SEKT62AMpttHX0UeIR5VPCvBOssG8uLqjkeAE0KR3rI0REigCwr03ckLe5q4KSJIaqvhAm5OHJIIh46BZ5XyCCx+Fm3gK9hZ2qtI0G6zScA+Ho6ANluLBQ5JYDIYOYx4lQzZexvHBYe+aiPyhGmSc2isIq9UH3uVuJ5Y0nu8/cRGcm1dOGQFyKtR4sLawz3hVmMj1chQFGelBsGInThrQhHyxtgUVB5njXWSdQTVFR55a3fFqa8neaSnsyUeGfEo4iQa651xqFKQAw5LOxabFUXfZOz0yEuQ3Kp41mu5tN11RB9LcTflUrTE2xB34thJ+MDQbKx53nrCl3m1u63eusxD3bLDNFithhoR1/WIPU68liMpMXARL+nNc/g93gEVZ7ksh1YCw3pp07dp0irjCUjrWKvmTgVzDuQaI0BtiYc4GFve5ertOOfk4QgigthusjuqFo3mEqz0dL4aAgbHdSjr2tsA3PBkpIBYCXtakarhZdmXobCxHf8CUSUDvo5rC7KhCM27Op2q01WkdYG86I2EwNhz6LOPx+AvkEfIpKqguQwpu7HnrrwxoS/JS4tHqcyF6A9q5MTC+1VdaSgaK6rrvlcKcF1uG62rweHUcduV7yPAy5e3fw6H24uuBb7kLJjm20apZXNTKNosBaai8zxB57KxNI+zHr4WEXBDf7LpF5AFpDCQP3KJZ6pSi476xXRI95qGmA/Sukw95mA2plJn1Z+imOPI6Y6f7u/WQYrmSyLi1bGnu3TjDaE/WZD+nLPd4L75/c9lSKY3uLlMfB1mfhcgNnWO9F6bICeI0UnWIjfNHGX8rDJeDL5mvqBKaomaTAIs2ju1zKvuXp0sl3VyLh4A3OZesqaz//4H",
-  "k415d7fe28c22": "bVVdk6IwEPwvPt5dNihBQqr2IcrWuVd7tfoTJjABVgQrAbny6v77FSrKh/NEaXe6p2cCf2dHiPaQ4MuXLYuZmH2b/ZhZOCGxaE5oXr7sTMyCaL5AV8hrUSnluoVFJjtWluaZoqAKSA9IalNhlr9EFxooZDEXtHmTyZZSTc80bOS93uTr6/iYXGFckgo03g/xeKw9MQbWNgGFBGp9Eb6BPcedKy3opXgoP0N6r+a3lFum2ZaHcsu1TCbqCop42EGw9Hz0xHvz1G2cAVYkzwrb6c9jP9CO6GlOOAYacgZMczQ3UuzjImCd6VUbTRvXiKjz2tqBGHdjb8EFpcEYm6DNorQiR1MqLG5wFSz8OYhVM+kjOdZE9x2BUsDVOPMUsEjQDDw4bqSXc0H/8PGhezigAVJA2mXpuP5CPbKhlG6mXvKL8YvEwzjzYhgQ2+HSE6XdKrXPlG/u/3a/h8lj3eRuImajNDOHYUya4cJxxcfUmk0hRkP2pa3uaM4AkN9uRkjlTrZLFo6Zj6Y6HgDw3qJQTuVmkqEtddWAQZIc6xsRGXq+J6R8n4ArOBy6e6Bd5kbjAdqqXfC+Dc93NV8KSr9fL8q06et1IGfM8o6kNWOBJ9YrNgafDBwIqMRkWndTV16kg2dL2mBeEVWWVXcs+j64bSRFf9Db5vqueFTInJ/r1U6Oar2W4dT/RaU01b1jtXQ0E7pdmCaaoDNTkQaitIMvtEIIxBPoGU2OCQ7iVD4P2hVvor7b7uH7YIHPk2mfM2yDLmxtu2FHwJQnnoymQbNXUOw7m44fLbn4JaVcfcrNMJhwt+UhnVTzJuX7RyGbfobyInLEiB5NqbP2jUhTqG0KefX4RPz7Dw=="
+  "k415d7fe28c22": "bVVdk6IwEPwvPt5dNihBQqr2IcrWuVd7tfoTJjABVgQrAbny6v77FSrKh/NEaXe6p2cCf2dHiPaQ4MuXLYuZmH2b/ZhZOCGxaE5oXr7sTMyCaL5AV8hrUSnluoVFJjtWluaZoqAKSA9IalNhlr9EFxooZDEXtHmTyZZSTc80bOS93uTr6/iYXGFckgo03g/xeKw9MQbWNgGFBGp9Eb6BPcedKy3opXgoP0N6r+a3lFum2ZaHcsu1TCbqCop42EGw9Hz0xHvz1G2cAVYkzwrb6c9jP9CO6GlOOAYacgZMczQ3UuzjImCd6VUbTRvXiKjz2tqBGHdjb8EFpcEYm6DNorQiR1MqLG5wFSz8OYhVM+kjOdZE9x2BUsDVOPMUsEjQDDw4bqSXc0H/8PGhezigAVJA2mXpuP5CPbKhlG6mXvKL8YvEwzjzYhgQ2+HSE6XdKrXPlG/u/3a/h8lj3eRuImajNDOHYUya4cJxxcfUmk0hRkP2pa3uaM4AkN9uRkjlTrZLFo6Zj6Y6HgDw3qJQTuVmkqEtddWAQZIc6xsRGXq+J6R8n4ArOBy6e6Bd5kbjAdqqXfC+Dc93NV8KSr9fL8q06et1IGfM8o6kNWOBJ9YrNgafDBwIqMRkWndTV16kg2dL2mBeEVWWVXcs+j64bSRFf9Db5vqueFTInJ/r1U6Oar2W4dT/RaU01b1jtXQ0E7pdmCaaoDNTkQaitIMvtEIIxBPoGU2OCQ7iVD4P2hVvor7b7uH7YIHPk2mfM2yDLmxtu2FHwJQnnoymQbNXUOw7m44fLbn4JaVcfcrNMJhwt+UhnVTzJuX7RyGbfobyInLEiB5NqbP2jUhTqG0KefX4RPz7Dw==",
+  "k751582e0b757": "rVVRb6M4EP4vebw91ySYYJD64DTVtbruNpX26d7GMAYaApFtSpXT/feVk7gJ0JN2pfUTgvk833zzzfDvbA/ZFgq8eTVtM0tnf8z+nBl4Q2JQv6G+eTWzdJZk8wWGqXgR7lAhxJ0Ly3S1t4bmFRRkqxFsp0mNEpub7AhDzCFfpvR3nXcuxKNjcCfuHZXi8fb/aFjY2jOLAGWSz9NVIUQvbq8RdSUpyAbKHZJOW6zqMwQkspyntL8XxYZSRQ903U+htcS8JRYUfgAjnqsoHQd2pgCJBDp1THYOjoJwLtVZHr4Wz+tLqT0XYsMU2/D16DIJTT5kmyyjGKPUCXM/LTCvAC2pq8b4vPM8TlRwaUv/dYLR0JMDYFmjPoPyGBcJ82RXLpmTZgRUdWfMIBkP82jBU0qTcWyBpspKS/a6vVhGJot4Dulqqnax74i6ZgRSApdjrUvApkA94BCEmVrOU/rOx5duYYcaSAOl1zII44UcWPZhysW7bIeNyTx0kSQK4l9w+0QRf+1QkSUPg1N3f+68XB5XP4/qv4pxlfWxPUchL+1hUQ6jGvmavlHqL3LPlD98fPXv18U1x4mkJisrvRuWrhgugjB9mjbAlJCjJtvW2I9ozgCQn4Va06MOGzYeH3MpyuMAgF+NA+VUPEycYlple9BIin3n1xvDKHadeZwEW9jt/JSrkIXZp/37xOXGuvG+phfFoeJuiX45rYcp5rQMyAGr2oOUYiyJ0rsVGwe/adgRkIWulPKel1Gmks9GtMfaEtm2fpUqjGMIUxrS5toA3/rT7rmcNQv+evrn5WVU8HO12kz5H7O02n5ULJeBYqlyRuqzSXSlLekhK334QkkER3/SswPqGgscyCljnrgB79WJ+8Et2vi8CNWXgbEP0xsrdEI3pjPeBBkwGaWftKZHvZXQbD3NIM6WJ3uunsXDQJe/vwcb5tobDyerd5o+laujviJzQ+S39R4zutetqtz/gJbQmRJqO/iLn0I6VLLDskHnLVu1DTaXqP9+AA=="
  },
  "ungemessen": {
   "karte2.planet.kopplung.bahn-klima#2": {
@@ -3599,35 +3748,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.leben.tiere.verhalten#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.764Z",
-   "abdruck": "35c8dcc2e643",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.leben.tiere.wanderung#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.764Z",
-   "abdruck": "20881f1f0c89",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.leben.tiere.verhalten#1",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.same.physik.feuer#2": {
    "gruen": false,
