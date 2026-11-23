@@ -112,6 +112,21 @@ begrenzt ihn — kein Hebel heute. `_archMergeCache` (12,0 → 14,5; siedlung-ba
 Weg-Wachstum. `blockerAABBs` als Typed-Array: fällt mit N2 im Verhältnis. `ro.dispose()` statt der Lösung: jede Rückkehr
 kompilierte neu (Frost-Nachbesserung 5).
 
+**23.11. — die 400 als Sprossen-Schranke fällt (Entscheid des Koordinators, widerrufbar durch den Schöpfer; sein Wort 16.11.:
+„vielleicht verfehlt der heapdeckel von 400mb das ziel?“, 23.11.: „wollte er eigentlich ein anderes ziel die 400 mb und wir jagen
+nun einen deckel der unnötig uns vom vorankommen hindert, nutzwert nicht vergessen“).** Die absolute Heap-Decke (Ort 400 MB · Stadt
+600 MB · Megastadt 1 GB · Planet wie Megastadt) ist keine Schranke der einzelnen Sprosse mehr; das Gesetz dieses Schnitts — der
+Speicher folgt dem Blick: steht nach 60 s, kein Wachstum mit dem Weg, Bahn durch die Stadt und zurück = Anfang ± 2 % — urteilt die
+Leiter `same.preis.speicher` (1–2 Ort · 3 Stadt · 4 Megastadt · 5–6 Planet). Die Gründe: (a) die 400 oben ist eine gesetzte Annahme
+[s], keine Messung und keine fremde Norm; (b) die Zahl an der Sprosse misst die Reihe in der Sitzung, nicht die Sprosse —
+`planet.zeit.archiv#1` hielt als erste Station 280,8 MB, als dritte über 400 (FUND-REGISTER 23.11. 10:36); (c) an der Linie
+entscheidet Rauschen — `mensch.nahrung.flur#1` 407,9 MB am 5b36f69a → 394,2 am 1feab29c, `mensch.wirtschaft.technik#1` 409,9 →
+381,7, ohne Heap-Schnitt dazwischen; (d) EIN Defekt (nach der vollen Stadt steht genesis bei 522 statt frisch 226,6 MB, der JS-Heap
+fällt nicht) sperrte neun grüne Front-Sprossen und jede kommende Ort-Sprosse des Kapitels mensch — er gehört in seine Leiter, dort
+bleibt er rot und sichtbar. Schranke der Sprosse bleibt der VRAM (gehalten, jede Akte trägt `preis.posten.vram_mb`); das Wachstum
+≤ 5 MB/min fällt mit dem Heap in die Leiter, weil es in 0 von 3 171 Akten-Preisen einen Schreiber hatte. Gelesen in `vision/buche-2.cjs`
+treppeLesen und preisUrteil, Fassung der Treppe 2026-11-23b.
+
 ## Schnitt 3 — das größte Bild
 
 **Annahme:** kein Bild über 100 ms [s] in der stehenden Welt nach dem Einlauf, auf beiden Geräten.
