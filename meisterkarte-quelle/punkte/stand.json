@@ -14794,7 +14794,7 @@
   },
   "karte2.leben.tiere.verhalten": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · rudel 24/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 52.9 s · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.verhalten#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 44985637417/1 probe' nach 2708 s Warten) — ungemessen · karte2.leben.tiere.verhalten#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.verhalten#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 87 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.verhalten#2) — offen, UNGEMESSEN · karte2.leben.tiere.verhalten#3 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#3 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#4 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#4 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#5 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#5 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#6 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#6 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#7 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · rudel 24/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 52.9 s · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.verhalten#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 44985637417/1 probe' nach 2708 s Warten) — ungemessen · karte2.leben.tiere.verhalten#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.verhalten#2 gtx: ROT: S2 Umfang nicht erzeugbar: der Hirsch trägt 3 Akte statt ≥ 30 (kein Alarmruf, kein Komfort, kein Markieren, kein Drohen) · rang 0,316 gegen Soll ≥ 0,7 ✗ · alarmS 0,05 s gegen Soll ≤ 1 s ✓ · akte 3 Akte gegen Soll ≥ 30 Akte ✗ · spielStunden 1 Spielstunden gegen Soll ≥ 1 Spielstunden ✓ · Täter: tetrapoda-core.js VERHALTEN.aktionen (das Buch der Aktionen) / ETHOGRAMM_GESETZ an 1feab29c · karte2.leben.tiere.verhalten#3 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#3 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#4 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#4 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#5 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#5 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#6 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#6 gtx: ungemessen (R10) · karte2.leben.tiere.verhalten#7 radeon: ungemessen (R10) · karte2.leben.tiere.verhalten#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.verhalten#1",
@@ -14831,10 +14831,10 @@
      "id": "karte2.leben.tiere.verhalten#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 87 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.verhalten#2) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: der Hirsch trägt 3 Akte statt ≥ 30 (kein Alarmruf, kein Komfort, kein Markieren, kein Drohen) · rang 0,316 gegen Soll ≥ 0,7 ✗ · alarmS 0,05 s gegen Soll ≤ 1 s ✓ · akte 3 Akte gegen Soll ≥ 30 Akte ✗ · spielStunden 1 Spielstunden gegen Soll ≥ 1 Spielstunden ✓ · Täter: tetrapoda-core.js VERHALTEN.aktionen (das Buch der Aktionen) / ETHOGRAMM_GESETZ",
+     "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: der Hirsch trägt 3 Akte statt ≥ 30 (kein Alarmruf, kein Komfort, kein Markieren, kein Drohen) · rang 0,316 gegen Soll ≥ 0,7 ✗ · alarmS 0,05 s gegen Soll ≤ 1 s ✓ · akte 3 Akte gegen Soll ≥ 30 Akte ✗ · spielStunden 1 Spielstunden gegen Soll ≥ 1 Spielstunden ✓ · Täter: tetrapoda-core.js VERHALTEN.aktionen (das Buch der Aktionen) / ETHOGRAMM_GESETZ",
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.tiere.verhalten#3",
@@ -30036,7 +30036,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 139 s von karte2.planet.kosmos.welten#1) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,498 (Faden 1,259 · alle Kerne 1,498; vor 105,5/242,9 ms, nach 113,3/344 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe scripts/diag-profiband.cjs 12,7 CPU-s · Claude.exe -- · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -30054,7 +30054,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 139 s von karte2.planet.kosmos.welten#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,498 (Faden 1,259 · alle Kerne 1,498; vor 105,5/242,9 ms, nach 113,3/344 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe scripts/diag-profiband.cjs 12,7 CPU-s · Claude.exe --",
      "ungemessen": true,
      "beide": true
     },
@@ -37546,12 +37546,10 @@
    ]
   }
  },
- "rueckfall": [
-  "karte2.mensch.menge.bevoelkerung#1 gtx: 89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 18 · ✗ Σ Soll 18 < 20 (die Zählung trägt zu wenig Soll) · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · am Steuer im Kreis: 3 Uhr Ort 1 ×2, 3 Uhr Ort 3 ×1, 10 Uhr Ort 3 ×1, 15 Uhr Ort 3 ×1, 20 Uhr Ort 3 ×1 · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal an 1feab29c (grün gebucht an ddaf883d)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 322,
+  "konsum": 323,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37719,10 +37717,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3300
+  "ohne": 3299
  },
  "kopfVoll": "a8a9ab164da4ba47211c39fef2cdd4ce4d14a26e",
- "zeit": "2026-11-23T23:09:09.101Z",
+ "zeit": "2026-11-23T23:19:25.265Z",
  "vorher": "a8a9ab16",
  "bilanz": {
   "gewinn": [],
