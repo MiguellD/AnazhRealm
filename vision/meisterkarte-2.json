@@ -205,11 +205,11 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 6,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 3.2,
-    "anteilKern": 0.4
+    "heute": 7,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 3.6,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -1419,8 +1419,8 @@
        "richter": "Albedo-Kippe unter Strahlungs-Schwelle in 10 Saaten reproduzierbar; Blindpaar Eismond gegen Sondenfoto"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik halb: See-Eis nach Stefan (gelaende-core.js:1341-1422) trägt headless 1 151 Schritte; Schneedecke mit Tiefe 1/2 (wetter.K4); kein Gletscher, kein Meereis. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": [
@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 18,
-    "kern": 12,
-    "kernDazu": 12,
-    "anteilHeute": 3.2,
-    "anteilKern": 2.1
+    "heute": 20,
+    "kern": 10,
+    "kernDazu": 10,
+    "anteilHeute": 3.5,
+    "anteilKern": 1.8
    },
    "perspektiven": [
     {
@@ -7915,8 +7915,8 @@
        "richter": "Straße → Orbit ohne Ladeschirm; Bewohner auf ≥ 5 Höhen-Dekaden"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "höchster Typ hochhaus mit 7 Geschossen (fachwerk-core.js:1987); keine zweite Ebene, keine Arkologie (Grep 0) — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
      "alt": [
@@ -8062,8 +8062,8 @@
        "richter": "Orbitbilder paarweise unterscheidbar ≥ 90 %, plausibel ≥ 70 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Stadt binnen 2 km in 7/8 Saaten an Radeon und GTX; Zipf ζ 1,022 [0,956; 1,158] über 8 Saaten, Spannweite 6–500 Häuser (siedlung.K2) — KARTE: Kern 1 — an beiden Geräten grün (siedlung.K2); Bild-Preis am Hügel an der Radeon nicht gemessen.",
      "alt": [
@@ -17586,11 +17586,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 8,
-    "kern": 4,
-    "kernDazu": 4,
-    "anteilHeute": 4.2,
-    "anteilKern": 2
+    "heute": 9,
+    "kern": 3,
+    "kernDazu": 3,
+    "anteilHeute": 4.6,
+    "anteilKern": 1.6
    },
    "perspektiven": [
     {
@@ -18210,15 +18210,15 @@
        "richter": "1 000 Zufallsorte jeder Welt: Merkmale ohne Ursache = 0"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
      "alt": [],
-     "heuteSprossen": [],
-     "kernSprossen": [
+     "heuteSprossen": [
       6
-     ]
+     ],
+     "kernSprossen": []
     },
     {
      "id": "leben.kopplung.leben-formt-planet",
@@ -20090,12 +20090,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 64,
+  "heute": 68,
   "davonKopplungen": 33,
-  "kern": 17,
-  "kernDazu": 17,
-  "anteilHeute": 3.6,
-  "anteilKern": 0.6,
+  "kern": 13,
+  "kernDazu": 13,
+  "anteilHeute": 3.8,
+  "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20104,8 +20104,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 37,
-  "nachwache": 27
+  "beide": 40,
+  "nachwache": 28
  },
  "zusammengelegt": [
   {
