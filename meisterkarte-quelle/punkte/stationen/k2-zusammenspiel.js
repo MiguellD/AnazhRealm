@@ -619,7 +619,7 @@ L.perspektive("planet", (() => {
                         const kh = r._gelaende().ort.klimaHeute;
                         const ort = (b, l, t, extra) => r._planetAuftrag(Object.assign({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa: t || 0 }, extra || {}));
                         const amp = (o) => kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter);
-                        const aus = M.teil || {};
+                        const aus = {};
                         const erde = await ort(45, L0);
                         const null0 = await ort(45, L0, 0, { koerper: { neigungRad: 0 }, neigungRad: 0 });
                         const n45 = await ort(45, L0, 0, { koerper: { neigungRad: 0.7854 }, neigungRad: 0.7854 });
@@ -749,7 +749,7 @@ L.perspektive("planet", (() => {
                         const st = r.state;
                         const p = st.playerMesh.position;
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                        const aus = M.teil || {};
+                        const aus = {};
                         const t = st.spielZeit || 0;
                         const wi = (d) => { d = ((((d + 180) % 360) + 360) % 360) - 180; return Math.abs(d); };
                         const lauf = (tt) => {
@@ -4257,7 +4257,7 @@ L.perspektive("erleben", (() => {
                     const sinne = async (r, T, a) => {
                         const s = r.state;
                         const pm = s.playerMesh.position;
-                        const aus = M.teil || {};
+                        const aus = {};
                         const arr = s.creatures;
                         const andere = arr.splice(0, arr.length);
                         const leichAlt = new Set(s.leichname || []);
@@ -4336,7 +4336,7 @@ L.perspektive("erleben", (() => {
                     } catch (e) {
                         w = { fehler: kurz(e) };
                     }
-                    const roh = {};
+                    const roh = M.teil || {}; // die Knoten-Seite legt die Sprossen in M.teil, bevor das Auge (S6) kommt — nie die Seite
                     const k = w.kitz || {};
                     if (U[2]) {
                         roh[2] = { werte: {}, zeuge: { laeufe: k.laeufe || 0, windRufe: k.windRufe, lageWindM: k.wind, lageRauschM: k.rausch, wegM: k.weg, fehler: k.fehler || w.fehler } };
@@ -6152,7 +6152,7 @@ L.perspektive("same", (() => {
                         const L0 = (st.worldMeta.taten ||= []);
                         const A = (window.__ereignisAlt = { n0: L0.length, bf0: [...(st.brandFeld || new Map()).keys()], rest0: !!r._brandRest, wetter: st.weather, tod: st.timeOfDay, spiel: st.spielZeit, uhr: st._uhrSpielZeit, halt: st.weatherEffectTime, regler: st.perfRegulator });
                         st.perfRegulator = false;
-                        const aus = M.teil || {};
+                        const aus = {};
                         const leute = [];
                         for (const Sd of (r._bewohnerSiedlungen || new Map()).values()) for (const b of Sd.liste || []) leute.push(b);
                         aus.bewohnerWelt = leute.length;
@@ -6705,7 +6705,7 @@ L.perspektive("same", (() => {
                         const pm = st.playerMesh.position;
                         const P = { x: pm.x, z: pm.z };
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                        const aus = M.teil || {};
+                        const aus = {};
                         const Z = C.WETTER_ZUG_SEK;
                         const nZ = Math.round((a.jahre * r._kalender().jahrK) / Z);
                         const tA = st.spielZeit;
@@ -8459,7 +8459,7 @@ L.perspektive("same", (() => {
                         const [B, L] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
                         const samen = r._planetSamen();
                         const ort = (sa, b, l, z) => r._planetAuftrag({ type: "planet-ort", samen: sa, breite: b, laenge: l, zeitMa: z });
-                        const aus = M.teil || {};
+                        const aus = {};
                         // S1: der Regen — das Feld des Worts (der EINE Leser `_weatherFieldFor`, ohne Ort) an Ziel und Lee, das Wort des
                         // Regens als einziges Werkzeug; der Planet trägt den Regen je Lage (planet-ort regenQuote), zweimal gefragt
                         const wort = s.weather;
