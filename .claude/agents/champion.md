@@ -19,7 +19,7 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des Koordinators (≤ 25 Zeilen, `koordination/auftrag/`)
    ist Auftrag, kein Plan-Doc.
 5. OFFEN AM ORT lesen — was frühere Abgaben und das FUND-REGISTER in deinen Dateien liegen ließen (Block im Brief, oder selbst:
-   `git show origin/koordination:bericht/2111-werkzeug/offen-ernte.cjs > oe.cjs && node oe.cjs --ort <pfad,pfad>`). Liegt dort
+   `git show origin/koordination:bericht/2111-werkzeug/offen-ernte.cjs | node - --ort <pfad,pfad>`). Liegt dort
    deine Klasse, fällt sie in deiner Welle (G3).
 
 ---
