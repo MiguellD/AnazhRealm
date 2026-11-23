@@ -2219,3 +2219,4 @@ omen-gtx-gtx-5b36f69a-3-5b36f69a ROT 0 GRÜN / 1 ROT / 1 UNGEMESSEN · ROT karte
 2026-11-23 17:31 RUNDE 12 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 64/247, Station karte2.same.entfaltung.schirm#1, Kopf 5b36f69a) — gesehen von gtx (landung-dienst)
 2026-11-23 17:56 RUNDE 12 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 66/76, Station -, Kopf 5b36f69a) — gesehen von gtx (landung-dienst)
 2026-11-23 18:32 RUNDE 12 ALARM gtx: ohne Fortschritt seit 77 min (laeuft, 64/247, Station karte2.same.entfaltung.schirm#1, Kopf 5b36f69a) — gesehen von radeon (radeon-dienst)
+2026-11-23 18:58 RUNDE 12 ALARM radeon: ohne Fortschritt seit 78 min (weicht, 66/76, Station -, Kopf 5b36f69a) — gesehen von radeon (radeon-dienst)
