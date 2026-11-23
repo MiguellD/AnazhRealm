@@ -577,8 +577,10 @@ module.exports = (F) => [
             6: nicht(um(100, "Welten fremder Gesellschaften"), [ge("rang", "Rang des vorhergesagten Lebensentwurfs", 0.7)], FREMD),
         },
         seite: { STADT, ZENSUS, ZUEGE },
+        // DER MESSORT IM UMFANG (k2-mensch.js K.messort, 23.11.): S1 „10²“ Bewohner, 20 Personen nach einem Spieltag (Klasse Ort, „P · Dorf“)
+        // — die Stadt (91 Häuser im Plan); das Dorf (50 Bewohner) trägt 10² nicht, die volle Stadt maß den Preis am 13-fachen (564,7 MB)
         messe: async (H, K) => {
-            await K.messort("stadt-voll");
+            await K.messort("stadt");
             const welt = (name, arg) =>
                 K.welt(
                     "const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite[name] + ")(r, T, " +
