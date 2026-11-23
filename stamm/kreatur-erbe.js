@@ -35,10 +35,11 @@ class AnazhRealm_kreatur_erbe {
     // Saat der Welt (jede junge Welt trug dieselben ersten Tiere), und der angenommene Leib musste a = −e tragen. Masse, Größe und
     // Temperament sind Ableitung. Den Kern liest der EINE Leser `AnazhRealm._lebenKern()` (fail-closed), den Gründer einer
     // Kennung `_erbeGruender`.
-    // Normalverteilte je Achse des Erbes aus dem Strom eines Takts (`rng`: Gleichverteilte u ∈ [0, 1), zwei je Achse).
-    _lebenNormale(rng) {
-        const L = AnazhRealm._lebenKern();
-        return L.gesetz().achsen.map(() => L.normal(rng(), rng()));
+    // Normalverteilte je Achse des Erbes (`__lebenCore.normale`, die EINE Regel): die Größe aus dem Strom eines Takts (`rng`: zwei
+    // Gleichverteilte u ∈ [0, 1)), jede weitere Achse aus dem Strom der Adresse des Kinds (`adr`, `_faunaRng("erbe:" + Kennung,
+    // true)`, erbe-geburt) — die zweite Achse verschiebt keinen Zug des Takts. Bis erbe-geburt zog jede Achse aus `rng`.
+    _lebenNormale(rng, adr) {
+        return AnazhRealm._lebenKern().normale(rng, adr);
     }
     // DAS ERBE ALS LEIB ohne das Alter: M∞, Lebensdauer und Reife (je Datensatz einmal, solange Kennung, Gattung und Erbe stehen).
     _bestandErbe(t) {

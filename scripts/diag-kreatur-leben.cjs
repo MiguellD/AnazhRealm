@@ -344,7 +344,7 @@ async function lebenBuehnen() {
                 });
             return o;
         });
-        return async (saat, takte, mitHalb, fern, eingriff, ganzAm) => {
+        return async (saat, takte, mitHalb, fern, eingriff, ganzAm, gezeichnet) => {
             // die Saat setzt die Ströme je Zweck (die Region liest `bestand:<Region>`, aus ihm auch die Größe ihrer Tiere) und den
             // Gau; die Spiel-Zeit beginnt bei 0 (ihre Differenzen sind sonst je Boot andere Fließkomma-Zahlen)
             const rng = new Proxy(Object.create(null), {
@@ -369,6 +369,7 @@ async function lebenBuehnen() {
                 const t0 = performance.now();
                 r.tickFaunaLifecycle();
                 const dt = performance.now() - t0;
+                if (gezeichnet) gezeichnet(nah);
                 // die Antwort des Gaus wird das Bild in ihrem eigenen Ereignis (der Takt bestellt nur, `_gauTakt`): ihre Kosten
                 // stehen neben denen des Takts; ein ganzer Gau gelesen (`ganzAm`) ist die Lesung der Probe, nicht die des Spiels
                 const ganz = !!(ganzAm && ganzAm(k));
@@ -441,6 +442,9 @@ async function lebenBuehnen() {
         // der Täter des Risses: der Gau reißt nicht (der Riss des Kerns fällt aus — der Wolf jagt ins Leere)
         if (taeter === "kaskade-riss")
             await fadenKern("leben-core.js", [["const o = zug(list, wahl, rng);", "const o = (rng(), null);"]]);
+        // der Täter des Aussterbens (erbe-geburt): der Gau gebiert nicht — das Rotwild stirbt über 18 Jahre aus
+        if (taeter === "kaskade-geburt")
+            await fadenKern("leben-core.js", [["const p = ((t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;", "const p = 0;"]]); // prettier-ignore
         // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
         // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
         // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
@@ -543,9 +547,16 @@ async function lebenBuehnen() {
                         if (k >= 160 && k < LAUF && !(k % 10)) [...nah, ...fern].forEach((key, j) => (z.orte[j] = (z.orte[j] || 0) + koepfe(key) / ((LAUF - 160) / 10))); // prettier-ignore
                         if (k >= LAUF / 2 && k < LAUF && !(k % 10)) z.aesend += [...nah, ...fern].reduce((n, key) => n + AESEND.reduce((m, g) => m + (r._bestandArt(key, g) || { n: 0 }).n, 0), 0) / (LAUF / 20); // prettier-ignore
                         if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(nah.map((key) => GATTUNGEN.flatMap((g) => (r._bestandArt(key, g) || { tiere: [] }).tiere.map((t) => t.id)).join()).join("|")); // prettier-ignore
+                    },
+                    GANZ[name],
+                    // DIE ZEICHNUNG, gelesen im Augenblick der Zeichnung (erbe-geburt): nach dem Lebenszyklus des Takts, VOR der
+                    // Antwort des Gaus auf den nächsten — jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst
+                    // steht: ein Jährling des Gaus, der danach abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen
+                    // neues Revier, das kann fern sein). Bis erbe-geburt las die Linse nach der Antwort: ein Leib, im Takt k aus der
+                    // nahen Region gezeichnet, stand „fremd“, wenn die Antwort k + 1 sein Tier im selben Takt fortzog (an main
+                    // a615ab5d über 40 Saaten 6 Leiber, 5 Wölfe eines springenden Rudels, 1 Jährling — 3 der 5 Fenster zu 8 Saaten ROT)
+                    (nah) => {
                         z.leiber = Math.max(z.leiber, s.creatures.length);
-                        // jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst steht: ein Jährling des Gaus, der danach
-                        // abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen neues Revier, das kann fern sein)
                         for (const c of s.creatures.filter(
                             (c) =>
                                 c.userData._bestand &&
@@ -555,8 +566,7 @@ async function lebenBuehnen() {
                         ))
                             // prettier-ignore
                             (z.fremd++, (z.fremdWer[c.userData._bestand.g] = (z.fremdWer[c.userData._bestand.g] || 0) + 1));
-                    },
-                    GANZ[name]
+                    }
                 );
                 L[name].push(Object.assign(l, z));
                 // zwischen den Läufen eine Aufgaben-Grenze (der EINE Schlaf der Seite): erst dort räumt die Speicher-Bereinigung die
@@ -1849,7 +1859,7 @@ async function lebenBuehnen() {
         for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) gauKeys.push(ix + dx + "," + (iz + dz));
         const GG = [A.GAU.beute, A.GAU.jaeger];
         const erbeGau = async (saat, mutante) => {
-            const zurueck = mutante || taeter === "erbe-kind" ? await fadenKern("leben-core.js", [["kind(mu.a, va.a, normale(rng), normale(rng), normale(rng))", "(normale(rng), normale(rng), gruender(normale(rng)))"]]) : () => {}; // prettier-ignore
+            const zurueck = mutante || taeter === "erbe-kind" ? await fadenKern("leben-core.js", [["kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax))", "(normale(rng, ax), normale(rng, ax), gruender(normale(rng, ax)))"]]) : () => {}; // prettier-ignore
             const P = paare();
             const fahrt = gauFahrt(gauKeys, 1e6 + saat);
             const t0 = performance.now();
@@ -1921,7 +1931,7 @@ async function lebenBuehnen() {
             kernPaare.push(["const o = zug(list, wahl, rng);", "const o = (rng(), list.reduce((b, t) => (wahl(t) > 0 && (!b || t.alterS > b.alterS) ? t : b), null));"]); // prettier-ignore
         // der Täter: die Rückkraft fällt — das Kind erbt das Erbe seiner Eltern anderthalbfach (die Größe hat keinen Halt mehr)
         if (taeter === "rueckkraft")
-            kernPaare.push(["kind(mu.a, va.a, normale(rng), normale(rng), normale(rng))", "kind(mu.a, va.a, normale(rng), normale(rng), normale(rng)).map((v) => 1.5 * v)"]); // prettier-ignore
+            kernPaare.push(["kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax))", "kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax)).map((v) => 1.5 * v)"]); // prettier-ignore
         // der Täter: der Riss fasst den Scheuen wie den Kühnen (das Spiel bis erbe-geburt)
         if (taeter === "fang-aus") kernPaare.push([" : 1) * t.fang;", " : 1) * 1;"]);
         if (kernPaare.length) await fadenKern("leben-core.js", kernPaare);
@@ -2772,14 +2782,26 @@ function lebenUrteil(name, z, soll) {
                 Math.abs(kgRel) <= 0.05,
             `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (Risiko 1/fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Wahlen im Bestand (Soll ≥ 30), das Leichteste ${T.leicht}-mal gegen ${Math.round(T.pLeicht)} erwartet (${leichtRel.toFixed(3)}, Soll |·| ≤ 0,1), Masse ${kgRel.toFixed(3)} gegen die Erwartung (Soll |·| ≤ 0,05); gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
+        // AUSBRUCH UND AUSSTERBEN über der Rausch-Grenze (erbe-geburt): je Saat urteilt das Band [⅓×, 3×] nur über einen Bestand
+        // ab 4 Köpfen; darunter ist das Verhältnis der Zufall weniger Leben (1,61 → 0,2 Bären ist ein Bär, der starb — an main
+        // a615ab5d über 40 Saaten 1, am Kopf 3 solche Brüche, je 8er-Fenster mal ROT, mal grün, ohne dass eine Gattung sich
+        // bewegte: Σe/Σa je Fenster Fuchs 0,88–1,32, Bär 0,95–1,72). Jede Gattung urteilt als Ensemble über alle Saaten
+        // (Σ Ende / Σ Anfang im Band), ein Bestand aus dem Nichts (Anfang < 1) bricht über 3 Köpfe aus.
         const paare = z.saaten.flatMap((je, i) =>
-            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
+            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, g, a, e }))
         );
+        const band = (a, e) => (a >= 1 ? e >= a / 3 && e <= 3 * a : e <= 3);
         const da = paare.filter((p) => p.a >= 1).length;
-        const bruch = paare.filter((p) => (p.a >= 1 ? !(p.e >= p.a / 3 && p.e <= 3 * p.a) : p.e > 3));
+        const summe = paare.reduce((S, p) => ((S[p.g] = S[p.g] || [0, 0]), (S[p.g][0] += p.a), (S[p.g][1] += p.e), S), {});
+        const bruch = [
+            ...paare.filter((p) => (p.a >= 4 || p.a < 1) && !band(p.a, p.e)).map((p) => p.wo),
+            ...Object.entries(summe)
+                .filter(([, [a, e]]) => !band(a, e))
+                .map(([g, [a, e]]) => `${g} Σ ${a.toFixed(1)} → ${e.toFixed(1)}`),
+        ];
         soll(
             z.saaten.length >= 8 && da >= 16 && !bruch.length,
-            `der Bestand bricht aus oder stirbt aus: ${bruch.map((p) => p.wo).join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Gattung in [⅓×, 3×], 8 Saaten)`
+            `der Bestand bricht aus oder stirbt aus: ${bruch.join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Saat ab 4 Köpfen und je Gattung Σ über die Saaten in [⅓×, 3×], 8 Saaten)`
         );
         // DER BESTAND (oekologie.K2#2)
         const B = z.bestand;
@@ -2990,6 +3012,7 @@ module.exports = {
         kaskade: [
             ["kaskade-riss", /die Kaskade hirsche/],
             ["kaskade-park", /Tal liegt im Genesis-Ort: [1-9]/],
+            ["kaskade-geburt", /bricht aus oder stirbt aus: .*deer/],
             ["bestand-nahrung", /die Kaskade nahrung:/],
             ["bestand-deckel", /über seine Nahrung aus/],
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],
@@ -3136,6 +3159,17 @@ check(
         !T.st && /steigung /.test(T.fehler) && /steigungScheu /.test(T.fehler),
         T.st ? "der Täter blieb grün: " + JSON.stringify(T.st) : T.fehler
     );
+    // der Täter der Rate (erbe-geburt): die Nische der Scheu absolut — die neue Achse drückt das Mittel der Geburten um ihr w̄
+    // (Lauf-4-Gau: −5,7 %); die Eichung fällt ROT beim Namen
+    const eich = "* EIGNUNG_EICH * t.Mw) / t.ww;";
+    const ctxE = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    vm.runInContext(quelle.split("const EIGNUNG_EICH = ").join("const EIGNUNG_EICH = 1 || "), ctxE);
+    const E = quelle.split(eich).length === 2 && ctxE.__lebenCore ? lauf(ctxE.__lebenCore) : { st: "die Stelle fehlt" };
+    check(
+        "Das Erbe im Kern, Selbsttest: die Nische der neuen Achse ohne Eichung (das Mittel der Rate rückt) fällt ROT",
+        !E.st && /eichung /.test(E.fehler) && !/steigung /.test(E.fehler),
+        E.st ? "der Täter blieb grün: " + JSON.stringify(E.st) : E.fehler
+    );
 }
 
 // ── DER BESTAND IST DAS GESETZ (leben-core `bestand`: das Gesetz der Zeit und der Jagd, sieben Sätze — Blatt und Läufe 1–4 im
@@ -3183,17 +3217,19 @@ const LAUF4 = {
             jeSaat: [249.9186, 246.4353, 254.7589, 254.0979, 248.0043, 255.5524, 252.0837, 246.3311],
         },
     },
-    // am 23.11. neu gemünzt (erbe-geburt): das Gesetz trägt die zweite Achse scheu — je Vektor zwei Normale aus dem Strom, die
-    // Nische liest sie, der Riss wägt den Fang (`fangGewicht`); vorher Saat 1 Wolf 24 … 50 · Beute 11820 … 17690, Saat 2 Wolf
-    // 23 … 68 · Beute 11816 … 17401 (die Beute trägt die Last ihrer zweiten Nische: ≈ −4 %)
+    // am 23.11. neu gemünzt (erbe-geburt): das Gesetz trägt die zweite Achse scheu — sie zieht aus dem Strom der Adresse des Kinds
+    // (`normale`, Art 7: der Strom des Takts bleibt byte-gleich), die Nische liest sie relativ zu ihrem Mittel (EIGNUNG_EICH: die
+    // Rate der Art rückt nicht), der Riss wägt den Fang (`fangGewicht`); vorher Saat 1 Wolf 24 … 50 · Beute 11820 … 17690, Saat 2
+    // Wolf 23 … 68 · Beute 11816 … 17401 (der erste Wurf des WIP zog die Scheu aus dem Strom des Takts und trug ihre Nische absolut:
+    // Beute ≈ −4 %)
     spur: {
         1: {
-            wolf: [19, 36, 51, 58, 68, 47, 59, 62, 60, 70, 58],
-            reh: [11829, 14853, 16670, 16280, 16303, 16321, 16700, 16703, 16768, 16747, 16694],
+            wolf: [24, 44, 53, 63, 87, 57, 73, 84, 68, 81, 72],
+            reh: [11817, 14697, 17002, 16762, 16755, 16539, 17154, 17175, 17170, 16999, 17356],
         },
         2: {
-            wolf: [22, 39, 55, 57, 54, 55, 48, 77, 75, 53, 59],
-            reh: [11849, 15077, 16734, 16601, 16468, 16400, 16328, 16308, 16367, 16425, 16744],
+            wolf: [23, 47, 65, 85, 80, 81, 58, 58, 66, 67, 60],
+            reh: [11819, 15154, 17077, 16570, 17036, 16679, 16915, 16588, 17029, 17422, 17560],
         },
     },
 };

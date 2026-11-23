@@ -1149,7 +1149,9 @@ die Umwelt-Streuung `umwelt`, der gemessene Leib ohne Herkunft `erbeAusLeib` —
 `lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
 `fastenRang`/`rissGewicht`/`wurfGewicht` und die Nische der Art `eignung`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`;
 das Verhalten als Erbe (erbe-geburt, die zweite Achse scheu) — die Stelle einer Achse `achse`, das Maß der Art am Individuum `merkmal` (die
-Fluchtdistanz), das Gewicht im Riss `fangGewicht` und die Wandlung eines Erbes von vor einer Achse `erbeVoll`; der Bestand als reine Funktion
+Fluchtdistanz), das Gewicht im Riss `fangGewicht`, die Wandlung eines Erbes von vor einer Achse `erbeVoll` und die Normalen eines Zugs
+`normale` (die Größe aus dem Strom des Takts, jede Achse jenseits aus dem Strom der Adresse des Kinds — der Strom des Takts bleibt
+byte-gleich, Bestand und Wirt rufen dieselbe Regel); der Bestand als reine Funktion
 (das Gesetz der Zeit und der Jagd: Zustand hinein, Zustand heraus, Futter und Land über den Leser der Welt) — seine Werte `zeitJagd`, die
 Anker-Tafel `anker`, der am Samen verankerte Strom `strom` und die Funktion `bestand`; sein Selbsttest
 `selbsttest`. Rein: der Zufall kommt aus den Strömen des Wirts, im Bestand allein aus `strom`. Geladen vom Stamm (Script-Zeile neben `tetrapoda-core.js`) und
