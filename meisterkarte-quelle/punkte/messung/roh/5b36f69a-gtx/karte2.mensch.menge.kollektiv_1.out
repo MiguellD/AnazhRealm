@@ -1,0 +1,85 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\5b36f69a-gtx\karte2.mensch.menge.kollektiv_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+L=$(printf %s "${PUNKTE_SITZUNG_LOG:-}" | tr '\\' /); grep -m1 -o '\[linse-gpu\][^[:cntrl:]]*' "$L" 2>/dev/null || echo '[linse-gpu] ungenannt'
+node scripts/werkbank.cjs umstellen --ort genesis > "$B-umstellen.txt" 2>&1
+node scripts/werkbank.cjs eval 'return await (async function zeugenGang(r, T) {
+const UHR = 10 / 24, V = 1.4;
+const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
+if (!(wm.settlementCells && wm.settlementCells.start)) {
+const W = window, altHook = W.__anazhAutoSettlement;
+W.__anazhAutoSettlement = true;
+try {
+if (typeof r._startDorfBestellen === "function") r._startDorfBestellen(pm);
+for (const t0 = Date.now(); (r._autoSettlementPendingKey || !(s.worldMeta.settlementCells && s.worldMeta.settlementCells.start)) && Date.now() - t0 < 120000; ) await new Promise((f) => setTimeout(f, 50));
+for (let n = 0; r._autoSettlementQueue && n < 4000; n++) r._tickAutoSettlement(pm), await new Promise((f) => setTimeout(f, 0));
+} finally {
+W.__anazhAutoSettlement = altHook;
+}
+}
+const zelle = s.worldMeta.settlementCells && s.worldMeta.settlementCells.start;
+if (!zelle) return { fehler: "kein Start-Dorf (bestellt, nach dem Zug nicht da: Hoffnungslos " + !!r._autoSettlementStartHopeless + ")" };
+const plan = [...(r._ortPlaene || new Map()).values()].find((v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5);
+if (!plan) return { fehler: "kein Plan" };
+const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
+const lang = (pz.phi || 0) + (pz.ex >= pz.ez ? 0 : Math.PI / 2);
+const ux = -Math.cos(lang), uz = Math.sin(lang);
+const half = Math.max(6, Math.min(15, Math.max(pz.ex, pz.ez) - 1));
+s.renderer.setAnimationLoop(null);
+r.setTimeOfDay(UHR, "regler");
+if (s.cameraMode !== "third") r.setCameraMode("third");
+const offen = () => { const o = r._weltOffen(); return !o.leute && !o.leiber; };
+const dorf = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => Array.isArray(S.liste) && S.liste.length).sort((a, b) => Math.hypot(a.ox - zelle.x, a.oz - zelle.z) - Math.hypot(b.ox - zelle.x, b.oz - zelle.z))[0];
+await window.__gebautNach("der Gang durch den Platz", { fertig: () => !!dorf() && offen() });
+const S = dorf();
+if (!S) return { fehler: "keine Bewohner im Start-Dorf" };
+const L = S.liste;
+let uhr = performance.now();
+const takt = async () => { uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); await window.sleep(); };
+const ruhe = async (sek) => { for (let k = 0; k < Math.round(sek / A.TAKT_DECKEL_S); k++) await takt(); };
+const stelle = (x, z) => { pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z); if (s._fixedSimPos) s._fixedSimPos.copy(pm); };
+const gang = async () => {
+const min = new Map();
+const n = Math.max(1, Math.round((2 * half) / V / A.TAKT_DECKEL_S));
+for (let k = 0; k <= n; k++) {
+const t = -half + (2 * half * k) / n;
+stelle(pc.x + ux * t, pc.z + uz * t);
+await takt();
+for (const b of L) {
+if (!b.leib || b.drinnen) continue;
+const d = Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
+if (!(min.get(b) <= d)) min.set(b, d);
+}
+}
+return min;
+};
+stelle(pc.x - ux * half, pc.z - uz * half);
+await ruhe(2);
+const vor = await gang();
+stelle(pc.x, pc.z);
+await ruhe(1);
+const fx = pm.x + ux * 2, fz = pm.z + uz * 2;
+const opfer = r.spawnCreatureAt(fx, r._voxelSurfaceY(fx, fz), fz, "happy", "wesen", { precise: true, bodySize: 0.6 });
+if (!opfer) return { fehler: "Spawn des Opfers" };
+const R2 = A.BEWOHNER.zeugeM ** 2;
+const zeugen = L.filter((b) => b.leib && !b.drinnen && (b.leib.position.x - opfer.position.x) ** 2 + (b.leib.position.z - opfer.position.z) ** 2 < R2);
+const furcht0 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+const tat = r.damageCreature(opfer, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+const furcht1 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+stelle(pc.x - ux * half, pc.z - uz * half);
+await ruhe(2);
+const nach = await gang();
+for (const c of [...s.creatures, ...(s.leichname || [])]) if (c === opfer) r.removeCreature(c);
+const med = (a) => { const v = [...a].sort((x, y) => x - y); return v.length ? +(v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2).toFixed(3) : null; };
+const paare = zeugen.filter((b) => vor.has(b) && nach.has(b)).map((b) => [+vor.get(b).toFixed(2), +nach.get(b).toFixed(2)]);
+return { zeugen: zeugen.length, paare, vorMedian: med(paare.map((p) => p[0])), nachMedian: med(paare.map((p) => p[1])), furcht: [med(furcht0), med(furcht1)], tat: !!(tat && tat.ok), halbM: half, uhr: UHR, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, version: A.VERSION };
+})(r, T);' > "$B-zeugen.txt" 2>&1
+node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let e = null; try { e = JSON.parse(t.slice(t.indexOf("{"))); } catch (x) {} console.log("ZEUGEN " + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split("\n").pop() || "ohne Antwort").replace(/\s+/g, " ").slice(0, 300) }))' "$B-zeugen.txt"
+[linse-gpu] nvidia/pascal
+ZEUGEN {"zeugen":22,"paare":[[3.01,5.08],[3.07,4.91],[4.82,6.21],[19.87,22.48],[18.96,24.4],[5.77,16.48],[3.69,10.2],[5.79,11.37],[5.97,5.97],[12.2,22.6],[2.5,15.64],[3.15,9.14],[14.02,19.54],[2.4,2.77],[4.35,6.56],[4.66,5.27],[16.61,23.13],[12.53,18.79],[24.76,28.4],[2.2,10.38],[16.17,18.71],[18.4,24.85]],"vorMedian":5.78,"nachMedian":13.505,"furcht":[0,1],"tat":true,"halbM":9.399999999999999,"uhr":0.4166666666666667,"tod":0.4167,"sicht":"third","version":"18.546.381"}
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
