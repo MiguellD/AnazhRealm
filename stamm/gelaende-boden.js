@@ -3384,6 +3384,10 @@ AnazhRealm.FEUCHTE = Object.freeze({
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });
+// Die Codes des gepackten Hüllen-Speichers (`_huellePacken`, `_huelleLauf`): Art · Rolle · First je Index.
+AnazhRealm.HUELLE_ART = Object.freeze(["box", "keil", "kapsel"]);
+AnazhRealm.HUELLE_ROLLE = Object.freeze(["fest", "sicht", "wurf", "beide", "strahl"]);
+AnazhRealm.HUELLE_FIRST = Object.freeze(Object.keys(AnazhRealm.HUELLE_KEIL_TYP));
 
 // === Der emotionale Kern — das ABENTEUER GRADUIERT ===
 // Die explore-Magnitude emergiert aus NEUHEIT (erste Begegnung mit einer Region,

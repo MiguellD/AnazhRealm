@@ -767,7 +767,7 @@ async function lebenBuehnen() {
                     ? { c: [0, 0, 0], h: h.ux ? [0.4, 6, 4] : [4, 6, 0.4] }
                     : h.art === "sockel" && { c: [0, (unten + 0.35) / 2, 0], h: [2, (0.35 - unten) / 2, 2] };
             if (e && teil)
-                r._hausHuelleSetzen(e, { stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] });
+                r._hausHuelleSetzen(e, r.constructor._huellePacken({ stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] }, "probe"));
             const b = e && (e.blockerAABBs || []).find((q) => h.art !== "haus" || q.obb);
             const o = b && rahmen(b);
             Object.assign(h, { box: b, F: o });
