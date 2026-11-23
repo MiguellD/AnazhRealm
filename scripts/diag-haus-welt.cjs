@@ -1772,9 +1772,10 @@ async function proben(phasen) {
             }
             orte.push(ort);
             // die Solids der Hülle (die EINE Hüllen-Form, S3: je Box ein Teil mit rolle "fest")
+            // (der gepackte Speicher: je Teil ein Code, Rolle in den Bits 2–4 — nur "sicht" zählt nicht)
             const huelleVon = (e) =>
-                e._hausHuelle && Array.isArray(e._hausHuelle.teile)
-                    ? e._hausHuelle.teile.filter((t) => t.rolle !== "sicht").length
+                e._hausHuelle && e._hausHuelle.code
+                    ? Array.from(e._hausHuelle.code).filter((c) => r.constructor.HUELLE_ROLLE[(c >> 2) & 7] !== "sicht").length
                     : 0;
             // der Weg (haus-lokal): frontal auf die Tür; beim Hof-Haus durch das Tor, rechts am Brunnen vorbei (das Gesetz des
             // Hofs: zC = Front − Hof-Tiefe, Torriegel 2,8 m, Brunnen mittig im Hof)
@@ -1875,7 +1876,7 @@ async function proben(phasen) {
             await window.__gebautNach(e, { fertig: holen, bau: () => {}, takt: () => pumpe(10), max: 60 }).catch(() => null);
             const fernPreset = r._foundryPresetForEntry(e);
             const fernFlat = fernPreset ? r._foundryFlattenFor(e, fernPreset, r._foundryFernStufe(fernPreset)) : null;
-            w.fernLiefert = fernFlat && fernFlat.huelle && Array.isArray(fernFlat.huelle.teile) ? fernFlat.huelle.teile.length : 0;
+            w.fernLiefert = fernFlat && fernFlat.huelle && fernFlat.huelle.code ? fernFlat.huelle.code.length : 0;
             w.fernHuelle = huelleVon(e);
             w.fernGezeigt = r._archIsRendered(e) ? e._servedLod : null;
             w.fernDrinM = anlauf(e);

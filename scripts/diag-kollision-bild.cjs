@@ -649,7 +649,7 @@ async function tempo(K) {
     };
     const baer = (x, z, b = tier("baer", 1, x, z, 0)) => ((steher = b.userData._steuer), b);
     const setze = (typ, x, z, rotationY) => r.spawnArchitecture(typ, { x, y: hh(x, z) + 0.5, z }, { silent: true, precise: true, rotationY });
-    // DIE HINDERNISSE je auf ihrer Bahn z: Mauer (EIN Teil, 11° gedreht, Welt-AABB 1,5 m breit) und Haus (Westwand, 34°, `_hausObb`)
+    // DIE HINDERNISSE je auf ihrer Bahn z: Mauer (EIN Teil, 11° gedreht, Welt-AABB 1,5 m breit) und Haus (Westwand, 34°, `HausBox`)
     // an der ECHTEN Box, Felsblock, Mammutbaum, der stehende Bär quer; die Bahn-Wache räumt, was dort wächst
     const teil0 = { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 0.35, y: 2.5, z: 6 } };
     st.blueprints._t_kontakt_mauer = { name: "_t_kontakt_mauer", parts: [teil0] };
