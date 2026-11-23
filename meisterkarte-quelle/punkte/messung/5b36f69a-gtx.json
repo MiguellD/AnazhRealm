@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T08:54:33.576Z",
+ "zeit": "2026-11-23T09:00:45.241Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -487,6 +487,147 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.kopplung.emergenz#1": {
+   "gruen": false,
+   "zahl": "S1 spielStunden ungemessen gegen Soll ≥ 6 h ✗ · saaten ungemessen gegen Soll ≥ 8 Saaten ✗ · jungwuchsMinusProzent ungemessen gegen Soll > 0 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":7970,\"fehler\":\"ABNAHME ROT [kein nahWiese im Bild: 0.0 % < 15.0 %] ) · Täter: stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
+   "exit": 0,
+   "minuten": 2.4,
+   "grund": "ROT: S1 spielStunden ungemessen gegen Soll ≥ 6 h ✗ · saaten ungemessen gegen Soll ≥ 8 Saaten ✗ · jungwuchsMinusProzent ungemessen gegen Soll > 0 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":7970,\"fehler\":\"ABNAHME ROT [kein nahWiese im Bild: 0.0 % < 15.0 %] ) · Täter: stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k57b5c79aa431",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 144,
+   "fremd": {
+    "s": 146,
+    "takte": 64,
+    "fremdS": 258.34,
+    "kerne": 1.769,
+    "fensterKerne": 3.247,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      174.77
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      11.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.44
+     ]
+    ],
+    "dienerS": 108.91,
+    "diener": [
+     [
+      "System",
+      55.36
+     ],
+     [
+      "dwm.exe",
+      20.19
+     ]
+    ],
+    "geraetS": 87.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      48.56
+     ],
+     [
+      "svchost.exe",
+      35.16
+     ],
+     [
+      "SearchIndexer.exe",
+      1.3
+     ]
+    ],
+    "eigenS": 327.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T08:57:02.725Z",
+   "abdruck": "c7143ab773be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 3 × 300 Schritten 0×; mit gedrehtem Wind steht das Kitz nach 5 s 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "exit": 0,
+   "minuten": 2.4,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 3 × 300 Schritten 0×; mit gedrehtem Wind steht das Kitz nach 5 s 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k57b5c79aa431",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd1ae10eb2a80",
+   "s": 144,
+   "fremd": {
+    "s": 146,
+    "takte": 64,
+    "fremdS": 258.34,
+    "kerne": 1.769,
+    "fensterKerne": 3.247,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      174.77
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      11.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.44
+     ]
+    ],
+    "dienerS": 108.91,
+    "diener": [
+     [
+      "System",
+      55.36
+     ],
+     [
+      "dwm.exe",
+      20.19
+     ]
+    ],
+    "geraetS": 87.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      48.56
+     ],
+     [
+      "svchost.exe",
+      35.16
+     ],
+     [
+      "SearchIndexer.exe",
+      1.3
+     ]
+    ],
+    "eigenS": 327.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T08:57:02.725Z",
+   "abdruck": "c1c880a73abf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.kopplung.emergenz#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -497,6 +638,157 @@
   "k7f78661dad36": "rVVNj6M4EP0vOe4sbRIgGEt9cJrWdu/OqNPSnvZWhjIwIRDZpunOaP77yEmcBMhIM9LWCSX1ql69+vC32Q6yDRR491W3zYzN/pj9OdPwhp5G9Ybq7quesVmSzRcYMH40wjl/sG6ZqnZGk7yCwtsoBNMpr0aBzV12gCHmkC8Z+b/snZ4YPPDHV8558Xz/MxoGNubEwkeR5HO2Kjjv+f01oq4EAdFAuUWvUwar+gQBgWFOGekfebEmRJI9SXt+tscbYWqBeesZkHgOEtFcRmzs2OkCBHrQyUPik3PkB3MhT1LRlL+kl7J7yvk6lOGappxzyYtJdgFNPqwgWUYxRuz54ybbvAI0Xl012uWf53Ei/Uur+i8TjILe2wOWNaoTKI9xkYSO9MpKY+UaAWXdaT1IRoM8WlBGSDL2LVBXWWm8nWovYySSRTwHtuondRS7zpPXjEAIoGKseQnYFKgGHPwgk8s5I+90HHQDW1TgNVA6Lf0gXojBGD9NubjJ22KjMwddJImE+Dc2YKKICztUZEkDP2L8l+318rn6dVT/hY+rrA/tOQh5aU8Y5TCqkabkjRAXyH4T+nT+1/2eFtccJ5LqrKzUdli6DHHhB+zztAG6hByVt2m1OXvTEADpSaiUHHRYh+kYeSnK4QCAXq0DoYQ/TSZFt9L0oNArdp07eSFGse3M88TZwHbrtl0GYZDd7N+NKdfGrvc1vSgOJLWH9dPxTEwxx2Pg7bGqHUjKMEwi9rAKx85vCrYeiEJVUrqZF1Emk1sr2mNtPNG27rxKjGMIrFTN9QCs++OlvFga+n99/u/1dVTwSzVfT/kfsrTKnCsWS1+GTB6qzSbelTJeD1np3BdSIFj6k57tUdVY4EBOEdPELngvj9z39uDGp0MoPw0Gez+NWKEVutGddkOQQSgidqM1PaqNgGbjaPpxtqTsb9v3F/400OWff/01TcnEeqvpulkd36PMLhH5OF7rHWZkp1pZ2feAlNDpEmozeNmPLh1K0WHZoJ0tU7UNNhev7z8A",
   "k1220d636e945": "bVVNj5swEP0vOXbLmvARjKU9OJuoWXXbTaSeehubMbAhENkQqlT975WTkATIHM08z5s3b8zfyR7kFlJ8/jRVOWGTL5OvEwMHdAzqA+rnTzNhk1hOPfQZPwfhnL/aNKnzfW1IkQsCooRsh06ja8yLZ3mCgcAgoYy0S56uCVHkSBbty8sQWghMKqcGhVdgSBMVsmFiY1IQ6ECjTsUuyaHrT4Vi5BR0wT8W5Bot5XwdqGBNF4PLBJRJn208CyMM2VvL+ZKPWCY5YO0UeWm6utMkipXLbrV+jDAaWucImBWoL6AkQi8OOrJzK6eVZgBURWNMrxj1k9CjjJB4mJuiyWVWO3tdCSwv6SL2oimw+VjtdN846p4RCAFUDLXOAMsUdY+D60s1mzLyhw4v3cIONTglZJ2Wrh954qYNIWQ15lKciJ9K3IgHYQI9oB0qORDCO/sd7NHq+rU7X6T8FptRMSOzXO/6MqkAPddn72NqJoMEtbOtTH3NpgEA0ssWLAjfcGuuobHMrakOBwD0ziiEEr4aaWgqVbeg0Un3zQWIAYZRyDh/GyXXsNt1/ld+4EvGH8SD+ZvaGv+eXhj5is4YIU/nxRljzmviHDEvOpBSQRCH7HWeDpMPGnYOiFTnSnVuEKFU8SPztljUjqiqursWowh8RnxS3hvgZ2u7Wd51tgjcb++/N5tBw69886hCpetrt2LmqoApa6JWDsm3ua6dFmTWpXtKIFjqo3kdUReYYk9KEdHY2r5VZ95H+/xEl+dBPfVMfRzfmKMVuTSN6QwgIRAhezCWFvVWQLntaLqRnJ2tOf/gq/tF4N9/uWtqRxv16vvtks/bdTY/aculXaDuDdujJHtdqdy+kiSDxmRQ1LdfxL//",
   "k44929267aba7": "bVVdj9owEPwvPLb1OeSDOJbuwRyonHrtgdSnvq2ddZIjJMhOSEvV/14FCJCEfQwz3tnZsfk72YPaQoJPH7YsJnzyafJlYuGAxKI5oHn6sBM+idTURY+Lc1EhxEsLUybbV5bmmaQgC0h3SGpTYZY/qRMNJPox47RZimRNqaZHumien4fUXGJckgo0XokBi3XAh8DaJiCRQK1PzS7gwPGmUnN6KrYQ7wt6rYYJsfa1v2aLwWESirivNpoFIQb8tRFiKUYq4wywInlW2K7vNA4j7fBbr+8jjoGGHAHTHM2FFIfoRn4ndt7a2VozIOq8trbXjHlx4DJOaTTEJmgzlVZkb0qJxQUuIzecAp+P3U72NdH3ikBKYHLodQpYJGh6GhxP6dmU099seOgWdmiAFJB2Xjpe6MqbN5TS1VhLfhJ+anET7gcx9IjtUumBUtHF79B+Wl1/7b4vEnGrzaiZVWlmdn2btI+u4/G3sTSbQoyGbEtbXdHMB0B2uQULKjaiDdcwWPY2VMcDAHYXFMqoWI08tKWuGjBIkn19IaKPQRhwIV5H4Ap2uy7/2vM9xcWDerB/W7XBv5cXhJ5mM07p5/PFGXPO14QcMcs7kta+HwX8ZZ4MwQcDOwIyMZnWXRpkoHT0KLwN5hWRZVl1x2IYgsepR4v7APxo2mmWd5MtfOfr26/NZjDwi9g86lCa6jqtnDna57oNUaOG4pvMVKQBlXZwV0uEiFNvtK8jmhwT7FkpQxa1sW/0WfexfX7Cy/OgP/dCfRyfmGFrcmFr2wVAgS8D/mAtDZqthGLbyXRCNTtHc/4uVj1Pvv101qxdbdjr7zVLMW/W6fzkrVDtBaJ/zm/YHhXdm1Jn7StJU6htCnl1+4v49x8=",
-  "kb0830653cb8a": "bVXBjtowEP0Xjt1mHUhCHEt7MGRVtt1qQeqpt3EyTrKEBNkJrqj675WBAEmYE4J5M89v3gx/J3tItpDh86euqwmbfJl8nWg4oKNRHVA9f+oJm0TJdIYe4+cgnPOlTUtUsW80KQtBQFSQ79BpVYNF+ZycYCDQTykj5pVna0IkOZLY8Gu88peXYZlSYFo7DUi8FgloKgM2TGx1BgIdaOWp8SU5cL2pkIycgsb8IybXMJTztS/9NY1t80FBAVXaZx/NgxAD9mYeMk0LwMYpi0p3vadpGEmX3fr9HGEUGOcImJeoLqA0xFnkd4QXVhYr1QAoy1brXjPqpcGMMkKiYW6GukjyxtmrWmB1SRfRLJwCW5jRO7J968h7RiAEUDHUOwesMlQ9Dq6XyPmUkT90WHQLO1TgVJB3WrpeOBM3bQghqzGX8kT81OJG3A9S6AHtYMmBkM5G9jOhq+uv3fdxdrMa34ya6SQv1K4vk/Rx5nrsfUxN55Cicra1bq7Z1AdAetmKmPANtwaLh8jbozocANA7oxBK+Gqkoa5lY0Chk+3bCxB9DMKAcf42Sm5gt+t2QHq+lzD+IB7MXzfW+Pf0gtCTdM4IeTovzxhzXhPniEXZgaT0/Shgy0U2TD4o2DkgMlVI2blBBImMHpnXYNk4oq6briyGIXhWqureAGtzvh+3iH332/vvzWbw4CXfPOpQq+b6WjF3pc+kNZFJhuRNoRrHQJJ36TMpECz10byOqErMsCelCGlkbW/kmffRnqDwch7kU8/Ux3HFAq3IlW51Z4AEfBGwB2MxqLYCqm1H0w2TOWXf7cw/+KqnyY9f7prGZBieeeULs84X5wud2AXqbtgeE7JXtSzslSQ5tDqHsrn9Zfz7Dw=="
+  "kb0830653cb8a": "bVXBjtowEP0Xjt1mHUhCHEt7MGRVtt1qQeqpt3EyTrKEBNkJrqj675WBAEmYE4J5M89v3gx/J3tItpDh86euqwmbfJl8nWg4oKNRHVA9f+oJm0TJdIYe4+cgnPOlTUtUsW80KQtBQFSQ79BpVYNF+ZycYCDQTykj5pVna0IkOZLY8Gu88peXYZlSYFo7DUi8FgloKgM2TGx1BgIdaOWp8SU5cL2pkIycgsb8IybXMJTztS/9NY1t80FBAVXaZx/NgxAD9mYeMk0LwMYpi0p3vadpGEmX3fr9HGEUGOcImJeoLqA0xFnkd4QXVhYr1QAoy1brXjPqpcGMMkKiYW6GukjyxtmrWmB1SRfRLJwCW5jRO7J968h7RiAEUDHUOwesMlQ9Dq6XyPmUkT90WHQLO1TgVJB3WrpeOBM3bQghqzGX8kT81OJG3A9S6AHtYMmBkM5G9jOhq+uv3fdxdrMa34ya6SQv1K4vk/Rx5nrsfUxN55Cicra1bq7Z1AdAetmKmPANtwaLh8jbozocANA7oxBK+Gqkoa5lY0Chk+3bCxB9DMKAcf42Sm5gt+t2QHq+lzD+IB7MXzfW+Pf0gtCTdM4IeTovzxhzXhPniEXZgaT0/Shgy0U2TD4o2DkgMlVI2blBBImMHpnXYNk4oq6briyGIXhWqureAGtzvh+3iH332/vvzWbw4CXfPOpQq+b6WjF3pc+kNZFJhuRNoRrHQJJ36TMpECz10byOqErMsCelCGlkbW/kmffRnqDwch7kU8/Ux3HFAq3IlW51Z4AEfBGwB2MxqLYCqm1H0w2TOWXf7cw/+KqnyY9f7prGZBieeeULs84X5wud2AXqbtgeE7JXtSzslSQ5tDqHsrn9Zfz7Dw==",
+  "k57b5c79aa431": "bVXBkppAEP0Xj0nYQRlkmKo9jLIVN9nUalVOufVAD7AiWDMgian8e2pUVMA+Wfp6+vXr1+3fyR7iLaT49GGqcsInnyZfJgYO6BjUB9RPH2bCJ2E8naHHxTmIEGJpYbHO97UhRS4JyBKyHTqNrjEvnuJTGkikCeOkfRHpmhBFjiRqxTVexPPz8JlCYlI5NSi8PuKzRPl8CGxMChIdaNSp8AXsu95UKk5OwSLxHpFrtEyINVV0zSKxZkqko+oSyqTfQTj3A/T5a/uQbZID1k6Rl6arP02CULn8VvPHKEdD6xwBswL1JSkJcBbSjvTCSmPlGiSqojGmV4x5iT9jnJBwiE3R5HFWO3tdSSwvcBnOginwRTvqI903jrpnBFICk0PNM8AyRd3j4Hqxmk85+c2Gj25hhxqcErJOS9cLZvKmDSFkNeZSnIifStyIUz+BXqIdLjkQ0lnJfiZsdf21+z5Kb3YTm1ExE2e53vVlUhRnrsffxtRMBglqZ1uZ+opmFADZZTMiIjbCmiwaZt6a6vIAgN0ZhTAiViMNTaXqFjQ66b65JCJFP/C5EK8jcA27XbcHyqNezMWDeDB/U1vj39PzA0+xOSfk83mBxjnnNXGOmBddklKUhj5fLugQfNCwc0CmOleqc4P0YxU+Mm+LRe3Iqqq7ZzEIwLNSlfcGWLfnG3KLiLpf335tNoOGl8tNNOZ/qlLp+tqxnLuKcmWN1MYjdK5rp4U46+AzJREs/dHMjqgLTLEnpwxYaK3fqjP3oz1FweVEqM89Yx/HL+ZohS5NYzoTxEClzx+MpkW9lVBuO5puEM8Z/2bn/i5WPV2+/3TXLCKjaF/Egq7LxflSx3aJyJ/zHdtjTPa6Urm9lCSDxmRQ1Le/jn//AQ=="
+ },
+ "ungemessen": {
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:44.898Z",
+   "abdruck": "569d05e3c105",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:44.898Z",
+   "abdruck": "038be8b6ca11",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:44.898Z",
+   "abdruck": "9883c185a917",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:44.898Z",
+   "abdruck": "cc44d536ca59",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:44.898Z",
+   "abdruck": "5789ccbca7c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:45.241Z",
+   "abdruck": "897dcfbb134b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:45.241Z",
+   "abdruck": "3973093bb8ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#3": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:45.241Z",
+   "abdruck": "b8aef8b214e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:45.241Z",
+   "abdruck": "a0ed0936f791",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#6": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-23T09:00:45.241Z",
+   "abdruck": "50c971118209",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  }
  }
 }
