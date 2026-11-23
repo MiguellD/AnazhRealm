@@ -101,6 +101,8 @@ const BILD = process.argv.includes("--bild");
 //   fremdslot: W11: der Plan kennt keinen Fremd-Slot (die Gasse läuft durch das gesetzte Haus) · das Haus auf dem
 //       Erdbau eines Orts legt keinen Grund (sein Keller ist Erde)
 //   fremdkeller:
+//   netzindex: W11: die Tür am Netz überlebt ihr Netz (gemerkt neben dem Grund statt an ihm, der Stand vor netz-index) — nach
+//       dem Tausch des Plans hängt sie an einem Knoten des alten Grunds
 //   waise: W9: der geschlossene Slot lässt seinen Grund liegen
 //   ausstattung: W9: der Plan stellt einen Brunnen in ein Haus (in die Mitte seines ersten Loses — bis w28-stadt-grammatik
 //       legte der Defekt nur das Weichen ab: am Markt der Stadt-Grammatik stand kein ungeprüfter Brunnen mehr vor einem Haus,
@@ -455,6 +457,21 @@ async function proben(phasen) {
         // die Punkte der Gassen des Plans, 14 m von jedem Haus des Plans
         const orte = (v ? v.roads : []).flatMap((rd) => rd.pts.map((q) => [v.ort.x + q.x, v.ort.z + q.z]));
         const frei = ([x, z]) => v.slots.every((d) => Math.hypot(v.ort.x + d.x - x, v.ort.z + d.z - z) > 14);
+        // W11 NETZ-INDEX (netz-index): der Fremd-Slot rechnet den Plan des Orts neu (`_ortNeuRechnen`: sein Wege-Netz fällt) — ein
+        // Index in ein Netz überlebt sein Netz nie: nach dem Tausch hängt die Tür jedes Stands an einem Knoten des LEBENDEN
+        // Grunds (`_bewohnerTuerAm`), und die Wache geht ihren Gang am neuen Grund (ohne Wurf im Loop: welt-boot `loop-wurf`).
+        // Bis netz-index trug der Stand die Knoten-Zahl seiner Geburt: am Start-Dorf Tür-Knoten 415 im Grund von 406 Knoten,
+        // tetrapoda `wegBaum` warf im Spiel-Loop
+        const ortS = () => [...(r._bewohnerSiedlungen || new Map()).values()].find((S) => S.plan === v);
+        const staendeVon = (S) =>
+            S && S.liste
+                ? S.liste.flatMap((b) => A.BEWOHNER.staende.map((k) => b.orte[k] && b.orte[k].tuerVor && [b, b.orte[k]]).filter(Boolean)) // prettier-ignore
+                : [];
+        wartet("W11 Netz-Index: die Liste der Bewohner am Ort");
+        await warteBis(() => !!(ortS() && ortS().liste && !ortS().listeWerk), 4, 400);
+        const G0 = ortS() && ortS().netzGrund;
+        if (G0) for (const [, q] of staendeVon(ortS())) r._bewohnerTuerAm(G0, q.tuerVor);
+        w.netz = { vor: G0 ? G0.knoten.length : null, staende: staendeVon(ortS()).length };
         fe = await setze(
             kv,
             "w11-fremd",
@@ -464,6 +481,37 @@ async function proben(phasen) {
             false
         );
         await warteBis(() => !(r._grundOffen || []).size && !(r._ortNeuOffen || []).size, 4, 200);
+        wartet("W11 Netz-Index: der Gang der Wache am neuen Grund");
+        const amNeuen = () => {
+            const S = ortS();
+            return !!(S && S.netzGrund && S.netzGrund !== G0 && S.standGrund === S.netzGrund && !S.listeWerk);
+        };
+        await warteBis(amNeuen, 4, 400);
+        // (ging die Wache ihren Gang am neuen Grund nicht von selbst — kein Wechsel einer Hülle nach dem Tausch —, geht ihn die
+        // Probe: derselbe Gang `_bewohnerStandPruefen`, den die Wache treibt; ein Wurf in ihm ist der Wurf im Spiel-Loop)
+        let wurf = null;
+        if (!amNeuen() && ortS() && ortS().liste && !ortS().listeWerk)
+            try {
+                for (const g = r._bewohnerStandPruefen(ortS(), null); !g.next().done; );
+            } catch (x) {
+                wurf = String((x && x.message) || x).slice(0, 160);
+            }
+        const G1 = ortS() && ortS().netzGrund;
+        const fremdeTuer = G1
+            ? staendeVon(ortS()).filter(([, q]) => {
+                  const a = r._bewohnerTuerAm(G1, q.tuerVor);
+                  return a && G1.knoten[a.i] !== a.k;
+              })
+            : [];
+        const [fb, fq] = fremdeTuer[0] || [];
+        Object.assign(w.netz, {
+            nach: G1 ? G1.knoten.length : null,
+            neu: !!G1 && G1 !== G0,
+            gang: amNeuen() || (wurf ? "wurf" : false),
+            wurf,
+            fremd: fremdeTuer.length,
+            erster: fq ? `${fb.beruf || fb.rolle} #${fb.seed} am Stand ${fq.x.toFixed(1)}/${fq.z.toFixed(1)}: Tür-Knoten ${r._bewohnerTuerAm(G1, fq.tuerVor).i}` : null, // prettier-ignore
+        });
         const sl = fe && slotVon(kv, fe);
         if (sl)
             Object.assign(w, {
@@ -2262,7 +2310,16 @@ function urteil(o) {
     // jedes Haus des Plans steht, mit der Phase haus ist jedes gegangen (das Innen-Bild urteilt siedlung.K1 Staffel 2)
     if (P.has("fremd")) {
         const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
-        if (!(w.vorher > 0 && w.nachher === 0 && w.byte && w.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w)}`);
+        const { netz: nz, ...w0 } = w;
+        if (!(w0.vorher > 0 && w0.nachher === 0 && w0.byte && w0.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w0)}`);
+        const umfang = nz ? `Grund vor dem Tausch ${nz.vor} Knoten, danach ${nz.nach}` : "";
+        if (!nz || !(nz.staende > 0) || !nz.neu || !nz.gang)
+            f.push(`W11 Netz-Index: blind — kein Gang der Wache an einem neuen Grund des Orts (${JSON.stringify(nz)})`);
+        if (nz && nz.wurf) f.push(`W11 Netz-Index: der Gang der Wache am neuen Grund wirft — ${nz.wurf} (${umfang}; ${nz.erster || "-"})`); // prettier-ignore
+        if (nz && nz.fremd)
+            f.push(
+                `W11 Netz-Index: ${nz.fremd} von ${nz.staende} Türen der Stände hängen an einem Knoten außerhalb des lebenden Grunds — ${nz.erster} (${umfang})`
+            );
         if (!(g?.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
             f.push(`W10 Anti-Clip-Hub im Fremd-Slot: ${JSON.stringify(g)}`);
     }
