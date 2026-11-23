@@ -755,126 +755,130 @@ class AnazhRealm_koerper_seele {
             pm.userData.offhandMesh = null;
         }
         const eq = this.state.player && this.state.player.equipped;
-        const parts = pm.userData && pm.userData.parts;
-        const cfg = AnazhRealm.HELD_MESH;
-        // EIN Bau-Helfer für beide Hände (Spiegel: links negiert die x-Offsets).
-        const buildHand = (bpName, side) => {
-            const bp = this.state.blueprints && this.state.blueprints[bpName];
-            if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
-            // Studio-Gestalt in der Hand: löst der EINE Preset-Resolver den Bauplan auf (klinge_<id> → LIVE-Buch)
-            // UND ist die Foundry-Gruppe warm, tragen Wrapper um die GETEILTE Studio-Geometrie die Optik; die
-            // Parts bleiben unsichtbare Substanz-Wahrheit (Tags · Ω-PHYSIS · wield). "pending" → der Part-Bau
-            // trägt sichtbar als Interim (die Hand ist nie leer); null → Part-Pfad byte-alt.
-            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
-            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
-            const anchor =
-                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
-                pm;
-            const rig = pm.userData && pm.userData.rig;
-            const imGelenk =
-                !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
-            // DIE FAUST LIEST DIE HAND-MITTE DES LEIBS (`_leibHandMitte`, physik.K4 · same.physik.verformung): an der Grobstufe (B5,
-            // der Ego-Boot) die der feinen Vorlage; ist die feine noch im Werk, trägt der Part-Bau wie bei kaltem Buch, bis ihre
-            // Ankunft die Hand neu trägt (`_leibFuerHand`). Bis hier fiel jede Studio-Gestalt dort aus der Hand (die Faust ohne
-            // Hand-Mitte: null), bis der Leerlauf tauschte.
-            const handMitte = imGelenk ? this._leibHandMitte(rig) : null;
-            const grobOhneMitte =
-                imGelenk &&
-                !(handMitte && handMitte[anchor.name]) &&
-                !!pm.userData._gelenk &&
-                pm.userData._gelenk.nahStufe === 1;
-            const studio = grobOhneMitte ? "pending" : this._heldFoundryGroup(bpName);
-            const isStudio = !!(studio && studio !== "pending");
-            const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
-            // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
-            mesh.userData._gehalten = true;
-            // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
-            // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
-            // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
-            // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
-            // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
-            // × 0,27 = 0,17 m, ein Spielzeug im Faustinneren. Jetzt rechnet die Hand in WELT-Metern: die Studio-Gestalt
-            // trägt ihre Gesetzbuch-Länge (die Schmiede baut in Metern — Masse, Balance und Reichweite rechnen damit),
-            // ein Part-Bau seine Werkzeug-Spanne `targetSpanM`; der Anker-Faktor wird herausgeteilt.
-            let ankerSkala = 1;
-            try {
-                anchor.updateWorldMatrix(true, false);
-                const ws = anchor.getWorldScale(new THREE.Vector3());
-                const m = (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3;
-                if (Number.isFinite(m) && m > 1e-4) ankerSkala = m;
-            } catch (_e) {
-                /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
-            }
-            // die wahre Größe: die Studio-Gestalt in Metern, ein Part-Bau in der EINEN Skala, mit der er auch wiegt
-            // (`_geraetWeltSkala`: die rotations-bewusste Spanne seiner Teile auf die Werkzeug-Spanne)
-            mesh.scale.setScalar((isStudio ? 1 : this._geraetWeltSkala(bp)) / ankerSkala);
-            const sx = side === "left" ? -1 : 1;
-            // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
-            // verschoben, dass der griffigste Part (bzw. der explizite griff-
-            // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
-            const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
-            // DIE FAUST (W5): ein Studio-Gerät im Handgelenk des Studio-Menschen (die Rig-Gelenke, `_buildHumanGroup`)
-            // liegt, wie eine Hand greift — der Griff quer zum Unterarm durch die Faust, das Blatt zur Daumenseite und
-            // `neigung` unter die Waagrechte (der entspannte Arm), die Schneide (Klinge) bzw. der Kopf (Axt, Hammer,
-            // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
-            // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
-            // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
-            const faust = isStudio && imGelenk;
-            if (faust) {
-                // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
-                // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)
-                // ließ den Griff 0,072 m neben ihr (gate:nervensystem-schmiede H-F). Ohne Mitte keine Faust: LAUT.
-                const hm = handMitte && handMitte[anchor.name];
-                if (!hm) {
-                    this.log("FAUST: die Hand trägt keine Hand-Mitte (Ofen-Beipack handMitte) — kein Griff.", "ERROR");
-                    return null;
-                }
-                const fo = { x: hm[0], y: hm[1], z: hm[2] };
-                const art = mesh.userData && mesh.userData.heldArt;
-                // Der Bogen steht rechtwinklig zum Unterarm (gestreckter Bogen-Arm: der Bogen senkrecht zum Pfeil), eine
-                // Klinge oder ein Schaft `neigung` unter der Waagrechten des hängenden Arms.
-                const ng = art === "bogen" ? 0 : cfg.neigung;
-                const c = Math.cos(ng),
-                    s = Math.sin(ng);
-                const griff = new THREE.Vector3(0, -s, c); // die Griff-Achse: vorn, `neigung` hinab
-                const oben = new THREE.Vector3(0, c, s); // quer dazu in der Schwung-Ebene, oben
-                const quer = new THREE.Vector3(1, 0, 0);
-                const B = new THREE.Matrix4();
-                // Spalten = Bild der Template-Achsen X · Y · Z (rechtshändig).
-                if (art === "bogen")
-                    B.makeBasis(oben, griff, quer); // Länge Y im Griff, Sehne nach oben
-                else if (art === "klinge")
-                    B.makeBasis(griff, oben, quer.clone().negate()); // Klinge X, Schneiden-Ebene XY
-                else B.makeBasis(griff, quer.clone().negate(), oben.clone().negate()); // Kopf +Z nach unten
-                mesh.quaternion.setFromRotationMatrix(B);
-                const gpT =
-                    art === "bogen"
-                        ? new THREE.Vector3(0, 0, 0)
-                        : new THREE.Vector3((mesh.userData && mesh.userData.heldGripX) || 0, 0, 0);
-                gpT.multiplyScalar(ms).applyQuaternion(mesh.quaternion);
-                mesh.position.set(fo.x - gpT.x, fo.y - gpT.y, fo.z - gpT.z);
-                anchor.add(mesh);
-                return mesh;
-            }
-            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
-            // Der Griff der Studio-Gestalt kommt als DATEN (heldGripX aus dem LIVE-Buch). Template-Achse ist X
-            // (Griff bei 0, Klinge nach +X) → rotation.z += π/2 (Euler XYZ: Z wirkt zuerst) stellt sie in die
-            // Hand-Konvention (lange Achse +Y, Griff unten); (gripX,0,0) liegt danach bei (0,gripX,0) — dieselbe
-            // Versatz-Formel wie der Part-Pfad (_attachPointFor), tilt bewusst nicht eingerechnet.
-            const gp = isStudio
-                ? { x: 0, y: (mesh.userData && mesh.userData.heldGripX) || 0, z: 0 }
-                : this._attachPointFor(bp, "griff").point;
-            const axisRot = isStudio && mesh.userData && mesh.userData.heldAxis === "x" ? Math.PI / 2 : 0;
-            mesh.position.set(off.x * sx - gp.x * ms, off.y - gp.y * ms, off.z - gp.z * ms);
-            mesh.rotation.set(cfg.tilt.x, cfg.tilt.y * sx, cfg.tilt.z * sx + axisRot);
-            anchor.add(mesh);
-            return mesh;
-        };
-        if (eq && eq.held) pm.userData.heldMesh = buildHand(eq.held, "right");
-        if (eq && eq.offhand) pm.userData.offhandMesh = buildHand(eq.offhand, "left");
+        if (eq && eq.held) pm.userData.heldMesh = this._geraetInHand(pm, eq.held, "right");
+        if (eq && eq.offhand) pm.userData.offhandMesh = this._geraetInHand(pm, eq.offhand, "left");
         // DAS SEIL AM LEIB (physik.K4): trägt das Gerät ein Seil seiner Gattung, rechnet es ab jetzt der Takt
         this._seilAmLeib(pm.userData.heldMesh);
         this._seilAmLeib(pm.userData.offhandMesh);
+    }
+
+    // DIE EINE HAND (das Gerät sichtbar in der Hand eines Körpers, über `_buildFromBlueprint` — kein Parallel-Pfad): ein Mesh
+    // am Arm/Flügel des Körpers `koerper` (seine `userData.parts`, schwingt über die Transform-Kette mit — kein per-Frame-Update),
+    // sonst an seiner Wurzel; `side` "right" | "left" (Spiegel: links negiert die x-Offsets). Leser: die Hand des Spielers
+    // (`_refreshHeldMesh`) und das Werkzeug der Stoffstrom-Kette in der Hand eines Bewohners (`_stoffstromHand`). Liefert das
+    // Mesh (am Anker gehängt) oder null.
+    _geraetInHand(koerper, bpName, side) {
+        const parts = koerper.userData && koerper.userData.parts;
+        const cfg = AnazhRealm.HELD_MESH;
+        const bp = this.state.blueprints && this.state.blueprints[bpName];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        // Studio-Gestalt in der Hand: löst der EINE Preset-Resolver den Bauplan auf (klinge_<id> → LIVE-Buch)
+        // UND ist die Foundry-Gruppe warm, tragen Wrapper um die GETEILTE Studio-Geometrie die Optik; die
+        // Parts bleiben unsichtbare Substanz-Wahrheit (Tags · Ω-PHYSIS · wield). "pending" → der Part-Bau
+        // trägt sichtbar als Interim (die Hand ist nie leer); null → Part-Pfad byte-alt.
+        // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+        // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+        const anchor =
+            (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+            koerper;
+        const rig = koerper.userData && koerper.userData.rig;
+        const imGelenk = !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+        // DIE FAUST LIEST DIE HAND-MITTE DES LEIBS (`_leibHandMitte`, physik.K4 · same.physik.verformung): an der Grobstufe (B5,
+        // der Ego-Boot) die der feinen Vorlage; ist die feine noch im Werk, trägt der Part-Bau wie bei kaltem Buch, bis ihre
+        // Ankunft die Hand neu trägt (`_leibFuerHand`). Bis hier fiel jede Studio-Gestalt dort aus der Hand (die Faust ohne
+        // Hand-Mitte: null), bis der Leerlauf tauschte.
+        const handMitte = imGelenk ? this._leibHandMitte(rig) : null;
+        const grobOhneMitte =
+            imGelenk &&
+            !(handMitte && handMitte[anchor.name]) &&
+            !!koerper.userData._gelenk &&
+            koerper.userData._gelenk.nahStufe === 1;
+        const studio = grobOhneMitte ? "pending" : this._heldFoundryGroup(bpName);
+        const isStudio = !!(studio && studio !== "pending");
+        const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+        // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
+        mesh.userData._gehalten = true;
+        // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
+        // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
+        // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
+        // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
+        // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
+        // × 0,27 = 0,17 m, ein Spielzeug im Faustinneren. Jetzt rechnet die Hand in WELT-Metern: die Studio-Gestalt
+        // trägt ihre Gesetzbuch-Länge (die Schmiede baut in Metern — Masse, Balance und Reichweite rechnen damit),
+        // ein Part-Bau seine Werkzeug-Spanne `targetSpanM`; der Anker-Faktor wird herausgeteilt.
+        let ankerSkala = 1;
+        try {
+            anchor.updateWorldMatrix(true, false);
+            const ws = anchor.getWorldScale(new THREE.Vector3());
+            const m = (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3;
+            if (Number.isFinite(m) && m > 1e-4) ankerSkala = m;
+        } catch (_e) {
+            /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
+        }
+        // die wahre Größe: die Studio-Gestalt in Metern, ein Part-Bau in der EINEN Skala, mit der er auch wiegt
+        // (`_geraetWeltSkala`: die rotations-bewusste Spanne seiner Teile auf die Werkzeug-Spanne)
+        mesh.scale.setScalar((isStudio ? 1 : this._geraetWeltSkala(bp)) / ankerSkala);
+        const sx = side === "left" ? -1 : 1;
+        // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
+        // verschoben, dass der griffigste Part (bzw. der explizite griff-
+        // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
+        const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
+        // DIE FAUST (W5): ein Studio-Gerät im Handgelenk des Studio-Menschen (die Rig-Gelenke, `_buildHumanGroup`)
+        // liegt, wie eine Hand greift — der Griff quer zum Unterarm durch die Faust, das Blatt zur Daumenseite und
+        // `neigung` unter die Waagrechte (der entspannte Arm), die Schneide (Klinge) bzw. der Kopf (Axt, Hammer,
+        // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
+        // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
+        // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
+        const faust = isStudio && imGelenk;
+        if (faust) {
+            // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
+            // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)
+            // ließ den Griff 0,072 m neben ihr (gate:nervensystem-schmiede H-F). Ohne Mitte keine Faust: LAUT.
+            const hm = handMitte && handMitte[anchor.name];
+            if (!hm) {
+                this.log("FAUST: die Hand trägt keine Hand-Mitte (Ofen-Beipack handMitte) — kein Griff.", "ERROR");
+                return null;
+            }
+            const fo = { x: hm[0], y: hm[1], z: hm[2] };
+            const art = mesh.userData && mesh.userData.heldArt;
+            // Der Bogen steht rechtwinklig zum Unterarm (gestreckter Bogen-Arm: der Bogen senkrecht zum Pfeil), eine
+            // Klinge oder ein Schaft `neigung` unter der Waagrechten des hängenden Arms.
+            const ng = art === "bogen" ? 0 : cfg.neigung;
+            const c = Math.cos(ng),
+                s = Math.sin(ng);
+            const griff = new THREE.Vector3(0, -s, c); // die Griff-Achse: vorn, `neigung` hinab
+            const oben = new THREE.Vector3(0, c, s); // quer dazu in der Schwung-Ebene, oben
+            const quer = new THREE.Vector3(1, 0, 0);
+            const B = new THREE.Matrix4();
+            // Spalten = Bild der Template-Achsen X · Y · Z (rechtshändig).
+            if (art === "bogen")
+                B.makeBasis(oben, griff, quer); // Länge Y im Griff, Sehne nach oben
+            else if (art === "klinge")
+                B.makeBasis(griff, oben, quer.clone().negate()); // Klinge X, Schneiden-Ebene XY
+            else B.makeBasis(griff, quer.clone().negate(), oben.clone().negate()); // Kopf +Z nach unten
+            mesh.quaternion.setFromRotationMatrix(B);
+            const gpT =
+                art === "bogen"
+                    ? new THREE.Vector3(0, 0, 0)
+                    : new THREE.Vector3((mesh.userData && mesh.userData.heldGripX) || 0, 0, 0);
+            gpT.multiplyScalar(ms).applyQuaternion(mesh.quaternion);
+            mesh.position.set(fo.x - gpT.x, fo.y - gpT.y, fo.z - gpT.z);
+            anchor.add(mesh);
+            return mesh;
+        }
+        const off = anchor === koerper ? cfg.rootOffset : cfg.handOffset;
+        // Der Griff der Studio-Gestalt kommt als DATEN (heldGripX aus dem LIVE-Buch). Template-Achse ist X
+        // (Griff bei 0, Klinge nach +X) → rotation.z += π/2 (Euler XYZ: Z wirkt zuerst) stellt sie in die
+        // Hand-Konvention (lange Achse +Y, Griff unten); (gripX,0,0) liegt danach bei (0,gripX,0) — dieselbe
+        // Versatz-Formel wie der Part-Pfad (_attachPointFor), tilt bewusst nicht eingerechnet.
+        const gp = isStudio
+            ? { x: 0, y: (mesh.userData && mesh.userData.heldGripX) || 0, z: 0 }
+            : this._attachPointFor(bp, "griff").point;
+        const axisRot = isStudio && mesh.userData && mesh.userData.heldAxis === "x" ? Math.PI / 2 : 0;
+        mesh.position.set(off.x * sx - gp.x * ms, off.y - gp.y * ms, off.z - gp.z * ms);
+        mesh.rotation.set(cfg.tilt.x, cfg.tilt.y * sx, cfg.tilt.z * sx + axisRot);
+        anchor.add(mesh);
+        return mesh;
     }
 
     // DAS SEIL AM LEIB (physik.K4) — der Leser des EINEN Seil-Gesetzes (schmiede-core `seilZustand` · `seilSchritt`, dasselbe

@@ -132,7 +132,7 @@ hauptLauf(async () => {
         if (ziel) {
             const v = r._foundryVariantFor(1, ziel.preset);
             const key = r._foundryKoerperKey(ziel.preset, v, ziel.lod);
-            await flatMessen(ziel.preset, ziel.lod); // eine untätige Stufe räumte der Ruhe-Deckel: sie reist wieder an
+            await flatMessen(ziel.preset, ziel.lod); // eine Stufe ohne Halter ließ der Cache los (`_foundryOhneLeser`): sie reist wieder an
             const grp = r._foundryCacheGet(key);
             const orig = r._foundryFlatVerschmelzen;
             try {

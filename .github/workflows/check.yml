@@ -4,12 +4,18 @@ name: Code-Check
 # Merge-Regel (entscheidung.md §2.8): jeder Karten-Kopf braucht den Puls grün, eine Karte mit Risiko R2/R3 trägt am letzten Push `[ci voll]` und braucht die volle Batterie grün, und eine Karte mit R0/R1 merget auf den Puls, während die volle Batterie auf integ-probe je Merge richtet.
 # PULS (Job `puls`, je Push auf jedem Zweig, Wanduhr ≤ 2 min): Format (in Teilen auf allen Kernen), Lint, Syntax, die
 # Statik (`npm run check`), der Schnell-Playtest und die Byte-Verträge unter 30 s — zwei Gruppen parallel. VOLL (Job
-# `voll`, die ganze übrige Batterie): auf integ-probe und main, auf einem PR nach main, nachts, auf Abruf und bei
-# `[ci voll]` in der Commit-Message; die Gruppen nach dem p90 ihrer Schritte verteilt (spec/ci/ci-zeiten.json,
-# `node scripts/ci-zeiten.cjs` misst und verteilt; die Klasse cpu), jede ≤ dem Mittel + 0,5 min, hinter dem Kopf-Richter (Job
-# `kopf`: ein Kopf, der die volle Batterie schon grün trug, fährt sie nicht noch einmal). DIE KARTEN (Job `echt`, drei Beine:
-# omen · radeon · gtx1050): jede Wand der GPU-Klasse an GENAU einer Stelle, auf der echten Karte — nie swiftshader im Zug
-# (w27-swift-raus). `[skip ci]` (WIP) überspringt beides. gate:ci-deckung hält die Waage: jeder Schritt steht an GENAU einer Stelle, keine Gruppe über ihrem
+# `voll`, die ganze übrige Batterie): am Zweig-Kopf mit `[ci voll]` in der Commit-Message (die Vorprüfung), auf main (die
+# Nachwache nach jeder Landung), auf einem PR nach main und auf Abruf — NIE im Zug (der Kopf-Richter sagt dort voll=nein); die
+# Gruppen nach dem p90 ihrer Schritte verteilt (spec/ci/ci-zeiten.json, `node scripts/ci-zeiten.cjs` misst und verteilt; die
+# Klasse cpu), jede ≤ dem Mittel + 0,5 min, hinter dem Kopf-Richter (Job `kopf`: ein Kopf, der die volle Batterie schon grün
+# trug, fährt sie nicht noch einmal). DIE KARTEN (Job `echt`, drei Beine: omen · radeon · gtx1050): jede Wand der GPU-Klasse an
+# GENAU einer Stelle, auf der echten Karte — nie swiftshader (w27-swift-raus); sie fährt nur auf Abruf, den GPU-Beweis eines
+# Kopfs trägt die GPU-Probe seiner Vorprüfung.
+# LANDUNG ≤ 10 MIN (23.11., der Schöpfer: „Keine 10h max 10min und fertig. Wir messen soviel wie nötig, nicht wie möglich“;
+# gemessen an z695: Wand 29,4 min, kopf 0,4 + puls 4,7, voll 10–20 je Scherbe, echt omen 28,9 · radeon 21,4 · gtx 8,7 min): am
+# Zug-Kandidaten urteilen NUR kopf und puls 1/2 · 2/2; voll erbt vom grünen Lauf am Zweig-Kopf (der Einlass, zug.cjs bereit,
+# verlangt ihn), echt fährt in keinem Zug und keiner Nacht. Nach der Landung fährt main die volle Batterie als NACHWACHE, nie
+# blockierend: ihr Rot nennt zug.cjs nachwache mit den Landungen seit dem letzten grünen main beim Namen (die Täter-Spur). `[skip ci]` (WIP) überspringt beides. gate:ci-deckung hält die Waage: jeder Schritt steht an GENAU einer Stelle, keine Gruppe über ihrem
 # Deckel, kein Schritt ohne Zeit, ein voller Lauf nie mehr Jobs zugleich als das Konto Läufer-Plätze hat.
 on:
     push:
@@ -19,17 +25,25 @@ on:
         branches: ["**", "!claude/**"]
     pull_request:
         branches: [main]
-    schedule:
-        # nachts 02:30 UTC auf main — die Batterie nur, wenn der Kopf noch kein grünes Urteil trägt (Job `kopf`)
-        - cron: "30 2 * * *"
+    # kein schedule mehr (LANDUNG ≤ 10 MIN): die Nacht trug die Beine der Karten und die Batterie am Kopf von main — die Beine fahren
+    # in keiner Nacht, die Batterie fährt auf main je Landung (die Nachwache), ein Nacht-Lauf am selben Kopf urteilte nichts Neues
     workflow_dispatch:
+        # der Abruf der Karten ist eine WAHL: der Zug-Dienst stößt am Zweig-Kopf ohne grüne Batterie die volle an (zug-dienst.sh
+        # bereit, ohne inputs) — ohne die Wahl führe jeder solche Anstoß drei GPU-Beine mit (gate:ci-deckung (E) ABRUF)
+        inputs:
+            karten:
+                description: "die Beine der Karten (Job echt: omen · radeon · gtx1050) fahren mit"
+                type: boolean
+                default: false
 
 # V7 — ein Lauf pro Ref: ein neuer Push auf denselben Branch canceled den laufenden
 # (spart Runner-Minuten, kein veralteter Lauf hängt). Der pull_request-Trigger teilt sich
-# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft.
+# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft. AUSSER auf main: die Nachwache bricht nie ab — landet der
+# nächste Zug, während sie fährt, wartet sein Lauf (GitHub hält je Gruppe einen laufenden und einen wartenden; ein überholter
+# wartender fällt, sein Kopf steht im Bereich des nächsten Urteils: zug.cjs nachwache nennt die Landungen seit dem letzten grünen main).
 concurrency:
     group: check-${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+    cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
     puls:
@@ -224,15 +238,15 @@ jobs:
 
     kopf:
         # EIN URTEIL JE KOPF (K61, Richter 22.10.): vor der vollen Batterie fragt dieser Job die API nach den anderen Läufen auf
-        # demselben Kopf (SHA): trug einer die volle Batterie grün, läuft sie nicht noch einmal (voll=nein), trug einer jedes
-        # Bein der Karten grün, sie auch nicht (echt=nein); läuft ein älterer noch, wartet er bis 30 min auf sein Urteil (grün steht,
-        # rot ist ROT, abgebrochen fährt selbst). Nachts urteilt derselbe Richter (main trägt den Kopf von integ-probe), auf Abruf
-        # und auf einem PR läuft alles; ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
+        # demselben Kopf (SHA): trug einer die volle Batterie grün, läuft sie nicht noch einmal (voll=nein); läuft ein älterer noch,
+        # wartet er bis 30 min auf sein Urteil (grün steht, rot ist ROT, abgebrochen fährt selbst). Im Zug (push auf integ-probe,
+        # zug-a, zug-b) sagt er ohne Frage voll=nein — die Batterie erbt vom Zweig-Kopf (LANDUNG ≤ 10 MIN); auf main fährt sie als
+        # Nachwache, auf Abruf und auf einem PR läuft alles; ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
         # DER KOPF IST SEIN INHALT (18.11.): ein Commit ohne Inhalt (EIN Elter, derselbe Baum) trägt das Urteil seines Elters — der
         # Stempel „Abgabe …" auf einem Kopf, der `[ci voll]` grün trug, fährt die Batterie nicht ein zweites Mal (Stempel → bereit
         # in der Zeit des Pulses statt der Batterie); ein Merge und jeder Commit mit Inhalt erben nichts (`kopfKette`).
         name: kopf
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
         runs-on: ubuntu-latest
         timeout-minutes: 35
         permissions:
@@ -240,7 +254,6 @@ jobs:
             contents: read
         outputs:
             voll: ${{ steps.kopf.outputs.voll }}
-            echt: ${{ steps.kopf.outputs.echt }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -1220,12 +1233,16 @@ jobs:
         # trägt seine Frist (timeout-minutes aus node scripts/ci-zeiten.cjs); der Job höchstens 45 min, der Plan je Bein höchstens
         # 20 min (die Waage). Ein Schritt, dessen Browser nur den Null-Renderer trägt, zeichnet nie und steht hier nicht (die Weiche
         # nennt ihn ROT, gate:ci-deckung (K) statisch). Der Start-Hook jedes Läufers nimmt das GPU-Schloss der Maschine (dasselbe wie
-        # für jede GPU-Probe, die ihm nachgibt) und lässt nur push und schedule von MiguellD durch; nie pull_request (das Repo ist
-        # öffentlich). Bei jedem push auf integ-probe, zug-a und zug-b (die Hälften der Bisektion, zug.cjs teile) und nachts, hinter
-        # dem Kopf-Richter (echt=ja: der Kopf trägt noch nicht jedes Bein grün). gate:ci-deckung (E).
+        # für jede GPU-Probe, die ihm nachgibt); nie pull_request (das Repo ist öffentlich).
+        # NUR AUF ABRUF (LANDUNG ≤ 10 MIN, 23.11.; der Schöpfer: „wir messen soviel wie nötig, nicht wie möglich“): bis hier fuhren
+        # die drei Beine je push auf integ-probe, zug-a und zug-b und nachts — am 23.11. 14 Züge mit 1 186 GPU-min, je Zug 84,7, und
+        # das Bein omen allein 28,9 min der 29,4 min Wand von z695. Den GPU-Beweis eines Kopfs trägt die GPU-Probe seiner Vorprüfung
+        # (`[gpu-probe: gate:…]`, ein Gerät, ≤ 8 min), die Pflicht-Wände je Pfad verlangt zug.cjs (PROBE_PFLICHT); der Zug wartet
+        # auf kein Bein. Der Job bleibt die EINE Stelle jeder Wand der GPU-Klasse (gate:ci-deckung (E)), ohne Kopf-Richter, und fährt
+        # nur, wenn der Abruf die Karten wählt (inputs.karten). Der Start-Hook der Läufer lässt heute nur push und schedule von
+        # MiguellD durch — der Abruf wartet auf seine Freigabe dort.
         name: echt ${{ matrix.karte }} (GPU-Wände auf der Karte)
-        needs: kopf
-        if: (github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/zug-a' || github.ref == 'refs/heads/zug-b'))) && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'
+        if: github.event_name == 'workflow_dispatch' && inputs.karten
         strategy:
             fail-fast: false
             matrix:

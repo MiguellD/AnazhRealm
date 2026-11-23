@@ -3132,5 +3132,5 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 
 // Voll-Dispose + Re-Mint (Pipeline-Cache, Matrix-Upload, Heap-Müll). 10 s deckt jede Oszillation.
 AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
 // Die Frist eines bekannten Wiederkehrers (Mint-Zahl ≥ 2) wächst mit seinen Mints bis zu diesem Vielfachen (60 s): die längste
-// Rückkehr, die die Churn-Linse einer Hülle gewährt. Leser: der Reaper und die Ruhezeit des Foundry-Cache (`_foundryRuheDeckel`).
+// Rückkehr, die die Churn-Linse einer Hülle gewährt. Leser: der Reaper und der Leser ohne Senke im Foundry-Cache (`_foundryOhneLeser`).
 AnazhRealm.ARCH_LEER_MINT_DECKEL = 6;

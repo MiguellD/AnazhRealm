@@ -121,6 +121,10 @@
             "zweck": "Struktur: Render-Fluss (W2) und Zeit-Graph (W7) am AST, Absenzen W3–W6 über den Helfer",
             "stamm": 1
         },
+        "scripts/diag-vehicle-drive.cjs": {
+            "zweck": "Messung: führt vehicle-core im vm ohne das Gesetz der Kabine aus (A8: der EINE Form-Durchgang epocheForm ohne kabineGesetz — der GT am Regler-Rand Gürtel = Dach steht beim Namen)",
+            "datei": 1
+        },
         "scripts/diag-vendor-anker.cjs": {
             "zweck": "Messung: führt _diaetRefresh aus dem Stamm gegen r184 aus (Konsum statt Zitat)",
             "stamm": 1
