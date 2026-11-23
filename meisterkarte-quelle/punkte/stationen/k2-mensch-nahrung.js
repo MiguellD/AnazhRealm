@@ -507,7 +507,7 @@ const HAND = async (r, T, arg) => {
 // DER VORRAT DER SCHEUNE (strom S1): je Hof der Siedlung am Messort (`S.scheunen`: die Scheune, ihre Esser, die Werke ihrer Bauern) die
 // Welt-Uhr gerafft, Stunde für Stunde über `tage` Tage (`_scheuneFassen` wie der Takt des Bilds); gemessen: die Ernten (Anstiege des
 // Vorrats) und die Mahlzeiten (Abstiege) je Hof, hochgerechnet auf ein Jahr — ein Sägezahn nur, wo beides geschieht —, und der Hof,
-// dessen Scheune sowohl voll (≥ eine Kiste) als auch leer (keine Kiste) stand, mit seinen beiden Stunden. `zu` (optional, in
+// dessen Scheune sowohl voll (≥ ein Stück im Bild) als auch leer (keines) stand, mit seinen beiden Stunden. `zu` (optional, in
 // Stunden ab dem Anfang): die Welt-Uhr auf diese Stunde stellen und das Bild des Bestands sofort legen (das Bildpaar).
 const STROM = async (r, T, arg) => {
     const s = r.state;
@@ -517,7 +517,6 @@ const STROM = async (r, T, arg) => {
     SL.sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
     const S = SL[0];
     if (!S || typeof r._scheuneFassen !== "function") return { hoefe: 0, fehlt: "keine Scheune als Halter des Bestands (S.scheunen, _scheuneFassen)" };
-    const kiste = KC.BESTAND_GESETZ.kiste;
     const stdJeS = (r._weltStunde(s.spielZeit + 1000) - r._weltStunde(s.spielZeit)) / 1000;
     if (arg.zu != null) {
         s.spielZeit = arg.z0 + arg.zu / stdJeS;
@@ -530,7 +529,7 @@ const STROM = async (r, T, arg) => {
         const y = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
         const [px, pz, lx, lz] = [w.x - fx * 7 + fz * 1.5, w.z - fz * 7 - fx * 1.5, w.x + fz * 1.5, w.z - fx * 1.5];
         const kam = { px, pz, py: y(px, pz) + 1.7, lx, lz, ly: y(lx, lz) + 0.5 };
-        return { n: KC.bestandAm(H.bestand, r._weltStunde()), kisten: H.bestandBild ? H.bestandBild.children.filter((c) => c.visible).length * (H.bestandBild.visible ? 1 : 0) : -1, kam };
+        return { n: KC.bestandAm(H.bestand, r._weltStunde()), kisten: H.bestandBild ? (H.bestandBild.visible ? (H.bestandBild.userData.stuecke != null ? H.bestandBild.userData.stuecke : H.bestandBild.children.filter((c) => c.visible).length) : 0) : -1, kam };
     }
     const tage = arg.tage || 2;
     const z0 = s.spielZeit;
@@ -544,7 +543,7 @@ const STROM = async (r, T, arg) => {
             const o = hoefe[j];
             if (n > o.vor + 1e-9) o.auf++;
             if (n < o.vor - 1e-9) o.ab++;
-            if (n >= kiste && o.voll == null) o.voll = i;
+            if (n >= 1 && o.voll == null) o.voll = i; // voll: ein Stück im Bild (je angefangene Einheit eines)
             if (n < 1e-9 && o.voll != null && o.leer == null) o.leer = i;
             o.vor = n;
         });

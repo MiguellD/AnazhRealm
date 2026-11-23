@@ -356,8 +356,9 @@ const LIEFERUNG = async (r, T, arg) => {
     const wagen = SL.flatMap((S) => S.verkehr.wagen.filter((W) => W.lieferung && W.bestand));
     const staende = SL.flatMap((S) => S.liste.filter((b) => b && b.bestand && b.bestand.art === "stand"));
     const geliefert = () => SL.reduce((a, S) => a + ((S.verkehr.zahl && S.verkehr.zahl.ladung && S.verkehr.zahl.ladung.amStand) || 0), 0);
-    // die Kisten im Bild des Wagens (die Gruppe `_verkehrLadung`: je angefangene Kiste ein sichtbares Kind; die Gruppe selbst folgt der Stufe)
-    const kisten = (W) => (W.ladungBild ? W.ladungBild.children.filter((c) => c.visible).length : 0);
+    // die Ware im Bild des Wagens (die Gruppe `_verkehrLadung`: die Stücke ihres Stapels, `userData.stuecke` — je angefangene Einheit
+    // eines; vor stoffstrom-kette-2 je angefangene Kiste ein sichtbares Kind; die Gruppe selbst folgt der Stufe)
+    const kisten = (W) => (W.ladungBild ? (W.ladungBild.userData.stuecke != null ? W.ladungBild.userData.stuecke : W.ladungBild.children.filter((c) => c.visible).length) : 0);
     const aus = { wagen: wagen.length, staende: staende.length, mitFahrer: wagen.filter((W) => Array.isArray(W.fahrer) && W.fahrer.length).length };
     if (arg.schritt === "ladung") {
         // die Ladung: die Stadt fährt (seit dem Tag), bis ein Wagen mit Fahrer an seinem Werk geladen hat
@@ -470,12 +471,92 @@ const STROM7 = async (r, T, arg) => {
     return { arten: Object.keys(tage[7]).length, waren: imStrom.size, hinein, hinaus, tage: h0 != null && h1 != null ? +((h1 - h0) / 24).toFixed(3) : null };
 };
 
+// DIE KETTE IM ZEITRAFFER (stoffstrom S1): die Siedlung am Messort mit einer Kette Erz → Barren → Werkzeug (`S.stoffstrom`), ihr
+// Zensus (`_stoffstromZensus`: die Halde in kg, die Barren an den Öfen, die Werkzeuge in den Händen) und ihr BILD, wie der Takt des
+// Spiels es legt (`_bestandBildTakt` mit dem Auge an der Schmiede): die Stücke am Ofen und die Stoffe ihrer Meshes (die Barren im
+// Bild — ihr Stoff ist die Ware des Ofens, nie Holz: bis stoffstrom-kette-2 lag jede Ware als dunkle Holzkiste), die Stoffe der
+// Halde (das Erz, bis dahin Stein). `tage` (optional) rafft die Welt-Uhr vorher um so viele Tage, Stunde für Stunde über die Kette
+// (`_stoffstromFassen`). Die Pose des Bildpaars: 2,5 m hinter dem Stapel des ersten Ofens, vom Schmied her gesehen, Ego 1,5 m.
+const KETTE = async (r, T, arg) => {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const KC = window.__koerperCore;
+    if (typeof r._stoffstromZensus !== "function") return { leser: "_stoffstromZensus" };
+    const SL = [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && S.stoffstrom);
+    SL.sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
+    const S = SL[0];
+    if (!S) return { ketten: 0 };
+    const Z = S.stoffstrom;
+    const stdJeS = (r._weltStunde(s.spielZeit + 1000) - r._weltStunde(s.spielZeit)) / 1000;
+    const z0 = s.spielZeit;
+    for (let i = 1; i <= 24 * (arg.tage || 0); i++) {
+        s.spielZeit = z0 + i / stdJeS;
+        r._stoffstromFassen(Z);
+    }
+    const zensus = r._stoffstromZensus(S);
+    const stoffe = (G) => {
+        const o = new Set();
+        if (G && G.visible) G.traverse((m) => m.isMesh && m.visible && o.add((m.userData && m.userData.stoff) || "?"));
+        return [...o];
+    };
+    // das Bild: dieselbe Funktion, die der Takt des Spiels je Halter im Kreis ruft (`_bestandBild`), sofort; die Halde an ihrem
+    // Ort, gelesen, ehe der Takt sie dem fernen Auge verbirgt
+    for (const b of Z.schmiede) r._bestandBild(b, true);
+    if (typeof r._stoffstromBild === "function") r._stoffstromBild(S, { x: Z.lager.x, z: Z.lager.z });
+    const halde = { kg: Z.K.haldeKg, stoffe: stoffe(Z.bild) };
+    for (let i = 0; i < 4; i++) await window.__seitenTakt();
+    const h = r._weltStunde();
+    const oefen = Z.schmiede.map((b) => {
+        const G = b.bestandBild;
+        const st = stoffe(G);
+        const n = Math.ceil(KC.bestandAm(b.bestand, h) - 1e-9);
+        const stuecke = G && G.visible ? (G.userData.stuecke != null ? G.userData.stuecke : G.children.filter((c) => c.visible).length) : 0;
+        return { n, stuecke, stoffe: st, ware: b.bestand.ware };
+    });
+    // die Barren im Bild: die Stücke eines Ofens, dessen Bild ganz aus der Ware des Ofens ist
+    const barrenImBild = oefen.reduce((a, o) => a + (o.stoffe.length && o.stoffe.every((x) => x === o.ware) ? o.stuecke : 0), 0);
+    // die Pose: 1,5 m vor dem Stapel des ersten Ofens mit Bild, 1,6 m über dem Grund — zuerst vom Werk her, über dem getretenen Gang
+    // des Schmieds zum Stapel (`_bestandWare`: dort steht kein Halm vor den Barren), sonst im Kreis um den Stapel die erste, deren
+    // Strahl zum Stapel frei ist (der Strahl des Felds und der Bauten, `_fieldRaycast`: ein Zaunpfahl, eine Wand davor fällt aus —
+    // durch Pflanzen hindurch) und an der kein Leib der Siedlung steht (das Auge stünde in ihm)
+    const b = Z.schmiede.find((x) => x.bestandBild && x.bestandBild.userData.platz) || Z.schmiede[0];
+    const P = (b.bestandBild && b.bestandBild.userData.platz) || { x: b.orte.werk.x + 1.9, z: b.orte.werk.z };
+    const w = b.orte.werk;
+    const y = (x, z) => r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z);
+    const a0 = Math.atan2(w.z - P.z, w.x - P.x);
+    const ly = y(P.x, P.z) + 0.05;
+    let kam = null;
+    for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6]) {
+        const a = a0 + (k * Math.PI) / 6;
+        const [px, pz] = [P.x + Math.cos(a) * 1.5, P.z + Math.sin(a) * 1.5];
+        const py = y(px, pz) + 1.6;
+        const t = typeof r._fieldRaycast === "function" ? r._fieldRaycast(px, py, pz, P.x, ly + 0.25, P.z, { durchPflanzen: true }) : null;
+        const pose = { px, pz, py, lx: P.x, lz: P.z, ly };
+        if (!kam) kam = pose;
+        const leib = (S.liste || []).some((q) => Number.isFinite(q.x) && Math.hypot(q.x - px, q.z - pz) < 1.4);
+        if (!(t && t.hit) && !leib) {
+            kam = Object.assign(pose, { frei: true });
+            break;
+        }
+    }
+    return {
+        name: S.plan && S.plan.name,
+        zensus,
+        oefen,
+        barrenImBild,
+        halde,
+        erz: globalThis.__schmiedeCore.STOFFSTROM.erz,
+        tage: +((r._weltStunde() - r._weltStunde(z0)) / 24).toFixed(3),
+        kam,
+    };
+};
+
 module.exports = (F) => [
     // ───────── DER STOFFSTROM: Erz → Barren → Werkzeug, die Waren über die Zeit ─────────
     F.leiter("mensch.wirtschaft.stoffstrom", {
-        sek: 45,
-        mutiert: true,
-        pfad: [...STADT_PFAD, "stamm/feld-leben.js", "stamm/dirigent-takt.js"],
+        sek: 60,
+        mutiert: true, // S2 rafft sieben Tage der Stadt, S1 drei Tage der Kette am Dorf
+        pfad: [...STADT_PFAD, "stamm/feld-leben.js", "stamm/dirigent-takt.js", "schmiede-core.js", "stamm/bau-teile.js", "stamm/bau-vorlagen.js"],
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
@@ -492,7 +573,6 @@ module.exports = (F) => [
             };
             const arten = () => Object.keys(z().inventar).length;
             H.zeile("Stadt: " + (Z ? Z.bewohner + " Bewohner, " + Z.haeuser + " Häuser, " + Z.schmieden + " Schmieden, Bestände des Spielers " + Object.keys(Z.inventar).length + " Arten" : "kein Zensus (" + zf + ")"));
-            await K.schritt(1, async () => K.leser(1, { n: z().schmieden, fehlt: "keine Kette Erz → Barren → Werkzeug: die Esse wärmt den gehaltenen Stahl, sie schmilzt kein Erz und gibt keinen Barren — keine Halde, kein Barren am Ofen (" + z().schmieden + " Schmieden in der Stadt)", wo: "stamm/feld-leben.js:2499" }));
             await K.schritt(3, async () => K.nicht(3, { n: arten(), fehlt: "10² Waren mit Warenkorb je Geologie (20 Saaten): die Welt trägt " + arten() + " Warenarten, alle im Inventar des Spielers — kein Bewohner, kein Stand, kein Haus hat einen Bestand" }));
             await K.schritt(4, async () => {
                 if (arten() < 1000) return K.nicht(4, { n: arten(), fehlt: "10³ Waren in der Werkstatt: " + arten() + " Warenarten in der Welt, " + z().schmieden + " Schmieden ohne Werkstück" });
@@ -510,10 +590,37 @@ module.exports = (F) => [
                 if (w.waren < 10) return K.nicht(2, { n: w.waren, fehlt: "10 Waren im Strom: über " + w.tage + " geraffte Tage änderte sich der Bestand von " + w.waren + " Waren (" + w.arten + " Arten, alle beim Spieler; kein Bewohner, Stand oder Haus hält einen Bestand)" });
                 K.zahl(2, { n: w.waren, werte: { bilanz: (w.hinein - w.hinaus) / Math.max(1, w.hinein + w.hinaus) }, beleg: w.tage + " Tage, hinein " + w.hinein + ", hinaus " + w.hinaus, taeter: null });
             });
+            // S1 am Dorf (die Kette liegt, wo die Geologie den Fels legt — das Start-Dorf trägt sie): der Zeitraffer der Kette und ihr
+            // Bildpaar an derselben Pose, Tag 0 ↔ drei Tage später — die Halde kleiner und aus Erz, die Barren am Ofen im Bild aus
+            // ihrem Stoff (die Stücke, die das Bild zeigt), das Werkzeug in der Hand
+            await K.messort("dorf");
+            await K.schritt(1, async () => {
+                const v = await ruf("KETTE", {});
+                if (v.leser) return K.leser(1, { n: 0, fehlt: "kein Zensus der Kette Erz → Barren → Werkzeug", wo: "stamm/siedlung-bewohner.js " + v.leser });
+                if (!v.zensus) return K.zahl(1, { n: 0, werte: { halde: 0, barren: 0, werkzeug: 0 }, beleg: "am Dorf keine Siedlung mit Kette", taeter: "keine Kette am Dorf (stamm/siedlung-bewohner.js _stoffstromAnlegen: keine Schmiede oder kein Fels binnen lager.bisM)" });
+                const vb = await K.bild(1 + "-vorher", v.kam, { wahl: 0 });
+                const n = await ruf("KETTE", { tage: 3 });
+                const nb = await K.bild(1 + "-nachher", v.kam, { wahl: 0 });
+                const [a, e] = [v.zensus, n.zensus];
+                const erzBild = n.halde.stoffe.length > 0 && n.halde.stoffe.every((x) => x === n.erz);
+                const halde = e.haldeKg < a.haldeKg && erzBild ? 1 : 0;
+                const kiste = n.oefen.filter((o) => o.n > 0 && !(o.stoffe.length && o.stoffe.every((x) => x === o.ware)));
+                H.zeile("Kette am Dorf " + (n.name || "") + " (" + n.tage + " Tage gerafft): Halde " + a.haldeKg + " → " + e.haldeKg + " kg aus " + (n.halde.stoffe.join("/") || "—") + " · Barren am Ofen " + a.barren + " → " + e.barren + ", im Bild " + n.barrenImBild + " Stück [" + n.oefen.map((o) => o.n + ":" + o.stuecke + " " + (o.stoffe.join("/") || "—")).join(", ") + "] · Werkzeug in der Hand " + a.werkzeug + " → " + e.werkzeug);
+                K.zahl(1, {
+                    n: e.oefen,
+                    werte: { halde, barren: n.barrenImBild, werkzeug: e.werkzeug },
+                    beleg: n.tage + " Tage: Halde " + a.haldeKg + " → " + e.haldeKg + " kg (" + (n.halde.stoffe.join("/") || "—") + "), Barren " + e.barren + " am Ofen, " + n.barrenImBild + " im Bild, Werkzeug " + e.werkzeug + " in der Hand; Bildpaar " + vb.datei + " ↔ " + nb.datei,
+                    taeter: !(e.haldeKg < a.haldeKg) ? "die Halde schrumpft nicht (koerper-core stoffstromFassen)"
+                        : !erzBild ? "die Halde liegt aus " + (n.halde.stoffe.join("/") || "nichts") + ", nicht aus " + n.erz + " (stamm/siedlung-bewohner.js _stoffstromBild)"
+                        : !(e.barren >= 1) ? "kein Barren am Ofen (koerper-core stoffstromFassen)"
+                        : kiste.length ? "die Ware liest sich als dunkle Kiste: " + kiste.map((o) => o.n + " " + o.ware + " als " + (o.stoffe.join("/") || "nichts")).join(", ") + " (stamm/siedlung-bewohner.js _bestandBild → _wareBild)"
+                        : !(e.werkzeug >= 1) ? "kein Werkzeug in der Hand (stamm/siedlung-bewohner.js _stoffstromFassen)" : null,
+                });
+            });
         },
-        seite: { STADT, STROM7 },
+        seite: { STADT, STROM7, KETTE },
         sprossen: {
-            1: { umfang: { soll: 1, wort: "Kette Erz → Barren → Werkzeug" }, masse: [{ key: "halde", wort: "Halde kleiner im Zeitraffer (ja = 1)", soll: 1, richtung: "≥" }, { key: "barren", wort: "Barren am Ofen", soll: 1, richtung: "≥" }, { key: "werkzeug", wort: "Werkzeug in der Hand", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "keine Schmelze, kein Barren", wo: "stamm/feld-leben.js:2499" },
+            1: { umfang: { soll: 1, wort: "Kette Erz → Barren → Werkzeug" }, masse: [{ key: "halde", wort: "Halde kleiner im Zeitraffer und aus Erz (ja = 1)", soll: 1, richtung: "≥" }, { key: "barren", wort: "Barren am Ofen im Bild (Stücke aus ihrem Stoff)", soll: 1, richtung: "≥" }, { key: "werkzeug", wort: "Werkzeug in der Hand", soll: 1, richtung: "≥" }], erwartet: "zahl" },
             2: { umfang: { soll: 10, wort: "Waren im Strom über 7 Tage" }, masse: [{ key: "bilanz", wort: "hinein − hinaus über 7 Tage (relativ)", soll: 0, tol: 0.1 }], erwartet: "nicht", fehlt: "keine Ware fließt" },
             3: { umfang: { soll: 100, wort: "Waren" }, masse: [{ key: "geologie", wort: "Warenkorb passt zur Geologie (20 Saaten)", soll: 0.9, richtung: "≥" }, { key: "H", wort: "Kettentiefe H", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Waren" },
             4: { auge: { pose: "6 m diagonal vor der ersten Schmiede, Ego 1,7 m", vorbild: "Foto einer realen Werkstatt (Schmiede mit Werkstücken, Halde und Ofen): „echt“ ≥ 70 % im Blindpaar; Kettentiefe H ≥ 10²" }, erwartet: "nicht", fehlt: "10³ Waren" },
@@ -522,6 +629,7 @@ module.exports = (F) => [
             7: { umfang: { soll: 1e9, wort: "Waren über Sonnensysteme" }, masse: [{ key: "imBlick", wort: "Waren im Blick, je Kette abrufbar", soll: 1000, richtung: "≥" }, { key: "H", wort: "Kettentiefe H", soll: 1e5, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁹ Waren" },
         },
         proben: {
+            1: [{ name: "TÄTER: die Ware liest sich als dunkle Kiste (stoffstrom-kette 13b09174 am Dorf: 14 Barren an vier Öfen als 5 Holzkisten, 0 im Bild aus Eisen)", j: { leiter: "mensch.wirtschaft.stoffstrom", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 4, werte: { halde: 1, barren: 0, werkzeug: 31 }, taeter: "die Ware liest sich als dunkle Kiste: 3 eisen als holz" } } }, gruen: false, zahl: /ROT an Barren am Ofen im Bild \(Stücke aus ihrem Stoff\) 0 / }],
             2: [{ name: "ATTRAPPE: zehn Waren fließen hinein, ein Drittel geht nie hinaus (der Bestand wächst aus dem Nichts)", j: { leiter: "mensch.wirtschaft.stoffstrom", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 10, werte: { bilanz: 0.3 } } } }, gruen: false, zahl: /ROT an hinein − hinaus über 7 Tage \(relativ\) 0\.3 / }],
         },
     }),
