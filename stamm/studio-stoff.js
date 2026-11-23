@@ -175,28 +175,54 @@ class AnazhRealm_studio_stoff {
     // `aus` (optional): der Verband nennt dem Gefüge seinen Stein (`_gefuegeStoff`: die Wölbung je Stein) — der Weg durch ihn je
     // Achse (`fu`, `fv`: 0 … 1), die Steine je Pixel (`sp`), die Deckung der Fuge (`fuge`: an der fernen Fachwerk-Wand der
     // Balken) und was die Ecke über ihre Lage am Bau sagt (`hoch`, `hochDa`, `tiefe`).
-    _verbandStoff(T, nr, ecke = null, aus = null) {
+    _verbandStoff(T, nr, ecke = null, aus = null, grund = null) {
         const Z = AnazhRealm.Gesetz("fachwerk:verbandZeilen")();
+        const VG = AnazhRealm.Gesetz("fachwerk:VERBAND_GESETZ");
+        const GG = AnazhRealm.Gesetz("fachwerk:GEFUEGE_GESETZ");
+        // DAS FUGENBETT (fachwerk GEFUEGE_GESETZ.bett): die Nummer der Hinterfüllung hinter den Steinen und die Zeile ihres Verbands
+        const B = GG && GG.bett;
+        const bettZeile = B && VG && Array.isArray(VG.reihe) ? VG.reihe.indexOf(B.verband) : -1;
+        // DER STEIN FÜR STEIN (fachwerk GEFUEGE_GESETZ.stein): die Nummer eines Teils, das selbst EIN Stein ist, und die Zeile
+        // seines Verbands
+        const ST = GG && GG.stein;
+        const steinZeile = ST && VG && Array.isArray(VG.reihe) ? VG.reihe.indexOf(ST.verband) : -1;
+        // DIE FASE (`fase` = ihr Fall, `faseM` = ihre Breite): der Kamm trägt EINE Breite gegen die halbe Fuge — jede Zeile mit Fase
+        // dasselbe Verhältnis, auf beiden Achsen dieselbe Fuge (das Mauerwerk)
+        const fasen = Array.isArray(Z) ? Z.filter((z) => z && z.fase > 0) : [];
+        const faseJeFuge = fasen.length ? fasen[0].faseM / fasen[0].fugeU : 0;
         if (
             !Array.isArray(Z) ||
             Z.length < 2 ||
             Z[0] !== null ||
             Z.slice(1).some(
-                (z) => !z || !(z.lM > 0) || !(z.hM > 0) || !(z.tiefe >= 0) || !(z.licht > 0 && z.licht <= 1)
-            )
+                (z) =>
+                    !z ||
+                    !(z.lM > 0) ||
+                    !(z.hM > 0) ||
+                    !(z.tiefe >= 0) ||
+                    !(z.licht > 0 && z.licht <= 1) ||
+                    !(z.fase >= 0) ||
+                    !(Array.isArray(z.brand) && z.brand.length === 3 && z.brand.every((x) => x >= 0))
+            ) ||
+            !(B && B.nr > Z.length && B.nr <= 127 && bettZeile > 0 && bettZeile < Z.length) ||
+            !(ST && ST.nr > Z.length && ST.nr < B.nr && steinZeile > 0 && steinZeile < Z.length) ||
+            (Z.slice(1).some((z) => z.lage === 2) && !(VG.lageGrund >= 1)) ||
+            fasen.some((z) => !(z.faseM > 0) || z.fugeU !== z.fugeV || Math.abs(z.faseM / z.fugeU - faseJeFuge) > 1e-9)
         )
             throw this._stoffBruch("das Verband-Gesetz fehlt in fachwerk:verbandZeilen");
         // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · [Fugen-Ton U, Tiefe] ·
-        // [Fugen-Ton V, Licht der Fuge] · eins — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
+        // [Fugen-Ton V, Licht der Fuge] · [eins, Fall der Fase] · [Brand je Kanal] — die Zeile 0 ist die Identität (keine Fuge,
+        // kein Ton, alle Faktoren 1).
         // Die Unruhe als Hub der zwei Wellen (unten: ihre Steigung zusammen höchstens `VERBAND_WELLE.steil` je Reihe)
-        const W = 5;
+        const W = 6;
         const VW = AnazhRealm.VERBAND_WELLE;
         const zeile = (z) => [
             new THREE.Vector4(z.lM, z.hM, z.lM / Math.max(z.fugeU, 1e-6), z.hM / Math.max(z.fugeV, 1e-6)),
-            new THREE.Vector4(z.versatz, z.ton, Math.min(0.9, z.unruhe || 0) / VW.steil, z.lage ? 1 : 0),
+            new THREE.Vector4(z.versatz, z.ton, Math.min(0.9, z.unruhe || 0) / VW.steil, z.lage || 0),
             new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], z.tiefe || 0),
             new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], z.licht == null ? 1 : z.licht),
-            new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], 0),
+            new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], z.fase || 0),
+            new THREE.Vector4(z.brand[0], z.brand[1], z.brand[2], 0),
         ];
         const null0 = {
             lM: 1,
@@ -210,6 +236,8 @@ class AnazhRealm_studio_stoff {
             eins: [1, 1, 1],
             tiefe: 0,
             licht: 1,
+            fase: 0,
+            brand: [1, 1, 1],
         };
         // EINE Tafel für jeden Graphen (der feste Name, Lehre 23: ohne ihn trüge das WGSL `NodeBuffer_<Knoten-id>`)
         const tafel =
@@ -219,21 +247,36 @@ class AnazhRealm_studio_stoff {
             ));
         // eine Nummer über der Tafel ist ein Stoff ohne Verband (fachwerk GEFUEGE_GESETZ: Holz, Gefach, die Faser je Ecke) — die
         // Zeile 0, die Identität; bis haus-gefuege klemmte sie auf die letzte Zeile
+        // — außer der des Fugenbetts: sie liest die Zeile ihres Verbands (sein Raster nennt ihr die Fuge, in deren Grund sie liegt)
+        // — und der des Steins für Stein: er liest die Zeile seines Verbands (sein Raster nennt ihm die Zelle: den Ton je Stein)
         const nrG = nr.add(0.5).floor();
-        const i0 = T.int(T.select(nrG.lessThan(Z.length - 0.5), nrG, T.float(0.0)).clamp(0.0, Z.length - 1)).mul(W);
-        const [mass, lage, tonU, tonV, eins] = [0, 1, 2, 3, 4].map((k) => tafel.element(i0.add(k)));
-        // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — in der VORLAGE
-        // (Einheit E8): das Muster liegt im Raster des Baus, in dem seine Steine liegen (fachwerk `infill`), nie am Ort der Welt; bis hier
-        // webte jedes Haus sein Muster je nach Standort verschoben gegen seine Steine
+        const bett = T.step(B.nr - 0.5, nrG);
+        const stein = T.step(ST.nr - 0.5, nrG).sub(bett);
+        const i0 = T.int(
+            T.select(nrG.lessThan(Z.length - 0.5), nrG, bett.mul(bettZeile).add(stein.mul(steinZeile))).clamp(
+                0.0,
+                Z.length - 1
+            )
+        ).mul(W);
+        const [mass, lage, tonU, tonV, eins, brand] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
+        // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — an der Lage
+        // der Geometrie: die Vorlage im Studio, im Satz der Welt die WELT-Lage (`_satzBlockEcken`).
+        // DIE LAGE IM RASTER DES BAUS (haus-ziegel-putz, `lage` 2 der Zeile): wo ein Bau Steine setzt (fachwerk `infill`), nennt die
+        // Ecke ihre Lage in seinem Raster (`_steinLage`: Steine längs · 1 + Lagen hoch) — das Muster liegt auf den Steinen, an jedem
+        // Standort. Bis hier lag das Mauerwerk der Welt im Raster ihres Ursprungs: am Genesis-Haus wechselte der Ton 69 mm neben
+        // dem Spalt zweier Steine, der Spalt stand in Stein-Farbe, die gewebte Fuge doppelt neben der gebauten (Radeon, 4,5 m).
         const wp = T.positionGeometry;
         const n = T.normalize(T.normalGeometry);
         const h = T.vec3(n.z, 0.0, n.x.negate());
         const t = T.normalize(T.select(h.length().greaterThan(0.02), h, T.vec3(1.0, 0.0, 0.0)));
         const s = T.cross(n, t);
-        // die Lage in Steinen: an der Welt — oder die der Ecke (`lage.w`); die Reihen verzogen um die Unruhe (`lage.z`)
-        const vonEcke = ecke ? lage.w.greaterThan(0.5) : null;
+        // die Lage in Steinen: an der Welt — oder die der Ecke (`lage.w`: 1 jede Ecke der Zeile, 2 die Ecke mit Angabe: ihre zweite
+        // Stelle ab 0,5 ist `lageGrund` + die Lage hoch); die Reihen verzogen um die Unruhe (`lage.z`)
+        const mitAngabe = ecke ? T.step(1.5, lage.w) : null;
+        const vonEcke = ecke ? lage.w.greaterThan(0.5).and(lage.w.lessThan(1.5).or(ecke.y.greaterThan(0.5))) : null;
+        const eckV = ecke ? ecke.y.sub(mitAngabe.mul(VG.lageGrund)) : null;
         const u0 = vonEcke ? T.select(vonEcke, ecke.x, T.dot(wp, t).div(mass.x)) : T.dot(wp, t).div(mass.x);
-        const v0 = vonEcke ? T.select(vonEcke, ecke.y, T.dot(wp, s).div(mass.y)) : T.dot(wp, s).div(mass.y);
+        const v0 = vonEcke ? T.select(vonEcke, eckV, T.dot(wp, s).div(mass.y)) : T.dot(wp, s).div(mass.y);
         const v = v0.add(
             lage.z.mul(T.sin(v0.mul(VW.welle[0])).add(T.sin(v0.mul(VW.welle[1]).add(VW.phase)).mul(VW.welle[2])))
         );
@@ -263,13 +306,84 @@ class AnazhRealm_studio_stoff {
                 1e-3,
                 1.0
             );
+        // (die Fase in Einheiten der halben Fuge — der Kamm misst die Fuge hier als 1; die Richtung wachsender Lage in der Welt)
         const S = this._steinStoff(
             T,
-            { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
-            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
+            { fuge: 1, fase: faseJeFuge, fall: 1, ton: 1, fugeTon: 1, kuppe: 0 },
+            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0), rU: welt(t), rV: welt(s) }
         );
+        const eine = T.vec3(1.0, 1.0, 1.0);
+        const fU = T.mix(eine, tonU.xyz, sicht(t, mass.x, mass.z));
+        const fV = T.mix(eine, tonV.xyz, sicht(s, mass.y, mass.w));
+        // DER VERBAND STEHT IN DER WAND (`steht` · `wand`): die Stufe mit Steinen zeigt auch die Lager-Flanken ihrer Steine (liegende
+        // Flächen, 1,25 cm vor dem Bett) — dort webt das Raster der Vorlage quer über die Flanke: die Fuge stünde als heller
+        // Mörtel-Strich, ihr Schlitz und ihre Fase als dunkler Punkt je 8 cm unter jedem Stein (Radeon, Genesis K2 aus 3 m,
+        // Mittag). Eine Zeile mit Tiefe (das Mauerwerk) trägt Fuge, Ton je Stein, Schlitz und Fase nur auf Flächen, die stehen
+        // (|n.y| der Vorlage unter 0,35 voll, ab 0,65 keine); jede Zeile ohne Tiefe (Deckung, Naturstein) bleibt, was sie war.
+        // DER STEIN FÜR STEIN TRÄGT KEINE FUGE (`stein`): seine Fuge ist der Spalt zum Nachbarn, in dem das Bett steht — das
+        // Raster webt auf ihm nur den Ton seiner Zelle. Fern, wo die Fuge unter dem Pixel liegt, zöge ihr Anteil sonst über die
+        // Stirn jedes Steins (die Fuge zweimal: als Spalt und als Ton).
+        const steht = T.float(1.0).sub(T.smoothstep(0.35, 0.65, n.y.abs()));
+        const wand = T.mix(T.float(1.0), steht, T.step(1e-6, tiefe));
+        const [aU, aV] = S.achse.map((a) => a.mul(wand).mul(T.float(1.0).sub(stein)));
+        const muster = T.mix(eine, fU, aU)
+            .mul(T.mix(eine, fV, aV))
+            .add(T.min(fU, fV).sub(fU.mul(fV)).mul(aU.mul(aV)));
+        // DAS LICHT IM SCHLITZ (haus-ziegel-putz, `tiefe` · `licht` der Zeile): der Grund der Fuge liegt `tiefe` hinter der Stirn.
+        // Vom Himmel sieht er `licht` (der Sicht-Faktor des Schlitzes, fachwerk `verbandZeilen`) — das trägt das indirekte Licht
+        // (`himmel` → aoNode). Die Sonne erreicht von seiner Breite w noch k = 1 − tiefe ÷ w · tan(Winkel der Sonne quer zur
+        // Fuge gegen die Normale), je Achse (die Stoßfuge quer über t, die Lagerfuge quer über s): ab 41° liegt der Grund der
+        // 11-mm-Fuge ganz im Schatten ihres Steins — das trägt der empfangene Schatten (`sonne` → receivedShadowNode, nie die
+        // Albedo: dieselbe Richtung `uSunDir`, die die Kaskade prüft). Beide gewogen mit dem Anteil der Fuge an der Leuchtdichte
+        // des Pixels (`grund`: die Farbe der Fläche) — nah steht der Schatten in der Fuge, fern trägt die Fläche sein Mittel
+        // (Licht-treu: Albedo × Licht des Pixels = die Summe über Stein und Fuge). Das Fugenbett liegt ganz im Schlitz. Ohne
+        // Tiefe (jede Zeile außer dem Mauerwerk) sind beide 1. Bis hier stand `licht` in der Albedo der Fuge, für Sonne und
+        // Himmel gleich: die besonnte Wand trug die helle Fuge ohne Schatten, die Stufe mit Steinen ihr Bett voll im Licht.
+        // Schlitz und Fase stehen nur in der Wand (`steht`, oben).
+        const sonne = this._windUniformsEnsure().uSunDir;
+        const zurSonne = T.dot(sonne, welt(n)).max(1e-3);
+        const besonnt = (achse, M, Mz) =>
+            T.float(1.0).sub(
+                tiefe
+                    .mul(Mz)
+                    .div(M.mul(2.0))
+                    .mul(T.abs(T.dot(sonne, welt(achse))))
+                    .div(zurSonne)
+                    .clamp(0.0, 1.0)
+            );
+        const k = aU
+            .mul(besonnt(t, mass.x, mass.z))
+            .add(aV.mul(besonnt(s, mass.y, mass.w)))
+            .add(1e-3)
+            .div(aU.add(aV).add(1e-3));
+        const LUMA = T.vec3(0.2126, 0.7152, 0.0722);
+        const g0 = grund ? T.vec3(grund).max(1e-4) : eine;
+        // (das Fugenbett liegt im Schlitz, wo das Raster die Fuge nennt — wo es den Stein nennt, steht das Bett frei: `fugeDa`.
+        // Am ORT gelesen, nie am Fußabdruck des Pixels: das Bett ist Geometrie, sein Spalt zwischen zwei Steinen IST die Fuge —
+        // mit der Deckung des Pixels stünde der Spalt fern, wo die Fuge unter dem Pixel liegt, halb als Stein und halb im Licht.
+        // Die halbe Fuge × 1,5: der Rand des Spalts liegt sicher in ihr — die Lage der Ecke reist als halbe Gleitzahl, über 5 m
+        // Höhe auf ± 2,6 mm.)
+        const steinDa = T.float(1.0).sub(aU).mul(T.float(1.0).sub(aV));
+        const inFuge = (f, Mz) => T.step(T.min(f, T.float(1.0).sub(f)), T.float(1.5).div(Mz));
+        const fugeDa = T.float(1.0).sub(
+            T.float(1.0)
+                .sub(inFuge(T.fract(u), mass.z))
+                .mul(T.float(1.0).sub(inFuge(T.fract(v), mass.w)))
+        );
+        const imSchlitz = T.mix(
+            T.float(1.0)
+                .sub(steinDa.mul(T.dot(g0, LUMA)).div(T.dot(g0.mul(muster), LUMA).max(1e-5)))
+                .clamp(0.0, 1.0),
+            fugeDa,
+            bett
+        ).mul(steht);
         if (aus)
             Object.assign(aus, {
+                himmel: T.float(1.0).sub(imSchlitz.mul(T.float(1.0).sub(tonV.w))),
+                sonne: T.float(1.0).sub(imSchlitz.mul(T.float(1.0).sub(k))),
+                // DIE KANTE DES STEINS (`fase` der Zeile): die Neigung der Fase aus dem Kamm (Welt, zur Normale zu addieren) mal ihr
+                // Fall — das Bett trägt keine
+                fase: S.kipp ? S.kipp.mul(eins.w).mul(T.float(1.0).sub(bett)).mul(steht) : null,
                 fu: T.fract(u),
                 fv: T.fract(v),
                 sp: T.max(T.fwidth(u0), T.fwidth(v0)),
@@ -279,21 +393,21 @@ class AnazhRealm_studio_stoff {
                 // der zweiten die lange Kante seiner Fläche: 1 · 3, `_gefuegeStoff` DIE KANTE). Der Satz trägt
                 // seine Ecken in Welt-Lage (`_satzBlockEcken`) — die Höhe am Bau kennt dort nur die Ecke; die ferne Fachwerk-Wand
                 // zählt sie in Riegel-Feldern, ein Stoff ohne Ecke (die Vorlage: ihr Fuß bei y = 0) liest die Höhe der Vorlage.
-                hoch: ecke ? T.select(vonEcke, ecke.y.mul(mass.y), ecke.x.sub(1.0)) : T.positionGeometry.y,
+                hoch: ecke ? T.select(vonEcke, eckV.mul(mass.y), ecke.x.sub(1.0)) : T.positionGeometry.y,
                 hochDa: ecke ? T.select(vonEcke, T.float(1.0), T.step(0.5, ecke.x)) : T.float(1.0),
                 tiefe: ecke ? T.select(vonEcke, T.float(0.0), ecke.y) : null,
             });
-        const eine = T.vec3(1.0, 1.0, 1.0);
-        const fU = T.mix(eine, tonU.xyz, sicht(t, mass.x, mass.z));
-        const fV = T.mix(eine, tonV.xyz, sicht(s, mass.y, mass.w));
-        return T.vec3(S.ton.sub(1.0).mul(lage.y).add(1.0))
-            .mul(
-                T.mix(eine, fU, S.achse[0])
-                    .mul(T.mix(eine, fV, S.achse[1]))
-                    .add(T.min(fU, fV).sub(fU.mul(fV)).mul(S.achse[0].mul(S.achse[1])))
-            )
-            .mul(eins.xyz)
-            .mul(T.float(1.0).sub(S.fuge.mul(T.float(1.0).sub(tonV.w))));
+        // DER TON JE STEIN mit seiner Brandhaut (`brand` der Zeile: die Ziehung wiegt je Kanal, mittelfrei) × das Muster der Fugen ×
+        // eins — der Stein für Stein trägt seine Farbe selbst (ohne `eins`: die Fläche trägt das Mittel aus Stein und Fuge, er den
+        // Stein). Das Fugenbett behält seine Farbe (1), wo das Raster die Fuge nennt; wo es den Stein nennt (der Rest unter 5 cm am
+        // Ständer, den die Stufe mit Steinen frei lässt), steht auf dem Bett der Stein: seine Farbe ÷ den Ton der Fuge gegen den
+        // Stein, mit dem Ton seiner Zelle — bis hier stand dort der helle Mörtel als Quadrat je Lage neben dem Ständer.
+        const steinTon = eine.add(brand.xyz.mul(S.ton.sub(1.0).mul(lage.y).mul(wand)));
+        return T.mix(
+            steinTon.mul(muster).mul(T.mix(eins.xyz, eine, stein)),
+            T.mix(steinTon.div(tonU.xyz.max(1e-3)), eine, fugeDa),
+            bett
+        );
     }
 
     // DAS GEFÜGE EINER FLÄCHE (haus-gefuege, fachwerk GEFUEGE_GESETZ; Karte 2 mensch.bau.huelle): was der Stoff INNERHALB seines
@@ -325,7 +439,7 @@ class AnazhRealm_studio_stoff {
     // die Lee-Seite dunkler (± `wetter` über den Kompass, mittelfrei); Holz nimmt dort Silber an (`grau`, bei gleicher
     // Leuchtdichte: die Albedo der Rolle bleibt). DER SPRITZ-SAUM: am Fuß des Baus (die Höhe in der Vorlage) dunkelt die Fläche um
     // den Anteil ihrer Zeile (`spritz`). DER LÄUFER UNTER DEM DACH: nennt die Ecke ihre Tiefe unter der Dachhaut (`V.tiefe`), steht
-    // die Wolke dort `lauf`-fach stärker (mittelfrei: fern bleibt nichts). DER TON JE BALKEN: die Nummer der Ecke eines Balkens
+    // dort die Bahn des Läufers (`lauf.bahn`, ± `lauf` der Zeile; mittelfrei: fern bleibt nichts). DER TON JE BALKEN: die Nummer der Ecke eines Balkens
     // trägt über seiner Richtung die Klasse seines Tons (`faser.toene` Klassen, fachwerk `faserNummer`: gewürfelt aus seiner Mitte
     // am Bau) — jeder Balken steht ± `faser.ton` heller oder dunkler als das Mittel der Rolle (mittelfrei über die Klassen; die
     // Zahl reist als `balken` in der Zeile des Holzes). DIE KANTE DES BALKENS: wo er an das Gefach stößt, dunkelt seine Fläche
@@ -338,6 +452,9 @@ class AnazhRealm_studio_stoff {
         const paar = (p) => Array.isArray(p) && p.length === 2 && p.every((x) => x > 0);
         const F = GG && GG.faser;
         const holz = Array.isArray(Z) && F ? Z.findIndex((z) => z && z.art === F.art) : -1;
+        // (der Stein für Stein, `stein.nr`: die Zeile seines Verbands — die Gefüge-Zeilen 1–5 stehen am Platz der Verband-Zeilen)
+        const VG = AnazhRealm.Gesetz("fachwerk:VERBAND_GESETZ");
+        const steinReihe = GG && GG.stein && VG && Array.isArray(VG.reihe) ? VG.reihe.indexOf(GG.stein.verband) : -1;
         if (
             !Array.isArray(Z) ||
             Z.length < 2 ||
@@ -354,9 +471,14 @@ class AnazhRealm_studio_stoff {
                     !(z.grund > 0) ||
                     ![z.faser, z.rau, z.rauFern, z.wetter, z.grau, z.fugeGrau, z.spritz, z.lauf, z.balken].every(
                         Number.isFinite
-                    )
+                    ) ||
+                    !(z.unruhe >= 0)
             ) ||
-            !(GG.lauf && GG.lauf.weit > 0) ||
+            !(GG.lauf && GG.lauf.weit > 0 && paar(GG.lauf.bahn)) ||
+            !(GG.bett && GG.rolle && GG.rolle[GG.bett.rolle] > 0 && GG.bett.nr <= 127) ||
+            !(F && GG.bett.nr > F.ab + F.klassen * F.toene - 1) ||
+            !(GG.stein && GG.stein.nr > F.ab + F.klassen * F.toene - 1 && GG.stein.nr < GG.bett.nr) ||
+            !(steinReihe > 0 && steinReihe < Z.length) ||
             !(GG.fuss && GG.fuss.voll > GG.fuss.leer && GG.fuss.leer > 0) ||
             !(GG.spritz && GG.spritz.aus > GG.spritz.voll && GG.spritz.voll >= 0 && GG.spritz.rand >= 0) ||
             !(GG.periode >= 16) ||
@@ -367,7 +489,7 @@ class AnazhRealm_studio_stoff {
             throw this._stoffBruch("das Gefüge-Gesetz fehlt in fachwerk:GEFUEGE_GESETZ");
         // die Tafel: [Korn quer, längs, Zug quer, längs] · [Wolke quer, längs, Faser, Grund] · [Ton Korn, Zug, Wolke, Wetter] ·
         // [Hub Korn, Zug, Wolke, Grau] · [Wölbung quer, hoch, Rauheit ±, Rauheit fern] · [Grau der Fuge, Spritz-Saum, Läufer,
-        // Ton je Balken] · [Kante: Anteil, Breite, höchster Anteil der Breite] — die Zeile 0 ist die Identität
+        // Ton je Balken] · [Kante: Anteil, Breite, höchster Anteil der Breite · die Unruhe des Zugs] — die Zeile 0 ist die Identität
         const W = 7;
         const zeile = (z) => [
             new THREE.Vector4(z.korn[0], z.korn[1], z.zug[0], z.zug[1]),
@@ -376,7 +498,7 @@ class AnazhRealm_studio_stoff {
             new THREE.Vector4(z.hub[0], z.hub[1], z.hub[2], z.grau),
             new THREE.Vector4(z.woelb[0], z.woelb[1], z.rau, z.rauFern),
             new THREE.Vector4(z.fugeGrau, z.spritz, z.lauf, z.balken),
-            new THREE.Vector4(z.kante[0], z.kante[1], z.kante[2], 0),
+            new THREE.Vector4(z.kante[0], z.kante[1], z.kante[2], z.unruhe),
         ];
         const null0 = {
             korn: [1, 1],
@@ -396,6 +518,7 @@ class AnazhRealm_studio_stoff {
             lauf: 0,
             balken: 0,
             kante: [0, 0, 0],
+            unruhe: 0,
         };
         // EINE Tafel für jeden Graphen (der feste Name, Lehre 23)
         const tafel =
@@ -404,8 +527,13 @@ class AnazhRealm_studio_stoff {
                 "gefuegeTafel"
             ));
         // die Zeile: die Nummer selbst — oder, trägt die Ecke die Richtung ihres Balkens, die des Holzes mit dieser Richtung
-        // (die Nummer über `faser.ab`: Richtung + `klassen` × Ton-Klasse; ohne Zweig gerechnet — `balken` ist 0 unter `ab`)
-        const g = nr.add(0.5).floor();
+        // (die Nummer über `faser.ab`: Richtung + `klassen` × Ton-Klasse; ohne Zweig gerechnet — `balken` ist 0 unter `ab`);
+        // das Fugenbett (`bett.nr`, über den Nummern der Faser) trägt die Zeile seiner Rolle, der Stein für Stein (`stein.nr`) die
+        // seines Verbands
+        const g0 = nr.add(0.5).floor();
+        const istBett = T.step(GG.bett.nr - 0.5, g0);
+        const istStein = T.step(GG.stein.nr - 0.5, g0).sub(istBett);
+        const g = T.mix(T.mix(g0, T.float(steinReihe), istStein), T.float(GG.rolle[GG.bett.rolle]), istBett);
         const jeEcke = g.greaterThan(F.ab - 0.5);
         const i0 = T.int(T.select(jeEcke, T.float(holz), g.clamp(0.0, Z.length - 1))).mul(W);
         const [mass, lage, ton, hub, form, mehr, rand2] = [0, 1, 2, 3, 4, 5, 6].map((k) => tafel.element(i0.add(k)));
@@ -448,18 +576,25 @@ class AnazhRealm_studio_stoff {
         };
         // je Skala: ihr Rauschen (−1 … 1) × wie viel von ihr am Schirm steht (der Fußabdruck: Zellen je Pixel)
         const [voll, leer] = [1 / GG.fuss.voll, 1 / GG.fuss.leer];
-        const skala = (cq, cl, versatz) => {
+        // (`zieh`, optional: die Zelle verzogen um so viele Zellen — das Raster der Skala steht dann nicht mehr gerade)
+        const skala = (cq, cl, versatz, zieh = null) => {
             const steht = T.float(1.0).sub(T.smoothstep(voll, leer, T.max(fq.div(cq), fl.div(cl))));
+            const x = quer.div(cq).add(versatz);
+            const y = laengs.div(cl).add(versatz * 0.37);
             return [
-                rausch(quer.div(cq).add(versatz), laengs.div(cl).add(versatz * 0.37))
+                rausch(zieh ? x.add(zieh) : x, zieh ? y.add(zieh.mul(0.61)) : y)
                     .mul(steht)
                     .mul(2.0),
                 steht,
             ];
         };
         const [korn, kornSteht] = skala(mass.x, mass.y, 17.0);
-        const [zug] = skala(mass.z, mass.w, 59.0);
         const [wolke] = skala(lage.x, lage.y, 101.0);
+        // DER ZUG, von der Wolke verzogen (`unruhe` der Zeile, in Zellen): kein Kellenzug liegt gerade über dem anderen, keine
+        // Falte des Steins neben der nächsten — mit dem festen Raster las der Zug des Putzes aus 13,5 m als Zeilen eines Stoffs
+        const [zug] = skala(mass.z, mass.w, 59.0, wolke.mul(rand2.w));
+        // DIE BAHN DES LÄUFERS (`lauf.bahn`: schmal, lotrecht, von der Wolke verzogen) — nur unter dem Dach (unten)
+        const [bahn] = skala(GG.lauf.bahn[0], GG.lauf.bahn[1], 151.0, wolke.mul(1.5));
         // das Wetter: die Seite der Fläche gegen die Richtung, aus der es kommt (−1 Lee … 1 Wetterseite)
         const wl = Math.hypot(...GG.wetterVon) || 1;
         const wetter = T.dot(nG, T.vec3(...GG.wetterVon.map((x) => x / wl)));
@@ -506,7 +641,8 @@ class AnazhRealm_studio_stoff {
         const faktor = T.float(1.0)
             .add(korn.mul(ton.x))
             .add(zug.mul(ton.y))
-            .add(wolke.mul(ton.z).mul(T.float(1.0).add(mehr.z.mul(unterDach))))
+            .add(wolke.mul(ton.z))
+            .add(bahn.mul(mehr.z).mul(unterDach))
             .mul(T.float(1.0).add(wetter.mul(ton.w)))
             .mul(T.float(1.0).sub(mehr.y.mul(saum)))
             .mul(T.float(1.0).add(balken.mul(mehr.w)))
@@ -544,7 +680,10 @@ class AnazhRealm_studio_stoff {
                 const c = T.vec3(rgb.mul(faktor));
                 return T.mix(c, silber.mul(T.dot(c, T.vec3(...LUMA))), grau);
             },
-            normale: T.cameraViewMatrix.transformDirection(T.normalize(n.sub(kipp).add(kissen))),
+            // (die Fase des Steins im Verband: die Neigung des Kamms, `_verbandStoff` `fase`)
+            normale: T.cameraViewMatrix.transformDirection(
+                T.normalize(V.fase ? n.sub(kipp).add(kissen).add(V.fase) : n.sub(kipp).add(kissen))
+            ),
             rauh: (r) => r.add(zug.mul(form.z)).add(T.float(1.0).sub(kornSteht).mul(form.w)).clamp(0.0, 1.0),
         };
     }
@@ -1135,11 +1274,17 @@ class AnazhRealm_studio_stoff {
             // immer (EINE Signatur, dieselben Knoten-Plätze)
             const stein = {};
             const farbe = mat.colorNode;
-            const fuge = this._verbandStoff(TSL, nr, ecke, stein);
+            const fuge = this._verbandStoff(TSL, nr, ecke, stein, farbe.rgb);
             const gefuege = this._gefuegeStoff(TSL, nr, stein);
             mat.colorNode = TSL.vec4(gefuege.farbe(farbe.rgb.mul(fuge)), farbe.a);
             mat.normalNode = gefuege.normale;
             mat.roughnessNode = gefuege.rauh(mat.roughnessNode || TSL.materialRoughness);
+            // DAS LICHT IM SCHLITZ DER FUGE (`_verbandStoff`): der Himmel im indirekten Licht (r184 trägt aoNode nur dorthin), die
+            // Sonne im empfangenen Schatten (je Kaskade, wie die Zuwendung des Bodens) — nie in der Albedo
+            const himmelVor = mat.aoNode || (mat.aoMap && TSL.materialAO ? TSL.materialAO : null);
+            mat.aoNode = himmelVor ? himmelVor.mul(stein.himmel) : stein.himmel;
+            const schattenVor = mat.receivedShadowNode;
+            mat.receivedShadowNode = (schatten) => (schattenVor ? schattenVor(schatten) : schatten).mul(stein.sonne);
         }
         // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
         // DACH (licht.K1: die Normale des Dachs, Rauheit 1) — EIN Gesetz (`_halmStoff`), hinter dem Satz-Regler (er gilt jeder
