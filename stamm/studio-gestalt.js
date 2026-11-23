@@ -1111,7 +1111,7 @@ class AnazhRealm_studio_gestalt {
             if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
             this._foundryCacheEvict(oldest);
         }
-        this._foundryOhneLeser(key);
+        this._foundryOhneLeser();
     }
     // DER CACHE HÄLT NICHTS ÜBER SEINE LESER HINAUS (foundry-halten, Gebot 7): ein Körper ist Besitz, solange ein Leser ihn
     // hält — die Senke, die ihn zeichnet (`_liveRefs`), oder der Leser ohne Senke, der ihn las; sonst leitet das Gesetz ihn neu
@@ -1124,11 +1124,12 @@ class AnazhRealm_studio_gestalt {
     // (10 s) bestellten die Ziegel, Vorbauten und Karten des Start-Dorfs 43 Körper neu, die sie nur lasen (Radeon, am Dorf
     // 89 statt 53,5 Aufträge je Minute). Kein Gewichts-Deckel, keine eigene Frist. Bis foundry-halten hielt der Ruhe-Deckel jeden Untätigen 60 s über
     // seinen letzten Leser hinaus, bis 64 MB (Radeon, Wiese nach dem Start-Dorf: 63,9 MB untätig, davon 62,7 MB Häuser des
-    // Dorfs, die ihre Hülle schon zurückgab). Gerufen beim Setzen (`schone`: der eben gesetzte Schlüssel), im Takt nach jeder
-    // Rückgabe (`ruheOffen`) und wenn der nächste Leser fertig wird (`ruheFaellig`). DIE GNADE ZÄHLT AN DER WELT-UHR
+    // Dorfs, die ihre Hülle schon zurückgab). Gerufen beim Setzen, im Takt nach jeder Rückgabe (`ruheOffen`) und wenn der
+    // nächste Leser fertig wird (`ruheFaellig`) — auch der eben gebaute Körper trägt seine Frist ein (bis Vorprüfung 2 übersprang
+    // das Setzen ihn: ein Körper, nach dem nichts mehr gebaut und nichts zurückgegeben wurde, hielt ohne Frist). DIE GNADE ZÄHLT AN DER WELT-UHR
     // (`spielZeit` in s, w28-funktion-welt-2; die Takte an `weltTakt`): wie viele Körper der Cache hält, hängt nie an der Dauer
     // der Takte des Geräts; die Pause (das Portal) hält die Uhr und mit ihr die Gnade.
-    _foundryOhneLeser(schone) {
+    _foundryOhneLeser() {
         const f = this._foundry;
         f.ruheOffen = false;
         const jetzt = this.state.spielZeit;
@@ -1136,7 +1137,7 @@ class AnazhRealm_studio_gestalt {
         const gnade = (AnazhRealm.ARCH_LEER_GNADE_MS * AnazhRealm.ARCH_LEER_MINT_DECKEL) / 1000;
         let faellig = Infinity;
         for (const [k, v] of f.cache) {
-            if (!v || typeof v !== "object" || v._liveRefs > 0 || k === schone) continue;
+            if (!v || typeof v !== "object" || v._liveRefs > 0) continue;
             if (!(v._ruheSeit >= 0)) v._ruheSeit = jetzt; // ein Eintrag ohne Stempel (am Setzen vorbei) wird ab jetzt gelesen
             const los = v._losTakt !== undefined;
             if (los ? takt > v._losTakt : jetzt - v._ruheSeit >= gnade) this._foundryCacheEvict(k);

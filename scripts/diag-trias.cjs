@@ -399,7 +399,10 @@ hauptLauf(async () => {
         res.heavyBytesOk = f2.cacheBytes <= BYTES;
         f2.cache = new Map();
         f2.cacheBytes = 0;
-        const uhr = { zeit: r.state.spielZeit, takt: r.state.weltTakt };
+        // die Zeit vergeht über den Takt der Welt (`__handTakt`, ein Takt des Loops: `weltTakt` und die Welt-Uhr um ihr
+        // echtes delta, darin der Cache-Takt `_tickFoundryIngest`); die Wiederkehr einer Hülle bestellt die Linse bei der
+        // Welt (`_weltUhrNimm`, nur vor) — sie schreibt die Uhr nie selbst (die Ein-Schreiber-Wand)
+        const halt8 = () => [...f2.cache.keys()].filter((k) => k.startsWith("halt8|")).length;
         const los = [];
         for (let i = 0; i < 41; i++) {
             const v = mkFake(8, true);
@@ -408,19 +411,17 @@ hauptLauf(async () => {
         }
         for (const v of los) r._foundryLoslassen(v);
         r._foundryOhneLeser();
-        res.losSelberTakt = f2.cache.size; // 41: die Rückgabe fällt nie im selben Takt
-        r.state.weltTakt = uhr.takt + 1;
-        r._foundryOhneLeser();
-        res.losNaechsterTakt = f2.cache.size; // 1: der gehaltene bleibt
+        res.losSelberTakt = halt8(); // 41: die Rückgabe fällt nie im selben Takt
+        __handTakt();
+        res.losNaechsterTakt = halt8(); // 1: der gehaltene bleibt
         r._foundryCacheSet("leser8", mkFake(8));
-        r._foundryOhneLeser();
+        __handTakt();
         res.leserInGnade = f2.cache.has("leser8");
-        r.state.spielZeit =
-            uhr.zeit + (r.constructor.ARCH_LEER_GNADE_MS * r.constructor.ARCH_LEER_MINT_DECKEL) / 1000 + 0.1;
-        r._foundryOhneLeser();
+        r._weltUhrNimm(
+            r.state.spielZeit + (r.constructor.ARCH_LEER_GNADE_MS * r.constructor.ARCH_LEER_MINT_DECKEL) / 1000 + 0.1
+        );
+        __handTakt();
         res.leserNachGnade = f2.cache.has("leser8");
-        r.state.spielZeit = uhr.zeit;
-        r.state.weltTakt = uhr.takt;
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
