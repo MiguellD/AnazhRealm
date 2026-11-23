@@ -9,8 +9,8 @@
 //   2a DIE GETEILTE FRONT (Koordinator 22.11.; Runde 4: die GTX 21 von 246 nach 3,5 h, die Radeon „wartet 0/0“): beide Geraete teilen
 //     EINE Front. Das zweite Geraet tritt ein, sobald das erste am Kopf eine Liste traegt (bis dahin wartet: kein Alarm) — seine Liste
 //     ist der vordere Teil der Liste des ersten in UMGEKEHRTER Reihe, ohne Schwanz (`reihe --erst`). Eine Station ist fuer ein Geraet
-//     offen, solange es am Kopf keinen Eintrag traegt UND das andere sie am Kopf nicht ROT urteilte (`offen --anders`); GRUEN und
-//     UNGEMESSEN des anderen ueberspringen nie (das Paar entsteht an GRUEN, ein UNGEMESSEN bekommt die zweite Chance).
+//     offen, solange es am Kopf keinen Eintrag traegt UND das andere sie am Kopf nicht URTEILTE (`offen --anders`, seit 23.11. GRUEN
+//     wie ROT: JEDE STATION EINMAL, die Buchung hebt mit EINEM Geraet); UNGEMESSEN des anderen ueberspringt nie (die zweite Chance).
 //   3 frisches ROT an einer am vorigen Mess-Kopf gruenen Station: NUR diese Station wird ueber die Koepfe dazwischen halbiert
 //     (`faelle` nennt sie, richter.sh --fall halbiert und nennt den Taeter-Kopf).
 //   4 Halt, Weichen, Neustart: der Stand je Geraet steht in der Datei, die Liste ist eingefroren — es geht an derselben Station weiter.
@@ -84,7 +84,7 @@ const KOPF = [
     "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN | Schwanz: K4 ROT anderes (22.11.: so viel wie noetig) ·",
     "# K5 ROT Leser fehlt · K6 ROT Umfang nicht erzeugbar. Bleibt nur der Schwanz und ist main weiter, traegt sein ROT vom frueheren Kopf",
     "# (getragen). DIE GETEILTE FRONT (22.11.): das zweite Geraet wartet (wartet: kein Alarm) nur, bis das erste am Kopf eine Liste traegt, und",
-    "# faehrt dann deren vorderen Teil in UMGEKEHRTER Reihe; keines misst, was das andere am Kopf ROT urteilte (GRUEN und UNGEMESSEN zaehlen nicht).",
+    "# faehrt dann deren vorderen Teil in UMGEKEHRTER Reihe; keines misst, was das andere am Kopf urteilte (GRUEN wie ROT, 23.11.; UNGEMESSEN zaehlt nicht).",
     "# Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.",
     "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
@@ -488,16 +488,18 @@ if (was === "lies") {
     };
     const m = lade(g) || {};
     // DIE GETEILTE FRONT (Koordinator 22.11.): mit --anders <geraet2> ist eine Station nur offen, wenn das andere Gerät sie am SELBEN Kopf
-    // nicht ROT urteilte — ROT in der Lesart von urteil() (kein UNGEMESSEN, kein Start-Fehler, kein jüngeres UNGEMESSEN darüber). GRÜN
-    // des anderen überspringt nie (das Paar entsteht nur an GRÜN), UNGEMESSEN nie (die zweite Chance am anderen Gerät); fehlt seine
-    // Mess-Datei, überspringt nichts. Seine Datei liest offen am selben Ort wie die eigene (ref oder Baum) — kein eigener Netz-Gang.
+    // nicht URTEILTE — GRÜN oder ROT in der Lesart von urteil() (kein UNGEMESSEN, kein Start-Fehler, kein jüngeres UNGEMESSEN darüber).
+    // JEDE STATION EINMAL (Koordinator 23.11., Schöpfer: „wir messen soviel wie nötig, nicht wie möglich“; die Buchung hebt seit 18.11.
+    // mit EINEM Gerät, buche-2 Z7 — das GRÜN des zweiten war ein Paar, das keine Sprosse hebt): bis heute übersprang nur ROT, das zweite
+    // Gerät maß jedes GRÜN des ersten nach. UNGEMESSEN überspringt nie (die zweite Chance am anderen Gerät); fehlt seine Mess-Datei,
+    // überspringt nichts. Seine Datei liest offen am selben Ort wie die eigene (ref oder Baum) — kein eigener Netz-Gang.
     const ANDERS = opt("anders"), ma = ANDERS ? lade(ANDERS) : null;
-    const rotAnders = (s) => !!ma && urteil(ma, s) === "ROT";
+    const urteilAnders = (s) => !!ma && /^(GRUEN|ROT)$/.test(urteil(ma, s) || "");
     const ids = liste(String(l || "").replace("|", ","));
-    const ueber = ids.filter((s) => !hatEintrag(m, s) && rotAnders(s)).length;
+    const ueber = ids.filter((s) => !hatEintrag(m, s) && urteilAnders(s)).length;
     process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length +
-        (ANDERS ? " · übersprungen, ROT auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") + "\n");
-    console.log(ids.filter((s) => !hatEintrag(m, s) && !rotAnders(s)).join(","));
+        (ANDERS ? " · übersprungen, geurteilt auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") + "\n");
+    console.log(ids.filter((s) => !hatEintrag(m, s) && !urteilAnders(s)).join(","));
 } else if (was === "faelle") {
     const [repo, g, vorher, kopf, l] = arg;
     const git = gitIn(repo), zeig = zeigIn(repo);
