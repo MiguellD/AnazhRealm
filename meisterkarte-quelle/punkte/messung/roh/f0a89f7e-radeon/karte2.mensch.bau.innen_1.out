@@ -1,0 +1,18 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+  … gang 2/18 haus_alpenchalet
+  … gang 6/18 haus_schwarzwald
+  … gang 12/18 haus_alpenchalet
+  … gang 16/18 haus_skandinavisch
+  … gang 18/18 haus_skandinavisch
+  … bild 1/18 haus_gotisch
+  … bild 2/18 haus_alpenchalet
+  … bild 3/18 haus_schwarzwald
+  … bild 4/18 haus_schwarzwald
+  … bild 6/18 haus_schwarzwald
+  … bild 7/18 haus_schwarzwald
+  … bild 8/18 haus_schwarzwald
+  … bild 9/18 haus_schwarzwald
+  … bild 10/18 haus_alpenchalet
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

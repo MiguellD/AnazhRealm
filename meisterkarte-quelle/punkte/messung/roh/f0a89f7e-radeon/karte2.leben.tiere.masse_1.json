@@ -1,0 +1,163 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 46,
+   "spieler": 43.1,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2141,
+   "kamera": [
+    -575.59,
+    54.65,
+    -873.13,
+    -541.41,
+    38.18,
+    -899.22
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.04 m · Luma 98.9 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.378 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 66,
+    "tier:bestaeuber": 23,
+    "tier:wesen": 186
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     106,
+     94,
+     37,
+     43,
+     60
+    ],
+    "flecken": 1,
+    "kruemel": 8,
+    "pixel": 275,
+    "leibPx": 33.6
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f0a89f7e-radeon\\karte2.leben.tiere.masse_1-herde-1.png",
+   "bisS": 38
+  },
+  {
+   "schuss": 2,
+   "abstand": 42.9,
+   "spieler": 42.9,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2171,
+   "kamera": [
+    -567.5,
+    36.08,
+    -933.4,
+    -537.88,
+    37,
+    -902.39
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 50.89 m · Luma 99.6 σ 35.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.378 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f0a89f7e-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f0a89f7e-radeon\\karte2.leben.tiere.masse_1-herde-2.png",
+   "bisS": 45.8
+  },
+  {
+   "schuss": 3,
+   "abstand": 44.5,
+   "spieler": 43.3,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2201,
+   "kamera": [
+    -577.34,
+    46.28,
+    -901.8,
+    -534.27,
+    35.88,
+    -905.72
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 44.48 m, verdeckt nur von Leibern: 1 Punkt, nächster 36.16 m (Leib tier:wesen) · Luma 102.2 σ 33.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.378 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 58,
+    "tier:wesen": 303
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     107,
+     122,
+     132,
+     122,
+     107
+    ],
+    "flecken": 2,
+    "kruemel": 0,
+    "pixel": 361,
+    "leibPx": 35.7
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f0a89f7e-radeon\\karte2.leben.tiere.masse_1-herde-3.png",
+   "bisS": 60.8
+  }
+ ],
+ "zeiten": {
+  "herdeS": 7.9,
+  "szeneS": 8.1
+ },
+ "szene": {
+  "kamera": [
+   -567.5,
+   36.08,
+   -933.4,
+   -541.41,
+   38.18,
+   -899.22
+  ],
+  "abstand": 43.1,
+  "punkte": [
+   [
+    -540.17,
+    38.01,
+    -900.54
+   ],
+   [
+    -539.42,
+    37.61,
+    -902.42
+   ],
+   [
+    -547.68,
+    41.13,
+    -890.65
+   ],
+   [
+    -541.69,
+    37.96,
+    -902.15
+   ],
+   [
+    -538.07,
+    37.7,
+    -900.36
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 2141,
+  "hang": {
+   "x": -550.6,
+   "z": -889.6,
+   "neigung": 21.2,
+   "lebensraum": false
+  },
+  "wurf": 5,
+  "fluchtBei": 13.5
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}
