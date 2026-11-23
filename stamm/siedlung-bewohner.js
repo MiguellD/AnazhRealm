@@ -1051,6 +1051,7 @@ class AnazhRealm_siedlung_bewohner {
             };
         }
         this._bestandAnlegen(liste);
+        this._scheuneAnlegen(S, liste, tueren);
         S.listeRest = 0;
         return liste;
     }
@@ -1081,6 +1082,56 @@ class AnazhRealm_siedlung_bewohner {
         for (const b of liste)
             if (b.rolle === "haendler" && b.orte.werk && b.orte.werk.stand != null && W.length)
                 b.bestand = KC.bestandHalter("stand", W[i++ % W.length], h, B.lager.stand, b.same, b.rolle, b.beruf);
+    }
+
+    // DIE SCHEUNE DES HOFS (koerper `scheuneHalter` · `scheuneFassen`, Meisterkarte 2 mensch.nahrung.strom S1): je stehende Scheune
+    // des Plans EIN Halter des Bestands mit der Ware des Ackers (BESTAND_GESETZ.herstellung.feld) — leer zur Stunde der Liste. Ihr
+    // Hof sind die Leute, deren Tür ihr näher liegt als jeder anderen Scheune des Plans: sie essen aus ihr (`esser`), und wer von
+    // ihnen am Acker arbeitet (sein Werk stellt die Ware her), trägt am Ende seiner Arbeit die Ernte in sie (`werke`). Ein Plan ohne
+    // Scheune lagert nichts. Die Kisten vor ihrem Tor zeigen den Vorrat (`_bestandBild`, dasselbe Kistenmaß wie am Stand).
+    _scheuneAnlegen(S, liste, tueren) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.scheuneHalter !== "function") return AnazhRealm._kernPflichtBruch("koerper:scheuneHalter");
+        const ware = KC.BESTAND_GESETZ.herstellung.feld.ware;
+        if (!this.state.materials || !this.state.materials[ware])
+            throw new Error(`SCHEUNE: die Ware ${ware} des Ackers ist kein Stoff der Welt`);
+        const h = this._weltStunde();
+        const vorM = AnazhRealm.BEWOHNER.vorM;
+        const hoefe = tueren
+            .filter((T) => T.sl.rolle === "scheune")
+            .map((T) => ({
+                slot: T.si,
+                orte: { werk: { x: T.tx + T.ux * vorM, z: T.tz + T.uz * vorM, blick: Math.atan2(-T.ux, -T.uz) } },
+                leute: [],
+                werke: [],
+                bestand: null,
+                bestandBild: null,
+            }));
+        const von = this._scheuneVon || (this._scheuneVon = new WeakMap());
+        if (hoefe.length)
+            for (const b of liste) {
+                const t = b.orte.tuer;
+                let best = null;
+                for (const H of hoefe) {
+                    const d = Math.hypot(H.orte.werk.x - t.x, H.orte.werk.z - t.z);
+                    if (!best || d < best.d) best = { H, d };
+                }
+                best.H.leute.push(b);
+                if (b.bestand && b.bestand.art === "werk" && b.bestand.ware === ware) best.H.werke.push(b.bestand);
+            }
+        for (const H of hoefe) {
+            H.bestand = KC.scheuneHalter(ware, h, 0, H.leute.length);
+            for (const W of H.werke) von.set(W, H);
+        }
+        S.scheunen = hoefe;
+    }
+
+    // DIE ERNTE BIS JETZT (koerper `scheuneFassen`): die Scheune des Hofs legt jede Ernte seit ihrer Uhr an — vor jedem Leser
+    // ihres Bestands und vor jedem, der am Werk eines ihrer Bauern nimmt (die Lieferung des Wagens): wer zuerst kommt, nimmt
+    // nach der Uhr, nie nach der Reihe der Leser. `x` ein Hof (`S.scheunen`) oder ein Werk-Halter eines seiner Bauern.
+    _scheuneFassen(x, h = this._weltStunde()) {
+        const hof = x && x.werke ? x : this._scheuneVon && this._scheuneVon.get(x);
+        return hof ? window.__koerperCore.scheuneFassen(hof.bestand, hof.werke, h) : 0;
     }
 
     // DER TAUSCH (markt S1: Spieler ↔ Bewohner, nur, was er hat): die Taste des Verbs (`einsteigen`, E) vor einem Stand, dessen
@@ -1143,8 +1194,9 @@ class AnazhRealm_siedlung_bewohner {
     // sonst prüft der Takt (`_bestandBildTakt`) die Stände im Kreis je `taktS`.
     _bestandBild(b, jetzt = false) {
         const H = b.bestand;
-        if (!H || H.art !== "stand") return;
+        if (!H || (H.art !== "stand" && H.art !== "scheune")) return;
         const KC = window.__koerperCore;
+        if (H.art === "scheune") this._scheuneFassen(b); // die Scheune trägt die Ernten bis jetzt (vor dem Tor der Hof)
         const n = KC.bestandAm(H, this._weltStunde());
         const k = Math.ceil(n / KC.BESTAND_GESETZ.kiste - 1e-9);
         const G = this._bestandKisten(b, Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste));
@@ -1155,7 +1207,8 @@ class AnazhRealm_siedlung_bewohner {
         G.visible = k > 0;
     }
 
-    // die Gruppe der Kisten eines Stands (einmal gebaut, an seinem Ort): seitlich des Händlers, quer zu seinem Blick, in zwei Lagen
+    // die Gruppe der Kisten eines Stands (einmal gebaut, an seinem Ort): seitlich des Händlers, quer zu seinem Blick, in zwei Lagen;
+    // trägt ein Halter mehr als sechs Kisten (die Scheune), stehen die weiteren in Reihen dahinter (je Reihe wieder drei in zwei Lagen)
     _bestandKisten(b, m) {
         if (b.bestandBild) return b.bestandBild;
         const bp = this.state.blueprints && this.state.blueprints.kiste;
@@ -1163,14 +1216,48 @@ class AnazhRealm_siedlung_bewohner {
         const w = b.orte.werk;
         const [fx, fz] = [Math.sin(w.blick), Math.cos(w.blick)];
         const kM = AnazhRealm.BESTAND_BILD.kisteM;
-        const am = (j) => AnazhRealm.BESTAND_BILD.seiteM + (j % 3) * kM;
+        // DIE KISTEN STEHEN NIE IM HAUS (strom S1, acker-kette 2): die Reihen wachsen vom Werk-Ort fort, seitlich des Blicks —
+        // am Start-Dorf lag die vierte Reihe zweier von drei Scheunen in der Wand des Nachbarn (6 bzw. 4 von 24 Plätzen im
+        // Grundriss „haus“, dort trägt kein gezeichneter Boden), `_bodenSichtAt` antwortete null und das Bild des Vorrats kam
+        // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste; keine der vier Seiten war ganz frei, die Reihen dahinter
+        // liefen bis 7 m tief durch das Nachbarhaus). Nun nimmt jede Kiste den nächsten FREIEN Fuß: zuerst die bisherigen
+        // Reihen (drei breit, nach hinten), danach das Feld daneben (seitlich bis 8 Füße, 4 nach hinten, 2 zum Tor) nach
+        // Abstand vom ersten Fuß (beide Seiten des Händlers, sein Fuß bleibt frei); ein Fuß im Grundriss eines Hauses oder Baus
+        // (mit dem Rand einer halben Kiste) fällt aus — auch dort, wo Boden gezeichnet ist (am Start-Dorf standen so 12 von 24
+        // Kisten des dritten Hofs in einer Wand). Wo nichts im Weg steht, ist die Lage die bisherige
+        const fussLage = ([c, r]) => {
+            const a = AnazhRealm.BESTAND_BILD.seiteM + c * kM;
+            const d = r * kM;
+            return [w.x + fz * a + fx * d, w.z - fx * a + fz * d];
+        };
+        const fuss = (j) => (j % 3) + 3 * Math.floor(j / 6); // der Platz der Kiste j am Boden (die Folge der freien Füße)
+        const n = m > 0 ? fuss(m - 1) + 1 : 0;
+        const plaetze = [];
+        for (let q = 0; q < n; q++) plaetze.push([q % 3, -Math.floor(q / 3)]);
+        const feld = [];
+        const s0 = AnazhRealm.BESTAND_BILD.seiteM / kM; // (der Fuß des Händlers: a = 0 bleibt frei)
+        for (let c = -8; c < 8; c++) for (let r = -6; r <= 4; r++) if (Math.abs(s0 + c) >= 1) feld.push([c, r]);
+        feld.sort((A, B) => Math.hypot(A[0], A[1]) - Math.hypot(B[0], B[1]));
+        for (const P of feld) if (!plaetze.some((Q) => Q[0] === P[0] && Q[1] === P[1])) plaetze.push(P);
         // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
-        const y = [0, 1, 2].map((j) => this._bodenSichtAt(w.x + fz * am(j), w.z - fx * am(j)));
-        if (y.some((v) => v == null)) return null;
+        const fuesse = [];
+        const y = [];
+        for (let q = 0; fuesse.length < n && q < plaetze.length; q++) {
+            const p = fussLage(plaetze[q]);
+            const g = this._imGrundriss(...p, kM / 2);
+            if (g === "haus" || g === "bau") continue;
+            const h = this._bodenSichtAt(...p);
+            if (h == null) return null;
+            fuesse.push(p);
+            y.push(h);
+        }
+        if (fuesse.length < n) return null;
+        const lage = (j) => fuesse[fuss(j)];
         const G = new THREE.Group();
         for (let j = 0; j < m; j++) {
             const k = this._buildArchMeshMerged(bp);
-            k.position.set(w.x + fz * am(j), y[j % 3] + Math.floor(j / 3) * kM, w.z - fx * am(j));
+            const [x, z] = lage(j);
+            k.position.set(x, y[fuss(j)] + (Math.floor(j / 3) % 2) * kM, z);
             k.rotation.y = w.blick;
             G.add(k);
         }
@@ -1187,8 +1274,8 @@ class AnazhRealm_siedlung_bewohner {
         S.bestandTakt = t;
         const p = this._lodAuge() || this.state.playerMesh.position;
         const R = AnazhRealm.BESTAND_BILD.nahM;
-        for (const b of S.liste || []) {
-            if (!b.bestand || b.bestand.art !== "stand") continue;
+        for (const b of [...(S.liste || []), ...(S.scheunen || [])]) {
+            if (!b.bestand || (b.bestand.art !== "stand" && b.bestand.art !== "scheune")) continue;
             const nah = Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < R;
             if (nah) this._bestandBild(b);
             else if (b.bestandBild && b.bestandBild.visible)
@@ -1198,7 +1285,7 @@ class AnazhRealm_siedlung_bewohner {
 
     // die Kisten eines Halters fort (die Liste geht, `_bewohnerFort`)
     _bestandFort(S) {
-        for (const b of S.liste || [])
+        for (const b of [...(S.liste || []), ...(S.scheunen || [])])
             if (b.bestandBild) {
                 this.state.scene.remove(b.bestandBild);
                 this._disposeSoulGroup(b.bestandBild);

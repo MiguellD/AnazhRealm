@@ -359,6 +359,71 @@ function bestandUrteil(C0, mutante = null) {
     return { rot, sinkt, ohneHerstellung, geladen, abgeladen, leer24, her: acker.her, ver: stand.ver };
 }
 
+// TEIL C — DIE ACKER-KETTE (Meisterkarte 2 mensch.nahrung strom S1 · frucht S1 · hand S2; koerper `scheuneHalter` ·
+// `scheuneFassen`, phyto ACKER_GESETZ · `ackerStand`): ein Hof mit zwei Äckern (Bauern, Same 12345 und 4242) und sechs Essern,
+// fünf Tage Stunde für Stunde über die Scheune des Kerns (`scheuneFassen`, wie der Wirt sie ruft). C1 der Sägezahn: an jedem Tag
+// steigt die Scheune (eine Ernte) und fällt sie (das Mahl), `ernten` ≥ 1 je Tag; C2 die Erhaltung: Σ Bestand von Äckern und
+// Scheune am Ende − am Anfang = Herstellung − Verbrauch (die Bücher), auf 1e-9, und die Scheune bleibt in [0, Lager]; C3 die
+// Frucht: über die Tage bis zur Ernte steigt die Höhe nie und reift die Farbe nie zurück, die Saat steht bei 0, die reife bei
+// voller Reife, nach der Ernte die Stoppel; `ackerTage` liegt in [0, Jahr). Täter (Selbsttest): „die Scheune erntet nicht" (der
+// Ruf legt nur den Verbrauch an), „die Ernte erzeugt Ware" (die Scheune bekommt, was das Werk nicht gab), „der Acker wächst nicht"
+// (der Stand bleibt flach). Leser: der Wirt (`_scheuneAnlegen`, `_scheuneFassen`, `_bestandBild`, `_ackerKoerperTakt`).
+function ackerUrteil(C0, P0, mutante = null) {
+    const C = Object.assign({}, C0);
+    const P = Object.assign({}, P0);
+    if (mutante === "ohneErnte") C.scheuneFassen = (S, w, h) => (C0.bestandFassen(S, h), 0);
+    if (mutante === "erzeugt")
+        C.scheuneFassen = (S, werke, h) => {
+            const n = C0.scheuneFassen(S, werke, h);
+            if (n) S.n[S.ware] = Math.min(S.cap, S.n[S.ware] + n);
+            return n;
+        };
+    if (mutante === "flach") P.ackerStand = (t) => Object.assign({}, P0.ackerStand(t), { hoeheM: 0 });
+    const rot = [];
+    const h0 = 3 * 24;
+    const werke = [12345, 4242].map((s) => C.bestandHalter("werk", "kraut", h0, 0, s, "wohnhaus", "feld"));
+    const S = C.scheuneHalter("kraut", h0, 0, 6);
+    const summe = (h) => werke.reduce((a, W) => a + C.bestandAm(W, h), 0) + C.bestandAm(S, h);
+    const anfang = summe(h0);
+    const tage = 5;
+    let [steigt, faellt, raus] = [new Set(), new Set(), 0];
+    let vor = C.bestandAm(S, h0);
+    for (let h = h0 + 0.5; h <= h0 + 24 * tage; h += 0.5) {
+        C.scheuneFassen(S, werke, h);
+        const n = C.bestandAm(S, h);
+        const d = Math.floor((h - 1e-9) / 24);
+        if (n > vor + 1e-9) steigt.add(d);
+        if (n < vor - 1e-9) faellt.add(d);
+        if (n < -1e-9 || n > S.cap + 1e-9) raus++;
+        vor = n;
+    }
+    // (am ersten Tag ist die Scheune vor der ersten Ernte leer: das Mahl fällt an den Tagen nach ihr)
+    if (steigt.size < tage || faellt.size < tage - 1)
+        rot.push(`C1 kein Sägezahn: die Scheune steigt an ${steigt.size}, fällt an ${faellt.size} von ${tage} Tagen (Ernten ${S.ernten})`);
+    if (S.ernten < tage) rot.push(`C1 die Scheune erntet nicht: ${S.ernten} Ernten in ${tage} Tagen`);
+    const he = h0 + 24 * tage;
+    for (const W of werke) C.bestandFassen(W, he);
+    const buch = [...werke, S].reduce((a, H) => a + H.her - H.ver, 0);
+    if (Math.abs(summe(he) - anfang - buch) > 1e-9)
+        rot.push(`C2 die Ernte erzeugt Ware: Ende − Anfang ${(summe(he) - anfang).toFixed(4)} ≠ Herstellung − Verbrauch ${buch.toFixed(4)}`);
+    if (raus) rot.push(`C2 die Scheune verlässt ihr Lager in ${raus} Proben`);
+    // C3 die Frucht nach dem Gesetz des Wuchses
+    const G = P.ACKER_GESETZ.frucht;
+    let [hoch, reif, zurueck] = [0, 0, 0];
+    for (let t = 0; t < G.ernteTag; t++) {
+        const a = P.ackerStand(t);
+        if (a.hoeheM < hoch - 1e-9 && t <= G.stuetzen[G.stuetzen.length - 3][0]) zurueck++;
+        if (a.reife < reif - 1e-9) zurueck++;
+        [hoch, reif] = [Math.max(hoch, a.hoeheM), Math.max(reif, a.reife)];
+    }
+    const [saat, ernte, stoppel] = [P.ackerStand(0), P.ackerStand(G.ernteTag - 6), P.ackerStand(G.ernteTag + 1)];
+    if (!(hoch >= 0.5) || zurueck || saat.hoeheM !== 0 || !(ernte.reife >= 0.95) || !stoppel.stoppel)
+        rot.push(`C3 der Acker wächst nicht nach dem Gesetz: Höhe bis ${hoch.toFixed(2)} m, ${zurueck} Rückschritte, Saat ${saat.hoeheM} m, Reife zur Ernte ${ernte.reife}, Stoppel ${!!stoppel.stoppel}`);
+    const jt = [0, 0.37, 0.99].map((ph) => P.ackerTage(ph, 365));
+    if (jt.some((t) => !(t >= 0 && t < 365))) rot.push(`C3 die Tage seit der Saat liegen außerhalb des Jahrs: ${jt.join(", ")}`);
+    return { rot, ernten: S.ernten, steigt: steigt.size, faellt: faellt.size, voll: C.bestandAm(S, he), hoch, buch };
+}
+
 // DAS KÖNNEN AUS DEM LEIB (mensch-zahlen, koerper `leibKoennen`; Meisterkarte 2 mensch.sport.koennen S1): K1 am Bezugs-Leib
 // (START_PARAMS + KOENNEN_BEZUG) exakt 1; K2 je Achse des Leibs die Richtung — mehr Muskel-Ton läuft schneller, mehr Alter und
 // mehr Masse langsamer, über ein Gitter der übrigen Dials; K3 die Höhe kürzt sich: gleich gebaut und verschieden hoch trägt die
@@ -434,15 +499,18 @@ if (SELBSTTEST) {
     // der Bestand: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const bGut = !bestandUrteil(core).rot.length;
     const bestandTaeter = [["ohneHerstellung", "B2 der Bestand füllt sich ohne Herstellung"], ["ohneLadung", "B3 der Wagen fährt ohne Ladung"], ["erzeugt", "B1 der Tausch erzeugt Ware"]].map(([m, z]) => [bGut && bestandUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
+    // die Acker-Kette: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const aGut = !ackerUrteil(core, globalThis.__phytoCore).rot.length;
+    const ackerTaeter = [["ohneErnte", "C1 die Scheune erntet nicht"], ["erzeugt", "C2 die Ernte erzeugt Ware"], ["flach", "C3 der Acker wächst nicht"]].map(([m, z]) => [aGut && ackerUrteil(core, globalThis.__phytoCore, m).rot.some((r) => r.startsWith(z)), z]);
     // das Können: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const kGut = !koennenUrteil(core).rot.length;
     const koennenTaeter = [["ohneKoennen", "K2 das Können folgt dem Muskel nicht"], ["ohneAlter", "K2 das Können folgt dem Alter nicht"], ["ohneMasse", "K2 das Können folgt der Masse nicht"], ["mitHoehe", "K3 die Höhe bleibt im Tempo"], ["bezugStart", "K5 der Median der Bevölkerung mit 30 J"]].map(([m, z]) => [kGut && koennenUrteil(core, m).rot.some((r) => r.startsWith(z)), z]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...koennenTaeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle achtzehn injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, fünf Täter des Könnens).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einundzwanzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -453,6 +521,11 @@ if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.lengt
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
+const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phytoCore.ackerStand === "function"
+    ? ackerUrteil(core, globalThis.__phytoCore)
+    : { rot: ["C0 der Kern trägt keine Acker-Kette (koerper scheuneHalter/scheuneFassen, phyto ackerStand)"] };
+for (const z of ak.rot) st.rot.push("ACKER " + z + " — Täter: koerper scheuneFassen · phyto ACKER_GESETZ");
+if (!ak.rot.length) console.log(`  ACKER Scheune: ${ak.ernten} Ernten in 5 Tagen, steigt an ${ak.steigt}, fällt an ${ak.faellt} Tagen, am Ende ${ak.voll.toFixed(2)} · Frucht bis ${ak.hoch.toFixed(2)} m`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Bezugs-Leib 1: die Mitte der Achsen mit 30 J) · der Median der Dreißigjährigen ${kn.median30.toFixed(4)} · START_PARAMS ${kn.start.toFixed(4)} · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);

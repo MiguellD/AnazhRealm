@@ -166,7 +166,7 @@ hauptLauf(async () => {
         };
         // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der
         // Siedlungen, die Fauna (Vogel, Fisch, Bestäuber) — Substanz, ihr Grund ist ihr Name
-        for (const k of ["siedlung-zaun", "siedlung-mauer", "vogel", "tier:fisch", "tier:bestaeuber"])
+        for (const k of ["siedlung-zaun", "siedlung-mauer", "siedlung-acker", "siedlung-frucht", "vogel", "tier:fisch", "tier:bestaeuber"])
             INVENTAR[k] = { b: "substanz", why: k + " (ein Pool)" };
         const chainOf = (node) => {
             const c = [];
