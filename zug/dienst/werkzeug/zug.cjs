@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 // zug.cjs — der Merge-Zug (Rumpf von zug.sh; Hilfe zug.md). Geurteilt wird genau der SHA, der landet; ein roter Zweig
-// fällt aus dem Zug, statt die Spur zu sperren. Verben: bereit · bau · urteil · teile · wackler · landen · punkte · loese (intern).
+// fällt aus dem Zug, statt die Spur zu sperren. Verben: bereit · bau · urteil · teile · wackler · landen · nachwache · punkte · loese (intern).
 const { execFileSync, spawn, spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -13,7 +13,14 @@ const INTEG = "C:/Users/micha/AnazhRealm-integ";
 const ZUG = process.env.ZUG_WT || "C:/Users/micha/AnazhRealm-zug";
 const VOLL = "C:/Users/micha/AnazhRealm-profiband";
 const KOORD = process.env.ZUG_KOORD || "C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination";
-const PFLICHT = ["puls 1/2", "puls 2/2", ...Array.from({ length: 18 }, (_, i) => `voll ${i + 1}/18`)];
+// LANDUNG ≤ 10 MIN (23.11., der Schöpfer: „Keine 10h max 10min und fertig. Wir messen soviel wie nötig, nicht wie möglich“; z695:
+// Wand 29,4 min, davon kopf 0,4 + puls 4,7): am Zug-Kandidaten urteilen NUR kopf und der Puls (PFLICHT). Die volle Batterie
+// (VOLL_PFLICHT) verlangt der Einlass am Zweig-Kopf (zug-dienst.sh bereit über ci.sh „voll: n/n“; hier `bereit`) — im Zug ERBT sie
+// immer und fährt nie; die Karten (Job echt) fahren in keinem Zug. Nach der Landung fährt main die Batterie (`nachwache`).
+const PFLICHT = ["puls 1/2", "puls 2/2"];
+const VOLL_PFLICHT = Array.from({ length: 18 }, (_, i) => `voll ${i + 1}/18`);
+// die Jobs, die im Zug nie urteilen: voll erbt vom Zweig-Kopf, echt fährt nur auf Abruf (check.yml)
+const NIE_IM_ZUG = /^(voll|echt)\b/;
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i; // dieselbe Wand wie diag-betriebsgesetz.cjs
 const SIEGEL_CS = /\bRUND\b/;
 const CO = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>";
@@ -130,8 +137,10 @@ async function bereit(args) {
         const je = (await Promise.all(runs.map(jobsAlle))).map(lesart);
         const wackler = [...new Set(je.flatMap((l) => l.wackler))];
         const letzteJe = (n) => je.flatMap((l) => [...l.letzte].filter(([k]) => kurz(k) === n).map(([, j]) => j));
-        const gruen = PFLICHT.filter((n) => letzteJe(n).some((j) => j.conclusion === "success"));
-        const offen = PFLICHT.filter((n) => !gruen.includes(n));
+        // der Einlass verlangt am Zweig-Kopf den Puls UND die volle Batterie — sie ist das Erbe, das der Zug nie mehr fährt
+        const pflicht = [...PFLICHT, ...VOLL_PFLICHT];
+        const gruen = pflicht.filter((n) => letzteJe(n).some((j) => j.conclusion === "success"));
+        const offen = pflicht.filter((n) => !gruen.includes(n));
         const roteJ = offen.flatMap((n) => letzteJe(n).filter((j) => j.conclusion === "failure").flatMap((j) => rotSchritte(j).map((s) => `${n}/${s}`)));
         const lauf = offen.filter((n) => letzteJe(n).some((j) => j.status !== "completed"));
         const ab = offen.filter((n) => letzteJe(n).some((j) => j.conclusion === "cancelled"));
@@ -158,88 +167,39 @@ async function bereit(args) {
 // ── urteil ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // die Wackler ohne je einen Täter (08.11., z296–z322: Fenster-Wand 6×, K6 5× rot, 0 Täter) — kein Neulauf, sie blockieren nie (landen --wackler-frei)
 const WACKEL_RE = new RegExp(process.env.ZUG_WACKEL || "Fenster-Wand|Kamera-Leib auf der Karte|Fahr-Linse des Lebens|Erst-Zeichnungs-Wand");
-// DER SWIFTSHADER-ZWILLING IST NIE EIN HALT (10.11., Schöpfer: „wieso haben wir noch immer switshader, dachte das ist weg mit gpu-probe“):
-// die voll-Jobs der Klasse gpu zeichnen auf GitHub-ubuntu mit swiftshader dieselben Render-Wände, die der echt-Job auf der Karte trägt
-// (dazu je Zweig die GPU-Probe). z358–z366: jedes ROT dort war der 900-s-Abriss an createRenderPipelineAsync, kein einziger Täter,
-// je Zug bis zu drei Neuläufe à ~20 min. Ist am Kopf JEDES Rot ein swiftshader-gpu-Job UND der echt-Job auf der Karte GRÜN, ist das
-// Urteil GRÜN mit Hinweis — der Kopf landet ohne Neulauf. Fällt auch echt, oder ein cpu-Job, urteilt der Zug wie bisher.
-const SWIFT_JOB = /^voll \d+\/\d+ gpu$/;
-function swiftHinweis(letzte) {
-    const rotJobs = [...letzte].filter(([, j]) => ROT.has(j.conclusion));
-    const echt = [...letzte].filter(([n]) => /^echt/.test(n));
-    if (!rotJobs.length || !echt.length) return null;
-    if (!rotJobs.every(([n]) => SWIFT_JOB.test(n))) return null;
-    if (!echt.every(([, j]) => j.conclusion === "success")) return null;
-    return rotJobs.map(([n, j]) => `${kurz(n)}/${rotSchritte(j).join("+") || "?"}`).join(", ");
-}
-// ── DIE VOLLE BATTERIE FÄHRT EINMAL (13.11., der Schöpfer: „ewige loops mit sinnlosem prüftheater … als würde der tüv die ganze
-// zeit bämängeln“): der Dienst lässt nur Köpfe ein, die „voll n/n“ GRÜN tragen (zug-dienst.sh bereit) — und der Zug fuhr dieselbe
-// Batterie am selben Baum noch einmal (z413–z424: 10 von 12 Zügen trugen EINEN Zweig, CI bis zum Urteil Median 19 min). Ist der
-// Kandidat bis auf seine Versions-Stufe BAUM-GLEICH zum Zweig-Kopf, gilt das „voll n/n“ des Zweig-Kopfs; im Zug urteilen nur, was
-// die Gleichheit nicht deckt: Puls und echt an der Stufe. Bewiesen wird die Gleichheit, nie vermutet: (1) der Kandidat ist eine
-// Versions-/Werkzeug-Stufe mit EINEM Elter, (2) der Kandidat trägt genau EINEN Zweig, (3) der Tree-SHA vor der Stufe = der Tree-SHA
-// des Zweig-Kopfs (main zog seit dem Merge des Zweigs nicht weiter, keine Format- oder Zeit-Stufe), (4) jede Datei der Stufe ist bis
-// auf die Versions-Muster (VERS) byte-gleich, keine kommt hinzu oder fällt. Sonst fährt voll wie bisher, und der Grund steht im Log.
-const STUFE_BETREFF = /^(V[0-9.]+: Versions-Stufe nach |Werkzeug-Stufe nach )/;
-const ohneVersionZeilen = (t) => t.split("\n").map(ohneVersion).join("\n");
-const VOLL_PFLICHT = PFLICHT.filter((n) => n.startsWith("voll"));
-function gitRoh(args, repo) {
-    const r = spawnSync("git", args, { cwd: repo, encoding: "utf8", maxBuffer: 1 << 28 });
-    if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${(r.stderr || "").trim().slice(0, 300)}`);
-    return r.stdout; // ungekürzt: ein Byte am Datei-Ende zählt
-}
-function baumErbe(kand, repo = INTEG) {
-    const [eltern, betreff] = git(["log", "-1", "--format=%P%x00%s", kand], repo).split("\x00");
-    const p = eltern.trim().split(" ");
-    if (p.length !== 1 || !STUFE_BETREFF.test(betreff)) return { gilt: false, grund: `der Kopf ${kand.slice(0, 8)} ist keine Versions-Stufe` };
-    const { zweige } = zugAufbau(kand, repo);
-    if (zweige.length !== 1) return { gilt: false, grund: `${zweige.length} Zweige im Kandidaten` };
-    const [zweig, zSha] = zweige[0].split("@");
-    const tVor = git(["rev-parse", `${p[0]}^{tree}`], repo);
-    const tZweig = git(["rev-parse", `${zSha}^{tree}`], repo);
-    const b = { zweig, zSha, tVor, tZweig };
-    if (tVor !== tZweig)
-        return { ...b, gilt: false, grund: `Baum vor der Stufe ${tVor.slice(0, 12)} ≠ Zweig-Kopf ${zweig}@${zSha.slice(0, 8)} ${tZweig.slice(0, 12)} (main zog weiter, oder eine Format-/Zeit-Stufe)` };
-    // die eine Datei, die die Stufe HINZUFÜGT: der Speicher-Korpus der neuen Version (bump-version → diag-persistence --stufe, z417–z424
-    // an jeder Stufe) — gemünzt vom selben Baum; jede andere neue oder gestrichene Datei bricht das Erbe
-    const ver = JSON.parse(git(["show", `${kand}:package.json`], repo)).version;
-    const diff = git(["diff", "--name-status", "--no-renames", p[0], kand], repo).split("\n").filter(Boolean);
-    for (const z of diff) {
-        const [st, datei] = z.split("\t");
-        if (st === "A" && datei === `spec/speicher-korpus/${ver}.json.br`) continue;
-        if (st !== "M") return { ...b, gilt: false, grund: `die Stufe ${st === "A" ? "fügt" : "streicht"} ${datei}` };
-        if (ohneVersionZeilen(gitRoh(["show", `${p[0]}:${datei}`], repo)) !== ohneVersionZeilen(gitRoh(["show", `${kand}:${datei}`], repo)))
-            return { ...b, gilt: false, grund: `die Stufe ändert in ${datei} mehr als die Version` };
+// DAS URTEIL AM KANDIDATEN IST KOPF UND PULS (LANDUNG ≤ 10 MIN, 23.11.): jeder Job des Laufs außer voll und echt (NIE_IM_ZUG). Bis
+// hier wartete der Zug auf die volle Batterie — oder auf ihr Baum-Erbe, das nur bei EINEM Zweig und gleichem Baum griff (erbeVoll) —
+// und auf jedes Bein der Karten (der Zweig echt hier und in landen, der swiftshader-Hinweis): z695 Wand 29,4 min. Die Batterie urteilte
+// am Zweig-Kopf, die Wechselwirkung der Zweige und die Stufe sieht die Nachwache auf main nach der Landung (`nachwache`).
+// urteilAus({ run, jobs, neulauf }) → { wort, rot?, wackler?, neulauf? (der Rerun ist anzustoßen), zeile } — ohne Netz (Selbsttest)
+function urteilAus({ run, jobs, neulauf = true }) {
+    const { letzte, wackler } = lesart(jobs.filter((j) => !NIE_IM_ZUG.test(j.name)));
+    const ort = `Lauf ${run.id} (${run.head_branch}, Versuch ${run.run_attempt}) · voll erbt vom Zweig-Kopf (bereit), echt fährt im Zug nie`;
+    const lauf = [...letzte].filter(([, j]) => j.status !== "completed").map(([n]) => kurz(n));
+    const fehlt = PFLICHT.filter((n) => ![...letzte.keys()].some((k) => kurz(k) === n));
+    // ein Pflicht-Job, den der Lauf noch nicht zeigt, kommt noch — erst ein fertiger Lauf ohne ihn ist UNVOLL
+    if (lauf.length || (fehlt.length && run.status !== "completed"))
+        return { wort: "LAEUFT", zeile: `LAEUFT ${ort}: ${[...lauf, ...fehlt].join(", ") || run.status}` };
+    const rot = [...letzte].filter(([, j]) => ROT.has(j.conclusion)).flatMap(([n, j]) => rotSchritte(j).map((s) => ({ n: kurz(n), s })));
+    if (!rot.length) {
+        if (fehlt.length) return { wort: "UNVOLL", zeile: `UNVOLL ohne ${fehlt.join(", ")} · ${ort}` };
+        return wackler.length
+            ? { wort: "GRUEN", wackler, zeile: `GRUEN mit Wackler ${wackler.join(", ")} · ${ort}` }
+            : { wort: "GRUEN", zeile: `GRUEN · ${ort}` };
     }
-    return { ...b, gilt: true, dateien: diff.length };
-}
-async function erbeVoll(sha) {
-    let b;
-    try {
-        b = baumErbe(sha);
-    } catch (e) {
-        return { erbt: false, zeile: `voll fährt im Zug: der Baum-Vergleich scheitert (${String(e.message).slice(0, 160)})` };
-    }
-    if (!b.gilt) return { erbt: false, zeile: `voll fährt im Zug: ${b.grund}` };
-    const n = VOLL_PFLICHT.length;
-    const runs = (await runsFuer(b.zSha, [b.zweig])).filter((r) => r.head_sha === b.zSha && !["integ-probe", "zug-a", "zug-b"].includes(r.head_branch));
-    for (const r of runs.sort((x, y) => y.id - x.id)) {
-        const { letzte } = lesart(await jobsAlle(r));
-        if (VOLL_PFLICHT.every((v) => [...letzte].some(([k, j]) => kurz(k) === v && j.conclusion === "success")))
-            return {
-                erbt: true,
-                lauf: r.id,
-                zeile: `voll ${n}/${n} aus dem Zweig-Kopf ${b.zweig}@${b.zSha.slice(0, 8)} (Zweig-Lauf#${r.id}) · Baum vor der Stufe ${b.tVor} = Zweig-Kopf ${b.tZweig} · Stufe ${b.dateien} Dateien nur Version`,
-            };
-    }
-    return { erbt: false, zeile: `voll fährt im Zug: Baum gleich (${b.tVor.slice(0, 12)}), aber kein Lauf am Zweig-Kopf ${b.zSha.slice(0, 8)} trägt voll ${n}/${n} GRÜN` };
+    const namen = rot.map((r) => `${r.n}/${r.s}`).join(", ");
+    if (run.run_attempt < 2 && neulauf && !rot.every((r) => WACKEL_RE.test(r.s)))
+        // der Neulauf der gefallenen Jobs geht erst nach dem Ende des Laufs (die API weist ihn sonst ab)
+        return run.status === "completed"
+            ? { wort: "LAEUFT", rot, neulauf: true, zeile: `LAEUFT Neulauf angestoßen für ${namen} · ${ort}` }
+            : { wort: "LAEUFT", rot, zeile: `LAEUFT rot ${namen} — der Neulauf folgt nach dem Ende des Laufs · ${ort}` };
+    return { wort: "ROT", rot, zeile: `ROT ${namen} · ${ort}` };
 }
 async function urteilVon(sha, { neulauf = true } = {}) {
     const alle = await runsFuer(sha, ["integ-probe", "zug-a", "zug-b"]);
     const runs = alle.filter((r) => r.conclusion !== "cancelled" || r.status !== "completed");
     if (!runs.length) {
-        // ein ABGEBROCHENER Lauf (24.10.: der echt-Job unter Last am Deckel) ist ein Rot mit EINEM Neulauf — vorher hieß er
-        // „KEIN LAUF", und der Fahrer wartete 120 min auf nichts
+        // ein ABGEBROCHENER Lauf ist ein Rot mit EINEM Neulauf — vorher hieß er „KEIN LAUF", und der Fahrer wartete 120 min auf nichts
         const ab = alle.filter((r) => r.status === "completed" && r.conclusion === "cancelled").sort((a, b) => b.id - a.id)[0];
         if (!ab) return { wort: "KEIN LAUF", zeile: `KEIN LAUF am ${sha.slice(0, 8)}` };
         const ort = `Lauf ${ab.id} (${ab.head_branch}, Versuch ${ab.run_attempt})`;
@@ -251,55 +211,81 @@ async function urteilVon(sha, { neulauf = true } = {}) {
     }
     runs.sort((a, b) => (b.head_branch === "integ-probe") - (a.head_branch === "integ-probe") || b.id - a.id);
     const run = runs[0];
-    const jobs = await jobsAlle(run);
-    // erbt der Kandidat das „voll n/n“ des Zweig-Kopfs, sind die voll-Jobs dieses Laufs ein Nachlauf ohne Urteil: auf sie wartet der
-    // Zug nicht, ihr Ausgang zählt nicht (die Batterie urteilte am selben Baum); Puls und echt urteilen wie immer
-    const erbe = await erbeVoll(sha);
-    const nachlauf = (n) => erbe.erbt && VOLL_PFLICHT.includes(kurz(n));
-    const { letzte: alleLetzten } = lesart(jobs);
-    const letzte = new Map([...alleLetzten].filter(([n]) => !nachlauf(n)));
-    const wackler = lesart(jobs.filter((j) => !nachlauf(j.name))).wackler;
-    const ort = `Lauf ${run.id} (${run.head_branch}, Versuch ${run.run_attempt}) · ${erbe.zeile}`;
-    const lauf = [...letzte].filter(([, j]) => j.status !== "completed").map(([n]) => kurz(n));
-    // ohne Erbe wartet das Urteil auf den ganzen Lauf; mit Erbe auf jeden Job außer dem Nachlauf — der echt-Job muss dastehen
-    const offenLauf = erbe.erbt ? ![...letzte.keys()].some((n) => /^echt/.test(n)) && run.status !== "completed" : run.status !== "completed";
-    if (offenLauf || lauf.length)
-        return { wort: "LAEUFT", run, zeile: `LAEUFT ${ort}: ${lauf.join(", ") || run.status}` };
-    const rot = [...letzte].filter(([, j]) => ROT.has(j.conclusion)).flatMap(([n, j]) => rotSchritte(j).map((s) => ({ n: kurz(n), s })));
-    // ein Rot neben dem laufenden Nachlauf: der Neulauf der gefallenen Jobs geht erst nach dem Ende des Laufs (die API weist ihn sonst ab)
-    if (rot.length && erbe.erbt && run.status !== "completed" && neulauf && run.run_attempt < 2 && !rot.every((r) => WACKEL_RE.test(r.s)))
-        return { wort: "LAEUFT", run, rot, zeile: `LAEUFT rot ${rot.map((r) => `${r.n}/${r.s}`).join(", ")} — der Neulauf folgt nach dem Ende des Laufs · ${ort}` };
-    let fehlt = PFLICHT.filter((n) => !nachlauf(n) && ![...letzte.keys()].some((k) => kurz(k) === n));
-    if (!rot.length) {
-        // EIN Urteil je Kopf (ci-kopf): fährt integ-probe die Batterie nicht, weil ein anderer Lauf desselben SHA (integ-zug)
-        // sie grün trägt, zählen dessen Pflicht-Jobs
-        const tragend = [];
-        if (fehlt.length) {
-            const andere = (await runsFuer(sha, ["integ-zug"])).filter((r) => r.id !== run.id && r.status === "completed");
-            for (const r of andere) {
-                const { letzte: l2 } = lesart(await jobsAlle(r));
-                const g = fehlt.filter((n) => [...l2].some(([k, j]) => kurz(k) === n && j.conclusion === "success"));
-                if (g.length) tragend.push(r.id);
-                fehlt = fehlt.filter((n) => !g.includes(n));
-            }
-        }
-        const zus =
-            (fehlt.length ? ` · ohne ${fehlt.length} Pflicht-Jobs (keine volle Batterie)` : "") +
-            (tragend.length ? ` · Batterie aus Lauf ${tragend.join(", ")}` : "") +
-            ` · ${ort}`;
-        return wackler.length
-            ? { wort: "GRUEN", run, wackler, zeile: `GRUEN mit Wackler ${wackler.join(", ")}${zus}` }
-            : { wort: fehlt.length ? "UNVOLL" : "GRUEN", run, zeile: `${fehlt.length ? "UNVOLL" : "GRUEN"}${zus}` };
+    const u = urteilAus({ run, jobs: await jobsAlle(run), neulauf });
+    if (!u.neulauf) return { ...u, run };
+    const st = await api(`/actions/runs/${run.id}/rerun-failed-jobs`, "POST");
+    return { ...u, run, zeile: u.zeile.replace("Neulauf angestoßen", `Neulauf angestoßen (HTTP ${st})`) };
+}
+
+// ── nachwache ────────────────────────────────────────────────────────────────────────────────────────────────────────
+// DIE NACHWACHE OHNE GERÄT (LANDUNG ≤ 10 MIN, 23.11.): nach jeder Landung fährt check.yml auf main die volle Batterie auf ubuntu, nie
+// blockierend — der Zug wartet nicht auf sie, die Schlange hält nie (die Gruppe von main bricht nie ab, check.yml concurrency). Ihr
+// ROT nennt jede Landung seit dem letzten GRÜNEN main beim Namen (je Merge „Merge <zweig> in integ-probe“ im Bereich grün..rot auf
+// der ersten Eltern-Linie) und geht in die Täter-Spur (zug-dienst.sh: zug-taeter.txt und das Dienst-Log).
+// nachwacheUrteil(laeufe, zweigeZwischen) ohne Netz: laeufe = [{ run, jobs }] der Läufe auf main (push), neueste zuerst; ein Lauf ohne
+// Urteil der Batterie (kein voll-Job, jeder übersprungen) zählt nicht; zweigeZwischen(gruen|null, rot) → [„<zweig>@<sha8>“].
+const VOLL_JOB = /^voll \d+\/\d+/;
+function battUrteil(jobs) {
+    const { letzte } = lesart(jobs.filter((j) => VOLL_JOB.test(j.name)));
+    const v = [...letzte.values()].filter((j) => j.conclusion !== "skipped");
+    if (!v.length) return null;
+    if (v.some((j) => j.status !== "completed")) return { wort: "LAEUFT", n: v.length };
+    const rot = [...letzte].filter(([, j]) => ROT.has(j.conclusion));
+    return rot.length
+        ? { wort: "ROT", n: v.length, rot: rot.flatMap(([n, j]) => rotSchritte(j).map((s) => `${kurz(n)}/${s}`)) }
+        : { wort: "GRUEN", n: v.length };
+}
+function nachwacheUrteil(laeufe, zweigeZwischen) {
+    const mit = laeufe.map(({ run, jobs }) => ({ run, u: battUrteil(jobs) })).filter((x) => x.u);
+    const fertig = mit.filter((x) => x.u.wort !== "LAEUFT");
+    const neu = mit[0] && mit[0].u.wort === "LAEUFT" ? mit[0] : null;
+    const dazu = neu ? ` · main ${neu.run.head_sha.slice(0, 8)} fährt noch (Lauf ${neu.run.id})` : "";
+    if (!fertig.length) return { wort: "OHNE URTEIL", zeile: `NACHWACHE OHNE URTEIL: ${laeufe.length} Läufe auf main, keiner trug die Batterie zu Ende${dazu}` };
+    const kopf = fertig[0];
+    const k8 = kopf.run.head_sha.slice(0, 8);
+    if (kopf.u.wort === "GRUEN")
+        return { wort: "GRUEN", sha: kopf.run.head_sha, zeile: `NACHWACHE GRÜN main ${k8} (voll ${kopf.u.n}/${kopf.u.n}, Lauf ${kopf.run.id})${dazu}` };
+    const gruen = fertig.find((x) => x.u.wort === "GRUEN");
+    const zweige = zweigeZwischen(gruen ? gruen.run.head_sha : null, kopf.run.head_sha);
+    const seit = gruen ? `seit grünem main ${gruen.run.head_sha.slice(0, 8)} (Lauf ${gruen.run.id})` : `ohne grünes main in ${fertig.length} Läufen`;
+    return {
+        wort: "ROT",
+        sha: kopf.run.head_sha,
+        gruen: gruen ? gruen.run.head_sha : null,
+        zweige,
+        zeile: `NACHWACHE ROT main ${k8} (Lauf ${kopf.run.id}: ${kopf.u.rot.join(", ")}) · Landungen ${seit}: ${zweige.length ? zweige.join(" ") : "keine im Bereich"}${dazu}`,
+    };
+}
+// die Landungen zwischen zwei Köpfen von main (Reihe der Landung; ohne grünen Kopf die letzten 40 Commits): je Merge des Zugs der
+// Zweig mit seinem Kopf, je direktem Commit auf main „main@<sha8>“ — die Stufe nach einem Zug (Versions-/Werkzeug-Stufe) gehört zu ihm
+const STUFE_RE = /^(V\d+\.\d+\.\d+: Versions-Stufe|Werkzeug-Stufe) nach /;
+function zweigeZwischen(gruen, rot, repo = INTEG) {
+    const bereich = gruen ? [`${gruen}..${rot}`] : ["-n", "40", rot];
+    return git(["log", "--first-parent", "--reverse", "--format=%H%x00%P%x00%s", ...bereich], repo)
+        .split("\n")
+        .filter(Boolean)
+        .map((z) => {
+            const [h, p, s] = z.split("\x00");
+            const m = /^Merge (\S+) in integ-probe/.exec(s);
+            if (m) return `${m[1]}@${(p.split(" ")[1] || h).slice(0, 8)}`;
+            return STUFE_RE.test(s) ? null : `main@${h.slice(0, 8)}`;
+        })
+        .filter(Boolean);
+}
+async function nachwache() {
+    const r = await api("/actions/workflows/check.yml/runs?branch=main&event=push&per_page=20");
+    const runs = (r.workflow_runs || []).filter((x) => x.head_branch === "main").sort((a, b) => b.id - a.id);
+    const laeufe = [];
+    for (const run of runs) {
+        laeufe.push({ run, jobs: await jobsAlle(run) });
+        // genug gelesen: ein fertiges Urteil — grün, oder rot mit einem grünen dahinter
+        const u = nachwacheUrteil(laeufe, () => []);
+        if (u.wort === "GRUEN" || (u.wort === "ROT" && u.gruen)) break;
     }
-    const swift = swiftHinweis(letzte);
-    if (swift) return { wort: "GRUEN", run, swift, zeile: `GRUEN (echt auf der Karte GRÜN · swiftshader-Hinweis, kein Halt: ${swift}) · ${ort}` };
-    const nur = rot.every((r) => r.n.startsWith("echt"));
-    const namen = rot.map((r) => `${r.n}/${r.s}`).join(", ");
-    if (run.run_attempt < 2 && neulauf && !rot.every((r) => WACKEL_RE.test(r.s))) {
-        const st = await api(`/actions/runs/${run.id}/rerun-failed-jobs`, "POST");
-        return { wort: "LAEUFT", run, rot, zeile: `LAEUFT Neulauf angestoßen (HTTP ${st}) für ${namen} · ${ort}` };
-    }
-    return { wort: "ROT", run, rot, echtNur: nur, zeile: `ROT ${namen}${nur ? " (echt-only)" : ""} · ${ort}` };
+    git(["fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main"], INTEG);
+    const u = nachwacheUrteil(laeufe, (g, k) => zweigeZwischen(g, k));
+    console.log(u.zeile);
+    return { GRUEN: 0, ROT: 1 }[u.wort] ?? 3;
 }
 
 // ── wackler ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -1293,18 +1279,15 @@ async function teile(args) {
         console.log(`teile: ${zweige.length} Zweig(e) im Kandidaten ${sha.slice(0, 8)} — nichts zu teilen, der Zweig selbst ist der Täter`);
         return 1;
     }
-    let echtNur = false;
     if (!trocken) {
         const u = await urteilVon(sha, { neulauf: false });
         if (u.wort !== "ROT") {
             console.log(`teile: Kandidat ${sha.slice(0, 8)} ist nicht ROT nach dem Neulauf (${u.zeile})`);
             return 1;
         }
-        echtNur = u.echtNur;
     } else {
         try {
             const u = await urteilVon(sha, { neulauf: false });
-            echtNur = u.echtNur;
             console.log(`(trocken) Urteil am Kandidaten: ${u.zeile}`);
         } catch (e) {}
     }
@@ -1319,7 +1302,6 @@ async function teile(args) {
         console.log(`── ${ziel}: ${liste.map((z) => z.split("@")[0]).join(" ")}`);
         rot += bau(["--basis", basis, ...liste, "--push", `+${ziel}`], { trocken });
     }
-    if (echtNur) console.log("ACHTUNG: das Rot war echt-only — die Hälften fahren die volle Batterie ohne echt, sie brauchen echt (OMEN).");
     return rot ? 1 : 0;
 }
 
@@ -1336,20 +1318,9 @@ async function landen(args) {
         return 1;
     }
     if (nurWackler) console.log(`landen: nur Wackler rot, übergangen — ${u.zeile}`);
-    // echt ist Pflicht am Lande-SHA, auch für Werkzeug (die echt-Linsen sind Werkzeug) — 23.10.: ff6d7d51 landete ohne echt,
-    // weil der Push nach integ-probe abgewiesen war und urteil echt nur als Rot kannte
-    // 10.11. (w27-swift-raus): der echt-Job ist eine Matrix aus drei Karten-Beinen (omen · radeon · gtx1050) — JEDES Bein muss in
-    // seinem letzten Versuch grün sein (vorher reichte EIN grüner echt-Job, das hätte ein rotes Bein durchgelassen)
-    let echtGruen = false;
-    for (const r of await runsFuer(sha, ["integ-probe"])) {
-        const { letzte } = lesart(await jobsAlle(r));
-        const beine = [...letzte].filter(([n]) => /^echt/.test(n)).map(([, j]) => j);
-        if (beine.length && beine.every((j) => j.conclusion === "success" || (nurWackler && j.conclusion === "failure"))) echtGruen = true;
-    }
-    if (!echtGruen) {
-        console.log(`landen ABBRUCH: kein grüner echt-Lauf am ${sha.slice(0, 8)} (integ-probe trägt ihn)`);
-        return 1;
-    }
+    // KEIN BEIN DER KARTEN AM LANDE-SHA (LANDUNG ≤ 10 MIN, 23.11.): bis hier verlangte landen jedes Bein (omen · radeon · gtx1050) grün
+    // am Kandidaten — das Bein omen allein trug 28,9 der 29,4 min von z695. Den GPU-Beweis trug je Kopf die GPU-Probe seiner Vorprüfung
+    // (der Einlass verlangt sie, zug-dienst.sh bereit); was der Zug zusammenfügt, sieht die Nachwache auf main (`nachwache`).
     git(["fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main"], INTEG);
     const nurWerkzeug = istWerkzeug(git(["diff", "--name-only", `origin/main..${sha}`], INTEG));
     git(["pull", "-q", "--ff-only"], KOORD, true);
@@ -1378,7 +1349,7 @@ async function landen(args) {
             }
         }
     // NACHWACHE (23.10., Schöpfer: „statt 20 min jetzt 3 h“): das ABAB läuft NACH der Landung als Wache über main, nie als Tor
-    // davor — gelandet wird bei grüner Batterie und grünem echt; ein späteres LANGSAMER nimmt der Fahrer per Revert zurück.
+    // davor — gelandet wird bei grünem Urteil (kopf und Puls); ein späteres LANGSAMER nimmt der Fahrer per Revert zurück.
     // Ein schon geschriebenes LANGSAMER oder UNENTSCHIEDEN für genau diesen SHA sperrt weiter.
     const gesperrt = [...letzte].some(([k, l]) => sha.startsWith(k) && !gilt(l));
     // DAS LOG SAGT, WAS LÄUFT (13.11.): „Nachwache“ stand in jedem Lande-Log, aber seit 11.11. lief keine (FAHRT_ABAB aus, zug/abab.txt
@@ -1955,63 +1926,60 @@ function probeTag(args) {
     return grund ? 1 : 0;
 }
 
-// ── Selbsttest der Auflösung (ohne Netz) ─────────────────────────────────────────────────────────────────────────────
-// das Erbe an einem echten git-Baum im Temp: Basis → Zweig (enthält die Basis) → Merge --no-ff → Versions-Stufe
-function selbsttestErbe(pr) {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "zug-erbe-"));
-    const g = (...a) => git(a, d);
-    const schreib = (f, t) => fs.writeFileSync(path.join(d, f), t);
-    try {
-        g("init", "-q", "-b", "main");
-        g("config", "user.email", "zug@selbsttest");
-        g("config", "user.name", "zug");
-        g("config", "core.autocrlf", "false");
-        schreib("index.html", '<script src="a.js?v=1.0.0"></script>\n');
-        schreib("package.json", '{ "version": "1.0.0" }\n');
-        schreib("a.js", "x = 1;\n");
-        g("add", "-A");
-        g("commit", "-q", "-m", "basis");
-        const M = g("rev-parse", "HEAD");
-        const zweig = (name, datei, inhalt) => {
-            g("checkout", "-q", "-b", name, M);
-            schreib(datei, inhalt);
-            g("add", "-A");
-            g("commit", "-q", "-m", `Abgabe ${name}`);
-            return g("rev-parse", "HEAD");
-        };
-        const Z = zweig("z", "a.js", "x = 2;\n");
-        const Y = zweig("y", "b.js", "y = 1;\n");
-        // der Kandidat wie bauRumpf: Basis, Merges, (Mutante), Versions-Stufe
-        const kandidat = (basis, liste, mutante) => {
-            g("checkout", "-q", "--detach", basis);
-            for (const [n, s] of liste) g("merge", "--no-ff", "-q", "-m", `Merge ${n} in integ-probe`, s);
-            schreib("index.html", fs.readFileSync(path.join(d, "index.html"), "utf8").replace("?v=1.0.0", "?v=1.0.1"));
-            schreib("package.json", '{ "version": "1.0.1" }\n');
-            fs.mkdirSync(path.join(d, "spec", "speicher-korpus"), { recursive: true });
-            schreib("spec/speicher-korpus/1.0.1.json.br", "korpus");
-            if (mutante) mutante();
-            g("add", "-A");
-            g("commit", "-q", "-m", "V1.0.1: Versions-Stufe nach z (alle versionierten Dateien tragen den neuen ?v=) [ci voll]");
-            return g("rev-parse", "HEAD");
-        };
-        const a = baumErbe(kandidat(M, [["z", Z]]), d);
-        pr("Erbe (a) baum-gleich bis auf die Versions-Stufe (samt Korpus der Version) → Übernahme", a.gilt && a.tVor === a.tZweig && a.zweig === "z" && a.dateien === 3);
-        const b = baumErbe(kandidat(M, [["z", Z]], () => schreib("a.js", "x = 2; \n")), d);
-        pr("Erbe (b) EIN Byte anders in der Stufe → voll fährt", !b.gilt && /mehr als die Version/.test(b.grund));
-        const b3 = baumErbe(kandidat(M, [["z", Z]], () => schreib("spec/speicher-korpus/1.0.0.json.br", "fremd")), d);
-        pr("Erbe (b) die Stufe fügt eine fremde Datei → voll fährt", !b3.gilt && /fügt spec\/speicher-korpus\/1\.0\.0/.test(b3.grund));
-        // die zweite Mutante: main zog seit dem Merge des Zweigs weiter — der Baum vor der Stufe ist nicht der des Zweig-Kopfs
-        g("checkout", "-q", "main");
-        schreib("c.js", "c = 1;\n");
-        g("add", "-A");
-        g("commit", "-q", "-m", "main zieht weiter");
-        const b2 = baumErbe(kandidat(g("rev-parse", "main"), [["z", Z]]), d);
-        pr("Erbe (b) main zog weiter → voll fährt", !b2.gilt && /≠ Zweig-Kopf/.test(b2.grund));
-        const c = baumErbe(kandidat(M, [["z", Z], ["y", Y]]), d);
-        pr("Erbe (c) zwei Zweige → voll fährt", !c.gilt && /2 Zweige/.test(c.grund));
-    } finally {
-        fs.rmSync(d, { recursive: true, force: true });
+// ── Selbsttest des Urteils und der Nachwache (ohne Netz) ──────────────────────────────────────────────────────────────
+// LANDUNG ≤ 10 MIN: das Urteil am Kandidaten ist kopf und Puls — die Fälle am gestellten Lauf, dazu der Mutant „das alte Gesetz“ (die
+// volle Batterie und jedes Bein der Karten sind Pflicht); die Nachwache nennt die Landungen seit dem letzten grünen main
+function selbsttestUrteil(pr) {
+    const j = (name, conclusion, status = "completed", steps = []) => ({ name, conclusion, status, run_attempt: 1, steps });
+    const run = (status = "completed", run_attempt = 1) => ({ id: 7, head_branch: "integ-probe", run_attempt, status });
+    const zug = [j("kopf", "success"), j("puls 1/2", "success"), j("puls 2/2", "success")];
+    const uebersprungen = [...VOLL_PFLICHT.map((n) => j(n + " cpu", "skipped")), j("echt omen (GPU-Wände auf der Karte)", "skipped")];
+    const faelle = [
+        ["kopf und Puls grün, voll und echt übersprungen → GRUEN", { run: run(), jobs: [...zug, ...uebersprungen] }, "GRUEN"],
+        ["kopf und Puls grün, der Lauf ohne voll-Jobs → GRUEN (voll erbt)", { run: run(), jobs: zug }, "GRUEN"],
+        ["ein Bein der Karten läuft am selben Kopf (Abruf) → GRUEN, der Zug wartet nie auf die Karten", { run: run(), jobs: [...zug, j("echt omen (GPU-Wände auf der Karte)", null, "in_progress")] }, "GRUEN"],
+        ["voll rot in einem Abruf am selben Kopf → GRUEN (voll urteilte am Zweig-Kopf, main wacht)", { run: run(), jobs: [...zug, j("voll 3/18 cpu", "failure", "completed", [{ name: "Haus der Welt", conclusion: "failure" }])] }, "GRUEN"],
+        ["ein Puls läuft → LAEUFT", { run: run("in_progress"), jobs: [zug[0], zug[1], j("puls 2/2", null, "in_progress")] }, "LAEUFT"],
+        ["der Puls fehlt noch im laufenden Lauf → LAEUFT", { run: run("in_progress"), jobs: [zug[0]] }, "LAEUFT"],
+        ["ein Puls rot, Versuch 1 → Neulauf", { run: run(), jobs: [zug[0], zug[1], j("puls 2/2", "failure", "completed", [{ name: "Statik", conclusion: "failure" }])] }, "LAEUFT"],
+        ["ein Puls rot, Versuch 2 → ROT beim Schritt", { run: run("completed", 2), jobs: [zug[0], zug[1], j("puls 2/2", "failure", "completed", [{ name: "Statik", conclusion: "failure" }])] }, "ROT"],
+        ["der Kopf-Richter rot (Versuch 2) → ROT", { run: run("completed", 2), jobs: [j("kopf", "failure"), zug[1], zug[2]] }, "ROT"],
+    ];
+    const wort = (u, e) => {
+        const x = u(e);
+        return x.wort === "ROT" ? `ROT ${x.rot.map((r) => r.n + "/" + r.s).join(",")}` : x.wort;
+    };
+    for (const [n, e, soll] of faelle) {
+        const w = wort(urteilAus, e);
+        pr(`Urteil ${n} (${w})`, w.split(" ")[0] === soll);
     }
+    pr("Urteil: der rote Puls nennt seinen Schritt", wort(urteilAus, faelle.find(([n]) => n.startsWith("ein Puls rot, Versuch 2"))[1]) === "ROT puls 2/2/Statik");
+    // DER MUTANT: das alte Gesetz — die volle Batterie ist Pflicht im Zug (PFLICHT mit voll 1–18) und jedes Bein der Karten (landen)
+    const altesGesetz = ({ run: r, jobs }) => {
+        const { letzte } = lesart(jobs);
+        const pfl = [...PFLICHT, ...VOLL_PFLICHT];
+        const gruen = (n) => [...letzte].some(([k, x]) => kurz(k) === n && x.conclusion === "success");
+        const beine = [...letzte].filter(([n]) => /^echt/.test(n)).map(([, x]) => x);
+        return { wort: pfl.every(gruen) && beine.length && beine.every((x) => x.conclusion === "success") ? "GRUEN" : "UNVOLL", rot: [] };
+    };
+    pr("Urteil: der Mutant „das alte Gesetz“ (voll und jedes Bein Pflicht) fällt am Kandidaten mit grünem kopf und Puls", wort(altesGesetz, faelle[0][1]) !== "GRUEN" && wort(altesGesetz, faelle[1][1]) !== "GRUEN");
+    // die Nachwache: Läufe auf main, neueste zuerst
+    const lauf = (id, sha, voll) => ({ run: { id, head_sha: sha.padEnd(40, "0") }, jobs: voll.map((c, i) => j(`voll ${i + 1}/18 cpu`, c === "lauf" ? null : c, c === "lauf" ? "in_progress" : "completed", c === "failure" ? [{ name: "Haus der Welt", conclusion: "failure" }] : [])) }); // prettier-ignore
+    const bereich = [];
+    const zwischen = (g, k) => (bereich.push(`${g ? g.slice(0, 8) : "—"}..${k.slice(0, 8)}`), [`w28-a@${(g || "x").slice(0, 4)}`, "w28-b@bbbb0000"]);
+    const nw = (l) => nachwacheUrteil(l, zwischen);
+    const rotUeberGruen = [lauf(30, "cccc", ["success", "failure"]), lauf(29, "bbbb", ["failure", "success"]), lauf(28, "aaaa", ["success", "success"])];
+    const u1 = nw(rotUeberGruen);
+    pr(`Nachwache: rot über rot über grün nennt den Bereich seit dem letzten GRÜNEN main (${u1.zeile})`, u1.wort === "ROT" && u1.gruen.startsWith("aaaa") && bereich.at(-1) === "aaaa0000..cccc0000" && /voll 2\/18\/Haus der Welt/.test(u1.zeile) && /w28-a@aaaa w28-b@bbbb0000/.test(u1.zeile));
+    const u2 = nw([lauf(31, "dddd", ["lauf", "success"]), lauf(30, "cccc", ["success", "success"])]);
+    pr(`Nachwache: der jüngste fährt noch, der fertige davor ist grün (${u2.zeile})`, u2.wort === "GRUEN" && /cccc0000/.test(u2.zeile) && /dddd0000 fährt noch/.test(u2.zeile));
+    const u3 = nw([lauf(32, "eeee", ["skipped", "skipped"]), lauf(31, "dddd", ["failure"]), lauf(30, "cccc", ["success"])]);
+    pr(`Nachwache: ein Lauf ohne Urteil der Batterie zählt nicht (${u3.zeile})`, u3.wort === "ROT" && u3.sha.startsWith("dddd"));
+    const u4 = nw([lauf(33, "ffff", ["failure"])]);
+    pr(`Nachwache: ohne grünes main nennt sie den Bereich ohne Anfang (${u4.zeile})`, u4.wort === "ROT" && u4.gruen === null && bereich.at(-1) === "—..ffff0000");
+    // der Mutant: „nur der Kopf zählt“ — er nennt nur die letzte Landung, nie den Bereich seit dem letzten grünen main
+    const nurKopf = (l) => { const u = nachwacheUrteil(l.slice(0, 1), zwischen); return u; }; // prettier-ignore
+    pr("Nachwache: der Mutant „nur der jüngste Lauf“ verliert den grünen Anfang des Bereichs", nurKopf(rotUeberGruen).gruen === null);
 }
 // selbsttest --vorab — DER ECHTE FALL z631 (20.11.) in einem Temp-Worktree des Repos (ZUG_PROBE_REPO, sonst INTEG; node_modules als
 // Junction): (a) main 3da9d9ae + w28-ein-schreiber-wand 8ea58de7 + kern-sprossen-heil-2 + los-huelle-2 + stein-ein-gesetz → die
@@ -2313,7 +2281,7 @@ function selbsttest(args = []) {
     iFall("i Umzug nach oben → die obere Anweisung", d3([M("x, a"), "x();"], [], [M("a")], [M("a, w")], ["a(w);"]), [M("x, a, w"), "x();", "a(w);"]);
     iFall("i Code im Stück bleibt d", d3([], [M("a, c"), "c();"], [M("a")], [M("a, d"), "d();"], ["a();"]), null);
     iFall("i derselbe neue Name an zwei Modulen bleibt d", d3([], [M("a, z")], [M("a")], [M("a"), 'const { z } = require("./n.cjs");'], ["a(z);"]), null);
-    selbsttestErbe(pr);
+    selbsttestUrteil(pr);
     // die Landung je Zweig (z390): ein Zweig des Bündels fehlt im Kandidaten — die Mutante
     const nw = (o) => nachweisUrteil(o).map((u) => `${u.zweig}:${u.wort}`).join(" ");
     pr("Nachweis z390: ein Zweig des Bündels fehlt im Kandidaten → FREI, nie GELANDET",
@@ -2409,7 +2377,7 @@ function selbsttestPuffer(pr) {
     pr(`Puffer-Grenze: jeder git-Leser der Dienst-Skripte trägt maxBuffer${funde.length ? ` — OHNE: ${funde.join(", ")}` : ""}`, !funde.length);
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, urteilAus, urteilVon, nachwacheUrteil, zweigeZwischen, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
@@ -2430,12 +2398,8 @@ else (async () => {
         else if (verb === "nachweis") rc = nachweis(args);
         else if (verb === "taeter") rc = await taeter(args);
         else if (verb === "probe-tag") rc = probeTag(args);
-        else if (verb === "erbe") {
-            // erbe <kandidat> — liest nur: greift das Erbe der vollen Batterie an diesem Kandidaten (Trockenlauf, kein Push, kein Anstoß)
-            const e = await erbeVoll(git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG));
-            console.log(`ERBE ${e.erbt ? "GREIFT" : "NEIN"}: ${e.zeile}`);
-            rc = e.erbt ? 0 : 1;
-        } else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|punkte|nachweis|taeter|probe-tag|erbe|selbsttest [--vorab] — siehe zug.md");
+        else if (verb === "nachwache") rc = await nachwache();
+        else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|nachwache|punkte|nachweis|taeter|probe-tag|selbsttest [--vorab] — siehe zug.md");
     } catch (e) {
         console.log(`zug ${verb} FEHLER: ${e.message}`);
         rc = 2;
