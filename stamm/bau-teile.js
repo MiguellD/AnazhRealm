@@ -24,7 +24,7 @@ class AnazhRealm_bau_teile {
             "flutedColumn",
             "bladeProfile",
             "gableTriangle",
-            "spitzbarren",
+            "barren",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -1278,30 +1278,42 @@ class AnazhRealm_bau_teile {
                 g.computeVertexNormals();
                 return g;
             }
-            case "spitzbarren": {
-                // DER SPITZBARREN (die Ware Eisen im Bild, koerper `bestandStueck`): zwei vierseitige Pyramiden Fuß an Fuß längs x —
-                // size.x die Länge, size.y die Höhe, size.z die Breite der Mitte; acht Flächen, je Fläche ihre Normale (flach)
+            case "barren": {
+                // DER BARREN (die Ware Eisen in der Kiste, koerper `bestandStueck`): der Stangenbarren der Schmiede — size.x die Länge,
+                // size.y die Höhe, size.z die Breite unten; der Schnitt ein Trapez (oben `oben` der Breite), an beiden Enden über
+                // `ende` der Länge auf `spitze` verjüngt, die Unterseite eben (er liegt auf ihr). Die Form trägt das Teil (`form`,
+                // die Zeile des Gesetzes), ohne sie gilt die des Eisens (koerper BESTAND_GESETZ.stueck.eisen). Vier Schnitte, je
+                // Fläche ihre Normale (flach: die Kanten des geschlagenen Eisens fangen das Licht je Fläche), 28 Dreiecke.
+                const F = part.form || window.__koerperCore.BESTAND_GESETZ.stueck.eisen;
                 const [hx, hy, hz] = [sx / 2, sy / 2, sz / 2];
-                const ecken = [
-                    [0, hy, hz],
-                    [0, hy, -hz],
-                    [0, -hy, -hz],
-                    [0, -hy, hz],
+                const schnitt = (x, t) => [
+                    [x, -hy, -hz * t],
+                    [x, -hy, hz * t],
+                    [x, -hy + sy * t, hz * t * F.oben],
+                    [x, -hy + sy * t, -hz * t * F.oben],
+                ];
+                const S = [
+                    schnitt(-hx, F.spitze),
+                    schnitt(-hx + sx * F.ende, 1),
+                    schnitt(hx - sx * F.ende, 1),
+                    schnitt(hx, F.spitze),
                 ];
                 const pos = [];
-                for (const t of [hx, -hx])
-                    for (let i = 0; i < 4; i++) {
-                        const [a, b] = [ecken[i], ecken[(i + 1) % 4]];
-                        const tri = [[t, 0, 0], a, b];
-                        // außen: die Normale zeigt von der Mitte des Barrens fort
-                        const [u, v] = [
-                            [a[0] - t, a[1], a[2]],
-                            [b[0] - t, b[1], b[2]],
-                        ];
-                        const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-                        if (n[0] * t + n[1] * (a[1] + b[1]) + n[2] * (a[2] + b[2]) < 0) tri.reverse();
-                        for (const p of tri) pos.push(p[0], p[1], p[2]);
-                    }
+                const flaeche = (a, b, c, d) => {
+                    // außen: die Normale zeigt von seiner Mitte fort (der Barren ist konvex, der Ursprung liegt in ihm)
+                    const [u, v] = [
+                        [c[0] - a[0], c[1] - a[1], c[2] - a[2]],
+                        [d[0] - b[0], d[1] - b[1], d[2] - b[2]],
+                    ];
+                    const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+                    const m = [(a[0] + c[0]) / 2, (a[1] + c[1]) / 2, (a[2] + c[2]) / 2];
+                    const q = n[0] * m[0] + n[1] * m[1] + n[2] * m[2] < 0 ? [a, d, c, b] : [a, b, c, d];
+                    for (const p of [q[0], q[1], q[2], q[0], q[2], q[3]]) pos.push(p[0], p[1], p[2]);
+                };
+                for (let j = 0; j < 3; j++)
+                    for (let i = 0; i < 4; i++) flaeche(S[j][i], S[j][(i + 1) % 4], S[j + 1][(i + 1) % 4], S[j + 1][i]);
+                flaeche(...S[0]);
+                flaeche(...S[3]);
                 const g = new THREE.BufferGeometry();
                 g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
                 g.computeVertexNormals();

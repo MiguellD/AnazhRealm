@@ -5711,29 +5711,65 @@
         // (Bairoch: rund 80 % der Menschen auf dem Feld): 24 / 4 = 6 je Kopf. Ein Hof mit weniger Bauern, als er Esser trägt,
         // leert die Scheune am Mittag und füllt sie am Feierabend (der Sägezahn), einer mit mehr füllt sie bis zum Lager.
         mahl: Object.freeze({ jeKopfTag: 6 }),
-        // DIE WARE IM BILD (mensch.wirtschaft.stoffstrom#1, `bestandStueck` · `bestandStapel`): je Ware ihr STÜCK — die Gestalt,
-        // die Masse kg und das Verhältnis seiner Breite und Höhe zur Länge (`seite`); die Dichte der Zeile ihres Stoffs macht aus
-        // der Masse das Volumen, die Gestalt aus dem Volumen die Maße. Der Spitzbarren (Eisen): der Handelsbarren der Rennöfen,
-        // zwei vierseitige Pyramiden Fuß an Fuß, er wiegt, was die Luppe füllt (`stoffstrom.barrenKg`) — 5 kg Eisen sind 39 cm
-        // lang und in der Mitte 7 cm breit. Der Bund (Kraut): ein gebundener Bund frisches Kraut, 0,5 kg, ⌀ 0,22 der Länge — bei
-        // ρ 400 der Zeile 32 cm lang. Das Werkzeug (das Beil der Kette, schmiede `STOFFSTROM.werkzeug`): seine Gestalt trägt die
+        // das Bild des Bestands: so viele Einheiten trägt eine Kiste (der Wirt stellt je angefangene Kiste eine)
+        kiste: 4,
+        // DIE WARE IN DER KISTE (mensch.wirtschaft.stoffstrom#1, `bestandStueck` · `bestandKiste` · `bestandFuellung`): je Ware ihr
+        // STÜCK — die Gestalt, die Masse kg und das Verhältnis von Höhe und Breite zur Länge (`seite`); die Dichte der Zeile ihres
+        // Stoffs macht aus der Masse das Volumen, die Gestalt aus dem Volumen die Maße. Der Barren (Eisen): der Stangenbarren der
+        // Schmiede, ein Stab mit trapezförmigem Schnitt (oben `oben` der Breite: die Form, in die er gegossen und geschlagen ist),
+        // an beiden Enden über `ende` der Länge auf `spitze` verjüngt; er wiegt, was die Luppe füllt (`stoffstrom.barrenKg`) — 5 kg
+        // Eisen sind 41 cm lang und 4,5 cm stark. Der Bund (Kraut): ein gebundener Bund frisches Kraut, 0,5 kg, ⌀ 0,22 der Länge —
+        // bei ρ 400 der Zeile 32 cm lang. Das Werkzeug (das Beil der Kette, schmiede `STOFFSTROM.werkzeug`): seine Gestalt trägt die
         // Schmiede (der Bauplan des Wirts), seine Maße ihr Bau. Die Schüttung (Erz): die Halde, ihre Form trägt
         // `stoffstromHaldeForm`. Eine Ware ohne Zeile hat kein Bild (bricht laut).
-        // stapel: die Stücke liegen in Lagen — der Spitzbarren und das Werkzeug je Lage quer zur vorigen (`kreuz`), der Bund
-        // parallel, jede zweite Lage um einen halben Bund versetzt (`reihe`) —, höchstens `hoeheM` hoch, dann der nächste Stapel
-        // daneben im Abstand `fugeM`. Bis hier stellte der Wirt je angefangene vier Einheiten eine Holzkiste 0,6 m: der Barren,
-        // das Kraut, die Ernte lasen sich als dieselbe dunkle Kiste (gemessen am Dorf, drei Tage gerafft: 14 Barren an vier Öfen
-        // als 5 Kisten aus Holz, 8 Bund in der Scheune als 2).
         stueck: Object.freeze({
-            eisen: Object.freeze({ gestalt: "spitzbarren", seite: 0.18 }),
+            eisen: Object.freeze({ gestalt: "barren", seite: 0.11, ende: 0.18, spitze: 0.45, oben: 0.8 }),
             kraut: Object.freeze({ gestalt: "bund", kg: 0.5, seite: 0.22 }),
             beil: Object.freeze({ gestalt: "werkzeug" }),
             erz: Object.freeze({ gestalt: "schuettung" }),
         }),
-        stapel: Object.freeze({
-            hoeheM: 0.9,
-            fugeM: 0.08,
-            art: Object.freeze({ spitzbarren: "kreuz", werkzeug: "kreuz", bund: "reihe" }),
+        // DER BEHÄLTER (die Holzkiste des Bestands, `bestandKiste` · `bestandKisteTeile`): eine Steige aus Brettern der Stärke
+        // `brettM` aus dem Stoff Holz — der Boden aus Brettern längs (höchstens `bodenM` breit, `bodenFugeM` Fuge), jede Wand aus
+        // Latten (Richtmaß `latteM` hoch, `fugeM` Fuge zwischen ihnen; die Längswände laufen durch, die Stirnwände stehen zwischen ihnen), in
+        // den Ecken innen je ein Pfosten (`pfostenM` im Quadrat), der `ueberM` über den Rand steht, oben offen. Jedes Brett trägt
+        // seinen Ton (die Farbe der Zeile Holz × 1 ± `tonJeBrett` aus seiner Zahl: gewachsenes Holz — Kern und Splint, Stamm und
+        // Ast — ist nie einfarbig). Ihr Maß folgt der Ware: `kiste` Einheiten liegen in Lagen Seite an Seite (je Lage so viele,
+        // wie die Länge des Stücks Breiten trägt, `luftM` zwischen zwei Stücken), längs zwischen den Pfosten der Stirn, mit
+        // `spielM` zur Wand; die Wand trägt so viele Latten vom Richtmaß, wie ihre Höhe fasst (mindestens zwei), auf Maß geschnitten:
+        // die oberste Lage liegt `randM` unter dem Rand — die Kiste ist voll, man sieht hinein. Was eine Kiste trägt, hebt ein Mensch (`traglastKg`: die Lastkonstante der NIOSH-Hebegleichung, Waters et al.
+        // 1993). Die Kisten eines Halters stehen als Block Seite an Seite, so quadratisch, wie ihr Maß es erlaubt, `abstandM`
+        // zwischen zwei Kisten — offen, nie gestapelt (die gestapelte Steige verbirgt, was sie trägt).
+        behaelter: Object.freeze({
+            brettM: 0.016,
+            bodenM: 0.1,
+            bodenFugeM: 0.006,
+            latteM: 0.045,
+            fugeM: 0.01,
+            pfostenM: 0.032,
+            ueberM: 0.025,
+            tonJeBrett: 0.1,
+            spielM: 0.012,
+            luftM: 0.004,
+            randM: 0.03,
+            traglastKg: 23,
+            abstandM: 0.05,
+        }),
+        // DER BOCK (`bestandBock`): die Kisten eines Halters stehen auf einem Bock aus Holz — die Platte aus Bohlen längs (`bohleM`
+        // stark, höchstens `bohleBreiteM` breit, `bohleFugeM` Fuge), `ueberM` über den Block der Kisten hinaus; die Beine (`beinM`
+        // im Quadrat) an den Kanten des Blocks und höchstens `spannM` voneinander; je Längsseite eine Zarge innen an den Beinen
+        // unter der Platte (`zargeM` hoch, `zargeStarkM` stark). Seine Höhe: der Rand der Kiste liegt in `hebeM` — dem Ursprung der
+        // Hebung, an dem die NIOSH-Hebegleichung keinen Abschlag rechnet (V = 75 cm, VM = 1 − 0,003·|V − 75|, Waters et al.
+        // 1993): wer die Kiste nimmt, bückt sich nicht, und sie steht über dem Gras. Der Wagen trägt die Kisten ohne Bock.
+        bock: Object.freeze({
+            hebeM: 0.75,
+            bohleM: 0.035,
+            bohleBreiteM: 0.16,
+            bohleFugeM: 0.008,
+            ueberM: 0.05,
+            beinM: 0.07,
+            spannM: 1.2,
+            zargeM: 0.08,
+            zargeStarkM: 0.025,
         }),
     });
     // DAS FENSTER DER ARBEIT eines Menschen: die Stunden des Tags [a, b) (0–24, ohne Versatz in seiner Uhr), in denen sein Plan ihn
@@ -6030,71 +6066,187 @@
             }
         return aus;
     }
-    // ── DIE WARE IM BILD (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, rein additiv): jede Ware des Bestands zeigt sich als
+    // ── DIE WARE IN DER KISTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, rein additiv): jede Ware des Bestands zeigt sich als
     //    ihr STÜCK aus ihrem Stoff und Maß (`bestandStueck`: die Masse des Gesetzes durch die Dichte der Zeile ist das Volumen,
-    //    die Gestalt gibt aus ihm Länge, Höhe und Breite) im STAPEL (`bestandStapel`: die Lage jedes Stücks, Lage für Lage von
-    //    unten — ein Halter mit k Einheiten zeigt die ersten k Stücke, der Stapel schrumpft von oben). Leser: der Wirt (`_wareBild`,
-    //    das EINE Bild jeder Ware: Stand, Scheune, Ofen, Wagen, Halde, die Werkzeuge der Schmiede) und gate:koerper-kern WARE.
+    //    die Gestalt gibt aus ihm Länge, Höhe und Breite) in ihrer KISTE (`bestandKiste`: die Holzkiste, deren Maß der Inhalt
+    //    gibt; `bestandKisteTeile`: ihre Bretter, Latten und Pfosten; `bestandFuellung`: die Lage jedes Stücks in ihr, Lage für
+    //    Lage von unten), die Kisten eines Halters als Block (`bestandKisten`) — je angefangene `kiste` Einheiten eine Kiste, ein
+    //    Halter mit k Einheiten zeigt die ersten k Stücke. Leser: der Wirt (`_wareBild`, das EINE Bild jeder Ware: Stand,
+    //    Scheune, Ofen, Wagen, die Werkzeuge der Schmiede; die Halde trägt `stoffstromHaldeForm`) und gate:koerper-kern WARE.
     // DAS STÜCK der Ware `ware` aus der Dichte `rho` (kg/m³) ihres Stoffs: { ware, gestalt, kg, masz: [Länge, Höhe, Breite] m,
-    // volumen m³ } — die Schüttung (die Halde) und das Werkzeug (der Bauplan der Schmiede) tragen ihre Maße selbst (masz null)
+    // volumen m³, form } — die Schüttung (die Halde) und das Werkzeug (der Bauplan der Schmiede) tragen ihre Maße selbst (masz
+    // null); der Barren trägt in `form` seinen Schnitt (`oben`) und seine Enden (`ende`, `spitze`)
     function bestandStueck(ware, rho) {
         var B = BESTAND_GESETZ,
             S = B.stueck[ware];
         if (!S) throw new Error("BESTAND: die Ware " + ware + " hat keine Gestalt im Bild (BESTAND_GESETZ.stueck)");
         if (S.gestalt === "schuettung" || S.gestalt === "werkzeug")
-            return { ware: ware, gestalt: S.gestalt, kg: null, masz: null, volumen: null };
+            return { ware: ware, gestalt: S.gestalt, kg: null, masz: null, volumen: null, form: null };
         if (!(rho > 0)) throw new Error("BESTAND: das Stück der Ware " + ware + " braucht die Dichte ihres Stoffs");
-        // das Volumen je Länge³: der Spitzbarren s²/3 (zwei Pyramiden der Höhe L/2 über dem Quadrat s·L), der Bund π·s²/4
-        var k =
-            S.gestalt === "spitzbarren"
-                ? (S.seite * S.seite) / 3
-                : S.gestalt === "bund"
-                  ? (Math.PI * S.seite * S.seite) / 4
-                  : NaN;
+        // das Volumen je Länge³ — der Barren: der Trapez-Schnitt s²·(1 + oben)/2, über die Mitte (1 − 2·ende) voll, an den Enden
+        // in beiden Richtungen linear auf `spitze` verjüngt (der Schnitt im Mittel (1 + k + k²)/3); der Bund: der Kreis π·s²/4
+        var k = NaN,
+            kg = S.kg,
+            form = null;
+        if (S.gestalt === "barren") {
+            var q = S.spitze;
+            k = ((S.seite * S.seite * (1 + S.oben)) / 2) * (1 - 2 * S.ende + (2 * S.ende * (1 + q + q * q)) / 3);
+            kg = B.stoffstrom.barrenKg;
+            form = { oben: S.oben, ende: S.ende, spitze: S.spitze };
+        } else if (S.gestalt === "bund") k = (Math.PI * S.seite * S.seite) / 4;
         if (!(k > 0))
             throw new Error("BESTAND: die Gestalt " + S.gestalt + " der Ware " + ware + " kennt ihr Volumen nicht");
-        var kg = S.gestalt === "spitzbarren" ? B.stoffstrom.barrenKg : S.kg,
-            V = kg / rho,
+        var V = kg / rho,
             L = Math.cbrt(V / k);
-        return { ware: ware, gestalt: S.gestalt, kg: kg, masz: [L, S.seite * L, S.seite * L], volumen: V };
+        return { ware: ware, gestalt: S.gestalt, kg: kg, masz: [L, S.seite * L, S.seite * L], volumen: V, form: form };
     }
-    // DER STAPEL von n Stücken des Maßes `masz` ([Länge x, Höhe y, Breite z]) der Gestalt `gestalt`: je Stück [x, y, z, drehY] (die
-    // Mitte des Stücks über dem Fuß des Stapels, y = 0 der Boden; drehY die Drehung um die Senkrechte) in der Folge, in der sie
-    // sich füllen — je Lage `je` Stücke Seite an Seite (so viele, wie die Länge Breiten trägt), Lage über Lage bis `hoeheM`, die
-    // Stapel in einer Reihe längs x, um den Fuß zentriert
-    function bestandStapel(n, masz, gestalt) {
-        var G = BESTAND_GESETZ.stapel,
-            art = G.art[gestalt],
-            L = masz && masz[0],
-            H = masz && masz[1],
-            B = masz && masz[2];
-        if (!art)
-            throw new Error("BESTAND: die Gestalt " + gestalt + " kennt keinen Stapel (BESTAND_GESETZ.stapel.art)");
-        if (!(L > 0 && H > 0 && B > 0)) throw new Error("BESTAND: ein Stück ohne Maß stapelt nicht (" + gestalt + ")");
-        var je = Math.max(1, Math.floor(L / B + 1e-9)),
-            dy = art === "reihe" ? (H * Math.sqrt(3)) / 2 : H, // der Bund liegt in der Rinne zweier Bunde darunter
-            lagen = Math.max(1, Math.floor((G.hoeheM - H) / dy + 1e-9) + 1),
-            jeStapel = je * lagen,
-            m = Math.max(1, Math.ceil(n / jeStapel)),
-            aussen = art === "kreuz" ? Math.max(L, je * B) : L,
-            aus = new Float64Array(4 * Math.max(0, n));
+    // DIE KISTE des Stücks `st` (sein Maß `masz` [Länge, Höhe, Breite], ohne es das Maß des Stücks — das Werkzeug reicht das seines
+    // Bauplans): { ware, gestalt, stueck: [L, H, B], je (Stücke je Lage), lagen, latten (je Wand) und latteM (ihre Höhe, auf Maß),
+    // fuellM (die Höhe des Inhalts),
+    // innen, aussen: [Länge x, Höhe y, Breite z] m, kg (der Inhalt, wo das Stück seine Masse kennt) } — die Länge des Stücks
+    // liegt längs x; null für die Schüttung (sie liegt als Halde)
+    function bestandKiste(st, masz) {
+        var n = BESTAND_GESETZ.kiste,
+            K = BESTAND_GESETZ.behaelter;
+        if (!st) throw new Error("BESTAND: eine Kiste ohne Stück");
+        if (st.gestalt === "schuettung") return null;
+        var m = masz || st.masz;
+        if (!(m && m[0] > 0 && m[1] > 0 && m[2] > 0))
+            throw new Error("BESTAND: ein Stück ohne Maß füllt keine Kiste (" + st.ware + ")");
+        var L = m[0],
+            H = m[1],
+            W = m[2],
+            t = K.brettM,
+            jeMax = Math.max(1, Math.floor((L + K.luftM) / (W + K.luftM) + 1e-9)),
+            lagen = Math.ceil(n / Math.min(n, jeMax)),
+            je = Math.ceil(n / lagen),
+            fuell = lagen * H + (lagen - 1) * K.luftM,
+            wand = fuell + K.randM,
+            latten = Math.max(2, Math.round((wand + K.fugeM) / (K.latteM + K.fugeM))),
+            latte = (wand + K.fugeM) / latten - K.fugeM,
+            innen = [L + 2 * (K.spielM + K.pfostenM), wand, je * W + (je - 1) * K.luftM + 2 * K.spielM];
+        return {
+            ware: st.ware,
+            gestalt: st.gestalt,
+            stueck: [L, H, W],
+            je: je,
+            lagen: lagen,
+            latten: latten,
+            latteM: latte,
+            fuellM: fuell,
+            innen: innen,
+            aussen: [innen[0] + 2 * t, t + wand, innen[2] + 2 * t],
+            kg: st.kg != null ? st.kg * n : null,
+        };
+    }
+    // DIE TEILE DER KISTE K (`bestandKiste`) um ihre Mitte, y = 0 ihr Fuß: je Brett { art: "boden" | "latte" | "pfosten",
+    // mitte: [x, y, z], masz: [x, y, z] m, ton } — der Boden aus Brettern längs, je Latte die zwei Längswände (durchlaufend) und
+    // die zwei Stirnwände (zwischen ihnen), die vier Pfosten innen in den Ecken; `ton` der Faktor auf die Farbe der Zeile Holz
+    // (1 ± `tonJeBrett`, aus der Zahl des Bretts über den goldenen Schnitt: benachbarte Bretter liegen nie im selben Ton)
+    function bestandKisteTeile(K) {
+        var B = BESTAND_GESETZ.behaelter,
+            t = B.brettM,
+            IL = K.innen[0],
+            IB = K.innen[2],
+            AL = K.aussen[0],
+            AB = K.aussen[2],
+            aus = [];
+        var brett = function (art, x, y, z, sx, sy, sz) {
+            var g = (aus.length * 0.6180339887498949) % 1;
+            aus.push({ art: art, mitte: [x, y, z], masz: [sx, sy, sz], ton: 1 + B.tonJeBrett * (2 * g - 1) });
+        };
+        var nb = Math.max(1, Math.ceil((AB + B.bodenFugeM) / (B.bodenM + B.bodenFugeM) - 1e-9)),
+            bb = (AB - (nb - 1) * B.bodenFugeM) / nb,
+            i;
+        for (i = 0; i < nb; i++) brett("boden", 0, t / 2, -AB / 2 + bb / 2 + i * (bb + B.bodenFugeM), AL, t, bb);
+        for (i = 0; i < K.latten; i++) {
+            var h = K.latteM,
+                y = t + h / 2 + i * (h + B.fugeM);
+            brett("latte", 0, y, -(IB + t) / 2, AL, h, t);
+            brett("latte", 0, y, (IB + t) / 2, AL, h, t);
+            brett("latte", -(IL + t) / 2, y, 0, t, h, IB);
+            brett("latte", (IL + t) / 2, y, 0, t, h, IB);
+        }
+        var ph = K.aussen[1] + B.ueberM - t,
+            px = IL / 2 - B.pfostenM / 2,
+            pz = IB / 2 - B.pfostenM / 2;
+        for (i = 0; i < 4; i++) brett("pfosten", i & 1 ? px : -px, t + ph / 2, i & 2 ? pz : -pz, B.pfostenM, ph, B.pfostenM);
+        return aus;
+    }
+    // DIE FÜLLUNG DER KISTE K: je Stück [x, y, z, drehY] (seine Mitte über dem Fuß der Kiste, drehY die Drehung um die Senkrechte)
+    // in der Folge, in der sie sich füllt — Lage für Lage vom Boden, je Lage `je` Stücke Seite an Seite; jedes zweite Werkzeug
+    // liegt gewendet (Kopf an Stiel, so liegen sie dicht)
+    function bestandFuellung(K) {
+        var B = BESTAND_GESETZ.behaelter,
+            n = BESTAND_GESETZ.kiste,
+            H = K.stueck[1],
+            W = K.stueck[2],
+            aus = new Float64Array(4 * n);
         for (var i = 0; i < n; i++) {
-            var s = Math.floor(i / jeStapel),
-                k = i - s * jeStapel,
-                l = Math.floor(k / je),
-                q = (k - l * je - (je - 1) / 2) * B,
-                sx = (s - (m - 1) / 2) * (aussen + G.fugeM),
-                o = 4 * i;
-            aus[o + 1] = H / 2 + l * dy;
-            if (art === "kreuz" && l % 2) {
-                aus[o] = sx + q; // die Lage quer zur vorigen
-                aus[o + 3] = Math.PI / 2;
-            } else {
-                aus[o] = sx;
-                aus[o + 2] = q + (art === "reihe" && l % 2 ? B / 2 : 0);
-            }
+            var l = Math.floor(i / K.je),
+                q = i - l * K.je;
+            aus[4 * i + 1] = B.brettM + H / 2 + l * (H + B.luftM);
+            aus[4 * i + 2] = (q - (K.je - 1) / 2) * (W + B.luftM);
+            aus[4 * i + 3] = K.gestalt === "werkzeug" && q % 2 ? Math.PI : 0;
         }
         return aus;
+    }
+    // DER BLOCK von m Kisten K um den Fuß des Halters: je Kiste [x, z] ihrer Mitte — `je` Kisten Seite an Seite längs z (so viele,
+    // dass der Block so quadratisch steht, wie ihr Maß es erlaubt), die Reihen dahinter längs x, `abstandM` zwischen zwei Kisten;
+    // die Kisten in der Folge, in der sie sich füllen
+    function bestandKisten(m, K) {
+        var a = BESTAND_GESETZ.behaelter.abstandM,
+            dx = K.aussen[0] + a,
+            dz = K.aussen[2] + a,
+            je = Math.max(1, Math.min(m, Math.round(Math.sqrt((m * dx) / dz)))),
+            reihen = Math.ceil(m / je),
+            aus = new Float64Array(2 * Math.max(0, m));
+        for (var i = 0; i < m; i++) {
+            var r = Math.floor(i / je),
+                q = i - r * je;
+            aus[2 * i] = (r - (reihen - 1) / 2) * dx;
+            aus[2 * i + 1] = (q - (Math.min(je, m - r * je) - 1) / 2) * dz;
+        }
+        return aus;
+    }
+    // DER BOCK unter dem Block von m Kisten K (`bestandKisten`): { hoehe (die Platte, auf der die Kisten stehen, über dem Fuß),
+    // teile: je Brett { art: "bohle" | "bein" | "zarge", mitte, masz, ton } } — die Platte aus Bohlen längs x, die Beine an den
+    // Kanten des Blocks (längs x höchstens `spannM` voneinander), die Zargen innen an den Beinen; der Rand der Kisten in `hebeM`
+    function bestandBock(m, K) {
+        var B = BESTAND_GESETZ.bock,
+            ton = BESTAND_GESETZ.behaelter.tonJeBrett,
+            O = bestandKisten(m, K),
+            x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity,
+            aus = [],
+            i;
+        for (i = 0; i < m; i++) {
+            x0 = Math.min(x0, O[2 * i] - K.aussen[0] / 2);
+            x1 = Math.max(x1, O[2 * i] + K.aussen[0] / 2);
+            z0 = Math.min(z0, O[2 * i + 1] - K.aussen[2] / 2);
+            z1 = Math.max(z1, O[2 * i + 1] + K.aussen[2] / 2);
+        }
+        var brett = function (art, x, y, z, sx, sy, sz) {
+            var g = (aus.length * 0.6180339887498949 + 0.5) % 1;
+            aus.push({ art: art, mitte: [x, y, z], masz: [sx, sy, sz], ton: 1 + ton * (2 * g - 1) });
+        };
+        var H = B.hebeM - K.aussen[1],
+            hb = H - B.bohleM,
+            L = x1 - x0 + 2 * B.ueberM,
+            W = z1 - z0 + 2 * B.ueberM,
+            cx = (x0 + x1) / 2,
+            nb = Math.max(1, Math.ceil((W + B.bohleFugeM) / (B.bohleBreiteM + B.bohleFugeM) - 1e-9)),
+            bb = (W - (nb - 1) * B.bohleFugeM) / nb,
+            nx = Math.max(1, Math.ceil((x1 - x0 - B.beinM) / B.spannM - 1e-9));
+        for (i = 0; i < nb; i++) brett("bohle", cx, H - B.bohleM / 2, z0 - B.ueberM + bb / 2 + i * (bb + B.bohleFugeM), L, B.bohleM, bb); // prettier-ignore
+        for (var s = 0; s < 2; s++) {
+            var zb = s ? z1 - B.beinM / 2 : z0 + B.beinM / 2;
+            for (i = 0; i <= nx; i++) brett("bein", x0 + B.beinM / 2 + (i * (x1 - x0 - B.beinM)) / nx, hb / 2, zb, B.beinM, hb, B.beinM); // prettier-ignore
+            brett("zarge", cx, hb - B.zargeM / 2, zb + (s ? -1 : 1) * (B.beinM + B.zargeStarkM) / 2, x1 - x0, B.zargeM, B.zargeStarkM); // prettier-ignore
+        }
+        return { hoehe: H, teile: aus };
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -10452,9 +10604,13 @@
         stoffstromFassen: stoffstromFassen,
         stoffstromOrte: stoffstromOrte,
         stoffstromHaldeForm: stoffstromHaldeForm,
-        // mensch.wirtschaft.stoffstrom#1 — DIE WARE IM BILD (das Stück aus Stoff und Maß, sein Stapel; Leser: _wareBild)
+        // mensch.wirtschaft.stoffstrom#1 — DIE WARE IN DER KISTE (das Stück aus Stoff und Maß, die Kiste aus dem Inhalt, der Bock; Leser: _wareBild)
         bestandStueck: bestandStueck,
-        bestandStapel: bestandStapel,
+        bestandKiste: bestandKiste,
+        bestandKisteTeile: bestandKisteTeile,
+        bestandFuellung: bestandFuellung,
+        bestandKisten: bestandKisten,
+        bestandBock: bestandBock,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,

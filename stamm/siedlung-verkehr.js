@@ -528,13 +528,14 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DIE LADUNG IM BILD: die Ware seines Bestands in ihrem EINEN Bild (`_wareBild`: je angefangene Einheit ein Stück aus ihrem
-    // Stoff, gestapelt) auf seinem Dach, mittig längs seiner Achse — an der Lage, die sein Bild trägt, in seiner Neigung
-    // (`_archEntryWorldMatrix`): die Matrix schreibt nur `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt,
-    // dieselbe, aus der die Instanz ihre Matrix nimmt) und die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im
-    // Takt) zählt nur die Stücke. Bis hier schrieb auch die Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des
-    // Wagens: die Ladung stand neben ihm in der Luft (stadt-voll, Radeon 22.11.); bis stoffstrom#1 lud er je vier Einheiten eine
-    // Holzkiste (der Bauplan `kiste`). Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt —
-    // `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut (trägt er eine andere Ware, steht sie neu).
+    // Stoff in ihren Kisten, dieselben wie am Stand, ohne Bock — das Dach trägt sie) auf seinem Dach, mittig längs seiner
+    // Achse — an der Lage, die sein Bild trägt, in seiner Neigung (`_archEntryWorldMatrix`): die Matrix schreibt nur
+    // `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt, dieselbe, aus der die Instanz ihre Matrix nimmt) und
+    // die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im Takt) zählt nur die Stücke. Bis hier schrieb auch die
+    // Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des Wagens: die Ladung stand neben ihm in der Luft
+    // (stadt-voll, Radeon 22.11.); bis stoffstrom#1 lud er je vier Einheiten den geschlossenen Quader `kiste` ohne Inhalt.
+    // Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt — `_tickVerkehr` hält die Sicht).
+    // Je Wagen EINE Gruppe, einmal gebaut (trägt er eine andere Ware, steht sie neu).
     _verkehrLadung(W, amBild = false) {
         const e = W.entry;
         const H = W.bestand;
@@ -548,7 +549,7 @@ class AnazhRealm_siedlung_verkehr {
         }
         if (!G) {
             if (!k || !this.state.scene) return;
-            const L = this._wareBild(H.ware, H.cap);
+            const L = this._wareBild(H.ware, H.cap, false);
             if (!L) return;
             G = new THREE.Group();
             G.matrixAutoUpdate = false;

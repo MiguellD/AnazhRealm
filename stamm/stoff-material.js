@@ -999,6 +999,19 @@ class AnazhRealm_stoff_material {
         const mat = new THREE.MeshStandardNodeMaterial(params);
         if (zeile && opts.roughness === undefined && opts.metalness === undefined)
             this._stoffOptikMerke(zeile.name, mat);
+        // DAS METALL IST KEIN ERDREICH (mensch.wirtschaft.stoffstrom#1, stoffstrom-kette-2): ein Stoff mit Vertex-Farbe, dessen
+        // Zeile Metall ist (die Stoff-Gruppe eines verschmolzenen Baus, `_mergeBlueprintByMaterial`: Band, Beschlag, die Barren in
+        // der Kiste), zeichnet wie das flache Werk — die Vertex-Farbe ist seine Albedo, der EINE Substanz-Kern legt Schliff, Ton
+        // und Rauheit nach seinem Metall auf, die Normale ist die seiner Gestalt, den Glanz gibt der Himmel. Bis hier las er die
+        // Geologie des Bodens (Korn, Fels, Moos, die Rauheit der Erde) und dessen Normale samt Mikro-Relief: die Barren in der
+        // Kiste lasen am Messort dorf als grauer Granit.
+        const metallWerk =
+            opts.vertexColors === true &&
+            !opts.pflanzenStoff &&
+            !opts.vertexColorAlbedo &&
+            !opts.geomorph &&
+            !opts.wegeKarte &&
+            params.metalness > 0.5;
         // Die Welt-Antenne: derselbe Substance-Response wie im Toon-Pfad (profil-gewichteter Aerial-/Mikro-/
         // Rim-Term POST-lighting); _ensureAtmoUniforms ist idempotent + lazy. Das Emissiv folgt NACH
         // responseProfile (liest `responseProfile.emissiv`).
@@ -1058,6 +1071,18 @@ class AnazhRealm_stoff_material {
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                         this._mikroGestalt(_Ta, mat);
+                    } else if (metallWerk) {
+                        // das Metall des verschmolzenen Baus: der Kern des flachen Werks auf seiner Vertex-Farbe
+                        const _rm = this._substanceCharacter(_Ta, albedoNode, {
+                            pos: _Ta.positionLocal,
+                            worldPos: _Ta.positionWorld,
+                            tags: opts.tags || {},
+                            metal: params.metalness,
+                            roughBase: _Ta.materialRoughness,
+                        });
+                        albedoNode = _rm.albedo || albedoNode;
+                        if (_rm.roughNode) mat.roughnessNode = _rm.roughNode;
+                        mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                     } else if (!opts.pflanzenStoff && typeof this._terrainGeologyAlbedo === "function") {
                         // Roughness-Variation für den Boden aus DEMSELBEN Substanz-Kern wie die Geologie
                         // (`_terrainGeologyAlbedo` → `_substanceCharacter`), sonst uniform 0.7 = Plastik-Sheen unterm IBL.
@@ -2033,9 +2058,10 @@ class AnazhRealm_stoff_material {
         // jede Boden-Normale zur Senkrechten: jeder Hang nahm das Licht einer Ebene, bei Sonne 5° sin 5° = 0,087 des Richtlichts,
         // ob er zur Sonne stand oder nicht (Radeon 2674ff9a ferne.K4: Schatten-/Lichthang 0,7162, Soll ≤ 0,4; der Feld-Pass
         // jenseits 8 km rechnete schon die wahre Normale — zwei Lichtungen für EINEN Boden).
-        // Vegetation (pflanzenStoff) und Fels (vertexColorAlbedo) tragen ihre eigene Normale (unten nicht berührt).
+        // Vegetation (pflanzenStoff), Fels (vertexColorAlbedo) und das Metall des Baus (`metallWerk`) tragen ihre eigene Normale
+        // (unten nicht berührt).
         let _mikroH = null; // die Höhe des Mikro-Reliefs und ihre Blende (`_mikroStoff`: das Korn in der Albedo, jedes Licht liest es)
-        if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
+        if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo && !metallWerk) {
             try {
                 const _Tn = THREE.TSL;
                 {

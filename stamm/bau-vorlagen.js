@@ -1818,7 +1818,10 @@ class AnazhRealm_bau_vorlagen {
                 resoniert: 0.5,
                 lebendig: 0.7,
             }),
-            make("eisen", "stoff.eisen", 0x484850, {
+            // eisen: das geschmiedete Eisen der Schmiede (ihr Farb-Gesetz W5, schmiede `M.iron` 0x8a8e94: F0 0,27 im Band der
+            // Natur) — bis stoffstrom-kette-2 trug die Zeile 0x484850 (F0 0,06, die Höhe von Ruß): jedes Eisen der Welt, die Barren
+            // in der Kiste wie Band und Beschlag, las schwarz.
+            make("eisen", "stoff.eisen", 0x8a8e94, {
                 härte: 0.75,
                 dichte: 0.9,
                 zähigkeit: 0.65,
