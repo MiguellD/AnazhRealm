@@ -1839,12 +1839,29 @@
                 // der Lage der Gelenke linear, zwei Strecken tragen ihn
                 BAU_GESETZ.achsen.map(function (a) {
                     return Object.freeze({ achse: a.achse, knoten: Object.freeze([-BAU_GESETZ.spanne, 0, BAU_GESETZ.spanne]) });
-                })
+                }),
+                // DER KREUZTERM TON × MASSE (generationen-band): die Summe der Achsen trägt den schlanken, schlaffen Leib nicht — am
+                // Kind (Ton 0,13, Masse 0,21) fehlten dem Satz 6 Punkte der Ausweitung Becken ÷ Taille (nah 8,4 %, Satz 2,3 %).
+                // Die Achse trägt den Rest an der Ecke `kreuz` (Ton 0, Masse 0), ihr Wert ist das Produkt der Abweichungen beider
+                // von der Vorlage, je auf die Ecke bezogen (−1 … 1, 0 an der Vorlage; foundry `__leibRaumTafel`)
+                [Object.freeze({ achse: "__tonMasse", knoten: Object.freeze([-1, 1]), kreuz: Object.freeze({ tone: 0, mass: 0 }) })]
             )),
         });
     })();
     // der Wert einer Achse an den Dials d (die Kappe: das Tripel `__kappe` oder das des Stils)
     function leibRaumWert(d, achse) {
+        // der Kreuzterm: Π je Dial der Ecke (v − Mitte) ÷ (Ecke − Mitte), die Mitte der Mittel-Knoten seiner Achse
+        var kr = LEIB_RAUM.achsen.filter(function (a) {
+            return a.achse === achse && a.kreuz;
+        })[0];
+        if (kr)
+            return Object.keys(kr.kreuz).reduce(function (p, k) {
+                var K = LEIB_RAUM.achsen.filter(function (a) {
+                    return a.achse === k;
+                })[0].knoten;
+                var m = K[(K.length - 1) / 2];
+                return (p * (leibRaumWert(d, k) - m)) / (kr.kreuz[k] - m);
+            }, 1);
         var kj = /^__kappe([012])$/.exec(achse);
         if (kj) {
             var t = (d && Array.isArray(d.__kappe) && d.__kappe) || HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
@@ -1865,6 +1882,7 @@
         for (k in d) o[k] = d[k];
         var kap = [0, 0, 0];
         LEIB_RAUM.achsen.forEach(function (a) {
+            if (a.kreuz) return; // (der Kreuzterm ist kein Dial: an der Vorlage 0)
             var m = a.knoten[(a.knoten.length - 1) / 2];
             var kj = /^__kappe([012])$/.exec(a.achse);
             if (kj) kap[+kj[1]] = m;
