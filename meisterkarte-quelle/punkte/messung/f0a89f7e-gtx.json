@@ -2649,5 +2649,275 @@
   },
   "fahrtS": 457,
   "minuten": 7.78
- }
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-23T07:36:34.009Z",
+   "ordner": "sitzung-20261123-083634",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.7,
+   "grundstellungS": [
+    7.4,
+    6.5
+   ],
+   "proben": 3,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.erleben.spieler.hand#1",
+     "s": 27.8,
+     "takte": 881,
+     "chunks": 81,
+     "nach": null
+    },
+    {
+     "ort": null,
+     "vor": "karte2.erleben.kopplung.emergenz#1",
+     "s": 22,
+     "takte": 652,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "karte2.same.massstab.sprung#1",
+     "s": 23.7,
+     "takte": 723,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [
+    {
+     "vor": "karte2.same.massstab.sprung#1",
+     "wege": "wege +2 [-1.2,-31.2,206.5,0/2] [-27.7,-58.3,231.6,16/91]",
+     "s": 6.5
+    }
+   ],
+   "felder": [
+    {
+     "probe": "karte2.erleben.spieler.hand#1",
+     "weg": [
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr",
+      "__imSchuss",
+      "__nahSpeicher",
+      "__letzteSpiegel"
+     ]
+    },
+    {
+     "probe": "karte2.erleben.kopplung.emergenz#1",
+     "weg": [
+      "__dorfDerProbe",
+      "__rafferEnde",
+      "__rafferKurz",
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr",
+      "__imSchuss",
+      "__nahSpeicher",
+      "__letzteSpiegel",
+      "__letzteTeilung"
+     ]
+    },
+    {
+     "probe": "karte2.same.massstab.sprung#1",
+     "weg": [
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr"
+     ]
+    }
+   ],
+   "wirt": [
+    {
+     "probe": "karte2.erleben.spieler.hand#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      189.8,
+      226.4
+     ],
+     "ungemessen": null
+    },
+    {
+     "probe": "karte2.erleben.kopplung.emergenz#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r._tickNahWiese",
+      "r._ruheImBild",
+      "r.state.weather",
+      "window.__raffer",
+      "window.__rafferRest",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r._tickNahWiese": "neu: () => 0",
+      "r._ruheImBild": "neu: () => 0",
+      "r.state.weather": "neu: () => wert",
+      "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+      "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      193.4,
+      302.7
+     ],
+     "ungemessen": null
+    },
+    {
+     "probe": "karte2.same.massstab.sprung#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      192.4,
+      233.7
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.erleben.spieler.hand#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.erleben.spieler.hand#1",
+     "gehalten": [
+      "skala",
+      "spiegel"
+     ],
+     "offen": []
+    },
+    {
+     "probe": "karte2.erleben.kopplung.emergenz#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.erleben.kopplung.emergenz#1",
+     "gehalten": [
+      "skala",
+      "spiegel"
+     ],
+     "offen": []
+    },
+    {
+     "probe": "karte2.same.massstab.sprung#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.same.massstab.sprung#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "anOrt": [
+    {
+     "vor": "karte2.erleben.kopplung.emergenz#1",
+     "anders": [
+      "worldMeta.kalender"
+     ],
+     "wie": {
+      "worldMeta.kalender": "undefined → undefined"
+     }
+    },
+    {
+     "vor": "karte2.same.massstab.sprung#1",
+     "anders": [
+      "playerPathBuckets",
+      "worldMeta.kalender"
+     ],
+     "wie": {
+      "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w",
+      "worldMeta.kalender": "undefined → undefined"
+     }
+    }
+   ],
+   "ciBlicke": 4,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2875,
+    "frameP95": 25.13,
+    "taktP95": 22.36,
+    "vramMax": 123.5,
+    "seiten": 3,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.same.massstab.sprung#1",
+      "m": 10730,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "karte2.erleben.spieler.hand#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 465,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 482.5,
+   "minuten": 8.18
+  }
+ ]
 }
