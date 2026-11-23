@@ -53,7 +53,7 @@
   {
    "id": "R8",
    "name": "Die Preis-Treppe",
-   "satz": "Der Preis hat EIN Heim (same.preis.*, die Sprung-Zeit in same.massstab.sprung) und wächst dort mit dem Umfang; jede Inhalts-Sprosse trägt als P die Stufe ihrer Umfangs-Klasse am Standardgerät — Bild, Speicher, Bytes, Sprung — (Tafel der Preis-Treppe); die Ankunft ist Schranke KEINER Inhalts-Sprosse, sie steht in ihrer Leiter same.preis.ankunft gemessen und gestuft (Ort 1–3, Stadt 4–5, Megastadt und Kontinent 6, Planet und Welten 7–8) —, und ihre Spalte Preis nennt nur P, die Pose und die Antwortzeit, die der Spieler fühlt, nie ein Budget je Teilsystem."
+   "satz": "Der Preis hat EIN Heim (same.preis.*, die Sprung-Zeit in same.massstab.sprung) und wächst dort mit dem Umfang; jede Inhalts-Sprosse trägt als P die Stufe ihrer Umfangs-Klasse am Standardgerät — Bild, VRAM, Bytes, Sprung — (Tafel der Preis-Treppe); die Ankunft ist Schranke KEINER Inhalts-Sprosse, sie steht in ihrer Leiter same.preis.ankunft gemessen und gestuft (Ort 1–3, Stadt 4–5, Megastadt und Kontinent 6, Planet und Welten 7–8), ebenso Heap und Wachstum in same.preis.speicher (Ort 1–2, Stadt 3, Megastadt und Kontinent 4, Planet und Welten 5–6: der Speicher folgt dem Blick) —, und ihre Spalte Preis nennt nur P, die Pose und die Antwortzeit, die der Spieler fühlt, nie ein Budget je Teilsystem."
   },
   {
    "id": "R9",
@@ -117,7 +117,7 @@
    "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
    "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
    "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
-   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "speicher": "VRAM ≤ 256 MB — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt · Heap und Wachstum: keine Schranke in der Sprosse (gestuft in same.preis.speicher 1–2)",
    "bytes": "0 über das Skript hinaus"
   },
   {
@@ -125,7 +125,7 @@
    "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
    "bild": "wie Ort",
    "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 4–5)",
-   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "speicher": "VRAM ≤ 256 MB · Heap und Wachstum: keine Schranke in der Sprosse (gestuft in same.preis.speicher 3)",
    "bytes": "0"
   },
   {
@@ -133,7 +133,7 @@
    "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
    "bild": "wie Ort",
    "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 6)",
-   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "speicher": "VRAM ≤ 512 MB · Heap und Wachstum: keine Schranke in der Sprosse (gestuft in same.preis.speicher 4)",
    "bytes": "0"
   },
   {
@@ -141,11 +141,11 @@
    "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
    "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
    "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 7–8)",
-   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "speicher": "VRAM ≤ 512 MB — der Speicher wächst nicht mit der Welt · Heap und Wachstum: keine Schranke in der Sprosse (gestuft in same.preis.speicher 5–6)",
    "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
   }
  ],
- "preisFassung": "2026-11-23",
+ "preisFassung": "2026-11-23b",
  "umfangsKlassen": [
   {
    "wort": "Weiler, Dorf",
@@ -17509,7 +17509,7 @@
      "name": "Speicher, Wärme, Akku",
      "art": "kriterium",
      "perspektive": "preis",
-     "misst": "Heap und Grafikspeicher gegen den erlebten Welt-Umfang, dazu Wärme und Akku am Laptop — der Speicher hängt am Schirm, nie an der Welt. Die Decken dieser Leiter sind der Speicher-Teil von P (R8).",
+     "misst": "Heap und Grafikspeicher gegen den erlebten Welt-Umfang, dazu Wärme und Akku am Laptop — der Speicher hängt am Schirm, nie an der Welt. Heap und Wachstum sind Schranke keiner Inhalts-Sprosse — jede Klasse der Preis-Treppe ist HIER gestuft (Ort 1–2, Stadt 3, Megastadt und Kontinent 4, Planet und Welten 5–6; R8, Fassung 23.11.b): der Speicher folgt dem Blick, er steht nach 60 s, wächst nicht mit dem Weg und kehrt nach der Bahn durch die Stadt auf den Anfang ± 2 % zurück. Schranke der Sprosse bleibt der VRAM (er hängt am Schirm).",
      "sprossen": [
       {
        "nr": 1,

@@ -283,12 +283,13 @@ function selbsttest() {
         const p = preisVon({ bilder: bilder.concat([{ ...eins, wand: U + BIS + 500, dt: 999, heap: 900, vram: 300 }]), referenz: ref(1.05) });
         return p.urteil === "GRÜN" && p.bild_max_ms === 48 && p.heap_mb === 312.4 && p.vram_mb === 104.5 ? true : JSON.stringify(p).slice(0, 300);
     });
-    pruefe("STÜCK Mutant Heap und VRAM der Probe VOR dem Stück über dem Soll (ihr Zeitraffer): Lesewert im Einlauf, nie im Preis; IM Stück reißen sie", () => {
+    // 23.11.: der Heap ist keine Schranke der Sprosse mehr (gestuft in same.preis.speicher) — IM Stück reißt der VRAM, der Heap steht als Zahl im Preis
+    pruefe("STÜCK Mutant Heap und VRAM der Probe VOR dem Stück über dem Soll (ihr Zeitraffer): Lesewert im Einlauf, nie im Preis; IM Stück reißt der VRAM, der Heap steht als Zahl", () => {
         const vorher = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.wand < U + AB ? { ...b, heap: 900, vram: 300 } : b));
-        const drin = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.wand >= U + AB ? { ...b, heap: 900 } : b));
+        const drin = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.wand >= U + AB ? { ...b, heap: 900, vram: 300 } : b));
         const p = preisVon({ bilder: vorher, referenz: ref(1.05) }),
             q = preisVon({ bilder: drin, referenz: ref(1.05) });
-        return p.urteil === "GRÜN" && p.heap_mb === 312.4 && p.einlauf.heap_mb === 900 && p.einlauf.vram_mb === 300 && q.urteil === "ROT" && q.heap_mb === 900
+        return p.urteil === "GRÜN" && p.heap_mb === 312.4 && p.einlauf.heap_mb === 900 && p.einlauf.vram_mb === 300 && q.urteil === "ROT" && q.heap_mb === 900 && q.vram_mb === 300
             ? true : JSON.stringify([p, q]).slice(0, 300);
     });
     pruefe("STÜCK Mutant das Stück beginnt früher (die alte Spanne des ganzen Fensters): das Bild von 150 ms reißt — das Stück urteilt, nie das Fenster", () => {

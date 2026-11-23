@@ -26,7 +26,7 @@
 //       "preis":   { "stufe": "Ort",   // optional; die Zeile der Preis-Treppe nennt die KARTE (sprosse.klasse, R8) — weicht sie ab: Bruch
 //                    "bild_p95_ms": 21.4, "bild_max_ms": 61, "heap_mb": 310, "vram_mb": 104,
 //                    "ankunft_kalt_s": 4.2,                       // Lesewert; keine Klasse verlangt ihn (die Ankunft urteilt same.preis.ankunft)
-//                    "wachstum_mb_min": 1.1, "ton_aussetzer": 0,   // geprüft, wenn angegeben
+//                    "wachstum_mb_min": 1.1, "ton_aussetzer": 0,   // geprüft, wenn angegeben (das Wachstum nur, wo die Treppe es als Zahl trägt)
 //                    "referenz": { "f": 1.08, … },               // die Referenzfahrt derselben Sitzung (DIE LAST AM PREIS, unten)
 //                    "urteil": "GRÜN" | "ROT" | "UNGEMESSEN …" } },
 //     { "geraet": "GTX 1060", … }
@@ -159,33 +159,59 @@ function treppeLesen(karte) {
             if (!p || !m) bruch(`Preis-Treppe ${t.klasse}: Bild unlesbar`);
             Object.assign(s, { p95: zahl(p[1]), max: zahl(m[1]) });
         }
+        // DIE STUFUNG IN DER EIGENEN LEITER (EINE Prüfung für Ankunft und Speicher): „keine Schranke in der Sprosse (gestuft in L a–b)“
+        // gilt nur, wenn die Leiter L in der Karte steht und ihre Sprossen a–b die Klasse dieser Zeile tragen — sonst zeigt sie ins Leere.
+        const stufung = (was, m) => {
+            const L = (karte.gruppen || []).flatMap((g) => g.kriterien).find((k) => k.id === m[1]);
+            if (!L) bruch(`Preis-Treppe ${t.klasse}: ${was} ist in „${m[1]}“ gestuft, die Leiter steht nicht in der Karte`);
+            const von = +m[2],
+                bis = +(m[3] || m[2]);
+            for (let nr = von; nr <= bis; nr++) {
+                const sp = L.sprossen.find((x) => x.nr === nr);
+                if (!sp || sp.klasse !== t.klasse) bruch(`Preis-Treppe ${t.klasse}: ${m[1]} S ${nr} trägt die Klasse „${sp ? sp.klasse : "—"}“, nicht „${t.klasse}“ — die Stufung zeigt ins Leere`);
+            }
+            return { leiter: m[1], von, bis };
+        };
+        const STUFUNG = "keine Schranke in der Sprosse \\(gestuft in ([\\w.-]+) (\\d+)(?:–(\\d+))?\\)";
+        // DER SPEICHER FOLGT DEM BLICK (23.11., Entscheid des Koordinators nach dem Wort des Schöpfers 16.11. „vielleicht verfehlt der
+        // heapdeckel von 400mb das ziel?“ und 23.11. „wir jagen nun einen deckel der unnötig uns vom vorankommen hindert, nutzwert nicht
+        // vergessen“): Heap und Wachstum sind Schranke KEINER Sprosse — „Heap und Wachstum: keine Schranke in der Sprosse (gestuft in
+        // same.preis.speicher a–b)“; das Gesetz (steht nach 60 s, kein Wachstum mit dem Weg, Bahn zurück = Anfang ± 2 %) urteilt die
+        // Leiter. Schranke der Sprosse bleibt der VRAM (hängt am Schirm, jede Akte trägt den Posten). Das Wachstum hatte bis hier in
+        // 0 von 3 171 Akten-Preisen einen Schreiber — es fällt offen aus der Sprosse, nie als stille Lücke. Bis 23.11. sperrte die
+        // absolute Decke (Ort 400 MB) grüne Sprossen an der Reihe in der Sitzung (planet.zeit.archiv#1 280,8 MB als erste Station,
+        // über 400 als dritte) und am Rauschen der Linie (mensch.nahrung.flur#1 407,9 → 394,2 MB ohne Heap-Schnitt).
         const spErbe = erb("speicher");
-        if (spErbe) Object.assign(s, { heap: spErbe.heap, vram: spErbe.vram, wachstum: spErbe.wachstum });
-        else {
+        if (spErbe) {
+            if (spErbe.heap === null) bruch(`Preis-Treppe ${t.klasse}: „${t.speicher}“ erbt eine Stufung — die Stufung nennt jede Klasse selbst`);
+            Object.assign(s, { heap: spErbe.heap, vram: spErbe.vram, wachstum: spErbe.wachstum });
+        } else {
             const h = /Heap ≤ (\d+(?:,\d+)?) (MB|GB)/.exec(t.speicher),
+                hs = new RegExp("Heap und Wachstum: " + STUFUNG).exec(t.speicher),
                 v = /VRAM ≤ (\d+) MB/.exec(t.speicher),
                 w = /Wachstum ≤ (\d+(?:,\d+)?) MB\/min/.exec(t.speicher);
-            if (!h || !v) bruch(`Preis-Treppe ${t.klasse}: Speicher unlesbar`);
-            s.heap = zahl(h[1]) * (h[2] === "GB" ? 1024 : 1);
+            if (!v) bruch(`Preis-Treppe ${t.klasse}: Speicher unlesbar (kein „VRAM ≤ N MB“)`);
             s.vram = +v[1];
-            s.wachstum = w ? zahl(w[1]) : 0; // „kein Wachstum mit dem Weg“
+            if (hs) {
+                if (h || w) bruch(`Preis-Treppe ${t.klasse}: der Speicher trägt die Stufung UND eine Heap- oder Wachstums-Zahl — zwei Gesetze an einer Stelle`);
+                s.heap = null; // keine Schranke in der Sprosse: Heap und Wachstum urteilt ihre eigene Leiter
+                s.wachstum = null;
+                Object.defineProperty(s, "speicherLeiter", { value: stufung("der Speicher", hs) });
+            } else if (h) {
+                s.heap = zahl(h[1]) * (h[2] === "GB" ? 1024 : 1);
+                s.wachstum = w ? zahl(w[1]) : 0; // „kein Wachstum mit dem Weg“
+            } else bruch(`Preis-Treppe ${t.klasse}: Speicher unlesbar („${t.speicher}“) — weder „Heap ≤ N MB“ noch „Heap und Wachstum: keine Schranke in der Sprosse (gestuft in <Leiter> a–b)“`);
         }
         // DIE ANKUNFT HAT EIN HEIM (23.11., Entscheid des Koordinators nach dem Wort des Schöpfers 18.11. — Sprossen vor Kennzahl — und
         // 19.11. „du schneidest wieder dinge wegen diesem verdammten kaltstart?“): jede Klasse trägt „keine Schranke in der Sprosse (gestuft in same.preis.ankunft a–b)“ — der
         // Anspruch fällt nicht, er steht gemessen in der Leiter same.preis.ankunft, deren Sprossen a–b dieselbe Klasse tragen müssen.
         // Bis 23.11. verlangte die Treppe ab Stadt `ankunft_kalt_s` ≤ 5 s in JEDER Sprosse; die Zahl hatte keinen Schreiber, 956 von
         // 1 718 Sprossen endeten bei Richter GRÜN auf „Preis FEHLT“. Ein Text, der weder die Stufung noch „≤ N s“ trägt, bricht laut.
-        const st = /^keine Schranke in der Sprosse \(gestuft in ([\w.-]+) (\d+)(?:–(\d+))?\)$/.exec(t.ankunft);
+        const st = new RegExp("^" + STUFUNG + "$").exec(t.ankunft);
         const a = /≤ (\d+(?:,\d+)?) s/.exec(t.ankunft);
         if (st) {
-            const L = (karte.gruppen || []).flatMap((g) => g.kriterien).find((k) => k.id === st[1]);
-            if (!L) bruch(`Preis-Treppe ${t.klasse}: die Ankunft ist in „${st[1]}“ gestuft, die Leiter steht nicht in der Karte`);
-            for (let nr = +st[2]; nr <= +(st[3] || st[2]); nr++) {
-                const sp = L.sprossen.find((x) => x.nr === nr);
-                if (!sp || sp.klasse !== t.klasse) bruch(`Preis-Treppe ${t.klasse}: ${st[1]} S ${nr} trägt die Klasse „${sp ? sp.klasse : "—"}“, nicht „${t.klasse}“ — die Stufung zeigt ins Leere`);
-            }
             s.ankunft = null; // keine Schranke in der Sprosse: die Ankunft urteilt ihre eigene Leiter
-            Object.defineProperty(s, "ankunftLeiter", { value: { leiter: st[1], von: +st[2], bis: +(st[3] || st[2]) } });
+            Object.defineProperty(s, "ankunftLeiter", { value: stufung("die Ankunft", st) });
         } else if (a) s.ankunft = zahl(a[1]);
         else bruch(`Preis-Treppe ${t.klasse}: Ankunft unlesbar („${t.ankunft}“) — weder „≤ N s“ noch „keine Schranke in der Sprosse (gestuft in <Leiter> a–b)“`);
         T[t.klasse] = s;
@@ -231,9 +257,9 @@ function preisGrund(p, T, klasse) {
     if (!s) return "";
     const aus = [];
     const reisst = (name, wert, soll, einheit, n) => typeof wert === "number" && wert > soll && aus.push(`${name} ${komma(wert, n)} > ${soll} ${einheit}`);
-    reisst("Heap", gehaltenVon(p, "heap_mb"), s.heap, "MB", 1);
+    if (s.heap != null) reisst("Heap", gehaltenVon(p, "heap_mb"), s.heap, "MB", 1);
     reisst("VRAM", gehaltenVon(p, "vram_mb"), s.vram, "MB", 1);
-    reisst("Wachstum", p.wachstum_mb_min, s.wachstum, "MB/min", 1);
+    if (s.wachstum != null) reisst("Wachstum", p.wachstum_mb_min, s.wachstum, "MB/min", 1);
     if (s.ankunft != null) reisst("Ankunft", p.ankunft_kalt_s, s.ankunft, "s", 1);
     reisst("p95", p.bild_p95_ms, s.p95, "ms", 2);
     reisst("größtes Bild", p.bild_max_ms, s.max, "ms", 1);
@@ -247,11 +273,13 @@ function preisUrteil(p, T, wo, klasse) {
     const s = T[zeile(klasse)];
     if (!s) bruch(`${wo}: die Klasse „${klasse}“ der Karte steht nicht in der Preis-Treppe`);
     if (p.stufe !== undefined && zeile(p.stufe) !== zeile(klasse)) bruch(`${wo}: die Akte misst den Preis der Stufe „${p.stufe}“, die Karte verlangt „${klasse}“`);
-    const pflicht = ["bild_p95_ms", "bild_max_ms", "heap_mb", "vram_mb"].concat(s.ankunft != null ? ["ankunft_kalt_s"] : []);
+    // Pflicht ist nur, was eine Schranke der Sprosse urteilt: Heap nur mit Heap-Zahl in der Treppe, Ankunft nur mit Ankunfts-Zahl
+    const pflicht = ["bild_p95_ms", "bild_max_ms", "vram_mb"].concat(s.heap != null ? ["heap_mb"] : [], s.ankunft != null ? ["ankunft_kalt_s"] : []);
     if (pflicht.some((k) => typeof p[k] !== "number")) return "FEHLT";
-    // fest: an fremder Last nie gebunden — urteilen wie gemessen, und zwar das GEHALTENE (`gehaltenVon`)
-    let fest = gehaltenVon(p, "heap_mb") <= s.heap && gehaltenVon(p, "vram_mb") <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
-    if (typeof p.wachstum_mb_min === "number") fest = fest && p.wachstum_mb_min <= s.wachstum;
+    // fest: an fremder Last nie gebunden — urteilen wie gemessen, und zwar das GEHALTENE (`gehaltenVon`); Heap und Wachstum nur, wo die
+    // Treppe sie als Schranke der Sprosse trägt (gestuft: Lesewert, das Urteil fällt in same.preis.speicher)
+    let fest = (s.heap == null || gehaltenVon(p, "heap_mb") <= s.heap) && gehaltenVon(p, "vram_mb") <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
+    if (s.wachstum != null && typeof p.wachstum_mb_min === "number") fest = fest && p.wachstum_mb_min <= s.wachstum;
     if (typeof p.ton_aussetzer === "number") fest = fest && p.ton_aussetzer === 0;
     // die Zeit-Zahlen: über dem Soll nur dann ROT, wenn die Referenz derselben Sitzung im Band der Ruhe lag
     const zeitReisst = !(p.bild_p95_ms <= s.p95 && p.bild_max_ms <= s.max);
@@ -1411,8 +1439,8 @@ function selbsttest() {
     });
     pruefe("KÖPFE: GTX PUNKT am Vorfahren, Radeon KERN (Preis ROT) am Nachfahren → das beste Urteil über Köpfe: PUNKT, Nachwache nennt die Radeon", () => {
         const { L, z } = lauf({ [A + ".1.e4eeee08-gtx"]: fahrt(A, 1, { sha: ALT, geraete: ["GTX 1060"], datum: "2026-11-14T10:00:00Z" }),
-            [A + ".1.a635bfee-radeon"]: fahrt(A, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-15T10:00:00Z", preis: { heap_mb: 491, urteil: "ROT" } }) });
-        return L(A).heute === 1 && z.beide === 0 && /GTX 1060 am e4eeee08 · Nachwache Radeon 890M: Richter GRÜN an Radeon 890M, Preis Radeon 890M ROT \(Heap 491,0 > 400 MB\) am a635bfee/.test(z.bericht[0].warum)
+            [A + ".1.a635bfee-radeon"]: fahrt(A, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-15T10:00:00Z", preis: { vram_mb: 300, urteil: "ROT" } }) });
+        return L(A).heute === 1 && z.beide === 0 && /GTX 1060 am e4eeee08 · Nachwache Radeon 890M: Richter GRÜN an Radeon 890M, Preis Radeon 890M ROT \(VRAM 300,0 > 256 MB\) am a635bfee/.test(z.bericht[0].warum)
             ? true
             : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
     });
@@ -1450,8 +1478,8 @@ function selbsttest() {
         const { L, z } = lauf({ [B + ".1"]: fahrt(B, 1, { preis: { bild_p95_ms: 58.8, bild_max_ms: 134, referenz: unterLast, urteil: "UNGEMESSEN unter Last ×1,84" } }) });
         return L(B).heute === 0 && L(B).kern === 1 && z.kern === 19 && /UNGEMESSEN unter Last ×1,84/.test(z.bericht[0].warum) ? true : `heute ${L(B).heute} kern ${L(B).kern} · ${z.bericht[0].warum}`;
     });
-    pruefe("LAST: Referenz gerissen + größtes Bild über Soll, Heap über Soll = ROT (Heap hängt nie an Last)", () =>
-        preisUrteil(preis({ bild_max_ms: 134, heap_mb: 427, referenz: unterLast, urteil: undefined }), treppeLesen(neu()), "t", "Ort") === "ROT" || "nicht ROT");
+    pruefe("LAST: Referenz gerissen + größtes Bild über Soll, VRAM über Soll = ROT (VRAM hängt nie an Last)", () =>
+        preisUrteil(preis({ bild_max_ms: 134, vram_mb: 271.6, referenz: unterLast, urteil: undefined }), treppeLesen(neu()), "t", "Ort") === "ROT" || "nicht ROT");
     pruefe("LAST: Preis unter Soll = GRÜN, egal welche Last (gerissen, ohne Referenz)", () =>
         preisUrteil(preis({ referenz: { f: 9 } }), treppeLesen(neu()), "t", "Ort") === "GRÜN" && preisUrteil(preis(), treppeLesen(neu()), "t", "Ort") === "GRÜN" || "nicht GRÜN");
     pruefe("LAST: Bild über Soll ohne Referenz (alte Akte) = UNGEMESSEN ohne Referenz, nie ROT", () =>
@@ -1495,12 +1523,12 @@ function selbsttest() {
     });
     pruefe("LAST-FAHRT Mutant: PUNKT + Preis-Zahl fehlt (R3) → KERN", () => {
         const a = lauf(punktDann(fahrt(A, 1, { ohnePreis: "GTX 1060" })));
-        const b = lauf(punktDann(fahrt(A, 1, { preis: { heap_mb: undefined, urteil: undefined } })));
+        const b = lauf(punktDann(fahrt(A, 1, { preis: { vram_mb: undefined, urteil: undefined } })));
         return a.L(A).heute === 0 && a.L(A).kern === 1 && b.L(A).heute === 0 && b.L(A).kern === 1 ? true : `fehlt: heute ${a.L(A).heute} kern ${a.L(A).kern} · unvollständig: heute ${b.L(A).heute} kern ${b.L(A).kern}`;
     });
-    pruefe("LAST-FAHRT Mutant: PUNKT + Last an der Radeon, Heap gemessen ROT an der GTX → KERN (ein Gerät gemessen ROT nimmt)", () => {
+    pruefe("LAST-FAHRT Mutant: PUNKT + Last an der Radeon, VRAM gemessen ROT an der GTX → KERN (ein Gerät gemessen ROT nimmt)", () => {
         const f = fahrt(A, 1, { preis: lastPreis });
-        f.geraete[1].preis = preis({ heap_mb: 491, urteil: "ROT" });
+        f.geraete[1].preis = preis({ vram_mb: 300, urteil: "ROT" });
         const { L } = lauf(punktDann(f));
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
@@ -1528,15 +1556,54 @@ function selbsttest() {
         return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
     // DIE ANKUNFT IN IHRER LEITER (23.11.): eine Stadt-Akte mit grünem Bild, Speicher und Bytes und ohne ankunft_kalt_s urteilt GRÜN und
-    // bucht; dieselbe mit gehaltenem Heap 601 MB urteilt ROT. Vor dem Schnitt stand hier „Kern statt Punkt“ — der Preis FEHLTE.
+    // bucht; dieselbe mit gehaltenem VRAM 257 MB urteilt ROT (bis zum Speicher-Schnitt 23.11.: Heap 601 MB). Vor dem Schnitt stand hier „Kern statt Punkt“ — der Preis FEHLTE.
     const stadtPreis = (x = {}) => Object.assign(preis({ stufe: "Stadt", heap_mb: 560, vram_mb: 175, urteil: undefined, treppe: undefined }), x);
+    // DER SPEICHER IN DER LEITER (23.11.): eine Ort-Akte mit gehaltenem Heap 520 MB und sonst grünem Preis urteilt GRÜN und bucht;
+    // dieselbe mit VRAM über der Decke urteilt ROT. Vor dem Schnitt riss sie an „Heap 520,0 > 400 MB“.
+    const ortPreis = (x = {}) => Object.assign(preis({ heap_mb: 548, posten: { heap_mb: 520, vram_mb: 140 }, urteil: undefined, treppe: undefined }), x);
+    pruefe("SPEICHER IN DER LEITER: Ort-Akte mit gehaltenem Heap 520 MB und sonst grünem Preis urteilt GRÜN und bucht", () => {
+        const u = preisUrteil(ortPreis(), T0Vor, "probe", "Ort");
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: ortPreis() }) });
+        return u === "GRÜN" && L(A).heute === 1 ? true : `Preis ${u} (${preisGrund(ortPreis(), T0Vor, "Ort")}) · heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("SPEICHER IN DER LEITER Mutant: dieselbe Ort-Akte mit gehaltenem VRAM 257 MB über der Decke urteilt ROT, nur Kern", () => {
+        const p = ortPreis({ posten: { heap_mb: 520, vram_mb: 257 } });
+        const u = preisUrteil(p, T0Vor, "probe", "Ort");
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: p }) });
+        return u === "ROT" && L(A).heute === 0 && L(A).kern === 1 ? true : `Preis ${u} · heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("SPEICHER IN DER LEITER: jede Klasse stuft Heap und Wachstum in same.preis.speicher, der VRAM bleibt Schranke der Sprosse", () => {
+        const f = Object.keys(T0Vor).filter((k) => T0Vor[k].heap !== null || T0Vor[k].wachstum !== null || !(T0Vor[k].vram > 0) || !T0Vor[k].speicherLeiter || T0Vor[k].speicherLeiter.leiter !== "same.preis.speicher");
+        return f.length ? "Heap-Schranke in der Sprosse: " + f.join(", ") : true;
+    });
+    pruefe("SPEICHER IN DER LEITER Mutant: eine Stufung, die auf Sprossen fremder Klasse zeigt, bricht laut", () => {
+        const k = neu();
+        const z = k.preisTreppe.find((t) => t.klasse === "Stadt");
+        z.speicher = z.speicher.replace(/same\.preis\.speicher \d+(–\d+)?\)/, "same.preis.speicher 1–2)");
+        try {
+            treppeLesen(k);
+            return "bricht nicht";
+        } catch (e) {
+            return /same\.preis\.speicher S 1 trägt die Klasse „Ort“, nicht „Stadt“/.test(e.message) || e.message;
+        }
+    });
+    pruefe("SPEICHER IN DER LEITER Mutant: ein Speicher-Text ohne Heap-Zahl und ohne Stufung bricht laut (nie still keine Schranke)", () => {
+        const k = neu();
+        k.preisTreppe.find((t) => t.klasse === "Megastadt und Kontinent").speicher = "VRAM ≤ 512 MB, sonst nichts";
+        try {
+            treppeLesen(k);
+            return "bricht nicht";
+        } catch (e) {
+            return /Speicher unlesbar/.test(e.message) || e.message;
+        }
+    });
     pruefe("ANKUNFT IN DER LEITER: Stadt-Preis ohne ankunft_kalt_s (Bild, Speicher, Bytes grün) urteilt GRÜN und bucht", () => {
         const u = preisUrteil(stadtPreis(), T0Vor, "probe", "Stadt");
         const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: stadtPreis() }) }, { klasse: "Stadt" });
         return u === "GRÜN" && L(A).heute === 1 ? true : `Preis ${u} · heute ${L(A).heute} kern ${L(A).kern}`;
     });
-    pruefe("ANKUNFT IN DER LEITER Mutant: dieselbe Stadt-Akte mit gehaltenem Heap 601 MB urteilt ROT, nur Kern", () => {
-        const p = stadtPreis({ heap_mb: 640, posten: { heap_mb: 601, vram_mb: 175 } });
+    pruefe("ANKUNFT IN DER LEITER Mutant: dieselbe Stadt-Akte mit gehaltenem VRAM 257 MB urteilt ROT, nur Kern", () => {
+        const p = stadtPreis({ posten: { heap_mb: 560, vram_mb: 257 } });
         const u = preisUrteil(p, T0Vor, "probe", "Stadt");
         const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: p }) }, { klasse: "Stadt" });
         return u === "ROT" && L(A).heute === 0 && L(A).kern === 1 ? true : `Preis ${u} · heute ${L(A).heute} kern ${L(A).kern}`;
@@ -1585,17 +1652,17 @@ function selbsttest() {
     );
     // ── die Treppe in der Fassung 15.11.: Raster des Schirms, gehaltener Speicher, VRAM am Schirm ──
     const T0 = treppeLesen(neu());
-    pruefe("TREPPE: die Karte nennt ihre Fassung, Ort trägt 34 · 101 ms und VRAM 256 MB", () =>
-        (!!FASSUNG && T0.Ort.p95 === 34 && T0.Ort.max === 101 && T0.Ort.vram === 256 && T0.Ort.heap === 400) || JSON.stringify([FASSUNG, T0.Ort]));
+    pruefe("TREPPE: die Karte nennt ihre Fassung, Ort trägt 34 · 101 ms und VRAM 256 MB, keine Heap-Zahl", () =>
+        (!!FASSUNG && T0.Ort.p95 === 34 && T0.Ort.max === 101 && T0.Ort.vram === 256 && T0.Ort.heap === null) || JSON.stringify([FASSUNG, T0.Ort]));
     pruefe("RASTER: ein sauberer 30-Bilder-Gang am 120-Hz-Schirm (p95 33,47 ms, Aussetzer 100,4 ms) = GRÜN", () =>
         preisUrteil(preis({ bild_p95_ms: 33.47, bild_max_ms: 100.4, urteil: undefined }), T0, "t", "Ort") === "GRÜN" || "nicht GRÜN");
     pruefe("RASTER Mutant: fünf Takte (p95 41,8 ms) in Ruhe = ROT; ein Bild von 108,4 ms in Ruhe = ROT", () =>
         (preisUrteil(preis({ bild_p95_ms: 41.8, referenz: ruhig, urteil: undefined }), T0, "t", "Ort") === "ROT" &&
             preisUrteil(preis({ bild_max_ms: 108.4, referenz: ruhig, urteil: undefined }), T0, "t", "Ort") === "ROT") || "nicht ROT");
-    pruefe("GEHALTEN: Spitze 457 MB über dem Soll, gehalten 258 MB darunter = GRÜN (die Spitze ist Lesewert)", () =>
-        preisUrteil(preis({ heap_mb: 457.4, posten: { heap_mb: 258, vram_mb: 125 }, urteil: undefined }), T0, "t", "Ort") === "GRÜN" || "nicht GRÜN");
-    pruefe("GEHALTEN Mutant: gehalten 411 MB reißt, auch wenn die Akte nichts sonst reißt = ROT", () =>
-        preisUrteil(preis({ heap_mb: 457.4, posten: { heap_mb: 411, vram_mb: 133 }, urteil: undefined }), T0, "t", "Ort") === "ROT" || "nicht ROT");
+    pruefe("GEHALTEN: VRAM-Spitze 300 MB über dem Soll, gehalten 125 MB darunter = GRÜN (die Spitze ist Lesewert)", () =>
+        preisUrteil(preis({ vram_mb: 300, posten: { heap_mb: 258, vram_mb: 125 }, urteil: undefined }), T0, "t", "Ort") === "GRÜN" || "nicht GRÜN");
+    pruefe("GEHALTEN Mutant: gehaltener VRAM 257 MB reißt, auch wenn die Akte nichts sonst reißt = ROT", () =>
+        preisUrteil(preis({ vram_mb: 200, posten: { heap_mb: 258, vram_mb: 257 }, urteil: undefined }), T0, "t", "Ort") === "ROT" || "nicht ROT");
     pruefe("VRAM AM SCHIRM: 140 MB hält am Ort, 300 MB reißt", () =>
         (preisUrteil(preis({ vram_mb: 140, urteil: undefined }), T0, "t", "Ort") === "GRÜN" && preisUrteil(preis({ vram_mb: 300, urteil: undefined }), T0, "t", "Ort") === "ROT") || "falsch");
     pruefe("FASSUNG: eine Akte älterer Fassung (ohne `treppe`) wird an ihren Zahlen neu geurteilt — ihr altes „ROT“ ist kein Bruch", () => {
@@ -1615,7 +1682,7 @@ function selbsttest() {
             : `heute ${L(B).heute} kern ${L(B).kern} · ${z.bericht[0].warum}`;
     });
     // ── DIE KOPF-FOLGE: der Fall der GTX 16.11. (13:14 am a635bfee Preis ROT, 14:11 am Vorfahren e4eeee08 Preis GRÜN) ──
-    const heapRot = { heap_mb: 491, urteil: "ROT" };
+    const heapRot = { vram_mb: 300, urteil: "ROT" }; // ein gemessen ROTER Preis (bis 23.11. Heap 491 MB; der Heap ist seither keine Schranke der Sprosse)
     pruefe("KOPF-FOLGE Mutant: ältere Kopf-Fahrt später gemessen hebt nicht — Kern am a635bfee bleibt, laut „überholt“", () => {
         const { L, z } = lauf({ [B + ".1"]: [fahrt(B, 1, { sha: NEU, datum: "2026-11-16T13:14:00+01:00", preis: heapRot }), fahrt(B, 1, { sha: ALT, datum: "2026-11-16T14:11:00+01:00" })] });
         const b = z.bericht[0];
