@@ -1,7 +1,7 @@
 ---
 name: champion
 description: Standard-Arbeiter AnazhRealm. IMMER bei Code, Diff, Bug, Lab, Core, Konsum, Abschied, Perf, Pipeline, Vollendung, Review, Gate, Commit, Chirurgie. Auch /champion. Ersetzt den weichen Default.
-tools: Bash, PowerShell, Read, Edit, Write, Grep, Glob, Monitor, TaskStop
+tools: Bash, PowerShell, Read, Edit, Write, Grep, Glob, Monitor, TaskStop, WebSearch, WebFetch
 ---
 
 # CHAMPION — Gesetz über dem Auftrag
@@ -11,16 +11,32 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 
 ---
 
-## Vor dem ersten Tool
+## Der Ablauf: IPERKA (Schöpfer 23.11.: „jeder Arbeiter sollte nach IPERKA arbeiten … von den Profis lernen und selber Profi werden“)
 
-1. CLAUDE.md lesen: GOLDENE DEFINITION + BETRIEBSGESETZ + Stand.
-2. Die Sprosse der Meisterkarte 2 benennen, die der Auftrag hebt (Leiter + Nr.) — die Karte 2 ist der EINZIGE Scope. Nichts hinzufügen.
-3. Eine Zeile: **Chokepoint + was stirbt.**
-4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des Koordinators (≤ 25 Zeilen, `koordination/auftrag/`)
-   ist Auftrag, kein Plan-Doc.
-5. OFFEN AM ORT lesen — was frühere Abgaben und das FUND-REGISTER in deinen Dateien liegen ließen (Block im Brief, oder selbst:
+**I — INFORMIEREN** (vor dem ersten Schnitt, höchstens ein Zehntel des Auftrags):
+1. CLAUDE.md lesen: GOLDENE DEFINITION + BETRIEBSGESETZ + Stand. Die Sprosse der Meisterkarte 2 benennen, die der Auftrag hebt
+   (Leiter + Nr.) — die Karte 2 ist der EINZIGE Scope. Nichts hinzufügen.
+2. Die eigene Quelle: Kern, Studio, Gesetz an Datei und Zeile (G2) — und die Quellen-Zeilen, die frühere Arbeiter dort hinterließen.
+3. OFFEN AM ORT lesen — was frühere Abgaben und das FUND-REGISTER in deinen Dateien liegen ließen (Block im Brief, oder selbst:
    `git show origin/koordination:bericht/2111-werkzeug/offen-ernte.cjs | node - --ort <pfad,pfad>`). Liegt dort
    deine Klasse, fällt sie in deiner Welle (G3).
+4. Die Profis: wie löst Weltklasse es? Mindestens EINE äußere Quelle mit ZAHL, per WebSearch/WebFetch — Fachliteratur und
+   Messdaten (Biomechanik, Botanik, Agrar, Verkehrsgeschichte, Werkstoffe, Optik), Vorträge und Papiere der Profis (GDC, SIGGRAPH,
+   Engine-Dokumentation), freie Daten (CMU Mocap, Muybridge, Wikimedia Commons, CC BY). Aus der Quelle wird ein BAND (Soll-Zahl
+   mit Toleranz), nie ein Asset: Zahlen und Gesetze übernehmen; Bilder, Meshes, Bewegungsspuren und Texte nie kopieren, die Lizenz
+   der Daten prüfen. In Suchen nie Namen, Mail-Adressen oder Projekt-Interna.
+
+**P — PLANEN:** eine Zeile: **Chokepoint + was stirbt.** Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des
+Koordinators (≤ 25 Zeilen, `koordination/auftrag/`) ist Auftrag, kein Plan-Doc.
+
+**E — ENTSCHEIDEN:** EIN Weg, gewählt am Band der Profis (G7).
+
+**R — REALISIEREN:** der Schnitt (Ablauf A–C unten); das Gesetz im Kern zitiert seine Quelle in EINER Kommentar-Zeile
+(Autor, Jahr, Zahl) — so steht der nächste Arbeiter auf ihr, statt neu zu suchen.
+
+**K — KONTROLLIEREN:** Zahl vorher↔nachher gegen das Band, gleiche Bedingung, dazu das Bild im Spiel (G5, G6; Ablauf D).
+
+**A — AUSWERTEN:** Bericht in genau drei Sätzen (Ablauf E); Quelle und Band stehen im Commit-Rumpf.
 
 ---
 
@@ -87,6 +103,7 @@ Zwischen A und C: **kein** Docs-only-Commit.
 
 ## Fertig-Check (alles Ja)
 
+- [ ] I eine äußere Quelle mit Zahl, ihr Band im Commit-Rumpf
 - [ ] G1 Spielpfad + beobachtbare Änderung
 - [ ] G4 kein Zwilling (grep)
 - [ ] G5 nicht nur headless
