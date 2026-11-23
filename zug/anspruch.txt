@@ -17,3 +17,5 @@ w28-front-druckwelle karte2.same.physik.reaktion#1,karte2.same.physik.reaktion#2
 w28-mensch-zahlen karte2.mensch.sport.koennen#1,karte2.mensch.geist.absicht#1,karte2.mensch.fahrzeug.form#1,karte2.mensch.nahrung.tier#1
 # z679 (main c1236fa8, 23.11. 00:10): das Verb am Brunnen dreht die Kurbel, Seil und Eimer folgen (Hub 0,804 m je Umdrehung) — die Sprosse steht an der Front, die Station liegt seit 7fb10dbe in punkte-maschine
 w28-brunnen-haspel karte2.mensch.fahrzeug.maschine#1
+# z681 (main e4895630, 23.11. 03:03): jeder Tod des Bestands düngt die Zelle seines Ankers und zerfällt nach dem Gesetz des Risses (Nährstoff je Tod 0 → +0,18..0,20) — zerfall#1 steht an der Front, die Station liegt in k2-leben.js
+w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
