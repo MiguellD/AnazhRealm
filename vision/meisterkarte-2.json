@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 9,
+    "heute": 10,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.7,
+    "anteilHeute": 5.2,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4654,7 +4654,7 @@
        "richter": "Stoffbilanz eines Bioms über 100 Spieljahre: Fehlbetrag ≤ 1 %; Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Kadaver wird gewittert, gefressen, sinkt (tetrapoda-core.js:168); gedüngt wird nur ein Tod von Spieler-Hand (stamm/kreatur-leben.js:918); Totholz und Konsolen-Pilze als zeitlose Gestalt (foundry-core.js:5155).",
@@ -20088,7 +20088,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 57,
+  "heute": 58,
   "davonKopplungen": 33,
   "kern": 15,
   "kernDazu": 15,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 32,
-  "nachwache": 25
+  "nachwache": 26
  },
  "zusammengelegt": [
   {
