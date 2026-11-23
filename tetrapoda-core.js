@@ -1329,9 +1329,10 @@
         schrittBasis: 1.4,
         schrittFroude: 1.0,
         // DER TASTGRAD DER GANGART (K3, Alexander 1984, Hildebrand 1965): im Schritt steht jeder Fuß zwei Drittel des Takts
-        // (drei Füße tragen, Schritt 0,6–0,7), über die Schwelle des Trabs (GANG_FOLGE.froudeTrab × (1 + hysterese) bis
-        // zum Doppelten) fällt er auf tastgradTrab (die Diagonalen im halben Takt). Vorher stand der Fuß in Schritt und
-        // Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
+        // (drei Füße tragen, Schritt 0,6–0,7), im Trab tastgradTrab (die Diagonalen im halben Takt) — der Tastgrad folgt
+        // der GANGART (gangArt mit ihrer Hysterese), er springt mit dem Wechsel wie die Fußfolge (nerv-bewegung: vorher lief
+        // er über eine eigene Rampe Fr 0,6–1,2, der langsame Trab stand 0,65 und der Satz, im Trab bei Fr 1,5 gebacken, 0,53).
+        // Vorher stand der Fuß in Schritt und Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
         tastgrad: 0.65,
         tastgradTrab: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
@@ -1373,19 +1374,31 @@
         galopp: Object.freeze([0, 0.3 * Math.PI, 1.2 * Math.PI, 0.9 * Math.PI]),
         paddeln: Object.freeze([0, Math.PI, Math.PI, 0]),
         kopplung: 0.3,
-        // DIE HYSTERESE DES WECHSELS: wer geht, wechselt erst über froudeTrab × (1 + hysterese) in den Trab, wer trabt, erst
-        // unter froudeTrab × (1 − hysterese) zurück (ebenso am Galopp) — ein Folger, der um die Schwelle pendelt, wechselt
-        // nicht je Takt (Säuger wechseln hinauf später als hinab; Hoyt & Taylor 1981)
+        // DIE HYSTERESE DES WECHSELS (nerv-bewegung, Tiefe 2 NERV): HINAUF wechselt jedes Tier an der Froude-Zahl der Natur —
+        // froudeTrab und froudeGalopp SIND die Wechsel des anlaufenden Tiers (Heglund & Taylor 1988, 16 Arten 30 g–200 kg am
+        // beschleunigenden Laufband; der Wechsel am Schnitt der Energie-Kurven, Hoyt & Taylor 1981); HINAB hält es die
+        // schnellere Gangart bis unter froudeX × (1 − hysterese) (Lauf → Gehen auf dem bremsenden Band tiefer als Gehen →
+        // Lauf auf dem beschleunigenden, Segers 2006) — ein Folger, der um die Schwelle pendelt, wechselt nicht je Takt.
+        // Vorher lag die Hysterese beidseits der Natur (hinauf × 1,2): das anlaufende Tier trabte erst bei Fr 0,63 und
+        // galoppierte bei 3,15 (leben.tiere.bewegung#1 froudeAbw 26 %, die Station 23.11.)
         hysterese: 0.2,
     });
-    // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese
+    // DAS BAND JEDER GANGART (die EINE Quelle der Schwellen — gangArt wählt an ihm, die Proben lesen es): [von, bis) in der
+    // Froude-Zahl; von = die Schwelle hinab (die Gangart hält bis dort), bis = die Schwelle hinauf in die nächste
+    function gangBand(art) {
+        var h = GANG_FOLGE.hysterese,
+            fT = GANG_FOLGE.froudeTrab,
+            fG = GANG_FOLGE.froudeGalopp;
+        return art === "galopp" ? [fG * (1 - h), Infinity] : art === "trab" ? [fT * (1 - h), fG] : [0, fT];
+    }
+    // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese: hinauf an der Natur
+    // (bis des Bands), hinab an ihrem von
     function gangArt(vh, vorher) {
         var fr = vh * vh,
-            h = GANG_FOLGE.hysterese,
-            rang = vorher === "galopp" ? 2 : vorher === "trab" ? 1 : vorher ? 0 : -1;
-        var fT = GANG_FOLGE.froudeTrab * (rang < 0 ? 1 : rang >= 1 ? 1 - h : 1 + h),
-            fG = GANG_FOLGE.froudeGalopp * (rang < 0 ? 1 : rang >= 2 ? 1 - h : 1 + h);
-        return fr < fT ? "schritt" : fr < fG ? "trab" : "galopp";
+            art = vorher === "galopp" || vorher === "trab" ? vorher : "schritt";
+        while (art !== "schritt" && fr < gangBand(art)[0]) art = art === "galopp" ? "trab" : "schritt";
+        while (art !== "galopp" && fr >= gangBand(art)[1]) art = art === "schritt" ? "trab" : "galopp";
+        return art;
     }
     // DIE ZEILE DES GESETZES (K07, additiv): gangSchritt und gangFuss sind das EINE Gang-Gesetz für Vier- und Zweibeiner —
     // die Zeile Z trägt die Zahlen der Gestalt (der Mensch: koerper-core fx.bewegung.gang), ohne Zeile gilt GANG_GESETZ
@@ -1416,11 +1429,8 @@
         var tier = !(G.laufFroude > 0);
         var tL = gangZahl(G, "tastgradLauf"),
             fL = tier ? GANG_FOLGE.froudeGalopp : G.laufFroude;
-        if (tier) {
-            var fT = GANG_FOLGE.froudeTrab * (1 + GANG_FOLGE.hysterese);
-            var wT = Math.max(0, Math.min(1, (vh * vh - fT) / fT));
-            tast += (gangZahl(G, "tastgradTrab") - tast) * wT * wT * (3 - 2 * wT);
-        }
+        var art = gangArt(vh, vorher);
+        if (tier && art !== "schritt") tast = gangZahl(G, "tastgradTrab");
         if (tL > 0 && fL > 0) {
             var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
             w = w * w * (3 - 2 * w);
@@ -1432,7 +1442,6 @@
         }
         var lamMax = sMax / tast;
         var lam = Math.min(lamF, lamMax);
-        var art = gangArt(vh, vorher);
         return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art] };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
@@ -5577,6 +5586,8 @@
         ANATOMIE_SOLL: ANATOMIE_SOLL,
         GANG_GESETZ: GANG_GESETZ,
         GANG_FOLGE: GANG_FOLGE,
+        gangBand: gangBand,
+        gangArt: gangArt,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
         gangBecken: gangBecken,

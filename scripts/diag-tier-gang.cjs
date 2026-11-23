@@ -19,7 +19,9 @@
 //   und die Phasen der Folge, wie der Knoten sie zeichnet; die KREUZ-PROBE Stimmung × Tempo (KREUZ, unten).
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
 //   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert; die Flucht
-//   wählt den Galopp → die Kreuz-Probe feuert. Jede Zeile des Selbsttests trägt „[Selbsttest]“ (ihr ❌ ist das Soll).
+//   wählt den Galopp → die Kreuz-Probe feuert; die Hysterese beidseits der Natur (der Vor-Wechsel, hinauf × 1,2) → die
+//   WECHSEL-WAND feuert (WECHSEL, unten: der Gangwechsel hinauf an der Froude-Zahl der Natur ± 8 %, je Gattung).
+//   Jede Zeile des Selbsttests trägt „[Selbsttest]“ (ihr ❌ ist das Soll).
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf, urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
@@ -83,6 +85,18 @@ const LAUF = (k) => {
     if (k.taeter === "gang")
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
     if (k.taeter === "satz") AnazhRealm._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
+    // der Vor-Wechsel (nerv-bewegung): die Hysterese beidseits der Natur — hinauf erst über froudeX × 1,2
+    if (k.taeter === "wechsel")
+        core.gangSchritt = (v, L, Z, vorher) => {
+            const gs = echt(v, L, Z, vorher);
+            if (gs.art === "stand") return gs;
+            const [F, h] = [core.GANG_FOLGE, core.GANG_FOLGE.hysterese];
+            const fr = (Math.min(v, core.GANG_GESETZ.vMax) ** 2) / (((Z && Z.g) || core.GANG_GESETZ.g) * L);
+            const rang = vorher === "galopp" ? 2 : vorher === "trab" ? 1 : 0;
+            const [fT, fG] = [F.froudeTrab * (rang >= 1 ? 1 - h : 1 + h), F.froudeGalopp * (rang >= 2 ? 1 - h : 1 + h)];
+            const art = fr < fT ? "schritt" : fr < fG ? "trab" : "galopp";
+            return Object.assign(gs, { art, folge: F[art] });
+        };
     if (k.taeter === "schwere") r._gangZeile = () => undefined;
     if (k.g) r.dslEffects.gravity([-k.g]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
     const pm = s.playerMesh.position;
@@ -130,6 +144,9 @@ const LAUF = (k) => {
         });
         const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
         const v = k.vh * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1));
+        // DER ANLAUF HINAB (`vor`, v̂): die ersten 30 Takte läuft das Tier schneller, dann bremst es auf v̂ — die Gangart hält
+        // die Hysterese hinab (gangBand), gemessen ab Takt 60
+        const vVor = k.vor ? k.vor * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1)) : v;
         const satz = k.satz && r._tierSatzFuer(cr);
         if (satz && !satz.fertig) r._tierSatzBacken(satz, 1e6);
         if (k.satz && !(satz?.fertig)) return { fehler: "kein Satz für " + k.seele };
@@ -165,7 +182,7 @@ const LAUF = (k) => {
         const [leib, uhr] = [[], []];
         cr.userData._animFade = 1;
         for (let i = 0; auswertungen < N; i++) {
-            cr.position.x += v * dt;
+            cr.position.x += (auswertungen < 30 ? vVor : v) * dt;
             t += dt;
             phase += dt * 5.0;
             if (satz) {
@@ -573,13 +590,30 @@ const BEWEGUNG = (bruch) => {
 const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /schaukeln sitz0 schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/, durch: /^turmrutsche rutschen: die Haut greift/, angebot: /^doppelschaukel schaukeln sitz1: nicht gemessen/, glied: /^turmrutsche rutschen: fuss1 .* über seiner Reichweite/ };
 
 // DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF als Leib, SATZ im Satz) und Labor
-// (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt
-// lateral, Trab, Galopp, Labor = Leib = Satz auf ≤ 0,05 Zyklus je Bein; der TASTGRAD (Anteil des Zyklus im Stand: Welt die
-// Pfote am Boden, Labor der Fuß aus gangFuss) im Band (Alexander 1984, Hildebrand 1965). --selftest: Stimmungs-Muster und
-// Tastgrad 0,5 → ROT.
+// (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 — über dem Wechsel hinauf, Fr 0,5) · 1,2 · 3,5 →
+// Schritt lateral, Trab, Trab, Galopp, Labor = Leib = Satz auf ≤ 0,05 Zyklus je Bein; der TASTGRAD (Anteil des Zyklus im
+// Stand: Welt die Pfote am Boden, Labor der Fuß aus gangFuss) im Band (Alexander 1984, Hildebrand 1965). Dazu HINAB v̂ 0,67
+// (Fr 0,45, im Band der Hysterese) nach dem Anlauf im Trab (v̂ 1,2): die Gangart hält — das Gedächtnis des Leibs (Welt,
+// Satz und das Labor nach seinem Galopp). --selftest: Stimmungs-Muster und Tastgrad 0,5 → ROT.
 const VH = [0.3, 0.74, 1.2, 3.5];
-const GANG_SOLL = { 0.3: "schritt-lateral", 0.74: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
-const TAST_SOLL = { 0.3: [0.6, 0.7], 0.74: [0.6, 0.7], 1.2: [0.4, 0.6], 3.5: [0.25, 0.35] };
+const HINAB = { vh: 0.67, vor: 1.2 };
+const GANG_SOLL = { 0.3: "schritt-lateral", 0.67: "trab", 0.74: "trab", 1.2: "trab", 3.5: "galopp" };
+// der Tastgrad folgt der Gangart: Schritt 0,6–0,7, Trab 0,4–0,6 (auch der langsame Trab über dem Wechsel und hinab)
+const TAST_SOLL = { 0.3: [0.6, 0.7], 0.67: [0.4, 0.6], 0.74: [0.4, 0.6], 1.2: [0.4, 0.6], 3.5: [0.25, 0.35] };
+// DIE WECHSEL-LEITER (nerv-bewegung, leben.tiere.bewegung#1 „Gangwechsel bei der Froude-Zahl der Natur ±10 %“): jede
+// Gattung läuft aus dem Stand an, je knapp unter und knapp über der Natur (Fr 0,5 · 2,5 × (1 ∓ WECHSEL_BAND)) — unter ihr
+// die alte Gangart, über ihr die neue: der Wechsel hinauf liegt in ± 8 % um die Natur (Alexander 1989: Gehen → Lauf bei
+// Fr ≈ 0,5; Alexander & Jayes 1983: Trab → Galopp bei Fr 2–3; Heglund & Taylor 1988 am beschleunigenden Band). Täter:
+// gangArt / gangBand (GANG_FOLGE) — vorher lag die Hysterese beidseits der Natur, der Wechsel bei Fr 0,63 und 3,15.
+const WECHSEL_BAND = 0.08;
+const WECHSEL_NATUR = { trab: 0.5, galopp: 2.5 };
+const WECHSEL = [
+    { fr: WECHSEL_NATUR.trab * (1 - WECHSEL_BAND), soll: "schritt-lateral", wechsel: "trab" },
+    { fr: WECHSEL_NATUR.trab * (1 + WECHSEL_BAND), soll: "trab", wechsel: "trab" },
+    { fr: WECHSEL_NATUR.galopp * (1 - WECHSEL_BAND), soll: "trab", wechsel: "galopp" },
+    { fr: WECHSEL_NATUR.galopp * (1 + WECHSEL_BAND), soll: "galopp", wechsel: "galopp" },
+];
+const WECHSEL_TAETER = "tetrapoda-core.js gangArt / gangBand (GANG_FOLGE)";
 const LABOR_WELT = { wolf: "wolf", fox: "fuchs", bear: "baer", deer: "wesen" };
 const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
 // DIE KREUZ-PROBE Stimmung × Tempo (das Schlupfloch der Karte: ein Galopp an der Flucht bestünde beim Flucht-Tempo zufällig):
@@ -665,7 +699,7 @@ hauptLauf(async () => {
     const koerper = studio(await seite(sb, true), "worlds/koerperstudio/index.html", () => typeof enterPlay === "function" && typeof playTakt === "function" && typeof parkTeile !== "undefined");
     const tierGang = studio(await seite(sb), "worlds/tetrapoda/index.html", () => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined").then(async (tp) => {
         const g = {};
-        for (const gattung in LABOR_WELT) g[gattung] = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
+        for (const gattung in LABOR_WELT) g[gattung] = await tp.evaluate(GANG, { art: gattung, vh: [...VH, HINAB.vh], stub: SELBST, stimmung: STIMMUNG_FOLGE });
         return g;
     });
     /* eslint-enable no-undef */
@@ -682,8 +716,9 @@ hauptLauf(async () => {
     // jede Vergleichs-Zeile ({Name: Zeile}: „Name − Ort“ in Zyklen, Soll ≤ 0,05)
     const gangUrteil = (wo, z, vergleich = {}) => {
         const g = gangart(z.ph);
-        const [lo, hi] = TAST_SOLL[z.vh];
-        const art = g.art === GANG_SOLL[z.vh],
+        const soll = z.soll || GANG_SOLL[z.vh];
+        const [lo, hi] = z.soll ? [0, 1] : TAST_SOLL[z.vh];
+        const art = g.art === soll,
             tast = z.tast >= lo && z.tast <= hi;
         const ab = Object.entries(vergleich).map(([n, v]) => [
             n,
@@ -692,7 +727,7 @@ hauptLauf(async () => {
         const nah = ab.every(([, d]) => d <= 0.05);
         const ok = art && tast && nah;
         log(
-            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + GANG_SOLL[z.vh]} · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi})`}${ab.map(([n, d]) => ` · ${n} − Labor ${d.toFixed(2)} Zyklus`).join("")}${ok ? "" : " — Täter: " + (wo[0] === "S" ? "_tierSatzSchritt" : "tetrapoda gangSchritt")}`
+            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + soll} · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi})`}${ab.map(([n, d]) => ` · ${n} − Labor ${d.toFixed(2)} Zyklus`).join("")}${ok ? "" : " — Täter: " + (z.soll ? WECHSEL_TAETER : wo[0] === "S" ? "_tierSatzSchritt" : "tetrapoda gangSchritt")}`
         );
         if (!ok) rot++;
         if (!art || !nah) gangRot = true;
@@ -713,7 +748,10 @@ hauptLauf(async () => {
             for (const [j, vh] of VH.entries()) laeufe.push({ seele, vh, ...KREUZ[(i + j) % 4], taeter: T0 });
             for (const vh of [0.74, 1.2]) laeufe.push({ seele, vh, fps: 30, last: true, taeter: T0 });
             for (const vh of VH) laeufe.push({ seele, vh, satz: true, taeter: T0 && "satz" });
+            laeufe.push({ seele, ...HINAB, name: "hinab", taeter: T0 }, { seele, ...HINAB, satz: true, taeter: T0 && "satz" });
+            for (const w of WECHSEL) laeufe.push({ seele, vh: Math.sqrt(w.fr), wechsel: w, name: "Wechsel Fr " + w.fr.toFixed(2), taeter: SELBST ? "wechsel" : null });
         }
+        const wechselJe = {};
         for (const k of laeufe) {
             const z = await page.evaluate(LAUF, k);
             if (z.fehler) {
@@ -733,9 +771,25 @@ hauptLauf(async () => {
                 vh: z.vh,
                 ph: z.ph,
                 tast: z.standAnteil,
+                soll: k.wechsel && k.wechsel.soll,
             });
-            if (!k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
+            if (k.wechsel) {
+                const J = (wechselJe[z.seele] = wechselJe[z.seele] || { trab: [], galopp: [] });
+                J[k.wechsel.wechsel].push({ fr: k.wechsel.fr, gut });
+            } else if (!k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
             if (!gut) gefeuert.add(k.taeter);
+        }
+        // je Gattung der Wechsel hinauf in seinem Band um die Natur (beide Seiten gut = der Wechsel liegt zwischen ihnen)
+        for (const [seele, J] of Object.entries(wechselJe)) {
+            const urteil = ["trab", "galopp"].map((w) => {
+                const [u, o] = J[w].map((x) => x.fr);
+                return { w, u, o, gut: J[w].length === 2 && J[w].every((x) => x.gut) };
+            });
+            const ok = urteil.every((x) => x.gut);
+            log(
+                `  ${ok ? "✅" : "❌"} Wechsel ${seele.padEnd(5)} ${urteil.map((x) => `${x.w === "trab" ? "Schritt → Trab" : "Trab → Galopp"} zwischen Fr ${x.u.toFixed(2)} und ${x.o.toFixed(2)}${x.gut ? "" : " verfehlt"}`).join(" · ")} (Natur ${WECHSEL_NATUR.trab} / ${WECHSEL_NATUR.galopp} ± ${WECHSEL_BAND * 100} %)${ok ? "" : " — Täter: " + WECHSEL_TAETER}`
+            );
+            if (!ok) rot++;
         }
         const leib = await page.evaluate(LEIB, { stub: SELBST });
         if (leib.fehler) {
@@ -826,6 +880,7 @@ hauptLauf(async () => {
             [gangRot, "das Muster der Stimmung blieb grün: die Gangart-Wand"],
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
+            [gefeuert.has("wechsel"), "der Wechsel über der Natur (die Hysterese beidseits) blieb grün: die Wechsel-Wand"],
             [taktRot, "die Takt-Wand (Labor = Welt)"],
             [bewegtFeuert === Object.keys(BEWEGUNG_BRUCH).length, "die Bewegungs-Wand (VERB_SOLL)"],
         ].find(([ok]) => !ok);
