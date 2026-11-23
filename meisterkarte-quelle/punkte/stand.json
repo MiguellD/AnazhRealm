@@ -30546,7 +30546,7 @@
   },
   "karte2.planet.relief.wandel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: ungemessen (R10) · karte2.planet.relief.wandel#1 gtx: Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 239 s von karte2.planet.relief.wandel#1) — offen, UNGEMESSEN · karte2.planet.relief.wandel#2 radeon: ungemessen (R10) · karte2.planet.relief.wandel#2 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: ungemessen (R10) · karte2.planet.relief.wandel#4 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#5 radeon: ungemessen (R10) · karte2.planet.relief.wandel#5 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#6 radeon: ungemessen (R10) · karte2.planet.relief.wandel#6 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: ungemessen (R10) · karte2.planet.relief.wandel#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.planet.relief.wandel#2 radeon: ungemessen (R10) · karte2.planet.relief.wandel#2 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: ungemessen (R10) · karte2.planet.relief.wandel#4 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#5 radeon: ungemessen (R10) · karte2.planet.relief.wandel#5 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#6 radeon: ungemessen (R10) · karte2.planet.relief.wandel#6 gtx: Station seit der Messung geändert · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.wandel#1",
@@ -30564,8 +30564,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 61 s unter dem Grund-Deckel 239 s von karte2.planet.relief.wandel#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37518,7 +37519,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 269,
+  "konsum": 270,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37686,10 +37687,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3353
+  "ohne": 3352
  },
  "kopfVoll": "4019a2ad0565310f56cfc461672c173d8ba8e2b2",
- "zeit": "2026-11-23T01:13:12.338Z",
+ "zeit": "2026-11-23T01:20:22.628Z",
  "vorher": "4019a2ad",
  "bilanz": {
   "gewinn": [],
