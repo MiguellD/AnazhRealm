@@ -1455,10 +1455,21 @@
     // so weit, dass die Senke beim Aufsetzen vorn der beim Abheben hinten gleicht (gangVersatz; Saunders 1953, Kerrigan
     // 2001: die Ferse hebt die Senke des Doppel-Stands; Gard 2004: 4–5 cm). Vorher stand der Fuß flach bis zum Abheben,
     // das Becken des Gehens sank um 0,137 L (11 cm), das Knie knickte tief ein.
+    // DIE FERSEN-WIPPE (nerv-bewegung, additiv — die Tiere lesen sie nicht: ohne ferse/fersenWinkel/fersenFlach der Zeile setzt
+    // der Fuß flach auf, byte-gleich): der Fuß setzt mit der Ferse auf, die Zehen fersenWinkel über dem Boden, und rollt über
+    // die Ferse (ferse × R hinter dem Knöchel) bis zum flachen Fuß bei fersenFlach des Stands — der Knöchel steht um dy höher
+    // und um dx weiter hinten (phi < 0 in gangRolle). Perry 1992 (Gait Analysis, die drei Wippen: Ferse · Knöchel · Vorfuß;
+    // der Fuß flach am Ende der Lastübernahme, ~12 % des Zyklus). Bis hier fehlte die erste Wippe: im Gang der Profis
+    // (1,5 m/s, Bohannon 1997) sank das Becken 0,097 L (gate:tier-gang BECKEN, Soll ≤ 0,08).
+    function gangFersen(Z) {
+        return !!(Z && Z.ferse > 0 && Z.fersenWinkel > 0 && Z.fersenFlach > 0 && Z.fersenFlach <= Z.fersenAb);
+    }
     function gangRolle(phi, R, Z) {
-        var lb = Z.ballen * R,
-            ha = Z.knoechel * R;
-        return { dx: lb * (1 - Math.cos(phi)) + ha * Math.sin(phi), dy: lb * Math.sin(phi) - ha * (1 - Math.cos(phi)) };
+        var l = (phi < 0 ? Z.ferse : Z.ballen) * R,
+            ha = Z.knoechel * R,
+            a = Math.abs(phi);
+        var d = l * (1 - Math.cos(a)) + ha * Math.sin(a);
+        return { dx: phi < 0 ? -d : d, dy: l * Math.sin(a) - ha * (1 - Math.cos(a)) };
     }
     function gangRollt(Z, R) {
         return !!(Z && Z.rollWinkel > 0 && Z.ballen > 0 && Z.knoechel >= 0 && Z.fersenAb >= 0 && Z.fersenAb < 1 && R > 0);
@@ -1466,26 +1477,32 @@
     // Rf = die Reichweite, an der der Fuß gemessen ist (ohne: R) — die gebeugte Kette (geduckt) hat denselben Fuß
     function gangVersatz(S, R, Z, Rf) {
         if (!gangRollt(Z, R) || !(S > 0)) return 0;
-        var e = gangRolle(Z.rollWinkel, Rf > 0 ? Rf : R, Z);
+        var e = gangRolle(Z.rollWinkel, Rf > 0 ? Rf : R, Z),
+            f = gangFersen(Z) ? gangRolle(-Z.fersenWinkel, Rf > 0 ? Rf : R, Z) : { dx: 0, dy: 0 };
         var lo = 0,
             hi = Math.min(S / 2, R);
         for (var i = 0; i < 24; i++) {
             var d = (lo + hi) / 2;
-            var a = Math.min(R, S / 2 - d),
+            var a = Math.min(R, Math.abs(S / 2 - d + f.dx)),
                 b = Math.min(R, Math.abs(S / 2 + d - e.dx));
-            if (R - Math.sqrt(R * R - a * a) > R - e.dy - Math.sqrt(R * R - b * b)) lo = d;
+            if (R - f.dy - Math.sqrt(R * R - a * a) > R - e.dy - Math.sqrt(R * R - b * b)) lo = d;
             else hi = d;
         }
         return (lo + hi) / 2;
     }
-    // der Roll-Winkel zur Phase u (rad, 0 … 2π, der Schwung füllt 0 … sw)
+    // der Roll-Winkel zur Phase u (rad, 0 … 2π, der Schwung füllt 0 … sw): im Schwung klingt der Vorfuß bis zur Mitte ab, dann
+    // heben sich die Zehen zum Auftritt (die Fersen-Wippe, < 0); im Stand rollt der Fuß über die Ferse bis fersenFlach, ab fersenAb
+    // über den Ballen
     function gangRollWinkel(u, sw, Z) {
-        var TAU = 2 * Math.PI;
+        var TAU = 2 * Math.PI,
+            ferse = gangFersen(Z);
         if (u < sw) {
-            var t = Math.max(0, 1 - (2 * u) / sw);
-            return Z.rollWinkel * t * t;
+            var t = Math.max(0, 1 - (2 * u) / sw),
+                t2 = ferse ? Math.max(0, (2 * u) / sw - 1) : 0;
+            return Z.rollWinkel * t * t - (ferse ? Z.fersenWinkel * t2 * t2 : 0);
         }
         var s = (u - sw) / (TAU - sw);
+        if (ferse && s < Z.fersenFlach) return -Z.fersenWinkel * (1 - s / Z.fersenFlach) * (1 - s / Z.fersenFlach);
         var q = s > Z.fersenAb ? (s - Z.fersenAb) / (1 - Z.fersenAb) : 0;
         return Z.rollWinkel * q * q;
     }
@@ -1543,8 +1560,10 @@
         var sw = tast > 0 && tast < 1 ? TAU * (1 - tast) : Math.PI;
         var rollt = gangRollt(Z, R),
             versatz = rollt ? gangVersatz(S, R, Z, Rf) : 0;
-        var halbS = Math.min(S / 2 - versatz, R);
-        var oben = R - Math.sqrt(R * R - halbS * halbS);
+        // die Tiefe im Doppel-Stand: das vordere Bein (auf der Ferse, gangRolle(−fersenWinkel); ohne Fersen-Wippe flach) trägt
+        var fv = rollt && gangFersen(Z) ? gangRolle(-Z.fersenWinkel, Rf > 0 ? Rf : R, Z) : { dx: 0, dy: 0 };
+        var halbS = Math.min(Math.abs(S / 2 - versatz + fv.dx), R);
+        var oben = R - fv.dy - Math.sqrt(R * R - halbS * halbS);
         var A = Z && Z.beckenHub > 0 ? Z.beckenHub * R : 0;
         var tg = gangZahl(Z, "tastgrad"),
             tl = Z && Z.tastgradLauf > 0 ? Z.tastgradLauf : tg;

@@ -651,6 +651,16 @@
                             fersenAb: 0.5,
                             ballen: 0.16,
                             knoechel: 0.1,
+                            // DIE FERSEN-WIPPE (nerv-bewegung; tetrapoda
+                            // gangFersen): der Fuss setzt mit der Ferse auf (die
+                            // Zehen 0.35 rad = 20 Grad ueber dem Boden, Perry 1992)
+                            // und rollt ueber die Ferse (0.07 R = 5.8 cm hinter dem
+                            // Knoechel) bis zum flachen Fuss bei 0.2 des Stands
+                            // (~12 % des Zyklus). Die Senke bei 1.58 m/s faellt so
+                            // von 0.081 auf 0.061 L, der Hub bleibt 0.050 L.
+                            ferse: 0.07,
+                            fersenWinkel: 0.35,
+                            fersenFlach: 0.2,
                         },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
@@ -6060,7 +6070,7 @@
         hang: ["maxSlopeY", "malus"],
         parkour: ["doppelspruenge", "doppelsprungMul", "wandsprungMul", "wandAbstoss", "kletterV", "kletterAusdauerProS", "kontaktFrischeSec", "slideTempoMul", "slideDauerSec", "slideMinTempo"],
         slidePose: ["lehne", "beinVor", "knieKnick", "armStuetz", "armFrei", "kopf"],
-        gang: ["schrittBasis", "schrittFroude", "tastgrad", "tastgradLauf", "laufFroude", "maxWinkel", "hub", "hubLauf", "hubForm", "beckenHub", "rollWinkel", "fersenAb", "ballen", "knoechel"],
+        gang: ["schrittBasis", "schrittFroude", "tastgrad", "tastgradLauf", "laufFroude", "maxWinkel", "hub", "hubLauf", "hubForm", "beckenHub", "rollWinkel", "fersenAb", "ballen", "knoechel", "ferse", "fersenWinkel", "fersenFlach"],
     };
     var _leibGesetzMemo = null;
     function leibGesetz() {
