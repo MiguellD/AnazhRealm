@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 9,
+    "heute": 10,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 4.7,
+    "anteilHeute": 5.1,
     "anteilKern": 0.5
    },
    "perspektiven": [
@@ -3710,7 +3710,7 @@
        "richter": "100 fremde Saaten: Lebensweise blind benannt ≥ 0,8; Gegenprobe Sinn aus → Verhalten bricht"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Jagd-Kreislauf, Furcht mit Gedächtnis, Ethogramm aus Bedürfnis-Pegeln (tetrapoda-core.js VERHALTEN): Rudel reißt 18/60, Budget Hirsch ruhen 0,409/0,4 — headless, im Fenster nie gemessen.",
@@ -20088,7 +20088,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 57,
+  "heute": 58,
   "davonKopplungen": 33,
   "kern": 19,
   "kernDazu": 19,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 33,
-  "nachwache": 24
+  "nachwache": 25
  },
  "zusammengelegt": [
   {
