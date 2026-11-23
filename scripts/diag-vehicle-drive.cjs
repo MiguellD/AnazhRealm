@@ -157,6 +157,94 @@ function stammQuellen() {
         fs.readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => ["stamm/" + f, fs.readFileSync(path.join(dir, f), "utf8")])
     );
 }
+// ── A7 DER UMRISS DER GATTUNG (fahrzeug-gattungen): zwei Gattungen, die das Auge als EINEN Wagen liest, sind eine. Gemessen am
+// Bau des Kerns (`buildInstance`, die feine Stufe — derselbe Bau, den die Welt zeichnet): der Seitenriss je Gattung als Raster
+// {leer, Karosse, Glas} auf 2 cm; zwei Risse liegen am Boden und an EINEM Ende (Bug, dann Heck) aufeinander, die Abweichung
+// ist der Anteil der belegten Zellen mit verschiedener Klasse — an dem Ende, an dem sie größer ist. Unter `UMRISS.zwilling`
+// liest das Paar als ein Wagen. Der Täter: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) wich vom SUV 0,288 ab —
+// im Bild der Wiese ein zweiter SUV; die engsten Paare der fünf alten Gattungen stehen bei 0,327 (GT · Supersport) und 0,368
+// (GT · Limousine), der Kasten (`kasten`, Dach 2,0) bei 0,570. Gezählt werden die LESBAREN Gattungen (Zwillinge fallen in eine).
+const UMRISS = { px: 0.02, zwilling: 0.3 };
+const UMRISS_MUTANTE = { tueren: 4, kasten: false, dach: 1.75, guertel: 0.95, radstand: 3.2, ueberhangV: 0.6, ueberhangH: 0.78 };
+function seitenRiss(K, id, ov) {
+    const T3 = global.THREE;
+    const g = K.buildInstance(id, 7, 0, ov);
+    g.updateMatrixWorld(true);
+    const tris = [];
+    const v = new T3.Vector3();
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        const pos = o.geometry.attributes.position, idx = o.geometry.index;
+        const m = Array.isArray(o.material) ? o.material[0] : o.material;
+        const kl = m.transparent && m.opacity < 0.6 ? 2 : 1; // 2 = Glas, 1 = Karosse (Blech, Rad, Anbau)
+        const P = [];
+        for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+            P.push([v.x, v.y, v.z]);
+            u0 = Math.min(u0, v.x), u1 = Math.max(u1, v.x), v0 = Math.min(v0, v.y), v1 = Math.max(v1, v.y);
+        }
+        const n = idx ? idx.count : pos.count;
+        for (let i = 0; i < n; i += 3) tris.push([P[idx ? idx.getX(i) : i], P[idx ? idx.getX(i + 1) : i + 1], P[idx ? idx.getX(i + 2) : i + 2], kl]);
+    });
+    const px = UMRISS.px, W = Math.ceil((u1 - u0) / px) + 1, H = Math.ceil((v1 - v0) / px) + 1;
+    const kl = new Uint8Array(W * H), tief = new Float32Array(W * H).fill(-Infinity);
+    for (const [A, B, C, k] of tris) {
+        const ax = (A[0] - u0) / px, ay = (A[1] - v0) / px, bx = (B[0] - u0) / px, by = (B[1] - v0) / px, cx = (C[0] - u0) / px, cy = (C[1] - v0) / px;
+        const fl = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+        if (Math.abs(fl) < 1e-9) continue;
+        const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx))), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, bx, cx)));
+        const y0 = Math.max(0, Math.floor(Math.min(ay, by, cy))), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, by, cy)));
+        for (let y = y0; y <= y1; y++)
+            for (let x = x0; x <= x1; x++) {
+                const qx = x + 0.5, qy = y + 0.5;
+                const w0 = ((bx - qx) * (cy - qy) - (by - qy) * (cx - qx)) / fl, w1 = ((cx - qx) * (ay - qy) - (cy - qy) * (ax - qx)) / fl, w2 = 1 - w0 - w1;
+                if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
+                const t = w0 * A[2] + w1 * B[2] + w2 * C[2]; // die Seite zum Auge (größtes z) gewinnt
+                if (t > tief[y * W + x]) (tief[y * W + x] = t), (kl[y * W + x] = k);
+            }
+    }
+    return { W, H, kl, glas: kl.reduce((s, k) => s + (k === 2), 0), belegt: kl.reduce((s, k) => s + (k > 0), 0) };
+}
+function rissAbweichung(a, b) {
+    let schlimm = 0;
+    for (const amBug of [true, false]) {
+        const da = amBug ? a.W : 0, db = amBug ? b.W : 0; // der Bug ist der rechte Rand des Risses (+x), das Heck der linke
+        let versch = 0, belegt = 0;
+        for (let y = 0; y < Math.max(a.H, b.H); y++)
+            for (let x = Math.min(-da, -db); x < Math.max(a.W - da, b.W - db); x++) {
+                const xa = x + da, xb = x + db;
+                const ka = xa >= 0 && xa < a.W && y < a.H ? a.kl[y * a.W + xa] : 0;
+                const kb = xb >= 0 && xb < b.W && y < b.H ? b.kl[y * b.W + xb] : 0;
+                if (ka || kb) belegt++, (versch += ka !== kb);
+            }
+        schlimm = Math.max(schlimm, belegt ? versch / belegt : 0);
+    }
+    return schlimm;
+}
+// die Zwillinge beim Namen und die Zahl der lesbaren Gattungen: `paare` [{ a, b, abw }] über alle Paare von `namen`
+function umrissVerdict(namen, paare) {
+    const out = [];
+    const haupt = Object.fromEntries(namen.map((n) => [n, n]));
+    const wurzel = (n) => (haupt[n] === n ? n : (haupt[n] = wurzel(haupt[n])));
+    if (paare.length !== (namen.length * (namen.length - 1)) / 2) out.push(`der Umriss maß ${paare.length} Paare von ${(namen.length * (namen.length - 1)) / 2}`);
+    for (const p of paare) {
+        if (!Number.isFinite(p.abw)) out.push(`der Umriss ${p.a} · ${p.b} ist ungemessen`);
+        else if (p.abw < UMRISS.zwilling) {
+            out.push(`ZWILLING: ${p.b} liest als ${p.a} (Abweichung des Seitenrisses ${p.abw.toFixed(3)}, Soll ≥ ${UMRISS.zwilling})`);
+            haupt[wurzel(p.b)] = wurzel(p.a);
+        }
+    }
+    const lesbar = new Set(namen.map(wurzel)).size;
+    if (!(lesbar >= GATTUNG.min)) out.push(`der Kern trägt ${lesbar} lesbare Gattungen (Soll ≥ ${GATTUNG.min})`);
+    return out;
+}
+function umrissMessen(K, ids, ovJe) {
+    const risse = ids.map((id) => seitenRiss(K, id, ovJe && ovJe[id]));
+    const paare = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) paare.push({ a: ids[i], b: ids[j], abw: rissAbweichung(risse[i], risse[j]) });
+    return { risse, paare };
+}
 
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
@@ -234,6 +322,29 @@ hauptLauf(async () => {
             const v = gattungVerdict({ ...gesund, ...b });
             check(`Selbst-Test gattungVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A7 der Umriss: gesund schweigt er; ein Paar unter der Schwelle heißt beim Namen (zwei Paare kosten dazu die Zahl der
+        // lesbaren Gattungen), ein ungemessenes und ein fehlendes Paar sind ROT (eine Sonde ohne Messung, Lehre 6)
+        const namenU = ["a", "b", "c", "d", "e", "f"];
+        const paareU = (b) => namenU.flatMap((x, i) => namenU.slice(i + 1).map((y) => ({ a: x, b: y, abw: b[x + y] ?? 0.5 })));
+        for (const [b, n, wort] of [
+            [{}, 0, null],
+            [{ ef: 0.29 }, 1, /^ZWILLING: f liest als e /],
+            [{ ef: 0.29, ab: 0.1 }, 3, /4 lesbare Gattungen/],
+            [{ cd: NaN }, 1, /c · d ist ungemessen/],
+        ]) {
+            const v = umrissVerdict(namenU, paareU(b));
+            check(`Selbst-Test umrissVerdict ${JSON.stringify(b)}`, v.length === n && (!wort || v.some((z) => wort.test(z))), v.join(" · "));
+        }
+        const luecke = umrissVerdict(namenU, paareU({}).slice(1));
+        check("Selbst-Test umrissVerdict: ein fehlendes Paar ist ROT", luecke.length === 1 && /14 Paare von 15/.test(luecke[0]), luecke.join(" · "));
+        // die Mutante am ECHTEN Kern: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) liest als SUV — und nur er
+        const ids = VC.GATTUNGEN || [];
+        const mut = umrissVerdict(ids, umrissMessen(VC, ids, { transporter: UMRISS_MUTANTE }).paare);
+        check(
+            "Selbst-Test Umriss am Kern: der Transporter mit Glas rundum heißt als Zwilling des SUV beim Namen",
+            mut.length === 1 && /^ZWILLING: transporter liest als suv /.test(mut[0]),
+            mut.join(" · ") || "die Mutante schweigt"
+        );
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -256,6 +367,17 @@ hauptLauf(async () => {
         `A7: die Gattungen sind Gesetz des Kerns (≥ ${GATTUNG.min}) und kein Stamm-Feld zählt sie selbst auf`,
         gA.length === 0,
         gA.join(" · ") || `${gattungenKern.length} Gattungen: ${gattungenKern.join(", ")} · 0 eigene Typ-Listen in stamm/`
+    );
+    // A7: jede Gattung liest als eigener Wagen — der Seitenriss ihres Baus (Leser: `buildInstance`, die feine Stufe der Welt)
+    const umriss = umrissMessen(VC, gattungenKern);
+    const uV = umrissVerdict(gattungenKern, umriss.paare);
+    const eng = umriss.paare.slice().sort((x, y) => x.abw - y.abw);
+    check(
+        `A7: jede Gattung liest als eigener Wagen (Seitenriss Karosse/Glas je Paar ≥ ${UMRISS.zwilling} verschieden, ≥ ${GATTUNG.min} lesbare Gattungen)`,
+        uV.length === 0,
+        uV.join(" · ") ||
+            `die engsten Paare: ${eng.slice(0, 3).map((p) => `${p.a} · ${p.b} ${p.abw.toFixed(3)}`).join(", ")} · Glas am Riss: ` +
+                gattungenKern.map((id, i) => `${id} ${Math.round((100 * umriss.risse[i].glas) / umriss.risse[i].belegt)} %`).join(", ")
     );
 
     const ell = ellipseMessung(VC);

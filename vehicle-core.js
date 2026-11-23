@@ -2071,12 +2071,12 @@
                     lenC / 2,
                     0.005,
                     cwK,
-                    M.glass,
+                    P.kasten ? bodyMat : M.glass,
                     Math.min(0.085, cwK * 0.1),
                     angC,
                     true
                 )
-            ); // Heckscheibe gewölbt (konvex, dezenter)
+            ); // Heckscheibe gewölbt (konvex, dezenter) — der Kasten (`kasten`) trägt dort Blech: die Hecktür des Laderaums
             if (tueren < 4)
                 for (const sd of [-1, 1]) {
                     const gBr = Math.max(gB, footR);
@@ -2087,10 +2087,10 @@
                             [xAtC2(gT), gT, sd * cwK],
                             [dBx + 0.02, gT, sd * cwK],
                             sd * 0.026,
-                            M.glass
+                            P.kasten ? bodyMat : M.glass
                         )
                     );
-                } // Quarter (Basis auf Schulter)
+                } // Quarter (Basis auf Schulter) — der Kasten (`kasten`) trägt dort Blech: die Wand des Laderaums hinter der Fahrertür
             if (hasRearQ)
                 for (const sd of [-1, 1]) {
                     const gBr = Math.max(gB, footR);
@@ -4476,7 +4476,7 @@
             id: "guertel",
             lab: "Gürtellinie",
             min: 0.55,
-            max: 0.95,
+            max: 1.2,
             step: 0.01,
             grp: "GREENHOUSE",
             law: "Gürtel = Fenster-Unterkante",
@@ -4485,7 +4485,7 @@
             id: "dach",
             lab: "Dachhöhe",
             min: 1.05,
-            max: 1.75,
+            max: 2.1,
             step: 0.01,
             grp: "GREENHOUSE",
             law: "Scheiben-Neigung ∝ (Dach − Gürtel)",
@@ -4743,29 +4743,31 @@
             },
             fx: { sig: "brow", heck: "steil" },
         },
-        // DIE GATTUNG LIEFERWAGEN (fahrzeug-gattungen, rein additiv — Karte 2 mensch.fahrzeug.gestalt#1): der Kasten, den ein
-        // Betrachter am Umriss von SUV und Kleinwagen trennt — das Dach am oberen Rand (1,75), der Gürtel hoch (0,95), die Kabine
-        // vorn (kurze Haube, Windschutz steil 0,3), das Dach flach bis ans steile Heck (2-Box ohne Kofferraum), kleine Räder bei
-        // mäßiger Bodenfreiheit; steif gefedert für die Last, schwacher Motor je Tonne (die Gattung des Transporters).
+        // DIE GATTUNG LIEFERWAGEN (fahrzeug-gattungen, rein additiv — Karte 2 mensch.fahrzeug.gestalt#1): der KASTEN, den ein
+        // Betrachter am Umriss von SUV und Kleinwagen trennt — die Kabine vorn (kurze Haube, Windschutz steil 0,3), eine Tür je
+        // Seite, dahinter die geschlossene Wand des Laderaums bis ans steile Heck (`kasten`: Seitenfeld und Hecktür tragen Blech,
+        // kein Glas), das Dach zwei Meter hoch über einem Gürtel auf Brusthöhe (die Regler-Bänder `dach` und `guertel` reichen
+        // dafür bis 2,1 und 1,2), kleine Räder bei mäßiger Bodenfreiheit; steif gefedert für die Last, schwacher Motor je Tonne.
+        // Derselbe Wagen MIT Glas rundum (vier Türen, Dach 1,75) las im Bild als zweiter SUV — die Linse A7 nennt den Zwilling.
         transporter: {
             kind: "vehicle",
             lab: "Transporter",
             s: {
                 leistung: 30, // kW/t (das Antriebs-Gesetz, carPhys)
                 cw: 0.36,
-                radstand: 3.2,
+                radstand: 3.3,
                 spur: 1.66,
-                ueberhangV: 0.6,
-                ueberhangH: 0.78,
+                ueberhangV: 0.7,
+                ueberhangH: 0.95,
                 radR: 0.33,
                 fahrhoehe: 0.16,
-                guertel: 0.95,
-                dach: 1.75,
+                guertel: 1.15,
+                dach: 2.0,
                 kabineMitte: 0.15,
                 kabineLaenge: 2.4,
                 tumblehome: 0.04,
                 taille: 0.02,
-                tueren: 4,
+                tueren: 2,
                 springRate: 112,
                 coke: 0.04,
                 grilleW: 0.42,
@@ -4779,7 +4781,7 @@
                 hoodArc: 0.02,
                 windshieldRake: 0.3,
             },
-            fx: { sig: "blade", heck: "steil" },
+            fx: { sig: "blade", heck: "steil", kasten: true },
         },
     };
     // ── DIE FLOTTE (fahrzeug-gattungen, rein additiv): welche Gattungen eine Stadt fährt, ist Gesetz des Kerns — die Gattungen
