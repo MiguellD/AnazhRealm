@@ -862,14 +862,32 @@ const stapelWort = (text) => {
     return [...z.slice(0, Math.min(ab, 3)), ...z.slice(ab).filter(rahmen).slice(0, STAPEL_RAHMEN).map(kurz)].join(" | ").slice(0, 900);
 };
 
-function melde(art, text) {
+// DER WURF GEHÖRT DER WELT, DIE IHN WARF (netz-raten): eine Linse, die neben ihren geheilten Welten Defekt-Welten fährt (gate:haus-welt:
+// vier Welten zugleich in EINEM Prozess), zeichnet die Seite einer Defekt-Welt (`selbstWelt(page, name)`) — was diese Seite meldet,
+// gleich welcher Art (Wurf, Wurf im Takt, Post-Kette, Konsole), ist der Beleg ihres Defekts: es steht als SELBSTTEST mit ihrem Namen und in
+// ihrer Liste (`page.__selbstFehler`), nie im Sammler der Wand. Bis hier sammelte der EINE Sammler jede Seite gleich: im Zug z690 (CI
+// 45167789886, voll 4/18) warf die Welt des Selbsttests „netzindex" — ihr Defekt legt die Tür neben den Grund, der Stand vor netz-index —
+// im Spiel-Loop `wegBaum` (Tür-Knoten am Grund von 419 Knoten, gelesen am Grund von 406), die Wand fiel ROT, Versuch 2 grün: ob der Loop
+// oder die Probe den Gang zuerst ging, entschied das Rennen.
+function melde(art, text, seite) {
     const t = stapelWort(text);
     if (sammlung.erwartet?.test(t)) return;
+    if (seite && seite.__selbstWelt) {
+        seite.__selbstFehler.push(`${art}: ${t}`);
+        return console.log(`[welt-boot] SELBSTTEST ${seite.__selbstWelt} ${art}: ${t}`);
+    }
     // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite meldet, steht als SELBSTTEST
     if (sammlung.selbsttest && (art === "console.error" || art === "pageerror"))
         return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
     sammlung.fehler.push(`${art}: ${t}`);
     console.log(`[welt-boot] FEHLER ${art}: ${t}`);
+}
+
+// die Seite einer Defekt-Welt (`melde`): ihr Name, ihre Liste
+function selbstWelt(page, name) {
+    page.__selbstWelt = name;
+    page.__selbstFehler = [];
+    return page;
 }
 
 function wacheAnProzessEnde() {
@@ -887,20 +905,23 @@ function wacheAnProzessEnde() {
 function fehlerSammler(page) {
     if (!page || page.__weltBootSammler) return page;
     page.__weltBootSammler = true;
-    page.on("pageerror", (e) => melde("pageerror", (e && (e.stack || e.message)) || e));
-    page.on("error", (e) => melde("absturz", e?.message || e));
+    page.on("pageerror", (e) => melde("pageerror", (e && (e.stack || e.message)) || e, page));
+    page.on("error", (e) => melde("absturz", e?.message || e, page));
     page.on("console", (m) => {
         const t = m.text();
-        if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t);
+        if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t, page);
         if (LOOP_WURF.test(t)) {
             const n = /(\d+)× insgesamt\)$/.exec(t);
-            return n ? (sammlung.wuerfe = Math.max(sammlung.wuerfe, n[1])) : melde("loop-wurf", t);
+            if (!n) return melde("loop-wurf", t, page);
+            // (der Zähler der Wiederholung gehört der Wand nur aus ihren geheilten Welten)
+            if (!page.__selbstWelt) sammlung.wuerfe = Math.max(sammlung.wuerfe, n[1]);
+            return;
         }
         if (m.type() !== "error") return;
         if (HARMLOS.test(t)) return;
         // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
         if (KOSTEN.test(t)) return console.log(`[welt-boot] KOSTEN (Richter gate:asset-contract): ${t.slice(0, 300)}`);
-        melde("console.error", t);
+        melde("console.error", t, page);
     });
     return page;
 }
@@ -2340,6 +2361,7 @@ module.exports = {
     teilAus,
     teilVon,
     selbsttest: (name) => (sammlung.selbsttest = name),
+    selbstWelt,
     taeter,
     bruchBuch,
 };
@@ -2504,8 +2526,13 @@ async function selbsttest() {
     // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
+    // DER WURF GEHÖRT DER WELT, DIE IHN WARF (`selbstWelt`): dieselbe Seite als Defekt-Welt in einem zweiten Kontext — ihr Seiten-Wurf,
+    // ihre Post-Kette und ihre Würfe im Takt stehen in IHRER Liste, keiner im Sammler (sonst zählen die Fälle unten doppelt)
+    const defektWelt = selbstWelt(await (await browser.createBrowserContext()).newPage(), "wirft");
+    await server.zeige(defektWelt, undefined, "wirft.html", "load");
     await sleep(400);
     const [wurf, kette, takt] = [/__seitenWurf/, /^post-kette: /, /^loop-wurf: /].map((re) => taeter(re));
+    const defektBeleg = defektWelt.__selbstFehler.map((f) => `${f.split(":")[0]} ${(/__\w+Wurf|Post-Kette/.exec(f) || ["?"])[0]}`).sort(); // prettier-ignore
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -2796,6 +2823,10 @@ async function selbsttest() {
         [
             `${takt.map((f) => /Error: __\w+Wurf/.exec(f))}` === "Error: __taktWurf,Error: __handWurf" && sammlung.wuerfe === 7,
             `Wurf im Takt (7 an der Grenze, 1 am Hand-Takt): ${takt.join(" · ") || "still grün"} · gezählt ${sammlung.wuerfe}`,
+        ],
+        [
+            `${defektBeleg}` === "loop-wurf __handWurf,loop-wurf __taktWurf,pageerror __seitenWurf,post-kette Post-Kette",
+            `Wurf der Defekt-Welt in IHRER Liste, nie im Sammler der Wand: ${defektBeleg.join(" · ") || "keiner — die Seite meldete nichts"}`,
         ],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [

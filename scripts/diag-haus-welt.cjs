@@ -42,7 +42,7 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei, SELBSTTEST, path, fs, stammLib, jsonSchreiben, akteUrteil, PROBE_WARTET } = require("./lib/welt-boot.cjs");
+    pngDatei, SELBSTTEST, path, fs, stammLib, jsonSchreiben, akteUrteil, PROBE_WARTET, selbstWelt } = require("./lib/welt-boot.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SELBST = SELBSTTEST;
@@ -472,6 +472,8 @@ async function proben(phasen) {
         const G0 = ortS() && ortS().netzGrund;
         if (G0) for (const [, q] of staendeVon(ortS())) r._bewohnerTuerAm(G0, q.tuerVor);
         w.netz = { vor: G0 ? G0.knoten.length : null, staende: staendeVon(ortS()).length };
+        // (das Buch des EINEN Melders vor dem Tausch: ein Wurf des Gangs ist, was danach neu in ihm steht)
+        const buchVor = new Set(r._bruchBuch ? r._bruchBuch.keys() : []);
         fe = await setze(
             kv,
             "w11-fremd",
@@ -487,15 +489,19 @@ async function proben(phasen) {
             return !!(S && S.netzGrund && S.netzGrund !== G0 && S.standGrund === S.netzGrund && !S.listeWerk);
         };
         await warteBis(amNeuen, 4, 400);
-        // (ging die Wache ihren Gang am neuen Grund nicht von selbst — kein Wechsel einer Hülle nach dem Tausch —, geht ihn die
-        // Probe: derselbe Gang `_bewohnerStandPruefen`, den die Wache treibt; ein Wurf in ihm ist der Wurf im Spiel-Loop)
-        let wurf = null;
-        if (!amNeuen() && ortS() && ortS().liste && !ortS().listeWerk)
-            try {
-                for (const g = r._bewohnerStandPruefen(ortS(), null); !g.next().done; );
-            } catch (x) {
-                wurf = String((x && x.message) || x).slice(0, 160);
-            }
+        // DER GANG AM NEUEN GRUND GEHT IM LOOP (netz-raten): ging ihn die Wache nicht von selbst (kein Wechsel einer Hülle nach dem
+        // Tausch), vergisst sie ihr Buch (`wegeStand`) — der Bewohner-Takt prüft jeden Stand neu (`_bewohnerWacheTakt`, trifft null), im
+        // Werk des Takt-Planers unter der Grenze des Loops, wie im Spiel; sein Wurf steht im Buch des EINEN Melders (`_bruchBuch`).
+        // Bis hier ging die Probe den Gang selbst in einem eigenen try/catch (ein Zwilling der Grenze, welt-boot `__handTakt`): ob
+        // derselbe Wurf in der Probe oder im Loop fiel, entschied das Rennen — im Loop fiel die Wand (z690, die Welt „netzindex")
+        if (!amNeuen() && ortS() && ortS().liste) {
+            ortS().wegeStand = -Infinity;
+            await warteBis(amNeuen, 4, 400);
+        }
+        const wurfImGang = [...(r._bruchBuch ? r._bruchBuch.keys() : [])].find(
+            (k) => !buchVor.has(k) && /^Loop-Frame-Fehler/.test(k) && /_bewohnerStandPruefen/.test(k)
+        );
+        const wurf = wurfImGang ? wurfImGang.replace(/^Loop-Frame-Fehler[^:]*: /, "").split("\n")[0].slice(0, 160) : null; // prettier-ignore
         const G1 = ortS() && ortS().netzGrund;
         const fremdeTuer = G1
             ? staendeVon(ortS()).filter(([, q]) => {
@@ -2455,6 +2461,9 @@ hauptLauf(async () => {
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
+            // die Seite einer Defekt-Welt meldet ihren Defekt, nie einen Fehler der Wand (welt-boot `selbstWelt`: der Wurf gehört der
+            // Welt, die ihn warf — bis netz-raten fiel die Wand am Wurf im Loop der Welt „netzindex", je nach Rennen, z690)
+            if (inj) selbstWelt(page, inj);
             page.setDefaultTimeout(880000);
             if (!BILD) await nullRenderer(page);
             // das Bild misst Schatten: auf dem Software-Adapter das Holz nah (kienspan schaltet die Schatten aus)
