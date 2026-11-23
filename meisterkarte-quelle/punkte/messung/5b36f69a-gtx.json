@@ -1,7 +1,7 @@
 {
  "sha": "5b36f69a78690dd2661aae017fef04106778125c",
  "geraet": "gtx",
- "zeit": "2026-11-23T20:31:02.720Z",
+ "zeit": "2026-11-23T20:32:10.132Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -3960,17 +3960,67 @@
   },
   "karte2.leben.pflanzen.biome#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (vor karte2.mensch.menge.bevoelkerung#1) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 111.2 s · Exit 0",
+   "exit": 0,
+   "minuten": 1.86,
+   "grund": "der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 111.2 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-23T12:37:44.826Z",
+   "s": 111.3,
+   "fremd": {
+    "s": 115.3,
+    "takte": 52,
+    "fremdS": 71.17,
+    "kerne": 0.617,
+    "fensterKerne": 0.878,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      18.31
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-5b36f69a x listen/kandidat-gtx-5b36f69a.txt",
+      6.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.23
+     ]
+    ],
+    "dienerS": 42.34,
+    "diener": [
+     [
+      "System",
+      17.45
+     ],
+     [
+      "dwm.exe",
+      15.73
+     ]
+    ],
+    "geraetS": 57.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.14
+     ],
+     [
+      "svchost.exe",
+      21.97
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 195.13,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T20:32:10.132Z",
    "abdruck": "715011cc2e19",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.mensch.kopplung.leib#1": {
    "gruen": false,
@@ -5135,14 +5185,177 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-23T19:03:49.389Z",
-  "ordner": "sitzung-20261123-200349",
+  "start": "2026-11-23T20:30:16.077Z",
+  "ordner": "sitzung-20261123-213016",
   "port": 7804,
-  "warten": 45.28,
-  "grundstellungS": [],
-  "proben": 0,
+  "warten": 0.02,
+  "bootS": 9.1,
+  "grundstellungS": [
+   9.1
+  ],
+  "proben": 2,
   "freigaben": [],
-  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
-  "minuten": 45.29
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.same.physik.feuer#2",
+    "s": 29.4,
+    "takte": 881,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "karte2.leben.pflanzen.biome#1",
+    "s": 23.7,
+    "takte": 639,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "karte2.same.physik.feuer#2",
+    "weg": [
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr"
+    ]
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "weg": [
+     "__rafferEnde",
+     "__rafferKurz",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__zensusCalls"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.same.physik.feuer#2",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     191.5,
+     227.2
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._tickNahWiese",
+     "r._ruheImBild",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._tickNahWiese": "neu: () => 0",
+     "r._ruheImBild": "neu: () => 0",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
+    },
+    "haelt": [],
+    "heap": [
+     192.7,
+     192.2
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.same.physik.feuer#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.pflanzen.biome#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
+   }
+  ],
+  "anOrt": [
+   {
+    "vor": "karte2.leben.pflanzen.biome#1",
+    "anders": [
+     "worldMeta.kalender"
+    ],
+    "wie": {
+     "worldMeta.kalender": "undefined → undefined"
+    }
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.same.physik.feuer#2",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 199,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 221.7,
+  "minuten": 3.91
  }
 }
