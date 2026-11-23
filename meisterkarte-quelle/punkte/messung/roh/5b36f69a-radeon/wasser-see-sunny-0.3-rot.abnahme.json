@@ -1,0 +1,188 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.381",
+  "sha": "5b36f69a78690dd2661aae017fef04106778125c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.3,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 35,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1497,
+  "taeter": {
+   "Laub baum_erle": 0.1497
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.342,
+   "taeter": {
+    "Laub baum_erle": 0.2326,
+    "Laub baum_eiche": 0.1076,
+    "bauSatz": 0.0017
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Boden-Schicht",
+  "vorAbstand": 1.72,
+  "leiber": null,
+  "abstand": 386.01,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   436.368,
+   -0.805,
+   10676.978
+  ],
+  "blick": [
+   0.04084,
+   -0.00569,
+   0.99915
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 124.4,
+  "sigma": 52.8,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 15.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 15.0 % · Vordergrund 34.2 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_erle 23.3 %, Laub baum_eiche 10.8 %, bauSatz 0.2 % · Ziel Blickziel verdeckt von Boden-Schicht in 1.72 m] · beweis · Sicht 15.0 % (Laub baum_erle 15.0 %) · Ziel Blickziel im Bild VERDECKT 386.01 m · Luma 124.4 σ 52.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.381 · Bühne summer sunny 0.30 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 15.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 15.0 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 34.2 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_erle 23.3 %, Laub baum_eiche 10.8 %, bauSatz 0.2 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Boden-Schicht in 1.72 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 762,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1709,
+   "wechsel": 847063
+  },
+  "rinde": null,
+  "toene": [
+   "farWater=255/80/80",
+   "wasserSatz=80/255/80"
+  ],
+  "klassen": {
+   "farWater": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": -3.146,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.2264,
+    "wt": 543,
+    "wtZiel": null,
+    "bunt": 9.12,
+    "pixel": 2398,
+    "luma": 153.21,
+    "kante": 0.5925,
+    "kr": 835,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "wasserSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.8492,
+    "spiegelEbene": -2.874,
+    "sp": [
+     37,
+     0,
+     0,
+     7998.85,
+     7998.85,
+     6792.54
+    ],
+    "zweiton": 0,
+    "weiss": 0.0988,
+    "wt": 2790,
+    "wtZiel": null,
+    "bunt": 12.16,
+    "pixel": 28238,
+    "luma": 132.1,
+    "kante": 0.1839,
+    "kr": 8662,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.334,
+    "si": 49,
+    "bloecke": 38,
+    "glatt": 0.1842,
+    "glattDunkel": 0,
+    "nyquist": 0.1474,
+    "beta": 2.4614
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5b36f69a-radeon\\wasser-see-sunny-0.3-rot.maske.png"
+ }
+}
