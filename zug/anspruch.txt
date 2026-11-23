@@ -13,3 +13,11 @@ w28-front-technik karte2.mensch.wirtschaft.technik#1
 w28-wirtschaft-wende karte2.mensch.wirtschaft.handel#1
 # z672 (main e88a0b53, 22.11. 15:30): die Druckwelle als EIN Gesetz — reaktion#2 steht hinter der Front, der Anspruch nennt #1 mit (lückenlose Folge)
 w28-front-druckwelle karte2.same.physik.reaktion#1,karte2.same.physik.reaktion#2
+# z677 (Stempel 3a8827ac, 22.11. 20:49; fährt seit 21:06): der Mensch in Zahlen — Können aus dem Genom, der geteilte Abend, der Motor im Rezept, das Tier im Auftrag am Hang; alle vier an der Front, die Runde misst sie nach der Landung zuerst
+w28-mensch-zahlen karte2.mensch.sport.koennen#1,karte2.mensch.geist.absicht#1,karte2.mensch.fahrzeug.form#1,karte2.mensch.nahrung.tier#1
+# z679 (main c1236fa8, 23.11. 00:10): das Verb am Brunnen dreht die Kurbel, Seil und Eimer folgen (Hub 0,804 m je Umdrehung) — die Sprosse steht an der Front, die Station liegt seit 7fb10dbe in punkte-maschine
+w28-brunnen-haspel karte2.mensch.fahrzeug.maschine#1
+# z681 (main e4895630, 23.11. 03:03): jeder Tod des Bestands düngt die Zelle seines Ankers und zerfällt nach dem Gesetz des Risses (Nährstoff je Tod 0 → +0,18..0,20) — zerfall#1 steht an der Front, die Station liegt in k2-leben.js
+w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
+# z682 (main ddaf883d, 23.11. 03:41): EINE Hülle je Haus — die Stände rücken während einer Zählung nicht mehr (49 → 0), Σ Soll 18 → 21; die Station pm-fahrer-soll liegt seit 66e016e5 in punkte-maschine
+w28-eine-huelle karte2.mensch.menge.bevoelkerung#1

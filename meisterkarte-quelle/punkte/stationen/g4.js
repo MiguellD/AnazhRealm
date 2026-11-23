@@ -531,9 +531,9 @@ const { probeBefehl } = require("./sitzung-seite.js");
 const { ANKUNFT_KALT } = require("./g6.js");
 
 // DIE STUDIOS (studios.K2#2 · K3#2, Zwillinge): der Gang der Linse diag-studio-huelle (`gang`: H3 die Folge, H8 die Kosten-Leiste mit
-// der Bank `?bank=12`, H7 die Sitzung mit dem Neuladen) über die acht Studios — je Studio eine Seite im Browser der Sitzung, geliefert
+// der Bank `?bank=12`) über die acht Studios — je Studio eine Seite im Browser der Sitzung, geliefert
 // vom save-server der Sitzung (welt-boot `statikServer` und `starteBrowser` still ersetzt); die Nebenwelten (H6, ohne Urteil dieser
-// Stationen) fallen aus dem Gang, je Studio 5 Griffe statt 20 (p95 aus 5 ist ihr Größtes). Bis 29.10. ein eigener Browser je Lauf:
+// Stationen) fallen aus dem Gang. Bis 29.10. ein eigener Browser je Lauf:
 // Radeon e18195be 2,27 min, 4abae42d 3,5 min (K2#2), K3#2 6 min Soll. Die Herkunft teilt den localStorage mit der Welt (die
 // Sitzung leert ihn am Ende): mutiert.
 async function probeStudios(H) {
@@ -559,16 +559,15 @@ async function probeStudios(H) {
         return p;
     };
     const derSitzung = { newPage: neueSeite, close: async () => {}, adapter };
-    const L = H.linse("scripts/diag-studio-huelle.cjs", ["gang", "GRIFFE"], {
+    // der Gang von heute: H7 (der Sitzungs-Gang mit GRIFFE) fiel am Spiel 1d36d131 („Alte Tests fallen“, a13) — die Probe liest nur,
+    // was die Linse am Kopf trägt (H3 die Folge, H4/H10 die Kosten-Zeile)
+    const L = H.linse("scripts/diag-studio-huelle.cjs", ["gang"], {
         argv: ["--engine"],
         stumm: { statikServer: () => server, starteBrowser: async () => derSitzung },
-        ersetze: [
-            ['const NEBENWELTEN = ["skeleton", "fluid", "translated"];', "const NEBENWELTEN = [];"],
-            ["const GRIFFE = 20;", "const GRIFFE = 5;"],
-        ],
+        ersetze: [['const NEBENWELTEN = ["skeleton", "fluid", "translated"];', "const NEBENWELTEN = [];"]],
     });
     await L.gang();
-    return { griffe: L.GRIFFE, adapter };
+    return { adapter };
 }
 // DIE AUSNAHME (w12-proben-frist): acht Studios je zwei Seiten mit eigenem Renderer (der Besuch, das Neuladen) und 5 Griffe je Seite —
 // Radeon 8ef49bef: fünf Studios in 39 s an der Frist (fachwerk allein 16 s), acht ≈ 62 s; GTX mit Faktor 1,3 ≈ 81 s
@@ -1577,7 +1576,8 @@ const alle = [
         // Seite trägt den Plan, den bei/nachRuhe anwandte); die Klasse je Zeile steht im Vertrag (`uniform: true` ≤ 200 ms, sonst
         // Neubau ≤ 1 s); dann das Neuladen (jeder Regler der Sitzung steht wieder, der EINE Speicher-Weg localStorage) und A/B
         // (der Gang H3: A zeigt den Stand der Öffnung, B den Zug). Die Zeit urteilt nur auf der Karte (Kopfzeile „geurteilt“).
-        // IN DER SITZUNG (29.10., `probeStudios`, Zwilling von studios.K3#2): 5 Griffe je Studio — jeder trägt sein Bild (`j.griffe`).
+        // IN DER SITZUNG (29.10., `probeStudios`, Zwilling von studios.K3#2). H7 fiel am Spiel 1d36d131: ohne ⏱-Zeile
+        // steht das Urteil ROT mit dem Täter beim Namen, bis das Spiel den Sitzungs-Gang wieder trägt.
         probe: { ...STUDIO_PROBE, mutiert: true,  sek: 25 },
         gpu: true,
         zeit: true,
@@ -1585,7 +1585,6 @@ const alle = [
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
             const karte = /=== H7 DIE SITZUNG — Saat \d+, die Zeit geurteilt \(Karte\)/.test(out);
-            const N = j && j.griffe > 0 ? j.griffe : Infinity; // ohne Ausgabe der Probe trägt kein Studio seine Griffe
             const je = {};
             for (const l of zeilen(out)) {
                 const t = /^\s{2}⏱ (\S+)\s+Griff → Bild p95 Gesetz-Wert (\S+) ms · Neubau (\S+) ms · (\d+) Griffe mit Bild · Neuladen (\d+)\/(\d+)/.exec(l);
@@ -1595,7 +1594,9 @@ const alle = [
             }
             const s = Object.keys(SEITEN).map((id) => ({ id, ...(je[id] || {}) }));
             const klasse = (z, k, max) => !(z[k] > max); // „–“ (keine Zeile der Klasse im Studio) ist NaN und zählt nicht
-            const zeit = s.filter((z) => z.mit === N && klasse(z, "u", 200) && klasse(z, "n", 1000));
+            // ohne ⏱-Zeile kein Urteil der Zeit: H7 (Griff → Bild, Neuladen) fiel am Spiel 1d36d131, die Station nennt es beim Namen
+            if (!s.some((z) => z.mit > 0)) return { gruen: false, zahl: "keine H7-Zeile des Gangs am Kopf (der Sitzungs-Gang fiel am Spiel 1d36d131)" };
+            const zeit = s.filter((z) => z.mit > 0 && klasse(z, "u", 200) && klasse(z, "n", 1000));
             const bleibt = s.filter((z) => z.bleibt).length;
             const ab = s.filter((z) => z.ab).length;
             const hoch = (k) => s.reduce((m, z) => (z[k] > m.v ? { v: z[k], id: z.id } : m), { v: 0, id: "–" });
@@ -1606,7 +1607,7 @@ const alle = [
                 zahl:
                     (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
                     "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
-                    ", Neubau höchstens " + n.v + " ms " + n.id + ", je Studio " + (j && j.griffe) + " Griffe) · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
+                    ", Neubau höchstens " + n.v + " ms " + n.id + ", Griffe mit Bild je Studio " + s.map((z) => z.mit || 0).join("/") + ") · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
             };
         },
         pfad: [

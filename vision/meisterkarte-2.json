@@ -206,10 +206,10 @@
     "kriterien": 26,
     "sprossen": 180,
     "heute": 4,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 1.7,
-    "anteilKern": 0
+    "anteilKern": 1
    },
    "perspektiven": [
     {
@@ -2194,7 +2194,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Mechanik von Sprosse 1 steht: Schicht-Gesetz T5 Pediment → Schutthang → Kliff (gelaende-core.js:374-375, schichtMass :1028), nicht mit eigenem Auge belegt; Lagen ohne Alter und Stoff. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": []
@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 11,
-    "kern": 9,
-    "kernDazu": 9,
-    "anteilHeute": 2,
-    "anteilKern": 1.6
+    "heute": 13,
+    "kern": 14,
+    "kernDazu": 14,
+    "anteilHeute": 2.4,
+    "anteilKern": 2.5
    },
    "perspektiven": [
     {
@@ -6347,7 +6347,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
      "alt": []
@@ -7106,7 +7106,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
      "alt": []
@@ -8991,7 +8991,7 @@
        "richter": "Leistung je Masse steigt; Ahnen im Nachfahren erkannt ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Teile-Werk fährt mit seiner Hülle (stamm/koerper-fahrt.js:550), Preis nicht gemessen",
@@ -9198,7 +9198,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Haspel des Ziehbrunnens als Gestalt ohne Wirkung (fachwerk-core.js:5314)",
      "alt": []
@@ -9421,7 +9421,7 @@
        "richter": "64 Welten: Zähmungs-Drift ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "gebundenes Tier folgt ≥ 10 min über Hang (oekologie.K5); wilde Herde ohne Hirte — KARTE: 0 — die Bindung ist headless gebucht (oekologie.K5).",
@@ -10012,7 +10012,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Wagen ohne Ladung (hausJeWagen 15); Hafen, Lager: Grep 0",
      "alt": []
@@ -10089,7 +10089,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Werkstoff-Tafeln im Studio, Epochen-Tafel der Stadt (fachwerk-core.js:3294) — Liste, nicht gewachsen; jede Saat hat dieselbe Epochenfolge",
      "alt": []
@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 8,
+    "heute": 9,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.3,
+    "anteilHeute": 4.6,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15632,7 +15632,7 @@
        "richter": "N = 100 Planeten-Saaten: Phase sichtbarer Oberflächen-Stoffe stimmt mit Phasendiagramm ≥ 95 %; Saat mit O₂ 30 %: Brandfläche ≥ 3× der heutigen"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Rothermel 1972 + Albini + Anderson auf dem Feld (stamm/feld-leben.js:2477-2620), Halt an Fluss und Fels, Asche als Tat; Phasen nur Eis und Wasser (bau-vorlagen.js:1610). Alle Belege headless (stoffe.K2/K3 an d3708675), Bild-p95 im Brand nie gemessen; nur Vegetation brennt.",
@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 8,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 2,
+    "kernDazu": 2,
     "anteilHeute": 4.2,
-    "anteilKern": 0.8
+    "anteilKern": 1.3
    },
    "perspektiven": [
     {
@@ -18209,12 +18209,14 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
      "alt": [],
      "heuteSprossen": [],
-     "kernSprossen": []
+     "kernSprossen": [
+      6
+     ]
     },
     {
      "id": "leben.kopplung.leben-formt-planet",
@@ -20086,12 +20088,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 50,
+  "heute": 53,
   "davonKopplungen": 33,
-  "kern": 10,
-  "kernDazu": 10,
-  "anteilHeute": 2.9,
-  "anteilKern": 0.3,
+  "kern": 17,
+  "kernDazu": 17,
+  "anteilHeute": 3,
+  "anteilKern": 0.7,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20101,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 31,
-  "nachwache": 19
+  "nachwache": 22
  },
  "zusammengelegt": [
   {

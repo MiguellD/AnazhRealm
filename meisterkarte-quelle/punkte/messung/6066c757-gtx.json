@@ -1,7 +1,7 @@
 {
  "sha": "6066c7573242c2abd89f509d7037c181b7efefc6",
  "geraet": "gtx",
- "zeit": "2026-11-22T17:50:13.004Z",
+ "zeit": "2026-11-22T18:28:07.827Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.physik.reaktion#1": {
@@ -2065,6 +2065,146 @@
    },
    "zeit": "2026-11-22T17:50:13.004Z",
    "abdruck": "9aaf2929b46e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Bühne, kein Erzähler: der Abend trifft sich im Gasthaus (treff), kein Stück, kein Publikum (koerper-core.js:5182) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k74a7fcba2a6c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf2f39ebabdf3",
+   "s": 86.5,
+   "fremd": {
+    "s": 91,
+    "takte": 41,
+    "fremdS": 96.86,
+    "kerne": 1.065,
+    "fensterKerne": 1.621,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.48
+     ]
+    ],
+    "dienerS": 50.53,
+    "diener": [
+     [
+      "System",
+      23.03
+     ],
+     [
+      "dwm.exe",
+      15.92
+     ]
+    ],
+    "geraetS": 43.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.06
+     ],
+     [
+      "svchost.exe",
+      16.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 202.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T18:25:15.798Z",
+   "abdruck": "abec7d942e4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: Lokale in einer Gasse: die Stadt trägt EIN Gasthaus (das Sonderbau-Gesetz), kein Gericht (gemessen 1 < 3) (gemessen 1, Soll 3 Lokale in einer Gasse am Abend) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.41,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Lokale in einer Gasse: die Stadt trägt EIN Gasthaus (das Sonderbau-Gesetz), kein Gericht (gemessen 1 < 3) (gemessen 1, Soll 3 Lokale in einer Gasse am Abend) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8c438f0790e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf2f39ebabdf3",
+   "s": 84.4,
+   "fremd": {
+    "s": 87.1,
+    "takte": 39,
+    "fremdS": 90.25,
+    "kerne": 1.036,
+    "fensterKerne": 1.717,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      31.58
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.94
+     ]
+    ],
+    "dienerS": 48.64,
+    "diener": [
+     [
+      "System",
+      22.86
+     ],
+     [
+      "dwm.exe",
+      15.09
+     ]
+    ],
+    "geraetS": 47.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.13
+     ],
+     [
+      "svchost.exe",
+      21.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 189.8,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-22T18:28:07.827Z",
+   "abdruck": "a79ebd53e96b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"

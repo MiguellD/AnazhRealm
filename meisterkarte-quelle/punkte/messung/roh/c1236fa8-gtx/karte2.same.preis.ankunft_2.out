@@ -1,0 +1,374 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                // seit spielgang.K5 (29643272, 02.11.) fragt die Welt nie mehr über window.confirm, sondern über ihre eigene
+                // Oberfläche (#frage-dialog, `_frage`; die souveräne Geste `_sovereignGesture`) — der Hörer oben hört sie nicht, die
+                // Geste des Teilens stand offen, bis die Probe riss (bauen.K5#2 geteilt: „Waiting failed: 30000ms" seit 02.11.). Die
+                // Probe sagt dort Ja wie `frageJa` (scripts/lib/welt-boot.cjs), solange sie verbunden ist.
+                await page.evaluate(() => {
+                    const d = document.getElementById("frage-dialog");
+                    if (!d) return;
+                    const jaKlick = () => d.open && d.querySelector("#frage-ja").click();
+                    (window.__sitzungFrageJa = new MutationObserver(jaKlick)).observe(d, { attributes: true, attributeFilter: ["open"] });
+                    jaKlick();
+                });
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.evaluate(() => (window.__sitzungFrageJa && window.__sitzungFrageJa.disconnect(), delete window.__sitzungFrageJa)).catch(() => {});
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+netz: async function netzMitschnitt(page) {
+    const c = await page.target().createCDPSession();
+    const m = { roh: 0, draht: 0, ws: 0, n: 0, offen: new Set(), fehler: [], zu: [], zuletzt: Date.now(), bisK: null, ruht: false };
+    const anfragen = new Map(); // requestId → { url, roh, von } — `von` das Ziel, das sie zuerst meldete: nur es zählt ihre Bytes
+    const typen = new Map(); // sessionId → Typ des Ziels (Target.attachedToTarget), wie namen in foundryFadenLog
+    const an = new Map(); // die Ziele, deren Network an ist: Schlüssel → Typ
+    c.on("Target.attachedToTarget", (e) => typen.set(e.sessionId, (e.targetInfo && e.targetInfo.type) || "?"));
+    const haenge = async (s, key) => {
+        s.on("Network.requestWillBeSent", (e) => {
+            const url = (e.request && e.request.url) || "";
+            if (!/^(https?|wss?):/.test(url)) return;
+            if (!anfragen.has(e.requestId)) (m.n += 1), anfragen.set(e.requestId, { url, roh: 0, von: key });
+            m.offen.add(e.requestId);
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.dataReceived", (e) => {
+            const r = anfragen.get(e.requestId);
+            if (!r || r.von !== key) return;
+            const d = Math.max(0, e.dataLength || 0);
+            r.roh += d;
+            m.roh += d;
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.loadingFinished", (e) => {
+            const r = anfragen.get(e.requestId);
+            m.offen.delete(e.requestId);
+            m.zuletzt = Date.now();
+            if (r && r.von === key) m.draht += Math.max(0, e.encodedDataLength || 0);
+        });
+        s.on("Network.loadingFailed", (e) => {
+            m.offen.delete(e.requestId);
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.webSocketFrameReceived", (e) => {
+            const d = String((e.response && e.response.payloadData) || "").length;
+            m.ws += d;
+            m.roh += d;
+            m.zuletzt = Date.now();
+        });
+        try {
+            await s.send("Network.enable");
+            an.set(key, true);
+        } catch (e) {
+            // DAS ZIEL, DAS SCHLOSS, EHE ES LIEF (16.11., Radeon fe885d9d: Boot 2 und 3 „worker: Network.enable … Target closed“, roh je
+            // Boot 31,98 MB an allen vier Boots, mit und ohne dieses Ziel): ein angehängtes Ziel steht unter waitForDebuggerOnStart, bis
+            // `sessionattached` es nach dieser Zeile weckt — schließt es vorher, lief keine Zeile seines Codes, es trägt keine eigene
+            // Anfrage. Es steht gezählt beim Namen (`zu`), nie als Fehler; jeder andere Grund und die Seite selbst bleiben Fehler
+            const msg = String(e.message);
+            if (key !== "seite" && /Target closed|Session closed|No target with given id/i.test(msg)) m.zu.push(typen.get(key) || key);
+            else m.fehler.push((typen.get(key) || key) + ": Network.enable " + msg.slice(0, 120));
+        }
+    };
+    c.on("sessionattached", async (s) => {
+        await haenge(s, s.id());
+        await s.send("Runtime.runIfWaitingForDebugger").catch(() => {});
+    });
+    await haenge(c, "seite");
+    await c.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+    return {
+        kontrolle: () => (m.bisK = m.roh),
+        // das Netz ruht: nichts offen und 2 s nichts Neues — höchstens `ms`, nie über die Frist der Probe
+        ruhe: async (H, ms = 10000) => {
+            const bis = Date.now() + ms;
+            while (Date.now() < bis && H.rest() > 6 && (m.offen.size || Date.now() - m.zuletzt < 2000)) await H.schlaf(200);
+            m.ruht = !m.offen.size && Date.now() - m.zuletzt >= 2000;
+        },
+        schluss: async () => {
+            await c.detach().catch(() => {});
+            const ziele = [...an.keys()].map((k) => (k === "seite" ? "seite" : typen.get(k) || "?"));
+            const groesste = [...anfragen.values()].sort((a, b) => b.roh - a.roh).slice(0, 5).map((r) => [r.url.replace(/^\w+:\/\/[^/]+/, "").slice(0, 80), r.roh]);
+            return { roh: m.roh, draht: m.draht, ws: m.ws, n: m.n, offen: m.offen.size, ruht: m.ruht, bisK: m.bisK, ziele: ziele.length,
+                worker: ziele.filter((t) => /worker/.test(t)).length, fehler: m.fehler, zu: m.zu, groesste };
+        },
+    };
+}
+};
+H.fahre(async function probeAnkunftVier(H) {
+    const { fs, path } = H;
+    const RUHE_MS = 40000, REST_S = 30;
+    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "KONTROLLE_M", "KONTROLLE_DRUECKE", "SCHUSS", "RUHE", "lueckeKacheln"]);
+    const { pngLesen } = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const { pngDatei } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { page } = await H.verbinde();
+    const j = (H.teil = { kalt: [] });
+    for (let n = 1; n <= 4; n++) {
+        if (!(H.rest() > 8)) {
+            H.fristRiss("Kalt-Boot " + n + " von 4 ausgelassen");
+            break;
+        }
+        const netz = await H.seite.netz(page).catch((e) => ({ kaputt: String(e.message).slice(0, 160) }));
+        const t0 = await H.lade(page, { kalt: true });
+        let [tK, druecke] = [0, 0];
+        for (; !tK && druecke++ < L.KONTROLLE_DRUECKE && H.rest() > 4; await page.keyboard.down("KeyW"))
+            if (await page.evaluate(L.LEIB_WEG, L.KONTROLLE_M)) {
+                tK = Date.now() - t0;
+                if (netz.kontrolle) netz.kontrolle();
+            }
+        await page.keyboard.up("KeyW");
+        const boot = { tK, druecke };
+        if (tK) {
+            try {
+                boot.offen = await page.evaluate(() => window.anazhRealm._weltbildFehlt());
+                await page.evaluate(AUSGABE_INSTALL);
+                const a = await page.evaluate(L.SCHUSS, 960, 540, false);
+                const fa = H.AUS + "-boot" + n + ".png", fb = H.AUS + "-boot" + n + "-ruhe.png";
+                pngDatei(fa, a.png);
+                const tr = Date.now();
+                const ruheMs = Math.min(RUHE_MS, (H.rest() - 6 - REST_S * (4 - n)) * 1000);
+                const lk = ruheMs > 0 ? await H.binnen(page.evaluate(L.RUHE), ruheMs, null) : null;
+                const b = await page.evaluate(L.SCHUSS, 960, 540, false);
+                pngDatei(fb, b.png);
+                const K = L.lueckeKacheln(...[fa, fb].map((f) => pngLesen(fs.readFileSync(f))));
+                boot.bild = { luecke: K.luecke, kachel: K.kachel, mittel: K.mittel, ruheS: +((Date.now() - tr) / 1000).toFixed(1), ruhe: !!lk, gekappt: !lk && ruheMs < RUHE_MS };
+                Object.assign(
+                    boot,
+                    await page.evaluate(() => ({
+                        weltbildDa: Math.round(window.anazhRealm.state._weltbildDa),
+                        ohne: (window.anazhRealm.state.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+                    }))
+                );
+            } catch (e) {
+                boot.bildFehler = String((e && e.message) || e).split("\n")[0].slice(0, 160);
+            }
+        }
+        if (netz.ruhe) await netz.ruhe(H);
+        const nz = netz.schluss ? await netz.schluss() : { fehler: ["kein Mitschnitt: " + netz.kaputt] };
+        boot.netz = nz;
+        j.kalt.push(boot);
+        if (boot.bild) H.zeile("Kalt-Boot " + n + ": Lücke " + (100 * boot.bild.luecke).toFixed(2) + " % (Kachel " + boot.bild.kachel + ") nach " + boot.bild.ruheS + " s " + (boot.bild.ruhe ? "bis zur Ruhe der Foundry" : boot.bild.gekappt ? "OHNE Ruhe (die Frist der Boots danach kappte sie)" : "OHNE Ruhe der Foundry") + ", offen im Bild " + ((boot.offen || []).join(" · ") || "nichts"));
+        else if (boot.bildFehler) H.zeile("Kalt-Boot " + n + ": das Bild brach: " + boot.bildFehler);
+        const mb = (b) => (b / 1e6).toFixed(2) + " MB";
+        const nzt = nz.roh == null ? "ohne Mitschnitt" : mb(nz.roh) + " roh, " + mb(nz.draht) + " Draht, " + nz.n + " Anfragen (" + nz.offen + " offen), " + nz.ziele + " Ziele (" + nz.worker + " Worker)" + (nz.ruht ? "" : ", das Netz ruhte nicht");
+        H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen · Netz " + nzt + (nz.fehler.length ? " · " + nz.fehler.join(" | ") : ""));
+    }
+    // DIE WELT DER WERKBANK ZURÜCK (15.11., Radeon a996d0ae: nach dem vierten Boot fehlten der Seite die Werkzeuge der Werkbank — der
+    // Preis-Lauf danach zählte 212 Bilder des Ladens, die Posten „__buehne is not defined“): die Seite einmal über /reload der Werkbank,
+    // die ihre Werkzeuge neu legt; der Preis misst die angekommene Welt
+    const z = await H.wb("/reload", {}, Math.max(10, H.rest() - 3) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 160) }));
+    j.zurueck = z && z.neu === true ? { ms: z.ms } : { fehler: (z && z.fehler) || "ohne Antwort" };
+    H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(j.zurueck));
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\c1236fa8-gtx\karte2.same.preis.ankunft_2.json 526
+@@ 22.9 s · Kalt-Boot 1: Lücke 2.18 % (Kachel 4/3) nach 6.6 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt
+@@ 23 s · Kalt-Boot 1: t(Kontrolle) 11.15 s von außen · Netz 34.30 MB roh, 18.02 MB Draht, 201 Anfragen (0 offen), 25 Ziele (24 Worker)
+@@ 44.4 s · Kalt-Boot 2: Lücke 2.19 % (Kachel 4/3) nach 6.2 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt
+@@ 44.4 s · Kalt-Boot 2: t(Kontrolle) 10.42 s von außen · Netz 34.30 MB roh, 18.02 MB Draht, 201 Anfragen (0 offen), 22 Ziele (21 Worker)
+@@ 63.8 s · Kalt-Boot 3: Lücke 2.17 % (Kachel 4/3) nach 6.3 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt
+@@ 63.8 s · Kalt-Boot 3: t(Kontrolle) 10.60 s von außen · Netz 34.30 MB roh, 18.02 MB Draht, 201 Anfragen (0 offen), 23 Ziele (22 Worker)
+@@ 84.7 s · Kalt-Boot 4: Lücke 2.18 % (Kachel 4/3) nach 6 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt
+@@ 84.7 s · Kalt-Boot 4: t(Kontrolle) 10.11 s von außen · Netz 34.30 MB roh, 18.02 MB Draht, 201 Anfragen (0 offen), 22 Ziele (21 Worker)
+@@ 87.2 s · die Welt der Werkbank zurück: {"ms":2498}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
