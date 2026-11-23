@@ -1,0 +1,95 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.377",
+  "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 171.83,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   842.49,
+   225.47,
+   476.79
+  ],
+  "blick": [
+   0,
+   -0.98936,
+   -0.14549
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 99,
+  "sigma": 25.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     842.49,
+     225.47,
+     476.79
+    ],
+    "rot": [],
+    "ms": 875
+   }
+  ],
+  "ms": 875
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 171.83 m · Luma 99 σ 25.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
