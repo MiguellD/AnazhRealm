@@ -64,14 +64,19 @@ const DAUER_S = {
     muster: 62,
     // (leben-gau C2a: headless an der Laptop-Maschine, samt den vier Tätern in EINEM Lauf)
     gau: 35,
+    // (oeko-kreislauf: headless an der Laptop-Maschine, samt den zwei Tätern — 33 s Uhr der Lauf, die Probe 6 s)
+    zerfall: 6,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {
     const alle = opt("--proben", null) ? opt("--proben").split(",") : PROBEN;
+    // JEDE Probe der Liste trägt ihre gemessene Dauer — geprüft in JEDEM Lauf, nie erst unter --teil (oeko-kreislauf 22.11.: die
+    // neue Probe zerfall lief lokal mit --proben grün und fiel erst in der CI, drei Teile rot nach einer vollen Runde)
+    for (const p of PROBEN.concat(alle))
+        if (!(DAUER_S[p] > 0)) throw new Error(`--teil: ${p} ohne gemessene Dauer in DAUER_S — der Teil wäre geraten`);
     if (!TEIL) return alle;
     const last = Array.from({ length: TEIL.n }, () => ({ s: 0, p: [] }));
     for (const p of [...alle].sort((a, b) => DAUER_S[b] - DAUER_S[a])) {
-        if (!(DAUER_S[p] > 0)) throw new Error(`--teil: ${p} ohne gemessene Dauer in DAUER_S — der Teil wäre geraten`);
         const g = last.reduce((m, x) => (x.s < m.s ? x : m));
         [g.s, g.p] = [g.s + DAUER_S[p], g.p.concat(p)];
     }

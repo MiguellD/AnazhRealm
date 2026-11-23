@@ -654,6 +654,7 @@ class AnazhRealm_kreatur_erbe {
         const voll = aktN === (this._gauHalt().get(b.gx + "," + b.gz) || []).length;
         const fall = voll ? Infinity : b.spurFall;
         if (voll) b.spurFall = Infinity;
+        const tode = new Map(); // je Revier die Tode der Spur: [Takt, Beute, Jäger] (`_gauAas`)
         (a.reviere || []).forEach((rv, j) => {
             const key = sp && this._gauSpurRevier(b.gx, b.gz, rv.i);
             if (!key) return;
@@ -666,6 +667,8 @@ class AnazhRealm_kreatur_erbe {
                     n: sp.beute[k * L + j],
                     f: Number.isNaN(sp.frass[q]) ? null : sp.frass.slice(q, q + Z),
                 });
+                const [tb, tj] = sp.tod ? [sp.tod[2 * (k * L + j)], sp.tod[2 * (k * L + j) + 1]] : [0, 0];
+                if (tb > 0 || tj > 0) (tode.get(rv.i) || tode.set(rv.i, []).get(rv.i)).push([sp.von + k, tb, tj]);
             }
             // die Spur bleibt ab dem ältesten Takt, den die Altlast des Reviers noch liest (ihr nächster), und die letzten 400
             const R = this._bestandRegionen().regionen[key];
@@ -695,19 +698,23 @@ class AnazhRealm_kreatur_erbe {
             let [cb, wb] = [0, -1];
             for (let c = 0; c < rv.lr.length; c++) if (rv.lr[c] * rv.s[c] > wb) [cb, wb] = [c, rv.lr[c] * rv.s[c]];
             const anker = { beute: zelle(cb), jaeger: null };
+            const jaegerAnker = () => {
+                if (anker.jaeger || (anker.jaeger = AJ.get(key))) return anker.jaeger;
+                const LG = AnazhRealm._lebensraumGesetz();
+                let [cj, wj] = [0, -1];
+                for (let c = 0; c < zn * zn; c++) {
+                    const o = zelle(c);
+                    const w = LG.lebensraum(G.jaeger, this._bodenKlasseAt(o.x, o.z), LG.L);
+                    if (w > wj) [cj, wj] = [c, w];
+                }
+                AJ.set(key, (anker.jaeger = zelle(cj)));
+                return anker.jaeger;
+            };
+            if (tode.has(rv.i)) this._gauAas(kopf + "r" + rv.i, tode.get(rv.i), anker.beute, jaegerAnker);
             for (const q of rv.tiere) {
                 const id = kopf + q.id;
                 if (b.gefallen.has(id)) continue; // sein Akt „aus“ reist noch: die Seite zeichnet ihn nicht wieder
-                if (q.g === "jaeger" && !anker.jaeger && !(anker.jaeger = AJ.get(key))) {
-                    const LG = AnazhRealm._lebensraumGesetz();
-                    let [cj, wj] = [0, -1];
-                    for (let c = 0; c < zn * zn; c++) {
-                        const o = zelle(c);
-                        const w = LG.lebensraum(G.jaeger, this._bodenKlasseAt(o.x, o.z), LG.L);
-                        if (w > wj) [cj, wj] = [c, w];
-                    }
-                    AJ.set(key, (anker.jaeger = zelle(cj)));
-                }
+                if (q.g === "jaeger") jaegerAnker();
                 let t = alt.get(id) || (offen && offen.get(id));
                 if (!t) {
                     const g = G[q.g];
@@ -792,6 +799,19 @@ class AnazhRealm_kreatur_erbe {
         const R = b.reviere.get(t.revier);
         if (R) R.tiere = R.tiere.filter((x) => x !== t);
         this._gauAktEigen(t.gx, t.gz, { takt, art: "aus", id: t.lokal });
+    }
+    // DER TOD IM GAU DÜNGT (oeko.zerfall#1): die Tode der Spur eines Reviers (`zeilen`: [Takt, Beute, Jäger], der Faden zählt sie
+    // je Takt, voxel-worker `spurTod`) legen je Kopf ihren Leichnam als Tat „aas“ — über denselben Schreiber wie jeder Tod des
+    // Bestands (`_aasTat`), zur Stunde ihres Takts, die Beute am Anker der Herde, der Jäger am Anker des Rudels (wo die Zeichnung
+    // sie führt). Die Kennung ist Revier, Takt und Kopf: eine Spur, die zweimal kommt (ein zweiter Leser, ein Mitspieler),
+    // düngt einmal. Gelesen werden nur die Reviere am Schirm — die Kosten hängen an der Spur, nie am Gau.
+    _gauAas(vorn, zeilen, beute, jaeger) {
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        for (const [k, nb, nj] of zeilen) {
+            for (let i = 0; i < nb; i++) this._aasTat({ id: vorn + "@" + k + "b" + i, x: beute.x, z: beute.z }, k * T);
+            for (let i = 0, o = nj > 0 && jaeger(); i < nj; i++)
+                this._aasTat({ id: vorn + "@" + k + "j" + i, x: o.x, z: o.z }, k * T);
+        }
     }
     // DER STAND EINES GEGANGENEN LEIBS (Gedächtnis, Wunde, Name) überdauert sein Revier am Schirm: je Kennung gemerkt
     // (höchstens 256, der älteste fällt), gelesen, wenn der Kopf wieder ins Bild tritt.
