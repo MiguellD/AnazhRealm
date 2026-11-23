@@ -1,0 +1,401 @@
+{
+ "ms": 104247,
+ "ergebnis": {
+  "bewohner": 89,
+  "orte": [
+   [
+    -97.6,
+    -194.9,
+    3
+   ],
+   [
+    -82.1,
+    -193.9,
+    3
+   ],
+   [
+    -44.6,
+    -168.4,
+    3
+   ],
+   [
+    -102.9,
+    -182.7,
+    3
+   ],
+   [
+    -45.6,
+    -189.7,
+    3
+   ]
+  ],
+  "rM": 10,
+  "samenDoppelt": 0,
+  "doppelt": 0,
+  "sicht": "third",
+  "proben": [
+   {
+    "uhr": 3,
+    "ort": 0,
+    "tod": 0.125,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -91.2,
+     -188.5
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 3,
+    "ort": 1,
+    "tod": 0.125,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -73.1,
+     -193.9
+    ],
+    "takte": 0,
+    "fahrerImKreis": 2
+   },
+   {
+    "uhr": 3,
+    "ort": 2,
+    "tod": 0.125,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -53.6,
+     -168.4
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 3,
+    "ort": 3,
+    "tod": 0.125,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -93.9,
+     -182.7
+    ],
+    "takte": 0,
+    "fahrerImKreis": 1
+   },
+   {
+    "uhr": 3,
+    "ort": 4,
+    "tod": 0.125,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -39.3,
+     -183.3
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 10,
+    "ort": 0,
+    "tod": 0.4167,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -91.2,
+     -188.5
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 10,
+    "ort": 1,
+    "tod": 0.4167,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -73.1,
+     -193.9
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 10,
+    "ort": 2,
+    "tod": 0.4167,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -50.9,
+     -174.7
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 10,
+    "ort": 3,
+    "tod": 0.4167,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -93.9,
+     -182.7
+    ],
+    "takte": 0,
+    "fahrerImKreis": 1
+   },
+   {
+    "uhr": 10,
+    "ort": 4,
+    "tod": 0.4167,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -39.3,
+     -183.3
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 15,
+    "ort": 0,
+    "tod": 0.625,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -91.2,
+     -188.5
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 15,
+    "ort": 1,
+    "tod": 0.625,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -73.1,
+     -193.9
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 15,
+    "ort": 2,
+    "tod": 0.625,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -50.9,
+     -174.7
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 15,
+    "ort": 3,
+    "tod": 0.625,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -93.9,
+     -182.7
+    ],
+    "takte": 0,
+    "fahrerImKreis": 1
+   },
+   {
+    "uhr": 15,
+    "ort": 4,
+    "tod": 0.625,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -39.3,
+     -183.3
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 20,
+    "ort": 0,
+    "tod": 0.8333,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -91.2,
+     -188.5
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 20,
+    "ort": 1,
+    "tod": 0.8333,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -73.1,
+     -193.9
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 20,
+    "ort": 2,
+    "tod": 0.8333,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -53.6,
+     -168.4
+    ],
+    "takte": 0
+   },
+   {
+    "uhr": 20,
+    "ort": 3,
+    "tod": 0.8333,
+    "soll": 1,
+    "ist": 1,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -93.9,
+     -182.7
+    ],
+    "takte": 0,
+    "fahrerImKreis": 1
+   },
+   {
+    "uhr": 20,
+    "ort": 4,
+    "tod": 0.8333,
+    "soll": 0,
+    "ist": 0,
+    "fehlt": 0,
+    "imBild": true,
+    "stand": [
+     -39.3,
+     -183.3
+    ],
+    "takte": 0
+   }
+  ],
+  "fahrer": [
+   {
+    "uhr": 3,
+    "rolle": "nachtfahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   },
+   {
+    "uhr": 3,
+    "rolle": "nachtfahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   },
+   {
+    "uhr": 10,
+    "rolle": "fahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   },
+   {
+    "uhr": 10,
+    "rolle": "fahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   },
+   {
+    "uhr": 15,
+    "rolle": "fahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   },
+   {
+    "uhr": 15,
+    "rolle": "fahrer",
+    "amSteuer": true,
+    "leib": true,
+    "d": 0,
+    "sitzt": true
+   }
+  ],
+  "ankunft": [
+   {
+    "uhr": 3,
+    "s": 1.5,
+    "offen": 0,
+    "wer": []
+   },
+   {
+    "uhr": 10,
+    "s": 1.5,
+    "offen": 0,
+    "wer": []
+   },
+   {
+    "uhr": 15,
+    "s": 1.5,
+    "offen": 0,
+    "wer": []
+   },
+   {
+    "uhr": 20,
+    "s": 0,
+    "offen": 0,
+    "wer": []
+   }
+  ],
+  "version": "18.546.387"
+ }
+}
