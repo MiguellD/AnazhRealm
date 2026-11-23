@@ -14,7 +14,8 @@
 //
 // ── DIE SIGNATUREN (EINGEFROREN ab Welle 1, Bahn B1 — B2 und B3 bauen parallel dagegen) ──────────────────────────────────────
 //   Ein Erbe ist ein VEKTOR: `a`, `e` und jedes `n*` sind Arrays der Länge gesetz().achsen.length, Stelle i = Achse i
-//   (Reihenfolge = Byte-Vertrag; Welle 1: eine Achse, [lnM]). Normalverteilte n kommen aus `normal(u1, u2)`.
+//   (Reihenfolge = Byte-Vertrag; Welle 1: eine Achse, [lnM]; erbe-geburt hängt die zweite an: [lnM, scheu]). Normalverteilte n
+//   kommen aus `normal(u1, u2)`.
 //
 //   gesetz()                               → LEBEN_GESETZ
 //   normal(u1, u2)                         → N(0,1)            Box-Muller, u ∈ [0, 1) wie die Ströme sie liefern
@@ -37,6 +38,14 @@
 //   spanne()                               → [q^⅓·e^(−4·sdP/3), e^(4·sdP/3)]   die Größen-Grenzen DES GESETZES (bs)
 //   artId(wurzel, pfad = "")               → wurzel + (pfad ? "/" + pfad : "")  Welle 1: pfad leer, die Wurzel ist die Gattung
 //   indId(key, tS, j)                      → key + ":" + tS + ":" + j
+//   ── additiv (erbe-geburt, die zweite Achse `scheu`: das Verhalten ist Erbe — leben.evolution.zivilisation#1) ──
+//   achse(name)                            → i   die Stelle der Achse im Vektor (wirft bei einem fremden Namen)
+//   merkmal(wert, a, e, name)              → wert·e^(a_i + e_i)  das Maß der Art am Individuum (lnM: masseAdult; scheu: die
+//                                            Fluchtdistanz der Gattung × e^P — Kinder scheuer Eltern fliehen früher)
+//   fangGewicht(a, e)                      → e^(−scheuFang·P_scheu)  das Gewicht eines Kopfs in der Wahl des Risses: wer früher
+//                                            flieht, wird seltener gefasst (die Auslese der Achse; die Nische `eignung` ist ihr Preis)
+//   erbeVoll(v, wer?)                      → v'  ein Erbe eines Stands mit 1 … ACHSEN Stellen, die fehlenden als Art-Mittel 0
+//                                            (die benannte Wandlung eines Stands von vor einer Achse; jede andere Form wirft)
 //   ── additiv (Schritt B, das Gesetz der Zeit und der Jagd — §2 unten trägt die Sätze und den Leser `welt`) ──
 //   zeitJagd()                             → ZEIT_JAGD         die Werte der sieben Sätze, jede Rate je Jahr mit Quelle
 //   anker(f, D, tafel = ZEIT_JAGD.anker)   → die Anker-Tafel des Satzes 4 an der Deckung D (faehen · welpen · welpeJaehrling · ueberleben)
@@ -48,9 +57,11 @@
 //       akt(g, { takt, art: "aus" | "ein", id, … }) → wirkte · feldTakt(feld, O, Kap) · feldAesen(feld, O, frass)
 //       koepfe(z, i) → { beute, jaeger, rudel } · tiereIn(z, i) → [{ id, g, v, m, w, alterS, kg, M, r, a, e }] · frassAm(g, i, c)
 //       gauPack(g) → Uint8Array · gauEntpack(bytes, feld) → g      der Gau als reines Datum (Stand, Mitspieler)
-//   selbsttest(samen)                      → { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf }
+//   selbsttest(samen)                      → { steigung, steigungAus, steigungScheu, streuKind, saatGleich, masseMonoton, reifeTreffer,
+//                                              lebenWolf }
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
+//       steigungScheu dieselbe Regression an der Achse scheu (`merkmal`), Soll ihr h2 0,35 ± 0,02 (erbe-geburt)
 //       masseMonoton masseZurZeit steigt streng über das Leben (0 … lebensdauerS), danach nie fallend, nie über M∞ (vier Massen)
 //       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ), die Umkehr
 //                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso, erbeAusLeib(P): a + e = P und a = h²·P
@@ -71,7 +82,17 @@
         // Reihenfolge = Byte-Vertrag; eine Achse tritt NUR mit Leser UND Auslese ein.
         //   h2: Mousseau & Roff 1987 (Heredity 59:181), Morphologie ~0,46
         //   sdP: Massen-CV 10–30 % in einer Population (Yablokov 1974) — unsicher
-        achsen: Object.freeze([Object.freeze({ name: "lnM", h2: 0.46, sdP: 0.2 })]),
+        //   scheu (erbe-geburt, die zweite Achse): P = ln(d / d̄) der Fluchtdistanz gegen das Feldmaß der Gattung (tetrapoda
+        //     FURCHT_GESETZ.fluchtDistanzM). Leser: die Flucht vor dem Menschen (`merkmal`), Auslese: der Riss (`fangGewicht`) gegen
+        //     die Nische (`eignung`: wer flieht, äst weniger). h2: Verhalten im Mittel 0,24 (Dochtermann, Schwab & Sih 2015, Proc. R.
+        //     Soc. B 282:20141201), Kühnheit/Erkundung der Kohlmeise 0,22–0,54 (Dingemanse et al. 2002, Anim. Behav. 64:929) —
+        //     gewählt 0,35, unsicher. sdP: die Fluchtdistanz streut in einer Population um ±30–50 % (Stankowich & Blumstein 2005,
+        //     Proc. R. Soc. B 272:2627) — 0,35, unsicher
+        achsen: Object.freeze([Object.freeze({ name: "lnM", h2: 0.46, sdP: 0.2 }), Object.freeze({ name: "scheu", h2: 0.35, sdP: 0.35 })]),
+        // Die Fang-Elastizität der Scheu: das Gewicht im Riss ∝ (d / d̄)^−scheuFang — die Beute, die bei doppelter Distanz flieht,
+        // gibt dem Jäger den doppelten Weg vor und wird halb so oft gefasst (Ydenberg & Dill 1986, Adv. Study Behav. 16:229: die
+        // Ökonomie der Flucht) — gewählt 1, unsicher
+        scheuFang: 1,
         vmJeVE: 1e-3, // Mutations-Varianz je Generation V_M/V_E (Houle, Morikawa & Lynch 1996; Lynch & Walsh 1998) — unsicher
         lebenExp: 0.2, // t_max ∝ M^0,20 (Sacher 1959; Calder 1984)
         wachsExp: 0.25, // ontogenetisches Wachstum (m/M)^¼ = 1 − (1 − q^¼)·e^(−t/τ), τ ∝ M^¼ (West, Brown & Enquist 2001, Nature 413:628)
@@ -99,6 +120,7 @@
     const SD_E = VE.map(Math.sqrt);
     const OMEGA2 = G.achsen.map((x) => G.omegaJeVP * x.sdP * x.sdP);
     const LN_M = G.achsen.findIndex((x) => x.name === "lnM");
+    const SCHEU = G.achsen.findIndex((x) => x.name === "scheu");
     const Q_W = Math.pow(G.geburtAnteil, G.wachsExp); // q^¼
     const REIFE_MASS = Math.log((1 - Q_W) / (1 - Math.pow(G.reifeMasse, G.wachsExp)));
     const TAU_REF = (G.reifeAnteil * G.refS) / REIFE_MASS;
@@ -224,6 +246,37 @@
     function spanne() {
         const s = G.achsen[LN_M].sdP;
         return [Math.cbrt(G.geburtAnteil) * Math.exp((-4 * s) / 3), Math.exp((4 * s) / 3)];
+    }
+
+    // DIE ACHSE BEIM NAMEN (erbe-geburt): ihre Stelle im Vektor des Erbes — ein fremder Name bricht laut.
+    function achse(name) {
+        const i = G.achsen.findIndex((x) => x.name === name);
+        if (i < 0) throw new Error("leben-core: das Gesetz trägt keine Achse „" + name + "“");
+        return i;
+    }
+    // DAS MASS DER ART AM INDIVIDUUM: wert·e^(a_i + e_i) — der Phänotyp der Achse als Faktor auf das Maß der Gattung (die Achse
+    // lnM: masseAdult; die Achse scheu: die Fluchtdistanz, die ein Kind scheuer Eltern früher fliehen lässt).
+    function merkmal(wert, a, e, name) {
+        zahl(wert, "wert");
+        vektor(a, "a");
+        vektor(e, "e");
+        const i = achse(name);
+        return wert * Math.exp(a[i] + e[i]);
+    }
+    // DAS ERBE EINES STANDS VON VOR EINER ACHSE (erbe-geburt, die Wandlung — benannt, nie still): ein Vektor endlicher Zahlen mit
+    // 1 … ACHSEN Stellen trägt die Achsen, die er nicht kennt, als das Art-Mittel (0); jede andere Form bricht laut. Liefert einen
+    // NEUEN Vektor der Länge ACHSEN.
+    function erbeVoll(v, wer) {
+        if (!Array.isArray(v) || v.length < 1 || v.length > ACHSEN) throw new Error("leben-core: " + (wer || "das Erbe") + " ist kein Vektor mit 1 … " + ACHSEN + " Achsen");
+        const aus = new Array(ACHSEN).fill(0);
+        for (let i = 0; i < v.length; i++) aus[i] = zahl(v[i], (wer || "das Erbe") + "[" + i + "]");
+        return aus;
+    }
+    // DAS GEWICHT IM RISS (die Auslese der Scheu): (d / d̄)^−scheuFang = e^(−scheuFang·P_scheu) — 1 am Art-Mittel.
+    function fangGewicht(a, e) {
+        vektor(a, "a");
+        vektor(e, "e");
+        return Math.exp(-G.scheuFang * (a[SCHEU] + e[SCHEU]));
     }
 
     function artId(wurzel, pfad) {
@@ -428,7 +481,8 @@
         }
         const mutterW = (t) => wurfGewicht(t.kg) * t.eig;
         // die Verwundbarkeit: eine Stufe im Alter — unreif · Greis · sonst 1 (keine Masse: der Riss zieht nicht an der Größen-Erbanlage)
-        const verwundbar = (t) => (!t.r ? JAGD.jung : t.alterS >= JAGD.greisAb * t.tod ? JAGD.greis : 1);
+        // — mal das Fang-Gewicht der Scheu (`fangGewicht`, erbe-geburt): wer früher flieht, wird seltener gefasst
+        const verwundbar = (t) => (!t.r ? JAGD.jung : t.alterS >= JAGD.greisAb * t.tod ? JAGD.greis : 1) * t.fang;
 
         function tier(g, id, a, e, mutter, alterS, weiblich) {
             const M = masseAdult(M_ART[g], a, e);
@@ -446,7 +500,9 @@
                 tau: reifeS(M) / REIFE_MASS,
                 tod: lebensdauerS(M),
                 reif: reifeS(M),
-                eig: eignung(G.achsen.map((x, i) => (i === LN_M ? P : 0))),
+                // die Nische über JEDE Achse: die Größe am Leib, die Scheu am Erbe (erbe-geburt — wer flieht, äst weniger)
+                eig: eignung(G.achsen.map((x, i) => (i === LN_M ? P : a[i] + e[i]))),
+                fang: fangGewicht(a, e),
                 alterS,
                 kg: 0,
                 k34: 0,
@@ -1229,7 +1285,8 @@
             if (!(zahl(a.alterS, "akt.alterS") >= 0)) throw new Error("leben-core bestand: „ein“ mit negativem Alter");
             const rng = strom(g.saat, z.takt, 6, kennZahl(a.id), SAMEN);
             const u = rng();
-            const t = tier(a.g, a.id, vektor(a.a, "akt.a").slice(), vektor(a.e, "akt.e").slice(), a.m == null ? null : String(a.m), a.alterS, typeof a.w === "boolean" ? a.w : u < BEUTE.weiblich);
+            // das Erbe des Akts: ein Akt eines Stands von vor der zweiten Achse trägt eine Stelle (`erbeVoll`, die Wandlung)
+            const t = tier(a.g, a.id, erbeVoll(a.a, "akt.a"), erbeVoll(a.e, "akt.e"), a.m == null ? null : String(a.m), a.alterS, typeof a.w === "boolean" ? a.w : u < BEUTE.weiblich);
             if (a.g === "beute") return z.beute[a.revier].push(t), true;
             t.ab = abwanderAlter(rng);
             let R = z.besitz[a.revier] >= 0 ? z.rudel.find((r) => r.id === z.besitz[a.revier]) : null;
@@ -1313,7 +1370,7 @@
             const LR = g.feld.LR;
             for (let j = 0; j < LR.length; j++) if (LR[j] > 0) D.push(g.O[j]);
             const zeile = new TextEncoder().encode(
-                JSON.stringify({ v: 1, W: z.W, H: z.H, takt: z.takt, saat: g.saat, aktN: g.aktN, param: z.param, frei: z.frei, rudelZahl: z.rudelZahl, namen, rudel, nD: D.length, nI: I.length })
+                JSON.stringify({ v: 1, W: z.W, H: z.H, takt: z.takt, saat: g.saat, aktN: g.aktN, param: z.param, frei: z.frei, rudelZahl: z.rudelZahl, namen, rudel, nD: D.length, nI: I.length, achsen: ACHSEN })
             );
             const ab = (8 + zeile.length + 7) & ~7;
             const aus = new Uint8Array(ab + D.length * 8 + I.length * 4);
@@ -1331,6 +1388,11 @@
             const K0 = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + lang)));
             if (K0.v !== 1 || K0.W !== F.W || K0.H !== F.H) throw new Error("leben-core bestand: der Stand (v " + K0.v + ", " + K0.W + " × " + K0.H + ") gehört nicht zu diesem Feld");
             if (bytes.length !== ab + K0.nD * 8 + K0.nI * 4) throw new Error("leben-core bestand: der Stand des Gaus trägt " + bytes.length + " Bytes, sein Kopf nennt " + (ab + K0.nD * 8 + K0.nI * 4));
+            // DIE ACHSEN DES STANDS (erbe-geburt): ein Stand von vor der zweiten Achse trägt keine Zahl `achsen` und je Kopf EINE Achse;
+            // die Achsen, die er nicht kennt, liest er als das Art-Mittel (a = e = 0) — benannt, nie still; mehr Achsen als das Gesetz
+            // bricht laut
+            const NA = K0.achsen == null ? 1 : K0.achsen;
+            if (!(Number.isInteger(NA) && NA >= 1 && NA <= ACHSEN)) throw new Error("leben-core bestand: der Stand trägt " + NA + " Achsen des Erbes, das Gesetz " + ACHSEN);
             const roh = bytes.buffer.slice(bytes.byteOffset + ab, bytes.byteOffset + bytes.length);
             const [D, I] = [new Float64Array(roh, 0, K0.nD), new Int32Array(roh, K0.nD * 8, K0.nI)];
             let [d, i] = [0, 0];
@@ -1340,8 +1402,8 @@
             };
             const kopf = (art) => {
                 const [ich, mutter, alterS] = [kennung(), kennung().id, D[d++]];
-                const a = Array.from(D.subarray(d, (d += ACHSEN)));
-                const e = Array.from(D.subarray(d, (d += ACHSEN)));
+                const a = erbeVoll(Array.from(D.subarray(d, (d += NA))), "stand.a");
+                const e = erbeVoll(Array.from(D.subarray(d, (d += NA))), "stand.e");
                 const t = tier(art, ich.id, a, e, mutter, alterS, !!(ich.bits & 1));
                 [t.r, t.jl] = [!!(ich.bits & 2), !!(ich.bits & 4)];
                 if (art === "jaeger") t.ab = D[d++];
@@ -1385,21 +1447,42 @@
         // 10⁵ Paare: die Streuung der Steigung ist 0,013 bei 10⁴ Paaren (gemessen über 200 Saaten, 12 % außerhalb ±0,02) —
         // bei 10⁵ ist sie 0,004, das Band ±0,02 liegt bei ~5σ.
         const PAARE = 100000;
-        // Eltern-Kind-Regression des Phänotyps lnM = a + e (Mbar = 1): Steigung Kind auf Eltern-Mittel = h2.
-        const regression = (zeuge) => {
+        // Eltern-Kind-Regression des Phänotyps lnM = a + e (Mbar = 1): Steigung Kind auf Eltern-Mittel = h2 — je Achse (`name`,
+        // erbe-geburt: die Scheu am Maß `merkmal` wie die Größe an masseAdult)
+        const regression = (zeuge, name) => {
+            const p = name === "lnM" ? (a, e) => Math.log(masseAdult(1, a, e)) : (a, e) => Math.log(merkmal(1, a, e, name));
             let sx = 0, sy = 0, sxx = 0, sxy = 0;
             for (let k = 0; k < PAARE; k++) {
                 const aM = gruender(nv()), aV = gruender(nv());
-                const pM = Math.log(masseAdult(1, aM, umwelt(nv())));
-                const pV = Math.log(masseAdult(1, aV, umwelt(nv())));
-                const pK = Math.log(masseAdult(1, zeuge(aM, aV), umwelt(nv())));
+                const pM = p(aM, umwelt(nv()));
+                const pV = p(aV, umwelt(nv()));
+                const pK = p(zeuge(aM, aV), umwelt(nv()));
                 const x = (pM + pV) / 2;
                 sx += x; sy += pK; sxx += x * x; sxy += x * pK;
             }
             return (sxy - (sx * sy) / PAARE) / (sxx - (sx * sx) / PAARE);
         };
-        const steigung = regression((aM, aV) => kind(aM, aV, nv(), nv(), nv()));
-        const steigungAus = regression(() => gruender(nv()));
+        const steigung = regression((aM, aV) => kind(aM, aV, nv(), nv(), nv()), "lnM");
+        const steigungAus = regression(() => gruender(nv()), "lnM");
+        const steigungScheu = regression((aM, aV) => kind(aM, aV, nv(), nv(), nv()), "scheu");
+        // die Auslese der Scheu: das Art-Mittel wiegt 1, wer doppelt so weit flieht, halb so viel (scheuFang 1)
+        const fang = [fangGewicht([0, 0], [0, 0]), fangGewicht([0, Math.LN2], [0, 0])];
+        // DAS KIND ZWISCHEN DEN ELTERN (erbe-geburt): je Achse liegt es um das Eltern-Mittel mit der Varianz VA/2 + V_M (Segregation
+        // und Mutation, nichts sonst — 2·10⁴ Kinder, ±5 % ≈ 5σ); gleiche Saat → gleiches Kind, Bit für Bit, eine andere Saat ein anderes
+        const KINDER = 20000;
+        const streuKind = new Array(ACHSEN).fill(0);
+        for (let k = 0; k < KINDER; k++) {
+            const aM = gruender(nv()), aV = gruender(nv());
+            const a = kind(aM, aV, nv(), nv(), nv());
+            for (let i = 0; i < ACHSEN; i++) streuKind[i] += (a[i] - (aM[i] + aV[i]) / 2) ** 2 / KINDER;
+        }
+        const zwischen = streuKind.every((v, i) => Math.abs(v / (VA[i] / 2 + G.vmJeVE * VE[i]) - 1) <= 0.05);
+        const kindDer = (s) => {
+            const w = samen(s);
+            const n = () => G.achsen.map(() => normal(w(), w()));
+            return kind(gruender(n()), gruender(n()), n(), n(), n());
+        };
+        const saatGleich = kindDer(7).every((x, i) => x === kindDer(7)[i]) && kindDer(7).some((x, i) => x !== kindDer(8)[i]);
         let masseMonoton = true;
         let reifeTreffer = true;
         for (const M of [15, 64, 94, 335]) {
@@ -1418,7 +1501,7 @@
             if (Math.abs(alterZurMasse(M, masseZurZeit(M, reifeS(M))) / reifeS(M) - 1) > 1e-9) reifeTreffer = false;
         }
         // die Annahme eines gemessenen Leibs trifft seinen Phänotyp (a + e = P), der Zuchtwert ist sein h²-Anteil
-        const leib = erbeAusLeib([0.37]);
+        const leib = erbeAusLeib(G.achsen.map((x, i) => (i === LN_M ? 0.37 : 0)));
         if (Math.abs(leib.a[LN_M] + leib.e[LN_M] - 0.37) > 1e-12 || Math.abs(leib.a[LN_M] - G.achsen[LN_M].h2 * 0.37) > 1e-12)
             reifeTreffer = false;
         const lebenWolf = lebensdauerS(64);
@@ -1430,12 +1513,16 @@
         const fehl = [];
         if (!(Math.abs(steigung - h2) <= 0.02)) fehl.push("steigung " + steigung);
         if (!(Math.abs(steigungAus) <= 0.02)) fehl.push("steigungAus " + steigungAus);
+        if (!(Math.abs(steigungScheu - G.achsen[SCHEU].h2) <= 0.02)) fehl.push("steigungScheu " + steigungScheu);
+        if (!(fang[0] === 1 && Math.abs(fang[1] - Math.pow(2, -G.scheuFang)) <= 1e-12)) fehl.push("fang " + fang.join(" "));
+        if (!zwischen) fehl.push("zwischen " + streuKind.join(" "));
+        if (!saatGleich) fehl.push("saatGleich");
         if (!masseMonoton) fehl.push("masseMonoton");
         if (!reifeTreffer) fehl.push("reifeTreffer");
         if (!ankerTreffer) fehl.push("ankerTreffer");
         if (!(Math.abs(lebenWolf - G.refS) <= 1e-9)) fehl.push("lebenWolf " + lebenWolf);
         if (fehl.length) throw new Error("leben-core selbsttest ROT: " + fehl.join(" · "));
-        return { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf };
+        return { steigung, steigungAus, steigungScheu, streuKind, saatGleich, masseMonoton, reifeTreffer, lebenWolf };
     }
 
     const api = Object.freeze({
@@ -1459,6 +1546,10 @@
         wurfGewicht: wurfGewicht,
         eignung: eignung,
         spanne: spanne,
+        achse: achse,
+        merkmal: merkmal,
+        fangGewicht: fangGewicht,
+        erbeVoll: erbeVoll,
         artId: artId,
         indId: indId,
         zeitJagd: zeitJagd,
