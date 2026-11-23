@@ -2137,6 +2137,14 @@ class AnazhRealm_siedlung_wege {
         }
         const m = F.von.get(entry);
         if (!m) return;
+        // FIEL DAS HAUS INS GEDÄCHTNIS seines Orts (`_ortAbschiedTakt`: es trug kein eigenes Bild), steht seine Masse weiter und
+        // das Los ist frei — das Haus, das der Zug hebt, bindet es neu (der Eintritt oben); nur der Abbau nimmt die Masse
+        if (art === "weg" && entry._insGedaechtnis) {
+            m.e.gebunden[m.j] = 0;
+            F.von.delete(entry);
+            F.schmutz.delete(entry);
+            return;
+        }
         if (art === "weg") m.weg = true; // abgebaut: an seinem Los steht nichts mehr
         F.schmutz.add(entry);
     }
@@ -2166,6 +2174,12 @@ class AnazhRealm_siedlung_wege {
             }
             P.mesh.instanceMatrix.needsUpdate = true;
         }
+    }
+    // der Zug, der den Ort `key` aus dem Gedächtnis hob (`_ortHeben`), endete: ein Los, das kein Haus band, trägt keine Masse mehr
+    _stadtMasseGehoben(key) {
+        const F = this.state.stadtFerne;
+        const e = F && F.je.get(key);
+        if (e && e.los) this._stadtMasseZugEnde(F, e);
     }
     _stadtMasseZugEnde(F, e) {
         e.steht = true;
@@ -3245,6 +3259,7 @@ class AnazhRealm_siedlung_wege {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
+        this._ortGefallen = this._ortFall = this._ortFallPruef = null; // und das Gedächtnis der gefallenen Orte (`_ortAbschiedTakt`)
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);

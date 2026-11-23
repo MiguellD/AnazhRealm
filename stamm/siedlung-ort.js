@@ -597,16 +597,21 @@ class AnazhRealm_siedlung_ort {
     // Die Wandlaterne hängt an ihrem Haus und steht nur mit ihm (`_spawnSettlementSlot`): sie fällt nur an einem Haus aus `weg`
     // ({x, z, r}: die gefallenen Häuser, r ihre Reichweite).
     _ortAusstattungFaellt(plan, weg) {
+        for (const e of this._ortAusstattung(plan, weg)) this.removeArchitecture(e, { still: true });
+    }
+    // die Ausstattung des Plans, die mit den Häusern aus `weg` fällt (`_ortAusstattungFaellt`, der Fall ins Gedächtnis `_ortAbschiedTakt`)
+    _ortAusstattung(plan, weg) {
         const [A, S, o, w] = [AnazhRealm.ORT_AUSSTATTUNG, new Set(), plan.ort, plan.welt];
         for (const art in A)
             for (let k = 0; k < (A[art].kappe || (plan.laternen || []).length); k++)
                 S.add(this._ausstattungSame(plan, art, k));
-        for (const e of this.state.architectures.slice()) {
+        const aus = [];
+        for (const e of this.state.architectures) {
             const p = e && e._ausGesetz && S.has(e.seed >>> 0) && e.position;
             if (!p || p.x < o.x + w.x0 || p.x > o.x + w.x1 || p.z < o.z + w.z0 || p.z > o.z + w.z1) continue;
-            if (e.type !== "wandlaterne_dorf" || weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r))
-                this.removeArchitecture(e, { still: true });
+            if (e.type !== "wandlaterne_dorf" || weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r)) aus.push(e);
         }
+        return aus;
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
@@ -2769,7 +2774,11 @@ class AnazhRealm_siedlung_ort {
 
     _tickAutoSettlement(playerPos) {
         const st = this.state;
-        if (!playerPos || !this._dorfTaktLebt()) return;
+        if (!playerPos) return;
+        // DER FERNE ORT FÄLLT INS GEDÄCHTNIS (`_ortAbschiedTakt`) auch, wo der Haken des Messorts den Bau anhält: er hält den Bau,
+        // nie das Loslassen — der Fall geht in der Frist dieses Bauers, das Heben wartet auf den Zug
+        this._ortAbschiedTakt(playerPos);
+        if (!this._dorfTaktLebt()) return;
         this._stadtFerneTakt(playerPos); // die Kacheln der Stadt, die nicht stehen, tragen ihre Massen
         // DER ORT LIEGT VOR SEINEM WALD (w28-ort-vor-wald): der Vorlauf (`_dorfVorlauf`: die Vorräte, ihr Wasser, ihr Grund und der
         // nächste fällige Ort) geht in JEDEM Takt vor dem Akt — ein Zug, ein Export unterwegs, die Wiederkehr hielten ihn an
@@ -2793,6 +2802,8 @@ class AnazhRealm_siedlung_ort {
                 // nach dem Wachstum (`_ortWaechst`) stellen sich die Bewohner aus dem neuen Plan auf: ihre Liste ist seine Funktion
                 const S = q.waechst && this._bewohnerSiedlungen && this._bewohnerSiedlungen.get(q.cellKey);
                 if (S) this._bewohnerFort(S);
+                // der Ort kehrte aus dem Gedächtnis (`_ortHeben`): ein Los, an dem kein Haus wieder stand, trägt keine Masse mehr
+                if (q.gehoben) this._stadtMasseGehoben(q.cellKey);
             }
             return;
         }
@@ -3040,6 +3051,126 @@ class AnazhRealm_siedlung_ort {
             "INFO"
         );
         return true;
+    }
+    // DER ORT FÄLLT INS GEDÄCHTNIS (heap-loslassen, „der Speicher folgt dem Blick“, same.preis.speicher): ein Ort dieser Sitzung
+    // (seine Wege, `_stlWegeKeys`), dessen Bewohner gingen (`_bewohnerFort`) und dessen Häuser und Ausstattung KEIN eigenes Bild
+    // tragen — kein Mesh, kein Satz, jeder um `hebM` + `fallBandM` jenseits seines Pixel-Horizonts samt Totband
+    // (`_archSatzHorizont`; das Haus der Stadt trägt dort seine Masse, `_stadtMasseRegt`) —, fällt in Raten (`fallJeTakt`) aus
+    // `state.architectures`: der Abbau ins Gedächtnis (`removeArchitecture` still: keine Tat, kein Journal, kein Stand; der Grund
+    // bleibt im Erdbau des Orts, die Masse an ihrem Los). Sein Gedächtnis bleibt — `settlementCells`, der Plan (`_ortPlaene`), die
+    // Wege, die Taten. Naht das Auge einem seiner Bauten auf `hebM` vor dessen Horizont, hebt ihn der Zug aus DEMSELBEN Plan
+    // (`_ortHeben`). Beide Urteile fragen erst wieder, wenn das Auge weit genug ging (`frei`: der Abstand jedes Baus ändert sich
+    // höchstens um den Weg des Auges). Bis heap-loslassen blieb jeder ferne Ort im Sack: GTX 1060, genesis → stadt-voll →
+    // genesis, 2 454 → 3 267 Einträge (308 Häuser, 291 Laternen, 167 Wandlaternen), Heap nach GC 225,7 → 387,9 MB.
+    // Rückgabe true = der Takt fiel oder hob.
+    _ortAbschiedTakt(p) {
+        const cells = (this.state.worldMeta || {}).settlementCells;
+        if (!cells || typeof cells !== "object" || !this._stlWegeKeys || !this._ortPlaene) return false;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const auge = this._lodAuge() || p;
+        const ging = (g) => Math.hypot(auge.x - g.ax, auge.z - g.az) >= g.frei;
+        // (a) DAS HEBEN zuerst — es bricht auch den Fall, der noch geht
+        const G = this._ortGefallen || (this._ortGefallen = new Map());
+        for (const [k, g] of G) {
+            if (!ging(g)) continue;
+            const frei = this._ortHorizontFrei(g.punkte, auge) - A.hebM;
+            if (frei > 0) {
+                [g.ax, g.az, g.frei] = [auge.x, auge.z, frei];
+                continue;
+            }
+            G.delete(k);
+            if (this._ortFall && this._ortFall.k === k) this._ortFall = null;
+            this._ortHeben(k, cells[k], (cells[k] && this._ortPlaene.get(cells[k].ort)) || g.plan);
+            return true;
+        }
+        // (b) DER FALL IN RATEN
+        const F = this._ortFall;
+        if (F) {
+            for (let n = 0; n < A.fallJeTakt && F.i < F.liste.length; n++)
+                this.removeArchitecture(F.liste[F.i++], { still: true, gedaechtnis: true });
+            if (F.i >= F.liste.length) this._ortFall = null;
+            return true;
+        }
+        // (c) DAS URTEIL: EIN Ort je Takt, sobald das Auge weit genug ging
+        const P = this._ortFallPruef || (this._ortFallPruef = new Map());
+        const [q, H, B] = [this._autoSettlementQueue, this._ortWachsHaeuser, this._bewohnerSiedlungen];
+        for (const k in cells) {
+            const c = cells[k];
+            const plan = c && c.ort && this._stlWegeKeys.has(k) && !G.has(k) && this._ortPlaene.get(c.ort);
+            if (!plan || !plan.ort || !plan.welt || !Array.isArray(plan.slots)) continue;
+            const pr = P.get(k);
+            if (pr && !ging(pr)) continue;
+            if ((q && q.cellKey === k) || (H && H.has(k))) continue; // sein Zug geht noch
+            const S = B && B.get(k);
+            if (S && (S.liste || S.listeWerk)) continue; // seine Bewohner gehen zuerst (`_tickBewohner`)
+            const U = this._ortFallUrteil(plan, auge);
+            if (U.fehlt > 0) {
+                P.set(k, { ax: auge.x, az: auge.z, frei: U.fehlt });
+                return false;
+            }
+            P.delete(k);
+            G.set(k, { plan, punkte: U.punkte, ax: auge.x, az: auge.z, frei: 0 });
+            this._ortFall = { k, liste: U.liste, i: 0 };
+            return true;
+        }
+        return false;
+    }
+    // DAS URTEIL DES FALLS: die Häuser des Plans (ihr Same an der Mitte ihres Slots, wie `_dorfHaus` — EIN Gang über den Bestand)
+    // und ihre Ausstattung (`_ortAusstattung`). `fehlt` > 0: so weit muss das Auge noch gehen, bis keiner ein Bild trägt und jeder
+    // um `hebM` + `fallBandM` jenseits seines Horizonts samt Totband steht; sonst `liste` (was fällt) und `punkte` (je Bau x, z und
+    // sein Horizont samt Totband — das Heben fragt sie, nie die gefallenen Einträge)
+    _ortFallUrteil(plan, auge) {
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const o = plan.ort;
+        const je = new Map();
+        for (const s of plan.slots) {
+            const l = je.get(s.seed >>> 0);
+            if (l) l.push(s);
+            else je.set(s.seed >>> 0, [s]);
+        }
+        const [liste, weg] = [[], []];
+        for (const e of this.state.architectures) {
+            const l = e && e.position && je.get(e.seed);
+            const s = l && l.find((q) => Math.abs(o.x + q.x - e.position.x) < 0.05 && Math.abs(o.z + q.z - e.position.z) < 0.05); // prettier-ignore
+            if (!s) continue;
+            const fp = this._grundrissVon(s);
+            liste.push(e);
+            weg.push({ x: e.position.x, z: e.position.z, r: (fp ? Math.hypot(fp.ex, fp.ez) : 4) + 1.5 });
+        }
+        if (!liste.length) return { fehlt: A.fallBandM, liste, punkte: null }; // kein Haus steht: nichts fällt
+        liste.push(...this._ortAusstattung(plan, weg));
+        const band = 1 + AnazhRealm.WELT_MARCH.satzBand;
+        const punkte = new Float64Array(liste.length * 3);
+        let fehlt = -Infinity;
+        liste.forEach((e, i) => {
+            const h = this._archSatzHorizont(e) * band;
+            const d = Math.hypot(e.position.x - auge.x, e.position.z - auge.z);
+            // trägt er noch ein Bild (Mesh oder Satz), oder kennt er keinen Horizont, fragt das Urteil nach `fallBandM` Weg neu
+            const bild = !!e._ziegelSlot || this._archIsRendered(e) || !Number.isFinite(h);
+            fehlt = Math.max(fehlt, bild ? A.fallBandM : h + A.hebM + A.fallBandM - d);
+            punkte.set([e.position.x, e.position.z, h], i * 3);
+        });
+        return { fehlt, liste, punkte };
+    }
+    // der kleinste Abstand des Auges zum Horizont eines gefallenen Baus (`punkte`: je Bau x, z, Horizont samt Totband)
+    _ortHorizontFrei(punkte, auge) {
+        let m = Infinity;
+        for (let i = 0; i < punkte.length; i += 3)
+            m = Math.min(m, Math.hypot(punkte[i] - auge.x, punkte[i + 1] - auge.z) - punkte[i + 2]);
+        return m;
+    }
+    // DER ORT KEHRT AUS DEM GEDÄCHTNIS (`_ortAbschiedTakt`): derselbe Weg wie das Wachstum (`_ortWaechst`) — der Zug hebt jeden
+    // Slot des Plans, dessen Haus nicht steht (`_dorfZugOffen`: eine Tat sperrt ihn, der Grund liegt noch), das Erlebnis die
+    // Ausstattung (`_dorfErlebnis`: was steht, bleibt, die Wege liegen schon); am Ende des Zugs fallen die Massen der Lose, an
+    // denen kein Haus wieder stand (`_stadtMasseGehoben`)
+    _ortHeben(k, c, plan) {
+        const so = { key: k, autonomous: !!(c && c.autonomous) };
+        const gang = this._dorfErlebnis(plan, { x: plan.ort.x, z: plan.ort.z }, so);
+        const q = this._dorfZug(this._dorfZugOffen(plan, plan.ort), plan.ort, k, gang);
+        (this._ortWachsHaeuser || (this._ortWachsHaeuser = new Map())).set(
+            k,
+            Object.assign(q, { so, wieder: true, gehoben: true })
+        );
     }
     // DIE MAUER WÄCHST MIT (siedlung.K4 Staffel 2, `_ortWaechst`): wechselt die Mauer des Plans `plan` mit seinem Jahr (der Ring
     // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Streifen (Maß 0, der Pool behält die Plätze) und
@@ -3730,6 +3861,12 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     laternenJeTakt: 32,
     // die Zellen des Erdbaus je Rate seines Wasser-Urteils (`_dorfErwachen`, stadt-erwachen)
     wasserZellenJeTakt: 200,
+    // DER ORT FÄLLT INS GEDÄCHTNIS (`_ortAbschiedTakt`, heap-loslassen): so weit vor dem Horizont seines nächsten Baus hebt der Zug
+    // einen gefallenen Ort (`hebM`: der Lauf von 8 m/s gibt dem Zug 20 s), um `fallBandM` weiter fällt er (das Totband: kein Ort
+    // fällt und steht im Wechsel), je Takt fallen `fallJeTakt` seiner Bauten
+    hebM: 160,
+    fallBandM: 64,
+    fallJeTakt: 32,
 });
 // DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-Ingest (`_foundryIngestSiedlung`, validiert
 // ganz-oder-gar-nicht); kaltes Buch → null: ohne Gesetz entsteht kein Dorf (fail-closed, die Leser prüfen), nie ein

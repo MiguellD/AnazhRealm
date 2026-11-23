@@ -835,8 +835,9 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // `still`: der Abbau ohne Stimme (das Verblassen am Horizont, `_evictArchitecture`) — kein Ping, kein Journal; alles, was
-    // die Welt für den Bau hält, fällt gleich.
-    removeArchitecture(entry, { still = false } = {}) {
+    // die Welt für den Bau hält, fällt gleich. `gedaechtnis`: der Bau eines Orts fällt in dessen Gedächtnis (`_ortAbschiedTakt`) —
+    // sein Grund bleibt im Erdbau des Orts, die Masse der Stadt an seinem Los (`_stadtMasseRegt`), der Stand ändert sich nicht.
+    removeArchitecture(entry, { still = false, gedaechtnis = false } = {}) {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
@@ -850,7 +851,9 @@ class AnazhRealm_werkstatt_bauen {
             const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
             this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
         }
-        this._erdbauGrundFaellt(entry); // und sein Grund (S4): der Boden schließt sich, der Keller füllt sich
+        // und sein Grund (S4): der Boden schließt sich, der Keller füllt sich — nie beim Fall ins Gedächtnis: der Grund liegt im
+        // Erdbau seines Orts, und der Zug, der ihn hebt, liest ihn (`_dorfZugOffen`)
+        if (!gedaechtnis) this._erdbauGrundFaellt(entry);
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
@@ -898,6 +901,7 @@ class AnazhRealm_werkstatt_bauen {
         this.state.architectures.splice(idx, 1);
         this._blockerAustritt(entry);
         if (entry._grundBox) this._wagenGrund(entry, true); // wo der Wagen stand, wächst der Halm wieder
+        if (gedaechtnis) entry._insGedaechtnis = true; // die Masse der Stadt bleibt an seinem Los (`_stadtMasseRegt`)
         this._cullWecken(entry, "weg");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
@@ -915,7 +919,12 @@ class AnazhRealm_werkstatt_bauen {
         // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
         // Ein Wurf des Felds (`_ausGesetz` und `feldWurf`) stand nie im Stand (`_standBauten`): sein Abbau ändert ihn nicht — die
         // Tat an ihm schreibt und speichert ihr Rufer (`_tatSchreiben`); die Saat, die mit ihrem Chunk geht (`_saatGeht`), sichert nie.
-        if (!(entry._ausGesetz === true && entry.feldWurf === true) && typeof this._scheduleEditSave === "function")
+        // Der Fall ins Gedächtnis ändert den Stand nie: der Bau eines Orts steht nicht in ihm (speicher.K3, die Wiederkehr)
+        if (
+            !gedaechtnis &&
+            !(entry._ausGesetz === true && entry.feldWurf === true) &&
+            typeof this._scheduleEditSave === "function"
+        )
             this._scheduleEditSave();
         return true;
     }

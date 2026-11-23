@@ -470,7 +470,108 @@ function leserWand(A) {
     return { errs, mb, n };
 }
 
-// H13 DER PUFFER GEHÖRT DER GPU (heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
+// H17 DER FERNE ORT HÄLT KEINEN BAU (heap-loslassen, „der Speicher folgt dem Blick“): ein Ort der Sitzung, dessen Bewohner gingen
+// und von dessen Bauten keiner ein eigenes Bild trägt, fällt in sein Gedächtnis (`_ortAbschiedTakt` im Bauer `_tickAutoSettlement`
+// — auch wo der Haken des Messorts den Bau anhält): seine Häuser und ihre Ausstattung verlassen `state.architectures`
+// (`removeArchitecture` ins Gedächtnis), sein Grund bleibt im Erdbau, die Masse der Stadt an ihrem Los, Zelle, Wege und Taten
+// stehen, der Stand speichert nicht, ein fremder Bau bleibt; ein Bau mit Bild hält den Fall an; naht das Auge, hebt der Zug jeden
+// Slot aus demselben Plan (`_ortHeben`). Bis heap-loslassen hielt jeder ferne Ort seine Bauten (GTX 1060, genesis → stadt-voll →
+// genesis: 2 454 → 3 267 Einträge, Heap nach GC 225,7 → 387,9 MB). Die Linse fährt den echten Takt an einem Ort aus drei Häusern
+// (eins der Stadt, mit Masse), einer Laterne und einer Wandlaterne, 1 km vom Auge; `mitBild`: ein Haus trägt seinen Satz.
+function ortFallWand(A, mitBild = false) {
+    const plan = {
+        seed: 4242,
+        ort: { x: 1000, z: 0 },
+        welt: { x0: -60, x1: 60, z0: -60, z1: 60 },
+        slots: [
+            { seed: 11, x: 0, z: 0 },
+            { seed: 12, x: 20, z: 0 },
+            { seed: 13, x: 0, z: 20 },
+        ],
+        laternen: [
+            { x: 10, z: 10 },
+            { wand: true, slot: 0, x: 2, z: 0 },
+        ],
+    };
+    const k = "7,0";
+    const taten = [{ tat: "abbauen", x: 1040, z: 0, h: 1 }];
+    const cells = { [k]: { seed: 4242, x: 1000, z: 0, nH: 3, ort: "ort:4242:1000,0" } };
+    const state = { worldMeta: { settlementCells: cells, taten }, architectures: [], stadtFerne: { los: new Map(), von: new Map(), schmutz: new Set(), je: new Map() } }; // prettier-ignore
+    const w = weltVon(A, state);
+    const auge = { x: 0, z: 0 };
+    const zahl = { grund: 0, stand: 0 };
+    Object.assign(w, {
+        _ortPlaene: new Map([[cells[k].ort, plan]]),
+        _stlWegeKeys: new Set([k]),
+        _bewohnerSiedlungen: new Map([[k, { key: k, plan, ox: 1000, oz: 0, liste: null }]]),
+        _lodAuge: () => auge,
+        _schirm: () => ({ pxJeM: 200 }), // ein Haus (100 m²) 500 m Horizont, die Laterne (1 m²) 50 m, das Haus der Stadt 300 m
+        _dorfTaktLebt: () => false, // der Haken des Messorts hält den Bau an
+        _stadtFerneTakt: () => {},
+        _grundrissVon: () => ({ ex: 4, ez: 4, ox: 0, oz: 0 }),
+        _grundrissFaellt: () => {},
+        _erdbauGrundFaellt: () => zahl.grund++,
+        _scheduleEditSave: () => zahl.stand++,
+        _erdbauRoh: () => [],
+        _werkGesetzAus: () => {},
+    });
+    for (const n of ["_archZiegelTod", "_cullArchitectureMesh", "_trittFlaecheLoesen", "_blockerAustritt", "_stufeWecken", "_weltRegt", "_kronenStreuWeg"]) w[n] = () => {}; // prettier-ignore
+    const same = (i) => A.prototype._ausstattungSame.call(w, plan, "laterne", i);
+    const bau = (id, type, seed, x, z, satzA) => ({
+        id,
+        type,
+        seed,
+        position: { x, y: 0, z },
+        _satzA: satzA,
+        _ausGesetz: true,
+    });
+    const haeuser = plan.slots.map((s) => bau(s.seed, "haus_gotisch", s.seed, 1000 + s.x, s.z, 100));
+    const ort = [
+        ...haeuser,
+        bau(21, "laterne_dorf", same(0), 1010, 10, 1),
+        bau(22, "wandlaterne_dorf", same(1), 1002, 0, 1),
+    ];
+    const fremd = bau(30, "haus_gotisch", 99, 1030, 30, 100);
+    state.architectures.push(...ort, fremd);
+    if (mitBild) haeuser[1]._ziegelSlot = {};
+    // das Haus der Stadt trägt fern seine Masse: sein Los, gebunden beim Eintritt (`_stadtMasseRegt`)
+    const masse = { e: { gebunden: [0], anH: [1] }, j: 0 };
+    state.stadtFerne.los.set(A._stadtLosKey(1000, 0), masse);
+    A.prototype._stadtMasseRegt.call(w, haeuser[0], "ein");
+    for (let i = 0; i < 4; i++) {
+        A.prototype._tickAutoSettlement.call(w, auge);
+        A.prototype._stadtMasseStand.call(w); // der Stand der Massen nach den Wechseln des Takts (`_stadtFerneTakt`)
+    }
+    const errs = [];
+    const stehen = ort.filter((e) => state.architectures.includes(e));
+    if (mitBild) {
+        if (stehen.length < ort.length)
+            errs.push(`H17 _ortFallUrteil: ein Bau mit Bild fiel — ${ort.length - stehen.length} von ${ort.length} Bauten des Orts fielen, während haus_gotisch #12 seinen Satz trug (Soll: der Ort steht, bis keiner ein Bild trägt)`); // prettier-ignore
+        return { errs, n: stehen.length };
+    }
+    if (stehen.length)
+        errs.push(`H17 _ortAbschiedTakt: die ferne Siedlung hält ${stehen.length} Bauten (Soll 0) — ${stehen.map((e) => e.type + " #" + e.id).join(" · ")}`); // prettier-ignore
+    if (!state.architectures.includes(fremd))
+        errs.push("H17 _ortAbschiedTakt: ein fremder Bau fiel mit dem Ort (haus_gotisch #30)");
+    if (zahl.grund) errs.push(`H17 removeArchitecture: der Fall ins Gedächtnis nahm den Grund (${zahl.grund}×) — der Zug, der den Ort hebt, fände ihn nicht`); // prettier-ignore
+    if (zahl.stand) errs.push(`H17 removeArchitecture: der Fall ins Gedächtnis speicherte den Stand (${zahl.stand}×) — der Bau eines Orts steht nicht in ihm`); // prettier-ignore
+    if (!(masse.e.anH[0] === 1 && masse.e.gebunden[0] === 0 && !state.stadtFerne.von.has(haeuser[0])))
+        errs.push(`H17 _stadtMasseRegt: die Masse des gefallenen Hauses der Stadt steht nicht frei an ihrem Los (an ${masse.e.anH[0]}, gebunden ${masse.e.gebunden[0]}; Soll an 1, gebunden 0)`); // prettier-ignore
+    const vergessen = [!cells[k] && "Zelle", !w._stlWegeKeys.has(k) && "Wege", taten.length !== 1 && "Taten"].filter(
+        Boolean
+    );
+    if (vergessen.length) errs.push(`H17 _ortAbschiedTakt: der Ort vergaß sein Gedächtnis — ${vergessen.join(" · ")}`);
+    // das Auge naht (500 m vor dem Ort): der Zug hebt jeden Slot aus demselben Plan
+    auge.x = 500;
+    A.prototype._ortAbschiedTakt.call(w, auge);
+    const q = w._ortWachsHaeuser && w._ortWachsHaeuser.get(k);
+    const gehoben = q && q.gehoben && q.plan ? q.plan.slots.length : 0;
+    if (gehoben !== plan.slots.length)
+        errs.push(`H17 _ortHeben: das nahende Auge hebt ${gehoben} von ${plan.slots.length} Slots des gefallenen Orts (Soll alle, aus demselben Plan)`); // prettier-ignore
+    return { errs, n: stehen.length, gehoben };
+}
+
+// H13 DER PUFFER GEHÖRT DER GPU(heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
 // Kopie (`_gpuEigen`). Bis heap-register 2 hielt der Sicht-Index (`_sichtZugPuffer`) seine Nullen ein zweites Mal im Heap
 // (Radeon, Wegenetz-Fahrt am Richter-Preis: `_sichtTiefeZ.auftraege[]` 13,5 MB). Die Linse fährt den echten Auftrag dreimal
 // an einem Zug mit 40 000 Indizes: gelegt (einmal hochgeladen, die Kopie leer, Typ und Zahl stehen), wieder (kein zweites
@@ -1967,6 +2068,18 @@ function selbsttest() {
     const l16Kurz = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryOhneLeser", "(AnazhRealm.ARCH_LEER_GNADE_MS * AnazhRealm.ARCH_LEER_MINT_DECKEL) / 1000", "AnazhRealm.ARCH_LEER_GNADE_MS / 1000"))); // prettier-ignore
     const l16Bau = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryOhneLeser", "v._liveRefs > 0) continue;", "v._liveRefs > 0 || v._ruheSeit === jetzt) continue;"))); // prettier-ignore
     t("Cache und Leser: ohne Takt-Marke rot beim ungehaltenen Eintrag, die Rückgabe im selben Takt rot beim Umbau, die Gnade einer Hülle rot bei der Wiederkehr des Lesers, der eben gebaute ohne Frist rot nach seinem Bau, der Stamm grün", l16Marke.errs.some((e) => /ungehaltener Foundry-Eintrag nach dem Leser/.test(e)) && l16Frueh.errs.some((e) => /fiel im Takt seiner Rückgabe/.test(e)) && l16Kurz.errs.some((e) => /in der Wiederkehr seines Lesers/.test(e)) && l16Bau.errs.some((e) => /nach seinem Bau/.test(e)) && !leserWand(klasseVon()).errs.length); // prettier-ignore
+    // DER FERNE ORT (H17): ohne den Fall (der Takt nimmt keinen Bau, oder der Bauer ruft ihn nicht) rot bei den fünf Bauten, der
+    // Fall mit dem Grund rot beim Grund, die Masse als Abbau rot bei ihr, der Fall über ein Bild rot beim Bild, ohne Heben rot beim
+    // Zug, der Stamm grün
+    const o17 = (e, bild) => ortFallWand(klasseVon(stammLib.ersetze(st8, e)), bild).errs.join(" ");
+    t("Ferne Ort: ohne Fall rot bei fünf Bauten, Grund, Masse, Bild und Heben rot beim Namen, der Stamm grün", [
+        [[["_ortAbschiedTakt", "this.removeArchitecture(F.liste[F.i++], { still: true, gedaechtnis: true });", "F.i++;"]], false, /hält 5 Bauten \(Soll 0\)/],
+        [[["_tickAutoSettlement", "this._ortAbschiedTakt(playerPos);", ""]], false, /hält 5 Bauten \(Soll 0\)/],
+        [[["removeArchitecture", "if (!gedaechtnis) this._erdbauGrundFaellt(entry);", "this._erdbauGrundFaellt(entry);"]], false, /nahm den Grund \(5×\)/],
+        [[["_stadtMasseRegt", 'if (art === "weg" && entry._insGedaechtnis) {', "if (false) {"]], false, /H17 _stadtMasseRegt: .*an 0, gebunden 1/],
+        [[["_ortFallUrteil", "bild ? A.fallBandM : h + A.hebM", "h + A.hebM"]], true, /ein Bau mit Bild fiel — 5 von 5/],
+        [[["_ortAbschiedTakt", "this._ortHeben(", "void ("]], false, /hebt 0 von 3 Slots/],
+    ].every(([e, bild, re]) => re.test(o17(e, bild))) && !ortFallWand(klasseVon()).errs.length && !ortFallWand(klasseVon(), true).errs.length); // prettier-ignore
     // DAS SOLL DES TURMS (H9): der Kern, dessen Gedächtnis je Auftrag lebt (frisch geladen vor jedem Auftrag — der Stand vor
     // hochhaus-dach-speicher), ist rot bei sollTon; der Kern grün
     const sollRot = sollWand(true);
@@ -2066,6 +2179,10 @@ function main() {
     const l16 = leserWand(A);
     errs.push(...l16.errs);
     console.log(`H16 der Foundry-Cache nach dem Leser: ${l16.mb} MB zurückgegebener Körper im Takt danach (Soll 0), ${l16.n} von 5 Körpern bleiben (Soll 2: die gehaltenen) (${l16.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const o17 = ortFallWand(A);
+    const o17b = ortFallWand(A, true);
+    errs.push(...o17.errs, ...o17b.errs);
+    console.log(`H17 der ferne Ort nach seinem Abschied: ${o17.n} Bauten halten ihn (Soll 0), mit einem Bild im Satz stehen ${o17b.n} von 5 (Soll 5), das nahende Auge hebt ${o17.gehoben} von 3 Slots (${o17.errs.length + o17b.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const g13 = gpuEigenWand(A);
     errs.push(...g13.errs);
     console.log(`H13 der Sicht-Index der GPU: CPU-Kopie ${g13.mb.toFixed(2)} MB nach dem Hochladen (Soll 0), ${g13.gelegt}× gelegt über Fall und Neu-Legen (${g13.errs.length ? "ROT" : "grün"})`); // prettier-ignore
