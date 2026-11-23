@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 11 kopf 07783ef21c5aa850536481c099a7cae8cbb56214 start 2026-11-23T08:21:54Z vorher f0a89f7e12a26d84104ab0f613e86f3eae01102a
 gtx offen 0/0 station - fortschritt 2026-11-23T08:21:54Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-23T08:21:54Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-23T08:21:54Z alarm - liste -
 notiz 2026-11-23T08:21:54Z Runde 10 am f0a89f7e sprang auf 07783ef2 (gtx laeuft 36/247, radeon laeuft 33/82): Nachmessung: neun Stationen warfen M is not defined (geheilt punkte-maschine 3fa7ff55), drei Sprossen trugen den Preis UNGEMESSEN unter Last (archiv#1 fiel 08:56 aus der Buchung); main traegt zwei Landungen mehr (z684 march-warter, z685 haus-gefuege)
