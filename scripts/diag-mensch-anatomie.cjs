@@ -1001,8 +1001,10 @@ function messeBau(eingriff, nur, W = mengeWelt(eingriff, nur ? MENGE_PLAENE.slic
     };
     // (was der BAU an einem Leib der Menge bewegt: sein Leib an seinem Punkt gegen denselben Punkt im Kanon des Skeletts — das
     // Weiche, Geschlecht und Fett, trägt jeder Leib in beiden; seine Streuung halten die anderen Bänder dieser Linse)
-    const SV = K.BAU_SOLL.vorzeichen, nB = K.BAU_GESETZ.achsen.length, je = [], aus = { vk: {}, r: {}, leser: {} }; // prettier-ignore
-    const imKanon = (p) => p.map((x, i) => (i >= p.length - nB ? 1 : x));
+    const SV = K.BAU_SOLL.vorzeichen, je = [], aus = { vk: {}, r: {}, leser: {} }; // prettier-ignore
+    // die Bau-Achsen des Punkts beim NAMEN (LEIB_RAUM), nie als die letzten nB — der Raum trägt nach ihnen den Kreuzterm Ton × Masse
+    const istBau = K.LEIB_RAUM.achsen.map((a) => K.BAU_GESETZ.achsen.some((g) => g.achse === a.achse));
+    const imKanon = (p) => p.map((x, i) => (istBau[i] ? 1 : x));
     for (const { S, vorlage, R } of W.siedlungen) {
         const E = ecken(vorlage);
         for (const b of S.liste) {
@@ -1210,7 +1212,7 @@ if (SELBSTTEST) {
     // lange Beine werden kurz) · (BA3) die Knochen des nahen Leibs lesen den Kanon (der Bau erreicht sie nicht: Bild, Gang und Griff
     // gehen auseinander) · (BA4) die Knochen heben das Becken nicht (der Rumpf des nahen Leibs bleibt, die Beine wachsen in den Boden)
     // · (BA5) die Arme hängen in der Ruhe der Gestalt (Ellbogen und Hand stehen nicht, wo der Guss seines Baus sie hängt)
-    const bauPunkt = (f) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); const n = ctx.__koerperCore.BAU_GESETZ.achsen.length; S.liste.forEach((b) => (b.raumPunkt = b.raumPunkt.map((x, i) => (i >= b.raumPunkt.length - n ? f(x) : x)))); }); // prettier-ignore
+    const bauPunkt = (f) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); const kc = ctx.__koerperCore, bau = kc.LEIB_RAUM.achsen.map((a) => kc.BAU_GESETZ.achsen.some((g) => g.achse === a.achse)); S.liste.forEach((b) => (b.raumPunkt = b.raumPunkt.map((x, i) => (bau[i] ? f(x) : x)))); }); // prettier-ignore
     pruefe("BA1 alle lesen denselben Bau (die Menge im Kanon des Skeletts) wird erkannt", bauPunkt(() => 1), /^bau\.streuung bein .*denselben Bau/, "bau"); // prettier-ignore
     pruefe("BA2 das verkehrte Vorzeichen (lange Beine werden in der Menge kurz) wird erkannt", bauPunkt((x) => 2 - x), /^bau\.vorzeichen bein /, "bau"); // prettier-ignore
     pruefe("BA3 die Knochen des nahen Leibs im Kanon (der Bau erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauAuf = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
