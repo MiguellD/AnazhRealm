@@ -21,3 +21,5 @@ w28-brunnen-haspel karte2.mensch.fahrzeug.maschine#1
 w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
 # z682 (main ddaf883d, 23.11. 03:41): EINE Hülle je Haus — die Stände rücken während einer Zählung nicht mehr (49 → 0), Σ Soll 18 → 21; die Station pm-fahrer-soll liegt seit 66e016e5 in punkte-maschine
 w28-eine-huelle karte2.mensch.menge.bevoelkerung#1
+# z683 (main f0a89f7e, 23.11. 05:54): der Acker als Kette — Vorrat als Sägezahn, ein Klick bestellt, Halme der Frucht im Körper des Ackers
+w28-acker-kette karte2.mensch.nahrung.strom#1,karte2.mensch.nahrung.hand#2,karte2.mensch.nahrung.frucht#1

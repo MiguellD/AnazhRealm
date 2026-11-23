@@ -1,5 +1,5 @@
 {
- "kopf": "ddaf883d",
+ "kopf": "f0a89f7e",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3562,7 +3562,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +194)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +195)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3598,7 +3598,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +194)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +195)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3608,7 +3608,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +194)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +195)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -12862,7 +12862,7 @@
   },
   "karte2.leben.oeko.stoffe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.stoffe#1 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#1 gtx: Station seit der Messung geändert · karte2.leben.oeko.stoffe#2 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +4) · karte2.leben.oeko.stoffe#3 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#3 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#4 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#4 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#5 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#5 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#6 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#6 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#7 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.stoffe#1 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#1 gtx: Station seit der Messung geändert · karte2.leben.oeko.stoffe#2 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +5) · karte2.leben.oeko.stoffe#3 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#3 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#4 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#4 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#5 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#5 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#6 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#6 gtx: ungemessen (R10) · karte2.leben.oeko.stoffe#7 radeon: ungemessen (R10) · karte2.leben.oeko.stoffe#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.stoffe#1",
@@ -12899,7 +12899,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +4)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +5)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -13263,7 +13263,7 @@
   },
   "karte2.leben.oeko.zerfall": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.zerfall#1 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#1 gtx: ROT: S1 fresserVerhaeltnis 2,99 gegen Soll > 1 ✓ · naehrMinPlus ungemessen gegen Soll > 0 ✗ · Täter: stamm/kreatur-leben.js _bestandStirbt — kein Nährstoff nach jagd (nur die Tat riss des Spielers düngt) an ddaf883d · karte2.leben.oeko.zerfall#2 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#2 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#3 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#3 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#4 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#4 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#5 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#5 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#6 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.zerfall#1 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/vegetation-wiese.js) · karte2.leben.oeko.zerfall#2 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#2 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#3 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#3 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#4 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#4 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#5 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#5 gtx: ungemessen (R10) · karte2.leben.oeko.zerfall#6 radeon: ungemessen (R10) · karte2.leben.oeko.zerfall#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.zerfall#1",
@@ -13279,9 +13279,10 @@
      "id": "karte2.leben.oeko.zerfall#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S1 fresserVerhaeltnis 2,99 gegen Soll > 1 ✓ · naehrMinPlus ungemessen gegen Soll > 0 ✗ · Täter: stamm/kreatur-leben.js _bestandStirbt — kein Nährstoff nach jagd (nur die Tat riss des Spielers düngt)",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S1 fresserVerhaeltnis 2,99 gegen Soll > 1 ✓ · naehrMinPlus ungemessen gegen Soll > 0 ✗ · Täter: stamm/kreatur-leben.js _bestandStirbt — kein Nährstoff nach jagd (nur die Tat riss des Spielers düngt)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -14053,7 +14054,7 @@
   },
   "karte2.leben.tiere.arten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.arten#1 radeon: ungemessen (R10) · karte2.leben.tiere.arten#1 gtx: ungemessen (R10) · karte2.leben.tiere.arten#2 radeon: ungemessen (R10) · karte2.leben.tiere.arten#2 gtx: ungemessen (R10) · karte2.leben.tiere.arten#3 radeon: ungemessen (R10) · karte2.leben.tiere.arten#3 gtx: ungemessen (R10) · karte2.leben.tiere.arten#4 radeon: ungemessen (R10) · karte2.leben.tiere.arten#4 gtx: ungemessen (R10) · karte2.leben.tiere.arten#5 radeon: ungemessen (R10) · karte2.leben.tiere.arten#5 gtx: ungemessen (R10) · karte2.leben.tiere.arten#6 radeon: ungemessen (R10) · karte2.leben.tiere.arten#6 gtx: ungemessen (R10) · karte2.leben.tiere.arten#7 radeon: ungemessen (R10) · karte2.leben.tiere.arten#7 gtx: ungemessen (R10) · karte2.leben.tiere.arten#8 radeon: ungemessen (R10) · karte2.leben.tiere.arten#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.arten#1 radeon: ungemessen (R10) · karte2.leben.tiere.arten#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN · karte2.leben.tiere.arten#2 radeon: ungemessen (R10) · karte2.leben.tiere.arten#2 gtx: ungemessen (R10) · karte2.leben.tiere.arten#3 radeon: ungemessen (R10) · karte2.leben.tiere.arten#3 gtx: ungemessen (R10) · karte2.leben.tiere.arten#4 radeon: ungemessen (R10) · karte2.leben.tiere.arten#4 gtx: ungemessen (R10) · karte2.leben.tiere.arten#5 radeon: ungemessen (R10) · karte2.leben.tiere.arten#5 gtx: ungemessen (R10) · karte2.leben.tiere.arten#6 radeon: ungemessen (R10) · karte2.leben.tiere.arten#6 gtx: ungemessen (R10) · karte2.leben.tiere.arten#7 radeon: ungemessen (R10) · karte2.leben.tiere.arten#7 gtx: ungemessen (R10) · karte2.leben.tiere.arten#8 radeon: ungemessen (R10) · karte2.leben.tiere.arten#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.arten#1",
@@ -14071,7 +14072,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -14205,7 +14206,7 @@
   },
   "karte2.leben.tiere.bewegung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.bewegung#1 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#1 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#2 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#2 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#3 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#3 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#4 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#4 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#5 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#5 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#6 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#6 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#7 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#7 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#8 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.bewegung#1 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN · karte2.leben.tiere.bewegung#2 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#2 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#3 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#3 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#4 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#4 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#5 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#5 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#6 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#6 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#7 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#7 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#8 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.bewegung#1",
@@ -14223,7 +14224,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -14493,7 +14494,7 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +54) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.leben.tiere.masse#1 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal an ddaf883d · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +54) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +50) · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -14510,9 +14511,10 @@
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1229 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 36.5 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (176 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.85 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.32 m · Luma 98.8 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.377 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (289 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +50)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -14646,7 +14648,7 @@
   },
   "karte2.leben.tiere.mensch": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: Annäherung im Fenster: deer flieht ab 113.881 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.586 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.211 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.leben.tiere.mensch#2 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#2 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#3 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#3 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#4 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#4 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#5 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#5 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#6 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#6 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#7 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: Annäherung im Fenster: deer flieht ab 113.881 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.586 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.211 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.leben.tiere.mensch#2 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#2 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN · karte2.leben.tiere.mensch#3 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#3 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#4 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#4 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#5 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#5 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#6 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#6 gtx: ungemessen (R10) · karte2.leben.tiere.mensch#7 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.mensch#1",
@@ -14685,7 +14687,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ddaf883d: die Fahrt riss 1800 s (der Rest 186 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.arten#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -15964,7 +15966,7 @@
   },
   "karte2.mensch.fahrzeug.form": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +4) · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#2 gtx: ROT: S2 ROT: Umfang nicht erzeugbar: 50 Baupläne an Land: der Fahrzeug-Kern trägt 5 Rezepte (gt, supersport, limousine, kompakt_fwd, suv) (gemessen 5, Soll 50 Baupläne an Land) · [linse-gpu] nvidia/pascal an ddaf883d · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +6) · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#2 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js) · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.form#1",
@@ -15982,7 +15984,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +4)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +6)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -16000,9 +16002,10 @@
      "id": "karte2.mensch.fahrzeug.form#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 ROT: Umfang nicht erzeugbar: 50 Baupläne an Land: der Fahrzeug-Kern trägt 5 Rezepte (gt, supersport, limousine, kompakt_fwd, suv) (gemessen 5, Soll 50 Baupläne an Land) · [linse-gpu] nvidia/pascal",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: 50 Baupläne an Land: der Fahrzeug-Kern trägt 5 Rezepte (gt, supersport, limousine, kompakt_fwd, suv) (gemessen 5, Soll 50 Baupläne an Land) · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -16081,7 +16084,7 @@
   },
   "karte2.mensch.fahrzeug.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +9) · karte2.mensch.fahrzeug.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +11) · karte2.mensch.fahrzeug.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.gestalt#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.gestalt#1",
@@ -16099,7 +16102,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +9)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +11)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -16314,7 +16317,7 @@
   },
   "karte2.mensch.fahrzeug.maschine": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Hub des Eimers je Kurbel-Umdrehung in m 0.80425 (Soll > 0) · Rang-r Kurbelweg ↔ Hub über die Umdrehungen 1 (Soll > 0) · größte Abweichung |Hub − r·φ| über den Kurbelweg in cm 0.00018614 (Soll ≤ 1) · Gegenlauf: Hub in m je 2 s ohne Klick vor und nach dem Kurbeln 0 (Soll ≤ 0.001) · Umfang 1 (Soll ≥ 1 Werkzeug mit Wirkung (Haspel am Ziehbrunnen)) · Brunnen 2439 von 1, 35 Griffe, Weg 4.43 Umdr., Hub-Spanne 1.89 m, 11 l oben · Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.mensch.fahrzeug.maschine_1-S1.png · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.fahrzeug.maschine#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Hub des Eimers je Kurbel-Umdrehung in m 0.80425 (Soll > 0) · Rang-r Kurbelweg ↔ Hub über die Umdrehungen 1 (Soll > 0) · größte Abweichung |Hub − r·φ| über den Kurbelweg in cm 0.00018614 (Soll ≤ 1) · Gegenlauf: Hub in m je 2 s ohne Klick vor und nach dem Kurbeln 0 (Soll ≤ 0.001) · Umfang 1 (Soll ≥ 1 Werkzeug mit Wirkung (Haspel am Ziehbrunnen)) · Brunnen 2439 von 1, 35 Griffe, Weg 4.43 Umdr., Hub-Spanne 1.89 m, 11 l oben · Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.mensch.fahrzeug.maschine_1-S1.png · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.fahrzeug.maschine#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.maschine#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.maschine#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.maschine#1",
@@ -16332,7 +16335,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Hub des Eimers je Kurbel-Umdrehung in m 0.80425 (Soll > 0) · Rang-r Kurbelweg ↔ Hub über die Umdrehungen 1 (Soll > 0) · größte Abweichung |Hub − r·φ| über den Kurbelweg in cm 0.00018614 (Soll ≤ 1) · Gegenlauf: Hub in m je 2 s ohne Klick vor und nach dem Kurbeln 0 (Soll ≤ 0.001) · Umfang 1 (Soll ≥ 1 Werkzeug mit Wirkung (Haspel am Ziehbrunnen)) · Brunnen 2439 von 1, 35 Griffe, Weg 4.43 Umdr., Hub-Spanne 1.89 m, 11 l oben · Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ddaf883d-gtx\\karte2.mensch.fahrzeug.maschine_1-S1.png · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/kampf.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -16430,7 +16434,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +4) · karte2.mensch.fahrzeug.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js) · karte2.mensch.fahrzeug.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16460,7 +16464,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +4)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -16585,16 +16589,16 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.geist.absicht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +8) · karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] amd/rdna-3 an ddaf883d radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +8)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] amd/rdna-3",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-takt.js, stamm/feld-leben.js +3)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -16604,7 +16608,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-takt.js, stamm/feld-leben.js +3)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -16702,7 +16707,7 @@
   },
   "karte2.mensch.geist.generationen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.generationen#1 radeon: Station seit der Messung geändert · karte2.mensch.geist.generationen#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +13) · karte2.mensch.geist.generationen#2 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#2 gtx: ungemessen (R10) · karte2.mensch.geist.generationen#3 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#4 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#5 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#6 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#7 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#7 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#8 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.generationen#1 radeon: Station seit der Messung geändert · karte2.mensch.geist.generationen#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +15) · karte2.mensch.geist.generationen#2 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#2 gtx: ungemessen (R10) · karte2.mensch.geist.generationen#3 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#4 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#5 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#6 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#7 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#7 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#8 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.generationen#1",
@@ -16720,7 +16725,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +13)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +15)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -18589,7 +18594,7 @@
   },
   "karte2.mensch.kultur.glaube": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.glaube#1",
@@ -18607,8 +18612,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -19094,7 +19100,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19112,7 +19118,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s",
      "ungemessen": true,
      "beide": true
     },
@@ -20381,7 +20387,7 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
@@ -20399,7 +20405,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -20748,7 +20754,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs) · karte2.mensch.macht.wehrbau#2 gtx: ROT: S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal an ddaf883d · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.macht.wehrbau#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.mensch.macht.wehrbau#2 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-wege.js) · karte2.mensch.macht.wehrbau#3 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -20778,7 +20784,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -20786,9 +20792,10 @@
      "id": "karte2.mensch.macht.wehrbau#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Steinring R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-wege.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -20903,7 +20910,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#2 radeon: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 21 · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · am Steuer im Kreis: 3 Uhr Ort 1 ×2, 10 Uhr Ort 4 ×1, 15 Uhr Ort 4 ×1, 20 Uhr Ort 4 ×1 · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal an ddaf883d gtx · gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#2 radeon: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -20918,11 +20925,12 @@
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 21 · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · am Steuer im Kreis: 3 Uhr Ort 1 ×2, 10 Uhr Ort 4 ×1, 15 Uhr Ort 4 ×1, 20 Uhr Ort 4 ×1 · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
+     "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -21803,7 +21811,7 @@
   },
   "karte2.mensch.nahrung.flur": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.nahrung.flur#1 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.flur#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.nahrung.flur#1 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.flur#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.flur#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.flur#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.flur#1",
@@ -21821,7 +21829,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Äcker als Fläche im Bild am Dorfrand 1 (Soll ≥ 1) · Umfang 8 (Soll ≥ 1 gemalte Äcker am Feldweg-Ende) · 4 Äcker im Plan, 4 als Fläche gemalt, 2 Feldwege; bestes Bild 0.73 % an Pose {\"px\":-646.66,\"py\":56.82,\"pz\":-859.78,\"lx\":-641.48,\"ly\":50.19,\"lz\":-836.76} · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-takt.js, stamm/siedlung-bewohner.js +1)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -21937,7 +21946,7 @@
   },
   "karte2.mensch.nahrung.frucht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4) · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.frucht#1",
@@ -21955,9 +21964,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -22054,7 +22062,7 @@
   },
   "karte2.mensch.nahrung.hand": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.hand#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4) — zuletzt an 30e01e75: die Fahrt riss 1800 s (vor karte2.mensch.wirtschaft.stoffstrom#1) — offen, UNGEMESSEN · karte2.mensch.nahrung.hand#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.hand#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.hand#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.hand#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.hand#1",
@@ -22091,9 +22099,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4) — zuletzt an 30e01e75: die Fahrt riss 1800 s (vor karte2.mensch.wirtschaft.stoffstrom#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "karte2.mensch.nahrung.hand#3",
@@ -22171,7 +22178,7 @@
   },
   "karte2.mensch.nahrung.jenseits": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 · karte2.mensch.nahrung.jenseits#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2) · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.jenseits#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 29 s gerissen im /umstellen dorf (der Ruf lief 28.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 · karte2.mensch.nahrung.jenseits#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +3) · karte2.mensch.nahrung.jenseits#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.jenseits#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.jenseits#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.jenseits#1",
@@ -22189,7 +22196,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -22288,7 +22295,7 @@
   },
   "karte2.mensch.nahrung.strom": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) — zuletzt an 6066c757: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s) · karte2.mensch.nahrung.strom#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +7) · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.strom#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#1 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.strom#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.strom#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.strom#1",
@@ -22296,7 +22303,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 6066c757: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 33 s · S1 an der Frist ausgelassen (33 s)",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -22306,9 +22313,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +7)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -22405,7 +22411,7 @@
   },
   "karte2.mensch.nahrung.tier": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +5) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.tier#1",
@@ -22423,7 +22429,7 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal",
      "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +5)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -22443,7 +22449,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +5)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -22541,7 +22547,7 @@
   },
   "karte2.mensch.netz.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +7) · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.gestalt#1 radeon: ungemessen (R10) — zuletzt an 6066c757: Frist der Probe 79 s gerissen im /umstellen stadt-voll (der Ruf lief 78.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FR · karte2.mensch.netz.gestalt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +9) · karte2.mensch.netz.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.netz.gestalt#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.gestalt#1",
@@ -22559,7 +22565,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +7)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +9)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -22676,7 +22682,7 @@
   },
   "karte2.mensch.netz.massenverkehr": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.massenverkehr#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +7) · karte2.mensch.netz.massenverkehr#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +4) · karte2.mensch.netz.massenverkehr#2 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#3 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#4 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#5 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#6 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#7 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.massenverkehr#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +9) · karte2.mensch.netz.massenverkehr#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +6) · karte2.mensch.netz.massenverkehr#2 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#3 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#4 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#5 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#6 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.massenverkehr#7 radeon: ungemessen (R10) · karte2.mensch.netz.massenverkehr#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.massenverkehr#1",
@@ -22684,7 +22690,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +7)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +9)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -22695,7 +22701,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +4)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +6)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -22812,7 +22818,7 @@
   },
   "karte2.mensch.netz.stoffwechsel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +4) · karte2.mensch.netz.stoffwechsel#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.netz.stoffwechsel#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js) · karte2.mensch.netz.stoffwechsel#1 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#2 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#2 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#3 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#3 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#4 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#4 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#5 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#5 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#6 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#6 gtx: Station seit der Messung geändert · karte2.mensch.netz.stoffwechsel#7 radeon: ungemessen (R10) · karte2.mensch.netz.stoffwechsel#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.netz.stoffwechsel#1",
@@ -22820,7 +22826,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +4)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, stamm/siedlung-wege.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -23333,7 +23339,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 14.41 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 82.91 s · Altersgang ρ(Alter, Zeit) 0.4772157215721572 · 1365 mit Können-Profil · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.sport.koennen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2) · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 14.41 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 82.91 s · Altersgang ρ(Alter, Zeit) 0.4772157215721572 · 1365 mit Können-Profil · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.sport.koennen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2) · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23352,7 +23358,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 14.41 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 82.91 s · Altersgang ρ(Alter, Zeit) 0.4772157215721572 · 1365 mit Können-Profil · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -25155,7 +25162,7 @@
   },
   "karte2.mensch.wirtschaft.energie": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4) · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +6) · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.energie#1",
@@ -25173,7 +25180,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +4)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +6)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -25272,7 +25279,7 @@
   },
   "karte2.mensch.wirtschaft.handel": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Wagen beladen ↔ leer im Bildpaar 3 (Soll ≥ 1) · Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung 1 (Soll ≥ 1) · Umfang 7 (Soll ≥ 1 Ware auf einem Weg mit Fahrer) · 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 54.5 s, 7 fahren geladen, 14 leer, 12 kraut im ersten, Kisten leer 0 ↔ beladen 3 (gezeichnet), in der Fahrt am Werk 1 (+0), am Stand 1 (−12) · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.handel#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Wagen beladen ↔ leer im Bildpaar 3 (Soll ≥ 1) · Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung 1 (Soll ≥ 1) · Umfang 7 (Soll ≥ 1 Ware auf einem Weg mit Fahrer) · 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 54.5 s, 7 fahren geladen, 14 leer, 12 kraut im ersten, Kisten leer 0 ↔ beladen 3 (gezeichnet), in der Fahrt am Werk 1 (+0), am Stand 1 (−12) · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.handel#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.handel#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.handel#1",
@@ -25290,7 +25297,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Wagen beladen ↔ leer im Bildpaar 3 (Soll ≥ 1) · Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung 1 (Soll ≥ 1) · Umfang 7 (Soll ≥ 1 Ware auf einem Weg mit Fahrer) · 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 54.5 s, 7 fahren geladen, 14 leer, 12 kraut im ersten, Kisten leer 0 ↔ beladen 3 (gezeichnet), in der Fahrt am Werk 1 (+0), am Stand 1 (−12) · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -25406,7 +25414,7 @@
   },
   "karte2.mensch.wirtschaft.markt": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 5 Stände · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.markt#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 5 Stände · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.markt#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.markt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.markt#1",
@@ -25424,7 +25432,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Änderung des Bestands des Bewohners beim Tausch -1 (Soll < 0) · Gegenlauf: Füllung ohne Herstellung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 1 Tausch Spieler ↔ Bewohner) · eisen am Stand 24, Inventar eisen 0→1, stein 1→0 (am Stand 1), 5 Stände · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -25656,15 +25665,15 @@
   },
   "karte2.mensch.wirtschaft.technik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an 30e01e75 radeon · S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an ddaf883d radeon · gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.technik#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3",
-     "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stand-linse.cjs +2)",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -25675,7 +25684,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js +1)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -27979,7 +27989,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -28018,7 +28028,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28214,7 +28224,7 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2) · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2) · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2) · karte2.planet.kopplung.gegenwart#6 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3) · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3) · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3) · karte2.planet.kopplung.gegenwart#6 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#6 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
@@ -28232,7 +28242,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -28252,7 +28262,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28307,7 +28317,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28326,7 +28336,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/gelaende-kollision.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -28334,7 +28344,7 @@
   },
   "karte2.planet.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.kaskade#1 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bauten.js +2) · karte2.planet.kopplung.kaskade#2 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#6 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.kaskade#1 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bauten.js +4) · karte2.planet.kopplung.kaskade#2 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#6 gtx: Station seit der Messung geändert · karte2.planet.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.planet.kopplung.kaskade#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.kaskade#1",
@@ -28352,7 +28362,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bauten.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bauten.js +4)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -28469,7 +28479,7 @@
   },
   "karte2.planet.kopplung.land-meer-luft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.land-meer-luft#3 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.land-meer-luft#4 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js) · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.land-meer-luft#3 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#3 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.land-meer-luft#4 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#4 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.land-meer-luft#1",
@@ -28487,7 +28497,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -28507,7 +28517,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28526,7 +28536,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28545,7 +28555,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28564,7 +28574,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28583,7 +28593,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, voxel-worker.js)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -28591,7 +28601,7 @@
   },
   "karte2.planet.kopplung.siedlungslage": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.siedlungslage#1 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2) · karte2.planet.kopplung.siedlungslage#2 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2) · karte2.planet.kopplung.siedlungslage#3 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#4 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#5 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#6 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#6 gtx: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.siedlungslage#1 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3) · karte2.planet.kopplung.siedlungslage#2 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3) · karte2.planet.kopplung.siedlungslage#3 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#4 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#5 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.siedlungslage#6 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#6 gtx: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 radeon: ungemessen (R10) · karte2.planet.kopplung.siedlungslage#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.siedlungslage#1",
@@ -28609,7 +28619,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -28629,7 +28639,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +3)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28844,7 +28854,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.wetter-welt#3 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1) · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2) · karte2.planet.kopplung.wetter-welt#3 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2) · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2) · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2) · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -28883,7 +28893,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28902,7 +28912,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28921,7 +28931,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28940,7 +28950,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -28959,7 +28969,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stand-linse.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -29351,7 +29361,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an c1236fa8: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 17.6 s · 430.9 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: Last: Referenz f 1,313 (Faden 1,261 · alle Kerne 1,313; vor 106,1/301,8 ms, nach 113,5/281,1 ms, Ruhe 90/229,9 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-ddaf883d x listen/kandidat-gtx- · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: Last: Referenz f 1,313 (Faden 1,261 · alle Kerne 1,313; vor 106,1/301,8 ms, nach 113,5/281,1 ms, Ruhe 90/229,9 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-ddaf883d x listen/kandidat-gtx- · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29359,7 +29369,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 17.6 s · 430.9 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig =",
+     "grund": "Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -29753,7 +29763,7 @@
   },
   "karte2.planet.kosmos.sternhimmel": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · ✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 167 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 6, im Bild 6 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 127 Median 163 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 118 Median 149 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 76 Median 110 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.95 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 167↔169 147↔142 133↔126 86↔85; roh 107↔110 75↔77 92↔88 45↔38) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.17,\"Y\":0.0115,\"X\":0.0064,\"rb\":0.00 · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 167 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 6, im Bild 6 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 127 Median 163 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 118 Median 149 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 76 Median 110 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.95 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 167↔169 147↔142 133↔126 86↔85; roh 107↔110 75↔77 92↔88 45↔38) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.17,\"Y\":0.0115,\"X\":0.0064,\"rb\":0.00 · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sternhimmel#1",
@@ -29761,7 +29771,7 @@
      "gruen": true,
      "zahl": "✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Station seit der Messung geändert — zuletzt an c1236fa8: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 17.6 s · 430.9 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig =",
+     "grund": "Station seit der Messung geändert — zuletzt an ddaf883d: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.8 s · 428.4 s)",
      "gehalten": true,
      "beide": true
     },
@@ -29771,7 +29781,8 @@
      "gruen": true,
      "zahl": "✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 167 Median 196 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 6, im Bild 6 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 127 Median 163 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 118 Median 149 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.93 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 76 Median 110 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.95 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 167↔169 147↔142 133↔126 86↔85; roh 107↔110 75↔77 92↔88 45↔38) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.17,\"Y\":0.0115,\"X\":0.0064,\"rb\":0.00 · [linse-gpu] nvidia/pascal",
      "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-takt.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -34009,7 +34020,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#2 gtx: ROT: S2 brennendHa ungemessen gegen Soll ≥ 1 ha ✗ · meidenProzent ungemessen gegen Soll = 100 % ✗ · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front) an ddaf883d · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#2 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/feld-leben.js, stamm/siedlung-bewohner.js +2) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -34046,9 +34057,10 @@
      "id": "karte2.same.kopplung.ereignis#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 brennendHa ungemessen gegen Soll ≥ 1 ha ✗ · meidenProzent ungemessen gegen Soll = 100 % ✗ · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S2 brennendHa ungemessen gegen Soll ≥ 1 ha ✗ · meidenProzent ungemessen gegen Soll = 100 % ✗ · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/feld-leben.js, stamm/siedlung-bewohner.js +2) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -34145,7 +34157,7 @@
   },
   "karte2.same.kopplung.gewalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#1 gtx: ROT: S1 die Messung der Leiter warf nach 0,01 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter) an ddaf883d · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-takt.js) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.gewalt#1",
@@ -34161,9 +34173,10 @@
      "id": "karte2.same.kopplung.gewalt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S1 die Messung der Leiter warf nach 0,01 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S1 die Messung der Leiter warf nach 0,01 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-takt.js) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -34395,7 +34408,7 @@
   },
   "karte2.same.kopplung.kohaerenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#1 gtx: ROT: S1 Umfang nicht erzeugbar: die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte) — an dieser: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steigen 0 · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor` an ddaf883d · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/siedlung-wege.js) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kohaerenz#1",
@@ -34411,9 +34424,10 @@
      "id": "karte2.same.kopplung.kohaerenz#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S1 Umfang nicht erzeugbar: die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte) — an dieser: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steigen 0 · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S1 Umfang nicht erzeugbar: die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte) — an dieser: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steigen 0 · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/siedlung-wege.js) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -34779,7 +34793,7 @@
   },
   "karte2.same.kopplung.zeitreise": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#1 gtx: ROT: S1 baumAnteilProzent 75 % gegen Soll ≤ 30 % ✗ · stuempfe 0 gegen Soll ≥ 10 ✗ · Täter: stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat) an ddaf883d · karte2.same.kopplung.zeitreise#2 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-takt.js, stamm/feld-leben.js +3) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN · karte2.same.kopplung.zeitreise#2 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.zeitreise#1",
@@ -34795,9 +34809,10 @@
      "id": "karte2.same.kopplung.zeitreise#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S1 baumAnteilProzent 75 % gegen Soll ≤ 30 % ✗ · stuempfe 0 gegen Soll ≥ 10 ✗ · Täter: stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat)",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "ROT: S1 baumAnteilProzent 75 % gegen Soll ≤ 30 % ✗ · stuempfe 0 gegen Soll ≥ 10 ✗ · Täter: stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-takt.js, stamm/feld-leben.js +3) — zuletzt an c1236fa8: die Fahrt riss 1800 s (der Rest 66 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.ereignis#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -35487,7 +35502,7 @@
   },
   "karte2.same.physik.feuer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +1) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) · karte2.same.physik.feuer#2 gtx: ungemessen (R10) · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +3) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) · karte2.same.physik.feuer#2 gtx: ungemessen (R10) · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.feuer#1",
@@ -35505,7 +35520,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/feld-leben.js +1)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37181,7 +37196,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bewohner.js +1) · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c12 · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2) · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c12 · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37189,7 +37204,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/siedlung-bewohner.js +1)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37514,7 +37529,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 283,
+  "konsum": 282,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37682,10 +37697,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3339
+  "ohne": 3340
  },
- "kopfVoll": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
- "zeit": "2026-11-23T03:53:03.043Z",
+ "kopfVoll": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+ "zeit": "2026-11-23T04:59:35.577Z",
  "vorher": "ddaf883d",
  "bilanz": {
   "gewinn": [],
