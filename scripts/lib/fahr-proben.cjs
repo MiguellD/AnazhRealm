@@ -717,6 +717,10 @@ async function probeLeben(expected) {
         if (!S) throw new Error("keine Stadt am Messort stadt-voll");
         const R = A.PLAYER_WALL_RADIUS;
         const P = Object.getPrototypeOf(r);
+        // im Ort, den er allein hält (er ist eingefahren, sein Schlüssel hält ihn): dort begegnet ihm keiner — weder „neben der
+        // Spur“ noch das Ausscheren über dem Band zählen ihn (der Transporter parkt mit dem Wendekreis seiner Lenkung aus, 6,0 m
+        // am Schwerpunkt gegen den Bogen des Stadt-Gesetzes 5,5 m: 0,5–0,8 m neben der Linie, allein in der Wende)
+        const haeltAllein = (W) => W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
         const lage = (W) => {
             const f = W.entry._rideYaw || 0;
             return {
@@ -1162,8 +1166,7 @@ async function probeLeben(expected) {
                         )
                             m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, halter ? "halter" : Z.art, ...ort2(L[n])]);
                     }
-                    const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
-                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    if (!haeltAllein(W) && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
                     for (const b of S.liste)
                         if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z))
                             m.leib++ < 6 && m.leibOrte.push([b.seed + "|" + W.nr, k, ...ort2(L[n]), W.grund, b.weg ? "geht" : "steht"]); // prettier-ignore
@@ -1216,13 +1219,14 @@ async function probeLeben(expected) {
                     }
                 // DAS AUSSCHEREN ÜBER DEM BAND (fahrzeug-gattungen 2): die Folge sieht einen anderen in ihrer Bahn, wenn er der Linie
                 // näher steht als die halbe Breite samt Ausscheren (`F.rund`) und Raum — so weit ragt der fahrende Leib im Bogen, glaubt
-                // sie, aus der Linie. Je fahrendem Wagen jede Ecke seines Rechtecks gegen das Stück seiner Linie um ihn: ragt sie weiter
+                // sie, aus der Linie. Je fahrendem Wagen (außer im Ort, den er allein hält: `haeltAllein`) jede Ecke seines Rechtecks
+                // gegen das Stück seiner Linie um ihn: ragt sie weiter
                 // als hw + rund, frisst sie den Raum der Begegnung (`begegnungM`) — das weiteste beim Namen [über dem Band m, Wagen,
                 // Gattung, Probe, Ort, rund, Gier gegen die Linie °]. Bis hier galt der Leib als Tangente der Linie (l²·κ/2): der
                 // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr)
                 for (const [W, L] of LA) {
                     const F = W.F;
-                    if (!F || !F.rund || !(W.entry._fahr && W.entry._fahr.speed > 0.5)) continue;
+                    if (!F || !F.rund || !(W.entry._fahr && W.entry._fahr.speed > 0.5) || haeltAllein(W)) continue;
                     let [i0, i1] = [F.i, F.i];
                     while (i0 > 0 && F.bogen[i0] > F.s - W.hl - 2) i0--;
                     while (i1 < F.pts.length - 1 && F.bogen[i1] < F.s + W.hl + 2) i1++;
