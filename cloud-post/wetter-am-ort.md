@@ -1,6 +1,6 @@
 # wetter-am-ort — Abgabe (ZWISCHENSTAND)
 
-Zweig `wetter-am-ort`, vom Kopf von origin/main (a615ab5). Kopf der Arbeit: `241642f0890567ff2755abfe59aadd6880278ffc`.
+Zweig `wetter-am-ort`, vom Kopf von origin/main (a615ab5). Kopf der Arbeit: `39b16099209dd68df96944f3458a2012ca8a23f1`.
 Karte 2 gebucht 58 von 1 718 (diese Abgabe bucht keine Sprosse: gebucht wird erst, wenn der Richter am Zweig `punkte-maschine` sie grün misst).
 
 ## Der Schnitt
@@ -38,6 +38,9 @@ füllt sich mit dem Regen an seinem Ort).
 Die Linse: `gate:wetter-wache` (O) ORT am Kern — Weg, Saat, Stetigkeit, Eingriff, Bilanz, Relief; der Selbsttest misst den
 echten Kern und lässt 7 Attrappen je genau EINMAL rot fallen (die abgeschaltete Lee-Bilanz: Median 1,318, 0 % im Band).
 `diag-planet --anker` trägt die Zeilen `ort.neigung`.
+Die CI des ersten Kopfs fand zwei Proben, die dem neuen Gesetz nicht folgten: das Probe-Teilchen von `gate:kopplung` trug
+keinen Grund (Höhe NaN — `windProfil` wirft laut, kein stiller Fallback; es trägt ihn jetzt 10 m unter sich, Rauch 1,751 → 0
+wie vorher), und die Linse las ihren Median neben dem EINEN `rang` (Rang-Wand in `gate:welt-boot`); beide grün.
 
 ## Die fünf Sprossen
 
