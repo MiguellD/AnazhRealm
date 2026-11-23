@@ -32000,7 +32000,7 @@
      "gruen": true,
      "zahl": "S1 windrichtungProzent 80 % gegen Soll ≥ 70 % ✓ · beginne 100 gegen Soll ≥ 100 ✓ · Zeuge: die Welt geändert",
      "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.vorhersage#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -35382,7 +35382,7 @@
   },
   "karte2.same.massstab.sprung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.sprung#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,44 (Faden 1,44 · alle Kerne 1,298; vor 115,3/341,3 ms, nach 116,2/294,2 ms, Ruhe 80,7/262,9 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.same.massstab.sprung#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 357 s von karte2.same.massstab.sprung#1) — offen, UNGEMESSEN · karte2.same.massstab.sprung#2 radeon: ungemessen (R10) · karte2.same.massstab.sprung#2 gtx: ungemessen (R10) · karte2.same.massstab.sprung#3 radeon: ungemessen (R10) · karte2.same.massstab.sprung#3 gtx: ungemessen (R10) · karte2.same.massstab.sprung#4 radeon: ungemessen (R10) · karte2.same.massstab.sprung#4 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#5 radeon: ungemessen (R10) · karte2.same.massstab.sprung#5 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#6 radeon: ungemessen (R10) · karte2.same.massstab.sprung#6 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#7 radeon: ungemessen (R10) · karte2.same.massstab.sprung#7 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#8 radeon: ungemessen (R10) · karte2.same.massstab.sprung#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.sprung#1 radeon: ungemessen (R10) — zuletzt an 5b36f69a: Last: Referenz f 1,44 (Faden 1,44 · alle Kerne 1,298; vor 115,3/341,3 ms, nach 116,2/294,2 ms, Ruhe 80,7/262,9 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.same.massstab.sprung#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen · karte2.same.massstab.sprung#2 radeon: ungemessen (R10) · karte2.same.massstab.sprung#2 gtx: ungemessen (R10) · karte2.same.massstab.sprung#3 radeon: ungemessen (R10) · karte2.same.massstab.sprung#3 gtx: ungemessen (R10) · karte2.same.massstab.sprung#4 radeon: ungemessen (R10) · karte2.same.massstab.sprung#4 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#5 radeon: ungemessen (R10) · karte2.same.massstab.sprung#5 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#6 radeon: ungemessen (R10) · karte2.same.massstab.sprung#6 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#7 radeon: ungemessen (R10) · karte2.same.massstab.sprung#7 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#8 radeon: ungemessen (R10) · karte2.same.massstab.sprung#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.massstab.sprung#1",
@@ -35400,7 +35400,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 147 s unter dem Grund-Deckel 357 s von karte2.same.massstab.sprung#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 45231516035/1 probe' nach 2705 s Warten) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -37736,8 +37736,8 @@
   "ohne": 3306
  },
  "kopfVoll": "a615ab5d964aa714cb7c98f84766d7b431bcf186",
- "zeit": "2026-11-23T16:52:27.814Z",
- "vorher": "26456680",
+ "zeit": "2026-11-23T18:20:31.967Z",
+ "vorher": "a615ab5d",
  "bilanz": {
   "gewinn": [],
   "fall": [],
