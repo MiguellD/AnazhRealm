@@ -852,7 +852,13 @@ class AnazhRealm_feld_brand {
     // (`_rauchStoff`: τ im Kern, die Dicke (1 − ρ²)^profil) steht im Kern τ = `tr2` ÷ r², tr2 = km × Schwebstoff × (profil + 1)
     // ÷ π. Seine Deckung ist 1 − e^(−τ) (Beer-Lambert) und fällt im Wachsen mit 1 ÷ r²: der Ballen verdünnt, er verliert und
     // erfindet keinen Rauch. Ein frischer Ballen deckt höchstens `a0` — trägt er mehr, ist er größer (dieselbe Masse über
-    // mehr Fläche); deckt er unter `aKill`, wartet sein Rauch auf den nächsten. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
+    // mehr Fläche) — und mindestens die Geburt (`aGeburt`) — trägt er weniger, ist er kleiner (dieselbe Masse über weniger
+    // Fläche): DER RAUCH STEIGT, WENN ER ENTSTEHT. Bis front-stoff wartete ein Ballen unter der Geburt auf den nächsten, und
+    // seine Masse mit ihm: mit der Flammen-Länge × `kMax` als Maß schob ein Herd aus 25 Zellen seinen Rauch ~4 s vor sich her,
+    // ein Herd aus 3 Zellen ~0,5 s, im Gleichtakt aller Zellen (same.physik.reaktion#1 an der Radeon 5b36f69a: τ·A je kg Holz
+    // im Fenster von 6 s 72,6 · 79,4 · 76,1 · 66,2 m² über 1 · 3 · 9 · 25 Zellen — rauch_prop_abw_pct 10,018). DER TAKT JE ZELLE
+    // beginnt an ihrer eigenen Phase (der Hash ihrer Lage): Zellen, die zugleich fingen, stoßen ihre Ballen nie im Gleichtakt
+    // aus. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
     // verdünnte mit b0 ÷ s: ein dünnes Bett rauchte wie ein dichtes, und im Steigen wuchs der Rauch.
     _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
         const st = this.state;
@@ -866,28 +872,32 @@ class AnazhRealm_feld_brand {
         const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
         const [B, W] = [AnazhRealm.BRAND, AnazhRealm.RAUCH_BILD];
         const [optik, tau0] = [(B.partikel.km * B.partikel.jeKg * (W.profil + 1)) / Math.PI, -Math.log(1 - R.a0)];
-        // geboren wird ein Ballen erst zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
+        // geboren wird ein Ballen zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
         // selbst verdünnte ihn sein erstes Bild unter die Sicht — er stürbe, ehe ihn ein Auge sah, und sein Rauch mit ihm
         const aGeburt = Math.sqrt(R.aKill * R.a0);
+        const tauG = -Math.log(1 - aGeburt);
         for (const q of qu) {
             const b = q.b;
             const voll = R.jeS * b.glut;
             const rate = Math.min(voll, anteil);
             const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
             // DIE SCHULD DER MASSE (`rauchKg`): das Holz, das die Front seit dem letzten Ballen verzehrte (`holz` je Bild, gezählt an
-            // der Uhr der Welt). Der Ballen nimmt sie mit; deckt er unter der Sicht, bleibt sie beim nächsten.
+            // der Uhr der Welt). Der nächste Ballen nimmt sie ganz mit. Der Takt der Ballen beginnt an der Phase der Zelle.
             b.rauchKg = (b.rauchKg || 0) + q.holz;
-            b.rauchSchuld = (b.rauchSchuld || 0) + rate * s;
+            if (b.rauchSchuld === undefined)
+                b.rauchSchuld = ((Math.imul(b.cx, 73856093) ^ Math.imul(b.cz, 19349663)) >>> 0) / 4294967296;
+            b.rauchSchuld += rate * s;
             for (; b.rauchSchuld >= 1; b.rauchSchuld--) {
                 const holz = b.rauchKg / Math.floor(b.rauchSchuld); // die Schuld teilt sich auf die Ballen dieses Bilds
                 const [m, tr2] = [holz * (1 - B.mineral.gesamt), holz * optik];
+                if (!(tr2 > 0)) continue; // kein Holz, kein Rauch
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
                 const f = fl[q.von + (h % (q.bis - q.von))];
                 // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
-                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel)
-                const b0 = Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size);
+                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel). Seine
+                // Größe hält die Deckung zwischen der Geburt und der Kappe
+                const b0 = Math.min(Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size), Math.sqrt(tr2 / tauG) / R.size);
                 const a = 1 - Math.exp(-tr2 / (R.size * b0) ** 2);
-                if (a < aGeburt) continue; // unter der Sicht: sein Rauch bleibt beim nächsten Ballen
                 b.rauchKg -= holz;
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
                 const y = f.y + f.lang + b0 * R.size;
