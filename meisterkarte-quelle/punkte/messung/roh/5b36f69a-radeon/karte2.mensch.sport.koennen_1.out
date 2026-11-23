@@ -463,8 +463,8 @@ H.fahre(async (H) => {
     return K.ende();
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\5b36f69a-radeon\karte2.mensch.sport.koennen_1.json 45
 [linse-gpu] amd/rdna-3
-@@ 24.8 s · am Messort stadt (ego) nach 24.8 s, 1812 Takte, Anlauf stand
-@@ 24.8 s · Können: 1511 Bewohner · Lauf {"n":100,"mittelS":82.09,"cv":12.41,"alterRho":0.34897089708970896} · mit Können-Profil 1511
+@@ 10.7 s · am Messort stadt (ego) nach 10.7 s, 342 Takte, Anlauf stand
+@@ 10.7 s · Können: 477 Bewohner · Lauf {"n":100,"mittelS":83.73,"cv":12.3,"alterRho":0.26513051305130514} · mit Können-Profil 477
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
