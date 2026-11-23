@@ -1,7 +1,7 @@
 // diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI: jede Art, einen Schritt zu verlieren, zu vervielfachen oder stumm zu
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
 // (S) STUMM · (K) KLASSE (die volle Batterie cpu, die Karte gpu — kein swiftshader-Schritt im Zug) · (E) ECHT (die Karten: je
-// Schritt GENAU ein Bein) · (T) WAAGE · (P) PLAYTEST · (O) KORPUS-ANTEIL · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
+// Schritt GENAU ein Bein, nur auf Abruf) · (T) WAAGE · (P) PLAYTEST · (O) KORPUS-ANTEIL · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
 // Job nennt jeden roten) · (B) BRUCH AM LANDE-TOR (nur BRUCH sperrt, die Tafel spec/ci/tor-klassen.json), je Regel an ihrer
 // Funktion erklärt. check.yml trägt die Jobs puls (je Push), kopf und voll (unter VOLL_WENN) und echt (die Karten); ein weiterer
 // Job ist ROT.
@@ -32,10 +32,11 @@ const ZEITEN = "spec/ci/ci-zeiten.json";
 const PULS_JOB = "puls";
 const VOLL_JOB = "voll";
 const GRUPPEN_JOBS = [PULS_JOB, VOLL_JOB];
-// Die EINE Bedingung der vollen Batterie: nachts, auf Abruf, auf jedem PR nach main, auf integ-probe und main, und wo die
-// Commit-Message `[ci voll]` trägt (eine Karte mit Risiko R2/R3 am letzten Push).
+// Die EINE Bedingung der vollen Batterie: auf Abruf, auf jedem PR nach main, auf integ-probe (dort sagt der Kopf-Richter
+// voll=nein: der Zug fährt voll nie, LANDUNG ≤ 10 MIN) und main (die Nachwache nach jeder Landung), und wo die Commit-Message
+// `[ci voll]` trägt (die Vorprüfung am Zweig-Kopf). Kein schedule mehr: die Nacht urteilte am Kopf von main nichts Neues.
 const VOLL_WENN =
-    "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || " +
+    "github.event_name == 'workflow_dispatch' || " +
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
 const jobsVon = (doc) => doc?.jobs || {};
@@ -51,17 +52,21 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat(J?.needs || []);
-// (E) DIE KARTEN (w27-swift-raus): jede Wand der GPU-Klasse auf einem eigenen Läufer mit der echten Karte, hinter dem
-// Kopf-Richter (`echt`), nie pull_request — DREI BEINE ZUGLEICH (matrix.karte; der Läufer heißt bis zum ersten Bindestrich wie
-// seine Karte, sein Label `<karte>-gpu`, gpu-probe.yml gibt demselben Label Vorfahrt); je Schritt GENAU ein Bein und eine Frist,
-// kein Bein leer, der Job ≤ ECHT_DECKEL_MIN, der Plan je Bein ≤ ECHT_PLAN_S (T). Die Klasse jedes Schritts urteilt (K).
+// (E) DIE KARTEN (w27-swift-raus): jede Wand der GPU-Klasse auf einem eigenen Läufer mit der echten Karte (`echt`), nie
+// pull_request — DREI BEINE ZUGLEICH (matrix.karte; der Läufer heißt bis zum ersten Bindestrich wie seine Karte, sein Label
+// `<karte>-gpu`, gpu-probe.yml gibt demselben Label Vorfahrt); je Schritt GENAU ein Bein und eine Frist, kein Bein leer, der
+// Job ≤ ECHT_DECKEL_MIN, der Plan je Bein ≤ ECHT_PLAN_S (T). Die Klasse jedes Schritts urteilt (K).
+// NUR AUF ABRUF (LANDUNG ≤ 10 MIN, 23.11., der Schöpfer: „Wir messen soviel wie nötig, nicht wie möglich“): ECHT_WENN, ohne
+// needs — kein push (bis hier je Zug auf integ-probe, zug-a, zug-b: z695 trug das Bein omen 28,9 der 29,4 min Wand), kein
+// schedule, kein Kopf-Richter. Den GPU-Beweis eines Kopfs trägt die GPU-Probe seiner Vorprüfung. Eine Wand, die NUR hier steht,
+// hält kein Tor: (W) zählt sie in der abgeleiteten Klasse KARTE_KLASSE (keine Liste, die Zahl steht im Bericht).
+// DER ABRUF IST EINE WAHL (ECHT_WAHL): der Zug-Dienst stößt am Zweig-Kopf ohne grüne Batterie check.yml ohne inputs an
+// (zug-dienst.sh bereit) — on.workflow_dispatch.inputs.karten (boolean, default false) hält die Beine dort draußen.
 const ECHT_JOB = "echt";
-// die Zug-Zweige: integ-probe (der Kandidat) und die Hälften der Bisektion (zug.cjs teile) — dort und nachts urteilen die Karten
-const ZUG_REFS = ["integ-probe", "zug-a", "zug-b"];
-const ECHT_WENN =
-    "(github.event_name == 'schedule' || (github.event_name == 'push' && (" +
-    ZUG_REFS.map((z) => `github.ref == 'refs/heads/${z}'`).join(" || ") +
-    "))) && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'";
+const ECHT_WAHL = "karten";
+const ECHT_WENN = `github.event_name == 'workflow_dispatch' && inputs.${ECHT_WAHL}`;
+const KARTE_GRUND = `der Job „${ECHT_JOB}" fährt nur auf Abruf, den GPU-Beweis trägt die GPU-Probe der Vorprüfung`;
+const KARTE_KLASSE = "Karte (GPU-Probe der Vorprüfung, echt auf Abruf)";
 const [ECHT_DECKEL_MIN, ECHT_PLAN_S] = [45, 20 * 60];
 const ECHT_LAEUFER = ["self-hosted", "${{ matrix.karte }}-gpu"];
 // das Bein eines Karten-Schritts: `if: ${{ !cancelled() && matrix.karte == '<karte>' }}` (null: keines)
@@ -91,8 +96,16 @@ function echtForm(doc) {
         v.push(
             `(E) ECHT: „${ECHT_JOB}" läuft nicht auf [${ECHT_LAEUFER.join(", ")}] mit env CI_KLASSE gpu und LINSE_GPU karte`
         );
-    if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
-        v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
+    if (normWenn(E.if) !== ECHT_WENN || needsVon(E).length)
+        v.push(
+            `(E) ABRUF: „${ECHT_JOB}" läuft unter „${E.if}"${needsVon(E).length ? ` hinter ${needsVon(E).join(", ")}` : ""} statt nur auf Abruf (if: ${ECHT_WENN}, ohne needs) — die Karten fahren in keinem Zug und keiner Nacht (LANDUNG ≤ 10 MIN)`
+        );
+    const on = doc.on !== undefined ? doc.on : doc[true];
+    const wahl = on?.workflow_dispatch?.inputs?.[ECHT_WAHL];
+    if (!wahl || wahl.type !== "boolean" || wahl.default !== false)
+        v.push(
+            `(E) ABRUF: on.workflow_dispatch.inputs.${ECHT_WAHL} ist ${JSON.stringify(wahl)} statt { type: boolean, default: false } — ohne die Wahl liefen die Karten nie, mit default true bei jedem Anstoß der vollen Batterie (zug-dienst.sh bereit)`
+        );
     if (!(Number(E["timeout-minutes"]) > 0 && Number(E["timeout-minutes"]) <= ECHT_DECKEL_MIN))
         v.push(`(E) DECKEL: „${ECHT_JOB}" timeout-minutes ${E["timeout-minutes"]} (Soll 1–${ECHT_DECKEL_MIN})`);
     const je = new Map((Array.isArray(karten) ? karten : []).map((k) => [k, 0]));
@@ -330,18 +343,16 @@ function schrittStumm(datei, doc, job, j, s) {
     if (!haeltMerge(doc)) return `${datei} läuft nicht auf push/pull_request (blockt keinen Merge)`;
     const an = (x) => x !== undefined && x !== false && x !== "false";
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
+    // die Karten halten kein Tor (LANDUNG ≤ 10 MIN): in ihrer Form fahren sie nur auf Abruf — KARTE_GRUND, (W) zählt die Wand in
+    // KARTE_KLASSE; außer Form nennt (E) den Täter und die Wand ist stumm wie jede
+    if (job === ECHT_JOB && datei === path.basename(DATEI))
+        return echtForm(doc).length ? `der Job „${job}" verfehlt seine Form (E)` : KARTE_GRUND;
     // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
     // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
-    const vollStufe =
-        datei === path.basename(DATEI) && (imVollenLauf(doc, job) || (job === ECHT_JOB && !echtForm(doc).length));
+    const vollStufe = datei === path.basename(DATEI) && imVollenLauf(doc, job);
     if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe)
         return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
-    // das Bein eines Karten-Schritts ist seine Gruppe: es läuft, wenn die Matrix die Karte trägt
-    if (job === ECHT_JOB && beinVon(s))
-        return kartenVon(doc).includes(beinVon(s))
-            ? null
-            : `die Karte „${beinVon(s)}" steht in keiner Matrix (läuft nie)`;
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
         const [g, M] = [gruppeVon(s), j.strategy?.matrix?.gruppe];
         if (!g) return `läuft nur unter „${s.if}"`;
@@ -399,13 +410,18 @@ function deckung(skripte, docs, ausnahmen) {
     const inSich = (teile) => teile.filter((t) => t.stumm);
     const laeuft = (n, teile) =>
         !inSich(teile).length && (gerufen.has(n) || (teile.length > 0 && teile.every((t) => gefahren.has(t.t))));
+    // eine Wand der Karte: was die CI von ihr nicht fährt, fährt der Job echt in seiner Form (KARTE_GRUND) — die abgeleitete Klasse
+    const nurKarte = (teile) => {
+        const rest = teile.filter((t) => !gefahren.has(t.t));
+        return !inSich(teile).length && rest.length > 0 && rest.every((t) => (stummBei.get(t.t) || []).some((e) => e.endsWith(KARTE_GRUND)));
+    };
     const klassen = new Set(Object.values(KLASSEN));
     const zahl = { waende: W.size, inCi: 0, ausnahmen: 0, offen: 0, jeKlasse: {} };
     for (const [n, teile] of W) {
         if (laeuft(n, teile)) zahl.inCi++;
-        else if (ausnahmen[n]) {
+        else if (ausnahmen[n] || nurKarte(teile)) {
             zahl.ausnahmen++;
-            const k = ausnahmen[n].klasse;
+            const k = ausnahmen[n] ? ausnahmen[n].klasse : KARTE_KLASSE;
             zahl.jeKlasse[k] = (zahl.jeKlasse[k] || 0) + 1;
         } else {
             zahl.offen++;
@@ -725,7 +741,7 @@ function einlassTeil(docs) {
 }
 
 // (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
-// checkout (scripts/ci-kopf.cjs mit id), dessen Ausgaben `voll` und `echt` der Job weiterreicht
+// checkout (scripts/ci-kopf.cjs mit id), dessen Ausgabe `voll` der Job weiterreicht — nur sie (die Karten fragen ihn nicht mehr)
 function kopfForm(doc) {
     const v = [];
     const K = jobsVon(doc)[KOPF_JOB];
@@ -750,13 +766,13 @@ function kopfForm(doc) {
                 `(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`
             );
         if (r.if !== undefined) v.push(`(V) KOPF: der Richter-Schritt trägt die Bedingung „${r.if}"`);
-        for (const aus of ["voll", "echt"]) {
-            const soll = r.id ? `\${{ steps.${r.id}.outputs.${aus} }}` : null;
-            if (!soll || normWenn((K.outputs || {})[aus]) !== soll)
-                v.push(
-                    `(V) KOPF: „${KOPF_JOB}" reicht outputs.${aus} nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`
-                );
-        }
+        const soll = r.id ? `\${{ steps.${r.id}.outputs.voll }}` : null;
+        if (!soll || normWenn((K.outputs || {}).voll) !== soll)
+            v.push(
+                `(V) KOPF: „${KOPF_JOB}" reicht outputs.voll nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`
+            );
+        for (const aus of Object.keys(K.outputs || {}).filter((a) => a !== "voll"))
+            v.push(`(V) KOPF: „${KOPF_JOB}" reicht outputs.${aus} — der Richter urteilt nur voll, der Leser läse leer`);
     }
     return v;
 }
@@ -1059,8 +1075,8 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
             `(T) PLÄTZE: ein voller Lauf fährt ${plaetze} Jobs zugleich (${zugleich.map(([j, , n]) => `${j} ${n}`).join(" · ")}) — ` +
                 `das Konto hat ${LAEUFER_PLAETZE} Läufer-Plätze: ${plaetze - LAEUFER_PLAETZE} warten auf einen freien Platz und tragen die Wanduhr doppelt`
         );
-    // die WANDUHR (benannt, nie ROT): der längste Weg — je Job seine schwerste Gruppe (die Karten: ihr schwerstes Bein) plus die
-    // der Jobs, auf die er wartet; die Karten belegen keinen Platz des Kontos (eigene Läufer), ihr Weg zählt
+    // die WANDUHR (benannt, nie ROT): der längste Weg — je Job seine schwerste Gruppe plus die der Jobs, auf die er wartet; die
+    // Karten fahren nur auf Abruf (LANDUNG ≤ 10 MIN), nie im vollen Lauf: ihr Bein steht im Plan (T) ECHT, nie auf diesem Weg
     const weg = (job, tiefe = 0) => {
         const J = doc.jobs[job];
         const eigen = schwerste.has(job) ? schwerste.get(job)[1] : 0;
@@ -1068,7 +1084,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
         const v0 = vor.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
         return [v0[0] + eigen, (v0[1] ? v0[1] + " → " : "") + (schwerste.has(job) ? schwerste.get(job)[0] : job)];
     };
-    const wege = [...imLauf.map(([job]) => job), ...(E ? [ECHT_JOB] : [])].map((job) => weg(job));
+    const wege = imLauf.map(([job]) => weg(job));
     const laengster = wege.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
     const voll = [...deckel].filter(([, k]) => k.art === "voll" && k.n > 1).map(([kl, k]) => `${kl} ${minuten(k.d)}`);
     return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll, alt };
@@ -1078,7 +1094,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
 const CHECKOUT = { uses: "actions/checkout@v4" };
 const kopfJob = () => ({
     if: VOLL_WENN,
-    outputs: { voll: "${{ steps.kopf.outputs.voll }}", echt: "${{ steps.kopf.outputs.echt }}" },
+    outputs: { voll: "${{ steps.kopf.outputs.voll }}" },
     steps: [CHECKOUT, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
 });
 const cacheSchritt = (p, key, restore = p.replace(/\W+/g, "") + "-") => ({
@@ -1198,18 +1214,18 @@ function selbsttestKette(kette = kopfKette) {
     return f;
 }
 function selbsttestKopf(urteile = kopfUrteil) {
-    // je Karte ein Bein: „echt omen (…)", „echt radeon (…)", „echt gtx1050 (…)"
-    const BEINE = ["omen", "radeon", "gtx1050"];
-    const gruen = (id, event = "push", voll = ["success", "success"], echt = []) => ({
-        lauf: { id, event, status: "completed", conclusion: "success", head_branch: "integ-probe" },
-        jobs: [{ name: "puls 1/2", conclusion: "success" }]
-            .concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2`, conclusion: c })))
-            .concat(echt.map((c, i) => ({ name: `echt ${BEINE[i]} (GPU-Wände auf der Karte)`, conclusion: c }))),
+    const gruen = (id, event = "push", voll = ["success", "success"]) => ({
+        lauf: { id, event, status: "completed", conclusion: "success", head_branch: "w28-zweig" },
+        jobs: [{ name: "puls 1/2", conclusion: "success" }].concat(
+            voll.map((c, i) => ({ name: `voll ${i + 1}/2`, conclusion: c }))
+        ),
     });
     const lauf = (x, lauf) => ({ ...x, lauf: { ...x.lauf, ...lauf } });
     const laufend = lauf(gruen(1), { status: "in_progress", conclusion: null });
-    const fall = (ereignis, laeufe, gewartet = []) => ({
+    // der eigene Lauf: ein push auf main (die Nachwache) — im Zug (ZUG_REFS) fragt der Richter nichts
+    const fall = (ereignis, laeufe, gewartet = [], ref = "refs/heads/main") => ({
         ereignis,
+        ref,
         eigenerLauf: 9,
         laeufe: laeufe.map((x) => x.lauf),
         jobsJe: Object.fromEntries(laeufe.map((x) => [x.lauf.id, x.jobs])),
@@ -1217,7 +1233,7 @@ function selbsttestKopf(urteile = kopfUrteil) {
     });
     // [Name, Fall, Soll: „ja"/„nein" (voll) · „warte" · „rot" · ein Prüfer am Urteil]
     const faelle = [
-        ["derselbe Kopf grün auf integ-probe", fall("push", [gruen(1)]), "nein"],
+        ["derselbe Kopf grün am Zweig (der Stempel landet, main erbt)", fall("push", [gruen(1)]), "nein"],
         ["kein anderer Lauf", fall("push", []), "ja"],
         ["nur der eigene Lauf", fall("push", [gruen(9)]), "ja"],
         ["auf Abruf läuft sie immer", fall("workflow_dispatch", [gruen(1)]), "ja"],
@@ -1235,32 +1251,51 @@ function selbsttestKopf(urteile = kopfUrteil) {
             fall("push", [lauf(gruen(1), { conclusion: "cancelled" })], [1]),
             "ja",
         ],
-        // Richter 22.10.: der Nachtlauf fuhr auf schon grünem main
         [
-            "nachts auf grünem main (Batterie und jede Karte stehen)",
-            fall("schedule", [gruen(1, "push", undefined, ["success", "success", "success"])]),
-            (u) => u.voll === "nein" && u.echt === "nein",
+            "der Kopf stand rot (die Batterie fährt)",
+            fall("push", [lauf(gruen(1, "push", ["failure"]), { conclusion: "failure" })]),
+            "ja",
         ],
+        // LANDUNG ≤ 10 MIN (23.11.): der Zug fährt voll nie — ohne Frage an die API, auch neben einem laufenden Lauf
+        ["im Zug: push auf integ-probe (der Kandidat)", fall("push", [], [], "refs/heads/integ-probe"), "nein"],
+        ["im Zug: push auf zug-a (die Hälfte der Bisektion)", fall("push", [], [], "refs/heads/zug-a"), "nein"],
+        ["im Zug: push auf zug-b", fall("push", [], [], "refs/heads/zug-b"), "nein"],
+        ["im Zug wartet der Richter auf keinen älteren Lauf", fall("push", [laufend], [], "refs/heads/integ-probe"), "nein"],
+        ["auf Abruf an integ-probe läuft sie (der Abruf ist kein Zug)", fall("workflow_dispatch", [], [], "refs/heads/integ-probe"), "ja"],
         [
-            "nachts, ein Bein der Karten rot (alle Karten fahren)",
-            fall("schedule", [gruen(1, "push", undefined, ["success", "failure", "success"])]),
-            (u) => u.voll === "nein" && u.echt === "ja",
-        ],
-        [
-            "nachts, der Kopf stand rot (die Batterie fährt)",
-            fall("schedule", [lauf(gruen(1, "push", undefined, ["failure"]), { conclusion: "failure" })]),
+            "die Nachwache auf main: der Zug-Lauf am selben Kopf trug kopf und Puls, nie voll (sie fährt)",
+            fall("push", [gruen(1, "push", ["skipped", "skipped"])]),
             "ja",
         ],
     ];
-    const f = [];
-    for (const [n, e, soll] of faelle) {
-        const u = urteile(e);
-        const art = u.warte ? "warte" : u.rot ? "rot" : u.voll;
-        const ok = typeof soll === "function" ? soll(u) : art === soll;
+    const pruefe = (u) => {
+        const f = [];
+        for (const [n, e, soll] of faelle) {
+            const x = u(e);
+            const art = x.warte ? "warte" : x.rot ? "rot" : x.voll;
+            if ((typeof soll === "function" ? soll(x) : art === soll) === false)
+                f.push([n, `${art} statt ${typeof soll === "function" ? "der Prüfung" : soll}`, x]);
+        }
+        return f;
+    };
+    const rot = pruefe(urteile);
+    for (const [n, e] of faelle) {
+        const x = urteile(e);
+        const r = rot.find(([m]) => m === n);
         console.log(
-            `  ${ok ? "✅" : "❌"} Selbsttest Kopf „${n}" → ${art}${u.echt ? ` echt=${u.echt}` : ""} (${u.grund || u.rot || (u.warte && u.warte.id)})`
+            `  ${r ? "❌" : "✅"} Selbsttest Kopf „${n}" → ${x.warte ? "warte" : x.rot ? "rot" : x.voll} (${x.grund || x.rot || (x.warte && x.warte.id)})`
         );
-        if (!ok) f.push(`Kopf „${n}": ${art} statt ${typeof soll === "function" ? "der Prüfung" : soll}`);
+    }
+    const f = rot.map(([n, w]) => `Kopf „${n}": ${w}`);
+    // DER MUTANT: der alte Richter (blind für den Ref: jeder push fragt nach der Batterie) — er fällt an den Zug-Fällen
+    if (urteile === kopfUrteil) {
+        const alt = pruefe((e) => kopfUrteil({ ...e, ref: "refs/heads/main" })).map(([n]) => n);
+        const zug = faelle.filter(([n]) => n.startsWith("im Zug")).map(([n]) => n);
+        const ok = zug.every((n) => alt.includes(n));
+        console.log(
+            `  ${ok ? "✅" : "❌"} Selbsttest Kopf, Mutant „der Richter blind für den Zug" → ${alt.length ? "ROT an „" + alt.join("“ · „") + '"' : "bleibt grün"}`
+        );
+        if (!ok) f.push("Kopf: der Mutant „der Richter blind für den Zug\" fällt nicht an jedem Zug-Fall — die Fälle sind vakuös");
     }
     return f;
 }
@@ -1300,8 +1335,8 @@ function selbsttest() {
     // (E) die Karten in ihrer Form: zwei Beine, je Schritt genau eines (D auf omen, W auf radeon), mit Frist
     const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
     const echtDazu = (d) =>
+        ((d.on = { push: { branches: ["**"] }, workflow_dispatch: { inputs: { [ECHT_WAHL]: { type: "boolean", default: false } } } }),
         (d.jobs.echt = {
-            needs: KOPF_JOB,
             if: ECHT_WENN,
             strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
             "runs-on": [...ECHT_LAEUFER],
@@ -1314,7 +1349,7 @@ function selbsttest() {
                 { name: "D auf der Karte", if: bein("omen"), run: "npm run gate:d", "timeout-minutes": 5 },
                 { name: "W auf der Karte", if: bein("radeon"), run: "npm run gate:w", "timeout-minutes": 5 },
             ],
-        });
+        }));
     const faelle = [
         [
             "ein Karten-Schritt ohne Frist",
@@ -1326,15 +1361,40 @@ function selbsttest() {
             (d) => (echtDazu(d)["timeout-minutes"] = 150),
             /\(E\) DECKEL: „echt" timeout-minutes 150/,
         ],
+        // LANDUNG ≤ 10 MIN (23.11.): die Karten fahren in keinem Zug und keiner Nacht — der Täter ist jede alte Form
         [
-            "die Karten ohne das Kopf-Urteil echt",
-            (d) => (echtDazu(d).if = ECHT_WENN.replace(/ && needs\.kopf\.outputs\.echt == 'ja'/, "")),
-            /\(E\) ECHT: „echt" läuft unter/,
+            "die Karten wieder im Zug (push auf integ-probe, hinter dem Kopf-Richter)",
+            (d) =>
+                Object.assign(echtDazu(d), {
+                    needs: KOPF_JOB,
+                    if: "github.event_name == 'push' && github.ref == 'refs/heads/integ-probe' && needs.kopf.result == 'success'",
+                }),
+            /\(E\) ABRUF: „echt" läuft unter „github\.event_name == 'push' && github\.ref == 'refs\/heads\/integ-probe'.*" hinter kopf statt nur auf Abruf/,
         ],
         [
-            "die Karten nur auf integ-probe (die Hälften der Bisektion urteilten ohne Karte)",
-            (d) => (echtDazu(d).if = ECHT_WENN.replace(/ \|\| github\.ref == 'refs\/heads\/zug-[ab]'/g, "")),
-            /\(E\) ECHT: „echt" läuft unter .*refs\/heads\/zug-a/,
+            "die Karten wieder nachts",
+            (d) => (echtDazu(d).if = "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"),
+            /\(E\) ABRUF: „echt" läuft unter „github\.event_name == 'schedule'/,
+        ],
+        [
+            "die Karten auf Abruf, aber hinter dem Kopf-Richter (er fragte nach ihnen)",
+            (d) => (echtDazu(d).needs = KOPF_JOB),
+            /\(E\) ABRUF: „echt" läuft unter „github\.event_name == 'workflow_dispatch' && inputs\.karten" hinter kopf/,
+        ],
+        [
+            "der Abruf ohne die Wahl der Karten (jeder Anstoß der vollen Batterie führe drei Beine mit)",
+            (d) => (echtDazu(d), (d.on.workflow_dispatch.inputs[ECHT_WAHL].default = true)),
+            /\(E\) ABRUF: on\.workflow_dispatch\.inputs\.karten ist \{"type":"boolean","default":true\}/,
+        ],
+        [
+            "die Wahl fehlt (die Karten liefen nie)",
+            (d) => (echtDazu(d), (d.on.workflow_dispatch = null)),
+            /\(E\) ABRUF: on\.workflow_dispatch\.inputs\.karten ist undefined/,
+        ],
+        [
+            "der Kopf-Richter reicht noch echt (der Leser läse leer)",
+            (d) => (d.jobs.kopf.outputs.echt = "${{ steps.kopf.outputs.echt }}"),
+            /\(V\) KOPF: „kopf" reicht outputs\.echt — der Richter urteilt nur voll/,
         ],
         [
             "ein Karten-Schritt ohne Bein (er liefe auf jeder Karte)",
@@ -1427,7 +1487,7 @@ function selbsttest() {
                 V(d).if = VOLL_WENN;
                 delete V(d).needs;
             },
-            /\(V\) BEDINGUNG: „voll" läuft unter „github\.event_name == 'schedule'.*" ohne needs: kopf/,
+            /\(V\) BEDINGUNG: „voll" läuft unter „github\.event_name == 'workflow_dispatch'.*" ohne needs: kopf/,
         ],
         [
             "der Kopf-Richter unter einer anderen Bedingung",
@@ -1600,7 +1660,6 @@ function selbsttestWaage() {
     const mitEcht = (d, z, s) => {
         const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
         d.jobs.echt = {
-            needs: KOPF_JOB,
             if: ECHT_WENN,
             strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
             steps: prep(
@@ -1700,9 +1759,9 @@ function selbsttestWaage() {
             /\(T\) UNGEMESSEN: „W" \(echt omen\)/,
         ],
         [
-            "das schwerste Bein ist der Weg der Karten (benannt, nie ROT)",
+            "die Karten fahren nie im vollen Lauf: ihr schwerstes Bein (19,0 min) ist nie die Wanduhr (LANDUNG ≤ 10 MIN)",
             (d, z) => mitKopf(d, z, 120) || mitEcht(d, z, 900),
-            (w) => !w.v.length && w.wanduhr[1] === "kopf → echt omen" && minuten(w.wanduhr[0]) === "19,0",
+            (w) => !w.v.length && w.wanduhr[1] === "kopf → voll 1/2" && minuten(w.wanduhr[0]) === "8,5",
         ],
     ];
     const f = [];
@@ -1740,7 +1799,11 @@ function selbsttestGegenrichtung() {
     });
     const docs = () => ({
         "check.yml": {
-            on: { push: { branches: ["**"] }, pull_request: { branches: ["main"] } },
+            on: {
+                push: { branches: ["**"] },
+                pull_request: { branches: ["main"] },
+                workflow_dispatch: { inputs: { [ECHT_WAHL]: { type: "boolean", default: false } } },
+            },
             jobs: {
                 check: {
                     steps: [
@@ -1765,8 +1828,31 @@ function selbsttestGegenrichtung() {
         "gate:d": { klasse: KLASSEN.MESS, grund: "gibt Zahlen aus, kennt kein Rot" },
     });
     const C = (d) => d["check.yml"].jobs.playtest.steps[0];
+    // eine Wand der Karte: gate:e fährt NUR im Job echt (in seiner Form: nur auf Abruf)
+    const mitKarte = (s, d) => {
+        s["gate:e"] = "node scripts/e.cjs --echt";
+        d["check.yml"].jobs.echt = {
+            if: ECHT_WENN,
+            strategy: { "fail-fast": false, matrix: { karte: ["omen"] } },
+            "runs-on": [...ECHT_LAEUFER],
+            "timeout-minutes": 30,
+            env: { CI_KLASSE: "gpu", LINSE_GPU: "karte" },
+            steps: [
+                CHECKOUT,
+                { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
+                { name: "E auf der Karte", if: "${{ !cancelled() && matrix.karte == 'omen' }}", run: "npm run gate:e", "timeout-minutes": 5 },
+            ],
+        };
+        return d["check.yml"].jobs.echt;
+    };
     const faelle = [
         ["(W) der gute Stand", () => {}],
+        ["(W) eine Wand nur auf der Karte (Abruf): die Klasse Karte, kein Rot", (s, d) => mitKarte(s, d), null],
+        [
+            "die Wand der Karte, die Karten wieder im Zug: ihr Rot verfehlt die Form",
+            (s, d) => (mitKarte(s, d).if = "github.event_name == 'push' && github.ref == 'refs/heads/integ-probe'"),
+            /\(S\) STUMM: „gate:e" läuft nur abgeschaltet — „E auf der Karte" \(check\.yml\/echt\): der Job „echt" verfehlt seine Form \(E\)/,
+        ],
         [
             "ein neues Gate ohne Schritt und ohne Eintrag",
             (s) => (s["gate:neu"] = "node scripts/neu.cjs"),
@@ -1880,11 +1966,18 @@ function selbsttestGegenrichtung() {
             /\(F\) FEHLT: das Skript „gate:c-beide" ruft „npm run gate:weg"/,
         ],
     ];
-    return taeterFaelle(
+    const f = taeterFaelle(
         faelle.map(([n, tat, soll]) => [n, (z) => tat(...z), soll]),
         (z) => deckung(...z).v,
         { klon: () => [skripte(), docs(), aus()] }
     );
+    // die Zahl: die Wand der Karte zählt in KARTE_KLASSE, nie „in der CI" (der Täter ist das alte Gesetz: die Karten hielten das Tor)
+    const [s, d] = [skripte(), docs()];
+    mitKarte(s, d);
+    const z = deckung(s, d, aus()).zahl;
+    const zok = z.jeKlasse[KARTE_KLASSE] === 1 && z.inCi === z.waende - z.ausnahmen;
+    console.log(`  ${zok ? "✅" : "❌"} Selbsttest „die Wand der Karte steht in der Klasse Karte" → ${JSON.stringify(z.jeKlasse)}, in der CI ${z.inCi}`);
+    return zok ? f : f.concat([`(W) die Wand der Karte zählt nicht in „${KARTE_KLASSE}": ${JSON.stringify(z.jeKlasse)}`]);
 }
 
 // (P) Der volle Playtest gegen ein Fixture: die gute check.yml trägt ihn allein in Gruppe 2 der vollen Batterie, mit
@@ -2076,9 +2169,27 @@ async function selbsttestZeiten() {
     const bleibt = !!B && B.s === 13 && B.geschaetzt === true && !n.ohne.length && n.out.schritte.A?.s === 214;
     const wb = B ? `B ${B.s} s${B.geschaetzt ? " geschaetzt" : ""}` : `B fehlt (ohne Messung: ${n.ohne.join(", ") || "—"})`;
     console.log(`  ${bleibt ? "✅" : "❌"} Selbsttest „ein neuer Schritt ohne gelandeten Lauf behält die Zeit seines Zweigs" → ${wb}`);
+    // LANDUNG ≤ 10 MIN: der Zug fährt voll nie — die Nachwache auf main wiegt die volle Stufe; ein Arbeits-Zweig wiegt nie (der Täter
+    // ist der alte Filter „nur integ-probe": er fände keinen Lauf, die Tafel bliebe ROT stehen)
+    const zweigLauf = (id, zweig, s) => ({ id, zweig, s });
+    const nw = [zweigLauf(5, "main", 300), zweigLauf(6, "w28-arbeit", 999)];
+    const apiNw = async (p) =>
+        p.includes("/runs?per_page")
+            ? { total_count: nw.length, workflow_runs: nw.map((x) => ({ id: x.id, head_sha: G, head_branch: x.zweig, status: "completed", run_attempt: 1, created_at: new Date().toISOString() })) } // prettier-ignore
+            : p.startsWith("/contents/")
+              ? { content: Buffer.from(yaml.dump(jetzt)).toString("base64") }
+              : { jobs: nw.filter((x) => p === `/actions/runs/${x.id}/attempts/1/jobs?per_page=100`).map((x) => job(x.s, "success")) };
+    const tn = await messe(apiNw, jetzt, {}, 0, () => true).then(
+        (x) => x.out,
+        (e) => ({ schritte: {}, e: e.message })
+    );
+    const wache = tn.schritte.A?.s === 300 && tn.schritte.A?.n === 1;
+    const ww = tn.schritte.A ? `A ${tn.schritte.A.s} s aus ${tn.schritte.A.n} Lauf` : `A fehlt (${tn.e || "—"})`;
+    console.log(`  ${wache ? "✅" : "❌"} Selbsttest „die Nachwache auf main wiegt voll, ein Arbeits-Zweig nie" → ${ww}`);
     return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(
         gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`],
-        bleibt ? [] : [`das Neu-Messen wirft den Eintrag eines neuen Schritts aus der Tafel: ${wb}`]
+        bleibt ? [] : [`das Neu-Messen wirft den Eintrag eines neuen Schritts aus der Tafel: ${wb}`],
+        wache ? [] : [`die Nachwache auf main wiegt nicht (oder ein Arbeits-Zweig wiegt mit): ${ww}`]
     );
 }
 async function selbsttestLauf() {

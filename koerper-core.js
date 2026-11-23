@@ -5674,13 +5674,34 @@
     //    er, am Stand lädt er ab, `bestandZiel` nennt die nächste Seite); der TAUSCH bewegt zwischen zwei Haltern (`bestandNimm` →
     //    `bestandGib`), nur, was der eine hat, nur, was der andere fasst. Nichts entsteht, nichts vergeht außer Herstellung und
     //    Verbrauch: `her` und `ver` je Halter sind ihre Bücher (die Linse rechnet die Erhaltung, gate:koerper-kern BESTAND).
-    //    Die Waren sind Stoffe der Welt (schmiede STOFF_GESETZ: kraut, eisen) — sie gehen in das Inventar des Spielers. Die
+    //    Die Waren sind Stoffe der Welt (schmiede STOFF_GESETZ: kraut, eisen) — sie gehen in das Inventar des Spielers. Das Eisen
+    //    der Schmiede entsteht nicht aus dem Nichts: ihr Werk ist der Ofen der Stoffstrom-Kette (`jeStunde` 0, `aus` das Erz der
+    //    Halde, `stoffstromFassen` gibt ihm die Barren). Die
     //    nächste Sprosse (markt S2: zehn Waren, Knappheit treibt Preis) ist eine Zeile je Beruf in `herstellung`, ihr Preis liest
     //    `bestandAm` gegen das Lager. Leser: der Wirt (`_bestandHalter`, `_bestandTausch`, `_bestandAnkunft`, `_bestandBild`).
     var BESTAND_GESETZ = Object.freeze({
         herstellung: Object.freeze({
             feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
-            schmiede: Object.freeze({ ware: "eisen", jeStunde: 0.5 }),
+            schmiede: Object.freeze({ ware: "eisen", jeStunde: 0, aus: "erz" }),
+        }),
+        // DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, `stoffstromHalter`): Erz → Barren → Werkzeug.
+        // esseKgJeStunde: das Erz, das ein Rennofen in einer Stunde der Arbeit seiner Schmiede reduziert (die Versuche der
+        // experimentellen Archäologie setzen 20–40 kg Erz in einer Ofenreise von 6–8 h durch); barrenKg: der Barren, den die Luppe
+        // füllt (der Spitzbarren, Handelsbarren der La-Tène-Zeit: 3–7 kg); werkzeugStunden: die Stunden des Schmieds an einem
+        // Werkzeug; haldeTage: die Halde am Abbau trägt so viele Tage der Arbeit aller Öfen ihres Orts (ein Wurf aus seinem Samen);
+        // schrittH: das Raster der Uhr der Kette (der Lauf ist dasselbe, gleich in wie vielen Rufen er gelesen wird); lager: die
+        // Orte, an denen der Wirt nach dem Erz sucht — Ringe um den Ort von `vonM` bis `bisM` im Abstand `ringM`, je Ring `je`
+        // Punkte ab einem Winkel aus dem Samen (`stoffstromOrte`; wo es liegt, sagt die Geologie des Wirts); halde: die Form des
+        // Haufens (`stoffstromHaldeForm`) — der Porenanteil gebrochenen Gesteins (lose geschüttet 0,35–0,45) und sein
+        // Schüttwinkel (gebrochenes Erz 35–40°): die Halde ist ein Kegel ihres Volumens, sie schrumpft mit jedem Kilogramm.
+        stoffstrom: Object.freeze({
+            esseKgJeStunde: 5,
+            barrenKg: 5,
+            werkzeugStunden: 3,
+            haldeTage: Object.freeze([5, 15]),
+            schrittH: 0.25,
+            lager: Object.freeze({ vonM: 80, bisM: 420, ringM: 20, je: 24 }),
+            halde: Object.freeze({ poren: 0.4, boeschungGrad: 37 }),
         }),
         lager: Object.freeze({ werk: 24, stand: 24, wagen: 12, scheune: 96 }),
         verbrauch: Object.freeze({ anteil: 1 }),
@@ -5863,6 +5884,129 @@
         }
         bestandFassen(S, h);
         return n;
+    }
+    // ── DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, rein additiv): Erz → Barren → Werkzeug, die Ware
+    //    hat eine Herkunft. Je Ort EINE Halde am Abbau (kg Erz: `haldeTage` Tage der Arbeit seiner Öfen, ein Wurf aus dem Samen
+    //    des Orts), je Schmiede ihr Werk als OFEN — ein Halter des Bestands mit der Ware Eisen, der nichts aus dem Nichts herstellt
+    //    (`herstellung.schmiede.jeStunde` 0). In den Stunden der Arbeit seiner Schmiede (`tagesFenster` des Werks): die Esse
+    //    reduziert `esseKgJeStunde` Erz der Halde (solange sie trägt) zur Luppe — Eisen nach der Ausbeute des Stoff-Gesetzes
+    //    (schmiede `STOFFSTROM.verhuettung`, der Wirt reicht sie); je volle `barrenKg` Luppe gibt sie dem Ofen EINEN Barren
+    //    (`bestandGib`, nur, was er fasst); der Schmied schmiedet je `werkzeugStunden` ein Werkzeug aus dem Eisen des Ofens (er
+    //    nimmt einen Barren, `bestandNimm`, und schmiedet aus seinem Anbruch, `werkzeugKg` je Werkzeug — schmiede `werkEisen`);
+    //    am Ende jedes Fensters der Arbeit gibt die Schmiede ihre fertigen Werkzeuge in die Hände der Leute des Orts (`haendeMax`
+    //    Hände, der Wirt nennt sie). Die Kette ist eine FUNKTION der Zeit auf dem Raster `schrittH` — `stoffstromFassen` legt die
+    //    Schritte seit ihrer Uhr an, gleich in wie vielen Rufen; kein Takt über den Ort (Gebot 7). Die Bücher: `erz` (verhüttet,
+    //    kg), `eisen` (in die Luppe, kg), `barren`, `werkzeug` (geschmiedet) — die Erhaltung: Erz der Halde vorher − nachher =
+    //    `erz`, Eisen = Luppe + Barren · barrenKg (im Ofen und wohin ihn Wagen und Tausch trugen) + Anbruch + Werkzeug ·
+    //    werkzeugKg. Leser: der Wirt (`_stoffstromAnlegen`, `_stoffstromFassen`, `_stoffstromZensus`, `_stoffstromBild`) und
+    //    gate:koerper-kern STOFFSTROM.
+    function stoffstromHalter(oefen, h, ausbeute, werkzeugKg, haendeMax, same) {
+        var G = BESTAND_GESETZ.stoffstrom,
+            tag = 0,
+            null0 = function () {
+                return oefen.map(function () {
+                    return 0;
+                });
+            };
+        if (!(ausbeute > 0 && ausbeute < 1)) throw new Error("STOFFSTROM: die Ausbeute " + ausbeute + " ist kein Anteil des Erzes");
+        if (!(werkzeugKg > 0 && werkzeugKg <= G.barrenKg)) throw new Error("STOFFSTROM: ein Werkzeug von " + werkzeugKg + " kg passt nicht in einen Barren");
+        for (var i = 0; i < oefen.length; i++) {
+            var O = oefen[i];
+            if (!O || O.art !== "werk" || O.rate > 0 || !O.fenster)
+                throw new Error("STOFFSTROM: der Ofen " + i + " ist kein Werk, das nichts aus dem Nichts herstellt");
+            for (var k = 0; k < O.fenster.length; k++) tag += O.fenster[k][1] - O.fenster[k][0];
+        }
+        var u = _tagZahl(same, "halde"),
+            kg = (G.haldeTage[0] + (G.haldeTage[1] - G.haldeTage[0]) * u) * tag * G.esseKgJeStunde;
+        return {
+            art: "stoffstrom", h: Math.floor(h / G.schrittH) * G.schrittH, oefen: oefen, ausbeute: ausbeute, werkzeugKg: werkzeugKg,
+            haldeKg: kg, halde0: kg, luppe: null0(), anbruch: null0(), arbeit: null0(), lager: null0(), haende: 0,
+            haendeMax: Math.max(0, haendeMax | 0), erz: 0, eisen: 0, barren: 0, werkzeug: 0,
+        };
+    }
+    // endet ein Fenster der Arbeit (`fenster`, Stunden des Tags) in (t0, t1]? — die Stunde, zu der die Schmiede ihre Werkzeuge gibt
+    function _fensterEnde(fenster, t0, t1) {
+        for (var d = Math.floor(t0 / 24); d <= Math.floor(t1 / 24); d++)
+            for (var k = 0; k < fenster.length; k++) {
+                var e = d * 24 + fenster[k][1];
+                if (e > t0 && e <= t1) return true;
+            }
+        return false;
+    }
+    // DER LAUF BIS ZUR STUNDE h: je Schritt des Rasters und je Ofen (in ihrer Folge) die Esse, der Barren, der Schmied, die Gabe.
+    // Liefert die Zahl der gegangenen Schritte.
+    function stoffstromFassen(K, h) {
+        var G = BESTAND_GESETZ.stoffstrom,
+            d = G.schrittH,
+            bis = Math.floor(h / d) * d,
+            n = 0;
+        while (K.h + d <= bis + 1e-9) {
+            var t0 = K.h,
+                t1 = t0 + d;
+            for (var i = 0; i < K.oefen.length; i++) {
+                var O = K.oefen[i],
+                    w = bestandStunden(O.fenster, t0, t1);
+                if (w > 0) {
+                    var e = Math.min(K.haldeKg, w * G.esseKgJeStunde);
+                    if (e > 0) {
+                        K.haldeKg -= e;
+                        K.erz += e;
+                        K.luppe[i] += e * K.ausbeute;
+                        K.eisen += e * K.ausbeute;
+                    }
+                    while (K.luppe[i] >= G.barrenKg - 1e-9 && bestandGib(O, O.ware, 1, t1) === 1) {
+                        K.luppe[i] -= G.barrenKg;
+                        K.barren++;
+                    }
+                    K.arbeit[i] += w;
+                    while (K.arbeit[i] >= G.werkzeugStunden - 1e-9) {
+                        if (K.anbruch[i] < K.werkzeugKg - 1e-9) {
+                            if (bestandNimm(O, O.ware, 1, t1) !== 1) {
+                                K.arbeit[i] = G.werkzeugStunden; // kein Eisen im Ofen: der Schmied wartet am Amboss
+                                break;
+                            }
+                            K.anbruch[i] += G.barrenKg;
+                        }
+                        K.anbruch[i] -= K.werkzeugKg;
+                        K.lager[i]++;
+                        K.werkzeug++;
+                        K.arbeit[i] -= G.werkzeugStunden;
+                    }
+                }
+                if (K.lager[i] > 0 && K.haende < K.haendeMax && _fensterEnde(O.fenster, t0, t1)) {
+                    var g = Math.min(K.lager[i], K.haendeMax - K.haende);
+                    K.haende += g;
+                    K.lager[i] -= g;
+                }
+            }
+            K.h = t1;
+            n++;
+        }
+        return n;
+    }
+    // DIE FORM DER HALDE: `kg` Erz der Dichte `rho` (kg/m³, die Zeile des Stoff-Gesetzes) als Schüttkegel — Volumen kg / (rho ·
+    // (1 − poren)), Höhe r · tan(Schüttwinkel). Liefert { r, h } in Metern (0 bei leerer Halde).
+    function stoffstromHaldeForm(kg, rho) {
+        var F = BESTAND_GESETZ.stoffstrom.halde,
+            t = Math.tan((F.boeschungGrad * Math.PI) / 180);
+        if (!(rho > 0)) throw new Error("STOFFSTROM: die Halde braucht die Dichte ihres Erzes");
+        if (!(kg > 0)) return { r: 0, h: 0 };
+        var V = kg / (rho * (1 - F.poren)),
+            r = Math.cbrt((3 * V) / (Math.PI * t));
+        return { r: r, h: r * t };
+    }
+    // DIE ORTE DER SUCHE NACH DEM ERZ (`lager`): Ringe um (ox, oz) von innen nach außen, je Ring `je` Punkte ab einem Winkel aus dem
+    // Samen — der Wirt nimmt den ersten, an dem seine Geologie das Erz trägt (anstehender Fels)
+    function stoffstromOrte(ox, oz, same) {
+        var L = BESTAND_GESETZ.stoffstrom.lager,
+            a0 = _tagZahl(same, "erz") * 2 * Math.PI,
+            aus = [];
+        for (var r = L.vonM; r <= L.bisM + 1e-9; r += L.ringM)
+            for (var j = 0; j < L.je; j++) {
+                var a = a0 + (j * 2 * Math.PI) / L.je + (r / L.ringM) * 0.5;
+                aus.push({ x: ox + r * Math.cos(a), z: oz + r * Math.sin(a), r: r });
+            }
+        return aus;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -7556,6 +7700,7 @@
     // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in ihrer Ruhe (`_rigRuhe`).
     function leibRigNeutral(r) {
         _rigRuhe(r);
+        if (r.armLot) r.armLot.length = 0; // (der Winkel vom Lot gilt der Pose, die ihn setzt: `leibRigPose`)
         var mitte = [r.hips, r.spine, r.chest, r.neck, r.head],
             seiten = [r.armL, r.armR, r.legL, r.legR],
             i,
@@ -7567,6 +7712,54 @@
                 if (seiten[i][k]) seiten[i][k].rotation.set(u ? u[0] : 0, u ? u[1] : 0, u ? u[2] : 0);
             }
     }
+    // DIE NÄCHSTE POSE EINGESCHWUNGEN: `leibRigPose` glättet das Delta des Gemüts über die Uhr (kpMul, joy 0,35); wer eine Pose
+    // backt oder misst (der Satz der Menge je Stand-Zeile zu ihrer Uhr, `_bewohnerGangPose`), stellt sie ohne die vorige. Bis hier
+    // glättete das Backen die Zeile einer Geste aus der Zeile davor: der Satz stand in joy 10,7° anders als der nahe Leib.
+    function leibRigEingeschwungen(r) {
+        r._kpmulT = null;
+    }
+    // DIE GESTE (a-haltung 2, Leiter mensch.leib.ausdruck S1 — Akt und Gemüt aus der Silhouette lesbar, nie jede gleich): hebt ein
+    // Profil eine Seite über das Band der Ruhe (MOTION_RIG_MAP armL / armR gegen das Labor-idle, vom Lot, mehr als
+    // ARM_RUHE.spreizGrad: joy 0,6 rad = 34°), ist ihre Abspreizung keine Haltung, sondern eine Geste in der Zeit: je Seite ein Bogen
+    // (sin²) über `hub` des Takts, die rechte um `versatz` versetzt (die Arme heben im Wechsel), der Ausschlag je Geste aus der Uhr
+    // (`ausschlag`, Anteil der Abspreizung des Profils) — dazwischen hängt der Arm in seiner Ruhe. Die Uhr ist die des Leibs (die
+    // Welt reicht `uhr + atem`, die Phase aus seinem Samen): Phase und Ausschlag trägt jeder Leib selbst, im Mittel hängt der Arm im
+    // Band. Der ferne Satz backt je Stand mit Geste `phasen` Zeilen (`leibGesteZeit`), jeder Leib liest die Zeile seiner Phase
+    // (`leibGestePhase`). Bis hier hielt joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment
+    // mit 34–39° (gate:mensch-anatomie haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
+    var GESTE = Object.freeze({
+        takt: 2.4, // s je Geste
+        hub: 0.3, // der Anteil des Takts, in dem der Arm gehoben ist
+        versatz: 0.5, // die rechte Seite gegen die linke (Anteil des Takts)
+        ausschlag: Object.freeze([0.3, 1]), // der Ausschlag je Geste (Anteil der Abspreizung des Profils)
+        phasen: 4, // die Zeilen des Satzes je Stand mit Geste
+    });
+    // die Seite s (0 links, 1 rechts) des Profils mp gegen mref trägt eine Geste: ihre Abspreizung vom Lot über dem Band der Ruhe
+    function leibGeste(mp, mref, s) {
+        if (!mp || !mref) return false;
+        var k = s ? "armR" : "armL";
+        return (Number(mp[k]) || 0) - (Number(mref[k]) || 0) > (ARM_RUHE.spreizGrad[1] * Math.PI) / 180;
+    }
+    // der Anteil der Abspreizung, den die Geste zur Uhr t an der Seite s hebt (0 … 1): der Bogen in seinem Takt, der Ausschlag je
+    // Takt aus der Zahl des Takts (dieselbe Uhr, derselbe Ausschlag)
+    function leibGesteWert(t, s) {
+        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt + (s ? GESTE.versatz : 0),
+            n = Math.floor(x),
+            u = x - n;
+        if (!(u < GESTE.hub)) return 0;
+        var h = Math.sin((n + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+            b = Math.sin((Math.PI * u) / GESTE.hub);
+        return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
+    }
+    // die Phase (0 … n−1) der Uhr t: die Zeile, die ein ferner Leib liest — und die Uhr der Zeile k (die Mitte ihrer Phase, je Zeile
+    // ein eigener Takt: ihr eigener Ausschlag)
+    function leibGestePhase(t, n) {
+        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt;
+        return Math.min(n - 1, Math.floor((x - Math.floor(x)) * n));
+    }
+    function leibGesteZeit(k, n) {
+        return GESTE.takt * (k + (k + 0.5) / n);
+    }
     // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
     // Gang-Gesetzes (tetrapoda gangFuss, das Becken gangBecken, die Zwei-Knochen-IK), die Arme gegen die Beine, die Becken-Senke.
@@ -7574,6 +7767,8 @@
     // THREE-Rotationen; M = die Bein-Maße (l1, l2, wpl, wz, L), Z = die Gang-Zeile der Welt-Schwere, TC = der tetrapoda-Kern.
     // DIE RUHE DER ARME HÄLT (w28-mensch-samen): nach jedem Delta — Kontrapost, Emotion, Gang — steht die Schulter nie unter ihrer
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
+    // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose); über dem Band der Ruhe ist
+    // sie eine Geste zur Uhr t (`leibGeste`).
     function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
@@ -7681,12 +7876,23 @@
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
+        // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
+        // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
+        // die Profile entstanden (die neutrale Pose stellte jede Schulter auf 0). Die Schulter steht auf dem größeren von Ruhe und
+        // Profil — der Arm hängt am Rumpf, bis ein Profil ihn weiter hebt (joy 0,6 rad: 34°). Bis hier lag das Profil AUF der Ruhe:
+        // mittags (showcase 0,15 rad) stand die Menge der Linse mit p95 29° in der A-Haltung, das spielende Kind (joy) mit 58,5°.
+        // Hebt das Profil eine Seite über das Band der Ruhe, ist ihre Abspreizung die Geste zur Uhr t (`leibGesteWert`, a-haltung 2).
+        // `r.armLot` merkt je Seite den Winkel vom Lot: wer die Pose auf einen anderen Leib legt (die Vorlage der Menge,
+        // `_bewohnerRaumStellen`), stellt ihn auf dessen Ruhe — die Pose ist der Winkel vom Lot, der Boden der des Leibs.
         var sL = r.armL.shoulder,
             sR = r.armR.shoulder,
             uL = r.armRuhe[0].shoulder,
-            uR = r.armRuhe[1].shoulder;
-        if (sL && uL && sL.rotation.z < uL[2]) sL.rotation.z = uL[2];
-        if (sR && uR && sR.rotation.z > uR[2]) sR.rotation.z = uR[2];
+            uR = r.armRuhe[1].shoulder,
+            lot = r.armLot || (r.armLot = []);
+        lot[0] = sL && uL ? (sL.rotation.z - uL[2]) * (leibGeste(mp, mref, 0) ? leibGesteWert(t, 0) : 1) : 0;
+        lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
+        if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
+        if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -10215,6 +10421,11 @@
         bestandZiel: bestandZiel,
         scheuneHalter: scheuneHalter,
         scheuneFassen: scheuneFassen,
+        // mensch.wirtschaft.stoffstrom#1 — DIE STOFFSTROM-KETTE (Erz → Barren → Werkzeug; Leser: _stoffstromAnlegen, _stoffstromFassen, _stoffstromZensus)
+        stoffstromHalter: stoffstromHalter,
+        stoffstromFassen: stoffstromFassen,
+        stoffstromOrte: stoffstromOrte,
+        stoffstromHaldeForm: stoffstromHaldeForm,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
@@ -10269,6 +10480,11 @@
         leibGangTakt: leibGangTakt,
         leibRig: leibRig,
         leibRigNeutral: leibRigNeutral,
+        leibRigEingeschwungen: leibRigEingeschwungen,
+        GESTE: GESTE,
+        leibGeste: leibGeste,
+        leibGestePhase: leibGestePhase,
+        leibGesteZeit: leibGesteZeit,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,

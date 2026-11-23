@@ -16,11 +16,15 @@ const {
     wandEnde,
     selbsttestEnde,
     studioKern,
+    ausDatei,
     fehlerText,
     SELBSTTEST,
     stammLib,
+    ROOT,
+    path,
 } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 
 const server = statikServer();
 
@@ -123,6 +127,183 @@ function ellipseVerdict(m) {
     return out;
 }
 
+// ── A7/B-h DIE GATTUNGEN (fahrzeug-gattungen, Karte 2 mensch.fahrzeug.gestalt#1): welche Gattungen eine Stadt fährt, ist Gesetz
+// des Fahrzeug-Kerns (vehicle-core `GATTUNGEN` · `flotte`). Gezählt wird, was in der Stadt des Messorts stadt-voll wirklich
+// STEHT oder FÄHRT (die Wagen ihres Verkehrs, B-h) — nie, was der Kern kann; jede Stelle des Stamms mit eigener Typ-Liste (ein
+// Feld nur aus Rezept-Namen, A7) heißt beim Namen. Bis fahrzeug-gattungen fuhr die Stadt aus der Tafel `VERKEHR.wagen`
+// (Kleinwagen, Limousine, SUV): 3 Gattungen.
+const GATTUNG = { min: 5 };
+function gattungVerdict(g) {
+    const out = [];
+    if (!g || !(g.kern >= GATTUNG.min)) out.push(`der Kern trägt ${g && g.kern} Gattungen (Soll ≥ ${GATTUNG.min})`);
+    if (g && g.stadt != null && !(g.stadt >= GATTUNG.min)) out.push(`die Stadt fährt ${g.stadt} Gattungen (Soll ≥ ${GATTUNG.min})`);
+    for (const t of (g && g.tafeln) || []) out.push(`eigene Typ-Liste ${t}`);
+    return out;
+}
+// die Felder aus lauter Rezept-Namen (≥ 2) je Datei und Zeile: `quellen` { datei: text }, `ids` die Gattungen des Kerns
+function typTafeln(quellen, ids) {
+    const kenn = new Set(ids);
+    const out = [];
+    for (const [datei, t] of Object.entries(quellen))
+        for (const m of t.matchAll(/\[\s*(?:"[\w-]+"\s*,\s*)+"[\w-]+"\s*,?\s*\]/g)) {
+            const namen = [...m[0].matchAll(/"([\w-]+)"/g)].map((x) => x[1]);
+            if (namen.length >= 2 && namen.every((n) => kenn.has(n)))
+                out.push(`${datei}:${t.slice(0, m.index).split("\n").length} ${m[0].replace(/\s+/g, " ")}`);
+        }
+    return out;
+}
+function stammQuellen() {
+    const fs = require("fs");
+    const dir = path.join(ROOT, "stamm");
+    return Object.fromEntries(
+        fs.readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => ["stamm/" + f, fs.readFileSync(path.join(dir, f), "utf8")])
+    );
+}
+// ── A7 DER UMRISS DER GATTUNG (fahrzeug-gattungen): zwei Gattungen, die das Auge als EINEN Wagen liest, sind eine. Gemessen am
+// Bau des Kerns (`buildInstance`, die feine Stufe — derselbe Bau, den die Welt zeichnet): der Seitenriss je Gattung als Raster
+// {leer, Karosse, Glas} auf 2 cm; zwei Risse liegen am Boden und an EINEM Ende (Bug, dann Heck) aufeinander, die Abweichung
+// ist der Anteil der belegten Zellen mit verschiedener Klasse — an dem Ende, an dem sie größer ist. Unter `UMRISS.zwilling`
+// liest das Paar als ein Wagen. Der Täter: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) wich vom SUV 0,288 ab —
+// im Bild der Wiese ein zweiter SUV; die engsten Paare der fünf alten Gattungen stehen bei 0,327 (GT · Supersport) und 0,368
+// (GT · Limousine), der Kasten (`kasten`, Dach 2,0) bei 0,570. Gezählt werden die LESBAREN Gattungen (Zwillinge fallen in eine).
+// DIE ZWEI SEITEN (derselbe Riss von der Gegenseite, auf demselben Gitter): ein Wagen liest von links wie von rechts. Blech zeigt
+// EINE Seite (der Renderer zeichnet es nicht, wo es vom Auge wegblickt), Glas beide — ein Feld, das als Glas gebaut war und
+// Blech trägt, steht an einer Wagenseite als LOCH. Der Täter: die Wand des Kastens als EINE Fläche (4 957 von 21 244 Zellen
+// verschieden, 23 %; im Bild der Wiese von der Gegenseite ein offenes Gerippe); die fünf alten Gattungen weichen ≤ `UMRISS.seite` ab.
+const UMRISS = { px: 0.02, zwilling: 0.3, seite: 0.02 };
+const UMRISS_MUTANTE = { tueren: 4, kasten: false, dach: 1.75, guertel: 0.95, radstand: 3.2, ueberhangV: 0.6, ueberhangH: 0.78 };
+function seitenRiss(K, id, ov, gegen) {
+    const T3 = global.THREE;
+    const g = K.buildInstance(id, 7, 0, ov);
+    g.updateMatrixWorld(true);
+    const tris = [];
+    const v = new T3.Vector3();
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        const pos = o.geometry.attributes.position, idx = o.geometry.index;
+        const m = Array.isArray(o.material) ? o.material[0] : o.material;
+        const kl = m.transparent && m.opacity < 0.6 ? 2 : 1; // 2 = Glas, 1 = Karosse (Blech, Rad, Anbau)
+        const P = [];
+        for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+            P.push([v.x, v.y, v.z]);
+            u0 = Math.min(u0, v.x), u1 = Math.max(u1, v.x), v0 = Math.min(v0, v.y), v1 = Math.max(v1, v.y);
+        }
+        const n = idx ? idx.count : pos.count;
+        for (let i = 0; i < n; i += 3) tris.push([P[idx ? idx.getX(i) : i], P[idx ? idx.getX(i + 1) : i + 1], P[idx ? idx.getX(i + 2) : i + 2], kl, m.side === T3.FrontSide]);
+    });
+    const px = UMRISS.px, W = Math.ceil((u1 - u0) / px) + 1, H = Math.ceil((v1 - v0) / px) + 1;
+    const kl = new Uint8Array(W * H), tief = new Float32Array(W * H).fill(-Infinity);
+    const s = gegen ? -1 : 1; // das Auge steht auf +z (die rechte Wagenseite) oder, `gegen`, auf −z — dasselbe Gitter (x, y)
+    const R = { u0, v0, r: px, nu: W, nv: H }; // das EINE Dreiecks-Raster (kronen-linse `rasterDreieck`), der Tiefen-Puffer wählt
+    for (const [A, B, C, k, einseitig] of tris) {
+        const fl = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+        if (einseitig && fl * s < 0) continue; // einseitiges Blech, das vom Auge wegblickt, zeichnet niemand
+        rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], R, (o, w0, w1, w2) => {
+            const t = s * (w0 * A[2] + w1 * B[2] + w2 * C[2]); // die Fläche am nächsten zum Auge gewinnt
+            if (t > tief[o]) (tief[o] = t), (kl[o] = k);
+        }, 1e-6);
+    }
+    return { W, H, kl, glas: kl.reduce((s, k) => s + (k === 2), 0), belegt: kl.reduce((s, k) => s + (k > 0), 0) };
+}
+function rissAbweichung(a, b) {
+    let schlimm = 0;
+    for (const amBug of [true, false]) {
+        const da = amBug ? a.W : 0, db = amBug ? b.W : 0; // der Bug ist der rechte Rand des Risses (+x), das Heck der linke
+        let versch = 0, belegt = 0;
+        for (let y = 0; y < Math.max(a.H, b.H); y++)
+            for (let x = Math.min(-da, -db); x < Math.max(a.W - da, b.W - db); x++) {
+                const xa = x + da, xb = x + db;
+                const ka = xa >= 0 && xa < a.W && y < a.H ? a.kl[y * a.W + xa] : 0;
+                const kb = xb >= 0 && xb < b.W && y < b.H ? b.kl[y * b.W + xb] : 0;
+                if (ka || kb) belegt++, (versch += ka !== kb);
+            }
+        schlimm = Math.max(schlimm, belegt ? versch / belegt : 0);
+    }
+    return schlimm;
+}
+// der Anteil der belegten Zellen, die von der einen Seite anders lesen als von der anderen (dasselbe Gitter)
+function seitenAbweichung(a, b) {
+    let versch = 0, belegt = 0;
+    for (let i = 0; i < a.kl.length; i++) if (a.kl[i] || b.kl[i]) belegt++, (versch += a.kl[i] !== b.kl[i]);
+    return a.kl.length === b.kl.length && belegt ? versch / belegt : NaN;
+}
+// die Zwillinge beim Namen und die Zahl der lesbaren Gattungen: `paare` [{ a, b, abw }] über alle Paare von `namen`;
+// `seiten` { id: Anteil } — jede Gattung liest von beiden Seiten gleich
+function umrissVerdict(namen, paare, seiten) {
+    const out = [];
+    for (const n of namen) {
+        const a = seiten && seiten[n];
+        if (!Number.isFinite(a)) out.push(`die Seiten von ${n} sind ungemessen`);
+        else if (a > UMRISS.seite) out.push(`LOCH: ${n} liest von links anders als von rechts (${(100 * a).toFixed(1)} % der Zellen, Soll ≤ ${100 * UMRISS.seite} %)`);
+    }
+    const haupt = Object.fromEntries(namen.map((n) => [n, n]));
+    const wurzel = (n) => (haupt[n] === n ? n : (haupt[n] = wurzel(haupt[n])));
+    if (paare.length !== (namen.length * (namen.length - 1)) / 2) out.push(`der Umriss maß ${paare.length} Paare von ${(namen.length * (namen.length - 1)) / 2}`);
+    for (const p of paare) {
+        if (!Number.isFinite(p.abw)) out.push(`der Umriss ${p.a} · ${p.b} ist ungemessen`);
+        else if (p.abw < UMRISS.zwilling) {
+            out.push(`ZWILLING: ${p.b} liest als ${p.a} (Abweichung des Seitenrisses ${p.abw.toFixed(3)}, Soll ≥ ${UMRISS.zwilling})`);
+            haupt[wurzel(p.b)] = wurzel(p.a);
+        }
+    }
+    const lesbar = new Set(namen.map(wurzel)).size;
+    if (!(lesbar >= GATTUNG.min)) out.push(`der Kern trägt ${lesbar} lesbare Gattungen (Soll ≥ ${GATTUNG.min})`);
+    return out;
+}
+function umrissMessen(K, ids, ovJe) {
+    const risse = ids.map((id) => seitenRiss(K, id, ovJe && ovJe[id]));
+    const seiten = Object.fromEntries(ids.map((id, i) => [id, seitenAbweichung(risse[i], seitenRiss(K, id, ovJe && ovJe[id], true))]));
+    const paare = [];
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) paare.push({ a: ids[i], b: ids[j], abw: rissAbweichung(risse[i], risse[j]) });
+    return { risse, paare, seiten };
+}
+
+// ── A8 DAS GESETZ DER KABINE (fahrzeug-gattungen): der Gürtel bleibt `glasMin` unter dem Dach. Die Regler-Bänder sind je Art
+// absolut (der Kasten weitete `guertel` bis 1,2 und `dach` bis 2,1) — erst ihre Beziehung trägt den Bau: bei Gürtel = Dach
+// teilt die Kabine durch null (der GT am Rand 1,2: nicht-endliche Werte in den Puffern, gate:regler-wirkt nannte ihn als
+// BRICHT), darüber stülpt sie sich um und baut endlich — den Umsturz sieht kein NaN-Zähler. Gemessen an jeder Gattung an
+// jeder Ecke des Regler-Paars (die Ränder aus `PARAMS_BY_KIND`, dazu jeder Rand am Rezept-Maß des anderen): die Glas-Höhe des
+// geformten P (Leser: `epocheForm`, der EINE Durchgang jedes Baus) und die Puffer des Baus (Leser: `buildInstance`).
+const KABINE = { glasMin: 0.1, eps: 1e-9 };
+function nichtEndlich(g) {
+    let n = 0;
+    if (!g) return NaN;
+    g.traverse((o) => {
+        if (!o.geometry) return;
+        for (const k in o.geometry.attributes) for (const w of o.geometry.attributes[k].array) if (!Number.isFinite(w)) n++;
+    });
+    return n;
+}
+function kabineMessen(K) {
+    const band = (id) => K.PARAMS_BY_KIND.vehicle.find((p) => p.id === id);
+    const [G, D] = [band("guertel"), band("dach")];
+    const faelle = [];
+    for (const id of K.GATTUNGEN)
+        for (const g of [null, G.min, G.max])
+            for (const d of [null, D.min, D.max]) {
+                if (g == null && d == null) continue;
+                const ov = Object.assign({}, g != null && { guertel: g }, d != null && { dach: d });
+                const P = K.epocheForm(Object.assign({}, K.DEFAULT_P, K.BASE_P, K.PRESETS[id].s, K.PRESETS[id].fx, ov));
+                faelle.push({ id, ov, glas: P.dach - P.guertel, nan: nichtEndlich(K.buildInstance(id, 7, 1, ov)) });
+            }
+    return faelle;
+}
+function kabineVerdict(faelle, gattungen) {
+    const rot = [];
+    for (const f of faelle || []) {
+        const wo = `${f.id} ${Object.entries(f.ov)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(" ")}`;
+        if (!(f.glas >= KABINE.glasMin - KABINE.eps)) rot.push(`KABINE: ${wo} — Glas-Höhe ${Number(f.glas).toFixed(3)} m (Soll ≥ ${KABINE.glasMin})`);
+        if (!(f.nan === 0)) rot.push(`KABINE: ${wo} — der Bau trägt ${f.nan} nicht-endliche Werte`);
+    }
+    const soll = 8 * (gattungen || []).length;
+    if (!soll || (faelle || []).length !== soll) rot.push(`das Gesetz der Kabine maß ${(faelle || []).length} Ecken von ${soll}`);
+    return rot;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 function expectedFor(presetId) {
@@ -179,6 +360,110 @@ hauptLauf(async () => {
             const v = ellipseVerdict({ ...ellipse, ...b });
             check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
+        // Kern mit 3 sind ROT, ein Wort-Katalog mit Kulturen (kein reines Rezept-Feld) schweigt
+        const tafel = typTafeln(
+            {
+                "stamm/mutante.js": 'AnazhRealm.VERKEHR = Object.freeze({\n    wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),',
+                "stamm/katalog.js": 'dsl: Object.freeze(["gt", "cavallo", "probefahrt"])',
+            },
+            VC.GATTUNGEN || []
+        );
+        check("Selbst-Test typTafeln: die feste Liste mit 3 Typen heißt beim Namen, der Wort-Katalog schweigt", tafel.length === 1 && /^stamm\/mutante\.js:2 /.test(tafel[0]), tafel.join(" · "));
+        const gesund = { kern: 6, stadt: 6, tafeln: [] };
+        for (const [b, n] of [
+            [{}, 0],
+            [{ stadt: 3 }, 1],
+            [{ kern: 3 }, 1],
+            [{ tafeln: tafel }, 1],
+        ]) {
+            const v = gattungVerdict({ ...gesund, ...b });
+            check(`Selbst-Test gattungVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        // A7 der Umriss: gesund schweigt er; ein Paar unter der Schwelle heißt beim Namen (zwei Paare kosten dazu die Zahl der
+        // lesbaren Gattungen), ein ungemessenes und ein fehlendes Paar sind ROT (eine Sonde ohne Messung, Lehre 6)
+        const namenU = ["a", "b", "c", "d", "e", "f"];
+        const paareU = (b) => namenU.flatMap((x, i) => namenU.slice(i + 1).map((y) => ({ a: x, b: y, abw: b[x + y] ?? 0.5 })));
+        const seitenU = (b) => Object.fromEntries(namenU.map((n) => [n, b[n] ?? 0.004]));
+        for (const [b, n, wort] of [
+            [{}, 0, null],
+            [{ ef: 0.29 }, 1, /^ZWILLING: f liest als e /],
+            [{ ef: 0.29, ab: 0.1 }, 3, /4 lesbare Gattungen/],
+            [{ cd: NaN }, 1, /c · d ist ungemessen/],
+            [{ c: 0.233 }, 1, /^LOCH: c liest von links anders als von rechts \(23\.3 %/],
+            [{ d: NaN }, 1, /die Seiten von d sind ungemessen/],
+        ]) {
+            const v = umrissVerdict(namenU, paareU(b), seitenU(b));
+            check(`Selbst-Test umrissVerdict ${JSON.stringify(b)}`, v.length === n && (!wort || v.some((z) => wort.test(z))), v.join(" · "));
+        }
+        const luecke = umrissVerdict(namenU, paareU({}).slice(1), seitenU({}));
+        check("Selbst-Test umrissVerdict: ein fehlendes Paar ist ROT", luecke.length === 1 && /14 Paare von 15/.test(luecke[0]), luecke.join(" · "));
+        const blind = umrissVerdict(namenU, paareU({}));
+        check("Selbst-Test umrissVerdict: ohne die Messung der Seiten ist jede Gattung ROT", blind.length === namenU.length, blind.join(" · "));
+        // die Mutante am ECHTEN Kern: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) liest als SUV — und nur er
+        const ids = VC.GATTUNGEN || [];
+        const mutM = umrissMessen(VC, ids, { transporter: UMRISS_MUTANTE });
+        const mut = umrissVerdict(ids, mutM.paare, mutM.seiten);
+        check(
+            "Selbst-Test Umriss am Kern: der Transporter mit Glas rundum heißt als Zwilling des SUV beim Namen",
+            mut.length === 1 && /^ZWILLING: transporter liest als suv /.test(mut[0]),
+            mut.join(" · ") || "die Mutante schweigt"
+        );
+        // die Mutante am ECHTEN Raster: ein Rumpf mit einer Blech-Wand je Seite — als EINE Fläche (beide Wände blicken nach +z) steht
+        // sie an der Gegenseite als Loch; im Gegen-Umlauf (jede blickt nach aussen) lesen beide Seiten gleich
+        const T3 = global.THREE;
+        const blech = new T3.MeshBasicMaterial();
+        const attrappe = (gegenUmlauf) => ({
+            buildInstance: () => {
+                const g = new T3.Group();
+                const rumpf = new T3.Mesh(new T3.BoxGeometry(4, 0.6, 1.8), blech);
+                rumpf.position.y = 0.5;
+                g.add(rumpf);
+                for (const sd of [-1, 1]) {
+                    const wand = new T3.Mesh(new T3.PlaneGeometry(2, 0.8), blech);
+                    wand.position.set(-0.8, 1.0, sd * 0.9);
+                    if (gegenUmlauf && sd < 0) wand.rotation.y = Math.PI;
+                    g.add(wand);
+                }
+                return g;
+            },
+        });
+        const [loch, heil] = [false, true].map((u) => seitenAbweichung(seitenRiss(attrappe(u), "x"), seitenRiss(attrappe(u), "x", null, true)));
+        check(
+            "Selbst-Test die zwei Seiten am Raster: die Blech-Wand als EINE Fläche steht an einer Seite als Loch, im Gegen-Umlauf an keiner",
+            loch > UMRISS.seite * 5 && heil === 0,
+            `eine Fläche ${(100 * loch).toFixed(1)} % · Gegen-Umlauf ${(100 * heil).toFixed(1)} %`
+        );
+        // A8 das Gesetz der Kabine: gesund schweigt es; ein Fenster ohne Höhe, ein umgestülptes, ein Bau mit nicht-endlichen
+        // Werten und eine ungemessene Ecke heißen beim Namen
+        const eckenK = (b) => ["a", "b"].flatMap((id) => Array.from({ length: 8 }, (_, i) => ({ id, ov: { guertel: i }, glas: 0.4, nan: 0, ...(b[id + i] || {}) })));
+        for (const [b, n, wort] of [
+            [{}, 0, null],
+            [{ a3: { glas: 0.02 } }, 1, /^KABINE: a guertel=3 — Glas-Höhe 0\.020 m/],
+            [{ b5: { glas: -0.15 } }, 1, /^KABINE: b guertel=5 — Glas-Höhe -0\.150 m/],
+            [{ a0: { glas: 0, nan: 7668 } }, 2, /der Bau trägt 7668 nicht-endliche Werte/],
+            [{ b1: { nan: NaN } }, 1, /der Bau trägt NaN nicht-endliche Werte/],
+        ]) {
+            const v = kabineVerdict(eckenK(b), ["a", "b"]);
+            check(`Selbst-Test kabineVerdict ${JSON.stringify(b)}`, v.length === n && (!wort || v.some((z) => wort.test(z))), v.join(" · "));
+        }
+        const eckeFehlt = kabineVerdict(eckenK({}).slice(1), ["a", "b"]);
+        check("Selbst-Test kabineVerdict: eine ungemessene Ecke ist ROT", eckeFehlt.length === 1 && /15 Ecken von 16/.test(eckeFehlt[0]), eckeFehlt.join(" · "));
+        // die Mutante am ECHTEN Kern (sein Text ohne das Gesetz, der EINE Lader `kernAusText`): der GT am Rand Gürtel 1,2 steht mit
+        // nicht-endlichen Werten und ohne Glas-Höhe beim Namen, der Sportwagen mit dem Gürtel über dem Dach als umgestülpt
+        const kernText = ausDatei("vehicle-core.js");
+        const ankerK = "return kabineGesetz(epocheZeit(P));";
+        const mutK =
+            kernText.split(ankerK).length === 2
+                ? kabineVerdict(kabineMessen(require("./lib/asset-worker-harness.cjs").kernAusText(kernText.replace(ankerK, "return epocheZeit(P);"), "__vehicleCore")), VC.GATTUNGEN)
+                : [`Anker fehlt: ${ankerK}`];
+        check(
+            "Selbst-Test Kabine am Kern: ohne das Gesetz heißt der GT am Rand Gürtel 1,2 beim Namen (kein Glas, nicht-endliche Werte), der Sportwagen umgestülpt",
+            mutK.some((z) => /^KABINE: gt guertel=1\.2 — der Bau trägt [1-9]\d* nicht-endliche Werte/.test(z)) &&
+                mutK.some((z) => /^KABINE: gt guertel=1\.2 — Glas-Höhe 0\.000 m/.test(z)) &&
+                mutK.some((z) => /^KABINE: supersport guertel=1\.2 — Glas-Höhe -0\.080 m/.test(z)),
+            `${mutK.length} Zeilen · ${mutK.slice(0, 3).join(" · ") || "die Mutante schweigt"}`
+        );
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -191,6 +476,37 @@ hauptLauf(async () => {
         "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
         stammLib.fehlt({ ausser: "_loopPlayerMovement" }, /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/),
         stammLib.fehlt.wo
+    );
+
+    // A7: die Gattungen des Kerns und jede eigene Typ-Liste des Stamms (die Stadt zählt B-h im lebenden Draht)
+    const gattungenKern = Array.isArray(VC.GATTUNGEN) ? VC.GATTUNGEN : [];
+    const tafeln = typTafeln(stammQuellen(), gattungenKern);
+    const gA = gattungVerdict({ kern: gattungenKern.length, tafeln });
+    check(
+        `A7: die Gattungen sind Gesetz des Kerns (≥ ${GATTUNG.min}) und kein Stamm-Feld zählt sie selbst auf`,
+        gA.length === 0,
+        gA.join(" · ") || `${gattungenKern.length} Gattungen: ${gattungenKern.join(", ")} · 0 eigene Typ-Listen in stamm/`
+    );
+    // A7: jede Gattung liest als eigener Wagen — der Seitenriss ihres Baus (Leser: `buildInstance`, die feine Stufe der Welt)
+    const umriss = umrissMessen(VC, gattungenKern);
+    const uV = umrissVerdict(gattungenKern, umriss.paare, umriss.seiten);
+    const eng = umriss.paare.slice().sort((x, y) => x.abw - y.abw);
+    check(
+        `A7: jede Gattung liest als eigener Wagen (Seitenriss Karosse/Glas je Paar ≥ ${UMRISS.zwilling} verschieden, ≥ ${GATTUNG.min} lesbare Gattungen) und von beiden Seiten gleich (≤ ${100 * UMRISS.seite} % der Zellen)`,
+        uV.length === 0,
+        uV.join(" · ") ||
+            `die engsten Paare: ${eng.slice(0, 3).map((p) => `${p.a} · ${p.b} ${p.abw.toFixed(3)}`).join(", ")} · Glas am Riss: ` +
+                gattungenKern.map((id, i) => `${id} ${Math.round((100 * umriss.risse[i].glas) / umriss.risse[i].belegt)} %`).join(", ") +
+                ` · links ≠ rechts: ` +
+                gattungenKern.map((id) => `${id} ${(100 * umriss.seiten[id]).toFixed(2)} %`).join(", ")
+    );
+    // A8: das Gesetz der Kabine — an jeder Gattung trägt jede Ecke des Regler-Paars Gürtel × Dach ein Fenster mit Höhe
+    const kabine = kabineMessen(VC);
+    const kV = kabineVerdict(kabine, gattungenKern);
+    check(
+        `A8: das Gesetz der Kabine — an jeder Gattung hält jede Ecke des Regler-Paars Gürtel × Dach die Glas-Höhe (≥ ${KABINE.glasMin} m) und baut endlich`,
+        kV.length === 0,
+        kV.join(" · ") || `${kabine.length} Ecken an ${gattungenKern.length} Gattungen · kleinste Glas-Höhe ${Math.min(...kabine.map((f) => f.glas)).toFixed(3)} m`
     );
 
     const ell = ellipseMessung(VC);
@@ -412,6 +728,38 @@ hauptLauf(async () => {
         return res;
     });
 
+    // ===== B-h: DIE GATTUNGEN DER STADT — die Stadt des Messorts stadt-voll (sein Wort, sein Anker) steht, der Spieler an ihrem
+    // Ursprung, bis ihr Verkehr angelegt ist; gezählt werden die Gattungen ihrer Wagen und die Fahrzeug-Typen, die in der Welt
+    // STEHEN (`state.architectures`, dasselbe Maß wie die Station gestalt#1) =====
+    const stadt = await page.evaluate(async () => {
+        try {
+            const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === "stadt-voll");
+            const w = ort.gruendung.wort.split(" ");
+            const [seed, nH, [ax, az]] = [Number(w[1]), Number(w[2]), ort.gruendung.anker];
+            await __weltDa(() => AnazhRealm._siedlungGesetz());
+            const S0 = () => [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200);
+            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+            const S = S0();
+            if (!S) return { fehler: "keine Stadt am Messort stadt-voll" };
+            const pm = r.state.playerMesh.position;
+            let t = performance.now();
+            for (const weiter = __deckel("B-h: der Verkehr der Stadt", 150000); weiter() && !(S.verkehr && S.verkehr.wagen.length); ) {
+                pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + 0.2, S.oz);
+                r.state.playerVel.setValue(0, 0, 0);
+                for (let k = 0; k < 8; k++) r._gameLoopTick((t += 1000 / 60));
+                await window.sleep();
+            }
+            const VK = S.verkehr;
+            if (!VK || !VK.wagen.length) return { fehler: `die Stadt trägt keinen Verkehr (Soll ${VK && VK.zahl && VK.zahl.soll})` };
+            const typen = {};
+            for (const W of VK.wagen) typen[W.typ] = (typen[W.typ] || 0) + 1;
+            const welt = [...new Set((r.state.architectures || []).filter((e) => e && /^fahrzeug_/.test(e.type)).map((e) => e.type))];
+            return { wagen: VK.wagen.length, soll: VK.zahl.soll, typen, welt };
+        } catch (e) {
+            return { fehler: fehlerText(e) };
+        }
+    });
+
     await browser.close();
     server.close();
 
@@ -422,6 +770,14 @@ hauptLauf(async () => {
         "B-a/B-b: jedes Fahrzeug-Rezept reiste BIT-EXAKT durch Worker+Ingest (Buch == Node-exportDrive)",
         !abw.length,
         out.bookErr || abw.join(",") || Object.keys(out.book).join(",")
+    );
+    // B-h: die Gattungen, die in der Stadt stadt-voll stehen und fahren — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test)
+    const nWelt = stadt.welt ? stadt.welt.length : 0;
+    const gB = stadt.fehler ? [stadt.fehler] : gattungVerdict({ kern: gattungenKern.length, stadt: Math.min(nWelt, Object.keys(stadt.typen).length), tafeln: [] });
+    check(
+        `B-h: die Stadt stadt-voll fährt ≥ ${GATTUNG.min} Gattungen des Kerns (Wagen ihres Verkehrs und Fahrzeug-Typen der Welt)`,
+        gB.length === 0,
+        gB.join(" · ") || `${stadt.wagen} von ${stadt.soll} Wagen · ${JSON.stringify(stadt.typen)} · in der Welt ${stadt.welt.join(", ")}`
     );
     // B-c: das Host-Profil.
     const pg = out.gt;

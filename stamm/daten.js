@@ -2664,6 +2664,7 @@ class AnazhRealm_daten {
             "gestalt.torii": ["Torii", "Torii"],
             "gestalt.totholz": ["Totholz", "Deadwood"],
             "gestalt.totstamm": ["Totstamm", "Dead trunk"],
+            "gestalt.transporter": ["Transporter", "Van"],
             "gestalt.trap": ["Trap", "Trap"],
             "gestalt.trefferfolge": ["Trefferfolge", "Strike sequence"],
             "gestalt.trockengraben": ["Trockengraben · Sohle, Stützmauern, Kronensteine", "Dry moat · floor, retaining walls, coping stones"],
