@@ -164,9 +164,13 @@ function stammQuellen() {
 // liest das Paar als ein Wagen. Der Täter: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) wich vom SUV 0,288 ab —
 // im Bild der Wiese ein zweiter SUV; die engsten Paare der fünf alten Gattungen stehen bei 0,327 (GT · Supersport) und 0,368
 // (GT · Limousine), der Kasten (`kasten`, Dach 2,0) bei 0,570. Gezählt werden die LESBAREN Gattungen (Zwillinge fallen in eine).
-const UMRISS = { px: 0.02, zwilling: 0.3 };
+// DIE ZWEI SEITEN (derselbe Riss von der Gegenseite, auf demselben Gitter): ein Wagen liest von links wie von rechts. Blech zeigt
+// EINE Seite (der Renderer zeichnet es nicht, wo es vom Auge wegblickt), Glas beide — ein Feld, das als Glas gebaut war und
+// Blech trägt, steht an einer Wagenseite als LOCH. Der Täter: die Wand des Kastens als EINE Fläche (4 957 von 21 244 Zellen
+// verschieden, 23 %; im Bild der Wiese von der Gegenseite ein offenes Gerippe); die fünf alten Gattungen weichen ≤ `UMRISS.seite` ab.
+const UMRISS = { px: 0.02, zwilling: 0.3, seite: 0.02 };
 const UMRISS_MUTANTE = { tueren: 4, kasten: false, dach: 1.75, guertel: 0.95, radstand: 3.2, ueberhangV: 0.6, ueberhangH: 0.78 };
-function seitenRiss(K, id, ov) {
+function seitenRiss(K, id, ov, gegen) {
     const T3 = global.THREE;
     const g = K.buildInstance(id, 7, 0, ov);
     g.updateMatrixWorld(true);
@@ -185,14 +189,15 @@ function seitenRiss(K, id, ov) {
             u0 = Math.min(u0, v.x), u1 = Math.max(u1, v.x), v0 = Math.min(v0, v.y), v1 = Math.max(v1, v.y);
         }
         const n = idx ? idx.count : pos.count;
-        for (let i = 0; i < n; i += 3) tris.push([P[idx ? idx.getX(i) : i], P[idx ? idx.getX(i + 1) : i + 1], P[idx ? idx.getX(i + 2) : i + 2], kl]);
+        for (let i = 0; i < n; i += 3) tris.push([P[idx ? idx.getX(i) : i], P[idx ? idx.getX(i + 1) : i + 1], P[idx ? idx.getX(i + 2) : i + 2], kl, m.side === T3.FrontSide]);
     });
     const px = UMRISS.px, W = Math.ceil((u1 - u0) / px) + 1, H = Math.ceil((v1 - v0) / px) + 1;
     const kl = new Uint8Array(W * H), tief = new Float32Array(W * H).fill(-Infinity);
-    for (const [A, B, C, k] of tris) {
+    const s = gegen ? -1 : 1; // das Auge steht auf +z (die rechte Wagenseite) oder, `gegen`, auf −z — dasselbe Gitter (x, y)
+    for (const [A, B, C, k, einseitig] of tris) {
         const ax = (A[0] - u0) / px, ay = (A[1] - v0) / px, bx = (B[0] - u0) / px, by = (B[1] - v0) / px, cx = (C[0] - u0) / px, cy = (C[1] - v0) / px;
         const fl = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-        if (Math.abs(fl) < 1e-9) continue;
+        if (Math.abs(fl) < 1e-9 || (einseitig && fl * s < 0)) continue; // einseitiges Blech, das vom Auge wegblickt, zeichnet niemand
         const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx))), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, bx, cx)));
         const y0 = Math.max(0, Math.floor(Math.min(ay, by, cy))), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, by, cy)));
         for (let y = y0; y <= y1; y++)
@@ -200,7 +205,7 @@ function seitenRiss(K, id, ov) {
                 const qx = x + 0.5, qy = y + 0.5;
                 const w0 = ((bx - qx) * (cy - qy) - (by - qy) * (cx - qx)) / fl, w1 = ((cx - qx) * (ay - qy) - (cy - qy) * (ax - qx)) / fl, w2 = 1 - w0 - w1;
                 if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
-                const t = w0 * A[2] + w1 * B[2] + w2 * C[2]; // die Seite zum Auge (größtes z) gewinnt
+                const t = s * (w0 * A[2] + w1 * B[2] + w2 * C[2]); // die Fläche am nächsten zum Auge gewinnt
                 if (t > tief[y * W + x]) (tief[y * W + x] = t), (kl[y * W + x] = k);
             }
     }
@@ -222,9 +227,21 @@ function rissAbweichung(a, b) {
     }
     return schlimm;
 }
-// die Zwillinge beim Namen und die Zahl der lesbaren Gattungen: `paare` [{ a, b, abw }] über alle Paare von `namen`
-function umrissVerdict(namen, paare) {
+// der Anteil der belegten Zellen, die von der einen Seite anders lesen als von der anderen (dasselbe Gitter)
+function seitenAbweichung(a, b) {
+    let versch = 0, belegt = 0;
+    for (let i = 0; i < a.kl.length; i++) if (a.kl[i] || b.kl[i]) belegt++, (versch += a.kl[i] !== b.kl[i]);
+    return a.kl.length === b.kl.length && belegt ? versch / belegt : NaN;
+}
+// die Zwillinge beim Namen und die Zahl der lesbaren Gattungen: `paare` [{ a, b, abw }] über alle Paare von `namen`;
+// `seiten` { id: Anteil } — jede Gattung liest von beiden Seiten gleich
+function umrissVerdict(namen, paare, seiten) {
     const out = [];
+    for (const n of namen) {
+        const a = seiten && seiten[n];
+        if (!Number.isFinite(a)) out.push(`die Seiten von ${n} sind ungemessen`);
+        else if (a > UMRISS.seite) out.push(`LOCH: ${n} liest von links anders als von rechts (${(100 * a).toFixed(1)} % der Zellen, Soll ≤ ${100 * UMRISS.seite} %)`);
+    }
     const haupt = Object.fromEntries(namen.map((n) => [n, n]));
     const wurzel = (n) => (haupt[n] === n ? n : (haupt[n] = wurzel(haupt[n])));
     if (paare.length !== (namen.length * (namen.length - 1)) / 2) out.push(`der Umriss maß ${paare.length} Paare von ${(namen.length * (namen.length - 1)) / 2}`);
@@ -241,9 +258,10 @@ function umrissVerdict(namen, paare) {
 }
 function umrissMessen(K, ids, ovJe) {
     const risse = ids.map((id) => seitenRiss(K, id, ovJe && ovJe[id]));
+    const seiten = Object.fromEntries(ids.map((id, i) => [id, seitenAbweichung(risse[i], seitenRiss(K, id, ovJe && ovJe[id], true))]));
     const paare = [];
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) paare.push({ a: ids[i], b: ids[j], abw: rissAbweichung(risse[i], risse[j]) });
-    return { risse, paare };
+    return { risse, paare, seiten };
 }
 
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
@@ -326,24 +344,55 @@ hauptLauf(async () => {
         // lesbaren Gattungen), ein ungemessenes und ein fehlendes Paar sind ROT (eine Sonde ohne Messung, Lehre 6)
         const namenU = ["a", "b", "c", "d", "e", "f"];
         const paareU = (b) => namenU.flatMap((x, i) => namenU.slice(i + 1).map((y) => ({ a: x, b: y, abw: b[x + y] ?? 0.5 })));
+        const seitenU = (b) => Object.fromEntries(namenU.map((n) => [n, b[n] ?? 0.004]));
         for (const [b, n, wort] of [
             [{}, 0, null],
             [{ ef: 0.29 }, 1, /^ZWILLING: f liest als e /],
             [{ ef: 0.29, ab: 0.1 }, 3, /4 lesbare Gattungen/],
             [{ cd: NaN }, 1, /c · d ist ungemessen/],
+            [{ c: 0.233 }, 1, /^LOCH: c liest von links anders als von rechts \(23\.3 %/],
+            [{ d: NaN }, 1, /die Seiten von d sind ungemessen/],
         ]) {
-            const v = umrissVerdict(namenU, paareU(b));
+            const v = umrissVerdict(namenU, paareU(b), seitenU(b));
             check(`Selbst-Test umrissVerdict ${JSON.stringify(b)}`, v.length === n && (!wort || v.some((z) => wort.test(z))), v.join(" · "));
         }
-        const luecke = umrissVerdict(namenU, paareU({}).slice(1));
+        const luecke = umrissVerdict(namenU, paareU({}).slice(1), seitenU({}));
         check("Selbst-Test umrissVerdict: ein fehlendes Paar ist ROT", luecke.length === 1 && /14 Paare von 15/.test(luecke[0]), luecke.join(" · "));
+        const blind = umrissVerdict(namenU, paareU({}));
+        check("Selbst-Test umrissVerdict: ohne die Messung der Seiten ist jede Gattung ROT", blind.length === namenU.length, blind.join(" · "));
         // die Mutante am ECHTEN Kern: der Transporter des WIP (vier Türen, Glas rundum, Dach 1,75) liest als SUV — und nur er
         const ids = VC.GATTUNGEN || [];
-        const mut = umrissVerdict(ids, umrissMessen(VC, ids, { transporter: UMRISS_MUTANTE }).paare);
+        const mutM = umrissMessen(VC, ids, { transporter: UMRISS_MUTANTE });
+        const mut = umrissVerdict(ids, mutM.paare, mutM.seiten);
         check(
             "Selbst-Test Umriss am Kern: der Transporter mit Glas rundum heißt als Zwilling des SUV beim Namen",
             mut.length === 1 && /^ZWILLING: transporter liest als suv /.test(mut[0]),
             mut.join(" · ") || "die Mutante schweigt"
+        );
+        // die Mutante am ECHTEN Raster: ein Rumpf mit einer Blech-Wand je Seite — als EINE Fläche (beide Wände blicken nach +z) steht
+        // sie an der Gegenseite als Loch; im Gegen-Umlauf (jede blickt nach aussen) lesen beide Seiten gleich
+        const T3 = global.THREE;
+        const blech = new T3.MeshBasicMaterial();
+        const attrappe = (gegenUmlauf) => ({
+            buildInstance: () => {
+                const g = new T3.Group();
+                const rumpf = new T3.Mesh(new T3.BoxGeometry(4, 0.6, 1.8), blech);
+                rumpf.position.y = 0.5;
+                g.add(rumpf);
+                for (const sd of [-1, 1]) {
+                    const wand = new T3.Mesh(new T3.PlaneGeometry(2, 0.8), blech);
+                    wand.position.set(-0.8, 1.0, sd * 0.9);
+                    if (gegenUmlauf && sd < 0) wand.rotation.y = Math.PI;
+                    g.add(wand);
+                }
+                return g;
+            },
+        });
+        const [loch, heil] = [false, true].map((u) => seitenAbweichung(seitenRiss(attrappe(u), "x"), seitenRiss(attrappe(u), "x", null, true)));
+        check(
+            "Selbst-Test die zwei Seiten am Raster: die Blech-Wand als EINE Fläche steht an einer Seite als Loch, im Gegen-Umlauf an keiner",
+            loch > UMRISS.seite * 5 && heil === 0,
+            `eine Fläche ${(100 * loch).toFixed(1)} % · Gegen-Umlauf ${(100 * heil).toFixed(1)} %`
         );
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
@@ -370,14 +419,16 @@ hauptLauf(async () => {
     );
     // A7: jede Gattung liest als eigener Wagen — der Seitenriss ihres Baus (Leser: `buildInstance`, die feine Stufe der Welt)
     const umriss = umrissMessen(VC, gattungenKern);
-    const uV = umrissVerdict(gattungenKern, umriss.paare);
+    const uV = umrissVerdict(gattungenKern, umriss.paare, umriss.seiten);
     const eng = umriss.paare.slice().sort((x, y) => x.abw - y.abw);
     check(
-        `A7: jede Gattung liest als eigener Wagen (Seitenriss Karosse/Glas je Paar ≥ ${UMRISS.zwilling} verschieden, ≥ ${GATTUNG.min} lesbare Gattungen)`,
+        `A7: jede Gattung liest als eigener Wagen (Seitenriss Karosse/Glas je Paar ≥ ${UMRISS.zwilling} verschieden, ≥ ${GATTUNG.min} lesbare Gattungen) und von beiden Seiten gleich (≤ ${100 * UMRISS.seite} % der Zellen)`,
         uV.length === 0,
         uV.join(" · ") ||
             `die engsten Paare: ${eng.slice(0, 3).map((p) => `${p.a} · ${p.b} ${p.abw.toFixed(3)}`).join(", ")} · Glas am Riss: ` +
-                gattungenKern.map((id, i) => `${id} ${Math.round((100 * umriss.risse[i].glas) / umriss.risse[i].belegt)} %`).join(", ")
+                gattungenKern.map((id, i) => `${id} ${Math.round((100 * umriss.risse[i].glas) / umriss.risse[i].belegt)} %`).join(", ") +
+                ` · links ≠ rechts: ` +
+                gattungenKern.map((id) => `${id} ${(100 * umriss.seiten[id]).toFixed(2)} %`).join(", ")
     );
 
     const ell = ellipseMessung(VC);
