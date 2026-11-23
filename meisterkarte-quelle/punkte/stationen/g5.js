@@ -2014,9 +2014,28 @@ async function startDorfInnen(o) {
         if (e) SD.push(e);
         else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
     }
+    // die Läufe der Treppe aus dem Gesetzbuch EINES Hauses: der Keller-Lauf und die Läufe nach oben (bis zum Dachboden), EINE Quelle für
+    // die Wahl des Umfangs und den Gang
+    const treppen = (Hh) => {
+        const fls = ((Hh && Hh.dims && Hh.dims.flights) || []).filter((f) => f.x1 - f.x0 > 0.3);
+        const kf = fls.find((f) => f.atLevel === "keller");
+        return { kf, auf: fls.filter((f) => f !== kf).sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic")) };
+    };
+    // DER UMFANG DER SPROSSE (pm-innen-ein-haus, 23.11.: mensch.bau.innen#1 heißt „1 Haus, Tür → Keller → Dachboden“, ihr Lauf ging jedes
+    // Haus des Start-Dorfs samt Innen-Bild — der Umfang des Zwillings siedlung.K1#2, und ihr Preis gehörte diesem Lauf): `o.haeuser` nimmt
+    // die ersten Häuser des Plans, deren Gesetzbuch einen Keller-Lauf UND einen Lauf zum Dachboden trägt (sonst steht der Weg nicht);
+    // `o.bild === false` lässt das Innen-Bild aus. Ohne beides geht der Lauf jedes Haus (siedlung.K1#2)
+    const WEG = o.haeuser ? [] : SD;
+    if (o.haeuser)
+        for (const e of SD) {
+            if (WEG.length >= o.haeuser) break;
+            const tr = treppen(gesetz(e));
+            if (tr.kf && tr.auf.some((f) => f.atLevel === "attic")) WEG.push(e);
+        }
+    if (o.haeuser) aus.startDorf.umfang = { haeuser: WEG.length, soll: o.haeuser, von: SD.length, bild: o.bild !== false };
     // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand) — die Eingabe hält die
     // Verb-Tafel (`gehalten.vor`, unten); das tote `s.keys = s.keys || {}` (seit w12-menue liest es kein Verb) fiel
-    for (const e of SD) {
+    for (const e of WEG) {
         const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
         aus.haeuser.push(h);
         if (performance.now() > ende) {
@@ -2041,9 +2060,7 @@ async function startDorfInnen(o) {
             const tu = e.tuer;
             const base = e.position.y - 0.5;
             const dm = Hh.dims || {};
-            const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
-            const kf = fls.find((f) => f.atLevel === "keller");
-            const auf = fls.filter((f) => f !== kf).sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic"));
+            const { kf, auf } = treppen(Hh);
             const gg = (h.gang = { hub: 0, fehlt: [], keller: !!kf, dach: auf.some((f) => f.atLevel === "attic") });
             const eg = dm.levelsY[0];
             const xm = (f) => (f.x0 + f.x1) / 2;
@@ -2112,10 +2129,11 @@ async function startDorfInnen(o) {
         } finally {
             s.verbTafel.gehalten.vor = false;
             // DER STAND je Haus (das Lebenszeichen der Probe: der Treiber liest ihn neben dem langen eval, probeStartDorf)
-            window.__startDorfStand = { teil: "gang", n: aus.haeuser.length, von: SD.length, typ: e.type };
+            window.__startDorfStand = { teil: "gang", n: aus.haeuser.length, von: WEG.length, typ: e.type };
         }
     }
-    // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
+    // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht — nicht im Umfang ohne Bild (oben)
+    if (o.bild === false) return aus;
     // Takt um Takt (das Einschwingen schläft selbst je 5 Takte; `pumpe(1)` schlief je Takt 10 ms dazu)
     if (performance.now() < ende)
         await window.__weltStehtNach(() => {
@@ -2141,7 +2159,7 @@ async function startDorfInnen(o) {
                 l.push(0.2126 * lin[u8[(k = 4 * (y * WB + x))]] + 0.7152 * lin[u8[k + 1]] + 0.0722 * lin[u8[k + 2]]);
         return l.sort((a, b) => a - b)[l.length >> 1];
     };
-    for (const [n, e] of SD.entries()) {
+    for (const [n, e] of WEG.entries()) {
         const h = aus.haeuser[n];
         if (performance.now() > ende) {
             h.bildFehlt = "Frist der Probe";
@@ -2226,7 +2244,7 @@ async function startDorfInnen(o) {
         } catch (err) {
             h.bildFehlt = "Bild warf: " + String((err && err.message) || err);
         }
-        window.__startDorfStand = { teil: "bild", n: n + 1, von: SD.length, typ: e.type };
+        window.__startDorfStand = { teil: "bild", n: n + 1, von: WEG.length, typ: e.type };
     }
     r._tickNahWiese = tick;
     return aus;
@@ -2243,7 +2261,8 @@ async function probeStartDorf(H) {
         const { AUSGABE_INSTALL } = require(H.path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
         await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);
     }
-    const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
+    // DER UMFANG (pm-innen-ein-haus): die Seite der Probe trägt ihn (H.seite.UMFANG, { haeuser, bild }), sonst jedes Haus mit Bild
+    const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000, ...(H.seite.UMFANG || {}) };
     // DAS LEBENSZEICHEN (OMEN 12.11.: siedlung.K1#2 schwieg in EINEM eval bis zum Bild des letzten Hauses, die Stille-Wache der Sitzung
     // tötete die arbeitende Probe nach 170 s): daneben fragt der Treiber je 10 s den Stand der Probe (`__startDorfStand`) und schreibt
     // je Haus und Teil eine Zeile — Arbeit ist kein Schweigen
@@ -2276,6 +2295,9 @@ async function probeStartDorf(H) {
     return j;
 }
 const START_DORF_PROBE = probeBefehl(probeStartDorf, 60, { INNEN: startDorfInnen });
+// EIN Haus, nur der Gang (mensch.bau.innen#1, pm-innen-ein-haus): derselbe Treiber und dieselbe Seite, der Umfang der Sprosse — ein
+// eigener Lauf (der Befehl unterscheidet sich), sein Preis gehört dem einen Haus
+const INNEN_EIN_HAUS_PROBE = probeBefehl(probeStartDorf, 60, { INNEN: startDorfInnen, UMFANG: JSON.stringify({ haeuser: 1, bild: false }) });
 
 // leib.K3 #1 (w4-stationen-b-koord): UFER → SCHWIMMEN → TAUCHEN im echten Takt (`_gameLoopTick`, Null-Renderer — Lage und Kamera sind
 // Mechanik, das Unterwasser-Bild ist Staffel 2). Der See nächst der Mess-Wiese aus der Welt (wasser-linse `__wasserOrte`, heute
@@ -4286,40 +4308,53 @@ const stationen = [
         ],
         quelle: "2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
     },
-    // KARTE 2 mensch.bau.innen S1 (Umfang „1 Haus, Tür → Keller → Dachboden“): derselbe Lauf wie siedlung.K1#2 (Zwilling, startDorfInnen),
-    // ein eigenes Urteil am GANG allein — ≥ 1 Haus des Start-Dorfs erreicht Keller und Dachboden ohne Fehlstelle und ohne einen
-    // Sim-Schritt, der den Leib über 0,3 m hebt (die Sprünge der anderen Häuser stehen in der Zahl). Die Licht-Quote (innen lesbar) ist die Tiefe von S2 und urteilt hier nicht: S1 misst den
-    // Hub des Gangs, S2 (siedlung.K1#2) jedes Haus mit seiner Quote — zwei Größen, nie dieselbe Zahl zweimal (R9)
+    // KARTE 2 mensch.bau.innen S1 (Umfang „1 Haus, Tür → Keller → Dachboden“): EIN Haus des Start-Dorfs — das erste des Plans, dessen
+    // Gesetzbuch Keller und Dachboden trägt —, nur der Gang (INNEN_EIN_HAUS_PROBE, pm-innen-ein-haus 23.11.; bis dahin der Lauf des
+    // Zwillings siedlung.K1#2: jedes Haus samt Innen-Bild, und der Preis gehörte jenem Umfang). Das Urteil am GANG: das Haus erreicht
+    // Keller und Dachboden ohne Fehlstelle und ohne einen Sim-Schritt, der den Leib über 0,3 m hebt. Die Licht-Quote (innen lesbar) ist
+    // die Tiefe von S2 und urteilt hier nicht: S1 misst den Hub des Gangs an EINEM Haus, S2 (siedlung.K1#2) jedes Haus mit seiner Quote —
+    // zwei Größen, nie dieselbe Zahl zweimal (R9). DIE LINSE DES UMFANGS: ein Lauf ohne Umfang (der Befehl des Zwillings) oder über ihm
+    // ist ROT beim Namen, nie ein Punkt am falschen Umfang
     {
         kriterium: "karte2.mensch.bau.innen",
         karte2: true,
         staffel: 1,
         geraet: ["radeon", "gtx"],
         beide: true,
-        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33 },
+        probe: { ...INNEN_EIN_HAUS_PROBE, mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 1,
         urteil: (j) => {
-            if (!j || !Array.isArray(j.haeuser)) return { gruen: false, zahl: "keine Gänge des Start-Dorfs" + (j && j.fehler ? " — " + j.fehler : "") };
+            if (!j || !Array.isArray(j.haeuser) || (j.fehler && !j.haeuser.length)) return { gruen: false, zahl: "keine Gänge des Start-Dorfs" + (j && j.fehler ? " — " + j.fehler : "") };
+            const u = j.startDorf && j.startDorf.umfang;
+            if (!u) return { gruen: false, zahl: "Umfang verfehlt: der Lauf ging " + j.haeuser.length + " Häuser ohne Umfang (Soll 1 Haus mit Keller und Dachboden — der Befehl des Zwillings siedlung.K1#2?)" };
+            if (!u.haeuser) return { gruen: false, zahl: "kein Haus des Start-Dorfs trägt Keller und Dachboden (" + u.von + " Häuser im Plan)" };
             const g = j.haeuser.filter((h) => !h.fehler && h.gang);
             const ganz = g.filter((h) => h.gang.keller && h.gang.dach && !h.gang.fehlt.length && h.gang.hub <= 0.3);
             const sprung = g.filter((h) => !(h.gang.hub <= 0.3));
             const hub = Math.max(0, ...g.map((h) => h.gang.hub));
+            const ueber = j.haeuser.length > u.soll;
             return {
-                gruen: ganz.length >= 1,
+                gruen: ganz.length >= 1 && !ueber,
                 zahl:
                     ganz.length + " von " + g.length + " Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max " + hub.toFixed(2) + " m (Soll ≤ 0,3), Sprung > 0,3 m " + sprung.length +
                     (sprung.length ? " (" + sprung.map((h) => h.typ + " " + (h.gang.wo || "")).join(" · ").slice(0, 200) + ")" : "") +
-                    (ganz.length ? " · ganz: " + ganz.map((h) => h.typ).slice(0, 3).join(", ") : ""),
+                    (ganz.length ? " · ganz: " + ganz.map((h) => h.typ).slice(0, 3).join(", ") : "") +
+                    " · Umfang " + j.haeuser.length + " Haus (Soll " + u.soll + " mit Keller und Dachboden, aus " + u.von + " Häusern des Start-Dorfs" + (u.bild ? ", mit Innen-Bild" : ", ohne Innen-Bild") + ")" +
+                    (ueber ? " — Umfang verfehlt: " + j.haeuser.length + " Häuser über dem Soll " + u.soll : ""),
             };
         },
         proben: (() => {
             const h = (typ, gang) => ({ typ, gang: { hub: 0.12, fehlt: [], keller: true, dach: true, ...gang } });
+            const sd = (n = 1) => ({ slots: 13, fehlt: [], umfang: { haeuser: n, soll: 1, von: 13, bild: false } });
             return [
-                { name: "ein Haus ganz, die anderen ohne Keller", j: { haeuser: [h("fachwerk", {}), h("scheune", { keller: false, fehlt: ["keller 0,8 m neben"] })] }, gruen: true },
-                { name: "kein Haus ganz", j: { haeuser: [h("scheune", { dach: false, fehlt: ["dach 1,2 m neben"] })] }, gruen: false },
-                { name: "der einzige Gang bis Keller und Dachboden springt 0,45 m", j: { haeuser: [h("fachwerk", { hub: 0.45, wo: "keller: Fuß 0,10 → 0,55 m" })] }, gruen: false },
+                { name: "das eine Haus ganz", j: { startDorf: sd(), haeuser: [h("fachwerk", {})] }, gruen: true },
+                { name: "das eine Haus verfehlt den Dachboden", j: { startDorf: sd(), haeuser: [h("fachwerk", { dach: false, fehlt: ["dach 1,2 m neben"] })] }, gruen: false },
+                { name: "der Gang bis Keller und Dachboden springt 0,45 m", j: { startDorf: sd(), haeuser: [h("fachwerk", { hub: 0.45, wo: "keller: Fuß 0,10 → 0,55 m" })] }, gruen: false },
+                { name: "kein Haus des Plans trägt Keller und Dachboden", j: { startDorf: sd(0), haeuser: [] }, gruen: false },
+                { name: "Täter: der Lauf des Zwillings (jedes Haus, ohne Umfang) — ROT beim Namen, auch wenn ein Haus ganz ist", j: { startDorf: { slots: 13, fehlt: [] }, haeuser: [h("fachwerk", {}), h("scheune", {})] }, gruen: false },
+                { name: "Täter: zwei Häuser gegen den Umfang 1", j: { startDorf: sd(2), haeuser: [h("fachwerk", {}), h("scheune", {})] }, gruen: false },
                 { name: "die Probe brach", j: { haeuser: [], fehler: "__fachwerkCore fehlt" }, gruen: false },
             ];
         })(),
