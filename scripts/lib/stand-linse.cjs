@@ -470,7 +470,7 @@ function brandAmSoll(Z) {
     };
     return {
         gang: eng(Z.gang, (k) => brandGangSoll(Z, k), (k) => ({ zellen: Z.zellen[k], leser: brandLeser(Z.rufe && Z.rufe[k]) })),
-        kachel: Z.kachel && eng(Z.kachel, (k) => Math.max(1, brandKachelSoll(Z, k)), (k) => ({ ringe: Z.ringe[k], m2: Z.ringM2[k] })),
+        kachel: Z.kachel && eng(Z.kachel, (k) => Math.max(1, brandKachelSoll(Z, k)), (k) => ({ ringe: Z.ringe[k], m2: Z.ringM2[k], leser: brandLeser(Z.rufeK && Z.rufeK[k]) })),
         zuendung: eng(Z.zuendung, (k) => brandZuendSoll(Z, k), (k) => ({ ankuenfte: Z.ankuenfte[k], betten: Z.betten[k], punkte: Z.punkte[k], kahl: Z.kahl[k], masken: Z.masken[k], leser: brandLeser(Z.rufeZ && Z.rufeZ[k]) })), // prettier-ignore
     };
 }
@@ -648,7 +648,7 @@ function simUrteil(b, v) {
         else {
             const k = Z.kachel.findIndex((e, s) => e > brandKachelSoll(Z, s) || Z.ringe[s] > 1 || Z.ringM2[s] > BRAND_RING_M2);
             if (k >= 0)
-                v.push(`KACHEL-FALL: Schritt ${k + 1} ließ ${Z.kachel[k]} Kacheln fallen — Soll ≤ ${brandKachelSoll(Z, k)} (je Kachel im Rechteck der Asche eine), ${Z.ringe[k]} ${Z.ringe[k] === 1 ? "Neubau" : "Neubauten"} von ${Z.ringM2[k]} m² (Soll ≤ 1 je Bild, ≤ ${BRAND_RING_M2} m² = ±½ Zelle) — seine Leser: ${brandLeser(Z.rufe && Z.rufe[k])}`);
+                v.push(`KACHEL-FALL: Schritt ${k + 1} ließ ${Z.kachel[k]} Kacheln fallen — Soll ≤ ${brandKachelSoll(Z, k)} (je Kachel im Rechteck der Asche eine), ${Z.ringe[k]} ${Z.ringe[k] === 1 ? "Neubau" : "Neubauten"} von ${Z.ringM2[k]} m² (Soll ≤ 1 je Bild, ≤ ${BRAND_RING_M2} m² = ±½ Zelle) — seine Leser: ${brandLeser(Z.rufeK && Z.rufeK[k])}`);
         }
         const j = Z.zuendung.findIndex((e, k) => e > brandZuendSoll(Z, k));
         if (j >= 0)

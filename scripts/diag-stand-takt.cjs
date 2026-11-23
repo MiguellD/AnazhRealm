@@ -188,7 +188,7 @@ function selbsttest() {
                 // Ankunft der Front mit neu gemessenem Bett (fünf grobe Punkte, alle Gras), in Schritt 4 zwei
                 ...{ zellen: [9, 9, 12, 16, 16, 12], gang: [27, 90, 46, 50, 113, 36], zuendung: [0, 0, 395, 763, 0, 0] },
                 // in Schritt 4 fällt die Wiese über EINER Zelle (±½ Zelle, 1 024 m²): 98 Kacheln der Streu, 24 der Wiese stehen darin
-                ...{ kachel: [0, 0, 0, 122, 0, 0], kachelSoll: [0, 0, 0, 122, 0, 0], ringe: [0, 0, 0, 1, 0, 0], ringM2: [0, 0, 0, 1024, 0, 0] },
+                ...{ kachel: [0, 0, 0, 122, 0, 0], kachelSoll: [0, 0, 0, 122, 0, 0], ringe: [0, 0, 0, 1, 0, 0], ringM2: [0, 0, 0, 1024, 0, 0], rufeK: [[], [], [], [["_nahStreuKachelFaellt", 98], ["_nahWieseKachelFaellt", 24]], [], []] },
                 ...{ ankuenfte: [0, 0, 1, 2, 0, 0], betten: [0, 0, 1, 2, 0, 0], punkte: [0, 0, 5, 10, 0, 0], kahl: [0, 0, 0, 0, 0, 0], masken: [0, 0, 0, 0, 0, 0] },
                 ...{ lesungen: [0, 0, 5, 10, 0, 0], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04, schritte: 6, bilder: 6 },
                 // die Herde auf dem gesetzten Bett (Gras, Last 0,092, im gesetzten Wind): das Vorrücken trägt R, die drei Starts der
@@ -601,7 +601,7 @@ function selbsttest() {
         // davon 122 Kacheln über EINER Zelle: der Gang trägt 46 (≤ 144), die Kacheln ihr eigenes Soll
         ["der Fall der Wiese über einer Zelle in einem kleinen Feld (CI c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 46, 113, 36] }), null],
         ["der Gang trägt die Kacheln ungetrennt (der Täter von c8e95d38)", (b) => Object.assign(b.simWecken.brand, { zellen: [9, 9, 12, 9, 16, 12], gang: [27, 90, 46, 168, 113, 36], kachel: [0, 0, 0, 0, 0, 0] }), /BRAND-GANG: Schritt 4 kostete 168 Einheiten Gang bei 9 Zellen des Felds \(Soll ≤ 16 je Zelle\)/],
-        ["jede Kachel fällt zweimal",["simWecken.brand.kachel.3=", 244], /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 122 \(je Kachel im Rechteck der Asche eine\), 1 Neubau von 1024 m²/],
+        ["jede Kachel fällt zweimal",["simWecken.brand.kachel.3=", 244], /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 122 \(je Kachel im Rechteck der Asche eine\), 1 Neubau von 1024 m² .* seine Leser: _nahStreuKachelFaellt 98, _nahWieseKachelFaellt 24/],
         ["zwei Zellen fallen im selben Bild (der gebündelte Neubau)", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 2, 0, 0], kachel: [0, 0, 0, 244, 0, 0], kachelSoll: [0, 0, 0, 244, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 244 Kacheln fallen — Soll ≤ 244 .*2 Neubauten/],
         ["der Neubau fällt über ±1 Zelle", ["simWecken.brand.ringM2.3=", 4096], /KACHEL-FALL: .*1 Neubau von 4096 m² \(Soll ≤ 1 je Bild, ≤ 1024 m²/],
         ["die Kacheln fallen ohne Asche", (b) => Object.assign(b.simWecken.brand, { ringe: [0, 0, 0, 0, 0, 0], kachelSoll: [0, 0, 0, 0, 0, 0], ringM2: [0, 0, 0, 0, 0, 0] }), /KACHEL-FALL: Schritt 4 ließ 122 Kacheln fallen — Soll ≤ 0/],
@@ -3582,7 +3582,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         };
                         const lauf = async (n) => {
                             const h0 = r._brandEntfachen(MESS.x, MESS.z);
-                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], kachel: [], kachelSoll: [], ringe: [], ringM2: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
+                            const [Z, H, bf, I] = [{ zellen: [], einheiten: [], gang: [], zuendung: [], ankuenfte: [], betten: [], masken: [], punkte: [], kahl: [], lesungen: [], rufe: [], rufeZ: [], kachel: [], kachelSoll: [], ringe: [], ringM2: [], rufeK: [], start: !!h0 }, new Map(), st.brandFeld, new Map()];
                             // DER FALL DER KACHELN AN SEINEM MASS (linse-brand-schritte 4): die Asche malt je Bild EIN Viertel EINER
                             // glühenden Zelle (`_brandMalen`), und je Zelle höchstens alle `BRAND.wieseS` fällt die Nah-Wiese und Nah-Streu
                             // über dem Rechteck ihrer geänderten Viertel (`_nahRingNeuIn`, ±½ Zelle) — je Kachel im Rechteck EIN Ruf des
@@ -3647,7 +3647,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 Object.assign(KF, { ringe: 0, m2: 0, kacheln: 0 });
                                 Z.zuendung.push(bild.zuendung);
                                 Z.einheiten.push(bild.brand + bild.zuendung);
-                                Z.rufe.push(haeufigste(bild.je.brand, 6));
+                                const [jeK, jeG] = [{}, {}];
+                                for (const [m, c] of Object.entries(bild.je.brand)) (/^_nah(Streu|Wiese)KachelFaellt$/.test(m) ? jeK : jeG)[m] = c;
+                                Z.rufe.push(haeufigste(jeG, 6));
+                                Z.rufeK.push(haeufigste(jeK, 2));
                                 Z.rufeZ.push(haeufigste(bild.je.zuendung, 12));
                                 // DIE ARBEIT DER ZÜNDUNG AUS DER ÄNDERUNG DER WELT, nie aus der Zahl ihrer Lese-Rufe (ein Soll aus den Rufen
                                 // wüchse mit dem Täter): die Ankünfte der Front (je fällige Zelle EIN Ruf von `_brandZuenden`), die Betten, die
@@ -3936,7 +3939,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                               zuendung: Math.max(0, ...w.zuendung),
                               ...{ kachel: Math.max(0, ...(w.kachel || [])), kachelSoll: Math.max(0, ...(w.kachelSoll || [])), ringe: Math.max(0, ...(w.ringe || [])), ringM2: Math.max(0, ...(w.ringM2 || [])) },
                               ...Object.fromEntries(["ankuenfte", "betten", "masken", "punkte", "kahl"].map((k) => [k, w[k].reduce((a, b) => a + b, 0)])),
-                              ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, nachher: undefined },
+                              ...{ lesungen: undefined, rufe: undefined, rufeZ: undefined, rufeK: undefined, nachher: undefined },
                               amSoll: STAND.brandAmSoll(w),
                           }) + ` — nachher ${simZeile(w.nachher)}`
                         : n === "druck"
