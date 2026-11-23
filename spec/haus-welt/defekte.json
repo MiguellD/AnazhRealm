@@ -8,10 +8,10 @@
     "W5 Kollision"
    ],
    [
-    [
-     "if (fest && fest.length) {",
-     "if (false) {"
-    ]
+    {
+     "glied": "_hausBlockerBoxen",
+     "basis": "() => function () { return null; }"
+    }
    ]
   ],
   "obb": [
@@ -210,7 +210,8 @@
   "fernstufe": [
    [
     "w6",
-    "W6 Fernstufe"
+    "W6 Fernstufe",
+    "W6 Fern-Hülle"
    ],
    [
     [
@@ -220,15 +221,28 @@
     ]
    ]
   ],
-  "kern": [
+  "zweithuelle": [
    [
     "w6",
-    "W6 Kern-Hülle"
+    "W6 EINE Hülle: vor"
+   ],
+   [
+    {
+     "glied": "_hausHuelleKommt",
+     "basis": "() => function () { return false; }"
+    }
+   ]
+  ],
+  "fernleer": [
+   [
+    "w6",
+    "W6 EINE Hülle: die Lieferung"
    ],
    [
     [
-     "boxen = this._hausKernHuelle(t);",
-     "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"
+     "/fachwerk-core.js",
+     "geoms.__solids = hs3.fest;",
+     "geoms.__solids = null;"
     ]
    ]
   ],

@@ -6681,9 +6681,13 @@
         if (st.topH) solAus(st.topH, st.off || 0);
         return solL;
     }
+    // DIE SOLIDS BRAUCHEN KEIN GITTER (eine-huelle): der Bau der Hülle teilt je Maß EINE Box-Geometrie ohne Tint (`__nurMass`,
+    // die Regel des Mass-Baus) — er liest nur, was `addSolid` und `addStrahl` sammeln. Dieselben Solids byte-gleich
+    // (gate:fachwerk-contract 1b, 32 Kulturen × 2 Samen × jede Stufe), 32,2 → 12,7 ms je Haus (Node, 21 Häuser des Dorfs).
     function hausSolids(p) {
         var hp = stufe0Param(p);
         hp.nur = Object.assign({}, SOLIDLOS, hp.nur);
+        hp.__nurMass = true;
         var st = stufe0Bau(hp);
         var z = { fest: solidZeile(st), strahl: solidZeile(st, "strahl") };
         st.g.traverse(function (o) {
@@ -6754,9 +6758,16 @@
         } else if (stufe === 3) {
             // DIE STUFE 3 (nurWurf, S3): der Fernkörper des Gesetzbuchs. Der Warm-Pfad misst den Fassaden-Ton (wie die L2),
             // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
-            // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe). Ihre Massen
-            // kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
+            // Beipack `__fern`. Ihre Massen kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
+            // EINE HÜLLE JE HAUS (eine-huelle, additiv, must-ignore): auch sie trägt die Solids des Gesetzbuchs (nach dem Gitter:
+            // der Stufen-Bau bleibt byte-gleich) — das ferne Haus, das nur sie bestellt, steht in derselben Hülle wie das nahe.
+            // Bis hier trug sie keine: jenseits der Mesh-Zone stellte der Wirt vier Wände aus der Tür-Zeile auf (seine Kern-Hülle),
+            // an jedem Haus des Dorfs 7–10 Solids am Boden bis 0,73 m daneben, am Hof-Haus 60 bis 9,07 m — kam die Hülle der
+            // gezeigten Stufe, rückten die Stände der Bewohner um 0,3–2,9 m (28 Stände während einer Zählung am Start-Dorf).
             geoms = wurfVon(planBau(p));
+            var hs3 = hausSolids(p);
+            geoms.__solids = hs3.fest;
+            geoms.__strahl = hs3.strahl;
         } else {
             var B = massBau(p);
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));

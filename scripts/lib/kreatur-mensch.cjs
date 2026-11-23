@@ -514,7 +514,20 @@ async function menschBuehnen() {
                     const h = Math.floor(nachLauf.length / 2);
                     const T = liste.map((b) => b.tempo).filter((v) => v > 0);
                     const tm = T.reduce(addiere, 0) / Math.max(1, T.length);
+                    // DER BEZUGS-LEIB DES GANGS (eine-huelle, koerper KOENNEN_BEZUG): der Bezug ist der erwachsene Median der
+                    // Bevölkerung mit 30 J — je erwachsenem Bewohner der Liste sein eigener Leib mit 30 J, der Median ihres `lauf`
+                    // liegt bei 1 (Schranke: 3 Standardfehler des Medians dieser Liste, mindestens 0,015)
+                    // Täter (Selbsttest): der Bezug vor dem Schnitt — START_PARAMS (ein Mann von 27 J, Gewicht 0,35) läuft 1
+                    const BZ = KC.KOENNEN_BEZUG;
+                    const lauf30 = hat("bewohner-bezug") ? (d) => KC.leibKoennen(d).lauf / KC.leibKoennen(KC.START_PARAMS).lauf : (d) => KC.leibKoennen(d).lauf;
+                    const L30 = BZ ? liste.filter((b) => b.genom && b.genom.alter >= 0).map((b) => lauf30(Object.assign({}, r._dialsAusGenom(b.genom), { age: BZ.age }))).sort((a, c) => a - c) : []; // prettier-ignore
+                    const m30 = L30.length ? L30[(L30.length - 1) >> 1] : 0;
+                    const mw30 = L30.reduce(addiere, 0) / Math.max(1, L30.length);
+                    const s30 = L30.length > 1 ? Math.sqrt(L30.reduce((a, v) => a + (v - mw30) ** 2, 0) / (L30.length - 1)) : 0;
                     return {
+                        bezug: q3(m30),
+                        bezugN: L30.length,
+                        bezugTol: q3(Math.max(0.015, (3 * 1.2533 * s30) / Math.sqrt(Math.max(1, L30.length)))),
                         n: liste.length,
                         ohne: ohne.length,
                         wer: ohne.slice(0, 3).map(wer),
@@ -1203,6 +1216,10 @@ function menschUrteil(name, z, soll) {
             kn.n > 0 && kn.ohne === 0 && kn.geher >= 10 && kn.rho >= 0.5,
             `das Können trägt den Gang nicht: ${kn.ohne} von ${kn.n} Bewohnern gehen nicht Einheit × gang × lauf (${kn.wer}), Rang-Korrelation Können ↔ gegangenes Tempo ${kn.rho} über ${kn.geher} Geher (Soll ≥ 0,5; die Hälfte mit mehr Können geht × ${kn.haelften}, Streuung des Tempos ${kn.cv})`
         );
+        soll(
+            kn.bezugN >= 10 && Math.abs(kn.bezug - 1) <= kn.bezugTol,
+            `der Bezugs-Leib des Gangs ist nicht der erwachsene Median: ${kn.bezugN} Erwachsene der Liste laufen mit 30 J im Median ${kn.bezug} des Bezugs (Soll 1 ± ${kn.bezugTol}; koerper KOENNEN_BEZUG)`
+        );
         const dw = z.daheimWerk || { n: 0, falsch: "ungemessen", wer: [] };
         soll(
             dw.n > 0 && dw.falsch === 0,
@@ -1276,6 +1293,7 @@ module.exports = {
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
             ["bewohner-koennen", /das Können trägt den Gang nicht/],
+            ["bewohner-bezug", /der Bezugs-Leib des Gangs ist nicht der erwachsene Median/],
             ["bewohner-abendstand", /daheim am Werk/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
