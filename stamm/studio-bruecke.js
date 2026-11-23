@@ -1699,8 +1699,10 @@ class AnazhRealm_studio_bruecke {
     // Budget halbe Rate (der Stau schrumpft immer, kein LongTask). Ohne dt (Gate/Test): 3 unter / 1 über
     // Budget (gate:leistungs-vertrag).
     _tickFoundryIngest(dtSec) {
-        // was der letzte Leser im letzten Takt verließ (`_foundryLoslassen`), verlässt den Cache
-        this._foundryVerlassenRaeumen();
+        // eine Rückgabe im letzten Takt (`_foundryLoslassen`) oder ein Untätiger, dessen Ruhezeit ablief (`ruheFaellig`): der
+        // Ruhe-Deckel wiegt, was untätig wurde
+        const _f = this._foundry;
+        if (_f && (_f.ruheOffen || this.state.spielZeit >= _f.ruheFaellig)) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;
