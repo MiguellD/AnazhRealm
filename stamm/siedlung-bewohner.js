@@ -799,9 +799,9 @@ class AnazhRealm_siedlung_bewohner {
             for (const amRand of [true, false])
                 for (let v = 0; v < 40; v++) {
                     const L = vorn;
-                    const P = L[Math.min(L.length - 1, Math.floor(g.axis("ms" + v) * L.length))];
-                    const a = (g.axis("ma" + v) * 2 - 1) * P.halb[0];
-                    const b = (g.axis("mb" + v) * 2 - 1) * P.halb[1];
+                    const P = L[Math.min(L.length - 1, Math.floor(g.axis(`${v}:stand:markt`) * L.length))];
+                    const a = (g.axis(`${v}:quer:markt`) * 2 - 1) * P.halb[0];
+                    const b = (g.axis(`${v}:laengs:markt`) * 2 - 1) * P.halb[1];
                     const [lx, lz] = [P.x + P.qx * a + P.fx * b, P.z + P.qz * a + P.fz * b];
                     const [x, z] = [S.ox + lx, S.oz + lz];
                     if (!FC.imPlatzStueck(plan, lx, lz, FC.MARKT_GESETZ.saumM, true) && (yield* frei(x, z, amRand))) {
@@ -833,8 +833,8 @@ class AnazhRealm_siedlung_bewohner {
             // erst am Rand der Gassen (Platz, sein Rand, die Gassen an ihm), dann auch in ihnen
             for (const amRand of [true, false]) {
                 for (let v = 0; v < 64; v++) {
-                    const lx = (g.axis("px" + v) * 2 - 1) * pz.ex;
-                    const lz = (g.axis("pz" + v) * 2 - 1) * pz.ez;
+                    const lx = (g.axis(`${v}:quer:platz`) * 2 - 1) * pz.ex;
+                    const lz = (g.axis(`${v}:laengs:platz`) * 2 - 1) * pz.ez;
                     const x = mx + lx * pc + lz * ps;
                     const z = mz - lx * ps + lz * pc;
                     if (yield* frei(x, z, amRand)) return stand(x, z, zurMitte(x, z), amRand);
@@ -844,7 +844,7 @@ class AnazhRealm_siedlung_bewohner {
                     const rand = 0.6 + ((v >> 5) / 5) * BW.platzRandM * 0.5;
                     const ex = pz.ex + rand;
                     const ez = pz.ez + rand;
-                    let u = g.axis("pr" + v) * 4 * (ex + ez);
+                    let u = g.axis(`${v}:rand:platz`) * 4 * (ex + ez);
                     let lx;
                     let lz;
                     if (u < 2 * ex) [lx, lz] = [u - ex, ez];
@@ -874,8 +874,8 @@ class AnazhRealm_siedlung_bewohner {
                         const fernZ = Math.max(0, Math.min(...kz) - pz.ez, -pz.ez - Math.max(...kz));
                         if (Math.hypot(fernX, fernZ) > BW.platzRandM + (rd.w || 3) / 2 + 0.81) continue;
                         for (let v = 0; v < 12; v++) {
-                            const t = g.axis("gt" + i + ":" + v);
-                            const sd = g.axis("gs" + i + ":" + v) < 0.5 ? -1 : 1;
+                            const t = g.axis(`${i}:${v}:lauf:gasse`);
+                            const sd = g.axis(`${i}:${v}:seite:gasse`) < 0.5 ? -1 : 1;
                             const qx = S.ox + a.x + (e.x - a.x) * t;
                             const qz = S.oz + a.z + (e.z - a.z) * t;
                             const o = (rd.w || 3) / 2 + 0.8;
@@ -928,8 +928,8 @@ class AnazhRealm_siedlung_bewohner {
             const c = Math.cos(F.phi || 0);
             const s = Math.sin(F.phi || 0);
             for (let v = 0; v < 32; v++) {
-                const lx = (g.axis("fx" + v) * 2 - 1) * F.ex * 0.85;
-                const lz = (g.axis("fz" + v) * 2 - 1) * F.ez * 0.85;
+                const lx = (g.axis(`${v}:quer:feld`) * 2 - 1) * F.ex * 0.85;
+                const lz = (g.axis(`${v}:laengs:feld`) * 2 - 1) * F.ez * 0.85;
                 const x = S.ox + F.cx + lx * c - lz * s;
                 const z = S.oz + F.cz + lx * s + lz * c;
                 if (yield* frei(x, z)) return nimm({ x, z, blick: g.axis("fdreh") * Math.PI * 2 });
