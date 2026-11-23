@@ -2025,7 +2025,7 @@ async function dorfZaehlung(r, T) {
             const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
             const auge = cam.getWorldPosition(new T.Vector3());
             const je = new Map();
-            let ist = 0;
+            let ist = 0, fahrerImKreis = 0;
             const amOrt = new Set(),
                 gezaehlt = [];
             for (const g of leiber()) {
@@ -2034,6 +2034,11 @@ async function dorfZaehlung(r, T) {
                 if (!gez(g)) continue;
                 const dO = Math.hypot(g.position.x - O.x, g.position.z - O.z);
                 if (dO > R_M) continue;
+                // DER FAHRER ZÄHLT AN SEINEM WAGEN, NIE AM ORT (pm-fahrer-soll, 22.11.): wessen Soll der Stunde sein laufender Wagen
+                // ist, trägt seine EINE Stichprobe in `fahrer` (Soll 1 am Sitz) — fährt oder hält sein Wagen im Kreis eines der fünf
+                // Orte, ist er dort kein Ist (bis hier zählte ihn der Ort als Ist ohne Soll: „Ist 2/Soll 1“ an einem Ort, an dem
+                // jeder des Solls stand). Lesewert `fahrerImKreis`: wie viele am Steuer im Kreis des Orts gezeichnet waren
+                if (amWagen(b, r._bewohnerSoll(b, h))) { fahrerImKreis++; continue; }
                 let naechst = true;
                 for (const [kz, z] of ziele) if (kz !== ok && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) naechst = false;
                 if (!naechst) continue;
@@ -2062,7 +2067,7 @@ async function dorfZaehlung(r, T) {
                 const g = leiber().find((x) => x.userData._feldLageVon.b === b), z = r._bewohnerSoll(b, h);
                 return { rolle: b.rolle || b.beruf || null, akt: z && z.akt != null ? String(z.akt) : null, planDrinnen: !!(z && z.drinnen), drinnen: !!b.drinnen, dZiel: g && z && z.ziel ? +Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z).toFixed(1) : null };
             });
-            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
+            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(fahrerImKreis ? { fahrerImKreis } : {}), ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
         }
     }
     const spaet = ankunft.filter((a) => a.offen > 0);
@@ -5159,13 +5164,17 @@ const stationen = [
             if (z.messort) return { gruen: false, zahl: "Messort: " + z.messort + " · " + ad };
             const gruen = !reisst.length && !rot.length && !fahrerRot.length;
             const ank = Array.isArray(z.ankunft) && z.ankunft.length ? " · Ankunft " + z.ankunft.map((a) => a.uhr + " Uhr " + a.s + " s").join("/") : "";
+            // AM STEUER IM KREIS EINES ORTS (Lesewert, pm-fahrer-soll 22.11.): der Fahrer zählt an seinem Wagen (`fahrer`), nie am Ort —
+            // die Zahl nennt, an welcher Stichprobe er im Kreis gezeichnet war (GTX 5facf8cf: zwei Nachtfahrer um 3 Uhr an Ort 1)
+            const kreisL = P.filter((p) => p.fahrerImKreis > 0).map((p) => p.uhr + " Uhr Ort " + p.ort + " ×" + p.fahrerImKreis);
+            const kreis = kreisL.length ? " · am Steuer im Kreis: " + kreisL.join(", ") : "";
             return {
                 gruen,
                 zahl:
                     z.bewohner + " Bewohner, " + paare + " Stichproben (" + orte + " Orte × " + uhren + " Uhren) + " + F.length + " Fahrer am Steuer (" + (F.length - fahrerRot.length) + " sitzen), Σ Soll " + sollSumme + " · " +
                     (reisst.length ? "✗ " + reisst.join(" · ") + " · " : "") +
                     (fahrerRot.length ? "✗ " + fahrerRot.join(" · ") + " · " : "") +
-                    (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + ank + " · doppelt " + z.doppelt + " Hüllen / " +
+                    (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + ank + kreis + " · doppelt " + z.doppelt + " Hüllen / " +
                     z.samenDoppelt + " Samen · " + z.sicht + " · " + ad,
             };
         },
@@ -5208,6 +5217,19 @@ const stationen = [
                         { name: "MUTANTE ein Fahrer 2,4 m neben seinem Wagen — ROT beim Namen", stdout: roh((z) => (gtx(z), acht(z), Object.assign(z.fahrer[5], { d: 2.4, sitzt: false }))), gruen: false, zahl: /✗ 15 Uhr Fahrer bauer 2\.4 m neben dem Sitz seines Wagens/ },
                         { name: "MUTANTE ein Fahrer aus dem Wagen gestiegen (nicht am Steuer) — ROT beim Namen", stdout: roh((z) => (gtx(z), acht(z), Object.assign(z.fahrer[0], { amSteuer: false, d: 6.1, sitzt: false }))), gruen: false, zahl: /✗ 10 Uhr Fahrer fischer nicht am Steuer, 6\.1 m neben dem Sitz/ },
                         { name: "die Ankunft stand nach 40 s nicht — kein GRÜN, die Zahl nennt den Grund (der Läufer urteilt per MESSORT UNGEMESSEN)", stdout: roh((z) => (z.messort = "die Ankunft nach dem Zeitsprung stand nach 40 s nicht: 3 Uhr 1 unterwegs (bauer heim Plan drinnen 14.2 m vom Ziel)")) + "\n@@PUNKTE@@ MESSORT die Ankunft nach dem Zeitsprung stand nach 40 s nicht", gruen: false, zahl: /^Messort: die Ankunft nach dem Zeitsprung stand nach 40 s nicht: 3 Uhr 1 unterwegs \(bauer heim/ },
+                    ];
+                })(),
+                // DER FAHRER ZÄHLT AN SEINEM WAGEN, NIE AM ORT (pm-fahrer-soll, 22.11.; die GTX am 5facf8cf): je Ort und Uhr EIN Mensch
+                // (Σ Soll 15 an den Orten) + 6 Fahrer auf dem Sitz = 21; um 3 Uhr halten zwei Nachtfahrer im Kreis von Ort 1 — die Probe
+                // zählt sie dort nicht als Ist (Lesewert fahrerImKreis), GRÜN, die Zahl nennt sie. Derselbe Fall, wie die Probe ihn bis
+                // hier zählte (beide als Ist an einem Ort mit Soll 0): ROT beim Namen
+                ...(() => {
+                    const dorf = (z) => (z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : 1)),
+                        (z.fahrer = [[3, "nachtfahrer"], [10, "fahrer"], [15, "fahrer"]].flatMap(([uhr, rolle]) => [0, 1].map(() => ({ uhr, rolle, amSteuer: true, leib: true, d: 0, sitzt: true })))));
+                    const nacht = { rolle: "nachtfahrer", akt: "arbeit", planDrinnen: false, drinnen: false, dZiel: 0.1 };
+                    return [
+                        { name: "zwei Nachtfahrer am Steuer im Kreis von Ort 1 um 3 Uhr: kein Ist am Ort, Σ Soll 15 + 6 = 21 — GRÜN, die Zahl nennt sie", stdout: roh((z) => (dorf(z), (z.proben[1].fahrerImKreis = 2))), gruen: true, zahl: /\+ 6 Fahrer am Steuer \(6 sitzen\), Σ Soll 21 · jede Stichprobe ±10 %, niemand fehlt · am Steuer im Kreis: 3 Uhr Ort 1 ×2 · doppelt/ },
+                        { name: "MUTANTE die Probe zählt die zwei Nachtfahrer als Ist am Ort (Soll 0) — ROT beim Namen", stdout: roh((z) => (dorf(z), Object.assign(z.proben[1], { ist: 2, mehr: [nacht, nacht] }))), gruen: false, zahl: /✗ 3 Uhr Ort 1 Ist 2\/Soll 0, zu viel: nachtfahrer arbeit \(Plan draußen, 0\.1 m vom Ziel\), nachtfahrer arbeit/ },
                     ];
                 })(),
                 { name: "die Probe fand die Orte nicht", stdout: ad + "\nZAEHLUNG " + JSON.stringify({ fehler: "nur 3 Orte mit Soll im Start-Dorf", bewohner: 77 }), gruen: false },
