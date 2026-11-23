@@ -10016,7 +10016,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 2,239 (Faden 2,239 · alle Kerne 1,669; vor 151/380,2 ms, nach 177,1/437,9 ms, Ruhe 79,1/262,4 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,397 (Faden 1,373 · alle Kerne 1,397; vor 123,6/305,6 ms, nach 116,1/320,9 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: Explorer.EXE 0,8 CPU-s · LightStudio-background.exe InvokerP · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64 · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,397 (Faden 1,373 · alle Kerne 1,397; vor 123,6/305,6 ms, nach 116,1/320,9 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: Explorer.EXE 0,8 CPU-s · LightStudio-background.exe InvokerP · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10024,7 +10024,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 2,239 (Faden 2,239 · alle Kerne 1,669; vor 151/380,2 ms, nach 177,1/437,9 ms, Ruhe 79,1/262,4 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
+     "grund": "ungemessen (R10) — zuletzt an f0a89f7e: Last: Referenz f 1,539 (Faden 1,539 · alle Kerne 1,15; vor 106,6/301,7 ms, nach 122,2/302,1 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: node.exe punkte/punkte.cjs buchen --kopf ad83627369bc8d5d64",
      "ungemessen": true,
      "beide": true
     },
@@ -16586,26 +16586,26 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] amd/rdna-3 an ddaf883d radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal an f0a89f7e gtx — offen: karte2.mensch.geist.absicht#2 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] amd/rdna-3",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
      "id": "karte2.mensch.geist.absicht#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.7 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.74 (1365 in der Stadt), je Zug {\"haeuslich\":{\"n\":29,\"ok\":15},\"fleissig\":{\"n\":29,\"ok\":20},\"ausgeglichen\":{\"n\":27,\"ok\":25},\"gesellig\":{\"n\":15,\"ok\":14 · [linse-gpu] nvidia/pascal",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal",
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -25657,16 +25657,16 @@
   },
   "karte2.mensch.wirtschaft.technik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an ddaf883d radeon · gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an ddaf883d gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an f0a89f7e gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.technik#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -25674,9 +25674,9 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
-     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37186,7 +37186,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2) · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c12 · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2) — zuletzt an f0a89f7e: Last: Referenz f 1,497 (Faden 1,497 · alle Kerne 1,193; vor 104,7/313,5 ms, nach 118,9/296,3 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 22,9 CPU-s · bash.exe werkz · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an c1236fa8: Last: Referenz f 1,547 (Faden 1,172 · alle Kerne 1,547; vor 95,8/355,3 ms, nach 105,5/234 ms, Ruhe 90/229,7 ms seit 2026-11-16) · fremd: sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c12 · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37194,7 +37194,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2) — zuletzt an f0a89f7e: Last: Referenz f 1,497 (Faden 1,497 · alle Kerne 1,193; vor 104,7/313,5 ms, nach 118,9/296,3 ms, Ruhe 79,4/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/radeon-dienst.sh 22,9 CPU-s · bash.exe werkz",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37519,7 +37519,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 276,
+  "konsum": 280,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37687,11 +37687,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3346
+  "ohne": 3342
  },
  "kopfVoll": "ad83627369bc8d5d64ba9092b99ee644426d2f6c",
- "zeit": "2026-11-23T06:04:53.941Z",
- "vorher": "f0a89f7e",
+ "zeit": "2026-11-23T06:13:29.295Z",
+ "vorher": "ad836273",
  "bilanz": {
   "gewinn": [],
   "fall": [],
