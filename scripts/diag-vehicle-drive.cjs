@@ -16,6 +16,7 @@ const {
     wandEnde,
     selbsttestEnde,
     studioKern,
+    ausDatei,
     fehlerText,
     SELBSTTEST,
     stammLib,
@@ -450,7 +451,7 @@ hauptLauf(async () => {
         check("Selbst-Test kabineVerdict: eine ungemessene Ecke ist ROT", eckeFehlt.length === 1 && /15 Ecken von 16/.test(eckeFehlt[0]), eckeFehlt.join(" · "));
         // die Mutante am ECHTEN Kern (sein Text ohne das Gesetz, der EINE Lader `kernAusText`): der GT am Rand Gürtel 1,2 steht mit
         // nicht-endlichen Werten und ohne Glas-Höhe beim Namen, der Sportwagen mit dem Gürtel über dem Dach als umgestülpt
-        const kernText = require("fs").readFileSync(path.join(ROOT, "vehicle-core.js"), "utf8");
+        const kernText = ausDatei("vehicle-core.js");
         const ankerK = "return kabineGesetz(epocheZeit(P));";
         const mutK =
             kernText.split(ankerK).length === 2
