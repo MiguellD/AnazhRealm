@@ -3509,11 +3509,28 @@ const LEITERN = [];
     // An der dichtesten Pose (stadt-voll, Third) zählt das Programm die Leuchtquellen, die die Welt selbst setzt: das Verzeichnis „licht“
     // (`_blockerMit`, stamm/gelaende-kollision.js:1193) mit Emitter-Datum (`_lichtDatum`, stamm/dirigent-kern.js:1834), dazu die
     // glühende Lava (`_tatIndex().lava`, stamm/feld-leben.js:2648) — je Sprosse gegen 1 · 10² · 10³ … 10⁹. Unter dem Umfang urteilt
-    // Umfang; trägt die Welt ihn, fehlt der Leser des Bilds (Schatten am Pfosten, Bodenfleck, Fenster je Uhr, Fotosätze).
+    // Umfang; trägt die Welt ihn, fehlt der Leser des Bilds (Fenster je Uhr, Fotosätze).
+    // DIE LESER VON S1 UND S2 (pm-nacht-licht, 21.11.): an der dichtesten Pose die Nacht-Linse des Spiels (`nachtSicht`,
+    // scripts/lib/licht-linsen.cjs — der Bodenfleck je sichtbarer Quelle in 50 m, die Kelvin-Farbe je Leuchte; `nachtKelvin` die EINE
+    // Regel der Gasse, dieselbe wie gate:nacht-licht:echt), dann an derselben Pose der Teil schatten.K5 der NEUN-Seite
+    // (g3.js `neunSeite`, mit denselben Maßen `neunC` und derselben Gültigkeit `k5Gilt`): der Pfosten 2 m neben dem nächsten Feuer,
+    // das Auge lotrecht darüber. Fehlt die Linse am SHA, fehlt der Leser — beim Namen.
+    // Die Seite der NEUN (43 000 Zeichen) passt nie ins argv (ENAMETOOLONG): die Probe lädt sie aus g3.js wie `neunProbe` und prüft ihren
+    // Abdruck gegen den der Station (ein geänderter Teil ändert die Station). Der Anker steht genau einmal, sonst laut beim Laden.
+    const NEUN = require("./g3.js");
+    const K5_ANKER = "const teil = async (name, fn) => {";
+    const neunNur = (s, anker) => {
+        const n = s.split(anker).length - 1;
+        if (n !== 1) throw new Error("erleben.bild.nacht: der Anker „" + anker + "“ steht " + n + "× in der NEUN-Seite (g3.js neunSeite), nie genau einmal");
+        // der Teil, den C.nur nennt, und nur er: die übrigen Teile der NEUN kosten an dieser Pose nichts
+        return s.replace(anker, anker + " if (C.nur && !C.nur.includes(name)) return;");
+    };
+    const NEUN_NUR_ABDRUCK = require("crypto").createHash("sha1").update(neunNur(String(NEUN.neunSeite), K5_ANKER)).digest("hex").slice(0, 16);
     LEITERN.push(
         leiter({
             leiter: "erleben.bild.nacht",
-            sek: 45,
+            sek: 60,
+            seite: { NEUN_NUR: String(neunNur), K5_ANKER: JSON.stringify(K5_ANKER), NEUN_ABDRUCK: JSON.stringify(NEUN_NUR_ABDRUCK), NEUN_C: JSON.stringify(NEUN.neunC), K5_GILT: String(NEUN.k5Gilt) },
             pfad: ["stamm/dirigent-kern.js", "stamm/gelaende-kollision.js", "stamm/stoff-material.js", "stamm/feld-leben.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
             welt: [{ wort: "quellen", ab: 1, was: "Leuchtquellen der Welt, gezählt im Verzeichnis „licht“" }],
             sprossen: {
@@ -3605,9 +3622,61 @@ const LEITERN = [];
                 L.zeile("Nacht der Sitzung (stadt-voll third): " + JSON.stringify(z));
                 const n = z.welt + z.lava;
                 const zaehlWas = "die Welt setzt " + n + " Leuchtquellen (" + z.welt + " im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu " + z.lava + " glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.lichtGlut stamm/dirigent-kern.js:1606, und zählen nicht als Quelle)";
+                // DIE NACHT-LINSE DES SPIELS an der Gasse (stadt-voll third): Bodenfleck und Kelvin für S1 und S2, EIN Lauf
+                const LLd = require("path").resolve("scripts/lib/licht-linsen.cjs");
+                const LL = require("fs").existsSync(LLd) ? require(LLd) : {};
+                const linse = typeof LL.nachtSicht === "function" && typeof LL.nachtKelvin === "function";
+                let nacht = null;
+                if (linse && n >= 1) {
+                    nacht = await L.ev("return await (" + LL.nachtSicht + ")({});", Math.max(20, L.rest() - 20));
+                    L.zeile("Nacht-Linse (stadt-voll third): " + JSON.stringify({ quellen: nacht.quellen, sichtbar: nacht.sichtbar, gut: nacht.gut, anteil: nacht.anteil, ohneKarte: nacht.ohneKarte, kelvin: nacht.kelvin }).slice(0, 900));
+                }
+                const ohneLinse = "kein Leser am SHA — nachtSicht und nachtKelvin fehlen in scripts/lib/licht-linsen.cjs (gate:nacht-licht:echt)";
+                await L.je(2, async () => {
+                    if (n < P.sprossen[2].umfang.verlangt) return L.umfang(2, n, zaehlWas);
+                    if (!linse) return L.leser(2, "Bodenfleck ≥ 1 EV je sichtbarer Quelle in 50 m: " + ohneLinse, n);
+                    if (!(nacht.sichtbar > 0)) throw new Error("die Nacht-Linse sah an stadt-voll third keine Quelle (" + nacht.quellen + " in 50 m)");
+                    L.gemessen(2, { bodenfleck_anteil: nacht.anteil, gasse_dev_median: null }, {
+                        erzeugt: n,
+                        welt: { quellen: n },
+                        taeter: "Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms" + (nacht.anteil >= 0.9 ? "" : " · Bodenfleck " + nacht.gut + " von " + nacht.sichtbar),
+                        beleg: { sichtbar: nacht.sichtbar, gut: nacht.gut, ohneKarte: nacht.ohneKarte, quellen50: nacht.quellen },
+                    });
+                });
+                await L.je(1, async () => {
+                    if (n < P.sprossen[1].umfang.verlangt) return L.umfang(1, n, zaehlWas);
+                    if (!linse) return L.leser(1, "Kelvin der Gasse: " + ohneLinse, n);
+                    const { kMed, kel } = LL.nachtKelvin(nacht);
+                    // DER PFOSTEN an der Gasse: der Teil schatten.K5 allein (die nächste Leuchtquelle des Gesetzes am Spieler, ihr Platz im Pool
+                    // trägt den Wurf), im Fenster der NEUN, danach das Fenster der Sitzung — die Leiter hält 60 s, ein Ortswechsel kostet 30
+                    const C = Object.assign(H.seite.NEUN_C, { teile: [], nur: ["schatten.K5"], rest: Math.max(5, Math.min(25, L.rest() - 20)) });
+                    let k5;
+                    try {
+                        await L.wb("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30);
+                        const pf = require("path");
+                        const G = require(pf.join(pf.dirname(String(process.env.PUNKTE_MASCHINE || "")), "stationen", "g3.js"));
+                        const seite = H.seite.NEUN_NUR(String(G.neunSeite), H.seite.K5_ANKER);
+                        const ist = require("crypto").createHash("sha1").update(seite).digest("hex").slice(0, 16);
+                        if (ist !== H.seite.NEUN_ABDRUCK) throw new Error("NEUN-BRUCH die Seite in g3.js trägt den Abdruck " + ist + ", die Station " + H.seite.NEUN_ABDRUCK);
+                        const a = await L.ev("return await (" + seite + ")(r, T, " + JSON.stringify(C) + ");", C.rest + 30);
+                        k5 = (a && a.teile && a.teile["schatten.K5"]) || { fehler: "der Teil kam nicht dran (" + JSON.stringify((a && a.ausgelassen) || []) + ")" };
+                    } finally {
+                        await L.wb("/fenster", { w: 1920, h: 1080 }, 30).catch(() => {});
+                    }
+                    L.zeile("Pfosten (schatten.K5 an stadt-voll third): " + JSON.stringify(k5));
+                    const gilt = !k5.fehler && H.seite.K5_GILT(k5);
+                    const taeter = [];
+                    if (k5.fehler) taeter.push("der Pfosten-Teil brach: " + k5.fehler);
+                    else if (!gilt) taeter.push("das Maß am Pfosten gilt nicht (im Blick " + k5.pfosten + ", im Pool " + k5.imPool + ", ohne Pfosten " + k5.kontrolle + ", Punkte " + k5.n + ")");
+                    if (!kel.length) taeter.push("keine Leuchte der Gasse mit Farbe gesehen");
+                    L.gemessen(1, { schatten_kontrast: gilt ? k5.kontrast : null, kelvin_abw: kMed }, {
+                        erzeugt: n,
+                        welt: { quellen: n },
+                        taeter: taeter.join(" · ") || null,
+                        beleg: { pfosten: k5, kelvin: kel, gasse: "stadt-voll third" },
+                    });
+                });
                 const FEHLT = {
-                    1: "Schatten-Kontrast am Pfosten 2 m vom Feuer und Kelvin der Gasse: kein Leser — der Licht-Pool (stamm/stoff-material.js:3776) trägt Stärke und Farbe, kein Leser misst den Schatten eines Pfostens im Bild (scripts/lib/licht-linsen.cjs:743 lichtBilanz misst die Bilanz des Lichts)",
-                    2: "Bodenfleck ≥ 1 EV je sichtbarer Quelle in 50 m: kein Leser — der Licht-Pool leuchtet höchstens " + z.plaetze + " Quellen zugleich (stamm/stoff-material.js:3776), in 50 m stehen " + z.nah + "; kein Gassen-Fotosatz im Baum",
                     3: "Anteil beleuchteter Fenster je Uhr: kein Leser — die Fenster glühen nach EINEM Zeitplan je Licht-Art (stamm/dirigent-kern.js:1882 _lichtZeitplan), nicht nach ihren Bewohnern; Straße in lx: kein geeichtes k",
                     4: "Leuchtdichte-Histogramm nasser Nachtstraßen gegen Fotosatz: kein Leser, kein Fotosatz im Baum (scripts/lib/licht-linsen.cjs:743)",
                     5: "Himmelshelligkeit am Stadtrand gegen Walker's Law: kein Leser — die Himmels-Sicht (welt-licht.js:989 himmelSicht) trägt keine Lichtglocke der Stadt",
@@ -3615,7 +3684,7 @@ const LEITERN = [];
                     7: "Nachtbild-Statistik gegen Black Marble: kein Leser; 100 Saaten verlangt, die Sitzung hält eine",
                     8: "Nachtlicht je Epoche gegen DMSP/VIIRS: kein Leser; die Lichter tragen keine Epoche (stamm/dirigent-kern.js:1882)",
                 };
-                for (const nr of [1, 2, 3, 4, 5, 6, 7, 8])
+                for (const nr of [3, 4, 5, 6, 7, 8])
                     await L.je(nr, async () => {
                         if (n < P.sprossen[nr].umfang.verlangt) return L.umfang(nr, n, zaehlWas);
                         L.leser(nr, FEHLT[nr], n);
