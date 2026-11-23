@@ -2846,7 +2846,9 @@
     // Spieler fort ist. Die Kosten hängen am Auge: Stände nur binnen nahM, die Ankunft an einem Lauf baut je Takt
     // höchstens zelleJeTakt Zellen. DER LEIB: eine Bachforelle (Salmo trutta, 0,3 m)
     // als Doppel-Keil (Oktaeder) der Ausdehnung groesse (x quer, y hoch, z längs; Farbe sRGB), tiefe = sein Anteil der
-    // Wassertiefe über dem Bett.
+    // Wassertiefe über dem Bett. DER FISCH FOLGT DEM PEGEL (front-leben, Karte 2 leben.wasser.netz S1: Fisch-Hub ≥ 0,8 ×
+    // Pegel-Hub): steigt der Spiegel um dh, steigt der Stand um tiefe × dh — mit 0,4 stand er in der unteren Säule und hob
+    // sich mit 0,38 des Pegels (GTX 5b36f69a); der Rücken bleibt eine Leib-Höhe unter dem Spiegel (stamm `_fischTiefeY`).
     var FISCH_GESETZ = Object.freeze({
         zelleM: 6,
         anteil: 0.55,
@@ -2855,7 +2857,7 @@
         haltMs: 1.6,
         glieder: [1, 4],
         truppM: [1.6, 0.9],
-        tiefe: 0.4,
+        tiefe: 0.85,
         tempoMs: 0.7,
         wendeRad: 3,
         pendelM: 0.3,
