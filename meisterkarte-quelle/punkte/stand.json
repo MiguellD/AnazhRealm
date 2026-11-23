@@ -18589,7 +18589,7 @@
   },
   "karte2.mensch.kultur.glaube": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.glaube#1 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#1 gtx: ROT: S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7 h · im Kultbau 0 · an ihm 13 · Soll des Tags 0/24 · 7 Tage 13/24/24/24/24/24/24 · Gläubige = alle 1365 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal an ddaf883d · karte2.mensch.kultur.glaube#2 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#2 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#3 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#3 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#4 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#4 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#5 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#5 gtx: ungemessen (R10) · karte2.mensch.kultur.glaube#6 radeon: ungemessen (R10) · karte2.mensch.kultur.glaube#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.glaube#1",
@@ -18605,10 +18605,10 @@
      "id": "karte2.mensch.kultur.glaube#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7 h · im Kultbau 0 · an ihm 13 · Soll des Tags 0/24 · 7 Tage 13/24/24/24/24/24/24 · Gläubige = alle 1365 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+     "sha": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
+     "grund": "ROT: S1 ROT an Gläubige im Kultbau 0 verfehlt ≥ 0.3 — Täter: der Tag der Bewohner (koerper-core tagesPlan) kennt keinen Gang in den Kultbau und keinen Festtag · Gläubige im Kultbau 0 (Soll ≥ 0.3) · Festtag ÷ Werktag 1 (Soll ≥ 3) · Umfang 3 (Soll ≥ 1 Glaube mit Kalender (sein Kultbau steht)) · Stunde 7 h · im Kultbau 0 · an ihm 13 · Soll des Tags 0/24 · 7 Tage 13/24/24/24/24/24/24 · Gläubige = alle 1365 Bewohner (kein Bekenntnis am Bewohner) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -19094,7 +19094,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19112,7 +19112,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ddaf883d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.1 s · S1 warf: /eval ohne Antwort binnen 40 s",
      "ungemessen": true,
      "beide": true
     },
@@ -37514,7 +37514,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 283,
+  "konsum": 284,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37682,10 +37682,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3339
+  "ohne": 3338
  },
  "kopfVoll": "ddaf883df80ffaeb188dba6714e6a55e3a239d06",
- "zeit": "2026-11-23T03:53:03.043Z",
+ "zeit": "2026-11-23T04:00:18.657Z",
  "vorher": "ddaf883d",
  "bilanz": {
   "gewinn": [],
