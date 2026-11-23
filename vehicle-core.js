@@ -2090,7 +2090,21 @@
                             P.kasten ? bodyMat : M.glass
                         )
                     );
-                } // Quarter (Basis auf Schulter) — der Kasten (`kasten`) trägt dort Blech: die Wand des Laderaums hinter der Fahrertür
+                    // der Kasten (`kasten`) trägt dort Blech: die Wand des Laderaums hinter der Fahrertür. Blech zeigt EINE Seite
+                    // (Glas beide) — dieselbe Fläche im Gegen-Umlauf zeigt die Wand auch von der anderen: von aussen an der
+                    // Wagenseite, an der das Feld nach innen blickt, und aus dem Laderaum (durch den Windschutz gesehen)
+                    if (P.kasten)
+                        g.add(
+                            bowedQuad(
+                                [xAtC2(gBr), gBr, sd * cwK],
+                                [dBx + 0.02, gBr, sd * cwK],
+                                [dBx + 0.02, gT, sd * cwK],
+                                [xAtC2(gT), gT, sd * cwK],
+                                -sd * 0.026,
+                                bodyMat
+                            )
+                        );
+                } // Quarter (Basis auf Schulter)
             if (hasRearQ)
                 for (const sd of [-1, 1]) {
                     const gBr = Math.max(gB, footR);
