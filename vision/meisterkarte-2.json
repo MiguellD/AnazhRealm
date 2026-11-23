@@ -2985,11 +2985,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 10,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 5.1,
-    "anteilKern": 0.5
+    "heute": 11,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 5.6,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -4654,8 +4654,8 @@
        "richter": "Stoffbilanz eines Bioms über 100 Spieljahre: Fehlbetrag ≤ 1 %; Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Kadaver wird gewittert, gefressen, sinkt (tetrapoda-core.js:168); gedüngt wird nur ein Tod von Spieler-Hand (stamm/kreatur-leben.js:918); Totholz und Konsolen-Pilze als zeitlose Gestalt (foundry-core.js:5155).",
      "alt": []
@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 9,
+    "heute": 11,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.6,
+    "anteilHeute": 5.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15782,7 +15782,7 @@
        "richter": "N = 100 Planeten: 0 Verstöße (Brennstoff + Oxidator + Zündtemperatur) in 1 000 Bränden"
       }
      ],
-     "heute": 0,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Außer Verbrennen nach Rothermel nichts; „phaseChange\"/„plastic\" je Stoff (bau-buch.js:2624-2626) sind Etiketten des Bauplans, keine Chemie.",
@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 8,
-    "kern": 3,
-    "kernDazu": 3,
+    "kern": 4,
+    "kernDazu": 4,
     "anteilHeute": 4.2,
-    "anteilKern": 1.6
+    "anteilKern": 2
    },
    "perspektiven": [
     {
@@ -17919,8 +17919,10 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
-     "kernSprossen": [],
+     "kern": 1,
+     "kernSprossen": [
+      3
+     ],
      "fuss": "kern",
      "beleg": "Mechanik von Sprosse 1 und 3 steht (wetter.K2 2/2), Wind-Leser halb (wetter.K5: 6 Leser im Code, Bild-Richter nie gefahren). Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen. — KARTE: Kern 2 — die Front im Licht (licht.K5) und die Nässe (wetter.K2) stehen je an beiden Geräten im Bild; als Glieder zählt jede für sich (Z3). Der Wind-Leser ist nur headless; Bild-Preis im Sturm an der Radeon nicht gemessen.",
      "alt": [
@@ -20088,12 +20090,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 61,
+  "heute": 64,
   "davonKopplungen": 33,
   "kern": 17,
   "kernDazu": 17,
-  "anteilHeute": 3.4,
-  "anteilKern": 0.7,
+  "anteilHeute": 3.6,
+  "anteilKern": 0.6,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20102,8 +20104,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 35,
-  "nachwache": 26
+  "beide": 37,
+  "nachwache": 27
  },
  "zusammengelegt": [
   {
