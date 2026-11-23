@@ -717,6 +717,10 @@ async function probeLeben(expected) {
         if (!S) throw new Error("keine Stadt am Messort stadt-voll");
         const R = A.PLAYER_WALL_RADIUS;
         const P = Object.getPrototypeOf(r);
+        // im Ort, den er allein hält (er ist eingefahren, sein Schlüssel hält ihn): dort begegnet ihm keiner — weder „neben der
+        // Spur“ noch das Ausscheren über dem Band zählen ihn (der Transporter parkt mit dem Wendekreis seiner Lenkung aus, 6,0 m
+        // am Schwerpunkt gegen den Bogen des Stadt-Gesetzes 5,5 m: 0,5–0,8 m neben der Linie, allein in der Wende)
+        const haeltAllein = (W) => W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
         const lage = (W) => {
             const f = W.entry._rideYaw || 0;
             return {
@@ -890,6 +894,7 @@ async function probeLeben(expected) {
                 leibOrte: [],
                 wagen: 0,
                 knapp: [Infinity],
+                aussch: [-Infinity],
                 ohne: 0,
                 ohneOrte: [],
                 quer: 0,
@@ -1161,8 +1166,7 @@ async function probeLeben(expected) {
                         )
                             m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, halter ? "halter" : Z.art, ...ort2(L[n])]);
                     }
-                    const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
-                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    if (!haeltAllein(W) && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
                     for (const b of S.liste)
                         if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z))
                             m.leib++ < 6 && m.leibOrte.push([b.seed + "|" + W.nr, k, ...ort2(L[n]), W.grund, b.weg ? "geht" : "steht"]); // prettier-ignore
@@ -1211,8 +1215,39 @@ async function probeLeben(expected) {
                     for (let b = a + 1, t; b < LA.length; b++) {
                         m.wagen += (t = abstand(LA[a][1], LA[b][1])) < -0.01;
                         if (t < m.knapp[0])
-                            m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
+                            m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund, ...[LA[a], LA[b]].map(([W, L]) => `${W.typ}:${W.zustand}:${(W.entry._fahr ? W.entry._fahr.speed : 0).toFixed(1)}:${(((W.entry._rideYaw || 0) * 180) / Math.PI).toFixed(0)}°:${L.hl.toFixed(2)}×${L.hw.toFixed(2)}@${L.x.toFixed(1)},${L.z.toFixed(1)}`)]; // prettier-ignore
                     }
+                // DAS AUSSCHEREN ÜBER DEM BAND (fahrzeug-gattungen 2): die Folge sieht einen anderen in ihrer Bahn, wenn er der Linie
+                // näher steht als die halbe Breite samt Ausscheren (`F.rund`) und Raum — so weit ragt der fahrende Leib im Bogen, glaubt
+                // sie, aus der Linie. Je fahrendem Wagen (außer im Ort, den er allein hält: `haeltAllein`) jede Ecke seines Rechtecks
+                // gegen das Stück seiner Linie um ihn: ragt sie weiter
+                // als hw + rund, frisst sie den Raum der Begegnung (`begegnungM`) — das weiteste beim Namen [über dem Band m, Wagen,
+                // Gattung, Probe, Ort, rund, Gier gegen die Linie °]. Bis hier galt der Leib als Tangente der Linie (l²·κ/2): der
+                // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr)
+                for (const [W, L] of LA) {
+                    const F = W.F;
+                    if (!F || !F.rund || !(W.entry._fahr && W.entry._fahr.speed > 0.5) || haeltAllein(W)) continue;
+                    let [i0, i1] = [F.i, F.i];
+                    while (i0 > 0 && F.bogen[i0] > F.s - W.hl - 2) i0--;
+                    while (i1 < F.pts.length - 1 && F.bogen[i1] < F.s + W.hl + 2) i1++;
+                    for (const [u, w] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+                        const [x, z] = [L.x + L.fx * W.hl * u + L.fz * W.hw * w, L.z + L.fz * W.hl * u - L.fx * W.hw * w];
+                        let [bq, bi, bt, rand] = [Infinity, -1, 0, false];
+                        for (let i = i0; i < i1; i++) {
+                            const [p, q] = [F.pts[i], F.pts[i + 1]];
+                            const [dx, dz] = [q.x - p.x, q.z - p.z];
+                            const t0 = ((x - p.x) * dx + (z - p.z) * dz) / (dx * dx + dz * dz || 1);
+                            const t = Math.max(0, Math.min(1, t0));
+                            const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
+                            if (d < bq) [bq, bi, bt, rand] = [d, i, Math.atan2(dx, dz), (i === i0 && t0 < 0) || (i === i1 - 1 && t0 > 1)];
+                        }
+                        // eine Ecke vor dem Anfang der Linie oder hinter ihrem Ende hat keinen Fuß auf ihr (die neue Linie beginnt am
+                        // Wagen, `_verkehrLinie`: sein Heck liegt hinter ihrem ersten Punkt) — der Abstand zum Endpunkt wäre seine Länge
+                        const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - F.rund[bi];
+                        if (ueber > m.aussch[0])
+                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +F.rund[bi].toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1)]; // prettier-ignore
+                    }
+                }
             }
             for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr"]) delete r[n];
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
@@ -1242,6 +1277,19 @@ async function probeLeben(expected) {
                 const [x, z] = [(c.x + b.x) / 2 + Math.cos(f) * q, (c.z + b.z) / 2 - Math.sin(f) * q];
                 ankunft = { d: +r._bewohnerNaechster(S, null, x, z).toFixed(2), K: KA, wagen: WA.nr };
             }
+            // DER MASS-ZWILLING (fahrzeug-gattungen 2): das Maß, mit dem der Verkehr rechnet (`W.hl` · `W.hw`), ist das der Gattung
+            // (vehicle-core `exportDrive.huelle` × Größe, hl = max(Bug, −Heck), `_verkehrMass`), je Wagen am Ende der Stunde; wer ein
+            // anderes trägt, beim Namen [Wagen, Gattung, hl im Verkehr, hl der Gattung, hw, hw]. Bis hier fror das Stellen das Mittel
+            // (Bug − Heck)/2 ein: das Rechteck trug den Bug nicht (4|8 um 23 Uhr: 0,17 m im Rechteck, ein Stoß am Leib)
+            const massZwilling = VK.wagen
+                .filter((X) => X.entry)
+                .map((X) => {
+                    const h = r._fahrzeugGesetzFor(X.entry).drive.huelle;
+                    const sc = Number.isFinite(X.entry.scale) ? X.entry.scale : 1;
+                    const soll = [Math.max(h.noseX, -h.tailX) * sc, h.bw * sc];
+                    return [X.nr, X.typ, +X.hl.toFixed(3), +soll[0].toFixed(3), +X.hw.toFixed(3), +soll[1].toFixed(3)];
+                })
+                .filter(([, , hl, soll, hw, sollW]) => Math.abs(hl - soll) > 0.001 || Math.abs(hw - sollW) > 0.001);
             // der Täter der längsten Fahrt beim Namen: sein Grund, sein Ort, wer vor ihm steht (Wagen oder Leib)
             const W = m.fahrtWer;
             const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
@@ -1260,6 +1308,9 @@ async function probeLeben(expected) {
                 endeOhne: VK.kp.filter((K) => K.ende && !K.wende).map((K) => [Math.round(K.x), Math.round(K.z)]),
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, bauOrte: m.bauOrte },
                 knapp: m.knapp,
+                ausscheren: Number.isFinite(m.aussch[0]) ? m.aussch : null,
+                ausscherenRand: A.VERKEHR.begegnungM,
+                massZwilling,
                 ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
                 ohneSchluessel: m.ohne,

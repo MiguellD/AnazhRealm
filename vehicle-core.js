@@ -2071,12 +2071,12 @@
                     lenC / 2,
                     0.005,
                     cwK,
-                    M.glass,
+                    P.kasten ? bodyMat : M.glass,
                     Math.min(0.085, cwK * 0.1),
                     angC,
                     true
                 )
-            ); // Heckscheibe gewölbt (konvex, dezenter)
+            ); // Heckscheibe gewölbt (konvex, dezenter) — der Kasten (`kasten`) trägt dort Blech: die Hecktür des Laderaums
             if (tueren < 4)
                 for (const sd of [-1, 1]) {
                     const gBr = Math.max(gB, footR);
@@ -2087,9 +2087,23 @@
                             [xAtC2(gT), gT, sd * cwK],
                             [dBx + 0.02, gT, sd * cwK],
                             sd * 0.026,
-                            M.glass
+                            P.kasten ? bodyMat : M.glass
                         )
                     );
+                    // der Kasten (`kasten`) trägt dort Blech: die Wand des Laderaums hinter der Fahrertür. Blech zeigt EINE Seite
+                    // (Glas beide) — dieselbe Fläche im Gegen-Umlauf zeigt die Wand auch von der anderen: von aussen an der
+                    // Wagenseite, an der das Feld nach innen blickt, und aus dem Laderaum (durch den Windschutz gesehen)
+                    if (P.kasten)
+                        g.add(
+                            bowedQuad(
+                                [xAtC2(gBr), gBr, sd * cwK],
+                                [dBx + 0.02, gBr, sd * cwK],
+                                [dBx + 0.02, gT, sd * cwK],
+                                [xAtC2(gT), gT, sd * cwK],
+                                -sd * 0.026,
+                                bodyMat
+                            )
+                        );
                 } // Quarter (Basis auf Schulter)
             if (hasRearQ)
                 for (const sd of [-1, 1]) {
@@ -4476,7 +4490,7 @@
             id: "guertel",
             lab: "Gürtellinie",
             min: 0.55,
-            max: 0.95,
+            max: 1.2,
             step: 0.01,
             grp: "GREENHOUSE",
             law: "Gürtel = Fenster-Unterkante",
@@ -4485,7 +4499,7 @@
             id: "dach",
             lab: "Dachhöhe",
             min: 1.05,
-            max: 1.75,
+            max: 2.1,
             step: 0.01,
             grp: "GREENHOUSE",
             law: "Scheiben-Neigung ∝ (Dach − Gürtel)",
@@ -4743,7 +4757,77 @@
             },
             fx: { sig: "brow", heck: "steil" },
         },
+        // DIE GATTUNG LIEFERWAGEN (fahrzeug-gattungen, rein additiv — Karte 2 mensch.fahrzeug.gestalt#1): der KASTEN, den ein
+        // Betrachter am Umriss von SUV und Kleinwagen trennt — die Kabine vorn (kurze Haube, Windschutz steil 0,3), eine Tür je
+        // Seite, dahinter die geschlossene Wand des Laderaums bis ans steile Heck (`kasten`: Seitenfeld und Hecktür tragen Blech,
+        // kein Glas), das Dach zwei Meter hoch über einem Gürtel auf Brusthöhe (die Regler-Bänder `dach` und `guertel` reichen
+        // dafür bis 2,1 und 1,2), kleine Räder bei mäßiger Bodenfreiheit; steif gefedert für die Last, schwacher Motor je Tonne.
+        // Derselbe Wagen MIT Glas rundum (vier Türen, Dach 1,75) las im Bild als zweiter SUV — die Linse A7 nennt den Zwilling.
+        transporter: {
+            kind: "vehicle",
+            lab: "Transporter",
+            s: {
+                leistung: 30, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.36,
+                radstand: 3.3,
+                spur: 1.66,
+                ueberhangV: 0.7,
+                ueberhangH: 0.95,
+                radR: 0.33,
+                fahrhoehe: 0.16,
+                guertel: 1.15,
+                dach: 2.0,
+                kabineMitte: 0.15,
+                kabineLaenge: 2.4,
+                tumblehome: 0.04,
+                taille: 0.02,
+                tueren: 2,
+                springRate: 112,
+                coke: 0.04,
+                grilleW: 0.42,
+                grilleDrop: 0.12,
+                lightH: 0.07,
+                lightDrop: 0.14,
+                roofArc: 0.008,
+                pillarCurve: 0.01,
+                pillarProfile: 0.006,
+                haunch: 0.01,
+                hoodArc: 0.02,
+                windshieldRake: 0.3,
+            },
+            fx: { sig: "blade", heck: "steil", kasten: true },
+        },
     };
+    // ── DIE FLOTTE (fahrzeug-gattungen, rein additiv): welche Gattungen eine Stadt fährt, ist Gesetz des Kerns — die Gattungen
+    // sind seine Fahrzeug-Rezepte (`GATTUNGEN`, nie eine Tafel im Wirt), ihr Anteil am Bestand die Zeile `FLOTTE` (Größenordnung
+    // des Pkw-Bestands nach Segment: Klein-/Kompaktwagen gut ein Drittel, SUV ein Viertel, Mittelklasse ein Fünftel, Transporter
+    // ein Zehntel, Sportwagen wenige Prozent). `flotte(n, same)` legt n Wagen nach dem größten Rest auf die Anteile und
+    // mischt die Folge mit dem Samen der Stadt — dieselbe Stadt, dieselbe Flotte.
+    // Leser: der Verkehr der Siedlung (`_verkehrAnlegen`), der Vorrat der Platte (`_foundryLibraryConfig`).
+    const GATTUNGEN = Object.keys(PRESETS).filter((k) => PRESETS[k].kind === "vehicle");
+    const FLOTTE = { kompakt_fwd: 0.34, suv: 0.24, limousine: 0.18, transporter: 0.12, gt: 0.07, supersport: 0.05 };
+    function flotte(n, same) {
+        n = Math.max(0, Math.floor(n));
+        const ids = GATTUNGEN.filter((k) => FLOTTE[k] > 0);
+        const sum = ids.reduce((a, k) => a + FLOTTE[k], 0);
+        const roh = ids.map((k) => (n * FLOTTE[k]) / sum);
+        const zahl = roh.map(Math.floor);
+        let rest = n - zahl.reduce((a, b) => a + b, 0);
+        const folge = ids.map((_, i) => i).sort((a, b) => roh[b] - zahl[b] - (roh[a] - zahl[a]) || a - b);
+        for (let j = 0; rest > 0; j++, rest--) zahl[folge[j % folge.length]]++;
+        const out = [];
+        ids.forEach((k, i) => {
+            for (let c = 0; c < zahl[i]; c++) out.push(k);
+        });
+        let h = (same >>> 0) ^ 0x9e3779b9;
+        for (let i = out.length - 1; i > 0; i--) {
+            h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+            h = Math.imul(h ^ (h >>> 12), 0x297a2d39) >>> 0;
+            const j = ((h ^ (h >>> 15)) >>> 0) % (i + 1);
+            [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
+    }
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
@@ -4852,9 +4936,24 @@
         if (ref == null) return P[k] != null ? P[k] : E.s[k]; // ein Maß nur der Zeit (Vorderrad, Verdeck): das Wort des Rezepts gilt
         return E.s[k] + (P[k] != null && ref != null ? (P[k] - ref) * E.erbe : 0);
     }
+    // DIE FORM EINES P — der EINE Durchgang jedes Baus, der Fahr-Physik und des Labors: erst die Zeit, dann das Gesetz der Kabine.
+    function epocheForm(P) {
+        return kabineGesetz(epocheZeit(P));
+    }
+    // DAS GESETZ DER KABINE (fahrzeug-gattungen): der Gürtel bleibt `GLAS_MIN` unter dem Dach — ein Fenster hat Höhe. Die
+    // Bänder der Regler sind je Art absolut (`guertel` bis 1,2 für den Kasten, `dach` ab 1,05 für den Sportwagen), erst ihre
+    // Beziehung trägt den Bau: bei Gürtel = Dach teilt die Kabine durch null (der GT am Rand 1,2: 7 668 nicht-endliche
+    // Werte), darüber stülpt sie sich um. Das Dach führt, der Gürtel folgt. 0,10 m ist die kleinste Glas-Höhe, die die
+    // Bänder vor dem Kasten zuließen (1,05 − 0,95) — jeder Bau jener Bänder bleibt byte-gleich; hält die Beziehung, geht
+    // DASSELBE Objekt durch. Sie steht im EINEN Durchgang jedes P (Bau, Fahr-Physik, Labor), nie an einem Aufrufer.
+    const GLAS_MIN = 0.1;
+    function kabineGesetz(P) {
+        if (!P || !(P.guertel > P.dach - GLAS_MIN)) return P;
+        return Object.assign({}, P, { guertel: P.dach - GLAS_MIN });
+    }
     // P (gemergt) → P der Epoche. Ohne `epoche` und auf „heute" genau DASSELBE Objekt (byte-gleich); sonst ein neues, das
     // `epoche` VERBRAUCHT hat (idempotent: ein geformtes P formt nie zweimal) und seine Stufe beim Namen trägt (`epocheStufe`).
-    function epocheForm(P) {
+    function epocheZeit(P) {
         if (!P || P.epoche == null || !Number.isFinite(+P.epoche)) return P;
         const n = EPOCHE_GESETZ.length - 1;
         const e = Math.max(0, Math.min(n, +P.epoche));
@@ -5024,6 +5123,10 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
+        // die Flotte (fahrzeug-gattungen, rein additiv): die Gattungen, ihr Anteil am Bestand, die Wagen einer Stadt
+        GATTUNGEN: GATTUNGEN,
+        FLOTTE: FLOTTE,
+        flotte: flotte,
         PARAMS_BY_KIND: { vehicle: PARAMS },
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
         STAMMBAUM: { studio: "Garage", arten: { vehicle: "Fahrzeuge" } },

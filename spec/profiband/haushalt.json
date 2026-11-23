@@ -287,7 +287,7 @@
                 400,
                 400
             ],
-            "imBild": { "bauSatz": 0.02, "f:(kompakt_fwd|limousine|suv)": 0.005 },
+            "imBild": { "bauSatz": 0.02, "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": 0.005 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
@@ -409,7 +409,7 @@
         "bewohner": { "luma": [10, 245] },
         "portal-membran": { "luma": [10, 250] },
         "fern-ring": { "luma": [15, 245] },
-        "f:(kompakt_fwd|limousine|suv)": { "luma": [5, 250] }
+        "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": { "luma": [5, 250] }
     },
     "klassen": [
         {

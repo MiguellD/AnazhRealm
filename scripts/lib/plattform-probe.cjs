@@ -381,11 +381,14 @@ function goldenVergleich(golden, actual) {
             bad.push(`${k}: sha256 weicht ab (${g.sha256.slice(0, 12)}… != ${a.sha256.slice(0, 12)}…)`);
         else if (g.objects !== a.objects || g.vertices !== a.vertices) bad.push(`${k}: objects/vertices weichen ab`);
     }
+    // ein Fall des Ist OHNE Golden (ein Rezept des Kerns, das niemand einfror) steht beim Namen — die Zahl der Fälle allein
+    // nennt ihn nicht, und eine Hand-Liste der Linse sah ihn nie (der Transporter fuhr als sechste Gattung ohne Byte-Beweis)
+    for (const k in actual) if (!(k in golden.cases)) bad.push(`${k}: fehlt im Golden (ohne Byte-Beweis)`);
     return bad;
 }
 
 // DER SELBST-TEST des Golden-Vergleichs (die Linse ist nicht vakuös) gegen das Ist selbst (S1 Wände: er misst auch auf einem
-// roten Stand, was er misst): ein gekipptes sha256 und eine objects-Drift am ersten Fall werden rot.
+// roten Stand, was er misst): ein gekipptes sha256, eine objects-Drift am ersten Fall und ein Fall ohne Golden werden rot.
 function goldenSelbsttest(actual, check) {
     const k0 = Object.keys(actual)[0];
     const { jsonKlon } = require("./welt-boot.cjs");
@@ -395,6 +398,9 @@ function goldenSelbsttest(actual, check) {
     const rot = (golden, ist, was) => goldenVergleich(golden, ist).some((s) => s.includes(was));
     check("SELBST-TEST: korruptes Golden (sha256) wird erkannt", rot({ cases: t1 }, actual, "sha256"));
     check("SELBST-TEST: objects-Drift wird erkannt", rot({ cases: actual }, t2, "objects"));
+    const t3 = jsonKlon(actual);
+    delete t3[k0];
+    check("SELBST-TEST: ein Fall ohne Golden steht beim Namen", rot({ cases: t3 }, actual, `${k0}: fehlt im Golden`));
 }
 
 // DAS IST EINES VERTRAGS (porta · schmiede · vehicle): jeder Fall doppelt gebaut und gefingert, je Schlüssel der Abdruck des
