@@ -25669,7 +25669,7 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal",
      "sha": "30e01e758cff5c284a4cd591b5dfce7e3664518e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-bewohner.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -35994,7 +35994,7 @@
   },
   "karte2.same.physik.reaktion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +8) · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-satz.js) · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#1 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.same.physik.reaktion#2 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#2 gtx: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) · karte2.same.physik.reaktion#3 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#3 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#4 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#4 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#5 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#5 gtx: Station seit der Messung geändert · karte2.same.physik.reaktion#6 radeon: Station seit der Messung geändert · karte2.same.physik.reaktion#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.reaktion#1",
@@ -36012,7 +36012,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +8)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -36032,7 +36032,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/siedlung-satz.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -37658,8 +37658,8 @@
   "ohne": 3384
  },
  "kopfVoll": "4019a2ad0565310f56cfc461672c173d8ba8e2b2",
- "zeit": "2026-11-22T23:56:04.319Z",
- "vorher": "c1236fa8",
+ "zeit": "2026-11-23T00:03:52.458Z",
+ "vorher": "4019a2ad",
  "bilanz": {
   "gewinn": [],
   "fall": [],
