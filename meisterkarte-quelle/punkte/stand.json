@@ -28258,7 +28258,7 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) · karte2.planet.kopplung.gegenwart#6 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.gegenwart#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#2 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs) · karte2.planet.kopplung.gegenwart#6 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
@@ -28369,7 +28369,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
      "ungemessen": true
     }
    ]
@@ -28876,7 +28876,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) · karte2.planet.kopplung.wetter-welt#2 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#3 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) · karte2.planet.kopplung.wetter-welt#3 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) · karte2.planet.kopplung.wetter-welt#2 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#3 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) · karte2.planet.kopplung.wetter-welt#3 gtx: Station seit der Messung geändert — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -28935,7 +28935,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5b36f69a: die Fahrt riss 1800 s (der Rest 355 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.bahn-klima#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 5b36f69a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-schlange-pruef' nach 2716 s Warten) — ungemessen",
      "ungemessen": true
     },
     {
@@ -37736,8 +37736,8 @@
   "ohne": 3306
  },
  "kopfVoll": "023be8496556477263f61926788390d0777fe987",
- "zeit": "2026-11-23T19:10:15.920Z",
- "vorher": "a615ab5d",
+ "zeit": "2026-11-23T20:31:37.681Z",
+ "vorher": "023be849",
  "bilanz": {
   "gewinn": [],
   "fall": [],
