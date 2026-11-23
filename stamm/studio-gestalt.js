@@ -362,6 +362,9 @@ class AnazhRealm_studio_gestalt {
         // WELLE L (Q13 F-D8) — das RAD reist ans Mesh (Umschlag out.rad, additiv): die Gestalt der Ecke 0 nabenrelativ,
         // `raeder` nennt jede Ecke — der Flatten setzt es je Ecke als Instanz, der Ritt dreht und lenkt sie.
         if (m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length) mesh.userData.__rad = m.rad;
+        // DAS TEIL DER MASCHINE (brunnen-haspel, Umschlag out.welle, additiv): kurbel · seil · eimer der Haspel — der Flatten hebt
+        // es aufs Leaf, die Instanz zeichnet außerhalb von Satz und Bündel, `_haspelSetzen` setzt seine Matrix.
+        if (m.welle && typeof m.welle.teil === "string") mesh.userData.__welle = m.welle;
         // DER SCHATTEN-TEIL (S3, Umschlag out.teil, additiv): die Baum-L1 liefert ihren Wurf als eigenes Teil
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
@@ -1439,6 +1442,8 @@ class AnazhRealm_studio_gestalt {
                 localMatrix: I,
                 // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                 tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
+                // brunnen-haspel — das Teil der Maschine (kurbel · seil · eimer): eigene Instanz, der Wirt setzt seine Matrix
+                welle: child.userData && child.userData.__welle ? child.userData.__welle : undefined,
                 // Welle L (Q13 F-D8) — das Rad der Ecke 0 (nabenrelativ); unten je Ecke als Instanz gesetzt
                 rad: child.userData && child.userData.__rad ? child.userData.__rad : undefined,
                 sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes

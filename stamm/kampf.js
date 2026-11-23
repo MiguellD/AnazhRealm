@@ -2222,6 +2222,15 @@ class AnazhRealm_kampf {
         this.tryMouseBreak(p._mausVerb || undefined);
     }
 
+    // DAS VERB AM BAU (brunnen-haspel): eine Maschine unter dem Fadenkreuz (ein Bau, dessen Stufe Teile einer Welle zeichnet,
+    // `_haspelVon`: die Haspel des Ziehbrunnens) wird gekurbelt; DIE GLUT AN EINER LADUNG (same.physik.reaktion#2): wer Glut in
+    // der Hand hält und auf einen Bau zielt, dessen Stoff q trägt (`_ladungTeile`), legt sie an ihn — der Funke an seiner Hülle
+    // setzt ihn um (`_brandFangen`); jeder andere Bau fällt dem Abbau.
+    _bauVerb(entry) {
+        if (this._haspelVon(entry)) return "kurbeln";
+        return this._ladungTeile(entry).length && this._fackelGlut() ? "zuenden" : "abbau";
+    }
+
     // DIE MAUS-ABSICHT (Welle L 06.10., Klasse Q9) — der EINE Dispatcher des linken Klicks. Beim DRÜCKEN liest er das
     // Ziel am Fadenkreuz und das gehaltene Gerät: Kreatur in Nahkampf-Weite vom SCHULTERGELENK (nie von der Kamera: in
     // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken (ein
@@ -2299,10 +2308,8 @@ class AnazhRealm_kampf {
                 if (dG <= klinge) geraetPick = { geraet: pick.entry, point: pick.point };
                 else zuWeit = { d: dG, klinge };
             } else if (pick && pick.entry) {
-                // DIE GLUT AN EINER LADUNG (same.physik.reaktion#2): wer Glut in der Hand hält und auf einen Bau zielt, dessen
-                // Stoff q trägt (`_ladungTeile`), legt sie an ihn — der Funke an seiner Hülle setzt ihn um (`_brandFangen`); jeder
-                // andere Bau fällt dem Abbau
-                verb = this._ladungTeile(pick.entry).length && this._fackelGlut() ? "zuenden" : "abbau";
+                // das Verb des Baus (`_bauVerb`): kurbeln an einer Maschine, zünden an einer Ladung, sonst der Abbau
+                verb = this._bauVerb(pick.entry);
                 ort = pick.point;
             } else if (this._fackelGlut()) {
                 // DIE FACKEL (same.physik.feuer S1): wer Glut in der Hand hält, legt sie an den Boden unter dem Fadenkreuz — vor
@@ -2322,6 +2329,8 @@ class AnazhRealm_kampf {
             }
             const F = ort ? this._fadenkreuzStrahl() : null;
             inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
+            // die Kurbel greift nur die Hand: jenseits der Arm-Länge fällt der Klick auf den Bau dem Abbau zu, wie bis hier
+            if (verb === "kurbeln" && !inArm) verb = "abbau";
             const tier = pmB && !inArm && !geraetPick ? this._kampfKegelZiel(R, klinge) : null;
             if (tier) {
                 verb = "hieb";
@@ -2353,6 +2362,7 @@ class AnazhRealm_kampf {
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
+        if (verb === "kurbeln") return this._kurbeln(pick.entry);
         if (verb === "abbau") return this._strikeArchitecture(pick.entry, pick.point);
         if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
         if (verb === "zuenden") return this._fackelZuenden(inArm ? ort : null);

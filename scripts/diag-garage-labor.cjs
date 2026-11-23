@@ -41,6 +41,8 @@ function laborVerdict(m) {
     if (m.presetLeck?.length) out.push(`preset ${m.presetLeck}`);
     if (m.reglerLeck?.length) out.push(`regler ${m.reglerLeck}`);
     if (m.kulturAb !== true) out.push("kultur bleibt");
+    // G12 Labor = Welt: die Probefahrt liest den Motor der Gattung — am langen Radstand fällt die Leistung je Masse
+    if (!(m.formMotor?.[1] < m.formMotor?.[0])) out.push(`form die Probefahrt zieht am langen Radstand gleich: aLeist ${m.formMotor}`);
     if (m.schilderFahrt !== 0 || !(m.schilderWerkstatt > 0)) out.push(`lehren ${m.schilderFahrt} in der Fahrt, ${m.schilderWerkstatt} danach`);
     // G10 der Schirm gehört dem Wagen: im Standard ≤ 15 % Leiste und kein Schild am Wagen; der Knopf „Lehren" bringt Tafel und
     // Schilder; „Leicht" halbiert die Auflösung und lässt den Schatten-Pass ruhen (die Bildzeit steht als Zahl im Befund)
@@ -135,12 +137,48 @@ function streckeVerdict({ soll, r, gleich }) {
     if (!gleich) out.push("wiederholung: zwei Läufe, zwei Spuren");
     return out;
 }
+// ── G12 DIE FORM TRÄGT DEN MOTOR IHRES REZEPTS (mensch-zahlen, Karte 2 mensch.fahrzeug.form#1; Node — der Kern, den Garage und
+// Welt lesen): je Stufe der Zeit × Gattung das Rezept und sein schwerer Stempel (Radstand, Spur und Dach am oberen Rand ihrer
+// Regler-Zeile) im EINEN Fahr-Schritt, 6 s Vollgas auf der Ebene. Der Stempel baut die Form, nie den Motor: die Leistung [W] =
+// aLeist × Masse bleibt die des Rezepts (vehicle-core carPhys `motor`), und die schwere Form fährt langsamer — mindestens mit der
+// halben Wirkung des Leistungs-Gesetzes v ∝ √(W ÷ m). Befund 22.11. (GTX 1050, Wiese, GT): Masse × 1,896, Tempo × 1,0009 — die
+// Leistung je Masse war fest (kW/t), jede Form zog gleich; das Gespann teilte seine Kraft schon durch die Masse.
+function formMessen(VC) {
+    const zeile = Object.fromEntries(VC.PARAMS_BY_KIND.vehicle.map((z) => [z.id, z])),
+        schwer = Object.fromEntries(["radstand", "spur", "dach"].map((k) => [k, zeile[k].max])),
+        f = {};
+    const sechs = (P, g) => {
+        const G = VC.fahrGesetz(VC.exportDrive(P, g)), z = VC.fahrZustand(0, 0, 0), eben = () => 0;
+        VC.fahrStand(z, G, eben, 0);
+        for (let i = 0; i < 360; i++) VC.fahrSchritt(z, { throttle: 1 }, G, eben, 1 / 60);
+        return z.speed;
+    };
+    VC.EPOCHE_GESETZ.forEach(({ id }, epoche) => {
+        for (const g in VC.PRESETS) {
+            const L = { ...VC.presetPatch(g), epoche }, S = { ...L, ...schwer },
+                [dL, dS] = [VC.exportDrive(L, g), VC.exportDrive(S, g)];
+            f[`${id} ${g}`] = { masseQ: dS.mass / dL.mass, wattQ: (dS.zweispur.aLeist * dS.mass) / (dL.zweispur.aLeist * dL.mass), tempoQ: sechs(S, g) / sechs(L, g) };
+        }
+    });
+    return f;
+}
+function formVerdict(f) {
+    const out = [], r3 = (x) => Math.round(x * 1000) / 1000;
+    for (const [k, { masseQ, wattQ, tempoQ }] of Object.entries(f)) {
+        if (!(masseQ > 1.05)) out.push(`form ${k}: der Stempel wiegt nicht (Masse × ${r3(masseQ)})`);
+        else if (!(Math.abs(wattQ - 1) < 1e-9)) out.push(`form ${k}: der Stempel baut einen anderen Motor ein (Leistung × ${r3(wattQ)} bei Masse × ${r3(masseQ)})`);
+        else if (!(tempoQ <= (1 + 1 / Math.sqrt(masseQ)) / 2)) out.push(`form ${k}: die schwere Form zieht fast gleich (Tempo × ${r3(tempoQ)} bei Masse × ${r3(masseQ)})`);
+    }
+    return out;
+}
 // DIE KERN-MUTANTEN (vm, ohne Browser; der EINE Lader `kernAusText`): je Klasse ein eingeschmuggelter Täter im echten Kern, die
 // Linse nennt ihn ROT — G9: der Körper der Zeit ersetzt den Lack · EIN Antrieb für jede Zeit · die Gestalt der Zeit ohne den
 // Schnitt der Flanke · EIN Rezept für jede Gattung; G11: die Bahn ohne Überhöhung · die Normalkraft ohne v·ω · der Zufall in der
-// Prüffahrt (zwei Läufe, zwei Spuren; bis w12-fahrzeug-decke kippte der Selbsttest dafür nur das Urteil-Flag)
+// Prüffahrt (zwei Läufe, zwei Spuren; bis w12-fahrzeug-decke kippte der Selbsttest dafür nur das Urteil-Flag); G12: der Motor
+// wächst mit der Form (der Stand vor mensch-zahlen)
 const G9 = (K) => epocheVerdict(epocheMessen(K.__vehicleCore)),
-    G11 = (K) => streckeVerdict(streckeMessen(K.__vehicleCore, K.__gelaendeCore));
+    G11 = (K) => streckeVerdict(streckeMessen(K.__vehicleCore, K.__gelaendeCore)),
+    G12 = (K) => formVerdict(formMessen(K.__vehicleCore));
 const MUTANTEN = [
     ["vehicle", "epocheKoerper(E.koerper, lack) : lack", "epocheStoff(E.koerper) : lack", /^farbe zukunft/, G9],
     ["vehicle", "            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/, G9],
@@ -149,6 +187,7 @@ const MUTANTEN = [
     ["gelaende", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/, G11],
     ["vehicle", "const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/, G11],
     ["vehicle", "boden, dt);\n            t += dt;", "boden, dt);\n            z.x += Math.random() * 1e-3;\n            t += dt;", /^wiederholung/, G11],
+    ["vehicle", "        const ph = carPhys(P, Pm);", "        const ph = carPhys(P);", /^form heute gt: der Stempel baut einen anderen Motor ein/, G12],
 ];
 const kerne = () => ({ __vehicleCore: studioKern("vehicle-core.js", "__vehicleCore"), __gelaendeCore: studioKern("gelaende-core.js", "__gelaendeCore") });
 
@@ -160,7 +199,7 @@ hauptLauf(async () => {
         const ansicht = Object.fromEntries(ANSICHTEN.map((n) => [n, [60, 0.2]]));
         const schirm = { anteil: 10.8, schilder: 0, lehrenSchilder: 5, lehrenTafel: true },
             leicht = { voll: 186, leicht: 46, pr: 0.5, schatten: false, leinwand: true };
-        const gesund = { geladen: true, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, kulturAb: true, schilderFahrt: 0, schilderWerkstatt: 6, ansicht, schirm, leicht };
+        const gesund = { geladen: true, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, kulturAb: true, formMotor: [78.2, 68.9], schilderFahrt: 0, schilderWerkstatt: 6, ansicht, schirm, leicht };
         check("Selbst-Test 0: gesundes Labor == 0 Täter", !laborVerdict(gesund).length);
         for (const [soll, bruch] of [
             ["hud", { hudDisplay: "block" }],
@@ -168,6 +207,7 @@ hauptLauf(async () => {
             ["preset", { presetLeck: ["grip"] }],
             ["regler", { reglerLeck: ["springRate"] }],
             ["kultur", { kulturAb: false }],
+            ["form", { formMotor: [78.2, 78.2] }],
             ["lehren", { schilderFahrt: 6 }],
             ["lehren", { schilderWerkstatt: 0 }],
             ["seite", { ansicht: { ...ansicht, seite: [40, 0] } }],
@@ -202,8 +242,12 @@ hauptLauf(async () => {
     const strecke = streckeMessen(K.__vehicleCore, K.__gelaendeCore),
         v11 = streckeVerdict(strecke);
     check("G11 die Prüfstrecke (die fliegende Runde)", !v11.length, `${JSON.stringify(strecke.r)} ${v11.join(" · ")}`);
+    const form = formMessen(K.__vehicleCore),
+        v12 = formVerdict(form),
+        tq = Object.values(form).map((x) => x.tempoQ);
+    check("G12 die Form trägt den Motor ihres Rezepts (6 s Vollgas, Rezept gegen schweren Stempel)", !v12.length, `${tq.length} Stufe × Gattung, Tempo × ${Math.min(...tq).toFixed(3)}–${Math.max(...tq).toFixed(3)} ${v12.slice(0, 4).join(" · ")}`);
     if (process.argv.includes("--epoche")) {
-        urteilEnde(errs.length, `\n❌ ROT — ${[...v9, ...v11].join(" · ")}`, "\n✅ GRÜN — die Zeit-Achse und die Prüfstrecke der Garage.");
+        urteilEnde(errs.length, `\n❌ ROT — ${[...v9, ...v11, ...v12].join(" · ")}`, "\n✅ GRÜN — die Zeit-Achse, die Prüfstrecke und der Motor des Rezepts.");
         return;
     }
 
@@ -278,6 +322,15 @@ hauptLauf(async () => {
                     const s = { ...VC.DEFAULT_P, ...VC.presetPatch(pid), ...(kid && VC.CULTURES[kid].fx), epoche: 2 };
                     return Object.keys({ ...s, ...P }).filter((k) => s[k] !== P[k]).map((k) => `${k} ${P[k]}≠${s[k]}`);
                 };
+            // G12 am Labor: das Fahr-Gesetz der Probefahrt (`fahrGesetzLab`) am Rezept und am längsten Radstand seiner Zeile
+            const lang = VC.PARAMS_BY_KIND.vehicle.find((z) => z.id === "radstand").max,
+                motorAm = (rs, alt = P.radstand) => {
+                    P.radstand = rs;
+                    const a = fahrGesetzLab().aLeist;
+                    P.radstand = alt;
+                    return a;
+                },
+                formMotor = [motorAm(P.radstand), motorAm(lang)];
             P.epoche = 2;
             knopf(VC.PRESETS.supersport).click();
             knopf(VC.PRESETS.gt).click();
@@ -287,7 +340,7 @@ hauptLauf(async () => {
             presetLeck.push(...leck("limousine", "toro"));
             knopf(VC.CULTURES.toro).click(); // zweiter Klick: ab
             const reglerLeck = [...document.querySelectorAll("#ctl .h-wert")].filter((w) => /NaN/.test(w.textContent)).map((w) => w.closest("[data-regler]").dataset.regler);
-            return { presetLeck, reglerLeck, kulturAb: !leck("limousine").length && !knopf(VC.CULTURES.toro).classList.contains("on") };
+            return { presetLeck, reglerLeck, formMotor, kulturAb: !leck("limousine").length && !knopf(VC.CULTURES.toro).classList.contains("on") };
         })
     );
     // G8: die Ansicht je Modus am Wagen der Zukunft — das Bild mit gegen ohne Wagen (160×90), die Befehle des Bilds. Die Pixel
@@ -362,11 +415,12 @@ hauptLauf(async () => {
         ["G3 der Tacho zeigt km/h", "tacho", `${m.tachoAnzeige} bei ${m.tachoV} m/s`],
         ["G4 P == DEFAULT_P + Preset + Kultur, Regler == Modell", "preset regler", [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ")],
         ["G5 die Kultur lässt sich abwählen", "kultur"],
+        ["G12 die Probefahrt fährt den Motor der Gattung (Labor = Welt)", "form", `aLeist ${m.formMotor}`],
         ["G6 keine Lehren in der Probefahrt, zurück in der Werkstatt", "lehren", `${m.schilderFahrt} · ${m.schilderWerkstatt}`],
         ["G8 die Ansicht zeigt den Wagen je Modus (≥ 1,5 % des Bildes) in ≤ 120 Befehlen", ANSICHTEN.join(" "), m.ansicht],
         ["G10 der Schirm gehört dem Wagen: ≤ 15 % Leiste, Lehren auf Knopf, Leicht halbiert die Auflösung und lässt den Schatten ruhen", "schirm lehren-knopf leicht", `${JSON.stringify(m.schirm)} ${JSON.stringify(m.leicht)}`],
     ])
         check(name, !v.some((t) => frei.split(" ").includes(t.split(" ")[0])), detail);
     check("G7 die Probefahrt atmet das Tempo wie der Ritt", !v7.length, `${JSON.stringify(m.tempo)} ${v7}`);
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${[...v, ...v7, ...v9, ...v11].join(" · ")}`, "\n✅ GRÜN — die Garage: Maus, HUD, Tacho, Preset, Kultur, Lehren, Tempo, die Ansicht in jedem Modus und die Zeit-Achse.");
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${[...v, ...v7, ...v9, ...v11, ...v12].join(" · ")}`, "\n✅ GRÜN — die Garage: Maus, HUD, Tacho, Preset, Kultur, Lehren, Tempo, die Ansicht in jedem Modus, die Zeit-Achse und der Motor des Rezepts.");
 });
