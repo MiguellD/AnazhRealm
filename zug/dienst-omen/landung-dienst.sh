@@ -484,12 +484,15 @@ fahre_teil() {
 # y  die Runde springt während der Liste (runde.cjs sprung des Koordinators), nachdem der Stand der Station gefragt hat: der Blick ohne
 #    Schreiben (runde_blick) sieht es, Ende an der nächsten Grenze, EINMAL „RUNDE SPRANG auf <kopf8>“, der nächste Takt misst am neuen
 #    Kopf. Mutanten dazu: sprung-blind · blick-blind
+# z  K1 in der Reihe der Landungen (23.11.): die jüngste Anspruchs-Zeile zuerst, in der Zeile ihre Reihe, „am längsten nicht gemessen“ nur
+#    bei Gleichstand. Mutante dazu: zeile-blind · z2  eine beanspruchte Sprosse, die die Karte schon als Punkt trägt, steht nirgends in
+#    der Liste (die Front ist die eine Stelle). Mutante dazu: gebucht-zieht
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter: die Runde fährt vor dem, der vor ihr kam) ·
 #    halt-rm (halt() löscht die Flagge) · nur-schloss · tafel-blind · tafel-alle — alle ROT.
 # nur <fall> — das Tor je Fall: ST_NUR=<fall,fall> fährt nur diese (der Sandkasten und die Attrappen immer; „a“ trägt k, „l“ trägt m);
 # je gefahrenem Fall eine Zeile „ZEIT <fall> <s> s“. Die Runden-Fälle bauen aufeinander (a b c f · n o p q · s w): allein urteilen nur
-# die ohne Vorgänger (d e g h i j l r t u x y). `nur -` schließt die letzte Zeit.
+# die ohne Vorgänger (d e g h i j l r t u x y z z2). `nur -` schließt die letzte Zeit.
 nur() {
     [ -n "$ST_ZF" ] && echo "ZEIT $ST_ZF $((SECONDS - ST_ZT)) s"
     ST_ZF= ST_ZT=$SECONDS
@@ -614,6 +617,8 @@ STUMMEL
         schwanz-immer) main_weiter() { return 0; } ;; # der Schwanz trägt, auch wenn main nicht weiter ist (die Runde misst ihn nie)
         schwanz-nie) main_weiter() { return 1; } ;; # die Regel bis 21.11.: der Schwanz misst an jedem Kopf neu
         front-blind) sed "s|^        ids = ids.filter((id) => F.has(id));$|        ;|" "$RUNDE_CJS" >"$X/runde-alt.cjs"; RUNDE_CJS=$X/runde-alt.cjs ;; # die Regel bis 21.11. 15:45: die ganze Tafel, auch hinter der Front
+        zeile-blind) sed 's|^    const vorn = \[\.\.\.k1(je\.K1),|    const vorn = [...ord(je.K1),|' "$RUNDE_CJS" >"$X/runde-alt.cjs"; RUNDE_CJS=$X/runde-alt.cjs ;; # die Regel bis 23.11.: K1 nach „am längsten nicht gemessen“, die jüngste Landung hinten
+        gebucht-zieht) sed "s|^        ids = ids.filter((id) => F.has(id));$|        ids = ids.filter((id) => F.has(id) \|\| stelle.has(id));|" "$RUNDE_CJS" >"$X/runde-alt.cjs"; RUNDE_CJS=$X/runde-alt.cjs ;; # ein Anspruch holt jede Sprosse, auch die schon gebuchte
         tafel-alle) karte2_nur() { [ -f "$PM/vision/richter-tafel.json" ] && grep -o '"station":"[^"]*"' "$PM/vision/richter-tafel.json" | cut -d'"' -f4 | awk '!s[$0]++' | paste -sd, -; } ;;
     esac
     # a — eine Landung nach Station 2, ein Macher nach Station 4: die Liste fährt AM KOPF DER RUNDE zu Ende, nie am neuen main
@@ -1142,13 +1147,35 @@ ATTRAPPE
         echo "OK y  Sprung des Koordinators nach Station 2 (${y1:0:8} → ${y2:0:8}): die Liste endete an der nächsten Grenze („RUNDE SPRANG auf ${y2:0:8}“), 2 am alten Kopf, keine mehr; der nächste Takt maß 8 von 8 am neuen"
     else echo "ROT y  Sprung: am alten Kopf $w1 (Soll 2), Zeile „RUNDE SPRANG auf ${y2:0:8}“ $w2× (Soll 1), am neuen Kopf $w (Soll 8, eindeutig $(eindeutig "$y2"))"; fi
     fi
+    if nur z; then
+    # z — K1 IN DER REIHE DER LANDUNGEN (Koordinator 23.11. 03:50; Runde 9 am ddaf883d: bevoelkerung#1 der jüngsten Landung auf Platz 23
+    # von 23 K1): drei Anspruchs-Zeilen alt · mitte · neu, z5 in alt UND mitte (die jüngere zählt); zuletzt gemessen z4 (23.11.) > z2 > z5
+    # > z3 > z1 (19.11.) — die alte Reihe hätte z1,z3,z5,z2,z4. Soll: neu z4,z2 · mitte z5 · alt z3,z1 · dann K2 z6. Mutante: zeile-blind
+    local zz
+    echo '{"zeit":"2026-11-19T01:00:00Z","je":{"z1":{"gruen":true,"zeit":"2026-11-19T01:00:00Z"},"z3":{"gruen":false,"grund":"ROT: 0,4 verfehlt","zeit":"2026-11-20T01:00:00Z"},"z5":{"gruen":true,"zeit":"2026-11-21T01:00:00Z"},"z2":{"gruen":false,"grund":"S2 · ROT Leser fehlt: kein Leser","zeit":"2026-11-22T01:00:00Z"},"z4":{"gruen":true,"zeit":"2026-11-23T01:00:00Z"}}}' >"$MESSUNG_DIR/dddddddd-gtx.json"
+    printf '# zug/anspruch.txt\nw29-alt z3,z1,z5\nw29-mitte z5 # Kommentar\n\nw29-neu z4,z2\n' >"$X/anspruch-z.txt"
+    zz=$(runde reihe "$MESSUNG_DIR" gtx z1,z2,z3,z4,z5,z6 --anspruch "$X/anspruch-z.txt")
+    if [ "$zz" = "z4,z2,z5,z3,z1,z6|" ]; then echo "OK z  K1 in der Reihe der Landungen: die jüngste Anspruchs-Zeile zuerst (z4,z2), in der Zeile ihre Reihe, z5 aus der jüngeren Zeile, dann alt (z3,z1) — nie „zuletzt gemessen hinten“ — $zz"
+    else echo "ROT z  K1-Reihe: „$zz“ (Soll z4,z2,z5,z3,z1,z6|)"; fi
+    fi
+    if nur z2; then
+    # z2 — DIE GEBUCHTE ANSPRUCHS-SPROSSE FÄLLT (Koordinator 23.11. 03:50; am 23.11. trugen 7 von 34 Anspruchs-Einträgen schon den Punkt,
+    # z. B. same.physik.feuer#1): Leiter g heute 2 (g#1, g#2 gebucht, Front g#3), Glieder-Leiter h (heuteSprossen 2); beansprucht g#1, g#2,
+    # h#2 (gebucht) und h#3 (offen) → nur h#3 ist K1, die gebuchten stehen nirgends in der Liste. Mutante: gebucht-zieht
+    local zg
+    echo '{"gruppen":[{"kriterien":[{"id":"g","heute":2,"sprossen":[{"nr":1},{"nr":2},{"nr":3},{"nr":4}]},{"id":"h","zaehlung":"glieder","heuteSprossen":[2],"sprossen":[{"nr":1},{"nr":2},{"nr":3}]}]}]}' >"$X/karte-z2.json"
+    printf 'w29-gebucht karte2.g#1,karte2.g#2,karte2.h#2\nw29-offen karte2.h#3\n' >"$X/anspruch-z2.txt"
+    zg=$(runde reihe "$MESSUNG_DIR" gtx karte2.g#1,karte2.g#2,karte2.g#3,karte2.g#4,karte2.h#1,karte2.h#2,karte2.h#3 --karte "$X/karte-z2.json" --anspruch "$X/anspruch-z2.txt")
+    if [ "$zg" = "karte2.h#3,karte2.g#3,karte2.h#1|" ]; then echo "OK z2 die gebuchte Anspruchs-Sprosse fällt: g#1, g#2, h#2 tragen den Punkt und stehen nirgends, K1 nur die offene h#3, dann die Front g#3 · h#1 — $zg"
+    else echo "ROT z2 gebuchte Anspruchs-Sprosse: „$zg“ (Soll karte2.h#3,karte2.g#3,karte2.h#1|)"; fi
+    fi
     nur -
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"sprung-blind blick-blind front-blind klassen-blind schwanz-immer schwanz-nie bucht-am-ende weicht hinten-an deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"sprung-blind blick-blind front-blind zeile-blind gebucht-zieht klassen-blind schwanz-immer schwanz-nie bucht-am-ende weicht hinten-an deckel-blind station-stumm push-still liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 # DIE FANG-TAFEL (EINE Stelle, 22.11.): je Mutante die Fälle, an denen sie ROT fallen MUSS — sie fährt nur diese (ST_NUR), nicht alle 24
 # (front-blind fuhr 33 min für ein Urteil an x). Ohne Eintrag fährt eine Mutante alle Fälle.
-FANG="sprung-blind:y blick-blind:y front-blind:x klassen-blind:e schwanz-immer:e,w schwanz-nie:e,w weicht:a,b hinten-an:a,b blind:a,b"
+FANG="sprung-blind:y blick-blind:y front-blind:x zeile-blind:z gebucht-zieht:z2 klassen-blind:e schwanz-immer:e,w schwanz-nie:e,w weicht:a,b hinten-an:a,b blind:a,b"
 fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
 selbsttest() {
     local O m r rot=0 mr=0 mz=0 ok
@@ -1162,15 +1189,15 @@ selbsttest() {
     grep -E "^(OK|ROT|ZEIT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
     ok=$(grep -c "^OK" "$O/echt")
-    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$ok" = 25 ] || rot=1
+    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$ok" = 27 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: ${ST_NUR:+nur }$ok Fälle grün (${ST_NUR:-a–y}), $mr/$mz Mutanten ROT"; return 0; fi
-    echo "landung-dienst SELBSTTEST ROT: $ok von 25 Fällen OK, $mr/$mz Mutanten ROT"
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: ${ST_NUR:+nur }$ok Fälle grün (${ST_NUR:-a–z2}), $mr/$mz Mutanten ROT"; return 0; fi
+    echo "landung-dienst SELBSTTEST ROT: $ok von 27 Fällen OK, $mr/$mz Mutanten ROT"
     return 1
 }
 [ "$1" = --selbsttest ] && { selbsttest; exit $?; }

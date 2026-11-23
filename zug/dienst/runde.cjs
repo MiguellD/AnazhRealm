@@ -3,7 +3,7 @@
 //   1 EIN Mess-Kopf je Runde in EINER Datei (zug/runde.txt im Zweig koordination): Kopf, Startzeit, Stand je Geraet. Jedes Geraet
 //     faehrt seine ganze Liste an DIESEM Kopf zu Ende; die naechste Runde nimmt den main-Kopf des Moments, in dem alle Geraete durch
 //     sind — so steht nach jeder Runde jede Station als Paar am SELBEN Kopf (die Karte 2 bucht daraus).
-//   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht · K2 ohne Urteil · K3 GRUEN (K4 ROT anderes: seit 22.11. Schwanz)
+//   2 die Reihe folgt der erwarteten Aenderung (Koordinator 21.11., `reihe`): K1 beansprucht (juengste Anspruchs-Zeile zuerst, 23.11.) · K2 ohne Urteil · K3 GRUEN (K4 ROT anderes: seit 22.11. Schwanz)
 //     | der SCHWANZ K5 ROT „Leser fehlt" · K6 ROT „Umfang nicht erzeugbar". Bleibt einem Geraet nur der Schwanz und ist main weiter als
 //     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen).
 //   2a DIE GETEILTE FRONT (Koordinator 22.11.; Runde 4: die GTX 21 von 246 nach 3,5 h, die Radeon „wartet 0/0“): beide Geraete teilen
@@ -377,12 +377,13 @@ if (was === "lies") {
                 if (gg === g && (!letzt[id] || z > letzt[id].z)) letzt[id] = { z, min: Number(e && e.minuten) || 0 };
             }
     }
-    const anspruch = new Set(), jeZweig = new Map();
+    const anspruch = new Set(), jeZweig = new Map(), stelle = new Map();
     if (opt("anspruch")) {
         let t = "";
         try { t = fs.readFileSync(opt("anspruch"), "utf8"); } catch { /* fehlt die Datei: leer */ }
-        // „#“ beginnt einen Kommentar nur am Anfang eines Worts — die Stationen tragen ihn im Namen („…#2“); EIN Anspruch je Zweig
-        for (const z of t.split(/\r?\n/)) { const w = z.trim().split(/\s+/), k = w.findIndex((x) => x.startsWith("#")), v = k < 0 ? w : w.slice(0, k); if (v.length >= 2) { if (!jeZweig.has(v[0])) jeZweig.set(v[0], new Set()); for (const id of v.slice(1).join(",").split(",")) if (id) jeZweig.get(v[0]).add(id); } }
+        // „#“ beginnt einen Kommentar nur am Anfang eines Worts — die Stationen tragen ihn im Namen („…#2“); EIN Anspruch je Zweig.
+        // Die STELLE je Sprosse (23.11.): ihre jüngste Zeile n (die Datei wächst nach unten) und ihr Platz p in ihr — K1 ordnet danach
+        t.split(/\r?\n/).forEach((z, n) => { const w = z.trim().split(/\s+/), k = w.findIndex((x) => x.startsWith("#")), v = k < 0 ? w : w.slice(0, k); if (v.length >= 2) { if (!jeZweig.has(v[0])) jeZweig.set(v[0], new Set()); v.slice(1).join(",").split(",").filter(Boolean).forEach((id, p) => { jeZweig.get(v[0]).add(id); stelle.set(id, { n, p }); }); } });
     }
     // 0 DIE FRONT DER KARTE 2 (Koordinator 21.11. 15:45; vision/buche-2.cjs zählt je Leiter nur die lückenlose Folge von unten, bei
     // „glieder“ jede Sprosse für sich): mit --karte <vision/meisterkarte-2.json> steht in der Liste NUR, was beim nächsten Buchen zählen
@@ -424,7 +425,13 @@ if (was === "lies") {
     // Stations-Zeit GTX 21 min gegen 1 340 min Karten-Zeit der CI, und in der Liste der Runde 4 standen 56 von 179 Stationen vorn als
     // Wiederholung eines bekannten ROT): K4 — ROT aus anderem Grund, von keiner Landung beansprucht — steht im SCHWANZ, vor K5 und K6.
     // Vorn bleibt, was ein Urteil braucht: K1 beansprucht · K2 nie beurteilt · K3 GRÜN und ungebucht (der Preis fehlt oder ist offen).
-    const vorn = [...ord(je.K1), ...ord(je.K2), ...ord(je.K3)], schwanz = [...ord(je.K4), ...ord(je.K5), ...ord(je.K6)];
+    // K1 IN DER REIHE DER LANDUNGEN (Koordinator 23.11. 03:50; Befund Runde 9 am ddaf883d: die jüngste Landung z682 beanspruchte
+    // mensch.menge.bevoelkerung#1, die Reihe stellte sie auf Platz 23 von 23 K1, ≈ 75 min hinter 21 älteren Sprossen — sie war die
+    // zuletzt gemessene): K1 ordnet nach der STELLE, die jüngste Anspruchs-Zeile zuerst, in einer Zeile deren Reihe; ord („am längsten
+    // nicht gemessen“) entscheidet nur bei Gleichstand. Eine Sprosse, die die Karte schon als Punkt trägt (heute ≥ Nummer), steht nie in
+    // K1: sie liegt nicht in der Front (oben ids.filter, die eine Stelle) — am 23.11. 7 von 34 Anspruchs-Einträgen.
+    const k1 = (xs) => ord(xs).map((id, i) => ({ id, i, s: stelle.get(id) })).sort((a, b) => b.s.n - a.s.n || a.s.p - b.s.p || a.i - b.i).map((x) => x.id);
+    const vorn = [...k1(je.K1), ...ord(je.K2), ...ord(je.K3)], schwanz = [...ord(je.K4), ...ord(je.K5), ...ord(je.K6)];
     process.stderr.write("Reihe " + g + ": " + Object.entries(je).map(([k, v]) => k + " " + v.length).join(" · ") + " → vorn " + vorn.length + " | Schwanz " + schwanz.length + "\n");
     console.log(vorn.join(",") + "|" + schwanz.join(","));
 } else if (was === "kappe") {
