@@ -27,6 +27,10 @@ GL=${1:-$(cd "$(dirname "$0")" && pwd)/gpu-lauf.sh}
 export GPU_LAUF_SCHLOSS_SH=${GPU_LAUF_SCHLOSS_SH:-$(cd "$(dirname "$GL")" && pwd)/gpu-schloss.sh}
 T=$(mktemp -d); rot=0
 tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker && { echo "UNGEMESSEN: ein Runner.Worker lebt — der Selbsttest wartete am echten CI-Job"; exit 2; }
+# EIN Runner.Worker WÄHREND des Tests (23.11. 17:21: ein CI-Job wartete am echten Schloss, gpu-lauf.sh fragt worker() am echten — g und
+# h warteten 120 s und endeten mit Exit 75, „ROT“ ohne Schuld des Kopfs): dann UNGEMESSEN, nie ein Urteil
+( while [ -d "$T" ]; do tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker && : >"$T/worker-sah"; sleep 3; done ) >/dev/null 2>&1 &
+WW=$!
 fall() { # $1 Name · $2 WEICH ("" = Vorgabe) · $3 erste Dauer s · $4 Sekunden bis der Job „genommen“ meldet (0 = nie) · $5 stirbt · $6 rohr (Kind = node, Ausgabe durch eine Leitung)
     local n=$1 d=$T/$1; mkdir -p "$d"; : >"$d/dienst.log"
     echo "2026-01-01 00:00:00 start ci-runner 1/1 echt: Schloss genommen (alt)" >"$d/hook.log"
@@ -101,5 +105,7 @@ t1=$(date +%s); lauf allein 0; wait; S2=$(($(date +%s) - t1)); R2=$(reihe)
 if [ "$R" = "S hand E hand S runde E runde" ] && [ "$R2" = "S allein E allein" ] && [ "$S2" -lt 12 ] && [ ! -f "$d/schlange/runde-$TOT" ]; then
     echo "GRÜN h  wer vor dem Platz der Runde kam, ging vor ihr ($R); ein Platz mit toter pid hielt nicht auf ($S2 s) und fiel"
 else echo "ROT h  Reihe „$R“ (Soll S hand E hand S runde E runde) · allein neben totem Platz „$R2“ nach $S2 s (Soll < 12) · toter Platz $([ -f "$d/schlange/runde-$TOT" ] && echo liegt || echo fort)"; rot=1; fi
+kill $WW 2>/dev/null
+[ -f "$T/worker-sah" ] && { echo "UNGEMESSEN: ein Runner.Worker lebte während des Selbsttests — die Fälle warteten am echten CI-Job, die Zeilen oben urteilen nicht"; rm -rf "$T"; exit 2; }
 rm -rf "$T"
 exit $rot
