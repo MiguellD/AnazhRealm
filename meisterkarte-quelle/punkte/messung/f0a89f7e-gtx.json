@@ -1,7 +1,7 @@
 {
  "sha": "f0a89f7e12a26d84104ab0f613e86f3eae01102a",
  "geraet": "gtx",
- "zeit": "2026-11-23T07:37:14.421Z",
+ "zeit": "2026-11-23T07:38:16.360Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -2219,17 +2219,67 @@
   },
   "karte2.erleben.kopplung.emergenz#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\7150a8c5-8aaf-4f0a-8130-1fb9c5fb25dd.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\7150a8c5-8aaf-4f0a-8130-1fb9c5fb25dd.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 60,033 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 60,033 s vor dem Wert der Sprosse · der Deckel der Leiter 60 s) · Täter: @@PUNKTE@@ PROBE 130.5 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.18,
+   "grund": "der Deckel der Leiter riss nach 60,033 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 60,033 s vor dem Wert der Sprosse · der Deckel der Leiter 60 s) · Täter: @@PUNKTE@@ PROBE 130.5 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-23T07:36:30.851Z",
+   "s": 130.7,
+   "fremd": {
+    "s": 132.5,
+    "takte": 60,
+    "fremdS": 50.91,
+    "kerne": 0.384,
+    "fensterKerne": 0.759,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.83
+     ],
+     [
+      "Explorer.EXE",
+      5.08
+     ]
+    ],
+    "dienerS": 45.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.17
+     ],
+     [
+      "System",
+      14.3
+     ]
+    ],
+    "geraetS": 43.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.25
+     ],
+     [
+      "svchost.exe",
+      12.55
+     ],
+     [
+      "SearchIndexer.exe",
+      2.03
+     ]
+    ],
+    "eigenS": 343.47,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T07:38:16.360Z",
    "abdruck": "971363182bc1",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2
+   "modus": "session"
   },
   "karte2.erleben.schoepfen.satz#1": {
    "gruen": false,
