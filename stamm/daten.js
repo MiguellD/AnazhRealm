@@ -1789,6 +1789,7 @@ class AnazhRealm_daten {
             "stoff.eis": ["Eis", "Ice"],
             "stoff.eisen": ["Eisen", "Iron"],
             "stoff.erde": ["Erde", "Earth"],
+            "stoff.erz": ["Erz", "Ore"],
             "stoff.donnerkorn": ["Donnerkorn", "Thundergrain"],
             "stoff.essenz": ["Essenz", "Essence"],
             "stoff.federn": ["Federn", "Feathers"],

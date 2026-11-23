@@ -593,6 +593,96 @@ function stoffstromUrteil(C0, S0, mutante = null) {
     return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg };
 }
 
+// TEIL W — DIE WARE IM BILD (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1; koerper `bestandStueck` · `bestandStapel`, BESTAND_GESETZ
+// stueck · stapel): jede Ware des Bestands — was ein Werk herstellt (`herstellung[].ware`), woraus es herstellt (`aus`, das Erz) und
+// das Werkzeug der Kette (schmiede STOFFSTROM.werkzeug) — zeigt sich in ihrer Gestalt aus ihrem Stoff. W1 die Ware hat eine Gestalt
+// des Bau-Pfads (der Wirt baut sie, stamm `_wareStueck`: Spitzbarren, Bund, Schüttung, Werkzeug) — nie die Kiste; W2 das Stück
+// wiegt, was es trägt: Volumen × ρ der Zeile des Stoff-Gesetzes = die Masse des Gesetzes, und seine Maße umschließen genau dieses
+// Volumen (der Spitzbarren L·H·B/3, der Bund π/4·L·H·B); W3 in jedem Lager (`lager`: Stand, Werk, Wagen, Scheune) liegt kein Stück
+// im anderen; W4 der Stapel steht: das erste Stück liegt auf dem Boden, jedes weitere auf einem früheren (jeder Anfang k des
+// Stapels — das Bild zeigt die ersten k — trägt sich), höchstens `stapel.hoeheM` hoch. Täter (Selbsttest): „die Ware liest sich als
+// Kiste" (der Stand vor stoffstrom-kette-2: je vier Einheiten eine Holzkiste 0,6 m, vier Abgaben nannten die dunkle Kiste), „das
+// Stück wiegt nicht, was es trägt" (die Dichte fehlt), „die Stücke liegen ineinander", „der Stapel schwebt". Leser: der Wirt
+// (`_wareBild` — Stand, Scheune, Ofen, Wagen, Halde, die Werkzeuge der Schmiede).
+function wareUrteil(C0, S0, mutante = null) {
+    const C = Object.assign({}, C0);
+    const B = C0.BESTAND_GESETZ;
+    const SG = S0.STOFF_GESETZ;
+    const rot = [];
+    const zeilen = [];
+    if (mutante === "kiste") C.bestandStueck = (w) => ({ ware: w, gestalt: "kiste", kg: null, masz: [0.6, 0.6, 0.6], volumen: 0.216 });
+    if (mutante === "ohneStoff") C.bestandStueck = (w) => C0.bestandStueck(w, 1000);
+    if (mutante === "ineinander") C.bestandStapel = (n, m, g) => C0.bestandStapel(n, m, g).map((v, i) => (i % 4 === 1 ? m[1] / 2 : v));
+    if (mutante === "schwebt") C.bestandStapel = (n, m, g) => C0.bestandStapel(n, m, g).map((v, i) => (i % 4 === 1 ? v + 0.3 : v));
+    const H = Object.values(B.herstellung);
+    const waren = [...new Set([...H.map((h) => h.ware), ...H.map((h) => h.aus).filter(Boolean), S0.STOFFSTROM.werkzeug])];
+    const bauPfad = ["spitzbarren", "bund", "schuettung", "werkzeug"];
+    const tol = 1e-6;
+    for (const w of waren) {
+        let z = null;
+        try {
+            z = SG.zeile(w);
+        } catch (_e) {
+            z = null; // das Werkzeug trägt keine Zeile: seine Stoffe trägt der Bauplan der Schmiede
+        }
+        let st = null;
+        try {
+            st = C.bestandStueck(w, z ? z.rho : null);
+        } catch (e) {
+            rot.push(`W1 die Ware liest sich als Kiste: ${w} hat keine Gestalt im Bild (${(e && e.message) || e})`);
+            continue;
+        }
+        if (!bauPfad.includes(st.gestalt)) {
+            rot.push(`W1 die Ware liest sich als Kiste: ${w} trägt die Gestalt „${st.gestalt}" (Soll eine des Bau-Pfads: ${bauPfad.join(", ")})`);
+            continue;
+        }
+        if (!st.masz) {
+            zeilen.push(`${w} ${st.gestalt}`);
+            continue;
+        }
+        // W2 das Stück wiegt, was es trägt
+        const [L, Hh, Bb] = st.masz;
+        const V = (L * Hh * Bb) * (st.gestalt === "spitzbarren" ? 1 / 3 : Math.PI / 4);
+        if (!z || Math.abs(st.volumen * z.rho - st.kg) > 1e-9 * st.kg || Math.abs(V - st.volumen) > 1e-9 * st.volumen)
+            rot.push(`W2 das Stück wiegt nicht, was es trägt: ${w} ${st.kg} kg, Volumen ${st.volumen.toExponential(4)} m³ × ρ ${z ? z.rho.toFixed(1) : "—"} = ${z ? (st.volumen * z.rho).toFixed(4) : "—"} kg, die Maße umschließen ${V.toExponential(4)} m³`);
+        let lagenMax = 0;
+        for (const n of [...new Set(Object.values(B.lager))].sort((a, b) => a - b)) {
+            const P = C.bestandStapel(n, st.masz, st.gestalt);
+            const box = (i) => {
+                const quer = Math.abs(Math.sin(P[4 * i + 3])) > 0.5;
+                const [hx, hz] = quer ? [Bb / 2, L / 2] : [L / 2, Bb / 2];
+                return [P[4 * i] - hx, P[4 * i + 1] - Hh / 2, P[4 * i + 2] - hz, P[4 * i] + hx, P[4 * i + 1] + Hh / 2, P[4 * i + 2] + hz];
+            };
+            const K = Array.from({ length: n }, (_, i) => box(i));
+            const flaeche = (a, b) => a[0] < b[3] - tol && b[0] < a[3] - tol && a[2] < b[5] - tol && b[2] < a[5] - tol;
+            // der Bund liegt längs x: zwei Bunde berühren sich, wo ihre Kreise (y, z) sich berühren (die Rinne der Lage darunter)
+            const ineinander = (i, j) =>
+                flaeche(K[i], K[j]) &&
+                (st.gestalt === "bund"
+                    ? Math.hypot(P[4 * i + 1] - P[4 * j + 1], P[4 * i + 2] - P[4 * j + 2]) < Hh - tol
+                    : K[i][1] < K[j][4] - tol && K[j][1] < K[i][4] - tol);
+            let paar = null;
+            for (let i = 0; i < n && !paar; i++) for (let j = 0; j < i && !paar; j++) if (ineinander(i, j)) paar = [j, i];
+            if (paar) rot.push(`W3 die Stücke liegen ineinander: ${w} im Lager ${n}, Stück ${paar[0]} und ${paar[1]} an (${P[4 * paar[1]].toFixed(3)}, ${P[4 * paar[1] + 1].toFixed(3)}, ${P[4 * paar[1] + 2].toFixed(3)})`);
+            // W4 der Stapel steht: jedes Stück auf dem Boden oder auf einem früheren
+            let schwebt = -1;
+            for (let i = 0; i < n && schwebt < 0; i++) {
+                if (Math.abs(K[i][1]) < tol) continue;
+                const traegt = (j) => flaeche(K[i], K[j]) && P[4 * j + 1] < P[4 * i + 1] - tol && P[4 * i + 1] - P[4 * j + 1] <= Hh + tol;
+                let j = 0;
+                while (j < i && !traegt(j)) j++;
+                if (j === i) schwebt = i;
+            }
+            const oben = Math.max(...K.map((k) => k[4]));
+            if (schwebt >= 0 || oben > B.stapel.hoeheM + tol)
+                rot.push(`W4 der Stapel schwebt: ${w} im Lager ${n}${schwebt >= 0 ? `, Stück ${schwebt} liegt ${K[schwebt][1].toFixed(3)} m über dem Boden auf keinem früheren` : ""}, oben ${oben.toFixed(3)} m (höchstens ${B.stapel.hoeheM})`);
+            lagenMax = Math.max(lagenMax, new Set(Array.from({ length: n }, (_, i) => P[4 * i + 1].toFixed(6))).size);
+        }
+        zeilen.push(`${w} ${st.gestalt} ${st.kg} kg ${L.toFixed(3)} × ${Hh.toFixed(3)} m (ρ ${z.rho.toFixed(0)}), bis ${lagenMax} Lagen`);
+    }
+    return { rot, waren, zeilen };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
@@ -621,12 +711,15 @@ if (SELBSTTEST) {
     const sc = globalThis.__schmiedeCore;
     const sGut = !stoffstromUrteil(core, sc).rot.length;
     const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter])
+    // die Ware im Bild: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const wGut = !wareUrteil(core, sc).rot.length;
+    const wareTaeter = [["kiste", "W1 die Ware liest sich als Kiste"], ["ohneStoff", "W2 das Stück wiegt nicht, was es trägt"], ["ineinander", "W3 die Stücke liegen ineinander"], ["schwebt", "W4 der Stapel schwebt"]].map(([m, z]) => [wGut && wareUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...wareTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle siebenundzwanzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einunddreißig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, vier Täter der Ware im Bild).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -645,6 +738,9 @@ if (!ak.rot.length) console.log(`  ACKER Scheune: ${ak.ernten} Ernten in 5 Tagen
 const sk = stoffstromUrteil(core, globalThis.__schmiedeCore);
 for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper stoffstromHalter · stoffstromFassen · schmiede STOFFSTROM");
 if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand`);
+const wu = wareUrteil(core, globalThis.__schmiedeCore);
+for (const z of wu.rot) st.rot.push("WARE " + z + " — Täter: koerper bestandStueck · bestandStapel · BESTAND_GESETZ.stueck/stapel");
+if (!wu.rot.length) console.log(`  WARE ${wu.waren.length} Waren in ihrer Gestalt: ${wu.zeilen.join(" · ")}`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Bezugs-Leib 1: die Mitte der Achsen mit 30 J) · der Median der Dreißigjährigen ${kn.median30.toFixed(4)} · START_PARAMS ${kn.start.toFixed(4)} · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);

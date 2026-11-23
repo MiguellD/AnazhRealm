@@ -24,6 +24,7 @@ class AnazhRealm_bau_teile {
             "flutedColumn",
             "bladeProfile",
             "gableTriangle",
+            "spitzbarren",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -1274,6 +1275,35 @@ class AnazhRealm_bau_teile {
                 const g = new THREE.BufferGeometry();
                 g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
                 g.setIndex(tri);
+                g.computeVertexNormals();
+                return g;
+            }
+            case "spitzbarren": {
+                // DER SPITZBARREN (die Ware Eisen im Bild, koerper `bestandStueck`): zwei vierseitige Pyramiden Fuß an Fuß längs x —
+                // size.x die Länge, size.y die Höhe, size.z die Breite der Mitte; acht Flächen, je Fläche ihre Normale (flach)
+                const [hx, hy, hz] = [sx / 2, sy / 2, sz / 2];
+                const ecken = [
+                    [0, hy, hz],
+                    [0, hy, -hz],
+                    [0, -hy, -hz],
+                    [0, -hy, hz],
+                ];
+                const pos = [];
+                for (const t of [hx, -hx])
+                    for (let i = 0; i < 4; i++) {
+                        const [a, b] = [ecken[i], ecken[(i + 1) % 4]];
+                        const tri = [[t, 0, 0], a, b];
+                        // außen: die Normale zeigt von der Mitte des Barrens fort
+                        const [u, v] = [
+                            [a[0] - t, a[1], a[2]],
+                            [b[0] - t, b[1], b[2]],
+                        ];
+                        const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+                        if (n[0] * t + n[1] * (a[1] + b[1]) + n[2] * (a[2] + b[2]) < 0) tri.reverse();
+                        for (const p of tri) pos.push(p[0], p[1], p[2]);
+                    }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
                 g.computeVertexNormals();
                 return g;
             }

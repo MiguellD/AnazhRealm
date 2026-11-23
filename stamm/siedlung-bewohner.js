@@ -1216,9 +1216,9 @@ class AnazhRealm_siedlung_bewohner {
         return null;
     }
 
-    // DAS BILD DER HALDE (nah, `BESTAND_BILD.nahM` vom Auge): der Schüttkegel ihres Erzes (koerper `stoffstromHaldeForm`, die Dichte der
-    // Zeile `erz` des Stoff-Gesetzes) am Ort der Geologie, gebaut aus dem EINEN Bau-Pfad (`_buildFromBlueprint`, ein Kegel aus
-    // Stein — der Fels, aus dem es gebrochen ist) und skaliert auf seine Form: er schrumpft mit jedem Kilogramm, das die Esse nimmt.
+    // DAS BILD DER HALDE (nah, `BESTAND_BILD.nahM` vom Auge): die Schüttung ihres Erzes — das Bild der Ware Erz (`_wareBild`: der
+    // Kegel aus dem Stoff `erz`, bis hier aus Stein) am Ort der Geologie, skaliert auf ihre Form (koerper `stoffstromHaldeForm`, die
+    // Dichte der Zeile `erz` des Stoff-Gesetzes): sie schrumpft mit jedem Kilogramm, das die Esse nimmt.
     _stoffstromBild(S, p) {
         const Z = S.stoffstrom;
         if (!Z || !this.state.scene) return;
@@ -1232,18 +1232,14 @@ class AnazhRealm_siedlung_bewohner {
         if (!Z.bild) {
             const y = this._bodenSichtAt(Z.lager.x, Z.lager.z);
             if (y == null) return; // der Boden, auf dem sie liegt, ist das gezeichnete Mesh (Lehre 22) — das Bild wartet auf den Takt
-            const kegel = {
-                shape: "cone",
-                material: "stein",
-                size: { x: 2, y: 1, z: 2 },
-                position: { x: 0, y: 0.5, z: 0 },
-            };
-            Z.bild = this._buildFromBlueprint({ name: "halde", parts: [kegel] });
+            Z.bild = this._wareBild(globalThis.__schmiedeCore.STOFFSTROM.erz, 1);
             Z.bild.position.set(Z.lager.x, y, Z.lager.z);
             this.state.scene.add(Z.bild);
         }
+        const y = this._bodenSichtAt(Z.lager.x, Z.lager.z);
+        if (y != null) Z.bild.position.y = y; // der gezeichnete Boden folgt der Stufe des Auges (`_wareBoden`)
         Z.bild.scale.set(F.r, F.h, F.r);
-        Z.bild.visible = F.r > 0;
+        this._wareZeige(Z.bild, F.r > 0 ? 1 : 0);
     }
 
     // DER TAUSCH (markt S1: Spieler ↔ Bewohner, nur, was er hat): die Taste des Verbs (`einsteigen`, E) vor einem Stand, dessen
@@ -1299,11 +1295,13 @@ class AnazhRealm_siedlung_bewohner {
         return true;
     }
 
-    // DAS BILD DES BESTANDS (das Kistenmaß des Gesetzes, BESTAND_GESETZ.kiste): je angefangene Kiste eine Kiste der Welt (der
-    // Bauplan `kiste`, sein Stoff) — am Stand neben dem Händler in zwei Lagen, auf dem Wagen auf seinem Dach (`_verkehrLadung`).
-    // Gezeichnet nur, was nah steht (`BESTAND_BILD.nahM` vom Auge der Stufen): die Kosten trägt der Schirm, nie die Stadt; je
-    // Halter EINE Gruppe, ihre Kisten werden sichtbar oder nicht, nie neu gebaut. `jetzt` zeichnet sofort (nach einem Ereignis),
-    // sonst prüft der Takt (`_bestandBildTakt`) die Stände im Kreis je `taktS`.
+    // DAS BILD DES BESTANDS (das Bild der Ware, `_wareBild`): je Halter seine Ware als Stapel ihrer Stücke — je angefangene Einheit
+    // ein Stück (der Spitzbarren am Ofen, der Bund in der Scheune, am Stand die Ware des Stands), seitlich des Händlers an einem
+    // freien Platz (`_bestandPlatz`), auf dem Wagen auf seinem Dach (`_verkehrLadung`); am Ofen dazu die Werkzeuge, die die
+    // Schmiede geschmiedet und noch keiner Hand gegeben hat (`K.lager` der Kette — ihr Stapel steht ab dem ersten). Gezeichnet
+    // nur, was nah steht (`BESTAND_BILD.nahM` vom Auge der Stufen): die Kosten trägt der Schirm, nie die Stadt; je Halter und Ware
+    // EINE Gruppe, ihr Stapel zeigt die ersten k Stücke, nie neu gebaut. `jetzt` zeichnet sofort (nach einem Ereignis), sonst
+    // prüft der Takt (`_bestandBildTakt`) die Halter im Kreis je `taktS`.
     _bestandBild(b, jetzt = false) {
         const H = b.bestand;
         if (!H || (H.art !== "stand" && H.art !== "scheune" && !this._stoffstromOfen(H))) return;
@@ -1311,90 +1309,289 @@ class AnazhRealm_siedlung_bewohner {
         if (H.art === "scheune")
             this._scheuneFassen(b); // die Scheune trägt die Ernten bis jetzt (vor dem Tor der Hof)
         else if (H.art === "werk") this._stoffstromFassen(H); // der Ofen trägt die Barren der Kette bis jetzt (neben dem Schmied)
-        const n = KC.bestandAm(H, this._weltStunde());
-        const k = Math.ceil(n / KC.BESTAND_GESETZ.kiste - 1e-9);
-        const G = this._bestandKisten(b, Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste));
-        if (!G) return;
-        if (!jetzt && G.userData.kisten === k) return;
-        G.userData.kisten = k;
-        G.children.forEach((c, j) => (c.visible = j < k));
-        G.visible = k > 0;
+        const k = Math.ceil(KC.bestandAm(H, this._weltStunde()) - 1e-9);
+        const G = this._bestandWare(b, "bestandBild", H.ware, H.cap);
+        if (G) this._wareBoden(G);
+        if (G && (jetzt || G.userData.stuecke !== k)) this._wareZeige(G, k);
+        if (H.art !== "werk") return;
+        // die Werkzeuge am Ofen: so viele Plätze wie das Lager des Werks, mehr verdoppeln den Stapel (die Kette kennt keine Grenze)
+        const Z = this._stoffstromVon.get(H);
+        const w = Z.K.lager[Z.K.oefen.indexOf(H)];
+        if (!w && !b.werkzeugBild) return;
+        const cap = Math.max(KC.BESTAND_GESETZ.lager.werk, 2 ** Math.ceil(Math.log2(Math.max(1, w))));
+        const T = this._bestandWare(b, "werkzeugBild", globalThis.__schmiedeCore.STOFFSTROM.werkzeug, cap);
+        if (T) this._wareBoden(T);
+        if (T && (jetzt || T.userData.stuecke !== w)) this._wareZeige(T, w);
     }
 
-    // die Gruppe der Kisten eines Stands (einmal gebaut, an seinem Ort): seitlich des Händlers, quer zu seinem Blick, in zwei Lagen;
-    // trägt ein Halter mehr als sechs Kisten (die Scheune), stehen die weiteren in Reihen dahinter (je Reihe wieder drei in zwei Lagen)
-    _bestandKisten(b, m) {
-        if (b.bestandBild) return b.bestandBild;
-        const bp = this.state.blueprints && this.state.blueprints.kiste;
-        if (!bp || !this.state.scene) return null;
+    // DER STAPEL LIEGT AUF DEM GEZEICHNETEN BODEN (Lehre 22, `_bodenSichtAt`): der Boden unter seinem Fuß — die Mitte und vier Punkte
+    // am Rand — gibt die Höhe (ihr Mittel) und die Neigung (die Ebene durch sie: die Stücke liegen auf dem Hang, nie in ihm); je Ruf
+    // des Bilds neu, denn der gezeichnete Boden folgt der Stufe des Auges (am Messort dorf lag derselbe Platz unter dem fernen Auge
+    // bis 0,5 m über, unter dem nahen bis 0,27 m unter dem Boden, den das Bild zeigt — ein Barren von 7 cm lag in der Erde oder in der
+    // Luft). Steht der Boden nicht, bleibt die Lage. Der Platz merkt das Auge, unter dem er seinen Boden las (`augeX/augeZ`),
+    // und die Karte des Chunks, die ihn trug (`chunk`, `karte` = ihre `surfMap`): der Takt legt ihn neu, sobald eins sich ändert.
+    _wareBoden(G) {
+        const P = G.userData.platz;
+        if (!P) return; // die Gruppe fiel (`_wareFort`)
+        const s = P.r;
+        const h = [
+            [0, 0],
+            [s, 0],
+            [-s, 0],
+            [0, s],
+            [0, -s],
+        ].map(([u, v]) => this._bodenSichtAt(P.x + u, P.z + v));
+        if (h.some((y) => y == null)) return;
+        const a = this._lodAuge();
+        [P.augeX, P.augeZ] = a ? [a.x, a.z] : [NaN, NaN];
+        const span = this._voxelChunkConfig(0).span;
+        P.chunk = P.chunk || `${Math.floor(P.x / span)},${Math.floor(P.z / span)}`;
+        const E = this.state.voxelChunks && this.state.voxelChunks.get(P.chunk);
+        P.karte = E ? E.surfMap : null;
+        const n = new THREE.Vector3(-(h[1] - h[2]) / (2 * s), 1, -(h[3] - h[4]) / (2 * s)).normalize();
+        G.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+        G.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), P.blick));
+        P.y = (h[0] + h[1] + h[2] + h[3] + h[4]) / 5;
+        G.position.set(P.x, P.y, P.z);
+    }
+
+    // DIE GRUPPE EINER WARE AM HALTER b (Feld `feld`: `bestandBild` seine Ware, `werkzeugBild` die Werkzeuge der Schmiede): einmal
+    // gebaut (`_wareBild`) und an einen freien Platz gestellt (`_bestandPlatz`, quer zum Blick des Händlers gedreht); trägt sie eine
+    // andere Ware oder weniger Plätze als verlangt, fällt sie (`_wareFort`) und steht neu. Der Platz ist getreten (DIE TRITTFLÄCHE,
+    // `_trittFlaecheMalen`: wer die Ware holt und bringt, tritt den Gang vom Werk des Halters bis um den Stapel —
+    // `BESTAND_BILD.trittM` über seinen Rand; dort wächst keine Wiese, die Stücke liegen auf der Erde, nicht im Halm, und der Gang zu
+    // ihnen ist frei). null, solange der Boden des Platzes nicht steht.
+    _bestandWare(b, feld, ware, cap) {
+        const alt = b[feld];
+        if (alt && alt.userData.ware === ware && alt.userData.cap >= cap) return alt;
+        if (!this.state.scene) return null;
+        const G = this._wareBild(ware, cap);
+        if (!G) return null;
+        if (alt) this._wareFort(alt);
+        b[feld] = null;
+        const P = this._bestandPlatz(b, G.userData.radius);
+        if (!P) return (this._disposeSoulGroup(G), null);
+        const t = P.r + AnazhRealm.BESTAND_BILD.trittM;
+        const w = b.orte.werk;
+        P.tritt = this._trittFlaecheMalen({ typ: "segment", kanal: 0, ax: w.x, az: w.z, bx: P.x, bz: P.z, halb: t });
+        (this._warePlaetze || (this._warePlaetze = new Set())).add(P);
+        P.blick = b.orte.werk.blick;
+        G.userData.platz = P;
+        this._wareBoden(G);
+        this.state.scene.add(G);
+        return (b[feld] = G);
+    }
+
+    // die Gruppe einer Ware fort samt ihrem Platz und seiner Trittfläche (die Wiese wächst zurück)
+    _wareFort(G) {
+        this.state.scene.remove(G);
+        this._disposeSoulGroup(G);
+        const P = G.userData.platz;
+        if (!P) return;
+        this._warePlaetze.delete(P);
+        if (P.tritt) this._trittBoxLoesen(P.tritt);
+        G.userData.platz = null;
+    }
+
+    // DER PLATZ EINES STAPELS vom Halbmesser r neben dem Halter b: die Plätze seitlich des Händlers, quer zu seinem Blick (der
+    // erste `seiteM` neben ihm), nach Abstand vom ersten — beide Seiten, sein Fuß bleibt frei, nach hinten und zum Tor; ein Platz im
+    // Grundriss eines Hauses oder Baus fällt aus (DIE WARE STEHT NIE IM HAUS, strom S1, acker-kette 2: am Start-Dorf lagen sonst
+    // Stapel in der Wand des Nachbarn, dort trägt kein gezeichneter Boden), ebenso einer, der den Platz einer anderen Ware berührt
+    // (`_warePlaetze`, jeder Halter der Welt: zwei Öfen drei Meter voneinander stellten sonst ihre Stapel ineinander). Die Höhe: der
+    // tiefste gezeichnete Boden unter dem Fuß des Stapels (Lehre 22 — solange er nicht steht, null: das Bild wartet auf den
+    // Takt), so schwebt kein Stück am Hang.
+    _bestandPlatz(b, r) {
         const w = b.orte.werk;
         const [fx, fz] = [Math.sin(w.blick), Math.cos(w.blick)];
-        const kM = AnazhRealm.BESTAND_BILD.kisteM;
-        // DIE KISTEN STEHEN NIE IM HAUS (strom S1, acker-kette 2): die Reihen wachsen vom Werk-Ort fort, seitlich des Blicks —
-        // am Start-Dorf lag die vierte Reihe zweier von drei Scheunen in der Wand des Nachbarn (6 bzw. 4 von 24 Plätzen im
-        // Grundriss „haus“, dort trägt kein gezeichneter Boden), `_bodenSichtAt` antwortete null und das Bild des Vorrats kam
-        // NIE (die Scheune voll 62 Einheiten, vor dem Tor keine Kiste; keine der vier Seiten war ganz frei, die Reihen dahinter
-        // liefen bis 7 m tief durch das Nachbarhaus). Nun nimmt jede Kiste den nächsten FREIEN Fuß: zuerst die bisherigen
-        // Reihen (drei breit, nach hinten), danach das Feld daneben (seitlich bis 8 Füße, 4 nach hinten, 2 zum Tor) nach
-        // Abstand vom ersten Fuß (beide Seiten des Händlers, sein Fuß bleibt frei); ein Fuß im Grundriss eines Hauses oder Baus
-        // (mit dem Rand einer halben Kiste) fällt aus — auch dort, wo Boden gezeichnet ist (am Start-Dorf standen so 12 von 24
-        // Kisten des dritten Hofs in einer Wand). Wo nichts im Weg steht, ist die Lage die bisherige
-        const fussLage = ([c, r]) => {
-            const a = AnazhRealm.BESTAND_BILD.seiteM + c * kM;
-            const d = r * kM;
-            return [w.x + fz * a + fx * d, w.z - fx * a + fz * d];
-        };
-        const fuss = (j) => (j % 3) + 3 * Math.floor(j / 6); // der Platz der Kiste j am Boden (die Folge der freien Füße)
-        const n = m > 0 ? fuss(m - 1) + 1 : 0;
-        const plaetze = [];
-        for (let q = 0; q < n; q++) plaetze.push([q % 3, -Math.floor(q / 3)]);
+        const [M, s0] = [AnazhRealm.BESTAND_BILD.fussM, AnazhRealm.BESTAND_BILD.seiteM];
+        const belegt = [...(this._warePlaetze || [])].filter((P) => Math.hypot(P.x - w.x, P.z - w.z) < 16);
         const feld = [];
-        const s0 = AnazhRealm.BESTAND_BILD.seiteM / kM; // (der Fuß des Händlers: a = 0 bleibt frei)
-        for (let c = -8; c < 8; c++) for (let r = -6; r <= 4; r++) if (Math.abs(s0 + c) >= 1) feld.push([c, r]);
+        for (let c = -10; c < 10; c++) for (let q = -6; q <= 4; q++) if (Math.abs(s0 / M + c) >= 1) feld.push([c, q]);
         feld.sort((A, B) => Math.hypot(A[0], A[1]) - Math.hypot(B[0], B[1]));
-        for (const P of feld) if (!plaetze.some((Q) => Q[0] === P[0] && Q[1] === P[1])) plaetze.push(P);
-        // (der Boden, auf dem sie stehen, ist das gezeichnete Mesh, Lehre 22 — solange er nicht steht, wartet das Bild auf den Takt)
-        const fuesse = [];
-        const y = [];
-        for (let q = 0; fuesse.length < n && q < plaetze.length; q++) {
-            const p = fussLage(plaetze[q]);
-            const g = this._imGrundriss(...p, kM / 2);
+        for (const [c, q] of feld) {
+            const [a, d] = [s0 + c * M, q * M];
+            const [x, z] = [w.x + fz * a + fx * d, w.z - fx * a + fz * d];
+            if (Math.hypot(x - w.x, z - w.z) < r + 0.4) continue; // der Fuß des Händlers
+            if (belegt.some((P) => Math.hypot(x - P.x, z - P.z) < r + P.r + 0.1)) continue;
+            const g = this._imGrundriss(x, z, r);
             if (g === "haus" || g === "bau") continue;
-            const h = this._bodenSichtAt(...p);
-            if (h == null) return null;
-            fuesse.push(p);
-            y.push(h);
+            let y = Infinity;
+            for (const [u, v] of [
+                [0, 0],
+                [r, 0],
+                [-r, 0],
+                [0, r],
+                [0, -r],
+            ]) {
+                const h = this._bodenSichtAt(x + u, z + v);
+                if (h == null) return null;
+                y = Math.min(y, h);
+            }
+            return { x, y, z, r };
         }
-        if (fuesse.length < n) return null;
-        const lage = (j) => fuesse[fuss(j)];
-        const G = new THREE.Group();
-        for (let j = 0; j < m; j++) {
-            const k = this._buildArchMeshMerged(bp);
-            const [x, z] = lage(j);
-            k.position.set(x, y[fuss(j)] + (Math.floor(j / 3) % 2) * kM, z);
-            k.rotation.y = w.blick;
-            G.add(k);
-        }
-        G.userData.kisten = -1;
-        this.state.scene.add(G);
-        return (b.bestandBild = G);
+        return null;
     }
 
-    // DER TAKT DES BILDS DER STÄNDE (je `taktS` der Bild-Uhr, nur die Stände im Kreis `nahM` um das Auge): der Verbrauch leert den
-    // Stand an der Welt-Uhr, das Bild folgt ihm; ein Stand, der den Kreis verlässt, verbirgt seine Kisten
+    // DIE WARE IM BILD (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1; das Gesetz: koerper `bestandStueck` · `bestandStapel`): das
+    // EINE Bild jeder Ware — am Stand, in der Scheune, am Ofen, auf dem Wagen, die Halde, die Werkzeuge der Schmiede. Je Ware und
+    // Zahl der Plätze `cap` EIN Bauplan: `cap` Stücke ihrer Gestalt aus ihrem Stoff (`_wareStueck`) an den Lagen ihres Stapels, gebaut
+    // über den EINEN Bau-Pfad (`_buildArchMeshMerged`: je Stoff EIN Mesh, die Vorlage geteilt, solange ein Bild aus ihr steht); das
+    // Bild zeigt die ersten k Stücke (`_wareZeige`: der Zeichen-Bereich je Mesh — kein Mesh je Stück). Bis hier stand für jede Ware
+    // je angefangene vier Einheiten eine Holzkiste 0,6 m (der Bauplan `kiste`, je Kiste ein Mesh), die Halde lag als Kegel aus Stein.
+    // Eine Ware ohne Gestalt bricht laut (koerper `bestandStueck`), ebenso eine ohne Zeile im Stoff-Buch (sie läge sonst im
+    // Ersatz-Stoff — die dunkle Kiste in anderer Form); ein Werkzeug ohne Bauplan meldet die Kette (null).
+    _wareBild(ware, cap) {
+        const C = this._wareBauplaene || (this._wareBauplaene = new Map());
+        const key = ware + ":" + cap;
+        let bp = C.get(key);
+        if (!bp) {
+            const KC = window.__koerperCore;
+            const zeile = this.state.materials && this.state.materials[ware];
+            const st = KC.bestandStueck(ware, zeile ? zeile.rho : null);
+            if (st.gestalt !== "werkzeug" && !zeile)
+                throw new Error(
+                    `BESTAND: die Ware ${ware} hat keine Zeile im Stoff-Buch (state.materials) — kein Bild ohne Stoff`
+                );
+            const ein = this._wareStueck(st);
+            if (!ein) return null;
+            const L = st.gestalt === "schuettung" ? new Float64Array(4) : KC.bestandStapel(cap, ein.masz, st.gestalt);
+            const [M, P] = [new THREE.Matrix4(), new THREE.Matrix4()];
+            const [E, Q, V, S] = [new THREE.Euler(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3()];
+            const parts = [];
+            let radius = 0;
+            for (let i = 0; i < cap; i++) {
+                M.makeRotationY(L[4 * i + 3]).setPosition(L[4 * i], L[4 * i + 1], L[4 * i + 2]);
+                for (const q of ein.parts) {
+                    const [p, o] = [q.position || {}, q.rotation || {}];
+                    P.makeRotationFromEuler(E.set(o.x || 0, o.y || 0, o.z || 0)).setPosition(
+                        p.x || 0,
+                        p.y || 0,
+                        p.z || 0
+                    );
+                    P.premultiply(M).decompose(V, Q, S);
+                    E.setFromQuaternion(Q);
+                    parts.push({ ...q, position: { x: V.x, y: V.y, z: V.z }, rotation: { x: E.x, y: E.y, z: E.z } });
+                }
+                if (ein.masz) radius = Math.max(radius, Math.hypot(Math.abs(L[4 * i]) + ein.masz[0] / 2, Math.abs(L[4 * i + 2]) + ein.masz[0] / 2)); // prettier-ignore
+            }
+            bp = { name: "ware_" + ware + "_" + cap, parts, je: ein.parts.length, cap, radius };
+            C.set(key, bp);
+        }
+        const G = this._buildArchMeshMerged(bp);
+        const U = G.userData;
+        [U.ware, U.cap, U.je, U.radius, U.stuecke] = [ware, cap, bp.je, bp.radius, -1];
+        if (U.archMerged) for (const m of G.children) m.userData.jeStueck = m.geometry.attributes.position.count / cap;
+        G.visible = false;
+        return G;
+    }
+
+    // DAS STÜCK EINER WARE (das Gesetz koerper `bestandStueck`, die Gestalt im Bau-Pfad): die Teile EINES Stücks um seine Mitte,
+    // die Länge längs x, und sein Maß [Länge, Höhe, Breite]. Der Spitzbarren (Teil `spitzbarren`), der Bund (ein Sechskant-Zylinder
+    // längs x), die Schüttung (ein Kegel vom Halbmesser 1 und der Höhe 1 — ihr Bild skaliert ihn auf die Form der Halde) aus dem
+    // Stoff der Ware; das Werkzeug ist der Bauplan der Schmiede (`_stoffstromBauplan`) in seiner wahren Größe (`_geraetWeltSkala`,
+    // dieselbe wie in der Hand), liegend: seine längste Achse längs x, seine flachste senkrecht.
+    _wareStueck(st) {
+        const [w, m] = [st.ware, st.masz];
+        if (st.gestalt === "spitzbarren")
+            return { masz: m, parts: [{ shape: "spitzbarren", material: w, size: { x: m[0], y: m[1], z: m[2] } }] };
+        if (st.gestalt === "bund")
+            return {
+                masz: m,
+                parts: [{ shape: "cylinder", material: w, segments: 6, size: { x: m[2], y: m[0], z: m[2] }, rotation: { x: 0, y: 0, z: Math.PI / 2 } }], // prettier-ignore
+            };
+        if (st.gestalt === "schuettung")
+            return { masz: null, parts: [{ shape: "cone", material: w, segments: 16, size: { x: 2, y: 1, z: 2 }, position: { x: 0, y: 0.5, z: 0 } }] }; // prettier-ignore
+        const name = this._stoffstromBauplan(w);
+        if (!name) return null;
+        const bp = this.state.blueprints[name];
+        const s = this._geraetWeltSkala(bp);
+        // die Teile in wahrer Größe, ihre Hülle in der Lage des Bauplans
+        const E = new THREE.Euler();
+        const roh = bp.parts.map((q) => ({
+            ...q,
+            size: q.size
+                ? { x: (q.size.x || 1) * s, y: (q.size.y || q.size.x || 1) * s, z: (q.size.z || q.size.x || 1) * s }
+                : q.size,
+            position: { x: ((q.position && q.position.x) || 0) * s, y: ((q.position && q.position.y) || 0) * s, z: ((q.position && q.position.z) || 0) * s }, // prettier-ignore
+        }));
+        const box = new THREE.Box3();
+        for (const q of roh) {
+            const g = this._makePartGeometry(q);
+            const o = q.rotation || {};
+            g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(E.set(o.x || 0, o.y || 0, o.z || 0)).setPosition(q.position.x, q.position.y, q.position.z)); // prettier-ignore
+            g.computeBoundingBox();
+            box.union(g.boundingBox);
+            g.dispose();
+        }
+        // liegend: die Achsen nach ihrer Länge — die längste wird x, die kürzeste y (die Reihen einer Dreh-Matrix, rechtshändig)
+        const d = box.getSize(new THREE.Vector3()).toArray();
+        const [lang, , kurz] = [0, 1, 2].sort((a, b) => d[b] - d[a]);
+        const mitte = 3 - lang - kurz;
+        const e = (i) => [0, 1, 2].map((j) => +(i === j));
+        const [rx, ry] = [e(lang), e(kurz)];
+        const rz = [rx[1] * ry[2] - rx[2] * ry[1], rx[2] * ry[0] - rx[0] * ry[2], rx[0] * ry[1] - rx[1] * ry[0]];
+        const R = new THREE.Matrix4().set(...rx, 0, ...ry, 0, ...rz, 0, 0, 0, 0, 1);
+        const c = box.getCenter(new THREE.Vector3()).applyMatrix4(R);
+        R.setPosition(-c.x, -c.y, -c.z);
+        const [P, Q, V, S] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3()];
+        const parts = roh.map((q) => {
+            const o = q.rotation || {};
+            P.makeRotationFromEuler(E.set(o.x || 0, o.y || 0, o.z || 0)).setPosition(
+                q.position.x,
+                q.position.y,
+                q.position.z
+            );
+            P.premultiply(R).decompose(V, Q, S);
+            E.setFromQuaternion(Q);
+            return { ...q, position: { x: V.x, y: V.y, z: V.z }, rotation: { x: E.x, y: E.y, z: E.z } };
+        });
+        return { masz: [d[lang], d[kurz], d[mitte]], parts };
+    }
+
+    // DAS BILD ZEIGT k STÜCKE (die ersten k des Stapels, höchstens seine Plätze): verschmolzen der Zeichen-Bereich jedes Meshs
+    // (`jeStueck` Ecken je Stück), sonst je Teil sein Stück; ohne Stück zeichnet die Gruppe nichts
+    _wareZeige(G, k) {
+        const U = G.userData;
+        const n = Math.max(0, Math.min(U.cap, k | 0));
+        U.stuecke = n;
+        G.children.forEach((m, j) => {
+            if (U.archMerged) (m.geometry.setDrawRange(0, n * m.userData.jeStueck), (m.visible = n > 0));
+            else m.visible = Math.floor(j / U.je) < n;
+        });
+        G.visible = n > 0;
+    }
+
+    // DER TAKT DES BILDS DER HALTER (je `taktS` der Bild-Uhr, nur die Halter im Kreis `nahM` um das Auge): der Verbrauch leert den
+    // Stand an der Welt-Uhr, das Bild folgt ihm; ein Halter, der den Kreis verlässt, verbirgt seine Ware. Jeder gezeichnete Stapel
+    // (`S.wareNah`, aus dem Takt) legt sich in DEM Bild neu auf den gezeichneten Boden (`_wareBoden`), in dem sich dieser Boden
+    // ändern kann: die Karte seines Chunks ist neu gebaut (die Stufe folgt dem Auge über mehrere Bilder nach seinem Sprung) oder das
+    // Auge steht `fussAugeM` weiter als bei der letzten Lesung (der Geomorph im Band der Stufe) — ein Barren von 7 cm liegt sonst in
+    // der Erde oder in der Luft. Die Kosten folgen der Änderung (Auge und Boden stehen: kein Ruf), nie der Zahl der Stapel je Bild
     _bestandBildTakt(S) {
-        const t = this._bildZeit || 0;
-        if (S.bestandTakt != null && t - S.bestandTakt < AnazhRealm.BESTAND_BILD.taktS) return;
-        S.bestandTakt = t;
+        const B = AnazhRealm.BESTAND_BILD;
         const p = this._lodAuge() || this.state.playerMesh.position;
-        const R = AnazhRealm.BESTAND_BILD.nahM;
+        const vc = this.state.voxelChunks;
+        if (S.wareNah && vc)
+            for (const G of S.wareNah) {
+                const P = G.userData.platz;
+                if (!G.visible || !P) continue;
+                const E = vc.get(P.chunk);
+                if ((E ? E.surfMap : null) !== P.karte || !(Math.hypot(P.augeX - p.x, P.augeZ - p.z) < B.fussAugeM))
+                    this._wareBoden(G);
+            }
+        const t = this._bildZeit || 0;
+        if (S.bestandTakt != null && t - S.bestandTakt < B.taktS) return;
+        S.bestandTakt = t;
+        S.wareNah = [];
         for (const b of [...(S.liste || []), ...(S.scheunen || [])]) {
             const H = b.bestand;
             if (!H || (H.art !== "stand" && H.art !== "scheune" && !this._stoffstromOfen(H))) continue;
-            const nah = Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < R;
-            if (nah) this._bestandBild(b);
-            else if (b.bestandBild && b.bestandBild.visible)
-                [b.bestandBild.visible, b.bestandBild.userData.kisten] = [false, -1];
+            if (Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < B.nahM) {
+                this._bestandBild(b);
+                for (const G of [b.bestandBild, b.werkzeugBild]) if (G) S.wareNah.push(G);
+            } else
+                for (const G of [b.bestandBild, b.werkzeugBild])
+                    if (G && G.visible) [G.visible, G.userData.stuecke] = [false, -1];
         }
         // die Kette läuft an der Welt-Uhr, auch fern jedes Auges (die Hände empfangen ihre Werkzeuge); ihre Halde zeigt sich nah
         if (S.stoffstrom) {
@@ -1403,19 +1600,19 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
 
-    // ist der Halter H ein Ofen einer Stoffstrom-Kette? (sein Bild sind die Barren neben dem Schmied, im Kistenmaß des Bestands)
+    // ist der Halter H ein Ofen einer Stoffstrom-Kette? (sein Bild sind die Barren neben dem Schmied und seine Werkzeuge)
     _stoffstromOfen(H) {
         return !!(H && H.art === "werk" && this._stoffstromVon && this._stoffstromVon.has(H));
     }
 
-    // die Kisten eines Halters fort (die Liste geht, `_bewohnerFort`)
+    // das Bild der Ware eines Halters fort (die Liste geht, `_bewohnerFort`)
     _bestandFort(S) {
         for (const b of [...(S.liste || []), ...(S.scheunen || [])])
-            if (b.bestandBild) {
-                this.state.scene.remove(b.bestandBild);
-                this._disposeSoulGroup(b.bestandBild);
-                b.bestandBild = null;
-            }
+            for (const f of ["bestandBild", "werkzeugBild"])
+                if (b[f]) {
+                    this._wareFort(b[f]);
+                    b[f] = null;
+                }
         const Z = S.stoffstrom;
         if (Z && Z.bild) {
             this.state.scene.remove(Z.bild);
@@ -4130,11 +4327,22 @@ AnazhRealm.BEWOHNER = Object.freeze({
     zeugeM: 25,
 });
 
-// DAS BILD DES BESTANDS (`_bestandBild`, `_bestandTausch`, `_verkehrLadung`): tauschM = so nah steht der Spieler am Stand (dem
-// Punkt hinter der Theke), damit die Taste des Verbs tauscht · kisteM = der Abstand der Kisten (der Bauplan `kiste`, 0,6 m) ·
-// seiteM = so weit seitlich des Händlers steht die erste Kiste (der Tritt des Stands reicht 1,45 m, fachwerk AUSSTATTUNG
-// marktstand) · nahM = so nah am Auge zeichnet ein Stand seine Kisten · taktS = so oft (Bild-Uhr) prüft der Takt sie
-AnazhRealm.BESTAND_BILD = Object.freeze({ tauschM: 3, kisteM: 0.62, seiteM: 1.9, nahM: 60, taktS: 1 });
+// DAS BILD DES BESTANDS (`_bestandBild`, `_bestandTausch`, `_wareBild`): tauschM = so nah steht der Spieler am Stand (dem
+// Punkt hinter der Theke), damit die Taste des Verbs tauscht · fussM = das Raster der Plätze, an denen ein Stapel stehen kann ·
+// seiteM = so weit seitlich des Händlers steht der erste Stapel (der Tritt des Stands reicht 1,45 m, fachwerk AUSSTATTUNG
+// marktstand) · trittM = so weit über den Rand des Stapels ist der Boden getreten (wer die Ware holt, steht an ihm: eine
+// halbe Schrittlänge) · nahM = so nah am Auge zeichnet ein Halter seine Ware · taktS = so oft (Bild-Uhr) prüft der Takt sie ·
+// fussAugeM = so weit wandert das Auge, ehe ein gezeichneter Stapel sich neu auf den gezeichneten Boden legt (ein Schritt: die Stufe
+// des Bodens wandert mit dem Auge stetig, über einen Meter um wenige Millimeter)
+AnazhRealm.BESTAND_BILD = Object.freeze({
+    tauschM: 3,
+    fussM: 0.62,
+    seiteM: 1.9,
+    trittM: 0.4,
+    nahM: 60,
+    taktS: 1,
+    fussAugeM: 1,
+});
 
 // DIE NÄCHSTEN KNOTEN AUS DEM RASTER (Lehre 25: der billige Filter zuerst): je Zelle (`gasseZelleM` × 3) ihre Knoten; die
 // Frage eines Punkts geht Ring um Ring, bis seine n nächsten näher liegen als der nächste Ring — dieselben n wie die

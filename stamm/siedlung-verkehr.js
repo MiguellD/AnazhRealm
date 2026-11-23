@@ -527,37 +527,39 @@ class AnazhRealm_siedlung_verkehr {
         this._verkehrLadung(W);
     }
 
-    // DIE LADUNG IM BILD: je angefangene Kiste seines Bestands (BESTAND_GESETZ.kiste) eine Kiste der Welt (der Bauplan `kiste`) auf
-    // seinem Dach, längs seiner Achse — an der Lage, die sein Bild trägt, in seiner Neigung (`_archEntryWorldMatrix`): die Matrix
-    // schreibt nur `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt, dieselbe, aus der die Instanz ihre Matrix
-    // nimmt) und die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im Takt) zählt nur die Kisten. Bis hier schrieb
-    // auch die Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des Wagens: die Kisten standen neben ihm in der Luft
-    // (stadt-voll, Radeon 22.11.). Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt —
-    // `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut.
+    // DIE LADUNG IM BILD: die Ware seines Bestands in ihrem EINEN Bild (`_wareBild`: je angefangene Einheit ein Stück aus ihrem
+    // Stoff, gestapelt) auf seinem Dach, mittig längs seiner Achse — an der Lage, die sein Bild trägt, in seiner Neigung
+    // (`_archEntryWorldMatrix`): die Matrix schreibt nur `_verkehrBild` (`amBild`, wo der Eintrag die Lage des Bilds trägt,
+    // dieselbe, aus der die Instanz ihre Matrix nimmt) und die Geburt der Gruppe; jeder andere Ruf (die Ankunft, die Sicht im
+    // Takt) zählt nur die Stücke. Bis hier schrieb auch die Ankunft die Matrix — an der Lage der Simulation, vor dem Bild des
+    // Wagens: die Ladung stand neben ihm in der Luft (stadt-voll, Radeon 22.11.); bis stoffstrom#1 lud er je vier Einheiten eine
+    // Holzkiste (der Bauplan `kiste`). Gezeichnet, wo der Wagen in einer 3D-Stufe steht (`_archTraegt`, das Komposit erbt —
+    // `_tickVerkehr` hält die Sicht). Je Wagen EINE Gruppe, einmal gebaut (trägt er eine andere Ware, steht sie neu).
     _verkehrLadung(W, amBild = false) {
         const e = W.entry;
         const H = W.bestand;
         if (!e || !H) return;
-        const KC = window.__koerperCore;
-        const k = Math.ceil((H.n[H.ware] || 0) / KC.BESTAND_GESETZ.kiste - 1e-9);
+        const k = Math.ceil((H.n[H.ware] || 0) - 1e-9);
         let G = W.ladungBild;
+        if (G && G.userData.ware !== H.ware) {
+            this.state.scene.remove(G);
+            this._disposeSoulGroup(G);
+            G = W.ladungBild = null;
+        }
         if (!G) {
-            const bp = this.state.blueprints && this.state.blueprints.kiste;
-            if (!k || !bp || !this.state.scene) return;
+            if (!k || !this.state.scene) return;
+            const L = this._wareBild(H.ware, H.cap);
+            if (!L) return;
             G = new THREE.Group();
             G.matrixAutoUpdate = false;
+            G.userData.ware = H.ware;
             const um = this._fahrUmriss(e);
-            const kM = AnazhRealm.BESTAND_BILD.kisteM;
-            const m = Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste);
             const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             // (der Rahmen der Gestalt: Bug +x, die Höhe ab dem Ursprung der Instanz — das Dach `dach`, alles ÷ der Größe des Eintrags)
-            for (let j = 0; j < m; j++) {
-                const c = this._buildArchMeshMerged(bp);
-                c.position.set(((um.bug + um.heck) / 2 + (j - (m - 1) / 2) * kM) / sc, um.dach / sc, 0);
-                c.scale.setScalar(1 / sc); // die Kiste trägt ihr Maß der Welt, nie die Größe des Wagens
-                c.updateMatrix();
-                G.add(c);
-            }
+            L.position.set((um.bug + um.heck) / 2 / sc, um.dach / sc, 0);
+            L.scale.setScalar(1 / sc); // die Ware trägt ihr Maß der Welt, nie die Größe des Wagens
+            L.updateMatrix();
+            G.add(L);
             this.state.scene.add(G);
             W.ladungBild = G;
             amBild = true;
@@ -566,8 +568,9 @@ class AnazhRealm_siedlung_verkehr {
             this._archEntryWorldMatrix(e, G.matrix);
             G.matrixWorldNeedsUpdate = true;
         }
-        G.userData.kisten = k;
-        G.children.forEach((c, j) => (c.visible = j < k));
+        const L = G.children[0];
+        if (L.userData.stuecke !== k) this._wareZeige(L, k);
+        G.userData.stuecke = L.userData.stuecke;
         G.visible = k > 0 && this._archTraegt(e);
     }
 
@@ -881,13 +884,13 @@ class AnazhRealm_siedlung_verkehr {
         const p = this._lodAuge() || pm.position; // das Auge der Stufen: die Nah-Wahl und die Stufe der Fahrer messen von ihm
         for (const S of alle.values()) {
             const VK = S.verkehr;
-            if (S.liste) this._bestandBildTakt(S); // die Kisten der nahen Stände folgen dem Verbrauch (auch im Dorf ohne Wagen)
+            if (S.liste) this._bestandBildTakt(S); // die Ware der nahen Stände folgt dem Verbrauch (auch im Dorf ohne Wagen)
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
             for (const W of VK.wagen) {
                 // DIE LADUNG ERBT DIE STUFE (das Komposit): gezeichnet nur, wo der Wagen in einer 3D-Stufe steht
                 const G = W.ladungBild;
-                if (G && G.visible !== (G.userData.kisten > 0 && !!W.entry && this._archTraegt(W.entry)))
+                if (G && G.visible !== (G.userData.stuecke > 0 && !!W.entry && this._archTraegt(W.entry)))
                     this._verkehrLadung(W);
                 // DAS BILD DES WAGENS je Bild (`_verkehrSchritt` merkt, wer sich bewegte, `bildAlt`): die Instanz-Matrix samt Rädern
                 // schreibt das Bild, nicht der Schritt — bis w13-verkehr-heil schrieb sie jeder Sim-Schritt (stadt-voll 10 Uhr 0,25 von

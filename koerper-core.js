@@ -5711,8 +5711,30 @@
         // (Bairoch: rund 80 % der Menschen auf dem Feld): 24 / 4 = 6 je Kopf. Ein Hof mit weniger Bauern, als er Esser trägt,
         // leert die Scheune am Mittag und füllt sie am Feierabend (der Sägezahn), einer mit mehr füllt sie bis zum Lager.
         mahl: Object.freeze({ jeKopfTag: 6 }),
-        // das Bild des Bestands: so viele Einheiten trägt eine Kiste (der Wirt stellt je angefangene Kiste eine)
-        kiste: 4,
+        // DIE WARE IM BILD (mensch.wirtschaft.stoffstrom#1, `bestandStueck` · `bestandStapel`): je Ware ihr STÜCK — die Gestalt,
+        // die Masse kg und das Verhältnis seiner Breite und Höhe zur Länge (`seite`); die Dichte der Zeile ihres Stoffs macht aus
+        // der Masse das Volumen, die Gestalt aus dem Volumen die Maße. Der Spitzbarren (Eisen): der Handelsbarren der Rennöfen,
+        // zwei vierseitige Pyramiden Fuß an Fuß, er wiegt, was die Luppe füllt (`stoffstrom.barrenKg`) — 5 kg Eisen sind 39 cm
+        // lang und in der Mitte 7 cm breit. Der Bund (Kraut): ein gebundener Bund frisches Kraut, 0,5 kg, ⌀ 0,22 der Länge — bei
+        // ρ 400 der Zeile 32 cm lang. Das Werkzeug (das Beil der Kette, schmiede `STOFFSTROM.werkzeug`): seine Gestalt trägt die
+        // Schmiede (der Bauplan des Wirts), seine Maße ihr Bau. Die Schüttung (Erz): die Halde, ihre Form trägt
+        // `stoffstromHaldeForm`. Eine Ware ohne Zeile hat kein Bild (bricht laut).
+        // stapel: die Stücke liegen in Lagen — der Spitzbarren und das Werkzeug je Lage quer zur vorigen (`kreuz`), der Bund
+        // parallel, jede zweite Lage um einen halben Bund versetzt (`reihe`) —, höchstens `hoeheM` hoch, dann der nächste Stapel
+        // daneben im Abstand `fugeM`. Bis hier stellte der Wirt je angefangene vier Einheiten eine Holzkiste 0,6 m: der Barren,
+        // das Kraut, die Ernte lasen sich als dieselbe dunkle Kiste (gemessen am Dorf, drei Tage gerafft: 14 Barren an vier Öfen
+        // als 5 Kisten aus Holz, 8 Bund in der Scheune als 2).
+        stueck: Object.freeze({
+            eisen: Object.freeze({ gestalt: "spitzbarren", seite: 0.18 }),
+            kraut: Object.freeze({ gestalt: "bund", kg: 0.5, seite: 0.22 }),
+            beil: Object.freeze({ gestalt: "werkzeug" }),
+            erz: Object.freeze({ gestalt: "schuettung" }),
+        }),
+        stapel: Object.freeze({
+            hoeheM: 0.9,
+            fugeM: 0.08,
+            art: Object.freeze({ spitzbarren: "kreuz", werkzeug: "kreuz", bund: "reihe" }),
+        }),
     });
     // DAS FENSTER DER ARBEIT eines Menschen: die Stunden des Tags [a, b) (0–24, ohne Versatz in seiner Uhr), in denen sein Plan ihn
     // bei der Arbeit sieht — Werk zwischen Aufstehen und Ruhe, ohne den Mittag außer Haus (`tagesPlan`; der Regen bleibt draußen)
@@ -6006,6 +6028,72 @@
                 var a = a0 + (j * 2 * Math.PI) / L.je + (r / L.ringM) * 0.5;
                 aus.push({ x: ox + r * Math.cos(a), z: oz + r * Math.sin(a), r: r });
             }
+        return aus;
+    }
+    // ── DIE WARE IM BILD (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, rein additiv): jede Ware des Bestands zeigt sich als
+    //    ihr STÜCK aus ihrem Stoff und Maß (`bestandStueck`: die Masse des Gesetzes durch die Dichte der Zeile ist das Volumen,
+    //    die Gestalt gibt aus ihm Länge, Höhe und Breite) im STAPEL (`bestandStapel`: die Lage jedes Stücks, Lage für Lage von
+    //    unten — ein Halter mit k Einheiten zeigt die ersten k Stücke, der Stapel schrumpft von oben). Leser: der Wirt (`_wareBild`,
+    //    das EINE Bild jeder Ware: Stand, Scheune, Ofen, Wagen, Halde, die Werkzeuge der Schmiede) und gate:koerper-kern WARE.
+    // DAS STÜCK der Ware `ware` aus der Dichte `rho` (kg/m³) ihres Stoffs: { ware, gestalt, kg, masz: [Länge, Höhe, Breite] m,
+    // volumen m³ } — die Schüttung (die Halde) und das Werkzeug (der Bauplan der Schmiede) tragen ihre Maße selbst (masz null)
+    function bestandStueck(ware, rho) {
+        var B = BESTAND_GESETZ,
+            S = B.stueck[ware];
+        if (!S) throw new Error("BESTAND: die Ware " + ware + " hat keine Gestalt im Bild (BESTAND_GESETZ.stueck)");
+        if (S.gestalt === "schuettung" || S.gestalt === "werkzeug")
+            return { ware: ware, gestalt: S.gestalt, kg: null, masz: null, volumen: null };
+        if (!(rho > 0)) throw new Error("BESTAND: das Stück der Ware " + ware + " braucht die Dichte ihres Stoffs");
+        // das Volumen je Länge³: der Spitzbarren s²/3 (zwei Pyramiden der Höhe L/2 über dem Quadrat s·L), der Bund π·s²/4
+        var k =
+            S.gestalt === "spitzbarren"
+                ? (S.seite * S.seite) / 3
+                : S.gestalt === "bund"
+                  ? (Math.PI * S.seite * S.seite) / 4
+                  : NaN;
+        if (!(k > 0))
+            throw new Error("BESTAND: die Gestalt " + S.gestalt + " der Ware " + ware + " kennt ihr Volumen nicht");
+        var kg = S.gestalt === "spitzbarren" ? B.stoffstrom.barrenKg : S.kg,
+            V = kg / rho,
+            L = Math.cbrt(V / k);
+        return { ware: ware, gestalt: S.gestalt, kg: kg, masz: [L, S.seite * L, S.seite * L], volumen: V };
+    }
+    // DER STAPEL von n Stücken des Maßes `masz` ([Länge x, Höhe y, Breite z]) der Gestalt `gestalt`: je Stück [x, y, z, drehY] (die
+    // Mitte des Stücks über dem Fuß des Stapels, y = 0 der Boden; drehY die Drehung um die Senkrechte) in der Folge, in der sie
+    // sich füllen — je Lage `je` Stücke Seite an Seite (so viele, wie die Länge Breiten trägt), Lage über Lage bis `hoeheM`, die
+    // Stapel in einer Reihe längs x, um den Fuß zentriert
+    function bestandStapel(n, masz, gestalt) {
+        var G = BESTAND_GESETZ.stapel,
+            art = G.art[gestalt],
+            L = masz && masz[0],
+            H = masz && masz[1],
+            B = masz && masz[2];
+        if (!art)
+            throw new Error("BESTAND: die Gestalt " + gestalt + " kennt keinen Stapel (BESTAND_GESETZ.stapel.art)");
+        if (!(L > 0 && H > 0 && B > 0)) throw new Error("BESTAND: ein Stück ohne Maß stapelt nicht (" + gestalt + ")");
+        var je = Math.max(1, Math.floor(L / B + 1e-9)),
+            dy = art === "reihe" ? (H * Math.sqrt(3)) / 2 : H, // der Bund liegt in der Rinne zweier Bunde darunter
+            lagen = Math.max(1, Math.floor((G.hoeheM - H) / dy + 1e-9) + 1),
+            jeStapel = je * lagen,
+            m = Math.max(1, Math.ceil(n / jeStapel)),
+            aussen = art === "kreuz" ? Math.max(L, je * B) : L,
+            aus = new Float64Array(4 * Math.max(0, n));
+        for (var i = 0; i < n; i++) {
+            var s = Math.floor(i / jeStapel),
+                k = i - s * jeStapel,
+                l = Math.floor(k / je),
+                q = (k - l * je - (je - 1) / 2) * B,
+                sx = (s - (m - 1) / 2) * (aussen + G.fugeM),
+                o = 4 * i;
+            aus[o + 1] = H / 2 + l * dy;
+            if (art === "kreuz" && l % 2) {
+                aus[o] = sx + q; // die Lage quer zur vorigen
+                aus[o + 3] = Math.PI / 2;
+            } else {
+                aus[o] = sx;
+                aus[o + 2] = q + (art === "reihe" && l % 2 ? B / 2 : 0);
+            }
+        }
         return aus;
     }
 
@@ -10364,6 +10452,9 @@
         stoffstromFassen: stoffstromFassen,
         stoffstromOrte: stoffstromOrte,
         stoffstromHaldeForm: stoffstromHaldeForm,
+        // mensch.wirtschaft.stoffstrom#1 — DIE WARE IM BILD (das Stück aus Stoff und Maß, sein Stapel; Leser: _wareBild)
+        bestandStueck: bestandStueck,
+        bestandStapel: bestandStapel,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,

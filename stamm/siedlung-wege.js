@@ -1888,14 +1888,23 @@ class AnazhRealm_siedlung_wege {
                   ? { typ: "segment", kanal: 0, ax: x, az: z, bx: x, bz: z, halb: t.r * s }
                   : null;
         if (!form) return;
+        this._trittFlaecheMalen(form, entry);
+    }
+    // DIE TRITTFLÄCHE EINER FORM (der EINE Maler: die Ausstattung `_trittFlaecheSetzen`, der Platz einer Ware `_bestandWare` —
+    // wer sie holt und bringt, tritt den Boden um sie): die Form in die Wege-Karte, ihr Kasten in die Natur-Wand, die Wiese
+    // darüber neu; Rückgabe der Kasten (für `_trittBoxLoesen`), ohne Wege-Karte null. `entry` trägt ihn, ehe die Stufen malen.
+    // Der Kasten umfasst die Form von a bis b (der Gang zum Stapel ist ein Segment vom Werk bis zu ihm).
+    _trittFlaecheMalen(form, entry = null) {
         const wk = this._wegeKarteEnsure();
-        if (!wk) return;
+        if (!wk) return null;
         const r = AnazhRealm._wegeFormRadius(form);
-        const box = { x0: x - r, z0: z - r, x1: x + r, z1: z + r, formen: [form] };
+        const [x0, x1] = [Math.min(form.ax, form.bx), Math.max(form.ax, form.bx)];
+        const [z0, z1] = [Math.min(form.az, form.bz), Math.max(form.az, form.bz)];
+        const box = { x0: x0 - r, z0: z0 - r, x1: x1 + r, z1: z1 + r, formen: [form] };
         wk.siedlungen.push(box);
         wk.raeumen.push(box); // was schon um die Ausstattung wuchs, räumt der Takt (`_wegeRaeumen`)
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
-        entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
+        if (entry) entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
         for (const stufe of wk.stufen)
             if (stufe.zentriert) {
                 this._wegeKarteMale(stufe, form);
@@ -1904,18 +1913,24 @@ class AnazhRealm_siedlung_wege {
         const pm = this.state.playerMesh;
         if (pm && wk.stufen.some((st) => !st.zentriert)) this._tickWegeKarte(pm.position);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+        return box;
     }
     // Der Abbau nimmt die Trittfläche mit: die Form fällt aus der Karte, jede zentrierte Stufe malt JETZT neu (der
     // EINE Neu-Maler — bis 06.10. wartete der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte: die
     // GPU-Karte zeigte weiter Erde, der CPU-Leser 0), Wiese und Nah-Streu wachsen über der Fläche zurück.
     _trittFlaecheLoesen(entry) {
-        const wk = this.state.wegeKarte;
         const box = entry ? entry._trittBox : null;
-        if (!box || !wk) return;
+        if (!box || !this.state.wegeKarte) return;
+        this._trittBoxLoesen(box, entry);
+    }
+    // der Kasten `box` einer Trittfläche fällt (die Ausstattung geht, der Platz einer Ware geht — `_wareFort`)
+    _trittBoxLoesen(box, entry = null) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return;
         const i = wk.siedlungen.indexOf(box);
         if (i >= 0) wk.siedlungen.splice(i, 1);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
-        entry._trittBox = undefined;
+        if (entry) entry._trittBox = undefined;
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe, null, null, box); // nur ihr Kasten malt neu
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }

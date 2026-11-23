@@ -1685,6 +1685,7 @@ class AnazhRealm_bau_vorlagen {
             gras:     [0.6,  533,    0.4,   0.2,  0.000348],
             wasser:   [null, null,   null,  null, 0.003],
             eis:      [0.05, null,   null,  null, null],
+            erz:      [0.6,  null,   0.8,   0.55, null],
         };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
@@ -1740,7 +1741,8 @@ class AnazhRealm_bau_vorlagen {
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
         // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
         // nicht an (`bauStoff`).
-        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis"];
+        // Das Erz liegt nur in der Halde der Stoffstrom-Kette (die Esse nimmt es, keine Hand baut damit).
+        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis", "erz"];
         const make = (name, label, color, tags) => {
             const si = SI[name];
             const g = SG.zeile(name);
@@ -2003,6 +2005,17 @@ class AnazhRealm_bau_vorlagen {
                 wärmeleitung: 0.5,
                 transparent: 0.7,
                 resoniert: 0.5,
+            }),
+            // DAS ERZ DER RENNÖFEN (mensch.wirtschaft.stoffstrom#1): die Zeile `erz` des Stoff-Gesetzes (Hämatit mit Kieselsäure,
+            // ρ, E und Glanz folgen dort aus den Teilen) — der Roteisenstein, rotbraun bis stahlgrau, sein Strich kirschrot. Die Halde
+            // der Kette zeigt ihn (`_wareBild`); bis hier lag sie als Kegel aus Stein.
+            make("erz", "stoff.erz", 0x6b3b2b, {
+                härte: 0.6,
+                dichte: 0.9,
+                zähigkeit: 0.25,
+                wärmeleitung: 0.3,
+                stromleitung: 0.1,
+                resoniert: 0.3,
             }),
         ];
         const out = {};
