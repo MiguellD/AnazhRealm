@@ -2125,6 +2125,8 @@
     // und Auswaschung in Bahnen — die Wolke der Art (ihr lotrechter Läufer) steht unter dem Dach `lauf`-fach stärker und fällt über
     // `weit` Meter Tiefe auf ihr Maß (1,5 m: eine Bahn läuft so weit, bis die Wand sie getrunken hat — am Bild gestellt, OHNE
     // Messung). Mittelfrei wie die Wolke: fern, wo sie ihr Mittel ist, bleibt nichts — die ferne Stufe (ohne die Tiefe) springt nicht.
+    // Putz und Gefach 0,75 (unter der Dachhaut 1,75-fach): mit 2,5 las der Giebel bei Stärke 2 aus 13,5 m als Schmier-Rauschen
+    // (er liegt ganz unter dem Ortgang) — am Bild gestellt, Radeon 890M, 23.11.
     // DIE TIEFE UNTER DEM DACH rechnet der Kern je Ecke jeder Rolle, deren Art einen Läufer trägt (`lauf` > 0: Putz und Gefach),
     // gegen die Unterseite der Dach-Rollen (`dach`: Deckung, Stroh; ein Dach aus Holz nennt sich nicht: seine Rolle trägt auch
     // jeden Balken) über ihr — `vor` Meter vor der Wand, im Raster `zelle` (`_eckLage`, zweite Stelle).
@@ -2138,9 +2140,13 @@
     // WO DIE KANTE IST nennt die Ecke (`_eckLage`, zweite Stelle: 1 an der einen langen Kante ihrer Fläche, 3 an der anderen,
     // 0 = keine Angabe — das Holz trägt keinen Läufer, die Stelle ist frei; eine Art trägt Läufer ODER Kante).
     // DIE STÄRKE (`staerke`): der EINE Faktor auf Ton, Hub und Rauheit jeder Art (`gefuegeZeilen`). Die Zahlen der Arten nennen
-    // das Maß am Ding; `staerke` ist am Bild gestellt (die Stufen × 1 · 2 · 3 in EINER Welt, Radeon 890M, 23.11.).
+    // das Maß am Ding; `staerke` ist am Bild gestellt (die Stufen × 1 · 2 · 3 in EINER Welt, die Tafel des Stoffs live getauscht,
+    // Radeon 890M, 23.11.): × 1 liest aus 13,5 m als glatte Fläche (Luma σ fein im Ausschnitt der Fassade 10,4 → 11,2), × 3 der
+    // Putz als Rauschen; × 2 ist die stärkste Stufe, die als Putz, Holz und Stein liest (σ fein 11,4). Aus 100 m steht jede Stufe
+    // ruhig: der Rest zweier Bilder mit 1 Pixel Schwenk, mittlere |ΔLuma| im Ausschnitt des Hauses, 1,73 ohne Gefüge · 1,93 bei × 2
+    // · 1,98 bei × 3 (der Kontrast wächst, kein Flimmern).
     var GEFUEGE_GESETZ = {
-        staerke: 1,
+        staerke: 2,
         fuss: { voll: 3, leer: 1.4 },
         spritz: { voll: 0.3, aus: 0.6, rand: 0.16 },
         lauf: { weit: 1.5, vor: 0.2, zelle: 0.25, dach: [2, 9] },
@@ -2148,8 +2154,8 @@
         wetterVon: [-0.92, 0, 0.39],
         silber: [0.147, 0.133, 0.112],
         art: {
-            putz:        { korn: [0.004, 0.004], zug: [0.28, 0.06], wolke: [0.18, 1.6], faser: 1.5708, ton: [0.05, 0.03, 0.06], hub: [0.0005, 0.0015, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 2.5 },
-            lehmputz:    { korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 2.5 },
+            putz:        { korn: [0.004, 0.004], zug: [0.28, 0.06], wolke: [0.18, 1.6], faser: 1.5708, ton: [0.05, 0.03, 0.06], hub: [0.0005, 0.0015, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
+            lehmputz:    { korn: [0.005, 0.005], zug: [0.2, 0.05], wolke: [0.25, 0.9], faser: 1.5708, ton: [0.06, 0.04, 0.07], hub: [0.0006, 0.002, 0.004], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.75 },
             holz:        { korn: [0.003, 0.09], zug: [0.045, 0.9], wolke: [0.12, 1.2], faser: 1.5708, ton: [0.12, 0.1, 0.08], hub: [0.0004, 0.0012, 0.002], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 1, spritz: 0.1, kante: [0.45, 0.015, 0.25] },
             hirnholz:   { korn: [0.003, 0.003], zug: [0.02, 0.02], wolke: [0.12, 0.12], faser: 0, ton: [0.1, 0.08, 0.05], hub: [0.0004, 0.0008, 0.001], woelb: [0, 0], rau: 0.04, wetter: 0.06, grau: 0.55, grund: 0.78, spritz: 0.1 },
             deckung:     { korn: [0.004, 0.004], zug: [0.05, 0.45], wolke: [0.5, 1.2], faser: 1.5708, ton: [0.05, 0.07, 0.09], hub: [0.0003, 0.0008, 0.002], woelb: [0.09, 0.08], rau: 0.04, wetter: 0.05, grau: 0, grund: 1 },
@@ -2166,10 +2172,12 @@
         // die Waagrechte ihrer Fläche (`faserNummer`); `hirn` = die Zeile der Stirn, `hirnAb` = |Achse · Normale| ab dem sie gilt.
         // DER TON JE BALKEN: über der Richtung trägt die Nummer die Klasse seines Tons (`toene` Klassen, gewürfelt aus der Mitte
         // des Balkens am Bau im Raster `tonRaster` Meter — dieselbe in jeder Stufe, die ihn als Teil führt): jeder Balken steht bis
-        // ± `ton` heller oder dunkler als das Mittel der Rolle, mittelfrei über die Klassen. 0,13: Kern- gegen Splintholz und
-        // Stamm gegen Stamm streuen an Eiche in der Helligkeit L* um ± 5–6 (≈ ± 13 % der Leuchtdichte bei L* 45; am Bild gestellt,
-        // OHNE eigene Messung). Die größte Nummer ab + klassen · toene − 1 = 121 bleibt in den sieben Bits der Ecke (≤ 127).
-        faser: { ab: 10, klassen: 16, toene: 7, ton: 0.13, tonRaster: 0.05, art: "holz", hirn: 8, hirnAb: 0.7 },
+        // ± `ton` heller oder dunkler als das Mittel der Rolle, mittelfrei über die Klassen. 0,26: am Bild gestellt, OHNE eigene
+        // Messung — mit 0,13 (Kern- gegen Splintholz EINES Stamms: L* ± 5–6 an Eiche, ≈ ± 13 % der Leuchtdichte bei L* 45) lasen
+        // die Balken aus 13,5 m als EIN Ton (sieben Klassen in Schritten von 4 %, im dunklen Holz ± 3 Stufen sRGB); ein Gefüge
+        // trägt Hölzer verschiedenen Alters und Wetters. Die größte Nummer ab + klassen · toene − 1 = 121 bleibt in den sieben
+        // Bits der Ecke (≤ 127).
+        faser: { ab: 10, klassen: 16, toene: 7, ton: 0.26, tonRaster: 0.05, art: "holz", hirn: 8, hirnAb: 0.7 },
     };
     // DIE ZEILEN DES GEFÜGES für den Stoff der Welt, der Platz = die Nummer (0 = null: kein Gefüge). Je Zeile die Zahlen ihrer Art,
     // dazu `rauFern`: was die Rauheit trägt, wenn das Relief unter dem Pixel liegt (die Streuung seiner Neigung geht in die Rauheit
