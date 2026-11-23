@@ -1,0 +1,138 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.387",
+  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel am Fuß",
+  "imBild": false,
+  "ndc": [
+   0,
+   -1.121
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   224,
+   61.756,
+   128
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 95.8,
+  "sigma": 38.9,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel am Fuß nicht im Bild (ndc [0,-1.121]) · kein nahWiese im Bild: 10.2 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel am Fuß NICHT im Bild frei 20 m · Luma 95.8 σ 38.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.387 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 10.2 % (≥ 15.0 %) h 105° Luma 92",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel am Fuß nicht im Bild (ndc [0,-1.121])"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 10.2 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 10.2 % (≥ 15.0 %) h 105° Luma 92"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 223747,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2991,
+   "wechsel": 720187
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 211850,
+    "farbe": [
+     0.11815,
+     0.11353,
+     0.04439
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 608,
+    "farbe": [
+     0.0228,
+     0.04086,
+     0.01164
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1feab29c-gtx\\auge-same-stoerung-s6-rot.maske.png"
+ }
+}
