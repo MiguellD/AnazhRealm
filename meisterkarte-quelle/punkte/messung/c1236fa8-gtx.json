@@ -1,7 +1,7 @@
 {
  "sha": "c1236fa808fd4d9ea377d3710d0afcb9e050d060",
  "geraet": "gtx",
- "zeit": "2026-11-23T00:17:17.663Z",
+ "zeit": "2026-11-23T00:18:55.672Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#1": {
@@ -835,6 +835,1424 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kopplung.siedlungslage#1": {
+   "gruen": false,
+   "zahl": "S1 leserProzent 48,4 % gegen Soll = 100 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":20742,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum) · Täter: stamm/wasser-hydro.js _waterLevelAt/_koerperWasserSpiegel (Steg und Boot ohne Leser)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S1 leserProzent 48,4 % gegen Soll = 100 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":20742,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum) · Täter: stamm/wasser-hydro.js _waterLevelAt/_koerperWasserSpiegel (Steg und Boot ohne Leser)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "302f9b408dfa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.siedlungslage#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: die Welt trägt keine Bodenart und kein Gestein unter der Fläche (kein Leser _bodenArtAt/_gesteinAt/_schichtAt) — die Bodenklasse liest nur Wasser-Abstand, Hang und Wald · leser 0 gegen Soll ≥ 5 ✗ · grenzenProzent 5,3 % gegen Soll ≥ 50 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4542,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: stamm/kreatur-leben.js _bodenKlasseAt (keine Bodenart, kein Gestein)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: die Welt trägt keine Bodenart und kein Gestein unter der Fläche (kein Leser _bodenArtAt/_gesteinAt/_schichtAt) — die Bodenklasse liest nur Wasser-Abstand, Hang und Wald · leser 0 gegen Soll ≥ 5 ✗ · grenzenProzent 5,3 % gegen Soll ≥ 50 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4542,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: stamm/kreatur-leben.js _bodenKlasseAt (keine Bodenart, kein Gestein)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "dfcbffee2f54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#1": {
+   "gruen": false,
+   "zahl": "S1 luvLee 1,195 gegen Soll ≥ 2 ✗ · kammGruenDiff ungemessen gegen Soll > 0 Anteil ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4341,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: planet-core.js planetKlimaR (Regenschatten) über voxel-worker.js planetOrtAuftrag",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S1 luvLee 1,195 gegen Soll ≥ 2 ✗ · kammGruenDiff ungemessen gegen Soll > 0 Anteil ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4341,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: planet-core.js planetKlimaR (Regenschatten) über voxel-worker.js planetOrtAuftrag",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "de29bb180b6f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#2": {
+   "gruen": false,
+   "zahl": "S2 rang 0,137 gegen Soll ≥ 0,7 ✗ · Täter: planet-core.js planetKlimaR (Kontinentalität, Regenschatten)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S2 rang 0,137 gegen Soll ≥ 0,7 ✗ · Täter: planet-core.js planetKlimaR (Kontinentalität, Regenschatten)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "ef2dfca614bc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#3": {
+   "gruen": false,
+   "zahl": "S3 anteilProzent 0 % gegen Soll ≥ 70 % ✗ · nebelFaktor 1 gegen Soll ≥ 2 ✗ · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S3 anteilProzent 0 % gegen Soll ≥ 70 % ✗ · nebelFaktor 1 gegen Soll ≥ 2 ✗ · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "9ef122ef3a2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": false,
+   "zahl": "S4 dT 0,785 K gegen Soll ≥ 5 K ✗ · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S4 dT 0,785 K gegen Soll ≥ 5 K ✗ · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "f9dd14373880",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#5": {
+   "gruen": false,
+   "zahl": "S5 leeProzent -1,299 % gegen Soll ≤ -50 % ✗ · leeGruenDelta ungemessen gegen Soll < 0 Anteil ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4317,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: planet-core.js planetScheibe (Hebung über 10⁶ a)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S5 leeProzent -1,299 % gegen Soll ≤ -50 % ✗ · leeGruenDelta ungemessen gegen Soll < 0 Anteil ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4317,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: planet-core.js planetScheibe (Hebung über 10⁶ a)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "d87835bf7be2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#6": {
+   "gruen": false,
+   "zahl": "S6 ohneWiderspruchProzent 97,3 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 32 Welten (Soll 1 000 × 20 Orte) · Täter: planet-core.js planetKlimaR",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S6 ohneWiderspruchProzent 97,3 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 32 Welten (Soll 1 000 × 20 Orte) · Täter: planet-core.js planetKlimaR",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "fcda1a6deb05",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 0,011 s: /eval: {\"ms\":8,\"fehler\":\"M is not defined\",\"stapel\":[\"eval (werkbank/eval/ruf-16.js:13:13)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\c · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 0,011 s: /eval: {\"ms\":8,\"fehler\":\"M is not defined\",\"stapel\":[\"eval (werkbank/eval/ruf-16.js:13:13)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\c · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "92f2af2faf21",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/stoff-material.js _windAt/_windForm",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/stoff-material.js _windAt/_windForm",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "163a2b156d2c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#3": {
+   "gruen": false,
+   "zahl": "S3 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/stoff-material.js _naesseGesetz/_pfuetzeGesetz über gelaende-core.js muldeEcken",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S3 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/stoff-material.js _naesseGesetz/_pfuetzeGesetz über gelaende-core.js muldeEcken",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "2fb36d3acf29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/siedlung-bewohner.js (kein Leser des Wetters)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: stamm/siedlung-bewohner.js (kein Leser des Wetters)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "1762b26583ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: gelaende-core.js hoehe (das Relief liest kein Wetter)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: gelaende-core.js hoehe (das Relief liest kein Wetter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "8de381e03394",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: fachwerk-core.js pitchDeg (die Dachneigung folgt dem Stil, nie dem Schnee)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 0,008 s: /eval: {\"ms\":4,\"fehler\":\"M is not defined\",\"stapel\":[\"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.cjs:1506: · Täter: fachwerk-core.js pitchDeg (die Dachneigung folgt dem Stil, nie dem Schnee)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "ddd94b4d3b70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": false,
+   "zahl": "S1 abweichungGrad 61,901 ° gegen Soll ≤ 20 ° ✗ · Täter: stamm/stoff-material.js _windAt (liest keine Häuser)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S1 abweichungGrad 61,901 ° gegen Soll ≤ 20 ° ✗ · Täter: stamm/stoff-material.js _windAt (liest keine Häuser)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "e9af3ab2c936",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Rutschung sperrt eine Straße (_rutschung, _bergsturz fehlen) · saatenMitFolge 0 gegen Soll ≥ 20 ✗ · folgeImBild ungemessen gegen Soll > 0 px ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4290,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: stamm/siedlung-ort.js (kein Ereignis sperrt eine Straße)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Rutschung sperrt eine Straße (_rutschung, _bergsturz fehlen) · saatenMitFolge 0 gegen Soll ≥ 20 ✗ · folgeImBild ungemessen gegen Soll > 0 px ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4290,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: stamm/siedlung-ort.js (kein Ereignis sperrt eine Straße)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "2c0ad4f8ae9b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "S1 ursacheProzent ungemessen gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js _rockGeologyClass (Findling am flachen Grund, ohne Eis)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S1 ursacheProzent ungemessen gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js _rockGeologyClass (Findling am flachen Grund, ohne Eis)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "463ab7abd767",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#2": {
+   "gruen": false,
+   "zahl": "S2 gipfelProzent 46,3 % gegen Soll ≥ 95 % ✗ · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S2 gipfelProzent 46,3 % gegen Soll ≥ 95 % ✗ · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "9cacd305cdfb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#5": {
+   "gruen": false,
+   "zahl": "S5 gleichOrte 992 gegen Soll ≥ 1000 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4805,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: gelaende-core.js hoehe (das Relief der Welt ist nicht der Planet am Ort)",
+   "exit": 0,
+   "minuten": 1.91,
+   "grund": "ROT: S5 gleichOrte 992 gegen Soll ≥ 1000 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4805,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: gelaende-core.js hoehe (das Relief der Welt ist nicht der Planet am Ort)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "426a4faeb90f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#6": {
+   "gruen": true,
+   "zahl": "S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 1.91,
+   "gpu": "nvidia/pascal",
+   "konsum": "k436d8edd103c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6571f851edf4",
+   "s": 114,
+   "fremd": {
+    "s": 117.6,
+    "takte": 53,
+    "fremdS": 60.13,
+    "kerne": 0.511,
+    "fensterKerne": 1.246,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      9.89
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c1236fa8 x listen/kandidat-gtx-c1236fa8.txt",
+      7.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.73
+     ]
+    ],
+    "dienerS": 41.58,
+    "diener": [
+     [
+      "System",
+      17.63
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 45.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.89
+     ],
+     [
+      "svchost.exe",
+      14.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-23T00:18:55.672Z",
+   "abdruck": "a54f1c335d2a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -849,308 +2267,11 @@
   "k89b96e8b884f": "bVVdj9owEPwvPPaacz4vjqV7MJdTufaqA6lPfVs76yRHSJAdSEXV/14ZCJCEfUIwszsej5e/sy3INeT4+GmaesZmX2ZfZwb26BjUe9SPn2bGZon0fAwYPxXhnL9YmNTltjWkKgUBUUOxQWenWyyrR3mkgcAwo4x0rzxfEqLIgaQdv9Qrf34et6kEZo3TgsJLk4hmKmJj4M7kINCBnToOPoMjN/CEYuRYNOUfKblURzlfhipc0tQOHzUUUGdD9clTFGPE3rq7SrMSsHWqsjb9bC+LE+Wy67yfE46GzjkAFhXqMymL0U/CXvDc2mKtGhFVtTNmMIwGWeRTRkgyxuZoSlm0zlY3AuszXCR+7AGbd5Nz5Nudo24VgRBAxdjvArDOUQ80uIFUTx4jf+i46Ro2qMGpoei9dIPYF1dvCCGLqZbqKPw4ohfuReiBHBDtxZI9IX2M7GdCF5df++/T/Bo1vpoMM7Io9WZokwrRdwP2PpVmCshQO+vGtBc0DQGQnl9FSviK24ClY+b1UD0PAOhNUAglfDHx0DSq7UCjk293ZyKGGMUR4/xtAm5hs+nfgArCQDJ+p+7cv2lt8G/lQSI8yBghD6fHM+WcnolzwLLqSUqFYRKxl3k+Bu81bBwQuS6V6tMgIqmSe+HtsGod0TRt3xbjGAJrVX0bgGV32h/XSkP32/vv1Wp04Bc+lnOc0Oj2sjHEk6tCpmyIOjlBl7p1OpBFD/eVQLDSJ/d1QF1hjgMrRUwTG/tOnXQf7AqKz+tBPQxCfZh2LNGaXJud6QMgIRQRu3MtHeq1gHp9BkrP9T3Kvts7/+CLgSc/frlLmpJxBZ31c1nMTxtaWk/7IVuUZKsbVdotSQrYmQKq9vqX8e8/",
   "k2404d7ddd73e": "bVVNj5swFPwvOXbLms/FWNqDs4m6q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtItebYiRJEDWXTPz2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrgHwtyqY5yvgpVuKKL0WYCqnSoNnmKYozYW8f5kk9UpgVg45RFZfq+XhonymXXXj8mHA2dcwDMS9RnUhqjn4S92Lm101ozIqqyNWbQjAZp5FNGSDLGZmgKmTfOTtcCqzNcJH7sAZtP3c52raNuFYEQQMXY6xywylAPNLiBVE8eI3/oeNMNbFGDU0Hee+kGsS+u3hBCXqdayqPwY4teuBehB3JAtEMle0J4H7+9XXq9fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCX+deGhq1XSg0cl27ZmIIUZxxDh/m4Ab2G77/KsgDCTjd+rO/E1jg38rDxLhQcoIeThdnCnndE2cAxZlT1IqDJOIvcyzMXivYeuAyHShVJ8GEUmV3Atvh2XjiLpu+m0xjiFgJCDVbQB+dvY0y5uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgWClT+Z1QF1ihgMrRUwTG/tOnXQf7PMTn58H9TAI9WG6Y4HW5Mq0pg+AhFBE7M5YOtQbAdXmDJSe63unaM4/+OvtReDff7krakcbD/oH3ZLPu1U+P3rLpfW0b7JDSXa6VoV9JUkOrcmhbK6/iH//AQ==",
   "ka72776fa9377": "bVVNj5swFPwvOXbLms/FWNqDs4m6q267idRTb8/mGdgQiGwIVar+98pJSALkHc2M33je2Pyd7UBuIMPHT1NXMzb7Mvs6M7BHx6Deo378NDM2S6TnY8D4qQjn/MXCpC52jSFlIQiICvItOq1usCgf5ZEGAsOUMtItebYiRJEDWXTPz2NqKTCtnQYUXogRTVXExsDWZCDQgVYdm53BkRt4QjFyLLrgHwtyqY5yvgpVuKKL0WYCqnSoNnmKYozYW8f5kk9UpgVg45RFZfq+XhonymXXXj8mHA2dcwDMS9RnUhqjn4S92Lm101ozIqqyNWbQjAZp5FNGSDLGZmgKmTfOTtcCqzNcJH7sAZtP3c52raNuFYEQQMXY6xywylAPNLiBVE8eI3/oeNMNbFGDU0Hee+kGsS+u3hBCXqdayqPwY4teuBehB3JAtEMle0J4H7+9XXq9fO3XFxm/1nrSzMi80NuhTSpE3w3Y+1SaySFF7Wxq01zQNARAer4FC8LX3IZrHCxzPVTPAwB6ExRCCX+deGhq1XSg0cl27ZmIIUZxxDh/m4Ab2G77/KsgDCTjd+rO/E1jg38rDxLhQcoIeThdnCnndE2cAxZlT1IqDJOIvcyzMXivYeuAyHShVJ8GEUmV3Atvh2XjiLpu+m0xjiFgJCDVbQB+dvY0y5uTLUL32/vv9Xp04Bc+lnPsUOvm8lqIJ1eFTNkQdXKCLnTjdCDzHu4rgZAwEkzmdUBdYoYDK0VMExv7Tp10f9rnJz4/D+phEOrDdMcCrcmVaU0fAAmhiNidsXSoNwKqzRkoPdf3TtGcf/DXgSfff7krakcbD/oH3ZLPu1U+P3rLpfW0b7JDSXa6VoV9JUkOrcmhbK6/iH//AQ==",
-  "k92ca4cce1cdf": "bVVNj5swFPwvObb1ms8FLO3B2UTdVbfdROqpt2fzDGwIRDaENlX/e+UkJAHyjmbGbzxvbP7OdiA3kOHDh6mrGZt9mn2ZGdgjMaj3qB8+zIzNEul66DN+Kso5f7YwqYtdY2hZCAqignyLpNUNFuWDPNJAYJDGjHZLnq0oVfRAF93T05haCkxr0oDCCzGMUxWyMbA1GQgk0KpjszM4dHxXKEaPFS/4+4Jeqos5XwUqWMWL0WYCqnSoNnkMIwzZ6x/Ol3yiMi0AG1IWlen7ummUKIdde32fcDR05ACYl6jPpDRCLwl6sXNrp7VmRFRla8ygWeynoRczSpMxNkNTyLwhO10LrM5wkXiRC2w+dTvbtUTdKgIhIBZjr3PAKkM90OD4Uj26jP6Ox5tuYIsaSAV576XjR564ekMpfZlqKY/Cjy164W6ILsgB0Q6V7inlffz2dunl8rVfX2T8WutJMyPzQm+HNqkAPcdnb1NpJocUNdnUprmg4wAA4/MtWFC+5jZc42CZ66F6HgDEN0GhMeUvEw9NrZoONJJs156JGGAYhYzz1wm4ge22z7/yA18yfqfuzN80Nvi38iARLqSM0s+nizPlnK4JOWBR9iSlgiAJ2fM8G4P3GrYERKYLpfo0iFCq5F54OywbIuq66bfFKAKfUZ9WtwH40dnTLG9Otgicr2+/1uvRgZ/5WM6xQ62by2shHh0VMGVD1MkJutAN6UDmPdxTAiFh1J/M64C6xAwHVoooTmzsO3XSfbDPT3R+HtTnQagP0x0LtCZXpjV9ACQEImR3xtKh3gioNmegdB3PPUVz/s5fBp58++msYjvaaNDf75Z83q3y+dFbLq2nfZMdSrrTtSrsK0lzaE0OZXP9Rfz7Dw=="
+  "k92ca4cce1cdf": "bVVNj5swFPwvObb1ms8FLO3B2UTdVbfdROqpt2fzDGwIRDaENlX/e+UkJAHyjmbGbzxvbP7OdiA3kOHDh6mrGZt9mn2ZGdgjMaj3qB8+zIzNEul66DN+Kso5f7YwqYtdY2hZCAqignyLpNUNFuWDPNJAYJDGjHZLnq0oVfRAF93T05haCkxr0oDCCzGMUxWyMbA1GQgk0KpjszM4dHxXKEaPFS/4+4Jeqos5XwUqWMWL0WYCqnSoNnkMIwzZ6x/Ol3yiMi0AG1IWlen7ummUKIdde32fcDR05ACYl6jPpDRCLwl6sXNrp7VmRFRla8ygWeynoRczSpMxNkNTyLwhO10LrM5wkXiRC2w+dTvbtUTdKgIhIBZjr3PAKkM90OD4Uj26jP6Ox5tuYIsaSAV576XjR564ekMpfZlqKY/Cjy164W6ILsgB0Q6V7inlffz2dunl8rVfX2T8WutJMyPzQm+HNqkAPcdnb1NpJocUNdnUprmg4wAA4/MtWFC+5jZc42CZ66F6HgDEN0GhMeUvEw9NrZoONJJs156JGGAYhYzz1wm4ge22z7/yA18yfqfuzN80Nvi38iARLqSM0s+nizPlnK4JOWBR9iSlgiAJ2fM8G4P3GrYERKYLpfo0iFCq5F54OywbIuq66bfFKAKfUZ9WtwH40dnTLG9Otgicr2+/1uvRgZ/5WM6xQ62by2shHh0VMGVD1MkJutAN6UDmPdxTAiFh1J/M64C6xAwHVoooTmzsO3XSfbDPT3R+HtTnQagP0x0LtCZXpjV9ACQEImR3xtKh3gioNmegdB3PPUVz/s5fBp58++msYjvaaNDf75Z83q3y+dFbLq2nfZMdSrrTtSrsK0lzaE0OZXP9Rfz7Dw==",
+  "k436d8edd103c": "bVVdj5swEPwveWzLmc/DWLoHJ5yaq6665CeszRq4EIhsiKtU/e8VuZAEyD4hmPGMZ9fm7+IAcgc5Pn2apl6wxbfFj4WBIzoG9RH106dZsEUiPR8Dxr+KcM5XPUzq8tAaUpWCgKih2KPT6RbL6kmeaSAwzCgj9pXnG0IUOZHU8mu98peX6TKVwKxxWlB4XSSimYrYFNiZHAQ60Kmz8AUcuYEnFCPnoin/SMm17G/ON6EKNzTlG6p4PlMXUGfjHSTPUYwRe7MP3WYlYOtUZW0GfS+LE+WyO80ZR4N1ToBFhfpCymL0k3Awveyj6eOaEFXVGTMSo0EW+ZQRkkyxOZpSFq1z0I3A+gIXiR97wJZ2to/80Dnq3hEIAVRMMy8A6xz1yIMbSPXsMfKHThfdwR41ODUUQ5ZuEPvilg0hZD33Up2NnyUG416EHsgRsW8uORIyjFL/TOj6+nV4n+a3cePbmZiRRan345hUiL4bsPe5NVNAhtrZNaa9omkIgPRyMlLCt7wfsnTKvG1q4AEAvRsUQglfzzI0jWotaHTyQ3chYohRHDHO32bgFvb74RyoIAzktIGm7Qf83gYkwoOMEfL966DMN/11HJwTltVAUioMk4itluEUfNSwd0DkulRq6LqIpEoeDanFqnVE07TDshjHEPSR1PeN3tivu+JWaej+XC23fFKrFU/n/s8qjW6vN4R4dlXIVD8wVs7QpW4dC7IY4L4SCAl7AD2hrjDHUZwipkk/4lbeux0evo8G+DTr9qnEPujadGZotoRQROxBayzqnYB6dwFKz/U9yn5xzpcffD0OJt1uaEpmZV85f3uvub3H5meRA0py0I0q+xuRFNCZAqr29ov49x8=",
+  "k6571f851edf4": "jVVNj5swEP0vOXbrNZ8LWNqDs0TNSm03q65UqbexGQMbApENoUrV/16RQBJgD50DQmY+3rx5Hv4s9iC3kOL9u6nKBVt8WnxeGDggMagPqO/fzYItImk76DJ+Nso5/9K5SZ3va0OLXFAQJWQ7JI2uMS/u5SkMBHpJyGi74umGUkWPNG75xZ744+M0TSEwqUgNCi9J/DBRPps6NiYFgQQadSrcO/uWawvF6MnCmL/E9GLtN843nvI2YTxJJqBMxsijBz9Anz23nK/mKJMcsCZFXpqhrp0EkbLYTa1ZjIaWHAGzAnUflAToRN4AdtlR0tE0CVRFY8yoWOgmvhMySqOpb4oml1lN9roSWPbuInICG9iynfWR7huibhGBEBCKKdcZYJmiHmGwXKkebEZ/h9OkW9ihBlJCNnBpuYEjrtxQStdzLMUJ+KnEANz20QY5CuyG2j0HCdFDd7S+fB3O4/QqM/46K2ZkluvdmCbloWO5095NBglqsq1MffEMPQAM+9sQU/7KO2FNRWWuDQ1xABDeiISGlK9n/JlK1S1oJOm+6QPRQz/wGU9nqjI17HaD9pXruXLWQN2J+xYGRMKGhFF6d74c81mcrwI5Yl4MQUp5XuSzp6U3dT5o2BEQqc6VGiYufKmijwTaYlETUVX1kBaDAFxGXVreDvl7y5cpX11HuH73rZ9ff/14u51rt4bSp48qVLq+bATxYCmPqVOncgq+zXVNWpDZ4O4ogRBNSTyiLjDFEY0iCKNO1q28wom94eVuJNrjbMrHHDuCS9OYYcgSPOGf1dEvyefx6mlRbwWU2z5A2pZjdzKMU/7C1zesrPnzm7Vp+f/Zkq+6InuUdK8rlXfbkGbQmAyK+vpb+PsP"
  },
  "ungemessen": {
-  "karte2.planet.kopplung.siedlungslage#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "302f9b408dfa",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.siedlungslage#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "dfcbffee2f54",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "de29bb180b6f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "ef2dfca614bc",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#3": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "9ef122ef3a2d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#4": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "f9dd14373880",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#5": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "d87835bf7be2",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.land-meer-luft#6": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "fcda1a6deb05",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.bahn-klima#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "92f2af2faf21",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.wetter-welt#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "163a2b156d2c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.wetter-welt#3": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "2fb36d3acf29",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.wetter-welt#4": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "1762b26583ba",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.wetter-welt#5": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "8de381e03394",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.wetter-welt#6": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "ddd94b4d3b70",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.stadtklima#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "e9af3ab2c936",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.kaskade#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "2c0ad4f8ae9b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.gegenwart#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "463ab7abd767",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.gegenwart#2": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "9cacd305cdfb",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.gegenwart#5": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "426a4faeb90f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.kopplung.gegenwart#6": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 198 s unter dem Grund-Deckel 470 s von karte2.planet.kopplung.siedlungslage#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T00:15:06.058Z",
-   "abdruck": "a54f1c335d2a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kopplung.siedlungslage#1",
-   "modus": "session",
-   "offen": 1
-  },
   "karte2.leben.pflanzen.biome#1": {
    "gruen": false,
    "zahl": "die Fahrt riss 1800 s (der Rest 67 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
