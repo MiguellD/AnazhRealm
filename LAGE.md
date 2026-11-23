@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 23.11. 22:44 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 58 von 1 718 (Kern 19).**
+**STAND 23.11. 23:10 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 58 von 1 718 (Kern 19).**
 - KURS: die FRONT führt. Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs` (koordination 32cb7691). 253 Leitern = 253 Fronten:
   18 Richter GRÜN und nur am Preis rot (11 Klasse Ort am gehaltenen Heap 402–522 MB, sechs ≤ 10 MB über 400; 6 Klasse Stadt Preis FEHLT an der Ankunft) ·
   4 GRÜN mit Preis, ungebucht · 16 am Apparat rot (10 × „spawn ENAMETOOLONG“ seit 20.11., nie neu gemessen) · 63 „Umfang nicht erzeugbar“ ·
@@ -19,14 +19,20 @@
   über 1 000 steht); `ankunft_kalt_s` hat keinen Schreiber, der Preis urteilte FEHLT, grüne Sprossen buchten nie. Der Anspruch bleibt in der Leiter gemessen.
 - GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen; Hände ≤ 10 min und WEICH 0 halten
   den Schaden; wieder auf, wenn eine gemessene Verdrängung Sprossen kostet). `pm-innen-ein-haus`: Rebase, Selbsttest und ein Lauf bau.innen#1 fehlen.
-- NÄCHSTE WELLEN (EIN Arbeiter je fehlender Fähigkeit, nie je Sprosse; Start, sobald Arbeiter frei werden):
-  (1) der Satz des Bewohners als Funktion des Samens — Name, Alter mit Kindern, Verwandtschaft, Können und Übung, Krankheit, Rolle Wache, Waffe, Ziel,
-  ansprechbar → Front-Sprossen kultur.sprache#1 · geist.netz#1 · geist.absicht#2 · sport.koennen#2 · sport.kunst#1 · menge.seuche#1 · macht.krieg#1 ·
-  macht.recht#1 · macht.megastadt#1 · geist.generationen#1 · geist.gespraech#2 (alle mensch.*);
-  (2) die Akte des Tages-Gesetzes — Wettkampf, Brettspiel, Kultgang und Festtag, Bühne, Arena, Wochentag → sport.regeln#1 · sport.geistspiel#1 ·
-  kultur.glaube#1 · kultur.erzaehlkunst#1 · sport.arena#1 · sport.mannschaft#1 · geist.tag#2 · menge.rhythmus#2;
-  (3) die Ausstattung des Orts — Schild, Werk, Leitung, Grenze, Technikstand, Linie → kultur.schrift#1 · kultur.bildkunst#1 · netz.stoffwechsel#1 ·
-  macht.grenze#1 · kultur.wissen#1 · netz.massenverkehr#1.
+- DIE TIEFE DER GESETZE (Schöpfer 23.11. ~23:00: „du entscheidest … tore, decken, alles deine definitionen“; „musst du bühnen bauen, oder verstehst du
+  den determinismus so gut“): Blatt `vision/TIEFE-DER-GESETZE.md` (koordination f18ee952) — Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band ·
+  M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen 0 Adresse · 1 Gestalt · 2 Nerv · 3 Antrieb · 4 Absicht · 5 Geschichte. Jeder Brief nennt seine Tiefe.
+- VIER CLOUD-KARTEN, angefordert am Abend des 23.11., jede wartet auf den Start-Klick des Schöpfers (die App startet Cloud-Sitzungen nicht von selbst; in den
+  Einstellungen gibt es keinen Schalter): `bewohner-satz` (der Satz des Bewohners als Funktion des Samens: kultur.sprache#1 · geist.netz#1 ·
+  geist.absicht#2 · sport.koennen#2 · sport.kunst#1 · menge.seuche#1 · macht.krieg#1 · macht.recht#1 · macht.megastadt#1 · geist.generationen#1 ·
+  geist.gespraech#2) · `ort-ausstattung` (kultur.schrift#1 · kultur.bildkunst#1 · netz.stoffwechsel#1 · macht.grenze#1 · Bau-Teil megastadt#1) ·
+  `nerv-bewegung` (Tiefe 2: leben.tiere.bewegung#1 froudeAbw 26 % → ≤ 10 %; mensch.sport.koerper#1 3 → 11 Verben, Gehen 1,15 → 1,5 m/s; dazu
+  `pm-nerv-bewegung`) · `pm-beobachter` (M4: der Adress-Fächer als EINE Stations-Bauart, 9 Fronten „BUEHNE Saaten“ + Lese-Tabelle der übrigen).
+  Bericht je Zweig in `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht — den Zweig selbst lesen. In Fahrt aus Konto 17: `leib-ausdruck`
+  13ef2e76 (WIP 23.11. 22:00: das Ausdrucks-Gesetz = Tiefe 3 mit Quellen; offen K7 und das Bild) — `bewohner-satz` fasst dieselben zwei Stamm-Dateien an.
+- DANACH (steht auf `bewohner-satz` und `ort-ausstattung`): Tiefe 4, der Alltag aus Angebot × Antrieb → sport.regeln#1 · sport.geistspiel#1 ·
+  kultur.glaube#1 · kultur.erzaehlkunst#1 · sport.arena#1 · sport.mannschaft#1 · geist.tag#2 · menge.rhythmus#2. Nicht bestellt: kultur.wissen#1 ·
+  netz.massenverkehr#1. Kein Arbeiter für Kalt-Ankunft, die Uhr der GTX 1050, den Schlangen-Beweis des OMEN.
 - OFFEN beim Schöpfer (gestellt, nicht neu fragen): wer bildet das Panel für R11 (198 PANEL-Sprossen).
 
 **STAND 23.11. 18:20 (Konto 17, Koordinator an der Radeon) — Karte 2 gebucht 58 von 1 718 (Kern 19, an beiden Geräten 33, Nachwache 25).**
