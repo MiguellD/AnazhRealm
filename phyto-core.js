@@ -7208,6 +7208,82 @@
             z: A.add(A.mul(oz, ha), A.mul(A.mul(nx, w), A.k(-1))),
         };
     }
+    // DER ACKER UND SEINE FRUCHT (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2, additiv): ein bestellter Acker trägt die Spur
+    // der Arbeit und den Wuchs der Kulturpflanze als FUNKTION der Tage seit seiner Saat — kein Zustand, keine Liste. `furche`: die
+    // Kämme des Pflugs quer zur Zugrichtung gereiht (Abstand der Furchen eines Beetpflugs 0,25–0,35 m, der frisch gewendete Kamm
+    // 15–25 cm über der Sohle); `frucht`: die Kulturpflanze (Sommerweizen, Mitteleuropa) gedrillt in Reihen auf den Kämmen, ihr Wuchs über die
+    // Stützen [Tag, Höhe m, Reife 0 grün … 1 gelb, Deckung der Reihe] nach dem BBCH-Gang (Auflaufen BBCH 10 nach ~12 Tagen,
+    // Bestockung 21–29 bis ~45, Schossen 30–39 bis ~75, Ähre und Blüte 51–69 bis ~95, Milch- und Teigreife 71–87 bis ~125,
+    // Vollreife 89 ~135), am `ernteTag` gemäht: dann steht die Stoppel bis zur nächsten Saat. `saatPhase` ist die Phase des Jahrs,
+    // in der das Dorf sät (SAISON_GESETZ: 0 Frühling) — wer selbst bestellt, setzt die Saat seiner Stunde. Farben sRGB (der
+    // Wirt linearisiert). Leser: der Wirt (`_ackerStand`, `_ackerKoerperTakt`) und gate:koerper-kern (die Kurve).
+    var ACKER_GESETZ = Object.freeze({
+        furche: Object.freeze({ abstandM: 0.3, hoeheM: 0.2, breiteM: 0.3 }),
+        frucht: Object.freeze({
+            art: "weizen",
+            stuetzen: Object.freeze([
+                Object.freeze([0, 0, 0, 0]),
+                Object.freeze([12, 0.04, 0, 0.12]),
+                Object.freeze([45, 0.18, 0, 0.45]),
+                Object.freeze([75, 0.6, 0, 0.7]),
+                Object.freeze([95, 0.9, 0.1, 0.8]),
+                Object.freeze([125, 0.9, 0.6, 0.8]),
+                Object.freeze([135, 0.85, 1, 0.8]),
+            ]),
+            ernteTag: 140,
+            stoppel: Object.freeze({ hoeheM: 0.14, deckung: 0.35 }),
+            gruen: 0x55732e,
+            reif: 0xc9a456,
+            stoppelFarbe: 0xb3a174,
+        }),
+        saatPhase: 0,
+    });
+    // DER STAND DES ACKERS `tage` nach seiner Saat (rein): { tage, hoeheM, reife, deckung, stoppel, farbe (sRGB-Zahl) } — vor der
+    // Saat (tage < 0) und nie bestellt: null (der Acker liegt brach, nur sein gemalter Grund)
+    function ackerStand(tage) {
+        if (!(tage >= 0)) return null;
+        var F = ACKER_GESETZ.frucht,
+            S = F.stuetzen;
+        var mische = function (a, b, t) {
+            var r = 0,
+                k;
+            for (k = 0; k < 3; k++) {
+                var s = 16 - 8 * k,
+                    ca = (a >> s) & 255,
+                    cb = (b >> s) & 255;
+                r = r * 256 + Math.round(ca + (cb - ca) * t);
+            }
+            return r;
+        };
+        if (tage >= F.ernteTag)
+            return {
+                tage: tage,
+                hoeheM: F.stoppel.hoeheM,
+                reife: 1,
+                deckung: F.stoppel.deckung,
+                stoppel: true,
+                farbe: F.stoppelFarbe,
+            };
+        var i = 0;
+        while (i < S.length - 2 && tage >= S[i + 1][0]) i++;
+        var a = S[i],
+            b = S[i + 1],
+            t = Math.max(0, Math.min(1, (tage - a[0]) / (b[0] - a[0])));
+        var reife = a[2] + (b[2] - a[2]) * t;
+        return {
+            tage: tage,
+            hoeheM: a[1] + (b[1] - a[1]) * t,
+            reife: reife,
+            deckung: a[3] + (b[3] - a[3]) * t,
+            stoppel: false,
+            farbe: mische(F.gruen, F.reif, reife),
+        };
+    }
+    // DIE TAGE SEIT DER SAAT DES DORFS zur Phase des Jahrs `phase` (0–1, SAISON_GESETZ) in einem Jahr von `jahrTage` Tagen
+    function ackerTage(phase, jahrTage) {
+        var p = (((phase - ACKER_GESETZ.saatPhase) % 1) + 1) % 1;
+        return p * jahrTage;
+    }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
         k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
@@ -7669,6 +7745,9 @@
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
         HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
         halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
+        ACKER_GESETZ: ACKER_GESETZ, // acker-kette — der bestellte Acker: Furchen des Pflugs, die Kulturpflanze in Reihen, ihr Wuchs je Tag
+        ackerStand: ackerStand, // acker-kette — der Stand des Ackers n Tage nach der Saat (Höhe, Reife, Deckung, Stoppel, Farbe)
+        ackerTage: ackerTage, // acker-kette — die Tage seit der Saat des Dorfs zur Phase des Jahrs
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

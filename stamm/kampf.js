@@ -2323,9 +2323,11 @@ class AnazhRealm_kampf {
                 verb = "pfluecken";
                 ort = flora.point;
             } else if (this._geraetGraebt(this._heldImplementBlueprint())) {
-                verb = "graben";
+                // DAS BESTELLEN (mensch.nahrung hand S2): was den Boden öffnet, öffnet am Acker die Furche — dieselbe Mühe und
+                // derselbe Verschleiß wie das Graben, statt der Grube ein Stück gepflügt und gesät (`_ackerBestellen`)
                 boden = this._raycastWorldHit(30);
                 if (boden.hit) ort = boden;
+                verb = ort && this._ackerAt(ort.x, ort.z) ? "bestellen" : "graben";
             }
             const F = ort ? this._fadenkreuzStrahl() : null;
             inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
@@ -2374,7 +2376,8 @@ class AnazhRealm_kampf {
         // DIE WERKZEUG-WAND und DER VERSCHLEISS auch am Boden (halten.K3): jeder Grabe-Hieb zehrt das Gerät wie Hieb, Abbau und
         // Mahd (_kampfVerschleiss, modus-unabhängig, nach der Ausdauer), ein verbrauchtes gräbt nicht — vorher grub es ewig neu.
         const heldG = this._heldImplementBlueprint();
-        if (this._geraetVerbraucht(heldG, "Graben")) return false;
+        const tut = verb === "bestellen" ? "Bestellen" : "Graben";
+        if (this._geraetVerbraucht(heldG, tut)) return false;
         // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
         // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
         if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
@@ -2392,7 +2395,7 @@ class AnazhRealm_kampf {
             const perStrike = digFit.stamina * Math.min(1, digFit.progress);
             const have = (this.state.player && this.state.player.stamina) || 0;
             if (have < perStrike) {
-                this.log(`Graben: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
+                this.log(`${tut}: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
                 return false;
             }
             this.state.player.stamina = Math.max(0, have - perStrike);
@@ -2409,11 +2412,12 @@ class AnazhRealm_kampf {
             }
             dig.progress += digFit.progress;
             if (dig.progress < 1) {
-                this.log(`Graben: ${Math.round(dig.progress * 100)} % — der Boden leistet Widerstand.`, "INFO");
+                this.log(`${tut}: ${Math.round(dig.progress * 100)} % — der Boden leistet Widerstand.`, "INFO");
                 return true;
             }
             dig.progress = 0;
         } else this._kampfVerschleiss(heldG);
+        if (verb === "bestellen") return this._ackerBestellen(target);
         // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
         // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;

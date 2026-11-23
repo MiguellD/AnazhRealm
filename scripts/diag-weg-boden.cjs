@@ -16,8 +16,11 @@
 //  10 KÖRPER      die Fahrstraße der Stadt (fachwerk WEG_GESETZ, Art `strasse`) trägt ihren Querschnitt in der Karte: die
 //                 Fahrbahn als zweite Höhe des Pflasters (Mitte 1, am Bord ½, linear über ±fahrRandM), der Gehweg volles
 //                 Pflaster ohne Fahrbahn, hinter der Bauflucht nichts — und auf dem Pflaster steht bis an seine Kante kein Halm
+//  11 ACKER       der Acker ist ein Grundriss der Natur-Wand: in ihm stehen 0 Büschel der Nah-Wiese und 0 Pflanzen der
+//                 Nah-Streu (`_ackerGrund`), ohne den Plan trägt dieselbe Fläche Wiese
 // --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug, der alte
-// Abbau der Trittfläche, die stille Kappe von 900 Formen und die Fahrstraße ohne Bord müssen beim Namen rot werden.
+// Abbau der Trittfläche, die stille Kappe von 900 Formen, die Fahrstraße ohne Bord und der Acker ohne Grundriss müssen
+// beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
 const { statikServer, hauptLauf, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
@@ -61,6 +64,27 @@ function probe(stoerung) {
             fern = { x: fx, z: fz };
     }
     const wieseOhne = wiese(o);
+    // 11 ACKER: die Büschel der Nah-Wiese und die Pflanzen der Nah-Streu im ersten Acker des Plans (Mitte −18, −18, 6 × 4 m, innen
+    // 0,5 m vor seiner Kante) — dieselben Bauten der Kacheln, die das Spiel zeichnet
+    const imAcker = () => {
+        let [w, s] = [0, 0];
+        const [x0, x1, z0, z1] = [o.x - 23.5, o.x - 12.5, o.z - 21.5, o.z - 14.5];
+        const arten = r._nahStreuArten() || [];
+        for (let tx = Math.floor(x0 / KW); tx <= Math.floor(x1 / KW); tx++)
+            for (let tz = Math.floor(z0 / KW); tz <= Math.floor(z1 / KW); tz++)
+                for (const b of r._nahWieseKachelBueschel(tx, tz) || []) if (b.x > x0 && b.x < x1 && b.z > z0 && b.z < z1) w++;
+        const KS = A.NAH_STREU.kachel;
+        for (let tx = Math.floor(x0 / KS); tx <= Math.floor(x1 / KS); tx++)
+            for (let tz = Math.floor(z0 / KS); tz <= Math.floor(z1 / KS); tz++) {
+                const k = r._nahStreuKachel(tx, tz, arten);
+                for (const it of (k && k.items) || []) {
+                    const art = arten[it.art];
+                    if (art && art.kind !== "rock" && art.kind !== "deadwood" && it.x > x0 && it.x < x1 && it.z > z0 && it.z < z1) s++;
+                }
+            }
+        return { wiese: w, streu: s };
+    };
+    const ackerOhne = imAcker();
     const randAlt = A.WEGE_KARTE;
     if (stoerung === "hart") A.WEGE_KARTE = Object.freeze(Object.assign({}, randAlt, { randM: 0.001 }));
     const plan = {
@@ -136,6 +160,13 @@ function probe(stoerung) {
     // die Wiese dünnt über das Pfad-Feld: auf dem Kern der Straße wächst höchstens 30 % der Büschel von vorher
     out.wiese = { ohne: wieseOhne, mit: wiese(o) };
     out.wieseLiest = out.wiese.mit >= 0 && out.wiese.mit <= 0.3 * wieseOhne && r._pfadFeldAt(o.x - 12, o.z, null) > 0.9;
+    // 11 ACKER: der Acker ist ein Grundriss der Natur-Wand — die Störung `ohnegrundriss` nimmt ihm den Grund (`_ackerGrund`)
+    const ackerGrund = stoerung === "ohnegrundriss" ? leihe(r, { _ackerGrund: () => false }) : null;
+    try {
+        out.acker11 = { ohne: ackerOhne, mit: imAcker() };
+    } finally {
+        if (ackerGrund) ackerGrund();
+    }
     // 7 BESTAND: eine Eintrags-Krone (a:, trägt sich nur beim Entstehen ein) übersteht einen Ausflug über das ferne
     // Fenster — 1,6 km hin und zurück: sie steht im Register, die Laubstreu liegt unter ihr, und jede verschobene
     // Stufe gleicht dem vollen Neumalen aus dem Register (der Raum-Index verliert keine Krone am Streifen-Rand).
@@ -331,6 +362,9 @@ function urteil(S) {
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
+    const AC = S.acker11;
+    if (!AC || !(AC.ohne.wiese > 0) || AC.mit.wiese !== 0 || AC.mit.streu !== 0)
+        rot.push(`11 ACKER: im Acker stehen ${AC ? JSON.stringify(AC.mit) : "—"} Büschel und Pflanzen (soll 0; ohne Acker ${AC ? JSON.stringify(AC.ohne) : "—"}, Wiese soll > 0) — der Acker räumt die Wiese nicht (_ackerGrund)`);
     if (!(S.voll[0] === 1001 && S.voll[1] > 0.9)) rot.push(`9 VOLL: ${S.voll[0]} von 1001 Formen, der Platz danach ${S.voll[1]}`);
     const K = S.koerper;
     const um = (v, soll) => Math.abs(v - soll) <= 0.07; // ein Byte der Lage ist 1/63, die Probe liegt bis ¼ Texel neben dem Soll
@@ -390,6 +424,7 @@ hauptLauf(async () => {
         const tritt = urteil(await messen("tritt"));
         const kappe = urteil(await messen("kappe"));
         const ohnebord = urteil(await messen("ohnebord"));
+        const ohnegrundriss = urteil(await messen("ohnegrundriss"));
         const heil = urteil(await messen(null));
         selbst = {
             streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
@@ -399,6 +434,8 @@ hauptLauf(async () => {
             kappeRot: kappe.some((e) => e.startsWith("9 VOLL")),
             ohnebordRot: ohnebord.some((e) => e.startsWith("10 KÖRPER")),
             ohnebord: ohnebord.find((e) => e.startsWith("10 KÖRPER")) || ohnebord[0] || "-",
+            ohnegrundrissRot: ohnegrundriss.some((e) => e.startsWith("11 ACKER")),
+            ohnegrundriss: ohnegrundriss.find((e) => e.startsWith("11 ACKER")) || ohnegrundriss[0] || "-",
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
@@ -417,6 +454,7 @@ hauptLauf(async () => {
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
         console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
         console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg} · voll ${S.voll}`);
+        if (S.acker11) console.log(`  Acker (11): Büschel · Pflanzen innen ohne Acker ${JSON.stringify(S.acker11.ohne)} → mit ${JSON.stringify(S.acker11.mit)}`);
         console.log(`  Körper der Fahrstraße (Pflaster · Lage zum Bord · Halm-Feld): ${JSON.stringify(S.koerper)}`);
         console.log(
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
@@ -444,6 +482,8 @@ hauptLauf(async () => {
         if (!selbst.kappeRot) rot.push("SELBSTTEST: die stille Kappe blieb grün");
         console.log(`  Selbsttest: die Fahrstraße ohne Bord → ${selbst.ohnebord}`);
         if (!selbst.ohnebordRot) rot.push("SELBSTTEST: die Fahrstraße ohne Bord blieb grün");
+        console.log(`  Selbsttest: der Acker ohne Grundriss → ${selbst.ohnegrundriss}`);
+        if (!selbst.ohnegrundrissRot) rot.push("SELBSTTEST: der Acker ohne Grundriss blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     require("./lib/welt-boot.cjs").wandEnde(rot, "der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
