@@ -7643,6 +7643,7 @@ L.perspektive("same", (() => {
             // ════════ same.kopplung.kohaerenz — die gewachsene Kohärenz einer ungestörten Saat ════════
             [KO]: {
                 sek: 40,
+                faecher: true,
                 pfad: ["stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "stamm/feld-leben.js", "stamm/siedlung-ort.js", "stamm/siedlung-wege.js", "gelaende-core.js", "fachwerk-core.js", "voxel-worker.js", "planet-core.js", "scripts/werkbank.cjs"],
                 ungefahren: "die Auge-Bilder (S5 ein Ort der Welt aus 80 m, S6 an der Wiese) schießt nur das Gerät; headless steht die Welt nie (/bild wartet auf Ruhe)",
                 mess: async function (H, U, M) {
@@ -7657,19 +7658,6 @@ L.perspektive("same", (() => {
                         const alle = rv.flatMap((v) => v.points);
                         const y = (x, z) => r._voxelSurfaceY(x, z);
                         const aus = { fluesse: rv.length, punkte: alle.length };
-                        const ende = (v) => {
-                            const p = v.points[v.points.length - 1];
-                            const b = y(p.x, p.z);
-                            const w = r._atlasWaterLevelAt(p.x, p.z, b);
-                            return !!(v.mouth || p.inLake || r._nassAt(p.x, p.z) || (Number.isFinite(w) && w > b));
-                        };
-                        const paare = [];
-                        for (const v of rv) for (let i = 0; i + 1 < v.points.length; i++) paare.push([v.points[i], v.points[i + 1], ende(v)]);
-                        const schritt = Math.max(1, Math.floor(paare.length / a.punkte));
-                        const wahl = paare.filter((_, i) => i % schritt === 0).slice(0, a.punkte);
-                        const ab = (p, q) => y(q.x, q.z) <= y(p.x, p.z) + a.tolM;
-                        aus.s1 = { n: wahl.length, vor: wahl.filter(([p, q, e]) => ab(p, q) && e).length, rueck: wahl.filter(([p, q]) => y(p.x, p.z) < y(q.x, q.z) - a.tolM).length, bergab: wahl.filter(([p, q]) => ab(p, q)).length, ende: rv.filter(ende).length };
-                        aus.s1.rueckAb = wahl.filter(([p, q]) => ab(q, p)).length;
                         const lebt = (x, z) => r.auraAt(x, z).lebendig;
                         const schnitt = (x, z, nx, nz) => {
                             const w = [];
@@ -7740,7 +7728,43 @@ L.perspektive("same", (() => {
                         const m = H0.reduce((s, v) => s + v, 0) / Math.max(1, H0.length);
                         return { n: H0.length, land, streuungM: Math.round(Math.sqrt(H0.reduce((s, v) => s + (v - m) * (v - m), 0) / Math.max(1, H0.length))), ms: Math.round(performance.now() - t0) };
                     };
-                    const w = await S(welt, { punkte: U[1].punkte, tolM: 0.05, abstaende: U[2].abstaendeM, tolDichte: 0.02, schnitte: 20, fernM: 400, halbM: U[3].halbM, zellen: 8, anM: U[3].anM });
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die 100 Saaten der Leiter (dieselben Namen wie S6 im Planet-Faden) und die Saat
+                    // der Welt; je Adresse die Wasserläufe der Hydrosphäre um den Spieler an 50 Punkten — vorwärts bergab und am Ende in Senke
+                    // oder Meer, rückwärts als Gegenlauf. Die Hydrosphäre rechnet der Faden über SEINER Lage (gelaende-core.js:6107
+                    // `hydrosphaere`, voxel-worker.js:1997, state = die geladene Saat): eine andere Saat zählt ohne Fähigkeit
+                    const WASSER_AN = async (r, T, a, mit) => {
+                        const st = r.state;
+                        if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+                            return { fehlt: "die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107 hydrosphaere im Faden über seiner Lage, voxel-worker.js:1997; der Planet-Faden antwortet ohne Flusslauf)" };
+                        const pm = st.playerMesh.position;
+                        const hyd = r._hydroFor(pm.x, pm.z);
+                        const rv = (hyd.rivers || []).filter((v) => v.points && v.points.length >= 3);
+                        const y = (x, z) => r._voxelSurfaceY(x, z);
+                        const ende = (v) => {
+                            const p = v.points[v.points.length - 1];
+                            const b = y(p.x, p.z);
+                            const w = r._atlasWaterLevelAt(p.x, p.z, b);
+                            return !!(v.mouth || p.inLake || r._nassAt(p.x, p.z) || (Number.isFinite(w) && w > b));
+                        };
+                        const paare = [];
+                        for (const v of rv) for (let i = 0; i + 1 < v.points.length; i++) paare.push([v.points[i], v.points[i + 1], ende(v)]);
+                        const schritt = Math.max(1, Math.floor(paare.length / mit.punkte));
+                        const wahl = paare.filter((_, i) => i % schritt === 0).slice(0, mit.punkte);
+                        const ab = (p, q) => y(q.x, q.z) <= y(p.x, p.z) + mit.tolM;
+                        return { n: wahl.length, vor: wahl.filter(([p, q, e]) => ab(p, q) && e).length, rueck: wahl.filter(([p, q]) => y(p.x, p.z) < y(q.x, q.z) - mit.tolM).length, bergab: wahl.filter(([p, q]) => ab(p, q)).length, ende: rv.filter(ende).length, rueckAb: wahl.filter(([p, q]) => ab(q, p)).length, fluesse: rv.length };
+                    };
+                    const geladen = await H.seite("return r.state.worldMeta && r.state.worldMeta.seed;");
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: WASSER_AN, export: "gelaende-core.js:6107 hydrosphaere (im Faden, voxel-worker.js:1997)", leser: "stamm/gelaende-boden.js:675 _hydroFor" },
+                        adressen: { saaten: [geladen, ...Array.from({ length: U[1].saaten }, (_, i) => "same-saat-" + i)] },
+                        mit: { punkte: U[1].punkte, tolM: 0.05 },
+                        ms: 10000,
+                        masse: { saaten: { wie: "anzahl", nur: "saat" }, n: { wie: "summe", feld: "n" }, vor: { wie: "summe", feld: "vor" }, rueck: { wie: "summe", feld: "rueck" }, bergab: { wie: "summe", feld: "bergab" }, rueckAb: { wie: "summe", feld: "rueckAb" }, ende: { wie: "summe", feld: "ende" }, fluesse: { wie: "summe", feld: "fluesse" } },
+                        schlecht: { feld: "vor", richtung: "min" },
+                        pose: (a) => "Saat " + a.saat + ": ein Fluss am Spieler aus 80 m, Lauf und Mündung im Bild",
+                    });
+                    const w = await S(welt, { abstaende: U[2].abstaendeM, tolDichte: 0.02, schnitte: 20, fernM: 400, halbM: U[3].halbM, zellen: 8, anM: U[3].anM });
+                    w.s1 = R1.werte;
                     const f = await S(faden, { saaten: U[6].saaten, deckelMs: Math.max(2000, (30 - M.uhr()) * 1000) });
                     const auge5 = await M.auge("same-kohaerenz-s5", w.pose || { ort: "wiese" });
                     const auge6 = await M.auge("same-kohaerenz-s6", { ort: "wiese" });
@@ -7752,7 +7776,7 @@ L.perspektive("same", (() => {
                     const eine = "die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte)";
                     return {
                         sprossen: {
-                            1: { werte: { anteilProzent: pz(s1.vor, s1.n) }, zeuge: { punkte: s1.n, vor: s1.vor, rueck: s1.rueck, rueckAb: s1.rueckAb, bergab: s1.bergab, fluesse: w.fluesse, ende: s1.ende }, nicht: eine + " — an dieser: " + s1.vor + " von " + s1.n + " Punkten bergab in Senke oder Meer, rückwärts steigen " + s1.rueck },
+                            1: { werte: { anteilProzent: pz(s1.vor, s1.n) }, zeuge: { punkte: s1.n, vor: s1.vor, rueck: s1.rueck, rueckAb: s1.rueckAb, bergab: s1.bergab, fluesse: s1.fluesse, ende: s1.ende, saaten: R1.gemessen }, ...(R1.gemessen < U[1].saaten ? { nicht: (R1.fehlt || "die Frist") + " — an der Saat der Welt: " + s1.vor + " von " + s1.n + " Punkten bergab in Senke oder Meer, rückwärts steigen " + s1.rueck + " · " + R1.akte } : {}) },
                             2: { werte: { monotonProzent: pz(s2.flussMonoton, s2.fluss) }, zeuge: { schnitte: s2.fluss, zufall: s2.zufall, anteilFluss: pz(s2.flussMonoton, s2.fluss), anteilZufall: pz(s2.zufallMonoton, s2.zufall), streu: s2.streu }, nicht: eine + " — an dieser: " + s2.flussMonoton + " von " + s2.fluss + " Schnitten quer zum Fluss monoton fallend (fern jedes Flusses " + s2.zufallMonoton + " von " + s2.zufall + "), " + s2.flaecheKm2 + " km² Hydrosphäre" },
                             3: { werte: { anteilProzent: zo.anteilOrte, luvLeeVerh: undefined }, zeuge: zo, nicht: "10³ km² nicht und kein Niederschlag je Ort: " + o.n + " Orte (Dörfer, " + o.staedte + " Städte) auf " + Math.round(((2 * U[3].halbM) / 1000) ** 2) + " km², " + o.amWasser + " am Fluss (Zufallsorte " + o.zufallAmWasser + " von " + o.zufall + "); der Planet-Faden trägt Regen nur als Δ zum Anker, Luv/Lee unmessbar" },
                             4: { werte: { umwegFaktor: undefined, zipfSteigung: o.zipf, groessterOrt: o.groesster }, zeuge: Object.assign({ zipf: o.zipf }, zo), nicht: "10⁵ km² und 10³ Städte nicht, kein Straßennetz zwischen den Orten: " + o.n + " Orte, der größte trägt " + o.groesster + " Häuser (Soll bis 10⁷), Zipf-Steigung " + o.zipf },
