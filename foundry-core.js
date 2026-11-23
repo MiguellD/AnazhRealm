@@ -7546,7 +7546,26 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox,
     const slots = achsen.reduce((s, a) => s + a.knoten.length, 0);
     const ziele = new Float32Array(n * slots * 3);
     let slot = 0;
+    const anfang = {};
     for (const a of achsen) {
+        anfang[a.achse] = slot;
+        // DER KREUZTERM (generationen-band, koerper LEIB_RAUM `kreuz`): die Achse trägt den Leib an der Ecke `kreuz` (zwei Dials
+        // zugleich) weniger der Ziele ihrer Achsen an dieser Ecke — den Rest, den die Summe der Achsen nicht trägt; je Knoten
+        // wert × Rest (der Punkt liest das Produkt der Abweichungen, 0 an der Vorlage)
+        if (a.kreuz) {
+            const R = __leibRaumWeg(kern, V, P0, N0, depot0, Object.assign({}, dials, a.kreuz), leibVon, ruhe, vox, na, siA, swA, skinJoints, n); // prettier-ignore
+            for (const k of Object.keys(a.kreuz)) {
+                const b = achsen.find((x) => x.achse === k);
+                const j = b ? b.knoten.indexOf(a.kreuz[k]) : -1;
+                if (j < 0 || !(k in anfang)) throw new Error("LEIB-RAUM: der Kreuzterm " + a.achse + " ohne den Knoten " + k + " = " + a.kreuz[k] + " vor ihm (fail-closed)"); // prettier-ignore
+                for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) R[i * 3 + c] -= ziele[(i * slots + anfang[k] + j) * 3 + c];
+            }
+            for (const wert of a.knoten) {
+                for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) ziele[(i * slots + slot) * 3 + c] = wert * R[i * 3 + c];
+                slot++;
+            }
+            continue;
+        }
         const kj = /^__kappe([012])$/.exec(a.achse);
         if (kj && !(Array.isArray(dials.__kappe) && dials.__kappe.length === 3))
             throw new Error("LEIB-RAUM: die Achse " + a.achse + " ohne das Tripel dials.__kappe (fail-closed)");
@@ -7554,24 +7573,30 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox,
             const d2 = Object.assign({}, dials);
             if (kj) (d2.__kappe = dials.__kappe.slice())[+kj[1]] = wert;
             else d2[a.achse] = wert;
-            const Lk = leibVon(d2);
-            // das Fett-Depot entlang der Normale der Spreiz-Pose, mit den Positionen in die Ruhe getragen
-            const Wk = __leibRaumRefit(V, P0, Lk.prims, vox);
-            const depot = kern.fettDepot(d2);
-            for (let i = 0; i < n; i++) {
-                const nz = na[i * 3 + 2];
-                const fs = __fettMass(depot, siA, swA, i, nz, skinJoints) - __fettMass(depot0, siA, swA, i, nz, skinJoints);
-                for (let c = 0; c < 3; c++) Wk[i * 3 + c] += na[i * 3 + c] * fs;
-            }
-            const W = ruhe(Wk, Lk);
+            const W = __leibRaumWeg(kern, V, P0, N0, depot0, d2, leibVon, ruhe, vox, na, siA, swA, skinJoints, n);
             for (let i = 0; i < n; i++) {
                 const o = (i * slots + slot) * 3;
-                for (let c = 0; c < 3; c++) ziele[o + c] = W[i * 3 + c] - N0[i * 3 + c];
+                for (let c = 0; c < 3; c++) ziele[o + c] = W[i * 3 + c];
             }
             slot++;
         }
     }
     return { achsen: achsen.map((a) => ({ achse: a.achse, knoten: a.knoten.slice() })), n, ziele };
+}
+// Der Weg jeder Ecke der Vorlage zum Leib an den Dials d2, in der Ruhe gegen die Ruhe der Vorlage (N0): der Re-Fit auf seine
+// Primitive, das Fett-Depot entlang der Normale der Spreiz-Pose, mit den Positionen in die Ruhe getragen
+function __leibRaumWeg(kern, V, P0, N0, depot0, d2, leibVon, ruhe, vox, na, siA, swA, skinJoints, n) {
+    const Lk = leibVon(d2);
+    const Wk = __leibRaumRefit(V, P0, Lk.prims, vox);
+    const depot = kern.fettDepot(d2);
+    for (let i = 0; i < n; i++) {
+        const nz = na[i * 3 + 2];
+        const fs = __fettMass(depot, siA, swA, i, nz, skinJoints) - __fettMass(depot0, siA, swA, i, nz, skinJoints);
+        for (let c = 0; c < 3; c++) Wk[i * 3 + c] += na[i * 3 + c] * fs;
+    }
+    const W = ruhe(Wk, Lk);
+    for (let i = 0; i < W.length; i++) W[i] -= N0[i];
+    return W;
 }
 // Die Zahlen des Re-Fits: `tragen` die Weite (m), über die das nächste Primitiv eine Ecke trägt; `newton` die Schritte auf das
 // Nullniveau, `schritt` (m) ihr größter, `gradient` (m) die Weite des Differenzen-Gradienten.

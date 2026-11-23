@@ -213,3 +213,32 @@ Vertrags-Akt (Auge 1310 Nr. 11: die Fensterreihen der L2 und der Turm-L1 waren s
 - Byte-Beweis (Mint 13.10. abends gegen den Kern c5a4d0f8): L0 1 von 65 byte-gleich (das schlafende Glas), L1 0/64,
   L2 0/65, Stufe 3 12/64 (der Wand-Ton); gegen den ersten K38-Mint (bd570a89) L0 65/65 byte-gleich. `ausstattung.json`
   byte-gleich.
+
+## Nachtrag BRANDTON UND GEFÜGE DER WAND (23.11.2026, haus-ziegel-putz) — der Backstein am Anker, der Ton im Stoff
+
+Vertrags-Akt (Karte 2 `mensch.bau.huelle` #1/#2; das Bild: der Backstein las als Spielzeug, die Stufe mit Steinen sprang
+gegen die Flächen-Stufe — Gefach-Mittel L1 ÷ L0 1,32 an derselben Pose aus 9 m). Die Farbe der Ecken bewegt sich, jede
+Objekt- und jede Ecken-Zahl bleibt:
+
+- **DER BRANDTON AM ANKER** (`VERBAND_GESETZ.mauerwerk.grund` 0x8c5746, die Palette `backstein`): die Albedo des gebrannten
+  Ziegels, linear 0,262 · 0,095 · 0,061 (physicallybased.info „Brick“). Die Farbe der Rolle IST der Stein.
+- **DIE FLÄCHE TRÄGT DAS MITTEL, DER STEIN DEN STEIN** (`_baseFor`): der Stoff webt Stein und Fuge × `eins` (das Mittel der
+  Fläche bleibt 1) — eine Fläche im Mauerwerk trägt darum Stein ÷ `eins` (0,874 · 0,613 · 0,535), der Stein für Stein den
+  Stein (`GEFUEGE_GESETZ.stein`, die Nummer 126 je Ecke im Beipack: der Stoff liest ihn ohne `eins` und ohne Fuge), das Bett
+  einer Rolle im Mauerwerk Stein × Ton der Fuge. Der eingemischte Lehm der Kultur (`__fuge`) ist gestrichen.
+- **DER TON IM STOFF** (`GEFUEGE_GESETZ` `tonImStoff`: putz · lehmputz · ziegelstein): kein Ton je Teil in der Farbe der Ecke
+  (die Patina je Brett zeichnete am Giebel Bänder je 0,24 m ± 11 %) und kein Rauschen je Ecke für Putz, Lehm, Gefach und
+  Backstein — der Stoff rechnet Kellenzug, Wolke und den Ton je Stein.
+- Ohne Byte (Gesetz-Zeilen und Beipack): das Maß des Handstrichs (NF 240 × 115 × 71 mm, Fuge 11 mm), `tiefeM`, `fase`,
+  `brand`; die Nummern 126 · 127 je Ecke (`__zeile`); die Lage im Verband je Ecke (`__lage`, `VERBAND_GESETZ` `lage` 2 und
+  `lageGrund`: das Raster des Baus statt der Welt-Lage des Satzes).
+- Die Linse DIE WAND DES STILS liest den umgemalten Verband seither auch am Stoff des Teils (der Fühler „fremder Verband“):
+  die Patina je Teil, an der sie ihn in der Flächen-Stufe nannte, trägt das Mauerwerk nicht mehr.
+- Byte-Beweis (Mint 23.11. gegen den Kern von main 07783ef2): `haeuser.json` L0 18 von 65 byte-gleich, L1 0/64, L2 0/65,
+  Stufe 3 11/64; `ausstattung.json` 32 von 37 byte-gleich (L0 10/13, L1 10/12, Stufe 3 12/12); jede Objekt- und Ecken-Zahl
+  gleich. Gesetz-Zeilen und Beipack allein (der Mint vor dem Farb-Schnitt): 258/258 und 37/37 byte-gleich.
+- Der Umschlag (`spec/asset-contract/v1/golden/recipes.json`, `MINT_NUR_DATEN=1`): die Backstein-Farbe von vier Kulturen
+  folgt dem Anker im Ton (hollaendisch 0x9a4f3a → 0x905841, hanseatisch 0x8c4636 → 0x834e3d, georgian 0x9c5a44 → 0x92644c,
+  viktorianisch 0x7e4636 → 0x754e3d) — vier Zahlen, `world-params` und `render-config` byte-gleich.
+- Plattform-Ratsche v6 (`plattform-ratsche.json`): cos 26, sin 15 → 11, atan 17 → 18, tan 14 (Summe 72 → 69) — der
+  gemessene Ton-Faktor der L2 und der Hülle liegt je Kultur auf einer anderen Stufe, die Drift kippt andere Fälle.

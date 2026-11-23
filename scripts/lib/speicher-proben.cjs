@@ -125,7 +125,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "runde.json"));
     const ordner = path.dirname(datei);
     fs.mkdirSync(ordner, { recursive: true });
-    const nur = opt("--nur"); // a | b | reise
+    const nur = opt("--nur"); // a | b | reise | stadt | blick
     const ev = async (code) => {
         const o = await rufe("/eval", { code });
         if (o && o.fehler) throw new Error("runde: " + o.fehler);
@@ -193,7 +193,19 @@ async function rundeFahrt({ umstellen, rufe }) {
                 return { orte };
             },
         },
-    ].filter((x) => (nur ? x.name === nur : x.name !== "stadt"));
+        {
+            // (blick) der Speicher folgt dem Blick (heap-blick-folgt, nur mit `--nur blick`): Wiese frisch → stadt-voll → Wiese; kein
+            // Halter trägt nach der Rückkehr mehr als frisch (`blickUrteil`, je Halter mit MB)
+            name: "blick",
+            blick: true,
+            start: () => geh({ ort: "wiese", sicht: "ego" }),
+            runde: async () => {
+                await geh({ ort: "stadt-voll", sicht: "ego" });
+                await geh({ ort: "wiese", sicht: "ego" });
+                return { orte: ["stadt-voll", "wiese"] };
+            },
+        },
+    ].filter((x) => (nur ? x.name === nur : x.name !== "stadt" && x.name !== "blick"));
     const DZ = require("./draw-zaehler.cjs");
     const anlage = anlageVon(root);
     const aus = { datum: new Date().toISOString(), runden: [] };
@@ -215,7 +227,7 @@ async function rundeFahrt({ umstellen, rufe }) {
         }
         const b2 = await bild(k, R.name + "-rueckkehr");
         const paar = bildPaar(b0, b2);
-        const u = DZ.rundenUrteil({ name: R.name, stand: s }, anlage);
+        const u = DZ.rundenUrteil({ name: R.name, stand: s, blick: R.blick }, anlage);
         if (paar.urteil !== "dasselbe Bild") u.f.push(`${R.name}: die Rückkehr zeigt ein anderes Bild (${paar.urteil}, Mittel ${paar.mittel}, stark ${paar.anteilStark})`); // prettier-ignore
         aus.runden.push({ name: R.name, min: +((Date.now() - t0) / 60000).toFixed(1), was, stand: s, tafel: u.tafel, paar, urteil: u.f }); // prettier-ignore
         zeilen.push(`Runde ${R.name}: Heap ${s.map((x) => x.heapMB).join(" → ")} MB · geometries ${s.map((x) => x.geometries).join(" → ")} · größtes Bild ${s.slice(1).map((x) => x.bildMax.toFixed(1)).join(" / ")} ms · Bildpaar ${paar.urteil}`); // prettier-ignore

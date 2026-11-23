@@ -306,9 +306,13 @@ class AnazhRealm_siedlung_bewohner {
             return AnazhRealm._kernPflichtBruch("fachwerk:kleidung");
         const tuch = Object.keys(kc.CLOTH_COLORS);
         const aus = [];
-        for (let gi = 0; gi < AnazhRealm.BEWOHNER.gestalten; gi++) {
-            const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`);
-            gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
+        const von = AnazhRealm.BEWOHNER.gestalten;
+        for (let gi = 0; gi < von; gi++) {
+            // (DAS ALTER DER GESTALT, koerper ALTER_GESETZ: geschichtet über die Pyramide der Epoche des Plans — die Gestalten
+            // tragen die Lebensphasen ihrer Siedlung, Kind bis Greis; das Geschlecht der Gestalt in der Reife ihres Alters,
+            // koerper `alterGeschlecht`)
+            const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`, { jahr: S.plan.jahr, gestalt: gi, von });
+            gen.sex = kc.alterGeschlecht(gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25, gen.jahre);
             const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch), {
                 hairStyle: gen.schnitt,
                 hairLen: gen.haarLaenge,
@@ -373,6 +377,21 @@ class AnazhRealm_siedlung_bewohner {
             if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length];
         return ov;
     }
+    // DIE NÄHE EINES GENOMS a ZU EINER GESTALT t (die Wahl der Gestalt, `_bewohnerGenome`): Geschlecht, Bau, Muskel, Kopf, der Schnitt
+    // des Haars, das Gesicht — und das Alter nach dem Gesetz der Lebensphase (koerper `alterAbstand`: ein Kind trägt nie die Gestalt
+    // eines Erwachsenen, unter Kindern zählt der Wuchs). Bis generationen-band der Abstand im Regler allein (Gewicht 1 neben 3 für das
+    // Geschlecht): das Kind hätte den Leib des Erwachsenen seines Geschlechts getragen, nur kleiner.
+    _bewohnerAbstand(a, t) {
+        return (
+            3 * Math.abs(a.sex - t.sex) +
+            Math.abs(a.build - t.build) +
+            Math.abs(a.muscle - t.muscle) +
+            Math.abs(a.headRatio - t.headRatio) / 0.24 +
+            window.__koerperCore.alterAbstand(a.alter, t.alter) +
+            (a.schnitt === t.schnitt ? 0 : 0.5) +
+            0.25 * (Math.abs(a.auge - t.auge) + Math.abs(a.mund - t.mund) + Math.abs(a.braue - t.braue) + Math.abs(a.haaransatz - t.haaransatz)) // prettier-ignore
+        );
+    }
 
     // DAS GENOM JEDES BEWOHNERS (mensch.K4, die EINE Quelle seines Leibs): sein Same („Plan:Haus:Person") rollt sein Genom
     // (`_rollHumanoidGenome`); er trägt die Gestalt seiner Siedlung, deren FORM seinem Genom am nächsten ist (Geschlecht, Bau,
@@ -385,14 +404,8 @@ class AnazhRealm_siedlung_bewohner {
         const BW = AnazhRealm.BEWOHNER;
         const kc = window.__koerperCore;
         if (typeof kc.menschPalette !== "function") return AnazhRealm._kernPflichtBruch("koerper:menschPalette");
-        const ab = (a, t) =>
-            3 * Math.abs(a.sex - t.sex) +
-            Math.abs(a.build - t.build) +
-            Math.abs(a.muscle - t.muscle) +
-            Math.abs(a.headRatio - t.headRatio) / 0.24 +
-            Math.abs(a.alter - t.alter) +
-            (a.schnitt === t.schnitt ? 0 : 0.5) +
-            0.25 * (Math.abs(a.auge - t.auge) + Math.abs(a.mund - t.mund) + Math.abs(a.braue - t.braue) + Math.abs(a.haaransatz - t.haaransatz)); // prettier-ignore
+        const ab = (a, t) => this._bewohnerAbstand(a, t);
+
         if (typeof kc.leibRaumPunkt !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibRaumPunkt");
         if (typeof kc.leibKoennen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibKoennen");
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
@@ -403,7 +416,7 @@ class AnazhRealm_siedlung_bewohner {
         const R = S.raum || (S.raum = this._bewohnerRaum(S));
         if (!R.tonZeile) R.tonZeile = this._tonZeile(kc.menschPalette(R.dK, R.f.skin, R.f.hair));
         for (const b of S.liste) {
-            const gen = (b.genom = this._rollHumanoidGenome(b.seed));
+            const gen = (b.genom = this._rollHumanoidGenome(b.seed, b.epoche));
             let best = 0;
             S.gestalten.forEach((G, gi) => {
                 if (ab(gen, G.gen) < ab(gen, S.gestalten[best].gen)) best = gi;
@@ -893,6 +906,12 @@ class AnazhRealm_siedlung_bewohner {
                 yield;
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
+                // SEIN ALTER (koerper ALTER_GESETZ: die Epoche des Plans, sein Platz im Haushalt — die erste Person erwachsen): wer
+                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel vor der Tür, kein Werk)
+                const epoche = { jahr: plan.jahr, rang: k, n };
+                const kind =
+                    this._bewohnerJahre(this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"), epoche) <
+                    KC.ALTER_GESETZ.kindJ;
                 const heim = yield* ringStand(g, "", ex, ez, ux, uz, null, false, { x: tx, z: tz });
                 if (!heim) {
                     this._bruchMelden(
@@ -900,11 +919,11 @@ class AnazhRealm_siedlung_bewohner {
                     );
                     continue;
                 }
-                geboren.push({ sl, si, k, g, rolle, tuer, vor, ein, heimI, heim, platz: yield* platzStand(g) });
+                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, epoche, tuer, vor, ein, heimI, heim, platz: yield* platzStand(g) }); // prettier-ignore
             }
         }
         yield* anschliessen();
-        for (const { sl, si, k, g, rolle, tuer, vor, ein, heimI, heim, platz } of geboren) {
+        for (const { sl, si, k, g, rolle, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
             yield;
             const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
             // DIE BINDUNG (`binden`): das Werk, der Tisch, der Abend — der Besuch folgt, wenn jeder steht
@@ -924,7 +943,7 @@ class AnazhRealm_siedlung_bewohner {
             const werk = ort("werk") || (bind.werk === heimI && rolle !== "wohnhaus" ? heim : null);
             // der Beruf nennt das Werk: die Rolle seines Hauses, der Markt, der Acker, die Art des Orts — ohne Ort der Hof
             const wA = werk && bind.werk !== heimI ? orte[bind.werk].art : rolle;
-            const beruf = !werk ? "hof" : wA === "platz" ? "markt" : wA;
+            const beruf = rolle === "kind" ? "kind" : !werk ? "hof" : wA === "platz" ? "markt" : wA;
             // DIE EINE GESTALT DES BEWOHNERS (Lehre 25): der Satz trägt ab seiner Geburt jedes Feld, das ein Takt je an ihm
             // schreibt (ungesetzt `undefined`, wie ein fehlendes) — so teilen alle Sätze EINE versteckte Klasse, und jeder Zugriff
             // der Schleifen des Takts liest an fester Stelle. Bis hier trug der Satz 11 Felder, die übrigen ~60 schrieb der Takt in
@@ -937,7 +956,7 @@ class AnazhRealm_siedlung_bewohner {
             const u = undefined;
             // prettier-ignore
             liste.push({
-                    heim: sl.seed >>> 0, rolle, beruf, same,
+                    heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
@@ -3779,9 +3798,9 @@ class AnazhRealm_siedlung_bewohner {
         // 28,9 MB nach GC). Die Klasse fällt am Register, nie Feld für Feld.
         for (const k of Object.keys(S)) if (!AnazhRealm.BEWOHNER_ERINNERUNG.includes(k)) delete S[k];
         [S.liste, S.gestalten] = [null, null];
-        // … und die Arbeits-Puffer des Takts (`_bewohnerKoepfe`, `_bewohnerBewegt`, `_bewohnerNachbarn`, die Wahl in
-        // `_bewohnerNbZahl`): vor jedem Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
-        for (const a of [this._bewohnerKoepfe, this._bewohnerBewegt, this._bewohnerNachbarn]) if (a) a.length = 0;
+        // … und die Arbeits-Puffer des Takts (das Register `BEWOHNER_TAKT_PUFFER`, die Wahl in `_bewohnerNbZahl`): vor jedem
+        // Lesen neu geschrieben, ihr Rest hielt die Köpfe der zuletzt getakteten Siedlung
+        for (const k of AnazhRealm.BEWOHNER_TAKT_PUFFER) if (this[k]) this[k].length = 0;
         if (this._bewohnerNbZahl) this._bewohnerNbZahl.geachtet.length = this._bewohnerNbZahl.naechste.length = 0;
         this._ofenMemoRaeumen();
     }
@@ -3869,6 +3888,23 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
 // fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
 AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund"]);
+// DIE ARBEITS-PUFFER DES TAKTS (heap-blick-folgt, „der Speicher folgt dem Blick“): jede Liste, die der Bewohner-Takt am Reich lazy
+// anlegt und vor jedem Lesen neu schreibt — der Abschied (`_bewohnerFort`) leert GENAU dieses Register. Bis hier leerte er drei beim
+// Namen; `_bewohnerNah` (die Nah-Wahl), `_bewohnerHalter` (die Halter der Arme) und `_bewohnerWandKand` (die Kästen am Schritt)
+// entkamen ihm: Radeon, Wiese nach der Stadt, `_bewohnerNah[]` 22,3 MB nach GC (die Köpfe samt Leib der zuletzt getakteten
+// Siedlung). Der Verkehr geht mit (`_verkehrFort`), also auch seine Puffer: `_verkehrKandidaten` (die Wagen um das Fenster) hielt
+// danach die Wagen der Stadt, 17,96 MB an der Wiese nach der Stadt. Die Linse (H10, diag-profiband) legt jede lazy Liste
+// `this._bewohner… / this._verkehr… || (… = [])` des Stamms an und nennt die, die hält.
+AnazhRealm.BEWOHNER_TAKT_PUFFER = Object.freeze([
+    "_bewohnerKoepfe",
+    "_bewohnerBewegt",
+    "_bewohnerNachbarn",
+    "_bewohnerNah",
+    "_bewohnerHalter",
+    "_bewohnerWandKand",
+    "_verkehrKandidaten",
+    "_verkehrProben",
+]);
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
     huellenJeTakt: 8,
