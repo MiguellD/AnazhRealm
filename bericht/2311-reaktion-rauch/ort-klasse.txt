@@ -1,0 +1,30 @@
+k2-leben.js: lädt nicht — planet.wasser.stroemung S1: keine Sprosse in der Station (jede Sprosse der Leiter urteilt)
+k2-planet.js: lädt nicht — planet.wasser.stroemung S1: keine Sprosse in der Station (jede Sprosse der Leiter urteilt)
+k2-zusammenspiel.js: lädt nicht — planet.wasser.stroemung S1: keine Sprosse in der Station (jede Sprosse der Leiter urteilt)
+spiegel-lack.js: lädt nicht — await is only valid in async functions and the top level bodies of modules
+Proben (je Kriterium) 280 · stellen ihren Ort selbst 25 · davon liest die Sitzung KEINEN Ort 25 · ohne Ort überhaupt 93
+  k2-erleben.js · karte2.erleben.spieler.hand · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.spieler.wegfindung · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.spieler.zeit · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.spieler.nichtleib · await L.ort("stadt-voll"
+  k2-erleben.js · karte2.erleben.sinne.geruch · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.sinne.signale · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.bild.nacht · await L.ort("stadt-voll"
+  k2-erleben.js · karte2.erleben.bild.himmel · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.klang.raum · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.klang.ereignis · await L.ort("wiese"
+  k2-erleben.js · karte2.erleben.klang.getuemmel · await L.ort("wiese"
+  k2-same.js · karte2.same.preis.takt · await L.ort("stadt-voll"
+  k2-same.js · karte2.same.physik.koerper · await L.ort("stadt-voll"
+  k2-same.js · karte2.same.physik.tragen · await L.ort("wiese" await L.ort("stadt-voll"
+  k2-same.js · karte2.same.physik.fluid · await L.ort("wiese"
+  k2-same.js · karte2.same.physik.feuer · await L.ort("wiese"
+  k2-same.js · karte2.same.physik.flug · await L.ort("wiese"
+  k2-same.js · karte2.same.physik.stoffe · await L.ort("wiese"
+  k2-same.js · karte2.same.entfaltung.abwesenheit · await L.ort("stadt"
+  k2-same.js · karte2.same.massstab.spanne · await L.ort("wiese"
+  k2-same.js · karte2.same.massstab.nahe · await L.ort("wiese"
+  k2-same.js · karte2.same.massstab.sprung · await L.ort("wiese"
+  k2-same.js · karte2.same.gedaechtnis.alter · await L.ort("stadt-voll"
+  k2-same.js · karte2.same.gedaechtnis.schicht · await L.ort("wiese"
+  k2-same.js · karte2.same.preis.eingabe · await L.ort("wiese"
