@@ -19462,7 +19462,7 @@
   },
   "karte2.mensch.leib.gesicht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.gesicht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +3) — zuletzt an 5b36f69a: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.gesicht#1 gtx: ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.mensch.leib.gesicht#2 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#2 gtx: ungemessen (R10) · karte2.mensch.leib.gesicht#3 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#3 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#4 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#5 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#6 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.gesicht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +3) — zuletzt an 5b36f69a: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.gesicht#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +3) · karte2.mensch.leib.gesicht#2 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#2 gtx: ungemessen (R10) · karte2.mensch.leib.gesicht#3 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#3 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#4 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#5 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.gesicht#6 radeon: ungemessen (R10) · karte2.mensch.leib.gesicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.leib.gesicht#1",
@@ -19481,8 +19481,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5b36f69a: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +3)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37541,7 +37542,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 292,
+  "konsum": 293,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37709,10 +37710,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3330
+  "ohne": 3329
  },
  "kopfVoll": "9f3fe35f4a6f7860b04264831bc20ffc70aa7d14",
- "zeit": "2026-11-23T13:57:39.770Z",
+ "zeit": "2026-11-23T14:21:14.454Z",
  "vorher": "9f3fe35f",
  "bilanz": {
   "gewinn": [],
