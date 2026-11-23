@@ -29,5 +29,7 @@ w28-oeko-kreislauf karte2.leben.oeko.zerfall#1
 pm-ort-im-umfang karte2.mensch.sport.koennen#1,karte2.mensch.wirtschaft.markt#1,karte2.mensch.geist.absicht#1,karte2.mensch.wirtschaft.technik#1
 # Nachmessung 23.11. 09:20 (main 07783ef2): neun Stationen warfen seit 2b32fa18 „M is not defined“ statt zu messen, geheilt in punkte-maschine 3fa7ff55 (jede Seiten-Funktion trägt ihr eigenes aus)
 pm-seite-ohne-m karte2.leben.wasser.netz#1,karte2.leben.tiere.masse#1,karte2.leben.tiere.lebenszyklus#2,karte2.planet.kopplung.bahn-klima#2,karte2.planet.kopplung.wetter-welt#2,karte2.erleben.kopplung.wahrnehmung#2,karte2.same.kopplung.ereignis#2,karte2.same.kopplung.gewalt#1,karte2.same.kopplung.terraform#1
+# z687 (main 5b36f69a, 23.11. 09:28): die Hülle des Hauses tritt EINMAL gepackt ein — stadt-voll gehalten 530,3 → 469,0 MB, Start-Dorf 476 → 455 (Radeon); zwei Kern-Sprossen hängen allein am gehaltenen Heap (flur#1 GTX 417,2 · koennen#1 Radeon 527,8 MB gegen 400)
+w28-heap-huelle-gepackt karte2.mensch.nahrung.flur#1,karte2.mensch.sport.koennen#1
 # Nachmessung 23.11. 09:20 (main 07783ef2): drei Sprossen mit grünem Richter, Preis „UNGEMESSEN unter Last“ (×1,28 bis ×2,08) — archiv#1 fiel damit 08:56 aus der Buchung
 pm-preis-in-ruhe karte2.planet.zeit.archiv#1,karte2.mensch.wirtschaft.technik#1,karte2.mensch.wirtschaft.markt#1
