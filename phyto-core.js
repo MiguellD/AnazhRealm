@@ -7305,12 +7305,12 @@
     // Körper über ihm. Quer zur Zugrichtung (q, m) folgt die Höhe dem Kamm, ein erhabener Kosinus im Abstand `furche.abstandM`,
     // so hoch wie `furche.hoeheM` × `relief` (`ackerStand`: die frische Herbstfurche 1, das Saatbett `saatbett`, das sich unter
     // dem Regen auf `setzung.rest` setzt). Der Leser liefert die Breite seines Pixels quer zu den Furchen (`w`, m — am Schirm die
-    // Ableitung, im Labor seine Masche): das Gesetz mittelt den Kamm über sie (der Kasten-Filter des Kosinus, sin x ÷ x mit
-    // x = π·w ÷ Abstand, ab einer Periode 0) — fern fällt die Furche in ihr Mittel, nie in ein Moiré. `scholle` (−1 … 1, das
+    // Ableitung, im Labor seine Masche): das Gesetz mittelt den Kamm über sie (seine Amplitude fällt linear mit w ÷ Abstand, ab
+    // einer Periode je Pixel 0) — fern fällt die Furche in ihr Mittel, nie in ein Moiré. `scholle` (−1 … 1, das
     // Rauschen des Lesers) bricht den Kamm in Schollen. Die Frucht steht in Reihen auf dem First (`deckung` der Reihe quer,
     // `ackerStand`): `reihe` ist ihr Anteil am Pixel, gemittelt ihre Deckung. Der Rain (`rainM`) bleibt am Rand jedes Ackers
-    // ungepflügt, die Wiese steht auf ihm. Die Spur des Pflugs schlingert um `schlagM` (das Rauschen des Lesers, auf q). Die
-    // Erde trägt ihr Relief im Ton (`hell`): der First trocken und hell, die Sohle feucht und dunkel, um `ton` × Relief. Über einer
+    // ungepflügt, die Wiese steht auf ihm. Die Erde trägt ihr Relief im Ton (`hell`): der First trocken und hell, die Sohle
+    // feucht und dunkel, um `ton` × Relief. Über einer
     // Algebra (WIND_ZAHLEN das Labor und die Linse, die TSL-Algebra der Boden-Stoff der Welt): { hoehe (m über der Sohle),
     // steigung (dh/dq), kamm (0 Sohle … 1 First, gemittelt), hell (der Faktor der Erde), reihe (0 … 1) }.
     var ACKER_FURCHE = Object.freeze({
@@ -7320,7 +7320,6 @@
         pflugTag: 190,
         scholle: 0.45,
         kante: 0.12,
-        schlagM: 0.05,
         ton: 0.3,
     });
     function furcheImAcker(A, q, w, relief, scholle, deckung) {
@@ -7328,8 +7327,7 @@
             Z = ACKER_FURCHE,
             om = (2 * Math.PI) / F.abstandM,
             vt = Math.PI / 2;
-        var x = A.max(A.mul(w, A.k(Math.PI / F.abstandM)), A.k(1e-4));
-        var filt = A.mul(A.sin(A.min(x, A.k(Math.PI))), A.pow(x, A.k(-1)));
+        var filt = A.max(A.add(A.k(1), A.mul(w, A.k(-1 / F.abstandM))), A.k(0));
         var phi = A.mul(q, A.k(om));
         var cr = A.sin(A.add(phi, A.k(vt)));
         var H = A.mul(A.mul(A.k(F.hoeheM), relief), A.add(A.k(1), A.mul(scholle, A.k(Z.scholle))));

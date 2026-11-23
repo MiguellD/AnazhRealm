@@ -136,7 +136,7 @@ function probe(stoerung) {
         const S = nah.S;
         const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
         const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
-        return (nah.daten[(j * nah.N + i) * 2 + c] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll;
+        return (nah.daten[(j * nah.N + i) * 4 + c] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll;
     };
     out.platz = +kanal(o.x + 10, o.z + 14, 0).toFixed(3);
     out.acker = +kanal(o.x - 18, o.z - 18, 1).toFixed(3);

@@ -142,7 +142,7 @@ class AnazhRealm_stoff_material {
     // im Schieben (× aehre: vor dem Ährenschieben und nach der Ernte fällt sie auf ihren Fuß) —, die Farbe der Frucht (grün →
     // reif → Stoppel, ACKER_GESETZ.frucht, linear).
     _fruchtJahr(T) {
-        const U = this._ackerRahmenU().uAckerFrucht;
+        const U = this._ackerStandU().uAckerFrucht;
         const G = globalThis.__phytoCore.ACKER_GESETZ.frucht;
         const aehre = T.step(1e-4, T.attribute("aCenter", "vec3").y);
         const lin = (hex) => {
@@ -605,13 +605,13 @@ class AnazhRealm_stoff_material {
     // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`). Nur an Konstanten, die
     // allein der Shader liest — nie im Rechenwerk des Fels-Gesetzes: das rechnet die Zahlen des Gesetzes (gate:hoehlen-sicht
     // wertet `_felsRechenwerkTSL` in f64 gegen gelaende-core aus, Abstand ≤ 1e-6; gekürzt 6,2e-4 an 400 Punkten).
+    // Je Stellenzahl prüft sie die Zahl selbst UND ihr f32 (π/2 trägt als 1.5707964 acht Stellen, gerundet aus der Doppel-
+    // Zahl erst neun); neun Stellen tragen jedes f32.
     static _f32(v) {
         const f = Math.fround(v);
-        for (let p = 1; p < 9; p++) {
-            const k = +v.toPrecision(p);
-            if (Math.fround(k) === f) return k;
-        }
-        return +f.toPrecision(9);
+        for (let p = 1; p < 10; p++)
+            for (const k of [+v.toPrecision(p), +f.toPrecision(p)]) if (Math.fround(k) === f) return k;
+        return f;
     }
 
     // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
