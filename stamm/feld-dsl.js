@@ -2410,12 +2410,17 @@ AnazhRealm.WORLD_RULES = Object.freeze({
 // und der Chat meldete den Wunsch („Sprungkraft auf 1.2"). Je Op: [Argument, Prüfung (Wert, Welt), Gesetz in Worten (Welt)].
 AnazhRealm.DSL_WERTE = (() => {
     const zahlIn = (v, lo, hi) => v != null && v !== "" && Number(v) >= lo && Number(v) <= hi;
-    // das Band des Leibs (`_koerperGesetzBand`) mit dem Wert von jetzt
+    // das Band des Leibs (`_koerperGesetzBand`) mit dem Wert von jetzt. DIE GENANNTEN RÄNDER GELTEN (nerv-bewegung): das Gesetz
+    // in Worten nennt den unteren Rand auf-, den oberen abgerundet (zwei Stellen) — jeder Wert, den die KI aus dem Prompt
+    // nimmt, besteht die Prüfung darüber. Vorher rundete es zum nächsten: am Leib aus der Gestalt stand der obere Rand um
+    // bis zu 0,005 über dem Band im Prompt, das Modell nahm zu „mach mich schneller“ genau ihn, und `dslEval` wies den
+    // Satz ab (`invalid_wert`) — am alten Leib (1,15–2,00) trafen die Ränder zwei Stellen, es fiel nie auf.
+    const rand = (v, auf) => ((auf ? Math.ceil(v * 100 - 1e-6) : Math.floor(v * 100 + 1e-6)) / 100).toFixed(2);
     const leib = (stat) => [
         0,
         (v, r) => (({ min, max }) => zahlIn(v, min - 1e-6, max + 1e-6))(r._koerperGesetzBand(stat)),
         (r) =>
-            (({ min, max }) => `${min.toFixed(2)}–${max.toFixed(2)}, jetzt ${Number(r.state[stat]).toFixed(2)}`)(
+            (({ min, max }) => `${rand(min, true)}–${rand(max, false)}, jetzt ${Number(r.state[stat]).toFixed(2)}`)(
                 r._koerperGesetzBand(stat)
             ),
     ];

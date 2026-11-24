@@ -497,18 +497,34 @@
                     // lesen magieleitung, staminaMax liest waermeleitung). Der Wirt
                     // (STAT_FROM_TAGS) liest fail-soft: Kern kalt → seine Literale.
                     bewegung: {
-                        // DIE REALITAETS-EICHUNG (Schoepfer-Wort 17.07.: "die
-                        // Realitaet unser Spiegel") -- die Verben tragen
-                        // MENSCHEN-Masse: Gehen ~1.5 m/s (dichte-Spanne 1.15-2.0),
-                        // Sprint x4.5 ~6.8 m/s, Sprung ~0.53 m (bei g=9.81, faellt
-                        // mit derselben Welle von 1.5x-Erde), Klettern 0.6 m/s,
-                        // Schwimmen ~1.3 m/s. Die Arcade-Saetze (base 7 / Sprint x2
-                        // / jump 8 / kletterV 3.2 / tauchV 3.2) fielen mit dem Wort.
-                        speed: { base: 1.15, leicht: 0.6, mag: 0.25 },
-                        // Der Sprint-Faktor reist als Gesetz (war Stamm-Literal x2):
-                        // Gehen -> Sprint wie Mensch (1.5 -> ~6.8 = trainierter Lauf).
-                        sprintMul: 4.5,
-                        jumpPower: { base: 2.6, leicht: 1.0, mag: 0.5 },
+                        // DIE VERBEN AUS DER GESTALT (nerv-bewegung, Meisterkarte 2
+                        // mensch.sport.koerper S1): die Basis des Gehens, der Sprint-
+                        // Faktor und das Abdruck-Tempo des Sprungs sind keine Literale
+                        // mehr -- sie fallen aus dem Leib der START_PARAMS (`leibVerben`:
+                        // Beinlaenge, Kraft ueber Gewicht, der Gang des Zweibeiners).
+                        // Bis hier trugen sie die Eichung vom 17.07. als Zahl (1.15 /
+                        // x4.5 / 2.6): der Mensch der Welt (dichte 1) ging 1.15 m/s,
+                        // sprintete 5.18 und sprang 0.395 m gegen das Soll 1.5 / 6.8 /
+                        // 0.53 (die Eichung rechnete mit 1.5, der Leib las 1.15).
+                        // leicht/mag bleiben die Achsen der Tags (der leichte Leib).
+                        speed: {
+                            get base() {
+                                return leibVerben().gehen;
+                            },
+                            leicht: 0.6,
+                            mag: 0.25,
+                        },
+                        get sprintMul() {
+                            var V = leibVerben();
+                            return V.sprint / V.gehen;
+                        },
+                        jumpPower: {
+                            get base() {
+                                return leibVerben().abdruck;
+                            },
+                            leicht: 1.0,
+                            mag: 0.5,
+                        },
                         staminaMax: { base: 100, leicht: 60, mag: 40 },
                         // SCHWIMM-HEIMAT (rein additive DATEN-Zeile — Praezedenz: die
                         // Bewegungs-Koeffizienten oben): DIE WASSER-BEWEGUNG des Avatars
@@ -651,6 +667,16 @@
                             fersenAb: 0.5,
                             ballen: 0.16,
                             knoechel: 0.1,
+                            // DIE FERSEN-WIPPE (nerv-bewegung; tetrapoda
+                            // gangFersen): der Fuss setzt mit der Ferse auf (die
+                            // Zehen 0.35 rad = 20 Grad ueber dem Boden, Perry 1992)
+                            // und rollt ueber die Ferse (0.07 R = 5.8 cm hinter dem
+                            // Knoechel) bis zum flachen Fuss bei 0.2 des Stands
+                            // (~12 % des Zyklus). Die Senke bei 1.58 m/s faellt so
+                            // von 0.081 auf 0.061 L, der Hub bleibt 0.050 L.
+                            ferse: 0.07,
+                            fersenWinkel: 0.35,
+                            fersenFlach: 0.2,
                         },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
@@ -5244,10 +5270,18 @@
     //    134) verliert aus 4 m 11, aus 8 m 56, aus 12 m 101 und stirbt aus 15 m (17,2 m/s). ──
     // ── leib.K2 (rein additiv) — DER SPRUNG AUS MASSE UND KRAFT: die Beine strecken den Leib über den Abdruck-Weg abdruckM
     //    (m, die Streckung von Knie und Hüfte aus der Hocke) mit der Kraft F gegen sein Gewicht, ½ m v² = (F − m g) d, also
-    //    v = √(2 d (F/m − g)). Die Sprungkraft der Seele (bewegung.jumpPower, m/s) ist das Abdruck-Tempo, das ihre Beine dem
-    //    Bezugs-Leib refKg unter der Erd-Schwere refG geben (der Mensch der START_PARAMS: Haut-Volumen × dichteKgM3 = 89,0 kg),
-    //    die Kraft F = refKg (refG + v²/2d). Ein schwererer Leib springt niedriger und kürzer, stärkere Beine höher und
-    //    weiter (Wirt: _sprungKraft, _sprungAbdruck). ──
+    //    v = √(2 d (F/m − g)). Die Sprungkraft der Seele (bewegung.jumpPower, m/s) ist das Abdruck-Tempo, das ihre Beine
+    //    IHREM Leib unter der Erd-Schwere refG geben: F = m (refG + v²/2d) mit m der Masse des Leibs, dessen Beine es sind
+    //    (nerv-bewegung: bis hier stand dort refKg 89 — „der Mensch der START_PARAMS" —, der gegossene Leib wiegt 80,9 kg,
+    //    jeder Sprung stieg 10 % über das Gesetz). Mehr Last über denselben Beinen springt niedriger und kürzer, stärkere
+    //    Beine höher und weiter (Wirt: _sprungKraft, _sprungAbdruck). ──
+    // ── nerv-bewegung (rein additiv) — DIE KRAFT DER BEINE ÜBER DEM GEWICHT (kraft, dimensionslos): die mittlere Kraft der
+    //    Beine im Abdruck über dem Gewicht des Bezugs-Leibs (KOENNEN_BEZUG, `leibKoennen` kraft 1); der Leib trägt sie mal
+    //    seinem Können (Φ = kraft × leibKoennen.kraft). Aus ihr fallen Sprint und Sprung (`leibVerben`). Band der Profis:
+    //    Samozino 2008 (J Biomech 41:2940, der Hocksprung F̄ = m g (1 + h/h_PO)), Weyand 2000 (J Appl Physiol 89:1991, das
+    //    Höchsttempo 6,2–11,1 m/s an 33 Läufern folgt der Kraft — ×1,26 vom langsamsten zum schnellsten —, nie der
+    //    Schwungzeit 0,36–0,40 s). Die EINE geeichte Zahl des Gesetzes: 2,0 — die Beine des mittleren Dreißigjährigen tragen im
+    //    Abdruck das Doppelte seines Gewichts; START_PARAMS (kraft 1,213) trägt Φ 2,43. ──
     // ── w4-koerper-park (rein additiv) — DIE KOPF-EINHEIT DES MENSCHEN IN DER WELT (m): 8 Kopf-Einheiten sind die Höhe des
     //    Menschen der START_PARAMS (1,7 m); die Gelenk-Einheit des Gusses (labProportionen H = 6) misst 8 · kopfM / H Meter
     //    (`leibMassstab`). Wirt (PLAYER_KH, der Wrap `_buildHumanoidRig`) und Labor (die Bühne des Spiel-Modus in Metern)
@@ -5256,7 +5290,8 @@
         dichteKgM3: 985,
         armAnteil: 0.05,
         sturz: Object.freeze({ schadlosMs: 7.7, lebenJeJkg: 1.15 }),
-        sprung: Object.freeze({ abdruckM: 0.4, refKg: 89, refG: 9.81 }),
+        sprung: Object.freeze({ abdruckM: 0.4, refG: 9.81 }),
+        kraft: 2.0,
         kopfM: 0.2125,
         // DIE KAPSEL DES LEIBS (m, am 1-m-Box-Collider geeicht): fussM die Sohle unter der Mitte der Kapsel, stufeM wie hoch der
         // Leib ohne Sprung aufsteigt, haftM wie weit unter den Füßen er am Boden haftet (nur geerdet, nie im Fall), radiusM der
@@ -6073,7 +6108,7 @@
         hang: ["maxSlopeY", "malus"],
         parkour: ["doppelspruenge", "doppelsprungMul", "wandsprungMul", "wandAbstoss", "kletterV", "kletterAusdauerProS", "kontaktFrischeSec", "slideTempoMul", "slideDauerSec", "slideMinTempo"],
         slidePose: ["lehne", "beinVor", "knieKnick", "armStuetz", "armFrei", "kopf"],
-        gang: ["schrittBasis", "schrittFroude", "tastgrad", "tastgradLauf", "laufFroude", "maxWinkel", "hub", "hubLauf", "hubForm", "beckenHub", "rollWinkel", "fersenAb", "ballen", "knoechel"],
+        gang: ["schrittBasis", "schrittFroude", "tastgrad", "tastgradLauf", "laufFroude", "maxWinkel", "hub", "hubLauf", "hubForm", "beckenHub", "rollWinkel", "fersenAb", "ballen", "knoechel", "ferse", "fersenWinkel", "fersenFlach"],
     };
     var _leibGesetzMemo = null;
     function leibGesetz() {
@@ -6122,6 +6157,74 @@
             sizeSpeedMul = 1 / sizeHpMul;
         var speed = Math.max((2 / 7) * B.speed.base, (B.speed.base + 0 * B.speed.leicht + 0 * B.speed.mag) * sizeSpeedMul);
         return { speed: speed, sprintSpeed: speed * B.sprintMul, jumpPower: (B.jumpPower.base + 0 * B.jumpPower.leicht + 0 * B.jumpPower.mag) * sizeSpeedMul };
+    }
+    // ── nerv-bewegung (Meisterkarte 2 mensch.sport.koerper S1) — DIE VERB-TAFEL DES LEIBS: jedes Verb eine Zeile aus Zielen im
+    //    Raum (wohin Fuß und Hand greifen, was den Schwerpunkt hält, wohin der Blick geht) und der Kontakt-Sequenz (je Phase die
+    //    Glieder, die tragen: fL/fR die Füße, hL/hR die Hände, sitz und gesaess die Fläche des Geräts; [] ist der Flug bzw. das
+    //    Wasser, das trägt). Fünf Verben des Leibs, sechs am Gerät (ihre Zahlen: VERB_GESETZ); ihre Zahl ist das Soll der Station
+    //    k2-mensch-sport (11 Verben im Spiel). `froude` des Gehens ist das Tempo, das der Mensch wählt: Fr = v²/(g·L) ≈ 0,25
+    //    (Alexander 1989, Physiol Rev 69:1199; Leurs 2011, J Exp Biol 214 — Fr ≈ 0,25 über verschiedene Bein-Geometrien). ──
+    var VERB_TAFEL = Object.freeze({
+        gehen: Object.freeze({ ziele: Object.freeze({ fuss: "Fußweg der Gang-Zeile", schwerpunkt: "über dem Stand-Fuß", blick: "voraus" }), kontakt: Object.freeze([["fL", "fR"], ["fL"], ["fL", "fR"], ["fR"]]), froude: 0.25 }),
+        sprint: Object.freeze({ ziele: Object.freeze({ fuss: "unter dem Schwerpunkt, Fußweg 2·L·tan(maxWinkel)", schwerpunkt: "Flug zwischen den Schritten", blick: "voraus" }), kontakt: Object.freeze([["fL"], [], ["fR"], []]) }),
+        sprung: Object.freeze({ ziele: Object.freeze({ fuss: "Abdruck aus der Hocke über abdruckM", schwerpunkt: "ballistisch", blick: "Landung" }), kontakt: Object.freeze([["fL", "fR"], [], ["fL", "fR"]]) }),
+        wand: Object.freeze({ ziele: Object.freeze({ hand: "Griff über der Schulter", fuss: "Tritt unter der Hüfte", schwerpunkt: "an der Wand", blick: "zum Griff" }), kontakt: Object.freeze([["hR", "fL"], ["hL", "fR"]]) }),
+        schwimmen: Object.freeze({ ziele: Object.freeze({ hand: "Zug unter dem Leib", fuss: "Treten", schwerpunkt: "an der Schwimm-Linie (Archimedes)", blick: "voraus" }), kontakt: Object.freeze([[]]) }),
+        schaukeln: Object.freeze({ geraet: true, ziele: Object.freeze({ hand: "an den Ketten", schwerpunkt: "pumpt um sitzSchwerpunktM", blick: "voraus" }), kontakt: Object.freeze([["sitz", "hL", "hR"]]) }),
+        rutschen: Object.freeze({ geraet: true, ziele: Object.freeze({ schwerpunkt: "auf der Bahn", blick: "talwärts" }), kontakt: Object.freeze([["gesaess"]]) }),
+        klettern: Object.freeze({ geraet: true, ziele: Object.freeze({ hand: "Sprosse über der Schulter", fuss: "Sprosse unter der Hüfte", schwerpunkt: "am Gerüst", blick: "zum Griff" }), kontakt: Object.freeze([["hR", "fL", "hL", "fR"], ["hL", "fR"], ["hR", "fL", "hL", "fR"], ["hR", "fL"]]) }),
+        hangeln: Object.freeze({ geraet: true, ziele: Object.freeze({ hand: "der nächste Holm", schwerpunkt: "Pendel unter dem Griff", blick: "zum Griff" }), kontakt: Object.freeze([["hL", "hR"], ["hL"], ["hL", "hR"], ["hR"]]) }),
+        balancieren: Object.freeze({ geraet: true, ziele: Object.freeze({ fuss: "Fuß vor Fuß auf der Linie", schwerpunkt: "über dem Balken", blick: "voraus" }), kontakt: Object.freeze([["fL", "fR"], ["fL"], ["fL", "fR"], ["fR"]]) }),
+        wippen: Object.freeze({ geraet: true, ziele: Object.freeze({ hand: "am Griff", fuss: "Abstoß am Boden", schwerpunkt: "auf seiner Seite des Hebels", blick: "voraus" }), kontakt: Object.freeze([["sitz", "hL", "hR"], ["sitz", "hL", "hR", "fL", "fR"]]) }),
+    });
+    // DIE VERBEN AUS DER GESTALT (nerv-bewegung, mensch.sport.koerper S1) — der Leib der START_PARAMS (der Mensch der Welt, an dem
+    // die Stats des Wirts ihre Basis nehmen: `fx.bewegung` liest diese Funktion): L die Länge seines Beins (Ober- und
+    // Unterschenkel des Gusses in Metern, dasselbe Maß wie der Rig `_gaitBeinMass`), Φ die Kraft seiner Beine über seinem Gewicht
+    // (LEIB.kraft × `leibKoennen` kraft), g = LEIB.sprung.refG.
+    //   gehen   = √(froude · g · L) · lauf — das gewählte Tempo bei Fr 0,25, mal dem Können (dieselbe Ähnlichkeit wie der Bewohner).
+    //   sprint  = das Tempo, an dem der Lauf der Gang-Zeile die Kraft der Beine braucht: je Schritt trägt der Stand das Gewicht
+    //             über die ganze Schritt-Zeit, Φ = 1 / (2·Tastgrad) (Weyand 2000); im Lauf ist der Tastgrad der Fußweg
+    //             2·L·tan(maxWinkel) über den Schritt L·(schrittBasis + schrittFroude·v̂) (tetrapoda `gangSchritt`), also
+    //             v̂ = (4·tan(maxWinkel)·Φ − schrittBasis) / schrittFroude. Der Sprint gleitet nie: er IST ein Punkt des Gangs.
+    //   sprung  = h = abdruckM · (Φ − 1) (Samozino 2008), das Abdruck-Tempo √(2·g·h) ist die Sprungkraft der Seele.
+    // Die Größe der Dials skaliert danach im Wirt mit 1/√Größe (`_applySizeMultipliersToStats`) — gegen die Froude-Ähnlichkeit;
+    // das steht offen (nerv-bewegung, cloud-post). Linse: gate:koerper-kern VERBEN.
+    // DER TANGENS OHNE TRANSZENDENTE (Daten-Vertrag v7): `fx.bewegung` trägt die Werte von `leibVerben` im kanonischen JSON der
+    // Daten — Math.tan ist die Klasse, die je Plattform im letzten Bit runden darf, der Satz v7 ruft keine (Plattform-Probe:
+    // „ruft jetzt tan 1"). Lamberts Kettenbruch tan x = x / (1 − x² / (3 − x² / (5 − …))) rechnet nur mit − · ÷, IEEE-754 rundet
+    // jede davon exakt: dieselben Bits auf jeder Plattform. Zwölf Glieder tragen |x| ≤ 0,8 auf 1 ULP (an maxWinkel 0,47 die Bits
+    // von Math.tan); den Gang zur Laufzeit rechnet tetrapoda `gangSchritt`, gate:koerper-kern V5 bindet beide (2·Tastgrad·Φ = 1).
+    function tanKette(x) {
+        if (!(Math.abs(x) <= 0.8)) throw new Error("KERN-PFLICHT verletzt: tanKette außerhalb |x| ≤ 0,8 (" + x + ")");
+        var x2 = x * x,
+            d = 25;
+        for (var k = 12; k >= 1; k--) d = 2 * k - 1 - x2 / d;
+        return x / d;
+    }
+    var _leibVerbenMemo = null;
+    function leibVerben() {
+        if (_leibVerbenMemo) return _leibVerbenMemo;
+        var P = labProportionen(START_PARAMS),
+            beinM = (P.thighLen + P.calfLen) * leibMassstab(),
+            K = leibKoennen(START_PARAMS),
+            G = leibGesetz().gang,
+            g = LEIB.sprung.refG,
+            phi = LEIB.kraft * K.kraft,
+            einheit = Math.sqrt(g * beinM);
+        var vh = (4 * tanKette(G.maxWinkel) * phi - G.schrittBasis) / G.schrittFroude;
+        // der Sprint liegt im Lauf (der Tastgrad unter tastgradLauf, die Froude-Zahl über dem Wechsel) — sonst gilt die Formel nicht
+        if (!(beinM > 0) || !(phi > 1) || !(1 / (2 * phi) < G.tastgradLauf) || !(vh * vh >= 1.3 * G.laufFroude))
+            throw new Error("KERN-PFLICHT verletzt: leibVerben außerhalb des Laufs (Bein " + beinM + " m, Φ " + phi + ", v̂ " + vh + ")");
+        var hoehe = LEIB.sprung.abdruckM * (phi - 1);
+        _leibVerbenMemo = Object.freeze({
+            beinM: beinM,
+            kraft: phi,
+            gehen: Math.sqrt(VERB_TAFEL.gehen.froude * g * beinM) * K.lauf,
+            sprint: vh * einheit,
+            hoehe: hoehe,
+            abdruck: Math.sqrt(2 * g * hoehe),
+        });
+        return _leibVerbenMemo;
     }
     // DER BEZUGS-LEIB DES GANGS (eine-huelle, additiv): der erwachsene Median der Bevölkerung mit 30 Jahren — die Mitte der
     // Achsen, die das Genom rollt (Geschlecht, Gewicht, Muskel-Ton je 0,5), im Alter 30 J (der Regler `age` des ALTER_GESETZ, `alterRegler`), in der
@@ -6223,10 +6326,12 @@
         m.z += r.z * quer;
         return m;
     }
-    // DIE KRAFT DER BEINE (N): die Sprungkraft der Seele (das Abdruck-Tempo des Bezugs-Leibs) als Kraft nach LEIB.sprung
-    function leibSprungKraft(jumpPower) {
+    // DIE KRAFT DER BEINE (N): die Sprungkraft der Seele (das Abdruck-Tempo, das sie ihrem Leib unter refG gibt) als Kraft
+    // nach LEIB.sprung an der Masse m des Leibs, dessen Beine es sind (kg; fehlt sie, ist das laut — kein Bezugs-Literal)
+    function leibSprungKraft(jumpPower, m) {
         var G = LEIB.sprung;
-        return G.refKg * (G.refG + jumpPower ** 2 / (2 * G.abdruckM));
+        if (!(m > 0)) throw new Error("KERN-PFLICHT verletzt: leibSprungKraft ohne die Masse des Leibs (" + m + ")");
+        return m * (G.refG + jumpPower ** 2 / (2 * G.abdruckM));
     }
     // DER ABDRUCK (m/s): ½ m v² = (F − m g) d — der schwerere Leib springt niedriger, die stärkeren Beine höher (F die Kraft der
     // Beine, `leibSprungKraft`; m die Masse des Leibs; g die Schwere der Welt)
@@ -10460,6 +10565,8 @@
         leibMasse: leibMasse,
         leibGroesse: leibGroesse,
         leibWerte: leibWerte,
+        VERB_TAFEL: VERB_TAFEL,
+        leibVerben: leibVerben,
         leibKoennen: leibKoennen,
         KOENNEN_BEZUG: KOENNEN_BEZUG,
         leibVec: leibVec,
