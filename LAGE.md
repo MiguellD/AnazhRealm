@@ -1,23 +1,45 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 07:15 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 07:37 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
-- NACHTRAG 07:15 (gilt vor den Zeilen darunter): KARTE 2 = **80 von 1 718** (punkte-maschine 91051ba0; 06:03 waren es 78). `klima-kontinent` 3
-  (2ab011ec) war 21 von 21 GRÜN + GPU-Probe GRÜN (omen-gtx1060) + PROBE-TAG OK + Wiese im Bild heil → GESTEMPELT 06:46:53 als `w28-klima-kontinent`
-  28d4c8df, **z706 fährt seit 07:01:27** (trägt den Klassen-Schnitt der Karte nach main). EHRLICH: die Landung bucht voraussichtlich 0 Sprossen — die
-  Front der Leiter `planet.kopplung.land-meer-luft` ist #1 (Luv/Lee 1,258 statt ≥ 2); #3 (Nebel 4,46×) und #4 (5,05 K) sind erreicht, liegen aber
-  hinter der Front. Anspruch nach der Landung: #3, #4. NÄCHSTE MACHER-WELLE dafür (benannt, startet beim nächsten freien Platz, Opus): Niederschlag als
-  lineares Hang-Aufwind-Gesetz mit Lee-Abstieg (Smith & Barstad 2004: Quelle ∝ Feuchte × U·∇h, Verzögerung τ ≈ 1 000 s, Feuchte-Schicht ~2,5 km) statt
-  Abreicherung allein; zuerst der Zensus je Saat (Verhältnis gegen Δh, Erholungs-Länge im Lee, Mess-Orte der Station); node am Export, keine GPU.
-  `erbe-geburt` 5 (fb5096a5): GPU-Probe GRÜN, Batterie 20 GRÜN + 1 ROT = „voll 17/18 Stand-Takt“ mit der bekannten Zeile „DRUCK-SCHLAF: die letzte
-  der 70 Scherben schlief nach 3.9 s (Soll ≤ 3 s)“ → nach der Regel EIN Neulauf nur dieses Jobs (07:10:25, Versuch 2 läuft). STICHPROBE Sonde 3,
-  Läufe 2 und 3: echt 1,15 s (4,06 m/s) / Mutante 1,133 s (4,77 m/s) · echt 1,05 s (5,36 m/s) / Mutante 1,183 s (1,88 m/s) — sieben von acht Wellen
-  schnell, kein Täter benannt, kein Schnitt bestellt. HAUSHALT 07:14: Woche alle Modelle 59 %, Fable 57 % (Reset 28.11. 21:59). MEIN FEHLER 04:55–06:43:
-  zwei lokale Arbeiter ohne `model` gestartet → sie erbten Fable (einer 2 h 47 min, 1 510 Züge), Fable-Woche 38 → 56 %. REGEL: JEDER Agent-Start nennt
-  `model: "opus"`, das Modell wird im Protokoll nachgelesen, `get_usage` stündlich. Benannt für OMENs Apparat-Zweig: `model: opus` in den Kopf von
-  `.claude/agents/champion.md`.
+- NACHTRAG 07:40 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **81 von 1 718** (Buchung 07:22).
+  **GELANDET 07:25:49: z706 `w28-klima-kontinent` → main 87bb259c** (V18.546.393; trägt den Klassen-Schnitt der Karte — jeder Zweig mergt ab jetzt
+  `origin/main` und löst `docs/README.md` ganz zur Seite von main). Anspruch `land-meer-luft#3,#4` = koordination 581255a4; die Landung bucht 0,
+  weil die Front der Leiter bei #1 steht. **IM ZUG: z707 `w28-licht-stetig` fc7e4a32** (Stempel 07:17:46, Kandidat c2c7ed12 seit 07:32).
+  **GESTEMPELT, warten auf z708:** `w28-erbe-geburt` 4e1ef816 (07:24:33; der Neulauf des Stand-Takt-Jobs war grün) · `w28-bewohner-satz` 628bc789
+  (07:32:58, Vorwärts-Schritt auf dem Halt 9c80f78c; EHRLICH: kein eigenes Bild dieses Zweigs von mir gesehen — er trägt kein `bild:`-Tag; nach
+  der Landung `bild:dorf` an main ansehen) · `w28-nerv-bewegung` 9958afd3 (07:35:32). Alle drei paarweise und gegen main + licht sauber,
+  PROBE-TAG OK, Bilder der Proben von mir gesehen (Wiese, Dorf, Stadt-voll: heil). Werkzeug: Scratch `stempel.sh <zweig> <kopf40> <msg> [erster
+  Elter]` prüft Kopf, Batterie, merge-tree, Siegel-Wörter und stempelt. RUNDE: noch 15 am 9d4319c0; EIN Sprung nach der Landung von z708 (er trägt
+  dann vier Landungen), nicht vorher.
+  **FAHRT-WAND (Block R4 von OMEN, 07:28) — MEIN ENTSCHEID:** `punkte.cjs:419` summiert die Deckel des ganzen KATALOGS (289 Läufe, GTX Σ 21 080 s,
+  Radeon Σ 21 287 s gegen 12 × 1 740 = 20 880 s mit der Station von auge-der-art) — den fährt seit dem 21.11. kein Gerät; die Wand stieg schon
+  3 → 12 und reißt bei jeder neuen Station (`liste`, `run`, `buchen` fallen an beiden Geräten). Sie bindet ab jetzt die Fahrt, die fährt (`run`:
+  die Liste der Sitzung an ihrem Gerät), der Katalog trägt keine Summe. Auftrag an OMEN `auftrag/2411-fahrt-wand.md` (be505bff), VOR scherbe-liegt.
+  **BIS SEIN KOPF IN punkte-maschine LIEGT, MERGE ICH KEINE STATION.** Danach in dieser Reihe, je mit Blick auf den nächsten Buchungs-Puls:
+  pm-erbe-geburt 0cf308d9 → pm-nerv-bewegung 28e7cbc8 → pm-auge-der-art 42009563 → pm-faecher-kopplung 8ed1dead → pm-faecher-planet 2ee64a40
+  (alle fünf einzeln sauber gegen punkte-maschine 91051ba0, gemessen 07:26).
+  **DRUCK-SCHLAF HAT EINEN TÄTER MIT ZEILE** (Stichprobe ist durch: 10 Wellen; Schlaf gegen Körper-Wind 1,8–6,6 m/s → 0,9–1,3 s, 7,95 m/s → 2,87 s;
+  rot heute 3,9 s): `stamm/koerper-frei.js:1117` `_freiLuftPacken` gibt jedem Körper die GRÖSSTE Quer-Fläche — die flach liegende Glas-Scherbe
+  (~4 mm, ~10 kg/m²) liest im Wind die Breitseite einer fallenden Platte: 0,07 · v² = 4,5–5,7 m/s² bei 8–9 m/s gegen μ·g ≈ 4–6. Gesetz-Defekt mit
+  Spiel-Folge. Auftrag an OMEN `auftrag/2411-scherbe-liegt.md` (e63ac98e): Spike (fester Körper-Wind 5 / 9,5 m/s) VOR dem Schnitt (EINE
+  Flächen-Funktion, der gestützte Körper liest seine Lage). Bis dahin gilt: roter Stand-Takt-Job → EIN Neulauf nur dieses Jobs.
+  **GTX 1050 (war idle) HAT EINE MACHER-WELLE:** die Front `planet.kopplung.land-meer-luft` #1/#2/#5 — `auftrag/2411-klima-front.md` (cf3d50b9):
+  #1 und #2 sind Stations-Schnitte (Kamm einer Kette statt Plateau-Buckel im 3°-Raster: echte Ketten geben 2,92; Rang je Breiten-Gürtel), #5 ist
+  ein Kern-Schnitt (Hebung über 10⁶ a als Funktion der Konvergenz, km statt 200 m; −50 % verlangt 1,73 km). Zweige `klima-hebung` + `pm-klima-front`.
+  **OMEN:** auge-der-art 2 = 380dc644 gepusht 07:27 (Täter: die Wariness rampte über die Sichtweite; jetzt `auraReichM` 21 m), Batterie läuft,
+  Stempel bei Grün `[gpu-probe: gate:kreatur-leben, gate:kreatur-takt, bild:wiese@0.5] [ci voll]`. Reihenfolge OMEN: Fahrt-Wand → scherbe-liegt →
+  ci-post-erbt (dort auch: `model: opus` in `.claude/agents/champion.md`; der Stempel erbt GPU-Probe und Batterie vom Kopf mit gleichem Baum —
+  heute stößt jeder Stempel beides neu an, der Zug sah w28-erbe-geburt deshalb 07:29 nicht bereit und fuhr z707 mit EINEM Zweig).
+  **CLOUD (ListAgents 07:36):** `ort-ausstattung` LÄUFT (Kopf 8574142e, `bild:ort-zeichen` weiter ROT: sie senkte die Schwelle auf 0,1 %, relief
+  0,0 % — Post 5c6edfa1: Schwelle 0,2 % bleibt, Schild wächst, merge main). FÜNF Richter-Sitzungen (Planet, Kopplung, Erleben/Same, Mensch, Leben)
+  stehen auf „waiting on a human“ — sie brauchen einen Klick des Schöpfers, ich kann sie nicht lösen. Idle: bewohner-satz, licht-stetig, klima,
+  nerv-bewegung (ihre Zweige sind gestempelt bzw. gelandet).
+  HAUSHALT 07:14: Woche alle Modelle 59 %, Fable 57 % (Reset 28.11. 21:59). MEIN FEHLER 04:55–06:43: zwei lokale Arbeiter ohne `model` gestartet → sie
+  erbten Fable (einer 2 h 47 min, 1 510 Züge), Fable-Woche 38 → 56 %. REGEL: JEDER Agent-Start nennt `model: "opus"`, das Modell wird im Protokoll
+  nachgelesen, `get_usage` stündlich.
 - GELANDET 24.11.: z700 `w28-linse-slot-rest` (01:09) · z701 `w28-wetter-am-ort` → 60e8909d (02:46) · z702 `w28-front-stoff` → 5b0f551a (03:55) ·
   z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; das Rennen des Welt-Wechsels, die Register-Zeile dazu
   ist gefallen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
