@@ -670,7 +670,13 @@ class AnazhRealm_stoff_material {
     // Idempotent (setGroup ist ein Setter); ohne renderGroup-Export byte-alt. ═══
     // DER WIND-SATZ (EINE Stelle legt ihn an): Wind-Uhr, Wind-Stärke und die Richtung des aktiven Körpers (`uSunDir`,
     // Sonne oder Mond — `_dayNightApplyDirectionalLight` schreibt sie mit dem Richtlicht). Gras (Gegenlicht) und Boden
-    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer.
+    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer. DIE WETTERSEITE
+    // (`uWetterVon`, Welt-Einheitsvektor): woher die Fronten kommen — gegen ihren Zug (`_alterWind`, phyto-core `windGrund`:
+    // derselbe Wind, mit dem das Alter Silber, Algen und Moos an die Wetterseite legt, `_alterLage`), je Saat einmal gestellt
+    // (`_loopRender`); der Gefüge-Stoff wäscht dort (`_gefuegeStoff`). Eine Bühne ohne Welt trägt kein Wetter (0: der Term ist
+    // mittelfrei). Bis front-stoff kam das Wetter des Stoffs fest aus West-Südwest (fachwerk `GEFUEGE_GESETZ.wetterVon`,
+    // „Mitteleuropa“), das des Alters aus dem Wind der Saat — an stadt-voll (Zug nach NNO) wusch der Stoff die WSW-Seite, das
+    // Alter begrünte die NNW-Seite: zwei Wetterseiten an einem Haus.
     _windUniformsEnsure() {
         if (!this.state.windUniforms) {
             const { uniform } = THREE.TSL;
@@ -678,6 +684,7 @@ class AnazhRealm_stoff_material {
                 uWindTime: uniform(0.0),
                 uWindStrength: uniform(0.12),
                 uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
+                uWetterVon: uniform(new THREE.Vector3(0, 0, 0)),
             });
         }
         return this.state.windUniforms;
