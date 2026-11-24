@@ -11,6 +11,6 @@
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 21 kopf bf9be26c5b6d4e5f15926be5d8eb5c79c62d4d4d start 2026-11-24T11:36:38Z vorher daee7541bfcc7a5a5346b886ab4498ad73120925
-gtx offen 0/0 station - fortschritt 2026-11-24T11:36:38Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-24T11:36:38Z alarm - liste -
+gtx offen 0/0 station - fortschritt 2026-11-24T11:36:38Z alarm 2026-11-24T11:54:57Z liste -
+radeon offen 0/0 station - fortschritt 2026-11-24T11:36:38Z alarm 2026-11-24T11:54:57Z liste -
 notiz 2026-11-24T11:36:38Z Runde 20 am daee7541 sprang auf bf9be26c (gtx laeuft 0/239, radeon laeuft 0/76): z715 w28-spiegel-eis gelandet: Anspruch karte2.planet.wasser.eis#2
