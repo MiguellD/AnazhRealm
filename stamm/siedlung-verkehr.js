@@ -190,6 +190,26 @@ class AnazhRealm_siedlung_verkehr {
             // Wenden von stadt-voll die Plätze der letzten (983/324): die Nachtfahrer der Wagen 2, 5 und 9 stiegen neben dem Weg ein
             kappe: Infinity,
         };
+        // DER WENDEKREIS JE GATTUNG (fahrzeug-gattungen 2): der engste Bogen, den ihr Schwerpunkt im Kriechen fährt — die Lenksäule
+        // trägt lenk · maxSteer / (1 + kriechMs · sfK) (der Deckel des Fahrers, `vKurve`), die Hinterachse rollt im Abstand
+        // L / tan δ um die Mitte, der Schwerpunkt c vor ihr: R = √((L / tan δ)² + c²). Band: der Wendekreis von Wand zu Wand
+        // eines Transporters der 3,3-m-Klasse liegt bei 12,3–13,6 m (Ford Transit L2 · VW Crafter), eines Kompakten bei
+        // 10,5–11 m — hier bis an die Mitte Transporter 6,83 m, SUV 5,90 m. Leser: der Bogen zwischen Platz und Kreis
+        // (`_verkehrPlatzBogen`): je Wagen seiner (`_verkehrZugPunkte`), im Boden und im Raster der weiteste; und das
+        // Ausscheren der Bahn im Raster (unten, je Gattung im Wendekreis des Gesetzes)
+        const vc = globalThis.__vehicleCore;
+        const gattungen = vc.GATTUNGEN.map((g) => [g, vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g)]); // prettier-ignore
+        const ST = AnazhRealm.VERKEHR.stil;
+        VK.wendeR = new Map(
+            gattungen.map(([g, d]) => {
+                const delta = (ST.lenk * d.lenkung.maxSteer) / (1 + ST.kriechMs * d.lenkung.sfK);
+                return [g, Math.hypot((d.zweispur.b + d.zweispur.c) / Math.tan(delta), d.zweispur.c)];
+            })
+        );
+        VK.wendeRMax = Math.max(...VK.wendeR.values());
+        // der längste halbe Wagen der Flotte (exportDrive.huelle wie `_verkehrMass`): so weit reicht eine Hülle über ihre Mitte
+        // hinaus (die Boxen, die sie erreicht, `_verkehrSchritt`)
+        VK.hlMax = Math.max(...gattungen.map(([, d]) => Math.max(d.huelle.noseX, -d.huelle.tailX)));
         for (const w of VK.wenden.values()) {
             const ring = [];
             for (let a = 0; a <= 2 * Math.PI + 1e-9; a += 1 / w.r)
@@ -208,13 +228,14 @@ class AnazhRealm_siedlung_verkehr {
                     ],
                     w: VG.parkB,
                 });
-                // DER BOGEN ZWISCHEN PLATZ UND KREIS trägt Weg wie Ring und Platz (aus ihm, in ihn: je seine Sehne mit dem Rand des
-                // Rings, der den Pfeil des Bogens, R·(1 − cos 22,5°) = 0,42 m, trägt) — bis pflicht.C#1 fuhr, wer ausparkte, über
-                // ungemalten Boden (stadt-voll 23 Uhr: Wagen 5, 14 und 16 je 9 m von der Mitte ihrer Wende, `_aufWeg` nein)
-                for (const s of [1, -1]) {
-                    const { B } = this._verkehrPlatzBogen(w, p, s);
-                    flaechen.roads.push({ pts: [{ x: p.x, z: p.z }, B[B.length - 1]], w: 2 * VG.halbM + VG.ringRandM });
-                }
+                // DER BOGEN ZWISCHEN PLATZ UND KREIS trägt Weg wie Ring und Platz (aus ihm, in ihn: je Punkt seines Bogens im
+                // weitesten Wendekreis, breit wie der Ring) — bis pflicht.C#1 fuhr, wer ausparkte, über ungemalten Boden (stadt-voll
+                // 23 Uhr: Wagen 5, 14 und 16 je 9 m von der Mitte ihrer Wende, `_aufWeg` nein)
+                for (const s of [1, -1])
+                    flaechen.roads.push({
+                        pts: [{ x: p.x, z: p.z }, ...this._verkehrPlatzBogen(w, p, s, VK.wendeRMax).B],
+                        w: 2 * VG.halbM + VG.ringRandM,
+                    });
             }
         }
         this._stlWegeBuild(flaechen, { x: 0, z: 0 }, "verkehr:" + S.key);
@@ -226,10 +247,8 @@ class AnazhRealm_siedlung_verkehr {
         // und beide warteten (stadt-voll 10 Uhr, die Kreuzung am Markt mit allen zwölf Abbiegern: 250 s, 18 Wagen dahinter). Bis
         // fahrzeug-gattungen 2 galt der längste Wagen des Stadt-Gesetzes (parkL) als Tangente: (parkL/2)²/(2·kurveR) = 0,66 m
         VK.spurRaster = new Map();
-        const vc = globalThis.__vehicleCore;
         const kurveAus = Math.max(
-            ...vc.GATTUNGEN.map((g) => {
-                const d = vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g);
+            ...gattungen.map(([, d]) => {
                 const [h, c] = [d.huelle, d.zweispur.c];
                 return this._verkehrAusscheren({ c, bug: h.noseX, heck: h.tailX, hw: h.bw }, 1 / VG.kurveR);
             })
@@ -274,7 +293,7 @@ class AnazhRealm_siedlung_verkehr {
                 stueck({ x: p.x - fx, z: p.z - fz }, { x: p.x + fx, z: p.z + fz }, platzAus);
                 for (const s of [1, -1])
                     linie(
-                        this._verkehrPlatzBogen(w, p, s).B.filter(
+                        this._verkehrPlatzBogen(w, p, s, VK.wendeRMax).B.filter(
                             (q) => Math.hypot(q.x - p.x, q.z - p.z) >= VG.parkL / 2
                         )
                     );
@@ -1388,10 +1407,10 @@ class AnazhRealm_siedlung_verkehr {
     // DIE PUNKTE EINES ZUGS: die Spur der Strecke in seiner Richtung; die Bahn der Wende; aus dem Platz (vorwärts auf den Kreis,
     // den Bogen bis zum Übergang der Wende `aus` in die Spur) und in ihn (über den Übergang `ein` an den Kreis, den Bogen bis vor den
     // Platz, auf ihn). Zwischen Platz und Kreis
-    // fährt er erst den Bogen seines Wendekreises (`kurveR`, bis 45°), der in der Richtung des Platzes beginnt (endet): so fährt
-    // ihn der Wagen — und der Wagen im Platz vor (hinter) ihm steht auf ihm, er wartet, bis der fort ist. Bis hier lief die Sehne
-    // zum Kreis 48° aus dem Stand: der Wagen fuhr geradeaus in den Platz vor ihm (23 Uhr, die Wende der Metropole: 92 und 123
-    // Berührungen).
+    // fährt er den Bogen SEINES Wendekreises (`VK.wendeR` seiner Gattung, `_verkehrPlatzBogen`), der in der Richtung des Platzes
+    // beginnt (endet): so fährt ihn der Wagen — und der Wagen im Platz vor (hinter) ihm steht auf ihm, er wartet, bis der fort
+    // ist. Bis hier lief die Sehne zum Kreis 48° aus dem Stand: der Wagen fuhr geradeaus in den Platz vor ihm (23 Uhr, die Wende
+    // der Metropole: 92 und 123 Berührungen).
     _verkehrZugPunkte(S, W, m) {
         const VK = S.verkehr;
         if (m.art === "strecke") {
@@ -1407,7 +1426,7 @@ class AnazhRealm_siedlung_verkehr {
             return d;
         };
         const [tx, tz] = [Math.sin(pk.fahrt), Math.cos(pk.fahrt)];
-        const bogen = (s) => this._verkehrPlatzBogen(w, pk, s);
+        const bogen = (s) => this._verkehrPlatzBogen(w, pk, s, VK.wendeR.get(W.typ));
         const schritt = AnazhRealm.VERKEHR.platzBogenM / w.r;
         const pts = [];
         if (m.art === "aus") {
@@ -1429,28 +1448,35 @@ class AnazhRealm_siedlung_verkehr {
         return pts;
     }
 
-    // DER BOGEN ZWISCHEN PLATZ UND KREIS (die Wende `w`, der Platz `pk`): vom Platz (vorwärts, s = 1: aus ihm; rückwärts, s = −1:
-    // in ihn) der Bogen seines Wendekreises (`kurveR`) zur Seite der Mitte, bis 45° oder bis er den Kreis trifft — { B: seine
-    // Punkte, a: der Winkel am Kreis }. Leser: die Züge aus dem Platz und in ihn (`_verkehrZugPunkte`) und der Boden der Wende
-    // (`_verkehrAnlegen`: er trägt Weg wie Ring und Platz).
-    _verkehrPlatzBogen(w, pk, s) {
-        const R = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
+    // DER BOGEN ZWISCHEN PLATZ UND KREIS (die Wende `w`, der Platz `pk`, der Wendekreis `R`): vom Platz (vorwärts, s = 1: aus
+    // ihm; rückwärts, s = −1: in ihn) der Bogen im Wendekreis zur Seite der Mitte, dann gerade an den Kreis — die Gerade berührt
+    // Bogen und Kreis (die äußere Tangente beider: ihre Normale m trägt m · (C − O) = r − R, C die Mitte des Bogens, O die der
+    // Wende), so dreht die Linie nirgends enger als R und tritt in der Richtung des Kreises auf ihn — { B: die Punkte des Bogens,
+    // je Meter einer, und der Fußpunkt auf dem Kreis; a: sein Winkel am Kreis }. Bis hier endete der Bogen im Wendekreis des
+    // Gesetzes (`kurveR` 5,5 m) nach 45° und lief als Sehne quer auf den Kreis: die Linie des Fahrers glättete den Knick über
+    // ±kurveM in einen Bogen von 4,3 m, den kein Wagen fährt — der Transporter 8 (Wendekreis 6,83 m) schwang aus seinem Platz an der
+    // Wende 746/573 0,88 m neben seine Linie und strich 0,13 m am SUV 17 zwei Plätze vor ihm vorbei, den die Folge an der Linie
+    // „frei“ sah (stadt-voll 10 Uhr, Sekunde 3). Leser: die Züge aus dem Platz und in ihn (`_verkehrZugPunkte`, R seiner
+    // Gattung) und der Boden der Wende (`_verkehrAnlegen`: Weg und Raster im weitesten Wendekreis).
+    _verkehrPlatzBogen(w, pk, s, R) {
         const [tx, tz] = [Math.sin(pk.fahrt), Math.cos(pk.fahrt)];
         const innen = -tz * (w.x - pk.x) + tx * (w.z - pk.z) > 0 ? 1 : -1;
         const [nx, nz] = [-tz * innen, tx * innen];
+        const [cx, cz] = [pk.x + nx * R, pk.z + nz * R];
+        const al = Math.acos(Math.max(-1, Math.min(1, (w.r - R) / Math.hypot(cx - w.x, cz - w.z))));
         const B = [];
-        const n = Math.ceil((Math.PI / 4) * R);
+        const n = Math.ceil(al * R);
         for (let k = 1; k <= n; k++) {
-            const f = (k * Math.PI) / 4 / n;
-            const q = {
+            const f = (k * al) / n;
+            B.push({
                 x: pk.x + nx * R * (1 - Math.cos(f)) + s * tx * R * Math.sin(f),
                 z: pk.z + nz * R * (1 - Math.cos(f)) + s * tz * R * Math.sin(f),
-            };
-            B.push(q);
-            if (Math.hypot(q.x - w.x, q.z - w.z) <= w.r) break;
+            });
         }
         const q = B[B.length - 1];
-        return { B, a: Math.atan2(q.z - w.z, q.x - w.x) };
+        const [mx, mz] = [(q.x - cx) / R, (q.z - cz) / R];
+        B.push({ x: w.x + mx * w.r, z: w.z + mz * w.r });
+        return { B, a: Math.atan2(mz, mx) };
     }
 
     // DIE GEFAHRENE SPUR einer Strecke in der Richtung `dir` (0: von a nach b) — DER ABZWEIG DER WENDE (fachwerk `verkehrsNetz`:
@@ -1554,6 +1580,42 @@ class AnazhRealm_siedlung_verkehr {
             for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
             return this._verkehrAusscheren(W, Math.min(2 * k, 1 / kR));
         });
+        // DER LEIB AUS SEINER LAGE (fahrzeug-gattungen 2): die neue Linie beginnt am Wagen, sein Leib aber steht, wie er stand.
+        // Das Einspur-Modell ohne Schlupf hinten (der Fahr-Satz): die Hinterachse rollt, wohin der Leib zeigt — sie folgt dem
+        // Schwerpunkt auf seiner Schleppkurve im Abstand c, die Schräge gegen die Linie fällt je c um 1/e, ihr Grenzwert im Bogen
+        // ist asin(c·k) (`_verkehrAusscheren`). Über fünf c (die Schräge ≤ 1 % der ersten) trägt jede Ecke seines Rechtecks so weit
+        // über die halbe Breite, wie sie neben dem Stück der Linie um sie liegt — das `rund` an ihrem Fußpunkt, wo es den Bogen
+        // übersteigt. Bis hier galt nur der eingeschwungene Bogen: der Transporter 6 umfuhr einen Bewohner, die neue Linie begann
+        // 9° neben seiner Gier und bog binnen 2 m weitere 9°, die Ecke am Bug ragte 0,42 m über das Band (stadt-voll 10 Uhr, 824/442)
+        const g0 = e._rideYaw;
+        if (Number.isFinite(g0) && W.c > 0) {
+            let [hx, hz] = [e.position.x - Math.sin(g0) * W.c, e.position.z - Math.cos(g0) * W.c];
+            const n = F.pts.length;
+            for (let i = 0; i < n && F.bogen[i] - F.bogen[0] <= 5 * W.c + W.hl; i++) {
+                const P = F.pts[i];
+                const l = Math.hypot(P.x - hx, P.z - hz) || 1;
+                const [fx, fz] = [(P.x - hx) / l, (P.z - hz) / l];
+                [hx, hz] = [P.x - fx * W.c, P.z - fz * W.c];
+                let [j0, j1] = [i, i];
+                while (j0 > 0 && F.bogen[i] - F.bogen[j0] < W.hl + 2) j0--;
+                while (j1 < n - 1 && F.bogen[j1] - F.bogen[i] < W.hl + 2) j1++;
+                for (const [u, w] of AnazhRealm._verkehrEcken) {
+                    if (!u || !w) continue;
+                    const [x, z] = [P.x + fx * W.hl * u + fz * W.hw * w, P.z + fz * W.hl * u - fx * W.hw * w];
+                    let [bq, bj] = [Infinity, -1];
+                    for (let j = j0; j < j1; j++) {
+                        const [p, q] = [F.pts[j], F.pts[j + 1]];
+                        const [dx, dz] = [q.x - p.x, q.z - p.z];
+                        const t0 = ((x - p.x) * dx + (z - p.z) * dz) / (dx * dx + dz * dz || 1);
+                        if ((j === 0 && t0 < 0) || (j === n - 2 && t0 > 1)) continue; // ohne Fuß auf der Linie (vor ihrem Anfang, hinter ihrem Ende)
+                        const t = Math.max(0, Math.min(1, t0));
+                        const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
+                        if (d < bq) [bq, bj] = [d, j];
+                    }
+                    if (bj >= 0 && bq - W.hw > F.rund[bj]) F.rund[bj] = bq - W.hw;
+                }
+            }
+        }
         const vorher = W.zonen;
         W.zonen = [];
         // DIE DURCHFAHRT (EIN Gesetz, unten ihr Ende): tritt ein Ort zweimal in die Linie (die Enge vor der Wende hinein und
@@ -1714,15 +1776,21 @@ class AnazhRealm_siedlung_verkehr {
                 if (!L0 || L0.x !== e.position.x || L0.z !== e.position.z || L0.y !== e.position.y) Sp.length = 0;
                 if (!Sp.length) (([W.bildD, W.bildR] = [NaN, NaN]), this._verkehrZustand(W, Sp, 0)); // die Uhr der Spur beginnt bei 0 (die Stunde ohne Vorgeschichte: nie die Uhr des Wagens, ihr Rundungsfehler trägt seine Geschichte)
                 let gegner = null;
+                // DIE BOXEN, DIE EINE HÜLLE ERREICHT: die Hülle des nahen Wagens (bis `huelleM`) prüft jeden Wagen, an den sie reicht
+                // — samt dem längsten Wagen der Flotte und dem eigenen halben (`VK.hlMax` + `W.hl`) —, also ziehen dessen Boxen nach
+                // wie die eines nahen. Bis hier zog sie nur, wer selbst nah war: der Transporter 6, 14,8 m vom Spieler, trug seine
+                // Boxen bis `boxFernM` hinter sich, und der Supersport 0, der ihm 2,11 m dahinter folgte, stieß an die Boxen 2,02 m
+                // hinter dem Wagen — Luft (stadt-voll 23 Uhr, Probe 21635 und 30730 bei 841/432 und 831/444: 3 Stöße Wagen an Wagen)
+                const greift = d2 < (V.huelleM + VK.hlMax + W.hl) ** 2;
                 if (!(ruht && W.bildRuht && W.T.handbremse)) {
                     e._radGrob = d2 >= V.radFeinM * V.radFeinM;
                     gegner = this._wagenSchritt(
                         e,
                         { throttle: W.T.gas, brake: W.T.bremse, steer: W.T.lenken, hand: W.T.handbremse },
                         h,
-                        !ruht && d2 < V.genauM * V.genauM,
+                        !ruht && (d2 < V.genauM * V.genauM || greift),
                         !ruht && d2 < V.huelleM * V.huelleM,
-                        d2 < V.huelleM * V.huelleM ? 0.5 : V.boxFernM
+                        greift ? 0.5 : V.boxFernM
                     );
                     vc.fahrStand(fz, e._fahrSatz, this._fahrBoden(e), h);
                     if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
