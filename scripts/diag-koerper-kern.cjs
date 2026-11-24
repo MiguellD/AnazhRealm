@@ -720,6 +720,11 @@ function planWege(C0, g, orte) {
     }
     return wo.filter((p, k) => { const q = wo[(k + wo.length - 1) % wo.length]; return p.ort !== q.ort || p.drinnen !== q.drinnen; }).length; // prettier-ignore
 }
+// der Täter „ohneGegner": der Zweikampf wie vor sport-wurzel — der Auftritt heißt wie der Lauf „wettkampf“ und trägt keinen Gegner
+function ohneGegnerVon(P) {
+    const alt = (e) => (e.akt === "zweikampf" ? Object.assign({}, e, { akt: "wettkampf", gegner: undefined }) : e);
+    return Object.assign({}, P, { auftritte: P.auftritte.map((A) => A.map(alt)) });
+}
 // der Täter „ohneWeg": jeder Auftritt zerfällt in acht Stände, hin und her zwischen seinem Stand und einem Gang daneben
 function ohneWegVon(P) {
     const teile = (e) => Array.from({ length: 8 }, (_, k) => Object.assign({}, e, { von: e.von + ((e.bis - e.von) * k) / 8, bis: e.von + ((e.bis - e.von) * (k + 1)) / 8, x: e.x + (k % 2) * 3 })); // prettier-ignore
@@ -766,6 +771,7 @@ function spielUrteil(C0, mutante = null) {
     const SM = C0.SPIEL_GESETZ.feld.standM;
     const raum = { n: 0, eng: 0, min: Infinity, wo: "—" };
     const wege = { abende: 0, n: 0, ueber: 0, max: 0, wo: "—", anders: 0, andersWo: "—", kurz: 0 }; // prettier-ignore
+    const zk = { n: 0, fehl: 0, wo: "—" };
     for (let tag = 1; tag <= 120 && (laeufe.length < 20 || kaempfe.length < 200 || proben.n < 200); tag++) {
         const P = mutante === "gewuerfelt" ? spielProgrammMit(C, gaeste, tag, feld, sek) : C.spielProgramm(4242, tag, gaeste, feld, sek);
         if (!P) continue;
@@ -773,6 +779,14 @@ function spielUrteil(C0, mutante = null) {
         raumPruefen(mutante === "eng" ? engVon(P, SM) : P, tag, raum, SM);
         // E7 der Abend trägt den Weg (der Täter „ohneWeg": jeder Auftritt in acht Ständen)
         if (wege.abende < 5) wegePruefen(C0, mutante === "ohneWeg" ? ohneWegVon(P) : P, gaeste, tag, wege);
+        // E9 der Zweikampf trägt seinen Gegner (der Täter „ohneGegner“): je Gang beide Auftritte im Akt „zweikampf“, jeder mit dem anderen
+        const PA = mutante === "ohneGegner" ? ohneGegnerVon(P) : P;
+        for (const g of PA.gaenge) {
+            if (g.art !== "ringen") continue;
+            const [a, b] = g.teil, ea = PA.auftritte[a].find((e) => e.von === g.von), eb = PA.auftritte[b].find((e) => e.von === g.von); // prettier-ignore
+            zk.n++;
+            if (!(ea && eb && ea.akt === "zweikampf" && eb.akt === "zweikampf" && ea.gegner === b && eb.gegner === a)) (zk.fehl++, zk.wo === "—" && (zk.wo = `Tag ${tag} ${g.klasse}: ${ea ? ea.akt + " gegen " + ea.gegner : "kein Auftritt"} · ${eb ? eb.akt + " gegen " + eb.gegner : "kein Auftritt"}`)); // prettier-ignore
+        }
         for (const g of P.gaenge) {
             if (g.art === "lauf" && laeufe.length < 20) laeufe.push(g);
             if (g.art === "ringen" && kaempfe.length < 200) kaempfe.push(g);
@@ -882,7 +896,38 @@ function spielUrteil(C0, mutante = null) {
     if (!(SM > SPIEL_FREI_M) || raum.eng > 0 || !raum.n)
         rot.push(`E6 die Stände des Abends nehmen einander den Raum: ${raum.eng} von ${raum.n} Paaren näher als standM ${SM} m (das nächste ${raum.min.toFixed(2)} m, ${raum.wo}; standM über der Tür-Freiheit des Wirts ${SPIEL_FREI_M} m) — wer beiseite trat, fände seinen Stand nie frei`); // prettier-ignore
     if (!(e5n > 0 && e5 === e5n)) rot.push(`E5 der Tag liest das Programm nicht: ${e5} von ${e5n} Auftritten stehen im Plan der Stunde (koerper tagesPlan orte.spiel)`);
+    // E8 der Platz zieht seine Nachbarschaft (sport-wurzel, koerper `spielGaesteWahl`): ein kleiner Treff wie an stadt-voll (12 mit dem
+    // Abend am Platz) und 140 Nachbarn mit dem Abend daheim binnen 95 m, dazu 60 daheim jenseits von 120 m und 30 an einem fernen Treff —
+    // Gäste sind die 152 des Platzes, und an jedem von fünf Abenden läuft ein Lauf, ein Gang und ≥ 10 stehen im Ring. Der Täter
+    // „nurTreff“: die Wahl vor sport-wurzel (nur wer den Abend am Platz hat — 40 Tage ohne Lauf und Gang an stadt-voll)
+    // E9 der Zweikampf trägt seinen Gegner (sport-wurzel: EIN Akt, zwei Leser — die Siegquote des Sports und der Krieg, krieg#1 zählt,
+    // wer einen Gegner trägt): jeder Gang des Ringens stellt beide in den Akt „zweikampf“, jeden mit dem Index des anderen
+    if (!(zk.n > 0 && zk.fehl === 0)) rot.push(`E9 der Zweikampf trägt seinen Gegner nicht: ${zk.fehl} von ${zk.n} Gängen ohne den Akt „zweikampf“ mit dem anderen (${zk.wo}; koerper spielProgramm auftritte)`); // prettier-ignore
+    const e8 = nachbarUrteil(C0, mutante === "nurTreff");
+    if (e8.fehlt) rot.push(`E8 der Platz zieht seine Nachbarschaft nicht: ${e8.fehlt}`);
     return { rot, laeufe: laeufe.length, laeufer: zeit.length, rho: rhoAlle, rhoLauf: rho, kaempfe: kaempfe.length, quote, festMax, partien: 100, widrig, siege, zuege: zuegeSumme, zuschauerMax, blick, seitab, seit: proben.seit, proben: proben.n, e5, e5n, standM: SM, raumN: raum.n, raumMin: raum.min, wegeN: wege.n, wegeMax: wege.max, wegeAbende: wege.abende, wegeKurz: wege.kurz };
+}
+// E8: die Gäste des Abends am Platz (0, 0) mit Rand 20 m — der Treff, die Nachbarn, die Fernen; fünf Abende des Programms
+function nachbarUrteil(C0, nurTreff) {
+    if (typeof C0.spielGaesteWahl !== "function") return { fehlt: "der Kern trägt keine Wahl der Gäste (koerper spielGaesteWahl fehlt)" };
+    const z = (w) => linseZahl(21, w);
+    const leiber = spielGaeste(C0, 242, 21);
+    const um = (i, r0, r1) => ((a, r) => ({ x: r * Math.cos(a), z: r * Math.sin(a) }))(2 * Math.PI * z("a" + i), r0 + (r1 - r0) * z("r" + i));
+    const fernTreff = um(999, 200, 200); // der Treff eines anderen Platzes, 200 m fort
+    const kand = leiber.map((g, i) => (i < 12 ? { abend: um(i, 0, 15), heim: um(i + 500, 60, 200) } : i < 152 ? { abend: null, heim: um(i, 20, 95) } : i < 212 ? { abend: null, heim: um(i, 120, 300) } : { abend: fernTreff, heim: um(i, 150, 250) })); // prettier-ignore
+    const wahl = nurTreff ? kand.map((k, i) => (k.abend && Math.hypot(k.abend.x, k.abend.z) <= 20 ? i : -1)).filter((i) => i >= 0) : C0.spielGaesteWahl(kand, 0, 0, 20); // prettier-ignore
+    const gaeste = wahl.map((i) => Object.assign({}, leiber[i], { orte: Object.assign({}, leiber[i].orte, { abend: kand[i].abend ? leiber[i].orte.abend : null }) })); // prettier-ignore
+    const abende = [];
+    for (let tag = 1; tag <= 5; tag++) {
+        const P = C0.spielProgramm(4242, tag, gaeste, { L: 25, B: 10 }, 150);
+        const n = (art) => (P ? P.gaenge.filter((g) => g.art === art).length : 0);
+        let ring = 0;
+        for (let h = 18; P && h < 21; h += 0.05) ring = Math.max(ring, P.auftritte.filter((A) => A.some((e) => e.akt === "zuschauen" && e.von <= h && h < e.bis)).length); // prettier-ignore
+        abende.push({ lauf: n("lauf"), ringen: n("ringen"), ring });
+    }
+    const leer = abende.filter((a) => !(a.lauf >= 1 && a.ringen >= 1 && a.ring >= 10)).length;
+    const zeile = `${wahl.length} Gäste (Soll 152: 12 vom Treff, 140 Nachbarn binnen 95 m), Abende ${abende.map((a) => `${a.lauf} Läufe · ${a.ringen} Gänge · ${a.ring} im Ring`).join(" | ")}`; // prettier-ignore
+    return { fehlt: wahl.length !== 152 || leer ? `${zeile} — ${leer} von 5 Abenden ohne Lauf, Gang oder Ring von 10 (koerper spielGaesteWahl, SPIEL_GESETZ.programm.nachbarM)` : null, zeile }; // prettier-ignore
 }
 // E7: je Gast mit einem Auftritt die Wege seines Tags am Plan (planWege) und im Kern (tagesGaenge)
 function wegePruefen(C0, P, gaeste, tag, W) {
@@ -971,13 +1016,13 @@ if (SELBSTTEST) {
     const verbenTaeter = [["Literal", "V1 Gehen"], ["Literal", "V3 Sprung"], ["refKg", "V6 die Masse kürzt sich nicht"], ["gleitet", "V5 der Sprint ist kein Punkt des Gangs"], ["Tafel", "V7 die Verb-Tafel"], ["Prosa", "V7 die Verb-Tafel"], ["Stufe", "V8 die Gang-Pose"]].map(([m, z]) => [vGut && verbenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Verben ${m} ${z}`]);
     // die Regel-Grammatik: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const eGut = !spielUrteil(core).rot.length;
-    const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"], ["eng", "E6 die Stände des Abends"], ["ohneWeg", "E7 der Abend trägt den Weg nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
+    const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"], ["eng", "E6 die Stände des Abends"], ["ohneWeg", "E7 der Abend trägt den Weg nicht"], ["nurTreff", "E8 der Platz zieht seine Nachbarschaft nicht"], ["ohneGegner", "E9 der Zweikampf trägt seinen Gegner nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, sieben Täter der Regel-Grammatik).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle dreiundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);

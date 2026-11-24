@@ -1142,7 +1142,7 @@ class AnazhRealm_siedlung_bewohner {
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
-                    drehen: u, platz: u, weichen: null, brand: null,
+                    drehen: u, platz: u, weichen: null, brand: null, gegner: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
@@ -2521,8 +2521,8 @@ class AnazhRealm_siedlung_bewohner {
         S.spielJetzt = g ? S.spiel.welt(g.x, g.z) : null;
     }
     // DAS PROGRAMM DES TAGS an der Siedlung S: das Feld ist der Platz ihres Plans (seine lange Achse, `randM` und der Ring der Zuschauer
-    // innerhalb seines Rechtecks), die Gäste sind, wer seinen Abend auf ihm hat (die Bindung `abend`; wer einen Posten hält, steht
-    // an ihm), ihre Leiber und ihre Übung tragen sie aus dem Satz (`koennen`, `genom`, der Lebenslauf `uebung`). Jeder Auftritt des
+    // innerhalb seines Rechtecks), die Gäste wählt der Kern (`spielGaesteWahl`: wer seinen Abend auf ihm hat — die Bindung `abend` —, und
+    // wer ihn daheim verbringt und nahe dem Platz wohnt, `programm.nachbarM`; wer einen Posten hält, steht an ihm), ihre Leiber und ihre Übung tragen sie aus dem Satz (`koennen`, `genom`, der Lebenslauf `uebung`). Jeder Auftritt des
     // Kerns wird ein Stand in der Welt — wo der Grund ihn nicht trägt (ein Bau, kein Land), fällt er, und der Gast bleibt an seinem
     // Ort des Abends (auch im Stück des Platzes: dem Tritt eines Marktstands, dem Kreis eines Brunnens, fachwerk `imPlatzStueck`).
     // Liefert { programm, welt(u, w), wer, gaeste, feld } oder null (kein Platz, zu wenige Gäste, ein Feld ohne Lauf) — die Gäste und
@@ -2548,10 +2548,10 @@ class AnazhRealm_siedlung_bewohner {
         const R = Math.max(pz.ex, pz.ez) + AnazhRealm.BEWOHNER.platzRandM;
         const RO = KC.TAGES_GESETZ.rollen;
         const [gaeste, wer] = [[], []];
-        for (const b of L0) {
-            const a = b.orte.abend;
-            if (!a || !b.koennen || !b.genom || (RO[b.rolle] && RO[b.rolle].regenfest)) continue;
-            if (Math.hypot(a.x - mx, a.z - mz) > R) continue;
+        const kand = L0.filter((b) => b.koennen && b.genom && !(RO[b.rolle] && RO[b.rolle].regenfest));
+        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim }));
+        for (const i of KC.spielGaesteWahl(wo, mx, mz, R)) {
+            const b = kand[i];
             const d = this._dialsAusGenom(b.genom);
             const P = KC.labProportionen(d);
             const U = b.uebung;
@@ -2569,7 +2569,7 @@ class AnazhRealm_siedlung_bewohner {
             const auf = [];
             for (const e of A) {
                 const q = welt(e.x, e.z);
-                if (traegt(q)) auf.push({ von: e.von, bis: e.bis, akt: e.akt, x: q.x, z: q.z, blick: blick(e.blick), tempo: e.tempo || 0 }); // prettier-ignore
+                if (traegt(q)) auf.push({ von: e.von, bis: e.bis, akt: e.akt, x: q.x, z: q.z, blick: blick(e.blick), tempo: e.tempo || 0, gegner: e.gegner ?? null }); // prettier-ignore
             }
             if (!auf.length) return;
             wer[i].orte.spiel = auf;
@@ -2832,6 +2832,11 @@ class AnazhRealm_siedlung_bewohner {
         const ziel = soll.ziel;
         if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
         b.akt = soll.akt;
+        // DER GEGNER IM ZWEIKAMPF (koerper `spielProgramm`, der Auftritt „zweikampf“ trägt den Index seines Gegners unter den Gästen
+        // des Tags): der Leib des anderen aus der Liste des Programms (`S.spiel.wer`) — EIN Akt, zwei Leser (die Siegquote des Sports,
+        // der Krieg: wer einen Gegner trägt); jedes andere Ziel nimmt ihn ab
+        const sp = b.sied && b.sied.spiel;
+        b.gegner = ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null;
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
         // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
         // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
