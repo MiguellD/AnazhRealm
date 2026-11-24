@@ -896,7 +896,10 @@ class AnazhRealm_feld_brand {
                 // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
                 // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel). Seine
                 // Größe hält die Deckung zwischen der Geburt und der Kappe
-                const b0 = Math.min(Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size), Math.sqrt(tr2 / tauG) / R.size);
+                const b0 = Math.min(
+                    Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size),
+                    Math.sqrt(tr2 / tauG) / R.size
+                );
                 const a = 1 - Math.exp(-tr2 / (R.size * b0) ** 2);
                 b.rauchKg -= holz;
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht

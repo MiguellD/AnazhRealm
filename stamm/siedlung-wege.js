@@ -2759,7 +2759,8 @@ class AnazhRealm_siedlung_wege {
         const M = plan && plan.mauer;
         if (!M || !Array.isArray(M.segs) || !this.state.scene) return 0;
         const FC = globalThis.__fachwerkCore;
-        if (!M.wand || !M.art) throw new Error("_stlMauerBuild: die Mauer trägt keine Form (fachwerk `mauerGestalt`: art, wand)");
+        if (!M.wand || !M.art)
+            throw new Error("_stlMauerBuild: die Mauer trägt keine Form (fachwerk `mauerGestalt`: art, wand)");
         const [W, K, T, D, BW] = [M.wand, M.krone, M.turm, M.dach, M.bollwerk];
         const farbe = FC.DEFCOL[M.stoff];
         const dachFarbe = M.dachStoff ? FC.DEFCOL[M.dachStoff] : null;
@@ -2814,7 +2815,18 @@ class AnazhRealm_siedlung_wege {
                 // die Brustwehr der Bastion steht außen auf dem Wall (`aussen`), der Wehrgang des Steinrings über seiner Mitte
                 const [ox, oz, ol] = [mx - origin.x, mz - origin.z, Math.hypot(mx - origin.x, mz - origin.z) || 1];
                 const o = K.aussen ? (W.dick - K.dick) / 2 : 0;
-                this._stlStreifen(P, mx + (ox / ol) * o, my + K.y, mz + (oz / ol) * o, yaw, pitch, K.dick, K.hoch, L, farbe);
+                this._stlStreifen(
+                    P,
+                    mx + (ox / ol) * o,
+                    my + K.y,
+                    mz + (oz / ol) * o,
+                    yaw,
+                    pitch,
+                    K.dick,
+                    K.hoch,
+                    L,
+                    farbe
+                );
             }
             form({ typ: "segment", kanal: -1, ax, az, bx, bz, halb: Math.max(W.dick, K ? K.dick : 0) / 2 });
             n++;
@@ -2843,7 +2855,18 @@ class AnazhRealm_siedlung_wege {
             const gier = BW ? Math.atan2(t.x, t.z) + Math.PI / 4 : 0; // die Raute: eine Ecke zeigt vom Ort weg
             this._stlStreifen(P, x, y + (hoch - fuss) / 2, z, gier, 0, breit, hoch + fuss, breit, farbe);
             if (D && dachFarbe !== null) this._stlStreifen(P, x, y + D.y, z, 0, 0, D.breit, D.hoch, D.breit, dachFarbe);
-            form({ typ: "kasten", kanal: -1, ax: x, az: z, bx: x, bz: z, ex: breit / 2, ez: breit / 2, phi: gier, halb: 0 });
+            form({
+                typ: "kasten",
+                kanal: -1,
+                ax: x,
+                az: z,
+                bx: x,
+                bz: z,
+                ex: breit / 2,
+                ez: breit / 2,
+                phi: gier,
+                halb: 0,
+            });
             n++;
         }
         box.streifen.push(P ? P.top : 0);
