@@ -66,3 +66,5 @@ w28-wind-saison karte2.leben.pflanzen.kraft#2
 w28-saison-schatten karte2.leben.pflanzen.jahreslauf#2,karte2.planet.kopplung.stadtklima#1
 # 714 (main daee7541, 24.11. 11:48): z714 w28-tat-aufwaerts: das gebaute Haus senkt das Leben ringsum, das Werk ist eine Tat im Feld (orteGeaendert 0 → 10 von 10)
 w28-tat-aufwaerts karte2.same.kopplung.aufwaerts#1
+# 715 (main bf9be26c, 24.11. 12:21): w28-spiegel-eis gelandet 12:35 (main bf9be26c): das Eis spiegelt den Himmel
+w28-spiegel-eis karte2.planet.wasser.eis#2
