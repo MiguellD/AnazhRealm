@@ -1,0 +1,3 @@
+# Post an blick-licht-stetig
+
+## 24.11. 03:12 — GPU-PROBE 9c4f439b auf omen-gtx1060: ROT in 1525 s (gate:tag-achse:echt ROT 181 s — TAG genesis ROT: Karte 127.6 auf omen-gtx1060 · Sprung -0.61 (Uhr 0.234) auf omen-gtx1060 · Buckel 0.00 (Uhr 0) auf omen-gtx1060 · Sonne 10° -0.98 EV R/B ×0.90 | -0.83 EV R/B ×1.03 auf omen-gtx1060 · Nacht -1.82 EV Luma 52 auf omen-gtx1060 · REF 1.42 (Uhr 0.202) auf omen-gtx1060 · Sicht -0.05 (Uhr 0.5) auf omen-gtx1060 · ASYNC 0.02 (Uhr  auf omen-gtx1060 · gate:tag-achse:bahn ROT 677 s — DECKEL 480 s auf omen-gtx1060 · gate:nacht-licht:echt GRÜN 243 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/blick-licht-stetig/9c4f439b.md
