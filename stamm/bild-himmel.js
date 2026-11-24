@@ -3257,7 +3257,7 @@ class AnazhRealm_bild_himmel {
     // über der es trägt (`EIS.traegt`). Das Eis wächst mit der Höhe (kälter) und schwindet mit der Säule (träger): je Säule
     // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
     // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
-    // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~3 Tagen vom ersten zum tragenden; eine Stunde trägt
+    // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~9 Tagen vom ersten zum tragenden; eine Stunde trägt
     // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ, L, k des Eises) — nie je Bild;
     // Bild und Körper lesen dieselbe Stunde. Der Leser zahlt sieben Vergleiche, solange Saison und Stoff stehen.
     _eisLinien() {

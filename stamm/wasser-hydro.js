@@ -772,7 +772,14 @@ class AnazhRealm_wasser_hydro {
     _eisDickeAt(y, tiefe) {
         const K = globalThis.__gelaendeCore;
         const E = this._eisLinien();
-        return K.eisDicke(this._gelaende(), y, E.saison, tiefe, (tr) => this._temperaturFeld(y, tr), this._wasserStoff());
+        return K.eisDicke(
+            this._gelaende(),
+            y,
+            E.saison,
+            tiefe,
+            (tr) => this._temperaturFeld(y, tr),
+            this._wasserStoff()
+        );
     }
 
     // Die Linie (`_eisLinien`: je Knoten der Säule eine Höhe) an der Säule `tiefe` — logarithmisch zwischen den Knoten
@@ -1027,11 +1034,18 @@ class AnazhRealm_wasser_hydro {
                 if (traegt(x0 + ux * d, z0 + uz * d, 0) === null) continue; // das Ufer: der erste nasse Punkt
                 const m = d + A.stegM / 2 - A.landM; // die Mitte des Stegs: er liegt `landM` auf dem Ufer und reicht hinaus
                 const [sx, sz] = [x0 + ux * m, z0 + uz * m];
-                const [bx, bz] = [sx + ux * A.bootLaengsM - uz * A.bootQuerM, sz + uz * A.bootLaengsM + ux * A.bootQuerM];
+                const [bx, bz] = [
+                    sx + ux * A.bootLaengsM - uz * A.bootQuerM,
+                    sz + uz * A.bootLaengsM + ux * A.bootQuerM,
+                ];
                 const [gs, gb] = [traegt(sx, sz, S.T), traegt(bx, bz, B.T)];
                 if (gs !== null && gb !== null) {
                     const phi = Math.atan2(ux, uz); // ein Teile-Werk liegt längs +z: R_y(φ) trägt +z nach (sin φ, cos φ)
-                    best = { d, steg: { x: sx, z: sz, phi, grund: gs, ...S }, boot: { x: bx, z: bz, phi, grund: gb, ...B } };
+                    best = {
+                        d,
+                        steg: { x: sx, z: sz, phi, grund: gs, ...S },
+                        boot: { x: bx, z: bz, phi, grund: gb, ...B },
+                    };
                 }
                 break;
             }
@@ -1061,7 +1075,11 @@ class AnazhRealm_wasser_hydro {
         if (!a) return null;
         const L = this._anlegerLage(a);
         const setz = (typ, o, y) =>
-            this.spawnArchitecture(typ, { x: o.x, y, z: o.z }, { rotationY: o.phi, silent: true, precise: true, ausGesetz: true });
+            this.spawnArchitecture(
+                typ,
+                { x: o.x, y, z: o.z },
+                { rotationY: o.phi, silent: true, precise: true, ausGesetz: true }
+            );
         const e = { a, steg: setz(A.steg, a.steg, L.steg), boot: setz(A.boot, a.boot, L.boot) };
         M.set(schluessel, e);
         return e;

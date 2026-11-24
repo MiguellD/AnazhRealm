@@ -104,6 +104,18 @@ function wasserWirt(kachel) {
     return { r, G };
 }
 
+// Die gepflanzte Mutante des Eis-Gesetzes über seinen Eingang, den Stoff (`_wasserStoff`): die Schmelzwärme L × f lässt dasselbe
+// Gesetz um 1/f schneller wachsen — f = 0,695 ist die Summe des alten Übergangs H = 20 (10,9 statt 15,65 K·d), f = 0,22 die des
+// einfachen Stefan ohne Übergang ((5/2,7)² = 3,4 K·d). Der Kern bleibt unberührt; `_eisDickeAt` und `_eisAt` lesen den Stoff.
+function eisMutante(r, f) {
+    return Object.assign(Object.create(r), {
+        _wasserStoff() {
+            const s = r._wasserStoff();
+            return Object.assign({}, s, { eis: Object.assign({}, s.eis, { L: s.eis.L * f }) });
+        },
+    });
+}
+
 // N1 DER ANLEGER FOLGT DEM SPIEGEL (Karte 2 planet.kopplung.siedlungslage#1): am ersten Ufer des Meers auf dem Strahl der Station
 // (Spieler 40/−30, je 40 m nach Osten) der Ort des Anlegers (`_anlegerOrt`); Steg und Boot liegen nach dem Takt (`_anlegerTakt`) auf
 // ihrer Lage (`_anlegerLage`), ein zweiter Takt ohne Hebung rührt keinen, der Spiegel + 1 m hebt beide samt Bild um 1 m (≤ 3 cm).
@@ -152,10 +164,13 @@ function anlegerFolgt(wirt) {
     return { fehler: f[0] || null, zahl: { hub, tiefgang: [a.steg.T, a.boot.T].map((t) => Math.round(t * 1000) / 1000) } };
 }
 
-// N2 DAS EIS SETZT NACH STEFAN EIN (Karte 2 planet.wasser.eis#2): am See 1816/−6168 je Tag das Tagesmittel der Luft über dem Spiegel
+// N2 DAS EIS SETZT NACH DER FELDREGEL EIN (Karte 2 planet.wasser.eis#2): am See 1816/−6168 je Tag das Tagesmittel der Luft über dem Spiegel
 // (vier Stunden, `temperaturAus`), dann stündlich vom ersten Eis (die Dicke des Gesetzes `_eisDickeAt` > 1 mm) bis zum tragenden
-// (`_eisAt`, die Dicke ≥ `EIS.traegt`) die Frostgrad-Summe — Soll (traegt/α)² ± 20 % (Ashton 1986, α 2,7 cm/√(K·d)); das Eis trägt im
-// Frost und bricht im Tauwetter. → { fehler, zahl }
+// (`_eisAt`, die Dicke ≥ `EIS.traegt`) die Frostgrad-Summe — Soll EIS_FELDREGEL_KD ± 20 % (liest den Kern NICHT); das Eis trägt im
+// Frost und bricht im Tauwetter. `tauTag`: der erste Tag nach dem tragenden, an dem es nicht mehr trägt. → { fehler, zahl }
+// Das Soll: Gold 1971 (80 kg, P = A·h², A = 3,5 kg/cm²) trägt auf 4,8 cm; die Feldregel — ist die erste Decke da, wächst das Eis
+// 1 Zoll je 15 °F·d = 2,54 cm je 8,33 K·d — gibt 4,8 / 2,54 · 8,33 = 15,7 K·d.
+const EIS_FELDREGEL_KD = (4.8 / 2.54) * ((15 * 5) / 9);
 function eisEinsatz(wirt, G) {
     const r = wirt;
     const st = r.state;
@@ -191,12 +206,15 @@ function eisEinsatz(wirt, G) {
         st.seasonPhase = alt;
         r._eisLinien();
     }
-    const soll = (G.EIS.traegt / G.EIS.alpha) ** 2;
+    const soll = EIS_FELDREGEL_KD;
+    const tb = traegt === null ? -1 : Math.floor(traegt / 24);
+    let tauTag = null;
+    for (let k = 1; k <= n && tb >= 0 && tauTag === null; k++) if (!E[(tb + k) % n]) tauTag = (tb + k) % n;
     const fdd = Math.round(summe * 1000) / 1000;
-    const zahl = { fdd, soll: Math.round(soll * 1000) / 1000, stunden: traegt - an, traegtTage: E.filter(Boolean).length, brichtTage: E.filter((e, d) => !e && T[d] > 0).length };
+    const zahl = { fdd, soll: Math.round(soll * 1000) / 1000, stunden: traegt - an, tauTag, traegtTage: E.filter(Boolean).length, brichtTage: E.filter((e, d) => !e && T[d] > 0).length };
     const f = [];
     if (an === null || traegt === null) f.push("der See friert nie oder trägt nie " + JSON.stringify(zahl));
-    else if (!(Math.abs(fdd - soll) <= 0.2 * soll)) f.push(`das Eis trägt nach ${fdd} K·d vom ersten Eis (Soll ${zahl.soll} ± 20 %, Stefan nach Ashton)`);
+    else if (!(Math.abs(fdd - soll) <= 0.2 * soll)) f.push(`das Eis trägt nach ${fdd} K·d vom ersten Eis (Soll ${zahl.soll} ± 20 %, Gold 1971 durch die Feldregel)`);
     if (!(zahl.traegtTage > 0 && zahl.brichtTage > 0)) f.push("das Eis trägt nicht im Frost oder bricht nicht im Tauwetter " + JSON.stringify(zahl));
     return { fehler: f[0] || null, zahl };
 }
@@ -1015,9 +1033,11 @@ function selbsttest() {
         console.log(`  ${ok1 ? "✅" : "❌"} N1 ANLEGER an der Quelle: ${n1.fehler || "Steg und Boot folgen dem Spiegel " + JSON.stringify(n1.zahl)} · Mutante eingefrorener Spiegel → ${m1.fehler || "blieb grün"}`);
         if (!ok1) fehler.push("N1 ANLEGER (_anlegerLage/_anlegerTakt): " + (n1.fehler || "die Mutante fiel nicht"));
         const n2 = eisEinsatz(r, G);
-        const m2 = eisEinsatz(Object.assign(Object.create(r), { _eisDickeAt: (y, t) => 0.5 * r._eisDickeAt(y, t) }), G);
-        const ok2 = !n2.fehler && !!m2.fehler;
-        console.log(`  ${ok2 ? "✅" : "❌"} N2 EIS an der Quelle: ${n2.fehler || "das Eis trägt nach Stefan " + JSON.stringify(n2.zahl)} · Mutante halber Beiwert → ${m2.fehler || "blieb grün"}`);
+        // die Mutanten: die Summe des alten Übergangs H = 20 (main bis spiegel-eis 2) und die des einfachen Stefan ohne Übergang
+        const m2 = eisEinsatz(eisMutante(r, 0.695), G);
+        const m3 = eisEinsatz(eisMutante(r, 0.22), G);
+        const ok2 = !n2.fehler && !!m2.fehler && !!m3.fehler;
+        console.log(`  ${ok2 ? "✅" : "❌"} N2 EIS an der Quelle: ${n2.fehler || "das Eis trägt nach der Feldregel " + JSON.stringify(n2.zahl)} · Mutante Summe von H = 20 (L × 0,695) → ${m2.fehler || "blieb grün"} · Mutante Summe des Stefan ohne Übergang (L × 0,22) → ${m3.fehler || "blieb grün"}`);
         if (!ok2) fehler.push("N2 EIS (gelaende-core eisDicke · _eisAt): " + (n2.fehler || "die Mutante fiel nicht"));
     }
     // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher (die Zeile

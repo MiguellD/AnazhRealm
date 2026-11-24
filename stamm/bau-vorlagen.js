@@ -1075,9 +1075,25 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 durchlass: true,
                 parts: [
-                    { shape: "box", material: "holz", size: { x: 1.2, y: 0.05, z: 6 }, position: { x: 0, y: 0.625, z: 0 }, tritt: true },
-                    { shape: "box", material: "holz", size: { x: 0.35, y: 0.6, z: 6 }, position: { x: -0.42, y: 0.3, z: 0 } },
-                    { shape: "box", material: "holz", size: { x: 0.35, y: 0.6, z: 6 }, position: { x: 0.42, y: 0.3, z: 0 } },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 1.2, y: 0.05, z: 6 },
+                        position: { x: 0, y: 0.625, z: 0 },
+                        tritt: true,
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 0.35, y: 0.6, z: 6 },
+                        position: { x: -0.42, y: 0.3, z: 0 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 0.35, y: 0.6, z: 6 },
+                        position: { x: 0.42, y: 0.3, z: 0 },
+                    },
                 ],
             },
             boot_anleger: {
@@ -1086,12 +1102,44 @@ class AnazhRealm_bau_vorlagen {
                 builtIn: true,
                 durchlass: true,
                 parts: [
-                    { shape: "box", material: "holz", size: { x: 1.1, y: 0.04, z: 3.2 }, position: { x: 0, y: 0.02, z: 0 }, tritt: true },
-                    { shape: "box", material: "holz", size: { x: 0.03, y: 0.4, z: 3.2 }, position: { x: -0.535, y: 0.22, z: 0 } },
-                    { shape: "box", material: "holz", size: { x: 0.03, y: 0.4, z: 3.2 }, position: { x: 0.535, y: 0.22, z: 0 } },
-                    { shape: "box", material: "holz", size: { x: 1.04, y: 0.4, z: 0.03 }, position: { x: 0, y: 0.22, z: -1.585 } },
-                    { shape: "box", material: "holz", size: { x: 1.04, y: 0.4, z: 0.03 }, position: { x: 0, y: 0.22, z: 1.585 } },
-                    { shape: "box", material: "holz", size: { x: 1.04, y: 0.04, z: 0.25 }, position: { x: 0, y: 0.3, z: 0.4 }, tritt: true },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 1.1, y: 0.04, z: 3.2 },
+                        position: { x: 0, y: 0.02, z: 0 },
+                        tritt: true,
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 0.03, y: 0.4, z: 3.2 },
+                        position: { x: -0.535, y: 0.22, z: 0 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 0.03, y: 0.4, z: 3.2 },
+                        position: { x: 0.535, y: 0.22, z: 0 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 1.04, y: 0.4, z: 0.03 },
+                        position: { x: 0, y: 0.22, z: -1.585 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 1.04, y: 0.4, z: 0.03 },
+                        position: { x: 0, y: 0.22, z: 1.585 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        size: { x: 1.04, y: 0.04, z: 0.25 },
+                        position: { x: 0, y: 0.3, z: 0.4 },
+                        tritt: true,
+                    },
                 ],
             },
             // DAS DONNERFASS (same.physik.reaktion#2): ein freier Körper aus Donnerkorn, ⌀ 0,4 × 0,55 m — 62 kg mal q der Zeile
@@ -1621,7 +1669,7 @@ class AnazhRealm_bau_vorlagen {
     //   tSchmelz K — der Gefrierpunkt des Süßwassers ist die Phasen-Grenze des Eises: an ihm setzt das Eis des Kerns ein
     //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`); null zersetzt sich vor dem Schmelzen
     //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
-    //            (h = α·√FDD, α nach Ashton 1986, nie über dem Ideal √(2k/ρL); gelaende-core `eisDicke`)
+    //            (h²/2k + h/H = ∫Frost dt / ρL, Ashton 1989, gelaende-core `eisDicke`)
     //   brenn    das Brennstoff-Bett des Brands (stoffe.K2, `_brandTempo`), nur wo die Welt als Fläche brennt (gras, laub):
     //            sigma 1/m (Oberfläche je Volumen der Partikel), last kg/m² (die Trocken-Masse des vollen Betts, × lebendig des
     //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
