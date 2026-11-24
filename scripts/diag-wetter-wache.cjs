@@ -21,6 +21,13 @@
 //       Weitergabe des rAF-Stempels im Takt an ein Glied ohne Grund (`this._bildZeit = wandZeit`) ist ROT beim Namen (Datei:Zeile).
 //   (K) KALENDER: Licht, Tag der Prozesse, Pegel und Jahr gehen bei jeder Tag-Länge im Verhältnis 1; DAS JAHR AM LAUB: im Winter des
 //       Kalenders deckt keine Laub-Art über `JAHR_LAUB_DECKUNG` ihrer Sommer-Fläche, die Nadel steht (`jahrLaubRot`).
+//   (O) ORT (wetter-am-ort, im Selbsttest am echten Kern): das Wetter ist ein Feld je Ort (phyto-core `wetterFeldAm`) — Weg des
+//       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, Bilanz Ziel + Lee
+//       ±10 %, der Luv-Hang regnet mehr als der Lee-Hang (`ortRot`).
+//   (L) LAND-MEER-LUFT (klima-kontinent, im Selbsttest am echten Kern planet-core): das Δ des Orts trägt das Klima von Land, Meer und
+//       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost —, der Gipfel steht auf Konvergenz
+//       (ks liest die Grenze jemals) und das Eis auf der Kälte des Orts; fünf gepflanzte Täter fallen je an ihrer Klinge und nennen
+//       ihr Gesetz (`planetKlimaR`, `ortRoh ks`, `ortEisZeit`), ein Δ ohne nebelQuote wirft (`lmlRot`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
@@ -412,6 +419,386 @@ async function jahrLaubArten(praesenz) {
 
 // der Selbsttest: der erlaubte Leser grün; der neue Leser (auch `new Date()`), die Zahl darüber, der Eintrag ohne Leser, die Bild-Uhr
 // aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
+// ── (O) DAS WETTER AM ORT (wetter-am-ort, rein, ohne Browser — im Selbsttest gemessen): das Feld des Kerns (phyto-core
+// `wetterFeldAm`) je Ort statt EINES Worts der Welt. Gemessen am echten Kern: der Weg des Winds ist das Integral der EINEN Richtung
+// (d/dt `windWeg` = `windRichtung`, |Δ| ≤ 1e-5), gleiche Saat → gleiches Feld (byte), der Eingriff trägt an seinem Ort sein Feld,
+// die Bilanz Ziel + Lee mit ÷ ohne steht in ±10 % (median ±5 %, ≥ 85 % der Fälle — wo das Lee weniger Regen trägt, als der Eingriff
+// zieht, nimmt er nur, was dort fällt), der Luv-Hang regnet mehr als die Ebene, der Lee-Hang weniger, und das Feld springt nie
+// (10 m Schritt: |Δ| < 0,2 je Kanal — die Zeilen der Tafel liegen bis 0,85 auseinander). Leser: `ortRot`.
+const ORT_BILANZ = { median: 0.05, band: 0.1, anteil: 0.85, sprung: 0.2 };
+function ortMessung(P) {
+    const W = P.WETTER_ORT;
+    const K = ["fog", "sun", "grey", "wind", "rain"];
+    let weg = 0;
+    for (const saat of ["anazh-realm-seed", "o1"])
+        for (let k = 0; k < 24; k++) {
+            const t = k * 1733.7 - 4000;
+            const [a, b, r] = [P.windWeg(saat, 0, t - 0.01), P.windWeg(saat, 0, t + 0.01), P.windRichtung(saat, t)];
+            weg = Math.max(weg, Math.abs((b.x - a.x) / 0.02 - r.x), Math.abs((b.z - a.z) / 0.02 - r.z));
+        }
+    let gleich = true;
+    let sprung = 0;
+    for (let i = 0; i < 300; i++) {
+        const [x, z, t] = [((i * 7919) % 40000) - 20000, ((i * 104729) % 40000) - 20000, i * 37];
+        const a = P.wetterFeldAm("o1", x, z, t);
+        if (JSON.stringify(a) !== JSON.stringify(P.wetterFeldAm("o1", x, z, t))) gleich = false;
+        const b = P.wetterFeldAm("o1", x + 10, z, t);
+        for (const c of K) sprung = Math.max(sprung, Math.abs(a[c] - b[c]));
+    }
+    const feld = { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 };
+    const bilanz = [];
+    let hier = 0;
+    for (const saat of ["o1", "o2", "o3", "o4", "o5", "o6"])
+        for (const t of [0, 900, 1800, 2700]) {
+            const H = { x: 1000, z: -500, feld }; // BÜHNE: ein Punkt der Kern-Ebene (Saat o1–o6 ohne Welt), kein Welt-Ort
+            hier = Math.max(hier, Math.abs(P.wetterFeldAm(saat, H.x, H.z, t, null, { hier: H }).rain - feld.rain));
+            const g = P.windGrund(saat);
+            const R = W.hierM[1];
+            let [mit, ohne] = [0, 0];
+            for (const [cx, cz] of [
+                [H.x, H.z],
+                [H.x + g.x * W.leeM, H.z + g.z * W.leeM],
+            ])
+                for (let dx = -R; dx <= R; dx += 400)
+                    for (let dz = -R; dz <= R; dz += 400) {
+                        if (dx * dx + dz * dz > R * R) continue;
+                        mit += P.wetterFeldAm(saat, cx + dx, cz + dz, t, null, { hier: H }).rain;
+                        ohne += P.wetterFeldAm(saat, cx + dx, cz + dz, t, null).rain;
+                    }
+            bilanz.push(mit / ohne);
+        }
+    bilanz.sort(aufsteigend); // der EINE Vergleich und der EINE Rang der Boot-Lib (`aufsteigend`, `rang`: Node global)
+    const gr = P.windGrund("o1");
+    const hang = (s) => (x, z) => s * 0.05 * (x * gr.x + z * gr.z);
+    let [luv, flach, lee] = [0, 0, 0];
+    for (let t = 0; t < 3600; t += 120) {
+        flach += P.wetterFeldAm("o1", 0, 0, t).rain;
+        luv += P.wetterFeldAm("o1", 0, 0, t, null, { hoehe: hang(1) }).rain;
+        lee += P.wetterFeldAm("o1", 0, 0, t, null, { hoehe: hang(-1) }).rain;
+    }
+    const r3 = (v) => Math.round(v * 1000) / 1000;
+    return {
+        weg,
+        gleich,
+        sprung: r3(sprung),
+        hier,
+        bilanz: { min: r3(bilanz[0]), median: r3(rang(bilanz)), max: r3(bilanz[bilanz.length - 1]) },
+        imBand: r3(bilanz.filter((v) => Math.abs(v - 1) <= ORT_BILANZ.band).length / bilanz.length),
+        relief: { luv: r3(luv), flach: r3(flach), lee: r3(lee) },
+    };
+}
+function ortRot(O) {
+    const rot = [];
+    if (!(O.weg <= 1e-5)) rot.push(`(O) WEG: d/dt windWeg weicht von windRichtung um ${O.weg} ab — die Wolken-Schicht zieht neben dem Wind`); // prettier-ignore
+    if (!O.gleich) rot.push("(O) SAAT: gleiche Saat, gleicher Ort, gleiche Uhr — ein anderes Feld");
+    if (!(O.sprung < ORT_BILANZ.sprung)) rot.push(`(O) STETIG: das Feld springt um ${O.sprung} auf 10 m — die Zeile wechselt hart`); // prettier-ignore
+    if (!(O.hier <= 1e-12))
+        rot.push(`(O) EINGRIFF: am Ort des Eingriffs trägt das Feld nicht sein Feld (Regen ±${O.hier})`);
+    if (!(Math.abs(O.bilanz.median - 1) <= ORT_BILANZ.median && O.imBand >= ORT_BILANZ.anteil))
+        rot.push(`(O) BILANZ: Ziel + Lee mit ÷ ohne median ${O.bilanz.median}, ${(100 * O.imBand).toFixed(0)} % in ±${100 * ORT_BILANZ.band} % — der Eingriff erfindet oder verliert Regen`); // prettier-ignore
+    if (!(O.relief.luv > O.relief.flach && O.relief.flach > O.relief.lee))
+        rot.push(`(O) RELIEF: Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee} — der Hang formt den Regen nicht`); // prettier-ignore
+    return rot;
+}
+function ortSelbsttest() {
+    require("../phyto-core.js");
+    const O = ortMessung(globalThis.__phytoCore);
+    const v = ortRot(O).map((r) => `ort am Kern: ${r}`);
+    const A = (o) => ortRot(Object.assign({}, O, o)).length;
+    if (
+        [
+            { weg: 0.3 },
+            { gleich: false },
+            { sprung: 0.6 },
+            { hier: 0.2 },
+            { bilanz: { min: 1.4, median: 1.4, max: 2 } },
+            { imBand: 0.5 },
+            { relief: { luv: 1, flach: 1, lee: 1 } },
+        ].some((o) => A(o) !== 1)
+    )
+        v.push("ort: ein eingeschmuggelter Täter (Weg, Saat, Sprung, Eingriff, Bilanz, Band, Relief) fällt nicht rot");
+    return { v, O };
+}
+
+// (L) LAND-MEER-LUFT (klima-kontinent, Karte 2 planet.kopplung.land-meer-luft): das Wetter am Ort liest das Klima des Planeten — der
+// Leser des Spiels (planet-core `planetOrt` → Δ wetter → phyto-core `wetterAt`, die Zeilen gezählt wie die Station) auf sechs Saaten
+// LML_SAATEN, Breitenkreise im 3°-Takt. KAMM: Kämme ≥ 1 500 m mit ≥ 800 m Abfall nach beiden Seiten — Median nass West ÷ Ost
+// ≥ 2 (Sperre und Föhn, Smith & Evans 2007; Kaskaden, Anden 3–10 : 1); NEBEL: Passat-Westküsten (±25°) — Anteil der Küsten mit
+// Nebel Küste ÷ 9° landein ≥ 2 mindestens 70 % (Namib, Atacama: Advektions-Nebel über dem Auftrieb, Seely & Henschel 1998);
+// SPANNE: das Jahres-Mittel West- minus Ostküste an ±42° ≥ 5 K (Bergen ↔ Magadan, Vancouver ↔ Halifax; WMO-Normalwerte).
+// GIPFEL (Karte 2 planet.kopplung.gegenwart#2): Gipfel > 2 km (Gitter 6°, Nachbarn je 6°) stehen zu ≥ 95 % auf einer jemals
+// konvergenten Grenze — ks über dem Boden der Saat (ks am ersten Land ohne Gebirge und ohne konvergenten Rand) um > 0,05; Himalaya,
+// Alpen, Ural, Appalachen: jedes Hochgebirge ist Kollision oder ihre Naht (Dewey & Bird 1970), die Ausnahmen Dom und Trapp.
+// EIS (Karte 2 planet.kopplung.gegenwart#1): jedes Land im selben Gitter, dessen Jahresmittel heute unter der Eis-Linie liegt
+// (planetKlima tJahrC < KLIMA.tEisC, −10 °C nach North 1975), trug das Eis des Quartärs — eis.zeit 1 an 100 % (Grönland, Tibet,
+// Antarktis: Hochland und Inneres, nicht die Breite allein).
+// Der Selbsttest pflanzt je Klinge ihren Täter in den Kern (EINE Zeile, ohne git): ohne Sperre und Föhn, ohne Auftrieb im Nebel,
+// ohne den Winter der Meeresluft, ks nur an der Grenze von heute, das Eis nur nach der Breite — jeder fällt ROT an genau seiner
+// Klinge und nennt sein Gesetz.
+// Leser: `lmlRot`.
+const LML_SAATEN = ["anazh-realm-seed", "zsp-0", "zsp-1", "zsp-2", "zsp-3", "zsp-4"];
+const LML_SOLL = { kamm: 2, nebelAnteil: 0.7, spanneK: 5, gipfelAnteil: 0.95, eisAnteil: 1 };
+const LML_TAETER = [
+    ["kamm", "ohne Sperre und Föhn", /sperreKm: 2\.5,/, "sperreKm: 1e9, schattenKm: 1e9,", "planetKlimaR"],
+    ["nebel", "ohne Auftrieb im Nebel", /auftrieb = glatt\(0, KLIMA\.nebelTaupunktK, -dTj\);/, "auftrieb = 0;", "planetKlimaR"],
+    ["spanne", "ohne den Winter der Meeresluft", /westWinterK: 14, westSommerK: -2,/, "westWinterK: 0, westSommerK: 0,", "planetKlimaR"],
+    ["gipfel", "ks nur an der Grenze von heute", /const konv = Math\.max\(st, /, "const konv = Math.max(0, ", "ortRoh ks"],
+    ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((breite < 0 ? -breite : breite) >= G.eisBreite) return 1;", "ortEisZeit"], // prettier-ignore
+];
+function lmlKern(taeter) {
+    // der Kern des Baums, bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt die Zeile, bricht der Selbsttest beim Namen)
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const kern = path.join(__dirname, "..", "planet-core.js");
+    const halt = globalThis.__planetCore;
+    if (!taeter) {
+        delete globalThis.__planetCore;
+        delete require.cache[kern];
+        try {
+            return require(kern);
+        } finally {
+            if (halt === undefined) delete globalThis.__planetCore;
+            else globalThis.__planetCore = halt;
+        }
+    }
+    const text = fs.readFileSync(kern, "utf8");
+    if (!taeter[2].test(text)) throw new Error(`(L) der Kern trägt die Zeile ${taeter[2]} nicht — der Täter „${taeter[1]}" lässt sich nicht pflanzen`); // prettier-ignore
+    const aus = path.join(os.tmpdir(), `planet-core-lml-${taeter[0]}-${process.pid}.js`);
+    fs.writeFileSync(aus, text.replace(taeter[2], taeter[3]));
+    delete globalThis.__planetCore;
+    try {
+        return require(aus);
+    } finally {
+        if (halt === undefined) delete globalThis.__planetCore;
+        else globalThis.__planetCore = halt;
+        fs.unlinkSync(aus);
+    }
+}
+function lmlMessung(P, W, og) {
+    const RAD = Math.PI / 180;
+    const je = new Map();
+    const anteil = (d, zeile) => {
+        const k = `${d.regenQuote}|${d.sturmQuote}|${d.nebelQuote}|${zeile}`;
+        if (!je.has(k)) {
+            let n = 0;
+            for (let i = 0; i < 200; i++) {
+                const z = W.wetterAt("anazh-realm-seed", 0, 0, i * 97.3, d).zeile;
+                if (zeile === "nebel" ? z === "nebel" : z === "regen" || z === "sturm") n++;
+            }
+            je.set(k, n / 200);
+        }
+        return je.get(k);
+    };
+    const v = (a, b) => (a + 0.0025) / (b + 0.0025);
+    const [kamm, nebel, spanne] = [[], [], []];
+    let [gipfel, gipfelKonv, kalt, kaltEis] = [0, 0, 0, 0];
+    for (const samen of LML_SAATEN) {
+        const plan = P.planetPlan(samen, P.PLANET_ERDE);
+        const S = P.planetScheibe(plan, 0);
+        // GIPFEL: das Relief im 6°-Gitter, ks nur an den Gipfeln und am Boden der Saat
+        const g = [];
+        for (let b = -66; b <= 66; b += 6) {
+            const z = [];
+            for (let l = -180; l < 180; l += 6) {
+                const p = {};
+                P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+                z.push({ b, l, h: p.hoeheM, boden: p.hoeheM > 0 && p.orogenStaerke === 0 && p.randArt !== P.RAND_ART.konvergent }); // prettier-ignore
+                if (!(p.hoeheM > 0) || !(P.planetKlima(S, b * RAD, l * RAD, -1, {}, p).tJahrC < P.KLIMA.tEisC)) continue;
+                kalt++;
+                if (P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan).eis.zeit === 1) kaltEis++;
+            }
+            g.push(z);
+        }
+        const ks = (q) => P.planetOrt(S, q.b * RAD, q.l * RAD, og, undefined, plan).wildnis.ks;
+        const boden = g.flat().find((q) => q.boden);
+        if (!boden) throw new Error(`(L) GIPFEL: die Saat ${samen} trägt kein Land ohne Gebirge — der Boden von ks fehlt`);
+        const ks0 = ks(boden);
+        for (let i = 0; i < g.length; i++)
+            for (let j = 0; j < g[i].length; j++) {
+                const q = g[i][j];
+                const nb = [g[i][(j + 1) % g[i].length], g[i][(j + g[i].length - 1) % g[i].length], (g[i - 1] || [])[j], (g[i + 1] || [])[j]]; // prettier-ignore
+                if (!(q.h > 2000) || nb.some((n) => n && n.h > q.h)) continue;
+                gipfel++;
+                if (ks(q) > ks0 + 0.05) gipfelKonv++;
+            }
+        const ort = (b, l) => {
+            const o = P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan);
+            const p = {};
+            P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+            return { land: p.hoeheM > 0, h: p.hoeheM, t: (o.delta.klima.sommer + o.delta.klima.winter) / 2, w: o.delta.wetter };
+        };
+        for (const b of [42, -42, 52, 25, -25]) {
+            const o = [];
+            for (let l = -180; l < 180; l += 3) o.push(ort(b, l));
+            const at = (i) => o[(i + o.length) % o.length];
+            for (let i = 0; i < o.length; i++) {
+                const x = at(i);
+                if (!x.land) continue;
+                if (Math.abs(b) === 25) {
+                    if (!at(i - 1).land && !at(i - 2).land && at(i + 3).land)
+                        nebel.push(v(anteil(x.w, "nebel"), anteil(at(i + 3).w, "nebel")));
+                    continue;
+                }
+                const [w1, e1] = [at(i - 1), at(i + 1)];
+                if (x.h >= 1500 && w1.land && e1.land && x.h - w1.h >= 800 && x.h - e1.h >= 800 && [-2, 2].every((d) => at(i + d).h <= x.h)) // prettier-ignore
+                    kamm.push(v(anteil(w1.w, "nass"), anteil(e1.w, "nass")));
+                if (Math.abs(b) === 42 && !w1.land && !at(i - 2).land)
+                    for (let j = i + 1; j < i + 40; j++) {
+                        if (!at(j).land) break;
+                        if (!at(j + 1).land && !at(j + 2).land) {
+                            spanne.push(x.t - at(j).t);
+                            break;
+                        }
+                    }
+            }
+        }
+    }
+    const r3 = (x) => Math.round(x * 1000) / 1000;
+    return {
+        kamm: r3(rang(kamm.sort(aufsteigend))),
+        kaemme: kamm.length,
+        nebelAnteil: r3(nebel.filter((x) => x >= 2).length / Math.max(1, nebel.length)),
+        kuesten: nebel.length,
+        spanneK: r3(rang(spanne.sort(aufsteigend))),
+        paare: spanne.length,
+        gipfelAnteil: r3(gipfelKonv / Math.max(1, gipfel)),
+        gipfel,
+        eisAnteil: r3(kaltEis / Math.max(1, kalt)),
+        kalt,
+    };
+}
+function lmlRot(L) {
+    const rot = [];
+    if (!(L.kaemme >= 10 && L.kamm >= LML_SOLL.kamm))
+        rot.push(`(L) KAMM: nass West ÷ Ost am Kamm Median ${L.kamm} an ${L.kaemme} Kämmen (soll ≥ ${LML_SOLL.kamm}) — planetKlimaR trägt keinen Regenschatten`); // prettier-ignore
+    if (!(L.kuesten >= 10 && L.nebelAnteil >= LML_SOLL.nebelAnteil))
+        rot.push(`(L) NEBEL: ${(100 * L.nebelAnteil).toFixed(0)} % von ${L.kuesten} Passat-Westküsten mit Nebel ≥ 2× landein (soll ≥ ${100 * LML_SOLL.nebelAnteil} %) — planetKlimaR liest den Auftrieb nicht`); // prettier-ignore
+    if (!(L.paare >= 10 && L.spanneK >= LML_SOLL.spanneK))
+        rot.push(`(L) SPANNE: West- minus Ostküste an ±42° Median ${L.spanneK} K an ${L.paare} Paaren (soll ≥ ${LML_SOLL.spanneK} K) — planetKlimaR trägt die Meeresluft nicht`); // prettier-ignore
+    if (!(L.gipfel >= 50 && L.gipfelAnteil >= LML_SOLL.gipfelAnteil))
+        rot.push(`(L) GIPFEL: ${(100 * L.gipfelAnteil).toFixed(1)} % von ${L.gipfel} Gipfeln > 2 km auf jemals konvergenter Grenze (soll ≥ ${100 * LML_SOLL.gipfelAnteil} %) — ortRoh ks liest das Gebirge nicht`); // prettier-ignore
+    if (!(L.kalt >= 20 && L.eisAnteil >= LML_SOLL.eisAnteil))
+        rot.push(`(L) EIS: ${(100 * L.eisAnteil).toFixed(1)} % von ${L.kalt} Land-Orten unter −10 °C Jahresmittel tragen das Eis des Quartärs (soll 100 %) — ortEisZeit liest die Kälte des Orts nicht`); // prettier-ignore
+    return rot;
+}
+function lmlSelbsttest() {
+    require("../phyto-core.js");
+    require("../gelaende-core.js");
+    const W = globalThis.__phytoCore;
+    const og = globalThis.__gelaendeCore.ortGesetz();
+    const L = lmlMessung(lmlKern(null), W, og);
+    const v = lmlRot(L).map((r) => `land-meer-luft am Kern: ${r}`);
+    const taeter = LML_TAETER.map(([klinge, name, re, ersatz, gesetz]) => {
+        const rot = lmlRot(lmlMessung(lmlKern([klinge, name, re, ersatz]), W, og));
+        const soll = new RegExp(`^\\(L\\) ${klinge.toUpperCase()}:.*${gesetz}`);
+        if (!(rot.length === 1 && soll.test(rot[0])))
+            v.push(`land-meer-luft: der Täter „${name}" fällt nicht genau an (L) ${klinge.toUpperCase()} rot: ${rot.join(" · ") || "grün"}`); // prettier-ignore
+        return `${name} → ${rot.join(" · ") || "GRÜN"}`;
+    });
+    // das Δ ohne Nebel ist kein Wetter: der Kern wirft beim Namen, nie still 0
+    let wurf = "";
+    try {
+        W.wetterAt("anazh-realm-seed", 0, 0, 10, { regenQuote: 0, sturmQuote: 0 });
+    } catch (e) {
+        wurf = String(e.message);
+    }
+    if (!/nebelQuote/.test(wurf)) v.push("land-meer-luft: ein Δ ohne nebelQuote läuft still durch wetterAt");
+    return { v, L, taeter };
+}
+
+// (Ö) DIE BÖE ZIEHT MIT DEM WIND (wind-saison, Karte 2 leben.pflanzen.kraft#2, im Selbsttest am echten Wirt, rein in node): das Maß
+// der Station (k2-leben KRAFT S2) am EINEN Wind `_windAt` — Ruhe ↔ Sturm, die Reihe staerke × Böe am Spieler und 100 m windab
+// (240 × 0,25 s ab t 100), die Laufzeit der Kreuzkorrelation (Lag ≤ 20 s) gegen 100 m ÷ den mittleren Wind am Spieler: ±20 %
+// (Taylor 1938: das Muster zieht mit 0,8–1,0 × dem mittleren Wind), r ≥ 0,6, die Varianz Sturm ÷ Ruhe ≥ 3. QUELLE: kein Leser der
+// Böe im Stamm dreht ihre Phase mit der Uhr allein (`uWindTime·ω`) — Gras, Krone und Karte lesen uBoePhase (`_boePhase`), der Wind
+// am Ort dieselbe Phase. Selbst-Test: der Täter von vor wind-saison (die Böe wandert mit ω/k = 10,4 m/s in jedem Wetter) MUSS rot
+// sehen. Leser: `boeRot`.
+const BOE_SOLL = { laufzeitAbw: 20, kreuzR: 0.6, varianz: 3 };
+// die Phase der Böe aus der Uhr allein: `uWindTime.mul(B.omega)`, `.mul(float(B.omega))`, `t * B.omega − (x * d.x …)`
+const BOE_ALT = /\.mul\(\s*(?:float\()?\s*_?[A-Z][A-Za-z]*\.omega\b|\.omega\s*-\s*\(?\s*[a-z]+\s*\*\s*d\.x/;
+function boeMessung(r) {
+    const st = r.state;
+    const p = st.playerMesh.position;
+    const reihe = (x, z) => {
+        const a = [];
+        let ms = 0;
+        for (let i = 0; i < 240; i++) {
+            const w = r._windAt(x, z, 100 + i * 0.25);
+            a.push(w.staerke * w.boe);
+            ms += w.ms;
+        }
+        return { a, ms: ms / 240 };
+    };
+    const d = r._windDirAt(100);
+    const w0 = st.weather;
+    let ruhe, A, B;
+    try {
+        st.weather = "sunny";
+        ruhe = reihe(p.x, p.z);
+        st.weather = "stormy";
+        A = reihe(p.x, p.z);
+        B = reihe(p.x + d.x * 100, p.z + d.z * 100);
+    } finally {
+        st.weather = w0;
+    }
+    const m = (v) => v.reduce((s, x) => s + x, 0) / v.length;
+    const varz = (v) => m(v.map((x) => (x - m(v)) ** 2));
+    let [lag, kr] = [0, -2];
+    for (let L = 0; L <= 80; L++) {
+        const [x, y] = [A.a.slice(0, 240 - L), B.a.slice(L)];
+        const [mx, my] = [m(x), m(y)];
+        let [sxy, sxx, syy] = [0, 0, 0];
+        for (let i = 0; i < x.length; i++) {
+            sxy += (x[i] - mx) * (y[i] - my);
+            sxx += (x[i] - mx) ** 2;
+            syy += (y[i] - my) ** 2;
+        }
+        const k = sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : 0;
+        if (k > kr) [lag, kr] = [L * 0.25, k];
+    }
+    const soll = 100 / A.ms;
+    const r3 = (x) => Math.round(x * 1000) / 1000;
+    return { laufzeitAbw: r3((100 * Math.abs(lag - soll)) / soll), lagS: lag, sollS: r3(soll), kreuzR: r3(kr), varianz: r3(varz(A.a) / varz(ruhe.a)) };
+}
+function boeQuelle(R) {
+    const fs = require("fs");
+    const path = require("path");
+    const rot = [];
+    for (const f of require("./lib/stamm.cjs").dateien(R)) {
+        const text = fs.readFileSync(path.join(R, f), "utf8");
+        text.split("\n").forEach((z, i) => {
+            if (BOE_ALT.test(z)) rot.push(`${f}:${i + 1}`);
+        });
+    }
+    return rot;
+}
+function boeRot(Bm, quelle) {
+    const rot = [];
+    if (!(Bm.laufzeitAbw <= BOE_SOLL.laufzeitAbw && Bm.kreuzR >= BOE_SOLL.kreuzR && Bm.varianz >= BOE_SOLL.varianz))
+        rot.push(`(Ö) BÖE: Laufzeit ${Bm.lagS} s gegen ${Bm.sollS} s (±${Bm.laufzeitAbw} %, soll ≤ ${BOE_SOLL.laufzeitAbw} %), r ${Bm.kreuzR}, Varianz Sturm ÷ Ruhe ${Bm.varianz} — die Böe wandert nicht mit dem Wind (stamm/stoff-material.js _boeWeg, phyto-core boeTempo)`); // prettier-ignore
+    if (quelle.length) rot.push(`(Ö) QUELLE: die Böe dreht mit der Uhr allein (ω/k, ein zweiter Wind) — ${quelle.join(", ")}`);
+    return rot;
+}
+function boeSelbsttest() {
+    const R = require("path").join(__dirname, "..");
+    const { ctx } = require("./lib/stamm.cjs").ladeKlasse(R);
+    const r = require("vm").runInContext("new AnazhRealm()", ctx);
+    r.state.worldMeta = { seed: "anazh-realm-seed", voxelTerrain: true };
+    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } }; // BÜHNE: der Stand-Ort der Station kraft#2 am Wirt ohne Welt (Saat anazh-realm-seed), kein Welt-Ort
+    r.state.weatherTransition = null;
+    const Bm = boeMessung(r);
+    const v = boeRot(Bm, boeQuelle(R)).map((x) => `böe am Wirt: ${x}`);
+    // der Täter von vor wind-saison: die Phase der Böe läuft mit ω = 0,4 rad/s, gleich welches Wetter
+    const alt = Object.create(r);
+    alt._boePhase = (t) => t * 0.4;
+    const Ba = boeMessung(alt);
+    const ra = boeRot(Ba, []);
+    if (!(ra.length === 1 && /^\(Ö\) BÖE:/.test(ra[0]))) v.push(`böe: der Täter „die Böe wandert mit ω/k“ fällt nicht rot (${JSON.stringify(Ba)})`);
+    if (boeRot(Bm, ["stamm/x.js:1"]).length !== boeRot(Bm, []).length + 1) v.push("böe: die Quelle mit ω/k fällt nicht rot");
+    return { v, Bm, Ba };
+}
+
 function uhrSelbsttest() {
     const K = (r) => `class A {\n${r}\n}`;
     const U = (text, leser, sp) =>
@@ -455,6 +842,24 @@ if (SELBSTTEST) {
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x))
         .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest());
+    const ort = ortSelbsttest();
+    v.push(...ort.v);
+    const O = ort.O;
+    console.log(
+        `  (O) Ort am Kern · Weg ${O.weg.toExponential(1)} · Sprung ${O.sprung} · Bilanz ${O.bilanz.min}/${O.bilanz.median}/${O.bilanz.max} (${(100 * O.imBand).toFixed(0)} % in ±10 %) · Regen Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee}`
+    );
+    const lml = lmlSelbsttest();
+    v.push(...lml.v);
+    const L = lml.L;
+    console.log(
+        `  (L) Land-Meer-Luft am Kern · Kamm West ÷ Ost ${L.kamm} (${L.kaemme}) · Nebel-Küsten ≥ 2× ${(100 * L.nebelAnteil).toFixed(0)} % (${L.kuesten}) · West − Ost ${L.spanneK} K (${L.paare}) · Gipfel auf Konvergenz ${(100 * L.gipfelAnteil).toFixed(1)} % (${L.gipfel}) · Eis am kalten Land ${(100 * L.eisAnteil).toFixed(1)} % (${L.kalt})`
+    );
+    for (const t of lml.taeter) console.log(`      gepflanzt: ${t}`);
+    const boe = boeSelbsttest();
+    v.push(...boe.v);
+    console.log(
+        `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+    );
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];

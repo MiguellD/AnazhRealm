@@ -200,7 +200,9 @@ function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "", ueber = 0
 //    nennt · e) ein Code-Kommentar, der auf eine .md zeigt, die es nicht gibt, oder den Monolithen außerhalb seiner Wache
 //    nennt (das Literal als Lese-Ziel wacht gate:altlasten, Stamm-Leser-Wand). Ein SATZ, der das Genannte als gefallen
 //    benennt (fiel · gefallen · tot), ist Chronik und bleibt legal — im Code die Zeile.
-const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9])/g;
+// der Name trägt seine Glieder (`gate:tag-achse:echt`): am Doppelpunkt abgeschnitten schwieg ein totes
+// `gate:x:nie` hinter dem lebenden `gate:x`
+const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9](?::[a-z0-9][a-z0-9-]*[a-z0-9])*)/g;
 const ZITAT_CHRONIK = /\b(fiel|fielen|gefallen|gefallene[nmrs]?|tot|tote[nmrs]?)\b/i;
 const ZITAT_PFAD = /(?<![\w.:/@-])((?:\.github|\.claude|[a-z][\w-]*)\/[\w./-]*)/g;
 const ZITAT_DATEI = /(?<![\w.:/@-])([A-Za-z][\w.-]*\.(?:js|cjs|mjs|md|html))(?![\w/-])/g;
@@ -238,8 +240,13 @@ function zitatBefund(dokumente, welt) {
     const da = (p) => welt.pfade.has(p.replace(/\/+$/, ""));
     for (const { pfad, text } of dokumente) {
         const ordner = path.posix.dirname(pfad);
-        if (welt.karte != null && !welt.karte.includes("`" + pfad + "`"))
-            out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
+        // DIE KARTE NENNT DIE KLASSE (24.11.): der Bericht eines Arbeiter-Zweigs ist eine Klasse von Dokumenten — die Karte nennt
+        // ihren Ordner mit Platzhalter EINMAL (`cloud-post/<zweig>.md`), keine Zeile je Zweig. Bis hier trug jeder Zweig seine
+        // Zeile in DIESELBE Tabelle der Karte (prettier richtet mit jeder Zeile alle Spalten neu): nach jeder Landung stand
+        // jeder andere Zweig dort im Konflikt — am 24.11. klima-kontinent und bewohner-satz gegen main 9d4319c0, je ein Merge
+        // und eine Batterie mehr. Jede andere Regel dieser Wand richtet das Dokument der Klasse wie jedes andere.
+        const genannt = welt.karte == null || welt.karte.includes("`" + pfad + "`") || welt.karte.includes("`" + ordner + "/<");
+        if (!genannt) out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
         for (const b of zitatBloecke(text)) {
             const ort = (i) => `${pfad}:${b.erste + b.anfang.filter((a) => a <= i).length}`;
             const satz = (i) => {
@@ -585,14 +592,14 @@ function main() {
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
-        "docs/README.md": "| `docs/README.md` | `docs/a.md` |",
+        "docs/README.md": "| `docs/README.md` | `docs/a.md` | die Klasse `post/<zweig>.md` |",
         "stamm/01.js": "this._lebt(); // Norm: docs/weg.md",
         "scripts/x.cjs": "// Spiegel aus anazhRealm.js",
     };
     const zWelt = zitatWelt(
         Object.keys(zTexte),
         (p) => zTexte[p],
-        new Set(["gate:tier-gang"]),
+        new Set(["gate:tier-gang", "gate:tier-gang:echt"]),
         () => false,
         stamm.ALT
     );
@@ -606,11 +613,15 @@ function main() {
         "- `stamm/NN[x].js` bei 30 km/h",
         "- **_fett** liegt in `archiv/x.md`",
         "- der Bericht (Zweig `koordination` `bericht/x.md`)",
+        "- der Richter `gate:tier-gang:echt`, nie `gate:tier-gang:nie`",
     ].join("\n");
     const zIst = zitatBefund(
         [
             { pfad: "docs/a.md", text: zDoku },
             { pfad: "docs/b.md", text: "x" },
+            // die Klasse der Karte deckt IHREN Ordner (post/c.md schweigt), keinen, der nur ähnlich heißt
+            { pfad: "post/c.md", text: "x" },
+            { pfad: "posten/d.md", text: "x" },
         ],
         zWelt
     );
@@ -622,7 +633,9 @@ function main() {
         "docs/a.md:6 nennt diag-genom",
         "docs/a.md:8 nennt `_fett`",
         "docs/a.md:8 nennt den Pfad archiv/x.md",
+        "docs/a.md:10 nennt gate:tier-gang:nie",
         "docs/b.md fehlt in der EINEN Karte",
+        "posten/d.md fehlt in der EINEN Karte",
         "stamm/01.js:1 verweist auf docs/weg.md",
         "scripts/x.cjs:1 nennt anazhRealm.js",
     ];

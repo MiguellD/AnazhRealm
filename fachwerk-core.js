@@ -2133,8 +2133,8 @@
     // `aVerband` der gefalteten Stufe → die vierte Stelle von `aRegler` im Satz): 1–5 sind die Zeilen des Verbands (ihr Gefüge steht
     // in `reihe` am selben Platz), ab 6 die Stoffe ohne Verband (`rolle`). `fuss`: eine Skala steht voll ab `voll` Pixeln je Zelle
     // und ist unter `leer` ihr Mittel (Ton 1, Relief 0) — am Schirm, nie in Metern; `periode`: die Zellen des Rauschens wiederholen
-    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). `wetterVon`: woher das Wetter kommt (Welt: +x Ost,
-    // +z Süd — die Sonnenbahn `welt-licht.js sonnenRichtung`; Mitteleuropa: West-Südwest).
+    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). Woher das Wetter kommt, trägt die Welt (der Zug ihrer
+    // Fronten, Stamm `uWetterVon`) — bis front-stoff stand hier `wetterVon` fest auf West-Südwest.
     // DER SPRITZ-SAUM (`spritz`): der Regen wirft den Grund an den Fuß der Wand — voll bis `voll` Meter über dem Fuß des Baus (der
     // Spritzwasser-Bereich reicht mindestens 30 cm über Gelände, DIN 18533-1), aus ab `aus`; je Art der Anteil, um den die Fläche
     // dort dunkelt (Putz und Gefach 0,14, Holz 0,10 — am Bild gestellt, OHNE Messung; der Stein des Sockels 0: er steht ganz in
@@ -2190,7 +2190,6 @@
         bett: { nr: 127, rolle: "lehm", verband: "mauerwerk" },
         stein: { nr: 126, verband: "mauerwerk" },
         periode: 256,
-        wetterVon: [-0.92, 0, 0.39],
         silber: [0.147, 0.133, 0.112],
         art: {
             putz:        { korn: [0.004, 0.004], zug: [0.14, 0.022], wolke: [0.7, 0.9], faser: 1.5708, ton: [0.05, 0.03, 0.05], hub: [0.0005, 0.0006, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.16, unruhe: 1.5, tonImStoff: 1 },
@@ -6278,6 +6277,52 @@
   if(gatePts.length<2){ const t=(gatePts[0]?gatePts[0].th:0)+Math.PI; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
   let s=((Math.round((seed||1)*577+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return mauerRing(Rw, gatePts, rnd); }
+    // DIE FORM DER WEHR IM JAHR (mensch.macht.wehrbau#2, front-stoff, additiv): der Ring (`mauerRing`, `schnittMauer`, `kachelMauer`)
+    // traegt die Wehr seiner Zeit. In Mitteleuropa die PALISADE bis ins 12. Jh. (die Pfahlwand aus Eichenstaemmen auf dem Wall der
+    // ottonischen und salischen Orte, Holztuerme ueber den Toren), ab 1150 der STEINRING (die Stadtmauer der Staufer- und Hansezeit:
+    // Wand mit Wehrgang, Tuerme im Ring, STADTMAUER), ab 1530 die BASTION (die trace italienne nach Sangallo und Duerers
+    // Befestigungslehre 1527: der niedrige, dicke, erdhinterfuellte Wall, an Stelle der Tuerme vorspringende Bollwerke, deren Flanken
+    // das Vorfeld bestreichen) bis MAUER_BIS — danach faellt der Wall (die Entfestigung). Regionen ohne diese Folge tragen ihre EINE
+    // Form (`fest`: die roemische Stadt und die Stadt des Fernen Ostens ummauern in Stein). `bollwerk.vor`: so weit springt die
+    // Spitze des Bollwerks vor den Ring, seine Seite vor * sqrt 2 (die innere Ecke sitzt auf dem Ring). Leser: exportSettlement (die
+    // Welt, `_stlMauerBuild`) und das Labor (buildDorf) ueber `mauerGestalt`.
+    var MAUER_FORM = {
+        zeit: [[-Infinity, 'palisade'], [1150, 'steinring'], [1530, 'bastion']],
+        fest: { antik: 'steinring', fernost: 'steinring' },
+        palisade: { stoff: 'stamm', dachStoff: 'holz', wand: { hoch: 3.6, dick: 0.35, ueber: 0.1 }, krone: null, turm: { breit: 3.0, hoch: 6.4 }, dach: { y: 7.0, breit: 3.6, hoch: 1.2 }, bollwerk: null },
+        steinring: { stoff: 'stein', dachStoff: 'ziegel', wand: STADTMAUER.wand, krone: STADTMAUER.krone, turm: STADTMAUER.turm, dach: STADTMAUER.dach, bollwerk: null },
+        bastion: { stoff: 'stein', dachStoff: null, wand: { hoch: 6.4, dick: 4.5, ueber: 0.6 }, krone: { y: 6.8, hoch: 0.8, dick: 1.0, aussen: true }, turm: null, dach: null, bollwerk: { vor: 12, hoch: 6.4 } },
+    };
+    // die Form der Wehr eines Orts der Region im Jahr → ihr Name (palisade · steinring · bastion)
+    function mauerForm(region, jahr) {
+        var f = MAUER_FORM.fest[region];
+        if (f) return f;
+        var Z = MAUER_FORM.zeit, a = Z[0][1];
+        for (var i = 0; i < Z.length; i++) if (jahr >= Z[i][0]) a = Z[i][1];
+        return a;
+    }
+    // DER RING IN SEINER FORM → { R, segs, towers, gates, art, stoff, wand, krone, turm, dach, bollwerk }: die Bollwerke der Bastion
+    // stehen an den Orten der Tuerme, um `bollwerk.vor` vor den Ring gerueckt (ihre Mitte), jede andere Form traegt ihre Tuerme im Ring
+    function mauerGestalt(m, region, jahr) {
+        var art = mauerForm(region, jahr), F = MAUER_FORM[art], vor = F.bollwerk ? F.bollwerk.vor : 0;
+        return {
+            R: m.R,
+            segs: m.segs.map(function (s) { return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 }; }),
+            towers: m.towers.map(function (t) {
+                var r = Math.hypot(t.x, t.z), k = vor && r > 0 ? (r + vor) / r : 1;
+                return { x: t.x * k, z: t.z * k };
+            }),
+            gates: m.gates.map(function (g) { return { x: g.x, z: g.z, th: g.th }; }),
+            art: art,
+            stoff: F.stoff,
+            dachStoff: F.dachStoff,
+            wand: F.wand,
+            krone: F.krone,
+            turm: F.turm,
+            dach: F.dach,
+            bollwerk: F.bollwerk,
+        };
+    }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
@@ -12091,20 +12136,7 @@
             // der Graph der Gassen (nV/nE/zyklen, der Leser gate:settlement Z). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
-            mauer: mz
-                ? {
-                      R: mz.R,
-                      segs: mz.segs.map(function (s) {
-                          return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 };
-                      }),
-                      towers: mz.towers.map(function (t) {
-                          return { x: t.x, z: t.z };
-                      }),
-                      gates: mz.gates.map(function (g) {
-                          return { x: g.x, z: g.z, th: g.th };
-                      }),
-                  }
-                : null,
+            mauer: mz ? mauerGestalt(mz, plan.region, plan.schnitt.jahr) : null, // die Wehr ihrer Zeit (MAUER_FORM)
             graph: { nV: lay.graph.nV, nE: lay.graph.nE, zyklen: lay.graph.zyklen },
             roads: lay.roads,
             feldwege: lay.feldwege,
@@ -12564,6 +12596,165 @@
         return (v2.roads || []).concat(v2.feldwege || []).some(function (rd) {
             return !!festLauf(rd.pts || [], g, (isFinite(rd.w) ? rd.w : 3) / 2);
         });
+    }
+    // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1; rein additiv): die Häuser des Plans sind die
+    // Rauigkeit und der Kanal des EINEN Winds am Ort. Je Abschnitt einer Gasse (`roads`, pts) die Fassade beider Seiten — der erste
+    // Grundriss (`obb`) auf der Normalen der Mitte bis w/2 + reichM — und ihre Höhe (`ext.y1`): H/W der Schlucht, W der Abstand der
+    // Fassaden. Das Gewicht κ = (Seiten mit Fassade ÷ 2) · glatt(0,3, 0,7, H/W): unter H/W 0,3 umströmt der Wind die Häuser einzeln,
+    // über 0,7 überströmt er die Schlucht (Oke 1988, Energy and Buildings 11: isolated roughness · wake interference · skimming
+    // flow). In der Schlucht trägt die Luft nur den Anteil längs der Gasse, der Quer-Anteil schließt sich zum Wirbel (u_Gasse ∝
+    // u·cos θ; Soulhac, Perkins & Salizzoni 2008, Boundary-Layer Meteorology 126): v = κ·(d·e)·e + (1 − κ)·d, die Richtung v/|v|,
+    // die Stärke × |v|; über den Saum der Fassade (w/2 … w/2 + saumM) klingt κ aus. Ohne Haus an der Gasse und neben jeder Gasse
+    // genau der Wind des Geländes (Bit für Bit). Leser: der Wind der Welt (`_windAt` über `_gassenWind`).
+    var GASSEN_WIND = Object.freeze({ reichM: 15, saumM: 4, hw: Object.freeze([0.3, 0.7]), zelleM: 16 });
+    function gassenGlatt(a, b, v) {
+        var u = Math.max(0, Math.min(1, (v - a) / (b - a)));
+        return u * u * (3 - 2 * u);
+    }
+    // der Strahl (px, pz) + t·(nx, nz), 0 ≤ t ≤ tMax, gegen den Grundriss o (Achsen wie distPunktOBB): das kleinste t oder Infinity
+    function gassenStrahl(px, pz, nx, nz, o, tMax) {
+        var c = Math.cos(o.phi),
+            s = Math.sin(o.phi),
+            dx = px - o.cx,
+            dz = pz - o.cz;
+        var P = [dx * c - dz * s, dx * s + dz * c],
+            N = [nx * c - nz * s, nx * s + nz * c],
+            E = [o.ex, o.ez],
+            t0 = 0,
+            t1 = tMax;
+        for (var a = 0; a < 2; a++) {
+            if (Math.abs(N[a]) < 1e-12) {
+                if (Math.abs(P[a]) > E[a]) return Infinity;
+                continue;
+            }
+            var ta = (-E[a] - P[a]) / N[a],
+                tb = (E[a] - P[a]) / N[a];
+            if (ta > tb) {
+                var q = ta;
+                ta = tb;
+                tb = q;
+            }
+            t0 = Math.max(t0, ta);
+            t1 = Math.min(t1, tb);
+            if (t0 > t1) return Infinity;
+        }
+        return t0;
+    }
+    // das Netz der Schluchten eines Plans (lokal zum Ort des Plans, wie seine pts und Grundrisse): je Abschnitt [ax, az, ex, ez,
+    // Länge, w/2, κ], dazu ein Gitter je zelleM auf die Abschnitte, die eine Zelle berühren. Einmal je Plan (der Wirt merkt es).
+    function gassenNetz(plan) {
+        if (!plan || !Array.isArray(plan.roads) || !Array.isArray(plan.slots))
+            throw new Error("fachwerk gassenNetz: der Plan trägt roads und slots nicht");
+        var G = GASSEN_WIND,
+            seg = [],
+            je = new Map(),
+            box = [Infinity, -Infinity, Infinity, -Infinity];
+        var haeuser = plan.slots.filter(function (s) {
+            return s && s.obb && s.ext && isFinite(s.ext.y1);
+        });
+        var zelle = function (v) {
+            return Math.floor(v / G.zelleM);
+        };
+        plan.roads.forEach(function (rd, ri) {
+            if (!rd || !Array.isArray(rd.pts) || !isFinite(rd.w))
+                throw new Error("fachwerk gassenNetz: die Gasse " + ri + " trägt pts oder w nicht");
+            for (var i = 1; i < rd.pts.length; i++) {
+                var A = rd.pts[i - 1],
+                    B = rd.pts[i],
+                    L = Math.hypot(B.x - A.x, B.z - A.z);
+                if (!(L > 1e-6)) continue;
+                var ex = (B.x - A.x) / L,
+                    ez = (B.z - A.z) / L,
+                    mx = (A.x + B.x) / 2,
+                    mz = (A.z + B.z) / 2,
+                    hw = rd.w / 2,
+                    tMax = hw + G.reichM;
+                var seite = [1, -1].map(function (sg) {
+                    var nx = -ez * sg,
+                        nz = ex * sg,
+                        best = Infinity,
+                        h = 0;
+                    for (var k = 0; k < haeuser.length; k++) {
+                        var o = haeuser[k].obb;
+                        if (Math.hypot(o.cx - mx, o.cz - mz) > o.ex + o.ez + tMax) continue; // sicher fern (die Vorauswahl der Nähe)
+                        var t = gassenStrahl(mx, mz, nx, nz, o, tMax);
+                        if (t < best) {
+                            best = t;
+                            h = haeuser[k].ext.y1;
+                        }
+                    }
+                    return { d: best, h: h };
+                });
+                var n = 0,
+                    W = 0,
+                    H = 0;
+                for (var j = 0; j < 2; j++) {
+                    W += isFinite(seite[j].d) ? seite[j].d : tMax;
+                    if (isFinite(seite[j].d)) {
+                        n++;
+                        H += seite[j].h;
+                    }
+                }
+                var kap = n ? (n / 2) * gassenGlatt(G.hw[0], G.hw[1], H / n / W) : 0;
+                if (!(kap > 0)) continue;
+                var si = seg.length;
+                seg.push([A.x, A.z, ex, ez, L, hw, kap]);
+                var r = hw + G.saumM;
+                var cx0 = zelle(Math.min(A.x, B.x) - r),
+                    cx1 = zelle(Math.max(A.x, B.x) + r),
+                    cz0 = zelle(Math.min(A.z, B.z) - r),
+                    cz1 = zelle(Math.max(A.z, B.z) + r);
+                box[0] = Math.min(box[0], cx0 * G.zelleM);
+                box[1] = Math.max(box[1], (cx1 + 1) * G.zelleM);
+                box[2] = Math.min(box[2], cz0 * G.zelleM);
+                box[3] = Math.max(box[3], (cz1 + 1) * G.zelleM);
+                for (var ci = cx0; ci <= cx1; ci++)
+                    for (var cj = cz0; cj <= cz1; cj++) {
+                        var key = (ci + 32768) * 65536 + (cj + 32768),
+                            l = je.get(key);
+                        if (l) l.push(si);
+                        else je.set(key, [si]);
+                    }
+            }
+        });
+        return { seg: seg, je: je, box: box, zelleM: G.zelleM, saumM: G.saumM };
+    }
+    // der Wind am Punkt (lx, lz) des Plans, der nach (dx, dz) weht (Einheitsvektor): aus.x, aus.z die Richtung, aus.f der Faktor
+    // der Stärke, aus.kappa das Gewicht der Schlucht (0: neben jeder Gasse — dann genau (dx, dz) und 1)
+    function gassenWind(netz, lx, lz, dx, dz, aus) {
+        var o = aus || {};
+        o.x = dx;
+        o.z = dz;
+        o.f = 1;
+        o.kappa = 0;
+        var b = netz.box;
+        if (!(lx >= b[0] && lx <= b[1] && lz >= b[2] && lz <= b[3])) return o;
+        var l = netz.je.get((Math.floor(lx / netz.zelleM) + 32768) * 65536 + (Math.floor(lz / netz.zelleM) + 32768));
+        if (!l) return o;
+        var best = 0,
+            S = null;
+        for (var i = 0; i < l.length; i++) {
+            var s = netz.seg[l[i]],
+                t = Math.max(0, Math.min(s[4], (lx - s[0]) * s[2] + (lz - s[1]) * s[3])),
+                r = Math.hypot(lx - s[0] - s[2] * t, lz - s[1] - s[3] * t),
+                k = s[6] * gassenGlatt(s[5] + netz.saumM, s[5], r);
+            if (k > best) {
+                best = k;
+                S = s;
+            }
+        }
+        if (!S) return o;
+        var c = dx * S[2] + dz * S[3],
+            vx = best * c * S[2] + (1 - best) * dx,
+            vz = best * c * S[3] + (1 - best) * dz,
+            m = Math.hypot(vx, vz);
+        o.kappa = best;
+        o.f = m;
+        if (m > 1e-9) {
+            o.x = vx / m;
+            o.z = vz / m;
+        }
+        return o;
     }
     function ortPlan(plan, origin, ctx) {
         if (plan && plan.art === "genesis") return genesisOrtPlan(plan, origin, ctx); // der Genesis-Ort (GENESIS_ORT unten)
@@ -14588,6 +14779,10 @@
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        // klima-kontinent (stadtklima#1) — die Häuser als Rauigkeit und Kanal des Winds: das Netz der Schluchten je Plan, der Wind darin
+        GASSEN_WIND: GASSEN_WIND,
+        gassenNetz: gassenNetz,
+        gassenWind: gassenWind,
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
         platzImWasser: platzImWasser,
         ortBauWand: ortBauWand, // siedlung.K5 — die stehenden Bauten des Wirts im Raster (der Ort-Faden, je Wahl einmal)
@@ -14746,6 +14941,9 @@
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
         MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
+        MAUER_FORM: MAUER_FORM, // die Form der Wehr im Jahr: Palisade, Steinring, Bastion (Leser: mauerGestalt)
+        mauerForm: mauerForm,
+        mauerGestalt: mauerGestalt, // der Ring in der Form seiner Zeit (Leser: exportSettlement, das Labor)
         WACHSTUM: WACHSTUM, // das Wachstum in Spielzeit (Staffel 2; Leser: der Wirt, gate:settlement W)
         wachstum: wachstum,
         REGION_HIST: REGION_HIST,

@@ -51,6 +51,11 @@ const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke au
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
 const STEHT_M = 0.6; // so nah steht ein ruhender Körper an seinem Grund (Rad-Ebene, Nick, Sohle)
 const DACH_M = 2.0; // höher über dem Grund steht er nicht — er sprang aufs Dach
+// DER GANG DES SPIELERS IN DIE HALLE IST EIN WEG, KEINE ZEIT (nerv-bewegung): DACH_M urteilt die Höhe über dem Grund, auf den er
+// gesetzt war, und der Grund der Halle steigt (an 2.6/72.0 nach −z: 1,05 m über 2,97 m, 2,17 m über 4,08 m — überall der Fuß auf
+// dem Fels, kein Stück steiler als die 60° des Steilhang-Gesetzes). Ein Gang in Takten hängt am Geh-Tempo des Leibs: 150 Takte
+// trugen ihn am Gehen 1,15 m/s 2,85 m weit, am Gehen aus der Gestalt (1,58 m/s) 3,94 m — den Hang hinauf über das Band.
+const GANG_M = 2.85;
 // DIE TOD-LAGE gegen die Fels-Wahrheit (die tiefste Stelle der Haut über dem Fels, absolut — ein Stand, der schon im Hang
 // steckt, ist nie das Soll des Liegens):
 const TOD_M = 0.15; // so tief liegt sie nie im Fels, und im Kippen nie tiefer, als der Leib stand
@@ -102,6 +107,10 @@ const OBERKANTE_BENANNT = {
     _bodenUmzug: [
         ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
         "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
+    ],
+    _updateDorfRauch: [
+        ["_terrainMacroSurfaceY"],
+        "Welt-Leser: der Grund unter dem Kamin — die Höhe des Rauch-Teilchens über ihm wählt seinen Wind (`_rauchWindAt`, Hellmann-Profil); der Leib, dessen Höhe die Methode berührt, ist das Rauch-Mesh, nie ein Körper (wetter-am-ort)",
     ],
 };
 
@@ -899,7 +908,7 @@ async function probe(K) {
         st.yaw = Math.PI; // nach −z, in die Halle
         const s = spur();
         for (let i = 0; i < 180; i++) {
-            tasten(i < 150);
+            tasten(i < 150 && Math.hypot(pm.x - hs.x, pm.z - hs.z) < K.gangM);
             await takt();
             s.schritt(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z);
         }
@@ -1029,6 +1038,7 @@ hauptLauf(async () => {
     const befund = await page.evaluate(probe, {
         spaltenJeOrt: 6,
         todGier: TOD_GIER,
+        gangM: GANG_M,
         turmBloecke: TURM_BLOECKE,
         turmR: TURM_R,
         sohleM: SOHLE_M,

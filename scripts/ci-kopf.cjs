@@ -1,12 +1,16 @@
-// ci-kopf.cjs — EIN URTEIL JE KOPF: die volle Batterie und die Echt-Gruppe richten jeden Kopf (SHA) einmal.
+// ci-kopf.cjs — EIN URTEIL JE KOPF: die volle Batterie richtet jeden Kopf (SHA) einmal.
 // DER KOPF IST SEIN INHALT: ein Commit ohne Inhalt (EIN Elter, derselbe Baum — der Stempel „Abgabe …" auf dem geprüften Kopf)
 // trägt das Urteil seines Elters, bis KETTE Glieder tief (`kopfKette`); ein Merge und jeder Commit mit Inhalt erben nichts.
-// Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`,
-// jedes Bein der Karten (`echt <karte> (…)`) grün: `echt=nein`. Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
+// Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`.
+// Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
 // ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
 // der API ist ROT. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
+// DER ZUG FÄHRT voll NIE (LANDUNG ≤ 10 MIN, 23.11., der Schöpfer: „Keine 10h max 10min und fertig. Wir messen soviel wie nötig,
+// nicht wie möglich“): ein push auf einen Zug-Zweig (ZUG_REFS) ist `voll=nein` ohne Frage an die API — die Batterie erbt vom grünen
+// Lauf am Zweig-Kopf, den der Einlass verlangt (zug.cjs bereit); nach der Landung fährt sie auf main (die Nachwache). Die Karten
+// (Job `echt`) fahren nur auf Abruf und fragen keinen Richter.
 // DIESELBE KETTE trägt die GPU-Probe (`probeErbeLesen`, Leser: der Einlass in gpu-probe.yml, gate:apparat Klinge 7 fährt ihn).
-//   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` und `echt=` nach $GITHUB_OUTPUT
+//   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` nach $GITHUB_OUTPUT
 "use strict";
 require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 const fs = require("fs");
@@ -14,9 +18,13 @@ const { setTimeout: schlaf } = require("timers/promises");
 
 const IMMER = ["workflow_dispatch", "pull_request"];
 const BEWEIS = ["push", "schedule", "workflow_dispatch"];
-const [VOLL_JOB, ECHT_JOB] = [/^voll\b/, /^echt\b/];
+const VOLL_JOB = /^voll\b/;
 const [TAKT_S, WARTE_S] = [30, 30 * 60];
 const KETTE = 4;
+// die Zug-Zweige: der Kandidat (integ-probe) und die Hälften der Bisektion (zug.cjs teile) — ihr push fährt voll nie
+const ZUG_REFS = ["refs/heads/integ-probe", "refs/heads/zug-a", "refs/heads/zug-b"];
+const imZug = (ereignis, ref) => ereignis === "push" && ZUG_REFS.includes(ref);
+const ZUG_GRUND = "der Zug fährt die volle Batterie nie — sie erbt vom grünen Lauf am Zweig-Kopf (zug.cjs bereit), main fährt sie nach der Landung (LANDUNG ≤ 10 MIN)";
 
 // der Kopf und seine leeren Vorfahren, der Kopf zuerst: `commits` trägt je SHA { sha, tree: { sha }, parents: [{ sha }] }
 // (die Form von /git/commits/<sha>); die Kette endet am Merge, am ersten Elter mit anderem Baum, an KETTE Vorfahren
@@ -31,10 +39,11 @@ function kopfKette(sha, commits) {
     return kette;
 }
 
-// → { voll, echt, grund } · { warte: lauf } · { rot: grund }
-function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
-    const u = { voll: "ja", echt: "ja", grund: "kein anderer Lauf trägt die volle Batterie auf diesem Kopf grün" };
+// → { voll, grund } · { warte: lauf } · { rot: grund }
+function kopfUrteil({ ereignis, ref, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
+    const u = { voll: "ja", grund: "kein anderer Lauf trägt die volle Batterie auf diesem Kopf grün" };
     if (IMMER.includes(ereignis)) return { ...u, grund: `Ereignis ${ereignis}: die Batterie läuft immer` };
+    if (imZug(ereignis, ref)) return { voll: "nein", grund: ZUG_GRUND };
     const gruen = (jobs, re) =>
         jobs.filter((j) => re.test(j.name)).length &&
         jobs.filter((j) => re.test(j.name)).every((j) => j.conclusion === "success");
@@ -48,7 +57,6 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
             return { rot: `der Kopf trägt ein rotes Urteil: Lauf ${r.id} (${r.head_branch}, ${r.event})` };
         if (r.conclusion !== "success") continue;
         const jobs = jobsJe[r.id] || [];
-        if (gruen(jobs, ECHT_JOB)) u.echt = "nein";
         if (u.voll === "ja" && gruen(jobs, VOLL_JOB))
             Object.assign(u, {
                 voll: "nein",
@@ -145,7 +153,7 @@ async function probeErbeLesen(api, { sha, lauf, proben, rufVon, wf = "gpu-probe.
     return probeErbe({ sha, commits, laeufe, proben, rufVon });
 }
 
-module.exports = { kopfUrteil, kopfKette, KETTE, alleLaeufe, apiMit, kopfKetteLesen, probeErbe, probeErbeLesen };
+module.exports = { kopfUrteil, kopfKette, KETTE, ZUG_REFS, alleLaeufe, apiMit, kopfKetteLesen, probeErbe, probeErbeLesen };
 
 if (require.main === module) {
     const env = process.env;
@@ -155,9 +163,11 @@ if (require.main === module) {
             .replace(/^[^/]+\/[^/]+\/\.github\/workflows\//, "")
             .replace(/@.*$/, "") || "check.yml";
     (async () => {
-        const [ereignis, gewartet] = [env.GITHUB_EVENT_NAME, []];
+        const [ereignis, ref, gewartet] = [env.GITHUB_EVENT_NAME, env.GITHUB_REF, []];
+        // im Zug fragt der Richter nichts: voll=nein (ZUG_REFS)
+        const ohneFrage = IMMER.includes(ereignis) || imZug(ereignis, ref);
         // die Kette des Kopfs: je Glied EINE Anfrage, sie endet am ersten Commit, der nicht mehr erbt
-        const commits = IMMER.includes(ereignis) ? {} : await kopfKetteLesen(api, env.GITHUB_SHA);
+        const commits = ohneFrage ? {} : await kopfKetteLesen(api, env.GITHUB_SHA);
         const kette = kopfKette(env.GITHUB_SHA, commits);
         if (kette.length > 1)
             console.log(`Kopf ${String(env.GITHUB_SHA).slice(0, 8)}: ohne Inhalt über ${kette.slice(1).map((s) => s.slice(0, 8)).join(" → ")} — er trägt deren Urteil`);
@@ -166,17 +176,16 @@ if (require.main === module) {
             // der eigene Lauf steht immer in der Liste — fehlt er, war die Seite leer
             const traegt = (rs) => rs.some((r) => String(r.id) === String(env.GITHUB_RUN_ID));
             const [nimm, seit] = [(r) => kette.includes(r.head_sha), Date.now() - 3 * 864e5];
-            const laeufe = IMMER.includes(ereignis) ? [] : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
+            const laeufe = ohneFrage ? [] : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
             const jobsJe = {};
             for (const r of laeufe)
                 if (String(r.id) !== String(env.GITHUB_RUN_ID) && r.conclusion === "success")
                     jobsJe[r.id] = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs;
-            u = kopfUrteil({ ereignis, eigenerLauf: env.GITHUB_RUN_ID, laeufe, jobsJe, gewartet });
+            u = kopfUrteil({ ereignis, ref, eigenerLauf: env.GITHUB_RUN_ID, laeufe, jobsJe, gewartet });
             if (!u.warte) break;
             if (gang >= WARTE_S / TAKT_S) {
                 u = {
                     voll: "ja",
-                    echt: "ja",
                     grund: `Lauf ${u.warte.id} läuft nach ${WARTE_S / 60} min noch — die Batterie fährt selbst`,
                 };
                 break;
@@ -189,9 +198,9 @@ if (require.main === module) {
         }
         if (u.rot) throw new Error(u.rot);
         console.log(
-            `Kopf ${String(env.GITHUB_SHA).slice(0, 8)} (${ereignis}): voll=${u.voll} echt=${u.echt} — ${u.grund}`
+            `Kopf ${String(env.GITHUB_SHA).slice(0, 8)} (${ereignis} ${ref}): voll=${u.voll} — ${u.grund}`
         );
-        if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `voll=${u.voll}\necht=${u.echt}\n`);
+        if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `voll=${u.voll}\n`);
         if (u.voll === "nein") console.log(`::notice title=Ein Urteil je Kopf::${u.grund}`);
     })().catch((e) => {
         console.error(`❌ ci-kopf: ${e.message}`);

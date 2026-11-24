@@ -831,10 +831,21 @@ async function probeLeben(expected) {
             frame(i++);
             const bereit = () =>
                 S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer); // prettier-ignore
+            // (steht die Stadt nie bereit, nennt der Deckel, wer fehlt: der Wagen ohne Fahrer am Steuer samt Rolle, Ziel und Krankheit
+            // seiner Fahrer, der Leib, der noch ankommt — bis bewohner-satz sagte er nur „die Welt hat nichts mehr offen")
+            const fehlt = () =>
+                [
+                    ...(S.verkehr ? S.verkehr.wagen : []).filter((W) => !W.b.amSteuer).map((W) => `Wagen ${W.nr} (${W.zustand}): ${W.fahrer.map((f) => `${f === W.b ? "*" : ""}${f.rolle}#${f.same >>> 0}${f.krank ? " krank" : ""} ziel ${f.ziel === f.orte.werk ? "werk" : f.ziel === f.orte.heim ? "heim" : f.drinnen ? "drinnen" : "anderes"}`).join(" / ")}`), // prettier-ignore
+                    ...(S.liste || []).filter((b) => !b.leib || b.ankunft).slice(0, 3).map((b) => `${b.rolle}#${b.same >>> 0} ${b.leib ? "kommt an" : "ohne Leib"}`), // prettier-ignore
+                ].slice(0, 6).join(" · ") || "keiner";
             const bis = async (was, ok) => {
-                for (const weiter = __deckel(was, 8000); weiter() && !ok(); i++) {
-                    frame(i);
-                    if (i % 8 === 7) await window.sleep();
+                try {
+                    for (const weiter = __deckel(was, 8000); weiter() && !ok(); i++) {
+                        frame(i);
+                        if (i % 8 === 7) await window.sleep();
+                    }
+                } catch (f) {
+                    throw new Error(`${f.message} — es fehlt: ${fehlt()}`); // (der Stapel trägt die Meldung seiner Geburt)
                 }
             };
             // DER ANFANG AUS DEM GESETZ (gleiche Saat, gleiches Urteil): erst steht die Stadt samt jeder Hülle ihrer Häuser und jedem

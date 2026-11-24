@@ -343,16 +343,18 @@ function buildDorf(dp){
   lay.feldwege.forEach(fw=>{ const m=new THREE.Mesh(rib(fw.pts,fw.w,0.03),M.weg); m.receiveShadow=true; dorfGroup.add(m); });
   if(lay.platz){ const pz=lay.platz, pm=new THREE.Mesh(new THREE.BoxGeometry(pz.ex*2,0.09,pz.ez*2),(pz.typ==='gras')?M.gras:((modernS||pflasterS)?new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide}):M.weg));   // MARKT trägt den Zonen-Belag
     pm.position.set(pz.cx,0.045,pz.cz); pm.receiveShadow=true; dorfGroup.add(pm); }
-  if(lay.mauer){ const SM=FC.STADTMAUER, W=SM.wand, K=SM.krone, T=SM.turm, D=SM.dach;      // STADTMAUER: Segmente, Türme, Tore — die Maße des Gesetzbuchs (siedlung.K2: dieselben baut die Welt, _stlMauerBuild)
-    lay.mauer.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+W.ueber;
+  if(lay.mauer){ const MG=FC.mauerGestalt(lay.mauer, plan.region, plan.jahr), W=MG.wand, K=MG.krone, T=MG.turm, D=MG.dach, BW=MG.bollwerk, mW=mLay(MG.stoff);      // DIE WEHR IHRER ZEIT (fachwerk MAUER_FORM, mensch.macht.wehrbau#2): Palisade · Steinring · Bastion in den Maßen des Gesetzbuchs — dieselbe Gestalt baut die Welt (_stlMauerBuild)
+    MG.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+W.ueber;
       const ang=Math.atan2(-dz,dx), mx=(sg.x0+sg.x1)/2, mz=(sg.z0+sg.z1)/2;
-      const w=new THREE.Mesh(new THREE.BoxGeometry(len,W.hoch,W.dick),mLay('stein')); w.position.set(mx,W.hoch/2,mz); w.rotation.y=ang;
+      const w=new THREE.Mesh(new THREE.BoxGeometry(len,W.hoch,W.dick),mW); w.position.set(mx,W.hoch/2,mz); w.rotation.y=ang;
       w.castShadow=true; w.receiveShadow=true; dorfGroup.add(w);
-      const zi=new THREE.Mesh(new THREE.BoxGeometry(len,K.hoch,K.dick),mLay('stein')); zi.position.set(mx,K.y,mz); zi.rotation.y=ang; zi.castShadow=true; dorfGroup.add(zi);
+      if(K){ const ol=Math.hypot(mx,mz)||1, o=K.aussen?(W.dick-K.dick)/2:0;   // die Brustwehr der Bastion steht außen auf dem Wall
+        const zi=new THREE.Mesh(new THREE.BoxGeometry(len,K.hoch,K.dick),mW); zi.position.set(mx+mx/ol*o,K.y,mz+mz/ol*o); zi.rotation.y=ang; zi.castShadow=true; dorfGroup.add(zi); }
       solids.push({min:[-len/2,0,-W.dick/2],max:[len/2,W.hoch,W.dick/2], th:ang, tx:mx, tz:mz}); });
-    lay.mauer.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(T.breit,T.hoch,T.breit),mLay('stein')); tm.position.set(tw.x,T.hoch/2,tw.z); tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
-      const td=new THREE.Mesh(new THREE.BoxGeometry(D.breit,D.hoch,D.breit),M.ziegel); td.position.set(tw.x,D.y,tw.z); td.castShadow=true; dorfGroup.add(td);
-      solids.push({min:[tw.x-T.breit/2,0,tw.z-T.breit/2],max:[tw.x+T.breit/2,T.hoch,tw.z+T.breit/2]}); }); }
+    const tB=T?T.breit:BW?BW.vor*Math.SQRT2:0, tH=T?T.hoch:BW?BW.hoch:0;   // der Turm oder das Bollwerk (die Raute, ihre innere Ecke am Ring)
+    if(tB>0) MG.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(tB,tH,tB),mW); tm.position.set(tw.x,tH/2,tw.z); if(BW) tm.rotation.y=Math.atan2(tw.x,tw.z)+Math.PI/4; tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
+      if(D){ const td=new THREE.Mesh(new THREE.BoxGeometry(D.breit,D.hoch,D.breit),MG.dachStoff==='ziegel'?M.ziegel:mLay(MG.dachStoff)); td.position.set(tw.x,D.y,tw.z); td.castShadow=true; dorfGroup.add(td); }
+      solids.push({min:[tw.x-tB/2,0,tw.z-tB/2],max:[tw.x+tB/2,tH,tw.z+tB/2]}); }); }
   lay.brunnen.forEach(b3=>{ const bg2=ausstattungAm('brunnen', b3.x, b3.z, 0); dorfGroup.add(bg2);   // AUSSTATTUNG: der Ziehbrunnen kommt aus dem Gesetzbuch (Lab = Welt)
     solids.push({min:[b3.x-0.95,0,b3.z-0.95],max:[b3.x+0.95,0.75,b3.z+0.95]}); });
   lay.fences.forEach(f=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;

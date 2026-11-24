@@ -2208,11 +2208,12 @@ hauptLauf(async () => {
             ? erlebnis(Object.assign({}, v2, { trees: [], staende: [], fences: [], felder: [] }), "__probe2")
             : null;
         // DIE STADTMAUER (siedlung.K2): der Erlebnis-Hebel legt die Mauer des Exports der Stadt (Same 9, 36 Häuser) in den
-        // Mauer-Pool — Wand und Krone je Segment, Turm und Dach je Turm; er wirft, die Natur weicht ihrer Linie
+        // Mauer-Pool — Wand und Krone je Segment, Turm und Dach je Turm, in der Form ihrer Zeit (fachwerk `mauerGestalt`: die
+        // Palisade ohne Krone, die Bastion mit Bollwerken ohne Dach); er wirft, die Natur weicht ihrer Linie
         const vS = await r._ortWahl(await r._foundryRequestSettlement({ seed: 9, nH: 36 }), o1);
         const g = vS.mauer.segs[0];
         res.stadt = Object.assign(erlebnis(vS, "__mauer"), {
-            soll: 2 * (vS.mauer.segs.length + vS.mauer.towers.length),
+            soll: vS.mauer.segs.length * (vS.mauer.krone ? 2 : 1) + vS.mauer.towers.length * (vS.mauer.dach ? 2 : 1),
             wirft: st.stlMauer.mesh.castShadow,
             natur: r._aufWeg(o1.x + (g.x0 + g.x1) / 2, o1.z + (g.z0 + g.z1) / 2, 0.5),
         });

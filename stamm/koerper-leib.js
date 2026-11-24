@@ -815,9 +815,13 @@ class AnazhRealm_koerper_leib {
     // zieht ab: dx − Ü·(1 − cos φ), dy − Ü·sin φ), längs der Geraden, auf der die Sohle ruht (`probe.kipp`), nie längs der
     // Waagrechten; [vor, hinauf] in Metern. Vorher fehlte am Hang die Steigung × dx (die Falllinie hinauf tauchte der rollende
     // Fuß 3–6 cm ein), und treppab drehte er um die Spitze über der tieferen Stufe (er hob 3–12 cm von der Kante ab).
+    // DIE FERSE UND DER VORFUSS ROLLEN AUCH (nerv-schwung): der Aufsatz des Gesetzes (tetrapoda gangAufsatz — Gehen die Ferse, roll
+    // < 0 um die Ferse; Sprint der Vorfuß, roll > 0 um den Ballen) steht in derselben Rolle; der Überstand der Spitze zählt nur über
+    // den Ballen. Bis hier rollte nur der Ballen: beim Gehen stand der Knöchel der Ferse 1,5 cm höher, als der Lock ihn suchte — die
+    // Kette reichte ihn nicht, der Lock griff erst drei Takte nach dem Aufsetzen, die Ferse stand 2 cm im Boden, der Fuß schlug flach.
     _gaitRollung(rolle, probe, ik) {
-        if (!(rolle && rolle.roll > 0)) return [0, 0];
-        const ue = ik.sohle ? (ik.sohle[ik.sohle.length - 1] - (probe.vorn || 0)) / ik.wpl : 0;
+        if (!(rolle && rolle.roll)) return [0, 0];
+        const ue = rolle.roll > 0 && ik.sohle ? (ik.sohle[ik.sohle.length - 1] - (probe.vorn || 0)) / ik.wpl : 0;
         const [dx, dy] = [rolle.rollDx - ue * (1 - Math.cos(rolle.roll)), rolle.heb - ue * Math.sin(rolle.roll)];
         const [c, s] = [Math.cos(probe.kipp || 0), Math.sin(probe.kipp || 0)];
         return [(dx * c - dy * s) * ik.wpl, (dy * c + dx * s) * ik.wpl];
@@ -853,8 +857,14 @@ class AnazhRealm_koerper_leib {
         if (geht) {
             if (!lock.on) {
                 lock.on = true; // Stance-Beginn: den Fuß-Weltpunkt EINMAL einfrieren, wo seine Sohle am meisten trägt
-                lock.x = foot.x;
-                lock.z = foot.z;
+                // der Lock hält den Knöchel des FLACHEN Fußes (nerv-schwung): setzt der Fuß rollend auf (Ferse oder Vorfuß), steht
+                // sein Knöchel um die Rolle versetzt — sie zieht ab, die Rolle jedes Takts legt sie wieder an (sonst zählte sie doppelt)
+                const r0 =
+                    geht && rolle && rolle.roll
+                        ? this._gaitRollung(rolle, probe, ik)[0] * ((ik.wz || ik.wpl) / ik.wpl)
+                        : 0;
+                lock.x = foot.x - r0 * Math.sin(ik.yaw);
+                lock.z = foot.z - r0 * Math.cos(ik.yaw);
                 this._gaitSetzen(ik, probe, lock);
             }
             tx = lock.x;
@@ -869,7 +879,7 @@ class AnazhRealm_koerper_leib {
         leg.hip.getWorldPosition(hv);
         // der Vorlauf längs in das lotrechte Maß der Kette (das Becken ist längs ungleich skaliert, _gaitBeinMass)
         // der rollende Fuß im Gang (rolle aus der Pose): der Knöchel über der Stelle der Sohle, die trägt, die Sohle gekippt
-        const rollt = geht && rolle && rolle.roll > 0;
+        const rollt = !!(geht && rolle && rolle.roll);
         const [rx, ry] = this._gaitRollung(rollt && rolle, probe, ik);
         const vor =
             ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) + rx;
@@ -2657,8 +2667,11 @@ class AnazhRealm_koerper_leib {
         // der Sub-Strom (`seq`), nie zwei Achsen: Achsen-Namen, die sich nur im letzten Zeichen unterscheiden, tragen fast dieselbe
         // Gleichverteilte (FNV, r ≈ 0,96) — ein Paar daraus ist keine Normale
         const u = this._rollGenome(welt + "/" + String(kennung), "erbe").seq("erbe");
-        const n = () => L.gesetz().achsen.map(() => L.normal(u(), u()));
-        return { a: L.gruender(n()), e: L.umwelt(n()) };
+        // je Achse das Paar (a, e) hintereinander (erbe-geburt): die Größe zieht dieselben vier Gleichverteilten wie vor der
+        // zweiten Achse — der Gründer einer Kennung behält seine Größe, die Scheu kommt dahinter
+        const [na, ne] = [[], []];
+        for (let i = 0; i < L.gesetz().achsen.length; i++) (na.push(L.normal(u(), u())), ne.push(L.normal(u(), u())));
+        return { a: L.gruender(na), e: L.umwelt(ne) };
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE

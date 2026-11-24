@@ -2061,8 +2061,7 @@ async function starte() {
                 const U = window.__buehneUhr,
                     T0 = U.T,
                     S = auf.tiefe,
-                    nah = new Uint8Array(W * H),
-                    B = r.constructor.WIND_BOE;
+                    nah = new Uint8Array(W * H);
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
                     nah[p] = P?.distanceTo(cam.position) <= k.nahM ? 1 : 0;
@@ -2091,7 +2090,7 @@ async function starte() {
                     return o;
                 };
                 try {
-                    zeit = { dt: k.zeit, nahAnteil: nah.reduce(addiere, 0) / (W * H), tempo: B.omega / B.k, kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
+                    zeit = { dt: k.zeit, nahAnteil: nah.reduce(addiere, 0) / (W * H), tempo: r._boeWeg(T0 + 1) - r._boeWeg(T0), kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
                 } finally {
                     U.T = T0;
                 }
@@ -3863,7 +3862,7 @@ hauptLauf(async () => {
         // `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
-        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve = (uhren, png, taeter) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png, taeter })});`);
         try {
             for (const wahl of String(opt("--orte", "genesis,wiese")).split(",")) {
                 const [ort, sicht = "ego"] = wahl.split(":");
@@ -3876,6 +3875,12 @@ hauptLauf(async () => {
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
                 if (f) (m.fein = f.zeilen), Object.assign(m.schreiber, f.schreiber);
+                // DER TÄTER-PASS (licht-stetig): an beiden Uhren jedes reißenden Schritts das Bild in seine Beiträge zerlegt
+                // (`teile`: Sonne, Wurf, Himmel, Sterne, Lampen unter der gehaltenen Kamera) — das Urteil nennt den Träger der Stufe
+                const tu = LL.tagTaeterUhren((m.zeilen || []).concat(m.fein || []));
+                const t = tu.length && (await kurve(tu, false, true)).ergebnis;
+                if (tu.length) m.taeter = (t && t.zeilen) || []; // ohne Zeilen nennt die Wand die Stufe „ohne Täter-Pass“
+                if (t) Object.assign(m.schreiber, t.schreiber);
             }
         } finally {
             if (halt) await halt();

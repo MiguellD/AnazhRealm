@@ -482,6 +482,82 @@ function koennenUrteil(C0, mutante = null) {
     return { rot, greis, min: Math.min(...L), max: Math.max(...L), median30, start: K(S).lauf };
 }
 
+// DIE VERBEN AUS DER GESTALT (nerv-bewegung; Meisterkarte 2 mensch.sport.koerper S1; koerper `leibVerben` · `VERB_TAFEL`): der Leib
+// der START_PARAMS, wie der Wirt ihn liest (`leibWerte` über fx.bewegung — dieselben Getter, die `Gesetz("koerper:bewegung.*")`
+// trägt), gegen das Profi-Band der Station k2-mensch-sport (die Eichung koerper fx.bewegung: Gehen 1,5 · Sprint 6,8 m/s · Sprung
+// 0,53 m, je ± 10 %; Bohannon 1997 · Weyand 2000 · Samozino 2008). V1–V3 die drei Zahlen; V4 der Konsum: die Werte des Leibs SIND
+// das Gesetz (kein Literal neben ihm); V5 der Sprint ist ein Punkt des Gangs (tetrapoda `gangSchritt` an der Gang-Zeile des
+// Menschen: 2·Tastgrad·Φ = 1 — die Kraft der Beine trägt den Schritt, der Fuß gleitet nie); V6 die Masse kürzt sich (der Abdruck
+// eines Leibs von 55–110 kg ist seine Sprungkraft, ± 1e-9 — kein Bezugs-Literal); V7 die Verb-Tafel trägt elf Zeilen, die sechs am
+// Gerät sind die Verben des Geräte-Gesetzes (VERB_GESETZ), Gehen und Sprint tragen den Schwung (die zwei Enden der Gang-Pose), keine
+// Zeile trägt Prosa (`ziele`/`kontakt` fielen in nerv-schwung: kein Leser steuerte sie, 0 von 11); V8 die Gang-Pose ist EINE Kurve
+// auf der Froude-Achse (`leibSchwung`): am Gehen der Schwung des Gehens, am Sprint der des Sprints, dazwischen steigt das Knie
+// stetig (kein Sprung über 40 % der Spanne je 1/40 des Tempos, heute 18 %), und die Enden liegen im Profi-Band (Novacheck 1998 · Perry 1992 · Mann & Herman 1985: Knie im Schwung Gehen 52–68°,
+// Sprint ≥ 120°, Knie beim Aufsatz des Sprints im Gesetz 25–30° (die Welt trägt mit dem Stand-Lock 4° mehr: 30–40°), der Ellbogen des Sprints 80–100°). Täter (Selbsttest): „Literal" (die
+// Eichung vom 17.07.: 1,15 · ×4,5 · 2,6), „refKg" (die Kraft am Bezugs-Leib 89 kg), „gleitet" (der Sprint als Vielfaches des
+// Gehens), „Tafel" (fünf Zeilen), „Prosa" (eine Zeile trägt wieder Ziele), „Stufe" (die Pose springt am Wechsel vom Gehen zum Sprint). Leser: der Wirt (`computePlayerStats` → `_statsFromTags`, `_sprungKraft`) und das Körper-Studio.
+const VERBEN_SOLL = { gehen: [1.5, 0.15], sprint: [6.8, 0.68], sprung: [0.53, 0.053] };
+const VERBEN_TAETER = "koerper-core.js fx.bewegung (speed.base · sprintMul · jumpPower.base) · leibVerben · leibSprungKraft · VERB_TAFEL · leibSchwung";
+function verbenUrteil(C0, mutante = null) {
+    const rot = [];
+    const S = C0.START_PARAMS;
+    const ohneGesetz = typeof C0.leibVerben !== "function" || !C0.VERB_TAFEL;
+    if (ohneGesetz) rot.push("V4 der Kern trägt kein Gesetz der Verben aus der Gestalt (koerper leibVerben · VERB_TAFEL)");
+    const V = ohneGesetz ? null : C0.leibVerben();
+    let werte = (d) => C0.leibWerte(d);
+    let kraft = (jp, m) => C0.leibSprungKraft(jp, m);
+    let tafel = C0.VERB_TAFEL || {};
+    if (mutante === "Literal") werte = () => ({ speed: 1.15, sprintSpeed: 1.15 * 4.5, jumpPower: 2.6 });
+    if (mutante === "refKg") kraft = (jp) => 89 * (9.81 + (jp * jp) / (2 * 0.4));
+    if (mutante === "gleitet") werte = (d) => ((w) => Object.assign({}, w, { sprintSpeed: w.speed * 4.5 }))(C0.leibWerte(d));
+    if (mutante === "Tafel") tafel = Object.fromEntries(Object.entries(C0.VERB_TAFEL).slice(0, 5));
+    if (mutante === "Prosa") tafel = Object.assign({}, C0.VERB_TAFEL, { gehen: Object.assign({}, C0.VERB_TAFEL.gehen, { ziele: { vor: 1 }, kontakt: ["ferse"] }) });
+    let schwung = (fr, lauf) => C0.leibSchwung(fr, lauf, {});
+    if (mutante === "Stufe") schwung = (fr, lauf) => C0.leibSchwung(fr, lauf > 0.5 ? 1e6 : 0, {});
+    const G = C0.LEIB.sprung.refG;
+    const w = werte(S);
+    const abdruck = (m) => C0.leibAbdruck(kraft(w.jumpPower, m), m, G);
+    const h = abdruck(80.94) ** 2 / (2 * G);
+    for (const [n, x, sp] of [["V1 Gehen", w.speed, "gehen"], ["V2 Sprint", w.sprintSpeed, "sprint"], ["V3 Sprung", h, "sprung"]]) {
+        const [soll, tol] = VERBEN_SOLL[sp];
+        if (!(Math.abs(x - soll) <= tol)) rot.push(`${n} ${x.toFixed(3)} verfehlt ${soll} ± ${tol}`);
+    }
+    if (ohneGesetz) return { rot, w, h, V };
+    const B = C0.PRESETS.mensch.fx.bewegung;
+    const nah = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
+    if (!(nah(w.speed, V.gehen) && nah(w.sprintSpeed, V.sprint) && nah(w.jumpPower, V.abdruck) && nah(B.speed.base * B.sprintMul, V.sprint)))
+        rot.push(`V4 die Werte des Leibs sind nicht das Gesetz (gehen ${w.speed.toFixed(4)}/${V.gehen.toFixed(4)}, sprint ${w.sprintSpeed.toFixed(4)}/${V.sprint.toFixed(4)}, Abdruck ${w.jumpPower.toFixed(4)}/${V.abdruck.toFixed(4)})`);
+    const Z = Object.assign({}, B.gang, { g: G });
+    const gs = globalThis.__tetrapodaCore.gangSchritt(w.sprintSpeed, V.beinM, Z, "galopp");
+    const bilanz = 2 * gs.tast * V.kraft;
+    if (!(Math.abs(bilanz - 1) <= 1e-6)) rot.push(`V5 der Sprint ist kein Punkt des Gangs (2·Tastgrad·Φ ${bilanz.toFixed(4)}, Soll 1: Tastgrad ${gs.tast.toFixed(4)}, Φ ${V.kraft.toFixed(3)})`);
+    const ab = [55, 70, 80.94, 89, 110].map(abdruck);
+    const spanne = Math.max(...ab) / Math.min(...ab) - 1;
+    if (!(spanne <= 1e-9 && nah(ab[2], w.jumpPower))) rot.push(`V6 die Masse kürzt sich nicht (Abdruck 55–110 kg ${ab.map((x) => x.toFixed(3)).join("/")} gegen die Sprungkraft ${w.jumpPower.toFixed(3)})`);
+    const zeilen = Object.entries(tafel);
+    const geraet = zeilen.filter(([, z]) => z.geraet).map(([k]) => k).sort().join(",");
+    const prosa = zeilen.filter(([, z]) => "ziele" in z || "kontakt" in z).map(([k]) => k);
+    const FELDER = ["knie", "knieAufsatz", "aufsatz", "rumpf", "arm", "ellbogen"];
+    const ohneSchwung = ["gehen", "sprint"].filter((k) => !(tafel[k] && tafel[k].schwung && FELDER.every((n) => Number.isFinite(tafel[k].schwung[n]))));
+    if (zeilen.length !== 11 || prosa.length || ohneSchwung.length || geraet !== Object.keys(C0.VERB_GESETZ).sort().join(","))
+        rot.push(`V7 die Verb-Tafel trägt ${zeilen.length} Zeilen (Soll 11), Prosa ohne Leser [${prosa.join(", ")}], ohne Schwung [${ohneSchwung.join(", ")}], am Gerät [${geraet}]`);
+    // V8: die Kurve über die Froude-Achse (das Gang-Gesetz gibt fr und lauf, wie der Takt sie liest: tetrapoda gangSchritt)
+    const TC = globalThis.__tetrapodaCore;
+    const kurve = [];
+    for (let i = 0; i <= 40; i++) {
+        const v = 0.5 + ((V.sprint - 0.5) * i) / 40, g = TC.gangSchritt(v, V.beinM, Z, "galopp");
+        kurve.push(schwung(g.fr, g.lauf));
+    }
+    const A = C0.VERB_TAFEL.gehen.schwung, Bs = C0.VERB_TAFEL.sprint.schwung, deg = (x) => (x * 180) / Math.PI;
+    const gehK = schwung(TC.gangSchritt(V.gehen, V.beinM, Z, "galopp").fr, TC.gangSchritt(V.gehen, V.beinM, Z, "galopp").lauf), spK = kurve[kurve.length - 1];
+    const sprungMax = Math.max(...kurve.slice(1).map((k, i) => Math.abs(k.knie - kurve[i].knie)));
+    const faellt = kurve.slice(1).some((k, i) => k.knie < kurve[i].knie - 1e-12);
+    const band = [["Knie im Schwung Gehen", deg(gehK.knie), 52, 68], ["Knie im Schwung Sprint", deg(spK.knie), 120, 140], ["Knie beim Aufsatz Sprint", deg(spK.knieAufsatz), 25, 30], ["Ellbogen Sprint", deg(spK.ellbogen), 80, 100]].filter(([, x, a, b]) => !(x >= a && x <= b));
+    if (!nah(gehK.knie, A.knie) || !nah(spK.knie, Bs.knie) || faellt || sprungMax > 0.4 * (Bs.knie - A.knie) || band.length)
+        rot.push(`V8 die Gang-Pose ist keine Kurve der Froude-Achse (Gehen ${deg(gehK.knie).toFixed(1)}°, Sprint ${deg(spK.knie).toFixed(1)}°, größter Sprung ${deg(sprungMax).toFixed(1)}°${faellt ? ", fällt" : ""}${band.map(([n, x, a, b]) => `, ${n} ${x.toFixed(1)}° außer ${a}–${b}`).join("")})`);
+    return { rot, w, h, V, tast: gs.tast };
+}
+
 // TEIL D — DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1; koerper `stoffstromHalter` · `stoffstromFassen`,
 // schmiede `STOFFSTROM`): Erz → Barren → Werkzeug. Zwei Öfen (die Werke zweier Schmiede, Same 4242 und 12345), die Halde aus dem
 // Samen 7, zwölf Hände; sieben Tage ab Tag 3, 6 Uhr, Stunde für Stunde über den Kern, wie der Wirt ihn ruft. D0 die Kette steht:
@@ -621,12 +697,15 @@ if (SELBSTTEST) {
     const sc = globalThis.__schmiedeCore;
     const sGut = !stoffstromUrteil(core, sc).rot.length;
     const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter])
+    // die Verben aus der Gestalt: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const vGut = !verbenUrteil(core).rot.length;
+    const verbenTaeter = [["Literal", "V1 Gehen"], ["Literal", "V3 Sprung"], ["refKg", "V6 die Masse kürzt sich nicht"], ["gleitet", "V5 der Sprint ist kein Punkt des Gangs"], ["Tafel", "V7 die Verb-Tafel"], ["Prosa", "V7 die Verb-Tafel"], ["Stufe", "V8 die Gang-Pose"]].map(([m, z]) => [vGut && verbenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Verben ${m} ${z}`]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle siebenundzwanzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle vierunddreißig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -647,6 +726,9 @@ for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper st
 if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
+const vb = verbenUrteil(core);
+for (const z of vb.rot) st.rot.push("VERBEN " + z + " — Täter: " + VERBEN_TAETER);
+console.log(`  VERBEN der Leib der START_PARAMS: Gehen ${vb.w.speed.toFixed(3)} · Sprint ${vb.w.sprintSpeed.toFixed(3)} m/s · Sprung ${vb.h.toFixed(3)} m (Soll 1,5 · 6,8 · 0,53 ± 10 %)${vb.V ? ` · Bein ${vb.V.beinM.toFixed(4)} m, Φ ${vb.V.kraft.toFixed(3)}, Tastgrad des Sprints ${vb.tast.toFixed(4)}` : ""}`);
 console.log(`  KÖNNEN lauf über das Gitter ${kn.min.toFixed(3)}–${kn.max.toFixed(3)} (Bezugs-Leib 1: die Mitte der Achsen mit 30 J) · der Median der Dreißigjährigen ${kn.median30.toFixed(4)} · START_PARAMS ${kn.start.toFixed(4)} · der Greis ohne Ton × ${kn.greis.toFixed(3)} des jungen Athleten`);
 console.log(`  BESTAND Tausch ${be.sinkt} · Füllung ohne Herstellung ${be.ohneHerstellung} · Wagen ${be.geladen} geladen, ${be.abgeladen} abgeladen · Stand nach 24 h ${be.leer24} · Herstellung ${be.her.toFixed(2)}, Verbrauch ${be.ver.toFixed(2)}`);
 urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; aus dem Stand ${st.s.map((x) => `${x.dv} m/s → höchstens ${x.vmax.toFixed(2)} m/s, Ruhe nach ${x.ruhe.toFixed(2)} s und ${x.weg.toFixed(1)} m`).join(" · ")}.`);

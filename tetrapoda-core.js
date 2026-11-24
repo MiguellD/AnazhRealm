@@ -1329,9 +1329,10 @@
         schrittBasis: 1.4,
         schrittFroude: 1.0,
         // DER TASTGRAD DER GANGART (K3, Alexander 1984, Hildebrand 1965): im Schritt steht jeder Fuß zwei Drittel des Takts
-        // (drei Füße tragen, Schritt 0,6–0,7), über die Schwelle des Trabs (GANG_FOLGE.froudeTrab × (1 + hysterese) bis
-        // zum Doppelten) fällt er auf tastgradTrab (die Diagonalen im halben Takt). Vorher stand der Fuß in Schritt und
-        // Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
+        // (drei Füße tragen, Schritt 0,6–0,7), im Trab tastgradTrab (die Diagonalen im halben Takt) — der Tastgrad folgt
+        // der GANGART (gangArt mit ihrer Hysterese), er springt mit dem Wechsel wie die Fußfolge (nerv-bewegung: vorher lief
+        // er über eine eigene Rampe Fr 0,6–1,2, der langsame Trab stand 0,65 und der Satz, im Trab bei Fr 1,5 gebacken, 0,53).
+        // Vorher stand der Fuß in Schritt und Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
         tastgrad: 0.65,
         tastgradTrab: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
@@ -1373,19 +1374,31 @@
         galopp: Object.freeze([0, 0.3 * Math.PI, 1.2 * Math.PI, 0.9 * Math.PI]),
         paddeln: Object.freeze([0, Math.PI, Math.PI, 0]),
         kopplung: 0.3,
-        // DIE HYSTERESE DES WECHSELS: wer geht, wechselt erst über froudeTrab × (1 + hysterese) in den Trab, wer trabt, erst
-        // unter froudeTrab × (1 − hysterese) zurück (ebenso am Galopp) — ein Folger, der um die Schwelle pendelt, wechselt
-        // nicht je Takt (Säuger wechseln hinauf später als hinab; Hoyt & Taylor 1981)
+        // DIE HYSTERESE DES WECHSELS (nerv-bewegung, Tiefe 2 NERV): HINAUF wechselt jedes Tier an der Froude-Zahl der Natur —
+        // froudeTrab und froudeGalopp SIND die Wechsel des anlaufenden Tiers (Heglund & Taylor 1988, 16 Arten 30 g–200 kg am
+        // beschleunigenden Laufband; der Wechsel am Schnitt der Energie-Kurven, Hoyt & Taylor 1981); HINAB hält es die
+        // schnellere Gangart bis unter froudeX × (1 − hysterese) (Lauf → Gehen auf dem bremsenden Band tiefer als Gehen →
+        // Lauf auf dem beschleunigenden, Segers 2006) — ein Folger, der um die Schwelle pendelt, wechselt nicht je Takt.
+        // Vorher lag die Hysterese beidseits der Natur (hinauf × 1,2): das anlaufende Tier trabte erst bei Fr 0,63 und
+        // galoppierte bei 3,15 (leben.tiere.bewegung#1 froudeAbw 26 %, die Station 23.11.)
         hysterese: 0.2,
     });
-    // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese
+    // DAS BAND JEDER GANGART (die EINE Quelle der Schwellen — gangArt wählt an ihm, die Proben lesen es): [von, bis) in der
+    // Froude-Zahl; von = die Schwelle hinab (die Gangart hält bis dort), bis = die Schwelle hinauf in die nächste
+    function gangBand(art) {
+        var h = GANG_FOLGE.hysterese,
+            fT = GANG_FOLGE.froudeTrab,
+            fG = GANG_FOLGE.froudeGalopp;
+        return art === "galopp" ? [fG * (1 - h), Infinity] : art === "trab" ? [fT * (1 - h), fG] : [0, fT];
+    }
+    // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese: hinauf an der Natur
+    // (bis des Bands), hinab an ihrem von
     function gangArt(vh, vorher) {
         var fr = vh * vh,
-            h = GANG_FOLGE.hysterese,
-            rang = vorher === "galopp" ? 2 : vorher === "trab" ? 1 : vorher ? 0 : -1;
-        var fT = GANG_FOLGE.froudeTrab * (rang < 0 ? 1 : rang >= 1 ? 1 - h : 1 + h),
-            fG = GANG_FOLGE.froudeGalopp * (rang < 0 ? 1 : rang >= 2 ? 1 - h : 1 + h);
-        return fr < fT ? "schritt" : fr < fG ? "trab" : "galopp";
+            art = vorher === "galopp" || vorher === "trab" ? vorher : "schritt";
+        while (art !== "schritt" && fr < gangBand(art)[0]) art = art === "galopp" ? "trab" : "schritt";
+        while (art !== "galopp" && fr >= gangBand(art)[1]) art = art === "schritt" ? "trab" : "galopp";
+        return art;
     }
     // DIE ZEILE DES GESETZES (K07, additiv): gangSchritt und gangFuss sind das EINE Gang-Gesetz für Vier- und Zweibeiner —
     // die Zeile Z trägt die Zahlen der Gestalt (der Mensch: koerper-core fx.bewegung.gang), ohne Zeile gilt GANG_GESETZ
@@ -1406,7 +1419,7 @@
             hub = gangZahl(G, "hub");
         var g = gangZahl(G, "g");
         if (!(v > gangZahl(G, "stand")) || !(L > 0) || !(g > 0))
-            return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub, art: "stand", folge: GANG_FOLGE.schritt };
+            return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub, art: "stand", folge: GANG_FOLGE.schritt, fr: 0, lauf: 0 };
         var vv = Math.min(v, gangZahl(G, "vMax"));
         var vh = vv / Math.sqrt(g * L);
         var mW = gangZahl(G, "maxWinkel");
@@ -1416,13 +1429,11 @@
         var tier = !(G.laufFroude > 0);
         var tL = gangZahl(G, "tastgradLauf"),
             fL = tier ? GANG_FOLGE.froudeGalopp : G.laufFroude;
-        if (tier) {
-            var fT = GANG_FOLGE.froudeTrab * (1 + GANG_FOLGE.hysterese);
-            var wT = Math.max(0, Math.min(1, (vh * vh - fT) / fT));
-            tast += (gangZahl(G, "tastgradTrab") - tast) * wT * wT * (3 - 2 * wT);
-        }
+        var art = gangArt(vh, vorher);
+        if (tier && art !== "schritt") tast = gangZahl(G, "tastgradTrab");
+        var w = 0;
         if (tL > 0 && fL > 0) {
-            var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
+            w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
             w = w * w * (3 - 2 * w);
             if (tier) sMax = 2 * L * Math.tan(mW + (gangZahl(G, "winkelLauf") - mW) * w);
             // im Lauf fegt das Bein höchstens seinen Winkel: der Fußweg bleibt bei sMax, der Tastgrad fällt mit dem Tempo
@@ -1432,8 +1443,10 @@
         }
         var lamMax = sMax / tast;
         var lam = Math.min(lamF, lamMax);
-        var art = gangArt(vh, vorher);
-        return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art] };
+        // fr = die Froude-Zahl des Schritts, lauf = das Gewicht des Wechsels Gehen → Laufen (0 … 1) (nerv-schwung, additiv): die
+        // Achse, auf der die Pose des Zweibeiners schwingt (koerper `leibSchwung`) — dieselben Zahlen, an denen hier Tastgrad, Hub
+        // und Gangart wechseln
+        return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art], fr: vh * vh, lauf: w };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
     // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π.
@@ -1446,10 +1459,30 @@
     // so weit, dass die Senke beim Aufsetzen vorn der beim Abheben hinten gleicht (gangVersatz; Saunders 1953, Kerrigan
     // 2001: die Ferse hebt die Senke des Doppel-Stands; Gard 2004: 4–5 cm). Vorher stand der Fuß flach bis zum Abheben,
     // das Becken des Gehens sank um 0,137 L (11 cm), das Knie knickte tief ein.
+    // DIE FERSEN-WIPPE (nerv-bewegung, additiv — die Tiere lesen sie nicht: ohne ferse/fersenWinkel/fersenFlach der Zeile setzt
+    // der Fuß flach auf, byte-gleich): der Fuß setzt mit der Ferse auf, die Zehen fersenWinkel über dem Boden, und rollt über
+    // die Ferse (ferse × R hinter dem Knöchel) bis zum flachen Fuß bei fersenFlach des Stands — der Knöchel steht um dy höher
+    // und um dx weiter hinten (phi < 0 in gangRolle). Perry 1992 (Gait Analysis, die drei Wippen: Ferse · Knöchel · Vorfuß;
+    // der Fuß flach am Ende der Lastübernahme, ~12 % des Zyklus). Bis hier fehlte die erste Wippe: im Gang der Profis
+    // (1,5 m/s, Bohannon 1997) sank das Becken 0,097 L (gate:tier-gang BECKEN, Soll ≤ 0,08).
+    function gangFersen(Z) {
+        return !!(Z && Z.ferse > 0 && Z.fersenWinkel > 0 && Z.fersenFlach > 0 && Z.fersenFlach <= Z.fersenAb);
+    }
+    // DIE ART DES AUFSATZES (nerv-schwung, additiv — die Tiere lesen sie nicht: ohne Fersen-Wippe 0, ohne aufsatzWinkel der Zeile
+    // die Ferse des Gehens, −fersenWinkel, byte-gleich): der Winkel des Fußes beim Aufsetzen, vorzeichenbehaftet — < 0 die Ferse
+    // zuerst (die Zehen gehoben, gangRolle dreht um die Ferse), 0 der flache Mittelfuß, > 0 der Vorfuß zuerst (die Ferse gehoben,
+    // gangRolle dreht um den Ballen). Bis fersenFlach des Stands rollt der Fuß aus ihm flach. Der Mensch trägt ihn als Funktion
+    // der Froude-Zahl (koerper `leibSchwung`: Gehen Ferse, Laufen Mittelfuß, Sprint Vorfuß — Novacheck 1998, Lieberman 2010).
+    function gangAufsatz(Z) {
+        if (!gangFersen(Z)) return 0;
+        return typeof Z.aufsatzWinkel === "number" && isFinite(Z.aufsatzWinkel) ? Z.aufsatzWinkel : -Z.fersenWinkel;
+    }
     function gangRolle(phi, R, Z) {
-        var lb = Z.ballen * R,
-            ha = Z.knoechel * R;
-        return { dx: lb * (1 - Math.cos(phi)) + ha * Math.sin(phi), dy: lb * Math.sin(phi) - ha * (1 - Math.cos(phi)) };
+        var l = (phi < 0 ? Z.ferse : Z.ballen) * R,
+            ha = Z.knoechel * R,
+            a = Math.abs(phi);
+        var d = l * (1 - Math.cos(a)) + ha * Math.sin(a);
+        return { dx: phi < 0 ? -d : d, dy: l * Math.sin(a) - ha * (1 - Math.cos(a)) };
     }
     function gangRollt(Z, R) {
         return !!(Z && Z.rollWinkel > 0 && Z.ballen > 0 && Z.knoechel >= 0 && Z.fersenAb >= 0 && Z.fersenAb < 1 && R > 0);
@@ -1457,26 +1490,33 @@
     // Rf = die Reichweite, an der der Fuß gemessen ist (ohne: R) — die gebeugte Kette (geduckt) hat denselben Fuß
     function gangVersatz(S, R, Z, Rf) {
         if (!gangRollt(Z, R) || !(S > 0)) return 0;
-        var e = gangRolle(Z.rollWinkel, Rf > 0 ? Rf : R, Z);
+        var e = gangRolle(Z.rollWinkel, Rf > 0 ? Rf : R, Z),
+            A = gangAufsatz(Z),
+            f = A ? gangRolle(A, Rf > 0 ? Rf : R, Z) : { dx: 0, dy: 0 };
         var lo = 0,
             hi = Math.min(S / 2, R);
         for (var i = 0; i < 24; i++) {
             var d = (lo + hi) / 2;
-            var a = Math.min(R, S / 2 - d),
+            var a = Math.min(R, Math.abs(S / 2 - d + f.dx)),
                 b = Math.min(R, Math.abs(S / 2 + d - e.dx));
-            if (R - Math.sqrt(R * R - a * a) > R - e.dy - Math.sqrt(R * R - b * b)) lo = d;
+            if (R - f.dy - Math.sqrt(R * R - a * a) > R - e.dy - Math.sqrt(R * R - b * b)) lo = d;
             else hi = d;
         }
         return (lo + hi) / 2;
     }
-    // der Roll-Winkel zur Phase u (rad, 0 … 2π, der Schwung füllt 0 … sw)
+    // der Roll-Winkel zur Phase u (rad, 0 … 2π, der Schwung füllt 0 … sw): im Schwung klingt der Vorfuß bis zur Mitte ab, dann
+    // heben sich die Zehen zum Auftritt (die Fersen-Wippe, < 0); im Stand rollt der Fuß über die Ferse bis fersenFlach, ab fersenAb
+    // über den Ballen
     function gangRollWinkel(u, sw, Z) {
-        var TAU = 2 * Math.PI;
+        var TAU = 2 * Math.PI,
+            A = gangAufsatz(Z);
         if (u < sw) {
-            var t = Math.max(0, 1 - (2 * u) / sw);
-            return Z.rollWinkel * t * t;
+            var t = Math.max(0, 1 - (2 * u) / sw),
+                t2 = A ? Math.max(0, (2 * u) / sw - 1) : 0;
+            return Z.rollWinkel * t * t + A * t2 * t2;
         }
         var s = (u - sw) / (TAU - sw);
+        if (A && s < Z.fersenFlach) return A * (1 - s / Z.fersenFlach) * (1 - s / Z.fersenFlach);
         var q = s > Z.fersenAb ? (s - Z.fersenAb) / (1 - Z.fersenAb) : 0;
         return Z.rollWinkel * q * q;
     }
@@ -1500,9 +1540,15 @@
         var sw = tast > 0 && tast < 1 && tast !== 0.5 ? TAU * (1 - tast) : Math.PI;
         var halb = sw === Math.PI;
         if (u >= sw) return { dz: S / 2 - (S * (u - sw)) / (halb ? Math.PI : TAU - sw), hub: 0 };
-        // Hermite von −S/2 (Abheben hinten) nach +S/2 (Aufsetzen vorn), beide Enden mit der Stand-Rate (rückwärts)
+        // Hermite von −S/2 (Abheben hinten) nach +S/2 (Aufsetzen vorn), beide Enden mit der Stand-Rate (rückwärts).
+        // DER SCHWUNG ÜBERHOLT DIE STAND-STRECKE NICHT (nerv-schwung, additiv — die Tiere lesen es nicht: ohne schwungTangente
+        // der Zeile byte-gleich): die Tangente der Enden ist höchstens schwungTangente × S je Schwung — beim Abheben faltet das
+        // Knie den Fuß unter das Gesäß, statt ihn mit dem Tempo des Bodens weiter nach hinten zu tragen, und vor dem Aufsetzen
+        // zieht er schon zurück. Mit der Stand-Rate wächst die Tangente wie (1 − Tastgrad) / Tastgrad: im Sprint (Tastgrad
+        // 0,20) 3,9 S — der Fuß fuhr 0,70 m hinter und 0,58 m vor die Hüfte, beide Knie gestreckt (der Spagat der Flugphase).
         var t = u / sw,
             m = halb ? -S : (-S * sw) / (TAU - sw);
+        if (Z && Z.schwungTangente > 0 && -m > Z.schwungTangente * S) m = -Z.schwungTangente * S;
         var h00 = 2 * t * t * t - 3 * t * t + 1,
             h10 = t * t * t - 2 * t * t + t,
             h01 = -2 * t * t * t + 3 * t * t,
@@ -1534,8 +1580,11 @@
         var sw = tast > 0 && tast < 1 ? TAU * (1 - tast) : Math.PI;
         var rollt = gangRollt(Z, R),
             versatz = rollt ? gangVersatz(S, R, Z, Rf) : 0;
-        var halbS = Math.min(S / 2 - versatz, R);
-        var oben = R - Math.sqrt(R * R - halbS * halbS);
+        // die Tiefe im Doppel-Stand: das vordere Bein (auf der Ferse, gangRolle(−fersenWinkel); ohne Fersen-Wippe flach) trägt
+        var A = rollt ? gangAufsatz(Z) : 0,
+            fv = A ? gangRolle(A, Rf > 0 ? Rf : R, Z) : { dx: 0, dy: 0 };
+        var halbS = Math.min(Math.abs(S / 2 - versatz + fv.dx), R);
+        var oben = R - fv.dy - Math.sqrt(R * R - halbS * halbS);
         var A = Z && Z.beckenHub > 0 ? Z.beckenHub * R : 0;
         var tg = gangZahl(Z, "tastgrad"),
             tl = Z && Z.tastgradLauf > 0 ? Z.tastgradLauf : tg;
@@ -2843,7 +2892,9 @@
     // Spieler fort ist. Die Kosten hängen am Auge: Stände nur binnen nahM, die Ankunft an einem Lauf baut je Takt
     // höchstens zelleJeTakt Zellen. DER LEIB: eine Bachforelle (Salmo trutta, 0,3 m)
     // als Doppel-Keil (Oktaeder) der Ausdehnung groesse (x quer, y hoch, z längs; Farbe sRGB), tiefe = sein Anteil der
-    // Wassertiefe über dem Bett.
+    // Wassertiefe über dem Bett. DER FISCH FOLGT DEM PEGEL (front-leben, Karte 2 leben.wasser.netz S1: Fisch-Hub ≥ 0,8 ×
+    // Pegel-Hub): steigt der Spiegel um dh, steigt der Stand um tiefe × dh — mit 0,4 stand er in der unteren Säule und hob
+    // sich mit 0,38 des Pegels (GTX 5b36f69a); der Rücken bleibt eine Leib-Höhe unter dem Spiegel (stamm `_fischTiefeY`).
     var FISCH_GESETZ = Object.freeze({
         zelleM: 6,
         anteil: 0.55,
@@ -2852,7 +2903,7 @@
         haltMs: 1.6,
         glieder: [1, 4],
         truppM: [1.6, 0.9],
-        tiefe: 0.4,
+        tiefe: 0.85,
         tempoMs: 0.7,
         wendeRad: 3,
         pendelM: 0.3,
@@ -5577,6 +5628,8 @@
         ANATOMIE_SOLL: ANATOMIE_SOLL,
         GANG_GESETZ: GANG_GESETZ,
         GANG_FOLGE: GANG_FOLGE,
+        gangBand: gangBand,
+        gangArt: gangArt,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
         gangBecken: gangBecken,

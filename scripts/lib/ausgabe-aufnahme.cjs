@@ -297,6 +297,7 @@ function bildUhren() {
         ["himmel", st.skyboxUniforms?.time, "value"],
         ["wasser", st.hydroSurfaceUniforms?.time, "value"],
         ["wind", wu.uWindTime, "value"],
+        ["böe-phase", wu.uBoePhase, "value"],
         ["wind-x", v2, "x"],
         ["wind-z", v2, "y"],
         ["böe", r, "_weatherWob"],
