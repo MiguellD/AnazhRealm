@@ -39,14 +39,16 @@
 //                                           Schwanz), Exit 7 + "gesetz-leer", wenn sie keine Station traegt
 //   offen <git-dir> <ref> <geraet> <kopf> <liste> [--anders <geraet2>]   → die Stationen der Liste ohne Eintrag in
 //                                           messung/<kopf8>-<geraet>.json am ref; mit --anders auch ohne ROT von <geraet2> am selben Kopf
-//                                           (dessen Mess-Datei am selben ref; stderr: die Zahl der uebersprungenen)
+//                                           (dessen Mess-Datei am selben ref; stderr: die Zahl der uebersprungenen); die NACHWACHE-SCHULD
+//                                           (24.11.): urteilte <geraet2> GRÜN und ist das juengste Urteil von <geraet> ROT, bleibt sie — vorn
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
 //   paare <repo> [anzahl]                   Paare am selben Kopf aus den Mess-Dateien von punkte-maschine (je Kopf + Summe)
 //   push-pfade <baum> <zweig> <geraet> <kopf|-> <botschaft>   die eigenen Geräte-Pfade nach <zweig>, OHNE Rebase (commit-tree, Retry)
 //   ungepusht <baum> <zweig> <geraet> <seit-datei>            → "<n> <seit>": Messungen des Geräts, die der Ursprung nicht trägt
 //   bestand <repo> <geraet>                 → der juengste Kopf der main-Linie, an dem das Geraet eine Mess-Datei traegt
 //   selbsttest                              die Reihe an einer Attrappe der Mess-Dateien (ohne Gerät, ohne git): der WIDERSPRUCH DER
-//                                           GERÄTE steht vorn, die Mutante ohne die Regel stellt ihn in den Schwanz (ROT am Täter)
+//                                           GERÄTE steht vorn, die Mutante ohne die Regel stellt ihn in den Schwanz (ROT am Täter); die
+//                                           NACHWACHE-SCHULD bleibt in `offen --anders` und steht vorn (Mutante nachwache-aus: sie fällt)
 "use strict";
 const fs = require("fs"), cp = require("child_process"), os = require("os"), path = require("path");
 const ZWEIG = process.env.RUNDE_ZWEIG || "koordination";
@@ -59,6 +61,8 @@ const ALARM_MIN = Number(process.env.RUNDE_ALARM_MIN || 15), WIEDER_MIN = Number
 const LANG_MIN = Number(process.env.REIHE_LANG_MIN || 10);
 // die Mutante des Selbsttests (reihe ohne den WIDERSPRUCH DER GERÄTE): nur `selbsttest` setzt sie
 const WIDERSPRUCH_AUS = process.env.RUNDE_MUTANTE === "widerspruch-aus";
+// die Mutante des Selbsttests (offen --anders ohne die NACHWACHE-SCHULD: jedes Urteil des anderen Geräts streicht die Station, wie bis 24.11.)
+const NACHWACHE_AUS = process.env.RUNDE_MUTANTE === "nachwache-aus";
 const WER = { GIT_AUTHOR_NAME: "MiguellD", GIT_AUTHOR_EMAIL: "87209049+MiguellD@users.noreply.github.com",
     GIT_COMMITTER_NAME: "MiguellD", GIT_COMMITTER_EMAIL: "87209049+MiguellD@users.noreply.github.com" };
 const jetzt = () => (process.env.RUNDE_JETZT ? new Date(process.env.RUNDE_JETZT) : new Date());
@@ -201,6 +205,38 @@ const hatEintrag = (m, s) => {
     if (startFehler(v)) return !!(u && String(u.zeit || "") >= String(v.zeit || "") && !apparatOffen(u));
     return !!(v || (u && !apparatOffen(u)));
 };
+// DAS JÜNGSTE URTEIL JE GERÄT ÜBER ALLE KÖPFE — EINE Lesart für die Reihe und für `offen`: je Station der jüngste Eintrag je Gerät aus
+// jeder Mess-Datei im Ordner (und den schon geladenen am Kopf, `dazu`: [geraet, mess-datei]); ein jüngeres UNGEMESSEN schlägt den
+// älteren Lauf, bei gleicher Zeit auch (wie urteil()). letzt: je Station die jüngste Fahrt des Geräts g (Zeit, Minuten — die Reihe)
+function juengstIn(mdir, drin, g, dazu = [], geraete = ["gtx", "radeon"]) {
+    const juengst = { gtx: {}, radeon: {} }, letzt = {};
+    const nimm = (gg, m) => {
+        const J = geraete.includes(gg) ? juengst[gg] : null;
+        if (!J || !m) return;
+        for (const [o, ung] of [[m.je || {}, false], [m.ungemessen || {}, true]])
+            for (const [id, e] of Object.entries(o)) {
+                if (!drin.has(id)) continue;
+                const z = String((e && e.zeit) || m.zeit || ""), u = ung || !e || !!e.ungemessen || startFehler(e);
+                if (!J[id] || z > J[id].z || (z === J[id].z && u)) J[id] = { z, u, e };
+                if (gg === g && (!letzt[id] || z > letzt[id].z)) letzt[id] = { z, min: Number(e && e.minuten) || 0 };
+            }
+    };
+    let dateien = [];
+    try { dateien = fs.readdirSync(mdir).filter((f) => /^[0-9a-f]{8}-(gtx|radeon)\.json$/.test(f) && geraete.includes(f.slice(9, -5))); } catch { /* ohne Baum: alle ohne Urteil */ }
+    for (const f of dateien) {
+        let m;
+        try { m = JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")); } catch { continue; }
+        nimm(f.slice(9, -5), m);
+    }
+    for (const [gg, m] of dazu) nimm(gg, m);
+    return { juengst, letzt };
+}
+// DAS EIGENE ROT HÄLT — EINE Lesart für die Reihe (der Widerspruch) und für `offen --anders` (die Nachwache-Schuld): das jüngste Urteil
+// von g über alle Köpfe ist ROT. Die Karte bucht die Sprosse dann nicht, auch wenn das andere Gerät GRÜN urteilt (vision/buche-2.cjs:
+// „überholt ist eine Messung nur durch eine Messung DESSELBEN Geräts“) — nur g selbst kann es lösen.
+const rotZuletzt = (J, g, id) => { const x = J[g][id]; return !!x && !x.u && !x.e.gruen; };
+// der Widerspruch der Reihe: das andere Gerät urteilte DANACH GRÜN (über alle Köpfe, nach der Zeit)
+const widerspruchIn = (J, g, anders, id) => { const y = J[anders][id]; return !WIDERSPRUCH_AUS && rotZuletzt(J, g, id) && !!y && !y.u && !!y.e.gruen && y.z > J[g][id].z; };
 
 const [was, ...arg] = process.argv.slice(2);
 const opt = (n) => { const i = arg.indexOf("--" + n); return i < 0 ? null : arg[i + 1]; };
@@ -364,23 +400,7 @@ if (was === "lies") {
         process.exit(0);
     }
     const anders = g === "gtx" ? "radeon" : "gtx";
-    const juengst = { gtx: {}, radeon: {} }, letzt = {};
-    let dateien = [];
-    try { dateien = fs.readdirSync(dir).filter((f) => /^[0-9a-f]{8}-(gtx|radeon)\.json$/.test(f)); } catch { /* ohne Baum: alle ohne Urteil */ }
-    const drinIds = new Set(ids);
-    for (const f of dateien) {
-        let m;
-        try { m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); } catch { continue; }
-        const gg = f.slice(9, -5), J = juengst[gg];
-        for (const [o, ung] of [[m.je || {}, false], [m.ungemessen || {}, true]])
-            for (const [id, e] of Object.entries(o)) {
-                if (!drinIds.has(id)) continue;
-                const z = String((e && e.zeit) || m.zeit || ""), u = ung || !e || !!e.ungemessen || startFehler(e);
-                // ein jüngeres UNGEMESSEN schlägt den älteren Lauf, bei gleicher Zeit auch (wie urteil())
-                if (!J[id] || z > J[id].z || (z === J[id].z && u)) J[id] = { z, u, e };
-                if (gg === g && (!letzt[id] || z > letzt[id].z)) letzt[id] = { z, min: Number(e && e.minuten) || 0 };
-            }
-    }
+    const { juengst, letzt } = juengstIn(dir, new Set(ids), g);
     const anspruch = new Set(), jeZweig = new Map(), stelle = new Map();
     if (opt("anspruch")) {
         let t = "";
@@ -425,7 +445,7 @@ if (was === "lies") {
     // Geräten, und kein Lauf fragte die GTX je wieder): ein ROT dieses Geräts, dem das ANDERE Gerät danach GRÜN widersprach, ist kein
     // bekanntes ROT, sondern ein Urteil, das am heutigen Kopf fehlt — K2 (vorn), nie K4. Leser: die Reihe beider Dienste (radeon-dienst.sh,
     // landung-dienst.sh); Selbsttest: `node runde.cjs selbsttest` (die Mutante ohne diese Regel stellt den Fall in den Schwanz).
-    const widerspruch = (id) => { const x = juengst[g][id], y = juengst[anders][id]; return !WIDERSPRUCH_AUS && !!x && !x.u && !x.e.gruen && !!y && !y.u && !!y.e.gruen && y.z > x.z; };
+    const widerspruch = (id) => widerspruchIn(juengst, g, anders, id);
     const klasse = (id) => { if (anspruch.has(id)) return "K1"; const x = juengst[g][id] || juengst[anders][id]; if (!x || x.u) return "K2"; if (x.e.gruen) return "K3"; if (widerspruch(id)) return "K2"; const t = String(x.e.grund || x.e.zahl || ""); return SCHWANZ.K6.test(t) ? "K6" : SCHWANZ.K5.test(t) ? "K5" : "K4"; };
     const lang = (id) => (letzt[id] && letzt[id].min >= LANG_MIN ? 1 : 0);
     const ord = (xs) => xs.map((id, i) => ({ id, i })).sort((a, b) => lang(a.id) - lang(b.id) || ((letzt[a.id] || {}).z || "").localeCompare((letzt[b.id] || {}).z || "") || a.i - b.i).map((x) => x.id);
@@ -506,10 +526,23 @@ if (was === "lies") {
     const ANDERS = opt("anders"), ma = ANDERS ? lade(ANDERS) : null;
     const urteilAnders = (s) => !!ma && /^(GRUEN|ROT)$/.test(urteil(ma, s) || "");
     const ids = liste(String(l || "").replace("|", ","));
-    const ueber = ids.filter((s) => !hatEintrag(m, s) && urteilAnders(s)).length;
+    // DIE NACHWACHE-SCHULD (Koordinator 24.11. 19:40; Runde 24 an der Radeon: jahreslauf#2 und kraft#2 — Radeon ROT am c445936d, GTX
+    // GRÜN am a8dd22b5 und danach nie ROT; die Karte hält das ROT der Radeon, bis die Radeon selbst GRÜN urteilt, und `offen --anders`
+    // strich die Station aus ihrer Liste, sobald die GTX sie am Kopf urteilte — die Sprosse buchte nie): urteilt das andere Gerät am
+    // Kopf GRÜN und ist das jüngste Urteil von g über alle Köpfe ROT (rotZuletzt, dieselbe Lesart wie die Reihe), fällt die Station
+    // nicht — sie steht VORN in der Liste, die g fährt. Das GRÜN am Kopf IST das Urteil über den jüngeren Code (nie eine Uhr-Frage: eine
+    // nachgelieferte alte Akte trägt eine spätere Zeit). Gelesen nur, wenn das andere am Kopf GRÜN urteilte: die Mess-Dateien von g im
+    // Ordner (alle Köpfe) und die am Kopf
+    const gruenAnders = ANDERS ? ids.filter((s) => !hatEintrag(m, s) && urteil(ma, s) === "GRUEN") : [];
+    const J = gruenAnders.length && !NACHWACHE_AUS ? juengstIn(path.join(dir, MDIR), new Set(gruenAnders), g, [[g, m]], [g]).juengst : null;
+    const schuld = (s) => !!J && urteil(ma, s) === "GRUEN" && rotZuletzt(J, g, s);
+    const offen = ids.filter((s) => !hatEintrag(m, s) && (!urteilAnders(s) || schuld(s)));
+    const vorn = offen.filter(schuld);
+    const ueber = ids.filter((s) => !hatEintrag(m, s) && urteilAnders(s) && !schuld(s)).length;
     process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length +
-        (ANDERS ? " · übersprungen, geurteilt auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") + "\n");
-    console.log(ids.filter((s) => !hatEintrag(m, s) && !urteilAnders(s)).join(","));
+        (ANDERS ? " · übersprungen, geurteilt auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") +
+        (vorn.length ? " · Nachwache-Schuld vorn (eigenes ROT, GRÜN von " + ANDERS + " danach): " + vorn.join(",") : "") + "\n");
+    console.log([...vorn, ...offen.filter((s) => !schuld(s))].join(","));
 } else if (was === "faelle") {
     const [repo, g, vorher, kopf, l] = arg;
     const git = gitIn(repo), zeig = zeigIn(repo);
@@ -699,7 +732,23 @@ if (was === "lies") {
     const ok = jetztR.vorn.join(",") === "w.a#1" && jetztR.schwanz.length === 3 && mut.vorn.length === 0 && mut.schwanz.includes("w.a#1");
     console.log((ok ? "GRÜN" : "ROT") + " WIDERSPRUCH DER GERÄTE: vorn " + (jetztR.vorn.join(",") || "-") + " · Schwanz " + (jetztR.schwanz.join(",") || "-") +
         " · Mutante ohne die Regel: vorn " + (mut.vorn.join(",") || "-") + " · Schwanz " + (mut.schwanz.join(",") || "-"));
-    process.exit(ok ? 0 : 1);
+    // DIE NACHWACHE-SCHULD an einer Attrappe des Baums (Koordinator 24.11. 19:40; jahreslauf#2, kraft#2): am Kopf 33333333 urteilte die
+    // GTX n.a#1 · n.d#1 · n.e#1 · n.f#1 GRÜN und n.c#1 ROT, n.b#1 nichts. Die Radeon: n.a#1 ROT am 11111111 (die Schuld) · n.c#1 ROT (das
+    // ROT der GTX streicht) · n.d#1 GRÜN (ihr GRÜN, nichts zu lösen) · n.e#1 ROT, danach GRÜN am 22222222 (gelöst) · n.f#1 ROT mit einer
+    // späteren Uhr als das GRÜN der GTX (die nachgelieferte alte Akte — die Schuld bleibt). `offen --anders gtx` → „n.a#1,n.f#1,n.b#1“:
+    // die Schuld vorn; die Mutante ohne die Regel (RUNDE_MUTANTE=nachwache-aus) → „n.b#1“
+    const tb = fs.mkdtempSync(path.join(os.tmpdir(), "runde-schuld-")), md = path.join(tb, MDIR);
+    fs.mkdirSync(md, { recursive: true });
+    fs.writeFileSync(path.join(md, "11111111-radeon.json"), JSON.stringify({ je: { "n.a#1": e(false, "2026-11-21T10:00:00Z"), "n.c#1": e(false, "2026-11-21T10:00:00Z"), "n.d#1": e(true, "2026-11-21T10:00:00Z"), "n.e#1": e(false, "2026-11-21T10:00:00Z"), "n.f#1": e(false, "2026-11-25T10:00:00Z") } }));
+    fs.writeFileSync(path.join(md, "22222222-radeon.json"), JSON.stringify({ je: { "n.e#1": e(true, "2026-11-22T10:00:00Z") } }));
+    fs.writeFileSync(path.join(md, "33333333-gtx.json"), JSON.stringify({ je: { "n.a#1": e(true, "2026-11-24T10:00:00Z"), "n.c#1": e(false, "2026-11-24T10:00:00Z"), "n.d#1": e(true, "2026-11-24T10:00:00Z"), "n.e#1": e(true, "2026-11-24T10:00:00Z"), "n.f#1": e(true, "2026-11-24T10:00:00Z") } }));
+    const offenS = (env) => String(cp.spawnSync(process.execPath, [__filename, "offen", tb, "-", "radeon", "3333333300000000000000000000000000000000", "n.b#1,n.c#1,n.d#1,n.e#1,n.a#1,n.f#1|", "--anders", "gtx"],
+        { encoding: "utf8", env: { ...process.env, ...env }, windowsHide: true }).stdout || "").trim();
+    const os1 = offenS({ RUNDE_MUTANTE: "" }), os2 = offenS({ RUNDE_MUTANTE: "nachwache-aus" });
+    fs.rmSync(tb, { recursive: true, force: true });
+    const ok2 = os1 === "n.a#1,n.f#1,n.b#1" && os2 === "n.b#1";
+    console.log((ok2 ? "GRÜN" : "ROT") + " NACHWACHE-SCHULD: offen --anders gtx „" + os1 + "“ (Soll n.a#1,n.f#1,n.b#1 — die Schuld vorn) · Mutante ohne die Regel „" + os2 + "“ (Soll n.b#1)");
+    process.exit(ok && ok2 ? 0 : 1);
 } else {
     console.log("runde.cjs lies|anlegen|stand|durch|weiter|alarm|reihe|offen|faelle|paare|bestand|selbsttest — siehe Kopf der Datei");
     process.exit(2);
