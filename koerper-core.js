@@ -5705,6 +5705,16 @@
         var bis = Math.max(T.w0 - (bM ? TAGES_GESETZ.besuchH : 0), T.wach + T.morgenH);
         return [bis - T.morgenH, bis];
     }
+    // DAS FENSTER DES MARKTS EINES MENSCHEN (mensch.menge.bild#2): [von, bis) in Stunden der Uhr (samt dem Versatz seiner Rolle) —
+    // sein Gang über den Markt mit und ohne den Besuch des Morgens (`_morgenGang`), vereint. Leser: der Wirt teilt den Stand am
+    // Platz nach ihm (`_bewohnerListe`): wer zu dieser Stunde nicht am Markt steht, teilt seinen Stand mit ihm.
+    function tagesMarkt(same, rolle) {
+        var T = _tagesWenden(same, rolle),
+            v = T.R.versatzH || 0,
+            mO = _morgenGang(T, false),
+            mB = _morgenGang(T, true);
+        return [Math.min(mO[0], mB[0]) + v, Math.max(mO[1], mB[1]) + v];
+    }
     // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
     // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
     // (orte.spiel), rund um die Uhr, trocken und gesund; ein Ort ist der gereichte Ort mit drinnen oder davor (die Orte eines
@@ -11132,6 +11142,7 @@
         tagesBindung: tagesBindung,
         tagesWege: tagesWege,
         tagesGaenge: tagesGaenge,
+        tagesMarkt: tagesMarkt,
         tagesPlan: tagesPlan,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,

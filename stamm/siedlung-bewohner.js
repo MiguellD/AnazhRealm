@@ -641,6 +641,7 @@ class AnazhRealm_siedlung_bewohner {
         if (!TC || typeof TC.zielWahl !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:zielWahl");
         if (typeof TC.wegLaengen !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:wegLaengen");
         if (typeof KC.tagesWege !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesWege");
+        if (typeof KC.tagesMarkt !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesMarkt");
         const BW = AnazhRealm.BEWOHNER;
         const plan = S.plan;
         const belegt = new Map(); // das Raster des Raums (`frei`): je Zelle x, z, x, z …
@@ -1258,6 +1259,33 @@ class AnazhRealm_siedlung_bewohner {
                 wer.rolle = wer.beruf = rolle;
                 wer.orte.werk = st;
             }
+        }
+        // DER STAND AM MARKT GEHÖRT SEINER STUNDE (mensch.menge.bild#2, koerper `tagesMarkt`): der Stand, den ein Mensch bei seiner
+        // Geburt am Platz nahm (`platzStand`), trägt ihn nur in der Stunde seines Gangs über den Markt — wer bis hier keinen
+        // fand, teilt einen, dessen Leute zu seiner Stunde nicht dort stehen (ihre Fenster schneiden sich nicht). Wer an seinem
+        // Stand auch Werk, Tisch oder Abend hat (der Posten der Wache, das Spiel des Kinds), teilt ihn nie. Bis hier gehörte jeder
+        // Stand einem für den ganzen Tag: an stadt-voll trugen 377 Stände (135 im Rechteck, 242 an seinem Rand) 377 von 1 356
+        // Menschen, die übrigen 979 standen in der Stunde ihres Markts vor ihrer Tür — um 8 Uhr sah die Station 84 im Bild.
+        const schicht = new Map(); // Stand → die Fenster seiner Leute, oder null (er trägt einen den ganzen Tag)
+        for (const b of liste) {
+            const st = b.orte.platz;
+            if (!st || schicht.get(st) === null) continue;
+            const ganz = b.orte.werk === st || b.orte.mahl === st || b.orte.abend === st;
+            if (ganz) schicht.set(st, null);
+            else schicht.set(st, [...(schicht.get(st) || []), KC.tagesMarkt(b.same, b.rolle)]);
+        }
+        const staende = [...schicht.keys()]; // in der Reihe ihrer Geburt: erst das Rechteck, dann sein Rand
+        for (const b of liste) {
+            if (b.orte.platz) continue;
+            yield;
+            const f = KC.tagesMarkt(b.same, b.rolle);
+            const st = staende.find((s) => {
+                const l = schicht.get(s);
+                return !!l && l.every(([von, bis]) => bis <= f[0] || f[1] <= von);
+            });
+            if (!st) continue;
+            schicht.get(st).push(f);
+            b.orte.platz = st;
         }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
