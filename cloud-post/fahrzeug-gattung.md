@@ -110,3 +110,13 @@ nennt denselben Täter „wachsen skala 5.9958“ und „schwarm kohaesion 0.031
 | die Breite des Kahns 0,96 m gegen 1,04–1,16 m | das Gesetz rechnet die Breite am Bord ohne Dollbord-Überstand | `B` | `gate:vehicle-drive` A9 |
 | die Räder des Leiterwagens: europäische Maße unbelegt | nur US-Museumsmaße | `radR`, `radVorn` | FUND-REGISTER (Zweig koordination) |
 | das Boot trägt den Spieler nicht über das Wasser | das Fahr-Gesetz liest `art.medium` wasser noch nicht (der Kern nennt es, die Fahrt fährt an Land) | `exportDrive.art` | `gate:vehicle-drive` |
+
+## Stand beim Kontowechsel (24.11. 15:40, kein Push)
+
+Lokal grün auf 5febf0d4: fahr-leben (FK 63 Läufe, FK2, L9 boot und karren: Kopf offen, Anker 0,00, außen 0), asset-contract (Gestalten-Lügen 0),
+regler-wirkt Teil 1 (134/134), kreatur-takt Teil 1/3 (EXIT 0). Rot: settlement O Auto-Dorf „fremde Bauten im Erdbau 2“
+(`fahrzeug_kompakt_fwd`, `fahrzeug_suv` am Zweit-Dorf −7,−7), in zwei lokalen Läufen gleich; auf 86697613 (CI) und main 499f8b57 (CI) grün.
+Täter unbenannt: der nächste Handgriff ist der Lauf mit den Orten der fremden Wagen (`fremdOrt`: Lage, Wende, Anleger) gegen den Anleger;
+danach die Familien-Schritte aus check.yml (vehicle-contract, nervensystem-vehicle, vehicle-drive, gegenstand-stoff, garage-labor,
+boot-rettung, boot-stage, erstarren, welt-boot, warm-start, mp-sync, hitch-telemetrie Teil 1; Läufer: scratchpad `w/familie.sh`).
+Leser: `gate:settlement`.
