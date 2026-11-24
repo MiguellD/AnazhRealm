@@ -1538,11 +1538,20 @@
     // hinter ihm fällt die Linie zum `nacken` (die Höhe des Ohrläppchens), dazwischen gerade. Bis hier trug die Haut den Ton der
     // Kappe überall, wo ihr Ellipsoid sie tiefer umschloss als die Form des Gesichts: eine dicke Kappe (afro 0,24) färbte Wange,
     // Kiefer und Hals bis zum Kragen — die Sturmhaube —, jede Kappe den Hals hinter dem Ohr.
-    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]) });
+    // DIE STIRN (front-leben, mensch.leib.gesicht#1 augeFrei): vor der Schläfe steigt die Linie zum Haar-Ansatz der Stirn — ab z =
+    // `stirn` liegt sie auf dem Ansatz des Kanons (labProportionen hairlineY, 0,91 Kopf-Segment: dieselbe Linie, über der KOPF_SOLL
+    // haarLinie 0,8 der Kopf-Höhe das Haar verlangt), dazwischen gerade. Bis hier galt die Linie der Schläfe (0,33, unter dem Auge
+    // 0,37) bis an die Front: die Kappe des krausen Haars (afro 0,24, locken 0,14 dick) umschloss Stirn und Augen, ihre Strähnen lagen
+    // über der Iris (augeFrei 0,742–0,876 an den Samen 0, 2, 3 — GTX und Werkbank gleich, verdeckt von `kopf/hair`).
+    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]), stirn: 0.25 });
+    var _haarStirnY = null;
     function haarGrenze(z) {
         var a = HAAR_GRENZE.schlaefe,
-            b = HAAR_GRENZE.nacken;
-        if (z >= a[0]) return a[1];
+            b = HAAR_GRENZE.nacken,
+            s = HAAR_GRENZE.stirn;
+        if (_haarStirnY === null) _haarStirnY = _labKanon().hairlineY;
+        if (z >= s) return _haarStirnY;
+        if (z >= a[0]) return a[1] + ((_haarStirnY - a[1]) * (z - a[0])) / (s - a[0]);
         if (z <= b[0]) return b[1];
         return b[1] + ((a[1] - b[1]) * (z - b[0])) / (a[0] - b[0]);
     }
