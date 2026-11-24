@@ -61,12 +61,10 @@ in ihre Leitern; „erreicht“ ist `heute` der Leiter am selben Stand:
 | E Profi-Band | `same.preis.takt` (ABAB Wiese + Genesis, Ego + Third, beide Geräte: S 2) und der Preis P in jeder Sprosse | 1/7 | die Wände CPU-Takt p95 ≤ 5,8 ms, ≤ 208 Befehle, ≤ 680k Dreiecke |
 | F Prüfplatz | `mensch.sport.regeln`, `mensch.sport.arena`, `mensch.macht.krieg` | 0/8 · 0/7 · 1/9 | der Ort selbst (EIN Plan: Rondell mit zehn Toren, Park und Teich, Zoo), die Schaukel nach dem Pendel, die Strecke (Runde 55–65 s, 18–22 m Flug) |
 
-**Vorprüfungen der Wolke** (Welle — der Bericht eines Zweigs an die Station, er fällt mit seinem Merge):
-
-| Dokument                         | Zweck                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------- |
-| `cloud-post/stoffstrom-kette.md` | Die Vorprüfung `mensch.wirtschaft.stoffstrom#1` — Erz → Barren → Werkzeug, Zahlen, Linse. |
-| `cloud-post/erbe-geburt.md`      | Der Zwischenstand `leben.evolution` — Erbe und Scheu von den Eltern zum Kind, Zahlen.     |
+**Vorprüfungen der Wolke** (Welle — der Bericht eines Arbeiter-Zweigs an die Station): `cloud-post/<zweig>.md`, je Zweig EIN
+Dokument (Kopf, je Sprosse Stand mit Zahl, Offenes mit Leser). Die Karte nennt die KLASSE, keine Zeile je Zweig: ein Zweig, der
+seinen Bericht mitbringt, fasst diese Karte nicht an — gate:betriebsgesetz (Zitat-Wand) richtet jeden Bericht wie jedes andere
+Dokument.
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
 -Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main.

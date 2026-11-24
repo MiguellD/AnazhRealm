@@ -371,7 +371,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.WIND_BOE;
         const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
-        const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
+        // DIE STÄRKE AM ORT (wetter-am-ort): der Wind-Kanal des Felds über (x, z) (`_wetterFeldAm`, ohne Relief: der Wind-Kanal
+        // trägt keins) — am Spieler das Feld seines Worts, fern die Front über dem Ort; bis hier wehte jeder Ort im Wort am Spieler
+        const wf = this._wetterFeldAm(x, z, tt, this._windFeldAus || (this._windFeldAus = {}), false);
+        const staerke = wf.wind * this._windWob(tt) * form;
         const ms = staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS;
         if (!aus) return { x: d.x, z: d.z, staerke, boe, form, ms };
         aus.x = d.x;
@@ -381,6 +384,18 @@ class AnazhRealm_stoff_material {
         aus.form = form;
         aus.ms = ms;
         return aus;
+    }
+    // DER WIND AM RAUCH (wetter-am-ort): der EINE Wind am Ort (`_windAt`: Richtung, Feld am Ort, Form, Böe) in der Höhe h über
+    // Grund — sein Betrag über das Profil des Kerns (phyto-core `windProfil`, Hellmann: der Wind am Ort gilt in 10 m). `grund`:
+    // der Wind am Boden, den der Leser schon fragte (der Brand je Zelle und Bild); `aus` wird gefüllt statt neu gebaut. Bis
+    // wetter-am-ort zog jeder Rauch in jeder Höhe mit dem Wind am Boden. Leser: die Fahne des Brands, der Rauch der Kamine, der
+    // Staub der Druckwelle.
+    _rauchWindAt(x, z, t, h, grund, aus) {
+        const w = grund || this._windAt(x, z, t, aus);
+        const o = aus || (grund ? {} : w);
+        if (o !== w) Object.assign(o, w);
+        o.ms = w.ms * globalThis.__phytoCore.windProfil(h);
+        return o;
     }
     // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: längs des Winds
     // sin(t·takt + 2π·ν) · laengs, quer cos(t·takt·quer + 2π·fract(256·ν))), die Weite Stärke × WEATHER_WIND_AMP × Böe des EINEN
@@ -655,7 +670,13 @@ class AnazhRealm_stoff_material {
     // Idempotent (setGroup ist ein Setter); ohne renderGroup-Export byte-alt. ═══
     // DER WIND-SATZ (EINE Stelle legt ihn an): Wind-Uhr, Wind-Stärke und die Richtung des aktiven Körpers (`uSunDir`,
     // Sonne oder Mond — `_dayNightApplyDirectionalLight` schreibt sie mit dem Richtlicht). Gras (Gegenlicht) und Boden
-    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer.
+    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer. DIE WETTERSEITE
+    // (`uWetterVon`, Welt-Einheitsvektor): woher die Fronten kommen — gegen ihren Zug (`_alterWind`, phyto-core `windGrund`:
+    // derselbe Wind, mit dem das Alter Silber, Algen und Moos an die Wetterseite legt, `_alterLage`), je Saat einmal gestellt
+    // (`_loopRender`); der Gefüge-Stoff wäscht dort (`_gefuegeStoff`). Eine Bühne ohne Welt trägt kein Wetter (0: der Term ist
+    // mittelfrei). Bis front-stoff kam das Wetter des Stoffs fest aus West-Südwest (fachwerk `GEFUEGE_GESETZ.wetterVon`,
+    // „Mitteleuropa“), das des Alters aus dem Wind der Saat — an stadt-voll (Zug nach NNO) wusch der Stoff die WSW-Seite, das
+    // Alter begrünte die NNW-Seite: zwei Wetterseiten an einem Haus.
     _windUniformsEnsure() {
         if (!this.state.windUniforms) {
             const { uniform } = THREE.TSL;
@@ -663,6 +684,7 @@ class AnazhRealm_stoff_material {
                 uWindTime: uniform(0.0),
                 uWindStrength: uniform(0.12),
                 uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
+                uWetterVon: uniform(new THREE.Vector3(0, 0, 0)),
             });
         }
         return this.state.windUniforms;

@@ -218,6 +218,12 @@ Satzes zeichnet die Züge als Funktion (stoff-gang `_gangSeite`), kein Dreieck u
 bewegt: `mensch-L2|beipack` und `mensch-L3|beipack`. Keine Klasse fällt, keine kommt (507); 505 Klassen byte-gleich — jede Ecke,
 jedes Gelenk, jedes Tier.
 
+Vertrags-Akt front-leben (23.11.2026, die Stirn trägt die Linie des Haars — Station mensch.leib.gesicht#1 `augeFrei`): vor der
+Schläfe steigt die Linie der Kappe zum Haar-Ansatz des Kanons (koerper `HAAR_GRENZE.stirn`, labProportionen `hairlineY`); bis hier
+galt die Schläfe bis an die Front, die Strähnen von afro und locken deckten die Iris. 7 Zeilen bewegt (der Start-Stil mittel trägt
+seine Stirn unter der Linie frei): `mensch-L0|hair|head`, `mensch-L0|haut|head`, `mensch-L1|haut|mensch`, `mensch-L2|leib|mensch`
+(980 → 986 Ecken), `mensch-L2|beipack`, `mensch-L3|leib|mensch`, `mensch-L3|beipack`; 509 von 516 Klassen byte-gleich.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

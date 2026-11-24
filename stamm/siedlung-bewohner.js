@@ -99,6 +99,7 @@ class AnazhRealm_siedlung_bewohner {
                     x: qq.x,
                     y: qq.y,
                     z: qq.z,
+                    g: this._terrainMacroSurfaceY(qq.x, qq.z, false), // der Grund unter dem Kamin: die Höhe des Teilchens über ihm
                     s: 1,
                     vy: G.vyBase + w() * G.vyRange,
                     dx: (w() - 0.5) * G.dxSpread,
@@ -106,14 +107,15 @@ class AnazhRealm_siedlung_bewohner {
                     q: qq.id,
                 });
         }
-        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen in seiner Höhe über dem Grund des Kamins,
+        // `_rauchWindAt`, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
         // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
         // eine eigene — bis hier zog der Rauch am Objekt vorbei mit dem ungeformten Wind (L.rauch 1,75 → 1,75)
         const aus = this._rauchWind || (this._rauchWind = {});
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            const w = this._windAt(T2.x, T2.z, this._bildZeit, aus);
+            const w = this._rauchWindAt(T2.x, T2.z, this._bildZeit, T2.y - T2.g, null, aus); // der Wind in seiner Höhe
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
@@ -963,7 +965,7 @@ class AnazhRealm_siedlung_bewohner {
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
-                    drehen: u, platz: u, weichen: null,
+                    drehen: u, platz: u, weichen: null, brand: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
@@ -1668,6 +1670,8 @@ class AnazhRealm_siedlung_bewohner {
                 if (b.ziel !== z0) this._bewohnerWecken(S, b);
             }
             if (S.planSoll >= N) S.planSoll = 0;
+            // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`): je Stand des Brand-Felds flieht, wer in der Gefahr steht oder hingeht
+            if (this._bewohnerBrandSchau(S, stunde)) anders = true;
             this._bewohnerVorlagen(S, p);
             if (this._bewohnerGangBacken(S, BW.gangJeTakt)) anders = true;
             // in der Reihe der Liste (wer geweckt oder besucht wurde, kam hinten dazu)
@@ -2224,11 +2228,112 @@ class AnazhRealm_siedlung_bewohner {
         return ort ? { ort, soll } : null;
     }
 
+    // DIE GEFAHR DES BRANDS (same.kopplung.ereignis#2, front-leben): die Quelle ist das EINE Brand-Feld (`state.brandFeld`,
+    // stamm/feld-brand.js) — kein zweites Feuer-Register. Gefahr trägt jede Zelle des Lebens-Rasters (LIFE_FIELD.cell), die
+    // brennt (`t0` gesetzt), und jede ihrer acht Nachbarinnen (der Saum: die Front kriecht im Gras eine Zelle in Minuten, wer am
+    // Saum steht, geht, bevor sie ihn erreicht) — je Zelle die früheste Zündung, die sie gefährdet (Schlüssel wie das Raster der
+    // Siedlung). Gebaut EINMAL je Stand des Felds (Uhr, Größe, Fortschritt der Zündungen), für jede Siedlung; ohne Brand null.
+    _bewohnerBrandGefahr() {
+        const bf = this.state.brandFeld;
+        if (!bf || !bf.size) return null;
+        const R = this._brandRest;
+        const k = this._brandUhr + ":" + bf.size + ":" + (R ? R.t + "/" + R.i : "-");
+        const H = this._bewohnerBrand;
+        if (H && H.k === k) return H;
+        const G = new Map();
+        for (const z of bf.values()) {
+            if (z.t0 === null) continue;
+            for (let i = -1; i <= 1; i++)
+                for (let j = -1; j <= 1; j++) {
+                    const q = (z.cx + i) * 2097152 + (z.cz + j);
+                    const t = G.get(q);
+                    if (t === undefined || z.t0 < t) G.set(q, z.t0);
+                }
+        }
+        return (this._bewohnerBrand = { k, G });
+    }
+
+    // DER ORT OHNE GEFAHR nächst (x, z): Ring um Ring der Zellen (bis `BEWOHNER.brandRinge`) die erste Zelle ohne Gefahr — ihr
+    // Punkt nächst (x, z), sonst ihre Mitte —, auf Land, nicht im Wasser, in keinem Grundriss; der nächste im ersten Ring, der
+    // einen trägt. Ohne einen: null (er bleibt, laut ist der Rufer).
+    _bewohnerBrandOrt(x, z, G) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
+        const frei = (q) => this._landAt(q.x, q.z) && !this._nassAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)); // prettier-ignore
+        let best = null;
+        let bd = Infinity;
+        for (let d = 0; d <= AnazhRealm.BEWOHNER.brandRinge && !best; d++)
+            for (let i = -d; i <= d; i++)
+                for (const [ix, iz] of d
+                    ? [
+                          [cx + i, cz - d],
+                          [cx + i, cz + d],
+                          [cx - d, cz + i],
+                          [cx + d, cz + i],
+                      ]
+                    : [[cx, cz]]) {
+                    if (G.has(ix * 2097152 + iz)) continue;
+                    const nah = { x: Math.min(Math.max(x, ix * cs + 1), (ix + 1) * cs - 1), z: Math.min(Math.max(z, iz * cs + 1), (iz + 1) * cs - 1) }; // prettier-ignore
+                    const q = frei(nah) ? nah : { x: (ix + 0.5) * cs, z: (iz + 0.5) * cs };
+                    const dq = Math.hypot(q.x - x, q.z - z);
+                    if (dq < bd && (q === nah || frei(q))) [best, bd] = [q, dq];
+                }
+        return best;
+    }
+
+    // DIE SCHAU DER SIEDLUNG vor der Front (`_tickBewohner`, je Stand des Felds): wer in der Gefahr steht (draußen oder drinnen)
+    // oder dessen Ziel in ihr liegt, flieht an den nächsten Ort ohne Gefahr (`_bewohnerBrandOrt`) und hält ihn, solange der Brand
+    // lebt (`b.brand`, gelesen im Soll `_bewohnerSoll`); wer drinnen war, tritt aus seiner Tür. SEINE FLUCHT BEGANN, ALS DIE
+    // GEFAHR SEINEN ORT ERREICHTE (die früheste Zündung dort, die Uhr der Welt): wer den Brand nicht im Takt sah — der Ruhende, ein
+    // Brand, der seiner Uhr vorauslief —, steht, wo ihn seine Flucht im Tempo seines Leibs jetzt sähe (wie die Ankunft
+    // `_bewohnerAnkunft`: f(t), nie die Lage vor dem Brand); der Rest des Wegs geht im Takt. Liefert, ob eine Lage wechselte.
+    _bewohnerBrandSchau(S, stunde) {
+        const H = this._bewohnerBrandGefahr();
+        if (!H || S.brandK === H.k) return false;
+        S.brandK = H.k;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const jetzt = this.state.spielZeit;
+        const gefahr = (q) => H.G.get(Math.floor(q.x / cs) * 2097152 + Math.floor(q.z / cs));
+        let anders = false;
+        for (const b of S.liste || []) {
+            const g = b.leib;
+            if (!g || b.amSteuer || b.ankunft) continue;
+            const von = b.drinnen ? b.orte.tuer : g.position;
+            const t0 = gefahr(von);
+            const ziel = b.brand ? b.brand.ort : b.ziel;
+            if (t0 === undefined && !(ziel && gefahr(ziel) !== undefined)) continue;
+            const ort = this._bewohnerBrandOrt(von.x, von.z, H.G);
+            if (!ort) continue;
+            this._bewohnerWecken(S, b);
+            b.brand = { ort };
+            if (t0 !== undefined) {
+                const [x0, z0] = [von.x, von.z];
+                if (b.drinnen) {
+                    [b.drinnen, b.hinaus, g.userData._drinnen] = [false, false, false];
+                    this._bewohnerStellen(b, g, x0, z0);
+                }
+                const d = Math.hypot(ort.x - x0, ort.z - z0);
+                const w = d > 0 ? Math.min(1, (Math.max(0, jetzt - t0) * b.tempo) / d) : 1;
+                if (w > 0) this._bewohnerStellen(b, g, x0 + (ort.x - x0) * w, z0 + (ort.z - z0) * w);
+                [b.vx, b.vz, b.lageNeu] = [0, 0, true];
+                this._bewohnerRasterLage(S, b);
+            }
+            // der Weg der Flucht beginnt hier (kein Stand, keine Lage des Tags, nichts aufzuholen)
+            [b.da, b.weg, b.tag, b.platz] = [false, null, null, false];
+            this._bewohnerZiel(b, stunde);
+            b.zielUhr = NaN;
+            anders = true;
+        }
+        return anders;
+    }
+
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
     // Hauses und den Orten seiner Bindung (`_bewohnerListe`) — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
     // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
-    // den Kanal `rain` des EINEN Wetter-Felds der Welt (`_weatherFieldFor`: das Wort am Spieler samt seinem Übergang, wie Himmel,
-    // Tropfen und Nässe ihn lesen); je planH liest jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz.
+    // den Kanal `rain` des EINEN Wetter-Felds an seiner Tür (`_wetterFeldAm`, wetter-am-ort: nah am Spieler das Feld seines Worts
+    // samt Übergang, wie Himmel, Tropfen und Nässe es lesen, fern die Front über dem Dorf und sein Steigungsregen); je planH liest
+    // jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz. Bis wetter-am-ort regnete es in jedem Dorf der Welt
+    // im Wort am Spieler.
     // AM STEUER IST SEIN WERK SEIN WAGEN (Leiter mensch.netz.verkehr, w28-fahrer-am-steuer): wen sein Plan am Werk sieht und wer am Steuer
     // sitzt, ist, wo sein Wagen ist — die EINE Lage, die der Verkehr schreibt und an der sein Leib sitzt (`_verkehrSitz`); der
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
@@ -2238,9 +2343,21 @@ class AnazhRealm_siedlung_bewohner {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
+        const regen = this._wetterFeldAm(
+            o.tuer.x,
+            o.tuer.z,
+            undefined,
+            this._tuerFeldAus || (this._tuerFeldAus = {})
+        ).rain;
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
+        // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`, das EINE Brand-Feld): wer vor ihr floh, hält den Ort ohne Gefahr, solange
+        // der Brand lebt — sein Plan führt ihn nie in die Front zurück; erlischt sie, gilt sein Tag wieder
+        if (b.brand) {
+            if (this._brandLebt()) return { ziel: b.brand.ort, drinnen: false, akt: soll.akt };
+            b.brand = null;
+        }
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
         const W = b.weichen;
         if (W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
@@ -4167,6 +4284,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfRadS: 4.5,
     spielerRaumM: 0.5,
     zeugeM: 25,
+    // die Ringe der Zellen des Lebens-Rasters (LIFE_FIELD.cell), über die der Fliehende den nächsten Ort ohne Gefahr sucht
+    // (`_bewohnerBrandOrt`: 8 × 16 m)
+    brandRinge: 8,
 });
 
 // DAS BILD DES BESTANDS (`_bestandBild`, `_bestandTausch`, `_verkehrLadung`): tauschM = so nah steht der Spieler am Stand (dem

@@ -845,14 +845,21 @@ class AnazhRealm_feld_brand {
     // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild und dem Holz, das ihre
     // Front seit ihrem letzten Bild verzehrte (`holz` kg). Je Zelle und Sekunde `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist
     // der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens `rauch.max` im Himmel (der älteste weicht dem neuen); jeder
-    // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt).
+    // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt, in seiner Höhe über
+    // dem Fuß seiner Flamme: `_rauchWindAt`).
     // DER BALLEN TRÄGT DIE MASSE SEINES RAUCHS (same.physik.reaktion#1, `_brandMasse`): was die Front seit dem letzten verzehrte,
     // ohne die Asche (`m` kg). Sichtbar ist sein Schwebstoff (`BRAND.partikel`: `jeKg` kg je kg verbranntem Holz, mit dem
     // Auslösch-Querschnitt `km` m² je kg): die optische Dicke über seine Fläche ist km × Schwebstoff — im Maß des Rauch-Bilds
     // (`_rauchStoff`: τ im Kern, die Dicke (1 − ρ²)^profil) steht im Kern τ = `tr2` ÷ r², tr2 = km × Schwebstoff × (profil + 1)
     // ÷ π. Seine Deckung ist 1 − e^(−τ) (Beer-Lambert) und fällt im Wachsen mit 1 ÷ r²: der Ballen verdünnt, er verliert und
     // erfindet keinen Rauch. Ein frischer Ballen deckt höchstens `a0` — trägt er mehr, ist er größer (dieselbe Masse über
-    // mehr Fläche); deckt er unter `aKill`, wartet sein Rauch auf den nächsten. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
+    // mehr Fläche) — und mindestens die Geburt (`aGeburt`) — trägt er weniger, ist er kleiner (dieselbe Masse über weniger
+    // Fläche): DER RAUCH STEIGT, WENN ER ENTSTEHT. Bis front-stoff wartete ein Ballen unter der Geburt auf den nächsten, und
+    // seine Masse mit ihm: mit der Flammen-Länge × `kMax` als Maß schob ein Herd aus 25 Zellen seinen Rauch ~4 s vor sich her,
+    // ein Herd aus 3 Zellen ~0,5 s, im Gleichtakt aller Zellen (same.physik.reaktion#1 an der Radeon 5b36f69a: τ·A je kg Holz
+    // im Fenster von 6 s 72,6 · 79,4 · 76,1 · 66,2 m² über 1 · 3 · 9 · 25 Zellen — rauch_prop_abw_pct 10,018). DER TAKT JE ZELLE
+    // beginnt an ihrer eigenen Phase (der Hash ihrer Lage): Zellen, die zugleich fingen, stoßen ihre Ballen nie im Gleichtakt
+    // aus. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
     // verdünnte mit b0 ÷ s: ein dünnes Bett rauchte wie ein dichtes, und im Steigen wuchs der Rauch.
     _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
         const st = this.state;
@@ -866,28 +873,35 @@ class AnazhRealm_feld_brand {
         const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
         const [B, W] = [AnazhRealm.BRAND, AnazhRealm.RAUCH_BILD];
         const [optik, tau0] = [(B.partikel.km * B.partikel.jeKg * (W.profil + 1)) / Math.PI, -Math.log(1 - R.a0)];
-        // geboren wird ein Ballen erst zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
+        // geboren wird ein Ballen zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
         // selbst verdünnte ihn sein erstes Bild unter die Sicht — er stürbe, ehe ihn ein Auge sah, und sein Rauch mit ihm
         const aGeburt = Math.sqrt(R.aKill * R.a0);
+        const tauG = -Math.log(1 - aGeburt);
         for (const q of qu) {
             const b = q.b;
             const voll = R.jeS * b.glut;
             const rate = Math.min(voll, anteil);
             const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
             // DIE SCHULD DER MASSE (`rauchKg`): das Holz, das die Front seit dem letzten Ballen verzehrte (`holz` je Bild, gezählt an
-            // der Uhr der Welt). Der Ballen nimmt sie mit; deckt er unter der Sicht, bleibt sie beim nächsten.
+            // der Uhr der Welt). Der nächste Ballen nimmt sie ganz mit. Der Takt der Ballen beginnt an der Phase der Zelle.
             b.rauchKg = (b.rauchKg || 0) + q.holz;
-            b.rauchSchuld = (b.rauchSchuld || 0) + rate * s;
+            if (b.rauchSchuld === undefined)
+                b.rauchSchuld = ((Math.imul(b.cx, 73856093) ^ Math.imul(b.cz, 19349663)) >>> 0) / 4294967296;
+            b.rauchSchuld += rate * s;
             for (; b.rauchSchuld >= 1; b.rauchSchuld--) {
                 const holz = b.rauchKg / Math.floor(b.rauchSchuld); // die Schuld teilt sich auf die Ballen dieses Bilds
                 const [m, tr2] = [holz * (1 - B.mineral.gesamt), holz * optik];
+                if (!(tr2 > 0)) continue; // kein Holz, kein Rauch
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
                 const f = fl[q.von + (h % (q.bis - q.von))];
                 // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
-                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel)
-                const b0 = Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size);
+                // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel). Seine
+                // Größe hält die Deckung zwischen der Geburt und der Kappe
+                const b0 = Math.min(
+                    Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size),
+                    Math.sqrt(tr2 / tauG) / R.size
+                );
                 const a = 1 - Math.exp(-tr2 / (R.size * b0) ** 2);
-                if (a < aGeburt) continue; // unter der Sicht: sein Rauch bleibt beim nächsten Ballen
                 b.rauchKg -= holz;
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
                 const y = f.y + f.lang + b0 * R.size;
@@ -896,6 +910,7 @@ class AnazhRealm_feld_brand {
                     y,
                     z: f.z,
                     y0: y,
+                    g: f.y, // der Fuß seiner Flamme: die Höhe über Grund, in der der Wind ihn trägt (`_rauchWindAt`)
                     b0,
                     s: b0,
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
@@ -906,9 +921,10 @@ class AnazhRealm_feld_brand {
                 });
             }
         }
+        const RW = this._brandRauchWind || (this._brandRauchWind = {});
         for (let k = T.length - 1; k >= 0; k--) {
             const p = T[k];
-            const w = wind(p.x, p.z);
+            const w = this._rauchWindAt(p.x, p.z, st.spielZeit, p.y - p.g, wind(p.x, p.z), RW); // der Wind in seiner Höhe
             p.y += p.w * s;
             p.x += w.x * w.ms * s;
             p.z += w.z * w.ms * s;
@@ -1451,7 +1467,7 @@ class AnazhRealm_feld_brand {
         if (k) S.saat.splice(0, k);
         for (let i = T.length - 1; i >= 0; i--) {
             const p = T[i];
-            const w = this._windAt(p.x, p.z, jetzt);
+            const w = this._rauchWindAt(p.x, p.z, jetzt, p.y - p.boden); // der Wind in seiner Höhe über dem Boden
             const zug = w.ms * s;
             p.x += w.x * zug;
             p.z += w.z * zug;

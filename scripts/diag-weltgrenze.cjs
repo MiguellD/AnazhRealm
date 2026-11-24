@@ -29,6 +29,9 @@
 //                       DER NULL-PUNKT (welt-tag-null): jede Welt trägt `worldMeta.tagNull` 0 ab der Geburt, auch nach ihrem
 //                       Laden am Ort; zurück in der Welt des Boots springt der Tag der Prozesse nicht (Δ 0), und ein Alt-Stand
 //                       ohne Null-Punkt eicht genau einmal
+//                       DAS RENNEN DES VORRATS (vorrat-wartet-erwachen): die Fahrt ERZWINGT, dass der Vorrat des Studios im
+//                       Tausch VOR dem Heil der neuen Welt endet — kein Neubau (`_foundryRewarmColdTrees`) läuft in diesem
+//                       Fenster, und trat das Fenster nicht ein, fällt die Probe als blind
 // Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
 // Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
 // Ablage), `location.reload` steht nur im lauten Rückfall des Wechsels `_weltWechsel` — jeder andere Schreiber fällt beim Namen.
@@ -55,7 +58,7 @@
 //                                      und die Geburt ohne Null-Punkt (der Weg „saat" MUSS `worldMeta.tagNull` an B nennen)
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST, taeter } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
@@ -352,7 +355,7 @@ const TUEREN = new Set(["ersetzen", "weltpull", "portal", "einladung", "geburt"]
 // (eine Tür im Fenster des Wechsels), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
 // ohne die Sperre des Welt-Wechsels) · "stand" (der Prototyp trägt Stand: der Griff des Prüfbühnen-Zensus bis 30.10., `P[n]`
 // weckte den Getter `dslPositions` mit dem Prototyp als this — der Abschied bricht den Tausch beim Namen, die Tür sagt es).
-// DIE SIEBEN SCHEINE DES SELBSTTESTS mit Namen, Schlüssel in `selbst` und der Fahrt, die ihn trägt (5 und 6 teilen eine Sitzung, 8 ist statisch)
+// DIE ACHT SCHEINE DES SELBSTTESTS mit Namen, Schlüssel in `selbst` und der Fahrt, die ihn trägt (5 und 6 teilen eine Sitzung, 8 ist statisch)
 const SCHEINE = [
     ["1 Spread am Lade-Engpass", "spread", "spread"],
     ["2 saveState ohne die Sperre", "sperre", "sperre"],
@@ -361,6 +364,7 @@ const SCHEINE = [
     ["5 Gedächtnis der alten Saat überlebt den Wechsel", "gedaechtnis", "gedaechtnis"],
     ["6 Geburt ohne Null-Punkt", "tagnull", "gedaechtnis"],
     ["8 Ersatz-Saat neben dem EINEN Leser", "ersatz", "ersatz"],
+    ["9 Neubau im Tausch vor dem Heil", "vorrat", "vorrat"],
 ];
 // welcher Schein blind blieb — je einer mit den ersten zwei Befunden seiner Fahrt (oder „kein Befund“: die Fahrt sah nichts)
 const blindeScheine = (selbst) =>
@@ -772,10 +776,44 @@ async function fahreSaat(browser, schein) {
             if (!(await page.evaluate(() => r.state.wolkenKarte === window.__wolkenKarteA)))
                 rep.befunde.push(`${wann}: die Karte des Wolken-Wurfs fiel mit der Welt (WELT_GRENZE.seite \`wolkenKarte\`)`);
         };
+        // DAS RENNEN DES VORRATS (24.11., erbe-geburt 6a548391, voll 12/18: „Die Saat der Welt fehlt (null) — gelesen vor dem Heil“ über
+        // `_foundryPrefetchLibrary` → `_foundryRewarmColdTrees` → `_bereitStand` → `_forestSeedInt`; main trug es, die Nachwache davor
+        // war grün): waren die Vorräte des Studios beim Wechsel nicht durch, beginnt ihr Lauf nach dem Abschied neu (`_foundryVorraete`)
+        // und kann VOR dem Heil der neuen Welt enden — sein Ende baute aktiv neu, ein Glied des Takts außerhalb des Takts, und der
+        // Leser der Saat brach beim Namen (nur wenn der Lauf schnell genug war: ein Wackler). Die Probe ERZWINGT die Reihenfolge,
+        // statt auf den schnellen Läufer zu hoffen: vor jedem Satz fällt der Merker „durch“ (`_warmCritical`), und der Vorlauf der
+        // neuen Welt (er trägt das Heil, `ensureWorldMeta`) hält, bis der neue Lauf durch ist — das FENSTER (höchstens 3 s; die
+        // Schleife ist die Wartezeit der Probe, kein Deckel des Spiels). Ein Neubau im Fenster steht beim Namen (`imFenster`), sein
+        // Wurf am Leser der Saat geht an den EINEN Sammler; blieb das Fenster aus (`gehalten` 0), ist die Probe blind und fällt.
+        // Am Prototyp: der Abschied räumt jedes Feld der Seite, und Funktionen sind dort kein Stand (`_weltAbschied`).
+        // `schein` "vorrat": im Fenster baut einer zum Schein aktiv neu (der Ruf, den das Ende des Vorrats bis hier trug).
+        await page.evaluate((schein) => {
+            const P = AnazhRealm.prototype;
+            const G = (window.__vorratRennen = { gehalten: 0, imFenster: 0, fenster: false });
+            const [vorlauf, neuBau] = [P._weltVorlauf, P._foundryRewarmColdTrees];
+            P._foundryRewarmColdTrees = function (...a) {
+                if (G.fenster) G.imFenster++;
+                return neuBau.apply(this, a);
+            };
+            P._weltVorlauf = async function () {
+                const f = this._foundry;
+                const durch = () => !!f && f._vorrat === false && f._warmCritical === true;
+                G.fenster = true;
+                for (let i = 0; i < 600 && f && f.ready && !durch(); i++) await sleep(5); // der EINE Schlaf der Seite (welt-boot)
+                if (durch()) G.gehalten++;
+                if (schein) {
+                    Promise.resolve().then(() => this._foundryRewarmColdTrees());
+                    await sleep(0);
+                }
+                G.fenster = false;
+                return vorlauf.call(this);
+            };
+        }, scheine.includes("vorrat"));
         for (const [i, saat] of [B, B, A].entries()) {
             const wann = `Wechsel ${i + 1} (Saat ${saat})`;
             const w = await page.evaluate(async (saat) => {
                 const vor = st.worldMeta.worldId;
+                if (r._foundry) r._foundry._warmCritical = false; // die Vorräte waren beim Wechsel nicht durch (das Rennen des Vorrats)
                 r.processChatCommand(`neue welt saat ${saat}`);
                 const ziel = r.activeWorldGet();
                 if (ziel === vor) return { ok: false };
@@ -791,6 +829,16 @@ async function fahreSaat(browser, schein) {
             await wolke(wann);
             await nullPunkt(wann);
         }
+        // das Rennen des Vorrats: das Fenster trat ein (sonst ist die Probe dort blind), und kein Neubau lief in ihm
+        const G = (rep.vorrat = await page.evaluate(() => window.__vorratRennen));
+        if (!(G.gehalten >= 1))
+            rep.befunde.push(
+                `das Rennen des Vorrats trat nicht ein: in ${rep.saaten.length - 1} Wechseln endete kein Lauf des Vorrats vor dem Heil der neuen Welt — die Probe ist dort blind`
+            );
+        if (G.imFenster)
+            rep.befunde.push(
+                `ein Glied des Takts lief im Tausch der Welt: \`_foundryRewarmColdTrees\` ${G.imFenster}× vor dem Heil der neuen Welt (das Ende des Vorrats \`_foundryPrefetchLibrary\` wartet nicht auf das Erwachen)`
+            );
         // DER TAG DER PROZESSE ÜBER SPEICHERN + LADEN: zurück in die Welt des Boots (`switchToWorld`, ihr Stand liegt gespeichert
         // seit dem ersten Satz) — ihr Null-Punkt springt nicht (Δ 0; vor welt-tag-null +0,4999 am ersten Laden)
         const zurueck = await page.evaluate(async (id) => r.switchToWorld(id, { reload: true }) && (await r.erwacht), heim.id);
@@ -889,6 +937,11 @@ hauptLauf(async () => {
         const schein8 = '\nconst x = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";\n';
         const ersatz = stammLib.fehlt(null, ERSATZ, { wandel: (t) => t + schein8 }) ? [] : [stammLib.fehlt.wo];
         const tagnull = rauschRep.befunde.filter((f) => /Saat grenze-saat-b\): worldMeta\.tagNull [-\d.e]+ statt 0 — die Welt trägt den Null-Punkt/.test(f));
+        // ein Neubau im Fenster zum Schein: der Weg nennt ihn, UND der EINE Sammler sah seinen Wurf am Leser der Saat (`taeter` nimmt
+        // ihn aus der Liste; leer hieße: der Leser bricht dort nicht mehr beim Namen — die Probe wäre an der Stelle blind)
+        const vorratRep = await fahreSaat(browser, "vorrat");
+        const wurf = taeter(/Die Saat der Welt fehlt/);
+        const vorrat = wurf.length ? vorratRep.befunde.filter((f) => /_foundryRewarmColdTrees` \d+× vor dem Heil/.test(f)) : [];
         selbst = {
             spread: namen,
             sperre: fenster,
@@ -897,7 +950,8 @@ hauptLauf(async () => {
             gedaechtnis: rausch,
             tagnull,
             ersatz,
-            befunde: { spread: spread.befunde, sperre: sperre.befunde, stand: stand.befunde, zufall: zufallRep.befunde, gedaechtnis: rauschRep.befunde, ersatz: [] },
+            vorrat,
+            befunde: { vorrat: vorratRep.befunde, spread: spread.befunde, sperre: sperre.befunde, stand: stand.befunde, zufall: zufallRep.befunde, gedaechtnis: rauschRep.befunde, ersatz: [] },
         };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
@@ -915,6 +969,9 @@ hauptLauf(async () => {
         );
         console.log(`  SELBSTTEST 6 (die Geburt ohne Null-Punkt zum Schein): ${tagnull[0] || "BLIND"}`);
         console.log(`  SELBSTTEST 8 (eine Ersatz-Saat neben dem EINEN Leser zum Schein): ${ersatz[0] || "BLIND"}`);
+        console.log(
+            `  SELBSTTEST 9 (ein Neubau im Tausch vor dem Heil zum Schein): ${vorrat[0] ? `${vorrat[0]} · der Sammler trug ${wurf.length}× den Wurf am Leser der Saat` : `BLIND — der Sammler trug ${wurf.length} Würfe am Leser der Saat`}`
+        );
     }
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, absenz: abs, berichte, selbst });
     let pass;
@@ -928,10 +985,11 @@ hauptLauf(async () => {
             selbst.zufall.length > 0 &&
             selbst.gedaechtnis.length > 0 &&
             selbst.tagnull.length > 0 &&
-            selbst.ersatz.length > 0;
+            selbst.ersatz.length > 0 &&
+            selbst.vorrat.length > 0;
         // DER BLINDE SCHEIN BEIM NAMEN (20.11., Probe 584c2060 an der OMEN: „ein Schein blieb unentdeckt“ — die Schlusszeile ist
         // alles, was der Probe-Post trägt, und sie nannte weder den Schein noch, was seine Fahrt stattdessen meldete; der Neulauf
-        // war grün, der Täter blieb ungenannt): welcher der sieben blind blieb, und die ersten Befunde seiner Fahrt
+        // war grün, der Täter blieb ungenannt): welcher der acht blind blieb, und die ersten Befunde seiner Fahrt
         const blind = blindeScheine(selbst);
         // die Namens-Funktion an einem gestellten Fall: Schein 5 blind mit fremdem Befund, Schein 3 blind ohne Befund, der Rest gesehen
         const gestellt = blindeScheine({
@@ -942,7 +1000,8 @@ hauptLauf(async () => {
             gedaechtnis: [],
             tagnull: [1],
             ersatz: [1],
-            befunde: { spread: [], sperre: [], stand: [], zufall: [], gedaechtnis: ["x trägt y", "z", "w"], ersatz: [] },
+            vorrat: [1],
+            befunde: { vorrat: [], spread: [], sperre: [], stand: [], zufall: [], gedaechtnis: ["x trägt y", "z", "w"], ersatz: [] },
         }).join(" | ");
         const gestelltSoll = "3 Prototyp trägt Stand — seine Fahrt meldete keinen Befund | 5 Gedächtnis der alten Saat überlebt den Wechsel — seine Fahrt meldete 3 andere Befunde: x trägt y · z";
         console.log(`  SELBSTTEST 7 (ein blinder Schein steht in der Schlusszeile beim Namen): ${gestellt === gestelltSoll ? gestellt : `FALSCH — ${gestellt}`}`);
@@ -951,7 +1010,7 @@ hauptLauf(async () => {
             blind.push("7 die Namens-Funktion selbst");
         }
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser und jeder Stelle ihres Gedächtnisses — und alle sieben Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : `blind an Schein ${blind.join(" | ")} (die Linse sah ihn nicht)`)}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser und jeder Stelle ihres Gedächtnisses — und alle acht Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : `blind an Schein ${blind.join(" | ")} (die Linse sah ihn nicht)`)}`
         );
     } else {
         pass = !rot;
