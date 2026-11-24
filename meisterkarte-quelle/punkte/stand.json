@@ -20402,7 +20402,7 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ungemessen (R10) — zuletzt an c9da3a64: Frist der Probe 24 s gerissen im /umstellen hochhaus-dach (der Ruf lief 23.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +7) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ungemessen (R10) — zuletzt an c9da3a64: Frist der Probe 24 s gerissen im /umstellen hochhaus-dach (der Ruf lief 23.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ · karte2.mensch.macht.megastadt#1 gtx: ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal an 5ef0404b · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
@@ -20418,10 +20418,9 @@
      "id": "karte2.mensch.macht.megastadt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +7)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "5ef0404b561616b752c1a31b69d37d7cacde53d5",
+     "grund": "ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37722,7 +37721,7 @@
   "ohne": 3318
  },
  "kopfVoll": "5ef0404b561616b752c1a31b69d37d7cacde53d5",
- "zeit": "2026-11-24T10:16:01.702Z",
+ "zeit": "2026-11-24T10:27:39.808Z",
  "vorher": "5ef0404b",
  "bilanz": {
   "gewinn": [],
