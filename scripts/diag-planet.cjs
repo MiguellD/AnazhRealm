@@ -14,7 +14,8 @@
 //   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte, Wasser)
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
 //   --anker [--selftest]                                      die Wand in der CI (gate:worker-dichte, Familie K6): die Zeile anker.jede-saat allein —
-//                                                             jede Saat des Spiels trägt eine Heimat; der Selbsttest pflanzt beide Täter der Treppe
+//                                                             jede Saat des Spiels trägt eine Heimat; der Selbsttest pflanzt beide Täter der Treppe;
+//                                                             dazu ort.neigung (Karte 2 bahn-klima#2): ohne Neigung kein Jahres-Gang am Ort
 //   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
 //                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
@@ -1419,15 +1420,37 @@ function ankerJedeSaat(Q, og) { // die Zeile anker.jede-saat: EIN Leser für den
 // die Täter der Treppe, gepflanzt in den Kern des Baums (sein Text, EINE Zeile getauscht, ohne git): `[512]` ist der Kern vor der
 // Treppe (jede der sieben Saaten bricht), `[2048, 8192, 32768]` die Treppe, die immer dicht sucht (sie verlegt bestehende Heimaten)
 function ankerMutant(proben) {
-  const text = fs.readFileSync(KERN, 'utf8'), re = /const ANKER_PROBEN = \[[^\]]*\];/;
-  if (!re.test(text)) return null; // der Kern trägt keine Treppe: der Aufrufer nennt es
-  const aus = path.join(os.tmpdir(), 'planet-core-anker-' + process.pid + '-' + proben.length + '.js'), halt = globalThis.__planetCore;
-  fs.writeFileSync(aus, text.replace(re, 'const ANKER_PROBEN = [' + proben.join(', ') + '];')); delete globalThis.__planetCore;
+  return kernMutant(/const ANKER_PROBEN = \[[^\]]*\];/, 'const ANKER_PROBEN = [' + proben.join(', ') + '];', 'anker-' + proben.length);
+}
+function kernMutant(re, ersatz, marke) { // der Kern des Baums mit EINER getauschten Zeile (sein Text, ohne git); null, wenn die Zeile fehlt
+  const text = fs.readFileSync(KERN, 'utf8');
+  if (!re.test(text)) return null; // der Kern trägt die Zeile nicht: der Aufrufer nennt es
+  const aus = path.join(os.tmpdir(), 'planet-core-' + marke + '-' + process.pid + '.js'), halt = globalThis.__planetCore;
+  fs.writeFileSync(aus, text.replace(re, ersatz)); delete globalThis.__planetCore;
   try { return require(aus); } finally { if (halt === undefined) delete globalThis.__planetCore; else globalThis.__planetCore = halt; fs.unlinkSync(aus); }
+}
+// DIE NEIGUNG AM ORT (Karte 2 planet.kopplung.bahn-klima#2): der Ort (45°, Länge des Ankers) am Samen des Spiels, der Körper der Erde
+// gegen die Neigung 0 — gelesen wie der Richter (Heimat + Δ, Sommer − Winter) und wie der Faden (`planetOrtAuftrag`: das Δ gegen den
+// Anker der HEIMAT, 6. Parameter). Ohne Neigung kein Jahres-Gang: die Spanne ≤ 10 % der Erde, die Antwort ≠ die der Erde, und
+// dieselbe Saat gibt dasselbe Feld (der Plan zweimal gebaut, byte-gleich). `ohneHeimat`: der Täter vor dem Schnitt (eigener Anker).
+function neigungZeile(Q, og, ohneHeimat) {
+  const samen = 'anazh-realm-seed', kh = og.klimaHeute, RAD = Math.PI / 180, heim = planQ(Q, samen), A = Q.planetAnker(heim, 0, og);
+  const am = (n) => { const pl = n === undefined ? heim : Q.planetPlan(samen, Object.assign({}, Q.PLANET_ERDE, { neigungRad: n })), S = Q.planetScheibe(pl, 0);
+    const d = (ohneHeimat ? Q.planetOrt(S, 45 * RAD, A.laenge, og) : Q.planetOrt(S, 45 * RAD, A.laenge, og, undefined, heim)).delta.klima;
+    return { amp: kh.sommer + d.sommer - (kh.winter + d.winter), json: JSON.stringify(d) }; };
+  const e = am(), n0 = am(0), n0b = am(0), n45 = am(0.7854), proz = 100 * n0.amp / e.amp;
+  return { ok: proz <= 10 && n0.json !== e.json && n0.json === n0b.json, proz,
+    wert: 'Spanne an 45° (' + samen + '): Erde ' + e.amp.toFixed(3) + ' K · Neigung 0 ' + n0.amp.toFixed(3) + ' K (' + proz.toFixed(1) + ' %) · Neigung 45° ' + n45.amp.toFixed(3) + ' K (' + (n45.amp / e.amp).toFixed(3) + '×) · dieselbe Saat ' + (n0.json === n0b.json ? 'byte-gleich' : 'ANDERS') };
 }
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
-  if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)'); return U; }
+  if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
+    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); return U; }
+  // die Täter der Neigung: der eigene Anker (vor dem Schnitt) und die Zuschläge der Küsten ohne den Gang der Neigung (jG = 1)
+  const N1 = neigungZeile(P, og, true), QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
+  zeile('ort.neigung feuert', !N1.ok, 'gepflanzt: das Δ gegen den eigenen Anker → ' + N1.wert);
+  if (!QG) zeile('ort.neigung nennt', false, 'der Kern ' + P.VERSION + ' trägt keine Zeile jG — der Täter lässt sich nicht pflanzen');
+  else { const N2 = neigungZeile(QG, og); zeile('ort.neigung nennt', !N2.ok, 'gepflanzt: die Küsten-Zuschläge ohne den Gang der Neigung (jG = 1) → ' + N2.wert); }
   const Q1 = ankerMutant([512]), Q2 = ankerMutant([2048, 8192, 32768]);
   if (!Q1 || !Q2) { zeile('anker.jede-saat feuert', false, 'der Kern ' + P.VERSION + ' trägt keine Tafel ANKER_PROBEN — die Täter lassen sich nicht pflanzen'); return U; }
   const J1 = ankerJedeSaat(Q1, og), J2 = ankerJedeSaat(Q2, og);
