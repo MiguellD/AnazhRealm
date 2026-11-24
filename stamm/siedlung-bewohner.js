@@ -1260,31 +1260,31 @@ class AnazhRealm_siedlung_bewohner {
                 wer.orte.werk = st;
             }
         }
-        // DER STAND AM MARKT GEHÖRT SEINER STUNDE (mensch.menge.bild#2, koerper `tagesMarkt`): der Stand, den ein Mensch bei seiner
-        // Geburt am Platz nahm (`platzStand`), trägt ihn nur in der Stunde seines Gangs über den Markt — wer bis hier keinen
-        // fand, teilt einen, dessen Leute zu seiner Stunde nicht dort stehen (ihre Fenster schneiden sich nicht). Wer an seinem
-        // Stand auch Werk, Tisch oder Abend hat (der Posten der Wache, das Spiel des Kinds), teilt ihn nie. Bis hier gehörte jeder
-        // Stand einem für den ganzen Tag: an stadt-voll trugen 377 Stände (135 im Rechteck, 242 an seinem Rand) 377 von 1 356
-        // Menschen, die übrigen 979 standen in der Stunde ihres Markts vor ihrer Tür — um 8 Uhr sah die Station 84 im Bild.
-        const schicht = new Map(); // Stand → die Fenster seiner Leute, oder null (er trägt einen den ganzen Tag)
+        // DER STAND AM MARKT GEHÖRT SEINER STUNDE (mensch.menge.bild#2, koerper `tagesMarkt`): die Stände, die die Geburt am Platz
+        // fand (`platzStand`), tragen die Menschen in der Stunde ihres Gangs über den Markt — vergeben nach der Uhr: wer früher
+        // kommt, nimmt einen Stand, der zu seiner Stunde frei ist (zuerst seinen eigenen, dann den ersten der Geburt: das Rechteck
+        // vor seinem Rand); so trägt jeder Stand zu jeder Stunde einen, solange einer ihn braucht, und wer keinen freien findet,
+        // bleibt in seiner Stunde vor seiner Tür. Wer an seinem Stand auch Werk, Tisch oder Abend hat (der Posten der Wache, das
+        // Spiel des Kinds), behält ihn den ganzen Tag. Bis hier gehörte jeder Stand EINEM für den ganzen Tag: an stadt-voll trugen
+        // 377 Stände (135 im Rechteck, 242 an seinem Rand) 377 von 1 356 Menschen, um 8 Uhr standen 149 dort — die Station sah 84
+        // im Bild (Soll 100); nur die Fenster ohne Schnitt zu teilen, nahm 117 dazu, um 8 Uhr keinen.
+        const ganz = new Set();
         for (const b of liste) {
             const st = b.orte.platz;
-            if (!st || schicht.get(st) === null) continue;
-            const ganz = b.orte.werk === st || b.orte.mahl === st || b.orte.abend === st;
-            if (ganz) schicht.set(st, null);
-            else schicht.set(st, [...(schicht.get(st) || []), KC.tagesMarkt(b.same, b.rolle)]);
+            if (st && (b.orte.werk === st || b.orte.mahl === st || b.orte.abend === st)) ganz.add(st);
         }
-        const staende = [...schicht.keys()]; // in der Reihe ihrer Geburt: erst das Rechteck, dann sein Rand
-        for (const b of liste) {
-            if (b.orte.platz) continue;
-            yield;
-            const f = KC.tagesMarkt(b.same, b.rolle);
-            const st = staende.find((s) => {
-                const l = schicht.get(s);
-                return !!l && l.every(([von, bis]) => bis <= f[0] || f[1] <= von);
-            });
-            if (!st) continue;
-            schicht.get(st).push(f);
+        const freiAb = new Map(); // Stand → das Ende des Fensters, das ihn zuletzt trug (in der Reihe der Geburt)
+        for (const b of liste) if (b.orte.platz && !ganz.has(b.orte.platz)) freiAb.set(b.orte.platz, -Infinity);
+        const staende = [...freiAb.keys()];
+        const markt = liste
+            .filter((b) => !ganz.has(b.orte.platz))
+            .map((b) => ({ b, f: KC.tagesMarkt(b.same, b.rolle) }))
+            .sort((x, y) => x.f[0] - y.f[0]);
+        for (const [i, { b, f }] of markt.entries()) {
+            if (i % 64 === 0) yield;
+            const eigen = b.orte.platz;
+            const st = eigen && freiAb.get(eigen) <= f[0] ? eigen : staende.find((q) => freiAb.get(q) <= f[0]) || null;
+            if (st) freiAb.set(st, f[1]);
             b.orte.platz = st;
         }
         this._bestandAnlegen(liste);
