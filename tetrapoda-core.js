@@ -159,7 +159,7 @@
             // traegt (der Baer ist keine Beute des Wolfs). Vorher folgte er einem Gradienten, der vom Ziel fortzeigte,
             // im Schritt-Tempo: 0 Bisse in 3600 Takten, der Sprinter entkam immer (Leben-Schau 07.10.).
             hetzM: 6, // m — von hier hetzt der Jaeger (der Ring, auf dem das Rudel seine Plaetze bezieht)
-            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden ab noticeRadius)
+            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden, sobald ihr Auge ihn sieht)
             // DIE EINE MASSE (V18.536): das Volumen der Gestalt × MASSSTAB.dichteKgM3 (Fuchs 15 · Wolf 64 · Hirsch 94 · Baer
             // 335 kg bei Groesse 1) — ein grosser Fleischfresser schlaegt Beute um seine eigene Masse und darueber (Carbone
             // et al. 2007): der Wolf (64 kg) den Hirsch (94 kg), nie den Baeren (335 kg).
@@ -180,7 +180,8 @@
             hungerAnteil: 0.5, // unter diesem Anteil des Magens jagt und frisst das Tier
         },
         furcht: {
-            noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
+            // noticeRadius (22 m für jede Gattung, jede Farbe, jeden Boden) fiel mit dem AUGE DER ART (auge-der-art, VERTRAGS-AKT
+            // 24.11.): fern davon ignoriert das Wesen den Spieler, wo sein Auge ihn nicht sieht (SINNES_GESETZ, `_kreaturSiehtM`).
             menaceFromChaos: 1.3, // Aggression/Zorn verschreckt am staerksten
             menaceFromSorrow: 0.5, // Trauer verunsichert etwas
             calmFromPeace: 0.9, // Ruhe laedt ein
@@ -2094,6 +2095,12 @@
             r = Math.max(r, Math.sqrt((p.x - B.x) * (p.x - B.x) + (p.z - B.z) * (p.z - B.z)));
         }
         return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
+    }
+    // NAT = VERHALTEN.furcht. Liefert die Reichweite der Aura (m): in ihr steigt die Wariness mit der Naehe (1 − d/R). Die
+    // scheueste Natur ((2·0 − 1)·mutGewicht), unbedroht und ohne Erinnerung, erreicht fleeThreshold genau am fleeRadius — kein
+    // Wesen fuerchtet die Aura, wo es nicht flieht: R = fleeRadius / (1 − fleeThreshold / mutGewicht) = 14 / ⅔ = 21 m.
+    function auraReichM(NAT) {
+        return NAT.fleeRadius / (1 - NAT.fleeThreshold / NAT.mutGewicht);
     }
     // d = fluchtDistanzM der Gattung (m), erinnert = furchtErinnert des Wesens, menace = die Bedrohung der Aura (bedrohung),
     // bond = die Bindung ∈ [0, 1]. Liefert die Fluchtdistanz vor dem Menschen JETZT (m; 0 = es flieht ihn nicht): erinnerte
@@ -5385,7 +5392,7 @@
             var socket = s(0.021 * H, "dunkel", [1.1, 1.12, 0.32]);
             socket.position.z = -0.004 * H;
             e.add(socket);
-            var ball = s(0.017 * H, "tierauge", [1.0, 1.0, 0.9]);
+            var ball = s(AUGE_BALL * H, "tierauge", [1.0, 1.0, 0.9]); // die Augenlänge des Leibs (SINNES_GESETZ, `augeDesLeibs`)
             e.add(ball);
             var pup = s(0.009 * H, "pupille", [0.8, 0.8, 0.5]);
             pup.position.z = 0.012 * H;
@@ -5584,6 +5591,188 @@
     // W8 — die Gestalten je Rezept (B2c): JEDE Gattung trägt GESTALTEN_JE_REZEPT Individuen (eine neue zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
+    // ── DAS AUGE DER ART (auge-der-art; erleben.sinne.genom · gesehen · sicht): EINE Funktion aus dem Leib, keine Tabelle ──
+    // Der ZAPFEN-SATZ folgt dem Genom: die Gestalt der Dials wählt ihre Art (`artGewichte`, die stärkste), die Art ihr Taxon,
+    // das Taxon seine Opsine — Säuger zwei (SWS1 + LWS), Altweltaffe und Mensch drei, die Biene UV · Blau · Grün. Jede Kurve ist
+    // die A1-Schablone über ihrem λmax (Govardovskii et al. 2000, Vis. Neurosci. 17:509, α- und β-Bande); die Linse des
+    // Menschen sperrt unter 400 nm (Douglas & Jeffery 2014, Proc. R. Soc. B 281:20132995). Die SCHÄRFE trägt die Augenlänge
+    // des Leibs (2 · AUGE_BALL · H · kopf.gross, der Augapfel aus `bauTier`): Säuger nach der PGLS-Geraden ln cpd = 0,971 ·
+    // ln AL − 1,045 (Verhalten, n = 42, r² 0,353 — Veilleux & Kirk 2014, Brain Behav. Evol. 83:43, Tab. 1), der Mensch ohne
+    // Summation in der Fovea: RMF · √D / 2, RMF = 2π · 0,643 · AL / 360 mm/° (k tagaktiv, ebd. nach Pettigrew et al. 1988),
+    // D = 199 000 Zapfen/mm² (Curcio et al. 1990, J. Comp. Neurol. 292:497). Die FARBE einer Fläche im Rezeptorraum: der Stoff
+    // trägt kein Spektrum, also das fundamentale Metamer seines sRGB (Cohen & Kappauf 1982, Am. J. Psychol. 95:537 — die
+    // Kombination der Menschen-Zapfen, die der Mensch als genau dieses sRGB sieht; der Wirt reicht seine linear-sRGB → LMS
+    // `lms`), je Zapfen auf Weiß gestellt (von Kries). Der ABSTAND zweier Flächen in Unterscheidungs-Schritten: ln-Fänge mit
+    // dem Rauschen ω = 0,05 je Klasse (Vorobyev & Osorio 1998, Proc. R. Soc. B 265:351), kein Fang unter ω. Die ENTDECKUNG:
+    // ein Ziel der Breite w steht auf der Auflösungs-Grenze β₀ = 1/(2 · cpd) Grad nur mit vollem Kontrast (Weiß gegen die
+    // Rauschgrenze, √n · ln(1/ω)/ω); darunter wächst die Schwelle mit 1/Fläche (Riccò 1877) — D = w / tan(β₀ · √(ΔS_voll/ΔS)),
+    // ab ΔS ≤ 1 ungesehen. Ein Taxon ohne eigene Messung erbt das nächste verwandte und sagt es (`verwandt`).
+    var AUGE_BALL = 0.017; // × H × kopf.gross — der Radius des Augapfels im Kopf-Baum (`bauTier` buildEye)
+    var SINNES_GESETZ = Object.freeze({
+        taxa: Object.freeze({
+            canidae: Object.freeze({ zapfen: [429, 555], quelle: "Neitz, Geist & Jacobs 1989, Vis. Neurosci. 3:119 (Hund)" }),
+            ursidae: Object.freeze({ zapfen: [429, 555], verwandt: "canidae", quelle: "ungemessen — Caniformia wie die Hunde" }),
+            cervidae: Object.freeze({ zapfen: [455, 537], quelle: "Jacobs et al. 1994, J. Comp. Physiol. A 174:551 (Weißwedelhirsch)" }),
+            haplorhini: Object.freeze({ zapfen: [419, 531, 558], fovea: true, linseNm: 400, quelle: "Bowmaker & Dartnall 1980, J. Physiol. 298:501" }),
+            apis: Object.freeze({ zapfen: [344, 436, 556], facette: true, quelle: "Peitsch et al. 1992, J. Comp. Physiol. A 170:23" }),
+        }),
+        // die Art des Gesetzbuchs → ihr Taxon (Wolf und Fuchs Canidae, Bär Ursidae, Hirsch Cervidae); mensch/biene für die Leser
+        art: Object.freeze({ wolf: "canidae", fox: "canidae", bear: "ursidae", deer: "cervidae", mensch: "haplorhini", biene: "apis" }),
+        saeuger: Object.freeze({ steigung: 0.971, achse: -1.045 }),
+        fovea: Object.freeze({ k: 0.643, zapfenMm2: 199000 }),
+        omega: 0.05,
+        bandNm: Object.freeze([300, 700, 5]),
+    });
+    // die A1-Schablone (Govardovskii et al. 2000): Empfindlichkeit eines Pigments mit Maximum lm (nm) bei l (nm), 1 im Maximum
+    function sinnKurve(lm, l) {
+        var x = lm / l,
+            a = 0.8795 + 0.0459 * Math.exp(-((lm - 300) * (lm - 300)) / 11940);
+        var alpha = 1 / (Math.exp(69.7 * (a - x)) + Math.exp(28 * (0.922 - x)) + Math.exp(-14.9 * (1.104 - x)) + 0.674);
+        var lb = 189 + 0.315 * lm,
+            bb = -40.5 + 0.195 * lm;
+        return alpha + 0.26 * Math.exp(-((l - lb) / bb) * ((l - lb) / bb));
+    }
+    function sinnKurven(T) {
+        var B = SINNES_GESETZ.bandNm,
+            K = [];
+        for (var i = 0; i < T.zapfen.length; i++) {
+            var z = [];
+            for (var l = B[0]; l <= B[1]; l += B[2]) z.push(T.linseNm && l < T.linseNm ? 0 : sinnKurve(T.zapfen[i], l));
+            K.push(z);
+        }
+        return K;
+    }
+    function sinnInv3(m) {
+        var a = m[0][0], b = m[0][1], c = m[0][2], d = m[1][0], e = m[1][1], f = m[1][2], g = m[2][0], h = m[2][1], i = m[2][2]; // prettier-ignore
+        var A = e * i - f * h,
+            Bq = f * g - d * i,
+            C = d * h - e * g,
+            det = a * A + b * Bq + c * C;
+        return [
+            [A / det, (c * h - b * i) / det, (b * f - c * e) / det],
+            [Bq / det, (a * i - c * g) / det, (c * d - a * f) / det],
+            [C / det, (b * g - a * h) / det, (a * e - b * d) / det],
+        ];
+    }
+    // DER FANG eines Taxons: Zeilen-Matrix n × 3, linear-sRGB → Zapfen-Fänge (Weiß = 1 je Zapfen), über das fundamentale
+    // Metamer R = Hᵀ (H Hᵀ)⁻¹ t (H die Menschen-Zapfen über dem Band, t die Fänge, die der Mensch für dieses sRGB trägt); dazu
+    // das BILD (3 × 3, linear-sRGB → linear-sRGB): die Fänge der Art auf die Zapfen des Menschen gelegt — zwei Klassen als
+    // Blau-Gelb (S → S, L → L und M), drei des Menschen gleich, die Biene als Falschfarbe (Grün → L, Blau → M, UV → S).
+    var _sinnFangSpeicher = {};
+    function augeFang(taxon, lms) {
+        var T = SINNES_GESETZ.taxa[taxon];
+        if (!T || !lms) return null;
+        var schl = taxon + "|" + lms.join(",");
+        if (_sinnFangSpeicher[schl]) return _sinnFangSpeicher[schl];
+        // H in der Reihe der Zeilen von lms (L, M, S); die Zapfen des Gesetzes stehen aufsteigend (S, M, L) — bis zur Umkehr
+        // las jede fremde Art Blau mit ihrem langen und Gelb mit ihrem kurzen Zapfen (der Hund sah das Gras violett, den Himmel
+        // oliv), nur der Mensch hob die Vertauschung in sich selbst auf
+        var H = sinnKurven(SINNES_GESETZ.taxa.haplorhini).reverse(),
+            S = sinnKurven(T),
+            N = H[0].length;
+        var dot = function (u, v) {
+            for (var s = 0, k = 0; k < N; k++) s += u[k] * v[k];
+            return s;
+        };
+        var HHt = H.map(function (u) { return H.map(function (v) { return dot(u, v); }); }); // prettier-ignore
+        var tw = lms.map(function (z) { return z[0] + z[1] + z[2]; });
+        var h1 = H.map(function (u) { for (var s = 0, k = 0; k < N; k++) s += u[k]; return s; }); // prettier-ignore
+        // K = (H Hᵀ)⁻¹ · diag(H·1 / tw) · lms: die Menschen-Fänge, so gestellt, dass Weiß das flache Spektrum ist
+        var I = sinnInv3(HHt),
+            K = [0, 1, 2].map(function (r) {
+                return [0, 1, 2].map(function (j) {
+                    for (var s = 0, q = 0; q < 3; q++) s += I[r][q] * (h1[q] / tw[q]) * lms[q][j];
+                    return s;
+                });
+            });
+        var SHt = S.map(function (u) { return H.map(function (v) { return dot(u, v); }); }); // prettier-ignore
+        var fang = SHt.map(function (z) {
+            var zeile = [0, 1, 2].map(function (j) { return z[0] * K[0][j] + z[1] * K[1][j] + z[2] * K[2][j]; }); // prettier-ignore
+            var w = zeile[0] + zeile[1] + zeile[2];
+            return zeile.map(function (x) { return x / w; });
+        });
+        // DIE ORDNUNG DER FÄNGE (fail-closed): die Klasse des kürzesten Gipfels fängt Blau am stärksten, die des längsten mehr
+        // Rot und Grün als Blau — sonst bricht das Gesetz beim Namen, ehe ein Bild oder eine Entdeckung es liest
+        var f0 = fang[0],
+            fn = fang[fang.length - 1];
+        if (!(f0[2] > f0[0] && f0[2] > f0[1]) || !(fn[0] + fn[1] > fn[2]))
+            throw new Error("SINNES_GESETZ: die Fänge von " + taxon + " folgen nicht der Ordnung der Zapfen (kurz → Blau, lang → Rot/Grün)");
+        // die Klassen (aufsteigend) auf die Zapfen des Menschen in der Reihe von lms (L, M, S): drei umgekehrt; zwei als Blau-Gelb
+        // nach Viénot, Brettel & Mollon 1999 (Color Res. Appl. 24:243): lang → L, kurz → S, und M liegt in der EBENE, die das
+        // sRGB-Blau und -Gelb in lms aufspannen (Normale n = lms·Blau × lms·Gelb, Weiß liegt darin) — jedes Bild der zwei Klassen
+        // ist R = G, Himmel blau, Gras gelb-oliv. Bis hier stand M = L: die Richtung des reinen S-Fangs, der Himmel des Hundes violett
+        var P = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]; // prettier-ignore
+        if (fang.length === 2) {
+            var lb = [lms[0][2], lms[1][2], lms[2][2]],
+                ly = [lms[0][0] + lms[0][1], lms[1][0] + lms[1][1], lms[2][0] + lms[2][1]],
+                n = [lb[1] * ly[2] - lb[2] * ly[1], lb[2] * ly[0] - lb[0] * ly[2], lb[0] * ly[1] - lb[1] * ly[0]];
+            if (!(Math.abs(n[1]) > 1e-9)) throw new Error("SINNES_GESETZ: die Blau-Gelb-Ebene von lms trägt kein M (" + n.join(", ") + ")");
+            P = [[0, 1], [(-n[2] * tw[2]) / (n[1] * tw[1]), (-n[0] * tw[0]) / (n[1] * tw[1])], [1, 0]]; // prettier-ignore
+        }
+        var L = sinnInv3(lms),
+            bild = [0, 1, 2].map(function (r) {
+                return [0, 1, 2].map(function (j) {
+                    for (var s = 0, q = 0; q < 3; q++)
+                        for (var c = 0; c < fang.length; c++) s += L[r][q] * tw[q] * P[q][c] * fang[c][j];
+                    return s;
+                });
+            });
+        return (_sinnFangSpeicher[schl] = Object.freeze({ taxon: taxon, kanaele: fang.length, fang: fang, bild: bild }));
+    }
+    // die Schärfe (Zyklen je Grad) eines Auges der Länge achseMm; das Facetten-Auge trägt sie über den Augen-Abstand (null)
+    function augeSchaerfe(taxon, achseMm) {
+        var G = SINNES_GESETZ,
+            T = G.taxa[taxon];
+        if (!T || T.facette || !(achseMm > 0)) return null;
+        if (T.fovea) return (((2 * Math.PI * G.fovea.k * achseMm) / 360) * Math.sqrt(G.fovea.zapfenMm2)) / 2;
+        return Math.exp(G.saeuger.achse) * Math.pow(achseMm, G.saeuger.steigung);
+    }
+    // der Abstand zweier linear-sRGB-Flächen im Rezeptorraum eines Fangs, in Unterscheidungs-Schritten
+    function augeAbstand(F, a, b) {
+        var w = SINNES_GESETZ.omega,
+            s = 0;
+        for (var i = 0; i < F.fang.length; i++) {
+            var z = F.fang[i],
+                qa = Math.max(w, z[0] * a[0] + z[1] * a[1] + z[2] * a[2]),
+                qb = Math.max(w, z[0] * b[0] + z[1] * b[1] + z[2] * b[2]),
+                d = Math.log(qa / qb) / w;
+            s += d * d;
+        }
+        return Math.sqrt(s);
+    }
+    // die Entdeckungsdistanz (m) eines Ziels der Breite breiteM mit dem Abstand dS (Schritte) für ein Auge der Schärfe cpd, DURCH
+    // DIE LUFT der Welt: der Abstand fällt mit der Strecke wie der Kontrast (Koschmieder, dS·e^{−β·d}; β die Extinktion der EINEN
+    // Luft am Auge in 1/m, 0 = Vakuum) — entdeckt ist, was bei d noch über 1 Schritt trägt und dessen Fläche bei d die
+    // Riccò-Schwelle hält: der größte solche Abstand (weit(dS·e^{−β·d}) − d fällt monoton, Halbierung). Bis auge-der-art 2 sah
+    // jedes Auge durch Vakuum: der Hirsch den Spieler auf 1,2 km, der Mensch den Hirsch auf 9,7 km, bei Sonne wie im Sturm.
+    function augeEntdeckung(cpd, breiteM, dS, kanaele, beta) {
+        if (!(beta >= 0)) throw new Error("augeEntdeckung: die Extinktion der Luft fehlt (" + beta + ")");
+        if (!(cpd > 0) || !(breiteM > 0) || !(dS > 1)) return 0;
+        var w = SINNES_GESETZ.omega,
+            voll = (Math.sqrt(kanaele) * Math.log(1 / w)) / w,
+            b0 = Math.PI / 180 / (2 * cpd);
+        var weit = function (s) {
+            return breiteM / Math.tan(b0 * Math.sqrt(Math.max(1, voll / s)));
+        };
+        var hi = beta > 0 ? Math.min(weit(dS), Math.log(dS) / beta) : weit(dS),
+            lo = 0;
+        if (weit(dS * Math.exp(-beta * hi)) >= hi) return hi;
+        for (var i = 0; i < 40; i++) {
+            var m = (lo + hi) / 2;
+            if (weit(dS * Math.exp(-beta * m)) >= m) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
+    // DAS AUGE DES LEIBS: aus den Tier-Parametern (`deriveTierParams`) und der Größe des Leibs (skala, 1 = das Rezept) das
+    // Taxon, die Augenlänge (mm) und die Schärfe — dieselben Zahlen, die `bauTier` zum Augapfel formt
+    function augeDesLeibs(P, skala, lms) {
+        var A = artGestalt(P),
+            taxon = SINNES_GESETZ.art[A.art];
+        var achseMm = 2 * AUGE_BALL * P.size * A.kopf.gross * MASSSTAB.meterJeEinheit * (skala > 0 ? skala : 1) * 1000;
+        return { art: A.art, taxon: taxon, achseMm: achseMm, cpd: augeSchaerfe(taxon, achseMm), fang: augeFang(taxon, lms) };
+    }
+
     // ── DIE TREFFER-ZONE JE GLIED (Welle L 06.10., additiv) ──
     // Das Treffer-Volumen eines Tiers sind seine Glieder (die Teile aus bauTier, dieselben Anker wie die
     // Fern-Kapseln); jedes Glied trägt die Zone der Prüfstand-Tafel (schmiede ARENA.zonen). Der Rumpf ("wolf",
@@ -5683,6 +5872,7 @@
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
         fluchtRadius: fluchtRadius,
+        auraReichM: auraReichM,
         fluchtDistanz: fluchtDistanz,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
@@ -5753,5 +5943,13 @@
         fellStreu: fellStreu,
         TREFFER_ZONE: TREFFER_ZONE,
         trefferZone: trefferZone,
+        AUGE_BALL: AUGE_BALL,
+        SINNES_GESETZ: SINNES_GESETZ,
+        sinnKurve: sinnKurve,
+        augeFang: augeFang,
+        augeSchaerfe: augeSchaerfe,
+        augeAbstand: augeAbstand,
+        augeEntdeckung: augeEntdeckung,
+        augeDesLeibs: augeDesLeibs,
     };
 })(typeof self !== "undefined" ? self : globalThis);
