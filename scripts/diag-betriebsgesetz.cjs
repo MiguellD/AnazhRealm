@@ -238,8 +238,13 @@ function zitatBefund(dokumente, welt) {
     const da = (p) => welt.pfade.has(p.replace(/\/+$/, ""));
     for (const { pfad, text } of dokumente) {
         const ordner = path.posix.dirname(pfad);
-        if (welt.karte != null && !welt.karte.includes("`" + pfad + "`"))
-            out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
+        // DIE KARTE NENNT DIE KLASSE (24.11.): der Bericht eines Arbeiter-Zweigs ist eine Klasse von Dokumenten — die Karte nennt
+        // ihren Ordner mit Platzhalter EINMAL (`cloud-post/<zweig>.md`), keine Zeile je Zweig. Bis hier trug jeder Zweig seine
+        // Zeile in DIESELBE Tabelle der Karte (prettier richtet mit jeder Zeile alle Spalten neu): nach jeder Landung stand
+        // jeder andere Zweig dort im Konflikt — am 24.11. klima-kontinent und bewohner-satz gegen main 9d4319c0, je ein Merge
+        // und eine Batterie mehr. Jede andere Regel dieser Wand richtet das Dokument der Klasse wie jedes andere.
+        const genannt = welt.karte == null || welt.karte.includes("`" + pfad + "`") || welt.karte.includes("`" + ordner + "/<");
+        if (!genannt) out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
         for (const b of zitatBloecke(text)) {
             const ort = (i) => `${pfad}:${b.erste + b.anfang.filter((a) => a <= i).length}`;
             const satz = (i) => {
@@ -585,7 +590,7 @@ function main() {
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
-        "docs/README.md": "| `docs/README.md` | `docs/a.md` |",
+        "docs/README.md": "| `docs/README.md` | `docs/a.md` | die Klasse `post/<zweig>.md` |",
         "stamm/01.js": "this._lebt(); // Norm: docs/weg.md",
         "scripts/x.cjs": "// Spiegel aus anazhRealm.js",
     };
@@ -611,6 +616,9 @@ function main() {
         [
             { pfad: "docs/a.md", text: zDoku },
             { pfad: "docs/b.md", text: "x" },
+            // die Klasse der Karte deckt IHREN Ordner (post/c.md schweigt), keinen, der nur ähnlich heißt
+            { pfad: "post/c.md", text: "x" },
+            { pfad: "posten/d.md", text: "x" },
         ],
         zWelt
     );
@@ -623,6 +631,7 @@ function main() {
         "docs/a.md:8 nennt `_fett`",
         "docs/a.md:8 nennt den Pfad archiv/x.md",
         "docs/b.md fehlt in der EINEN Karte",
+        "posten/d.md fehlt in der EINEN Karte",
         "stamm/01.js:1 verweist auf docs/weg.md",
         "scripts/x.cjs:1 nennt anazhRealm.js",
     ];
