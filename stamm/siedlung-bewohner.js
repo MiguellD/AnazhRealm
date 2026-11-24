@@ -99,6 +99,7 @@ class AnazhRealm_siedlung_bewohner {
                     x: qq.x,
                     y: qq.y,
                     z: qq.z,
+                    g: this._terrainMacroSurfaceY(qq.x, qq.z, false), // der Grund unter dem Kamin: die Höhe des Teilchens über ihm
                     s: 1,
                     vy: G.vyBase + w() * G.vyRange,
                     dx: (w() - 0.5) * G.dxSpread,
@@ -106,14 +107,15 @@ class AnazhRealm_siedlung_bewohner {
                     q: qq.id,
                 });
         }
-        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen in seiner Höhe über dem Grund des Kamins,
+        // `_rauchWindAt`, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
         // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
         // eine eigene — bis hier zog der Rauch am Objekt vorbei mit dem ungeformten Wind (L.rauch 1,75 → 1,75)
         const aus = this._rauchWind || (this._rauchWind = {});
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            const w = this._windAt(T2.x, T2.z, this._bildZeit, aus);
+            const w = this._rauchWindAt(T2.x, T2.z, this._bildZeit, T2.y - T2.g, null, aus); // der Wind in seiner Höhe
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
@@ -364,12 +366,15 @@ class AnazhRealm_siedlung_bewohner {
             const familie = gross(wort(this._rollGenome(`${ps}:${b.heim}`, "familie"), "f", 2) + wort(gS, "e", 1));
             return feld === "vorname" ? vorname : feld === "familie" ? familie : `${vorname} ${familie}`;
         }
-        if (feld === "freunde") {
-            // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt
+        if (feld === "freunde" || feld === "kreis") {
+            // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
+            // nennt eine Schicht der Dunbar-Folge (`tag` trägt ihre Größe, LEBENSLAUF.freunde.schichten): dieselben Züge, weiter
+            // gezählt — jede Schicht enthält die innere
             const FC = globalThis.__fachwerkCore;
             const g = this._rollGenome(b.seed, "freunde");
             const aus = [];
-            for (let m = 0, F = Math.max(0, L.freunde.gruppe - (b.epoche.n - 1)); m < F; m++) {
+            const gr = feld === "kreis" ? tag : L.freunde.gruppe;
+            for (let m = 0, F = Math.max(0, gr - (b.epoche.n - 1)); m < F; m++) {
                 const si = Math.floor(g.axis(`${m}:haus:freund`) * plan.slots.length) % plan.slots.length;
                 const sl = plan.slots[si];
                 const n = sl ? FC.leuteVon(sl.ov) : 0;
@@ -1153,10 +1158,17 @@ class AnazhRealm_siedlung_bewohner {
             // DER BESUCH GILT DEN SEINEN (mensch.geist.netz#1, bewohner-satz): nur ein Haus, in dem einer seiner Sympathie-Gruppe
             // wohnt (`b.freunde`, der Lebenslauf) — unter ihnen wählt der Kern wie bisher nach Weg und Angebot. Bis hier wählte er
             // jedes Haus fern von Heim und Platz: am Messstand Steintal 0 von 89 Besuchen bei einem Bekannten.
+            // DIE SCHICHTEN DES BESUCHS (Dunbar: 15 · 50 · 150, LEBENSLAUF.freunde.schichten): wohnt keiner der Sympathie-Gruppe in
+            // einem Haus, das der Kern fern genug nennt, gilt der Besuch der nächsten Schicht. Bis hier blieb er dann ohne Besuch
+            // und ging einen Weg weniger (CI voll 11/18: Steintal gasthaus #419347 3 Wege, Soll 4–10; main 4).
             const P = besuche[i];
-            P.freund = new Set();
-            for (const f of b.freunde) if (ortVon.has(f.si)) P.freund.add(ortVon.get(f.si));
-            b.orte.besuch = (yield* binden(P, ["besuch"]))("besuch");
+            for (const n of AnazhRealm.LEBENSLAUF.freunde.schichten) {
+                P.freund = new Set();
+                for (const f of this._bewohnerLauf(S, b, "kreis", n))
+                    if (ortVon.has(f.si)) P.freund.add(ortVon.get(f.si));
+                b.orte.besuch = (yield* binden(P, ["besuch"]))("besuch");
+                if (b.orte.besuch) break;
+            }
         }
         // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik; koerper TAGES_GESETZ.rollen.haendler, fachwerk `platzAnziehung`
         // „haendler"): je Stand des Plans EIN Bewohner mit der Rolle des Händlers — sein Werk ist der Punkt hinter der Theke,
@@ -2498,8 +2510,10 @@ class AnazhRealm_siedlung_bewohner {
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
     // Hauses und den Orten seiner Bindung (`_bewohnerListe`) — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
     // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
-    // den Kanal `rain` des EINEN Wetter-Felds der Welt (`_weatherFieldFor`: das Wort am Spieler samt seinem Übergang, wie Himmel,
-    // Tropfen und Nässe ihn lesen); je planH liest jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz.
+    // den Kanal `rain` des EINEN Wetter-Felds an seiner Tür (`_wetterFeldAm`, wetter-am-ort: nah am Spieler das Feld seines Worts
+    // samt Übergang, wie Himmel, Tropfen und Nässe es lesen, fern die Front über dem Dorf und sein Steigungsregen); je planH liest
+    // jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz. Bis wetter-am-ort regnete es in jedem Dorf der Welt
+    // im Wort am Spieler.
     // AM STEUER IST SEIN WERK SEIN WAGEN (Leiter mensch.netz.verkehr, w28-fahrer-am-steuer): wen sein Plan am Werk sieht und wer am Steuer
     // sitzt, ist, wo sein Wagen ist — die EINE Lage, die der Verkehr schreibt und an der sein Leib sitzt (`_verkehrSitz`); der
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
@@ -2509,9 +2523,17 @@ class AnazhRealm_siedlung_bewohner {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs an diesem Tag (`b.krank`) ist ein Eingang
-        // des Plans — der Kern setzt ihn vor seine Tür, der Posten hält seine Schicht
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain, b.krank);
+        // der Regen an seiner Tür (wetter-am-ort: das EINE Wetter-Feld am Ort, `_wetterFeldAm`)
+        const regen = this._wetterFeldAm(
+            o.tuer.x,
+            o.tuer.z,
+            undefined,
+            this._tuerFeldAus || (this._tuerFeldAus = {})
+        ).rain;
+        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs am Tag der Prozesse (`b.krank`) ist ein
+        // Eingang des Plans — der Kern setzt ihn vor seine Tür, der Posten (Fahrer, Wache) hält seine Schicht: kein Wagen der
+        // Stadt steht, keine Vertretung, die den Plan eines Zweiten liest (VK am Kopf e0714e46: „die Stadt steht nach 39102 Takten")
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
@@ -4370,7 +4392,7 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         koda: Object.freeze(["n", "m", "l", "r", "s", "t", "k"]),
     }),
     // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
-    freunde: Object.freeze({ gruppe: 15 }),
+    freunde: Object.freeze({ gruppe: 15, schichten: Object.freeze([15, 50, 150]) }),
     // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit ∝ N^−α, α gesetzt)
     uebung: Object.freeze({
         besteH: 10000,

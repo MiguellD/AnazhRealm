@@ -40,7 +40,7 @@
  *                                     Meer), auf Land, Küste ≤ 300 km, kein konvergenter Rand < 500 km.
  *   planetFlaeche / planetKarteVon    Spiel-(x, z) = Karten-Meter (ξ, η) der Würfel-Fläche, in deren Mitte der Anker liegt
  *                                     (x Ost, z Süd); winkeltreue Würfel-Abbildung, Krümmung nur im Vertex-Schritt des Zeichners.
- *   planetOrt(scheibe, φ, λ, ortGesetz) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
+ *   planetOrt(scheibe, φ, λ, ortGesetz, aus?, heimat?) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
  *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, wuchs (die Pflanzen-Deckung des Klimas:
  *                                     Krautschicht und Wald, dieselbe Rechnung wie die Farbe des Atlas), leit (9×9 Stützen über
  *                                     64 km), vulkan, rand, stauchung s_v, delta }.
@@ -2300,7 +2300,12 @@
     // Wind (woher) polwärts, kommt Polarluft (kälter), dreht er äquatorwärts, Warmluft. 12 K je Einheit der meridionalen Abweichung
     // (gesetzt; Erde: die Eiskante streut über den Umfang ~10–20° Breite, Labrador ↔ Nordkap).
     const advW = -12 * sg * (vN - vN0);
-    const tS = tJ + amp + dTs, tW = tJ - amp + dTw + advW;
+    // DER JAHRES-GANG FOLGT DER NEIGUNG (Karte 2 planet.kopplung.bahn-klima#2): die Solstitien-Differenz der Tages-Einstrahlung ist
+    // π·sin φ·sin β an JEDEM Ort, auch jenseits des Polarkreises (Polartag gegen Polarnacht) — `amp` trägt sie. Die Zuschläge der
+    // Küsten (dTs, dTw) und die Winter-Advektion (advW) sind Teil DESSELBEN Gangs und folgen ihm im selben Verhältnis: ohne Neigung
+    // kein Winter, keine winterkalte Festlandsluft. Am Körper der Erde ist das Verhältnis x/x = 1 genau (Lehre 11: die Heimat byte-gleich).
+    const jG = sb / ksin(PLANET_ERDE.neigungRad);
+    const tS = tJ + amp + dTs * jG, tW = tJ - amp + dTw * jG + advW * jG;
     // Abfluss: Turc-Pike, L(T) = 300 + 25T + 0,05T³
     const tl = tJ < -10 ? -10 : tJ, L = Math.max(50, 300 + 25 * tl + 0.05 * tl * tl * tl);
     const et = pJahr / Math.sqrt(0.9 + (pJahr / L) * (pJahr / L));
@@ -2681,9 +2686,19 @@
     let a = M.ortAnker.get(key); if (a) return a;
     const A = planetAnker(plan, 0, og); a = ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {})); M.ortAnker.set(key, a); return a;
   }
-  function planetOrt(S, breite, laenge, og, aus) {
+  // DIE HEIMAT EINES ANDEREN KÖRPERS (Karte 2 planet.kopplung.bahn-klima#2): `heimat` (optional) ist der Plan, dessen Anker die Welt
+  // trägt — derselbe Samen (dieselbe Geografie), ein anderer Körper (Neigung, Tag). Das Δ misst den Ort des Körpers gegen den Anker
+  // der HEIMAT: vorher maß es gegen den eigenen Anker, und der lag dort, wo der fremde Körper das Klima der Heimat trägt — jede
+  // Neigung antwortete an der Heimat mit der Erd-Spanne. Ohne `heimat` ist sie der eigene Plan, Bit für Bit wie zuvor.
+  function heimatPlan(plan, heimat, og) {
+    if (heimat === undefined || heimat === plan) return plan;
+    if (!heimat || heimat.k !== plan.k) throw new Error('planetOrt: heimat ist kein Plan desselben Samens (K10)');
+    pruefJahr(heimat.koerper, og); return heimat;
+  }
+  function planetOrt(S, breite, laenge, og, aus, heimat) {
     pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
-    const a = ortAnkerRoh(S.plan, og), o = ortRoh(S, breite, laenge, og, aus || {});
+    const hp = heimatPlan(S.plan, heimat, og);
+    const a = ortAnkerRoh(hp, og), o = ortRoh(S, breite, laenge, og, aus || {}, hp);
     const d = (o.delta && o.delta.leit) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, wuchs: {}, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
     if (!d.wuchs) d.wuchs = {};
     for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
@@ -2705,13 +2720,13 @@
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
     for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
-    const anker = planetAnker(S.plan, 0, og);
-    d.eis = { zeit: ortEisZeit(S.plan, breite) - ortEisZeit(S.plan, anker.breite) };
+    const anker = planetAnker(hp, 0, og);
+    d.eis = { zeit: ortEisZeit(S.plan, breite) - ortEisZeit(hp, anker.breite) };
     o.delta = d; return o;
   }
-  function ortRoh(S, breite, laenge, og, aus) {
-    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
-    const anker = planetAnker(plan, 0, og), S0 = planetScheibe(plan, 0);
+  function ortRoh(S, breite, laenge, og, aus, heimat) {
+    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R, hp = heimat || plan;
+    const anker = planetAnker(hp, 0, og), S0 = planetScheibe(hp, 0);
     const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt
     const o = aus || {};
     planetPunkt(S, breite, laenge, 16, _orP);                    // Band ≥ 32 km (K8): fuss 16 km
@@ -2750,10 +2765,10 @@
     pflanzenDeckung(K.tJahrC, K.niederschlagMm, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
     // Leit-Stützen 9×9 über 64 km in der Würfel-Karte des Ankers: gestauchte Höhen-Differenz zum Anker (t = 0) und Differenz von „land"
     const hAnk = planetPunktR(S0, anker.auf[0], anker.auf[1], anker.auf[2], 16, _orKV), landAnk = landAus(_orKV.kont);
-    planetRichtung(breite, laenge, _orV); const kv = planetKarteVon(plan, anker, _orV[0], _orV[1], _orV[2], _orL);
+    planetRichtung(breite, laenge, _orV); const kv = planetKarteVon(hp, anker, _orV[0], _orV[1], _orV[2], _orL);
     const huelleM = (o.leit && o.leit.huelleM) || new Float64Array(81), landC = (o.leit && o.leit.landC) || new Float64Array(81);
     for (let j = 0; j < 9; j++) for (let i = 0; i < 9; i++) {
-      planetFlaeche(plan, anker, kv.flaeche, kv.xiM + (i - 4) * 8000, kv.etaM + (j - 4) * 8000, _orV);
+      planetFlaeche(hp, anker, kv.flaeche, kv.xiM + (i - 4) * 8000, kv.etaM + (j - 4) * 8000, _orV);
       const h = planetPunktR(S, _orV[0], _orV[1], _orV[2], 16, _orKV);
       huelleM[9 * j + i] = sv * (h - hAnk); landC[9 * j + i] = landAus(_orKV.kont) - landAnk;
     }
