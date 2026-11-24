@@ -1,0 +1,89 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.405",
+  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 740,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3.87,
+   "deckung": 0.0156,
+   "taeter": {
+    "siedlung-acker": 0.0122,
+    "siedlung-frucht": 0.0035
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 7.73,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -622.21,
+   59.9,
+   -846.54
+  ],
+  "blick": [
+   -0.7476,
+   -0.23928,
+   -0.61954
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 2,
+  "halb": 0,
+  "teile": 14,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 104.4,
+  "sigma": 34.6,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Leiber näher als 6 m: 2 von 2 ganz (14 Teile) · Ziel Blickziel im Bild frei 7.73 m · Luma 104.4 σ 34.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.405 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN"
+}
