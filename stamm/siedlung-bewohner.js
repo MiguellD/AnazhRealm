@@ -2568,7 +2568,7 @@ class AnazhRealm_siedlung_bewohner {
             const auf = [];
             for (const e of A) {
                 const q = welt(e.x, e.z);
-                if (traegt(q)) auf.push({ von: e.von, bis: e.bis, akt: e.akt, x: q.x, z: q.z, blick: blick(e.blick), tempo: e.tempo || 0 }); // prettier-ignore
+                if (traegt(q)) auf.push({ von: e.von, bis: e.bis, akt: e.akt, x: q.x, z: q.z, blick: blick(e.blick), tempo: e.tempo || 0, gegner: e.gegner ?? null }); // prettier-ignore
             }
             if (!auf.length) return;
             wer[i].orte.spiel = auf;
@@ -2831,6 +2831,11 @@ class AnazhRealm_siedlung_bewohner {
         const ziel = soll.ziel;
         if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
         b.akt = soll.akt;
+        // DER GEGNER IM ZWEIKAMPF (koerper `spielProgramm`, der Auftritt „zweikampf“ trägt den Index seines Gegners unter den Gästen
+        // des Tags): der Leib des anderen aus der Liste des Programms (`S.spiel.wer`) — EIN Akt, zwei Leser (die Siegquote des Sports,
+        // der Krieg: wer einen Gegner trägt); jedes andere Ziel nimmt ihn ab
+        const sp = b.sied && b.sied.spiel;
+        b.gegner = ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null;
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
         // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
         // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der

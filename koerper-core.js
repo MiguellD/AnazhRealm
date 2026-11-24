@@ -5443,8 +5443,9 @@
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
-        // (das Spiel des Abends, SPIEL_GESETZ: der Wettkämpfer gebeugt in der Kraft, am Brett über den Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // (das Spiel des Abends, SPIEL_GESETZ: der Wettkämpfer gebeugt in der Kraft, der Ringer im Zweikampf ebenso, am Brett über den
+        // Tisch, der Zuschauer jubelt)
+        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "pwalk", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -6087,8 +6088,11 @@
                     bis2 = start2 + h(kampf.zuege.length * AR.zugS + P.pauseS);
                 if (!kann(a, von2, bis2) || !kann(b, von2, bis2) || !traegt(a, [{ von: von2, bis: bis2 }]) || !traegt(b, [{ von: von2, bis: bis2 }])) continue; // prettier-ignore
                 gaenge.push({ art: "ringen", klasse: folge[f], von: von2, start: start2, bis: bis2, teil: [a, b], staerke: [sa, sb], kampf: kampf, sieger: [a, b][kampf.sieger] });
-                auftritte[a].push({ von: von2, bis: bis2, akt: "wettkampf", x: -AR.abstandM / 2, z: 0, blick: Math.PI / 2 });
-                auftritte[b].push({ von: von2, bis: bis2, akt: "wettkampf", x: AR.abstandM / 2, z: 0, blick: -Math.PI / 2 });
+                // DER AKT DES ZWEIKAMPFS (sport-wurzel: EIN Akt, zwei Leser): „zweikampf“ mit dem Gegner (sein Index unter den Gästen) —
+                // der Wirt trägt ihn an den Leib (`b.gegner`), gelesen von der Siegquote (mannschaft#1) und vom Krieg (krieg#1: wer im
+                // Zweikampf steht); bis hier hieß er wie der Lauf „wettkampf“ und trug keinen Gegner
+                auftritte[a].push({ von: von2, bis: bis2, akt: "zweikampf", gegner: b, x: -AR.abstandM / 2, z: 0, blick: Math.PI / 2 });
+                auftritte[b].push({ von: von2, bis: bis2, akt: "zweikampf", gegner: a, x: AR.abstandM / 2, z: 0, blick: -Math.PI / 2 });
                 belegt[a].push([von2, bis2]);
                 belegt[b].push([von2, bis2]);
                 t = bis2;
