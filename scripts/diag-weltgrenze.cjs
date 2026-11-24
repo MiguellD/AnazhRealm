@@ -799,11 +799,11 @@ async function fahreSaat(browser, schein) {
                 const f = this._foundry;
                 const durch = () => !!f && f._vorrat === false && f._warmCritical === true;
                 G.fenster = true;
-                for (let i = 0; i < 600 && f && f.ready && !durch(); i++) await new Promise((ok) => setTimeout(ok, 5));
+                for (let i = 0; i < 600 && f && f.ready && !durch(); i++) await sleep(5); // der EINE Schlaf der Seite (welt-boot)
                 if (durch()) G.gehalten++;
                 if (schein) {
                     Promise.resolve().then(() => this._foundryRewarmColdTrees());
-                    await new Promise((ok) => setTimeout(ok, 0));
+                    await sleep(0);
                 }
                 G.fenster = false;
                 return vorlauf.call(this);
