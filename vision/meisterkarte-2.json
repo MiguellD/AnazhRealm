@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 11,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.1,
+    "anteilHeute": 4.5,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14202,7 +14202,7 @@
        "richter": "Bildpaar: im passenden Sinn sichtbar, im Menschensinn nicht; Empfänger reagieren ≥ 0,8"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Grep Warnruf/Alarmruf/Duftmarke/Gesang: 0 Treffer.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 80,
+  "heute": 81,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 4.3,
+  "anteilHeute": 4.4,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,7 +20103,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 51,
+  "beide": 52,
   "nachwache": 29
  },
  "zusammengelegt": [
