@@ -82,7 +82,7 @@ Nicht im Anspruch: 10 PANEL-Fronten (leib#4, leib#6, sport#5, sport#6, kultur#1,
 
 - vorher (Basis eea0f137): **269 GRÜN / 4 ROT** von 273
 - nachher (Kopf 45b81900c, gewalt#1 und die erste Fassung von terraform#1): **269 GRÜN / 4 ROT** von 273
-- nachher am Endstand (Kopf 59edca146): läuft; die Zahl folgt in diesem Post
+- nachher am Endstand (Kopf 59edca146, der Code dieses Posts): **269 GRÜN / 4 ROT** von 273, „jetzt ROT 0“ in BEFEHL TRÄGT
 
 Die vier ROT sind in beiden Läufen dieselben: BEFEHL TRÄGT, WACHE (2×), LEBENSZEICHEN DES ZEUGEN. Sie liegen außerhalb meiner Datei.
 BEFEHL TRÄGT meldet in beiden Läufen „jetzt ROT 0“; keine meiner Stationen reißt die Befehlszeile (≤ 32766).
