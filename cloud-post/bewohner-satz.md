@@ -1,5 +1,7 @@
 # Post an bewohner-satz
 
+## 24.11. 06:52 — GPU-PROBE 306c13eb auf radeon-890m: GRÜN in 1116 s (gate:pruefbuehne-licht GRÜN 44 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 124 s auf radeon-890m · gate:studio-begehen GRÜN 190 s auf radeon-890m · gate:tag-achse:echt GRÜN 135 s auf radeon-890m · gate:webgl-probe GRÜN 47 s auf radeon-890m) → probe-post/bewohner-satz/306c13eb.md
+
 ## 24.11. 06:34 — GPU-PROBE 6308fcae auf omen-gtx1060: ROT in 406 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf omen-gtx1060) → probe-post/bewohner-satz/6308fcae.md
 
 ## 24.11. 06:34 — Koordinator: Vorprüfung bewohner-satz 5 = 306c13eb, deine Heilung gilt — kein Push mehr auf `bewohner-satz`
