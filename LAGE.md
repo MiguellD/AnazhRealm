@@ -1,29 +1,31 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 09:29 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 10:08 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
-- NACHTRAG 09:29 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **82 von 1 718** (Stand-Datei am Kopf 9906eb97).
-  **main c9da3a64**, RUNDE 17 misst dort (GTX 0/240, Radeon 7/70 um 09:10). Kein Stempel seit z709.
-  **VORPRÜFUNGEN (Macher):** `nerv-schwung` 304a4228 (19/22 grün, 0 rot um 09:22) · `mensch-nah` 17f4e300 · `wind-saison` 6bf32259 ·
-  `klima-hebung` 43ea39ed (GTX 1050) — alle vier ohne Rot, GPU-Probe grün; Sätze liegen in `satz-<zweig>.txt`, Stempel bei Grün per
-  `stempel-msg.sh` → `stempel.sh` (wind-saison VOR saison-schatten).
-  **ZURÜCK MIT GRUND (nicht stempeln):**
-  (1) `tat-aufwaerts` 75c7730a — `gate:mp-sync` ROT („Reload mitten im Sturm: leben VERSCHIEDEN“, 43 Zellen, Abstand 2,6e-3; an main und
-  nerv-schwung GRÜN): das Werk hängt an einem Neben-Index statt als gestempelte Tat in der EINEN Folge des Felds. Auftrag liegt bereit:
-  `auftrag-tat-aufwaerts-2.md` im Scratch; geht an den ursprünglichen Arbeiter (Protokoll agent-a2963030…), sobald ein Platz frei ist.
-  (2) `spiegel-eis` 20ad0cf8 — der Arbeiter ersetzte das Eis-Gesetz (Ashton 1989, h²/2k + h/H) durch das einfache Stefan-Gesetz und zog das
-  Soll der Station von 13,7 auf 3,43 K·d nach; zwei Quellen sagen: Stefan überschätzt dünnes Eis, Feldregel 1 Zoll je 15 °F·d. MEIN
-  ENTSCHEID: Gesetz bleibt Ashton mit H = 12 W/(m²·K), Soll 15,7 K·d ± 20 % (Gold 1971 4,8 cm ÷ Feldregel). Korrektur läuft beim selben
-  Arbeiter; der Anleger (Steg + Boot am Spiegel, siedlungslage#1 60 → 100 % in node) bleibt, sein Bild schieße ich selbst (≤ 180 s).
-  (3) `saison-schatten` 4be2182e — fiel am Prettier-Format (fünf Dateien); von mir im Baum `AnazhRealm-front-pl` formatiert, Statik läuft,
-  danach neuer Kopf.
-  **NEUE BRIEF-PFLICHT:** `npm run format:check` + `npm run lint` (CI „puls 2/2“, 8 s lokal) und die Soll-Regel (ein Macher ändert nie
-  das Soll seines Richters) — im Merkblatt brief-pflicht-statik-2411.
-  **GERÄTE:** OMEN: Handlauf `gate:kreatur-takt` an auge-der-art 380dc644 (1060) steht aus, danach scherbe-liegt, ci-post-erbt, pm-Commit
-  (HAKEN gelaende.K2 + fahrtUrteil). GTX 1050: nacht-laterne → kreatur-takt je Schritt → Macher klima-aufwind (auftrag/2411-klima-aufwind.md).
-  **NICHT GEMERGT in punkte-maschine:** pm-auge-der-art 42009563 · pm-saison-schatten 66cc8276 · pm-spiegel-eis (kommt neu).
+- NACHTRAG 10:07 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **82 von 1 718** (Stand-Datei am Kopf ce32531e).
+  **main f18576b6** (z710 `w28-nerv-schwung` gelandet 09:57; Anspruch `mensch.sport.koerper#1`, koordination c5ad7a1a). RUNDE 18 misst dort
+  seit 10:00 (Sprung 00fe3f47).
+  **FÜNF VORPRÜFUNGEN IN DER BATTERIE, alle ohne Rot um 10:06:** `wind-saison` 6bf32259 · `mensch-nah` 17f4e300 · `klima-hebung` 43ea39ed ·
+  `saison-schatten` db7a8245 · `spiegel-eis` 2c04ae52 (GPU-Probe Versuch 2 an der GTX 1050; an der 1060 „nachgegeben“). ENGPASS ist die
+  GitHub-Schlange: drei Batterien warteten ab 09:56 ganz auf Läufer. Sätze liegen für alle fünf (`satz-<zweig>.txt`). STEMPEL: zusammen
+  stempeln, was zusammen grün ist (EIN Zug je Bündel); wind-saison VOR saison-schatten.
+  **BILDER, von mir angesehen:** Anleger am Dorf am Wasser (Scratch `bild/anleger/anleger-vor.png`, Radeon, 640×360): Steg mit Planken und
+  Pfosten, Boot mit Bänken am Ufer im Schilf — das Boot ist ein Kasten ohne Bug (`stamm/bau-vorlagen.js` boot_anleger), und das Paar bei
+  +1 m Spiegel zeigt keinen Unterschied (die sichtbare Wasserfläche folgte dem gesetzten Spiegel in 2 s nicht; das Folgen ist nur in node
+  gemessen). `saison-schatten` db7a8245 Dorf und Wiese heil. `klima-hebung` Relief-Karte liegt vor (Diagnose-Bild, kein Spielbild).
+  **ZURÜCK BEIM ARBEITER:** `tat-aufwaerts` 3 (75c7730a ROT an gate:mp-sync; Auftrag: das Werk als gestempelte Tat in der EINEN Folge des
+  Felds, Eingang `_feldAkt` feld-leben.js:2075).
+  **WARTET AUF OMEN:** `auge-der-art` 380dc644 — Urteil des Handlaufs gate:kreatur-takt an der 1060 (`auftrag/2411-omen-runde18.md`); der
+  Stempel-Satz fehlt bis dahin.
+  **VERBRAUCH 10:05: Woche alle Modelle 72 %, Fable 67 %, Reset 28.11. 21:00.** Von 08:46 bis 10:05 stieg er um 7 Punkte (alle) und 4
+  (Fable); EIN Intervall, in diesem Tempo wäre das Wochenbudget heute gegen 15:30 leer. MEIN ENTSCHEID: kein neuer lokaler Arbeiter, solange
+  Vorprüfungen in der Schlange stehen (der Engpass ist die Landung, nicht der Nachschub); der Koordinator reagiert nur auf Ereignisse und
+  stempelt im Bündel; die Geräte-Sitzungen ruhen zwischen Aufträgen und warten per Skript (`auftrag/2411-verbrauch.md`). Nächste Lesung
+  nach dem nächsten Zug.
+  **NICHT GEMERGT in punkte-maschine:** pm-auge-der-art 42009563 · pm-saison-schatten 66cc8276 · pm-spiegel-eis b964f975 · pm-mensch-nah (aus
+  Scratch `mensch-nah/station-eigenes-tuch.diff`) · pm-sport-regeln (kommt mit dem Arbeiter).
 - GELANDET 24.11.: z700 `w28-linse-slot-rest` (01:09) · z701 `w28-wetter-am-ort` → 60e8909d (02:46) · z702 `w28-front-stoff` → 5b0f551a (03:55) ·
   z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; das Rennen des Welt-Wechsels, die Register-Zeile dazu
   ist gefallen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
@@ -89,13 +91,12 @@
   m/s, Sprint 5,18 → 6,28 m/s); Stationen `pm-nerv-bewegung` 28e7cbc danach. MEIN BLICK (Bilder Scratch `nerv/blick/`): Gehen trägt (Ferse zuerst,
   Abrollen), die Arme hängen; der SPRINT ist ein Spagat-Sprung (beide Beine fast gestreckt, Rumpf senkrecht, Ferse zuerst) — an main genauso, keine
   Verschlechterung, aber kein Sprint.
-- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt seit 09:20, beides MACHER, beide OPUS — im Protokoll nachgelesen; nur CPU,
-  keine GPU, kein Browser; RAM frei 15 GB beim Start): **`spiegel-eis` 2** (Baum `AnazhRealm-acker`, Korrektur des Eis-Gesetzes, Station im
-  Branch `pm-spiegel-eis`) · **`sport-regeln`** (Baum `AnazhRealm-leib`, von main c9da3a64; vier Front-Sprossen EINER Regel-Grammatik:
-  `mensch.sport.regeln#1`, `arena#1`, `mannschaft#1`, `geistspiel#1`; Zensus nach Scratch `sport/zensus.md`, Stationen im Branch
-  `pm-sport-regeln`). WARTET auf einen Platz: `tat-aufwaerts` 3 (Auftrag im Scratch). Fertig geliefert und abgenommen: `saison-schatten`
-  (rang 0 → 0,975, Gasse 30,6° → 3,5°, Trocken-Zeit Schatten ÷ Sonne 2,63; brach zwei Regeln: Hilfs-Zweig gepusht und gelöscht, lokaler
-  werkbank-Start — die Radeon-Schleife lief laut Puls weiter).
+- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt, beides MACHER, beide OPUS; nur CPU, keine GPU, kein Browser):
+  **`sport-regeln`** (Baum `AnazhRealm-leib`, von main c9da3a64; vier Front-Sprossen EINER Regel-Grammatik: `mensch.sport.regeln#1`,
+  `arena#1`, `mannschaft#1`, `geistspiel#1`; Zensus nach Scratch `sport/zensus.md`, Stationen im Branch `pm-sport-regeln`) ·
+  **`tat-aufwaerts` 3** (Baum `AnazhRealm-brand`; Korrektur an der Mehrspieler-Wand). DANACH KEIN NEUER ARBEITER, bis die Schlange der
+  Vorprüfungen fällt (Verbrauch, siehe NACHTRAG). Abgenommen: `spiegel-eis` 2 (Eis-Gesetz bleibt Ashton, H = 13, Soll 15,7 K·d; Anleger
+  im Bild gesehen) · `saison-schatten` (rang 0 → 0,975, Gasse 30,6° → 3,5°, Trocken-Zeit Schatten ÷ Sonne 2,63; Format von mir geheilt).
 - RUNDE 15 am Kopf main 9d4319c0 seit 05:53 (Sprung von 447eaea6, koordination 3043a44d; Runde 14 stand bei gtx 10/241, radeon 15/58). K1 = die Ansprüche
   bis z705. 06:08: `gtx laeuft 0/241`, `radeon laeuft`. Die GTX braucht ~9 min je Station — die Listen beginnen mit den jüngsten Ansprüchen.
 - CI-REIHE = der Takt der Landung (20 gehostete Jobs, eine Batterie = 22; NICHT FIFO, keine Vorfahrt — Register-Nachtrag 06:10). Der Vorfahrt-Wächter läuft
