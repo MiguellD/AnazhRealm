@@ -180,8 +180,10 @@ const G9 = (K) => epocheVerdict(epocheMessen(K.__vehicleCore)),
     G11 = (K) => streckeVerdict(streckeMessen(K.__vehicleCore, K.__gelaendeCore)),
     G12 = (K) => formVerdict(formMessen(K.__vehicleCore));
 const MUTANTEN = [
-    ["vehicle", "epocheKoerper(E.koerper, lack) : lack", "epocheStoff(E.koerper) : lack", /^farbe zukunft/, G9],
-    ["vehicle", "            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/, G9],
+    ["vehicle", "? epocheKoerper(kk, lack) : lack", "? epocheStoff(kk) : lack", /^farbe zukunft/, G9],
+    // carPhys (gattungArt liest dieselbe Zeile): der Anker trägt die Zeile davor, damit er einmal steht; die Mutante nimmt der
+    // Zeit-Stufe ihren Antrieb, der Muskel von Boot und Leiterwagen bleibt
+    ["vehicle", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = (E && E.antrieb) || muskel(P.antrieb) || {};", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = muskel(P.antrieb) || {};", /^ordnung|^band/, G9],
     ["vehicle", "        if (topo) taperBody(", "        if (false) taperBody(", /^regler kutsche: taille/, G9],
     ["vehicle", "        const pre = PRESETS[id];", "        const pre = PRESETS.gt;", /^gattung/, G9],
     ["gelaende", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/, G11],
