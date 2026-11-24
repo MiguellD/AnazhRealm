@@ -77,5 +77,5 @@ Je Merkmal im Bild, gegen die Fotos:
 - **Sockel am Hang gestuft.** Der Sockel wird am höchsten Geländepunkt gemessen (Marx), talseitig wächst er um Δh.
   - Eingang: `getTerrainHeightAt` unter dem Grundriss. Leser: die Platte des Erdbaus (`ortPlan`).
 - **Die Form des Sockels im Wasser.** Sie ist linear und damit eine Annahme. Belegt sind nur die drei Höhen 0,30, 0,50–0,60 und 0,95 m.
-- **Der Dachüberstand.** Das Maß ist unbelegt. Abschnitt B von quellen/fachwerk.md nennt keine Regel.
+- **Der Dachüberstand.** Das Maß ist unbelegt. die Quellen-Zuarbeit (Abschnitt B, Ursache je Merkmal) nennt keine Regel.
 - **`alpin` auf Meereshöhe.** Wie unter (b).
