@@ -363,10 +363,10 @@
         },
         {
             "id": "ort-zeichen",
-            "titel": "Der Ort weist sich aus (ort-ausstattung, Leitern mensch.kultur.schrift und bildkunst): die volle Stadt wie stadt-voll — am Anlauf sagt der Spieler „dorf 7 300“, die Metropole steht am Anker —, dann steht er vor der Tür-Wand des Sonderbaus nächst dem Platz, die Schild und Hauszeichen trägt, und blickt auf beide (`ortPose` „zeichen“, `_ortPose`: aus dem Plan, hier steht keine Zahl von ihr); das Bild zeigt sie (`imBild` f:schild, f:relief).",
+            "titel": "Der Ort weist sich aus (ort-ausstattung, Leitern mensch.kultur.schrift und bildkunst): die volle Stadt wie stadt-voll — am Anlauf sagt der Spieler „dorf 7 300“, die Metropole steht am Anker —, dann steht er vor der Tür-Wand des Sonderbaus nächst dem Platz, die Schild und Hauszeichen trägt, und blickt auf beide (`ortPose` „zeichen“, `_ortPose`: aus dem Plan, hier steht keine Zahl von ihr); das Bild zeigt JEDES für sich (`imBild` f:schild und f:relief, je ≥ 0,05 % der Leinwand: ein 16 × 16-Fleck — an 6 m trägt die Tafel 0,17 %, das Hauszeichen 0,19 %). Kein `bauSatz` daneben: ruft der Ausdruck den Satz beim Namen, ist jeder seiner Bereiche EINE Klasse (Werkbank, die Teilung des Bau-Satzes), und das Stück im Satz stand als Haus (GPU-Probe b3bf1523: „KAUFHAUS“ lesbar, f:schild 0,0 %).",
             "ortPose": "zeichen",
             "anlauf": [400, 400],
-            "imBild": { "bauSatz": 0.02, "f:(schild|relief)": 0.002 },
+            "imBild": { "f:schild": 0.0005, "f:relief": 0.0005 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": { "wort": "dorf 7 300", "anker": [836.0867207453832, 438.24283067541955] },
@@ -428,7 +428,8 @@
         "portal-membran": { "luma": [10, 250] },
         "fern-ring": { "luma": [15, 245] },
         "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": { "luma": [5, 250] },
-        "f:(schild|relief)": { "luma": [5, 250] }
+        "f:schild": { "luma": [5, 250] },
+        "f:relief": { "luma": [5, 250] }
     },
     "klassen": [
         {
