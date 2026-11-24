@@ -47,3 +47,5 @@ w28-front-stoff karte2.same.physik.reaktion#1,karte2.mensch.macht.wehrbau#2,kart
 w28-front-leben karte2.leben.wasser.netz#1
 # z705 (main 9d4319c0, 24.11. 05:21): der Klang folgt dem Weg und dem Leib — Einsatz nach d/c(T) 12 von 12 Proben (vorher 0), die Stimme 120 von 120 Formanten ±15 % (vorher stumm); ein-ereignis#2 (das Bild des Blitzes fehlt) und getuemmel#1 (nur der Duck 12,0 → 10,0 dB) stehen nicht im Anspruch
 w28-klang-leib karte2.erleben.klang.raum#1,karte2.erleben.klang.stimme#1
+# 706 (main 87bb259c, 24.11. 07:04): das Klima des Planeten ist EIN Gesetz (planetKlimaR): Nebel an Ostrand-Strömen 4,46× Umland an 77,1 %, zwei Küsten gleicher Breite 5,05 K; die Front der Leiter steht bei #1 (Luv/Lee 1,258 gegen ≥ 2 — die Station misst an Plateau-Buckeln, echte Ketten geben 2,92), #2 (Rang 0,211) und #5 (−9,5 %) stehen nicht im Anspruch, gegenwart#2 (Wert 98,6 %, Zeuge 12 statt 100 Saaten) und stadtklima#1 (Stadt 18,3°, Dorf offen) ebenso nicht; der Klassen-Schnitt der Karte (cloud-post/<zweig>.md) landete mit
+w28-klima-kontinent karte2.planet.kopplung.land-meer-luft#3,karte2.planet.kopplung.land-meer-luft#4
