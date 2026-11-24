@@ -374,20 +374,34 @@ var __weltLicht = (function () {
             const dMin = float(RT).sub(r);
             const dMax = rho.add(H);
             const xmu = d.sub(dMin).div(max(dMax.sub(dMin), 1e-4));
-            const t = texture(rtT.texture, vec2(subUv(xmu, Z.durchlass[0]), subUv(rho.div(H), Z.durchlass[1]))).level(
+            const tau = texture(rtT.texture, vec2(subUv(xmu, Z.durchlass[0]), subUv(rho.div(H), Z.durchlass[1]))).level(
                 float(0)
             ).rgb;
-            return select(amBoden(r, mu), vec3(0), t);
+            return select(amBoden(r, mu), vec3(0), exp(tau.negate()));
         };
+        // DIE TAFELN MISCHEN IM LOGARITHMUS (licht-stetig): das Licht der Dämmerung fällt exponentiell mit der Sonnenhöhe (0,4–0,5
+        // Dekaden je Grad, Brown 1952 / USNO Circular 171), der Filter der GPU mischt zwei Texel linear. Ψ_ms trägt 32 Texel über
+        // cos Sonnen-Zenit — um den Horizont 3,6° weit, die Luft unten im Schatten der Erde lebt dort allein von ihm: linear im Licht
+        // gemischt, knickte das Himmelslicht an jedem Texel (Sonne −5,38°: das Bild stieg je 0,002 der Uhr 0,82, dann 1,67 EV,
+        // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05). Darum trägt die Durchlass-Tafel die optische Tiefe τ (der Filter
+        // mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden ihrer Auflösung (2^−24, die
+        // kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um. Dasselbe Gesetz mischt
+        // die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
+        const MS_BODEN = 2 ** -24;
         // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
         // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
         // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
         // 0,966 → 1,012, Dorf 0,951 → 1,050; gate:naesse:echt ROT) — heil-w4-ferne-blau.
         const mehrfach = (h, mus) =>
-            texture(
-                rtMS.texture,
-                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
-            ).level(float(0)).rgb;
+            max(
+                exp(
+                    texture(
+                        rtMS.texture,
+                        vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
+                    ).level(float(0)).rgb
+                ).sub(MS_BODEN),
+                vec3(0)
+            );
         const phaseR = (nu) =>
             nu
                 .mul(nu)
@@ -431,7 +445,7 @@ var __weltLicht = (function () {
                 const hi = max(sqrt(t.mul(t).add(r.mul(mu).mul(t).mul(2)).add(r.mul(r))).sub(RG), 0);
                 tau.addAssign(ext(hi).mul(dt));
             });
-            return vec4(exp(tau.negate()), 1);
+            return vec4(tau, 1); // die optische Tiefe: `durchlass` liest exp(−τ)
         });
         // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = die Erde (`ATMO_ERDE`) ──
         const passMehrfach = Fn(() => {
@@ -498,7 +512,8 @@ var __weltLicht = (function () {
                 Fsum.addAssign(F);
             });
             const fms = Fsum.div(64);
-            return vec4(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), 1);
+            // der Logarithmus über dem Boden der Auflösung: `mehrfach` liest exp(x) − 2^−24
+            return vec4(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN)), 1);
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
