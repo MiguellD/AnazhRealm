@@ -45,3 +45,5 @@ w28-wetter-am-ort karte2.planet.kopplung.wetter-welt#2,karte2.mensch.kopplung.le
 w28-front-stoff karte2.same.physik.reaktion#1,karte2.mensch.macht.wehrbau#2,karte2.planet.wasser.tiefsee#1
 # z703 (main 447eaea6, 24.11. 04:25): der Fisch folgt dem Pegel (Hub des Stands je Pegel-Hub 0,394 → 0,844); Brandflucht (ereignis#2 ohne Zeugen) und Stirn (gesicht#1 noch 7 von 10 rot) stehen nicht im Anspruch
 w28-front-leben karte2.leben.wasser.netz#1
+# z705 (main 9d4319c0, 24.11. 05:21): der Klang folgt dem Weg und dem Leib — Einsatz nach d/c(T) 12 von 12 Proben (vorher 0), die Stimme 120 von 120 Formanten ±15 % (vorher stumm); ein-ereignis#2 (das Bild des Blitzes fehlt) und getuemmel#1 (nur der Duck 12,0 → 10,0 dB) stehen nicht im Anspruch
+w28-klang-leib karte2.erleben.klang.raum#1,karte2.erleben.klang.stimme#1
