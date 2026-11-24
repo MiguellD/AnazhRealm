@@ -3048,6 +3048,8 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 grabstein: [0],
                 schild: [0],
                 grenzstein: [0],
+                relief: [0],
+                denkmal: [0],
             }),
         });
     })(),

@@ -3823,6 +3823,22 @@ AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
         schicht: "gegenstaende",
         gier: (q) => (Number.isFinite(q.th) ? -q.th : 0),
     }),
+    // DAS HAUSZEICHEN (ort-ausstattung, fachwerk `ortAusstattung`): je Rolle des Orts EIN Bild ihres Gewerbes an der Tür-Wand
+    // ihres ersten Baus, der es trägt — ein Stück am Haus wie das Schild (`slot`, +x zur Wand nach `th`)
+    relief: Object.freeze({
+        ab: 127,
+        bauplan: "relief_dorf",
+        schicht: "gegenstaende",
+        gier: (q) => (Number.isFinite(q.th) ? -q.th : 0),
+    }),
+    // DAS MARKTKREUZ (ort-ausstattung, fachwerk `ortAusstattung`): der Markt trägt EINES ab dem Jahr seines Rechts, frei am Platz
+    denkmal: Object.freeze({
+        ab: 137,
+        kappe: 1,
+        bauplan: "denkmal_dorf",
+        schicht: "gegenstaende",
+        gier: (q) => q.th || 0,
+    }),
 });
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist

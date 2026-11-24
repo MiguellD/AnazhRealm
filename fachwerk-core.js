@@ -6368,7 +6368,7 @@
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
       const standFrei=(s)=>roads.every(rd=>{ if(zt.staedtisch&&(rd.w||0)<VERKEHR_GESETZ.breiteM) return true;   /*DER STAND STEHT NIE AUF DEM WEG (Welle SAMEN): im Dorf jeder Weg mit seiner Breite, in der Stadt die Trasse samt standTrasseM — bis hier stand der Stand des Dorfs ohne Frage; am Würfel je Los lief ein Hauptweg des Auto-Dorfs −4,−4 über den Platz, der GT stand nach 1,8 m vor dem Stand (gate:settlement O)*/ const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (Leiter mensch.netz.verkehr): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
-      if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
+      if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0; platz.gangM=SD.marktGangM;            /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber; der Platz traegt die halbe Breite seiner Gasse (`gangM`: das Marktkreuz der Ausstattung steht neben ihr)*/
         for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
       else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
@@ -7547,6 +7547,14 @@
         // (`grenzeAmWeg`) — je Gestalt einer von drei Köpfen (gefast · Giebel · flach), auf jeder Stirn (±z, je eine zu einem Ort)
         // das Kreuz, auf dem Kopf die Weisung in der Flucht der Grenze (x); 0,2 m im Grund.
         grenzstein: { lab: "Grenzstein · Kopf, Kreuz, Weisung", gestalten: 3, siteTag: "weg", salz: 0x8c4f, tritt: { typ: "kasten", ex: 0.2, ez: 0.13 } },
+        // DAS HAUSZEICHEN (ort-ausstattung, rein additiv): das Bild der Rolle am Sonderbau — der Stein in der Wand, im Rahmen das
+        // Motiv ihres Gewerbes, Amts oder Kults (`HAUSZEICHEN_MOTIV`, je Gestalt EINE Rolle in der Folge von SCHILD_WORT; 1–19 in
+        // der Höhe der Tafel, 20–38 neben der Tür unter der Traufe des niedrigen Hauses), gesetzt von `ortAusstattung` an der
+        // Tür-Wand des ersten Baus seiner Rolle (+x zur Wand, die Wand in armM wie das Schild)
+        relief: { lab: "Hauszeichen · Rahmen, Grund, Motiv", gestalten: 38, siteTag: "wand", salz: 0x9d61, tritt: { typ: "kreis", r: 0.3 } },
+        // DAS MARKTKREUZ (ort-ausstattung, rein additiv): das Zeichen des Marktrechts auf dem Platz — drei Stufen, die Säule, das
+        // Kapitell, das Kreuz in der Form seiner Epoche (Tatzen · Balken · Kugel), gesetzt von `ortAusstattung` neben der Gasse des Markts
+        denkmal: { lab: "Marktkreuz · Stufen, Säule, Kreuz", gestalten: 3, siteTag: "platz", salz: 0xae83, tritt: { typ: "kasten", ex: 1.2, ez: 1.2 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -9110,31 +9118,37 @@
         V: [0x11, 0x11, 0x11, 0x11, 0x11, 0x0a, 0x04], W: [0x11, 0x11, 0x11, 0x15, 0x15, 0x15, 0x0a], X: [0x11, 0x11, 0x0a, 0x04, 0x0a, 0x11, 0x11],
         Y: [0x11, 0x11, 0x11, 0x0a, 0x04, 0x04, 0x04], Z: [0x1f, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1f],
     };
-    // Die Lettern eines Worts als Rechtecke {u0, u1, v0, v1} in Punkten (u nach rechts, v nach oben, die Grundlinie v = 0): je
-    // Zeile die Läufe gesetzter Punkte, senkrecht gleiche Läufe verschmolzen (das I ist drei Rechtecke, kein Stapel aus sieben).
+    // DAS RASTER (EINE Funktion für Lettern und Motiv): die gesetzten Punkte von `G` (je Zeile `w` Bit, das höchste links, die
+    // Zeile 0 oben; `h` Zeilen) als Rechtecke {u0, u1, v0, v1} in Punkten ab u = `u0` (u nach rechts, v nach oben, die Grundlinie
+    // v = 0) an `R`: je Zeile die Läufe gesetzter Punkte, senkrecht gleiche Läufe verschmolzen (das I ist drei Rechtecke, kein
+    // Stapel aus sieben). Leser: die Lettern des Schilds (`schriftRechtecke`), das Motiv des Hauszeichens (`reliefTeile`).
+    function rasterRechtecke(G, w, h, u0, R) {
+        var offen = {};
+        for (var r = 0; r < h; r++) {
+            var neu = {};
+            for (var a = 0; a < w; ) {
+                if (!((G[r] >> (w - 1 - a)) & 1)) {
+                    a++;
+                    continue;
+                }
+                var b = a;
+                while (b < w && (G[r] >> (w - 1 - b)) & 1) b++;
+                var q = offen[a * 16 + b];
+                if (q) q.v0 = h - 1 - r;
+                else R.push((q = { u0: u0 + a, u1: u0 + b, v0: h - 1 - r, v1: h - r }));
+                neu[a * 16 + b] = q;
+                a = b;
+            }
+            offen = neu;
+        }
+        return R;
+    }
+    // Die Lettern eines Worts als Rechtecke (je Letter 5 × 7 Punkte, Schritt 6)
     function schriftRechtecke(wort) {
         var R = [];
         for (var c = 0; c < wort.length; c++) {
             var G = SCHRIFT_5X7[wort.charAt(c)];
-            if (!G) continue;
-            var offen = {};
-            for (var r = 0; r < 7; r++) {
-                var neu = {};
-                for (var a = 0; a < 5; ) {
-                    if (!((G[r] >> (4 - a)) & 1)) {
-                        a++;
-                        continue;
-                    }
-                    var b = a;
-                    while (b < 5 && (G[r] >> (4 - b)) & 1) b++;
-                    var q = offen[a * 8 + b];
-                    if (q) q.v0 = 6 - r;
-                    else R.push((q = { u0: c * 6 + a, u1: c * 6 + b, v0: 6 - r, v1: 7 - r }));
-                    neu[a * 8 + b] = q;
-                    a = b;
-                }
-                offen = neu;
-            }
+            if (G) rasterRechtecke(G, 5, 7, c * 6, R);
         }
         return R;
     }
@@ -9246,22 +9260,25 @@
             ausTeil(g, t.geo, t.rolle);
         });
     }
+    // DER KASTEN DES WURFS (EIN Körper für die Würfe der Stücke des Orts): aus seinen acht Ecken (e(i, j, k), i/j/k ∈ {0, 1})
+    // seine sechs Flächen (12 Dreiecke); `wurfQuader` der achsenparallele von x0 … x1, ya … yb, z0 … z1
+    function wurfKasten(e) {
+        return [[e(0, 0, 0), e(1, 0, 0), e(1, 1, 0), e(0, 1, 0)], [e(0, 0, 1), e(0, 1, 1), e(1, 1, 1), e(1, 0, 1)], [e(0, 0, 0), e(0, 1, 0), e(0, 1, 1), e(0, 0, 1)], [e(1, 0, 0), e(1, 0, 1), e(1, 1, 1), e(1, 1, 0)], [e(0, 0, 0), e(0, 0, 1), e(1, 0, 1), e(1, 0, 0)], [e(0, 1, 0), e(1, 1, 0), e(1, 1, 1), e(0, 1, 1)]];
+    }
+    function wurfQuader(x0, x1, ya, yb, z0, z1) {
+        return wurfKasten(function (i, j, k) {
+            return [i ? x1 : x0, j ? yb : ya, k ? z1 : z0];
+        });
+    }
     // Der Wurf des Schilds (Stufe 3): die Körper der L0 als Kästen — das Brett samt der erhabenen Lettern, am Ausleger der Arm,
     // die Wandplatte und die Strebe (je Kasten 12 Dreiecke, der Ausleger 48 = das Budget der Stufe 3)
     function schildWurf(wahl, p, flaeche) {
         var m = schildMass(p.groesse, wahl.gestalt),
             A = m.A,
             y1 = m.y0 + m.bh,
-            dl = m.d / 2 + 0.008;
-        // ein Kasten aus seinen acht Ecken (e(i, j, k), i/j/k ∈ {0, 1}) als sechs Flächen
-        var kasten = function (e) {
-            return [[e(0, 0, 0), e(1, 0, 0), e(1, 1, 0), e(0, 1, 0)], [e(0, 0, 1), e(0, 1, 1), e(1, 1, 1), e(1, 0, 1)], [e(0, 0, 0), e(0, 1, 0), e(0, 1, 1), e(0, 0, 1)], [e(1, 0, 0), e(1, 0, 1), e(1, 1, 1), e(1, 1, 0)], [e(0, 0, 0), e(0, 0, 1), e(1, 0, 1), e(1, 0, 0)], [e(0, 1, 0), e(1, 1, 0), e(1, 1, 1), e(0, 1, 1)]];
-        };
-        var achsen = function (x0, x1, ya, yb, z0, z1) {
-            return kasten(function (i, j, k) {
-                return [i ? x1 : x0, j ? yb : ya, k ? z1 : z0];
-            });
-        };
+            dl = m.d / 2 + 0.008,
+            kasten = wurfKasten,
+            achsen = wurfQuader;
         if (!m.aus) return flaeche(achsen(A - m.d - 0.008, A, m.y0, y1, -m.bw / 2, m.bw / 2));
         var sa = [A - 0.02, m.yA - 0.28],
             sb = [m.x1 - m.bw * 0.45, m.yA - 0.02],
@@ -9340,15 +9357,9 @@
     // Der Wurf des Grenzsteins (Stufe 3): der Schaft ab dem Grund und der Kopf als Kästen (je 12 Dreiecke) — der Giebel ein
     // Kasten über den vier Ecken seines Rauten-Schnitts
     function grenzsteinWurf(wahl, p, flaeche) {
-        var m = grenzsteinMass(p.groesse, wahl.gestalt);
-        var kasten = function (e) {
-            return [[e(0, 0, 0), e(1, 0, 0), e(1, 1, 0), e(0, 1, 0)], [e(0, 0, 1), e(0, 1, 1), e(1, 1, 1), e(1, 0, 1)], [e(0, 0, 0), e(0, 1, 0), e(0, 1, 1), e(0, 0, 1)], [e(1, 0, 0), e(1, 0, 1), e(1, 1, 1), e(1, 1, 0)], [e(0, 0, 0), e(0, 0, 1), e(1, 0, 1), e(1, 0, 0)], [e(0, 1, 0), e(1, 1, 0), e(1, 1, 1), e(0, 1, 1)]];
-        };
-        var achsen = function (x0, x1, ya, yb, z0, z1) {
-            return kasten(function (i, j, k) {
-                return [i ? x1 : x0, j ? yb : ya, k ? z1 : z0];
-            });
-        };
+        var m = grenzsteinMass(p.groesse, wahl.gestalt),
+            kasten = wurfKasten,
+            achsen = wurfQuader;
         var P = achsen(-m.b / 2, m.b / 2, 0, m.hS, -m.d / 2, m.d / 2);
         if (m.kopf === 0) P = P.concat(achsen((-m.b * m.bk) / 2, (m.b * m.bk) / 2, m.hS, m.h, (-m.d * m.bk) / 2, (m.d * m.bk) / 2));
         else if (m.kopf === 1) {
@@ -9366,11 +9377,213 @@
         var m = grenzsteinMass(p.groesse, wahl.gestalt);
         dazu(huelleTeil("box", -m.b / 2, m.b / 2, 0, m.h, -m.d / 2, m.d / 2, F("stein")));
     }
+    // ═══ DER ORT WEIST SICH AUS (ort-ausstattung) — DIE BILDKUNST: das Hauszeichen am Sonderbau, das Marktkreuz auf dem Platz ═══
+    // DAS MOTIV DES HAUSZEICHENS je Rolle in der Folge von SCHILD_WORT (9 × 9 Punkte, die Zeile 0 oben, „#“ gesetzt): der Krug ·
+    // der Hammer über dem Amboss · der Zirkel · die Brezel · die Haut · die Waage · der Schlüssel · der Sack am Haken · die
+    // gekreuzten Hämmer · das Buch · die Kanone · die Arkade · die Hellebarde · das Wappen · das Tor · der Kelch · die Glocke ·
+    // der Turm · die Burg. Je Rolle EIN Bild: kein Werk eines Orts gleicht einem anderen.
+    var HAUSZEICHEN_MOTIV = [
+        [".........", ".######..", ".#####.#.", ".#####..#", ".#####..#", ".#####.#.", ".#####...", "..###....", "........."],
+        ["..####...", "..####...", "....#....", "....#....", ".........", "#########", ".#######.", "...###...", ".#######."],
+        ["....#....", "...###...", "...#.#...", "..#...#..", "..#####..", ".#.....#.", ".#.....#.", "#.......#", "........."],
+        [".##...##.", "#..#.#..#", "#...#...#", "#..#.#..#", ".##...##.", "..#...#..", "...#.#...", "....#....", "........."],
+        ["##.....##", ".#######.", "..#####..", ".#######.", ".#######.", "..#####..", ".#######.", "##.....##", "........."],
+        ["....#....", "#########", "#...#...#", "#...#...#", "###.#.###", "....#....", "....#....", "..#####..", "........."],
+        [".........", ".........", ".###.....", "#...#....", "#...#####", "#...#.#.#", ".###..#.#", ".........", "........."],
+        ["....#....", "....##...", "...###...", "..#####..", ".#######.", ".#######.", ".#######.", "..#####..", "........."],
+        ["##.....##", "###...###", "..#...#..", "...#.#...", "....#....", "...#.#...", "..#...#..", ".#.....#.", "#.......#"],
+        [".........", ".###.###.", "#...#...#", "#.#.#.#.#", "#...#...#", "#.#.#.#.#", "#...#...#", ".###.###.", "........."],
+        [".........", ".........", "#######..", "########.", "#######..", "..#...#..", ".###.###.", "..#...#..", "........."],
+        ["#########", "#########", "##.###.##", "#...#...#", "#...#...#", "#...#...#", "#...#...#", "#...#...#", "#########"],
+        ["....#....", "...###...", "..####...", "...###...", "....#.##.", "....#....", "....#....", "....#....", "....#...."],
+        ["#########", "#...#...#", "#...#...#", "#########", "#...#...#", ".#..#..#.", "..#.#.#..", "...###...", "....#...."],
+        ["#.#.#.#.#", "#########", "#########", "###...###", "##.....##", "##.....##", "##.....##", "##.....##", "##.....##"],
+        ["#########", ".#######.", "..#####..", "...###...", "....#....", "....#....", "...###...", "..#####..", "........."],
+        ["....#....", "...###...", "..#####..", "..#####..", "..#####..", ".#######.", "#########", "....#....", "........."],
+        [".#.#.#.#.", ".#######.", "..#####..", "..##.##..", "..#####..", "..#####..", "..##.##..", "..#####..", ".#######."],
+        ["#.#...#.#", "###...###", "###.#.###", "#########", "#########", "###...###", "###...###", "###...###", "#########"]
+    ].map(function (Z) {
+        return Z.map(function (z) {
+            return parseInt(z.replace(/\./g, "0").replace(/#/g, "1"), 2);
+        });
+    });
+    // DAS HAUSZEICHEN (Ursprung der Anker armM vor der Wand, +x zur Wand, die Wand in x = A, y = 0 der Weg): der Stein bw × bh
+    // ab y0 — in der Höhe der Tafel über dem Sturz (über der Tür oder neben dem Schild), am niedrigen Haus neben der Tür, seine
+    // Oberkante in der Flucht des Sturzes (`tiefM`: die Schwelle 0,55 m, die Tür 2,05 m) —, `d` vor der Wand, sein Rahmen `r`
+    // breit und `vor` weiter vor, im Feld das Motiv seiner Rolle erhaben (`md`) im Punkt `px`.
+    // Band: Rijksmuseum KOG-ALS-47 Gevelsteen 57,5 × 60 × 16,5 cm (der Stein sitzt im Mauerwerk, vor die Wand tritt sein Rahmen)
+    var HAUSZEICHEN_GESETZ = { breiteM: 0.6, hoeheM: 0.575, tiefeM: 0.04, rahmenM: 0.045, vorM: 0.02, motivM: 0.018, saumM: 0.03, tiefM: 2.025, faseM: 0.006 };
+    function reliefMass(G, gestalt) {
+        var H = HAUSZEICHEN_GESETZ,
+            n = SCHILD_WORT.length,
+            k = ((((gestalt | 0) - 1) % (2 * n)) + 2 * n) % (2 * n),
+            bw = H.breiteM * G,
+            bh = H.hoeheM * G;
+        return { rolle: SCHILD_WORT[k % n], motiv: HAUSZEICHEN_MOTIV[k % n], A: LICHT_GESETZ.wandlaterne.armM, bw: bw, bh: bh, d: H.tiefeM * G, r: H.rahmenM * G, vor: H.vorM * G, md: H.motivM * G, px: (Math.min(bw, bh) - 2 * (H.rahmenM + H.saumM) * G) / 9, y0: k < n ? SCHILD_GESETZ.tafelM : H.tiefM, nebenTuer: k >= n, aus: false };
+    }
+    // DIE TEILE DES HAUSZEICHENS (EINE Form für Bau, Hülle und Wurf): der Rahmen aus hellem Sandstein (nah vier gefaste Leisten,
+    // mittel EIN Stein), das Feld gefasst in Blau, das Motiv vergoldet (nah erhaben, mittel EINE Fläche je Rechteck) — EIN Stoff
+    // (stein), EIN Draw. Wer vor der Wand steht, sieht das Bild nach +z (die Folge der Lettern).
+    function reliefTeile(m, fein, kol) {
+        var T = [],
+            A = m.A,
+            fa = fein ? HAUSZEICHEN_GESETZ.faseM : 0,
+            rahmen = ausAuf([0.3, 0.27, 0.22], "stein", kol),
+            feld = ausAuf([0.05, 0.07, 0.13], "stein", kol),
+            gold = ausAuf([0.36, 0.26, 0.08], "stein", kol),
+            ym = m.y0 + m.bh / 2,
+            xF = A - m.d;
+        var dazu = function (geo, ton) {
+            T.push({ geo: geo, rolle: "stein", ton: ton });
+        };
+        if (fein) {
+            var t = m.d + m.vor,
+                xR = A - t / 2,
+                ih = m.bh - 2 * m.r;
+            dazu(ausSetze(ausKiste(t, m.r, m.bw, fa), xR, m.y0 + m.r / 2, 0), rahmen);
+            dazu(ausSetze(ausKiste(t, m.r, m.bw, fa), xR, m.y0 + m.bh - m.r / 2, 0), rahmen);
+            dazu(ausSetze(ausKiste(t, ih, m.r, fa), xR, ym, -m.bw / 2 + m.r / 2), rahmen);
+            dazu(ausSetze(ausKiste(t, ih, m.r, fa), xR, ym, m.bw / 2 - m.r / 2), rahmen);
+            dazu(ausSetze(ausKiste(m.d, ih, m.bw - 2 * m.r, 0), A - m.d / 2, ym, 0), feld);
+        } else {
+            dazu(ausSetze(ausKiste(m.d + m.vor, m.bh, m.bw, 0), A - (m.d + m.vor) / 2, ym, 0), rahmen);
+            var fx = A - m.d - m.vor - 0.002,
+                fy = (m.bh - 2 * m.r) / 2,
+                fz = (m.bw - 2 * m.r) / 2;
+            dazu(ausVielecke([[[fx, ym - fy, -fz], [fx, ym - fy, fz], [fx, ym + fy, fz], [fx, ym + fy, -fz]]], [A, ym, 0]), feld);
+        }
+        rasterRechtecke(m.motiv, 9, 9, 0, []).forEach(function (r) {
+            var w = (r.u1 - r.u0) * m.px,
+                h = (r.v1 - r.v0) * m.px,
+                u = ((r.u0 + r.u1) / 2 - 4.5) * m.px,
+                y = ym + ((r.v0 + r.v1) / 2 - 4.5) * m.px;
+            if (fein) return dazu(ausSetze(ausKiste(m.md, h, w, 0), xF - m.md / 2, y, u), gold);
+            var x = A - m.d - m.vor - 0.004;
+            dazu(ausVielecke([[[x, y - h / 2, u - w / 2], [x, y - h / 2, u + w / 2], [x, y + h / 2, u + w / 2], [x, y + h / 2, u - w / 2]]], [A, y, u]), gold);
+        });
+        return T;
+    }
+    function ausRelief(g, p, seed, stufe, kol) {
+        var m = reliefMass(p.groesse, ((seed >>> 0) ^ AUSSTATTUNG.relief.salz) >>> 0),
+            W = p.verwitterung;
+        reliefTeile(m, stufe === 0, kol).forEach(function (t) {
+            ausFaerbe(t.geo, t.rolle, W, function () {
+                return { ton: t.ton };
+            });
+            ausTeil(g, t.geo, t.rolle);
+        });
+    }
+    // Der Wurf des Hauszeichens (Stufe 3): der Stein samt Rahmen als EIN Kasten (12 Dreiecke), seine freien Kanten um die halbe
+    // Fase der L0 eingerückt — dort liegt der Umriss der gefasten Kante (6 cm tief wirft der Stein 2 bis 3 Raster-Körner breit)
+    function reliefWurf(wahl, p, flaeche) {
+        var m = reliefMass(p.groesse, wahl.gestalt),
+            f = HAUSZEICHEN_GESETZ.faseM / 2;
+        flaeche(wurfQuader(m.A - m.d - m.vor + f, m.A, m.y0 + f, m.y0 + m.bh - f, -m.bw / 2 + f, m.bw / 2 - f));
+    }
+    function reliefHuelle(wahl, p, dazu, F) {
+        var m = reliefMass(p.groesse, wahl.gestalt);
+        dazu(huelleTeil("box", m.A - m.d - m.vor, m.A, m.y0, m.y0 + m.bh, -m.bw / 2, m.bw / 2, F("stein")));
+    }
+    // DAS MARKTKREUZ (Ursprung der Grund in der Mitte, y nach oben, die Arme längs x): drei Stufen im Quadrat (die unterste 0,15 m
+    // im Grund), die Säule aus Granit (nah achtkantig), das Kapitell, das Kreuz — je Gestalt seine Epoche: 1 das Tatzenkreuz der
+    // Romanik (die Enden verbreitert), 2 das Balkenkreuz der Gotik, 3 das Kreuz auf der Kugel der Renaissance; die Höhe bleibt.
+    // Band: Trierer Marktkreuz 958 — 5,22 m: drei Sandsteinstufen, Granitsäule, Kapitell, Tatzenkreuz
+    var MARKTKREUZ_GESETZ = { hoeheM: 5.22, stufeM: 0.2, stufen: [2.4, 1.8, 1.2], saeuleM: 0.42, kapitell: [0.62, 0.3], kreuz: [0.62, 0.5, 0.12], kugelM: 0.3, ab: 958, romanikBis: 1200, gotikBis: 1500 };
+    function denkmalGestalt(jahr) {
+        var K = MARKTKREUZ_GESETZ;
+        return jahr < K.romanikBis ? 1 : jahr < K.gotikBis ? 2 : 3;
+    }
+    function denkmalMass(G, gestalt) {
+        var K = MARKTKREUZ_GESETZ,
+            art = ((((gestalt | 0) - 1) % 3) + 3) % 3,
+            st = K.stufeM * G,
+            yS = st * K.stufen.length,
+            kh = K.kreuz[0] * G,
+            ku = art === 2 ? K.kugelM * G : 0,
+            yK = K.hoeheM * G - kh;
+        return { art: art, st: st, yS: yS, stufen: K.stufen.map(function (b) { return b * G; }), s: K.saeuleM * G, kap: [K.kapitell[0] * G, K.kapitell[1] * G], yKap: yK - ku - K.kapitell[1] * G, ku: ku, yK: yK, kh: kh, kb: K.kreuz[1] * G, kd: K.kreuz[2] * G, h: K.hoeheM * G };
+    }
+    // DIE TEILE DES MARKTKREUZES (EINE Form für Bau und Wurf): die Stufen, das Kapitell und das Kreuz aus Sandstein, die Säule aus
+    // Granit; die Säule achtkantig, nah gefast und die Kugel gedreht — mittel je übriges Teil EIN Kasten. EIN Stoff (stein), EIN Draw.
+    function denkmalTeile(m, fein, kol, seed) {
+        var T = [],
+            z = ausZufall(seed, 0xb5),
+            sand = ausAuf([0.33, 0.27, 0.2], "stein", kol),
+            granit = ausAuf([0.2, 0.2, 0.19], "stein", kol),
+            fa = fein ? 0.015 : 0,
+            ton = ausTon(z, 0.05, 0.02);
+        var dazu = function (geo, t) {
+            T.push({ geo: geo, rolle: "stein", ton: [t[0] * ton[0], t[1] * ton[1], t[2] * ton[2]] });
+        };
+        m.stufen.forEach(function (b, i) {
+            var y0 = i * m.st - (i ? 0 : 0.15);
+            dazu(ausSetze(ausKiste(b, (i + 1) * m.st - y0, b, fa), 0, (y0 + (i + 1) * m.st) / 2, 0), sand);
+        });
+        var hS = m.yKap - m.yS;
+        dazu(ausSetze(ausDreh([[m.s / 2, 0], [m.s / 2, hS]], 8, false, false), 0, m.yS, 0), granit); // achtkantig in jeder Stufe (der Umriss springt nicht)
+        dazu(ausSetze(ausKiste(m.kap[0], m.kap[1], m.kap[0], fa), 0, m.yKap + m.kap[1] / 2, 0), sand);
+        if (m.ku) {
+            var r = m.ku / 2;
+            dazu(fein ? ausSetze(ausDreh([[0, 0], [r * 0.7, r * 0.3], [r, r], [r * 0.7, r * 1.7], [0, 2 * r]], 8, false, false), 0, m.yK - m.ku, 0) : ausSetze(ausKiste(m.ku * 0.8, m.ku, m.ku * 0.8, 0), 0, m.yK - r, 0), sand);
+        }
+        var yA = m.yK + m.kh * 0.62;
+        dazu(ausSetze(ausKiste(m.kd, m.kh, m.kd, fa * 0.5), 0, m.yK + m.kh / 2, 0), sand);
+        dazu(ausSetze(ausKiste(m.kb, m.kd, m.kd, fa * 0.5), 0, yA, 0), sand);
+        if (m.art === 0) {
+            // die Tatzen: jedes Ende des Kreuzes in die Breite gezogen
+            [-1, 1].forEach(function (sx) {
+                dazu(ausSetze(ausKiste(m.kd * 0.45, m.kd * 1.9, m.kd * 1.25, 0), sx * (m.kb / 2 - m.kd * 0.22), yA, 0), sand);
+            });
+            dazu(ausSetze(ausKiste(m.kd * 1.9, m.kd * 0.45, m.kd * 1.25, 0), 0, m.yK + m.kh - m.kd * 0.22, 0), sand);
+        }
+        return T;
+    }
+    function ausDenkmal(g, p, seed, stufe, kol) {
+        var m = denkmalMass(p.groesse, ((seed >>> 0) ^ AUSSTATTUNG.denkmal.salz) >>> 0),
+            W = p.verwitterung;
+        denkmalTeile(m, stufe === 0, kol, seed).forEach(function (t) {
+            ausFaerbe(t.geo, t.rolle, W, function () {
+                return { ton: t.ton };
+            });
+            ausTeil(g, t.geo, t.rolle);
+        });
+    }
+    // Der Wurf des Marktkreuzes (Stufe 3): die unterste und die oberste Stufe als Kästen (die mittlere liegt in ihrem Wurf), die
+    // Säule achtkantig wie die L0 bis zur Spitze des Kreuzes, oben gedeckelt — unten steht sie auf der Stufe (46 Dreiecke ≤ 48)
+    function denkmalWurf(wahl, p, flaeche) {
+        var m = denkmalMass(p.groesse, wahl.gestalt),
+            b0 = m.stufen[0] / 2,
+            b2 = m.stufen[m.stufen.length - 1] / 2,
+            R = m.s / 2,
+            ecke = function (k, y) {
+                return [Math.cos((k * Math.PI) / 4) * R, y, Math.sin((k * Math.PI) / 4) * R];
+            },
+            mantel = [];
+        for (var k = 0; k < 8; k++) mantel.push([ecke(k, m.yS), ecke(k + 1, m.yS), ecke(k + 1, m.h), ecke(k, m.h)]);
+        flaeche(
+            wurfQuader(-b0, b0, 0, m.st, -b0, b0)
+                .concat(wurfQuader(-b2, b2, 0, m.yS, -b2, b2))
+                .concat(mantel)
+                .concat([[ecke(0, m.h), ecke(7, m.h), ecke(6, m.h), ecke(5, m.h)], [ecke(0, m.h), ecke(5, m.h), ecke(4, m.h), ecke(1, m.h)], [ecke(1, m.h), ecke(4, m.h), ecke(3, m.h), ecke(2, m.h)]])
+        );
+    }
+    function denkmalHuelle(wahl, p, dazu, F) {
+        var m = denkmalMass(p.groesse, wahl.gestalt),
+            b = m.stufen[0] / 2;
+        dazu(huelleTeil("box", -b, b, 0, m.yS, -b, b, F("stein")));
+        dazu(huelleTeil("box", -m.kap[0] / 2, m.kap[0] / 2, m.yS, m.h, -m.kap[0] / 2, m.kap[0] / 2, F("stein")));
+    }
     // DIE STÜCKE DES ORTS (ort-ausstattung) in den Tafeln der Ausstattung: ihr Wurf, ihre Hülle, ihre Farben — die Gestalt trägt
     // ihr Wort (ihr Motiv, ihre Epoche) im Samen (`ausWahl`: gestalt = sd ^ salz), Bau, Wurf und Hülle lesen DIESELBE Maß-Funktion.
-    var ORT_STUECK_WURF = { schild: schildWurf, grenzstein: grenzsteinWurf },
-        ORT_STUECK_HUELLE = { schild: schildHuelle, grenzstein: grenzsteinHuelle },
+    var ORT_STUECK_WURF = { schild: schildWurf, grenzstein: grenzsteinWurf, relief: reliefWurf, denkmal: denkmalWurf },
+        ORT_STUECK_HUELLE = { schild: schildHuelle, grenzstein: grenzsteinHuelle, relief: reliefHuelle, denkmal: denkmalHuelle },
         ORT_STUECK_FARBE = {
+            relief: function (pick) {
+                return { stein: pick([0xb4ab9a, 0xa89f8e]) }; // der Grund des Bake: die Töne des Rahmens, des Felds und des Golds sind Ziele
+            },
+            denkmal: function (pick) {
+                return { stein: pick([0xa8987e, 0x9c9282]) }; // Sandstein (die Säule ihr Ziel im Granit)
+            },
             grenzstein: function (pick) {
                 return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit (wie der Grabstein)
             },
@@ -9509,6 +9722,8 @@
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, trockengraben: ausTrockengraben };
     AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
     AUS_BAU.grenzstein = ausGrenzstein;
+    AUS_BAU.relief = ausRelief;
+    AUS_BAU.denkmal = ausDenkmal;
     // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
     // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
     // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
@@ -9675,6 +9890,12 @@
     };
     AUS_MASS.grenzstein = function (G) {
         return grenzsteinMass(G, 0);
+    };
+    AUS_MASS.relief = function () {
+        return { A: LICHT_GESETZ.wandlaterne.armM };
+    };
+    AUS_MASS.denkmal = function (G) {
+        return denkmalMass(G, 1);
     };
     // ── DIE GERÄTE (w4-koerper-park): die Maße (Norm, Meter, Ursprung am Boden in der Mitte, +z die Front), der Bau je Stufe, die
     //    Substanz, der Wurf, die Hülle und das Angebot — alle aus DERSELBEN Maß-Funktion (`AUS_MASS[id]`). ──
@@ -11541,33 +11762,35 @@
             }
             return false;
         };
-        // die Stände an der Tür-Wand in ihrer Reihe: der Ausleger neben der Tür (die Seite der Wandlaterne zuletzt), die Tafel über
-        // dem Sturz, dann seitlich so weit, dass ihr Rand die Laterne oder das Fenster frei gibt; der erste freie trägt es
-        var schildAmHaus = function (B, q, i, g) {
+        // DER STAND AN DER TÜR-WAND (EIN Prüfer für Schild und Hauszeichen): das Brett `m` (bw × bh ab y0, d tief; der Ausleger
+        // quer zur Wand bis x0) in der Reihe `reihe` (x längs der Wand, der erste freie Stand trägt es) — frei, wo es die Massen des
+        // Hauses, seine Fenster, jedes Stück in `belegt` ({x0, x1, y0, y1} an derselben Wand), jeden fremden Grund und seine
+        // Wandlaterne nicht trifft. Rückgabe {x, z, th, kasten} (der Anker, die Drehung, sein Kasten an der Wand) oder null.
+        var amTuerWand = function (B, q, i, m, reihe, belegt) {
             var c = Math.cos(q.phi || 0),
                 s = Math.sin(q.phi || 0),
                 hw = B.dims.W / 2,
                 hd = B.dims.D / 2,
                 t = B.dims.tuer,
                 sz = t.z > 0 ? 1 : -1,
-                m = schildMass(1, g),
                 rand = m.aus ? hw - 0.6 : hw - m.bw / 2 - 0.1,
                 tief = m.aus ? A - (m.x0 - 0.05) : m.d,
                 halb = m.aus ? 0.03 : m.bw / 2,
                 y1 = m.aus ? m.yA + 0.03 : m.y0 + m.bh;
-            if (rand < 0 || (!m.aus && (t.y || 0) + (t.h || 0) + 0.05 > m.y0)) return null; // die Tafel hängt über dem Sturz der Tür
+            if (rand < 0 || (!m.aus && !m.nebenTuer && (t.y || 0) + (t.h || 0) + 0.05 > m.y0)) return null; // das Brett hängt über dem Sturz der Tür
             var welt = function (ax, az) {
                 return { x: q.x + ax * c + az * s, z: q.z - ax * s + az * c };
             };
             var fen = ((B.fenster && B.fenster.liste) || []).filter(function (f) {
                 return f.perp === "z" && f.cz * sz > 0 && f.cy + f.h / 2 > m.y0 && f.cy - f.h / 2 < y1;
             });
-            var reihe = m.aus ? [t.x - S.nebenTuerM, t.x + S.nebenTuerM] : [t.x, t.x - halb - 0.85, t.x + halb + 0.85];
             for (var ri = 0; ri < reihe.length; ri++) {
                 var lx = Math.max(-rand, Math.min(rand, reihe[ri])),
                     b = { x0: lx - halb, x1: lx + halb, y0: m.y0, y1: y1, z0: sz > 0 ? hd : -hd - tief, z1: sz > 0 ? hd + tief : -hd };
                 if (schildStoesst(B.masse, b)) continue;
                 if (fen.some(function (f) { return Math.abs(f.cx - lx) < f.w / 2 + halb; })) continue;
+                if (belegt.some(function (o) { return o.x1 + 0.1 > b.x0 && o.x0 - 0.1 < b.x1 && o.y1 + 0.1 > b.y0 && o.y0 - 0.1 < b.y1; })) continue;
+                if (m.nebenTuer && Math.abs(lx - t.x) < (t.w || 1) / 2 + halb + 0.1) continue; // neben der Tür, nie vor ihr
                 var k = welt(lx, sz * (hd + A)),
                     w = welt(lx, sz * hd),
                     e = welt(lx, sz * (hd + tief));
@@ -11580,10 +11803,20 @@
                     // die Wandlaterne des Hauses hängt dort (an derselben Wand, seitlich näher als das Brett und ihr Kopf)
                     if (l.wand && l.haus === i && Math.abs(dx * s + dz * c) < 0.3 && Math.abs(dx * c - dz * s) < halb + 0.25) frei = false;
                 }
-                if (frei) return { art: "schild", x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gestalt: g, slot: slotVon[i] };
+                if (frei) return { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), kasten: b };
             }
             return null;
         };
+        // die Stände des Schilds: der Ausleger neben der Tür (die Seite der Wandlaterne zuletzt), die Tafel über dem Sturz, dann
+        // seitlich so weit, dass ihr Rand die Laterne oder das Fenster frei gibt
+        var schildAmHaus = function (B, q, i, g) {
+            var m = schildMass(1, g),
+                t = B.dims.tuer,
+                halb = m.aus ? 0.03 : m.bw / 2,
+                st = amTuerWand(B, q, i, m, m.aus ? [t.x - S.nebenTuerM, t.x + S.nebenTuerM] : [t.x, t.x - halb - 0.85, t.x + halb + 0.85], []);
+            return st && { stueck: { art: "schild", x: st.x, z: st.z, th: st.th, gestalt: g, slot: slotVon[i] }, kasten: st.kasten };
+        };
+        var wand = []; // je Haus die Kästen seiner Stücke an der Tür-Wand
         for (var i = 0; i < Bs.length; i++) {
             var B = Bs[i],
                 q = pl[i],
@@ -11593,7 +11826,72 @@
             if (!g) continue;
             // wo die Traufe oder der Nachbar den Ausleger schneidet, hängt das Gewerbe flach an der Wand
             var st = schildAmHaus(B, q, i, g) || (schildMass(1, g).aus ? schildAmHaus(B, q, i, schildGestalt(rolle, jahr, true)) : null);
-            if (st) aus.push(st);
+            if (st) {
+                aus.push(st.stueck);
+                wand[i] = [st.kasten];
+            }
+        }
+        // DAS HAUSZEICHEN: je Rolle EIN Bild am Ort (`HAUSZEICHEN_MOTIV`: kein Werk gleicht einem anderen) — am ersten Bau seiner
+        // Rolle, an dessen Tür-Wand es neben seinem Schild Platz findet: über der Tür, seitlich in der Höhe der Tafel, sonst
+        // (die Traufe des niedrigen Hauses, sein Vordach) neben der Tür unter dem Sturz
+        var gezeigt = {};
+        for (i = 0; i < Bs.length; i++) {
+            B = Bs[i];
+            q = pl[i];
+            rolle = B && B.p && B.p.rolle;
+            var gr = SCHILD_WORT.indexOf(rolle) + 1;
+            if (!gr || gezeigt[rolle] || !q || slotVon[i] === undefined || !B.dims || !B.dims.tuer || !B.masse) continue;
+            var mr = reliefMass(1, gr),
+                tr = B.dims.tuer,
+                hr = mr.bw / 2,
+                reihe = [tr.x, tr.x - hr - 0.85, tr.x + hr + 0.85, tr.x - hr - 1.7, tr.x + hr + 1.7],
+                sr = amTuerWand(B, q, i, mr, reihe, wand[i] || []);
+            // neben der Tür sucht es die Wand ab, im Schritt der Viertel-Elle, nächst der Tür zuerst
+            for (var rx = hr + 0.65 + 0.25 * Math.ceil(((tr.w || 1) / 2) / 0.25), lauf = []; rx < B.dims.W / 2; rx += 0.25) lauf.push(tr.x - rx, tr.x + rx);
+            if (!sr && (sr = amTuerWand(B, q, i, reliefMass(1, gr + SCHILD_WORT.length), lauf, wand[i] || []))) gr += SCHILD_WORT.length;
+            if (!sr) continue;
+            gezeigt[rolle] = true;
+            aus.push({ art: "relief", x: sr.x, z: sr.z, th: sr.th, gestalt: gr, slot: slotVon[i] });
+        }
+        // DAS MARKTKREUZ: der Markt (ein Platz mit Ständen) trägt es ab dem Jahr seines Rechts, in der Form seiner Epoche
+        // (`denkmalGestalt`) — am Stand nächst der Mitte des Platzes, außer seiner Gasse (`gangM`), frei von Stand, Brunnen, Laterne,
+        // Weg und Grundriss (die Stufen im Kreis ihrer Ecken)
+        var pz = lay.platz,
+            MK = MARKTKREUZ_GESETZ;
+        if (pz && lay.staende && lay.staende.length && jahr >= MK.ab) {
+            var rK = AUSSTATTUNG.denkmal.tritt.ex,
+                rD = rK * Math.SQRT2,
+                rS = Math.hypot(AUSSTATTUNG.marktstand.tritt.ex, AUSSTATTUNG.marktstand.tritt.ez),
+                wege = (lay.roads || []).map(function (rd) {
+                    return { pts: rd.pts, h: lay.wegRand ? lay.wegRand(rd) : rd.w / 2 };
+                }).concat((lay.feldwege || []).map(function (fw) {
+                    return { pts: fw.pts, h: fw.w / 2 };
+                })),
+                kandidat = [];
+            for (var gz = -pz.ez + rK; gz <= pz.ez - rK + 1e-6; gz += 0.5)
+                for (var gx = -pz.ex + rK; gx <= pz.ex - rK + 1e-6; gx += 0.5) if (Math.abs(gz) >= (pz.gangM || 0) + rK) kandidat.push({ x: pz.cx + gx, z: pz.cz + gz, d2: gx * gx + gz * gz, n: kandidat.length });
+            kandidat.sort(function (a, b) {
+                return a.d2 - b.d2 || a.n - b.n;
+            });
+            var kreuzFrei = function (x, z) {
+                var o, k2, P;
+                for (o = 0; o < lay.staende.length; o++) if (Math.hypot(x - lay.staende[o].x, z - lay.staende[o].z) < rS + rD) return false;
+                for (o = 0; o < (lay.brunnen || []).length; o++) if (Math.hypot(x - lay.brunnen[o].x, z - lay.brunnen[o].z) < AUSSTATTUNG.brunnen.tritt.r + rD) return false;
+                for (o = 0; o < lay.laternen.length; o++) if (!lay.laternen[o].wand && Math.hypot(x - lay.laternen[o].x, z - lay.laternen[o].z) < AUSSTATTUNG.laterne.tritt.r + rD) return false;
+                for (o = 0; o < wege.length; o++)
+                    for (P = wege[o].pts, k2 = 0; k2 + 1 < P.length; k2++) {
+                        var ax = P[k2].x, az = P[k2].z, dx = P[k2 + 1].x - ax, dz = P[k2 + 1].z - az, L2 = dx * dx + dz * dz,
+                            tt = L2 > 1e-9 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2)) : 0;
+                        if (Math.hypot(x - ax - dx * tt, z - az - dz * tt) < wege[o].h + rD) return false;
+                    }
+                for (o = 0; o < pl.length; o++) if (pl[o] && pl[o].obb && imOrt(pl[o]) && distPunktOBB(x, z, pl[o].obb) < rD + 0.5) return false;
+                return true;
+            };
+            for (var ki = 0; ki < kandidat.length; ki++)
+                if (kreuzFrei(kandidat[ki].x, kandidat[ki].z)) {
+                    aus.push({ art: "denkmal", x: kandidat[ki].x, z: kandidat[ki].z, th: 0, gestalt: denkmalGestalt(jahr) });
+                    break;
+                }
         }
         return aus;
     }
@@ -14416,6 +14714,8 @@
         wegUeberBruecken: wegUeberBruecken, // fahrzeug.K2 — der Weg über dem Wasser auf der Achse seiner Brücke (Netz und Feldweg)
         grenzeAmWeg: grenzeAmWeg, // ort-ausstattung (Leiter mensch.macht.grenze) — wo der Feldweg zweier Orte ihre Grenze kreuzt: der Stein daneben
         GRENZSTEIN_GESETZ: GRENZSTEIN_GESETZ, // ort-ausstattung — der Grenzstein (Höhe, Breite, Tiefe, Grund, Kreuz, Weisung, Abstand zum Weg)
+        reliefMass: reliefMass, // ort-ausstattung (Leiter mensch.kultur.bildkunst) — die Gestalt des Hauszeichens → {rolle, motiv, Maße}
+        MARKTKREUZ_GESETZ: MARKTKREUZ_GESETZ, // ort-ausstattung — das Marktkreuz (Höhe, Stufen, Säule, Kapitell, Kreuz, Jahr des Rechts, Epochen)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,

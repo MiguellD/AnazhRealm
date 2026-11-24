@@ -1350,6 +1350,51 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
+            // DAS HAUSZEICHEN (ort-ausstattung) — das Bild einer Rolle an der Tür-Wand ihres Baus (fachwerk `ortAusstattung`, ein
+            // Stück am Haus des Exports `gegenstaende`), gehoben MIT seinem Haus. Die GESTALT baut das Gesetzbuch (fachwerk
+            // AUSSTATTUNG `relief`: Rahmen, Grund, das Motiv erhaben — Rolle und Höhe wählen sie, die Welt stempelt sie als
+            // `__gestalt`); der Ursprung liegt im Boden vor der Wand, +x zur Wand (armM 0,4 m). Die Parts sind seine Substanz in
+            // seinen Maßen (HAUSZEICHEN_GESETZ 0,6 × 0,575 m, mit dem Rahmen 0,06 m vor der Wand) in der Höhe der Tafel.
+            relief_dorf: {
+                name: "relief_dorf",
+                etikett: ["bau.relief"],
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "relief",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0.37, y: 2.99, z: 0 },
+                        size: { x: 0.06, y: 0.575, z: 0.6 },
+                    },
+                ],
+            },
+            // DAS MARKTKREUZ (ort-ausstattung) — das Zeichen des Marktrechts am Platz (fachwerk `ortAusstattung`, frei in
+            // `gegenstaende`), gehoben über `_dorfErlebnis`. Die GESTALT baut das Gesetzbuch (fachwerk AUSSTATTUNG `denkmal`: drei
+            // Stufen, die Säule, das Kapitell, das Kreuz der Epoche); die Parts sind seine Substanz wie seine Hülle (MARKTKREUZ_GESETZ:
+            // die Stufen 2,4 × 0,6 m, darüber 0,62 m bis 5,22 m): stein dicht → solide.
+            denkmal_dorf: {
+                name: "denkmal_dorf",
+                etikett: ["bau.denkmal"],
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "denkmal",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.3, z: 0 },
+                        size: { x: 2.4, y: 0.6, z: 2.4 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 2.91, z: 0 },
+                        size: { x: 0.62, y: 4.62, z: 0.62 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: {
                 name: "felsbogen",
