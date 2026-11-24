@@ -3171,8 +3171,9 @@ const LANDMARKE_AN = async (r, T, a) => {
     // Gezählt wird das Gesetzbuch der Tiere in der Sitzung: die Gattungen (GATTUNGEN ∪ die Gattungen der lebenden Tiere), je Gattung
     // ein Tier (das nächste binnen 80 m, sonst ein Wurf) und sein AUGE DER ART (`_kreaturAuge`: Taxon, Augenlänge, Schärfe aus dem Leib;
     // tetrapoda SINNES_GESETZ). S1 — die RADIEN je Gattung: die Sicht-Distanz, in der das Tier den Spieler an der Pose sieht
-    // (`_kreaturSiehtM`), liegt im Band, wenn sie die Fluchtdistanz seiner Gattung trägt (ein Tier entdeckt, ehe es flieht — die
-    // Alarm- vor der Fluchtdistanz, am Sikahirsch Alarm 80,0 m vor dem Menschen — Hirobe & Senzaki 2026, bioRxiv 10.64898/2026.05.13.725053;
+    // (`_kreaturSiehtM`: Auge und Luft der Welt), liegt im Band, wenn sie die Fluchtdistanz seiner Gattung trägt (nur wer sieht, flieht —
+    // die ENTDECKUNG ist Auge + Luft; der ALARM ist Verhalten und eine andere Größe: am Sikahirsch Alarm 80,0 m vor dem Menschen, Hirobe &
+    // Senzaki 2026, bioRxiv 10.64898/2026.05.13.725053 — das Spiel trägt keinen Alarm-Leser, kein Sichern als Rate je Blick: Register;
     // die Fluchtdistanz aus FURCHT_GESETZ mit ihrer Quelle);
     // der Witter-Radius ist EIN Wert für alle (jagd.scentRangeM) und liegt in keinem Band je Gattung. Der Gegenlauf: derselbe Hirsch
     // an der Hälfte seiner Sicht-Distanz, mit Auge ↔ blind (cpd 0), seine Wariness vor dem Spieler. S2 — das GENOM je Gattung gegen
@@ -3577,21 +3578,22 @@ const LANDMARKE_AN = async (r, T, a) => {
                 // DIE HILFEN DER WELT (vorn in jedem Ruf): der Kern und die Zapfen des Wirts; das Tier einer Gattung (das nächste binnen
                 // 80 m, sonst ein Leib neben dem Spieler, `spawnCreatureAt` mit der Seele der Gattung aus TETRAPODA_SOUL_MAP — `_kreaturWurf` wirft nie in den Blick); das Färben eines Leibs (jeder Stoff auf eine linear-sRGB-Farbe,
                 // seine Vertex-Farben aus, gemerkt je Stoff — der Rückruf stellt alles zurück, ehe ein Bild zeichnet); das Menschen-Auge
-                // und die Entdeckung mit denselben Zeilen wie `_kreaturSiehtM`
+                // und die Entdeckung mit denselben Zeilen wie `_kreaturSiehtM` — durch dieselbe Luft der Welt (`_luftSichtM`, Koschmieder)
                 const V = [
                     "const A = r.constructor, st = r.state, K = globalThis.__tetrapodaCore, pm = st.playerMesh, lms = A.FARBSICHT.lms;",
                     "const r1 = (x) => Math.round(x * 10) / 10, f3 = (a) => a.map((x) => +x.toFixed(3));",
                     "const SEELE = {}; for (const [k, g] of Object.entries(A.TETRAPODA_SOUL_MAP)) SEELE[g] = k; const tier = (g, dx, dz) => { const nah = (st.creatures || []).filter((c) => c && c.parent && r._kreaturGattung(c) === g && c.position.distanceTo(pm.position) < 80).sort((a, b) => a.position.distanceTo(pm.position) - b.position.distanceTo(pm.position)); if (nah.length) return nah[0]; if (!SEELE[g]) return null; const x = pm.position.x + dx, z = pm.position.z + dz, h = r.getTerrainHeightAt(x, z); return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : pm.position.y) + 0.5, z, 'happy', SEELE[g], { precise: true, bodySize: 1 }); };",
                     "const faerbe = (obj, c) => { const alt = new Map(); obj.traverse((o) => { if (!o.isMesh) return; for (const m of [].concat(o.material)) if (m && m.color && !alt.has(m)) { alt.set(m, [m.color.clone(), m.vertexColors]); m.color.setRGB(c[0], c[1], c[2]); m.vertexColors = false; } }); delete obj.userData._sichtZiel; return () => { for (const [m, [f, v]] of alt) { m.color.copy(f); m.vertexColors = v; } delete obj.userData._sichtZiel; }; };",
                     "const mensch = { taxon: 'haplorhini', fang: K.augeFang('haplorhini', lms), cpd: K.augeSchaerfe('haplorhini', 23.5) };",
-                    "const sieht = (E, Z, b) => K.augeEntdeckung(E.cpd, Z.kanteM, K.augeAbstand(E.fang, Z.farbe, b), E.fang.kanaele);",
+                    "const luftBeta = -Math.log(A.LUFT.kontrast) / r._luftSichtM(pm.position.y);",
+                    "const sieht = (E, Z, b) => K.augeEntdeckung(E.cpd, Z.kanteM, K.augeAbstand(E.fang, Z.farbe, b), E.fang.kanaele, luftBeta);",
                 ].join("\n");
                 const s = await L.ev(
                     V +
                         `
                     let bew = 0, sied = 0;
                     for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); }
-                    const aus = { saat: st.worldMeta && st.worldMeta.seed, bew, sied };
+                    const aus = { saat: st.worldMeta && st.worldMeta.seed, bew, sied, luftM: r1(-Math.log(A.LUFT.kontrast) / luftBeta) };
                     const D = tier("deer", 30, 0);
                     if (!D) return Object.assign(aus, { fehlt: "kein Hirsch binnen 80 m und kein Leib (r.spawnCreatureAt deer)" });
                     // S1 — DER SPIELER ALS BEUTE: Orange und Grün gleicher Leuchtdichte, Weiß auf dem Schnee der Palette
