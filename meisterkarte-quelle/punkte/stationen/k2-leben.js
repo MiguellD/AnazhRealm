@@ -8164,7 +8164,8 @@ L.perspektive("evolution", (() => {
 
             // ═══ MIKROBEN: die unsichtbare Mehrheit ═══
             [MI]: {
-                sek: 10,
+                sek: 20,
+                faecher: true,
                 pfad: PFAD_GRUND,
                 ungefahren: "die Bildvergleiche der Matten und des Zooms (S1–S3) — auf swiftshader kein Schuss",
                 mess: async function (H, U, M) {
@@ -8208,9 +8209,61 @@ L.perspektive("evolution", (() => {
                     const z = { fehler: a.fehler, antworten: a.orte || 0, streuung: Math.max(0, (a.klassen || 0) - 1) };
                     const keine = "kein mikrobielles Leben: " + (a.matten || 0) + " Treffer unter " + (a.objekte || 0) + " Objekten der Szene";
                     const zoom = "die Kamera sieht bis " + Math.round((a.nearM || 0) * 1000) + " mm (near)";
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): der Belag des Grunds ist das Gesetz des Fels-Stoffs (gelaende-core.js:3855
+                    // `felsFarbe`: Krustenflechte FELS.flechte :3381 am trockenen Licht, Moos am feuchten Sims), gelesen vom Boden der Welt
+                    // (stamm/gelaende-boden.js:3142 FELS_STOFF → das Netz, gelaende-core.js:5473). 40 Fels-Punkte × 5 Stufen des Himmels × 3 der
+                    // Feuchte: je Adresse die Farbe mit und ohne Himmel — der Belag ist ihre Differenz, seine Zone die Richtung (Flechte oder
+                    // Moos, aus FELS gelesen). Die Temperatur ist eine eigene Adresse (heiße Quelle 20–85 °C, das Watt): das Band der Profis
+                    // ordnet die Farbzonen einer heißen Quelle an der Temperatur — über 73 °C endet die Photosynthese (Synechococcus-Matten
+                    // grün-gelb bis 72–73 °C, darunter Chloroflexus orange; Brock 1967, Science 158:1012). Moos ist eine Pflanze, kein Belag
+                    // aus Mikroben: es zählt als Zone, nie als Matte
+                    const MI_AN = (r, T, a) => {
+                        const GK = globalThis.__gelaendeCore;
+                        if (a.saat === "heisse-quelle" || a.saat === "watt") {
+                            const eigen = Object.keys(GK).filter((k) => /quelle|therm|watt|biofilm|matte|mikrob/i.test(k));
+                            if (!eigen.length)
+                                return { fehlt: "die Temperatur des Belags: gelaende-core.js:3855 felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss) nimmt keine Temperatur, das Gelände trägt keine heiße Quelle und kein Watt (0 Exporte quelle|therm|watt|biofilm|matte in __gelaendeCore)" };
+                            return { eigen: eigen.length };
+                        }
+                        const S = r.constructor.FELS_STOFF;
+                        const F = S.gesetz;
+                        const x = ((a.saat * 37.7) % 211) - 105, z = ((a.saat * 61.3) % 197) - 98;
+                        const mit = GK.felsFarbe(S.basis, x, 0, z, 0, 1, 0, 0, a.ort, a.zeit, S.netz.fuss, [0, 0, 0]);
+                        const ohne = GK.felsFarbe(S.basis, x, 0, z, 0, 1, 0, 0, 0, a.zeit, S.netz.fuss, [0, 0, 0]);
+                        const d = [0, 1, 2].map((k) => mit[k] - ohne[k]);
+                        const dE = Math.hypot(d[0], d[1], d[2]);
+                        const cos = (ziel) => {
+                            const t = [0, 1, 2].map((k) => ziel[k] - ohne[k]);
+                            const n = Math.hypot(t[0], t[1], t[2]);
+                            return n > 0 && dE > 0 ? (d[0] * t[0] + d[1] * t[1] + d[2] * t[2]) / (n * dE) : 0;
+                        };
+                        const zone = dE < 0.005 ? "Fels" : cos(F.flechte) >= cos(F.moos) ? "Flechte" : "Moos";
+                        return { zone, dE, himmel: a.ort, feucht: a.zeit, x, z };
+                    };
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: MI_AN, export: "gelaende-core.js:3855 felsFarbe (FELS.flechte :3381, FELS.moos)", leser: "stamm/gelaende-boden.js:3142 FELS_STOFF → gelaende-core.js:5473 (das Netz des Bodens)" },
+                        adressen: { saaten: 40, orte: [0, 0.25, 0.5, 0.75, 1], zeiten: [0.05, 0.5, 0.95], dazu: [20, 45, 60, 72, 85].map((t) => ({ saat: "heisse-quelle", ort: 1, zeit: t })).concat([{ saat: "watt", ort: 1, zeit: 0.95 }]) },
+                        ms: 8000,
+                        masse: {
+                            zonen: { wie: "verschieden", feld: "zone" },
+                            matten: { wie: (v) => new Set(v.filter((x) => x === "Flechte")).size, feld: "zone" },
+                            lichtSteigung: { wie: "steigung", x: "a.ort", y: "dE" },
+                            feuchteSteigung: { wie: "steigung", x: "a.zeit", y: "dE" },
+                            belagMax: { wie: "max", feld: "dE" },
+                        },
+                        schlecht: { feld: "dE", richtung: "min" },
+                        pose: (q, w) => "Fels unter Himmel " + q.ort + ", Feuchte " + q.zeit + " an (" + Math.round(w.x) + ", " + Math.round(w.z) + "): Zone " + w.zone + ", Belag ΔRGB " + Math.round(w.dE * 1e4) / 1e4,
+                        ungemessen: ["der Bildvergleich der Zonierung gegen Natur-Fotos (Panel R11) — ungemessen bis zum Gerät"],
+                    });
+                    const z1 = R1.je.map((e) => e.w.dE);
+                    const m1 = z1.length ? z1.reduce((u, v) => u + v, 0) / z1.length : NaN;
+                    const sd1 = z1.length > 1 ? Math.sqrt(z1.reduce((u, v) => u + (v - m1) ** 2, 0) / (z1.length - 1)) : 0;
+                    const r4 = (x) => (Number.isFinite(x) ? Math.round(x * 1e4) / 1e4 : x);
+                    const zonen1 = [...new Set(R1.je.map((e) => e.w.zone))].join(", ");
+                    const nicht1 = (R1.fehlt || "die Temperatur-Adressen ungemessen") + " — die Zonen folgen dem Licht (Steigung ΔRGB je Himmel " + r4(R1.werte.lichtSteigung) + ") und der Feuchte (" + r4(R1.werte.feuchteSteigung) + "), nie der Temperatur: " + R1.werte.zonen + " Zonen (" + zonen1 + "), " + R1.werte.matten + " aus Mikroben (Krustenflechte) — keine Matte, kein Biofilm gegen das Band der heißen Quelle (≤ 73 °C grün, Brock 1967) · " + R1.akte;
                     return {
                         sprossen: {
-                            1: { werte: { matten: a.matten }, zeuge: z, auge: await M.auge("evolution-mikroben-s1", { ort: "wiese" }), nicht: keine },
+                            1: { werte: { matten: R1.werte.matten, zonen: R1.werte.zonen, lichtSteigung: R1.werte.lichtSteigung, belagMax: R1.werte.belagMax }, zeuge: { fehler: R1.fehler.length ? R1.fehler[0] : null, antworten: R1.gemessen, streuung: sd1 }, auge: await M.auge("evolution-mikroben-s1", { ort: "wiese" }), nicht: nicht1 },
                             2: { werte: { zoomMinMm: a.nearM * 1000 }, zeuge: z, auge: await M.auge("evolution-mikroben-s2", { ort: "wiese" }), nicht: keine + "; " + zoom },
                             3: { werte: { orte: a.orte, zoomMinM: a.nearM }, zeuge: z, auge: await M.auge("evolution-mikroben-s3", { ort: "wiese" }), nicht: keine + "; " + zoom },
                             4: { werte: { mikrobenArten: a.matten }, zeuge: { fehler: a.fehler, antworten: a.lebenZellen || 0, streuung: a.abbauProS || 0 }, nicht: keine + "; das Feld des Lebens zerfällt mit einer Konstante (" + a.abbauProS + "/s) — keine Mutante „Mikroben aus“" },
@@ -8223,11 +8276,11 @@ L.perspektive("evolution", (() => {
                     1: S({
                         soll: [ohneZahl(MI, 1, "Bildvergleich der Zonierung gegen Natur-Fotos", "zonierung"), K.soll(MI, 1, "Bildvergleich der Zonierung", { key: "matten", rel: "≥", zahl: 1, refQuelle: "eine sichtbare Matte (Umfang: „Matten, Biofilme, Algenbeläge sichtbar“)" })],
                         werte: { matten: 3 },
-                        zeuge: { min: 20, was: "Orte am Spieler", streu: true },
+                        zeuge: { min: 600, was: "Adressen des Fächers (Fels × Himmel × Feuchte)", streu: true },
                         auge: { pose: "Ego an der Wiese (keine heiße Quelle, kein Watt erzeugbar)", vorbild: "Natur-Fotos der Zonierung (heiße Quelle, Watt, Fels), Prüfer-Satz R11" },
-                        taeter: "gelaende-core.js / stamm/feld-leben.js (kein mikrobielles Leben)",
+                        taeter: "gelaende-core.js:3855 felsFarbe (Belag aus Licht und Feuchte, keine Temperatur, keine heiße Quelle, kein Watt)",
                         nicht: "keine Matten",
-                        leser: "stamm/feld-leben.js:3079 LIFE_FIELD — ein Feld des Lebens ohne Mikroben; kein Leser einer Matte im Gelände",
+                        leser: "gelaende-core.js:3855 felsFarbe (FELS.flechte :3381, FELS.moos :3384) — Leser stamm/gelaende-boden.js:3142 FELS_STOFF → gelaende-core.js:5473 das Netz des Bodens; Licht und Feuchte, keine Temperatur",
                         unklar: "der Richter nennt keine Schwelle — Vorschlag: Panel-2AFC gegen Natur-Fotos ≤ 70 %",
                     }),
                     2: S({
