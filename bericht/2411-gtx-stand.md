@@ -73,3 +73,23 @@ Dieser Nachtrag ERSETZT oben den nächsten Handgriff bei klima-aufwind („Vorpr
 - **`einlass-ruf-erbe-wip` db4bf13b3** — unverändert: 9da5ae70d auf main 499f8b57 pflücken, Tore, Blatt, Vorprüf-Kopf.
 
 Reihenfolge: Ruhe-Gesetz (Vorprüf-Kopf) → Welt-Wache tat-k1 → klima-aufwind stetig → Einlass. Karte 2 gebucht 83 von 1 718. ZWISCHENSTAND.
+
+## NACHTRAG 16:06 — Welt-Wache tat-k1 an main 499f8b57: die Lesung an der Quelle (noch kein Lauf, kein Schnitt)
+
+- Die Probe BEKAM ihre Welt: zehn ENDLICHE Nullen. Eine blinde Messung fiele beim Namen („K1 Tat n am Ort … ohne … nach … Schritten
+  Vogel-Uhr“, `scripts/diag-weltakt-wache.cjs:44–47`).
+- δ einer Tat = Ertrag − Erwartung; Ertrag = `_playerSituationWohl(auraAt)` NACH dem Programm minus vorher (`stamm/feld-sprache.js`
+  :1193, :1231) — gelesen im selben Aufruf. „pflege das land“ = `deposit_life` am Leib → `_lebenGabe` → `_feldAkt`
+  (`stamm/feld-leben.js` :2444, :2120). Der Akt wirkt nur SOFORT, wenn `akt.w ≤ _feldHorizont()`, kein Akt vor ihm in der Reihe
+  steht UND `_feldFolgeSteht(w)` (:2152: jede nahe Region trägt ihren Takt bis w, `R.t + taktS ≥ w`; w28-mp-boden). Sonst tritt er
+  in die Reihe und wirkt erst in der Folge — der Ertrag der Tat ist dann 0, δ 0, die Antwort am Ohr 0 dB.
+- Die Probe spult die Welt-Uhr je Tat 30 s vor (`r._weltUhrNimm((t0 += 30))`, :401) und in `hoere` je Schritt 5 s, dazwischen
+  `stelle(4)` = vier Takte der Schleife: holen die nahen Regionen ihre Stunde in diesen Takten nicht bis w ein, tritt JEDE Pflege
+  in die Reihe — zehn Nullen. (Belegt ist die Kette an der Quelle, nicht der Lauf.)
+- THESE (zu belegen, nicht belegt): die Tat-Probe K1 (tat-aufwaerts, z714) und der EINE Schreiber der Folge (`_feldFolgeSteht`,
+  w28-mp-boden) sind je für sich grün gelandet und zusammen rot — dieselbe Klasse wie die Playtest-Linse, die mit front-stoff
+  „feldFolgeSteht unter __deckel“ bekam. Der Schnitt liegt dann NICHT in der Linse allein: die WERTUNG liest den Ertrag, bevor
+  der Akt wirkt (`_tatWerten` im selben Ruf) — im Spiel heißt das: eine Pflege, während die Folge aufholt, zählt mit δ 0. Die Wurzel
+  ist der Zeitpunkt der Wertung (sie gehört an das Wirken des Akts, `_feldAktWirkt`), die Linse ist der Zeuge.
+- NÄCHSTER HANDGRIFF: `node scripts/diag-weltakt-wache.cjs` unter dem Schloss an main 499f8b57 (in `.wt-probe`), dabei je Tat
+  `st.feldAkte.length` und `_feldFolgeSteht(st.spielZeit)` mitlesen — steht die Pflege in der Reihe, ist die These belegt.

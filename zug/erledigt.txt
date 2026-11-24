@@ -2364,3 +2364,4 @@ omen-gtx-gtx-a8dd22b5-w151552-1-a8dd22b5 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-24 15:39 RUNDE 22 ALARM radeon: RADEON: 1 Messungen ungepusht seit 00:00 — durch 77/77, Station -, Kopf a8dd22b5; die Runde setzt an derselben Station fort — gesehen von radeon (radeon-dienst)
 2026-11-24 15:41 RUNDE 22 ALARM gtx: ohne Fortschritt seit 16 min (halt, 11/239, Station karte2.mensch.geist.netz#1, Kopf a8dd22b5) — gesehen von radeon (radeon-dienst)
 2026-11-24 15:45 landung Runde 22 am a8dd22b5: misst 56 von 239 Stationen (vorn; 21 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 16:14 landung Runde 22 am a8dd22b5: misst 51 von 239 Stationen (vorn; 26 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
