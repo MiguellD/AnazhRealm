@@ -3524,10 +3524,14 @@ hauptLauf(async () => {
                     // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld, kein Werk des Genesis-Orts: die ids seines Plans
                     // `genesis:<art>:<n>`, `_genesisWerkListeBauen` — Tore, Bänke, Laternen), auf dem Erdbau eines Orts — nie das gesetzte
                     // Haus auf seinem EIGENEN Grund (`haus:`, S4)
+                    // — und nie der Wagen des Orts selbst (`_verkehrWagen`, stamm/siedlung-verkehr.js `_verkehrWagenStellen`): er parkt an
+                    // der Wende seiner Gasse, die der Erdbau trägt (haus-stoff2: das nordische Dorf am Mess-Ort trägt Wenden, sein
+                    // Kleinwagen und sein SUV zählten als „fremde Bauten im Erdbau 2“)
                     let fremd = 0;
                     for (const e of st.architectures)
                         if (
                             !e.fundament &&
+                            !e._verkehrWagen &&
                             !/^genesis:/.test(e.id) &&
                             !/_dorf$|^bruecke_/.test(e.type) &&
                             !st.worldMeta.erdbau[
