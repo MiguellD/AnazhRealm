@@ -1,5 +1,13 @@
 # Vorprüfung sport-regeln — Bewohner treten gegeneinander an, und das Dorf schaut zu
 
+**sport-regeln 2 (Basis main f18576b6, Merge-Commit, kein Rebase):** der Konflikt in scripts/diag-koerper-kern.cjs (die Täter-Liste
+und die Selbsttest-Zeile) ist gelöst, beide Teile stehen ganz — die Verben aus der Gestalt mit dem Schwung des Gangs (sieben Täter,
+V8 die Gang-Pose) und TEIL E die Regel-Grammatik (fünf Täter); kein Buchstabe doppelt, der Selbsttest zählt neununddreißig, alle ROT
+beim Namen. Gegen main f18576b6: `tagesPlan` ohne Spiel 1 267 200 von 1 267 200 gleich, `leibVerben` gleich, PRESETS samt
+mensch.fx.bewegung.gang (schwungTangente · schwungWechsel · schwungSpitze) gleich, TAGES_GESETZ außer `haltung` gleich, sha256
+koerper-core 0ad14a8d7c19 → 5bcc5be6d54e; gate:koerper-kern und gate:daten-contract GRÜN. Messort stadt-voll: der Entscheid des
+Koordinators; der Stationen-Zweig `pm-sport-regeln` 3581c6ac bleibt.
+
 ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 82 von 1 718 (vision/karte-2-stand.json im Zweig `punkte-maschine`,
 Kopf 471c911f; die Sprossen bucht der Koordinator).
 
