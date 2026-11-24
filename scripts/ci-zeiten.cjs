@@ -50,6 +50,28 @@ function schritteAus(doc) {
     return m;
 }
 
+// DIE ZEIT JE TOR (kreatur-takt, 24.11.): je npm-Skript gate:*, dessen JEDER Befehl ein gemessener Schritt der Batterie ist (oder
+// das ganze Skript ein Schritt `npm run <name>`), die Summe seiner Schritte (s). Der Einlass der GPU-Probe liest sie und weist ein
+// Tor ab, das länger misst als der Deckel je Probe (gpu-probe.yml PROBE_DECKEL_S): gate:kreatur-takt (Null-Welt, keine GPU) maß in
+// der Cloud 742 + 937 + 596 s und brach auf der GTX 1050 dreimal stumm am Deckel 960 s (1 134 · 1 127 · 1 115 s), auf der OMEN am
+// Deckel 480 s — kein Läufer hält es, sein Richter sind die drei Teile der Cloud
+function skriptZeiten(doc, schritte, skripte) {
+    const amLauf = new Map();
+    for (const [name, s] of schritteAus(doc))
+        if (schritte[name]) amLauf.set(s.run, Math.max(amLauf.get(s.run) || 0, schritte[name].s));
+    const out = {};
+    for (const [n, befehl] of Object.entries(skripte || {})) {
+        if (!n.startsWith("gate:")) continue;
+        const teile = amLauf.has(`npm run ${n}`)
+            ? [`npm run ${n}`]
+            : String(befehl)
+                  .split(/\s*&&\s*/)
+                  .map((t) => t.trim().replace(/\s+/g, " "));
+        if (teile.every((t) => amLauf.has(t))) out[n] = { s: teile.reduce((a, t) => a + amLauf.get(t), 0) };
+    }
+    return out;
+}
+
 // die Messung: je Schritt die ersten JE_SCHRITT Läufe, die ihr Urteil sprachen (grün oder rot: dieselbe Arbeit), aus jedem Versuch;
 // ein am Job-Deckel abgebrochener Schritt, der selbst die Hälfte des Deckels trug, zählt mit seiner Zeit als untere Grenze (er ist
 // der Täter des Abbruchs; auch ein gelandeter Kopf trägt ihn, im Versuch vor dem grünen Wiederholungs-Versuch). Nur grün und nur der letzte Versuch gezählt, wog die Kamera-Leib-Linse 58 s, während sie auf G18 318–919 s
@@ -128,6 +150,8 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
         // je Karte ihr Median; eine Karte ohne grünen Lauf behält ihre Zahl (eine neue trägt sie geschätzt, Lehre z364)
         echt: { vorbereitung_s: Object.fromEntries(karten(jetzt).map((k) => [k, vorb.echt.get(k)?.length ? Math.round(median(vorb.echt.get(k))) : (alt.echt?.vorbereitung_s || {})[k]])) },
         schritte,
+        // je Tor die Summe seiner Schritte — der Einlass der GPU-Probe weist damit ab, was kein Deckel je Probe hält
+        skripte: skriptZeiten(jetzt, schritte, jsonLesen(path.join(root, "package.json")).scripts),
     };
     return { out, gelesen, ohne };
 }
@@ -244,7 +268,16 @@ function verteile(jetzt, out) {
     );
 }
 
-module.exports = { messe };
+module.exports = { messe, skriptZeiten, schreibe };
+
+// die Tafel auf der Platte: flache Objekte auf einer Zeile (je Schritt, je Tor, je Karte)
+function schreibe(out) {
+    const text = JSON.stringify(out, null, 2).replace(
+        /([[{])\n\s+([^[\]{}]*?)\n\s+([\]}])/g,
+        (m, a, x, b) => a + x.replace(/\n\s+/g, " ") + b
+    );
+    fs.writeFileSync(path.join(root, AUS), text + "\n");
+}
 
 if (require.main === module) {
     const token =
@@ -260,11 +293,7 @@ if (require.main === module) {
         // die Geschichte von main frisch: ein eben gelandeter Kopf zählt
         execSync('git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main"', { cwd: root, stdio: "pipe" });
         const { out, gelesen, ohne } = await messe(apiMit(API, token), jetzt, alt);
-        const text = JSON.stringify(out, null, 2).replace(
-            /([[{])\n\s+([^[\]{}]*?)\n\s+([\]}])/g,
-            (m, a, x, b) => a + x.replace(/\n\s+/g, " ") + b
-        );
-        fs.writeFileSync(path.join(root, AUS), text + "\n");
+        schreibe(out);
         console.log(
             `${AUS}: ${Object.keys(out.schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s (echt ${JSON.stringify(out.echt.vorbereitung_s)} s), ${gelesen} Läufe, Kopf ${out.kopf}`
         );
