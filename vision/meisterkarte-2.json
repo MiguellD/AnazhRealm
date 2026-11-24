@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 34,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 6,
-    "anteilKern": 0.4
+    "heute": 33,
+    "kern": 4,
+    "kernDazu": 4,
+    "anteilHeute": 5.8,
+    "anteilKern": 0.6
    },
    "perspektiven": [
     {
@@ -7105,8 +7105,8 @@
        "richter": "N = 100 Welten: Fremdwelt-Probe (R10) — Lebensentwurf aus Leib, Welt und Gesellschaft der Art vorhergesagt Rang ≥ 0,7"
       }
      ],
-     "heute": 2,
-     "kern": 0,
+     "heute": 1,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
      "alt": []
@@ -20089,10 +20089,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 90,
+  "heute": 89,
   "davonKopplungen": 33,
-  "kern": 4,
-  "kernDazu": 4,
+  "kern": 5,
+  "kernDazu": 5,
   "anteilHeute": 4.8,
   "anteilKern": 0.1,
   "kapitel": 7,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 37
+  "nachwache": 36
  },
  "zusammengelegt": [
   {
