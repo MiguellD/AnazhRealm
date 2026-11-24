@@ -63,7 +63,15 @@
 // („Preis am Kopf offen (Last): <kopf> <gerät> ×f“), ihr Kopf zählt für die KOPF-FOLGE als Urteil. Sie HEBT weiter nur bis KERN
 // (aus 0 wird KERN, nie PUNKT). Ein gemessen ROTER Preis, eine fehlende oder unvollständige Preis-Zahl (R3), „UNGEMESSEN ohne
 // Referenz“ und jedes Richter-ROT nehmen wie bisher. Gesetz: ROT unter Last ist kein Urteil (Referenzfahrt, einseitige Logik) —
-// es kann darum auch keinen Punkt nehmen. Unter dem Gesetz der KOPF-FOLGE:
+// es kann darum auch keinen Punkt nehmen.
+// DIE LAST DER NACHWACHE AM SELBEN KOPF (24.11., der Koordinator): das galt bis hier nur in der Folge EINES Geräts und über
+// verschiedene Köpfe. Am SELBEN Kopf nahm die Last-Fahrt des zweiten Geräts den Punkt des ersten: „eine Fahrt, das schwächere“
+// rechnete KERN (Last) gegen PUNKT. Am 24.11. standen so mensch.kultur.bildkunst S 1 und mensch.geist.absicht S 2 im Kern — GTX 1060
+// Richter und Preis GRÜN am 2d6a0447, Radeon 890M Richter GRÜN, Preis „UNGEMESSEN unter Last ×1,65“ und „×1,95“ am selben Kopf
+// (die Radeon maß neben den Batterien zweier Macher). Jetzt: steht am Kopf ein Gerät im PUNKT, zählt ein Gerät, dessen Stand dort
+// aus einer LAST-FAHRT stammt, nicht in das schwächere — es bleibt Nachwache mit Richter GRÜN, der Bericht nennt es laut („Preis am
+// Kopf offen (Last): <kopf> <gerät> ×f — … der Punkt von <gerät> am selben Kopf hält“). Ein GEMESSEN roter Preis, eine fehlende
+// Zahl und jedes Richter-ROT des zweiten Geräts nehmen am selben Kopf wie bisher. Unter dem Gesetz der KOPF-FOLGE:
 //
 // ── DIE KOPF-FOLGE (16.11.) ── Der Stand folgt dem Code, nicht der Uhr. Bis hier setzte eine spätere Messung an ÄLTEREM Code das Urteil
 // über neueren (GTX 16.11.: 13:14 am a635bfee Preis ROT, Heap 491 MB → Kern; 14:11 am Vorfahren e4eeee08 Preis GRÜN → hob die Sprosse
@@ -542,7 +550,7 @@ function rechne(karte, akten, kern0, kopf) {
         // Messung nur durch eine Messung DESSELBEN Geräts an einem Nachfahren — die Nachwache des anderen Geräts bleibt stehen, bis es
         // selbst den jüngeren Code misst.
         const jeGeraet = fahrtenJeGeraet(liste, (x) => preisUrteil(x.preis, T, `Sprosse ${id} S ${nr} ${x.geraet}`, sp.klasse)).map(({ geraet, fahrten }) => {
-            const d = { geraet, s: start, warum: "", kopf: null, rot: false, rote: [] }; // rote: die main-Köpfe, an denen dieses Gerät den Richter ROT maß
+            const d = { geraet, s: start, warum: "", kopf: null, rot: false, rote: [], last: null }; // rote: die main-Köpfe, an denen dieses Gerät den Richter ROT maß · last: sein Stand KERN stammt aus einer LAST-FAHRT („<gerät> ×f“)
             const setzer = []; // die vollen SHA der Fahrten dieses Geräts, die seinen Stand schon setzten (ROT, KERN, PUNKT)
             fahrten.forEach((f, i) => {
                 const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} ${geraet} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
@@ -561,7 +569,7 @@ function rechne(karte, akten, kern0, kopf) {
                 }
                 if (r.u === "NICHTS") return void (d.kopf || (d.warum = r.warum));
                 setzer.push(h);
-                Object.assign(d, { kopf: h, warum: r.warum, rot: r.u === "ROT", s: r.u === "ROT" ? "NULL" : r.u });
+                Object.assign(d, { kopf: h, warum: r.warum, rot: r.u === "ROT", s: r.u === "ROT" ? "NULL" : r.u, last: (r.u === "KERN" && r.last) || null });
             });
             return d;
         });
@@ -593,7 +601,13 @@ function rechne(karte, akten, kern0, kopf) {
         } else if (gesetzt.length) {
             const jeKopf = new Map();
             for (const d of gesetzt) jeKopf.set(d.kopf, (jeKopf.get(d.kopf) || []).concat(d));
-            const fahrt = [...jeKopf.values()].map((ds) => ({ ds, r: Math.min(...ds.map((d) => RANG[d.s])) }));
+            // DIE LAST DER NACHWACHE AM SELBEN KOPF (24.11., Kopf-Kommentar): steht ein Gerät am Kopf im PUNKT, zählt das Gerät, dessen
+            // Stand dort nur aus einer LAST-FAHRT stammt, nicht in „das schwächere“ — ungemessen ist nicht schwächer; laut als Notiz
+            const fahrt = [...jeKopf.values()].map((alle) => {
+                const ds = alle.some((d) => d.s === "PUNKT") ? alle.filter((d) => !(d.s === "KERN" && d.last)) : alle;
+                for (const d of alle) if (!ds.includes(d)) notiz(`Preis am Kopf offen (Last): ${d.kopf.slice(0, 8)} ${d.last} — Richter GRÜN, der Punkt von ${ds.map((x) => x.geraet).join(" + ")} am selben Kopf hält (Z4)`);
+                return { ds, r: Math.min(...ds.map((d) => RANG[d.s])) };
+            });
             const best = Math.max(...fahrt.map((x) => x.r));
             s = best === 2 ? "PUNKT" : "KERN";
             const sieger = fahrt.filter((x) => x.r === best).flatMap((x) => x.ds);
@@ -1620,6 +1634,46 @@ function selbsttest() {
         });
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
+    // ── DIE LAST DER NACHWACHE AM SELBEN KOPF (24.11.): je Gerät eine Akte am selben Kopf, die Radeon nur unter Last ──
+    const nachwacheLast = (radeonPreis) => ({
+        [A + ".1.7f778d44-gtx"]: fahrt(A, 1, { geraete: ["GTX 1060"], datum: "2026-11-24T19:00:00Z" }),
+        [A + ".1.7f778d44-radeon"]: fahrt(A, 1, { geraete: ["Radeon 890M"], datum: "2026-11-24T20:50:00Z", preis: radeonPreis }),
+    });
+    pruefe("LAST DER NACHWACHE am selben Kopf: GTX PUNKT, Radeon Richter GRÜN und Preis nur unter Last → PUNKT an der GTX, die Radeon Nachwache beim Namen, laut", () => {
+        const { L, z } = lauf(nachwacheLast(lastPreis));
+        const b = z.bericht[0];
+        return L(A).heute === 1 && L(A).kern === 0 && z.beide === 0 && b.stand === "PUNKT" &&
+            /^Richter GRÜN und Preis \(Ort\) GRÜN an GTX 1060 am 7f778d44 · Nachwache Radeon 890M: Richter GRÜN an Radeon 890M, Preis Radeon 890M UNGEMESSEN unter Last ×1,84/.test(b.warum) &&
+            b.notiz.join(" | ") === "Preis am Kopf offen (Last): 7f778d44 Radeon 890M ×1,84 — Richter GRÜN, der Punkt von GTX 1060 am selben Kopf hält (Z4)"
+            ? true
+            : `heute ${L(A).heute} kern ${L(A).kern} beide ${z.beide} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("LAST DER NACHWACHE Gegenprobe: die Radeon misst den Preis am selben Kopf GEMESSEN ROT (Referenz im Band) → KERN, der Punkt fällt", () => {
+        const { L, z } = lauf(nachwacheLast({ bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" }));
+        return L(A).heute === 0 && L(A).kern === 1 && !z.bericht[0].notiz.length ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("LAST DER NACHWACHE Gegenprobe: die Radeon misst am selben Kopf den Richter ROT → 0", () => {
+        const a = nachwacheLast(lastPreis);
+        a[A + ".1.7f778d44-radeon"].geraete[0].richter.urteil = "ROT";
+        const { L } = lauf(a);
+        return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("LAST DER NACHWACHE Gegenprobe: BEIDE Geräte am selben Kopf nur unter Last → KERN, nie PUNKT (kein Gerät im Punkt, nichts fällt aus)", () => {
+        const a = nachwacheLast(lastPreis);
+        a[A + ".1.7f778d44-gtx"] = fahrt(A, 1, { geraete: ["GTX 1060"], datum: "2026-11-24T19:00:00Z", preis: lastPreis });
+        const { L, z } = lauf(a);
+        return L(A).heute === 0 && L(A).kern === 1 && !z.bericht[0].notiz.length ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("MUTANTE (i) „eine Fahrt, das schwächere“ ohne die Last-Ausnahme (die Regel bis 24.11.): der Fall LAST DER NACHWACHE fällt ROT", () => {
+        const r = mutante("alle.filter((d) => !(d.s === \"KERN\" && d.last)) : alle;", "alle : alle;");
+        const { L } = lauf(nachwacheLast(lastPreis), { rechne: r });
+        return L(A).heute === 1 ? "die Mutante hob trotzdem — der Fall fängt die alte Regel nicht" : true;
+    });
+    pruefe("MUTANTE (j) „jeder KERN der Nachwache fällt aus“ (ohne das Last-Wort): die Gegenprobe GEMESSEN ROT fällt ROT", () => {
+        const r = mutante("alle.filter((d) => !(d.s === \"KERN\" && d.last)) : alle;", "alle.filter((d) => d.s !== \"KERN\") : alle;");
+        const { L } = lauf(nachwacheLast({ bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" }), { rechne: r });
+        return L(A).heute === 0 ? "die Mutante nahm trotzdem — die Gegenprobe fängt die zu weite Regel nicht" : true;
+    });
     pruefe("LAST-FAHRT Mutant: PUNKT + Last-Fahrt + Richter ROT → 0", () => {
         const { L } = lauf(punktDann(fahrt(A, 1, { preis: lastPreis, rot: "GTX 1060" })));
         return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
@@ -1792,6 +1846,14 @@ function selbsttest() {
     //   c1 ← c3 (main im Ursprung, nach dem Klonen) ← c5 (main später) ; c1 ← c2 (Zweig im Ursprung)
     {
         const os = require("os");
+        // DIE FIXTUR HAT IHR EIGENES REPO (24.11., der Koordinator): ein geerbtes GIT_DIR (ein Lauf aus einem Baum ohne .git, der sein
+        // Repo per Umgebung nennt) lenkte jedes git der Fixtur in DIESES Repo — `update-ref refs/heads/main c3` setzte am 24.11. viermal
+        // den lokalen main-Zeiger des Haupt-Klons auf den Fixtur-Commit und legte dort „zweig“ und „probe“ an. Die Fixtur läuft darum
+        // ohne die Repo-Umgebung; der Fall „FIXTUR bleibt in ihrem Repo“ nennt jeden ihrer drei Zeiger, der sich im Repo des Laufs bewegte.
+        const umgebung = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY"].map((n) => [n, process.env[n]]);
+        const zeiger = () => spawnSync("git", ["for-each-ref", "--format=%(refname) %(objectname)", "refs/heads/main", "refs/heads/zweig", "refs/heads/probe"], { encoding: "utf8", cwd: __dirname }).stdout.trim();
+        const zeigerVor = zeiger();
+        for (const [n] of umgebung) delete process.env[n];
         const t = fs.mkdtempSync(path.join(os.tmpdir(), "buche-2-kopf-"));
         const ursprung = path.join(t, "ursprung.git"),
             klon = path.join(t, "klon");
@@ -1852,6 +1914,11 @@ function selbsttest() {
             }
         });
         fs.rmSync(t, { recursive: true, force: true });
+        for (const [n, v] of umgebung) if (v !== undefined) process.env[n] = v;
+        pruefe("FIXTUR bleibt in ihrem Repo: kein Zeiger main · zweig · probe des Repos, in dem der Lauf steht, bewegte sich (auch unter geerbtem GIT_DIR)", () => {
+            const nach = zeiger();
+            return nach === zeigerVor ? true : `die Fixtur schrieb in das Repo des Laufs — vorher [${zeigerVor.replace(/\n/g, " · ")}] nachher [${nach.replace(/\n/g, " · ")}]`;
+        });
     }
     pruefe("KOPF-FOLGE git: e4eeee08 ist echter Vorfahre von a635bfee, nicht umgekehrt, beide auf main", () => {
         const K = kopfFolgeAusGit(["e4eeee08", "a635bfee"]);
