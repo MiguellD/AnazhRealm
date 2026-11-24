@@ -2047,6 +2047,12 @@
         }
         return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
     }
+    // NAT = VERHALTEN.furcht. Liefert die Reichweite der Aura (m): in ihr steigt die Wariness mit der Naehe (1 − d/R). Die
+    // scheueste Natur ((2·0 − 1)·mutGewicht), unbedroht und ohne Erinnerung, erreicht fleeThreshold genau am fleeRadius — kein
+    // Wesen fuerchtet die Aura, wo es nicht flieht: R = fleeRadius / (1 − fleeThreshold / mutGewicht) = 14 / ⅔ = 21 m.
+    function auraReichM(NAT) {
+        return NAT.fleeRadius / (1 - NAT.fleeThreshold / NAT.mutGewicht);
+    }
     // d = fluchtDistanzM der Gattung (m), erinnert = furchtErinnert des Wesens, menace = die Bedrohung der Aura (bedrohung),
     // bond = die Bindung ∈ [0, 1]. Liefert die Fluchtdistanz vor dem Menschen JETZT (m; 0 = es flieht ihn nicht): erinnerte
     // Furcht und eine bedrohliche Aura weiten sie um fluchtJeFurcht je Einheit (wer geschlagen wurde und wer einen schnellen,
@@ -5801,6 +5807,7 @@
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
         fluchtRadius: fluchtRadius,
+        auraReichM: auraReichM,
         fluchtDistanz: fluchtDistanz,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,

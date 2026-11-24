@@ -65,7 +65,7 @@ class AnazhRealm_kreatur_furcht {
         // ENTDECKUNG ≠ ALARM (auge-der-art 2): das Auge sagt, OB die Beute ihn sieht; AB WELCHER NÄHE sie flieht, sagt die
         // Fluchtdistanz ihrer Gattung (`_kreaturFluchtDistanzM`, das Feldmaß — dasselbe der Glut und der Flucht vor dem Menschen).
         // Bis hier war der Flucht-Radius die ganze Sichtweite: der Hirsch floh einen hetzenden Wolf ab 1 066 m und lief
-        // fluchtRadius = r + 2,2 r ≈ 3,5 km weit (gate:kreatur-takt an der GTX 595 s über dem Deckel 480 s).
+        // fluchtRadius = r + 2,2 r ≈ 3,4 km weit (gate:kreatur-takt an der GTX 595 s über dem Deckel 480 s).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
         let best = Infinity;
         let J = null;
@@ -143,21 +143,23 @@ class AnazhRealm_kreatur_furcht {
         const bedroht = FG.bedrohung(e, NAT);
         // ENTDECKUNG ≠ ALARM (auge-der-art 2): das Auge sagt, OB das Wesen den Spieler wahrnimmt (`sieht`: seine Farbe gegen den
         // Boden unter ihm im Rezeptorraum der Art, `_kreaturSiehtM` — Hunderte Meter); AB WELCHER NÄHE es ihn angeht, sagt die
-        // Fluchtdistanz seiner Gattung (`alarm`, das Feldmaß — dasselbe der Glut und des hetzenden Jägers). Bis auge-der-art EIN
-        // noticeRadius 22 m für jede Gattung, jede Farbe und jeden Boden; bis auge-der-art 2 rampte die Wariness über die ganze
+        // Reichweite der Aura (`alarm`, tetrapoda auraReichM: die scheueste Natur erreicht die Flucht-Schwelle genau am
+        // fleeRadius, 21 m) und, im pfad, die Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`, das Feldmaß). Bis auge-der-art
+        // EIN noticeRadius 22 m für jede Gattung, jede Farbe und jeden Boden; bis auge-der-art 2 rampte die Wariness über die ganze
         // Sichtweite: auf 90 m stand der scheue Hirsch bei +0,80, der kühne bei −0,84 neugierig auf dem Weg zum Spieler (Playtest
-        // Tier-Separation „Anker nicht initialisiert“). Ein Leib ohne Auge (keine Gattung im Gesetzbuch) sieht nichts.
+        // Tier-Separation „Anker nicht initialisiert“); über die Fluchtdistanz gerampt fürchtete der Verband den Spieler 50 m vor
+        // dem Radius seiner Flucht und zog, statt zu ruhen (gate:kreatur-takt herde: zweite Hand 0 von 4, tagesbudget: der Wolf
+        // ruht 0,014 gegen 0,6). Ein Leib ohne Auge (keine Gattung im Gesetzbuch) sieht nichts.
         const auge = this._kreaturAuge(creature);
-        const d0 = auge ? this._kreaturFluchtDistanzM(creature) : 0;
-        const fluchtM = d0 * weit;
-        // das Auge wird nur gefragt, wo es zählt — in der Fluchtdistanz und, im pfad, in der Flucht vor dem Menschen, die eine
-        // drohende Aura weitet (`_kreaturMenschFlucht`, dasselbe Gesetz `fluchtDistanz`): die Kosten folgen der Nähe, nie dem Bestand
+        const auraM = FG.auraReichM(NAT) * weit;
+        // das Auge wird nur gefragt, wo es zählt — in der Aura und, im pfad, in der Flucht vor dem Menschen, die eine drohende
+        // Aura weitet (`_kreaturMenschFlucht`, dasselbe Gesetz `fluchtDistanz`): die Kosten folgen der Nähe, nie dem Bestand
         const reichM =
-            mode === "pfad" && !jaegt
-                ? Math.max(fluchtM, FG.fluchtDistanz(d0, erinnert, bedroht, ud.bond || 0, FG.F))
-                : fluchtM;
+            auge && mode === "pfad" && !jaegt
+                ? Math.max(auraM, FG.fluchtDistanz(this._kreaturFluchtDistanzM(creature), erinnert, bedroht, ud.bond || 0, FG.F)) // prettier-ignore
+                : auraM;
         const sieht = auge && dist <= reichM ? this._kreaturSiehtM(creature, this.state.playerMesh) * weit : 0;
-        const alarm = Math.min(sieht, fluchtM);
+        const alarm = Math.min(sieht, auraM);
         let wariness = 0; // fern → neutral, das Wesen wandert
         if (fearActive || dist <= alarm) {
             const menace = jaegt ? 0 : bedroht;
