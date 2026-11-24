@@ -6474,8 +6474,9 @@ L.perspektive("oeko", (() => {
             },
             // ═══ DIE DYNAMIK: Kaskade im Bild, Schwingung, Ausbruch, Kelp, Front, Zyklus nur mit Paar ═══
             [DY]: {
-                sek: 45,
+                sek: 60,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_TIER,
                 ungefahren: "die Bilder (S2 Bildpaar, S4 Luftbild-Reihe) — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
@@ -6565,6 +6566,124 @@ L.perspektive("oeko", (() => {
                         return { k0, jahrT, G, laeufe, front: fern, seiteM: S, marin: Object.values(A._lebensraumGesetz().L.gattung).filter((h) => Object.keys(h).some((k) => /meer|kueste|riff|see/i.test(k))).length };
                     };
                     const R = await seite(raffer, { varianten: [null, "wolf"], saaten: [1, 2, 3, 4, 5, 6, 7, 8], jahre: 50, jungJahre: 10, probeT: 12, budgetMs: 20000, praefix: "dyn-", front: "fox" });
+                    // DER FÄCHER DER KASKADE (S2): Rotwild und Wolf leben im GAU (Leben C2b) — das Gesetz ist der Auftrag an den Gau-Faden
+                    // (`_gauAuftrag`, stamm/kreatur-erbe.js:277: der Gau des Spielers als Funktion von Saat, Takt und Akten), die Wölfe gehen
+                    // mit ihrem Akt „aus“ an Takt 2 (der EINE Eingang der Seite in den Gau, `_gauAkt`); je Adresse (das Tal × mit/ohne Wölfe ×
+                    // 1, 5, 10 Spieljahre) der Fraß je Zelle des Tals (25 Reviere um den Spieler, die Schicht, die `_gauFrassAt` :555 liest)
+                    // als Stufe des Leben-Overlays (`_lebenStufe`, stamm/feld-leben.js:2403) — und die Deckung der lebenden Nah-Streu, wie
+                    // ihr Leser sie wiegt: `__phytoCore.bodenGewicht` (phyto-core.js:6506, der Leser stamm/vegetation-wiese.js:1580) mit der
+                    // Umwelt der Zelle aus denselben Lesern wie `_nahStreuKachel` (Licht der Kronen, Feuchte, Ufer, Fels, Hang). Eigene Saaten
+                    // (Saat des Gaus ⊕ Adresse) sind eigene Läufe im Faden: der Lauf des Spiels bleibt; am Ende geht der Gau (`_gauGeht`), die
+                    // Seite bestellt ihn aus ihren Akten neu (der Gau ist Funktion, nie Cache)
+                    const DY2_AN = async (r, T, a, mit) => {
+                        const A = r.constructor, G = A.GAU, B = A._bestandGesetz().B, L = A.LIFE_FIELD, BR = A.BESTAND_REGION;
+                        const core = globalThis.__phytoCore;
+                        const S = r._bestandSeite(), pm = r.state.playerMesh.position;
+                        const [ix0, iz0] = [Math.floor(pm.x / S), Math.floor(pm.z / S)];
+                        const o = r._gauOrt(ix0, iz0);
+                        const C = r.__dy2 || (r.__dy2 = { ids: {}, u: null, gau: [o.gx, o.gz] });
+                        if (!C.u) {
+                            const boden = (px, pz) => {
+                                const v = r._bodenSichtAt(px, pz);
+                                return v === null ? r._voxelSurfaceY(px, pz) : v;
+                            };
+                            const zellen = [];
+                            for (let dx = -mit.ring; dx <= mit.ring; dx++)
+                                for (let dz = -mit.ring; dz <= mit.ring; dz++) {
+                                    const [ix, iz] = [ix0 + dx, iz0 + dz];
+                                    const q = r._gauOrt(ix, iz);
+                                    if (q.gx !== o.gx || q.gz !== o.gz) continue;
+                                    for (let i = 0; i < BR.zellen; i++)
+                                        for (let j = 0; j < BR.zellen; j++) {
+                                            const x = (ix + (i + 0.5) / BR.zellen) * S, z = (iz + (j + 0.5) / BR.zellen) * S;
+                                            const y = boden(x, z);
+                                            const feld = r.worldFieldAt(x, z);
+                                            zellen.push({ revier: q.revier, c: i * BR.zellen + j, u: { licht: r._bodenLichtFeld(x, z, x, z)(x, z), feucht: r._feuchteAt(x, z, y), ufer: y - r._koerperWasser(x, z, y), fels: feld ? feld.dichte : null, hang: r._slopeAt(x, z, boden) } });
+                                        }
+                                }
+                            C.u = zellen;
+                        }
+                        const arten = (r._nahStreuArten() || []).filter((q) => q.ernte === "kraut");
+                        const jahrT = Math.round(r._kalender().jahrK / B.taktS);
+                        const saat = (r._gauSaat(o.gx, o.gz) ^ Math.imul(a.saat, 0x9e3779b1)) | 0;
+                        const liste = (x) => (Array.isArray(x) ? x : Object.values(x || {}));
+                        let akte = [];
+                        if (a.ort === "ohne") {
+                            if (!C.ids[saat]) {
+                                const a1 = await r._gauAuftrag(o.gx, o.gz, 1, [], { lesen: Array.from({ length: G.n * G.n }, (_, i) => i), saat });
+                                const ids = [];
+                                for (const Rv of liste(a1.reviere)) for (const t of Rv.tiere) if (t.g === "jaeger") ids.push(t.id);
+                                C.ids[saat] = ids;
+                            }
+                            akte = C.ids[saat].map((id) => ({ takt: 2, art: "aus", id }));
+                        }
+                        const lesen = [...new Set(C.u.map((q) => q.revier))].sort((p, q) => p - q);
+                        const ant = await r._gauAuftrag(o.gx, o.gz, a.zeit * jahrT, akte, { lesen, saat });
+                        const rv = new Map(liste(ant.reviere).map((Rv) => [Rv.i, Rv]));
+                        let D = 0, Db = 0, ab = 0, fs = 0, hirsch = 0;
+                        for (const Rv of rv.values()) hirsch += Rv.koepfe.beute;
+                        for (const q of C.u) {
+                            const Rv = rv.get(q.revier);
+                            const f = Rv ? Rv.frass[q.c] || 0 : 0;
+                            const st = Math.round(f * L.stufen) / L.stufen;
+                            const u = Object.assign({}, q.u, { leben: st });
+                            for (const z of arten) {
+                                const g = z.zeile.dichte * core.bodenGewicht(z.zeile, u);
+                                D += g;
+                                if (z.zeile.leben) Db += g;
+                            }
+                            if (st < 0) ab++;
+                            fs += f;
+                        }
+                        return { saat: a.saat, ohne: a.ort === "ohne", jahre: a.zeit, takt: ant.takt, beute: ant.beute, jaeger: ant.jaeger, hirschTal: hirsch, wolfAus: akte.length, zellen: C.u.length, reviere: lesen.length, deckung: Math.round(D * 1e3) / 1e3, deckungLeser: Math.round(Db * 1e3) / 1e3, abgeaest: Math.round((1e4 * ab) / C.u.length) / 1e4, frass: Math.round((1e5 * fs) / C.u.length) / 1e5, leserArten: arten.filter((q) => q.zeile.leben).map((q) => q.id), arten: arten.map((q) => q.id) };
+                    };
+                    let R2 = null;
+                    if (U[2]) {
+                        // je Saat und Jahr das Paar mit/ohne Wölfe: die Abnahme in % gegen den Gegenlauf (positiv = ohne Wölfe weniger)
+                        const paare = (aus, feld, jahre) => {
+                            const je = {};
+                            for (const x of aus) if (x.w.jahre === jahre) (je[x.w.saat] = je[x.w.saat] || {})[x.w.ohne ? "ohne" : "mit"] = x.w[feld];
+                            return Object.values(je).filter((p) => p.mit > 0 && p.ohne != null).map((p) => Math.round((1e4 * (p.mit - p.ohne)) / p.mit) / 100);
+                        };
+                        const minus = (feld, jahre) => (v, aus) => {
+                            const p = paare(aus, feld, jahre);
+                            return p.length ? Math.min(...p) : null;
+                        };
+                        try {
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: DY2_AN, export: "stamm/kreatur-erbe.js:277 _gauAuftrag (der Gau-Faden: Bestand, Riss, Fraß je Zelle) · :319 _gauAkt (aus) · phyto-core.js:6506 bodenGewicht", leser: "stamm/vegetation-wiese.js:1580 _nahStreuKachel liest _lebenStufe (stamm/feld-leben.js:2403 ← kreatur-erbe.js:555 _gauFrassAt)" },
+                                adressen: { saaten: 1, orte: ["mit", "ohne"], zeiten: [1, 5, 10] },
+                                mit: { ring: 2 },
+                                ms: 32000,
+                                zugabe: 6000,
+                                masse: {
+                                    jungwuchsMinusProzent: { wie: minus("deckung", 10) },
+                                    jungwuchsMinusJeSaat: { wie: (v, aus) => paare(aus, "deckung", 10) },
+                                    jungwuchsMinusJahr1: { wie: minus("deckung", 1) },
+                                    jungwuchsMinusJahr5: { wie: minus("deckung", 5) },
+                                    leserMinusProzent: { wie: minus("deckungLeser", 10) },
+                                    hirschTalPlusProzent: { wie: (v, aus) => { const p = paare(aus, "hirschTal", 10); return p.length ? -Math.max(...p) : null; } }, // prettier-ignore
+                                    wolfAus: { wie: "min", feld: "wolfAus", nur: (q) => q.ort === "ohne" },
+                                    jaegerOhne: { wie: "max", feld: "jaeger", nur: (q) => q.ort === "ohne" },
+                                    zellen: { wie: "max", feld: "zellen" },
+                                    reviere: { wie: "max", feld: "reviere" },
+                                    leserArten: { wie: "erste", feld: "leserArten" },
+                                    arten: { wie: "erste", feld: "arten" },
+                                    deckungMin: { wie: "min", feld: "deckung" },
+                                    deckungMax: { wie: "max", feld: "deckung" },
+                                    abgeaestOhne: { wie: "mittel", feld: "abgeaest", nur: (q) => q.ort === "ohne" && q.zeit === 10 },
+                                    abgeaestMit: { wie: "mittel", feld: "abgeaest", nur: (q) => q.ort === "mit" && q.zeit === 10 },
+                                },
+                                schlecht: { feld: "deckung", richtung: "min" },
+                                pose: (q, w) => "Ego im Tal des Spielers, dieselbe Kamera nach " + w.jahre + " Spieljahren " + (w.ohne ? "ohne" : "mit") + " Wölfe (Saat " + w.saat + "): Deckung " + w.deckung + ", " + Math.round(w.abgeaest * 100) + " % der Zellen abgeäst",
+                                ungemessen: ["das Bildpaar gleicher Kamera vor/nach 10 Spieljahren (Bildpflicht) — ungemessen bis zum Gerät", "die Deckung wiegt die Nah-Streu je Zelle nach dem Boden-Gesetz in der Mitte der Zelle (je Revier 4 × 4), nicht jede Pflanze der Kachel"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
+                        // der Sandkasten: die eigenen Läufe der Probe fallen mit dem Gau, die Seite bestellt ihn aus Saat und Akten neu
+                        await H.seite("const C = r.__dy2; delete r.__dy2; if (C) r._gauGeht(C.gau[0], C.gau[1]); return !!C;");
+                    }
                     const proJahr = R.jahrT / 12;
                     // DIE SCHWINGUNG: die Autokorrelation der Hirsch-Reihe (ohne Mittel) — ihr erstes Maximum nach dem ersten Nulldurchgang
                     // ist die Periode, das Maximum der Kreuzkorrelation Wolf gegen Hirsch der Verzug des Räubers
@@ -6619,7 +6738,21 @@ L.perspektive("oeko", (() => {
                     const jungMinus = jm.length && jo.length ? Math.round((1e4 * (mj(jm) - mj(jo))) / Math.max(1e-9, mj(jm))) / 100 : null;
                     const zg = { antworten: R.laeufe.length, streuung: sd, vor: mit.length ? mit[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, nach: ohne.length ? ohne[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, tal: R.k0, mit: mit.length, ohne: ohne.length, ms: R.laeufe.map((l) => l.ms) };
                     const aus = M.teil || {};
-                    aus[2] = { werte: jungMinus === null ? {} : { jungwuchsMinusProzent: jungMinus }, zeuge: Object.assign({ jungMit: jm, jungOhne: jo }, zg), auge: await M.auge("oeko-dynamik-s2", { ort: "wiese" }) };
+                    if (U[2]) {
+                        // die Werte trägt der Fächer allein (der Gau, der Fraß, das Boden-Gesetz); die Abnahme des Hirsch-K der Altlast-Region
+                        // (`jungMinus`, die Bühne bis hier: eine Zahl des Rotwilds, nie die Deckung) steht als Bühnen-Zeuge daneben
+                        const RW = R2 && R2.werte;
+                        const gem = (R2 && R2.je) || [];
+                        const d10 = (ohne) => gem.filter((x) => x.w.jahre === 10 && x.w.ohne === ohne).map((x) => x.w.deckung);
+                        aus[2] = {
+                            werte: RW ? { jungwuchsMinusProzent: RW.jungwuchsMinusProzent == null ? undefined : RW.jungwuchsMinusProzent, jungwuchsMinusJeSaat: RW.jungwuchsMinusJeSaat, jungwuchsMinusJahr1: RW.jungwuchsMinusJahr1, jungwuchsMinusJahr5: RW.jungwuchsMinusJahr5, leserMinusProzent: RW.leserMinusProzent, hirschTalPlusProzent: RW.hirschTalPlusProzent, wolfAus: RW.wolfAus, jaegerOhne: RW.jaegerOhne, zellen: RW.zellen, reviere: RW.reviere, leserArten: RW.leserArten, arten: RW.arten, abgeaestMit: RW.abgeaestMit, abgeaestOhne: RW.abgeaestOhne, buehneHirschKMinusProzent: jungMinus } : {},
+                            zeuge: { antworten: R2 && R2.gemessen, streuung: RW && RW.deckungMax != null ? Math.round((RW.deckungMax - RW.deckungMin) * 1e3) / 1e3 : 0, vor: d10(false)[0], nach: d10(true)[0], faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)), jungMit: jm, jungOhne: jo },
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                            auge: await M.auge("oeko-dynamik-s2", { ort: "wiese" }),
+                        };
+                        // der Gegenlauf gilt nur, wenn die Wölfe wirklich gingen (Akt „aus“ je Wolf, kein Wolf nach 10 Jahren)
+                        if (RW && !(RW.wolfAus > 0 && RW.jaegerOhne === 0)) aus[2].nicht = "kein Lauf ohne Wölfe: " + RW.wolfAus + " Akte „aus“, nach 10 Spieljahren " + RW.jaegerOhne + " Jäger im Gau (stamm/kreatur-erbe.js:319 _gauAkt)";
+                    }
                     aus[3] = { werte: { periodeJahre: med(per), verzugJahre: med(verz) }, zeuge: Object.assign({ perioden: per, verzug: verz }, zg, { antworten: mit.length }) };
                     const aSaaten = mit.filter((l) => l.kappe > 0).length;
                     aus[4] = { werte: { ausbruchSaaten: aSaaten, saaten: mit.length }, zeuge: Object.assign({ kappe: mit.map((l) => l.kappe) }, zg, { antworten: mit.length }), auge: await M.auge("oeko-dynamik-s4", { ort: "wiese" }), nicht: "keine Massenvermehrung eines Waldschädlings — kein Insekt im Bestand (" + R.G.join(", ") + "), keine braune Waldfläche" };
@@ -6641,11 +6774,21 @@ L.perspektive("oeko", (() => {
                         u: { jahre: 10, auge: { ort: "wiese" } },
                         soll: [K.soll(DY, 2, "Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf", { key: "jungwuchsMinusProzent", einheit: "%" })],
                         auge: { pose: "Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe", vorbild: "Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11)" },
-                        taeter: "stamm/kreatur-leben.js _kreaturFrass (die Äsung der Herde am Jungwuchs)",
-                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
-                        zeuge: zeugeWelt(2, true),
-                        gruen: gut({ jungwuchsMinusProzent: 26 }, 16),
-                        attrappen: [{ name: "−26 % aus dem Kaskaden-Lauf ohne Bild", roh: flach({ jungwuchsMinusProzent: 26 }) }],
+                        taeter: "phyto-core.js:6527 bodenGewicht (nur `blume` trägt `leben`: von den lebenden Nah-Arten liest allein die Blume den Fraß; Farn, Gestrüpp, Schilf und der Jungwuchs der Bäume `_baumAlter` lesen ihn nicht) · stamm/kreatur-erbe.js:555 _gauFrassAt",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg; der Zeuge ist der Fächer (das Tal × mit/ohne × Jahre)
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer der Kaskade warf: " + z.fehler;
+                            if (!(z.faecher >= 6)) return "nur " + (z.faecher || 0) + " Läufe des Fächers gemessen (Soll ≥ 6: das Tal × mit/ohne Wölfe × 1, 5, 10 Spieljahre)";
+                            return zeugeWelt(2, true)(roh);
+                        },
+                        gruen: { werte: { jungwuchsMinusProzent: 26 }, zeuge: { antworten: 6, streuung: 90, vor: 2160, nach: 1600, faecher: 6 } },
+                        attrappen: [
+                            { name: "−26 % aus dem Kaskaden-Lauf ohne Bild", roh: flach({ jungwuchsMinusProzent: 26 }) },
+                            { name: "die feste Pose ohne Fächer", roh: gut({ jungwuchsMinusProzent: 26 }, 16) },
+                            { name: "die Welt heute (der Fraß erreicht nur die Blume)", roh: { werte: { jungwuchsMinusProzent: 4.2 }, zeuge: { antworten: 6, streuung: 90, vor: 2164, nach: 2072, faecher: 6 } } },
+                            { name: "die Wölfe gingen nicht", roh: { werte: { jungwuchsMinusProzent: 26 }, zeuge: { antworten: 6, streuung: 90, vor: 2160, nach: 1600, faecher: 6 }, nicht: "kein Lauf ohne Wölfe: 0 Akte „aus“" } },
+                        ],
                     },
                     3: {
                         u: { jahre: 50 },
