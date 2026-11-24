@@ -1,7 +1,7 @@
 {
  "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
  "geraet": "gtx",
- "zeit": "2026-11-24T16:56:41.841Z",
+ "zeit": "2026-11-24T17:08:01.344Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -420,6 +420,76 @@
    },
    "zeit": "2026-11-24T16:56:41.841Z",
    "abdruck": "17638632a3f6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.gespraech#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1356 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1356 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k331b47ef475f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6a02e1b6563c",
+   "s": 8.6,
+   "fremd": {
+    "s": 10.9,
+    "takte": 5,
+    "fremdS": 4.5,
+    "kerne": 0.411,
+    "fensterKerne": 0.411,
+    "namen": [
+     [
+      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
+      0.95
+     ],
+     [
+      "Explorer.EXE",
+      0.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.58
+     ]
+    ],
+    "dienerS": 2.25,
+    "diener": [
+     [
+      "System",
+      1.14
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.61
+     ]
+    ],
+    "geraetS": 4.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.31
+     ],
+     [
+      "svchost.exe",
+      1.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 33.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T17:08:01.344Z",
+   "abdruck": "899501ce89ec",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
