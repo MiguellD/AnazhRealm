@@ -1,9 +1,21 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 10:27 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 10:42 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 10:42 (gilt VOR allem darunter): der Schöpfer 10:36: „fahre fort in deinem tempo, werde nach 98% den account wechseln. Sei dem
+  nächsten ein vorbild“ — also volle Fahrt bis 98 % (um 10:36: alle Modelle 76 %, Fable 69 %, Kontext der Sitzung 72 %). ÜBERGABE liegt:
+  `UEBERGABE-2026-11-24.md` + Werkzeug `bericht/2411-werkzeug/` (koordination a35e5cc3).
+  **MESSGERÄTE STANDEN:** nach dem Sprung 10:00 baute die GTX keine Liste am f18576b6 (`gtx offen 0/0`, Alarm 10:16), die Radeon wartet auf
+  sie. Meine Nachrichten an die bridge-Adressen kamen nicht an; um 10:38 per NAME an „Omen Meister“ und „GTX1050 Meister“ gesendet — die
+  GTX 1050 antwortete 10:47, OMEN noch nicht.
+  **GTX 1050 (Bericht 10:47):** `auge-der-art` 380dc644 ist an der GPU-Probe rot am ZEIT-Deckel, nicht am Verhalten: gate:kreatur-takt
+  1 134 s > 960 s auf der GTX; das Tor braucht keine GPU, misst in der Cloud 2 275 s in drei Teilen, der Code-Check des Kopfs ist GRÜN
+  (21 von 22). Sie schneidet `probe-deckel-einlass` (EIN Deckel `PROBE_DECKEL_S` 480; der Einlass weist zehn Tore über dem Deckel ab),
+  Vorprüf-Push nach der Statik; danach Macher klima-aufwind. `w28-nacht-laterne` bleibt WIP d0171d26 (eine Wandlaterne 0,68 EV).
+  **`auge-der-art`:** merge-tree gegen main f18576b6 = KONFLIKT → braucht „auge-der-art 3“ (Merge mit main), am besten NACH der Landung von
+  `probe-deckel-einlass`; Auftrag an OMEN folgt, sobald OMEN antwortet.
 - NACHTRAG 10:27 — WORT DES SCHÖPFERS 10:20 UND KURS-WECHSEL (gilt VOR allem darunter): „das bau/macherniveau scheint immernoch fern von AAAA …
   sehe kaum fortschritte … sieht fast alles noch gleich aus wie vor 12 h?“ Er hat recht (meine eigenen Bilder: Dorf = graue Kästen, Wiese
   gleich, Boot = Kasten). **WURZEL 1:** der Arbeitsbaum des Haupt-Klons trug eine ALTE `.claude/agents/champion.md` (ohne WebSearch/WebFetch,
