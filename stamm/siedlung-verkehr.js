@@ -228,7 +228,8 @@ class AnazhRealm_siedlung_verkehr {
         VK.spurRaster = new Map();
         const vc = globalThis.__vehicleCore;
         const kurveAus = Math.max(
-            ...vc.GATTUNGEN.map((g) => {
+            // die Gattungen, die die Straße fährt (`FLOTTE`): das Boot und der Leiterwagen stehen am Ufer und im Hof, nie im Ring
+            ...vc.GATTUNGEN.filter((g) => vc.FLOTTE[g] > 0).map((g) => {
                 const d = vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g);
                 const [h, c] = [d.huelle, d.zweispur.c];
                 return this._verkehrAusscheren({ c, bug: h.noseX, heck: h.tailX, hw: h.bw }, 1 / VG.kurveR);

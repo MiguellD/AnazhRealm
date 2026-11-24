@@ -964,6 +964,174 @@ class AnazhRealm_wasser_hydro {
         }
         return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
     }
+
+    // DER ANLEGER (Karte 2 planet.kopplung.siedlungslage#1, fahrzeug-gattung): am Ufer eines Orts der Steg (fachwerk `stegfeld`,
+    // Felder auf festen Jochen) und an seinem Kopf das Boot (vehicle-core `boot`, sein Rumpf aus dem Wasser vor dem Steg). Beide
+    // lesen DIESELBE Welle: die Streichlänge des Wassers vor dem Ufer (`_anlegerStreich`) gibt Hs (vehicle-core `bootWelle`) —
+    // sie formt den Rumpf (ruhiger See: der Kahn; offene See: das Spitzboot) und hebt die Bahn des Stegs über den Spiegel. Der Steg
+    // reicht vom Ufer, bis das Wasser das Boot trägt (die Flachwasserzone, wo das Schilf steht); das Boot schwimmt am Spiegel, den
+    // der Fuß liest (`_koerperWasser`), je Takt gelesen (`_anlegerTakt`), mit dem Tiefgang seines Gesetzes (`bootRumpf` Tleer).
+
+    // DIE STREICHLÄNGE vor dem Ufer (m): je Strahl im Fächer ±`faecherRad` um die Richtung `u` hinaus, bis das Gelände des Gesetzes
+    // (`_terrainMacroSurfaceY`) über den Spiegel (`_waterLevelAt`) steigt oder `streichM` endet — gemittelt nach cos θ (die
+    // effektive Streichlänge der Küsteningenieure, SPM 1977: der Wind trägt die Welle nur in seiner Richtung). Leser: `_anlegerOrt`.
+    _anlegerStreich(x0, z0, ux, uz) {
+        const A = AnazhRealm.ANLEGER;
+        let summe = 0,
+            gewicht = 0;
+        for (let k = -A.strahlen; k <= A.strahlen; k++) {
+            const th = (k / A.strahlen) * A.faecherRad,
+                [c, s] = [Math.cos(th), Math.sin(th)],
+                [rx, rz] = [ux * c - uz * s, uz * c + ux * s];
+            let d = A.streichSchrittM;
+            for (; d < A.streichM; d += A.streichSchrittM) {
+                const [x, z] = [x0 + rx * d, z0 + rz * d];
+                if (!(this._terrainMacroSurfaceY(x, z, false) < this._waterLevelAt(x, z))) break;
+            }
+            summe += d * c;
+            gewicht += c;
+        }
+        return summe / gewicht;
+    }
+
+    // DER ORT DES ANLEGERS am Ufer bei (x0, z0): je Richtung (`ANLEGER.richtungen`) vom Ort hinaus das Ufer (der erste nasse Punkt
+    // binnen `sucheM`), von dort hinaus der Steg, bis die Säule das Boot mit `luftM` unter dem Kiel trägt (höchstens `stegMaxM`),
+    // längs neben seinem Kopf das Boot (die Säule an seiner Mitte trägt es) — die nächste Richtung gewinnt. Rückgabe
+    // { a, b, y, phi, hs, F, boot: { x, z, phi, grund, T, ov } } oder null (kein Wasser, kein tragender Platz).
+    _anlegerOrt(x0, z0) {
+        const A = AnazhRealm.ANLEGER;
+        const VC = globalThis.__vehicleCore;
+        const SG = AnazhRealm.Gesetz("fachwerk:STEG_GESETZ");
+        const saeule = (x, z) => {
+            const s = this._koerperWasser(x, z, -Infinity);
+            if (!(s > -Infinity)) return null;
+            const g = this._voxelSurfaceY(x, z);
+            return g !== null && Number.isFinite(g) && s > g ? { s, g } : null;
+        };
+        let best = null;
+        for (let k = 0; k < A.richtungen; k++) {
+            const [ux, uz] = [Math.cos((2 * Math.PI * k) / A.richtungen), Math.sin((2 * Math.PI * k) / A.richtungen)];
+            let d = 0;
+            while (d <= A.sucheM && !saeule(x0 + ux * d, z0 + uz * d)) d += A.schrittM;
+            if (d > A.sucheM || (best && d >= best.d)) continue;
+            const [ax, az] = [x0 + ux * (d - A.landM), z0 + uz * (d - A.landM)];
+            const F = this._anlegerStreich(ax, az, ux, uz);
+            const hs = VC.bootWelle(F);
+            const ov = { welle: hs, last: A.last };
+            const R = VC.bootRumpf(ov);
+            const traegt = (x, z) => {
+                const q = saeule(x, z);
+                return q && q.s - q.g >= R.Tleer + R.kiel + A.luftM ? q : null;
+            };
+            let L = SG.feldM;
+            while (L < A.stegMaxM && !traegt(ax + ux * L, az + uz * L)) L += SG.feldM;
+            const n = Math.round(L / SG.feldM);
+            const kopf = n * SG.feldM;
+            // das Boot liegt längs am Kopf des Stegs, sein Bug zum Wasser, quer um die halbe Bahn, den halben Rumpf und den Fender
+            const quer = SG.lichtM / 2 + 0.1 + R.B / 2 + A.fenderM;
+            const laengs = kopf - R.L / 2 - A.fenderM;
+            let boot = null;
+            for (const sg of [1, -1]) {
+                const [bx, bz] = [ax + ux * laengs - uz * quer * sg, az + uz * laengs + ux * quer * sg];
+                const q = traegt(bx, bz);
+                if (q) {
+                    boot = { x: bx, z: bz, phi: Math.atan2(-uz, ux), grund: q.g, T: R.Tleer, ov };
+                    break;
+                }
+            }
+            if (!boot) continue;
+            const q = saeule(ax + ux * kopf, az + uz * kopf) || saeule(ax + ux * d, az + uz * d);
+            if (!q) continue;
+            // die Bahn steht über dem Spiegel um die Welle vor ihr, mindestens um den kleinsten Freibord des Boots (dieselbe Hs)
+            const y = q.s + Math.max(VC.BOOT_GESETZ.fMin, hs);
+            best = {
+                d,
+                a: { x: ax, z: az, y },
+                b: { x: ax + ux * (kopf - 1e-3), z: az + uz * (kopf - 1e-3), y },
+                y,
+                phi: Math.atan2(-uz, ux),
+                hs,
+                F,
+                felder: n,
+                boot,
+            };
+        }
+        return best;
+    }
+
+    // DIE LAGE DES BOOTS (`position.y`, Basis + ½ wie `spawnArchitecture`): der Spiegel am Körper an seiner Mitte − sein Tiefgang;
+    // fällt das Wasser unter ihn, liegt er auf dem Grund. EINE Funktion des Spiegels, je Takt gelesen (`_anlegerTakt`) und von
+    // der Linse.
+    _anlegerLage(b) {
+        return Math.max(this._koerperWasser(b.x, b.z, -Infinity) - b.T, b.grund) + 0.5;
+    }
+
+    // DER ANLEGER LIEGT: am Ufer bei (x, z) die Felder des Stegs (`brueckenFelder` am Feld des Stegs) und das Boot als Werke der
+    // Welt aus dem Gesetz (je Schlüssel einmal je Sitzung, wie die Brücke); das Boot trägt seine Welle als Stempel (`studioOv`).
+    // Leser: das Erlebnis eines Orts (`_dorfErlebnis`), die Linse. Rückgabe { a, felder, boot } oder null.
+    _anlegerLegen(x, z, schluessel) {
+        const A = AnazhRealm.ANLEGER;
+        const M = this._anleger || (this._anleger = new Map());
+        if (M.has(schluessel)) return M.get(schluessel);
+        const bp = this.state.blueprints || {};
+        if (!bp[A.steg] || !bp[A.boot])
+            return this._wartetAufBauplan([A.steg, A.boot], () => this._anlegerLegen(x, z, schluessel));
+        M.set(schluessel, null);
+        const a = this._anlegerOrt(x, z);
+        if (!a) return null;
+        const same = this._rollGenome(schluessel, "anleger");
+        const SG = AnazhRealm.Gesetz("fachwerk:STEG_GESETZ");
+        const felder = AnazhRealm.Gesetz("fachwerk:brueckenFelder")(a.a, a.b, SG.feldM)
+            .map((f, i) =>
+                this.spawnArchitecture(
+                    A.steg,
+                    { x: f.x, y: f.y + 0.5, z: f.z },
+                    {
+                        seed: Math.floor(same.axis("steg:" + i) * 4294967296) >>> 0,
+                        rotationY: f.phi,
+                        silent: true,
+                        precise: true,
+                        ausGesetz: true,
+                    }
+                )
+            )
+            .filter(Boolean);
+        const boot = this.spawnArchitecture(
+            A.boot,
+            { x: a.boot.x, y: this._anlegerLage(a.boot), z: a.boot.z },
+            {
+                seed: Math.floor(same.axis("boot") * 4294967296) >>> 0,
+                rotationY: a.boot.phi,
+                silent: true,
+                precise: true,
+                ausGesetz: true,
+                studioOv: a.boot.ov,
+            }
+        );
+        const e = { a, felder, boot };
+        M.set(schluessel, e);
+        return e;
+    }
+
+    // DER TAKT DES ANLEGERS (im Sim-Schritt): je Anleger die Lage des Boots am Spiegel; weicht es um mehr als `ANLEGER.folgtM` ab,
+    // folgt es — Höhe, Hülle und Bild. Der Steg steht auf seinen Jochen. Ohne Anleger zahlt er einen Vergleich.
+    _anlegerTakt() {
+        if (!this._anleger || !this._anleger.size) return;
+        const eps = AnazhRealm.ANLEGER.folgtM;
+        for (const A of this._anleger.values()) {
+            const e = A && A.boot;
+            if (!e || !e.position) continue;
+            const y = this._anlegerLage(A.a.boot);
+            if (!(Math.abs(e.position.y - y) > eps)) continue;
+            e.position.y = y;
+            if (e.blockerAABBs) {
+                this._populateBlockerAABBs(e);
+                e._blockerStampAt = null;
+            }
+            if (e.mesh) e.mesh.position.y = y - 0.5;
+            else if (e.instanced) this._archInstanceUpdate.call(this, e);
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_wasser_hydro]);
 
@@ -982,3 +1150,25 @@ AnazhRealm.PEGEL_RAND_M = 40;
 // DAS KLIMA DES REGENS (`_regenMittel`): so viele Züge der Front mittelt die Welt (die Wellen der Front kehren in 230–2 800 s der
 // Welt-Uhr wieder, 2 000 Züge sind 67 Stunden).
 AnazhRealm.REGEN_KLIMA_ZUEGE = 2000;
+// DER ANLEGER (Karte 2 planet.kopplung.siedlungslage#1, fahrzeug-gattung): die Baupläne von Steg und Boot (fachwerk `stegfeld`,
+// vehicle-core `boot`), die Suche nach dem Ufer (16 Richtungen, je 3 m bis 200 m vom Ort, der Steg liegt 1 m auf dem Ufer und
+// reicht höchstens 6 Felder hinaus), die Streichlänge (7 Strahlen im Fächer ±30°, je 50 m bis 10 km), die Luft unter dem Kiel
+// (0,15 m), der Fender zwischen Steg und Boot (0,25 m), die Last des Boots (zwei Sitzende, 160 kg) und die Schwelle, ab der das
+// Boot dem Spiegel folgt (5 mm — die Stufe des Pegels ist 1 cm, gelaende-core `PEGEL.stufe`).
+AnazhRealm.ANLEGER = Object.freeze({
+    steg: "steg_stegfeld",
+    boot: "fahrzeug_boot",
+    richtungen: 16,
+    sucheM: 200,
+    schrittM: 3,
+    landM: 1,
+    stegMaxM: 22.2,
+    strahlen: 3,
+    faecherRad: Math.PI / 6,
+    streichM: 10000,
+    streichSchrittM: 50,
+    luftM: 0.15,
+    fenderM: 0.25,
+    last: 160,
+    folgtM: 0.005,
+});

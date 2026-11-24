@@ -22,11 +22,11 @@
         },
         "v3": {
             "kern": "vehicle-core.js",
-            "faelle": 20,
+            "faelle": 27,
             "kippt": {
                 "atan2": 20,
-                "sin": 20,
-                "cos": 20,
+                "sin": 24,
+                "cos": 23,
                 "hypot": 5
             },
             "taeter": {
@@ -35,7 +35,7 @@
                 "cos": "vehicle-core.js:484 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
                 "hypot": "vehicle-core.js:1964 hypot (lenA, die A-Saeule)"
             },
-            "soll": "0 - das Raster kommt mit dem v3-Akt der W3; K43-2 trug die Fahrzeug-Stufe 1 dazu (12 -> 17 Faelle), fahrzeug-gattungen den Transporter als sechste Gattung (17 -> 20 Faelle: der Nenner waechst, dieselben Taeter je Fall, hypot unveraendert 5; das Raster steht offen)"
+            "soll": "0 - das Raster kommt mit dem v3-Akt der W3; K43-2 trug die Fahrzeug-Stufe 1 dazu (12 -> 17 Faelle), fahrzeug-gattungen den Transporter als sechste Gattung (17 -> 20 Faelle: der Nenner waechst, dieselben Taeter je Fall, hypot unveraendert 5; das Raster steht offen); fahrzeug-gattung Boot und Leiterwagen (20 -> 27 Faelle: sin 20 -> 24, cos 20 -> 23 am selben Taeter, der Zylinder-Drehung von C; atan2 und hypot unveraendert)"
         },
         "v4": {
             "kern": "porta-core.js",
