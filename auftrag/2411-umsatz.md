@@ -49,3 +49,13 @@ die ECHTE Station seiner Sprosse am eigenen Kopf auf der Radeon und beansprucht 
 „Lies vor dem ersten Schnitt die Station deiner Sprossen (Zweig punkte-maschine, `meisterkarte-quelle/punkte/stationen/`, Feld `wo`
 und die Messfunktion). Sagt sie `K.leser` oder `K.nicht`, gehört ihre Messfunktion zu deiner Abgabe (Zweig `pm-<name>`, Soll wörtlich
 aus der Karte). Beansprucht wird nur eine Sprosse, deren Station am Vorprüf-Kopf GRÜN lief.“
+
+## NACHTRAG 24.11. 16:47 — die Teilung, damit nichts doppelt gebaut wird
+- GELANDET 16:44: z718 w28-ort-ausstattung, main = eba9bf8f (V18.546.404). Runde 23 misst seit 16:47 an diesem Kopf.
+- Die ERSTE Reihe der Messfunktionen (die acht aus bewohner-satz2) schreibt seit 16:45 ein lokaler Arbeiter an der Radeon, Zweig
+  `pm-leser-welle`. OMEN nimmt sie NICHT.
+- OMEN, sobald wach: (1) sport-regeln auf main eba9bf8f, die zwei Röten lesen, neuer Vorprüf-Kopf. (2) Die ZWEITE Reihe als Zweig
+  `pm-leser-welle2`: die Zeilen „ROT NACH DER LANDUNG“ der Umsatz-Tafel (`bericht/2411-umsatz-tafel.md`) außer bewohner-satz2 — je
+  Station erst lesen, ob die Fähigkeit in main steht. Regeln wie oben. Melde dich an die Adresse des Koordinators mit Kopf und Zahl.
+- GTX 1050: Reihenfolge (2) Stations-Probe → (3) runde.cjs → (4) GIT_DIR → Tat-Wertung (Wertung am Moment des Wirkens UND die Probe wartet
+  auf `_feldFolgeSteht`, EINE Welle) → klima-aufwind. Fällt ein Zug-Kandidat zweimal an tat-k1, springt die Tat-Wertung nach vorn.
