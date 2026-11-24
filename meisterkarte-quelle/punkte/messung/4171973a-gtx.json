@@ -1,0 +1,82 @@
+{
+ "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+ "geraet": "gtx",
+ "zeit": "2026-11-24T22:12:12.718Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.macht.grenze#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kdde71287898d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k73bfaf80a92a",
+   "s": 13.8,
+   "fremd": {
+    "s": 17.9,
+    "takte": 8,
+    "fremdS": 57.89,
+    "kerne": 3.233,
+    "fensterKerne": 3.519,
+    "namen": [
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      49.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.44
+     ],
+     [
+      "Explorer.EXE",
+      1.58
+     ]
+    ],
+    "dienerS": 5.25,
+    "diener": [
+     [
+      "System",
+      2.13
+     ],
+     [
+      "dwm.exe",
+      1.89
+     ]
+    ],
+    "geraetS": 11.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.28
+     ],
+     [
+      "svchost.exe",
+      4.73
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 52.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T22:12:12.718Z",
+   "abdruck": "7149d70c4cb7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kdde71287898d": "bVTbjpswEP2XPHbLmmswlvbBKVslUreb/YQxjIENgciGUKXqv1eQOOGy8wTojOf4nDP8XZ0gOUCGz5+6rlZs9W31faXhjJZGdUb1/KlXbBUljose49cinPMfPSxRxanRpCwEAVFBfkSrVQ0W5XMytIFAP6WMdK882xMiyYXE3cvLvLUUmNZWAxLvjQFNZcDmwFZnINCCVg7DbmDbpmsXGBmKxvw9Jvfq3jjf+9Lf03h2mIAqnbKN1kGIAdt1nL/yBcu0AGyssqi0meukYSRtNpq16FHQWRfAvER1a0LqOL4wZDe9nL00s0ZZtlpPhlEvDVzKCInm2Ax1keSNdVK1wOoGF5EbOsA2S7WzU2vJMSMQAqiYa50DVhmqCQfbS+TaYeQPnR96gCMqsCrIjZa2F7rioQ0hZLvkUg7EhxGGeOqEgetMGntTybkXmO+4iWD/Trd3hPkeZ/xRH4uBOskLdZxKJX10bY/9WtLTOaSorEOtmzvaw9C3xXUTdvF17p5u5p2Pixn/AICOwkIo4duFjrqWTQcKrezUmsD4GIQB43y3ADdwPBq/PbRTe26ibvqQj2n44RoRGSFP1yVZXvq6EtYFi9I0Sen70WIbzwqOFohMFVIa10WQyOirkHZYNpao68bI6ISh5zHikWps9O9u0HXkYZx9+G8/efbKJ7Xjc97DhFo1hnQg1rb0mRyCkyzQhWqsDpLcwF0pECL2BfSCqsQMJzKKkEZ9vLtkxNQ3D0+T8F4WLl8K7AWudKuNyQn4ImBfWNKhOgioDjdgkjrOOh3it3nn26ko8ceexv2aTMobtItzfjv4hAk5qVoW/R+Q5NDqHMrm8fv/9x8=",
+  "k73bfaf80a92a": "jVXbjpswEP2XPHbLmosJYGkfnE3UZKvtZqv+wBjGwIZAZEOoUvXfK5I44bIPnSeEzvicOXMMf2YHiHeQ4uOHrsoZm32ZfZ1pOKKlUR1RPX7oGZtFseOix/ilCOf8WweLVX6oNSlyQUCUkO3RalSNefEYn9tAIE1CRtoVT7eESHIiy5bf6pk/PY2PKQQmlVWDxNshfphIn42BjU5BoAWNPBNfwbYdzl1g5Fzhkr8tya3aV863VNJtuBwdJqBMhsqjuR+gzzYt56upyiQHrK0iL7XhdZIgkjbrcU16FLTWCTArUF2bMHQcKozYRWdJZ9OoURaN1gOy0Et8N2SERGNsijqPs9o6qEpgeYWLyA0cYIt2Mkd6aCzZVwRCQCjGXmeAZYpqoMH2Yjl3GPkdjg/dwR4VWCVkxkvbC1xx94YQsp5qKc7CzxRGeOIEvusMGrulXgzmGxMjcuxer28I836Z3qPG3yeEOs5ytR9aJSm6tjeeX2eQoLJ2la5vSA8DaovLjdgsL5zbcDHuvA9ldgcAYS8oJCR8PfFQV7JuQaGVHhoTFop+4DOeTpKla9jvza49tBN7MkDdBbwvgwZzRGSEPFztnNhzuQ7WCfPCNElJaeSz5wUdg48K9haIVOVSmq0LP5bRZyFtsagtUVW1sdIJAs9jxCNlf9E/Wv7M+Wtvh8viJ62Ll4cVH9R3/vIZQ6VqI9wXc1tSJs+TxmPxba5qq4U4M3BXCoRobOIJVYEpDmwUQRh10W7jnkpqHh4GwT1NtnzKsTO41I02S46BCp9dE34J1/Dz06LaCSh314Y4cZx5ws5hf+Prnitrvvllb1v+f7Xi7x3JAWNyUJXMuy8iyaDRGRT1/dfw9x8="
+ }
+}
