@@ -27,15 +27,15 @@
   "taeter": {},
   "vordergrund": {
    "radius": 3.51,
-   "deckung": 0.1615,
+   "deckung": 0.1597,
    "taeter": {
     "bauSatz": 0.1337,
-    "Leib bewohner": 0.0278
+    "Leib bewohner": 0.026
    },
    "leib": {
-    "deckung": 0.0278,
+    "deckung": 0.026,
     "taeter": {
-     "Leib bewohner": 0.0278
+     "Leib bewohner": 0.026
     }
    }
   }
@@ -79,9 +79,9 @@
  "bild": {
   "w": 1280,
   "h": 720,
-  "mittel": 92.7,
-  "sigma": 45.3,
-  "schwarz": 0.0039,
+  "mittel": 92.8,
+  "sigma": 45.1,
+  "schwarz": 0.004,
   "weiss": 0
  },
  "wahl": {
@@ -96,13 +96,13 @@
      454.49
     ],
     "rot": [],
-    "ms": 1526
+    "ms": 1477
    }
   ],
-  "ms": 1526
+  "ms": 1477
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Leib im Vordergrund 2.8 % (Leib bewohner 2.8 %) · Leiber näher als 6 m: 2 von 2 ganz (15 Teile) · Ziel Blickziel im Bild frei 7.02 m · Luma 92.7 σ 45.3 schwarz 0.4 % weiß 0.0 % · Stand 18.546.396 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Leib im Vordergrund 2.6 % (Leib bewohner 2.6 %) · Leiber näher als 6 m: 2 von 2 ganz (15 Teile) · Ziel Blickziel im Bild frei 7.02 m · Luma 92.8 σ 45.1 schwarz 0.4 % weiß 0.0 % · Stand 18.546.396 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
  "rot": [],
  "urteil": "GRÜN"
 }
