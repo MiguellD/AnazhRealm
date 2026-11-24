@@ -1385,6 +1385,44 @@ function raumLinse() {
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
     goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall");
+    // 10b) DIE GRENZE IM LAND (w28-grenze-im-land, Leiter mensch.macht.grenze #1): der Rand des Reichs eines Herrn als Haupt- und
+    //      Läufersteine (fachwerk `grenzeImLand`). Das Band: Hauptsteine 250–600 m voneinander (Kreisarchiv Bodenseekreis), ab
+    //      drei je Reich; kein Stein weiter als `laeuferM` vom nächsten; jeder der 360 Punkte des Rands liegt binnen der halben
+    //      größten Steinweite (300 m, die Zählung der Station) eines Steins; derselbe Same dieselben Steine; ein Rand ohne freies
+    //      Land trägt keinen Stein und zählt jeden Stand.
+    {
+        const GL = FC.GRENZE_IM_LAND;
+        const SG = FC.SIEDLUNG;
+        // die Mitte: der Anker der Metropole am Messort stadt-voll (spec/profiband/haushalt.json, `gruendung.anker`) — dort misst die Station
+        const ort = JSON.parse(require("fs").readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")).messorte.find((m) => m.id === "stadt-voll");
+        const [ax, az] = ort.gruendung.anker;
+        const ringe = [SG.nHMin, 26, 295, 499].map((nH) => ({ x: ax, z: az, r: FC.siedlungsReich(SG, nH), nH }));
+        let bandOk = true;
+        let deckOk = true;
+        let beispiel = "";
+        for (const A of ringe) {
+            const G = FC.grenzeImLand(A, 0x5eed + A.nH, null);
+            const H = G.steine.filter((s) => s.haupt);
+            const U = 2 * Math.PI * A.r;
+            const hW = U / H.length;
+            const lW = G.abstandM;
+            const band = H.length === G.haupt && H.length >= GL.minHaupt && (H.length === GL.minHaupt || (hW >= 250 && hW <= 600));
+            let im = 0;
+            for (let k = 0; k < 360; k++) {
+                const a = (k * Math.PI) / 180;
+                const [x, z] = [A.x + A.r * Math.cos(a), A.z + A.r * Math.sin(a)];
+                if (G.steine.some((q) => Math.hypot(q.x - x, q.z - z) <= 300)) im++;
+            }
+            if (!band || lW > GL.laeuferM + 1e-9) bandOk = false;
+            if (im !== 360 || G.fehlt) deckOk = false;
+            beispiel += ` · nH ${A.nH}: Reich ${A.r.toFixed(0)} m, ${H.length} Haupt (${hW.toFixed(0)} m), ${G.steine.length} Steine (${lW.toFixed(1)} m), Rand ${im}/360`;
+        }
+        const leer = FC.grenzeImLand(ringe[2], 1, () => false);
+        const zwei = [FC.grenzeImLand(ringe[2], 9, null), FC.grenzeImLand(ringe[2], 9, null)].map((g) => JSON.stringify(g));
+        check(`Die Grenze im Land: Hauptsteine im Band 250–600 m (ab ${GL.minHaupt}), Läufer ≤ ${GL.laeuferM} m${beispiel}`, bandOk);
+        check("Die Grenze im Land: jeder der 360 Punkte des Rands binnen 300 m eines Steins (die Zählung der Station)", deckOk);
+        check("Die Grenze im Land: derselbe Same dieselben Steine; ohne freies Land kein Stein, jeder Stand gezählt", zwei[0] === zwei[1] && leer.steine.length === 0 && leer.fehlt > 0);
+    }
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
