@@ -25,8 +25,9 @@
 //       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, Bilanz Ziel + Lee
 //       ±10 %, der Luv-Hang regnet mehr als der Lee-Hang (`ortRot`).
 //   (L) LAND-MEER-LUFT (klima-kontinent, im Selbsttest am echten Kern planet-core): das Δ des Orts trägt das Klima von Land, Meer und
-//       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost; drei gepflanzte Täter fallen je an
-//       ihrer Klinge und nennen `planetKlimaR`, ein Δ ohne nebelQuote wirft (`lmlRot`).
+//       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost —, der Gipfel steht auf Konvergenz
+//       (ks liest die Grenze jemals) und das Eis auf der Kälte des Orts; fünf gepflanzte Täter fallen je an ihrer Klinge und nennen
+//       ihr Gesetz (`planetKlimaR`, `ortRoh ks`, `ortEisZeit`), ein Δ ohne nebelQuote wirft (`lmlRot`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
@@ -525,14 +526,24 @@ function ortSelbsttest() {
 // ≥ 2 (Sperre und Föhn, Smith & Evans 2007; Kaskaden, Anden 3–10 : 1); NEBEL: Passat-Westküsten (±25°) — Anteil der Küsten mit
 // Nebel Küste ÷ 9° landein ≥ 2 mindestens 70 % (Namib, Atacama: Advektions-Nebel über dem Auftrieb, Seely & Henschel 1998);
 // SPANNE: das Jahres-Mittel West- minus Ostküste an ±42° ≥ 5 K (Bergen ↔ Magadan, Vancouver ↔ Halifax; WMO-Normalwerte).
+// GIPFEL (Karte 2 planet.kopplung.gegenwart#2): Gipfel > 2 km (Gitter 6°, Nachbarn je 6°) stehen zu ≥ 95 % auf einer jemals
+// konvergenten Grenze — ks über dem Boden der Saat (ks am ersten Land ohne Gebirge und ohne konvergenten Rand) um > 0,05; Himalaya,
+// Alpen, Ural, Appalachen: jedes Hochgebirge ist Kollision oder ihre Naht (Dewey & Bird 1970), die Ausnahmen Dom und Trapp.
+// EIS (Karte 2 planet.kopplung.gegenwart#1): jedes Land im selben Gitter, dessen Jahresmittel heute unter der Eis-Linie liegt
+// (planetKlima tJahrC < KLIMA.tEisC, −10 °C nach North 1975), trug das Eis des Quartärs — eis.zeit 1 an 100 % (Grönland, Tibet,
+// Antarktis: Hochland und Inneres, nicht die Breite allein).
 // Der Selbsttest pflanzt je Klinge ihren Täter in den Kern (EINE Zeile, ohne git): ohne Sperre und Föhn, ohne Auftrieb im Nebel,
-// ohne den Winter der Meeresluft — jeder fällt ROT an genau seiner Klinge und nennt `planetKlimaR`. Leser: `lmlRot`.
+// ohne den Winter der Meeresluft, ks nur an der Grenze von heute, das Eis nur nach der Breite — jeder fällt ROT an genau seiner
+// Klinge und nennt sein Gesetz.
+// Leser: `lmlRot`.
 const LML_SAATEN = ["anazh-realm-seed", "zsp-0", "zsp-1", "zsp-2", "zsp-3", "zsp-4"];
-const LML_SOLL = { kamm: 2, nebelAnteil: 0.7, spanneK: 5 };
+const LML_SOLL = { kamm: 2, nebelAnteil: 0.7, spanneK: 5, gipfelAnteil: 0.95, eisAnteil: 1 };
 const LML_TAETER = [
-    ["kamm", "ohne Sperre und Föhn", /sperreKm: 2\.5,/, "sperreKm: 1e9, schattenKm: 1e9,"],
-    ["nebel", "ohne Auftrieb im Nebel", /auftrieb = glatt\(0, KLIMA\.nebelTaupunktK, -dTj\);/, "auftrieb = 0;"],
-    ["spanne", "ohne den Winter der Meeresluft", /westWinterK: 14, westSommerK: -2,/, "westWinterK: 0, westSommerK: 0,"],
+    ["kamm", "ohne Sperre und Föhn", /sperreKm: 2\.5,/, "sperreKm: 1e9, schattenKm: 1e9,", "planetKlimaR"],
+    ["nebel", "ohne Auftrieb im Nebel", /auftrieb = glatt\(0, KLIMA\.nebelTaupunktK, -dTj\);/, "auftrieb = 0;", "planetKlimaR"],
+    ["spanne", "ohne den Winter der Meeresluft", /westWinterK: 14, westSommerK: -2,/, "westWinterK: 0, westSommerK: 0,", "planetKlimaR"],
+    ["gipfel", "ks nur an der Grenze von heute", /const konv = Math\.max\(st, /, "const konv = Math.max(0, ", "ortRoh ks"],
+    ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((breite < 0 ? -breite : breite) >= G.eisBreite) return 1;", "ortEisZeit"], // prettier-ignore
 ];
 function lmlKern(taeter) {
     // der Kern des Baums, bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt die Zeile, bricht der Selbsttest beim Namen)
@@ -581,9 +592,36 @@ function lmlMessung(P, W, og) {
     };
     const v = (a, b) => (a + 0.0025) / (b + 0.0025);
     const [kamm, nebel, spanne] = [[], [], []];
+    let [gipfel, gipfelKonv, kalt, kaltEis] = [0, 0, 0, 0];
     for (const samen of LML_SAATEN) {
         const plan = P.planetPlan(samen, P.PLANET_ERDE);
         const S = P.planetScheibe(plan, 0);
+        // GIPFEL: das Relief im 6°-Gitter, ks nur an den Gipfeln und am Boden der Saat
+        const g = [];
+        for (let b = -66; b <= 66; b += 6) {
+            const z = [];
+            for (let l = -180; l < 180; l += 6) {
+                const p = {};
+                P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+                z.push({ b, l, h: p.hoeheM, boden: p.hoeheM > 0 && p.orogenStaerke === 0 && p.randArt !== P.RAND_ART.konvergent }); // prettier-ignore
+                if (!(p.hoeheM > 0) || !(P.planetKlima(S, b * RAD, l * RAD, -1, {}, p).tJahrC < P.KLIMA.tEisC)) continue;
+                kalt++;
+                if (P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan).eis.zeit === 1) kaltEis++;
+            }
+            g.push(z);
+        }
+        const ks = (q) => P.planetOrt(S, q.b * RAD, q.l * RAD, og, undefined, plan).wildnis.ks;
+        const boden = g.flat().find((q) => q.boden);
+        if (!boden) throw new Error(`(L) GIPFEL: die Saat ${samen} trägt kein Land ohne Gebirge — der Boden von ks fehlt`);
+        const ks0 = ks(boden);
+        for (let i = 0; i < g.length; i++)
+            for (let j = 0; j < g[i].length; j++) {
+                const q = g[i][j];
+                const nb = [g[i][(j + 1) % g[i].length], g[i][(j + g[i].length - 1) % g[i].length], (g[i - 1] || [])[j], (g[i + 1] || [])[j]]; // prettier-ignore
+                if (!(q.h > 2000) || nb.some((n) => n && n.h > q.h)) continue;
+                gipfel++;
+                if (ks(q) > ks0 + 0.05) gipfelKonv++;
+            }
         const ort = (b, l) => {
             const o = P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan);
             const p = {};
@@ -624,6 +662,10 @@ function lmlMessung(P, W, og) {
         kuesten: nebel.length,
         spanneK: r3(rang(spanne.sort(aufsteigend))),
         paare: spanne.length,
+        gipfelAnteil: r3(gipfelKonv / Math.max(1, gipfel)),
+        gipfel,
+        eisAnteil: r3(kaltEis / Math.max(1, kalt)),
+        kalt,
     };
 }
 function lmlRot(L) {
@@ -634,6 +676,10 @@ function lmlRot(L) {
         rot.push(`(L) NEBEL: ${(100 * L.nebelAnteil).toFixed(0)} % von ${L.kuesten} Passat-Westküsten mit Nebel ≥ 2× landein (soll ≥ ${100 * LML_SOLL.nebelAnteil} %) — planetKlimaR liest den Auftrieb nicht`); // prettier-ignore
     if (!(L.paare >= 10 && L.spanneK >= LML_SOLL.spanneK))
         rot.push(`(L) SPANNE: West- minus Ostküste an ±42° Median ${L.spanneK} K an ${L.paare} Paaren (soll ≥ ${LML_SOLL.spanneK} K) — planetKlimaR trägt die Meeresluft nicht`); // prettier-ignore
+    if (!(L.gipfel >= 50 && L.gipfelAnteil >= LML_SOLL.gipfelAnteil))
+        rot.push(`(L) GIPFEL: ${(100 * L.gipfelAnteil).toFixed(1)} % von ${L.gipfel} Gipfeln > 2 km auf jemals konvergenter Grenze (soll ≥ ${100 * LML_SOLL.gipfelAnteil} %) — ortRoh ks liest das Gebirge nicht`); // prettier-ignore
+    if (!(L.kalt >= 20 && L.eisAnteil >= LML_SOLL.eisAnteil))
+        rot.push(`(L) EIS: ${(100 * L.eisAnteil).toFixed(1)} % von ${L.kalt} Land-Orten unter −10 °C Jahresmittel tragen das Eis des Quartärs (soll 100 %) — ortEisZeit liest die Kälte des Orts nicht`); // prettier-ignore
     return rot;
 }
 function lmlSelbsttest() {
@@ -643,9 +689,9 @@ function lmlSelbsttest() {
     const og = globalThis.__gelaendeCore.ortGesetz();
     const L = lmlMessung(lmlKern(null), W, og);
     const v = lmlRot(L).map((r) => `land-meer-luft am Kern: ${r}`);
-    const taeter = LML_TAETER.map(([klinge, name, re, ersatz]) => {
+    const taeter = LML_TAETER.map(([klinge, name, re, ersatz, gesetz]) => {
         const rot = lmlRot(lmlMessung(lmlKern([klinge, name, re, ersatz]), W, og));
-        const soll = new RegExp(`^\\(L\\) ${klinge.toUpperCase()}:.*planetKlimaR`);
+        const soll = new RegExp(`^\\(L\\) ${klinge.toUpperCase()}:.*${gesetz}`);
         if (!(rot.length === 1 && soll.test(rot[0])))
             v.push(`land-meer-luft: der Täter „${name}" fällt nicht genau an (L) ${klinge.toUpperCase()} rot: ${rot.join(" · ") || "grün"}`); // prettier-ignore
         return `${name} → ${rot.join(" · ") || "GRÜN"}`;
@@ -714,7 +760,7 @@ if (SELBSTTEST) {
     v.push(...lml.v);
     const L = lml.L;
     console.log(
-        `  (L) Land-Meer-Luft am Kern · Kamm West ÷ Ost ${L.kamm} (${L.kaemme}) · Nebel-Küsten ≥ 2× ${(100 * L.nebelAnteil).toFixed(0)} % (${L.kuesten}) · West − Ost ${L.spanneK} K (${L.paare})`
+        `  (L) Land-Meer-Luft am Kern · Kamm West ÷ Ost ${L.kamm} (${L.kaemme}) · Nebel-Küsten ≥ 2× ${(100 * L.nebelAnteil).toFixed(0)} % (${L.kuesten}) · West − Ost ${L.spanneK} K (${L.paare}) · Gipfel auf Konvergenz ${(100 * L.gipfelAnteil).toFixed(1)} % (${L.gipfel}) · Eis am kalten Land ${(100 * L.eisAnteil).toFixed(1)} % (${L.kalt})`
     );
     for (const t of lml.taeter) console.log(`      gepflanzt: ${t}`);
     const U = (b, n, ohne) => {
