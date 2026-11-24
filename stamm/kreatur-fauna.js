@@ -591,10 +591,15 @@ class AnazhRealm_kreatur_fauna {
         };
         return c;
     }
+    // DIE TIEFE DES FISCHS (FISCH_GESETZ.tiefe der Säule über dem Bett — er folgt dem Pegel): die Mitte des Leibs höchstens
+    // eine Leib-Höhe unter dem Spiegel (der Rücken bricht nie durch, auch am flachen Ufer-Kolk), nie tiefer als ein halber
+    // Leib über dem Bett; trägt die Säule keinen Leib, steht er in ihrer Mitte.
     _fischTiefeY(x, z, F) {
         const bett = this._voxelSurfaceY(x, z);
         const spiegel = this._koerperWasser(x, z, bett);
-        return bett + F.tiefe * Math.max(0, spiegel - bett);
+        const h = Math.max(0, spiegel - bett);
+        const leib = F.leib.groesse[1];
+        return bett + Math.max(Math.min(F.tiefe * h, h - leib), Math.min(leib / 2, h / 2));
     }
     // Das Ziel der Flucht (`fischFlucht`) im Wasser: längs des Laufs auf der Seite des Fischs, ist es trocken die andere Seite,
     // sonst radial fort; ist keines nass, bleibt er (kein Fisch flieht an Land).

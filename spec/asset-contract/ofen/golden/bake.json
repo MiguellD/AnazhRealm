@@ -1662,13 +1662,13 @@
    "meshes": 1,
    "verts": 5212,
    "tris": 2654,
-   "sha256": "b9fbd04bad7900854eae66bc8dcf0459331df39a93cbe4bc07b31aca647bf593"
+   "sha256": "a3e218e3b03a25182fc30fc52db5890fa02b09835e37fc0edf37f2c11660b04a"
   },
   "mensch-L0|haut|head": {
    "meshes": 1,
    "verts": 3674,
    "tris": 7185,
-   "sha256": "258838b7b34385bb71df940f9e30749a481badf605fc2a51836b485948c1836c"
+   "sha256": "749b7d250db96308bf0037715046f601202968a48b85505afca1c874ee9770ac"
   },
   "mensch-L0|stoff_e8e6e0|ankle-1": {
    "meshes": 1,
@@ -1800,7 +1800,7 @@
    "meshes": 1,
    "verts": 2113,
    "tris": 3773,
-   "sha256": "b662a231e7e87fda4aeaf3190dc5f4427467cae2b624126c87478321abdb9d4b"
+   "sha256": "b7408bcff6bf100cd5031c9f962d44e4aeedf167ee927ddad26e2f01ec1c68f9"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
@@ -1894,9 +1894,9 @@
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
-   "verts": 980,
+   "verts": 986,
    "tris": 1700,
-   "sha256": "a44ff5d338d17319ffc94b52d5a680c2676eaf150b16815defc8158afdfd620a"
+   "sha256": "c0a4556c91f491070a0bdb9386c10eedfdfd85c1dd3e031eb66e0b3e42673d3e"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1968,13 +1968,13 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L2|beipack": {
-   "sha256": "b0c1e606f1393ad443473f1e938c978f079fb36eeb84b54067f94216f52b9e45"
+   "sha256": "b10c9762952ac622e168c09545a0eb8bb8c7a9d250b5e9b35e039cf9be04a9ec"
   },
   "mensch-L3|leib|mensch": {
    "meshes": 1,
    "verts": 239,
    "tris": 360,
-   "sha256": "4670718b51972ef2344efe690cf3ce500bf7a1df4f7b0a3d8332cd83d48a211b"
+   "sha256": "fb74e91834ff4ed47bc5be4a9518b6bb49fa62e52c821ac2a6430e211a09ccb4"
   },
   "mensch-L3|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -2046,7 +2046,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L3|beipack": {
-   "sha256": "23fc93eae734961b74e0846a6720d107cc0c4dddf90b72797b3cd9727f4ec4b7"
+   "sha256": "f85fc19f1fba5b651bf838f3c3ed52e91506585514ffd001cc52936c03247d5e"
   }
  }
 }
