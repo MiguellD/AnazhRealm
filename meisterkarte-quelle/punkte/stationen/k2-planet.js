@@ -4603,15 +4603,74 @@ L.perspektive("wetter", (() => {
     // ════════════════════════════════════════ LAGEN ════════════════════════════════════════
     const LA = "planet.wetter.lagen";
     const lagen = {
-        sek: 25,
+        sek: 32,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "die Draufsicht (S3) und das Bild unter der Superzelle (S6) schießt die Probe nur am Gerät (M.auge); headless misst sie das Wetter, den Wind und den Faden",
         mess: async function (H, U, M) {
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const u2 = U[2] || {}, u4 = U[4] || {}, u5 = U[5] || {}, u7 = U[7] || {};
-            // DAS WETTER DER SAATEN: je Saat die Folge der Worte am Ort (0, 0) im Takt des Zugs (das Wort, das der Zug an k·Z zöge), der
-            // Wind `_windDirAt` um den ersten Regenbeginn; die Saat der Welt steht in EINER synchronen Auswertung und kehrt zurück
+            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): je Saat (Adresse) die Folge der Worte am Ort (0, 0) im Takt des Zugs — der Leser
+            // des Spiels `_wetterAmOrt` (stamm/bild-himmel.js:3032 → phyto-core.js:4804 wetterAt) unter der Saat der Adresse, der Wind
+            // `_windDirAt` (stamm/stoff-material.js:349 → phyto-core windRichtung) um den ersten Regenbeginn und der Druck, den die Welt
+            // dort trägt (ein Leser `_luftdruckAt`/`_druckAm` oder ein Feld `druck` der Zeile von wetterAt); die Saat der Welt kehrt je
+            // Adresse zurück (finally)
+            const FRONT_AN = async (r, T, a, mit) => {
+                const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed, P = globalThis.__phytoCore;
+                const FELD = A.WEATHER_FIELD, nass = (w) => r._weatherIsWet(w), grau = (w) => FELD[w].grey, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60;
+                const peil = (d) => { let b = (Math.atan2(d.x, -d.z) * 180) / Math.PI; return b < 0 ? b + 360 : b; };
+                const druckAn = typeof r._luftdruckAt === "function" ? (t) => r._luftdruckAt(0, 0, t) : typeof r._druckAm === "function" ? (t) => r._druckAm(0, 0, t) : null;
+                try {
+                    wm.seed = "wetter-s" + a.saat;
+                    const W = [], worte = new Set(), spell = [];
+                    for (let i = 0; i < mit.takte; i++) { const w = r._wetterAmOrt(0, 0, i * Z); W.push(w); worte.add(w); }
+                    for (let i0 = 0; i0 < W.length; ) if (nass(W[i0])) { let e = i0; while (e < W.length && nass(W[e])) e++; spell.push(((e - i0) * Z) / tagS); i0 = e; } else i0++;
+                    let on = -1;
+                    for (let i = 6; i < mit.takte - 10; i++) if (nass(W[i]) && !nass(W[i - 1])) { on = i; break; }
+                    if (on < 0) return { saat: a.saat, passage: null, spell, worte: [...worte] };
+                    const vor = W.slice(on - 5, on);
+                    let ende = on;
+                    while (ende < W.length && nass(W[ende])) ende++;
+                    const schauer = W.slice(ende, ende + 5).some(nass);
+                    const anstieg = grau(vor[4]) >= FELD.cloudy.grey - 1e-9 && vor.slice(0, 4).some((w) => grau(w) < grau(vor[4]));
+                    let d = peil(r._windDirAt((on + 3) * Z)) - peil(r._windDirAt((on - 3) * Z));
+                    while (d > 180) d -= 360;
+                    while (d < -180) d += 360;
+                    const zeile = P.wetterAt(A._saatVon(wm), 0, 0, (on - 3) * Z, r._gelaende().ort.wetter), zeile1 = P.wetterAt(A._saatVon(wm), 0, 0, on * Z, r._gelaende().ort.wetter);
+                    const p0 = druckAn ? druckAn((on - 3) * Z) : Number.isFinite(zeile.druck) ? zeile.druck : null;
+                    const p1 = druckAn ? druckAn(on * Z) : Number.isFinite(zeile1.druck) ? zeile1.druck : null;
+                    return { saat: a.saat, passage: { on, vor: vor.join(","), anstieg, schauer, dreh: Math.round(d * 10) / 10, druckFall: p0 != null && p1 != null ? p0 - p1 : null, zeileSchluessel: Object.keys(zeile).join(",") }, spell, worte: [...worte] };
+                } finally {
+                    wm.seed = s0;
+                }
+            };
+            const streu0 = (x) => { const m = x.length ? x.reduce((s, v) => s + v, 0) / x.length : 0; return x.length > 1 ? Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / x.length) : 0; };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: FRONT_AN, export: "phyto-core.js:4804 wetterAt (die Zeile zeile/front/feuchte) · phyto-core windRichtung", leser: "stamm/bild-himmel.js:3032 _wetterAmOrt · stamm/stoff-material.js:349 _windDirAt" },
+                adressen: { saaten: Array.from({ length: Number(u2.saaten) || 50 }, (_, i) => i) },
+                mit: { takte: 400 },
+                ms: Number(u2.ms) || 8000,
+                masse: {
+                    saaten: { wie: "anzahl", feld: "saat" },
+                    passagen: { wie: "anzahl", feld: "passage", nur: (a, w) => !!w.passage },
+                    stimmt: { wie: (v) => v.filter((p) => p.anstieg && p.schauer && p.dreh >= 15 && p.druckFall != null && p.druckFall > 0).length, feld: "passage", nur: (a, w) => !!w.passage },
+                    abfolge: { wie: (v) => v.filter((p) => p.anstieg && p.schauer).length, feld: "passage", nur: (a, w) => !!w.passage },
+                    drehung: { wie: (v) => v.filter((p) => p.dreh >= 15).length, feld: "passage", nur: (a, w) => !!w.passage },
+                    druck: { wie: (v) => v.filter((p) => p.druckFall != null).length, feld: "passage", nur: (a, w) => !!w.passage },
+                    streuDreh: { wie: (v) => streu0(v.map((p) => p.dreh)), feld: "passage", nur: (a, w) => !!w.passage },
+                    streuBeginn: { wie: (v) => streu0(v.map((p) => p.on)), feld: "passage", nur: (a, w) => !!w.passage },
+                    worte: { wie: (v) => new Set([].concat(...v)).size, feld: "worte" },
+                    spell: { wie: (v) => [].concat(...v), feld: "spell" },
+                    zeile: { wie: "erste", feld: "passage.zeileSchluessel" },
+                    je: { wie: (v) => v.slice(0, 8), feld: "passage", nur: (a, w) => !!w.passage },
+                },
+                schlecht: { feld: "passage.dreh", richtung: "min" },
+                pose: (a, w) => "Ego an der Mess-Wiese unter der Saat wetter-s" + a.saat + " zum Regenbeginn (Takt " + w.passage.on + "), Blick in die Zugrichtung",
+                ungemessen: ["die Wolkengattung im Bild (Cirrus → Nimbostratus) — die Welt spricht Worte, keine Gattung"],
+            });
+            // DAS WETTER DER SAATEN (S5, S7): je Saat die Folge der Worte am Ort (0, 0) im Takt des Zugs; die Saat der Welt steht in EINER
+            // synchronen Auswertung und kehrt zurück
             const welt = await H.seite(`
 const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed;
 const FELD = A.WEATHER_FIELD, nass = (w) => r._weatherIsWet(w), grau = (w) => FELD[w].grey;
@@ -4621,7 +4680,7 @@ const dreh = (a, b) => { let d = peil(b) - peil(a); while (d > 180) d -= 360; wh
 const out = { Z, jahrS, tagS, passagen: [], spellTage: [], sturmJahr: [], nassAnteil: [], wortZahl: 0 };
 const worte = new Set();
 try {
-for (let k = 0; k < ${Number(u2.saaten) || 50}; k++) {
+for (let k = 0; k < 0; k++) {
 wm.seed = "wetter-s" + k;
 const W = [];
 for (let i = 0; i < 400; i++) { const w = r._wetterAmOrt(0, 0, i * Z); W.push(w); worte.add(w); }
@@ -4705,13 +4764,14 @@ return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[
             const aus = M.teil || {};
             // S2 die Frontpassage: Abfolge (die Bedeckung steigt aus dünner Decke zur Decke bewölkt, nach dem Regen ein Schauer) und
             // Winddrehung (rechtsdrehend ≥ 15° über ±3 Takte, Nordhalbkugel); einen Druck trägt die Welt nicht
-            const pas = welt.passagen.filter(Boolean);
-            const stimmt = pas.filter((p) => p.anstieg && p.schauer && p.dreh >= 15).length;
+            const F2 = RF.werte, np = F2.passagen || 0;
+            welt.spellTage = F2.spell || [];
             aus[2] = {
-                werte: { passagen: pas.length, stimmtProzent: pas.length ? R((100 * stimmt) / pas.length) : null, abfolgeProzent: pas.length ? R((100 * pas.filter((p) => p.anstieg && p.schauer).length) / pas.length) : null, drehungProzent: pas.length ? R((100 * pas.filter((p) => p.dreh >= 15).length) / pas.length) : null },
-                zeuge: { saaten: welt.passagen.length, passagen: pas.length, streuDreh: R(streu(pas.map((p) => p.dreh))), streuBeginn: R(streu(pas.map((p) => p.on))), worte: welt.wortZahl, je: pas.slice(0, 8) },
-                nicht: "kein Druckfeld und keine Wolkengattung (Cirrus, Nimbostratus) in der Welt — das Wetter am Ort ist ein Wort aus drei Sinus-Wellen (phyto-core.js:4423 wetterAt), der Druckfall ist nicht messbar",
+                werte: { passagen: np, stimmtProzent: np ? R((100 * F2.stimmt) / np) : null, abfolgeProzent: np ? R((100 * F2.abfolge) / np) : null, drehungProzent: np ? R((100 * F2.drehung) / np) : null },
+                zeuge: { saaten: F2.saaten || 0, passagen: np, druck: F2.druck || 0, streuDreh: R(F2.streuDreh), streuBeginn: R(F2.streuBeginn), worte: F2.worte || 0, je: F2.je || [], adressen: RF.adressen, gerissen: RF.gerissen },
             };
+            if (np && !F2.druck) aus[2].taeter = "Leser fehlt: phyto-core.js:4804 wetterAt gibt " + (F2.zeile || "zeile,front,feuchte") + " — kein Druck; kein Leser _luftdruckAt im Stamm: der Druckfall der Frontpassage ist an " + np + " Passagen ungemessen · " + RF.akte;
+            else aus[2].zeuge.akte = RF.akte.slice(0, 600);
             // S3 das Tief mit Lebenslauf: die Dauer der nassen Strecken am Ort (Spieltage), das Bild von oben nur am Gerät
             aus[3] = {
                 werte: { lebenslaufTage: R(mittel(welt.spellTage)), lebenslaufMaxTage: R(Math.max(0, ...welt.spellTage)), kameraFernM: welt.far },
@@ -4750,17 +4810,20 @@ return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[
         },
         sprossen: {
             2: {
-                u: { saaten: 50 },
+                u: { saaten: 50, ms: 8000 },
                 soll: [K.soll(LA, 2, "Winddrehung stimmt ≥ 80 %", { key: "stimmtProzent", einheit: "%" }), K.soll(LA, 2, "50 Frontpassagen aus 50 Saaten", { key: "passagen", rel: "≥", zahl: 50 })],
-                zeuge: zMinStreu({ saaten: 50, passagen: 50, worte: 3 }, ["streuDreh", "streuBeginn"]),
+                // der Zeuge: 50 Saaten gefragt, an jeder Passage ein Druck (der Druckfall gehört zum Satz der Sprosse), Abfolge und Beginn streuen
+                zeuge: zMinStreu({ saaten: 50, passagen: 50, druck: 50, worte: 3 }, ["streuDreh", "streuBeginn"]),
                 taeter: "phyto-core.js wetterAt (drei Sinus-Wellen, kein Druck, keine Gattung)",
-                nicht: "kein Druckfeld, keine Wolkengattung",
-                leser: "phyto-core.js:4423 — wetterAt gibt nur zeile/front/feuchte, kein Druck und keine Gattung",
-                gruen: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, streuDreh: 22, streuBeginn: 9, worte: 5 } },
+                leser: "stamm/bild-himmel.js:3032 _wetterAmOrt und stamm/stoff-material.js:349 _windDirAt lesen phyto-core.js:4804 wetterAt / windRichtung — die Zeile trägt zeile/front/feuchte, keinen Druck und keine Gattung",
+                unklar: "„stimmt“ gelesen als: die Decke steigt aus dünner zur bewölkten (die Gattung Cirrus → Nimbostratus trägt die Welt nicht als Wort), nach dem Regen ein Schauer, der Druck fällt über die letzten 3 Takte vor dem Regen und der Wind dreht ≥ 15° rechts",
+                gruen: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, druck: 50, streuDreh: 22, streuBeginn: 9, worte: 5 } },
                 attrappen: [
                     { name: "84 % ohne eine Antwort der Welt", roh: leer({ passagen: 50, stimmtProzent: 84 }) },
-                    { name: "dieselbe Passage 50-mal (keine Streuung)", roh: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, streuDreh: 0, streuBeginn: 0, worte: 5 } } },
+                    { name: "dieselbe Passage 50-mal (keine Streuung)", roh: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, druck: 50, streuDreh: 0, streuBeginn: 0, worte: 5 } } },
+                    { name: "die Drehung ohne Druck gezählt", roh: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, druck: 0, streuDreh: 22, streuBeginn: 9, worte: 5 } } },
                 ],
+                proben: [{ name: "die Welt ohne Druck: 0 % stimmen (ROT beim Leser)", roh: { werte: { passagen: 50, stimmtProzent: 0, abfolgeProzent: 60, drehungProzent: 40 }, zeuge: { saaten: 50, passagen: 50, druck: 0, streuDreh: 22, streuBeginn: 9, worte: 5 }, taeter: "Leser fehlt: kein Druck" } }],
             },
             3: {
                 u: { draufsichten: 20 },
@@ -5057,7 +5120,8 @@ return { gipfel, momente, saatZurueck: wm.seed === s0 };
     // ════════════════════════════════════════ KLIMAZONEN ════════════════════════════════════════
     const KZ = "planet.wetter.klimazonen";
     const klimazonen = {
-        sek: 45,
+        sek: 52,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "die Bilder (Baum- und Schneegrenze im Bild, Bildpaar Juli/Januar, Orbitbild) schießt M.auge am Gerät; headless misst die Probe das Gesetz der Grenzen und den Faden",
@@ -5136,12 +5200,69 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 return sa > 0 && sb > 0 ? s / Math.sqrt(sa * sb) : NaN;
             };
             const aus = M.teil || {};
-            // S2 Schnee- und Baumgrenze (Gesetz) gegen die Erd-Höhe der Breite der Heimat
+            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): Schnee- und Baumgrenze sind ein Gesetz der Höhe (gelaende-core `schnee`, Leser
+            // stamm `_schneeGilt` und der Boden) — die Adresse ist die Welt im Band der Erd-Referenz (43–46°): die Heimat, wenn ihr Anker
+            // dort liegt, und Reise-Welten an Land-Lagen des Bands (planet-ort → `_reiseSaat` → lageAus); je Adresse die Höhe über dem
+            // Meer, an der der Schnee-Anteil 0,5 (Schnee, Saison der Welt) bzw. 0,1 (Wald, ohne Schnee) erreicht — die Grenze steht als
+            // Funktion, auch wo kein Grund so hoch reicht
+            const GRENZE_AN = async (r, T, a, mit) => {
+                const G = globalThis.__gelaendeCore;
+                await r._fadenQuelle();
+                let L, wl, breite, x = 0, z = 0, saat;
+                if (a.saat === "heim") {
+                    const an = await r._planetAuftrag({ type: "planet-anker", samen: r._planetSamen() });
+                    breite = (an.breite * 180) / Math.PI;
+                    if (breite < mit.von || breite > mit.bis) return { ausserBand: true, breite };
+                    L = r._gelaende();
+                    wl = r.state.waterLevel;
+                    const pm = (r.state.playerMesh || r.state.camera).position;
+                    x = pm.x;
+                    z = pm.z;
+                    saat = L.seed;
+                } else {
+                    breite = mit.von + (((a.saat * 0.6180339887) % 1) * (mit.bis - mit.von));
+                    const laenge = ((a.saat * 137.508) % 360) - 180;
+                    const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                    if (!o || !o.land) return { meer: true, breite };
+                    const heim = r.constructor._weltGesetz(r.state.worldMeta).gelaende;
+                    const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                    const O = G.ortGesetz(ort), eg = G.erbgutNormal(G.ortErbgut(G.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                    saat = r._reiseSaat(ort, heim);
+                    wl = G.GRUND.basis - O.meerUnterBasisM;
+                    L = G.lageAus({ seed: saat, baseHeight: G.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: G.GRUND.kachel }, SimplexNoise);
+                }
+                const linie = (v, thr) => {
+                    let lo = wl - 50, hi = wl + mit.bisM;
+                    if (G.schnee(L, hi, x, z, v) < thr) return null;
+                    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (G.schnee(L, m, x, z, v) >= thr) hi = m; else lo = m; }
+                    return hi - wl;
+                };
+                return { saat, breite: Math.round(breite * 100) / 100, schnee: linie(r._schneeGilt(), 0.5), baum: linie(0, 0.1) };
+            };
+            const med2 = (v) => { const b = v.filter(Number.isFinite).sort((p, q) => p - q); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
+            const u2 = U[2] || {};
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: GRENZE_AN, export: "gelaende-core.js schnee (die Kühlung gelaende-core.js:5850 kuehlungKJeM) an der Lage der Welt", leser: "stamm _schneeGilt und der Boden (stamm/gelaende-boden.js:833 _gelaende)" },
+                adressen: { saaten: Array.from({ length: Number(u2.saaten) || 16 }, (_, i) => i + 1), dazu: [{ saat: "heim", ort: null, zeit: null }] },
+                mit: { von: 43, bis: 46, bisM: 6000 },
+                ms: Number(u2.ms) || 6000,
+                masse: {
+                    schnee: { wie: med2, feld: "schnee", nur: (a, w) => w.schnee != null },
+                    baum: { wie: med2, feld: "baum", nur: (a, w) => w.baum != null },
+                    grenzen: { wie: "anzahl", feld: "saat", nur: (a, w) => w.schnee != null && w.baum != null },
+                    welten: { wie: "verschieden", feld: "saat", nur: (a, w) => w.schnee != null },
+                    bMin: { wie: "min", feld: "breite", nur: (a, w) => w.schnee != null },
+                    bMax: { wie: "max", feld: "breite", nur: (a, w) => w.schnee != null },
+                },
+                schlecht: { feld: "schnee", richtung: "min" },
+                pose: (a, w) => "Ego in der Welt " + w.saat + " (" + w.breite + "°), Blick zum höchsten Grund, Mittag",
+                ungemessen: ["die Grenzen im Bild gegen das Foto eines Gebirges gleicher Breite (Beleg, am Gerät)"],
+            });
             aus[2] = {
-                werte: { schneegrenzeM: R(heim.schnee), baumgrenzeM: R(heim.baum), hoechsterM: R(heim.hoechsterM) },
-                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))), breiteAnkerGrad: R(faden.anker[0]) },
+                werte: { schneegrenzeM: R(RF.werte.schnee), baumgrenzeM: R(RF.werte.baum), hoechsterM: R(heim.hoechsterM) },
+                zeuge: { grenzen: RF.werte.grenzen || 0, welten: RF.werte.welten || 0, breiteMin: R(RF.werte.bMin), breiteMax: R(RF.werte.bMax), abstandM: R(Math.abs((RF.werte.schnee || 0) - (RF.werte.baum || 0))), breiteAnkerGrad: R(faden.anker[0]), adressen: RF.adressen, gerissen: RF.gerissen },
                 auge: await M.auge("wetter-klima-s2", { ort: "wiese" }, { uhr: 0.5 }),
-                nicht: "kein Gebirge in Erd-Höhe: die Höhe ist gestaucht (gelaende-core TEMPERATUR 0,11 K/m statt 0,0065 K/m), der höchste Grund binnen 6 km liegt " + R(heim.hoechsterM) + " m über dem Meer",
+                taeter: "gelaende-core.js:5850 kuehlungKJeM (die Höhe gestaucht: 18 K ÷ 162,5 m = 0,11 K/m, Erde 0,0065 K/m) · " + RF.akte,
             };
             // S3 Kontinentalität: Spearman der Jahresamplitude gegen den Küstenabstand an 30 Land-Orten um den Anker
             const l3 = faden.land3;
@@ -5188,33 +5309,35 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
         },
         sprossen: {
             2: {
-                u: { referenzBreite: "Breite des Ankers der Heimat (43,4° N)" },
+                u: { referenzBreite: "das Band der Erd-Referenz 43–46° (Heimat, wenn ihr Anker dort liegt, und 16 Reise-Welten an Land-Lagen des Bands)", saaten: 16, ms: 6000 },
                 soll: [
                     K.soll(KZ, 2, "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %", { key: "schneegrenzeM", ref: 2900, refQuelle: "Erde 43–46° N: Schneegrenze ≈ 2 900 m (Gleichgewichtslinie der Alpen, Ohmura, Kasser & Funk 1992)", einheit: "m" }),
                     K.soll(KZ, 2, "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %", { key: "baumgrenzeM", ref: 2100, refQuelle: "Erde 43–46° N: Baumgrenze ≈ 2 100 m (Körner & Paulsen 2004, J. Biogeogr.)", einheit: "m" }),
                 ],
                 auge: { pose: "Ego an der Mess-Wiese, Blick zum höchsten Grund, Mittag", vorbild: "Foto eines Gebirges gleicher Breite (Pyrenäen/Alpen) mit Baum- und Schneegrenze" },
                 taeter: "gelaende-core.js TEMPERATUR (Höhe gestaucht, 0,11 K/m)",
-                nicht: "kein Gebirge in Erd-Höhe (Höhe gestaucht)",
-                leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m",
+                leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m; der Fächer liest gelaende-core schnee an der Lage jeder Welt im Band",
                 // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
                 // DIE QUELLE DER ERD-REFERENZ IN DER STATION (pm-front-f1): ref 2 900 / 2 100 m gilt nur für 43–46° N (Alpen, die refQuelle) —
                 // der Zeuge trägt die Breite des Ankers, den der Faden der Welt nennt (planet-anker); steht er außerhalb des Bands (andere
                 // Messungen sahen −45,5°), vergliche die Sprosse gegen eine Erd-Höhe ohne Quelle für ihre Breite
+                // der Zeuge: ≥ 8 Adressen mit beiden Grenzen in ≥ 4 Welten, jede gemessene Welt im Band der Erd-Referenz (43–46° N)
                 zeuge: (roh) => {
-                    const f = zMin({ grenzen: 2 })(roh);
+                    const f = zMin({ grenzen: 8, welten: 4 })(roh);
                     if (f) return f;
-                    const b = roh.zeuge.breiteAnkerGrad;
-                    if (!(typeof b === "number" && Number.isFinite(b))) return "die Breite des Ankers fehlt — die Erd-Referenz 43–46° N hat keinen Ort";
-                    if (b < 43 || b > 46) return "der Anker der Heimat liegt auf " + b + "° — die Erd-Referenz (Alpen, Ohmura 1992 · Körner & Paulsen 2004) gilt für 43–46° N, für diese Breite trägt die Station keine Quelle";
+                    const a = roh.zeuge.breiteMin, b = roh.zeuge.breiteMax;
+                    if (!(typeof a === "number" && Number.isFinite(a) && typeof b === "number" && Number.isFinite(b))) return "die Breiten der Adressen fehlen — die Erd-Referenz 43–46° N hat keinen Ort";
+                    if (a < 43 || b > 46) return "gemessen auf " + a + "°–" + b + "° — die Erd-Referenz (Alpen, Ohmura 1992 · Körner & Paulsen 2004) gilt für 43–46° N, für diese Breite trägt die Station keine Quelle";
                     return null;
                 },
-                zeugeText: "Schnee- und Baumgrenze am höchsten Grund gefunden, der Anker auf 43–46° N",
-                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: 43.4 } },
+                zeugeText: "Schnee- und Baumgrenze an ≥ 8 Adressen in ≥ 4 Welten des Bands 43–46° N",
+                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 14, welten: 13, breiteMin: 43.1, breiteMax: 45.9, abstandM: 800 } },
                 attrappen: [
                     { name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) },
-                    { name: "Erd-Höhe am Anker der Südhalbkugel (−45,5°)", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800, breiteAnkerGrad: -45.5 } } },
+                    { name: "Erd-Höhe an der Südhalbkugel (−45,5°)", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 14, welten: 13, breiteMin: -46, breiteMax: -45, abstandM: 800 } } },
+                    { name: "EINE Welt trägt die Grenzen", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 14, welten: 1, breiteMin: 43.4, breiteMax: 43.4, abstandM: 800 } } },
                 ],
+                proben: [{ name: "die gestauchte Höhe: Schnee 150 m gegen 2 900 m (ROT beim Täter)", roh: { werte: { schneegrenzeM: 150, baumgrenzeM: 120 }, zeuge: { grenzen: 14, welten: 13, breiteMin: 43.1, breiteMax: 45.9, abstandM: 30 }, taeter: "gelaende-core.js:5850 kuehlungKJeM" } }],
             },
             3: {
                 u: { orte: 30, radiusGrad: [14, 20] },
@@ -5283,7 +5406,8 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
     // ════════════════════════════════════════ EXTREME ════════════════════════════════════════
     const EX = "planet.wetter.extreme";
     const extreme = {
-        sek: 20,
+        sek: 36,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "die Bildpaare (Flut, Sandsturm, Megastadt) schießt M.auge am Gerät; p95 headless ist die Zeit des Software-Renderers, nicht des Geräts",
@@ -5312,7 +5436,6 @@ const freq = {};
 for (const w of W) freq[w] = (freq[w] || 0) + 1;
 let tMittel = 0;
 for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
-const T = r._pegelGilt();
 const tele = [];
 try {
 for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
@@ -5324,7 +5447,7 @@ tele.push([a, b]);
 }
 } finally { wm.seed = s0; }
 const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
-return { jahrMax, maxAll, sonnig, Tw, tMittel, krone: T ? T.krone : null, pegelKlassen: T && T.q ? T.q.length : 0, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
+return { jahrMax, maxAll, sonnig, Tw, tMittel, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
 `);
             // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
             const takt = await H.seite(`
@@ -5342,12 +5465,79 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
                 return b > 0 && c > 0 ? a / Math.sqrt(b * c) : 0;
             };
             const aus = M.teil || {};
-            // S1 die Flut: der größte Regen einer nassen Strecke in 100 Jahren am Ort; der Hub ist an der Krone gedeckelt
+            // S1 DIE FLUT AM FÄCHER (M4): je Adresse (Saat × Jahr der Welt-Uhr) die stärkste nasse Strecke des Jahrs am Ort (Kanal
+            // rain × 10 mm je Stunde) und der Pegel, den das Gesetz danach trägt — die Stempel des Regens (je Takt des Zugs der Knoten
+            // [t, rain], ab dem Fenster des Grunds vor der Strecke) durch gelaende-core pegelLauf → pegelTafel → pegelHub, den Leser
+            // des Spiegels jedes Flusses und Sees, über die Lag-Klassen und die Höhen ohne Schmelze, je Stunde nach der Strecke. Die
+            // Höhe über der Aue ist der Hub über der Krone des Betts (die Aue liegt an der Krone)
+            const u1 = U[1] || {};
+            const FLUT_AN = async (r, T, a, mit) => {
+                const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed, k0 = r._regenKlima, G = globalThis.__gelaendeCore;
+                const FELD = A.WEATHER_FIELD, kal = r._kalender(), tagS = kal.normS, stundeS = tagS / 24, jeJahr = Math.max(1, Math.round(kal.jahrK / Z));
+                const L = r._gelaende(), nT = G.TEMPERATUR.jahrTage, tag = Math.floor(st.seasonPhase * nT) / nT;
+                const sch = G.pegelSchmelze(L, tag, (y, tr) => r._temperaturFeld(y, tr));
+                try {
+                    if (a.saat != null) wm.seed = "wetter-s" + a.saat;
+                    const memo = mit.memo || (mit.memo = {});
+                    let M0 = memo[String(a.saat)];
+                    if (!M0) {
+                        r._regenKlima = null;
+                        M0 = memo[String(a.saat)] = { mittel: r._regenMittel(), W: [] };
+                    }
+                    const mittel = M0.mittel, i0 = (a.zeit || 0) * jeJahr, ab = Math.max(0, i0 - Math.ceil((G.LAUF.fenster * tagS) / Z));
+                    while (M0.W.length < i0 + jeJahr) M0.W.push(r._wetterAmOrt(0, 0, M0.W.length * Z));
+                    const W = M0.W.slice(ab, i0 + jeJahr);
+                    let best = null, lauf = 0, von = 0;
+                    for (let i = i0 - ab; i < W.length; i++) {
+                        const mm = FELD[W[i]].rain * mit.mmJeStunde * (Z / stundeS);
+                        if (mm > 0) { if (lauf === 0) von = i; lauf += mm; if (!best || lauf > best.mm) best = { mm: lauf, von, bis: i }; } else lauf = 0;
+                    }
+                    if (!best) return { saat: a.saat, jahr: a.zeit, mm: 0, hub: null, krone: null, ueber: null };
+                    const S = [];
+                    for (let i = 0; i <= Math.min(W.length - 1, best.bis + 1); i++) S.push((ab + i) * Z, FELD[W[i]].rain);
+                    // die Höhe ohne Schmelze (dort trägt nur der Regen den Hub; jede solche Zeile hebt sich gleich), sonst die unterste
+                    const ende = (ab + best.bis + 1) * Z, iy = Math.max(0, Array.prototype.findIndex.call(sch.a, (v) => v === 0)), y = sch.y0 + iy * G.PEGEL.dy;
+                    let hub = null, krone = null, nach = null;
+                    for (const h of mit.stunden) {
+                        const tafel = G.pegelTafel(L, sch, G.pegelLauf(L, S, ende + h * stundeS, tagS, mittel, null));
+                        if (!tafel) continue;
+                        krone = tafel.krone;
+                        for (let j = 0; j < G.LAUF.n; j++) { const v = G.pegelHub({ pegel: tafel }, y, j); if (hub == null || v > hub) { hub = v; nach = h; } }
+                    }
+                    return { saat: a.saat, jahr: a.zeit, mm: Math.round(best.mm * 10) / 10, takte: best.bis - best.von + 1, hub, krone, ueber: hub != null && krone != null ? Math.round((hub - krone) * 1000) / 1000 : null, nach, mittel, schmelze: sch.a[iy] > 0 ? 1 : 0 };
+                } finally {
+                    wm.seed = s0;
+                    r._regenKlima = k0;
+                }
+            };
+            const streu0 = (x) => { const m = x.length ? x.reduce((s, v) => s + v, 0) / x.length : 0; return x.length > 1 ? Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / x.length) : 0; };
+            const stark = Number(u1.starkMm) || 100;
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: FLUT_AN, export: "gelaende-core.js:1658 pegelLauf → pegelTafel → gelaende-core.js:1796 pegelHub (der Hub gelaende-core.js:1627 pegelHubVon)", leser: "stamm/wasser-hydro.js:313 (der Spiegel liest K.pegelHub) · stamm/wasser-hydro.js:117 _pegelGilt" },
+                adressen: { saaten: Array.from({ length: Number(u1.saaten) || 20 }, (_, i) => i), zeiten: Array.from({ length: Number(u1.jahre) || 30 }, (_, i) => i), dazu: [{ saat: null, ort: null, zeit: 0 }] },
+                mit: { mmJeStunde: Number(u1.mmJeStunde) || 10, stunden: [0, 1, 2, 4, 8, 16, 32, 64] },
+                ms: Number(u1.ms) || 14000,
+                masse: {
+                    adressen: { wie: "anzahl", feld: "mm" },
+                    saaten: { wie: "verschieden", feld: "a.saat" },
+                    regenMaxMm: { wie: "max", feld: "mm" },
+                    stark: { wie: "anzahl", feld: "mm", nur: (a, w) => w.mm >= stark },
+                    ueberAueM: { wie: "max", feld: "ueber", nur: (a, w) => w.mm >= stark && w.ueber != null },
+                    bordvoll: { wie: "anzahl", feld: "ueber", nur: (a, w) => w.ueber != null && w.ueber >= -0.005 },
+                    hubMaxM: { wie: "max", feld: "hub" },
+                    kroneM: { wie: "erste", feld: "krone" },
+                    streuMm: { wie: (v) => streu0(v), feld: "mm" },
+                    schmelze: { wie: "summe", feld: "schmelze" },
+                },
+                schlecht: { feld: "mm", richtung: "max" },
+                pose: (a, w) => "Ego am Fluss der Mess-Wiese unter der Saat " + (a.saat == null ? "der Welt" : "wetter-s" + a.saat) + ", Jahr " + a.zeit + ", " + w.nach + " h nach " + w.mm + " mm Regen (" + w.takte + " Takte), Blick über die Aue",
+                ungemessen: ["das Bild der Aue unter Wasser (die Welt zeichnet den Spiegel, den pegelHub trägt — über der Krone nie)"],
+            });
             aus[1] = {
-                werte: { regenMaxMm: R(welt.maxAll), kroneM: R(welt.krone) },
-                zeuge: { jahre: welt.jahrMax.length, streu: R(streu(welt.jahrMax)), pegelKlassen: welt.pegelKlassen },
+                werte: { regenMaxMm: R(RF.werte.regenMaxMm), ueberAueM: RF.werte.ueberAueM == null ? null : R(RF.werte.ueberAueM), kroneM: R(RF.werte.kroneM) },
+                zeuge: { adressen: RF.werte.adressen, saaten: RF.werte.saaten, stark: RF.werte.stark, bordvoll: RF.werte.bordvoll, streu: R(RF.werte.streuMm), hubMaxM: R(RF.werte.hubMaxM), gerissen: RF.gerissen, akte: RF.akte },
                 auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
-                nicht: "der Fluss verlässt das Bett nie: der Hub ist an der Krone gedeckelt (gelaende-core.js:1569 — „darüber trägt die Aue den Überschuss, nicht gerechnet“), Krone " + R(welt.krone) + " m; der größte Regen einer Strecke in 100 Jahren " + R(welt.maxAll) + " mm",
+                taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
             };
             // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und der Überschuss der Temperatur des klaren Worts über
             // das Mittel der Worte (Sommer, Nachmittag)
@@ -5390,21 +5580,31 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
         },
         sprossen: {
             1: {
-                u: { jahre: 100, mmJeStunde: 10 },
+                u: { saaten: 20, jahre: 30, starkMm: 100, mmJeStunde: 10, ms: 14000 },
                 soll: [
                     K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" }),
-                    // die zweite Hälfte des Satzes: das Wasser steht über der Aue (die Probe misst sie heute nicht — ungemessen ist ROT)
+                    // die zweite Hälfte des Satzes: das Wasser steht über der Aue — gemessen an den Adressen mit ≥ 100 mm (keine: ungemessen, ROT)
                     K.soll(EX, 1, "Überflutung ≥ Aue", { key: "ueberAueM", rel: ">", zahl: 0, refQuelle: "der Richter: „Überflutung ≥ Aue“ — der Spiegel steht über der Aue (Höhe über ihr > 0 m)", einheit: "m" }),
                 ],
                 auge: { pose: "Ego an der Mess-Wiese, Bildpaar vor/nach dem Starkregen (die Bühne setzt stormy)", vorbild: "Bildpaar eines Hochwassers über die Aue (Pegelfotos, z. B. Elbe 2002)" },
-                taeter: "gelaende-core.js pegelHub (an der Krone gedeckelt)",
-                nicht: "der Fluss verlässt das Bett nie",
-                leser: "gelaende-core.js:1569 — der Hub ist an der Krone gedeckelt, die Aue trägt den Überschuss „nicht gerechnet“",
+                taeter: "gelaende-core.js:1627 pegelHubVon (an der Krone gedeckelt)",
+                leser: "stamm/wasser-hydro.js:313 — der Spiegel liest K.pegelHub; gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone, die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569)",
+                unklar: "„Überflutung ≥ Aue“ ohne Ort und Lauf — Vorschlag: der höchste Hub über die Lag-Klassen am Spiegel ohne Schmelze über der Krone des Betts (die Aue liegt an der Krone), ≥ 100 mm in einer nassen Strecke",
                 // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
-                zeuge: zMinStreu({ jahre: 1 }, ["streu"]),
-                zeugeText: "die Regen-Jahre der Strecke gewürfelt, mit Streuung",
-                gruen: { werte: { regenMaxMm: 120, ueberAueM: 0.4 }, zeuge: { jahre: 100, streu: 12 } },
-                attrappen: [{ name: "120 mm behauptet", roh: leer({ regenMaxMm: 120 }) }],
+                zeuge: zMinStreu({ adressen: 100, saaten: 10 }, ["streu"]),
+                zeugeText: "der Fächer: ≥ 100 Adressen aus ≥ 10 Saaten, der Regen der Strecken streut",
+                gruen: { werte: { regenMaxMm: 120, ueberAueM: 0.4, kroneM: 0.2 }, zeuge: { adressen: 601, saaten: 21, stark: 40, bordvoll: 300, streu: 18, hubMaxM: 0.6 } },
+                attrappen: [
+                    { name: "120 mm behauptet", roh: leer({ regenMaxMm: 120, ueberAueM: 0.4 }) },
+                    { name: "eine Saat, ein Jahr", roh: { werte: { regenMaxMm: 120, ueberAueM: 0.4 }, zeuge: { adressen: 1, saaten: 1, streu: 0 } } },
+                    { name: "100 gleiche Strecken", roh: { werte: { regenMaxMm: 120, ueberAueM: 0.4 }, zeuge: { adressen: 601, saaten: 21, streu: 0 } } },
+                ],
+                proben: [
+                    // die Welt heute: das Gesetz füllt das Bett bis zur Krone und nie darüber (node am Export: 104 · 208 · 480 mm → Hub 0,2 m = Krone)
+                    { name: "bordvoll an der Krone", gruen: false, roh: { werte: { regenMaxMm: 128, ueberAueM: 0, kroneM: 0.2 }, zeuge: { adressen: 601, saaten: 21, stark: 12, bordvoll: 601, streu: 18, hubMaxM: 0.2 } } },
+                    // die trockene Welt (die Pose der schlechten Saat): kein Starkregen — ueberAueM ungemessen
+                    { name: "die trockene Welt", gruen: false, roh: { werte: { regenMaxMm: 0, ueberAueM: null, kroneM: 0.2 }, zeuge: { adressen: 601, saaten: 21, stark: 0, bordvoll: 0, streu: 0, hubMaxM: -0.6 } } },
+                ],
             },
             2: {
                 u: { jahre: 100, saison: "Sommer 0,375, Uhr 0,6" },
