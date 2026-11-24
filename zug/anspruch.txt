@@ -60,3 +60,5 @@ w28-bewohner-satz2 karte2.mensch.kultur.sprache#1,karte2.mensch.geist.gespraech#
 nachmessung-2411 karte2.leben.oeko.sukzession#1,karte2.planet.kopplung.gegenwart#2
 # 710 (main f18576b6, 24.11. 09:46): z710 gelandet 09:57 (main f18576b6): der Schwung des Gangs — Sprint Knie-Spitze 107,2 → 123,1°, Rumpf 0,5 → 9,0° (node); die Station k2-mensch-sport urteilt Tempo, Sprung und Umfang am Gerät
 w28-nerv-schwung karte2.mensch.sport.koerper#1
+# 711 (main a3af6df0, 24.11. 10:39): z711 w28-wind-saison: die Böe zieht mit dem Wind über Wiese und Kronen (Taylor statt ω/k)
+w28-wind-saison karte2.leben.pflanzen.kraft#2
