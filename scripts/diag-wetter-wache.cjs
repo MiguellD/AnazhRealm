@@ -24,6 +24,9 @@
 //   (O) ORT (wetter-am-ort, im Selbsttest am echten Kern): das Wetter ist ein Feld je Ort (phyto-core `wetterFeldAm`) — Weg des
 //       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, Bilanz Ziel + Lee
 //       ±10 %, der Luv-Hang regnet mehr als der Lee-Hang (`ortRot`).
+//   (L) LAND-MEER-LUFT (klima-kontinent, im Selbsttest am echten Kern planet-core): das Δ des Orts trägt das Klima von Land, Meer und
+//       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost; drei gepflanzte Täter fallen je an
+//       ihrer Klinge und nennen `planetKlimaR`, ein Δ ohne nebelQuote wirft (`lmlRot`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
@@ -516,6 +519,148 @@ function ortSelbsttest() {
     return { v, O };
 }
 
+// (L) LAND-MEER-LUFT (klima-kontinent, Karte 2 planet.kopplung.land-meer-luft): das Wetter am Ort liest das Klima des Planeten — der
+// Leser des Spiels (planet-core `planetOrt` → Δ wetter → phyto-core `wetterAt`, die Zeilen gezählt wie die Station) auf sechs Saaten
+// LML_SAATEN, Breitenkreise im 3°-Takt. KAMM: Kämme ≥ 1 500 m mit ≥ 800 m Abfall nach beiden Seiten — Median nass West ÷ Ost
+// ≥ 2 (Sperre und Föhn, Smith & Evans 2007; Kaskaden, Anden 3–10 : 1); NEBEL: Passat-Westküsten (±25°) — Anteil der Küsten mit
+// Nebel Küste ÷ 9° landein ≥ 2 mindestens 70 % (Namib, Atacama: Advektions-Nebel über dem Auftrieb, Seely & Henschel 1998);
+// SPANNE: das Jahres-Mittel West- minus Ostküste an ±42° ≥ 5 K (Bergen ↔ Magadan, Vancouver ↔ Halifax; WMO-Normalwerte).
+// Der Selbsttest pflanzt je Klinge ihren Täter in den Kern (EINE Zeile, ohne git): ohne Sperre und Föhn, ohne Auftrieb im Nebel,
+// ohne den Winter der Meeresluft — jeder fällt ROT an genau seiner Klinge und nennt `planetKlimaR`. Leser: `lmlRot`.
+const LML_SAATEN = ["anazh-realm-seed", "zsp-0", "zsp-1", "zsp-2", "zsp-3", "zsp-4"];
+const LML_SOLL = { kamm: 2, nebelAnteil: 0.7, spanneK: 5 };
+const LML_TAETER = [
+    ["kamm", "ohne Sperre und Föhn", /sperreKm: 2\.5,/, "sperreKm: 1e9, schattenKm: 1e9,"],
+    ["nebel", "ohne Auftrieb im Nebel", /auftrieb = glatt\(0, KLIMA\.nebelTaupunktK, -dTj\);/, "auftrieb = 0;"],
+    ["spanne", "ohne den Winter der Meeresluft", /westWinterK: 14, westSommerK: -2,/, "westWinterK: 0, westSommerK: 0,"],
+];
+function lmlKern(taeter) {
+    // der Kern des Baums, bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt die Zeile, bricht der Selbsttest beim Namen)
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const kern = path.join(__dirname, "..", "planet-core.js");
+    const halt = globalThis.__planetCore;
+    if (!taeter) {
+        delete globalThis.__planetCore;
+        delete require.cache[kern];
+        try {
+            return require(kern);
+        } finally {
+            if (halt === undefined) delete globalThis.__planetCore;
+            else globalThis.__planetCore = halt;
+        }
+    }
+    const text = fs.readFileSync(kern, "utf8");
+    if (!taeter[2].test(text)) throw new Error(`(L) der Kern trägt die Zeile ${taeter[2]} nicht — der Täter „${taeter[1]}" lässt sich nicht pflanzen`); // prettier-ignore
+    const aus = path.join(os.tmpdir(), `planet-core-lml-${taeter[0]}-${process.pid}.js`);
+    fs.writeFileSync(aus, text.replace(taeter[2], taeter[3]));
+    delete globalThis.__planetCore;
+    try {
+        return require(aus);
+    } finally {
+        if (halt === undefined) delete globalThis.__planetCore;
+        else globalThis.__planetCore = halt;
+        fs.unlinkSync(aus);
+    }
+}
+function lmlMessung(P, W, og) {
+    const RAD = Math.PI / 180;
+    const je = new Map();
+    const anteil = (d, zeile) => {
+        const k = `${d.regenQuote}|${d.sturmQuote}|${d.nebelQuote}|${zeile}`;
+        if (!je.has(k)) {
+            let n = 0;
+            for (let i = 0; i < 200; i++) {
+                const z = W.wetterAt("anazh-realm-seed", 0, 0, i * 97.3, d).zeile;
+                if (zeile === "nebel" ? z === "nebel" : z === "regen" || z === "sturm") n++;
+            }
+            je.set(k, n / 200);
+        }
+        return je.get(k);
+    };
+    const v = (a, b) => (a + 0.0025) / (b + 0.0025);
+    const [kamm, nebel, spanne] = [[], [], []];
+    for (const samen of LML_SAATEN) {
+        const plan = P.planetPlan(samen, P.PLANET_ERDE);
+        const S = P.planetScheibe(plan, 0);
+        const ort = (b, l) => {
+            const o = P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan);
+            const p = {};
+            P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+            return { land: p.hoeheM > 0, h: p.hoeheM, t: (o.delta.klima.sommer + o.delta.klima.winter) / 2, w: o.delta.wetter };
+        };
+        for (const b of [42, -42, 52, 25, -25]) {
+            const o = [];
+            for (let l = -180; l < 180; l += 3) o.push(ort(b, l));
+            const at = (i) => o[(i + o.length) % o.length];
+            for (let i = 0; i < o.length; i++) {
+                const x = at(i);
+                if (!x.land) continue;
+                if (Math.abs(b) === 25) {
+                    if (!at(i - 1).land && !at(i - 2).land && at(i + 3).land)
+                        nebel.push(v(anteil(x.w, "nebel"), anteil(at(i + 3).w, "nebel")));
+                    continue;
+                }
+                const [w1, e1] = [at(i - 1), at(i + 1)];
+                if (x.h >= 1500 && w1.land && e1.land && x.h - w1.h >= 800 && x.h - e1.h >= 800 && [-2, 2].every((d) => at(i + d).h <= x.h)) // prettier-ignore
+                    kamm.push(v(anteil(w1.w, "nass"), anteil(e1.w, "nass")));
+                if (Math.abs(b) === 42 && !w1.land && !at(i - 2).land)
+                    for (let j = i + 1; j < i + 40; j++) {
+                        if (!at(j).land) break;
+                        if (!at(j + 1).land && !at(j + 2).land) {
+                            spanne.push(x.t - at(j).t);
+                            break;
+                        }
+                    }
+            }
+        }
+    }
+    const r3 = (x) => Math.round(x * 1000) / 1000;
+    return {
+        kamm: r3(rang(kamm.sort(aufsteigend))),
+        kaemme: kamm.length,
+        nebelAnteil: r3(nebel.filter((x) => x >= 2).length / Math.max(1, nebel.length)),
+        kuesten: nebel.length,
+        spanneK: r3(rang(spanne.sort(aufsteigend))),
+        paare: spanne.length,
+    };
+}
+function lmlRot(L) {
+    const rot = [];
+    if (!(L.kaemme >= 10 && L.kamm >= LML_SOLL.kamm))
+        rot.push(`(L) KAMM: nass West ÷ Ost am Kamm Median ${L.kamm} an ${L.kaemme} Kämmen (soll ≥ ${LML_SOLL.kamm}) — planetKlimaR trägt keinen Regenschatten`); // prettier-ignore
+    if (!(L.kuesten >= 10 && L.nebelAnteil >= LML_SOLL.nebelAnteil))
+        rot.push(`(L) NEBEL: ${(100 * L.nebelAnteil).toFixed(0)} % von ${L.kuesten} Passat-Westküsten mit Nebel ≥ 2× landein (soll ≥ ${100 * LML_SOLL.nebelAnteil} %) — planetKlimaR liest den Auftrieb nicht`); // prettier-ignore
+    if (!(L.paare >= 10 && L.spanneK >= LML_SOLL.spanneK))
+        rot.push(`(L) SPANNE: West- minus Ostküste an ±42° Median ${L.spanneK} K an ${L.paare} Paaren (soll ≥ ${LML_SOLL.spanneK} K) — planetKlimaR trägt die Meeresluft nicht`); // prettier-ignore
+    return rot;
+}
+function lmlSelbsttest() {
+    require("../phyto-core.js");
+    require("../gelaende-core.js");
+    const W = globalThis.__phytoCore;
+    const og = globalThis.__gelaendeCore.ortGesetz();
+    const L = lmlMessung(lmlKern(null), W, og);
+    const v = lmlRot(L).map((r) => `land-meer-luft am Kern: ${r}`);
+    const taeter = LML_TAETER.map(([klinge, name, re, ersatz]) => {
+        const rot = lmlRot(lmlMessung(lmlKern([klinge, name, re, ersatz]), W, og));
+        const soll = new RegExp(`^\\(L\\) ${klinge.toUpperCase()}:.*planetKlimaR`);
+        if (!(rot.length === 1 && soll.test(rot[0])))
+            v.push(`land-meer-luft: der Täter „${name}" fällt nicht genau an (L) ${klinge.toUpperCase()} rot: ${rot.join(" · ") || "grün"}`); // prettier-ignore
+        return `${name} → ${rot.join(" · ") || "GRÜN"}`;
+    });
+    // das Δ ohne Nebel ist kein Wetter: der Kern wirft beim Namen, nie still 0
+    let wurf = "";
+    try {
+        W.wetterAt("anazh-realm-seed", 0, 0, 10, { regenQuote: 0, sturmQuote: 0 });
+    } catch (e) {
+        wurf = String(e.message);
+    }
+    if (!/nebelQuote/.test(wurf)) v.push("land-meer-luft: ein Δ ohne nebelQuote läuft still durch wetterAt");
+    return { v, L, taeter };
+}
+
 function uhrSelbsttest() {
     const K = (r) => `class A {\n${r}\n}`;
     const U = (text, leser, sp) =>
@@ -565,6 +710,13 @@ if (SELBSTTEST) {
     console.log(
         `  (O) Ort am Kern · Weg ${O.weg.toExponential(1)} · Sprung ${O.sprung} · Bilanz ${O.bilanz.min}/${O.bilanz.median}/${O.bilanz.max} (${(100 * O.imBand).toFixed(0)} % in ±10 %) · Regen Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee}`
     );
+    const lml = lmlSelbsttest();
+    v.push(...lml.v);
+    const L = lml.L;
+    console.log(
+        `  (L) Land-Meer-Luft am Kern · Kamm West ÷ Ost ${L.kamm} (${L.kaemme}) · Nebel-Küsten ≥ 2× ${(100 * L.nebelAnteil).toFixed(0)} % (${L.kuesten}) · West − Ost ${L.spanneK} K (${L.paare})`
+    );
+    for (const t of lml.taeter) console.log(`      gepflanzt: ${t}`);
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];
