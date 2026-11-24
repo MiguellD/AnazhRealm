@@ -756,6 +756,14 @@ class AnazhRealm_studio_gestalt {
         }
         f._warmCritical = true;
         f._vorrat = false;
+        // DER NEUBAU WARTET AUF DAS ERWACHEN (vorrat-wartet-erwachen): das Ende des Vorrats ist ein Glied des Takts außerhalb
+        // des Takts. Im Tausch der Welt ruht der Takt (`_weltTausch`), und die neue Welt trägt vor ihrem Heil keine Saat: endete
+        // der Lauf in diesem Fenster (er beginnt mit dem Abschied neu, `_foundryVorraete`), las der Neubau den Stand der
+        // Bereitschaft (`_bereitStand` → `_forestSeedInt`), und der Leser der Saat brach beim Namen — nur wenn der Lauf schnell
+        // genug war, ein Wackler der Weltgrenze (24.11., erbe-geburt 6a548391, voll 12/18; erzwungen in 3 von 3 Wechseln). Er
+        // wartet auf das EREIGNIS (`erwacht`, der Tausch setzt es mit seinem Merker), nie auf die Uhr; brach der Tausch (die Seite
+        // lädt neu), baut er nichts. Linse: gate:weltgrenze — der Weg „saat" erzwingt das Fenster und nennt jeden Neubau in ihm.
+        while (this._weltTausch) if (!(await this.erwacht)) return;
         // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
         // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
         // hoffen (unter Last baut der NICHTS -> die Baeume blieben cold).
