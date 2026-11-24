@@ -2349,3 +2349,4 @@ omen-gtx-gtx-bf9be26c-w130914-1-bf9be26c ROT 0 GRÜN / 5 ROT / 0 UNGEMESSEN · R
 2026-11-24 13:40 landung Runde 22 am a8dd22b5: misst 77 von 239 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-24 13:51 RUNDE 22 ALARM radeon: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf a8dd22b5) — gesehen von gtx (landung-dienst)
 omen-gtx-gtx-a8dd22b5-1-a8dd22b5 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.mensch.macht.megastadt#1 ‖ karte2.mensch.macht.megastadt#1: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal (punkte-maschine 3a0b8b9a messung/a8dd22b5-gtx.json)
+2026-11-24 14:14 RUNDE 22 ALARM gtx: ohne Fortschritt seit 16 min (halt, 1/239, Station karte2.mensch.macht.megastadt#1, Kopf a8dd22b5) — gesehen von gtx (landung-dienst)
