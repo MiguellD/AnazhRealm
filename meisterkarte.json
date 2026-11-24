@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-24",
-  "kopf": "07693cc8",
-  "version": "V18.546.395",
+  "kopf": "c9da3a64",
+  "version": "V18.546.396",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "07693cc8",
-    "zeit": "2026-11-24T07:10:38.660Z",
+    "kopf": "c9da3a64",
+    "zeit": "2026-11-24T07:16:25.599Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1586,7 +1586,7 @@
           "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +38) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +39) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },
@@ -1918,7 +1918,7 @@
           "punkte": 0,
           "staffel": "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           "messung": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +122) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +127) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +122) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +127)",
+          "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +123) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +127) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +123) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +127)",
           "schlupfloch": "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt.",
           "maschine": true
         },
@@ -2353,7 +2353,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten",
           "messung": "Dasselbe Werk (Saat + ov) in Studio-Bühne und Welt bei gleicher Pose (Standard-Kamera der Bühne = Vorschau-Kamera der Welt) und Uhr, aus dem Ausgabe-Pfad (bild-diff.cjs-Rezept), Radeon UND GTX; die 18-%-Karte der Bühne bei Luma 110–130.",
-          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-bruecke.js +117) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +79) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +74) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +78) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-bruecke.js +118) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +79) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +75) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +78) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "r184 laden und eigenes Licht oder eine Bau-Kopie behalten: H6 wäre grün, Labor ≠ Welt bliebe — darum urteilt das Bild, nie die Netz-Anfrage; eine Pose, die niemand sieht, zählt nicht.",
           "aenderung": "EIN Heim von Labor = Welt im Bild (vorher auch Material K2, Tore K3(b), Siedlung K1; B39, V16).",
           "maschine": true
@@ -4606,7 +4606,7 @@
     },
     {
       "stand": "2026-11-24",
-      "kopf": "07693cc8",
+      "kopf": "c9da3a64",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4614,7 +4614,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 24.11.2026, Kopf main 07693cc8 (V18.546.395)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 24.11.2026, Kopf main c9da3a64 (V18.546.396)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
