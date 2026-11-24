@@ -1,7 +1,7 @@
 {
  "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
  "geraet": "gtx",
- "zeit": "2026-11-24T22:33:06.164Z",
+ "zeit": "2026-11-24T22:36:41.881Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -280,6 +280,76 @@
    },
    "zeit": "2026-11-24T22:33:06.164Z",
    "abdruck": "ff636cfdbfc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k413740a1a1e3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 7.5,
+   "fremd": {
+    "s": 8.6,
+    "takte": 4,
+    "fremdS": 2.11,
+    "kerne": 0.245,
+    "fensterKerne": 0.245,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.48
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      0.28
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.23
+     ]
+    ],
+    "dienerS": 1.28,
+    "diener": [
+     [
+      "System",
+      0.66
+     ],
+     [
+      "dwm.exe",
+      0.33
+     ]
+    ],
+    "geraetS": 2.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.56
+     ],
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 25.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T22:36:41.881Z",
+   "abdruck": "b2ca939fc27a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
