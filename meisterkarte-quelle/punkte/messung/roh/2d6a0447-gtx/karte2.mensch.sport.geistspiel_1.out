@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 9.6 s · am Messort stadt-voll (ego) nach 9.6 s, 381 Takte, Anlauf stand
+@@ 9.6 s · Geist-Spiele: 1356 Bewohner · im Akt treff 0 · Sport-Akte 480
+@@ 25.5 s · Spiel an stadt-voll um 18.56 Uhr (Tag 0): 12 Gäste des Treffs, Feld {"L":25,"B":10} · 40 Tage: 0 Läufe (0 Läufer, ρ null) · 0 Gänge (der Stärkere null) · 100 Partien (5035 Züge, 0 regelwidrig) · jetzt 1 Zuschauer, 0 mit Blick am Geschehen
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
