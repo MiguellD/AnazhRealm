@@ -5626,8 +5626,18 @@
             fn = fang[fang.length - 1];
         if (!(f0[2] > f0[0] && f0[2] > f0[1]) || !(fn[0] + fn[1] > fn[2]))
             throw new Error("SINNES_GESETZ: die Fänge von " + taxon + " folgen nicht der Ordnung der Zapfen (kurz → Blau, lang → Rot/Grün)");
-        // die Klassen (aufsteigend) auf die Zapfen des Menschen in der Reihe von lms (L, M, S): zwei als Blau-Gelb, drei umgekehrt
-        var P = fang.length === 2 ? [[0, 1], [0, 1], [1, 0]] : [[0, 0, 1], [0, 1, 0], [1, 0, 0]]; // prettier-ignore
+        // die Klassen (aufsteigend) auf die Zapfen des Menschen in der Reihe von lms (L, M, S): drei umgekehrt; zwei als Blau-Gelb
+        // nach Viénot, Brettel & Mollon 1999 (Color Res. Appl. 24:243): lang → L, kurz → S, und M liegt in der EBENE, die das
+        // sRGB-Blau und -Gelb in lms aufspannen (Normale n = lms·Blau × lms·Gelb, Weiß liegt darin) — jedes Bild der zwei Klassen
+        // ist R = G, Himmel blau, Gras gelb-oliv. Bis hier stand M = L: die Richtung des reinen S-Fangs, der Himmel des Hundes violett
+        var P = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]; // prettier-ignore
+        if (fang.length === 2) {
+            var lb = [lms[0][2], lms[1][2], lms[2][2]],
+                ly = [lms[0][0] + lms[0][1], lms[1][0] + lms[1][1], lms[2][0] + lms[2][1]],
+                n = [lb[1] * ly[2] - lb[2] * ly[1], lb[2] * ly[0] - lb[0] * ly[2], lb[0] * ly[1] - lb[1] * ly[0]];
+            if (!(Math.abs(n[1]) > 1e-9)) throw new Error("SINNES_GESETZ: die Blau-Gelb-Ebene von lms trägt kein M (" + n.join(", ") + ")");
+            P = [[0, 1], [(-n[2] * tw[2]) / (n[1] * tw[1]), (-n[0] * tw[0]) / (n[1] * tw[1])], [1, 0]]; // prettier-ignore
+        }
         var L = sinnInv3(lms),
             bild = [0, 1, 2].map(function (r) {
                 return [0, 1, 2].map(function (j) {
