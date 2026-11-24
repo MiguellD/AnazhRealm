@@ -2331,3 +2331,4 @@ omen-gtx-gtx-f18576b6-w105816-1-f18576b6 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-24 11:49 PLATTE 5.8 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 11:51 PLATTE 17.3 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
 2026-11-24 11:52 RUNDE 19 ALARM gtx: OMEN: 4 Messungen ungepusht seit 04:58 — laeuft 9/240, Station karte2.mensch.kultur.sprache#1, Kopf 5ef0404b; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-24 11:52 landung Runde 19 am 5ef0404b: misst 65 von 240 Stationen (vorn; 9 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
