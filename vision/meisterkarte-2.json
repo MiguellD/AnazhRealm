@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 7,
+    "heute": 8,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.6,
+    "anteilHeute": 4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1560,7 +1560,7 @@
        "richter": "Licht, Druck und Phasen gegen deren Stoff ±20 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Stand 0: Absorption und Sicht je Wasser-Art als Gesetz (foundry-core.js:163-172), im Bild ungemessen.",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 78,
+  "heute": 79,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 51,
-  "nachwache": 27
+  "nachwache": 28
  },
  "zusammengelegt": [
   {
