@@ -79,3 +79,24 @@ Je Merkmal im Bild, gegen die Fotos:
 - **Die Form des Sockels im Wasser.** Sie ist linear und damit eine Annahme. Belegt sind nur die drei Höhen 0,30, 0,50–0,60 und 0,95 m.
 - **Der Dachüberstand.** Das Maß ist unbelegt. die Quellen-Zuarbeit (Abschnitt B, Ursache je Merkmal) nennt keine Regel.
 - **`alpin` auf Meereshöhe.** Wie unter (b).
+
+## Heilung: das Klima trägt nur das Dorf ohne Wort
+
+- **Ursache.** `_foundryRequestSettlement` (stamm/siedlung-ort.js) gab JEDEM Plan das Klima des Orts, auch dem Plan eines Worts. Das
+  betraf den Satz „dorf 7 18“, sein Gedächtnis „d:…“ und die Kacheln seiner Stadt (`viertelWort` und `kachelMassen` mit Klima). Die Stadt
+  „dorf 7 30/120/300“ der Messorte stand dadurch alpin statt mediterran: 34 statt 35 Lose, die Kirche #635014 gotisch bei 33,8/26,4 statt
+  provenzalisch bei 14,5/37,1. Die Messorte und die Proben nennen aber Anker, Bahnen (`spec/profiband/haushalt.json`), Tore und Stände
+  dieses Plans. Fünf CI-Schritte waren deshalb rot: gate:haus-welt (beide Teile, W7 „losstill“ und „bauwand“ blind), die Kreatur-Linse
+  Teil 1 und Teil 3 („Los 0 kirche #635014 steht nicht: fiel still“, 54 von 520 Ständen jenseits der Wand) und die Fahr-Linse des Lebens
+  (B-h 3 Gattungen, VK bahn[0] außer der Bahn).
+- **Schnitt.** Der Plan eines Worts ist eine Funktion des Worts allein: derselbe an jedem Ort und für jeden, der ihn teilt. Am EINEN
+  Kanal gilt `wort = dp.wort || dp.kachel`. Der Satz (`spawnSettlement`) und das Gedächtnis „d:“ (`_ortDp`) setzen `wort`, die Kachel nennt
+  sich selbst. Das Dorf ohne Wort (die Zellen der Welt, der Messort `dorf`) trägt das Klima wie bisher.
+- **Gemessen (lokal, gleicher Kopf).**
+  - Kreatur-Linse Teil 3: 44 von 44 Tätern rot, Grund 12 von 12.
+  - Kreatur-Linse Teil 1: 46 von 46 Tätern, Grund 8 von 8.
+  - gate:haus-welt 1/2 und 2/2 grün, „losstill“ und „bauwand“ fallen rot beim Namen.
+  - gate:fahr-leben grün (VK 10 und 23 Uhr, VK-V).
+  - Labor-Hash c31204c7cdb89380 unverändert.
+- **OFFEN.** Ein Wort an einem fremden Klima baut seine eigene Region (das teilbare Wort geht vor dem Ort). Der Ort spricht nur, wo kein
+  Wort spricht · Messname gate:settlement R · Leser `_foundryRequestSettlement`.
