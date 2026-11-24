@@ -1393,7 +1393,7 @@ function raumLinse() {
     {
         const GL = FC.GRENZE_IM_LAND;
         const SG = FC.SIEDLUNG;
-        const ringe = [SG.nHMin, 26, 295, 499].map((nH) => ({ x: 836.1, z: 438.2, r: FC.siedlungsReich(SG, nH), nH }));
+        const ringe = [SG.nHMin, 26, 295, 499].map((nH) => ({ x: 836.1, z: 438.2, r: FC.siedlungsReich(SG, nH), nH })); // BÜHNE: der Rand ist eine Funktion des Reichs, die Mitte (der Herr an stadt-voll) setzt nichts in eine Welt
         let bandOk = true;
         let deckOk = true;
         let beispiel = "";
