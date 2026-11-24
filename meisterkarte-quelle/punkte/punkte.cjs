@@ -4117,6 +4117,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     //     zweites Mal, steht sie beim Namen.
     const anfangLief = ctx.anfangLief || new Set(), messortZweit = ctx.messortZweit || new Set();
     let anfangHier = false, neuNachAnfang = null, seiteFiel = null;
+    const ortBrach = new Map(); // der Messort, der in DIESER Sitzung nicht stand (ein Versuch je Ort je Sitzung)
     for (const g of gruppen) {
         // DIE LAUFENDE PROBE in der Akte des Läufers (akteLaeuft): stirbt er, nennt die Wache nur sie, die übrigen fahren neu
         akteLaeuft("sitzung", g.map(schluessel));
@@ -4239,9 +4240,27 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             return true;
         };
         if (await ohneStueck()) continue;
+        // DIE SITZUNG TRÄGT (c): ein Bruch des Messorts ist offen — die Fortsetzung misst die Probe in einer neuen Sitzung, die Runde
+        // zählt den Versuch (`eintragen`: „— offen, UNGEMESSEN“); ein zweiter Bruch derselben Probe in diesem Lauf steht beim Namen
+        const messortOffen = (e, i) => {
+            if (!e.ungemessen || !MESSORT_BRUCH.test(e.grund || "") || /— offen, UNGEMESSEN$/.test(e.grund)) return e;
+            const id = schluessel(g[i]);
+            if (messortZweit.has(id)) return { ...e, grund: e.grund + " · der Messort brach in diesem Lauf zum zweiten Mal" };
+            messortZweit.add(id);
+            if (!kopf.offen.includes(id)) kopf.offen.push(id);
+            (kopf.messortOffen = kopf.messortOffen || []).push(id);
+            const mehr = " — offen, UNGEMESSEN";
+            return { ...e, grund: e.grund + mehr, zahl: e.zahl === e.grund ? e.grund + mehr : e.zahl };
+        };
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
         // Deckel der Probe (er misst ihre Arbeit, nie den Ring) und steht je Ort im Kopf (`orte`: s, Takte, Chunks — Pflicht B, die
-        // Ankunft); die Proben des Orts danach finden ihn gebaut. Scheitert das Umstellen, stellt die Probe selbst um (beim Namen im Log)
+        // Ankunft); die Proben des Orts danach finden ihn gebaut. DER MESSORT TRÄGT SEINE EIGENE FRIST (pm-sitzung-traegt Scheibe 2;
+        // Radeon eba9bf8f: megastadt#1, sprache#1, koennen#2 „Frist der Probe 80 s / 39 s / 24 s gerissen im /umstellen hochhaus-dach /
+        // stadt-voll / stadt“): das Umstellen der Sitzung hat seine Frist (rufFrist 300 s) und EINMAL die Tür; steht der Ort danach nicht,
+        // fährt die Probe NIE — bis dahin stellte sie selbst um, in IHRER Frist, und die Werkbank lief die ganze Frist am Anlauf aus (der
+        // stille Ersatzweg, der die Station kostete). Die Frist der Probe beginnt, wenn ihr Ort steht: sonst ist sie „Messort: …“ offen
+        // (DIE SITZUNG TRÄGT (c), einmal je Lauf), und jede weitere Probe desselben Orts in DIESER Sitzung steht ohne zweiten Versuch
+        // offen beim Grund des ersten (`ortBrach`) — die Kette der kalten Brüche endet am Ort, die Proben anderer Orte messen weiter
         // DER WARME START (w4-sitzung-eichen; takt25c GTX an 6b3da705: 36 von 38 Proben UNGEMESSEN am Deckel — nach jedem Riss ging
         // die Grundstellung durch die Tür, die Werkbank hält die neue Seite still (`loopAus`), und jede Probe danach zahlte den Ring:
         // am Ort 15–25 s statt ~3 s warm, eine Probe ohne Ort in ihrem eigenen Deckel — die Kaskade): auch eine Probe OHNE Ort misst in
@@ -4251,7 +4270,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         await zapf(aktuell);
         if (seite !== stellSeite && aktOrt !== null) (aktOrt = null), (ortNach = ortNach || "einer neuen Seite");
         const ort = probeOrt(g[0]);
-        if (ort ? ort !== aktOrt : aktOrt === null && stellungVon(g) !== "anfang") {
+        if (!(ort && ortBrach.has(ort)) && (ort ? ort !== aktOrt : aktOrt === null && stellungVon(g) !== "anfang")) {
             const tu = Date.now();
             const stelle = () => (ort ? rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000)
                 : rufFrist(W, "/eval", { code: WELT_STEHT }, 300000).then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: (a && a.fehler) || JSON.stringify(a) })))
@@ -4259,7 +4278,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             let u = await stelle();
             // DIE WELT HÄNGT (Radeon-Eich 25ac4c0c 01.11.: nach profiband.K4 stand die Wiese nicht mehr — „wald 11“ offen über 3 601 Takte —,
             // und jede Probe am Ort danach zahlte 36 s und fiel): steht der Ort nicht, geht die Sitzung EINMAL durch die Tür (die Seite neu,
-            // der Grund) und stellt neu um — steht er dann, misst die Probe in der heilen Welt; sonst stellt die Probe selbst um wie bisher
+            // der Grund) und stellt neu um — steht er dann, misst die Probe in der heilen Welt; sonst ist der Messort gebrochen (unten)
             if (u && u.fehler && grundDa === true) {
                 const gs = await grundstellung(W, grund, { abbruch: true });
                 await zapf(aktuell);
@@ -4296,10 +4315,19 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             } else {
                 // ohne Ort EIN Versuch je Grundstellung oder Seite: eine Welt, die nicht steht, kostete sonst jede folgende Probe die Frist
                 if (!ort) (aktOrt = "(hier)"), (stellSeite = seite);
+                else ortBrach.set(ort, { vor: schluessel(g[0]), s: us, fehler: String((u && u.fehler) || JSON.stringify(u)).replace(/\s+/g, " ").slice(0, 300) });
                 kopf.orte.push({ ort: ort || null, vor: schluessel(g[0]), s: us, fehler: String(u && u.fehler).slice(0, 200), nach: ortNach });
                 console.log("  SITZUNG " + wo + " vor " + schluessel(g[0]) + " steht nicht nach " + us + " s: " + JSON.stringify(u).slice(0, 200));
             }
             ortNach = null;
+        }
+        if (ort && ortBrach.has(ort)) {
+            const b = ortBrach.get(ort), erst = b.vor === schluessel(g[0]);
+            const grund = "Messort: /umstellen " + ort + " steht nicht nach " + b.s + " s" + (erst ? "" : " (vor " + b.vor + ", ein Versuch je Sitzung)") + ": " + b.fehler + " — kein Urteil, UNGEMESSEN";
+            (kopf.ortBrach = kopf.ortBrach || []).push({ ort, probe: schluessel(g[0]), vor: b.vor });
+            console.log("  SITZUNG " + schluessel(g[0]) + " fährt nicht: der Ort " + ort + " steht nicht — die Frist der Probe beginnt erst, wenn ihr Messort steht");
+            await melde(g, g.map(() => ohne(grund, true)).map(messortOffen), null, new Date().toISOString());
+            continue;
         }
         if (await ohneStueck()) continue;
         const name = schluessel(g[0]).replace("#", "_");
@@ -4457,18 +4485,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const wirtBruch = (e) => (!wirtHaelt ? e : e.ungemessen ? { ...e, grund: e.grund + " · " + wirtHaelt, zahl: e.zahl + " · " + wirtHaelt }
             : { ...e, gruen: false, ungemessen: true, grund: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")",
                 zahl: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")" });
-        // DIE SITZUNG TRÄGT (c): ein Bruch des Messorts ist offen — die Fortsetzung misst die Probe in einer neuen Sitzung, die Runde
-        // zählt den Versuch (`eintragen`: „— offen, UNGEMESSEN“); ein zweiter Bruch derselben Probe in diesem Lauf steht beim Namen
-        const messortOffen = (e, i) => {
-            if (!e.ungemessen || !MESSORT_BRUCH.test(e.grund || "") || /— offen, UNGEMESSEN$/.test(e.grund)) return e;
-            const id = schluessel(g[i]);
-            if (messortZweit.has(id)) return { ...e, grund: e.grund + " · der Messort brach in diesem Lauf zum zweiten Mal" };
-            messortZweit.add(id);
-            if (!kopf.offen.includes(id)) kopf.offen.push(id);
-            (kopf.messortOffen = kopf.messortOffen || []).push(id);
-            const mehr = " — offen, UNGEMESSEN";
-            return { ...e, grund: e.grund + mehr, zahl: e.zahl === e.grund ? e.grund + mehr : e.zahl };
-        };
+        // DIE SITZUNG TRÄGT (c): ein Bruch des Messorts in der Probe ist offen (messortOffen, vor dem Ort)
         const urteile = es.map(unter).map(werkzeug).map(wirtBruch).map(messortOffen).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
         if (urteile.some((e, i) => (kopf.messortOffen || []).includes(schluessel(g[i])) && /— offen, UNGEMESSEN$/.test(e.grund || "")))
             console.log("  SITZUNG " + schluessel(g[0]) + " — der Messort brach: offen, die Fortsetzung misst die Probe in einer neuen Sitzung");
@@ -8803,8 +8820,9 @@ async function selbsttest(o = {}) {
             '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
             '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
             // DIE WELT HÄNGT (art „haengt“): der Ort steht nicht, bis die Seite neu lud; „wirt-anfang“: nicht, solange eine Probe die Seite
-            // hält (`r.state.__haelt`, die Wirt-Wache nennt sie — die Radeon eba9bf8f nach profiband.K4)
-            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); if (art === "wirt-anfang" && seite.welt.state.__haelt) return s({ fehler: "DIE WELT STEHT NICHT nach 1800 Takten: die Probe davor hält die Seite" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
+            // hält (`r.state.__haelt`, die Wirt-Wache nennt sie — die Radeon eba9bf8f nach profiband.K4); „ort-nie“: der Ort „stadt“ steht
+            // nie, auch nicht nach der Tür (der Messort trägt seine eigene Frist)
+            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "ort-nie" && b.ort === "stadt") return s({ fehler: "DIE WELT STEHT NICHT nach 1800 Takten: stadt 7" }); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); if (art === "wirt-anfang" && seite.welt.state.__haelt) return s({ fehler: "DIE WELT STEHT NICHT nach 1800 Takten: die Probe davor hält die Seite" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/wirt" && /^wirt/.test(art)) return wirtWeg(b, s);',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
@@ -9254,6 +9272,22 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG DIE WELT HÄNGT: der Ort steht nicht — EINMAL durch die Tür, neu umgestellt, die Probe misst in der heilen Welt",
             rH.z.join(",") === "start,nimm,umstellen:wiese,tuer,reload,grund,umstellen:wiese,stop" && rH.kopf.orte.length === 1 && rH.kopf.orte[0].nach === "der Tür (die Welt hing)" &&
             !rH.kopf.orte[0].fehler && rH.es["a.K1#1"].gruen, JSON.stringify([rH.z, rH.kopf.orte, rH.es]));
+        // DER MESSORT TRÄGT SEINE EIGENE FRIST (pm-sitzung-traegt Scheibe 2; Radeon eba9bf8f: drei Stadt-Stationen rissen die Frist der
+        // Probe im /umstellen): steht der Ort auch nach der Tür nicht, fährt die Probe nie — sie ist „Messort: …“ offen, die zweite Probe
+        // desselben Orts ohne zweiten Versuch (der Grund der ersten), die Probe eines anderen Orts misst GRÜN. Vorher: a und b fuhren in
+        // ihrer eigenen Frist und stellten selbst um (z …,umstellen:stadt,umstellen:stadt,…, beide GRÜN in der Attrappe)
+        {
+            const rN = await lauf([[S("a.K1", 1, { befehl: mitOrt("stadt"), sek: 30 }, warm)], [S("b.K1", 1, { befehl: mitOrt("stadt"), sek: 30 }, warm)],
+                [S("c.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)]], "ort-nie", null);
+            const [na, nb, nc] = ["a", "b", "c"].map((k) => rN.es[k + ".K1#1"] || {});
+            const fehl = "DIE WELT STEHT NICHT nach 1800 Takten: stadt 7 — kein Urteil, UNGEMESSEN — offen, UNGEMESSEN";
+            pruef("SITZUNG DER MESSORT TRÄGT SEINE EIGENE FRIST: steht der Ort auch nach der Tür nicht, fährt die Probe nie in ihrer Frist — „Messort: …“ offen, die zweite Probe des Orts ohne zweiten Versuch, ein anderer Ort misst GRÜN",
+                rN.z.join(",") === "start,nimm,umstellen:stadt,tuer,reload,grund,umstellen:stadt,umstellen:wiese,stop" &&
+                na.ungemessen === true && new RegExp("^Messort: /umstellen stadt steht nicht nach [\\d.]+ s: " + fehl + "$").test(na.grund || "") &&
+                nb.ungemessen === true && new RegExp("^Messort: /umstellen stadt steht nicht nach [\\d.]+ s \\(vor a\\.K1#1, ein Versuch je Sitzung\\): " + fehl + "$").test(nb.grund || "") &&
+                nc.gruen === true && JSON.stringify(rN.kopf.offen) === '["a.K1#1","b.K1#1"]' && (rN.kopf.ortBrach || []).length === 2 &&
+                apparatOffen(na.grund) && apparatOffen(nb.grund), JSON.stringify([rN.z, na.grund, nb.grund, nc.gruen, rN.kopf.offen, rN.kopf.grund]));
+        }
         // DIE EICH-FAHRT (eichEintrag): der Deckel ändert nie ein Urteil — GRÜN nach 50 s bleibt GRÜN (bis 10.11. „über dem Gesetz 45 s,
         // das Urteil zählt nie“), ROT bleibt ROT, je mit ihrer Zahl; an der Leine gefallen ist die Zahl zensiert (gerissen), der Grund bleibt
         // wörtlich; die Welt, die endete, und die Fahrt, die riss, tragen keine Zahl der Probe
