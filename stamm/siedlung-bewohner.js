@@ -719,12 +719,19 @@ class AnazhRealm_siedlung_bewohner {
         // Netz und ihre Längen merkt der Grund selbst (`_bewohnerTuerAm`, `_bewohnerAnTuer`)
         const grundVon = () => S.netzGrund || (S.netzGrund = realm._wegeNetzGrund(plan, S.ox, S.oz));
         let freiKnoten = null;
+        // JEDER ORT SEINES TAGS IST EIN GANG (`seine`: die Stände des Menschen, für den `standAm` eben stellt — sein Heim, sein
+        // Platz, jeder schon gebundene): der neue liegt `gangM` von jedem, sonst ist die Wende seines Plans kein Weg. Bis hier
+        // trennte die Stände nur der Raum (`raumM`, je zwei Stände der Liste): die Station des Wirts im Ring seines Hauses
+        // stand 1,54 m vor seinem Heim-Stand, Werk und Abend lagen einen Schritt auseinander (Steintal 5 von 89, Stadt 21 von
+        // 1 391; gate:kreatur-takt bewohner: 3 Wege des Tags, Soll 4–10)
+        let seine = null;
         const frei = function* (x, z, amRand = true, tuer = null) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
                 for (let j = -1; j <= 1; j++)
                     for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
                         if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
+            for (const p of seine || []) if (p && (p.x - x) ** 2 + (p.z - z) ** 2 < BW.gangM * BW.gangM) return false;
             if (amRand && amWeg(x, z)) return false;
             // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
             // Stücke selbst stehen erst mit dem Erlebnis des Dorfs; an stadt-voll lagen 30 Stände in einem, fachwerk `imPlatzStueck`)
@@ -1002,12 +1009,26 @@ class AnazhRealm_siedlung_bewohner {
             // Plans GEHT, nie nach der Luftlinie (pendler-anschluss)
             wegZu = KC.tagesWege(TC, orte, NG, S.ox, S.oz, (o, i) => ortAm[i]);
         };
-        const standAm = function* (g, i, heimI, platz) {
+        // der Stand des Menschen P am Ort i, einen Gang von jedem seiner Stände (`seine`). Am Platz ohne freien Markt-Stand ein
+        // eigener Stand auf dem Platz (`platzStand`): bis hier stand er dort, wo ihn der Morgengang hinstellte — sein Werk am
+        // Platz WAR sein Platz-Stand (Steintal 22 Kinder), das Spiel nach dem Morgen am Markt kein Weg. Trägt auch der Platz
+        // keinen mehr, bleibt er an seinem Stand vom Morgen; ein voller Platz bleibt voll (`platzVoll`: die Liste stellt nur
+        // hinzu) — an stadt-voll suchte sonst jedes der 208 Kinder vergebens den ganzen Platz ab (die Liste 6,1 → 8,5 s)
+        let platzVoll = false;
+        const standAm = function* (P, i) {
             const o = orte[i];
-            if (o.art === "platz") return (yield* marktStand(g)) || platz;
-            if (o.art === "feld") return yield* feldStand(g, plan.felder[o.feld]);
-            const T = tuerVon.get(o.slot);
-            return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.ex, T.ez, T.ux, T.uz, null, i !== heimI, { x: T.tx, z: T.tz }); // prettier-ignore
+            seine = [P.heim, P.platz, ...P.am.values()];
+            try {
+                if (o.art === "platz") {
+                    const st = (yield* marktStand(P.g)) || (platzVoll ? null : yield* platzStand(P.g));
+                    return st || ((platzVoll = true), P.platz);
+                }
+                if (o.art === "feld") return yield* feldStand(P.g, plan.felder[o.feld]);
+                const T = tuerVon.get(o.slot);
+                return yield* ringStand(P.g, i === P.heimI ? "w" : "o" + i, T.ex, T.ez, T.ux, T.uz, null, i !== P.heimI, { x: T.tx, z: T.tz }); // prettier-ignore
+            } finally {
+                seine = null;
+            }
         };
         // DIE BINDUNG (der Kern wählt, `tagesBindung`): je Bedürfnis `namen` der Ort des Menschen P; der Wirt stellt den Stand
         // (je Ort einen, `am`) — trägt ein Ort keinen freien mehr oder hängt sein Stand an einem anderen Teil des Netzes (`voll`),
@@ -1021,8 +1042,7 @@ class AnazhRealm_siedlung_bewohner {
                 for (const wo of namen) {
                     const i = P.bind[wo];
                     if (i < 0 || P.am.has(i) || (i === P.heimI && wo !== "werk")) continue;
-                    const st =
-                        i === P.heimI && P.rolle === "wohnhaus" ? null : yield* standAm(P.g, i, P.heimI, P.platz);
+                    const st = i === P.heimI && P.rolle === "wohnhaus" ? null : yield* standAm(P, i);
                     P.am.set(i, st);
                     if (i !== P.heimI && (!st || teilVon(st) !== P.heimTeil)) neu = P.voll.add(i);
                 }
@@ -1082,6 +1102,7 @@ class AnazhRealm_siedlung_bewohner {
                 same,
                 rolle,
                 heimI,
+                heim,
                 heimTeil: teilVon(heim),
                 platz,
                 am: new Map(),
@@ -4414,6 +4435,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
     platzAnteil: 0.45,
     raumM: 1.5,
+    // DER GANG (`_bewohnerListe` `seine`; der Richter: gate:kreatur-takt bewohner „Wege", eine Wende ≥ gangM): zwei Orte
+    // eines Tags liegen drei Schritte auseinander (die Schrittlänge des Gehens 0,65–0,75 m, Perry 1992 „Gait Analysis")
+    gangM: 2,
     saumM: 0.45,
     geburtenJeTakt: 2,
     fernFaktor: 1.25,
