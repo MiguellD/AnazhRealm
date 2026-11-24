@@ -1,9 +1,18 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 15:50 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 15:56 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 15:56 — **HALT BEI 98 %** (gilt VOR allem darunter): beide lokalen Arbeiter und alle Wächter sind angehalten. GESICHERT am
+  Server als WIP-Zweige (nie Vorprüf-Köpfe): `fahrzeug-gattung-wip` 6e1733a2e7ae (Baum C:/Users/micha/AnazhRealm-acker; dort liegt
+  EINE unversionierte Änderung an scripts/diag-garage-labor.cjs, 17 Diff-Zeilen, der Arbeiter stand mitten im Schnitt — ungeprüft,
+  Kopie im Werkzeug `halt-fahrzeug-garage-labor.diff`; die 12 Familien-Schritte liefen noch) · `haus-stoff-wip` 866f1a793cb8 und
+  `haus-dach-wip` 5f0f608d5cb4 (Baum C:/Users/micha/AnazhRealm-front-pl, sauber; gate:settlement allein fahren, Port 4436).
+  DREI Batterien laufen ohne Wächter — nach dem Wechsel zuerst `node S/ci/ci-rot.cjs <kopf>` für 3bbb5b23 · 7c517dc5 · cf3bff66,
+  dann stempeln oder bündeln. OMEN-Befund zu Stand-Takt: die Wanduhr steckt in der WELT (`_tickDruck`, DRUCK.budgetMs 4 entscheidet,
+  WANN ein Körper getroffen wird), nicht in der Linse — OMEN schneidet dort (scherbe-liegt), mein Auftrag „Schritte statt Wanduhr“
+  ist damit ersetzt. KARTE 2: 83 von 1 718. VERBRAUCH: 98 % alle Modelle, 96 % Fable.
 - NACHTRAG 15:50 (gilt VOR allem darunter; berichtigt den NACHTRAG 15:48): `sport-regeln` 3 **cf3bff6630b0d071e2df0adea129b5c0f6d42d1f**
   geschoben (OMEN, grün-reif JA: Steckenbleiber 1 → 0, Wege 12 → 10; drei Täter mit Zeile in `bericht/2411-omen-stand.md` — den
   Satz `satz-sport-regeln.txt` vor dem Stempel um sie ergänzen). DREI Batterien laufen: anatomie-r4-heil 3bbb5b23 ·
