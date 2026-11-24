@@ -12620,7 +12620,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +28) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: ungemessen (R10) — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Gli · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +28) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: ungemessen (R10) — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.leben.oeko.netz#2 gtx: ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19995 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt an 9d4319c0 · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12657,10 +12657,10 @@
      "id": "karte2.leben.oeko.netz#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Gli",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19995 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19995 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.oeko.netz#3",
@@ -36294,7 +36294,7 @@
   },
   "karte2.same.physik.tragen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.tragen#1 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.same.physik.tragen#1 gtx: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Gli · karte2.same.physik.tragen#2 radeon: ungemessen (R10) · karte2.same.physik.tragen#2 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#3 radeon: ungemessen (R10) · karte2.same.physik.tragen#3 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#4 radeon: ungemessen (R10) · karte2.same.physik.tragen#4 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#5 radeon: ungemessen (R10) · karte2.same.physik.tragen#5 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#6 radeon: ungemessen (R10) · karte2.same.physik.tragen#6 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#7 radeon: ungemessen (R10) · karte2.same.physik.tragen#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 · GRÜN ✅ abw_pct 0 (Soll ≤ 20) · ✅ abw_halbe_pct 0 (Soll ≤ 20) · ✅ Umfang verlangt 1 Glied, die Welt erzeugte 1 · gemessen vor dem Abbruch: Frist der Probe 111 s gerissen an 9d4319c0 gtx — offen: karte2.same.physik.tragen#1 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.same.physik.tragen#2 radeon: ungemessen (R10) · karte2.same.physik.tragen#2 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#3 radeon: ungemessen (R10) · karte2.same.physik.tragen#3 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#4 radeon: ungemessen (R10) · karte2.same.physik.tragen#4 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#5 radeon: ungemessen (R10) · karte2.same.physik.tragen#5 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#6 radeon: ungemessen (R10) · karte2.same.physik.tragen#6 gtx: Station seit der Messung geändert · karte2.same.physik.tragen#7 radeon: ungemessen (R10) · karte2.same.physik.tragen#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.tragen#1",
@@ -36309,11 +36309,11 @@
     {
      "id": "karte2.same.physik.tragen#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Gli",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 · GRÜN ✅ abw_pct 0 (Soll ≤ 20) · ✅ abw_halbe_pct 0 (Soll ≤ 20) · ✅ Umfang verlangt 1 Glied, die Welt erzeugte 1 · gemessen vor dem Abbruch: Frist der Probe 111 s gerissen",
+     "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37555,7 +37555,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 313,
+  "konsum": 315,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37723,11 +37723,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3309
+  "ohne": 3307
  },
  "kopfVoll": "87bb259ca289c03b9ac870550dbe1c2118774175",
- "zeit": "2026-11-24T06:28:52.520Z",
- "vorher": "9d4319c0",
+ "zeit": "2026-11-24T06:35:22.785Z",
+ "vorher": "87bb259c",
  "bilanz": {
   "gewinn": [],
   "fall": [],

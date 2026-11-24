@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 11,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.4,
+    "anteilHeute": 5.8,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15455,7 +15455,7 @@
        "richter": "N = 100 Planeten-Saaten: Höhe der höchsten Bauten ∝ σ/(ρ·g) ±30 %; Blind-Jury ordnet Silhouetten der richtigen Schwere zu ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Biegung und Euler-Knick je Glied (stamm/bau-buch.js:1823-1892), aber durch knickSicherheit 500 geeicht (:2580-2591): relativ wahr, absolut nicht; Lastpfad-Bruch nur in der Werkstatt, kein gesätes Stadthaus bricht.",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 81,
+  "heute": 82,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 52,
-  "nachwache": 29
+  "nachwache": 30
  },
  "zusammengelegt": [
   {
