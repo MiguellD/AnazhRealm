@@ -22,7 +22,15 @@ module.exports = (F) => [
             H.zeile("Grenze: " + JSON.stringify(w));
             const reich = "Reich " + w.reichM + " m um den Ort mit Herrn (" + w.reichKm2 + " km²)";
             const keine = "keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEinesOrts`) hält nur Gründungen und Herden fern — kein Bau, kein Weg, kein Zeichen zeigt es (" + w.zeichen + " Grenzzeichen in der Szene; " + reich + ")";
-            await K.schritt(1, async () => K.leser(1, { n: w.herren, fehlt: keine, wo: "stamm/siedlung-ort.js:1609" }));
+            // die Grenze im Bild (Marksteine der Szene binnen 300 m des Rands, Band 250–600 m Steinweite) gegen die Karte (der Rand des Reichs)
+            await K.schritt(1, async () =>
+                K.zahl(1, {
+                    n: w.herren,
+                    werte: { grenzeKarte: w.grenzeKarte, burgLage: w.burgLage },
+                    beleg: reich + " · Grenzzeichen in der Szene " + w.steine + ", davon am Rand " + w.steineAmRand + " · Rand im Bild " + w.imBild + " von " + w.randPunkte + " Punkten · Burg in Lage " + w.burgLage,
+                    taeter: "stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (" + keine + ")",
+                })
+            );
             await K.schritt(2, async () => K.leser(2, { n: w.gemein, fehlt: "keine Grenze aus der Kostenfläche: " + w.gemein + " Gemeinwesen in " + w.zellen + " von " + w.zellenSoll + " Zellen (32 × 32 km) tragen kein Reich mit Grenze, kein Fluss und kein Kamm verlegt eine", wo: "stamm/siedlung-ort.js:1609" }));
             await K.schritt(3, async () => K.nicht(3, { n: w.bund, fehlt: "keine zweite Ebene: kein Bund, kein Stadtstaat über den Orten (" + w.gemein + " Gemeinwesen ohne Ordnung über sich)" }));
             await K.schritt(4, async () => K.nicht(4, { n: w.chronikJ, fehlt: "keine Herrschaft über die Zeit: der Ort mit Herrn trägt eine Chronik von " + w.chronikJ + " Jahren, kein Aufstieg, kein Fall, der Hauptort wandert nie" }));
@@ -46,10 +54,34 @@ module.exports = (F) => [
                 const reichM = herren.length ? Math.round(reich(SG, haeuser)) : 0;
                 const reichKm2 = +((Math.PI * reichM * reichM) / 1e6).toFixed(3);
                 let zeichen = 0;
+                const steine = [];
                 for (const e of r.state.architectures || []) {
                     const t = e && typeof e.type === "string" ? e.type.toLowerCase() : "";
-                    if (t.indexOf("grenz") >= 0 || t.indexOf("markstein") >= 0 || t.indexOf("schlagbaum") >= 0) zeichen++;
+                    if (t.indexOf("grenz") >= 0 || t.indexOf("markstein") >= 0 || t.indexOf("schlagbaum") >= 0) (zeichen++, e.position && steine.push(e.position));
                 }
+                // DIE GRENZE IM BILD GEGEN DIE KARTE (Sprosse 1): die Karte ist der Rand des Reichs um den Ort mit Herrn (fachwerk
+                // siedlungsReich, reichM), 360 Punkte; ein Punkt steht im Bild, wo ein Grenzzeichen der Szene (Markstein, stamm/siedlung-ort.js
+                // _markSteinSetzen) binnen der halben Weite zweier Steine liegt — Band: die Hauptgrenzsteine standen 250–600 m voneinander
+                // (Kleindenkmale Baden-Württemberg, Kreisarchiv Bodenseekreis), die halbe größte Weite 300 m
+                const herr = herren[0];
+                let [randPunkte, imBild, steineAmRand] = [0, 0, 0];
+                if (herr && reichM > 0) {
+                    for (let k = 0; k < 360; k++) {
+                        const a = (k * Math.PI) / 180;
+                        const [x, z] = [herr.ort.x + reichM * Math.cos(a), herr.ort.z + reichM * Math.sin(a)];
+                        randPunkte++;
+                        if (steine.some((q) => Math.hypot(q.x - x, q.z - z) <= 300)) imBild++;
+                    }
+                    steineAmRand = steine.filter((q) => Math.abs(Math.hypot(q.x - herr.ort.x, q.z - herr.ort.z) - reichM) <= 300).length;
+                }
+                // DIE BURG, WO LAGE UND REICHTUM SIE TRAGEN: je Ort mit Herrn steht der Palas (Rolle burg) im obersten Viertel der Höhen
+                // seiner Lose (fachwerk STADT_GRAMMATIK burg lage "hoehe"; die Höhe des Slots sl.y) und der Ort ist eine Stadt (das
+                // BURG-GESETZ: herrBar nur städtisch)
+                const burgOk = herren.filter((p) => {
+                    const ys = p.slots.map((sl) => sl.y).filter(Number.isFinite).sort((a, b) => a - b);
+                    const b = p.slots.find((sl) => sl.rolle === "burg");
+                    return b && Number.isFinite(b.y) && ys.length && b.y >= ys[Math.floor(0.75 * (ys.length - 1))] && !!p.staedtisch;
+                }).length;
                 // die Gemeinwesen des Rang-Gesetzes auf 32 × 32 km um den Messort (eine Zelle je `cellM`), mit Frist
                 const cellM = SG.cellM;
                 const halb = Math.round(16000 / cellM);
@@ -79,6 +111,12 @@ module.exports = (F) => [
                     reichM,
                     reichKm2,
                     zeichen,
+                    steine: steine.length,
+                    steineAmRand,
+                    randPunkte,
+                    imBild,
+                    grenzeKarte: randPunkte ? +(imBild / randPunkte).toFixed(3) : null,
+                    burgLage: herren.length ? +(burgOk / herren.length).toFixed(3) : null,
                     zellen,
                     zellenSoll: 4 * halb * halb,
                     gemein,
@@ -97,9 +135,6 @@ module.exports = (F) => [
                     { key: "grenzeKarte", wort: "Grenze im Bild deckt die Karte (Anteil)", soll: 1, richtung: "≥" },
                     { key: "burgLage", wort: "Burg, wo Lage und Reichtum sie tragen (Anteil)", soll: 1, richtung: "≥" },
                 ],
-                erwartet: "leser",
-                fehlt: "keine Grenze im Land: das Reich eines Orts hält nur Gründungen und Herden fern, nichts zeigt es",
-                wo: "stamm/siedlung-ort.js:1609",
             },
             2: {
                 umfang: { soll: 10, wort: "Gemeinwesen auf 32 × 32 km" },
@@ -154,6 +189,18 @@ module.exports = (F) => [
                     j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 0, werte: { grenzeKarte: 1, burgLage: 1 } } } },
                     gruen: false,
                     zahl: /ROT an Umfang 0 < 1 Herrschaftsgebiet/,
+                },
+                {
+                    name: "die Marksteine genommen: ein Herrschaftsgebiet, sein Rand nirgends im Bild",
+                    j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { grenzeKarte: 0, burgLage: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Grenze im Bild deckt die Karte \(Anteil\) 0 /,
+                },
+                {
+                    name: "drei Steine an drei Wegen: der Rand zu 0,4 im Bild",
+                    j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { grenzeKarte: 0.4, burgLage: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Grenze im Bild deckt die Karte \(Anteil\) 0\.4 /,
                 },
             ],
             2: [
