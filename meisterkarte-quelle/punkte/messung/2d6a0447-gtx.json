@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T20:44:06.128Z",
+ "zeit": "2026-11-24T20:59:53.265Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -1811,6 +1811,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "exit": 0,
+   "minuten": 2.21,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfbafe7bfbba1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k98d389a4d559",
+   "s": 131.9,
+   "fremd": {
+    "s": 134.7,
+    "takte": 62,
+    "fremdS": 73.98,
+    "kerne": 0.549,
+    "fensterKerne": 0.846,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      27.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.91
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      7.45
+     ]
+    ],
+    "dienerS": 34.53,
+    "diener": [
+     [
+      "System",
+      14.28
+     ],
+     [
+      "dwm.exe",
+      11.48
+     ]
+    ],
+    "geraetS": 55.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.56
+     ],
+     [
+      "svchost.exe",
+      14.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 364.03,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T20:59:53.265Z",
+   "abdruck": "34aa5fc96862",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
