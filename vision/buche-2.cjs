@@ -47,6 +47,15 @@
 // anderen am selben oder jüngeren Kopf); sonst urteilen die Geräte DESSELBEN Kopfes als EINE Fahrt (das schwächere), über verschiedene
 // Köpfe hinweg das beste (PUNKT vor KERN). Bis 18.11. hob ein Gerät nie (Beleg 16.11.: 934 Stations-Paare am selben Kopf, 91,6 % gleiches
 // Urteil; 2 781 Messungen ohne Partner am selben Kopf, 75 % der Mess-Arbeit). Der Bericht nennt je Punkt, wer gemessen hat.
+// ── DAS ROT FÄLLT MIT DEM CODE, DER ES HEILTE (24.11., der Koordinator) ── Befund: mensch.kultur.bildkunst S 1 stand 18:57 gebucht
+// (GTX GRÜN am 2d6a0447) und fiel 19:22 wieder, als die Radeon ihre alte Akte vom Vorfahren eba9bf8f (ROT) nachlieferte; die geteilte
+// Front (runde offen --anders) streicht die Station aus der Liste der Radeon, sobald die GTX sie am Kopf urteilte — das ROT am
+// Vorfahren hielt die Sprosse ohne Ende. Am 24.11. hingen so 6 Front-Sprossen (jüngstes ROT eines Geräts am Vorfahren des GRÜN des
+// anderen), an 4 davon war das buchende Gerät an diesem oder einem jüngeren Kopf SELBST ROT. Gesetz: das ROT von Gerät B am Kopf X
+// ist GESCHICHTE, wenn Gerät A an einem Kopf W (X = W oder X Vorfahr von W) selbst ROT urteilte und an einem echten Nachfahren von W
+// GRÜN urteilt (sein jüngstes setzendes Urteil) — beide standen am alten Code rot, der Code dazwischen heilte. B zählt dann wie nie
+// gemessen („Nachwache offen: B“), laut als Notiz „Geschichte: …“. Sonst bleibt „die Nachwache nimmt“: war A an oder nach X nie ROT
+// (ein Geräte-Unterschied ist möglich) oder misst B den jüngeren Code selbst ROT, hält das ROT.
 // Die Fahrten eines Geräts laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt seinen Stand, „nichts“ lässt ihn (Ratsche Z4) —
 // AUSSER der LAST-FAHRT (17.11., der Koordinator: vier Sprossen fielen PUNKT → KERN bei Richter GRÜN an beiden und einem Preis, der nur
 // „UNGEMESSEN unter Last“ war): eine KERN-Fahrt, deren Preis an keinem Gerät GEMESSEN ROT ist und an keinem fehlt — jeder Preis, der
@@ -533,7 +542,7 @@ function rechne(karte, akten, kern0, kopf) {
         // Messung nur durch eine Messung DESSELBEN Geräts an einem Nachfahren — die Nachwache des anderen Geräts bleibt stehen, bis es
         // selbst den jüngeren Code misst.
         const jeGeraet = fahrtenJeGeraet(liste, (x) => preisUrteil(x.preis, T, `Sprosse ${id} S ${nr} ${x.geraet}`, sp.klasse)).map(({ geraet, fahrten }) => {
-            const d = { geraet, s: start, warum: "", kopf: null, rot: false };
+            const d = { geraet, s: start, warum: "", kopf: null, rot: false, rote: [] }; // rote: die main-Köpfe, an denen dieses Gerät den Richter ROT maß
             const setzer = []; // die vollen SHA der Fahrten dieses Geräts, die seinen Stand schon setzten (ROT, KERN, PUNKT)
             fahrten.forEach((f, i) => {
                 const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} ${geraet} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
@@ -541,6 +550,7 @@ function rechne(karte, akten, kern0, kopf) {
                     h8 = h.slice(0, 8);
                 if (f.lastGehalten.length) notiz(`Preis am Kopf offen (Last): ${h8} ${f.lastGehalten.join(" · ")} — die GRÜNE Preis-Messung desselben Kopfes hält (Z4)`);
                 if (!kopf.aufMain(h)) return void notiz(`nicht auf der main-Linie: ${h8} (${r.u}) setzt nichts`, geraet);
+                if (r.u === "ROT") d.rote.push(h); // auch eine überholte Fahrt belegt: an diesem Code stand das Gerät rot
                 const neuer = setzer.find((g) => kopf.istAhn(h, g));
                 if (neuer) return void notiz(`überholt: ${h8} (${r.u}) ist Vorfahre von ${neuer.slice(0, 8)}`, geraet);
                 if (r.u === "KERN" && r.last && d.s === "PUNKT") {
@@ -555,6 +565,20 @@ function rechne(karte, akten, kern0, kopf) {
             });
             return d;
         });
+        // DAS ROT FÄLLT MIT DEM CODE, DER ES HEILTE (24.11., Kopf-Kommentar): das jüngste ROT von B am Kopf X ist Geschichte, wenn A an
+        // einem Kopf W (X = W oder X Vorfahr von W) selbst ROT war und an einem echten Nachfahren von W GRÜN steht — B zählt wie nie
+        // gemessen (Nachwache offen), laut als Notiz
+        for (const b of jeGeraet) {
+            if (!b.rot || !b.kopf) continue;
+            for (const a of jeGeraet) {
+                if (a === b || !a.kopf || a.rot) continue;
+                const w = a.rote.find((h) => (h === b.kopf || kopf.istAhn(b.kopf, h)) && kopf.istAhn(h, a.kopf));
+                if (!w) continue;
+                notiz(`Geschichte: ${b.geraet} ROT am ${b.kopf.slice(0, 8)} fiel mit dem Code — ${a.geraet} stand am ${w.slice(0, 8)} selbst ROT und urteilt am Nachfahren ${a.kopf.slice(0, 8)} GRÜN; Nachwache offen: ${b.geraet}`);
+                Object.assign(b, { kopf: null, rot: false, s: start, warum: "" });
+                break;
+            }
+        }
         // DER STAND DER SPROSSE aus den jüngsten Urteilen je Gerät (REGELN Z2, Z4, Z7): ein Richter-ROT irgendeines Geräts nimmt; sonst
         // urteilen die Geräte DESSELBEN Kopfes als EINE Fahrt (der Preis muss an jedem gemessenen Gerät halten: das schwächere), und über
         // verschiedene Köpfe hinweg gilt das beste Urteil (PUNKT vor KERN). Ohne Urteil eines Geräts bleibt der Ausgangs-Stand.
@@ -1463,6 +1487,51 @@ function selbsttest() {
     pruefe("MUTANTE (f) „ROT des zweiten Geräts nimmt nicht“: Fall (b) fällt ROT", () => {
         const r = mutante("        if (rot.length) {\n", "        if (rot.length && rot.length === gesetzt.length) {\n");
         return pruefeB({ rechne: r }) === true ? "die Mutante nahm trotzdem — der Fall (b) fängt die stumme Nachwache nicht" : true;
+    });
+    // ── DAS ROT FÄLLT MIT DEM CODE, DER ES HEILTE (24.11.) ── drei Köpfe in Folge: ALT → MITTE → NEU
+    const MITTE = "b1b1b1b1cc";
+    const KOPF3 = kopfFolgeFest({ main: ["7f778d44c1", ALT, MITTE, NEU], ahnen: { [MITTE]: [ALT], [NEU]: [ALT, MITTE] } });
+    const g8 = { "Radeon 890M": "radeon", "GTX 1060": "gtx" };
+    // akte(gerät, kopf, rot?) → [Name, Fahrt]: je Gerät und Kopf eine Datei, wie die Mess-Sitzung sie schreibt
+    const akte = (g, sha, rot, datum) => [`${A}.1.${sha.slice(0, 8)}-${g8[g]}`, fahrt(A, 1, { sha, geraete: [g], rot: rot ? g : undefined, datum })];
+    const geschichte = (teile, o) => {
+        const { L, z } = lauf(Object.fromEntries(teile), Object.assign({ kopf: KOPF3 }, o));
+        return { heute: L(A).heute, b: z.bericht[0], z };
+    };
+    const fallG = () => [akte("Radeon 890M", ALT, true, "2026-11-14T10:00:00Z"), akte("GTX 1060", ALT, true, "2026-11-14T11:00:00Z"), akte("GTX 1060", NEU, false, "2026-11-15T10:00:00Z")];
+    pruefe("GESCHICHTE: Radeon ROT am Vorfahren, GTX dort selbst ROT und am Nachfahren GRÜN → PUNKT an der GTX, „Nachwache offen: Radeon 890M“, laut", () => {
+        const { heute, b, z } = geschichte(fallG());
+        return heute === 1 && z.beide === 0 && b.warum === "Richter GRÜN und Preis (Ort) GRÜN an GTX 1060 am a635bfee · Nachwache offen: Radeon 890M" &&
+            b.notiz.some((n) => n === "Geschichte: Radeon 890M ROT am e4eeee08 fiel mit dem Code — GTX 1060 stand am e4eeee08 selbst ROT und urteilt am Nachfahren a635bfee GRÜN; Nachwache offen: Radeon 890M")
+            ? true
+            : `heute ${heute} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("GESCHICHTE: die GTX stand NACH dem ROT der Radeon selbst ROT (Radeon ALT, GTX MITTE), GRÜN am NEU → PUNKT", () => {
+        const { heute, b } = geschichte([akte("Radeon 890M", ALT, true, "2026-11-14T10:00:00Z"), akte("GTX 1060", MITTE, true, "2026-11-14T11:00:00Z"), akte("GTX 1060", NEU, false, "2026-11-15T10:00:00Z")]);
+        return heute === 1 && /Geschichte: Radeon 890M ROT am e4eeee08 .* GTX 1060 stand am b1b1b1b1 selbst ROT/.test(b.notiz.join()) ? true : `heute ${heute} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("GESCHICHTE Gegenprobe: die Radeon maß ROT NACH dem letzten ROT der GTX (GTX ALT, Radeon MITTE), GTX GRÜN am NEU → 0, das ROT hält", () => {
+        const { heute, b } = geschichte([akte("GTX 1060", ALT, true, "2026-11-14T10:00:00Z"), akte("Radeon 890M", MITTE, true, "2026-11-14T11:00:00Z"), akte("GTX 1060", NEU, false, "2026-11-15T10:00:00Z")]);
+        return heute === 0 && /^Richter ROT an Radeon 890M am b1b1b1b1$/.test(b.warum) && !b.notiz.some((n) => /Geschichte/.test(n)) ? true : `heute ${heute} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("GESCHICHTE Gegenprobe: misst die Radeon den jüngeren Kopf selbst ROT, nimmt sie (die Nachwache am selben Kopf) → 0", () => {
+        const { heute, b } = geschichte(fallG().concat([akte("Radeon 890M", NEU, true, "2026-11-15T11:00:00Z")]));
+        return heute === 0 && /^Richter ROT an Radeon 890M am a635bfee$/.test(b.warum) ? true : `heute ${heute} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("GESCHICHTE: misst die Radeon den jüngeren Kopf danach GRÜN → „an beiden Geräten“, keine Geschichte mehr nötig", () => {
+        const { heute, b, z } = geschichte(fallG().concat([akte("Radeon 890M", NEU, false, "2026-11-15T11:00:00Z")]));
+        return heute === 1 && z.beide === 1 && !b.notiz.some((n) => /Geschichte/.test(n)) ? true : `heute ${heute} beide ${z.beide} · ${b.warum} · ${b.notiz}`;
+    });
+    // der Fall (c) von oben als Fänger: die GTX war am Vorfahren NIE rot — die Regel darf das ROT der anderen dort nicht fällen
+    const fallC = () => [akte("Radeon 890M", NEU, false, "2026-11-14T10:00:00Z"), akte("GTX 1060", ALT, true, "2026-11-15T10:00:00Z")];
+    pruefe("MUTANTE (g) „jedes ROT am Vorfahren ist Geschichte“ (ohne das eigene ROT des buchenden Geräts): Fall (c) fällt ROT", () => {
+        if (geschichte(fallC()).heute !== 0) return "der Fall (c) hält schon ohne Mutante nicht";
+        const r = mutante("const w = a.rote.find((h) => (h === b.kopf || kopf.istAhn(b.kopf, h)) && kopf.istAhn(h, a.kopf));", "const w = kopf.istAhn(b.kopf, a.kopf) && b.kopf;");
+        return geschichte(fallC(), { rechne: r }).heute === 0 ? "die Mutante fällte das ROT nicht — der Fall (c) fängt die zu weite Regel nicht" : true;
+    });
+    pruefe("MUTANTE (h) „ein ROT ist nie Geschichte“ (die Regel bis 24.11.): der Fall GESCHICHTE fällt ROT", () => {
+        const r = mutante("            if (!b.rot || !b.kopf) continue;\n", "            continue;\n");
+        return geschichte(fallG(), { rechne: r }).heute === 1 ? "die Mutante hob trotzdem — der Fall fängt die alte Regel nicht" : true;
     });
     pruefe("Mutant fehlender Preis: Kern statt Punkt", () => {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { ohnePreis: "GTX 1060" }) });
