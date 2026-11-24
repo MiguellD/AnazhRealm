@@ -16,7 +16,9 @@ var __weltLicht = (function () {
         );
 
     // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `atmoTafeln`): Größen (Texel) und Marsch-Schritte. Transmittance
-    // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+    // 256×64 und Ψ_ms 64×32 je Medium (cos Sonnen-Zenit quadratisch dicht um den Horizont wie die Bestrahlungs-Tafel: bei −5°
+    // ein Texel 1,15° statt 3,6° — die Dämmerung knickt nirgends, licht-stetig), die Himmels-Sicht 192×108 je Stufe der Sonne,
+    // die Umgebung 128×64 (Equirekt, PMREM).
     // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
     // der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
     // flug: so viele Stufen darf das Medium wandern, solange die Tafel im Flug ist (`_waagrechtIrradianz`) — der steilste Anstieg im
@@ -26,7 +28,7 @@ var __weltLicht = (function () {
         mediumStufe: 0.02,
         flug: 8,
         durchlass: Object.freeze([256, 64]),
-        mehrfach: Object.freeze([32, 32]),
+        mehrfach: Object.freeze([64, 32]),
         himmel: Object.freeze([192, 108]),
         umgebung: Object.freeze([128, 64]),
         bestrahlung: Object.freeze([65, 1]),
@@ -380,14 +382,18 @@ var __weltLicht = (function () {
             return select(amBoden(r, mu), vec3(0), exp(tau.negate()));
         };
         // DIE TAFELN MISCHEN IM LOGARITHMUS (licht-stetig): das Licht der Dämmerung fällt exponentiell mit der Sonnenhöhe (0,4–0,5
-        // Dekaden je Grad, Brown 1952 / USNO Circular 171), der Filter der GPU mischt zwei Texel linear. Ψ_ms trägt 32 Texel über
-        // cos Sonnen-Zenit — um den Horizont 3,6° weit, die Luft unten im Schatten der Erde lebt dort allein von ihm: linear im Licht
-        // gemischt, knickte das Himmelslicht an jedem Texel (Sonne −5,38°: das Bild stieg je 0,002 der Uhr 0,82, dann 1,67 EV,
-        // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05). Darum trägt die Durchlass-Tafel die optische Tiefe τ (der Filter
-        // mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden ihrer Auflösung (2^−24, die
-        // kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um. Dasselbe Gesetz mischt
-        // die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
+        // Dekaden je Grad, Brown 1952 / USNO Circular 171), der Filter der GPU mischt zwei Texel linear. Ψ_ms trug 32 Texel linear
+        // über cos Sonnen-Zenit — um den Horizont 3,6° weit, die Luft unten im Schatten der Erde lebt dort allein von ihm: linear im
+        // Licht gemischt, knickte das Himmelslicht an jedem Texel (Sonne −5,38°: das Bild stieg je 0,002 der Uhr 0,82, dann 1,67 EV,
+        // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05; im Logarithmus gemischt blieb der Knick der Steigung, wiese Uhr 0,766
+        // −0,10 EV, GTX f53f05ea — darum liegt Ψ_ms quadratisch dicht um den Horizont, `msLage`). Die Durchlass-Tafel trägt die
+        // optische Tiefe τ (der Filter mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden
+        // ihrer Auflösung (2^−24, die kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
+        // Dasselbe Gesetz mischt die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
         const MS_BODEN = 2 ** -24;
+        // die Lage von cos Sonnen-Zenit in Ψ_ms (u ∈ [0, 1]): quadratisch um den Horizont, μ = c·|c| mit c = 2u − 1 — dieselbe Lage
+        // wie die Bestrahlungs-Tafel (`bestrahlung`); `passMehrfach` legt jeden Texel an ihre Umkehr
+        const msLage = (mus) => mus.sign().mul(mus.abs().min(1).sqrt()).add(1).mul(0.5);
         // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
         // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
         // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
@@ -397,7 +403,7 @@ var __weltLicht = (function () {
                 exp(
                     texture(
                         rtMS.texture,
-                        vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
+                        vec2(subUv(msLage(mus), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
                     ).level(float(0)).rgb
                 ).sub(MS_BODEN),
                 vec3(0)
@@ -450,7 +456,8 @@ var __weltLicht = (function () {
         // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = die Erde (`ATMO_ERDE`) ──
         const passMehrfach = Fn(() => {
             const q = uv();
-            const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const cMs = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const mus = cMs.mul(cMs.abs()).toVar();
             const h = max(ausUv(q.y, Z.mehrfach[1]).mul(RT - RG), 0.001).toVar();
             const r = h.add(RG).toVar();
             const sun = vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0).toVar();
