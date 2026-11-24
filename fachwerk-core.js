@@ -4779,14 +4779,14 @@
     // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
     // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
     // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe).
-    function viertelWort(samen, nH, i, k, epoche) {
+    function viertelWort(samen, nH, i, k, epoche, klima) {
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
         if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
         var n = stadtKachelZahl(samen, nH, i, k);
         if (n < STADT_FUNKTION.rest) return null;
         if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: stadtFormAm(samen, nH, 0, 0), ring: 0 };
-        var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
+        var kern = DORF({ seed: samen, nH: 4, epoche: epoche, klima: klima }); // die Mitte im Klima des Orts (REGION_KLIMA)
         return {
             seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
             nH: n,
@@ -4848,11 +4848,11 @@
     // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
     var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
     // prettier-ignore
-    function kachelMassen(samen, nH, i, k, epoche) {
-        const wort = viertelWort(samen, nH, i, k, epoche);
+    function kachelMassen(samen, nH, i, k, epoche, klima) {
+        const wort = viertelWort(samen, nH, i, k, epoche, klima);
         if (!wort) return null;
         const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
-        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }), H = dorf.houses;
+        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe, klima: klima }), H = dorf.houses;
         globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
         // die Straßen der Kachel: jede Kante des Netzes als Linienzug (jeder `strasseJe`-te Punkt), Breite, Belag und Saum des
         // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
@@ -5178,6 +5178,47 @@
           Object.assign(bp,{seed:bs,kultur:herrK,terrain:0,baujahr:palas.baujahr,rolle:'wohnhaus',wohl:1.2,keller:0,annexN:0,balcony:0,grundriss:'I',arm:0});
           setze(bp,z,band,'burg'); neu.push(bp); } }
       return neu; }
+    // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt): die Region eines Orts ohne Wort ist kein freier Wurf über den Planeten, sie ist
+    // der Wurf über die Regionen, deren Klima am Ort steht — `DP.klima` {winter, sommer}: das Tagesmittel des kältesten und des
+    // wärmsten Monats in °C (der Wirt: gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C). Je Region das Band beider
+    // Mittel aus den Klima-Normalen ihrer Orte (WMO 1961–1990: Berlin −0,5/19, Frankfurt 1/20, London 5/18 · Innsbruck −2/18,
+    // Davos −6/12 · Rom 8/25, Athen 10/28, Marseille 7/24 · Oslo −4/17, Helsinki −5/18, Moskau −7/19 · Tokio 5/26, Peking −3/27,
+    // Sapporo −4/22), die Grenze C/D bei −3 °C im kältesten Monat (Kottek u. a. 2006, Köppen-Geiger, Meteorol. Z. 15: 259–263). Der
+    // Wurf `r` bleibt derselbe Zug des Samens: sein Gewicht (die Spalte `w`, die Anteile des Wurfs bis hier) über den Regionen im
+    // Band, neu normiert. Steht keine im Band, trägt der Ort die nächste (die kleinste Summe der Abstände zum Band). Ohne Klima
+    // (das Labor, ein Plan ohne Ort) ist jede Region im Band — der Wurf bis hier, byte-gleich. Vorher stand im Dorf der Heimat
+    // (−4 °C im Winter, Schnee) das griechische Dorf mit Kykladen-Putz und Flachdach-Neigung (Zelle −4,−4, Same 4291161376).
+    // Die Deckung folgt der Region (KULTUR.pitch): Reet ≥ 45°, Schiefer 26,5° (BauNetz Wissen „Reet und Stroh“, Wikipedia
+    // „Dachneigung“) — die Gegenprobe in gate:settlement Teil R (die Heimat 49,6°, der Mittelmeer-Ort 25,1°).
+    // prettier-ignore
+    var REGION_KLIMA = [
+        { region: "mitteleuropa", w: 0.3, winter: [-8, 6], sommer: [14, 24] },
+        { region: "alpin", w: 0.16, winter: [-12, 0], sommer: [8, 20] },
+        { region: "mediterran", w: 0.18, winter: [4, 14], sommer: [22, 30] },
+        { region: "nordisch", w: 0.12, winter: [-20, -3], sommer: [10, 20] },
+        { region: "fernost", w: 0.12, winter: [-10, 8], sommer: [20, 30] },
+        { region: "antik", w: 0.12, winter: [4, 14], sommer: [22, 30] },
+    ];
+    function klimaAbstand(z, k) {
+        var a = function (v, b) {
+            return v < b[0] ? b[0] - v : v > b[1] ? v - b[1] : 0;
+        };
+        return a(k.winter, z.winter) + a(k.sommer, z.sommer);
+    }
+    // prettier-ignore
+    function regionImKlima(r, klima) {
+        var Z = REGION_KLIMA;
+        // ohne Ort jede Region: die Schwellen des Wurfs als Literale (die Summe der Gewichte in Gleitkomma läge um 1e-16 daneben)
+        if (klima == null) return r < 0.3 ? "mitteleuropa" : r < 0.46 ? "alpin" : r < 0.64 ? "mediterran" : r < 0.76 ? "nordisch" : r < 0.88 ? "fernost" : "antik";
+        if (!(isFinite(klima.winter) && isFinite(klima.sommer)))
+            throw new Error("fachwerk regionImKlima: das Klima des Orts trägt winter und sommer nicht als Zahl");
+        var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });
+        if (!im.length) im = [Z.reduce(function (b, z) { return klimaAbstand(z, klima) < klimaAbstand(b, klima) ? z : b; })];
+        var S = 0, c = 0;
+        for (var i = 0; i < im.length; i++) S += im[i].w;
+        for (var j = 0; j < im.length; j++) { c += im[j].w / S; if (r < c) return im[j].region; }
+        return im[im.length - 1].region;
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -5188,7 +5229,7 @@
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
-  else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
+  else{ region=regionImKlima(rnd(), DP.klima);   // DIE BAUWEISE FOLGT DEM KLIMA (REGION_KLIMA): der Wurf über die Regionen im Klima des Orts
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
@@ -11171,7 +11212,7 @@
         var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
         var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
         var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
-        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
+        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo, dp.klima) : null;
         if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
         var plan = DORF({
             seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
@@ -11180,6 +11221,7 @@
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
+            klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
         });
         var kNetz = null,
             kRand = null;
@@ -14073,6 +14115,8 @@
         platzAnziehung: platzAnziehung,
         imPlatzStueck: imPlatzStueck,
         DORF: DORF,
+        REGION_KLIMA: REGION_KLIMA, // die Bauweise folgt dem Klima (haus-gestalt): je Region das Band der Monats-Mittel; Leser: DORF, gate:settlement Teil R
+        regionImKlima: regionImKlima,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         dorfLayout: dorfLayout,

@@ -267,6 +267,9 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt, fachwerk `REGION_KLIMA`): jeder Plan der Welt trägt das Klima des Orts — das
+        // Mittel des kältesten und des wärmsten Monats (gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C)
+        d.klima = this._siedlungKlima();
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
         // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
@@ -1424,6 +1427,13 @@ class AnazhRealm_siedlung_ort {
     // den Zell-Hash (FNV-1a über „<Welt-Same>:dorf:cx,cz") und hält das Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
     // ein Dorf reicht der Ort (die Spawn-Klar-Wand und das Erwachen zählen ab seinem Rand). Bis K2 würfelte die Zelle hier
     // 8–17 Häuser — die Welt trug nur Dörfer.
+    // DAS KLIMA DES ORTS für den Plan (haus-gestalt, fachwerk `REGION_KLIMA`): Winter- und Sommer-Mittel am Meer in °C aus dem
+    // Ort-Gesetz der Welt (gelaende-core `ortGesetz(teil).klimaHeute`: die Heimat −4 / 18, am Ziel der Reise Heimat + Δ). Leser: der
+    // Export (`_foundryRequestSettlement`) und die Massen der Stadt-Kacheln (`kachelMassen`) — die Region jedes Dorfs liegt im Klima.
+    _siedlungKlima() {
+        const k = this._gelaende().ort.klimaHeute;
+        return { winter: k.winter, sommer: k.sommer };
+    }
     _autoSettlementCellInfo(cx, cz) {
         // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG); kaltes Buch → keine Zelle.
         const A = AnazhRealm._siedlungGesetz();
@@ -1529,7 +1539,7 @@ class AnazhRealm_siedlung_ort {
                 const [dx, dz] = [cx - s.cx, cz - s.cz];
                 const drin = Math.max(Math.abs(dx), Math.abs(dz)) <= s.ringe * SF.schritt;
                 if (!drin || (!dx && !dz) || dx % SF.schritt || dz % SF.schritt) continue;
-                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche);
+                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche, this._siedlungKlima()); // das Erbe der Mitte im Klima des Orts
                 if (w)
                     aus = {
                         key: cx + "," + cz,

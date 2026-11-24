@@ -187,6 +187,85 @@ function jahresringe(FC, o = {}) {
     return Object.assign(J, { min: Math.min(...J.paare.flat()) });
 }
 
+// ===== TEIL R (haus-gestalt, Karte mensch.bau.bauen): DIE BAUWEISE FOLGT DEM KLIMA — je Saat 1 … 200 das Dorf ohne Wort (18 Häuser)
+// unter drei Klimaten des Orts (fachwerk `REGION_KLIMA`, `DP.klima` {winter, sommer}): die Heimat (−4 / 18 °C, gelaende-core
+// TEMPERATUR), ein Mittelmeer-Ort (10 / 27, Athen) und ein subpolarer (−12 / 14). R1: kein Dorf trägt eine Region außerhalb ihres
+// Klima-Bands (die Heimat: kein mediterranes, antikes, fernöstliches Dorf); R2: jedes Klima trägt mindestens zwei Regionen (der
+// Wurf bleibt ein Wurf); R3 DIE GEGENPROBE: der Wechsel des Klimas ändert die Gestalt — die mittlere Dachneigung der Häuser der
+// Heimat liegt ≥ 10° über der des Mittelmeer-Orts (Schnee und Regen gegen Sonne: steile Deckung im Norden), und das Fachwerk
+// (Stil `alt`) steht in der Heimat, am Mittelmeer-Ort nicht; R4: ohne Klima (das Labor) würfelt der Kern über alle sechs Regionen
+// (die Schwellen bis haus-gestalt; der Byte-Beweis des Labors steht im Commit). Mutante „der Kern liest das Klima nicht“ fällt in R1 beim Namen.
+const KLIMA_ORTE = {
+    heimat: { winter: -4, sommer: 18 },
+    mittelmeer: { winter: 10, sommer: 27 },
+    subpolar: { winter: -12, sommer: 14 },
+};
+const KLIMA_SAATEN = Array.from({ length: 200 }, (_, i) => i + 1);
+function klimaGang(FC) {
+    const je = {},
+        aus = {};
+    for (const [ort, k] of Object.entries(KLIMA_ORTE)) {
+        const R = {},
+            neig = [],
+            stil = {};
+        for (const s of KLIMA_SAATEN) {
+            const d = FC.DORF({ seed: s, nH: 18, klima: k });
+            R[d.region] = (R[d.region] || 0) + 1;
+            for (const h of d.houses) {
+                const p = h.p || h;
+                if (isFinite(p.pitchDeg)) neig.push(p.pitchDeg);
+                const st = (FC.KULTUR[p.kultur] || {}).stil || "?";
+                stil[st] = (stil[st] || 0) + 1;
+            }
+        }
+        je[ort] = {
+            regionen: R,
+            neigung: +(neig.reduce((a, b) => a + b, 0) / Math.max(1, neig.length)).toFixed(1),
+            stil,
+        };
+        aus[ort] = Object.keys(R).filter((r) => {
+            const z = FC.REGION_KLIMA.find((q) => q.region === r);
+            return (
+                !z ||
+                k.winter < z.winter[0] ||
+                k.winter > z.winter[1] ||
+                k.sommer < z.sommer[0] ||
+                k.sommer > z.sommer[1]
+            );
+        });
+    }
+    // R4: ohne Klima (das Labor) würfelt der Kern über ALLE Regionen von REGION_KLIMA
+    const labor = new Set(KLIMA_SAATEN.map((s) => FC.DORF({ seed: s, nH: 18 }).region));
+    const r4 = FC.REGION_KLIMA.filter((q) => !labor.has(q.region)).map((q) => q.region);
+    return { je, aus, r4 };
+}
+function klimaUrteil(K, check) {
+    const fremd = Object.entries(K.aus)
+        .filter(([, l]) => l.length)
+        .map(([o, l]) => o + ": " + l.join(","));
+    check(
+        "R1 kein Dorf trägt eine Region außerhalb des Klima-Bands seines Orts (REGION_KLIMA)",
+        !fremd.length,
+        fremd.join(" · ")
+    );
+    const eng = Object.entries(K.je)
+        .filter(([, v]) => Object.keys(v.regionen).length < 2)
+        .map(([o]) => o);
+    check("R2 jedes Klima trägt mindestens zwei Regionen (der Wurf bleibt ein Wurf)", !eng.length, eng.join(","));
+    const [h, m] = [K.je.heimat, K.je.mittelmeer];
+    check(
+        `R3 die Gegenprobe: die Heimat deckt steiler als der Mittelmeer-Ort (${h.neigung}° gegen ${m.neigung}°, Soll ≥ 10°) und trägt Fachwerk (alt ${h.stil.alt || 0}), der Mittelmeer-Ort keins (alt ${m.stil.alt || 0})`,
+        h.neigung - m.neigung >= 10 && (h.stil.alt || 0) > 0 && !(m.stil.alt > 0)
+    );
+    check("R4 ohne Klima (das Labor) würfelt über alle sechs Regionen", !K.r4.length, K.r4.join(","));
+}
+const KLIMA_TAETER = {
+    "der Kern liest das Klima nicht": [
+        ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
+    ],
+};
+
+
 // ===== TEIL T (mensch.wirtschaft.technik): DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN — je Saat 1 … 20 der Ort ihrer Epoche
 // (`siedlungsEpoche`, 60 Häuser) im Export: das Bild fragt den Graphen (fachwerk `technikImBild`: keine Technik im Bild, die der
 // Stand der Saat nicht trägt, kein Vorgänger einer Technik im Bild außer dem Stand), der Stand gehorcht dem Gesetz, nachgerechnet
@@ -1305,6 +1384,21 @@ hauptLauf(async () => {
             }
             check(`Selbst-Test T: „${name}“ fällt in ${tSoll[name]} beim Namen`, rot.some((w) => w.startsWith(tSoll[name])), m.fehlt || rot.join(" · "));
         }
+        // V-R (mensch.bau.bauen, haus-gestalt): der Kern, der das Klima des Orts nicht liest, fällt in R1 beim Namen
+        for (const [name, R] of Object.entries(KLIMA_TAETER)) {
+            const m = kernMutante(kernText(), R),
+                rot = [];
+            if (m.text)
+                klimaUrteil(
+                    klimaGang(kernAusText(m.text, "klima-" + name)),
+                    (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220))
+                );
+            check(
+                `Selbst-Test R: „${name}“ fällt in R1 beim Namen`,
+                rot.some((w) => w.startsWith("R1")),
+                m.fehlt || rot.join(" · ")
+            );
+        }
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1335,7 +1429,16 @@ hauptLauf(async () => {
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
-    if (nur("t") || (!nur("z") && !nur("w") && !nur("j") && !ww)) {
+    if (nur("r") || (!nur("z") && !nur("w") && !nur("j") && !nur("t") && !ww)) {
+        console.log("=== TEIL R: DIE BAUWEISE FOLGT DEM KLIMA (mensch.bau.bauen, haus-gestalt) ===");
+        const t0 = Date.now(),
+            K = klimaGang(FC);
+        console.log("KLIMA " + JSON.stringify(K.je));
+        klimaUrteil(K, check);
+        console.log(`  Teil R: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        if (nur("r")) wandEnde(errs, "DIE BAUWEISE FOLGT DEM KLIMA (Teil R).");
+    }
+    if (nur("t") || (!nur("z") && !nur("w") && !nur("j") && !nur("r") && !ww)) {
         console.log("=== TEIL T: DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (mensch.wirtschaft.technik) ===");
         const t0 = Date.now(), T = technikGang(FC);
         console.log(
@@ -1346,7 +1449,7 @@ hauptLauf(async () => {
         console.log(`  Teil T: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         if (nur("t")) wandEnde(errs, "DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (Teil T).");
     }
-    if (!nur("z") && !nur("w") && !nur("t") && !ww) {
+    if (!nur("z") && !nur("w") && !nur("t") && !nur("r") && !ww) {
         console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
         const mut = (dp) =>
             ((x) => ({ ...x, kleidung: null, mauer: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
