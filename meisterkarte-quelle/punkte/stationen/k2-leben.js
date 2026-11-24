@@ -6737,7 +6737,7 @@ L.perspektive("evolution", (() => {
 
     const L_BODY = "stamm/kreatur-leben.js:1993 _creatureBodySize — die Geburt (_creatureNaturalBirth) würfelt die Größe des Kindes aus dem Strom der Region, kein Eltern-Feld, kein Erbe";
     const L_GATT = "tetrapoda-core.js:62 GATTUNGEN — 4 Gattungen aus 5 Dials ohne Ahn, ohne Klade (der STAMMBAUM des Kerns ist der Name eines Studios)";
-    const L_ZEIT = "stamm/kreatur-leben.js:1687 _pickFaunaSoulAtPlayer — liest keine Zeit: der Bestand jeder Epoche ist der von heute; voxel-worker.js:1175 planetOrtAuftrag trägt kein Feld der Fauna";
+    const L_ZEIT = "stamm/kreatur-leben.js:1691 _pickFaunaSoulAtPlayer — liest keine Zeit: der Bestand jeder Epoche ist der von heute; voxel-worker.js:1491 planetOrtAuftrag trägt kein Feld der Fauna";
 
     return {
         leitern: {
@@ -7421,6 +7421,7 @@ L.perspektive("evolution", (() => {
             // ═══ ZEITREISE: die Geschichte des Planeten im Faden ═══
             [ZR]: {
                 sek: 50,
+                faecher: true,
                 pfad: PFAD_PLANET,
                 ungefahren: "die Bildpaare und Blind-Sortierungen (S1, S5, S6) — auf swiftshader kein Schuss; die Epoche selbst ist nur als Antwort des Fadens erreichbar (die Reise lädt eine Welt)",
                 mess: async function (H, U, M) {
@@ -7462,10 +7463,6 @@ L.perspektive("evolution", (() => {
                             aus.waldVerh = waldAnteil(-0.1) / waldAnteil(0);
                             aus.wuchsBilder = new Set([].concat(...A.epochen.map((z) => je[z].map((x) => x.fp)))).size;
                             aus.faunaFelder = Math.max(...A.epochen.map((z) => Math.max(...je[z].map((x) => x.extra))));
-                            const h1 = await frage(samen, punkte[0][0], punkte[0][1], -0.01);
-                            const h0 = await frage(samen, punkte[0][0], punkte[0][1], 0);
-                            const h2 = await frage(samen, punkte[0][0], punkte[0][1], -0.01);
-                            aus.hinZurueckGleich = rein(h1) === rein(h2) && rein(h0) !== rein(h1) ? 1 : 0;
                             const zeiten = [];
                             for (let i = 0; i < 50; i++) zeiten.push(-Math.round((540 * i) / 49));
                             const k50 = await Promise.all(zeiten.map((z) => frage(samen, B0, L0, z)));
@@ -7501,9 +7498,55 @@ L.perspektive("evolution", (() => {
                     const ohneFauna = "Flora und Fauna der Epoche sind die von heute: die Antwort des Fadens trägt " + (a.faunaFelder || 0) + " Felder der Fauna, der Wuchs " + (a.wuchsBilder || 0) + " Bild(er) über " + (a.epochen || 0) + " Epochen";
                     const z = { fehler: a.fehler, antworten: a.antworten || 0, streuung: a.klimaStreuung || 0 };
                     const auge = (n) => M.auge("evolution-zeitreise-s" + n, { ort: "wiese" });
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Zeit ist die Adresse — 20 Planeten-Saaten (die der Welt und 19 fremde) × 12
+                    // Lagen um den Anker × die Epoche des Umfangs (10⁴ Jahre = −0,01 Ma); je Adresse fragt der Faden den Ort dreimal — heute, die
+                    // Epoche, die Epoche wieder (`r._planetAuftrag` planet-ort → voxel-worker.js:1491 planetOrtAuftrag: planetScheibe(plan,
+                    // zeitMa)); der Leser ist die Reise (stamm/feld-leben.js:1318 → stamm/netz-portal.js:660 `_reiseBetreten`: die Welt des Orts aus
+                    // dem Δ). Das Band der Profis: 10⁴ Jahre vor heute stand das Holozäne Wärmemaximum 1,6 ± 0,8 °C über heute (Kaufman et al.
+                    // 2004, Quat Sci Rev 23:529, Arktis 0–180° W) — eine Epoche ist im Klima des Orts unterscheidbar, nicht nur im Byte. Die
+                    // Fauna fragt eine eigene Adresse: der Bestand wählt ohne Zeit (`_lebensraumGesetz()` nimmt kein Argument)
+                    const ZR_AN = async (r, T, a) => {
+                        const C = r.constructor;
+                        const HEUTE = ["klima", "meer", "wetter", "wuchs", "eis", "wildnis"];
+                        await r._fadenQuelle();
+                        if (a.ort === "fauna") {
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite: 0, laenge: 0, zeitMa: a.zeit });
+                            const felder = Object.keys(o.delta || {}).filter((k) => !HEUTE.includes(k));
+                            if (C._lebensraumGesetz.length === 0 && !felder.length)
+                                return { fehlt: "die Fauna der Epoche: stamm/kreatur-leben.js:1691 _pickFaunaSoulAtPlayer wählt aus LEBENSRAUM_GESETZ (tetrapoda-core.js:2111) ohne Zeit, die Antwort des Fadens (voxel-worker.js:1491 planetOrtAuftrag) trägt kein Feld der Fauna" };
+                            return { faunaFelder: felder.length };
+                        }
+                        const an = await r._planetAnker();
+                        const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
+                        const b = Math.round((grad(an.breite) + a.ort[0]) * 100) / 100, l = Math.round((grad(an.laenge) + a.ort[1]) * 100) / 100;
+                        const samen = a.saat === "welt" ? r._planetSamen() : a.saat;
+                        const frage = (z) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa: z });
+                        const o0 = await frage(0), o1 = await frage(a.zeit), o2 = await frage(a.zeit);
+                        const d = (o) => JSON.stringify(o.delta);
+                        const dS = Math.abs(o1.delta.klima.sommer - o0.delta.klima.sommer);
+                        const dW = Math.abs(o1.delta.wuchs.wald - o0.delta.wuchs.wald), dD = Math.abs(o1.delta.wuchs.decke - o0.delta.wuchs.decke);
+                        return { land: o0.land ? 1 : 0, gleich: d(o1) === d(o2) ? 1 : 0, anders: d(o0) !== d(o1) ? 1 : 0, hin: d(o1) === d(o2) && d(o0) !== d(o1) ? 1 : 0, dSommer: dS, dWald: dW, dDecke: dD, abstand: dS + dW + dD, b, l, samen };
+                    };
+                    const lagen = [];
+                    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) lagen.push([(i - 1.5) * 1.5, (j - 1) * 1.5]);
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: ZR_AN, export: "voxel-worker.js:1491 planetOrtAuftrag (planet-ort, planetScheibe(plan, zeitMa); r._planetAuftrag)", leser: "stamm/feld-leben.js:1318 reise → stamm/netz-portal.js:660 _reiseBetreten" },
+                        adressen: { saaten: ["welt"].concat(Array.from({ length: 19 }, (_, i) => "evo-zeit-saat-" + (i + 1))), orte: lagen, zeiten: [-0.01], dazu: [{ saat: null, ort: "fauna", zeit: -0.01 }] },
+                        ms: 20000,
+                        masse: { hinZurueckGleich: { wie: "anteil", feld: "hin" }, gleichAnteil: { wie: "anteil", feld: "gleich" }, andersAnteil: { wie: "anteil", feld: "anders" }, dSommerMaxK: { wie: "max", feld: "dSommer" }, dWaldMax: { wie: "max", feld: "dWald" }, dDeckeMax: { wie: "max", feld: "dDecke" }, saaten: { wie: "verschieden", feld: "samen" }, land: { wie: "summe", feld: "land" } },
+                        schlecht: { feld: "abstand", richtung: "min" },
+                        pose: (q, w) => "Bildpaar Gegenwart/Epoche an " + w.b + "° " + w.l + "° (Saat " + w.samen + "): heute ↔ " + q.zeit + " Ma, Δ Sommer " + Math.round(w.dSommer * 1e4) / 1e4 + " K, Δ Wald " + w.dWald,
+                        ungemessen: ["das Bildpaar Gegenwart/Epoche (Panel R11) — ungemessen bis zum Gerät", "die Reise in die Epoche selbst: die Konsole nimmt nur ganze Ma (stamm/feld-leben.js:1284 `(-?\\d{1,4})`), 10⁴ Jahre sind kein Satz"],
+                    });
+                    const w1 = R1.werte;
+                    const ds = R1.je.map((e) => e.w.dSommer);
+                    const mw1 = ds.length ? ds.reduce((u, v) => u + v, 0) / ds.length : NaN;
+                    const sd1 = ds.length > 1 ? Math.sqrt(ds.reduce((u, v) => u + (v - mw1) ** 2, 0) / (ds.length - 1)) : 0;
+                    const r4 = (x) => (Number.isFinite(x) ? Math.round(x * 1e4) / 1e4 : x);
+                    const nicht1 = (R1.fehlt || "die Fauna der Epoche ungemessen") + " — die Flora der Epoche: ortWuchs (gelaende-core.js:5793) blendet erst über Ma (ORT_WUCHS :5780: Wald −390…−360, Gras −66…−23 Ma); über " + R1.gemessen + " Adressen (" + w1.saaten + " Saaten, " + w1.land + " an Land) Δ Wald max " + r4(w1.dWaldMax) + ", Δ Decke max " + r4(w1.dDeckeMax) + ", Δ Sommer max " + r4(w1.dSommerMaxK) + " K gegen das Band 1,6 ± 0,8 K (Kaufman et al. 2004) · " + R1.akte;
                     return {
                         sprossen: {
-                            1: { werte: { hinZurueckGleich: a.hinZurueckGleich }, zeuge: z, auge: await auge(1), nicht: ohneFauna + "; die Konsole reist nur in ganzen Ma (10⁴ Jahre nicht erreichbar)" },
+                            1: { werte: { hinZurueckGleich: w1.hinZurueckGleich, gleichAnteil: w1.gleichAnteil, andersAnteil: w1.andersAnteil, dSommerMaxK: w1.dSommerMaxK, dWaldMax: w1.dWaldMax, saaten: w1.saaten }, zeuge: { fehler: R1.fehler.length ? R1.fehler.length + " Adressen warfen (" + R1.fehler[0].fehler + ")" : null, antworten: R1.gemessen, streuung: sd1 }, auge: await auge(1), nicht: nicht1 },
                             2: { werte: { waldVerh: a.waldVerh }, zeuge: z, nicht: ohneFauna + " — kein Körpermassen-Median der Eiszeit" },
                             3: { werte: { arten: a.arten, verwandtProzent: a.arten ? (100 * (a.verwandt || 0)) / a.arten : undefined }, zeuge: z, nicht: ohneFauna + "; " + (a.verwandt || 0) + " Gattungen mit Ahn oder Schwester" },
                             4: { werte: { heutigeArten: a.arten, vorfahrAnteil: a.arten ? (a.verwandt || 0) / a.arten : undefined }, zeuge: z, nicht: ohneFauna + "; kein Vorfahr auffindbar" },
@@ -7522,7 +7565,7 @@ L.perspektive("evolution", (() => {
                         auge: { pose: "Ego an der Wiese (Gegenwart; die Epoche lädt eine Reise-Welt)", vorbild: "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8 (Prüfer-Satz R11)" },
                         taeter: "stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (keine Epochen-Fauna)",
                         nicht: "keine Epochen-Flora und -Fauna",
-                        leser: L_ZEIT + "; stamm/feld-leben.js:1272 reise — der Satz der Konsole nimmt nur ganze Ma (10⁴ Jahre nicht erreichbar)",
+                        leser: L_ZEIT + "; stamm/feld-leben.js:1284 reise — der Satz der Konsole nimmt nur ganze Ma (10⁴ Jahre nicht erreichbar); das Gesetz der Epoche fragt der Fächer am Faden (planet-ort, zeitMa −0,01)",
                     }),
                     2: S({
                         soll: [K.soll(ZR, 2, "Körpermassen-Median über dem der Gegenwart", { key: "medianVerh", rel: ">", zahl: 1, refQuelle: "das Wort des Richters: Median der Körpermasse der Eiszeit / der Gegenwart > 1" }), K.soll(ZR, 2, "Biom-Anteile gegen Paläo-Rekonstruktion ±20 %", { key: "waldVerh", ref: 0.5, refQuelle: "Erde, Letztes Glaziales Maximum: Waldfläche ≈ halb der heutigen (Adams & Faure 1997, QEN-Paläovegetations-Atlas)" })],
