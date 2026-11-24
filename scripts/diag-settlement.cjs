@@ -26,7 +26,14 @@ const {
 } = require("./lib/welt-boot.cjs");
 const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
-const { losProben, huelleProben, wurfProben, brandwandProben, kernMutante, kernAusText } = require("./lib/los-proben.cjs");
+const {
+    losProben,
+    huelleProben,
+    wurfProben,
+    brandwandProben,
+    kernMutante,
+    kernAusText,
+} = require("./lib/los-proben.cjs");
 const {
     gassenGefaelle,
     erdbauMedian,
@@ -55,7 +62,10 @@ const loseGolden = {
             loseGolden.datei,
             "{\n" +
                 Object.entries(G)
-                    .map(([k, L]) => `    ${JSON.stringify(k)}: [\n${L.map((h) => "        " + JSON.stringify(h)).join(",\n")}\n    ]`)
+                    .map(
+                        ([k, L]) =>
+                            `    ${JSON.stringify(k)}: [\n${L.map((h) => "        " + JSON.stringify(h)).join(",\n")}\n    ]`
+                    )
                     .join(",\n") +
                 "\n}\n"
         ),
@@ -155,7 +165,11 @@ function jahresringe(FC, o = {}) {
             const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
             if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[ep(x, k)].tracht))
                 fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
-            if (k === 3 && ep(x, k) === "moderne" && (x.groesse !== heute || kirchen < epochen || !x.slots.some((s) => s.rolle === "turm")))
+            if (
+                k === 3 &&
+                ep(x, k) === "moderne" &&
+                (x.groesse !== heute || kirchen < epochen || !x.slots.some((s) => s.rolle === "turm"))
+            )
                 fehl(`${x.groesse}, ${kirchen} Kirchen`);
             const quer = x.mauer?.segs.some((g) =>
                 x.slots.some((s) =>
@@ -173,11 +187,12 @@ function jahresringe(FC, o = {}) {
                     !(
                         /kirche|scheune/.test(s.rolle) ||
                         // die Kultur aus der jüngsten Historie bis zum Baujahr, deren Bauweise der Stand trägt (sonst der Notbau)
-                        (FC.REGION_HIST[x.region]
-                            .filter(([ab]) => s.baujahr >= ab)
-                            .map(([, n]) => n.filter((c) => FC.KULTUR[c] && traegt(x, c)))
-                            .filter((n) => n.length)
-                            .pop() || [FC.TECHNIK.notbau[x.region]]
+                        (
+                            FC.REGION_HIST[x.region]
+                                .filter(([ab]) => s.baujahr >= ab)
+                                .map(([, n]) => n.filter((c) => FC.KULTUR[c] && traegt(x, c)))
+                                .filter((n) => n.length)
+                                .pop() || [FC.TECHNIK.notbau[x.region]]
                         ).includes(s.kultur)
                     )
                 )
@@ -212,14 +227,26 @@ const TECHNIK_TAETER = {
     "Eisen ohne Schachtofen": [["zuHeiss=T>0&&!(T<g);", "zuHeiss=false;"]],
 };
 function technikGang(FC, o = {}) {
-    const S = globalThis.__schmiedeCore.STOFF_GESETZ, G = FC.TECHNIK.graph, tS = (x) => S.zeile(x).tSchmelz;
-    const T = { ohneVor: 0, ohne: {}, imBild: {}, fehl: [], staende: new Set(), spike: [], bild: o.bild, saaten: o.saaten };
+    const S = globalThis.__schmiedeCore.STOFF_GESETZ,
+        G = FC.TECHNIK.graph,
+        tS = (x) => S.zeile(x).tSchmelz;
+    const T = {
+        ohneVor: 0,
+        ohne: {},
+        imBild: {},
+        fehl: [],
+        staende: new Set(),
+        spike: [],
+        bild: o.bild,
+        saaten: o.saaten,
+    };
     const fehl = (w) => T.fehl.push(w);
     // der Graph: ≥ 10 Techniken mit Vorgänger, jeder Prozess und jedes Futter eine Stoff-Zeile mit T_schmelz
     const mitVor = Object.keys(G).filter((k) => G[k].vor.length);
     if (mitVor.length < 10) fehl(`Graph: ${mitVor.length} Techniken mit Vorgänger (Soll ≥ 10)`);
     for (const [k, t] of Object.entries(G))
-        for (const x of [t.prozess, t.ofen].filter(Boolean)) if (!(tS(x) > 0)) fehl(`Graph: ${k} liest ${x} ohne T_schmelz`);
+        for (const x of [t.prozess, t.ofen].filter(Boolean))
+            if (!(tS(x) > 0)) fehl(`Graph: ${k} liest ${x} ohne T_schmelz`);
     for (const seed of o.saaten || TECHNIK_SAATEN) {
         const P = o.bild === false ? null : FC.exportSettlement({ seed, nH: 60, epoche: FC.siedlungsEpoche(seed) });
         // ohne Bild (der Selbsttest der Stände) der Stand der Saat in Mitteleuropa
@@ -228,14 +255,18 @@ function technikGang(FC, o = {}) {
             fehl(`${seed}: der Export trägt keinen Technik-Stand`);
             continue;
         }
-        const st = TS.stand, V = TS.vorkommen, grenze = {};
+        const st = TS.stand,
+            V = TS.vorkommen,
+            grenze = {};
         T.staende.add(st.join(","));
         // das Gesetz, nachgerechnet aus den Stoff-Zeilen
         for (const id of Object.keys(G).filter((k) => st.includes(k))) {
-            const t = G[id], g = Math.max(0, ...t.vor.map((v) => grenze[v] || 0));
+            const t = G[id],
+                g = Math.max(0, ...t.vor.map((v) => grenze[v] || 0));
             for (const v of t.vor) if (!st.includes(v)) fehl(`${seed}: ${id} steht ohne Vorgänger ${v}`);
             for (const x of t.stoffe) if (!V[x]) fehl(`${seed}: ${id} steht ohne ${x} am Ort`);
-            if (t.prozess && !(tS(t.prozess) < g)) fehl(`${seed}: ${id} schmilzt ${t.prozess} bei ${tS(t.prozess)} K über der Grenze ${g} K`);
+            if (t.prozess && !(tS(t.prozess) < g))
+                fehl(`${seed}: ${id} schmilzt ${t.prozess} bei ${tS(t.prozess)} K über der Grenze ${g} K`);
             grenze[id] = Math.max(g, t.ofen ? tS(t.ofen) : 0);
         }
         if (!V.zinn && st.includes("bronze")) fehl(`${seed}: Bronze ohne Zinn am Ort`);
@@ -255,7 +286,9 @@ function technikGang(FC, o = {}) {
     const ohneZinn = FC.technikStand(1, "mitteleuropa", { ...alle, zinn: false });
     const amHerd = FC.technikStand(1, "mitteleuropa", alle, { ...G, eisen: { ...G.eisen, vor: ["feuer"] } });
     if (!voll.stand.includes("bronze") || voll.stand.length !== Object.keys(G).length)
-        T.spike.push(`alle Stoffe: ${voll.stand.length} von ${Object.keys(G).length} Techniken, Bronze ${voll.stand.includes("bronze")}`);
+        T.spike.push(
+            `alle Stoffe: ${voll.stand.length} von ${Object.keys(G).length} Techniken, Bronze ${voll.stand.includes("bronze")}`
+        );
     if (ohneZinn.stand.includes("bronze")) T.spike.push("ohne Zinn steht Bronze");
     if (amHerd.stand.includes("eisen") || !amHerd.fehlt.eisen || amHerd.fehlt.eisen.T < amHerd.fehlt.eisen.grenze)
         T.spike.push(`Eisen am Herd steht (${JSON.stringify(amHerd.fehlt.eisen || null)})`);
@@ -270,8 +303,16 @@ function technikUrteil(T, check) {
             T.ohneVor === 0 && Object.keys(T.imBild).length >= 5,
             `${JSON.stringify(T.ohne)} · ${JSON.stringify(T.imBild)}`
         );
-    check(`T2 GESETZ: ${T.fehl.length} Brüche am Stand, Spike ${T.spike.length}`, !T.fehl.length && !T.spike.length, [...T.spike, ...T.fehl.slice(0, 6)].join(" · "));
-    check(`T3 SAATEN: ${T.staende.size} verschiedene Stände über ${n} Saaten (Soll ≥ 2)`, T.staende.size >= 2, [...T.staende].join(" | "));
+    check(
+        `T2 GESETZ: ${T.fehl.length} Brüche am Stand, Spike ${T.spike.length}`,
+        !T.fehl.length && !T.spike.length,
+        [...T.spike, ...T.fehl.slice(0, 6)].join(" · ")
+    );
+    check(
+        `T3 SAATEN: ${T.staende.size} verschiedene Stände über ${n} Saaten (Soll ≥ 2)`,
+        T.staende.size >= 2,
+        [...T.staende].join(" | ")
+    );
 }
 
 // ===== TEIL W (siedlung.K4 Staffel 2): DAS WACHSTUM — je Ort (Saat, Zahl) der Ort des Mittelalters über `WACHS_S` s Welt-Uhr in
@@ -476,7 +517,12 @@ async function gtDorfweg(v2, anker, sek) {
             if (i % 60 === 59) {
                 if (i > 60 && F.s - sVor < 0.1 && !res.steckt) {
                     const [nd, naechster] = naechsterBau(pos);
-                    res.steckt = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10, bei: [Math.round(pos.x * 10) / 10, Math.round(pos.z * 10) / 10] };
+                    res.steckt = {
+                        s: Math.round((F.s - s0) * 10) / 10,
+                        naechster,
+                        abstand: Math.round(nd * 10) / 10,
+                        bei: [Math.round(pos.x * 10) / 10, Math.round(pos.z * 10) / 10],
+                    };
                 }
                 sVor = F.s;
             }
@@ -931,7 +977,9 @@ hauptLauf(async () => {
         const ringHaus = (fuss) =>
             Object.assign({}, hofSlots[0], {
                 y: 10,
-                huelle: ((q) => q.boxen.map((b, k) => [b[0], q.arten[k] === "hofarm" ? fuss : 0, b[2], b[1], 3, b[3]]))(hofSlots[0].grund),
+                huelle: ((q) => q.boxen.map((b, k) => [b[0], q.arten[k] === "hofarm" ? fuss : 0, b[2], b[1], 3, b[3]]))(
+                    hofSlots[0].grund
+                ),
             });
         const [u8, u9] = [ortUrteil(ortT([ringHaus(0.55)]), eben), ortUrteil(ortT([ringHaus(0)]), eben)];
         const amKern = (mutante) =>
@@ -942,7 +990,9 @@ hauptLauf(async () => {
                         return Object.assign({}, sl, {
                             y: 10,
                             // die Mutante: ohne jeden Körper, der unter der Diele ganz vor der Front liegt (die Sockel-Platte des Rings)
-                            huelle: mutante ? hu.filter((q) => !(q[4] <= sl.tuer.y + 0.01 && q[5] < sl.tuer.z - 0.1)) : hu,
+                            huelle: mutante
+                                ? hu.filter((q) => !(q[4] <= sl.tuer.y + 0.01 && q[5] < sl.tuer.z - 0.1))
+                                : hu,
                         });
                     })
                 ),
@@ -1256,9 +1306,17 @@ hauptLauf(async () => {
             // die Form im Bild (w28-stadt-form): Massen auf halber Tiefe (der Stab) · der Ton je Kachel statt je Lage (die Kante)
             {
                 massen: (...a) =>
-                    ((m) => m && { ...m, lage: m.lage.map((v, j) => (j % 7 === 4 ? v / 2 : v)) })(FC.kachelMassen(...a)),
+                    ((m) => m && { ...m, lage: m.lage.map((v, j) => (j % 7 === 4 ? v / 2 : v)) })(
+                        FC.kachelMassen(...a)
+                    ),
             },
-            { tonAn: (s, i, k, m) => ((f) => (col) => f(col, 0, 0))(FC.stadtTonAn(s, i, k, m)) },
+            {
+                tonAn: (s, i, k, m) =>
+                    (
+                        (f) => (col) =>
+                            f(col, 0, 0)
+                    )(FC.stadtTonAn(s, i, k, m)),
+            },
         ].map((o) => stadtFunktion(FC, o));
         check(
             "Selbst-Test S STADT ALS NETZ: das Gesetz GRÜN · verlorene Kacheln, ohne Erbe, nicht zustandslos, gleiche Samen, Tore aus dem Samen der Kachel, Massen als Stäbe, der Ton je Kachel ROT beim Namen",
@@ -1295,15 +1353,28 @@ hauptLauf(async () => {
         wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
         // V-T (mensch.wirtschaft.technik): jede Mutante des Technik-Gesetzes fällt in ihrem Urteil beim Namen
-        const tSoll = { "Bronze ohne Zinn": "T2", "Technik ohne Vorgänger im Bild": "T1", "jede Saat derselbe Stand": "T3", "Eisen ohne Schachtofen": "T2" };
+        const tSoll = {
+            "Bronze ohne Zinn": "T2",
+            "Technik ohne Vorgänger im Bild": "T1",
+            "jede Saat derselbe Stand": "T3",
+            "Eisen ohne Schachtofen": "T2",
+        };
         for (const [name, R] of Object.entries(TECHNIK_TAETER)) {
-            const m = kernMutante(kernText(), R), rot = [];
+            const m = kernMutante(kernText(), R),
+                rot = [];
             if (m.text) {
                 const K = kernAusText(m.text, "technik-" + name);
                 const o = tSoll[name] === "T1" ? { saaten: [1, 7] } : { bild: false };
-                technikUrteil(Object.assign(technikGang(K, o), o), (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220)));
+                technikUrteil(
+                    Object.assign(technikGang(K, o), o),
+                    (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220))
+                );
             }
-            check(`Selbst-Test T: „${name}“ fällt in ${tSoll[name]} beim Namen`, rot.some((w) => w.startsWith(tSoll[name])), m.fehlt || rot.join(" · "));
+            check(
+                `Selbst-Test T: „${name}“ fällt in ${tSoll[name]} beim Namen`,
+                rot.some((w) => w.startsWith(tSoll[name])),
+                m.fehlt || rot.join(" · ")
+            );
         }
         selbsttestEnde(errs);
         process.exit(0);
@@ -1337,10 +1408,18 @@ hauptLauf(async () => {
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
     if (nur("t") || (!nur("z") && !nur("w") && !nur("j") && !ww)) {
         console.log("=== TEIL T: DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (mensch.wirtschaft.technik) ===");
-        const t0 = Date.now(), T = technikGang(FC);
+        const t0 = Date.now(),
+            T = technikGang(FC);
         console.log(
             "TECHNIK " +
-                JSON.stringify({ ohneVor: T.ohneVor, ohne: T.ohne, imBild: T.imBild, staende: [...T.staende], fehl: T.fehl, spike: T.spike })
+                JSON.stringify({
+                    ohneVor: T.ohneVor,
+                    ohne: T.ohne,
+                    imBild: T.imBild,
+                    staende: [...T.staende],
+                    fehl: T.fehl,
+                    spike: T.spike,
+                })
         );
         technikUrteil(T, check);
         console.log(`  Teil T: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -1841,7 +1920,12 @@ hauptLauf(async () => {
         }
         // DER VERKEHR IM PLAN (w28-stadt-grammatik, lib/verkehrsnetz-proben.cjs): der Wagen im Ring, die Wende ohne Begegnung, der
         // Kranz samt Ausscheren, der freie Fahrer-Stand — samt den Selbst-Tests 15d bis 15g
-        verkehrsnetzProben(FC, check, studioKern("koerper-core.js", "__koerperCore"), studioKern("tetrapoda-core.js", "__tetrapodaCore"));
+        verkehrsnetzProben(
+            FC,
+            check,
+            studioKern("koerper-core.js", "__koerperCore"),
+            studioKern("tetrapoda-core.js", "__tetrapodaCore")
+        );
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
@@ -1859,7 +1943,9 @@ hauptLauf(async () => {
         // und sie brennt nachts. Bis nacht-lichter urteilte hier das Wand-Gesetz K66 (die Wand ≤ 2 × die Gasse): es hielt nur mit
         // einem Kern von 2,74 m in einem Glas von 22 cm — die Gasse trug ein Siebtel einer Laterne. Das Datum ihres Rezepts hält
         // gate:fachwerk-contract.
-        const gleich = ["cd", "kernM", "kelvin", "reichweiteM", "abfall", "glasStreu"].filter((s) => !LWd || LWd[s] !== LGd[s]);
+        const gleich = ["cd", "kernM", "kelvin", "reichweiteM", "abfall", "glasStreu"].filter(
+            (s) => !LWd || LWd[s] !== LGd[s]
+        );
         check(
             `Das Licht der Wandlaterne ist das der Laterne (${LWd ? LWd.cd : "?"} cd, Kern ${LWd ? LWd.kernM : "?"} m, ${LWd ? LWd.kelvin : "?"} K), ihr Leib ${LWd ? LWd.hoeheM : "?"} m über der Gasse und ${LWd ? LWd.armM : "?"} m vor der Wand${gleich.length ? " — anders: " + gleich.join(", ") : ""}`,
             !!LWd && !gleich.length && LWd.zeit.nacht > 0 && LWd.armM > 0 && LWd.hoeheM < LGd.hoeheM
@@ -2120,12 +2206,18 @@ hauptLauf(async () => {
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        // Die Buchhaltung: der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
-        // mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) — sonst nichts.
+        // Die Buchhaltung: der Akt setzt die Häuser seiner Slots und an ihnen die Stücke ihres Hauses — die Wandlaterne (die
+        // Laterne des Plans mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) und jedes Stück des Plans mit `slot`
+        // (`gegenstaende`, das Schild: sein Bauplan aus der Tafel der Welt `ORT_AUSSTATTUNG`) — sonst nichts.
         const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
         const alle1 = st.architectures.slice(mid2, after);
         const e1 = alle1.filter(istHaus);
-        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length;
+        const amHaus = (plan.gegenstaende || []).filter((q) => q && Number.isInteger(q.slot));
+        const amHausTyp = new Set([
+            "wandlaterne_dorf",
+            ...amHaus.map((q) => (AnazhRealm.ORT_AUSSTATTUNG[q.art] || {}).bauplan),
+        ]);
+        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length + amHaus.length;
         res.wand1 = alle1.length - e1.length;
         res.wandPlan = wandPlan;
         res.entriesMatch =
@@ -2134,7 +2226,7 @@ hauptLauf(async () => {
             e1.length === r2.placed &&
             akt1.length === alle1.length &&
             res.wand1 <= wandPlan;
-        res.allHaus = alle1.every((e) => istHaus(e) || e.type === "wandlaterne_dorf");
+        res.allHaus = alle1.every((e) => istHaus(e) || amHausTyp.has(e.type));
         // Slot-Anker == Plan-Slot, POSITIONS-DETERMINISTISCH: JEDES Haus BEIDER Akte trägt exakt anker + slot.x/z, phi und seed
         // seines Slots, beide Akte heben gleich viele; der zweite steht auf dem Boden des Plans v2 (y = slot.y + 0,5,
         // `_ortWahl` — derselbe Plan am selben Anker; y des ersten ist der Grund vor seinem Erdbau). Die Welt rückt kein Haus:
@@ -2365,8 +2457,14 @@ hauptLauf(async () => {
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
             // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
-            // trees-Schicht): das Band wandert mit dem Gesetz. Liegt Wasser am Ort, legt sie den Anleger — Steg und Boot, die
-            // Werke, die das Gesetz des Anlegers nennt (`AnazhRealm.ANLEGER`, fahrzeug-gattung), nie eine Liste der Linse.
+            // trees-Schicht), dazu jedes Stück ihrer Ausstattung (die Bauplan-Zeilen der Tafel `ORT_AUSSTATTUNG`: Stand, Grab,
+            // Schild): das Band wandert mit dem Gesetz. Liegt Wasser am Ort, legt sie den Anleger — Steg und Boot, die Werke, die
+            // das Gesetz des Anlegers nennt (`AnazhRealm.ANLEGER`, fahrzeug-gattung), nie eine Liste der Linse.
+            const stueckTyp = new Set([
+                ...Object.values(AnazhRealm.ORT_AUSSTATTUNG)
+                    .map((Z) => Z.bauplan)
+                    .filter(Boolean),
+            ]);
             const anleger = AnazhRealm.ANLEGER ? [AnazhRealm.ANLEGER.steg, AnazhRealm.ANLEGER.boot] : [];
             res.c.allHaus = st.architectures
                 .slice(archBefore)
@@ -2378,6 +2476,7 @@ hauptLauf(async () => {
                             e.type === "marktstand_dorf" ||
                             e.type === "laterne_dorf" ||
                             e.type === "wandlaterne_dorf" ||
+                            stueckTyp.has(e.type) ||
                             anleger.includes(e.type) ||
                             e.type.indexOf("baum_") === 0)
                 );
@@ -2605,12 +2704,22 @@ hauptLauf(async () => {
                 // Wasser-Urteil), der Zug (Gang, Reihe), die Trasse und die abgewiesenen Zellen — bis samen-ein-baum nannte sie nur
                 // das Offene der Welt (wald 4476, 3635 Takte), nie, wo der Dorf-Zug stand
                 const zugZustand = () => {
-                    const q = r._autoSettlementQueue, v = r._dorfVorraete && r._dorfVorraete.get(key);
+                    const q = r._autoSettlementQueue,
+                        v = r._dorfVorraete && r._dorfVorraete.get(key);
                     return JSON.stringify({
                         pending: r._autoSettlementPendingKey || null,
                         zelle: !!(wm.settlementCells || {})[key],
-                        vorrat: v ? { da: !!v.da, vorgebacken: !!v.vorgebacken, nass: v.wasser ? v.wasser.nass : "-", slots: v.v2 && v.v2.slots ? v.v2.slots.length : null } : null,
-                        zug: q ? { zelle: q.cellKey, idx: q.idx, reihe: q.reihe ? q.reihe.length : null, gang: !!q.gang } : null,
+                        vorrat: v
+                            ? {
+                                  da: !!v.da,
+                                  vorgebacken: !!v.vorgebacken,
+                                  nass: v.wasser ? v.wasser.nass : "-",
+                                  slots: v.v2 && v.v2.slots ? v.v2.slots.length : null,
+                              }
+                            : null,
+                        zug: q
+                            ? { zelle: q.cellKey, idx: q.idx, reihe: q.reihe ? q.reihe.length : null, gang: !!q.gang }
+                            : null,
                         trasse: r._ortTrasseMass || null,
                         abgewiesen: [...(r._autoSettlementRejected || [])].slice(0, 6),
                         haus,
@@ -3318,21 +3427,39 @@ hauptLauf(async () => {
                     // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld, kein Werk des Genesis-Orts: die ids seines Plans
                     // `genesis:<art>:<n>`, `_genesisWerkListeBauen` — Tore, Bänke, Laternen), auf dem Erdbau eines Orts — nie das gesetzte
                     // Haus auf seinem EIGENEN Grund (`haus:`, S4)
+                    // Ein Wagen des Verkehrs (`_verkehrWagen`, siedlung-verkehr `_verkehrWagenStellen`) ist kein Bau: sein Ort ist seine
+                    // Bahn, nicht der Grund, über den er gerade fährt — bis fahrzeug-gattung zählte die Schleife ihn, wo er im Augenblick
+                    // der Zählung stand (zwei rote Läufe von drei, `fahrzeug_kompakt_fwd`, `fahrzeug_suv` am Zweit-Dorf −7,−7: ein
+                    // Urteil nach der Uhr). Das Urteil liest den Zustand des Eintrags, nie den Takt.
+                    const fremdBau = (e) =>
+                        !e.fundament &&
+                        !e._verkehrWagen &&
+                        !/^genesis:/.test(e.id) &&
+                        !/_dorf$|^bruecke_/.test(e.type) &&
+                        !st.worldMeta.erdbau[
+                            `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`
+                        ] &&
+                        !r._ortFrei(e.position.x, e.position.z, 0.01);
                     let fremd = 0;
                     for (const e of st.architectures)
-                        if (
-                            !e.fundament &&
-                            !/^genesis:/.test(e.id) &&
-                            !/_dorf$|^bruecke_/.test(e.type) &&
-                            !st.worldMeta.erdbau[
-                                `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`
-                            ] &&
-                            !r._ortFrei(e.position.x, e.position.z, 0.01)
-                        ) {
+                        if (fremdBau(e)) {
                             fremd++;
                             (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
                         }
                     res.fremdBauten = fremd;
+                    // der Schein: am Grund eines Hauses des Orts (0,37 m neben seiner Mitte) zählt ein fremdes Werk (1), derselbe Eintrag
+                    // als Wagen des Verkehrs nicht (0) — und die Zählung ohne den Zustand (`_verkehrWagen` übergangen) zählte ihn (1)
+                    const hausO = st.architectures.find((e) => e.fundament && e.position);
+                    if (hausO) {
+                        const pos = { x: hausO.position.x + 0.37, y: hausO.position.y, z: hausO.position.z };
+                        const werk = { type: "haus_schein", id: "schein:werk", position: pos };
+                        const wagen = Object.assign({}, werk, { type: "fahrzeug_schein", _verkehrWagen: {} });
+                        res.fremdSchein = {
+                            werk: +fremdBau(werk),
+                            wagen: +fremdBau(wagen),
+                            ohneZustand: +fremdBau(Object.assign({}, wagen, { _verkehrWagen: undefined })),
+                        };
+                    }
                     // DAS DORF-LICHT DER GASSE (Leiter mensch.netz.verkehr): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
                     // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
                     // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
@@ -3400,33 +3527,46 @@ hauptLauf(async () => {
             outO.urteil = await page.evaluate(
                 (urteilSrc, ortW) => {
                     const u = new Function(urteilSrc)()[0](ortW, (x, z) => r.getTerrainHeightAt(x, z));
-            // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
-            // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
-            // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
-            const E = r._erdbauNorm;
-            // (und am Tritt vor jeder Tür ohne Gang: derselbe Splat-Befund an ihrer Stufe, `stufeBei.tief`)
-            for (const h of [...((u && u.sockelFehl) || []), ...((u && u.tuerenFehl) || []).map((t) => t.stufeBei).filter(Boolean)]) {
-                if (!h.tief || !E || !E.zellen) continue;
-                const [wx, wz] = [ortW.ort.x + h.tief[0], ortW.ort.z + h.tief[1]];
-                const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
-                const liste = Zm ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || [] : [];
-                const decken = [];
-                for (const k of liste) {
-                    const q = E.splats[k];
-                    let d;
-                    if (q.frei || q.platte) {
-                        const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex, vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
-                        d = Math.max(ux, vz, 0);
-                    } else {
-                        let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
-                        s = s < 0 ? 0 : s > 1 ? 1 : s;
-                        d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
+                    // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
+                    // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
+                    // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
+                    const E = r._erdbauNorm;
+                    // (und am Tritt vor jeder Tür ohne Gang: derselbe Splat-Befund an ihrer Stufe, `stufeBei.tief`)
+                    for (const h of [
+                        ...((u && u.sockelFehl) || []),
+                        ...((u && u.tuerenFehl) || []).map((t) => t.stufeBei).filter(Boolean),
+                    ]) {
+                        if (!h.tief || !E || !E.zellen) continue;
+                        const [wx, wz] = [ortW.ort.x + h.tief[0], ortW.ort.z + h.tief[1]];
+                        const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
+                        const liste = Zm
+                            ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || []
+                            : [];
+                        const decken = [];
+                        for (const k of liste) {
+                            const q = E.splats[k];
+                            let d;
+                            if (q.frei || q.platte) {
+                                const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex,
+                                    vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
+                                d = Math.max(ux, vz, 0);
+                            } else {
+                                let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
+                                s = s < 0 ? 0 : s > 1 ? 1 : s;
+                                d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
+                            }
+                            if (d === 0)
+                                decken.push(
+                                    `${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`
+                                );
+                        }
+                        h.splats = decken.length
+                            ? decken.slice(-5).join(" ")
+                            : Zm
+                              ? "keiner deckt"
+                              : "ERDBAU.zelleM fehlt";
+                        h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
                     }
-                    if (d === 0) decken.push(`${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`);
-                }
-                h.splats = decken.length ? decken.slice(-5).join(" ") : Zm ? "keiner deckt" : "ERDBAU.zelleM fehlt";
-                h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
-            }
                     return u;
                 },
                 `${lokal}\n${kasten}\nreturn [${ortUrteil}, kasten]`,
@@ -3609,11 +3749,11 @@ hauptLauf(async () => {
         // placed > 0, Buchhaltung exakt
         "B: der Konsument platziert",
         out.placed1 > 0 && out.entriesMatch === true,
-        `placed=${out.placed1} skipped=${out.skipped1} Wandlaternen ${out.wand1}/${out.wandPlan}`
+        `placed=${out.placed1} skipped=${out.skipped1} Stücke am Haus ${out.wand1}/${out.wandPlan}`
     );
     check(
         // Tabellen-Regel, kein Literal
-        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint oder die Wandlaterne seines Hauses",
+        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint oder ein Stück seines Hauses (Wandlaterne, Schild)",
         out.allHaus === true
     );
     check(
@@ -3710,6 +3850,14 @@ hauptLauf(async () => {
             poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
             poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
         });
+        check(
+            `O ${modusName}: Selbst-Schein — ein fremdes Werk am Grund des Orts zählt, ein Wagen des Verkehrs dort nicht, die Zählung nach der Uhr fiele`,
+            !!outO.fremdSchein &&
+                outO.fremdSchein.werk === 1 &&
+                outO.fremdSchein.wagen === 0 &&
+                outO.fremdSchein.ohneZustand === 1,
+            JSON.stringify(outO.fremdSchein || null)
+        );
         console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
         console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
         console.log(

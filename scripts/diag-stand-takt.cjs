@@ -247,7 +247,7 @@ function selbsttest() {
                 rest: 0,
                 grenze: 29.982,
                 scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
-                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032 },
+                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032, brueche: { zugleich: 2, ueber: 0, bilder: 12 }, uhr: { zugleich: 3, ueber: 0, bilder: 3 } },
                 staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
                 bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
@@ -791,6 +791,11 @@ function selbsttest() {
         // hinter seiner Ankunft
         ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
+        // scherbe-liegt: das Budget des Takts in Brüchen, nie an der Wanduhr
+        ["das Budget liest die Wanduhr (unter stehender Uhr fallen die drei Böcke in einem Bild)", ["simWecken.druck.uhr.ueber=", 2], /DRUCK-WANDUHR: unter stehender Uhr trug ein Bild 2 Brüche über dem Gesetz/],
+        ["ein Bild bricht über dem Budget", ["simWecken.druck.brueche.ueber=", 2], /DRUCK-BUDGET: ein Bild der Welle trug 2 Brüche über dem Gesetz/],
+        ["die Böcke stehen nicht zugleich an", ["simWecken.druck.uhr.zugleich=", 1], /BLIND: unter stehender Uhr sah kein Takt zwei fällige Werke \(1\)/],
+        ["das Budget ungemessen", (b) => delete b.simWecken.druck.uhr, /LEER: die Probe maß das Budget des Takts nicht/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
         ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
@@ -3619,7 +3624,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             const setz = (typ, x, z, mehr) => r.spawnArchitecture(typ, { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, { precise: true, silent: true, ...mehr });
                             const scheibe = (x) => ({ shape: "box", material: "quarz", size: { x: 0.5, y: 0.5, z: 0.004 }, position: { x, y: 0.37, z: 0 } });
                             const bock = (b) => ({ shape: "box", material: "holz", size: { x: b, y: 0.12, z: 0.35 }, position: { x: 0, y: 0.06, z: 0 } });
-                            for (const [name, parts] of [["_druck_fenster", [bock(0.7), scheibe(0)]], ["_druck_doppel", [bock(1.3), scheibe(-0.3), scheibe(0.3)]]]) // prettier-ignore
+                            for (const [name, parts] of [["_druck_fenster", [bock(0.7), scheibe(0)]], ["_druck_doppel", [bock(1.3), scheibe(-0.3), scheibe(0.3)]], ["_druck_bock", [bock(0.7)]]]) // prettier-ignore
                                 st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, parts });
                             const fass = setz("donnerfass", O.x, O.z, { seed: 7999, ruht: true });
                             const kiste = setz("kiste", O.x, O.z + 6, { seed: 7906, ruht: true });
@@ -3700,6 +3705,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     const plan = f.art === "werk" && f.q ? (f.q._gesetz && f.q._gesetz.plan) || st.blueprints[f.q.type] : null;
                                     const p = f.q ? (f.q._frei ? { x: f.q._frei.p[0], z: f.q._frei.p[2] } : f.q.position) : st.playerMesh.position;
                                     const e = { art: f.art, R: r3(Math.hypot(p.x - f.welle.x, p.z - f.welle.z)), teile: plan && plan.parts ? plan.parts.length : 0 };
+                                    if (f.art === "werk") werkImTakt++;
                                     const vor = new Set(freie());
                                     mess(e, () => P._druckTrifft.call(this, f));
                                     const neu = freie().filter((x) => !vor.has(x));
@@ -3709,6 +3715,29 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 };
                                 r._druckEnde = function (w) {
                                     mess({ art: "ende" }, () => P._druckEnde.call(this, w));
+                                };
+                                // DAS BUDGET DES TAKTS (scherbe-liegt): je Takt der Welle die fälligen Werke (`zugleich`: wie viele zugleich warteten)
+                                // und die gefallenen über dem Gesetz (`ueber`: mehr als `DRUCK.bruecheJeBild` und das Soll des Rückstands) — hier
+                                // gerechnet, wie `_tickDruck` es rechnet. `brueche` die Wellen der Probe an der Uhr des Läufers; `uhr` die Welle von
+                                // Hand auf drei Böcke im Kreis (dieselbe Ankunft) unter STEHENDER UHR (`performance.now` steht im Takt): liest das
+                                // Budget die Wanduhr, fallen unter ihr alle drei in einem Bild — DRUCK-WANDUHR
+                                const [BR, BU] = [(D.brueche = { zugleich: 0, ueber: 0, bilder: 0 }), (D.uhr = { zugleich: 0, ueber: 0, bilder: 0 })];
+                                let [werkImTakt, uhrSteht] = [0, false];
+                                r._tickDruck = function () {
+                                    const [F, jetzt, Z] = [this._druckFristen || [], st.spielZeit, uhrSteht ? BU : BR];
+                                    const faellig = F.filter((f) => f.t <= jetzt);
+                                    const soll = faellig.length ? Math.max(DR.mindestJeBild, Math.ceil((faellig.length * (jetzt - Math.min(...faellig.map((f) => f.t)))) / DR.verzugS)) : 0;
+                                    Z.zugleich = Math.max(Z.zugleich, faellig.filter((f) => f.art === "werk").length);
+                                    const uhr = performance.now;
+                                    if (uhrSteht) performance.now = ((t) => () => t)(uhr.call(performance));
+                                    werkImTakt = 0;
+                                    try {
+                                        return P._tickDruck.call(this);
+                                    } finally {
+                                        performance.now = uhr;
+                                        if (werkImTakt) Z.bilder++;
+                                        Z.ueber = Math.max(Z.ueber, werkImTakt - Math.max(DR.bruecheJeBild | 0, soll));
+                                    }
                                 };
                                 const stoss = new Map();
                                 r._druckStoss = function (q, ...a) {
@@ -3732,7 +3761,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             delete this._werkPoseZeigen;
                                         }
                                     };
-                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
+                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3811,6 +3840,19 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                                 return freie().filter((x) => !vor.has(x)).length;
                                             };
                                             D.vorrat = { rest, scherben: fenster.slice(4).map(bricht) };
+                                            // DIE UHR STEHT (scherbe-liegt): drei Böcke im Kreis von 10 m um den Ort des Fasses, eine Welle von Hand
+                                            // durch den EINEN Schreiber — ihre drei Fristen fallen zugleich fällig an; unter stehender Uhr trägt das Bild
+                                            // nach dem Gesetz einen Bruch, das nächste den zweiten (die Böcke stehen: ein Werk, das steht, kostet wie
+                                            // eines, das bricht)
+                                            const boecke = [0, 2, 4].map((k) => setz("_druck_bock", O.x + 10 * Math.cos((k * Math.PI) / 3), O.z + 10 * Math.sin((k * Math.PI) / 3), { seed: 7100 + k }));
+                                            uhrSteht = true;
+                                            try {
+                                                if (boecke.every(Boolean) && r._druckWelle({ x: w.x, y: w.y, z: w.z }, w.energieJ, st.spielZeit, null))
+                                                    for (let i = 0; i < 120 && r._druckFristen && r._druckFristen.length; i++) bild();
+                                            } finally {
+                                                uhrSteht = false;
+                                            }
+                                            for (const b of boecke) if (b && st.architectures.includes(b)) r.removeArchitecture(b, { still: true });
                                             // DER STAUB IM ECHTEN TAKT (druckwelle-bild (b): `_druckStaub` sät, `_druckBild` zeichnet): eine ZWEITE
                                             // Welle am Ort des Fasses durch den EINEN Schreiber (`_druckWelle`, ohne Ladung: kein Satz im Journal; ihre
                                             // Fristen fallen im Takt, jedes Ereignis an seinem Soll — der Staub mit seinen Ballen) über einer

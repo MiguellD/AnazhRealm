@@ -1529,21 +1529,27 @@ class AnazhRealm_feld_brand {
     // DER TAKT DER WELLE: ohne Frist kein Schritt (Ruhe ist Null). Fällig ist, was die Welt-Uhr erreicht hat, in der Folge
     // seiner Zeit — eine Ladung setzt um (`_ladungUmsatz`), ein Körper wird getroffen (`_druckTrifft`); was ein Umsatz an
     // Fristen schreibt, die schon fällig sind (der Körper an der Ladung), fällt im selben Takt.
-    // DAS BILD TRÄGT EIN BUDGET (wie der Brand, `_brandArbeit`): je Bild fallen Fristen, bis `DRUCK.budgetMs` verbraucht sind
-    // (mindestens `DRUCK.mindestJeBild`), der Rest im nächsten Bild — in der Folge ihrer Ankunft, jede mit den Zahlen des
-    // Gesetzes an IHREM Ort; nur ihr Augenblick wartet (`welle.verzug`: der größte Rückstand einer Frist hinter ihrer Ankunft,
-    // s Spielzeit). DER RÜCKSTAND HAT EINE GRENZE: über das Budget hinaus fällt je Bild der Anteil der fälligen Fristen, den
-    // die älteste schon gewartet hat (Rückstand ÷ `DRUCK.verzugS`) — nach verzugS alles Fällige. EINE LADUNG WARTET NIE: ihr
-    // Umsatz fällt im Takt ihrer Frist (wer sie zündet, darf sie danach aus der Welt nehmen — das Brennglas). Vorher fiel
-    // jede fällige Frist im selben Bild: ein Fass vor 78 Probe-Fenstern hielt ein Bild 595 ms (GTX 1050, 52 brechende Werke,
-    // je Werk 7,1–7,8 ms Einsturz); mit dem Budget allein fiel der letzte Bruch 2,6 s nach seiner Ankunft, und die Bilder der
-    // Welle trug zu 48 % der Löser der Scherben, zu 6 % dieser Takt (Profil w9).
+    // DAS BILD TRÄGT EIN BUDGET IN BRÜCHEN (`DRUCK.bruecheJeBild`), nie in Millisekunden: je Bild fallen Fristen in der Folge
+    // ihrer Ankunft, bis so viele Werke getroffen sind (jedes fragt sein Bruch-Gesetz, ob es steht oder bricht; mindestens
+    // `DRUCK.mindestJeBild` Fristen), der Rest im nächsten Bild — jede mit den Zahlen des Gesetzes an IHREM Ort; nur ihr
+    // Augenblick wartet (`welle.verzug`: der größte Rückstand einer Frist hinter ihrer Ankunft, s Spielzeit). Die Kosten trägt
+    // der Einsturz (7,1–7,8 ms je Werk an der GTX 1050; ein Stoß, ein Leib, ein Ohr sind Mikrosekunden). DER RÜCKSTAND HAT EINE
+    // GRENZE: über das Budget hinaus fällt je Bild der Anteil der fälligen Fristen, den die älteste schon gewartet hat
+    // (Rückstand ÷ `DRUCK.verzugS`) — nach verzugS alles Fällige. EINE LADUNG WARTET NIE: ihr Umsatz fällt im Takt ihrer Frist
+    // (wer sie zündet, darf sie danach aus der Welt nehmen — das Brennglas). Vorher fiel jede fällige Frist im selben Bild: ein
+    // Fass vor 78 Probe-Fenstern hielt ein Bild 595 ms (GTX 1050, 52 brechende Werke); mit dem Budget allein fiel der letzte
+    // Bruch 2,6 s nach seiner Ankunft, und die Bilder der Welle trug zu 48 % der Löser der Scherben, zu 6 % dieser Takt (Profil w9).
+    // DIE WANDUHR ENTSCHIED, WAS DIE WELT IST (scherbe-liegt, DRUCK-BUDGET-WANDUHR): bis hier fielen Fristen, bis
+    // `performance.now()` 4 ms über dem Anfang des Takts stand — welches Bild ein Fenster brach, hing am Läufer, die Scherben
+    // kamen in anderen Schritten zur Welt und schliefen anders (Stand-Takt DRUCK-SCHLAF an ort-ausstattung 4 rot in 2 von 3
+    // Versuchen an gleichen Bytes). Das Budget in Brüchen hält das Bild der langsamsten Karte (7,1–7,8 ms je Einsturz > 4 ms:
+    // dort trug das alte Budget einen Bruch je Bild) und macht dieselbe Folge der Bilder zur selben Welt auf jedem Gerät.
     _tickDruck() {
         const F = this._druckFristen;
         if (!F || !F.length) return;
         const jetzt = this.state.spielZeit;
         const D = AnazhRealm.DRUCK;
-        const ende = performance.now() + D.budgetMs;
+        let brueche = D.bruecheJeBild;
         for (;;) {
             F.sort((a, b) => a.t - b.t);
             let k = 0;
@@ -1556,7 +1562,8 @@ class AnazhRealm_feld_brand {
             for (let i = 0; i < k; i++) {
                 const f = F[i];
                 if (f.ladung) this._ladungUmsatz(f);
-                else if (i < soll || performance.now() <= ende) {
+                else if (i < soll || brueche > 0) {
+                    if (f.art === "werk") brueche--;
                     f.welle.verzug = Math.max(f.welle.verzug, jetzt - f.t);
                     this._druckTrifft(f);
                     if (--f.welle.offen === 0) this._druckEnde(f.welle);
@@ -1853,8 +1860,9 @@ AnazhRealm.BRAND = Object.freeze({
 // Paare Kreuz ↔ fein, vier Scheiben in 6–28 m: 16 ↔ 48 Scherben): die Geburt 0,53 ms je Scherbe über dem Kreuz (die
 // sechzehn einer Platte in einem Bild 16–18 ms gegen 9–11 ms); der Löser 0,1 ms je wacher Scherbe und Bild im Flug
 // (+3,2 ms je Bild), im Bild des Bruchs bis 20 ms gegen 7,7 ms; das ganze Bild im Bruch (7 Bilder) im Median 93 → 105 ms,
-// im Flug (52 Bilder) 65 → 68 ms, danach 54 → 55 ms, bis die Scherben schlafen (Ruhe dieser Messung 56–68 ms); `budgetMs` und
-// `mindestJeBild`: so viel Arbeit der fälligen Fristen trägt ein Bild (`_tickDruck`), und mindestens so viele Fristen;
+// im Flug (52 Bilder) 65 → 68 ms, danach 54 → 55 ms, bis die Scherben schlafen (Ruhe dieser Messung 56–68 ms); `bruecheJeBild`
+// und `mindestJeBild`: so viele Werke trifft ein Bild (`_tickDruck`; das frühere Budget von 4 ms trug an der GTX 1050 genau
+// einen Einsturz), und mindestens so viele Fristen;
 // `verzugS`: so lange wartet eine fällige Frist höchstens auf dieses Budget (dann fällt sie mit allem, was fällig ist);
 // `bildWellen`: so viele Wellen zugleich liest der Halm im Bild (`_halmWelle`, die Slots des Wind-Satzes) — die jüngsten.
 // `staub` (`_druckStaub`, `_druckBild`): das Raster `rasterM`, in dem die Welle die Narbe des Brands nach Asche fragt (je Punkt
@@ -1869,7 +1877,7 @@ AnazhRealm.DRUCK = Object.freeze({
     stossMin: 0.05,
     scherbenAchse: 4,
     scherbenFein: 72,
-    budgetMs: 4,
+    bruecheJeBild: 1,
     mindestJeBild: 1,
     verzugS: 0.25,
     bildWellen: 4,
