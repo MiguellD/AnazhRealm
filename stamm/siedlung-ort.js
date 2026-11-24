@@ -637,6 +637,8 @@ class AnazhRealm_siedlung_ort {
                     });
             }
         if (spannen.length && so && so.key) this._brueckenLegen(spannen, "dorf:" + so.key);
+        // DER ANLEGER (Karte 2 planet.kopplung.siedlungslage#1): liegt Wasser am Ort, legt er Steg und Boot an sein Ufer (`_anlegerLegen`)
+        if (so && so.key) this._anlegerLegen(origin.x, origin.z, "dorf:" + so.key);
         this._wegenetzAnschluss(so && so.key); // die Feldwege zu den Nachbarn, deren Plan steht (fahrzeug.K2)
         yield;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk

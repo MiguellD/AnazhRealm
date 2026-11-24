@@ -1362,17 +1362,23 @@
     // Mess-Wiese (3,4 m) mit 6,6, das Meer mit seiner Durchmischungs-Schicht von 50 m mit 97 — seine Jahres-Welle dämpft auf
     // 53 %, sein Winter bleibt über −1,9 °C. Das Meer ist das Wasser auf Meereshöhe; im Brack (`brack` über dem Meer) gehen
     // Salz und Schicht stetig in das Süßwasser und seine Säule über.
-    // DER GANG: das Eis setzt ein, wenn das träge Wasser den Gefrierpunkt erreicht, und wächst nach STEFAN mit den Frost-Graden
-    // der Luft (h²/2k + h/H = ∫(T_f − T_Luft) dt / ρL: Leitung durch das Eis, Übergang an die Luft); ist die Luft wärmer,
-    // schmilzt es an der Oberfläche (dh/dt = −H·(T_Luft − T_f) / ρL). Ein Wasser, das nie über den Gefrierpunkt kommt, trägt
-    // sein Eis durchs Jahr (der Kreis, in dem Wachsen und Schmelzen sich die Waage halten); friert die Luft immer, friert die
-    // Säule durch. Gerechnet geschlossen auf der Jahres-Welle des Tagesmittels: das Eis integriert den Tag (sein Gang trägt
-    // höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~6 Tagen vom ersten Eis zum tragenden.
+    // DER GANG: das Eis setzt ein, wenn das träge Wasser den Gefrierpunkt erreicht, und wächst nach STEFAN mit der Wurzel der
+    // Frostgrad-Summe seit dem ersten Eis (h = α·√FDD, FDD = ∫(T_f − T_Luft) dt in K·d): α = 2,7 cm/√(K·d) ist der Beiwert des
+    // windigen Sees ohne Schnee (Ashton 1986, River and Lake Ice Engineering, Tafel der Stefan-Beiwerte; das Ideal der Leitung
+    // allein, √(2k/ρL), läge bei 3,5) — er trägt die Leitung durch das Eis UND den Übergang an die Luft in EINER Zahl. Bis
+    // spiegel-eis wuchs das Eis nach h²/2k + h/H mit einem Übergang H = 20 W/(m²·K) ohne Quelle: der Übergang trug 80 % des
+    // Widerstands der ersten Zentimeter, der tragende See brauchte 13,5 K·d statt (5/2,7)² = 3,4 (Karte 2 planet.wasser.eis#2).
+    // Ist die Luft wärmer, schmilzt es an der Oberfläche (dh/dt = −H·(T_Luft − T_f) / ρL). Ein Wasser, das nie über den
+    // Gefrierpunkt kommt, trägt sein Eis durchs Jahr (der Kreis, in dem Wachsen und Schmelzen sich die Waage halten); friert die
+    // Luft immer, friert die Säule durch. Gerechnet geschlossen auf der Jahres-Welle des Tagesmittels: das Eis integriert den
+    // Tag (sein Gang trägt höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~3 Tagen vom ersten
+    // Eis zum tragenden.
     // `feld(traegTage)` ist das Temperatur-Feld an der Höhe (die Naht des Wirts; ohne sie das Feld des Kerns).
     // DER STOFF (stoffe.K1): `stoff` trägt die Zeilen `wasser` und `eis` der Stoff-Tafel des Wirts in SI — ρ·c der Säule (ρ kg/m³,
     // c J/(kg·K)), der Gefrierpunkt des Süßwassers (T_schmelz in K), ρ des Eises, seine Schmelzwärme L (J/kg) und seine
-    // Wärmeleitung k (W/(m·K)); der Kern hält keine Zahl eines Stoffs, nur die des Vorgangs: den Übergang H des Eises an die
-    // Luft, Kopplung, Salz und Säule. Ohne Stoff bricht er laut. `traegt`: die Dicke, die den Menschen trägt (GOLD: P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm).
+    // Wärmeleitung k (W/(m·K)); der Kern hält keine Zahl eines Stoffs, nur die des Vorgangs: den Stefan-Beiwert `alpha`
+    // (m/√(K·d), Ashton 1986), den Übergang H des schmelzenden Eises an die Luft, Kopplung, Salz und Säule. Ohne Stoff bricht er
+    // laut. `traegt`: die Dicke, die den Menschen trägt (GOLD 1971: P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm).
     const EIS = Object.freeze({
         salzMeer: 35,
         gefrierJeSalz: -0.054,
@@ -1380,6 +1386,7 @@
         kopplung: 25,
         saeule: [0.1, 30],
         meerSchicht: 50,
+        alpha: 0.027,
         uebergang: 20,
         traegt: 0.05,
     });
@@ -1405,7 +1412,6 @@
         if (!Number.isFinite(saison)) throw new Error("gelaende-core eisDicke: die Saison fehlt");
         const E = EIS;
         const K = wasserKoerper(L, y, tiefe, stoff);
-        const k = stoff.eis.k;
         const schmelzJeM3 = stoff.eis.rho * stoff.eis.L;
         const F = feld || ((tr) => temperaturFeld(L, y, tr));
         const luft = F(0);
@@ -1418,27 +1424,32 @@
         if (ca <= -1 || cw <= -1) return 0;
         if (ca >= 1) return tiefe;
         const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
-        const frost = (a, b) =>
-            (tage * 86400 * (zuB(luft) * (b - a) - A * (Math.sin(b - luft.jahr.spaet) - Math.sin(a - luft.jahr.spaet)))) /
-            schmelzJeM3;
-        const kH = k / E.uebergang;
-        const g = (h) => (h * h) / (2 * k) + h / E.uebergang;
-        const stefan = (q) => Math.sqrt(kH * kH + 2 * k * Math.max(0, q)) - kH;
+        // die Frostgrad-Summe (K·d) der Luft zwischen den Phasen a und b der Jahres-Welle, geschlossen
+        const fdd = (a, b) =>
+            tage * (zuB(luft) * (b - a) - A * (Math.sin(b - luft.jahr.spaet) - Math.sin(a - luft.jahr.spaet)));
+        // das Schmelzen an der Oberfläche (m, negativ in der Wärme): der Übergang H über dieselbe Summe
+        const schmelze = (a, b) => (E.uebergang * 86400 * fdd(a, b)) / schmelzJeM3;
+        // STEFAN (Ashton): der Beiwert, nie über dem Ideal der Leitung allein √(2k/ρL) des Stoffs (in m/√(K·d)), die Summe, die
+        // die Dicke h trägt, und die Dicke einer Summe
+        const alpha = Math.min(E.alpha, Math.sqrt((2 * stoff.eis.k * 86400) / schmelzJeM3));
+        const g = (h) => (h / alpha) ** 2;
+        const stefan = (q) => alpha * Math.sqrt(Math.max(0, q));
         const psiA = luft.jahr.spaet + Math.acos(ca);
         const psiB = luft.jahr.spaet + 2 * Math.PI - Math.acos(ca);
         let psiAn = wasser.jahr.spaet + Math.acos(cw);
         let h0 = 0;
         if (cw >= 1) {
-            const M = -E.uebergang * frost(psiB, psiA + 2 * Math.PI);
+            // das Eis des ganzen Jahrs: im Kreis schmilzt der Sommer M ab, was der Winter von h0 auf h0 + M wachsen lässt
+            const M = -schmelze(psiB, psiA + 2 * Math.PI);
             psiAn = psiA;
-            h0 = Math.max(0, ((frost(psiA, psiB) - M / E.uebergang - (M * M) / (2 * k)) * k) / M);
+            h0 = M > 0 ? Math.max(0, (fdd(psiA, psiB) * alpha * alpha - M * M) / (2 * M)) : tiefe;
         }
         if (!(psiAn < psiB)) return 0;
         const psi = 2 * Math.PI * (saison - luft.jahr.gipfel);
         const p = psiAn + (((psi - psiAn) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        if (p <= psiB) return Math.min(tiefe, stefan(g(h0) + frost(psiAn, p)));
-        const hB = stefan(g(h0) + frost(psiAn, psiB));
-        return Math.min(tiefe, Math.max(0, hB + E.uebergang * frost(psiB, p)));
+        if (p <= psiB) return Math.min(tiefe, stefan(g(h0) + fdd(psiAn, p)));
+        const hB = stefan(g(h0) + fdd(psiAn, psiB));
+        return Math.min(tiefe, Math.max(0, hB + schmelze(psiB, p)));
     }
 
     // DER SCHNEE-PEGEL (stoffe.K3-2): das Wasser des Schnees an der Höhe y in Metern (Schnee-Wasser-Äquivalent) — eine Funktion
