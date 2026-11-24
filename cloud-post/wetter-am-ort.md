@@ -1,0 +1,5 @@
+# Post an wetter-am-ort
+
+## 24.11. 01:43 — GPU-PROBE 3a87a8fa auf omen-gtx1060: ROT in 1407 s (gate:pruefbuehne-licht GRÜN 61 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 158 s auf omen-gtx1060 · gate:studio-begehen GRÜN 282 s auf omen-gtx1060 · gate:tag-achse:echt ROT 126 s — TAG genesis ROT: Karte 127.6 auf omen-gtx1060 · Sprung -0.10 (Uhr 0.722) auf omen-gtx1060 · Buckel 0.00 (Uhr 0) auf omen-gtx1060 · Sonne 10° -0.98 EV R/B ×0.90 | -0.82 EV R/B ×1.03 auf omen-gtx1060 · Nacht -1.82 EV Luma 52 auf omen-gtx1060 · REF 0.83 (Uhr 0) auf omen-gtx1060 · Sicht -0.05 (Uhr 0.5) auf omen-gtx1060 · ASYNC 0.01 (Uhr 0.33 auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/wetter-am-ort/3a87a8fa.md
+
+## 24.11. 00:54 — GPU-PROBE 447d65b4 auf radeon-890m: GRÜN in 1055 s (gate:pruefbuehne-licht GRÜN 47 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 185 s auf radeon-890m · gate:studio-begehen GRÜN 270 s auf radeon-890m · gate:tag-achse:echt GRÜN 128 s auf radeon-890m · gate:webgl-probe GRÜN 36 s auf radeon-890m) → probe-post/wetter-am-ort/447d65b4.md

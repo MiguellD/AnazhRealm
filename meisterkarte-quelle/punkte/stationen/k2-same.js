@@ -30,6 +30,20 @@ const crypto = require("crypto");
 const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
 const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
 const AUGE = require("./auge-klasse.cjs");
+const { FAECHER } = require("./faecher.js"); // der Fächer (M4: der Richter ist selbst eine Adresse) — same.massstab.spanne S1–S4
+
+// DAS AUGE AN EINER ADRESSE (same.massstab.spanne S1–S4, das Gesetz des Fächers): a.saat ist die Saat. Die Kamera der Welt folgt dem Leib
+// (`_loopCamera`, stamm/koerper-bewegung.js:1759), ihr Grund ist das Gelände der Saat — gelaende-core `hoehe` über die Lage
+// `_gelaende()` (stamm/gelaende-boden.js:833: eine lebende Sicht auf state, ihre Saat `_saatJe` = worldMeta.seed, Hydrosphäre und Erdbau
+// aus dem Faden). An der geladenen Saat misst das Gesetz die nahe und die ferne Ebene und das Auge über dem Grund; jede andere Saat
+// trägt keine Lage, die die warme Welt rufen kann — sie nennt das Fehlende
+const AUGE_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+        return { fehlt: "die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)" };
+    const c = st.camera;
+    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
+};
 
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
@@ -2761,7 +2775,7 @@ LEITERN.push(
 // ═══════════════════════════════════════ Perspektive massstab ═══════════════════════════════════════
 {
     // ─────────── same.massstab.spanne — Spanne der Größenordnungen ───────────
-    // S1–S4 verlangen 20 Saaten: EINE Fahrt über die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel am Ort), je Saat die Kamera der
+    // S1–S4 verlangen 20 Saaten: EIN Fächer über die Saaten (stationen/faecher.js, das Gesetz AUGE_AN), je Saat die Kamera der
     // Welt — dann nennt jede Sprosse ihren Leser (Steigflug, nahe Ebene, Krümmung, Orbit). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
     // gezählt wird die Reichweite der Welt-Kamera (`state.camera.far`, gesetzt in stamm/dirigent-ankunft.js:468) — was hinter ihr liegt,
     // zeichnet die Welt nicht.
@@ -2812,7 +2826,7 @@ LEITERN.push(
                     umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
                 },
             },
-            seite: { SAATEN },
+            seite: { FAECHER, AUGE_AN },
             lauf: async function spanneLauf(H, P, L) {
                 const ort0 = Date.now();
                 await L.ort("wiese", "ego");
@@ -2822,21 +2836,23 @@ LEITERN.push(
                 L.preisPose("wiese", "ego");
                 const sicht = "die Welt-Kamera reicht " + z.far + " m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht";
                 for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
-                // S1–S4 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): EINE Fahrt für die vier Sprossen (ihr Umfang ist derselbe, N = 20
-                // Saaten) — je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat die Kamera der Welt (nahe und ferne
-                // Ebene) und die Höhe des Auges über dem Gesetz. Die Schleife läuft zuletzt und lässt den Heimweg samt dem doppelten ersten
-                // Gang zur Wiese in der Frist (dort fährt der Preis, R3). Trägt die Welt alle Saaten, nennt jede Sprosse ihren Leser.
+                // S1–S4 ÜBER DEN FÄCHER (stationen/faecher.js; vorher die Bühne H.seite.SAATEN, je Saat ein Welt-Wechsel am Ort): EIN Fächer
+                // für die vier Sprossen (ihr Umfang ist derselbe, N = 20 Saaten, dieselben Namen wie die Bühne) und die geladene Saat — je
+                // Adresse die Kamera der Welt (nahe und ferne Ebene) und die Höhe des Auges über dem Grund. Trägt die Welt alle Saaten, nennt
+                // jede Sprosse ihren Leser; sonst bleibt sie beim Namen der fehlenden Fähigkeit offen.
                 const v = P.sprossen[1].umfang.verlangt;
-                const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
-                const kamera = function (r) {
-                    const c = r.state.camera;
-                    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
-                };
-                let s = null, wurf = null;
+                let R = null, wurf = null;
                 try {
-                    s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + kamera + ");", Math.max(5, L.rest() - 2));
-                    if (s.fehler) throw new Error(s.fehler);
-                    L.zeile("spanne S1–S4 Saaten " + JSON.stringify(s));
+                    R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.AUGE_AN, export: "gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833)", leser: "stamm/koerper-bewegung.js:1759 _loopCamera" },
+                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: z.saat }] },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: { saaten: { wie: "anzahl", nur: "saat" }, near: { wie: "max", feld: "near" }, auge: { wie: "max", feld: "auge" } },
+                        schlecht: { feld: "auge", richtung: "min" },
+                        pose: (a) => "Saat " + a.saat + " an der Wiese, ego (das Auge am Leib)",
+                        ungemessen: ["Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)"],
+                    });
+                    L.zeile("spanne S1–S4 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
                 } catch (e) {
                     if (e && e.messort) throw e;
                     wurf = e;
@@ -2845,24 +2861,20 @@ LEITERN.push(
                     for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => { throw wurf; });
                     return;
                 }
-                const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
-                const nahJe = [...new Set(s.je.map((x) => x.z.near))].join("/") || "—";
-                const augeJe = s.je.map((x) => x.z.auge).join("/") || "—";
-                const in20 = "in " + s.je.length + " Saaten (nahe Ebene je Saat " + nahJe + " m, Auge über dem Grund " + augeJe + " m; " + zeit + ")";
+                const in20 = "in " + R.gemessen + " von " + (v + 1) + " Adressen (nahe Ebene " + R.werte.near + " m, Auge über dem Grund " + R.werte.auge + " m; " + R.akte + ")";
                 const flug = "kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe";
                 // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera — derselbe wie same.massstab.nahe
                 const hfov = 2 * Math.atan(Math.tan((z.fov * Math.PI) / 360) * (1280 / 720));
                 const cm = 0.01 / (2 * Math.tan(hfov / 2));
-                const nahe = Math.max(...s.je.map((x) => x.z.near));
-                const urteil = {
-                    1: () => L.leser(1, "Steigflug 0,5 → 700 m in 30 s: " + flug + " — " + in20, s.je.length),
-                    2: () =>
-                        L.leser(2, nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand — " + in20 : "Spanne 1 cm → 1 km: " + flug + " — " + in20, s.je.length),
-                    3: () => L.leser(3, "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km — " + in20, s.je.length),
-                    4: () => L.leser(4, "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite — " + in20, s.je.length),
+                const nahe = R.werte.near;
+                // je Sprosse ihr Leser; trägt der Fächer nicht alle Saaten, steht das Fehlende der Saat daneben
+                const grund = {
+                    1: "Steigflug 0,5 → 700 m in 30 s: " + flug,
+                    2: nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand" : "Spanne 1 cm → 1 km: " + flug,
+                    3: "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km",
+                    4: "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite",
                 };
-                for (const nr of [1, 2, 3, 4])
-                    await L.je(nr, async () => (s.je.length < v ? L.umfang(nr, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; Ende: " + s.grund + ")") : urteil[nr]()));
+                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.leser(nr, grund[nr] + (R.gemessen < v ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen));
             },
         })
     );
@@ -3230,7 +3242,8 @@ LEITERN.push(
     // ─────────── same.gedaechtnis.alter — Alter des Gebauten ───────────
     // S1/S2 an der vollen Stadt: die Albedo der gebauten Werke binnen 60 m (Lehre 19: Ecken-Farbe × Stoff-Farbe × Instanz-Farbe des
     // Bau-Satzes, der Host-Baupläne `g:` und der Bau-Teile mit `userData.stoff`) je LAGE der Fläche — oben, nord (−z), Wetterseite (gegen den Zug der Fronten,
-    // `_alterWind`, dieselbe Richtung, die der Kern `_alterLage` liest) —, zweimal vorher (das Rauschen), dann springt die Welt-Uhr der
+    // `_alterWind`, dieselbe Richtung, die der Kern `_alterLage` liest; „verschieden“ urteilt an den DISJUNKTEN Resten nur-Nord ↔
+    // nur-Wetter mit dem Farbabstand ΔE*ab, Entscheid des Koordinators 24.11.) —, zweimal vorher (das Rauschen), dann springt die Welt-Uhr der
     // Prozesse um 30 Tage über den Weg, den das Spiel für eine spätere Uhr hat (`_weltUhrNimm`: Stand und Mitspieler; das Alter liest
     // `_weltTag`, nie die Uhr des Spielers — `setTimeOfDay` altert seit w28-lava-nachlauf nichts), der Loop des Spiels legt die gealterten
     // Ecken (`_tickWerkAlter`), und die Albedo wird neu gelesen. S2: weiter bis 1 Jahr, das Bild an der Pose. S3–S8 zählen die Welt.
@@ -3248,7 +3261,7 @@ LEITERN.push(
                 1: {
                     soll: [
                         { wort: "albedo_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02", feld: "richter" },
-                        { wort: "seiten_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden", feld: "richter" },
+                        { wort: "seiten_de", richtung: "≥", wert: 2.3, wortlaut: "Nord- und Wetterseite verschieden (ΔE*ab ≥ 2,3)", feld: "richter" },
                     ],
                     umfang: { verlangt: 3, einheit: "alternde Stoffe in einem Werk", wortlaut: "1 Werk, 3 Stoffe", feld: "umfang" },
                 },
@@ -3369,6 +3382,8 @@ LEITERN.push(
                                 else if (Math.abs(n.y) < 0.3) {
                                     if (n.z < -0.5) lagen.push("nord");
                                     if (-(n.x * gx + n.z * gz) > 0.5) lagen.push("wetter");
+                                    // die DISJUNKTEN Reste: nur im Nord-Fach, nur im Wetter-Fach (decken sich die Fächer, urteilt „verschieden“ nur dort)
+                                    if (lagen.includes("nord") !== lagen.includes("wetter")) lagen.push(lagen.includes("nord") ? "nordNur" : "wetterNur");
                                 }
                                 if (!lagen.length) continue;
                                 const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];
@@ -3406,22 +3421,39 @@ LEITERN.push(
                 };
                 const d = (a, b) => (a && b ? Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]), Math.abs(b[2] - a[2])) : null);
                 const r4 = (v) => (Number.isFinite(v) ? Math.round(v * 1e4) / 1e4 : null);
-                // je Klasse: Δ je Lage (≥ 20 Ecken) über dem Rauschen der Klasse; die Seiten: |Δ nord − Δ wetter|
+                const r2 = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
+                // CIE L*a*b* aus der linearen Albedo (sRGB-Primärvalenzen, Weiß D65 — CIE 15:2004); ΔE*ab = CIE76, die Schwelle der
+                // Wahrnehmung 2,3 (Mahy · Van Eycken · Oosterlinck 1994, Color Res. Appl. 19(2):105–121)
+                const fL = (x) => (x > (6 / 29) ** 3 ? Math.cbrt(x) : x / (3 * (6 / 29) ** 2) + 4 / 29);
+                const lab = (c) => {
+                    const X = fL((0.4124564 * c[0] + 0.3575761 * c[1] + 0.1804375 * c[2]) / 0.95047), Y = fL(0.2126729 * c[0] + 0.7151522 * c[1] + 0.072175 * c[2]);
+                    const Z = fL((0.0193339 * c[0] + 0.119192 * c[1] + 0.9503041 * c[2]) / 1.08883);
+                    return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+                };
+                const dE = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+                // je Klasse: Δ je Lage (≥ 20 Ecken) über dem Rauschen der Klasse; die Seiten: ΔE*ab zwischen dem Alter des Rests nur-Nord
+                // und dem des Rests nur-Wetter (|ΔLab nur-Nord − ΔLab nur-Wetter|: die Seiten ALTERN verschieden, nie der Grund der Wände)
+                // über dem Rauschen beider Reste; trägt keine Klasse ≥ 20 Ecken in beiden Resten, decken sich die Fächer
                 const vergleich = (vor, zwei, nach) => {
-                    let albedo = null, seiten = null, wo = null, wos = null;
+                    let albedo = null, seiten = null, wo = null, wos = null, reste = 0;
                     for (const kl of Object.keys(vor.je)) {
                         const a = vor.je[kl], b = nach.je[kl], z = zwei.je[kl] || {};
                         if (!b) continue;
-                        const rausch = Math.max(0, ...Object.keys(a).map((l) => d(a[l], z[l]) || 0));
+                        const rausch = Math.max(0, ...["oben", "nord", "wetter"].map((l) => d(a[l], z[l]) || 0));
                         const D = {};
                         for (const l of ["oben", "nord", "wetter"]) if (a[l] && b[l] && a[l][3] >= 20) D[l] = d(a[l], b[l]);
                         for (const l of Object.keys(D)) if (albedo === null || D[l] - rausch > albedo) [albedo, wo] = [D[l] - rausch, kl + " " + l + " Δ " + r4(D[l]) + " (Rauschen " + r4(rausch) + ")"];
-                        if ("nord" in D && "wetter" in D) {
-                            const sd = Math.abs(D.nord - D.wetter);
-                            if (seiten === null || sd > seiten) [seiten, wos] = [sd, kl + " nord Δ " + r4(D.nord) + " · wetter Δ " + r4(D.wetter)];
+                        const rest = (l) => a[l] && b[l] && a[l][3] >= 20 && b[l][3] >= 20;
+                        if (rest("nordNur") && rest("wetterNur")) {
+                            reste++;
+                            const [vN, vW, nN, nW] = [lab(a.nordNur), lab(a.wetterNur), lab(b.nordNur), lab(b.wetterNur)];
+                            const rN = z.nordNur ? dE(vN, lab(z.nordNur)) : 0, rW = z.wetterNur ? dE(vW, lab(z.wetterNur)) : 0;
+                            const de = dE([nN[0] - vN[0], nN[1] - vN[1], nN[2] - vN[2]], [nW[0] - vW[0], nW[1] - vW[1], nW[2] - vW[2]]) - Math.max(rN, rW);
+                            if (seiten === null || de > seiten)
+                                [seiten, wos] = [de, kl + " ΔE nur-Nord " + r2(dE(nN, vN)) + " · nur-Wetter " + r2(dE(nW, vW)) + " · Rauschen " + r2(Math.max(rN, rW)) + " (" + b.nordNur[3] + " · " + b.wetterNur[3] + " Ecken)"];
                         }
                     }
-                    return { albedo: r4(albedo), seiten: r4(seiten), wo, wos, klassen: Object.keys(vor.je).length };
+                    return { albedo: r4(albedo), seiten: r2(seiten), wo, wos, reste, klassen: Object.keys(vor.je).length };
                 };
                 await L.ort("stadt-voll", "third");
                 L.preisPose("stadt-voll", "third");
@@ -3456,10 +3488,11 @@ LEITERN.push(
                     const v = vergleich(vor, zwei, nach30);
                     L.zeile("Alter 30 d: Sprung " + JSON.stringify(s30) + " · Loop " + JSON.stringify(a30) + " · " + JSON.stringify(v));
                     const tage = r4(s30.nach - s30.vor);
-                    L.gemessen(1, { albedo_delta: v.albedo, seiten_delta: v.seiten }, {
+                    if (!v.reste) throw new Error("Fächer decken sich: keine Klasse binnen 60 m trägt ≥ 20 Ecken in nur-Nord UND nur-Wetter (Wind " + JSON.stringify(w.wind) + ")");
+                    L.gemessen(1, { albedo_delta: v.albedo, seiten_de: v.seiten }, {
                         erzeugt: w.max,
                         welt: { tage, werke: w.werke },
-                        taeter: "größtes Δ " + (v.wo || "keines") + " · Seiten " + (v.wos || "keine Klasse mit Nord- und Wetterseite") + " · " + v.klassen + " Klassen · reichstes Werk " + (w.typ || "keines") + (a30.gelaufen && !a30.werke && !a30.satz ? "" : " · nach " + a30.lauf_s + " s Loop warteten " + a30.werke + " Werke, " + a30.satz + " Sätze"),
+                        taeter: "größtes Δ " + (v.wo || "keines") + " · Seiten " + v.wos + " · " + v.klassen + " Klassen · reichstes Werk " + (w.typ || "keines") + (a30.gelaufen && !a30.werke && !a30.satz ? "" : " · nach " + a30.lauf_s + " s Loop warteten " + a30.werke + " Werke, " + a30.satz + " Sätze"),
                     });
                 });
                 // S2: weiter bis 1 Jahr, das Bild an der Pose (die Zahlen daneben)
@@ -3471,7 +3504,7 @@ LEITERN.push(
                     const nach365 = await ev(lies, { R: 60 });
                     const v = vergleich(vor, vor, nach365);
                     L.zeile("Alter 1 a: Sprung " + JSON.stringify(s365) + " · Loop " + JSON.stringify(a365) + " · " + JSON.stringify(v));
-                    await L.auge(2, { werte: { albedo_delta_1a: v.albedo, seiten_delta_1a: v.seiten, tage: r4(s365.nach - s30.vor) } });
+                    await L.auge(2, { werte: { albedo_delta_1a: v.albedo, seiten_de_1a: v.seiten, tage: r4(s365.nach - s30.vor) } });
                 });
             },
         })

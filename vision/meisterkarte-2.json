@@ -16802,7 +16802,7 @@
        "preis": "P",
        "klasse": "Ort",
        "klasseGrund": "hand",
-       "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden, beide Geräte"
+       "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden (ΔE*ab ≥ 2,3), beide Geräte"
       },
       {
        "nr": 2,

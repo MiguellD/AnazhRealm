@@ -45,6 +45,8 @@
 //   push-pfade <baum> <zweig> <geraet> <kopf|-> <botschaft>   die eigenen Geräte-Pfade nach <zweig>, OHNE Rebase (commit-tree, Retry)
 //   ungepusht <baum> <zweig> <geraet> <seit-datei>            → "<n> <seit>": Messungen des Geräts, die der Ursprung nicht trägt
 //   bestand <repo> <geraet>                 → der juengste Kopf der main-Linie, an dem das Geraet eine Mess-Datei traegt
+//   selbsttest                              die Reihe an einer Attrappe der Mess-Dateien (ohne Gerät, ohne git): der WIDERSPRUCH DER
+//                                           GERÄTE steht vorn, die Mutante ohne die Regel stellt ihn in den Schwanz (ROT am Täter)
 "use strict";
 const fs = require("fs"), cp = require("child_process"), os = require("os"), path = require("path");
 const ZWEIG = process.env.RUNDE_ZWEIG || "koordination";
@@ -55,6 +57,8 @@ const MDIR = "meisterkarte-quelle/punkte/messung";
 const GERAETE = (process.env.RUNDE_GERAETE || "gtx radeon").split(/\s+/).filter(Boolean);
 const ALARM_MIN = Number(process.env.RUNDE_ALARM_MIN || 15), WIEDER_MIN = Number(process.env.RUNDE_ALARM_WIEDER_MIN || 60);
 const LANG_MIN = Number(process.env.REIHE_LANG_MIN || 10);
+// die Mutante des Selbsttests (reihe ohne den WIDERSPRUCH DER GERÄTE): nur `selbsttest` setzt sie
+const WIDERSPRUCH_AUS = process.env.RUNDE_MUTANTE === "widerspruch-aus";
 const WER = { GIT_AUTHOR_NAME: "MiguellD", GIT_AUTHOR_EMAIL: "87209049+MiguellD@users.noreply.github.com",
     GIT_COMMITTER_NAME: "MiguellD", GIT_COMMITTER_EMAIL: "87209049+MiguellD@users.noreply.github.com" };
 const jetzt = () => (process.env.RUNDE_JETZT ? new Date(process.env.RUNDE_JETZT) : new Date());
@@ -416,7 +420,13 @@ if (was === "lies") {
         process.stderr.write("Front der Karte 2: " + F.size + " Sprossen (" + hinter + " dahinter) · von der Liste " + vor + " → " + ids.length + "\n");
     } else for (const A of jeZweig.values()) for (const id of A) anspruch.add(id);
     const SCHWANZ = { K5: /Leser fehlt/, K6: /Umfang nicht erzeugbar/ };
-    const klasse = (id) => { if (anspruch.has(id)) return "K1"; const x = juengst[g][id] || juengst[anders][id]; if (!x || x.u) return "K2"; if (x.e.gruen) return "K3"; const t = String(x.e.grund || x.e.zahl || ""); return SCHWANZ.K6.test(t) ? "K6" : SCHWANZ.K5.test(t) ? "K5" : "K4"; };
+    // DER WIDERSPRUCH DER GERÄTE (24.11.; Befund an der Front am 1feab29c: erleben.sinne.signale#1 und same.physik.tragen#1 standen
+    // seit 20.11. mit GTX ROT am 31ea3847 im SCHWANZ, die Radeon urteilte am 21.11. am c445936d GRÜN — die Karte bucht erst an beiden
+    // Geräten, und kein Lauf fragte die GTX je wieder): ein ROT dieses Geräts, dem das ANDERE Gerät danach GRÜN widersprach, ist kein
+    // bekanntes ROT, sondern ein Urteil, das am heutigen Kopf fehlt — K2 (vorn), nie K4. Leser: die Reihe beider Dienste (radeon-dienst.sh,
+    // landung-dienst.sh); Selbsttest: `node runde.cjs selbsttest` (die Mutante ohne diese Regel stellt den Fall in den Schwanz).
+    const widerspruch = (id) => { const x = juengst[g][id], y = juengst[anders][id]; return !WIDERSPRUCH_AUS && !!x && !x.u && !x.e.gruen && !!y && !y.u && !!y.e.gruen && y.z > x.z; };
+    const klasse = (id) => { if (anspruch.has(id)) return "K1"; const x = juengst[g][id] || juengst[anders][id]; if (!x || x.u) return "K2"; if (x.e.gruen) return "K3"; if (widerspruch(id)) return "K2"; const t = String(x.e.grund || x.e.zahl || ""); return SCHWANZ.K6.test(t) ? "K6" : SCHWANZ.K5.test(t) ? "K5" : "K4"; };
     const lang = (id) => (letzt[id] && letzt[id].min >= LANG_MIN ? 1 : 0);
     const ord = (xs) => xs.map((id, i) => ({ id, i })).sort((a, b) => lang(a.id) - lang(b.id) || ((letzt[a.id] || {}).z || "").localeCompare((letzt[b.id] || {}).z || "") || a.i - b.i).map((x) => x.id);
     const je = { K1: [], K2: [], K3: [], K4: [], K5: [], K6: [] };
@@ -671,7 +681,26 @@ if (was === "lies") {
     const k = git(["rev-list", "--first-parent", "-n", "300", "refs/runde/main"]).split(/\s+/).find((c) => da.has(c.slice(0, 8)));
     if (!k) { console.error("bestand: kein Kopf der main-Linie traegt messung/<kopf8>-" + g + ".json"); process.exit(1); }
     console.log(k);
+} else if (was === "selbsttest") {
+    // DER WIDERSPRUCH DER GERÄTE an einer Attrappe: w.a#1 GTX ROT 20.11., Radeon GRÜN 21.11. (der Fall signale#1) → vorn · w.b#1 GTX ROT
+    // nach dem GRÜN der Radeon → Schwanz (das jüngere ROT gilt) · w.c#1 ROT an beiden → Schwanz · w.d#1 ROT ohne zweites Gerät → Schwanz.
+    // Dieselbe Reihe mit der Mutante (RUNDE_MUTANTE=widerspruch-aus) muss w.a#1 in den Schwanz stellen — sonst prüft der Fall nichts
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "runde-selbst-"));
+    const e = (gruen, zeit) => ({ gruen, zeit, grund: gruen ? "GRÜN" : "ROT: S1 x 0 gegen Soll ≥ 1 ✗" });
+    fs.writeFileSync(path.join(tmp, "aaaaaaaa-gtx.json"), JSON.stringify({ je: { "w.a#1": e(false, "2026-11-20T18:00:00Z"), "w.b#1": e(false, "2026-11-22T10:00:00Z"), "w.c#1": e(false, "2026-11-20T10:00:00Z"), "w.d#1": e(false, "2026-11-20T10:00:00Z") } }));
+    fs.writeFileSync(path.join(tmp, "bbbbbbbb-radeon.json"), JSON.stringify({ je: { "w.a#1": e(true, "2026-11-21T23:30:00Z"), "w.b#1": e(true, "2026-11-21T23:30:00Z"), "w.c#1": e(false, "2026-11-21T23:30:00Z") } }));
+    const reihe = (env) => {
+        const r = cp.spawnSync(process.execPath, [__filename, "reihe", tmp, "gtx", "w.a#1,w.b#1,w.c#1,w.d#1"], { encoding: "utf8", env: { ...process.env, ...env }, windowsHide: true });
+        const [vorn, schwanz] = String(r.stdout || "").trim().split("|");
+        return { vorn: liste(vorn), schwanz: liste(schwanz) };
+    };
+    const jetztR = reihe({ RUNDE_MUTANTE: "" }), mut = reihe({ RUNDE_MUTANTE: "widerspruch-aus" });
+    fs.rmSync(tmp, { recursive: true, force: true });
+    const ok = jetztR.vorn.join(",") === "w.a#1" && jetztR.schwanz.length === 3 && mut.vorn.length === 0 && mut.schwanz.includes("w.a#1");
+    console.log((ok ? "GRÜN" : "ROT") + " WIDERSPRUCH DER GERÄTE: vorn " + (jetztR.vorn.join(",") || "-") + " · Schwanz " + (jetztR.schwanz.join(",") || "-") +
+        " · Mutante ohne die Regel: vorn " + (mut.vorn.join(",") || "-") + " · Schwanz " + (mut.schwanz.join(",") || "-"));
+    process.exit(ok ? 0 : 1);
 } else {
-    console.log("runde.cjs lies|anlegen|stand|durch|weiter|alarm|reihe|offen|faelle|paare|bestand — siehe Kopf der Datei");
+    console.log("runde.cjs lies|anlegen|stand|durch|weiter|alarm|reihe|offen|faelle|paare|bestand|selbsttest — siehe Kopf der Datei");
     process.exit(2);
 }

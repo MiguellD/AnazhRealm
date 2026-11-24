@@ -1,0 +1,43 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+  … gang 1/18 haus_gotisch
+  … gang 3/18 haus_schwarzwald
+  … gang 6/18 haus_schwarzwald
+  … gang 9/18 haus_schwarzwald
+  … gang 12/18 haus_alpenchalet
+  … gang 15/18 haus_schwarzwald
+  … gang 18/18 haus_skandinavisch
+  … bild 1/18 haus_gotisch
+  … bild 2/18 haus_alpenchalet
+  … bild 4/18 haus_schwarzwald
+  … bild 5/18 haus_schwarzwald
+  … bild 6/18 haus_schwarzwald
+  … bild 7/18 haus_schwarzwald
+  … bild 8/18 haus_schwarzwald
+  … bild 10/18 haus_alpenchalet
+  … bild 12/18 haus_alpenchalet
+  … bild 13/18 haus_schwarzwald
+  … bild 14/18 haus_schwarzwald
+  … bild 15/18 haus_schwarzwald
+  … bild 16/18 haus_skandinavisch
+  … bild 17/18 haus_alpenchalet
+  haus_gotisch · Gang Hub 0.20 m · innen 0.005101375887232953 ÷ außen undefined = null
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.015239439336865222 ÷ außen 0.2039144080062855 = 0.075
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.013952023076837367 ÷ außen 0.13669479440416535 = 0.102
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.013952023076837367 ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.007291469407756109 ÷ außen 0.17585198904119742 = 0.041
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.02860105154288718 ÷ außen 0.04491948253144435 = 0.637
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.011803851747660294 ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.010325073351014425 ÷ außen 0.03046921160892814 = 0.339
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen 0.039023619655145204 = null
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.028241425634981825 ÷ außen undefined = null
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.00836035348584648 ÷ außen 0.15707431732130533 = 0.053
+  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.011759570721927544 ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.0054334662224174895 ÷ außen undefined = null
+  haus_skandinavisch · Gang Hub 0.20 m · innen 0.017922593079513497 ÷ außen 0.03186870266775256 = 0.562
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.016406783960903216 ÷ außen 0.07895242738010647 = 0.208
+  haus_skandinavisch · Gang Hub 0.20 m · innen 0.010872585709512727 ÷ außen 0.02821075212494917 = 0.385
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

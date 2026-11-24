@@ -33,3 +33,9 @@ pm-seite-ohne-m karte2.leben.wasser.netz#1,karte2.leben.tiere.masse#1,karte2.leb
 w28-heap-huelle-gepackt karte2.mensch.nahrung.flur#1,karte2.mensch.sport.koennen#1
 # Nachmessung 23.11. 09:20 (main 07783ef2): drei Sprossen mit grünem Richter, Preis „UNGEMESSEN unter Last“ (×1,28 bis ×2,08) — archiv#1 fiel damit 08:56 aus der Buchung
 pm-preis-in-ruhe karte2.planet.zeit.archiv#1,karte2.mensch.wirtschaft.technik#1,karte2.mensch.wirtschaft.markt#1
+# Station pm-nacht-front (punkte-maschine 41fbb2ea, 24.11. 00:42): erleben.bild.nacht#1 und #2 messen am Kopf die Nacht-Linse (nachtSicht, nachtKelvin) und den Pfosten-Teil schatten.K5 statt „Leser fehlt“ (GTX 1050 von Hand: Kelvin ±28–38 K grün, Pfosten 2,36:1 gegen 3:1 rot, Bodenfleck 11/11)
+pm-nacht-front karte2.erleben.bild.nacht#1,karte2.erleben.bild.nacht#2
+# pm-front-widerspruch (punkte-maschine-Zweig b32ba806, 24.11.): zwei GTX-ROT vom 20.11. mit jüngerem Radeon-GRÜN (die Reihe stellte sie in den Schwanz), zeitreise#1 Richter grün an beiden Geräten mit Preis „UNGEMESSEN unter Last“ ×1,72/×1,41, ausdauer#1 zuletzt am 20.11. gemessen (BLIND, Heap nach dem Collector 95,5 MB/min)
+pm-front-widerspruch karte2.erleben.sinne.signale#1,karte2.same.physik.tragen#1,karte2.same.kopplung.zeitreise#1,karte2.same.preis.ausdauer#1
+# Station pm-beobachter (punkte-maschine 011f0280, 24.11. 01:44): neun Fronten urteilen über den Adress-Fächer stationen/faecher.js (M4, der Richter als Beobachter) statt an der Bühne; headless gefahren, jede Bildpflicht ungemessen bis zum Gerät (cloud-post/pm-beobachter.md); technik#1 gebucht, nicht beansprucht
+pm-beobachter karte2.mensch.fahrzeug.medium#2,karte2.mensch.nahrung.tier#2,karte2.planet.kosmos.systeme#1,karte2.erleben.spieler.wegfindung#1,karte2.same.massstab.spanne#1,karte2.planet.kopplung.bahn-klima#2,karte2.same.kopplung.kohaerenz#1,karte2.leben.evolution.fremde-physik#1,karte2.leben.oeko.netz#2
