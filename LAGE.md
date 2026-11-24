@@ -1,9 +1,22 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 14:32 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 15:36 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 15:36 (gilt VOR allem darunter): main **499f8b57** (z717 `w28-probe-deckel-einlass` gelandet 14:38, nur Werkzeug — KEIN
+  Runden-Sprung, Runde 22 steht am a8dd22b5; main trägt die Ratsche selbst). KARTE 2: 83 von 1 718.
+  R4 IST KEIN WACKLER: Mensch-Anatomie R4 war seit mensch-nah (z712) fest rot, wo ihr Selbsttest lief, und „grün“, wo er ruhte
+  („R6 ruht“). HEIL-COMMIT **3bbb5b233f33458176ca28bda54b6d113638ed2b** (GTX 1050, `anatomie-r4-heil` über main 499f8b57, vier
+  Skript-Dateien; R4 0 von 7 → 12 von 12; foundry-core weckt jetzt den Selbsttest). Batterie läuft; Stempel bei Grün mit
+  `satz-anatomie-r4-heil.txt` (kein Anspruch, Apparat). Wer R4 rot sieht: `git merge 3bbb5b23` (bringt main 499f8b57 mit).
+  `ort-ausstattung` 5 = **7c517dc573b56dbe3179ee2e57d724ed6be7f8aa** (von mir per Plumbing: Merge des Heil-Commits in 4612f450,
+  Batterie + GPU-Probe laufen; Stempel bei Grün mit `satz-ort-ausstattung.txt`, Ansprüche schrift#1 · bildkunst#1 · grenze#1 ·
+  megastadt#1). `haus-stoff` c6cec836: DREI echte Rots beim Arbeiter (Golden holzhuette-s7-L0 + zwei ULP-Kipper fachwerk-core
+  :321/:264 · Glas L2 der Hütte 0,195 · Settlement-Kanal „Plan-Hash Studio ≠ Welt“). `fahrzeug-gattung`: Arbeiter heilt fünf Linsen,
+  mischt 3bbb5b23 ein. `sport-regeln` 3 (OMEN): Kopf noch lokal, Steckenbleiber 1 → 0, Täter im Zweig gefunden (Tempo-Zwilling
+  siedlung-bewohner.js:2837); danach scherbe-liegt → dienst-frist. Offener Fund: gate:koerper-stand K6 (5 von 21 541 Punkten an der
+  Stufen-Naht null, an main a8dd22b5) — bei GTX 1050 hinter klima-aufwind. ÜBERGABE: Abschnitt 10 (3d74ad87).
 - NACHTRAG 14:32 (gilt VOR allem darunter): main weiter **a8dd22b5** (V18.546.403), KARTE 2: 83 von 1 718 (Stand-Datei punkte-maschine
   0c01bc55). GESTEMPELT 14:23, im Zug: `w28-probe-deckel-einlass` 85788c53 (Kopf cf7deb94, trägt den Ratschen-Commit 28240b1b; nach
   der Landung pflückt niemand mehr, `nach-landung.sh 717` ohne Anspruch, EIN Runden-Sprung von a8dd22b5).
