@@ -705,11 +705,10 @@ class AnazhRealm_studio_stoff {
         if (
             ecken != null &&
             (typeof ecken !== "object" ||
-                Object.entries(ecken).some(
-                    ([k, v]) =>
-                        k === "art"
-                            ? v !== null && typeof v !== "string"
-                            : (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
+                Object.entries(ecken).some(([k, v]) =>
+                    k === "art"
+                        ? v !== null && typeof v !== "string"
+                        : (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
                 ))
         )
             throw this._stoffBruch(

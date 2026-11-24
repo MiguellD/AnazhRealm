@@ -82,7 +82,12 @@ class AnazhRealm_stoff_dach {
         const h = Math.max(1e-4, Math.hypot(s.x, s.z));
         const lang = Math.min(N.wurfM, (Math.max(0, U.dachOben.value - (auge.y || 0)) + N.wurfUnterM) * (h / s.y));
         const [wx, wz] = [(-s.x / h) * lang, (-s.z / h) * lang];
-        U.schattenHuelle.value.set(H.x + Math.min(0, wx), H.y + Math.min(0, wz), H.z + Math.max(0, wx), H.w + Math.max(0, wz));
+        U.schattenHuelle.value.set(
+            H.x + Math.min(0, wx),
+            H.y + Math.min(0, wz),
+            H.z + Math.max(0, wx),
+            H.w + Math.max(0, wz)
+        );
     }
     // der Schatten der Häuser am Ort (x, y, z) auf der CPU — die Plätze und die Sonne, die der Stoff liest (`atmoUniforms`)
     _hausSchatten(x, y, z) {
@@ -94,7 +99,10 @@ class AnazhRealm_stoff_dach {
         U.dachLage.forEach((Lu, i) => {
             const L = Lu.value;
             const M = U.dachMass[i].value;
-            im = Math.max(im, AnazhRealm._hausSchattenGesetz(Z, x, y, z, s.x, s.y, s.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z]));
+            im = Math.max(
+                im,
+                AnazhRealm._hausSchattenGesetz(Z, x, y, z, s.x, s.y, s.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z])
+            );
         });
         return im;
     }

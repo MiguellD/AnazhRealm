@@ -7493,7 +7493,10 @@
     // SAISON_GESETZ für jede Art; im Herbst steht die Summe auf ihrem Wert zur Mitte des Sommers.
     var PHAENO_GESETZ = Object.freeze({
         kaltTag: 17.6, // der kälteste Tag des Bezugs-Jahrs nach dem 1. Januar (der Anfang der Summe vor der Kälte)
-        gewicht: Object.freeze([[31, 0.5], [59, 0.75]]), // [bis Tag, Gewicht] — Januar, Februar; danach 1
+        gewicht: Object.freeze([
+            [31, 0.5],
+            [59, 0.75],
+        ]), // [bis Tag, Gewicht] — Januar, Februar; danach 1
         laub: Object.freeze({ baum_erle: 297, baum_birke: 294, baum_buche: 376, baum_eiche: 438 }),
         bluete: Object.freeze({ busch_hazel: 22, baum_erle: 61, baum_birke: 326 }),
         bestand: "baum_buche",
@@ -7535,7 +7538,10 @@
     // Das Laub einer Art im Jahr über einer Algebra (WIND_ZAHLEN die CPU, die TSL-Algebra der Stoff): `G` die GTS, `F` die Schwelle
     // des Laubs, `herbst` das Laub des SAISON_GESETZ im Herbst (im Frühling 1), `w` die kahle Krone (SAISON_GESETZ pr des Winters).
     function laubImJahr(A, G, F, herbst, w) {
-        const r = A.min(A.max(A.add(A.k(0.5), A.mul(A.add(G, A.mul(F, A.k(-1))), A.k(1 / PHAENO_GESETZ.austriebKd))), A.k(0)), A.k(1));
+        const r = A.min(
+            A.max(A.add(A.k(0.5), A.mul(A.add(G, A.mul(F, A.k(-1))), A.k(1 / PHAENO_GESETZ.austriebKd))), A.k(0)),
+            A.k(1)
+        );
         return A.min(A.add(A.k(w), A.mul(r, A.k(1 - w))), herbst);
     }
     // Die Blüte einer Art im Jahr (Schwelle `Fb` ≥ 0): steigt über die halbe Dauer ab der Schwelle, fällt nach der Dauer

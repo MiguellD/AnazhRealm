@@ -1314,7 +1314,8 @@ class AnazhRealm_bild_himmel {
             // die Ruhe erst, wenn auch der Schatten der Häuser trocken ist (stadtklima#1, der Trocken-Weg × sein Anteil ≥ 1)
             const U = st.atmoUniforms;
             const schattenNass = U && U.naesseWeg && U.naesseWeg.value * U.schattenSonne.value.w < 1;
-            if (st.naesse === 0 && !st.weatherTransition && !schattenNass) this._regenRuht = { wort: st.weather, naesse: 0 };
+            if (st.naesse === 0 && !st.weatherTransition && !schattenNass)
+                this._regenRuht = { wort: st.weather, naesse: 0 };
             return;
         }
         const sys = this._ensureRainSystem();
@@ -3400,7 +3401,9 @@ class AnazhRealm_bild_himmel {
         // weiter, wenn der Film der Welt schon trocken ist — der Schatten der Häuser trocknet mit seinem Anteil der Rate nach
         const q1 = AnazhRealm._trockenAnteil(wf);
         const weg0 = n0 <= 0 && Number.isFinite(this._naesseWeg) ? this._naesseWeg : 1 - n0;
-        this._naesseWeg = ziel ? 1 - st.naesse : Math.min(1 / q1 + 1, weg0 + Math.max(0, dt) * AnazhRealm._trockenRate(wf));
+        this._naesseWeg = ziel
+            ? 1 - st.naesse
+            : Math.min(1 / q1 + 1, weg0 + Math.max(0, dt) * AnazhRealm._trockenRate(wf));
         const U = this._ensureAtmoUniforms();
         U.naesse.value = st.naesse;
         U.regen.value = ziel ? wf.rain : 0;

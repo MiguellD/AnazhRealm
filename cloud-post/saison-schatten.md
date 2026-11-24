@@ -13,4 +13,4 @@ Offen: die Hasel trägt kein eigenes Laub im DWD-Netz und folgt mit dem Laub dem
 
 ## Stationen
 
-Die Stationen k2-leben.js und k2-zusammenspiel.js liegen im Zweig `pm-saison-schatten` auf dem Zweig `punkte-maschine`.
+Die Stationen meisterkarte-quelle/punkte/stationen/k2-leben.js und meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js (Zweig `punkte-maschine`) tragen den Schnitt im Zweig `pm-saison-schatten`.

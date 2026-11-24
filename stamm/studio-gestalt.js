@@ -316,7 +316,13 @@ class AnazhRealm_studio_gestalt {
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton, Jahr, Verband und Lage an ihrem Namen
         // (`_foundryTreeMaterial`)
         // … und die Art des Jahrs (jahreslauf#2, `_phaenoArtVon`): das Laub der Gestalt trägt die Phänologie ihrer Spezies
-        const ecken = { ton, jahr, verband: verbandEcke, lage: lageEcke, art: jahr && typeof art === "string" ? art : null };
+        const ecken = {
+            ton,
+            jahr,
+            verband: verbandEcke,
+            lage: lageEcke,
+            art: jahr && typeof art === "string" ? art : null,
+        };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) {
             geo.computeVertexNormals();
