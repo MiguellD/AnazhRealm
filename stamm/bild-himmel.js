@@ -2189,12 +2189,15 @@ class AnazhRealm_bild_himmel {
         // Lesung des Himmels (Regen, Raum und Wurf lesen sie).
         const wp = this._poolAmAuge(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
+        // und dem Boden des Messers: der Vollmond (er steht der Sonne gegenüber, Höhe −e) ohne Wolken-Decke zu dieser Stunde,
+        // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem Licht
         const k = __weltLicht.belichtung(
             wp,
             EA,
             e,
             (h, q) => AnazhRealm._belichtungStufen(h, q),
-            AnazhRealm.BELICHTUNG
+            AnazhRealm.BELICHTUNG,
+            e < 0 ? -e * this._mondDurchlass(-e) : 0
         );
         // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
         // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im
