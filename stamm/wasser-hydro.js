@@ -995,8 +995,10 @@ class AnazhRealm_wasser_hydro {
     // der Fuß liest (`_koerperWasser`), je Takt gelesen (`_anlegerTakt`), mit dem Tiefgang seines Gesetzes (`bootRumpf` Tleer).
 
     // DIE STREICHLÄNGE vor dem Ufer (m): je Strahl im Fächer ±`faecherRad` um die Richtung `u` hinaus, bis das Gelände des Gesetzes
-    // (`_terrainMacroSurfaceY`) über den Spiegel (`_waterLevelAt`) steigt oder `streichM` endet — gemittelt nach cos θ (die
-    // effektive Streichlänge der Küsteningenieure, SPM 1977: der Wind trägt die Welle nur in seiner Richtung). Leser: `_anlegerOrt`.
+    // (`_terrainMacroSurfaceY`) trocken liegt (das EINE Urteil „ist hier Wasser", `_nassAt` über diesem Boden — nie der Bezug der
+    // Ufer-Bänder: der trägt den Meeresspiegel überall und den See 3×3 geweitet, die Welle liefe über trockenes Land) oder
+    // `streichM` endet — gemittelt nach cos θ (die effektive Streichlänge der Küsteningenieure, SPM 1977: der Wind trägt die
+    // Welle nur in seiner Richtung). Leser: `_anlegerOrt`.
     _anlegerStreich(x0, z0, ux, uz) {
         const A = AnazhRealm.ANLEGER;
         let summe = 0,
@@ -1008,7 +1010,7 @@ class AnazhRealm_wasser_hydro {
             let d = A.streichSchrittM;
             for (; d < A.streichM; d += A.streichSchrittM) {
                 const [x, z] = [x0 + rx * d, z0 + rz * d];
-                if (!(this._terrainMacroSurfaceY(x, z, false) < this._waterLevelAt(x, z))) break;
+                if (!this._nassAt(x, z, undefined, this._terrainMacroSurfaceY(x, z, false))) break;
             }
             summe += d * c;
             gewicht += c;
