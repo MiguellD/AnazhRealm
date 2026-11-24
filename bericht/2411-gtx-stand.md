@@ -29,16 +29,13 @@ im FUND-REGISTER. Das Bild liegt unter probe-post/klima-aufwind/kette-bogen-gege
 
 ## Offene Funde
 
-- `gate:koerper-stand` K6 (rot nur an main a8dd22b5, Job 138446232280; die Zeile des Koordinators: 5 von 21 541 Punkten an der
-  Stufen-Naht antworten null, Stufen 0110, zuerst −41,95|−42,6). Gelesen 15:42: das GANZE Tor ist ein Selbsttest-Befehl
-  (package.json:133 `node scripts/diag-koerper-stand.cjs --selftest`), sein Ruhe-Schlüssel trägt 15 Dateien, 0 Kerne, 67 Glieder,
-  24 Zeilen — nachgestellt (`r6Urteil`) RUHT es bei einem Diff an foundry-core.js, koerper-core.js, planet-core.js,
-  stamm/wasser-hydro.js oder stamm/koerper-leib.js, solange keine Diff-Zeile eines der 67 Glieder nennt. „Nur an main rot“ ist also
-  das Bild eines echten Rots, das an seinem Zweig schlief — kein Wackler-Beleg. Ungelesen: die Job-Logs der grünen Läufe (kein gh an
-  der GTX) und welche Landung die fünf Null-Punkte brachte. Die Weiche, die der Koordinator an den Logs lesen kann: zwischen bf9be26c
-  (12:21) und a8dd22b5 landete NUR w28-auge-der-art (stamm/bild-kosten.js, stamm/kreatur-furcht.js, stamm/kreatur-verhalten.js,
-  stamm/werkstatt-hof.js, tetrapoda-core.js), und a8dd22b5 → 499f8b57 trägt kein Laufzeit-Byte. Lief das Tor an main bf9be26c grün
-  und an 499f8b57 rot, ist auge-der-art der Täter (die Stufen-Lage 0110 der eingeschwungenen Welt); lief es an 499f8b57 grün, ist K6
-  ein Wackler mit 1 von 2 an gleichen Bytes — die Stufen-Lage hängt dann am Strom. Danach EIN Lauf des Tors. Eine Register-Zeile steht.
+- `gate:koerper-stand` K6 (rot an main a8dd22b5, Job 138446232280: 5 von 21 541 Punkten an der Stufen-Naht antworten null, Stufen
+  0110, zuerst −41,95|−42,6). BERICHTIGT 15:49: die Linse steht in `R6_ZUSATZ` (scripts/lib/ci-klasse.cjs:122) — ruht ihr
+  Selbsttest, fährt der Aufruf OHNE Schalter; der Hauptlauf lief also an jedem Zweig, und K6 ist eine Zeile des Hauptlaufs
+  (scripts/diag-koerper-stand.cjs:1348). Meine Fassung von 15:44 („das ganze Tor ruhte am Zweig“) war falsch; geruht haben nur die
+  Täter-Welten (nachgestellt mit dem Diff von w28-auge-der-art). Lief das Tor an main 499f8b57 (gleiche Laufzeit-Bytes) grün, ist K6
+  ein Wackler mit 1 von 2 an gleichen Bytes — die Stufen-Lage der eingeschwungenen Welt hängt am Strom; auge-der-art ist NICHT
+  belegt. Nächster Handgriff: die Lage 0110 an der Naht im Hauptlauf festhalten (welche Stufen stehen beim Messen), dann der Leser
+  `_bodenSichtAt` / `_bodenKarteEcke` an genau dieser Lage. Die Register-Zeile „[apparat ruhe]“ ist berichtigt.
 - Die drei Register-Zeilen von 15:33 (Dither-Blende 2 von 3 Läufen · Trägerhemd am Achsel-Ausschnitt · zwei Halter der Lagen-Folge
   unter dem Arm) und die Zeile von heute zum Takt der Luft-Schritte.
