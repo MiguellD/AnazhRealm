@@ -344,7 +344,7 @@ async function lebenBuehnen() {
                 });
             return o;
         });
-        return async (saat, takte, mitHalb, fern, eingriff, ganzAm) => {
+        return async (saat, takte, mitHalb, fern, eingriff, ganzAm, gezeichnet) => {
             // die Saat setzt die Ströme je Zweck (die Region liest `bestand:<Region>`, aus ihm auch die Größe ihrer Tiere) und den
             // Gau; die Spiel-Zeit beginnt bei 0 (ihre Differenzen sind sonst je Boot andere Fließkomma-Zahlen)
             const rng = new Proxy(Object.create(null), {
@@ -369,6 +369,7 @@ async function lebenBuehnen() {
                 const t0 = performance.now();
                 r.tickFaunaLifecycle();
                 const dt = performance.now() - t0;
+                if (gezeichnet) gezeichnet(nah);
                 // die Antwort des Gaus wird das Bild in ihrem eigenen Ereignis (der Takt bestellt nur, `_gauTakt`): ihre Kosten
                 // stehen neben denen des Takts; ein ganzer Gau gelesen (`ganzAm`) ist die Lesung der Probe, nicht die des Spiels
                 const ganz = !!(ganzAm && ganzAm(k));
@@ -441,6 +442,9 @@ async function lebenBuehnen() {
         // der Täter des Risses: der Gau reißt nicht (der Riss des Kerns fällt aus — der Wolf jagt ins Leere)
         if (taeter === "kaskade-riss")
             await fadenKern("leben-core.js", [["const o = zug(list, wahl, rng);", "const o = (rng(), null);"]]);
+        // der Täter des Aussterbens (erbe-geburt): die Rate der Geburt im Gau falsch geeicht, × ¼ — das Rotwild bricht ein
+        if (taeter === "kaskade-geburt")
+            await fadenKern("leben-core.js", [["const p = ((t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;", "const p = (0.25 * (t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * EIGNUNG_EICH * t.Mw) / t.ww;"]]); // prettier-ignore
         // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
         // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
         // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
@@ -543,9 +547,16 @@ async function lebenBuehnen() {
                         if (k >= 160 && k < LAUF && !(k % 10)) [...nah, ...fern].forEach((key, j) => (z.orte[j] = (z.orte[j] || 0) + koepfe(key) / ((LAUF - 160) / 10))); // prettier-ignore
                         if (k >= LAUF / 2 && k < LAUF && !(k % 10)) z.aesend += [...nah, ...fern].reduce((n, key) => n + AESEND.reduce((m, g) => m + (r._bestandArt(key, g) || { n: 0 }).n, 0), 0) / (LAUF / 20); // prettier-ignore
                         if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(nah.map((key) => GATTUNGEN.flatMap((g) => (r._bestandArt(key, g) || { tiere: [] }).tiere.map((t) => t.id)).join()).join("|")); // prettier-ignore
+                    },
+                    GANZ[name],
+                    // DIE ZEICHNUNG, gelesen im Augenblick der Zeichnung (erbe-geburt): nach dem Lebenszyklus des Takts, VOR der
+                    // Antwort des Gaus auf den nächsten — jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst
+                    // steht: ein Jährling des Gaus, der danach abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen
+                    // neues Revier, das kann fern sein). Bis erbe-geburt las die Linse nach der Antwort: ein Leib, im Takt k aus der
+                    // nahen Region gezeichnet, stand „fremd“, wenn die Antwort k + 1 sein Tier im selben Takt fortzog (an main
+                    // a615ab5d über 40 Saaten 6 Leiber, 5 Wölfe eines springenden Rudels, 1 Jährling — 3 der 5 Fenster zu 8 Saaten ROT)
+                    (nah) => {
                         z.leiber = Math.max(z.leiber, s.creatures.length);
-                        // jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst steht: ein Jährling des Gaus, der danach
-                        // abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen neues Revier, das kann fern sein)
                         for (const c of s.creatures.filter(
                             (c) =>
                                 c.userData._bestand &&
@@ -555,8 +566,7 @@ async function lebenBuehnen() {
                         ))
                             // prettier-ignore
                             (z.fremd++, (z.fremdWer[c.userData._bestand.g] = (z.fremdWer[c.userData._bestand.g] || 0) + 1));
-                    },
-                    GANZ[name]
+                    }
                 );
                 L[name].push(Object.assign(l, z));
                 // zwischen den Läufen eine Aufgaben-Grenze (der EINE Schlaf der Seite): erst dort räumt die Speicher-Bereinigung die
@@ -588,7 +598,8 @@ async function lebenBuehnen() {
             if (L[b]) richtungen[k] = richtung(b, g, soll);
         const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort(aufsteigend)];
         return {
-            saaten: G.map((l) => Object.fromEntries(GATTUNGEN.map((g) => [g, [l.mittel(80, 160, g), l.mittel(GRUND - 80, GRUND, g)]]))), // prettier-ignore
+            // je Saat und Gattung [Anfang 80–160, Ende, Gründer 0–10] (der Gründer-Bestand: das Rotwild des Gaus steht von Takt 0 an)
+            saaten: G.map((l) => Object.fromEntries(GATTUNGEN.map((g) => [g, [l.mittel(80, 160, g), l.mittel(GRUND - 80, GRUND, g), l.mittel(0, 10, g)]]))), // prettier-ignore
             kappe: Object.values(L)
                 .flat()
                 .reduce((p, l) => p + l.kappe, 0),
@@ -1774,6 +1785,19 @@ async function lebenBuehnen() {
         return { R: R.filter((x, j) => frei[j]), s: (performance.now() - t0) / 1000 };
     };
     const lnM = (t) => Math.log(r._bestandMasseAdult(t) / r._gattungKg(t.g));
+    // DIE FLUCHTDISTANZ EINES TIERS (zivilisation#1, erbe-geburt) am EINEN Leser des Spiels (`_kreaturFluchtDistanzM`: der Leib,
+    // der sein Tier trägt, flieht den Menschen ab ihr) — in m, und als ln des Maßes seiner Gattung (die Achse scheu, je Art um 0)
+    const fluchtM = (t) => r._kreaturFluchtDistanzM({ userData: { gattung: t.g, _bestand: t } });
+    const lnFlucht = (t) => Math.log(fluchtM(t) / A._furchtGesetz().F.fluchtDistanzM[t.g]);
+    // die Korrelation zweier Reihen (Paare [x, y]): r, n — ohne Streuung einer Seite null
+    const korrelation = (P) => {
+        const n = P.length;
+        if (n < 3) return { r: null, n };
+        const [mx, my] = [P.reduce((q, p) => q + p[0], 0) / n, P.reduce((q, p) => q + p[1], 0) / n];
+        let [sxx, sxy, syy] = [0, 0, 0];
+        for (const [x, y] of P) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
+        return { r: sxx > 0 && syy > 0 ? rund(sxy / Math.sqrt(sxx * syy), 3) : null, n };
+    };
     // die Regression y auf x (Steigung, ihr Standardfehler, n)
     const regression = (P) => {
         const n = P.length;
@@ -1784,24 +1808,30 @@ async function lebenBuehnen() {
         for (const [x, y] of P) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
         const b = sxy / sxx;
         const se = Math.sqrt(Math.max(0, (syy - b * sxy) / (n - 2)) / sxx);
-        return { steigung: rund(b, 3), se: rund(se, 3), n };
+        return { steigung: rund(b, 3), se: rund(se, 3), n, sdY: rund(Math.sqrt(syy / (n - 1)), 3) };
     };
     await buehne("erbe", async () => {
+        // der Täter: der Leib flieht beim Maß seiner Gattung (das Spiel bis erbe-geburt) — die Scheu reist nicht zum Kind
+        if (taeter === "scheu-gattung")
+            decke("_kreaturFluchtDistanzM", () => (c) => A._furchtGesetz().F.fluchtDistanzM[r._kreaturGattung(c)]);
         lebenHuelle();
         const keys = await lebenRegionen();
         // ≥ 10 Generationen: die Generation eines Kinds ist die seiner Mutter + 1 (ein Gründer 0)
         const TAKTE = 2160; // 6 Spielstunden je Region (der Fuchs ist reif nach Minuten) — und 82 Jahre des Gaus (26,25 Takte je Jahr)
         // je Tier sein Phänotyp und seine Generation (die Kennung der Mutter `m` nennt sie): die Paare Mutter → Kind
+        // dazu die Scheu (zivilisation#1): ln der Fluchtdistanz am Leser des Spiels, Mutter → Kind, und die Fluchtdistanz der
+        // Hirsche in m (die Streuung im Bild)
         const paare = () => {
             const wer = new Map();
-            const P = { mutter: [], gen: 0 };
+            const P = { mutter: [], scheu: [], hirschM: [], gen: 0 };
             P.sieh = (t, mutterId) => {
                 if (wer.has(t.id)) return;
                 const M = mutterId != null ? wer.get(mutterId) : null;
-                const ich = { p: lnM(t), gen: M ? M.gen + 1 : 0 };
+                const ich = { p: lnM(t), f: lnFlucht(t), gen: M ? M.gen + 1 : 0 };
                 wer.set(t.id, ich);
                 P.gen = Math.max(P.gen, ich.gen);
-                if (M) P.mutter.push([M.p, ich.p]);
+                if (t.g === "deer") P.hirschM.push(fluchtM(t));
+                if (M) (P.mutter.push([M.p, ich.p]), P.scheu.push([M.f, ich.f]));
             };
             return P;
         };
@@ -1830,7 +1860,7 @@ async function lebenBuehnen() {
         for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) gauKeys.push(ix + dx + "," + (iz + dz));
         const GG = [A.GAU.beute, A.GAU.jaeger];
         const erbeGau = async (saat, mutante) => {
-            const zurueck = mutante || taeter === "erbe-kind" ? await fadenKern("leben-core.js", [["kind(mu.a, va.a, normale(rng), normale(rng), normale(rng))", "(normale(rng), normale(rng), gruender(normale(rng)))"]]) : () => {}; // prettier-ignore
+            const zurueck = mutante || taeter === "erbe-kind" ? await fadenKern("leben-core.js", [["kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax))", "(normale(rng, ax), normale(rng, ax), gruender(normale(rng, ax)))"]]) : () => {}; // prettier-ignore
             const P = paare();
             const fahrt = gauFahrt(gauKeys, 1e6 + saat);
             const t0 = performance.now();
@@ -1843,7 +1873,7 @@ async function lebenBuehnen() {
             return Object.assign(P, { s: (performance.now() - t0) / 1000 });
         };
         const z = { regionen: 0, gauRegionen: gauKeys.length, saaten: [], s: 0 };
-        const [alle, aus] = [[], []];
+        const [alle, aus, scheu, scheuAus, hirschM] = [[], [], [], [], []];
         for (let i = 1; i <= SAATEN; i++) {
             const [E, M, EG, MG] = [
                 erbeAlt(i, false),
@@ -1853,6 +1883,9 @@ async function lebenBuehnen() {
             ];
             alle.push(...E.mutter, ...EG.mutter);
             aus.push(...M.mutter, ...MG.mutter);
+            scheu.push(...E.scheu, ...EG.scheu);
+            scheuAus.push(...M.scheu, ...MG.scheu);
+            hirschM.push(...EG.hirschM);
             z.regionen = E.regionen;
             z.s += E.s + M.s + EG.s + MG.s;
             z.saaten.push({
@@ -1860,14 +1893,21 @@ async function lebenBuehnen() {
                 mutante: regression([...M.mutter, ...MG.mutter]).steigung,
                 gau: regression(EG.mutter).steigung,
                 alt: regression(E.mutter).steigung,
+                scheu: korrelation([...E.scheu, ...EG.scheu]).r,
                 gen: Math.min(E.gen, EG.gen),
                 paare: [E.mutter.length, EG.mutter.length],
             });
             await sleep(1);
         }
+        const q = (l, p) => (l.length ? rund(l.slice().sort((x, y) => x - y)[Math.floor(p * (l.length - 1))], 1) : null);
         Object.assign(z, {
             erbe: regression(alle),
             mutante: regression(aus),
+            // die Scheu: die Korrelation der Fluchtdistanz Mutter ↔ Kind (ln, je Art um ihr Maß), die Mutante, die Hirsche in m
+            scheu: Object.assign(korrelation(scheu), {
+                mutante: korrelation(scheuAus).r,
+                hirschM: { n: hirschM.length, p10: q(hirschM, 0.1), p50: q(hirschM, 0.5), p90: q(hirschM, 0.9) },
+            }),
             gen: Math.min(...z.saaten.map((q) => q.gen)),
             s: rund(z.s, 1),
             takte: TAKTE,
@@ -1876,32 +1916,47 @@ async function lebenBuehnen() {
     });
     // ── muster#1 (Räuberdruck → Größe; Gegenlauf ohne Räuber): Hirsch und Wolf leben im Gau (Leben C2b) — die Bühne fährt den
     // Gau der 3 × 3 Regionen um den Spieler Takt für Takt (`gauFahrt`, mit den Toden des Takts), 2 600 Takte (≈ 100 Jahre, ≈ 25
-    // Hirsch-Generationen); der Gegenlauf nimmt nach jedem Takt jeden Wolf, der im Bild steht (der Akt „aus“, `_gauAus` — wie der
-    // Eingriff der Kaskade); gemessen das Mittel von ln(M∞ / M_guss) der reifen Hirsche über die zweite Hälfte, gelesen am EINEN
-    // Leser (`_bestandArt`). Das Vorzeichen ist ERGEBNIS — das Tor urteilt nur, dass die Kräfte wirken: der Riss wählt sein Opfer
-    // nach seiner VERWUNDBARKEIT (leben-core ZEIT_JAGD jagd: Kitz und Greis je `jung`/`greis`, sonst 1 — Satz 3 des Gesetzes),
-    // gegen die Erwartung an jeder Wahl im Revier des Risses (wie oft ein Greis, welche Masse) ──
+    // Hirsch-Generationen); der Gegenlauf ist der Gau OHNE Wolf (das Gesetz ohne Jäger, `anfang` jaeger: false — wie der Lauf
+    // ohne Wolf des Gesetz-Beweises S13: kein Rudel im ganzen Gau; bis erbe-geburt nahm er nur die Wölfe im Bild, der Rest des
+    // Gaus jagte weiter und trug seine Kinder herein — die Scheu trennte 3 von 5 Saaten); gemessen das Mittel von ln(M∞ / M_guss)
+    // und die Fluchtdistanz (zivilisation#1) der reifen Hirsche über die zweite Hälfte, gelesen am EINEN Leser (`_bestandArt`).
+    // Das Vorzeichen der Größe ist ERGEBNIS — das Tor urteilt, dass die Kräfte wirken: der Riss wählt sein Opfer nach seiner
+    // VERWUNDBARKEIT (leben-core ZEIT_JAGD jagd: Kitz und Greis je `jung`/`greis`, sonst 1 — Satz 3 des Gesetzes) mal seinem
+    // Fang (`fangGewicht`: der Scheue entkommt), gegen die Erwartung an jeder Wahl im Revier des Risses (wie oft ein Greis, welche
+    // Masse, welche Scheu); die Scheu steigt unter dem Räuber ──
     await buehne("muster", async () => {
-        // der Täter: der Riss nimmt das Älteste (das Opfer bis leben-erbe) — im Kern des Fadens
+        // die Täter rechnen im Kern des Fadens (Lauf und Gegenlauf)
+        const kernPaare = [];
+        // der Täter: der Riss nimmt das Älteste (das Opfer bis leben-erbe)
         if (taeter === "riss-aeltester")
-            await fadenKern("leben-core.js", [["const o = zug(list, wahl, rng);", "const o = (rng(), list.reduce((b, t) => (wahl(t) > 0 && (!b || t.alterS > b.alterS) ? t : b), null));"]]); // prettier-ignore
+            kernPaare.push(["const o = zug(list, wahl, rng);", "const o = (rng(), list.reduce((b, t) => (wahl(t) > 0 && (!b || t.alterS > b.alterS) ? t : b), null));"]); // prettier-ignore
         // der Täter: die Rückkraft fällt — das Kind erbt das Erbe seiner Eltern anderthalbfach (die Größe hat keinen Halt mehr)
         if (taeter === "rueckkraft")
-            await fadenKern("leben-core.js", [["kind(mu.a, va.a, normale(rng), normale(rng), normale(rng))", "kind(mu.a, va.a, normale(rng), normale(rng), normale(rng)).map((v) => 1.5 * v)"]]); // prettier-ignore
+            kernPaare.push(["kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax))", "kind(mu.a, va.a, normale(rng, ax), normale(rng, ax), normale(rng, ax)).map((v) => 1.5 * v)"]); // prettier-ignore
+        // der Täter: der Riss fasst den Scheuen wie den Kühnen (das Spiel bis erbe-geburt)
+        if (taeter === "fang-aus") kernPaare.push([" : 1) * t.fang;", " : 1) * 1;"]);
+        if (kernPaare.length) await fadenKern("leben-core.js", kernPaare);
+        const OHNE_WOLF = ["jaeger: opt.jaeger !== false,", "jaeger: false,"];
         const [J, TS] = [L0.zeitJagd().jagd, A._bestandGesetz().B.taktS];
         // die Verwundbarkeit am Takt des Risses (das Alter nach dem Schritt 0 des Takts)
         const klasse = (t) => {
             const a = t.alterS + TS;
             return !(t.r || a >= L0.reifeS(t.M)) ? "jung" : a >= J.greisAb * L0.lebensdauerS(t.M) ? "greis" : "adult";
         };
-        const vw = (t) => (klasse(t) === "adult" ? 1 : J[klasse(t)]);
+        // mal dem Fang-Gewicht seiner Scheu (leben-core `fangGewicht`, erbe-geburt: wer früher flieht, wird seltener gefasst)
+        const vw = (t) => (klasse(t) === "adult" ? 1 : J[klasse(t)]) * L0.fangGewicht(t.a, t.e);
         const greis = (t) => klasse(t) === "greis";
-        const riss = { n: 0, aeltest: 0, pAeltest: 0, vAeltest: 0, kg: 0, kgSoll: 0, kgVar: 0 };
+        // die Scheu eines Kopfs (der Phänotyp der Achse: ln der Fluchtdistanz über dem Maß der Gattung)
+        const scheuP = (t) => t.a[L0.achse("scheu")] + t.e[L0.achse("scheu")];
+        const riss = { n: 0, aeltest: 0, pAeltest: 0, vAeltest: 0, kg: 0, kgSoll: 0, kgVar: 0, scheu: 0, scheuSoll: 0, scheuVar: 0 };
         const keys = await lebenRegionen();
         const [H, W] = [A.GAU.beute, A.GAU.jaeger];
         const TAKTE = 2600;
         const lauf = async (saat, ohneWolf) => {
-            const q = { hirsch: 0, woelfe: 0, proben: 0, mittel: 0, reif: 0, ueber: 0 };
+            const q = { hirsch: 0, woelfe: 0, proben: 0, mittel: 0, flucht: 0, reif: 0, ueber: 0, gen: 0, start: null };
+            // die Generation je Hirsch im Bild: die seiner Mutter + 1, wenn sie im Bild lebte, sonst 0 (eine untere Grenze)
+            const gen = new Map();
+            const zurueck = ohneWolf ? await fadenKern("leben-core.js", [...kernPaare, OHNE_WOLF]) : () => {};
             const fahrt = gauFahrt(keys, 2e6 + saat, { tode: true });
             const t0 = performance.now();
             let pool = new Map(); // je Revier „gau:i“ die Beute vor dem Takt (Kopien: das Bild schreibt seine Datensätze fort)
@@ -1918,6 +1973,8 @@ async function lebenBuehnen() {
                         const p = P.reduce((s, t, i) => s + (greis(t) ? w[i] : 0), 0) / Wsum;
                         const eM = P.reduce((s, t, i) => s + (t.kg * w[i]) / Wsum, 0);
                         const vM = P.reduce((s, t, i) => s + ((t.kg - eM) ** 2 * w[i]) / Wsum, 0);
+                        const eS = P.reduce((s, t, i) => s + (scheuP(t) * w[i]) / Wsum, 0);
+                        const vS = P.reduce((s, t, i) => s + ((scheuP(t) - eS) ** 2 * w[i]) / Wsum, 0);
                         Object.assign(riss, {
                             n: riss.n + 1,
                             aeltest: riss.aeltest + greis(o),
@@ -1926,19 +1983,25 @@ async function lebenBuehnen() {
                             kg: riss.kg + o.kg,
                             kgSoll: riss.kgSoll + eM,
                             kgVar: riss.kgVar + vM,
+                            scheu: riss.scheu + scheuP(o),
+                            scheuSoll: riss.scheuSoll + eS,
+                            scheuVar: riss.scheuVar + vS,
                         });
                     }
                     P.splice(P.indexOf(o), 1); // das nächste Opfer desselben Takts wählt unter den übrigen
                 }
-                if (ohneWolf)
-                    for (const key of keys)
-                        for (const t of (r._bestandArt(key, W) || { tiere: [] }).tiere) r._gauAus(t);
                 pool = new Map();
                 for (const key of keys) {
                     const B = r._bestandArt(key, H);
                     if (!B) continue;
+                    for (const t of B.tiere)
+                        if (!gen.has(t.id)) gen.set(t.id, gen.has(t.m) ? gen.get(t.m) + 1 : 0), (q.gen = Math.max(q.gen, gen.get(t.id))); // prettier-ignore
                     const o = r._gauOrt(...key.split(",").map(Number));
-                    pool.set(o.gx + "," + o.gz + ":" + o.revier, B.tiere.map((t) => ({ id: t.id, r: t.r, alterS: t.alterS, M: t.M, kg: t.kg }))); // prettier-ignore
+                    pool.set(o.gx + "," + o.gz + ":" + o.revier, B.tiere.map((t) => ({ id: t.id, r: t.r, alterS: t.alterS, M: t.M, kg: t.kg, a: t.a, e: t.e }))); // prettier-ignore
+                }
+                if (k === 0) {
+                    const reif0 = keys.flatMap((key) => (r._bestandArt(key, H) || { tiere: [] }).tiere).filter((t) => t.r);
+                    q.start = reif0.length ? rund(reif0.reduce((p, t) => p + lnM(t), 0) / reif0.length, 4) : null;
                 }
                 if (k < TAKTE / 2 || k % 10) continue;
                 const hirsche = keys.flatMap((key) => (r._bestandArt(key, H) || { tiere: [] }).tiere);
@@ -1947,28 +2010,39 @@ async function lebenBuehnen() {
                 q.hirsch += hirsche.length;
                 q.proben++;
                 if (reif.length) q.mittel += reif.reduce((p, t) => p + lnM(t), 0) / reif.length;
+                // die Scheu (zivilisation#1): die Fluchtdistanz der reifen Hirsche am Leser des Spiels, m
+                if (reif.length) q.flucht += reif.reduce((p, t) => p + fluchtM(t), 0) / reif.length;
                 // jenseits der Spanne des Gesetzes: M∞ über dem größten Erwachsenen (+4σ), das der Leib noch zeigt, oder ebenso weit
                 // darunter (−4σ: ohne Rückkraft läuft die Größe nach beiden Seiten — die Mutante trug den Zwerg, ln M̄ −1,2)
                 [q.reif, q.ueber] = [q.reif + reif.length, q.ueber + reif.filter((t) => Math.abs(lnM(t)) > 3 * Math.log(L0.spanne()[1])).length]; // prettier-ignore
             }
-            return {
+            const aus = {
                 lnM: rund(q.mittel / Math.max(1, q.proben), 4),
+                start: q.start,
+                fluchtM: rund(q.flucht / Math.max(1, q.proben), 2),
+                gen: q.gen,
                 hirsch: rund(q.hirsch / Math.max(1, q.proben), 2),
                 woelfe: rund(q.woelfe / Math.max(1, q.proben), 2),
                 ueberSpanne: rund(q.ueber / Math.max(1, q.reif), 3),
                 s: rund((performance.now() - t0) / 1000, 1),
             };
+            zurueck();
+            return aus;
         };
         const z = { regionen: keys.length, takte: TAKTE, saaten: [] };
         // das Ergebnis am Stand: nach dem Lauf mit Wölfen steht der Riss (der Gegenlauf reißt nicht) — dort hält ein Täter, dessen
         // Wort schon steht (Kreatur-Takt 22.11.)
         const ergebnis = () => {
             const D = z.saaten.filter((q) => q.aus).map((q) => q.delta);
+            const S = z.saaten.filter((q) => q.aus).map((q) => q.scheuDelta);
             return {
                 ...z,
                 saaten: [...z.saaten],
                 delta: rund(D.reduce(addiere, 0) / D.length, 4),
                 negativ: D.filter((d) => d < 0).length,
+                // die Scheu: Fluchtdistanz der reifen Hirsche mit Wölfen − ohne (m), je Saat
+                scheuDelta: rund(S.reduce(addiere, 0) / S.length, 2),
+                scheuNegativ: S.filter((d) => !(d > 0)).length,
                 wanduhrMaxS: Math.max(...z.saaten.flatMap((q) => [q.an.s, q.aus ? q.aus.s : 0])),
                 riss: {
                 n: riss.n,
@@ -1978,6 +2052,10 @@ async function lebenBuehnen() {
                 kgZ: rund((riss.kg - riss.kgSoll) / Math.sqrt(Math.max(1e-9, riss.kgVar)), 2),
                 aeltestRel: rund(riss.aeltest / Math.max(1e-9, riss.pAeltest) - 1, 4),
                 kgRel: rund(riss.kg / Math.max(1e-9, riss.kgSoll) - 1, 4),
+                // die Scheu der Opfer gegen die Erwartung des Fangs (z): der Scheue entkommt
+                scheuZ: rund((riss.scheu - riss.scheuSoll) / Math.sqrt(Math.max(1e-9, riss.scheuVar)), 2),
+                scheuOpfer: rund(riss.scheu / Math.max(1, riss.n), 4),
+                scheuSoll: rund(riss.scheuSoll / Math.max(1, riss.n), 4),
             },
             };
         };
@@ -1986,7 +2064,7 @@ async function lebenBuehnen() {
             z.saaten.push({ an });
             await stelle(ergebnis());
             const aus = await lauf(i, true);
-            z.saaten[i - 1] = { delta: rund(an.lnM - aus.lnM, 4), an, aus };
+            z.saaten[i - 1] = { delta: rund(an.lnM - aus.lnM, 4), scheuDelta: rund(an.fluchtM - aus.fluchtM, 2), an, aus };
             await sleep(1);
         }
         return ergebnis();
@@ -2465,10 +2543,12 @@ const GESETZ_LEER = 0.01;
 // B4 — die Welt-Bindung, Saat 1 (gemessen am Feld des Haupt-Fadens: `--bestand-welt`): Wolf und Beute je 4 Jahre, Land, Zellen
 // der Beute und Σ K des Gaus (0, 0) der Heimat — das Soll des Gaus im Faden (G1). Am 20.11. neu gemünzt, seit der Kern den EINEN
 // Strom der Welt zieht (samen-core `samenStrom` statt seines mulberry32): dieselbe Rechnung an anderen Würfen, das Feld
-// gleich (Land 2240 · Zellen 10884 · Σ K 33989); vorher Wolf 27 … 58 · Beute 11339 … 14476 (18.11., Kopf 2672c409)
+// gleich (Land 2240 · Zellen 10884 · Σ K 33989); vorher Wolf 27 … 58 · Beute 11339 … 14476 (18.11., Kopf 2672c409). Am 23.11.
+// wieder gemünzt (erbe-geburt, wie Lauf 4: die zweite Achse scheu zieht je Vektor zwei Normale, Nische und Fang lesen sie), das
+// Feld gleich; vorher Wolf 24 … 58 · Beute 11449 … 14135
 const GAU_B4 = {
-    wolf: [24, 36, 40, 44, 62, 47, 52, 53, 57, 58],
-    reh: [11449, 11776, 14053, 14199, 14143, 14012, 14157, 14239, 14387, 14135],
+    wolf: [19, 47, 51, 53, 47, 55, 51, 56, 56, 46],
+    reh: [11451, 11810, 13314, 13301, 13405, 13552, 13507, 13606, 13857, 13615],
     feld: { land: 2240, zellen: 10884, kSumme: 33989 },
 };
 function lebenUrteil(name, z, soll) {
@@ -2640,6 +2720,18 @@ function lebenUrteil(name, z, soll) {
             Math.abs(M.steigung) <= Math.max(0.1, 3 * M.se),
             `die Mutante kind → gruender erbt: Steigung ${M.steigung} ± ${M.se} (Soll |·| ≤ ${Math.max(0.1, 3 * M.se)})`
         );
+        // DIE SCHEU (zivilisation#1, erbe-geburt): die Fluchtdistanz am Leser des Spiels korreliert Mutter ↔ Kind im Band
+        // [0,08; 0,35] (das Gesetz: h²/2 = 0,175), die Hirsche fliehen nicht bei EINER Zahl, die Mutante erbt sie nicht
+        const S = z.scheu;
+        const H = S.hirschM;
+        soll(
+            S.r >= 0.08 && S.r <= 0.35 && H.n >= 20 && H.p90 > H.p10,
+            `die Scheu reist nicht von den Eltern zum Kind: Korrelation der Fluchtdistanz Mutter ↔ Kind ${S.r} an ${S.n} Paaren (Soll 0,08–0,35, das Gesetz h²/2 = 0,175), Hirsche ${H.p10}/${H.p50}/${H.p90} m (p10/p50/p90, ${H.n} Tiere; Soll p90 > p10)`
+        );
+        soll(
+            S.mutante != null && Math.abs(S.mutante) <= 0.1,
+            `die Mutante kind → gruender erbt die Scheu: Korrelation ${S.mutante} (Soll |·| ≤ 0,1)`
+        );
     }
     // muster#1: die Kräfte wirken — der Riss wählt nach der Verwundbarkeit (ZEIT_JAGD jagd), gegen die Erwartung des Gesetzes an
     // jeder Wahl im Revier des Risses (wie oft ein Greis, welche Masse: je |z| ≤ 3 — der Täter „das Älteste“ nimmt fast nur
@@ -2656,6 +2748,17 @@ function lebenUrteil(name, z, soll) {
             `der Riss wählt sein Opfer nicht nach der Verwundbarkeit (ZEIT_JAGD jagd): ${Rz.aeltest} von ${Rz.n} ein Greis (Soll ${Rz.aeltestSoll}, ${Rz.aeltestRel}, z ${Rz.aeltestZ}), Masse ${Rz.kgRel} gegen die Erwartung (z ${Rz.kgZ}; Soll je |z| ≤ 3)`
         );
         soll(z.wanduhrMaxS <= 60, `ein Lauf von ${z.takte} Takten dauert ${z.wanduhrMaxS} s (Soll ≤ 60 s)`);
+        // DIE SCHEU (zivilisation#1, erbe-geburt): der Riss fasst den Scheuen seltener (`fangGewicht`: die Scheu seiner Opfer gegen
+        // die Erwartung des Fangs, |z| ≤ 3 — der Täter „Fang aus“ fasst jeden gleich), und unter dem Räuber flieht der reife Hirsch
+        // früher als im Gau ohne Wolf, in jeder Saat
+        soll(
+            Math.abs(Rz.scheuZ) <= 3,
+            `der Riss liest die Scheu nicht (fangGewicht): Scheu der Opfer ${Rz.scheuOpfer} gegen die Erwartung des Fangs ${Rz.scheuSoll} (z ${Rz.scheuZ}, Soll |z| ≤ 3)`
+        );
+        soll(
+            z.saaten.every((q) => q.scheuDelta > 0),
+            `der Räuber macht nicht scheuer: Fluchtdistanz der reifen Hirsche mit Wolf − ohne ${z.saaten.map((q) => q.scheuDelta).join(" · ")} m (${z.saaten.map((q) => q.an.fluchtM + "/" + q.aus?.fluchtM).join(" · ")}; Soll > 0 je Saat)`
+        );
         // DIE GRÖSSE BLEIBT IM GESETZ: mit und ohne Räuber trägt höchstens jeder zwanzigste reife Hirsch ein M∞ jenseits der
         // Spanne des Gesetzes (+4σ, bs 1,31) — die Nische (`eignung`) und das Wurf-Gewicht halten die Art im Gau
         const weg = z.saaten.flatMap((q, i) => [["an", q.an], ["aus", q.aus]].filter(([, l]) => l && !(l.ueberSpanne <= 0.05)).map(([k, l]) => `Saat ${i + 1} ${k}: ln M̄ ${l.lnM}, ${l.ueberSpanne} jenseits`)); // prettier-ignore
@@ -2680,14 +2783,28 @@ function lebenUrteil(name, z, soll) {
                 Math.abs(kgRel) <= 0.05,
             `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (Risiko 1/fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Wahlen im Bestand (Soll ≥ 30), das Leichteste ${T.leicht}-mal gegen ${Math.round(T.pLeicht)} erwartet (${leichtRel.toFixed(3)}, Soll |·| ≤ 0,1), Masse ${kgRel.toFixed(3)} gegen die Erwartung (Soll |·| ≤ 0,05); gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
+        // AUSBRUCH UND AUSSTERBEN über der Rausch-Grenze (erbe-geburt): je Saat urteilt das Band [⅓×, 3×] nur über einen Bestand
+        // ab 4 Köpfen; darunter ist das Verhältnis der Zufall weniger Leben (1,61 → 0,2 Bären ist ein Bär, der starb — an main
+        // a615ab5d über 40 Saaten 1, am Kopf 3 solche Brüche, je 8er-Fenster mal ROT, mal grün, ohne dass eine Gattung sich
+        // bewegte: Σe/Σa je Fenster Fuchs 0,88–1,32, Bär 0,95–1,72). Jede Gattung urteilt als Ensemble über alle Saaten
+        // (Σ Ende / Σ Anfang im Band), ein Bestand aus dem Nichts (Anfang < 1) bricht über 3 Köpfe aus. Das Aussterben urteilt
+        // die Gattung auch gegen ihren Gründer-Bestand (Takte 0–10, Σ über die Saaten): ein Rotwild, das schon VOR dem Anfang
+        // einbricht, war dem Band blind (Täter kaskade-geburt, die Geburt des Gaus × ¼: 1,7 statt ~9 Köpfe am Anfang, 2,8 am Ende)
         const paare = z.saaten.flatMap((je, i) =>
-            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
+            Object.entries(je).map(([g, [a, e, n0]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, g, a, e, n0: n0 || 0 }))
         );
+        const band = (a, e) => (a >= 1 ? e >= a / 3 && e <= 3 * a : e <= 3);
         const da = paare.filter((p) => p.a >= 1).length;
-        const bruch = paare.filter((p) => (p.a >= 1 ? !(p.e >= p.a / 3 && p.e <= 3 * p.a) : p.e > 3));
+        const summe = paare.reduce((S, p) => ((S[p.g] = S[p.g] || [0, 0, 0]), (S[p.g][0] += p.a), (S[p.g][1] += p.e), (S[p.g][2] += p.n0), S), {}); // prettier-ignore
+        const bruch = [
+            ...paare.filter((p) => (p.a >= 4 || p.a < 1) && !band(p.a, p.e)).map((p) => p.wo),
+            ...Object.entries(summe)
+                .filter(([, [a, e, n0]]) => !band(a, e) || e < n0 / 3)
+                .map(([g, [a, e, n0]]) => `${g} Σ ${a.toFixed(1)} → ${e.toFixed(1)} (Gründer ${n0.toFixed(1)})`),
+        ];
         soll(
             z.saaten.length >= 8 && da >= 16 && !bruch.length,
-            `der Bestand bricht aus oder stirbt aus: ${bruch.map((p) => p.wo).join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Gattung in [⅓×, 3×], 8 Saaten)`
+            `der Bestand bricht aus oder stirbt aus: ${bruch.join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Saat ab 4 Köpfen und je Gattung Σ über die Saaten in [⅓×, 3×], Σ Ende ≥ ⅓ der Gründer, 8 Saaten)`
         );
         // DER BESTAND (oekologie.K2#2)
         const B = z.bestand;
@@ -2863,7 +2980,10 @@ module.exports = {
             ["gau-stand", /der Stand des Gaus reist nicht/],
             ["gau-reihe", /der Stand der Seite trägt die Akte des Gaus nicht/],
         ],
-        erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
+        erbe: [
+            ["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/],
+            ["scheu-gattung", /die Scheu reist nicht von den Eltern zum Kind/],
+        ],
         zerfall: [
             ["zerfall-aas", /der Tod \w+ düngt seine Zelle nicht[\s\S]*Gau-Tode ohne Aas/],
             ["zerfall-gau", /Gau-Tode ohne Aas: 0 gedüngt/],
@@ -2871,6 +2991,7 @@ module.exports = {
         muster: [
             ["riss-aeltester", /nicht nach der Verwundbarkeit \(ZEIT_JAGD jagd\)/],
             ["rueckkraft", /die Größe läuft davon/],
+            ["fang-aus", /der Riss liest die Scheu nicht/],
         ],
         gehege: [
             ["gehege-rand", /Ausbruch: [1-9]/],
@@ -2894,6 +3015,7 @@ module.exports = {
         kaskade: [
             ["kaskade-riss", /die Kaskade hirsche/],
             ["kaskade-park", /Tal liegt im Genesis-Ort: [1-9]/],
+            ["kaskade-geburt", /bricht aus oder stirbt aus: .*deer/],
             ["bestand-nahrung", /die Kaskade nahrung:/],
             ["bestand-deckel", /über seine Nahrung aus/],
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],
@@ -3010,6 +3132,48 @@ check(
     "Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]",
     !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1
 );
+// ── DAS ERBE IM KERN (leben.evolution.erbe#1 · zivilisation#1, erbe-geburt): der Selbsttest des Gesetzes des Lebens am Strom der
+// Welt — je Achse (Größe, Scheu) die Regression Kind auf Eltern = h², das Kind um das Eltern-Mittel mit VA/2 + V_M, gleiche Saat
+// → gleiches Kind; der TÄTER ist das gewürfelte Kind (`kind` zieht einen Gründer — die Größe bis leben-erbe, die Fluchtdistanz bis
+// erbe-geburt), aus dem geänderten Quelltext in einer frischen Hülle: er fällt ROT ──
+{
+    const lauf = (L) => {
+        try {
+            return { st: L.selbsttest(SAMEN_STROM) };
+        } catch (e) {
+            return { fehler: String(e.message || e) };
+        }
+    };
+    const G = lauf(LK);
+    check(
+        "Das Erbe im Kern: Kind auf Eltern = h² je Achse (Größe, Scheu), das Kind zwischen den Eltern, gleiche Saat → gleiches Kind",
+        !!G.st,
+        G.fehler || ""
+    );
+    const fs = require("fs");
+    const vm = require("vm");
+    const quelle = fs.readFileSync(path.join(root, "leben-core.js"), "utf8");
+    const stelle = "a[i] = (aM[i] + v[i]) / 2 + SD_SEG[i] * nSeg[i] + SD_MUT[i] * nMut[i];";
+    const ctx = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    vm.runInContext(quelle.split(stelle).join("a[i] = SD_A[i] * nSeg[i];"), ctx);
+    const T = quelle.split(stelle).length === 2 && ctx.__lebenCore ? lauf(ctx.__lebenCore) : { st: "die Stelle fehlt" };
+    check(
+        "Das Erbe im Kern, Selbsttest: das gewürfelte Kind (kind zieht einen Gründer) fällt ROT",
+        !T.st && /steigung /.test(T.fehler) && /steigungScheu /.test(T.fehler),
+        T.st ? "der Täter blieb grün: " + JSON.stringify(T.st) : T.fehler
+    );
+    // der Täter der Rate (erbe-geburt): die Nische der Scheu absolut — die neue Achse drückt das Mittel der Geburten um ihr w̄
+    // (Lauf-4-Gau: −5,7 %); die Eichung fällt ROT beim Namen
+    const eich = "* EIGNUNG_EICH * t.Mw) / t.ww;";
+    const ctxE = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Uint8Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    vm.runInContext(quelle.split("const EIGNUNG_EICH = ").join("const EIGNUNG_EICH = 1 || "), ctxE);
+    const E = quelle.split(eich).length === 2 && ctxE.__lebenCore ? lauf(ctxE.__lebenCore) : { st: "die Stelle fehlt" };
+    check(
+        "Das Erbe im Kern, Selbsttest: die Nische der neuen Achse ohne Eichung (das Mittel der Rate rückt) fällt ROT",
+        !E.st && /eichung /.test(E.fehler) && !/steigung /.test(E.fehler),
+        E.st ? "der Täter blieb grün: " + JSON.stringify(E.st) : E.fehler
+    );
+}
 
 // ── DER BESTAND IST DAS GESETZ (leben-core `bestand`: das Gesetz der Zeit und der Jagd, sieben Sätze — Blatt und Läufe 1–4 im
 // Zweig koordination, vision/leben). Der Kern rechnet LAUF 4 des Spikes zahlengleich nach; die Welt von Lauf 4 (das Feld des
@@ -3056,14 +3220,19 @@ const LAUF4 = {
             jeSaat: [249.9186, 246.4353, 254.7589, 254.0979, 248.0043, 255.5524, 252.0837, 246.3311],
         },
     },
+    // am 23.11. neu gemünzt (erbe-geburt): das Gesetz trägt die zweite Achse scheu — sie zieht aus dem Strom der Adresse des Kinds
+    // (`normale`, Art 7: der Strom des Takts bleibt byte-gleich), die Nische liest sie relativ zu ihrem Mittel (EIGNUNG_EICH: die
+    // Rate der Art rückt nicht), der Riss wägt den Fang (`fangGewicht`); vorher Saat 1 Wolf 24 … 50 · Beute 11820 … 17690, Saat 2
+    // Wolf 23 … 68 · Beute 11816 … 17401 (der erste Wurf des WIP zog die Scheu aus dem Strom des Takts und trug ihre Nische absolut:
+    // Beute ≈ −4 %)
     spur: {
         1: {
-            wolf: [24, 49, 49, 65, 69, 65, 60, 65, 60, 59, 50],
-            reh: [11820, 14684, 17024, 17022, 16853, 16754, 17342, 17646, 17621, 17348, 17690],
+            wolf: [24, 44, 53, 63, 87, 57, 73, 84, 68, 81, 72],
+            reh: [11817, 14697, 17002, 16762, 16755, 16539, 17154, 17175, 17170, 16999, 17356],
         },
         2: {
-            wolf: [23, 43, 55, 78, 78, 56, 68, 79, 69, 55, 68],
-            reh: [11816, 15114, 17213, 16727, 16499, 16944, 17058, 17082, 17340, 17256, 17401],
+            wolf: [23, 47, 65, 85, 80, 81, 58, 58, 66, 67, 60],
+            reh: [11819, 15154, 17077, 16570, 17036, 16679, 16915, 16588, 17029, 17422, 17560],
         },
     },
 };
