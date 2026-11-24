@@ -1524,7 +1524,8 @@ class AnazhRealm_siedlung_bewohner {
         // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
         this._leibMatrix(g);
         g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags × `lauf`
+        // DAS TEMPO DES GANGS (mensch.K2): das Gehen des Leibs an seiner Beinlänge (koerper `leibGehen`, Fr 0,25 wie der Spieler —
+        // bis nerv-schwung ein Zwilling: tempoEinheit × TAGES_GESETZ.gang, Fr 0,195) × `lauf`
         // seines Könnens (mensch-zahlen, koerper `leibKoennen`: die Kraft seiner Beine über seinem Gewicht — bis hier ging der
         // Greis so schnell wie der Athlet, 100 m binnen ±1,5 % über 100 Bewohner). Die
         // Beinlänge seiner GESTALT in seiner Größe, nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs liest sein
@@ -1534,7 +1535,7 @@ class AnazhRealm_siedlung_bewohner {
         b.beinMass = this._bewohnerBeinMass(G, b);
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
-        b.tempoBand = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        b.tempoBand = window.__koerperCore.leibGehen(b.beinL);
         b.tempo = b.tempoBand * b.koennen.lauf;
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
