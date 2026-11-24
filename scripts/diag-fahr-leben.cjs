@@ -1075,6 +1075,20 @@ const verkehrVerdict = (m) =>
         // näher kommt, streift im Takt (je 8 Stunden: main 0,08–0,19 m an der Begegnung der Wende 908/289), tiefer als 1 cm stecken
         // sie ineinander (`beruehrt.wagen`); das knappste Paar beim Namen
         [m.knapp[0] >= VERKEHR.raumM, `Wagen an Wagen ${JSON.stringify(m.knapp)}, ineinander ${m.beruehrt.wagen}×`],
+        // DAS MASS IST DAS DER GATTUNG (fahrzeug-gattungen 2): der Raum oben misst das Rechteck, mit dem der Verkehr rechnet — trägt
+        // ein Wagen ein anderes als seine Gattung (vehicle-core `exportDrive.huelle`, `_verkehrMass`), misst die Linse einen
+        // Zwilling; ungemessen ist ROT
+        [
+            Array.isArray(m.massZwilling) && !m.massZwilling.length,
+            `Maß-Zwilling ${m.massZwilling ? JSON.stringify(m.massZwilling.slice(0, 4)) : "ungemessen"} [Wagen, Gattung, hl im Verkehr, hl der Gattung, hw, hw]`,
+        ],
+        // DAS BAND DER FOLGE TRÄGT DEN LEIB (fahrzeug-gattungen 2): keine Ecke eines fahrenden Wagens ragt weiter über halbe Breite
+        // samt Ausscheren seiner Linie (`F.rund`, `_verkehrAusscheren`) als der Raum der Begegnung (`begegnungM`, aus dem Gesetz
+        // der Seite) — sonst sieht die Folge „frei“, wo der Leib steht; ungemessen ist ROT
+        [
+            Array.isArray(m.ausscheren) && m.ausscheren[0] <= m.ausscherenRand,
+            `Ausscheren über dem Band ${m.ausscheren ? JSON.stringify(m.ausscheren) : "ungemessen"} (Raum ${m.ausscherenRand} m) [m, Wagen, Gattung, Probe, x, z, rund, Gier gegen die Linie °]`,
+        ],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [
             !m.beruehrt.bau && !m.stoss.bau && !m.stoss.wagen && !m.stoss.leib,
@@ -2711,6 +2725,9 @@ hauptLauf(async () => {
                 fest: [],
                 beruehrt: { leib: 0, wagen: 0, bau: 0 },
                 knapp: [0.6],
+                massZwilling: [],
+                ausscheren: [-0.12, 3, "kompakt_fwd", 900, 820, 440, 0.671, -12.5],
+                ausscherenRand: 0.1,
                 ohneSchluessel: 0,
                 ohneOrte: [],
                 ankunft: { d: 0.14, K: 0.71, wagen: 3 },
@@ -2757,6 +2774,12 @@ hauptLauf(async () => {
                 // die Radeon 10 Uhr: drei stehende Wagen 0,22 m ineinander; main an der Begegnung der Wende 908/289 0,08 m
                 [{ knapp: [-0.22, "1|2", 0, 828, 441], beruehrt: { leib: 0, wagen: 40 } }, /\[-0.22,"1\|2",0,828,441\], ineinander 40/], // prettier-ignore
                 [{ knapp: [0.08, "12|16"] }, /Wagen an Wagen \[0.08/],
+                // fahrzeug-gattungen 2: der wartende Kompakt (Wagen 4) trug das Mittel der Stationen (1,92 m), sein Bug ragt 2,02 m vor
+                [{ massZwilling: [[4, "kompakt_fwd", 1.92, 2.02, 0.905, 0.905]] }, /Maß-Zwilling \[\[4,"kompakt_fwd",1.92,2.02/],
+                [{ massZwilling: undefined }, /Maß-Zwilling ungemessen/],
+                // fahrzeug-gattungen 2: der Transporter im Umfahren um den Spieler, 14,5° schräg zu seiner Linie, das Band als Tangente
+                [{ ausscheren: [0.176, 8, "transporter", 33356, 840, 438, 0.615, -14.5] }, /Ausscheren über dem Band \[0.176,8,"transporter"/],
+                [{ ausscheren: null }, /Ausscheren über dem Band ungemessen/],
                 [{ ankunft: { d: 1.1, K: 0.71, wagen: 3 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [{ ankunft: { d: null, K: 0.71 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [

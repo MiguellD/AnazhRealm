@@ -409,6 +409,67 @@ function vorlageWand(A) {
     return { errs, merges };
 }
 
+// H16 DER CACHE HÄLT NICHTS ÜBER SEINE LESER HINAUS (foundry-halten): ein Foundry-Körper, den sein letzter Halter zurückgab
+// (`_foundryLoslassen`), fällt im nächsten Takt — nie im selben (ein Umbau gibt zurück und holt gleich wieder) —, und ein
+// Leser ohne Senke hält ihn ab seinem letzten Lesen die Wiederkehr einer Hülle (ARCH_LEER_GNADE_MS × ARCH_LEER_MINT_DECKEL;
+// mit der Gnade EINER Hülle bestellte das Start-Dorf 43 nur gelesene Körper neu). Bis foundry-halten hielt der Ruhe-Deckel
+// jeden Untätigen 60 s über seinen letzten Leser hinaus, bis 64 MB (Radeon, Wiese nach dem Start-Dorf: 63,9 MB ungehalten,
+// davon 62,7 MB Häuser, deren Hülle schon zurückgab). Die Linse fährt den echten Takt (`_tickFoundryIngest`) an fünf Körpern
+// zu 8 MB: drei gelesen und zurückgegeben (einer im selben Takt wieder gehalten), einer gehalten, einer nur gelesen — und
+// danach ein Körper, nach dem nichts mehr gebaut und nichts zurückgegeben wird (der eben gebaute trägt seine Frist selbst ein).
+// Die Zeit vergeht über den Takt der Welt: je Schritt das echte delta (`AnazhRealm.FIXED_DT`), die Welt-Uhr bestellt durch ihre
+// EINE Tür (`_weltUhrNimm`), dann der Takt des Caches — die Linse schreibt die Uhr nie selbst (die Ein-Schreiber-Wand).
+function leserWand(A) {
+    const state = { spielZeit: 100, weltTakt: 7 };
+    const w = weltVon(A, state);
+    const f = (w._foundry = { cache: new Map(), cacheBytes: 0 });
+    const koerper = (halter) => ({ _liveRefs: halter, children: [{ geometry: { attributes: { position: { array: new Float32Array(2 << 20) } }, dispose() {} } }] }); // prettier-ignore
+    const setze = (k, halter) => A.prototype._foundryCacheSet.call(w, k, koerper(halter));
+    const dt = A.FIXED_DT;
+    const takt = (s) => {
+        for (let n = Math.max(1, Math.round(s / dt)); n > 0; n--) {
+            A.prototype._weltUhrNimm.call(w, state.spielZeit + dt);
+            state.weltTakt++;
+            A.prototype._tickFoundryIngest.call(w, dt);
+        }
+    };
+    const da = (k) => f.cache.has(k);
+    const G = (A.ARCH_LEER_GNADE_MS * A.ARCH_LEER_MINT_DECKEL) / 1000;
+    const los = ["haus:gotisch|12|0", "haus:schwarzwald|3|1", "haus:alpenchalet|7|0"];
+    for (const k of los) setze(k, 1);
+    setze("haus:gotisch|12|1", 1);
+    setze("baum:eiche|4|2", 0);
+    const errs = [];
+    // die Senke liest ihre Stufe (`_switchArchitectureLOD`) und gibt sie zurück, als der Spieler geht
+    for (const k of los) A.prototype._foundryCacheGet.call(w, k);
+    for (const k of los) A.prototype._foundryLoslassen.call(w, f.cache.get(k));
+    A.prototype._tickFoundryIngest.call(w, 0);
+    if (!los.every(da))
+        errs.push("H16 _foundryLoslassen: ein Körper fiel im Takt seiner Rückgabe (Soll: erst im nächsten — ein Umbau gibt zurück und holt gleich wieder)"); // prettier-ignore
+    if (da(los[2])) f.cache.get(los[2])._liveRefs++; // der Umbau: im selben Takt wieder gehalten
+    takt(dt);
+    const ungehalten = los.slice(0, 2).filter(da);
+    const mb = ungehalten.length * 8;
+    if (ungehalten.length)
+        errs.push(`H16 _foundryCacheSet: ungehaltener Foundry-Eintrag nach dem Leser — ${ungehalten.join(" · ")} (${mb} MB) halten den Cache im Takt nach ihrer Rückgabe (Soll: sie fallen — der Cache hält nichts über seine Leser hinaus)`); // prettier-ignore
+    if (!da(los[2]) || !da("haus:gotisch|12|1"))
+        errs.push("H16 _foundryLoslassen: ein gehaltener Körper fiel aus dem Cache");
+    takt(5);
+    A.prototype._foundryCacheGet.call(w, "baum:eiche|4|2"); // der Leser ohne Senke liest wieder: seine Gnade beginnt neu
+    takt(G - 1);
+    if (!da("baum:eiche|4|2"))
+        errs.push(`H16 _foundryCacheGet: ein Körper fiel ${G - 1} s nach seinem letzten Lesen, in der Wiederkehr seines Lesers (Soll: er hält ihn ${G} s — sonst bestellt er ihn neu)`); // prettier-ignore
+    takt(1.1);
+    if (da("baum:eiche|4|2"))
+        errs.push(`H16 _foundryCacheGet: ungehaltener Foundry-Eintrag nach dem Leser — baum:eiche|4|2 hält den Cache ${(G + 0.1).toFixed(1)} s nach seinem letzten Lesen (Soll: er fällt nach der Wiederkehr einer Hülle)`); // prettier-ignore
+    const n = f.cache.size;
+    setze("baum:buche|2|1", 0); // gebaut, nie gehalten, und danach baut keiner mehr und keiner gibt zurück
+    takt(G + 0.1);
+    if (da("baum:buche|2|1"))
+        errs.push(`H16 _foundryCacheSet: ungehaltener Foundry-Eintrag nach dem Leser — baum:buche|2|1 hält den Cache ${(G + 0.1).toFixed(1)} s nach seinem Bau (Soll: der eben gebaute trägt seine Frist ein und fällt nach der Wiederkehr einer Hülle)`); // prettier-ignore
+    return { errs, mb, n };
+}
+
 // H13 DER PUFFER GEHÖRT DER GPU (heap-register 2): was nur die GPU schreibt und liest, hält nach dem Hochladen keine CPU-
 // Kopie (`_gpuEigen`). Bis heap-register 2 hielt der Sicht-Index (`_sichtZugPuffer`) seine Nullen ein zweites Mal im Heap
 // (Radeon, Wegenetz-Fahrt am Richter-Preis: `_sichtTiefeZ.auftraege[]` 13,5 MB). Die Linse fährt den echten Auftrag dreimal
@@ -1898,6 +1959,14 @@ function selbsttest() {
     );
     // DER JS-HEAP DER RUNDE (`heapBesteller`): ein Leib, der je Runde lebende Bytes bestellt, ist rot beim Besteller und bei der Stelle
     t("Runde: der JS-Heap-Zuwachs steht beim Besteller (Datei:Zeile) und der Stelle, ein voll gelaufener Cache grün, Splitter benannt", DZ.jsHeapSelbsttest().length === 0); // prettier-ignore
+    // DER CACHE UND SEINE LESER (H16): die Rückgabe ohne Takt-Marke (der Körper wartet wie ein Leser die Wiederkehr) ist rot
+    // beim ungehaltenen Eintrag, die Rückgabe, die im selben Takt fällt, rot beim Umbau, die Gnade EINER Hülle für den Leser
+    // ohne Senke (die Neubau-Welle des Start-Dorfs) rot bei seiner Wiederkehr, der Stamm grün
+    const l16Marke = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryLoslassen", "src._losTakt = this.state.weltTakt | 0;", ""))); // prettier-ignore
+    const l16Frueh = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryOhneLeser", "takt > v._losTakt", "takt >= v._losTakt"))); // prettier-ignore
+    const l16Kurz = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryOhneLeser", "(AnazhRealm.ARCH_LEER_GNADE_MS * AnazhRealm.ARCH_LEER_MINT_DECKEL) / 1000", "AnazhRealm.ARCH_LEER_GNADE_MS / 1000"))); // prettier-ignore
+    const l16Bau = leserWand(klasseVon(stammLib.ersetze(st8, "_foundryOhneLeser", "v._liveRefs > 0) continue;", "v._liveRefs > 0 || v._ruheSeit === jetzt) continue;"))); // prettier-ignore
+    t("Cache und Leser: ohne Takt-Marke rot beim ungehaltenen Eintrag, die Rückgabe im selben Takt rot beim Umbau, die Gnade einer Hülle rot bei der Wiederkehr des Lesers, der eben gebaute ohne Frist rot nach seinem Bau, der Stamm grün", l16Marke.errs.some((e) => /ungehaltener Foundry-Eintrag nach dem Leser/.test(e)) && l16Frueh.errs.some((e) => /fiel im Takt seiner Rückgabe/.test(e)) && l16Kurz.errs.some((e) => /in der Wiederkehr seines Lesers/.test(e)) && l16Bau.errs.some((e) => /nach seinem Bau/.test(e)) && !leserWand(klasseVon()).errs.length); // prettier-ignore
     // DAS SOLL DES TURMS (H9): der Kern, dessen Gedächtnis je Auftrag lebt (frisch geladen vor jedem Auftrag — der Stand vor
     // hochhaus-dach-speicher), ist rot bei sollTon; der Kern grün
     const sollRot = sollWand(true);
@@ -1994,6 +2063,9 @@ function main() {
     const v11 = vorlageWand(A);
     errs.push(...v11.errs);
     console.log(`H11 die Vorlage des Bauplans: ${v11.merges}× verschmolzen für zwei Bauten und einen Geist, nach dem letzten gefallen (${v11.errs.length ? "ROT" : "grün"})`); // prettier-ignore
+    const l16 = leserWand(A);
+    errs.push(...l16.errs);
+    console.log(`H16 der Foundry-Cache nach dem Leser: ${l16.mb} MB zurückgegebener Körper im Takt danach (Soll 0), ${l16.n} von 5 Körpern bleiben (Soll 2: die gehaltenen) (${l16.errs.length ? "ROT" : "grün"})`); // prettier-ignore
     const g13 = gpuEigenWand(A);
     errs.push(...g13.errs);
     console.log(`H13 der Sicht-Index der GPU: CPU-Kopie ${g13.mb.toFixed(2)} MB nach dem Hochladen (Soll 0), ${g13.gelegt}× gelegt über Fall und Neu-Legen (${g13.errs.length ? "ROT" : "grün"})`); // prettier-ignore
