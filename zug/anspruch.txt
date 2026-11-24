@@ -73,4 +73,5 @@ w28-auge-der-art karte2.erleben.sinne.gesehen#3
 # 718 (main eba9bf8f, 24.11. 16:34): z718 16:44 w28-ort-ausstattung (Schilder an 68 von 69 Sonderbauten, Hauszeichen, Wache als Bau; trägt die R4-Heilung der Mensch-Anatomie) — Stationen der vier Sprossen sind art zahl
 w28-ort-ausstattung karte2.mensch.kultur.schrift#1,karte2.mensch.kultur.bildkunst#1,karte2.mensch.macht.grenze#1,karte2.mensch.macht.megastadt#1
 # 720 (main 2d6a0447, 24.11. 18:27): z720 18:27 w28-sport-regeln (Spiel des Abends am Platz der Stadt) — echte Station GTX am Vorprüf-Kopf 26f27214 mit der geheilten Station pm-sport-regeln 7315e73a: geistspiel#1 GRÜN (100 Partien, 5 035 Züge, 0 regelwidrig, Preis grün). NICHT beansprucht: regeln#1 · mannschaft#1 · arena#1 (ROT an der echten Station), reaktion#2 (Urteil steht aus)
-w28-sport-regeln karte2.mensch.sport.geistspiel#1
+# 720 Nachtrag 24.11. 19:01: reaktion#2 GRÜN an der echten Station GTX am main 2d6a0447 (radius_abw_pct 23,213, Soll ≤ 25; Umfang 3 von 3 Ladungen; Preis p95 25,3 ms)
+w28-sport-regeln karte2.mensch.sport.geistspiel#1,karte2.same.physik.reaktion#2
