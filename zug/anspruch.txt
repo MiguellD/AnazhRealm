@@ -70,3 +70,5 @@ w28-tat-aufwaerts karte2.same.kopplung.aufwaerts#1
 w28-spiegel-eis karte2.planet.wasser.eis#2
 # 716 (main a8dd22b5, 24.11. 13:22): w28-auge-der-art gelandet 13:32 (main a8dd22b5): das Tier sieht mit dem Auge seiner Art
 w28-auge-der-art karte2.erleben.sinne.gesehen#3
+# 718 (main eba9bf8f, 24.11. 16:34): z718 16:44 w28-ort-ausstattung (Schilder an 68 von 69 Sonderbauten, Hauszeichen, Wache als Bau; trägt die R4-Heilung der Mensch-Anatomie) — Stationen der vier Sprossen sind art zahl
+w28-ort-ausstattung karte2.mensch.kultur.schrift#1,karte2.mensch.kultur.bildkunst#1,karte2.mensch.macht.grenze#1,karte2.mensch.macht.megastadt#1
