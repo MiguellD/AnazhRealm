@@ -1798,9 +1798,9 @@
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,
-   "verts": 2113,
-   "tris": 3773,
-   "sha256": "66025ab7c1c1a6c8c894c8c3e154a6dae7ead5785cf21d288478dfd44d8b0c33"
+   "verts": 1985,
+   "tris": 3608,
+   "sha256": "e3f2e4798b3b91741766a493a56235c4cded875eef329df39a51f6aa4a51fcf2"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
