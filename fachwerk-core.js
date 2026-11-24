@@ -5643,31 +5643,33 @@
     // Abschnitt die Läufer dazwischen, die die Linie zwischen ihnen lesbar machen. Wo die Nähe eines Nachbarn das Reich teilt,
     // gilt die Grenze am Weg (`grenzeAmWeg`, d_A/r_A = d_B/r_B); das Rang-Gesetz (`siedlungsZelle`) hält jeden Nachbarn um die
     // Summe beider Reiche fern, also liegt jene Grenze nie innerhalb des Rands — der Rand ist die Grenze des Herrschaftsgebiets.
-    // Band: Hauptgrenzsteine 250–600 m voneinander, bis 1,5 m über Grund (Kreisarchiv Bodenseekreis, Historie der Grenzsteine);
-    // der Läufer wiederholt als Zwischenmarke nur eine festgelegte Grenze und macht ihren Verlauf erkennbar (bayerische
-    // Rechtsprechung zum Läufer) — hier je Hauptabschnitt `laeufer` Läufer, also ≤ 50 m Steinweite: der nächste Stein steht in
-    // Sicht (eigene Schätzung: ein 0,7-m-Stein liest am Schirm bis ~60 m). Der Stein
-    // steht nur, wo `frei(x, z)` Land und keinen Weg/Bau trägt; sonst rückt er längs des Rands in Schritten `schiebM` bis `schiebMax`,
-    // sonst fällt er (gezählt). Die Stirnen (±z) schauen zur Mitte und hinaus, die Weisung (x) liegt in der Flucht der Grenze; der
-    // Hauptstein trägt den Giebel (Gestalt 1, sein Grat in der Flucht), der Läufer den flachen Kopf (Gestalt 2). `seed` dreht den
-    // Anfang. Rückgabe {steine: [{x, z, th, gestalt, haupt}], fehlt, haupt, abstandM}.
-    var GRENZE_IM_LAND = { hauptM: 250, laeufer: 4, schiebM: 2, schiebMax: 24, minHaupt: 3 };
+    // Band: Hauptgrenzsteine 250–600 m voneinander, bis 1,5 m über Grund (Kreisarchiv Bodenseekreis, Historie der Grenzsteine) —
+    // hier `hauptM` 250 m, der Hauptstein in der größten Größe der Ausstattung (`hauptGroesse` 1,25: 0,875 m); der Läufer
+    // wiederholt als Zwischenmarke nur eine festgelegte Grenze und macht ihren Verlauf erkennbar (bayerische Rechtsprechung zum
+    // Läufer) — hier je Abschnitt so viele, dass kein Stein weiter als `laeuferM` vom nächsten steht: drei Steine in Sicht (ein
+    // 0,7-m-Stein liest am Schirm bis ~60 m, die Blick-Sonde an stadt-voll). Der Stein steht nur, wo `frei(x, z)` Land und keinen
+    // Weg oder Bau trägt; sonst rückt er längs des Rands in Schritten `schiebM` bis zur halben Steinweite, sonst fällt er
+    // (gezählt). Die Stirnen (±z) schauen zur Mitte und hinaus, die Weisung (x) liegt in der Flucht der Grenze; der Hauptstein
+    // trägt den Giebel (Gestalt 1, sein Grat in der Flucht), der Läufer den flachen Kopf (Gestalt 2). `seed` dreht den Anfang.
+    // Rückgabe {steine: [{x, z, th, gestalt, groesse, haupt}], fehlt, haupt, abstandM}.
+    var GRENZE_IM_LAND = { hauptM: 250, laeuferM: 25, hauptGroesse: 1.25, schiebM: 2, minHaupt: 3 };
     function grenzeImLand(A, seed, frei) {
         var G = GRENZE_IM_LAND,
             aus = { steine: [], fehlt: 0, haupt: 0, abstandM: 0 };
         if (!A || !(A.r > 0) || !isFinite(A.x) || !isFinite(A.z)) return aus;
         var U = 2 * Math.PI * A.r,
             nH = Math.max(G.minHaupt, Math.ceil(U / G.hauptM)),
-            je = G.laeufer + 1,
+            je = Math.max(1, Math.ceil(U / nH / G.laeuferM)),
             n = nH * je,
             a0 = ((rangSchluessel(seed >>> 0) >>> 8) / 16777216) * ((2 * Math.PI) / n),
-            dS = G.schiebM / A.r;
+            dS = G.schiebM / A.r,
+            kMax = 2 * Math.floor((0.5 * U) / n / G.schiebM);
         aus.haupt = nH;
         aus.abstandM = U / n;
         for (var i = 0; i < n; i++) {
             var a = a0 + (i * 2 * Math.PI) / n,
                 stand = null;
-            for (var k = 0; k <= 2 * Math.floor(G.schiebMax / G.schiebM) && !stand; k++) {
+            for (var k = 0; k <= kMax && !stand; k++) {
                 var b = a + (k & 1 ? 1 : -1) * Math.ceil(k / 2) * dS,
                     x = A.x + A.r * Math.cos(b),
                     z = A.z + A.r * Math.sin(b);
@@ -5678,7 +5680,7 @@
                 continue;
             }
             var haupt = i % je === 0;
-            aus.steine.push({ x: stand.x, z: stand.z, th: Math.atan2(Math.cos(stand.b), Math.sin(stand.b)), gestalt: haupt ? 1 : 2, haupt: haupt });
+            aus.steine.push({ x: stand.x, z: stand.z, th: Math.atan2(Math.cos(stand.b), Math.sin(stand.b)), gestalt: haupt ? 1 : 2, groesse: haupt ? G.hauptGroesse : 1, haupt: haupt });
         }
         return aus;
     }

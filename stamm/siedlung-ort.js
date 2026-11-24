@@ -3644,7 +3644,7 @@ class AnazhRealm_siedlung_ort {
     // DIE GRENZE IM LAND (Leiter mensch.macht.grenze #1): trägt der Plan einen Herrn (ein Los der Rolle burg, das BURG-GESETZ),
     // steht der Rand seines Reichs (fachwerk `siedlungsReich` über die Häuser des Plans, um den Ort) als Haupt- und Läufersteine
     // im Land (fachwerk `grenzeImLand`: das Band der Weite, der Rücken längs des Rands) — derselbe Stein wie am Weg
-    // (`markstein_dorf`, die Gestalt im Wort `__gestalt`), aus dem Gesetz (`ausGesetz`), der Same aus dem Ort. Frei ist ein Stand
+    // (`markstein_dorf`, die Gestalt im Wort `__gestalt`, der Hauptstein in seiner Größe `groesse`), aus dem Gesetz (`ausGesetz`), der Same aus dem Ort. Frei ist ein Stand
     // auf Land, auf keinem Weg und in keinem Bau. Je Ort und Größe einmal je Sitzung; wächst der Herr, fällt der alte Rand mit ihm.
     // Je `AUTO_SETTLEMENT.laternenJeTakt` Steine eine Rate des Erwachens. Bis hier stand am Rand des Reichs kein Zeichen: die
     // Station sah 0 von 360 Punkten des Rands im Bild (GTX 2d6a0447).
@@ -3683,7 +3683,7 @@ class AnazhRealm_siedlung_ort {
                 {
                     seed: (seed + k * 0x9e3779b1) >>> 0,
                     rotationY: g.th,
-                    studioOv: { __gestalt: g.gestalt },
+                    studioOv: g.haupt ? { __gestalt: g.gestalt, groesse: g.groesse } : { __gestalt: g.gestalt },
                     silent: true,
                     precise: true,
                     ausGesetz: true,
