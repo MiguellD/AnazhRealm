@@ -3,7 +3,108 @@
 // Umfang am ERGEBNIS der Welt: die Werke der Szene nach Art (Typ-Zähler über `state.architectures`), die Bewohner der Orte und ihre
 // Leiber (`S.liste`, stamm/siedlung-bewohner.js), die Kreaturen, die Wagen der Zeit-Achse jenseits von heute (der Stempel
 // `epoche` > 4, vehicle-core EPOCHE_GESETZ). Wo die Welt den Umfang nicht stellt, urteilt die Probe „nicht“ mit der Zahl.
+// Die Fronten S1 (pm-faecher-mensch 24.11., Meta-Gesetz M4) urteilen das GESETZ am Fächer (stationen/faecher.js): die Leiber der
+// Saaten (LEIBER_AN, k2-mensch-leib.js), der Plan einer Saat zur Gegenwart und +50 Jahre (TECHNIK_ZEIT_AN), die Flächen einer Saat
+// (MEDIEN_AN), der Wortschatz der Leiber und Werke jedes Kerns (MASCHINE_AN).
 "use strict";
+
+const { FAECHER } = require("./faecher.js");
+const { LEIBER_AN } = require("./k2-mensch-leib.js");
+
+// DIE STADT +50 JAHRE AM GESETZ (technik#1): je Adresse a.saat × a.zeit (Jahre nach der Gegenwart) der Plan der Saat (fachwerk-core.js
+// :5182 DORF, die Epoche der Zelle aus siedlungsEpoche :4494) an ihrer Gegenwart T0 (das Ende ihrer Zeitachse: `chronik.ende` = jahr +
+// spanne, der Leser stamm/siedlung-ort.js bestellt ihn mit dem Jahr des Orts, `wachstum`), an T0 + a.zeit und an T0 − a.zeit; die DINGE
+// eines Plans: Rolle, Stil, Kultur und Dach jedes Hauses, der Technik-Stand (`technik`), die Tracht, die Gattungen seiner Flotte
+// (vehicle-core.js:4809 flotte, der Leser stamm/siedlung-verkehr.js:372). Dazu die Achse des Fahrzeug-Kerns an beiden Jahren
+// (vehicle-core.js:4980 epocheAusJahr) — die Achse, die nach vorn reicht.
+const TECHNIK_ZEIT_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore;
+    const VC = globalThis.__vehicleCore;
+    if (!FC || typeof FC.DORF !== "function") return { fehlt: "der Kern trägt keinen Plan (fachwerk DORF)" };
+    if (!VC || typeof VC.flotte !== "function") return { fehlt: "der Kern trägt keine Flotte (vehicle flotte)" };
+    const ep = FC.siedlungsEpoche(a.saat);
+    const D0 = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: ep });
+    const T0 = D0.chronik && Number.isFinite(D0.chronik.ende) ? D0.chronik.ende : D0.jahr + D0.spanne;
+    const plan = (j) => FC.DORF({ seed: a.saat, nH: mit.nH, epoche: ep, jahr: j });
+    const dinge = (D) => {
+        const s = new Set();
+        for (const h of D.houses) for (const k of ["rolle", "stil", "kultur", "dachTyp"]) if (h[k] != null) s.add(k + ":" + h[k]);
+        for (const t of (D.technik && D.technik.stand) || []) s.add("technik:" + t);
+        const K = D.kleidung || {};
+        s.add("tracht:" + [K.top, K.bottom, K.shoes].join("/") + ":" + (K.farben || []).join(","));
+        for (const g of VC.flotte(D.houses.length, a.saat)) s.add("wagen:" + g);
+        return s;
+    };
+    const [B, P, M] = [plan(T0), plan(T0 + a.zeit), plan(T0 - a.zeit)].map((D) => ({ D, s: dinge(D) }));
+    const ohne = (x, y) => Array.from(x.s).filter((k) => !y.s.has(k));
+    const neu = ohne(P, B);
+    return {
+        saat: a.saat,
+        T0,
+        chronik: !!D0.chronik,
+        jahrPlus: P.D.schnitt ? P.D.schnitt.jahr : P.D.jahr,
+        jahrNull: B.D.schnitt ? B.D.schnitt.jahr : B.D.jahr,
+        haeuser: [B.D.houses.length, P.D.houses.length],
+        neu: neu.length,
+        neuDinge: neu.slice(0, 12),
+        weg: ohne(B, P).length,
+        zurueck: ohne(B, M).length,
+        dinge: B.s.size,
+        wagenAchse: [+VC.epocheAusJahr(T0).toFixed(2), +VC.epocheAusJahr(T0 + a.zeit).toFixed(2)],
+    };
+};
+
+// DIE BILDFLÄCHEN EINER SAAT AM GESETZ (medien#1): je Adresse a.saat der Plan (fachwerk-core.js:5182 DORF) und der Wortschatz dessen,
+// was an einer Straße stehen kann (die Ausstattung :7525 AUSSTATTUNG, die Werke :8809 WERKE, die Parameter jedes Hauses): je Ding, ob
+// es eine Fläche ist (Schild, Schirm, Leuchtschrift, Plakat, Anzeige, Uhr) und ob sein Gesetz einen INHALT trägt (Text, Bild,
+// Schrift); dazu die Häuser, die ein Inhalt nennen könnte (jede Rolle außer Wohnhaus und Scheune: Laden, Werkstatt, Gasthaus, Kirche …).
+const MEDIEN_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.DORF !== "function" || !FC.AUSSTATTUNG || !FC.WERKE) return { fehlt: "der Kern trägt keinen Plan oder keine Ausstattung (fachwerk DORF, AUSSTATTUNG, WERKE)" };
+    const FL = /schild|schirm|leucht|plakat|anzeige|reklame|display|monitor|hologramm|zifferblatt|uhr$/i;
+    const INHALT = /inhalt|text|schrift|bild|botschaft|nachricht/i;
+    const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
+    const wort = Object.assign({}, FC.AUSSTATTUNG, FC.WERKE);
+    const flaecheWort = Object.keys(wort).filter((k) => FL.test(k) || FL.test(String(wort[k].lab || "")));
+    const inhaltWort = Object.keys(wort).filter((k) => Object.keys(wort[k]).some((x) => INHALT.test(x)));
+    let flaecheHaus = 0;
+    const laeden = {};
+    for (const h of D.houses) {
+        flaecheHaus += Object.keys(h).filter((k) => FL.test(k) && h[k]).length;
+        if (h.rolle && h.rolle !== "wohnhaus" && h.rolle !== "scheune") laeden[h.rolle] = (laeden[h.rolle] || 0) + 1;
+    }
+    return {
+        saat: a.saat,
+        haeuser: D.houses.length,
+        flaechen: flaecheHaus + flaecheWort.length,
+        flaecheWort,
+        inhaltWort,
+        laeden: Object.values(laeden).reduce((s, x) => s + x, 0),
+        ladenArten: Object.keys(laeden),
+        wortschatz: Object.keys(wort).length,
+    };
+};
+
+// DIE MASCHINEN IM WORTSCHATZ DER KERNE (maschinenwesen#1): je Adresse a.ort ein Kern und was er an Leibern, Gattungen, Profilen und
+// Werken kennt — koerper (koerper-core.js:80 MOTION, :5432 die Rollen des Tags), tetrapoda (GATTUNGEN, ART_GESTALT), vehicle
+// (vehicle-core GATTUNGEN, PRESETS), fachwerk (BAU_NUTZUNG :2686, AUSSTATTUNG :7525, WERKE :8809) — und die Namen darunter, die eine
+// Maschine nennen, die sich selbst bewegt (Roboter, Android, Drohne, Automat, Golem). In der warmen Welt zählt der Zensus oben die
+// Kreaturen und Werke der Szene.
+const MASCHINE_AN = async (r, T, a, mit) => {
+    const KERN = { koerper: globalThis.__koerperCore, tetrapoda: globalThis.__tetrapodaCore, fahrzeug: globalThis.__vehicleCore, fachwerk: globalThis.__fachwerkCore };
+    const C = KERN[a.ort];
+    if (!C) return { fehlt: "der Kern " + a.ort + " ist nicht geladen" };
+    const liste = (x) => (Array.isArray(x) ? x : Object.keys(x || {}));
+    const tafel = {
+        koerper: () => [...Object.keys(C.MOTION || {}), ...Object.keys((C.TAGES_GESETZ && C.TAGES_GESETZ.rollen) || {})],
+        tetrapoda: () => [...liste(C.GATTUNGEN), ...liste(C.ART_GESTALT)],
+        fahrzeug: () => [...liste(C.GATTUNGEN), ...liste(C.PRESETS)],
+        fachwerk: () => [...Object.keys(C.BAU_NUTZUNG || {}), ...Object.keys(C.AUSSTATTUNG || {}), ...Object.keys(C.WERKE || {})],
+    }[a.ort];
+    const namen = Array.from(new Set(tafel().map(String)));
+    const MASCHINE = /robot|android|drohne|automat|maschinen?wesen|golem|mech|kybern|cyborg|servo/i;
+    return { kern: a.ort, namen: namen.length, maschinen: namen.filter((n) => MASCHINE.test(n)), auswahl: namen.slice(0, 16) };
+};
 
 // DER ZENSUS DER ZUKUNFT (Seite der Welt)
 const zensusZukunft = async (r, T, arg) => {
@@ -80,19 +181,48 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: da().mega, fehlt: "Energiehaushalt eines Planeten (10¹⁷ W): kein Megabau, kein Orbit-Ring, keine Wetter-Lenkung" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().mega, fehlt: "Energiehaushalt eines Sterns (10²⁶ W): kein Schwarm um den Stern" }));
             await K.schritt(7, async () => K.nicht(7, { n: da().zukunftDinge, fehlt: "10⁴–10⁶ Jahre Zukunft je Saat: keine Technik-Epoche nach heute in der Welt" }));
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten × +50 Jahre — der Plan jeder Saat an ihrer Gegenwart und 50 Jahre
+            // danach, die Dinge, die er dann NEU trägt; dazu, was die 50 Jahre davor brachten (die Achse zurück) und die Achse des
+            // Fahrzeug-Kerns. Trägt das Gesetz keine 10 neuen Dinge, „Umfang nicht erzeugbar“ mit dem Schnitt beim Namen
             await K.schritt(1, async () => {
-                const w = da();
-                if (w.zukunftDinge < 10) return K.nicht(1, { n: w.zukunftDinge, fehlt: "EINE Stadt +50 Jahre mit 10 neuen Dingen: die Stadt trägt " + w.zukunftDinge + " Dinge der Zukunft (Wagen der Epoche „zukunft“ " + w.zukunftWagen + ")" });
-                const b = await K.bild(1, w.pose);
-                K.auge(1, { bild: b.datei, pose: "stadt-voll: der Blick des Spielers, 30 m voraus", mass: w.zukunftDinge + " Dinge der Zukunft" });
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.TECHNIK_ZEIT_AN, export: "fachwerk-core.js:5182 DORF (das Jahr des Orts, der Schnitt :5290) + vehicle-core.js:4809 flotte, :4980 epocheAusJahr", leser: "stamm/siedlung-ort.js:3077" },
+                    adressen: { saaten: 20, zeiten: [50] },
+                    mit: { nH: 60 },
+                    masse: {
+                        neu: { wie: "summe", feld: "neu" },
+                        neuMax: { wie: "max", feld: "neu" },
+                        zurueck: { wie: "summe", feld: "zurueck" },
+                        chronik: { wie: "anteil", feld: "chronik" },
+                        wagen: { wie: (v, aus) => Math.max(0, ...aus.map((x) => x.w.wagenAchse[1] - x.w.wagenAchse[0])) },
+                    },
+                    schlecht: { feld: "neu", richtung: "min" },
+                    pose: (a, w) => "Saat " + a.saat + " an ihrer Gegenwart " + w.T0 + " und " + (w.T0 + a.zeit) + ": " + w.haeuser.join(" = ") + " Häuser, " + w.dinge + " Dinge, neu " + w.neu,
+                    ungemessen: [
+                        "das Bildpaar Jahr 0 / +50 am selben Ort (≥ 10 neue Dinge im Bild benannt): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)",
+                        "der Gegenlauf (Vorgänger gekappt → das Ding fehlt ≥ 80 %): ohne neues Ding kein Vorgänger zu kappen",
+                    ],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Technik S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W) + " · die 50 Jahre VOR der Gegenwart brachten " + W.zurueck + " Dinge (die Achse zurück trägt die Chronik, " + Math.round(W.chronik * 100) + " % der Saaten)");
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "EINE Stadt +50 Jahre: " + R.fehlt });
+                if (W.neuMax >= 10) {
+                    const b = await K.bild(1, da().pose);
+                    return K.auge(1, { bild: b.datei, pose: "stadt-voll: der Blick des Spielers, 30 m voraus", mass: R.akte.slice(0, 300) });
+                }
+                K.nicht(1, {
+                    n: W.neuMax,
+                    fehlt: "EINE Stadt +50 J.: an " + R.gemessen + " Saaten trägt der Plan +50 J. höchstens " + W.neuMax + " neue Dinge — DORF schneidet das Jahr an der Gegenwart (fachwerk-core.js:5290 T ≤ jahr + spanne); die Fahrzeug-Achse rückt +" + W.wagen.toFixed(2) + " (vehicle-core.js:4980), die Flotte liest kein Jahr (stamm/siedlung-verkehr.js:372)",
+                });
             });
         },
-        seite: { ZENSUS: zensusZukunft },
+        seite: { ZENSUS: zensusZukunft, FAECHER, TECHNIK_ZEIT_AN },
         sprossen: {
             1: {
                 auge: { pose: "Messort stadt-voll: der Blick des Spielers 30 m voraus, Jahr 0 und +50 an derselben Pose", vorbild: "Bildpaar derselben Straße Jahr 0 / +50: ≥ 10 neue Dinge im Bild benannt, Gegenlauf Vorgänger gekappt" },
                 erwartet: "nicht",
-                fehlt: "EINE Stadt +50 Jahre: die Stadt trägt keine Zeit-Achse nach vorn",
+                fehlt: "EINE Stadt +50 Jahre: der Plan jeder Saat endet an ihrer Gegenwart (fachwerk DORF :5290), +50 Jahre tragen 0 neue Dinge an 20 Saaten",
             },
             2: {
                 auge: { pose: "Messort stadt-voll: das Stadtbild +200 Jahre vom Turm", vorbild: "eingefrorener Leser nennt aus dem Stadtbild die Energiequelle (Ursachen-Probe R10), Gegenlauf Quelle getauscht" },
@@ -172,9 +302,38 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: da().flaechen, fehlt: "Megastadt mit Hologramm und Raum-Bild: keine Bildfläche in der Welt" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().terminals, fehlt: "20 Terminals mit dem Zustand der Welt: kein Rechner steht in der Welt" }));
             await K.schritt(7, async () => K.nicht(7, { n: da().fremd, fehlt: "Medien fremder Sinne: keine fremde Art in der Welt" }));
-            await K.schritt(1, async () => K.nicht(1, { n: da().flaechen, fehlt: "EINE Straße mit 10 Bildflächen: die Stadt trägt " + da().flaechen + " (kein Schild, kein Schirm, keine Leuchtschrift)" }));
+            // S1 AM GESETZ (der Fächer): 20 Saaten — je Plan die Flächen seiner Häuser und des Wortschatzes der Straße (Ausstattung,
+            // Werke), ob ihr Gesetz einen Inhalt trägt, und die Läden, die ein Inhalt nennen könnte. Trägt das Gesetz keine 10 Flächen,
+            // „Umfang nicht erzeugbar“ mit dem fehlenden Gesetz beim Namen
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.MEDIEN_AN, export: "fachwerk-core.js:5182 DORF + :7525 AUSSTATTUNG + :8809 WERKE", leser: "stamm/siedlung-ort.js:3077" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 60 },
+                    masse: {
+                        flaechen: { wie: "summe", feld: "flaechen" },
+                        flaechenMax: { wie: "max", feld: "flaechen" },
+                        mitInhalt: { wie: (v, aus) => new Set(aus.flatMap((x) => x.w.inhaltWort)).size },
+                        laeden: { wie: "summe", feld: "laeden" },
+                        haeuser: { wie: "summe", feld: "haeuser" },
+                        wortschatz: { wie: "max", feld: "wortschatz" },
+                    },
+                    schlecht: { feld: "laeden", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + ": " + w.laeden + " Häuser mit eigener Rolle (" + w.ladenArten.join(", ") + ") ohne eine Fläche, die sie nennt",
+                    ungemessen: ["das Bild der Straße mit den Flächen (Inhalt stimmt mit der Welt, keine zwei gleich): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Medien S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "EINE Straße mit 10 Bildflächen: " + R.fehlt });
+                if (W.flaechenMax >= 10) throw new Error("das Gesetz trägt " + W.flaechenMax + " Flächen je Saat: ihr Inhalt gegen die Welt (Laden, Uhr, Wetter) misst diese Probe noch nicht — UNGEMESSEN");
+                K.nicht(1, {
+                    n: W.flaechenMax,
+                    fehlt: "EINE Straße mit 10 Bildflächen: " + W.flaechen + " Flächen an " + R.gemessen + " Saaten (" + W.haeuser + " Häuser, " + W.laeden + " mit eigener Rolle als Inhalt) — kein Gesetz von Schild, Schirm, Leuchtschrift (fachwerk-core.js:7525 AUSSTATTUNG, :8809 WERKE: " + W.wortschatz + " Dinge, " + W.mitInhalt + " mit Inhalt)",
+                });
+            });
         },
-        seite: { ZENSUS: zensusZukunft },
+        seite: { ZENSUS: zensusZukunft, FAECHER, MEDIEN_AN },
         sprossen: {
             1: {
                 umfang: { soll: 10, wort: "Bildflächen einer Straße (Schild, Schirm, Leuchtschrift)" },
@@ -183,7 +342,7 @@ module.exports = (F) => [
                     { key: "zwillinge", wort: "Flächen mit gleichem Inhalt", soll: 0, richtung: "≤" },
                 ],
                 erwartet: "nicht",
-                fehlt: "keine Bildfläche in der Stadt",
+                fehlt: "keine Bildfläche im Gesetz: 0 Flächen an 20 Saaten, kein Schild, Schirm, keine Leuchtschrift (fachwerk AUSSTATTUNG, WERKE)",
             },
             2: {
                 auge: { pose: "Messort stadt-voll bei Nacht: die Straße der Flächen auf Augenhöhe", vorbild: "Blindpaar gegen das Foto einer Leuchtschrift-Straße (Shinjuku, Kabukichō) ≤ 80 %; Leuchtdichte folgt dem Inhalt r ≥ 0,7" },
@@ -267,14 +426,37 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: da().bewohner + da().maschinen, fehlt: "10⁶ Personen aus Menschen und Maschinen: " + da().bewohner + " Menschen, " + da().maschinen + " Maschinen" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().maschinen, fehlt: "Megastadt mit 10⁷ Maschinen-Personen: keine Maschinen-Person" }));
             await K.schritt(7, async () => K.nicht(7, { n: da().maschinen, fehlt: "Maschinen-Zivilisationen ohne Erbauer: keine Maschine in der Welt" }));
-            await K.schritt(1, async () => K.nicht(1, { n: da().maschinen, fehlt: "EIN Arbeits-Roboter an EINER Aufgabe: die Welt trägt keinen Roboter" }));
+            // S1 AM GESETZ (der Fächer): je Kern der Wortschatz seiner Leiber, Gattungen, Profile und Werke — trägt einer eine Maschine, die
+            // sich selbst bewegt, misst die Probe sie an ihrer Aufgabe; sonst „Umfang nicht erzeugbar“ mit dem Fehlen beim Namen
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.MASCHINE_AN, export: "koerper-core.js:80 MOTION · tetrapoda GATTUNGEN · vehicle GATTUNGEN · fachwerk-core.js:2686 BAU_NUTZUNG, :7525 AUSSTATTUNG, :8809 WERKE", leser: "stamm/kreatur-leben.js:2621" },
+                    adressen: { orte: ["koerper", "tetrapoda", "fahrzeug", "fachwerk"] },
+                    masse: {
+                        namen: { wie: "summe", feld: "namen" },
+                        maschinen: { wie: (v, aus) => aus.reduce((s, x) => s + x.w.maschinen.length, 0) },
+                    },
+                    schlecht: { feld: "namen", richtung: "max" },
+                    pose: (a, w) => "Kern " + w.kern + ": " + w.namen + " Namen (" + w.auswahl.slice(0, 8).join(", ") + " …), keine Maschine",
+                    ungemessen: ["der Roboter an seiner Aufgabe aus 6 m (Schrittfolge, Gelenkgrenzen ≥ 90 %, Blindpaar ≤ 85 %): ungemessen bis zum Gerät, und ohne Roboter im Gesetz ohne Pose"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Maschinen S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W) + (z ? " · warme Welt: " + z.maschinen + " Maschinen unter " + z.kreaturen + " Kreaturen" : ""));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "EIN Arbeits-Roboter: " + R.fehlt });
+                if (W.maschinen > 0) throw new Error("das Gesetz trägt " + W.maschinen + " Maschinen-Namen: ihren Gang an der Aufgabe misst diese Probe noch nicht — UNGEMESSEN");
+                K.nicht(1, {
+                    n: W.maschinen + (z ? z.maschinen : 0),
+                    fehlt: "EIN Arbeits-Roboter an EINER Aufgabe: 0 Maschinen unter " + W.namen + " Namen der Kerne (koerper MOTION und Rollen, tetrapoda und vehicle GATTUNGEN, fachwerk BAU_NUTZUNG, AUSSTATTUNG, WERKE) — kein Gesetz eines Leibs, der sich als Maschine bewegt",
+                });
+            });
         },
-        seite: { ZENSUS: zensusZukunft },
+        seite: { ZENSUS: zensusZukunft, FAECHER, MASCHINE_AN },
         sprossen: {
             1: {
                 auge: { pose: "Messort stadt-voll: der Roboter an seiner Aufgabe aus 6 m, Augenhöhe", vorbild: "Film realer Arbeits-Roboter (Boston Dynamics Stretch, Spot): Blindpaar ≤ 85 %, Schrittfolge und Gelenkgrenzen passen zum Bau ≥ 90 %" },
                 erwartet: "nicht",
-                fehlt: "kein Roboter in der Welt",
+                fehlt: "kein Roboter im Gesetz: 0 Maschinen unter den 76 Namen der Kerne (Leiber, Gattungen, Profile, Werke)",
             },
             2: {
                 auge: { pose: "je Bauart eine Maschine aus 6 m", vorbild: "Aufgabe aus dem Bild der Maschine erraten ≥ 70 % (Panel), Gegenlauf Aufgabe getauscht" },
@@ -354,9 +536,37 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: da().bewohner, fehlt: "Gentechnik über Generationen an 10⁶: " + da().bewohner + " Bewohner ohne Erbgang über Generationen" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().eingriff, fehlt: "10² veränderte Leiber je Straße: kein veränderter Leib" }));
             await K.schritt(7, async () => K.nicht(7, { n: da().fremd, fehlt: "Leiber jenseits des Menschen: kein hochgeladener, verteilter oder für andere Welten gebauter Leib" }));
-            await K.schritt(1, async () => K.nicht(1, { n: da().eingriff, fehlt: "EIN Bewohner mit Ersatzglied: keiner der " + da().bewohner + " Bewohner trägt eines" }));
+            // S1 AM GESETZ (der Fächer): 20 Saaten × 60 Leiber (LEIBER_AN, k2-mensch-leib.js) — trägt das Genom, der Bau oder das Können
+            // eines Bewohners ein Ersatzglied, und wie ungleich gehen links und rechts (die Achsen des Baus mit eigener Seite, die
+            // Ungleichheit der Haltungs-Profile)? DAS BAND DER PROTHESEN-TRÄGER (Richtwert, Volltext ungeprüft: Schrittlängen-Verhältnis
+            // der Seiten einseitig Unterschenkel-Amputierter ~0,93–0,98, gesund ~1,00 ± 0,02; PMC9201932 Tab. 2, eScholarship qt41w410h4)
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.LEIBER_AN, export: "stamm/siedlung-bewohner.js:557 _bewohnerGenome (stamm/koerper-leib.js:12 _rollHumanoidGenome, koerper-core.js:1634 BAU_GESETZ)", leser: "stamm/siedlung-bewohner.js:607" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 60, n: 60 },
+                    masse: {
+                        leiber: { wie: "summe", feld: "n" },
+                        ersatz: { wie: "summe", feld: "ersatz" },
+                        seitig: { wie: "max", feld: "seitig" },
+                        asym: { wie: "max", feld: "asym" },
+                    },
+                    schlecht: { feld: "ersatz", richtung: "min" },
+                    pose: (a, w) => "Saat " + a.saat + ": " + w.n + " Leiber, " + w.ersatz + " mit Ersatzglied, Bau-Achsen mit eigener Seite " + w.seitig + ", MOTION links ↔ rechts |Δ| " + w.asym + " rad",
+                    ungemessen: ["der Gang des Trägers im Bild (Schrittlänge, Symmetrie gegen Aufnahmen von Prothesen-Trägern): ungemessen bis zum Gerät, und ohne Träger im Gesetz ohne Pose"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Ersatzglied S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "EIN Bewohner mit Ersatzglied: " + R.fehlt });
+                if (W.ersatz > 0) throw new Error("das Gesetz trägt " + W.ersatz + " Bewohner mit Ersatzglied: ihren Gang gegen das Band misst diese Probe noch nicht — UNGEMESSEN");
+                K.nicht(1, {
+                    n: W.ersatz,
+                    fehlt: "EIN Bewohner mit Ersatzglied: 0 von " + W.leiber + " Leibern an " + R.gemessen + " Saaten — kein Glied fehlt im Genom (stamm/koerper-leib.js:12), der Bau trägt " + W.seitig + " Achsen mit eigener Seite (koerper-core.js:1634), MOTION links = rechts (|Δ| " + W.asym + "): Schritt-Verhältnis 1,000, Band 0,93–0,98",
+                });
+            });
         },
-        seite: { ZENSUS: zensusZukunft },
+        seite: { ZENSUS: zensusZukunft, FAECHER, LEIBER_AN },
         sprossen: {
             1: {
                 umfang: { soll: 1, wort: "Bewohner mit Ersatzglied" },
@@ -365,7 +575,7 @@ module.exports = (F) => [
                     { key: "symmetrieImBand", wort: "Symmetrie im Band der Aufnahmen von Prothesen-Trägern (1 ja)", soll: 1, richtung: "≥" },
                 ],
                 erwartet: "nicht",
-                fehlt: "kein Bewohner mit Ersatzglied",
+                fehlt: "kein Bewohner mit Ersatzglied: 0 von 1200 Leibern an 20 Saaten, der Bau ohne Seite, der Gang spiegelgleich",
             },
             2: {
                 umfang: { soll: 100, wort: "Bewohner mit Eingriff (10 Arten)" },
@@ -415,6 +625,14 @@ module.exports = (F) => [
             },
         },
         proben: {
+            1: [
+                {
+                    name: "der Träger geht spiegelgleich (Schritt-Verhältnis 1,000, außerhalb des Bands der Prothesen-Träger) — ROT am Gang",
+                    j: { leiter: "mensch.zukunft.leib", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { schrittImBand: 1, symmetrieImBand: 0 } } } },
+                    gruen: false,
+                    zahl: /ROT an Symmetrie im Band der Aufnahmen von Prothesen-Trägern \(1 ja\) 0 verfehlt/,
+                },
+            ],
             2: [
                 {
                     name: "ATTRAPPE: hundert Eingriffe, keiner ändert, was der Träger kann",
@@ -426,3 +644,6 @@ module.exports = (F) => [
         },
     }),
 ];
+module.exports.TECHNIK_ZEIT_AN = TECHNIK_ZEIT_AN;
+module.exports.MEDIEN_AN = MEDIEN_AN;
+module.exports.MASCHINE_AN = MASCHINE_AN;

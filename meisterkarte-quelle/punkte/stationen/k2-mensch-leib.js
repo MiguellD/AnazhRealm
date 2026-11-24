@@ -6,6 +6,8 @@
 // wo ein Prüfer richtet, schießt sie das Bild an fester Pose (auge, nie GRÜN ohne das Urteil am Gerät).
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
+
 // ───────────────────────── DIE SEITE DER WELT (als Text an K.welt; nichts aus dem Modul) ─────────────────────────
 
 // DER ZENSUS DER LEIBER: je Bewohner mit Leib sein Maß (Höhe aus dem Genom: kh 0,215 = 1,72 m, stamm/koerper-leib.js:40; Schulter,
@@ -411,6 +413,168 @@ const STOFF = async (r, T, arg) => {
 
 const WETTER = async (r, T, arg) => window.__wetterSetzen(arg.wort);
 
+// DIE LEIBER EINER SAAT AM GESETZ (Meta-Gesetz M4, stationen/faecher.js; pm-faecher-mensch 24.11.): je Adresse a.saat der Plan der
+// Saat (fachwerk-core.js:5182 DORF, die Epoche der Zelle aus siedlungsEpoche :4494, das Jahr seines Schnitts wie der Export), daraus
+// mit.n Bewohner gleich über die Leute seiner Häuser verteilt (Same „Plan:Haus:Person“, Epoche { jahr, rang, n } wie `_bewohnerListe`,
+// stamm/siedlung-bewohner.js:1083) und die EINEN Gesetze ihres Leibs: die Gestalten der Siedlung (`_bewohnerGestalten` :452) und das
+// Genom jedes Bewohners mit Gestalt, Rest, Bau und Farben (`_bewohnerGenome` :557). Je Bewohner, was sein NAHER Leib zeigt: die Form
+// seiner Gestalt (Geschlecht, Bau, Muskel, ALTER, Haar-Schnitt, Gesicht — G.dK, der Guss der Nah-Wahl, :580 und :607), darauf seine
+// Höhe, Breite, Tiefe, seine Knochen (`bau`) und seine Farben; dazu seine eigenen Jahre und was sein Satz an Ersatzglied trägt. Je Saat
+// die Paare der Leiber: die Gestalt-Distanz (m, die Konvention des ZENSUS oben) in Bildpunkten auf mit.dM Meter (Leinwand mit.hPx,
+// fov mit.fov), ein ZWILLING = dieselbe Gestalt, unter 1 px und dieselben fünf Farben. Die Ton-Zeilen, die die Gesetze belegen, gibt
+// die Funktion zurück. Ohne Realm (der Kern allein, r = null) fehlen die Methoden: { fehlt }.
+const LEIBER_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore;
+    const KC = globalThis.__koerperCore;
+    if (!r || typeof r._bewohnerGestalten !== "function" || typeof r._bewohnerGenome !== "function")
+        return { fehlt: "kein Realm: Gestalt und Genom der Bewohner rechnen die Methoden des Spiels (stamm/siedlung-bewohner.js _bewohnerGestalten, _bewohnerGenome)" };
+    if (!FC || typeof FC.DORF !== "function" || typeof FC.leuteVon !== "function" || !KC || !KC.BAU_GESETZ || !KC.MOTION)
+        return { fehlt: "der Kern trägt keinen Plan (fachwerk DORF, leuteVon) oder keinen Leib (koerper BAU_GESETZ, MOTION)" };
+    const o = mit || {};
+    const D = FC.DORF({ seed: a.saat, nH: o.nH, epoche: FC.siedlungsEpoche(a.saat) });
+    const jahr = D.schnitt && Number.isFinite(D.schnitt.jahr) ? D.schnitt.jahr : D.jahr;
+    const plan = Object.assign({}, D, { jahr });
+    const leute = [];
+    plan.houses.forEach((hp, si) => {
+        const n = FC.leuteVon(hp);
+        for (let k = 0; k < n; k++) leute.push([si, k, n]);
+    });
+    const N = Math.min(o.n || 10, leute.length);
+    const liste = [];
+    for (let i = 0; i < N; i++) {
+        const [si, k, n] = leute[Math.floor(((i + 0.5) * leute.length) / N)];
+        liste.push({ seed: (plan.seed >>> 0) + ":" + si + ":" + k, epoche: { jahr, rang: k, n } });
+    }
+    const S = { key: "faecher:" + a.saat, plan, liste, gestalten: null, raum: null };
+    try {
+        S.gestalten = r._bewohnerGestalten(S);
+        r._bewohnerGenome(S);
+    } finally {
+        for (const b of liste) if (b.tonZeilen) r._tonZeileFrei(b.tonZeilen[0]);
+        for (const G of S.gestalten || []) if (G.tonZeile) r._tonZeileFrei(G.tonZeile);
+        if (S.raum && S.raum.tonZeile) r._tonZeileFrei(S.raum.tonZeile);
+    }
+    const ERSATZ = /prothes|ersatz|amput|implant|kunstglied|stumpf/i;
+    const zehn = (x) => Math.round(x * 10) / 10;
+    const L = liste.map((b) => {
+        const gen = b.genom;
+        const G = S.gestalten[b.gestalt];
+        const h = 8 * gen.kh;
+        const s = b.groesse || 1;
+        const bau = b.bau || {};
+        const F = b.farben || {};
+        const ersatz = [b, gen, bau, b.koennen || {}].reduce((n, x) => n + Object.keys(x).filter((k) => ERSATZ.test(k)).length, 0);
+        return {
+            g: b.gestalt,
+            J: zehn(gen.jahre),
+            JG: zehn(G.gen.jahre),
+            h,
+            br: 0.45 * s * (b.breite || 1),
+            ti: 0.25 * s * (b.tiefe || 1),
+            bein: 0.026 * h * (bau.bauBein || 0),
+            arm: 0.027 * h * (bau.bauArm || 0),
+            sch: 0.048 * 0.45 * s * (bau.bauSchulter || 0),
+            f: [F.skinTone, F.hairColor, F.topColor, F.bottomColor, F.shoeColor],
+            haar: G.ov.hairStyle,
+            ersatz,
+        };
+    });
+    const pxJeM = (o.hPx || 720) / (2 * (o.dM || 2) * Math.tan(((o.fov || 60) * Math.PI) / 360));
+    let paareG = 0, formGleich = 0, zwillinge = 0, kopfGleich = 0, minPx = null, paar = null;
+    for (let i = 0; i < L.length; i++)
+        for (let j = i + 1; j < L.length; j++) {
+            const p = L[i], q = L[j];
+            if (p.g !== q.g) continue;
+            paareG++;
+            const px = pxJeM * Math.max(Math.abs(p.h - q.h), Math.abs(p.br - q.br), Math.abs(p.ti - q.ti), Math.abs(p.bein - q.bein), Math.abs(p.arm - q.arm), Math.abs(p.sch - q.sch));
+            const farbe = p.f.filter((x, k) => x !== q.f[k]).length;
+            // DER KOPF-ZWILLING: dieselbe Gestalt (Gesicht, Haarschnitt) mit derselben Haut und demselben Haar — der Kopf auf 2 m gleich
+            if (p.f[0] === q.f[0] && p.f[1] === q.f[1]) kopfGleich++;
+            if (minPx == null || px < minPx) [minPx, paar] = [px, [i, j, farbe]];
+            if (px < 1) {
+                if (farbe) formGleich++;
+                else zwillinge++;
+            }
+        }
+    // DIE SEITEN DES LEIBS: Achsen des Baus mit eigener Seite (koerper-core.js:1634 BAU_GESETZ) und die größte Ungleichheit links ↔
+    // rechts der Haltungs-Profile (:80 MOTION; das Z-Paar der Hüfte gespiegelt)
+    const SEITEN = [["armL", "armR", 1], ["armLX", "armRX", 1], ["armLZ", "armRZ", 1], ["elbowL", "elbowR", 1], ["hipLX", "hipRX", 1], ["hipLZ", "hipRZ", -1], ["kneeL", "kneeR", 1]];
+    let asym = 0;
+    for (const P of Object.values(KC.MOTION)) for (const [l, rr, v] of SEITEN) asym = Math.max(asym, Math.abs((P[l] || 0) - v * (P[rr] || 0)));
+    const K = plan.kleidung || {};
+    const ep = Object.keys(FC.EPOCHEN || {}).filter((k) => {
+        const t = FC.EPOCHEN[k].tracht || {};
+        return t.top === K.top && t.bottom === K.bottom && t.shoes === K.shoes && JSON.stringify(t.farben) === JSON.stringify(K.farben);
+    });
+    return {
+        saat: a.saat,
+        jahr,
+        region: typeof plan.region === "object" ? String(plan.region && (plan.region.id || plan.region.name)) : String(plan.region),
+        epoche: ep.join("|") || null,
+        // das Fenster der Epoche, deren Tracht der Plan trägt (fachwerk-core.js:4272 EPOCHEN: jahr … jahr + spanne)
+        fenster: ep.length ? [FC.EPOCHEN[ep[0]].jahr, FC.EPOCHEN[ep[0]].jahr + FC.EPOCHEN[ep[0]].spanne] : null,
+        abseits: ep.length ? Math.max(0, FC.EPOCHEN[ep[0]].jahr - jahr, jahr - FC.EPOCHEN[ep[0]].jahr - FC.EPOCHEN[ep[0]].spanne) : null,
+        schnitt: [K.top, K.bottom, K.shoes].join("/"),
+        farben: (K.farben || []).slice(),
+        n: L.length,
+        gestaltenN: new Set(L.map((x) => x.g)).size,
+        gestaltJ: S.gestalten.map((G) => zehn(G.gen.jahre)),
+        leute: L.map((x) => ({ g: x.g, J: x.J, JG: x.JG, h: +x.h.toFixed(3), f: x.f, haar: x.haar, ersatz: x.ersatz })),
+        paareG,
+        minPx: minPx == null ? null : +minPx.toFixed(2),
+        paar,
+        formGleich,
+        zwillinge,
+        kopfGleich,
+        ersatz: L.filter((x) => x.ersatz > 0).length,
+        // der Erwachsene, dessen Leib am weitesten neben seinem Alter steht (J., die Jahre seiner Gestalt gegen seine eigenen)
+        alterDaneben: zehn(Math.max(0, ...L.filter((x) => x.J >= 18).map((x) => Math.abs(x.JG - x.J)))),
+        seitig: KC.BAU_GESETZ.achsen.filter((x) => /(L|R|links|rechts)$/.test(x.achse)).length,
+        asym: +asym.toFixed(4),
+    };
+};
+
+// DIE HALTUNG NACH AKT UND GEMÜT AM GESETZ (pm-faecher-mensch 24.11.): je Adresse a.ort = ein Akt des Tags (koerper-core.js:5677
+// tagesPlan), a.zeit = ein Anlass im Gedächtnis seines Leibs (die Einträge, die die Welt schreibt: stamm/siedlung-bewohner.js:2421
+// `gewalt` des Zeugen, „geschlagen“ und „gefuettert“ der Kreatur-Gesetze, „spoken“ des Gesprächs; „ohne“ = der Gegenlauf, kein
+// Anlass) und je Rolle (mit.rollen, sonst „wohnhaus“ und jede Rolle des Tags, koerper TAGES_GESETZ) der Name, den sein naher Leib
+// steht und geht: das Gemüt `_bewohnerGemuet` (:2725 — die Haltung des Akts, koerper `tagesHaltung` :5484, und die erinnerte Furcht)
+// durch die EINE Wahl `_koerperMotionName` (stamm/koerper-leib.js:3096, der Leser `_koerperMotionProfile` :3091). Dazu je Name sein
+// Vektor der Haltung (koerper-core.js:80 MOTION: die Stellung von Kopf, Rumpf, Armen, Hüfte, Knie in rad — Atem, Wiegen, Takt und
+// Augen sind Bewegung, keine Haltung) und die Achsen der Profile, die das Gesicht bewegen (Iris, Lid — und eine Miene: Mund, Braue).
+const HALTUNG_AN = async (r, T, a, mit) => {
+    const KC = globalThis.__koerperCore;
+    if (!r || typeof r._bewohnerGemuet !== "function" || typeof r._koerperMotionName !== "function")
+        return { fehlt: "kein Realm: Haltung und Gemüt des Bewohners wählen die Methoden des Spiels (stamm/siedlung-bewohner.js _bewohnerGemuet, stamm/koerper-leib.js _koerperMotionName)" };
+    if (!KC || !KC.MOTION || !KC.TAGES_GESETZ) return { fehlt: "der Kern trägt kein MOTION oder TAGES_GESETZ (koerper-core)" };
+    const rollen = (mit && mit.rollen) || ["wohnhaus", ...Object.keys(KC.TAGES_GESETZ.rollen)];
+    const anlass = a.zeit && a.zeit !== "ohne" ? a.zeit : null;
+    const je = {};
+    for (const rolle of rollen) {
+        const b = { akt: a.ort, rolle, gemuet: null, leib: { userData: { memory: anlass ? [{ type: anlass }] : [] } } };
+        const g = r._bewohnerGemuet(b);
+        je[rolle] = { stand: r._koerperMotionName(false, g), geht: r._koerperMotionName(true, g), sorrow: g.sorrow, chaos: g.chaos, joy: g.joy || 0 };
+    }
+    const BEWEGUNG = /breath|sway|freq|kpMul|iris|blink/;
+    const achsen = Array.from(new Set(Object.values(KC.MOTION).flatMap((P) => Object.keys(P)))).filter((k) => !BEWEGUNG.test(k));
+    const profil = {};
+    for (const x of Object.values(je)) for (const n of [x.stand, x.geht]) if (KC.MOTION[n]) profil[n] = achsen.map((k) => KC.MOTION[n][k] || 0);
+    const alle = Array.from(new Set(Object.values(KC.MOTION).flatMap((P) => Object.keys(P))));
+    return {
+        akt: a.ort,
+        anlass: anlass || "ohne",
+        je,
+        stand: Array.from(new Set(Object.values(je).map((x) => x.stand))),
+        geht: Array.from(new Set(Object.values(je).map((x) => x.geht))),
+        profil,
+        gesicht: alle.filter((k) => /iris|blink|lid|mund|mouth|lip|brow|braue|smile|lach|wange|miene/i.test(k)),
+        miene: alle.filter((k) => /mund|mouth|lip|brow|braue|smile|lach|wange|miene/i.test(k)).length,
+        // ein Gefühl ohne Anlass (der Gegenlauf bricht an dieser Adresse): der Bewohner ohne Rolle steht in Freude, Trauer, Zorn
+        // oder Furcht, obwohl sein Gedächtnis leer ist
+        ohneAnlassGefuehl: !anlass && ["joy", "sad", "angry", "fear"].includes((je.wohnhaus || {}).stand) ? 1 : 0,
+    };
+};
+
 const PFAD = ["stamm/siedlung-bewohner.js", "stamm/koerper-leib.js", "koerper-core.js", "fachwerk-core.js"];
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 // die eigene Mutante einer Augen-Leiter: ein Augen-Ergebnis ohne Bild zählt nie (UNGEMESSEN beim Namen)
@@ -421,7 +585,7 @@ module.exports = (F) => [
     F.leiter("mensch.leib.verschieden", {
         sek: 45,
         pfad: PFAD,
-        seite: { ZENSUS },
+        seite: { ZENSUS, FAECHER, LEIBER_AN },
         messe: async (H, K) => {
             const welt = (name, arg, ms) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms);
             K.sicht = "third";
@@ -448,12 +612,41 @@ module.exports = (F) => [
                 const b = await K.bild(3, z.posen.ueber, { wahl: 0 });
                 K.auge(3, { bild: b.datei, pose: "stadt-voll Third: Mitte der 100 nächsten Bewohner, Kamera 10 m hoch und 17,3 m südlich, Blick auf die Mitte", mass: z.n + " Bewohner in der Stadt · " + z.gestaltenNah + " Gestalten unter den 100 nächsten" });
             });
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten × 10 Leiber (LEIBER_AN) — je Paar derselben Gestalt der Abstand
+            // ihrer nahen Leiber auf 2 m (720 px, fov 60°: 1 px = 3,2 mm); ein ZWILLING trägt dieselbe Gestalt, unter 1 px und dieselben
+            // fünf Farben. Zwillinge im Gesetz → „Umfang nicht erzeugbar“; sonst die Zahl-Hälfte am Bild, das Panel urteilt
             await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.LEIBER_AN, export: "stamm/siedlung-bewohner.js:452 _bewohnerGestalten + :557 _bewohnerGenome", leser: "stamm/siedlung-bewohner.js:607" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 60, n: 10, hPx: 720, fov: 60, dM: 2 },
+                    masse: {
+                        leiber: { wie: "summe", feld: "n" },
+                        paare: { wie: (v, aus) => aus.reduce((s, x) => s + (x.w.n * (x.w.n - 1)) / 2, 0) },
+                        gleicheGestalt: { wie: "summe", feld: "paareG" },
+                        minPx: { wie: "min", feld: "minPx" },
+                        formGleich: { wie: "summe", feld: "formGleich" },
+                        zwillinge: { wie: "summe", feld: "zwillinge" },
+                        kopfGleich: { wie: "summe", feld: "kopfGleich" },
+                        saatenMitGleich: { wie: (v, aus) => aus.filter((x) => x.w.paareG > 0).length },
+                    },
+                    schlecht: { feld: "minPx", richtung: "min" },
+                    pose: (a, w) => "Saat " + a.saat + ": das Paar " + w.paar[0] + "↔" + w.paar[1] + " der zehn, dieselbe Gestalt, " + w.minPx + " px auf 2 m, " + w.paar[2] + " von 5 Farben verschieden",
+                    ungemessen: ["das Bild der zehn auf 2 m (Prüfer findet 0 gleiche Paare): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Verschieden S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "10 unterscheidbare Leiber: " + R.fehlt });
+                if (W.zwillinge > 0)
+                    return K.nicht(1, { n: W.zwillinge, fehlt: "10 nah unterscheidbare Leiber: " + W.zwillinge + " Zwillinge (dieselbe Gestalt, < 1 px auf 2 m, dieselben Farben) unter " + W.paare + " Paaren an " + R.gemessen + " Saaten (stamm/siedlung-bewohner.js:557)" });
                 const b = await K.bild(1, z.posen.zehn, { wahl: 0 });
                 K.auge(1, {
                     bild: b.datei,
                     pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner draußen, Augenhöhe 1,6 m, Blick auf die Mitte der zehn nächsten",
-                    mass: "Gestalten unter den 10 nächsten: " + z.gestalten10 + " · Paare unter 1 px unter ihnen: " + z.paare10,
+                    mass:
+                        "Fächer " + R.gemessen + " Saaten × 10: Zwillinge " + W.zwillinge + ", kleinster Abstand " + W.minPx + " px auf 2 m; dasselbe Gesicht und derselbe Haarschnitt (eine Gestalt) " + W.gleicheGestalt + " von " + W.paare + " Paaren in " + W.saatenMitGleich +
+                        " Saaten, dazu Haut und Haar gleich " + W.kopfGleich + " · am Ort: Gestalten unter den 10 nächsten " + z.gestalten10 + ", Paare < 1 px " + z.paare10,
                 });
             });
         },
@@ -576,7 +769,7 @@ module.exports = (F) => [
     F.leiter("mensch.leib.tracht", {
         sek: 45,
         pfad: PFAD,
-        seite: { ZENSUS },
+        seite: { ZENSUS, FAECHER, LEIBER_AN },
         messe: async (H, K) => {
             const welt = (name, arg, ms) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms);
             K.sicht = "third";
@@ -602,13 +795,54 @@ module.exports = (F) => [
                 const b = await K.bild(3, z.posen.ueber, { wahl: 0 });
                 K.auge(3, { bild: b.datei, pose: "stadt-voll: Markt aus 20 m (10 m hoch, 17,3 m südlich der Mitte der 100 nächsten)", mass: "Rollen unter den 100 nächsten: " + z.berufe100.length + " (" + z.berufe100.join(", ") + ") · Schnitte unter ihnen " + z.schnitte100 });
             });
+            // S1 AM GESETZ (der Fächer): 20 Saaten (LEIBER_AN) — je Saat ihr Jahr, die Tracht ihres Plans (Schnitt und Farben, fachwerk
+            // `kleidung` aus EPOCHEN[epocheBei]) und das Fenster der Epoche dieser Tracht. DIE DECKE DES PRÜFERS: wer Schnitt und Farben
+            // jeder Tracht kennt und je Tracht das beste Jahrhundert rät (das dichteste Fenster von 200 J. ihrer Saaten), trifft höchstens
+            // diesen Anteil ± 1 Jh. — unter 0,7 trägt die Tracht des Gesetzes die Epoche nicht, kein Panel hebt das
             await K.schritt(1, async () => {
+                const decke = (sig) => (v, aus) => {
+                    const g = {};
+                    for (const x of aus) (g[sig(x.w)] = g[sig(x.w)] || []).push(x.w.jahr);
+                    let t = 0;
+                    for (const J of Object.values(g)) t += Math.max(...J.map((c) => J.filter((y) => y >= c && y <= c + 200).length));
+                    return aus.length ? t / aus.length : null;
+                };
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.LEIBER_AN, export: "fachwerk-core.js:5295 EPOCHEN[epocheBei].tracht (:4272, :4945) → stamm/siedlung-bewohner.js:452 _bewohnerGestalten", leser: "stamm/siedlung-bewohner.js:458" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 60, n: 10 },
+                    masse: {
+                        decke: { wie: decke((w) => w.schnitt + "|" + w.farben.join(",")) },
+                        deckeSchnitt: { wie: decke((w) => w.schnitt) },
+                        schnitte: { wie: "verschieden", feld: "schnitt" },
+                        paletten: { wie: "verschieden", feld: "farben" },
+                        epochen: { wie: "verschieden", feld: "epoche" },
+                        abseits: { wie: (v, aus) => aus.filter((x) => x.w.abseits > 100).length },
+                        abseitsMax: { wie: "max", feld: "abseits" },
+                    },
+                    schlecht: { feld: "abseits", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " (" + w.region + ", Jahr " + w.jahr + ") in der Tracht „" + w.epoche + "“ " + w.fenster.join("–") + ": " + w.abseits + " J. außerhalb ihrer Epoche",
+                    ungemessen: ["die 20 Bilder der Plätze (Prüfer ordnet Epoche ± 1 Jh.): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Tracht S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W) + " · " + R.je.map((x) => x.w.saat + ":" + x.w.jahr + ":" + x.w.epoche).join(" "));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "die Epoche wählt Schnitt und Farbe: " + R.fehlt });
+                if (W.decke < 0.7)
+                    return K.nicht(1, {
+                        n: Math.round(W.decke * R.gemessen),
+                        fehlt: "Epoche ± 1 Jh. aus der Tracht: die Decke eines Prüfers, der jede Tracht kennt, ist " + W.decke.toFixed(2) + " (Soll ≥ 0,7) an " + R.gemessen + " Saaten — " + W.abseits + " tragen die Tracht einer Epoche > 100 J. fern (bis " + W.abseitsMax + " J.; fachwerk-core.js:4945 epocheBei: die erste der Achse ist der Boden)",
+                    });
                 const b = await K.bild(1, z.posen.zehn, { wahl: 0 });
-                K.auge(1, { bild: b.datei, pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner, Blick auf die Mitte der zehn nächsten", mass: plan });
+                K.auge(1, { bild: b.datei, pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner, Blick auf die Mitte der zehn nächsten", mass: "Decke " + W.decke.toFixed(2) + " (Schnitt allein " + W.deckeSchnitt.toFixed(2) + "), " + W.schnitte + " Schnitte, " + W.paletten + " Paletten an " + R.gemessen + " Saaten · " + plan });
             });
         },
         sprossen: {
-            1: { auge: { pose: "stadt-voll am Markt, 2 m hinter dem nächsten Bewohner", vorbild: "historische Platz-Bilder je Epoche (20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7)" } },
+            1: {
+                auge: { pose: "stadt-voll am Markt, 2 m hinter dem nächsten Bewohner", vorbild: "historische Platz-Bilder je Epoche (20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7)" },
+                erwartet: "nicht",
+                fehlt: "die Tracht trägt die Epoche nicht: Decke des Prüfers 0,65 an 20 Saaten, 10 in der Tracht einer Epoche > 100 J. fern (fachwerk epocheBei)",
+            },
             2: { auge: { pose: "stadt-voll: Markt aus 20 m", vorbild: "Trachten realer Regionen (Rock, Mantel, Tunika, Kimono, Sari, Kopfbedeckung; Zuordnung ≥ 60 %)" }, erwartet: "nicht", fehlt: "je Siedlung EIN Schnitt, keine 10 Silhouetten-Familien" },
             3: { auge: { pose: "stadt-voll: Markt aus 20 m (10 m hoch, 17,3 m südlich)", vorbild: "Marktszene mit Bauer, Händler, Adel, Soldat, Priester (Stand-Rateaufgabe ≥ 70 %)" } },
             4: { auge: { pose: "keine: 10³ Gesellschaften fehlen", vorbild: "Trachtenatlas / Ethnographic Atlas (plausibel ≥ 0,9)" }, erwartet: "nicht", fehlt: "10³ Gesellschaften" },
@@ -733,7 +967,7 @@ module.exports = (F) => [
     F.leiter("mensch.leib.ausdruck", {
         sek: 45,
         pfad: PFAD,
-        seite: { ZENSUS },
+        seite: { ZENSUS, FAECHER, HALTUNG_AN },
         messe: async (H, K) => {
             const welt = (name, arg, ms) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms);
             K.sicht = "third";
@@ -751,9 +985,53 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: z.regionen.length, fehlt: "10⁴ mit Gestik je Kultur: " + z.n + " Bewohner in " + z.regionen.length + " Kultur(en)" }));
             await K.schritt(5, async () => K.nicht(5, { n: z.n, fehlt: "10⁵ mit eigenem Gang und Gestus: die Welt trägt " + z.n }));
             await K.schritt(6, async () => K.nicht(6, { n: 1, fehlt: "fremde Leiber und Kulturen: die Bewohner sind EINE Art (Mensch)" }));
+            // S1 AM GESETZ (der Fächer): 7 Akte des Tags × 5 Anlässe im Gedächtnis (HALTUNG_AN) — welche Haltungen trägt das Gesetz im
+            // Stand und im Gang, wie weit liegen sie auseinander (rad, die größte Achse), und welchen Anteil der Akte unterscheidet eine
+            // Haltung (die Decke des Prüfers am Bewohner ohne Rolle). DAS BAND (Coulson 2004, J. Nonverbal Behav. 28: 176 statische
+            // Haltungen, Treffer bis > 90 % für Zorn und Trauer, Ekel nahe 0, Furcht und Überraschung verwechselt): eine Haltung ist so
+            // gut wie ihr Abstand zur nächsten. Fehlt ein ganzer Grund nicht, nennt die Probe die Zahl-Hälfte am Bild
             await K.schritt(1, async () => {
+                const ohne = (aus) => aus.filter((x) => x.a.zeit === "ohne");
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.HALTUNG_AN, export: "stamm/siedlung-bewohner.js:2725 _bewohnerGemuet (koerper-core.js:5484 tagesHaltung) → stamm/koerper-leib.js:3096 _koerperMotionName", leser: "stamm/koerper-leib.js:3091" },
+                    // die Akte des Tags (koerper-core.js:5677 tagesPlan) × die Anlässe im Gedächtnis des Leibs (s. HALTUNG_AN)
+                    adressen: { orte: ["schlaf", "morgen", "arbeit", "mittag", "besuch", "spiel", "abend"], zeiten: ["ohne", "gewalt", "geschlagen", "gefuettert", "spoken"] },
+                    masse: {
+                        stand: { wie: (v, aus) => Array.from(new Set(aus.flatMap((x) => x.w.stand))) },
+                        geht: { wie: (v, aus) => Array.from(new Set(aus.flatMap((x) => x.w.geht))) },
+                        abstand: {
+                            wie: (v, aus) => {
+                                const P = Object.assign({}, ...aus.map((x) => x.w.profil));
+                                const L = Array.from(new Set(aus.flatMap((x) => x.w.stand))).filter((n) => P[n]);
+                                let m = null;
+                                for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+                                    const d = Math.max(...P[L[i]].map((x, k) => Math.abs(x - P[L[j]][k])));
+                                    if (m == null || d < m.d) m = { d: +d.toFixed(3), paar: L[i] + "↔" + L[j] };
+                                }
+                                return m;
+                            },
+                        },
+                        deckeStand: { wie: (v, aus) => new Set(ohne(aus).map((x) => x.w.je.wohnhaus.stand)).size / ohne(aus).length },
+                        deckeGang: { wie: (v, aus) => new Set(ohne(aus).map((x) => x.w.je.wohnhaus.geht)).size / ohne(aus).length },
+                        furcht: { wie: (v, aus) => aus.filter((x) => x.a.zeit !== "ohne" && x.w.je.wohnhaus.stand === "fear").length },
+                        nGang: { wie: (v, aus) => new Set(aus.flatMap((x) => x.w.geht)).size },
+                    },
+                    schlecht: { feld: "geht.length", richtung: "min" },
+                    pose: (a, w) => "Akt " + a.ort + ", Anlass " + a.zeit + ": im Stand " + w.stand.join("/") + ", im Gang " + w.geht.join("/") + " — der Gehende trägt keinen Akt",
+                    ungemessen: ["das Bild der zehn am Markt (Prüfer errät Akt/Gemüt ≥ 60 %): ungemessen bis zum Gerät; der Anteil der Gehenden unter den zehn: in der warmen Welt ungemessen"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Ausdruck S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "Haltung nach Akt und Gemüt: " + R.fehlt });
                 const b = await K.bild(1, z.posen.zehn, { wahl: 0 });
-                K.auge(1, { bild: b.datei, pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner, Blick auf die Mitte der zehn nächsten", mass: "Akte " + JSON.stringify(z.akt10) + " · Haltung " + JSON.stringify(z.haltung10) });
+                K.auge(1, {
+                    bild: b.datei,
+                    pose: "stadt-voll am Markt: 2 m hinter dem nächsten Bewohner, Blick auf die Mitte der zehn nächsten",
+                    mass:
+                        "Gesetz: im Stand " + W.stand.length + " Haltungen (" + W.stand.join(", ") + "), nächste " + (W.abstand ? W.abstand.paar + " " + W.abstand.d + " rad" : "—") + "; im Gang " + W.nGang + " (" + W.geht.join(", ") + ") für jeden Akt und Anlass; Decke Akt " + W.deckeStand.toFixed(2) +
+                        " im Stand, " + W.deckeGang.toFixed(2) + " im Gang · am Ort: Akte " + JSON.stringify(z.akt10) + " · Haltung " + JSON.stringify(z.haltung10),
+                });
             });
         },
         sprossen: {
@@ -771,7 +1049,7 @@ module.exports = (F) => [
     F.leiter("mensch.leib.spur", {
         sek: 45,
         pfad: PFAD,
-        seite: { ZENSUS },
+        seite: { ZENSUS, FAECHER, LEIBER_AN },
         messe: async (H, K) => {
             const welt = (name, arg, ms) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms);
             K.sicht = "third";
@@ -790,14 +1068,56 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: z.regionen.length, fehlt: "10² Kulturen mit Zeichen: " + z.regionen.length + " Kultur(en), kein Schmuck, keine Tätowierung, Bemalung, Implantat" }));
             await K.schritt(5, async () => K.nicht(5, { n: z.last, fehlt: "keine Biografie im Leib: " + z.last + " Leiber mit Bruch, Pocken, Narbe, Prothese" }));
             await K.schritt(6, async () => K.nicht(6, { n: z.n, fehlt: "jeder Mensch eines Planeten: " + z.n + " Leiber, keine Spur" }));
+            // S1 AM GESETZ (der Fächer): 20 Saaten × 60 Leiber (LEIBER_AN) — die eigenen Jahre jedes Bewohners (sein Genom, koerper
+            // ALTER_GESETZ über die Pyramide seiner Epoche) gegen die Jahre, die sein Leib ZEIGT (die Form seiner Gestalt: das Weiche
+            // samt Alter ist G.dK, stamm/siedlung-bewohner.js:607). Der Prüfer schätzt das Alter am Leib (Fehler ≤ 15 J.): ein Leib, der
+            // > 15 J. neben seinem Alter steht, fällt auch dem fehlerlosen Prüfer. Trägt das Gesetz die Achse und der Leib nicht, ist das
+            // ein fehlender Leser
             await K.schritt(1, async () => {
-                if (!(a[0] <= 20 && a[1] >= 78)) return K.nicht(1, { n: z.n, fehlt: "die Achse 18–80 J. trägt die Menge nicht: Alter " + a.map((x) => x.toFixed(0)).join("–") + " J. (Genom alter 0,05–0,5)" });
+                const P = (aus) => aus.flatMap((x) => x.w.leute);
+                const E = (aus) => P(aus).filter((p) => p.J >= 18);
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.LEIBER_AN, export: "stamm/koerper-leib.js:12 _rollHumanoidGenome (koerper-core.js:1782 epochenAlter, :1804 alterLeib) → stamm/siedlung-bewohner.js:580 die Gestalt", leser: "stamm/siedlung-bewohner.js:607" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 60, n: 60 },
+                    masse: {
+                        leiber: { wie: "summe", feld: "n" },
+                        jMin: { wie: (v, aus) => Math.min(...P(aus).map((p) => p.J)) },
+                        jMax: { wie: (v, aus) => Math.max(...P(aus).map((p) => p.J)) },
+                        zeigtMax: { wie: (v, aus) => Math.max(...P(aus).map((p) => p.JG)) },
+                        erwachsene: { wie: (v, aus) => E(aus).length },
+                        daneben: { wie: (v, aus) => E(aus).filter((p) => Math.abs(p.JG - p.J) > 15).length },
+                        danebenMax: { wie: (v, aus) => +Math.max(...E(aus).map((p) => Math.abs(p.JG - p.J))).toFixed(1) },
+                        fehlerMittel: { wie: (v, aus) => +(E(aus).reduce((s, p) => s + Math.abs(p.JG - p.J), 0) / E(aus).length).toFixed(1) },
+                        alt: { wie: (v, aus) => E(aus).filter((p) => p.J >= 60).length },
+                        altJung: { wie: (v, aus) => E(aus).filter((p) => p.J >= 60 && p.JG < 45).length },
+                        grauJung: { wie: (v, aus) => P(aus).filter((p) => p.J < 40 && /grey|white|platinum/.test(p.f[1])).length + " von " + P(aus).filter((p) => p.J < 40).length },
+                    },
+                    schlecht: { feld: "alterDaneben", richtung: "max" },
+                    pose: (a, w) => {
+                        const p = w.leute.filter((x) => x.J >= 18).sort((x, y) => Math.abs(y.JG - y.J) - Math.abs(x.JG - x.J))[0];
+                        return "Saat " + a.saat + ": der Bewohner mit " + (p ? p.J + " J., der Leib seiner Gestalt zeigt " + p.JG + " J." : "—") + " (Gestalten " + w.gestaltJ.join(", ") + " J.)";
+                    },
+                    ungemessen: ["die Altersschätzung des Prüfers am Bild (Fehler ≤ 15 J.): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Spur S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W) + " · am Ort: Alter " + a.map((x) => x.toFixed(0)).join("–") + " J.");
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "Alter als Achse 18–80: " + R.fehlt });
+                if (!(W.jMin <= 18 && W.jMax >= 80))
+                    return K.nicht(1, { n: R.gemessen, fehlt: "die Achse 18–80 J. trägt das Gesetz nicht: die Bewohner von " + R.gemessen + " Saaten tragen " + W.jMin + "–" + W.jMax + " J. (koerper-core.js:1782 epochenAlter)" });
+                if (W.daneben > 0)
+                    return K.leser(1, {
+                        n: W.daneben,
+                        fehlt: "das Genom trägt " + W.jMin + "–" + W.jMax + " J., der Leib zeigt das Alter seiner Gestalt (8 je Siedlung, höchstens " + W.zeigtMax + " J.): " + W.daneben + " von " + W.erwachsene + " Erwachsenen > 15 J. daneben (bis " + W.danebenMax + " J.), " + W.altJung + " von " + W.alt + " ab 60 J. zeigen sich unter 45",
+                        wo: "stamm/siedlung-bewohner.js:607",
+                    });
                 const b = await K.bild(1, z.posen.leib, { wahl: 0 });
-                K.auge(1, { bild: b.datei, pose: "stadt-voll: 3 m vor dem nächsten Bewohner", mass: "Alter " + a.map((x) => x.toFixed(0)).join("–") + " J." });
+                K.auge(1, { bild: b.datei, pose: "stadt-voll: 3 m vor dem nächsten Bewohner", mass: "Alter " + W.jMin + "–" + W.jMax + " J., der Leib zeigt es (Fehler im Mittel " + W.fehlerMittel + " J.)" });
             });
         },
         sprossen: {
-            1: { auge: { pose: "stadt-voll am Markt: 3 m vor dem nächsten Bewohner, 1,5 m hoch", vorbild: "Porträts 18–80 J. (Prüfer-Altersschätzung, Fehler ≤ 15 J.)" }, erwartet: "nicht", fehlt: "die Bewohner tragen nur ~21–49 J. der Achse 18–80" },
+            1: { auge: { pose: "stadt-voll am Markt: 3 m vor dem nächsten Bewohner, 1,5 m hoch", vorbild: "Porträts 18–80 J. (Prüfer-Altersschätzung, Fehler ≤ 15 J.)" }, erwartet: "leser", fehlt: "das Genom trägt die Achse 2–90 J., der nahe Leib zeigt das Alter seiner Gestalt: 32 % der Erwachsenen > 15 J. daneben", wo: "stamm/siedlung-bewohner.js:607" },
             2: { auge: { pose: "stadt-voll: 3 m vor dem nächsten Bewohner", vorbild: "Fotos von Bauer, Schmied, Schreiber (Beruf-Rateaufgabe ≥ 50 %)" }, erwartet: "nicht", fehlt: "keine 10 Berufe mit Spur am Leib" },
             3: { auge: { pose: "keine: keine Wunde am Leib", vorbild: "Bildreihe Wunde → Verband → Narbe, Tag 0/3/30" }, erwartet: "nicht", fehlt: "keine Verletzung live" },
             4: { auge: { pose: "keine: keine Zeichen am Leib", vorbild: "Schmuck, Tätowierung, Bemalung realer Kulturen (N = 100, ≥ 60 %)" }, erwartet: "nicht", fehlt: "10² Kulturen mit Zeichen" },
@@ -807,3 +1127,5 @@ module.exports = (F) => [
         proben: { 1: ohneBild("mensch.leib.spur", 1) },
     }),
 ];
+module.exports.LEIBER_AN = LEIBER_AN;
+module.exports.HALTUNG_AN = HALTUNG_AN;

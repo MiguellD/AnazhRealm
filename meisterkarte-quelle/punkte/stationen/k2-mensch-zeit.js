@@ -7,6 +7,11 @@
 // Welt) und das Gedächtnis der Orte (`settlementCells`, ihre Akten). Gemessen wird das Ergebnis, nie der Code-Text.
 "use strict";
 
+// DER FÄCHER (stationen/faecher.js) und DAS GESETZ DES ORTS an einer Adresse (k2-mensch-bau.js ORT_AN: der Plan, den das Spiel beim Faden
+// bestellt; mit a.zeit der Satz mit Jahr, `epocheImJahr`) samt der blinden Trennung am Rezept (TRENNE) — EINE Funktion, nie ein Zwilling
+const { FAECHER } = require("./faecher.js");
+const { ORT_AN, TRENNE } = require("./k2-mensch-bau.js");
+
 module.exports = (F) => [
     // ───────────────────────── mensch.zeit.spanne — die Kultur-Zeit am Ort, datierbar ─────────────────────────
     // EINE Messung: die Halte des Jahres — je Jahr der Ort, den der Akt mit diesem Jahr stellt (Same 7, 12 Häuser), und wie viele
@@ -17,6 +22,49 @@ module.exports = (F) => [
         mutiert: true,
         pfad: ["stamm/siedlung-ort.js", "stamm/siedlung-wege.js", "fachwerk-core.js"],
         messe: async (H, K) => {
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): dieselbe Zelle (5 Saaten) unter den 4 Jahren des Satzes, je Adresse der Plan,
+            // den der Satz mit Jahr bestellt (ORT_AN mit a.zeit: `epocheImJahr` → exportSettlement) — gleichen sich zwei Halte einer Zelle
+            // Haus für Haus, ist ihre Folge im Bild ein Wurf: die Schranke der Blind-Datierung ist das Mittel über die Zellen von Π 1/g!
+            // (g die Größe jeder Gruppe gleicher Orte). Liegt sie unter 80 %, urteilt die Sprosse am Gesetz „nicht“, nie ein Bild
+            let fa = null;
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.ORT_AN, export: "fachwerk-core.js:4961 epocheImJahr → :11165 exportSettlement → :4395 epocheDerSaat (die Epoche, die der Stand der Saat trägt)", leser: "stamm/siedlung-ort.js:1227" },
+                    adressen: { saaten: [7, 1, 2, 3, 4], zeiten: [1300, 1600, 1800, 1950] },
+                    mit: { nH: 12 },
+                    masse: {
+                        adressen: { wie: "anzahl" },
+                        zellen: {
+                            wie: (v, aus) => {
+                                const m = {};
+                                for (const x of aus) {
+                                    const sig = x.w.tracht + "|" + JSON.stringify(x.w.bauten.map((b) => [b.rolle, b.kultur, b.x, b.z, b.num, b.kat]));
+                                    ((m[x.a.saat] = m[x.a.saat] || {})[sig] = m[x.a.saat][sig] || []).push(x.a.zeit + " " + x.w.epoche + " (Plan " + x.w.jahr + ")");
+                                }
+                                const fak = (n) => (n <= 1 ? 1 : n * fak(n - 1));
+                                const zs = Object.keys(m);
+                                const gleich = zs.flatMap((k) => Object.values(m[k]).filter((g) => g.length > 1).map((g) => "Saat " + k + ": " + g.join(" ≡ ")));
+                                const schranke = zs.reduce((q, k) => q + Object.values(m[k]).reduce((p, g) => p / fak(g.length), 1), 0) / Math.max(1, zs.length);
+                                return { zellen: zs.length, vier: zs.filter((k) => Object.keys(m[k]).length >= 4).length, schranke: +schranke.toFixed(3), gleich };
+                            },
+                        },
+                        datiert: { wie: (v, aus) => H.seite.TRENNE(aus.flatMap((x) => x.w.bauten.map((b) => Object.assign({}, b, { halt: String(x.a.zeit) }))), "halt", { farbe: true }) },
+                    },
+                    ungemessen: ["die Blind-Datierung der 4 Bilder am Panel (die Folge ≥ 80 %): ungemessen bis zum Gerät"],
+                    ms: Math.max(3000, Math.min(9000, Math.floor((H.rest() - 30) * 1000))),
+                });
+                const w = R.werte;
+                H.zeile("Spanne S1: " + R.akte.slice(0, 500) + " · gleich " + JSON.stringify(w.zellen.gleich).slice(0, 400) + " · datiert " + JSON.stringify(w.datiert));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Jahrs: " + R.fehlt, wo: "stamm/siedlung-ort.js:1227" });
+                if (!R.gemessen) throw new Error("der Fächer der Jahre maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                if (w.zellen.schranke < 0.8)
+                    return K.nicht(1, {
+                        n: w.zellen.vier,
+                        fehlt: "4 Halte derselben Zelle: " + (w.zellen.zellen - w.zellen.vier) + " von " + w.zellen.zellen + " Zellen tragen zwei gleiche Orte (" + (w.zellen.gleich[0] || "—") +
+                            ": die Epoche fällt auf die, die der Stand der Saat trägt, fachwerk-core.js:4395) — die Folge der Bilder ist höchstens zu " + Math.round(w.zellen.schranke * 100) + " % richtig, am Rezept datiert " + Math.round((w.datiert.balanciert || 0) * 100) + " %",
+                    });
+                fa = R;
+            });
             await K.messort("genesis");
             const reihen = {
                 2: { von: -1000, schritt: 50, n: 60 },
@@ -45,6 +93,7 @@ module.exports = (F) => [
                     return K.auge(n, { bild: b.datei, pose: "genesis", mass: q.verschieden + " Halte" });
                 });
             await K.schritt(1, async () => {
+                if (!fa) return null; // S1 steht schon (nicht · leser) oder warf am Fächer: UNGEMESSEN beim Namen
                 const fristMs = Math.max(8000, Math.round((H.rest() - 26) * 1000));
                 const o = await K.welt("return await (" + H.seite.VIER + ")(r, T, " + JSON.stringify({ jahre: [1300, 1600, 1800, 1950], seed: 7, nH: 12, fristMs }) + ");", fristMs + 15000);
                 if (!o || o.fehler) throw new Error("die vier Orte: " + ((o && o.fehler) || "ohne Antwort"));
@@ -64,11 +113,15 @@ module.exports = (F) => [
                 K.auge(1, {
                     bild: bilder[0].datei,
                     pose: "genesis: vier Orte (Same 7, 12 Häuser) der Jahre 1300/1600/1800/1950, je die Kamera 70 m vor ihrer Mitte, 22 m über dem Grund, Blick auf die Mitte",
-                    mass: bilder.map((q) => q.jahr + " " + q.epoche + " " + q.haeuser + " Häuser → " + H.path.basename(q.datei)).join(" · ") + " (die Folge blind zu ordnen)",
+                    mass: bilder.map((q) => q.jahr + " " + q.epoche + " " + q.haeuser + " Häuser → " + H.path.basename(q.datei)).join(" · ") + " (die Folge blind zu ordnen) · Fächer: " + fa.werte.zellen.vier + "/" + fa.werte.zellen.zellen +
+                        " Zellen mit 4 Orten, Schranke der Folge " + fa.werte.zellen.schranke + ", am Rezept datiert " + Math.round((fa.werte.datiert.balanciert || 0) * 100) + " %",
                 });
             });
         },
         seite: {
+            FAECHER,
+            ORT_AN,
+            TRENNE,
             // je Sprosse die Reihe der Jahre, je Jahr der Auftrag des Akts (Epoche aus dem Jahr), je verschiedenem Auftrag EIN Export;
             // verschieden heißt: ein anderer Ort (Jahr des Plans, Region, Größe, Slots, Straßen, die ersten Slots)
             HALTE: async (r, T, arg) => {
@@ -148,11 +201,16 @@ module.exports = (F) => [
             },
         },
         sprossen: {
+            // am Fächer (5 Zellen × 4 Jahre, headless 24.11.): 5 von 5 Zellen geben 1600 und 1800 denselben Ort (hanse statt barock: der Stand
+            // der Saat trägt kalkmoertel/glas/kupfer nicht; über 10 Saaten 9 von 10) — die Folge ist höchstens zu 50 % richtig, ein ganzes
+            // ROT am Gesetz, kein Panel
             1: {
                 auge: {
                     pose: "genesis: vier Orte (Same 7, 12 Häuser) der Jahre 1300/1600/1800/1950, je die Kamera 70 m vor ihrer Mitte, 22 m über dem Grund",
                     vorbild: "datierte Ansichten derselben Stadt zu vier Zeiten (Merian-Stich um 1640, Ansichten um 1800, Fotos um 1900 und 1950) — die Folge der vier Bilder",
                 },
+                erwartet: "nicht",
+                fehlt: "4 Halte derselben Zelle: 1600 und 1800 geben denselben Ort (die Epoche fällt auf die, die der Stand der Saat trägt)",
             },
             2: {
                 auge: { pose: "genesis: 40 m vor der Mitte, 30 m hoch", vorbild: "datierte Bildquellen eines Orts über 3 000 Jahre (Rekonstruktionen je 50 Jahre)" },
@@ -187,6 +245,12 @@ module.exports = (F) => [
         },
         proben: {
             1: [
+                {
+                    name: "zwei Halte derselben Zelle gleich (1600 ≡ 1800) — ROT am Gesetz, nie ein Bild",
+                    j: { leiter: "mensch.zeit.spanne", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "nicht", n: 0, fehlt: "4 Halte derselben Zelle: 5 von 5 Zellen tragen zwei gleiche Orte" } } },
+                    gruen: false,
+                    zahl: /ROT: Umfang nicht erzeugbar: 4 Halte derselben Zelle: 5 von 5 Zellen tragen zwei gleiche Orte \(gemessen 0\)/,
+                },
                 {
                     name: "die Abnahme speicherte kein Bild (das Bild fehlt im Lauf)",
                     j: { leiter: "mensch.zeit.spanne", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "auge", bild: "", pose: "Probe", vorbild: "Probe" } } },
@@ -771,7 +835,44 @@ module.exports = (F) => [
                 const b = await K.bild(n, w.pose);
                 return K.auge(n, { bild: b.datei, pose: "wiese", mass: w.erde + " Orte der Erde" });
             };
-            await K.schritt(1, () => auge(1, "keine römische Stadt nach dem Befund"));
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): je Ort der Erde mit seinem Jahr (Augusta Raurica 100 · Köln 1300 · Wien 1860)
+            // und 2 Saaten der Plan, den der Satz mit Jahr bestellt (ORT_AN: `epocheImJahr` → exportSettlement) — trägt er einen Schlüssel
+            // der Erde (ein Feld des Orts, Befund, Vorbild), die Region des Orts, die Kultur seines Befunds? Der Auftrag des Satzes trägt
+            // seed · nH · epoche · budget · kachel (stamm/siedlung-ort.js:1247), keinen Ort der Erde
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.ORT_AN, export: "fachwerk-core.js:4961 epocheImJahr → :11165 exportSettlement (dp: seed · nH · epoche — kein Ort der Erde)", leser: "stamm/siedlung-ort.js:1227" },
+                    adressen: {
+                        saaten: [7, 1],
+                        orte: [
+                            { name: "Augusta Raurica", jahr: 100, region: "antik", kultur: "roemisch" },
+                            { name: "Köln", jahr: 1300, region: "mitteleuropa" },
+                            { name: "Wien", jahr: 1860, region: "mitteleuropa" },
+                        ],
+                    },
+                    mit: { nH: 36 },
+                    masse: {
+                        adressen: { wie: "anzahl" },
+                        erde: { wie: (v, aus) => aus.filter((x) => x.w.erde).length },
+                        region: { wie: (v, aus) => aus.filter((x) => x.w.region === x.a.ort.region).length },
+                        roemisch: { wie: (v, aus) => { const A = aus.filter((x) => x.a.ort.kultur); const n = A.reduce((q, x) => q + x.w.haeuser, 0); return n ? +(A.reduce((q, x) => q + (x.w.kulturen[x.a.ort.kultur] || 0), 0) / n).toFixed(3) : null; } },
+                        je: { wie: (v, aus) => [...new Set(aus.filter((x) => x.a.saat === 7).map((x) => x.a.ort.name + " " + x.a.ort.jahr + " → „" + x.w.name + "“ (" + x.w.region + ", " + x.w.epoche + ", Plan " + x.w.jahr + ")"))] },
+                        felder: { wie: "erste", feld: "felder" },
+                    },
+                    ungemessen: ["die Straßenachsen gegen den archäologischen Plan und das Fach-Panel 2AFC: ohne Schlüssel der Erde kein Plan zu decken, ungemessen bis zum Gerät"],
+                    ms: Math.max(3000, Math.min(8000, Math.floor((H.rest() - 10) * 1000))),
+                });
+                const v = R.werte;
+                H.zeile("Erde S1: " + R.akte.slice(0, 500) + " · " + JSON.stringify(v.je));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Jahrs: " + R.fehlt, wo: "stamm/siedlung-ort.js:1227" });
+                if (!R.gemessen) throw new Error("der Fächer der Erde maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                if (v.erde < 1)
+                    return K.nicht(1, {
+                        n: v.erde,
+                        fehlt: "kein Schlüssel der Erde: der Auftrag trägt seed · nH · epoche (stamm/siedlung-ort.js:1247), der Plan kein Feld eines Orts — am Fächer " + R.gemessen + " Adressen römische Häuser um 100 " + Math.round((v.roemisch || 0) * 100) + " %, Region der Erde " + v.region + "/" + R.gemessen + ": " + v.je.join(" · "),
+                    });
+                return auge(1, "der Schlüssel steht im Plan: die Straßenachsen gegen den Befund");
+            });
             await K.schritt(2, async () => K.nicht(2, { n: w.erde, fehlt: kein + " — keine 10 Orte × 3 Epochen" }));
             await K.schritt(3, () => auge(3, "keine Stadt, die wächst, brennt und überbaut wird, wie sie es tat"));
             await K.schritt(4, async () => K.nicht(4, { n: w.erde, fehlt: kein + " — keine bewohnte Erde je Jahrhundert, kein Bevölkerungsraster, keine Reichsgrenze" }));
@@ -779,6 +880,8 @@ module.exports = (F) => [
             await K.schritt(6, () => auge(6, "keine eigene Stadt im Jahr der Großeltern"));
         },
         seite: {
+            FAECHER,
+            ORT_AN,
             ERDE: async (r, T, arg) => {
                 const AR = r.constructor;
                 const ep = AR.Gesetz("fachwerk:epocheImJahr");
@@ -801,7 +904,7 @@ module.exports = (F) => [
             1: {
                 auge: { pose: "wiese: die Stadt des Jahres 100", vorbild: "Augusta Raurica um 100 (archäologischer Gesamtplan und wissenschaftliche Rekonstruktion, Augst)" },
                 erwartet: "nicht",
-                fehlt: "kein Schlüssel der Erde: das Jahr 100 gibt die Epoche mittelalter, keine römische Stadt nach dem Befund",
+                fehlt: "kein Schlüssel der Erde: der Auftrag trägt seed · nH · epoche, das Jahr 100 gibt die Epoche mittelalter, keine römische Stadt nach dem Befund",
             },
             2: {
                 umfang: { soll: 30, wort: "Orte der Erde × Epochen (10 × 3)", herkunft: "„10 Orte × 3 Epochen“ des Umfangs ausmultipliziert: 30 Paare (Ort, Epoche)" },
@@ -838,6 +941,14 @@ module.exports = (F) => [
             },
         },
         proben: {
+            1: [
+                {
+                    name: "Augusta Raurica 100 wird ein Dorf des Mittelalters (kein Schlüssel der Erde) — ROT am Gesetz",
+                    j: { leiter: "mensch.zeit.erde", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "nicht", n: 0, fehlt: "kein Schlüssel der Erde: der Auftrag trägt seed · nH · epoche" } } },
+                    gruen: false,
+                    zahl: /ROT: Umfang nicht erzeugbar: kein Schlüssel der Erde: der Auftrag trägt seed · nH · epoche \(gemessen 0\)/,
+                },
+            ],
             2: [
                 {
                     name: "die Attrappe: Plan und Einwohner im Soll an keinem Ort der Erde",

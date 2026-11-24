@@ -396,11 +396,12 @@ const epochenReihe = async (r, T, arg) => {
 };
 
 // DER VERKEHR EINER SPIELSTUNDE (Seite der Welt): die Welt rafft die Zeit — ihr Tag dauert 60 min Spielzeit
-// (`DAY_LENGTH_DEFAULT_MINUTES`, stamm/daten.js:159), eine Stunde ihrer Uhr `_bewohnerStundeSek()` = 150 s
-// (stamm/siedlung-bewohner.js:2422), und jeder Takt trägt höchstens `TAKT_DECKEL_S` (stamm/dirigent-takt.js:2699). Die Probe
+// (`DAY_LENGTH_DEFAULT_MINUTES`, stamm/daten.js:171), eine Stunde ihrer Uhr `_bewohnerStundeSek()` = 150 s
+// (stamm/siedlung-bewohner.js:2864), und jeder Takt trägt höchstens `TAKT_DECKEL_S` = 0,1 s (stamm/dirigent-takt.js:2749): die Stunde
+// sind ≥ 1 500 Takte, in 60 s nur bei ≤ 40 ms je Takt. Die Probe
 // taktet Bündel ohne Pause zu `TAKT_DECKEL_S`, bis der VERKEHR eine Spielstunde rechnete: gezählt wird nur die Spielzeit der
 // Takte, in denen der Kilometer-Zähler der Wagen (`zahl.km`) wuchs (ein Zwischen-Takt ohne Bild rechnet keinen Verkehr,
-// stamm/dirigent-takt.js:86). Je Takt je Wagen, ob er fährt, sein Tempo, die Zeitlücke zum Vorderen (`W.vorder`); vorher ↔
+// stamm/dirigent-takt.js:85 `_gpuLeineFrei`). Je Takt je Wagen, ob er fährt, sein Tempo, die Zeitlücke zum Vorderen (`W.vorder`); vorher ↔
 // nachher die Stöße (`zahl.stoss`: Wagen, Leib, Bau), die Steckenbleiber ohne Anlass (`zahl.fest`) und der Weg je Wagen.
 const verkehrLauf = async (r, T, arg) => {
     const s = r.state;
@@ -499,6 +500,121 @@ const saetzeFahr = async (r, T, arg) => {
         if (p && baut(p.program) && /fahrzeug|wagen|vehicle|boot|karren/i.test(JSON.stringify(p.program))) ja.push(t);
     }
     return { n: ja.length, von: (arg.saetze || []).length, ja: ja.slice(0, 8) };
+};
+
+// DIE KIPPGRENZE AN EINER ADRESSE (mensch.fahrzeug.form#2, das Gesetz des Fächers, stationen/faecher.js): a.ort die Gattung des Kerns
+// (`GATTUNGEN`), a.saat der Stempel des Bauplans 1–9 (Spur × 0,85 · 1 · 1,15, Fahrhöhe × 0,8 · 1 · 1,4) — 6 × 9 = 54 Baupläne an Land.
+// Der Bauplan fährt, wie der Wagen der Welt fährt (stamm/gelaende-kollision.js:1265: s + fx + Stempel → exportDrive → fahrGesetz),
+// gestellt auf den Kipptisch: der Boden quer geneigt um θ (die linke Seite höher), 2 s mit der Handbremse im EINEN Fahr-Schritt des
+// Kerns (`fahrSchritt`, Stand und Kräfte), θ in Stufen zu 2,5° bis 85°. Die statische Formel: SSF = Spur ÷ (2 · Schwerpunkthöhe),
+// Kippwinkel atan(SSF) (NHTSA, SSF-Prüfverfahren 2013: SSF = T / 2H, T die mittlere Spur). Gekippt heißt: der Aufbau dreht über die Ebene des Tischs hinaus (mehr als
+// der Anschlag seiner Wank-Feder) — das misst die Lage des Gesetzes, nie eine Formel der Station
+const KIPP_AN = async (r, T, a) => {
+    const VC = globalThis.__vehicleCore;
+    if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function" || typeof VC.exportDrive !== "function") return { fehlt: "der Fahrzeug-Kern trägt keinen Fahr-Schritt (vehicle-core fahrSchritt · fahrGesetz · exportDrive)" };
+    const pre = VC.PRESETS[a.ort];
+    if (!pre) return { fehlt: "kein Rezept " + a.ort + " im Fahrzeug-Kern" };
+    const i = (((a.saat - 1) % 9) + 9) % 9;
+    const P = Object.assign({}, pre.s, pre.fx);
+    if (P.spur > 0) P.spur *= [0.85, 1, 1.15][i % 3];
+    if (P.fahrhoehe > 0) P.fahrhoehe *= [0.8, 1, 1.4][Math.floor(i / 3)];
+    const G = VC.fahrGesetz(VC.exportDrive(P, a.ort));
+    if (!G) return { fehlt: "der Bauplan " + a.ort + "/" + a.saat + " trägt kein Fahr-Gesetz" };
+    const ssfGrad = (Math.atan(G.W / (2 * G.cgH)) * 180) / Math.PI;
+    let kippGrad = null, rutschGrad = null, stehtBis = 0, hebt = null;
+    for (let deg = 5; deg <= 85; deg += 2.5) {
+        const th = (deg * Math.PI) / 180, tn = Math.tan(th);
+        const boden = (x, z) => -z * tn; // links (−sin, −cos) der Gier 0 ist −z: die linke Seite höher
+        const z = VC.fahrZustand(0, 0, 0);
+        VC.fahrStand(z, G, boden, 0);
+        let luft = false, wank = 0;
+        for (let k = 0; k < 120; k++) {
+            VC.fahrSchritt(z, { hand: true }, G, boden, 1 / 60);
+            if (z.luft) luft = true;
+            wank = Math.max(wank, Math.abs(z.wank || 0) + Math.abs(z.fWank || 0));
+        }
+        const drift = Math.hypot(z.x, z.z);
+        if (wank > th + 0.15 && kippGrad == null) kippGrad = deg;
+        if (drift > 0.5 && rutschGrad == null) rutschGrad = deg;
+        if (luft && hebt == null) hebt = deg;
+        if (drift <= 0.5 && !luft && kippGrad == null) stehtBis = deg;
+    }
+    return {
+        plan: a.ort + "/" + a.saat, spur: +G.W.toFixed(3), cgH: +G.cgH.toFixed(3), ssf: +(G.W / (2 * G.cgH)).toFixed(3), ssfGrad: +ssfGrad.toFixed(1), kippGrad, rutschGrad, hebt, stehtBis,
+        kippQ: kippGrad != null ? +(kippGrad / ssfGrad).toFixed(3) : null, gekippt: kippGrad != null ? 1 : 0, ueberSSF: kippGrad == null && stehtBis > ssfGrad ? 1 : 0, mussKippen: rutschGrad == null || ssfGrad < rutschGrad ? 1 : 0,
+    };
+};
+
+// DIE GESTALT EINES WAGENS DER STADT (mensch.fahrzeug.gestalt#1, das Gesetz des Fächers): a.ort die Gattung (`GATTUNGEN`), a.saat die
+// Saat der Stadt. Der Same des Wagens ist der des Spiels (stamm/siedlung-verkehr.js:396 `_rollGenome("<saat>:<slot>", "verkehr")`,
+// :765 seed = axis("same") · 2³²), gebaut durch die EINE Bau-Funktion des Kerns (vehicle-core `buildInstance`, die der Faden der Foundry
+// ruft, foundry-bruecke.js:919) auf der Stufe 1. Gezählt die Gestalt: der Fingerabdruck der Geometrie (Ecken, Summe der Lagen) und der
+// Lack (`lackIndex`); die Geometrie wird danach freigegeben
+const GESTALT_AN = async (r, T, a) => {
+    const VC = globalThis.__vehicleCore;
+    if (!VC || typeof VC.buildInstance !== "function" || typeof VC.lackIndex !== "function") return { fehlt: "der Fahrzeug-Kern trägt keinen Bau (vehicle-core buildInstance · lackIndex)" };
+    if (!r || typeof r._rollGenome !== "function") return { fehlt: "die Welt trägt den Genom-Roller des Wirts nicht (_rollGenome)" };
+    const same = Math.floor(r._rollGenome(a.saat + ":0", "verkehr").axis("same") * 4294967296) >>> 0;
+    const g = VC.buildInstance(a.ort, same, 1);
+    let n = 0, s = 0;
+    g.traverse((o) => {
+        const p = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+        if (!p) return;
+        n += p.count;
+        for (let k = 0; k < p.count; k += 7) s += p.getX(k) * 3 + p.getY(k) * 5 + p.getZ(k) * 7;
+        o.geometry.dispose();
+    });
+    const geo = n + ":" + s.toFixed(3), lack = VC.lackIndex(same);
+    return { geo, lack, gestalt: a.ort + "|" + geo + "|" + lack, same };
+};
+
+// DIE FLOTTE EINER STADT (mensch.fahrzeug.gestalt#1, die Straße): a.ort die Größe (fachwerk GROESSE_N), a.saat die Saat der Stadt. Die
+// Lose des Plans (fachwerk `DORF`, aus dem exportSettlement die Slots legt, fachwerk-core.js:11176) → die Wagen der Stadt
+// (`verkehrVon`, je 15 Häuser einer) → ihre Gattungen (vehicle-core `flotte`, der Anteil am Bestand) — wie der Verkehr sie anlegt
+// (stamm/siedlung-verkehr.js:33 und :372)
+const FLOTTE_AN = async (r, T, a) => {
+    const FC = globalThis.__fachwerkCore, VC = globalThis.__vehicleCore;
+    if (!FC || typeof FC.DORF !== "function" || typeof FC.verkehrVon !== "function" || !VC || typeof VC.flotte !== "function") return { fehlt: "die Kerne tragen keine Flotte (fachwerk DORF · verkehrVon, vehicle-core flotte)" };
+    const nH = FC.GROESSE_N && FC.GROESSE_N[a.ort];
+    if (!(nH > 0)) return { fehlt: "keine Größe „" + a.ort + "“ in fachwerk GROESSE_N" };
+    const D = FC.DORF({ seed: a.saat, nH, epoche: typeof FC.siedlungsEpoche === "function" ? FC.siedlungsEpoche(a.saat) : undefined });
+    const von = FC.verkehrVon({ slots: D.houses, staedtisch: D.staedtisch });
+    const fl = VC.flotte(von.slots.length, a.saat >>> 0);
+    return { haeuser: D.houses.length, wagen: von.n, gattungen: new Set(fl).size, fuenf: new Set(fl).size >= 5 ? 1 : 0 };
+};
+
+// DIE MASCHINE AN IHRER QUELLE (mensch.fahrzeug.maschine#2, das Gesetz des Fächers): a.ort die Rolle des Teils („rad“ — das Rad einer
+// Mühle, eines Wasserrads; „segel“ — das Tuch im Wind), a.zeit die Stärke des Winds am Ort (0 Flaute … 1 Sturm). Gerufen wird der EINE
+// Animator, der jedes Werk der Welt im Leerlauf bewegt (stamm/vegetation-baum.js:2774 `_animateCompoundMotion` je Architektur mit Rad
+// oder Segel), an einem Teil um seinen Anker; der Wind des Orts (`_windAt`) steht für die Dauer des Rufs auf a.zeit und danach wieder,
+// wie er war. Gemessen über 2 s der Bild-Uhr die Drehung je Sekunde (das Rad) und der Ausschlag (das Tuch); dazu die Rezepte einer
+// Maschine mit Quelle in jedem Kern der Welt
+const RAD_AN = async (r, T, a) => {
+    if (!r || typeof r._animateCompoundMotion !== "function" || typeof r._windAt !== "function") return { fehlt: "die Welt trägt den Animator der Werke nicht (_animateCompoundMotion · _windAt)" };
+    if (!T || typeof T.Group !== "function" || typeof T.Object3D !== "function") return { fehlt: "kein THREE in der Seite der Welt" };
+    const G = new T.Group(), C = new T.Object3D();
+    G.add(C);
+    const rolle = [{ role: a.ort, joint: a.ort === "rad", axis: "z", anchor: { x: 0, y: 0, z: 0 }, phase: 0 }];
+    const eigen = Object.prototype.hasOwnProperty.call(r, "_windAt"), alt = r._windAt;
+    const winkel = [];
+    r._windAt = () => ({ x: a.zeit, z: 0, staerke: a.zeit, boe: 1 });
+    try {
+        for (let k = 0; k <= 40; k++) {
+            r._animateCompoundMotion(G, rolle, 10 + k * 0.05, 0, false, null);
+            winkel.push(C.rotation.z);
+        }
+    } finally {
+        if (eigen) r._windAt = alt;
+        else delete r._windAt;
+    }
+    let weg = 0;
+    for (let k = 1; k < winkel.length; k++) weg += Math.abs(winkel[k] - winkel[k - 1]);
+    const dreh = weg / 2, aus = Math.max(...winkel) - Math.min(...winkel);
+    const KERNE = Object.keys(globalThis).filter((k) => /^__\w+Core$/.test(k) && globalThis[k] && globalThis[k].PRESETS && typeof globalThis[k].PRESETS === "object");
+    const RE = /m(ue|ü)hle|wasserrad|windrad|schoepfrad|schöpfrad|saegewerk|sägewerk|hammerwerk|pumpwerk/i;
+    const muehlen = KERNE.flatMap((k) => Object.keys(globalThis[k].PRESETS).filter((id) => RE.test(id)).map((id) => k + ":" + id));
+    const rezepte = KERNE.reduce((n, k) => n + Object.keys(globalThis[k].PRESETS).length, 0);
+    return { dreh: +dreh.toFixed(4), aus: +aus.toFixed(4), arbeitet: (a.ort === "rad" ? dreh > 0.05 : aus > 0.005) ? 1 : 0, quelle: a.zeit > 0 ? 1 : 0, kerne: KERNE.length, rezepte, muehlen: muehlen.length, ids: muehlen.slice(0, 6) };
 };
 
 const PFAD = ["vehicle-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/gelaende-kollision.js"];
@@ -677,7 +793,6 @@ module.exports = (F) => [
                 if (!z) throw new Error("kein Zensus der Welt");
                 return z;
             };
-            await K.schritt(2, async () => K.nicht(2, { n: da().rezepte.length, fehlt: "50 Baupläne an Land: der Fahrzeug-Kern trägt " + da().rezepte.length + " Rezepte (" + da().rezepte.map((x) => x.k).join(", ") + ")" }));
             await K.schritt(3, async () => K.nicht(3, { n: da().medien.wasser + da().medien.luft, fehlt: "Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt" }));
             await K.schritt(5, async () => K.nicht(5, { n: da().kulturen, fehlt: "10³ Kultur-Saaten: der Kern trägt " + da().kulturen + " Kulturen (eingefrorene Marken-Vektoren)" }));
             await K.schritt(6, async () => K.nicht(6, { n: 0, fehlt: "Technik-Evolution über 500 Jahre: die Epochen sind eine feste Tafel (" + da().epochen.join(" · ") + "), keine Auslese durch Gebrauch" }));
@@ -701,8 +816,57 @@ module.exports = (F) => [
                     taeter: o.tempoQ != null && o.tempoQ >= 1 ? "carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich" : null,
                 });
             });
+            // S2 AM GESETZ (der Fächer, zuletzt: er liest nur den Kern): 6 Gattungen × 9 Stempel = 54 Baupläne auf dem Kipptisch im EINEN
+            // Fahr-Schritt — kippt einer, urteilt die Kippgrenze ± 15 % gegen atan(SSF); kippt keiner, nennt die Sprosse die fehlende
+            // Fähigkeit: der Fahr-Satz trägt die Lastverlagerung nur längs (vehicle-core.js:3990), quer allein die Wank-Feder bis zu
+            // ihrem Anschlag (nickMax 0,12 rad, :3909) — der Wagen steht auf vier Rädern, bis er rutscht
+            await K.schritt(2, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.KIPP_AN, export: "vehicle-core.js:4146 fahrSchritt (:3833 fahrStand · :3474 exportDrive → :3662 fahrGesetz)", leser: "stamm/koerper-bewegung.js:1575" },
+                    adressen: { saaten: 9, orte: ["gt", "supersport", "limousine", "kompakt_fwd", "suv", "transporter"] },
+                    masse: {
+                        plaene: { wie: "anzahl", feld: "plan" },
+                        gekippt: { wie: "summe", feld: "gekippt" },
+                        kippQ: { wie: (v, aus) => { const q = aus.map((x) => x.w.kippQ).filter((x) => Number.isFinite(x)).sort((p, s) => p - s); return q.length ? q[Math.floor(q.length / 2)] : null; } },
+                        mussKippen: { wie: "summe", feld: "mussKippen" },
+                        ueberSSF: { wie: "summe", feld: "ueberSSF" },
+                        ssfMin: { wie: "min", feld: "ssfGrad" },
+                        ssfMax: { wie: "max", feld: "ssfGrad" },
+                        rutschMin: { wie: "min", feld: "rutschGrad" },
+                        rutschMax: { wie: "max", feld: "rutschGrad" },
+                        formen: { wie: (v, aus) => new Set(aus.map((x) => x.w.spur + "/" + x.w.cgH)).size },
+                    },
+                    schlecht: { feld: "ssfGrad", richtung: "min" },
+                    pose: (a, w) => "der Bauplan " + w.plan + " (SSF " + w.ssf + ", Kippwinkel " + w.ssfGrad + "°) auf dem Kipptisch bei " + w.stehtBis + "°: 8 m quer vor ihm, Blick auf die tiefe Seite — er steht auf vier Rädern",
+                    ungemessen: [
+                        "die Welt-Skala des Werks (`_compoundSizeFactor`) streckt Spur und Schwerpunkt gleich: der SSF bleibt, der Fächer fährt die Skala 1",
+                        "der Kipptisch rutscht ab atan(μ) (der Reibkreis quer, vehicle-core.js:4104): eine Kippgrenze über ihm trägt nur ein Tisch mit Stolperkante — die Grenze von Plänen mit SSF > μ ist am Gesetz ohne Kante nicht zu sehen",
+                    ],
+                    ms: Math.max(4000, Math.floor((H.rest() - 3) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Kipptisch am Gesetz: " + R.akte.slice(0, 500));
+                if (!R.gemessen) {
+                    if (R.fehler.length) throw new Error("der Kipptisch warf: " + R.fehler[0].fehler);
+                    return K.nicht(2, { n: 0, fehlt: "50 Baupläne an Land: " + (R.fehlt || "keine Adresse des Fächers an der Frist") });
+                }
+                if (W.gekippt > 0)
+                    return K.zahl(2, {
+                        n: W.plaene,
+                        werte: { kippQ: W.kippQ },
+                        beleg: R.akte.slice(0, 300),
+                        taeter: !(Math.abs(W.kippQ - 1) <= 0.15) ? "die Kippgrenze des Fahr-Satzes (vehicle-core.js fahrStand) gegen atan(Spur ÷ 2 h)" : null,
+                    });
+                if (R.gerissen && W.plaene < 50) throw new Error("54 Baupläne an der Frist ungemessen: " + R.gerissen + " offen, " + W.plaene + " gefahren, keiner kippte");
+                K.leser(2, {
+                    n: W.plaene,
+                    fehlt: "die Kippgrenze: " + W.plaene + " Baupläne (" + W.formen + " Formen, SSF-Winkel " + W.ssfMin + "–" + W.ssfMax + "°) — keiner kippt an 5–85°; sie stehen auf vier Rädern bis zum Rutschen bei " + W.rutschMin + "–" + W.rutschMax +
+                        "° (von " + W.mussKippen + " Plänen, deren Kippwinkel unter dem Rutschen liegt, stehen " + W.ueberSSF + " über ihm). Der Fahr-Satz verlagert die Last nur längs (dW = aLong · cgH / L), quer trägt er allein die Wank-Feder bis 0,12 rad (:3909)",
+                    wo: "vehicle-core.js:3990",
+                });
+            });
         },
-        seite: { ZENSUS: zensusFahr, FORM: formTempo, SAETZE: saetzeFahr },
+        seite: { ZENSUS: zensusFahr, FORM: formTempo, SAETZE: saetzeFahr, FAECHER, KIPP_AN },
         sprossen: {
             1: {
                 umfang: { soll: 1, wort: "Werkstatt-Wagen, in zwei Bauplänen gefahren" },
@@ -714,8 +878,9 @@ module.exports = (F) => [
             2: {
                 umfang: { soll: 50, wort: "Baupläne an Land" },
                 masse: [{ key: "kippQ", wort: "Kippgrenze ÷ statische Formel", soll: 1, tol: 0.15 }],
-                erwartet: "nicht",
-                fehlt: "50 Baupläne an Land: der Kern trägt sechs Rezepte",
+                erwartet: "leser",
+                fehlt: "die Kippgrenze: 54 Baupläne am Gesetz, keiner kippt — der Fahr-Satz verlagert die Last nur längs, quer trägt allein die Wank-Feder bis 0,12 rad",
+                wo: "vehicle-core.js:3990",
             },
             3: {
                 umfang: { soll: 2, wort: "Werke mit gebauter Hülle (Floß, Gleiter)", herkunft: "der Richter nennt zwei Werke aus Teilen: das Floß (sinkt/schwimmt) und den Gleiter (fällt/fliegt)" },
@@ -762,11 +927,25 @@ module.exports = (F) => [
                     zahl: /ROT an Masse schwer ÷ leicht 1 verfehlt/,
                 },
             ],
+            2: [
+                {
+                    name: "TÄTER: der Wagen kippt erst am Rutschen (Kippgrenze 1,4 × atan(SSF)) — die Wank-Feder hält ihn über die Kante",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 54, werte: { kippQ: 1.4 } } } },
+                    gruen: false,
+                    zahl: /ROT an Kippgrenze ÷ statische Formel 1\.4 verfehlt/,
+                },
+                {
+                    name: "der Zweig kippt am Gesetz: 54 Baupläne, die Kippgrenze 1,05 × atan(Spur ÷ 2 h)",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 54, werte: { kippQ: 1.05 } } } },
+                    gruen: true,
+                },
+            ],
         },
     }),
 
-    // ── mensch.fahrzeug.gestalt — die Gestalt im Bild. S1 die Straße mit den Wagen der Stadt (≥ 5 Gattungen gezählt), S2 die Reihe
-    // der Epochen des Kerns 12 m vor dem Spieler; S3–S6 der Umfang gezählt.
+    // ── mensch.fahrzeug.gestalt — die Gestalt im Bild. S1 am Gesetz: die Gestalten der Wagen über 100 Saaten × die Gattungen des Kerns
+    // (dazu die Flotte der Großstadt über dieselben Saaten), S2 die Reihe der Epochen des Kerns 12 m vor dem Spieler; S3–S6 der Umfang
+    // gezählt.
     F.leiter("mensch.fahrzeug.gestalt", {
         sek: 60,
         mutiert: true,
@@ -789,6 +968,65 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: da().wagen, fehlt: "10² Wagen einer Straße: die Stadt trägt " + da().wagen + " Wagen" }));
             await K.schritt(5, async () => K.nicht(5, { n: da().fremd, fehlt: "fremde Evolutionen: kein Fahrzeug eines fremden Leibs" }));
             await K.schritt(6, async () => K.nicht(6, { n: da().fremd, fehlt: "10⁴ Planeten-Saaten: die Welt trägt einen Planeten ohne fremde Zivilisation" }));
+            // S1 AM GESETZ (vor der Reihe: die Fächer lesen nur die Kerne und den Genom-Roller, die Reihe setzt Werke): die Gestalten der
+            // Wagen über 100 Saaten × die Gattungen des Kerns — dieselbe Bau-Funktion und derselbe Same wie der Wagen der Stadt — und die
+            // Flotte der Großstadt über dieselben 100 Saaten (die Straße: ≥ 5 Gattungen). Die Geometrie des Kerns ist seed-invariant, der
+            // Same wählt den Lack (vehicle-core.js:3363): 100 Saaten tragen dann höchstens Gattungen × Lacke Gestalten
+            await K.schritt(1, async () => {
+                const ms = (anteil) => Math.max(4000, Math.floor((H.rest() - 3) * 1000 * anteil));
+                const S = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.FLOTTE_AN, export: "vehicle-core.js:4809 flotte (fachwerk-core.js:5745 verkehrVon · :5182 DORF)", leser: "stamm/siedlung-verkehr.js:372" },
+                    adressen: { saaten: 100, orte: ["grossstadt"] },
+                    masse: {
+                        saaten: { wie: "anzahl", feld: "gattungen" },
+                        fuenf: { wie: "summe", feld: "fuenf" },
+                        gattungenMin: { wie: "min", feld: "gattungen" },
+                        wagenMin: { wie: "min", feld: "wagen" },
+                        wagenMax: { wie: "max", feld: "wagen" },
+                    },
+                    schlecht: { feld: "gattungen", richtung: "min" },
+                    pose: (a, w) => "Großstadt der Saat " + a.saat + ": " + w.wagen + " Wagen aus " + w.haeuser + " Losen, " + w.gattungen + " Gattungen",
+                    ungemessen: ["die Slots nach dem Layout (exportSettlement fachwerk-core.js:11165, 1,5 s je Großstadt): der Fächer zählt die Lose von DORF — am Kern an 4 Saaten gegen den Export: die Lose bis 6 mehr, die Wagen gleich bis ± 1"],
+                    ms: ms(0.25),
+                });
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.GESTALT_AN, export: "vehicle-core.js:5003 buildInstance (:297 lackIndex)", leser: "stamm/siedlung-verkehr.js:765" },
+                    adressen: { saaten: 100, orte: ["gt", "supersport", "limousine", "kompakt_fwd", "suv", "transporter"] },
+                    masse: {
+                        gestalten: { wie: "verschieden", feld: "gestalt" },
+                        lacke: { wie: "verschieden", feld: "lack" },
+                        gattungen: { wie: "verschieden", feld: "a.ort" },
+                        saaten: { wie: "verschieden", feld: "a.saat" },
+                        geoJe: { wie: (v, aus) => { const o = {}; for (const x of aus) (o[x.a.ort] = o[x.a.ort] || new Set()).add(x.w.geo); const n = Object.values(o).map((s) => s.size); return n.length ? Math.max(...n) : null; } },
+                    },
+                    schlecht: { feld: "lack", richtung: "min" },
+                    pose: (a, w) => "Messort stadt-voll: 12 m vor einem Wagen " + a.ort + " der Saat " + a.saat + " (Lack " + w.lack + ") neben seinem Zwilling gleicher Gattung und gleichen Lacks einer anderen Saat, 2 m über Grund",
+                    ungemessen: [
+                        "das Bild der Straße (≥ 90 % als Gattung erkannt): ungemessen bis zum Gerät — der Satz ist Panel, die Pose nennt der Fächer",
+                        "ein Wagen ohne Fahrer oder ohne freien Platz an der Wende fällt aus der Flotte (stamm/siedlung-verkehr.js:375 und :390): die Flotte des Fächers ist die des Gesetzes",
+                    ],
+                    ms: ms(1),
+                });
+                const W = R.werte, F = S.werte;
+                H.zeile("Gestalten am Gesetz: " + R.akte.slice(0, 400) + " · Straße: " + S.akte.slice(0, 300) + " · Welt: " + (z ? z.fahrzeugTypen.length + " Typen, " + z.wagen + " Wagen" : "—"));
+                if (!R.gemessen) {
+                    if (R.fehler.length) throw new Error("der Bau der Wagen warf: " + R.fehler[0].fehler);
+                    return K.nicht(1, { n: 0, fehlt: "10² Saaten in 5 Gattungen: " + (R.fehlt || "keine Adresse des Fächers an der Frist") });
+                }
+                const strasse = S.gemessen ? F.fuenf + " von " + F.saaten + " Großstadt-Saaten fahren ≥ 5 Gattungen (" + F.wagenMin + "–" + F.wagenMax + " Wagen)" : "die Flotte ungemessen (" + (S.fehlt || "Frist") + ")";
+                if (W.gestalten < 100 || !(W.geoJe > 1)) {
+                    // die Schranke steht, sobald jeder Lack gesehen ist: mehr Saaten tragen dann keine Gestalt mehr
+                    if (R.gerissen && W.lacke < 8) throw new Error("die Gestalten an der Frist ungemessen: " + R.gerissen + " Adressen offen, " + W.saaten + " Saaten gebaut, " + W.lacke + " Lacke gesehen");
+                    return K.nicht(1, {
+                        n: W.gestalten,
+                        fehlt: "10² Saaten in 5 Gattungen: " + W.saaten + " Saaten × " + W.gattungen + " Gattungen tragen " + W.gestalten + " Gestalten — je Gattung " + W.geoJe + " Geometrie × " + W.lacke +
+                            " Lacke, die Geometrie ist seed-invariant, der Same wählt nur den Lack (GESTALTEN_JE_REZEPT); die Straße trägt die Gattungen: " + strasse,
+                    });
+                }
+                if (!z || !z.posen.strasse) throw new Error("kein Wagen am Messort");
+                const b = await K.bild(1, z.posen.strasse);
+                K.auge(1, { bild: b.datei, pose: "stadt-voll: 12 m vor dem nächsten Wagen der Stadt, 2 m über Grund", mass: W.gestalten + " Gestalten aus " + W.saaten + " Saaten × " + W.gattungen + " Gattungen; " + strasse });
+            });
             await K.schritt(2, async () => {
                 const o = await K.welt("return await (" + H.seite.REIHE + ")(r, T, {});", 45000);
                 H.zeile("Reihe der Epochen: " + o.n + "/" + o.soll + " " + (o.ids || []).join(", "));
@@ -800,21 +1038,13 @@ module.exports = (F) => [
                     await K.welt("return await (" + H.seite.REIHE + ")(r, T, " + JSON.stringify({ weg: true }) + ");");
                 }
             });
-            await K.schritt(1, async () => {
-                const w = da();
-                const n = w.fahrzeugTypen.length;
-                if (n < 5) return K.nicht(1, { n, fehlt: "5 Gattungen: die Welt trägt " + n + " Fahrzeug-Typen (" + w.fahrzeugTypen.join(", ") + ")" });
-                if (!w.posen.strasse) throw new Error("kein Wagen am Messort");
-                const b = await K.bild(1, w.posen.strasse);
-                K.auge(1, { bild: b.datei, pose: "stadt-voll: 12 m vor dem nächsten Wagen der Stadt, 2 m über Grund", mass: n + " Fahrzeug-Typen, " + w.wagen + " Wagen" });
-            });
         },
-        seite: { ZENSUS: zensusFahr, REIHE: epochenReihe },
+        seite: { ZENSUS: zensusFahr, REIHE: epochenReihe, FAECHER, GESTALT_AN, FLOTTE_AN },
         sprossen: {
             1: {
                 auge: { pose: "Messort stadt-voll: 12 m vor dem nächsten Wagen der Stadt in Richtung des Spielers, 2 m über Grund, Blick auf den Wagen", vorbild: "Fotos realer Straßen mit Wagen fünf Gattungen (Kleinwagen, Limousine, SUV, Lieferwagen, Sportwagen): ≥ 90 % als Gattung erkannt" },
                 erwartet: "nicht",
-                fehlt: "5 Gattungen: die Welt trägt weniger Fahrzeug-Typen",
+                fehlt: "10² Saaten in 5 Gattungen: 100 Saaten × 6 Gattungen tragen 48 Gestalten — die Geometrie ist seed-invariant, der Same wählt nur den Lack (8 Lacke); die Straße der Großstadt trägt die 5 Gattungen",
             },
             2: {
                 auge: { pose: "Messort stadt-voll: 2 m hinter dem Spieler, 2,2 m hoch, Blick auf die Reihe der sechs Epochen 12 m vor ihm (5,5 m Abstand)", vorbild: "Museumsfotos je Epoche: Schleife, Ochsenkarren, Kutsche, Motorwagen, Limousine, Zukunftsstudie (Silhouette IoU ≥ 0,7, Epoche ± 1 Jh.)" },
@@ -869,7 +1099,16 @@ module.exports = (F) => [
                     n: o.n,
                     werte: { kollisionen: o.kollisionen, zeitluecke: o.zeitluecke, reisetempo: o.reisetempo, stillstand: o.stillstand, stunden: o.stunden },
                     beleg: o.wagen + " Wagen, " + o.takte + " Takte, " + o.verkehrS + " s Verkehr (Spielstunde " + o.stundeS + " s), " + o.wegM + " m gefahren, " + o.luecken + " Folge-Proben, " + o.msJeTakt + " ms je Takt",
-                    taeter: o.kollisionen > 0 || o.stillstand > 0 || !(o.reisetempo >= 0.8) || !(o.zeitluecke >= 1 && o.zeitluecke <= 3) ? "die Fahrer des Verkehrs (stamm/siedlung-verkehr.js: Folgen, Bremsen, Spur)" : null,
+                    // der Täter beim Namen, das erste verfehlte Glied in der Folge der Maße: die Folge des Fahrers ist eine Schließung in
+                    // `_verkehrFolge` (kein Export eines Kerns, VERKEHR_GESETZ fachwerk-core.js:5743 trägt keine Zeitlücke) — darum misst
+                    // S1 die Stunde der warmen Welt und nie einen Fächer
+                    taeter:
+                        o.kollisionen > 0 ? o.kollisionen + " Stöße (Wagen, Leib, Bau) in der Spielstunde: die Folge und das Ausweichen des Fahrers (stamm/siedlung-verkehr.js:1788 _verkehrFolge, gezählt :1742)"
+                        : !(o.zeitluecke >= 1) ? "die Folge hält einen Abstand, keine Zeitlücke: der Fahrer fährt bis abstandM 2,5 m an den Vorderen heran (stamm/siedlung-verkehr.js:1832 halt, v² = vO² + 2·b·(Lücke − abstandM), :2501) — bei 8,3 m/s sind das 0,30 s"
+                        : o.zeitluecke > 3 ? "die Folge hält " + o.zeitluecke + " s hinter dem Vorderen (stamm/siedlung-verkehr.js:1832 halt)"
+                        : !(o.reisetempo >= 0.8) ? "Reisetempo " + o.reisetempo + " des erlaubten: der Deckel des Fahrers (stamm/siedlung-verkehr.js:1788 _verkehrFolge, sein Grund W.grund)"
+                        : o.stillstand > 0 ? o.stillstand + " Steckenbleiber ohne Anlass (stamm/siedlung-verkehr.js:1752 zahl.fest nach festS)"
+                        : null,
                 });
             });
         },
@@ -887,7 +1126,7 @@ module.exports = (F) => [
                         wort: "Spielstunden Verkehr der Messung",
                         soll: 1,
                         richtung: "≥",
-                        herkunft: "„1 h“: eine Stunde der Welt-Uhr, `_bewohnerStundeSek()` = 60 min Tag ÷ 24 = 150 s Spielzeit (stamm/siedlung-bewohner.js:2422)",
+                        herkunft: "„1 h“: eine Stunde der Welt-Uhr, `_bewohnerStundeSek()` = 60 min Tag ÷ 24 = 150 s Spielzeit (stamm/siedlung-bewohner.js:2864)",
                     },
                 ],
             },
@@ -953,6 +1192,12 @@ module.exports = (F) => [
                     zahl: /ROT an Zeitlücke zum Vorderen im Median in s 0\.4 verfehlt/,
                 },
                 {
+                    name: "TÄTER: die Folge am Abstand statt an der Zeit (2,5 m bei 8,3 m/s = 0,30 s, stamm/siedlung-verkehr.js:1832)",
+                    j: { leiter: "mensch.fahrzeug.lenker", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 20, werte: { kollisionen: 0, zeitluecke: 0.3, reisetempo: 0.9, stillstand: 0, stunden: 1 }, taeter: "die Folge hält einen Abstand, keine Zeitlücke" } } },
+                    gruen: false,
+                    zahl: /ROT an Zeitlücke zum Vorderen im Median in s 0\.3 verfehlt.*Täter: die Folge hält einen Abstand/,
+                },
+                {
                     name: "der Lauf einer Minute statt einer Spielstunde (0,4 h)",
                     j: { leiter: "mensch.fahrzeug.lenker", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 20, werte: { kollisionen: 0, zeitluecke: 1.8, reisetempo: 0.9, stillstand: 0, stunden: 0.4 } } } },
                     gruen: false,
@@ -981,7 +1226,48 @@ module.exports = (F) => [
                 if (!z) throw new Error("kein Zensus der Welt");
                 return z.werke;
             };
-            await K.schritt(2, async () => K.nicht(2, { n: da().quelle, fehlt: "50 Maschinen-Saaten mit Quelle: keine Mühle und kein Wasserrad steht in der Welt (das Rad eines Werks dreht im Leerlauf ohne Quelle, stamm/koerper-leib.js:3106)" }));
+            // S2 AM GESETZ (der Fächer: 8 Rufe des Animators, Millisekunden — vor der Haspel, die die Takte braucht): das Rad und das Tuch
+            // eines Werks bei Wind 0 · 0,3 · 0,6 · 1 im EINEN Leerlauf-Animator der Architektur, dazu die Rezepte einer Maschine mit
+            // Quelle in jedem Kern. Trägt kein Kern eine Mühle, ist der Umfang nicht erzeugbar — und das Gesetz der Bewegung nennt die
+            // Mühle, die bei Flaute dreht (das Rad im Leerlauf t · 0,7, stamm/koerper-leib.js:3229)
+            await K.schritt(2, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.RAD_AN, export: "stamm/koerper-leib.js:3154 _animateCompoundMotion (Rad :3229 · Segel :3277, Wind _windAt)", leser: "stamm/vegetation-baum.js:2774" },
+                    adressen: { orte: ["rad", "segel"], zeiten: [0, 0.3, 0.6, 1] },
+                    masse: {
+                        radFlaute: { wie: "max", feld: "dreh", nur: (a) => a.ort === "rad" && a.zeit === 0 },
+                        radSturm: { wie: "max", feld: "dreh", nur: (a) => a.ort === "rad" && a.zeit === 1 },
+                        segelFlaute: { wie: "max", feld: "aus", nur: (a) => a.ort === "segel" && a.zeit === 0 },
+                        segelSturm: { wie: "max", feld: "aus", nur: (a) => a.ort === "segel" && a.zeit === 1 },
+                        // die Maschine ist das Rad: sie arbeitet nur bei Quelle, wenn es bei Flaute steht und bei jedem Wind dreht
+                        nurBeiQuelle: { wie: (v, aus) => { const Q = aus.filter((x) => x.a.ort === "rad"); return Q.length ? (Q.every((x) => x.w.arbeitet === x.w.quelle) ? 1 : 0) : null; } },
+                        muehlen: { wie: "max", feld: "muehlen" },
+                        rezepte: { wie: "max", feld: "rezepte" },
+                        kerne: { wie: "max", feld: "kerne" },
+                        ids: { wie: "erste", feld: "ids" },
+                    },
+                    schlecht: { feld: "dreh", richtung: "max" },
+                    pose: (a, w) => "die Mühle bei " + (a.zeit ? "Wind " + a.zeit : "Flaute") + ": das " + (a.ort === "rad" ? "Rad dreht " + w.dreh + " rad/s" : "Tuch schlägt " + w.aus + " rad") + " — kein Werk der Welt trägt sie, die Pose bleibt ohne Bild",
+                    ungemessen: [
+                        "das Bild der stehenden Mühle bei Flaute: kein Werk der Welt trägt eine Mühle — der Fächer misst das Gesetz der Bewegung am Teil",
+                        "die Arbeit an der Welle (Mahlgut je Stunde, gehobenes Wasser): kein Gesetz trägt sie",
+                    ],
+                    ms: 8000,
+                });
+                const W = R.werte;
+                H.zeile("Mühle am Gesetz: " + R.akte.slice(0, 400) + " · Werke der Welt mit Quelle " + (z ? z.werke.quelle : "—"));
+                if (!R.gemessen) {
+                    if (R.fehler.length) throw new Error("der Animator warf: " + R.fehler[0].fehler);
+                    return K.nicht(2, { n: 0, fehlt: "50 Maschinen-Saaten mit Quelle: " + (R.fehlt || "keine Adresse des Fächers an der Frist") });
+                }
+                const bewegung = "das Rad eines Werks dreht " + W.radFlaute + " rad/s bei Flaute wie " + W.radSturm + " im Sturm (stamm/koerper-leib.js:3229), das Tuch schlägt " + W.segelFlaute + " ↔ " + W.segelSturm + " rad mit dem Wind und treibt nichts";
+                if (W.muehlen < 50)
+                    return K.nicht(2, {
+                        n: W.muehlen,
+                        fehlt: "50 Maschinen-Saaten mit Quelle: " + W.muehlen + " Rezepte einer Mühle, eines Wasser- oder Windrads unter " + W.rezepte + " Rezepten in " + W.kerne + " Kernen" + (W.muehlen ? " (" + W.ids.join(", ") + ")" : "") + ", " + (z ? z.werke.quelle : "—") + " in der Welt; " + bewegung,
+                    });
+                K.zahl(2, { n: W.muehlen, werte: { nurBeiQuelle: W.nurBeiQuelle }, beleg: R.akte.slice(0, 300), taeter: W.nurBeiQuelle < 0.9 ? bewegung : null });
+            });
             await K.schritt(3, async () => K.nicht(3, { n: da().ketten, fehlt: "Werkstatt-Kette Rohstoff → Fahrzeug: kein Werk trägt eine Fertigung" }));
             await K.schritt(4, async () => K.nicht(4, { n: da().fabrik, fehlt: "Fabrik, Industriestadt: kein Fabrik- und kein Kraftwerks-Bau" }));
             await K.schritt(5, async () => K.nicht(5, { n: da().werft, fehlt: "Industrie eines Planeten: keine Werft, kein Raumhafen" }));
@@ -1002,7 +1288,7 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { ZENSUS: zensusFahr, HASPEL: haspelKurbel },
+        seite: { ZENSUS: zensusFahr, HASPEL: haspelKurbel, FAECHER, RAD_AN },
         sprossen: {
             1: {
                 umfang: { soll: 1, wort: "Werkzeug mit Wirkung (Haspel am Ziehbrunnen)" },
@@ -1024,7 +1310,7 @@ module.exports = (F) => [
                 umfang: { soll: 50, wort: "Maschinen-Saaten mit Quelle (Mühle, Wasserrad)" },
                 masse: [{ key: "nurBeiQuelle", wort: "Anteil der Maschinen, die nur bei Quelle arbeiten", soll: 0.9, richtung: "≥" }],
                 erwartet: "nicht",
-                fehlt: "keine Mühle und kein Wasserrad in der Welt",
+                fehlt: "kein Kern trägt ein Rezept einer Mühle oder eines Wasserrads; das Rad eines Werks dreht 0,7 rad/s bei Flaute wie im Sturm",
             },
             3: {
                 umfang: { soll: 1, wort: "Werkstatt-Kette Rohstoff → Fahrzeug" },
@@ -1099,3 +1385,8 @@ module.exports = (F) => [
         },
     }),
 ];
+// die Gesetze der Fächer für den Lauf am Kern ohne Welt (das Werkzeug ruft dieselben Seiten-Funktionen)
+module.exports.KIPP_AN = KIPP_AN;
+module.exports.GESTALT_AN = GESTALT_AN;
+module.exports.FLOTTE_AN = FLOTTE_AN;
+module.exports.RAD_AN = RAD_AN;

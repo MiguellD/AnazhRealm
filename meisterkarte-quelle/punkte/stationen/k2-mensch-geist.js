@@ -10,6 +10,9 @@
 // (`_gameLoopTick`, je TAKT_DECKEL_S, wie platzAcht), die Pose eines Augen-Bilds vor der dichtesten Gruppe am Spieler, der Zensus.
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
+const { HALTUNG_AN } = require("./k2-mensch-leib.js");
+
 const STADT = (r, T) => {
     const s = r.state, A = r.constructor, pm = s.playerMesh.position;
     const listen = [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => Array.isArray(S.liste) && S.liste.length);
@@ -628,7 +631,11 @@ module.exports = (F) => [
         mutiert: true,
         pfad: PFAD,
         sprossen: {
-            1: { auge: { pose: "stadt-voll Markt, 3 m vor dem Gesicht des nächsten stehenden Bewohners, nach der Tat 2 m neben ihm, 10 Uhr", vorbild: "Film von Menschen in 4 Gefühlen mit Anlass (Panel nennt das Gefühl ≥ 70 %; Gegenlauf ohne Anlass neutral)" } },
+            1: {
+                auge: { pose: "stadt-voll Markt, 3 m vor dem Gesicht des nächsten stehenden Bewohners, nach der Tat 2 m neben ihm, 10 Uhr", vorbild: "Film von Menschen in 4 Gefühlen mit Anlass (Panel nennt das Gefühl ≥ 70 %; Gegenlauf ohne Anlass neutral)" },
+                erwartet: "nicht",
+                fehlt: "4 Gefühle mit Anlass: das Gemüt trägt 1 (Furcht), ohne Anlass nicht neutral (Abend traurig, Spiel froh), das Gesicht ohne Miene",
+            },
             2: leser(um(100, "Bewohner"), [ge("angehoerige", "Anteil Angehörige mit geändertem Tag", 1), gt("tage", "Tage der Änderung", 1, "der Plural „über Tage“: länger als ein Tag, strikt über 1"), ge("zurueck", "Anteil Angehörige, deren Tag zurückkehrt", 1), le("kontrolle", "Anteil Kontrollgruppe mit geändertem Tag", 0)], "kein Tod eines Bewohners und keine Trauer: das Soll der Stunde liest Plan und Weichen, nie einen Verlust", "stamm/siedlung-bewohner.js:2219"),
             3: { auge: { pose: "stadt-voll Markt, 7 m vor der dichtesten Gruppe, Augenhöhe 1,7 m, 8 Uhr", vorbild: "spielende Kinder (Fangen, Ball, Verstecken: Panel ≥ 70 %) und Gangtempo-Normtafeln je Alter (±15 %)" } },
             4: nicht(um(10000, "Bewohner"), [ge("r", "Korrelation Abstand und Blick zur Bindung", 0.6), ge("anlass", "Anteil Wenden mit Anlass", 1)], "10⁴ Bewohner, 100 Paare über 1 Spieljahr"),
@@ -636,7 +643,7 @@ module.exports = (F) => [
             6: { auge: { pose: "Ego in der Rolle eines Bewohners, 5 min", vorbild: "das Gefühl der Rolle, von blinden Spielern genannt (≥ 70 %)" }, erwartet: "nicht", fehlt: "keine Rolle für den Spieler: kein Bewohner ist als Spieler-Leib zu tragen" },
             7: nicht(null, [ge("arten", "Anteil gelesener Arten aller Welten", 1), ge("rang", "Rang des gelesenen Anlasses", 0.7)], "jede Art jeder Welt: eine Welt in der Sitzung, keine fremde Art (die Fremdwelt-Probe R10)"),
         },
-        seite: { STADT, ZENSUS, GEMUET, KINDER },
+        seite: { STADT, ZENSUS, GEMUET, KINDER, FAECHER, HALTUNG_AN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const welt = (name, arg) =>
@@ -666,12 +673,55 @@ module.exports = (F) => [
                 const bild = await K.bild(3, k.pose);
                 K.auge(3, { bild: bild.datei, pose: "stadt-voll Markt 8 Uhr (" + [k.pose.px, k.pose.py, k.pose.pz].join(", ") + ") → (" + [k.pose.lx, k.pose.ly, k.pose.lz].join(", ") + ")", mass: "Kinder " + k.kinder + " von " + k.bewohner + "; Gangtempo m/s je Alter " + JSON.stringify(k.tempo) + (bild.abnahme ? " · Abnahme " + bild.abnahme : "") });
             });
-            // S1 zuletzt: die niedrigste gemessene Sprosse, die Probe endet an ihrer Pose
+            // S1 zuletzt (die niedrigste Sprosse, die Probe endet an ihrer Pose) AM GESETZ (der Fächer, stationen/faecher.js): 7 Akte des
+            // Tags × 5 Anlässe im Gedächtnis des Leibs (HALTUNG_AN, k2-mensch-leib.js) — welche der 4 Gefühle (Freude, Trauer, Zorn,
+            // Furcht) trägt das Gemüt MIT Anlass in Stand und Gang, welche OHNE Anlass (der Gegenlauf: neutral), und welche Achse der
+            // Profile bewegt eine Miene. DAS BAND (Coulson 2004, J. Nonverbal Behav. 28: 176 statische Haltungen, Treffer bis > 90 % für
+            // Zorn und Trauer, Furcht und Überraschung verwechselt; Ekman: die Miene trägt das Gefühl im Gesicht). Fehlt dem Gesetz der
+            // Umfang, „Umfang nicht erzeugbar“ beim Namen; die Tat der warmen Welt (GEMUET) bleibt der Beleg daneben
             await K.schritt(1, async () => {
+                const EMO = ["joy", "sad", "angry", "fear"];
+                const basis = (aus, akt, wo) => {
+                    const x = aus.find((y) => y.a.zeit === "ohne" && y.a.ort === akt);
+                    return x ? x.w.je.wohnhaus[wo] : null;
+                };
+                const mitAnlass = (wo) => (v, aus) =>
+                    Array.from(new Set(aus.filter((x) => x.a.zeit !== "ohne" && EMO.includes(x.w.je.wohnhaus[wo]) && x.w.je.wohnhaus[wo] !== basis(aus, x.a.ort, wo)).map((x) => x.w.je.wohnhaus[wo])));
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.HALTUNG_AN, export: "stamm/siedlung-bewohner.js:2725 _bewohnerGemuet (:2730 sorrow = chaos = die erinnerte Furcht) → stamm/koerper-leib.js:3096 _koerperMotionName", leser: "stamm/koerper-leib.js:3091" },
+                    // die Akte des Tags (koerper-core.js:5677 tagesPlan) × die Anlässe im Gedächtnis des Leibs („ohne“ = der Gegenlauf)
+                    adressen: { orte: ["schlaf", "morgen", "arbeit", "mittag", "besuch", "spiel", "abend"], zeiten: ["ohne", "gewalt", "geschlagen", "gefuettert", "spoken"] },
+                    masse: {
+                        stand: { wie: mitAnlass("stand") },
+                        gang: { wie: mitAnlass("geht") },
+                        gegenlauf: { wie: (v, aus) => aus.filter((x) => x.a.zeit === "ohne" && EMO.includes(x.w.je.wohnhaus.stand)).map((x) => x.a.ort + "→" + x.w.je.wohnhaus.stand) },
+                        stumm: { wie: (v, aus) => Array.from(new Set(aus.filter((x) => x.a.zeit !== "ohne").map((x) => x.a.zeit))).filter((t) => aus.filter((x) => x.a.zeit === t).every((x) => x.w.je.wohnhaus.stand === basis(aus, x.a.ort, "stand"))) },
+                        miene: { wie: "max", feld: "miene" },
+                        gesicht: { wie: (v, aus) => (aus[0] ? aus[0].w.gesicht : []) },
+                    },
+                    schlecht: { feld: "ohneAnlassGefuehl", richtung: "max" },
+                    pose: (a, w) => "Akt " + a.ort + ", Anlass " + a.zeit + ": steht " + w.je.wohnhaus.stand + ", geht " + w.je.wohnhaus.geht + " (sorrow " + w.je.wohnhaus.sorrow + ", chaos " + w.je.wohnhaus.chaos + ")",
+                    ungemessen: ["der Film von 5 s je Gefühl (Panel nennt das Gefühl ≥ 70 %): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 8) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Innenleben S1: " + R.akte.slice(0, 700) + " · " + JSON.stringify(W));
+                if (R.fehlt && !R.gemessen) return K.nicht(1, { n: 0, fehlt: "4 Gefühle mit Anlass: " + R.fehlt });
+                try {
+                    const g = pruef(await welt("GEMUET", { uhr: 10 }), "das Gefühl mit Anlass");
+                    H.zeile("S1 warme Welt: Gemüt vor der Tat " + JSON.stringify(g.vor) + " → nach " + JSON.stringify(g.nach) + " (Tat " + g.tat + "), Gegenlauf " + JSON.stringify(g.kontrolle));
+                } catch (e) {
+                    H.zeile("S1 warme Welt: die Tat warf: " + String((e && e.message) || e).slice(0, 200));
+                }
+                const voll = W.stand.length >= 4 && W.gang.length >= 4 && !W.gegenlauf.length && W.miene > 0;
+                if (!voll)
+                    return K.nicht(1, {
+                        n: W.stand.length,
+                        fehlt: "4 Gefühle mit Anlass: im Stand " + W.stand.length + " (" + W.stand.join(", ") + "), im Gang " + W.gang.length + "; " + W.stumm.join(", ") + " ohne Gefühl, Zorn nie (sorrow = chaos, stamm/siedlung-bewohner.js:2730); ohne Anlass " + W.gegenlauf.join(", ") + " (koerper-core.js:5432); Miene " + W.miene + " Achsen (MOTION: " + W.gesicht.join(", ") + ")",
+                    });
                 const g = pruef(await welt("GEMUET", { uhr: 10 }), "das Gefühl mit Anlass");
                 const bild = await K.bild(1, g.pose);
-                H.zeile("S1 " + JSON.stringify(g.vor) + " → " + JSON.stringify(g.nach));
-                K.auge(1, { bild: bild.datei, pose: "stadt-voll Markt 10 Uhr, 3 m vor " + (g.rolle || "einem Bewohner") + " (" + [g.pose.px, g.pose.py, g.pose.pz].join(", ") + ") → (" + [g.pose.lx, g.pose.ly, g.pose.lz].join(", ") + ")", mass: "Gemüt vor der Tat " + JSON.stringify(g.vor) + " → nach " + JSON.stringify(g.nach) + " (Tat " + g.tat + "), Gegenlauf jenseits des Zeugen-Kreises " + JSON.stringify(g.kontrolle) + (bild.abnahme ? " · Abnahme " + bild.abnahme : "") });
+                K.auge(1, { bild: bild.datei, pose: "stadt-voll Markt 10 Uhr, 3 m vor " + (g.rolle || "einem Bewohner") + " (" + [g.pose.px, g.pose.py, g.pose.pz].join(", ") + ") → (" + [g.pose.lx, g.pose.ly, g.pose.lz].join(", ") + ")", mass: R.akte.slice(0, 300) });
             });
         },
         proben: {

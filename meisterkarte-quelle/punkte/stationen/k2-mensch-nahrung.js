@@ -35,6 +35,118 @@ const JAGD_AN = async (r, T, a, mit) => {
     return { jagd, bewohner, taten, rollen: [...new Set(orte.map((o) => o.art))].join(",") };
 };
 
+// DER TAG EINER SIEDLUNG AM GESETZ (strom#2 und hand#3, das Gesetz des Fächers, stationen/faecher.js): an der Saat a.saat in der Größe
+// a.ort (fachwerk `GROESSE_N`: dorf 12 · stadt 36 · grossstadt 90 · metropole 220 Häuser) der Plan, wie der Faden ihn baut (fachwerk
+// `exportSettlement`, die Epoche der Saat; je Adresse einmal im `mit` gehalten), seine Bewohner, wie der Wirt sie zählt
+// (stamm/siedlung-bewohner.js:1074 je Slot `leuteVon`, :1083 der Same `_rollGenome(…, "bewohner").axis("tag")`, :1088 das Kind aus
+// `_bewohnerJahre` — der Genom-Roller des Wirts, nie nachgerechnet), ihre Bindung (koerper-core `tagesOrte` · `tagesBindung`, der
+// Beruf wie :1123) und zur Stunde a.zeit ihr Plan (`tagesPlan`, derselbe Ruf wie `_bewohnerSoll`, :2637): gezählt, wer draußen beim
+// Mahl sitzt und an welchem Tisch, wer am Acker arbeitet und an welchem
+const TAG_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore, KC = window.__koerperCore, TC = globalThis.__tetrapodaCore;
+    if (!FC || !KC || !TC || typeof KC.tagesPlan !== "function" || typeof KC.tagesOrte !== "function" || typeof KC.tagesBindung !== "function" || typeof FC.exportSettlement !== "function")
+        return { fehlt: "der Kern trägt kein Gesetz des Tags (koerper-core tagesPlan · tagesOrte · tagesBindung, fachwerk exportSettlement)" };
+    if (!r || typeof r._rollGenome !== "function" || typeof r._bewohnerJahre !== "function") return { fehlt: "die Welt trägt den Genom-Roller des Wirts nicht (_rollGenome · _bewohnerJahre)" };
+    const nH = FC.GROESSE_N && FC.GROESSE_N[a.ort];
+    if (!(nH > 0)) return { fehlt: "keine Größe „" + a.ort + "“ in fachwerk GROESSE_N" };
+    const halt = (mit.tag = mit.tag || {});
+    const key = a.saat + "@" + a.ort;
+    if (!halt[key]) {
+        const P = FC.exportSettlement({ seed: a.saat, nH, epoche: FC.siedlungsEpoche(a.saat) });
+        const orte = KC.tagesOrte(P);
+        const ortVon = new Map(orte.map((o, i) => [o.slot, i]));
+        const platz = orte.find((o) => o.art === "platz") || null;
+        const leute = [];
+        P.slots.forEach((sl, si) => {
+            const n = FC.leuteVon(sl.ov);
+            const rolle0 = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
+            const heimI = ortVon.get(si);
+            for (let k = 0; k < n; k++) {
+                const wort = (P.seed >>> 0) + ":" + si + ":" + k;
+                const same = Math.floor(r._rollGenome(wort, "bewohner").axis("tag") * 4294967296) >>> 0;
+                const kind = r._bewohnerJahre(r._rollGenome(wort, "humanoid"), { jahr: P.jahr, rang: k, n }) < KC.ALTER_GESETZ.kindJ;
+                const rolle = kind ? "kind" : rolle0;
+                const B = KC.tagesBindung(TC, same, rolle, heimI, orte, null, null);
+                const am = (i, wo) => (i < 0 || (i === heimI && wo !== "werk") ? null : orte[i]);
+                const werk = B.werk < 0 ? null : B.werk === heimI ? (rolle === "wohnhaus" ? null : orte[heimI]) : orte[B.werk];
+                const wA = werk && B.werk !== heimI ? orte[B.werk].art : rolle;
+                const beruf = kind ? "kind" : !werk ? "hof" : wA === "platz" ? "markt" : wA;
+                leute.push({ same, rolle, beruf, orte: { heim: orte[heimI], werk, platz, mahl: am(B.mahl, "mahl"), abend: am(B.abend, "abend"), besuch: am(B.besuch, "besuch") } });
+            }
+        });
+        halt[key] = { leute, felder: (P.felder || []).length, slots: P.slots.length, region: P.region };
+    }
+    const D = halt[key];
+    let mahl = 0, draussen = 0, amAcker = 0, bauern = 0;
+    const wo = {}, tisch = new Map(), acker = new Map();
+    for (const b of D.leute) {
+        const p = KC.tagesPlan(b.same, b.rolle, a.zeit, b.orte, 0, false);
+        if (b.beruf === "feld") bauern++;
+        if (p.akt === "mittag") {
+            mahl++;
+            if (!p.drinnen && p.ort) {
+                draussen++;
+                wo[p.ort.art] = (wo[p.ort.art] || 0) + 1;
+                tisch.set(p.ort, (tisch.get(p.ort) || 0) + 1);
+            }
+        }
+        if (p.akt === "arbeit" && !p.drinnen && p.ort && p.ort.art === "feld") {
+            amAcker++;
+            acker.set(p.ort, (acker.get(p.ort) || 0) + 1);
+        }
+    }
+    const best = (M) => [...M.entries()].reduce((x, e) => (!x || e[1] > x[1] ? e : x), null);
+    const t = best(tisch), f = best(acker);
+    // im Blick des Ackers mit den meisten (60 m, die Weite eines Bilds vom Feldrain): wer an einem Acker so nah arbeitet
+    let nah = 0;
+    if (f) for (const [o, n] of acker) if (Math.hypot(o.x - f[0].x, o.z - f[0].z) <= 60) nah += n;
+    return {
+        leute: D.leute.length, mahl, draussen, wo, amAcker, bauern, jeAcker: f ? f[1] : 0, nah60: nah, aecker: acker.size, felder: D.felder, slots: D.slots, region: D.region,
+        tisch: t ? { art: t[0].art, x: +t[0].x.toFixed(1), z: +t[0].z.toFixed(1), n: t[1] } : null,
+        acker: f ? { x: +f[0].x.toFixed(1), z: +f[0].z.toFixed(1), n: f[1] } : null,
+    };
+};
+
+// DIE FLUR EINES PLANS (flur#2, das Gesetz des Fächers): an der Saat a.saat in der Größe a.ort der Plan des Fadens (fachwerk
+// `exportSettlement`, sein Acker-Gesetz `dorfLayout`: 1–2 Äcker je Feldweg-Ende) — je Acker seine Fläche 4·ex·ez (die halben Kanten
+// des Plans, dieselben, die stamm/siedlung-wege.js als Acker malt), ihre Summe und der Rahmen des Plans (`welt`)
+const FLUR_AN = async (r, T, a) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.exportSettlement !== "function" || !FC.GROESSE_N) return { fehlt: "der Kern trägt keinen Plan der Siedlung (fachwerk exportSettlement · GROESSE_N)" };
+    const nH = FC.GROESSE_N[a.ort];
+    if (!(nH > 0)) return { fehlt: "keine Größe „" + a.ort + "“ in fachwerk GROESSE_N" };
+    const P = FC.exportSettlement({ seed: a.saat, nH, epoche: FC.siedlungsEpoche(a.saat) });
+    const m2 = (P.felder || []).filter((f) => f && Number.isFinite(f.ex) && Number.isFinite(f.ez)).map((f) => 4 * f.ex * f.ez);
+    const summe = m2.reduce((s, x) => s + x, 0);
+    const w = P.welt || {};
+    return {
+        felder: m2.length, km2: +(summe / 1e6).toFixed(6), m2: m2.map((x) => Math.round(x)), mittelM2: m2.length ? Math.round(summe / m2.length) : 0,
+        maxM2: m2.length ? Math.round(Math.max(...m2)) : 0, ortKm2: Number.isFinite(w.x0) ? +(((w.x1 - w.x0) * (w.z1 - w.z0)) / 1e6).toFixed(4) : null, slots: P.slots.length, region: P.region,
+    };
+};
+
+// DIE ROLLEN EINES ORTS (jenseits#1, das Gesetz des Fächers): an der Saat a.saat in der Größe a.ort die Rollen der Slots des Plans
+// (fachwerk `exportSettlement`, die Rollen-Tafel `BAU_NUTZUNG` — der Leser: der Wirt liest `sl.rolle`, stamm/siedlung-bewohner.js:1076)
+// und die Region der Saat (das Klima des Plans): gezählt Gewächshaus, Garten und die Wohnhäuser
+const GARTEN_AN = async (r, T, a) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.exportSettlement !== "function" || !FC.GROESSE_N || !FC.BAU_NUTZUNG) return { fehlt: "der Kern trägt keinen Plan und keine Rollen-Tafel (fachwerk exportSettlement · BAU_NUTZUNG)" };
+    const nH = FC.GROESSE_N[a.ort];
+    if (!(nH > 0)) return { fehlt: "keine Größe „" + a.ort + "“ in fachwerk GROESSE_N" };
+    const P = FC.exportSettlement({ seed: a.saat, nH, epoche: FC.siedlungsEpoche(a.saat) });
+    const rollen = {};
+    for (const sl of P.slots || []) {
+        const ro = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
+        rollen[ro] = (rollen[ro] || 0) + 1;
+    }
+    const zaehle = (re) => Object.keys(rollen).filter((k) => re.test(k)).reduce((s, k) => s + rollen[k], 0);
+    const tafel = Object.keys(FC.BAU_NUTZUNG);
+    return {
+        rollen, region: P.region, slots: (P.slots || []).length, wohnhaus: rollen.wohnhaus || 0,
+        gewaechshaus: zaehle(/gewaechs|glas|treib/i), garten: zaehle(/garten|beet/i), tafel: tafel.length, tafelGarten: tafel.filter((k) => /garten|beet|gewaechs|glas|treib/i.test(k)).length,
+    };
+};
+
 // DER ZENSUS DER SIEDLUNG (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
 // ist (`__gebautNach`, wie g2 dorfZaehlung), dann je Plan die Äcker (Welt-OBB, Anteil gemalt innen und im Ring 2,5 m außen), die
 // Rollen der Häuser, die Bewohner mit Beruf und Rolle, ihr Ziel um 10 und 12:30 Uhr nach dem Gesetz des Tags, Stände, Wagen, Tiere
@@ -656,12 +768,6 @@ module.exports = (F) => [
             const km2 = () => flaechen().reduce((a, f) => a + f.m2, 0) / 1e6;
             const luft = () => ({ px: z().nah.ox, py: "+150", pz: z().nah.oz + 80, lx: z().nah.ox, ly: "+0", lz: z().nah.oz });
             H.zeile("Flur: " + (Z ? Z.felder.length + " Äcker im Plan, gemalt als Fläche " + flaechen().length + ", " + km2().toFixed(5) + " km²" : "kein Zensus (" + zf + ")"));
-            await K.schritt(2, async () => {
-                const a = km2();
-                if (a < 0.5) return K.nicht(2, { n: +a.toFixed(6), fehlt: "die Flur eines Dorfs ≈ 1 km²: " + flaechen().length + " gemalte Äcker decken " + a.toFixed(5) + " km² (fachwerk-core dorfLayout: 1–2 Äcker je Feldweg-Ende, 12–21 × 8–15 m)" });
-                const b = await K.bild(2, luft());
-                K.auge(2, { bild: b.datei, pose: "Luftbild 150 m über der Mitte des Dorfs, 80 m südlich", mass: "Flur " + a.toFixed(3) + " km², " + flaechen().length + " Äcker" });
-            });
             await K.schritt(3, async () => {
                 const n = flaechen().length;
                 if (n < 1000) return K.nicht(3, { n, fehlt: "10³ Parzellen auf 10² km²: die Welt am Messort trägt " + n + " gemalte Äcker (" + z().siedlungen + " Siedlung(en)), 8 Saaten trägt die Sitzung nicht" });
@@ -683,11 +789,46 @@ module.exports = (F) => [
                     taeter: B.imBild >= 1 ? null : n ? "kein gemalter Acker frei im Bild vom Feldweg-Ende (Gelände/Grundriss verdeckt oder ≥ 45 m fern)" : "kein Acker als Fläche gemalt (stamm/siedlung-wege.js felder-Schicht: _landAt oder ortKraut verweigert)",
                 });
             });
+            // S2 AM GESETZ (der Fächer, zuletzt: er liest nur den Kern): 8 Saaten × weiler, dorf, markt — die Äcker des Plans und ihre
+            // Fläche; die Flur eines Dorfs ≈ 1 km² (Gewannflur: 100 ha, der Morgen ≈ 0,25 ha, die Hufe 30 Morgen) gegen die Summe der Äcker
+            await K.schritt(2, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.FLUR_AN, export: "fachwerk-core.js:11165 exportSettlement (felder des dorfLayout)", leser: "stamm/siedlung-wege.js:2675" },
+                    adressen: { saaten: 8, orte: ["weiler", "dorf", "markt"] },
+                    masse: {
+                        km2: { wie: "max", feld: "km2" },
+                        felder: { wie: "max", feld: "felder" },
+                        mittelM2: { wie: (v, aus) => { const m = aus.flatMap((x) => x.w.m2); return m.length ? Math.round(m.reduce((s, y) => s + y, 0) / m.length) : 0; } },
+                        maxM2: { wie: "max", feld: "maxM2" },
+                        aecker: { wie: (v, aus) => aus.reduce((s, x) => s + x.w.felder, 0) },
+                        ortKm2: { wie: "max", feld: "ortKm2" },
+                        je: { wie: (v, aus) => aus.reduce((o, x) => ((o[x.a.ort] = Math.max(o[x.a.ort] || 0, x.w.km2)), o), {}) },
+                    },
+                    schlecht: { feld: "km2", richtung: "min" },
+                    pose: (a, w) => "Luftbild 150 m über der Mitte des Plans der Saat " + a.saat + " (" + a.ort + ", " + w.slots + " Häuser), 80 m südlich — Flur " + w.km2 + " km² in " + w.felder + " Äckern",
+                    ungemessen: [
+                        "die Feldgrößen-Verteilung gegen eine reale Flur (KS ≤ 0,25): kein Korpus realer Parzellen in der Station — gemessen sind Größe und Zahl der Äcker",
+                        "das Luftbild der Flur gegen das Kataster (Blindurteil ≤ 65 %): ungemessen bis zum Gerät — die Pose nennt der Fächer",
+                    ],
+                    ms: Math.max(4000, Math.floor((H.rest() - 3) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Flur am Gesetz: " + R.akte.slice(0, 500) + " · je Größe " + JSON.stringify(W.je) + " · Acker im Mittel " + W.mittelM2 + " m², größter " + W.maxM2 + " m²");
+                if (!R.gemessen) return K.nicht(2, { n: 0, fehlt: "die Flur eines Dorfs ≈ 1 km²: " + (R.fehlt || (R.fehler[0] && R.fehler[0].fehler) || "keine Adresse des Fächers an der Frist") });
+                if (W.km2 < 0.5)
+                    return K.nicht(2, {
+                        n: W.km2,
+                        fehlt: "die Flur eines Dorfs ≈ 1 km²: an " + R.gemessen + " Plänen (Weiler bis Markt) decken höchstens " + W.felder + " Äcker " + W.km2 + " km² (" + W.aecker + " Äcker, im Mittel " + W.mittelM2 + " m², der größte " + W.maxM2 +
+                            " m² = " + (W.maxM2 / 2500).toFixed(2) + " Morgen zu 2 500 m²), der Ort selbst " + W.ortKm2 + " km² (fachwerk-core.js:6563 dorfLayout: 1–2 Äcker je Feldweg-Ende zu 12–21 × 8–15 m)",
+                    });
+                const b = await K.bild(2, luft());
+                K.auge(2, { bild: b.datei, pose: "Luftbild 150 m über der Mitte des Dorfs, 80 m südlich", mass: "Flur am Gesetz bis " + W.km2 + " km², " + W.felder + " Äcker" });
+            });
         },
-        seite: { ZENSUS, FLUR_BLICK },
+        seite: { ZENSUS, FLUR_BLICK, FAECHER, FLUR_AN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "gemalte Äcker am Feldweg-Ende" }, masse: [{ key: "imBild", wort: "Äcker als Fläche im Bild am Dorfrand", soll: 1, richtung: "≥" }] },
-            2: { auge: { pose: "Luftbild 150 m über der Mitte des Dorfs, 80 m südlich", vorbild: "die reale Flur eines Dorfs ≈ 1 km² (Gewannflur Mitteleuropa, Luftbild/Kataster): Feldgrößen-Verteilung KS ≤ 0,25, Blindurteil ≤ 65 %" }, erwartet: "nicht", fehlt: "die Flur am Messort deckt ≪ 1 km² (1–2 Äcker je Feldweg-Ende)" },
+            2: { auge: { pose: "Luftbild 150 m über der Mitte des Plans mit der kleinsten Flur des Fächers, 80 m südlich", vorbild: "die reale Flur eines Dorfs ≈ 1 km² (Gewannflur Mitteleuropa, Luftbild/Kataster): Feldgrößen-Verteilung KS ≤ 0,25, Blindurteil ≤ 65 %" }, erwartet: "nicht", fehlt: "die Flur am Gesetz deckt ≪ 1 km² an jedem Plan von Weiler bis Markt (fachwerk-core.js:6563: 1–2 Äcker je Feldweg-Ende zu 12–21 × 8–15 m, je Acker ein Bruchteil des Morgens)" },
             3: { auge: { pose: "Luftbild 150 m über der Mitte des Dorfs", vorbild: "20 Satellitenbilder realer Agrarlandschaft (10² km², 10³ Parzellen) an 8 Saaten, Blindurteil ≤ 65 %" }, erwartet: "nicht", fehlt: "10³ Parzellen: die Welt am Messort trägt eine Handvoll Äcker" },
             4: { umfang: { soll: 16, wort: "Saaten je Region 10⁴ km²" }, masse: [{ key: "r", wort: "Acker/Weide/Wald über Abstand (r)", soll: 0.8, richtung: "≥" }, { key: "anteil", wort: "Saaten mit r ≥ 0,8", soll: 0.8, richtung: "≥" }], erwartet: "nicht", fehlt: "16 Saaten und Weide als Nutzung" },
             5: { umfang: { soll: 1e6, wort: "km² Kontinent" }, masse: [{ key: "fao", wort: "Abweichung Nutzfläche je Klimazone gegen FAO", soll: 0.25, richtung: "≤" }], erwartet: "nicht", fehlt: "ein Kontinent mit Nutzflächen je Klimazone" },
@@ -916,13 +1057,6 @@ module.exports = (F) => [
                 if (!Z) throw new Error("kein Zensus der Siedlung: " + zf);
                 return Z;
             };
-            await K.schritt(2, async () => {
-                const n = z().mahl;
-                if (n < 100) return K.nicht(2, { n, fehlt: "10² Bewohner beim Mahl: um 12:30 Uhr essen " + n + " draußen (" + z().bewohner + " Bewohner) — und kein Korb trägt Speise vom Feld zum Teller" });
-                const m = z().mahlMitte;
-                const b = await K.bild(2, { px: m.x + 8, py: "+1.7", pz: m.z + 8, lx: m.x, ly: "+1.0", lz: m.z });
-                K.auge(2, { bild: b.datei, pose: "8 m diagonal vor der Mitte des Mahls um 12:30 Uhr, Ego 1,7 m", mass: n + " beim Mahl" });
-            });
             await K.schritt(3, async () => K.nicht(3, { n: z().maerkte, fehlt: "10 Orte mit Markt, Preis und Wagen: " + z().maerkte + " Markt mit " + z().staende + " Ständen, " + z().wagen + " Wagen — kein Preis" }));
             await K.schritt(4, async () => K.nicht(4, { n: z().bewohner, fehlt: "10⁴ Bewohner mit Hunger und Überfluss: " + z().bewohner + " am Messort, keiner isst aus einem Vorrat" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().bewohner, fehlt: "eine Stadt ≥ 10⁸ vom Hinterland: " + z().bewohner + " Bewohner, kein Bissen hat Herkunft" }));
@@ -950,11 +1084,55 @@ module.exports = (F) => [
                     taeter: !V.hoefe ? "keine Scheune als Halter (stamm/siedlung-bewohner.js _scheuneAnlegen)" : !V.zahnHoefe ? "keine Ernte in die Scheune (koerper-core scheuneFassen)" : !vollLeer ? "die Scheune steht nie voll und leer (koerper-core BESTAND_GESETZ.mahl)" : null,
                 });
             });
+            // S2 AM GESETZ (der Fächer, zuletzt: er liest nur den Kern und den Genom-Roller, nie die geraffte Welt): 4 Saaten × dorf,
+            // stadt, grossstadt × die Stunden um den Mittag (TAGES_GESETZ.mittag 12 ± 0,5) — trägt das Gesetz des Tags 10² beim Mahl,
+            // urteilt die Sprosse am Leser der Speise: das Mahl ist eine Zahl je Kopf aus der Scheune (BESTAND_GESETZ.mahl), kein Korb
+            // trägt sie vom Feld, kein Teller ein Gericht. Am Messort dorf misst der Zensus der Welt das Mahl des Dorfs daneben
+            await K.schritt(2, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.TAG_AN, export: "koerper-core.js:5677 tagesPlan (:5503 tagesOrte · :5574 tagesBindung, fachwerk-core.js:11165 exportSettlement)", leser: "stamm/siedlung-bewohner.js:2637" },
+                    adressen: { saaten: 4, orte: ["dorf", "stadt", "grossstadt"], zeiten: [11.5, 12, 12.5, 13, 13.5] },
+                    masse: {
+                        draussen: { wie: "max", feld: "draussen" },
+                        beimMahl: { wie: "max", feld: "mahl" },
+                        tisch: { wie: (v, aus) => aus.reduce((m, x) => Math.max(m, x.w.tisch ? x.w.tisch.n : 0), 0) },
+                        hundert: { wie: (v, aus) => new Set(aus.filter((x) => x.w.draussen >= 100).map((x) => x.a.saat)).size },
+                        saaten: { wie: (v, aus) => new Set(aus.map((x) => x.a.saat)).size },
+                        je: { wie: (v, aus) => aus.reduce((o, x) => ((o[x.a.ort] = Math.max(o[x.a.ort] || 0, x.w.draussen)), o), {}) },
+                        fenster: { wie: (v, aus) => aus.reduce((o, x) => ((o[x.a.zeit] = Math.max(o[x.a.zeit] || 0, x.w.draussen)), o), {}) },
+                    },
+                    schlecht: { feld: "draussen", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " " + a.ort + " (" + w.slots + " Häuser, " + w.leute + " Bewohner) um " + a.zeit + " Uhr: " +
+                        (w.tisch ? "8 m diagonal vor dem Tisch am " + w.tisch.art + " bei (" + w.tisch.x + ", " + w.tisch.z + ") im Plan, Ego 1,7 m — " + w.tisch.n + " essen dort draußen, kein Gericht, kein Korb" : "kein Tisch draußen"),
+                    ungemessen: [
+                        "die Stände der Wirt-Bindung (ein Ort ohne freien Stand bindet neu, stamm/siedlung-bewohner.js:1043) und der Weg über das Netz (koerper-core tagesWege): der Fächer bindet nach dem Gesetz ohne Netz und ohne volle Orte, die Händler der Stände fehlen",
+                        "das Bildpaar Mahl ↔ Foto (≤ 65 % trennbar): ungemessen bis zum Gerät — die Pose nennt der Fächer, die Sitzung steht am Dorf",
+                    ],
+                    ms: Math.max(4000, Math.floor((H.rest() - 3) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Mahl am Gesetz: " + R.akte.slice(0, 500) + " · je Größe " + JSON.stringify(W.je) + " · je Stunde " + JSON.stringify(W.fenster) + " · Dorf der Welt " + (Z ? Z.mahl + "/" + Z.bewohner : "—"));
+                if (!R.gemessen) return K.nicht(2, { n: 0, fehlt: "10² Bewohner beim Mahl: " + (R.fehlt || (R.fehler[0] && R.fehler[0].fehler) || "keine Adresse des Fächers an der Frist") });
+                if (W.draussen >= 100)
+                    return K.leser(2, {
+                        n: W.draussen,
+                        fehlt: "Korb Feld → Teller und Gericht: das Gesetz des Tags trägt " + W.draussen + " draußen beim Mahl (" + W.hundert + " von " + W.saaten + " Saaten ≥ 10², am größten Tisch " + W.tisch +
+                            "), doch das Mahl ist eine Zahl je Kopf aus der Scheune (6 Einheiten, die Ernte als Zahl in den Halter, koerper-core.js:5902) — kein Leib trägt einen Korb vom Feld, kein Teller ein Gericht",
+                        wo: "koerper-core.js:5761",
+                    });
+                if (R.gerissen) throw new Error("10² beim Mahl an der Frist ungemessen: " + R.gerissen + " Adressen offen, gemessen höchstens " + W.draussen + " draußen");
+                K.nicht(2, { n: W.draussen, fehlt: "10² Bewohner beim Mahl: das Gesetz des Tags trägt höchstens " + W.draussen + " draußen beim Mahl (" + JSON.stringify(W.je) + ")" });
+            });
         },
-        seite: { ZENSUS, STROM },
+        seite: { ZENSUS, STROM, FAECHER, TAG_AN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Dorf mit Scheune, das erntet und lagert" }, masse: [{ key: "saegezahn", wort: "Sägezahn des Scheunen-Vorrats (Ernten je Jahr)", soll: 1, richtung: "≥" }, { key: "vollLeer", wort: "Scheune voll ↔ leer im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "zahl" },
-            2: { auge: { pose: "8 m diagonal vor der Mitte des Mahls um 12:30 Uhr, Ego 1,7 m", vorbild: "Foto eines realen Dorf-Mahls (Gericht auf dem Teller, Korb vom Feld): ≤ 65 % vom Foto trennbar, der Korb Feld → Teller verfolgt" }, erwartet: "nicht", fehlt: "10² Bewohner beim Mahl und eine Speise" },
+            2: {
+                auge: { pose: "8 m diagonal vor dem größten Tisch des Mahls um 12:30 Uhr an der schlechtesten Adresse des Fächers, Ego 1,7 m", vorbild: "Foto eines realen Dorf-Mahls (Gericht auf dem Teller, Korb vom Feld): ≤ 65 % vom Foto trennbar, der Korb Feld → Teller verfolgt" },
+                erwartet: "leser",
+                fehlt: "10² beim Mahl trägt das Gesetz des Tags (Stadt, Großstadt), das Mahl ist eine Zahl je Kopf aus der Scheune: kein Korb vom Feld, kein Gericht auf dem Teller",
+                wo: "koerper-core.js:5761",
+            },
             3: { umfang: { soll: 10, wort: "Orte mit Markt" }, masse: [{ key: "preisPlus", wort: "Preis in A nach Missernte", soll: 0.5, richtung: "≥" }, { key: "wagenAusB", wort: "Wagen aus B unterwegs", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10 Orte mit Markt und Preis" },
             4: { umfang: { soll: 1e4, wort: "Bewohner mit Hunger und Überfluss" }, masse: [{ key: "bevDuerre", wort: "Rückgang der Bevölkerung nach Dürre (Anteil)", soll: 0.1, richtung: "≥" }, { key: "wanderstrom", wort: "Wandernde nach der Dürre", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Bewohner, Hunger" },
             5: { umfang: { soll: 1e8, wort: "Einwohner einer Stadt vom Hinterland" }, masse: [{ key: "bissen", wort: "Bissen bis Feld/Stall verfolgt", soll: 0.9, richtung: "≥" }], erwartet: "nicht", fehlt: "eine Stadt ≥ 10⁸" },
@@ -1011,13 +1189,6 @@ module.exports = (F) => [
                     taeter: !furchen ? (B.kaemme > 0 ? "die Furchen laufen quer zum Zug (stamm/siedlung-wege.js _ackerBestellen)" : "das Stück trägt keinen Kamm (stamm/siedlung-wege.js _ackerKoerperTakt)") : null,
                 });
             });
-            await K.schritt(3, async () => {
-                const n = z().feld10;
-                if (n < 50) return K.nicht(3, { n, fehlt: "50 Bewohner sichtbar bei der Feldarbeit: um 10 Uhr " + n + " am Acker (" + z().bewohner + " Bewohner)" });
-                const f = z().felder[0];
-                const b = await K.bild(3, { px: f.x + 12, py: "+1.7", pz: f.z + 12, lx: f.x, ly: "+1.0", lz: f.z });
-                K.auge(3, { bild: b.datei, pose: "12 m diagonal vor dem ersten Acker um 10 Uhr, Ego 1,7 m", mass: n + " am Acker" });
-            });
             await K.schritt(4, async () => K.nicht(4, { n: g().bodenGeaendert, fehlt: "Werkzeug jeder Epoche mit Spur: nach " + g().dauerH + " gerafften Stunden änderte die Arbeit den Boden an " + g().bodenGeaendert + " von " + g().aecker + " Äckern" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().bewohner, fehlt: "ein Fest des Jahres mit 10³ Menschen in der Erntezeit (16 Saaten): " + z().bewohner + " Bewohner, keine Erntezeit" }));
             await K.schritt(6, async () => K.nicht(6, { n: g().weg, fehlt: "20 Zufallsrollen der Nahrung: der Spieler spielt " + g().weg + " (das Sammeln) — kein Bestellen, Hüten, Fischen, Kochen" }));
@@ -1030,12 +1201,57 @@ module.exports = (F) => [
                     taeter: !g().weg ? "die Pflanze bleibt im Block (stamm/vegetation-wiese.js _streuNehmen)" : g().frueh ? "die Pflanze kehrt vor ihrer Nachwuchs-Zeit (stamm/vegetation-wiese.js _tickScatterRegrow)" : !g().zurueck ? "die Pflanze kehrt nach ihrer Nachwuchs-Zeit nicht (stamm/vegetation-wiese.js _nahStreuTat / _tickNahStreu)" : null,
                 })
             );
+            // S3 AM GESETZ (der Fächer, zuletzt: er liest nur den Kern und den Genom-Roller): 4 Saaten × metropole (das Dorf misst der
+            // Zensus der Welt) × die Stunden der Arbeit — trägt das Gesetz des Tags 50 am Acker, urteilt die Sprosse am Leser der Arbeit:
+            // der Acker liest nur die Tat des Spielers (bestellen), die Arbeit der Bewohner hat keine Fläche je Stunde und keine Haltung.
+            // Die Saat 4 geht voran: am Kern trägt sie 122 am Acker (headless, 24.11.), eine Metropole bindet ~7 s — die Frist der
+            // Sitzung reißt sonst vor ihr; die Saaten 1–3 (am Kern 0–22) folgen
+            await K.schritt(3, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.TAG_AN, export: "koerper-core.js:5677 tagesPlan (:5503 tagesOrte · :5574 tagesBindung, fachwerk-core.js:11165 exportSettlement)", leser: "stamm/siedlung-bewohner.js:2637" },
+                    adressen: { saaten: [4, 1, 2, 3], orte: ["metropole"], zeiten: [8, 10, 15] },
+                    masse: {
+                        amAcker: { wie: "max", feld: "amAcker" },
+                        jeAcker: { wie: "max", feld: "jeAcker" },
+                        nah60: { wie: "max", feld: "nah60" },
+                        bauern: { wie: "max", feld: "bauern" },
+                        fuenfzig: { wie: (v, aus) => new Set(aus.filter((x) => x.w.amAcker >= 50).map((x) => x.a.saat)).size },
+                        saaten: { wie: (v, aus) => new Set(aus.map((x) => x.a.saat)).size },
+                        je: { wie: (v, aus) => aus.reduce((o, x) => ((o[x.a.saat] = Math.max(o[x.a.saat] || 0, x.w.amAcker)), o), {}) },
+                    },
+                    schlecht: { feld: "nah60", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " " + a.ort + " um " + a.zeit + " Uhr: " + (w.acker ? "12 m diagonal vor dem Acker bei (" + w.acker.x + ", " + w.acker.z + ") im Plan, Ego 1,7 m — " + w.acker.n + " an ihm, " + w.nah60 + " im Umkreis 60 m" : "kein Bewohner am Acker"),
+                    ungemessen: [
+                        "die Stände der Wirt-Bindung (ein Ort ohne freien Stand bindet neu, stamm/siedlung-bewohner.js:1043) und der Weg über das Netz (koerper-core tagesWege): der Fächer bindet nach dem Gesetz ohne Netz und ohne volle Orte",
+                        "das Bildpaar Erntetag ↔ Foto (≤ 65 % trennbar): ungemessen bis zum Gerät — die Pose nennt der Fächer, die Sitzung steht am Dorf",
+                        "die Fläche je Stunde (± 30 % gegen Sichel 0,1 ha und Sense 0,2–0,4 ha je Kopf und Tag): das Gesetz trägt keine — die Herstellung des Ackers zählt Kraut je Stunde (koerper-core.js:5732)",
+                    ],
+                    ms: Math.max(4000, Math.floor((H.rest() - 3) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Feldarbeit am Gesetz: " + R.akte.slice(0, 500) + " · je Saat " + JSON.stringify(W.je) + " · Dorf der Welt um 10 Uhr " + (Z ? Z.feld10 + "/" + Z.bewohner : "—"));
+                if (!R.gemessen) return K.nicht(3, { n: 0, fehlt: "50 Bewohner bei der Feldarbeit: " + (R.fehlt || (R.fehler[0] && R.fehler[0].fehler) || "keine Adresse des Fächers an der Frist") });
+                if (W.amAcker >= 50)
+                    return K.leser(3, {
+                        n: W.amAcker,
+                        fehlt: "Fläche je Stunde und sichtbare Arbeit: das Gesetz des Tags trägt " + W.amAcker + " am Acker (" + W.fuenfzig + " von " + W.saaten + " Saaten ≥ 50, an einem Acker höchstens " + W.jeAcker + ", im Umkreis 60 m " + W.nah60 +
+                            "), doch der Acker liest nur die Tat des Spielers — die Arbeit der Bewohner ändert keinen Acker (keine Fläche je Stunde, die Herstellung zählt Kraut, koerper-core.js:5732) und zeigt keine Feldarbeit (die Haltung jedes Werks ist dieselbe leichte Vorlage pwalk, koerper-core.js:5432)",
+                        wo: "stamm/siedlung-wege.js:2975",
+                    });
+                if (R.gerissen) throw new Error("50 am Acker an der Frist ungemessen: " + R.gerissen + " Adressen offen, gemessen höchstens " + W.amAcker);
+                K.nicht(3, { n: W.amAcker, fehlt: "50 Bewohner bei der Feldarbeit: das Gesetz des Tags trägt höchstens " + W.amAcker + " am Acker (" + JSON.stringify(W.je) + ")" });
+            });
         },
-        seite: { ZENSUS, HAND, BESTELLEN },
+        seite: { ZENSUS, HAND, BESTELLEN, FAECHER, TAG_AN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "gesammelte Wildpflanze im Inventar" }, masse: [{ key: "weg", wort: "Pflanze fort nach dem Pflücken", soll: 1, richtung: "≥" }, { key: "frueh", wort: "Gegenlauf: zurück vor der Nachwuchs-Zeit", soll: 0, richtung: "≤" }, { key: "zurueck", wort: "zurück nach der Nachwuchs-Zeit", soll: 1, richtung: "≥" }] },
             2: { umfang: { soll: 1, wort: "vom Spieler bestellter Acker" }, masse: [{ key: "furchen", wort: "Furchen in Zugrichtung im Bildpaar (ja = 1)", soll: 1, richtung: "≥" }], erwartet: "zahl" },
-            3: { auge: { pose: "12 m diagonal vor dem ersten Acker um 10 Uhr, Ego 1,7 m", vorbild: "Foto eines realen Erntetags (50 Menschen bei der Ernte): ≤ 65 % trennbar; Fläche je Stunde ± 30 % gegen Agrargeschichte" }, erwartet: "nicht", fehlt: "50 Bewohner bei der Feldarbeit" },
+            3: {
+                auge: { pose: "12 m diagonal vor dem Acker mit den meisten Bewohnern im Umkreis 60 m an der schlechtesten Adresse des Fächers, Ego 1,7 m", vorbild: "Foto eines realen Erntetags (50 Menschen bei der Ernte): ≤ 65 % trennbar; Fläche je Stunde ± 30 % gegen Agrargeschichte" },
+                erwartet: "leser",
+                fehlt: "50 am Acker trägt das Gesetz des Tags (Metropole), keiner ändert ihn: der Acker liest nur die Tat des Spielers, die Arbeit hat keine Fläche je Stunde und keine Haltung",
+                wo: "stamm/siedlung-wege.js:2975",
+            },
             4: { umfang: { soll: 1, wort: "Feldarbeit, die den Acker ändert (je Werkzeug und Epoche)" }, masse: [{ key: "haTag", wort: "Abweichung ha/Tag gegen Agrargeschichte", soll: 0.3, richtung: "≤" }, { key: "spur", wort: "Spur je Werkzeug erkannt", soll: 0.8, richtung: "≥" }], erwartet: "nicht", fehlt: "die Arbeit ändert den Acker nicht" },
             5: { umfang: { soll: 1000, wort: "Menschen am Fest des Jahres" }, masse: [{ key: "festErnte", wort: "Saaten mit Fest in der Erntezeit der eigenen Frucht", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "kein Fest, keine Erntezeit" },
             6: { umfang: { soll: 20, wort: "Zufallsrollen der Nahrung" }, masse: [{ key: "spielbarS", wort: "Zeit bis spielbar p95 (s)", soll: 5, richtung: "≤" }, { key: "aendert", wort: "Tat ändert die Welt", soll: 0.8, richtung: "≥" }], erwartet: "nicht", fehlt: "eine Rolle der Nahrung statt 20" },
@@ -1070,16 +1286,52 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.nicht(4, { n: bau(/ozean|aqua|fischzucht/i), fehlt: "eine Ozeanfarm: keine im Plan" }));
             await K.schritt(5, async () => K.nicht(5, { n: 1, fehlt: "64 Saaten mit Habitat-Agrar: die Sitzung trägt eine Saat ohne Habitat" }));
             await K.schritt(6, async () => K.nicht(6, { n: 1, fehlt: "16 Saaten über Sonnensysteme mit Import: die Sitzung trägt eine Welt" }));
+            // S1 AM GESETZ (der Fächer): 12 Saaten × dorf, stadt — die Rollen der Pläne (die Rollen-Tafel BAU_NUTZUNG) und die Region
+            // der Saat (das Klima); den Garten trägt nur das Hof-Gesetz (fachwerk-core.js:4196 hofFuer: zwei Beete hinter dem ländlichen
+            // Wohnhaus), das kein Leser der Welt baut (buildInstance → buildStufe ohne hofFuer, fachwerk-core.js:7081)
             await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.GARTEN_AN, export: "fachwerk-core.js:11165 exportSettlement (Rollen der Slots, BAU_NUTZUNG :2686)", leser: "stamm/siedlung-bewohner.js:1076" },
+                    adressen: { saaten: 12, orte: ["dorf", "stadt"] },
+                    masse: {
+                        gewaechshaus: { wie: "summe", feld: "gewaechshaus" },
+                        garten: { wie: "summe", feld: "garten" },
+                        wohnhaus: { wie: "summe", feld: "wohnhaus" },
+                        tafel: { wie: "max", feld: "tafel" },
+                        tafelGarten: { wie: "max", feld: "tafelGarten" },
+                        rollen: { wie: (v, aus) => [...new Set(aus.flatMap((x) => Object.keys(x.w.rollen)))].sort() },
+                        klima: { wie: (v, aus) => [...new Set(aus.map((x) => x.w.region))].sort() },
+                    },
+                    schlecht: { feld: "wohnhaus", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " " + a.ort + " (" + w.region + ", " + w.wohnhaus + " Wohnhäuser): 10 m diagonal hinter dem ersten ländlichen Wohnhaus, Ego 1,7 m — dort stünden die Beete des Hof-Gesetzes",
+                    ungemessen: [
+                        "die Beete des Hof-Gesetzes (fachwerk-core.js:4196, 62 % der ländlichen Wohnhäuser): kein Export des Plans nennt sie, kein Leser der Welt baut sie — gezählt sind die Rollen",
+                        "das Bildpaar Garten ↔ Foto (≤ 65 %): ungemessen bis zum Gerät — die Pose nennt der Fächer",
+                    ],
+                    ms: Math.max(4000, Math.floor((H.rest() - 3) * 1000)),
+                });
+                const W = R.werte;
+                H.zeile("Garten am Gesetz: " + R.akte.slice(0, 500) + " · Rollen " + (W.rollen || []).join("/") + " · Klima " + (W.klima || []).join("/"));
+                if (!R.gemessen) return K.nicht(1, { n: 0, fehlt: "Gewächshaus und Garten im Ort: " + (R.fehlt || (R.fehler[0] && R.fehler[0].fehler) || "keine Adresse des Fächers an der Frist") });
+                if (!(W.gewaechshaus > 0 && W.garten > 0))
+                    return K.nicht(1, {
+                        n: W.gewaechshaus + W.garten,
+                        fehlt: "Gewächshaus und Garten im Ort: an " + R.gemessen + " Plänen (" + W.klima.join(", ") + ") trägt kein Slot die Rolle (Gewächshaus " + W.gewaechshaus + ", Garten " + W.garten + "; die Rollen-Tafel kennt " + W.tafel +
+                            " Rollen, " + W.tafelGarten + " davon Garten oder Glas) — der Garten lebt nur als zwei Beete hinter dem ländlichen Wohnhaus im Hof-Gesetz (fachwerk-core.js:4196), ohne Klima, und kein Leser der Welt baut ihn (fachwerk-core.js:7081)",
+                    });
                 const gt = z().garten;
-                if (!gt) return K.nicht(1, { n: 0, fehlt: "Gewächshaus und Garten im Ort: keiner unter " + z().haeuser + " Häusern (Rollen " + rollen() + ")" });
+                if (!gt) throw new Error("das Gesetz trägt Garten und Gewächshaus, der Plan am Messort keinen (Rollen " + rollen() + ")");
                 const b = await K.bild(1, { px: gt.x + 10, py: "+1.7", pz: gt.z + 10, lx: gt.x, ly: "+1.0", lz: gt.z });
                 K.auge(1, { bild: b.datei, pose: "10 m diagonal vor dem ersten Garten/Gewächshaus, Ego 1,7 m", mass: gt.rolle });
             });
         },
-        seite: { ZENSUS },
+        seite: { ZENSUS, FAECHER, GARTEN_AN },
         sprossen: {
-            1: { auge: { pose: "10 m diagonal vor dem ersten Garten/Gewächshaus, Ego 1,7 m", vorbild: "Bildpaar realer Bauerngarten und Gewächshaus (Mitteleuropa): ≤ 65 % trennbar, nur in passendem Klima" }, erwartet: "nicht", fehlt: "kein Garten, kein Gewächshaus im Ort" },
+            1: {
+                auge: { pose: "10 m diagonal vor dem ersten Garten/Gewächshaus, Ego 1,7 m (am Gesetz: hinter dem ländlichen Wohnhaus der schlechtesten Adresse)", vorbild: "Bildpaar realer Bauerngarten und Gewächshaus (Mitteleuropa): ≤ 65 % trennbar, nur in passendem Klima" },
+                erwartet: "nicht",
+                fehlt: "keine Rolle Garten oder Gewächshaus in der Rollen-Tafel; die Beete des Hof-Gesetzes lesen kein Klima und baut kein Leser der Welt",
+            },
             2: { auge: { pose: "Orbit über dem Ort", vorbild: "Satellitenbild Almería (Gewächshausmeer, Albedo-Fleck): Blindurteil ≤ 65 %" }, erwartet: "nicht", fehlt: "kein Gewächshausmeer" },
             3: { umfang: { soll: 1, wort: "Nahrungsturm einer Megastadt" }, masse: [{ key: "r", wort: "Stadtnahrung ↔ Bodenpreis (r)", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "kein Nahrungsturm" },
             4: { umfang: { soll: 1, wort: "Ozeanfarm" }, masse: [{ key: "r", wort: "Farmfläche ↔ Küstenbevölkerung (r)", soll: 0, richtung: ">" }], erwartet: "nicht", fehlt: "keine Ozeanfarm" },
@@ -1091,3 +1343,7 @@ module.exports = (F) => [
         },
     }),
 ];
+// die Gesetze der Fächer für den Lauf am Kern ohne Welt (das Werkzeug ruft dieselben Seiten-Funktionen)
+module.exports.TAG_AN = TAG_AN;
+module.exports.FLUR_AN = FLUR_AN;
+module.exports.GARTEN_AN = GARTEN_AN;

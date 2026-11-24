@@ -7,6 +7,105 @@
 // und urteilt „Umfang nicht erzeugbar“ oder „fehlender Leser“ mit der Stelle im Spiel-Baum — nie ein Skip.
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
+
+// DIE STÄNDE DER WOHNFLÄCHE AN EINER ADRESSE (mensch.macht.stand#1, das Gesetz des Fächers, stationen/faecher.js): an der Saat a.saat
+// der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)}) — seine Wohnbauten (die Rollen des Wohnens), je Bau die Wohnfläche
+// W × D × Geschosse, wie das Wohlstands-Gesetz sie legt (fachwerk-core.js:5220: der Wohlstand w weitet das Los, hebt das Geschoss der
+// Stadt, `arm` unter 0,72; das Patrizierhaus und der Wohnturm ab wohl 1,1), ihr Gini, die zwei Stände (arm: das Los `arm`; reich: Patrizierhaus,
+// Wohnturm oder wohl ≥ 1,1) und wie getrennt sie in der Fläche stehen (P(Fläche reich > Fläche arm) über alle Paare); an a.ort = { ox, oz }
+// dieselben Wohnbauten aus den Plänen der warmen Welt binnen 1,5 km (`_ortPlaene`, ihr `ov`). Der Leser rechnet das Gesetz nicht nach
+const STAND_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore;
+    const WOHN = { wohnhaus: 1, patrizierhaus: 1, wohnturm: 1, pfarrhaus: 1, kontor: 1 };
+    const haus = [];
+    const bau = (ov, rolle, ex, ez) => ({ fl: (ov.W || 2 * (ex || 3)) * (ov.D || 2 * (ez || 3)) * (ov.storeys || 1), rolle, arm: ov.arm ? 1 : 0, reich: rolle === "patrizierhaus" || rolle === "wohnturm" || ov.wohl >= 1.1 ? 1 : 0 });
+    if (a.saat != null) {
+        if (!FC || typeof FC.DORF !== "function") return { fehlt: "der Kern trägt kein Gesetz des Plans (fachwerk DORF)" };
+        const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
+        for (const h of D.houses) if (WOHN[h.rolle]) haus.push(bau(h, h.rolle));
+    } else {
+        for (const p of (r._ortPlaene || new Map()).values())
+            if (p && p.ort && Array.isArray(p.slots) && Math.hypot(p.ort.x - a.ort.ox, p.ort.z - a.ort.oz) < 1500)
+                for (const s of p.slots) if (WOHN[s.rolle]) haus.push(bau(s.ov || {}, s.rolle, s.obb && s.obb.ex, s.obb && s.obb.ez));
+    }
+    if (haus.length < 2) throw new Error("weniger als zwei Wohnbauten an der Adresse");
+    const f = haus.map((h) => h.fl).sort((x, y) => x - y);
+    const n = f.length, sum = f.reduce((s, v) => s + v, 0);
+    let g = 0;
+    for (let i = 0; i < n; i++) g += (2 * (i + 1) - n - 1) * f[i];
+    const arm = haus.filter((h) => h.arm && !h.reich), reich = haus.filter((h) => h.reich);
+    let ueber = 0;
+    for (const x of reich) for (const y of arm) ueber += x.fl > y.fl ? 1 : x.fl === y.fl ? 0.5 : 0;
+    const med = (L) => { const v = L.map((h) => h.fl).sort((x, y) => x - y); return v.length ? v[(v.length - 1) >> 1] : null; };
+    return {
+        gini: +(g / (n * sum)).toFixed(3),
+        wohnbauten: n,
+        arm: arm.length,
+        reich: reich.length,
+        getrennt: arm.length && reich.length ? +(ueber / (arm.length * reich.length)).toFixed(3) : null,
+        verhaeltnis: arm.length && reich.length ? +(med(reich) / med(arm)).toFixed(2) : null,
+        zweiStaende: arm.length && reich.length ? 1 : 0,
+    };
+};
+// DER FÄCHER DER STÄNDE (stand#1): 20 Saaten im Gesetz und die volle Stadt am Messort; die schlechteste Adresse ist die, an der arm
+// und reich sich in der Fläche am wenigsten trennen. Das archäologische Band (Kohler et al. 2017, Nature 551: Gini der Hausflächen an 63
+// Fundorten, Median Ackerbau 0,35, die Alte Welt bis 0,59) steht im Spiel nicht als Zahl — die Station nennt es, die Tafel urteilt nicht
+const standFaecher = (ort, nH) => ({
+    gesetz: { export: "fachwerk-core.js:5182 DORF (Wohlstand :5220, Patrizierhaus :5120)", leser: "stamm/siedlung-ort.js:308" },
+    adressen: { saaten: 20, dazu: ort ? [{ ort }] : [] },
+    mit: { nH },
+    masse: {
+        giniMin: { wie: "min", feld: "gini", nur: "saat" },
+        giniMax: { wie: "max", feld: "gini", nur: "saat" },
+        giniMittel: { wie: "mittel", feld: "gini", nur: "saat" },
+        getrennt: { wie: "min", feld: "getrennt", nur: "saat" },
+        zweiStaende: { wie: "anteil", feld: "zweiStaende", nur: "saat" },
+        verhaeltnis: { wie: "mittel", feld: "verhaeltnis", nur: "saat" },
+        saaten: { wie: "anzahl", nur: "saat" },
+        welt: { wie: "erste", nur: "ort" },
+    },
+    schlecht: { feld: "getrennt", richtung: "min" },
+    pose: (a) => (a.saat != null ? "Saat " + a.saat + ": der Plan des Gesetzes, kein Bild in der warmen Welt" : "die volle Stadt: das reichste und das ärmste Wohnhaus nebeneinander"),
+    ungemessen: ["„arm/reich erkannt ≥ 80 %“ am Bildpaar (Bildpflicht, ungemessen bis zum Gerät)", "das Band der Wohnfläche: im Spiel nicht hinterlegt"],
+});
+
+// DIE BEWAFFNETEN AN EINEM ORT (mensch.macht.krieg#1, das Gesetz des Fächers): an der Adresse a.ort (der Schlüssel einer Siedlung der
+// warmen Welt) die Bewohner, denen ihr Lebenslauf eine Waffe gibt (`_bewohnerLauf(S, b, "waffe")`, stamm/siedlung-bewohner.js:314:
+// LEBENSLAUF.wache — die Rollen waechter/nachtwaechter, das Langschwert bis 1829, danach die Keule), ihre Waffen, das nächste Paar
+// zweier Posten (ihr Werk) und wie viele von ihnen ein Ziel des Hiebs sind (ihr Leib in `state.creatures`, über das allein
+// `_kampfSweepTick` fegt, stamm/kampf.js:447)
+const KRIEG_AN = async (r, T, a, mit) => {
+    const S = (r._bewohnerSiedlungen || new Map()).get(a.ort);
+    if (!S || !S.plan) throw new Error("der Ort " + a.ort + " trägt keinen Plan");
+    if (typeof r._bewohnerLauf !== "function") return { fehlt: "kein Lebenslauf der Bewohner (_bewohnerLauf)" };
+    const ziele = new Set(Array.isArray(r.state.creatures) ? r.state.creatures : []);
+    const arm = (S.liste || []).map((b) => [b, b && r._bewohnerLauf(S, b, "waffe")]).filter(([, w]) => w);
+    let paar = null;
+    for (let i = 0; i < arm.length; i++)
+        for (let j = i + 1; j < arm.length; j++) {
+            const p = arm[i][0].orte && arm[i][0].orte.werk, q = arm[j][0].orte && arm[j][0].orte.werk;
+            if (p && q && (paar == null || Math.hypot(p.x - q.x, p.z - q.z) < paar)) paar = Math.hypot(p.x - q.x, p.z - q.z);
+        }
+    return { bewaffnet: arm.length, arten: [...new Set(arm.map(([, w]) => w))], paarM: paar == null ? null : +paar.toFixed(1), ziel: arm.filter(([b]) => b.leib && ziele.has(b.leib)).length };
+};
+// DER FÄCHER DER BEWAFFNETEN (krieg#1): die Orte der warmen Welt — headless (der Kern ohne Welt) trägt er keine Adresse: der
+// Lebenslauf der Wache ist ein Gesetz des Stamms, kein Kern
+const kriegFaecher = (orte) => ({
+    gesetz: { export: "stamm/siedlung-bewohner.js:301 _bewohnerLauf (waffe, LEBENSLAUF.wache :4519)", leser: "stamm/kampf.js:92" },
+    adressen: { orte: orte || [] },
+    masse: {
+        bewaffnet: { wie: "summe", feld: "bewaffnet" },
+        arten: { wie: (v) => [...new Set(v.flat())], feld: "arten" },
+        paarM: { wie: "min", feld: "paarM" },
+        ziel: { wie: "summe", feld: "ziel" },
+        orte: { wie: "anzahl" },
+    },
+    schlecht: { feld: "bewaffnet", richtung: "min" },
+    pose: (a) => "der Ort " + a.ort + " mit den wenigsten Bewaffneten",
+    ungemessen: ["20 Zweikämpfe im Bild (Bildpflicht, ungemessen bis zum Gerät): kein Bewohner schwingt"],
+});
+
 module.exports = (F) => [
     // ───────────────────────── mensch.macht.grenze — Gemeinwesen, Grenzen, Reiche ─────────────────────────
     // EINE Messung: die Orte mit Herrn (ein Slot der Rolle burg) um den Messort, das Reich des Gesetzes (fachwerk `siedlungsReich`, das
@@ -445,16 +544,28 @@ module.exports = (F) => [
                     mass: w.staende + " Stände (Rollen der Wohnbauten: " + w.rollen.join(", ") + ") · " + w.viertel + " Viertel · Wohlstand zwischen den Vierteln η² " + w.eta2 + " · eine Kleidung je Ort (" + w.kleidung + ")",
                 });
             });
+            // S1: die Stände über den FÄCHER (20 Saaten im Gesetz + die volle Stadt am Messort, STAND_AN) — das Gesetz trägt die Zahl
+            // halb (Gini und zwei Stände; das Band steht nicht im Spiel): das Maß in der Akte, das Bildpaar arm/reich geht ans Panel
             await K.schritt(1, async () => {
+                const f = H.seite.STAND_FAECHER(w.ort, 90);
+                f.gesetz.fn = H.seite.STAND_AN;
+                f.ms = Math.max(5000, Math.floor((H.rest() - 8) * 1000));
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte, x = t.welt || {};
+                H.zeile("Stand S1: " + R.akte.slice(0, 400));
                 const b = await K.bild(1, w.posePaar);
                 K.auge(1, {
                     bild: b.datei,
                     pose: "stadt-voll: das reichste und das ärmste Wohnhaus binnen " + w.paar.d + " m, die Kamera 30 m quer über ihrer Mitte, 18 m hoch",
-                    mass: "Gini der Wohnfläche " + w.gini + " über " + w.wohnbauten + " Wohnbauten; das Paar " + w.paar.reich + " m² (" + w.paar.reichRolle + ") / " + w.paar.arm + " m² (" + w.paar.armRolle + ")",
+                    mass: "Gini der Wohnfläche " + (x.gini == null ? "—" : x.gini) + " über " + (x.wohnbauten || w.wohnbauten) + " Wohnbauten der Stadt, " + t.giniMin + "–" + t.giniMax + " über " + t.saaten + " Saaten (Kohler et al. 2017: Ackerbau Median 0,35, Alte Welt bis 0,59 — das Band steht nicht im Spiel)" +
+                        "; zwei Stände an " + Math.round(100 * (t.zweiStaende || 0)) + " % der Saaten, reich über arm in der Fläche ≥ " + t.getrennt + " (Stadt " + (x.getrennt == null ? "—" : x.getrennt) + ", " + (x.arm || 0) + " arm / " + (x.reich || 0) + " reich); das Paar " + w.paar.reich + " m² (" + w.paar.reichRolle + ") / " + w.paar.arm + " m² (" + w.paar.armRolle + ")",
                 });
             });
         },
         seite: {
+            FAECHER,
+            STAND_AN,
+            STAND_FAECHER: standFaecher,
             STAND: async (r, T, arg) => {
                 const pm = r.state.playerMesh.position;
                 const plaene = [...(r._ortPlaene || new Map()).values()].filter((p) => p && p.ort && Array.isArray(p.slots) && Math.hypot(p.ort.x - pm.x, p.ort.z - pm.z) < 1500);
@@ -475,10 +586,7 @@ module.exports = (F) => [
                 if (haus.length < 2) return { fehler: "weniger als zwei Wohnbauten in den Plänen" };
                 const f = haus.map((h) => h.fl).sort((a, b) => a - b);
                 const n = f.length;
-                const sum = f.reduce((s, v) => s + v, 0);
-                let g = 0;
-                for (let i = 0; i < n; i++) g += (2 * (i + 1) - n - 1) * f[i];
-                const gini = g / (n * sum);
+                // (der Gini der Wohnfläche ist EINE Rechnung: STAND_AN am Fächer der Sprosse 1, an der Adresse ort = der Platz hier)
                 // das Bildpaar: das nächste Paar aus dem reichsten und dem ärmsten Zehntel
                 const [lo, hi] = [f[Math.floor(n * 0.1)], f[Math.ceil(n * 0.9) - 1]];
                 const arm = haus.filter((h) => h.fl <= lo), reich = haus.filter((h) => h.fl >= hi);
@@ -514,7 +622,7 @@ module.exports = (F) => [
                 const poseNah = { px: +(bp.x + vx * 3.5).toFixed(2), py: +(bp.y + 1.6).toFixed(2), pz: +(bp.z + vz * 3.5).toFixed(2), lx: +bp.x.toFixed(2), ly: +(bp.y + 1.5).toFixed(2), lz: +bp.z.toFixed(2) };
                 const kl = plaene.map((p) => p.kleidung && p.kleidung.top).filter(Boolean);
                 return {
-                    gini: +gini.toFixed(3),
+                    ort: { ox: +pm.x.toFixed(2), oz: +pm.z.toFixed(2) },
                     wohnbauten: n,
                     paar: { d: Math.round(paar.d), arm: Math.round(paar.a.fl), armRolle: paar.a.rolle, reich: Math.round(paar.b.fl), reichRolle: paar.b.rolle },
                     posePaar,
@@ -571,6 +679,12 @@ module.exports = (F) => [
                     j: { leiter: "mensch.macht.stand", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "auge", bild: "", pose: "Probe", vorbild: "Probe" } } },
                     gruen: false,
                     zahl: /keine Messung der Sprosse$/,
+                },
+                {
+                    name: "TÄTER am Kern c9da3a6 (Fächer, 20 Saaten, nH 90): 3 Saaten tragen kein Los „arm“ — EIN Stand, kein Paar arm/reich",
+                    j: { leiter: "mensch.macht.stand", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "nicht", n: 1, fehlt: "2 Stände: die Saat trägt kein Los arm (fachwerk-core.js:5229 arm erst ab 16 Häusern und wohl < 0,72), nur einen Stand" } } },
+                    gruen: false,
+                    zahl: /Umfang nicht erzeugbar: 2 Stände: die Saat trägt kein Los arm/,
                 },
             ],
             4: [
@@ -801,8 +915,24 @@ module.exports = (F) => [
             const w = await K.welt("return await (" + H.seite.KRIEG + ")(r, T, {});", 20000);
             if (!w || w.fehler) throw new Error("die Welt des Kriegs: " + ((w && w.fehler) || "ohne Antwort"));
             H.zeile("Krieg: " + JSON.stringify(w));
-            const nur = "nur der Spieler trägt eine Klinge (" + (w.haelt || "die leere Hand") + "): " + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern bewaffnet";
-            await K.schritt(1, async () => K.nicht(1, { n: w.bewaffnet, fehlt: nur + ", kein zweiter Kämpfer für einen Zweikampf" }));
+            const nur = "die Welt trägt " + w.bewaffnet + " Bewaffnete — den Spieler (" + (w.haelt || "die leere Hand") + ") und " + w.bewaffneteBewohner + " Wachen von " + w.bewohner + " Bewohnern (LEBENSLAUF.wache), keiner schlägt";
+            // S1: die Bewaffneten je Ort über den FÄCHER (je Siedlung der warmen Welt eine Adresse, KRIEG_AN: die Waffe des Lebenslaufs,
+            // `_bewohnerLauf(S, b, "waffe")`, das nächste Paar zweier Posten, ob ein Bewaffneter ein Ziel des Hiebs ist) — trägt die Welt
+            // zwei Bewaffnete, fehlt der Leser: der Zweikampf (der Schwung eines Bewohners, sein Treffer am Leib, die Deckung)
+            await K.schritt(1, async () => {
+                const f = H.seite.KRIEG_FAECHER(w.siedlungen);
+                f.gesetz.fn = H.seite.KRIEG_AN;
+                f.ms = Math.max(4000, Math.floor((H.rest() - 6) * 1000));
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Krieg S1: " + R.akte.slice(0, 400));
+                if (R.fehlt || !(t.bewaffnet >= 1)) return K.nicht(1, { n: (t.bewaffnet || 0) + 1, fehlt: "2 Bewaffnete im Zweikampf: kein Bewohner trägt eine Waffe (" + (R.fehlt || t.orte + " Orte, 0 Wachen mit Waffe") + "), nur der Spieler" });
+                return K.leser(1, {
+                    n: t.bewaffnet + 1,
+                    fehlt: "kein Zweikampf: " + t.bewaffnet + " Wachen tragen eine Waffe (" + t.arten.join("/") + ", " + t.orte + " Orte; das nächste Paar zweier Posten " + (t.paarM == null ? "—" : t.paarM + " m") + ") und der Spieler eine Klinge — der einzige Schwung ist der des Spielers (_beginPlayerSwing), sein Hieb fegt nur über state.creatures (:447; " + t.ziel + " Wachen darin), kein Bewohner schlägt, antwortet oder deckt",
+                    wo: "stamm/kampf.js:92",
+                });
+            });
             await K.schritt(2, async () => {
                 if (w.bewaffnet < 10) return K.nicht(2, { n: w.bewaffnet, fehlt: nur + ", keine zehn Kämpfer, keine Moral, keine Flucht" });
                 const b = await K.bild(2, w.pose);
@@ -818,9 +948,12 @@ module.exports = (F) => [
                 const b = await K.bild(8, w.pose);
                 return K.auge(8, { bild: b.datei, pose: "stadt-voll: Vogelschau", mass: w.bewaffnet + " Kämpfer" });
             });
-            await K.schritt(9, async () => K.nicht(9, { n: 0, fehlt: "keine interplanetaren Konflikte: eine Welt, eine Art mit Klinge (der Spieler)" }));
+            await K.schritt(9, async () => K.nicht(9, { n: 0, fehlt: "keine interplanetaren Konflikte: eine Welt, eine Art mit Klinge (der Mensch)" }));
         },
         seite: {
+            FAECHER,
+            KRIEG_AN,
+            KRIEG_FAECHER: kriegFaecher,
             KRIEG: async (r, T, arg) => {
                 const st = r.state;
                 const pm = st.playerMesh.position;
@@ -841,6 +974,7 @@ module.exports = (F) => [
                 const haelt = st.player && st.player.equipped && st.player.equipped.held;
                 const y0 = r.getTerrainHeightAt(pm.x, pm.z);
                 return {
+                    siedlungen: [...(r._bewohnerSiedlungen || new Map()).entries()].filter(([, S]) => S && S.plan).map(([k]) => k),
                     bewohner,
                     bewaffneteBewohner,
                     bewaffnet: bewaffneteBewohner + (st.player ? 1 : 0),
@@ -859,8 +993,9 @@ module.exports = (F) => [
                     { key: "antwortet", wort: "der Getroffene antwortet (Anteil)", soll: 1, richtung: "≥" },
                     { key: "durchDeckung", wort: "Treffer durch die Deckung", soll: 0, richtung: "≤" },
                 ],
-                erwartet: "nicht",
-                fehlt: "nur der Spieler trägt eine Klinge, kein Bewohner ist bewaffnet",
+                erwartet: "leser",
+                fehlt: "kein Zweikampf: die Wache trägt ihre Waffe (LEBENSLAUF.wache), der einzige Schwung ist der des Spielers, sein Hieb trifft nur state.creatures",
+                wo: "stamm/kampf.js:92",
             },
             2: {
                 auge: { pose: "stadt-voll: der Platz, 40 m über ihm", vorbild: "Berichte und Bilder von Kämpfen Mensch gegen Mensch: Flucht statt Tod (Marshall, Men against Fire)" },
@@ -916,6 +1051,18 @@ module.exports = (F) => [
                     j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { sitzt: 1, antwortet: 1, durchDeckung: 0 } } } },
                     gruen: false,
                     zahl: /ROT an Umfang 1 < 2 Bewaffnete im Zweikampf/,
+                },
+                {
+                    name: "TÄTER am Spiel c9da3a6: die Wachen tragen Langschwert oder Keule, kein Bewohner schwingt — der Hieb des Spielers fegt nur über state.creatures",
+                    j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "leser", n: 2, fehlt: "kein Zweikampf: die Wachen tragen eine Waffe (langschwert/keule) und der Spieler eine Klinge — der einzige Schwung ist der des Spielers (_beginPlayerSwing), sein Hieb fegt nur über state.creatures (:447)", wo: "stamm/kampf.js:92" } } },
+                    gruen: false,
+                    zahl: /fehlender Leser: kein Zweikampf: .*_beginPlayerSwing.*\(stamm\/kampf\.js:92\)/,
+                },
+                {
+                    name: "TÄTER: zwanzig Zweikämpfe, einer trifft durch die Deckung",
+                    j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 2, werte: { sitzt: 1, antwortet: 1, durchDeckung: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Treffer durch die Deckung 1 /,
                 },
             ],
         },
@@ -1043,3 +1190,9 @@ module.exports = (F) => [
         },
     }),
 ];
+
+// DIE GESETZE DER FÄCHER für den Lauf am Kern (pm-werk/faecher-kern.cjs: dieselbe Funktion, dieselben Maße wie die Station)
+module.exports.STAND_AN = STAND_AN;
+module.exports.standFaecher = standFaecher;
+module.exports.KRIEG_AN = KRIEG_AN;
+module.exports.kriegFaecher = kriegFaecher;

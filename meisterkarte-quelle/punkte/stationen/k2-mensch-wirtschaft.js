@@ -24,7 +24,8 @@ const TECHNIK_AN = async (r, T, a, mit) => {
         const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
         if (!D.technik) return { fehlt: "der Plan der Saat " + a.saat + " trägt keinen Technik-Stand" };
         const B = FC.technikImBild({ technik: D.technik, slots: D.houses });
-        return { mitVor, ohneVor: B.ohneVor, ohne: B.ohne, imBild: B.imBild, stand: D.technik.stand.join(",") };
+        // technik#2: der Graph (Techniken), die Folge der Saat (ihr Stand in der Folge der Tafel) und das Jahr je Erfindung, wenn der Stand es trägt
+        return { mitVor, ohneVor: B.ohneVor, ohne: B.ohne, imBild: B.imBild, stand: D.technik.stand.join(","), techniken: Object.keys(G).length, erfunden: D.technik.jahre || D.technik.erfunden || null, epoche: D.technik.epoche || null };
     }
     let S = null, d = Infinity;
     for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
@@ -39,7 +40,7 @@ const TECHNIK_AN = async (r, T, a, mit) => {
 // Prädikat (die Verdichtung; die Schwellen stehen an der Sprosse), die schlechteste Adresse. Der Leser des Spiels: stamm/siedlung-ort.js:308
 // bestellt den Plan beim Faden (export-settlement → fachwerk-core exportSettlement → DORF), die Epoche der Zelle aus siedlungsEpoche (:2007)
 const technikFaecher = (ort, nH) => ({
-    gesetz: { export: "fachwerk-core.js:5183 DORF + :13942 technikImBild", leser: "stamm/siedlung-ort.js:308" },
+    gesetz: { export: "fachwerk-core.js:5182 DORF + :4402 technikImBild", leser: "stamm/siedlung-ort.js:308" },
     adressen: { saaten: 20, dazu: [{ ort }] },
     mit: { nH },
     masse: {
@@ -52,6 +53,24 @@ const technikFaecher = (ort, nH) => ({
         welt: { wie: "erste", feld: "welt" },
     },
     schlecht: { feld: "ohneVor", richtung: "max" },
+});
+// DER FÄCHER DER PFADE (technik#2): dasselbe Gesetz (TECHNIK_AN) an 50 Saaten — die Techniken des Graphen, die verschiedenen Folgen
+// (der Stand einer Saat ist ihre Folge: technikStand legt die Techniken in der Folge der Tafel, fachwerk-core.js:4357), die Saaten, deren
+// Stand ein Jahr je Erfindung trägt (die Streuung der Erfindungsjahre braucht es), die Epochen der Pläne
+const technikPfadFaecher = (nH) => ({
+    gesetz: { export: "fachwerk-core.js:5182 DORF (technik) + :4357 technikStand", leser: "stamm/siedlung-ort.js:308" },
+    adressen: { saaten: 50 },
+    mit: { nH },
+    masse: {
+        techniken: { wie: "max", feld: "techniken" },
+        pfade: { wie: "verschieden", feld: "stand" },
+        laengen: { wie: (v) => [...new Set(v.map((s) => String(s).split(",").length))].sort((a, b) => a - b), feld: "stand" },
+        erfunden: { wie: (v) => v.filter((x) => x != null).length, feld: "erfunden" },
+        epochen: { wie: "verschieden", feld: "epoche" },
+        saaten: { wie: "anzahl" },
+    },
+    schlecht: { feld: "techniken", richtung: "min" },
+    ungemessen: ["die Plausibilität der Folgen gegen die Geschichte (ein Panel); die Streuung der Erfindungsjahre (kein Jahr im Stand)"],
 });
 
 // DER ZENSUS DER STADT (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
@@ -124,6 +143,7 @@ const STADT = async (r, T, arg) => {
         if (SL.some((S) => imPlan(S, p.x, p.z, 30))) Z.muehlen++;
     }
     for (const x of (s.player && s.player.inventory) || []) if (x && x.kind === "material") plus(Z.inventar, String(x.material), x.count || 0);
+    Z.orte = [...(r._bewohnerSiedlungen || new Map()).entries()].filter(([, S]) => S && S.plan).map(([k]) => k);
     return Z;
 };
 
@@ -189,6 +209,7 @@ const BERUF = async (r, T, arg) => {
         haltungen,
         je: Object.fromEntries(R.map(([k, e]) => [k, [e.soll, e.am10, e.am2]])),
         takte,
+        ort: { ox: S.ox, oz: S.oz },
         pose: null,
     };
     if (top) {
@@ -200,6 +221,155 @@ const BERUF = async (r, T, arg) => {
     }
     return aus;
 };
+
+// DER BERUF UND SEINE HANDLUNG AN EINER ADRESSE (beruf#2, das Gesetz des Fächers, stationen/faecher.js): der Leser ruft die Gesetze
+// beim Namen und rechnet nichts nach — an der Saat a.saat der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)}): seine Werke
+// (die Rollen der Häuser, deren Angebot Arbeit trägt, koerper TAGES_GESETZ.angebot — wie der Wirt sie bindet), Platz (Beruf markt) und
+// Acker, die Rollen, die der Wirt vergibt (TAGES_GESETZ.rollen ohne das Kind); je Beruf die Handlung beim Akt arbeit: die Haltung des
+// Leibs (koerper tagesHaltung, gelesen von stamm/siedlung-bewohner.js:2729) und das Werkzeug der Hand (schmiede STOFFSTROM.werkzeug —
+// die Waffe der Wache steht im Lebenslauf des Stamms, nur die Adresse a.ort sieht sie). An a.ort = { ox, oz } die Bewohner der
+// Siedlung am Messort, wie die Welt sie trägt: Beruf, Haltung ihres Akts arbeit, `b.werkzeug` oder `b.waffe`. Eine EIGENE Handlung
+// trägt ein Beruf, dessen Paar (Haltung, Werkzeug) kein anderer Beruf derselben Adresse trägt
+const BERUF_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore, KC = globalThis.__koerperCore, SC = globalThis.__schmiedeCore;
+    if (!FC || !KC || typeof KC.tagesHaltung !== "function" || !KC.TAGES_GESETZ) return { fehlt: "der Kern trägt kein Gesetz der Haltung (koerper tagesHaltung)" };
+    const G = KC.TAGES_GESETZ, zeug = SC && SC.STOFFSTROM ? SC.STOFFSTROM.werkzeug : null;
+    const je = {};
+    const tritt = (beruf, rolle, werkzeug) => (je[beruf] = je[beruf] || new Set()).add((KC.tagesHaltung("arbeit", rolle) || "keine") + "|" + (werkzeug || "ohne"));
+    if (a.saat != null) {
+        const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
+        for (const h of D.houses) if ((G.angebot[h.rolle] || G.angebot.sonst).arbeit > 0) tritt(h.rolle, h.rolle, zeug);
+        if (G.angebot.platz && G.angebot.platz.arbeit > 0) tritt("markt", "wohnhaus", zeug);
+        if (G.angebot.feld && G.angebot.feld.arbeit > 0) tritt("feld", "wohnhaus", zeug);
+        for (const ro of Object.keys(G.rollen)) if (!G.rollen[ro].spiel) tritt(ro, ro, zeug);
+    } else {
+        let S = null, d = Infinity;
+        for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
+            const e = q && Math.hypot(q.ox - a.ort.ox, q.oz - a.ort.oz);
+            if (q && Array.isArray(q.liste) && q.liste.length && e < d) [S, d] = [q, e];
+        }
+        if (!S) return { fehlt: "keine Siedlung mit Bewohnern am Messort" };
+        for (const b of S.liste) if (b && b.rolle !== "kind" && b.orte && b.orte.werk) tritt(String(b.beruf), b.rolle, b.werkzeug || b.waffe);
+    }
+    const berufe = Object.keys(je).sort();
+    const zahl = {};
+    for (const k of berufe) for (const p of je[k]) zahl[p] = (zahl[p] || 0) + 1;
+    const eigen = berufe.filter((k) => [...je[k]].some((p) => zahl[p] === 1 && p !== "keine|ohne"));
+    const handlungen = [...new Set(berufe.flatMap((k) => [...je[k]].map((p) => p.split("|")[0]).filter((h) => h !== "keine")))];
+    const werkzeuge = [...new Set(berufe.flatMap((k) => [...je[k]].map((p) => p.split("|")[1]).filter((w) => w !== "ohne")))];
+    return { berufe: berufe.length, liste: berufe, eigene: eigen.length, eigen, handlungen, werkzeuge, paare: Object.keys(zahl).length };
+};
+// DER FÄCHER DES BERUFS (beruf#2): das Gesetz, die Adressen (20 Saaten, und die Stadt am Messort, wenn eine Welt sie trägt), das
+// Prädikat (die Schwellen stehen an der Sprosse), die schlechteste Adresse (die wenigsten Berufe mit eigener Handlung)
+const berufFaecher = (ort, nH) => ({
+    gesetz: { export: "koerper-core.js:5484 tagesHaltung + :5401 TAGES_GESETZ.angebot + fachwerk-core.js:5182 DORF", leser: "stamm/siedlung-bewohner.js:2729" },
+    adressen: { saaten: 20, dazu: ort ? [{ ort }] : [] },
+    mit: { nH },
+    masse: {
+        eigene: { wie: "max", feld: "eigene" },
+        berufe: { wie: "max", feld: "berufe" },
+        alle: { wie: (v) => new Set(v.flat()).size, feld: "liste" },
+        handlungen: { wie: (v) => [...new Set(v.flat())], feld: "handlungen" },
+        werkzeuge: { wie: (v) => [...new Set(v.flat())], feld: "werkzeuge" },
+        paare: { wie: "max", feld: "paare" },
+        saaten: { wie: "anzahl", nur: "saat" },
+        welt: { wie: "erste", feld: "eigen", nur: "ort" },
+    },
+    schlecht: { feld: "eigene", richtung: "min" },
+    pose: (a) => (a.saat != null ? "Saat " + a.saat + ": der Plan des Gesetzes, kein Bild in der warmen Welt" : "9 m vor der Rolle mit den meisten am Werk"),
+    ungemessen: ["das Bild „Beruf aus 1 Bild benannt ≥ 80 %“ (Bildpflicht, ungemessen bis zum Gerät)"],
+});
+
+// DIE WAREN UND IHR PREIS AN EINEM MARKT (markt#2, das Gesetz des Fächers): an der Saat a.saat der Plan des DORF — seine Berufe (die
+// Rollen der Häuser mit Arbeit im Angebot, TAGES_GESETZ.angebot, dazu der Acker) und die Waren, die der Wirt ihren Ständen gibt (koerper
+// BESTAND_GESETZ.herstellung: eine Zeile je Beruf, gelesen von stamm/siedlung-bewohner.js:1283 `_bestandAnlegen`), ob der Plan einen
+// Markt trägt (`kernel`), und ob der Halter eines Stands, wie der Kern ihn anlegt (`bestandHalter`), einen Preis trägt; an a.ort die
+// Stände der Siedlung am Messort, wie die Welt sie trägt (die Waren der Händler, ein Preis an ihrem Bestand)
+const MARKT_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore, KC = globalThis.__koerperCore;
+    if (!FC || !KC || !KC.BESTAND_GESETZ || typeof KC.bestandHalter !== "function") return { fehlt: "der Kern trägt kein Gesetz des Bestands (koerper BESTAND_GESETZ, bestandHalter)" };
+    const B = KC.BESTAND_GESETZ, G = KC.TAGES_GESETZ;
+    const preisAn = (H) => (H && Object.keys(H).some((k) => /preis|wert|kurs/i.test(k)) ? 1 : 0);
+    if (a.saat != null) {
+        const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
+        const berufe = new Set(["feld"]);
+        for (const h of D.houses) if ((G.angebot[h.rolle] || G.angebot.sonst).arbeit > 0) berufe.add(h.rolle);
+        const waren = [...new Set([...berufe].filter((k) => B.herstellung[k]).map((k) => B.herstellung[k].ware))].sort();
+        const H = waren.length ? KC.bestandHalter("stand", waren[0], 10, B.lager.stand, a.saat, "haendler", "markt") : null;
+        return { waren: waren.length, liste: waren, markt: D.kernel === "markt" ? 1 : 0, preis: preisAn(H), zeilen: Object.keys(B.herstellung).length };
+    }
+    let S = null, d = Infinity;
+    for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
+        const e = q && Math.hypot(q.ox - a.ort.ox, q.oz - a.ort.oz);
+        if (q && Array.isArray(q.liste) && q.liste.length && e < d) [S, d] = [q, e];
+    }
+    if (!S) return { fehlt: "keine Siedlung mit Bewohnern am Messort" };
+    const st = S.liste.filter((b) => b && b.bestand && b.bestand.art === "stand");
+    const waren = [...new Set(st.map((b) => b.bestand.ware))].sort();
+    return { waren: waren.length, liste: waren, markt: (S.plan.staende || []).length ? 1 : 0, preis: st.some((b) => preisAn(b.bestand)) ? 1 : 0, staende: st.length };
+};
+// DER FÄCHER DES MARKTS (markt#2): 20 Saaten im Gesetz und die Stadt am Messort; die schlechteste Adresse trägt die wenigsten Waren
+const marktFaecher = (ort, nH) => ({
+    gesetz: { export: "koerper-core.js:5731 BESTAND_GESETZ.herstellung + :5806 bestandHalter + fachwerk-core.js:5182 DORF", leser: "stamm/siedlung-bewohner.js:1283" },
+    adressen: { saaten: 20, dazu: ort ? [{ ort }] : [] },
+    mit: { nH },
+    masse: {
+        waren: { wie: "max", feld: "waren" },
+        alle: { wie: (v) => [...new Set(v.flat())], feld: "liste" },
+        maerkte: { wie: "summe", feld: "markt", nur: "saat" },
+        preis: { wie: "max", feld: "preis" },
+        zeilen: { wie: "max", feld: "zeilen" },
+        saaten: { wie: "anzahl", nur: "saat" },
+        welt: { wie: "erste", feld: "liste", nur: "ort" },
+    },
+    schlecht: { feld: "waren", richtung: "min" },
+    pose: (a) => (a.saat != null ? "Saat " + a.saat + ": der Plan des Gesetzes, kein Bild" : "der Markt der Stadt am Messort"),
+    ungemessen: ["der Preis über 3 Tage nach einer Missernte (der Kern trägt weder Preis noch Missernte: nichts zu raffen)"],
+});
+
+// DIE ROUTE ZWISCHEN ORTEN AN EINEM ORT (handel#2, das Gesetz des Fächers): an der Adresse a.ort (der Schlüssel einer Siedlung der
+// warmen Welt) seine Nachbarn im Wegenetz (`_wegenetzNachbarn`, der Graph der relativen Nachbarschaft), die gelegten Feldwege zu ihnen
+// (`_wegenetzKanten`: der günstigste Lauf über den Grund, fachwerk `wegZwischen`, gelegt vom Ort-Faden), je gelegtem Paar die Route
+// des Fahrers über das Netz von Mitte zu Mitte (`_wegenetzRoute`, ihre Länge über die Luftlinie) und die Lieferwagen des Orts, deren
+// Stand in einem ANDEREN Ort steht (die Bindung `W.lieferung`, stamm/siedlung-verkehr.js `_verkehrLieferung`)
+const HANDEL_AN = async (r, T, a, mit) => {
+    const B = r._bewohnerSiedlungen || new Map();
+    const S = B.get(a.ort);
+    if (!S || !S.plan) throw new Error("der Ort " + a.ort + " trägt keinen Plan");
+    if (typeof r._wegenetzNachbarn !== "function" || typeof r._wegenetzRoute !== "function") return { fehlt: "kein Wegenetz zwischen Orten (_wegenetzNachbarn, _wegenetzRoute)" };
+    const nb = r._wegenetzNachbarn(a.ort);
+    const K = r._wegenetzKanten || new Map();
+    const lang = (P) => P.reduce((s, q, i) => s + (i ? Math.hypot(q.x - P[i - 1].x, q.z - P[i - 1].z) : 0), 0);
+    const paare = [], umweg = [];
+    for (const n of nb || []) {
+        const paar = a.ort < n ? a.ort + "|" + n : n + "|" + a.ort;
+        const k = K.get(paar), Sb = B.get(n);
+        if (!k || !k.pts || !Sb) continue;
+        paare.push(paar);
+        const P = r._wegenetzRoute([{ x: S.ox, z: S.oz }, { x: Sb.ox, z: Sb.oz }]);
+        if (P && P.length > 1) umweg.push(+(lang(P) / Math.max(1, Math.hypot(Sb.ox - S.ox, Sb.oz - S.oz))).toFixed(3));
+    }
+    const wagen = ((S.verkehr && S.verkehr.wagen) || []).filter((W) => W && W.lieferung);
+    const liste = S.liste || [];
+    return { nachbarn: (nb || []).length, offen: nb === undefined ? 1 : 0, paare, umweg, lieferwagen: wagen.length, fern: wagen.filter((W) => !liste.includes(W.lieferung.stand)).length };
+};
+// DER FÄCHER DES HANDELS (handel#2): die Orte der warmen Welt (je Siedlung mit Plan eine Adresse) — headless (der Kern ohne Welt) trägt
+// er keine Adresse: das Wegenetz rechnet der Ort-Faden über dem Höhen-Raster der Welt
+const handelFaecher = (orte) => ({
+    gesetz: { export: "fachwerk-core.js:5616 wegZwischen (über den Ort-Faden) + stamm/siedlung-ort.js:3525 _wegenetzRoute", leser: "stamm/siedlung-ort.js:3413" },
+    adressen: { orte: orte || [] },
+    masse: {
+        routen: { wie: (v) => new Set(v.flat()).size, feld: "paare" },
+        umweg: { wie: (v) => (v.flat().length ? Math.max(...v.flat()) : null), feld: "umweg" },
+        lieferwagen: { wie: "summe", feld: "lieferwagen" },
+        fern: { wie: "summe", feld: "fern" },
+        offen: { wie: "summe", feld: "offen" },
+        orte: { wie: "anzahl" },
+    },
+    schlecht: { feld: "nachbarn", richtung: "min" },
+    pose: (a) => "der Ort " + a.ort + " mit den wenigsten Nachbarn im Netz",
+    ungemessen: ["die Kosten einer Fahrt gegen die billigste Route (ORBIS): keine Karawane, kein Lieferwagen fährt zwischen Orten"],
+});
 
 // DIE MÜHLE IM WIND (energie S2): die erste Architektur im Ort mit Rad oder Segel (ohne die Wagen der Stadt) — ihre Drehung je
 // Sekunde der Bild-Uhr (Winkel des Teils über 30 Takte des Spiels, `_bildZeit`) bei klarem Wetter (Flaute) und im Sturm, das Wetter
@@ -561,19 +731,33 @@ module.exports = (F) => [
             await K.schritt(5, async () => K.nicht(5, { n: b().rollenTag, fehlt: "10⁴ Berufe über Epochen: " + b().rollenTag + " Rollen einer Liste des Codes (fachwerk/koerper TAGES_GESETZ), keine jenseits der Liste" }));
             await K.schritt(6, async () => K.nicht(6, { n: b().am10, fehlt: "10⁷ Arbeitende in einer Stadt, ≥ 10⁵ sichtbar: um 10 Uhr " + b().am10 + " am Werk (" + b().mitWerk + " mit Werk)" }));
             await K.schritt(7, async () => K.nicht(7, { n: b().am10, fehlt: "10⁸ Arbeitende je Stadt, ≥ 10⁶ sichtbar: " + b().am10 + " am Werk" }));
-            // S2 zuletzt (S1 urteilt mensch.K2#2): der Spieler steht 9 m vor der Rolle mit den meisten am Werk, 10 Uhr
+            // S2 zuletzt (S1 urteilt mensch.K2#2): der Beruf und seine Handlung über den FÄCHER (20 Saaten im Gesetz + die Stadt am
+            // Messort, wie die Welt sie trägt) — je Adresse ein Ruf der Gesetze (BERUF_AN); erst wenn eine Adresse 10 Berufe mit eigener
+            // Handlung trägt, steht der Spieler 9 m vor der Rolle mit den meisten am Werk, 10 Uhr, und das Bild geht ans Panel
             await K.schritt(2, async () => {
-                const n = b().haltungen.filter((h) => h !== "keine").length;
-                if (n < 10) return K.nicht(2, { n, fehlt: "10 Berufe mit Handlung: am Werk tragen " + b().am10 + " Bewohner aus " + b().rollenAm + " Rollen " + n + " Handlung(en) (" + b().haltungen.join("/") + ") — die Haltung folgt dem Akt des Tags, nicht dem Beruf (koerper tagesHaltung)" });
+                const f = H.seite.BERUF_FAECHER({ ox: b().ort.ox, oz: b().ort.oz }, 60);
+                f.gesetz.fn = H.seite.BERUF_AN;
+                f.ms = ms() - 3000;
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Beruf S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { n: 0, fehlt: R.fehlt, wo: "stamm/siedlung-bewohner.js:2729" });
+                if (!(t.eigene >= 10)) {
+                    return K.nicht(2, {
+                        n: t.eigene || 0,
+                        fehlt: "10 Berufe mit eigener Handlung: das Gesetz trägt bis " + t.berufe + " Berufe an EINER Adresse (" + t.alle + " über " + t.saaten + " Saaten), " + t.eigene + " davon mit eigener Handlung (in der Stadt: " + ((t.welt || []).join("/") || "keiner") + ") — beim Akt arbeit stehen sie in " + (t.handlungen.join("/") || "keiner") +
+                            " Haltung: die Haltung folgt dem Akt, nicht dem Beruf (koerper-core.js:5484 tagesHaltung, :5432 eine Haltung je Akt, MOTION ohne Bewegung einer Arbeit), das Werkzeug ist EINES für jede Hand (" + (t.werkzeuge.join("/") || "keins") + ", schmiede STOFFSTROM.werkzeug)",
+                    });
+                }
                 const p = b().pose;
                 const bild = await K.bild(2, { px: p.px, py: p.py, pz: p.pz, lx: p.lx, ly: p.ly, lz: p.lz });
-                K.auge(2, { bild: bild.datei, pose: "9 m südlich der Mitte der Rolle " + p.rolle + " am Werk um 10 Uhr, Ego 1,7 m", mass: n + " Handlungen am Werk" });
+                K.auge(2, { bild: bild.datei, pose: "9 m südlich der Mitte der Rolle " + p.rolle + " am Werk um 10 Uhr, Ego 1,7 m", mass: t.eigene + " Berufe mit eigener Handlung (" + R.akte.slice(0, 160) + ")" });
             });
         },
-        seite: { BERUF },
+        seite: { BERUF, FAECHER, BERUF_AN, BERUF_FAECHER: berufFaecher },
         bestehend: { 1: "mensch.K2#2" },
         sprossen: {
-            2: { auge: { pose: "9 m südlich der Mitte der Rolle mit den meisten am Werk, 10 Uhr, Ego 1,7 m", vorbild: "Fotos realer Berufe bei der Arbeit (Schmied, Bäcker, Händler, Weber …): Beruf aus 1 Bild benannt ≥ 80 % an 10 Berufen" }, erwartet: "nicht", fehlt: "10 Berufe mit eigener Handlung" },
+            2: { auge: { pose: "9 m südlich der Mitte der Rolle mit den meisten am Werk, 10 Uhr, Ego 1,7 m", vorbild: "Fotos realer Berufe bei der Arbeit (Schmied, Bäcker, Händler, Weber …): Beruf aus 1 Bild benannt ≥ 80 % an 10 Berufen" }, erwartet: "nicht", fehlt: "10 Berufe mit eigener Handlung: das Gesetz trägt 25 Berufe an einer Adresse, eine Haltung je Akt (koerper-core.js:5484 tagesHaltung) und ein Werkzeug für jede Hand" },
             3: { umfang: { soll: 100, wort: "Berufe mit Lehrling, Meister, Kette" }, masse: [{ key: "veraendert", wort: "Werkstück nach 2 h verändert", soll: 0.9, richtung: "≥" }, { key: "glied", wort: "Ware am nächsten Glied", soll: 0.9, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Berufe mit Kette" },
             4: { umfang: { soll: 1000, wort: "Berufe als Bündel von Umwandlungen" }, masse: [{ key: "passt", wort: "Stichproben passen zu Werk, Uhr, Epoche (1000)", soll: 0.95, richtung: "≥" }], erwartet: "nicht", fehlt: "10³ Berufe" },
             5: { umfang: { soll: 1e4, wort: "Berufe über Epochen" }, masse: [{ key: "anachron", wort: "Anachronismen", soll: 0.01, richtung: "≤" }, { key: "ohneListe", wort: "Berufe in keiner Liste des Codes", soll: 0.2, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Berufe" },
@@ -581,6 +765,7 @@ module.exports = (F) => [
             7: { umfang: { soll: 1e8, wort: "Arbeitende je Stadt" }, masse: [{ key: "sichtbar", wort: "Arbeitende sichtbar", soll: 1e6, richtung: "≥" }, { key: "passtOrt", wort: "Berufe passen zum Ort", soll: 0.95, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁸ Arbeitende" },
         },
         proben: {
+            2: [{ name: "TÄTER am Kern c9da3a6 (Fächer, 20 Saaten): 25 Berufe an einer Adresse, eine Haltung pwalk und ein Beil für jede Hand — 0 Berufe mit eigener Handlung", j: { leiter: "mensch.wirtschaft.beruf", adapter: PROBE, sprossen: { 2: { art: "nicht", n: 0, fehlt: "10 Berufe mit eigener Handlung: das Gesetz trägt bis 25 Berufe an EINER Adresse (28 über 20 Saaten), 0 davon mit eigener Handlung — die Haltung folgt dem Akt, nicht dem Beruf (koerper-core.js:5484 tagesHaltung)" } } }, gruen: false, zahl: /Umfang nicht erzeugbar: 10 Berufe mit eigener Handlung: .*0 davon mit eigener Handlung/ }],
             6: [{ name: "ATTRAPPE: die Arbeitenden stehen sichtbar, nach 1 h kehrt nur ein Teil zurück", j: { leiter: "mensch.wirtschaft.beruf", adapter: PROBE, sprossen: { 6: { art: "zahl", n: 1e7, werte: { sichtbar: 2e5, rueckkehr: 0.7 } } } }, gruen: false, zahl: /ROT an Rückkehr nach 1 h 0\.7 / }],
         },
     }),
@@ -608,7 +793,23 @@ module.exports = (F) => [
                 return Z;
             };
             H.zeile("Markt: " + (Z ? Z.maerkte + " Markt/Märkte, " + Z.staende + " Stände, " + Z.haendler + " Händler unter " + Z.bewohner + " Bewohnern" : "kein Zensus (" + zf + ")"));
-            await K.schritt(2, async () => K.leser(2, { n: z().staende, fehlt: "kein Preis: der Stand ist Gestalt (Plane und Waren als Teile), er trägt weder Preis noch Bestand — keine Missernte hebt das Brot (" + z().staende + " Stände)", wo: "stamm/bau-vorlagen.js:1128" }));
+            // S2: die Waren und ihr Preis über den FÄCHER (20 Saaten im Gesetz + die Stadt am Messort) — je Adresse ein Ruf der Gesetze
+            // des Bestands (MARKT_AN); trägt eine Adresse 10 Waren mit Preis, misst erst die Missernte (gerafft über 3 Tage) die Zahl
+            await K.schritt(2, async () => {
+                const f = H.seite.MARKT_FAECHER({ ox: z().nah.ox, oz: z().nah.oz }, 60);
+                f.gesetz.fn = H.seite.MARKT_AN;
+                f.ms = ms() - 3000;
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Markt S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { n: 0, fehlt: R.fehlt, wo: "stamm/siedlung-bewohner.js:1283" });
+                if (t.waren >= 10 && t.preis) return K.zahl(2, { n: t.waren, werte: {}, beleg: R.akte, taeter: "Waren und Preis stehen im Gesetz, die Missernte über 3 Tage misst die Station noch nicht" });
+                return K.nicht(2, {
+                    n: t.waren || 0,
+                    fehlt: "10 Waren an einem Markt mit Preis: das Gesetz trägt " + t.waren + " Ware(n) an EINEM Markt (" + t.alle.join("/") + ", " + t.maerkte + " von " + t.saaten + " Saaten mit Markt; in der Stadt " + ((t.welt || []).join("/") || "keine") + ") — eine Zeile je Beruf in koerper-core.js:5731 BESTAND_GESETZ.herstellung (" + t.zeilen + " Zeilen, kein Brot), " +
+                        (t.preis ? "ein Preis am Stand" : "kein Preis am Halter des Stands (:5806 bestandHalter)") + ", keine Missernte (die Scheune kennt nur die Ernte, :5884)",
+                });
+            });
             await K.schritt(3, async () => K.nicht(3, { n: z().maerkte, fehlt: "10 Märkte mit Münze: " + z().maerkte + " Markt in " + z().siedlungen + " Siedlung(en), keine Münze, kein Wegkosten-Preis" }));
             await K.schritt(4, async () => K.nicht(4, { n: z().maerkte, fehlt: "10³ Märkte mit Kredit und Bank: " + z().maerkte + " Markt, keine Bank" }));
             await K.schritt(5, async () => {
@@ -636,10 +837,10 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { STADT, TAUSCH, AM_ORT },
+        seite: { STADT, TAUSCH, AM_ORT, FAECHER, MARKT_AN, MARKT_FAECHER: marktFaecher },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Tausch Spieler ↔ Bewohner" }, masse: [{ key: "sinkt", wort: "Änderung des Bestands des Bewohners beim Tausch", soll: 0, richtung: "<" }, { key: "ohneHerstellung", wort: "Gegenlauf: Füllung ohne Herstellung", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "kein Bestand der Bewohner", wo: "stamm/siedlung-bewohner.js:887" },
-            2: { umfang: { soll: 10, wort: "Waren an einem Markt" }, masse: [{ key: "brotPlus", wort: "Brotpreis 3 Tage nach Missernte (relativ)", soll: 0.3, richtung: "≥" }, { key: "nachErnte", wort: "Änderung des Brotpreises nach der Ernte", soll: 0, richtung: "<" }], erwartet: "leser", fehlt: "kein Preis am Stand", wo: "stamm/bau-vorlagen.js:1128" },
+            2: { umfang: { soll: 10, wort: "Waren an einem Markt" }, masse: [{ key: "brotPlus", wort: "Brotpreis 3 Tage nach Missernte (relativ)", soll: 0.3, richtung: "≥" }, { key: "nachErnte", wort: "Änderung des Brotpreises nach der Ernte", soll: 0, richtung: "<" }], erwartet: "nicht", fehlt: "10 Waren mit Preis: das Gesetz trägt 2 Waren (kraut, eisen; koerper-core.js:5731), keinen Preis, keine Missernte" },
             3: { umfang: { soll: 10, wort: "Märkte mit Münze" }, masse: [{ key: "r", wort: "Preis ↔ Wegkosten (r)", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "10 Märkte" },
             4: { umfang: { soll: 1000, wort: "Märkte mit Kredit und Bank" }, masse: [{ key: "spanneTage", wort: "Tage, bis die Spanne sich halbiert", soll: 30, richtung: "≤" }], erwartet: "nicht", fehlt: "10³ Märkte" },
             5: { auge: { pose: "20 m südlich der Mitte der Stadt, Ego 1,7 m", vorbild: "Fotos realer Krisen im Straßenbild (Schlangen, geschlossene Läden; 1929, 2008) an 20 Saaten: erkannt ≥ 80 %, Renditen mit fetten Rändern ≥ 80 %" }, erwartet: "nicht", fehlt: "10⁵ Märkte mit Börse" },
@@ -653,6 +854,10 @@ module.exports = (F) => [
                 { name: "TÄTER: der Stand füllt sich ohne Herstellung (+6 in 24 h)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { sinkt: -1, ohneHerstellung: 6 } } } }, gruen: false, zahl: /ROT an Gegenlauf: Füllung ohne Herstellung 6 / },
                 { name: "TÄTER: die Taste E tauscht nicht (Umfang 0)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { sinkt: 0, ohneHerstellung: 0 }, taeter: "die Taste E tauschte nicht" } } }, gruen: false, zahl: /ROT an Umfang 0 .*Täter: die Taste E tauschte nicht/ },
                 { name: "main 1e204f83: der Bewohner trägt keinen Bestand", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "kein Tausch: der Bewohner trägt keinen Bestand (es fehlt im Spiel: koerper-core bestandAm, _bestandTausch, _bestandAnlegen)", wo: "stamm/siedlung-bewohner.js:887", n: 5 } } }, gruen: false, zahl: /fehlender Leser: kein Tausch: .*_bestandTausch/ },
+            ],
+            2: [
+                { name: "TÄTER am Kern c9da3a6 (Fächer, 20 Saaten): 2 Waren an einem Markt (kraut, eisen), kein Preis am Halter des Stands", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 2: { art: "nicht", n: 2, fehlt: "10 Waren an einem Markt mit Preis: das Gesetz trägt 2 Ware(n) an EINEM Markt (eisen/kraut) — kein Preis am Halter des Stands (:5806 bestandHalter)" } } }, gruen: false, zahl: /Umfang nicht erzeugbar: 10 Waren an einem Markt mit Preis: das Gesetz trägt 2 Ware/ },
+                { name: "TÄTER: das Brot steigt nach der Missernte (+35 %) und fällt nach der Ernte nicht (der Preis ohne Gedächtnis der Ernte)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 10, werte: { brotPlus: 0.35, nachErnte: 0 } } } }, gruen: false, zahl: /ROT an Änderung des Brotpreises nach der Ernte 0 / },
             ],
             3: [{ name: "ATTRAPPE: zehn Märkte mit Münze, der Preis folgt keinem Weg (r 0,1)", j: { leiter: "mensch.wirtschaft.markt", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 10, werte: { r: 0.1 } } } }, gruen: false, zahl: /ROT an Preis ↔ Wegkosten \(r\) 0\.1 / }],
         },
@@ -688,7 +893,22 @@ module.exports = (F) => [
             };
             const hafen = () => Object.entries(z().slotRollen).filter(([k]) => /hafen|kai|werft|pier/i.test(k)).reduce((a, [, v]) => a + v, 0);
             H.zeile("Verkehr: " + (Z ? Z.wagen + " Wagen, " + Z.fahrer + " mit Fahrer, " + Z.fahrten + " gezählte Fahrten, aus dem Plan " + Z.fernWagen : "kein Zensus (" + zf + ")"));
-            await K.schritt(2, async () => K.nicht(2, { n: z().fernWagen, fehlt: "10 Routen zwischen Orten: " + z().fernWagen + " der " + z().wagen + " Wagen außerhalb ihres Plans — die Wagen fahren zwischen den Wenden EINER Stadt (" + z().siedlungen + " Siedlung(en))" }));
+            // S2: die Routen zwischen Orten über den FÄCHER (je Siedlung der warmen Welt eine Adresse, HANDEL_AN): gelegte Feldwege,
+            // die Route des Fahrers über das Netz, die Lieferwagen mit einem Stand in einem anderen Ort — der Umfang ist Handel auf der Route
+            await K.schritt(2, async () => {
+                const f = H.seite.HANDEL_FAECHER(z().orte);
+                f.gesetz.fn = H.seite.HANDEL_AN;
+                f.ms = ms() - 3000;
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Handel S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { n: 0, fehlt: R.fehlt, wo: "stamm/siedlung-ort.js:3413" });
+                return K.nicht(2, {
+                    n: t.fern || 0,
+                    fehlt: "10 Routen mit Karawane und Lieferwagen: das Gesetz legt " + t.routen + " Feldweg(e) zwischen " + t.orte + " Orten (fachwerk-core.js:5616 wegZwischen, der günstigste Lauf über den Grund; die Route des Fahrers über das Netz bis " + (t.umweg == null ? "—" : t.umweg) + "-fach der Luftlinie" + (t.offen ? ", " + t.offen + " Nachbarschaft(en) offen" : "") +
+                        "), aber nichts handelt auf ihnen: kein Gesetz einer Karawane, der Lieferwagen bindet Werk und Stand EINER Siedlung (stamm/siedlung-verkehr.js:476; " + t.fern + " von " + t.lieferwagen + " Lieferwagen mit Stand in einem anderen Ort, " + z().fernWagen + " von " + z().wagen + " Wagen außerhalb ihres Plans)",
+                });
+            });
             await K.schritt(3, async () => K.nicht(3, { n: hafen(), fehlt: "10² Routen mit Hafen: " + hafen() + " Häfen im Plan, kein Schiff" }));
             await K.schritt(4, async () => K.nicht(4, { n: z().siedlungen, fehlt: "10³ Knoten mit Pässen und Zöllen: " + z().siedlungen + " Siedlung(en) am Messort" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().fernWagen, fehlt: "10⁵ Routen mit Containern, ≥ 10⁴ Frachtbewegungen: " + z().fahrten + " gezählte Fahrten ohne Fracht, " + z().fernWagen + " Routen aus der Stadt" }));
@@ -711,10 +931,10 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { STADT, LIEFERUNG, AM_ORT },
+        seite: { STADT, LIEFERUNG, AM_ORT, FAECHER, HANDEL_AN, HANDEL_FAECHER: handelFaecher },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Ware auf einem Weg mit Fahrer" }, masse: [{ key: "beladen", wort: "Wagen beladen ↔ leer im Bildpaar", soll: 1, richtung: "≥" }, { key: "standLeer", wort: "Gegenlauf: Stand leer binnen Tagesfrist ohne Lieferung", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "der Wagen trägt keine Ware", wo: "stamm/siedlung-verkehr.js:384" },
-            2: { umfang: { soll: 10, wort: "Routen zwischen Orten" }, masse: [{ key: "teurer", wort: "Route teurer als die billigste (ORBIS)", soll: 0.1, richtung: "≤" }], erwartet: "nicht", fehlt: "keine Route zwischen Orten" },
+            2: { umfang: { soll: 10, wort: "Routen zwischen Orten" }, masse: [{ key: "teurer", wort: "Route teurer als die billigste (ORBIS)", soll: 0.1, richtung: "≤" }], erwartet: "nicht", fehlt: "kein Handel auf den Routen zwischen Orten: keine Karawane, der Lieferwagen bindet Werk und Stand einer Siedlung (stamm/siedlung-verkehr.js:476)" },
             3: { umfang: { soll: 100, wort: "Routen mit Hafen" }, masse: [{ key: "hafenLage", wort: "Hafenlage plausibel", soll: 1, richtung: "≥" }, { key: "beladen", wort: "Schiffe beladen", soll: 0.8, richtung: "≥" }], erwartet: "nicht", fehlt: "kein Hafen" },
             4: { umfang: { soll: 1000, wort: "Knoten mit Pässen und Zöllen" }, masse: [{ key: "r", wort: "Dichte ↔ Gravitationsmodell (r)", soll: 0.7, richtung: "≥" }, { key: "sperre", wort: "Hafen-Sperre leert ferne Regale in Reihenfolge", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10³ Knoten" },
             5: { umfang: { soll: 1e5, wort: "Routen mit Containern" }, masse: [{ key: "fracht", wort: "Frachtbewegungen", soll: 1e4, richtung: "≥" }, { key: "reserve", wort: "Verhalten nach Reserven bei 3 Tagen Sperre", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁵ Routen" },
@@ -730,7 +950,10 @@ module.exports = (F) => [
                 { name: "TÄTER: Werk und Stand an einer Wende (front-wirtschaft d157e52f, Radeon: 14 von 21, geladen 5, 0 gefahren)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 0, werte: { beladen: 0, standLeer: 1 }, taeter: "Werk und Stand an EINER Wende bei 14 von 21 Wagen (geladen 5, im selben Halt abgeladen) — kein Wagen mit Fahrer lud binnen 48.3 s an seinem Werk" } } }, gruen: false, zahl: /ROT an Umfang 0 .*Täter: Werk und Stand an EINER Wende bei 14 von 21/ },
                 { name: "main 1e204f83: der Wagen trägt keine Ware", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "keine Ladung: der Wagen fährt mit Fahrer (21 von 21), sein Satz trägt keine Ware (es fehlt im Spiel: koerper-core bestandAnkunft, _verkehrLieferung, _verkehrLadung)", wo: "stamm/siedlung-verkehr.js:384", n: 21 } } }, gruen: false, zahl: /fehlender Leser: keine Ladung: .*_verkehrLieferung/ },
             ],
-            2: [{ name: "ATTRAPPE: zehn Routen, die eine geht den Umweg (35 % teurer)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 10, werte: { teurer: 0.35 } } } }, gruen: false, zahl: /ROT an Route teurer als die billigste \(ORBIS\) 0\.35 / }],
+            2: [
+                { name: "ATTRAPPE: zehn Routen, die eine geht den Umweg (35 % teurer)", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 10, werte: { teurer: 0.35 } } } }, gruen: false, zahl: /ROT an Route teurer als die billigste \(ORBIS\) 0\.35 / },
+                { name: "TÄTER (das Gesetz von c9da3a6, stamm/siedlung-verkehr.js:476): Feldwege liegen zwischen den Orten, der Lieferwagen bindet Werk und Stand EINES Orts, keine Karawane", j: { leiter: "mensch.wirtschaft.handel", adapter: PROBE, sprossen: { 2: { art: "nicht", n: 0, fehlt: "10 Routen mit Karawane und Lieferwagen: das Gesetz legt Feldwege zwischen den Orten, aber nichts handelt auf ihnen: kein Gesetz einer Karawane, der Lieferwagen bindet Werk und Stand EINER Siedlung (stamm/siedlung-verkehr.js:476)" } } }, gruen: false, zahl: /Umfang nicht erzeugbar: 10 Routen mit Karawane und Lieferwagen: .*EINER Siedlung/ },
+            ],
         },
     }),
 
@@ -761,7 +984,20 @@ module.exports = (F) => [
             const dinge = () => Object.keys(z().slotRollen).length;
             const jahre = () => z().jahre.join("/") || "keins";
             H.zeile("Technik: " + (Z ? "Jahre der Pläne " + jahre() + ", " + dinge() + " Bauformen" : "kein Zensus (" + zf + ")"));
-            await K.schritt(2, async () => K.nicht(2, { n: 0, fehlt: "10² Techniken in ≥ 5 Pfaden (50 Saaten): die Welt trägt keine Technik, nur das Jahr des Plans (" + jahre() + ")" }));
+            // S2: die Pfade über den FÄCHER (50 Saaten, dasselbe Gesetz TECHNIK_AN wie S1): die Techniken des Graphen, die verschiedenen
+            // Folgen, das Jahr je Erfindung — vorher urteilte S2 ohne Messung (n 0: „die Welt trägt keine Technik“)
+            await K.schritt(2, async () => {
+                const f = H.seite.TECHNIK_PFAD_FAECHER(60);
+                f.gesetz.fn = H.seite.TECHNIK_AN;
+                f.ms = ms() - 3000;
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Technik S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { n: 0, fehlt: R.fehlt, wo: "fachwerk-core.js:4357" });
+                const beleg = t.techniken + " Techniken im Graphen (fachwerk-core.js:4305 TECHNIK.graph), " + t.pfade + " verschiedene Folgen über " + t.saaten + " Saaten (Länge " + t.laengen.join("/") + "), " + t.epochen + " Epochen der Pläne, " + t.erfunden + " Saaten mit einem Jahr je Erfindung (Pläne " + jahre() + ")";
+                if (t.techniken < 100 || !t.erfunden) return K.nicht(2, { n: t.techniken, fehlt: "10² Techniken in ≥ 5 Pfaden mit Erfindungsjahren: " + beleg + " — technikStand (:4357) legt den Stand ohne Zeit, kein Jahr streut" });
+                return K.zahl(2, { n: t.techniken, werte: { pfade: t.pfade, streuung: null }, beleg, taeter: "die Streuung der Erfindungsjahre misst die Station noch nicht" });
+            });
             await K.schritt(3, async () => K.nicht(3, { n: dinge(), fehlt: "10³ Techniken als sichtbare Dinge: " + dinge() + " Bauformen der Häuser, keine hängt an einem Pfad" }));
             await K.schritt(4, async () => K.nicht(4, { n: 0, fehlt: "10⁴ Techniken bis Dampf, Elektrik, Chemie mit Ausbreitung: keine Technik, keine Front" }));
             await K.schritt(5, async () => K.nicht(5, { n: 0, fehlt: "Halbleiter in ≥ 10 Pfaden mit lückenloser Kette: keine Kette" }));
@@ -790,7 +1026,7 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { STADT, TECHNIK_AN, FAECHER, TECHNIK_FAECHER: technikFaecher },
+        seite: { STADT, TECHNIK_AN, FAECHER, TECHNIK_FAECHER: technikFaecher, TECHNIK_PFAD_FAECHER: technikPfadFaecher },
         sprossen: {
             1: {
                 umfang: { soll: 10, wort: "Techniken mit Voraussetzung" },
@@ -800,7 +1036,7 @@ module.exports = (F) => [
                 ],
                 erwartet: "zahl",
             },
-            2: { umfang: { soll: 100, wort: "Techniken in ≥ 5 Pfaden" }, masse: [{ key: "pfade", wort: "plausible Pfadfolgen (50 Saaten)", soll: 5, richtung: "≥" }, { key: "streuung", wort: "Streuung der Erfindungsjahre", soll: 0.1, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Techniken" },
+            2: { umfang: { soll: 100, wort: "Techniken in ≥ 5 Pfaden" }, masse: [{ key: "pfade", wort: "plausible Pfadfolgen (50 Saaten)", soll: 5, richtung: "≥" }, { key: "streuung", wort: "Streuung der Erfindungsjahre", soll: 0.1, richtung: "≥" }], erwartet: "nicht", fehlt: "10² Techniken mit Erfindungsjahr: der Graph trägt 14 (fachwerk-core.js:4305), der Stand kein Jahr (:4357)" },
             3: { umfang: { soll: 1000, wort: "Techniken als sichtbare Dinge" }, masse: [{ key: "passt", wort: "Artefakte passen zum Pfad", soll: 0.8, richtung: "≥" }, { key: "H", wort: "Kettentiefe H", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "10³ Techniken" },
             4: { umfang: { soll: 1e4, wort: "Techniken bis Dampf, Elektrik, Chemie" }, masse: [{ key: "r", wort: "Ausbreitung ↔ Handelsdichte (r)", soll: 0.6, richtung: "≥" }, { key: "front", wort: "Front km/Jahr", von: 0.3, bis: 3 }, { key: "mehrfach", wort: "mehrfach erfunden", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "10⁴ Techniken" },
             5: { umfang: { soll: 10, wort: "Pfade zum Halbleiter" }, masse: [{ key: "kette", wort: "Pfade mit lückenloser Kette", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "kein Halbleiter" },
@@ -812,6 +1048,10 @@ module.exports = (F) => [
                 { name: "Technik ohne Vorgänger im Bild (drei Kuppeln ohne Kupfer)", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 3, staende: 4 }, taeter: "Technik ohne Vorgänger im Bild: kupfer 3" } } }, gruen: false, zahl: /ROT an Techniken ohne Voraussetzung im Bild \(20 Saaten\) 3 / },
                 { name: "jede Saat derselbe Stand", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 11, werte: { ohneVor: 0, staende: 1 }, taeter: " jede Saat derselbe Stand" } } }, gruen: false, zahl: /ROT an verschiedene Stände \(20 Saaten\) 1 / },
                 { name: "der Leser von main: kein Stand im Plan", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan", wo: "fachwerk-core.js technikImBild" } } }, gruen: false },
+            ],
+            2: [
+                { name: "TÄTER am Kern c9da3a6 (Fächer, 50 Saaten): 14 Techniken, 6 Folgen, kein Jahr je Erfindung", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 2: { art: "nicht", n: 14, fehlt: "10² Techniken in ≥ 5 Pfaden mit Erfindungsjahren: 14 Techniken im Graphen (fachwerk-core.js:4305 TECHNIK.graph), 6 verschiedene Folgen über 50 Saaten, 0 Saaten mit einem Jahr je Erfindung" } } }, gruen: false, zahl: /Umfang nicht erzeugbar: 10² Techniken .*0 Saaten mit einem Jahr je Erfindung/ },
+                { name: "TÄTER: hundert Techniken in sechs Pfaden, die Erfindungsjahre streuen nur 4 % (jede Saat erfindet im selben Jahr)", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 100, werte: { pfade: 6, streuung: 0.04 } } } }, gruen: false, zahl: /ROT an Streuung der Erfindungsjahre 0\.04 / },
             ],
             4: [{ name: "ATTRAPPE: die Front springt (30 km/Jahr) — Ausbreitung ohne Weg", j: { leiter: "mensch.wirtschaft.technik", adapter: PROBE, sprossen: { 4: { art: "zahl", n: 1e4, werte: { r: 0.7, front: 30, mehrfach: 0.7 } } } }, gruen: false, zahl: /ROT an Front km\/Jahr 30 / }],
         },
@@ -874,3 +1114,13 @@ module.exports = (F) => [
         },
     }),
 ];
+
+// DIE GESETZE DER FÄCHER für den Lauf am Kern (pm-werk/faecher-kern.cjs: dieselbe Funktion, dieselben Maße wie die Station)
+module.exports.BERUF_AN = BERUF_AN;
+module.exports.berufFaecher = berufFaecher;
+module.exports.MARKT_AN = MARKT_AN;
+module.exports.marktFaecher = marktFaecher;
+module.exports.HANDEL_AN = HANDEL_AN;
+module.exports.handelFaecher = handelFaecher;
+module.exports.TECHNIK_AN = TECHNIK_AN;
+module.exports.technikPfadFaecher = technikPfadFaecher;

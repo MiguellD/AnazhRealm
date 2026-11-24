@@ -9,6 +9,11 @@
 // byte-gleich aus dem argv jener Probe geholt, nie ein Zwilling; ohne sie lädt diese Datei nicht.
 "use strict";
 
+// DER FÄCHER (stationen/faecher.js) und DAS GESETZ DES ORTS an einer Adresse (k2-mensch-bau.js ORT_AN: der Plan, den das Spiel beim Faden
+// bestellt) mit der blinden Trennung am Rezept (TRENNE) — EINE Funktion für bau, kultur und zeit, nie ein Zwilling
+const { FAECHER } = require("./faecher.js");
+const { ORT_AN, TRENNE } = require("./k2-mensch-bau.js");
+
 const SPRACHE_LESER = (() => {
     const st = require("./g5.js").find((s) => s && s.kriterium === "karte2.same.preis.zugang" && s.probe && Array.isArray(s.probe.befehl));
     const t = st ? String(st.probe.befehl[2]) : "";
@@ -293,7 +298,10 @@ async function ritus(r, T, arg) {
 // von Grundriss), das Auge am Spieler (die Nah-Wahl liest es), dann der Takt der Leute je 1/60 s: geantwortet hat, wessen
 // Kopf-Knoten (seine Welt-Matrix) binnen `schritte` Takten auf 10° zum Spieler zeigt — und wann (die Form des Grußes). Am Ende
 // Spieler und Auge, wo sie standen.
-async function begegnung(r, T, arg) {
+async function begegnung(r, T, a, mit) {
+    // als Gesetz des Fächers (verstaendigung S1): die Adresse a.ort ist EINE Kultur der Stadt, mit = { n je Kultur, abM, schritte }
+    const arg = mit || a;
+    const nur = a && typeof a.ort === "string" ? a.ort : null;
     const st = r.state;
     const A = r.constructor;
     const pm = st.playerMesh.position;
@@ -319,11 +327,12 @@ async function begegnung(r, T, arg) {
     for (const b of S.liste)
         if (b.leib && b.da && !b.weg && !b.drinnen && !b.amSteuer) {
             const k = kultur.get(b.heim) || "?";
+            if (nur && k !== nur) continue;
             if (!je.has(k)) je.set(k, []);
             je.get(k).push(b);
         }
     const wahl = [];
-    const m = Math.ceil(arg.n / Math.max(1, je.size));
+    const m = nur ? arg.n : Math.ceil(arg.n / Math.max(1, je.size));
     for (const xs of je.values()) {
         const k = Math.min(m, xs.length);
         for (let j = 0; j < k; j++) wahl.push(xs[Math.floor((j * xs.length) / k)]);
@@ -569,17 +578,62 @@ module.exports = (F) => [
     F.leiter("mensch.kultur.gestalt", {
         sek: 45,
         pfad: ORT,
-        seite: { ZENSUS: zensus, STUFEN: stufen },
+        seite: { ZENSUS: zensus, STUFEN: stufen, FAECHER, ORT_AN, TRENNE },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
             if (!z || z.fehler) throw new Error("der Zensus der Stadt: " + ((z && z.fehler) || "ohne Antwort"));
             H.zeile("Gestalt: Kulturen der Stadt " + JSON.stringify(z.ort.kulturen) + " · alle Orte " + z.kulturenAlle + " · Gesetz " + z.kulturenGesetz + " · Häuser " + z.haeuserAlle);
-            const stadt = (z) => Object.keys(z.ort.kulturen).length;
             const welt = (z) => z.kulturenAlle;
             const mass = (z) => "Kulturen der Stadt " + Object.keys(z.ort.kulturen).join("/") + " · geladen " + z.kulturenAlle;
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten als Zellen der Welt, je Saat der Plan des Orts (ORT_AN) — der
+            // Umfang U_eff (Simpson 1/Σp² über die Häuser des Fächers, die Liste der Kulturen zählt mit), der Zahlen-Teil des Blindpaars
+            // (TRENNE: die 10 häufigsten Kulturen der Wohnhäuser am Rezept, mit den Farben) und die Tiefe „Bau UND Tracht je Kultur“: die
+            // Tracht liest der Wirt aus dem Plan (stamm/siedlung-bewohner.js:458), EINE je Ort aus der Epoche (fachwerk-core.js:5295)
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.ORT_AN, export: "fachwerk-core.js:11165 exportSettlement → :5206 poolAt (Kultur je Los) · :5295 EPOCHEN[eT].tracht (Tracht je Ort)", leser: "stamm/siedlung-ort.js:488" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 12 },
+                    masse: {
+                        orte: { wie: "anzahl" },
+                        haeuser: { wie: "summe", feld: "haeuser" },
+                        kulturen: { wie: (v, aus) => new Set(aus.flatMap((x) => Object.keys(x.w.kulturen))).size },
+                        ueff: {
+                            wie: (v, aus) => {
+                                const c = {};
+                                let N = 0;
+                                for (const x of aus) for (const k in x.w.kulturen) (c[k] = (c[k] || 0) + x.w.kulturen[k]), (N += x.w.kulturen[k]);
+                                return N ? +(1 / Object.values(c).reduce((q, m) => q + (m / N) ** 2, 0)).toFixed(2) : null;
+                            },
+                        },
+                        ortMax: { wie: "max", feld: "nKulturen" },
+                        trachten: { wie: "verschieden", feld: "tracht" },
+                        einTracht: { wie: (v, aus) => aus.filter((x) => x.w.nKulturen >= 2 && x.w.tracht).length },
+                        trennt: { wie: (v, aus) => H.seite.TRENNE(aus.flatMap((x) => x.w.bauten.filter((b) => b.rolle === "wohnhaus")), "kultur", { farbe: true, top: 10 }) },
+                    },
+                    schlecht: { feld: "nKulturen", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " (" + w.name + ", " + w.region + ", " + w.epoche + "): " + w.nKulturen + " Kulturen unter EINER Tracht " + w.tracht + " — die Zelle steht nicht in der warmen Welt",
+                    ungemessen: ["das Blindpaar „10 Kulturen an Häuser-Bildern ≥ 80 %“ (≥ 12 Prüfer): ungemessen bis zum Gerät"],
+                    ms: Math.max(3000, Math.min(12000, Math.floor((H.rest() - 6) * 1000))),
+                });
+                const w = R.werte, t = w.trennt || {};
+                H.zeile("Gestalt S1: " + R.akte.slice(0, 600) + " · getrennt " + JSON.stringify(t));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Orts: " + R.fehlt, wo: "stamm/siedlung-ort.js:308" });
+                if (!R.gemessen) throw new Error("der Fächer der Orte maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                const bau = "U_eff " + w.ueff + " (" + w.kulturen + " Kulturen, " + w.haeuser + " Häuser, je Ort ≤ " + w.ortMax + "), am Rezept blind " + Math.round((t.balanciert || 0) * 100) + " % (" + t.klassen + " Kulturen)";
+                if (!(w.ueff >= 10)) return K.nicht(1, { n: w.ueff, fehlt: "U_eff ≥ 10 am Fächer " + R.gemessen + " Orte: " + bau + " · Leser stamm/siedlung-ort.js:488" });
+                // der Umfang steht am Gesetz: die Zahl-Hälfte (U_eff, am Rezept blind getrennt) trägt der Fächer, das Blindpaar an Häuser-Bildern
+                // urteilt das Panel. Die Tracht (EINE je Ort aus der Epoche, fachwerk-core.js:5295) steht nicht im Wortlaut dieser Sprosse
+                // („an Häuser-Bildern“) — die Akte nennt sie als Befund, sie urteilt nicht
+                const b = await K.bild(1, z.pose);
+                return K.auge(1, {
+                    bild: b.datei,
+                    pose: K.SPEC.sprossen[1].auge.pose + " · Kamera " + [z.pose.px, z.pose.py, z.pose.pz].join("/"),
+                    mass: "Fächer " + R.gemessen + " Orte (Leser stamm/siedlung-ort.js:488): " + bau + " · Befund außerhalb der Sprosse: " + w.einTracht + " Orte tragen bis " + w.ortMax + " Kulturen unter EINER Tracht (" + w.trachten + " Trachten, fachwerk-core.js:5295) · ungemessen bis zum Gerät: das Blindpaar",
+                });
+            });
             await H.seite.STUFEN(H, K, z, [
-                { n: 1, art: "auge", um: 10, wert: stadt, mass, fehlt: "Kulturen an den Häusern der Stadt" },
                 { n: 2, art: "auge", um: 100, wert: welt, mass, fehlt: "Kulturen aus dem Samen (alle geladenen Orte; das Gesetz trägt " + z.kulturenGesetz + " Namen)" },
                 { n: 3, art: "auge", um: 1000, wert: welt, mass, fehlt: "Kulturen auf einem Kontinent" },
                 { n: 4, art: "auge", um: 10000, wert: welt, mass, fehlt: "Kulturen mit Fest und Alltag (eine Tracht je Epoche, kein Fest)" },
@@ -589,7 +643,10 @@ module.exports = (F) => [
             ]);
         },
         sprossen: {
-            1: { auge: { pose: POSE, vorbild: "Straßenfotos realer Häuser von 10 Kulturen, Blindpaar ≥ 12 Prüfer: getrennt ≥ 80 %" }, erwartet: "nicht", fehlt: "Kulturen der Stadt: 4 < 10" },
+            // der Umfang U_eff ≥ 10 steht am Fächer (20 Orte headless: U_eff 14,16, 10 Kulturen am Rezept 90,4 % getrennt) — die Probe schießt
+            // das Bild, die Sprosse wartet aufs Panel (K.auge). „erwartet nicht“ trägt sie nur, weil auge-klasse.cjs (fremde Datei) für
+            // mensch.kultur.gestalt#1 keine Klasse P führt und das Register eine Augen-Sprosse ohne Klasse nicht nimmt; die Zeile fehlt dort
+            1: { auge: { pose: POSE, vorbild: "Straßenfotos realer Häuser von 10 Kulturen, Blindpaar ≥ 12 Prüfer: getrennt ≥ 80 %" }, erwartet: "nicht", fehlt: "U_eff ≥ 10 an Häuser-Bildern: die Bühne der Stadt trug 4 Kulturen, der Fächer des Gesetzes trägt U_eff 14,16 — die Klasse P fehlt in auge-klasse.cjs" },
             2: { auge: { pose: POSE, vorbild: "die Saat-Probe: Häuserbilder zweier Saaten gegen Fotos realer Orte, getrennt ≥ 80 %, plausibel ≥ 90 %" }, erwartet: "nicht", fehlt: "Kulturen aus dem Samen: < 100" },
             3: { auge: { pose: POSE, vorbild: "Foto des realen Gegenstücks je Kultur (Merkmalsabstand im Foto-Band)" }, erwartet: "nicht", fehlt: "Kulturen auf einem Kontinent: < 1 000" },
             4: { auge: { pose: POSE, vorbild: "Fotos realer Festtrachten (≥ 60 %) und Tonaufnahmen der Musik je Kultur (zugeordnet ≥ 70 %)" }, erwartet: "nicht", fehlt: "Kulturen mit Fest und Alltag: < 10⁴" },
@@ -599,7 +656,7 @@ module.exports = (F) => [
         },
         proben: {
             1: [
-                { name: "die Attrappe: zehn Namen der Liste, vier Kulturen im Bild", j: mut("mensch.kultur.gestalt", 1, { art: "nicht", n: 4, fehlt: "Kulturen an den Häusern der Stadt (gemessen 4 < 10)" }), gruen: false, zahl: /Umfang nicht erzeugbar: Kulturen an den Häusern/ },
+                { name: "die Attrappe: zehn Namen der Liste, U_eff 4 am Fächer", j: mut("mensch.kultur.gestalt", 1, { art: "nicht", n: 4, fehlt: "U_eff ≥ 10 am Fächer 20 Orte: U_eff 4" }), gruen: false, zahl: /Umfang nicht erzeugbar: U_eff ≥ 10 am Fächer 20 Orte: U_eff 4 \(gemessen 4\)/ },
                 { name: "das Bild fehlt (auge ohne Bild)", j: mut("mensch.kultur.gestalt", 1, { art: "auge", pose: "Probe", vorbild: "Probe" }), gruen: false, zahl: /keine Messung der Sprosse$/ },
             ],
         },
@@ -609,18 +666,44 @@ module.exports = (F) => [
     F.leiter("mensch.kultur.diffusion", {
         sek: 45,
         pfad: ORT,
-        seite: { ZENSUS: zensus, STUFEN: stufen },
+        seite: { ZENSUS: zensus, STUFEN: stufen, FAECHER, ORT_AN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({ grenze: true }) + ");", 30000);
             if (!z || z.fehler) throw new Error("der Zensus der Stadt: " + ((z && z.fehler) || "ohne Antwort"));
             H.zeile("Diffusion: " + z.orte.length + " Orte, Regionen binnen 2 km " + z.grenze.regionen + ", Paar " + JSON.stringify(z.grenze));
             const herkuenfte = (z) => Object.keys(z.ort.kulturen).length;
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten als Zellen der Welt, je Saat der Plan des Orts (ORT_AN). Eine
+            // Grenze ist ein Paar Nachbar-Orte verschiedener Region; gemischt ist ein Haus, das eine Kultur jenseits des Vorrats SEINER
+            // Region trägt (fachwerk REGION_HIST, alle Epochen — die Tafel des Gesetzes). Der Auftrag eines Orts trägt keinen Nachbarn
+            // (seed, nH, epoche, ort, hoehe): sein Plan ist an jeder Grenze derselbe — gezählt wird, was der Fächer an Mischung zeigt
+            await K.schritt(1, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.ORT_AN, export: "fachwerk-core.js:11165 exportSettlement(dp: seed · nH · epoche · ort · hoehe) → :5206 poolAt (der Vorrat der eigenen Region)", leser: "stamm/siedlung-ort.js:308" },
+                    adressen: { saaten: 20 },
+                    mit: { nH: 12, bauten: false },
+                    masse: {
+                        orte: { wie: "anzahl" },
+                        haeuser: { wie: "summe", feld: "haeuser" },
+                        regionen: { wie: "verschieden", feld: "region" },
+                        fremd: { wie: "summe", feld: "fremd" },
+                        geteilt: { wie: (v, aus) => { const m = {}; for (const x of aus) for (const k in x.w.kulturen) (m[k] = m[k] || new Set()).add(x.w.region); return Object.keys(m).filter((k) => m[k].size > 1).length; } },
+                    },
+                    schlecht: { feld: "fremd", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " (" + w.name + ", " + w.region + "): " + w.fremd + " von " + w.haeuser + " Häusern jenseits des Vorrats ihrer Region",
+                    ungemessen: ["die Mischform am Bild eines Grenzdorfs: kein Grenzdorf in der warmen Welt (kein Ort einer anderen Region binnen 2 km), ungemessen bis zum Gerät"],
+                    ms: Math.max(3000, Math.min(12000, Math.floor((H.rest() - 6) * 1000))),
+                });
+                const w = R.werte;
+                H.zeile("Diffusion S1: " + R.akte.slice(0, 600));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Orts: " + R.fehlt, wo: "stamm/siedlung-ort.js:308" });
+                if (!R.gemessen) throw new Error("der Fächer der Orte maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                return K.nicht(1, {
+                    n: 0,
+                    fehlt: "Mischformen an einer Grenze: der Auftrag eines Orts trägt keinen Nachbarn (fachwerk-core.js:11165 seed · nH · epoche · ort · hoehe), jedes Haus nimmt die Kultur aus dem Vorrat SEINER Region (:5206) — am Fächer " + R.gemessen + " Orte in " + w.regionen + " Regionen: " + w.fremd + " von " + w.haeuser + " Häusern jenseits ihres Vorrats, " + w.geteilt + " Kulturen in 2 Regionen, kein Haus je Abstand zur Grenze gemischt",
+                });
+            });
             await H.seite.STUFEN(H, K, z, [
-                {
-                    n: 1, art: "nicht", wert: (z) => z.grenze.regionen, fehlt: "zwei Kulturen an einer Grenze: kein Ort einer anderen Region binnen 2 km",
-                    zahl: (z) => ({ n: z.grenze.regionen, werte: { grenze: z.grenze.grenze, abseits: z.grenze.abseits }, beleg: "Paar " + (z.grenze.orte || []).join(" ↔ ") + " (" + z.grenze.d + " m)", taeter: "die Wahl der Kultur je Haus (fachwerk-core REGION_HIST, der Vorrat der Region)" }),
-                },
                 { n: 2, art: "nicht", wert: (z) => z.kulturenAlle, fehlt: "zehn Kulturen mit Wegen zwischen ihnen: die geladenen Orte tragen weniger" },
                 { n: 3, art: "auge", um: 10, wert: herkuenfte, fehlt: "Herkünfte in der Stadt (Kulturen ihrer Häuser)", mass: (z) => "Herkünfte " + Object.keys(z.ort.kulturen).join("/") },
                 { n: 4, art: "nicht", wert: herkuenfte, fehlt: "Herkünfte in der Stadt: die Kulturen des Stadt-Vorrats" },
@@ -629,7 +712,7 @@ module.exports = (F) => [
             ]);
         },
         sprossen: {
-            1: { umfang: { soll: 2, wort: "Kulturen an einer Grenze" }, masse: [{ key: "grenze", wort: "Grenzstreifen gemischt", soll: 0.3, richtung: "≥" }, { key: "abseits", wort: "abseits gemischt", soll: 0.05, richtung: "≤" }], erwartet: "nicht", fehlt: "kein Ort einer anderen Region binnen 2 km" },
+            1: { umfang: { soll: 2, wort: "Kulturen an einer Grenze" }, masse: [{ key: "grenze", wort: "Grenzstreifen gemischt", soll: 0.3, richtung: "≥" }, { key: "abseits", wort: "abseits gemischt", soll: 0.05, richtung: "≤" }], erwartet: "nicht", fehlt: "Mischformen an einer Grenze: der Auftrag eines Orts trägt keinen Nachbarn, jedes Haus nimmt die Kultur aus dem Vorrat seiner Region" },
             2: { umfang: { soll: 10, wort: "Kulturen mit Wegen" }, masse: [{ key: "mantel", wort: "Mantel-r über Wege", soll: 0.4, richtung: "≥" }, { key: "vorsprung", wort: "Mantel-r über Wege minus Luftlinie", soll: 0, richtung: ">" }, { key: "lehnwort", wort: "Lehnwort ↔ Distanz r", soll: -0.5, richtung: "≤" }], erwartet: "nicht", fehlt: "zehn Kulturen mit Wegen: < 10" },
             3: { auge: { pose: POSE, vorbild: "Straßenbilder realer Städte mit 10 Herkünften: Herkunft blind erkannt ≥ 75 % (Prüfer)" }, erwartet: "nicht", fehlt: "Herkünfte in der Stadt: < 10" },
             4: { umfang: { soll: 100, wort: "Herkünfte (in 10⁷)" }, masse: [{ key: "hybrid", wort: "neue Hybrid-Merkmale in 100 J (trennbar, ins Umland)", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "Herkünfte: < 100" },
@@ -637,7 +720,10 @@ module.exports = (F) => [
             6: { umfang: { soll: 100000000, wort: "Bewohner (10⁸-Stadt)" }, masse: [{ key: "r", wort: "Divergenz ↔ Zeit × Abstand r", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "Bewohner: 1092 < 10⁸" },
         },
         proben: {
-            1: [{ name: "die Attrappe: gemischt überall (auch abseits)", j: mut("mensch.kultur.diffusion", 1, { art: "zahl", n: 2, werte: { grenze: 0.4, abseits: 0.4 } }), gruen: false, zahl: /ROT an abseits gemischt / }],
+            1: [
+                { name: "die Attrappe: gemischt überall (auch abseits)", j: mut("mensch.kultur.diffusion", 1, { art: "zahl", n: 2, werte: { grenze: 0.4, abseits: 0.4 } }), gruen: false, zahl: /ROT an abseits gemischt / },
+                { name: "der Plan liest keinen Nachbarn (kein Haus gemischt) — ROT Umfang nicht erzeugbar", j: mut("mensch.kultur.diffusion", 1, { art: "nicht", n: 0, fehlt: "Mischformen an einer Grenze: der Auftrag eines Orts trägt keinen Nachbarn" }), gruen: false, zahl: /Umfang nicht erzeugbar: Mischformen an einer Grenze: der Auftrag eines Orts trägt keinen Nachbarn \(gemessen 0, Soll 2 Kulturen an einer Grenze\)/ },
+            ],
         },
     }),
 
@@ -679,18 +765,37 @@ module.exports = (F) => [
         sek: 45,
         mutiert: true,
         pfad: [...ORT, "stamm/kreatur-verhalten.js", "stamm/vegetation-baum.js", "stamm/gelaende-boden.js", "stamm/dirigent-kern.js", "stamm/dirigent-takt.js", "stamm/koerper-bewegung.js"],
-        seite: { ZENSUS: zensus, STUFEN: stufen, BEGEGNUNG: begegnung },
+        seite: { ZENSUS: zensus, STUFEN: stufen, BEGEGNUNG: begegnung, FAECHER },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
             if (!z || z.fehler) throw new Error("der Zensus der Stadt: " + ((z && z.fehler) || "ohne Antwort"));
             H.zeile("Verständigung: Bewohner " + z.bewohner.n + " (nah " + z.bewohner.nah + "), Text-Träger an Gräbern " + z.texte.grab + ", Wörter " + z.texte.woerter + ", Kreaturen " + z.kreaturen.n + " (mit Zeichen " + z.kreaturen.sprache + ")");
-            // DER GRUSS (S1): wer antwortet (der Kopf wendet sich binnen 1,5 s auf 10° zum Spieler), und trägt die Form der Antwort
-            // (die Zeit bis dahin) die Kultur seines Hauses — getrennt je Bewohner gegen die Mitten der Kulturen ohne ihn (Gleichstand: falsch)
+            // DER GRUSS (S1) AM GESETZ DER BEGEGNUNG (der Fächer, stationen/faecher.js): je Kultur der Häuser der Stadt EINE Adresse, an ihr
+            // die Begegnung mit bis zu 6 Bewohnern dieser Kultur — wer antwortet (der Kopf wendet sich binnen 1,5 s auf 10° zum Spieler) und
+            // trägt die Form der Antwort (die Zeit bis dahin) die Kultur seines Hauses: getrennt je Bewohner gegen die Mitten der Kulturen
+            // ohne ihn (Gleichstand: falsch). Das Gesetz der Antwort ist `_bewohnerKopf` (EIN Satz BEWOHNER.kopfRadS · kopfMaxRad für jeden
+            // Leib), die Geste des Leibs (koerper-core GESTE) liest die Begegnung nicht
             const gruss = async (z) => {
-                const B = await K.welt("return await (" + H.seite.BEGEGNUNG + ")(r, T, " + JSON.stringify({ n: 24, abM: 2, schritte: 90 }) + ");", 40000);
-                if (!B || B.fehler) return { n: 0, werte: {}, taeter: "die Begegnung: " + ((B && B.fehler) || "ohne Antwort") };
-                const ja = B.aus.filter((x) => x.zuS !== null);
+                const ks0 = Object.keys(z.ort.kulturen).filter((k) => k !== "?");
+                if (!ks0.length) return { n: 0, werte: {}, taeter: "keine Kultur an den Häusern der Stadt (der Zensus trägt " + JSON.stringify(z.ort.kulturen) + ")" };
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.BEGEGNUNG, export: "stamm/siedlung-bewohner.js:2376 _bewohnerKopf (BEWOHNER.kopfRadS · kopfMaxRad · rumpfMaxRad, ohne Kultur)", leser: "stamm/siedlung-bewohner.js:2190" },
+                    adressen: { orte: ks0 },
+                    mit: { n: Math.max(2, Math.ceil(24 / ks0.length)), abM: 2, schritte: 90 },
+                    masse: {
+                        aus: { wie: (v, aus) => aus.flatMap((x) => x.w.aus || []) },
+                        ohneOrt: { wie: "summe", feld: "ohneOrt" },
+                    },
+                    schlecht: { feld: "gewaehlt", richtung: "min" },
+                    pose: (a, w) => "die Kultur " + a.ort + ": " + w.gewaehlt + " Bewohner an ihrem Ort",
+                    ungemessen: ["die Geste der Antwort (Winken, Verneigen, Handschlag) im Bild: keine Geste antwortet, ungemessen bis zum Gerät"],
+                    ms: Math.max(4000, Math.min(36000, Math.floor((H.rest() - 6) * 1000))),
+                });
+                H.zeile("Gruß S1: " + R.akte.slice(0, 600));
+                if (R.fehlt && !R.gemessen) return { n: 0, werte: {}, taeter: "die Begegnung: " + R.fehlt + " · " + R.akte };
+                const A = R.werte.aus;
+                const ja = A.filter((x) => x.zuS !== null);
                 const ks = [...new Set(ja.map((x) => x.k))];
                 let ok = 0;
                 ja.forEach((x, i) => {
@@ -704,12 +809,12 @@ module.exports = (F) => [
                     }
                     if (best === x.k && !gleich) ok++;
                 });
-                H.zeile("Gruß: " + ja.length + " von " + B.aus.length + " antworten (" + B.ohneOrt + " ohne freien Stand), Kulturen " + ks.join("/"));
+                H.zeile("Gruß: " + ja.length + " von " + A.length + " antworten (" + R.werte.ohneOrt + " ohne freien Stand), Kulturen " + ks.join("/"));
                 return {
-                    n: B.aus.length,
-                    werte: { antwort: B.aus.length ? ja.length / B.aus.length : NaN, trennbar: ks.length >= 2 && ja.length ? ok / ja.length : NaN },
-                    beleg: "geantwortet " + ja.length + "/" + B.aus.length + " · Zeit bis 10° " + ja.map((x) => x.k.slice(0, 4) + " " + x.zuS).slice(0, 8).join(", "),
-                    taeter: "die Begegnung (stamm/siedlung-bewohner.js _bewohnerKopf): EIN Gesetz des Kopfes für jede Kultur, keine Gruß-Form",
+                    n: A.length,
+                    werte: { antwort: A.length ? ja.length / A.length : NaN, trennbar: ks.length >= 2 && ja.length ? ok / ja.length : NaN },
+                    beleg: "geantwortet " + ja.length + "/" + A.length + " in " + ks0.length + " Kulturen · " + R.akte + " · Zeit bis 10° " + ja.map((x) => x.k.slice(0, 4) + " " + x.zuS).slice(0, 6).join(", "),
+                    taeter: "stamm/siedlung-bewohner.js:2376 _bewohnerKopf: EIN Gesetz des Kopfes für jede Kultur, keine Gruß-Form; die Geste des Leibs (koerper-core.js:7848 GESTE) antwortet nicht",
                 };
             };
             await H.seite.STUFEN(H, K, z, [
@@ -808,14 +913,51 @@ module.exports = (F) => [
     F.leiter("mensch.kultur.strassenleben", {
         sek: 45,
         pfad: ORT,
-        seite: { ZENSUS: zensus, STUFEN: stufen },
+        seite: { ZENSUS: zensus, STUFEN: stufen, FAECHER, ORT_AN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
             if (!z || z.fehler) throw new Error("der Zensus der Stadt: " + ((z && z.fehler) || "ohne Antwort"));
             H.zeile("Straßenleben: Lokale " + z.lokale + ", Läden und Stände " + z.laeden + ", Bewohner " + z.bewohner.n + " (Berufe " + z.bewohner.berufe + "), Trachten " + z.trachten + ", Kulturen " + Object.keys(z.ort.kulturen).length + " von " + z.kulturenGesetz);
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): je Größe der Stadt-Treppe (Metropole 220 · Großstadt 90 · Stadt 36 · Dorf 12)
+            // Saaten als Zellen, je Adresse der Plan des Orts (ORT_AN) — wie viele Lokale er trägt und wie viele davon in EINER Gasse
+            // (binnen 60 m um ein Lokal); das Gasthaus ist der Grund-Satz der Stadt-Grammatik (fachwerk-core.js:5103, ein Los je Ort), sein
+            // Angebot das Mahl als Güte (koerper-core.js:5407 mahl 8), kein Gericht, keine Zutat
+            await K.schritt(1, async () => {
+                const LOKAL = "^(gasthaus|wirtshaus|taverne|schenke|cafe|bar|garkueche|imbiss)$";
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.ORT_AN, export: "fachwerk-core.js:11165 exportSettlement → :5103 STADT_GRAMMATIK.grund (gasthaus ab 8 Losen, los: 1)", leser: "stamm/siedlung-ort.js:308" },
+                    adressen: { dazu: [[1, 220], [1, 90], [2, 90], [1, 36], [2, 36], [3, 36], [1, 12], [2, 12], [3, 12], [4, 12]].map(([saat, nH]) => ({ saat, ort: { nH } })) },
+                    mit: {},
+                    masse: {
+                        orte: { wie: "anzahl" },
+                        haeuser: { wie: "max", feld: "haeuser" },
+                        lokale: { wie: (v, aus) => Math.max(0, ...aus.map((x) => x.w.bauten.filter((b) => new RegExp(LOKAL).test(b.rolle)).length)) },
+                        gasse: {
+                            wie: (v, aus) => Math.max(0, ...aus.map((x) => {
+                                const L = x.w.bauten.filter((b) => new RegExp(LOKAL).test(b.rolle));
+                                return Math.max(0, ...L.map((a) => L.filter((b) => Math.hypot(a.x - b.x, a.z - b.z) <= 60).length));
+                            })),
+                        },
+                        groessen: { wie: (v, aus) => [...new Set(aus.map((x) => x.w.groesse + " " + x.w.haeuser))].join(", ") },
+                    },
+                    schlecht: { feld: "haeuser", richtung: "max" },
+                    pose: (a, w) => "Saat " + a.saat + " (" + w.name + ", " + w.groesse + ", " + w.haeuser + " Häuser): " + (w.rollen.gasthaus || 0) + " Gasthaus — die Zelle steht nicht in der warmen Welt",
+                    ungemessen: ["20 Gäste am Abend verfolgt: ohne drei Lokale keine Gasse, ungemessen", "das Gericht aus Zutaten der Flur (Gegenlauf): kein Gericht im Gesetz, ungemessen"],
+                    ms: Math.max(3000, Math.min(14000, Math.floor((H.rest() - 6) * 1000))),
+                });
+                const w = R.werte;
+                H.zeile("Straßenleben S1: " + R.akte.slice(0, 600) + " · Größen " + w.groessen);
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Orts: " + R.fehlt, wo: "stamm/siedlung-ort.js:308" });
+                if (!R.gemessen) throw new Error("der Fächer der Orte maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                if (w.gasse < 3)
+                    return K.nicht(1, {
+                        n: w.gasse,
+                        fehlt: "3 Lokale in einer Gasse: das Gesetz gibt jedem Ort EIN Gasthaus (fachwerk-core.js:5103 grund, los: 1) — am Fächer " + R.gemessen + " Orte bis " + w.haeuser + " Häuser (" + w.groessen.slice(0, 80) + "): höchstens " + w.lokale + " Lokal je Ort; kein Gericht: das Gasthaus bietet das Mahl als Güte (koerper-core.js:5407 mahl 8), keine Zutat der Flur",
+                    });
+                return K.leser(1, { n: w.gasse, fehlt: w.gasse + " Lokale in einer Gasse, kein Gericht: das Gasthaus bietet das Mahl als Güte (mahl 8), keine Zutat der Flur, kein Gast, der isst", wo: "koerper-core.js:5407" });
+            });
             await H.seite.STUFEN(H, K, z, [
-                { n: 1, art: "nicht", wert: (z) => z.lokale, fehlt: "Lokale in einer Gasse: die Stadt trägt EIN Gasthaus (das Sonderbau-Gesetz), kein Gericht" },
                 { n: 2, art: "leser", wert: (z) => z.lokale, da: (z) => z.orte.some((o) => o.kueche), wo: "koerper-core.js:5182", fehlt: "keine Küche: das Gasthaus bietet das Mahl als Güte (mahl 8), kein Gericht, keine Zutat" },
                 { n: 3, art: "leser", wert: (z) => z.trachten, da: (z) => z.orte.some((o) => o.mode), wo: "fachwerk-core.js:3622", fehlt: "keine Mode: die Tracht ist eine je Epoche (EPOCHEN.tracht), kein Merkmal steigt und klingt" },
                 { n: 4, art: "auge", um: 10000, wert: (z) => z.bewohner.alle, fehlt: "unterwegs in der Nacht (alle Bewohner der geladenen Orte)" },
@@ -825,7 +967,7 @@ module.exports = (F) => [
             ]);
         },
         sprossen: {
-            1: { umfang: { soll: 3, wort: "Lokale in einer Gasse am Abend" }, masse: [{ key: "gaeste", wort: "Gäste nach ihrem Tagesplan verfolgt", soll: 20, richtung: "≥" }, { key: "gegenlauf", wort: "Gerichte trotz fehlender Zutat", soll: 0, richtung: "≤" }], erwartet: "nicht", fehlt: "Lokale: ein Gasthaus je Ort" },
+            1: { umfang: { soll: 3, wort: "Lokale in einer Gasse am Abend" }, masse: [{ key: "gaeste", wort: "Gäste nach ihrem Tagesplan verfolgt", soll: 20, richtung: "≥" }, { key: "gegenlauf", wort: "Gerichte trotz fehlender Zutat", soll: 0, richtung: "≤" }], erwartet: "nicht", fehlt: "Lokale: das Gesetz gibt jedem Ort EIN Gasthaus (Dorf bis Metropole), kein Gericht" },
             2: { umfang: { soll: 100, wort: "Gerichte" }, masse: [{ key: "umland", wort: "Zutaten im Umkreis oder im Handel gefunden", soll: 0.9, richtung: "≥" }], erwartet: "leser", fehlt: "keine Küche", wo: "koerper-core.js:5182" },
             3: { umfang: { soll: 10, wort: "Jahre der Mode" }, masse: [{ key: "kurve", wort: "Aufstieg und Abklingen im Band realer Mode-Kurven", soll: 1, richtung: "≥" }, { key: "jung", wort: "zuerst bei Jungen und Reichen", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "keine Mode", wo: "fachwerk-core.js:3622" },
             4: { auge: { pose: POSE, vorbild: "Zählreihen realer Ausgehviertel je Stunde (±25 %) und Fotos einer Ausgehstraße bei Nacht (Blindpaar ≤ 75 %)" }, erwartet: "nicht", fehlt: "unterwegs: 1092 < 10⁴" },
@@ -834,7 +976,11 @@ module.exports = (F) => [
             7: { auge: { pose: POSE, vorbild: "datierte Bildquellen realen Straßenlebens (2AFC ≤ 70 %); fremd: Fremdwelt-Probe (R10)" }, erwartet: "nicht", fehlt: "Kulturen mit Straßenleben: < 32" },
         },
         proben: {
-            1: [{ name: "die Attrappe: drei Lokale, das Gericht kommt auch ohne Zutat", j: mut("mensch.kultur.strassenleben", 1, { art: "zahl", n: 3, werte: { gaeste: 25, gegenlauf: 4 } }), gruen: false, zahl: /ROT an Gerichte trotz fehlender Zutat / }],
+            1: [
+                { name: "die Attrappe: drei Lokale, das Gericht kommt auch ohne Zutat", j: mut("mensch.kultur.strassenleben", 1, { art: "zahl", n: 3, werte: { gaeste: 25, gegenlauf: 4 } }), gruen: false, zahl: /ROT an Gerichte trotz fehlender Zutat / },
+                { name: "die Metropole mit EINEM Gasthaus (der Grund-Satz los: 1) — ROT Umfang nicht erzeugbar", j: mut("mensch.kultur.strassenleben", 1, { art: "nicht", n: 1, fehlt: "3 Lokale in einer Gasse: das Gesetz gibt jedem Ort EIN Gasthaus" }), gruen: false, zahl: /Umfang nicht erzeugbar: 3 Lokale in einer Gasse: das Gesetz gibt jedem Ort EIN Gasthaus \(gemessen 1, Soll 3 Lokale in einer Gasse am Abend\)/ },
+                { name: "drei Lokale stehen, das Gericht fehlt im Gesetz — ROT fehlender Leser", j: mut("mensch.kultur.strassenleben", 1, { art: "leser", n: 3, fehlt: "3 Lokale in einer Gasse, kein Gericht", wo: "koerper-core.js:5407" }), gruen: false, zahl: /fehlender Leser: 3 Lokale in einer Gasse, kein Gericht \(koerper-core\.js:5407\)/ },
+            ],
         },
     }),
 ];

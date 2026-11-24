@@ -6,6 +6,110 @@
 // (`parseChatToDsl`, stamm/feld-sprache.js:545). Wo die Welt den Umfang nicht stellt, misst die Probe ihn und urteilt „nicht“.
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
+
+// DER PLAN EINES ORTS AN EINER ADRESSE (das Gesetz des Fächers, stationen/faecher.js — bau.bedarf#1, bau.huelle#1, kultur.gestalt#1,
+// kultur.diffusion#1, kultur.strassenleben#1, zeit.spanne#1 und zeit.erde#1 lesen DIESE Funktion): der Leser ruft das Gesetz des Kerns
+// beim Namen und rechnet nichts nach — an der Saat a.saat der Plan, den das Spiel beim Faden bestellt (stamm/siedlung-ort.js:308
+// export-settlement → fachwerk-core.js:11165 exportSettlement → :5182 DORF). Die Epoche: die Zelle der Welt liest die Legende ihres
+// Samens (`siedlungsEpoche`, stamm/siedlung-ort.js:1562), der Satz mit Jahr („dorf 7 12 jahr Y“) die Epoche des Jahrs (a.zeit,
+// `epocheImJahr`, stamm/siedlung-ort.js:1227). Je Bau Rolle, Kultur, Baujahr, Tür und das Rezept, das der Bau liest (slot.ov reist als
+// studioOv, stamm/siedlung-ort.js:536): Maße, Dach, Grundriss, Stil, Zierden, Farben. mit.bauten === false lässt die Bauten weg.
+// Trägt der Kern den Export nicht, steht `fehlt`.
+const ORT_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.exportSettlement !== "function" || typeof FC.siedlungsEpoche !== "function" || typeof FC.epocheImJahr !== "function")
+        return { fehlt: "der Kern trägt kein exportSettlement mit siedlungsEpoche und epocheImJahr (fachwerk-core) — kein Plan an der Adresse" };
+    const o = a.ort && typeof a.ort === "object" ? a.ort : {};
+    const saat = a.saat != null ? a.saat : o.saat != null ? o.saat : mit.saat != null ? mit.saat : 7;
+    const jahr = a.zeit != null ? a.zeit : o.jahr != null ? o.jahr : null;
+    const nH = o.nH || mit.nH || (FC.GROESSE_N && FC.GROESSE_N.dorf) || 12;
+    const epoche = jahr != null ? FC.epocheImJahr(jahr) : FC.siedlungsEpoche(saat);
+    const P = FC.exportSettlement({ seed: saat, nH, epoche });
+    if (!P || !Array.isArray(P.slots) || !P.slots.length) return { fehlt: "der Plan der Saat " + saat + " trägt keine Slots" };
+    const NUM = ["W", "D", "storeys", "pitchDeg", "turm", "kuppel", "arkade", "portikus", "zinnen", "treppgiebel", "veranda", "vorkragung", "balcony", "annexN", "arm", "hip", "roofCurve", "pilotis", "terrasse"];
+    const KAT = ["dachTyp", "grundriss", "stil", "bogenTyp", "brace"];
+    const rollen = {}, kulturen = {};
+    const bauten = P.slots.map((s) => {
+        const ov = s.ov && typeof s.ov === "object" ? s.ov : {};
+        const rolle = typeof s.rolle === "string" ? s.rolle : "wohnhaus";
+        const kultur = typeof s.kultur === "string" ? s.kultur : "?";
+        rollen[rolle] = (rollen[rolle] || 0) + 1;
+        kulturen[kultur] = (kulturen[kultur] || 0) + 1;
+        const col = {};
+        for (const k in ov.col || {}) if (Number.isFinite(ov.col[k])) col[k] = ov.col[k];
+        return { rolle, kultur, baujahr: s.baujahr, x: Math.round(s.x), z: Math.round(s.z), tuer: !!s.tuer, ov: !!s.ov, num: NUM.map((k) => +ov[k] || 0), kat: KAT.map((k) => String(ov[k])), col };
+    });
+    const K = P.kleidung;
+    // der Vorrat der Region des Plans (fachwerk REGION_HIST, alle Epochen — die Tafel des Gesetzes, gelesen, nie nachgerechnet): wie
+    // viele Häuser eine Kultur außerhalb seiner tragen
+    const H0 = FC.REGION_HIST && FC.REGION_HIST[P.region];
+    const vorrat = Array.isArray(H0) ? new Set(H0.flatMap((e) => e[1])) : null;
+    return {
+        saat, nH, epoche, jahr: P.jahr, spanne: P.spanne, name: P.name, region: P.region, groesse: P.groesse, staedtisch: !!P.staedtisch,
+        haeuser: P.slots.length, rollen, funktionen: Object.keys(rollen).length, kulturen, nKulturen: Object.keys(kulturen).length,
+        tracht: K ? [K.top, K.bottom, K.shoes].join("/") : null,
+        fremd: vorrat ? bauten.filter((b) => !vorrat.has(b.kultur)).length : null,
+        erde: !!(P.erde || P.befund || P.vorbild || P.erdSchluessel), felder: Object.keys(P).sort().join(","),
+        ...(mit.bauten === false ? {} : { bauten }),
+    };
+};
+
+// DIE BLINDE TRENNUNG AM REZEPT (in der Probe, node — der Zahlen-Teil eines Blindurteils „nach Funktion“, „nach Kultur“): je Bau sein
+// Merkmalsvektor (die Zahlen des Rezepts, die Wörter als Eins-aus-n, mit o.farbe die Farben des Rezepts als RGB), je Spalte z-normiert;
+// der nächste Nachbar OHNE den Bau selbst (leave-one-out, euklidisch) rät seine Klasse. Getrennt ist der Anteil richtig je Klasse,
+// gemittelt über die Klassen (balanciert: 183 Wohnhäuser überstimmen 20 Kirchen nicht); `roh` der Anteil über alle Bauten. Klassen
+// mit < 2 Bauten fallen (ohne Nachbarn kein Rat), o.top nimmt die häufigsten k Klassen (gestalt: „10 Kulturen“). Das Bild richtet sie
+// nicht: trennt schon das Rezept nicht, kann es kein Bild — trennt es, entscheidet das Panel
+const TRENNE = (bauten, klasse, o) => {
+    const opt = o || {};
+    const zahl = {};
+    for (const b of bauten) zahl[b[klasse]] = (zahl[b[klasse]] || 0) + 1;
+    let ks = Object.keys(zahl).filter((k) => zahl[k] >= 2).sort((a, b) => zahl[b] - zahl[a] || (a < b ? -1 : 1));
+    if (opt.top) ks = ks.slice(0, opt.top);
+    const C = bauten.filter((b) => ks.includes(b[klasse]));
+    if (ks.length < 2 || C.length < 4) return { n: C.length, klassen: ks.length, balanciert: null, roh: null, je: {} };
+    const woerter = C[0].kat.map((_, j) => [...new Set(C.map((b) => b.kat[j]))]);
+    const farben = opt.farbe ? [...new Set(C.flatMap((b) => Object.keys(b.col || {})))].sort() : [];
+    const rgb = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255].map((x) => x / 255);
+    const V = C.map((b) => [...b.num, ...b.kat.flatMap((v, j) => woerter[j].map((w) => (w === v ? 1 : 0))), ...farben.flatMap((k) => rgb((b.col || {})[k] || 0))]);
+    const d = V[0].length;
+    for (let j = 0; j < d; j++) {
+        const m = V.reduce((s, v) => s + v[j], 0) / V.length;
+        const sd = Math.sqrt(V.reduce((s, v) => s + (v[j] - m) ** 2, 0) / V.length) || 1;
+        for (const v of V) v[j] = (v[j] - m) / sd;
+    }
+    const ok = {}, n = {};
+    let alle = 0;
+    for (let i = 0; i < C.length; i++) {
+        let [best, bd] = [-1, Infinity];
+        for (let k = 0; k < C.length; k++) {
+            if (k === i) continue;
+            let e = 0;
+            for (let j = 0; j < d; j++) e += (V[i][j] - V[k][j]) ** 2;
+            if (e < bd) [best, bd] = [k, e];
+        }
+        const c = C[i][klasse];
+        n[c] = (n[c] || 0) + 1;
+        if (C[best][klasse] === c) (ok[c] = (ok[c] || 0) + 1), alle++;
+    }
+    const je = Object.fromEntries(ks.map((k) => [k, +((ok[k] || 0) / n[k]).toFixed(3)]));
+    return { n: C.length, klassen: ks.length, merkmale: d, balanciert: +(ks.reduce((s, k) => s + je[k], 0) / ks.length).toFixed(3), roh: +(alle / C.length).toFixed(3), je };
+};
+
+// DER FÄCHER DER DÖRFER (bedarf#1, huelle#1): 20 Saaten als Zellen der Welt, je Saat der Plan des Dorfs (nH = die Klasse dorf), den
+// das Spiel beim Faden bestellt — die Bauten mit Rolle, Kultur und Rezept
+const dorfFaecher = (ms, masse, schlecht, pose, ungemessen) => ({
+    gesetz: { export: "fachwerk-core.js:11165 exportSettlement → :5182 DORF (Rolle, Kultur und Rezept je Los)", leser: "stamm/siedlung-ort.js:536" },
+    adressen: { saaten: 20 },
+    mit: { nH: 12 },
+    masse,
+    schlecht,
+    pose,
+    ungemessen,
+    ms,
+});
+
 // DER ZENSUS DER BAUTEN (Seite der Welt): je Ort die stehenden Häuser seines Plans mit Rolle, Tür und Richtung aus dem Haus,
 // die Bewohner und ihre Berufe, die Typen der Bauten — und die festen Posen der Bilder, aus dem nächsten Ort abgeleitet.
 const zensusBau = async (r, T, arg) => {
@@ -250,6 +354,35 @@ module.exports = (F) => [
                     return null;
                 }
             };
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten als Zellen der Welt, je Saat der Plan des Dorfs (ORT_AN) — wie
+            // viele Funktionen ein Dorf trägt (Umfang „Dorf: 4 Funktionen“) und ob die Funktion am Rezept des Baus blind zu erkennen ist
+            // (TRENNE: der Zahlen-Teil von „50 Bauten blind nach Funktion ≥ 80 %“); das Bild schießt die Probe am Messort dorf (unten)
+            let fa = null;
+            await K.schritt(1, async () => {
+                const f = H.seite.DORF_FAECHER(
+                    Math.max(3000, Math.min(12000, Math.floor((H.rest() - 40) * 1000))),
+                    {
+                        doerfer: { wie: "anzahl" },
+                        bauten: { wie: "summe", feld: "haeuser" },
+                        min: { wie: "min", feld: "funktionen" },
+                        voll: { wie: (v) => v.filter((x) => x >= 4).length, feld: "funktionen" },
+                        rollen: { wie: "zaehle", feld: "rollen" },
+                        trennt: { wie: (v, aus) => H.seite.TRENNE(aus.flatMap((x) => x.w.bauten), "rolle", { farbe: true }) },
+                        form: { wie: (v, aus) => H.seite.TRENNE(aus.flatMap((x) => x.w.bauten), "rolle", {}) },
+                    },
+                    { feld: "funktionen", richtung: "min" },
+                    (a, w) => "Saat " + a.saat + " (" + w.name + ", " + w.epoche + ", " + w.haeuser + " Häuser): " + Object.keys(w.rollen).join("/") + " — die Zelle steht nicht in der warmen Welt, das Bild zeigt das Dorf am Messort dorf",
+                    ["das Blindurteil „50 Bauten nach Funktion ≥ 80 %“ am Panel: ungemessen bis zum Gerät (die Probe legt das Bild des Dorfs am Messort dorf, es richtet nicht)"],
+                );
+                f.gesetz.fn = H.seite.ORT_AN;
+                const R = await H.seite.FAECHER(K.welt, f);
+                H.zeile("Bedarf S1: " + R.akte.slice(0, 600) + " · Rollen " + JSON.stringify(R.werte.rollen) + " · getrennt " + JSON.stringify(R.werte.trennt));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Dorfs: " + R.fehlt, wo: "stamm/siedlung-ort.js:308" });
+                if (!R.gemessen) throw new Error("der Fächer der Dörfer maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                const w = R.werte;
+                if (!(w.voll > 0)) return K.nicht(1, { n: w.min, fehlt: "4 Funktionen im Dorf: kein Dorf des Fächers trägt sie (" + w.doerfer + " Dörfer, Rollen " + JSON.stringify(w.rollen) + ") · " + R.akte });
+                fa = R;
+            });
             await K.messort("stadt-voll");
             const z = await Z();
             if (z) H.zeile("Zensus stadt-voll: Häuser " + z.haeuser + " · Orte " + z.orte.length + " · Funktionen " + z.funktionen + " " + JSON.stringify(z.rollen).slice(0, 300));
@@ -278,16 +411,23 @@ module.exports = (F) => [
             });
             await K.messort("dorf");
             const d = await Z();
+            // S1 DAS BILD (das Gesetz trägt den Umfang am Fächer): das Dorf am Messort aus 30 m für das Panel, die Zahl des Fächers im Maß
             await K.schritt(1, async () => {
+                if (!fa) return null; // S1 steht schon (nicht · leser) oder warf am Fächer: UNGEMESSEN beim Namen
                 if (!d || !d.nah) throw new Error("kein Ort am Messort dorf");
+                const w = fa.werte, t = w.trennt;
                 const f = Object.keys(d.nah.rollen);
-                if (f.length < 4) return K.nicht(1, { n: f.length, fehlt: "4 Funktionen im Dorf: der Ort trägt " + f.join(", ") });
-                const p = d.posen.dorf30;
-                const b = await K.bild(1, p);
-                K.auge(1, { bild: b.datei, pose: "dorf: die Mitte des nächsten Orts aus 30 m (21,2/18/21,2 m versetzt), Blick 2 m über Grund", mass: "Funktionen " + f.length + " (" + f.join(", ") + ") an " + d.nah.haeuser + " Häusern" });
+                const b = await K.bild(1, d.posen.dorf30);
+                const je = Object.keys(t.je || {}).map((k) => k + " " + Math.round(t.je[k] * 100) + " %").join(", ");
+                K.auge(1, {
+                    bild: b.datei,
+                    pose: "dorf: die Mitte des nächsten Orts aus 30 m (21,2/18/21,2 m versetzt), Blick 2 m über Grund — im Bild " + f.length + " Funktionen (" + f.join(", ") + ") an " + d.nah.haeuser + " Häusern",
+                    mass: "Fächer " + w.doerfer + " Dörfer (Leser stamm/siedlung-ort.js:536): " + w.voll + " tragen ≥ 4 Funktionen (min " + w.min + (fa.schlecht ? " an Saat " + fa.schlecht.a.saat : "") + "), " + w.bauten +
+                        " Bauten; Funktion am Rezept blind " + Math.round((t.balanciert || 0) * 100) + " % balanciert, die Form allein " + Math.round((w.form.balanciert || 0) * 100) + " % (" + je + ") · ungemessen bis zum Gerät: das Panel",
+                });
             });
         },
-        seite: { ZENSUS: zensusBau },
+        seite: { ZENSUS: zensusBau, FAECHER, ORT_AN, TRENNE, DORF_FAECHER: dorfFaecher },
         sprossen: {
             1: {
                 auge: {
@@ -321,6 +461,20 @@ module.exports = (F) => [
             2: "Die Koordination legt einen Zensus-Korpus der Bau-Funktionen realer Städte der Epoche als Tafel ab (Häuserbuch einer Stadt um 1500, z. B. Nürnberg), dann misst die Station die Häufigkeit je Rolle an stadt-voll (≥ 20 Funktionen) und urteilt Spearman ≥ 0,7 gegen ihn.",
         },
         proben: {
+            1: [
+                {
+                    name: "das Gesetz trägt in keinem Dorf des Fächers 4 Funktionen (Saat 6: kirche, gasthaus, wohnhaus) — ROT Umfang nicht erzeugbar, nie ein Bild",
+                    j: { leiter: "mensch.bau.bedarf", adapter: PROBE, sprossen: { 1: { art: "nicht", n: 3, fehlt: "4 Funktionen im Dorf: kein Dorf des Fächers trägt sie (20 Dörfer)" } } },
+                    gruen: false,
+                    zahl: /ROT: Umfang nicht erzeugbar: 4 Funktionen im Dorf: kein Dorf des Fächers trägt sie \(20 Dörfer\) \(gemessen 3\)/,
+                },
+                {
+                    name: "der Kern ohne exportSettlement — ROT fehlender Leser am Faden",
+                    j: { leiter: "mensch.bau.bedarf", adapter: PROBE, sprossen: { 1: { art: "leser", fehlt: "der Plan des Dorfs: der Kern trägt kein exportSettlement", wo: "stamm/siedlung-ort.js:308" } } },
+                    gruen: false,
+                    zahl: /ROT: fehlender Leser: der Plan des Dorfs/,
+                },
+            ],
             5: [
                 {
                     name: "ATTRAPPE: drei Megastrukturen gezählt, die Mutation des Bedarfs ändert keinen Großbau",
@@ -346,6 +500,33 @@ module.exports = (F) => [
                     return null;
                 }
             };
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): 20 Saaten als Zellen der Welt, je Saat der Plan des Dorfs (ORT_AN) — trägt
+            // jedes Haus Tür und Rezept (das Rezept reist als studioOv in den Bau), und ist das Haus „als Haus seiner Kultur“ am Rezept
+            // blind zu erkennen (TRENNE über die 10 häufigsten Kulturen der Wohnhäuser, mit den Farben); der Paarvergleich gegen das Foto
+            // bleibt dem Gerät
+            let fa = null;
+            await K.schritt(1, async () => {
+                const f = H.seite.DORF_FAECHER(
+                    Math.max(3000, Math.min(12000, Math.floor((H.rest() - 40) * 1000))),
+                    {
+                        doerfer: { wie: "anzahl" },
+                        haeuser: { wie: "summe", feld: "haeuser" },
+                        mitTuer: { wie: (v, aus) => aus.reduce((s, x) => s + x.w.bauten.filter((b) => b.tuer && b.ov).length, 0) },
+                        kulturen: { wie: (v, aus) => new Set(aus.flatMap((x) => x.w.bauten.map((b) => b.kultur))).size },
+                        trennt: { wie: (v, aus) => H.seite.TRENNE(aus.flatMap((x) => x.w.bauten.filter((b) => b.rolle === "wohnhaus")), "kultur", { farbe: true, top: 10 }) },
+                    },
+                    { feld: "haeuser", richtung: "min" },
+                    (a, w) => "Saat " + a.saat + " (" + w.name + ", " + w.epoche + ", " + w.haeuser + " Häuser) — die Zelle steht nicht in der warmen Welt, das Bild zeigt das Wohnhaus am Messort dorf",
+                    ["der Paarvergleich Spiel ↔ Foto bei 10 m („Foto“ ≥ 5 %) am Panel: ungemessen bis zum Gerät (die Probe legt das Bild des Hauses am Messort dorf, es richtet nicht)"],
+                );
+                f.gesetz.fn = H.seite.ORT_AN;
+                const R = await H.seite.FAECHER(K.welt, f);
+                H.zeile("Hülle S1: " + R.akte.slice(0, 600) + " · getrennt " + JSON.stringify(R.werte.trennt));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "der Plan des Dorfs: " + R.fehlt, wo: "stamm/siedlung-ort.js:308" });
+                if (!R.gemessen) throw new Error("der Fächer der Dörfer maß keine Adresse (" + R.akte.slice(0, 200) + ")");
+                if (!(R.werte.mitTuer > 0)) return K.nicht(1, { n: 0, fehlt: "1 Haus im Spiel: kein Bau des Fächers trägt Tür und Rezept (" + R.werte.haeuser + " Bauten) · " + R.akte });
+                fa = R;
+            });
             await K.messort("stadt-voll");
             const z = await Z();
             if (z) H.zeile("Zensus stadt-voll: Häuser mit Tür " + z.haeuser + " · Bauten " + z.bauten + " · Typen " + z.typen);
@@ -368,12 +549,19 @@ module.exports = (F) => [
                 K.auge(2, { bild: b.datei, pose: "dorf: 100 m vor der Ortsmitte in Richtung des Spielers, 12 m über Grund", mass: d.nah.haeuser + " Häuser im Ort" });
             });
             await K.schritt(1, async () => {
+                if (!fa) return null; // S1 steht schon (nicht · leser) oder warf am Fächer: UNGEMESSEN beim Namen
                 if (!d || !d.posen || !d.posen.haus10) throw new Error("kein Haus mit Tür am Messort dorf");
+                const w = fa.werte, t = w.trennt;
                 const b = await K.bild(1, d.posen.haus10);
-                K.auge(1, { bild: b.datei, pose: "dorf: 10 m vor der Tür von " + d.posen.haus10.typ + ", Auge 1,7 m, Blick auf die Hausmitte", mass: "1 Haus " + d.posen.haus10.typ });
+                K.auge(1, {
+                    bild: b.datei,
+                    pose: "dorf: 10 m vor der Tür von " + d.posen.haus10.typ + ", Auge 1,7 m, Blick auf die Hausmitte",
+                    mass: "1 Haus " + d.posen.haus10.typ + " · Fächer " + w.doerfer + " Dörfer (Leser stamm/siedlung-ort.js:536): " + w.mitTuer + "/" + w.haeuser + " Häuser mit Tür und Rezept, " + w.kulturen + " Kulturen; Kultur am Rezept blind " +
+                        Math.round((t.balanciert || 0) * 100) + " % balanciert (" + t.klassen + " Kulturen, " + t.n + " Wohnhäuser) · ungemessen bis zum Gerät: das Foto-Panel",
+                });
             });
         },
-        seite: { ZENSUS: zensusBau },
+        seite: { ZENSUS: zensusBau, FAECHER, ORT_AN, TRENNE, DORF_FAECHER: dorfFaecher },
         sprossen: {
             1: {
                 auge: {
@@ -399,6 +587,12 @@ module.exports = (F) => [
                     j: { leiter: "mensch.bau.huelle", adapter: PROBE, sprossen: { 1: { art: "auge", bild: "", pose: "10 m vor der Tür" } } },
                     gruen: false,
                     zahl: /keine Messung der Sprosse$/,
+                },
+                {
+                    name: "kein Bau des Fächers trägt Tür und Rezept (das Haus fällt aus dem Plan) — ROT Umfang nicht erzeugbar",
+                    j: { leiter: "mensch.bau.huelle", adapter: PROBE, sprossen: { 1: { art: "nicht", n: 0, fehlt: "1 Haus im Spiel: kein Bau des Fächers trägt Tür und Rezept" } } },
+                    gruen: false,
+                    zahl: /ROT: Umfang nicht erzeugbar: 1 Haus im Spiel: kein Bau des Fächers trägt Tür und Rezept \(gemessen 0/,
                 },
             ],
         },
@@ -593,3 +787,7 @@ module.exports = (F) => [
         },
     }),
 ];
+
+// DIE GESETZE DES FÄCHERS für die Nachbar-Leitern (kultur, zeit): EINE Funktion des Orts an einer Adresse, EINE Trennung — nie ein Zwilling
+module.exports.ORT_AN = ORT_AN;
+module.exports.TRENNE = TRENNE;
