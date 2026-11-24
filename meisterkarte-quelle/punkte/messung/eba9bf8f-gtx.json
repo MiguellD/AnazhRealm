@@ -1,7 +1,7 @@
 {
  "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
  "geraet": "gtx",
- "zeit": "2026-11-24T16:51:34.731Z",
+ "zeit": "2026-11-24T16:55:15.273Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -280,6 +280,76 @@
    },
    "zeit": "2026-11-24T16:51:34.731Z",
    "abdruck": "257e78a817bd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1356 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1356) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1356 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1356) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k20aae71bfd79",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "keeaa85209ff1",
+   "s": 8.1,
+   "fremd": {
+    "s": 10.8,
+    "takte": 5,
+    "fremdS": 3.53,
+    "kerne": 0.327,
+    "fensterKerne": 0.327,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.16
+     ],
+     [
+      "Explorer.EXE",
+      0.52
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.38
+     ]
+    ],
+    "dienerS": 1.86,
+    "diener": [
+     [
+      "dwm.exe",
+      0.69
+     ],
+     [
+      "System",
+      0.61
+     ]
+    ],
+    "geraetS": 3.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.5
+     ],
+     [
+      "svchost.exe",
+      0.59
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 29.97,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T16:55:15.273Z",
+   "abdruck": "37e19d97647b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
