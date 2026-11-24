@@ -1,0 +1,142 @@
+{
+ "art": "dauer",
+ "sekunden": 22.1,
+ "uhrS": 84,
+ "schritte": [
+  [
+   "ende",
+   22.1
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 152,
+  "bilder": 471,
+  "seiten": 1,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 7.115750000000412e-15,
+   "mittag": 0.500000000000007
+  },
+  "heapKurve": {
+   "n": 21,
+   "min": 0.76,
+   "steigung": 56.43,
+   "von": 358.6,
+   "bis": 350.1,
+   "max": 408.7
+  },
+  "minuten": 1,
+  "seiten": 1,
+  "proben": 2,
+  "last": {
+   "n": 300,
+   "frame": 66.99,
+   "p99": 100.58,
+   "max": 577.67,
+   "ueber33": 224,
+   "ueber100": 3,
+   "takt": 53.12,
+   "vram": 148.7,
+   "gpu": 18.01,
+   "gpuN": 52,
+   "befehle": 168,
+   "dreiecke": 473940,
+   "voll": 0.361,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 201,
+  "gegangen": 89,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 56,
+    "frame": 50.27,
+    "p99": 83.79,
+    "max": 83.79,
+    "ueber33": 33,
+    "ueber100": 0,
+    "takt": 38.04,
+    "vram": 139,
+    "gpu": 15.85,
+    "gpuN": 8,
+    "befehle": 127,
+    "dreiecke": 333196,
+    "voll": 1,
+    "halt": false,
+    "last": 0.95,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 47,
+    "frame": 58.85,
+    "p99": 75.54,
+    "max": 75.54,
+    "ueber33": 45,
+    "ueber100": 0,
+    "takt": 38.49,
+    "vram": 147.7,
+    "gpu": 12.63,
+    "gpuN": 9,
+    "befehle": 163,
+    "dreiecke": 366097,
+    "voll": 1,
+    "halt": false,
+    "last": 0.21,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +38.2 MB/min > 5 — Halter: r.state.renderer.info.memoryMap[k].array +4.5 MB · r.state.chunkSaetze[].abschnitte[].liste[] +1.9 MB · r.state.renderer.info.memoryMap[k].data.array +1.4 MB",
+   "buf:verwaist 0.2 MB"
+  ],
+  "heap": [
+   265.9,
+   304.1
+  ],
+  "vramGC": [
+   162.6,
+   147.7
+  ]
+ }
+}
