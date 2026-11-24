@@ -2707,21 +2707,30 @@ const LANDMARKE_AN = async (r, T, a) => {
 // ═══════════════════════════════════════ Perspektive sinne ═══════════════════════════════════════
 {
     // ─────────── erleben.sinne.sicht — Fremde Sicht: das Auge als Leser des Lichts ───────────
-    // Die Welt zeichnet EIN Auge (das Menschenbild, Atlas Bild/sicht): kein Leser für Rezeptor-Kurven, Wärme, Polarisation oder
-    // Sehschärfe — S1–S4 urteilen „Leser fehlt“ mit Ort; S5 zählt die Bewohner der Sitzung gegen die Megastadt, S6 die Planeten
-    // (EINE Saat). Der Zensus liest das Gesetzbuch der Tiere (`__tetrapodaCore`): erscheint dort ein Sinnes-Gesetz, wirft die Sprosse
-    // beim Namen, statt alt zu urteilen.
+    // DAS AUGE DER ART zeichnet (auge-der-art): die Kette trägt neben dem Menschenbild die Ausgabe `auge` (stamm/bild-kosten.js
+    // `_augeDerArt`, die Zapfen eines Taxons aus tetrapoda SINNES_GESETZ auf die Zapfen des Menschen gelegt; die Biene als Falschfarbe
+    // Grün → Rot, Blau → Grün, UV → Blau). S1 — an der Wiese: das Bildpaar Mensch ↔ Biene an derselben Pose vor der nächsten Blüte,
+    // die die Bestäuber anfliegen (`_bestaeuberBlueten`), und je Blume der Nah-Streu (Studio-kind flower, je Teil eine Senke) die
+    // Muster zwischen ihren Teilen: ein Muster NUR im Bienenbild ist ein Paar mit UV-Kontrast (Michelson am UV-Zapfen, 344 nm) ≥ 0,2
+    // AUS DEM STOFF (das UV-Albedo des Stoffs, `userData.uvAlbedo`), dessen Kontrast in jedem Menschen-Zapfen unter 0,2 bleibt — der
+    // UV-Fang des fundamentalen Metamers (eine Funktion des sRGB, also eine Bemalung) zählt nicht und steht nur daneben. S2–S4 urteilen
+    // „Leser fehlt“ mit Ort; S5 zählt die Bewohner der Sitzung gegen die Megastadt, S6 die Planeten (EINE Saat). Erscheint ein Vogel
+    // (≥ 4 Zapfen), ein Wärme- oder Polarisations-Leser oder die Schärfe der Facette im Gesetz, wirft die Sprosse beim Namen.
     LEITERN.push(
         leiter({
             leiter: "erleben.sinne.sicht",
-            sek: 20,
-            pfad: ["scripts/werkbank.cjs", "stamm/bild-sicht.js", "stamm/bild-kosten.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js", "planet-core.js"],
+            sek: 45,
+            pfad: ["scripts/werkbank.cjs", "stamm/bild-sicht.js", "stamm/bild-kosten.js", "stamm/vegetation-wiese.js", "stamm/kreatur-fauna.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js", "planet-core.js"],
             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
             sprossen: {
                 1: {
                     soll: [
                         { wort: "muster_nur_biene", richtung: "≥", wert: 1, wortlaut: "≥ 1 Muster nur im Bienenbild", feld: "richter" },
                         { wort: "kontrast", richtung: "≥", wert: 0.2, wortlaut: "Kontrast ≥ 0,2", feld: "richter" },
+                    ],
+                    welt: [
+                        { wort: "blumen", ab: 1, was: "Blumen der Nah-Streu an der Wiese mit ≥ 2 Teilen (Studio-kind flower)" },
+                        { wort: "angeflogen", ab: 1, was: "Blüten, die die Bestäuber anfliegen (`_bestaeuberBlueten`)" },
                     ],
                 },
                 2: { soll: [{ wort: "spearman", richtung: "≥", wert: 0.7, wortlaut: "Kontrast-Rangordnung über 10 Pflanzenklassen Spearman ≥ 0,7", feld: "richter" }] },
@@ -2737,18 +2746,96 @@ const LANDMARKE_AN = async (r, T, a) => {
                 },
             },
             lauf: async function sichtLauf(H, P, L) {
+                await L.ort("wiese");
                 const z = await L.ev(
-                    "const TC = globalThis.__tetrapodaCore || {}; let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, sinnGesetz: Object.keys(TC).filter((k) => /sinn|rezeptor|spektr|polari|waerme|schaerfe/i.test(k)) };",
-                    30
-                );
+                    `const A = r.constructor, st = r.state, K = globalThis.__tetrapodaCore || {}, lms = A.FARBSICHT.lms, ns = st.nahStreu;
+                    let bew = 0, sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); }
+                    const taxa = K.SINNES_GESETZ ? K.SINNES_GESETZ.taxa : {};
+                    const aus = { saat: st.worldMeta && st.worldMeta.seed, bew, sied, taxa: Object.keys(taxa), vogel: Object.keys(taxa).filter((t) => taxa[t].zapfen.length >= 4), facetteScharf: K.augeSchaerfe ? K.augeSchaerfe("apis", 1) != null : false,
+                        waermePol: Object.keys(K).filter((k) => /polari|waerme|thermo/i.test(k)) };
+                    if (!K.augeFang) return Object.assign(aus, { fehlt: "das Gesetz trägt kein Auge der Art (tetrapoda augeFang)" });
+                    const biene = K.augeFang("apis", lms), mensch = K.augeFang("haplorhini", lms);
+                    const fang = (F, c) => F.fang.map((z) => Math.max(K.SINNES_GESETZ.omega, z[0] * c[0] + z[1] * c[1] + z[2] * c[2]));
+                    const mich = (a, b) => Math.abs(a - b) / (a + b);
+                    const ids = new Set((ns && r._nahStreuArten ? r._nahStreuArten() || [] : []).filter((a) => a.kind === "flower").map((a) => a.id));
+                    const blumen = new Map();
+                    for (const a of ns ? ns.senken.values() : []) {
+                        if (!ids.has(a.preset) || !a.bloecke.size || !a.mat || !a.mat.color) continue;
+                        const ton = [a.mat.color.r, a.mat.color.g, a.mat.color.b], vc = a.mat.vertexColors && a.geo && a.geo.attributes.color;
+                        if (vc) { const s = [0, 0, 0], schritt = Math.max(1, Math.floor(vc.count / 64)); let n = 0; for (let k = 0; k < vc.count; k += schritt, n++) { s[0] += vc.getX(k); s[1] += vc.getY(k); s[2] += vc.getZ(k); } for (let c = 0; c < 3; c++) ton[c] *= s[c] / n; }
+                        const uv = a.mat.userData && Number.isFinite(a.mat.userData.uvAlbedo) ? a.mat.userData.uvAlbedo : null;
+                        const k = a.key.split(":"), blume = k[0] + ":" + k[1];
+                        if (!blumen.has(blume)) blumen.set(blume, []);
+                        blumen.get(blume).push({ teil: k[3], ton, uv });
+                    }
+                    let muster = 0, kontrast = 0, metamer = 0, uvStoffe = 0, paare = 0, mehrteilig = 0;
+                    const beste = [];
+                    for (const [blume, T0] of blumen) {
+                        if (T0.length >= 2) mehrteilig++;
+                        for (const t of T0) if (t.uv != null) uvStoffe++;
+                        for (let i = 0; i < T0.length; i++) for (let j = i + 1; j < T0.length; j++) {
+                            const a = T0[i], b = T0[j], qa = fang(biene, a.ton), qb = fang(biene, b.ton), ma = fang(mensch, a.ton), mb = fang(mensch, b.ton);
+                            const kMensch = Math.max(...ma.map((x, c) => mich(x, mb[c]))), kMeta = mich(qa[0], qb[0]);
+                            const kStoff = a.uv != null && b.uv != null ? mich(Math.max(1e-6, a.uv), Math.max(1e-6, b.uv)) : 0;
+                            paare++;
+                            metamer = Math.max(metamer, kMeta);
+                            kontrast = Math.max(kontrast, kStoff);
+                            if (kStoff >= 0.2 && kMensch < 0.2) muster++;
+                            beste.push({ blume, paar: a.teil + "/" + b.teil, uvMetamer: +kMeta.toFixed(3), mensch: +kMensch.toFixed(3), uvStoff: +kStoff.toFixed(3) });
+                        }
+                    }
+                    beste.sort((u, v) => v.uvMetamer - u.uvMetamer);
+                    // DIE POSE DES BILDPAARS: 0,6 m vor der nächsten angeflogenen Blüte, 0,3 m über ihr, der Blick auf sie
+                    const pm = st.playerMesh.position, bl = r._bestaeuberBlueten ? r._bestaeuberBlueten() : [];
+                    let angeflogen = 0, nah = null, dn = Infinity;
+                    for (const e of bl) for (let i = 0; i < e.n; i++) { angeflogen++; const x = e.p[3 * i], y = e.p[3 * i + 1], zz = e.p[3 * i + 2], d = Math.hypot(x - pm.x, zz - pm.z); if (d < dn) [dn, nah] = [d, [x, y, zz]]; }
+                    let kam = null;
+                    if (nah) { const d = new T.Vector3(pm.x - nah[0], 0, pm.z - nah[2]); if (d.lengthSq() < 1e-4) d.set(1, 0, 0); d.normalize().multiplyScalar(0.6); kam = [nah[0] + d.x, nah[1] + 0.3, nah[2] + d.z, nah[0], nah[1], nah[2]]; }
+                    return Object.assign(aus, { blumen: blumen.size, mehrteilig, paare, muster, kontrast: +kontrast.toFixed(3), uvMetamerMax: +metamer.toFixed(3), uvStoffe, angeflogen, nahM: +dn.toFixed(1), kam, beste: beste.slice(0, 4) });`,
+                    40
+                ).catch((e) => ({ wurf: String((e && e.message) || e).split("\n")[0].slice(0, 200), taxa: [], vogel: [], waermePol: [] }));
                 L.zeile("Zensus Sicht: " + JSON.stringify(z));
-                const neu = (nr) => {
-                    if (z.sinnGesetz.length) throw new Error("Leser erschienen (" + z.sinnGesetz.join(", ") + ") — S" + nr + " misst ihn noch nicht");
-                };
-                await L.je(1, async () => (neu(1), L.leser(1, "kein Bienen-Auge: die Welt zeichnet nur das Menschenbild (RGB), kein Leser für UV/B/G-Rezeptoren und kein UV-Spektrum im Stoff der Blüte (stamm/bild-sicht.js:2, Atlas Bild/sicht)")));
-                await L.je(2, async () => (neu(2), L.leser(2, "kein Leser für beliebige Rezeptor-Kurven (2–16): kein Auge außer dem Menschenbild (stamm/bild-sicht.js:2); bild-kosten simuliert den Dichromaten nur als Prüfung des Bildschirms (stamm/bild-kosten.js:3031)")));
-                await L.je(3, async () => (neu(3), L.leser(3, "kein Wärmebild und keine Himmels-Polarisation: kein Leser der Leib-Temperatur im Bild, kein Polarisationswinkel im Himmel (stamm/bild-sicht.js:2)")));
-                await L.je(4, async () => (neu(4), L.leser(4, "keine Raum-/Zeitauflösung je Auge (Facette, Habicht, Flimmerfusion): das Gesetzbuch der Tiere trägt nur die Farbe des Auges (tetrapoda-core.js:4117 tierAuge)")));
+                await L.je(1, async () => {
+                    if (z.wurf) throw new Error("der Ruf der Welt warf: " + z.wurf);
+                    if (z.fehlt) return L.leser(1, z.fehlt);
+                    let beleg = null;
+                    if (z.kam) {
+                        const datei = (n) => require("path").join(L.D, P.leiter + "-S1-" + n + ".png");
+                        const schuss = async (taxon, n) => {
+                            await L.ev("r._augeDerArt(" + JSON.stringify(taxon) + "); return 1;", 30);
+                            const k = z.kam;
+                            const b = await L.wb("/bild", { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5], w: 1280, h: 720, spieler: true, datei: datei(n) }, 120);
+                            return (b && b.datei) || datei(n);
+                        };
+                        try {
+                            beleg = { mensch: await schuss(null, "mensch"), biene: await schuss("apis", "apis") };
+                        } finally {
+                            await L.ev("r._augeDerArt(null); return 1;", 30);
+                        }
+                    }
+                    L.gemessen(
+                        1,
+                        { muster_nur_biene: z.muster, kontrast: z.kontrast, uv_metamer_max: z.uvMetamerMax, uv_stoffe: z.uvStoffe, paare: z.paare },
+                        {
+                            welt: { blumen: z.mehrteilig, angeflogen: z.angeflogen },
+                            beleg,
+                            taeter: z.muster < 1 ? "der Stoff der Blüte trägt kein UV-Albedo (" + z.uvStoffe + " von " + z.paare + " Paaren, Stoff userData.uvAlbedo — Studio flower): das Bienen-Auge liest die Blüte über das Metamer ihres sRGB (tetrapoda augeFang), jedes Muster im Bienenbild steht auch im Menschenbild" : null,
+                        }
+                    );
+                });
+                await L.je(2, async () => {
+                    if (z.vogel.length) throw new Error("ein Vogel-Auge erschien (" + z.vogel.join(", ") + ") — S2 misst die Rangordnung noch nicht");
+                    L.leser(2, "EIN Leser für Kurven trägt das Gesetz (tetrapoda augeFang, Govardovskii-Schablone, " + z.taxa.length + " Taxa mit 2–3 Zapfen), doch kein Vogel-Auge (4 Zapfen) und keine Tier-Kamera-Referenz (Vasas/Hanley 2024) — keine Kontrast-Rangordnung über Pflanzenklassen, keine 20 Zufalls-Kurvensätze (stamm/bild-kosten.js `_augeDerArt` bildet 2–3 Klassen auf 3 ab)");
+                });
+                await L.je(3, async () => {
+                    if (z.waermePol.length) throw new Error("Leser erschienen (" + z.waermePol.join(", ") + ") — S3 misst ihn noch nicht");
+                    L.leser(3, "kein Wärmebild und keine Himmels-Polarisation: kein Leser der Leib-Temperatur im Bild, kein Polarisationswinkel im Himmel — das Auge der Art liest nur Zapfen-Fänge (tetrapoda SINNES_GESETZ, stamm/bild-kosten.js `_augeDerArt`)");
+                });
+                await L.je(4, async () => {
+                    if (z.facetteScharf || z.vogel.length) throw new Error("die Schärfe der Facette oder ein Vogel-Auge erschien — S4 misst Habicht gegen Fliege noch nicht");
+                    L.leser(4, "kein Habicht- und keine Fliegen-Schärfe: das Gesetz trägt die Schärfe der Säuger aus der Augenlänge (tetrapoda augeSchaerfe) und keine der Facette (apis → null), keinen Greifvogel und keine Flimmerfusion — kein Bild löst nach der Schärfe des Auges auf");
+                });
                 await L.je(5, async () => {
                     if (z.bew < 1e7) return L.umfang(5, z.bew, "die Sitzung trägt " + z.bew + " Bewohner in " + z.sied + " Siedlungen, keine Megastadt ≥ 10⁷ — und kein Auge außer dem Menschenbild");
                     L.leser(5, "kein Zufallsauge: die Welt zeichnet nur das Menschenbild (stamm/bild-sicht.js:2)", z.bew);
@@ -3081,19 +3168,34 @@ const LANDMARKE_AN = async (r, T, a) => {
     );
 
     // ─────────── erleben.sinne.genom — Sinnes-Genom: Breite und Evolution der Umwelten ───────────
-    // Gezählt wird das Gesetzbuch der Tiere in der Sitzung: die Gattungen (GATTUNGEN ∪ die Gattungen der lebenden Tiere) und die
-    // Sinnes-Radien des Verhaltens (`_verhaltenGesetz`: jagd.scentRangeM, furcht.noticeRadius) — EIN Wert für alle Gattungen, kein
-    // Genom. S1/S2 urteilen „Leser fehlt“ (kein Radius je Gattung, kein Sinnes-Genom), S3–S6 „Umfang nicht erzeugbar“ an der Artenzahl
-    // und den Saaten.
+    // Gezählt wird das Gesetzbuch der Tiere in der Sitzung: die Gattungen (GATTUNGEN ∪ die Gattungen der lebenden Tiere), je Gattung
+    // ein Tier (das nächste binnen 80 m, sonst ein Wurf) und sein AUGE DER ART (`_kreaturAuge`: Taxon, Augenlänge, Schärfe aus dem Leib;
+    // tetrapoda SINNES_GESETZ). S1 — die RADIEN je Gattung: die Sicht-Distanz, in der das Tier den Spieler an der Pose sieht
+    // (`_kreaturSiehtM`), liegt im Band, wenn sie die Fluchtdistanz seiner Gattung trägt (ein Tier entdeckt, ehe es flieht — die
+    // Alarm- vor der Fluchtdistanz, am Sikahirsch Alarm 80,0 m vor dem Menschen — Hirobe & Senzaki 2026, bioRxiv 10.64898/2026.05.13.725053;
+    // die Fluchtdistanz aus FURCHT_GESETZ mit ihrer Quelle);
+    // der Witter-Radius ist EIN Wert für alle (jagd.scentRangeM) und liegt in keinem Band je Gattung. Der Gegenlauf: derselbe Hirsch
+    // an der Hälfte seiner Sicht-Distanz, mit Auge ↔ blind (cpd 0), seine Wariness vor dem Spieler. S2 — das GENOM je Gattung gegen
+    // die gemessene Biologie (Quelle und Zahl in BAND; ein Wert ohne gemessenes Band liegt NICHT im Band): die Zapfen der Familie,
+    // die Augenlänge, die Schärfe. S3–S6 „Umfang nicht erzeugbar“ an der Artenzahl und den Saaten.
     LEITERN.push(
         leiter({
             leiter: "erleben.sinne.genom",
-            sek: 20,
+            sek: 30,
             pfad: ["scripts/werkbank.cjs", "tetrapoda-core.js", "stamm/kreatur-furcht.js", "stamm/kreatur-verhalten.js", "stamm/studio-glieder.js", "stamm/koerper-leib.js"],
             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
             sprossen: {
-                1: { soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter", aus: 2 }] },
-                2: { soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter" }] },
+                1: {
+                    soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter", aus: 2 }],
+                    welt: [
+                        { wort: "gattungen_mit_auge", ab: 1, was: "Gattungen der Welt mit einem Auge der Art (`_kreaturAuge`)" },
+                        { wort: "gegenlauf", ab: 1, was: "die Wariness des Hirschs vor dem Spieler ändert sich, wenn sein Auge blind ist (Gegenlauf)" },
+                    ],
+                },
+                2: {
+                    soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter" }],
+                    welt: [{ wort: "gattungen_mit_auge", ab: 1, was: "Gattungen der Welt mit einem Auge der Art (`_kreaturAuge`)" }],
+                },
                 3: {
                     soll: [
                         { wort: "anteil_hoehle_auge_klein", richtung: "≥", wert: 0.7, wortlaut: "Höhlenarten mit reduziertem Auge ≥ 0,7", feld: "richter" },
@@ -3118,20 +3220,108 @@ const LANDMARKE_AN = async (r, T, a) => {
                 },
             },
             lauf: async function genomLauf(H, P, L) {
+                await L.ort("wiese");
+                // DIE BÄNDER DER BIOLOGIE: die Familie der Gattung (Linné, unabhängig vom Gesetz) und je Familie bzw. Art das Gemessene
+                const FAMILIE = { wolf: "canidae", fox: "canidae", bear: "ursidae", deer: "cervidae" };
+                const BAND = {
+                    zapfen: {
+                        canidae: [[429, 555], "Neitz, Geist & Jacobs 1989, Vis. Neurosci. 3:119 (Hund)"],
+                        cervidae: [[455, 537], "Jacobs et al. 1994, J. Comp. Physiol. A 174:551 (Weißwedelhirsch)"],
+                    },
+                    achseMm: {
+                        wolf: [21.0, 21.7, "Nema et al. 2025, Iran. J. Vet. Res. 26:379 (Hund: Schäferhund, Labrador)"],
+                        deer: [25.3, 29.4, "D'Angelo et al. 2008, Can. J. Zool. 86:735 (Weißwedel 25,3–27,8); Arnegard et al. 2026, Ecol. Evol. 16:e74530 (Rentier 25,5–29,4)"],
+                        bear: [12.9, 17.1, "Wai et al. 2025, Open Vet. J. 15:2889 (Malaienbär 12,93); Paszta et al. 2022, Animals 12:801 (Kragenbär 16,7 ± 0,4)"],
+                    },
+                    cpd: {
+                        wolf: [5.5, 19.5, "Lind et al. 2017, PLoS ONE 12:e0188557 (Hund)"],
+                        deer: [4, 6, "Watson et al. 2022, Am. Midl. Nat. 187:90 (Weißwedelhirsch)"],
+                    },
+                };
                 const z = await L.ev(
-                    "const TC = globalThis.__tetrapodaCore || {}; const VG = r.constructor._verhaltenGesetz(); const gatt = new Set(Object.keys(TC.GATTUNGEN || {})); for (const c of r.state.creatures || []) { const g = r._kreaturGattung(c); if (g) gatt.add(g); } return { saat: r.state.worldMeta && r.state.worldMeta.seed, gattungen: [...gatt], witterM: VG.jagd.scentRangeM, sichtM: VG.furcht.noticeRadius, pirschM: VG.jagd.pirschSichtM, genom: Object.keys(TC).filter((k) => /sinn|genom|rezeptor/i.test(k)) };",
+                    `const A = r.constructor, st = r.state, K = globalThis.__tetrapodaCore, pm = st.playerMesh, VG = A._verhaltenGesetz();
+                    const r1 = (x) => Math.round(x * 10) / 10;
+                    const SEELE = {}; for (const [k, g] of Object.entries(A.TETRAPODA_SOUL_MAP)) SEELE[g] = k; const tier = (g, dx, dz) => { const nah = (st.creatures || []).filter((c) => c && c.parent && r._kreaturGattung(c) === g && c.position.distanceTo(pm.position) < 80).sort((a, b) => a.position.distanceTo(pm.position) - b.position.distanceTo(pm.position)); if (nah.length) return nah[0]; if (!SEELE[g]) return null; const x = pm.position.x + dx, z = pm.position.z + dz, h = r.getTerrainHeightAt(x, z); return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : pm.position.y) + 0.5, z, "happy", SEELE[g], { precise: true, bodySize: 1 }); };
+                    const gatt = new Set(Object.keys(K.GATTUNGEN || {}));
+                    for (const c of st.creatures || []) { const g = r._kreaturGattung(c); if (g) gatt.add(g); }
+                    const je = {};
+                    let k = 0;
+                    for (const g of gatt) {
+                        const c = tier(g, 28 * Math.cos(k), 28 * Math.sin(k));
+                        k += 1.7;
+                        if (!c) { je[g] = { fehlt: "kein Tier binnen 80 m und kein Wurf" }; continue; }
+                        const E = r._kreaturAuge(c);
+                        if (!E) { je[g] = { fehlt: "kein Auge (die Gattung trägt kein Gesetz im Ofen)" }; continue; }
+                        const T0 = K.SINNES_GESETZ.taxa[E.taxon];
+                        je[g] = { taxon: E.taxon, verwandt: T0.verwandt || null, zapfen: T0.zapfen.slice(), achseMm: r1(E.achseMm), cpd: r1(E.cpd), sichtM: r1(r._kreaturSiehtM(c, pm)), fluchtM: r1(r._kreaturFluchtDistanzM(c)), witterM: VG.jagd.scentRangeM };
+                    }
+                    // DER GEGENLAUF: der Hirsch an der Hälfte seiner Sicht-Distanz (mind. 3 m), seine Wariness mit Auge ↔ blind (cpd 0)
+                    const D = tier("deer", 30, 0);
+                    let gegen = null;
+                    if (D) {
+                        const ud = D.userData, E0 = r._kreaturAuge(D), sicht = r._kreaturSiehtM(D, pm), c0 = D.position.clone();
+                        const dir = new T.Vector3().subVectors(c0, pm.position).setY(0);
+                        if (dir.lengthSq() < 1e-6) dir.set(1, 0, 0);
+                        dir.normalize().multiplyScalar(Math.max(3, 0.5 * sicht));
+                        const von = { x: 0, z: 0, r: 0 };
+                        let mit = 0, blind = 0;
+                        try {
+                            D.position.set(pm.position.x + dir.x, c0.y, pm.position.z + dir.z);
+                            mit = r._creatureWarinessSpieler(D, VG.furcht, von);
+                            ud._auge = Object.assign({}, E0, { cpd: 0 });
+                            blind = r._creatureWarinessSpieler(D, VG.furcht, von);
+                        } finally {
+                            ud._auge = E0;
+                            D.position.copy(c0);
+                        }
+                        gegen = { abstandM: r1(dir.length()), sichtM: r1(sicht), mit: +mit.toFixed(4), blind: +blind.toFixed(4), modus: typeof r.getGameMode === "function" ? r.getGameMode() : null };
+                    }
+                    return { saat: st.worldMeta && st.worldMeta.seed, gattungen: [...gatt], je, gegen, nase: Object.keys(K).filter((q) => /nase|riech|olfakt/i.test(q)).concat(typeof r._kreaturRiechtM === "function" ? ["_kreaturRiechtM"] : []) };`,
                     30
-                );
+                ).catch((e) => ({ wurf: String((e && e.message) || e).split("\n")[0].slice(0, 200), gattungen: [], je: {} }));
                 L.zeile("Zensus Genom: " + JSON.stringify(z));
                 const n = z.gattungen.length;
-                const eins = typeof z.witterM === "number" && typeof z.sichtM === "number";
+                const mitAuge = Object.values(z.je).filter((e) => !e.fehlt).length;
+                const r3 = (x) => Math.round(x * 1000) / 1000;
                 await L.je(1, async () => {
-                    if (!eins) throw new Error("Leser erschienen: Witter-/Sicht-Radius ist kein einzelner Wert mehr (" + JSON.stringify([z.witterM, z.sichtM]) + ") — S1 misst ihn noch nicht");
-                    L.leser(1, "kein Radius je Gattung: EIN Witter-Radius " + z.witterM + " m und EIN Sicht-Radius " + z.sichtM + " m (Pirsch " + z.pirschM + " m) für alle " + n + " Gattungen (" + z.gattungen.join(" · ") + ") — tetrapoda-core.js:151 scentRangeM, :183 noticeRadius; nur die Flucht-Distanz trägt die Gattung (tetrapoda-core.js:1998)", n);
+                    if (z.wurf) throw new Error("der Ruf der Welt warf: " + z.wurf);
+                    if (z.nase.length) throw new Error("Leser erschienen (" + z.nase.join(", ") + ") — S1 misst den Witter-Radius je Gattung noch nicht");
+                    let im = 0;
+                    const aus = [];
+                    for (const g of z.gattungen) {
+                        const e = z.je[g];
+                        if (e.fehlt) {
+                            aus.push(g + " " + e.fehlt);
+                            continue;
+                        }
+                        if (e.sichtM >= e.fluchtM) im++;
+                        else aus.push(g + " sieht den Spieler " + e.sichtM + " m < Fluchtdistanz " + e.fluchtM + " m");
+                    }
+                    aus.push("Witterung EIN Radius " + (z.je[z.gattungen[0]] || {}).witterM + " m für alle " + n + " Gattungen (tetrapoda VERHALTEN.jagd.scentRangeM — kein Nasen-Gesetz)");
+                    const gl = z.gegen ? (Math.abs(z.gegen.mit - z.gegen.blind) > 1e-6 ? 1 : 0) : 0;
+                    L.gemessen(1, { anteil_im_band: r3(im / Math.max(1, 2 * n)), sicht_im_band: im, werte: 2 * n }, { welt: { gattungen_mit_auge: mitAuge, gegenlauf: gl }, taeter: aus.join(" · ") });
                 });
                 await L.je(2, async () => {
-                    if (z.genom.length) throw new Error("Leser erschienen (" + z.genom.join(", ") + ") — S2 misst ihn noch nicht");
-                    L.leser(2, "kein Sinnes-Genom: die Gattungen tragen size · neck · leg · diet · build (tetrapoda-core.js:62), die Sinne sind Konstanten des Verhaltens (tetrapoda-core.js:151, :183) — keine Kurve, kein Band, keine Reichweite je Art", n);
+                    if (z.wurf) throw new Error("der Ruf der Welt warf: " + z.wurf);
+                    let im = 0;
+                    const aus = [];
+                    const prüfe = (g, wert, band, was) => {
+                        if (!band) return aus.push(g + " " + was + " " + JSON.stringify(wert) + " ohne gemessenes Band");
+                        const ok = Array.isArray(band[0]) ? band[0].length === wert.length && band[0].every((x, i) => Math.abs(x - wert[i]) <= 3) : wert >= band[0] && wert <= band[1];
+                        if (ok) im++;
+                        else aus.push(g + " " + was + " " + JSON.stringify(wert) + " außer " + JSON.stringify(Array.isArray(band[0]) ? band[0] : [band[0], band[1]]) + " (" + band[band.length - 1] + ")");
+                    };
+                    for (const g of z.gattungen) {
+                        const e = z.je[g];
+                        if (e.fehlt) {
+                            aus.push(g + " " + e.fehlt);
+                            continue;
+                        }
+                        prüfe(g, e.zapfen, BAND.zapfen[FAMILIE[g]], "Zapfen (nm)");
+                        prüfe(g, e.achseMm, BAND.achseMm[g], "Augenlänge (mm)");
+                        prüfe(g, e.cpd, BAND.cpd[g], "Schärfe (cpd)");
+                    }
+                    L.gemessen(2, { anteil_im_band: r3(im / Math.max(1, 3 * n)), im_band: im, werte: 3 * n }, { welt: { gattungen_mit_auge: mitAuge }, taeter: aus.join(" · ") || null });
                 });
                 await L.je(3, async () => L.umfang(3, n, "die Saat " + z.saat + " trägt " + n + " Gattungen (" + z.gattungen.join(" · ") + "), keine Höhlen- oder Nachtart mit eigenem Auge"));
                 await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält EINE Saat (" + z.saat + ") und keine Evolution der Sinne — die Gattungen sind gesetzt (tetrapoda-core.js:62), keine Generation verändert ein Auge"));
@@ -3336,18 +3526,42 @@ const LANDMARKE_AN = async (r, T, a) => {
     );
 
     // ─────────── erleben.sinne.gesehen — Gesehen werden: Tarnung, Mimikry, Warnfarbe ───────────
-    // Die Entdeckung des Spielers liest Abstand, Aura und Erinnerung, nie Farbe (`_kreaturMenschFlucht`, `_creatureWarinessSpieler`):
-    // S1–S3 und S5 urteilen „Leser fehlt“ mit Ort, S4/S6 zählen Saaten und Planeten der Sitzung.
+    // DAS AUGE DER ART (auge-der-art, tetrapoda SINNES_GESETZ): die Entdeckung des Spielers und des hetzenden Jägers liest die Farbe
+    // des Ziels gegen den Boden unter ihm in den Zapfen der Art, die Schärfe aus der Augenlänge des Leibs und die Fläche des Ziels
+    // (`_kreaturSiehtM`, stamm/kreatur-furcht.js). Gemessen am ECHTEN Leser: S1 färbt den Spieler (jeder Stoff seines Leibs auf
+    // Orange bzw. Grün GLEICHER Leuchtdichte, Y nach ITU-R BT.709; zurück im selben Ruf) und liest die Distanz, in der ihn der
+    // nächste Hirsch sieht; S2 stellt denselben Hirsch auf den Boden der Welt (96 Orte bis 120 m um ihn, `_bodenFarbeAt`), der sein
+    // Fell im Wolfs-Auge am besten tarnt, und auf den, der es am meisten zeigt — der Wolf liest beide; S3 nennt an derselben Beute
+    // die Distanz des Wolfs-Auges und des Menschen-Auges (Zapfen haplorhini, Augenlänge 23,5 mm — Farassat et al. 2026, Sci. Rep.
+    // 16:27113) mit dem Bildpaar derselben Pose (`_augeDerArt`: canidae ↔ das Auge des Spielers). S4/S6 zählen Saaten und Planeten.
     LEITERN.push(
         leiter({
             leiter: "erleben.sinne.gesehen",
-            sek: 20,
-            pfad: ["scripts/werkbank.cjs", "stamm/kreatur-furcht.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js"],
+            sek: 40,
+            pfad: ["scripts/werkbank.cjs", "stamm/kreatur-furcht.js", "stamm/bild-kosten.js", "stamm/gelaende-boden.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js"],
             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
             sprossen: {
-                1: { soll: [{ wort: "abweichung_orange_gruen_pct", richtung: "≤", wert: 15, wortlaut: "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %)", feld: "richter" }] },
-                2: { soll: [{ wort: "distanz_minus_pct", richtung: "≥", wert: 30, wortlaut: "getarnte Beute: Entdeckungsdistanz −≥ 30 %", feld: "richter" }] },
-                3: { soll: [{ wort: "unterschied_pct", richtung: "≥", wert: 30, wortlaut: "Entdeckungsdistanzen verschieden ≥ 30 %", feld: "richter" }] },
+                1: {
+                    soll: [{ wort: "abweichung_orange_gruen_pct", richtung: "≤", wert: 15, wortlaut: "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %)", feld: "richter" }],
+                    welt: [
+                        { wort: "hirsche", ab: 1, was: "Hirsche der Welt mit einem Auge der Art (r.state.creatures, Gattung deer)" },
+                        { wort: "entdeckt_m", ab: 1, was: "die Distanz in m, in der das Auge des Hirschs den Spieler sieht (`_kreaturSiehtM`)" },
+                    ],
+                },
+                2: {
+                    soll: [{ wort: "distanz_minus_pct", richtung: "≥", wert: 30, wortlaut: "getarnte Beute: Entdeckungsdistanz −≥ 30 %", feld: "richter" }],
+                    welt: [
+                        { wort: "boeden", ab: 2, was: "verschiedene Böden der Welt um die Beute (`_bodenFarbeAt`)" },
+                        { wort: "entdeckt_m", ab: 1, was: "die Distanz in m, in der das Wolfs-Auge die Beute auf dem offenen Boden sieht (`_kreaturSiehtM`)" },
+                    ],
+                },
+                3: {
+                    soll: [{ wort: "unterschied_pct", richtung: "≥", wert: 30, wortlaut: "Entdeckungsdistanzen verschieden ≥ 30 %", feld: "richter" }],
+                    welt: [
+                        { wort: "jaeger_augen", ab: 2, was: "Jäger-Augen verschiedener Zapfen an derselben Beute" },
+                        { wort: "entdeckt_m", ab: 1, was: "die Distanz in m, in der das Wolfs-Auge die Beute an ihrem Ort sieht (`_kreaturSiehtM`)" },
+                    ],
+                },
                 4: {
                     soll: [{ wort: "abstand_fall_pct", richtung: "≥", wert: 50, wortlaut: "Abstand Beute ↔ Boden im Jäger-Farbraum fällt ≥ 50 %", feld: "richter" }],
                     umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
@@ -3359,20 +3573,119 @@ const LANDMARKE_AN = async (r, T, a) => {
                 },
             },
             lauf: async function gesehenLauf(H, P, L) {
-                const z = await L.ev(
-                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; const NAT = r.constructor._verhaltenGesetz().furcht; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, sichtM: NAT.noticeRadius, farbe: Object.keys(TC).filter((k) => /tarn|mimikry|warnfarb|rezeptor|farbraum/i.test(k)) };",
-                    30
-                );
-                L.zeile("Zensus Gesehen: " + JSON.stringify(z));
-                const neu = (nr) => {
-                    if (z.farbe.length) throw new Error("Leser erschienen (" + z.farbe.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                await L.ort("wiese");
+                // DIE HILFEN DER WELT (vorn in jedem Ruf): der Kern und die Zapfen des Wirts; das Tier einer Gattung (das nächste binnen
+                // 80 m, sonst ein Leib neben dem Spieler, `spawnCreatureAt` mit der Seele der Gattung aus TETRAPODA_SOUL_MAP — `_kreaturWurf` wirft nie in den Blick); das Färben eines Leibs (jeder Stoff auf eine linear-sRGB-Farbe,
+                // seine Vertex-Farben aus, gemerkt je Stoff — der Rückruf stellt alles zurück, ehe ein Bild zeichnet); das Menschen-Auge
+                // und die Entdeckung mit denselben Zeilen wie `_kreaturSiehtM`
+                const V = [
+                    "const A = r.constructor, st = r.state, K = globalThis.__tetrapodaCore, pm = st.playerMesh, lms = A.FARBSICHT.lms;",
+                    "const r1 = (x) => Math.round(x * 10) / 10, f3 = (a) => a.map((x) => +x.toFixed(3));",
+                    "const SEELE = {}; for (const [k, g] of Object.entries(A.TETRAPODA_SOUL_MAP)) SEELE[g] = k; const tier = (g, dx, dz) => { const nah = (st.creatures || []).filter((c) => c && c.parent && r._kreaturGattung(c) === g && c.position.distanceTo(pm.position) < 80).sort((a, b) => a.position.distanceTo(pm.position) - b.position.distanceTo(pm.position)); if (nah.length) return nah[0]; if (!SEELE[g]) return null; const x = pm.position.x + dx, z = pm.position.z + dz, h = r.getTerrainHeightAt(x, z); return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : pm.position.y) + 0.5, z, 'happy', SEELE[g], { precise: true, bodySize: 1 }); };",
+                    "const faerbe = (obj, c) => { const alt = new Map(); obj.traverse((o) => { if (!o.isMesh) return; for (const m of [].concat(o.material)) if (m && m.color && !alt.has(m)) { alt.set(m, [m.color.clone(), m.vertexColors]); m.color.setRGB(c[0], c[1], c[2]); m.vertexColors = false; } }); delete obj.userData._sichtZiel; return () => { for (const [m, [f, v]] of alt) { m.color.copy(f); m.vertexColors = v; } delete obj.userData._sichtZiel; }; };",
+                    "const mensch = { taxon: 'haplorhini', fang: K.augeFang('haplorhini', lms), cpd: K.augeSchaerfe('haplorhini', 23.5) };",
+                    "const sieht = (E, Z, b) => K.augeEntdeckung(E.cpd, Z.kanteM, K.augeAbstand(E.fang, Z.farbe, b), E.fang.kanaele);",
+                ].join("\n");
+                const s = await L.ev(
+                    V +
+                        `
+                    let bew = 0, sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); }
+                    const aus = { saat: st.worldMeta && st.worldMeta.seed, bew, sied };
+                    const D = tier("deer", 30, 0);
+                    if (!D) return Object.assign(aus, { fehlt: "kein Hirsch binnen 80 m und kein Leib (r.spawnCreatureAt deer)" });
+                    // S1 — DER SPIELER ALS BEUTE: Orange und Grün gleicher Leuchtdichte, Weiß auf dem Schnee der Palette
+                    const E = r._kreaturAuge(D);
+                    const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                    const orange = [1, 0.25, 0], gruen = [0.05, (Y(orange) - 0.2848 * 0.05) / 0.7152, 0.05], weiss = [0.85, 0.85, 0.85];
+                    const p = pm.position, boden = r._bodenFarbeAt(p.x, p.y, p.z, [0, 0, 0]).slice(), schnee = A.BODEN_FARBE.schnee;
+                    const lies = (c) => { const zurueck = faerbe(pm, c); try { const Z = r._sichtZiel(pm); return { m: r._kreaturSiehtM(D, pm), dS: K.augeAbstand(E.fang, Z.farbe, boden), schnee: sieht(E, Z, schnee), mensch: sieht(mensch, Z, boden), kante: Z.kanteM }; } finally { zurueck(); } };
+                    const o = lies(orange), g = lies(gruen), w = lies(weiss);
+                    Object.assign(aus, { hirsch: { taxon: E.taxon, achseMm: r1(E.achseMm), cpd: r1(E.cpd) }, hirsche: (st.creatures || []).filter((c) => r._kreaturGattung(c) === "deer").length, boden: f3(boden), gruen: f3(gruen), kanteM: +o.kante.toFixed(2),
+                        orangeM: r1(o.m), gruenM: r1(g.m), dSorange: r1(o.dS), dSgruen: r1(g.dS), weissSchneeM: r1(w.schnee), orangeSchneeM: r1(o.schnee), menschOrangeM: r1(o.mensch), menschGruenM: r1(g.mensch) });
+                    // S2/S3 — DIE BEUTE IM JÄGER-AUGE: der Hirsch auf den Böden um ihn, gelesen vom Wolf
+                    const W = tier("wolf", -40, 0);
+                    if (!W) return Object.assign(aus, { fehltWolf: "kein Wolf binnen 80 m und kein Leib (r.spawnCreatureAt wolf)" });
+                    const Ew = r._kreaturAuge(W);
+                    delete D.userData._sichtZiel;
+                    const Zd = r._sichtZiel(D), c = D.position.clone(), hier = r._bodenFarbeAt(c.x, c.y, c.z, [0, 0, 0]).slice(), orte = [];
+                    for (const rad of [8, 25, 60, 120]) for (let k = 0; k < 24; k++) {
+                        const a = (k / 24) * 2 * Math.PI, x = c.x + rad * Math.cos(a), z = c.z + rad * Math.sin(a);
+                        if (!r._landAt(x, z)) continue;
+                        const y = r.getTerrainHeightAt(x, z), b = r._bodenFarbeAt(x, y, z, [0, 0, 0]).slice();
+                        orte.push({ x, y, z, b, dS: K.augeAbstand(Ew.fang, Zd.farbe, b), dSm: K.augeAbstand(mensch.fang, Zd.farbe, b) });
+                    }
+                    if (orte.length < 2) return Object.assign(aus, { fehltWolf: "um den Hirsch liegt kein Land für zwei Böden (" + orte.length + " von 96 Orten an Land)" });
+                    orte.sort((u, v) => u.dS - v.dS);
+                    const an = (q) => { D.position.set(q.x, q.y, q.z); return r._kreaturSiehtM(W, D); };
+                    let tarnM = 0, offenM = 0;
+                    try { tarnM = an(orte[0]); offenM = an(orte[orte.length - 1]); } finally { D.position.copy(c); }
+                    const ort = (q, m) => ({ dS: r1(q.dS), dSmensch: r1(q.dSm), wolfM: r1(m), menschM: r1(sieht(mensch, Zd, q.b)), boden: f3(q.b), ort: [r1(q.x), r1(q.z)] });
+                    const hierWolf = r._kreaturSiehtM(W, D), hierMensch = sieht(mensch, Zd, hier);
+                    // DAS BILDPAAR (S3): 18 m vor dem Hirsch zum Spieler hin, in Augenhöhe, der Blick auf seinen Leib
+                    const d = new T.Vector3().subVectors(pm.position, c).setY(0);
+                    if (d.lengthSq() < 1) d.set(1, 0, 0);
+                    d.normalize().multiplyScalar(18);
+                    const kx = c.x + d.x, kz = c.z + d.z;
+                    return Object.assign(aus, { wolf: { taxon: Ew.taxon, achseMm: r1(Ew.achseMm), cpd: r1(Ew.cpd) }, fell: f3(Zd.farbe), beuteKanteM: +Zd.kanteM.toFixed(2), orte: orte.length,
+                        boeden: new Set(orte.map((q) => q.b.map((x) => x.toFixed(2)).join())).size, tarn: ort(orte[0], tarnM), offen: ort(orte[orte.length - 1], offenM),
+                        hier: { boden: f3(hier), dS: r1(K.augeAbstand(Ew.fang, Zd.farbe, hier)), dSmensch: r1(K.augeAbstand(mensch.fang, Zd.farbe, hier)), wolfM: r1(hierWolf), menschM: r1(hierMensch) },
+                        kam: [kx, r.getTerrainHeightAt(kx, kz) + 1.6, kz, c.x, c.y + 0.8, c.z] });`,
+                    40
+                ).catch((e) => ({ wurf: String((e && e.message) || e).split("\n")[0].slice(0, 200) }));
+                L.zeile("Gesehen (das Auge der Art an der Pose): " + JSON.stringify(s));
+                const ohne = (nr, feld) => {
+                    if (s.wurf) throw new Error("der Ruf der Welt warf: " + s.wurf);
+                    if (s[feld]) return L.leser(nr, s[feld]), true;
+                    return false;
                 };
-                await L.je(1, async () => (neu(1), L.leser(1, "die Entdeckung des Spielers liest keine Farbe: Abstand (noticeRadius " + z.sichtM + " m), Aura und Erinnerung (stamm/kreatur-furcht.js:107 _creatureWarinessSpieler, :164 _kreaturMenschFlucht) — kein dichromates Auge des Rotwilds")));
-                await L.je(2, async () => (neu(2), L.leser(2, "keine Tarnung im Jäger-Auge: die Jagd findet die Beute über die Witterung, nie über Muster gegen Boden (stamm/kreatur-verhalten.js:190); der Pirsch-Blick ist ein Radius (stamm/kreatur-furcht.js:64)")));
-                await L.je(3, async () => (neu(3), L.leser(3, "keine sinn-abhängige Tarnung: kein zweites Jäger-Auge (Vogel, UV), kein Rezeptorraum (stamm/kreatur-furcht.js:64, stamm/bild-sicht.js:2)")));
-                await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 20 Saaten verlangt; keine Färbung entsteht durch Selektion"));
-                await L.je(5, async () => (neu(5), L.leser(5, "Bewohner tarnen sich nicht: Kleidung liest kein Auge des Wilds, die Flucht des Wilds vor dem Menschen liest keine Farbe (stamm/kreatur-furcht.js:164)", z.bew)));
-                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINEN Planeten (Saat " + z.saat + ") — 20 Planeten verlangt, kein fremder Stern"));
+                const pct = (x) => +x.toFixed(1);
+                await L.je(1, async () => {
+                    if (ohne(1, "fehlt")) return;
+                    const abw = (100 * Math.abs(s.orangeM - s.gruenM)) / Math.max(1e-9, s.gruenM);
+                    L.gemessen(
+                        1,
+                        { abweichung_orange_gruen_pct: pct(abw), orange_m: s.orangeM, gruen_m: s.gruenM, weiss_schnee_m: s.weissSchneeM, orange_schnee_m: s.orangeSchneeM, mensch_orange_m: s.menschOrangeM, mensch_gruen_m: s.menschGruenM },
+                        {
+                            welt: { hirsche: s.hirsche, entdeckt_m: Math.max(s.orangeM, s.gruenM) },
+                            taeter: abw > 15 ? "tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs " + s.dSorange + " ↔ " + s.dSgruen + " Schritte vom Boden" : null,
+                        }
+                    );
+                });
+                await L.je(2, async () => {
+                    if (ohne(2, "fehlt") || ohne(2, "fehltWolf")) return;
+                    const minus = 100 * (1 - s.tarn.wolfM / Math.max(1e-9, s.offen.wolfM));
+                    L.gemessen(
+                        2,
+                        { distanz_minus_pct: pct(minus), getarnt_m: s.tarn.wolfM, offen_m: s.offen.wolfM, ds_getarnt: s.tarn.dS, ds_offen: s.offen.dS, mensch_getarnt_m: s.tarn.menschM, mensch_offen_m: s.offen.menschM },
+                        { welt: { boeden: s.boeden, entdeckt_m: s.offen.wolfM }, taeter: minus < 30 ? "stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (" + s.tarn.dS + " ↔ " + s.offen.dS + " Schritte)" : null }
+                    );
+                });
+                await L.je(3, async () => {
+                    if (ohne(3, "fehlt") || ohne(3, "fehltWolf")) return;
+                    // DAS BILDPAAR derselben Pose: das Auge des Spielers, dann das Auge des Wolfs (die Ausgabe auge der Kette), zurück
+                    const datei = (n) => require("path").join(L.D, P.leiter + "-S3-" + n + ".png");
+                    const schuss = async (taxon, n) => {
+                        await L.ev("r._augeDerArt(" + JSON.stringify(taxon) + "); return 1;", 30);
+                        const k = s.kam;
+                        const b = await L.wb("/bild", { px: k[0], py: k[1], pz: k[2], lx: k[3], ly: k[4], lz: k[5], w: 1280, h: 720, spieler: true, datei: datei(n) }, 120);
+                        return (b && b.datei) || datei(n);
+                    };
+                    let beleg = null;
+                    try {
+                        beleg = { mensch: await schuss(null, "mensch"), wolf: await schuss("canidae", "canidae") };
+                    } finally {
+                        await L.ev("r._augeDerArt(null); return 1;", 30);
+                    }
+                    const h = s.hier;
+                    const u = (100 * Math.abs(h.menschM - h.wolfM)) / Math.max(1e-9, h.menschM, h.wolfM);
+                    L.gemessen(3, { unterschied_pct: pct(u), wolf_m: h.wolfM, mensch_m: h.menschM, ds_wolf: h.dS, ds_mensch: h.dSmensch, getarnt_wolf_m: s.tarn.wolfM, getarnt_mensch_m: s.tarn.menschM }, { welt: { jaeger_augen: 2, entdeckt_m: h.wolfM }, beleg });
+                });
+                await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält EINE Saat (" + s.saat + ") — 20 Saaten verlangt; keine Färbung entsteht durch Selektion"));
+                await L.je(5, async () =>
+                    L.leser(5, "Bewohner tarnen sich nicht: das Auge des Wilds liest nur den Spieler und den hetzenden Jäger (stamm/kreatur-furcht.js `_kreaturSiehtM`), nie einen Bewohner — die Tracht kennt keine Jagd- neben der Festkleidung je Kultur (stamm/siedlung-bewohner.js `_bewohnerTracht`)", s.bew)
+                );
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINEN Planeten (Saat " + s.saat + ") — 20 Planeten verlangt, kein fremder Stern"));
             },
         })
     );
