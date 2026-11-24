@@ -20399,7 +20399,7 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] amd/rdna-3 an daee7541 · karte2.mensch.macht.megastadt#1 gtx: ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal an 5ef0404b · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] amd/rdna-3 an daee7541 · karte2.mensch.macht.megastadt#1 gtx: ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal an a8dd22b5 · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
@@ -20416,7 +20416,7 @@
      "geraet": "gtx",
      "gruen": false,
      "zahl": "S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal",
-     "sha": "5ef0404b561616b752c1a31b69d37d7cacde53d5",
+     "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
      "grund": "ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
@@ -37711,8 +37711,8 @@
   "ohne": 3317
  },
  "kopfVoll": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
- "zeit": "2026-11-24T12:36:13.461Z",
- "vorher": "bf9be26c",
+ "zeit": "2026-11-24T13:02:45.286Z",
+ "vorher": "a8dd22b5",
  "bilanz": {
   "gewinn": [],
   "fall": [],
