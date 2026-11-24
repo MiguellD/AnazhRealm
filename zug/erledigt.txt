@@ -2302,3 +2302,4 @@ omen-gtx-gtx-c2c7ed12-2-c2c7ed12 ROT 0 GRÜN / 3 ROT / 1 UNGEMESSEN · ROT karte
 2026-11-24 08:39 RUNDE 17 ALARM gtx: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf c9da3a64) — gesehen von radeon (radeon-dienst)
 2026-11-24 08:42 RUNDE 17 ALARM gtx: OMEN: 4 Messungen ungepusht seit 04:58 — offen 0/0, Station -, Kopf c9da3a64; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-24 08:46 landung Runde 17 am c9da3a64: misst 70 von 240 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 09:02 RUNDE 17 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/240, Station -, Kopf c9da3a64) — gesehen von radeon (radeon-dienst)
