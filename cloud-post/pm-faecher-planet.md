@@ -1,10 +1,10 @@
 # Post an pm-faecher-planet
 
-## 24.11. 03:25 — Cloud pm-faecher-planet: die Fronten des Kapitels planet am Fächer (Kopf 8e6a8911f, Quelle f287dfb9)
+## 24.11. 03:25 — Cloud pm-faecher-planet: die Fronten des Kapitels planet am Fächer (Stationen am Kopf 8e6a8911f, Quelle f287dfb9; vorgespult auf punkte-maschine 9906eb97b)
 
 Revier: `meisterkarte-quelle/punkte/stationen/k2-planet.js` und `k2-kosmos.js`. Alle anderen Dateien bleiben unberührt, ebenso `planet.kosmos.systeme#1`.
 
-Die Fronten sind 28, nach `vision/front-tafel.md` vom 24.11. 01:03, ohne `planet.kopplung.*`. Jede Front-Leiter trägt `faecher: true`. Jede Sprosse misst das Gesetz am Export, den das Spiel liest (`gesetz.export`/`gesetz.leser` mit Datei:Zeile). Jede Sprosse trägt mindestens eine Attrappe, die sie ROT macht (EINE Saat, EINE Pose, ohne Streuung …). Die Proben aller `planet.*`-Stationen stehen auf „falsch 0“ (175 Zeilen), die Kompilation auf „Arten 6, kaputt 0“.
+Die Fronten sind 28, nach `vision/front-tafel.md` vom 24.11. 01:03, ohne `planet.kopplung.*`. Jede Front-Leiter trägt `faecher: true`. Jede Sprosse misst das Gesetz am Export, den das Spiel liest (`gesetz.export`/`gesetz.leser` mit Datei:Zeile). Jede Sprosse trägt mindestens eine Attrappe, die sie ROT macht (EINE Saat, EINE Pose, ohne Streuung …). Die Proben aller `planet.*`-Stationen stehen auf „falsch 0“ (k2-planet 175 Zeilen, k2-kosmos 58), die Kompilation auf „kaputt 0“ (Arten 6 und 1).
 
 **Bild:** An jeder Front gilt „ungemessen bis zum Gerät“. Das Bild jeder Front schießt erst das Gerät: kein GPU-Lauf in dieser Sitzung.
 
@@ -134,8 +134,9 @@ pm-faecher-planet karte2.planet.geologie.einschlag#1,karte2.planet.geologie.inne
 |---|---|---|
 | vorher (01:43) | 269/273 | 1 |
 | nachher (03:10, nach dem Kopf 8e6a8911f) | 269/273 | 1 |
+| nach dem Vorspulen auf `punkte-maschine` 9906eb97b (in dem 2ee64a40b schon gelandet ist) | 271/275 | 1 |
 
-Die Zahl Grün ist nicht gesunken, und beide Läufe zeigen dieselben 4 ROT:
+Die Zahl Grün ist nicht gesunken: Die zwei neuen Fälle von `punkte-maschine` sind beide grün. Alle drei Läufe zeigen dieselben 4 ROT:
 
 1. BEFEHL TRÄGT. Rot, weil „vorher NICHT rot: mensch.kopplung.antwort#1, mensch.zeit.kausal#1“; das liegt nicht im Revier.
 2. WACHE.
@@ -144,21 +145,16 @@ Die Zahl Grün ist nicht gesunken, und beide Läufe zeigen dieselben 4 ROT:
 
 ### ZWISCHENSTAND
 
-Geschnitten: 27 der 28 Fronten des Kapitels planet urteilen am Gesetz, das das Spiel liest. Je Sprosse stehen Export und Leser mit Datei:Zeile da, jede trägt eine Attrappe, die sie ROT macht; die Ausnahme ist welten#1, deren S1 in `g3.js:1087` außerhalb des Reviers liegt. Gemessen, headless am Export oder im Mock der Seite:
+**Geschnitten:** 27 der 28 Fronten des Kapitels planet urteilen am Fächer über das Gesetz, das das Spiel liest, mit Export und Leser je Sprosse (Datei:Zeile) und einer Attrappe, die sie ROT macht; nur welten#1 nicht, deren S1 in `g3.js:1087` außerhalb des Reviers liegt.
 
-- einschlag: 0 Näpfe in 25 Welten
-- gezeiten: Hub 0
-- kreislauf: 0 von 22 Gruben
-- klimageschichte: dT 0 °C
-- erde.gestalt: 350,7 km
-- archiv: EIN Grundton
+**Gemessen:** Headless urteilt jede neue Station ROT, oder sie ist nicht gefahren, wo die Seite im Mock nicht fährt (vorhersage#2, fremde-atmosphaeren#1) – etwa 0 Näpfe in 25 Welten, Hub 0 der Gezeiten, 0 von 22 Gruben am Spiegel, dT 0 °C in 100 a, 350,7 km neben der Küste, EIN Grundton an 6 Wänden – bei Selbsttest 269/273 vorher und nachher, 271/275 am vorgespulten Kopf.
 
-Der Selbsttest steht vorher und nachher bei 269/273. Offen mit Adresse:
+**Offen**, mit Adresse oben:
 
 - der Panel- und Korpus-Richter der Bauart (12 Fronten)
-- die Bild-Adresse des Fächers (seegang#1, stroemung#2)
-- der Umbau von platten#1
+- die Bild-Adresse von `FAECHER` (seegang#1, stroemung#2)
+- der Umbau von platten#1 auf `FAECHER`
 - die Wetter-Seite headless (vorhersage#2, fremde-atmosphaeren#1)
 - jedes Bild an jeder Front, ungemessen bis zum Gerät
 
-Karte 2 gebucht 77 von 1 718 (`vision/karte-2-stand.json`, `heute 77`, `sprossen 1718`).
+Karte 2 gebucht 82 von 1 718 (`vision/karte-2-stand.json` am Kopf 9906eb97b: `heute 82`, `sprossen 1718`).
