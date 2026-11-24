@@ -112,7 +112,23 @@ richter() {
 }
 log() { echo "$(date +%H:%M) $*" >>"$L"; }
 iso() { date -u -d "$1" +%Y-%m-%dT%H:%M:%S.%3NZ; }
-stationen() { local c; c=$(grep -cE "^  (GRÜN|ROT|OFFEN)" "$W/radeon-nie-leer-lauf.out" 2>/dev/null); echo "${c:-0}"; }
+# grenzen — die Zeilen „GRÜN|ROT|OFFEN“ der laufenden .out: NUR die Grenze einer Station im Lauf (eine endete eben) und der Bericht des
+# Laufs, NIE der Zähler der Runde (ko-zaehler: der zählt aus der Mess-Datei, zaehlung)
+grenzen() { local c; c=$(grep -cE "^  (GRÜN|ROT|OFFEN)" "$W/radeon-nie-leer-lauf.out" 2>/dev/null); echo "${c:-0}"; }
+# zaehlung <kopf> <liste> [ref] — DER EINE ZÄHLER (ko-zaehler, Koordinator 24.11.; Runde 23 am eba9bf8f: „laeuft 374/79“ aus den Zeilen
+# der .out — jede Fortsetzung, jeder Zwilling —, „durch 77/77“ mit 13 Urteilen und 61 ungemessen): runde.cjs zaehle über die Mess-Datei am
+# Kopf, dieselbe Regel wie offen_am (die geteilte Front: --anders die GTX) — am Ursprung (Vorgabe, frisch geholt) oder im Mess-Baum während
+# der Fahrt („-“: punkte.cjs trägt jede Station dort ein) → „<erledigt> <urteile> <ungemessen> <gesamt>“ für `runde stand|durch
+# --zaehlung`. Scheitert sie, steht ZÄHLER ROT beim Namen im Log, die Zeile bleibt — nie eine Zahl von Zeilen als Ersatz.
+zaehlung() {
+    local z rc ref=${3:-origin/punkte-maschine}
+    [ "$ref" = - ] || git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
+    z=$(node "$RUNDE_CJS" zaehle "$PM" "$ref" radeon "$1" "$(liste_datei zaehle "$2")" --anders "$GESETZ_ERST" 2>>"$L")
+    rc=$?
+    if [ $rc = 0 ] && [ -n "$z" ]; then echo "$z"; return 0; fi
+    log "ZÄHLER ROT: runde.cjs zaehle am ${1:0:8} ($ref) scheiterte (Exit $rc) — die Zeile bleibt, keine Zahl von Zeilen als Ersatz"
+    return 1
+}
 # das Urteil der Punkte-Maschine selbst (run, `meine` leer nach --offen) — die EINE Quelle für „nichts offen“, nie die Zahl der Zeilen
 nichts_offen() { grep -q "ist jede Station auf radeon frisch gemessen" "$W/radeon-nie-leer-lauf.out" 2>/dev/null; }
 # DER PUSH SCHEITERT NIE MEHR STILL (Koordinator 19.11. 04:16; Fund: der Mess-Baum stand 58 Commits vor und 2 402 hinter
@@ -229,10 +245,10 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
             if [ -n "$wt" ]; then
                 weich=$(date +%s)
                 WEICH_VOR=$wt
-                c0=$(stationen)
+                c0=$(grenzen)
                 log "$name WEICHT: am Schloss wartet $wt — die Karte geht an der nächsten Stations-Grenze frei"
             fi
-        elif [ "$(stationen)" -gt "$c0" ]; then
+        elif [ "$(grenzen)" -gt "$c0" ]; then
             ab="$wt wartete am Schloss" # eine Station endete eben, die nächste hat kein Urteil: alles in der Datei lief allein
             bis=$(iso "1 second")
             break
@@ -244,8 +260,9 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
         echo "$K" >"$WACHE" # die Wache bezeugt: bis hierher lief der Lauf allein
         # der Stand je Station in zug/runde.txt (Fortschritt für den Alarm der Runde) — im Hintergrund, EIN Schreiber zugleich: ein
         # Push braucht Sekunden, die Wache darf nie auf ihn warten (sonst käme der CI-Abbruch Stationen zu spät)
-        c=$(stationen)
-        if [ "$c" -gt "${PROG:-0}" ] && ! kill -0 "${PROG_PID:-999999}" 2>/dev/null; then PROG=$c; runde_bg stand "$R" radeon "$K" laeuft --erledigt $((${BASIS:-0} + c)) & PROG_PID=$!; fi
+        # (die Grenze stößt an, die Zahl ist die Mess-Datei im Mess-Baum: zaehlung „-“ — DER EINE ZÄHLER)
+        c=$(grenzen)
+        if [ "$c" -gt "${PROG:-0}" ] && ! kill -0 "${PROG_PID:-999999}" 2>/dev/null; then PROG=$c; ZP=$(zaehlung "$K" "$RLISTE" -) && { runde_bg stand "$R" radeon "$K" laeuft --zaehlung "$ZP" & PROG_PID=$!; }; fi
         if [ $weich = 0 ]; then sleep $TAKT_S; else sleep 2; fi
     done
     if [ -n "$ab" ]; then
@@ -269,7 +286,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
         fi
         return 2
     fi
-    n=$(stationen)
+    n=$(grenzen)
     g=$(grep -cE "^  GRÜN" "$W/radeon-nie-leer-lauf.out")
     plan=$(grep -m1 -oE "^Punkte-Maschine: [0-9]+ Station" "$W/radeon-nie-leer-lauf.out" | grep -oE "[0-9]+")
     log "$name gemessen ${K:0:8}: $n Stationen (offen ${plan:-?}), $g GRÜN · $(grep -E "^  (GRÜN|ROT)" "$W/radeon-nie-leer-lauf.out" | cut -c1-60 | tr '\n' ' ' | cut -c1-300)"
@@ -369,12 +386,12 @@ takt() {
         RU=$(offen_am "$U") && RB=$(offen_am "$B") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; return 0; }
         G=$(zahl "$RLISTE")
         n=$(($(zahl "$RU") + $(zahl "$RB")))
-        BASIS=$((G - n))
         if [ $n = 0 ]; then # die ganze Liste trägt am Kopf der Runde einen Eintrag: der Richter der Runde, dann durch
             puls radeon "Richter Runde $RN am ${RK:0:8}"
             richter "$RK" "$RV" "$RLISTE"
             log "Richter Runde $RN ${RK:0:8}: $(grep -E "TÄTER|KEIN FALL|UNSCHARF|Fälle|FALL|frisches ROT" "$S/richter.out" | tail -1 | cut -c1-220)"
-            log "Runde $RN am ${RK:0:8}: die Radeon ist durch ($G Stationen) — $(runde durch "$R" radeon "$RK" "$(main_jetzt)" --erledigt "$G")"
+            Z=$(zaehlung "$RK" "$RLISTE") || { liste_rot "der Zähler der Runde scheiterte am ${RK:0:8} (runde.cjs zaehle) — kein durch"; return 0; }
+            log "Runde $RN am ${RK:0:8}: die Radeon ist durch ($G Stationen) — $(runde durch "$R" radeon "$RK" "$(main_jetzt)" --zaehlung "$Z")"
             return 0
         fi
     fi
@@ -420,7 +437,6 @@ takt() {
             U=${RLISTE%%|*} B=${RLISTE#*|}
             RU=$(offen_am "$U") && RB=$(offen_am "$B") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; f=0; return 0; }
             G=$(zahl "$RLISTE")
-            BASIS=$((G - $(zahl "$RU") - $(zahl "$RB")))
         fi
         # 2 DIE REIHE ÜBER DIE AUSWAHL: punkte.cjs fährt eine --nur-Auswahl in der Reihe seiner Stationen — darum getrennte Fahrten, erst
         # der Teil vor dem „|“, dann der dahinter (eine Liste von vor dem 21.11.: ungebucht | gebucht grün)
@@ -429,11 +445,12 @@ takt() {
         # an punkte.cjs reist nur ein Teil ≤ 8 000 Zeichen (die Reihe bleibt: der Anfang der Gruppe zuerst, der Rest in der nächsten Fahrt)
         [ -n "$grp" ] && { grp=$(runde kappe "$(liste_datei grp "$grp")" 8000) && [ -n "$grp" ] || { liste_rot "runde.cjs kappe gab keinen Teil"; f=0; return 0; }; }
         if [ -n "$grp" ]; then
-            runde stand "$R" radeon "$RK" laeuft --erledigt "$BASIS" --gesamt "$G" >>"$L"
+            Z=$(zaehlung "$RK" "$RLISTE") || { liste_rot "der Zähler der Runde scheiterte am ${RK:0:8} (runde.cjs zaehle) — keine Fahrt"; f=0; return 0; }
+            runde stand "$R" radeon "$RK" laeuft --zaehlung "$Z" --gesamt "$G" >>"$L"
             miss "Runde-Liste" --nur "$grp"
             rc=$?
             T_FAHRT_ENDE=$(date +%s)
-            [ $rc = 2 ] && runde stand "$R" radeon "$RK" weicht --erledigt $((BASIS + PROG)) >>"$L"
+            [ $rc = 2 ] && Z=$(zaehlung "$RK" "$RLISTE") && runde stand "$R" radeon "$RK" weicht --zaehlung "$Z" >>"$L"
         fi
         f=0
     elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 2"; fi
@@ -452,6 +469,8 @@ takt() {
 #    HAND_ZEIT_S keine Fahrt, danach beginnt sie; ein Einzel-Lauf, den nicht der Dienst startete, wartet am Baum → die Fahrt weicht an
 #    der nächsten Grenze (behalten n, wie b). Mutanten: lauf-fremd (lauf_da sieht wieder jeden punkte.cjs run) · warter-ohne-baum (warter
 #    liest nur das Schloss, die Regel bis 24.11.) — beide ROT an h.
+# k  DER EINE ZÄHLER (ko-zaehler 24.11.): 6 Stationen mit 12 Zeilen der .out, 2 UNGEMESSEN → die Zeile zählt aus der Mess-Datei (runde.cjs
+#    zaehle): durch 6/6, 4 Urteile · 2 ungemessen. Mutante zeilen (die Zeilen der .out sind der Zähler, die Regel bis 24.11.) — ROT an k.
 # z  DAS GESETZ DER RUNDE: main springt → am Kopf der Runde zu Ende, in der Reihe der Klassen, die nächste Runde erst, wenn beide durch
 # Mutanten: von-vorn (die Fortsetzung misst die ganze Gruppe) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
 # r  DAS GESETZ DER ROH-BILDER: ein Bild bei gehaltenem Urteil bleibt am Gerät (Prüfsumme in git), bei Wechsel geht es nach git
@@ -507,7 +526,7 @@ st_gesetz() {
     seq 1 7 | sed 's/^/g.K/;s/$/#1/' >"$STUB/alle.txt"
     touch "$STUB/nur.log"
     j=$(wc -l <"$STUB/nur.log")
-    runde stand "$R" gtx "$gk" laeuft --liste "g.K1#1,g.K2#1,g.K3#1,g.K4#1,g.K5#1|g.K6#1,g.K7#1" --gesamt 7 --erledigt 4 --getragen 0 >/dev/null
+    runde stand "$R" gtx "$gk" laeuft --liste "g.K1#1,g.K2#1,g.K3#1,g.K4#1,g.K5#1|g.K6#1,g.K7#1" --gesamt 7 --zaehlung "4 3 1 7" --getragen 0 >/dev/null
     pm_leg "${gk:0:8}-gtx.json" '{"je":{"g.K1#1":{"gruen":true},"g.K2#1":{"gruen":false,"grund":"ROT: Wert daneben"},"g.K3#1":{"gruen":false,"ungemessen":true},"g.K4#1":{"gruen":false,"grund":"Start: spawn ENAMETOOLONG"}},"ungemessen":{"g.K3#1":{"ungemessen":true,"offen":1}}}'
     for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
     g1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
@@ -677,9 +696,17 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
     for (const id of offen) {
         if (halt) await halte(); // nach der einen Station bis zur Grenze: der Dienst beendet den Lauf
         await schlaf(ms);
-        m.je[id] = { ende: Date.now() };
-        schreib(m);
-        console.log("  GRÜN " + id + " · Stummel · Exit 0 · 0 min");
+        // ungemessen.txt nennt, wer UNGEMESSEN endet (offen 3: er steht beim Grund, erledigt ohne Urteil); zwilling: je Station zwei Zeilen
+        if (marke("ungemessen.txt") !== null && marke("ungemessen.txt").split(/\s+/).includes(id)) {
+            (m.ungemessen = m.ungemessen || {})[id] = { zeit: new Date().toISOString(), offen: 3, grund: "Stummel — offen, UNGEMESSEN" };
+            schreib(m);
+            console.log("  OFFEN " + id + " · Stummel · UNGEMESSEN");
+        } else {
+            m.je[id] = { ende: Date.now() };
+            schreib(m);
+            console.log("  GRÜN " + id + " · Stummel · Exit 0 · 0 min");
+        }
+        if (marke("zwilling") !== null) console.log("  GRÜN " + id + " · Zwilling (dieselbe Station, eine zweite Zeile)");
         // ein Roh-Bild der Station (Gesetz der Roh-Bilder): bild.txt nennt, wer eins schreibt
         if (marke("bild.txt") !== null && marke("bild.txt").split(/\s+/).includes(id)) { const rd = path.join(__dirname, "messung", "roh", k8 + "-radeon"); fs.mkdirSync(rd, { recursive: true }); fs.writeFileSync(path.join(rd, id.replace(/#/g, "_") + "-bild.png"), "PNG " + id); }
         n++;
@@ -719,6 +746,7 @@ STUMMEL
     warter) warter() { :; } ;;
     lauf-fremd) lauf_da() { ps -ef | grep -q "[p]unkte.cjs run"; } ;; # die Regel bis 24.11.: jeder punkte.cjs run ist der eigene Lauf
     warter-ohne-baum) warter() { schloss_wartende radeon punkte-radeon; } ;; # die Regel bis 24.11.: nur das Schloss, der Baum ungelesen
+    zeilen) zaehlung() { local n; n=$(grenzen); echo "$n $n 0 $(zahl "$2")"; } ;; # die Regel bis 24.11.: die Zeilen der .out sind der Zähler
     ziel) kopf() { main_jetzt; } ;; # die alte Regel: der Takt misst am jüngsten main
     bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
     liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
@@ -818,6 +846,28 @@ STUMMEL
     else echo "ROT h  der fremde Einzel-Lauf ist eine Hand: Fahrten vor HAND_ZEIT_S $h0 (Soll 0), danach $h1 (Soll 1), WEICHT vor dem Baum $(grep -c "WEICHT: am Schloss wartet Baum-Sperre" "$L") (Soll 1), behalten ${hg:-?} (Soll 3 von 8: behalten bis zur Grenze, der Rest offen)"; fi
     fi
     case "$1" in lauf-fremd | warter-ohne-baum) nur -; command rm -rf "$X"; return ;; esac # die Mutanten des fremden Laufs prüfen nur h
+    if nur k; then
+    # k — DER EINE ZÄHLER (ko-zaehler, Koordinator 24.11.; Runde 23 am eba9bf8f „laeuft 374/79“, „durch 77/77“ mit 13 Urteilen und 61
+    # ungemessen): 6 Stationen, jede druckt zwei Zeilen (ein Zwilling), k.K3 und k.K4 enden UNGEMESSEN (offen 3) — die Zeile zählt aus der
+    # Mess-Datei: kein ZÄHLER ROT, durch 6/6, die Botschaft nennt 4 Urteile · 2 ungemessen. Vorher (Mutante zeilen: die Zeilen der .out)
+    # 12/6 → runde.cjs Exit 6, kein durch.
+    local kz kr k0 k1
+    neu zaehler
+    seq 1 6 | sed 's/^/k.K/;s/$/#1/' >"$STUB/alle.txt"
+    printf 'k.K3#1 k.K4#1\n' >"$STUB/ungemessen.txt"
+    : >"$STUB/zwilling"
+    gtx_vorn
+    f=0 WEICH_VOR= T_FAHRT_ENDE=
+    k0=$(wc -l <"$L") k1=$(cat "$L.runde" 2>/dev/null | wc -l)
+    for mp in 1 2 3; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    command rm -f "$STUB/ungemessen.txt" "$STUB/zwilling"
+    kz=$(feld radeon)
+    kr=$(( $(tail -n +$((k0 + 1)) "$L" | grep -c "ZÄHLER ROT") + $(tail -n +$((k1 + 1)) "$L.runde" 2>/dev/null | grep -c "ZÄHLER ROT") ))
+    if echo "$kz" | grep -q "^radeon durch 6/6 " && [ "$kr" = 0 ] && tail -n +$((k0 + 1)) "$L" | grep -q "durch am ${K:0:8}: 6/6 — 4 Urteile · 2 ungemessen"; then
+        echo "OK k  der eine Zähler: 6 Stationen mit 12 Zeilen der .out, 2 UNGEMESSEN — die Zeile zählt aus der Mess-Datei (kein ZÄHLER ROT), durch 6/6 mit 4 Urteilen · 2 ungemessen"
+    else echo "ROT k  der eine Zähler: Zeile „$(echo "$kz" | cut -c1-60)“ (Soll durch 6/6), ZÄHLER ROT $kr (Soll 0), durch nennt „$(tail -n +$((k0 + 1)) "$L" | grep -o "durch am [^ ]*: [^)]*ungemessen" | tail -1)“ (Soll 6/6 — 4 Urteile · 2 ungemessen)"; fi
+    fi
+    [ "$1" = zeilen ] && { nur -; command rm -rf "$X"; return; } # die Mutante des Zählers prüft nur k
     case "$1" in offen-blind | offen-nur-rot | offen-ungemessen | reihe-gtx | altes-gesetz | warte) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
     f=0 T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
@@ -1017,11 +1067,11 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warte lauf-fremd warter-ohne-baum"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warte lauf-fremd warter-ohne-baum zeilen"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # DIE FANG-TAFEL (22.11., wie landung-dienst.sh): jede Mutante fährt nur den Fall, an dem sie fällt — ST_NUR wählt die Fälle von
     # echt; ST_ECHT=0 fährt nur die Mutanten. Höchstens VIER Sandkästen zugleich (Koordinator 22.11. 09:11: 14 nebeneinander verstopften
     # den Laptop 2 h 13 min) — die Mutanten in Gruppen per ST_MUTANTEN
-    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warte:g1 lauf-fremd:h warter-ohne-baum:h"
+    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warte:g1 lauf-fremd:h warter-ohne-baum:h zeilen:k"
     fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
     if [ "${ST_ECHT:-1}" = 0 ]; then : >"$O/echt"; else (st_lauf "" >"$O/echt" 2>&1) & fi
     for m in $MUT; do (ST_NUR=${ST_NUR:-$(fang "$m")}; st_lauf "$m" >"$O/$m" 2>&1) & done
@@ -1030,7 +1080,7 @@ selbsttest() {
     [ -n "$echt" ] && echo "$echt" | sed 's/^/  /'
     echt=$(echo "$echt" | grep -v "^ZEIT")
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 18 ] || rot=1
+    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 19 ] || rot=1
     for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
@@ -1038,7 +1088,7 @@ selbsttest() {
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g') $zt"; else echo "  Mutante „$m“ bleibt GRÜN $zt"; fi
     done
     rm -rf "$O"
-    local nf="18 Fälle grün"
+    local nf="19 Fälle grün"
     [ -n "$ST_NUR" ] && nf="die Fälle $ST_NUR grün"
     [ "${ST_ECHT:-1}" = 0 ] && nf="ohne echt"
     if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: $nf, $mr/$mz Mutanten ROT"; return 0; fi

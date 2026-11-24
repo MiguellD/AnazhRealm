@@ -23,8 +23,11 @@
 //   lies <repo> <geraet> [--voll]           → "<n> <kopf40> <vorher40|-> <zustand> <liste>" oder "-" (keine Runde); --voll haengt
 //                                           <getragen|-> an („-": eine Zeile von vor dem 21.11. — ihre Liste kennt keinen Schwanz)
 //   anlegen <repo> <kopf40>                 die erste Runde aus dem Bestand (nur, wenn die Datei keine traegt)
-//   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L] [--getragen n]   die eigene Zeile
-//   durch <repo> <geraet> <kopf40> <main40> [--erledigt n] [--getragen n]  die eigene Liste ist durch (getragen: Schwanz-Stationen, deren
+//   stand <repo> <geraet> <kopf40> <zustand> [--zaehlung Z] [--erledigt 0] [--gesamt n] [--station id] [--liste L] [--getragen n]
+//                                           die eigene Zeile; Z = die Ausgabe von `zaehle` (DER EINE ZÄHLER), --erledigt nur die 0 des Anfangs
+//   zaehle <dir> <ref|-> <geraet> <kopf> <liste> [--anders g2]   → "<erledigt> <urteile> <ungemessen> <gesamt>": was `offen` am Kopf
+//                                           nicht mehr nennt (dieselbe Regel), getrennt nach Urteil und ungemessen — nie eine Zahl von Zeilen
+//   durch <repo> <geraet> <kopf40> <main40> [--zaehlung Z] [--erledigt 0] [--getragen n]  die eigene Liste ist durch (getragen: Schwanz-Stationen, deren
 //                                           rotes Urteil vom frueheren Kopf steht); sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
 //   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
@@ -63,6 +66,8 @@ const LANG_MIN = Number(process.env.REIHE_LANG_MIN || 10);
 const WIDERSPRUCH_AUS = process.env.RUNDE_MUTANTE === "widerspruch-aus";
 // die Mutante des Selbsttests (offen --anders ohne die NACHWACHE-SCHULD: jedes Urteil des anderen Geräts streicht die Station, wie bis 24.11.)
 const NACHWACHE_AUS = process.env.RUNDE_MUTANTE === "nachwache-aus";
+// die Mutante der Front ohne die Tafel der Richter (die Station der Sprosse): nur `selbsttest` setzt sie
+const TAFEL_AUS = process.env.RUNDE_MUTANTE === "tafel-aus";
 const WER = { GIT_AUTHOR_NAME: "MiguellD", GIT_AUTHOR_EMAIL: "87209049+MiguellD@users.noreply.github.com",
     GIT_COMMITTER_NAME: "MiguellD", GIT_COMMITTER_EMAIL: "87209049+MiguellD@users.noreply.github.com" };
 const jetzt = () => (process.env.RUNDE_JETZT ? new Date(process.env.RUNDE_JETZT) : new Date());
@@ -240,6 +245,57 @@ const widerspruchIn = (J, g, anders, id) => { const y = J[anders][id]; return !W
 
 const [was, ...arg] = process.argv.slice(2);
 const opt = (n) => { const i = arg.indexOf("--" + n); return i < 0 ? null : arg[i + 1]; };
+// DIE LISTE AM KOPF — EINE Regel für `offen` und `zaehle`: die Mess-Datei des Geräts am Kopf (ref oder „-“: der Arbeitsbaum) und, mit
+// --anders, die des anderen Geräts am selben Ort. Erledigt ist eine Station, die einen Eintrag trägt (hatEintrag) oder die das andere
+// Gerät URTEILTE (die geteilte Front); ein Urteil ist GRÜN oder ROT — das eigene oder das des anderen. Was nicht erledigt ist, ist offen.
+function listeAmKopf(dir, ref, g, kopf, l, ANDERS) {
+    // ref „-“: die Mess-Datei im Arbeitsbaum (kandidat.sh nach einer gefallenen Sitzung: was sie fertig maß, steht dort; an der OMEN
+    // stellt pm-stand.cjs den Baum je Takt des Dienstes und zu Beginn jeder Sitzung auf origin/punkte-maschine)
+    const lade = (gg) => {
+        const rel = MDIR + "/" + k8(kopf) + "-" + gg + ".json";
+        try { return JSON.parse((ref === "-" ? (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })() : zeigIn(dir)(ref, rel)) || "null"); } catch { return null; }
+    };
+    const m = lade(g) || {};
+    // DIE GETEILTE FRONT (Koordinator 22.11.): mit --anders <geraet2> ist eine Station nur offen, wenn das andere Gerät sie am SELBEN Kopf
+    // nicht URTEILTE — GRÜN oder ROT in der Lesart von urteil() (kein UNGEMESSEN, kein Start-Fehler, kein jüngeres UNGEMESSEN darüber).
+    // JEDE STATION EINMAL (Koordinator 23.11., Schöpfer: „wir messen soviel wie nötig, nicht wie möglich“; die Buchung hebt seit 18.11.
+    // mit EINEM Gerät, buche-2 Z7 — das GRÜN des zweiten war ein Paar, das keine Sprosse hebt): bis heute übersprang nur ROT, das zweite
+    // Gerät maß jedes GRÜN des ersten nach. UNGEMESSEN überspringt nie (die zweite Chance am anderen Gerät); fehlt seine Mess-Datei,
+    // überspringt nichts. Seine Datei liest offen am selben Ort wie die eigene (ref oder Baum) — kein eigener Netz-Gang.
+    const ma = ANDERS ? lade(ANDERS) : null;
+    const urteilAnders = (s) => !!ma && /^(GRUEN|ROT)$/.test(urteil(ma, s) || "");
+    const ids = liste(String(l || "").replace("|", ","));
+    // DIE NACHWACHE-SCHULD (Koordinator 24.11. 19:40; Runde 24 an der Radeon: jahreslauf#2 und kraft#2 — Radeon ROT am c445936d, GTX
+    // GRÜN am a8dd22b5 und danach nie ROT; die Karte hält das ROT der Radeon, bis die Radeon selbst GRÜN urteilt, und `offen --anders`
+    // strich die Station aus ihrer Liste, sobald die GTX sie am Kopf urteilte — die Sprosse buchte nie): urteilt das andere Gerät am
+    // Kopf GRÜN und ist das jüngste Urteil von g über alle Köpfe ROT (rotZuletzt, dieselbe Lesart wie die Reihe), fällt die Station
+    // nicht — sie steht VORN in der Liste, die g fährt. Das GRÜN am Kopf IST das Urteil über den jüngeren Code (nie eine Uhr-Frage: eine
+    // nachgelieferte alte Akte trägt eine spätere Zeit). Gelesen nur, wenn das andere am Kopf GRÜN urteilte: die Mess-Dateien von g im
+    // Ordner (alle Köpfe) und die am Kopf
+    const gruenAnders = ANDERS ? ids.filter((s) => !hatEintrag(m, s) && urteil(ma, s) === "GRUEN") : [];
+    const J = gruenAnders.length && !NACHWACHE_AUS ? juengstIn(path.join(dir, MDIR), new Set(gruenAnders), g, [[g, m]], [g]).juengst : null;
+    const schuld = (s) => !!J && urteil(ma, s) === "GRUEN" && rotZuletzt(J, g, s);
+    return { m, ma, ids, urteilAnders, schuld,
+        erledigt: (s) => hatEintrag(m, s) || (urteilAnders(s) && !schuld(s)), urteilt: (s) => /^(GRUEN|ROT)$/.test(urteil(m, s) || "") || (urteilAnders(s) && !schuld(s)) };
+}
+// DER EINE ZÄHLER DER RUNDE (ko-zaehler, Koordinator 24.11.; Radeon Runde 23 am eba9bf8f „laeuft 374/79“ — radeon-dienst.sh `stationen()`
+// zählte jede Zeile GRÜN|ROT|OFFEN seiner Läufe, jede Fortsetzung, jeden Zwilling —, und „durch 77/77“ mit 13 Urteilen und 61 ungemessen):
+// die Zeile trägt erledigt nur aus `--zaehlung "<erledigt> <urteile> <ungemessen> <gesamt>"` — der Ausgabe von `zaehle`, nie einer Zahl
+// von Zeilen; `--erledigt` trägt nur die 0 des Anfangs. Was keine Zahl von Stationen sein kann (erledigt über gesamt, Urteile und
+// Ungemessene ≠ erledigt, eine andere Liste als die der Zeile), steht beim Namen: Exit 6, die Zeile bleibt, wie sie ist.
+const zaehlerRot = (g, w) => { console.log("ZÄHLER ROT: " + w + " — die Zeile " + g + " bleibt, wie sie ist"); process.exit(6); };
+function zaehlungAus(g) {
+    const e0 = opt("erledigt"), z = opt("zaehlung");
+    if (e0 !== null && e0 !== "0") zaehlerRot(g, "--erledigt " + e0 + ": erledigt kommt nur aus der Mess-Datei (runde.cjs zaehle → --zaehlung), --erledigt trägt nur die 0 des Anfangs");
+    if (z === null) return null;
+    const w = String(z).trim().split(/\s+/);
+    if (w.length !== 4 || !w.every((x) => /^\d+$/.test(x))) zaehlerRot(g, "--zaehlung „" + z + "“ ist nicht „<erledigt> <urteile> <ungemessen> <gesamt>“");
+    const [erledigt, urteile, ungemessen, gesamt] = w.map(Number);
+    if (erledigt > gesamt) zaehlerRot(g, "erledigt " + erledigt + " über gesamt " + gesamt + " — eine Zahl von Zeilen, nie von Stationen");
+    if (urteile + ungemessen !== erledigt) zaehlerRot(g, urteile + " Urteile + " + ungemessen + " ungemessen ≠ erledigt " + erledigt);
+    return { erledigt, urteile, ungemessen, gesamt };
+}
+const zaehlungPasst = (g, zz, e) => zz.gesamt === e.gesamt || zaehlerRot(g, "die Zählung zählt " + zz.gesamt + " Stationen, die Zeile trägt " + e.gesamt + " (eine andere Liste)");
 if (was === "lies") {
     const [repo, g] = arg;
     if (!process.env.RUNDE_OHNE_FETCH) gitIn(repo)(["fetch", "-q", "origin", "+refs/heads/" + ZWEIG + ":refs/runde/koord"]);
@@ -257,14 +313,16 @@ if (was === "lies") {
     let anders = false;
     // STILLES SCHEITERN (19.11. 05:54, `laeuft 0/0 … liste |`): eine Liste ohne Station wird nie geschrieben — ROT beim Namen, Exit 5
     if (opt("liste") !== null && !traegtListe({ liste: listenText(opt("liste")) })) { console.log("LEERE LISTE — die Zeile " + g + " bleibt, wie sie ist"); process.exit(5); }
-    const { r } = aendere(repo, "Runde " + g + ": " + zustand + (opt("erledigt") ? " " + opt("erledigt") + "/" + (opt("gesamt") || "?") : "") + " am " + k8(kopf), (r) => {
+    const zz = zaehlungAus(g);
+    const { r } = aendere(repo, "Runde " + g + ": " + zustand + (zz ? " " + zz.erledigt + "/" + zz.gesamt : opt("erledigt") !== null ? " 0/" + (opt("gesamt") || "?") : "") + " am " + k8(kopf), (r) => {
         if (!r.runde || r.runde.kopf !== kopf) { anders = true; return false; }
         const e = r.g[g] || leer(r.runde.start), z = iso(jetzt());
         const vor = e.erledigt, vorG = e.gesamt;
         const vorZ = e.zustand;
         e.zustand = zustand;
-        if (opt("erledigt") !== null) e.erledigt = Number(opt("erledigt"));
         if (opt("gesamt") !== null) e.gesamt = Number(opt("gesamt"));
+        if (opt("erledigt") !== null) e.erledigt = 0; // die 0 des Anfangs (zaehlungAus ließ nur sie durch)
+        if (zz && zaehlungPasst(g, zz, e)) e.erledigt = zz.erledigt; // DER EINE ZÄHLER: was die Mess-Datei am Kopf für die Liste trägt
         if (opt("station") !== null) e.station = opt("station") || "-";
         if (opt("liste") !== null) {
             // DER LISTEN-BRUCH (19.11. 05:53, `laeuft 0/0 … liste |`): trug die Zeile eine Liste OHNE Station, während sie schon lief, ist
@@ -284,7 +342,9 @@ if (was === "lies") {
 } else if (was === "durch" || was === "weiter") {
     const [repo, g, kopf, main] = was === "durch" ? arg : [arg[0], null, null, arg[1]];
     let anders = false, leerDurch = false;
-    const { r } = aendere(repo, was === "durch" ? "Runde " + g + ": durch am " + k8(kopf) : "Runde weiter: main " + k8(main), (r) => {
+    // „durch“ nennt Urteile und Ungemessene getrennt (DER EINE ZÄHLER): die Botschaft und die Ausgabe tragen die Zählung der Mess-Datei
+    const zz = g ? zaehlungAus(g) : null, zText = zz ? zz.erledigt + "/" + zz.gesamt + " — " + zz.urteile + " Urteile · " + zz.ungemessen + " ungemessen" : "";
+    const { r } = aendere(repo, was === "durch" ? "Runde " + g + ": durch am " + k8(kopf) + (zz ? " " + zText : "") : "Runde weiter: main " + k8(main), (r) => {
         if (!r.runde) return false;
         let neu = false;
         if (g) {
@@ -292,7 +352,8 @@ if (was === "lies") {
             const e = r.g[g] || leer(r.runde.start);
             if (!traegtListe(e)) { leerDurch = true; return false; } // nie „durch“ ohne Liste (LISTE ROT beim Rufer)
             if (e.zustand !== "durch") { e.zustand = "durch"; e.station = "-"; e.fortschritt = iso(jetzt()); e.alarm = "-"; r.g[g] = e; neu = true; }
-            if (opt("erledigt") !== null && e.erledigt !== Number(opt("erledigt"))) { e.erledigt = Number(opt("erledigt")); neu = true; } // der Endstand: was am Kopf einen Eintrag trägt
+            if (opt("erledigt") !== null && e.erledigt !== 0) { e.erledigt = 0; neu = true; } // die 0 des Anfangs (die leere Liste des Gesetzes)
+            if (zz && zaehlungPasst(g, zz, e) && e.erledigt !== zz.erledigt) { e.erledigt = zz.erledigt; neu = true; } // der Endstand aus der Mess-Datei
             if (opt("getragen") !== null && e.getragen !== Number(opt("getragen"))) { e.getragen = Number(opt("getragen")) || 0; neu = true; } // der Schwanz, dessen ROT vom früheren Kopf steht
         }
         if (alleDurch(r) && /^[0-9a-f]{40}$/.test(String(main)) && main !== r.runde.kopf) { oeffne(r, main); neu = true; }
@@ -301,6 +362,7 @@ if (was === "lies") {
     if (anders) { console.log("ANDERE RUNDE " + r.runde.n + " " + r.runde.kopf); process.exit(4); }
     if (leerDurch) { console.log("LEERE LISTE — " + g + " wird nie „durch“ ohne Station (die Zeile bleibt)"); process.exit(5); }
     if (!r.runde) { console.log("-"); process.exit(0); }
+    if (zz) console.log(g + " durch am " + k8(kopf) + ": " + zText);
     console.log(alleDurch(r) ? "ALLE DURCH runde " + r.runde.n + " " + r.runde.kopf + " (main nicht weiter)" : "runde " + r.runde.n + " " + r.runde.kopf + " " + GERAETE.map((x) => x + "=" + ((r.g[x] || {}).zustand || "offen")).join(" "));
 } else if (was === "sprung") {
     // sprung <repo> <kopf40> <main40> <grund> — DER SPRUNG DES KOORDINATORS (22.11.): die Runde am <kopf40> endet, die naechste oeffnet
@@ -433,11 +495,28 @@ if (was === "lies") {
         let k;
         try { k = JSON.parse(fs.readFileSync(opt("karte"), "utf8")); if (!Array.isArray(k.gruppen)) throw new Error("ohne gruppen"); } catch (e) { console.error("reihe: die Front ohne lesbare Karte (--karte " + opt("karte") + "): " + String(e.message).slice(0, 120)); process.exit(6); }
         const { F, K1, hinter } = front(k), vor = ids.length;
+        // DIE STATION DER SPROSSE (pm-sitzung-traegt Scheibe 2; Leser-Bericht 24.11.: mensch.nahrung.erdbau#1 und same.physik.fluid#1
+        // urteilt die bestehende Station gelaende.K2#1 — die Front trug nur „karte2.<leiter>#<n>“, der Filter unten nahm gelaende.K2#1
+        // aus der Liste, die zwei Front-Sprossen fuhren in keiner Runde): die Tafel der Richter (vision/richter-tafel.json, Station →
+        // Sprosse — die EINE Zuordnung, die fahreSitzung nach jeder Probe liest und buche-2 bucht) übersetzt die Front in die Stationen,
+        // die ihre Sprossen urteilen; eine Station trägt den Anspruch ihrer Sprosse. Die Tafel liegt im Mess-Baum (<messung-dir>/../../../
+        // vision) oder `--tafel <datei>`; fehlt sie, steht es beim Namen (die Front dann nur aus karte2.*-Stationen), unlesbar: Exit 6
+        const tafelDatei = opt("tafel") || path.resolve(dir, "..", "..", "..", "vision", "richter-tafel.json");
+        let zeilen = [];
+        if (!TAFEL_AUS && fs.existsSync(tafelDatei))
+            try { zeilen = JSON.parse(fs.readFileSync(tafelDatei, "utf8")).zeilen; if (!Array.isArray(zeilen)) throw new Error("ohne zeilen"); } catch (e) { console.error("reihe: die Front ohne lesbare Tafel der Richter (" + tafelDatei + "): " + String(e.message).slice(0, 120)); process.exit(6); }
+        else process.stderr.write("Front der Karte 2: ohne Tafel der Richter (" + tafelDatei + ") — nur karte2.*-Stationen tragen die Front\n");
+        const stationen = new Map();
+        for (const z of zeilen) { const sid = "karte2." + z.leiter + "#" + z.sprosse; if (z.station && z.station !== sid) stationen.set(sid, [...(stationen.get(sid) || []), z.station]); }
+        const traegt = new Map();
+        for (const sid of F) for (const st of stationen.get(sid) || []) traegt.set(st, [...(traegt.get(st) || []), sid]);
+        for (const st of traegt.keys()) F.add(st);
         ids = ids.filter((id) => F.has(id));
         for (const id of K1) anspruch.add(id);
         // eine beanspruchte Sprosse IN der Front (auch Glieder) ist K1, eine dahinter nur über die lückenlose Folge oben
         for (const A of jeZweig.values()) for (const id of A) if (F.has(id)) anspruch.add(id);
-        process.stderr.write("Front der Karte 2: " + F.size + " Sprossen (" + hinter + " dahinter) · von der Liste " + vor + " → " + ids.length + "\n");
+        for (const [st, sids] of traegt) if (sids.some((sid) => anspruch.has(sid))) anspruch.add(st);
+        process.stderr.write("Front der Karte 2: " + F.size + " Sprossen (" + hinter + " dahinter" + (traegt.size ? ", " + traegt.size + " bestehende Stationen: " + [...traegt.keys()].slice(0, 6).join(" ") : "") + ") · von der Liste " + vor + " → " + ids.length + "\n");
     } else for (const A of jeZweig.values()) for (const id of A) anspruch.add(id);
     const SCHWANZ = { K5: /Leser fehlt/, K6: /Umfang nicht erzeugbar/ };
     // DER WIDERSPRUCH DER GERÄTE (24.11.; Befund an der Front am 1feab29c: erleben.sinne.signale#1 und same.physik.tragen#1 standen
@@ -510,39 +589,24 @@ if (was === "lies") {
     console.log(teile.map((t) => t.join(",")).join(";"));
 } else if (was === "offen") {
     const [dir, ref, g, kopf, l] = arg;
-    // ref „-“: die Mess-Datei im Arbeitsbaum (kandidat.sh nach einer gefallenen Sitzung: was sie fertig maß, steht dort; an der OMEN
-    // stellt pm-stand.cjs den Baum je Takt des Dienstes und zu Beginn jeder Sitzung auf origin/punkte-maschine)
-    const lade = (gg) => {
-        const rel = MDIR + "/" + k8(kopf) + "-" + gg + ".json";
-        try { return JSON.parse((ref === "-" ? (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })() : zeigIn(dir)(ref, rel)) || "null"); } catch { return null; }
-    };
-    const m = lade(g) || {};
-    // DIE GETEILTE FRONT (Koordinator 22.11.): mit --anders <geraet2> ist eine Station nur offen, wenn das andere Gerät sie am SELBEN Kopf
-    // nicht URTEILTE — GRÜN oder ROT in der Lesart von urteil() (kein UNGEMESSEN, kein Start-Fehler, kein jüngeres UNGEMESSEN darüber).
-    // JEDE STATION EINMAL (Koordinator 23.11., Schöpfer: „wir messen soviel wie nötig, nicht wie möglich“; die Buchung hebt seit 18.11.
-    // mit EINEM Gerät, buche-2 Z7 — das GRÜN des zweiten war ein Paar, das keine Sprosse hebt): bis heute übersprang nur ROT, das zweite
-    // Gerät maß jedes GRÜN des ersten nach. UNGEMESSEN überspringt nie (die zweite Chance am anderen Gerät); fehlt seine Mess-Datei,
-    // überspringt nichts. Seine Datei liest offen am selben Ort wie die eigene (ref oder Baum) — kein eigener Netz-Gang.
-    const ANDERS = opt("anders"), ma = ANDERS ? lade(ANDERS) : null;
-    const urteilAnders = (s) => !!ma && /^(GRUEN|ROT)$/.test(urteil(ma, s) || "");
-    const ids = liste(String(l || "").replace("|", ","));
-    // DIE NACHWACHE-SCHULD (Koordinator 24.11. 19:40; Runde 24 an der Radeon: jahreslauf#2 und kraft#2 — Radeon ROT am c445936d, GTX
-    // GRÜN am a8dd22b5 und danach nie ROT; die Karte hält das ROT der Radeon, bis die Radeon selbst GRÜN urteilt, und `offen --anders`
-    // strich die Station aus ihrer Liste, sobald die GTX sie am Kopf urteilte — die Sprosse buchte nie): urteilt das andere Gerät am
-    // Kopf GRÜN und ist das jüngste Urteil von g über alle Köpfe ROT (rotZuletzt, dieselbe Lesart wie die Reihe), fällt die Station
-    // nicht — sie steht VORN in der Liste, die g fährt. Das GRÜN am Kopf IST das Urteil über den jüngeren Code (nie eine Uhr-Frage: eine
-    // nachgelieferte alte Akte trägt eine spätere Zeit). Gelesen nur, wenn das andere am Kopf GRÜN urteilte: die Mess-Dateien von g im
-    // Ordner (alle Köpfe) und die am Kopf
-    const gruenAnders = ANDERS ? ids.filter((s) => !hatEintrag(m, s) && urteil(ma, s) === "GRUEN") : [];
-    const J = gruenAnders.length && !NACHWACHE_AUS ? juengstIn(path.join(dir, MDIR), new Set(gruenAnders), g, [[g, m]], [g]).juengst : null;
-    const schuld = (s) => !!J && urteil(ma, s) === "GRUEN" && rotZuletzt(J, g, s);
-    const offen = ids.filter((s) => !hatEintrag(m, s) && (!urteilAnders(s) || schuld(s)));
-    const vorn = offen.filter(schuld);
-    const ueber = ids.filter((s) => !hatEintrag(m, s) && urteilAnders(s) && !schuld(s)).length;
-    process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length +
-        (ANDERS ? " · übersprungen, geurteilt auf " + ANDERS + " am Kopf: " + ueber + (ma ? "" : " (ohne dessen Mess-Datei)") : "") +
-        (vorn.length ? " · Nachwache-Schuld vorn (eigenes ROT, GRÜN von " + ANDERS + " danach): " + vorn.join(",") : "") + "\n");
-    console.log([...vorn, ...offen.filter((s) => !schuld(s))].join(","));
+    const ANDERS = opt("anders"), L = listeAmKopf(dir, ref, g, kopf, l, ANDERS), ids = L.ids;
+    // DIE NACHWACHE-SCHULD steht VORN in der Liste, die g fährt (listeAmKopf: sie ist nicht erledigt, auch wenn das andere GRÜN urteilte)
+    const vorn = ids.filter((s) => !L.erledigt(s) && L.schuld(s));
+    const ueber = ids.filter((s) => !hatEintrag(L.m, s) && L.urteilAnders(s) && !L.schuld(s)).length;
+    process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(L.m, s)).length) + " von " + ids.length +
+        (ANDERS ? " · übersprungen, geurteilt auf " + ANDERS + " am Kopf: " + ueber + (L.ma ? "" : " (ohne dessen Mess-Datei)") : "") +
+        (vorn.length ? " · Nachwache-Schuld vorn (eigenes ROT, GRÜN von " + ANDERS + " am Kopf): " + vorn.join(",") : "") + "\n");
+    console.log([...vorn, ...ids.filter((s) => !L.erledigt(s) && !L.schuld(s))].join(","));
+} else if (was === "zaehle") {
+    // DER EINE ZÄHLER (ko-zaehler): „<erledigt> <urteile> <ungemessen> <gesamt>“ der Liste am Kopf — erledigt ist, was `offen` nicht mehr
+    // nennt (listeAmKopf, dieselbe Regel), ein Urteil GRÜN oder ROT, das eigene oder das des anderen Geräts; erledigt + offen = gesamt.
+    // Trägt die Liste keine Station: Exit 6 beim Namen (der Dienst meldet ROT — nie eine Zahl von Zeilen als Ersatz)
+    const [dir, ref, g, kopf, l] = arg;
+    const L = listeAmKopf(dir, ref, g, kopf, l, opt("anders"));
+    if (!L.ids.length) { console.error("zaehle: die Liste trägt keine Station („" + String(l || "").slice(0, 80) + "“) — kein Zähler"); process.exit(6); }
+    const z = { erledigt: 0, urteile: 0, ungemessen: 0 };
+    for (const s of L.ids) if (L.erledigt(s)) (z.erledigt++, L.urteilt(s) ? z.urteile++ : z.ungemessen++);
+    console.log([z.erledigt, z.urteile, z.ungemessen, L.ids.length].join(" "));
 } else if (was === "faelle") {
     const [repo, g, vorher, kopf, l] = arg;
     const git = gitIn(repo), zeig = zeigIn(repo);
@@ -728,10 +792,53 @@ if (was === "lies") {
         return { vorn: liste(vorn), schwanz: liste(schwanz) };
     };
     const jetztR = reihe({ RUNDE_MUTANTE: "" }), mut = reihe({ RUNDE_MUTANTE: "widerspruch-aus" });
-    fs.rmSync(tmp, { recursive: true, force: true });
     const ok = jetztR.vorn.join(",") === "w.a#1" && jetztR.schwanz.length === 3 && mut.vorn.length === 0 && mut.schwanz.includes("w.a#1");
     console.log((ok ? "GRÜN" : "ROT") + " WIDERSPRUCH DER GERÄTE: vorn " + (jetztR.vorn.join(",") || "-") + " · Schwanz " + (jetztR.schwanz.join(",") || "-") +
         " · Mutante ohne die Regel: vorn " + (mut.vorn.join(",") || "-") + " · Schwanz " + (mut.schwanz.join(",") || "-"));
+    // DIE STATION DER SPROSSE: die Front x.erdbau#1 urteilt die bestehende gelaende.K2#1 (Tafel), x.erdbau#2 liegt hinter der Front,
+    // andere.K1#1 trägt keine Sprosse — vorn steht gelaende.K2#1 (beansprucht: K1, wie ihre Sprosse); die Mutante ohne Tafel
+    // (RUNDE_MUTANTE=tafel-aus) filtert sie heraus, wie bis zum 24.11.
+    const karte = path.join(tmp, "karte.json"), tafel = path.join(tmp, "tafel.json"), ansp = path.join(tmp, "anspruch.txt");
+    fs.writeFileSync(karte, JSON.stringify({ gruppen: [{ kriterien: [{ id: "x.erdbau", heute: 0, sprossen: [{ nr: 1 }, { nr: 2 }] }, { id: "x.fluid", heute: 0, sprossen: [{ nr: 1 }] }] }] }));
+    fs.writeFileSync(tafel, JSON.stringify({ zeilen: [{ station: "gelaende.K2#1", leiter: "x.erdbau", sprosse: 1, richter: "gleich" }, { station: "gelaende.K2#1", leiter: "x.fluid", sprosse: 1, richter: "gleich" },
+        { station: "karte2.x.erdbau#2", leiter: "x.erdbau", sprosse: 2, richter: "gleich" }] }));
+    fs.writeFileSync(ansp, "w28-graben karte2.x.fluid#1\n");
+    const front = (env) => {
+        const r = cp.spawnSync(process.execPath, [__filename, "reihe", tmp, "gtx", "andere.K1#1,karte2.x.erdbau#2,gelaende.K2#1", "--karte", karte, "--tafel", tafel, "--anspruch", ansp], { encoding: "utf8", env: { ...process.env, ...env }, windowsHide: true });
+        const [vorn, schwanz] = String(r.stdout || "").trim().split("|");
+        return { vorn: liste(vorn), schwanz: liste(schwanz), err: String(r.stderr || "") };
+    };
+    const fJ = front({ RUNDE_MUTANTE: "" }), fM = front({ RUNDE_MUTANTE: "tafel-aus" });
+    const okF = fJ.vorn.join(",") === "gelaende.K2#1" && !fJ.schwanz.length && /K1 1 /.test(fJ.err) && !fM.vorn.length && !fM.schwanz.length;
+    console.log((okF ? "GRÜN" : "ROT") + " DIE STATION DER SPROSSE: vorn " + (fJ.vorn.join(",") || "-") + " (" + (/Reihe gtx: [^\n]*/.exec(fJ.err) || [""])[0] + ") · Mutante ohne Tafel: vorn " + (fM.vorn.join(",") || "-"));
+    // DER EINE ZÄHLER (ko-zaehler): z.a GRÜN · z.b ROT · z.c UNGEMESSEN mit offen 3 (steht beim Grund) · z.d UNGEMESSEN mit offen 1 (fährt
+    // nach, nie erledigt) · z.e ohne Eintrag · z.f von der GTX GRÜN geurteilt (--anders: erledigt, ein Urteil) → zaehle „4 3 1 6“, und
+    // offen nennt genau den Rest (z.d, z.e): erledigt + offen = gesamt. Die Zeile: --zaehlung „4 3 1 6“ schreibt laeuft 4/6; erledigt über
+    // gesamt („374 13 361 79“, Radeon Runde 23), Urteile + Ungemessene ≠ erledigt, --erledigt 5 und eine andere Liste (gesamt 7 an einer
+    // Zeile mit 6) sind Exit 6, die Zeile bleibt 4/6; durch nennt die Urteile und die Ungemessenen getrennt.
+    const T = "2026-11-24T10:00:00Z", LZ = "z.a#1,z.b#1,z.c#1|z.d#1,z.e#1,z.f#1";
+    fs.mkdirSync(path.join(tmp, MDIR), { recursive: true });
+    fs.writeFileSync(path.join(tmp, MDIR, "cccccccc-radeon.json"), JSON.stringify({ je: { "z.a#1": e(true, T), "z.b#1": e(false, T) },
+        ungemessen: { "z.c#1": { zeit: T, offen: 3, grund: "x — offen, UNGEMESSEN" }, "z.d#1": { zeit: T, offen: 1, grund: "x — offen, UNGEMESSEN" } } }));
+    fs.writeFileSync(path.join(tmp, MDIR, "cccccccc-gtx.json"), JSON.stringify({ je: { "z.f#1": e(true, T) } }));
+    const ruf = (...a) => cp.spawnSync(process.execPath, [__filename, ...a], { encoding: "utf8", windowsHide: true, env: { ...process.env, RUNDE_MUTANTE: "" } });
+    const zr = ruf("zaehle", tmp, "-", "radeon", "cccccccc", LZ, "--anders", "gtx"), orf = ruf("offen", tmp, "-", "radeon", "cccccccc", LZ, "--anders", "gtx");
+    const ur = path.join(tmp, "ur.git"), kl = path.join(tmp, "kl"), K40 = "c".repeat(40);
+    const g0 = (cwd, ...a) => cp.execFileSync("git", a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...WER } });
+    g0(tmp, "init", "-q", "--bare", ur);
+    g0(tmp, "init", "-q", "-b", ZWEIG, kl);
+    fs.mkdirSync(path.join(kl, path.dirname(DATEI)), { recursive: true });
+    fs.writeFileSync(path.join(kl, DATEI), text({ runde: { n: 1, kopf: K40, start: T, vorher: "-" }, g: { radeon: { ...leer(T), zustand: "laeuft", gesamt: 6, liste: LZ } }, notizen: [] }));
+    g0(kl, "add", "-A"), g0(kl, "commit", "-qm", "runde"), g0(kl, "remote", "add", "origin", ur), g0(kl, "push", "-q", "origin", ZWEIG);
+    const zeile = () => (g0(kl, "fetch", "-q", "origin"), lies(g0(kl, "show", "origin/" + ZWEIG + ":" + DATEI)).g.radeon || {});
+    const s1 = ruf("stand", kl, "radeon", K40, "laeuft", "--zaehlung", "4 3 1 6"), z1 = zeile();
+    const rot = [["374 13 361 79"], ["4 2 1 6"], null, ["4 3 1 7"]].map((zz) => ruf("stand", kl, "radeon", K40, "laeuft", ...(zz ? ["--zaehlung", zz[0]] : ["--erledigt", "5"])));
+    const z2 = zeile(), d1 = ruf("durch", kl, "radeon", K40, "-", "--zaehlung", "4 3 1 6"), z3 = zeile();
+    const okZ = String(zr.stdout).trim() === "4 3 1 6" && String(orf.stdout).trim() === "z.d#1,z.e#1" && s1.status === 0 && z1.erledigt === 4 && z1.gesamt === 6 &&
+        rot.every((x) => x.status === 6 && /ZÄHLER ROT/.test(x.stdout)) && z2.erledigt === 4 && z2.zustand === "laeuft" &&
+        d1.status === 0 && /durch am cccccccc: 4\/6 — 3 Urteile · 1 ungemessen/.test(d1.stdout) && z3.zustand === "durch" && z3.erledigt === 4;
+    console.log((okZ ? "GRÜN" : "ROT") + " DER EINE ZÄHLER: zaehle „" + String(zr.stdout).trim() + "“ (Soll „4 3 1 6“) · offen „" + String(orf.stdout).trim() + "“ · Zeile " + z1.erledigt + "/" + z1.gesamt +
+        " · Exit " + rot.map((x) => x.status).join("/") + " (Soll 6/6/6/6), danach " + z2.erledigt + "/" + z2.gesamt + " · durch: " + String(d1.stdout).split("\n")[0] + " → " + z3.zustand + " " + z3.erledigt);
     // DIE NACHWACHE-SCHULD an einer Attrappe des Baums (Koordinator 24.11. 19:40; jahreslauf#2, kraft#2): am Kopf 33333333 urteilte die
     // GTX n.a#1 · n.d#1 · n.e#1 · n.f#1 GRÜN und n.c#1 ROT, n.b#1 nichts. Die Radeon: n.a#1 ROT am 11111111 (die Schuld) · n.c#1 ROT (das
     // ROT der GTX streicht) · n.d#1 GRÜN (ihr GRÜN, nichts zu lösen) · n.e#1 ROT, danach GRÜN am 22222222 (gelöst) · n.f#1 ROT mit einer
@@ -745,10 +852,14 @@ if (was === "lies") {
     const offenS = (env) => String(cp.spawnSync(process.execPath, [__filename, "offen", tb, "-", "radeon", "3333333300000000000000000000000000000000", "n.b#1,n.c#1,n.d#1,n.e#1,n.a#1,n.f#1|", "--anders", "gtx"],
         { encoding: "utf8", env: { ...process.env, ...env }, windowsHide: true }).stdout || "").trim();
     const os1 = offenS({ RUNDE_MUTANTE: "" }), os2 = offenS({ RUNDE_MUTANTE: "nachwache-aus" });
+    // der EINE Zähler liest dieselbe Liste am Kopf: die Schuld ist nicht erledigt — „3 3 0 6“ (n.c · n.d · n.e), erledigt + offen = gesamt
+    const zs = String(cp.spawnSync(process.execPath, [__filename, "zaehle", tb, "-", "radeon", "3333333300000000000000000000000000000000", "n.b#1,n.c#1,n.d#1,n.e#1,n.a#1,n.f#1|", "--anders", "gtx"],
+        { encoding: "utf8", env: { ...process.env, RUNDE_MUTANTE: "" }, windowsHide: true }).stdout || "").trim();
     fs.rmSync(tb, { recursive: true, force: true });
-    const ok2 = os1 === "n.a#1,n.f#1,n.b#1" && os2 === "n.b#1";
-    console.log((ok2 ? "GRÜN" : "ROT") + " NACHWACHE-SCHULD: offen --anders gtx „" + os1 + "“ (Soll n.a#1,n.f#1,n.b#1 — die Schuld vorn) · Mutante ohne die Regel „" + os2 + "“ (Soll n.b#1)");
-    process.exit(ok && ok2 ? 0 : 1);
+    const ok2 = os1 === "n.a#1,n.f#1,n.b#1" && os2 === "n.b#1" && zs === "3 3 0 6";
+    console.log((ok2 ? "GRÜN" : "ROT") + " NACHWACHE-SCHULD: offen --anders gtx „" + os1 + "“ (Soll n.a#1,n.f#1,n.b#1 — die Schuld vorn) · Mutante ohne die Regel „" + os2 + "“ (Soll n.b#1) · zaehle „" + zs + "“ (Soll 3 3 0 6)");
+    fs.rmSync(tmp, { recursive: true, force: true });
+    process.exit(ok && okF && okZ && ok2 ? 0 : 1);
 } else {
     console.log("runde.cjs lies|anlegen|stand|durch|weiter|alarm|reihe|offen|faelle|paare|bestand|selbsttest — siehe Kopf der Datei");
     process.exit(2);
