@@ -31,6 +31,57 @@ const HIMMEL_AN = async (r, T, a) => {
     });
     return { abw: Math.max(0, ...grad), planeten: himmel.length, stufe: k.zeit.t, jahrTage: k.jahrTage };
 };
+// DER HIMMEL EINER SAAT AN EINER ADRESSE (planet.kosmos.ereignisse#1 · galaxien#1, das Gesetz des Fächers): a.saat die Saat des Kosmos
+// („kosmos-s<k>“, null die Heimat `_planetSamen`), a.zeit der Tag. Gerufen wird das Gesetz, das der Himmel liest (stamm/bild-himmel.js:335
+// `_kosmosJetzt`: welt-licht kosmos → kosmosHimmel → kosmosZeit) — nie die Szene. EREIGNIS_AN sucht im Kosmos und in seiner Zeit die
+// Ereignisse (Meteor, Strom, Radiant, Komet, Feuerball); fehlen sie, nennt es die Felder, die das Gesetz trägt
+const EREIGNIS_AN = async (r, T, a) => {
+    const WL = window.__weltLicht;
+    if (!WL || typeof WL.kosmos !== "function" || typeof WL.kosmosZeit !== "function") return { fehlt: "kein Kosmos-Gesetz (welt-licht kosmos, kosmosZeit)" };
+    const saat = a.saat == null ? r._planetSamen() : "kosmos-s" + a.saat, jahrTage = r._kosmosJetzt().jahrTage;
+    const K = WL.kosmos(saat, { jahrTage }), Z = WL.kosmosZeit(K, a.zeit);
+    const re = /meteor|schnuppe|strom|radiant|komet|comet|bolid|feuerball/i, aus = [];
+    const tief = (o, p, d) => {
+        if (!o || typeof o !== "object" || ArrayBuffer.isView(o) || Array.isArray(o) || o instanceof Map || d > 3) return;
+        for (const k of Object.keys(o)) if (k[0] !== "_") { if (re.test(k)) aus.push(p + k); tief(o[k], p + k + ".", d + 1); }
+    };
+    tief(Z, "zeit.", 0);
+    tief(K, "kosmos.", 0);
+    if (!aus.length) return { fehlt: "welt-licht.js:2020 kosmosZeit gibt " + Object.keys(Z).join("/") + ", welt-licht.js:1616 kosmos trägt " + Object.keys(K).filter((k) => k[0] !== "_").join("/") + " — kein Meteor, kein Strom, kein Radiant" };
+    return { saat, t: a.zeit, felder: aus, rate: null };
+};
+// GALAXIE_AN: der Himmel des bloßen Auges der Saat (welt-licht kosmosHimmel: die Richtungen der Sterne im Rahmen des Felds) — das Band
+// der Heim-Galaxie (der größte Anteil der Sterne in ±10° um einen von 400 Großkreisen, gleichverteilt ≈ 0,17) — und die Ziele außerhalb
+// der Heim-Galaxie, die das Gesetz trägt
+const GALAXIE_AN = async (r, T, a) => {
+    const WL = window.__weltLicht;
+    if (!WL || typeof WL.kosmos !== "function" || typeof WL.kosmosHimmel !== "function") return { fehlt: "kein Kosmos-Gesetz (welt-licht kosmos, kosmosHimmel)" };
+    const saat = a.saat == null ? r._planetSamen() : "kosmos-s" + a.saat, jahrTage = r._kosmosJetzt().jahrTage;
+    const K = WL.kosmos(saat, { jahrTage }), Hm = WL.kosmosHimmel(K), d = Hm.richtung, n = Hm.n, s10 = Math.sin((10 * Math.PI) / 180);
+    let band = 0;
+    for (let k = 0; k < 400; k++) {
+        const zc = 1 - (2 * (k + 0.5)) / 400, rr = Math.sqrt(1 - zc * zc), ph = k * 2.399963, p0 = rr * Math.cos(ph), p2 = rr * Math.sin(ph);
+        let c = 0;
+        for (let i = 0; i < n; i++) if (Math.abs(d[3 * i] * p0 + d[3 * i + 1] * zc + d[3 * i + 2] * p2) <= s10) c++;
+        if (n && c / n > band) band = c / n;
+    }
+    const ziele = Object.keys(K).filter((k) => /nachbar|galaxien|gruppe|haufen|andromeda|netz/i.test(k));
+    return { saat, band: Math.round(band * 1000) / 1000, sterne: n, ziele: ziele.length, galaxieN: K.galaxie ? K.galaxie.N : null, felder: Object.keys(K).filter((k) => k[0] !== "_").join("/") };
+};
+// BAUART_AN (planet.kosmos.kunstwelten#1): das Gesetz einer Welt des Ultiversums (a.ort, „heim“ die geladene) in seiner Normalform
+// (stamm/speicher-welten.js:118 `_weltGesetz` — dieselbe, die Schwere, Himmel, Wetter, Gelände und Ort der Welt lesen) — trägt es eine
+// Bauart (Zylinder, Ring, Schale, Hohlwelt) oder eine Drehung, die einen Wurf um die Coriolis-Ablenkung führte?
+const BAUART_AN = async (r, T, a) => {
+    const A = r.constructor;
+    let G;
+    try {
+        G = a.ort === "heim" ? A._weltGesetz(r.state.worldMeta) : A._weltGesetz({ gesetz: A.ULTIVERSUM[a.ort] });
+    } catch (e) {
+        return { welt: a.ort, abgelehnt: String((e && e.message) || e).slice(0, 120) };
+    }
+    const felder = Object.keys(G), bau = felder.filter((k) => /bauart|zylinder|ring|schale|hohl|dreh|rotation|omega/i.test(k));
+    return { welt: a.ort, felder: felder.join("/"), bau: bau.length, schwere: G.schwere, schwereArt: typeof G.schwere };
+};
 const LEITERN = [];
 
 // ═══════════════════════════════════════ Perspektive kosmos ═══════════════════════════════════════
@@ -637,6 +688,7 @@ const LEITERN = [];
                     umfang: { verlangt: 1000, einheit: "Welten", wortlaut: "1 000 Welten: Meteorrate gegen Kleinkörper-Dichte Rang ≥ 0,8", feld: "richter" },
                 },
             },
+            seite: { FAECHER, EREIGNIS_AN },
             lauf: async function ereignisseLauf(H, P, L) {
                 const z = await L.ev(
                     `const st = r.state, je = {};
@@ -649,7 +701,22 @@ const LEITERN = [];
                 );
                 L.zeile("Ereignisse der Sitzung: " + JSON.stringify(z));
                 const himmel = "die Szene trägt " + z.ereignisse + " Ereignis-Körper (" + (z.namen.join(", ") || "keinen") + "); der Himmel zeichnet Rayleigh, Mie und Wolken (welt-licht.js:989 himmelSicht)";
-                await L.je(1, async () => L.umfang(1, z.ereignisse, himmel + " — kein Meteor je Stunde"));
+                // S1 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Saaten des Kosmos und die Heimat × 12 Tage des Jahrs — das Gesetz des Himmels
+                // (welt-licht kosmos · kosmosZeit, gelesen von stamm/bild-himmel.js:335 _kosmosJetzt) trägt Ereignisse oder nennt, was fehlt
+                await L.je(1, async () => {
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.EREIGNIS_AN, export: "welt-licht.js:1616 kosmos · welt-licht.js:2020 kosmosZeit", leser: "stamm/bild-himmel.js:335 _kosmosJetzt" },
+                        adressen: { saaten: Array.from({ length: 20 }, (_, i) => i), zeiten: Array.from({ length: 12 }, (_, i) => i * 30 + 0.95), dazu: [{ saat: null, ort: null, zeit: 0.95 }] },
+                        ms: Math.max(3000, Math.min(8000, Math.floor((L.rest() - 8) * 1000))),
+                        masse: { adressen: { wie: "anzahl", feld: "t" }, felder: { wie: (v) => new Set([].concat(...v)).size, feld: "felder" }, rate: { wie: "max", feld: "rate" } },
+                        schlecht: { feld: "t", richtung: "min" },
+                        pose: (a) => "Ego an der Mess-Wiese, Nacht am Tag " + a.zeit + ", Blick in den Zenit (Saat " + (a.saat == null ? "der Welt" : "kosmos-s" + a.saat) + ")",
+                        ungemessen: ["die Spurlängen im Bild gegen die Meteor-Kamera-Netze (am Gerät)"],
+                    });
+                    L.zeile("Ereignisse S1: " + R.akte.slice(0, 400));
+                    if (R.fehlt || !R.gemessen) return L.leser(1, (R.fehlt || "kein Wert des Gesetzes") + " · " + R.akte, 0);
+                    L.gemessen(1, { rate_je_h_min: R.werte.rate, rate_je_h_max: R.werte.rate, spur_abw_pct: null }, { erzeugt: R.werte.rate, welt: { gezaehlt: R.werte.felder }, taeter: "welt-licht.js:2020 kosmosZeit (Felder ohne Rate) · " + R.akte });
+                });
                 await L.je(2, async () => L.umfang(2, z.ereignisse, himmel + " — kein Strom, kein Radiant"));
                 await L.je(3, async () => L.leser(3, "Umfang nicht erzeugbar (der Umfang „periodische Kometen“ trägt keine Zahl): " + himmel + " — kein Körper mit Bahnperiode"));
                 await L.je(4, async () => L.leser(4, "Umfang nicht erzeugbar (der Umfang „Polarlicht aus Sonne × Feld“ trägt keine Zahl): " + himmel + " — kein Magnetfeld, keine Emission bei 557,7 nm"));
@@ -793,6 +860,7 @@ const LEITERN = [];
                     umfang: { verlangt: 1000, einheit: "gebaute Welten", wortlaut: "10³ gebaute Welten aus Saaten, jede von einer anderen Zivilisation", feld: "umfang" },
                 },
             },
+            seite: { FAECHER, BAUART_AN },
             lauf: async function kunstweltenLauf(H, P, L) {
                 const z = await L.ev(
                     `const A = r.constructor, U = A.ULTIVERSUM, bau = [];
@@ -811,7 +879,22 @@ const LEITERN = [];
                         if (z.bau.length) return L.leser(nr, "eine Welt trägt eine Bauart (" + z.bau.join(", ") + "), kein Leser nennt ihre Größe in km (stamm/speicher-welten.js:88)");
                         L.umfang(nr, z.bau.length, "0 km " + art + ": " + was);
                     });
-                await stufe(1, "Drehzylinder");
+                // S1 ÜBER DEN FÄCHER: das Gesetz jeder Welt des Ultiversums und der geladenen in der Normalform, die die Welt liest — eine
+                // Bauart oder eine Drehung, die den Wurf ablenkte, oder beim Namen, was das Gesetz trägt
+                await L.je(1, async () => {
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.BAUART_AN, export: "stamm/speicher-welten.js:118 _weltGesetz (die Normalform)", leser: "stamm/koerper-bewegung.js:922 leibFall (schwere) · stamm/gelaende-boden.js:855 (ort)" },
+                        adressen: { orte: z.welten, dazu: [{ saat: null, ort: "heim", zeit: null }] },
+                        ms: 3000,
+                        masse: { welten: { wie: "anzahl", feld: "welt" }, bau: { wie: "summe", feld: "bau" }, felder: { wie: "verschieden", feld: "felder" }, skalar: { wie: "anzahl", feld: "welt", nur: (a, w) => w.schwereArt === "number" }, abgelehnt: { wie: "anzahl", feld: "abgelehnt", nur: (a, w) => !!w.abgelehnt } },
+                        schlecht: { feld: "bau", richtung: "min" },
+                        pose: (a) => "Ego an der Mess-Wiese der Welt " + a.ort + ", Wurf nach Osten",
+                        ungemessen: ["der Wurf-Versuch selbst (die Bahn eines Körpers unter Drehung): ohne Drehung im Gesetz ist die Ablenkung 0"],
+                    });
+                    L.zeile("Kunstwelten S1: " + R.akte.slice(0, 400));
+                    if (R.werte.bau > 0) return L.leser(1, "eine Welt trägt eine Bauart, kein Leser nennt ihre Größe in km und ihre Drehung (stamm/speicher-welten.js:118) · " + R.akte, 0);
+                    L.leser(1, "stamm/speicher-welten.js:118 _weltGesetz trägt in " + R.werte.welten + " Welten nur " + (R.je[0] ? R.je[0].w.felder : "?") + " — keine Bauart, keine Drehung: die Schwere ist ein Betrag längs −y (" + R.werte.skalar + " von " + R.werte.welten + "), 0 km Drehzylinder, kein Wurf weicht um Coriolis ab · " + R.akte, 0);
+                });
                 await stufe(2, "Hohlwelt oder Zylinder");
                 await stufe(3, "Ringwelt");
                 await L.je(4, async () => L.leser(4, "Umfang nicht erzeugbar (der Umfang „Schale um einen Stern, Scheibe, Schwarm“ trägt keine Zahl): " + was));
@@ -863,7 +946,26 @@ const LEITERN = [];
                 },
                 7: { auge: { pose: "Halt +5 Ga, Blick zur Nachbargalaxie", vorbild: "Rechen-Referenz der Verschmelzung Milchstraße–Andromeda" } },
             },
+            seite: { FAECHER, GALAXIE_AN },
             lauf: async function galaxienLauf(H, P, L) {
+                // S1 ÜBER DEN FÄCHER: der Himmel jeder Saat des Kosmos (welt-licht kosmosHimmel, das Gesetz hinter dem Sternfeld) — das Band
+                // der Heim-Galaxie und die Ziele außerhalb ihrer, die das Gesetz trägt
+                await L.je(1, async () => {
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.GALAXIE_AN, export: "welt-licht.js:1616 kosmos · welt-licht.js:1929 kosmosHimmel", leser: "stamm/bild-himmel.js:335 _kosmosJetzt (das Sternfeld stamm/bild-himmel.js:453)" },
+                        adressen: { saaten: Array.from({ length: 12 }, (_, i) => i), dazu: [{ saat: null, ort: null, zeit: null }] },
+                        ms: Math.max(3000, Math.min(10000, Math.floor((L.rest() - 8) * 1000))),
+                        masse: { saaten: { wie: "anzahl", feld: "saat" }, bandMin: { wie: "min", feld: "band" }, bandMax: { wie: "max", feld: "band" }, ziele: { wie: "summe", feld: "ziele" }, sterne: { wie: "min", feld: "sterne" }, felder: { wie: "erste", feld: "felder" } },
+                        schlecht: { feld: "band", richtung: "min" },
+                        pose: (a) => "Nacht an der Mess-Wiese, Blick auf das Band der Heim-Galaxie (Saat " + (a.saat == null ? "der Welt" : "kosmos-s" + a.saat) + ")",
+                        ungemessen: ["das Bildpaar Anflug gegen die Teleskop-Aufnahme (2AFC, am Gerät)"],
+                    });
+                    L.zeile("Galaxien S1: " + R.akte.slice(0, 400));
+                    if (R.fehlt || !R.gemessen) return L.leser(1, (R.fehlt || "kein Wert des Gesetzes") + " · " + R.akte, 0);
+                    if (!(R.werte.ziele > 0))
+                        return L.leser(1, "welt-licht.js:1616 kosmos trägt EINE Galaxie (" + R.werte.felder + ") — keine Nachbargalaxie, kein Ziel außerhalb der Heim-Scheibe; das Band der Heimat " + R.werte.bandMin + "–" + R.werte.bandMax + " über " + R.werte.saaten + " Saaten (gleichverteilt ≈ 0,17) · " + R.akte, 0);
+                    L.leser(1, "das Gesetz trägt " + R.werte.ziele + " Ziele, kein Leser fliegt hin und misst die Heimat am Himmel (stamm/bild-himmel.js:335) · " + R.akte, R.werte.ziele);
+                });
                 const z = await L.ev(
                     `const st = r.state, sf = st.starField;
                     let galax = 0;
@@ -895,7 +997,6 @@ const LEITERN = [];
                 if (z.band === null) throw new Error("das Sternfeld ist nicht gebaut (state.starField null, stamm/bild-himmel.js:471)");
                 const galaxien = z.galax > 0 || z.band >= 0.3 ? 1 : 0;
                 const was = "die Welt zeigt " + galaxien + " Galaxien: " + z.galax + " Galaxien-Körper in der Szene, das Sternfeld (" + z.n + " Punkte) ohne Band (höchstens " + z.band + " in ±10° um einen Großkreis, gleichverteilt ≈ 0,17)";
-                await L.je(1, async () => L.leser(1, "Umfang nicht erzeugbar (der Umfang „EINE Nachbargalaxie als Ziel“ trägt keine Zahl, die die Wand liest): " + was + " — kein Ziel außerhalb der Welt"));
                 await L.je(2, async () => L.umfang(2, galaxien, was));
                 await L.je(3, async () => L.umfang(3, galaxien, was));
                 await L.je(4, async () => L.umfang(4, galaxien, was));
