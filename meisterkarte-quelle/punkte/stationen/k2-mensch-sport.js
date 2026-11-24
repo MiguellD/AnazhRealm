@@ -740,14 +740,8 @@ const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js
 const { STADT } = require("./k2-mensch-geist.js");
 // DAS SPIEL DES ABENDS an der Stadt des Messorts stadt-voll (die Seite SPIEL mit der STADT): die Uhr 18,55 Uhr — im dritten Lauf
 // des Programms vor dem Start, der Punkt des Geschehens an der Linie am Ende des Felds —, 15 Takte, bis zu 40 Tage des Programms
-// (die Messe fährt in ihrem EIGENEN Prozess: sie kennt keine Konstante dieser Datei — Lauf und Zeile reisen als Seite SPIELWELT ·
-// SPIELZEILE, das Argument steht in ihr; bis hier brach jede der vier Stationen mit „ReferenceError: spielWelt is not defined“)
-async function SPIELWELT(H, K) {
-    return K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify({ uhr: 18.55, takte: 15, tage: 40 }) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
-}
-function SPIELZEILE(sp) {
-    return "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"); // prettier-ignore
-}
+// (Heilung 24.11.): der Ruf des Spiels und seine Zeile stehen IN jeder messe — messe reist als Text und sieht nichts aus dem Modul
+// (k2-mensch.js:17); die Modul-Helfer warfen an der echten Station „ReferenceError: spielWelt is not defined“ (GTX, Kopf 26f27214)
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 const mutante = (id, n, name, werte, zahl, umfang) => [{ name, j: { leiter: id, adapter: KARTE, sprossen: { [n]: { art: "zahl", n: umfang, werte } } }, gruen: false, zahl }];
 
@@ -756,13 +750,14 @@ module.exports = (F) => [
     F.leiter("mensch.sport.regeln", {
         sek: 30,
         pfad: PFAD,
-        seite: { SPORT, STADT, SPIEL, SPIELWELT, SPIELZEILE },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             // DER LAUF (koerper SPIEL_GESETZ, der Wirt `_spielTag`): am Platz der vollen Stadt — am Genesis-Ort wohnt niemand
             await K.messort("stadt-voll");
-            const sp = await H.seite.SPIELWELT(H, K);
-            H.zeile(H.seite.SPIELZEILE(sp));
-            await K.schritt(1, async () => (sp.laeufe ? K.zahl(1, { n: sp.laeufe, werte: { rho: sp.rho } }) : K.leser(1, { n: 0, fehlt: "kein Wettkampf-Akt im Tages-Gesetz: kein Lauf, kein Wurf, kein Sieger (" + H.seite.SPIELZEILE(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
+            const sp = await K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify({ uhr: 18.55, takte: 15, tage: 40 }) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
+            const spZ = ((sp) => "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"))(sp); // prettier-ignore
+            H.zeile(spZ);
+            await K.schritt(1, async () => (sp.laeufe ? K.zahl(1, { n: sp.laeufe, werte: { rho: sp.rho } }) : K.leser(1, { n: 0, fehlt: "kein Wettkampf-Akt im Tages-Gesetz: kein Lauf, kein Wurf, kein Sieger (" + spZ + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
             H.zeile("Sport am Genesis-Ort: " + z.n + " Bewohner · Akte jetzt " + JSON.stringify(z.akte) + " · um 15 Uhr " + JSON.stringify(z.akteN) + " · Sport-Akte " + z.sport + "/" + z.sportN + " · Arena " + JSON.stringify(z.arena) + " · Geräte " + z.geraete);
@@ -961,13 +956,14 @@ module.exports = (F) => [
     F.leiter("mensch.sport.mannschaft", {
         sek: 30,
         pfad: [...PFAD, "stamm/kampf.js"],
-        seite: { SPORT, STADT, SPIEL, SPIELWELT, SPIELZEILE },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             // DER ZWEIKAMPF (koerper `spielKampf`: Angriff, Finte, Abwehr; der Wirt `_spielTag`): am Platz der vollen Stadt
             await K.messort("stadt-voll");
-            const sp = await H.seite.SPIELWELT(H, K);
-            H.zeile(H.seite.SPIELZEILE(sp));
-            await K.schritt(1, async () => (sp.kaempfe ? K.zahl(1, { n: sp.kaempfe, werte: { sieg: sp.sieg } }) : K.leser(1, { n: 0, fehlt: "kein Kampf 1 gegen 1 zweier Leiber (" + H.seite.SPIELZEILE(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
+            const sp = await K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify({ uhr: 18.55, takte: 15, tage: 40 }) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
+            const spZ = ((sp) => "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"))(sp); // prettier-ignore
+            H.zeile(spZ);
+            await K.schritt(1, async () => (sp.kaempfe ? K.zahl(1, { n: sp.kaempfe, werte: { sieg: sp.sieg } }) : K.leser(1, { n: 0, fehlt: "kein Kampf 1 gegen 1 zweier Leiber (" + spZ + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
             H.zeile("Mannschaft: " + z.n + " Bewohner · Sport-Akte " + z.sport + "/" + z.sportN + " · Arena " + JSON.stringify(z.arena));
@@ -1003,7 +999,7 @@ module.exports = (F) => [
     F.leiter("mensch.sport.arena", {
         sek: 45,
         pfad: PFAD,
-        seite: { SPORT, STADT, SPIEL, SPIELWELT, SPIELZEILE },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const s = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
@@ -1015,9 +1011,10 @@ module.exports = (F) => [
             });
             // DIE ZUSCHAUER AM FELD DES ORT-GESETZES (der Platz des Plans, der Wirt `_spielTag`, der Kopf `_bewohnerKopf`): an der vollen
             // Stadt — am Genesis-Ort wohnt niemand, seine Arena bleibt Fläche
-            const sp = await H.seite.SPIELWELT(H, K);
-            H.zeile(H.seite.SPIELZEILE(sp));
-            await K.schritt(1, async () => (sp.programm && sp.jetzt ? K.zahl(1, { n: sp.zuschauer, werte: { blick: sp.blick } }) : K.leser(1, { n: sp.zuschauer || 0, fehlt: "kein Geschehen auf dem Feld: die Arena bleibt Fläche, kein Spiel, kein Ball (" + H.seite.SPIELZEILE(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
+            const sp = await K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify({ uhr: 18.55, takte: 15, tage: 40 }) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
+            const spZ = ((sp) => "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"))(sp); // prettier-ignore
+            H.zeile(spZ);
+            await K.schritt(1, async () => (sp.programm && sp.jetzt ? K.zahl(1, { n: sp.zuschauer, werte: { blick: sp.blick } }) : K.leser(1, { n: sp.zuschauer || 0, fehlt: "kein Geschehen auf dem Feld: die Arena bleibt Fläche, kein Spiel, kein Ball (" + spZ + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Arena: " + JSON.stringify(z.arena) + " · Zuschauer " + z.zuschauer + " (Blick zur Mitte " + z.blickt + ") · Sport-Akte " + z.sport);
@@ -1087,16 +1084,17 @@ module.exports = (F) => [
     F.leiter("mensch.sport.geistspiel", {
         sek: 30,
         pfad: PFAD,
-        seite: { SPORT, STADT, SPIEL, SPIELWELT, SPIELZEILE },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Geist-Spiele: " + z.n + " Bewohner · im Akt treff " + z.treff + " · Sport-Akte " + z.sport);
             const tisch = "kein Brettspiel: Gasthaus und Platz bieten mahl und treff, keinen Tisch mit Brett (" + z.treff + " Bewohner im Akt treff)";
             // DAS BRETT AM RAND DES FELDS (koerper `spielBrett`, die Tische des Programms, der Wirt `_spielTag`)
-            const sp = await H.seite.SPIELWELT(H, K);
-            H.zeile(H.seite.SPIELZEILE(sp));
-            await K.schritt(1, async () => (sp.partien ? K.zahl(1, { n: sp.partien, werte: { regelwidrig: sp.regelwidrig } }) : K.leser(1, { n: z.treff, fehlt: tisch + " (" + H.seite.SPIELZEILE(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
+            const sp = await K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify({ uhr: 18.55, takte: 15, tage: 40 }) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
+            const spZ = ((sp) => "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"))(sp); // prettier-ignore
+            H.zeile(spZ);
+            await K.schritt(1, async () => (sp.partien ? K.zahl(1, { n: sp.partien, werte: { regelwidrig: sp.regelwidrig } }) : K.leser(1, { n: z.treff, fehlt: tisch + " (" + spZ + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
             await K.schritt(2, async () => K.leser(2, { n: z.treff, fehlt: "keine Spielstärke, keine Übung, kein Elo: " + tisch, wo: "koerper-core.js:5182" }));
             await K.schritt(3, async () => K.leser(3, { n: 0, fehlt: "keine Grammatik der Spiele: 0 historische Spiele", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine neuen Spiele aus der Saat", wo: "koerper-core.js:5126" }));
