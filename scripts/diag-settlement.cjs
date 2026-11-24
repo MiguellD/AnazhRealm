@@ -196,10 +196,34 @@ function jahresringe(FC, o = {}) {
 // (Stil `alt`) steht in der Heimat, am Mittelmeer-Ort nicht; R4: ohne Klima (das Labor) würfelt der Kern über alle sechs Regionen
 // (die Schwellen bis haus-gestalt; der Byte-Beweis des Labors steht im Commit). Mutante „der Kern liest das Klima nicht“ fällt in R1 beim Namen.
 const KLIMA_ORTE = {
-    heimat: { winter: -4, sommer: 18 },
-    mittelmeer: { winter: 10, sommer: 27 },
-    subpolar: { winter: -12, sommer: 14 },
+    heimat: { winter: -4, sommer: 18, spendeVerh: 1 },
+    mittelmeer: { winter: 10, sommer: 27, spendeVerh: 1 },
+    subpolar: { winter: -12, sommer: 14, spendeVerh: 1 },
 };
+// R5 (haus-stoff): DER SOCKEL FOLGT DEM WASSER DES ORTS — dasselbe Dorf (Saat 7, 18 Häuser, das Klima der Heimat) am trockenen
+// Ort (Spende 0), in der Heimat (1) und am nassen (2): jeder Bau trägt die Sockel-Höhe aus fachwerk `sockelImWasser` im Rezept
+// (`ov.foundH`), und seine Hülle (`ext.y1`, die Masse des Baus aus `massBau`) steigt vom trockenen zum nassen Ort um
+// genau den Unterschied der Sockel (Soll 0,50 m: 0,30 → 0,80). Die Mutante „der Sockel liest das Wasser nicht“ fällt in R5.
+const SOCKEL_SPENDEN = { trocken: 0, heimat: 1, nass: 2 };
+function sockelGang(FC) {
+    const je = {};
+    for (const [ort, v] of Object.entries(SOCKEL_SPENDEN)) {
+        const ex = FC.exportSettlement({ seed: 7, nH: 18, klima: { winter: -4, sommer: 18, spendeVerh: v } });
+        je[ort] = { region: ex.region, fh: ex.slots.map((q) => q.ov.foundH), y1: ex.slots.map((q) => q.ext.y1) };
+    }
+    const n = je.trocken.y1.length;
+    const hub = je.nass.y1.map((y, i) => +(y - je.trocken.y1[i]).toFixed(3));
+    const soll = +(FC.sockelImWasser({ spendeVerh: 2 }) - FC.sockelImWasser({ spendeVerh: 0 })).toFixed(3);
+    return { je, n, hub, soll, gleich: hub.filter((d) => Math.abs(d - soll) < 0.005).length };
+}
+function sockelUrteil(S, check) {
+    const fh = (o) => [...new Set(S.je[o].fh)].join("/");
+    check(
+        `R5 die Gegenprobe: der Sockel folgt dem Wasser — trocken ${fh("trocken")} m · Heimat ${fh("heimat")} m · nass ${fh("nass")} m, die Hülle steigt vom trockenen zum nassen Ort um ${S.soll} m an ${S.gleich} von ${S.n} Bauten`,
+        S.soll >= 0.4 && S.gleich === S.n && S.n > 0 && S.je.trocken.region === S.je.nass.region,
+        "Hub je Bau " + S.hub.join(",")
+    );
+}
 const KLIMA_SAATEN = Array.from({ length: 200 }, (_, i) => i + 1);
 function klimaGang(FC) {
     const je = {},
@@ -237,7 +261,7 @@ function klimaGang(FC) {
     // R4: ohne Klima (das Labor) würfelt der Kern über ALLE Regionen von REGION_KLIMA
     const labor = new Set(KLIMA_SAATEN.map((s) => FC.DORF({ seed: s, nH: 18 }).region));
     const r4 = FC.REGION_KLIMA.filter((q) => !labor.has(q.region)).map((q) => q.region);
-    return { je, aus, r4 };
+    return { je, aus, r4, sockel: sockelGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -258,12 +282,17 @@ function klimaUrteil(K, check) {
         h.neigung - m.neigung >= 10 && (h.stil.alt || 0) > 0 && !(m.stil.alt > 0)
     );
     check("R4 ohne Klima (das Labor) würfelt über alle sechs Regionen", !K.r4.length, K.r4.join(","));
+    if (K.sockel) sockelUrteil(K.sockel, check);
 }
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
     ],
+    "der Sockel liest das Wasser nicht": [
+        ["h = S.spritz + (S.heimat - S.spritz) * v;", "h = S.spritz + (S.heimat - S.spritz) * 1;"],
+    ],
 };
+const KLIMA_SOLL = { "der Kern liest das Klima nicht": "R1", "der Sockel liest das Wasser nicht": "R5" };
 
 
 // ===== TEIL T (mensch.wirtschaft.technik): DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN — je Saat 1 … 20 der Ort ihrer Epoche
@@ -1394,8 +1423,8 @@ hauptLauf(async () => {
                     (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220))
                 );
             check(
-                `Selbst-Test R: „${name}“ fällt in R1 beim Namen`,
-                rot.some((w) => w.startsWith("R1")),
+                `Selbst-Test R: „${name}“ fällt in ${KLIMA_SOLL[name]} beim Namen`,
+                rot.some((w) => w.startsWith(KLIMA_SOLL[name])),
                 m.fehlt || rot.join(" · ")
             );
         }

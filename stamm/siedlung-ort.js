@@ -1430,9 +1430,12 @@ class AnazhRealm_siedlung_ort {
     // DAS KLIMA DES ORTS für den Plan (haus-gestalt, fachwerk `REGION_KLIMA`): Winter- und Sommer-Mittel am Meer in °C aus dem
     // Ort-Gesetz der Welt (gelaende-core `ortGesetz(teil).klimaHeute`: die Heimat −4 / 18, am Ziel der Reise Heimat + Δ). Leser: der
     // Export (`_foundryRequestSettlement`) und die Massen der Stadt-Kacheln (`kachelMassen`) — die Region jedes Dorfs liegt im Klima.
+    // Dazu die Wasser-Spende relativ zur Heimat (haus-stoff, fachwerk `sockelImWasser`: `ortGesetz(teil).spendeVerh`, die Heimat 1):
+    // der Sockel jedes Baus steht über dem Spritzwasser des Orts.
     _siedlungKlima() {
-        const k = this._gelaende().ort.klimaHeute;
-        return { winter: k.winter, sommer: k.sommer };
+        const o = this._gelaende().ort,
+            k = o.klimaHeute;
+        return { winter: k.winter, sommer: k.sommer, spendeVerh: o.spendeVerh };
     }
     _autoSettlementCellInfo(cx, cz) {
         // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG); kaltes Buch → keine Zelle.

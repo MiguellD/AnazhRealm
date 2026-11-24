@@ -212,11 +212,11 @@
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
     modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.modern },   // glatt verputzt, flaches Dach
-    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
+    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben — der Sockel bleibt Stein (haus-stoff: das Holz steht nie im Spritzwasser, Marx 1891; das Foto Molfsee: Feldstein unter Reet)
     stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.stein },   // glatt verputzt (FR/IT), Ziegeldach bleibt
     glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.glas },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
     klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.klinker },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
-    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
+    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
@@ -5219,6 +5219,21 @@
         for (var j = 0; j < im.length; j++) { c += im[j].w / S; if (r < c) return im[j].region; }
         return im[im.length - 1].region;
     }
+    // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff): die Schwelle liegt über dem Spritzwasser — Marx 1891 (Handbuch der
+    // Architektur III.2.1, „Unterbaute Fachwerkwand“): der Sockel „gern 50 bis 60 cm“, die Bauordnungen je Land Mähren 0,5 m, Hessen
+    // ≥ 0,5 m, Böhmen ≥ 0,95 m; heute 0,30 m Spritzwasserzone (ÖNORM B 2320). Der Eingang ist die Wasser-Spende des Orts relativ zur
+    // Heimat (`spendeVerh`, gelaende-core `ortGesetz(teil)`: die Heimat 1, der Ort nach planet-core `abflussMm`): die Heimat trägt
+    // Marx' 0,55 m (die Konstante `foundH` bis hier), der trockene Ort sinkt auf die Spritzwasserzone, der nasse steigt bis zur
+    // böhmischen Ordnung. Linear im Wasser (Annahme: das Spritzwasser wächst mit der Menge, die an der Wand abläuft; die Form ist
+    // unbelegt, die drei Höhen sind es). Leser: DORF (je Bau `foundH`), gate:settlement Teil R (R5, die Gegenprobe nass ↔ trocken).
+    var SOCKEL_WASSER = { spritz: 0.3, heimat: 0.55, nass: 0.95 };
+    function sockelImWasser(klima) {
+        var v = klima && klima.spendeVerh;
+        if (!(isFinite(v) && v >= 0))
+            throw new Error("fachwerk sockelImWasser: das Klima des Orts trägt die Spende (spendeVerh) nicht als Zahl");
+        var S = SOCKEL_WASSER, h = S.spritz + (S.heimat - S.spritz) * v;
+        return Math.round(Math.min(S.nass, Math.max(S.spritz, h)) * 100) / 100;
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -5340,6 +5355,8 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
+  // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff, `sockelImWasser`): jeder Bau und jede seiner Fassungen trägt die Höhe aus der Spende des Orts — ohne Klima (das Labor) der Bau, wie er stand
+  if(DP.klima!=null){ const fh=sockelImWasser(DP.klima); alle.forEach((b,ai)=>{ b.foundH=fh; for(const f of za[ai].fr) f.v.foundH=fh; }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
@@ -14117,6 +14134,8 @@
         DORF: DORF,
         REGION_KLIMA: REGION_KLIMA, // die Bauweise folgt dem Klima (haus-gestalt): je Region das Band der Monats-Mittel; Leser: DORF, gate:settlement Teil R
         regionImKlima: regionImKlima,
+        SOCKEL_WASSER: SOCKEL_WASSER, // der Sockel folgt dem Wasser des Orts (haus-stoff): Spritzwasser 0,30 · Heimat 0,55 · Böhmen 0,95 m; Leser: DORF, gate:settlement R5
+        sockelImWasser: sockelImWasser,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         dorfLayout: dorfLayout,
