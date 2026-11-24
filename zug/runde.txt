@@ -11,6 +11,6 @@
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 14 kopf 447eaea65297f44ca4135f8c4009685fa949045f start 2026-11-24T03:41:15Z vorher 1feab29c69723a5982df4e4f0b064afc08d094cf
-gtx offen 0/0 station - fortschritt 2026-11-24T03:41:15Z alarm - liste -
+gtx offen 0/0 station - fortschritt 2026-11-24T03:41:15Z alarm 2026-11-24T03:57:49Z liste -
 radeon wartet 0/0 station - fortschritt 2026-11-24T03:41:15Z alarm - liste -
 notiz 2026-11-24T03:41:15Z Runde 13 am 1feab29c sprang auf 447eaea6 (gtx laeuft 51/246, radeon durch 55/55): Koordinator 24.11. 04:42: die Landungen z701–z703 (wetter-am-ort, front-stoff, front-leben) und die Stationen pm-beobachter und pm-front-stoff tragen Ansprüche, die an 1feab29c niemand misst; die GTX steht dort seit 02:45 bei 51/246 (Alarm seit 04:02)
