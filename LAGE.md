@@ -1,9 +1,23 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 12:47 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 13:35 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 13:35 (gilt VOR allem darunter): main **a8dd22b5** (V18.546.403) — z716 `w28-auge-der-art` gelandet 13:32 (sechste
+  Landung heute), Anspruch `karte2.erleben.sinne.gesehen#3` gebucht, Station gemischt (punkte-maschine 7437a5d0), RUNDE 22 am
+  a8dd22b5 seit 13:34. KARTE 2: 83 von 1 718 (Buchung 13:29).
+  DER RATSCHEN-COMMIT STEHT: **28240b1bff13e4f1b7eeb9039c15195fd8b1309c** (GTX 1050, auf `probe-deckel-einlass`, Vorprüf-Kopf
+  cf7deb94 in der Batterie — Stempel bei Grün, Satz `satz-probe-deckel-einlass.txt` um die Ratsche ergänzen). JEDER Zweig mit main ab
+  bf5a1542 pflückt genau diesen SHA, sonst fällt gate:pruefbuehne-licht an „S0 Boden-Programm 108011 Zeichen“. Mein eigener Zwilling
+  `licht-ratsche-zahl` 87ebf3db ist ZURÜCKGEZOGEN (Läufe abgebrochen, nie landen).
+  ZURÜCK AN DIE MACHER (beide Arbeiter laufen, je ein Baum): `fahrzeug-gattung` 86697613 — Bildpaar gut (Steg + Kahn am Dorf, main 0 →
+  3 Anleger), aber SECHS Linsen rot (Asset-Vertrag: boot/karren 1 von 8 Saaten verschieden · Regler: vehicle:L1 0,512 an boot · Fahr-Linse:
+  das Boot wird als Motorwagen geprüft · Settlement-Kanal C3 · Kreatur 1 · Mensch-Anatomie R4); Täter-Zeilen im Scratch `log/fg-rot.txt`.
+  `haus-stoff-heil` (Baum AnazhRealm-front-pl): die fünf Rots von haus-gestalt lokal nachgestellt, Ursache in Arbeit.
+  OMEN: Platte C: 17,0 → 24,7 GB (Bericht `bericht/2411-omen-platte.md`), pflückt den Ratschen-SHA auf ort-ausstattung (Vorprüfung 3)
+  und sport-regeln 3; danach `dienst-frist` (gpu-schloss.sh:20 und :64–66, platte-dienst.sh:27, start.sh:92) → scherbe-liegt
+  (DRUCK-SCHLAF fiel heute an zwei fremden Batterien als Wanduhr-Wackler). VERBRAUCH 13:12: 89 % alle Modelle, 84 % Fable.
 - NACHTRAG 12:50 (gilt VOR allem darunter): main **bf9be26c** (V18.546.402) — z715 `w28-spiegel-eis` gelandet 12:35, Anspruch
   `karte2.planet.wasser.eis#2` gebucht, Station gemischt (punkte-maschine 458d5f80), RUNDE 21 am bf9be26c seit 12:37. KARTE 2: 83 von 1 718.
   DER DECKEL, DER ALLES HÄLT: `gate:pruefbuehne-licht` fällt an jedem Kopf mit main ab z713 — „S0 Boden-Programm: 108011 Zeichen WGSL
