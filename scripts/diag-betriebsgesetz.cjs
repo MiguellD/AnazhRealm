@@ -200,7 +200,9 @@ function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "", ueber = 0
 //    nennt · e) ein Code-Kommentar, der auf eine .md zeigt, die es nicht gibt, oder den Monolithen außerhalb seiner Wache
 //    nennt (das Literal als Lese-Ziel wacht gate:altlasten, Stamm-Leser-Wand). Ein SATZ, der das Genannte als gefallen
 //    benennt (fiel · gefallen · tot), ist Chronik und bleibt legal — im Code die Zeile.
-const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9])/g;
+// der Name trägt seine Glieder (`gate:tag-achse:echt`): am Doppelpunkt abgeschnitten schwieg ein totes
+// `gate:x:nie` hinter dem lebenden `gate:x`
+const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9](?::[a-z0-9][a-z0-9-]*[a-z0-9])*)/g;
 const ZITAT_CHRONIK = /\b(fiel|fielen|gefallen|gefallene[nmrs]?|tot|tote[nmrs]?)\b/i;
 const ZITAT_PFAD = /(?<![\w.:/@-])((?:\.github|\.claude|[a-z][\w-]*)\/[\w./-]*)/g;
 const ZITAT_DATEI = /(?<![\w.:/@-])([A-Za-z][\w.-]*\.(?:js|cjs|mjs|md|html))(?![\w/-])/g;
@@ -592,7 +594,7 @@ function main() {
     const zWelt = zitatWelt(
         Object.keys(zTexte),
         (p) => zTexte[p],
-        new Set(["gate:tier-gang"]),
+        new Set(["gate:tier-gang", "gate:tier-gang:echt"]),
         () => false,
         stamm.ALT
     );
@@ -606,6 +608,7 @@ function main() {
         "- `stamm/NN[x].js` bei 30 km/h",
         "- **_fett** liegt in `archiv/x.md`",
         "- der Bericht (Zweig `koordination` `bericht/x.md`)",
+        "- der Richter `gate:tier-gang:echt`, nie `gate:tier-gang:nie`",
     ].join("\n");
     const zIst = zitatBefund(
         [
@@ -622,6 +625,7 @@ function main() {
         "docs/a.md:6 nennt diag-genom",
         "docs/a.md:8 nennt `_fett`",
         "docs/a.md:8 nennt den Pfad archiv/x.md",
+        "docs/a.md:10 nennt gate:tier-gang:nie",
         "docs/b.md fehlt in der EINEN Karte",
         "stamm/01.js:1 verweist auf docs/weg.md",
         "scripts/x.cjs:1 nennt anazhRealm.js",
