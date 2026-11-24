@@ -61,7 +61,21 @@ EINEN gpu-schloss, nie zwei zugleich, RAM frei ≥ 8 GB. Jeder Agent-Start nennt
 - LAGE: Block-Datei mit `@@ZEIT@@` → `lage-block.cjs <block> <ziel> <anfang des alten Blocks>` → `ko-datei.cjs <quelle> LAGE.md <betreff-datei>`.
 - Bild im Spiel: `anleger-bild.sh` als Muster (eigener Port, wartet auf die Karte, 640×360 gelingt, größere fielen an der Frist).
 
-## 7. Stand der Zweige um 10:50 (danach gilt LAGE.md)
+## 8. STAND 12:20 (gilt vor Abschnitt 7; der lebende Stand ist der oberste NACHTRAG in LAGE.md — nur die ersten 190 Zeilen lesen, die Datei hat 690 000 Zeichen)
+- main daee7541 (V18.546.401); fünf Macher-Landungen 10:39–11:57 (z711–z714). Karte 2: 83 von 1 718. Runde 20 am daee7541 seit 11:59.
+- Gestempelt: `w28-spiegel-eis` 04aa7ca9. In der Batterie: `auge-der-art` 3 f55b3018 · `probe-deckel-einlass` f4158c03 · `haus-gestalt` 5e497a9f ·
+  `haus-stoff` 51a7a9cb (gestapelt — erst haus-gestalt stempeln). Die Stempel-Sätze liegen gesichert unter `bericht/2411-werkzeug/satz-<zweig>.txt`.
+- Bei OMEN: `auftrag/2411-omen-ort-2.md` (Merge, grüner Cloud-Kopf mit Konflikt) · `auftrag/2411-omen-sport-3.md` (deterministisch rot).
+- Was heute WIRKTE (wiederholen): (1) ein Zuarbeiter `general-purpose` mit Web-Zugang schreibt Maße mit URL, URSACHE je Merkmal und
+  Referenz-Fotos in den Scratch (`bericht/2411-quellen/`), die Macher lesen die Datei — 13 min, 60 Zahlen; (2) der Brief verlangt je Merkmal
+  „warum · welcher Eingang der Welt · welches bestehende Gesetz“ und EINE Gegenprobe mit Mutante — der Haus-Macher fand so den wahren Täter
+  (die Region wurde über den Planeten gewürfelt) statt des vermuteten; (3) Stufen von 20–60 min mit Bildpaar, jede landet für sich
+  (haus-gestalt → haus-stoff → Dach), statt einer großen Welle; (4) `ci/gruen-warte.sh` weckt nur bei echtem Urteil.
+- Neue Fehler dieser Stunden: meine Merge-Probe las den Exit von `head` statt von git (ort-ausstattung sah konfliktfrei aus) — immer
+  `git merge-tree --write-tree … >/dev/null 2>&1; echo $?`; `ci-warte2.cjs` hält „abgebrochen“ für „durch“; Uhrzeiten nur aus `date`.
+- Engpass ist die CI-Reihe (20 Läufer, 22 Jobs je Batterie): `ci/vorfahrt-waechter.sh 2` und `ci/main-veraltet.sh 2` nach dem Start neu aufsetzen.
+
+## 7. Stand der Zweige um 10:50 (überholt, siehe Abschnitt 8)
 - main f18576b6 (z710 `w28-nerv-schwung`). GESTEMPELT, warten auf den Zug: `w28-wind-saison` 5166b746 · `w28-mensch-nah` 28e4f478.
 - IN DER BATTERIE ohne Rot: `klima-hebung` 43ea39ed · `saison-schatten` db7a8245 · `tat-aufwaerts` 03d2bba8 · `sport-regeln` 998254be. Die Stempel-Sätze
   liegen als `satz-<zweig>.txt` im Scratch der Sitzung 020b359f; fehlen sie, aus `cloud-post/<zweig>.md` des Zweigs neu schreiben.

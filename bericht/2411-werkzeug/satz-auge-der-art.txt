@@ -1,0 +1,13 @@
+das Tier sieht mit dem Auge seiner Art, und Entdeckung ist nicht Alarm — der Hirsch flieht 372 m statt 3,4 km
+
+Geschnitten: EIN Sinnes-Gesetz im Kern (tetrapoda SINNES_GESETZ: Fang aus den Zapfen-Kurven, Schärfe aus der Augenlänge des Leibs,
+Entdeckung Riccò × Koschmieder durch die EINE Luft der Welt); zwei Leser — _kreaturSiehtM (OB ein Tier den Spieler oder den hetzenden
+Jäger sieht) und die Ausgabe „auge“ der Post-Kette (die Welt durch die Zapfen einer Art, Blau-Gelb nach Viénot 1999). Der eine
+noticeRadius 22 m und seine vier Kopien in den Rezepten sind fort; die Aura rampt über auraReichM 21 m, die Flucht liest die
+Fluchtdistanz der Gattung (FURCHT_GESETZ.fluchtDistanzM).
+Gemessen: Hirsch-Flucht 3,4 km → 372 m (Kontrolle 117,6 m); zweite Hand 0 → 4 von 4; der Wolf ruht 0,014 → 0,600; Rudel 16 von 60
+(0,27, Band 0,2–0,4 nach MacNulty 2012); Selbsttest 19 von 19 Tätern ROT beim Namen; erleben.sinne.gesehen#3 an der GTX GRÜN
+(Wolf 1 290 m, Mensch 5 684 m, Bildpaar an derselben Pose).
+Offen: erleben.sinne.gesehen#1 ROT 22,6 % und gesehen#2 ROT −18 % (Farb-Abstand der Böden im Auge der Art zu klein);
+erleben.sinne.genom#1 ROT 0,5 (die Witterung ist EIN Radius 50 m, kein Nasen-Gesetz); genom#2 ROT 0,333 (Augenlänge Wolf 27,2 mm
+außer dem Band 21–21,7 mm); gate:kreatur-takt misst 1 134 s und steht über dem Deckel der GPU-Probe (kein GPU-Tor).

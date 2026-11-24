@@ -1,0 +1,14 @@
+das Dorf der Heimat steht in Holz mit Ständer-Raster und steilem Dach statt in griechischen Putz-Kuben — Dachneigung am Messort 19,9 → 41,5°
+
+Geschnitten: die Region eines Dorfs ohne eigenes Wort wird nur noch aus den Regionen gezogen, deren Klima zum Ort passt (REGION_KLIMA im
+fachwerk-Kern); das Klima kommt aus gelaende-core ortGesetz(teil).klimaHeute über den EINEN Export-Kanal _foundryRequestSettlement und
+speist auch Viertel und Stadt-Kacheln. Ohne Klima (das Labor) würfelt der Kern wie bisher — Prüf-Hash über 6 Exporte und 3 Stadt-Kacheln
+auf beiden Seiten c31204c7cdb89380.
+Gemessen: am Messort dorf 14 griechische und 2 römische Putz-Kuben → 17 Holzhäuser mit Ständer-Raster, Schornstein und Kirchturm;
+Dachneigung im Mittel 19,9 → 41,5°; dasselbe Bild 441 → 373 ms, 61 → 77 Draw-Calls, 395 097 → 438 641 Dreiecke. Gegenprobe in
+gate:settlement Teil R über 200 Saaten: Heimat 49,6° gegen Mittelmeer 25,1°, 2 011 Fachwerk-Häuser gegen 0; Mutante „der Kern liest das
+Klima nicht“ ROT in R1 und R3. Quellen: Marx 1891, Esselborn 1908, EN 1991-1-3, WMO-Normalen 1961–1990, Kottek 2006.
+Offen: karte2.mensch.bau.bauen#1 steht weiter bei 98,0 % (der Schnitt ändert den Studio-Stempel nicht; die Silhouetten decken sich zu
+99,4 %, der Rest ist Helligkeit); das Haus ist im Bild EIN Braun — Gefach als Brett statt heller Füllung, kein Sockel, Neigung und
+Überstand je Kultur konstant (Folge-Zweig haus-stoff); alpin darf auf Meereshöhe stehen (die Höhe wird nicht gelesen); der Abdruck nennt
+452 Abweichungen, geprüft sind nur die Dorfplan-Zeilen D3.

@@ -1,0 +1,13 @@
+am Abend laufen, ringen und spielen die Bewohner auf dem Platz der Stadt, und der Ring der Zuschauer folgt dem Geschehen mit dem Blick
+
+Geschnitten: eine Regel-Grammatik im Kern des Leibs (koerper-core SPIEL_GESETZ … spielGeschehen), aus der Lauf, Ringen mit Finte und
+Abwehr und das Brett „Fünf in einer Reihe“ fallen; der Stamm verdrahtet nur (_spielTag, _spielProgramm, Läufer-Tempo, Kopf und Leib
+der Zuschauer). Die Stationen regeln#1, mannschaft#1 und arena#1 messen an der vollen Stadt statt am Genesis-Ort (dort wohnt niemand).
+Gemessen (Linse gate:koerper-kern TEIL E, node; an main ROT, am Kopf GRÜN, Selbsttest 39 von 39 Täter): regeln#1 Rangfolge ↔ Leib
+kein Leser → ρ 0,887 (Soll 0,6–0,9); mannschaft#1 Siegquote des Stärkeren kein Leser → 0,755 (Soll 0,6–0,8); geistspiel#1 regelwidrige
+Züge kein Leser → 0 in 100 Partien; arena#1 Blick folgt dem Geschehen kein Leser → 1,000 bei bis zu 112 Zuschauern (Soll ≥ 0,8).
+tagesPlan ohne Spiel gleicht main in 1 267 200 von 1 267 200 Fällen.
+Offen: alle vier Sprossen sind am echten Ort ungemessen, bis die Runde an stadt-voll misst; der Wurf fehlt (kein Wurf-Gesetz des
+Leibs im Kern); die Spieler stehen — Sitzen, Hand am Brett und Griff der Ringer sind nicht sichtbar; die Sprint-Formel überschießt am
+Rand der Bevölkerung (bis 12,6 m/s, leibSprintHoch); mehrere Zahlen des Gesetzes sind angenommen, ohne Quelle (Übungs-Exponent 0,45,
+Finte, Feldmaße, Programm 18–21 Uhr).

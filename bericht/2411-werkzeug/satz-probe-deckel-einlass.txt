@@ -1,0 +1,12 @@
+EIN Deckel je GPU-Probe am Einlass, und ein gescheiterter Vorfahrt-Blick gibt nicht mehr nach
+
+Geschnitten: EIN Deckel PROBE_DECKEL_S 480 im env von gpu-probe.yml (das Bein liest ihn, die GTX doppelt); ci-zeiten.cjs schreibt je Tor
+die Cloud-Sekunden (117 Tore), der Einlass weist jedes Tor über dem Deckel beim Namen ab (zehn Tore, darunter gate:kreatur-takt). Der
+Vorfahrt-Blick liest 5xx und Netzfehler dreimal neu (2 · 4 · 6 s); bleibt er aus, misst die Probe zu Ende und nennt den gescheiterten
+Blick in Kopf und Post; NACHGEGEBEN fällt nur noch nach einem GELESENEN Vorfahrt-Fall.
+Gemessen (GTX 1050): die 1 134 s von gate:kreatur-takt sind weder Boot (31 s) noch Schloss (17 s), sondern 2 275 s Cloud-Arbeit ohne GPU;
+gate:apparat GRÜN 59 s, sechs neue Mutanten fallen beim Namen (darunter „Blick gibt bei 502 nach“ und „Lauf überhört die Vorfahrt“);
+check:statik GRÜN 1 012 s vor dem Nachtrag, ci-deckung und betriebsgesetz GRÜN danach.
+Offen: die ganze Statik-Kette fuhr nach dem Nachtrag nicht noch einmal am Gerät (ihr Richter ist die Batterie am Kopf); die zehn
+abgewiesenen Tore messen nur noch in der Cloud-Batterie; der Anlass (spiegel-eis 2adc05ed, 502 am 24.11. 10:51) steht im Bericht
+bericht/2411-kreatur-takt-1050.md im Zweig koordination.
