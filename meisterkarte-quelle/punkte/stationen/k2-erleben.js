@@ -142,6 +142,17 @@ const NEULING_AN = async (r, T, a) => {
     return { ganz: eigen, erschafft: 1, teilt: 1, eigen, weg: eigen ? "ganz" : "geteilt mit Same " + seedCode + ", gesetzt mit " + seedWerk, name, zeichen: c.code.length };
 };
 
+// EIN WAGEN AM OHR (erleben.klang.landschaft#2, das Gesetz des Fächers): a = { d } — ein Wagen d m vor dem stehenden Ohr, beide in
+// Ruhe. Das Gesetz der Fahrt am Ohr (`fahrtAmOhr` klang-core.js:1892: −20·log10(d/dMin) wie jede Punkt-Quelle, jenseits der
+// Hörweite FAHRT_OHR.hoerweiteM still), gelesen von `_fahrtKlangTick` (stamm/klang.js:1034) für die `FAHRT_VERKEHR_K` nächsten Wagen
+// (stamm/klang.js:1113, :2366). Kein Wagen wird gestellt, kein Klang gespielt.
+const WAGEN_AN = async (r, T, a) => {
+    const K = globalThis.__klangCore;
+    if (!K || typeof K.fahrtAmOhr !== "function") return { fehlt: "der Klang-Kern trägt kein Ohr der Fahrt (klang-core fahrtAmOhr)" };
+    const f = K.fahrtAmOhr({ x: a.d, y: 0, z: 0, vx: 0, vy: 0, vz: 0 }, { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0 });
+    return { db: Number.isFinite(f.dDb) ? +f.dDb.toFixed(2) : null, still: Number.isFinite(f.dDb) ? 0 : 1, lg: +Math.log10(a.d).toFixed(4), k: r.constructor.FAHRT_VERKEHR_K };
+};
+
 // EIN ZIEL DER HAND (erleben.spieler.hand#1, das Gesetz des Fächers): a = { pitch, gier } — ein Strahl vom Auge der Welt-Kamera
 // (Ego, nie bewegt) in die Richtung `_blickVorn(gier, pitch)` (stamm/koerper-bewegung.js:1645), 30 m wie `_raycastWorldHit(30)`.
 // Der TREFFER ist, wo die Tat wirkt: `_fieldRaycast` (stamm/gelaende-chunks.js:2339, der Strahl durch das Dichtefeld samt Edits —
@@ -4800,6 +4811,7 @@ const FERNE_AN = async (r, T, a) => {
         leiter({
             leiter: "erleben.klang.landschaft",
             sek: 20,
+            seite: { FAECHER, WAGEN_AN },
             pfad: ["scripts/werkbank.cjs", "stamm/klang.js", "klang-core.js", "stamm/koerper-seele.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "fachwerk-core.js"],
             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
             bestehend: [1],
@@ -4871,10 +4883,39 @@ const FERNE_AN = async (r, T, a) => {
                     if (z.bewohnerKlang.length) throw new Error("Leser erschienen (" + z.bewohnerKlang.join(", ") + ") — S" + nr + " misst ihn noch nicht");
                 };
                 const stumm = "die Bewohner klingen nicht: der Schritt-Klang gehört dem Spieler allein (`_schrittKlangTick` stamm/klang.js:888, gerufen nur aus animatePlayerSoul stamm/koerper-seele.js:1771) — kein Werkzeug, keine Tür, kein Murmeln";
+                // S2 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: 0 Wagen der Sitzung): der Richter stellt keine Wagen. 20 Wagen-
+                // Adressen zwischen 4 und 320 m vor dem Ohr (geometrisch), dazu die Kante der Hörweite (159 ↔ 161 m) — je Adresse das Gesetz
+                // der Fahrt am Ohr (WAGEN_AN). Die Kontrolle: in der Hörweite fällt der Pegel mit dem Abstand (Steigung < 0).
                 await L.je(2, async () => {
-                    if (z.wagen < P.sprossen[2].umfang.verlangt)
-                        return L.umfang(2, z.wagen, "die Sitzung trägt " + z.wagen + " Wagen des Verkehrs (`_verkehrWagen`, stamm/siedlung-verkehr.js:634) — 20 verlangt; 5 Biome × Tag/Nacht × Regen liegen jenseits einer Leiter von 60 s");
-                    throw new Error("20 Wagen stehen (" + z.wagen + "), doch 5 Biome × Tag/Nacht × Regen verlangen 20 Ortswechsel mit kaltem Ring — jenseits der 60 s einer Leiter");
+                    const v = P.sprossen[2].umfang.verlangt;
+                    const wagen = Array.from({ length: v }, (_, i) => ({ d: +(4 * Math.pow(80, i / (v - 1))).toFixed(2) }));
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.WAGEN_AN, export: "klang-core.js:1892 fahrtAmOhr (FAHRT_OHR :1890)", leser: "stamm/klang.js:1034 _fahrtKlangTick (die FAHRT_VERKEHR_K nächsten, :1113)" },
+                        adressen: { dazu: wagen.concat([{ d: 159, kante: true }, { d: 161, kante: true }]) },
+                        ms: Math.max(2000, Math.floor((L.rest() - 8) * 1000)),
+                        masse: {
+                            wagen: { wie: "anzahl", nur: (a) => !a.kante },
+                            hoerbar: { wie: "anzahl", nur: (a, w) => !a.kante && !w.still },
+                            steigung: { wie: "steigung", x: "lg", y: "db", nur: (a, w) => !a.kante && !w.still },
+                            vorKante: { wie: "erste", feld: "db", nur: (a) => a.kante && a.d < 160 },
+                            nachKante: { wie: "erste", feld: "still", nur: (a) => a.kante && a.d > 160 },
+                            k: { wie: "erste", feld: "k" },
+                        },
+                        schlecht: { feld: "still", richtung: "max" },
+                        pose: (a) => "ein Wagen " + a.d + " m vor dem Ohr an der Stadt, Ego — Bild und Ohr",
+                        ungemessen: ["Kreuzkorrelation Bild ↔ Ohr je Biom: ungemessen bis zum Gerät (kein Bild), und die Lage am Ohr trägt kein Biom", "5 Biome × Tag/Nacht × Regen: `_umweltLageEins` (stamm/klang.js:414) liest nur den Ort des Spielers"],
+                    });
+                    L.zeile("landschaft S2: " + R.akte.slice(0, 500));
+                    const w = R.werte;
+                    if (!w.wagen) return L.leser(2, "der Wagen am Ohr: " + (R.fehlt || "kein Wagen gemessen") + " · " + R.akte);
+                    if (!(w.steigung < 0)) throw new Error("in der Hörweite fällt der Pegel nicht mit dem Abstand (Steigung " + w.steigung + " dB/Dekade) — das Prädikat trennt nicht");
+                    L.leser(
+                        2,
+                        "Kreuzkorrelation Bild ↔ Ohr je Biom: die Lage am Ohr trägt kein Biom (`umweltMischung` klang-core.js:876 liest Wind, Regen, Ufer, Glut, Vögel — `_umweltLageEins` stamm/klang.js:414 nur den Ort des Spielers), kein Leser legt Bild und Ohr je Biom nebeneinander — der Wagen: an " +
+                            w.wagen + " Abständen 4–320 m klingt er an " + w.hoerbar + ", " + (+w.steigung.toFixed(2)) + " dB/Dekade (Punkt-Quelle −20), an der Hörweite ein Sprung von " + w.vorKante + " dB auf still (" + (w.nachKante ? "161 m stumm" : "161 m klingt") +
+                            "); von 20 Wagen klingen nur die " + w.k + " nächsten (FAHRT_VERKEHR_K stamm/klang.js:2366) · " + R.akte,
+                        w.wagen
+                    );
                 });
                 await L.je(3, async () => {
                     neu(3);
