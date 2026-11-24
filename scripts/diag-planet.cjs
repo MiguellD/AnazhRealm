@@ -908,7 +908,8 @@ const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c6
   'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-12': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-13': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',   // h2-13 (klima-kontinent: das Klima aus Land, Meer und Luft — Sperre und Zehren der Feuchte, Wirbel der Sturmbahn, Meeresluft längs des Winds, der Nebel; ks liest die Konvergenz jemals, das Eis die Kälte des Orts) — das Relief steht   // h2-12 (die Treppe der Suche des Ankers: jede Saat des Spiels trägt eine Heimat; eine Saat mit Ort bei 512 Proben bitgleich) — das Relief steht   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
-  'planet-h2-14': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535' };   // h2-14 (klima-hebung: die Hebung eines Gebirges folgt der Konvergenz — Reife 1 − e^(−Alter·u0/h∞), u0 = konv/40; die Relief-Karte erde-09 bewegt sich, wo ein Abschnitt jung ist)
+  'planet-h2-14': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535',   // h2-14 (klima-hebung: die Hebung eines Gebirges folgt der Konvergenz — Reife 1 − e^(−Alter·u0/h∞), u0 = konv/40; die Relief-Karte erde-09 bewegt sich, wo ein Abschnitt jung ist)
+  'planet-h2-15': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535' };   // h2-15 (klima-aufwind: der Hang-Aufwind — was die Säule über einem Anstieg verliert, fällt dort; Luv und Lee aus EINEM Zustand der Säule, die nahen Schritte am Relief ihres Schritts; das Relief selbst unverändert)
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1446,10 +1447,64 @@ function neigungZeile(Q, og, ohneHeimat) {
   return { ok: proz <= 10 && n0.json !== e.json && n0.json === n0b.json, proz,
     wert: 'Spanne an 45° (' + samen + '): Erde ' + e.amp.toFixed(3) + ' K · Neigung 0 ' + n0.amp.toFixed(3) + ' K (' + proz.toFixed(1) + ' %) · Neigung 45° ' + n45.amp.toFixed(3) + ' K (' + (n45.amp / e.amp).toFixed(3) + '×) · dieselbe Saat ' + (n0.json === n0b.json ? 'byte-gleich' : 'ANDERS') };
 }
+// DER HANG-AUFWIND (Karte 2 planet.kopplung.land-meer-luft#1, klima-aufwind): die Kämme der Heimat längs des EINEN Winds, gelesen wie der
+// Zensus der Station — Kamm = Land ≥ 1 200 m, Maximum auf seinem Breitenkreis (±2 Schritte à 0,5°), |Breite| 25–64°; das Profil ±400 km
+// längs des Winds (woher, planetKlima) im 20-km-Takt, der Abfall je Flanke ≥ 800 m; Luv und Lee sind der erste Punkt der Flanke, an
+// dem die Höhe um ¾ des Abfalls unter dem Kamm liegt. Das Gesetz am Niederschlag des Kerns: der Median Luv/Lee ≥ 2 (Smith & Evans
+// 2007: die Süd-Anden nehmen dem Strom ~50 %), der Luv-Punkt trägt mehr Regen als sein Vorland 200 km luvwärts (der Aufwind) und
+// der Lee-Punkt weniger als der Kamm (der Abstieg derselben Säule).
+function aufwindZeile(Q) {
+  const samen = 'anazh-realm-seed', S = Q.planetScheibe(planQ(Q, samen), 0), RAD = Math.PI / 180, p = {}, K = {};
+  const lw = (l) => ((((l + 180) % 360) + 360) % 360) - 180;
+  const hoehe = (b, l) => { Q.planetPunkt(S, b * RAD, lw(l) * RAD, 16, p); return p.hoeheM; };
+  const klima = (b, l) => Q.planetKlima(S, b * RAD, lw(l) * RAD, -1, K);
+  const schritt = (b, l, ost, nord, dKm) => { const az = Math.atan2(ost, nord), d = dKm / 6371, p1 = b * RAD, l1 = l * RAD;
+    const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(az));
+    return [p2 / RAD, lw((l1 + Math.atan2(Math.sin(az) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2))) / RAD)]; };
+  const gk = (b1, l1, b2, l2) => Math.acos(Math.max(-1, Math.min(1, Math.sin(b1 * RAD) * Math.sin(b2 * RAD) + Math.cos(b1 * RAD) * Math.cos(b2 * RAD) * Math.cos((l2 - l1) * RAD)))) * 6371;
+  const kaemme = [], v = [], auf = [], ab = [];
+  for (let b = -64; b <= 64; b++) {
+    if (Math.abs(b) < 25) continue;
+    const L = []; for (let l = -180; l < 180; l += 0.5) L.push(hoehe(b, l));
+    const n = L.length;
+    for (let i = 0; i < n; i++) {
+      if (L[i] < 1200 || ![-2, -1, 1, 2].every((d) => L[(i + d + n) % n] <= L[i])) continue;
+      const l = -180 + 0.5 * i, k0 = klima(b, l), eo = k0.windOst, en = k0.windNord;
+      if (Math.hypot(eo, en) < 0.2) continue;
+      const P = []; for (let d = -400; d <= 400; d += 20) { const [bb, ll] = schritt(b, l, eo, en, d); P.push({ d, b: bb, l: ll, h: hoehe(bb, ll) }); }   // d > 0: luvwärts
+      let km = 20; for (let i2 = 17; i2 <= 23; i2++) if (P[i2].h > P[km].h) km = i2;
+      const h0 = P[km].h, luvS = P.slice(km + 1), leeS = P.slice(0, km).reverse();
+      if (!(h0 > 0) || !luvS.length || !leeS.length) continue;
+      const aU = h0 - Math.min(...luvS.map((x) => x.h)), aD = h0 - Math.min(...leeS.map((x) => x.h));
+      if (!(aU >= 800 && aD >= 800) || kaemme.some((x) => gk(x.b, x.l, P[km].b, P[km].l) < 100)) continue;
+      const u = luvS.find((x) => x.h <= h0 - 0.75 * aU), e = leeS.find((x) => x.h <= h0 - 0.75 * aD);
+      kaemme.push({ b: P[km].b, l: P[km].l });
+      if (!u || !e || !(u.h > 0 && e.h > 0)) continue;
+      const pU = klima(u.b, u.l).niederschlagMm, pE = klima(e.b, e.l).niederschlagMm, pK = klima(P[km].b, P[km].l).niederschlagMm;
+      const [vb, vl] = schritt(u.b, u.l, eo, en, 200), hV = hoehe(vb, vl);
+      v.push(pU / pE); ab.push(pE < pK ? 1 : 0);
+      if (hV > 0 && hV < u.h) auf.push(pU > klima(vb, vl).niederschlagMm ? 1 : 0);
+    }
+  }
+  const mittel = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0, m = v.length ? median(v) : 0, ab2 = v.filter((x) => x >= 2).length / (v.length || 1);
+  return { ok: v.length >= 40 && m >= 2 && mittel(auf) >= 0.7, median: m, n: v.length,
+    wert: 'Luv/Lee an den ¾-Punkten (' + samen + '): Median ' + m.toFixed(2) + ' über ' + v.length + ' Kämme (≥ 2:1 an ' + (100 * ab2).toFixed(0) + ' %) · Luv über seinem Vorland ' + (100 * mittel(auf)).toFixed(0) + ' % (' + auf.length + ') · Lee unter dem Kamm ' + (100 * mittel(ab)).toFixed(0) + ' %' };
+}
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
-    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); return U; }
+    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich');
+    const A = aufwindZeile(P); zeile('klima.aufwind', A.ok, A.wert, 'Median Luv/Lee ≥ 2 über ≥ 40 Kämme, Luv über seinem Vorland ≥ 70 %'); return U; }
+  // die Täter des Hang-Aufwinds (klima-aufwind): der Hang ohne Aufwind, das Lee ohne den Abstieg der Säule, die Schritte an der Hülle
+  // (dem Klima fehlt das Relief der Kette — der Stand bis klima-aufwind); jeder fällt an der Zeile klima.aufwind
+  for (const [name, re, ersatz, marke] of [
+    ['ohne Aufwind', /if \(hl0 > hS\) hubW = /, 'if (false) hubW = ', 'aufwind'],
+    ['das Lee ohne die Säule', /else schranke = \(hS - hl0\) \* eLn;/, 'else schranke = 0;', 'lee'],
+    ['die Schritte an der Hülle', /function klimaRelief\(S, x, y, z\) \{ punktKern\(S, x, y, z, FEUCHTE_NAH_KM, false\);/, 'function klimaRelief(S, x, y, z) { punktKern(S, x, y, z, 400, true);', 'huelle']]) {
+    const QA = kernMutant(re, ersatz, marke);
+    if (!QA) zeile('klima.aufwind nennt', false, 'der Kern ' + P.VERSION + ' trägt die Zeile des Täters „' + name + '“ nicht — er lässt sich nicht pflanzen');
+    else { const A = aufwindZeile(QA); zeile('klima.aufwind feuert', !A.ok, 'gepflanzt: ' + name + ' → ' + A.wert); }
+  }
   // die Täter der Neigung: der eigene Anker (vor dem Schnitt) und die Zuschläge der Küsten ohne den Gang der Neigung (jG = 1)
   const N1 = neigungZeile(P, og, true), QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
   zeile('ort.neigung feuert', !N1.ok, 'gepflanzt: das Δ gegen den eigenen Anker → ' + N1.wert);

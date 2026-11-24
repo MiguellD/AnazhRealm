@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-14';
+  const VERSION = 'planet-h2-15';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2083,8 +2083,7 @@
     lapse: 6.5,                                  // K/km (Standard-Atmosphäre)
     schritte: Object.freeze([100, 200, 300]),    // km luvwärts (gesetzt): drei im 100-km-Takt lösen die Kämme der Hülle (Gürtel σ 85 km: am
                                                  // schlechtesten Versatz 50 km ≥ 0,84 der Kamm-Höhe); sie sind zugleich die nahen Knoten der Feuchte (G2.3, B2)
-    schattenKm: 1.5,                             // Regenschatten e^(−Δh/1,5 km) (Entscheid §4)
-    leeKm: 800,                                  // Schranke eines Kamms wirkt mit e^(−d/800 km) hinter ihm (gesetzt)
+    schattenKm: 1.5,                             // Föhn: abgestiegene Luft ist untersättigt, der Regen der Front fällt um e^(−Abstieg/1,5 km) (Entscheid §4)
     meerKm: 300,                                 // Nachladen über Meer e^(−Weg/300 km) (gesetzt)
     // DAS LAND ZEHRT IM FENSTER (klima-kontinent): über unbewaldetem Land fällt der Niederschlag landein exponentiell mit einer e-Länge
     // von einigen 100 km (Makarieva, Gorshkov & Li 2009) — vorher 6 000 km bei einem Fenster von 1 850 km: der Ort 1 850 km hinter
@@ -2094,6 +2093,16 @@
     // über dem Anstieg aus — Anteil e^(−Anstieg/2,5 km); über Land heilt die Sperre mit landKm, über Meer mit meerKm. Band: über die
     // Süd-Anden (Kämme ~1,5–2 km) verliert der Strom rund 50 % seines Wassers (Smith & Evans 2007, drying ratio ≈ 0,5).
     sperreKm: 2.5,
+    // DER HANG-AUFWIND (klima-aufwind): was die Säule über einem Anstieg verliert, FÄLLT dort — der Regen des Luv-Hangs ist dieselbe
+    // Menge, die windab als Sperre fehlt (lineares Modell des orographischen Niederschlags, Smith & Barstad 2004, J. Atmos. Sci. 61,
+    // 1377–1391: Quelle ∝ Feuchte · Wind · Hang in Wind-Richtung, im Lee dieselbe Quelle mit umgekehrtem Zeichen). Der Dampf-Fluss der
+    // regen-tragenden Strömung ist der Gürtel-Regen mal seine e-Länge über Land (landKm: so viel regnet die Säule über flachem Land
+    // aus), ohne freie Zahl. Band: der Strom verliert über die Kaskaden von Oregon ~43 % (Smith, Barstad & Bonneau 2005, J. Atmos. Sci.
+    // 62, 177–191; Kämme ~1,5 km: 1 − e^(−1,5/2,5) = 45 %), über die Süd-Anden ~50 % (Smith & Evans 2007, J. Hydrometeor. 8, 3–19;
+    // 71 Bachproben 40–48° S) — über ~100 km Hang sind das 0,45 · 600 km / 100 km = das 2,7-Fache des Regens der Ebene obendrauf
+    // (das Maß der Linse klima.aufwind: Luv/Lee ≥ 2 — Eugene im Luv-Tal 1 036 mm gegen Bend im Lee 269 mm, 3,9 : 1 quer über die
+    // Kaskaden; NOAA-Normalwerte 1991–2020). Die Verzögerung der Wolke (1 700–2 400 s, beide Arbeiten; bei 12 m/s ≈ 20–30 km) liegt
+    // unter dem Schritt der Knoten (100 km): der Regen fällt im Schritt seines Aufstiegs.
     feuchteLand0: 0.35, feuchteLand1: 0.5,       // Feuchte ohne Meer im Fenster: kalt 0,35 … warm (Zone ≥ 25 °C) 0,5 — Rückführung (gesetzt); 0,7
                                                  // hob das Tropen-Land, brach aber klima.widerspruch (Regen ≥ 1 500 mm ohne Meer luvwärts) — bleibt 0,5
     itcz: 2600, sturm: 1100, grund: 250,         // mm/a Gürtel-Amplituden (gesetzt, gegen Köppen gerichtet)
@@ -2209,6 +2218,17 @@
     KL_W[1] = sj * (1 - (1 - sp) * eM) + (1 - sj) * spL;
     KL_W[2] = (1 - sj) * hL;
   }
+  // klima-aufwind DAS RELIEF DER LUFT-SCHRITTE: die nahen Schritte (100 … 300 km) und der eigene Ort lesen das Relief am Fuß ihres
+  // Schritts (FEUCHTE_NAH_KM: Wellen ≥ 2 Schritte — was der Takt der Knoten ohne Alias trägt). Vorher
+  // lasen sie die Hülle (Fuß 400 km, Wellen ≥ 800 km): eine Kette von 300 km Breite stand dem Klima als flacher Buckel, ihr Luv-Hang
+  // 160 km vor dem Kamm trug keinen Anstieg und ihr Lee keinen Abstieg (Heimat, 291 Kämme: Median Luv/Lee 1,91 an der Hülle, 2,47
+  // am Relief des Schritts). Die fernen Knoten (650 … 1 850 km, Takt 600 km) lesen weiter die Hülle: ihr Takt trägt nichts Feineres.
+  // DIE KÜSTE DER SCHRITTE bleibt die der Hülle (`kuesteHuelle`: dasselbe grobe Krustenfeld am Fuß 400 km, das `planetHuelle` als kont
+  // trägt, ohne ihre Höhe): sie trägt die Meeresluft `mar` und damit Sommer und Winter — mit der Küste am Fuß des Schritts wanderte
+  // die Heimat (drei von drei Saaten mit Ort bei 512 verlegt, die Heimat des Spiels um 40° Länge; Linse anker.jede-saat). Dieser
+  // Schnitt ändert den Regen; die Temperatur folgt ihm nur über das EINE Gesetz „trockenes Land heizt“ (`trocken`, bis trockenK).
+  function kuesteHuelle(S, x, y, z) { const f = krusteFeld(S, x, y, z, 400, true); return (f - S.kuesteF) * radiusAmOrt(S) * S.R; }
+  function klimaRelief(S, x, y, z) { punktKern(S, x, y, z, FEUCHTE_NAH_KM, false); return PK.hA + PK.hB * S.refKm - S.sigmaKm; }
   function planetKlimaR(S, x, y, z, saison, aus, punkt) {
     pruefScheibe(S);
     const plan = S.plan, kp = plan.koerper, R = S.R, G = planetKlimaGlobal(plan, S.zeitMa), ds = kp.drehsinn;
@@ -2238,17 +2258,18 @@
       // Schritte luvwärts (fern → nah): Meer füllt die Feuchte auf, Land zehrt, Kämme beschatten. Alles stetig: Meer-Anteil je
       // Hüllen-Schritt s = glatt(+0,3; −0,6 km; Hülle), je Feuchte-Knoten glatt über den halben Takt; keine Schwelle.
       const mLand = KLIMA.feuchteLand0 + (KLIMA.feuchteLand1 - KLIMA.feuchteLand0) * glatt(5, 25, tZ);
-      const hO = planetHuelle(S, x, y, z);                                // eigene Hülle: Schatten und Hub auf derselben Lesart wie die Schritte
+      const hO = klimaRelief(S, x, y, z);                                 // das eigene Relief: Föhn und Hub auf derselben Lesart wie die Schritte
       const mNeutral = mLand + (1 - mLand) * kexpS(-Math.max(0, kont) / 1000);   // ohne Windrichtung (Zellrand): Feuchte nach Küstenferne
       let mW = mNeutral, schranke = 0, hubW = 0, mar = 0, sp = 1;
       const om = wl / 1.044;                                              // G2.3 Gewicht des Luv-Gangs wächst stetig mit dem Wind; am Zellrand (Wind 0) trägt mNeutral
       if (cphi > 1e-9 && om > 0) {
         const eEx = -z / cphi, eEz = x / cphi, eNx = -y * x / cphi, eNy = cphi, eNz = -y * z / cphi;
         const dx = (uO * eEx + vN * eNx) / wl, dy = (vN * eNy) / wl, dz = (uO * eEz + vN * eNz) / wl;
-        // die nahen Hüllen-Schritte (100 … 300 km, fest): Kamm-Schranke und Hub — und ihr kont (B2: der nahe Feuchte-Knoten)
+        // die nahen Schritte (100 … 300 km, fest) am Relief ihres Schritts: Sperre, Föhn und Hub — ihr kont an der Küste der Hülle (B2: der nahe Feuchte-Knoten)
         for (let j = 2; j >= 0; j--) {
           const a = KLIMA.schritte[j] / R, ca = kcos(a), sa = ksin(a);
-          KL_H[j] = planetHuelle(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz); KL_K[j] = PK.kont;
+          const X = ca * x + sa * dx, Y = ca * y + sa * dy, Z = ca * z + sa * dz;
+          KL_K[j] = kuesteHuelle(S, X, Y, Z); KL_H[j] = klimaRelief(S, X, Y, Z);
         }
         // G2.3 Feuchte als Integral längs des Winds über feste Knoten (vorher: sechs Punkt-Proben bei [75 … 2 000]·skal km — jede
         // scharfe Kante luvwärts erschien als Geister-Küste, und weil skal mit der Breite schrumpfte, liefen die Geister zu Keilen
@@ -2280,16 +2301,17 @@
         mW = (1 - lam) * (1 - (1 - mW) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.meerKm)) + lam * (mLand + (mW - mLand) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.landKm));
         // die Wirbel der Sturmbahn laden vom nahen Meer in jeder Richtung nach (vor der Sperre: auch ihr Dampf regnet am Anstieg aus)
         mW += (1 - mW) * KLIMA.wirbelAnteil * wwZ * glatt(KLIMA.wirbelKm, 0, kont);
-        // Kamm-Schranke: die nahen Hüllen-Schritte (fern → nah), gewichtet mit e^(−d/leeKm) — die Luft mischt sich hinter dem Kamm;
-        // über Meer klingt sie mit meerKm ab
-        for (let j = 2; j >= 0; j--) {
-          const dj = KLIMA.schritte[j], h = KL_H[j], sj = glatt(0.3, -0.6, h);
-          const b = (h - hO) * kexpS(-dj / KLIMA.leeKm);
-          schranke = sj * schranke * eMn + (1 - sj) * (b > schranke ? b : schranke);
-        }
-        const anstieg = hO - (KL_H[0] > 0 ? KL_H[0] : 0);
-        // Hub hebt nur die vom Meer herangeführte Feuchte (m über mLand), nie die rückgeführte — nach der Sperre
-        hubW = 0.9 * Math.min(1.5, Math.max(0, anstieg)) * Math.max(0, (mW * sp - mLand) / (1 - mLand));
+        // klima-aufwind DER EIGENE SCHRITT, EINE Quelle für Luv und Lee: die Säule kommt mit ihrer Sperrhöhe hS an (die höchste Querung
+        // seit dem letzten Meer, über Land mit landKm geheilt — der Zustand DESSELBEN Integrals, das die Sperre trägt). Steigt die Luft
+        // hier über hS, regnet der Anteil 1 − e^(−Anstieg/sperreKm) ihres Dampfs HIER aus: der Hub ist dieser Anteil mal der Fluss
+        // (Gürtel-Regen · landKm) auf den Schritt verteilt — er hebt JEDE Feuchte, auch die rückgeführte (vorher nur den Meeres-Anteil
+        // über mLand, und nur 0,9 je km: ein Luv-Hang im Binnenland trug hub = 1 und, weil die Sperre ihm den Dampf schon nahm, WENIGER
+        // Regen als sein Vorland — 126 → 107 mm/a bei 1,4 → 5,8 km Anstieg, Zensus 24.11.). Liegt der Ort unter hS, ist die Luft
+        // abgestiegen: der Föhn nimmt dem Regen der Front e^(−Abstieg/schattenKm) (vorher eine eigene Schranke aus drei nahen Schritten
+        // mit e^(−d/800 km) NEBEN der Sperrhöhe — zwei Gedächtnisse desselben Kamms).
+        const hS = KL_W[2], hl0 = hO > 0 ? hO : 0;
+        if (hl0 > hS) hubW = (KLIMA.landKm / FEUCHTE_NAH_KM) * (1 - kexpS(-(hl0 - hS) / KLIMA.sperreKm));
+        else schranke = (hS - hl0) * eLn;
       }
       // B2 jede Land-Wirkung klingt mit dem Land-Gewicht zum Meer aus (bei λ = 1 Bit für Bit der Land-Wert, bei λ = 0 der des Meers)
       m = (1 - lam) + lam * (om * mW * sp + (1 - om) * mNeutral);
@@ -2380,7 +2402,7 @@
     o.tJahrC = tJ; o.tSommerC = tS; o.tWinterC = tW; o.tagAmpC = 4 + 10 * c * (1 - Math.min(1, pJahr / 1500));
     o.niederschlagMm = pJahr; o.sommerAnteil = sommerAnteil; o.kontinental = c;
     o.windOst = wl > 1e-9 ? uO / wl : 0; o.windNord = wl > 1e-9 ? vN / wl : 0;
-    o.luv = (hub - 1) / 1.35; o.lee = 1 - schatten; o.stromK = dTj; o.meerWest = meerWest; o.meerLuv = meerLuv; o.feuchte = m;
+    o.luv = (hub - 1) * FEUCHTE_NAH_KM / KLIMA.landKm; o.lee = 1 - schatten; o.stromK = dTj; o.meerWest = meerWest; o.meerLuv = meerLuv; o.feuchte = m;
     o.relief = relief; o.meerLuft = meerLuft;
     // klima-kontinent DER NEBEL aus demselben Gesetz: die Küstenluft (e^(−kont/nebelKm) an Land, über Meer 1) trägt den See-Nebel; die
     // vom kalten Auftrieb gekühlte Luft (der Rand-Strom dTj < 0 der Westküste, voll beim Taupunkt-Abstand — er klingt landein mit seinem
@@ -2841,9 +2863,12 @@
     o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
       regenQuote: K.niederschlagMm / (K.niederschlagMm + 900),   // gesetzt
       // klima-kontinent: der Sturm ist Wind UND Regen (WX_GESETZ sturm.rain 1) — sein Regen fällt nach demselben Relief wie der
-      // Niederschlag (Sperre · Föhn · Hub, K.relief; ohne Anstieg luvwärts genau 1). Der Nebel ist der Anteil der regenfreien Zeit
+      // Niederschlag (Sperre · Föhn · Hub, K.relief; ohne Anstieg luvwärts genau 1). klima-aufwind: sein ANTEIL DER ZEIT wächst mit dem
+      // Relief r wie die nasse Zeit des Orts — regenQuote(P)/regenQuote(P/r) = (P + 900·r)/(P + 900), dasselbe Gesetz wie die Zeile
+      // darüber (vorher · r: mit dem Hub des Hang-Aufwinds, bis 7-fach, liefe der Anteil über 1 und der Leser klemmte ihn still).
+      // Der Nebel ist der Anteil der regenfreien Zeit
       // (K.nebel: Küstenluft, Auftrieb, Feuchte) — wetterAt verschiebt mit seinem Δ die Stufe des Nebels.
-      sturmQuote: (0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0)) * K.relief, nebelQuote: K.nebel };
+      sturmQuote: (0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0)) * (K.niederschlagMm + 900 * K.relief) / (K.niederschlagMm + 900), nebelQuote: K.nebel };
     o.biom = { koeppen: B.koeppen, hauptklasse: B.hauptklasse, biom: B.biom };
     o.eis = { zeit: ortEisZeit(plan, breite, K.tJahrC, S.zeitMa) };   // das Eis des Quartärs liest das Jahresmittel des Orts
     // der Wuchs, den das Klima des Orts trägt — die stetige Form des Bioms, dieselbe Rechnung wie die Farbe des Atlas (`pflanzenDeckung`)
