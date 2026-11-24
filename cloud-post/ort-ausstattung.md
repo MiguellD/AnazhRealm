@@ -1,5 +1,7 @@
 # Post an ort-ausstattung
 
+## 24.11. 15:55 — GPU-PROBE 7c517dc5 auf omen-gtx1060: GRÜN in 1251 s (gate:pruefbuehne-licht GRÜN 53 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 151 s auf omen-gtx1060 · gate:studio-begehen GRÜN 262 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/ort-ausstattung/7c517dc5.md
+
 ## 24.11. 14:00 — GPU-PROBE 4612f450 auf omen-gtx1060: GRÜN in 1051 s (gate:pruefbuehne-licht GRÜN 51 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 149 s auf omen-gtx1060 · gate:studio-begehen GRÜN 269 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/ort-ausstattung/4612f450.md
 
 ## 24.11. 12:33 — GPU-PROBE 4d012d86 auf radeon-890m: ROT in 856 s (gate:pruefbuehne-licht ROT 54 s — ⛔ S0 Boden-Programm: 108011 Zeichen WGSL (Budget ≤ 104162) — die Ratsche des Programms (der Stand + seine Luft, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild auf radeon-890m · gate:weltbild-frost:echt GRÜN 126 s auf radeon-890m · gate:studio-begehen GRÜN 171 s auf radeon-890m · gate:webgl-probe GRÜN 52 s auf radeon-890m) → probe-post/ort-ausstattung/4d012d86.md
