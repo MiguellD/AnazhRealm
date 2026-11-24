@@ -1,7 +1,7 @@
 {
  "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
  "geraet": "gtx",
- "zeit": "2026-11-24T13:21:58.336Z",
+ "zeit": "2026-11-24T13:41:31.399Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.megastadt#1": {
@@ -350,6 +350,76 @@
    },
    "zeit": "2026-11-24T13:21:58.336Z",
    "abdruck": "bfd211beed4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kd8bf6c3f98a4",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 8.1,
+   "fremd": {
+    "s": 11.1,
+    "takte": 5,
+    "fremdS": 5.05,
+    "kerne": 0.454,
+    "fensterKerne": 0.454,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.06
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-a8dd22b5-w143438 x listen/kandidat-gtx-a8dd22b5-w143438.txt",
+      0.94
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 4.11,
+    "diener": [
+     [
+      "dwm.exe",
+      1.88
+     ],
+     [
+      "System",
+      1.33
+     ]
+    ],
+    "geraetS": 3.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.03
+     ],
+     [
+      "svchost.exe",
+      0.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 29.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T13:41:31.399Z",
+   "abdruck": "bf253a3ed167",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
