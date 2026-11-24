@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 06:21 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 06:40 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
@@ -17,68 +17,85 @@
   Zweig trug seinen Bericht als Zeile in DIESELBE Tabelle der Karte — nach jeder Landung kollidierte jeder andere Zweig dort (klima-kontinent und
   bewohner-satz gegen 9d4319c0). Jetzt nennt die Karte die Klasse `cloud-post/<zweig>.md` EINMAL, die Zitat-Wand (`scripts/diag-betriebsgesetz.cjs`
   `zitatBefund`) deckt den Ordner der Klasse (Selbsttest 11 Funde genau, Gate GRÜN). REGEL für jeden Zweig bis zur Landung: `origin/karte-nennt-klasse`
-  mergen statt main, `docs/README.md` ganz zu seiner Seite auflösen, KEINE Zeile für den Bericht. Gesagt: beide lokalen Arbeiter, OMEN, GTX 1050 (06:21),
-  Post an ort-ausstattung (koordination 9ece8617).
-- STEMPEL-REIF BEI GRÜN: `klima-kontinent` **2ab011ec** = Vorprüfung 3 (06:19, von mir: Merge karte-nennt-klasse in die Vorprüfung 2 der Cloud 40eb5720,
-  kein Code des Zweigs geändert; Batterie 45332462445 und GPU-Probe 45332462430 laufen; Sprossen land-meer-luft#3/#4, gegenwart#2; vor dem Stempel Kopf per
-  ls-remote lesen, merge-tree gegen main, probe-tag, `bild:wiese` ansehen; Tags `[gpu-probe: bild:wiese@0.5, gate:studio-begehen, gate:kopplung,
-  gate:wetter-wache] [ci voll]`; Post an die Cloud-Sitzung: kein Push mehr, koordination 60c8eb93) · `erbe-geburt`
-  2a80ce2d (der eine rote Job voll 17/18 läuft neu, Versuch 4 seit 06:00; bei Grün Stempel `[gpu-probe: gate:kreatur-leben, bild:wiese@0.5] [ci voll]`,
-  Stationen `pm-erbe-geburt` 0cf308d9 danach).
+  mergen statt main, `docs/README.md` ganz zu seiner Seite auflösen, KEINE Zeile für den Bericht. Gesagt: beide lokalen Arbeiter, OMEN (06:21 und 06:32),
+  GTX 1050 (06:21), Posts an ort-ausstattung, erbe-geburt, licht-stetig, bewohner-satz. GEMESSEN 06:37 (merge-tree): der Zug löst die Klasse NICHT selbst
+  (`zug.cjs` `stossen`: zwei Einfügungen an derselben Basis-Stelle = Klasse d) — VIER Zweige tragen den Schnitt jetzt (von mir gemergt, kein Laufzeit-Byte
+  berührt), paarweise 6 von 6 sauber, die Kette main + klima + erbe + licht + bewohner 0 Konflikte. Ohne Schnitt stößt weiter: `auge-der-art` 59080c51,
+  `ort-ausstattung` b3bf1523, der Remote-Kopf `nerv-bewegung` bbc07085 (der lokale Arbeiter hat ihn schon gemergt).
+- VIER VORPRÜFUNGEN IN DER BATTERIE (Stempel bei Grün; je Zweig: Kopf per ls-remote, merge-tree gegen main, probe-tag, Bild ansehen, Post lesen):
+  `klima-kontinent` **2ab011ec** (Vorprüfung 3, seit 06:19; Sprossen land-meer-luft#3/#4, gegenwart#2; `[gpu-probe: bild:wiese@0.5, gate:studio-begehen,
+  gate:kopplung, gate:wetter-wache] [ci voll]`) · `erbe-geburt` **fb5096a5** (Vorprüfung 5, 06:27; der Kopf 2a80ce2d war GRÜN — 21 von 21 im Versuch 4 —,
+  stieß aber an der Karte; `[gpu-probe: gate:kreatur-leben, bild:wiese@0.5] [ci voll]`; Sprossen erbe#1, zivilisation#1; Stationen `pm-erbe-geburt`
+  0cf308d9 danach) · `licht-stetig` **04d2d455** (Vorprüfung 2, 06:30, auf die Vorprüfung der Cloud 1cb7362d: „die Helligkeit folgt der Sonnenhöhe
+  stetig“, wiese −18° +1,72 EV, genesis −6° unter 0,1; `[gpu-probe: gate:tag-achse:echt, gate:pruefbuehne-licht, bild:dorf@0.5, bild:wiese@0.5] [ci voll]`;
+  Sprosse planet.kosmos.himmelsmechanik#1; `bild:dorf` und `bild:wiese` vor dem Stempel selbst ansehen) · `bewohner-satz` **306c13eb** (Vorprüfung 5,
+  06:33, unten). Wartende Läufe in `/tasks` des Koordinators; die zwei GPU-Proben an den überholten Köpfen (1cb7362d, 6308fcae) brach ich ab.
 - DRUCK-SCHLAF (Register, Nachtrag 3 an `scripts/diag-stand-takt.cjs:3782`): GESICHERT — der Baum von erbe-geburt schläft in der CI auch schnell (Sonde 3,
   `sonde-druck-erbe-3` c11ef4e0, Schleife byte-gleich: echte Welle 1,217 s bei 1,81 m/s Wind an den Körpern). INDIZ, NICHT BEWIESEN — die Windphase: die
   Mutanten-Welle desselben Laufs 2,867 s bei 7,95 m/s (16 Scherben < 13 m); die freien Körper lesen den Wind zur Sim-Uhr (`stamm/koerper-frei.js:1128`), die
   Probe stellt nur die Spiel-Uhr. DAGEGEN steht der Versuch mit erzwungenem Gegenwind 9,4 m/s → 0,983 s. STICHPROBE läuft seit 06:15 (vier Neuläufe des einen
-  Sonden-Jobs → Scratch `sonde3-tafel.txt`: je Welle Schlaf · Wind · Lage); erst ihre Tafel nennt den Täter, vorher kein Schnitt-Auftrag. Für JEDEN Zweig
+  Sonden-Jobs → Scratch `sonde3-tafel.txt`: je Welle Schlaf · Wind · Lage). LAUF 1 (06:30): echt 0,933 s bei 6,63 m/s (11 Scherben < 13 m), Mutante 0,917 s
+  bei 4,3 m/s (13 Scherben < 13 m, 10 davon bei 11,4–12,6 m) — WEDER Wind NOCH Lage allein machen langsam (vier schnelle Wellen bei 1,8–6,6 m/s und bis 13
+  nahen Scherben, eine langsame bei 7,95 m/s und 16 nahen). Erst die volle Tafel nennt den Täter, vorher kein Schnitt-Auftrag. Für JEDEN Zweig
   (auch erbe-geburt) gilt: roter Stand-Takt-Job → EIN Neulauf nur dieses Jobs, bei Grün gilt die Vorprüfung.
-- `bewohner-satz` 7f1a426e (11 Sprossen: sprache#1, gespraech#2, netz#1 (geist), generationen#1, absicht#2, koennen#2, kunst#1, seuche#1, recht#1, krieg#1,
-  megastadt#1): EINE Röte — „Die Kreatur-Linse Teil 3“, Grund-Lauf `zielplan`: ohne Ziel 10 Uhr 8 %, 13 Uhr 7 % (Soll ≤ 5 %; genannt Kaufmann → Kirche,
-  Kind → fremdes Haus, Wache → eigenes Haus). Täter: die Linse fährt einen Stunden-ZWILLING des Tagesplans (`passt`/`NACHT`,
-  `scripts/diag-kreatur-leben.cjs` ~1256) und rät die Art des Ziels aus der nächsten Tür (`ortVon` ~1235); die neuen gebundenen Orte des Zweigs (Posten der
-  Wache, zweiter Stand des Kinds, Besuch, der Kranke vor der Tür) kennt er nicht. LOKALER ARBEITER seit 06:04 (Baum `AnazhRealm-bewohner`): die Probe liest
-  den Kern-Plan (`koerper-core` `tagesPlan`), der Zwilling fällt, neuer Täter „der Wirt reicht `krank` nicht“; Merge main 9d4319c0 (Konflikt
-  `docs/README.md`); EIN Push „Vorprüfung bewohner-satz 4 … [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen,
-  gate:tag-achse:echt] [ci voll]“. Die Cloud-Sitzung des Zweigs LÄUFT noch: Post 06:10 (koordination 4c61b3e2) — kein Push mehr nach `bewohner-satz`,
-  Eigenes auf `bewohner-satz-cloud`. Danach der Vorwärts-Stempel: commit-tree mit dem Baum des neuen Kopfs, Eltern 9c80f78c (der Halt auf
-  `w28-bewohner-satz`) UND der neue Kopf. Die GTX 1050 ist davon entbunden.
-- `ort-ausstattung` (Cloud, LÄUFT): Inhalts-Kopf c18ad5eb, der Remote-Kopf c2ad9aad ist nur Post. Batterie 45322344234 V5 ROT an voll 17/18
-  „Das Nervensystem“: `S: kein Zwilling (grenzstein)` — eine Namens-Kollision mit der FIXTUR der Linse (`worlds/neuntes-buch/stele-core.js:49`, „ein
-  Gesetzbuch, das der Wirt nicht kennt“). Auftrag als Post 06:07 (koordination ef474f2b): die Fixtur weicht (Art umbenennen), Merge main, EIN Push
-  „Vorprüfung ort-ausstattung 3 … [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]“, der Bericht im selben Commit.
-  BILD-BEWEIS: die Cloud schob 06:09 den Kopf 2b711daa nach („Messort ort-zeichen: das Auge vor Schild und Hauszeichen“, `spec/profiband/haushalt.json` +
-  `stamm/siedlung-ort.js`, ohne `[ci voll]`) — das Bild kommt damit aus ihrer GPU-Probe `bild:ort-zeichen`; ich sehe es mir vor dem Stempel an (fehlt das
-  Marktkreuz darin — Plan 841.79/456.44 — schieße ich es an der Radeon in einer Lücke nach, nie während die Runde misst). Sprossen: mensch.kultur.schrift#1 (0/69 → 69/69), bildkunst#1 (17 Werke), mensch.macht.grenze#1 (3 Steine),
-  megastadt#1 (Bau); mensch.netz.stoffwechsel#1 offen.
+- `bewohner-satz` **306c13eb** = Vorprüfung 5 (11 Sprossen: sprache#1, gespraech#2, netz#1 (geist), generationen#1, absicht#2, koennen#2, kunst#1,
+  seuche#1, recht#1, krieg#1, megastadt#1). Die EINE Röte (Kreatur-Linse Teil 3, `zielplan` ohne Ziel 10 Uhr 8 %) heilte die CLOUD-Sitzung selbst und
+  pushte 06:27 die Vorprüfung 4 (6308fcae): `NACHT` fiel, `stundeVon` liest `TAGES_GESETZ` und `tagesPlan`, Platz und Tor sind Orte des Werks, neue Täter
+  zielplan-platzfern · zielplan-torfern, ohne Ziel 10 Uhr 7,6 → 0 %. IHRE LINIE GILT; den lokalen Parallel-Umbau hielt ich 06:32 an (zwei Heilungen
+  derselben Linse fahren nicht nebeneinander) und merge­te den Klassen-Schnitt darauf (306c13eb; koerper-core.js, siedlung-bewohner.js, Modul-Karte fügten
+  sich ohne Konflikt). VORRAT, ungelandet: Seitenzweig `bewohner-linse-kernplan` 006b8cb1 — der lokale Schnitt (`planVon` liest `tagesPlan` je Bewohner
+  und Stunde, `passt`/`NACHT`/`heimVon` fallen, Täter zielplan-krank: „der Kranke am Werk“ fällt an 6308fcae um 10 Uhr als „werk“ durch — gelesen, nicht
+  gefahren); nicht auf 6308fcae gefügt. Post 06:33 (koordination 6691e2a9): kein Push mehr, die Lücke `krank` als Befund. Bei Grün der Vorwärts-Stempel:
+  commit-tree mit dem Baum des Kopfs, Eltern 9c80f78c (der Halt auf `w28-bewohner-satz`) UND der Kopf.
+- `ort-ausstattung` (Cloud, LÄUFT): Kopf b3bf1523 = Bild-Commit ohne `[ci voll]`; die Batterie am Inhalts-Kopf c18ad5eb steht ROT am „Nervensystem“
+  (`S: kein Zwilling (grenzstein)` — Namens-Kollision mit der FIXTUR `worlds/neuntes-buch/stele-core.js:49`; Heil-Auftrag im Post ef474f2b). MEIN BLICK
+  06:36 auf `bild:ort-zeichen` (GTX 1050, ROT „kein f:(schild|relief) im Bild 0,0 % < 0,2 %“): „KAUFHAUS“ steht über der Tür, dunkles Gold auf Schwarz,
+  118 × 13 px = 0,08 % des Bilds, lesbar erst im Vierfach-Zoom, kein Hauszeichen im Rahmen; die Maske färbt das Schild als `bauSatz`. Urteil: ein
+  Klingelschild, kein Ort, der sich ausweist — die Schwelle bleibt, das Schild wächst nach der LESE-ENTFERNUNG des Orts (8,3 mm Schrift je Meter, 20 cm
+  = 12 px bei 15 m), Kontrast ≥ 4,5 : 1, die Familie in der Maske (Post koordination 40ed41b3). Erwartet: EIN Push „Vorprüfung ort-ausstattung 3 …
+  [gpu-probe: bild:ort-zeichen, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]“ mit Fixtur-Schnitt, Merge
+  `karte-nennt-klasse`, Bildpaar. Sprossen: mensch.kultur.schrift#1 (0/69 → 69/69 gezählt — das Bild trägt sie noch nicht), bildkunst#1 (17 Werke),
+  mensch.macht.grenze#1 (3 Steine), megastadt#1 (Bau); mensch.netz.stoffwechsel#1 offen.
 - OMEN: ZUERST `auge-der-art` 2 (59080c51 ROT mit vier Röten: GOLDEN tetrapoda neu prägen; Playtest „Anker nicht initialisiert“, Kreatur-Linse 2 und
   kreatur-takt 595 s > 480 s haben EINEN Täter — die Wariness rampt über die Sichtweite statt über 22 m); Stempel bei Grün `[gpu-probe: gate:kreatur-leben,
   gate:kreatur-takt, bild:wiese@0.5] [ci voll]`, Stationen `pm-auge-der-art` 42009563a danach. DANN `ci-post-erbt` (Köpfe caacf77f/dc041aa9: Probe (b) ROT,
   der Push-Payload trägt keine Datei-Listen; neuer Schnitt `paths-ignore: cloud-post/**` + `ci.sh` erbt über `kopfKetteLokal`; meine zwei Prüfpunkte 06:09:
   der LEERE Stempel-Commit und ein Commit mit Code UND Post). `ci.sh` installiere ich danach per `start.sh` in einer Lücke ohne Zug. DANACH (noch nicht
   beauftragt): der Zug urteilt seinen Puls an der eigenen Maschine statt in der gehosteten Reihe.
-- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt): `nerv-bewegung` (seit 03:50, Baum `AnazhRealm-nerv`; der Remote-Kopf bbc07085 ist
-  die ALTE Vorprüfung von 02:05; Sprossen leben.tiere.bewegung#1, mensch.sport.koerper#1; Stationen `pm-nerv-bewegung` 28e7cbc) · die Heilung von
-  `bewohner-satz` (oben). `mensch-nah` ENDETE 05:58 am Kopf bb7c53c9 (Baum `AnazhRealm-nah`): `foundry-core.js` `__hautUnterStoff` + `__hautUnterTuch` am
-  Ende des Menschen-Backens — der Wirt hebt 758 → 8 Stoff-Punkte (Same k2-stoff:3, vorher 180 um 1–3,6 cm an Kragen, Schulter, Bund), Goldens
-  `mensch-L0/L1|haut` neu geprägt; ABER `mensch.leib.stoff#1` 6748 → 6383 Durchstiche (Soll 0) ROT — die Station zählt Paare ohne gemeinsamen Knochen (der
-  hängende Arm außerhalb des Hemds); nur Paare mit gemeinsamem Knochen: 504 (lokale Diagnose, kein Stations-Urteil). `mensch.leib.gesicht#1` unberührt
-  (7 von 10), kein Bildpaar, keine Linse. Seine Batterie (45329877520) brach ich ab (unfertig, die Reihe ist knapp). NÄCHSTER SCHRITT, sobald ein Platz frei
-  ist: DENSELBEN Arbeiter fortsetzen — die 504 echten fällen, Bildpaar in `bild/mensch-nah/`, dann das Gesicht; die Station (`pm-mensch-nah`) zählt Haut nur
-  unter IHREM Stoff.
+- `nerv-bewegung` **5ce568cb** = Vorprüfung 2 in der Batterie (FÜNFTE; gepusht 06:30 vom lokalen Arbeiter, sauber gegen main und die vier anderen;
+  `[gpu-probe: gate:webgl-probe, bild:dorf@0.5, bild:stadt-voll@0.42] [ci voll]`): die fünf Roten an der Wurzel (Daten-Vertrag v7: `leibVerben` rief
+  `Math.tan` → `tanKette`; Diele: Auflage Kreis statt Quadrat, 3 → 0 von 26 Häusern; Korpus 40 → 41 von 41; drei Playtest-Bänder und der Fall-Wächter an
+  der Linse). Sprossen: leben.tiere.bewegung#1 (Gangart-Wechsel an 4 von 4 Gattungen bei Fr 0,5 und 2,5), mensch.sport.koerper#1 HALB (Gehen 1,15 → 1,58
+  m/s, Sprint 5,18 → 6,28 m/s); Stationen `pm-nerv-bewegung` 28e7cbc danach. MEIN BLICK (Bilder Scratch `nerv/blick/`): Gehen trägt (Ferse zuerst,
+  Abrollen), die Arme hängen; der SPRINT ist ein Spagat-Sprung (beide Beine fast gestreckt, Rumpf senkrecht, Ferse zuerst) — an main genauso, keine
+  Verschlechterung, aber kein Sprint.
+- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt, beides MACHER): `nerv-schwung` (derselbe Arbeiter, fortgesetzt 06:40, gestapelt
+  auf 5ce568cb im Baum `AnazhRealm-nerv`): Schwung des Beins, Aufsatz, Rumpf und Arme als EINE stetige Funktion der Geschwindigkeit im Kern (Froude-Achse;
+  `ziele`/`kontakt` der `VERB_TAFEL` steuern heute 0 von 11 Verben, `koerper-core.js:6163`), Profi-Zahlen im Brief (Knie-Spitze im Schwung 60° / 90–110° /
+  ≥ 120°, Vorfuß im Sprint, Duty 0,6 → 0,25), Bildpaar in Scratch `nerv/blick2/`; KEIN `npm run check`, kein voller Playtest lokal · `mensch-nah`
+  FORTGESETZT 06:36 (derselbe Arbeiter, Kopf bb7c53c9, Baum
+  `AnazhRealm-nah`): die 504 echten Durchdringungen an geteilten Knochen → 0 als EIN Gesetz in `foundry-core.js` (`__hautUnterStoff`/`__hautUnterTuch`),
+  Bildpaar vorher ↔ nachher in Scratch `bild/mensch-nah/` (1,5 m und 4 m, Streiflicht), dann das Gesicht (`leib.gesicht#1` 7 von 10); die Station
+  (`pm-mensch-nah`, zählt heute Haut unter fremdem Tuch: 6 383 statt 504) baut er NICHT um — er nennt den Diff, ich buche. GPU-Deckel ≤ 180 s je Lauf, weil
+  die Runde misst; Push erst bei gemessenen 504 → 0. Der Arbeiter der bewohner-Heilung ENDETE 06:34 (sein Schnitt = Seitenzweig oben).
 - RUNDE 15 am Kopf main 9d4319c0 seit 05:53 (Sprung von 447eaea6, koordination 3043a44d; Runde 14 stand bei gtx 10/241, radeon 15/58). K1 = die Ansprüche
   bis z705. 06:08: `gtx laeuft 0/241`, `radeon laeuft`. Die GTX braucht ~9 min je Station — die Listen beginnen mit den jüngsten Ansprüchen.
 - CI-REIHE = der Takt der Landung (20 gehostete Jobs, eine Batterie = 22; NICHT FIFO, keine Vorfahrt — Register-Nachtrag 06:10). Der Vorfahrt-Wächter läuft
   bis ~08:05 (bricht nur Läufe mit läuft ≤ 4 und wartet ≥ 8 ab und stößt sie neu an). Werkzeug im Scratch: `ci/schlange.cjs`, `ci/lauf-jobs.cjs <lauf>`,
   `ci/abbruch.cjs <lauf>`, `neulauf.cjs <lauf>`, `ci/job-neulauf.cjs <job>`, `ci/ci-rot.cjs <sha40>`, `job-log.cjs <job> <ziel>`. REGEL für jeden Brief: je
   Zweig EIN Push mit `[ci voll]`, der Bericht IM selben Commit, danach nichts mehr pushen.
-- TAG-ACHSE / `licht-stetig` (Cloud, idle): Köpfe `licht-stetig` 63e7f7b0 und `blick-licht-stetig` 95b5d4f8 standen 06:08 in der CI — UNGELESEN; vor dem
-  Stempel Kopf und `cloud-post/licht-stetig.md` lesen. GTX 1050: `nacht-laterne` (EIN Vorprüf-Push, Meldung an mich).
-- CLOUD (sie melden ihr Ende nicht; vor jedem Stempel Kopf per ls-remote UND `cloud-post/<zweig>.md` lesen): `klima-kontinent` (idle, abgegeben),
-  `ort-ausstattung` (läuft, Auftrag oben), `bewohner-satz` (läuft, Weisung oben), `klang-leib` (gelandet), `nerv-bewegung`-Cloud (idle), die fünf
+- TAG-ACHSE / `licht-stetig` (Cloud, LÄUFT doch): sie pushte 06:26 ihre Vorprüfung 1cb7362d (die Folge `U.umgebung` 63e7f7b0 fiel an der Messung,
+  Revert cc605055; `scripts/diag-betriebsgesetz.cjs` +8: die Zitat-Wand liest den ganzen Gate-Namen mit seinen Gliedern) — jetzt Vorprüfung 2 oben. Der
+  Seitenzweig `blick-licht-stetig` 95b5d4f8 ist ungelesen. GTX 1050: `nacht-laterne` (EIN Vorprüf-Push, Meldung an mich; ihre Hand hielt 06:24 das
+  GPU-Schloss).
+- CLOUD (sie melden ihr Ende nicht; vor jedem Stempel Kopf per ls-remote UND `cloud-post/<zweig>.md` lesen; mein Post an einen Zweig: Scratch
+  `post.cjs <zweig> <block-datei> "<betreff>"`, der jüngste Block oben): `klima-kontinent` (idle, abgegeben),
+  `ort-ausstattung` (läuft, Auftrag oben), `bewohner-satz` (läuft, Weisung oben), `licht-stetig` (läuft), `klang-leib` (gelandet), `nerv-bewegung`-Cloud (idle), die fünf
   Richter-Sitzungen warten auf einen Menschen (Fächer-Zweige `pm-faecher-kopplung` 8ed1dead, `-planet` 8e6a8911: einmergen wie pm-beobachter, einer nach dem
   anderen, NACH den Macher-Landungen — und beim Mergen die Regel der Akten oben halten).
 - RADEON: fünf Schleifen laufen; RAM frei 17 GB um 06:01. Lokales `main` des Haupt-Klons ist eine Test-Fixtur („c3“) — immer `origin/main` lesen; Heilung nur
   in einer Lücke ohne Zug und Runde. NICHT installiert: die Reihen-Regel WIDERSPRUCH DER GERÄTE aus koordination a5b7882c. Der ruhende Baum für meine kurzen
-  Läufe: `C:/Users/micha/AnazhRealm-auge-main` (c18ad5eb, für das Bild von ort-ausstattung).
+  Läufe und Merges: `C:/Users/micha/AnazhRealm-auge-main` (lokale Zweige `*-merge` je gemergtem Zweig; nach den Landungen archivieren).
 - ZWEI PREIS-ENTSCHEIDE in Kraft (widerrufbar durch den Schöpfer): Ankunft gestuft in `same.preis.ankunft`, Heap und Wachstum gestuft in
   `same.preis.speicher`; in der Sprosse bleiben Bild-Takt (p95 ≤ 34 ms, kein Frame > 101 ms) und VRAM.
 - LESE-LISTE ungelandeter Zweige: `leib-ausdruck` 13ef2e76 (K7 rot, WIP) · `acker-furche` 9c776e7f (S0 über dem Budget) · `saat-vor-heil` (DRUCK-SCHLAF rot —
