@@ -6965,6 +6965,7 @@ L.perspektive("oeko", (() => {
                         soll: [K.soll(DY, 2, "Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf", { key: "jungwuchsMinusProzent", einheit: "%" })],
                         auge: { pose: "Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe", vorbild: "Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11)" },
                         taeter: "phyto-core.js:6527 bodenGewicht (nur `blume` trägt `leben`: von den lebenden Nah-Arten liest allein die Blume den Fraß; Farn, Gestrüpp, Schilf und der Jungwuchs der Bäume `_baumAlter` lesen ihn nicht) · stamm/kreatur-erbe.js:555 _gauFrassAt",
+                        leser: "stamm/vegetation-wiese.js:1580 _nahStreuKachel liest `leben: _lebenStufe(x, z)` (stamm/feld-leben.js:2403 ← stamm/kreatur-erbe.js:555 _gauFrassAt) in phyto-core.js:6527 bodenGewicht — das Gewicht der Boden-Art sinkt mit dem Fraß nur, wo die Zeile `leben` trägt",
                         // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg; der Zeuge ist der Fächer (das Tal × mit/ohne × Jahre)
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
