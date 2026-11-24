@@ -11,7 +11,8 @@
 //       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe; der
 //       Täter heißt mit seiner Box, wenn ein Werk den Sprung trägt) — und (K4c, K24-N1) keine FUGE trägt einen Leib: die
 //       Oberkante einer Box, auf der eine Box desselben Werks sitzt (zwei Stamm-Abschnitte), hebt weder die Kapsel noch das
-//       Tier.
+//       Tier — und (K4d, nerv-bewegung) jede ebene TRITTFLÄCHE der Geräte (`tritt` des Fachwerks: Podest, Deck, Schwebebalken)
+//       trägt die Kapsel im echten Schritt auf ihrer Oberkante (± 1 cm); der Täter „stab" deckt sie wie einen Stab.
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
 //       steht dort, kein Seegrund)
@@ -42,7 +43,16 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    warteAufWelt,
+    nullRenderer,
+    ROOT,
+    hauptLauf,
+    SELBSTTEST,
+    jsonSchreiben,
+} = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
@@ -172,6 +182,14 @@ function taeter(inj) {
         ueber("_tickLeichname", function () {
             for (const c of this.state.leichname || []) if (c.userData.dying) c.userData.dying.hebe = null;
         });
+    // stab (K4d): die Stab-Regel deckt auch die Trittfläche des Gesetzbuchs (vor nerv-bewegung: der Schwebebalken, 0,10 m, trug nie)
+    if (inj === "stab")
+        r._blockerFugen = function (boxes) {
+            P._blockerFugen.call(this, boxes);
+            for (const a of boxes || [])
+                if (a.tritt === true && Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < AnazhRealm.PLAYER_STAB)
+                    a.gedeckt = true;
+        };
     if (inj === "fuge") {
         // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
         r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
@@ -639,6 +657,54 @@ async function proben(mitWiese) {
                 c.userData._huellenNah = saveNah;
                 c.position.copy(cp);
                 o.k4c = { fugen, traegt, taeter };
+            }
+            // ── K4d DIE TRITTFLÄCHE TRÄGT: je Gerät des Spielplatzes (fachwerk WERKE, siteTag spielplatz) gesetzt 8 m neben der
+            // ebenen Stelle (sonst der Mitte der Hang-Suche), auf jede EBENE Box mit `tritt` (Dicke ≤ 0,15 m: Podest, Deck, Balken — die geneigte Bahn der Rutsche trägt ihre
+            // Ebene, nie ihre Hülle) die Kapsel 5 cm über ihrer Mitte, 30 echte Schritte (`_stepCharacter`): sie steht auf der
+            // Oberkante (± 1 cm) und auf einer Struktur. Bis nerv-bewegung deckte die Stab-Regel (`_blockerFugen`, PLAYER_STAB) den
+            // Schwebebalken (0,10 m) — die Sohle 0,38 m unter ihm, das Verb balancieren war in der Welt nie erreichbar.
+            {
+                const FC = globalThis.__fachwerkCore;
+                const flaechen = [];
+                const pm0 = pm.position.clone();
+                const basis = eben || mitte; // im gestreamten Ring der Hang-Suche, auf ebenem Grund, wo er sich fand
+                const sx = basis.x + 8;
+                const sz = basis.z;
+                for (const [id, w] of Object.entries((FC && FC.WERKE) || {})) {
+                    if (!w || w.siteTag !== "spielplatz") continue;
+                    const e = r.spawnArchitecture(
+                        w.kind + "_" + id,
+                        { x: sx, y: r._voxelSurfaceY(sx, sz) + 0.5, z: sz },
+                        { rotationY: 0, silent: true, precise: true, seed: 1 }
+                    );
+                    if (!e) continue;
+                    await __gebautNach(e, { takt, max: 200 });
+                    (e.blockerAABBs || []).forEach((a, i) => {
+                        if (a.tritt !== true || a.obb || !(a.topY - a.botY <= 0.15)) return;
+                        pm.position.set(
+                            (a.minX + a.maxX) / 2,
+                            a.topY + 0.05 + A.PLAYER_FOOT_OFFSET,
+                            (a.minZ + a.maxZ) / 2
+                        );
+                        [s._fieldVy, s.isInAir, s._fieldWasGrounded] = [0, false, false];
+                        vy = 0;
+                        kapsel(30);
+                        const sohle = pm.position.y - A.PLAYER_FOOT_OFFSET;
+                        flaechen.push({
+                            wer: `${e.type} Box ${i} (${(Math.min(a.maxX - a.minX, a.maxZ - a.minZ) * 100).toFixed(0)} cm breit)`,
+                            cm: (sohle - a.topY) * 100,
+                            struktur: s._kapselStruktur === true,
+                        });
+                    });
+                    r.removeArchitecture(e);
+                }
+                pm.position.copy(pm0);
+                const fehl = flaechen.filter((q) => !(Math.abs(q.cm) <= 1) || !q.struktur);
+                o.k4d = {
+                    flaechen: flaechen.length,
+                    tragen: flaechen.length - fehl.length,
+                    taeter: fehl.slice(0, 3).map((q) => `${q.wer}: Sohle ${q.cm.toFixed(1)} cm`),
+                };
             }
             // ── K5 TOD-LAGE ── (auf der ebenen Stelle: das Tier stirbt, kippt, liegt — die tiefste Stelle gegen den Boden)
             const ort = eben || hang;
@@ -1257,6 +1323,12 @@ function urteil(o) {
             f.push(
                 `K4 Fuge: ${k4c.traegt} von ${k4c.fugen} Fugen tragen einen Leib — Täter ${k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
             );
+        const k4d = o.k4d || {};
+        if (!(k4d.flaechen >= 4)) f.push(`K4 Aufbau: ${k4d.flaechen} ebene Trittflächen der Geräte (Soll ≥ 4)`);
+        else if (k4d.tragen < k4d.flaechen)
+            f.push(
+                `K4 Trittfläche: ${k4d.flaechen - k4d.tragen} von ${k4d.flaechen} tragen den Leib nicht — Täter ${k4d.taeter.join("; ")} (_blockerFugen: die Stab-Regel deckt die Trittfläche des Gesetzbuchs)`
+            );
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!(Math.abs(k5.gegenStandCm) <= 3) || !(k5.wegMinCm >= -5))
             f.push(
@@ -1390,6 +1462,7 @@ hauptLauf(async () => {
                 sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
                 fuge: ["K4 Fuge"],
+                stab: ["K4 Trittfläche"],
                 rand: ["K6 Leser im Rand-Streifen"],
                 naht: ["K6 Leser an der Stufen-Naht"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
@@ -1409,7 +1482,8 @@ hauptLauf(async () => {
                 const ok = soll[inj].every((x) => f.some((y) => y.startsWith(x)));
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
                 console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
-                if (o && o.k6naht && inj === "naht") console.log("    " + zeile({ k6naht: { ...o.k6naht, orte: undefined } }));
+                if (o && o.k6naht && inj === "naht")
+                    console.log("    " + zeile({ k6naht: { ...o.k6naht, orte: undefined } }));
                 if (!ok) rot++;
             }
         }
@@ -1419,8 +1493,7 @@ hauptLauf(async () => {
         console.log("  " + zeile({ ...o, k8: k8.o }));
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
-        if (process.env.KOERPER_STAND_JSON)
-            jsonSchreiben(process.env.KOERPER_STAND_JSON, { ...o, k8: k8.o });
+        if (process.env.KOERPER_STAND_JSON) jsonSchreiben(process.env.KOERPER_STAND_JSON, { ...o, k8: k8.o });
     } finally {
         await browser.close();
         server.close();
