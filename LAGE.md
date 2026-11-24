@@ -1,9 +1,23 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 15:36 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 15:48 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 15:48 (gilt VOR allem darunter; VERBRAUCH 97 % alle Modelle, 95 % Fable — bei 98 % Halt, EINSTIEG: UEBERGABE-2026-11-24.md
+  Abschnitt 11 und 12): main **499f8b57**, KARTE 2: 83 von 1 718. Batterien laufen: `anatomie-r4-heil` 3bbb5b23 und
+  `ort-ausstattung` 5 7c517dc5 (Stempel-Befehle in Abschnitt 11). main 499f8b57 ist ROT an Mensch-Anatomie (heilt 3bbb5b23) und
+  Welt-Wache (ungelesen, Job 138485517979; Verdacht auge-der-art wie bei koerper-stand K6 — das Ruhe-Gesetz ließ die Tore schlafen;
+  Schnitt bei GTX 1050 bestellt). LOKAL, NICHT GESCHOBEN: `fahrzeug-gattung` 39b69949cbcc88c6735a62a67224355b124f436c (Baum
+  AnazhRealm-acker; fünf Linsen + gate:settlement grün, die 12 Familien-Schritte laufen, danach Push als Vorprüfung 2) ·
+  `haus-stoff` b7d94deccf07431143dae2eea6ac6878b7de9c41 und `haus-dach` 5f0f608d (Baum AnazhRealm-front-pl; Glas L2 und die
+  ULP-Kipper geheilt, gate:settlement Akt O noch ohne gültigen Lauf).
+  FUND: `gate:settlement` nutzt den FESTEN Port 127.0.0.1:4436 — zwei Arbeiter auf zwei Bäumen rissen sich heute drei Läufe ab
+  (exit 1 ohne rote Zeile). Nie zeitgleich fahren; die Wurzel (Port je Baum aus dem Pfad oder frei gewählt) ist offen, Besitzer: der
+  erste lokale Arbeiter des Nachfolgers. Dazu: Teil O zählt fahrenden Verkehr als „fremde Bauten“, je nach Zeitpunkt (2 von 3 rot).
+  ENTSCHIEDEN: Auslagerungsdatei am OMEN bleibt systemverwaltet (keine Klick-Datei) · klima-aufwind landet so nicht (Sprung p99
+  320 mm) · OMEN: scherbe-liegt → golden-je-rezept → dienst-frist · GTX 1050: Ruhe-Gesetz für Welt-Tore vor klima-aufwind.
+  WERKZEUG NEU: `buendel.sh` (eine Batterie für mehrere grün-reife Köpfe, nur trocken gefahren), `familie-fahrzeug.sh`.
 - NACHTRAG 15:36 (gilt VOR allem darunter): main **499f8b57** (z717 `w28-probe-deckel-einlass` gelandet 14:38, nur Werkzeug — KEIN
   Runden-Sprung, Runde 22 steht am a8dd22b5; main trägt die Ratsche selbst). KARTE 2: 83 von 1 718.
   R4 IST KEIN WACKLER: Mensch-Anatomie R4 war seit mensch-nah (z712) fest rot, wo ihr Selbsttest lief, und „grün“, wo er ruhte
