@@ -17,7 +17,8 @@
 //       Liste und Halt liest, beweisen H und F am Verhalten); (K) KI: der Prompt der Welt-KI (`llmBuildSystemPrompt`) nennt
 //       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe; jeder Op
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
-//       (modify_terrain in einer Liste);
+//       (modify_terrain in einer Liste), und jeder Rand, den „Die Bänder jetzt" der KI nennt, besteht die Prüfung seines Ops
+//       (`bandUrteil`);
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 //   (T) DIE TAT (affekt K1/K4, ohne Halt): 10 Pflegen je 30 s — |δ₁₀| ≤ 0,3 δ₁, der Chor-Teil der Wertung am Ort ≥ 3 dB, 32 m
 //       daneben ≤ 0,5 dB, gestempelte Freude 0; Taten von Nexus und KI im Blick in ≤ 1 treuen Zeile je 30 s (`tat-k1`/`tat-k4`).
@@ -90,6 +91,9 @@ if (SELBSTTEST) {
     const [heil, fu, halb] = [form([["say", "ok"], ["fall", "ok"]], { X_OPS: ["say"] }), form([["say", "x_oob"], ["fall", "ok", 1], ["spawn_tree", 'ergebnis_failed {"lichtung":1}']], { X_OPS: ["modify_terrain"] }), form([["say", "ok"]], {})];
     if (heil || !/say .*x_oob · .*fall .*Bau steht.*spawn_tree .*lichtung.*X_OPS nennt tote Ops: modify_terrain/.test(fu) || !/ungeprüft: fall/.test(halb))
         v.push(`(K) formUrteil blind: heil „${heil}" · gebrochen „${fu}" · halb „${halb}"`);
+    const band = (gilt, rand = [1.58, 2.43]) => bandUrteil([{ op: "player_speed", text: "1.58–2.43, jetzt 1.58", rand, gilt }]).join(" · ");
+    if (band([true, true]) || !/player_speed .*weist den Rand 2\.43 ab/.test(band([true, false])) || !/kein Band/.test(band(null, null)))
+        v.push(`(K) bandUrteil blind: heil „${band([true, true])}" · Rand abgewiesen „${band([true, false])}" · ohne Band „${band(null, null)}"`);
     // der Selbsttest: Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne
     // Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.
     selbsttestEnde(v);
@@ -167,6 +171,18 @@ function formUrteil(zeilen, listen, ops) {
         ...(ohne.length ? [`(K) FORM ungeprüft: ${ohne.join(", ")}`] : []),
         ...Object.entries(listen).flatMap(([n, l]) => (l.some((x) => !ops.includes(x)) ? [`(K) LISTE: ${n} nennt tote Ops: ${l.filter((x) => !ops.includes(x)).join(", ")}`] : [])),
     ];
+}
+
+// (K) DIE KI LIEST EIN BAND, DAS GILT (nerv-bewegung): die Ränder, die das Gesetz in Worten nennt, besteht die Prüfung desselben
+// Ops — ein genannter Rand, den `dslEval` abweist (`invalid_wert`), fällt beim Namen, ein Band ohne zwei Ränder ebenso. Der
+// Täter: „player_speed 1.58–2.43“ am Leib aus der Gestalt (das Band endet bei 2,4257), das Modell nahm 2.43, der Satz „mach
+// mich schneller“ fiel ungültig (gate:v1-pfad --korpus liest den Mitschnitt, nie den Prompt — er sah es nicht).
+function bandUrteil(zeilen) {
+    return zeilen.flatMap((z) =>
+        !z.rand
+            ? [`(K) BAND: ${z.op} nennt der KI kein Band — „${z.text}“`]
+            : z.rand.filter((_, i) => !z.gilt[i]).map((v) => `(K) BAND: ${z.op} nennt der KI „${z.text}“, die Prüfung weist den Rand ${v} ab`)
+    );
 }
 
 const server = statikServer();
@@ -307,6 +323,18 @@ async function probe(GESCHICKT) {
     // eine Liste von Op-Namen oder eine Tafel je Op (DSL_WERTE: ihre Schlüssel) — jeder Name muss leben
     const namen = (x) => (x[Symbol.iterator] ? [...x] : Object.keys(x));
     aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, namen(K[n])]));
+    // (K) das Band, wie die KI es liest: je Op mit einem Band aus der Welt (`DSL_WERTE[op][2](r)`, „Die Bänder jetzt" im Prompt) die
+    // zwei genannten Ränder an der Prüfung desselben Ops (`DSL_WERTE[op][1]`); dazu am Leib der Mutant — dieselben Ränder zum
+    // nächsten gerundet, die Form bis nerv-bewegung —, den die Zeile mit seinem Urteil nennt
+    aus.band = Object.entries(K.DSL_WERTE).filter(([, w]) => w && w[2].length).map(([op, w]) => {
+        const text = w[2](r);
+        const m = /^(-?\d+(?:\.\d+)?)–(-?\d+(?:\.\d+)?)/.exec(text);
+        const rand = m ? [Number(m[1]), Number(m[2])] : null;
+        const stat = { player_speed: "speed", player_jump_power: "jumpPower" }[op];
+        const B = stat ? r._koerperGesetzBand(stat) : null;
+        const mutant = B ? [B.min, B.max].map((v) => Number(v.toFixed(2))) : null;
+        return { op, text, rand, gilt: rand && rand.map((v) => !!w[1](v, r)), genau: B && [B.min, B.max], mutant, mutantGilt: mutant && mutant.map((v) => !!w[1](v, r)) };
+    });
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
@@ -470,7 +498,7 @@ function urteil(S) {
         if (nexusFrei.length) rot.push(`(Q) NEXUS: der Nexus komponiert Ops ohne Urteil: ${nexusFrei.join(", ")}`);
         const welt = S.ops.filter((o) => S.liste.includes(o));
         const gruppen = { "Welt-Akte": welt, "Weitere Ops": S.ops.filter((o) => !welt.includes(o)), ...S.ki.gruppen };
-        rot.push(...kiUrteil(S.ki.prompt, gruppen), ...formUrteil(S.form, S.listen, S.ops));
+        rot.push(...kiUrteil(S.ki.prompt, gruppen), ...formUrteil(S.form, S.listen, S.ops), ...bandUrteil(S.band));
     }
     return rot;
 }
@@ -516,6 +544,7 @@ hauptLauf(async () => {
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
     );
     console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops, ${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
+    console.log(`  KI-Band: ${S.band.map((z) => `${z.op} „${z.text}“${z.genau ? ` (genau ${z.genau.map((v) => v.toFixed(4)).join("–")}; Mutant nächste Rundung ${z.mutant.join("–")}: ${z.mutantGilt.every(Boolean) ? "gilt" : "die Prüfung weist den Rand " + z.mutant.filter((_, i) => !z.mutantGilt[i]).join(", ") + " ab"})` : ""}`).join(" · ")}`);
     const rot = urteil(S);
     // (T) die Zahlen je Kriterium (`tat-k1 {…}`, `tat-k4 {…}` — die Punkte-Maschine liest sie), die Befunde im Urteil
     const [tu, t, Z] = [tatUrteil(T), T.taten, T.stimme.zeilen];

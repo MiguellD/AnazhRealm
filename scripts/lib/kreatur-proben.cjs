@@ -1600,7 +1600,7 @@ async function kreaturProben(r, T, opts) {
             // (Soll ≤ 0,03 m, die Zeile der Hufe); N2 die Schrittlänge λ aus zwei Aufsetz-Punkten desselben Fußes (`_gang.fuss`,
             // der Punkt, an dem das Gesetz ihn hält) gegen die Hüft-Höhe L und die Froude-Zahl Fr = v²/(g·L) — Alexander & Jayes
             // 1983: λ/L = 2,3 · Fr^0,3 (GANG_GESETZ.schrittBasis/schrittFroude), dazu λ je Schulterhöhe; N2b die Froude-Zahl je
-            // Gangart im Band des Gesetzes (GANG_FOLGE: Trab ab froudeTrab, Galopp ab froudeGalopp, je mit der Hysterese);
+            // Gangart im Band des Gesetzes (gangBand: Trab ab froudeTrab, Galopp ab froudeGalopp, hinab je mit der Hysterese);
             // N3 die Kopf-Ruhe im Trab: die Kopf-Mitte gegen den Rumpf, halbe Spanne p5–p95 je Leib, Soll ≤ HALTUNG_GESETZ.nick ×
             // L (das Nicken des Schritts, Loscher 2016 — der Trab trägt den Kopf ruhiger); dazu der Bein-Winkel aus dem Lot
             // (Hüfte → Pfote, längs) und die Senke des Rumpfs je Hüft-Höhe — die gedrückte, gespreizte Gestalt beim Namen
@@ -2173,8 +2173,8 @@ async function kreaturProben(r, T, opts) {
                 natur: (() => {
                     const q = (a, p) => (a.length ? rund(quantil(a, p), 3) : null);
                     const KG = window.__tetrapodaCore;
-                    const [fT, fG, hy] = [KG.GANG_FOLGE.froudeTrab, KG.GANG_FOLGE.froudeGalopp, KG.GANG_FOLGE.hysterese];
-                    const band = { schritt: [0, fT * (1 + hy)], trab: [fT * (1 - hy), fG * (1 + hy)], galopp: [fG * (1 - hy), Infinity] }; // prettier-ignore
+                    // das Band je Gangart aus dem EINEN Gesetz (tetrapoda gangBand: hinauf an der Natur, hinab unter ihr)
+                    const band = Object.fromEntries(["schritt", "trab", "galopp"].map((a) => [a, KG.gangBand(a)]));
                     const jeArt = {};
                     for (const art of Object.keys(natur.fr)) {
                         const fr = natur.fr[art];

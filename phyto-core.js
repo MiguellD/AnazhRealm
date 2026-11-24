@@ -4784,12 +4784,25 @@
         if (p <= 0) return -0.01;
         return V[Math.min(V.length - 1, Math.floor(p * V.length))];
     }
+    // DER NEBEL AM ORT (klima-kontinent, rein additiv — ohne `ort` bewegt sich kein Wert): `nebelQuote` ist das Δ des Anteils der
+    // regenfreien Zeit mit Nebel (planet-core `planetKlimaR` o.nebel: Küstenluft, kalter Auftrieb, feuchte Luft). Die Feuchte ist EINE
+    // Welle (gleichverteilte Phase): ihr Anteil über der Stufe s ist 1/2 − asin(2s − 1)/π, die Stufe zum Anteil p ist 1/2 + cos(π·p)/2;
+    // der Weg der Nebel-Stufe ist Stufe(Anteil + Δ) − Stufe(Anteil), am Anker 0.
+    function nebelStufe(p) {
+        if (p >= 1) return -0.01;
+        if (p <= 0) return 1.01;
+        return 0.5 + 0.5 * Math.cos(Math.PI * p);
+    }
     var _wetterVersatzJe = new WeakMap();
     function wetterVersatz(ort) {
         var vs = _wetterVersatzJe.get(ort);
         if (vs) return vs;
         if (!(Number.isFinite(ort.regenQuote) && Number.isFinite(ort.sturmQuote)))
             throw new Error("wetterAt: das Δ des Orts trägt regenQuote oder sturmQuote nicht");
+        if (!Number.isFinite(ort.nebelQuote))
+            throw new Error(
+                "wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)"
+            );
         var V = frontVerteilung(),
             st = WIND_FELD.front.stufen;
         var weg = function (stufe, d) {
@@ -4797,7 +4810,13 @@
             var z = Math.min(1, Math.max(0, a + d));
             return frontQuantil(V, 1 - z) - frontQuantil(V, 1 - a);
         };
-        vs = { regen: weg(st.regen, ort.regenQuote), sturm: weg(st.sturm, ort.sturmQuote) };
+        var aN = 0.5 - Math.asin(2 * st.nebel - 1) / Math.PI;
+        var zN = Math.min(1, Math.max(0, aN + ort.nebelQuote));
+        vs = {
+            regen: weg(st.regen, ort.regenQuote),
+            sturm: weg(st.sturm, ort.sturmQuote),
+            nebel: nebelStufe(zN) - nebelStufe(aN),
+        };
         _wetterVersatzJe.set(ort, vs);
         return vs;
     }
@@ -4820,17 +4839,19 @@
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
         var stSturm = st.sturm,
-            stRegen = st.regen;
+            stRegen = st.regen,
+            stNebel = st.nebel;
         if (ort) {
             var vs = wetterVersatz(ort);
             stSturm += vs.sturm;
             stRegen += vs.regen;
+            stNebel += vs.nebel;
         }
         var zeile = "klar";
         if (f >= stSturm) zeile = "sturm";
         else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
-        else if (feuchte >= st.nebel) zeile = "nebel";
+        else if (feuchte >= stNebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte };
     }
 
@@ -4888,13 +4909,15 @@
         var st = WIND_FELD.front.stufen,
             k = WETTER_ORT.kante;
         var stSturm = st.sturm,
-            stRegen = st.regen;
+            stRegen = st.regen,
+            stNebel = st.nebel;
         if (ort) {
             var vs = wetterVersatz(ort);
             stSturm += vs.sturm;
             stRegen += vs.regen;
+            stNebel += vs.nebel;
         }
-        var n = wxGlatt(st.nebel - k, st.nebel + k, w.feuchte);
+        var n = wxGlatt(stNebel - k, stNebel + k, w.feuchte);
         var s1 = wxGlatt(st.bewoelkt - k, st.bewoelkt + k, w.front);
         var s2 = wxGlatt(stRegen - k, stRegen + k, w.front);
         var s3 = wxGlatt(stSturm - k, stSturm + k, w.front);
