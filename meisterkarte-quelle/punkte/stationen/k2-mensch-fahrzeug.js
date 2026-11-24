@@ -6,6 +6,33 @@
 // Sätze des Spielers durch den EINEN Parser. Wo die Welt den Umfang nicht stellt, misst die Probe ihn und urteilt „nicht“.
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
+
+// DER BREMSWEG AN EINER ADRESSE (mensch.fahrzeug.medium#2, das Gesetz des Fächers, stationen/faecher.js): a.ort ist das Rezept, a.saat
+// die Saat des Wagens. Gerufen wird, was der Wagen der Welt fährt (stamm/gelaende-kollision.js:1238 `_fahrzeugGesetzFor`: exportDrive
+// aus s + fx des Rezepts → fahrGesetz), gefahren vom EINEN Fahr-Schritt des Kerns (`fahrSchritt`, die Probefahrt) auf der Ebene: aus
+// 100 und 50 km/h die volle Bremse bis zum Stand; dazu die Spitze nach `fahrLeistung` (90 s Vollgas). Die Saat hat im Gesetz keinen
+// Eingang — sie reist mit, damit der Fächer zählt, ob sie die Physik ändert
+const BREMS_AN = async (r, T, a) => {
+    const VC = window.__vehicleCore;
+    if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function") return { fehlt: "der Fahrzeug-Kern trägt keinen Fahr-Schritt (vehicle-core fahrSchritt)" };
+    const pre = VC.PRESETS[a.ort];
+    const G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, pre.s, pre.fx), a.ort));
+    if (!G) return { fehlt: "das Rezept " + a.ort + " trägt kein Fahr-Gesetz" };
+    const eben = () => 0;
+    const weg = (kmh) => {
+        const z = VC.fahrZustand(0, 0, 0);
+        VC.fahrStand(z, G, eben, 0);
+        z.vlong = kmh / VC.FAHR.kmh;
+        z.speed = z.vlong;
+        let i = 0;
+        while (z.speed > 0.05 && i++ < 3600) VC.fahrSchritt(z, { brake: 1 }, G, eben, 1 / 60);
+        return Math.round(Math.hypot(z.x, z.z) * 100) / 100;
+    };
+    const L = VC.fahrLeistung(Object.assign({}, pre.s, pre.fx), a.ort);
+    return { weg100: weg(100), weg50: weg(50), vmaxKmh: L ? L.kmh : null };
+};
+
 // DER ZENSUS DER FAHRZEUGE UND MASCHINEN (Seite der Welt)
 const zensusFahr = async (r, T, arg) => {
     const s = r.state;
@@ -496,7 +523,35 @@ module.exports = (F) => [
                 if (!z) throw new Error("kein Zensus der Welt");
                 return z;
             };
-            await K.schritt(2, async () => K.nicht(2, { n: da().physik, fehlt: "20 Saaten bis 130 km/h mit eigener Physik: die Welt trägt " + da().physik + " Fahr-Rezepte (je Typ EINE Physik, die Saat eines Wagens ändert sie nicht) und keine Spurrinne" }));
+            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Saaten × die Rezepte des Kerns, je Adresse die Probefahrt des EINEN
+            // Fahr-Schritts (BREMS_AN) — das Band 30–50 m und 7,5–12,5 m sind die Karte; die Spurrinne hat kein Gesetz (ungemessen beim Namen)
+            await K.schritt(2, async () => {
+                const orte = da().rezepte.filter((x) => x.m != null).map((x) => x.k);
+                const anteil = (von, bis) => (v) => (v.length ? v.filter((x) => x >= von && x <= bis).length / v.length : null);
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.BREMS_AN, export: "vehicle-core.js:3474 exportDrive → :3662 fahrGesetz → :4146 fahrSchritt", leser: "stamm/gelaende-kollision.js:1238" },
+                    adressen: { saaten: 20, orte },
+                    ms: Math.max(4000, Math.floor((H.rest() - 4) * 1000)),
+                    masse: {
+                        imBand: { wie: anteil(30, 50), feld: "weg100" },
+                        imBand50: { wie: anteil(7.5, 12.5), feld: "weg50" },
+                        weg100: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "weg100" },
+                        bis130: { wie: (v) => v.filter((x) => x >= 130).length, feld: "vmaxKmh" },
+                        // die eigene Physik je Saat: verschiedene Fahrten über die 20 Saaten, am ärmsten Rezept
+                        physik: { wie: (v, aus) => Math.min(...orte.map((o) => new Set(aus.filter((x) => x.a.ort === o).map((x) => JSON.stringify(x.w))).size)) },
+                    },
+                    schlecht: { feld: "weg100", richtung: "max" },
+                    ungemessen: ["Spurrinne nach 10 Durchfahrten (kein Gesetz der Spur im Boden)"],
+                });
+                H.zeile("Medium S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "vehicle-core.js:4146 fahrSchritt" });
+                const w = R.werte;
+                return K.nicht(2, {
+                    n: w.physik,
+                    fehlt: "Bremsweg 100→0 " + w.weg100 + " m (im Band " + Math.round(w.imBand * 100) + " %), 50→0 im Band " + Math.round(w.imBand50 * 100) + " %, ≥ 130 km/h " + w.bis130 + "/" + R.gemessen +
+                        " · die Saat ändert die Physik nicht (" + w.physik + " Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · " + R.akte,
+                });
+            });
             await K.schritt(3, async () => K.nicht(3, { n: da().medien.wasser, fehlt: "Wasser: kein Floß, Boot oder Segler steht in der Welt" }));
             await K.schritt(4, async () => K.nicht(4, { n: (da().medien.schiene > 0 ? 1 : 0) + (da().medien.luft > 0 ? 1 : 0), fehlt: "Schiene und Luft: Schienen-Werke " + da().medien.schiene + " · Luft-Werke " + da().medien.luft }));
             await K.schritt(5, async () => K.nicht(5, { n: da().medien.tief, fehlt: "Tiefsee, Verformung, Untergang: kein Tauch-Werk, kein Wagen verformt sich" }));
@@ -504,7 +559,7 @@ module.exports = (F) => [
             await K.schritt(7, async () => K.leser(7, { n: da().g === 9.8 ? 1 : 0, fehlt: "kein Planet trägt sein g und ρ: der Fahr-Kern liest die Konstante FAHR.G = " + da().g, wo: "vehicle-core.js:3080" }));
             await K.schritt(8, async () => K.nicht(8, { n: da().medien.raum, fehlt: "zwischen Sonnensystemen: kein Raum-Werk, keine Uhr an Bord neben der Uhr daheim" }));
         },
-        seite: { ZENSUS: zensusFahr },
+        seite: { ZENSUS: zensusFahr, FAECHER, BREMS_AN },
         sprossen: {
             2: {
                 umfang: { soll: 20, wort: "Saaten bis 130 km/h mit eigener Physik" },

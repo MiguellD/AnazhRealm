@@ -9,6 +9,31 @@
 
 const PROBE = "[linse-gpu] amd/rdna-3 (Probe)";
 const SIEDLUNG = ["stamm/siedlung-bewohner.js", "stamm/siedlung-wege.js", "fachwerk-core.js", "koerper-core.js"];
+const { FAECHER } = require("./faecher.js");
+
+// DER TAG DER BEWOHNER AN EINER ADRESSE (mensch.nahrung.tier#2, das Gesetz des Fächers, stationen/faecher.js): an der Saat a.saat der
+// Plan des Dorfs, wie der Faden ihn baut (fachwerk `exportSettlement`, die Epoche der Saat; ~1 s je Saat, darum je Saat einmal im
+// `mit` des Fächers gehalten), seine Orte nach dem Gesetz des Tags (koerper-core `tagesOrte`), und zur Stunde a.zeit je Slot der Plan
+// seines Bewohners (koerper-core `tagesPlan` — derselbe Ruf wie der Wirt, stamm/siedlung-bewohner.js:2239): gezählt, wer zur Jagd oder
+// zum Fischen geht (Tat, Ort oder Rolle: Jagd, Wild, Fisch)
+const JAGD_AN = async (r, T, a, mit) => {
+    const FC = globalThis.__fachwerkCore, KC = window.__koerperCore;
+    if (!FC || !KC || typeof KC.tagesPlan !== "function" || typeof KC.tagesOrte !== "function") return { fehlt: "der Kern trägt kein Gesetz des Tags (koerper-core tagesPlan / tagesOrte)" };
+    const halt = (mit.plaene = mit.plaene || {});
+    if (!halt[a.saat]) halt[a.saat] = KC.tagesOrte(FC.exportSettlement({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) }));
+    const orte = halt[a.saat];
+    const JAGD = /jag|jagd|fisch|angel|wild|beute/i;
+    let jagd = 0, bewohner = 0;
+    const taten = {};
+    for (const o of orte) {
+        if (o.slot == null) continue;
+        bewohner++;
+        const p = KC.tagesPlan(a.saat * 1000 + o.slot, o.art, a.zeit, orte);
+        taten[p.akt] = (taten[p.akt] || 0) + 1;
+        if (JAGD.test(String(p.akt)) || JAGD.test(String(p.wo)) || JAGD.test(String(o.art))) jagd++;
+    }
+    return { jagd, bewohner, taten, rollen: [...new Set(orte.map((o) => o.art))].join(",") };
+};
 
 // DER ZENSUS DER SIEDLUNG (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
 // ist (`__gebautNach`, wie g2 dorfZaehlung), dann je Plan die Äcker (Welt-OBB, Anteil gemalt innen und im Ring 2,5 m außen), die
@@ -747,6 +772,33 @@ module.exports = (F) => [
             await K.messort("dorf");
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
+            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 8 Saaten × 24 Stunden, je Adresse der Tag jedes Bewohners nach dem Gesetz des
+            // Kerns (JAGD_AN) — der Umfang je Saat ist die kleinste Zahl der Jäger über die 8 Saaten (die Karte: je Saat); vor dem Zensus:
+            // der Fächer braucht die Bühne nicht
+            await K.schritt(2, async () => {
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.JAGD_AN, export: "koerper-core.js:5459 tagesOrte + :5630 tagesPlan (TAGES_GESETZ :5300)", leser: "stamm/siedlung-bewohner.js:2239" },
+                    adressen: { saaten: 8, zeiten: Array.from({ length: 24 }, (_, h) => h + 0.5) },
+                    mit: { nH: 60 },
+                    ms: Math.max(4000, Math.floor((H.rest() - 4) * 1000)),
+                    masse: {
+                        jaegerJeSaat: { wie: (v, aus) => Math.min(...[1, 2, 3, 4, 5, 6, 7, 8].map((s) => Math.max(0, ...aus.filter((x) => x.a.saat === s).map((x) => x.w.jagd)))) },
+                        jagdJeTag: { wie: (v) => v.reduce((q, x) => q + x, 0) / 8, feld: "jagd" },
+                        bewohner: { wie: "summe", feld: "bewohner" },
+                        taten: { wie: "zaehle", feld: "taten" },
+                        rollen: { wie: "verschieden", feld: "rollen" },
+                    },
+                    schlecht: { feld: "jagd", richtung: "min" },
+                    ungemessen: ["der Wildbestand unter der Jagd (ohne Jäger keine Jagd, die ihn senkt)"],
+                });
+                H.zeile("Tier S2: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "koerper-core.js:5630" });
+                const w = R.werte;
+                return K.nicht(2, {
+                    n: w.jaegerJeSaat,
+                    fehlt: "Bewohner, die jagen und fischen (8 Saaten): " + w.jaegerJeSaat + " Jäger je Saat, " + w.jagdJeTag + " Jagden je Tag; die Taten des Tags " + Object.keys(w.taten).join("/") +
+                        " — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · " + R.akte,
+                });
             let Z = null, zf = "";
             try {
                 Z = await ruf("ZENSUS");
@@ -758,7 +810,7 @@ module.exports = (F) => [
                 return Z;
             };
             const wer = () => "Bewohner " + z().bewohner + " (Berufe " + Object.keys(z().berufe).join("/") + "), Tiere " + z().kreaturen + ", zahm " + z().zahm;
-            await K.schritt(2, async () => K.nicht(2, { n: z().jaeger, fehlt: "Bewohner, die jagen und fischen (8 Saaten): " + z().jaeger + " Jäger/Fischer unter " + wer() }));
+            });
             await K.schritt(3, async () => K.nicht(3, { n: z().hirten, fehlt: "10² Tiere in einer Herde mit Hirte: " + z().hirten + " Hirten — " + wer() }));
             await K.schritt(4, async () => K.nicht(4, { n: z().zahm, fehlt: "10³ Haustiere aus der Wildfauna (32 Saaten): " + z().zahm + " zahme Tiere (bond ≥ 0,5)" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().jaeger, fehlt: "Fischerei und Aquakultur mit Bestand und Fang: kein Fischer, kein Fang — " + wer() }));
@@ -775,7 +827,7 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { ZENSUS, TIER },
+        seite: { ZENSUS, TIER, FAECHER, JAGD_AN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "an den Spieler gebundenes Tier" }, masse: [{ key: "p95", wort: "Abstand p95 zum Spieler über den Hang (m)", soll: 5, richtung: "≤" }, { key: "hub", wort: "Anstieg des Wegs über den Hang (m)", soll: 0, richtung: ">" }] },
             2: { umfang: { soll: 1, wort: "jagende oder fischende Bewohner (je Saat, 8 Saaten)" }, masse: [{ key: "jagdJeTag", wort: "Jagden je Tag", soll: 1, richtung: "≥" }, { key: "wildDelta", wort: "Änderung des Wildbestands", soll: 0, richtung: "<" }], erwartet: "nicht", fehlt: "kein Bewohner jagt oder fischt" },

@@ -7,44 +7,52 @@
 // Seiten-Funktionen sehen nichts aus diesem Modul (sie reisen als Text).
 "use strict";
 
+const { FAECHER } = require("./faecher.js");
 const PROBE = "[linse-gpu] amd/rdna-3 (Probe)";
 const STADT_PFAD = ["stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "stamm/siedlung-wege.js", "fachwerk-core.js", "koerper-core.js"];
 
-// DER STAND DER TECHNIK (mensch.wirtschaft.technik#1): der Leser ruft das Gesetz des Kerns beim Namen und rechnet nichts nach — je Saat
-// 1 … arg.saaten der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)}) vor `technikImBild` (Techniken im Bild, die der Stand
-// der Saat nicht trägt: `ohneVor`), die verschiedenen Stände, der Graph (Techniken mit Vorgänger); dazu der Plan der Stadt am Messort,
-// wie die Welt ihn gebaut hat (`technik` des Plans). Trägt der Kern das Gesetz nicht (main vor front-technik), steht `fehlt`
-const TECHNIK = async (r, T, arg) => {
+// DER STAND DER TECHNIK AN EINER ADRESSE (mensch.wirtschaft.technik#1, das Gesetz des Fächers, stationen/faecher.js): der Leser ruft das
+// Gesetz des Kerns beim Namen und rechnet nichts nach — an der Saat a.saat der Plan des DORF ({seed, nH, epoche: siedlungsEpoche(seed)})
+// vor `technikImBild` (Techniken im Bild, die der Stand der Saat nicht trägt: `ohneVor`), sein Stand, der Graph (Techniken mit
+// Vorgänger); an der Adresse a.ort = { ox, oz } der Plan der Stadt am Messort, wie die Welt ihn gebaut hat (`technik` des Plans). Trägt
+// der Kern das Gesetz nicht (main vor front-technik), steht `fehlt`. Vorher lief die Schleife der Saaten in dieser Funktion selbst
+const TECHNIK_AN = async (r, T, a, mit) => {
     const FC = globalThis.__fachwerkCore;
     if (!FC || typeof FC.technikImBild !== "function" || !FC.TECHNIK) return { fehlt: "der Kern trägt kein Technik-Gesetz (fachwerk technikImBild fehlt) — kein Stand im Plan" };
-    const G = FC.TECHNIK.graph, mitVor = Object.keys(G).filter((k) => G[k].vor.length);
-    const o = { mitVor: mitVor.length, ohneVor: 0, ohne: {}, imBild: {}, staende: 0, saaten: 0, welt: null };
-    const st = new Set();
-    for (let seed = 1; seed <= arg.saaten; seed++) {
-        const D = FC.DORF({ seed, nH: arg.nH, epoche: FC.siedlungsEpoche(seed) });
-        if (!D.technik) return { fehlt: "der Plan der Saat " + seed + " trägt keinen Technik-Stand" };
+    const G = FC.TECHNIK.graph, mitVor = Object.keys(G).filter((k) => G[k].vor.length).length;
+    if (a.saat != null) {
+        const D = FC.DORF({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) });
+        if (!D.technik) return { fehlt: "der Plan der Saat " + a.saat + " trägt keinen Technik-Stand" };
         const B = FC.technikImBild({ technik: D.technik, slots: D.houses });
-        o.saaten++;
-        o.ohneVor += B.ohneVor;
-        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
-        for (const k in B.imBild) o.imBild[k] = (o.imBild[k] || 0) + B.imBild[k];
-        st.add(D.technik.stand.join(","));
+        return { mitVor, ohneVor: B.ohneVor, ohne: B.ohne, imBild: B.imBild, stand: D.technik.stand.join(",") };
     }
-    o.staende = st.size;
-    // die Stadt am Messort, wie die Welt sie gebaut hat
     let S = null, d = Infinity;
     for (const q of (r._bewohnerSiedlungen || new Map()).values()) {
-        const e = Math.hypot(q.ox - arg.ox, q.oz - arg.oz);
+        const e = Math.hypot(q.ox - a.ort.ox, q.oz - a.ort.oz);
         if (q && q.plan && e < d) [S, d] = [q, e];
     }
-    if (S && S.plan.technik) {
-        const B = FC.technikImBild(S.plan);
-        o.welt = { ohneVor: B.ohneVor, ohne: B.ohne, stand: S.plan.technik.stand.length, ohneTechnik: S.plan.technik.fehlt, epoche: S.plan.technik.epoche };
-        o.ohneVor += B.ohneVor;
-        for (const k in B.ohne) o.ohne[k] = (o.ohne[k] || 0) + B.ohne[k];
-    } else o.welt = { fehlt: S ? "der Plan der Stadt trägt keinen Technik-Stand" : "keine Siedlung am Messort" };
-    return o;
+    if (!(S && S.plan.technik)) return { fehlt: S ? "der Plan der Stadt trägt keinen Technik-Stand" : "keine Siedlung am Messort" };
+    const B = FC.technikImBild(S.plan);
+    return { mitVor, ohneVor: B.ohneVor, ohne: B.ohne, welt: { ohneVor: B.ohneVor, ohne: B.ohne, stand: S.plan.technik.stand.length, ohneTechnik: S.plan.technik.fehlt, epoche: S.plan.technik.epoche } };
 };
+// DER FÄCHER DER TECHNIK (technik#1): die vier Dinge der Bauart — das Gesetz, die Adressen (20 Saaten + die Stadt am Messort), das
+// Prädikat (die Verdichtung; die Schwellen stehen an der Sprosse), die schlechteste Adresse. Der Leser des Spiels: stamm/siedlung-ort.js:308
+// bestellt den Plan beim Faden (export-settlement → fachwerk-core exportSettlement → DORF), die Epoche der Zelle aus siedlungsEpoche (:2007)
+const technikFaecher = (ort, nH) => ({
+    gesetz: { export: "fachwerk-core.js:5183 DORF + :13942 technikImBild", leser: "stamm/siedlung-ort.js:308" },
+    adressen: { saaten: 20, dazu: [{ ort }] },
+    mit: { nH },
+    masse: {
+        mitVor: { wie: "max", feld: "mitVor" },
+        ohneVor: { wie: "summe", feld: "ohneVor" },
+        ohne: { wie: "zaehle", feld: "ohne" },
+        imBild: { wie: "zaehle", feld: "imBild", nur: "saat" },
+        staende: { wie: "verschieden", feld: "stand", nur: "saat" },
+        saaten: { wie: "anzahl", nur: "saat" },
+        welt: { wie: "erste", feld: "welt" },
+    },
+    schlecht: { feld: "ohneVor", richtung: "max" },
+});
 
 // DER ZENSUS DER STADT (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
 // ist (`__gebautNach`, wie g2 dorfZaehlung), dann je Plan die Rollen der Häuser, die Bewohner mit Werk, Beruf und Rolle, die Händler,
@@ -763,22 +771,26 @@ module.exports = (F) => [
                 K.auge(6, { bild: b.datei, pose: "20 m südlich der Mitte der Stadt, Ego 1,7 m", mass: epochen() + " Epochen" });
             });
             await K.schritt(7, async () => K.nicht(7, { n: 0, fehlt: "fremde Chemie in ≥ 10 Pfaden jenseits unserer: keine Technik, keine fremde Stoffwelt" }));
-            // S1: der Stand der Technik je Saat, gelesen am Gesetz des Kerns (`TECHNIK`), dazu der Plan der Stadt am Messort
+            // S1: der Stand der Technik über den FÄCHER (stationen/faecher.js): 20 Saaten und die Stadt am Messort als Adressen, je Adresse
+            // ein Ruf des Gesetzes des Kerns (TECHNIK_AN) in der EINEN warmen Welt; die Akte nennt Gesetz, Leser und die schlechteste Adresse
             await K.schritt(1, async () => {
-                const t = await ruf("TECHNIK", { saaten: 20, nH: 60, ox: z().nah.ox, oz: z().nah.oz });
-                H.zeile("Technik S1: " + JSON.stringify(t).slice(0, 400));
-                if (t.fehlt) return K.leser(1, { fehlt: t.fehlt, wo: "fachwerk-core.js technikImBild" });
-                if (t.welt && t.welt.fehlt) return K.leser(1, { fehlt: "die Stadt am Messort: " + t.welt.fehlt, wo: "fachwerk-core.js DORF technik" });
+                const f = H.seite.TECHNIK_FAECHER({ ox: z().nah.ox, oz: z().nah.oz }, 60);
+                f.gesetz.fn = H.seite.TECHNIK_AN;
+                f.ms = ms() - 3000;
+                const R = await H.seite.FAECHER(K.welt, f);
+                const t = R.werte;
+                H.zeile("Technik S1: " + R.akte.slice(0, 400));
+                if (R.fehlt) return K.leser(1, R.fehltAn[0].saat != null ? { fehlt: R.fehlt, wo: "fachwerk-core.js technikImBild" } : { fehlt: "die Stadt am Messort: " + R.fehlt, wo: "fachwerk-core.js DORF technik" });
                 const ohne = Object.keys(t.ohne).map((k) => k + " " + t.ohne[k]).join(", ");
                 return K.zahl(1, {
                     n: t.mitVor,
                     werte: { ohneVor: t.ohneVor, staende: t.staende },
-                    beleg: t.saaten + " Saaten + die Stadt am Messort (" + (t.welt.epoche || "ohne Epoche") + ", ohne " + t.welt.ohneTechnik.join("/") + "); im Bild " + JSON.stringify(t.imBild),
+                    beleg: t.saaten + " Saaten + die Stadt am Messort (" + (t.welt.epoche || "ohne Epoche") + ", ohne " + t.welt.ohneTechnik.join("/") + "); im Bild " + JSON.stringify(t.imBild) + " · " + R.akte,
                     ...(t.ohneVor || t.staende < 2 ? { taeter: (ohne ? "Technik ohne Vorgänger im Bild: " + ohne : "") + (t.staende < 2 ? " jede Saat derselbe Stand" : "") } : {}),
                 });
             });
         },
-        seite: { STADT, TECHNIK },
+        seite: { STADT, TECHNIK_AN, FAECHER, TECHNIK_FAECHER: technikFaecher },
         sprossen: {
             1: {
                 umfang: { soll: 10, wort: "Techniken mit Voraussetzung" },

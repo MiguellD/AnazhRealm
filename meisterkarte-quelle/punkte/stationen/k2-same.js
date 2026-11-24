@@ -30,6 +30,20 @@ const crypto = require("crypto");
 const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
 const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
 const AUGE = require("./auge-klasse.cjs");
+const { FAECHER } = require("./faecher.js"); // der Fächer (M4: der Richter ist selbst eine Adresse) — same.massstab.spanne S1–S4
+
+// DAS AUGE AN EINER ADRESSE (same.massstab.spanne S1–S4, das Gesetz des Fächers): a.saat ist die Saat. Die Kamera der Welt folgt dem Leib
+// (`_loopCamera`, stamm/koerper-bewegung.js:1759), ihr Grund ist das Gelände der Saat — gelaende-core `hoehe` über die Lage
+// `_gelaende()` (stamm/gelaende-boden.js:833: eine lebende Sicht auf state, ihre Saat `_saatJe` = worldMeta.seed, Hydrosphäre und Erdbau
+// aus dem Faden). An der geladenen Saat misst das Gesetz die nahe und die ferne Ebene und das Auge über dem Grund; jede andere Saat
+// trägt keine Lage, die die warme Welt rufen kann — sie nennt das Fehlende
+const AUGE_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+        return { fehlt: "die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)" };
+    const c = st.camera;
+    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
+};
 
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
@@ -2761,7 +2775,7 @@ LEITERN.push(
 // ═══════════════════════════════════════ Perspektive massstab ═══════════════════════════════════════
 {
     // ─────────── same.massstab.spanne — Spanne der Größenordnungen ───────────
-    // S1–S4 verlangen 20 Saaten: EINE Fahrt über die Saaten der Sitzung (H.seite.SAATEN, der EINE Wechsel am Ort), je Saat die Kamera der
+    // S1–S4 verlangen 20 Saaten: EIN Fächer über die Saaten (stationen/faecher.js, das Gesetz AUGE_AN), je Saat die Kamera der
     // Welt — dann nennt jede Sprosse ihren Leser (Steigflug, nahe Ebene, Krümmung, Orbit). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
     // gezählt wird die Reichweite der Welt-Kamera (`state.camera.far`, gesetzt in stamm/dirigent-ankunft.js:468) — was hinter ihr liegt,
     // zeichnet die Welt nicht.
@@ -2812,7 +2826,7 @@ LEITERN.push(
                     umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
                 },
             },
-            seite: { SAATEN },
+            seite: { FAECHER, AUGE_AN },
             lauf: async function spanneLauf(H, P, L) {
                 const ort0 = Date.now();
                 await L.ort("wiese", "ego");
@@ -2822,21 +2836,23 @@ LEITERN.push(
                 L.preisPose("wiese", "ego");
                 const sicht = "die Welt-Kamera reicht " + z.far + " m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht";
                 for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
-                // S1–S4 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): EINE Fahrt für die vier Sprossen (ihr Umfang ist derselbe, N = 20
-                // Saaten) — je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat die Kamera der Welt (nahe und ferne
-                // Ebene) und die Höhe des Auges über dem Gesetz. Die Schleife läuft zuletzt und lässt den Heimweg samt dem doppelten ersten
-                // Gang zur Wiese in der Frist (dort fährt der Preis, R3). Trägt die Welt alle Saaten, nennt jede Sprosse ihren Leser.
+                // S1–S4 ÜBER DEN FÄCHER (stationen/faecher.js; vorher die Bühne H.seite.SAATEN, je Saat ein Welt-Wechsel am Ort): EIN Fächer
+                // für die vier Sprossen (ihr Umfang ist derselbe, N = 20 Saaten, dieselben Namen wie die Bühne) und die geladene Saat — je
+                // Adresse die Kamera der Welt (nahe und ferne Ebene) und die Höhe des Auges über dem Grund. Trägt die Welt alle Saaten, nennt
+                // jede Sprosse ihren Leser; sonst bleibt sie beim Namen der fehlenden Fähigkeit offen.
                 const v = P.sprossen[1].umfang.verlangt;
-                const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
-                const kamera = function (r) {
-                    const c = r.state.camera;
-                    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
-                };
-                let s = null, wurf = null;
+                let R = null, wurf = null;
                 try {
-                    s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + kamera + ");", Math.max(5, L.rest() - 2));
-                    if (s.fehler) throw new Error(s.fehler);
-                    L.zeile("spanne S1–S4 Saaten " + JSON.stringify(s));
+                    R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.AUGE_AN, export: "gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833)", leser: "stamm/koerper-bewegung.js:1759 _loopCamera" },
+                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: z.saat }] },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: { saaten: { wie: "anzahl", nur: "saat" }, near: { wie: "max", feld: "near" }, auge: { wie: "max", feld: "auge" } },
+                        schlecht: { feld: "auge", richtung: "min" },
+                        pose: (a) => "Saat " + a.saat + " an der Wiese, ego (das Auge am Leib)",
+                        ungemessen: ["Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)"],
+                    });
+                    L.zeile("spanne S1–S4 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
                 } catch (e) {
                     if (e && e.messort) throw e;
                     wurf = e;
@@ -2845,24 +2861,20 @@ LEITERN.push(
                     for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => { throw wurf; });
                     return;
                 }
-                const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
-                const nahJe = [...new Set(s.je.map((x) => x.z.near))].join("/") || "—";
-                const augeJe = s.je.map((x) => x.z.auge).join("/") || "—";
-                const in20 = "in " + s.je.length + " Saaten (nahe Ebene je Saat " + nahJe + " m, Auge über dem Grund " + augeJe + " m; " + zeit + ")";
+                const in20 = "in " + R.gemessen + " von " + (v + 1) + " Adressen (nahe Ebene " + R.werte.near + " m, Auge über dem Grund " + R.werte.auge + " m; " + R.akte + ")";
                 const flug = "kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe";
                 // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera — derselbe wie same.massstab.nahe
                 const hfov = 2 * Math.atan(Math.tan((z.fov * Math.PI) / 360) * (1280 / 720));
                 const cm = 0.01 / (2 * Math.tan(hfov / 2));
-                const nahe = Math.max(...s.je.map((x) => x.z.near));
-                const urteil = {
-                    1: () => L.leser(1, "Steigflug 0,5 → 700 m in 30 s: " + flug + " — " + in20, s.je.length),
-                    2: () =>
-                        L.leser(2, nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand — " + in20 : "Spanne 1 cm → 1 km: " + flug + " — " + in20, s.je.length),
-                    3: () => L.leser(3, "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km — " + in20, s.je.length),
-                    4: () => L.leser(4, "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite — " + in20, s.je.length),
+                const nahe = R.werte.near;
+                // je Sprosse ihr Leser; trägt der Fächer nicht alle Saaten, steht das Fehlende der Saat daneben
+                const grund = {
+                    1: "Steigflug 0,5 → 700 m in 30 s: " + flug,
+                    2: nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand" : "Spanne 1 cm → 1 km: " + flug,
+                    3: "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km",
+                    4: "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite",
                 };
-                for (const nr of [1, 2, 3, 4])
-                    await L.je(nr, async () => (s.je.length < v ? L.umfang(nr, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; Ende: " + s.grund + ")") : urteil[nr]()));
+                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.leser(nr, grund[nr] + (R.gemessen < v ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen));
             },
         })
     );
@@ -4228,12 +4240,17 @@ LEITERN.push(
     // je 3 s in der Minute (GTX f68dbf09: „FRIST 87 s der Probe gerissen“, ehe ein Posten stand) — die Probe fällt in dieser Welle.
     //   Teil 1: genesis-0 (frisch: S1) → stadt-voll (die Gründung, wo die Stadt noch nicht steht) → stadt-1 (S4)
     //   Teil 2: genesis-1 (S2: Runde 1) → stadt-2 → genesis-2
-    //   Teil 3: Halde genesis-2 → stadt-3 (der Umfang von S3) → genesis-3, dreimal gepostet (die Streuung) → Halde → S1 · S3
+    //   Teil 3: Halde genesis-2 → stadt-3 (der Umfang von S3) → genesis-3, dreimal gepostet (die Streuung) → Halde → S1
+    //   Teil 4: stadt-4 → genesis-4, dreimal gepostet, OHNE Halde (Koordinator 24.11.: EINE vierte Runde R4 − R3) → S3
     // S3 urteilt R3 gegen R2 (R n = Heap nach GC an genesis-n): „Speicher am Ende = Anfang ±2 %“ über der GEMESSENEN Streuung des
     // Postens (drei Posten am selben Halt, max − min) — rueck_pct = max(0, |R3 − R2| − Streuung) / R2; der Täter nennt R2 − R1, R3 − R2
     // und den Halter des Diffs. Ein Vorrat, der sich im zweiten Besuch füllt und steht, ist grün; eine Undichte je Besuch nie.
+    // DIE VIERTE RUNDE (Koordinator 24.11., runde-c-vor an main 1feab29c6: R1−R0 +166,9 · R2−R1 +64,6 · R3−R2 +33,8 MB): das Urteil über
+    // R4 − R3 stand VOR der Messung — ≤ 22 MB VORRAT (der Zuwachs fällt je Runde, kein Schnitt am Spiel), ≥ 28 MB UNDICHT außerhalb der
+    // Register (die Allokations-Zeitleiste über Runde 4 nennt den Erzeuger), dazwischen UNGEMESSEN (kein weiterer Lauf). S3 trägt es
+    // im Täter, mit dem Verhältnis (R4 − R3)/(R3 − R2) und — als Vorrat — dem Grenzwert der Folge R3 + (R4 − R3)/(1 − q).
     // NUR AUF ANSPRUCH: die Station fährt, wenn eine Anspruchs-Zeile (zug/anspruch.txt) sie nennt oder die Leiter nie beurteilt wurde
-    // (nötig messen) — nie in jeder Runde; ein Gerät zahlt die drei Teile (≈ 8–10 min) einmal je Anspruch.
+    // (nötig messen) — nie in jeder Runde; ein Gerät zahlt die vier Teile (≈ 11–13 min) einmal je Anspruch.
     // DIE EINE AUSNAHME DER MINUTE (`SPEICHER_RUNDE`, nur hier — `leiter()` hält jede andere Leiter bei sek ≤ 60): je Teil der Deckel
     // `sekJeTeil`, Grund gemessen an der GTX 1060 (main 1feab29c6, p3/n2311/heap/runde-a-vor/schritte.log der OMEN): die Gründung an
     // stadt-voll 153 s, die warme Ankunft stadt-voll 98 s, genesis 23–27 s, der Posten 4–8 s, die Halde 18 s, die Ruhe des Vorbaus ≤ 20 s
@@ -4243,7 +4260,7 @@ LEITERN.push(
     // er geht und entsorgt sich selbst, :1447). Jeder Posten wartet, bis kein Gast (`vorbau:` · `vorwaermen:`, `_vorbauGast`) in der
     // Szene hängt — dreimal in Folge; steht nach 20 s noch einer, trägt der Halt ihn beim Namen.
     const SPEICHER_RUNDE = {
-        teile: 3,
+        teile: 4,
         sekJeTeil: 240,
         grund: "warme Ankunft stadt-voll 98 s + genesis 23 s, Gründung 153 s, Halde 18 s, Ruhe des Vorbaus ≤ 20 s je Posten — gemessen GTX 1060 an main 1feab29c6",
     };
@@ -4452,7 +4469,6 @@ LEITERN.push(
                         await ort("genesis", 40);
                         for (let i = 0; i < 3; i++) await posten("genesis-3");
                         await halde("genesis-3");
-                        L.preisPose("genesis", "ego");
                         const k = kurve();
                         await L.je(1, async () => {
                             const a = R.halte["genesis-0"];
@@ -4467,17 +4483,35 @@ LEITERN.push(
                                 }
                             );
                         });
+                    }
+                    if (faehrt(4)) {
+                        traegt("genesis-1", "genesis-2", "genesis-3", "stadt-1", "stadt-2", "stadt-3");
+                        await L.zelle(ZELLE);
+                        await ort("stadt-voll", 110);
+                        await posten("stadt-4");
+                        await ort("genesis", 40);
+                        for (let i = 0; i < 3; i++) await posten("genesis-4");
+                        L.preisPose("genesis", "ego");
+                        const w3 = R.stadt3 || (await stadtZahl());
                         await L.je(3, async () => {
                             const g = (n) => R.halte["genesis-" + n];
-                            const wdh = g(3).wdh.filter(Number.isFinite);
-                            const streu = Math.max(...wdh) - Math.min(...wdh);
-                            const [d21, d32] = [g(2).heap - g(1).heap, g(3).heap - g(2).heap];
+                            const wdh = g(3).wdh.filter(Number.isFinite), wdh4 = g(4).wdh.filter(Number.isFinite);
+                            const streu = Math.max(...wdh) - Math.min(...wdh), streu4 = Math.max(...wdh4) - Math.min(...wdh4);
+                            const [d21, d32, d43] = [g(2).heap - g(1).heap, g(3).heap - g(2).heap, g(4).heap - g(3).heap];
                             const rueck = (100 * Math.max(0, Math.abs(d32) - streu)) / g(2).heap;
+                            // DAS URTEIL DER VIERTEN RUNDE (vor der Messung gesetzt): ≤ 22 MB Vorrat · ≥ 28 MB undicht · dazwischen ungemessen
+                            const q = d32 > 0 ? d43 / d32 : null;
+                            const vier =
+                                d43 <= 22
+                                    ? "VORRAT (R4 − R3 " + MB(d43) + " ≤ 22 MB" + (q != null ? ", q = " + q.toFixed(2) + (q < 1 ? ", Grenzwert der Folge " + MB(g(3).heap + d43 / (1 - q)) + " MB" : "") : "") + ")"
+                                    : d43 >= 28
+                                      ? "UNDICHT außerhalb der Register (R4 − R3 " + MB(d43) + " ≥ 28 MB) — die Allokations-Zeitleiste über Runde 4 nennt den Erzeuger"
+                                      : "UNGEMESSEN (R4 − R3 " + MB(d43) + " MB zwischen 22 und 28)";
                             // DER HALTER DES DIFFS: je Pfad ab r die MB an genesis-3 gegen genesis-2, die größten zuerst
                             const [h2, h3] = [new Map((R.halde["genesis-2"] || {}).halter || []), new Map((R.halde["genesis-3"] || {}).halter || [])];
                             const diff = [...new Set([...h2.keys(), ...h3.keys()])].map((p) => [p, (h3.get(p) || 0) - (h2.get(p) || 0)]).sort((x, y) => y[1] - x[1]);
                             const halter = diff.slice(0, 3).map(([p, d]) => (d >= 0 ? "+" : "") + d.toFixed(1) + " MB " + p).join(" · ");
-                            const stadt = [1, 2, 3].map((n) => R.halte["stadt-" + n]);
+                            const stadt = [1, 2, 3, 4].map((n) => R.halte["stadt-" + n]);
                             const reg = (n) => { const x = g(n); return "geo " + x.geo + " · tex " + x.tex + " · memoryMap " + x.memoryMap + " · attrMB " + x.attrMB + " · Schatten-Hörer " + x.schattenHoerer + " · Kinder " + x.kinder + (x.gast && x.gast.length ? " · GAST im Posten " + x.gast.join(", ") : ""); }; // prettier-ignore
                             L.gemessen(
                                 3,
@@ -4488,8 +4522,9 @@ LEITERN.push(
                                     taeter:
                                         "R3 − R2 " + MB(d32) + " MB (genesis-2 " + g(2).heap + " → genesis-3 " + g(3).heap + " MB), Streuung des Postens " + MB(streu) + " MB, R2 − R1 " + MB(d21) + " MB" +
                                         (Math.abs(d32) > streu ? " — der Halter des Diffs: " + (halter || "keine Halde") : " — ein Vorrat, der steht") +
-                                        " · Register genesis-2 " + reg(2) + " → genesis-3 " + reg(3) + " · die Stadt des Gesetzes (" + w3.haeuser + " Häuser an " + JSON.stringify(w3.ort) + ") trägt " + w3.bauten + " Bauten",
-                                    beleg: { genesis: [0, 1, 2, 3].map((n) => ({ heap: g(n).heap, vram: g(n).vram, geo: g(n).geo, tex: g(n).tex })), streu: wdh, diff: diff.slice(0, 12) },
+                                        " · VIERTE RUNDE R4 − R3 " + MB(d43) + " MB (genesis-4 " + g(4).heap + " MB, Streuung " + MB(streu4) + " MB): " + vier +
+                                        " · Register genesis-2 " + reg(2) + " → genesis-3 " + reg(3) + " → genesis-4 " + reg(4) + " · die Stadt des Gesetzes (" + w3.haeuser + " Häuser an " + JSON.stringify(w3.ort) + ") trägt " + w3.bauten + " Bauten",
+                                    beleg: { genesis: [0, 1, 2, 3, 4].map((n) => ({ heap: g(n).heap, vram: g(n).vram, geo: g(n).geo, tex: g(n).tex })), streu: wdh, streu4: wdh4, d43: MB(d43), q: q != null ? +q.toFixed(3) : null, vier, diff: diff.slice(0, 12) },
                                 }
                             );
                         });
