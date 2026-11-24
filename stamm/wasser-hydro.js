@@ -736,8 +736,8 @@ class AnazhRealm_wasser_hydro {
     }
 
     // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
-    // Grund) trägt als Fläche, wo das Bild tragendes Eis zeigt: über der Linie `voll` des Gesetzes (`_eisLinien`) an der
-    // Säule unter ihm (`_eisLinieBei`, dieselbe Deckung wie der Stoff, `_eisDeckung`; der Gefrierpunkt und die Trägheit aus den
+    // Grund) trägt als Fläche, wo das Gesetz tragendes Eis rechnet: die Dicke der Säule unter ihm (`_eisDickeAt`, `eisDicke`
+    // des Kerns ≥ `EIS.traegt`; die Linien `_eisLinien` sind nur die billigen Filter und die Deckung des Bilds, `_eisDeckung`; der Gefrierpunkt und die Trägheit aus den
     // Zeilen wasser und eis der Stoff-Tafel, stoffe.K1, `_wasserStoff`). Rückgabe: der Grund unter `y0` binnen
     // `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null. Kein zweites Wasser: dieselbe Fläche, die das Auge
     // sieht und durch die der Körper taucht, solange sie offen ist.
@@ -757,7 +757,29 @@ class AnazhRealm_wasser_hydro {
         // einem Spiegel, den er nie berührt.
         const g = Number.isFinite(grund) ? grund : this._voxelSurfaceY(x, z);
         if (!(g < spiegel)) return null;
-        return spiegel >= E.voll[3] || spiegel >= this._eisLinieBei(E.voll, spiegel - g) ? spiegel : null;
+        // DAS TRAG-URTEIL IST DIE DICKE DES GESETZES (spiegel-eis, planet.wasser.eis#2): über der Linie der tiefsten Säule trägt
+        // jedes Wasser; dazwischen urteilt die Dicke der EINEN Säule unter dem Körper (`_eisDickeAt`), nie die Linie zwischen
+        // zwei Knoten. Bis hier las der Körper die Linie in log-Tiefe interpoliert: am See 1816/−6168 (3,43 m) trug das Eis
+        // zwei Tage nach dem Gesetz (die Linie 1,74 m über der wahren am Tag 275, an 1,5 m Säule 2,03 m).
+        return spiegel >= E.voll[3] || this._eisDickeAt(spiegel, spiegel - g) >= globalThis.__gelaendeCore.EIS.traegt
+            ? spiegel
+            : null;
+    }
+
+    // DIE DICKE DES EISES über der Säule `tiefe` am Spiegel `y` (m): das Gesetz des Kerns (`eisDicke`) zur Stunde der Linien
+    // (`_eisLinien().saison`), auf dem Feld dieser Naht und dem Stoff der Welt — die EINE Dicke, die das Trag-Urteil (`_eisAt`)
+    // und die Linse lesen. Leser: `_eisAt`, gate:wasser-leben (N2 EIS), die Station planet.wasser.eis#2.
+    _eisDickeAt(y, tiefe) {
+        const K = globalThis.__gelaendeCore;
+        const E = this._eisLinien();
+        return K.eisDicke(
+            this._gelaende(),
+            y,
+            E.saison,
+            tiefe,
+            (tr) => this._temperaturFeld(y, tr),
+            this._wasserStoff()
+        );
     }
 
     // Die Linie (`_eisLinien`: je Knoten der Säule eine Höhe) an der Säule `tiefe` — logarithmisch zwischen den Knoten

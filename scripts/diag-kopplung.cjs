@@ -11,6 +11,8 @@
 //      (`_windAt`) — das Rauschen je Halm verschiebt nur die Phase; die zweite Welle (die Phase wandert mit dem Ort) MUSS rot sehen.
 //   F7 GASSE (klima-kontinent, stadtklima#1): die Häuser der Siedlung sind Kanal des Winds — in der Schlucht folgt `_windAt` der
 //      Gasse (fachwerk `gassenWind`), daneben Bit für Bit der alte Wind; die ungelesene Siedlung MUSS rot sehen.
+//   F8 DIE PFÜTZE IM SCHATTEN (stadtklima#1): der Ort im Wurf eines Hauses des Dach-Pools trocknet später als der vor ihm
+//      (`_naesseAm` über `_hausSchatten`), der Stoff liest dieselbe Nässe am Ort (`_naesseOrtKnoten`); der Ort ohne Schatten MUSS rot sehen.
 //   F6 DIE WELLE IM HALM (druckwelle-bild): die Druckwelle im EINEN Wind-Term — die Front im Halm am Radius des Gesetzes, der
 //      Winkel aus dem Luft-Weg der Welle, der Halm steht wieder auf; ohne Welle ist der Term bit-gleich der alte; der Bild-Takt
 //      trägt die Welle ein. Drei Mutanten (ohne Leser, halbe Trägheit, spätere Tafel) MÜSSEN rot sehen.
@@ -341,6 +343,53 @@ hauptLauf(async () => {
                     fail(`F7: die Gasse formt den Wind nicht (\`_windAt\` → \`_gassenWind\`, fachwerk gassenWind): ${JSON.stringify(gz)}`);
                 if (!(gz.mutant >= 40))
                     fail(`F7: der Täter (die Siedlung ungelesen) bleibt grün — die Linse sieht die Gasse nicht: ${JSON.stringify(gz)}`);
+            }
+
+            // ══ F8 DIE PFÜTZE IM SCHATTEN (Karte 2 planet.kopplung.stadtklima#1, „Schatten kühlt“) — als VERHALTEN: ein Haus im
+            //    Dach-Pool (10 × 8 m, Traufe 6 m), die Sonne des klaren Vormittags; der Ort im Wurf seiner Wand trocknet später als der
+            //    Ort vor ihr (die Nässe am Ort `_naesseAm` über `_hausSchatten`, Penman: im Schatten bleibt das Himmelslicht), und der
+            //    Stoff liest dieselbe Nässe (`_pfuetzeKnoten` und `_naesseImStoff` über `_naesseOrtKnoten`). Der Täter (der Ort ohne
+            //    Schatten: `_hausSchatten` 0) MUSS rot sehen ══
+            {
+                const V4 = (a, b, c, d) => new THREE.Vector4(a, b, c, d);
+                const mkU = () => ({
+                    naesse: { value: 1 },
+                    regen: { value: 0 },
+                    naesseWeg: { value: 0 },
+                    schattenSonne: { value: V4(0, -1, 0, 1) },
+                    schattenHuelle: { value: V4(1, 1, -1, -1) },
+                    dachLage: Array.from({ length: 8 }, (_, i) => ({ value: i ? V4(0, 0, 1, 0) : V4(0, 0, Math.cos(0.3), Math.sin(0.3)) })),
+                    dachMass: Array.from({ length: 8 }, (_, i) => ({ value: i ? V4(0, 0, -1e6, 1) : V4(5, 4, 6, 1) })),
+                    dachHuelle: { value: V4(-5, -4, 5, 4) },
+                    dachOben: { value: 6 },
+                });
+                const mk = (mut) => {
+                    const U = mkU();
+                    const s = Object.assign(Object.create(r.state), { atmoUniforms: U, timeOfDay: 0.42, weather: "sunny", naesse: 1 });
+                    const R = Object.assign(Object.create(r), { state: s, _ensureAtmoUniforms: () => U, _lodAuge: () => ({ x: 0, y: 1.6, z: 20 }) }); // prettier-ignore
+                    if (mut) R._hausSchatten = () => 0;
+                    return R;
+                };
+                const miss = (R) => {
+                    const wf = R._weatherFieldFor("sunny");
+                    R._schattenTakt(AR._trockenAnteil(wf));
+                    const S = R.state.atmoUniforms.schattenSonne.value;
+                    const h = Math.hypot(S.x, S.z);
+                    const rate = AR._trockenRate(wf);
+                    const zeit = (k) => {
+                        const [x, z] = [(k * S.x * 8) / h, (k * S.z * 8) / h];
+                        for (let t = 0; t < 2e4; t++) if (R._naesseAm(x, 0, z, t * rate) <= 0) return t;
+                        return null;
+                    };
+                    const [tS, tO] = [zeit(-1), zeit(1)];
+                    return { schattenS: tS, sonneS: tO, verh: tS && tO ? tS / tO : null };
+                };
+                const leser = ["_pfuetzeKnoten", "_naesseImStoff"].filter((g) => !String(AR.prototype[g]).includes("_naesseOrtKnoten"));
+                const pz = (o.zahlen.pfuetze = { ...miss(mk(false)), mutant: miss(mk(true)).verh, ohneLeser: leser });
+                if (!(pz.verh > 1.5 && !leser.length))
+                    fail(`F8: die Pfütze trocknet im Schatten nicht später, oder ein Stoff liest die Nässe am Ort nicht: ${JSON.stringify(pz)}`);
+                if (!(pz.mutant <= 1.01))
+                    fail(`F8: der Täter (der Ort ohne Schatten) bleibt grün — die Linse sieht den Schatten nicht: ${JSON.stringify(pz)}`);
             }
 
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
