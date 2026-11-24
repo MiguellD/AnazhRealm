@@ -523,6 +523,7 @@ class AnazhRealm_koerper_frei {
                 W.push(K);
                 K.nachbarn.length = 0;
                 K.welt = false;
+                K.getragen = false;
                 this._freiUmwelt(K, dt); // die Lage trägt er seit dem Ende seines letzten Schritts (oder der Geburt, dem Stoß)
                 K.p0[0] = K.p[0];
                 K.p0[1] = K.p[1];
@@ -586,7 +587,10 @@ class AnazhRealm_koerper_frei {
         const weich = this._freiWeich(h, F);
         const alt = this._freiWarm || (this._freiWarm = new Map());
         const CS = AnazhRealm.FREI_KONTAKT;
-        for (const K of W) X[K.slot + 26] = K.welt ? 1 : 0;
+        for (const K of W) {
+            X[K.slot + 26] = K.welt ? 1 : 0;
+            if (K.getragen) this._freiLuftLage(K, X, K.slot);
+        }
         for (let k = 0; k < n; k++) this._freiKontaktBereit(k * CS, X, weich, alt);
         const invH = 1 / h;
         const G = this._freiG;
@@ -983,6 +987,12 @@ class AnazhRealm_koerper_frei {
         G[c + 74] = key;
         G[c + 75] = tiefe;
         if (!b || b.statisch) a.welt = true;
+        // DIE STÜTZE (scherbe-liegt): ein Kontakt, der berührt (Spalt ≤ FREI.spalt) und von unten hält, trägt den Körper über ihm —
+        // a, wenn die Normale aufwärts zeigt, sonst der wache b; der getragene zeigt der Luft seine Lage (`_freiLuftLage`)
+        if (tiefe > -AnazhRealm.FREI.spalt) {
+            if (ny > 0) a.getragen = true;
+            else if (bw && ny < 0) b.getragen = true;
+        }
         return n + 1;
     }
 
@@ -1108,26 +1118,53 @@ class AnazhRealm_koerper_frei {
         return X;
     }
 
-    // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Fläche der Hülle
-    // mit dem größten c_w·A (die Kiste je Flächen-Paar, die Walze quer oder längs ihrer Achse): ein fallender Körper stellt
-    // sie der Strömung entgegen (die Platte, das Blatt fällt quer: der Druckpunkt liegt vor der Mitte, Hoerner 1965 Kap. 3),
+    // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Breitseite
+    // (`_freiLuftFlaeche` ohne Richtung; der getragene liest nach den Kontakten seine Lage, `_freiLuftLage`)
     // und der EINE Wind an seinem Ort (41, 42: m/s in Welt-x/z, `_windAt` zur Uhr des Sim-Schritts). Der Widerstand im
     // Teil-Schritt (`_freiZiehen`) liest sie gegen das Tempo durch die Luft. Vorher kannte der Löser keine Luft: die Feder
     // (1,9 g) flog wie der Stein, 2 260 % weiter als die Rechnung.
     _freiLuftPacken(K, X, x, rho) {
-        const L = AnazhRealm.FREI.luft;
-        const [a, b, c] = [K.hx, K.hy, K.hz];
-        const cwA = K.kiste
-            ? Math.max(
-                  this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c,
-                  this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c,
-                  this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b
-              )
-            : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
-        X[x + 38] = (0.5 * rho * cwA) / K.m;
+        X[x + 38] = (0.5 * rho * this._freiLuftFlaeche(K, null)) / K.m;
         const w = this._windAt(K.p[0], K.p[2], this.state._simZeit, this._freiWindAus || (this._freiWindAus = {}));
         X[x + 41] = w.x * w.ms;
         X[x + 42] = w.z * w.ms;
+    }
+    // DIE LUFT DES GETRAGENEN (scherbe-liegt, nach den Kontakten des Schritts): wer auf dem Grund oder einem Körper liegt, stellt
+    // sich nicht quer — er zeigt der Strömung (das Tempo durch die Luft zu Beginn des Schritts) seine Fläche in seiner Lage. Die
+    // flach liegende Scherbe (4 mm, Kanten 66–250 mm) zeigt dem waagrechten Wind ihre Kante, 15- bis 70-mal weniger als die Breitseite: bis hier las sie die
+    // Platte quer (0,07 je m, bei 9 m/s 5,7 m/s² gegen μg ≈ 4–6) und rutschte weiter, statt zu schlafen (DRUCK-SCHLAF, Böe 8 m/s)
+    _freiLuftLage(K, X, x) {
+        const ux = X[x] - X[x + 41];
+        const uy = X[x + 1];
+        const uz = X[x + 2] - X[x + 42];
+        const u = Math.sqrt(ux * ux + uy * uy + uz * uz);
+        if (u > 1e-9) X[x + 38] *= this._freiLuftFlaeche(K, [ux / u, uy / u, uz / u]) / this._freiLuftFlaeche(K, null);
+    }
+    // DIE FLÄCHE DES KÖRPERS GEGEN DIE STRÖMUNG (c_w·A, m²): die Hülle quer zur Anström-Richtung d (Welt, Einheit) in ihrer wahren
+    // Lage — die Kiste Σ |d·e_i| · c_w,i · A_i (e_i ihre Achsen in der Welt, A_i die Fläche quer zu e_i, c_w,i aus ihrer Tiefe
+    // längs e_i, `_freiLuftZahl`), die Walze |d·a| · c_w,längs · π r² + √(1 − (d·a)²) · c_w,quer · 4 r h (a ihre Achse). Ohne d
+    // (der freie Körper) die Breitseite: die Fläche mit dem größten c_w·A — ein fallender Körper stellt sie der Strömung entgegen
+    // (die Platte, das Blatt fällt quer: der Druckpunkt liegt vor der Mitte, Hoerner 1965 Kap. 3)
+    _freiLuftFlaeche(K, d) {
+        const L = AnazhRealm.FREI.luft;
+        const [a, b, c] = [K.hx, K.hy, K.hz];
+        const R = K.R;
+        if (K.kiste) {
+            const fx = this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c;
+            const fy = this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c;
+            const fz = this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b;
+            if (!d) return Math.max(fx, fy, fz);
+            return (
+                Math.abs(d[0] * R[0] + d[1] * R[3] + d[2] * R[6]) * fx +
+                Math.abs(d[0] * R[1] + d[1] * R[4] + d[2] * R[7]) * fy +
+                Math.abs(d[0] * R[2] + d[1] * R[5] + d[2] * R[8]) * fz
+            );
+        }
+        const quer = L.cwWalzeQuer * 4 * K.r * b;
+        const laengs = this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r;
+        if (!d) return Math.max(quer, laengs);
+        const ca = Math.min(1, Math.abs(d[0] * R[1] + d[1] * R[4] + d[2] * R[7]));
+        return ca * laengs + Math.sqrt(1 - ca * ca) * quer;
     }
     // c_w einer Fläche aus ihrer Tiefe durch ihre Breite: die Platte (0) bis der Würfel (≥ 1), dazwischen gerade
     _freiLuftZahl(tiefe, breite) {

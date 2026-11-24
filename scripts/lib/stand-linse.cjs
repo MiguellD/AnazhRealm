@@ -528,6 +528,13 @@ const [DRUCK_STAUB_MASSE, DRUCK_STAUB_BILD, DRUCK_STAUB_HOCH] = [0.05, 0.002, 0.
 const DRUCK_VERZUG_S = 0.35;
 const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen die Lage ihres Körpers
 const DRUCK_SCHLAF_S = 3;
+const schlafText = (D) => `${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`;
+// scherbe-liegt: die Röte des Schlafs nennt den Wind an den Körpern, seine Böen je halbe Sekunde und die drei späten Scherben (ihr
+// Abstand zum Fass, flach oder schief, getragen oder frei, am Bau, ihr Tempo, bis wann sie wach lagen)
+const spaetText = (D) =>
+    D.wind == null && !D.sturmMs
+        ? ""
+        : ` — Körper-Wind ${D.sturmMs ? `${D.sturmMs} m/s fest` : `${D.wind} m/s (Böen ${(D.boeen || []).join(" · ") || "—"})`}, die späten: ${(D.spaet || []).map((x) => `${x.dM} m ${x.flach ? "flach" : "schief"} ${x.getragen ? "getragen" : "frei"}${x.bau ? " am Bau" : ""} ${x.vMs} m/s ${x.wachS == null ? "wach" : `bis ${x.wachS} s`}`).join(", ") || "—"}`; // prettier-ignore
 const druckSoll = (e) =>
     e.art === "umsatz"
         ? DRUCK_UMSATZ
@@ -681,7 +688,19 @@ function druckUrteil(D, v) {
     // (Lehre 17: `null <= x` ist wahr — ein fehlender Wert ist ROT, nie still grün)
     if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — der Takt hält die Grenze seines Rückstands nicht (\`_tickDruck\`, \`DRUCK.verzugS\`)`);
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
-    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
+    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${schlafText(D)}${spaetText(D)}`);
+    // DIE STURM-WELLE (scherbe-liegt): dieselbe Welle bei festem Körper-Wind 9,5 m/s — wer liegt, zeigt der Luft seine Lage, die
+    // flache Scherbe ihre Kante; die Mutante jedes Laufs (die liegende Scherbe liest die Breitseite) schläft dort nie
+    const DS = D.sturm;
+    if (!DS) v.push("LEER: die Probe fuhr die Sturm-Welle nicht (die Druckwelle bei festem Körper-Wind 9,5 m/s)");
+    else if (!(DS.scherben > 0)) v.push("LEER: die Sturm-Welle brach keine Scheibe");
+    else {
+        if (DS.schlafS == null || !(DS.schlafS <= DRUCK_SCHLAF_S))
+            v.push(`DRUCK-STURM: im Sturm ${DS.sturmMs} m/s schlief die letzte der ${DS.scherben} Scherben ${schlafText(DS)} — die liegende Scherbe liest die Breitseite (\`_freiLuftLage\` · \`_freiLuftFlaeche\`, stamm/koerper-frei.js)${spaetText(DS)}`); // prettier-ignore
+        const MS = D.mutante && D.mutante.sturm;
+        if (!MS || (MS.schlafS != null && MS.schlafS <= DRUCK_SCHLAF_S))
+            v.push(`BLIND: die Mutante „die liegende Scherbe liest die Breitseite“ blieb im Sturm ungesehen — ${MS ? `die letzte Scherbe schlief nach ${MS.schlafS} s` : "keine Mutante im Sturm gefahren"}`); // prettier-ignore
+    }
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
     if (!(ruhe === 0)) v.push(`DRUCK-RUHE: nach der Welle arbeitet ihr Takt — ${ruhe} Einheiten`);
 }

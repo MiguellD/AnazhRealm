@@ -248,12 +248,16 @@ function selbsttest() {
                 grenze: 29.982,
                 scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
                 ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032 },
+                // scherbe-liegt (OMEN GTX 1060 an main 87bb259c, Spike): der Wind an den Körpern, seine Böen, die späten Scherben; die
+                // Sturm-Welle 9,5 m/s nach dem Schnitt, ihre Mutante (die liegende Scherbe liest die Breitseite) wie vor ihm
+                ...{ wind: 5.3, boeen: [5.1, 5.3, 5.4, 5.3], spaet: [{ wachS: 2.167, dM: 12.4, flach: true, getragen: true, vMs: 0 }] },
+                sturm: { sturmMs: 9.5, scherben: 70, wach: 0, schlafS: 1.2, boeen: [], spaet: [{ wachS: 1.2, dM: 12.4, flach: true, getragen: true, vMs: 0 }] },
                 staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
                 bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
-                mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
+                mutante: { sturm: { sturmMs: 9.5, scherben: 70, wach: 3, schlafS: null }, raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -793,7 +797,14 @@ function selbsttest() {
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
-        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Körper-Wind 5\.3 m\/s \(Böen 5\.1 · 5\.3 · 5\.4 · 5\.3\), die späten: 12\.4 m flach getragen 0 m\/s bis 2\.167 s/],
+        // scherbe-liegt (OMEN GTX 1060 an main 87bb259c, fester Körper-Wind 9,5 m/s): 3 der 70 Scherben lagen nach 10 s wach — die flach
+        // liegende Scherbe las die Breitseite (`_freiLuftPacken` vor dem Schnitt)
+        ["im Sturm schläft die letzte Scherbe nie", ["simWecken.druck.sturm", { wach: 3, schlafS: null, spaet: [{ wachS: null, dM: 8.2, flach: true, getragen: true, vMs: 0.31 }] }], /DRUCK-STURM: im Sturm 9\.5 m\/s schlief die letzte der 70 Scherben nie \(3 liegen nach 10 s wach\) \(Soll ≤ 3 s\) — die liegende Scherbe liest die Breitseite \(._freiLuftLage. · ._freiLuftFlaeche., stamm\/koerper-frei\.js\) — Körper-Wind 9\.5 m\/s fest, die späten: 8\.2 m flach getragen 0\.31 m\/s wach/],
+        ["im Sturm schläft die letzte Scherbe nach 4 s", ["simWecken.druck.sturm.schlafS=", 4], /DRUCK-STURM: im Sturm 9\.5 m\/s schlief die letzte der 70 Scherben nach 4 s \(Soll ≤ 3 s\)/],
+        ["die Probe fährt die Sturm-Welle nicht", ["simWecken.druck.sturm"], /LEER: die Probe fuhr die Sturm-Welle nicht/],
+        ["die Mutante Breitseite schläft im Sturm (die Linse sähe den Täter nicht)", ["simWecken.druck.mutante.sturm", { wach: 0, schlafS: 1.2 }], /BLIND: die Mutante „die liegende Scherbe liest die Breitseite“ blieb im Sturm ungesehen — die letzte Scherbe schlief nach 1\.2 s/],
+        ["die Mutante fährt nicht im Sturm", ["simWecken.druck.mutante.sturm"], /BLIND: die Mutante „die liegende Scherbe liest die Breitseite“ blieb im Sturm ungesehen — keine Mutante im Sturm gefahren/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
@@ -3610,7 +3621,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // `mutante` (in JEDEM Lauf die zweite Probe): der Rest eines Einsturzes räumt den Grund seines Werks ein zweites Mal
                         // (der Stand vor dem geerbten Grund, `_grundrissRaeumen` ohne `gehalten`) — die Linse zählt ihre Natur-Räumungen
                         // unter der Marke (`raeumt`), an ihr fällt DRUCK-ERBE; sieht sie keine, ist die Linse BLIND.
-                        const druckProbe = async (mutante) => {
+                        // `sturmMs` (scherbe-liegt): DIE STURM-WELLE — der Wind an jedem freien Körper fest in der Richtung [0,95 · 0,32]
+                        // (`_freiLuftPacken`, der Wind der Welt geht weiter); mit `mutante` liest die liegende Scherbe die Breitseite
+                        // (`_freiLuftLage` schweigt) — an ihr fällt DRUCK-STURM, sieht die Linse sie nicht, ist sie BLIND.
+                        const druckProbe = async (mutante, sturmMs = 0) => {
                             const t0 = performance.now();
                             const [SG, cs, DR] = [globalThis.__schmiedeCore.STOFF_GESETZ, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.DRUCK];
                             const O = { x: MESS.x - cs, z: MESS.z };
@@ -3732,7 +3746,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             delete this._werkPoseZeigen;
                                         }
                                     };
-                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
+                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn", "_freiLuftPacken", "_freiLuftLage"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3745,6 +3759,14 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     D.start = !!r._brandEntfachen(O.x - 2.4 * kx, O.z - 2.4 * kz);
                                     D.frist = fass._ladungFrist != null ? r3(fass._ladungFrist - st.spielZeit) : null;
                                     if (D.frist > 0) {
+                                        if (sturmMs) {
+                                            const [n, packen] = [Math.hypot(0.95, 0.32), P._freiLuftPacken];
+                                            r._freiLuftPacken = function (K, X, x, rho) {
+                                                packen.call(this, K, X, x, rho);
+                                                [X[x + 41], X[x + 42]] = [(0.95 / n) * sturmMs, (0.32 / n) * sturmMs];
+                                            };
+                                            if (mutante) r._freiLuftLage = () => {};
+                                        }
                                         r._weltUhrNimm(fass._ladungFrist - 0.02);
                                         S.frame();
                                         const bild = () => (takt(), (D.einheiten += S.frame().druck));
@@ -3779,9 +3801,25 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
                                             D.scherben = freie().length;
                                             D.zaehler = w.scherben;
-                                            while (st.spielZeit - tW < 10 && wachN() > 0) bild();
+                                            // je Scherbe, wann sie zuletzt wach lag, und der Wind an den Körpern (`_freiWindAus`) je halbe Sekunde: die
+                                            // Röte nennt den Körper-Wind, die Böen-Reihe und die drei späten Scherben in ihrer Lage (im Sturm steht der Körper-Wind fest:
+                                            // die Böen des Welt-Winds erreichen keinen Körper, die Reihe bleibt leer)
+                                            const [zuletzt, boeen] = [new Map(), []];
+                                            while (st.spielZeit - tW < 10 && wachN() > 0) {
+                                                bild();
+                                                for (const x of freie()) if (!x._frei.schlaf) zuletzt.set(x, st.spielZeit);
+                                                if (!sturmMs && r._freiWindAus && st.spielZeit - tW >= boeen.length * 0.5) boeen.push(+(+r._freiWindAus.ms).toFixed(1));
+                                            }
                                             D.wach = wachN();
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            D.wind = sturmMs || (r._freiWindAus ? r3(r._freiWindAus.ms) : null);
+                                            D.boeen = boeen.slice(0, 20);
+                                            D.spaet = [...zuletzt].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([x, t]) => {
+                                                const K = x._frei;
+                                                const h = [K.hx, K.hy, K.hz];
+                                                const i = h.indexOf(Math.min(...h));
+                                                return { wachS: K.schlaf ? r3(t - tW) : null, dM: r3(Math.hypot(K.p[0] - O.x, K.p[2] - O.z)), flach: Math.abs(K.R[3 + i]) > 0.9, getragen: !!K.getragen, bau: K.bauten.some((Z) => r._freiKastenNah(K, Z, 0.02)), vMs: r3(Math.hypot(K.v[0], K.v[1], K.v[2])) }; // prettier-ignore
+                                            });
                                             // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
                                             for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {
                                                 r._cullArchitectureMesh(x);
@@ -3921,9 +3959,14 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             return D;
                         };
                         W.druck = await druckProbe(false);
+                        // DIE STURM-WELLE (scherbe-liegt): dieselbe Welle bei festem Körper-Wind 9,5 m/s — die Mutante jedes Laufs fährt
+                        // ebenfalls im Sturm (die liegende Scherbe liest dort die Breitseite)
+                        const sturm = (D) => ({ sturmMs: D.wind, scherben: D.scherben, wach: D.wach, schlafS: D.schlafS, boeen: D.boeen, spaet: D.spaet, ms: D.ms });
+                        W.druck.sturm = sturm(await druckProbe(false, 9.5));
                         // die Mutante jedes Laufs: ihre Natur-Räumungen unter der Marke, die Einheiten ihrer Brüche, ihre Dauer
-                        const DM = await druckProbe(true);
+                        const DM = await druckProbe(true, 9.5);
                         W.druck.mutante = {
+                            sturm: sturm(DM),
                             raeumt: DM.ereignisse.reduce((s, e) => s + (e.raeumt | 0), 0),
                             bruch: DM.ereignisse.filter((e) => e.art === "werk" && e.scherben > 0).map((e) => e.einheiten),
                             // je Augenblick der Lage im Bild [schief, Grad]: der Bau ohne die Pose des Gesetzes
