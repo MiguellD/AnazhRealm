@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-24T01:14:48.171Z",
+ "zeit": "2026-11-24T01:35:05.350Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -4184,17 +4184,66 @@
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-23T23:57:58.355Z",
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.5 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.95,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.5 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 356.8,
+   "fremd": {
+    "s": 359,
+    "takte": 157,
+    "fremdS": 364.83,
+    "kerne": 1.016,
+    "fensterKerne": 1.804,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      64.69
+     ],
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      49.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      37.63
+     ]
+    ],
+    "dienerS": 174.19,
+    "diener": [
+     [
+      "dwm.exe",
+      72.22
+     ],
+     [
+      "System",
+      63.31
+     ]
+    ],
+    "geraetS": 267.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      164.86
+     ],
+     [
+      "svchost.exe",
+      95.69
+     ],
+     [
+      "SearchIndexer.exe",
+      3.14
+     ]
+    ],
+    "eigenS": 1200.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T01:35:05.350Z",
    "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
