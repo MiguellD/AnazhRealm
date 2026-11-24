@@ -23,7 +23,8 @@
 //         Maß: { key, wort, soll, richtung: "≤" | "≥" | "<" | ">" } · { key, wort, von, bis } (Band) · { key, wort, soll, tol } (±);
 //         das Soll steht als Zahl im Wortlaut (die Linse SOLL AUS DER KARTE) oder trägt `herkunft` (ein Satz: wie es aus dem Wortlaut folgt)
 //         erwartet/fehlt/wo: was die Probe an der Welt von heute findet (das Blatt zählt es; das Urteil fällt am Lauf)
-//       { auge: { pose, vorbild } } — der Blindpaar-Richter: die Probe schießt das Bild an fester Pose, GRÜN nie ohne Geräte-Urteil
+//       { auge: { pose, vorbild } } — der Blindpaar-Richter: die Probe schießt das Bild an fester Pose, GRÜN nie ohne Geräte-Urteil;
+//         dazu erwartet „nicht“ (fehlt) oder „leser“ (fehlt, wo): die Welt trägt den Umfang nicht · das Gesetz trägt ihn, der Leser fehlt
 //   bestehend { <n>: "<Station>" } — die Sprosse urteilt schon eine Station (Tafel „gleich“ oder karte2.…#n): keine zweite;
 //             { <n>: { station, fehlt } } — sie misst den Richter nicht ganz in der Sitzung (z. B. nur headless): Tafel-Zeile „fehlt“ mit Grund.
 //             Die Zuordnung trägt vision/richter-tafel.json (von Hand; die Zeilen der Stationen selbst faltet `punkte.cjs tafel`)
@@ -245,8 +246,13 @@ const RICHTUNG = Object.keys(VERGLEICH);
 function pruefeSprosse(wo, sp) {
     if (sp.auge) {
         if (!sp.auge.pose || !sp.auge.vorbild) throw new Error(wo + ": auge trägt pose und vorbild");
-        // ein Augen-Richter, dessen Umfang die Welt von heute nicht trägt: die Probe urteilt „Umfang nicht erzeugbar“ (ROT), nie ein Bild
-        if (sp.erwartet != null && !(sp.erwartet === "nicht" && typeof sp.fehlt === "string" && sp.fehlt.length >= 4)) throw new Error(wo + ": auge trägt höchstens erwartet „nicht“ mit fehlt");
+        // ein Augen-Richter, dessen Umfang die Welt von heute nicht trägt: die Probe urteilt „Umfang nicht erzeugbar“ (ROT), nie ein Bild;
+        // einer, dessen Umfang das GESETZ am Fächer trägt, dessen Leser im Spiel aber fehlt (pm-faecher-mensch 24.11.: sport.kunst#1 —
+        // Meister und Anfänger stehen im Lebenslauf, kein Leib liest das Können): „fehlender Leser“ (ROT) mit fehlt und wo — ein ganzes
+        // Urteil, kein Panel macht ihn grün. Bis hier trug ein Augen-Richter nur „nicht“: der Leser-Fund stand als „Umfang nicht erzeugbar“
+        if (sp.erwartet != null && !(sp.erwartet === "nicht" && typeof sp.fehlt === "string" && sp.fehlt.length >= 4) &&
+            !(sp.erwartet === "leser" && typeof sp.fehlt === "string" && sp.fehlt.length >= 4 && typeof sp.wo === "string" && /^[\w./-]+:\d+$/.test(sp.wo)))
+            throw new Error(wo + ": auge trägt höchstens erwartet „nicht“ mit fehlt oder „leser“ mit fehlt und wo (datei:zeile)");
         return;
     }
     if (sp.umfang != null && !(Number.isFinite(sp.umfang.soll) && sp.umfang.soll >= 1 && typeof sp.umfang.wort === "string" && sp.umfang.wort))
@@ -372,10 +378,11 @@ function leiter(id, def) {
     const probe = { ...probeBefehl(rumpf(def.messe), sek, { K: k2Werkzeug, SPEC: JSON.stringify(SPEC), ...seite }), ...(def.mutiert ? { mutiert: true } : {}) };
     leitern.push({ id, def, nrn });
     // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): ein Augen-Richter, dessen Umfang die Welt nicht trägt,
-    // urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“; jeder andere Augen-Richter „fehlt“ mit seiner Klasse
+    // urteilt ROT „Umfang nicht erzeugbar“, einer ohne Leser im Spiel ROT „fehlender Leser“ — ganze Urteile, die Zeile „gleich“; jeder
+    // andere Augen-Richter „fehlt“ mit seiner Klasse
     const tafel = (n) => {
         const sp = sprossen[n];
-        return sp.auge && sp.erwartet !== "nicht"
+        return sp.auge && sp.erwartet !== "nicht" && sp.erwartet !== "leser"
             ? AUGE.tafel(id, n, false) // die Klasse am Wortlaut (auge-klasse.cjs): dieses Gerüst trägt kein Soll — PANEL, KORPUS oder „ZAHL ohne Soll“ beim Namen
             : { richter: "gleich" };
     };

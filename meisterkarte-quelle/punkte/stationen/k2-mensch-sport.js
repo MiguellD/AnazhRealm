@@ -6,6 +6,7 @@
 // „fehlender Leser“ an der Stelle, an der der Haken sitzen müsste; wo der Umfang fehlt (Welten, Planeten, 10⁵ Zuschauer), „Umfang
 // nicht erzeugbar“ — beides ROT, nie ein Skip.
 "use strict";
+const { FAECHER } = require("./faecher.js");
 
 // ───────────────────────── DIE SEITE DER WELT (als Text an K.welt; nichts aus dem Modul) ─────────────────────────
 
@@ -517,6 +518,58 @@ const VERBEN = async (r, T, arg) => {
     return { verben: aus, tafel: Object.keys(KC.VERB_TAFEL) };
 };
 
+// DAS KÖNNEN AM FÄCHER (mensch.sport.kunst#1, pm-faecher-mensch 24.11.; Meta-Gesetz M4, stationen/faecher.js): je Adresse EINE Siedlung
+// der warmen Welt (Index in `r._bewohnerSiedlungen`), je Bewohner sein Lebenslauf `uebung` — der Ruf `r._bewohnerLauf(S, b, "uebung")`
+// ist dasselbe Gesetz, das der Satz (`b.uebung`, BEWOHNER_SATZ stamm/siedlung-bewohner.js:4531) und das Werk (:1292) lesen; nichts
+// nachgerechnet. Die Bänder sind die des Gesetzes (LEBENSLAUF.uebung, Ericsson, Krampe & Tesch-Römer 1993): Meister ist, wen die
+// Absicht des Lebenslaufs Meister nennt (h ≥ besteH, :410), Anfänger, wer unter dem Band der Liebhaber übt (h < amateurH). Dazu je
+// Kunst das nächste Paar Meister ↔ Anfänger mit Leib (die Pose EINES Bildpaars) und was die Leser des Leibs von ihm zeigen: die
+// Haltung zum Akt (`KC.tagesHaltung(akt, rolle)`, koerper-core.js:5484) und der Gang (`b.tempo`, :1792 — die Kraft des Leibs)
+const KUNST_AN = async (r, T, a, mit) => {
+    const W = r && r.constructor;
+    const L = W && W.LEBENSLAUF ? W.LEBENSLAUF : typeof AnazhRealm !== "undefined" ? AnazhRealm.LEBENSLAUF : null;
+    if (!L || !L.uebung) return { fehlt: "kein Lebenslauf: LEBENSLAUF.uebung fehlt (stamm/siedlung-bewohner.js)" };
+    if (typeof r._bewohnerLauf !== "function") return { fehlt: "kein Gesetz des Lebenslaufs: r._bewohnerLauf fehlt (stamm/siedlung-bewohner.js:301)" };
+    const Sm = r._bewohnerSiedlungen;
+    const S = Sm && typeof Sm.values === "function" ? Array.from(Sm.values())[a.ort] : null;
+    if (!S || !Array.isArray(S.liste)) return { fehlt: "keine Siedlung " + a.ort + " in der warmen Welt (r._bewohnerSiedlungen)" };
+    const U = L.uebung;
+    const KC = window.__koerperCore;
+    const je = {};
+    for (const art of U.kuenste) je[art] = { meister: 0, anfaenger: 0, hMax: 0, hMin: null, paar: null };
+    const mitLeib = { meister: {}, anfaenger: {} };
+    let n = 0;
+    for (const b of S.liste) {
+        const k = r._bewohnerLauf(S, b, "uebung");
+        n++;
+        for (const art of U.kuenste) {
+            const x = k[art], z = je[art];
+            z.hMax = Math.max(z.hMax, Math.round(x.h));
+            z.hMin = z.hMin == null ? Math.round(x.h) : Math.min(z.hMin, Math.round(x.h));
+            const stufe = x.h >= U.besteH ? "meister" : x.h < U.amateurH ? "anfaenger" : null;
+            if (!stufe) continue;
+            z[stufe]++;
+            const g = b.leib;
+            if (g && g.position) (mitLeib[stufe][art] = mitLeib[stufe][art] || []).push({ b, x, p: g.position });
+        }
+    }
+    const haltung = (b) => (KC && typeof KC.tagesHaltung === "function" ? KC.tagesHaltung(b.akt || "arbeit", b.rolle) : "?");
+    for (const art of U.kuenste) {
+        const M = (mitLeib.meister[art] || []).slice(0, 80), A = (mitLeib.anfaenger[art] || []).slice(0, 80);
+        let best = null;
+        for (const m of M)
+            for (const q of A) {
+                const d = Math.hypot(m.p.x - q.p.x, m.p.z - q.p.z);
+                if (!best || d < best.d) best = { m, q, d };
+            }
+        if (!best) continue;
+        const wer = (e) => ({ h: Math.round(e.x.h), koennen: +e.x.koennen.toFixed(2), haltung: haltung(e.b), akt: e.b.akt || null, tempo: +(e.b.tempo || 0).toFixed(2), rolle: e.b.rolle });
+        je[art].paar = { d: +best.d.toFixed(1), x: +((best.m.p.x + best.q.p.x) / 2).toFixed(1), z: +((best.m.p.z + best.q.p.z) / 2).toFixed(1), meister: wer(best.m), anfaenger: wer(best.q) };
+    }
+    const paare = U.kuenste.filter((art) => je[art].meister > 0 && je[art].anfaenger > 0).length;
+    return { name: (S.plan && S.plan.name) || String(a.ort), n, je, paare, mitPaarLeib: U.kuenste.filter((art) => je[art].paar).length, baender: { besteH: U.besteH, amateurH: U.amateurH } };
+};
+
 const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 const mutante = (id, n, name, werte, zahl, umfang) => [{ name, j: { leiter: id, adapter: KARTE, sprossen: { [n]: { art: "zahl", n: umfang, werte } } }, gruen: false, zahl }];
@@ -787,12 +840,56 @@ module.exports = (F) => [
     F.leiter("mensch.sport.kunst", {
         sek: 30,
         pfad: [...PFAD, "schmiede-core.js"],
-        seite: { SPORT },
+        seite: { SPORT, FAECHER, KUNST_AN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
+            // S1 AM GESETZ (der Fächer, stationen/faecher.js): je Siedlung der warmen Welt der Lebenslauf `uebung` jedes Bewohners —
+            // trägt das Gesetz Meister und Anfänger in den 3 Künsten, urteilt die Sprosse am Leser des Leibs (die Haltung zum Akt);
+            // fehlen sie im Gesetz, „Umfang nicht erzeugbar“ mit der Kunst beim Namen
+            await K.schritt(1, async () => {
+                const nS = await K.welt("const Sm = r._bewohnerSiedlungen; return Sm && typeof Sm.size === 'number' ? Sm.size : 0;", 5000);
+                if (!nS) return K.nicht(1, { n: 0, fehlt: "Meister und Anfänger in 3 Künsten: am Messort stadt-voll steht keine Siedlung in der warmen Welt (r._bewohnerSiedlungen leer)" });
+                const summe = (stufe) => (v, aus) => {
+                    const o = {};
+                    for (const x of aus) for (const k in x.w.je) o[k] = (o[k] || 0) + x.w.je[k][stufe];
+                    return o;
+                };
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.KUNST_AN, export: "stamm/siedlung-bewohner.js:301 _bewohnerLauf(S, b, \"uebung\")", leser: "stamm/siedlung-bewohner.js:1292" },
+                    adressen: { orte: Array.from({ length: nS }, (_, i) => i) },
+                    masse: {
+                        bewohner: { wie: "summe", feld: "n" },
+                        meister: { wie: summe("meister") },
+                        anfaenger: { wie: summe("anfaenger") },
+                        paar: { wie: (v, aus) => {
+                            const o = {};
+                            for (const x of aus) for (const k in x.w.je) if (x.w.je[k].paar && (!o[k] || x.w.je[k].paar.d < o[k].d)) o[k] = { ...x.w.je[k].paar, ort: x.w.name };
+                            return o;
+                        } },
+                    },
+                    schlecht: { feld: "paare", richtung: "min" },
+                    pose: (a, w) => "Siedlung " + w.name + ": " + Object.keys(w.je).filter((k) => w.je[k].paar).map((k) => k + " 3 m vor dem Paar bei (" + w.je[k].paar.x + ", " + w.je[k].paar.z + ")").join(" · "),
+                    ungemessen: ["das Blindpaar Meister ↔ Anfänger (≥ 80 %): ungemessen bis zum Gerät (die Bildpflicht braucht die Karte und das Panel)"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 4) * 1000)),
+                });
+                H.zeile("Kunst S1: " + R.akte.slice(0, 700) + " · Paare " + JSON.stringify(R.werte.paar).slice(0, 700));
+                if (R.fehlt && !R.gemessen) return K.leser(1, { fehlt: "Meister und Anfänger: " + R.fehlt, wo: "stamm/siedlung-bewohner.js:301" });
+                const M = R.werte.meister, A = R.werte.anfaenger, P = R.werte.paar;
+                const kuenste = Object.keys(M);
+                const voll = kuenste.filter((k) => M[k] > 0 && A[k] > 0);
+                const zahl = kuenste.map((k) => k + " " + M[k] + "/" + A[k]).join(" · ");
+                if (voll.length < 3)
+                    return K.nicht(1, { n: voll.length, fehlt: "Meister ↔ Anfänger (Lebenslauf, " + R.werte.bewohner + " Bewohner in " + R.gemessen + " Siedlungen): " + zahl + " — " + kuenste.filter((k) => !voll.includes(k)).join(", ") + " ohne Paar" });
+                // der Leser des Leibs: zeigen Meister und Anfänger desselben Akts eine andere Haltung oder einen anderen Gang aus dem Können?
+                const leibe = voll.filter((k) => P[k]).map((k) => k + " " + P[k].meister.haltung + "↔" + P[k].anfaenger.haltung + " " + P[k].meister.tempo + "↔" + P[k].anfaenger.tempo + " m/s").join(" · ");
+                return K.leser(1, {
+                    n: voll.length,
+                    fehlt: "Meister/Anfänger im Lebenslauf " + zahl + " (" + R.werte.bewohner + " Bewohner, " + R.gemessen + " Siedlungen), kein Leib zeigt das Können: Haltung aus Akt+Rolle, Gang aus der Beinkraft (" + (leibe || "kein Paar mit Leib") + ")",
+                    wo: "koerper-core.js:5484",
+                });
+            });
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Kunst: " + z.n + " Bewohner · mit Können-Profil " + z.koennen + " · Akte " + JSON.stringify(z.akte));
-            await K.schritt(1, async () => K.nicht(1, { n: z.koennen, fehlt: "Meister und Anfänger in 3 Künsten: " + z.koennen + " Bewohner mit Können-Profil, jeder Leib gleich geschickt" }));
             await K.schritt(2, async () => K.leser(2, { n: z.koennen, fehlt: "die Güte des Werks liest Rezept und Prägung (gueteFaktor), nie die Hand, die es schmiedet", wo: "schmiede-core.js:4064" }));
             await K.schritt(3, async () => K.leser(3, { n: z.sport, fehlt: "kein Tanz-Akt, keine Musik, der ein Schritt folgt", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.nicht(4, { n: 0, fehlt: "10² Stile je Kultur: 0 Kampf- und Tanzstile" }));
@@ -800,7 +897,12 @@ module.exports = (F) => [
             await K.schritt(6, async () => K.nicht(6, { n: 0, fehlt: "neue Künste fremder Kulturen und Körper: 0" }));
         },
         sprossen: {
-            1: { auge: { pose: "keine: kein Meister, kein Anfänger", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" }, erwartet: "nicht", fehlt: "kein Können-Profil: Meister und Anfänger gleich" },
+            1: {
+                auge: { pose: "3 m vor dem nächsten Paar Meister ↔ Anfänger je Kunst (der Fächer nennt es)", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" },
+                erwartet: "leser",
+                fehlt: "Meister und Anfänger stehen im Lebenslauf, kein Leib zeigt das Können (die Haltung liest Akt und Rolle)",
+                wo: "koerper-core.js:5484",
+            },
             2: { umfang: { soll: 10, wort: "Werkstücke" }, masse: [{ key: "r2", wort: "R² Werk-Güte ↔ Können-Profil", soll: 0.7, richtung: "≥" }], erwartet: "leser", fehlt: "die Güte liest nie die Hand", wo: "schmiede-core.js:4064" },
             3: { umfang: { soll: 20, wort: "Tänzer zur Musik" }, masse: [{ key: "takt", wort: "Schritt-Takt-Abstand (ms)", soll: 50, richtung: "≤" }], erwartet: "leser", fehlt: "kein Tanz", wo: "koerper-core.js:5126" },
             4: { auge: { pose: "keine: keine Stile", vorbild: "10 Kampf- und Tanzstile einer Kultur (Fremde ordnen ≥ 70 %)" }, erwartet: "nicht", fehlt: "10² Stile je Kultur" },
