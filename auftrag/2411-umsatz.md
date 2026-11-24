@@ -59,3 +59,37 @@ aus der Karte). Beansprucht wird nur eine Sprosse, deren Station am Vorprüf-Kop
   Station erst lesen, ob die Fähigkeit in main steht. Regeln wie oben. Melde dich an die Adresse des Koordinators mit Kopf und Zahl.
 - GTX 1050: Reihenfolge (2) Stations-Probe → (3) runde.cjs → (4) GIT_DIR → Tat-Wertung (Wertung am Moment des Wirkens UND die Probe wartet
   auf `_feldFolgeSteht`, EINE Welle) → klima-aufwind. Fällt ein Zug-Kandidat zweimal an tat-k1, springt die Tat-Wertung nach vorn.
+
+## NACHTRAG 24.11. 17:28 — DIE SITZUNG TRÄGT (GTX 1050, VOR der Stations-Probe; die Radeon misst seit 17:10 nichts mehr)
+Gemessen an Runde 23, Kopf eba9bf8f, `messung/eba9bf8f-radeon.json` + `messung/roh/eba9bf8f-radeon/` (Zweig punkte-maschine, Baum der Radeon):
+- Sitzung 17:00:24: grenze#1, bildkunst#1, schrift#1, kunst#1, seuche#1 geurteilt; gespraech#2 „Läufer starb (Exit 0xC0000409
+  STATUS_STACK_BUFFER_OVERRUN, Kind 24604 nach 11,2 min)“.
+- Danach je Sitzung GENAU EINE verlorene Station und ein Neustart: 17:11:42 megastadt#1 „Frist der Probe 80 s gerissen im /umstellen
+  hochhaus-dach (der Ruf lief 79,8 s: der Messort trug die Frist)“ · 17:16:35 sprache#1 „… 39 s … /umstellen stadt-voll“ · 17:21:54
+  koennen#2 „… 24 s … /umstellen stadt“ · 17:25:05 · 17:25:11 … Jede verlorene Station trägt `offen: undefined` (zählt als erledigt).
+- 71 Stationen stehen auf „die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender
+  weather · {"creatures":{"vorher":3,"nachher":0,"fehlt":["Yune ×2","Nox"]},"worldMeta.kalender":{"fehlt":["0.10099999999394"],
+  "neu":["0.10099999999393816"]},"weather":"undefined → \"sunny\""})“. Der Kalender-Unterschied ist derselbe Wert in zwei Rundungen.
+- Jede Sitzung misst zuerst wieder profiband.K4#1/#2 (2–3 min) und meldet „UNGEMESSEN unter Last: Referenz f 1,456–1,652“.
+- Dieselbe Klasse am ganzen 24.11. (Leser-Bericht): 18 Front-Sprossen werden in jeder Runde gefahren und blieben in 261 Mess-Einträgen
+  0-mal GRÜN, immer UNGEMESSEN — die Grundstellung (punkte.cjs:3191, weiter :4091–4199) warf „creatures 14 → 0“ an daee7541 und
+  bf9be26c, an a8dd22b5 starb die Werkbank (Exit 3221226505). 15 davon urteilen an einer Zahl mit Soll (welten#1, wasser.bild#1,
+  kollektiv#2, lenker#1, verstaendigung#1, spieler.hand#1, feuer#2, preis.eingabe#2, gemeinsam#1, schoepfen.satz#1, massstab.sprung#1,
+  preis.ankunft#2, evolution-planet#1 …): sie warten nur auf EINE Fahrt, in der die Sitzung trägt.
+Mein Anteil: zwei lokale Arbeiter liefen neben der Messung, die Maschine nennt „fremd: radeon-dienst.sh --selbsttest“ — angehalten 17:31.
+
+DER SCHNITT (EINE Welle, Wurzel lesen statt raten; jede Regel mit Selbsttest und Mutante in der bestehenden Familie):
+1. DER MESSORT TRÄGT SEINE EIGENE FRIST. Die Frist der Probe beginnt, wenn ihr Messort steht (punkte.cjs:784 „der Messort trug die
+   Frist“ darf für eine Probe nie mehr das Urteil sein). Steht der Messort in SEINER Frist nicht: „UNGEMESSEN: Messort <name>“ MIT
+   `offen`, die Station kommt in derselben Runde einmal wieder, in einer Sitzung, deren Messort steht.
+2. DIE KETTE ENDET. Nach einem Abbruch bringt die Grundstellung die Welt zurück oder die Sitzung startet neu — aber die nächste Sitzung
+   beginnt nie wieder mit demselben kalten Bruch (heute: megastadt → sprache → koennen, je 4–5 min, je eine Station verloren).
+3. DER VERGLEICH DER GRUNDSTELLUNG. Lies an der Wurzel, welche der drei Abweichungen echt ist: `worldMeta.kalender` vergleicht Text
+   zweier Rundungen desselben Werts; `weather: undefined → "sunny"`; `creatures N → 0` nach einem Ortswechsel fort vom Grund. Ein
+   falscher Alarm des Vergleichs tötet keine Sitzung; eine echte Abweichung nennt ihren Täter (welche Probe ließ was zurück).
+4. profiband.K4 unter Last wird nicht je Sitzung neu gefahren (einmal je Runde, danach `offen` bis zur Ruhe).
+5. runde.cjs (stand schon als Punkt 2 deines Auftrags): „durch n/m“ nennt Urteile und Ungemessene getrennt; ungemessen aus einem
+   Sitzungs-Bruch ist nicht erledigt.
+BEWEIS: EINE Fahrt der 15 genannten Stationen + megastadt#1 + sprache#1 + koennen#2 an einem Gerät, Urteile gegen Ungemessene vorher
+(heute: 0 von 18) ↔ nachher. Hast du kein Standardgerät frei, liefere den Zweig `pm-sitzung-traegt` — ich fahre die Fahrt an der Radeon.
+NEUE REIHENFOLGE GTX 1050: (1) dieser Schnitt → (2) Stations-Probe `station:` → (3) GIT_DIR → (4) Tat-Wertung → klima-aufwind.
