@@ -2337,3 +2337,4 @@ omen-gtx-gtx-f18576b6-w105816-1-f18576b6 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-24 12:01 PLATTE 5.8 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 12:03 PLATTE 16.9 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
 2026-11-24 12:20 landung Runde 20 am daee7541: misst 76 von 239 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 12:36 RUNDE 20 SPRUNG am daee7541 → Runde 21 am bf9be26c (gtx laeuft 0/239, radeon laeuft 0/76): z715 w28-spiegel-eis gelandet: Anspruch karte2.planet.wasser.eis#2
