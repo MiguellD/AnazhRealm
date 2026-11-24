@@ -4267,7 +4267,7 @@ window.__pwMeer = m;
             // das Gesetz des Eises) und ob das Eis trägt (gelaende-core eisDicke ≥ EIS.traegt, derselbe Ruf wie `_eisLinien`); die
             // Heimat am Feld des Spiels (`_temperaturFeld`, `_wasserStoff`), der See der Soll-Tafel über den Leser des Spielers
             // (`_eisAt` je Tag der Saison), jede andere Saat an ihrer Lage (planet-ort → lageAus). Das Einsetzen: die Frostgrad-Summe
-            // stündlich ab dem ersten Eis (Dicke > 1 mm) bis zum ersten tragenden, wie Stefan sie zählt (Ashton 1986: ab dem Gefrieren);
+            // stündlich ab dem ersten Eis (Dicke > 1 mm) bis zum ersten tragenden, wie die Feldregel sie zählt (ab der ersten Decke);
             // daneben `fddLuft` ab dem ersten Frosttag der Luft (die Abkühlung der Säule dazu) — gezählt nur, wo das Jahr friert UND taut
             const u2 = U[2];
             if (u2) {
@@ -4331,7 +4331,7 @@ window.__pwMeer = m;
                     let offen = false;
                     for (let d = 0; d < nT && !offen; d++) offen = dicke(d / nT) <= 0.001;
                     const jz = traegt > 0 && traegt < nT && on >= 0 && offen ? 1 : 0;
-                    // DAS EINSETZEN NACH STEFAN (Ashton 1986 zählt die Frostgrad-Summe ab dem Gefrieren der Oberfläche, nie ab dem ersten
+                    // DAS EINSETZEN NACH DER FELDREGEL (sie zählt die Frostgrad-Summe ab der ersten dünnen Decke, nie ab dem ersten
                     // Frosttag der Luft — bis dahin kühlt die Säule ab): stündlich vom ersten Frosttag bis zum tragenden die erste Stunde mit
                     // Eis (Dicke > 1 mm), ab ihr die Summe der Stunden bis zur ersten tragenden
                     let fdd = null, stunden = null;
@@ -4360,7 +4360,7 @@ window.__pwMeer = m;
                 const RF = await FAECHER((c) => H.seite(c), {
                     gesetz: { fn: EIS_AN, export: "gelaende-core.js:1411 eisDicke ≥ EIS.traegt (gelaende-core.js:1391) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3263 _eisLinien (der Ruf :3289, die tragende Linie je Säule) → stamm/wasser-hydro.js:749 _eisAt (der Spieler auf dem See)" },
                     adressen: { saaten: Array.from({ length: Number(u2.saaten) || 12 }, (_, i) => i + 1), orte: ORTE, dazu: ORTE.map((o) => ({ saat: "heim", ort: o, zeit: null })).concat([{ saat: "heim", ort: "see", zeit: null }]) },
-                    mit: { ref: 3.43, see: u2.see || [1816, -6168] },
+                    mit: { ref: 15.7, see: u2.see || [1816, -6168] },
                     ms: Number(u2.ms) || 12000,
                     masse: {
                         adressen: { wie: "anzahl", feld: "tage" },
@@ -4518,16 +4518,16 @@ return { meer, kalt, felder: Object.keys(a) };
             },
             2: {
                 u: { saaten: 12, see: [1816, -6168], ms: 12000 },
-                soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 3.43, refQuelle: "Erde: Stefan h = α·√FDD mit α = 2,7 cm/√(K·d) (Ashton 1986, River and Lake Ice Engineering, windiger See ohne Schnee; FDD ab dem Gefrieren der Oberfläche) — tragend 5 cm (Gold 1971, P = A·h², A = 3,5 kg/cm²: 80 kg auf 4,8 cm): (5/2,7)² = 3,43 K·d. Bis spiegel-eis stand hier 13,7 = (10/2,7)², gezählt ab dem ersten Frosttag der Luft — die 10 cm ohne Quelle, die Abkühlung der Säule mitgezählt", einheit: "K·d" })],
+                soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 15.7, refQuelle: "Erde: Gold 1971 (80 kg, P = A·h², A = 3,5 kg/cm²) trägt auf 4,8 cm; die Feldregel — ist die erste dünne Decke da, wächst das Eis 1 Zoll je 15 °F·d = 2,54 cm je 8,33 K·d — gibt 4,8 / 2,54 · 8,33 = 15,7 K·d ab der ersten Decke (das Band 12,6 … 18,9). Das einfache Stefan α·√FDD ist nur die obere Schranke für dickes Eis (Ashton 1989, Thin ice growth: der Übergang Eis → Luft lässt dünnes Eis linear wachsen). Bis spiegel-eis stand hier 13,7 = (10/2,7)², gezählt ab dem ersten Frosttag der Luft — die 10 cm ohne Quelle, die Abkühlung der Säule mitgezählt", einheit: "K·d" })],
                 zeuge: zMin({ tage: 365, jahreszeitlich: 10, saaten: 3, traegtTage: 1, brichtTage: 1 }),
                 zeugeText: "der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter",
                 taeter: "gelaende-core.js:1411 eisDicke (EIS.traegt, gelaende-core.js:1391) · stamm/wasser-hydro.js:749 _eisAt",
                 leser: "stamm/bild-himmel.js:3263 _eisLinien ruft (:3289) gelaende-core.js:1411 eisDicke je Säule, stamm/wasser-hydro.js:749 _eisAt trägt den Spieler über der Linie voll",
-                gruen: gut({ fddEinsetzen: 3.3 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
+                gruen: gut({ fddEinsetzen: 15.2 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
                 attrappen: [
-                    { name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 3.43 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
-                    { name: "EINE Säule der Heimat", roh: gut({ fddEinsetzen: 3.43 }, { tage: 365, jahreszeitlich: 1, saaten: 1, traegtTage: 130, brichtTage: 200 }) },
-                    { name: "der Übergang ohne Quelle (h²/2k + h/H, H = 20 W/(m²·K)): der See trägt nach 13,5 K·d vom ersten Eis", roh: gut({ fddEinsetzen: 13.5 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
+                    { name: "die Frostgrad-Summe der Feldregel eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 15.7 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
+                    { name: "EINE Säule der Heimat", roh: gut({ fddEinsetzen: 15.7 }, { tage: 365, jahreszeitlich: 1, saaten: 1, traegtTage: 130, brichtTage: 200 }) },
+                    { name: "das einfache Stefan ohne Übergang (α·√FDD, α = 2,7 cm/√(K·d)): der See trägt nach (5/2,7)² = 3,43 K·d", roh: gut({ fddEinsetzen: 3.43 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
                     { name: "die ganzjährige Kälte als Einsetzen gezählt (die Säule 10 m · 800 m über dem Meer am Export: 70,6 K·d)", roh: gut({ fddEinsetzen: 70.6 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
                 ],
             },
