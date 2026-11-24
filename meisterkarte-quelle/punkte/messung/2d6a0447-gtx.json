@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T19:00:32.470Z",
+ "zeit": "2026-11-24T19:11:06.158Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -998,5 +998,71 @@
   },
   "fahrtS": 258.3,
   "minuten": 4.43
+ },
+ "ungemessen": {
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 47.7,
+   "fremd": {
+    "s": 51.5,
+    "takte": 24,
+    "fremdS": 8.78,
+    "kerne": 0.171,
+    "fensterKerne": 0.219,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.17
+     ],
+     [
+      "Explorer.EXE",
+      0.86
+     ]
+    ],
+    "dienerS": 4.98,
+    "diener": [
+     [
+      "System",
+      2.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.75
+     ]
+    ],
+    "geraetS": 14.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.31
+     ],
+     [
+      "svchost.exe",
+      4.84
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 76.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T19:11:06.158Z",
+   "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
