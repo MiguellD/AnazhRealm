@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 16 kopf c2c7ed123ecff97de4c9f091e644bc30d5c9b365 start 2026-11-24T06:47:40Z vorher 9d4319c05f2426cea21cd7a5ee37dad47220b8db
 gtx offen 0/0 station - fortschritt 2026-11-24T06:47:40Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-24T06:47:40Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-24T06:47:40Z alarm - liste -
 notiz 2026-11-24T06:47:40Z Runde 15 am 9d4319c0 sprang auf c2c7ed12 (gtx laeuft 22/241, radeon durch 60/60): z706 klima-kontinent + z707 licht-stetig gelandet; die Radeon ist am 9d4319c0 durch und steht leer, die GTX behält ihre 38 gemessenen Stationen
