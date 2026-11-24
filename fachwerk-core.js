@@ -11773,6 +11773,165 @@
             return !!festLauf(rd.pts || [], g, (isFinite(rd.w) ? rd.w : 3) / 2);
         });
     }
+    // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1; rein additiv): die Häuser des Plans sind die
+    // Rauigkeit und der Kanal des EINEN Winds am Ort. Je Abschnitt einer Gasse (`roads`, pts) die Fassade beider Seiten — der erste
+    // Grundriss (`obb`) auf der Normalen der Mitte bis w/2 + reichM — und ihre Höhe (`ext.y1`): H/W der Schlucht, W der Abstand der
+    // Fassaden. Das Gewicht κ = (Seiten mit Fassade ÷ 2) · glatt(0,3, 0,7, H/W): unter H/W 0,3 umströmt der Wind die Häuser einzeln,
+    // über 0,7 überströmt er die Schlucht (Oke 1988, Energy and Buildings 11: isolated roughness · wake interference · skimming
+    // flow). In der Schlucht trägt die Luft nur den Anteil längs der Gasse, der Quer-Anteil schließt sich zum Wirbel (u_Gasse ∝
+    // u·cos θ; Soulhac, Perkins & Salizzoni 2008, Boundary-Layer Meteorology 126): v = κ·(d·e)·e + (1 − κ)·d, die Richtung v/|v|,
+    // die Stärke × |v|; über den Saum der Fassade (w/2 … w/2 + saumM) klingt κ aus. Ohne Haus an der Gasse und neben jeder Gasse
+    // genau der Wind des Geländes (Bit für Bit). Leser: der Wind der Welt (`_windAt` über `_gassenWind`).
+    var GASSEN_WIND = Object.freeze({ reichM: 15, saumM: 4, hw: Object.freeze([0.3, 0.7]), zelleM: 16 });
+    function gassenGlatt(a, b, v) {
+        var u = Math.max(0, Math.min(1, (v - a) / (b - a)));
+        return u * u * (3 - 2 * u);
+    }
+    // der Strahl (px, pz) + t·(nx, nz), 0 ≤ t ≤ tMax, gegen den Grundriss o (Achsen wie distPunktOBB): das kleinste t oder Infinity
+    function gassenStrahl(px, pz, nx, nz, o, tMax) {
+        var c = Math.cos(o.phi),
+            s = Math.sin(o.phi),
+            dx = px - o.cx,
+            dz = pz - o.cz;
+        var P = [dx * c - dz * s, dx * s + dz * c],
+            N = [nx * c - nz * s, nx * s + nz * c],
+            E = [o.ex, o.ez],
+            t0 = 0,
+            t1 = tMax;
+        for (var a = 0; a < 2; a++) {
+            if (Math.abs(N[a]) < 1e-12) {
+                if (Math.abs(P[a]) > E[a]) return Infinity;
+                continue;
+            }
+            var ta = (-E[a] - P[a]) / N[a],
+                tb = (E[a] - P[a]) / N[a];
+            if (ta > tb) {
+                var q = ta;
+                ta = tb;
+                tb = q;
+            }
+            t0 = Math.max(t0, ta);
+            t1 = Math.min(t1, tb);
+            if (t0 > t1) return Infinity;
+        }
+        return t0;
+    }
+    // das Netz der Schluchten eines Plans (lokal zum Ort des Plans, wie seine pts und Grundrisse): je Abschnitt [ax, az, ex, ez,
+    // Länge, w/2, κ], dazu ein Gitter je zelleM auf die Abschnitte, die eine Zelle berühren. Einmal je Plan (der Wirt merkt es).
+    function gassenNetz(plan) {
+        if (!plan || !Array.isArray(plan.roads) || !Array.isArray(plan.slots))
+            throw new Error("fachwerk gassenNetz: der Plan trägt roads und slots nicht");
+        var G = GASSEN_WIND,
+            seg = [],
+            je = new Map(),
+            box = [Infinity, -Infinity, Infinity, -Infinity];
+        var haeuser = plan.slots.filter(function (s) {
+            return s && s.obb && s.ext && isFinite(s.ext.y1);
+        });
+        var zelle = function (v) {
+            return Math.floor(v / G.zelleM);
+        };
+        plan.roads.forEach(function (rd, ri) {
+            if (!rd || !Array.isArray(rd.pts) || !isFinite(rd.w))
+                throw new Error("fachwerk gassenNetz: die Gasse " + ri + " trägt pts oder w nicht");
+            for (var i = 1; i < rd.pts.length; i++) {
+                var A = rd.pts[i - 1],
+                    B = rd.pts[i],
+                    L = Math.hypot(B.x - A.x, B.z - A.z);
+                if (!(L > 1e-6)) continue;
+                var ex = (B.x - A.x) / L,
+                    ez = (B.z - A.z) / L,
+                    mx = (A.x + B.x) / 2,
+                    mz = (A.z + B.z) / 2,
+                    hw = rd.w / 2,
+                    tMax = hw + G.reichM;
+                var seite = [1, -1].map(function (sg) {
+                    var nx = -ez * sg,
+                        nz = ex * sg,
+                        best = Infinity,
+                        h = 0;
+                    for (var k = 0; k < haeuser.length; k++) {
+                        var o = haeuser[k].obb;
+                        if (Math.hypot(o.cx - mx, o.cz - mz) > o.ex + o.ez + tMax) continue; // sicher fern (die Vorauswahl der Nähe)
+                        var t = gassenStrahl(mx, mz, nx, nz, o, tMax);
+                        if (t < best) {
+                            best = t;
+                            h = haeuser[k].ext.y1;
+                        }
+                    }
+                    return { d: best, h: h };
+                });
+                var n = 0,
+                    W = 0,
+                    H = 0;
+                for (var j = 0; j < 2; j++) {
+                    W += isFinite(seite[j].d) ? seite[j].d : tMax;
+                    if (isFinite(seite[j].d)) {
+                        n++;
+                        H += seite[j].h;
+                    }
+                }
+                var kap = n ? (n / 2) * gassenGlatt(G.hw[0], G.hw[1], H / n / W) : 0;
+                if (!(kap > 0)) continue;
+                var si = seg.length;
+                seg.push([A.x, A.z, ex, ez, L, hw, kap]);
+                var r = hw + G.saumM;
+                var cx0 = zelle(Math.min(A.x, B.x) - r),
+                    cx1 = zelle(Math.max(A.x, B.x) + r),
+                    cz0 = zelle(Math.min(A.z, B.z) - r),
+                    cz1 = zelle(Math.max(A.z, B.z) + r);
+                box[0] = Math.min(box[0], cx0 * G.zelleM);
+                box[1] = Math.max(box[1], (cx1 + 1) * G.zelleM);
+                box[2] = Math.min(box[2], cz0 * G.zelleM);
+                box[3] = Math.max(box[3], (cz1 + 1) * G.zelleM);
+                for (var ci = cx0; ci <= cx1; ci++)
+                    for (var cj = cz0; cj <= cz1; cj++) {
+                        var key = (ci + 32768) * 65536 + (cj + 32768),
+                            l = je.get(key);
+                        if (l) l.push(si);
+                        else je.set(key, [si]);
+                    }
+            }
+        });
+        return { seg: seg, je: je, box: box, zelleM: G.zelleM, saumM: G.saumM };
+    }
+    // der Wind am Punkt (lx, lz) des Plans, der nach (dx, dz) weht (Einheitsvektor): aus.x, aus.z die Richtung, aus.f der Faktor
+    // der Stärke, aus.kappa das Gewicht der Schlucht (0: neben jeder Gasse — dann genau (dx, dz) und 1)
+    function gassenWind(netz, lx, lz, dx, dz, aus) {
+        var o = aus || {};
+        o.x = dx;
+        o.z = dz;
+        o.f = 1;
+        o.kappa = 0;
+        var b = netz.box;
+        if (!(lx >= b[0] && lx <= b[1] && lz >= b[2] && lz <= b[3])) return o;
+        var l = netz.je.get((Math.floor(lx / netz.zelleM) + 32768) * 65536 + (Math.floor(lz / netz.zelleM) + 32768));
+        if (!l) return o;
+        var best = 0,
+            S = null;
+        for (var i = 0; i < l.length; i++) {
+            var s = netz.seg[l[i]],
+                t = Math.max(0, Math.min(s[4], (lx - s[0]) * s[2] + (lz - s[1]) * s[3])),
+                r = Math.hypot(lx - s[0] - s[2] * t, lz - s[1] - s[3] * t),
+                k = s[6] * gassenGlatt(s[5] + netz.saumM, s[5], r);
+            if (k > best) {
+                best = k;
+                S = s;
+            }
+        }
+        if (!S) return o;
+        var c = dx * S[2] + dz * S[3],
+            vx = best * c * S[2] + (1 - best) * dx,
+            vz = best * c * S[3] + (1 - best) * dz,
+            m = Math.hypot(vx, vz);
+        o.kappa = best;
+        o.f = m;
+        if (m > 1e-9) {
+            o.x = vx / m;
+            o.z = vz / m;
+        }
+        return o;
+    }
     function ortPlan(plan, origin, ctx) {
         if (plan && plan.art === "genesis") return genesisOrtPlan(plan, origin, ctx); // der Genesis-Ort (GENESIS_ORT unten)
         if (
@@ -13796,6 +13955,10 @@
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        // klima-kontinent (stadtklima#1) — die Häuser als Rauigkeit und Kanal des Winds: das Netz der Schluchten je Plan, der Wind darin
+        GASSEN_WIND: GASSEN_WIND,
+        gassenNetz: gassenNetz,
+        gassenWind: gassenWind,
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
         platzImWasser: platzImWasser,
         ortBauWand: ortBauWand, // siedlung.K5 — die stehenden Bauten des Wirts im Raster (der Ort-Faden, je Wahl einmal)

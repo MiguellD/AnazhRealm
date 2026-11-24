@@ -374,16 +374,44 @@ class AnazhRealm_stoff_material {
         // DIE STÄRKE AM ORT (wetter-am-ort): der Wind-Kanal des Felds über (x, z) (`_wetterFeldAm`, ohne Relief: der Wind-Kanal
         // trägt keins) — am Spieler das Feld seines Worts, fern die Front über dem Ort; bis hier wehte jeder Ort im Wort am Spieler
         const wf = this._wetterFeldAm(x, z, tt, this._windFeldAus || (this._windFeldAus = {}), false);
-        const staerke = wf.wind * this._windWob(tt) * form;
+        // DIE GASSE (klima-kontinent, stadtklima#1): in der Schlucht der Häuser trägt der Wind den Anteil längs der Gasse — Richtung
+        // und Stärke (`_gassenWind`); die Böe wandert mit dem Wind über den Dächern (d). Neben jeder Gasse Bit für Bit der alte Wind.
+        const g = this._gassenWind(x, z, d);
+        const staerke = wf.wind * this._windWob(tt) * form * g.f;
         const ms = staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS;
-        if (!aus) return { x: d.x, z: d.z, staerke, boe, form, ms };
-        aus.x = d.x;
-        aus.z = d.z;
+        if (!aus) return { x: g.x, z: g.z, staerke, boe, form, ms };
+        aus.x = g.x;
+        aus.z = g.z;
         aus.staerke = staerke;
         aus.boe = boe;
         aus.form = form;
         aus.ms = ms;
         return aus;
+    }
+    // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1): die Häuser jeder geladenen Siedlung sind
+    // Rauigkeit und Kanal des EINEN Winds (fachwerk `gassenWind`: v = κ·(d·e)·e + (1 − κ)·d, κ aus H/W der Schlucht). Die Siedlungen
+    // liest die EINE Stelle, an der die Welt sie je Sitzung kennt (`_bewohnerSiedlungen`, Plan und Ort); ihr Netz der Schluchten
+    // entsteht einmal je Plan (fachwerk `gassenNetz`, gemerkt am Eintrag, neu mit einem neuen Plan) — die Frage baut nichts.
+    // Liefert {x, z, f, kappa}: die Richtung, den Faktor der Stärke und das Gewicht; neben jeder Gasse genau (d.x, d.z) und 1.
+    _gassenWind(x, z, d) {
+        const o = this._gassenAus || (this._gassenAus = {});
+        o.x = d.x;
+        o.z = d.z;
+        o.f = 1;
+        o.kappa = 0;
+        const B = this._bewohnerSiedlungen;
+        if (!B || !B.size) return o;
+        const FC = globalThis.__fachwerkCore;
+        if (!FC || typeof FC.gassenNetz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:gassenNetz");
+        for (const Si of B.values()) {
+            if (Si.gassenPlan !== Si.plan) {
+                Si.gassen = FC.gassenNetz(Si.plan);
+                Si.gassenPlan = Si.plan;
+            }
+            FC.gassenWind(Si.gassen, x - Si.ox, z - Si.oz, d.x, d.z, o);
+            if (o.kappa > 0) return o;
+        }
+        return o;
     }
     // DER WIND AM RAUCH (wetter-am-ort): der EINE Wind am Ort (`_windAt`: Richtung, Feld am Ort, Form, Böe) in der Höhe h über
     // Grund — sein Betrag über das Profil des Kerns (phyto-core `windProfil`, Hellmann: der Wind am Ort gilt in 10 m). `grund`:
