@@ -13520,7 +13520,7 @@
   },
   "karte2.leben.pflanzen.biome": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert — zuletzt an a8dd22b5: der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.biome#1",
@@ -13538,7 +13538,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an a8dd22b5: der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter",
      "ungemessen": true,
      "beide": true
     },
@@ -13752,7 +13752,7 @@
   },
   "karte2.leben.pflanzen.jahreslauf": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.jahreslauf#2 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.jahreslauf#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.jahreslauf#2 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.jahreslauf#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs) · karte2.leben.pflanzen.jahreslauf#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.jahreslauf#2",
@@ -13769,8 +13769,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.pflanzen.jahreslauf#3",
@@ -13848,7 +13849,7 @@
   },
   "karte2.leben.pflanzen.kraft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.kraft#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.kraft#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs) · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.kraft#2",
@@ -13865,8 +13866,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.pflanzen.kraft#3",
@@ -37562,7 +37564,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 313,
+  "konsum": 315,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37730,10 +37732,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3309
+  "ohne": 3307
  },
  "kopfVoll": "499f8b572290130d2a8264cf306f500dace25eba",
- "zeit": "2026-11-24T14:30:16.514Z",
+ "zeit": "2026-11-24T15:17:39.252Z",
  "vorher": "499f8b57",
  "bilanz": {
   "gewinn": [],
