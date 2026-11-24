@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T18:23:28.690Z",
+ "zeit": "2026-11-24T18:37:40.024Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -433,59 +433,59 @@
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k9e943d0bf40a",
-   "s": 39.9,
+   "konsumBoot": "kab45c9954465",
+   "s": 39.4,
    "fremd": {
-    "s": 42.8,
+    "s": 42.9,
     "takte": 20,
-    "fremdS": 15.11,
-    "kerne": 0.353,
-    "fensterKerne": 0.442,
+    "fremdS": 12.86,
+    "kerne": 0.3,
+    "fensterKerne": 0.449,
     "namen": [
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      6.58
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.53
      ],
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      2.95
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.45
      ],
      [
       "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      1.64
+      1.25
      ]
     ],
-    "dienerS": 7.78,
+    "dienerS": 8.11,
     "diener": [
      [
       "dwm.exe",
-      4.02
+      4.11
      ],
      [
       "System",
-      2.23
+      2.59
      ]
     ],
-    "geraetS": 6.59,
+    "geraetS": 6.64,
     "geraet": [
      [
       "MsMpEng.exe",
-      3.55
+      3.61
      ],
      [
       "svchost.exe",
-      2.33
+      2.47
      ],
      [
       "SearchIndexer.exe",
-      0.36
+      0.33
      ]
     ],
-    "eigenS": 119.25,
+    "eigenS": 122.48,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-24T18:12:06.946Z",
-   "abdruck": "335bba5327d1",
+   "zeit": "2026-11-24T18:29:08.076Z",
+   "abdruck": "10421369a82b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -629,6 +629,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4a51c262359c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 9,
+   "fremd": {
+    "s": 13.1,
+    "takte": 6,
+    "fremdS": 6.63,
+    "kerne": 0.505,
+    "fensterKerne": 0.511,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.31
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.33
+     ],
+     [
+      "Explorer.EXE",
+      0.92
+     ]
+    ],
+    "dienerS": 2.89,
+    "diener": [
+     [
+      "dwm.exe",
+      1.59
+     ],
+     [
+      "System",
+      0.75
+     ]
+    ],
+    "geraetS": 4.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.05
+     ],
+     [
+      "svchost.exe",
+      1.13
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 35.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T18:36:09.697Z",
+   "abdruck": "c4adbcfa93ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5d22618bde07",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 13.2,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 11.16,
+    "kerne": 0.733,
+    "fensterKerne": 0.794,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.16
+     ],
+     [
+      "Explorer.EXE",
+      2.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ]
+    ],
+    "dienerS": 4.44,
+    "diener": [
+     [
+      "dwm.exe",
+      2.05
+     ],
+     [
+      "System",
+      1.48
+     ]
+    ],
+    "geraetS": 6.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.55
+     ],
+     [
+      "svchost.exe",
+      1.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 28.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T18:37:40.024Z",
+   "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -641,10 +781,10 @@
   "k37ca1e272999": "bVTbjpswEP2XPHbrNddgLO2DU7ZKpG6b/YQxjIENgciG0Kbqv1eQkHDZeQJ0xnN8zhn+rk4QHyDF5w9TlSu++rL6ujJwRmJQn1E/f5gVX4Wx7aDLxbWoEOJbB4t1fqoNLXJJQZaQHZE0usa8eI77NpDoJYzT9lWke0oVvdCofXmZtxYSk4rUoPDe6LNE+XwObEwKEgk0qh92A1sWWzvAaV8sEr8ieq/2TYi9p7w9i2aHSSiTKdtw7Qfo890fIV7FgmWSA9akyEszzLWTIFQWH81a9GhoyQUwK1DfmpDZticHsptOzk6aWaMqGmMmw5ib+A7jlIZzbIomj7OanHQlsbzBZegENvDNUu301BA1ZgRSApNzrTPAMkU94WC5sVrbnP5m80MPcEQNpIRs0NJyA0c+tKGUbpdcip54P2IgntiB79iTxs5Ueu4EFjsxRLB7Z9s7YvgepeJR74uBJs5yfZxKpTx0LJf/WNIzGSSoyaEy9R3tYuBZ8roJu+g6d882887HxQb/AICNwkIZFduFjqZSdQsaSXpqhsB46Ac+F2K3ANdwPN5QvnI9N56baOou5GMaXrBGRE7p03VJlpe+rgS5YF4MTUp5XrjYxrOGIwGZ6lypwXXpxyr8LKQtFjWRVVUPMtpB4LqcurQcG/2z7XUdeRil797bd5G+ikntxJx3P6HS9UDal2tLeVz1wYkX6FzXpIU4G+COkggh/wR6QV1gihMZZcDCLt5tPGLqDQ9Pk/BeFi5fcuwELk1jBpNj8KTPP7GkRX2QUB5uwDix7XXSx2/zS2ynokTvexZ1azIpt9cuysTt4BPG9KQrlXd/QJpBYzIo6sfv/99/"
  },
  "sitzung": {
-  "start": "2026-11-24T18:09:39.725Z",
-  "ordner": "sitzung-20261124-190939",
+  "start": "2026-11-24T18:26:43.219Z",
+  "ordner": "sitzung-20261124-192643",
   "port": 7804,
-  "warten": 0.02,
+  "warten": 0.01,
   "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
@@ -653,8 +793,8 @@
    {
     "ort": "stadt-voll",
     "vor": "karte2.mensch.sport.regeln#1",
-    "s": 135,
-    "takte": 1939,
+    "s": 132.7,
+    "takte": 1881,
     "chunks": 81,
     "nach": null
    }
@@ -671,8 +811,8 @@
     },
     "haelt": [],
     "heap": [
-     430.9,
-     431.7
+     435,
+     433.8
     ],
     "ungemessen": null
    }
@@ -697,10 +837,10 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3384,
+   "bilder": 3388,
    "frameP95": 25.04,
-   "taktP95": 15.3,
-   "vramMax": 191,
+   "taktP95": 15.4,
+   "vramMax": 191.5,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
@@ -714,10 +854,10 @@
     }
    ],
    "zapfen": 180,
-   "luecken": 6,
+   "luecken": 5,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 262,
-  "minuten": 4.49
+  "fahrtS": 258.3,
+  "minuten": 4.43
  }
 }
