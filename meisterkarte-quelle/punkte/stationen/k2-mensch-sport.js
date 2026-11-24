@@ -563,7 +563,53 @@ const UEBUNG = async (r, T, arg) => {
         r2 = sxx > 0 && syy > 0 ? (sxy * sxy) / (sxx * syy) : null;
     }
     const hs = pts.map((p) => p.h);
+    // DER EINE BEWOHNER ÜBER 10² ÜBUNGSSTUNDEN (der Umfang der Sprosse, wörtlich): der erste Hersteller, der Kalender der Welt
+    // (`worldMeta.kalender`, wie absicht S2) in elf Schritten so weit vorwärts, dass seine Stunden im Handwerk um 100 wachsen; je
+    // Schritt seine Stunden (`b.uebung`) und die Güte, die sein Werk zeigt (`b.bestand.rate` ÷ jeStunde) — danach zurück, byte-gleich
+    const wm = r.state.worldMeta;
+    let einer = null;
+    const b1 = (() => {
+        for (const S of (r._bewohnerSiedlungen || new Map()).values())
+            for (const b of S.liste || []) if (b.bestand && b.bestand.art === "werk" && HS[b.beruf] && HS[b.beruf].jeStunde > 0 && b.bestand.rate > 0) return b;
+        return null;
+    })();
+    if (b1 && wm) {
+        r._kalenderZeit();
+        const hatte = Object.prototype.hasOwnProperty.call(wm, "kalender");
+        const alt = hatte ? wm.kalender : undefined;
+        const [v0, l0] = alt || [0, r._kalender().normS];
+        const jahrK = r._kalender().jahrK;
+        const reihe = [];
+        try {
+            const h0 = b1.uebung.handwerk.h;
+            wm.kalender = [v0 + jahrK, l0];
+            const proJ = b1.uebung.handwerk.h - h0;
+            const schrittK = proJ > 0 ? (10 / proJ) * jahrK : 0;
+            for (let k = 0; k <= 10 && schrittK > 0; k++) {
+                wm.kalender = [v0 + k * schrittK, l0];
+                const u = b1.uebung.handwerk;
+                reihe.push({ h: u.h, gesetz: u.koennen, g: b1.bestand.rate / HS[b1.beruf].jeStunde });
+            }
+        } finally {
+            if (hatte) wm.kalender = alt;
+            else delete wm.kalender;
+        }
+        let r2e = null;
+        const P = reihe.filter((p) => p.h >= 1 && p.g > 0).map((p) => [Math.log(p.h), Math.log(p.g)]);
+        if (P.length >= 3) {
+            const mx = P.reduce((s, p) => s + p[0], 0) / P.length, my = P.reduce((s, p) => s + p[1], 0) / P.length;
+            let [sxx, sxy, syy] = [0, 0, 0];
+            for (const [x, y] of P) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
+            // steht die Güte über den Stunden still (syy 0), erklärt das Potenzgesetz nichts von ihr: R² 0
+            r2e = sxx > 0 ? (syy > 0 ? (sxy * sxy) / (sxx * syy) : 0) : null;
+        }
+        const q = (x) => +x.toFixed(4);
+        einer = reihe.length
+            ? { beruf: b1.beruf, spanne: Math.round(reihe[reihe.length - 1].h - reihe[0].h), hVon: Math.round(reihe[0].h), hBis: Math.round(reihe[reihe.length - 1].h), gVon: q(reihe[0].g), gBis: q(reihe[reihe.length - 1].g), gesetzVon: q(reihe[0].gesetz), gesetzBis: q(reihe[reihe.length - 1].gesetz), r2: r2e == null ? null : q(r2e), zurueck: !hatte ? !Object.prototype.hasOwnProperty.call(wm, "kalender") : wm.kalender === alt }
+            : null;
+    }
     return {
+        einer,
         bewohner,
         werke,
         ohneRate,
@@ -734,14 +780,20 @@ module.exports = (F) => [
                 })
             );
             // S2: die Güte, die das Werk zeigt (Rate des Werks ÷ Rate des Berufs), über den Stunden der Übung — gegen das Potenzgesetz
-            await K.schritt(2, async () =>
+            // Der Umfang ist EIN Bewohner über 10² Übungsstunden (u.einer: derselbe Mensch, der Kalender rückt); der Querschnitt über
+            // alle Hersteller ist Beleg, nie das Urteil — er zeigt die Güte zwischen Menschen, nicht über die Übung eines Menschen
+            await K.schritt(2, async () => {
+                const e = u.einer;
+                if (!e) throw new Error("kein Hersteller mit Rate an der Stadt (oder kein Kalender)");
+                if (!e.zurueck) throw new Error("der Kalender stand nach der Übung nicht, wo er stand");
+                H.zeile("S2 ein " + e.beruf + ": Stunden " + e.hVon + " → " + e.hBis + ", Güte des Werks " + e.gVon + " → " + e.gBis + " (das Gesetz " + e.gesetzVon + " → " + e.gesetzBis + "), R² " + e.r2);
                 K.zahl(2, {
-                    n: u.spanne,
-                    werte: { r2: u.r2 },
-                    beleg: u.hersteller + " Hersteller (" + JSON.stringify(u.berufe) + ") über " + u.hMin + "–" + u.hMax + " Übungsstunden im Handwerk: die Güte = b.bestand.rate ÷ BESTAND_GESETZ.herstellung[beruf].jeStunde (das Werk, _bestandAnlegen), Fit log(Güte) ↔ log(Stunden) α " + u.alpha + " (Gesetz " + u.alphaGesetz + "); " + u.ohneRate + " Werke ohne Rate (der Beruf stellt nicht her)",
-                    taeter: "stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks folgt dem Können seines Handwerks nicht (`b.uebung.handwerk.koennen`)",
-                })
-            );
+                    n: e.spanne,
+                    werte: { r2: e.r2 },
+                    beleg: "ein " + e.beruf + " über " + e.hVon + "–" + e.hBis + " Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) " + e.gVon + " → " + e.gBis + ", das Können seines Lebenslaufs " + e.gesetzVon + " → " + e.gesetzBis + "; Querschnitt " + u.hersteller + " Hersteller " + JSON.stringify(u.berufe) + " über " + u.hMin + "–" + u.hMax + " h: R² " + u.r2 + ", α " + u.alpha + " (Gesetz " + u.alphaGesetz + ")",
+                    taeter: "stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks liest das Können EINMAL beim Bau der Liste (`b.bestand.rate *= b.uebung.handwerk.koennen`): über die Stunden der Übung eines Menschen steht seine Güte still",
+                });
+            });
             await K.schritt(3, async () => K.leser(3, { n: z.sport, fehlt: "kein Wettkampf, kein Bestwert (" + z.n + " Bewohner, " + z.sport + " im Sport-Akt)", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine Altersklassen, Vereine, Meister: die Rollen des Tages-Gesetzes tragen keine", wo: "koerper-core.js:5135" }));
             await K.schritt(5, async () => K.leser(5, { n: 0, fehlt: "keine Weltmeisterschaft, kein Rekord: die Leib-Werte kennen weder Übung noch Talent", wo: "koerper-core.js:5455" }));
