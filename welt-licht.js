@@ -58,7 +58,7 @@ var __weltLicht = (function () {
     // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
     // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
     // DER BODEN DES MESSERS (`nachtKnotenE` × der Mond der Stunde, licht-stetig): die weiteste Blende der Kamera — ihr Lichtmesser
-    // liest nie weniger als das Licht des Vollmonds unter klarer Luft zu DIESER Stunde, E des Monds im Zenit (`MOND_E`) × der Sinus
+    // liest nie weniger als das Licht des Vollmonds ohne Wolken-Decke zu DIESER Stunde, E des Monds im Zenit (`MOND_E`) × der Sinus
     // seiner Höhe × sein Durchlass (`belichtung`, das sechste Wort); darunter steht die Belichtung, und das Bild fällt mit dem Licht
     // (UE: die Untergrenze der Auto-Belichtung, Min EV100) — Wald, Wolke, Gasse ohne Laterne. Unter offenem Himmel folgt die Kamera
     // dem Mond, wie die REF es misst (spec/farbe/tag-ref.json, USNO Circular 171: −20° 0,096 lx und −90° 0,397 lx stehen beide auf
@@ -731,8 +731,8 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest nie unter seinem BODEN (UE: Min EV100): `mond` ist das Licht des Vollmonds unter klarer Luft relativ zum Zenit
-    // (der Sinus seiner Höhe × sein Durchlass, 0 unter dem Horizont; die Welt reicht ihn, `_belichtungAusLicht`), der Boden
+    // liest nie unter seinem BODEN (UE: Min EV100): `mond` ist das Licht des Vollmonds ohne Wolken-Decke relativ zum Zenit
+    // (der Sinus seiner Höhe × sein Durchlass durch die Luft jetzt, 0 unter dem Horizont; die Welt reicht ihn, `_belichtungAusLicht`), der Boden
     // `nachtKnotenE` × `mond` — darunter steht die Blende, das Bild fällt mit dem Licht; darüber folgt die Kamera dem Licht. Der
     // Boden ist eine stetige Funktion der Uhr (er steigt und sinkt mit dem Mond) und liegt unter offenem Himmel nie über dem Licht:
     // die Dämmerung fällt nie durch ihn (bis licht-stetig: fest ab −6°, siehe `BELICHTUNG`). Bis w28-licht-stetig zog ein
@@ -881,6 +881,13 @@ var __weltLicht = (function () {
     // DER HIMMEL ÜBER DEM ORT, SYNCHRON (S7; rgb, E einer waagrechten Fläche): die Bestrahlungs-Tafel `T` ({W, werte}) an der Sonne
     // und am Mond der Uniforms `U` der Tafeln, das Sternen-Licht — in derselben Zusammensetzung wie die Farbe des Himmels
     // (`himmelFarbe`: E0 × Tönung, der Mond in `mondE`, die Sterne in `nachtE`) → `out`.
+    // ZWISCHEN ZWEI TEXELN mischt sie GEOMETRISCH (licht-stetig): das Licht der Dämmerung fällt exponentiell mit der Sonnenhöhe
+    // (0,4–0,5 Dekaden je Grad, Brown 1952 / USNO Circular 171; die Tafel selbst trägt 0,43–0,52), ein Texel liegt am Ende der
+    // bürgerlichen Dämmerung 1,2° weit — das Licht fällt dort je Texel um das 3,4-Fache. Linear im Licht gemischt, stieg der
+    // Messer am Anfang jedes Texels doppelt, an seinem Ende halb so steil wie das Licht: die Belichtung fiel 1,52 und 1,09 EV,
+    // wo das Bild 1,1 und 1,4 stieg (genesis Uhr 0,232 → 0,236, GTX, Täter-Pass „Belichtung“). Im Logarithmus gemischt, über dem
+    // Boden der Auflösung der Tafel (2^−24, die kleinste Stufe ihres Halb-Floats), folgt er der Steigung des Lichts in jedem Texel.
+    const TAFEL_BODEN = 2 ** -24;
     function bestrahlung(T, U, out) {
         const W = T.W,
             w = T.werte;
@@ -888,7 +895,9 @@ var __weltLicht = (function () {
             const x = ((Math.sign(mu) * Math.sqrt(Math.min(1, Math.abs(mu))) + 1) / 2) * (W - 2);
             const i = Math.max(0, Math.min(W - 3, Math.floor(x)));
             const f = Math.max(0, Math.min(1, x - i));
-            return w[i * 3 + c] * (1 - f) + w[(i + 1) * 3 + c] * f;
+            const a = Math.max(0, w[i * 3 + c]) + TAFEL_BODEN;
+            const b = Math.max(0, w[(i + 1) * 3 + c]) + TAFEL_BODEN;
+            return Math.max(0, a * (b / a) ** f - TAFEL_BODEN);
         };
         const ms = U.sonne.value.y,
             mm = U.mond.value.y;
