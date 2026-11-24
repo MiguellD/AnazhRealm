@@ -7631,8 +7631,9 @@ L.perspektive("evolution", (() => {
 
             // ═══ BAUPLAN: der Morphoraum der Zufalls-Genome ═══
             [BP]: {
-                sek: 40,
+                sek: 50,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_TIER,
                 ungefahren: "das Blindtest-Video (S4) und die Fremdwelt-Probe (S6) — auf swiftshader kein Schuss; die Silhouette misst die Hülle des Leibs, nicht das Bild",
                 mess: async function (H, U, M) {
@@ -7749,9 +7750,91 @@ L.perspektive("evolution", (() => {
                     const z = { fehler: a.fehler, antworten: a.genome || 0, streuung: a.wegStreuung || 0 };
                     const und = (...l) => l.filter(Boolean).join("; ") || undefined;
                     const ohneNatur = "kein Natur-Bildsatz in der Welt und keine Gangart aus dem Genom: die Zufalls-Genome laufen alle (Schwimmen und Fliegen sind eigene Gesetze, FISCH_GESETZ und Vogel)";
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): 1 000 Zufalls-Genome (die fünf Dials der Kreatur, gleichverteilt über
+                    // PARAMS_BY_KIND.kreatur) als Funktionsrufe des Leib-Gesetzes — bauTier (tetrapoda-core.js:4547) durch die Fabrik
+                    // seines Lesers (foundry-core.js:7618 __tierRaumBaum; derselbe Baum, den der Guss :8517 gießt) — und des Gang-Gesetzes
+                    // gangSchritt (tetrapoda-core.js:1416, gelesen in tierPose :3445) an der Hüft-Höhe des Baums (wie koerper-leib.js:2618
+                    // beinL: Hüfte über der Pfote, × MASSSTAB) im Tempo des Gehens und des Sprints. Bewegt heißt: vier Pfoten unter ihren
+                    // Hüften und ein Schritt (ω > 0, endlich) in beiden Tempi. Das Volumen ist das der FORM, nicht der Größe (Disparität
+                    // misst man größenfrei — Foote 1997, Annu Rev Ecol Syst 28:129): vier log-Verhältnisse der Gestalt (Länge, Breite,
+                    // Hüft-Höhe und Kopf-Höhe je Höhe), das Produkt der Streuungen der Zufalls-Genome gegen das der vier Gattungen des
+                    // Gesetzbuchs (GATTUNGEN, tetrapoda-core.js — die Welt heute)
+                    const BP_AN = (r, T, a) => {
+                        const TC = globalThis.__tetrapodaCore;
+                        const PK = TC.PARAMS_BY_KIND.kreatur;
+                        let dials;
+                        if (typeof a.saat === "string") dials = Object.assign({}, TC.GATTUNGEN[a.saat]);
+                        else {
+                            let u = (Math.imul(a.saat >>> 0, 2654435761) ^ 0x9e3779b9) >>> 0;
+                            const zz = () => (u = (Math.imul(u, 1664525) + 1013904223) >>> 0) / 4294967296;
+                            dials = {};
+                            for (const p of PK) dials[p.id] = p.min + (p.max - p.min) * zz();
+                        }
+                        const b = __tierRaumBaum(TC, dials, []);
+                        const t = b.B.teile;
+                        b.root.updateMatrixWorld(true);
+                        const V = new T.Vector3();
+                        const y = (o) => V.setFromMatrixPosition(o.matrixWorld).y;
+                        const f = TC.MASSSTAB.meterJeEinheit;
+                        const beine = [[t.legFL, t.flP], [t.legFR, t.frP], [t.legHL, t.hlP], [t.legHR, t.hrP]].map(([h, p]) => (h && p ? (y(h) - y(p)) * f : NaN));
+                        const L = (y(t.legHL) - y(t.hlP)) * f;
+                        const geh = TC.gangSchritt(TC.tempoEinheit(L), L, null);
+                        const lauf = TC.gangSchritt(TC.sprintTempo(L), L, null);
+                        const ok = (g) => g.omega > 0 && Number.isFinite(g.omega) && g.schritt > 0;
+                        const box = new T.Box3().setFromObject(b.root).getSize(new T.Vector3());
+                        const hoch = box.y * f;
+                        const kopf = t.headGroup ? y(t.headGroup) * f : NaN;
+                        return {
+                            bewegt: beine.every((x) => x > 0) && ok(geh) && ok(lauf) ? 1 : 0,
+                            L,
+                            art: TC.artGestalt(TC.deriveTierParams(dials)).art,
+                            gang: geh.art + "/" + lauf.art,
+                            d: [Math.log(box.z / box.y), Math.log(box.x / box.y), Math.log(L / hoch), Math.log(kopf / hoch)],
+                            dials: Object.fromEntries(Object.entries(dials).map(([k, v]) => [k, Math.round(v * 1000) / 1000])),
+                        };
+                    };
+                    const VOL = (v) => {
+                        if (v.length < 2) return null;
+                        let p = 1;
+                        for (let k = 0; k < 4; k++) {
+                            const x = v.map((d) => d[k]), m = x.reduce((s, q) => s + q, 0) / x.length;
+                            p *= Math.max(1e-9, Math.sqrt(x.reduce((s, q) => s + (q - m) * (q - m), 0) / (x.length - 1)));
+                        }
+                        return p;
+                    };
+                    const zufall = (q) => typeof q.saat === "number";
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: BP_AN, export: "tetrapoda-core.js:4547 bauTier + :1416 gangSchritt (an der Hüft-Höhe, tempoEinheit :1650)", leser: "foundry-core.js:7618 __tierRaumBaum (:8517 der Guss) · tetrapoda-core.js:3445 tierPose → gangWahl" },
+                        adressen: { saaten: 1000, dazu: ["wolf", "fox", "bear", "deer"].map((g) => ({ saat: g })) },
+                        ms: 30000,
+                        masse: {
+                            bewegtProzent: { wie: (v) => (v.length ? (100 * v.filter((x) => x === 1).length) / v.length : null), feld: "bewegt", nur: zufall },
+                            genome: { wie: "anzahl", feld: "bewegt", nur: zufall },
+                            volZufall: { wie: VOL, feld: "d", nur: zufall },
+                            volHeute: { wie: VOL, feld: "d", nur: (q) => typeof q.saat === "string" },
+                            arten: { wie: "verschieden", feld: "art", nur: zufall },
+                            gaenge: { wie: "verschieden", feld: "gang", nur: zufall },
+                        },
+                        schlecht: { feld: "L", richtung: "min" },
+                        pose: (q, w) => "Genom " + q.saat + " " + JSON.stringify(w.dials) + ": Hüft-Höhe " + Math.round(w.L * 1000) / 1000 + " m, Gestalt der Art " + w.art,
+                        ungemessen: ["das Bild der Gestalt im Lauf (S4 Blindtest) — ungemessen bis zum Gerät"],
+                    });
+                    const G1 = R1.je.filter((e) => zufall(e.a));
+                    const H1 = R1.je.filter((e) => !zufall(e.a));
+                    const lo = [0, 1, 2, 3].map((k) => Math.min(...H1.map((e) => e.w.d[k])));
+                    const hi = [0, 1, 2, 3].map((k) => Math.max(...H1.map((e) => e.w.d[k])));
+                    const draussen1 = G1.filter((e) => e.w.d.some((x, k) => x < lo[k] - 1e-6 || x > hi[k] + 1e-6)).length;
+                    const vf1 = R1.werte.volZufall != null && R1.werte.volHeute > 0 ? R1.werte.volZufall / R1.werte.volHeute : undefined;
+                    const L1 = G1.map((e) => e.w.L);
+                    const mL = L1.length ? L1.reduce((s, x) => s + x, 0) / L1.length : NaN;
+                    const sdL = L1.length > 1 ? Math.sqrt(L1.reduce((s, x) => s + (x - mL) ** 2, 0) / (L1.length - 1)) : 0;
+                    const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : x);
+                    // gemessen ist gemessen: ein Volumen unter dem Soll ist ROT an der Zahl mit dem Täter, nie „nicht erzeugbar“
+                    const nicht1 = und(R1.fehlt, R1.werte.genome < 1000 ? "1 000 Zufalls-Genome: am Gesetz des Leibs gemessen " + R1.werte.genome + " (" + R1.akte + ")" : null);
+                    const taeter1 = "tetrapoda-core.js:295 PARAMS (5 Dials) → :4434 artGestalt: die Gestalt ist die Gauß-Mischung der vier ART_GESTALT (:4319, artGewichte :4408) — Form-Volumen ×" + r3(vf1) + " gegen die vier Gattungen, " + draussen1 + " von " + G1.length + " Genomen außerhalb ihrer Spanne, " + R1.werte.arten + " Gestalten, Gang " + R1.werte.gaenge + "; ein Bauplan jenseits der Vierbeiner hat kein Genom · " + R1.akte;
                     return {
                         sprossen: {
-                            1: { werte: { bewegtProzent: pr(a.bewegt, a.genome), genome: a.genome, volumenFaktor: a.volumenFaktor }, zeuge: z, nicht: und(a.genome < 1000 ? "1 000 Zufalls-Genome: im Deckel gegossen und gelaufen " + a.genome + " (der Guss eines Genoms kostet den Ofen der Gattung)" : null) },
+                            1: { werte: { bewegtProzent: R1.werte.bewegtProzent, genome: R1.werte.genome, volumenFaktor: vf1 }, zeuge: { fehler: R1.fehler.length ? R1.fehler[0].fehler : null, antworten: R1.werte.genome || 0, streuung: sdL }, nicht: nicht1, taeter: vf1 >= 10 ? undefined : taeter1, akte: R1.akte },
                             2: { werte: { volumenFaktor: a.volumenFaktor, modi: a.modi }, zeuge: z, nicht: ohneNatur },
                             3: { werte: { volumenFaktor: a.volumenFaktor }, zeuge: z, nicht: "nur Tetrapoden: keine Gliederfüßer, Weichtiere oder Wuchsformen aus einem Genom; " + ohneNatur },
                             4: { werte: { tempoMs: a.tempoMs }, zeuge: z, auge: await M.auge("evolution-bauplan-s4", a.pose || { ort: "wiese" }) },
@@ -7764,9 +7847,9 @@ L.perspektive("evolution", (() => {
                     1: S({
                         soll: [K.soll(BP, 1, "Bewegungs-Anteil ≥ 95 %", { key: "bewegtProzent", einheit: "%" }), K.soll(BP, 1, "1 000 Zufalls-Genome", { key: "genome", rel: "≥", zahl: 1000 }), K.soll(BP, 1, "1 000 Zufalls-Genome", { key: "volumenFaktor", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "×10" })],
                         werte: { bewegtProzent: 97, genome: 1000, volumenFaktor: 12 },
-                        zeuge: { min: 10, was: "Zufalls-Genome gegossen und im Takt der Welt gelaufen", streu: true },
-                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (5 Dials — der Raum der Genome)",
-                        leser: "stamm/koerper-leib.js:2469 _buildCreatureGroup — gießt je neuem Genom den Ofen der Gattung (1 000 im Deckel nicht)",
+                        zeuge: { min: 1000, was: "Zufalls-Genome am Gesetz des Leibs (bauTier) und des Gangs (gangSchritt)", streu: true },
+                        taeter: "tetrapoda-core.js:4434 artGestalt (5 Dials, die Gestalt gemischt aus vier ART_GESTALT — der Raum der Genome)",
+                        leser: "foundry-core.js:7618 __tierRaumBaum → tetrapoda-core.js:4547 bauTier (der Guss foundry-core.js:8517) · tetrapoda-core.js:3445 tierPose → :1416 gangSchritt an der Hüft-Höhe (stamm/koerper-leib.js:2618 beinL)",
                     }),
                     2: S({
                         soll: [K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz der Tetrapoden", { key: "abdeckungProzent", rel: "≥", zahl: 50, quelleFeld: "tiefe", quelleWort: "≥ 50 %", einheit: "%" }), K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz der Tetrapoden", { key: "volumenFaktor", rel: "≥", zahl: 100, quelleFeld: "umfang", quelleWort: "×10²" }), K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz", { key: "modi", rel: "≥", zahl: 4, refQuelle: "die vier Gangarten des Umfangs: Laufen, Schwimmen, Fliegen, Schlängeln ENTSTEHEN" })],
