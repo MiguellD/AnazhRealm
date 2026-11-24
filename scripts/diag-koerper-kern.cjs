@@ -680,16 +680,50 @@ function stoffstromUrteil(C0, S0, mutante = null) {
 // Ring stehen ≥ 10 Zuschauer, und ihr Blick (die Wendung des Stands + Kopf und Rumpf, `BEWOHNER.kopfMaxRad + rumpfMaxRad`)
 // trifft den Punkt des Geschehens (`spielGeschehen`) in ≥ 80 % der Proben (je Gang 5 Zeitpunkte, ±30° wie die Station);
 // E5 der Tag liest das Programm: `tagesPlan` mit `orte.spiel` stellt den Gast zur Stunde seines Auftritts in dessen Akt an
-// dessen Stand. Täter (Selbsttest): „gewürfelt" (der Sieger des Laufs ohne den Leib), „immer" (der Stärkere siegt jeden Zug),
-// „starr" (der Zuschauer blickt in eine feste Richtung), „ohneRegel" (das Brett setzt auf ein besetztes Feld), „ohneTag" (der Tag
-// liest `orte.spiel` nicht). Leser: der Wirt (`_spielTag`, `_spielProgramm` → `orte.spiel`, `_bewohnerKopf` → `S.spielJetzt`).
+// dessen Stand; E6 der Raum des Stands: je zwei Stände verschiedener Gäste, deren Stunden sich decken (Ring, Tisch, Bahn, Zweikampf),
+// stehen ≥ `SPIEL_GESETZ.feld.standM` auseinander, und standM liegt über der Tür-Freiheit des Wirts (BEWOHNER.tuerFreiM 0,9 m: wer
+// beiseite trat, kehrt erst zurück, wenn kein Leib näher an seinem Stand steht — bis sport-regeln 3 saßen die zwei am Brett 0,8 m
+// auseinander, pfarrhaus #723323 trat dem Kind beiseite und kam nie zurück, Kreatur-Linse bewohner 18,80 Uhr); E7 der Abend trägt
+// den Weg: kein Gast geht mit den Ständen seines Abends mehr als 10 Wege am Tag (mensch.K3, 4–10 Wege je Tag) — gezählt am Plan
+// der Stunde selbst (`tagesPlan` je 0,05 h und an jeder Grenze eines Auftritts, ein Weg = ein neuer Ort, drinnen oder davor), und
+// `tagesGaenge` des Kerns zählt nie weniger (das Raster ist die untere Schranke; bis sport-regeln 3 vergab das Programm Lauf, Gang und Ring obendrauf: Patrizierhaus
+// #91693 der Stadt ging 13 Wege). Täter (Selbsttest):
+// „gewürfelt" (der Sieger des Laufs ohne den Leib), „immer" (der Stärkere siegt jeden Zug), „starr" (der Zuschauer blickt in eine
+// feste Richtung), „ohneRegel" (das Brett setzt auf ein besetztes Feld), „ohneTag" (der Tag liest `orte.spiel` nicht), „eng" (die
+// zwei am Brett 0,8 m auseinander, der Tisch vor sport-regeln 3), „ohneWeg" (jeder Auftritt zerfällt in acht Stände hin und her). Leser: der Wirt (`_spielTag`, `_spielProgramm` → `orte.spiel`,
+// `_bewohnerKopf` → `S.spielJetzt`; der Rückweg des Beiseitegetretenen an seinen Stand, `_bewohnerPlatz` → BEWOHNER.tuerFreiM).
 const SPIEL_KOPF_RAD = 1.65; // BEWOHNER.kopfMaxRad 1,2 + rumpfMaxRad 0,45 (stamm/siedlung-bewohner.js) — die Linse liest den Stamm nicht als Quelltext
+const SPIEL_WEGE_MAX = 10; // mensch.K3: 4–10 Wege je Tag (die Kreatur-Linse bewohner „Wege", scripts/lib/kreatur-mensch.cjs)
+const SPIEL_FREI_M = 0.9; // BEWOHNER.tuerFreiM (stamm/siedlung-bewohner.js): so nah an seinem Stand steht keiner, wenn der Beiseitegetretene zurückgeht
 // die Zahl des Samens der Linse (FNV-1a über Same und Wort, in [0,1)) — die Gäste sind die der Linse, nie die des Kerns
 function linseZahl(same, wort) {
     let h = (2166136261 ^ (same >>> 0)) >>> 0;
     for (const c of String(wort)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
     h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
     return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+}
+// die Orte eines Gasts der Linse (je Gast eigene, je ein Gang auseinander): Heim, Markt, Werk, Treff, je zur Hälfte Mittagstisch und Besuch
+function spielOrte(i, z) {
+    const ort = (k) => ({ x: 10 * i, z: 10 * k });
+    return { heim: ort(1), platz: ort(2), werk: ort(3), mahl: z("mahl" + i) < 0.5 ? ort(4) : null, abend: ort(5), besuch: z("besuch" + i) < 0.5 ? ort(6) : null }; // prettier-ignore
+}
+// E7: die Wege eines Tags am Plan der Stunde — je 0,05 h und an jeder Grenze eines Auftritts, ein Weg = ein neuer Ort (drinnen oder davor)
+function planWege(C0, g, orte) {
+    const t = new Set();
+    for (let k = 0; k < 480; k++) t.add(k * 0.05);
+    for (const e of orte.spiel || []) t.add(((e.von % 24) + 24) % 24).add(((e.bis % 24) + 24) % 24);
+    const u = [...t].sort((a, b) => a - b), wo = []; // prettier-ignore
+    const v = (C0.TAGES_GESETZ.rollen[g.rolle] || {}).versatzH || 0;
+    for (let i = 0; i < u.length; i++) {
+        const [a, b] = [u[i], i + 1 < u.length ? u[i + 1] : u[0] + 24];
+        if (b - a > 1e-9) wo.push(C0.tagesPlan(g.same, g.rolle, (a + b) / 2 + v, orte, 0, false));
+    }
+    return wo.filter((p, k) => { const q = wo[(k + wo.length - 1) % wo.length]; return p.ort !== q.ort || p.drinnen !== q.drinnen; }).length; // prettier-ignore
+}
+// der Täter „ohneWeg": jeder Auftritt zerfällt in acht Stände, hin und her zwischen seinem Stand und einem Gang daneben
+function ohneWegVon(P) {
+    const teile = (e) => Array.from({ length: 8 }, (_, k) => Object.assign({}, e, { von: e.von + ((e.bis - e.von) * k) / 8, bis: e.von + ((e.bis - e.von) * (k + 1)) / 8, x: e.x + (k % 2) * 3 })); // prettier-ignore
+    return Object.assign({}, P, { auftritte: P.auftritte.map((A) => A.flatMap(teile)) });
 }
 function spielGaeste(C0, n, same) {
     const z = (w) => linseZahl(same, w);
@@ -703,7 +737,7 @@ function spielGaeste(C0, n, same) {
         // die Übung der Liebhaber wie im Lebenslauf des Wirts (stamm LEBENSLAUF.uebung: amateurH 2000 Stunden über ueberJ 15 Jahre,
         // das Potenzgesetz guteH 7500 · alpha 0,4; der Zweikampf ab 15 J, das Brett ab 7 J)
         const uebung = (w) => Math.pow(Math.max(1, ((z(w + i) * 2000) / 15) * Math.max(0, alterJ - (w === "kampf" ? 15 : 7))) / 7500, 0.4);
-        return { same: (same * 7919 + i * 104729) >>> 0, rolle: alterJ < 15 ? "kind" : rollen[i % 4], mann: z("g" + i) >= 0.5, alterJ, masse: mass, beinM: 0.85 + 0.12 * (z("bein" + i) - 0.5), kraft: K.kraft, kampf: uebung("kampf"), brett: uebung("brett") }; // prettier-ignore
+        return { same: (same * 7919 + i * 104729) >>> 0, rolle: alterJ < 15 ? "kind" : rollen[i % 4], mann: z("g" + i) >= 0.5, alterJ, masse: mass, beinM: 0.85 + 0.12 * (z("bein" + i) - 0.5), kraft: K.kraft, kampf: uebung("kampf"), brett: uebung("brett"), orte: spielOrte(i, z) }; // prettier-ignore
     });
 }
 function spearman(a, b) {
@@ -729,9 +763,16 @@ function spielUrteil(C0, mutante = null) {
     // E1 · E2 · E4: Abend um Abend
     const laeufe = [], kaempfe = [], proben = { n: 0, trifft: 0, seit: 0, seitTrifft: 0 }; // prettier-ignore
     let zuschauerMax = 0;
+    const SM = C0.SPIEL_GESETZ.feld.standM;
+    const raum = { n: 0, eng: 0, min: Infinity, wo: "—" };
+    const wege = { abende: 0, n: 0, ueber: 0, max: 0, wo: "—", anders: 0, andersWo: "—", kurz: 0 }; // prettier-ignore
     for (let tag = 1; tag <= 120 && (laeufe.length < 20 || kaempfe.length < 200 || proben.n < 200); tag++) {
         const P = mutante === "gewuerfelt" ? spielProgrammMit(C, gaeste, tag, feld, sek) : C.spielProgramm(4242, tag, gaeste, feld, sek);
         if (!P) continue;
+        // E6 der Raum des Stands (der Täter „eng": die zwei am Brett 0,8 m, wie bis sport-regeln 3)
+        raumPruefen(mutante === "eng" ? engVon(P, SM) : P, tag, raum, SM);
+        // E7 der Abend trägt den Weg (der Täter „ohneWeg": jeder Auftritt in acht Ständen)
+        if (wege.abende < 5) wegePruefen(C0, mutante === "ohneWeg" ? ohneWegVon(P) : P, gaeste, tag, wege);
         for (const g of P.gaenge) {
             if (g.art === "lauf" && laeufe.length < 20) laeufe.push(g);
             if (g.art === "ringen" && kaempfe.length < 200) kaempfe.push(g);
@@ -826,8 +867,7 @@ function spielUrteil(C0, mutante = null) {
     const tag = mutante === "ohneTag" ? (s, r, h, o, n, k) => C0.tagesPlan(s, r, h, Object.assign({}, o, { spiel: null }), n, k) : C0.tagesPlan; // prettier-ignore
     P1.auftritte.forEach((A, gi) => {
         const g = gaeste[gi];
-        const ort = (n) => ({ x: n, z: 0, n });
-        const orte = { heim: ort(1), platz: ort(2), werk: ort(3), mahl: ort(4), abend: ort(5), besuch: null, spiel: A };
+        const orte = Object.assign({}, g.orte, { spiel: A });
         for (const e of A.slice(0, 2)) {
             const h = (e.von + e.bis) / 2;
             const s = tag(g.same, g.rolle, h, orte, false, false);
@@ -835,8 +875,50 @@ function spielUrteil(C0, mutante = null) {
             if (s.akt === e.akt && s.ort === e && !s.drinnen) e5++;
         }
     });
+    // E7 der Abend trägt den Weg
+    if (!C0.tagesGaenge || wege.ueber > 0 || wege.anders > 0 || !wege.n)
+        rot.push(`E7 der Abend trägt den Weg nicht: ${wege.ueber} von ${wege.n} Gästen gehen mit dem Abend mehr als ${SPIEL_WEGE_MAX} Wege am Tag (das meiste ${wege.max}, ${wege.wo}); der Kern zählt ${wege.anders}× weniger als der Plan (${wege.andersWo}; koerper tagesGaenge ${C0.tagesGaenge ? "da" : "fehlt"})`); // prettier-ignore
+    // E6 der Raum des Stands
+    if (!(SM > SPIEL_FREI_M) || raum.eng > 0 || !raum.n)
+        rot.push(`E6 die Stände des Abends nehmen einander den Raum: ${raum.eng} von ${raum.n} Paaren näher als standM ${SM} m (das nächste ${raum.min.toFixed(2)} m, ${raum.wo}; standM über der Tür-Freiheit des Wirts ${SPIEL_FREI_M} m) — wer beiseite trat, fände seinen Stand nie frei`); // prettier-ignore
     if (!(e5n > 0 && e5 === e5n)) rot.push(`E5 der Tag liest das Programm nicht: ${e5} von ${e5n} Auftritten stehen im Plan der Stunde (koerper tagesPlan orte.spiel)`);
-    return { rot, laeufe: laeufe.length, laeufer: zeit.length, rho: rhoAlle, rhoLauf: rho, kaempfe: kaempfe.length, quote, festMax, partien: 100, widrig, siege, zuege: zuegeSumme, zuschauerMax, blick, seitab, seit: proben.seit, proben: proben.n, e5, e5n };
+    return { rot, laeufe: laeufe.length, laeufer: zeit.length, rho: rhoAlle, rhoLauf: rho, kaempfe: kaempfe.length, quote, festMax, partien: 100, widrig, siege, zuege: zuegeSumme, zuschauerMax, blick, seitab, seit: proben.seit, proben: proben.n, e5, e5n, standM: SM, raumN: raum.n, raumMin: raum.min, wegeN: wege.n, wegeMax: wege.max, wegeAbende: wege.abende, wegeKurz: wege.kurz };
+}
+// E7: je Gast mit einem Auftritt die Wege seines Tags am Plan (planWege) und im Kern (tagesGaenge)
+function wegePruefen(C0, P, gaeste, tag, W) {
+    W.abende++;
+    P.auftritte.forEach((A, gi) => {
+        if (!A.length) return;
+        const g = gaeste[gi], orte = Object.assign({}, g.orte, { spiel: A }); // prettier-ignore
+        const w = planWege(C0, g, orte), k = C0.tagesGaenge ? C0.tagesGaenge(g.same, g.rolle, orte) : NaN; // prettier-ignore
+        W.n++;
+        // (das Raster ist die untere Schranke: ein Stück kürzer als 0,05 h sieht nur der Kern an den Wenden des Tags — der Kern
+        // zählt nie weniger als der Plan zeigt, sonst vergäbe das Programm Stände über das Band)
+        const m = Math.max(w, k);
+        if (!(m <= SPIEL_WEGE_MAX)) W.ueber++;
+        if (m > W.max) [W.max, W.wo] = [m, `Abend ${tag}: ${g.rolle} #${g.same} mit ${A.length} Ständen (${A.map((e) => e.akt).join(" · ")})`]; // prettier-ignore
+        if (!(k >= w) && W.anders++ === 0) W.andersWo = `Abend ${tag}: ${g.rolle} #${g.same} Plan ${w}, Kern ${k}`;
+        if (k > w) W.kurz++;
+    });
+}
+// E6: je zwei Stände verschiedener Gäste, deren Stunden sich decken — wie viele näher als standM und das nächste Paar
+function raumPruefen(P, tag, R, SM) {
+    const st = [];
+    P.auftritte.forEach((A, gi) => A.forEach((e) => st.push([gi, e])));
+    for (let i = 0; i < st.length; i++)
+        for (let j = i + 1; j < st.length; j++) {
+            const [[ga, a], [gb, b]] = [st[i], st[j]];
+            if (ga === gb || !(a.von < b.bis && b.von < a.bis)) continue;
+            const d = Math.hypot(a.x - b.x, a.z - b.z);
+            R.n++;
+            if (!(d >= SM - 1e-9)) R.eng++;
+            if (d < R.min) [R.min, R.wo] = [d, `Abend ${tag}: ${a.akt} ↔ ${b.akt} bei ${a.x.toFixed(1)}/${a.z.toFixed(1)}`];
+        }
+}
+// der Täter „eng": die zwei am Brett rücken auf 0,8 m zusammen (der Tisch vor sport-regeln 3)
+function engVon(P, SM) {
+    const d = ((SM || 0.8) - 0.8) / 2;
+    return Object.assign({}, P, { auftritte: P.auftritte.map((A) => A.map((e) => (e.akt === "brett" ? Object.assign({}, e, { z: e.z + (e.blick === 0 ? d : -d) }) : e))) }); // prettier-ignore
 }
 // das Programm mit einer fremden Leistung (der Täter „gewürfelt"): der Kern rechnet mit seiner eigenen — der Täter ersetzt die Zeiten
 function spielProgrammMit(C, gaeste, tag, feld, sek) {
@@ -889,13 +971,13 @@ if (SELBSTTEST) {
     const verbenTaeter = [["Literal", "V1 Gehen"], ["Literal", "V3 Sprung"], ["refKg", "V6 die Masse kürzt sich nicht"], ["gleitet", "V5 der Sprint ist kein Punkt des Gangs"], ["Tafel", "V7 die Verb-Tafel"], ["Prosa", "V7 die Verb-Tafel"], ["Stufe", "V8 die Gang-Pose"]].map(([m, z]) => [vGut && verbenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Verben ${m} ${z}`]);
     // die Regel-Grammatik: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const eGut = !spielUrteil(core).rot.length;
-    const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
+    const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"], ["eng", "E6 die Stände des Abends"], ["ohneWeg", "E7 der Abend trägt den Weg nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neununddreißig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, fünf Täter der Regel-Grammatik).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, sieben Täter der Regel-Grammatik).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -916,7 +998,7 @@ for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper st
 if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand`);
 const sp = spielUrteil(core);
 for (const z of sp.rot) st.rot.push("SPIEL " + z + " — Täter: koerper SPIEL_GESETZ · spielProgramm · spielKampf · spielBrett · spielGeschehen · tagesPlan");
-if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte`); // prettier-ignore
+if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte · der Raum des Stands: ${sp.raumN} Paare ≥ ${sp.standM} m, das nächste ${sp.raumMin.toFixed(2)} m · der Abend trägt den Weg: ${sp.wegeN} Gäste an ${sp.wegeAbende} Abenden, höchstens ${sp.wegeMax} Wege (${sp.wegeKurz}× sah der Kern ein Stück unter 0,05 h)`); // prettier-ignore
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);

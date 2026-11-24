@@ -1138,7 +1138,7 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -2555,7 +2555,7 @@ class AnazhRealm_siedlung_bewohner {
             const d = this._dialsAusGenom(b.genom);
             const P = KC.labProportionen(d);
             const U = b.uebung;
-            gaeste.push({ same: b.same, rolle: b.rolle, mann: d.gender >= 0.5, alterJ: b.alter, masse: d.mass, beinM: (P.thighLen + P.calfLen) * KC.leibMassstab(), kraft: b.koennen.kraft, kampf: U.kampf.koennen, brett: U.brett.koennen }); // prettier-ignore
+            gaeste.push({ same: b.same, rolle: b.rolle, mann: d.gender >= 0.5, alterJ: b.alter, masse: d.mass, beinM: (P.thighLen + P.calfLen) * KC.leibMassstab(), kraft: b.koennen.kraft, kampf: U.kampf.koennen, brett: U.brett.koennen, orte: b.orte }); // prettier-ignore
             wer.push(b);
         }
         const programm = KC.spielProgramm(S.plan.seed >>> 0, tag, gaeste, { L, B }, sek);
@@ -2833,8 +2833,13 @@ class AnazhRealm_siedlung_bewohner {
         if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
         b.akt = soll.akt;
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
-        // `tempo`), jeder andere Weg das seines Gangs
-        if (b.tempoBand) b.tempo = ziel && ziel.tempo > 0 ? ziel.tempo : b.tempoBand * b.koennen.lauf;
+        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
+        // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
+        // Geburt: der Täter bewohner-koennen der Kreatur-Linse (der Stand vor dem Gesetz) blieb unsichtbar
+        const lauf = !!(ziel && ziel.tempo > 0);
+        if (lauf && b.gangTempo == null) b.gangTempo = b.tempo;
+        if (lauf) b.tempo = ziel.tempo;
+        else if (b.gangTempo != null) [b.tempo, b.gangTempo] = [b.gangTempo, null];
         if (ziel === b.ziel) return false;
         // DIE LAGE DES TAGS (mensch.K2 Staffel 2: sein Tag ist f(Same, t)): der neue Weg beginnt, wo ihn die Ankunft begänne
         // (`_bewohnerAnkunft`, derselbe Weg ohne Zuschauer) — an der Wende `w` (der Takt bemerkt sie bis planH später) so weit

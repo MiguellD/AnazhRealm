@@ -5361,6 +5361,9 @@
         streuH: 0.5,
         morgenPlatzH: 1,
         besuchH: 0.75,
+        // wegeMax = so viele Wege trägt ein Tag höchstens (der Morgengang: 4–10 Wege je Tag, mensch.K3) — der Abend des Spiels
+        // (`spielProgramm`) vergibt nur Stände, die der Tag noch trägt (`tagesGaenge`)
+        wegeMax: 10,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
@@ -5686,6 +5689,42 @@
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
+    // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
+    // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
+    // (orte.spiel), rund um die Uhr, trocken und gesund; ein Ort ist der gereichte Ort mit drinnen oder davor (die Orte eines
+    // Menschen liegen je einen Gang auseinander, der Wirt bindet sie so), jeder Wechsel ein Weg. Leser: `spielProgramm` (der
+    // Abend trägt den Weg), die Linse gate:koerper-kern E7.
+    function tagesGaenge(same, rolle, orte) {
+        var G = TAGES_GESETZ,
+            T = _tagesWenden(same, rolle),
+            v = T.R.versatzH || 0;
+        var t = [T.wach, T.wach + T.morgenH, T.wach + T.morgenH + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        (orte.spiel || []).forEach(function (e) {
+            t.push(e.von, e.bis);
+        });
+        var u = t
+            .map(function (x) {
+                return ((x % 24) + 24) % 24;
+            })
+            .sort(function (a, b) {
+                return a - b;
+            });
+        var wo = [],
+            n = 0;
+        for (var i = 0; i < u.length; i++) {
+            var a = u[i],
+                b = i + 1 < u.length ? u[i + 1] : u[0] + 24;
+            if (b - a < 1e-9) continue;
+            var p = tagesPlan(same, rolle, (a + b) / 2 + v, orte, 0, false);
+            wo.push([p.ort, p.drinnen]);
+        }
+        for (var k = 0; k < wo.length; k++) {
+            var q = wo[(k + wo.length - 1) % wo.length];
+            if (wo[k][0] !== q[0] || wo[k][1] !== q[1]) n++;
+        }
+        return n;
+    }
     function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
         var T = _tagesWenden(same, rolle),
@@ -5761,9 +5800,13 @@
         // minGaeste = so viele Gäste braucht der Treff, damit ein Spiel stattfindet (der Akt rechnet nur, wo ein Ort ihn trägt)
         programm: Object.freeze({ ab: 18, bis: 21, pauseS: 15, minGaeste: 8 }),
         // das Feld auf dem Platz (die lange Achse des Platzes, `platz.phi`): randM frei vor jedem Rand des Platzes, ringM so weit
-        // vor dem Feld steht der Ring der Zuschauer, je Stand ringAbstandM (die persönliche Distanz Hall 1966: 0,45–1,2 m), minLaengeM
-        // = kürzer trägt das Feld keinen Lauf
-        feld: Object.freeze({ randM: 3, ringM: 1.5, ringAbstandM: 0.9, minLaengeM: 16, breiteMaxM: 10 }),
+        // vor dem Feld steht der Ring der Zuschauer, minLaengeM = kürzer trägt das Feld keinen Lauf. DER RAUM DES STANDS: standM = so
+        // weit stehen je zwei Stände des Abends wenigstens auseinander (je Stand im Ring, die zwei am Tisch; Bahn `bahnM` und Zweikampf
+        // `abstandM` tragen ihr eigenes Maß, nie enger) — die persönliche Distanz an ihrem fernen Rand (Hall 1966: 0,45–1,2 m): wer im
+        // Gedränge beiseite trat, findet seinen Stand frei (der Wirt führt ihn zurück, wenn kein Leib näher als 0,9 m daran steht,
+        // BEWOHNER.tuerFreiM). Bis sport-regeln 3 standen die zwei am Brett 0,8 m und der Ring je 0,9 m (an seinen Ecken enger)
+        // auseinander: pfarrhaus #723323 trat dem Kind am Tisch beiseite und kam nie zurück (Kreatur-Linse bewohner, 18,80 Uhr)
+        feld: Object.freeze({ randM: 3, ringM: 1.5, standM: 1.2, minLaengeM: 16, breiteMaxM: 10 }),
         arten: Object.freeze({
             lauf: Object.freeze({ teil: Object.freeze([3, 6]), mass: "zeit", sieg: "klein", bahnM: 1.2, gaenge: 3 }),
             ringen: Object.freeze({
@@ -5777,7 +5820,7 @@
                 finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: 1.5 }),
                 gaenge: 4,
             }),
-            brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tischM: 0.8, tische: 4 }),
+            brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
     });
     // die Normal-Zahl des Samens zu einem Wort (Box-Muller über zwei Zahlen aus `_tagZahl`)
@@ -5905,7 +5948,8 @@
         return [ab, T.ruhe];
     }
     // DAS PROGRAMM DES ABENDS an einem Platz: same = der Same des Platzes, tag = der Tag der Welt (ganzzahlig), gaeste = die Gäste
-    // seines Treffs [{same, rolle, mann, alterJ, masse, beinM, kraft, kampf, brett}] (der Wirt: wer seinen Abend am Platz hat),
+    // seines Treffs [{same, rolle, mann, alterJ, masse, beinM, kraft, kampf, brett, orte}] (der Wirt: wer seinen Abend am Platz hat;
+    // orte = seine Orte des Tags ohne spiel — der Abend trägt den Weg, `tagesGaenge`),
     // feld = {L, B} das Feld in Metern (die lange Achse +x, die Mitte im Ursprung), stundeSek = die Sekunden einer Stunde der Uhr.
     // Liefert {gaenge, auftritte, ring, tische} — gaenge [{art, von, start, bis, teil: [Gast], ...}] in Stunden der Uhr (der Lauf:
     // zeiten, rang; der Zweikampf: kampf; das Brett: partien), auftritte[gi] = die Auftritte des Gasts gi [{von, bis, akt, x, z, blick,
@@ -5918,6 +5962,7 @@
             AB = S.arten.brett;
         if (!(stundeSek > 0)) throw new Error("KERN-PFLICHT verletzt: spielProgramm ohne die Sekunden der Stunde");
         if (!gaeste || gaeste.length < P.minGaeste || !(feld && feld.L >= S.feld.minLaengeM && feld.B > 0)) return null;
+        if (gaeste.some(function (g) { return !g.orte; })) throw new Error("KERN-PFLICHT verletzt: spielProgramm ohne die Orte der Gäste (der Abend trägt den Weg, `tagesGaenge`)"); // prettier-ignore
         var s0 = ((same >>> 0) ^ Math.imul(tag | 0, 0x9e3779b1)) >>> 0;
         // das Los des Abends: die Gäste in der Folge ihres Loses
         var los = gaeste.map(function (g, i) {
@@ -5937,6 +5982,16 @@
             if (frei[gi][0] > von || frei[gi][1] < bis) return false;
             for (var q = 0; q < belegt[gi].length; q++) if (belegt[gi][q][0] < bis && belegt[gi][q][1] > von) return false;
             return true;
+        };
+        // DER ABEND TRÄGT DEN WEG (TAGES_GESETZ.wegeMax): ein Stand (neu = [{von, bis}]) geht an den Gast, wo sein Tag mit allen Ständen
+        // des Abends höchstens wegeMax Wege trägt (`tagesGaenge` liest den Plan der Stunde) — wer schon Werk, Mittag, Besuch und Treff
+        // geht, bleibt am Treff. Bis sport-regeln 3 vergab das Programm Lauf, Gang und Ring obendrauf: am Patrizierhaus #91693 der
+        // Stadt trug der Tag 13 Wege (Start, Ziel, Zweikampf, Ring, zurück zum Treff; Kreatur-Linse bewohner, Soll 4–10)
+        var traegt = function (gi, neu) {
+            var A = auftritte[gi].concat(neu).sort(function (x, y) {
+                return x.von - y.von;
+            });
+            return tagesGaenge(gaeste[gi].same, gaeste[gi].rolle, Object.assign({}, gaeste[gi].orte, { spiel: A })) <= TAGES_GESETZ.wegeMax;
         };
         var gaenge = [],
             t = P.ab,
@@ -5966,7 +6021,7 @@
                 // (wer bis zum Ziel des Langsamsten frei ist)
                 var bisWahl = start + h(L / Math.min.apply(null, wahl.map(tempo)) + P.pauseS);
                 var teil = wahl.filter(function (gi) {
-                    return kann(gi, von, bisWahl);
+                    return kann(gi, von, bisWahl) && traegt(gi, [{ von: von, bis: start }, { von: start, bis: bisWahl }]);
                 });
                 if (teil.length < AL.teil[0]) continue;
                 var v = teil.map(tempo);
@@ -6011,7 +6066,7 @@
                 var von2 = t,
                     start2 = t + h(P.pauseS),
                     bis2 = start2 + h(kampf.zuege.length * AR.zugS + P.pauseS);
-                if (!kann(a, von2, bis2) || !kann(b, von2, bis2)) continue;
+                if (!kann(a, von2, bis2) || !kann(b, von2, bis2) || !traegt(a, [{ von: von2, bis: bis2 }]) || !traegt(b, [{ von: von2, bis: bis2 }])) continue; // prettier-ignore
                 gaenge.push({ art: "ringen", klasse: folge[f], von: von2, start: start2, bis: bis2, teil: [a, b], staerke: [sa, sb], kampf: kampf, sieger: [a, b][kampf.sieger] });
                 auftritte[a].push({ von: von2, bis: bis2, akt: "wettkampf", x: -AR.abstandM / 2, z: 0, blick: Math.PI / 2 });
                 auftritte[b].push({ von: von2, bis: bis2, akt: "wettkampf", x: AR.abstandM / 2, z: 0, blick: -Math.PI / 2 });
@@ -6030,7 +6085,7 @@
                 return e[1];
             })
             .filter(function (gi) {
-                return !belegt[gi].length && gaeste[gi].alterJ >= 12 && kann(gi, P.ab, ende);
+                return !belegt[gi].length && gaeste[gi].alterJ >= 12 && kann(gi, P.ab, ende) && traegt(gi, [{ von: P.ab, bis: ende }]);
             });
         // (EINE Partie je Tisch und Abend; ihre Züge rechnet `spielTischPartie`, wenn einer sie liest — nie im Programm)
         for (var ti = 0; ti + 1 < amTisch.length && tische.length < AB.tische; ti += 2) {
@@ -6040,43 +6095,56 @@
             var tisch = { x: x, z: -Bz, teil: [A2, B2], u: [gaeste[A2].brett, gaeste[B2].brett], same: (s0 ^ Math.imul(tische.length + 1, 0x85ebca6b)) >>> 0, partie: null };
             tische.push(tisch);
             gaenge.push({ art: "brett", von: P.ab, start: P.ab + h(P.pauseS), bis: ende, teil: [A2, B2], tisch: tisch });
-            auftritte[A2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz - AB.tischM / 2, blick: 0 });
-            auftritte[B2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz + AB.tischM / 2, blick: Math.PI });
+            // (die zwei sitzen standM auseinander, je einer an seiner Seite des Bretts)
+            auftritte[A2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz - S.feld.standM / 2, blick: 0 });
+            auftritte[B2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz + S.feld.standM / 2, blick: Math.PI });
             belegt[A2].push([P.ab, ende]);
             belegt[B2].push([P.ab, ende]);
         }
-        // DER RING DER ZUSCHAUER um das Feld (ringM vor seinem Rand, je ringAbstandM ein Stand, zur Mitte gewandt): jeder Gast steht
-        // dort, solange er frei ist und keinen Gang trägt — der Stand des Rings in der Folge des Loses
+        // DER RING DER ZUSCHAUER um das Feld (ringM vor seinem Rand, zur Mitte gewandt): jeder Gast steht dort, solange er frei ist
+        // und keinen Gang trägt — der Stand des Rings in der Folge des Loses. Je Seite des Rechtecks so viele Stände, wie standM
+        // trägt, je standM auseinander und mittig; vor jeder Ecke bleibt standM/√2 frei, so halten auch die zwei Stände um die Ecke
+        // standM (bis sport-regeln 3 lief der Ring je 0,9 m über den Umfang, um die Ecke bis 0,64 m)
         var ring = [],
             rx = L / 2 + S.feld.ringM,
             rz = feld.B / 2 + S.feld.ringM,
-            U = 4 * (rx + rz),
-            nRing = Math.floor(U / S.feld.ringAbstandM);
-        for (var q2 = 0; q2 < nRing; q2++) {
-            var w2 = (q2 + 0.5) * S.feld.ringAbstandM,
-                px,
-                pz;
-            if (w2 < 2 * rx) (px = -rx + w2), (pz = rz);
-            else if (w2 < 2 * rx + 2 * rz) (px = rx), (pz = rz - (w2 - 2 * rx));
-            else if (w2 < 4 * rx + 2 * rz) (px = rx - (w2 - 2 * rx - 2 * rz)), (pz = -rz);
-            else (px = -rx), (pz = -rz + (w2 - 4 * rx - 2 * rz));
-            ring.push({ x: px, z: pz, blick: Math.atan2(-px, -pz) });
+            sM = S.feld.standM,
+            eck = sM / Math.SQRT2,
+            seiten = [[-rx, rz, 1, 0, 2 * rx], [rx, rz, 0, -1, 2 * rz], [rx, -rz, -1, 0, 2 * rx], [-rx, -rz, 0, 1, 2 * rz]];
+        for (var q2 = 0; q2 < 4; q2++) {
+            var sd = seiten[q2],
+                laengeS = sd[4] - 2 * eck;
+            if (laengeS < 0) continue;
+            var nS = Math.floor(laengeS / sM + 1e-9) + 1,
+                o0 = eck + (laengeS - (nS - 1) * sM) / 2;
+            for (var k2 = 0; k2 < nS; k2++) {
+                var px = sd[0] + sd[2] * (o0 + k2 * sM),
+                    pz = sd[1] + sd[3] * (o0 + k2 * sM);
+                ring.push({ x: px, z: pz, blick: Math.atan2(-px, -pz) });
+            }
         }
         var rk = 0;
         los.forEach(function (e) {
             var gi = e[1];
             if (rk >= ring.length || !(frei[gi][0] < ende)) return;
-            var R0 = ring[rk++],
-                a0 = Math.max(P.ab, frei[gi][0]),
+            var a0 = Math.max(P.ab, frei[gi][0]),
                 b0 = Math.min(ende, frei[gi][1]),
                 B0 = belegt[gi].slice().sort(function (x, y) {
                     return x[0] - y[0];
-                });
+                }),
+                stuecke = [];
             for (var m = 0; m <= B0.length; m++) {
                 var e0 = m < B0.length ? B0[m][0] : b0;
-                if (e0 > a0) auftritte[gi].push({ von: a0, bis: e0, akt: "zuschauen", x: R0.x, z: R0.z, blick: R0.blick, ring: true });
+                if (e0 > a0) stuecke.push({ von: a0, bis: e0 });
                 if (m < B0.length) a0 = Math.max(a0, B0[m][1]);
             }
+            // (der Ring nur, wo der Tag ihn trägt: das früheste Stück fällt zuerst, wer antrat, schaut danach zu)
+            while (stuecke.length && !traegt(gi, stuecke)) stuecke.shift();
+            if (!stuecke.length) return;
+            var R0 = ring[rk++];
+            stuecke.forEach(function (st) {
+                auftritte[gi].push({ von: st.von, bis: st.bis, akt: "zuschauen", x: R0.x, z: R0.z, blick: R0.blick, ring: true });
+            });
         });
         auftritte.forEach(function (A) {
             A.sort(function (x, y) {
@@ -11021,6 +11089,7 @@
         tagesOrte: tagesOrte,
         tagesBindung: tagesBindung,
         tagesWege: tagesWege,
+        tagesGaenge: tagesGaenge,
         tagesPlan: tagesPlan,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
