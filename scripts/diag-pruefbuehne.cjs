@@ -31,7 +31,7 @@
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
-//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, es wächst nicht (Ratsche `S0_ZEICHEN`); die Zeit ist Auskunft.
+//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron; seine Größe (`S0_ZEICHEN`) und die Zeit sind Auskunft.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -888,45 +888,54 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss zeichnet das Boden-Programm
 // (`voxelChunkMaterial`). Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion
 // `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
-// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE RATSCHE
-// DER GRÖSSE (`zeichenMax`, `S0_ZEICHEN`): das Programm wächst nicht — am 12.11. (main f46b9e81) 95 297 Zeichen auf Radeon 890M
-// und GTX 1060, die Decke der Stand + Luft (bis 18.11. 5 %); sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
-// 18.11. GEHOBEN FÜR DEN WEG-KÖRPER (w28-weg-koerper, Wort des Koordinators): 102 120 Zeichen am Kopf (GTX 1060) — wegBord +2 499,
-// Aufruf/Kante +480, Belag +500, wegAn +96 über main 1f300260 (98 747). Davor hatte main seit 12.11. 3 450 Zeichen still
-// gefressen (95 297 → 98 747), ohne dass eine Abgabe es nannte: die Luft ist darum ENGER, 2 % statt 5 % — sie feuert früher.
-const S0_ZEICHEN = { stand: 102120, luft: 1.02 };
+// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE GRÖSSE
+// IST EINE ZAHL, KEIN TOR (`S0_ZEICHEN`; Entscheid des Koordinators 24.11. auf das Wort des Schöpfers vom selben Tag: „ist das
+// wirklich ein problem? was ist das wahre ziel dieser regel“ — und 19.11.: der Kaltstart ist kein Tor). Bis dahin hielt hier eine
+// Ratsche (der Stand + 2 % Luft) seit z713 (main bf5a1542) JEDE Vorprüfung an 108 011 Zeichen (Budget ≤ 104 162): der Zuwachs
+// von 4 664 Zeichen war gelandeter Bild-Gewinn (stadtklima#1 `_naesseOrtKnoten`, jahreslauf#2 `uLaubJahr`), und dieselbe Probe
+// maß kalt 701 ms bei 108 011 und 1 081 ms bei 103 347 Zeichen (beide Radeon 890M) — die Zeichenzahl sagt die Übersetzungszeit
+// nicht voraus. Die Zeile „S0 BODEN-PROGRAMM“ nennt die Zahl und ihren Zuwachs gegen den gebuchten Stand: laut, aber grün
+// (Selbsttest e). Tor bleibt, was bricht: die Bindung (`bindungInFunktionMax` 0), der Weg der Pipeline, die Abtastungen (die
+// Budgets der Stoffe in der Shader-Kosten-Linse) und gate:webgl-probe (16 Sampler). Der gebuchte Stand: 108 011 Zeichen am
+// 24.11. (main bf9be26c, GTX 1050 und Radeon 890M gleich) — davor 12.11. 95 297 · 18.11. 102 120 (Weg-Körper) · 103 347.
+const S0_ZEICHEN = { stand: 108011 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
-    const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };
+    const budget = { bindungInFunktionMax: 0 };
     return (wgsl, name = "S0 Boden-Programm") => SK.kostenUrteil(SK.wgslKosten(wgsl), budget, name);
 })();
 // DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3; Tor-Schnitt 12.11.): IM TOR URTEILT DAS GESETZ DES
 // PROGRAMMS, NIE DIE WANDUHR (Wort des Schöpfers 16.10. und 11.11.: Linsen im Zug urteilen Verhalten und Gesetz, nie Läufer-Zeit;
 // Zeit gehört in eine Station mit Referenzfahrt derselben Sitzung). Je Programm, das ein Schuss zeichnet, urteilt (1) DER WEG
 // seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede Pipeline der
-// Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; dazu oben (`S0_STOFF`) die Bindung und die
-// Ratsche der Größe. (2) AUSKUNFT ohne Urteil, auf echter GPU: die kalte Übersetzung — Vertex und Fragment neu
+// Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; dazu oben (`S0_STOFF`) die Bindung.
+// (2) AUSKUNFT ohne Urteil: die Größe (oben `S0_ZEICHEN`) und, auf echter GPU, die kalte Übersetzung — Vertex und Fragment neu
 // (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine eigene Zahl im Rumpf (kein Cache von
 // Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; die Zeile nennt die Zeiten, den Median und
 // das Verhältnis zum K17-Fall derselben Sitzung (die Referenzfahrt: an ihr kürzt sich die Last des Läufers). Bis 12.11. urteilte
 // hier ein Zeit-Soll (≤ 250 ms, darüber ≤ 1,1 × main 721 ms Radeon / 1132 ms GTX, gesetzt 08.11. ohne Referenzfahrt): z409 fiel
 // 78 min an 1111 ms unter Last, und die Radeon maß am selben Stand 1295–1740 ms bei Median/schnellster 1,08–1,14 — gleichmäßige
 // Last sieht kein Maß einer Sitzung. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
-// `s0BodenMessung`, ~188 000 Zeichen) auf dem Vendor-Weg: er fällt am Weg (synchron) und an der Ratsche.
+// `s0BodenMessung`, ~188 000 Zeichen) auf dem Vendor-Weg: er fällt am Weg (synchron).
 const S0_MS = { n: 9 };
 const s0Median = (p) => (p?.ms?.length ? rang([...p.ms].sort(aufsteigend)) : null);
 function s0BodenUrteil(name, p) {
     return [p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`].filter(Boolean);
 }
-// die Zeile je Programm: das Urteil (Weg + Stoff: `u`) und die Zeit als Auskunft; `ref` — der K17-Fall derselben Sitzung;
-// `fang` — ein erwarteter Fang des Selbsttests heißt GEFANGEN, nie ROT
+// die Größe als Auskunft: die Zahl und ihr Zuwachs gegen den gebuchten Stand (`S0_ZEICHEN`) — laut, nie Urteil
+const s0Groesse = (zeichen) => {
+    const d = zeichen - S0_ZEICHEN.stand;
+    return `${zeichen} Zeichen WGSL (gebuchter Stand ${S0_ZEICHEN.stand}, ${d > 0 ? `ZUWACHS +${d}` : d < 0 ? `kleiner um ${-d}` : "±0"} — Auskunft, kein Urteil)`;
+};
+// die Zeile je Programm: das Urteil (Weg + Stoff: `u`), die Größe und die Zeit als Auskunft; `ref` — der K17-Fall derselben
+// Sitzung; `fang` — ein erwarteter Fang des Selbsttests heißt GEFANGEN, nie ROT
 const s0ZeileText = (name, p, u, ref, fang) => {
     const [m, mr] = [s0Median(p), s0Median(ref)];
     const zeit = !p.ms.length
         ? "ungemessen (swiftshader)"
         : `${p.ms.join(" · ")} ms, Median ${m} ms${mr ? ` · ÷ K17 derselben Sitzung ${String((m / mr).toFixed(2)).replace(".", ",")}` : ""} (Auskunft, kein Zeit-Urteil)`;
     const urteil = u.length ? (fang ? "GEFANGEN" : "ROT") : fang ? "nicht gefangen" : "GRÜN";
-    return `  ${name}: ${p.zeichen} Zeichen WGSL (Ratsche ≤ ${Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft)}) · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
+    return `  ${name}: ${s0Groesse(p.zeichen)} · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
 };
 const s0Zeile = (...a) => console.log(s0ZeileText(...a));
 // DAS REGISTER DER PIPELINES (vor dem ersten Skript der Seite): je Pipeline des Geräts ihr Weg und ihr Deskriptor; `__s0Flug`
@@ -1704,7 +1713,7 @@ async function lichtLauf() {
             const aus = opt("--wgsl", null);
             if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
         });
-        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm das Urteil des Wegs, die Zeichen gegen die Ratsche, die Zeit als Auskunft
+        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm das Urteil des Wegs, die Zeichen gegen den gebuchten Stand und die Zeit als Auskunft
         // neben dem K17-Fall derselben Sitzung
         if (boden?.fehler || !boden?.programme.length)
             befunde.push(`S0 Boden-Übersetzung: ${boden?.fehler || "kein Programm (die Linse ist blind)"}`);
@@ -1766,14 +1775,14 @@ async function lichtLauf() {
         const bindRot = bind ? S0_STOFF(`${prog}\nfn s0Mutante() {\n\tlet s0 = ${bind[1]};\n}\n`) : [];
         const bindGetroffen = bindRot.some((b) => b.includes(`s0Mutante: ${bind[1]}`));
         console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (c: eine Hilfs-Funktion liest eine Bindung): ${bindGetroffen ? `getroffen — ${bindRot[0].split(" — ")[0]}` : "BLIND"}`);
-        // (a+b) der K17-Fall, gezeichnet auf dem Vendor-Weg: er fällt am Weg (synchron) UND an der Ratsche der Größe; die Bindung
-        // steht als Auskunft daneben (der Fall schreibt das Fels-Gesetz ohne Layout-Funktion aus — die Bindung fängt Mutante c)
+        // (a+b) der K17-Fall, gezeichnet auf dem Vendor-Weg: er fällt am Weg (synchron) — seine Größe (~188 000 Zeichen) nennt die
+        // Zeile als Zuwachs, sie urteilt nicht mehr (Fall e); die Bindung steht als Auskunft daneben (der Fall schreibt das
+        // Fels-Gesetz ohne Layout-Funktion aus — die Bindung fängt Mutante c)
         const k17 = boden?.k17;
         const k17Rot = k17 ? [...s0BodenUrteil("S0 K17-Fall", k17), ...S0_STOFF(k17.wgsl || "", "S0 K17-Fall")] : [];
         if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot, null, true);
-        const k17Getroffen =
-            !HW || (k17Rot.some((b) => b.includes("entstand synchron")) && k17Rot.some((b) => b.includes("Zeichen WGSL")));
-        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg, Weg und Ratsche): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "GEFANGEN — " + k17Rot.map((b) => b.split(" (Budget")[0].split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 ? { ...k17, wgsl: undefined } : boden)}`);
+        const k17Getroffen = !HW || k17Rot.some((b) => b.includes("entstand synchron"));
+        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg, der Weg): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "GEFANGEN — " + k17Rot.map((b) => b.split(" (Budget")[0].split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 ? { ...k17, wgsl: undefined } : boden)}`);
         // (d) ZEITEN JEDER ART ÄNDERN DEN EXIT NICHT (z409, Stummel-Zeiten): unter Last (Median 1487 > 1,3 × 1111), ruhig über dem
         // alten Soll (1111–1170) und schnell (90–99) — dasselbe Urteil, keine Zeile ROT (`istRotZeile`). Die Mutante „Wanduhr
         // urteilt“ (das Zeit-Soll bis 12.11.: ≤ 1,1 × main 721 ms) muss fallen
@@ -1792,6 +1801,19 @@ async function lichtLauf() {
         const zeitGetroffen = zeitProbe(s0BodenUrteil) && !zeitProbe(wanduhr);
         console.log(
             `  SELBSTTEST S0 BODEN-PROGRAMM (d: Zeiten jeder Art ändern den Exit nicht — z409 unter Last, ruhig 1111 ms, schnell 90 ms): ${zeitGetroffen ? `getroffen — kein Befund, keine Zeile urteilt · die Mutante „Wanduhr urteilt“ GEFANGEN` : "BLIND"}`
+        );
+        // (e) DIE GRÖSSE ÄNDERT DEN EXIT NICHT (Entscheid 24.11., oben `S0_ZEICHEN`): das gezeichnete Programm, um den Fall von z713
+        // gewachsen (4 664 Zeichen Kommentar), trägt keinen Befund mehr als das Programm selbst, und seine Zeile nennt den Zuwachs,
+        // ohne zu urteilen. Die Mutante „die Ratsche urteilt“ (bis 24.11.: der Stand + 2 %) muss an derselben Probe fallen
+        const z713 = 4664;
+        const dick = `${prog}\n// ${"z".repeat(z713 - 5)}\n`;
+        const dickZeile = s0ZeileText("S0 GRÖSSEN-PROBE", { weg: "asynchron", zeichen: S0_ZEICHEN.stand + z713, ms: [] }, []);
+        const groessenProbe = (urteil) => urteil(dick).length === urteil(prog).length;
+        const ratsche = (w) => [...S0_STOFF(w), w.length > 1.02 * prog.length && `${w.length} Zeichen WGSL (Budget ≤ ${Math.round(1.02 * prog.length)})`].filter(Boolean);
+        const groesseGetroffen =
+            !!prog && groessenProbe(S0_STOFF) && !groessenProbe(ratsche) && !istRotZeile(dickZeile) && dickZeile.includes(`ZUWACHS +${z713}`);
+        console.log(
+            `  SELBSTTEST S0 BODEN-PROGRAMM (e: die Größe ändert den Exit nicht — das Programm ${z713} Zeichen größer): ${groesseGetroffen ? `getroffen — kein Befund, die Zeile nennt „ZUWACHS +${z713}“ ohne Urteil · die Mutante „die Ratsche urteilt“ GEFANGEN` : "BLIND " + JSON.stringify({ programm: prog.length, zeile: dickZeile })}`
         );
         const nb = (sauber && !sauber.fehler && sauber.nah) || {};
         const vers = Object.keys(nb.versetzt || {});
@@ -1821,7 +1843,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.slice(0, 230) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
-            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && groesseGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
         const stoffTreffer = /`_mikroStoff`/.test(
             s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 }, gesetz: { luma: 24.6, aRing: 0.11, aStoff: 0.11, k: 1 } }, S0_NACHT.nacht)
         );
