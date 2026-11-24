@@ -5593,7 +5593,10 @@
         if (!T || !lms) return null;
         var schl = taxon + "|" + lms.join(",");
         if (_sinnFangSpeicher[schl]) return _sinnFangSpeicher[schl];
-        var H = sinnKurven(SINNES_GESETZ.taxa.haplorhini),
+        // H in der Reihe der Zeilen von lms (L, M, S); die Zapfen des Gesetzes stehen aufsteigend (S, M, L) — bis zur Umkehr
+        // las jede fremde Art Blau mit ihrem langen und Gelb mit ihrem kurzen Zapfen (der Hund sah das Gras violett, den Himmel
+        // oliv), nur der Mensch hob die Vertauschung in sich selbst auf
+        var H = sinnKurven(SINNES_GESETZ.taxa.haplorhini).reverse(),
             S = sinnKurven(T),
             N = H[0].length;
         var dot = function (u, v) {
@@ -5617,7 +5620,14 @@
             var w = zeile[0] + zeile[1] + zeile[2];
             return zeile.map(function (x) { return x / w; });
         });
-        var P = fang.length === 2 ? [[0, 1], [0, 1], [1, 0]] : T.facette ? [[0, 0, 1], [0, 1, 0], [1, 0, 0]] : [[1, 0, 0], [0, 1, 0], [0, 0, 1]]; // prettier-ignore
+        // DIE ORDNUNG DER FÄNGE (fail-closed): die Klasse des kürzesten Gipfels fängt Blau am stärksten, die des längsten mehr
+        // Rot und Grün als Blau — sonst bricht das Gesetz beim Namen, ehe ein Bild oder eine Entdeckung es liest
+        var f0 = fang[0],
+            fn = fang[fang.length - 1];
+        if (!(f0[2] > f0[0] && f0[2] > f0[1]) || !(fn[0] + fn[1] > fn[2]))
+            throw new Error("SINNES_GESETZ: die Fänge von " + taxon + " folgen nicht der Ordnung der Zapfen (kurz → Blau, lang → Rot/Grün)");
+        // die Klassen (aufsteigend) auf die Zapfen des Menschen in der Reihe von lms (L, M, S): zwei als Blau-Gelb, drei umgekehrt
+        var P = fang.length === 2 ? [[0, 1], [0, 1], [1, 0]] : [[0, 0, 1], [0, 1, 0], [1, 0, 0]]; // prettier-ignore
         var L = sinnInv3(lms),
             bild = [0, 1, 2].map(function (r) {
                 return [0, 1, 2].map(function (j) {
