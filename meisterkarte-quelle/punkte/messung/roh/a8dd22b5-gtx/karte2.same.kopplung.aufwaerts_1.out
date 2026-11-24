@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@PUNKTE@@ ZEIT dorf 3.1 s
+@@PUNKTE@@ ZEIT same.kopplung.aufwaerts 48.1 s
+@@PUNKTE@@ ZEIT same.kopplung.ereignis 86.8 s
+@@PUNKTE@@ ZEIT same.kopplung.erdsaat 100.2 s
+@@PUNKTE@@ ZEIT same.kopplung.gewalt 104.4 s
+@@PUNKTE@@ ZEIT same.kopplung.stoerung 134.9 s
+@@PUNKTE@@ ZEIT same.kopplung.kaskade 190.3 s
+@@PUNKTE@@ ZEIT same.kopplung.kohaerenz 230.6 s
+@@PUNKTE@@ ZEIT same.kopplung.zeitreise 254.8 s
+@@PUNKTE@@ ZEIT same.kopplung.terraform 275.1 s
+@@PUNKTE@@ PROBE 275.3 s · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
