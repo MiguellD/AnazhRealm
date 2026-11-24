@@ -2471,7 +2471,7 @@
             smooth: 0x4a7a2c,
         };
         const bc = BC[barkType];
-        return {
+        const ph = {
             kind: isShrub ? "shrub" : "tree",
             conifer: isCon,
             height,
@@ -2496,6 +2496,12 @@
             maxDepth: Math.round(lerp(7, 10, leaf * 0.4 + slim * 0.3 + api * 0.3)),
             windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
         };
+        // DIE KRONE DER KONIFERE AUS IHREM PHÄNOTYP (fachwerk-buehne, gate:studio-huelle H3): die Dials machen jeden Baum zur
+        // Konifere (api > 0,72), ihre Zeile der Kronen-Tafel trug bis hier nur die Art (`art.ph.krone`) — die Eiche des Terrain-
+        // Studios mit api 1 brach im Bau (`konifereKroneAnteil`), der Zug schrieb keinen Rückgängig-Schritt. Die Rinde nennt die
+        // Zeile (Mammut die Sequoia, sonst die Fichte, FOREST_PACK.crown); die Zeile der Art gilt darüber (`artPhaenotyp`).
+        if (isCon) ph.krone = barkType === "sequoia" ? "mammut" : "fichte";
+        return ph;
     }
     // DIE STUFEN-ABBILDUNG (Welle 6, seit K24 im Gesetzbuch): EINE Bedeutung je Bau-Stufe — welches REZEPT die Stufe
     // fährt. Der Strauch: Nah- (0) und Mittel-Stufe (1) fahren beide das Rezept 1 (Karten-Krone, Blatt-Aggregation,
@@ -2668,7 +2674,7 @@
         // ohne Welt-Skala baut er in der Form-Höhe.
         if (ph.kind === "tree" && ph.hoeheM > 0 && !ph.tot && weltSkala > 0) {
             P.hoeheM = ph.hoeheM * (P.height / ph.height);
-            if (ph.conifer) P.hd = ph.hd;
+            if (ph.conifer) P.hd = FOREST_PACK.schlank[ph.krone];
             else if (ph.hd != null)
                 throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
             if (ph.solitaer) P.solitaer = 1;
@@ -3334,6 +3340,10 @@
             fichte: 2.75,
             mammut: 9.2,
         },
+        // DIE SCHLANKHEIT H/D DER KONIFERE je Zeile ihrer Krone (`ph.krone`, treeParams `P.hd`): Bestand 40–100 (waldwissen,
+        // McMahon 1973), der Mammut gedrungen — EINE Quelle für die Art und die Konifere der Dials (bis fachwerk-buehne je Art
+        // in foundry-core; die Eiche mit api 1 trug keine und brach im Bau, gate:studio-huelle H3)
+        schlank: { fichte: 70, tanne: 65, mammut: 18 },
         // DIE SCHICHTEN DES BESTANDS (vegetation.K3, w16-wald-innen): ein Dart, den die Kronen-Schüchternheit aus dem Dach
         // nimmt (`forestSteht`), stirbt nicht, wenn er unter dem Schirm einer Dach-Krone steht — er wächst im Zwischen- und
         // Unterstand (Kraft'sche Baumklassen 3–5) im größten Alter `alter` (die Stufen der Jugend-Gestalt, stamm

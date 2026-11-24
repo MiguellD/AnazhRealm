@@ -2657,7 +2657,8 @@
             u.act.value = act;
             u.pulse.value = 0.5 + 0.5 * Math.sin(zeit * MG.puls);
             u.waveDepth.value = tor.mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
-            B.wirt._torZielAtlas.uBelicht.value = 1 / Math.max(1e-3, R.toneMappingExposure || 1);
+            // die Belichtung des Zielbilds liest der Stoff selbst (licht-eine-skala: `_vorBelichtung().k` = toneMappingExposure);
+            // ihre Kopie je Takt fiel dort, hier warf sie in jedem Bild der Tor-Seite (gate:studio-huelle, „uBelicht of undefined“)
         };
         // die Passage geht: ihr Stoff gehört ihr, ihre Geometrie dem Memo des Wirts je Gestalt und Stempel — sie fällt mit
         B.passageFort = (mesh) => {
