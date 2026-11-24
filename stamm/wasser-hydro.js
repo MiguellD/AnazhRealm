@@ -191,7 +191,10 @@ class AnazhRealm_wasser_hydro {
             S.push(a, ra);
         }
         if (rampe) S.push(t1, r1);
-        if (S.length !== n0 || i < n0) this._regenGen = (this._regenGen | 0) + 1;
+        // die Marke des Regens (`_regenGen`, der Pegel liest sie) wechselt nur mit dem Weg der WELT (`state.regenStempel`): ein
+        // eigener Weg eines Lesers (`_regenVergangen`: die Vergangenheit des Pegels, der Sprung der Welt-Uhr) ist Rechnung, kein
+        // Wechsel des Wetters. Bis front-stoff kippte jeder Knoten eines solchen Wegs die Marke der Welt
+        if (S === st.regenStempel && (S.length !== n0 || i < n0)) this._regenGen = (this._regenGen | 0) + 1;
     }
 
     // DIE VERGANGENHEIT DES PEGELS (wetter.K3): eine Welt ohne Gedächtnis des Pegels (kein `pegelZustand` — die Geburt, ein Stand
@@ -245,9 +248,10 @@ class AnazhRealm_wasser_hydro {
         const [k0, k1] = [this._kalenderZeit(u0), this._kalenderZeit(u1)];
         if (!(k1 > k0)) return 0;
         const ab = Math.max(k0, k1 - globalThis.__gelaendeCore.LAUF.fenster * normS);
-        const pm = this.state.playerMesh;
-        const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
-        const S = this._regenVergangen(x, z, ab, k1, []);
+        // AM ORT DES KLIMAS (`_regenMittel`, die Welt-Mitte): die Dosis ist EINE Zahl der Welt (`nassTage`, reist im Stand) — sie folgt
+        // aus Saat und Welt-Uhr, nie aus dem Ort des einen Spielers (M1 Adresse, M6 eine Quelle). Bis hier rechnete jede Seite am
+        // Ort ihres Spielers (500 m Ost 10,37, Süd 12,46 Regen-Tage je 30 d): zwei Seiten, zwei Dosen
+        const S = this._regenVergangen(0, 0, ab, k1, []);
         return AnazhRealm._regenTage(S, ab, k1, normS) + ((ab - k0) / normS) * this._regenMittel();
     }
 
