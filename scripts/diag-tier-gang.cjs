@@ -321,11 +321,14 @@ const LEIB = (k) => {
     const klang = () => (s._schrittKlang ? s._schrittKlang.schritte : 0);
     const ruheH = huefte();
     const zeilen = [];
+    // das Tempo, das der Leib trägt (nerv-bewegung: Gehen und Sprint fallen aus der Gestalt, koerper `leibVerben` — bis hier
+    // fuhr die Probe die Literale der alten Eichung 1,15 / 5,16 m/s, an denen der Spieler nicht mehr ging); die Spitze des Bands
     for (const [name, v] of [
-        ["gehen (W)", 1.15],
-        ["laufen (Shift)", 5.16],
+        ["gehen (W)", st.speed],
+        ["laufen (Shift)", st.sprintSpeed],
         ["Spitze", 6.75],
     ]) {
+        if (!(v > 0)) return { fehler: `der Leib trägt kein Tempo für ${name} (${v})` };
         zaehl.stand = zaehl.loeser = 0;
         zaehl.wo = [];
         // das Becken im eingeschwungenen Gang (ab Takt 60: der Anlauf-Schritt aus dem Stand liegt davor)

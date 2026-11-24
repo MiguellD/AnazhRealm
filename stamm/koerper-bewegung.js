@@ -44,10 +44,13 @@ class AnazhRealm_koerper_bewegung {
         return h;
     }
 
-    // DIE KRAFT DER BEINE (N, leib.K2): die Sprungkraft der Seele (`state.jumpPower`, das Abdruck-Tempo, das sie dem
-    // Bezugs-Leib gibt) als Kraft nach koerper LEIB.sprung (`leibSprungKraft`); Leser: `_sprungAbdruck`.
+    // DIE KRAFT DER BEINE (N, leib.K2): die Sprungkraft der Seele (`state.jumpPower`, das Abdruck-Tempo, das sie ihrem Leib
+    // gibt) als Kraft nach koerper LEIB.sprung (`leibSprungKraft`) an der Masse des Leibs, dessen Beine es sind (im Schritt des
+    // Mitspieler-Geists die Masse seines Leibs, `_geistKg`); Leser: `_sprungAbdruck`. Bis nerv-bewegung trug der Kern dafür
+    // die Bezugs-Masse refKg 89 — der Leib wiegt 80,9 kg, jeder Sprung stieg über die Sprungkraft der Seele.
     _sprungKraft() {
-        return AnazhRealm._leibTakt().leibSprungKraft(this.state.jumpPower);
+        const m = this.state._geistKg || this._leibMasse(this.state.playerMesh);
+        return AnazhRealm._leibTakt().leibSprungKraft(this.state.jumpPower, m);
     }
 
     // DER ABDRUCK (m/s, leib.K2): die Beine strecken den Leib über den Abdruck-Weg mit der Kraft F gegen sein Gewicht

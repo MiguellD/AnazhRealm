@@ -542,7 +542,7 @@ function _playOrt(T) {
   return { tempo: T.sprint ? W.sprintSpeed : W.speed, gehTempo: W.speed, hang: 1, ritt: null, rittKAcc: null, rittKBrake: null, reitet: false, fahr: null, wasser: false, wasserKBrake: 0,
     leben: play.leben, angebote: parkAngebote, lage: play.p, beinM: play.M.L, mass: play.kette.mass, masse: play.masse, g: G_WELT,
     amBoden: function () { return play.amBoden; }, hangSprung: function () { return false; },
-    abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
+    abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower, play.masse), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
 }
 function _kopfraum() {
   var top = play.p[1] + 2 * KAPSEL.fussM, best = Infinity;

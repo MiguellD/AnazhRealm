@@ -1200,7 +1200,10 @@ async function rollen(n) {
         const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, s.camera.position.y]);
         const sprung = (fm, fk, j = { hub: [0, 0, 0] }) => {
             const L = Object.getPrototypeOf(r);
-            [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * L._sprungKraft.call(r)];
+            // dieselben Beine (die Kraft des Leibs, wie er gebaut ist — gelesen, bevor die Masse wächst) unter der Masse × fm
+            // (nerv-bewegung: die Kraft liest die Masse des Leibs, dessen Beine es sind; die Last darüber senkt den Sprung)
+            const F0 = L._sprungKraft.call(r);
+            [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * F0];
             setz();
             [halt.vor, halt.sprint, s.yaw] = [true, true, 0];
             for (let k = 0; k < 120; k++) takt();
