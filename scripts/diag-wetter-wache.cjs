@@ -189,6 +189,56 @@ function kalenderSelbsttest() {
         (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`kalender Fall ${i}: ${rot}`]
     );
 }
+// (G) DIE GRUNDSTELLUNG TRÄGT UHR UND WETTER (w4-grundstellung, am Wirt im vm: stamm.cjs `grundWirt`, die Lade-Kette echt): der
+// Grund steht unter der Tag-Länge der Bühne (10¹² min, `__buehne` je Takt der Werkbank, das Jahr gehalten) — sein Kalender
+// [0,10099999999394; 6·10¹³] wie der der Radeon eba9bf8f —, die Seite nach Tür und Neuladen am Standard-Tag 23,8 s weiter, dann
+// spielt `_grundstellung` ihn an Ort und Stelle zurück. (GK) Der Kalender kehrt bit-gleich zurück: die Tag-Länge kehrt VOR der
+// Lade-Kette zurück, der Versatz legt sich nie zweimal. (GW) Ein Zustand ohne Wort (roh undefined) reist als das Wort, das die Welt
+// zeigt (`_wetterGilt`). Die Täter von vorher als Mutanten am Text des Stamms fallen je ROT beim Namen ihrer Größe (GTX 24.11., Tür
+// und Neuladen: 0.10099999999394 → 0.10099999999394171 und „weather undefined → sunny“). → { rot, zahl }
+const GRUND_TAETER = {
+    kalender: [
+        ["_standRueckspielen", "if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;\n", ""],
+        [
+            "_standRueckspielen",
+            "this.state.player.tools = [...S.playerTools];\n",
+            "this.state.player.tools = [...S.playerTools];\n        if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;\n",
+        ],
+    ],
+    wetter: [
+        ["_standTafel", "AnazhRealm._wetterGilt(st().weather)", "st().weather"],
+        ["_loadStateRestoreBasicState", "AnazhRealm._wetterGilt(state.weather)", 'state.weather || "sunny"'],
+    ],
+};
+function grundUhrWetter(taeter) {
+    const R = require("path").join(__dirname, "..");
+    const { r, A, st } = require("./lib/stamm.cjs").grundWirt(R, taeter);
+    st.autoSeason = false; // die Bühne hält das Jahr: der Stand trägt keinen Anker, die Kette liest den Kalender
+    r._weltUhrNeu(0.101); // die Uhr der Bühne beim Grund (die Geburt der Messung)
+    st.dayLengthMinutes = 1e12; // die Bühne hält den Tag
+    r._kalenderZeit();
+    const w0 = st.weather;
+    st.weather = undefined; // ein Zustand ohne Wort, wie ihn der Grund der Radeon trug
+    const G = r._grundstellung().grund;
+    st.weather = w0;
+    st.dayLengthMinutes = A.DAY_LENGTH_DEFAULT_MINUTES; // die Seite nach dem Neuladen
+    r._weltUhrNimm(23.819245); // die Uhr geht weiter, nie zurück
+    r._kalenderZeit();
+    const z = r._grundstellung(G);
+    const S = JSON.parse(G).stand;
+    return { anders: z.anders, kalGrund: JSON.stringify(S.worldMeta.kalender), kal: JSON.stringify(st.worldMeta.kalender), wetter: S.weather };
+}
+function grundSelbsttest() {
+    const [b, mk, mw] = [null, GRUND_TAETER.kalender, GRUND_TAETER.wetter].map(grundUhrWetter);
+    const rot = [];
+    if (b.anders.length || b.kal !== b.kalGrund || b.wetter !== "sunny")
+        rot.push(`(G) GRUND: die Grundstellung nennt ${JSON.stringify(b.anders)} (Kalender ${b.kalGrund} → ${b.kal}, Wetter im Grund ${b.wetter}) — stamm/speicher-laden.js _standRueckspielen, _wetterGilt`); // prettier-ignore
+    if (!(mk.anders.length === 1 && mk.anders[0] === "worldMeta.kalender" && mk.kal !== mk.kalGrund))
+        rot.push(`(GK) der Täter „die Tag-Länge kehrt nach der Lade-Kette zurück“ fällt nicht rot beim Kalender (${JSON.stringify(mk)})`);
+    if (!(mw.anders.length === 1 && mw.anders[0] === "weather"))
+        rot.push(`(GW) der Täter „der Stand trägt das rohe Wort“ fällt nicht rot beim Wetter (${JSON.stringify(mw)})`);
+    return { rot, zahl: { grund: b.kalGrund, nach: b.kal, mutante: mk.kal, wetter: b.wetter, mutanteWetter: mw.anders.join(" ") } };
+}
 // (K) die Probe im Seiten-Kontext (eine frische Welt, der echte Takt `_gameLoopTick`): je Tag-Länge `o.minuten` ein Fenster von
 // `o.sek` Sekunden Welt-Uhr; gelesen die Tage des Lichts (`worldMeta.tag` + `timeOfDay`), des Tags der Prozesse (`_weltTag`), des
 // Pegels (Zeit ÷ Tag, wie der Lauf des Kerns sie bekommt, `pegelLauf`) und des Jahrs (Phase ÷ `jahreJeTag`).
@@ -859,6 +909,12 @@ if (SELBSTTEST) {
     v.push(...boe.v);
     console.log(
         `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+    );
+    const grund = grundSelbsttest();
+    v.push(...grund.rot);
+    const Gz = grund.zahl;
+    console.log(
+        `  (G) Grundstellung am Wirt · Kalender ${Gz.grund} → ${Gz.nach} (gepflanzt Tag-Länge nach der Kette: ${Gz.mutante}) · Wetter ohne Wort reist als ${Gz.wetter} (gepflanzt rohes Wort: ${Gz.mutanteWetter})`
     );
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };

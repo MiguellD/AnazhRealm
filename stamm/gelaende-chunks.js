@@ -1365,7 +1365,11 @@ class AnazhRealm_gelaende_chunks {
         }
         for (const l of this.state.leichname.slice()) this.removeCreature(l); // die Gefallenen gehen mit der alten Welt
         this.state.creatures = [];
-        this.state.creatureEmotions = [];
+        // die Etiketten gehen mit den Leibern — nie die der Wesen, die noch im Stash auf ihre Wiederkehr warten (`_wesenAusstehend`:
+        // das Laden setzte beide vor dem Boden, `_bootDeferCreatures` reicht die Etiketten an die Wiederkehr). Bis grund-ohne-fehlalarm
+        // fielen sie hier, und jedes Wesen eines geladenen Stands kam „happy“ wieder (GTX 24.11. nach dem Neuladen: 4 Wesen im Stash,
+        // 0 Etiketten — der Stand dieses Fensters trug sie so)
+        if (!this._wesenAusstehend()) this.state.creatureEmotions = [];
         if (this.state.vegetation && this.state.vegetation.length) {
             this.state.vegetation.forEach((veg) => {
                 this.state.scene.remove(veg);

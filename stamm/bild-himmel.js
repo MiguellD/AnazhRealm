@@ -3414,6 +3414,16 @@ class AnazhRealm_bild_himmel {
         return st.naesse;
     }
 
+    // DAS WORT, DAS GILT (w4-grundstellung): ein Wort der Achse (`WEATHER_INTENSITY`) gilt, wie es ist; jedes andere — keins,
+    // `undefined`, ein fremdes — zeigt die Welt als „sunny“ (jeder Leser: `_weatherFieldFor`, `_weatherBlendedValue`, `_weatherIsWet`,
+    // die Tönung), und so reist es. Leser: die Zeile „weather“ des Speicher-Gesetzes und das Laden (`_loadStateRestoreBasicState`).
+    // Bis grund-ohne-fehlalarm trug der Stand das rohe Feld: ein Grund aus einer Welt ohne Wort stand ohne „weather“, das Laden
+    // schrieb „sunny“, und die Grundstellung nannte „weather undefined → sunny“ (Radeon eba9bf8f; GTX 24.11. an Ort und Stelle wie
+    // nach Tür und Neuladen)
+    static _wetterGilt(w) {
+        return typeof w === "string" && Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, w) ? w : "sunny";
+    }
+
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
     // die Transition ist rein visuell (Skybox + Symphonie cross-faden ~45 s). Aufrufer: DSL-Op `weather`
     // (Quelle = die DSL-Quelle: emotion:<Achse> · nexus · rule:<Herkunft> · human · remote:<Peer> · llm:grok …)
