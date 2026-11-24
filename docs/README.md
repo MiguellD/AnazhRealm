@@ -67,6 +67,7 @@ in ihre Leitern; „erreicht“ ist `heute` der Leiter am selben Stand:
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `cloud-post/stoffstrom-kette.md` | Die Vorprüfung `mensch.wirtschaft.stoffstrom#1` — Erz → Barren → Werkzeug, Zahlen, Linse.                       |
 | `cloud-post/klang-leib.md`       | Die Vorprüfung `erleben.klang` — Weg zum Ohr, Stimme aus dem Leib, Donner aus dem Feld am Ort, Zahlen, Linse. |
+| `cloud-post/licht-stetig.md`     | Die Vorprüfung `planet.kosmos.himmelsmechanik#1` — die Helligkeit stetig über die Sonnenhöhe, Erzeuger, Zahlen, Täter-Linse, Offenes. |
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
 -Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main. **Abgabe eines
