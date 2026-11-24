@@ -1841,6 +1841,8 @@ class AnazhRealm_feld_leben {
         const brand = bf && bf.size ? bf.get(this._lifeCellKey(x, z)) : null;
         // DIE LAVA (stoffe.K3-2) glüht in der glut ihrer Zelle, bis sie erkaltet (`_lavaAt`)
         const lava = this._lavaAt(x, z, uhr);
+        // DAS WERK STÖRT (same.kopplung.aufwaerts#1): die Bauten des Menschen senken es in ihrer Zone (`_werkStoerungAt`)
+        const werk = this._werkStoerungAt(x, z);
         let emotion = e;
         if (imp) {
             emotion = {};
@@ -1850,13 +1852,63 @@ class AnazhRealm_feld_leben {
         }
         return {
             lebendig:
-                overlay || narbe > 0 || gau ? Math.max(0, Math.min(1, f.lebendig + overlay + gau - narbe)) : f.lebendig,
+                overlay || narbe > 0 || gau || werk > 0
+                    ? Math.max(0, Math.min(1, f.lebendig + overlay + gau - narbe - werk))
+                    : f.lebendig,
             dichte: f.dichte,
             glut: brand || lava ? Math.min(1, f.glut + (brand ? brand.glut : 0) + (lava ? lava.glut : 0)) : f.glut,
             magieleitung: f.magieleitung,
             emotion,
             t,
         };
+    }
+
+    // DIE STÖRUNG DER WERKE an (x, z) (same.kopplung.aufwaerts#1, tetrapoda `stoerung`): Σ der Zonen der gebauten Werke im Umkreis
+    // `reichM`, gekappt. Gespeichert ist nur das Werk selbst (sein Eintrag in `architectures`, `werk`); die Zone ist eine Funktion
+    // seines Orts und seiner Grundfläche (`_grundrissVon`). Der Index (`_werkWirk`, Zellen der Kante `reichM`) trägt die stehenden
+    // Werke — die Frage kostet die 3 × 3 Zellen um den Ort, nie die Welt; ohne Werk keine Frage.
+    _werkStoerungAt(x, z) {
+        const W = this._werkWirk;
+        if (!W || !W.n) return 0;
+        const LG = AnazhRealm._lebensraumGesetz();
+        const R = LG.S.reichM;
+        const [cx, cz] = [Math.floor(x / R), Math.floor(z / R)];
+        let s = 0;
+        for (let i = -1; i <= 1; i++)
+            for (let j = -1; j <= 1; j++) {
+                const zelle = W.zellen.get((cx + i) * 2097152 + cz + j);
+                if (zelle) for (const w of zelle) s += LG.stoerung(Math.hypot(w.x - x, w.z - z), w.a, LG.S);
+            }
+        return Math.min(LG.S.kappe, s);
+    }
+
+    // Ein Werk tritt in die Zone ein (der Eintritt jedes Baus, `spawnArchitecture`): ein gebautes Werk mit Grundriss, das steht
+    // (kein Wagen) — die Grundfläche aus dem Grundriss (halbe Maße). Austritt: `removeArchitecture`; das Laden leert den Index.
+    _werkWirkEin(e) {
+        if (!e || e.werk !== true || e._fahrAchseX || !e.position) return false;
+        const g = this._grundrissVon(e);
+        if (!g) return false;
+        const R = AnazhRealm._lebensraumGesetz().S.reichM;
+        const W = this._werkWirk || (this._werkWirk = { n: 0, zellen: new Map(), je: new Map() });
+        const w = { x: e.position.x, z: e.position.z, a: 4 * g.ex * g.ez };
+        const k = Math.floor(w.x / R) * 2097152 + Math.floor(w.z / R);
+        if (!W.zellen.has(k)) W.zellen.set(k, []);
+        W.zellen.get(k).push(w);
+        W.je.set(e, [k, w]);
+        W.n++;
+        return true;
+    }
+
+    _werkWirkAus(e) {
+        const W = this._werkWirk;
+        const kw = W && W.je.get(e);
+        if (!kw) return false;
+        const zelle = W.zellen.get(kw[0]);
+        zelle.splice(zelle.indexOf(kw[1]), 1);
+        if (!zelle.length) W.zellen.delete(kw[0]);
+        W.je.delete(e);
+        W.n--;
+        return true;
     }
 
     // === DIE LEBENDIGE WERTUNG: Wohl-Maß + gleitende Baseline ===

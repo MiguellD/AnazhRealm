@@ -1537,6 +1537,7 @@ class AnazhRealm_siedlung_satz {
         this._populateBlockerAABBs(entry);
         // DER GRUND DES HAUSES (S4) ist Plan-Datum: ein Haus ohne Ort legt ihn beim Setzen, vor dem Bau der Chunks um ihn
         this._hausGrundSetzen(entry);
+        this._werkWirkEin(entry); // das gebaute Werk tritt in seine Störungszone (same.kopplung.aufwaerts#1, `_werkStoerungAt`)
         // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung, jeder Bau mit Boxen): was die Natur dort
         // schon geworfen hat, weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Platz, Tore, Spieler, KI
         // und Probe gleich. Nach den Boxen: sie sind der Grundriss eines Baus ohne Haus-Zeile (K52).

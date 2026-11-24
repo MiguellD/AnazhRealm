@@ -911,6 +911,7 @@ class AnazhRealm_speicher_laden {
         // bleiben). Die Respawn-Schleife baut sie lazy neu.
         this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
+        this._werkWirk = null; // die Störungszonen der Werke fallen mit ihrer Liste (der Respawn trägt sie neu ein)
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
     }
 

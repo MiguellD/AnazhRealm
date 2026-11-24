@@ -3123,6 +3123,35 @@ if (V) {
     check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
     // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
 }
+// ── DIE STÖRUNGSZONE DES BAUS (same.kopplung.aufwaerts#1, tetrapoda `STOERUNG_GESETZ` · `stoerung`, Leser feld-leben `auraAt` über
+// `_werkStoerungAt`): ein Haus (100 m²) senkt das Leben an jedem der zehn Orte der Station (60 … 1 000 m) um mehr als ihre Auflösung
+// (r3: 0,0005), fallend mit dem Abstand, jenseits `reichM` nichts. Bis hier trug der Kern kein Gesetz: die Tat ohne Leser
+// (GTX 6066c757: orteGeaendert 0 von 10). Selbsttest: die Zone, die vor 1 km endet, fällt ROT ──
+{
+    const RADIEN = [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000];
+    const zone = (K) => {
+        if (!K || typeof K.stoerung !== "function" || !K.STOERUNG_GESETZ) return { fehler: "tetrapoda stoerung fehlt — die Tat ohne Leser (auraAt liest kein Werk)" };
+        const S = K.STOERUNG_GESETZ;
+        const w = RADIEN.map((d) => K.stoerung(d, 100, S));
+        const unter = RADIEN.filter((d, i) => !(w[i] >= 0.0005));
+        if (unter.length) return { fehler: "die Zone eines Hauses unter der Auflösung bei " + unter.join(", ") + " m" };
+        if (!w.every((v, i) => !i || v < w[i - 1])) return { fehler: "die Zone fällt nicht mit dem Abstand: " + w.map((v) => v.toFixed(4)).join(" ") };
+        if (K.stoerung(S.reichM, 100, S) !== 0) return { fehler: "jenseits reichM wirkt das Werk noch" };
+        if (!(K.stoerung(60, 2.56, S) < w[0] / 10)) return { fehler: "ein kleines Werk (2,6 m²) wiegt wie ein Haus" };
+        return { w };
+    };
+    const Z = zone(core);
+    check("Die Störungszone des Baus: ein Haus senkt das Leben an allen 10 Orten bis 1 km, fallend, jenseits reichM nichts", !!Z.w, Z.fehler || "");
+    const fs = require("fs");
+    const vm = require("vm");
+    const quelle = fs.readFileSync(path.join(root, "tetrapoda-core.js"), "utf8");
+    const stelle = "reichM: 2500,";
+    const ctx = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Float32Array, Uint8Array, Uint16Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
+    if (quelle.split(stelle).length === 2) vm.runInContext(quelle.split(stelle).join("reichM: 900,"), ctx);
+    const M = ctx.__tetrapodaCore ? zone(ctx.__tetrapodaCore) : { w: "die Stelle fehlt" };
+    check("Die Störungszone, Selbsttest: die Zone, die vor 1 km endet, fällt ROT", !M.w && /unter der Auflösung bei (\d+, )*1000 m/.test(M.fehler || ""), M.w ? "der Täter blieb grün" : M.fehler);
+    if (Z.w) console.log("  Störungszone Haus 100 m² an den Orten der Station: " + Z.w.map((v) => v.toFixed(4)).join(" "));
+}
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
 require(path.join(root, "leben-core.js"));

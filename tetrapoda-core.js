@@ -2112,6 +2112,20 @@
         var g = L.gattung[gattung];
         return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
     }
+    // DIE STOERUNGSZONE DES BAUS (same.kopplung.aufwaerts#1, additiv): ein gebautes Werk senkt das Leben um sich, abklingend mit
+    // dem Abstand — die Zone des Einflusses menschlicher Bauten auf das Wild (Benitez-Lopez, Alkemade & Verweij 2010, Biol.
+    // Conserv. 143: 1307, Meta-Analyse von 49 Studien: Saeuger weniger bis ~5 km, Voegel bis ~1 km um Bauten und Wege; Rotwild
+    // meidet Haeuser auf 100–300 m am staerksten). tiefe ist die Senkung am Werk von der Grundflaeche flaecheRefM2 (ein Haus,
+    // ~100 m²), kleinere Werke wiegen nach ihrer Flaeche (ein Stuhl 2,6 m²: 1/40), viele addieren sich bis kappe; lambdaM die
+    // Abkling-Laenge (bei 1 km noch e^-2 = 14 % der Senkung am Werk), jenseits reichM nichts — die Frage kostet die Werke im
+    // Umkreis, nie die Welt. dM ≥ 0 der Abstand, flaecheM2 die Grundflaeche des Werks; Leser: der Stamm (`_werkStoerungAt`, das
+    // Leben `auraAt.lebendig`).
+    var STOERUNG_GESETZ = Object.freeze({ tiefe: 0.1, lambdaM: 500, reichM: 2500, flaecheRefM2: 100, kappe: 0.3 });
+    function stoerung(dM, flaecheM2, S) {
+        if (!(dM >= 0) || !(flaecheM2 > 0)) throw new Error("stoerung: Abstand " + dM + " m, Flaeche " + flaecheM2 + " m²");
+        if (dM >= S.reichM) return 0;
+        return S.tiefe * Math.min(1, flaecheM2 / S.flaecheRefM2) * Math.exp(-dM / S.lambdaM);
+    }
     // DER DURST (Tiere K4, additiv): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr durch durstS; ab 1 sucht das Tier
     // Wasser im Umkreis VERHALTEN.aufgaben.trinkSuchM und trinkt, dann ist er 0; fand es keines, sucht es nach suchPauseS
     // wieder (das Rotwild zieht mehrmals am Tag zur Traenke).
@@ -5625,6 +5639,8 @@
         bodenKlasse: bodenKlasse,
         bodenKlasseAm: bodenKlasseAm,
         lebensraum: lebensraum,
+        STOERUNG_GESETZ: STOERUNG_GESETZ,
+        stoerung: stoerung,
         lebensraumWahl: lebensraumWahl,
         DURST_GESETZ: DURST_GESETZ,
         durst: durst,
