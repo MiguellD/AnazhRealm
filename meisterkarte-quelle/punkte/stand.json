@@ -21585,7 +21585,7 @@
   },
   "karte2.mensch.menge.seuche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.menge.seuche#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.menge.seuche#1 gtx: ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4358 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4358 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal an 2d6a0447 · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.seuche#1",
@@ -21601,10 +21601,10 @@
      "id": "karte2.mensch.menge.seuche#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4358 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4358 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4358 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4358 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -23470,7 +23470,7 @@
   },
   "karte2.mensch.sport.koerper": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.542 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.542 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.239 in 0.2–0 · [linse-gpu] amd/rdna-3 an bf9be26c radeon — offen: karte2.mensch.sport.koerper#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/shader-kosten.cjs +2) · karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.542 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.542 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.239 in 0.2–0 · [linse-gpu] amd/rdna-3 an bf9be26c radeon · S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.229 in 0.2–0 · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koerper#1",
@@ -23486,11 +23486,10 @@
     {
      "id": "karte2.mensch.sport.koerper#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/shader-kosten.cjs +2)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.543 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.543 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.229 in 0.2–0 · [linse-gpu] nvidia/pascal",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37534,7 +37533,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 300,
+  "konsum": 301,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37702,10 +37701,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3322
+  "ohne": 3321
  },
  "kopfVoll": "2d6a0447b80ae36b4b83e52e12757c457c536133",
- "zeit": "2026-11-24T19:24:45.069Z",
+ "zeit": "2026-11-24T19:37:46.932Z",
  "vorher": "2d6a0447",
  "bilanz": {
   "gewinn": [],
