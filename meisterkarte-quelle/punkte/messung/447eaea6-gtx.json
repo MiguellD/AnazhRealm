@@ -1,7 +1,7 @@
 {
  "sha": "447eaea65297f44ca4135f8c4009685fa949045f",
  "geraet": "gtx",
- "zeit": "2026-11-24T04:34:42.710Z",
+ "zeit": "2026-11-24T04:50:06.929Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -558,6 +558,147 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
    "modus": "session"
+  },
+  "karte2.erleben.bild.nacht#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ schatten_kontrast 2,3754 (Soll ≥ 3) · ✅ kelvin_abw 28 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 510 — Täter: schatten_kontrast 2,3754 statt ≥ 3",
+   "exit": 0,
+   "minuten": 2.94,
+   "grund": "ROT: S1 · ROT ❌ schatten_kontrast 2,3754 (Soll ≥ 3) · ✅ kelvin_abw 28 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 510 — Täter: schatten_kontrast 2,3754 statt ≥ 3",
+   "gpu": "nvidia/pascal",
+   "konsum": "kae7548d83f7d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 176.1,
+   "fremd": {
+    "s": 178.8,
+    "takte": 79,
+    "fremdS": 129.33,
+    "kerne": 0.723,
+    "fensterKerne": 1.414,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      18.28
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-447eaea6 x listen/kandidat-gtx-447eaea6.txt",
+      11.19
+     ]
+    ],
+    "dienerS": 77.22,
+    "diener": [
+     [
+      "dwm.exe",
+      31.14
+     ],
+     [
+      "System",
+      30.55
+     ]
+    ],
+    "geraetS": 89.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      55.72
+     ],
+     [
+      "svchost.exe",
+      30.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.86
+     ]
+    ],
+    "eigenS": 594.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T04:45:42.974Z",
+   "abdruck": "0a8640cb44c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.bild.nacht#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 510 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "exit": 0,
+   "minuten": 2.94,
+   "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 510 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "gpu": "nvidia/pascal",
+   "konsum": "kae7548d83f7d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 176.1,
+   "fremd": {
+    "s": 178.8,
+    "takte": 79,
+    "fremdS": 129.33,
+    "kerne": 0.723,
+    "fensterKerne": 1.414,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      18.28
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-447eaea6 x listen/kandidat-gtx-447eaea6.txt",
+      11.19
+     ]
+    ],
+    "dienerS": 77.22,
+    "diener": [
+     [
+      "dwm.exe",
+      31.14
+     ],
+     [
+      "System",
+      30.55
+     ]
+    ],
+    "geraetS": 89.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      55.72
+     ],
+     [
+      "svchost.exe",
+      30.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.86
+     ]
+    ],
+    "eigenS": 594.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T04:45:42.974Z",
+   "abdruck": "0c4617c417a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -568,7 +709,8 @@
   "k15942408cb93": "bVXBkqIwEP0XjzvLRAUkpGoOcbDKqdrd0dOeO6EDjAhWArLj1v77VtSowPQR+6Vf3nsd/04OIHeQ4fOHqasJm3ybfJ8YOKJnUB9RP3+YCZvEcjZHn/FLEc75q22Tujg0hpSFICAqyPfotbrBonyWZxgIDFLKSLfi2YYQRU4k6V5ehtBSYFp7DSi8AUOaqpANG1uTgUAPWnUedm0Op/5MKEbORRP+npBbdZTzTaCCDU0Ghwmo0j7beBFGGLK3T85XfMQyLQAbrywq4+bO0ihWU3af9XOE0dB5J8C8RH0FIZ3NAuHILq2cVpoBUJWtMb1h1E/DOWWExMPeDE0h88Y76FpgdW0X8TyaAVuO1c4OraceGYEQQMVQ6xywylD3OEx9qRYzRv7Q4aE72KMGr4LcaTn1o7m4a0MIWY+5lGfi5xF34kGYQg9oTSVHQriL39F+Wt9+dd+TjN9rOxpmZF7ofV8mFeB86rMfY2omhxS1t6tNc+umAQDS6xYkhG+5DdcwWOZ+KYcDAPoQFEIJX480NLVqOtDoZYfWhSXAMAoZ52+j5gb2e5d/5Qe+HBpoGhvwRxph5Cu6YIQ8XRZkfOnLOngnLEoHUioI4tEmHjXsPRCZLpRyjotQqvirgHZYNp6o68bJISgqZMQn1aPJvzor6+rBw6Sr5e/PrOP9WvEh7/OEWje3m4rFVAVM2aB0ctRd6MbrQOaufa4EgqU+8uSEusQMezKKiMY22p268D7ZJya6PgHqqRfc0/jEAq3AlWmNM1lCIEL2hSUd6p2AaudoTiO5uMRv+c7XPU1ek+2GWluj3ny/s3pu8uVFQ2mXxL1TB5TkoGtV2JeQ5NCaHMrm/jfw7z8=",
   "k824b60bb19f5": "bVXRkpowFP0XH9uyEQEJmdmHuDjjzrRd96nPN+EGWBGcBExrp//eiYoK7H3Ee3JPzjk3/p0dQO4gx6cP09QzNvsy+zYzcETPoD6ifvowMzZLpL/AgPFLEc75i2uTujy0hlSlICBqKPbodbrFsnqSZxgIDDPKiF3zfEuIIieS2ufnMbQSmDVeCwpvwIhmKmLjxs7kINCDTp2HXZujeeALxci5aMrfUnIrSznfhirc0nR0mIA6G7JNllGMEXu1nK/5hGVWArZeVdamn+tncaLm7D7rxwSjwXonwKJCfQUh9f1Q9GRXTk4nzQioqs6YwTAaZNGCMkKScW+OppRF6x10I7C+totkEfvAVlO180PnqUdGIARQMda6AKxz1AMO80Cqpc/Ibzo+dAd71ODVUPRazoN4Ie7aEEI2Uy7Vmfh5xJ14GGUwADpTyZEQ3sfv6D5tbr/239Oc3+t9MszIotT7oUwqxMU8YN+n1EwBGWpv15j21k1DAKTXLUgJf+cuXONgmfulehwA0IegEEr4ZqKhaVRrQaOXH7o+LCFGccQ4f500t7Df9/lXQRjIsYGmdQF/pBHFgaJLRsjXy4JML31ZB++EZdWDlArDZLKJRw17D0SuS6V6x0UkVfJZQC1WrSeapu3lEBQVMhKQ+tHkn9bJun7wMLWN/PUnt3xYaz7mfZ7Q6PZ2U7Gcq5ApFxQrJ92lbj0LsujbF0ogOOoTT06oK8xxIKOIaeKibdWF98k9MfH1CVBfB8E9TU8s0Qlcm870JksIRcQ+scSi3gmodz3NeSyXl/it3vhmoMlL+r6lztZ4MD+wTs9tsbpoKN2S9O/UASU56EaV7iUkBXSmgKq9/w38+w8=",
   "k662529ca16d2": "bVXBcpswEP0XH9sqsg0YoZkc5JAZZyZtnFPPK7ECYgweCULjTv+9I2xsA94Tg9/jvX3alf/ODqB2kOLDh63KGZ99m/2YWfhEYtF8onn4sDM+i9RiiR4X78IVFUI8OZgy+aG2tMglBVlCtkfSmBrz4kF1NJDoJ4zT9lmkW0o1PdK4fXwcUwuJSUVq0HghBizRAR8DG5uCRAKN7sTO4GDuLaTmtCsWi7eYXqplQmx97W9ZPPqYhDIZuo1WQYgBf/kS4llMXCY5YE2KvLS97iIJIz3nV62fE46BlhwBswLNmYRssfBlb3bt4nTRjIi6aKwdiDEvCZaMUxqNsSnaXGU1OZhKYnmGy2gZLoCvp2mnh4boW0cgJTA5zjoDLFM0Aw9zT+nVwnnXnX37tdV/mBBrMRbZwR4NkBKyPtu5Fy7lNStK6Wbqrega6SSvjfhBAgOiO2T6Sak4l3umbHP5tX8fp+Ja7xMxq7Lc7IexaR+Xc4+/Tq3ZDBI0ZFfZ+oJmPgAyflaj3XZs/fGg2WtTPQ8A2M3gUEbFhk0UK123YJCkh6YfHh+DMOBCvEzANez3/T5oz/cUF5N6vsMqk4G1IPQ0W3FKv5+WaBrEaWXIEfOiJ2nt+9FkWz8N7AnI1ORa91MgA6Wje0PcYlETWVV1H5FkqNFFVN4e/K+26+Omp7it1O+vtB23OhnJTqEy9aVTuZprn2s3PK2aoHNTkxZU1sOXWiJE/A70iKbAFAcxypBFbtzb06LQo7uGwvM1ob8Phvk4Ofljji7g0ja2P3gFvgz4nSNp0ewklLve5jxUK8ZfhRDrN7G5SaQVT/H7lsWUjrLyUpfnUyZO75VbnP4uO6CiB1Pp3N2WNIPGZlDU17+Kf/8B",
-  "ka514177420ff": "dVTBcpswEP0XH5Mqsg0YoZkc5OAZe6bNJMceV2IFxBg8kgitO/33DjbYBlIdOKC3u2/fPu2f2RHUHlJ8+rBVOeOzh9m3mYVPJBbNJ5qnDzvjs0gtlujx9kqZ/OgsLXJJQZaQHZDUxmFePKkzFCT6CeO02Yj0jVJNTzRuxPW8iOfncZpCYlIRBxqvSQKW6GBSr7YpSCRQ63PhDvwwgkkokyGnaBWEGPDdbyE20/pJDuhIkZe2z7hIwkjPOe1P82MSY6AhJ8CsQNMFIVssfNkFsXXbbCvAKFAXtbWDYsxLgiXjlEZjbIo2V5kjR1NJLDu4jJbhAvi6mfSRHmui7xmBlMDkWMUMsEzRDDjMPaVXC05/sXHSPRzQACkh67Wce+FS3rShlG6nXIoz8XOJ8j9jsirLzWHYnPZxOff492lCm0GChuwr665o5gMg4xdjxVS8CyHe/HgceaPSxwEAuxsvZVRsJ53bSrsGDJL0WPcj9jEIAy7EbgJ2cDh0qEB7vqfGslvX2vKeRhB6mq04pY/xxWWTpi8mJifMiz5Ia9+PAv6y9sfgTwMHAjI1udb9rGSgdPSVtRosHJFV5XpJJEONrSTl/WRfzy93c3u+Im4qtXlJ38XwvArxhQvOVSrjrh3L1Vz7XJ+7VRN0bhxpQGU9fKklQkt/MpsTmgJTHMgpQxa1xmxUx7R1Q9g9YP143xY9TTPm2Apd2tr2w1bgy+Dikm6B7YbLo0Gzl1Due7rzUK0Yj0Wc0sfNdihQ/P7G4mui/tC01XabrS//f3afRuzEui10REU1GInUQUoM6sGWbm+PptJ5u/FoBrXNoHA3yN9/"
+  "ka514177420ff": "dVTBcpswEP0XH5Mqsg0YoZkc5OAZe6bNJMceV2IFxBg8kgitO/33DjbYBlIdOKC3u2/fPu2f2RHUHlJ8+rBVOeOzh9m3mYVPJBbNJ5qnDzvjs0gtlujx9kqZ/OgsLXJJQZaQHZDUxmFePKkzFCT6CeO02Yj0jVJNTzRuxPW8iOfncZpCYlIRBxqvSQKW6GBSr7YpSCRQ63PhDvwwgkkokyGnaBWEGPDdbyE20/pJDuhIkZe2z7hIwkjPOe1P82MSY6AhJ8CsQNMFIVssfNkFsXXbbCvAKFAXtbWDYsxLgiXjlEZjbIo2V5kjR1NJLDu4jJbhAvi6mfSRHmui7xmBlMDkWMUMsEzRDDjMPaVXC05/sXHSPRzQACkh67Wce+FS3rShlG6nXIoz8XOJ8j9jsirLzWHYnPZxOff492lCm0GChuwr665o5gMg4xdjxVS8CyHe/HgceaPSxwEAuxsvZVRsJ53bSrsGDJL0WPcj9jEIAy7EbgJ2cDh0qEB7vqfGslvX2vKeRhB6mq04pY/xxWWTpi8mJifMiz5Ia9+PAv6y9sfgTwMHAjI1udb9rGSgdPSVtRosHJFV5XpJJEONrSTl/WRfzy93c3u+Im4qtXlJ38XwvArxhQvOVSrjrh3L1Vz7XJ+7VRN0bhxpQGU9fKklQkt/MpsTmgJTHMgpQxa1xmxUx7R1Q9g9YP143xY9TTPm2Apd2tr2w1bgy+Dikm6B7YbLo0Gzl1Due7rzUK0Yj0Wc0sfNdihQ/P7G4mui/tC01XabrS//f3afRuzEui10REU1GInUQUoM6sGWbm+PptJ5u/FoBrXNoHA3yN9/",
+  "kae7548d83f7d": "bVXBjtowFPwXjt1mDSQhjqU9GILESt0ue+r52XlOsoQE2QlpqfrvlQEDSdYHkMyM33jePPN3cgC5gwyfP01dTdjk2+T7xMARPYP6iPr500zYJJazOfqMXxbhnK8sTOri0BhSFoKAqCDfo9fqBovyWZ5pIDBIKSPdmmdbQhQ5kaR7eRlSS4Fp7TWg8EYMaapCNgS2JgOBHrTqXOwKDqf+TChGzosm/D0ht9VRzreBCrY0GRwmoEr7auNFGGHIXjvO13ykMi0AG68sKuPqztIoVlN2r/U24mjovBNgXqK+kpDOZoFwYpfWTmvNgKjK1pheMeqn4ZwyQuIhNkNTyLzxDroWWF3hIp5HM2DLsdvZofXUoyIQAqgYep0DVhnqnoapL9VixshvOjx0B3vU4FWQOy+nfjQXd28IIZuxlvIs/FziLjwIU+gRbVPtJ3fxO9qtze1Xt59k/L4+rt9vlkqHnhmZF3rft0wFOJ/67MdYpskhRe3tatPc0DQAQHqdiISc622DYcjM/YKOBwD0ITSEEr4Z+Wlq1XSg0csOrQtOgGEUMs5fR+AG9ns3C8oPfDlspmls2B9lhJGv6IIR8nQZlvGlL6PhnbAoHUmpIIhDtloGQ/BRw94DkelCKZcAEUoVfxXYDsvGE3XdOEsERYWM+KR6bPrPzlq7fuhp0tXy15+s4/215kM55wq1bm63FYupCpiywenkCF3oxutA5g4+VwLBSh/15YS6xAx7VoqIxjbqnbroPtknJ7o+CeqpF+TT+MQCrcmVaY1rtIRAhOyLtnSodwKqnZM5jeTiEsHlO9/0PFklH1s7NQOv/Mz6ucmXl31ph8a9WweU5KBrVdiXkeTQmhzK5v638O8/"
  },
  "ungemessen": {
   "profiband.K4#1": {
@@ -1001,6 +1143,398 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:04.385Z",
+   "abdruck": "d73938ad5063",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:04.712Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:04.758Z",
+   "abdruck": "c23e51a638e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.menge.bevoelkerung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:04.820Z",
+   "abdruck": "7cd224169c08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.sinne.signale#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:05.396Z",
+   "abdruck": "286ce6d42455",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.physik.tragen#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:05.444Z",
+   "abdruck": "6190143738c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:05.936Z",
+   "abdruck": "a5387cf1d3b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:05.972Z",
+   "abdruck": "27569cd06067",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:06.480Z",
+   "abdruck": "c1c880a73abf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.pflanzen.biome#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T04:50:06.929Z",
+   "abdruck": "715011cc2e19",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
   }
+ },
+ "sitzung": {
+  "start": "2026-11-24T04:33:18.452Z",
+  "ordner": "sitzung-20261124-053318",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.6,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "offen": [
+   "karte2.same.preis.ausdauer#1",
+   "karte2.leben.tiere.masse#1",
+   "karte2.mensch.nahrung.frucht#1",
+   "karte2.mensch.menge.bevoelkerung#1",
+   "karte2.erleben.sinne.signale#1",
+   "karte2.same.physik.tragen#1",
+   "karte2.leben.oeko.netz#2",
+   "karte2.leben.evolution.fremde-physik#1",
+   "karte2.erleben.kopplung.wahrnehmung#2",
+   "karte2.leben.pflanzen.biome#1"
+  ],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
+    "s": 3.8,
+    "takte": 125,
+    "chunks": 90,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "karte2.erleben.bild.nacht#1",
+    "s": 56,
+    "takte": 1530,
+    "chunks": 95,
+    "nach": "der Wanderung von karte2.planet.kosmos.himmelsmechanik#1"
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "profiband.K4#1",
+    "weg": [
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__impostorRttBaked",
+     "__flussBibliothekS",
+     "__zensusCalls",
+     "__k4",
+     "__k4iv"
+    ]
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "weg": [
+     "__aufnahmeRuhig",
+     "__imSchuss",
+     "__ruheBilder"
+    ]
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "weg": [
+     "__imSchuss"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._feuchteLeser",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [
+     "const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t ",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return window.__k4 || null",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "/* __punkteFelder */ return (function probeFelder(gib, sitzung, grundSeite) { if (!gib) { window.__punkteFel"
+    ],
+    "heap": [
+     null,
+     null
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen"
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     271.7,
+     309.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     425.4,
+     548.2
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "ort": "dorf",
+    "m": 2084.52,
+    "dreh": 0.163
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "wie": "orte +d:7@836,438 · wege +4 [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] [661.6,278.2,1001.1,585/797] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438)"
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":11,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\",\"weather\":\"undefined → \\\"sunny\\\"\"} — offen: karte2.same.preis.ausdauer#1, karte2.leben.tiere.masse#1, karte2.mensch.nahrung.frucht#1, karte2.mensch.menge.bevoelkerung#1, karte2.erleben.sinne.signale#1, karte2.same.physik.tragen#1, karte2.leben.oeko.netz#2, karte2.leben.evolution.fremde-physik#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.pflanzen.biome#1",
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 5318,
+   "frameP95": 33.39,
+   "taktP95": 24.44,
+   "vramMax": 257.9,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.erleben.bild.nacht#1",
+     "m": 2085,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 919,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1003.3,
+  "minuten": 16.91
  }
 }
