@@ -10022,7 +10022,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: Last: Referenz f 3,544 (Faden 3,544 · alle Kerne 2,977; vor 273,5/754,2 ms, nach 297,3/777,7 ms, Ruhe 83,9/261,2 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,532 (Faden 1,472 · alle Kerne 1,532; vor 97,4/241,2 ms, nach 132,5/352 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: Last: Referenz f 3,544 (Faden 3,544 · alle Kerne 2,977; vor 273,5/754,2 ms, nach 297,3/777,7 ms, Ruhe 83,9/261,2 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an 2d6a0447: Last: Referenz f 1,238 (Faden 1,238 · alle Kerne 1,104; vor 111,2/251,4 ms, nach 107,5/246,1 ms, Ruhe 89,8/227,8 ms seit 2026-11-23) · fremd: Explorer.EXE 0,5 CPU-s · LightStudio-background.exe Invoke · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10040,7 +10040,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,532 (Faden 1,472 · alle Kerne 1,532; vor 97,4/241,2 ms, nach 132,5/352 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
+     "grund": "ungemessen (R10) — zuletzt an 2d6a0447: Last: Referenz f 1,238 (Faden 1,238 · alle Kerne 1,104; vor 111,2/251,4 ms, nach 107,5/246,1 ms, Ruhe 89,8/227,8 ms seit 2026-11-23) · fremd: Explorer.EXE 0,5 CPU-s · LightStudio-background.exe Invoke",
      "ungemessen": true,
      "beide": true
     },
@@ -37727,7 +37727,7 @@
   "ohne": 3305
  },
  "kopfVoll": "32c0cd8b87c45b767ad81be177cd3ff1c1259c58",
- "zeit": "2026-11-24T21:15:04.720Z",
+ "zeit": "2026-11-24T21:41:02.646Z",
  "vorher": "32c0cd8b",
  "bilanz": {
   "gewinn": [],
