@@ -877,6 +877,12 @@ class AnazhRealm_bild_himmel {
             Math.abs(last.h - neu.h) < 0.05 &&
             last.v === neu.v;
         const drossel = !sprung && !!last && last.v === neu.v && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS;
+        // DIE FOLGE DER UMGEBUNG (licht-stetig, welt-licht.js `umgebungFolge`): solange sie hält (gleich, Drossel, Leine), tragen
+        // ihre Leser sie je Anwendung mit der Bestrahlung der Tafel jetzt ÷ der ihrer Malung zum Licht jetzt; ohne Tafel hält die
+        // Folge wie die Belichtung. Bis licht-stetig hielt sie den Himmel ihrer Malung bis zur nächsten: im Lauf der Uhr (Tag
+        // 60 min, die Sonne 0,1° je s) sprang das Himmelslicht der Stoffe am Abend alle ~5 s um die Änderung von 0,5° Sonne.
+        const folge = last && __weltLicht.umgebungFolge(A.tafel, U, last.quelle);
+        if (folge > 0) U.umgebung.value = folge;
         if (!force && last && (gleich || drossel)) return true;
         // DIE LEINE FRAGT DIE UMGEBUNG (wie das Bild und die Karte, `_gpuLeineStraff`): Equirekt, PMREM und Rücklesung sind
         // GPU-Arbeit — an gespannter Leine wartet die fällige Neuzeichnung auf den nächsten freien Takt (die Umgebung davor gilt
@@ -888,8 +894,11 @@ class AnazhRealm_bild_himmel {
         if (!force && !sprung && last && this._gpuLeineStraff()) return true;
         try {
             // Null-Renderer (headless): kein Pass, kein PMREM — die Equirekt-Tafel ist die Umgebung (ungezeichnet).
+            // die Malung trägt ihre Quelle (`umgebungQuelle`), ihre Folge beginnt bei 1
+            neu.quelle = __weltLicht.umgebungQuelle(U, A.tafel);
             if (st.renderer._isHeadlessNull) {
                 st.scene.environment = A.rtEq.texture;
+                U.umgebung.value = 1;
                 st._skyEnvLast = neu;
                 st._skyEnvLastRegenMs = nowMs;
                 return true;
@@ -912,6 +921,7 @@ class AnazhRealm_bild_himmel {
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
             if (!this._weltLichtHimmel()) return false; // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
+            U.umgebung.value = 1;
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -943,9 +953,11 @@ class AnazhRealm_bild_himmel {
         const W = A.rtEq.width,
             H = A.rtEq.height;
         const nr = (st._skyEnvLeseNr = (st._skyEnvLeseNr || 0) + 1);
+        const quelle = st._skyEnvLast && st._skyEnvLast.quelle; // die Quelle der Malung, die diese Lesung trägt
         st._skyEnvLesung = r.readRenderTargetPixelsAsync(A.rtEq, 0, 0, W, H).then(
             (px) => {
                 if (nr !== st._skyEnvLeseNr) return st._skyEnvLesung; // überholt: das Versprechen der neueren Lesung
+                st._skyEnvDatenQuelle = quelle;
                 const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
                 const schritt = __weltLicht.zeilenSchritt(px, W, H); // die Zeilen liegen ausgerichtet (bytesPerRow)
                 const halb = px instanceof Uint16Array;
@@ -996,9 +1008,11 @@ class AnazhRealm_bild_himmel {
     // Kuppel und die Bestrahlung der Belichtung — die Stoffe (`_spiegelUmgebung`), das Licht der Welt (`_weltLicht`), der Film
     // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
     // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c). Das Gesetz lebt EINMAL im
-    // Baustein der Engine (welt-licht.js `umgebungLicht`, die Bühne der Studios liest dasselbe).
+    // Baustein der Engine (welt-licht.js `umgebungLicht`, die Bühne der Studios liest dasselbe). `farbe` ist eine Lesung der
+    // GEZEICHNETEN Umgebung (das Licht der Welt, der Film des Tors): sie trägt ihre Folge (`U.umgebung`) wie `himmelDerStoffe`.
     _umgebungLicht(farbe) {
-        return __weltLicht.umgebungLicht(this._atmoLutBau().U, farbe);
+        const U = this._atmoLutBau().U;
+        return __weltLicht.umgebungLicht(U, farbe.mul(U.umgebung));
     }
 
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
@@ -3719,7 +3733,8 @@ AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
 // Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
 AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17] · nachtGrad −32
 // Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
-// nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
+// nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges; zwischen zwei Malungen trägt die Folge
+// (`U.umgebung`, licht-stetig) ihre Helligkeit stetig zum Licht jetzt, die Malung nur noch die Gestalt. Bis w4-licht-uhr 6 000 ms Wanduhr: der
 // Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
 // Stufen nach, auf der GTX alle ~8 Spiel-Sekunden, auf swiftshader jede — das Bild sprang je Gerät anders (licht.K5 GTX
 // 0,230 EV/s, takt24c). Im steilsten Anstieg (β ×1,13 je Sekunde) wächst er 0,11 EV je Sekunde: eine halbe Welt-Sekunde hält
