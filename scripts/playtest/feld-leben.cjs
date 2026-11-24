@@ -83,7 +83,7 @@ async function checkBandV1727WritableField({ page, check }) {
         return k;
     });
     const zeilen = [];
-    if (probe) await feldFolgeSteht(page, (n, g, d) => zeilen.push({ n, g, d: String(d) }), "Selbsttest", 1500);
+    if (probe) await feldFolgeSteht(page, (n, g, d) => zeilen.push({ n, g, d: String(d) }), "Selbsttest", 6); // 6 Gänge: die Linse fällt beim Namen, ohne auf die Frist eines Bands zu warten
     await page.evaluate(() => {
         const P = window.__folgeProbe;
         delete r._bestandGauSteht;
