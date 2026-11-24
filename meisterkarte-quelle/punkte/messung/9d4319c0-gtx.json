@@ -1,7 +1,7 @@
 {
  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
  "geraet": "gtx",
- "zeit": "2026-11-24T05:05:32.307Z",
+ "zeit": "2026-11-24T05:17:29.368Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -73,10 +73,147 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.75 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Bastion R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalter · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.66,
+   "gpu": "nvidia/pascal",
+   "konsum": "kb3479b59188a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 38.6,
+   "fremd": {
+    "s": 41.7,
+    "takte": 19,
+    "fremdS": 15.55,
+    "kerne": 0.373,
+    "fensterKerne": 0.572,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.44
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-9d4319c0-w061225 x listen/kandidat-gtx-9d4319c0-w061225.txt",
+      2.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.78
+     ]
+    ],
+    "dienerS": 12.08,
+    "diener": [
+     [
+      "dwm.exe",
+      6.05
+     ],
+     [
+      "System",
+      3.33
+     ]
+    ],
+    "geraetS": 10.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.11
+     ],
+     [
+      "svchost.exe",
+      2.98
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 98.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T05:15:30.108Z",
+   "abdruck": "1f11a392d802",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "keb55c8f1f18b": "bVRdb6MwEPwvebwe3SRAMJb64JZIqXQfzU9YmzXQEIhsCKec7r+fSOIkQPcJmRnveHbsv7MDqh1m9Pxp62rGZ99m32cWj+RZMkcyz592xmexWizJ5+JSIIR462HKFIfGQllIQFlhvievNQ0V5bM601BSkDIO3VpkHwAaTpB0Ly9jaikprb0GNd2IIUt1yMfA1mYoycNWn5tdweHcX0jN4VwsEb8TuFX3U4iPQAcfLBltJrFKh2rjVRhRyN87IdZiojItkBqvLCrr+i7SKNZz/tBrwjHYeSekvCRzJRFbLALpxL72dvbWjIi6bK0dNGN+Gi4ZB4jH2IxsofLGO5haUnWFy3gZLZC/Tt3ODq2nHxWhlMjk2OscqcrIDDTMfaVXCw5/2HjTHe7JoFdh7ryc+9FS3r0BgM1US3kWfm5xFx6EKQ6I/VDhCCBc/I790ub2160nmbjXdtLMqrww+6FNOqDl3Oc/ptJsjikZb1fb5oZmASKx6y1IQGxFH65xsOz9UI6HiOwhKMBAbCYe2lo3HRryskPrwhJQGIVciPcJuMH93uVf+4GvxgO0TR/wRxlh5Gu24gBPlwsyPfTlOngnKkpH0joI4slNPBrceygzU2jtJi5DpeOvAtpR2Xiyrhtnh2SkiYMP1eOQf3W9reuHGSZdrdZv2VYMay3Gus8datPcTipXcx1w3QelUxN0YRqvQ5U7+FJLwph/AT2RKSmjgY0yYnEf7U49KA3cx9MguKfJlE8F9QZXtrVuyAoDGfIvRtKR2Umsdk7mPFKrS/xef4vN0JRk+8ESgG646me9n0kurhsfSMHB1LroXz/IsbU5ls396f/3Hw==",
-  "k2b071f9725eb": "jVXBjpswEP2XHLv1mgQIxtIenCVqtlJ3E6lSz2MzBjYEIhtCN1X/vSIJSYA9dA4ImTeeN2+ezZ/JHtQWEnx8t2Ux4ZMvk68TCwckFs0BzeO7nfBJqKYzdLk4BxVCfGthymT7ytI8kxRkAekOSW0qzPJHdUoDiV7MOG2WIllTqumRRo24xrN4ehpuk0uMS1KBxusmPou1z4fA2iYgkUCtT4UvYN9xp1JzegoWibeIXqP5IcTa096aRYPNJBRxn3k49wP0+UsjxHLMMs4AK5Jnhe3qTuMg1A6/qzXKMdCQI2Cao7kkIZtOPdmRXbSStDINEnVeW9srxtzYnzFOaTjEJmgzlVZkb0qJxQUuw1kwBb5oRn0k+5roe0YgJTA51DoFLBI0PQ6Oq/R8yulvNtx0Czs0QApIOy0dN5jJmzaU0tWYS34ifipxI+75MfQS26G2z85C9NAura5fu/UoudlMbEbFrEozs+vLpD2cOe6wd5tCjIZsS1tdkcwDQHY5DREVG9Eaa2gqe2uoywMAdmcSyqhYjfSzpa4aMEiSfd0ZxUM/8LlIRq6yFex2nfe167lq1EDVmvuehh+4ms05pQ/nwzGexfkokCNmeZekteeFPn9eeEPwwcCOgExMpnU3cekrHX5m0AbzisiyrDpJJEONnLq0uB/yayMWiVjeRvg9+ijZr4+tK/rxKpafVShNde1Wzh3tcX3qVA3JN5mpSAMq7eAzLRHCoYhHNDkm2JNRBixsbd2oG53I614eeqY9jqZ8zLAVuLC17YaswJP+2R2XS/Klf/U0aLYSim1H1QnUvLVhlIg3sbpTZSVefjrrRvxfLMWmLbJHRfem1Fl7G9IUaptCXt1+C3//AQ=="
+  "k2b071f9725eb": "jVXBjpswEP2XHLv1mgQIxtIenCVqtlJ3E6lSz2MzBjYEIhtCN1X/vSIJSYA9dA4ImTeeN2+ezZ/JHtQWEnx8t2Ux4ZMvk68TCwckFs0BzeO7nfBJqKYzdLk4BxVCfGthymT7ytI8kxRkAekOSW0qzPJHdUoDiV7MOG2WIllTqumRRo24xrN4ehpuk0uMS1KBxusmPou1z4fA2iYgkUCtT4UvYN9xp1JzegoWibeIXqP5IcTa096aRYPNJBRxn3k49wP0+UsjxHLMMs4AK5Jnhe3qTuMg1A6/qzXKMdCQI2Cao7kkIZtOPdmRXbSStDINEnVeW9srxtzYnzFOaTjEJmgzlVZkb0qJxQUuw1kwBb5oRn0k+5roe0YgJTA51DoFLBI0PQ6Oq/R8yulvNtx0Czs0QApIOy0dN5jJmzaU0tWYS34ifipxI+75MfQS26G2z85C9NAura5fu/UoudlMbEbFrEozs+vLpD2cOe6wd5tCjIZsS1tdkcwDQHY5DREVG9Eaa2gqe2uoywMAdmcSyqhYjfSzpa4aMEiSfd0ZxUM/8LlIRq6yFex2nfe167lq1EDVmvuehh+4ms05pQ/nwzGexfkokCNmeZekteeFPn9eeEPwwcCOgExMpnU3cekrHX5m0AbzisiyrDpJJEONnLq0uB/yayMWiVjeRvg9+ijZr4+tK/rxKpafVShNde1Wzh3tcX3qVA3JN5mpSAMq7eAzLRHCoYhHNDkm2JNRBixsbd2oG53I614eeqY9jqZ8zLAVuLC17YaswJP+2R2XS/Klf/U0aLYSim1H1QnUvLVhlIg3sbpTZSVefjrrRvxfLMWmLbJHRfem1Fl7G9IUaptCXt1+C3//AQ==",
+  "kb3479b59188a": "bVVhj6IwEP0vfry9blVASpP9UBcT97KX1Z8wLVNgRTAt2IuX++8XVFTA+dTAm5nXN2/g7+QAagcpvn7bqpzwyY/Jz4mFIxKL5ojm9dtO+CRSszl6XFyCCiHeW5gy+aG2tMglBVlCtkfSmBrz4lWd00CinzBO3UqkG0o1PdHYiVusxNvbsEwhMalIDRpvRQKW6IAPgY1NQSKBRp8bX8HB1JtJzek5WCy+YnoL91uIja/9DYvb5oOCEsqkzz5aBCEG/MM9ZZrkgDUp8tJ2vWdJGOkpf+g3yjHgyAkwK9Bck5DNZr7sCC9bWVqpBom6aKztNWNeEswZpzQaYlO0ucpqcjCVxPIKl9E8nAFfutE90kND9CMjkBKYHOqdAZYpmh6Hqaf0YsbpHzYsuoM9GiAlZJ2WUy+cy7s2lNL1mEtxJn5ucSfuBwn0EtvB0iOlnY3aM2Xr29vueZzerSa2o2ZWZbnZ92XSPs6nHv8cU7MZJGjIrrL1Dc18AGTXrYip2IrWYPEw836pLg8A2INRKKNiPdLQVrp2YJCkh6Yzi49BGHAhPkbgGvb7bge053tqOEBbtwZ/pBGEnmYLTunLZUnGl76sAzlhXnRJWvt+NNrGo4E9AZmaXOtu4jJQOnpmUIdFTWRV1Z0ckqHGVo7yccgbd/lG3CN2lVq9p1vRj5UY8j53qEx9u6lcTLXPdWsUp0bo3NTEgco6+FxLhIg/gZ7QFJhiT0YZsqi1tlMPTP3u8NIz7mk05VOOrcClbWw3ZAW+DPiTkTg0OwnlrqM5DdWC8V9CiOWXWPdFibcbFtNheK7V8zMT18IHVPRgKp23Xz+aQWMzKOr7r+Dffw==",
+  "kec8d4d7e00d6": "jVXBjpswEP2XHNuyJsEEY2kPzhI1e+huVqrU89iMgQ2ByIbQTdV/r0hCCLCHzgEh88bz5s2z+TM7gNpBgg/vtixmfPZl9m1m4YiORXNE8/BuZ3wWqvkCPS4uQYQQ31uYMtmhsiTPJAFZQLpHpzYVZvmDOqeBRBozTpq1SLaEaHIiUSNu8SQeH8fb5BLj0qlA420Tn8Xa52NgbROQ6ECtz4WvYN/15lJzcg4WideI3KL5IcSWarpl0WgzCUU8ZB4u/QB9/twIsZ6yjDPAysmzwnZ153EQapff1ZrkGGicE2Cao7kmIZvPqezIrlpJWplGiTqvrR0UY17sLxgnJBxjE7SZSivnYEqJxRUuw0UwB75qJn0kh9rR94xASmByrHUKWCRoBhxcT+nlnJPfbLzpDvZowCkg7bR0vWAhe20IIZspl/xM/FyiJ079GAaJ7VDbZ2chcmyXNrev3XqU9DYTb5NiVqWZ2Q9l0hQXrjfu3aYQo3F2pa1uSEYBkF1PQ0TEm2iNNTaV7Rvq8gCA3ZmEMCI2E/1sqasGDDrJoe6MQtEPfC6SiatsBft9533tUU9NGqhac9/T8ANPsyUn5OvlcExncTkKzgmzvEvSmtLQ508rOgYfDewdkInJtO4mLn2lw88M2mBeObIsq04SyVAjJx4p7of80ohVItb9CLfRR8l+few8MYwXsf6sQmmqW7dy6WrK9blTNSbfZKZyGlBpB19oiRCORTyhyTHBgYwyYGFr60b1dCLavXwdmPY0mfIpw1bgwta2G7ICKv2LO66X5PPw6mnQ7CQUu46qG6hla8MoEa9ic6fKRjz/dLeN+L9Yi7e2yAEVOZhSZ+1tSFKobQp51f8W/v4D"
+ },
+ "ungemessen": {
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.5,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 1.67,
+    "kerne": 0.777,
+    "fensterKerne": 0.777,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.42
+     ],
+     [
+      "Explorer.EXE",
+      0.39
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.22
+     ]
+    ],
+    "dienerS": 0.72,
+    "diener": [
+     [
+      "dwm.exe",
+      0.3
+     ],
+     [
+      "System",
+      0.27
+     ]
+    ],
+    "geraetS": 1.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.2
+     ],
+     [
+      "SearchIndexer.exe",
+      0.06
+     ]
+    ],
+    "eigenS": 4.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T05:17:29.368Z",
+   "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
