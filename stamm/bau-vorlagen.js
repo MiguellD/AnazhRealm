@@ -1304,6 +1304,32 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
+            // DAS SCHILD (ort-ausstattung) — das Wort eines Sonderbaus an seiner Tür-Wand (fachwerk `ortAusstattung`, ein Stück am
+            // Haus des Exports `gegenstaende`), gehoben MIT seinem Haus (`_spawnSettlementSlot`). Die GESTALT baut das Gesetzbuch
+            // (fachwerk AUSSTATTUNG `schild`: der Ausleger des Gewerbes, die Tafel, die Inschrift in Stein — Rolle und Jahr wählen
+            // sie, die Welt stempelt sie als `__gestalt`); der Ursprung liegt im Boden vor der Wand, +x zeigt zur Wand (armM 0,4 m,
+            // wie die Wandlaterne). Die Parts sind seine Substanz über dem Kopf des Spielers: das Brett des Auslegers und sein Arm.
+            schild_dorf: {
+                name: "schild_dorf",
+                etikett: ["bau.schild"],
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "schild",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -0.3, y: 2.74, z: 0 },
+                        size: { x: 1.0, y: 0.28, z: 0.035 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: -0.1, y: 3.0, z: 0 },
+                        size: { x: 1.0, y: 0.03, z: 0.03 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: {
                 name: "felsbogen",

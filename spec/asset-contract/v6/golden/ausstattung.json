@@ -182,6 +182,366 @@
       "vertices": 72,
       "sha256": "430e2ffb5f69bb37abc90392644a468dc3a9311890a54120463f15ee268a3504"
     },
+    "schild-s1-L0": {
+      "objects": 2,
+      "vertices": 2112,
+      "sha256": "02503a41271d13e8a00da7f6e4d6e8b915299b515b8f68c7f7cacd51f777b6fd"
+    },
+    "schild-s1-L1": {
+      "objects": 2,
+      "vertices": 376,
+      "sha256": "826c75c334121840764da28d4a3c2f4e215973dac07c9aa8109fabdf8186fda8"
+    },
+    "schild-s1-L3": {
+      "objects": 1,
+      "vertices": 96,
+      "sha256": "7e4a3d01dcc21bd86bdf62cf58dc2ec880caa2339c6550d5f37cce4424ff4561"
+    },
+    "schild-s2-L0": {
+      "objects": 2,
+      "vertices": 2256,
+      "sha256": "d46ec8944e3861b751ad17e10c750bb6a40b44df20b996075b4b0f0042a0e804"
+    },
+    "schild-s2-L1": {
+      "objects": 2,
+      "vertices": 400,
+      "sha256": "8a2ed841c887d7f4a846454e150a6b0f7bd9c3048ad401a999a905cac96ac438"
+    },
+    "schild-s2-L3": {
+      "objects": 1,
+      "vertices": 96,
+      "sha256": "f67e4886b22a833a965a141bf7c20b3d1443e5356d37e1faf3d5746dfcf7b7b5"
+    },
+    "schild-s3-L0": {
+      "objects": 2,
+      "vertices": 2400,
+      "sha256": "0bf3f78d2bd1cfa9f2810c4fa89329464a3aeba99a72160f32b4521eb3d871eb"
+    },
+    "schild-s3-L1": {
+      "objects": 2,
+      "vertices": 424,
+      "sha256": "b871c15806a53cb8313b7911d9febdbe8237c3b6d2b36c5856c0843ceddca864"
+    },
+    "schild-s3-L3": {
+      "objects": 1,
+      "vertices": 96,
+      "sha256": "17f837f9a4503aaf10dc14ccd8f0db2f748cf529813d43f60a3fe19099440835"
+    },
+    "schild-s4-L0": {
+      "objects": 2,
+      "vertices": 2496,
+      "sha256": "e9fd76b56a6663d9d89f5fa6cfab60df9f7b6ae60390d40d67d7834198c21e75"
+    },
+    "schild-s4-L1": {
+      "objects": 2,
+      "vertices": 440,
+      "sha256": "c2c33ad7ade6b264b704ccbc884ff35d5cd68faf56c0f529e33777270e1be7db"
+    },
+    "schild-s4-L3": {
+      "objects": 1,
+      "vertices": 96,
+      "sha256": "f67e4886b22a833a965a141bf7c20b3d1443e5356d37e1faf3d5746dfcf7b7b5"
+    },
+    "schild-s5-L0": {
+      "objects": 2,
+      "vertices": 2544,
+      "sha256": "320d402b15be106c57c1022f53e43b5566a0a267426084bf78432a6c386514a0"
+    },
+    "schild-s5-L1": {
+      "objects": 2,
+      "vertices": 448,
+      "sha256": "201739d90531fb5365ccbb2a1120e3a9d5475ea4119a8a4a8e09bad25a3605bd"
+    },
+    "schild-s5-L3": {
+      "objects": 1,
+      "vertices": 96,
+      "sha256": "7e4a3d01dcc21bd86bdf62cf58dc2ec880caa2339c6550d5f37cce4424ff4561"
+    },
+    "schild-s6-L0": {
+      "objects": 1,
+      "vertices": 1080,
+      "sha256": "de95ce696ec53c188cadc73a8fe7220737865cd4ecbefc1c96b7aa9f882c7087"
+    },
+    "schild-s6-L1": {
+      "objects": 1,
+      "vertices": 188,
+      "sha256": "8897f8e38b11f5dc4e2f3cf486b2eb7bb2cdde033c911a8776079caa74482372"
+    },
+    "schild-s6-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "7d72bdb0f7076758cc6061f686fd2f86f510e1f2788e605c42adba8f537e0c84"
+    },
+    "schild-s7-L0": {
+      "objects": 1,
+      "vertices": 912,
+      "sha256": "3cbe2ff252b2d4370b45f8e5646abf8a5d38e6a4fc576bcaf19b6fa7d8ea28ae"
+    },
+    "schild-s7-L1": {
+      "objects": 1,
+      "vertices": 160,
+      "sha256": "0f8235948d9822e915bfb2ae93762116b3a66e7dbab75e57949d9c537792f644"
+    },
+    "schild-s7-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "f4eab46262c1e1dd7dd60bfdd21f3652ad6ba4388d0ca76643f879be3ef11dfd"
+    },
+    "schild-s8-L0": {
+      "objects": 1,
+      "vertices": 1080,
+      "sha256": "66190e1d7deeec548e3348348e003c5e13f704304a3a769574d444c31aabbc3d"
+    },
+    "schild-s8-L1": {
+      "objects": 1,
+      "vertices": 188,
+      "sha256": "5455882a16f54dab1a3c97ea5f2b96f06b197c670e8330cc99cde6867c3b38a9"
+    },
+    "schild-s8-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "276a5f0a54078681c43cb9dfc3000a6d63d285245702e917bb5acf95c0bc3cdb"
+    },
+    "schild-s9-L0": {
+      "objects": 1,
+      "vertices": 1104,
+      "sha256": "a38dd26bed0c90b3a9f7e8efb26b719a0a72c4af54c6886a8d05881fd5628cd9"
+    },
+    "schild-s9-L1": {
+      "objects": 1,
+      "vertices": 192,
+      "sha256": "b222c508b59e6926ea0a4495931e1b612ee8d7d538c4477d22431c529b43e927"
+    },
+    "schild-s9-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "e6d8d73832675a960f1f23c06b2287e06040e275e5120673d5457239eaa2b621"
+    },
+    "schild-s10-L0": {
+      "objects": 1,
+      "vertices": 1296,
+      "sha256": "db68e8ab99ae7691a6eae5c47a6b74cfc663456def1eea03e422d78113b1ff56"
+    },
+    "schild-s10-L1": {
+      "objects": 1,
+      "vertices": 224,
+      "sha256": "eba416a852ebfbc6758d6e211a5fe782fb36f75aae098d65bfca4f77cf6f3dfa"
+    },
+    "schild-s10-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "e6d8d73832675a960f1f23c06b2287e06040e275e5120673d5457239eaa2b621"
+    },
+    "schild-s11-L0": {
+      "objects": 1,
+      "vertices": 1056,
+      "sha256": "1e937a4c67e7902e67153bda36049e5d8f77477a4b627ccd23c81fd701956120"
+    },
+    "schild-s11-L1": {
+      "objects": 1,
+      "vertices": 184,
+      "sha256": "d50c9d2ab054b6495f7f15a0588b650fc18ed328b03277e5ffd27bc3cfb29dbb"
+    },
+    "schild-s11-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "7d72bdb0f7076758cc6061f686fd2f86f510e1f2788e605c42adba8f537e0c84"
+    },
+    "schild-s12-L0": {
+      "objects": 1,
+      "vertices": 576,
+      "sha256": "11e7c96b1d74daae79d7a6b4ea88aa1c44c19a4a5967ba776fde8b26da4da7b5"
+    },
+    "schild-s12-L1": {
+      "objects": 1,
+      "vertices": 104,
+      "sha256": "3e8b120ad75a85ce9769c40898f0b1ab24b5e09a44698b3ee64b9f0208fad0fa"
+    },
+    "schild-s12-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "746d417a7df4372d62c28cb357610f3db1b206bbe01534d5ba1f736421d0dc36"
+    },
+    "schild-s13-L0": {
+      "objects": 1,
+      "vertices": 720,
+      "sha256": "298ab88c48a991052e9b1fe78dbed26bc6f6d5ef044ed6d5dcfa32e5f8eb0ef8"
+    },
+    "schild-s13-L1": {
+      "objects": 1,
+      "vertices": 128,
+      "sha256": "109642e44c481aef325e18619bd8d9f8d5b6df0566c8dff441cc3bb189e3590c"
+    },
+    "schild-s13-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "8544be351442ad184beb974d0a6752cf60be0dc743120482b9b932278884993e"
+    },
+    "schild-s14-L0": {
+      "objects": 1,
+      "vertices": 936,
+      "sha256": "d7a58978d2823bb7f24c8266358e8433f002e8a2f69f885e02232307ac8d236d"
+    },
+    "schild-s14-L1": {
+      "objects": 1,
+      "vertices": 164,
+      "sha256": "08e57bd39ad8811d0b7be0ddad23db0c5137d61183e70a64ecc163aa2af5d72e"
+    },
+    "schild-s14-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "73b0f9455150e9c6fd929c7325d684fdfe8fbbf1f9a4877b235c780801dc8e9c"
+    },
+    "schild-s15-L0": {
+      "objects": 1,
+      "vertices": 888,
+      "sha256": "c730847f3fa719b89c4415a5b1d55ba52e2bcf8eafc29396561273136dec304f"
+    },
+    "schild-s15-L1": {
+      "objects": 1,
+      "vertices": 156,
+      "sha256": "55134f327b597f76aca94ca445863bb47972fff023ef89cae935bc1835a87c1a"
+    },
+    "schild-s15-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "73b0f9455150e9c6fd929c7325d684fdfe8fbbf1f9a4877b235c780801dc8e9c"
+    },
+    "schild-s16-L0": {
+      "objects": 1,
+      "vertices": 936,
+      "sha256": "5c5f960f4356d50a91971cb573bbdadc673350dffb41029ae8e4701bb8cc4aea"
+    },
+    "schild-s16-L1": {
+      "objects": 1,
+      "vertices": 164,
+      "sha256": "8b720f078f64ccb30ea0f0a6c5b7dd1407eb33a8af8f953420541ad8aad1f622"
+    },
+    "schild-s16-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "dd3a6d3a7b6a6a7880d05309512d183035442ccb34d425d644b054518e7f1c4e"
+    },
+    "schild-s17-L0": {
+      "objects": 1,
+      "vertices": 912,
+      "sha256": "250c51e13ea0a41b0b75d318b5a52073ea6fc2f5963b1101f02aea8fb097f472"
+    },
+    "schild-s17-L1": {
+      "objects": 1,
+      "vertices": 160,
+      "sha256": "034896a184da9eda7b2de70087fad6a36ba9b4f4196fa05a3daa74da92487b39"
+    },
+    "schild-s17-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "73b0f9455150e9c6fd929c7325d684fdfe8fbbf1f9a4877b235c780801dc8e9c"
+    },
+    "schild-s18-L0": {
+      "objects": 1,
+      "vertices": 1344,
+      "sha256": "a532da120ca3785f2c863b37c6b921374ff57a5c7e67c0ca56cd165be54f76a5"
+    },
+    "schild-s18-L1": {
+      "objects": 1,
+      "vertices": 232,
+      "sha256": "44793db3f72a066873244bc021dd987d3c71d46e4f8854de89b4c557708b345f"
+    },
+    "schild-s18-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "11494f4999d10c0a3dca0bed7feb4ecf3a3e5939667283ca0c00e51f5f7501ab"
+    },
+    "schild-s19-L0": {
+      "objects": 1,
+      "vertices": 672,
+      "sha256": "26d7210c2668074d3e407821c06113f2c6d161adc960b8ce8ed99287e899fd67"
+    },
+    "schild-s19-L1": {
+      "objects": 1,
+      "vertices": 120,
+      "sha256": "7fa59bc3a899c9ecc9b03eaa21f756ed00db916247a6bbbdd3809ef9b4d95164"
+    },
+    "schild-s19-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "fe24e6159ab781150d9bb0b1513f60263b2d4850f659a654dec95f1d96edd442"
+    },
+    "schild-s20-L0": {
+      "objects": 1,
+      "vertices": 1008,
+      "sha256": "a9a7c458ce338246ba8b974703ec333c63e243caa9730bbfd5937b34876abb82"
+    },
+    "schild-s20-L1": {
+      "objects": 1,
+      "vertices": 176,
+      "sha256": "ec67bd0c34d121a5edc1b3b8455fef6b59b02f86bdefee76fbc758c0217b42e6"
+    },
+    "schild-s20-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "276a5f0a54078681c43cb9dfc3000a6d63d285245702e917bb5acf95c0bc3cdb"
+    },
+    "schild-s21-L0": {
+      "objects": 1,
+      "vertices": 1080,
+      "sha256": "0e4e783988067eb878096d10bdf5a67a41257403901f817d29a3ad89a75c6c08"
+    },
+    "schild-s21-L1": {
+      "objects": 1,
+      "vertices": 188,
+      "sha256": "b18e53e0075f4b45aa609cbb030664d173049263de783362e0677eb4288f17cb"
+    },
+    "schild-s21-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "276a5f0a54078681c43cb9dfc3000a6d63d285245702e917bb5acf95c0bc3cdb"
+    },
+    "schild-s22-L0": {
+      "objects": 1,
+      "vertices": 1152,
+      "sha256": "e7122e95ffc79897c6409e088879dc38d57a31ad8bfc872ea14b36cd0cd8845c"
+    },
+    "schild-s22-L1": {
+      "objects": 1,
+      "vertices": 200,
+      "sha256": "119e57c58e817b64048d983c65ffd07ec079ccfdb9bea805f7b3feff25f1d78c"
+    },
+    "schild-s22-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "ace27ea870940aeb375e6d48b1fe6bbb400d2c081f472f899d79b1ef9d891d7b"
+    },
+    "schild-s23-L0": {
+      "objects": 1,
+      "vertices": 1200,
+      "sha256": "191fd9694c9aca7bd991fd5084a79fdc5ff8d47301520be1cb4c211c3a3e623f"
+    },
+    "schild-s23-L1": {
+      "objects": 1,
+      "vertices": 208,
+      "sha256": "183014b397ee5d582bdf4c697de503aa04ceb6f492cf141200c23f0feaa38ad2"
+    },
+    "schild-s23-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "dcf009397695a3df0cbfb4dbc7046ebf45e66202005df90663e73e46836d87c7"
+    },
+    "schild-s24-L0": {
+      "objects": 1,
+      "vertices": 1224,
+      "sha256": "e5e95ed430fa4545ea9c0c8e8d293097f11e6411a921fcbb01888868579dabe3"
+    },
+    "schild-s24-L1": {
+      "objects": 1,
+      "vertices": 212,
+      "sha256": "7d27323c55eeddd9a58115ef7066d006a96e613daa0ee8ea65a38268d2347558"
+    },
+    "schild-s24-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "dcf009397695a3df0cbfb4dbc7046ebf45e66202005df90663e73e46836d87c7"
+    },
     "feuerstelle-s1-L0-ov_fuelle": {
       "objects": 4,
       "vertices": 906,

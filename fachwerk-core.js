@@ -7504,6 +7504,10 @@
             fx: {
                 place: { mode: "site", siteTag: AUSSTATTUNG[_aus].siteTag },
                 tritt: Object.assign({}, AUSSTATTUNG[_aus].tritt),
+        // DAS SCHILD (ort-ausstattung, rein additiv): das Wort der Rolle am Sonderbau — der Ausleger des Gewerbes, die Tafel an der
+        // Wand, die Inschrift im Stein; je Gestalt EIN Wort in EINER Form (`schildArt`), gesetzt von `ortAusstattung`. Es hängt
+        // an der Wand wie die Wandlaterne (+x zur Wand, die Wand in armM); der Tritt ist die Platte an der Wand.
+        schild: { lab: "Schild · Ausleger, Tafel, Inschrift", gestalten: 24, siteTag: "wand", salz: 0x7b3e, tritt: { typ: "kreis", r: 0.12 } },
             },
         };
         // das Emitter-Datum der Quelle reist als fx-Daten (JSON-klonbar, must-ignore; K11)
@@ -9054,6 +9058,207 @@
             zP = ausZufall(seed, 0xc2),
             zK = ausZufall(seed, 0xc3);
         var stein = function (geo, ton) {
+    // ═══ DER ORT WEIST SICH AUS (ort-ausstattung) — DAS SCHILD: das Wort der Rolle am Sonderbau ═══
+    // DIE SCHRIFT DES SCHILDS (5 × 7 Punkte, je Zeile 5 Bit, das höchste links, die Zeile 0 oben; Schritt 6 Punkte)
+    var SCHRIFT_5X7 = {
+        A: [0x0e, 0x11, 0x11, 0x1f, 0x11, 0x11, 0x11], B: [0x1e, 0x11, 0x11, 0x1e, 0x11, 0x11, 0x1e], C: [0x0e, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0e],
+        D: [0x1c, 0x12, 0x11, 0x11, 0x11, 0x12, 0x1c], E: [0x1f, 0x10, 0x10, 0x1e, 0x10, 0x10, 0x1f], F: [0x1f, 0x10, 0x10, 0x1e, 0x10, 0x10, 0x10],
+        G: [0x0e, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0f], H: [0x11, 0x11, 0x11, 0x1f, 0x11, 0x11, 0x11], I: [0x0e, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0e],
+        J: [0x07, 0x02, 0x02, 0x02, 0x02, 0x12, 0x0c], K: [0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11], L: [0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1f],
+        M: [0x11, 0x1b, 0x15, 0x15, 0x11, 0x11, 0x11], N: [0x11, 0x11, 0x19, 0x15, 0x13, 0x11, 0x11], O: [0x0e, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0e],
+        P: [0x1e, 0x11, 0x11, 0x1e, 0x10, 0x10, 0x10], Q: [0x0e, 0x11, 0x11, 0x11, 0x15, 0x12, 0x0d], R: [0x1e, 0x11, 0x11, 0x1e, 0x14, 0x12, 0x11],
+        S: [0x0f, 0x10, 0x10, 0x0e, 0x01, 0x01, 0x1e], T: [0x1f, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04], U: [0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0e],
+        V: [0x11, 0x11, 0x11, 0x11, 0x11, 0x0a, 0x04], W: [0x11, 0x11, 0x11, 0x15, 0x15, 0x15, 0x0a], X: [0x11, 0x11, 0x0a, 0x04, 0x0a, 0x11, 0x11],
+        Y: [0x11, 0x11, 0x11, 0x0a, 0x04, 0x04, 0x04], Z: [0x1f, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1f],
+    };
+    // Die Lettern eines Worts als Rechtecke {u0, u1, v0, v1} in Punkten (u nach rechts, v nach oben, die Grundlinie v = 0): je
+    // Zeile die Läufe gesetzter Punkte, senkrecht gleiche Läufe verschmolzen (das I ist drei Rechtecke, kein Stapel aus sieben).
+    function schriftRechtecke(wort) {
+        var R = [];
+        for (var c = 0; c < wort.length; c++) {
+            var G = SCHRIFT_5X7[wort.charAt(c)];
+            if (!G) continue;
+            var offen = {};
+            for (var r = 0; r < 7; r++) {
+                var neu = {};
+                for (var a = 0; a < 5; ) {
+                    if (!((G[r] >> (4 - a)) & 1)) {
+                        a++;
+                        continue;
+                    }
+                    var b = a;
+                    while (b < 5 && (G[r] >> (4 - b)) & 1) b++;
+                    var q = offen[a * 8 + b];
+                    if (q) q.v0 = 6 - r;
+                    else R.push((q = { u0: c * 6 + a, u1: c * 6 + b, v0: 6 - r, v1: 7 - r }));
+                    neu[a * 8 + b] = q;
+                    a = b;
+                }
+                offen = neu;
+            }
+        }
+        return R;
+    }
+    // DAS SCHILD-GESETZ: die Rolle spricht ihr Wort — das Gewerbe am Ausleger quer zur Gasse (lesbar, wer die Gasse entlang geht),
+    // Amt und Handel an der Tafel über der Tür, Kult, Herrschaft und Tor in der Inschrift des Steins. Je Rolle EINE Gestalt
+    // (1…19), dazu die fünf Gewerbe an der Tafel (20…24): nach dem Verbot der Ausleger hängt das Gewerbe flach an der Wand
+    // (das Gasthaus behält sein Zeichen), und wo die Traufe den Ausleger schneidet, auch. Das Schild hängt neben (Ausleger) oder
+    // über der Tür (Tafel, Inschrift); der Ort setzt es (`ortAusstattung`), der Bau prüft es an den Massen des Hauses.
+    // Band: USSC 1 Zoll Letter je 10 Fuß Lesedistanz (0,14 m → 17 m) · Kopfhöhe 2,6 m über dem Weg (Nottinghamshire CC, Ausleger über dem Gehweg) · Westminster Paving Act 1762 (die Ausleger fallen, das Schild liegt an der Wand)
+    var SCHILD_GESETZ = { letterM: 0.14, randM: 0.07, dickeM: 0.035, steinM: 0.06, kopfM: 2.6, tafelM: 2.7, abstandM: 0.18, armM: 0.12, tafelAb: 1762, nebenTuerM: 1.1 };
+    var SCHILD_WORT = ["gasthaus", "schmiede", "werkstatt", "backhaus", "gerberei", "kaufhaus", "kontor", "speicher", "zunfthaus", "pfarrhaus", "zeughaus", "halle", "wache", "rathaus", "torhaus", "kirche", "kapelle", "bergfried", "burg"];
+    var SCHILD_GEWERBE = 5; // die ersten fünf Wörter: das Gewerbe am Ausleger
+    var SCHILD_STEIN = 13; // ab hier die Inschrift im Stein
+    function schildArt(gestalt) {
+        var i = ((((gestalt | 0) - 1) % 24) + 24) % 24;
+        if (i >= SCHILD_WORT.length) return { wort: SCHILD_WORT[i - SCHILD_WORT.length], form: "tafel" };
+        return { wort: SCHILD_WORT[i], form: i < SCHILD_GEWERBE ? "ausleger" : i < SCHILD_STEIN ? "tafel" : "inschrift" };
+    }
+    // Die Gestalt des Schilds einer Rolle im Jahr `jahr` (0: die Rolle trägt kein Wort); `flach` erzwingt die Tafel des Gewerbes.
+    function schildGestalt(rolle, jahr, flach) {
+        var i = SCHILD_WORT.indexOf(rolle);
+        if (i < 0) return 0;
+        if (i < SCHILD_GEWERBE && (flach || (jahr >= SCHILD_GESETZ.tafelAb && rolle !== "gasthaus"))) return SCHILD_WORT.length + 1 + i;
+        return i + 1;
+    }
+    // DIE MASSE DES SCHILDS (Ursprung der Anker armM vor der Wand, +x zur Wand, die Wand in x = A, y = 0 der Weg): das Wort in
+    // Punkten `px`, die Breite `tw`, das Brett bw × bh × d; der Ausleger von x0 bis x1 quer zur Wand, die Tafel an ihr.
+    function schildMass(G, gestalt) {
+        var S = SCHILD_GESETZ,
+            a = schildArt(gestalt),
+            A = LICHT_GESETZ.wandlaterne.armM,
+            hL = S.letterM * (G || 1),
+            px = hL / 7,
+            tw = (a.wort.length * 6 - 1) * px,
+            bw = tw + 2 * S.randM,
+            bh = hL + 2 * S.randM,
+            aus = a.form === "ausleger",
+            y0 = aus ? S.kopfM : S.tafelM;
+        return { a: a, A: A, px: px, tw: tw, bw: bw, bh: bh, d: a.form === "inschrift" ? S.steinM : S.dickeM, y0: y0, x1: A - S.abstandM, x0: A - S.abstandM - bw, yA: y0 + bh + S.armM, aus: aus };
+    }
+    // DIE TEILE DES SCHILDS (EINE Form für Bau, Hülle und Wurf): je Teil Gitter, Rolle und Ton — das Brett (Holz dunkel gestrichen,
+    // im Stein der helle Quader), die Lettern erhaben (nah Kisten, mittel Flächen; gold auf dem Holz, dunkel eingelegt im Stein:
+    // ein Drittel des Steins, im Band der Albedo),
+    // am Ausleger das Eisen (Wandplatte, Arm, nah Strebe und zwei Hänger). Zwei Rollen am Ausleger, eine an Tafel und Stein.
+    function schildTeile(m, fein, kol) {
+        var T = [],
+            A = m.A,
+            S = SCHILD_GESETZ,
+            fa = fein ? 0.008 : 0,
+            stein = m.a.form === "inschrift",
+            brett = stein ? "stein" : "holz",
+            grund = ausAuf(stein ? [0.3, 0.28, 0.24] : [0.06, 0.05, 0.04], brett, kol),
+            letter = ausAuf(stein ? [0.1, 0.092, 0.082] : [0.36, 0.26, 0.08], brett, kol),
+            eisen = ausAuf([0.1, 0.1, 0.095], "metall", kol),
+            lt = fein ? 0.008 : 0.005;
+        var dazu = function (geo, rolle, ton) {
+            T.push({ geo: geo, rolle: rolle, ton: ton });
+        };
+        // eine Letter: nah eine Kiste lt tief, mittel EINE Fläche lt vor dem Brett (n die Normale des Bretts nach außen)
+        var lettern = function (mitte, n, achse) {
+            schriftRechtecke(m.a.wort.toUpperCase()).forEach(function (r) {
+                var w = (r.u1 - r.u0) * m.px,
+                    h = (r.v1 - r.v0) * m.px,
+                    u = ((r.u0 + r.u1) / 2) * m.px - m.tw / 2,
+                    y = m.y0 + S.randM + ((r.v0 + r.v1) / 2) * m.px,
+                    c = [mitte[0] + n[0] * lt * 0.5 + achse[0] * u, y, mitte[2] + n[2] * lt * 0.5 + achse[2] * u];
+                var lx = Math.abs(achse[0]) * w + Math.abs(n[0]) * lt,
+                    lz = Math.abs(achse[2]) * w + Math.abs(n[2]) * lt;
+                if (fein) return dazu(ausSetze(ausKiste(lx, h, lz, 0), c[0], c[1], c[2]), brett, letter);
+                var ex = (Math.abs(achse[0]) * w) / 2,
+                    ez = (Math.abs(achse[2]) * w) / 2,
+                    fx = c[0] + (n[0] * lt) / 2,
+                    fz = c[2] + (n[2] * lt) / 2;
+                dazu(ausVielecke([[[fx - ex, y - h / 2, fz - ez], [fx + ex, y - h / 2, fz + ez], [fx + ex, y + h / 2, fz + ez], [fx - ex, y + h / 2, fz - ez]]], [c[0] - n[0], y, c[2] - n[2]]), brett, letter);
+            });
+        };
+        if (m.aus) {
+            var xc = (m.x0 + m.x1) / 2,
+                xE = m.x0 - 0.05;
+            dazu(ausSetze(ausKiste(m.bw, m.bh, m.d, fa), xc, m.y0 + m.bh / 2, 0), brett, grund);
+            // das Wort auf beiden Seiten, je Seite von links nach rechts (+z: nach +x, −z: nach −x)
+            lettern([xc, 0, m.d / 2], [0, 0, 1], [1, 0, 0]);
+            lettern([xc, 0, -m.d / 2], [0, 0, -1], [-1, 0, 0]);
+            dazu(ausSetze(ausKiste(0.02, 0.36, 0.12, 0), A - 0.01, m.yA - 0.12, 0), "metall", eisen);
+            dazu(ausSetze(ausKiste(A - 0.02 - xE, 0.035, 0.035, fein ? 0.006 : 0), (A - 0.02 + xE) / 2, m.yA, 0), "metall", eisen);
+            if (fein) {
+                var sa = [A - 0.02, m.yA - 0.28, 0],
+                    sb = [m.x1 - m.bw * 0.45, m.yA - 0.02, 0],
+                    sl = Math.hypot(sb[0] - sa[0], sb[1] - sa[1]);
+                dazu(ausStrecke(ausSetze(ausKiste(0.022, sl, 0.022, 0), 0, sl / 2, 0), sa, sb), "metall", eisen);
+                var hH = m.yA - (m.y0 + m.bh);
+                [m.x1 - 0.1, m.x0 + 0.1].forEach(function (hx) {
+                    dazu(ausSetze(ausKiste(0.012, hH, 0.012, 0), hx, m.y0 + m.bh + hH / 2, 0), "metall", eisen);
+                });
+            }
+        } else {
+            dazu(ausSetze(ausKiste(m.d, m.bh, m.bw, fa), A - m.d / 2, m.y0 + m.bh / 2, 0), brett, grund);
+            lettern([A - m.d, 0, 0], [-1, 0, 0], [0, 0, 1]); // wer vor der Wand steht, liest nach +z
+        }
+        return T;
+    }
+    function ausSchild(g, p, seed, stufe, kol) {
+        var m = schildMass(p.groesse, ((seed >>> 0) ^ AUSSTATTUNG.schild.salz) >>> 0),
+            W = p.verwitterung;
+        schildTeile(m, stufe === 0, kol).forEach(function (t) {
+            ausFaerbe(t.geo, t.rolle, W, function () {
+                return { ton: t.ton };
+            });
+            ausTeil(g, t.geo, t.rolle);
+        });
+    }
+    // Der Wurf des Schilds (Stufe 3): die Körper der L0 als Kästen — das Brett samt der erhabenen Lettern, am Ausleger der Arm,
+    // die Wandplatte und die Strebe (je Kasten 12 Dreiecke, der Ausleger 48 = das Budget der Stufe 3)
+    function schildWurf(wahl, p, flaeche) {
+        var m = schildMass(p.groesse, wahl.gestalt),
+            A = m.A,
+            y1 = m.y0 + m.bh,
+            dl = m.d / 2 + 0.008;
+        // ein Kasten aus seinen acht Ecken (e(i, j, k), i/j/k ∈ {0, 1}) als sechs Flächen
+        var kasten = function (e) {
+            return [[e(0, 0, 0), e(1, 0, 0), e(1, 1, 0), e(0, 1, 0)], [e(0, 0, 1), e(0, 1, 1), e(1, 1, 1), e(1, 0, 1)], [e(0, 0, 0), e(0, 1, 0), e(0, 1, 1), e(0, 0, 1)], [e(1, 0, 0), e(1, 0, 1), e(1, 1, 1), e(1, 1, 0)], [e(0, 0, 0), e(0, 0, 1), e(1, 0, 1), e(1, 0, 0)], [e(0, 1, 0), e(1, 1, 0), e(1, 1, 1), e(0, 1, 1)]];
+        };
+        var achsen = function (x0, x1, ya, yb, z0, z1) {
+            return kasten(function (i, j, k) {
+                return [i ? x1 : x0, j ? yb : ya, k ? z1 : z0];
+            });
+        };
+        if (!m.aus) return flaeche(achsen(A - m.d - 0.008, A, m.y0, y1, -m.bw / 2, m.bw / 2));
+        var sa = [A - 0.02, m.yA - 0.28],
+            sb = [m.x1 - m.bw * 0.45, m.yA - 0.02],
+            sl = Math.hypot(sb[0] - sa[0], sb[1] - sa[1]),
+            nx = -(sb[1] - sa[1]) / sl * 0.011,
+            ny = (sb[0] - sa[0]) / sl * 0.011;
+        flaeche(
+            achsen(m.x0, m.x1, m.y0, y1, -dl, dl)
+                .concat(achsen(m.x0 - 0.05, A - 0.02, m.yA - 0.0175, m.yA + 0.0175, -0.0175, 0.0175))
+                .concat(achsen(A - 0.02, A, m.yA - 0.3, m.yA + 0.06, -0.06, 0.06))
+                .concat(
+                    kasten(function (i, j, k) {
+                        var b = i ? sb : sa,
+                            s = j ? 1 : -1;
+                        return [b[0] + s * nx, b[1] + s * ny, k ? 0.011 : -0.011];
+                    })
+                )
+        );
+    }
+    function schildHuelle(wahl, p, dazu, F) {
+        var m = schildMass(p.groesse, wahl.gestalt),
+            A = m.A,
+            brett = m.a.form === "inschrift" ? "stein" : "holz";
+        if (!m.aus) return dazu(huelleTeil("box", A - m.d, A, m.y0, m.y0 + m.bh, -m.bw / 2, m.bw / 2, F(brett)));
+        dazu(huelleTeil("box", m.x0, m.x1, m.y0, m.y0 + m.bh, -m.d / 2, m.d / 2, F(brett)));
+        dazu(huelleTeil("box", m.x0 - 0.05, A, m.yA - 0.0175, m.yA + 0.0175, -0.0175, 0.0175, F("metall")));
+    }
+    // DIE STÜCKE DES ORTS (ort-ausstattung) in den Tafeln der Ausstattung: ihr Wurf, ihre Hülle, ihre Farben — die Gestalt trägt
+    // ihr Wort (ihr Motiv, ihre Epoche) im Samen (`ausWahl`: gestalt = sd ^ salz), Bau, Wurf und Hülle lesen DIESELBE Maß-Funktion.
+    var ORT_STUECK_WURF = { schild: schildWurf },
+        ORT_STUECK_HUELLE = { schild: schildHuelle },
+        ORT_STUECK_FARBE = {
+            schild: function (pick) {
+                return { holz: pick([0x6e5a44, 0x765f48]), metall: pick([0x5e625e, 0x62605c]), stein: pick([0xb4ab9a, 0xa89f8e]) };
+            },
+        };
             geo.translate(0, T, 0);
             ausFaerbe(geo, "stein", W, function () {
                 return { ton: ton };
@@ -9183,6 +9388,7 @@
         // Halbmesser 7,7 cm in 0,20–0,24 m unter der Flamme) — jenseits der nahen Ebene `yL − yK0` warf er ein Achteck von 1,25 m
         // Halbmesser um den Fuß jeder werfenden Laterne (Radeon, Dorf Uhr 0: der Boden-Fleck 0–2 m stand 0,41 EV über 6–8 m).
         // Der Leib reicht bis zum Fuß des Kragens; darunter wirft der Mast (4,5 cm) seinen eigenen Fleck von 0,5 m.
+    AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
         var unten = m.yKr != null ? Math.min(m.yKr, m.yK0) : m.yK0;
         return unten < m.yL ? Math.max(m.yL - unten, m.yK1 - m.yL, m.kb / 2) : 0;
     }
@@ -9343,6 +9549,10 @@
         var l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]) + (b[2] - a[2]) * (b[2] - a[2]));
         var geo = fein ? ausStrecke(ausDreh([[d / 2, 0], [d / 2, l]], 8, true, true), a, b) : ausStrecke(ausSetze(ausKiste(d, l, d, 0), 0, l / 2, 0), a, b);
         ausFaerbe(geo, "metall", 0, function () {
+    // das Schild (ort-ausstattung): die Maße seines Worts trägt die Gestalt (`schildMass` über `ausWahl`); hier die Wand
+    AUS_MASS.schild = function () {
+        return { A: LICHT_GESETZ.wandlaterne.armM };
+    };
             return { ton: ton };
         });
         ausTeil(g, geo, "metall");
@@ -10032,6 +10242,7 @@
         var teil = function (geo) {
             ausFaerbe(geo, "stein", 0, null);
             ausTeil(g, geo, "stein");
+        if (ORT_STUECK_WURF[rezeptId]) return { gestalt: ((sd >>> 0) ^ AUSSTATTUNG[rezeptId].salz) >>> 0 }; // die Gestalt trägt ihr Wort, ihr Motiv (ort-ausstattung)
         };
         // Der Schatten-Stoff ist beidseitig (der Wirt rendert ihn in die Kaskaden von beiden Seiten): eine Fläche wirft, wie
         // sie steht — der Tisch, die Ablage, die Plane, der Volant, das Dach je EIN Viereck (2 Dreiecke), ein Pfosten als
@@ -10061,6 +10272,7 @@
             for (var sx = -1; sx <= 1; sx += 2) for (var sz = -1; sz <= 1; sz += 2) pfosten(sx * m.px, sz * m.pz, 0, sz < 0 ? m.pV : m.pH, 0.045);
             // das Fass (wo die Gestalt es trägt): drei Flächen im Stern durch die Achse und der Deckel als Sechseck
             if (wahl && wahl.fass) {
+        if (ORT_STUECK_WURF[rezeptId]) return ORT_STUECK_WURF[rezeptId](wahl, p, flaeche, pfosten, platte); // ort-ausstattung
                 var fx = wahl.fass[0],
                     fz = wahl.fass[1],
                     fr = 0.235,
@@ -10208,6 +10420,10 @@
         } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
             if (rezeptId === "laterne") {
                 var fr = m.fr * 0.8;
+        if (ORT_STUECK_HUELLE[rezeptId]) {
+            ORT_STUECK_HUELLE[rezeptId](wahl, p, dazu, F); // ort-ausstattung
+            return { stufe: 3, teile: teile };
+        }
                 dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
                 dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
             } else {
@@ -10292,6 +10508,7 @@
             var A = o.geometry.attributes;
             for (var name in A) {
                 var q = name === "normal" ? 16384 : 4096,
+        if (ORT_STUECK_FARBE[rezeptId]) return ORT_STUECK_FARBE[rezeptId](pick); // ort-ausstattung: das Holz, das Eisen, der Stein des Orts
                     arr = A[name].array;
                 for (var i = 0; i < arr.length; i++) arr[i] = Math.round(arr[i] * q) / q + 0;
             }
@@ -11132,6 +11349,131 @@
             seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
             nH: kw ? kw.nH : isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
             epoche: epo,
+    // ═══ DIE AUSSTATTUNG DES ORTS (ort-ausstattung): das EINE Gesetz — die Rolle des Baus, das Jahr des Orts, sein Rang und sein
+    //     Netz → die Stücke, die ihn ausweisen. Je Stück {art, x, z, th, gestalt[, slot]} im Rahmen des Plans (die Gestalt am Anker,
+    //     +x der Gestalt nach `th`, wie die Laterne): `slot` hängt es an die Wand seines Hauses (die Welt setzt es MIT ihm,
+    //     `_spawnSettlementSlot`), sonst steht es frei (`_dorfErlebnis`); `gestalt` ist die Gestalt seines Rezepts (das Wort, das
+    //     Motiv, die Epoche), die die Welt als `__gestalt` stempelt. Leser: `exportSettlement` (aus.gegenstaende). ═══
+    // DAS SCHILD AM HAUS: der Stand an der Tür-Wand (`schildMass`), geprüft an den Massen des Hauses (`masse`: kein Anbau, kein
+    // Turm, kein Vordach im Brett, die Traufe über ihm — der Überstand fällt mit der Neigung des Dachs) und am Grund jedes
+    // fremden Hauses; null, wo es nicht hängen kann.
+    function schildStoesst(M, b) {
+        for (var k = 0; k < (M || []).length; k++) {
+            var q = M[k];
+            if (q.art === "haupt") {
+                var ovX = q.ovX || 0,
+                    aus = Math.max(q.z0 - b.z0, b.z1 - q.z1, 0);
+                if (!(aus > 0) || !(b.x1 > q.x0 - ovX && b.x0 < q.x1 + ovX)) continue;
+                var sl = q.dach === "flat" ? 0 : (q.rY - q.eY) / Math.max(0.1, (q.z1 - q.z0) / 2);
+                if (b.y1 > q.eY - Math.min(aus, q.ovZ || 0) * sl) return true;
+                continue;
+            }
+            // das Vordach (die Veranda ein Pult von der Wand `yT` zur Pfette `yB`, die Laube eine Platte über `yB`): das Brett hängt
+            // unter ihm, wo es von der Wand reicht (die Pfette der Veranda 0,12 m unter dem Pult)
+            if (q.art === "vordach") {
+                if (!(b.x1 > q.x0 && b.x0 < q.x1 && b.z1 > q.z0 && b.z0 < q.z1)) continue;
+                var lang = /z/.test(q.first || "") ? q.z1 - q.z0 : q.x1 - q.x0,
+                    weit = Math.min(1, (b.z1 - b.z0) / Math.max(0.1, lang)),
+                    unter = q.deck != null ? q.yT - (q.yT - q.yB) * weit - 0.12 : q.yB;
+                if (b.y1 > unter) return true;
+                continue;
+            }
+            var y0 = q.y0 != null ? q.y0 : q.yB != null ? q.yB : 0,
+                y1 = q.y1 != null ? q.y1 : q.yT != null ? q.yT : Infinity;
+            if (b.x1 > q.x0 && b.x0 < q.x1 && b.z1 > q.z0 && b.z0 < q.z1 && b.y1 > y0 && b.y0 < y1) return true;
+        }
+        return false;
+    }
+    function ortAusstattung(plan, lay, Bs, slotVon) {
+        var jahr = plan.schnitt && isFinite(plan.schnitt.jahr) ? plan.schnitt.jahr : plan.jahr,
+            S = SCHILD_GESETZ,
+            A = LICHT_GESETZ.wandlaterne.armM,
+            pl = lay.pl,
+            aus = [];
+        // die fremden Grundrisse je Zelle des Rasters (`GRUENDUNG_RASTER`, wie die Wandlaterne): je Stand nur die seiner Zelle
+        var zM = GRUENDUNG_RASTER.wandM,
+            zelle = function (x, z) {
+                return Math.floor(x / zM) + "," + Math.floor(z / zM);
+            },
+            R = new Map();
+        pl.forEach(function (q, j) {
+            var o = q && q.obb;
+            if (!o || !imOrt(q)) return;
+            var r = o.ex + o.ez + 1e-6;
+            for (var gx = Math.floor((o.cx - r) / zM); gx <= Math.floor((o.cx + r) / zM); gx++)
+                for (var gz = Math.floor((o.cz - r) / zM); gz <= Math.floor((o.cz + r) / zM); gz++) {
+                    var kz = gx + "," + gz;
+                    if (!R.has(kz)) R.set(kz, []);
+                    R.get(kz).push(j);
+                }
+        });
+        var fremd = function (x, z, selbst) {
+            var Z = R.get(zelle(x, z)) || [];
+            for (var jj = 0; jj < Z.length; jj++) {
+                var o = pl[Z[jj]].obb;
+                if (pl[Z[jj]] === selbst) continue;
+                var c = Math.cos(o.phi || 0),
+                    s = Math.sin(o.phi || 0);
+                if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
+            }
+            return false;
+        };
+        // die Stände an der Tür-Wand in ihrer Reihe: der Ausleger neben der Tür (die Seite der Wandlaterne zuletzt), die Tafel über
+        // dem Sturz, dann seitlich so weit, dass ihr Rand die Laterne oder das Fenster frei gibt; der erste freie trägt es
+        var schildAmHaus = function (B, q, i, g) {
+            var c = Math.cos(q.phi || 0),
+                s = Math.sin(q.phi || 0),
+                hw = B.dims.W / 2,
+                hd = B.dims.D / 2,
+                t = B.dims.tuer,
+                sz = t.z > 0 ? 1 : -1,
+                m = schildMass(1, g),
+                rand = m.aus ? hw - 0.6 : hw - m.bw / 2 - 0.1,
+                tief = m.aus ? A - (m.x0 - 0.05) : m.d,
+                halb = m.aus ? 0.03 : m.bw / 2,
+                y1 = m.aus ? m.yA + 0.03 : m.y0 + m.bh;
+            if (rand < 0 || (!m.aus && (t.y || 0) + (t.h || 0) + 0.05 > m.y0)) return null; // die Tafel hängt über dem Sturz der Tür
+            var welt = function (ax, az) {
+                return { x: q.x + ax * c + az * s, z: q.z - ax * s + az * c };
+            };
+            var fen = ((B.fenster && B.fenster.liste) || []).filter(function (f) {
+                return f.perp === "z" && f.cz * sz > 0 && f.cy + f.h / 2 > m.y0 && f.cy - f.h / 2 < y1;
+            });
+            var reihe = m.aus ? [t.x - S.nebenTuerM, t.x + S.nebenTuerM] : [t.x, t.x - halb - 0.85, t.x + halb + 0.85];
+            for (var ri = 0; ri < reihe.length; ri++) {
+                var lx = Math.max(-rand, Math.min(rand, reihe[ri])),
+                    b = { x0: lx - halb, x1: lx + halb, y0: m.y0, y1: y1, z0: sz > 0 ? hd : -hd - tief, z1: sz > 0 ? hd + tief : -hd };
+                if (schildStoesst(B.masse, b)) continue;
+                if (fen.some(function (f) { return Math.abs(f.cx - lx) < f.w / 2 + halb; })) continue;
+                var k = welt(lx, sz * (hd + A)),
+                    w = welt(lx, sz * hd),
+                    e = welt(lx, sz * (hd + tief));
+                if (fremd(k.x, k.z, q) || fremd(e.x, e.z, q)) continue;
+                var frei = true;
+                for (var li = 0; li < lay.laternen.length && frei; li++) {
+                    var l = lay.laternen[li],
+                        dx = l.x - k.x,
+                        dz = l.z - k.z;
+                    // die Wandlaterne des Hauses hängt dort (an derselben Wand, seitlich näher als das Brett und ihr Kopf)
+                    if (l.wand && l.haus === i && Math.abs(dx * s + dz * c) < 0.3 && Math.abs(dx * c - dz * s) < halb + 0.25) frei = false;
+                }
+                if (frei) return { art: "schild", x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gestalt: g, slot: slotVon[i] };
+            }
+            return null;
+        };
+        for (var i = 0; i < Bs.length; i++) {
+            var B = Bs[i],
+                q = pl[i],
+                rolle = B && B.p && B.p.rolle;
+            if (!B || !q || slotVon[i] === undefined || !B.dims || !B.dims.tuer || !B.masse) continue;
+            var g = schildGestalt(rolle, jahr, false);
+            if (!g) continue;
+            // wo die Traufe oder der Nachbar den Ausleger schneidet, hängt das Gewerbe flach an der Wand
+            var st = schildAmHaus(B, q, i, g) || (schildMass(1, g).aus ? schildAmHaus(B, q, i, schildGestalt(rolle, jahr, true)) : null);
+            if (st) aus.push(st);
+        }
+        return aus;
+    }
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
@@ -11370,6 +11712,9 @@
                 z0: Math.min(lay.welt.z0, -mz.R - 17),
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
+        // DIE AUSSTATTUNG DES ORTS (ort-ausstattung, `ortAusstattung`): die Stücke, die ihn ausweisen, zu den Gegenständen
+        var ortStuecke = ortAusstattung(plan, lay, Bs, slotVon);
+        if (ortStuecke.length) aus.gegenstaende = (aus.gegenstaende || []).concat(ortStuecke);
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
         // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
@@ -13895,6 +14240,11 @@
         siedlungsZelle: siedlungsZelle,
         // w28-stadt-funktion — die Stadt als Funktion über Vierteln (Wand je Viertel, Raster, das Wort eines Viertels)
         STADT_FUNKTION: STADT_FUNKTION,
+        ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
+        schildArt: schildArt, // die Gestalt des Schilds → {wort, form} (Leser: die Welt, die Station mensch.kultur.schrift)
+        schildGestalt: schildGestalt,
+        schriftRechtecke: schriftRechtecke,
+        SCHILD_GESETZ: SCHILD_GESETZ,
         stadtRinge: stadtRinge,
         STADT_FORM: STADT_FORM,
         stadtLambda: stadtLambda,

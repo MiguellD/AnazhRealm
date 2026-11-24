@@ -538,6 +538,11 @@ class AnazhRealm_siedlung_ort {
         );
         if (entry) ohne(); // (der Zug, der wiederkehrt: das Los steht jetzt)
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
+        // DIE STÜCKE AM HAUS (ort-ausstattung, `_hausStueckSetzen`): das Schild seiner Rolle steht MIT ihm
+        if (entry && so && so.plan)
+            for (const Z of this._ortStuecke(so.plan))
+                for (const [q, k] of Z.amHaus)
+                    if (q.slot === so.si) this._hausStueckSetzen(so.plan, Z, q, k, origin, so);
         return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
@@ -578,9 +583,11 @@ class AnazhRealm_siedlung_ort {
     _ausstattungSame(plan, art, k) {
         return ((plan.seed >>> 0 || 1) + AnazhRealm.ORT_AUSSTATTUNG[art].ab + k * 7919) >>> 0;
     }
-    // DIE STÜCKE EINES PLANS (ORT_AUSSTATTUNG): je Art mit Bauplan, den die Welt kennt, {art, bauplan, kappe, gier, liste} —
-    // die Liste ihrer Schicht im Plan, in `gegenstaende` die Einträge ihrer Art. Leser: das Erlebnis (`_dorfErlebnis`) und
-    // der Vorrat (`_dorfVorbacken`).
+    // DIE STÜCKE EINES PLANS (ORT_AUSSTATTUNG): je Art mit Bauplan, den die Welt kennt, {art, bauplan, kappe, gier, liste,
+    // amHaus} — die Liste ihrer Schicht im Plan, in `gegenstaende` die Einträge ihrer Art; was einen `slot` trägt (fachwerk
+    // `ortAusstattung`: das Schild an der Tür-Wand), hängt an seinem Haus und steht in `amHaus` ([Stück, Nummer k in seiner
+    // Art]), nie in `liste`. Leser: das Erlebnis (`_dorfErlebnis`), der Slot (`_spawnSettlementSlot`), der Vorrat
+    // (`_dorfVorbacken`) und der Abbau (`_ortAusstattungFaellt`).
     _ortStuecke(plan) {
         const [A, bp] = [AnazhRealm.ORT_AUSSTATTUNG, this.state.blueprints || {}];
         return Object.keys(A)
@@ -588,24 +595,67 @@ class AnazhRealm_siedlung_ort {
             .map((art) => {
                 const Z = A[art];
                 const alle = Array.isArray(plan[Z.schicht]) ? plan[Z.schicht] : [];
-                const liste = Z.schicht === "gegenstaende" ? alle.filter((q) => q && q.art === art) : alle;
-                return { art, bauplan: Z.bauplan, kappe: Z.kappe, gier: Z.gier, liste };
+                const eigen = Z.schicht === "gegenstaende" ? alle.filter((q) => q && q.art === art) : alle;
+                const amHaus = eigen.map((q, k) => [q, k]).filter(([q]) => q && Number.isInteger(q.slot));
+                const liste = amHaus.length ? eigen.filter((q) => !q || !Number.isInteger(q.slot)) : eigen;
+                return { art, bauplan: Z.bauplan, kappe: Z.kappe, gier: Z.gier, liste, amHaus };
             });
+    }
+    // DAS STÜCK AM HAUS (ort-ausstattung): ein Stück `q` des Plans mit `slot` hängt an der Wand seines Hauses — sein Stand ist im
+    // Kern gegen die Massen des Hauses, seine Fenster, seine Wandlaterne und jeden fremden Grund geprüft (`ortAusstattung`); die
+    // Welt setzt es auf den Boden des Hauses (der Slot des Plans, wie das Haus 0,5 m über ihm), gedreht nach `gier`, in der
+    // Gestalt seines Rezepts (`q.gestalt` als `__gestalt`: das Wort des Schilds). Same je Siedlung, Art und Nummer `k`; was
+    // schon steht, steht. Leser: `_spawnSettlementSlot` (mit dem Haus) und `_dorfErlebnis` (am stehenden Haus nach dem Wachstum).
+    _hausStueckSetzen(plan, Z, q, k, origin, so) {
+        const sl = (plan.slots || [])[q.slot];
+        if (!sl || !Number.isFinite(sl.y) || !Number.isFinite(q.x) || !Number.isFinite(q.z)) return null;
+        const [wx, wz, same] = [origin.x + q.x, origin.z + q.z, this._ausstattungSame(plan, Z.art, k)];
+        if (this._dorfSteht(wx, wz, same)) return null;
+        return this.spawnArchitecture(
+            Z.bauplan,
+            { x: wx, y: sl.y + 0.5, z: wz },
+            {
+                seed: same,
+                ...(Z.gier ? { rotationY: Z.gier(q, plan) } : null),
+                ...(Number.isInteger(q.gestalt) ? { studioOv: { __gestalt: q.gestalt } } : null),
+                silent: true,
+                autonomous: !!(so && so.autonomous),
+                ausGesetz: true,
+            }
+        );
     }
     // DIE AUSSTATTUNG FÄLLT (siedlung.K4 Staffel 2): jede Laterne, jeder Brunnen, Stand und Hof-Baum des Plans `plan` (ihre
     // Samen, in seiner Welt am Ort) — der Plan seines neuen Jahrs stellt sie neu (`_dorfErlebnis`): ihre Nummern wechseln mit ihm.
     // Die Wandlaterne hängt an ihrem Haus und steht nur mit ihm (`_spawnSettlementSlot`): sie fällt nur an einem Haus aus `weg`
-    // ({x, z, r}: die gefallenen Häuser, r ihre Reichweite).
-    _ortAusstattungFaellt(plan, weg) {
+    // ({x, z, r}: die gefallenen Häuser, r ihre Reichweite). Ebenso das Stück am Haus (`amHaus`, das Schild) — und wo der Plan
+    // `neu` es nicht in derselben Gestalt am selben Ort mit demselben Samen trägt (das Jahr wechselt den Ausleger zur Tafel):
+    // dann stellt es `_dorfErlebnis` am stehenden Haus neu.
+    _ortAusstattungFaellt(plan, weg, neu) {
         const [A, S, o, w] = [AnazhRealm.ORT_AUSSTATTUNG, new Set(), plan.ort, plan.welt];
+        const [haus, traegt] = [new Set(["wandlaterne_dorf"]), new Set()];
         for (const art in A)
             for (let k = 0; k < (A[art].kappe || (plan.laternen || []).length); k++)
                 S.add(this._ausstattungSame(plan, art, k));
+        // (beide Pläne stehen an genau seinem Ort, `_ortNeuRechnen`)
+        const kennung = (P, Z, q, k) =>
+            `${this._ausstattungSame(P, Z.art, k)}:${q.gestalt | 0}@${Math.round((o.x + q.x) * 20)},${Math.round((o.z + q.z) * 20)}`;
+        const steht = new Map(); // je Same eines Stücks am Haus des alten Plans seine Kennung (Same, Gestalt, Ort)
+        for (const Z of this._ortStuecke(plan))
+            for (const [q, k] of Z.amHaus) {
+                const same = this._ausstattungSame(plan, Z.art, k);
+                S.add(same);
+                haus.add(Z.bauplan);
+                steht.set(same, kennung(plan, Z, q, k));
+            }
+        for (const Z of neu ? this._ortStuecke(neu) : [])
+            for (const [q, k] of Z.amHaus) traegt.add(kennung(neu, Z, q, k));
         for (const e of this.state.architectures.slice()) {
             const p = e && e._ausGesetz && S.has(e.seed >>> 0) && e.position;
             if (!p || p.x < o.x + w.x0 || p.x > o.x + w.x1 || p.z < o.z + w.z0 || p.z > o.z + w.z1) continue;
-            if (e.type !== "wandlaterne_dorf" || weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r))
-                this.removeArchitecture(e, { still: true });
+            const amHaus = haus.has(e.type);
+            const bleibt = amHaus && !weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r);
+            const gleich = e.type === "wandlaterne_dorf" || !neu || traegt.has(steht.get(e.seed >>> 0));
+            if (!bleibt || !gleich) this.removeArchitecture(e, { still: true });
         }
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
@@ -694,6 +744,14 @@ class AnazhRealm_siedlung_ort {
                 );
                 if (entry) n++;
                 if (++stueck % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield; // die Stücke gehen in Raten wie die Laternen
+            }
+            // das Stück am Haus, dessen Haus schon steht (der Ort wuchs, das Jahr wechselte seine Gestalt): es hängt sich an; am
+            // kommenden Haus setzt es der Slot (`_spawnSettlementSlot`)
+            for (const [q, k] of Z.amHaus) {
+                const sl = (plan.slots || [])[q.slot];
+                if (!sl || !this._dorfSteht(origin.x + sl.x, origin.z + sl.z, sl.seed >>> 0)) continue;
+                this._hausStueckSetzen(plan, Z, q, k, origin, so);
+                if (++stueck % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield;
             }
         }
         // Hof-Bäume der Siedlung: die Export-Plätze ({x,z,h}) heben als Studio-Bäume durch spawnArchitecture;
@@ -2289,14 +2347,17 @@ class AnazhRealm_siedlung_ort {
             (plan.laternen || []).forEach((l, k) => {
                 if (l) stuecke.push([l.wand ? "wandlaterne_dorf" : "laterne_dorf", l, l.wand ? k : mast++, "laterne"]);
             });
-            for (const Z of this._ortStuecke(plan))
+            for (const Z of this._ortStuecke(plan)) {
                 Z.liste.slice(0, Z.kappe).forEach((q, k) => stuecke.push([Z.bauplan, q, k, Z.art]));
+                for (const [q, k] of Z.amHaus) stuecke.push([Z.bauplan, q, k, Z.art]);
+            }
             for (const [type, q, k, art] of stuecke)
                 if (bp[type] && q && Number.isFinite(q.x) && Number.isFinite(q.z))
                     bedarf({
                         type,
                         seed: this._ausstattungSame(plan, art, k),
                         position: { x: o.x + q.x, y: 0, z: o.z + q.z },
+                        ...(Number.isInteger(q.gestalt) ? { studioOv: { __gestalt: q.gestalt } } : null),
                     });
         }
         // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei);
@@ -3023,7 +3084,7 @@ class AnazhRealm_siedlung_ort {
                 if (e) weg.push({ x: e.position.x, z: e.position.z, r: (fp ? Math.hypot(fp.ex, fp.ez) : 4) + 1.5 });
                 if (e) this.removeArchitecture(e, { still: true });
             }
-            this._ortAusstattungFaellt(a, weg);
+            this._ortAusstattungFaellt(a, weg, neu);
         };
         if (!(await this._ortNeuPlanen(c.ort, plan, vorTausch))) return false;
         if (JSON.stringify(alt.mauer || null) !== mauer) this._stlMauerNeu(alt);
@@ -3697,6 +3758,14 @@ AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
         bauplan: "grabstein_dorf",
         schicht: "gegenstaende",
         gier: (q) => q.th || 0,
+    }),
+    // DAS SCHILD (ort-ausstattung, fachwerk `ortAusstattung`): je Sonderbau eines an seiner Tür-Wand, ein Stück am Haus (`slot`),
+    // gedreht wie die Wandlaterne (+x der Gestalt zur Wand nach `th`); keine Kappe über die Häuser hinaus — es steht mit seinem Haus
+    schild: Object.freeze({
+        ab: 113,
+        bauplan: "schild_dorf",
+        schicht: "gegenstaende",
+        gier: (q) => (Number.isFinite(q.th) ? -q.th : 0),
     }),
 });
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
