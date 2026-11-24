@@ -5361,6 +5361,9 @@
         streuH: 0.5,
         morgenPlatzH: 1,
         besuchH: 0.75,
+        // wegeMax = so viele Wege trägt ein Tag höchstens (der Morgengang: 4–10 Wege je Tag, mensch.K3) — der Abend des Spiels
+        // (`spielProgramm`) vergibt nur Stände, die der Tag noch trägt (`tagesGaenge`)
+        wegeMax: 10,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
@@ -5440,7 +5443,8 @@
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy" }),
+        // (das Spiel des Abends, SPIEL_GESETZ: der Wettkämpfer gebeugt in der Kraft, am Brett über den Tisch, der Zuschauer jubelt)
+        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5685,6 +5689,42 @@
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
+    // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
+    // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
+    // (orte.spiel), rund um die Uhr, trocken und gesund; ein Ort ist der gereichte Ort mit drinnen oder davor (die Orte eines
+    // Menschen liegen je einen Gang auseinander, der Wirt bindet sie so), jeder Wechsel ein Weg. Leser: `spielProgramm` (der
+    // Abend trägt den Weg), die Linse gate:koerper-kern E7.
+    function tagesGaenge(same, rolle, orte) {
+        var G = TAGES_GESETZ,
+            T = _tagesWenden(same, rolle),
+            v = T.R.versatzH || 0;
+        var t = [T.wach, T.wach + T.morgenH, T.wach + T.morgenH + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        (orte.spiel || []).forEach(function (e) {
+            t.push(e.von, e.bis);
+        });
+        var u = t
+            .map(function (x) {
+                return ((x % 24) + 24) % 24;
+            })
+            .sort(function (a, b) {
+                return a - b;
+            });
+        var wo = [],
+            n = 0;
+        for (var i = 0; i < u.length; i++) {
+            var a = u[i],
+                b = i + 1 < u.length ? u[i + 1] : u[0] + 24;
+            if (b - a < 1e-9) continue;
+            var p = tagesPlan(same, rolle, (a + b) / 2 + v, orte, 0, false);
+            wo.push([p.ort, p.drinnen]);
+        }
+        for (var k = 0; k < wo.length; k++) {
+            var q = wo[(k + wo.length - 1) % wo.length];
+            if (wo[k][0] !== q[0] || wo[k][1] !== q[1]) n++;
+        }
+        return n;
+    }
     function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
         var T = _tagesWenden(same, rolle),
@@ -5702,11 +5742,12 @@
             besuch = orte.besuch;
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
-        var aus = function (wo, akt, drinnen) {
+        var aus = function (wo, akt, drinnen, an) {
             var posten = akt === "arbeit" && R.regenfest;
+            var o = an || orte[wo];
             if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
-            if (krank && !drinnen && !posten && (orte[wo] || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
-            return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
+            if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
+            return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
         var bM = besuch && !bA && wach + morgenH + G.besuchH <= w0;
@@ -5718,9 +5759,416 @@
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
+        // DAS SPIEL DES ABENDS (SPIEL_GESETZ, `spielProgramm`): wer Gast des Treffs am Platz ist, steht in den Stunden seines
+        // Auftritts (orte.spiel: [{von, bis, akt, x, z, blick}], der Wirt stellt sie aus dem Programm des Tags) am Feld — als
+        // Läufer, Ringer, am Brett oder im Ring der Zuschauer; der Regen schickt ihn heim, der Kranke bleibt vor seiner Tür
+        var sp = orte.spiel;
+        for (var si = 0; sp && si < sp.length; si++) if (h >= sp[si].von && h < sp[si].bis) return aus("spiel", sp[si].akt, false, sp[si]);
         // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür
         if (T.abendTreffH != null && h >= (bA ? w1 + G.besuchH : w1) + T.abendTreffH) return aus("heim", "abend", false);
         return aus("abend", "abend", false);
+    }
+
+    // ── DIE REGEL-GRAMMATIK (Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1, rein additiv) — EIN
+    //    Spiel ist Teilnehmer · Feld · Zug oder Lauf · Maß · Sieger; aus derselben Tafel fallen der LAUF (Maß: die Zeit über die
+    //    Länge des Felds, der Kleinste siegt), der ZWEIKAMPF (Ringen: je Zug greift einer an — offen oder mit einer Finte —, der
+    //    andere wehrt ab; Maß: Treffer bis `bis`) und das BRETT (Fünf in einer Reihe, Gobang der Edo-Zeit: Zug = ein Stein auf
+    //    ein freies Feld; Regel = die erlaubten Züge; Maß: die Reihe). Kein zweiter Stärke-Wert: die LEISTUNG ist der Leib (der
+    //    Sprint aus der Kraft seiner Beine über das Gang-Gesetz, `leibSprintHoch` — dieselbe Rechnung wie `leibVerben`; im
+    //    Zweikampf die Kraft Φ selbst, `leibKoennen`) × seine Übung hoch `uebungExp` (der Lebenslauf des Wirts: das Potenzgesetz
+    //    der Übung, Ericsson 1993 — Leibesübung und Zweikampf in der Kunst `kampf`, das Brett in der Kunst `brett`) × die
+    //    TAGESFORM (1 + cv · z, z normal aus dem Samen des Tags; die Streuung der Wettkampf-Leistung desselben Athleten liegt je
+    //    Sportart bei 0,5–5 % — Malcata & Hopkins 2014, Sports Med 44:1763; Sprint am unteren, Kampf am oberen Rand). Der
+    //    Exponent der Übung trägt den Anteil des Leibs an der Leistung: mit 0,45 erklärt der Leib im Lauf rund die Hälfte bis
+    //    zwei Drittel der Rangfolge (die Erblichkeit der Sprint- und Schnellkraft-Leistung in Zwillings-Studien 0,5–0,7, ANGENOMMEN —
+    //    keine Quelle im Kern; die Linse gate:koerper-kern E1 nennt den gemessenen Anteil). Je Zug des Zweikampfs ist die Wahrscheinlichkeit
+    //    des Treffers das Verhältnis der Stärken (Bradley & Terry 1952 — dieselbe Form wie die Elo-Kurve mit der Stärke als
+    //    10^(Elo/400)); die Finte liest der Verteidiger mit dem Verhältnis der Übungen, gelesen schützt sie ihn (× `gelesen`),
+    //    ungelesen öffnet sie ihn (× `offen`). Die KLASSE (Geschlecht, Alter, im Zweikampf das Gewicht in Dritteln — die Gewichts-
+    //    und Altersklassen jedes Regelwerks) paart Gleiche: der Stärkere siegt oft, nie immer. Das PROGRAMM DES ABENDS ist eine
+    //    Funktion von Same des Platzes, Tag und Gästen des Treffs (`spielProgramm`): Läufe, dann Gänge des Zweikampfs, die
+    //    Partien an den Tischen am Rand den ganzen Abend; jeder Gast, der nicht antritt, steht im Ring der Zuschauer um das
+    //    Feld, und der Punkt des Geschehens (`spielGeschehen`) ist eine Funktion der Uhr — sein Kopf folgt ihm (der Wirt,
+    //    `_bewohnerKopf`). Leser: der Wirt (`_spielTag`, `_bewohnerSoll` → tagesPlan `orte.spiel`, `_bewohnerKopf`), die Linse
+    //    gate:koerper-kern E1–E5. ──
+    var SPIEL_GESETZ = Object.freeze({
+        uebungExp: 0.45,
+        form: Object.freeze({ lauf: 0.02, ringen: 0.04 }),
+        // die Klassen: Altersgrenzen (J) und die Drittel des Gewichts im Zweikampf
+        klasse: Object.freeze({ alterJ: Object.freeze([15, 25, 41]), gewicht: 3 }),
+        // das Programm des Abends (Stunden der Uhr): ab, bis; pauseS = die Sekunden zwischen zwei Gängen (Aufstellen, Kampfrichter);
+        // minGaeste = so viele Gäste braucht der Treff, damit ein Spiel stattfindet (der Akt rechnet nur, wo ein Ort ihn trägt)
+        programm: Object.freeze({ ab: 18, bis: 21, pauseS: 15, minGaeste: 8 }),
+        // das Feld auf dem Platz (die lange Achse des Platzes, `platz.phi`): randM frei vor jedem Rand des Platzes, ringM so weit
+        // vor dem Feld steht der Ring der Zuschauer, minLaengeM = kürzer trägt das Feld keinen Lauf. DER RAUM DES STANDS: standM = so
+        // weit stehen je zwei Stände des Abends wenigstens auseinander (je Stand im Ring, die zwei am Tisch; Bahn `bahnM` und Zweikampf
+        // `abstandM` tragen ihr eigenes Maß, nie enger) — die persönliche Distanz an ihrem fernen Rand (Hall 1966: 0,45–1,2 m): wer im
+        // Gedränge beiseite trat, findet seinen Stand frei (der Wirt führt ihn zurück, wenn kein Leib näher als 0,9 m daran steht,
+        // BEWOHNER.tuerFreiM). Bis sport-regeln 3 standen die zwei am Brett 0,8 m und der Ring je 0,9 m (an seinen Ecken enger)
+        // auseinander: pfarrhaus #723323 trat dem Kind am Tisch beiseite und kam nie zurück (Kreatur-Linse bewohner, 18,80 Uhr)
+        feld: Object.freeze({ randM: 3, ringM: 1.5, standM: 1.2, minLaengeM: 16, breiteMaxM: 10 }),
+        arten: Object.freeze({
+            lauf: Object.freeze({ teil: Object.freeze([3, 6]), mass: "zeit", sieg: "klein", bahnM: 1.2, gaenge: 3 }),
+            ringen: Object.freeze({
+                teil: Object.freeze([2, 2]),
+                mass: "treffer",
+                sieg: "gross",
+                bis: 3,
+                abstandM: 1.2,
+                zugS: 4,
+                zuegeMax: 200,
+                finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: 1.5 }),
+                gaenge: 4,
+            }),
+            brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
+        }),
+    });
+    // die Normal-Zahl des Samens zu einem Wort (Box-Muller über zwei Zahlen aus `_tagZahl`)
+    function _spielNormal(same, wort) {
+        var u = Math.max(1e-12, _tagZahl(same, wort + ":u")),
+            v = _tagZahl(same, wort + ":v");
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    // DIE LEISTUNG DES LEIBS allein (ohne Übung und Form): im Lauf sein Sprint-Tempo (m/s) an seinem Bein beinM (m) und der Kraft
+    // seiner Beine kraft (`leibKoennen`, Φ = LEIB.kraft × kraft) — null, wo sein Sprint nicht im Lauf liegt (der Greis tritt nicht
+    // an); im Zweikampf die Kraft Φ
+    function spielLeib(art, beinM, kraft) {
+        var phi = LEIB.kraft * kraft;
+        if (art === "ringen") return phi > 0 ? phi : null;
+        if (art !== "lauf") throw new Error("KERN-PFLICHT verletzt: spielLeib kennt die Art „" + art + "“ nicht");
+        var vh = leibSprintHoch(phi);
+        return beinM > 0 && leibImLauf(phi, vh) ? vh * Math.sqrt(LEIB.sprung.refG * beinM) : null;
+    }
+    // DIE LEISTUNG AM TAG: der Leib × Übung^uebungExp × Tagesform (gast: {same, beinM, kraft, kampf}); null, wo der Leib nicht antritt
+    function spielLeistung(art, gast, tag) {
+        var L = spielLeib(art, gast.beinM, gast.kraft);
+        if (L === null) return null;
+        var S = SPIEL_GESETZ;
+        return L * Math.pow(Math.max(gast.kampf, 1e-6), S.uebungExp) * (1 + S.form[art] * _spielNormal(gast.same, "form:" + art + ":" + tag));
+    }
+    // DIE KLASSE eines Gasts (Geschlecht · Alter · im Zweikampf das Gewicht) — null außerhalb der Altersgrenzen
+    function spielKlasse(art, gast) {
+        var A = SPIEL_GESETZ.klasse.alterJ,
+            k = -1;
+        for (var i = 0; i + 1 < A.length; i++) if (gast.alterJ >= A[i] && gast.alterJ < A[i + 1]) k = i;
+        if (k < 0) return null;
+        var g = art === "ringen" ? ":" + Math.min(SPIEL_GESETZ.klasse.gewicht - 1, Math.floor(gast.masse * SPIEL_GESETZ.klasse.gewicht)) : "";
+        return (gast.mann ? "m" : "f") + k + g;
+    }
+    // DER ZWEIKAMPF zweier Stärken a, b ({s: Leistung, u: Übung}) aus dem Samen `same`: je Zug greift abwechselnd einer an — mit
+    // einer Finte (Anteil `finte.anteil`) oder offen —, der andere wehrt ab; Treffer, wenn sein Zug die Abwehr schlägt (Bradley-
+    // Terry). Liefert {zuege: [{an, finte, gelesen, treffer}], treffer: [ta, tb], sieger: 0 | 1}
+    function spielKampf(a, b, same) {
+        var R = SPIEL_GESETZ.arten.ringen,
+            F = R.finte,
+            t = [0, 0],
+            zuege = [],
+            S = [a, b];
+        for (var k = 0; t[0] < R.bis && t[1] < R.bis; k++) {
+            if (k >= R.zuegeMax) throw new Error("KERN-PFLICHT verletzt: spielKampf ohne Ende nach " + k + " Zügen");
+            var an = k % 2,
+                A = S[an],
+                D = S[1 - an];
+            var finte = _tagZahl(same, "finte:" + k) < F.anteil;
+            var gelesen = finte && _tagZahl(same, "lesen:" + k) < D.u / (A.u + D.u);
+            var mal = finte ? (gelesen ? F.gelesen : F.offen) : 1;
+            var treffer = _tagZahl(same, "zug:" + k) < A.s / (A.s + D.s * mal);
+            if (treffer) t[an]++;
+            zuege.push({ an: an, finte: finte, gelesen: gelesen, treffer: treffer });
+        }
+        return { zuege: zuege, treffer: t, sieger: t[0] >= R.bis ? 0 : 1 };
+    }
+    // DIE REGEL DES BRETTS: ein Zug ist erlaubt, wenn das Feld i auf dem Brett liegt und frei ist (brett: ein Feld je Punkt, 0 frei,
+    // 1 und 2 die Steine der beiden Seiten)
+    function brettErlaubt(brett, i) {
+        return i >= 0 && i < brett.length && (i | 0) === i && brett[i] === 0;
+    }
+    // die längste Reihe der Seite w durch das Feld i (der Stein dort mitgezählt)
+    function brettReihe(brett, N, i, w) {
+        var x = i % N,
+            z = (i / N) | 0,
+            best = 0,
+            D = [1, 0, 0, 1, 1, 1, 1, -1];
+        for (var d = 0; d < 8; d += 2) {
+            var n = 1;
+            for (var s = -1; s <= 1; s += 2)
+                for (var q = 1; q < N; q++) {
+                    var xx = x + s * q * D[d],
+                        zz = z + s * q * D[d + 1];
+                    if (xx < 0 || zz < 0 || xx >= N || zz >= N || brett[zz * N + xx] !== w) break;
+                    n++;
+                }
+            if (n > best) best = n;
+        }
+        return best;
+    }
+    // EINE PARTIE AM BRETT zwischen den Übungen ua, ub (die Kunst `brett`) aus dem Samen `same`: je Zug wägt die Hand jedes freie Feld
+    // nach der eigenen Reihe, die es baut, und der fremden, die es bricht, und wählt mit der Schärfe ihrer Übung (der Stärkere
+    // nimmt öfter den besten Zug). Liefert {zuege: [Feld je Zug], sieger: 0 | 1 | −1 (das Brett ist voll)}; nur erlaubte Züge
+    function spielBrett(ua, ub, same) {
+        var B = SPIEL_GESETZ.arten.brett,
+            N = B.feld,
+            brett = new Array(N * N),
+            zuege = [];
+        for (var c = 0; c < brett.length; c++) brett[c] = 0;
+        for (var k = 0; k < brett.length; k++) {
+            var w = 1 + (k % 2),
+                scharf = 0.5 + 2 * (k % 2 ? ub : ua),
+                summe = 0,
+                gew = [];
+            for (var i = 0; i < brett.length; i++) {
+                if (!brettErlaubt(brett, i)) continue;
+                brett[i] = w;
+                var eigen = brettReihe(brett, N, i, w);
+                brett[i] = 3 - w;
+                var fremd = brettReihe(brett, N, i, 3 - w);
+                brett[i] = 0;
+                var wert = eigen >= B.reihe ? 1e6 : fremd >= B.reihe ? 5e5 : Math.pow(10, eigen) + 0.8 * Math.pow(10, fremd);
+                var g = Math.pow(wert, scharf);
+                gew.push(i, g);
+                summe += g;
+            }
+            var u = _tagZahl(same, "brett:" + k) * summe,
+                wahl = gew[0];
+            for (var j = 0; j < gew.length; j += 2) {
+                wahl = gew[j];
+                if ((u -= gew[j + 1]) < 0) break;
+            }
+            if (!brettErlaubt(brett, wahl)) throw new Error("KERN-PFLICHT verletzt: spielBrett wählt den Zug " + wahl + " gegen die Regel");
+            brett[wahl] = w;
+            zuege.push(wahl);
+            if (brettReihe(brett, N, wahl, w) >= B.reihe) return { zuege: zuege, sieger: w - 1 };
+        }
+        return { zuege: zuege, sieger: -1 };
+    }
+    // DER ABEND EINES GASTS: ab wann er frei ist (nach dem Werk und dem Besuch seines Abends, `_tagesWenden`) und bis wann er bleibt
+    function _spielFrei(gast) {
+        var T = _tagesWenden(gast.same, gast.rolle),
+            ab = T.w1 + (T.w1 + TAGES_GESETZ.besuchH <= T.ruhe - 0.5 ? TAGES_GESETZ.besuchH : 0);
+        return [ab, T.ruhe];
+    }
+    // DAS PROGRAMM DES ABENDS an einem Platz: same = der Same des Platzes, tag = der Tag der Welt (ganzzahlig), gaeste = die Gäste
+    // seines Treffs [{same, rolle, mann, alterJ, masse, beinM, kraft, kampf, brett, orte}] (der Wirt: wer seinen Abend am Platz hat;
+    // orte = seine Orte des Tags ohne spiel — der Abend trägt den Weg, `tagesGaenge`),
+    // feld = {L, B} das Feld in Metern (die lange Achse +x, die Mitte im Ursprung), stundeSek = die Sekunden einer Stunde der Uhr.
+    // Liefert {gaenge, auftritte, ring, tische} — gaenge [{art, von, start, bis, teil: [Gast], ...}] in Stunden der Uhr (der Lauf:
+    // zeiten, rang; der Zweikampf: kampf; das Brett: partien), auftritte[gi] = die Auftritte des Gasts gi [{von, bis, akt, x, z, blick,
+    // tempo?}] in Koordinaten des Felds; null, wo der Treff zu klein ist oder das Feld keinen Lauf trägt.
+    function spielProgramm(same, tag, gaeste, feld, stundeSek) {
+        var S = SPIEL_GESETZ,
+            P = S.programm,
+            AL = S.arten.lauf,
+            AR = S.arten.ringen,
+            AB = S.arten.brett;
+        if (!(stundeSek > 0)) throw new Error("KERN-PFLICHT verletzt: spielProgramm ohne die Sekunden der Stunde");
+        if (!gaeste || gaeste.length < P.minGaeste || !(feld && feld.L >= S.feld.minLaengeM && feld.B > 0)) return null;
+        if (gaeste.some(function (g) { return !g.orte; })) throw new Error("KERN-PFLICHT verletzt: spielProgramm ohne die Orte der Gäste (der Abend trägt den Weg, `tagesGaenge`)"); // prettier-ignore
+        var s0 = ((same >>> 0) ^ Math.imul(tag | 0, 0x9e3779b1)) >>> 0;
+        // das Los des Abends: die Gäste in der Folge ihres Loses
+        var los = gaeste.map(function (g, i) {
+            return [_tagZahl(s0, "los:" + (g.same >>> 0)), i];
+        });
+        los.sort(function (a, b) {
+            return a[0] - b[0] || a[1] - b[1];
+        });
+        var frei = gaeste.map(_spielFrei);
+        var auftritte = gaeste.map(function () {
+            return [];
+        });
+        var belegt = gaeste.map(function () {
+            return [];
+        });
+        var kann = function (gi, von, bis) {
+            if (frei[gi][0] > von || frei[gi][1] < bis) return false;
+            for (var q = 0; q < belegt[gi].length; q++) if (belegt[gi][q][0] < bis && belegt[gi][q][1] > von) return false;
+            return true;
+        };
+        // DER ABEND TRÄGT DEN WEG (TAGES_GESETZ.wegeMax): ein Stand (neu = [{von, bis}]) geht an den Gast, wo sein Tag mit allen Ständen
+        // des Abends höchstens wegeMax Wege trägt (`tagesGaenge` liest den Plan der Stunde) — wer schon Werk, Mittag, Besuch und Treff
+        // geht, bleibt am Treff. Bis sport-regeln 3 vergab das Programm Lauf, Gang und Ring obendrauf: am Patrizierhaus #91693 der
+        // Stadt trug der Tag 13 Wege (Start, Ziel, Zweikampf, Ring, zurück zum Treff; Kreatur-Linse bewohner, Soll 4–10)
+        var traegt = function (gi, neu) {
+            var A = auftritte[gi].concat(neu).sort(function (x, y) {
+                return x.von - y.von;
+            });
+            return tagesGaenge(gaeste[gi].same, gaeste[gi].rolle, Object.assign({}, gaeste[gi].orte, { spiel: A })) <= TAGES_GESETZ.wegeMax;
+        };
+        var gaenge = [],
+            t = P.ab,
+            h = function (sek) {
+                return sek / stundeSek;
+            };
+        // DIE LÄUFE: je Klasse eine Gruppe von bis zu teil[1] Läufern, die zum Lauf frei sind — über die Länge des Felds
+        var L = feld.L,
+            gruppen = {},
+            reihe = [];
+        los.forEach(function (e) {
+            var gi = e[1],
+                k = spielKlasse("lauf", gaeste[gi]);
+            if (k === null || spielLeib("lauf", gaeste[gi].beinM, gaeste[gi].kraft) === null) return;
+            if (!gruppen[k]) reihe.push(k);
+            (gruppen[k] = gruppen[k] || []).push(gi);
+        });
+        for (var r = 0; r < reihe.length && gaenge.length < AL.gaenge; r++) {
+            var G = gruppen[reihe[r]];
+            for (var o = 0; o < G.length && gaenge.length < AL.gaenge; o += AL.teil[1]) {
+                var von = t,
+                    start = t + h(P.pauseS),
+                    wahl = G.slice(o, o + AL.teil[1]);
+                var tempo = function (gi) {
+                    return spielLeistung("lauf", gaeste[gi], tag);
+                };
+                // (wer bis zum Ziel des Langsamsten frei ist)
+                var bisWahl = start + h(L / Math.min.apply(null, wahl.map(tempo)) + P.pauseS);
+                var teil = wahl.filter(function (gi) {
+                    return kann(gi, von, bisWahl) && traegt(gi, [{ von: von, bis: start }, { von: start, bis: bisWahl }]);
+                });
+                if (teil.length < AL.teil[0]) continue;
+                var v = teil.map(tempo);
+                var zeiten = v.map(function (x) {
+                    return L / x;
+                });
+                var bis = start + h(Math.max.apply(null, zeiten) + P.pauseS);
+                var rang = teil.map(function (_, i) {
+                    return i;
+                });
+                rang.sort(function (a, b) {
+                    return zeiten[a] - zeiten[b];
+                });
+                gaenge.push({ art: "lauf", klasse: reihe[r], von: von, start: start, bis: bis, teil: teil, tempo: v, zeiten: zeiten, rang: rang, sieger: teil[rang[0]] });
+                teil.forEach(function (gi, i) {
+                    var z = (i - (teil.length - 1) / 2) * AL.bahnM;
+                    auftritte[gi].push({ von: von, bis: start, akt: "wettkampf", x: -L / 2, z: z, blick: Math.PI / 2 });
+                    auftritte[gi].push({ von: start, bis: bis, akt: "wettkampf", x: L / 2, z: z, blick: Math.PI / 2, tempo: v[i] });
+                    belegt[gi].push([von, bis]);
+                });
+                t = bis;
+            }
+        }
+        // DIE GÄNGE DES ZWEIKAMPFS: je Klasse (mit dem Gewicht) zwei, die frei sind — Gleiche gegen Gleiche
+        var paare = {},
+            folge = [];
+        los.forEach(function (e) {
+            var k = spielKlasse("ringen", gaeste[e[1]]);
+            if (k === null) return;
+            if (!paare[k]) folge.push(k);
+            (paare[k] = paare[k] || []).push(e[1]);
+        });
+        var nR = 0;
+        for (var f = 0; f < folge.length && nR < AR.gaenge && t < P.bis; f++) {
+            var Q = paare[folge[f]];
+            for (var p = 0; p + 1 < Q.length && nR < AR.gaenge && t < P.bis; p += 2) {
+                var a = Q[p],
+                    b = Q[p + 1];
+                var sa = spielLeistung("ringen", gaeste[a], tag),
+                    sb = spielLeistung("ringen", gaeste[b], tag);
+                var kampf = spielKampf({ s: sa, u: gaeste[a].kampf }, { s: sb, u: gaeste[b].kampf }, s0 ^ ((a * 7919 + b) >>> 0));
+                var von2 = t,
+                    start2 = t + h(P.pauseS),
+                    bis2 = start2 + h(kampf.zuege.length * AR.zugS + P.pauseS);
+                if (!kann(a, von2, bis2) || !kann(b, von2, bis2) || !traegt(a, [{ von: von2, bis: bis2 }]) || !traegt(b, [{ von: von2, bis: bis2 }])) continue; // prettier-ignore
+                gaenge.push({ art: "ringen", klasse: folge[f], von: von2, start: start2, bis: bis2, teil: [a, b], staerke: [sa, sb], kampf: kampf, sieger: [a, b][kampf.sieger] });
+                auftritte[a].push({ von: von2, bis: bis2, akt: "wettkampf", x: -AR.abstandM / 2, z: 0, blick: Math.PI / 2 });
+                auftritte[b].push({ von: von2, bis: bis2, akt: "wettkampf", x: AR.abstandM / 2, z: 0, blick: -Math.PI / 2 });
+                belegt[a].push([von2, bis2]);
+                belegt[b].push([von2, bis2]);
+                t = bis2;
+                nR++;
+            }
+        }
+        var ende = Math.max(P.bis, t);
+        // DIE TISCHE AM RAND: je Tisch zwei, die den ganzen Abend frei sind und keinen Gang tragen; Partie um Partie bis zum Ende
+        var tische = [],
+            Bz = feld.B / 2 + S.feld.ringM + 2.5;
+        var amTisch = los
+            .map(function (e) {
+                return e[1];
+            })
+            .filter(function (gi) {
+                return !belegt[gi].length && gaeste[gi].alterJ >= 12 && kann(gi, P.ab, ende) && traegt(gi, [{ von: P.ab, bis: ende }]);
+            });
+        // (EINE Partie je Tisch und Abend; ihre Züge rechnet `spielTischPartie`, wenn einer sie liest — nie im Programm)
+        for (var ti = 0; ti + 1 < amTisch.length && tische.length < AB.tische; ti += 2) {
+            var x = (tische.length - (AB.tische - 1) / 2) * 3,
+                A2 = amTisch[ti],
+                B2 = amTisch[ti + 1];
+            var tisch = { x: x, z: -Bz, teil: [A2, B2], u: [gaeste[A2].brett, gaeste[B2].brett], same: (s0 ^ Math.imul(tische.length + 1, 0x85ebca6b)) >>> 0, partie: null };
+            tische.push(tisch);
+            gaenge.push({ art: "brett", von: P.ab, start: P.ab + h(P.pauseS), bis: ende, teil: [A2, B2], tisch: tisch });
+            // (die zwei sitzen standM auseinander, je einer an seiner Seite des Bretts)
+            auftritte[A2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz - S.feld.standM / 2, blick: 0 });
+            auftritte[B2].push({ von: P.ab, bis: ende, akt: "brett", x: x, z: -Bz + S.feld.standM / 2, blick: Math.PI });
+            belegt[A2].push([P.ab, ende]);
+            belegt[B2].push([P.ab, ende]);
+        }
+        // DER RING DER ZUSCHAUER um das Feld (ringM vor seinem Rand, zur Mitte gewandt): jeder Gast steht dort, solange er frei ist
+        // und keinen Gang trägt — der Stand des Rings in der Folge des Loses. Je Seite des Rechtecks so viele Stände, wie standM
+        // trägt, je standM auseinander und mittig; vor jeder Ecke bleibt standM/√2 frei, so halten auch die zwei Stände um die Ecke
+        // standM (bis sport-regeln 3 lief der Ring je 0,9 m über den Umfang, um die Ecke bis 0,64 m)
+        var ring = [],
+            rx = L / 2 + S.feld.ringM,
+            rz = feld.B / 2 + S.feld.ringM,
+            sM = S.feld.standM,
+            eck = sM / Math.SQRT2,
+            seiten = [[-rx, rz, 1, 0, 2 * rx], [rx, rz, 0, -1, 2 * rz], [rx, -rz, -1, 0, 2 * rx], [-rx, -rz, 0, 1, 2 * rz]];
+        for (var q2 = 0; q2 < 4; q2++) {
+            var sd = seiten[q2],
+                laengeS = sd[4] - 2 * eck;
+            if (laengeS < 0) continue;
+            var nS = Math.floor(laengeS / sM + 1e-9) + 1,
+                o0 = eck + (laengeS - (nS - 1) * sM) / 2;
+            for (var k2 = 0; k2 < nS; k2++) {
+                var px = sd[0] + sd[2] * (o0 + k2 * sM),
+                    pz = sd[1] + sd[3] * (o0 + k2 * sM);
+                ring.push({ x: px, z: pz, blick: Math.atan2(-px, -pz) });
+            }
+        }
+        var rk = 0;
+        los.forEach(function (e) {
+            var gi = e[1];
+            if (rk >= ring.length || !(frei[gi][0] < ende)) return;
+            var a0 = Math.max(P.ab, frei[gi][0]),
+                b0 = Math.min(ende, frei[gi][1]),
+                B0 = belegt[gi].slice().sort(function (x, y) {
+                    return x[0] - y[0];
+                }),
+                stuecke = [];
+            for (var m = 0; m <= B0.length; m++) {
+                var e0 = m < B0.length ? B0[m][0] : b0;
+                if (e0 > a0) stuecke.push({ von: a0, bis: e0 });
+                if (m < B0.length) a0 = Math.max(a0, B0[m][1]);
+            }
+            // (der Ring nur, wo der Tag ihn trägt: das früheste Stück fällt zuerst, wer antrat, schaut danach zu)
+            while (stuecke.length && !traegt(gi, stuecke)) stuecke.shift();
+            if (!stuecke.length) return;
+            var R0 = ring[rk++];
+            stuecke.forEach(function (st) {
+                auftritte[gi].push({ von: st.von, bis: st.bis, akt: "zuschauen", x: R0.x, z: R0.z, blick: R0.blick, ring: true });
+            });
+        });
+        auftritte.forEach(function (A) {
+            A.sort(function (x, y) {
+                return x.von - y.von;
+            });
+        });
+        return { same: s0, tag: tag, feld: { L: L, B: feld.B }, gaenge: gaenge, auftritte: auftritte, ring: ring, tische: tische, ende: ende };
+    }
+    // DIE PARTIE EINES TISCHS (`spielProgramm` tische): gerechnet beim ersten Lesen, gemerkt am Tisch
+    function spielTischPartie(T) {
+        return T.partie || (T.partie = spielBrett(T.u[0], T.u[1], T.same));
+    }
+    // DER PUNKT DES GESCHEHENS zur Stunde h (Koordinaten des Felds): im Lauf der Erste auf der Bahn (vor dem Start die Linie, nach
+    // dem Ziel das Ziel), im Zweikampf die Mitte zwischen den Ringern — oder null, wo kein Gang läuft. Leser: der Kopf des Zuschauers.
+    function spielGeschehen(P, h, stundeSek) {
+        for (var i = 0; P && i < P.gaenge.length; i++) {
+            var g = P.gaenge[i];
+            if (g.art === "brett" || !(h >= g.von && h < g.bis)) continue;
+            if (g.art === "ringen") return { x: 0, z: 0, gang: g };
+            var s = Math.max(0, (h - g.start) * stundeSek),
+                vmax = Math.max.apply(null, g.tempo);
+            return { x: -P.feld.L / 2 + Math.min(P.feld.L, vmax * s), z: 0, gang: g };
+        }
+        return null;
     }
 
     // ── DER BESTAND (Meisterkarte 2 mensch.wirtschaft.markt S1 · handel S1, rein additiv): die Ware ist eine ERHALTENE Größe. Je
@@ -6228,19 +6676,29 @@
         for (var k = 12; k >= 1; k--) d = 2 * k - 1 - x2 / d;
         return x / d;
     }
+    // DER SPRINT AUS DER KRAFT (EINE Rechnung für den Leib des Spielers, `leibVerben`, und den Läufer des Spiels, `spielLeib`): das
+    // Froude-Tempo v̂ an der Kraft Φ der Beine — und ob es im Lauf liegt (der Tastgrad unter tastgradLauf, die Froude-Zahl über dem
+    // Wechsel); außerhalb gilt die Formel nicht
+    function leibSprintHoch(phi) {
+        var G = leibGesetz().gang;
+        return (4 * tanKette(G.maxWinkel) * phi - G.schrittBasis) / G.schrittFroude;
+    }
+    function leibImLauf(phi, vh) {
+        var G = leibGesetz().gang;
+        return phi > 1 && 1 / (2 * phi) < G.tastgradLauf && vh * vh >= 1.3 * G.laufFroude;
+    }
     var _leibVerbenMemo = null;
     function leibVerben() {
         if (_leibVerbenMemo) return _leibVerbenMemo;
         var P = labProportionen(START_PARAMS),
             beinM = (P.thighLen + P.calfLen) * leibMassstab(),
             K = leibKoennen(START_PARAMS),
-            G = leibGesetz().gang,
             g = LEIB.sprung.refG,
             phi = LEIB.kraft * K.kraft,
             einheit = Math.sqrt(g * beinM);
-        var vh = (4 * tanKette(G.maxWinkel) * phi - G.schrittBasis) / G.schrittFroude;
+        var vh = leibSprintHoch(phi);
         // der Sprint liegt im Lauf (der Tastgrad unter tastgradLauf, die Froude-Zahl über dem Wechsel) — sonst gilt die Formel nicht
-        if (!(beinM > 0) || !(phi > 1) || !(1 / (2 * phi) < G.tastgradLauf) || !(vh * vh >= 1.3 * G.laufFroude))
+        if (!(beinM > 0) || !leibImLauf(phi, vh))
             throw new Error("KERN-PFLICHT verletzt: leibVerben außerhalb des Laufs (Bein " + beinM + " m, Φ " + phi + ", v̂ " + vh + ")");
         var hoehe = LEIB.sprung.abdruckM * (phi - 1);
         _leibVerbenMemo = Object.freeze({
@@ -10631,9 +11089,21 @@
         tagesOrte: tagesOrte,
         tagesBindung: tagesBindung,
         tagesWege: tagesWege,
+        tagesGaenge: tagesGaenge,
         tagesPlan: tagesPlan,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // mensch.sport regeln · mannschaft · arena · geistspiel #1 — DIE REGEL-GRAMMATIK (Leser: _spielTag, tagesPlan orte.spiel, _bewohnerKopf)
+        SPIEL_GESETZ: SPIEL_GESETZ,
+        spielLeib: spielLeib,
+        spielLeistung: spielLeistung,
+        spielKlasse: spielKlasse,
+        spielKampf: spielKampf,
+        spielBrett: spielBrett,
+        brettErlaubt: brettErlaubt,
+        spielProgramm: spielProgramm,
+        spielTischPartie: spielTischPartie,
+        spielGeschehen: spielGeschehen,
         // mensch.wirtschaft markt S1 · handel S1 — DER BESTAND (die erhaltene Größe; Leser: _bestandHalter, _bestandTausch, _bestandAnkunft, _bestandBild)
         BESTAND_GESETZ: BESTAND_GESETZ,
         tagesFenster: tagesFenster,
