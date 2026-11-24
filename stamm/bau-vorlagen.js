@@ -1592,7 +1592,7 @@ class AnazhRealm_bau_vorlagen {
     //   tSchmelz K — der Gefrierpunkt des Süßwassers ist die Phasen-Grenze des Eises: an ihm setzt das Eis des Kerns ein
     //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`); null zersetzt sich vor dem Schmelzen
     //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
-    //            (h²/2k + h/H = ∫Frost dt / ρL, gelaende-core `eisDicke`)
+    //            (h²/2k + h/H = ∫Frost dt / ρL, Ashton 1989, gelaende-core `eisDicke`)
     //   brenn    das Brennstoff-Bett des Brands (stoffe.K2, `_brandTempo`), nur wo die Welt als Fläche brennt (gras, laub):
     //            sigma 1/m (Oberfläche je Volumen der Partikel), last kg/m² (die Trocken-Masse des vollen Betts, × lebendig des
     //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
