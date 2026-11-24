@@ -1,12 +1,12 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 06:11 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 06:14 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
 - GELANDET 24.11.: z700 `w28-linse-slot-rest` (01:09) · z701 `w28-wetter-am-ort` → 60e8909d (02:46) · z702 `w28-front-stoff` → 5b0f551a (03:55) ·
-  z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; die Register-Zeile [spiel rennen] 24.11. 02:30,
-  `stamm/studio-gestalt.js:759`, ist damit geheilt und noch zu löschen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
+  z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; das Rennen des Welt-Wechsels, die Register-Zeile dazu
+  ist gefallen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
   Kandidat 05:21 → erster Läufer 05:34 → Urteil 05:43; Anspruch `karte2.erleben.klang.raum#1`, `klang.stimme#1` = koordination f8744a76; `ein-ereignis#2` und
   `getuemmel#1` sind Teil-Stände und nicht beansprucht). ALLE ZWEIGE: die Basis ist der main-Kopf oben. IM ZUG 06:05: nichts.
 - BUCHUNG: war 05:01–06:03 ROT („BUCHE-2 BRUCH“): mein Merge der Station `pm-front-stoff` (punkte-maschine 4f4db7d5) änderte den Richter-Text von
@@ -18,11 +18,12 @@
   probe-tag, `bild:wiese` ansehen; Tags `[gpu-probe: bild:wiese@0.5, gate:studio-begehen, gate:kopplung, gate:wetter-wache] [ci voll]`) · `erbe-geburt`
   2a80ce2d (der eine rote Job voll 17/18 läuft neu, Versuch 4 seit 06:00; bei Grün Stempel `[gpu-probe: gate:kreatur-leben, bild:wiese@0.5] [ci voll]`,
   Stationen `pm-erbe-geburt` 0cf308d9 danach).
-- DRUCK-SCHLAF: der Täter ist benannt (Register, Nachtrag 3 an `scripts/diag-stand-takt.cjs:3782`): die UNGESTEUERTE WINDPHASE der Probe. Sonde 3
-  (`sonde-druck-erbe-3` c11ef4e0, Schleife byte-gleich erbe-geburt): echte Welle 1,217 s bei 1,81 m/s Wind an den Körpern, Mutanten-Welle desselben Laufs
-  2,867 s bei 7,95 m/s (16 Scherben < 13 m). Die freien Körper lesen den Wind zur Sim-Uhr (`stamm/koerper-frei.js:1128`), die Probe stellt nur die Spiel-Uhr.
-  Schnitt benannt, nicht gebaut: die Probe stellt den Wind an der Welle und richtet je Wind. Bis dahin gilt für JEDEN Zweig (auch erbe-geburt): roter
-  Stand-Takt-Job → EIN Neulauf nur dieses Jobs, bei Grün gilt die Vorprüfung.
+- DRUCK-SCHLAF (Register, Nachtrag 3 an `scripts/diag-stand-takt.cjs:3782`): GESICHERT — der Baum von erbe-geburt schläft in der CI auch schnell (Sonde 3,
+  `sonde-druck-erbe-3` c11ef4e0, Schleife byte-gleich: echte Welle 1,217 s bei 1,81 m/s Wind an den Körpern). INDIZ, NICHT BEWIESEN — die Windphase: die
+  Mutanten-Welle desselben Laufs 2,867 s bei 7,95 m/s (16 Scherben < 13 m); die freien Körper lesen den Wind zur Sim-Uhr (`stamm/koerper-frei.js:1128`), die
+  Probe stellt nur die Spiel-Uhr. DAGEGEN steht der Versuch mit erzwungenem Gegenwind 9,4 m/s → 0,983 s. STICHPROBE läuft seit 06:15 (vier Neuläufe des einen
+  Sonden-Jobs → Scratch `sonde3-tafel.txt`: je Welle Schlaf · Wind · Lage); erst ihre Tafel nennt den Täter, vorher kein Schnitt-Auftrag. Für JEDEN Zweig
+  (auch erbe-geburt) gilt: roter Stand-Takt-Job → EIN Neulauf nur dieses Jobs, bei Grün gilt die Vorprüfung.
 - `bewohner-satz` 7f1a426e (11 Sprossen: sprache#1, gespraech#2, netz#1 (geist), generationen#1, absicht#2, koennen#2, kunst#1, seuche#1, recht#1, krieg#1,
   megastadt#1): EINE Röte — „Die Kreatur-Linse Teil 3“, Grund-Lauf `zielplan`: ohne Ziel 10 Uhr 8 %, 13 Uhr 7 % (Soll ≤ 5 %; genannt Kaufmann → Kirche,
   Kind → fremdes Haus, Wache → eigenes Haus). Täter: die Linse fährt einen Stunden-ZWILLING des Tagesplans (`passt`/`NACHT`,
