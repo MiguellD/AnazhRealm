@@ -584,7 +584,12 @@ DER PERSÖNLICHE RAUM — je Leib die Körper-Kugel × `raumKugel`, der
   `herde { fensterRaum gewicht maxNachbarn }` (Schwarm-Kohäsion; Welle LF: im
   Paar-Raum zieht niemand, der Zug ist das Mittel × Tempo — `minAbstSq`/`fensterSq`
   fielen) · `wasser` (Ufer-Scheu) · (`furcht.neugierStoppM`
-  fiel: die Neugier hält am Paar-Raum mit dem Spieler) · `stimmung.schwellen`
+  fiel: die Neugier hält am Paar-Raum mit dem Spieler) · (`furcht.noticeRadius`
+  fiel, VERTRAGS-AKT auge-der-art 24.11.: DAS AUGE DER ART — die Distanz, in der
+  ein Wesen den Spieler oder einen hetzenden Jäger sieht, ist eine Funktion
+  seines Leibs, `SINNES_GESETZ` mit `augeDesLeibs` · `augeFang` · `augeSchaerfe`
+  · `augeAbstand` · `augeEntdeckung` im Namensraum; der Wirt liest sie in
+  `_kreaturSiehtM`, die Kette zeichnet sie als Ausgabe `auge` über `_augeDerArt`) · `stimmung.schwellen`
   (die Schwellen-DATEN-Zeile der Stimmungs-Tabelle — KEINE Stimmung,
   Validator/Leser überspringen den Schlüssel). Alle Kern-Pflicht
   (Wand je Block ein Feld; alter Kern → Bruch, nie Misch-Gesetz).

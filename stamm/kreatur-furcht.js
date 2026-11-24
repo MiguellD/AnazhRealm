@@ -149,9 +149,11 @@ class AnazhRealm_kreatur_furcht {
             if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
         }
         // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1, tetrapoda fluchtDistanz): im pfad flieht jedes Wesen den
-        // Spieler ab der Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`); ihr Radius ist der Radius der Flucht.
+        // Spieler ab der Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`); ihr Radius ist der Radius der Flucht — sobald es
+        // ihn WAHRNIMMT (sein Auge, `witterung`; der Hieb): wen es nicht sieht, den flieht es nicht, der getarnte Jäger kommt
+        // näher (auge-der-art). Vorher floh der Hirsch jeden Spieler ab 120 m, jede Farbe, jeden Boden.
         const D =
-            mode === "pfad" && !jaegt
+            mode === "pfad" && !jaegt && (fearActive || dist <= witterung)
                 ? this._kreaturMenschFlucht(creature, dist, erinnert, FG.bedrohung(e, NAT), wariness)
                 : 0;
         if (!(D > 0)) return wariness;

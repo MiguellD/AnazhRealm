@@ -3138,7 +3138,7 @@ async function kreaturProben(r, T, opts) {
     for (const mahl of [false, true]) await buehne(mahl ? "mahl" : "jagdkreis", (restore) => jagdkreis(restore, mahl));
 
     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
-    // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier noticeRadius, in der Witterung scentRangeM);
+    // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (in der Witterung scentRangeM; die Neugier liest das Auge der Art);
     // höchstens 10 Spielminuten am echten Takt, davor je 2 s Frieden und leerer Anker. Die Ereignisse in Sekunden der Kreatur-Uhr: die
     // erste Pirsch auf den Spieler (ein Wolf im Zustand „jagd" mit dem Ziel „spieler"), das erste Umstellen (≥ 3 Jäger, alle
     // näher als 2 × jagd.hetzM, die größte Winkel-Lücke ≤ anderthalb Plätze, 540°/n) und die Lücke beim ersten Biss ──
