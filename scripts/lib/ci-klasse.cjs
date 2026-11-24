@@ -179,6 +179,42 @@ function r6Kerne(text, lies = liesPlatte) {
     if (offen.length && text.includes("cores.manifest.json")) genannt.push(...alle);
     return { kerne: new Set(fadenQuellen([...new Set(genannt)])), blind: genannt.length ? [] : offen };
 }
+// DAS WELT-TOR (ruhe-gesetz, Entscheid des Koordinators 24.11.): eine Linse, deren SEITE die Welt lädt (Stamm, Kerne, Studios,
+// index.html), hängt an JEDEM Laufzeit-Byte — ihr echter Leser steht in keinem require-Graphen. Bis hier weckte sie nur ein
+// Diff, dessen Zeile eines ihrer Glieder beim Namen nennt: der Selbsttest-Zusatz von gate:koerper-stand ruhte beim Diff von
+// w28-auge-der-art (stamm/bild-kosten.js, drei weitere Stamm-Dateien, tetrapoda-core.js — „15 Dateien, 0 Kerne, 67 Glieder,
+// 24 Zeilen“). Regel statt Schlüssel: ein Welt-Tor ruht NUR, wenn der Diff kein Laufzeit-Byte trägt. Die Türen zur Welt liest
+// der Schlüssel aus der Boot-Bibliothek selbst (jede ihrer Funktionen, die — auch über andere — den Browser startet); eine
+// Linse ist Welt-Tor, wenn ihr eigener Text eine Tür ruft, die sie nicht selbst unter diesem Namen baut.
+const LAUFZEIT_RE = /^(?:stamm\/|worlds\/|index\.html$|cores\.manifest\.json$|[^/]+\.js$)/;
+const TUER_SAAT = ["starteBrowser", "startePuppeteer", "werkbankTor"];
+function weltTueren(lies = liesPlatte) {
+    const t = lies(path.join(ROOT, "scripts/lib/welt-boot.cjs")) || "";
+    const koepfe = [...t.matchAll(/^(?:async )?function ([\w$]+)\(/gm)];
+    // der Rumpf endet an seiner Klammer in Spalte 0 (prettier), Kommentar-Zeilen zählen nicht: sie dürfen eine Tür zitieren
+    const rumpf = koepfe.map((m) => {
+        const ab = m.index + m[0].length;
+        const zu = t.indexOf("\n}", ab);
+        return [m[1], t.slice(ab, zu < 0 ? t.length : zu).replace(/^\s*\/\/.*$/gm, "")];
+    });
+    // Tür wird nur, was die Bibliothek unter dem eigenen Namen ausführt (ein Schlüssel `name: …` ist ein anderes Ding)
+    const aus = t.slice(t.lastIndexOf("module.exports = {"));
+    const gibtAus = (n) => new RegExp(`^\\s*${n},?\\s*$`, "m").test(aus);
+    const tuer = new Set(TUER_SAAT);
+    for (let neu = 1; neu; ) {
+        neu = 0;
+        for (const [n, r] of rumpf)
+            if (!tuer.has(n) && gibtAus(n) && [...tuer].some((d) => new RegExp(`(?<![\\w$.])${d}\\(`).test(r)))
+                neu = tuer.add(n).size;
+    }
+    return tuer;
+}
+const istWeltTor = (text, tueren) =>
+    [...tueren].some(
+        (d) =>
+            new RegExp(`(?<![\\w$])${d}\\(`).test(text) &&
+            !new RegExp(`\\b(?:function|const|let|var)\\s+${d}\\b(?!\\s*[,}])`).test(text)
+    );
 // DIE ABHÄNGIGKEIT EINER LINSE (die EINE Quelle; das Schulden-Hauptbuch liest sie mit): ihr require-Graph (`code`), dazu die
 // Anker ihres Täters aus ihren EIGENEN Dateien (der Graph der geteilten Boot-Bibliothek welt-boot.cjs trägt keinen): die Datei-
 // Namen, die sie nennt (`text`), die Glieder (`_name`) und die Zeilen (Literal ≥ 24 Zeichen), in die sie ihn einspielt — und
@@ -193,6 +229,7 @@ function r6Abhaengig(linse, lies = liesPlatte) {
         code,
         text,
         ...r6Kerne(text, lies),
+        welt: istWeltTor(text, weltTueren(lies)),
         namen: new Set(text.match(NAME_RE)),
         zeilen: [...text.matchAll(LIT_RE)].map((m) => m[2]).filter((l) => !l.includes("${")),
     };
@@ -206,6 +243,7 @@ function r6Urteil(b, kx, abh = r6Abhaengig) {
     const a = abh((/node\s+([\w./-]+\.c?js)/.exec(b) || [, ""])[1]);
     for (const [f, zz] of kx.diff) {
         if (/^(package-lock\.json|vendor\/)/.test(f) || a.code.has(f) || a.kerne.has(f) || a.text.includes(f)) return ja(f);
+        if (a.welt && LAUFZEIT_RE.test(f)) return ja(`${f} (Laufzeit-Byte: die Seite der Linse lädt die Welt)`);
         const t =
             !/^(scripts|\.github)\/|\.md$/.test(f) &&
             zz
@@ -276,6 +314,9 @@ module.exports = {
     r6Urteil,
     r6Abhaengig,
     r6Kerne,
+    weltTueren,
+    istWeltTor,
+    LAUFZEIT_RE,
     r6Text,
     r6Immer,
 };
