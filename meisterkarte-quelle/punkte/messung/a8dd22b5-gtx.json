@@ -1,7 +1,7 @@
 {
  "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
  "geraet": "gtx",
- "zeit": "2026-11-24T14:54:53.541Z",
+ "zeit": "2026-11-24T15:15:58.465Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.megastadt#1": {
@@ -842,6 +842,146 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.pflanzen.biome#1",
    "modus": "session"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19998 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19998 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "gpu": "nvidia/pascal",
+   "konsum": "kc845a01909ec",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 97,
+   "fremd": {
+    "s": 98.5,
+    "takte": 45,
+    "fremdS": 42.92,
+    "kerne": 0.436,
+    "fensterKerne": 0.664,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.94
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-a8dd22b5-w154526 x listen/kandidat-gtx-a8dd22b5-w154526.txt",
+      4.63
+     ]
+    ],
+    "dienerS": 29.05,
+    "diener": [
+     [
+      "dwm.exe",
+      12.23
+     ],
+     [
+      "System",
+      10.53
+     ]
+    ],
+    "geraetS": 28.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      9.25
+     ],
+     [
+      "SearchIndexer.exe",
+      0.67
+     ]
+    ],
+    "eigenS": 149.59,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T14:58:33.435Z",
+   "abdruck": "ceb67a6f26e5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.oeko.sukzession#1": {
+   "gruen": true,
+   "zahl": "S1 uebergaengeInFolge 4 gegen Soll ≥ 4 ✓ · aschePlus 0,4 gegen Soll > 0 ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 1.62,
+   "gpu": "nvidia/pascal",
+   "konsum": "kc845a01909ec",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 97,
+   "fremd": {
+    "s": 98.5,
+    "takte": 45,
+    "fremdS": 42.92,
+    "kerne": 0.436,
+    "fensterKerne": 0.664,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.94
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-a8dd22b5-w154526 x listen/kandidat-gtx-a8dd22b5-w154526.txt",
+      4.63
+     ]
+    ],
+    "dienerS": 29.05,
+    "diener": [
+     [
+      "dwm.exe",
+      12.23
+     ],
+     [
+      "System",
+      10.53
+     ]
+    ],
+    "geraetS": 28.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      9.25
+     ],
+     [
+      "SearchIndexer.exe",
+      0.67
+     ]
+    ],
+    "eigenS": 149.59,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T14:58:33.435Z",
+   "abdruck": "6cc4546e5d39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.oeko.netz#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -853,7 +993,9 @@
   "k30dc08bee01f": "jVVNj5swEP0vObZlzWcwlvbgLFGTQ3ezUqWexzAGNgSQDaGbqv+9goUkwB46J2S9mXnz5tn8WVUQHSHBhzddFiu2+rL6ttJwRkOjOqN6eNMrtgoiy0aH8Y8gnPPvHSxSWVVrkmeCgCggPaHRqBqz/CHq00CgG1NG2i1PDoRIciFhy6/xxB8f52VygXFp1CDxWsSjsfTYHNjoBAQa0Mi+8QA2Tbq2gZE+aMhfQnKN9gfnB1e6BxrOigko4inzYO356LF9y/l2yTLOAGsjzwo99rViP5Amu+u1yFHQGhfANEc1JCG1LFeMZDedJJ1Ms0SZN1pPmlEn9mzKCAnm2AR1FqW1UalSYDHARWD7FrBNu5gjqRpD3jMCIYCKudYpYJGgmnAwnUiuLUZ+03nRI5xQgVFAOmppOr4tbtoQQnZLLnlPvG8xEo8t37OtSWK31A+B+X60ETl3x7srYjwPk5vV+OuioY7STJ2mUkkXbdOZz69TiFEZx1LXVyR1AZAONyIk/JV35pobS9+GGvMAgN4ZhVDCdwsNdSnrFhQaSdWMZnHR8z3Gk4WzdA2n04DypOM60WKAujP4PQ3PdyRdM0K+DnIu5Pm4DsYFs3xMktJ1A489bdw5+KzgZIBIVCbluHXhRTL4zKQt5rUhyrIeJREUJTLikOJ+0c8t3yR8e1vhIXwv6a/3o8On8cy3n3UoVX2dVqxN6TLZTxrNybeZqo0WonSE21IgBHMRL6hyTHAio/Bp0Fm7jW50Qnf8+Dox7mWx5UuGncCFbvS45Ahc4bHB4X3sp89Pi+oooDgOCVFsWeuY9WZ/4bs7VXZ8/9M8tPz/YstfuyYVRqRSpcy6F5Gk0OgU8vr2a/j7Dw==",
   "kebf3cd81e7d3": "bVVdj5swEPwveezV5/AVjKV7cI5IOantJT9hbdbAhUBkQ2hT9b9XcCEJcPsUohnveHYW/i5OoA6Q4vOHrcoFX3xbfF9YOCOxaM5onj/sgi8i5bjocfFZVAjx2sGUyU+1pUUuKcgSsiOSxtSYF8+qp4FEP2GcthuR7ijV9ELj9uVlSi0kJhWpQeONGLBEB3wKbGwKEgk0um92BS+XbOUCp32xWLzH9FbtTyF2vvZ3LJ4cJqFMxmqjVRBiwN/+CLERM5VJDliTIi/t0NdJwkgv+UOvGcdASy6AWYHmSkLmOL4cxK47OztrJkRdNNaOmjEvCVzGKY2m2BRtrrKanEwlsbzCZeSGDvD13O301BD9qAikBCanXmeAZYpmpGHpKb1yOP3Npoce4IgGSAnZ4OXSC11594ZSup1rKXrhfYtBeOKEgeuMiN1Q6bkzWLyJIYLdM9veEMP/cSrutZ81tCrLzXFslfbRXXr8x1yezSBBQw6VrW9o5gMgu25CTMVedAGbhsveLzbwAIA9hIUyKrYzH22l6xYMkvTUDIHxMQgDLsTbDFzD8XhFBdrzPTUdoq27kD/KCEJPsxWn9OlzSeaX/lwJcsG8GEha+34U8Ne1PwWfDRwJyNTkWg+Tl4HS0VdBbcHaSaKcyFGrcDLtSbVM0N04DdODsaiJrKp68Foy1MipR8tH3q+2m9nmISBxW6nNa7oX49qI6T37DpWpbzbK1VL7XPf61Aydm5q0oLIB7mqJEPEvoBc0BaY4MkWGLOp2p1UPSv3hx9PInMssQpccu+mVtrFDghT4MuBfzLtFc5BQHq5AlTjOKumzvX4X27Ep8X7H4m4HR+WlnZ/bTFwPPqGiJ1PpvHu90gwam0FR378t//4D",
   "kcc6852a0879f": "bVXbjpswEP2XPHbLmmswlvbBWVbK9qJmpUp9HpsxsCEQ2bC0qfrvlZOQBMi8EZ2Zc+bMePJ3sQe5hRwf301TL9ji0+LzwsAHOgb1B+rHd7Ngi0R6PgaMv3EbhHP+bGFSl/vWkKoUBEQNxQ6dTrdYVo/ymAYCw4wy0r/wfEOIIgeS9vwSL/zpaVqmEpg1TgsKL0UimqmITYGdyUGgA506Ep/BrkuXPjByDJryHym5RE8534Qq3NDUkk8KCqizsfpkGcUYsdf+rtKsBGydqqzNwO1lcaJcduX7PsvR0DsHwKJCfU5C6nmhGASvrC3WqkmiqjpjRmQ0yCKfMkKSKTZHU8qidfa6EVif4SLxYw/Yqp/1ke87R90qAiGAiqnfBWCdox5pcAOplh4jv+m06BZ2qMGpoRi8dIPYF1dvCCHruZbqKPxIMQjPvDjyvVGiHSz5sAbz12GVjt90fUEMv6f5dd3424zQyKLUu7FVKkTfDdi3uTxTQIba2TamvaBpCICUndnI8YVswnSaeW1syAMAerMshBK+nvloGtX2oNHJ992wMCFGccQ4f52BW9jtzqhIBWEgp0M0rV3yWxlRHCi6ZIQ8nB7KvOnTk3AOWFZDklJhmETseZVPwR8adg6IXJdKDZMXkVTJvUXtsWod0TTtYImgqNBaUt8Oe9OfbsU10r6Rv/7kN5dkOCf3GBrdXroVS1eFTB2XR87QpW6dHmQxwH0lEKz02VwOqCvMcWSliGliV7xXJ90He27i8ylQD6MFPswrlmhNrk1nhkFLCEXE7oylR70VUG/PQJl53jJjXzjnqx98PfLk6093Q1MyjaC3fm6K1clDaR/KcK/2KMleN6q0F5EU0JkCqvb69/DvPw==",
-  "k9ab40390d35b": "bVVdk6IwEPwvPt4eG/mSkKp9iGKVXu3V6k+YhAmwIlgJyJVX99+vQFEB50mtnnRPTyf+nZ1AHiDB929TFjM2+zH7OTNwRsugPqN+/zYzNgul7aDL+LUI53zVwqTOTpUheSYIiALSI1q1rjDL32XXBgK9mDLSrHmyI0SRC4kafq81//gYH5MLjEurAoX3Q3waK5+NgbVJQKAFteqIb+D5nC4cYKQrGvGviNyr+c35zlPejkZ8RyVPJuwCing4QbjwA/TZtnmpNs4AKyvPCtPz23EQqjl74pz0aGisC2Cao741IbVtT/Sil601rV2jRpXXxgzIqBv7DmWEhGNsgiaTaWWddCmwuMFF6AQ2sGUzmSM51ZZ6VgRCABVjz1PAIkE90DB3pVrYjPyh40MPcEQNVgFp7+XcDRzx8IYQsplqyTvhHUUvPLYD37EHje1yybk1mG/7OHXf6eaO6H+Pkkfk+H5CaGSa6ePQKuWhM3fZ51SeSSFGbR1KU93R1ANAersdEeF73gYtGnc+Buv7AIA+hYVQwjcTH02pqgY0Wsmp7gPjoR/4jPPtBFzB8XhD+cr1XDleoqnakD/L8ANX0QUj5O16WaZDX6+EdcEs75uU8rzQZ6ulNwafNRwtEInOlOo3L3ypwldBbTCvLFGWVW+JoKiwtaR4Xvauub4Xj4qaUq5XyZ4Pa70sX2SqYyl1dZ9YLObKY6oLkJygM11ZDci0hztKIITsBfSCOscEB3aKgIZtzBv5pNbrP7wNQnyZbPuSYWt0YWrTL1uCJ3z2YjUN6oOA4nADyti2FzH7xTlffvHN0Jho33m4G16i9mXm28+Ud/6ueBfdFe9ITijJSZcqa19FkkJtUsirx9/Ev/8="
+  "k9ab40390d35b": "bVVdk6IwEPwvPt4eG/mSkKp9iGKVXu3V6k+YhAmwIlgJyJVX99+vQFEB50mtnnRPTyf+nZ1AHiDB929TFjM2+zH7OTNwRsugPqN+/zYzNgul7aDL+LUI53zVwqTOTpUheSYIiALSI1q1rjDL32XXBgK9mDLSrHmyI0SRC4kafq81//gYH5MLjEurAoX3Q3waK5+NgbVJQKAFteqIb+D5nC4cYKQrGvGviNyr+c35zlPejkZ8RyVPJuwCing4QbjwA/TZtnmpNs4AKyvPCtPz23EQqjl74pz0aGisC2Cao741IbVtT/Sil601rV2jRpXXxgzIqBv7DmWEhGNsgiaTaWWddCmwuMFF6AQ2sGUzmSM51ZZ6VgRCABVjz1PAIkE90DB3pVrYjPyh40MPcEQNVgFp7+XcDRzx8IYQsplqyTvhHUUvPLYD37EHje1yybk1mG/7OHXf6eaO6H+Pkkfk+H5CaGSa6ePQKuWhM3fZ51SeSSFGbR1KU93R1ANAersdEeF73gYtGnc+Buv7AIA+hYVQwjcTH02pqgY0Wsmp7gPjoR/4jPPtBFzB8XhD+cr1XDleoqnakD/L8ANX0QUj5O16WaZDX6+EdcEs75uU8rzQZ6ulNwafNRwtEInOlOo3L3ypwldBbTCvLFGWVW+JoKiwtaR4Xvauub4Xj4qaUq5XyZ4Pa70sX2SqYyl1dZ9YLObKY6oLkJygM11ZDci0hztKIITsBfSCOscEB3aKgIZtzBv5pNbrP7wNQnyZbPuSYWt0YWrTL1uCJ3z2YjUN6oOA4nADyti2FzH7xTlffvHN0Jho33m4G16i9mXm28+Ud/6ueBfdFe9ITijJSZcqa19FkkJtUsirx9/Ev/8=",
+  "kc845a01909ec": "bVVdj5swEPwveeyVc/gKxtI9OMdJSXtVc1KlPq/NGrgQiGw4eqn63ysIJAGyb0Sz3tnZ2c3fxRHkHhJ8fDdlsWCLL4uvCwMfaBnUH6gf382CLUJpO+gy/sbbIJzz5xYmdXasDMkzQUAUkB7QqnWFWf4ouzQQ6MWUkeaFJztCFDmRqOGXeOFPT9NncoFxaVWg8PKIT2PlsymwNgkItKBWXeEevFzSlQOMdEEj/jMil2go5ztPeTsa8R2VPJlVF1DE4w7ClR+gz7bNXbZxBlhZeVaYob4dB6FasmvNH7McDY11Akxz1H0SUtv2xEB63UrTyjVJVHltzKgYdWPfoYyQcIpN0GQyrayjLgUWPVyETmADWzezPpJjbalbRiAEUDHVPAUsEtQjDktXqpXNyB86fXQPB9RgFZAOWi7dwBFXbQghmzmXvCPelRiIx3bgO/YosR0u+WgF5tvBTt033VwQw+9RcrUcf5sVNDLN9GEslfLQWbrsdU7PpBCjtvalqS5o6gEgZX010m3JzoummdfGhjwAoDdmIZTwzUxHU6qqAY1WcqwHw3joBz7jfDsDV3A49ChfuZ4rp0M0VWvyWxp+4Cq6YoQ8nJdl3vR5JawTZvmQpJTnhT57XntT8IeGgwUi0ZlSw+SFL1V4z6gN5pUlyrIaJBEUFbaSFLfD3jXne3GNqCnl78/k5pr0JyW546muSqmrS8ditVQeU52B5Ayd6cpqQKYD3FECoaU/m80JdY4JjuQUAQ1bmzfqzD1qz07QnwP1MDLxaf5ihq3QhanNMGwJnvDZndE0qPcCin0PlLFtr2L2jXO+/sk3I12+/1p2Gu7GS9ReZr59Tdedjs+Sv0UJ+TzfrCNKctSlytqrSFKoTQp5df2b+Pcf",
+  "k97d76e5a2945": "bVXbkqIwFPwXH3eWidwkpGoeolilVbM74yechBNgRLASkC239t+3YES5eJ7Q6rY7fTr4d3EGeYQEX79MWSzY4sfi58LABS2D+oL69css2CKUtoMu499DOOebFiZ1dq4MyTNBQBSQntCqdYVZ/io7Ggj0YspIs+XJJyGKXEnUvL1NqbnAuLQqUHgn+jRWPpsCa5OAQAtq1YndwMslXTnASDc04h8RuU/zi/NPT3mfNOJ8O1UWUMRjx+HKD9Bn+4bzLZ85jTPAysqzwvTadhyEaskGejOOhsa6AqY56hsJqW17oje8biNt45kQVV4bMxKjbuw7lBESTrEJmkymlXXWpcDiBhehE9jA1vPEk3NtqaEjEAKomOadAhYJ6pGHpSvVymbkD53+6BFOqMEqIO2zXLqBIx7ZEEJ2cy95Z7yT6I3HduA79ojYLpZc2oD5nvc1bD/T3R3Rfx8l/DGHmaCRaaZP46iUh87SZe9zeyaFGLV1LE11R1MPAOntNkSEH3hbsmjKfBys5wEAHZSFUMJ3sxxNqaoGNFrJue4L46Ef+Izz/Qxcwel0Q/nK9Vw5XaKp2pIPbfiBq+iKEfLyfVHmh/6+EtYVs7wnKeV5oc82a28Kvmg4WSASnSnVb174UoXPitpgXlmiLKs+EkFRISMuKYbL/t200W4He4yaUm43yYGPZ7v2nnSqUyl1dT+xWC2Vx1RXIDlDZ7qyGpBpD3eUQAjZE+gVdY4JjuIUAQ3bmjdy4NbrH15GJb7Otn3NsA26MLXply3BEz57spoG9VFAcbwBZWzbq7ir4fqD78bBRIdPGpHZNFvO9+8pbwbQDe9EzijJWZcqa9+KJIXapJBXj7+Ff/8B"
  },
  "ungemessen": {
   "karte2.mensch.macht.recht#1": {
@@ -982,6 +1124,416 @@
    "abdruck": "0e2470c9b605",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 45,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,006 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "der Deckel der Leiter riss nach 45,006 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,006 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "0a6772643477",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: Frame p95 41.595 ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms) · Täter: stamm/siedlung-bewohner.) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: Frame p95 41.595 ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms) · Täter: stamm/siedlung-bewohner.) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k97d76e5a2945",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "b0f00dcbbf88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S1 die Messung der Leiter warf nach 3,981 s: /eval: {\"ms\":3740,\"fehler\":\"planet: koerper ist kein Objekt (string)\",\"stapel\":[\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S1 die Messung der Leiter warf nach 3,981 s: /eval: {\"ms\":3740,\"fehler\":\"planet: koerper ist kein Objekt (string)\",\"stapel\":[\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k97d76e5a2945",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "47ad0509727a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 40,189 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,189 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "der Deckel der Leiter riss nach 40,189 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,189 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "d0a0a97b71a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": false,
+   "zahl": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S1 baumAnteilProzent 16,667 % gegen Soll ≤ 30 % ✓ · stuempfe 0 gegen Soll ≥ 10 ✗ · Täter: stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat)) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (die Probe sah: S1 baumAnteilProzent 16,667 % gegen Soll ≤ 30 % ✓ · stuempfe 0 gegen Soll ≥ 10 ✗ · Täter: stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat)) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k97d76e5a2945",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "87a6d08058b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 20,164 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,164 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "exit": 0,
+   "minuten": 4.61,
+   "grund": "der Deckel der Leiter riss nach 20,164 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,164 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 275.3 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) · Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state; const C = AnazhRealm; const B = C.BRAND; const cs = C.LIFE_FIELD.cel — Heap nach der Rücknahme 192.8 → 480.2 MB (+287.4 > 64)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 275.5,
+   "fremd": {
+    "s": 278.9,
+    "takte": 125,
+    "fremdS": 172.78,
+    "kerne": 0.619,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      37.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.39
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      24.89
+     ]
+    ],
+    "dienerS": 83.17,
+    "diener": [
+     [
+      "System",
+      37.88
+     ],
+     [
+      "dwm.exe",
+      23.25
+     ]
+    ],
+    "geraetS": 495.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      284.5
+     ],
+     [
+      "MsMpEng.exe",
+      84.48
+     ],
+     [
+      "SearchProtocolHost.exe",
+      82.67
+     ]
+    ],
+    "eigenS": 944.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T15:15:58.465Z",
+   "abdruck": "8dcb369fb653",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session"
   }
  }
