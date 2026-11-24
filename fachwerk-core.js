@@ -2701,6 +2701,7 @@
       bergfried:{ zeile:'herrschaft:bergfried', geschosse:[6,9], grundriss:['I'], personen:2, raeume:[['verlies','b',25,0,'eg','turm'],['eingang','b',25,0,'og','turm'],['wachstube','b',25,0,'og','turm'],['wehrplatte','b',81,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
       torhaus:{ zeile:'herrschaft:stadttor', geschosse:[2,5], grundriss:['I'], personen:4, raeume:[['durchfahrt','b',28,0,'eg','kern'],['wachstube','b',15,0,'eg','anbau'],['zollstube','b',10,0,'eg','anbau'],['torkammer','b',28,0,'og','kern'],['wehrplatte','b',60,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
       zeughaus:{ zeile:'herrschaft:zeughaus', geschosse:[2,3], grundriss:['I','L'], personen:0, raeume:[['ruestkammer','b',80,0,'eg','kern'],['magazin','b',60,0,'og','kern'],['wache','b',15,0,'eg','strasse']], mass:[['turm','setze',0],['kuppel','setze',0]] },
+      wache:{ zeile:'herrschaft:hauptwache', geschosse:[1,2], grundriss:['I'], personen:4, raeume:[['wachstube','b',15,0,'eg','strasse'],['arrest','s',6,0,'eg','hinten',2],['kammer','b',12,0,'og','oben']], mass:[['arkade','setze',1],['balcony','setze',0],['annexN','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // die Wache des Orts (die Hauptwache: die Stube der Mannschaft hinter dem Bogengang zur Gasse, der Arrest dahinter); ihre Zahl ist `wacheLose`
       werkstatt:{ zeile:'werk:werkstatt', geschosse:[1,3], grundriss:['hof','L','I'], raeume:[['werkraum','b',35,0,'eg','strasse'],['lager','b',12,0,'eg','fluegel'],['wohnen','p',20,20,'og','oben'],['schuppen','b',18,0,'eg','anbau'],['werkhof','b',24,0,'eg','offen']], mass:[['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
       backhaus:{ zeile:'werk:backhaus', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['ofen','b',10,0,'eg','anbau'],['vorraum','b',15,0,'eg','kern'],['teigraum','b',8,0,'eg','kern']], mass:[['annexN','setze',0],['balcony','setze',0]] },
       speicher:{ zeile:'werk:speicher', geschosse:[3,6], grundriss:['I'], personen:0, raeume:[['schuettboden','b',95,0,'alle','kern']], mass:[['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
@@ -2740,6 +2741,16 @@
   const l=Math.max(0.2,HAUSHALT_MITTEL-1+HAUSHALT_JE_WOHL*(w-1)), q=[1]; for(let k=1;k<12;k++) q.push(q[k-1]*l/k); const S=q.reduce((a,b)=>a+b,0);
   let k=0, c=q[0]/S; while(k<11&&u>=c){ k++; c+=q[k]/S; }
   return { personen:Math.max(1,Math.min(12,1+k)), wohl:w }; }
+    // DIE WACHE DES ORTS (der Grund-Satz, Leiter mensch.macht.megastadt): ein Ort trägt so viele Wachen, wie seine Leute Hüter der
+    // Ordnung tragen, je Wache ihre Mannschaft (BAU_NUTZUNG.wache.personen) — gerundet: die k-te Wache steht im ersten Wohn-Los, mit
+    // dem die Haushalte des Orts (Kern = alt, `haushaltVon`) k + ½ Mannschaften füllen. Der Ort wächst in seine Wache hinein (die
+    // Chronik schneidet die Lose nach ihrem Jahr); ein Dorf unter 587 Leuten trägt keine. Bis hier trug kein Plan eine Wache.
+    // Band: Eurostat 2022 (crim_plce) — 341 Polizisten je 100 000 Einwohner im Mittel der EU
+    const ORDNUNG_JE_KOPF=341e-5;
+    // prettier-ignore
+    function wacheLose(geb, n){ const M=BAU_NUTZUNG.wache.personen/ORDNUNG_JE_KOPF, aus=[]; let leute=0;
+  for(let i=0;i<n;i++){ leute+=haushaltVon(geb[i].seed,geb[i].wohl).personen; if(geb[i].rolle==='wohnhaus'&&leute>=(aus.length+0.5)*M) aus.push(i); }
+  return aus; }
     // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
     // prettier-ignore
     function _bauweiseWurf(k, seed){
@@ -5101,7 +5112,7 @@
     const STADT_GRAMMATIK={
       zeit:[['mittelalter',500,1500],['fruehneuzeit',1500,1800]],
       herrAb:49,                                                                              // ab so vielen Losen (die Großstadt) hat jede Stadt vor 1700 einen Herrn
-      grund:[{typ:'gasthaus',ab:8,los:()=>1,viertel:'markt'},{typ:'schmiede',ab:10,los:n=>Math.max(2,(n*0.62)|0),viertel:'handwerk'}],   // DER GRUND-SATZ jedes Orts ab `ab` Losen (Dorf wie Stadt): das Los `los(n)` trägt den Bau-Typ
+      grund:[{typ:'gasthaus',lose:(g,n)=>n>=8?[1]:[],viertel:'markt'},{typ:'schmiede',lose:(g,n)=>n>=10?[Math.max(2,(n*0.62)|0)]:[],viertel:'handwerk'},{typ:'wache',lose:wacheLose,viertel:'tor'}],   // DER GRUND-SATZ jedes Orts (Dorf wie Stadt): die Lose `lose(geb, n)` tragen den Bau-Typ — Gasthaus ab 8, Schmiede ab 10 Losen, die Wache nach den Leuten (`wacheLose`)
       fern:{mitteleuropa:['hollaendisch','italienisch'], alpin:['italienisch','fraenkisch'], mediterran:['andalusisch','marokkanisch'], nordisch:['hanseatisch','hollaendisch'], fernost:['chinesisch','japanisch']},   // die fremden Kaufleute je Region (ihr Kontor am Markt)
       herr:{nordisch:'norwegisch'},                                                           // die Kultur des Herrn, sonst gotisch (BURG-GESETZ)
       viertel:{
@@ -5120,6 +5131,7 @@
         wohnen:{ lage:null, lose:n=>[0,n],
           bauten:{mittelalter:[{typ:'wohnturm',je:5,wenn:(p,f)=>p.wohl>=1.1&&f<0.45},{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.1&&f<0.45}], fruehneuzeit:[{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.05&&f<0.5}]},
           dinge:[] },
+        tor:{ lage:'tor', lose:()=>[0,0], bauten:{}, dinge:[] },                              // die Wache (der Grund-Satz stellt ihre Lose): an der Gasse, die dem ersten Torplatz am nächsten liegt (dorfLayout `zug.tor`)
         vorstadt:{ lage:'vor der Mauer', lose:()=>[0,0], bauten:{}, dinge:[] },              // was vor der Mauer steht (dorfLayout: der Überlauf des Wohnens)
         hafen:{ lage:'wasser', lose:()=>[0,0], bauten:{}, dinge:[] },                         // was im Ring am Wasser steht (dorfLayout: Handwerk und Wohnen binnen STADT_DICHTE.hafenM am Wasser des Rasters) — die Rolle folgt der LAGE: ohne Wasser am Ring trägt die Stadt keinen Hafen (`lage.wasser` 0)
       },
@@ -5164,7 +5176,7 @@
       const vonLos=new Array(n).fill('wohnen');
       for(const name of ['kirchhof','markt','handwerk']){ const [a,b]=V[name].lose(n); for(let i=a;i<Math.min(b,n);i++) vonLos[i]=name; }
       vonLos[0]='kirchhof';
-      for(const z of SG.grund) if(n>=z.ab) vonLos[z.los(n)]=z.viertel;
+      for(let i=0;i<n;i++){ const z=SG.grund.find(q=>q.typ===geb[i].rolle); if(z) vonLos[i]=z.viertel; }   /*das Los des Grund-Satzes (DORF schrieb seine Rolle) steht im Viertel seiner Zeile*/
       const zahl={};                                                                          // je Viertel × Band × Zeile: wie viele Lose sie traf (n, je)
       for(let i=0;i<n;i++){ const name=vonLos[i], p0=geb[i], f=i/Math.max(1,n-1), frei=p0.rolle==='wohnhaus';
         for(const [band] of SG.zeit){ let zeile=null;
@@ -5246,7 +5258,7 @@
     kirche(p,markBei(leg,jahr),jahr); }
   const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*der Bau-Typ ist die Rolle des LOSES: jeder seiner Bauten traegt sie*/
   const SG=STADT_GRAMMATIK;
-  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))) p.rolle=z.typ;   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
+  for(const z of SG.grund) for(const i of z.lose(geb,n)) for(const p of losBauten(i)) p.rolle=z.typ;   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus, Schmiede und Wache jedes Orts*/
   const grammatik=staedtisch&&SG.zeit.some(z=>jahr>=z[1]&&jahr<z[2]);                        /*DIE STADT DER GRAMMATIK: staedtisch, ihre Gestalt in einem Band der Tafel (`zeit`) — die Chronik-Stadt steht in der Gegenwart, Antike und Moderne tragen keine Zeile: sie bleiben, was sie waren*/
   const herrBar=staedtisch&&jahr<1700&&n>=16, muenze=herrBar&&rnd()<0.5, herr=muenze||(herrBar&&grammatik&&n>=SG.herrAb), burgAb=geb.length;   /*BURG-GESETZ: die Stadt hat einen Herrn — in der Grammatik ab `herrAb` Losen jede (die Muenze faellt wie bisher; ein Herr ohne Muenze zaehlt nicht in das Mass der Gestalt, `nGestalt`)*/
   if(herr){
@@ -6426,7 +6438,9 @@
     const anker=(A,r)=>{ if(!A) return null; for(const side of [1,-1]) curs.push({rd:A.rd, side, cur:Math.max(2.5,A.u-r*0.6)}); return {x:A.x,z:A.z,r}; };
     if(vLose('burg')) zug.burg=anker(anGasse(q=>H?H(q.x,q.z):Math.hypot(q.x,q.z)), SD.zugBurgM);
     const nHw=vLose('handwerk'), hx=Math.cos(plan.zugHandwerk)*Rw*SD.zugSeite, hz=Math.sin(plan.zugHandwerk)*Rw*SD.zugSeite;
-    if(nHw) zug.handwerk=anker(anGasse(q=>(zug.burg&&Math.hypot(q.x-zug.burg.x,q.z-zug.burg.z)<zug.burg.r+30)?-1e9:-Math.hypot(q.x-hx,q.z-hz)), Math.sqrt(nHw*SD.zugJeLosM2/Math.PI)); }
+    if(nHw) zug.handwerk=anker(anGasse(q=>(zug.burg&&Math.hypot(q.x-zug.burg.x,q.z-zug.burg.z)<zug.burg.r+30)?-1e9:-Math.hypot(q.x-hx,q.z-hz)), Math.sqrt(nHw*SD.zugJeLosM2/Math.PI));
+    const nTor=vLose('tor'), T0=tore[0];                                                    /*DIE WACHE AM TOR: ihr Viertel zieht an die Gasse, die dem ersten Torplatz (dem Ende der ersten Trasse) am naechsten liegt*/
+    if(nTor&&T0) zug.tor=anker(anGasse(q=>-Math.hypot(q.x-T0.cx,q.z-T0.cz)), Math.sqrt(nTor*SD.zugJeLosM2/Math.PI)); }
   // DER FRIEDHOF (das Viertel kirchhof): der Hof im Los der Kirche hinter ihr (`tryPlace` hält ihn frei wie ihren Grundriss) — ein
   // umzäunter Rasen in ihrer Flucht, in ihm die Gräber seiner Zeile in Reihen um den Mittelgang (`dinge`), der Zaun offen zur Kirche.
   const friedhof=(o,f)=>{ const F=SD.friedhof, zeile=SG.viertel.kirchhof.dinge.find(q=>q.art==='grabstein'), c=Math.cos(f.phi), s=Math.sin(f.phi);
@@ -6439,7 +6453,8 @@
     for(let lz=-f.ez+F.randM; lz<=f.ez-F.randM+1e-6; lz+=gz) for(let lx=-f.ex+F.randM; lx<=f.ex-F.randM+1e-6; lx+=gx){ if(k>=zeile.max||Math.abs(lx)<0.9) continue;   /*der Mittelgang*/
       const p=ecke(lx+(rf()-0.5)*0.3, lz+(rf()-0.5)*0.3); dinge.push({art:'grabstein', viertel:'kirchhof', x:p.x, z:p.z, th:f.phi+(rf()-0.5)*0.24}); k++; } };
   const folge=[...Array(n).keys()];
-  if(stadt) folge.sort((a,b)=>((plan.houses[a].viertel==='burg'&&plan.houses[a].rolle!=='scheune')?0:1)-((plan.houses[b].viertel==='burg'&&plan.houses[b].rolle!=='scheune')?0:1)||a-b);   /*der Herr baut zuerst: seine Lose nehmen den Berg, bevor die Stadt an ihn waechst*/
+  const vorweg=h=>h.rolle==='scheune'?2:h.viertel==='burg'?0:h.viertel==='tor'?1:2;
+  if(stadt) folge.sort((a,b)=>vorweg(plan.houses[a])-vorweg(plan.houses[b])||a-b);   /*der Herr baut zuerst: seine Lose nehmen den Berg, bevor die Stadt an ihn waechst; dann die Wache ihr Tor*/
   for(const i of folge){
     const g=plan.houses[i], wurf=losWurf(i);                                                 /*der Wuerfel des Loses (Scheunen-Stand, Zeiger-Wahl)*/
     if(g.rolle==='scheune'){
@@ -7489,6 +7504,10 @@
         // DER GRABSTEIN (STADT_GRAMMATIK, das Viertel kirchhof — rein additiv): das Grab des Friedhofs hinter der Kirche, je Same
         // eine von drei Gestalten (die Tafel mit Giebel, das Steinkreuz, die Tafel mit Kopf); die Schrift-Seite ist −z
         grabstein: { lab: "Grabstein · Sockel, Tafel, Kreuz", gestalten: 3, siteTag: "friedhof", salz: 0x6c1d, tritt: { typ: "kasten", ex: 0.36, ez: 0.16 } },
+        // DAS SCHILD (ort-ausstattung, rein additiv): das Wort der Rolle am Sonderbau — der Ausleger des Gewerbes, die Tafel an der
+        // Wand, die Inschrift im Stein; je Gestalt EIN Wort in EINER Form (`schildArt`), gesetzt von `ortAusstattung`. Es hängt
+        // an der Wand wie die Wandlaterne (+x zur Wand, die Wand in armM); der Tritt ist die Platte an der Wand.
+        schild: { lab: "Schild · Ausleger, Tafel, Inschrift", gestalten: 24, siteTag: "wand", salz: 0x7b3e, tritt: { typ: "kreis", r: 0.12 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -7504,10 +7523,6 @@
             fx: {
                 place: { mode: "site", siteTag: AUSSTATTUNG[_aus].siteTag },
                 tritt: Object.assign({}, AUSSTATTUNG[_aus].tritt),
-        // DAS SCHILD (ort-ausstattung, rein additiv): das Wort der Rolle am Sonderbau — der Ausleger des Gewerbes, die Tafel an der
-        // Wand, die Inschrift im Stein; je Gestalt EIN Wort in EINER Form (`schildArt`), gesetzt von `ortAusstattung`. Es hängt
-        // an der Wand wie die Wandlaterne (+x zur Wand, die Wand in armM); der Tritt ist die Platte an der Wand.
-        schild: { lab: "Schild · Ausleger, Tafel, Inschrift", gestalten: 24, siteTag: "wand", salz: 0x7b3e, tritt: { typ: "kreis", r: 0.12 } },
             },
         };
         // das Emitter-Datum der Quelle reist als fx-Daten (JSON-klonbar, must-ignore; K11)
@@ -9043,21 +9058,6 @@
             );
         return B;
     }
-    // ── DER TROCKENGRABEN (Ursprung die Mitte des Geheges auf dem Grund des Zoos, y = 0; +z nach Norden): die Sohle `tiefeM` unter
-    //    dem Grund aus Platten im Verband (die Fuge zeigt das Bett aus Lehm), je Flucht die Stützmauer aus Quadern in Lagen —
-    //    jede Lage um einen halben Stein versetzt, die Stirn genau in der Flucht des Grunds (die Wand des Felds), die Fuge auf
-    //    dem Mörtel-Bett `fugeM` dahinter —, auf jeder Mauer die Reihe der Kronensteine, gefast nah. Gefärbt im Rahmen der Sohle:
-    //    der Erdsaum des Verwitterungs-Gesetzes liegt am Fuß der Mauer, das Moos auf der Sohle. Die L1: die Sohle je Kasten
-    //    EINE Platte, die Mauer je Flucht EINE Scheibe, die Krone je Flucht EIN Stein ohne Fase. ──
-    function ausTrockengraben(g, p, seed, stufe) {
-        var m = AUS_MASS.trockengraben(0, p),
-            W = p.verwitterung,
-            fein = stufe === 0,
-            T = m.T,
-            zQ = ausZufall(seed, 0xc1),
-            zP = ausZufall(seed, 0xc2),
-            zK = ausZufall(seed, 0xc3);
-        var stein = function (geo, ton) {
     // ═══ DER ORT WEIST SICH AUS (ort-ausstattung) — DAS SCHILD: das Wort der Rolle am Sonderbau ═══
     // DIE SCHRIFT DES SCHILDS (5 × 7 Punkte, je Zeile 5 Bit, das höchste links, die Zeile 0 oben; Schritt 6 Punkte)
     var SCHRIFT_5X7 = {
@@ -9259,6 +9259,21 @@
                 return { holz: pick([0x6e5a44, 0x765f48]), metall: pick([0x5e625e, 0x62605c]), stein: pick([0xb4ab9a, 0xa89f8e]) };
             },
         };
+    // ── DER TROCKENGRABEN (Ursprung die Mitte des Geheges auf dem Grund des Zoos, y = 0; +z nach Norden): die Sohle `tiefeM` unter
+    //    dem Grund aus Platten im Verband (die Fuge zeigt das Bett aus Lehm), je Flucht die Stützmauer aus Quadern in Lagen —
+    //    jede Lage um einen halben Stein versetzt, die Stirn genau in der Flucht des Grunds (die Wand des Felds), die Fuge auf
+    //    dem Mörtel-Bett `fugeM` dahinter —, auf jeder Mauer die Reihe der Kronensteine, gefast nah. Gefärbt im Rahmen der Sohle:
+    //    der Erdsaum des Verwitterungs-Gesetzes liegt am Fuß der Mauer, das Moos auf der Sohle. Die L1: die Sohle je Kasten
+    //    EINE Platte, die Mauer je Flucht EINE Scheibe, die Krone je Flucht EIN Stein ohne Fase. ──
+    function ausTrockengraben(g, p, seed, stufe) {
+        var m = AUS_MASS.trockengraben(0, p),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            T = m.T,
+            zQ = ausZufall(seed, 0xc1),
+            zP = ausZufall(seed, 0xc2),
+            zK = ausZufall(seed, 0xc3);
+        var stein = function (geo, ton) {
             geo.translate(0, T, 0);
             ausFaerbe(geo, "stein", W, function () {
                 return { ton: ton };
@@ -9373,6 +9388,7 @@
         });
     }
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, trockengraben: ausTrockengraben };
+    AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
     // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
     // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
     // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
@@ -9388,7 +9404,6 @@
         // Halbmesser 7,7 cm in 0,20–0,24 m unter der Flamme) — jenseits der nahen Ebene `yL − yK0` warf er ein Achteck von 1,25 m
         // Halbmesser um den Fuß jeder werfenden Laterne (Radeon, Dorf Uhr 0: der Boden-Fleck 0–2 m stand 0,41 EV über 6–8 m).
         // Der Leib reicht bis zum Fuß des Kragens; darunter wirft der Mast (4,5 cm) seinen eigenen Fleck von 0,5 m.
-    AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
         var unten = m.yKr != null ? Math.min(m.yKr, m.yK0) : m.yK0;
         return unten < m.yL ? Math.max(m.yL - unten, m.yK1 - m.yL, m.kb / 2) : 0;
     }
@@ -9534,6 +9549,10 @@
             };
         },
     };
+    // das Schild (ort-ausstattung): die Maße seines Worts trägt die Gestalt (`schildMass` über `ausWahl`); hier die Wand
+    AUS_MASS.schild = function () {
+        return { A: LICHT_GESETZ.wandlaterne.armM };
+    };
     // ── DIE GERÄTE (w4-koerper-park): die Maße (Norm, Meter, Ursprung am Boden in der Mitte, +z die Front), der Bau je Stufe, die
     //    Substanz, der Wurf, die Hülle und das Angebot — alle aus DERSELBEN Maß-Funktion (`AUS_MASS[id]`). ──
     // ein Holz von a nach b (Querschnitt dx × dz, gefast nah), ein Rundstahl von a nach b (Ø d, nah acht Seiten), ein Brett/Kasten
@@ -9549,10 +9568,6 @@
         var l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]) + (b[2] - a[2]) * (b[2] - a[2]));
         var geo = fein ? ausStrecke(ausDreh([[d / 2, 0], [d / 2, l]], 8, true, true), a, b) : ausStrecke(ausSetze(ausKiste(d, l, d, 0), 0, l / 2, 0), a, b);
         ausFaerbe(geo, "metall", 0, function () {
-    // das Schild (ort-ausstattung): die Maße seines Worts trägt die Gestalt (`schildMass` über `ausWahl`); hier die Wand
-    AUS_MASS.schild = function () {
-        return { A: LICHT_GESETZ.wandlaterne.armM };
-    };
             return { ton: ton };
         });
         ausTeil(g, geo, "metall");
@@ -10227,6 +10242,7 @@
     // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
     // derselbe Strom), nie aus einem zweiten Würfel.
     function ausWahl(rezeptId, p, sd, kol) {
+        if (ORT_STUECK_WURF[rezeptId]) return { gestalt: ((sd >>> 0) ^ AUSSTATTUNG[rezeptId].salz) >>> 0 }; // die Gestalt trägt ihr Wort, ihr Motiv (ort-ausstattung)
         if (rezeptId === "grabstein") return { art: (sd >>> 0) % 3 }; // die Gestalt des Steins (`ausGrabstein`: Giebel · Kreuz · Kopf)
         if (rezeptId !== "marktstand") return {};
         var tmp = new THREE.Group();
@@ -10242,7 +10258,6 @@
         var teil = function (geo) {
             ausFaerbe(geo, "stein", 0, null);
             ausTeil(g, geo, "stein");
-        if (ORT_STUECK_WURF[rezeptId]) return { gestalt: ((sd >>> 0) ^ AUSSTATTUNG[rezeptId].salz) >>> 0 }; // die Gestalt trägt ihr Wort, ihr Motiv (ort-ausstattung)
         };
         // Der Schatten-Stoff ist beidseitig (der Wirt rendert ihn in die Kaskaden von beiden Seiten): eine Fläche wirft, wie
         // sie steht — der Tisch, die Ablage, die Plane, der Volant, das Dach je EIN Viereck (2 Dreiecke), ein Pfosten als
@@ -10257,6 +10272,7 @@
             flaeche([[[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]]]);
         };
         if (GERAETE[rezeptId]) return geraetWurf(rezeptId, m, flaeche, pfosten, platte);
+        if (ORT_STUECK_WURF[rezeptId]) return ORT_STUECK_WURF[rezeptId](wahl, p, flaeche, pfosten, platte); // ort-ausstattung
         if (rezeptId === "feuerstelle") {
             teil(ausDreh([[m.ra, -0.05], [m.rt, m.hR], [0, m.hS]], 8, false, false));
         } else if (rezeptId === "marktstand") {
@@ -10272,7 +10288,6 @@
             for (var sx = -1; sx <= 1; sx += 2) for (var sz = -1; sz <= 1; sz += 2) pfosten(sx * m.px, sz * m.pz, 0, sz < 0 ? m.pV : m.pH, 0.045);
             // das Fass (wo die Gestalt es trägt): drei Flächen im Stern durch die Achse und der Deckel als Sechseck
             if (wahl && wahl.fass) {
-        if (ORT_STUECK_WURF[rezeptId]) return ORT_STUECK_WURF[rezeptId](wahl, p, flaeche, pfosten, platte); // ort-ausstattung
                 var fx = wahl.fass[0],
                     fz = wahl.fass[1],
                     fr = 0.235,
@@ -10405,6 +10420,10 @@
             geraetHuelle(rezeptId, m, dazu, F);
             return { stufe: 3, teile: teile };
         }
+        if (ORT_STUECK_HUELLE[rezeptId]) {
+            ORT_STUECK_HUELLE[rezeptId](wahl, p, dazu, F); // ort-ausstattung
+            return { stufe: 3, teile: teile };
+        }
         if (rezeptId === "feuerstelle") {
             dazu(huelleTeil("box", -m.rt, m.rt, -0.05, m.hR, -m.rt, m.rt, F("stein")));
             var rs = m.rt * 0.6;
@@ -10420,10 +10439,6 @@
         } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
             if (rezeptId === "laterne") {
                 var fr = m.fr * 0.8;
-        if (ORT_STUECK_HUELLE[rezeptId]) {
-            ORT_STUECK_HUELLE[rezeptId](wahl, p, dazu, F); // ort-ausstattung
-            return { stufe: 3, teile: teile };
-        }
                 dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
                 dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
             } else {
@@ -10493,6 +10508,7 @@
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
         if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
         if (rezeptId === "grabstein") return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit
+        if (ORT_STUECK_FARBE[rezeptId]) return ORT_STUECK_FARBE[rezeptId](pick); // ort-ausstattung: das Holz, das Eisen, der Stein des Orts
         // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
         if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
         // der Graben: Muschelkalk, Sandstein oder Granit der Gegend — ein Stein für Sohle, Mauer und Krone; die Platten liegen auf
@@ -10508,7 +10524,6 @@
             var A = o.geometry.attributes;
             for (var name in A) {
                 var q = name === "normal" ? 16384 : 4096,
-        if (ORT_STUECK_FARBE[rezeptId]) return ORT_STUECK_FARBE[rezeptId](pick); // ort-ausstattung: das Holz, das Eisen, der Stein des Orts
                     arr = A[name].array;
                 for (var i = 0; i < arr.length; i++) arr[i] = Math.round(arr[i] * q) / q + 0;
             }
@@ -11334,21 +11349,6 @@
             s = Math.sin(q.phi);
         return { cx: q.x + lx * c + lz * s, cz: q.z - lx * s + lz * c, phi: q.phi, ex: (e.x1 - e.x0) / 2, ez: (e.z1 - e.z0) / 2 };
     }
-    function exportSettlement(dp) {
-        dp = dp && typeof dp === "object" ? dp : {};
-        // DIE KACHEL EINER STADT (w28-stadt-netz): `dp.kachel` {samen, nH, i, k} nennt die Kachel (i, k) der Stadt „<samen> <nH>" —
-        // ihr Wort (`viertelWort`: Same, Zahl, Erbe) gründet der Plan, seine Lose stehen auf dem Netz ihrer Stufe 1 (`kachelNetz`,
-        // `dorfLayout` liest es) und nur in der Kachel (außen `belegt`; an einer Rand-Kante der Stadt samt dem Streifen der Mauer).
-        // Ein Wort über der Wand ohne Kachel ist die Mitte seiner Stadt (0, 0). Bis zur Wand ist kein Wort eine Kachel.
-        var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
-        var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
-        var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
-        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
-        if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
-        var plan = DORF({
-            seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
-            nH: kw ? kw.nH : isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
-            epoche: epo,
     // ═══ DIE AUSSTATTUNG DES ORTS (ort-ausstattung): das EINE Gesetz — die Rolle des Baus, das Jahr des Orts, sein Rang und sein
     //     Netz → die Stücke, die ihn ausweisen. Je Stück {art, x, z, th, gestalt[, slot]} im Rahmen des Plans (die Gestalt am Anker,
     //     +x der Gestalt nach `th`, wie die Laterne): `slot` hängt es an die Wand seines Hauses (die Welt setzt es MIT ihm,
@@ -11474,6 +11474,21 @@
         }
         return aus;
     }
+    function exportSettlement(dp) {
+        dp = dp && typeof dp === "object" ? dp : {};
+        // DIE KACHEL EINER STADT (w28-stadt-netz): `dp.kachel` {samen, nH, i, k} nennt die Kachel (i, k) der Stadt „<samen> <nH>" —
+        // ihr Wort (`viertelWort`: Same, Zahl, Erbe) gründet der Plan, seine Lose stehen auf dem Netz ihrer Stufe 1 (`kachelNetz`,
+        // `dorfLayout` liest es) und nur in der Kachel (außen `belegt`; an einer Rand-Kante der Stadt samt dem Streifen der Mauer).
+        // Ein Wort über der Wand ohne Kachel ist die Mitte seiner Stadt (0, 0). Bis zur Wand ist kein Wort eine Kachel.
+        var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
+        var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
+        var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
+        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
+        if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
+        var plan = DORF({
+            seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
+            nH: kw ? kw.nH : isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
+            epoche: epo,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
@@ -11697,6 +11712,9 @@
             };
             aus.kappe = stuecke(lay.roads) + stuecke(lay.feldwege) + 1 + 2 * slots.length + lay.felder.length + lay.zonen.length + 64; // + die Vorplätze eines Nachbarn im Umkreis
         }
+        // DIE AUSSTATTUNG DES ORTS (ort-ausstattung, `ortAusstattung`): die Stücke, die ihn ausweisen, zu den Gegenständen
+        var ortStuecke = ortAusstattung(plan, lay, Bs, slotVon);
+        if (ortStuecke.length) aus.gegenstaende = (aus.gegenstaende || []).concat(ortStuecke);
         if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
         // was nach dem letzten Gang des Los-Gesetzes noch ineinander liegt (`loseEntzerren` rest), reist beim Namen: [Slot, Slot, m]
@@ -11712,9 +11730,6 @@
                 z0: Math.min(lay.welt.z0, -mz.R - 17),
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
-        // DIE AUSSTATTUNG DES ORTS (ort-ausstattung, `ortAusstattung`): die Stücke, die ihn ausweisen, zu den Gegenständen
-        var ortStuecke = ortAusstattung(plan, lay, Bs, slotVon);
-        if (ortStuecke.length) aus.gegenstaende = (aus.gegenstaende || []).concat(ortStuecke);
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
         // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
@@ -14225,6 +14240,11 @@
         DORF: DORF,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
+        ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
+        schildArt: schildArt, // die Gestalt des Schilds → {wort, form} (Leser: die Welt, die Station mensch.kultur.schrift)
+        schildGestalt: schildGestalt,
+        schriftRechtecke: schriftRechtecke,
+        SCHILD_GESETZ: SCHILD_GESETZ,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
         lodPlan: lodPlan,
@@ -14240,11 +14260,6 @@
         siedlungsZelle: siedlungsZelle,
         // w28-stadt-funktion — die Stadt als Funktion über Vierteln (Wand je Viertel, Raster, das Wort eines Viertels)
         STADT_FUNKTION: STADT_FUNKTION,
-        ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
-        schildArt: schildArt, // die Gestalt des Schilds → {wort, form} (Leser: die Welt, die Station mensch.kultur.schrift)
-        schildGestalt: schildGestalt,
-        schriftRechtecke: schriftRechtecke,
-        SCHILD_GESETZ: SCHILD_GESETZ,
         stadtRinge: stadtRinge,
         STADT_FORM: STADT_FORM,
         stadtLambda: stadtLambda,
