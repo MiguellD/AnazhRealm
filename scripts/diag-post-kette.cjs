@@ -340,7 +340,11 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // (`_flammenLicht(r, cdM2)`, `_leuchtTakt`) bei der Leuchtdichte, deren Stärke × Belichtung `quelleBild` trägt: die Lage der Probe
 // vor der Welle (Stärke 17,177 × k 1,505 = 25,85 Welt-Einheiten in 1 m, c5713056), an der die Bänder (k1) gemessen sind. Das
 // Bild des Kopfs bei der Leuchtdichte des Gesetzes misst die Probe daneben als Auskunft (`gesetz`, kein Urteil).
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6, staubSink: 0.19 };
+// DIE NACHT DER PROBE (sonnenbahn): die Bänder stehen unter tiefer Sonne und hohem Vollmond (74° auf der alten Bühnen-Bahn); unter
+// der EINEN Sonne am Anker (−50,5°) trägt das die Winter-Mitternacht (Sonne −55,8°, Mond +55,8°). Im Sommer steht der Vollmond bei
+// +23°, die Kamera der Nacht öffnet dreifach (k 140 705 statt 47 140), und das Nacht-Auge liest die Quelle bei einem Drittel ihrer
+// Leuchtdichte (mesopisch, `_nachtAuge`): unten ÷ oben 4,81 · Wand 144,4 · Höhe zu Breite 1,646 (GTX 1050, 2a6af22f).
+const RAUCH_PROBE = { uhr: 0, saison: "winter", abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6, staubSink: 0.19 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
@@ -2100,7 +2104,7 @@ function rauchProbe(ort, P) {
         try {
             const eigen = GLIEDER.filter((k) => Object.prototype.hasOwnProperty.call(r, k));
             if (eigen.length) throw new Error(`die Welt trägt schon eine Hülle um ${eigen.join(", ")} — die Probe stellte sie nicht zurück`);
-            window.__buehne({ uhr: P.uhr });
+            window.__buehne({ uhr: P.uhr, saison: P.saison });
             await r._himmelFrisch();
             r._applyDayNightToScene();
             setzeKamera();
