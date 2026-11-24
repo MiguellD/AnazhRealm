@@ -4894,7 +4894,8 @@ return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[
     // ════════════════════════════════════════ WOLKEN ════════════════════════════════════════
     const WO = "planet.wetter.wolken";
     const wolken = {
-        sek: 20,
+        sek: 26,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "der Wurf der Wolke (Karte `_wolkenKarte`) malt nur mit Schatten-Licht (`_lichtWirft`), headless nie — die Zuggeschwindigkeit der Schatten misst die Probe am Gerät aus zwei Lesungen der Karte; die Bilder (2AFC, Blindtest, Gattung) schießt M.auge am Gerät",
@@ -4964,11 +4965,50 @@ return { korrelation: best[0], texel: px, dt: b.t - a.t, ms: b.t > a.t ? (px * W
             const aus = M.teil || {};
             const zug = welt.wolkeZugMs;
             const sch = Number.isFinite(schatten.ms) ? schatten.ms : null;
-            // S1 die Schicht: Zug der Wolke (Uniform) und des Wurfs (Karte, am Gerät), Versatz; das 2AFC am Gerät
+            // S1 DER ZUG AM FÄCHER (M4): je Adresse (Saat × Zeit der Welt-Uhr) der Zug der Schicht, wie der Himmel ihn setzt
+            // (stamm/bild-himmel.js:1964: phyto-core windGrund der Saat × WIND_FELD.front.zugMS über die Projektion der Schicht), und
+            // der Wind am Boden zur selben Zeit (`_windDirAt`) — Betrag und Richtung des Zugs gegen den Wind der Lage
+            const u1 = U[1] || {};
+            const ZUG_AN = async (r, T, a, mit) => {
+                const st = r.state, wm = st.worldMeta, A = r.constructor, s0 = wm.seed, P = globalThis.__phytoCore, W = A.WOLKEN_SCHICHT, HG = A.Gesetz("terrain:HIMMEL_GESETZ", null);
+                const peil = (d) => { let b = (Math.atan2(d.x, -d.z) * 180) / Math.PI; return b < 0 ? b + 360 : b; };
+                try {
+                    if (a.saat != null) wm.seed = "wetter-s" + a.saat;
+                    const g = P.windGrund(A._saatJe(r)), k = -P.WIND_FELD.front.zugMS / ((1 + HG.projY) * W.hoeheM);
+                    const t = a.zeit * mit.schrittS, zx = g.x * k, zz = g.z * k;
+                    const ms = Math.hypot(zx, zz) * (1 + HG.projY) * W.hoeheM;
+                    let d = peil({ x: -zx, z: -zz }) - peil(r._windDirAt(t));
+                    while (d > 180) d -= 360;
+                    while (d < -180) d += 360;
+                    return { saat: a.saat, zeit: a.zeit, ms: Math.round(ms * 1000) / 1000, gegenWindGrad: Math.round(Math.abs(d) * 10) / 10 };
+                } finally {
+                    wm.seed = s0;
+                }
+            };
+            const streu0 = (x) => { const m = x.length ? x.reduce((s, v) => s + v, 0) / x.length : 0; return x.length > 1 ? Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / x.length) : 0; };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: ZUG_AN, export: "phyto-core.js:4698 WIND_FELD.front.zugMS · phyto-core windGrund · stamm/stoff-material.js:349 _windDirAt", leser: "stamm/bild-himmel.js:1964 (der Zug der Schicht, Uniform zug)" },
+                adressen: { saaten: Array.from({ length: Number(u1.saaten) || 20 }, (_, i) => i), zeiten: Array.from({ length: Number(u1.zeiten) || 20 }, (_, i) => i), dazu: [{ saat: null, ort: null, zeit: 0 }] },
+                mit: { schrittS: Number(u1.schrittS) || 1777 },
+                ms: Number(u1.ms) || 4000,
+                masse: {
+                    adressen: { wie: "anzahl", feld: "ms" },
+                    saaten: { wie: "verschieden", feld: "a.saat" },
+                    zugMinMs: { wie: "min", feld: "ms" },
+                    zugMaxMs: { wie: "max", feld: "ms" },
+                    streuZug: { wie: (v) => streu0(v), feld: "ms" },
+                    gegenWindGrad: { wie: "mittel", feld: "gegenWindGrad" },
+                },
+                schlecht: { feld: "gegenWindGrad", richtung: "max" },
+                pose: (a, w) => "Ego an der Mess-Wiese, bewölkt, Saat " + (a.saat == null ? "der Welt" : "wetter-s" + a.saat) + ", Zug " + w.ms + " m/s " + w.gegenWindGrad + "° gegen den Wind am Boden",
+                ungemessen: ["der Zug des Wurfs (die Karte `_wolkenKarte` malt nur mit Schatten-Licht, `_lichtWirft` — am Gerät)", "das 2AFC gegen den Zeitraffer-Film (Panel)"],
+            });
+            // S1 die Schicht: Zug der Wolke (Uniform, am Fächer) und des Wurfs (Karte, am Gerät), Versatz; das 2AFC am Gerät
             aus[1] = {
                 werte: Object.assign({ wolkeZugMs: R(zug), schichtHoeheM: welt.hoeheM }, sch !== null ? { schattenZugMs: R(sch), versatzProzent: R((100 * Math.abs(sch - zug)) / zug) } : {}),
-                zeuge: { karteMal: welt.karteMal, korrelation: R(schatten.korrelation), dt: R(schatten.dt), grund: schatten.grund || null },
+                zeuge: { karteMal: welt.karteMal, korrelation: R(schatten.korrelation), dt: R(schatten.dt), grund: schatten.grund || null, adressen: RF.werte.adressen, saaten: RF.werte.saaten, zugMinMs: R(RF.werte.zugMinMs), zugMaxMs: R(RF.werte.zugMaxMs), streuZug: R(RF.werte.streuZug), gegenWindGrad: R(RF.werte.gegenWindGrad), akte: RF.akte },
                 auge: await M.auge("wetter-wolken-s1", { ort: "wiese" }, { wetter: "cloudy" }),
+                taeter: "phyto-core.js:4698 WIND_FELD.front.zugMS — der Zug " + R(RF.werte.zugMinMs) + "–" + R(RF.werte.zugMaxMs) + " m/s an " + RF.gemessen + " Adressen (Streuung " + R(RF.werte.streuZug) + "): eine Konstante, kein Wind der Lage · " + RF.akte,
             };
             // S2 drei Stockwerke: die Welt trägt EINE Schicht
             aus[2] = {
@@ -5035,14 +5075,15 @@ return { gipfel, momente, saatZurueck: wm.seed === s0 };
         },
         sprossen: {
             1: {
-                u: { lesungenS: 3, karteTexel: 192 },
+                u: { lesungenS: 3, karteTexel: 192, saaten: 20, zeiten: 20, schrittS: 1777, ms: 4000 },
                 soll: [
                     K.soll(WO, 1, "2AFC ≤ 85 %", { key: "afcProzent", einheit: "%" }),
                     K.soll(WO, 1, "im Band realer Wolkenzüge (2–20 m/s)", { key: "schattenZugMs", einheit: "m/s" }),
                     K.soll(WO, 1, "Versatz ≤ 5 %", { key: "versatzProzent", einheit: "%" }),
                 ],
                 auge: { pose: "Ego an der Mess-Wiese, bewölkt, Zeitraffer der Schicht (Werkbank /bild am Ort)", vorbild: "Zeitraffer-Film realer Schichtwolken (Stratocumulus), 2AFC ≤ 85 %" },
-                taeter: "stamm/bild-himmel.js _wolkenKarte · _dayNightApplySkybox (zug)",
+                taeter: "phyto-core.js:4698 WIND_FELD.front.zugMS (eine Konstante) · stamm/bild-himmel.js _wolkenKarte",
+                leser: "stamm/bild-himmel.js:1964 — der Zug der Schicht ist windGrund der Saat × WIND_FELD.front.zugMS, an jeder Adresse derselbe Betrag",
                 gruen: { werte: { afcProzent: 80, schattenZugMs: 11, versatzProzent: 0.5 }, zeuge: { karteMal: 40, korrelation: 0.9, dt: 3 } },
                 attrappen: [{ name: "der Zug aus der Konstante zugMS", roh: leer({ afcProzent: 80, schattenZugMs: 11, versatzProzent: 0 }) }],
             },
@@ -5671,7 +5712,8 @@ return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 *
     // ════════════════════════════════════════ VORHERSAGE ════════════════════════════════════════
     const VH = "planet.wetter.vorhersage";
     const vorhersage = {
-        sek: 25,
+        sek: 32,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "das Bildmodell, das NUR den Himmel sieht (S2), urteilt am Gerät über die Bilder von M.auge; headless misst die Probe die Folge der Welt",
@@ -5694,9 +5736,6 @@ beginne.push([t, luv, hier, kurz, jetzt]);
 t += 10 * h;
 }
 out.beginne = beginne;
-const lead12 = 12 * h, himmel = [];
-for (let k = 0; k < 500; k++) { const t = 1000 + k * 97; const w = r._wetterAmOrt(0, 0, t); himmel.push([deck(w) >= FELD.cloudy.grey - 1e-9 ? 1 : 0, nass(w) ? 1 : 0, nass(r._wetterAmOrt(0, 0, t + lead12)) ? 1 : 0]); }
-out.himmel = himmel;
 const schritt = Z, tage = ${Number(u3.lernTage) || 60}, nLern = Math.round((tage * tagS) / schritt);
 const obs = [];
 for (let i = 0; i < nLern + Math.round((40 * tagS) / schritt); i++) obs.push(r._wetterAmOrt(0, 0, i * schritt));
@@ -5740,13 +5779,50 @@ return out;
                 zeuge: { beginne: B.length, streuLuv: R(streu(B.map((x) => x[1]))), streuZeit: R(streu(B.map((x) => x[0]))) },
             };
             // S2 der Himmel als Zeichen: Regen in 12 h aus „bedeckt jetzt“ gegen die Persistenz (Brier-Skill) — das Bildmodell am Gerät
-            const Hm = welt.himmel;
-            const bs = (i) => mittel(Hm.map((x) => (x[i] - x[2]) ** 2));
-            const skillH = bs(1) > 0 ? 1 - bs(0) / bs(1) : NaN;
+            // am FÄCHER (M4): je Saat 500 Momente der Folge am Ort (`_wetterAmOrt`), das Zeichen „bedeckt jetzt“ gegen die Persistenz
+            // „nass jetzt“ für den Regen in 12 h; der Skill ist 1 − ΣBrier(Zeichen) ÷ ΣBrier(Persistenz) über den Fächer
+            const u2 = U[2] || {};
+            const ZEICHEN_AN = async (r, T, a, mit) => {
+                const st = r.state, wm = st.worldMeta, A = r.constructor, s0 = wm.seed, FELD = A.WEATHER_FIELD, h = (A.DAY_LENGTH_DEFAULT_MINUTES * 60) / 24;
+                try {
+                    if (a.saat != null) wm.seed = "wetter-s" + a.saat;
+                    let bz = 0, bp = 0, n = 0, nass12 = 0, bedeckt = 0;
+                    for (let k = 0; k < mit.momente; k++) {
+                        const t = 1000 + k * 97, w = r._wetterAmOrt(0, 0, t);
+                        const z = FELD[w].grey >= FELD.cloudy.grey - 1e-9 ? 1 : 0, p = r._weatherIsWet(w) ? 1 : 0, o = r._weatherIsWet(r._wetterAmOrt(0, 0, t + mit.vorlaufH * h)) ? 1 : 0;
+                        bz += (z - o) ** 2;
+                        bp += (p - o) ** 2;
+                        nass12 += o;
+                        bedeckt += z;
+                        n++;
+                    }
+                    return { saat: a.saat, n, bs: [bz / n, bp / n], nass12: nass12 / n, bedeckt: bedeckt / n };
+                } finally {
+                    wm.seed = s0;
+                }
+            };
+            const RZ = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: ZEICHEN_AN, export: "phyto-core.js:4804 wetterAt (das Wort am Ort) · stamm/daten.js WEATHER_FIELD (grey)", leser: "stamm/bild-himmel.js:3032 _wetterAmOrt" },
+                adressen: { saaten: Array.from({ length: Number(u2.saaten) || 20 }, (_, i) => i), dazu: [{ saat: null, ort: null, zeit: null, heim: 1 }] },
+                mit: { momente: Number(u2.momente) || 500, vorlaufH: Number(u2.vorlaufH) || 12 },
+                ms: Number(u2.ms) || 5000,
+                masse: {
+                    saaten: { wie: "anzahl", feld: "n" },
+                    momente: { wie: "summe", feld: "n" },
+                    skillHimmel: { wie: (v) => { const z = v.reduce((s, b) => s + b[0], 0), p = v.reduce((s, b) => s + b[1], 0); return p > 0 ? 1 - z / p : null; }, feld: "bs" },
+                    skillHeim: { wie: (v) => (v.length && v[0][1] > 0 ? 1 - v[0][0] / v[0][1] : null), feld: "bs", nur: "heim" },
+                    nass12: { wie: "mittel", feld: "nass12" },
+                    bedeckt: { wie: "mittel", feld: "bedeckt" },
+                },
+                schlecht: { feld: "bs.0", richtung: "max" },
+                pose: (a) => "Ego an der Mess-Wiese, Blick in den Himmel unter der Saat " + (a.saat == null ? "der Welt" : "wetter-s" + a.saat),
+                ungemessen: ["das eingefrorene Bildmodell, das NUR den Himmel sieht (Korpus) — die Probe liest das Wort, nicht das Bild"],
+            });
             aus[2] = {
-                werte: { skillHimmel: R(skillH) },
-                zeuge: { momente: Hm.length, nass12: R(mittel(Hm.map((x) => x[2]))) },
+                werte: { skillHimmel: R(RZ.werte.skillHimmel) },
+                zeuge: { momente: RZ.werte.momente, saaten: RZ.werte.saaten, skillHeim: R(RZ.werte.skillHeim), nass12: R(RZ.werte.nass12), bedeckt: R(RZ.werte.bedeckt), akte: RZ.akte },
                 auge: await M.auge("wetter-vorhersage-s2", { ort: "wiese" }, { wetter: "cloudy" }),
+                taeter: "phyto-core.js:4804 wetterAt — „bedeckt jetzt“ sagt den Regen in 12 h mit Skill " + R(RZ.werte.skillHimmel) + " über der Persistenz (" + RZ.gemessen + " Saaten, " + RZ.werte.momente + " Momente): kein Vorlauf der Front · " + RZ.akte,
             };
             // S3 die Vorhersage aus Beobachtung: Analog-Verfahren über die gelernte Folge (60 Spieltage), 100 Vorhersagen 3 Tage voraus,
             // Brier-Skill gegen die Klimatologie der Lern-Zeit
@@ -5815,11 +5891,12 @@ return out;
                 ],
             },
             2: {
-                u: { vorlaufH: 12 },
+                u: { vorlaufH: 12, saaten: 20, momente: 500, ms: 5000 },
                 soll: [K.soll(VH, 2, "Regen in 12 h mit Skill ≥ 0,3 über Persistenz", { key: "skillHimmel" })],
                 auge: { pose: "Ego an der Mess-Wiese, Blick in den Himmel (bewölkt)", vorbild: "Bildmodell, das NUR den Himmel sieht (Himmelsfotos mit Regen 12 h später), Skill ≥ 0,3" },
-                taeter: "phyto-core.js wetterAt (kein Vorlauf der Front)",
-                gruen: { werte: { skillHimmel: 0.35 }, zeuge: { momente: 500 } },
+                taeter: "phyto-core.js:4804 wetterAt (kein Vorlauf der Front)",
+                leser: "stamm/bild-himmel.js:3032 _wetterAmOrt — das Wort am Ort; das Zeichen „bedeckt“ ist das grey des Worts (stamm/daten.js WEATHER_FIELD)",
+                gruen: { werte: { skillHimmel: 0.35 }, zeuge: { momente: 10500, saaten: 21 } },
                 attrappen: [{ name: "Skill ohne Himmel", roh: leer({ skillHimmel: 0.35 }) }],
             },
             3: {
@@ -5876,7 +5953,8 @@ return out;
     // ════════════════════════════════════════ FREMDE ATMOSPHÄREN ════════════════════════════════════════
     const FA = "planet.wetter.fremde-atmosphaeren";
     const fremde = {
-        sek: 15,
+        sek: 20,
+        faecher: true,
         pfad: PFAD,
         ungefahren: "die Himmelsbilder (Mittag/Abend, Mars, Gasriese, Landeplatz) schießt M.auge am Gerät; headless misst die Probe die Sonne durch die Atmosphäre (`_atmoSonne`, die Rechnung der Welt mit dem Gesetz der Ferne) und den Faden",
         mess: async function (H, U, M) {
@@ -5935,11 +6013,43 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
             }
             const aus = M.teil || {};
             const E = welt.je.erde, F = welt.je.ferne;
-            // S1 die Erde: der Farbton der Sonne Mittag/Abend durch die Atmosphäre der Welt; die Himmelsfarbe im Bild am Gerät
+            // S1 DIE SONNE AM FÄCHER (M4): je Adresse (Welt des Ultiversums × Höhe der Sonne, e = sin) der Durchlass zur Sonne durch die
+            // Atmosphäre dieser Welt (foundry-core ATMO_RECHNUNG.sonne mit ihrer Rayleigh-Tiefe, dieselbe Rechnung wie `_atmoSonne`),
+            // sein Farbton und seine Helligkeit; die Himmelsfarbe selbst rechnet nur die GPU (welt-licht.js:1084 himmelSicht, TSL)
+            const u1 = U[1] || {};
+            const SONNE_AN = async (r, T, a, mit) => {
+                const A = r.constructor, Rr = r._atmoRechnung(), G0 = r._atmoGesetz(), U0 = A.ULTIVERSUM[a.ort];
+                const G = U0 && U0.himmel && U0.himmel.rayleighTiefe ? Object.assign({}, G0, { rayleighTiefe: U0.himmel.rayleighTiefe.slice() }) : G0;
+                const Mm = Rr.medium(G, Rr.betaKlar(G), A.ATMO_BODEN);
+                const s = Rr.sonne(G, Mm, 0.001, a.zeit, A.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
+                const c = s.col, mx = Math.max(c.r, c.g, c.b), mn = Math.min(c.r, c.g, c.b), d = mx - mn;
+                let hue = null;
+                if (d > 1e-9) { hue = mx === c.r ? ((c.g - c.b) / d) % 6 : mx === c.g ? (c.b - c.r) / d + 2 : (c.r - c.g) / d + 4; hue *= 60; if (hue < 0) hue += 360; }
+                return { welt: a.ort, e: a.zeit, hue: hue == null ? null : Math.round(hue * 100) / 100, lum: s.lum, eigen: G === G0 ? 0 : 1 };
+            };
+            const RS = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: SONNE_AN, export: "foundry-core.js:385 ATMO_RECHNUNG.sonne (durchlass) mit dem ATMO_GESETZ der Welt", leser: "stamm/bild-himmel.js:1629 _atmoSonne (das Richtlicht und die Tafeln)" },
+                adressen: { orte: welt.welten, zeiten: u1.hoehen || [0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1] },
+                ms: Number(u1.ms) || 3000,
+                masse: {
+                    adressen: { wie: "anzahl", feld: "e" },
+                    welten: { wie: "verschieden", feld: "welt" },
+                    eigeneHimmel: { wie: "verschieden", feld: "welt", nur: (a, w) => w.eigen === 1 },
+                    sonneHueMittag: { wie: "erste", feld: "hue", nur: (a, w) => w.welt === "erde" && w.e === 0.9 },
+                    sonneHueAbend: { wie: "erste", feld: "hue", nur: (a, w) => w.welt === "erde" && w.e === 0.05 },
+                    sonneLumAbend: { wie: "erste", feld: "lum", nur: (a, w) => w.welt === "erde" && w.e === 0.05 },
+                    hueSpanne: { wie: (v) => (v.length ? Math.max(...v) - Math.min(...v) : null), feld: "hue", nur: (a, w) => w.welt === "erde" && w.hue != null },
+                },
+                schlecht: { feld: "lum", richtung: "min" },
+                pose: (a) => "Ego an der Mess-Wiese, Welt " + a.ort + ", Sonne bei sin(h) = " + a.zeit,
+                ungemessen: ["die Himmelsfarbe (Zenit, Horizont) — welt-licht.js:1084 himmelSicht ist ein TSL-Knoten, kein Leser auf der CPU; das Bild am Gerät gegen das Foto (Panel)"],
+            });
+            // S1 die Erde: der Farbton der Sonne Mittag/Abend durch die Atmosphäre der Welt (am Fächer); die Himmelsfarbe im Bild am Gerät
             aus[1] = {
-                werte: { sonneHueMittag: R(E.mittag.hue), sonneHueAbend: R(E.abend.hue), sonneLumAbend: R(E.abend.lum) },
-                zeuge: { welten: welt.welten.length },
+                werte: { sonneHueMittag: R(RS.werte.sonneHueMittag), sonneHueAbend: R(RS.werte.sonneHueAbend), sonneLumAbend: R(RS.werte.sonneLumAbend) },
+                zeuge: { welten: RS.werte.welten, adressen: RS.werte.adressen, eigeneHimmel: RS.werte.eigeneHimmel, hueSpanne: R(RS.werte.hueSpanne), akte: RS.akte },
                 auge: await M.auge("wetter-fremde-s1", { ort: "wiese" }, { uhr: 0.5 }),
+                taeter: "Leser fehlt: welt-licht.js:1084 himmelSicht — die Himmelsfarbe rechnet nur die GPU (TSL), headless kein Wert himmelHue; die Sonne am Fächer " + RS.werte.adressen + " Adressen in " + RS.werte.welten + " Welten · " + RS.akte,
             };
             // S2 Mars: der Himmel der Ferne ist gesetzt (Rayleigh-Tiefe), nicht aus Gas, Druck, Stern gefolgert
             aus[2] = {
@@ -5985,10 +6095,11 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
         },
         sprossen: {
             1: {
-                u: {},
+                u: { hoehen: [0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1], ms: 3000 },
                 soll: [ohneZahl(FA, 1, "Himmelsfarbe Mittag/Abend gegen Foto", "himmelHue", "°")],
                 auge: { pose: "Ego an der Mess-Wiese, Mittag und Abend (die Bühne setzt die Uhr)", vorbild: "Himmelsfotos Mittag/Abend (klarer Tag, gemäßigte Breite)" },
-                taeter: "foundry-core.js ATMO_GESETZ · stamm/bild-himmel.js _atmoSonne",
+                taeter: "Leser fehlt: welt-licht.js:1084 himmelSicht (die Himmelsfarbe nur auf der GPU) · foundry-core.js ATMO_GESETZ",
+                leser: "stamm/bild-himmel.js:1629 _atmoSonne (die Sonne, am Fächer) · welt-licht.js:1084 himmelSicht (der Himmel, TSL — kein CPU-Leser)",
                 unklar: "der Richter nennt keine Schwelle — Vorschlag: Farbton des Zenits mittags 205–225°, Abend am Horizont ±10° gegen das Foto",
                 gruen: { werte: { himmelHue: 215 }, zeuge: { welten: 2 } },
                 attrappen: [{ name: "Farbton ohne Bild", roh: leer({ himmelHue: 215 }) }],
