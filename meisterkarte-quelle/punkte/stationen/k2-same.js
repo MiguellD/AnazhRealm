@@ -4236,11 +4236,16 @@ LEITERN.push(
     // (nötig messen) — nie in jeder Runde; ein Gerät zahlt die drei Teile (≈ 8–10 min) einmal je Anspruch.
     // DIE EINE AUSNAHME DER MINUTE (`SPEICHER_RUNDE`, nur hier — `leiter()` hält jede andere Leiter bei sek ≤ 60): je Teil der Deckel
     // `sekJeTeil`, Grund gemessen an der GTX 1060 (main 1feab29c6, p3/n2311/heap/runde-a-vor/schritte.log der OMEN): die Gründung an
-    // stadt-voll 153 s, die warme Ankunft stadt-voll 98 s, genesis 23–27 s, der Posten 4–8 s, die Halde 18 s.
+    // stadt-voll 153 s, die warme Ankunft stadt-voll 98 s, genesis 23–27 s, der Posten 4–8 s, die Halde 18 s, die Ruhe des Vorbaus ≤ 20 s
+    // je Posten.
+    // DER POSTEN MISST DIE RUHENDE WELT (24.11., GTX 1feab29c6 runde-b-vor): R3 − R2 +14,3 MB war EIN Gast des Vorbaus im Bau
+    // (`vorbau:haus_alemannisch`, `_geistVorbau` stamm/siedlung-bauten.js:1437 — 22 Geometrien, 120 Attribute, 12,4 MB, 46 Schatten-Hörer;
+    // er geht und entsorgt sich selbst, :1447). Jeder Posten wartet, bis kein Gast (`vorbau:` · `vorwaermen:`, `_vorbauGast`) in der
+    // Szene hängt — dreimal in Folge; steht nach 20 s noch einer, trägt der Halt ihn beim Namen.
     const SPEICHER_RUNDE = {
         teile: 3,
-        sekJeTeil: 210,
-        grund: "warme Ankunft stadt-voll 98 s + genesis 23 s, Gründung 153 s, Halde 18 s je Halt — gemessen GTX 1060 an main 1feab29c6",
+        sekJeTeil: 240,
+        grund: "warme Ankunft stadt-voll 98 s + genesis 23 s, Gründung 153 s, Halde 18 s, Ruhe des Vorbaus ≤ 20 s je Posten — gemessen GTX 1060 an main 1feab29c6",
     };
     LEITERN.push(
         leiter({
@@ -4324,12 +4329,23 @@ LEITERN.push(
                 const ZELLE = "k2-speicher-runde";
                 const REG =
                     "const R = r.state.renderer, M = R.info.memory || {}, sm = r._lichtWurfK && r._lichtWurfK.roh && r._lichtWurfK.roh.shadowMap, dt = sm && sm._depthTexture;" +
-                    " return { geo: M.geometries, tex: M.textures, memoryMap: R.info.memoryMap ? R.info.memoryMap.size : null, kinder: r.state.scene.children.length, arch: r.state.architectures.length," +
+                    " let attr = 0; for (const [, v] of R.info.memoryMap || []) if (v && typeof v === \"object\" && Number.isFinite(v.size)) attr += v.size;" +
+                    " return { geo: M.geometries, tex: M.textures, memoryMap: R.info.memoryMap ? R.info.memoryMap.size : null, attrMB: +(attr / 1048576).toFixed(1), kinder: r.state.scene.children.length, arch: r.state.architectures.length," +
                     " schattenHoerer: dt && dt._listeners && dt._listeners.dispose ? dt._listeners.dispose.length : null };";
+                const GAST = "return r.state.scene.children.filter((c) => /^(vorbau|vorwaermen):/.test(c.name || \"\")).map((c) => c.name);";
                 const posten = async (name) => {
+                    // DIE RUHE DES VORBAUS: kein Gast in der Szene, dreimal in Folge (höchstens 20 s, nie über die Frist des Teils)
+                    const t0 = Date.now(), gesehen = new Set();
+                    for (let leer = 0; leer < 3 && Date.now() - t0 < 20000 && H.rest() > 12; ) {
+                        const g = await L.ev(GAST);
+                        for (const x of g || []) gesehen.add(x);
+                        leer = g && g.length ? 0 : leer + 1;
+                        if (leer < 3) await H.schlaf(700);
+                    }
+                    const gast = await L.ev(GAST);
                     const p = await L.wb("/puffer", { top: 30 }, 60);
                     const g = await L.ev(REG);
-                    const h = { heap: p && Number.isFinite(p.heapMB) ? p.heapMB : null, vram: p && p.vram && Number.isFinite(p.vram.mb) ? p.vram.mb : null, wand: Date.now(), ...g };
+                    const h = { heap: p && Number.isFinite(p.heapMB) ? p.heapMB : null, vram: p && p.vram && Number.isFinite(p.vram.mb) ? p.vram.mb : null, wand: Date.now(), ruheS: +((Date.now() - t0) / 1000).toFixed(1), gaeste: [...gesehen], gast: gast || [], ...g };
                     if (!R.halte[name]) R.halte[name] = h;
                     (R.halte[name].wdh || (R.halte[name].wdh = [])).push(h.heap);
                     L.zeile("Posten " + name + ": " + JSON.stringify(h));
@@ -4462,7 +4478,7 @@ LEITERN.push(
                             const diff = [...new Set([...h2.keys(), ...h3.keys()])].map((p) => [p, (h3.get(p) || 0) - (h2.get(p) || 0)]).sort((x, y) => y[1] - x[1]);
                             const halter = diff.slice(0, 3).map(([p, d]) => (d >= 0 ? "+" : "") + d.toFixed(1) + " MB " + p).join(" · ");
                             const stadt = [1, 2, 3].map((n) => R.halte["stadt-" + n]);
-                            const reg = (n) => { const x = g(n); return "geo " + x.geo + " · tex " + x.tex + " · memoryMap " + x.memoryMap + " · Schatten-Hörer " + x.schattenHoerer + " · Kinder " + x.kinder; }; // prettier-ignore
+                            const reg = (n) => { const x = g(n); return "geo " + x.geo + " · tex " + x.tex + " · memoryMap " + x.memoryMap + " · attrMB " + x.attrMB + " · Schatten-Hörer " + x.schattenHoerer + " · Kinder " + x.kinder + (x.gast && x.gast.length ? " · GAST im Posten " + x.gast.join(", ") : ""); }; // prettier-ignore
                             L.gemessen(
                                 3,
                                 { heap_mb: Math.max(...stadt.map((x) => x.heap)), vram_mb: Math.max(...Object.values(R.halte).map((x) => x.vram).filter(Number.isFinite)), rueck_pct: MB(rueck) },
