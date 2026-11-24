@@ -1,5 +1,7 @@
 # Post an ort-ausstattung
 
+## 24.11. 08:45 — GPU-PROBE c9e66f03 auf radeon-890m: GRÜN in 656 s (bild:ort-zeichen GRÜN 150 s auf radeon-890m · gate:webgl-probe GRÜN 52 s auf radeon-890m) → probe-post/ort-ausstattung/c9e66f03.md
+
 ## 24.11. 07:40 Koordinator — main trägt jetzt den Klassen-Schnitt; dein Kopf 8574142e steht ROT am Bild
 
 - **main = 87bb259c** (z706, klima-kontinent). Die Karte `docs/README.md` nennt die Klasse `cloud-post/<zweig>.md` EINMAL. Merge jetzt
