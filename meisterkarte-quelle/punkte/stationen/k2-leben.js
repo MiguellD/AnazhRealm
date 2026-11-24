@@ -8415,7 +8415,8 @@ L.perspektive("evolution", (() => {
 
             // ═══ FOSSIL: das Leben im Gestein ═══
             [FO]: {
-                sek: 10,
+                sek: 20,
+                faecher: true,
                 pfad: PFAD_GRUND,
                 ungefahren: "das Bild der Fundstelle — auf swiftshader kein Schuss (keine Sprosse verlangt ein Auge)",
                 mess: async function (H, U, M) {
@@ -8466,9 +8467,52 @@ L.perspektive("evolution", (() => {
                     const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ orte: 40 }) + ");");
                     const z = { fehler: a.fehler, antworten: a.orte || 0, streuung: Math.max(0, (a.klassen || 0) - 1) };
                     const keine = "keine Fossilien: " + (a.funde || 0) + " Funde unter " + (a.objekte || 0) + " Objekten der Szene, " + (a.gesetzeFossil || 0) + " Gesetze des Fossils";
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Fundstelle ist eine Adresse im Gestein — 100 Orte × 4 Tiefen unter dem
+                    // Gelände, je ein Ruf des Schicht-Gesetzes felsLage (gelaende-core.js:3607; der Fels-Stoff liest es in felsFarbe :3862,
+                    // das Netz des Bodens :5473): was die Lage dort trägt. Die Superposition der Profis (Steno 1669: die untere Schicht ist
+                    // die ältere; ein Fossil liegt in der Schicht seiner Zeit, Smith 1816 Leitfossilien) verlangt von der Lage ein Alter
+                    // und einen Inhalt; dazu die Adresse des Baums: das Fossil gehört zum Baum des Lebens DIESES Samens
+                    const FO_AN = (r, T, a) => {
+                        const GK = globalThis.__gelaendeCore;
+                        if (a.saat === "fossil" || a.saat === "baum") {
+                            const LC = globalThis.__lebenCore || {};
+                            const fo = a.saat === "fossil" ? Object.keys(GK).concat(Object.keys(LC)).filter((k) => /fossil|faehrte|leitart|versteiner/i.test(k)) : Object.keys(LC).filter((k) => /stammbaum|phylo|abstamm|ahnen/i.test(k));
+                            if (!fo.length)
+                                return a.saat === "fossil"
+                                    ? { fehlt: "das Fossil im Gestein: gelaende-core.js:3607 felsLage gibt Paket, Bank und Mächtigkeit (dicke, unten, oben) — kein Alter, kein Inhalt; 0 Exporte fossil|faehrte|leitart in __gelaendeCore und __lebenCore" }
+                                    : { fehlt: "der Baum des Samens: leben-core.js trägt das Kind aus Mutter und Vater (kind), keinen Stammbaum je Samen (0 Exporte stammbaum|phylo|abstamm in __lebenCore) — ein Fund hat keinen Ast, an dem er hängen könnte" };
+                            return { eigen: fo.length };
+                        }
+                        const x = ((a.saat * 97.3) % 1500) - 750, z = ((a.saat * 211.7) % 1500) - 750;
+                        const h = r.getTerrainHeightAt(x, z);
+                        const L = GK.felsLage(x, h - a.ort, z, 0, {});
+                        const inhalt = Object.keys(L).filter((k) => /foss|alter|zeit|leben|art|fund/i.test(k));
+                        return { paket: L.paket, schicht: L.paket + ":" + L.bank, dicke: L.dicke, fossil: inhalt.length, felder: Object.keys(L).join(","), x, z, h };
+                    };
+                    const R1 = await FAECHER((c) => H.seite(c), {
+                        gesetz: { fn: FO_AN, export: "gelaende-core.js:3607 felsLage (Paket, Bank, Mächtigkeit an x, y, z)", leser: "gelaende-core.js:3862 felsFarbe → :5473 das Netz des Bodens (stamm/gelaende-boden.js:3142 FELS_STOFF)" },
+                        adressen: { saaten: 100, orte: [1, 3, 6, 10], dazu: [{ saat: "fossil" }, { saat: "baum" }] },
+                        ms: 8000,
+                        masse: {
+                            funde: { wie: "summe", feld: "fossil" },
+                            aufschluesse: { wie: "verschieden", feld: "a.saat", nur: (q) => typeof q.saat === "number" },
+                            pakete: { wie: "verschieden", feld: "paket" },
+                            schichten: { wie: "verschieden", feld: "schicht" },
+                            dickeMittel: { wie: "mittel", feld: "dicke" },
+                            felder: { wie: "erste", feld: "felder" },
+                        },
+                        schlecht: { feld: "dicke", richtung: "max" },
+                        pose: (q, w) => "Aufschluss an (" + Math.round(w.x) + ", " + Math.round(w.z) + ") " + q.ort + " m unter dem Gelände: Schicht " + w.schicht + ", Mächtigkeit " + Math.round(w.dicke * 100) / 100 + " m — kein Fund",
+                        ungemessen: ["das Bild der Fundstelle — ungemessen bis zum Gerät (keine Sprosse verlangt ein Auge)"],
+                    });
+                    const d1 = R1.je.map((e) => e.w.dicke).filter(Number.isFinite);
+                    const md = d1.length ? d1.reduce((s, x) => s + x, 0) / d1.length : NaN;
+                    const sd1 = d1.length > 1 ? Math.sqrt(d1.reduce((s, x) => s + (x - md) ** 2, 0) / (d1.length - 1)) : 0;
+                    const ohneBaum = R1.fehltAn.some((q) => q.saat === "baum") ? "; der Baum des Samens fehlt (leben-core.js: kein Stammbaum je Samen)" : "";
+                    const nicht1 = (R1.fehlt || "kein Fund") + ohneBaum + " — an " + R1.werte.aufschluesse + " Fundstellen × 4 Tiefen " + R1.werte.funde + " Funde in " + R1.werte.schichten + " Schichten aus " + R1.werte.pakete + " Paketen (die Lage trägt " + R1.werte.felder + ") · " + R1.akte;
                     return {
                         sprossen: {
-                            1: { werte: { funde: a.funde }, zeuge: z, nicht: keine },
+                            1: { werte: { funde: R1.werte.funde }, zeuge: { fehler: R1.fehler.length ? R1.fehler[0].fehler : null, antworten: R1.gemessen, streuung: sd1 }, nicht: nicht1 },
                             2: { werte: {}, zeuge: z, nicht: keine + " — keine Schichtfolge mit Leitfossilien" },
                             3: { werte: {}, zeuge: { fehler: a.fehler, antworten: a.gang || 0, streuung: a.schrittStreuung || 0 }, nicht: keine + " — keine Fährte; der lebende Gang schreitet " + (a.schrittMittel ? Math.round(a.schrittMittel * 100) / 100 + " m" : "ungemessen") },
                             4: { werte: {}, zeuge: z, nicht: keine },
@@ -8481,10 +8525,10 @@ L.perspektive("evolution", (() => {
                     1: S({
                         soll: [K.soll(FO, 1, "Anteil im Baum des Samens = 100 %", { key: "imBaumProzent", einheit: "%" }), K.soll(FO, 1, "100 Funde", { key: "funde", rel: "≥", zahl: 100 })],
                         werte: { imBaumProzent: 100, funde: 100 },
-                        zeuge: { min: 20, was: "Orte am Spieler, Objekte der Szene", streu: true },
-                        taeter: "gelaende-core.js (kein Fossil im Gestein)",
+                        zeuge: { min: 100, was: "Fundstellen × Tiefen am Schicht-Gesetz (felsLage)", streu: true },
+                        taeter: "gelaende-core.js:3607 felsLage (Schichten ohne Alter und Inhalt, kein Fossil im Gestein)",
                         nicht: "keine Fossilien",
-                        leser: "gelaende-core.js:397 schichtDicke — Schichten ohne Inhalt; kein Leser eines Fossils (0 Treffer im Spiel)",
+                        leser: "gelaende-core.js:3607 felsLage — gelesen in felsFarbe :3862 und im Netz des Bodens :5473; Paket, Bank, Mächtigkeit, kein Inhalt; kein Leser eines Fossils (0 Treffer im Spiel)",
                     }),
                     2: S({
                         soll: [K.soll(FO, 2, "Superposition ≥ 99 %", { key: "superpositionProzent", einheit: "%" }), K.soll(FO, 2, "100 Aufschlüsse", { key: "aufschluesse", rel: "≥", zahl: 100 })],
