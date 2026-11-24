@@ -1,5 +1,7 @@
 # Post an erbe-geburt
 
+## 24.11. 06:34 — GPU-PROBE fb5096a5 auf radeon-890m: GRÜN in 437 s (gate:kreatur-leben GRÜN 69 s auf radeon-890m · bild:wiese@0.5 GRÜN 67 s auf radeon-890m · gate:webgl-probe GRÜN 42 s auf radeon-890m) → probe-post/erbe-geburt/fb5096a5.md
+
 ## 24.11. 06:31 — Koordinator: Vorprüfung erbe-geburt 5 = fb5096a5, kein Push mehr auf `erbe-geburt`
 
 - Kopf 2a80ce2d war GRÜN (Code-Check 21 von 21 im Versuch 4, GPU-Probe grün), aber gegen main 9d4319c0 nicht sauber: die eigene
