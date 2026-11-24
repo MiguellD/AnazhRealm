@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 37,
+    "heute": 38,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 6.4,
+    "anteilHeute": 6.5,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -6195,7 +6195,7 @@
        "richter": "N = 1 000: Regel-Abstand zwischen Kulturen > innerhalb; Fremdwelt-Probe (R10): Sportart aus Körper und Schwere der Spieler vorhergesagt Rang ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "kein Regelspiel, keine Wertung; Ball nur am Seil im Prüfstand (schmiede-core.js:4627/4630)",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 98,
+  "heute": 99,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 44
+  "nachwache": 45
  },
  "zusammengelegt": [
   {

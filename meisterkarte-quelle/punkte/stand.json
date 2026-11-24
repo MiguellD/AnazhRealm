@@ -23638,7 +23638,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js +1) · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js +1) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js +1) · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23657,7 +23657,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/siedlung-bewohner.js +1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -24025,7 +24025,7 @@
   },
   "karte2.mensch.sport.regeln": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.regeln#1 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.regeln#1 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.sport.regeln#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.regeln#1",
@@ -24043,8 +24043,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37570,7 +37571,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 326,
+  "konsum": 327,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37738,11 +37739,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3296
+  "ohne": 3295
  },
  "kopfVoll": "aa93733ff084df958109663a017413c4435f7412",
- "zeit": "2026-11-24T23:49:22.323Z",
- "vorher": "b1f0de0e",
+ "zeit": "2026-11-24T23:56:48.794Z",
+ "vorher": "aa93733f",
  "bilanz": {
   "gewinn": [],
   "fall": [],
