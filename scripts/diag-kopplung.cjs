@@ -222,7 +222,8 @@ hauptLauf(async () => {
                 const wl = e.wellen || [];
                 const slots = Array.from({ length: AR.DRUCK.bildWellen }, (_, i) => wl[i] || { x: 0, z: 0, w3: 0, alter: 0, radius: 0 });
                 const [uWelle, uWelleUhr] = [slots.map((w) => V(w.x, 0.5, w.z, w.w3)), slots.map((w) => V(w.alter, w.radius))];
-                const windUniforms = { uWindTime: N(e.t), uWindStrength: N(e.U), uWindDir: V(e.dx, e.dz), uBend, uWelleZahl: N(wl.length), uWelle, uWelleUhr };
+                // die Phase der Böe wie im Frame-Takt (`_boePhase`, Taylor: die Böe zieht mit dem Wind)
+                const windUniforms = { uWindTime: N(e.t), uBoePhase: N(r._boePhase(e.t)), uWindStrength: N(e.U), uWindDir: V(e.dx, e.dz), uBend, uWelleZahl: N(wl.length), uWelle, uWelleUhr };
                 s.state = { windUniforms, materials: r.state.materials };
                 if (mut) mut(s);
                 const o = r._windSwayOffset.call(s, T, { rausch: N(rausch(e)) });

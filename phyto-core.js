@@ -7283,8 +7283,8 @@
     // (Widerstand ∝ u^(2+B), B ≈ −0,6 für umformende Kronen: Vogel 1989, Vollsinger 2005) — der Sturm biegt, die Brise
     // regt nur das Laub (Flattern ∝ √U). Wie stark ein Glied in SEINER Frequenz schwingt, sagt das Böen-Spektrum: die
     // Turbulenz trägt bei f die Energie S ∝ f^(−5/3) (Kolmogorov, von Kármán), die Antwort ∝ √S — ein gedrungener Stamm
-    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert (λ ≈ 164 m,
-    // Periode ≈ 15,7 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
+    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert mit dem Wind (λ ≈ 164 m,
+    // `boeTempo`: im Sturm 15 m/s, Periode ≈ 11 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
     // Die Formel rechnet über einer Algebra A (TSL im Welt-Stoff, GLSL-Text im Labor, Zahlen in der Linse — wie
     // `_durchsichtGewicht`): EIN Term, drei Leser.
     var WIND_GESETZ = Object.freeze({
@@ -7294,9 +7294,22 @@
         ast: Object.freeze({ faktor: 2.4, hub: 0.06, heben: 0.03 }), // f_Ast = faktor · f0 · Hub je Hebel · Heben je Hebel
         blatt: Object.freeze({ f: 4.5, ueberAst: 1.5, hub: 0.035 }), // Hz · Abstand zum Ast · Hub (m) bei Sturm
         spektrum: Object.freeze({ fRef: 0.4, exp: 5 / 6 }), // Antwort = min(1, (fRef / f)^exp) — fRef die Fichte, exp = ½ · 5/3
-        boe: Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 }), // g = sin(ω·t − k·(x·w))·amp + mitte
+        // g = sin(k·(s(t) − x·w))·amp + mitte — die Böe ist ein Muster, das MIT dem Wind wandert (`boeTempo`, s der Weg des Musters)
+        boe: Object.freeze({ k: 0.0384, amp: 0.45, mitte: 0.7, taylor: 0.9 }),
         dbh: 1.3, // m — die Brusthöhe, in der D gemessen wird
     });
+    // DAS TEMPO DER BÖE (wind-saison, Karte 2 leben.pflanzen.kraft#2): die Böe ist eingefrorene Turbulenz (Taylor 1938, Proc. R.
+    // Soc. A 164: f(x − U_c·t)) — ihr Muster zieht mit der Konvektions-Geschwindigkeit U_c = taylor × dem mittleren Wind über dem
+    // Ort (Böen und Wirbel der Grenzschicht ziehen mit 0,8–1,0 × dem mittleren Wind ihrer Höhe), nie mit einem eigenen ω/k. Der
+    // mittlere Wind ist der Wind-Kanal U des Wetters (0,06 ruhig … 1 Sturm) × der mittleren Böe × WIND_FELD.sturmMS. Bis
+    // wind-saison zog die Böe mit ω/k = 10,4 m/s in jedem Wetter: im Sturm (16 m/s am Ort) kam sie 100 m windab 9,5 s statt
+    // 6,2 s nach (Laufzeit +53 %), in der Ruhe überholte sie den Wind 7-fach. → m/s. Leser: die Welt (`_boeWeg`: der Weg des
+    // Musters, den Gras, Krone, Karte, Tuch, Rauch und Ohr über `_windAt` und `uBoePhase` lesen), das Labor (`baumWindGlsl`).
+    function boeTempo(U) {
+        if (!Number.isFinite(U)) throw new Error("boeTempo: der Wind-Kanal ist endlich (" + U + ")");
+        var B = WIND_GESETZ.boe;
+        return B.taylor * B.mitte * WIND_FELD.sturmMS * Math.max(0, U);
+    }
     // DER FUSS-DURCHMESSER DER GELIEFERTEN GESTALT: der erste Rinden-Strang ist der Stamm, seine Ringe liegen je R1 Ecken
     // hintereinander (die Naht wiederholt die erste Ecke) und steigen; D ist der mittlere doppelte Abstand der Ring-Ecken
     // von ihrer Mitte im Ring nächst der Höhe yT (Vorlagen-Einheiten). null, wenn der Strang keinen Ring trägt.
@@ -7993,6 +8006,7 @@
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
         budgetFrei: budgetFrei, // E8.1: die Dreiecke, die die Zeile frei stellt (`ohneVerband`, vor der Faltung gezählt)
+        boeTempo: boeTempo, // wind-saison — die Böe zieht mit dem Wind (Taylor 1938)
         WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
         stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
         windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
