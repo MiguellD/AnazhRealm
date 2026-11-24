@@ -134,3 +134,9 @@ Nachtrag 15:52: Der Verdacht auf den Heil-Commit 3bbb5b23 fällt an der Uhr. Bei
 gelaufen, auf 495fff72 (main a8dd22b5 eingemischt um 13:54): settlement.log um 14:12, settlement2.log um 15:34, das Einmischen 5febf0d4 um 15:36.
 welt-boot.cjs war in beiden Läufen der Stand von a8dd22b5. Der Täter liegt zwischen 86697613 und 495fff72: die Fahrzeug-Schnitte dieses
 Zweigs, main a8dd22b5 oder das Pflücken von 28240b1b.
+
+Nachtrag 16:0x: Der dritte Lauf, mit `fremdOrt` (nur gelesen, nicht eingecheckt), auf 62419de5 ist ganz GRÜN: „O Auto-Dorf: der Ort hält jede Zahl — gehalten“,
+fremdArten {}, gate:settlement EXIT 0. Teil O stand damit zweimal rot (auf 495fff72) und einmal grün (mit 3bbb5b23). Die zwei roten Wagen
+sind fahrende Wagen des Verkehrs; ob einer im Augenblick der Zählung auf dem Erdbau des zweiten Dorfs steht, hängt am Takt des Laufs.
+Ein Täter in diesem Zweig ist nicht belegt. Das ist ein Wackler der Zählung: sie zählt fahrende Wagen als Bauten.
+Leser: `gate:settlement` (Teil O, die Schleife „fremde Bauten“). Offen bleiben die 12 Familien-Schritte vor dem Push.
