@@ -80,8 +80,10 @@
 //   PUNKTE_TEIL_FRIST_S; der nächste nur nach `@@PUNKTE@@ TEIL WEITER`, EIN Urteil über alle — fahreGruppe). Eine Station trägt GENAU
 //   EINES von befehl und probe; auf radeon|gtx NUR probe (DIE FAHRT, fahrtUrteil).
 // DIE FAHRT (29.10., das Gesetz des Schöpfers: „Ein kpl. Fahrt durch jedes System max 30 min, inbegriff ist dann auch die dauerlast"):
-//   je Karte (radeon, gtx) die Summe der Deckel ihrer Läufe in der Sitzung (Zwillinge einmal) in Teilen je ≤ FAHRT_MAX_S samt Boot,
-//   höchstens FAHRT_TEILE_MAX — sonst ROT mit den drei größten beim Namen (pruefeStationen: liste, run und buchen fallen dort); im
+//   je Karte (radeon, gtx) die Summe der Deckel der Läufe, die DIESE Sitzung fährt (die Auswahl von run, Zwillinge einmal), in Teilen
+//   je ≤ FAHRT_MAX_S samt Boot, höchstens FAHRT_TEILE_MAX — sonst FAHRT-ROT mit den drei größten beim Namen, ehe ein Lauf fährt (run,
+//   auch --trocken; fahrtUrteil(meine, [opt.geraet])). Der Katalog trägt keine Summe: pruefeStationen hält je Station ihren Deckel und
+//   ihr Gerät, liste und buchen urteilen nie eine Fahrt (bis 24.11. summierte die Wand den Katalog und riss bei jeder neuen Station); im
 //   Läufer die Wache (fahreSitzung): reißt eine Probe ihren Deckel, fällt sie und ist UNGEMESSEN beim Namen, reißt die Fahrt
 //   FAHRT_MAX_S, endet die Sitzung und nennt die offenen Proben (m.sitzung.offen) — die Fortsetzung (fahreFortsetzung) misst sie in
 //   einer neuen Sitzung (m.fortsetzung), nie bleiben sie still bis zum nächsten `run --offen` liegen.
@@ -416,7 +418,7 @@ function pruefeStationen(liste, karte, tafel = ladeTafel()) {
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
     fehler.push(...tafelWache(ok, tafel));
-    fehler.push(...fahrtUrteil(ok));
+    // DIE FAHRT urteilt run an seiner Auswahl (fahrtUrteil), nie der Katalog
     return { stationen: ok, fehler };
 }
 // DIE TAFEL DER KARTE 2 (vision/richter-tafel.json): Station → Sprosse; nur über eine Zeile schreibt die Sitzung eine Akte
@@ -491,27 +493,14 @@ function fahrtSumme(stationen, geraet) {
     return { je, deckel: je.reduce((s, x) => s + x[1], 0), boot: SITZUNG_BOOT_S, summe: je.reduce((s, x) => s + x[1], 0) + SITZUNG_BOOT_S };
 }
 // DIE TEILE DER FAHRT (04.11., deckel-wurzel): jeder Teil ist eine Sitzung ≤ FAHRT_MAX_S samt eigenem Boot — die Deckel folgen dem Bedarf
-// (eichTafel), was über einen Teil reicht, misst die Fortsetzung (fahreFortsetzung); ROT erst über FAHRT_TEILE_MAX Teilen
-// bis 15.11. 3: mit vier neuen Stationen der Karte 2 fielen liste, run und buchen an BEIDEN Geräten (5 499 s > 5 400); je Landung fährt
-// ohnehin nur die Tafel (--nur). 16.11. 4 → 5: die sieben neuen Läufe der Welle vorrat2-stationen (Σ 585 s: verhalten 180, stoerung 90,
-// oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
-// 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
-// takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// 19.11. 6 → 10, die Richter-Falte (EINE Zahl statt 9 · 8 · 7 der drei Fabrik-Zweige mensch · erleben/same/kosmos · planet/leben/
-// zusammenspiel): die Grenze bleibt eine Konstante — sie ist die Wand gegen das Wachstum der Fahrt (FAHRT-ROT (c) und an der echten
-// Liste), eine aus der Liste gerechnete Zahl risse nie. Gerechnet an der gefalteten Liste (`eichtafel`, Σ Deckel heute): vorher Radeon
-// 112 Läufe Σ 10 064 s, GTX 111 Läufe Σ 9 857 s (6 Teile); nachher Radeon 263 Läufe Σ 16 793 s → ⌈16 793 ÷ 1 740⌉ = 10, GTX 262 Läufe
-// Σ 16 586 s → ⌈16 586 ÷ 1 740⌉ = 10. Kein Teil auf Vorrat für ungeeichte Deckel: hebt `eichtafel --schreibe` sie, reißt die Wand beim Namen
-// 19.11. 10 → 12: die Fabrik planet/leben/zusammenspiel nach der Falte (11 neue Läufe je Perspektive: planet geologie 162, relief 155,
-// wetter 160, zeit 90; leben tiere 225, oeko 151, evolution 235; zusammenspiel planet 305, erleben 333, mensch 238, leben 160 — und
-// zusammenspiel.same 55 → 395 s; Σ +2 554 s): Radeon 274 Läufe Σ 19 347 s → ⌈19 347 ÷ 1 740⌉ = 12, GTX 273 Läufe Σ 19 140 s → 11
-// 19.11. 12 bleibt: der Rest der Fabrik erleben/same/kosmos (same.physik · massstab · gedaechtnis, 15 Leitern, 15 neue Läufe Σ +670 s;
-// ihr Zweig zählte 8 an der eigenen Liste: 189 Läufe, Radeon 13 099 s): Radeon 289 Läufe Σ 20 017 s → ⌈20 017 ÷ 1 740⌉ = 12, GTX 288
-// Läufe Σ 19 810 s → 12 — unter der Wand bleiben an der Radeon 863 s (12 × 1 740 − 20 017)
+// (eichTafel), was über einen Teil reicht, misst die Fortsetzung (fahreFortsetzung); ROT erst über FAHRT_TEILE_MAX Teilen DER FAHRT, DIE
+// FÄHRT: run urteilt seine Auswahl an seinem Gerät (fahrtUrteil(meine, [opt.geraet])), je Landung fährt ohnehin nur die Tafel (--nur).
+// Bis 24.11. summierte die Wand den Katalog und riss bei jeder neuen Station. Die Grenze bleibt eine Konstante: die Wand gegen eine
+// Sitzung, die über die Nacht reicht (FAHRT-ROT (c) und an der echten Liste)
 const FAHRT_TEILE_MAX = 12;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
-function fahrtUrteil(stationen) {
-    return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
+function fahrtUrteil(stationen, geraete = GERAETE.filter((g) => g !== "headless")) {
+    return geraete.flatMap((g) => {
         const f = fahrtSumme(stationen, g);
         if (fahrtTeile(f) <= FAHRT_TEILE_MAX) return [];
         return [g + ": die Fahrt " + f.summe + " s in " + fahrtTeile(f) + " Teilen über " + FAHRT_TEILE_MAX + " × " + FAHRT_MAX_S + " s (Σ Deckel " + f.deckel + " s in " + f.je.length + " Läufen + Boot " + f.boot +
@@ -4787,6 +4776,11 @@ async function run(opt) {
         console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen" + (opt.eich ? " oder geeicht — nichts zu eichen" : ""));
         return null;
     }
+    // DIE FAHRT, DIE FÄHRT: die Läufe dieser Sitzung an DIESEM Gerät über FAHRT_TEILE_MAX Teilen reißen, ehe einer fährt (auch --trocken)
+    if (opt.geraet !== "headless") {
+        const fr = fahrtUrteil(meine, [opt.geraet]);
+        if (fr.length) throw new Error("FAHRT-ROT: " + fr.join(" | "));
+    }
     // headless misst nie am Platz: ohne --farm ruft run die Farm und holt ihre Messung (farmRufen)
     if (opt.geraet === "headless" && !opt.farm && !opt.trocken) return farmRufen(opt, a);
     if (opt.trocken) {
@@ -7021,10 +7015,19 @@ async function selbsttest(o = {}) {
             jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && jf[0][6] === abd0 && jf[0][7] === abd0 && abdruck(jk(), "hilfe", "radeon") === abd0 &&
             /Deckel 1800 s × 1 Teil\(e\) über dem Teil der Fahrt/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
             JSON.stringify(jf));
+        // DIE FAHRT, DIE FÄHRT (24.11.): an derselben geblähten Liste (jeder Deckel 120 s) trägt der Katalog keine Fahrt-Zeile; die
+        // Sitzung über die ganze Liste reißt je Karte beim Namen (run), eine Sitzung von 20 Stationen derselben Liste fährt
         const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 120 } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
-        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 120 s gebläht reißt die " + FAHRT_TEILE_MAX + " Teile der Fahrt beider Karten (liste, run und buchen fallen dort)",
-            eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
+        const egS = ["radeon", "gtx"].map((g) => fahrtUrteil(echtGross, [g]));
+        const eg20 = echtGross.filter((s) => s.probe).slice(0, 20);
+        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 120 s gebläht — der Katalog trägt keine Fahrt-Zeile (liste und buchen fallen nie an der Fahrt)",
+            eg.length === 0, eg.join(" | "));
+        pruef("FAHRT-ROT an der echten Liste: die Sitzung über die ganze geblähte Liste reißt die " + FAHRT_TEILE_MAX + " Teile an radeon und an gtx je mit den drei größten beim Namen",
+            egS.every((r, i) => r.length === 1 && r[0].startsWith(["radeon", "gtx"][i] + ": die Fahrt ") && /die größten: /.test(r[0])), JSON.stringify(egS));
+        pruef("FAHRT an der echten Liste: eine Sitzung von 20 Stationen derselben geblähten Liste fährt an beiden Karten (grün)",
+            eg20.length === 20 && fahrtUrteil(eg20).length === 0 && fahrtUrteil(eg20, ["radeon"]).length === 0 && fahrtUrteil(eg20, ["gtx"]).length === 0,
+            JSON.stringify(fahrtUrteil(eg20)));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
     const ctx = (n) => ({ baum: tmp, koord: KOORD, port: null, aus: path.join(tmp, n + ".json"), roh: path.join(tmp, n + ".out"), geraet: "radeon", bash: findeBash(), gpuLauf: null, deckelMinS: 0 });
