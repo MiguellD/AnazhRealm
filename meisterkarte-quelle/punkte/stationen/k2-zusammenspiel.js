@@ -1944,6 +1944,7 @@ L.perspektive("leben", (() => {
             // ═══ LEBEN FORMT GELÄNDE, WASSER UND FELS (S2–S7; S1 trägt g1.js PFAD_SITZUNG) ═══
             [LF]: {
                 sek: 40,
+                faecher: true,
                 mutiert: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder der Auge-Sprossen (S2 Rutschung im Starkregen, S3 Bildpaar am Fluss, S5 Draufsicht der Küste, S6 Felswand, S7 Bildvergleich) — swiftshader schießt nicht",
@@ -1972,10 +1973,11 @@ L.perspektive("leben", (() => {
                     const pose = (p) => (p ? { px: p[0], py: p[1], pz: p[2], lx: p[3], ly: p[4], lz: p[5] } : { ort: "wiese" });
                     const mittel = (l) => (l.length ? l.reduce((q, v) => q + v, 0) / l.length : NaN);
                     const sdv = (l) => { const m = mittel(l); return l.length > 1 ? Math.sqrt(l.reduce((q, v) => q + (v - m) * (v - m), 0) / (l.length - 1)) : 0; };
-                    const hang = async (r, T, a) => {
-                        const s = r.state;
+                    // DIE HANG-ORTE (Seite): je Ring um den Spieler die Punkte der Boden-Klasse „hang“, bewaldet (Bestandsdichte ≥ waldSd des
+                    // Lebensraum-Gesetzes) und offen (< randSd) — die Adressen des Fächers S2
+                    const hangOrte = async (r, T, a) => {
                         const LG = r.constructor._lebensraumGesetz();
-                        const pm = s.playerMesh.position;
+                        const pm = r.state.playerMesh.position;
                         const wald = [];
                         const offen = [];
                         for (let d = 20; d <= a.radius && (wald.length < a.n || offen.length < a.n); d += 20)
@@ -1984,36 +1986,36 @@ L.perspektive("leben", (() => {
                                 const z = pm.z + d * Math.sin((k * Math.PI) / 12);
                                 if (r._bodenKlasseAt(x, z) !== "hang") continue;
                                 const sd = r._forestStandDensity(x, z);
-                                if (sd >= LG.L.waldSd) { if (wald.length < a.n) wald.push([x, z, sd]); }
-                                else if (sd < LG.L.randSd && offen.length < a.n) offen.push([x, z, sd]);
+                                if (sd >= LG.L.waldSd) { if (wald.length < a.n) wald.push([x, z, sd, "wald"]); }
+                                else if (sd < LG.L.randSd && offen.length < a.n) offen.push([x, z, sd, "offen"]);
                             }
-                        const Y = (p) => r._voxelSurfaceY(p[0], p[1]);
-                        const alle = wald.concat(offen);
-                        const h0 = alle.map(Y);
+                        // im Wechsel: reißt die Frist den Fächer, fehlt keiner der beiden Arme ganz
+                        const reihe = [];
+                        for (let i = 0; i < Math.max(wald.length, offen.length); i++) reihe.push(...[wald[i], offen[i]].filter(Boolean));
+                        return reihe;
+                    };
+                    // DAS GESETZ AN EINER ADRESSE (S2): die Höhe, die das Spiel am Hang liest (`_voxelSurfaceY`), vor und nach Takten des
+                    // Spiels im Starkregen (`__wetterSetzen("stormy")`, der EINE Kanal des Wetters; das Wort kehrt im finally zurück); die
+                    // Rutschung fragt die Fähigkeit der Welt, die abgegangenes Material trägt — fehlt sie, nennt die Adresse ihr Fehlen
+                    const ABTRAG_AN = async (r, T, a, mit) => {
+                        const s = r.state;
+                        if (a.zeit.k === "rutschung") {
+                            const fn = ["_rutschung", "_hangRutschung", "_erosionAt"].find((n) => typeof r[n] === "function");
+                            if (!fn) return { fehlt: "kein Abtrag, keine Rutschung: stamm/gelaende-boden.js:316 „keine Erosions-Simulation“ — die Höhe (gelaende-core.js hoehe) trägt keinen Regen- und keinen Wurzel-Term (_forestStandDensity), kein _rutschung" };
+                            return { rutschungM3: +r[fn](a.ort[0], a.ort[1]) || 0, wald: a.ort[3] === "wald" ? 1 : 0 };
+                        }
+                        const h0 = r._voxelSurfaceY(a.ort[0], a.ort[1]);
                         const w0 = s.weather;
                         const uhr0 = s.spielZeit;
                         let t = performance.now();
                         try {
                             window.__wetterSetzen("stormy");
-                            for (let i = 0; i < a.takte; i++) r._gameLoopTick((t += 1000 / 60));
+                            for (let i = 0; i < mit.takte; i++) r._gameLoopTick((t += 1000 / 60));
                         } finally {
                             window.__wetterSetzen(w0);
                         }
-                        const dh = alle.map((p, i) => Math.abs(Y(p) - h0[i]));
-                        const sds = alle.map((p) => p[2]);
-                        const p0 = offen[0] || wald[0];
-                        const y0 = p0 ? Y(p0) : 0;
-                        return {
-                            nWald: wald.length,
-                            nOffen: offen.length,
-                            dhWald: dh.slice(0, wald.length),
-                            dhOffen: dh.slice(wald.length),
-                            sdSpanne: sds.length ? Math.max(...sds) - Math.min(...sds) : 0,
-                            hSpanne: h0.length ? Math.max(...h0) - Math.min(...h0) : 0,
-                            spielS: s.spielZeit - uhr0,
-                            wetterZurueck: s.weather === w0,
-                            pose: p0 ? [p0[0] + 30, y0 + 25, p0[1] + 30, p0[0], y0, p0[1]] : null,
-                        };
+                        const h1 = r._voxelSurfaceY(a.ort[0], a.ort[1]);
+                        return { dh: Math.abs(h1 - h0), h0, wald: a.ort[3] === "wald" ? 1 : 0, sd: a.ort[2], spielS: s.spielZeit - uhr0, zurueck: s.weather === w0 ? 1 : 0 };
                     };
                     const fluss = async (r, T, a) => {
                         const s = r.state;
@@ -2213,16 +2215,39 @@ L.perspektive("leben", (() => {
                         };
                     };
                     const aus = M.teil || {};
-                    // S2 — der Hang unter Starkregen: bewaldet gegen offen (der Gegenlauf: die Wurzeln fehlen)
+                    // S2 AM FÄCHER (M4) — der Hang unter Starkregen: Hang-Orte bewaldet und offen (der Gegenlauf: die Wurzeln fehlen) × der
+                    // Sturm, dazu je Ort die Frage nach der Rutschung
                     try {
-                        const h = await S(hang, U[2]);
-                        const ew = mittel(h.dhWald);
-                        const eo = mittel(h.dhOffen);
-                        const werte = { erosionGerodetM: eo, erosionBewaldetM: ew, hangPunkte: h.nWald + h.nOffen, takte: U[2].takte };
+                        const orte2 = await S(hangOrte, U[2]);
+                        const R2l = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: ABTRAG_AN, export: "r._voxelSurfaceY nach r._gameLoopTick im Wetter „stormy“ (window.__wetterSetzen) · r._rutschung", leser: "stamm/gelaende-boden.js:316 (die Hydrosphäre füllt das Gelände — „keine Erosions-Simulation“) · gelaende-core.js hoehe" },
+                            adressen: { orte: orte2, zeiten: [{ k: "sturm" }, { k: "rutschung" }] },
+                            mit: { takte: U[2].takte },
+                            ms: 12000,
+                            masse: {
+                                erosionGerodetM: { wie: "mittel", feld: "dh", nur: (a) => a.zeit.k === "sturm" && a.ort[3] === "offen" },
+                                erosionBewaldetM: { wie: "mittel", feld: "dh", nur: (a) => a.zeit.k === "sturm" && a.ort[3] === "wald" },
+                                nWald: { wie: "anzahl", feld: "dh", nur: (a) => a.zeit.k === "sturm" && a.ort[3] === "wald" },
+                                nOffen: { wie: "anzahl", feld: "dh", nur: (a) => a.zeit.k === "sturm" && a.ort[3] === "offen" },
+                                sdSpanne: { wie: (v) => (v.length ? Math.max(...v) - Math.min(...v) : 0), feld: "sd", nur: (a) => a.zeit.k === "sturm" },
+                                zurueck: { wie: "anteil", feld: "zurueck", nur: (a) => a.zeit.k === "sturm" },
+                                rutschungM3: { wie: "summe", feld: "rutschungM3", nur: (a) => a.zeit.k === "rutschung" && a.ort[3] === "offen" },
+                            },
+                            schlecht: { feld: "dh", richtung: "max" },
+                            pose: (a) => [a.ort[0] + 30, null, a.ort[1] + 30, a.ort[0], null, a.ort[1]],
+                            ungemessen: ["die Rutschung im Bild (am Gerät)"],
+                        });
+                        const w2l = R2l.werte;
+                        const ew = w2l.erosionBewaldetM;
+                        const eo = w2l.erosionGerodetM;
+                        const werte = { erosionGerodetM: eo, erosionBewaldetM: ew, hangPunkte: (w2l.nWald || 0) + (w2l.nOffen || 0), takte: U[2].takte };
                         if (ew > 0 && Number.isFinite(eo)) werte.erosionVerhaeltnis = eo / ew;
-                        const roh = { werte, zeuge: Z(h.nWald + h.nOffen, h.sdSpanne, eo, ew), auge: await A("leben-hang-s2", pose(h.pose), { wetter: "stormy" }) };
-                        if (!(h.nWald >= 3 && h.nOffen >= 3)) roh.nicht = "nur " + h.nWald + " bewaldete und " + h.nOffen + " offene Hang-Punkte im Umkreis " + U[2].radius + " m";
-                        else if (!(eo > 0)) roh.nicht = "kein Abtrag unter Starkregen: Δh 0 m an " + (h.nWald + h.nOffen) + " Hang-Punkten nach " + U[2].takte + " Takten Sturm (bewaldet " + ew + " m, offen " + eo + " m) — die Höhe ist eine Funktion des Gelände-Kerns ohne Regen- und Wurzel-Term, keine Rutschung";
+                        if (!R2l.fehlt) werte.rutschungM3 = w2l.rutschungM3;
+                        const p0 = orte2.find((o) => o[3] === "offen") || orte2[0];
+                        const y0 = p0 ? await H.seite("return r._voxelSurfaceY(" + p0[0] + ", " + p0[1] + ");").catch(() => 0) : 0;
+                        const roh = { werte, zeuge: Object.assign(Z(werte.hangPunkte, w2l.sdSpanne, eo, ew), { akte: R2l.akte, wetterZurueck: w2l.zurueck }), auge: await A("leben-hang-s2", pose(p0 ? [p0[0] + 30, y0 + 25, p0[1] + 30, p0[0], y0, p0[1]] : null), { wetter: "stormy" }) };
+                        if (!(w2l.nWald >= 3 && w2l.nOffen >= 3)) roh.nicht = "nur " + (w2l.nWald || 0) + " bewaldete und " + (w2l.nOffen || 0) + " offene Hang-Punkte im Umkreis " + U[2].radius + " m";
+                        else if (!(eo > 0)) roh.nicht = "kein Abtrag unter Starkregen: Δh 0 m an " + werte.hangPunkte + " Hang-Orten nach je " + U[2].takte + " Takten Sturm (bewaldet " + ew + " m, offen " + eo + " m)" + (R2l.fehlt ? " — " + R2l.fehlt : "");
                         aus[2] = roh;
                     } catch (e) {
                         aus[2] = { werte: {}, zeuge: {}, nicht: warf(e) };
@@ -2324,7 +2349,7 @@ L.perspektive("leben", (() => {
                         zeuge: zeugeR7(6, "Erosion gerodet gegen bewaldet"),
                         taeter: "gelaende-core.js hoehe (die Höhe ohne Regen- und Wurzel-Term)",
                         nicht: "kein Abtrag unter Starkregen, keine Rutschung",
-                        leser: "stamm/gelaende-boden.js:239 — „keine Erosions-Simulation“: kein Leser trägt Abtrag nach Regen × (1 − Wurzelhalt `_forestStandDensity`) ins Gelände",
+                        leser: "stamm/gelaende-boden.js:316 — „keine Erosions-Simulation“: kein Leser trägt Abtrag nach Regen × (1 − Wurzelhalt `_forestStandDensity`) ins Gelände",
                         ...selbst({ erosionVerhaeltnis: 6.2, erosionGerodetM: 0.31, erosionBewaldetM: 0.05, rutschungM3: 40 }, Z(17, 0.6, 0.31, 0.05)),
                     },
                     3: {
@@ -2390,6 +2415,7 @@ L.perspektive("leben", (() => {
             // ═══ EVOLUTION LIEST DEN PLANETEN (S1–S6) ═══
             [EP]: {
                 sek: 20,
+                faecher: true,
                 mutiert: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder der Auge-Sprossen (S1 die Würfe im Bild gezählt, S2 Bildvergleich Nord ↔ Süd) — swiftshader schießt nicht",
@@ -2554,12 +2580,39 @@ L.perspektive("leben", (() => {
                         const klassen = new Set(B.je.flatMap((x) => x.klassen));
                         const r0 = B.je[0];
                         const pose = { px: r0.cx + 60, py: r0.hy + 80, pz: r0.cz + 60, lx: r0.cx, ly: r0.hy, lz: r0.cz };
-                        // S1 — der Wurf in der Boden-Klasse der Gattung; Gegenlauf: die Klasse festgehalten (die Ursache gekappt)
+                        // S1 AM FÄCHER (M4) — der Wurf in der Boden-Klasse der Gattung: jede Geburt des Bestands (die Regionen über die Spiel-Uhr,
+                        // frei und mit festgehaltener Boden-Klasse = die Ursache gekappt) ist eine Adresse; das Prädikat ruft an ihr das Gesetz,
+                        // das der Wurf liest (stamm/kreatur-leben.js:1900 lebt = LG.lebensraum(Gattung, _bodenKlasseAt(x, z), LG.L) > 0)
+                        const WURF_AN = async (r, T, a) => {
+                            const LG = r.constructor._lebensraumGesetz && r.constructor._lebensraumGesetz();
+                            if (!LG || typeof LG.lebensraum !== "function") return { fehlt: "kein Lebensraum-Gesetz (AnazhRealm._lebensraumGesetz)" };
+                            const kl = r._bodenKlasseAt(a.ort[0], a.ort[1]);
+                            return { imRaum: LG.lebensraum(a.saat, kl, LG.L) > 0 ? 1 : 0, kl };
+                        };
+                        const wuerfe = (l, lauf) => l.map((x) => ({ saat: x[0], ort: [x[1], x[2]], zeit: { lauf } }));
+                        const R1e = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: WURF_AN, export: "stamm/kreatur-leben.js:1708 AnazhRealm._lebensraumGesetz().lebensraum · :1707 _bodenKlasseAt", leser: "stamm/kreatur-leben.js:1900 lebt (der Ort des Wurfs)" },
+                            adressen: { dazu: [...wuerfe(frei, "frei"), ...wuerfe(fest, "fest")] },
+                            ms: 8000,
+                            masse: {
+                                anteilImRaum: { wie: "mittel", feld: "imRaum", nur: (a) => a.zeit.lauf === "frei" },
+                                anteilFest: { wie: "mittel", feld: "imRaum", nur: (a) => a.zeit.lauf === "fest" },
+                                wuerfe: { wie: "anzahl", feld: "imRaum", nur: (a) => a.zeit.lauf === "frei" },
+                                wuerfeFest: { wie: "anzahl", feld: "imRaum", nur: (a) => a.zeit.lauf === "fest" },
+                                klassen: { wie: "verschieden", feld: "kl", nur: (a) => a.zeit.lauf === "frei" },
+                                gattungen: { wie: "verschieden", feld: "a.saat" },
+                            },
+                            schlecht: { feld: "imRaum", richtung: "min" },
+                            pose: (a) => "der Wurf " + a.saat + " am Ort " + a.ort.map(Math.round).join("/") + " — 60 m schräg darüber",
+                            ungemessen: ["die Würfe im Bild gezählt (am Gerät)"],
+                        });
+                        const w1e = R1e.werte;
                         aus[1] = {
-                            werte: { anteilImRaum: anteil(frei), anteilFest: anteil(fest), wuerfe: frei.length, wuerfeFest: fest.length, regionen: B.je.length },
-                            zeuge: Z(frei.length, klassen.size - 1, anteil(frei), anteil(fest)),
+                            werte: { anteilImRaum: w1e.anteilImRaum, anteilFest: w1e.anteilFest, wuerfe: w1e.wuerfe, wuerfeFest: w1e.wuerfeFest, regionen: B.je.length, gattungen: w1e.gattungen },
+                            zeuge: Object.assign(Z(w1e.wuerfe, Math.max(klassen.size, w1e.klassen || 0) - 1, w1e.anteilImRaum, w1e.anteilFest), { akte: R1e.akte }),
                             auge: await A("leben-evo-s1", pose),
                         };
+                        if (R1e.fehlt) aus[1].nicht = R1e.fehlt;
                         // S2 — Merkmal aus Klima und Boden: Größe ↔ Temperatur der Geburt; das Fell: Varianten je Gattung
                         const bs = frei.map((x) => x[3]);
                         const tp = frei.map((x) => x[7]);
@@ -2625,6 +2678,7 @@ L.perspektive("leben", (() => {
                         auge: { pose: "60 m schräg über der Mitte der ersten gemessenen Region, die Würfe im Bild", vorbild: "die Würfe im Bild gezählt: ≥ 0,9 in der Boden-Klasse ihrer Gattung (Klassen-Maske der Tiere gegen die Boden-Klasse)" },
                         zeuge: zeugeR7(20, "die Boden-Klasse festgehalten"),
                         taeter: "stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+                        leser: "stamm/kreatur-leben.js:1900 lebt(x, z) = LG.lebensraum(Gattung, _bodenKlasseAt(x, z), LG.L) > 0 — der Ort des Wurfs",
                         ...selbst({ anteilImRaum: 1, anteilFest: 0.12 }, Z(40, 4, 1, 0.12)),
                     },
                     2: {
@@ -2692,6 +2746,7 @@ L.perspektive("leben", (() => {
 
             // ═══ MENSCH, STADT UND MEER IM NETZ DES LEBENS (S2–S8; S1 trägt die Tafel vegetation.K4#1) ═══
             [SN]: {
+                faecher: true,
                 sek: 30,
                 dorf: true,
                 mutiert: true,
@@ -2856,6 +2911,56 @@ L.perspektive("leben", (() => {
                             auge: await A("leben-netz-s2", pose(O.pose)),
                             nicht: "kein Fang des Spielers: an 0 Orten ein Fang je Stunde (" + O.fischStaende + " Fisch-Stände der Karte, kein Verb fischt) — die Jagd als Entnahme: Hirsche nach 1 Spielstunde " + mittel(mitJ).toFixed(1) + " mit ↔ " + mittel(ohneJ).toFixed(1) + " ohne Jagd an " + b.je.length + " Regionen",
                         };
+                        // S2 AM FÄCHER (M4): die Fisch-Zellen um den Spieler (25 × 25 Zellen des Fisch-Gesetzes) × zwei Fragen. „dichte“: der
+                        // Stand, den das Spiel je Zelle würfelt (stamm/kreatur-fauna.js:566 _fischZelle — die Glieder n des Schwarms; eine
+                        // frische Zelle, die Karte des Spiels bleibt unberührt). „fang“: die Fähigkeit der Welt, an der Zelle eine Stunde zu
+                        // fischen — fehlt sie, nennt die Adresse ihr Fehlen. Das Prädikat: r (Fang je Stunde ↔ Dichte) über die Zellen mit Stand
+                        const FISCH_AN = async (r, T, a) => {
+                            const C = r.constructor;
+                            if (typeof r._fischZelle !== "function" || typeof C._fischGesetz !== "function") return { fehlt: "kein Fisch-Gesetz (_fischZelle, AnazhRealm._fischGesetz)" };
+                            const F = C._fischGesetz().F;
+                            const fk = r._fischKarte || { saat: parseInt(r._fastHash(C._saatJe(r) + "-fisch"), 16) >>> 0 };
+                            const pm = r.state.playerMesh.position;
+                            const c = r._fischZelle(fk, { ix: Math.floor(pm.x / F.zelleM) + a.ort[0], iz: Math.floor(pm.z / F.zelleM) + a.ort[1] });
+                            const dichte = c.stand ? c.stand.n : 0;
+                            if (a.zeit.k === "dichte") return { dichte, stand: c.stand ? 1 : 0 };
+                            if (!c.stand) return { stand: 0 };
+                            const fn = ["_fischFang", "_angeln", "_fangAt"].find((n) => typeof r[n] === "function");
+                            if (!fn) return { fehlt: "kein Fang des Spielers: kein Verb fischt (kein _fischFang/_angeln) — stamm/kreatur-fauna.js:566 _fischZelle setzt den Stand aus dem Gesetz, kein Leser nimmt aus ihm" };
+                            return { stand: 1, dichte, fang: +r[fn](c.stand.x, c.stand.z, 3600) || 0 };
+                        };
+                        const zellen = [];
+                        for (let i = -12; i <= 12; i++) for (let j = -12; j <= 12; j++) zellen.push([i, j]);
+                        const pear = (v) => {
+                            const p = v.filter((q) => Array.isArray(q) && q.every(Number.isFinite));
+                            if (p.length < 3) return null;
+                            const mx = p.reduce((q, x) => q + x[0], 0) / p.length, my = p.reduce((q, x) => q + x[1], 0) / p.length;
+                            let sxy = 0, sx = 0, sy = 0;
+                            for (const [x, y] of p) { sxy += (x - mx) * (y - my); sx += (x - mx) ** 2; sy += (y - my) ** 2; }
+                            return sx > 0 && sy > 0 ? sxy / Math.sqrt(sx * sy) : null;
+                        };
+                        const R2n = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: FISCH_AN, export: "stamm/kreatur-fauna.js:566 _fischZelle (der Stand je Zelle aus AnazhRealm._fischGesetz) · r._fischFang", leser: "stamm/kreatur-fauna.js:494 _fischTakt (je Takt eine Zelle nach) — kein Leser des Fangs" },
+                            adressen: { orte: zellen, zeiten: [{ k: "dichte" }, { k: "fang" }] },
+                            ms: 10000,
+                            masse: {
+                                zellen: { wie: "anzahl", feld: "stand", nur: (a) => a.zeit.k === "dichte" },
+                                fischOrte: { wie: "summe", feld: "stand", nur: (a) => a.zeit.k === "dichte" },
+                                dichteMax: { wie: "max", feld: "dichte", nur: (a, w) => a.zeit.k === "dichte" && w.stand === 1 },
+                                dichteMin: { wie: "min", feld: "dichte", nur: (a, w) => a.zeit.k === "dichte" && w.stand === 1 },
+                                fangOrte: { wie: "anzahl", feld: "fang", nur: (a, w) => a.zeit.k === "fang" && w.stand === 1 },
+                                fangR: { wie: pear, x: "dichte", y: "fang", nur: (a, w) => a.zeit.k === "fang" && w.stand === 1 },
+                            },
+                            schlecht: { feld: "dichte", richtung: "max" },
+                            pose: (a) => "die Fisch-Zelle " + a.ort.join("/") + " um den Spieler — 3 m über dem Stand, Blick ins Wasser",
+                            ungemessen: ["das Bildpaar übernutzt ↔ daneben (am Gerät)"],
+                        });
+                        const w2n = R2n.werte;
+                        Object.assign(aus[2].werte, { fangOrte: w2n.fangOrte || 0, fangR: w2n.fangR, fischOrte: w2n.fischOrte, dichteSpanne: w2n.dichteMax == null ? null : w2n.dichteMax - w2n.dichteMin });
+                        aus[2].zeuge.akte = R2n.akte;
+                        aus[2].zeuge.fischZellen = w2n.zellen;
+                        if (R2n.fehlt) aus[2].nicht = R2n.fehlt + " — an " + R2n.fehltAn.length + " Zellen mit Stand (" + (w2n.fischOrte || 0) + " von " + (w2n.zellen || 0) + " Zellen tragen einen Schwarm, Glieder " + w2n.dichteMin + "–" + w2n.dichteMax + "); " + aus[2].nicht;
+                        else delete aus[2].nicht;
                     } catch (e) {
                         aus[2] = { werte: {}, zeuge: {}, nicht: warf(e) };
                     }
@@ -2960,7 +3065,7 @@ L.perspektive("leben", (() => {
                         zeuge: zeugeR7(20, "Bestand mit Nutzung gegen ohne"),
                         taeter: "stamm/kreatur-fauna.js _fischZelle (kein Fang)",
                         nicht: "kein Fang des Spielers",
-                        leser: "stamm/kreatur-fauna.js:562 — `_fischZelle` setzt den Stand aus dem Gesetz, kein Verb des Spielers fängt und kein Fang liest die Fischdichte",
+                        leser: "stamm/kreatur-fauna.js:566 — `_fischZelle` setzt den Stand aus dem Gesetz, kein Verb des Spielers fängt und kein Fang liest die Fischdichte",
                         ...selbst({ fangR: 0.7, fangOrte: 20 }, Z(24, 5, 4, 9)),
                     },
                     3: {
