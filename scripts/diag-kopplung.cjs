@@ -263,7 +263,9 @@ hauptLauf(async () => {
                 const g = new THREE.Group().add(new THREE.Object3D());
                 g.position.copy(P);
                 const { vc } = AR._fahrSchrittGesetz();
-                const T = { x: P.x, y: 9, z: P.z };
+                // das Teilchen trägt, was der Kamin jedem schreibt: seinen Grund `g` — 10 m darunter, in der Bezugshöhe des Profils
+                // (phyto-core `windProfil` ×1, `_rauchWindAt`); ohne ihn ist seine Höhe NaN, und der Kern wirft (wetter-am-ort)
+                const T = { x: P.x, y: 9, z: P.z, g: 9 - globalThis.__phytoCore.WETTER_ORT.profil.bezugM };
                 const leser = {
                     // der Wind-Satz entsteht am ersten Leser (Boden, Gras: `_windUniformsEnsure`) — die Probe nimmt dieselbe Tür,
                     // bevor der Takt schreibt (bis 16.11. legte ihn zufällig das Material einer fliegenden Insel an)
