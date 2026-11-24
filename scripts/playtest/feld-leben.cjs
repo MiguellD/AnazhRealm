@@ -3,7 +3,7 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, feldFolgeSteht } = require("../playtest.cjs");
 
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
 // Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
@@ -71,6 +71,31 @@ async function checkBandV1721LivingFieldAura({ page, check }) {
 // zerfällt (Homöostase), bei max sättigt; der at_field_need-Loop schließt sich (belebt → ein ANDERER
 // Punkt wird ärmster). Leerer Overlay == frozen; der spawn_creature-Pfad deponiert.
 async function checkBandV1727WritableField({ page, check }) {
+    // der Selbsttest der Folge-Linse: eine nahe Region zwei Takte zurück und ohne Wahrheit (`_bestandGauSteht`) — die Linse nennt
+    // sie beim Namen; danach steht die Region wieder, wie sie stand
+    const probe = await page.evaluate(() => {
+        const k = r._bestandNah().find((x) => r._bestandRegionen().regionen[x]);
+        if (!k) return null;
+        const R = r._bestandRegionen().regionen[k];
+        window.__folgeProbe = { k, t: R.t };
+        R.t -= 2 * AnazhRealm._bestandGesetz().B.taktS;
+        r._bestandGauSteht = () => false;
+        return k;
+    });
+    const zeilen = [];
+    if (probe) await feldFolgeSteht(page, (n, g, d) => zeilen.push({ n, g, d: String(d) }), "Selbsttest", 6); // 6 Gänge: die Linse fällt beim Namen, ohne auf die Frist eines Bands zu warten
+    await page.evaluate(() => {
+        const P = window.__folgeProbe;
+        delete r._bestandGauSteht;
+        if (P) r._bestandRegionen().regionen[P.k].t = P.t;
+        delete window.__folgeProbe;
+    });
+    check(
+        "Folge-Linse Selbsttest: eine nahe Region ohne Wahrheit fällt beim Namen",
+        !!probe && zeilen.length === 1 && zeilen[0].g === false && zeilen[0].d.includes(`"region":"${probe}"`),
+        probe ? JSON.stringify(zeilen).slice(0, 300) : "keine nahe Region"
+    );
+    if (!(await feldFolgeSteht(page, check, "Schreib-Feld"))) return; // die Akte wirken sofort nur über stehender Folge
     const res = await page.evaluate(() => {
         const out = {};
         const cfg = AnazhRealm.LIFE_FIELD;
@@ -143,6 +168,7 @@ async function checkBandV1727WritableField({ page, check }) {
 // Kreatur-Trickle: NUR getragene Kreaturen (tendsLife) träufeln Leben in ihre Zelle → die Region
 // erhält sich nach dem Geburts-Puls; ambiente Fauna träufelt NICHT (kein Runaway); rate-limitiert.
 async function checkBandV1729CreatureTrickle({ page, check }) {
+    if (!(await feldFolgeSteht(page, check, "Trickle"))) return; // steht sie nicht, nennt EINE Zeile den Täter
     const res = await page.evaluate(() => {
         const out = {};
         const cfg = AnazhRealm.LIFE_FIELD;

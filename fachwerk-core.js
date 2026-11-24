@@ -2133,8 +2133,8 @@
     // `aVerband` der gefalteten Stufe → die vierte Stelle von `aRegler` im Satz): 1–5 sind die Zeilen des Verbands (ihr Gefüge steht
     // in `reihe` am selben Platz), ab 6 die Stoffe ohne Verband (`rolle`). `fuss`: eine Skala steht voll ab `voll` Pixeln je Zelle
     // und ist unter `leer` ihr Mittel (Ton 1, Relief 0) — am Schirm, nie in Metern; `periode`: die Zellen des Rauschens wiederholen
-    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). `wetterVon`: woher das Wetter kommt (Welt: +x Ost,
-    // +z Süd — die Sonnenbahn `welt-licht.js sonnenRichtung`; Mitteleuropa: West-Südwest).
+    // sich nach so vielen (kleine ganze Zahlen im Pixel, auch fern vom Ursprung). Woher das Wetter kommt, trägt die Welt (der Zug ihrer
+    // Fronten, Stamm `uWetterVon`) — bis front-stoff stand hier `wetterVon` fest auf West-Südwest.
     // DER SPRITZ-SAUM (`spritz`): der Regen wirft den Grund an den Fuß der Wand — voll bis `voll` Meter über dem Fuß des Baus (der
     // Spritzwasser-Bereich reicht mindestens 30 cm über Gelände, DIN 18533-1), aus ab `aus`; je Art der Anteil, um den die Fläche
     // dort dunkelt (Putz und Gefach 0,14, Holz 0,10 — am Bild gestellt, OHNE Messung; der Stein des Sockels 0: er steht ganz in
@@ -2190,7 +2190,6 @@
         bett: { nr: 127, rolle: "lehm", verband: "mauerwerk" },
         stein: { nr: 126, verband: "mauerwerk" },
         periode: 256,
-        wetterVon: [-0.92, 0, 0.39],
         silber: [0.147, 0.133, 0.112],
         art: {
             putz:        { korn: [0.004, 0.004], zug: [0.14, 0.022], wolke: [0.7, 0.9], faser: 1.5708, ton: [0.05, 0.03, 0.05], hub: [0.0005, 0.0006, 0.003], woelb: [0, 0], rau: 0.03, wetter: 0.05, grau: 0, grund: 1, spritz: 0.14, lauf: 0.16, unruhe: 1.5, tonImStoff: 1 },
@@ -6231,6 +6230,52 @@
   if(gatePts.length<2){ const t=(gatePts[0]?gatePts[0].th:0)+Math.PI; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
   let s=((Math.round((seed||1)*577+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return mauerRing(Rw, gatePts, rnd); }
+    // DIE FORM DER WEHR IM JAHR (mensch.macht.wehrbau#2, front-stoff, additiv): der Ring (`mauerRing`, `schnittMauer`, `kachelMauer`)
+    // traegt die Wehr seiner Zeit. In Mitteleuropa die PALISADE bis ins 12. Jh. (die Pfahlwand aus Eichenstaemmen auf dem Wall der
+    // ottonischen und salischen Orte, Holztuerme ueber den Toren), ab 1150 der STEINRING (die Stadtmauer der Staufer- und Hansezeit:
+    // Wand mit Wehrgang, Tuerme im Ring, STADTMAUER), ab 1530 die BASTION (die trace italienne nach Sangallo und Duerers
+    // Befestigungslehre 1527: der niedrige, dicke, erdhinterfuellte Wall, an Stelle der Tuerme vorspringende Bollwerke, deren Flanken
+    // das Vorfeld bestreichen) bis MAUER_BIS — danach faellt der Wall (die Entfestigung). Regionen ohne diese Folge tragen ihre EINE
+    // Form (`fest`: die roemische Stadt und die Stadt des Fernen Ostens ummauern in Stein). `bollwerk.vor`: so weit springt die
+    // Spitze des Bollwerks vor den Ring, seine Seite vor * sqrt 2 (die innere Ecke sitzt auf dem Ring). Leser: exportSettlement (die
+    // Welt, `_stlMauerBuild`) und das Labor (buildDorf) ueber `mauerGestalt`.
+    var MAUER_FORM = {
+        zeit: [[-Infinity, 'palisade'], [1150, 'steinring'], [1530, 'bastion']],
+        fest: { antik: 'steinring', fernost: 'steinring' },
+        palisade: { stoff: 'stamm', dachStoff: 'holz', wand: { hoch: 3.6, dick: 0.35, ueber: 0.1 }, krone: null, turm: { breit: 3.0, hoch: 6.4 }, dach: { y: 7.0, breit: 3.6, hoch: 1.2 }, bollwerk: null },
+        steinring: { stoff: 'stein', dachStoff: 'ziegel', wand: STADTMAUER.wand, krone: STADTMAUER.krone, turm: STADTMAUER.turm, dach: STADTMAUER.dach, bollwerk: null },
+        bastion: { stoff: 'stein', dachStoff: null, wand: { hoch: 6.4, dick: 4.5, ueber: 0.6 }, krone: { y: 6.8, hoch: 0.8, dick: 1.0, aussen: true }, turm: null, dach: null, bollwerk: { vor: 12, hoch: 6.4 } },
+    };
+    // die Form der Wehr eines Orts der Region im Jahr → ihr Name (palisade · steinring · bastion)
+    function mauerForm(region, jahr) {
+        var f = MAUER_FORM.fest[region];
+        if (f) return f;
+        var Z = MAUER_FORM.zeit, a = Z[0][1];
+        for (var i = 0; i < Z.length; i++) if (jahr >= Z[i][0]) a = Z[i][1];
+        return a;
+    }
+    // DER RING IN SEINER FORM → { R, segs, towers, gates, art, stoff, wand, krone, turm, dach, bollwerk }: die Bollwerke der Bastion
+    // stehen an den Orten der Tuerme, um `bollwerk.vor` vor den Ring gerueckt (ihre Mitte), jede andere Form traegt ihre Tuerme im Ring
+    function mauerGestalt(m, region, jahr) {
+        var art = mauerForm(region, jahr), F = MAUER_FORM[art], vor = F.bollwerk ? F.bollwerk.vor : 0;
+        return {
+            R: m.R,
+            segs: m.segs.map(function (s) { return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 }; }),
+            towers: m.towers.map(function (t) {
+                var r = Math.hypot(t.x, t.z), k = vor && r > 0 ? (r + vor) / r : 1;
+                return { x: t.x * k, z: t.z * k };
+            }),
+            gates: m.gates.map(function (g) { return { x: g.x, z: g.z, th: g.th }; }),
+            art: art,
+            stoff: F.stoff,
+            dachStoff: F.dachStoff,
+            wand: F.wand,
+            krone: F.krone,
+            turm: F.turm,
+            dach: F.dach,
+            bollwerk: F.bollwerk,
+        };
+    }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
@@ -11302,20 +11347,7 @@
             // der Graph der Gassen (nV/nE/zyklen, der Leser gate:settlement Z). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
-            mauer: mz
-                ? {
-                      R: mz.R,
-                      segs: mz.segs.map(function (s) {
-                          return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 };
-                      }),
-                      towers: mz.towers.map(function (t) {
-                          return { x: t.x, z: t.z };
-                      }),
-                      gates: mz.gates.map(function (g) {
-                          return { x: g.x, z: g.z, th: g.th };
-                      }),
-                  }
-                : null,
+            mauer: mz ? mauerGestalt(mz, plan.region, plan.schnitt.jahr) : null, // die Wehr ihrer Zeit (MAUER_FORM)
             graph: { nV: lay.graph.nV, nE: lay.graph.nE, zyklen: lay.graph.zyklen },
             roads: lay.roads,
             feldwege: lay.feldwege,
@@ -13945,6 +13977,9 @@
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
         MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
+        MAUER_FORM: MAUER_FORM, // die Form der Wehr im Jahr: Palisade, Steinring, Bastion (Leser: mauerGestalt)
+        mauerForm: mauerForm,
+        mauerGestalt: mauerGestalt, // der Ring in der Form seiner Zeit (Leser: exportSettlement, das Labor)
         WACHSTUM: WACHSTUM, // das Wachstum in Spielzeit (Staffel 2; Leser: der Wirt, gate:settlement W)
         wachstum: wachstum,
         REGION_HIST: REGION_HIST,

@@ -191,7 +191,10 @@ class AnazhRealm_wasser_hydro {
             S.push(a, ra);
         }
         if (rampe) S.push(t1, r1);
-        if (S.length !== n0 || i < n0) this._regenGen = (this._regenGen | 0) + 1;
+        // die Marke des Regens (`_regenGen`, der Pegel liest sie) wechselt nur mit dem Weg der WELT (`state.regenStempel`): ein
+        // eigener Weg eines Lesers (`_regenVergangen`: die Vergangenheit des Pegels, der Sprung der Welt-Uhr) ist Rechnung, kein
+        // Wechsel des Wetters. Bis front-stoff kippte jeder Knoten eines solchen Wegs die Marke der Welt
+        if (S === st.regenStempel && (S.length !== n0 || i < n0)) this._regenGen = (this._regenGen | 0) + 1;
     }
 
     // DIE VERGANGENHEIT DES PEGELS (wetter.K3): eine Welt ohne Gedächtnis des Pegels (kein `pegelZustand` — die Geburt, ein Stand
@@ -209,21 +212,62 @@ class AnazhRealm_wasser_hydro {
         const st = this.state;
         if (st.pegelZustand) return;
         const K = globalThis.__gelaendeCore;
-        const [Z, normS, dauer] = [AnazhRealm.WETTER_ZUG_SEK, this._kalender().normS, AnazhRealm.WETTER_UEBERGANG_S];
-        // die Vergangenheit liegt in der Kalender-Zeit: das Raster der Züge läuft über die `fenster` Tage des Kalenders vor dem
-        // ersten Stempel (je Tag `normS` ÷ Zug Schritte, gleich bei jeder Tag-Länge — auch unter dem angehaltenen Tag der Bühne),
-        // das Wort und der Weg des Regens zur Welt-Uhr ihres Augenblicks (`_kalenderUhr`; am Standard-Tag die Kalender-Zeit selbst)
+        const normS = this._kalender().normS;
         const t0 = this._regenStempel()[0];
+        const S = this._regenVergangen(x, z, t0 - K.LAUF.fenster * normS, t0, []);
+        st.pegelZustand = K.pegelZustand(S, t0, normS, this._regenMittel(), null);
+    }
+
+    // DER REGEN, DEN DIE FRONT TRUG (wetter.K3, stoffe.K4): über das Fenster [k0, k1) der Kalender-Zeit am Ort (x, z) Zug für Zug
+    // derselbe Weg, den der Zug legt (`_wetterAmOrt`, `_regenWeg`, der Übergang des Gesetzes) — die Knoten in `S`. Die Vergangenheit
+    // liegt in der Kalender-Zeit: das Raster der Züge läuft über das Fenster des Kalenders (je Tag `normS` ÷ Zug Schritte, gleich
+    // bei jeder Tag-Länge — auch unter dem angehaltenen Tag der Bühne), das Wort und der Weg des Regens zur Welt-Uhr ihres
+    // Augenblicks (`_kalenderUhr`; am Standard-Tag die Kalender-Zeit selbst). Leser: die Vergangenheit des Pegels
+    // (`_pegelVergangenheit`) und die Nässe-Dosis eines Sprungs der Welt-Uhr (`_regenSprung`).
+    _regenVergangen(x, z, k0, k1, S) {
+        const [Z, dauer] = [AnazhRealm.WETTER_ZUG_SEK, AnazhRealm.WETTER_UEBERGANG_S];
         const U = (k) => this._kalenderUhr(k * Z);
-        const S = [];
         let von = null;
-        for (let k = Math.floor((t0 - K.LAUF.fenster * normS) / Z); k * Z < t0; k++) {
+        for (let k = Math.floor(k0 / Z); k * Z < k1; k++) {
             if (von === null) von = this._wetterAmOrt(x, z, U(k - 1));
             const nach = this._wetterAmOrt(x, z, U(k));
             this._regenWeg(von, nach, U(k), von === nach ? 0 : dauer, -Infinity, S);
             von = nach;
         }
-        st.pegelZustand = K.pegelZustand(S, t0, normS, this._regenMittel(), null);
+        return S;
+    }
+
+    // DIE REGEN-TAGE EINES SPRUNGS DER WELT-UHR von `u0` nach `u1` (stoffe.K4, die Nässe-Dosis der Werke, `_naesseTakt`): der Regen
+    // der Front über die gesprungenen Tage — die letzten `LAUF.fenster` Tage Zug für Zug (`_regenVergangen`, ihr Integral
+    // `_regenTage`), davor das Mittel des Klimas (`_regenMittel`; die Regel des Pegels: das Fenster genau, davor das Klima). Bis
+    // front-stoff trug ein Sprung das Wort seines Augenblicks über alle Tage (der Regen ruhte: kein Tropfen; es regnete: jeder Tag
+    // ein voller Regen-Tag) — die Welt-Uhr der Station sprang um 30 Tage im Sonnenschein, die Werke alterten trocken, Moos und
+    // Algen der Nord- und der Wetterseite wuchsen nie (same.gedaechtnis.alter#1: Seiten Δ 0,0021–0,0027).
+    _regenSprung(u0, u1) {
+        const normS = this._kalender().normS;
+        const [k0, k1] = [this._kalenderZeit(u0), this._kalenderZeit(u1)];
+        if (!(k1 > k0)) return 0;
+        const ab = Math.max(k0, k1 - globalThis.__gelaendeCore.LAUF.fenster * normS);
+        // AM ORT DES KLIMAS (`_regenMittel`, die Welt-Mitte): die Dosis ist EINE Zahl der Welt (`nassTage`, reist im Stand) — sie folgt
+        // aus Saat und Welt-Uhr, nie aus dem Ort des einen Spielers (M1 Adresse, M6 eine Quelle). Bis hier rechnete jede Seite am
+        // Ort ihres Spielers (500 m Ost 10,37, Süd 12,46 Regen-Tage je 30 d): zwei Seiten, zwei Dosen
+        const S = this._regenVergangen(0, 0, ab, k1, []);
+        return AnazhRealm._regenTage(S, ab, k1, normS) + ((ab - k0) / normS) * this._regenMittel();
+    }
+
+    // DIE REGEN-TAGE EINES WEGS `S` (die Knoten [t, r, …] in Kalender-Zeit, `_regenWeg`) über [a, b): das Integral seines Regens —
+    // linear zwischen zwei Knoten, nach dem letzten gehalten (vor dem ersten: nichts) — in Tagen des Kalenders (`normS`)
+    static _regenTage(S, a, b, normS) {
+        let s = 0;
+        for (let i = 0; i + 1 < S.length; i += 2) {
+            const [t0, r0] = [S[i], S[i + 1]];
+            const [t1, r1] = i + 3 < S.length ? [S[i + 2], S[i + 3]] : [Infinity, r0];
+            const [lo, hi] = [Math.max(a, t0), Math.min(b, t1)];
+            if (!(hi > lo)) continue;
+            const r = (t) => (t1 === Infinity ? r0 : r0 + ((r1 - r0) * (t - t0)) / (t1 - t0));
+            s += ((r(lo) + r(hi)) / 2) * (hi - lo);
+        }
+        return s / normS;
     }
 
     // DER ZUSTAND DES PEGELS ZUR WELT-UHR (speicher.K3, gelaende-core `pegelZustand`, reist im Stand als `pegelZustand`): die Stempel

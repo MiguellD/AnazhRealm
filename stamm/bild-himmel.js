@@ -1262,8 +1262,10 @@ class AnazhRealm_bild_himmel {
         // Übergang oder die Nässe sich ändern (`_regenRuht`); die Uhr der Nässe geht mit, damit das nächste Wort ab seinem Takt
         // benetzt. Bis feld.K3 rechnete er in jedem Bild Feld, Nässe und Pool
         // (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 21 600 Rufe).
+        // (ein Sprung der Welt-Uhr — mehr als EIN Zug seit dem letzten Takt — weckt ihn: seine Tage tragen die Nässe-Dosis der Front)
         const ruht = this._regenRuht;
-        if (ruht && ruht.wort === st.weather && !st.weatherTransition && ruht.naesse === st.naesse) {
+        const sprung = st.spielZeit - this._naesseUhr > AnazhRealm.WETTER_ZUG_SEK;
+        if (ruht && ruht.wort === st.weather && !st.weatherTransition && ruht.naesse === st.naesse && !sprung) {
             this._naesseUhr = st.spielZeit;
             return;
         }
@@ -2688,7 +2690,7 @@ class AnazhRealm_bild_himmel {
                 // exp(−kd · Tiefe) × das Tageslicht —
                 // die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN Atmosphäre,
                 // `_himmelsIrradianz`): mittags unter dem Spiegel hell, mit jedem Meter dunkler und blauer, nachts dunkler als die
-                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~15 m). Bis w12-unterwasser
+                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~8 m, seine Secchi-Tiefe). Bis w12-unterwasser
                 // trug die Farbe die festen ersten 0,3 m (Radeon: Szenen-Luma 2,5 m ÷ 0,5 m = 1,24, kein Abfall) und β eine
                 // Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`): ein blauer Filter vor klarer Sicht auf Berge und Himmel.
                 const WGu =
@@ -3338,10 +3340,14 @@ class AnazhRealm_bild_himmel {
         // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Welt-Uhr, die verging, der Regen des Wetter-Felds des Worts
         // (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage des Gesetzes, aufsummiert
         // im worldMeta (`nassTage`, reist im Stand). Bis w28-lava-nachlauf schrieb sie der Schreiber der Uhr (`_uhrSetzen`) je
-        // Stunde der SICHT: ein Zug am Regler im Regen ließ jedes Werk um Tage rosten.
+        // Stunde der SICHT: ein Zug am Regler im Regen ließ jedes Werk um Tage rosten. Mehr als EIN Zug seit dem letzten Takt ist
+        // ein Sprung der Welt-Uhr (`_weltUhrNimm`: Stand, Mitspieler): seine Tage tragen den Regen der Front (`_regenSprung`), nie
+        // das Wort des Augenblicks.
         const wm = st.worldMeta;
         const regen = AnazhRealm.WEATHER_FIELD[st.weather];
-        if (lauf && dt > 0 && wm && regen && regen.rain > 0)
+        if (lauf && dt > AnazhRealm.WETTER_ZUG_SEK && wm)
+            wm.nassTage = (+wm.nassTage || 0) + this._regenSprung(st.spielZeit - dt, st.spielZeit);
+        else if (lauf && dt > 0 && wm && regen && regen.rain > 0)
             wm.nassTage = (+wm.nassTage || 0) + (dt / this._kalender().tagS) * regen.rain;
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
