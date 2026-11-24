@@ -1,9 +1,17 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 15:48 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 15:50 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 15:50 (gilt VOR allem darunter; berichtigt den NACHTRAG 15:48): `sport-regeln` 3 **cf3bff6630b0d071e2df0adea129b5c0f6d42d1f**
+  geschoben (OMEN, grün-reif JA: Steckenbleiber 1 → 0, Wege 12 → 10; drei Täter mit Zeile in `bericht/2411-omen-stand.md` — den
+  Satz `satz-sport-regeln.txt` vor dem Stempel um sie ergänzen). DREI Batterien laufen: anatomie-r4-heil 3bbb5b23 ·
+  ort-ausstattung 5 7c517dc5 · sport-regeln 3 cf3bff66. KORREKTUR: „auge-der-art → koerper-stand K6“ ist NICHT belegt (K6 ist eine
+  Zeile des Hauptlaufs, der an jedem Zweig lief; Wackler mit 1 von 2 an gleichen Bytes) — belegt schlafend gelandet ist nur
+  mensch-nah → R4. Welt-Wache an main 499f8b57 (Job 138485517979): „(T) K1 δ 0 → 0: keine Wertung mit Gewöhnung · (T) K1 Antwort am
+  Ort 0 → 0 dB“, tat-k1 zehn Nullen — riecht nach tat-aufwaerts (z714); bei GTX 1050 als zweiter Handgriff nach dem Ruhe-Gesetz.
+  VERBRAUCH 15:50: 97 % alle Modelle, 96 % Fable. KARTE 2: 83 von 1 718.
 - NACHTRAG 15:48 (gilt VOR allem darunter; VERBRAUCH 97 % alle Modelle, 95 % Fable — bei 98 % Halt, EINSTIEG: UEBERGABE-2026-11-24.md
   Abschnitt 11 und 12): main **499f8b57**, KARTE 2: 83 von 1 718. Batterien laufen: `anatomie-r4-heil` 3bbb5b23 und
   `ort-ausstattung` 5 7c517dc5 (Stempel-Befehle in Abschnitt 11). main 499f8b57 ist ROT an Mensch-Anatomie (heilt 3bbb5b23) und
