@@ -45,7 +45,9 @@
 # (22.11. 04:08); als sh gerufen schaltet die Zeile nur POSIX ab (volles bash), sonst startet sich das Skript EINMAL unter sh.exe neu.
 case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 D=$(cd "$(dirname "$0")" && pwd)
-if [ -f "$D/gemein.sh" ]; then . "$D/gemein.sh"; else . "$D/../dienst/gemein.sh"; fi
+if [ -f "$D/gemein.sh" ]; then GEMEIN_SH=$D/gemein.sh; else GEMEIN_SH=$D/../dienst/gemein.sh; fi
+. "$GEMEIN_SH"
+export KANDIDAT_GEMEIN=$GEMEIN_SH # kandidat.sh liest DIESELBE gemein.sh (baum_wartende), auch als Abschrift einer Mutante im Sandkasten
 # die Front der Runde (front_bauen, liste_datei, zahl): EINE Quelle mit der Radeon, installiert neben diesem Skript, im Zweig in ../dienst
 if [ -f "$D/front.sh" ]; then . "$D/front.sh"; else . "$D/../dienst/front.sh"; fi
 # runde.cjs und richter.sh: installiert neben diesem Skript, im Zweig in ../dienst (EINE Quelle beim Laptop)
@@ -62,11 +64,10 @@ sag() { melde la "$1" >>"$L" 2>&1; }
 # DER WARTENDE AN DER BAUM-SPERRE (14.11., Koordinator 23:16): eine Mess-Sitzung nimmt erst den Spiel-Baum, dann die GPU (punkte.cjs
 #   `baumSperre`) — sie wartet am BAUM, den der Lauf der Landung hält, und stand nie am GPU-Schloss. punkte.cjs legt, solange ein Lauf
 #   am Baum wartet, eine Marke `<wer>-<pid>` in `punkte-gtx.wartet/`; eine Marke jünger als eine Minute, die nicht der Landung oder
-#   dem Wächter gehört, ist ein Wartender wie der am GPU-Schloss.
+#   dem Wächter gehört, ist ein Wartender wie der am GPU-Schloss. Die Regel ist EINE mit der Radeon: gemein.sh `baum_wartende`.
 export PUNKTE_WER=landung
 BAUM_WARTET=${BAUM_WARTET:-/c/Users/micha/Desktop/AnazhRealm-OMEN/AnazhRealm-mess/.claude/worktrees/punkte-gtx.wartet}
-baum_wartende() { find "$BAUM_WARTET" -maxdepth 1 -type f -mmin -1 2>/dev/null | sed 's|.*/||' | grep -vE '^(landung|dauer)-' | sed 's/^/Baum-Sperre:/'; }
-warter_echt() { { schloss_wartende omen punkte- | tr ' ' '\n' | grep -v '^CI-Job'; baum_wartende; } | grep . | tr '\n' ' ' | sed 's/ $//'; }
+warter_echt() { { schloss_wartende omen punkte- | tr ' ' '\n' | grep -v '^CI-Job'; baum_wartende "$BAUM_WARTET" 'landung|dauer'; } | grep . | tr '\n' ' ' | sed 's/ $//'; }
 warter() { warter_echt; }
 main_kopf() { git -C "$M" fetch -q origin main 2>/dev/null; git -C "$M" rev-parse origin/main; }
 abstand() { local n; n=$(git -C "$M" rev-list --count "$1..origin/main" 2>/dev/null); echo "${n:-?}"; } # Commits des Kopfs hinter main (nur Anzeige)

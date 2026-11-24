@@ -14,7 +14,12 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 # Mess-Datei des Baums, runde.cjs offen … -), und nur der REST des Teils stellt sich ans Ende — in einer neuen Sitzung, nichts von vorn.
 # Bis hier fiel der ganze Teil (mit EINZELN=1 je Station eine Sitzung war das dieselbe Regel).
 # Orte über die Umgebung (der Selbsttest in landung-dienst.sh fährt dieses Skript mit Attrappen): KANDIDAT_N · _M · _PM · _H · _D ·
-# _SCHLOSS (gpu-schloss.sh) · _SCHLAF (s) · RUNDE_CJS.
+# _SCHLOSS (gpu-schloss.sh) · _SCHLAF (s) · RUNDE_CJS · KANDIDAT_GEMEIN (gemein.sh: landung-dienst.sh nennt die, die es selbst las).
+# DER WARTENDE AM BAUM ist EINE Regel mit landung-dienst.sh und radeon-dienst.sh: gemein.sh `baum_wartende` (ko-hand-lauf 24.11.; bis
+# hier ein eigenes find mit denselben Ausnahmen) — gemein.sh installiert in p3/dienst-omen/, im Zweig in zug/dienst/; fehlt sie, ROT.
+GEMEIN=${KANDIDAT_GEMEIN:-$(cd "$(dirname "$0")" && pwd)/../dienst-omen/gemein.sh}
+[ -f "$GEMEIN" ] || GEMEIN=$(cd "$(dirname "$0")" && pwd)/../../../dienst/gemein.sh
+[ -f "$GEMEIN" ] || { echo "ROT kandidat.sh: gemein.sh fehlt (baum_wartende, KANDIDAT_GEMEIN) — $GEMEIN"; exit 2; }
 O=/c/Users/micha/Desktop/AnazhRealm-OMEN
 N=${KANDIDAT_N:-$O/p3/n0611}; cd $N; L=$N/kette-0711.log; NAME=$1; ALT=$2; LISTE=$3
 # 19.11.: die Liste reist als DATEI („@<datei>“, landung-dienst.sh liste_datei) — 1 428 Stationen als Argument rissen die Windows-Grenze;
@@ -27,7 +32,7 @@ RUNDE_CJS=${RUNDE_CJS:-$O/p3/dienst-omen/runde.cjs}
 BILD_ABLAGE=${KANDIDAT_ABLAGE:-$N/roh-bilder} # die Roh-Bilder mit gehaltenem Urteil bleiben hier am Gerät (nie gelöscht)
 ROH=$PM/meisterkarte-quelle/punkte/messung/roh
 sperre_lebt() { local p; p=$(cat $M/.claude/worktrees/punkte-gtx.sperre/pid 2>/dev/null | tr -dc 0-9); [ -n "$p" ] && tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; }  # nur eine Sperre, deren Halter lebt (23:19–23:31 stand die Kette vor einer toten)
-baum_wartet() { [ -n "$(find $M/.claude/worktrees/punkte-gtx.wartet -maxdepth 1 -type f -mmin -1 ! -name 'landung-*' ! -name 'dauer-*' 2>/dev/null | head -n 1)" ]; }  # 14.11.: ein Macher wartet an der Baum-Sperre (Marke von punkte.cjs, jünger als 1 min) — die nächste Station beginnt nicht vor ihm
+baum_wartet() { [ -n "$(. "$GEMEIN" && baum_wartende "$M/.claude/worktrees/punkte-gtx.wartet" 'landung|dauer')" ]; }  # 14.11.: ein Macher wartet an der Baum-Sperre (Marke von punkte.cjs, jünger als 1 min) — die nächste Station beginnt nicht vor ihm
 frei() { sperre_lebt && return 1; baum_wartet && return 1; . $SCHLOSS; gpu_frei; }  # 10.11. 23:10: nie IN der Baum-Sperre eines fremden punkte-Laufs warten (Richter-Schritt) — dessen Verdrängung zählte sonst als die eigene;  # 10.11. (Auftrag gpu-stufe K10): die EINE Schloss-Quelle entscheidet und bricht ein verwaistes Schloss mit; das eigene frei() von vorher wartete vor toten Haltern
 enden() { grep -acE " ende .* (echt|probe):" $H; }
 verdr() { grep -ac "omen-punkte-gtx-sitzung VERDR" $D; }
