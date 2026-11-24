@@ -3965,8 +3965,9 @@ L.perspektive("tiere", (() => {
             },
             // ═══ MENSCH: der Spieler wird das Tier, folgt der Spur, ruft den Gefährten ═══
             [ME]: {
-                sek: 25,
+                sek: 29,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "die Ego-Aufnahme als Tier (S6, S7) — headless misst die Probe Tempo, Sprung, Spur und Ruf",
                 mess: async function (H, U, M) {
@@ -4180,12 +4181,65 @@ L.perspektive("tiere", (() => {
                     const mT = tAbw.reduce((x, y) => x + y, 0) / Math.max(1, tAbw.length);
                     const zeuge = { antworten: je.length * 240 + z.spur.reduce((x, y) => x + y.getreten, 0), streuung: Math.round(Math.sqrt(tAbw.reduce((x, y) => x + (y - mT) * (y - mT), 0) / Math.max(1, tAbw.length)) * 1000) / 1000 || z.spur.reduce((x, y) => x + y.getreten, 0), vor: 0, nach: je.length };
                     const findeQuote = z.spur.filter((x) => x.gefunden).length / z.spur.length;
+                    // DER FÄCHER DER FÄHRTE (S2, M4): das EINE Gesetz der Spur (`_trittStufe`: die Stufe einer Zelle mit n Tritten, sichtbar erst
+                    // als Pfad) an frischen Spuren — je Adresse die Zahl der Leiber, die dieselbe Zelle traten (das Einzeltier 1, das Paar 2,
+                    // das Rudel 3–8, die Herde 10–20; der Schreiber `_tritt` zählt je Leib und Zellwechsel EINEN Tritt) × das Alter der Spur
+                    // (0, 1, 5, 10 min der Welt-Uhr, erholt mit TRITT.erholTage wie der Maler `_trittMalen`); dazu je n = 1 … 60 die Stufe der
+                    // frischen Zelle (die Zahl der Tritte, ab der eine Spur sichtbar wird). Die Losung: kein Gesetz (Absenz-Grep „losung“)
+                    const ME2_AN = async (r, T, a, mit) => {
+                        const A = r.constructor, TR = A.TRITT;
+                        const n = a.ort != null ? a.ort : a.n;
+                        const tage = a.zeit != null ? a.zeit / (24 * 60) : 0;
+                        const st = A._trittStufe(n * Math.exp(-tage / TR.erholTage));
+                        return { n, minuten: a.zeit, stufe: st, sichtbar: st > 0 };
+                    };
+                    let R2 = null;
+                    if (U[2])
+                        try {
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: ME2_AN, export: "stamm/siedlung-wege.js:1712 _trittStufe (TRITT :3284 tritte · stufen · pfadGras · erholTage)", leser: "stamm/siedlung-wege.js:1679 _tritt (der Schreiber: die Zelle reist erst mit ihrer ersten Stufe) · :1737 _trittMalen (die Wege-Karte malt die Stufe)" },
+                                adressen: { orte: [1, 2, 3, 5, 8, 10, 15, 20], zeiten: [0, 1, 5, 10], dazu: Array.from({ length: 60 }, (_, k) => ({ n: k + 1 })) },
+                                ms: 4000,
+                                masse: {
+                                    frisch: { wie: "anzahl", feld: "n", nur: (q) => q.ort != null },
+                                    frischSichtbar: { wie: (v) => v.filter(Boolean).length, feld: "sichtbar", nur: (q) => q.ort != null },
+                                    einzelSichtbar: { wie: (v) => v.filter(Boolean).length, feld: "sichtbar", nur: (q) => q.ort === 1 },
+                                    herdeSichtbar: { wie: (v) => v.filter(Boolean).length, feld: "sichtbar", nur: (q) => q.ort != null && q.ort >= 10 },
+                                    trittBisSichtbar: { wie: "min", feld: "n", nur: (q, w) => q.n != null && w.sichtbar },
+                                    ersteStufe: { wie: "min", feld: "stufe", nur: (q, w) => q.n != null && w.sichtbar },
+                                    stufeEinzel: { wie: "max", feld: "stufe", nur: (q) => q.n === 1 },
+                                },
+                                schlecht: { feld: "n", richtung: "max" },
+                                pose: (q, w) => "die frische Spur von " + w.n + " Leibern (" + (w.minuten || 0) + " min alt): Stufe " + w.stufe + (w.sichtbar ? " sichtbar" : " — kein Pixel auf der Wiese"),
+                                ungemessen: ["das Folgen der Spur im Bild (der Spieler findet das Tier in ≤ 10 min, Bildpflicht) — ungemessen bis zum Gerät"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const aus = M.teil || {};
                     const nimm = (nr, werte, nicht, mitAuge) => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
                     };
-                    nimm(2, { findeQuote }, "keine Fährte und keine Losung: " + z.spur.map((x) => x.seele + " " + x.sichtbar + " sichtbare von " + x.getreten + " getretenen Zellen").join(", "));
+                    if (U[2]) {
+                        // die Quote trägt der Fächer allein: der Anteil frischer Spuren (≤ 10 min, 1–20 Leiber), die das Gesetz sichtbar zeichnet —
+                        // eine unsichtbare Spur führt zu keinem Tier; die getretenen Zellen der Probe (Hirsch, Wolf 40 s im Takt) stehen als Zeuge
+                        const RW = R2 && R2.werte;
+                        aus[2] = {
+                            werte: {
+                                findeQuote: RW && RW.frisch ? Math.round((1000 * RW.frischSichtbar) / RW.frisch) / 1000 : undefined,
+                                ...(RW ? { spurenFrisch: RW.frisch, spurenSichtbar: RW.frischSichtbar, einzelSichtbar: RW.einzelSichtbar, herdeSichtbar: RW.herdeSichtbar, trittBisSichtbar: RW.trittBisSichtbar, ersteStufe: RW.ersteStufe, stufeEinzel: RW.stufeEinzel, buehne: z.spur.map((x) => x.seele + " " + x.sichtbar + "/" + x.getreten + " Zellen").join(", "), buehneQuote: findeQuote } : {}),
+                            },
+                            zeuge: Object.assign({}, zeuge, { faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)) }),
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                        };
+                        const offen = [];
+                        if (!RW) offen.push("der Fächer der Fährte warf: " + ((R2 && R2.fehlerText) || "ohne Antwort"));
+                        else if (!(RW.frisch && RW.frischSichtbar / RW.frisch >= 0.8))
+                            offen.push("keine Fährte: das Gesetz zeichnet " + RW.frischSichtbar + " von " + RW.frisch + " frischen Spuren (1–20 Leiber, ≤ 10 min) — sichtbar wird eine Zelle erst ab " + RW.trittBisSichtbar + " Tritten als Pfad (Stufe " + RW.ersteStufe + "; stamm/siedlung-wege.js:1712 _trittStufe, TRITT.pfadGras), das Einzeltier tritt Stufe " + RW.stufeEinzel);
+                        offen.push("keine Losung: kein Gesetz des Kots in der Welt (Absenz-Grep „losung“ über *-core.js und stamm/)");
+                        aus[2].nicht = offen.join(" · ");
+                    }
                     nimm(3, { rufQuote: z.ruf.quote, fussfallAbw: null }, "kein Reittier (Fahr-Affordanz am Wolf: " + (z.reiten.istTier ? "ja" : "nein") + "), kein Hund");
                     nimm(4, { haustiere: z.haus.haustiere }, "keine Domestikation: " + z.haus.haustiere + " Haustiere unter " + z.haus.seelen + " Seelen");
                     nimm(5, { tempoAbw, sprungAbw }, "10 Arten: der Spieler wird eine von " + je.length + " Seelen");
@@ -4197,12 +4251,20 @@ L.perspektive("tiere", (() => {
                     2: {
                         u: {},
                         soll: [K.soll(ME, 2, "Tier in ≤ 10 min ≥ 0,8", { rel: "≥", zahl: 0.8, key: "findeQuote" })],
-                        zeuge: zeugeWelt(50, true),
-                        taeter: "stamm/siedlung-wege.js _trittStufe (ein Gang tritt keine Fährte)",
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer der Fährte warf: " + z.fehler;
+                            if (!(z.faecher >= 32)) return "nur " + (z.faecher || 0) + " Spuren des Fächers gemessen (Soll ≥ 32: Leiber × Alter)";
+                            return zeugeWelt(50, true)(roh);
+                        },
+                        taeter: "stamm/siedlung-wege.js:1712 _trittStufe (sichtbar erst als Pfad: ein Gang tritt keine Fährte) · TRITT :3284 · keine Losung",
                         nicht: "Fährte, Losung, Beobachten, Jagd",
                         leser: "stamm/siedlung-wege.js:1712 `_trittStufe` — ein Gang tritt die Zelle einmal, sichtbar wird erst der Pfad; keine Fährte, keine Losung",
-                        gruen: gut({ findeQuote: 0.9 }, 300),
-                        attrappen: atr({ findeQuote: 0.9 }, 300, true),
+                        gruen: gut({ findeQuote: 0.9 }, 300, { faecher: 92 }),
+                        attrappen: atr({ findeQuote: 0.9 }, 300, true).concat([
+                            { name: "zwei Tiere 40 s im Takt (der Fächer fehlt)", roh: gut({ findeQuote: 0.9 }, 300, { faecher: 0 }) },
+                            { name: "die Spur der Welt heute (sichtbar erst als Pfad)", roh: gut({ findeQuote: 0.125 }, 300, { faecher: 92 }) },
+                        ]),
                     },
                     3: {
                         u: {},
