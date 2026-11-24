@@ -68,6 +68,7 @@ jobs:
             abgewiesen: ${{ steps.einlass.outputs.abgewiesen }}
             geerbt: ${{ steps.einlass.outputs.geerbt }}
             lauf: ${{ steps.einlass.outputs.lauf }}
+            ruf: ${{ steps.einlass.outputs.ruf }}
         steps:
             # die Namen: package.json und die Orts-Tafel; dazu jede Datei, die der Einlass lädt — der Richter der Kette
             # (scripts/ci-kopf.cjs) und seine require-Kette (gate:ci-deckung (V) KOPF liest sie nach, wie am Job `kopf`)
@@ -82,8 +83,9 @@ jobs:
                   sparse-checkout-cone-mode: false
 
             # DER EINE LESER: die Message geht NUR über env hinein, nie in den Text eines run-Schritts (Injektion); heraus gehen
-            # die Zeilen `abgewiesen=<grund>`, `matrix=<die Arten>` oder `geerbt=<sha40>` + `lauf=<id>` (`\s+` → „ “: ein Umbruch
-            # schmuggelte sonst einen zweiten Ausgang; sha und id stehen geprüft hex und Ziffern).
+            # die Zeilen `abgewiesen=<grund>`, `matrix=<die Arten>` oder `geerbt=<sha40>` + `lauf=<id>` + `ruf=<die Proben>` (`\s+` →
+            # „ “: ein Umbruch schmuggelte sonst einen zweiten Ausgang; sha und id stehen geprüft hex und Ziffern, der Ruf des Erbes
+            # trägt nur Namen, die der Einlass gegen package.json und die Orts-Tafel geprüft hat).
             # DIE ZWEI ARTEN: `zeit:` geht auf gpu-zeit (die Band-Geräte), alles andere auf gpu-probe (jeder Probe-Läufer), je Art
             # {label, plan}; eine leere Art fehlt in der Matrix und weckt keinen Läufer.
             # DER STEMPEL ERBT (stempel-erbt-probe, 22.11.: je Stempel 10–13 min einer Karte, zwei Proben hielten die Mess-Runde der
@@ -108,6 +110,8 @@ jobs:
                       const cloud = require("./spec/ci/ci-zeiten.json").skripte;
                       if (!(deckel > 0) || !cloud) throw new Error(`der Deckel je Probe (PROBE_DECKEL_S ${process.env.PROBE_DECKEL_S}) oder die Zeit je Tor (spec/ci/ci-zeiten.json skripte) fehlt`);
                       let grund = n === 1 ? "" : `${n} Marken [gpu-probe: …] auf einer Zeile, genau eine`;
+                      // NIE GRÜN DURCH LEERE (24.11.): ein Ruf ohne eine einzige Probe weist ab, beim Namen — der Post urteilt ohne Probe ROT
+                      if (!grund && !proben.some(Boolean)) grund = "der Ruf nennt keine Probe — nie grün durch Leere";
                       for (const p of proben) {
                           const b = /^bild:([a-z][a-z0-9-]*)(?:@(?:0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/.exec(p);
                           const s = /^(?:zeit:)?(gate:[a-z0-9][a-z0-9:-]*)$/.exec(p);
@@ -151,7 +155,7 @@ jobs:
                                       const [e, l] = [String(u.erbt.sha), String(u.erbt.lauf)];
                                       if (!/^[0-9a-f]{40}$/.test(e) || !/^\d+$/.test(l)) throw new Error(`das Erbe trägt keine Form (${e.slice(0, 60)} ${l.slice(0, 20)})`);
                                       summe(`GEERBT von ${e} (Lauf ${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${l}): \`geerbt=${e} lauf=${l}\` — kein Bein, keine Karte`);
-                                      aus(`geerbt=${e}`, `lauf=${l}`);
+                                      aus(`geerbt=${e}`, `lauf=${l}`, `ruf=${proben.join(" ")}`);
                                   } else {
                                       summe(`fährt: ${u.faehrt}`);
                                       console.error(`Einlass: die Probe fährt — ${u.faehrt}`);
@@ -473,6 +477,7 @@ jobs:
             ABGEWIESEN: ${{ needs.einlass.outputs.abgewiesen }}
             GEERBT: ${{ needs.einlass.outputs.geerbt }}
             GEERBT_LAUF: ${{ needs.einlass.outputs.lauf }}
+            GEERBT_RUF: ${{ needs.einlass.outputs.ruf }}
             PROBE: ${{ needs.probe.result }}
         steps:
             # je Bein und Versuch ein Ordner probe/probe-<label>-v<versuch>/ (ein grünes Bein fährt bei „nur die roten Jobs neu“
@@ -510,6 +515,7 @@ jobs:
                   # (ci.sh: „GPU-Probe: completed success“), Urteil und Bilder stehen im Posten des Elters
                   if [ -n "$GEERBT" ]; then
                       URTEIL="GEERBT von ${GEERBT:0:8}"
+                      PLAN="$GEERBT_RUF"
                       LAEUFER="—"
                       KOPF="ohne Inhalt über ${GEERBT:0:8}, dessen Probe jede Probe dieses Rufs grün trug (Lauf $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GEERBT_LAUF)"
                       KOERPER="GEERBT (keine GPU geweckt): der Kopf ist ein Commit ohne Inhalt über $GEERBT (scripts/ci-kopf.cjs kopfKette) — Urteil und Bilder im Posten probe-post/*/${GEERBT:0:8}.md, Lauf $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GEERBT_LAUF"
@@ -553,6 +559,15 @@ jobs:
                           KOPF="$KOPF${KOPF:+ · }$K"
                           KOERPER="$KOERPER${KOERPER:+$NL$NL}## Läufer $R — $U$NL$NL$E"
                       done
+                  fi
+                  # NIE GRÜN DURCH LEERE (24.11., w28-tat-aufwaerts 5c650d13: der Post des Erbes schrieb „Ruf: —“ über einem Ruf mit vier
+                  # Proben): das Erbe nennt den Ruf seines Kopfs (oben PLAN), und ein Urteil ohne eine einzige Probe — eine Matrix ohne
+                  # Bein, ein Erbe ohne Ruf — ist ROT beim Namen. Bis hier begann der Post mit URTEIL=GRÜN, und nur der Einlass stand
+                  # davor. Ein abgewiesener Ruf bleibt ABGEWIESEN (er urteilt schon rot).
+                  if [ -z "${PLAN:-}" ] && [ "$URTEIL" != ABGEWIESEN ]; then
+                      URTEIL=ROT
+                      KOPF="der Lauf trug keine einzige Probe${KOPF:+ · $KOPF}"
+                      KOERPER="ROT: der Lauf trug keine einzige Probe (eine Matrix ohne Bein oder ein Erbe ohne Ruf) — nie grün durch Leere. $KOERPER"
                   fi
                   # BEKANNT steht sichtbar im Kopf: ein ROT, das am gebuchten Stand schon ROT ist, reißt den Zweig nicht — beim Namen
                   [ -n "$BEK" ] && [ "$URTEIL" = GRÜN ] && URTEIL="GRÜN · ROT wie an main (bekannt): $BEK"

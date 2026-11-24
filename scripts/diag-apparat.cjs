@@ -542,6 +542,11 @@ const PROBE_RUFE = [
     // skripte), weist der Einlass ab, auch als zeit: — gate:kreatur-takt (742 + 937 + 596 s) brach auf der GTX 1050 dreimal stumm am Deckel
     ["[gpu-probe: gate:kreatur-takt]"],
     ["[gpu-probe: zeit:gate:kreatur-takt, bild:wiese]"],
+    // NIE GRÜN DURCH LEERE (24.11.): ein Ruf ohne eine einzige Probe weist ab, mit seinem Grund (das dritte Glied) — eine leere
+    // Matrix weckte kein Bein, und der Post begann mit URTEIL=GRÜN
+    ["[gpu-probe: ]", null, /nennt keine Probe/],
+    ["[gpu-probe:]", null, /nennt keine Probe/],
+    ["[gpu-probe: , ]", null, /nennt keine Probe/],
 ];
 
 // Klinge 7, DER STEMPEL ERBT (stempel-erbt-probe, 22.11.): der Einlass fährt hier gegen eine GESTELLTE API (kein Netz im Gate:
@@ -572,7 +577,7 @@ function erbTafel({ kopf = {}, elterRuf = "bild:wiese@0.5, gate:apparat", lauf =
     ];
     return { commits, laeufe, fehler };
 }
-const ERB_GEERBT = `geerbt=${ERB.E}\nlauf=800\n`;
+const ERB_GEERBT = `geerbt=${ERB.E}\nlauf=800\nruf=bild:wiese@0.5\n`;
 const ERB_INHALT = erbTafel({ kopf: { tree: "t2" } });
 const faehrt = (plan) => `matrix=${JSON.stringify({ include: [{ label: "gpu-probe", plan }] })}\n`;
 const ERB_BILD = faehrt("bild:wiese@0.5 gate:webgl-probe");
@@ -787,11 +792,11 @@ function probeGesetz(doc) {
     if (!P?.run?.includes("${BL:+ — $BL}") || !P.run.includes("${BL:+ · $BL}"))
         v.push("Vorfahrt-Blick: Kopf oder Post nennen den gescheiterten Blick nicht ($BL)");
     const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })), "", deckel);
-    for (const [i, [m, matrix]] of PROBE_RUFE.entries()) {
+    for (const [i, [m, matrix, grund]] of PROBE_RUFE.entries()) {
         const { aus } = rufe[i];
         if (
             e.run !== 'node -e "$EINLASS_JS"' ||
-            (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))
+            (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus) || (grund && !grund.test(aus)))
         )
             v.push(`Einlass ${m} → ${aus}`);
     }
@@ -806,8 +811,12 @@ function probeGesetz(doc) {
     const E = doc.jobs.einlass;
     if (E.permissions?.actions !== "read" || e.env.GH_TOKEN !== "${{ github.token }}")
         v.push("Erbe: der Einlass liest keine Läufe (permissions actions: read und GH_TOKEN: ${{ github.token }})");
-    if (E.outputs?.geerbt !== "${{ steps.einlass.outputs.geerbt }}" || E.outputs?.lauf !== "${{ steps.einlass.outputs.lauf }}")
-        v.push("Erbe: der Einlass reicht geerbt/lauf nicht an den Post");
+    if (
+        E.outputs?.geerbt !== "${{ steps.einlass.outputs.geerbt }}" ||
+        E.outputs?.lauf !== "${{ steps.einlass.outputs.lauf }}" ||
+        E.outputs?.ruf !== "${{ steps.einlass.outputs.ruf }}"
+    )
+        v.push("Erbe: der Einlass reicht geerbt/lauf/ruf nicht an den Post");
     const postRun = doc.jobs.post.steps.find((s) => /^Post/.test(s.name || ""))?.run || "";
     if (
         !/if \[ -n "\$GEERBT" \]; then\n\s*URTEIL="GEERBT von \$\{GEERBT:0:8\}"/.test(postRun) ||
@@ -815,6 +824,15 @@ function probeGesetz(doc) {
         doc.jobs.post.env?.GEERBT !== "${{ needs.einlass.outputs.geerbt }}"
     )
         v.push("Erbe: der Post schreibt den geerbten Lauf nicht als „GEERBT von <eltern-sha8>“ mit Urteil GRÜN");
+    // NIE GRÜN DURCH LEERE (24.11., der Post w28-tat-aufwaerts 5c650d13 schrieb „Ruf: —“ über einem Ruf mit vier Proben): das Erbe
+    // nennt den Ruf seines Kopfs, und ein Urteil ohne eine einzige Probe (eine Matrix ohne Bein, ein Erbe ohne Ruf) ist ROT
+    if (
+        !/URTEIL="GEERBT von \$\{GEERBT:0:8\}"\n\s*PLAN="\$GEERBT_RUF"\n/.test(postRun) ||
+        doc.jobs.post.env?.GEERBT_RUF !== "${{ needs.einlass.outputs.ruf }}"
+    )
+        v.push("Erbe: der Post nennt den Ruf des Erbes nicht (er schriebe „Ruf: —“ über einem Ruf mit Proben)");
+    if (!/\n\s*if \[ -z "\$\{PLAN:-\}" \] && \[ "\$URTEIL" != ABGEWIESEN \]; then\n\s*URTEIL=ROT\n[\s\S]*\n\s*echo "Ruf: /.test(postRun))
+        v.push("Leere: der Post urteilt einen Lauf ohne eine einzige Probe nicht ROT (eine Matrix ohne Bein bliebe GRÜN)");
     // Klinge 9 (w28-probe-urteil, Lehre 6): der Kopf der Probe urteilt Log UND Exit über den EINEN Leser, nennt den Grund, und
     // ein BEKANNTES ROT steht sichtbar im Kopf des Posts — nie der Exit allein (bis dahin: `elif [ "$RC" = 0 ]; then U=GRÜN`)
     const lauf = doc.jobs.probe.steps.find((s) => /^Proben/.test(s.name || ""))?.run || "";
@@ -1195,6 +1213,14 @@ function selftest() {
             ["Einlass ohne Erbe (der Stand bis stempel-erbt-probe)", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "if (u.erbt) {", "if (false) {"); }, /Erbe \(1\) leer über grünem Elter/], // prettier-ignore
             ["Einlass ohne Recht auf die Läufe", ["jobs.einlass.permissions"], /Erbe: der Einlass liest keine Läufe/],
             ["Post ohne Erbe", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = mutiert(s.run, 'if [ -n "$GEERBT" ]; then', "if false; then"); }, /Erbe: der Post schreibt/], // prettier-ignore
+            // NIE GRÜN DURCH LEERE (24.11.): der Stand bis dahin — den leeren Ruf wies nur das Muster der Namen ab (ohne es: eine
+            // Matrix ohne Bein) und ohne eigenen Grund, das Erbe reichte seinen Ruf nicht, der Post schrieb „Ruf: —“ und begann GRÜN
+            ["leerer Ruf fährt", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(mutiert(e.EINLASS_JS, "!proben.some(Boolean)", "false"), ".map((p) => p.trim())", ".map((p) => p.trim()).filter(Boolean)"); }, /Einlass \[gpu-probe: \] → matrix=/], // prettier-ignore
+            ["leerer Ruf ohne Grund", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "!proben.some(Boolean)", "false"); }, /Einlass \[gpu-probe: \] → abgewiesen=/], // prettier-ignore
+            ["Erbe ohne Ruf im Ausgang", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, ', `ruf=${proben.join(" ")}`', ""); }, /Erbe \(1\) leer über grünem Elter/], // prettier-ignore
+            ["Einlass reicht den Ruf nicht", ["jobs.einlass.outputs.ruf"], /Erbe: der Einlass reicht/],
+            ["Post ohne Ruf des Erbes", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = mutiert(s.run, 'PLAN="$GEERBT_RUF"', ":"); }, /Erbe: der Post nennt den Ruf/], // prettier-ignore
+            ["Post grün ohne Probe", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = mutiert(s.run, '[ -z "${PLAN:-}" ] && [ "$URTEIL" != ABGEWIESEN ]', "false"); }, /Leere: der Post urteilt/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
