@@ -2315,3 +2315,4 @@ omen-gtx-gtx-f18576b6-1-f18576b6 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-24 10:54 RUNDE 18 ALARM gtx: PLATTE 6.9 GB frei (< 10 GB) — die Landung wird angehalten, weiter ab 15 GB, Löschen entscheidet der Schöpfer — laeuft 2/240, Station karte2.mensch.sport.kunst#1, Kopf f18576b6; die Runde setzt an derselben Station fort — gesehen von platte-dienst
 2026-11-24 10:54 PLATTE 6.9 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 10:57 PLATTE 17.9 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
+2026-11-24 10:58 landung Runde 18 am f18576b6: misst 70 von 240 Stationen (vorn; 3 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
