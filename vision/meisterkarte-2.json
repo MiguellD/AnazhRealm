@@ -2277,10 +2277,10 @@
    "summe": {
     "kriterien": 9,
     "sprossen": 61,
-    "heute": 0,
+    "heute": 1,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 0,
+    "anteilHeute": 1.6,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -2452,7 +2452,7 @@
        "richter": "tiefes Feld gegen Hubble-Deep-Field: Galaxien je Bogenminute² ±20 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Mechanik von Sprosse 1 steht: 2 800 Sterne aus der Saat an einer Kugel von 480 m (stamm/bild-himmel.js:307-421), drei Wandelsterne als feste Punkte. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 30,
+    "heute": 33,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 5.4,
+    "anteilHeute": 5.8,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -7105,7 +7105,7 @@
        "richter": "N = 100 Welten: Fremdwelt-Probe (R10) — Lebensentwurf aus Leib, Welt und Gesellschaft der Art vorhergesagt Rang ≥ 0,7"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
@@ -10799,7 +10799,7 @@
        "richter": "200 Texte widerspruchsfrei ≥ 90 %, ≥ 50 % verweisen auf ein Ereignis"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "die Stele mit Schriftband lebt nicht im Spiel; lesbar nur das Peer-Namensschild (stamm/netz-p2p.js:2232)",
@@ -11228,7 +11228,7 @@
        "richter": "Fremdwelt-Probe (R10): Sinn und Glaube der Art aus dem Werk gelesen Rang ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Nie gemessen; keine Station der alten Karte misst Kunst am Bau oder im Raum.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 85,
+  "heute": 89,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
-  "anteilHeute": 4.5,
+  "anteilHeute": 4.8,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 32
+  "nachwache": 36
  },
  "zusammengelegt": [
   {

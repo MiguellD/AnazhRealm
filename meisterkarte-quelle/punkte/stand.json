@@ -16601,7 +16601,7 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal an f0a89f7e gtx · gehalten: S2 GRÜN · Anteil sichtbarer Fortschritt nach 1 Spieljahr 0.72 (Soll ≥ 0.5) · Umfang 1356 (Soll ≥ 1000 Bewohner) · 100 Befragte über die 1356 Bewohner der Stadt verteilt; ein Spieljahr später (der Kalender der Welt + jahrK 2400) steigt die Prozent-Zahl ihres Ziels im Lebenslauf bei 72, 28 gleich; Ziele {\"meister\":45,\"lehre\":35,\"geselle\":20} · [linse-gpu] nvidia/pascal an eba9bf8f gtx — offen: karte2.mensch.geist.absicht#2 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal an f0a89f7e gtx · S2 GRÜN · Anteil sichtbarer Fortschritt nach 1 Spieljahr 0.72 (Soll ≥ 0.5) · Umfang 1356 (Soll ≥ 1000 Bewohner) · 100 Befragte über die 1356 Bewohner der Stadt verteilt; ein Spieljahr später (der Kalender der Welt + jahrK 2400) steigt die Prozent-Zahl ihres Ziels im Lebenslauf bei 72, 28 gleich; Ziele {\"meister\":45,\"lehre\":35,\"geselle\":20} · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.geist.absicht#2 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
@@ -16637,9 +16637,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "S2 GRÜN · Anteil sichtbarer Fortschritt nach 1 Spieljahr 0.72 (Soll ≥ 0.5) · Umfang 1356 (Soll ≥ 1000 Bewohner) · 100 Befragte über die 1356 Bewohner der Stadt verteilt; ein Spieljahr später (der Kalender der Welt + jahrK 2400) steigt die Prozent-Zahl ihres Ziels im Lebenslauf bei 72, 28 gleich; Ziele {\"meister\":45,\"lehre\":35,\"geselle\":20} · [linse-gpu] nvidia/pascal",
-     "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
-     "gehalten": true,
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -37707,7 +37706,7 @@
   "ohne": 3323
  },
  "kopfVoll": "2d6a0447b80ae36b4b83e52e12757c457c536133",
- "zeit": "2026-11-24T18:44:42.948Z",
+ "zeit": "2026-11-24T19:02:48.310Z",
  "vorher": "2d6a0447",
  "bilanz": {
   "gewinn": [],
