@@ -7,8 +7,8 @@
 //     | der SCHWANZ K5 ROT „Leser fehlt" · K6 ROT „Umfang nicht erzeugbar". Bleibt einem Geraet nur der Schwanz und ist main weiter als
 //     der Runden-Kopf, TRAEGT sein rotes Urteil vom frueheren Kopf (Feld getragen).
 //   2a DIE GETEILTE FRONT (Koordinator 22.11.; Runde 4: die GTX 21 von 246 nach 3,5 h, die Radeon „wartet 0/0“): beide Geraete teilen
-//     EINE Front. Das zweite Geraet tritt ein, sobald das erste am Kopf eine Liste traegt (bis dahin wartet: kein Alarm) — seine Liste
-//     ist der vordere Teil der Liste des ersten in UMGEKEHRTER Reihe, ohne Schwanz (`reihe --erst`). Eine Station ist fuer ein Geraet
+//     EINE Front. Das zweite Geraet tritt SOFORT ein (24.11.: traegt das erste am Kopf noch keine Liste, baut es dessen Front selbst — zug/dienst/front.sh front_bauen, dieselbe Funktion) — seine Liste
+//     ist der vordere Teil der Front des ersten in UMGEKEHRTER Reihe, ohne Schwanz (`reihe --erst`). Eine Station ist fuer ein Geraet
 //     offen, solange es am Kopf keinen Eintrag traegt UND das andere sie am Kopf nicht URTEILTE (`offen --anders`, seit 23.11. GRUEN
 //     wie ROT: JEDE STATION EINMAL, die Buchung hebt mit EINEM Geraet); UNGEMESSEN des anderen ueberspringt nie (die zweite Chance).
 //   3 frisches ROT an einer am vorigen Mess-Kopf gruenen Station: NUR diese Station wird ueber die Koepfe dazwischen halbiert
@@ -87,8 +87,8 @@ const KOPF = [
     "# <geraet> <offen|wartet|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <K1–K3,..>|<Schwanz,..> getragen <n>",
     "# DIE RUNDE FOLGT DER AENDERUNG (21.11.): die Liste ist NUR die Front der Karte 2 (je Leiter die Sprosse heute, Glieder jede ungebuchte). K1 beansprucht (zug/anspruch.txt) · K2 ohne Urteil · K3 GRUEN | Schwanz: K4 ROT anderes (22.11.: so viel wie noetig) ·",
     "# K5 ROT Leser fehlt · K6 ROT Umfang nicht erzeugbar. Bleibt nur der Schwanz und ist main weiter, traegt sein ROT vom frueheren Kopf",
-    "# (getragen). DIE GETEILTE FRONT (22.11.): das zweite Geraet wartet (wartet: kein Alarm) nur, bis das erste am Kopf eine Liste traegt, und",
-    "# faehrt dann deren vorderen Teil in UMGEKEHRTER Reihe; keines misst, was das andere am Kopf urteilte (GRUEN wie ROT, 23.11.; UNGEMESSEN zaehlt nicht).",
+    "# (getragen). DIE GETEILTE FRONT (22.11.): das zweite Geraet faehrt den vorderen Teil der Front des ersten in UMGEKEHRTER Reihe — traegt das erste am Kopf noch keine Liste, baut es dessen Front selbst (24.11., front.sh);",
+    "# keines misst, was das andere am Kopf urteilte (GRUEN wie ROT, 23.11.; UNGEMESSEN zaehlt nicht).",
     "# Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.",
     "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
@@ -321,8 +321,8 @@ if (was === "lies") {
         }
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
-            // WARTET NACH DEM GESETZ (22.11., die geteilte Front): das zweite Gerät, das auf die Liste des ersten am Kopf wartet, steht
-            // nicht still — kein Alarm
+            // WARTET NACH DEM GESETZ (22.11.–24.11.; seit 24.11. schreibt kein Dienst den Zustand mehr — die Radeon baut die Front selbst): eine
+            // Zeile, die noch „wartet“ traegt, stammt vom alten Dienst und steht bis zu seinem naechsten Takt — kein Alarm
             if (e.zustand === "durch" || e.zustand === "wartet") continue;
             const seit = Date.parse(e.fortschritt === "-" ? r.runde.start : e.fortschritt), min = Math.floor((t - seit) / 60000);
             if (!(min > ALARM_MIN)) continue;

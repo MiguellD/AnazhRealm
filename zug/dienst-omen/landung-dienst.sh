@@ -12,8 +12,8 @@
 #     · K2 ohne Urteil · K3 GRÜN | der Schwanz K4 ROT anderes · K5 ROT „Leser fehlt“ · K6 ROT „Umfang nicht erzeugbar“ — die Klasse aus
 #     dem jüngsten Urteil über alle Köpfe; darin die älteste Messung zuerst, eine Fahrt ≥ 10 min zuletzt. Die Liste wird beim Eintritt in
 #     die Runde EINGEFROREN (Feld liste). Vorn und Schwanz fahren getrennt; bleibt nur der Schwanz und ist main weiter, TRÄGT er (getragen).
-#   2a DIE GETEILTE FRONT (Koordinator 22.11.): die Radeon fährt den vorderen Teil dieser Liste vom anderen Ende (umgekehrt), sobald die
-#     Liste in zug/runde.txt steht; was eines der Geräte am Kopf ROT urteilt, misst das andere nicht mehr (runde.cjs offen --anders —
+#   2a DIE GETEILTE FRONT (Koordinator 22.11.): die Radeon fährt den vorderen Teil dieser Liste vom anderen Ende (umgekehrt) — steht
+#     sie noch nicht in zug/runde.txt, baut die Radeon sie selbst aus derselben Funktion (zug/dienst/front.sh front_bauen, 24.11.); was eines der Geräte am Kopf ROT urteilt, misst das andere nicht mehr (runde.cjs offen --anders —
 #     hier offen_am und kandidat.sh vor jeder Sitzung; GRÜN und UNGEMESSEN der Radeon überspringen nie).
 #   3 DER RICHTER DER RUNDE (richte_runde): nach der Liste nennt runde.cjs faelle jede Station, die am vorigen Mess-Kopf GRÜN und am
 #     jetzigen ROT misst; NUR sie wird über die Köpfe dazwischen halbiert (richter.sh --fall <station> <vorher> <kopf>, Täter beim Namen).
@@ -46,6 +46,8 @@
 case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 D=$(cd "$(dirname "$0")" && pwd)
 if [ -f "$D/gemein.sh" ]; then . "$D/gemein.sh"; else . "$D/../dienst/gemein.sh"; fi
+# die Front der Runde (front_bauen, liste_datei, zahl): EINE Quelle mit der Radeon, installiert neben diesem Skript, im Zweig in ../dienst
+if [ -f "$D/front.sh" ]; then . "$D/front.sh"; else . "$D/../dienst/front.sh"; fi
 # runde.cjs und richter.sh: installiert neben diesem Skript, im Zweig in ../dienst (EINE Quelle beim Laptop)
 RUNDE_CJS=$D/runde.cjs
 [ -f "$RUNDE_CJS" ] || RUNDE_CJS=$D/../dienst/runde.cjs
@@ -86,7 +88,6 @@ gepusht() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | grep -E " $2-[0-9]+ 
 # station_jetzt — die Station als EIN Wort (runde.txt station): aus der jüngsten Zeile der Kette („… STATION <id> beginnt“, „… STATION <id> geurteilt (k/N)“ —
 # kandidat.sh je Station mit Uhr, 19.11. 11:07 — oder die erste der laufenden Sitzung aus „Versuch v START (…)“, + wie viele mit ihr)
 station_jetzt() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | awk '/ Versuch [0-9]+ START [(]/ { s = $0; sub(/.* START [(]/, "", s); sub(/[)]$/, "", s); n = split(s, a, ","); z = a[1] (n > 1 ? "+" (n - 1) : "") } / STATION [^ ]+ beginnt$/ { z = $(NF - 1) } / STATION [^ ]+ geurteilt [(]/ { z = $(NF - 2) } END { print z }'; }
-zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
 # runde <verb> … — zug/dienst/runde.cjs gegen den Klon $RUNDE_REPO (stdout = die Antwort, stderr ins Log)
 runde() { node "$RUNDE_CJS" "$@" 2>>"$L"; }
 runde_alarm() { runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" >>"$L"; }
@@ -154,32 +155,9 @@ stand_ernten() {
     [ "$grund" = halt ] || grund=sprung
     touch "$GRENZE"
 }
-# DIE KARTE 2 (15.11.): die Stationen der Tafel Station → Sprosse (vision/richter-tafel.json im Baum von punkte-maschine) mit einer
-# Zeile „gleich“ — nur sie schreiben eine Akte —, je einmal, mit Komma; leer, wenn der Baum keine Tafel trägt (dann gtx-nutzen).
-karte2_nur() {
-    [ -f "$PM/vision/richter-tafel.json" ] || return 0
-    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).filter((e)=>e&&e.richter==="gleich").map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null | tr -d '\r'
-}
-liste_quelle() { # <kopf> → die Stationen der Runde (vor /band und Reihe); setzt QUELLE
-    local a
-    a=$(karte2_nur)
-    if [ -n "$a" ]; then QUELLE="der Tafel der Karte 2 (Zeilen gleich)"; echo "$a"; return; fi
-    QUELLE=gtx-nutzen
-    (cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs gtx-nutzen --kopf "$1" 2>>"$L" | sed -n 's/^nur=//p' | tr -d '\r')
-}
-# DIE LISTE REIST ALS DATEI (Koordinator 19.11. 05:54; Fund beim Live-Gang: „landung-dienst.sh: line 94: node: Argument list too long“ —
-# 1 428 Stationen ≈ 50 000 Zeichen als EIN Argument über der Windows-Grenze 32 767; die Kette lief leer weiter bis `laeuft 0/0 … liste |`).
-# liste_datei <name> <liste> schreibt die Liste in zustand/listen/<name>.txt (printf ist eingebaut: kein exec) und nennt „@<datei>“ —
-# so heißt jedes Listen-Argument an node (ohne-band.cjs, runde.cjs offen · reihe · teile · stand --liste · faelle) und an kandidat.sh.
-# Unbegrenzt lang reist eine Liste nie in argv oder Umgebung; ein Teil (runde.cjs teile: ≤ 1 740 s Deckel und ≤ 8 000 Zeichen) darf es.
-liste_datei() { mkdir -p "${S:?}/listen" && printf '%s\n' "$2" >"$S/listen/$1.txt" && echo "@$S/listen/$1.txt"; }
-ohne_band() { node "$ST/ohne-band.cjs" "$(liste_datei band "$1")" 2>>"$L"; }
-# anspruch_datei — zug/anspruch.txt (K1 der Reihe: die Stationen, die ein Zweig beim Stempel beansprucht; Schreiber ist der Koordinator)
-# am eben geholten koordination-Stand (runde lies holt ihn nach refs/runde/koord); fehlt sie: leer → der Pfad
-anspruch_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/runde/koord:zug/anspruch.txt >"$S/listen/anspruch.txt" 2>/dev/null || : >"$S/listen/anspruch.txt"; } && echo "$S/listen/anspruch.txt"; }
-# karte_datei — vision/meisterkarte-2.json am koordination-Stand der Runde (die Front: runde.cjs reihe --karte); fehlt sie, bleibt die
-# Datei leer und die Reihe bricht mit Exit 6 beim Namen (liste_rot) — nie still die ganze Tafel
-karte_datei() { mkdir -p "${S:?}/listen" && { git -C "$RUNDE_REPO" show refs/runde/koord:vision/meisterkarte-2.json >"$S/listen/karte.json" 2>/dev/null || : >"$S/listen/karte.json"; } && echo "$S/listen/karte.json"; }
+# DIE FRONT DER RUNDE (24.11.): karte2_nur · liste_quelle · ohne_band · anspruch_datei · karte_datei · liste_datei · zahl und die Kette
+# front_bauen stehen in zug/dienst/front.sh (oben gesourct) — EINE Quelle mit der Radeon, die damit die Front der GTX selbst baut, solange
+# diese am Kopf noch keine Liste trägt. Die Liste reist als Datei (liste_datei), ohne Tafel gilt gtx-nutzen.
 pm_stand() { node "$N/pm-stand.cjs" "$PM" >>"$L" 2>&1; } # der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt
 # offen_am <kopf> <liste> → was an diesem Kopf noch keinen Eintrag trägt, in der Mess-Datei des BAUMS (pm-stand.cjs: eine jüngere Messung
 # im Baum überlebt) — so zählt nach einem Tod mitten in einer Sitzung, was sie schon fertig maß; es reist mit dem nächsten Push.
@@ -363,22 +341,11 @@ runde_takt() {
     # der Eintritt in die Runde: die Liste wird gebaut und EINGEFROREN — auch, wenn die Zeile eine Liste OHNE Station trägt (`liste |`,
     # der Live-Gang 19.11. 05:52): der erste Takt nach dem Schnitt baut sie selbst neu, die Runde muss nicht neu angelegt werden
     if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then
-        local ra rb rr
-        mkdir -p "${S:?}/listen"
-        liste_quelle "$RK" >"$S/listen/quelle.txt" # ohne Unter-Shell: QUELLE bleibt gesetzt
-        ra=$?
-        a=$(<"$S/listen/quelle.txt")
-        B=$(ohne_band "$a")
-        rb=$?
-        local KD
-        KD=$(karte_datei)
-        RLISTE=$(runde reihe "$MESSUNG_DIR" "$GERAET" "$(liste_datei reihe "$B")" ${KD:+--karte "$KD"} --anspruch "$(anspruch_datei)")
-        rr=$?
-        if [ $ra != 0 ] || [ $rb != 0 ] || [ $rr != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then
-            liste_rot "Runde $RN am ${RK:0:8}: Quelle ${QUELLE:-?} $(zahl "$a") (Exit $ra), ohne /band $(zahl "$B") (Exit $rb), Reihe $(zahl "$RLISTE") (Exit $rr)"
-            return
-        fi
-        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (vorn K1–K3 | Schwanz K4–K6): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($(grep "^Reihe $GERAET: " "$L" | tail -n 1 | cut -c1-160); zustand/listen/runde.txt)"
+        local ra
+        # die Kette Quelle → ohne /band → Reihe: front_bauen (zug/dienst/front.sh), dieselbe, mit der die Radeon die Front selbst baut
+        front_bauen "$GERAET" "$MESSUNG_DIR" "$RK" || { liste_rot "Runde $RN am ${RK:0:8}: $FRONT_TEXT"; return; }
+        RLISTE=$FRONT
+        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $FRONT_QUELLE_N, ohne /band $FRONT_BAND_N — die Liste (vorn K1–K3 | Schwanz K4–K6): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($(grep "^Reihe $GERAET: " "$L" | tail -n 1 | cut -c1-160); zustand/listen/runde.txt)"
         runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 --getragen 0 >>"$L" ||
             { ra=$?; [ $ra = 4 ] && { sprang "$L" "$RK" "die Liste wird nicht am alten Kopf eingefroren, der nächste Takt baut sie am neuen"; return; }
               liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $ra)"; return; }

@@ -166,13 +166,13 @@ if [ -n "$hand" ]; then
 fi
 [ "$1" = "--neu" ] && stopp
 tmp=$S/manifest.neu
-echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter, puls, runde)" >"$tmp"
+echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, front, richter, puls, runde)" >"$tmp"
 {
     git -C $G ls-tree -r "$K" zug/dienst-omen/
-    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs zug/dienst/puls-dienst.sh zug/dienst/schloss-puls.cjs zug/dienst/runde.cjs zug/dienst/schloss-ort.cjs
+    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/front.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs zug/dienst/puls-dienst.sh zug/dienst/schloss-puls.cjs zug/dienst/runde.cjs zug/dienst/schloss-ort.cjs
 } | while read -r mode typ blob pfad; do
     case "$pfad" in
-        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs, puls-dienst.sh, schloss-puls.cjs, runde.cjs: EINE Quelle beim Laptop
+        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, front.sh, richter.sh, richter-werk.cjs, puls-dienst.sh, schloss-puls.cjs, runde.cjs: EINE Quelle beim Laptop
         zug/dienst-omen/ort/*) ort=p3/${pfad#zug/dienst-omen/ort/} ;;
         *) ort=p3/dienst-omen/${pfad#zug/dienst-omen/} ;;
     esac

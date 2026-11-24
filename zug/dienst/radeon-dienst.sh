@@ -19,7 +19,9 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 # Log: /tmp/claude/w4/radeon-nie-leer.log (der Blick liest es).
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
+. "$D/front.sh" # die Front der Runde: EINE Quelle mit der OMEN (front_bauen, liste_datei, zahl)
 PM=$T/w3/pm
+RUNDE_REPO=$R # der Klon, dessen refs/runde/koord `runde lies` holt (Karte und Ansprüche der Front, front.sh)
 L=$W/radeon-nie-leer.log
 GS="${TEMP:-/tmp}/claude/gpu-schloss"
 A="-c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com"
@@ -36,8 +38,8 @@ HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer warten
 # sprang die Schleife zum jüngsten main — die Geräte trafen sich selten, seit dem 18.11. 03:00 kein Paar am selben Kopf): der Kopf ist
 # der Mess-Kopf der Runde in koordination zug/runde.txt (zug/dienst/runde.cjs, dieselbe Datei wie die OMEN; die OMEN legt die erste
 # Runde aus ihrem Bestand an). Die Radeon fährt ihre ganze Liste an DIESEM Kopf zu Ende (eingefroren beim Eintritt, `runde.cjs reihe`:
-# DIE GETEILTE FRONT, 22.11. — der vordere Teil der GTX-Liste in umgekehrter Reihe, sobald die GTX am Kopf eine Liste trägt; vorher
-# WARTET sie; was die GTX am Kopf ROT urteilte, fällt aus ihrem Rest), ein Abbruch (CI, Warter, Tod) setzt an derselben Station fort (was gemessen ist, trägt einen Eintrag
+# DIE GETEILTE FRONT, 22.11. — der vordere Teil der GTX-Liste in umgekehrter Reihe; trägt die GTX am Kopf noch keine, baut die Radeon
+# deren Front SELBST aus derselben Funktion (front.sh, 24.11.) und tritt sofort ein; was die GTX am Kopf urteilte, fällt aus ihrem Rest), ein Abbruch (CI, Warter, Tod) setzt an derselben Station fort (was gemessen ist, trägt einen Eintrag
 # in messung/<kopf8>-radeon.json), danach der Richter der Runde und „durch“; die nächste Runde nimmt den main des Moments, in dem beide
 # Geräte durch sind. Ein Gerät ohne Fortschritt > 15 min ist ALARM beim Namen (runde.cjs alarm, je Takt).
 RUNDE_CJS=$D/runde.cjs
@@ -266,12 +268,8 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     log "$name ${K:0:8} OHNE URTEIL: 0 Stationen, die Punkte-Maschine sagte nie ‚frisch gemessen‘ ($(grep -v '^\s*$' "$W/radeon-nie-leer-lauf.out" | tail -1 | cut -c1-160)) — offen bleibt offen, die Fortsetzung misst in der nächsten Lücke"
     return 4
 }
-zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
-# DIE LISTE REIST ALS DATEI (Koordinator 19.11. 05:54; die OMEN fiel beim Live-Gang an „node: Argument list too long“ — 1 428 Stationen
-# ≈ 50 000 Zeichen als EIN Argument über der Windows-Grenze 32 767): liste_datei <name> <liste> schreibt sie nach $S/listen/<name>.txt
-# (printf ist eingebaut) und nennt „@<datei>“ — so heißt jedes Listen-Argument an runde.cjs. An punkte.cjs (--nur) reist nur ein Teil,
+# DIE LISTE REIST ALS DATEI (zahl und liste_datei: front.sh, die eine Quelle beider Dienste). An punkte.cjs (--nur) reist nur ein Teil,
 # gekappt auf ≤ 8 000 Zeichen (runde.cjs kappe); der Rest fährt in den nächsten Fahrten derselben Runde.
-liste_datei() { mkdir -p "${S:?}/listen" && printf '%s\n' "$2" >"$S/listen/$1.txt" && echo "@$S/listen/$1.txt"; }
 # liste_rot <grund> — STILLES SCHEITERN IST ROT: Quelle > 0 und Liste 0 oder ein node der Listen-Kette mit Exit ≠ 0 — die Zeile der Runde
 # bleibt (nie `laeuft 0/0`, nie „durch“), EIN Alarm je Stunde in zug/runde.txt + zug/erledigt.txt, der Puls nennt es
 liste_rot() {
@@ -292,23 +290,37 @@ offen_am() {
 }
 # gesetz_der_liste — DIE GETEILTE FRONT (Koordinator 22.11.; Befund Runde 4 am 6066c757: die GTX stand nach 3,5 h bei 21 von 246, die
 # Radeon die ganze Zeit „wartet 0/0“ — das Gesetz vom 21.11. ließ sie erst ein, wenn die GTX ihren vorderen Teil hinter sich hatte, und
-# nur an deren GRÜN; dieses Gesetz ist GEFALLEN). Jetzt: die Radeon tritt SOFORT ein, sobald die GTX an DIESEM Kopf eine Liste trägt;
-# ihre Liste ist deren vorderer Teil (vor dem „|“) in UMGEKEHRTER Reihe, ohne Schwanz (`runde reihe --erst gtx`) — beide fahren von zwei
-# Enden auf EINE Front zu, und offen_am lässt fallen, was die GTX am Kopf ROT urteilte. Trägt die GTX am Kopf noch keine Liste, WARTET
-# sie: Zustand „wartet“ in zug/runde.txt (der Runden-Alarm feuert dafür nicht). GVORN setzt diese Funktion für den Bau der Liste.
+# nur an deren GRÜN; dieses Gesetz ist GEFALLEN). Die Radeon tritt SOFORT ein; ihre Liste ist der vordere Teil (vor dem „|“) der Front
+# der GTX in UMGEKEHRTER Reihe, ohne Schwanz (`runde reihe --erst gtx`) — beide fahren von zwei Enden auf EINE Front zu, und offen_am
+# lässt fallen, was die GTX am Kopf urteilte. DIE FRONT IST EINE FUNKTION (Koordinator 24.11.; Befund: nach den neun Sprüngen des 24.11.
+# begann die Radeon 23 · 10 · 6 · 23 · 48 · 13 · 22 · 37 · 59 min später zu messen, 241 min Leerlauf — sie WARTETE, bis die GTX am Kopf
+# eine Liste trug; dieses Warten ist GEFALLEN): trägt die GTX am Kopf eine Liste, gilt ihre; trägt sie keine, baut die Radeon die Front
+# der GTX SELBST — derselbe Ruf `front_bauen gtx` (front.sh: Tafel → ohne /band → runde reihe gtx mit Karte und Ansprüchen) am frisch
+# geholten Stand (baum_frisch: der Mess-Baum am Ursprung, die Mess-Dateien beider Geräte). Fehlt ein Eingang (Tafel, Karte) oder bricht
+# die Kette: LISTE ROT beim Namen, nie still warten. Baut die GTX ihre Liste danach an einem anderen Stand, bleibt die eingefrorene Liste
+# der Radeon stehen; offen --anders hält JEDE STATION EINMAL (Fall g1). GVORN setzt diese Funktion (die Liste der GTX) oder front_selbst
+# beim Einfrieren (die Kette läuft nur dann, nie je Takt); GVON nennt die Herkunft.
 GESETZ_ERST=gtx
 gesetz_der_liste() {
     local gn gk gv gz gl gg
     read -r gn gk gv gz gl gg <<<"$(runde lies "$R" "$GESETZ_ERST" --voll)"
-    if [ "$gk" != "$RK" ]; then ERST_TEXT="$GESETZ_ERST trägt keine Zeile am ${RK:0:8}"; warte; return 1; fi
-    if [ "${gl:--}" = - ]; then ERST_TEXT="$GESETZ_ERST $gz, noch ohne Liste am ${RK:0:8}"; warte; return 1; fi
-    GVORN=${gl%%|*}
-    log "Gesetz der Liste am ${RK:0:8}: $GESETZ_ERST trägt eine Liste ($gz, vorn $(zahl "$GVORN")) — die Radeon tritt ein, vom anderen Ende"
+    # die Runde sprang zwischen den zwei Blicken (takt las RK eben): der nächste Takt liest die neue Runde
+    if [ "$gk" != "$RK" ]; then log "Gesetz der Liste am ${RK:0:8}: die Runde trägt inzwischen ${gk:0:8} — der nächste Takt liest sie"; return 1; fi
+    if [ "${gl:--}" != - ]; then
+        GVORN=${gl%%|*} GVON="die Liste von $GESETZ_ERST"
+        log "Gesetz der Liste am ${RK:0:8}: $GESETZ_ERST trägt eine Liste ($gz, vorn $(zahl "$GVORN")) — die Radeon tritt ein, vom anderen Ende"
+        return 0
+    fi
+    GVORN= GVON=selbst GZ=$gz
 }
-# warte — die Radeon wartet nach dem Gesetz: einmal „wartet“ in zug/runde.txt, je Takt der Puls
-warte() {
-    [ "$RZ" = wartet ] || runde stand "$R" radeon "$RK" wartet >>"$L"
-    puls radeon "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }wartet nach dem Gesetz (Runde $RN am ${RK:0:8}): $ERST_TEXT — die Radeon tritt ein, sobald die GTX am Kopf eine Liste trägt"
+# front_selbst — die Front der GTX aus derselben Funktion (front.sh front_bauen), am frisch geholten Stand; setzt GVORN; 1 = LISTE ROT
+# (die Tafel fragt sie NACH baum_frisch: der Baum zwischen zwei Fahrten trägt den Stand der letzten, nicht den des Ursprungs)
+front_selbst() {
+    (cd "$PM" && { rest_behalten; baum_frisch; }) || { liste_rot "Runde $RN am ${RK:0:8}: $GESETZ_ERST ohne Liste, die Front selbst — der Mess-Baum ist nicht frisch (ungepusht oder fetch)"; return 1; }
+    [ -f "$PM/vision/richter-tafel.json" ] || { liste_rot "Runde $RN am ${RK:0:8}: $GESETZ_ERST ohne Liste, die Front selbst — die Tafel fehlt im Mess-Baum ($PM/vision/richter-tafel.json am Ursprung punkte-maschine)"; return 1; }
+    front_bauen "$GESETZ_ERST" "$PM/meisterkarte-quelle/punkte/messung" "$RK" || { liste_rot "Runde $RN am ${RK:0:8}: $GESETZ_ERST ohne Liste, die Front selbst: $FRONT_TEXT"; return 1; }
+    GVORN=${FRONT%%|*} GVON="die Front von $GESETZ_ERST, selbst gebaut"
+    log "Gesetz der Liste am ${RK:0:8}: $GESETZ_ERST $GZ ohne Liste — die Radeon baut die Front selbst ($FRONT_TEXT; vorn $(zahl "$GVORN") | Schwanz $(zahl "${FRONT#*|}")) und tritt ein, vom anderen Ende"
 }
 # takt — EIN Blick der Schleife (je 60 s): verwaiste Schlösser lösen, die Runde lesen, die eigene Liste am Kopf der Runde fahren oder
 # fortsetzen; ist sie durch: der Richter der Runde, „durch“, dann auf das andere Gerät warten (Alarm, nie still)
@@ -354,8 +366,8 @@ takt() {
             return 0
         fi
     fi
-    # DER EINTRITT NACH DEM GESETZ (22.11., die geteilte Front): ohne Liste zuerst die GTX — trägt sie am Kopf noch keine Liste, wartet
-    # die Radeon (vor jeder Frage nach der Karte: das Warten ist kein Stillstand und keine Belegung)
+    # DER EINTRITT NACH DEM GESETZ (22.11., die geteilte Front; 24.11. die Front als Funktion): ohne Liste die Front der GTX — ihre Liste
+    # oder, trägt sie am Kopf noch keine, dieselbe Funktion selbst (front_selbst beim Einfrieren)
     if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then gesetz_der_liste || { f=0; return 0; }; fi
     if frei; then f=$((f + 1)); else
         f=0
@@ -374,11 +386,12 @@ takt() {
         f=2
     fi
     if [ $f -ge 2 ]; then
-        # DIE KARTE 2 IST DER ZÄHLER (15.11.), DIE FRONT IST GETEILT (22.11.): die Liste ist der vordere Teil der eingefrorenen GTX-Liste
-        # (die Front der Karte 2, K1–K3) in UMGEKEHRTER Reihe, ohne Schwanz (runde.cjs reihe --erst) — beim Eintritt in die Runde gebaut und
-        # EINGEFROREN (Feld liste). Auch eine Zeile mit Liste OHNE Station (`liste |`) baut sie neu — die Runde muss dafür nicht neu
-        # angelegt werden. GVORN setzte gesetz_der_liste in diesem Takt.
+        # DIE KARTE 2 IST DER ZÄHLER (15.11.), DIE FRONT IST GETEILT (22.11.): die Liste ist der vordere Teil der GTX-Front (ihre
+        # eingefrorene Liste oder dieselbe Funktion selbst gebaut, 24.11.; die Front der Karte 2, K1–K3) in UMGEKEHRTER Reihe, ohne Schwanz
+        # (runde.cjs reihe --erst) — beim Eintritt in die Runde gebaut und EINGEFROREN (Feld liste). Auch eine Zeile mit Liste OHNE Station
+        # (`liste |`) baut sie neu — die Runde muss dafür nicht neu angelegt werden. GVORN setzte gesetz_der_liste in diesem Takt.
         if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then
+            [ "$GVON" = selbst ] && { front_selbst || { f=0; return 0; }; }
             RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$(liste_datei reihe "$GVORN")" --erst "$GESETZ_ERST" --kopf "$RK")
             rc=$?
             if [ $rc = 7 ]; then # der vordere Teil der GTX trägt keine Station: an diesem Kopf durch, ohne Fahrt (nie ein Listen-Bruch)
@@ -389,7 +402,7 @@ takt() {
                 return 0
             fi
             if [ $rc != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then liste_rot "Runde $RN am ${RK:0:8}: vorn $GESETZ_ERST $(zahl "$GVORN"), Reihe $(zahl "$RLISTE") (Exit $rc)"; f=0; return 0; fi
-            log "Runde $RN am ${RK:0:8}: die Liste (der vordere Teil von $GESETZ_ERST, umgekehrt) $(zahl "$RLISTE") Stationen ($S/listen/runde.txt)"
+            log "Runde $RN am ${RK:0:8}: die Liste (der vordere Teil — $GVON —, umgekehrt) $(zahl "$RLISTE") Stationen ($S/listen/runde.txt)"
             runde stand "$R" radeon "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 --getragen 0 >>"$L" ||
                 { liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $?)"; f=0; return 0; }
             U=${RLISTE%%|*} B=${RLISTE#*|}
@@ -428,14 +441,15 @@ takt() {
 # r  DAS GESETZ DER ROH-BILDER: ein Bild bei gehaltenem Urteil bleibt am Gerät (Prüfsumme in git), bei Wechsel geht es nach git
 # Mutanten (Forts.): pid-Quelle „^pid=“ · reihe (nach HAND_ZEIT_S vor die Hand von vorhin) · ziel (der Kopf ist der jüngste main, die
 # Regel bis 19.11.) · bild (git add -A nimmt jedes Roh-Bild mit, die Regel bis 19.11.) — jede ROT.
-# g · g0  DIE GETEILTE FRONT (22.11.): solange die GTX am Kopf keine Liste trägt, WARTET die Radeon (Zustand wartet, keine Fahrt, kein
-#    Runden-Alarm nach 20 min); sobald sie eine trägt, tritt die Radeon SOFORT ein — mit dem vorderen Teil in umgekehrter Reihe, ohne
+# g · g0 · g1  DIE GETEILTE FRONT (22.11.): trägt die GTX am Kopf eine Liste, tritt die Radeon SOFORT ein — mit dem vorderen Teil in umgekehrter Reihe, ohne
 #    was die GTX am Kopf urteilte (GRÜN wie ROT seit 23.11.: JEDE STATION EINMAL; UNGEMESSEN und ein Start-Fehler der GTX überspringen
-#    nicht); trägt der vordere Teil keine Station → durch ohne Fahrt. o  das Verb offen, auch mit --anders. Mutanten: offen-blind (das
+#    nicht); trägt der vordere Teil keine Station → durch ohne Fahrt. g1 DIE FRONT IST EINE FUNKTION (24.11.): trägt die GTX am Kopf KEINE
+#    Liste, baut die Radeon deren Front selbst (front_bauen gtx: Tafel, Karte, Ansprüche, Mess-Dateien) und tritt sofort ein; baut die GTX
+#    ihre Liste danach an einem anderen Stand, bleibt die der Radeon eingefroren, jede Station einmal. o  das Verb offen, auch mit --anders. Mutanten: offen-blind (das
 #    Urteil des anderen zählt nicht: Doppel-Messung) · offen-nur-rot (die Regel bis 23.11.: nur ROT überspringt, GRÜN wird nachgemessen)
 #    · offen-ungemessen (auch UNGEMESSEN des anderen überspringt:
 #    nie beurteilt) · reihe-gtx (die Liste in der Reihe der GTX) · altes-gesetz (die Regel bis 22.11.: warten, bis die GTX vorn hinter sich
-#    hat) · warten-still (die Radeon wartet ohne den Zustand wartet — der Alarm feuert).
+#    hat) · warte (die Regel bis 24.11.: ohne Liste der GTX WARTET die Radeon — g1 ROT).
 # pm_leg <datei> <json> — eine Mess-Datei (auch eines anderen Geräts) an den Ursprung, über einen eigenen Klon (der Mess-Baum bleibt unberührt)
 pm_leg() {
     [ -d "$X/leg" ] || git clone -q -b punkte-maschine "$X/pm.git" "$X/leg"
@@ -457,43 +471,72 @@ nur() {
     [ -z "$ST_NUR" ] || case ",$ST_NUR," in *",$1,"*) ;; *) return 1 ;; esac
     ST_ZF=$1
 }
-# st_gesetz — die Fälle g · g0 (im Sandkasten von st_lauf: X R PM L S STUB K, neu, feld, takt)
+# st_gesetz — die Fälle g · g1 · g0 (im Sandkasten von st_lauf: X R PM L S STUB K, neu, feld, takt)
 st_gesetz() {
-    # g — (1) die GTX trägt am Kopf noch keine Liste: die Radeon WARTET (keine Fahrt, Zeile „radeon wartet“, nach 20 min kein ALARM
-    # radeon); (2) die GTX trägt die Liste „g.K1–g.K5 | g.K6 g.K7“ und hat erst vier Urteile: g.K1 GRÜN, g.K2 ROT, g.K3 UNGEMESSEN, g.K4
+    # g — die GTX trägt die Liste „g.K1–g.K5 | g.K6 g.K7“ und hat erst vier Urteile: g.K1 GRÜN, g.K2 ROT, g.K3 UNGEMESSEN, g.K4
     # ein Start-Fehler, g.K5 nichts — die Radeon tritt SOFORT ein (die GTX ist mitten im vorderen Teil), friert „g.K5 … g.K1|“ ein (umgekehrt,
     # ohne Schwanz) und misst in EINER Fahrt g.K5 g.K4 g.K3 (g.K1 GRÜN und g.K2 ROT der GTX fallen: jede Station einmal, 23.11.), dann
     # durch; die Runde bleibt.
+    # g1 — DIE FRONT IST EINE FUNKTION (24.11.): die GTX trägt am Kopf KEINE Liste. Die Tafel (sechs Sprossen „gleich“, eine „anders“, eine
+    # profiband.*), die Karte (Front ga#1 · gb#1 · gb#3), der Anspruch gb#3 und ein älteres GTX-ROT „Leser fehlt“ an gb#1 ergeben die Front
+    # der GTX „gb#3,ga#1 | gb#1“ — die Radeon baut sie SELBST, friert „ga#1,gb#3|“ ein und misst sofort (ga#1, dann ein CI-Job). DANACH
+    # baut die GTX ihre Liste an einem ANDEREN Stand (die Radeon urteilte gb#1 am 21.11. GRÜN: der Widerspruch stellt gb#1 nach vorn, ga#1
+    # trägt den Eintrag der Radeon) und urteilt gb#3 GRÜN: die Liste der Radeon bleibt eingefroren, sie misst nichts doppelt (gb#3 fällt
+    # durch offen --anders), ist durch; gb#1 bleibt der GTX — jede Station einmal, keine fällt aus.
     # g0 — trägt der vordere Teil der GTX keine Station (nur Schwanz), ist die Radeon durch ohne Fahrt (Liste gesetz-leer, kein Listen-Bruch).
-    local gk g1 g2 gw ga gp t0
+    local gk g1 g2 gl r1 a1 a2
     if nur g; then
     neu zehn
     gk=$K
     seq 1 7 | sed 's/^/g.K/;s/$/#1/' >"$STUB/alle.txt"
+    touch "$STUB/nur.log"
     j=$(wc -l <"$STUB/nur.log")
-    takt
-    takt
-    g2=$(tail -n +$((j + 1)) "$STUB/nur.log" | wc -l)
-    gw=$(feld radeon | cut -d' ' -f2)
-    gp=$(cat "$S/radeon.puls" 2>/dev/null)
-    t0=$(feld runde | sed -n 's/^runde .* start \([^ ]*\) .*/\1/p')
-    export RUNDE_JETZT=$(date -u -d "@$(($(date -u -d "$t0" +%s) + 20 * 60))" +%FT%TZ)
-    # nur die Alarme DIESES Blicks zählen (22.11.: Fall p davor schreibt absichtlich „ALARM radeon: … ungepusht“ — g zählte ihn mit)
-    ga=$(git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/erledigt.txt | grep -c "ALARM radeon")
-    runde_alarm
-    unset RUNDE_JETZT
-    ga=$(($(git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/erledigt.txt | grep -c "ALARM radeon") - ga))
     runde stand "$R" gtx "$gk" laeuft --liste "g.K1#1,g.K2#1,g.K3#1,g.K4#1,g.K5#1|g.K6#1,g.K7#1" --gesamt 7 --erledigt 4 --getragen 0 >/dev/null
     pm_leg "${gk:0:8}-gtx.json" '{"je":{"g.K1#1":{"gruen":true},"g.K2#1":{"gruen":false,"grund":"ROT: Wert daneben"},"g.K3#1":{"gruen":false,"ungemessen":true},"g.K4#1":{"gruen":false,"grund":"Start: spawn ENAMETOOLONG"}},"ungemessen":{"g.K3#1":{"ungemessen":true,"offen":1}}}'
     for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
     g1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
-    if [ "$g2" = 0 ] && [ "$gw" = wartet ] && [ "$ga" = 0 ] && echo "$gp" | grep -q "wartet nach dem Gesetz .*gtx offen, noch ohne Liste am ${gk:0:8}" &&
-        [ "$g1" = "g.K5#1,g.K4#1,g.K3#1" ] && feld radeon | grep -q "^radeon durch .* liste g.K5#1,g.K4#1,g.K3#1,g.K2#1,g.K1#1| getragen 0$" && feld runde | grep -q "kopf $gk " &&
+    if [ "$g1" = "g.K5#1,g.K4#1,g.K3#1" ] && feld radeon | grep -q "^radeon durch .* liste g.K5#1,g.K4#1,g.K3#1,g.K2#1,g.K1#1| getragen 0$" && feld runde | grep -q "kopf $gk " &&
         grep -qF "übersprungen, geurteilt auf gtx am Kopf: 2" "$L"; then
-        echo "OK g  geteilte Front: ohne Liste der GTX WARTET die Radeon (Zeile wartet, 0 Fahrten, nach 20 min kein Alarm); mit der Liste tritt sie mitten im vorderen Teil der GTX ein, umgekehrt, und misst „$g1“ (g.K1 GRÜN und g.K2 ROT der GTX fallen: jede Station einmal; UNGEMESSEN und Start-Fehler bleiben), dann durch, die Runde bleibt"
-    else echo "ROT g  geteilte Front: Fahrten beim Warten $g2 (Soll 0), Zeile „$gw“ (Soll wartet), ALARM radeon $ga (Soll 0), Puls „$(echo "$gp" | cut -c21-140)“, danach gemessen „$g1“ (Soll „g.K5#1,g.K4#1,g.K3#1“), Zeile „$(feld radeon | cut -c1-130)“, offen-Zeile: $(grep -h "übersprungen" "$L" 2>/dev/null | tail -1 | cut -c1-160)"; fi
+        echo "OK g  geteilte Front: mit der Liste der GTX tritt die Radeon mitten in deren vorderem Teil ein, umgekehrt, und misst „$g1“ (g.K1 GRÜN und g.K2 ROT der GTX fallen: jede Station einmal; UNGEMESSEN und Start-Fehler bleiben), dann durch, die Runde bleibt"
+    else echo "ROT g  geteilte Front: gemessen „$g1“ (Soll „g.K5#1,g.K4#1,g.K3#1“), Zeile „$(feld radeon | cut -c1-130)“, offen-Zeile: $(grep -h "übersprungen" "$L" 2>/dev/null | tail -1 | cut -c1-160)"; fi
     fi
-    [ -n "$ST_NUR_G" ] && return # die Mutanten des zweiten Geräts prüfen nur g
+    if nur g1; then
+    neu zwoelf
+    gk=$K
+    touch "$STUB/nur.log"
+    # die Eingänge der Front: die Tafel im Baum von punkte-maschine, ein älteres GTX-ROT, Karte und Anspruch in koordination
+    [ -d "$X/leg" ] || git clone -q -b punkte-maschine "$X/pm.git" "$X/leg"
+    git -C "$X/leg" fetch -q origin && git -C "$X/leg" reset -q --hard origin/punkte-maschine && mkdir -p "$X/leg/vision" &&
+        printf '%s\n' '{"zeilen":[{"station":"karte2.ga#1","richter":"gleich"},{"station":"karte2.ga#2","richter":"gleich"},{"station":"karte2.gb#1","richter":"gleich"},{"station":"karte2.gb#2","richter":"gleich"},{"station":"karte2.gb#3","richter":"gleich"},{"station":"karte2.gc#1","richter":"gleich"},{"station":"karte2.gd#1","richter":"anders"},{"station":"profiband.gz#1","richter":"gleich"}]}' >"$X/leg/vision/richter-tafel.json" &&
+        git -C "$X/leg" add -f vision/richter-tafel.json && git -C "$X/leg" $A commit -qm tafel && git -C "$X/leg" push -q origin HEAD:punkte-maschine
+    pm_leg aaaaaaaa-gtx.json '{"je":{"karte2.gb#1":{"gruen":false,"grund":"ROT: Leser fehlt","zeit":"2026-11-20T00:00:00Z"}}}'
+    rm -rf "$X/kk" && git clone -q -b koordination "$X/spiel.git" "$X/kk" && mkdir -p "$X/kk/vision" &&
+        printf '%s\n' '{"gruppen":[{"kriterien":[{"id":"ga","sprossen":[{"nr":1},{"nr":2}],"heute":0},{"id":"gb","zaehlung":"glieder","sprossen":[{"nr":1},{"nr":2},{"nr":3}],"heuteSprossen":[2]},{"id":"gc","sprossen":[{"nr":1}],"heute":1}]}]}' >"$X/kk/vision/meisterkarte-2.json" &&
+        printf '# Ansprüche\nw28-g1 karte2.gb#3\n' >"$X/kk/zug/anspruch.txt" &&
+        git -C "$X/kk" add vision zug/anspruch.txt && git -C "$X/kk" $A commit -qm "Karte und Anspruch" && git -C "$X/kk" push -q origin koordination
+    printf 'karte2.ga#1\nkarte2.gb#3\nkarte2.gb#1\n' >"$STUB/alle.txt"
+    echo 1 >"$STUB/ci_nach"
+    j=$(wc -l <"$STUB/nur.log")
+    takt
+    takt
+    r1=$(feld radeon)
+    a1=$(gem "$K")
+    # die GTX baut ihre Liste DANACH an einem anderen Stand — dieselbe Funktion, ihr Baum (der Klon leg am Ursprung)
+    pm_leg bbbbbbbb-radeon.json '{"je":{"karte2.gb#1":{"gruen":true,"zeit":"2026-11-21T00:00:00Z"}}}'
+    gl=$(PM=$X/leg; front_bauen gtx "$X/leg/meisterkarte-quelle/punkte/messung" "$gk" && echo "$FRONT")
+    runde stand "$R" gtx "$gk" laeuft --liste "$(liste_datei gtx-g1 "$gl")" --gesamt "$(zahl "$gl")" --getragen 0 >/dev/null
+    pm_leg "${gk:0:8}-gtx.json" '{"je":{"karte2.gb#3":{"gruen":true}}}'
+    rm -f "$STUB/ci"
+    for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    g1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
+    a2=$(gem "$K")
+    if echo "$r1" | grep -q "^radeon \(laeuft\|weicht\) .* liste karte2.ga#1,karte2.gb#3| getragen 0$" && [ "$a1" = 1 ] && grep -q "Gesetz der Liste am ${gk:0:8}: gtx offen ohne Liste — die Radeon baut die Front selbst" "$L" &&
+        [ "$gl" = "karte2.gb#3,karte2.gb#1|karte2.ga#1" ] && [ "$g1" = "karte2.ga#1,karte2.gb#3" ] && [ "$a2" = 1 ] &&
+        feld radeon | grep -q "^radeon durch .* liste karte2.ga#1,karte2.gb#3| getragen 0$" && feld runde | grep -q "kopf $gk " && grep -qF "übersprungen, geurteilt auf gtx am Kopf: 1" "$L"; then
+        echo "OK g1 die Front ist eine Funktion: ohne Liste der GTX baut die Radeon deren Front selbst („gb#3,ga#1 | gb#1“ → eingefroren „ga#1,gb#3|“) und misst sofort (1 Station vor dem CI-Job); die GTX baut danach an anderem Stand „$gl“ (gb#1 nach vorn, ga#1 in den Schwanz) — die Liste der Radeon bleibt, gb#3 der GTX fällt, sie ist durch mit 1 Messung, gb#1 bleibt der GTX: jede Station einmal"
+    else echo "ROT g1 die Front ist eine Funktion: nach dem Eintritt „$(echo "$r1" | cut -c1-140)“ (Soll laeuft/weicht … liste karte2.ga#1,karte2.gb#3|), gemessen $a1 (Soll 1), Log „$(grep "Gesetz der Liste\|LISTE ROT" "$L" | tail -1 | cut -c1-200)“, Liste der GTX „$gl“ (Soll karte2.gb#3,karte2.gb#1|karte2.ga#1), Fahrten „$g1“ (Soll karte2.ga#1,karte2.gb#3), danach $a2 (Soll 1), Zeile „$(feld radeon | cut -c1-140)“"; fi
+    fi
+    [ -n "$ST_NUR_G" ] && return # die Mutanten des zweiten Geräts prüfen nur g und g1
     nur g0 || return 0
     neu elf
     gk=$K
@@ -508,7 +551,7 @@ st_gesetz() {
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
     local X K j a1 a2 c3 o1 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
-    R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
+    R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub RUNDE_REPO=$X/spiel
     L=$W/log WACHE=$S/radeon.wache BILD_ABLAGE=$X/ablage TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
@@ -663,9 +706,15 @@ STUMMEL
             gesetz_der_liste_neu || return 1
             git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
             o=$(runde offen "$PM" origin/punkte-maschine gtx "$RK" "$(liste_datei erst-vorn "$GVORN")")
-            [ -z "$o" ] || { ERST_TEXT="gtx misst vorn: $(zahl "$o") von $(zahl "$GVORN") offen"; warte; return 1; }
+            [ -z "$o" ] || { [ "$RZ" = wartet ] || runde stand "$R" radeon "$RK" wartet >>"$L"; return 1; }
         } ;;
-    warten-still) warte() { puls radeon "wartet: $ERST_TEXT"; } ;; # die Radeon wartet, aber ihre Zeile sagt es nicht (offen) — der Alarm feuert
+    warte) # die Regel 22.11.–24.11.: trägt die GTX am Kopf noch keine Liste, WARTET die Radeon (Zustand wartet, keine Fahrt)
+        gesetz_der_liste() {
+            local gn gk gv gz gl gg
+            read -r gn gk gv gz gl gg <<<"$(runde lies "$R" "$GESETZ_ERST" --voll)"
+            if [ "$gk" != "$RK" ] || [ "${gl:--}" = - ]; then [ "$RZ" = wartet ] || runde stand "$R" radeon "$RK" wartet >>"$L"; return 1; fi
+            GVORN=${gl%%|*} GVON="die Liste von $GESETZ_ERST"
+        } ;;
     esac
     # neu <botschaft> — eine Landung auf main und (gespielt) beide Geräte durch: die nächste Runde am neuen Kopf
     geraet_durch() { runde stand "$R" "$1" "$2" laeuft --liste x.K1#1 --gesamt 1 >/dev/null; runde durch "$R" "$1" "$2" "$3" >/dev/null; } # durch nur MIT Liste
@@ -712,7 +761,7 @@ STUMMEL
     else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
     fi
     [ "$1" = reihe ] && { nur -; command rm -rf "$X"; return; } # die Mutante prüft nur d
-    case "$1" in offen-blind | offen-nur-rot | offen-ungemessen | reihe-gtx | altes-gesetz | warten-still) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
+    case "$1" in offen-blind | offen-nur-rot | offen-ungemessen | reihe-gtx | altes-gesetz | warte) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
     f=0 T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
     if nur a; then
@@ -911,11 +960,11 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warten-still"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warte"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # DIE FANG-TAFEL (22.11., wie landung-dienst.sh): jede Mutante fährt nur den Fall, an dem sie fällt — ST_NUR wählt die Fälle von
     # echt; ST_ECHT=0 fährt nur die Mutanten. Höchstens VIER Sandkästen zugleich (Koordinator 22.11. 09:11: 14 nebeneinander verstopften
     # den Laptop 2 h 13 min) — die Mutanten in Gruppen per ST_MUTANTEN
-    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warten-still:g"
+    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warte:g1"
     fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
     if [ "${ST_ECHT:-1}" = 0 ]; then : >"$O/echt"; else (st_lauf "" >"$O/echt" 2>&1) & fi
     for m in $MUT; do (ST_NUR=${ST_NUR:-$(fang "$m")}; st_lauf "$m" >"$O/$m" 2>&1) & done
@@ -924,7 +973,7 @@ selbsttest() {
     [ -n "$echt" ] && echo "$echt" | sed 's/^/  /'
     echt=$(echo "$echt" | grep -v "^ZEIT")
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 16 ] || rot=1
+    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 17 ] || rot=1
     for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
@@ -932,7 +981,7 @@ selbsttest() {
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g') $zt"; else echo "  Mutante „$m“ bleibt GRÜN $zt"; fi
     done
     rm -rf "$O"
-    local nf="16 Fälle grün"
+    local nf="17 Fälle grün"
     [ -n "$ST_NUR" ] && nf="die Fälle $ST_NUR grün"
     [ "${ST_ECHT:-1}" = 0 ] && nf="ohne echt"
     if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: $nf, $mr/$mz Mutanten ROT"; return 0; fi
