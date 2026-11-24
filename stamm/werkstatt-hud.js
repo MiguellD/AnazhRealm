@@ -3187,6 +3187,15 @@ AnazhRealm.UNTERTITEL = Object.freeze({
     schritt: { schritt: "untertitel.schritt.schritt", landung: "untertitel.schritt.landung" },
     fahrt: { motor: "untertitel.fahrt.motor", rollen: "untertitel.fahrt.rollen" },
     musik: { lofi: "untertitel.musik.lofi" },
+    // der Laut des Bewohners je Laut des Stimm-Gesetzes (klang:STIMME.laute, `_bewohnerLaut`)
+    laut: {
+        gruss: "untertitel.laut.gruss",
+        plaudern: "untertitel.laut.plaudern",
+        lachen: "untertitel.laut.lachen",
+        muehe: "untertitel.laut.muehe",
+        seufzer: "untertitel.laut.seufzer",
+        halten: "untertitel.laut.halten",
+    },
     panSchwelle: 0.35, // |pan| darüber zeigt die Richtung
     maxZeilen: 4, // so viele Zeilen höchstens; die älteste weicht
     sek: 2.5, // so lange steht eine Zeile nach ihrer letzten Auffrischung

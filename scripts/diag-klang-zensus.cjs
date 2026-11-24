@@ -23,7 +23,8 @@
 //      (im Sattel des GT) — Wetter und Uhr als Wort des Spielers, je Szene das Soll und der Weg in Bewegung.
 //  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
 //  (V) DER WEG ZUM OHR (klang-leib): Laufzeit über den Weg d/c(T), Luft nach ISO 9613-1, kein Panner ohne Kopf.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S20 unten), Stubs restauriert.
+//  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S21 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -359,7 +360,7 @@ function werkzeug() {
     // (Ü) die Zeilen der Untertitel bisher · die Namen des Gesetzes ohne Satz in der Tafel
     W.zeilen = () => (st._untertitel ? st._untertitel.zeilen : 0);
     W.luecken = (K = __klangCore) =>
-        [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ]].flatMap(([a, t]) =>
+        [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ], ["laut", K.STIMME.laute]].flatMap(([a, t]) =>
             Object.keys(t).filter((n) => !AnazhRealm.UNTERTITEL[a][n]).map((n) => a + ":" + n)
         );
     // Die EREIGNIS-KLÄNGE der Welt, je einmal ausgelöst über ihre echten Wege: welche Quellen entstehen, wer baut sie,
@@ -1531,6 +1532,112 @@ async function wegSeite(mut) {
     return { rot, proben: zahl };
 }
 
+// (St) DIE STIMME AUS DEM LEIB (klang-leib, das Stimm-Gesetz `stimmPuffer`, erleben.klang.stimme#1): je Sprecher-Gruppe der Tafel
+// von Peterson & Barney 1952 (die Mittel der 1 520 Messungen, CRAN phonTools `pb52` — 33 Männer, 28 Frauen, 15 Kinder; ihre
+// Leibmaße K.STIMME.bezug, K.STIMME.bezugFrau und ein Kind von zehn Jahren, 1,35 m) und je Vokal ein gehaltener Laut über den
+// EINEN Weg zum Ohr (`rufSpielen`, 1 m) gerendert; am Abgriff der Grundton (YIN über 92 ms) und F1–F3 im freien Ausklingen
+// nach dem letzten Puls (Kovarianz 14. Ordnung über 8 ms — die Pole, gleich welcher Grundton; die Autokorrelation sähe bei
+// hohem f0 nur die Harmonischen). Je Wert ±15 % zur Tafel (St); Mann und Frau sind die Eichung der Formen, das Kind die
+// Vorhersage des Gesetzes aus seinem Leib. Der Täter: S21 Rachen und Kehle des Manns ohne Pubertät (rachen 0, kehle 0).
+// prettier-ignore
+const PB_BAND = {"mann":{"i":[136,267,2294,2937],"I":[136,392,1993,2569],"E":[128,526,1854,2481],"ae":[125,664,1727,2420],"A":[124,718,1091,2442],"O":[127,568,836,2403],"U":[136,437,1023,2245],"u":[139,307,876,2239],"V":[129,631,1192,2377],"er":[133,489,1360,1709]},"frau":{"i":[231,310,2783,3312],"I":[232,441,2474,3063],"E":[220,608,2334,2999],"ae":[208,863,2049,2832],"A":[212,864,1229,2783],"O":[217,587,915,2736],"U":[234,469,1162,2685],"u":[235,378,961,2666],"V":[223,758,1409,2768],"er":[219,503,1641,1977]},"kind":{"i":[270,360,3178,3763],"I":[270,534,2744,3604],"E":[259,700,2616,3564],"ae":[248,1017,2334,3366],"A":[258,1030,1383,3188],"O":[259,694,1064,3263],"U":[273,560,1402,3332],"u":[278,432,1193,3250],"V":[263,855,1592,3328],"er":[264,569,1806,2194]}};
+const PB_LEIB = { kind: { hoeheM: 1.35, sex: 0.5, jahre: 10 } }; // Mann und Frau: K.STIMME.bezug, K.STIMME.bezugFrau
+async function stimmSeite(arg) {
+    const { band, leiber, mut } = arg;
+    const K = __klangCore, S = K.STIMME, rot = [], je = [], alt = { rachen: S.rachen, kehle: S.kehle };
+    if (mut === "pubertaet") [S.rachen, S.kehle] = [0, 0];
+    const sr = S.sr;
+    // die Kovarianz-Methode (Prony): das freie Ausklingen ist eine Summe gedämpfter Schwingungen an den Polen — exakt, gleich
+    // welcher Grundton (die Autokorrelation sieht bei hohem f0 nur die Harmonischen)
+    const kovarianz = (x, p) => {
+        const M = Array.from({ length: p }, () => new Float64Array(p + 1));
+        for (let i = 1; i <= p; i++)
+            for (let j = 0; j <= p; j++) {
+                let s = 0;
+                for (let n = p; n < x.length; n++) s += x[n - i] * x[n - j];
+                M[i - 1][j === 0 ? p : j - 1] = j === 0 ? -s : s;
+            }
+        for (let c = 0; c < p; c++) {
+            let m = c;
+            for (let r = c + 1; r < p; r++) if (Math.abs(M[r][c]) > Math.abs(M[m][c])) m = r;
+            [M[c], M[m]] = [M[m], M[c]];
+            for (let r = 0; r < p; r++)
+                if (r !== c) {
+                    const f = M[r][c] / M[c][c];
+                    for (let k = c; k <= p; k++) M[r][k] -= f * M[c][k];
+                }
+        }
+        return [1].concat(M.map((z, i) => z[p] / z[i]));
+    };
+    try {
+        for (const gruppe of Object.keys(band)) {
+            const leib = leiber[gruppe] || (gruppe === "frau" ? S.bezugFrau : S.bezug);
+            for (const v of Object.keys(band[gruppe])) {
+                const ctx = new OfflineAudioContext(2, sr * 0.9, sr);
+                const tex = K.stimmPuffer({ leib, laut: "halten", vokal: v, saat: 5 });
+                const ruf = K.rufSpielen(ctx, ctx.destination, { leib, d: 1, pan: 0, temperatur: 20 }, tex);
+                const A = (await ctx.startRendering()).getChannelData(0);
+                // der Grundton: YIN (de Cheveigné & Kawahara 2002) über 92 ms des gehaltenen Tons ab 0,2 s, die normierte Differenz
+                const i0 = Math.round(0.2 * sr), W = Math.round(0.092 * sr), dif = [1];
+                let summe = 0, tau = 0;
+                for (let L = 1; L <= Math.ceil(sr / 50); L++) {
+                    let s = 0;
+                    for (let i = 0; i < W; i++) s += (A[i0 + i] - A[i0 + i + L]) ** 2;
+                    summe += s;
+                    dif.push((s * L) / summe);
+                }
+                // die tiefste Senke, dann ihr kürzester Teiler, der ebenso tief sinkt (die Periode, nie ihr Vielfaches)
+                const L0 = Math.floor(sr / 600);
+                for (let L = L0; L < dif.length - 1; L++) if (!tau || dif[L] < dif[tau]) tau = L;
+                for (let k = 5; k >= 2; k--) {
+                    let c = Math.round(tau / k);
+                    for (let L = c - 2; L <= c + 2; L++) if (L >= L0 && dif[L] < dif[c]) c = L;
+                    if (c >= L0 && dif[c] <= dif[tau] + 0.03) {
+                        tau = c;
+                        break;
+                    }
+                }
+                const bestL = tau + (dif[tau - 1] - dif[tau + 1]) / (2 * (dif[tau - 1] - 2 * dif[tau] + dif[tau + 1]) || 1);
+                // die Formanten: das freie Ausklingen nach dem letzten Puls (die Silbe endet bei tex: 0,6 s, dazu der Weg),
+                // 8 ms, Kovarianz 14. Ordnung, die Wurzeln (Durand–Kerner): Winkel → Frequenz, Betrag → Bandbreite (< 400 Hz)
+                const t0 = Math.round((0.6 + ruf.verzug + 0.004) * sr), N = Math.round(0.008 * sr), x = new Float64Array(N);
+                let gross = 0;
+                for (let i = 0; i < N; i++) gross = Math.max(gross, Math.abs((x[i] = A[t0 + i])));
+                for (let i = 0; i < N; i++) x[i] /= gross || 1;
+                const a = kovarianz(x, 14), p = a.length - 1;
+                let z = Array.from({ length: p }, (_, k) => [Math.pow(0.9, k) * Math.cos(0.4 + 0.9 * k), Math.pow(0.9, k) * Math.sin(0.4 + 0.9 * k)].map((q) => q * 0.999));
+                const mul = (u, w) => [u[0] * w[0] - u[1] * w[1], u[0] * w[1] + u[1] * w[0]];
+                const div = (u, w) => { const d = w[0] * w[0] + w[1] * w[1]; return [(u[0] * w[0] + u[1] * w[1]) / d, (u[1] * w[0] - u[0] * w[1]) / d]; }; // prettier-ignore
+                for (let it = 0; it < 800; it++)
+                    z = z.map((zi, i) => {
+                        let f = [1, 0];
+                        for (let k = 1; k <= p; k++) f = [mul(f, zi)[0] + a[k], mul(f, zi)[1]];
+                        let q = [1, 0];
+                        z.forEach((zj, j) => j !== i && (q = mul(q, [zi[0] - zj[0], zi[1] - zj[1]])));
+                        const d = div(f, q);
+                        return [zi[0] - d[0], zi[1] - d[1]];
+                    });
+                const F = z
+                    .filter((w) => w[1] > 0)
+                    .map((w) => [(Math.atan2(w[1], w[0]) * sr) / (2 * Math.PI), (-Math.log(Math.hypot(w[0], w[1])) * sr) / Math.PI])
+                    .filter(([f, b]) => f > 150 && b < 400)
+                    .map(([f]) => f)
+                    .sort((u, w) => u - w);
+                const ist = [sr / bestL, F[0], F[1], F[2]], soll = band[gruppe][v];
+                const abw = ist.map((q, i) => (Number.isFinite(q) ? Math.abs(q / soll[i] - 1) : 1));
+                je.push({ gruppe, v, ist: ist.map((q) => Math.round(q)), soll, abw: abw.map((q) => +(100 * q).toFixed(1)) });
+                ["f0", "F1", "F2", "F3"].forEach((n, i) => {
+                    if (!(abw[i] <= 0.15)) rot.push(`St ${gruppe} /${v}/ ${n} ${Math.round(ist[i])} Hz, Peterson & Barney ${soll[i]} Hz (${(100 * abw[i]).toFixed(0)} %, klang-core STIMME: der Leib der Stimme)`);
+                });
+            }
+        }
+    } finally {
+        Object.assign(S, alt);
+    }
+    const alle = je.flatMap((z) => z.abw);
+    return { rot, je, mittelPct: +(alle.reduce((s, q) => s + q, 0) / alle.length).toFixed(2), maxPct: Math.max(...alle), innerhalbPct: +((100 * alle.filter((q) => q <= 15).length) / alle.length).toFixed(1) };
+}
+
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
 // gehalten bis zum Ereignis) an den Bach der Mess-Wiese und zurück, derweil spricht er das Wetter (Sturm, dann bewölkt). Je
 // 0,1 s das Ohr — RMS am Gain der Stimmen fluss + ufer und regen (ein Analyser, die Stimme an ihrem Puffer erkannt) — und das
@@ -1780,6 +1887,12 @@ async function zensus(page, browser, ergebnis) {
     const wg = (ergebnis.weg = await page.evaluate(wegSeite, false));
     rot.push(...wg.rot);
     console.log(`── (V) DER WEG ZUM OHR: ${wg.proben.length - wg.rot.length}/${wg.proben.length} Proben GRÜN · ${wg.proben.join(" · ")}`);
+    // (St) die Stimme aus dem Leib: Grundton und Formanten am Abgriff gegen Peterson & Barney 1952
+    const sm = (ergebnis.stimme = await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: false }));
+    rot.push(...sm.rot);
+    console.log(
+        `── (St) DIE STIMME AUS DEM LEIB: ${sm.je.length * 4 - sm.rot.length}/${sm.je.length * 4} Werte ±15 % zu Peterson & Barney · Mittel ${sm.mittelPct} % · max ${sm.maxPct} % · Kind max ${Math.max(...sm.je.filter((z) => z.gruppe === "kind").flatMap((z) => z.abw))} %`
+    );
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -1942,13 +2055,15 @@ async function zensus(page, browser, ergebnis) {
             ["panner", /^Rp /, "S20: ein StereoPanner im Weg"],
         ])
             nennt((await page.evaluate(wegSeite, mut)).rot, re, was);
+        // S21: der Mann ohne Pubertät (Rachen und Kehle wie die Frau) — sein Grundton fällt beim Namen
+        nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S20 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S21 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

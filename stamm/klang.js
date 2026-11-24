@@ -158,7 +158,7 @@ class AnazhRealm_klang {
     }
 
     // DIE KLANG-WERKSTATT: ein eigener Worker mit dem klang-Gesetzbuch (importScripts, ?v=) rechnet die Stimmen-Pakete
-    // (Texturen + Eichung, `umweltPaket`) und die Tier-Rufe (`tierRufPuffer`); die Puffer reisen zero-copy zurück
+    // (Texturen + Eichung, `umweltPaket`) und die Rufe (`rufPuffer`: das Tier, der Laut des Bewohners); die Puffer reisen zero-copy zurück
     // (Lehre 24). Der Haupt-Thread nimmt auf und spielt. Fällt die Werkstatt aus, schweigt die Klang-Welt LAUT
     // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt. Ihr Kern kommt aus der EINEN Quelle (w28-faden-quelle, der Rufer
     // reicht ihr den Port, `_quelleReiche`); bis dahin hält die Werkstatt jede Bestellung (`_klangWerkstattStart`).
@@ -189,7 +189,7 @@ class AnazhRealm_klang {
             if (m.typ === "stimme" && m.paket) {
                 if (um.graph.aufnehmen(m.paket)) um.geliefert++;
             } else if (m.typ === "ruf" && m.tex) {
-                if (um.kern.tierRufSpielen(s.ctx, um.bus, m.ruf, m.tex)) um.rufeGespielt++;
+                if (um.kern.rufSpielen(s.ctx, um.bus, m.ruf, m.tex)) um.rufeGespielt++;
             }
         };
         return w;
@@ -226,7 +226,7 @@ class AnazhRealm_klang {
                 const p = K.umweltPaket(m.name);
                 W.postMessage({ typ: "stimme", paket: p }, p ? p.texturen.map((t) => t.daten.buffer) : []);
             } else if (m.typ === "ruf") {
-                const tex = K.tierRufPuffer(m.ruf);
+                const tex = K.rufPuffer(m.ruf);
                 W.postMessage({ typ: "ruf", ruf: m.ruf, tex }, [tex.daten.buffer]);
             }
         };
@@ -299,7 +299,10 @@ class AnazhRealm_klang {
                 um.graph.anwenden(um.mix, jetzt);
                 um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
                 this._untertitelStimmen(um.graph);
-            } else this._tierRufTakt(um.rufDt);
+            } else {
+                this._tierRufTakt(um.rufDt);
+                this._bewohnerLautTakt(um.rufDt);
+            }
             return;
         }
         if (!lage) return;
@@ -754,7 +757,7 @@ class AnazhRealm_klang {
 
     // DIE VERDECKUNG EINES RUFS (klang.K3#2): die Sichtlinie vom Ohr (Fuß + raum.augeM) zur Quelle (ihr Fuß + raum.quelleM) — schneidet
     // sie Hang oder Bau (`_klangSichtVerdeckt`), trägt der Ruf { db: raum.verdecktDb, hz: raum.tiefpassHz } (gespielt von
-    // `tierRufSpielen`), sonst null.
+    // `rufSpielen`), sonst null.
     _klangVerdeckung(pm, quelle) {
         if (!pm || !quelle || !quelle.position) return null;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
@@ -810,6 +813,69 @@ class AnazhRealm_klang {
             if (this._klangZug("umwelt") / 4294967296 < ((T.rufProMin[stimmung] || 0) / 60) * dt)
                 this._tierRuf(c, stimmung);
         }
+    }
+
+    // DER LAUT DES BEWOHNERS (klang-leib, erleben.klang.stimme#1 — klang:STIMME): ein Bewohner mit Leib spricht aus seinem
+    // Genom (`b.genom`, koerper `alterLeib`: die Höhe 8 · kh, die Achse sex nach ihrer Reife, die Jahre) — sein Laut folgt dem Akt
+    // seines Tags (`b.akt`, STIMME.akte) als Rate je Minute, und wem der Spieler auf grussM nahe kommt, grüßt einmal je
+    // Begegnung. Gerechnet in der Klang-Werkstatt (`rufPuffer`), gespielt über den EINEN Weg zum Ohr (`rufSpielen`). Bis
+    // klang-leib sprach kein Bewohner. Kosten: die Leiber der Siedlungen im Nah-Ring (AUTO_SETTLEMENT.nearM), je Takt ein
+    // Abstand je Leib — nie die Bewohner der Welt.
+    _bewohnerLautTakt(dt) {
+        const alle = this._bewohnerSiedlungen;
+        const pm = this.state.playerMesh;
+        if (!(dt > 0) || !alle || !alle.size || !pm) return;
+        const ST = AnazhRealm._umweltGesetz().kern.STIMME;
+        const H = ST.pegel.hoerweiteM;
+        const reich = AnazhRealm.AUTO_SETTLEMENT.nearM + H;
+        const p = pm.position;
+        const gruss = this._bewohnerGruss || (this._bewohnerGruss = new WeakSet());
+        for (const S of alle.values()) {
+            if (!S.liste || (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 > reich * reich) continue;
+            for (const b of S.liste) {
+                const g = b.leib;
+                if (!g || !g.position || !b.genom || b.drinnen || b.amSteuer) continue;
+                const d = Math.hypot(g.position.x - p.x, g.position.z - p.z);
+                if (!(d < H)) {
+                    gruss.delete(b);
+                    continue;
+                }
+                if (d < ST.grussM && !gruss.has(b)) {
+                    gruss.add(b);
+                    this._bewohnerLaut(b, "gruss");
+                    continue;
+                }
+                if (d > 2 * ST.grussM) gruss.delete(b);
+                const [laut, rate] = ST.akte[b.akt] || ST.sonst;
+                if (this._klangZug("umwelt") / 4294967296 < (rate / 60) * dt) this._bewohnerLaut(b, laut);
+            }
+        }
+    }
+    // Ein Laut des Bewohners `b` (STIMME.laute): zählt jeden (headless messbar); nur ein hörbarer geht an die Werkstatt.
+    _bewohnerLaut(b, laut) {
+        const s = this.state.symphony;
+        s.bewohnerLaute = (s.bewohnerLaute || 0) + 1;
+        const um = s.umwelt;
+        const pm = this.state.playerMesh;
+        const g = b && b.leib;
+        if (!s.enabled || !s.ctx || !um || !um.werkstatt || !pm || !g || !b.genom) return null;
+        const dx = g.position.x - pm.position.x;
+        const dz = g.position.z - pm.position.z;
+        const ruf = {
+            leib: { hoeheM: 8 * b.genom.kh, sex: b.genom.sex, jahre: b.genom.jahre },
+            laut,
+            d: Math.hypot(dx, dz),
+            pan: this._umweltPanorama()(dx, dz),
+            saat: this._klangZug("umwelt"),
+            verdeckung: this._klangVerdeckung(pm, g),
+            temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
+        };
+        if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
+        um.rufeBestellt++;
+        um.werkstatt.postMessage({ typ: "ruf", ruf });
+        this._musikDuck("ruf");
+        this._untertitel("laut", laut, null, ruf.pan);
+        return ruf;
     }
 
     // DER KLANG-ZENSUS (Linse gate:klang-zensus): je Umwelt-Stimme Gesetz · Pegel · läuft; dazu die Lage am Ohr und RUF ← LEIB
@@ -2330,7 +2396,10 @@ AnazhRealm._umweltGesetz = function () {
         kern.umweltSpitze &&
         kern.umweltPaket &&
         kern.tierRufPuffer &&
-        kern.tierRufSpielen &&
+        kern.rufPuffer &&
+        kern.rufSpielen &&
+        kern.rufPegel &&
+        kern.stimmLeib &&
         kern.tierRufPegel &&
         kern.substanzKlang &&
         kern.trefferPaar &&

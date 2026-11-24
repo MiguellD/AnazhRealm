@@ -1409,7 +1409,9 @@
         var T = UMWELT.tier, sr = T.sr, r = ruf || {};
         var L = Math.max(0.15, typeof r.laengeM === "number" && isFinite(r.laengeM) ? r.laengeM : T.lRef);
         var K = T.konturen[r.stimmung] || T.konturen.ruhe, rnd = umweltRng((r.saat >>> 0) || 7);
-        var f0 = T.fRef * Math.pow(L / T.lRef, -T.exponent), f1 = T.f1Ref * (T.lRef / L), f2 = T.f2Ref * (T.lRef / L);
+        // die Formanten aus der EINEN Roehre des Stimm-Gesetzes (`roehre`): der Trakt waechst mit der Laenge des Leibs
+        var F = roehre(STIMME.tier.traktJeLaenge * L, STIMME.tier.form);
+        var f0 = T.fRef * Math.pow(L / T.lRef, -T.exponent), f1 = F[0], f2 = F[1];
         var gesamt = K.teile * K.sek + (K.teile - 1) * K.pause + 0.05, n = Math.floor(gesamt * sr);
         var x = new Float32Array(n), ph = 0;
         for (var teil = 0; teil < K.teile; teil++) {
@@ -1438,17 +1440,28 @@
         if (!(d < T.hoerweiteM)) return -Infinity;
         return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
-    // Der Ruf als Einmal-Quelle: rechnen (tierRufPuffer) und spielen (tierRufSpielen); null unter der Hoerschwelle.
+    // Der Ruf als Einmal-Quelle: rechnen (tierRufPuffer) und spielen (rufSpielen); null unter der Hoerschwelle.
     // Der Wirt rechnet in der Klang-Werkstatt und spielt, was sie zurueckreicht — dieselben zwei Schritte.
     function tierRuf(ctx, ausgang, ruf) {
         var r = ruf || {};
         if (!(tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef) >= UMWELT.hoerschwelleDb)) return null;
-        return tierRufSpielen(ctx, ausgang, r, tierRufPuffer(r));
+        return rufSpielen(ctx, ausgang, r, tierRufPuffer(r));
+    }
+    // DER EINE RUF (klang-leib): ein Ruf mit Leib (`ruf.leib`: der Mensch) ist ein Laut des Stimm-Gesetzes (`stimmPuffer`),
+    // sonst der Ruf des Tiers — die Werkstatt rechnet beide hier, der Pegel am Ohr folgt der Art (`rufPegel`)
+    function rufPuffer(ruf) {
+        return ruf && ruf.leib ? stimmPuffer(ruf) : tierRufPuffer(ruf);
+    }
+    function rufPegel(ruf) {
+        var r = ruf || {}, T = r.leib ? STIMME.pegel : UMWELT.tier, d = typeof r.d === "number" ? r.d : T.dRef;
+        if (!r.leib) return tierRufPegel(d);
+        if (!(d < T.hoerweiteM)) return -Infinity;
+        return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
     // Den gerechneten Ruf spielen: Puffer → der Weg zum Ohr (`raumWeg`: Luft, Kopf; die Laufzeit ueber den Weg ist sein
     // Einsatz, d / c(T) nach dem Ruf) → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
-    function tierRufSpielen(ctx, ausgang, ruf, tex) {
-        var r = ruf || {}, pegel = tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef);
+    function rufSpielen(ctx, ausgang, ruf, tex) {
+        var r = ruf || {}, pegel = rufPegel(r);
         if (!(pegel >= UMWELT.hoerschwelleDb) || !tex || !tex.daten) return null;
         var t = ctx.currentTime;
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
@@ -1474,6 +1487,171 @@
         return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration, verzug: ohr.verzug };
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS STIMM-GESETZ (klang-leib, erleben.klang.stimme#1, rein additiv): EINE Roehre fuer jeden Leib — die Stimme des
+    //  Menschen wie der Ruf des Tiers. Quelle und Filter (Fant 1960): die Falten schwingen mit f0, der Trakt — eine Roehre, an
+    //  der Glottis zu, an den Lippen offen — formt die Resonanzen F_n = k_n·(2n − 1)·c_t / (4·L_t) (`roehre`; c_t = c(traktT) des
+    //  Raum-Gesetzes, die warme Luft im Mund). Ein Vokal ist eine FORM der Roehre (k_n: ihre Abweichung von der geraden), die
+    //  Formen traegt die Tafel von Peterson & Barney 1952 (die Mittel der 33 Maenner und 28 Frauen, zehn Vokale in /hVd/), je
+    //  an der Roehre ihres Bezugs geeicht; die Laenge folgt dem Leib (Nordstroem & Lindblom 1975), die Form der Reife (Fant 1966:
+    //  die nicht gleichmaessige Skalierung) — das Kind folgt aus SEINEM Leib, die Vorhersage des Gesetzes.
+    //  DER LEIB (der Wirt reicht ihn aus dem Genom, koerper-core): die Hoehe H (m), die Achse sex nach ihrer Reife
+    //  (`alterGeschlecht`: 0 Mann, 1 Frau, das Kind zur Mitte), die Jahre. Die Pubertaet des Manns (mann = max(0, 1 − 2·sex))
+    //  streckt Rachen und Kehlkopf ueber das Mass der Hoehe hinaus (Fitch & Giedd 1999: der Trakt folgt der Groesse, die
+    //  Geschlechter trennen sich erst mit der Pubertaet):
+    //    L_t = H·traktJeHoehe·(1 + rachen·mann)    der Trakt
+    //    L_f = H·falteJeHoehe·(1 + kehle·mann)     die schwingende Falte, f0 = welle / (2·L_f) (die Saite, Titze 1994)
+    //  rachen und kehle sind an der Frau geeicht (PB: ihre Formanten 1,17-, ihr f0 1,70-mal die des Manns bei 0,93 seiner
+    //  Hoehe); das Kind ist die Vorhersage des Gesetzes (gleichmaessig skaliert laege sein /er/ F1 21 % ueber der Tafel, mit der
+    //  Form der Reife 6 %). Gemessen am Abgriff: gate:klang-zensus (St), der Grundton (YIN) und die Resonanzen im freien
+    //  Ausklingen der gerechneten Laute gegen die Tafel. Der Laut traegt keinen Sprach-Inhalt: Silben aus Vokalen der Tafel, ihr Bogen
+    //  (Gruss, Plaudern, Lachen, Muehe, Seufzer, ein gehaltener Ton) — `laute`.
+    //  Das TIER liest dieselbe Roehre: sein Trakt L_t = tier.traktJeLaenge·Laenge, seine Form [1, f2/(3·f1)] — der Ruf klingt wie
+    //  bis klang-leib (f1 700 Hz, f2 1 800 Hz am Meter), nun als Gesetz des Trakts statt einer Zahl je Laenge.
+    //  Kosten: je Laut ein Puffer in der Klang-Werkstatt (≤ 1,2 s bei 22 050 Hz), nie je Bewohner der Welt.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var STIMME = {
+        traktT: 35, sr: 22050,
+        traktJeHoehe: 0.09, rachen: 0.111,  // L_t des Bezugs-Manns 0,171 m
+        falteJeHoehe: 0.006226, kehle: 0.764, welle: 4.5,   // L_f Mann 17,1 mm · Frau 10,1 mm · Kind 8,4 mm (QUELLE UNGEPRUEFT
+                                                             // im Wert: welle = √(σ/ρ), traegt mit L_f nur das Produkt)
+        // der Bezugs-Sprecher der Tafel (PB berichten keine Groesse — QUELLE UNGEPRUEFT im Wert: das Mittel erwachsener Maenner
+        // der USA um 1950, das Geschlecht in der Mitte der maennlichen Gestalten, koerper `alterGeschlecht`)
+        bezug: { hoeheM: 1.75, sex: 0.125, jahre: 30 },
+        // Peterson & Barney 1952, Mittel der Maenner je Vokal [f0, F1, F2, F3] (Hz) — gerechnet aus den 1 520 Messungen der
+        // Studie (CRAN phonTools `pb52`); die Formen k leiten sich aus ihr ab (`STIMME_FORM`), F4 und F5 stehen gerade (k = 1)
+        mann: {
+            i: [136, 267, 2294, 2937], I: [136, 392, 1993, 2569], E: [128, 526, 1854, 2481], ae: [125, 664, 1727, 2420],
+            A: [124, 718, 1091, 2442], O: [127, 568, 836, 2403], U: [136, 437, 1023, 2245], u: [139, 307, 876, 2239],
+            V: [129, 631, 1192, 2377], er: [133, 489, 1360, 1709]
+        },
+        // ... und der 28 Frauen: die zweite Form der Roehre. Die Skalierung ist NICHT gleichmaessig (Fant 1966): der Rachen des
+        // Manns streckt sich in der Pubertaet, das Verhaeltnis Rachen zu Mund verschiebt die Form des Vokals — die Form folgt
+        // der Achse mann (Frau und Kind 0, der Bezugs-Mann 0,75), die Laenge dem Leib. Das Kind ist die Vorhersage.
+        bezugFrau: { hoeheM: 1.62, sex: 0.875, jahre: 30 },
+        frau: {
+            i: [231, 310, 2783, 3312], I: [232, 441, 2474, 3063], E: [220, 608, 2334, 2999], ae: [208, 863, 2049, 2832],
+            A: [212, 864, 1229, 2783], O: [217, 587, 915, 2736], U: [234, 469, 1162, 2685], u: [235, 378, 961, 2666],
+            V: [223, 758, 1409, 2768], er: [219, 503, 1641, 1977]
+        },
+        // die Bandbreiten der Resonatoren F1–F5 (Hz; Klatt 1980, die Groessenordnung seiner Kaskade)
+        breite: [70, 90, 130, 180, 250],
+        quelle: { offen: 0.4, schliessen: 0.16, jitter: 0.01, schimmer: 0.04, hauch: 0.03 }, // Rosenberg-Puls (Anteile der Periode)
+        pegel: { refDb: -16, dRef: 2, dMin: 0.5, hoerweiteM: 30 },   // ein Laut in Sprechstimme am Ohr (dB am Welt-Bus)
+        // DIE LAUTE: silben (Zahl), vokale (die Wahl je Silbe), sek [von, bis] je Silbe, pause (s), f0 [Anfang, Ende] des
+        // Bogens (× f0 des Leibs), gipfel (die Hebung jeder Silbe), hauch (Anteil Atem: das h)
+        laute: {
+            gruss:    { silben: 2, vokale: ["V", "A"], sek: [0.12, 0.2], pause: 0.03, f0: [1.05, 0.92], gipfel: 0.12, hauch: 0.25 },
+            plaudern: { silben: 4, vokale: ["E", "V", "A", "I", "ae", "O"], sek: [0.09, 0.17], pause: 0.04, f0: [1.08, 0.88], gipfel: 0.06, hauch: 0.08 },
+            lachen:   { silben: 3, vokale: ["A"], sek: [0.08, 0.11], pause: 0.07, f0: [1.3, 1.15], gipfel: 0.08, hauch: 0.55 },
+            muehe:    { silben: 1, vokale: ["V"], sek: [0.16, 0.24], pause: 0, f0: [0.88, 0.8], gipfel: 0.02, hauch: 0.3 },
+            seufzer:  { silben: 1, vokale: ["A"], sek: [0.45, 0.6], pause: 0, f0: [1.0, 0.74], gipfel: 0, hauch: 0.5 },
+            halten:   { silben: 1, vokale: ["A"], sek: [0.6, 0.6], pause: 0, f0: [1, 1], gipfel: 0, hauch: 0.03 }
+        },
+        // der Tag spricht (koerper TAGES_GESETZ, `b.akt` des Bewohners): je Akt sein Laut und seine Rate je Minute; ein
+        // Bewohner, dem der Spieler auf grussM nahe kommt, gruesst (einmal je Begegnung)
+        akte: { arbeit: ["muehe", 0.5], spiel: ["lachen", 1.2], mittag: ["plaudern", 1.5], besuch: ["plaudern", 1.5],
+                abend: ["seufzer", 0.3] },
+        sonst: ["plaudern", 0.6], grussM: 6,
+        tier: { traktJeLaenge: 0, form: null }   // gesetzt aus UMWELT.tier (unten): dieselben Zahlen, nun als Roehre
+    };
+    // die Roehre: F_n = form_n·(2n − 1)·c_t / (4·L_t), n = 1 … form.length
+    function roehre(traktM, form) {
+        var c = schallC(STIMME.traktT), F = [];
+        for (var n = 0; n < form.length; n++) F.push((form[n] * (2 * n + 1) * c) / (4 * traktM));
+        return F;
+    }
+    // der Leib der Stimme: { hoeheM, mann, traktM, falteM, f0 } aus { hoeheM, sex, jahre }
+    function stimmLeib(leib) {
+        var S = STIMME, L = leib || {};
+        var H = Math.max(0.5, Math.min(2.4, typeof L.hoeheM === "number" && isFinite(L.hoeheM) ? L.hoeheM : S.bezug.hoeheM));
+        var sx = Math.max(0, Math.min(1, typeof L.sex === "number" && isFinite(L.sex) ? L.sex : 0.5)), mann = Math.max(0, 1 - 2 * sx);
+        var trakt = H * S.traktJeHoehe * (1 + S.rachen * mann), falte = H * S.falteJeHoehe * (1 + S.kehle * mann);
+        return { hoeheM: H, mann: mann, traktM: trakt, falteM: falte, f0: S.welle / (2 * falte) };
+    }
+    // die Formen der Vokale je Bezug: k_n = F_n·4·L_t(Bezug) / ((2n − 1)·c_t), F4 und F5 gerade
+    var STIMME_FORM = (function () {
+        var c = schallC(STIMME.traktT), aus = { mann: {}, frau: {} };
+        [["mann", STIMME.bezug], ["frau", STIMME.bezugFrau]].forEach(function (g) {
+            var L = stimmLeib(g[1]).traktM;
+            Object.keys(STIMME[g[0]]).forEach(function (v) {
+                var M = STIMME[g[0]][v], k = [];
+                for (var n = 0; n < 3; n++) k.push((M[n + 1] * 4 * L) / ((2 * n + 1) * c));
+                aus[g[0]][v] = k.concat([1, 1]);
+            });
+        });
+        aus.mannBezug = stimmLeib(STIMME.bezug).mann;
+        return aus;
+    })();
+    // die Form eines Vokals auf der Achse der Reife: von der Frau (mann 0) zum Bezugs-Mann (mann 0,75), darueber fortgesetzt
+    function stimmForm(vokal, mann) {
+        var F = STIMME_FORM, v = F.mann[vokal] ? vokal : "V", w = Math.max(0, mann || 0) / F.mannBezug;
+        return F.frau[v].map(function (kw, n) { return kw + (F.mann[v][n] - kw) * w; });
+    }
+    STIMME.tier.traktJeLaenge = schallC(STIMME.traktT) / (4 * UMWELT.tier.f1Ref * UMWELT.tier.lRef);
+    STIMME.tier.form = [1, UMWELT.tier.f2Ref / (3 * UMWELT.tier.f1Ref)];
+    // die Formanten eines Vokals im Trakt eines Leibs
+    function stimmFormanten(leib, vokal) {
+        var l = stimmLeib(leib);
+        return roehre(l.traktM, stimmForm(vokal, l.mann));
+    }
+    // DER LAUT: ruf = { leib, laut, vokal?, saat } → { sr, daten, f0, formanten, traktM, laut } (geeicht auf texturRmsDb).
+    // Quelle: der Rosenberg-Puls (Fluss der Glottis, abgeleitet: die Abstrahlung der Lippen) mit Jitter und Schimmer, Atem im
+    // offenen Spalt; Filter: fuenf Resonatoren in Kaskade (Klatt 1980), ihre Frequenzen gleiten zwischen den Silben (30 ms).
+    function stimmPuffer(ruf) {
+        var S = STIMME, Q = S.quelle, r = ruf || {}, sr = S.sr, rnd = umweltRng((r.saat >>> 0) || 11);
+        var leib = stimmLeib(r.leib), Lt = S.laute[r.laut] || S.laute.gruss;
+        var silben = [], t = 0;
+        for (var i = 0; i < Lt.silben; i++) {
+            var v = r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length];
+            var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
+            silben.push({ v: v, von: t, bis: t + sek, F: roehre(leib.traktM, stimmForm(v, leib.mann)) });
+            t += sek + Lt.pause;
+        }
+        var n = Math.floor((t - Lt.pause + 0.06) * sr), x = new Float32Array(n);
+        var T0 = 1 / leib.f0, ph = 1, amp = 1, f0 = leib.f0, alt = 0;
+        var y1 = [0, 0, 0, 0, 0], y2 = [0, 0, 0, 0, 0], A = [0, 0, 0, 0, 0], B = [0, 0, 0, 0, 0], C = [0, 0, 0, 0, 0];
+        for (var k = 0, si = 0; k < n; k++) {
+            var tt = k / sr;
+            while (si < silben.length - 1 && tt >= silben[si + 1].von) si++;
+            var sb = silben[si], u = Math.max(0, Math.min(1, (tt - sb.von) / (sb.bis - sb.von)));
+            if (k % 16 === 0) {
+                // die Frequenzen gleiten von der vorigen Silbe (30 ms), dann die Koeffizienten der Resonatoren
+                var vor = si > 0 ? silben[si - 1].F : sb.F, w = Math.min(1, (tt - sb.von) / 0.03);
+                for (var j = 0; j < 5; j++) {
+                    var Fj = Math.min(sr * 0.45, vor[j] + (sb.F[j] - vor[j]) * Math.max(0, w)), e = Math.exp((-Math.PI * S.breite[j]) / sr);
+                    C[j] = -e * e;
+                    B[j] = 2 * e * Math.cos((2 * Math.PI * Fj) / sr);
+                    A[j] = 1 - B[j] - C[j];
+                }
+            }
+            // der Bogen des Lauts (Deklination ueber die Zeit) und die Hebung jeder Silbe
+            var bogen = Lt.f0[0] + (Lt.f0[1] - Lt.f0[0]) * (tt / Math.max(1e-3, t)), heb = 1 + Lt.gipfel * Math.sin(Math.PI * u);
+            if (ph >= 1) {
+                ph -= 1;
+                f0 = leib.f0 * bogen * heb * (1 + (rnd() - 0.5) * 2 * Q.jitter);
+                T0 = 1 / f0;
+                amp = 1 + (rnd() - 0.5) * 2 * Q.schimmer;
+            }
+            var g = ph < Q.offen ? 0.5 * (1 - Math.cos((Math.PI * ph) / Q.offen)) : ph < Q.offen + Q.schliessen ? Math.cos((Math.PI * (ph - Q.offen)) / (2 * Q.schliessen)) : 0;
+            ph += 1 / (T0 * sr);
+            var stimmhaft = tt <= sb.bis ? Math.min(1, (tt - sb.von) / 0.02) * Math.min(1, (sb.bis - tt) / 0.04) : 0;
+            var hauch = (Lt.hauch * Math.max(0, 1 - u * 3) + Q.hauch) * (0.4 + g);
+            var q = (g - alt) * amp * stimmhaft * (1 - Lt.hauch * 0.5) * 40 + (rnd() * 2 - 1) * hauch * stimmhaft;
+            alt = g;
+            for (j = 0; j < 5; j++) {
+                var yj = A[j] * q + B[j] * y1[j] + C[j] * y2[j];
+                y2[j] = y1[j];
+                y1[j] = yj;
+                q = yj;
+            }
+            x[k] = q;
+        }
+        SYNTHESE.samples += n;
+        SYNTHESE.rufe++;
+        return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
+    }
     // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — eine Form singt (Resonanz →
     //    Tonhoehe), eine resonierende Form verklingt beim Abbau (die Zahlen wanderten byte-gleich aus dem Stamm; der Treffer
     //    klingt seit w28 aus der Stoff-Zeile, `trefferPaar` unten — bis dahin aus den Tag-Achsen haerte und dichte, 160 +
@@ -2042,7 +2220,16 @@
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,
-        tierRufSpielen: tierRufSpielen,
+        rufPuffer: rufPuffer,
+        rufPegel: rufPegel,
+        rufSpielen: rufSpielen,
+        STIMME: STIMME,
+        STIMME_FORM: STIMME_FORM,
+        stimmForm: stimmForm,
+        roehre: roehre,
+        stimmLeib: stimmLeib,
+        stimmFormanten: stimmFormanten,
+        stimmPuffer: stimmPuffer,
         ohrLaufzeit: ohrLaufzeit,
         // klang-leib (rein additiv) — das Raum-Gesetz: Laufzeit ueber den Weg, Luft nach ISO 9613-1, das Ohr
         SCHALLWEG: SCHALLWEG,
