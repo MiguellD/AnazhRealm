@@ -198,7 +198,8 @@ class AnazhRealm_siedlung_verkehr {
         // (`_verkehrPlatzBogen`): je Wagen seiner (`_verkehrZugPunkte`), im Boden und im Raster der weiteste; und das
         // Ausscheren der Bahn im Raster (unten, je Gattung im Wendekreis des Gesetzes)
         const vc = globalThis.__vehicleCore;
-        const gattungen = vc.GATTUNGEN.map((g) => [g, vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g)]); // prettier-ignore
+        // die Gattungen, die die Straße fährt (`FLOTTE`): das Boot und der Leiterwagen stehen am Ufer und im Hof, nie im Ring
+        const gattungen = vc.GATTUNGEN.filter((g) => vc.FLOTTE[g] > 0).map((g) => [g, vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g)]); // prettier-ignore
         const ST = AnazhRealm.VERKEHR.stil;
         VK.wendeR = new Map(
             gattungen.map(([g, d]) => {

@@ -93,7 +93,7 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3], bruecke: [0, 1, 3], graben: [0, 1, 3] },
+            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3], bruecke: [0, 1, 3], steg: [0, 1, 3], graben: [0, 1, 3] },
             budget: {
                 // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
                 // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
@@ -153,6 +153,14 @@
                     0: { tris: 1750, draws: 1, schatten: 0 },
                     1: { tris: 150, draws: 1, schatten: 3 },
                     3: { tris: 18, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                },
+                // DER STEG (fahrzeug-gattung, das Stegfeld unten): dieselbe Maschine wie das Jochfeld, schmal, für den Fuß; gemessen am
+                // Rand des Reglers: L0 1 180–1 440 (Bohle 0,32–0,20 m), L1 132, die Stufe 3 wirft 14
+                steg: {
+                    0: { tris: 1450, draws: 1, schatten: 0 },
+                    1: { tris: 140, draws: 1, schatten: 3 },
+                    3: { tris: 14, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
                 // DER GRABEN (w28-graben-koerper, der Trockengraben unten): nah die Platten der Sohle, die Quader der Mauern in fünf
@@ -5605,6 +5613,14 @@
     // der Handlauf über der Bahn · pfahlM = so tief reichen die Pfähle unter die Bahn · einbindM = so weit liegt die Bahn am
     // Widerlager unter dem Grund (sie bindet in das Ufer ein: Rad und Fuß treten vom Grund auf die Bohlen, nie gegen sie).
     var BRUECKE_GESETZ = { feldM: 4, lichtM: 4, gelaenderM: 1.05, pfahlM: 3.5, einbindM: 0.05 };
+    // DER STEG AM ANLEGER (fahrzeug-gattung): das Jochfeld des Fußes — derselbe Zimmerbau (Bohlen auf Längsträgern, das Joch aus
+    // Holm und Pfählen mit Andreaskreuz, das Geländer), schmal und ohne Radabweiser; er führt vom Ufer über den Schilfgürtel an
+    // das offene Wasser, wo das Boot liegt (die Länge ist die Breite der Flachwasserzone, nie gewählt — der Wirt misst sie). Die
+    // Höhe seiner Bahn über dem Spiegel ist die Welle des Wassers vor ihm (dieselbe Hs, die den Rumpf des Boots formt: der Wirt).
+    //   BELEGT: die Fuge der Bohlen ≥ 4 mm (das Holz quillt), der Träger-Abstand ≤ 0,6 m (die Bohle trägt 450/600 mm Feld); das
+    //   Joch je Feld mit zwei Pfählen und das Andreaskreuz des Geländers (Steg am Schmachter See, Commons CC BY 2.0); der Jochabstand
+    //   12–13 ft = 3,7–4,0 m (Pfahl-Pier aus Holz, US Navy Design Manual). ANNAHMEN (unbelegt, beim Namen): lichtM, gelaenderM, pfahlM.
+    var STEG_GESETZ = { feldM: 3.7, lichtM: 1.4, gelaenderM: 1.0, pfahlM: 2.6, traegerM: 0.6, fugeM: 0.008 };
     // DER TROCKENGRABEN (w28-graben-koerper, Hagenbeck 1907: der Graben um das Gehege statt eines Zauns): EIN gebauter Körper,
     // kein Relief des Bodens — die Sohle aus Platten, die Stützmauer je Seite aus Quadern in Lagen, auf jeder Mauer die Reihe
     // der Kronensteine. Bis hier legte der Plan vier Trassen `tiefeM` unter den Zoo, und das 1,8-m-Gitter des Bodens zeichnete
@@ -5831,20 +5847,22 @@
     // über ihr — sie reicht an beiden Enden gleich weit auf das Ufer), je Feld seine Mitte, die Oberkante seiner Bahn (linear
     // zwischen den Widerlagern, um einbindM unter ihnen; jenseits die Höhe des Widerlagers) und seine Gier (das Feld liegt längs
     // +x: R_y(phi) trägt +x auf die Spanne). Rückgabe [{x, z, y, phi}].
-    function brueckenFelder(a, b) {
+    // `feldM` (optional): das Feld eines anderen Werks derselben Maschine (der Steg: STEG_GESETZ.feldM), sonst das der Brücke.
+    function brueckenFelder(a, b, feldM) {
         var BG = BRUECKE_GESETZ,
+            FM = feldM > 0 ? feldM : BG.feldM,
             dx = b.x - a.x,
             dz = b.z - a.z,
             L = Math.sqrt(dx * dx + dz * dz);
         if (!(L > 1e-6)) return [];
-        var n = Math.max(1, Math.ceil(L / BG.feldM)),
+        var n = Math.max(1, Math.ceil(L / FM)),
             ux = dx / L,
             uz = dz / L,
-            s0 = (L - n * BG.feldM) / 2,
+            s0 = (L - n * FM) / 2,
             phi = Math.atan2(-dz, dx),
             aus = [];
         for (var i = 0; i < n; i++) {
-            var s = s0 + (i + 0.5) * BG.feldM,
+            var s = s0 + (i + 0.5) * FM,
                 t = Math.max(0, Math.min(1, s / L));
             aus.push({ x: a.x + ux * s, z: a.z + uz * s, y: a.y + (b.y - a.y) * t - BG.einbindM, phi: phi });
         }
@@ -9070,6 +9088,9 @@
         // Welt legt so viele Felder, wie die Spanne verlangt (`brueckenFelder`). Sein Verb trägt die Form: die Bohlen sind
         // Trittfläche für Rad und Fuß, das Geländer hält den Wagen auf der Bahn, unter ihm fließt das Wasser (`durchlass`).
         jochfeld: { kind: "bruecke", art: "Brücke", lab: "Jochbrücke · Bohlen, Träger, Geländer, Joch", gestalten: 2, siteTag: "weg", salz: 0x83d9 },
+        // DAS STEGFELD (fahrzeug-gattung, rein additiv; STEG_GESETZ oben): ein Feld des Stegs am Anleger — der Fuß tritt auf die
+        // Bohlen, das Geländer hält ihn, unter ihm steht das Wasser (`durchlass`). Der Wirt legt so viele Felder, wie das Schilf breit ist.
+        stegfeld: { kind: "steg", art: "Steg", lab: "Steg · Bohlen, Träger, Geländer, Joch", gestalten: 2, siteTag: "weg", salz: 0x87fb },
         // DER TROCKENGRABEN (w28-graben-koerper, rein additiv; GRABEN_GESETZ oben): der Graben um das Gehege des Zoos als gebauter
         // Körper — die Sohle aus Platten, die Stützmauern aus Quadern in Lagen, die Kronensteine. Sein Grund (S4) ist der Hohlraum
         // im Feld und der Schnitt im gezeichneten Boden (`ortPlan`), sein Maß ist Norm (Kollision == Optik == Grund).
@@ -9143,7 +9164,7 @@
         PORTAL_RENDER_CONFIG.lod.kindStages[GERAETE[_gw].kind] = [0, 1, 3];
         PORTAL_RENDER_CONFIG.lod.budget[GERAETE[_gw].kind] = GERAET_BUDGET[GERAETE[_gw].kind];
     }
-    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, graben: GRABEN_PARAMS };
+    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, steg: BRUECKE_PARAMS, graben: GRABEN_PARAMS };
     for (var _ga in GERAETE) AUS_ARTEN[GERAETE[_ga].kind] = GERAET_PARAMS;
     // `grund`: das Werk steht auf dem Grund seines Orts (der Trockengraben: sein Hohlraum liegt im Erdbau des Orts, `ortPlan`) — der Ort
     // setzt es, nie die Hand: der Katalog des Spielers zeigt es nicht (stamm `_katalogSichtbar`, `fx.place.grund`)
@@ -9238,8 +9259,14 @@
     //    der Radabweiser an der Bahnkante, die Pfosten mit Holznägeln am Handlauf). Die L1 ohne Fase: die Bahn EINE Platte, zwei
     //    Träger, das Joch ohne Kreuz, das Geländer ohne Leisten; Pfähle als Vierkant. ──
     function ausJochfeld(g, p, seed, stufe) {
-        var m = AUS_MASS.jochfeld(0, p),
-            W = p.verwitterung,
+        jochBau(g, p, seed, stufe, AUS_MASS.jochfeld(0, p));
+    }
+    // DAS STEGFELD: derselbe Zimmerbau am Maß des Stegs (AUS_MASS.stegfeld) — kein Radabweiser (rH 0), zwei Pfähle je Joch
+    function ausStegfeld(g, p, seed, stufe) {
+        jochBau(g, p, seed, stufe, AUS_MASS.stegfeld(0, p));
+    }
+    function jochBau(g, p, seed, stufe, m) {
+        var W = p.verwitterung,
             fein = stufe === 0,
             fa = fein ? 0.008 : 0,
             zB = ausZufall(seed, 0xb1),
@@ -9270,7 +9297,7 @@
         } else holz(ausSetze(ausKiste(m.L, m.d, m.Bd, 0), 0, -m.d / 2, 0), ausTon(zB, 0.08, 0.03));
         // die Längsträger (nah vier, fern die beiden äußeren)
         for (i = 0; i < m.zT.length; i++) {
-            if (!fein && i % 3 !== 0) continue;
+            if (!fein && i !== 0 && i !== m.zT.length - 1) continue;
             holz(ausSetze(ausKiste(m.L, m.tH, m.tB, fa), 0, -m.d - m.tH / 2, m.zT[i]), ausTon(zT, 0.05, 0.02));
         }
         // das Joch: der Holm quer unter den Trägern, die Pfähle (nah acht Seiten, fern vier), nah das Andreaskreuz
@@ -9293,7 +9320,7 @@
             holz(ausSetze(ausKiste(m.L, m.hlH, m.hlB, fa), 0, m.gH - m.hlH / 2, z), ausTon(zT, 0.06, 0.02));
             if (fein) {
                 holz(ausSetze(ausKiste(m.L, 0.08, 0.05, fa * 0.6), 0, m.gH / 2, z - s * (m.gB / 2 + 0.025)), ausTon(zT, 0.06, 0.02));
-                holz(ausSetze(ausKiste(m.L, m.rH, m.rB, fa), 0, m.rH / 2, s * (m.B / 2 + m.rB / 2)), ausTon(zT, 0.05, 0.02));
+                if (m.rH > 0) holz(ausSetze(ausKiste(m.L, m.rH, m.rB, fa), 0, m.rH / 2, s * (m.B / 2 + m.rB / 2)), ausTon(zT, 0.05, 0.02));
                 for (i = 0; i < m.xG.length; i++) ausNagel(g, [m.xG[i], m.gH - m.hlH / 2, z - m.hlB / 2 - 0.003], [m.xG[i], m.gH - m.hlH / 2, z + m.hlB / 2 + 0.003], W, zNg);
             }
         }
@@ -9956,7 +9983,7 @@
             return { a: [F.a[0] - F.u[0] * d, F.a[1] - F.u[1] * d], u: F.u, n: F.n, L: F.L + 2 * d };
         });
     }
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, trockengraben: ausTrockengraben };
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, stegfeld: ausStegfeld, trockengraben: ausTrockengraben };
     AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
     AUS_BAU.markstein = ausMarkstein;
     AUS_BAU.relief = ausRelief;
@@ -10093,6 +10120,29 @@
                 L: L, B: B, d: d, Bd: 2 * zG + gB + 0.1, fuge: 0.015, bohle: p.bohle, tH: tH, tB: 0.2, zT: [-1.65, -0.55, 0.55, 1.65],
                 hB: 0.3, hH: hH, xJ: -L / 2 + 0.2, yJ: yJ, zP: [-1.75, 0, 1.75], pr: 0.14, yP: -BG.pfahlM, yK: yJ - 2,
                 zG: zG, xG: [-L / 2 + 0.2, 0.2], gB: gB, gH: BG.gelaenderM, yG: -d - 0.15, hlH: 0.1, hlB: 0.14, rH: 0.12, rB: 0.12,
+            };
+        },
+        // DAS STEGFELD (STEG_GESETZ): dieselben Felder wie das Jochfeld — die lichte Breite B, die Träger so viele, dass keiner weiter
+        // als traegerM vom nächsten liegt (über ±(B/2 − 0,1)), die Fuge fugeM, zwei Pfähle je Joch unter den Geländerpfosten, das
+        // Kreuz 1,2 m unter den Holm, das Geländer an der Kante der Bahn (kein Radabweiser: rH 0); die Bohle 5 cm, Träger 0,12 × 0,2 m.
+        stegfeld: function (_G, p) {
+            var SG = STEG_GESETZ,
+                L = SG.feldM,
+                B = SG.lichtM,
+                d = 0.05,
+                tH = 0.2,
+                hH = 0.2,
+                gB = 0.1,
+                zG = B / 2 + gB / 2,
+                yJ = -d - tH - hH,
+                zA = B / 2 - 0.1,
+                nT = Math.ceil((2 * zA) / SG.traegerM - 1e-9) + 1,
+                zT = [];
+            for (var i = 0; i < nT; i++) zT.push(-zA + (2 * zA * i) / (nT - 1));
+            return {
+                L: L, B: B, d: d, Bd: B + 2 * gB, fuge: SG.fugeM, bohle: p.bohle, tH: tH, tB: 0.12, zT: zT,
+                hB: 0.2, hH: hH, xJ: -L / 2 + 0.2, yJ: yJ, zP: [-zG, zG], pr: 0.1, yP: -SG.pfahlM, yK: yJ - 1.2,
+                zG: zG, xG: [-L / 2 + 0.2, 0.2], gB: gB, gH: SG.gelaenderM, yG: -d - 0.1, hlH: 0.08, hlB: 0.1, rH: 0, rB: 0,
             };
         },
         // DER TROCKENGRABEN (GRABEN_GESETZ): die Tiefe T, die Lagen der Quader, die Kästen der Sohle, die acht Fluchten der Mauern
@@ -10793,8 +10843,8 @@
                     parts.push(ts);
                 });
             });
-        } else if (id === "jochfeld") {
-            // DIE BRÜCKE: die Bahn samt Trägern ist TRITTFLÄCHE (`tritt`: Rad und Fuß stehen auf ihrer Oberkante, kein Gehender
+        } else if (id === "jochfeld" || id === "stegfeld") {
+            // DIE BRÜCKE (und der Steg, dasselbe Maß-Schema): die Bahn samt Trägern ist TRITTFLÄCHE (`tritt`: Rad und Fuß stehen auf ihrer Oberkante, kein Gehender
             // stößt an sie), das Geländer je Seite vom Radabweiser bis zum Handlauf ist Wand, das Joch steht als Holm und Pfähle
             // unter ihr; sie staut kein Wasser (`durchlass` der Zeile unten)
             var yT = -m.d - m.tH;
@@ -10811,7 +10861,7 @@
             for (a = -1; a <= 1; a += 2) parts.push(teil(a * m.hx, (m.P - m.dP) / 2, (m.zP + m.zS) / 2, m.dx, lS, m.h * 0.85, -Math.atan2(m.zS - m.zP, m.P - m.dP)));
             parts.push(teil(0, m.yB - 0.025, m.zB, 2 * m.hx + m.dx, 0.05, 0.05));
         }
-        return id === "jochfeld" ? { label: WERKE[id].art, durchlass: true, parts: parts } : { label: WERKE[id].art, parts: parts };
+        return id === "jochfeld" || id === "stegfeld" ? { label: WERKE[id].art, durchlass: true, parts: parts } : { label: WERKE[id].art, parts: parts };
     }
     var KIND_POLICY = {};
     for (var _wp in WERKE) KIND_POLICY[WERKE[_wp].kind] = { prefix: WERKE[_wp].kind + "_", substanz: werkSubstanz(_wp) };
@@ -10941,7 +10991,7 @@
                     e = [R.a[0] + R.u[0] * R.L, R.a[1] + R.u[1] * R.L];
                 flaeche([[[R.a[0] - R.n[0] * lnd, m.K.hochM, R.a[1] - R.n[1] * lnd], [e[0] - R.n[0] * lnd, m.K.hochM, e[1] - R.n[1] * lnd], [e[0] + R.n[0] * m.K.ueberM, m.K.hochM, e[1] + R.n[1] * m.K.ueberM], [R.a[0] + R.n[0] * m.K.ueberM, m.K.hochM, R.a[1] + R.n[1] * m.K.ueberM]]]);
             });
-        } else if (rezeptId === "jochfeld") {
+        } else if (rezeptId === "jochfeld" || rezeptId === "stegfeld") {
             // DIE BRÜCKE (18 Dreiecke): die Bahn als Platte auf der Oberkante der Bohlen, je Seite das Geländer als EINE Fläche vom
             // Radabweiser bis zum Handlauf, die drei Pfähle des Jochs als Kreuze vom Holm bis an ihren Fuß
             platte(-m.L / 2, m.L / 2, 0, -m.Bd / 2, m.Bd / 2);
@@ -11045,7 +11095,7 @@
                     zs = [R.a[1] - R.n[1] * lnd, R.a[1] + R.u[1] * R.L + R.n[1] * m.K.ueberM];
                 dazu(huelleTeil("box", Math.min(xs[0], xs[1]), Math.max(xs[0], xs[1]), m.K.hochM - m.K.dickM, m.K.hochM, Math.min(zs[0], zs[1]), Math.max(zs[0], zs[1]), F("stein")));
             });
-        } else if (rezeptId === "jochfeld") {
+        } else if (rezeptId === "jochfeld" || rezeptId === "stegfeld") {
             // die Bahn samt Trägern, je Seite das Geländer, je Pfahl sein Stamm unter dem Holm
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, -m.d - m.tH, 0, -m.Bd / 2, m.Bd / 2, F("holz")));
             for (var hs = -1; hs <= 1; hs += 2) dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.gH, hs * m.zG - m.gB / 2, hs * m.zG + m.gB / 2, F("holz")));
@@ -14958,7 +15008,7 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         // die Arten des Buchs als Literal (die Karte liest sie statisch, diag-atlas --find): die Geräte des Spielplatzes je ihre Art
-        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, schaukel: GERAET_PARAMS, rutsche: GERAET_PARAMS, klettergeruest: GERAET_PARAMS, wippe: GERAET_PARAMS, reck: GERAET_PARAMS, balken: GERAET_PARAMS, wand: GERAET_PARAMS, hangelleiter: GERAET_PARAMS, graben: GRABEN_PARAMS },
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, steg: BRUECKE_PARAMS, schaukel: GERAET_PARAMS, rutsche: GERAET_PARAMS, klettergeruest: GERAET_PARAMS, wippe: GERAET_PARAMS, reck: GERAET_PARAMS, balken: GERAET_PARAMS, wand: GERAET_PARAMS, hangelleiter: GERAET_PARAMS, graben: GRABEN_PARAMS },
         buildInstance: buildInstance,
         // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
         KIND_POLICY: KIND_POLICY,
@@ -15122,6 +15172,7 @@
         verkehrVon: verkehrVon, // Leiter mensch.netz.verkehr — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
         verkehrsNetz: verkehrsNetz, // Leiter mensch.netz.verkehr — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
+        STEG_GESETZ: STEG_GESETZ, // fahrzeug-gattung — der Steg am Anleger (Feld, lichte Breite, Träger-Abstand, Fuge)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
         GRABEN_GESETZ: GRABEN_GESETZ, // w28-graben-koerper — der Trockengraben des Geheges (Weite, Tiefe, Mauer, Krone, Sohle)
         grabenKaesten: grabenKaesten, // die vier Kästen seines Grunds (S4) — der Körper und der Erdbau lesen sie

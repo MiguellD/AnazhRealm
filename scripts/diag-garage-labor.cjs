@@ -68,8 +68,13 @@ function laborVerdict(m) {
 // Ordnung je Gattung: Schlitten und Ochsenkarren < Kutsche < Motorwagen < heute < Zukunft; die Bänder in km/h.
 const ZEIT_ORDNUNG = ["schlitten kutsche", "ochsenkarren kutsche", "kutsche motorwagen", "motorwagen heute", "heute zukunft"];
 const ZEIT_BAND = { ochsenkarren: [5, 12], kutsche: [18, 32], motorwagen: [30, 110], heute: [120, 250] };
+// DIE ACHSE DES MOTORS (fahrzeug-gattung): die Zeit-Achse ist die Achse des Antriebs — ihre Ordnung und Bänder fragt die Linse
+// nur die Gattung, die das Gesetz an einer Stufe als Motorwagen führt (`exportDrive.art.motor`, vehicle-core `gattungArt`). Boot und
+// Leiterwagen tragen an jeder Stufe ihren Muskel (Ruderer, Zugtier): die Stufe ändert ihr Tempo nie, an Land zieht das Tier (> 0),
+// das Boot fährt an Land nicht (0, `art.medium` wasser). Band des Zugtiers im Schritt: Rinder ziehen mit 0,47–0,55 m/s und gehen
+// mit 0,65–0,97 m/s (ODA R5198), der Ochse 1 m/s (FAO) — der Leiterwagen des Gesetzes geht mit 5,7 km/h hinter dem Pferd.
 function epocheMessen(VC) {
-    const e = { kmh: {}, farbe: {}, tot: {} };
+    const e = { kmh: {}, farbe: {}, tot: {}, motor: {}, medium: {} };
     const spur = (pid, ov, w) => {
         let s = 0;
         VC.buildInstance(pid, 1, 0, ov, w).traverse((o) => {
@@ -83,7 +88,11 @@ function epocheMessen(VC) {
         e.kmh[id] = {};
         e.farbe[id] = {};
         for (const g in VC.PRESETS) {
-            e.kmh[id][g] = VC.fahrLeistung({ ...VC.presetPatch(g), epoche }).kmh;
+            // ohne Fahr-Gesetz (fahrLeistung null) steht NaN — das Urteil nennt die Gattung ROT beim Namen
+            e.kmh[id][g] = VC.fahrLeistung({ ...VC.presetPatch(g), epoche })?.kmh ?? NaN;
+            const art = VC.exportDrive({ ...VC.presetPatch(g), epoche }, g).art;
+            e.motor[g] = e.motor[g] || art.motor;
+            e.medium[g] = art.medium;
             e.farbe[id][g] = Math.abs(spur(g, { epoche }, { bodyMat: VC.lackStoff(1) }) - spur(g, { epoche }, { bodyMat: VC.lackStoff(5) }));
         }
         e.tot[id] = VC.PARAMS_BY_KIND.vehicle.filter((z) => z.id !== "epoche" && spur("gt", { epoche, [z.id]: z.min }) === spur("gt", { epoche, [z.id]: z.max })).map((z) => z.id);
@@ -93,8 +102,12 @@ function epocheMessen(VC) {
 function epocheVerdict(e) {
     const out = [];
     for (const g in e.kmh.heute) {
-        for (const [a, b] of ZEIT_ORDNUNG.map((p) => p.split(" "))) if (!(e.kmh[a][g] < e.kmh[b][g])) out.push(`ordnung ${g}: ${a} ${e.kmh[a][g]} ≥ ${b} ${e.kmh[b][g]} km/h`);
-        for (const [id, [lo, hi]] of Object.entries(ZEIT_BAND)) if (!(e.kmh[id][g] >= lo && e.kmh[id][g] <= hi)) out.push(`band ${id} ${g}: ${e.kmh[id][g]} km/h ∉ ${lo}–${hi}`);
+        const muskel = e.motor[g] === false,
+            je = Object.keys(e.kmh).map((id) => e.kmh[id][g]);
+        if (muskel && new Set(je).size > 1) out.push(`muskel ${g}: die Stufe ändert das Tempo des Muskels ${je} km/h`);
+        if (muskel && (e.medium[g] === "land" ? !(je[0] > 0) : je[0] !== 0)) out.push(`muskel ${g} (${e.medium[g]}): ${je[0]} km/h an Land`);
+        if (!muskel) for (const [a, b] of ZEIT_ORDNUNG.map((p) => p.split(" "))) if (!(e.kmh[a][g] < e.kmh[b][g])) out.push(`ordnung ${g}: ${a} ${e.kmh[a][g]} ≥ ${b} ${e.kmh[b][g]} km/h`);
+        if (!muskel) for (const [id, [lo, hi]] of Object.entries(ZEIT_BAND)) if (!(e.kmh[id][g] >= lo && e.kmh[id][g] <= hi)) out.push(`band ${id} ${g}: ${e.kmh[id][g]} km/h ∉ ${lo}–${hi}`);
         for (const id in e.farbe) if (!(e.farbe[id][g] > 0.02)) out.push(`farbe ${id} ${g}: Δ ${e.farbe[id][g]}`);
     }
     for (const id in e.tot) for (const r of e.tot[id]) out.push(`regler ${id}: ${r} wirkt nicht`);
@@ -154,7 +167,10 @@ function formMessen(VC) {
         return z.speed;
     };
     VC.EPOCHE_GESETZ.forEach(({ id }, epoche) => {
+        // der Stempel (Radstand, Spur, Dach) gilt der Gattung auf Rädern: der Rumpf des Boots folgt Welle und Last (bootRumpf,
+        // gate:vehicle-drive A9), nie dem Radstand
         for (const g in VC.PRESETS) {
+            if (VC.exportDrive({ ...VC.presetPatch(g), epoche }, g).art.medium !== "land") continue;
             const L = { ...VC.presetPatch(g), epoche }, S = { ...L, ...schwer },
                 [dL, dS] = [VC.exportDrive(L, g), VC.exportDrive(S, g)];
             f[`${id} ${g}`] = { masseQ: dS.mass / dL.mass, wattQ: (dS.zweispur.aLeist * dS.mass) / (dL.zweispur.aLeist * dL.mass), tempoQ: sechs(S, g) / sechs(L, g) };
@@ -180,8 +196,12 @@ const G9 = (K) => epocheVerdict(epocheMessen(K.__vehicleCore)),
     G11 = (K) => streckeVerdict(streckeMessen(K.__vehicleCore, K.__gelaendeCore)),
     G12 = (K) => formVerdict(formMessen(K.__vehicleCore));
 const MUTANTEN = [
-    ["vehicle", "epocheKoerper(E.koerper, lack) : lack", "epocheStoff(E.koerper) : lack", /^farbe zukunft/, G9],
-    ["vehicle", "            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/, G9],
+    ["vehicle", "? epocheKoerper(kk, lack) : lack", "? epocheStoff(kk) : lack", /^farbe zukunft/, G9],
+    // carPhys (gattungArt liest dieselbe Zeile): der Anker trägt die Zeile davor, damit er einmal steht; die Mutante nimmt der
+    // Zeit-Stufe ihren Antrieb, der Muskel von Boot und Leiterwagen bleibt
+    ["vehicle", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = (E && E.antrieb) || muskel(P.antrieb) || {};", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = muskel(P.antrieb) || {};", /^ordnung|^band/, G9],
+    // carPhys ohne den Muskel: Boot und Leiterwagen fahren mit dem leeren Antrieb — das Tempo des Muskels fällt beim Namen
+    ["vehicle", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = (E && E.antrieb) || muskel(P.antrieb) || {};", "const A = FAHR.antrieb,\n            E = epocheStufe(P),\n            Z = (E && E.antrieb) || {};", /^muskel/, G9],
     ["vehicle", "        if (topo) taperBody(", "        if (false) taperBody(", /^regler kutsche: taille/, G9],
     ["vehicle", "        const pre = PRESETS[id];", "        const pre = PRESETS.gt;", /^gattung/, G9],
     ["gelaende", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/, G11],

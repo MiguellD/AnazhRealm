@@ -551,6 +551,22 @@ class AnazhRealm_siedlung_ort {
                     if (q.slot === so.si) this._hausStueckSetzen(so.plan, Z, q, k, origin, so);
         return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
+    // DAS WERK WARTET AUF SEINEN BAUPLAN (fahrzeug-gattung): ein Werk des Gesetzes, dessen Bauplan erst mit dem Buch geboren wird
+    // (`_foundryAutoRegisterSpecies`: die Arten der Studios, `fahrzeug_*`, `steg_*`), steht mit der Geburt (`_wartendeTreten`) —
+    // bis hier fiel es still, wo der Ort vor dem Buch stand. Leser: der Anleger (`_anlegerLegen`). Rückgabe null (noch nichts).
+    _wartetAufBauplan(typen, tat) {
+        (this._bauplanWarten || (this._bauplanWarten = [])).push({ typen, tat });
+        return null;
+    }
+    // DIE GEBURT DER BAUPLÄNE (`_foundryAutoRegisterSpecies` nach jeder Geburt): jedes wartende Werk, dessen Baupläne jetzt
+    // stehen, tritt an; die übrigen warten weiter.
+    _wartendeTreten() {
+        const W = this._bauplanWarten;
+        if (!W || !W.length) return;
+        const da = (w) => w.typen.every((t) => this.state.blueprints && this.state.blueprints[t]);
+        this._bauplanWarten = W.filter((w) => !da(w));
+        for (const w of W) if (da(w)) w.tat();
+    }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
     // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
     // Wandlaterne hängt vor der Wand, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
@@ -693,6 +709,8 @@ class AnazhRealm_siedlung_ort {
                     });
             }
         if (spannen.length && so && so.key) this._brueckenLegen(spannen, "dorf:" + so.key);
+        // DER ANLEGER (Karte 2 planet.kopplung.siedlungslage#1): liegt Wasser am Ort, legt er Steg und Boot an sein Ufer (`_anlegerLegen`)
+        if (so && so.key) this._anlegerLegen(origin.x, origin.z, "dorf:" + so.key);
         this._wegenetzAnschluss(so && so.key); // die Feldwege zu den Nachbarn, deren Plan steht (fahrzeug.K2)
         yield* this._grenzeImLandSetzen(plan, origin, so && so.key); // der Rand des Reichs eines Herrn (mensch.macht.grenze #1)
         yield;

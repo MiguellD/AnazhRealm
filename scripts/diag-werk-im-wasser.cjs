@@ -75,6 +75,13 @@ const brueckeLage = (tiefe, x0, z0, ry, S) => {
         ? { wo: "liegt längs", tiefe: tM, punkte: `das Ufer quer ${quer} m, längs ${laengs} m` }
         : null;
 };
+// DIE LAGE EINES STEGFELDS IM WASSER (Z, rein — dieselbe Funktion in der Seite und im Selbsttest): der Steg des Anlegers steht nach
+// seinem Gesetz IM Wasser und läuft LÄNGS hinaus (fachwerk STEG_GESETZ: vom Ufer über den Schilfgürtel an das offene Wasser, zwei
+// Pfähle je Joch bis `pfahlM` unter die Bahn) — „Fundament im Wasser“ und „liegt längs“ sind bei ihm kein Befund (die Batterie am
+// 852e16aa nannte den Steg des Dorfs am Ufer als Täter: 0,80 m Wasser unter 49 von 49 Punkten). Befund ist allein das Wasser, das
+// tiefer steht, als sein Pfahl reicht — dieselbe Lesart wie am Joch der Brücke. `tiefeMax` = das tiefste Wasser unter seiner Hülle.
+const stegLage = (tiefeMax, S) =>
+    tiefeMax > S.pfahlM ? { wo: "steht tiefer als sein Pfahl,", tiefe: tiefeMax, punkte: `der Pfahl trägt ${S.pfahlM} m` } : null;
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -606,6 +613,9 @@ async function probe(A) {
     // Bis N1 suchte der Zensus an ihm die Box am Boden: „wandlaterne_dorf stand ohne Hülle".
     const FCw = globalThis.__fachwerkCore;
     const brueckeLage = (0, eval)("(" + A.brueckeLageSrc + ")");
+    const stegLage = (0, eval)("(" + A.stegLageSrc + ")");
+    // der Steg beim Namen seines Gesetzes (der Wirt: `ANLEGER.steg`; ein Stand ohne Anleger kennt keinen)
+    const STEG_TYP = (r.constructor.ANLEGER || {}).steg;
     const anDerWand = (e) => {
         const bp = st.blueprints && st.blueprints[e.type];
         const p =
@@ -688,6 +698,14 @@ async function probe(A) {
                         if (t > A.tiefeFundament) nass++;
                         if (t > max) max = t;
                     }
+            }
+            // DER STEG STEHT IM WASSER (fahrzeug-gattung, `stegLage`): sein Fundament im Wasser ist sein Gesetz — Befund ist das
+            // Wasser unter seiner Hülle, das tiefer steht, als sein Pfahl reicht (fachwerk STEG_GESETZ.pfahlM)
+            if (STEG_TYP && e.type === STEG_TYP) {
+                const lage = stegLage(max, { pfahlM: FCw.STEG_GESETZ.pfahlM });
+                if (lage && zensus.imWasser.length < 40)
+                    zensus.imWasser.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, ...lage, quelle: w.quelle });
+                continue;
             }
             if (max > A.tiefeFundament && zensus.imWasser.length < 40)
                 zensus.imWasser.push({
@@ -2228,6 +2246,20 @@ function selbsttest() {
         flussLage,
         { fehler }
     );
+    // DER STEG (`stegLage`, rein): im flachen Wasser am Ufer steht er nach seinem Gesetz (kein Befund — die Lesart „Fundament im
+    // Wasser“ nannte ihn am 852e16aa als Täter), im Wasser über seinem Pfahl steht er zu tief. Wer die Schwelle des Fundaments
+    // an ihn legt, fällt am ersten Fall ROT; wer ihn ganz ausnimmt, am zweiten GRÜN — beide Fälle stehen hier.
+    taeterFaelle(
+        [
+            { name: "Z Steg im Flachwasser (0,80 m unter der ganzen Hülle)", z: 0.8 },
+            { name: "Z Steg tiefer als sein Pfahl (3,1 m Wasser)", z: 3.1, muss: /steht tiefer als sein Pfahl, 3\.10 m im Wasser \(der Pfahl trägt 2\.6 m\)/ },
+        ],
+        (tief) => {
+            const u = stegLage(tief, { pfahlM: 2.6 });
+            return u ? [`Z: steg_stegfeld ${u.wo} ${u.tiefe.toFixed(2)} m im Wasser (${u.punkte})`] : [];
+        },
+        { fehler }
+    );
     selbsttestEnde(fehler);
     process.exit(0);
 }
@@ -2413,6 +2445,7 @@ async function lauf() {
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
             brueckeLageSrc: brueckeLage.toString(),
+            stegLageSrc: stegLage.toString(),
             brueckeSuchM: 40, // Z: so weit sucht ein nasses Brückenfeld sein Ufer (längs und quer zu seiner Achse)
             brueckeQuer: 0.5, // Z: liegt das Ufer quer näher als dieser Bruchteil des Wegs längs, liegt die Brücke im Wasser, statt es zu queren
             wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
