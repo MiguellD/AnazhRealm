@@ -135,7 +135,7 @@ class AnazhRealm_stoff_material {
     // DAS WIEGEN IM EINEN WIND (w20-boee-bild) — die KANONISCHE Wind-Größe des Halms, jeder Halm-Leser LIEST sie (die Nah-Wiese,
     // ihre Ferne `_halmFerne`, die Nah-Streu): der Versatz der Ecke in Welt-Metern
     //   die WEITE A = uWindStrength · g · h ist der EINE Wind am Ort (`_windAt`): uWindStrength = WEATHER_WIND_AMP × die Stärke am
-    //     Auge (der Frame-Takt), g die wandernde Böe an der Lage der Ecke, sin(uWindTime·ω − (Lage·uWindDir)·k)·amp + mitte
+    //     Auge (der Frame-Takt), g die wandernde Böe an der Lage der Ecke, sin(uBoePhase − (Lage·uWindDir)·k)·amp + mitte
     //     (WIND_BOE — dieselben Zahlen hört das Ohr), h die Höhe über der Wurzel (`opts.hoehe` in Metern, sonst die
     //     Geometrie-Position, Lehre 22);
     //   die PHASE je Halm: längs des Winds φ = uWindTime·takt + 2π·ν, quer φ' = uWindTime·takt·quer + 2π·fract(256·ν) — ν das
@@ -167,9 +167,7 @@ class AnazhRealm_stoff_material {
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         const B = AnazhRealm.WIND_BOE;
         const gust = sin(
-            wu.uWindTime
-                .mul(float(B.omega))
-                .sub(positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)).mul(float(B.k)))
+            wu.uBoePhase.sub(positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)).mul(float(B.k)))
         )
             .mul(float(B.amp))
             .add(float(B.mitte));
@@ -369,11 +367,12 @@ class AnazhRealm_stoff_material {
         const tt = Number.isFinite(t) ? t : 0;
         const d = this._windDirAt(tt);
         const B = AnazhRealm.WIND_BOE;
-        const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
-        const form = this._windForm(x, z, d);
         // DIE STÄRKE AM ORT (wetter-am-ort): der Wind-Kanal des Felds über (x, z) (`_wetterFeldAm`, ohne Relief: der Wind-Kanal
         // trägt keins) — am Spieler das Feld seines Worts, fern die Front über dem Ort; bis hier wehte jeder Ort im Wort am Spieler
         const wf = this._wetterFeldAm(x, z, tt, this._windFeldAus || (this._windFeldAus = {}), false);
+        // die Böe zieht MIT dem Wind (Taylor, `_boePhase`): dieselbe Phase liest der Shader als uBoePhase
+        const boe = Math.sin(this._boePhase(tt) - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
+        const form = this._windForm(x, z, d);
         // DIE GASSE (klima-kontinent, stadtklima#1): in der Schlucht der Häuser trägt der Wind den Anteil längs der Gasse — Richtung
         // und Stärke (`_gassenWind`); die Böe wandert mit dem Wind über den Dächern (d). Neben jeder Gasse Bit für Bit der alte Wind.
         const g = this._gassenWind(x, z, d);
@@ -387,6 +386,32 @@ class AnazhRealm_stoff_material {
         aus.form = form;
         aus.ms = ms;
         return aus;
+    }
+    // DER WEG DER BÖE (wind-saison, Karte 2 leben.pflanzen.kraft#2): die Böe ist ein Muster, das mit dem Wind zieht — g = sin(k·(s(t)
+    // − x·w)), s der Weg des Musters, ds/dt = das Tempo der Böe (phyto-core `boeTempo`, Taylor 1938: 0,9 × der mittlere Wind über
+    // dem Ort, aus dem Wind-Kanal des Felds, das der Spieler trägt — `_wetterFeldAm` an seinem Ort, ohne Drift und Form). Der Weg
+    // ist stückweise linear in der Uhr: ändert sich das Tempo (ein neues Wort, sein Übergang), setzt der Anker den Weg stetig fort
+    // (s(t) = s_a + U_c·(t − t_a)) — die Böe springt nie, und ein schnellerer Wind lässt sie schneller ziehen statt die Phase der
+    // ganzen Welt um U·t zu drehen. Gemerkt je Tempo: die Frage baut nichts. → m. Leser: `_boePhase` (CPU `_windAt`, GPU uBoePhase).
+    _boeWeg(t) {
+        const pm = this.state.playerMesh;
+        const U = this._wetterFeldAm(
+            pm ? pm.position.x : 0,
+            pm ? pm.position.z : 0,
+            t,
+            this._boeFeldAus || (this._boeFeldAus = {}),
+            false
+        ).wind;
+        const c = globalThis.__phytoCore.boeTempo(U);
+        let A = this._boeAnker;
+        if (!A || A.c !== c) A = this._boeAnker = { t, s: A ? A.s + A.c * (t - A.t) : c * t, c };
+        return A.s + A.c * (t - A.t);
+    }
+    // die Phase der Böe k·s(t), auf [0, 2π) gefaltet (der Shader rechnet in float32: die Phase der Welt wächst mit der Uhr, ihr
+    // Rest bleibt genau). Leser: `_windAt` und der Frame-Takt (uBoePhase).
+    _boePhase(t) {
+        const p = this._boeWeg(t) * AnazhRealm.WIND_BOE.k;
+        return p - 2 * Math.PI * Math.floor(p / (2 * Math.PI));
     }
     // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1): die Häuser jeder geladenen Siedlung sind
     // Rauigkeit und Kanal des EINEN Winds (fachwerk `gassenWind`: v = κ·(d·e)·e + (1 − κ)·d, κ aus H/W der Schlucht). Die Siedlungen
@@ -712,6 +737,8 @@ class AnazhRealm_stoff_material {
             const { uniform } = THREE.TSL;
             this.state.windUniforms = this._uniformHeimatTeilen({
                 uWindTime: uniform(0.0),
+                // die Phase der Böe k·s(t) (`_boePhase`, Taylor): die Böe zieht mit dem Wind, nie mit der Uhr allein
+                uBoePhase: uniform(0.0),
                 uWindStrength: uniform(0.12),
                 uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
                 uWetterVon: uniform(new THREE.Vector3(0, 0, 0)),
@@ -1930,7 +1957,7 @@ class AnazhRealm_stoff_material {
                                             t: _wu.uWindTime,
                                             U: _wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
                                             g: _Ta
-                                                .sin(_wu.uWindTime.mul(_WB.omega).sub(_ortK.mul(_WB.k)))
+                                                .sin(_wu.uBoePhase.sub(_ortK.mul(_WB.k)))
                                                 .mul(_WB.amp)
                                                 .add(_WB.mitte),
                                             f0: this._karteWindDelta()

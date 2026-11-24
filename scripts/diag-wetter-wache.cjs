@@ -707,6 +707,98 @@ function lmlSelbsttest() {
     return { v, L, taeter };
 }
 
+// (Ö) DIE BÖE ZIEHT MIT DEM WIND (wind-saison, Karte 2 leben.pflanzen.kraft#2, im Selbsttest am echten Wirt, rein in node): das Maß
+// der Station (k2-leben KRAFT S2) am EINEN Wind `_windAt` — Ruhe ↔ Sturm, die Reihe staerke × Böe am Spieler und 100 m windab
+// (240 × 0,25 s ab t 100), die Laufzeit der Kreuzkorrelation (Lag ≤ 20 s) gegen 100 m ÷ den mittleren Wind am Spieler: ±20 %
+// (Taylor 1938: das Muster zieht mit 0,8–1,0 × dem mittleren Wind), r ≥ 0,6, die Varianz Sturm ÷ Ruhe ≥ 3. QUELLE: kein Leser der
+// Böe im Stamm dreht ihre Phase mit der Uhr allein (`uWindTime·ω`) — Gras, Krone und Karte lesen uBoePhase (`_boePhase`), der Wind
+// am Ort dieselbe Phase. Selbst-Test: der Täter von vor wind-saison (die Böe wandert mit ω/k = 10,4 m/s in jedem Wetter) MUSS rot
+// sehen. Leser: `boeRot`.
+const BOE_SOLL = { laufzeitAbw: 20, kreuzR: 0.6, varianz: 3 };
+// die Phase der Böe aus der Uhr allein: `uWindTime.mul(B.omega)`, `.mul(float(B.omega))`, `t * B.omega − (x * d.x …)`
+const BOE_ALT = /\.mul\(\s*(?:float\()?\s*_?[A-Z][A-Za-z]*\.omega\b|\.omega\s*-\s*\(?\s*[a-z]+\s*\*\s*d\.x/;
+function boeMessung(r) {
+    const st = r.state;
+    const p = st.playerMesh.position;
+    const reihe = (x, z) => {
+        const a = [];
+        let ms = 0;
+        for (let i = 0; i < 240; i++) {
+            const w = r._windAt(x, z, 100 + i * 0.25);
+            a.push(w.staerke * w.boe);
+            ms += w.ms;
+        }
+        return { a, ms: ms / 240 };
+    };
+    const d = r._windDirAt(100);
+    const w0 = st.weather;
+    let ruhe, A, B;
+    try {
+        st.weather = "sunny";
+        ruhe = reihe(p.x, p.z);
+        st.weather = "stormy";
+        A = reihe(p.x, p.z);
+        B = reihe(p.x + d.x * 100, p.z + d.z * 100);
+    } finally {
+        st.weather = w0;
+    }
+    const m = (v) => v.reduce((s, x) => s + x, 0) / v.length;
+    const varz = (v) => m(v.map((x) => (x - m(v)) ** 2));
+    let [lag, kr] = [0, -2];
+    for (let L = 0; L <= 80; L++) {
+        const [x, y] = [A.a.slice(0, 240 - L), B.a.slice(L)];
+        const [mx, my] = [m(x), m(y)];
+        let [sxy, sxx, syy] = [0, 0, 0];
+        for (let i = 0; i < x.length; i++) {
+            sxy += (x[i] - mx) * (y[i] - my);
+            sxx += (x[i] - mx) ** 2;
+            syy += (y[i] - my) ** 2;
+        }
+        const k = sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : 0;
+        if (k > kr) [lag, kr] = [L * 0.25, k];
+    }
+    const soll = 100 / A.ms;
+    const r3 = (x) => Math.round(x * 1000) / 1000;
+    return { laufzeitAbw: r3((100 * Math.abs(lag - soll)) / soll), lagS: lag, sollS: r3(soll), kreuzR: r3(kr), varianz: r3(varz(A.a) / varz(ruhe.a)) };
+}
+function boeQuelle(R) {
+    const fs = require("fs");
+    const path = require("path");
+    const rot = [];
+    for (const f of require("./lib/stamm.cjs").dateien(R)) {
+        const text = fs.readFileSync(path.join(R, f), "utf8");
+        text.split("\n").forEach((z, i) => {
+            if (BOE_ALT.test(z)) rot.push(`${f}:${i + 1}`);
+        });
+    }
+    return rot;
+}
+function boeRot(Bm, quelle) {
+    const rot = [];
+    if (!(Bm.laufzeitAbw <= BOE_SOLL.laufzeitAbw && Bm.kreuzR >= BOE_SOLL.kreuzR && Bm.varianz >= BOE_SOLL.varianz))
+        rot.push(`(Ö) BÖE: Laufzeit ${Bm.lagS} s gegen ${Bm.sollS} s (±${Bm.laufzeitAbw} %, soll ≤ ${BOE_SOLL.laufzeitAbw} %), r ${Bm.kreuzR}, Varianz Sturm ÷ Ruhe ${Bm.varianz} — die Böe wandert nicht mit dem Wind (stamm/stoff-material.js _boeWeg, phyto-core boeTempo)`); // prettier-ignore
+    if (quelle.length) rot.push(`(Ö) QUELLE: die Böe dreht mit der Uhr allein (ω/k, ein zweiter Wind) — ${quelle.join(", ")}`);
+    return rot;
+}
+function boeSelbsttest() {
+    const R = require("path").join(__dirname, "..");
+    const { ctx } = require("./lib/stamm.cjs").ladeKlasse(R);
+    const r = require("vm").runInContext("new AnazhRealm()", ctx);
+    r.state.worldMeta = { seed: "anazh-realm-seed", voxelTerrain: true };
+    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } };
+    r.state.weatherTransition = null;
+    const Bm = boeMessung(r);
+    const v = boeRot(Bm, boeQuelle(R)).map((x) => `böe am Wirt: ${x}`);
+    // der Täter von vor wind-saison: die Phase der Böe läuft mit ω = 0,4 rad/s, gleich welches Wetter
+    const alt = Object.create(r);
+    alt._boePhase = (t) => t * 0.4;
+    const Ba = boeMessung(alt);
+    const ra = boeRot(Ba, []);
+    if (!(ra.length === 1 && /^\(Ö\) BÖE:/.test(ra[0]))) v.push(`böe: der Täter „die Böe wandert mit ω/k“ fällt nicht rot (${JSON.stringify(Ba)})`);
+    if (boeRot(Bm, ["stamm/x.js:1"]).length !== boeRot(Bm, []).length + 1) v.push("böe: die Quelle mit ω/k fällt nicht rot");
+    return { v, Bm, Ba };
+}
+
 function uhrSelbsttest() {
     const K = (r) => `class A {\n${r}\n}`;
     const U = (text, leser, sp) =>
@@ -763,6 +855,11 @@ if (SELBSTTEST) {
         `  (L) Land-Meer-Luft am Kern · Kamm West ÷ Ost ${L.kamm} (${L.kaemme}) · Nebel-Küsten ≥ 2× ${(100 * L.nebelAnteil).toFixed(0)} % (${L.kuesten}) · West − Ost ${L.spanneK} K (${L.paare}) · Gipfel auf Konvergenz ${(100 * L.gipfelAnteil).toFixed(1)} % (${L.gipfel}) · Eis am kalten Land ${(100 * L.eisAnteil).toFixed(1)} % (${L.kalt})`
     );
     for (const t of lml.taeter) console.log(`      gepflanzt: ${t}`);
+    const boe = boeSelbsttest();
+    v.push(...boe.v);
+    console.log(
+        `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+    );
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];

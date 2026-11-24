@@ -265,7 +265,7 @@ class AnazhRealm_stoff_instanz {
         const ht = uB.x.max(1e-3);
         const H = AnazhRealm._senkenKnoten().attribut("aH0", "float").max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
-        const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
+        const g = T.sin(wu.uBoePhase.sub(ort.mul(B.k)))
             .mul(B.amp)
             .add(B.mitte);
         const e = {

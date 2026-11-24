@@ -843,8 +843,9 @@ function baumWindGlsl(foliage) {
     return (
         "#ifdef USE_INSTANCING\n float _wHt=max(aWindB.x,1e-3); float _wDl=aWindB.y; float _wSk=_isy; float _wAn=step(0.001,aWindB.x); vec3 _wPw=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz; vec3 _ix=normalize(instanceMatrix[0].xyz); vec3 _iz=normalize(instanceMatrix[2].xyz);\n#else\n float _wHt=max(uWindBaum.x,1e-3); float _wDl=uWindBaum.y; float _wSk=max(uWindBaum.z,1e-3); float _wAn=1.0; vec3 _wPw=(modelMatrix*vec4(transformed,1.0)).xyz; vec3 _ix=vec3(1.0,0.0,0.0); vec3 _iz=vec3(0.0,0.0,1.0);\n#endif\n" +
         "vec2 _wd=normalize(uWindDir.xz+vec2(1e-4)); vec2 _wdL=vec2(dot(vec3(_wd.x,0.0,_wd.y),_ix),dot(vec3(_wd.x,0.0,_wd.y),_iz));\n" +
+        // das Labor weht im Sturm (U = 1): die Böe zieht mit ihrem Tempo (phyto-core `boeTempo`, Taylor), ω = k · U_c
         "float _wHm=max(_wHt*_wSk,0.5); float _wOrt=dot(_wPw.xz,_wd); float _wG=sin(uTime*" +
-        G.k(B.omega) +
+        G.k(B.k * PC.boeTempo(1)) +
         "-_wOrt*" +
         G.k(B.k) +
         ")*" +
