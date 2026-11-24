@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T21:47:53.131Z",
+ "zeit": "2026-11-24T21:52:54.848Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -3390,6 +3390,70 @@
    "ungemessen": true,
    "zeit": "2026-11-24T21:36:13.844Z",
    "abdruck": "2c32cf62903e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 47.3 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.79,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 47.3 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 47.4,
+   "fremd": {
+    "s": 49.4,
+    "takte": 23,
+    "fremdS": 6.39,
+    "kerne": 0.129,
+    "fensterKerne": 0.185,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.55
+     ],
+     [
+      "Explorer.EXE",
+      1.2
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.36
+     ]
+    ],
+    "dienerS": 4.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.86
+     ],
+     [
+      "System",
+      1.73
+     ]
+    ],
+    "geraetS": 15.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.73
+     ],
+     [
+      "svchost.exe",
+      4.55
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 69.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T21:52:54.848Z",
+   "abdruck": "55183cc3768b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
