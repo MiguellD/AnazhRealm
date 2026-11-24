@@ -600,7 +600,7 @@ async function befehlTraegt(stationen, regel = {}) {
         {
             const tuer = (regel.zeileAlt ? zeileTuerAlt : zeileTuer)(argv);
             const bashPfad = bash || "C:/Program Files/Git/usr/bin/bash.exe";
-            const schloss = !st.probe && st.gpu ? [bashPfad, GPU_LAUF.split(path.sep).join("/"), "punkte-radeon-3"] : [];
+            const schloss = !st.probe && st.gpu ? [bashPfad, GPU_LAUF.split(path.sep).join("/"), schlossName("radeon-3")] : [];
             const voll = [...schloss, tuer.argv[0] === "node" ? process.execPath : bashPfad, ...tuer.argv.slice(1)];
             const n = zeileLaenge(voll);
             if (n > ZEILE_MAX) {
@@ -1825,7 +1825,7 @@ const torText = (t) => (!t ? "" : t.blind ? "Tor blind (" + t.blind + ")" : (t.r
 let referenzLeihen = 0;
 async function referenzSchloss() {
     if (haeltSchloss()) return { loesen: async () => {} };
-    const h = await schlossNehmen({ bash: findeBash(), gpuLauf: GPU_LAUF, name: "punkte-referenz", baum: DIR, stop: path.join(os.tmpdir(), "punkte-referenz-" + process.pid) }, referenzLeihen++);
+    const h = await schlossNehmen({ bash: findeBash(), gpuLauf: GPU_LAUF, name: schlossName("referenz"), baum: DIR, stop: path.join(os.tmpdir(), "punkte-referenz-" + process.pid) }, referenzLeihen++);
     if (!h.ok) return { fehler: "die Referenz bekam kein Schloss: " + h.grund };
     return { loesen: () => schlossLoesen(h) };
 }
@@ -2135,7 +2135,7 @@ function fahreGruppeEinmal(sts, ctx) {
         if (schloss) {
             if (!ctx.gpuLauf || !fs.existsSync(ctx.gpuLauf)) return rot("gpu-lauf.sh fehlt — eine GPU-Station läuft nie ohne Schloss");
             if (!ctx.bash) return rot("keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh");
-            argv = [ctx.gpuLauf, "punkte-" + ctx.geraet + "-" + ((ctx.bahn || 0) + 1), exe, ...argv];
+            argv = [ctx.gpuLauf, schlossName(ctx.geraet + "-" + ((ctx.bahn || 0) + 1)), exe, ...argv];
             exe = ctx.bash;
             env.GPU_LAUF_MAX_S = String(deckelS);
             // das Platz-Schloss: ein Zeit-Lauf nimmt alle Plätze, ein Bild-Lauf einen von N (N = 1: das Ein-Platz-Schloss)
@@ -2402,6 +2402,20 @@ const halterLebt = (start, marke) => start != null && !(start > marke + START_SP
 // die Sitzung des Dienstes hielt den Baum und wartete auf die GPU — zweimal stand die Karte): EINE Ordnung für alle, erst der Baum,
 // dann die GPU (die Sitzung nimmt ihr Schloss selbst, schlossNehmen). Wer den Baum nimmt, darf die GPU nicht schon halten: gpu-lauf.sh
 // gibt seinem Befehl GPU_LAUF_HAELT=<name> mit, und die Sperre weist ihn SOFORT ab, beim Namen — nie ein Warten im verkehrten Schloss.
+// WER DER LAUF IST (ko-hand-lauf, Koordinator 24.11.; Radeon: radeon-dienst.sh `lauf_da` hielt JEDEN `punkte.cjs run` für den eigenen
+// Lauf, `warter` blendete jeden `punkte-radeon-*` aus — der Einzel-Lauf eines Machers hielt die Karte, und die Fahrt begann nie): EINE
+// Regel — ein Lauf, den ein Dienst startete (seine Umgebung: PUNKTE_WER landung · dauer · radeon), heißt am GPU-Schloss `punkte-<rest>`;
+// jeder andere Einzel-Lauf ist eine HAND und heißt `hand-<wer>-<rest>`: gpu-lauf.sh lässt ihn dem Vorrang der wartenden Mess-Sitzung
+// (vorrang_fremd gilt nur `punkte-*` nie), und der Dienst sieht ihn warten (gemein.sh schloss_wartende ohne `punkte-<gerät>`). wer ist
+// dieselbe Quelle wie die Marke am Baum.
+const DIENST_WER = ["landung", "dauer", "radeon"];
+function werVon(env = process.env) {
+    return String(env.PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32) || "macher";
+}
+function schlossName(rest, env = process.env) {
+    const wer = werVon(env);
+    return (DIENST_WER.includes(wer) ? "punkte-" : "hand-" + wer + "-") + rest;
+}
 async function baumSperre(repo, geraet, o = {}) {
     const haelt = (o.env || process.env).GPU_LAUF_HAELT;
     if (haelt)
@@ -2412,10 +2426,10 @@ async function baumSperre(repo, geraet, o = {}) {
     // DIE MARKE DES WARTENDEN (14.11., OMEN: die erste Mess-Sitzung nach dem Fall von landung.halt wartete 1080 s am Baum, den der Lauf
     // der Landung hielt — deren Vorrang-Regel sah nur das GPU-Schloss, an dem die Sitzung nach der Ordnung der Schlösser nie stand):
     // solange dieser Lauf am Baum wartet, liegt `punkte-<gerät>.wartet/<wer>-<pid>`, je Runde aufgefrischt (wer = PUNKTE_WER, sonst
-    // „macher“; die Dienste nennen sich). Der Leser: landung-dienst.sh `baum_wartende` und kandidat.sh `baum_wartet` (eine Marke jünger
-    // als eine Minute, die nicht der Landung oder dem Wächter gehört) — die Liste endet an der Stations-Grenze, die nächste Station
-    // beginnt nicht vor dem Wartenden. Mit dem Baum und am Prozess-Ende fällt die Marke.
-    const wer = String((o.env || process.env).PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "") || "macher";
+    // „macher“; die Dienste nennen sich). Der Leser: gemein.sh `baum_wartende` (landung-dienst.sh und radeon-dienst.sh) und kandidat.sh
+    // `baum_wartet` (eine Marke jünger als eine Minute, die nicht dem eigenen Dienst gehört) — die Fahrt weicht an der Stations-Grenze,
+    // die nächste Station beginnt nicht vor dem Wartenden. Mit dem Baum und am Prozess-Ende fällt die Marke.
+    const wer = werVon(o.env || process.env);
     const marke = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".wartet", wer + "-" + process.pid);
     const markeFort = () => { try { fs.rmSync(marke, { force: true }); } catch (_e) {} };
     // DIE GERECHTE SCHLANGE (16.11., Radeon: pid 11860, seit 22:04 mit EINER Station am Baum, wartete 53 min, während der Lauf von 22:31
@@ -3005,7 +3019,7 @@ function schlossNehmen(o, nr) {
             'try { process.kill(Number(p), 0); } catch (e) { da = e.code === "EPERM"; } if (fs.existsSync(los) || !da) process.exit(0); }, 500);';
         const env = { ...process.env, GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) };
         delete env.NODE_OPTIONS;
-        const kind = spawn(o.bash, [o.gpuLauf, o.name || "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
+        const kind = spawn(o.bash, [o.gpuLauf, o.name || schlossName(o.geraet + "-sitzung"), process.execPath, "-e", warte, los, String(process.pid)],
             { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
         let out = "", gemeldet = false, uhr = null;
         const h = { kind, los, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out };
@@ -7175,12 +7189,32 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(falsch, '#!/bin/bash\nN="$1"; shift\necho "schloss $N $GPU_LAUF_MAX_S"\n"$@"\n');
         const c = { ...ctx("schloss"), gpuLauf: falsch };
         const mitKarte = (zeilen) => ["node", "-e", "for (const z of " + JSON.stringify(zeilen) + ") console.log(z); require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}"];
-        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon-1 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
-        pruef("LÄUFER GPU über das Schloss", e.gruen === true && e.gpu === "amd/rdna-3", JSON.stringify(e));
-        // (3c) DAS SCHLOSS DES RECHNERS: headless nimmt einen Platz (bild) neben den Bahnen der Karte, ohne Karte und ohne Zeugen
+        // WER DER LAUF IST (ko-hand-lauf): der Lauf des Diensts (PUNKTE_WER=radeon) heißt am Schloss punkte-radeon-1, derselbe Lauf ohne
+        // Dienst (ein Macher, ein Wort wie „koordinator-auge“) ist eine HAND — hand-<wer>-radeon-1, gpu-lauf.sh bekommt genau diesen Namen
+        const werAlt = process.env.PUNKTE_WER, alsWer = (w) => (w == null ? delete process.env.PUNKTE_WER : (process.env.PUNKTE_WER = w));
+        const nameAm = async (w) => {
+            alsWer(w);
+            try {
+                // das Urteil fährt als Text (String(st.urteil)) — der Name kommt aus seiner Zahl, der ersten Zeile des Laufs
+                const r = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]),
+                    urteil: (j, l) => ({ gruen: j.n === 0, zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
+                return { e: r, name: (/^schloss (\S+) 120\b/.exec(String(r.zahl || "")) || [])[1] || "?" };
+            } finally { alsWer(werAlt); }
+        };
+        const nD = await nameAm("radeon"), nM = await nameAm(null), nK = await nameAm("koordinator-auge");
+        e = nD.e;
+        pruef("LÄUFER GPU über das Schloss", e.gruen === true && e.gpu === "amd/rdna-3" && nD.name === "punkte-radeon-1", JSON.stringify(e));
+        pruef("LÄUFER WER DER LAUF IST (ko-hand-lauf): der Lauf des Diensts heißt am Schloss punkte-radeon-1, ein Einzel-Lauf ohne Dienst ist eine Hand (hand-macher-radeon-1, hand-koordinatorauge-radeon-1); landung · dauer · radeon sind Dienste, die Sitzung und die Referenz folgen derselben Regel",
+            nD.name === "punkte-radeon-1" && nM.name === "hand-macher-radeon-1" && nK.name === "hand-koordinatorauge-radeon-1" && nM.e.gruen === true &&
+            ["landung", "dauer", "radeon"].every((w) => schlossName("gtx-sitzung", { PUNKTE_WER: w }) === "punkte-gtx-sitzung") &&
+            schlossName("radeon-sitzung", {}) === "hand-macher-radeon-sitzung" && schlossName("referenz", { PUNKTE_WER: "landung" }) === "punkte-referenz" &&
+            schlossName("referenz", { PUNKTE_WER: "x/y" }) === "hand-xy-referenz", JSON.stringify([nD.name, nM.name, nK.name]));
+        // (3c) DAS SCHLOSS DES RECHNERS: headless nimmt einen Platz (bild) neben den Bahnen der Karte, ohne Karte und ohne Zeugen —
+        // als Lauf des Diensts (WER DER LAUF IST oben: sein Platz heißt punkte-headless-1)
+        alsWer("radeon");
         e = await fahreStation({ ...st0, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU + ' ' + process.env.GPU_LAUF_ART)"],
             urteil: (j, l) => ({ gruen: /schloss punkte-headless-1 120/.test(l.stdout) && /software bild/.test(l.stdout), zahl: l.stdout.trim().split("\n").join(" | ") }) },
-            { ...c, geraet: "headless", deckelMinS: 120 });
+            { ...c, geraet: "headless", deckelMinS: 120 }).finally(() => alsWer(werAlt));
         pruef("LÄUFER headless nimmt einen Platz im Schloss des Rechners (ein Zeit-Lauf misst allein), nie die Karte", e.gruen === true && e.gpu === undefined, JSON.stringify(e));
         // (3b) DIE WAND GPU: ohne Zeugen der Karte, mit Software-Adapter, mit „zeichnet nie" ROT; der Zeuge aus dem Log eines Kindes GRÜN
         const gs = { ...st0, geraet: "radeon", gpu: true, urteil: lies };
@@ -8893,8 +8927,9 @@ async function selbsttest(o = {}) {
                 mit.every((id) => typeof x[id].konsum === "string" && x[id].konsumBoot === x["a.K1#1"].konsumBoot && !x[id].konsumFehlt) && kv.every((k) => k && /^[0-9a-f]{6}:/.test(k.k["welt-stub.cjs"] || "")) &&
                 ohne.every((id) => !("konsum" in x[id])), JSON.stringify(Object.keys(x).map((id) => [id, x[id].ungemessen ? "ungemessen" : x[id].konsumFehlt || (x[id].konsum || "").length, (x[id].konsumBoot || "").length])));
         }
-        pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
-            !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
+        // der Name der Sitzung folgt WER DER LAUF IST (ko-hand-lauf): ohne Dienst-Umgebung hand-macher-radeon-sitzung, im Dienst punkte-radeon-sitzung
+        pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie), unter dem Namen der Regel (" + schlossName("radeon-sitzung") + ")",
+            !gl || (schloss.length === 1 && /^\S+ zeit \d+$/.test(schloss[0]) && schloss[0].split(" ")[0] === schlossName("radeon-sitzung")), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
             Object.values(x).every((e) => ["gruen", "zahl", "exit", "minuten", "zeit", "abdruck", "port", "bahn"].every((k) => k in e) && e.modus === "session" && e.bahn === "sitzung") &&
             Object.entries(x).every(([id, e]) => (e.ungemessen ? /^  OFFEN \S+ · (Deckel .*|.* — kein Urteil, UNGEMESSEN .*) · Sitzung · ungemessen/ : zeile).test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))) &&
