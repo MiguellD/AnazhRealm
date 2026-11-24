@@ -53,3 +53,6 @@ w28-klima-kontinent karte2.planet.kopplung.land-meer-luft#3,karte2.planet.kopplu
 w28-licht-stetig karte2.planet.kosmos.himmelsmechanik#1
 # 708 (main 07693cc8, 24.11. 07:49): z708 w28-erbe-geburt gelandet 07:59:14 → main 07693cc8
 w28-erbe-geburt karte2.leben.evolution.erbe#1,karte2.leben.evolution.zivilisation#1
+# 709 (main c9da3a64, 24.11. 08:03): nerv-bewegung: der Gang der Tiere aus dem Nerv · bewohner-satz: der Bewohner als EIN Satz (elf Front-Sprossen laut Zweig-Bericht; gespraech#2 misst bis zur Erweiterung der Station 0, seuche#1 ohne Ansteckung)
+w28-nerv-bewegung karte2.leben.tiere.bewegung#1
+w28-bewohner-satz2 karte2.mensch.kultur.sprache#1,karte2.mensch.geist.gespraech#2,karte2.mensch.geist.netz#1,karte2.mensch.geist.generationen#1,karte2.mensch.geist.absicht#2,karte2.mensch.sport.koennen#2,karte2.mensch.sport.kunst#1,karte2.mensch.menge.seuche#1,karte2.mensch.macht.recht#1,karte2.mensch.macht.krieg#1,karte2.mensch.macht.megastadt#1
