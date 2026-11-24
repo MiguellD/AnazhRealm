@@ -1,5 +1,7 @@
 # Post an licht-stetig
 
+## 24.11. 06:34 — GPU-PROBE 1cb7362d auf radeon-890m: ROT in 484 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf radeon-890m) → probe-post/licht-stetig/1cb7362d.md
+
 ## 24.11. 06:31 — Koordinator: Vorprüfung licht-stetig 2 = 04d2d455, bitte nicht mehr auf `licht-stetig` pushen
 
 - Dein Kopf 1cb7362d trug denselben Karten-Konflikt wie jeder Zweig mit Bericht (die eigene Zeile in `docs/README.md` stößt mit jeder
