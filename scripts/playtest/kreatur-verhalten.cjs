@@ -1368,12 +1368,18 @@ async function checkBandTierSeparation({ page, check }) {
         o.checks.aBounded = o.aGap < 30; // keine Explosions-Kraft
     
         // ── (C) SELBST-TEST: genullte Separation → das Paar BLEIBT gestapelt ──
-        a1.position.set(spotA.x, spotA.y, spotA.z);
-        a2.position.copy(a1.position);
-        delete a1.userData._wanderSlot;
-        delete a2.userData._wanderSlot;
-        a1.userData.wanderAnchor = null;
-        a2.userData.wanderAnchor = null;
+        // EIN FRISCHES PAAR (nerv-bewegung): derselbe Wurf wie (A) — dieselbe Los-Nummer (Ort × Art × Platz, `_leibLos`), dieselbe
+        // netId —, nur die Separation fehlt. Vorher stellte (C) das getrennte Paar von (A) an den Punkt zurück und löschte Slot
+        // und Anker; das Wander-Ziel (`_wanderZiel`, gilt bis zu seinem Slot) blieb je Leib das von (A), wo die Anker 3,6 m
+        // auseinander lagen: jeder zog zu seinem, und (C) hing an der Bühne — 0,01–0,18 m, steht der Spieler bei (0|0), 1,44–1,52 m
+        // bei (0|−2,14), wohin ihn die Bänder davor am Gehen 1,58 m/s tragen (main 447eaea6 dort: 1,27 m). Ohne das alte Ziel
+        // blieben 0,066 m (Gier und Lauf-Tempo aus (A)), das frische Paar liest 0,000 m.
+        cleanup([a1, a2]);
+        const c1 = spawn(spotA, "wesen", 1);
+        const c2 = spawn(spotA, "wesen", 1);
+        if (!c1 || !c2) return { error: "Spawn (C) fehlgeschlagen" };
+        c2.userData.netId = c1.userData.netId;
+        c2.position.copy(c1.position);
         // genullt: die Separation UND das EINE Paar Leib an Leib `_leibPaar` (es allein trennte das Paar)
         const savedSep = r._applyCreatureSeparation;
         r._applyCreatureSeparation = function () {};
@@ -1381,9 +1387,9 @@ async function checkBandTierSeparation({ page, check }) {
         tick(200, 0.05);
         r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
         delete r._leibPaar;
-        o.cGap = gap(a1, a2);
+        o.cGap = gap(c1, c2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
-        cleanup([a1, a2]);
+        cleanup([c1, c2]);
     
         // ── (B1) STAT-ACHSE: klein flink vs. Gigant träge (gleiche Soul) ──
         const spotB1a = findSpot(95, 1.8);
@@ -1394,6 +1400,12 @@ async function checkBandTierSeparation({ page, check }) {
         if (!bSmall || !bBig) return { error: "Spawn (B1) fehlgeschlagen" };
         o.b1MulSmall = r._creatureMoveCharacter(bSmall).speedMul;
         o.b1MulBig = r._creatureMoveCharacter(bBig).speedMul;
+        // DER WEG ZÄHLT AB DEM STAND (nerv-bewegung): die Geburt setzt den Leib an einen Punkt der Bühne, und steht dort die Hülle
+        // eines Baus, schiebt sie den Leib hinaus, sobald er sich in sie dreht (`_kreaturHuellenKontakt`) — den Giganten (2,4×) an
+        // der Bühne (0|−2,14) in den Takten 9–19 um 1,51 m mit bis zu 4,09 m/s, während sein Steuer 0,02–0,14 m/s fuhr. Sein Weg
+        // las 5,02–5,19 m statt 3,71 m (main 447eaea6 wie der Zweig: b1PathDiff ROT, 3,45 gegen 3,50 je Einheit). Gemessen wird
+        // die Größe, nie der Ort: die Leiber stehen, bevor der Weg zählt (danach 3,50 gegen 2,58).
+        tick(60, 0.05);
         let pathSmall = 0,
             pathBig = 0,
             px1 = bSmall.position.x,
