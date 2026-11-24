@@ -62,3 +62,5 @@ nachmessung-2411 karte2.leben.oeko.sukzession#1,karte2.planet.kopplung.gegenwart
 w28-nerv-schwung karte2.mensch.sport.koerper#1
 # 711 (main a3af6df0, 24.11. 10:39): z711 w28-wind-saison: die Böe zieht mit dem Wind über Wiese und Kronen (Taylor statt ω/k)
 w28-wind-saison karte2.leben.pflanzen.kraft#2
+# 713 (main bf5a1542, 24.11. 11:13): z713 w28-saison-schatten (mit w28-klima-hebung im selben Zug): jede Baumart treibt nach ihrer Wärmesumme aus, die Pfütze trocknet im Hausschatten später
+w28-saison-schatten karte2.leben.pflanzen.jahreslauf#2,karte2.planet.kopplung.stadtklima#1
