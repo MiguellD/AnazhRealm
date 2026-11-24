@@ -2335,3 +2335,4 @@ omen-gtx-gtx-f18576b6-w105816-1-f18576b6 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 2026-11-24 11:59 RUNDE 19 SPRUNG am 5ef0404b → Runde 20 am daee7541 (gtx laeuft 9/240, radeon laeuft 78/74): z713 w28-saison-schatten + w28-klima-hebung (11:35) und z714 w28-tat-aufwaerts (11:57) gelandet; die Radeon-Liste ist durch (78/74), die GTX steht bei 9/240 — EIN Sprung für drei Landungen, Ansprüche jahreslauf#2, stadtklima#1, aufwaerts#1
 2026-11-24 12:00 RUNDE 20 ALARM gtx: PLATTE 5.8 GB frei (< 10 GB) — die Landung wird angehalten, weiter ab 15 GB, Löschen entscheidet der Schöpfer — offen 0/0, Station -, Kopf daee7541; die Runde setzt an derselben Station fort — gesehen von platte-dienst
 2026-11-24 12:01 PLATTE 5.8 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
+2026-11-24 12:03 PLATTE 16.9 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
