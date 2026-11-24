@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 11,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.6,
+    "anteilHeute": 6,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4731,7 +4731,7 @@
        "richter": "16 Saaten × 4 Störungen: ≥ 90 % im Band realer Chronosequenzen UND paarweise verschieden"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Brand → Asche → Gras → Busch → Wald, Halme 477 → 70 → 491, Sämling 0 → 1 (stamm/feld-leben.js) — Mechanik belegt, unter P im Bild ungemessen.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 83,
+  "heute": 84,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
-  "anteilHeute": 4.4,
+  "anteilHeute": 4.5,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 30
+  "nachwache": 31
  },
  "zusammengelegt": [
   {
