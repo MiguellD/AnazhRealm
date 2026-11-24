@@ -5268,7 +5268,7 @@
     geb.push(bp); }
   const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
   geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:fr[gi]||[]});   /*der fruehere Bau steht im Los des juengeren: sein Deckel ist das Los am Schreiber-Ende*/
-    if(p.rolle==='wohnhaus'&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){
+    if((p.rolle==='wohnhaus'||p.rolle==='wache')&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){        /*die Wache ist ein Wohn-Los (`wacheLose` waehlt nur Wohnhaeuser): sie wuerfelt ihren Hof wie es — der Strom `rnd` bleibt der Strom vor ihr (ohne das rueckten am Dorf 21/150 fuenf der 153 Slots von ihrem Ort vor der Wache, mit ihm steht jeder ausser ihr selbst dort)*/
       const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
       alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
         pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
