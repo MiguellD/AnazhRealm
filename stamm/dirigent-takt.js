@@ -1203,7 +1203,6 @@ class AnazhRealm_dirigent_takt {
         this._trittDerLeiber(); // der Gang der Leiber tritt den Pfad (stoffe.K4), an ihrer Lage vor dem Leib-Löser
         this._leibKontakte();
         this._freiSchritt(dt); // DER FREIE KÖRPER (physik.K3): Kiste, Fass — fallen, stapeln, gestoßen kippen
-        this._anlegerTakt(); // DER ANLEGER (siedlungslage#1): Steg und Boot schwimmen am Spiegel, den der Fuß liest
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf

@@ -787,7 +787,6 @@ class AnazhRealm_daten {
         const Z = {
             "bau.birke": ["Birke", "Birch"],
             "bau.brennkolben": ["Brennkolben", "Alembic"],
-            "bau.boot": ["Boot", "Boat"],
             "bau.brustpanzer": ["Brustpanzer", "Breastplate"],
             "bau.buche": ["Buche", "Beech"],
             "bau.damm": ["Damm", "Dam"],
@@ -817,7 +816,6 @@ class AnazhRealm_daten {
             "bau.meister-esse": ["Meister-Esse (Eisen)", "Master forge (iron)"],
             "bau.pferd": ["Pferd", "Horse"],
             "bau.seelenstein-altar": ["Seelenstein-Altar", "Soulstone altar"],
-            "bau.steg": ["Steg", "Jetty"],
             "bau.tanne": ["Tanne", "Fir"],
             "bau.wandlaterne": ["Wandlaterne", "Wall lantern"],
             "bau.wasserfall": ["Wasserfall", "Waterfall"],

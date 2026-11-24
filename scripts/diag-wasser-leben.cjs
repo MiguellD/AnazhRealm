@@ -83,7 +83,7 @@ const HASH_ALT =
     "            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));\n        });\n    }\n" +
     "    _naechster() {}\n}\n";
 
-// ── N: DER EINE SPIEGEL UND DAS EIS an der lebenden Quelle (spiegel-eis, ohne Browser: der Wirt in node, `stammLib.ladeKlasse`) ──
+// ── N: DAS EIS an der lebenden Quelle (spiegel-eis, ohne Browser: der Wirt in node, `stammLib.ladeKlasse`) ──
 // Die Welt der Saat anazh-realm-seed am Meeresspiegel des Grunds, die Heimat-Hydrosphäre aus dem Gesetz des Kerns (`hydrosphaere`,
 // dieselbe Rechnung wie im Faden); `kachel` legt die Kachel um einen fernen Punkt dazu.
 function wasserWirt(kachel) {
@@ -114,54 +114,6 @@ function eisMutante(r, f) {
             return Object.assign({}, s, { eis: Object.assign({}, s.eis, { L: s.eis.L * f }) });
         },
     });
-}
-
-// N1 DER ANLEGER FOLGT DEM SPIEGEL (Karte 2 planet.kopplung.siedlungslage#1): am ersten Ufer des Meers auf dem Strahl der Station
-// (Spieler 40/−30, je 40 m nach Osten) der Ort des Anlegers (`_anlegerOrt`); Steg und Boot liegen nach dem Takt (`_anlegerTakt`) auf
-// ihrer Lage (`_anlegerLage`), ein zweiter Takt ohne Hebung rührt keinen, der Spiegel + 1 m hebt beide samt Bild um 1 m (≤ 3 cm).
-// `wirt` darf eine Mutante sein (Object.create über dem Wirt). → { fehler, zahl }
-function anlegerFolgt(wirt) {
-    const r = wirt;
-    const st = r.state;
-    const p = st.playerMesh.position;
-    let a = null;
-    for (let k = 0; k < 60 && !a; k++) {
-        const ang = k * 2.39996; // die Strahlen der Station (goldener Winkel), der erste Ufer-Punkt je Strahl
-        for (let d = 150, vor = null; d <= 20000; d += 40) {
-            const [x, z] = [p.x + Math.cos(ang) * d, p.z + Math.sin(ang) * d];
-            if (r._terrainMacroSurfaceY(x, z) < st.waterLevel) {
-                if (vor) a = r._anlegerOrt(...vor);
-                break;
-            }
-            vor = [x, z];
-        }
-    }
-    if (!a) return { fehler: "kein Anleger auf 60 Strahlen der Station" };
-    const werk = () => ({ position: { x: 0, y: 0, z: 0 }, mesh: { position: { y: 0 } } });
-    const [steg, boot] = [werk(), werk()];
-    r._anleger = new Map([["probe", { a, steg, boot }]]);
-    const lage = () => [steg.position.y, boot.position.y, steg.mesh.position.y + 0.5, boot.mesh.position.y + 0.5];
-    const wl = st.waterLevel;
-    r._anlegerTakt();
-    const vor = lage();
-    const soll = r._anlegerLage(a);
-    r._anlegerTakt();
-    const gegen = lage();
-    let nach;
-    try {
-        st.waterLevel = wl + 1;
-        r._anlegerTakt();
-        nach = lage();
-    } finally {
-        st.waterLevel = wl;
-        r._anlegerTakt();
-    }
-    const hub = nach.map((y, i) => Math.round((y - vor[i]) * 1000) / 1000);
-    const f = [];
-    if (Math.abs(vor[0] - soll.steg) > 0.005 || Math.abs(vor[1] - soll.boot) > 0.005) f.push("Steg/Boot nicht auf ihrer Lage " + JSON.stringify([vor, soll]));
-    if (gegen.some((y, i) => y !== vor[i])) f.push("ohne Hebung bewegt sich ein Werk " + JSON.stringify([vor, gegen]));
-    if (hub.some((h) => !(Math.abs(h - 1) <= 0.03))) f.push("der Spiegel + 1 m hebt Steg, Boot und Bild um " + JSON.stringify(hub) + " m (Soll 1 ± 0,03)");
-    return { fehler: f[0] || null, zahl: { hub, tiefgang: [a.steg.T, a.boot.T].map((t) => Math.round(t * 1000) / 1000) } };
 }
 
 // N2 DAS EIS SETZT NACH DER FELDREGEL EIN (Karte 2 planet.wasser.eis#2): am See 1816/−6168 je Tag das Tagesmittel der Luft über dem Spiegel
@@ -1022,16 +974,10 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} B8 KURVE an der Quelle: ${k.join(" · ") || "q(W) trägt W"} · Mutante fest 0,3 → ${m[0] || "blieb grün"}`);
         if (!ok) fehler.push("B8 KURVE: " + (k[0] || "die Mutante fiel nicht"));
     }
-    // N1 · N2 an der lebenden Quelle (ohne Browser, der Wirt in node): Steg und Boot folgen dem Spiegel, das Eis setzt nach Stefan
-    // ein — und jede Mutante fällt beim Namen: der beim Bau eingefrorene Spiegel (die Lage des Anlegers fest), der halbe Beiwert
+    // N2 an der lebenden Quelle (ohne Browser, der Wirt in node): das Eis setzt nach Stefan mit Übergang ein — und jede Mutante
+    // fällt beim Namen: die Summe des alten Übergangs, die des einfachen Stefan
     {
         const { r, G } = wasserWirt([1816, -6168]);
-        const n1 = anlegerFolgt(r);
-        const fest = r._anlegerOrt && n1.zahl ? r._anlegerLage(r._anleger.get("probe").a) : null;
-        const m1 = anlegerFolgt(Object.assign(Object.create(r), { _anlegerLage: () => fest }));
-        const ok1 = !n1.fehler && !!m1.fehler;
-        console.log(`  ${ok1 ? "✅" : "❌"} N1 ANLEGER an der Quelle: ${n1.fehler || "Steg und Boot folgen dem Spiegel " + JSON.stringify(n1.zahl)} · Mutante eingefrorener Spiegel → ${m1.fehler || "blieb grün"}`);
-        if (!ok1) fehler.push("N1 ANLEGER (_anlegerLage/_anlegerTakt): " + (n1.fehler || "die Mutante fiel nicht"));
         const n2 = eisEinsatz(r, G);
         // die Mutanten: die Summe des alten Übergangs H = 20 (main bis spiegel-eis 2) und die des einfachen Stefan ohne Übergang
         const m2 = eisEinsatz(eisMutante(r, 0.695), G);
