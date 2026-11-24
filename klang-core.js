@@ -379,7 +379,9 @@
             angriffSek: 0.03, freiSek: 0.35,
             schritt: { db: -9, haltSek: 0.55 },
             ruf: { db: -10, haltSek: 0.9 },
-            gespraech: { db: -12, haltSek: 1.2, sekProZeichen: 0.07 }
+            // das Gespraech senkt die Musik um 10 dB: die Mitte des Bands 8–12 dB fuer die Stimme (erleben.klang.getuemmel#1;
+            // bis klang-leib −12, am Rand — die Station las am Bus 13,27 dB)
+            gespraech: { db: -10, haltSek: 1.2, sekProZeichen: 0.07 }
         }
     };
 
@@ -429,11 +431,11 @@
         // 0,35 s): das Ohr hinkte der Boee 0,6 s nach (Rampe 0,4 · Takt 0,2; Radeon 5fb21e29, klang.K2#1 r 0,99 bei +0,6 s gegen
         // das Gesetz am Ohr), dem Bild 1,2 s.
         // DER KOPF (erleben.klang.raum#1, rein additiv): der Radius des Kopfs (m; Kugel-Modell nach Woodworth, der mittlere
-        // Erwachsene 8,75 cm) und die Schallgeschwindigkeit der Luft (m/s, 20 °C) — die Laufzeit zwischen den Ohren
-        // (`ohrLaufzeit`) folgt aus ihnen, bis 0,66 ms von der Seite; der Schatten des Kopfs (Brown & Duda 1998: die Kugel
+        // Erwachsene 8,75 cm) in der Luft des Raum-Gesetzes (c(T), `schallC`; bis klang-leib ein eigenes c = 343) — die
+        // Laufzeit zwischen den Ohren (`ohrLaufzeit`) folgt aus ihnen, bis 0,66 ms von der Seite; der Schatten des Kopfs (Brown & Duda 1998: die Kugel
         // daempft ueber f0 = c/(2πa) auf α(θ) = (1 + αmin/2) + (1 − αmin/2)·cos(θ/θmin·π), θ der Winkel Quelle ↔ Ohr,
         // αmin 0,1, θmin 150°) — `ohrSchatten`.
-        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1, kopfRadiusM: 0.0875, schallMs: 343,
+        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1, kopfRadiusM: 0.0875,
                schattenMin: 0.1, schattenGrad: 150 },
         // DER RAUM AM OHR (klang.K3 Staffel 2, w5-s2-g1, rein additiv): der Nachhall folgt aus dem, was um das Ohr STEHT —
         // RT60 = basis + krone·Deckung + bau·Bau-Anteil + fels·Fels-Anteil + hoehle·(Fels ueber dem Ohr), geklemmt auf maxSek
@@ -884,9 +886,13 @@
         var T = zahl(L.temperatur, -Infinity);
         var v = W.wind.vMin + (W.wind.vMax - W.wind.vMin) * windFeld, vEff = Math.max(0.05, v * boe);
         var out = {};
-        var setze = function (name, pegel, hz, q, pan, rate) {
+        // d: der Abstand der verorteten Quelle (der Weg zum Ohr, `raumWeg`), temperatur: die Luft, durch die sie klingt
+        // (lage.luft, °C; ohne sie die Bezugs-Luft des Raum-Gesetzes — die Waerme der Grillen ist ihr Boden, nie die Luft)
+        var Tl = zahl(L.luft, NaN);
+        var setze = function (name, pegel, hz, q, pan, rate, d) {
             var p = isFinite(pegel) ? pegel : -Infinity;
-            out[name] = { db: p, gain: p === -Infinity ? 0 : Math.pow(10, (p - U.texturRmsDb) / 20), hz: hz, q: q, pan: pan || 0, rate: rate || 1 };
+            out[name] = { db: p, gain: p === -Infinity ? 0 : Math.pow(10, (p - U.texturRmsDb) / 20), hz: hz, q: q, pan: pan || 0, rate: rate || 1,
+                          d: d > 0 && isFinite(d) ? d : 0, temperatur: isFinite(Tl) ? Tl : undefined };
         };
         // Abstands-Gesetz mit Hoerweite (weicher Rand ab 70 %): linie −10·lg, punkt −20·lg.
         var abstand = function (S, d, linie) {
@@ -905,20 +911,20 @@
         var Su = W.ufer, u = L.ufer || {};
         var du = zahl(u.d, Infinity), anteil = c01(zahl(u.anteil, 0));
         setze("ufer", anteil > 0 ? Su.refDb + abstand(Su, du, true) + 10 * Math.log10(anteil / Su.anteilRef) + Su.wellenDb * Math.min(1, windFeld) : -Infinity,
-              hell(Su, du), 0.707, zahl(u.pan, 0));
+              hell(Su, du), 0.707, zahl(u.pan, 0), 1, du);
         // Fluss (Linie): Pegel ∝ Stroemung
         var Sf = W.fluss, fl = L.fluss || {}, df = zahl(fl.d, Infinity), tempo = Math.max(0, zahl(fl.tempo, 0));
-        setze("fluss", tempo > 0 ? Sf.refDb + abstand(Sf, df, true) + db(tempo / Sf.tempoRef) : -Infinity, hell(Sf, df), 0.707, zahl(fl.pan, 0));
+        setze("fluss", tempo > 0 ? Sf.refDb + abstand(Sf, df, true) + db(tempo / Sf.tempoRef) : -Infinity, hell(Sf, df), 0.707, zahl(fl.pan, 0), 1, df);
         // Wasserfall (Punkt): Pegel ∝ Fallhoehe
         var Sa = W.fall, fa = L.fall || {}, da = zahl(fa.d, Infinity), hoehe = Math.max(0, zahl(fa.hoehe, 0));
-        setze("fall", hoehe > 0 ? Sa.refDb + abstand(Sa, da, false) + 10 * Math.log10(hoehe / Sa.hRef) : -Infinity, hell(Sa, da), 0.707, zahl(fa.pan, 0));
+        setze("fall", hoehe > 0 ? Sa.refDb + abstand(Sa, da, false) + 10 * Math.log10(hoehe / Sa.hRef) : -Infinity, hell(Sa, da), 0.707, zahl(fa.pan, 0), 1, da);
         // Regen
         var Sr = W.regen;
         setze("regen", regen > 0 ? Sr.refDb + db(regen) + Sr.deckungDb * deck : -Infinity, Sr.hzBasis + Sr.hzDeckung * deck, 0.707);
         // Glut (Punkt)
         var Sg = W.glut, gl = L.glut || {}, dg = zahl(gl.d, Infinity);
         var staerke = c01(Math.sqrt(Math.max(0, zahl(gl.flaeche, 0)) / ((Math.PI / 4) * Sg.bettRefM * Sg.bettRefM)));
-        setze("glut", staerke > 0 ? Sg.refDb + abstand(Sg, dg, false) + db(staerke) : -Infinity, hell(Sg, dg), 0.707, zahl(gl.pan, 0));
+        setze("glut", staerke > 0 ? Sg.refDb + abstand(Sg, dg, false) + db(staerke) : -Infinity, hell(Sg, dg), 0.707, zahl(gl.pan, 0), 1, dg);
         // Voegel: die Summe der singenden Leiber (Punkt-Quellen, Leistung), ihr Panorama leistungs-gewichtet
         var Sv = W.vogel, vs = Array.isArray(L.voegel) ? L.voegel : [], pv = 0, panV = 0;
         for (var i = 0; i < vs.length; i++) {
@@ -965,12 +971,75 @@
     // DIE LIEFERUNG: eine hoerbare Stimme ohne Puffer wird bestellt — `liefern(name)` rechnet ihr Paket (umweltPaket)
     // und reicht es an aufnehmen(); erst dann klingt sie. Ohne `liefern` rechnet der Graph selbst, sofort (Lab,
     // Offline-Render); der Wirt reicht seine Klang-Werkstatt (ein Worker), das Paket kommt einen Takt spaeter.
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS RAUM-GESETZ (klang-leib, erleben.klang.raum#1, rein additiv): der EINE Weg jeder verorteten Quelle vom Ort zum
+    //  Ohr — der Ruf, jede Stimme des Graphs, der Kamm des Nachhalls, der Donner, die Stimme des Menschen. Drei Glieder, eine
+    //  Lage { d (m), pan (sin des Azimuts), temperatur (°C), feuchte (%) }:
+    //   (1) DIE LAUFZEIT ueber den Weg: verzug = d / c(T), c(T) = c0·√(1 + T/T0) (die ideale Luft, 331,3 m/s bei 0 °C;
+    //       20 °C: 343,2 m/s) — der Schlag klingt nach seinem Bild, der Donner Sekunden nach dem Blitz.
+    //   (2) DIE LUFT: die Daempfung der Hoehen nach ISO 9613-1:1993 (α(f, T, h) in dB/m: der klassische Term und die Relaxation
+    //       von Sauerstoff und Stickstoff; die Tafel ISO 9613-2 Tab. 2 bei 20 °C, 70 %: 1 kHz 5,0 · 4 kHz 22,9 · 8 kHz
+    //       76,6 dB/km), gespielt als LEITER aus Hoch-Regalen je Oktave (`luftLeiter`): die Daempfung A_j = α(f_j)·d an den
+    //       Mitten f_j = 62,5 Hz … 16 kHz, je Stufe der Zuwachs zwischen zwei Mitten, der Grund A_0 breit. Ein Tiefpass 2. Ordnung
+    //       traegt die Kurve nicht (α waechst zwischen den Relaxationen etwa wie f, ueber ihnen wie f²: an 1 km 1 kHz 11 dB statt
+    //       5 dB); die Leiter trifft die Tafel auf ±2,9 dB bis 12 dB Daempfung und ±3,3 dB bis 20 dB (−10 … 35 °C, 20 … 95 %,
+    //       3 m … 10 km, gemessen gegen Gl. (3)–(5)), darueber daempft sie mindestens 17 dB (gate:klang-zensus V).
+    //   (3) DAS OHR zweier Seiten (Woodworth, Brown & Duda, UMWELT.ohr): die Laufzeit zwischen den Ohren und der Schatten
+    //       des Kopfs, in derselben Luft (c(T)).
+    //  Der Pegel ueber den Abstand bleibt das Gesetz der Quelle (Punkt −6 dB, Linie −3 dB je Verdopplung, `umweltMischung`,
+    //  `tierRufPegel`) — der Weg verteilt nur, verzoegert und daempft die Hoehen. Bis klang-leib trug der Raum keine Laufzeit
+    //  ueber den Weg (Einsatz 1,6 ms an 3 wie an 20 m) und die Flaeche einen StereoPanner ohne Kopf. Kosten: je hoerbarer
+    //  Quelle ein Tiefpass, zwei Regale, zwei Verzoegerungen — nie je Weltgroesse.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var SCHALLWEG = {
+        c0: 331.3, T0: 273.15,          // c(T) = c0·√(1 + T/T0), m/s (ideale Luft)
+        luft: { T: 20, feuchte: 70 },   // die Bezugs-Luft ohne Lage (das Lab): ISO 9613-1 Referenz, 70 % relative Feuchte
+        tMin: -40,                      // die kaelteste Luft der Welt: die laengste Laufzeit je Meter (der Vorrat der Verzoegerung)
+        // die Leiter der Luft: Mitten je Oktave ab mitteHz (9 Mitten, 8 Regale), das Regal bei lage·√(f_j·f_j+1) (das Hoch-Regal
+        // S = 1 der Web-Audio-Biquad steigt langsamer als die Tafel: 1,1 legt seine Mitte dorthin, wo der Fehler der Nachbarn
+        // sich gleicht), kappeDb die tiefste Daempfung einer Mitte (darunter ist jede Quelle unhoerbar; die Kappe haelt die
+        // Regale numerisch stabil — bei 10 km traegt 16 kHz sonst > 2 000 dB)
+        leiter: { mitteHz: 62.5, mitten: 9, lage: 1.1, kappeDb: 30 }
+    };
+    function schallC(T) {
+        var t = typeof T === "number" && isFinite(T) ? T : SCHALLWEG.luft.T;
+        return SCHALLWEG.c0 * Math.sqrt(1 + t / SCHALLWEG.T0);
+    }
+    // ISO 9613-1:1993 Gl. (3)–(5): α in dB/m bei f (Hz), T (°C), relativer Feuchte h_r (%), Meereshoehe (p = p_r)
+    function luftAlpha(f, T, feuchte) {
+        var Tk = (typeof T === "number" && isFinite(T) ? T : SCHALLWEG.luft.T) + 273.15, T0 = 293.15, T01 = 273.16;
+        var hr = typeof feuchte === "number" && isFinite(feuchte) ? Math.max(0, Math.min(100, feuchte)) : SCHALLWEG.luft.feuchte;
+        var h = hr * Math.pow(10, -6.8346 * Math.pow(T01 / Tk, 1.261) + 4.6151); // molarer Anteil des Wasserdampfs (%)
+        var frO = 24 + (4.04e4 * h * (0.02 + h)) / (0.391 + h);
+        var frN = Math.pow(Tk / T0, -0.5) * (9 + 280 * h * Math.exp(-4.17 * (Math.pow(Tk / T0, -1 / 3) - 1)));
+        var f2 = f * f;
+        return 8.686 * f2 * (1.84e-11 * Math.sqrt(Tk / T0) + Math.pow(Tk / T0, -2.5) *
+            ((0.01275 * Math.exp(-2239.1 / Tk)) / (frO + f2 / frO) + (0.1068 * Math.exp(-3352 / Tk)) / (frN + f2 / frN)));
+    }
+    // die Leiter der Luft ueber d Meter: { grundDb (≤ 0, breit), f[] (Hz der Regale), db[] (≤ 0 je Regal) } — die Summe der
+    // Regale unter f plus der Grund ist −min(kappeDb, α(f)·d) an jeder Mitte
+    function luftLeiter(d, T, feuchte) {
+        var L = SCHALLWEG.leiter, dd = Math.max(0, +d || 0), A = [], f = [], db = [];
+        for (var j = 0; j < L.mitten; j++) A.push(Math.min(L.kappeDb, luftAlpha(L.mitteHz * Math.pow(2, j), T, feuchte) * dd));
+        for (j = 1; j < L.mitten; j++) {
+            f.push(L.lage * L.mitteHz * Math.pow(2, j - 0.5));
+            db.push(-(A[j] - A[j - 1]));
+        }
+        return { grundDb: -A[0], f: f, db: db };
+    }
+    // die Lage am Ohr: { verzug (s), luft (die Leiter), c (m/s), pan, d }
+    function raumLage(lage) {
+        var L = lage || {}, d = typeof L.d === "number" && isFinite(L.d) && L.d > 0 ? L.d : 0, c = schallC(L.temperatur);
+        return { d: d, pan: Math.max(-1, Math.min(1, +L.pan || 0)), c: c, verzug: d / c, luft: luftLeiter(d, L.temperatur, L.feuchte) };
+    }
     // DIE LAUFZEIT ZWISCHEN DEN OHREN (erleben.klang.raum#1): eine Quelle unter dem Panorama pan (sin des Azimuts, −1 links …
     // +1 rechts) erreicht das ferne Ohr um τ = (a/c)·(θ + sin θ) später (Woodworth: der Weg um die Kugel des Kopfs, θ = asin pan,
-    // a = UMWELT.ohr.kopfRadiusM, c = schallMs). Vorzeichen: τ > 0 — das linke Ohr hoert spaeter (die Quelle steht rechts).
-    function ohrLaufzeit(pan) {
+    // a = UMWELT.ohr.kopfRadiusM, c = c(T) des Raum-Gesetzes). Vorzeichen: τ > 0 — das linke Ohr hoert spaeter (die Quelle
+    // steht rechts).
+    function ohrLaufzeit(pan, c) {
         var O = UMWELT.ohr, th = Math.asin(Math.max(-1, Math.min(1, +pan || 0)));
-        return (O.kopfRadiusM / O.schallMs) * (th + Math.sin(th));
+        return (O.kopfRadiusM / (c > 0 ? c : schallC())) * (th + Math.sin(th));
     }
     // DER SCHATTEN DES KOPFS am Ohr, dessen Achse θ (rad, 0 … π) von der Quelle abweicht: die Daempfung ueber f0 in dB gegen
     // das Ohr quer zur Quelle (θ = π/2, die Quelle vorn: beide Ohren 0 dB) — Brown & Duda, UMWELT.ohr.schattenMin/-Grad.
@@ -980,48 +1049,84 @@
         };
         return 20 * Math.log10(a(theta) / a(Math.PI / 2));
     }
-    // DAS OHR ZWEIER SEITEN (der EINE Richtungs-Weg jeder verorteten Quelle: der Ruf, jede gerichtete Stimme des Graphs): je Ohr
-    // der Schatten des Kopfs (ein Hoch-Regal bei f0 = c/(2πa), `ohrSchatten`: der Pegel je Ohr, ILD) und die Laufzeit (eine
-    // Verzoegerung, das ferne Ohr um `ohrLaufzeit`, ITD) — eingang (mono, −3 dB je Ohr wie die Mitte des Panoramas) → je Ohr
-    // Regal → Verzoegerung → Vereiner → ausgang. setzen(pan[, t, tau]) stellt beide (mit t gleitend wie der Graph, `ziel`).
-    // Vorher trug der Raum nur den Pegel eines StereoPanners (von der Seite schwieg das ferne Ohr ganz): Lag 0 Samples an 23
-    // von 24 Lagen.
-    function ohrRichtung(ctx, pan) {
-        var O = UMWELT.ohr, f0 = O.schallMs / (2 * Math.PI * O.kopfRadiusM);
-        var ein = ctx.createGain(), mg = ctx.createChannelMerger(2);
-        var sl = ctx.createBiquadFilter(), sr = ctx.createBiquadFilter(), dl = ctx.createDelay(0.002), dr = ctx.createDelay(0.002);
+    // DER WEG ZUM OHR (das Raum-Gesetz als Schaltung): eingang (mono, sein Pegel der Grund der Luft) → die Luft (die Leiter
+    // `luftLeiter`, nur wo der Weg einen Abstand tragen kann: ein Anschlag mit d > 0, ein Strom mit Vorrat) → je Ohr
+    // der Schatten des Kopfs (ein Hoch-Regal bei f0 = c/(2πa), `ohrSchatten`: ILD, −3 dB je Ohr wie die Mitte) → die
+    // Verzoegerung (das ferne Ohr um `ohrLaufzeit`, ITD) → Vereiner → ausgang. Zwei Formen DESSELBEN Gesetzes:
+    //  · der ANSCHLAG (vorrat 0: Ruf, Donner, Stimme — ein Ereignis): die Laufzeit ueber den Weg ist der Einsatz, `weg.verzug`
+    //    (der Rufer startet die Quelle um ihn spaeter: exakt, ohne Puffer);
+    //  · der STROM (vorrat > 0 s: die Stimmen des Graphs): die Laufzeit liegt in den Verzoegerungen beider Ohren (verzug ± τ),
+    //    ihr Vorrat die Hoerweite der Stimme in der kaeltesten Luft; sie gleitet mit der Lage (`ziel`).
+    // setzen(lage[, t, tau]) stellt alles; eine Zahl statt der Lage ist das Panorama allein (d 0: der Kamm, die Flaeche).
+    // Vorher trug der Raum nur den Pegel eines StereoPanners (Lag 0 an 23 von 24 Lagen), bis klang-leib keine Laufzeit ueber
+    // den Weg und keine Luft.
+    function raumWeg(ctx, lage, vorrat) {
+        var O = UMWELT.ohr, strom = vorrat > 0;
+        var ein = ctx.createGain(), mg = ctx.createChannelMerger(2), luft = [], vor = ein;
+        var sl = ctx.createBiquadFilter(), sr = ctx.createBiquadFilter();
+        var dl = ctx.createDelay(0.002 + (strom ? vorrat : 0)), dr = ctx.createDelay(0.002 + (strom ? vorrat : 0));
+        var weit = strom || (lage && typeof lage === "object" && lage.d > 0);
         ein.gain.value = Math.SQRT1_2;
+        for (var j = 0; weit && j < SCHALLWEG.leiter.mitten - 1; j++) {
+            var st = ctx.createBiquadFilter();
+            st.type = "highshelf";
+            vor.connect(st);
+            luft.push((vor = st));
+        }
         [sl, sr].forEach(function (f) {
             f.type = "highshelf";
-            f.frequency.value = f0;
-            ein.connect(f);
+            vor.connect(f);
         });
         sl.connect(dl);
         sr.connect(dr);
         dl.connect(mg, 0, 0);
         dr.connect(mg, 0, 1);
-        function setzen(pan, t, tau) {
-            var q = Math.max(-1, Math.min(1, +pan || 0)), it = ohrLaufzeit(q), phi = Math.asin(q);
+        var weg = { eingang: ein, ausgang: mg, knoten: [ein].concat(luft, [sl, sr, dl, dr, mg]), verzug: 0, lage: null };
+        weg.setzen = function (lg, t, tau) {
+            var R = raumLage(typeof lg === "number" ? { pan: lg } : lg), q = R.pan, it = ohrLaufzeit(q, R.c), phi = Math.asin(q);
             // die Lautheit gibt die Mischung (das EINE Pegel-Gesetz), der Kopf verteilt sie nur: beide Regale um k, dass die
             // Leistung beider Ohren ueber f0 der vorderen Quelle gleicht (ohne k trug die seitliche Glut +2 dB ueber dem Gesetz)
             var gl = ohrSchatten(Math.PI / 2 + phi), gr = ohrSchatten(Math.PI / 2 - phi);
             var k = 10 * Math.log10(2 / (Math.pow(10, gl / 10) + Math.pow(10, gr / 10)));
+            var f0 = R.c / (2 * Math.PI * O.kopfRadiusM), v = strom ? Math.min(vorrat, R.verzug) : 0;
+            var grund = Math.SQRT1_2 * (luft.length ? Math.pow(10, R.luft.grundDb / 20) : 1);
+            weg.verzug = R.verzug;
+            weg.lage = R;
             gl += k;
             gr += k;
             if (typeof t !== "number") {
+                ein.gain.value = grund;
+                luft.forEach(function (st, i) {
+                    st.frequency.value = R.luft.f[i];
+                    st.gain.value = R.luft.db[i];
+                });
+                sl.frequency.value = sr.frequency.value = f0;
                 sl.gain.value = gl;
                 sr.gain.value = gr;
-                dl.delayTime.value = Math.max(0, it);
-                dr.delayTime.value = Math.max(0, -it);
-                return;
+                dl.delayTime.value = v + Math.max(0, it);
+                dr.delayTime.value = v + Math.max(0, -it);
+                return weg;
             }
+            ziel(ein.gain, grund, t, tau);
+            luft.forEach(function (st, i) {
+                ziel(st.gain, R.luft.db[i], t, tau);
+            });
+            ziel(sl.frequency, f0, t, tau);
+            ziel(sr.frequency, f0, t, tau);
             ziel(sl.gain, gl, t, tau);
             ziel(sr.gain, gr, t, tau);
-            ziel(dl.delayTime, Math.max(0, it), t, tau);
-            ziel(dr.delayTime, Math.max(0, -it), t, tau);
-        }
-        setzen(pan);
-        return { eingang: ein, ausgang: mg, setzen: setzen, knoten: [ein, sl, sr, dl, dr, mg] };
+            ziel(dl.delayTime, v + Math.max(0, it), t, tau);
+            ziel(dr.delayTime, v + Math.max(0, -it), t, tau);
+            return weg;
+        };
+        return weg.setzen(lage);
+    }
+    // die Lage einer Stimme am Weg zum Ohr: die verortete (gerichtet) mit Abstand und Panorama, die Flaeche (Wind, Laub,
+    // Regen, Chor, Grillen) je Quelle k um ihr Panorama gespreizt, ohne Weg (sie umgibt das Ohr)
+    function umweltWegLage(S, m, k) {
+        if (S.gerichtet) return { d: m.d, pan: m.pan, temperatur: m.temperatur };
+        var p = (m.pan || 0) + (k % 2 ? 1 : -1) * (S.spreizung || 0);
+        return { d: 0, pan: Math.max(-1, Math.min(1, p)), temperatur: m.temperatur };
     }
     function umweltGraph(ctx, ausgang, liefern) {
         var U = UMWELT, W = U.stimmen;
@@ -1072,12 +1177,11 @@
                 src.buffer = b;
                 src.loop = true;
                 src.playbackRate.value = m.rate || 1;
-                // die verortete Stimme hoert das Ohr zweier Seiten (Pegel und Laufzeit, `ohrRichtung`), die Flaeche (Wind,
-                // Regen) traegt ihre Spreizung
-                var ohr = S.gerichtet ? ohrRichtung(ctx, m.pan) : null;
-                var pan = ohr ? ohr.eingang : ctx.createStereoPanner();
-                if (ohr) st.ohren.push(ohr);
-                else pan.pan.value = (k % 2 ? 1 : -1) * (S.spreizung || 0);
+                // JEDE Stimme geht den EINEN Weg zum Ohr (`raumWeg`): die verortete mit ihrem Abstand (Laufzeit und Luft im
+                // Strom, ihr Vorrat die Hoerweite), die Flaeche (Wind, Regen) mit ihrer Spreizung um ihr Panorama, ohne Weg
+                var ohr = raumWeg(ctx, umweltWegLage(S, m, k), S.gerichtet ? S.hoerweiteM / schallC(SCHALLWEG.tMin) : 0);
+                var pan = ohr.eingang;
+                st.ohren.push(ohr);
                 if (S.traegerHz) {
                     // DIE HARFE (der Koerper der Grille) klingt, die Huelle oeffnet sie: ihr Takt laesst den Ton stehen
                     var harfe = ctx.createOscillator(), auf = ctx.createGain();
@@ -1091,7 +1195,7 @@
                     st.quellen.push(harfe);
                     st.huellen.push(auf);
                 } else src.connect(pan);
-                (ohr ? ohr.ausgang : pan).connect(st.filter);
+                ohr.ausgang.connect(st.filter);
                 src.start(t, versatz() * b.duration);
                 knoten.add(src);
                 st.quellen.push(src);
@@ -1150,7 +1254,7 @@
                     }
                     ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.ohr.mischSek);
                     ziel(st.filter.frequency, mm.hz, zeit, U.ohr.mischSek);
-                    if (W[name].gerichtet) st.ohren.forEach(function (o) { o.setzen(mm.pan, zeit, U.ohr.mischSek); });
+                    st.ohren.forEach(function (o, k) { o.setzen(umweltWegLage(W[name], mm, k), zeit, U.ohr.mischSek); });
                     for (var q = 0; q < st.quellen.length; q++)
                         if (st.quellen[q].playbackRate) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.ohr.mischSek);
                 }
@@ -1263,17 +1367,18 @@
     function umweltRaum(ctx, eingang, ausgang) {
         var R = UMWELT.raum, kamm = [], erst = true;
         for (var i = 0; i < R.kammSek.length; i++) {
-            var d = ctx.createDelay(1), fb = ctx.createGain(), aus = ctx.createGain(), pan = ctx.createStereoPanner();
+            // der Kamm ist eine Wand des Orts: sein Widerhall kommt von der Seite und geht den EINEN Weg zum Ohr (`raumWeg`,
+            // Panorama ±kammPan) — bis klang-leib ein StereoPanner ohne Kopf
+            var d = ctx.createDelay(1), fb = ctx.createGain(), aus = ctx.createGain(), pan = raumWeg(ctx, (i % 2 ? 1 : -1) * R.kammPan, 0);
             d.delayTime.value = R.kammSek[i];
             fb.gain.value = 0;
             aus.gain.value = 0;
-            pan.pan.value = (i % 2 ? 1 : -1) * R.kammPan;
             eingang.connect(d);
             d.connect(fb);
             fb.connect(d);
             d.connect(aus);
-            aus.connect(pan);
-            pan.connect(ausgang);
+            aus.connect(pan.eingang);
+            pan.ausgang.connect(ausgang);
             kamm.push({ sek: R.kammSek[i], fb: fb, aus: aus });
         }
         var raum = {
@@ -1306,7 +1411,9 @@
         var T = UMWELT.tier, sr = T.sr, r = ruf || {};
         var L = Math.max(0.15, typeof r.laengeM === "number" && isFinite(r.laengeM) ? r.laengeM : T.lRef);
         var K = T.konturen[r.stimmung] || T.konturen.ruhe, rnd = umweltRng((r.saat >>> 0) || 7);
-        var f0 = T.fRef * Math.pow(L / T.lRef, -T.exponent), f1 = T.f1Ref * (T.lRef / L), f2 = T.f2Ref * (T.lRef / L);
+        // die Formanten aus der EINEN Roehre des Stimm-Gesetzes (`roehre`): der Trakt waechst mit der Laenge des Leibs
+        var F = roehre(STIMME.tier.traktJeLaenge * L, STIMME.tier.form);
+        var f0 = T.fRef * Math.pow(L / T.lRef, -T.exponent), f1 = F[0], f2 = F[1];
         var gesamt = K.teile * K.sek + (K.teile - 1) * K.pause + 0.05, n = Math.floor(gesamt * sr);
         var x = new Float32Array(n), ph = 0;
         for (var teil = 0; teil < K.teile; teil++) {
@@ -1335,21 +1442,37 @@
         if (!(d < T.hoerweiteM)) return -Infinity;
         return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
-    // Der Ruf als Einmal-Quelle: rechnen (tierRufPuffer) und spielen (tierRufSpielen); null unter der Hoerschwelle.
+    // Der Ruf als Einmal-Quelle: rechnen (tierRufPuffer) und spielen (rufSpielen); null unter der Hoerschwelle.
     // Der Wirt rechnet in der Klang-Werkstatt und spielt, was sie zurueckreicht — dieselben zwei Schritte.
     function tierRuf(ctx, ausgang, ruf) {
         var r = ruf || {};
         if (!(tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef) >= UMWELT.hoerschwelleDb)) return null;
-        return tierRufSpielen(ctx, ausgang, r, tierRufPuffer(r));
+        return rufSpielen(ctx, ausgang, r, tierRufPuffer(r));
     }
-    // Den gerechneten Ruf spielen: Puffer → Panner → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
-    function tierRufSpielen(ctx, ausgang, ruf, tex) {
-        var r = ruf || {}, pegel = tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef);
+    // DER EINE RUF (klang-leib): ein Ruf mit Leib (`ruf.leib`: der Mensch) ist ein Laut des Stimm-Gesetzes (`stimmPuffer`),
+    // sonst der Ruf des Tiers — die Werkstatt rechnet beide hier, der Pegel am Ohr folgt der Art (`rufPegel`)
+    function rufPuffer(ruf) {
+        return ruf && ruf.leib ? stimmPuffer(ruf) : ruf && ruf.blitz ? donnerPuffer(ruf) : tierRufPuffer(ruf);
+    }
+    function rufPegel(ruf) {
+        var r = ruf || {}, T = r.leib ? STIMME.pegel : r.blitz ? DONNER.pegel : UMWELT.tier, d = typeof r.d === "number" ? r.d : T.dRef;
+        if (!r.leib && !r.blitz) return tierRufPegel(d);
+        if (!(d < (r.blitz ? DONNER.hoerweiteM : T.hoerweiteM))) return -Infinity;
+        return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
+    }
+    // Den gerechneten Ruf spielen: Puffer → der Weg zum Ohr (`raumWeg`: Luft, Kopf; die Laufzeit ueber den Weg ist sein
+    // Einsatz, d / c(T) nach dem Ruf) → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
+    function rufSpielen(ctx, ausgang, ruf, tex) {
+        // der Donner kommt vom naechsten Punkt seines Kanals (`tex.dNah`), sein Einsatz zaehlt ab dem Blitz (`ruf.t0`)
+        var r = ruf && tex && typeof tex.dNah === "number" && isFinite(tex.dNah) ? Object.assign({}, ruf, { d: tex.dNah }) : ruf || {};
+        var pegel = rufPegel(r);
+        if (r.blitz && tex && typeof tex.scheitelDb === "number") pegel = Math.min(pegel, DONNER.pegel.spitzeDb - tex.scheitelDb);
         if (!(pegel >= UMWELT.hoerschwelleDb) || !tex || !tex.daten) return null;
-        var t = ctx.currentTime;
+        var t = ctx.currentTime, t0 = typeof r.t0 === "number" && isFinite(r.t0) ? Math.min(t, r.t0) : t;
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
         b.getChannelData(0).set(tex.daten);
-        var src = ctx.createBufferSource(), ohr = ohrRichtung(ctx, typeof r.pan === "number" && isFinite(r.pan) ? r.pan : 0), g = ctx.createGain();
+        var src = ctx.createBufferSource(), g = ctx.createGain();
+        var ohr = raumWeg(ctx, { d: typeof r.d === "number" ? r.d : UMWELT.tier.dRef, pan: typeof r.pan === "number" && isFinite(r.pan) ? r.pan : 0, temperatur: r.temperatur, feuchte: r.feuchte }, 0);
         // DIE VERDECKUNG (UMWELT.raum, w5-s2-g1): der Wirt legt sie an den Ruf ({ db, hz }), wenn Hang oder Bau die Sichtlinie schneiden
         var vd = r.verdeckung && typeof r.verdeckung.db === "number" && isFinite(r.verdeckung.db) ? r.verdeckung : null;
         var lp = vd ? ctx.createBiquadFilter() : null;
@@ -1365,10 +1488,318 @@
         } else ohr.ausgang.connect(g);
         g.connect(ausgang);
         src.onended = function () { try { ohr.knoten.forEach(function (nd) { nd.disconnect(); }); g.disconnect(); if (lp) lp.disconnect(); } catch (_e) {} };
-        src.start(t);
-        return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration };
+        var einsatz = Math.max(t, t0 + ohr.verzug);
+        src.start(einsatz);
+        return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration, verzug: ohr.verzug, einsatz: einsatz, t0: t0, d: r.d };
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS STIMM-GESETZ (klang-leib, erleben.klang.stimme#1, rein additiv): EINE Roehre fuer jeden Leib — die Stimme des
+    //  Menschen wie der Ruf des Tiers. Quelle und Filter (Fant 1960): die Falten schwingen mit f0, der Trakt — eine Roehre, an
+    //  der Glottis zu, an den Lippen offen — formt die Resonanzen F_n = k_n·(2n − 1)·c_t / (4·L_t) (`roehre`; c_t = c(traktT) des
+    //  Raum-Gesetzes, die warme Luft im Mund). Ein Vokal ist eine FORM der Roehre (k_n: ihre Abweichung von der geraden), die
+    //  Formen traegt die Tafel von Peterson & Barney 1952 (die Mittel der 33 Maenner und 28 Frauen, zehn Vokale in /hVd/), je
+    //  an der Roehre ihres Bezugs geeicht; die Laenge folgt dem Leib (Nordstroem & Lindblom 1975), die Form der Reife (Fant 1966:
+    //  die nicht gleichmaessige Skalierung) — das Kind folgt aus SEINEM Leib, die Vorhersage des Gesetzes.
+    //  DER LEIB (der Wirt reicht ihn aus dem Genom, koerper-core): die Hoehe H (m), die Achse sex nach ihrer Reife
+    //  (`alterGeschlecht`: 0 Mann, 1 Frau, das Kind zur Mitte), die Jahre. Die Pubertaet des Manns (mann = max(0, 1 − 2·sex))
+    //  streckt Rachen und Kehlkopf ueber das Mass der Hoehe hinaus (Fitch & Giedd 1999: der Trakt folgt der Groesse, die
+    //  Geschlechter trennen sich erst mit der Pubertaet):
+    //    L_t = H·traktJeHoehe·(1 + rachen·mann)    der Trakt
+    //    L_f = H·falteJeHoehe·(1 + kehle·mann)     die schwingende Falte, f0 = welle / (2·L_f) (die Saite, Titze 1994)
+    //  rachen und kehle sind an der Frau geeicht (PB: ihre Formanten 1,17-, ihr f0 1,70-mal die des Manns bei 0,93 seiner
+    //  Hoehe); das Kind ist die Vorhersage des Gesetzes (gleichmaessig skaliert laege sein /er/ F1 21 % ueber der Tafel, mit der
+    //  Form der Reife 6 %). Gemessen am Abgriff: gate:klang-zensus (St), der Grundton (YIN) und die Resonanzen im freien
+    //  Ausklingen der gerechneten Laute gegen die Tafel. Der Laut traegt keinen Sprach-Inhalt: Silben aus Vokalen der Tafel, ihr Bogen
+    //  (Gruss, Plaudern, Lachen, Muehe, Seufzer, ein gehaltener Ton) — `laute`.
+    //  Das TIER liest dieselbe Roehre: sein Trakt L_t = tier.traktJeLaenge·Laenge, seine Form [1, f2/(3·f1)] — der Ruf klingt wie
+    //  bis klang-leib (f1 700 Hz, f2 1 800 Hz am Meter), nun als Gesetz des Trakts statt einer Zahl je Laenge.
+    //  Kosten: je Laut ein Puffer in der Klang-Werkstatt (≤ 1,2 s bei 22 050 Hz), nie je Bewohner der Welt.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var STIMME = {
+        traktT: 35, sr: 22050,
+        traktJeHoehe: 0.09, rachen: 0.111,  // L_t des Bezugs-Manns 0,171 m
+        falteJeHoehe: 0.006226, kehle: 0.764, welle: 4.5,   // L_f Mann 17,1 mm · Frau 10,1 mm · Kind 8,4 mm (QUELLE UNGEPRUEFT
+                                                             // im Wert: welle = √(σ/ρ), traegt mit L_f nur das Produkt)
+        // der Bezugs-Sprecher der Tafel (PB berichten keine Groesse — QUELLE UNGEPRUEFT im Wert: das Mittel erwachsener Maenner
+        // der USA um 1950, das Geschlecht in der Mitte der maennlichen Gestalten, koerper `alterGeschlecht`)
+        bezug: { hoeheM: 1.75, sex: 0.125, jahre: 30 },
+        // Peterson & Barney 1952, Mittel der Maenner je Vokal [f0, F1, F2, F3] (Hz) — gerechnet aus den 1 520 Messungen der
+        // Studie (CRAN phonTools `pb52`); die Formen k leiten sich aus ihr ab (`STIMME_FORM`), F4 und F5 stehen gerade (k = 1)
+        mann: {
+            i: [136, 267, 2294, 2937], I: [136, 392, 1993, 2569], E: [128, 526, 1854, 2481], ae: [125, 664, 1727, 2420],
+            A: [124, 718, 1091, 2442], O: [127, 568, 836, 2403], U: [136, 437, 1023, 2245], u: [139, 307, 876, 2239],
+            V: [129, 631, 1192, 2377], er: [133, 489, 1360, 1709]
+        },
+        // ... und der 28 Frauen: die zweite Form der Roehre. Die Skalierung ist NICHT gleichmaessig (Fant 1966): der Rachen des
+        // Manns streckt sich in der Pubertaet, das Verhaeltnis Rachen zu Mund verschiebt die Form des Vokals — die Form folgt
+        // der Achse mann (Frau und Kind 0, der Bezugs-Mann 0,75), die Laenge dem Leib. Das Kind ist die Vorhersage.
+        bezugFrau: { hoeheM: 1.62, sex: 0.875, jahre: 30 },
+        frau: {
+            i: [231, 310, 2783, 3312], I: [232, 441, 2474, 3063], E: [220, 608, 2334, 2999], ae: [208, 863, 2049, 2832],
+            A: [212, 864, 1229, 2783], O: [217, 587, 915, 2736], U: [234, 469, 1162, 2685], u: [235, 378, 961, 2666],
+            V: [223, 758, 1409, 2768], er: [219, 503, 1641, 1977]
+        },
+        // die Bandbreiten der Resonatoren F1–F5 (Hz; Klatt 1980, die Groessenordnung seiner Kaskade)
+        breite: [70, 90, 130, 180, 250],
+        quelle: { offen: 0.4, schliessen: 0.16, jitter: 0.01, schimmer: 0.04, hauch: 0.03 }, // Rosenberg-Puls (Anteile der Periode)
+        pegel: { refDb: -16, dRef: 2, dMin: 0.5, hoerweiteM: 30 },   // ein Laut in Sprechstimme am Ohr (dB am Welt-Bus)
+        // DIE LAUTE: silben (Zahl), vokale (die Wahl je Silbe), sek [von, bis] je Silbe, pause (s), f0 [Anfang, Ende] des
+        // Bogens (× f0 des Leibs), gipfel (die Hebung jeder Silbe), hauch (Anteil Atem: das h)
+        laute: {
+            gruss:    { silben: 2, vokale: ["V", "A"], sek: [0.12, 0.2], pause: 0.03, f0: [1.05, 0.92], gipfel: 0.12, hauch: 0.25 },
+            plaudern: { silben: 4, vokale: ["E", "V", "A", "I", "ae", "O"], sek: [0.09, 0.17], pause: 0.04, f0: [1.08, 0.88], gipfel: 0.06, hauch: 0.08 },
+            lachen:   { silben: 3, vokale: ["A"], sek: [0.08, 0.11], pause: 0.07, f0: [1.3, 1.15], gipfel: 0.08, hauch: 0.55 },
+            muehe:    { silben: 1, vokale: ["V"], sek: [0.16, 0.24], pause: 0, f0: [0.88, 0.8], gipfel: 0.02, hauch: 0.3 },
+            seufzer:  { silben: 1, vokale: ["A"], sek: [0.45, 0.6], pause: 0, f0: [1.0, 0.74], gipfel: 0, hauch: 0.5 },
+            halten:   { silben: 1, vokale: ["A"], sek: [0.6, 0.6], pause: 0, f0: [1, 1], gipfel: 0, hauch: 0.03 }
+        },
+        // der Tag spricht (koerper TAGES_GESETZ, `b.akt` des Bewohners): je Akt sein Laut und seine Rate je Minute; ein
+        // Bewohner, dem der Spieler auf grussM nahe kommt, gruesst (einmal je Begegnung)
+        akte: { arbeit: ["muehe", 0.5], spiel: ["lachen", 1.2], mittag: ["plaudern", 1.5], besuch: ["plaudern", 1.5],
+                abend: ["seufzer", 0.3] },
+        sonst: ["plaudern", 0.6], grussM: 6,
+        tier: { traktJeLaenge: 0, form: null }   // gesetzt aus UMWELT.tier (unten): dieselben Zahlen, nun als Roehre
+    };
+    // die Roehre: F_n = form_n·(2n − 1)·c_t / (4·L_t), n = 1 … form.length
+    function roehre(traktM, form) {
+        var c = schallC(STIMME.traktT), F = [];
+        for (var n = 0; n < form.length; n++) F.push((form[n] * (2 * n + 1) * c) / (4 * traktM));
+        return F;
+    }
+    // der Leib der Stimme: { hoeheM, mann, traktM, falteM, f0 } aus { hoeheM, sex, jahre }
+    function stimmLeib(leib) {
+        var S = STIMME, L = leib || {};
+        var H = Math.max(0.5, Math.min(2.4, typeof L.hoeheM === "number" && isFinite(L.hoeheM) ? L.hoeheM : S.bezug.hoeheM));
+        var sx = Math.max(0, Math.min(1, typeof L.sex === "number" && isFinite(L.sex) ? L.sex : 0.5)), mann = Math.max(0, 1 - 2 * sx);
+        var trakt = H * S.traktJeHoehe * (1 + S.rachen * mann), falte = H * S.falteJeHoehe * (1 + S.kehle * mann);
+        return { hoeheM: H, mann: mann, traktM: trakt, falteM: falte, f0: S.welle / (2 * falte) };
+    }
+    // die Formen der Vokale je Bezug: k_n = F_n·4·L_t(Bezug) / ((2n − 1)·c_t), F4 und F5 gerade
+    var STIMME_FORM = (function () {
+        var c = schallC(STIMME.traktT), aus = { mann: {}, frau: {} };
+        [["mann", STIMME.bezug], ["frau", STIMME.bezugFrau]].forEach(function (g) {
+            var L = stimmLeib(g[1]).traktM;
+            Object.keys(STIMME[g[0]]).forEach(function (v) {
+                var M = STIMME[g[0]][v], k = [];
+                for (var n = 0; n < 3; n++) k.push((M[n + 1] * 4 * L) / ((2 * n + 1) * c));
+                aus[g[0]][v] = k.concat([1, 1]);
+            });
+        });
+        aus.mannBezug = stimmLeib(STIMME.bezug).mann;
+        return aus;
+    })();
+    // die Form eines Vokals auf der Achse der Reife: von der Frau (mann 0) zum Bezugs-Mann (mann 0,75), darueber fortgesetzt
+    function stimmForm(vokal, mann) {
+        var F = STIMME_FORM, v = F.mann[vokal] ? vokal : "V", w = Math.max(0, mann || 0) / F.mannBezug;
+        return F.frau[v].map(function (kw, n) { return kw + (F.mann[v][n] - kw) * w; });
+    }
+    STIMME.tier.traktJeLaenge = schallC(STIMME.traktT) / (4 * UMWELT.tier.f1Ref * UMWELT.tier.lRef);
+    STIMME.tier.form = [1, UMWELT.tier.f2Ref / (3 * UMWELT.tier.f1Ref)];
+    // die Formanten eines Vokals im Trakt eines Leibs
+    function stimmFormanten(leib, vokal) {
+        var l = stimmLeib(leib);
+        return roehre(l.traktM, stimmForm(vokal, l.mann));
+    }
+    // DER LAUT: ruf = { leib, laut, vokal?, saat } → { sr, daten, f0, formanten, traktM, laut } (geeicht auf texturRmsDb).
+    // Quelle: der Rosenberg-Puls (Fluss der Glottis, abgeleitet: die Abstrahlung der Lippen) mit Jitter und Schimmer, Atem im
+    // offenen Spalt; Filter: fuenf Resonatoren in Kaskade (Klatt 1980), ihre Frequenzen gleiten zwischen den Silben (30 ms).
+    function stimmPuffer(ruf) {
+        var S = STIMME, Q = S.quelle, r = ruf || {}, sr = S.sr, rnd = umweltRng((r.saat >>> 0) || 11);
+        var leib = stimmLeib(r.leib), Lt = S.laute[r.laut] || S.laute.gruss;
+        var silben = [], t = 0;
+        for (var i = 0; i < Lt.silben; i++) {
+            var v = r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length];
+            var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
+            silben.push({ v: v, von: t, bis: t + sek, F: roehre(leib.traktM, stimmForm(v, leib.mann)) });
+            t += sek + Lt.pause;
+        }
+        var n = Math.floor((t - Lt.pause + 0.06) * sr), x = new Float32Array(n);
+        var T0 = 1 / leib.f0, ph = 1, amp = 1, f0 = leib.f0, alt = 0;
+        var y1 = [0, 0, 0, 0, 0], y2 = [0, 0, 0, 0, 0], A = [0, 0, 0, 0, 0], B = [0, 0, 0, 0, 0], C = [0, 0, 0, 0, 0];
+        for (var k = 0, si = 0; k < n; k++) {
+            var tt = k / sr;
+            while (si < silben.length - 1 && tt >= silben[si + 1].von) si++;
+            var sb = silben[si], u = Math.max(0, Math.min(1, (tt - sb.von) / (sb.bis - sb.von)));
+            if (k % 16 === 0) {
+                // die Frequenzen gleiten von der vorigen Silbe (30 ms), dann die Koeffizienten der Resonatoren
+                var vor = si > 0 ? silben[si - 1].F : sb.F, w = Math.min(1, (tt - sb.von) / 0.03);
+                for (var j = 0; j < 5; j++) {
+                    var Fj = Math.min(sr * 0.45, vor[j] + (sb.F[j] - vor[j]) * Math.max(0, w)), e = Math.exp((-Math.PI * S.breite[j]) / sr);
+                    C[j] = -e * e;
+                    B[j] = 2 * e * Math.cos((2 * Math.PI * Fj) / sr);
+                    A[j] = 1 - B[j] - C[j];
+                }
+            }
+            // der Bogen des Lauts (Deklination ueber die Zeit) und die Hebung jeder Silbe
+            var bogen = Lt.f0[0] + (Lt.f0[1] - Lt.f0[0]) * (tt / Math.max(1e-3, t)), heb = 1 + Lt.gipfel * Math.sin(Math.PI * u);
+            if (ph >= 1) {
+                ph -= 1;
+                f0 = leib.f0 * bogen * heb * (1 + (rnd() - 0.5) * 2 * Q.jitter);
+                T0 = 1 / f0;
+                amp = 1 + (rnd() - 0.5) * 2 * Q.schimmer;
+            }
+            var g = ph < Q.offen ? 0.5 * (1 - Math.cos((Math.PI * ph) / Q.offen)) : ph < Q.offen + Q.schliessen ? Math.cos((Math.PI * (ph - Q.offen)) / (2 * Q.schliessen)) : 0;
+            ph += 1 / (T0 * sr);
+            var stimmhaft = tt <= sb.bis ? Math.min(1, (tt - sb.von) / 0.02) * Math.min(1, (sb.bis - tt) / 0.04) : 0;
+            var hauch = (Lt.hauch * Math.max(0, 1 - u * 3) + Q.hauch) * (0.4 + g);
+            var q = (g - alt) * amp * stimmhaft * (1 - Lt.hauch * 0.5) * 40 + (rnd() * 2 - 1) * hauch * stimmhaft;
+            alt = g;
+            for (j = 0; j < 5; j++) {
+                var yj = A[j] * q + B[j] * y1[j] + C[j] * y2[j];
+                y2[j] = y1[j];
+                y1[j] = yj;
+                q = yj;
+            }
+            x[k] = q;
+        }
+        SYNTHESE.samples += n;
+        SYNTHESE.rufe++;
+        return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
+    }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Der Blitz
+    //  schlaegt als Poisson-Folge mit der Dichte `blitzJeKm2Min` × dem Anteil des Sturms im Wetter-Feld am Ort (`blitzAnteil`:
+    //  der Wirt fragt das EINE Feld, phyto-core `wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner
+    //  Region) auf der Scheibe der Hoerweite (`hoerweiteM`: der Donner traegt etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
+    //  Boden zur Ladung der Wolke (`hoeheM`), gewunden (je `segmentM` ein Knick um `knickGrad`), mit `aeste` Seitenarmen.
+    //  Jeder Punkt des Kanals strahlt eine N-Welle; ihre Dauer folgt dem Relaxations-Radius R0 = √(E_l / (π·p0)) (Few 1969:
+    //  die Energie je Laenge E_l setzt die Skala, f_m = fFaktor·c / R0), ihr Gewicht 1/r. Die Ankunft je Punkt ist r / c(T):
+    //  das Grollen IST die Geometrie des Kanals, der Knall der Teil, der quer zum Ohr liegt (seine Wellen kommen zugleich).
+    //  Der naechste Punkt traegt den Einsatz: der Weg zum Ohr (`raumWeg`, der Anschlag) setzt ihn auf d / c(T) nach dem
+    //  Blitz (`ruf.t0`), die Luft nimmt die Hoehen ueber die Strecke. Kosten: je Blitz EIN Puffer in der Klang-Werkstatt
+    //  (≤ maxSek bei sr), nie je Bild.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var DONNER = {
+        blitzJeKm2Min: 0.01, // QUELLE UNGEPRUEFT im Wert: ein gewoehnliches Gewitter, wenige Blitze je Minute auf ~100 km²
+        hoerweiteM: 16000,   // NWS „Understanding Lightning: Thunder": der Donner traegt etwa 10 Meilen
+        hoeheM: 5000, segmentM: 40, knickGrad: 16, aeste: 3, astM: 1500, // QUELLE UNGEPRUEFT im Wert: die Gestalt des Kanals
+        energieJeM: 1e6, streuung: 0.6, p0: 101325, fFaktor: 0.63,   // E_l: die Groesse, die Few aus dem Spektrum des Donners las
+        punktM: 0.7,         // der Abstand der Strahler (≤ c·τ/4: die Welle laeuft, sie stottert nicht)
+        sr: 11025, maxSek: 14, ausSek: 0.6,
+        // QUELLE UNGEPRUEFT im Wert: der Donner in 500 m am Welt-Bus; der Bus hat keinen Begrenzer, darum traegt der Puffer
+        // seinen Scheitel (`scheitelDb`, Spitze ueber RMS) und der Pegel deckelt dort, wo die Spitze −1 dBFS erreichte
+        pegel: { refDb: -14, dRef: 500, dMin: 150, spitzeDb: -1 }
+    };
+    // DER ANTEIL DES STURMS AM ORT (klang-leib, die Dichte der Blitze = DONNER.blitzJeKm2Min × dieser Anteil): das Wetter-Feld am
+    // Ort (der Wirt fragt phyto-core `wetterFeldAm` ohne Relief: die Front, das Wort des Spielers als Eingriff in seiner Region)
+    // ist eine affine Mischung der Zeilen der Wetter-Tafel — die Front mischt sie stufig, der Eingriff und sein Übergang linear.
+    // Der Anteil EINER Zeile ist darum EIN lineares Mass über die Kanäle: der duale Vektor L der Tafel (L · Zeile = 1 für die
+    // Sturm-Zeile, 0 für jede andere; die kleinste Lösung L = Rᵀ (R Rᵀ)⁻¹ e, einmal je Tafel). Nur das Lee ist nicht affin: dort
+    // nimmt der Eingriff den Regen um (1 − lee) (`feld.lee`) — und mit ihm den Sturm: der Anteil ist (1 − lee) · L · (Kanäle
+    // ohne Regen) + L_regen · Regen, genau der Anteil der ungetrockneten Mischung × (1 − lee). feld → [0, 1]; fail-closed.
+    var _blitzDual = { zeilen: null, sturm: null, L: null, kanaele: null };
+    function blitzAnteil(feld, zeilen, sturm) {
+        var M = _blitzDual, i, j, k;
+        if (M.zeilen !== zeilen || M.sturm !== sturm) {
+            var worte = Object.keys(zeilen || {});
+            if (!zeilen || !zeilen[sturm]) throw new Error("blitzAnteil: die Tafel trägt die Sturm-Zeile „" + sturm + "“ nicht");
+            var kan = Object.keys(zeilen[sturm]);
+            if (kan.indexOf("rain") < 0) throw new Error("blitzAnteil: die Sturm-Zeile trägt keinen Regen (rain)");
+            var R = worte.map(function (w) {
+                return kan.map(function (c) {
+                    if (!isFinite(zeilen[w][c])) throw new Error("blitzAnteil: die Zeile " + w + " trägt " + c + " nicht");
+                    return zeilen[w][c];
+                });
+            });
+            var m = R.length, G = [], e = [];
+            for (i = 0; i < m; i++) {
+                G.push([]);
+                for (j = 0; j < m; j++) {
+                    var s = 0;
+                    for (k = 0; k < kan.length; k++) s += R[i][k] * R[j][k];
+                    G[i].push(s);
+                }
+                e.push(worte[i] === sturm ? 1 : 0);
+            }
+            for (var c0 = 0; c0 < m; c0++) {
+                var p = c0;
+                for (i = c0 + 1; i < m; i++) if (Math.abs(G[i][c0]) > Math.abs(G[p][c0])) p = i;
+                var tG = G[c0]; G[c0] = G[p]; G[p] = tG;
+                var te = e[c0]; e[c0] = e[p]; e[p] = te;
+                if (!(Math.abs(G[c0][c0]) > 1e-12)) throw new Error("blitzAnteil: die Zeilen der Tafel sind nicht unabhängig — der Sturm hat keinen eigenen Anteil");
+                for (i = 0; i < m; i++)
+                    if (i !== c0) {
+                        var f = G[i][c0] / G[c0][c0];
+                        for (k = c0; k < m; k++) G[i][k] -= f * G[c0][k];
+                        e[i] -= f * e[c0];
+                    }
+            }
+            var y = e.map(function (v, q) { return v / G[q][q]; });
+            var L = kan.map(function (_, q) {
+                var s = 0;
+                for (i = 0; i < m; i++) s += y[i] * R[i][q];
+                return s;
+            });
+            M = _blitzDual = { zeilen: zeilen, sturm: sturm, L: L, kanaele: kan };
+        }
+        var lee = feld && isFinite(feld.lee) ? feld.lee : 0, a = 0;
+        for (k = 0; k < M.kanaele.length; k++) {
+            var v = feld ? feld[M.kanaele[k]] : NaN;
+            if (!isFinite(v)) throw new Error("blitzAnteil: das Feld trägt " + M.kanaele[k] + " nicht");
+            a += M.kanaele[k] === "rain" ? M.L[k] * v : (1 - lee) * M.L[k] * v;
+        }
+        return a < 0 ? 0 : a > 1 ? 1 : a;
+    }
+    // DER DONNER EINES BLITZES: ruf = { blitz, d (m bis zum Fusspunkt), saat, temperatur } → { sr, daten, dNah, f0, sek }
+    function donnerPuffer(ruf) {
+        var D = DONNER, r = ruf || {}, rnd = umweltRng((r.saat >>> 0) || 13), c = schallC(typeof r.temperatur === "number" && isFinite(r.temperatur) ? r.temperatur : UMWELT.luft.T);
+        var dH = Math.max(1, typeof r.d === "number" && isFinite(r.d) ? r.d : 1000), sr = D.sr;
+        var gauss = function () { return Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd()); };
+        var knick = Math.tan((D.knickGrad * Math.PI) / 180);
+        // ein gewundener Arm: von p in Richtung v, je Segment ein Knick, `hebt` zieht ihn zur Wolke
+        var arme = [];
+        var arm = function (p, v, laenge, hebt) {
+            var pts = [p.slice()], q = p.slice(), w = v.slice();
+            for (var l = 0; l < laenge && q[1] >= 0; l += D.segmentM) {
+                for (var a = 0; a < 3; a++) w[a] += knick * gauss();
+                w[1] += hebt;
+                var n = Math.hypot(w[0], w[1], w[2]) || 1;
+                for (a = 0; a < 3; a++) q[a] += (D.segmentM * (w[a] /= n));
+                pts.push(q.slice());
+                if (hebt > 0 && q[1] >= D.hoeheM) break;
+            }
+            arme.push(pts);
+            return pts;
+        };
+        var stamm = arm([dH, 0, 0], [0, 1, 0], 4 * D.hoeheM, 0.35);
+        for (var k = 0; k < D.aeste; k++) {
+            var ab = stamm[Math.floor(stamm.length * (0.3 + 0.6 * rnd()))], phi = 2 * Math.PI * rnd();
+            arm(ab, [Math.cos(phi), -0.15, Math.sin(phi)], D.astM, 0);
+        }
+        // die Strahler: je Segment seine Energie (log-normal), je Punkt Abstand, Dauer und Gewicht
+        var R = [], TAU = [], G = [], rMin = Infinity, rMax = 0, tauMax = 0;
+        arme.forEach(function (pts) {
+            for (var i = 1; i < pts.length; i++) {
+                var A = pts[i - 1], B = pts[i], m = Math.max(1, Math.round(D.segmentM / D.punktM));
+                var R0 = Math.sqrt((D.energieJeM * Math.exp(D.streuung * gauss())) / (Math.PI * D.p0)), tau = R0 / (D.fFaktor * c);
+                for (var j = 0; j < m; j++) {
+                    var u = (j + 0.5) / m, x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u, z = A[2] + (B[2] - A[2]) * u;
+                    var rr = Math.max(1, Math.hypot(x, y, z));
+                    R.push(rr); TAU.push(tau); G.push(D.punktM / rr);
+                    if (rr < rMin) rMin = rr;
+                    if (rr > rMax) rMax = rr;
+                    if (tau > tauMax) tauMax = tau;
+                }
+            }
+        });
+        var sek = Math.min(D.maxSek, (rMax - rMin) / c + tauMax + 0.05), n = Math.ceil(sek * sr), x = new Float32Array(n);
+        for (var q = 0; q < R.length; q++) {
+            var i0 = Math.floor(((R[q] - rMin) / c) * sr), L = Math.max(2, Math.round(TAU[q] * sr));
+            for (var s = 0; s < L && i0 + s < n; s++) x[i0 + s] += G[q] * (1 - (2 * s) / (L - 1));
+        }
+        // das Ende des Puffers klingt aus (der ferne Rest des Kanals jenseits maxSek)
+        if ((rMax - rMin) / c + tauMax > D.maxSek)
+            for (var e = Math.max(0, n - Math.round(D.ausSek * sr)); e < n; e++) x[e] *= (n - e) / (D.ausSek * sr);
+        SYNTHESE.samples += n;
+        SYNTHESE.rufe++;
+        var spitze = 0, qs = 0;
+        for (q = 0; q < n; q++) (spitze = Math.max(spitze, Math.abs(x[q]))), (qs += x[q] * x[q]);
+        var scheitelDb = 20 * Math.log10(spitze / Math.sqrt(qs / n || 1e-30) || 1);
+        return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), dNah: rMin, scheitelDb: scheitelDb, f0: (D.fFaktor * c) / Math.sqrt(D.energieJeM / (Math.PI * D.p0)), sek: sek, strahler: R.length };
+    }
     // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — eine Form singt (Resonanz →
     //    Tonhoehe), eine resonierende Form verklingt beim Abbau (die Zahlen wanderten byte-gleich aus dem Stamm; der Treffer
     //    klingt seit w28 aus der Stoff-Zeile, `trefferPaar` unten — bis dahin aus den Tag-Achsen haerte und dichte, 160 +
@@ -1887,7 +2318,9 @@
     //  fahrtImOhr(lage) = fahrtMischung(lage) am Ohr (lage.doppler, lage.dDb; lage.motor false: kein Fahrer, der
     //  Motor schweigt) — ohne diese Felder byte-gleich der Mischung.
     // ═══════════════════════════════════════════════════════════════════════
-    var FAHRT_OHR = { c: 343, dMin: 4, hoerweiteM: 160 };
+    // c: die Bezugs-Luft des Raum-Gesetzes (`schallC`, 20 °C) fuer Leser ohne Lage (die Druckwelle); am Ohr gilt die Luft
+    // des Orts (ohr.temperatur) — bis klang-leib ein eigenes c = 343
+    var FAHRT_OHR = { c: schallC(), dMin: 4, hoerweiteM: 160 };
     // quelle, ohr = { x, y, z, vx, vy, vz } (m, m/s) → { doppler, dDb, d }
     function fahrtAmOhr(quelle, ohr) {
         var O = FAHRT_OHR, q = quelle || {}, o = ohr || {};
@@ -1897,7 +2330,8 @@
         if (!(d < O.hoerweiteM)) return { doppler: 1, dDb: -Infinity, d: d };
         var n = d > 1e-6 ? 1 / d : 0;
         var vq = (w(q.vx) * dx + w(q.vy) * dy + w(q.vz) * dz) * n, vo = -(w(o.vx) * dx + w(o.vy) * dy + w(o.vz) * dz) * n;
-        return { doppler: (O.c + vo) / Math.max(1, O.c - vq), dDb: -20 * Math.log10(Math.max(d, O.dMin) / O.dMin), d: d };
+        var c = schallC(o.temperatur);
+        return { doppler: (c + vo) / Math.max(1, c - vq), dDb: -20 * Math.log10(Math.max(d, O.dMin) / O.dMin), d: d };
     }
     function fahrtImOhr(lage) {
         var L = lage || {}, m = fahrtMischung(L);
@@ -1934,9 +2368,27 @@
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,
-        tierRufSpielen: tierRufSpielen,
+        rufPuffer: rufPuffer,
+        rufPegel: rufPegel,
+        rufSpielen: rufSpielen,
+        STIMME: STIMME,
+        STIMME_FORM: STIMME_FORM,
+        stimmForm: stimmForm,
+        DONNER: DONNER,
+        donnerPuffer: donnerPuffer,
+        blitzAnteil: blitzAnteil,
+        roehre: roehre,
+        stimmLeib: stimmLeib,
+        stimmFormanten: stimmFormanten,
+        stimmPuffer: stimmPuffer,
         ohrLaufzeit: ohrLaufzeit,
-        ohrRichtung: ohrRichtung,
+        // klang-leib (rein additiv) — das Raum-Gesetz: Laufzeit ueber den Weg, Luft nach ISO 9613-1, das Ohr
+        SCHALLWEG: SCHALLWEG,
+        schallC: schallC,
+        luftAlpha: luftAlpha,
+        luftLeiter: luftLeiter,
+        raumLage: raumLage,
+        raumWeg: raumWeg,
         SUBSTANZ: SUBSTANZ,
         substanzKlang: substanzKlang,
         // halten.K2 Staffel 2 (rein additiv) — der Treffer aus dem Stoff-Paar
