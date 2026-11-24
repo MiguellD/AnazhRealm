@@ -1,7 +1,7 @@
 {
  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
  "geraet": "gtx",
- "zeit": "2026-11-24T05:17:31.876Z",
+ "zeit": "2026-11-24T05:53:09.395Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -212,6 +212,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.massstab.spanne#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.05,
+   "grund": "ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k15942408cb93",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 2.1,
+   "fremd": {
+    "s": 4.6,
+    "takte": 2,
+    "fremdS": 15.53,
+    "kerne": 3.408,
+    "fensterKerne": 3.408,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-4448-profil-Oe89kw --no-pr",
+      10.78
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2972 3924",
+      1.33
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      1.09
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      2.31
+     ],
+     [
+      "dwm.exe",
+      0.61
+     ]
+    ],
+    "geraetS": 3.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.31
+     ],
+     [
+      "svchost.exe",
+      0.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 9.36,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T05:19:17.769Z",
+   "abdruck": "2be4c703545f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.tier#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bewohner, die jagen und fischen (8 Saaten): 0 Jäger je Saat, 0 Jagden je Tag; die Taten des Tags schlaf/morgen/arbeit/mittag/abend — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in 40544 ms · Leser stamm/siedlung-bewohner. (gemessen 0, Soll 1 jagende oder fischende Bewohner (je Saat, 8 Saaten)) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.19,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bewohner, die jagen und fischen (8 Saaten): 0 Jäger je Saat, 0 Jagden je Tag; die Taten des Tags schlaf/morgen/arbeit/mittag/abend — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in 40544 ms · Leser stamm/siedlung-bewohner. (gemessen 0, Soll 1 jagende oder fischende Bewohner (je Saat, 8 Saaten)) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "keb55c8f1f18b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 66.6,
+   "fremd": {
+    "s": 72.1,
+    "takte": 32,
+    "fremdS": 120.03,
+    "kerne": 1.664,
+    "fensterKerne": 4.882,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-31872-profil-aVUdkx --no-p",
+      72.89
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.25
+     ]
+    ],
+    "dienerS": 28.88,
+    "diener": [
+     [
+      "dwm.exe",
+      11.84
+     ],
+     [
+      "System",
+      11.34
+     ]
+    ],
+    "geraetS": 28.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18
+     ],
+     [
+      "svchost.exe",
+      9.03
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 193.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T05:53:09.395Z",
+   "abdruck": "d671153922bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -219,7 +359,8 @@
   "k2b071f9725eb": "jVXBjpswEP2XHLv1mgQIxtIenCVqtlJ3E6lSz2MzBjYEIhtCN1X/vSIJSYA9dA4ImTeeN2+ezZ/JHtQWEnx8t2Ux4ZMvk68TCwckFs0BzeO7nfBJqKYzdLk4BxVCfGthymT7ytI8kxRkAekOSW0qzPJHdUoDiV7MOG2WIllTqumRRo24xrN4ehpuk0uMS1KBxusmPou1z4fA2iYgkUCtT4UvYN9xp1JzegoWibeIXqP5IcTa096aRYPNJBRxn3k49wP0+UsjxHLMMs4AK5Jnhe3qTuMg1A6/qzXKMdCQI2Cao7kkIZtOPdmRXbSStDINEnVeW9srxtzYnzFOaTjEJmgzlVZkb0qJxQUuw1kwBb5oRn0k+5roe0YgJTA51DoFLBI0PQ6Oq/R8yulvNtx0Czs0QApIOy0dN5jJmzaU0tWYS34ifipxI+75MfQS26G2z85C9NAura5fu/UoudlMbEbFrEozs+vLpD2cOe6wd5tCjIZsS1tdkcwDQHY5DREVG9Eaa2gqe2uoywMAdmcSyqhYjfSzpa4aMEiSfd0ZxUM/8LlIRq6yFex2nfe167lq1EDVmvuehh+4ms05pQ/nwzGexfkokCNmeZekteeFPn9eeEPwwcCOgExMpnU3cekrHX5m0AbzisiyrDpJJEONnLq0uB/yayMWiVjeRvg9+ijZr4+tK/rxKpafVShNde1Wzh3tcX3qVA3JN5mpSAMq7eAzLRHCoYhHNDkm2JNRBixsbd2oG53I614eeqY9jqZ8zLAVuLC17YaswJP+2R2XS/Klf/U0aLYSim1H1QnUvLVhlIg3sbpTZSVefjrrRvxfLMWmLbJHRfem1Fl7G9IUaptCXt1+C3//AQ==",
   "kb3479b59188a": "bVVhj6IwEP0vfry9blVASpP9UBcT97KX1Z8wLVNgRTAt2IuX++8XVFTA+dTAm5nXN2/g7+QAagcpvn7bqpzwyY/Jz4mFIxKL5ojm9dtO+CRSszl6XFyCCiHeW5gy+aG2tMglBVlCtkfSmBrz4lWd00CinzBO3UqkG0o1PdHYiVusxNvbsEwhMalIDRpvRQKW6IAPgY1NQSKBRp8bX8HB1JtJzek5WCy+YnoL91uIja/9DYvb5oOCEsqkzz5aBCEG/MM9ZZrkgDUp8tJ2vWdJGOkpf+g3yjHgyAkwK9Bck5DNZr7sCC9bWVqpBom6aKztNWNeEswZpzQaYlO0ucpqcjCVxPIKl9E8nAFfutE90kND9CMjkBKYHOqdAZYpmh6Hqaf0YsbpHzYsuoM9GiAlZJ2WUy+cy7s2lNL1mEtxJn5ucSfuBwn0EtvB0iOlnY3aM2Xr29vueZzerSa2o2ZWZbnZ92XSPs6nHv8cU7MZJGjIrrL1Dc18AGTXrYip2IrWYPEw836pLg8A2INRKKNiPdLQVrp2YJCkh6Yzi49BGHAhPkbgGvb7bge053tqOEBbtwZ/pBGEnmYLTunLZUnGl76sAzlhXnRJWvt+NNrGo4E9AZmaXOtu4jJQOnpmUIdFTWRV1Z0ckqHGVo7yccgbd/lG3CN2lVq9p1vRj5UY8j53qEx9u6lcTLXPdWsUp0bo3NTEgco6+FxLhIg/gZ7QFJhiT0YZsqi1tlMPTP3u8NIz7mk05VOOrcClbWw3ZAW+DPiTkTg0OwnlrqM5DdWC8V9CiOWXWPdFibcbFtNheK7V8zMT18IHVPRgKp23Xz+aQWMzKOr7r+Dffw==",
   "kec8d4d7e00d6": "jVXBjpswEP2XHNuyJsEEY2kPzhI1e+huVqrU89iMgQ2ByIbQTdV/r0hCCLCHzgEh88bz5s2z+TM7gNpBgg/vtixmfPZl9m1m4YiORXNE8/BuZ3wWqvkCPS4uQYQQ31uYMtmhsiTPJAFZQLpHpzYVZvmDOqeBRBozTpq1SLaEaHIiUSNu8SQeH8fb5BLj0qlA420Tn8Xa52NgbROQ6ECtz4WvYN/15lJzcg4WideI3KL5IcSWarpl0WgzCUU8ZB4u/QB9/twIsZ6yjDPAysmzwnZ153EQapff1ZrkGGicE2Cao7kmIZvPqezIrlpJWplGiTqvrR0UY17sLxgnJBxjE7SZSivnYEqJxRUuw0UwB75qJn0kh9rR94xASmByrHUKWCRoBhxcT+nlnJPfbLzpDvZowCkg7bR0vWAhe20IIZspl/xM/FyiJ079GAaJ7VDbZ2chcmyXNrev3XqU9DYTb5NiVqWZ2Q9l0hQXrjfu3aYQo3F2pa1uSEYBkF1PQ0TEm2iNNTaV7Rvq8gCA3ZmEMCI2E/1sqasGDDrJoe6MQtEPfC6SiatsBft9533tUU9NGqhac9/T8ANPsyUn5OvlcExncTkKzgmzvEvSmtLQ508rOgYfDewdkInJtO4mLn2lw88M2mBeObIsq04SyVAjJx4p7of80ohVItb9CLfRR8l+few8MYwXsf6sQmmqW7dy6WrK9blTNSbfZKZyGlBpB19oiRCORTyhyTHBgYwyYGFr60b1dCLavXwdmPY0mfIpw1bgwta2G7ICKv2LO66X5PPw6mnQ7CQUu46qG6hla8MoEa9ic6fKRjz/dLeN+L9Yi7e2yAEVOZhSZ+1tSFKobQp51f8W/v4D",
-  "k7b9994db1607": "bVVdj5swEPwvPPaO2xAgGEv34DSR7qR+JI/3uDZroCEQ2SS0qfrfK0hIAtw+IAS7nvHMGP46B1Q7TOnll61KhztfnGfnUGBJtasq0z52uDOfeyryeDmDJzhtAJqPRojm1Xl2LJ7ItWROZC6tsfLm5PP2lTL5obZQ5BJQlpjtyT2amvLiRXWtKClIGIdmLdINgIYzrJrX1/FoISmp3Bo13QZDluhwgnG0KUpy8ag7sGtzOPM9qTl0xVbi5wpu1XwXYhPoYMNWo8UklsmQbbwIIwr5+x8h1mLCMsmRarfIS9vjekkU6xl/wJrMGGzcM1JWkLkOEfO8QPZkl0KITprRoC6O1g7AmJ+Ec8YB4nFvSjZXWe0eTCWpvLbLeB55yJdTtdPD0dWPjFBKZHKsdYZUpmQGHGa+0guPw282XnSHezLolpj1Ws78aC7v2gDA25RL0RHvIO7EgzDBwWBrKpwAxLXae2Bvt7f981Uq7rWdgFmV5WY/lEkHNJ/5/NuUms0wIePuKlvfulmASIxf0UBsRRuucbDsfVP9HCKyh6AAA/E20dBWum7QkJsejn1YAgqjkAvxPmmucb/v86/9wFdjA23dBvyRRhj5mi04wNPlgEw3fTkO7pnyoh/SOgjiyUk8Gdy7KFOTa907LkOl488C2lBRu7Kq6l4OyUgTBx/KR5N/NK2s6wcPV02l1l/TrRjWWox5dwiVqW87lYuZDrhug9KoSXduardBlfXtcy0JYw7+xJMzmYJSGsgoIxa30W7UlWWbguj6CdBPg+Cepyvm1Apc2qPtTVYYyJB/YklDZiex3PU0Z5FaXOK3/CnehqKsthvW2hoN8P2m1XOTLTttxcflcgE5kIKDqXTefgkhw6PNsKjvf4l//wE="
+  "k7b9994db1607": "bVVdj5swEPwvPPaO2xAgGEv34DSR7qR+JI/3uDZroCEQ2SS0qfrfK0hIAtw+IAS7nvHMGP46B1Q7TOnll61KhztfnGfnUGBJtasq0z52uDOfeyryeDmDJzhtAJqPRojm1Xl2LJ7ItWROZC6tsfLm5PP2lTL5obZQ5BJQlpjtyT2amvLiRXWtKClIGIdmLdINgIYzrJrX1/FoISmp3Bo13QZDluhwgnG0KUpy8ag7sGtzOPM9qTl0xVbi5wpu1XwXYhPoYMNWo8UklsmQbbwIIwr5+x8h1mLCMsmRarfIS9vjekkU6xl/wJrMGGzcM1JWkLkOEfO8QPZkl0KITprRoC6O1g7AmJ+Ec8YB4nFvSjZXWe0eTCWpvLbLeB55yJdTtdPD0dWPjFBKZHKsdYZUpmQGHGa+0guPw282XnSHezLolpj1Ws78aC7v2gDA25RL0RHvIO7EgzDBwWBrKpwAxLXae2Bvt7f981Uq7rWdgFmV5WY/lEkHNJ/5/NuUms0wIePuKlvfulmASIxf0UBsRRuucbDsfVP9HCKyh6AAA/E20dBWum7QkJsejn1YAgqjkAvxPmmucb/v86/9wFdjA23dBvyRRhj5mi04wNPlgEw3fTkO7pnyoh/SOgjiyUk8Gdy7KFOTa907LkOl488C2lBRu7Kq6l4OyUgTBx/KR5N/NK2s6wcPV02l1l/TrRjWWox5dwiVqW87lYuZDrhug9KoSXduardBlfXtcy0JYw7+xJMzmYJSGsgoIxa30W7UlWWbguj6CdBPg+Cepyvm1Apc2qPtTVYYyJB/YklDZiex3PU0Z5FaXOK3/CnehqKsthvW2hoN8P2m1XOTLTttxcflcgE5kIKDqXTefgkhw6PNsKjvf4l//wE=",
+  "k15942408cb93": "bVXBkqIwEP0XjzvLRAUkpGoOcbDKqdrd0dOeO6EDjAhWArLj1v77VtSowPQR+6Vf3nsd/04OIHeQ4fOHqasJm3ybfJ8YOKJnUB9RP3+YCZvEcjZHn/FLEc75q22Tujg0hpSFICAqyPfotbrBonyWZxgIDFLKSLfi2YYQRU4k6V5ehtBSYFp7DSi8AUOaqpANG1uTgUAPWnUedm0Op/5MKEbORRP+npBbdZTzTaCCDU0Ghwmo0j7beBFGGLK3T85XfMQyLQAbrywq4+bO0ihWU3af9XOE0dB5J8C8RH0FIZ3NAuHILq2cVpoBUJWtMb1h1E/DOWWExMPeDE0h88Y76FpgdW0X8TyaAVuO1c4OraceGYEQQMVQ6xywylD3OEx9qRYzRv7Q4aE72KMGr4LcaTn1o7m4a0MIWY+5lGfi5xF34kGYQg9oTSVHQriL39F+Wt9+dd+TjN9rOxpmZF7ofV8mFeB86rMfY2omhxS1t6tNc+umAQDS6xYkhG+5DdcwWOZ+KYcDAPoQFEIJX480NLVqOtDoZYfWhSXAMAoZ52+j5gb2e5d/5Qe+HBpoGhvwRxph5Cu6YIQ8XRZkfOnLOngnLEoHUioI4tEmHjXsPRCZLpRyjotQqvirgHZYNp6o68bJISgqZMQn1aPJvzor6+rBw6Sr5e/PrOP9WvEh7/OEWje3m4rFVAVM2aB0ctRd6MbrQOaufa4EgqU+8uSEusQMezKKiMY22p268D7ZJya6PgHqqRfc0/jEAq3AlWmNM1lCIEL2hSUd6p2AaudoTiO5uMRv+c7XPU1ek+2GWluj3ny/s3pu8uVFQ2mXxL1TB5TkoGtV2JeQ5NCaHMrm/jfw7z8="
  },
  "ungemessen": {
   "karte2.erleben.klang.stimme#1": {
