@@ -452,8 +452,8 @@ H.fahre(async (H) => {
     return K.ende();
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\c9da3a64-radeon\karte2.mensch.geist.generationen_1.json 77
 [linse-gpu] amd/rdna-3
-@@ 6.3 s · am Messort stadt-voll (ego) nach 6.3 s, 216 Takte, Anlauf stand
-@@ 11 s · S1 Kinder 511 von 1365, Alter 3.7–60.4 J
+@@ 7.9 s · am Messort stadt-voll (ego) nach 7.9 s, 316 Takte, Anlauf stand
+@@ 12.5 s · S1 Kinder 511 von 1365, Alter 3.7–60.4 J
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
