@@ -299,9 +299,10 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerLauf(S, b, feld, tag) {
         const L = AnazhRealm.LEBENSLAUF;
         if (feld === "krank") {
-            // je Spanne von `krank.tage` Tagen (versetzt um seinen Samen) EIN Wurf: krank mit dem Anteil der Kranken-Kassen
-            const wm = this.state.worldMeta;
-            const d = Number.isFinite(tag) ? tag : +(wm && wm.tag) || 0;
+            // je Spanne von `krank.tage` Tagen (versetzt um seinen Samen) EIN Wurf: krank mit dem Anteil der Kranken-Kassen. Der
+            // Tag ist der der Prozesse (`_weltTag`): die Uhr des Spielers bewegt keine Krankheit (bis hier der Tag der Sicht
+            // `worldMeta.tag` — ein Zug am Regler über Mitternacht machte den Kranken gesund, die Wiederkehr fand ihn 34 m fort)
+            const d = Number.isFinite(tag) ? tag : Math.floor(this._weltTag());
             const sp = Math.floor((d + (b.same % L.krank.tage)) / L.krank.tage);
             let h = (b.same ^ Math.imul(sp, 0x9e3779b1)) >>> 0;
             h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
@@ -2487,14 +2488,9 @@ class AnazhRealm_siedlung_bewohner {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
-        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1, bewohner-satz): ist er an diesem Tag der Sicht krank (der Lebenslauf,
-        // `krank`), sitzt er in jeder Stunde, die ihn fortführte — Werk, Markt, Mahl, Besuch —, vor seiner Tür im Akt seines Abends
-        if (!soll.drinnen && soll.ort !== o.heim && !b.amSteuer) {
-            const wm = this.state.worldMeta;
-            if (this._bewohnerLauf(null, b, "krank", (+(wm && wm.tag) || 0) + Math.floor(stunde / 24)))
-                return { ziel: o.heim, drinnen: false, akt: "abend" };
-        }
+        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs an diesem Tag (`b.krank`) ist ein Eingang
+        // des Plans — der Kern setzt ihn vor seine Tür, der Posten hält seine Schicht
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain, b.krank);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat

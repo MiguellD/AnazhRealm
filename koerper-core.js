@@ -5599,7 +5599,10 @@
     // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
     // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
     // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
-    // (`regenfest`).
+    // (`regenfest`). krank = das Feld seines Lebenslaufs an diesem Tag (mensch.menge.seuche#1, der Satz `b.krank`): jede Stunde,
+    // die ihn fortführte — Werk, Markt, Mahl, Besuch, Treff —, sitzt er vor seiner Tür im Akt des Abends; der Posten hält seine
+    // Schicht wie im Regen (`regenfest`: die Wache, der Fahrer). Bis hier stand die Krankheit als Zweig im Wirt (`_bewohnerSoll`)
+    // neben diesem Plan: die Linse des Tags las den Plan ohne ihn (Soll-Orte 0,567 statt ≥ 0,9), der kranke Fahrer stieg nie ein.
     // DIE WENDEN DES TAGS EINES MENSCHEN (rein aus Same und Rolle, in den Stunden seiner Rolle — ohne den Versatz `versatzH`): die
     // EINE Rechnung, die der Plan der Stunde (`tagesPlan`) und das Fenster seiner Arbeit (`tagesFenster`, der Bestand) lesen
     function _tagesWenden(same, rolle) {
@@ -5627,7 +5630,7 @@
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
-    function tagesPlan(same, rolle, stunde, orte, nass) {
+    function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
         var T = _tagesWenden(same, rolle),
             R = T.R;
@@ -5645,8 +5648,9 @@
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen) {
-            if (regen && !drinnen && !(akt === "arbeit" && R.regenfest))
-                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
+            var posten = akt === "arbeit" && R.regenfest;
+            if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
+            if (krank && !drinnen && !posten && (orte[wo] || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;

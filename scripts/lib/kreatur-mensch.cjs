@@ -213,9 +213,11 @@ async function menschBuehnen() {
                     Object.assign(sp, { x, z, innen, nah, steckt: !da && minute - sp.seit >= 5 });
                 }
             };
-            // die Zahl: die Wand je Bau, die Tür, die Wege und die Strecke je Leib, Steckenbleiber, Berührung (je die ersten vier)
+            // die Zahl: die Wand je Bau, die Tür, die Wege und die Strecke je Leib, Steckenbleiber, Berührung (je die ersten vier).
+            // Der Kranke des Tags (`b.krank`, mensch.menge.seuche#1) geht keine 4 Wege: sein Plan hält ihn vor der Tür — die
+            // Wege und die Strecke zählen die Gesunden, `krankN` nennt die anderen
             const zahl = () => {
-                const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
+                const je = liste.filter((b) => !b.krank).map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
                     wandN: [...WG.wand.values()].reduce(addiere, 0),
@@ -229,6 +231,7 @@ async function menschBuehnen() {
                     aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
                     sprungN: WG.sprungN,
                     stand: { n: WG.standN, ueber: WG.standUeber, mm: Math.round(WG.standMax * 1000), wer: WG.standWer },
+                    krankN: liste.length - je.length,
                     wegeMin: Math.min(...je.map((q) => q.n.size)),
                     wegeMax: Math.max(...je.map((q) => q.n.size)),
                     streckeMin: Math.round(Math.min(...je.map((q) => q.gesamt))),
@@ -956,7 +959,8 @@ async function menschBuehnen() {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
                 // der Regen der Welt, wie der Wirt ihn reicht (`_bewohnerSoll`: der Kanal rain des EINEN Wetter-Felds)
-                const planJetzt = () => planFn(b.same, b.rolle, sh, o, r._weatherFieldFor().rain);
+                // und sein Lebenslauf an diesem Tag (`b.krank`: der Kranke sitzt vor seiner Tür, mensch.menge.seuche#1)
+                const planJetzt = () => planFn(b.same, b.rolle, sh, o, r._weatherFieldFor().rain, b.krank);
                 const soll = planJetzt();
                 if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
                 const ziel = soll.drinnen ? o.tuer : soll.ort;
