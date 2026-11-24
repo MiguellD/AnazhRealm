@@ -1,5 +1,5 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe, deren Kopf
-// auf main gelandet ist (derselbe run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
+// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe und main
+// (WIEGT: der Zug trägt den Puls, main die volle Batterie als Nachwache — LANDUNG ≤ 10 MIN), deren Kopf auf main gelandet ist (derselbe run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
 // ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er nimmt aus dem
 // Puls, was eine Gruppe über ihren Deckel trägt, verteilt die Voll-Gruppen (die Klasse cpu: ein Echt-Rezept dort ist ROT, seine
 // Stelle die Karte) und je echt-Schritt die Frist timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉); die Vorbereitung
@@ -36,6 +36,10 @@ const gelandetAmMain = (sha) => spawnSync("git", ["merge-base", "--is-ancestor",
 const frist = (z) => Math.max(5, Math.ceil((3 * z.p90) / 60), Math.ceil((1.2 * z.max) / 60));
 // die Karten des Jobs echt (matrix.karte)
 const karten = (doc) => [].concat(doc?.jobs?.echt?.strategy?.matrix?.karte || []);
+// die Läufe, die wiegen (LANDUNG ≤ 10 MIN, 23.11.): integ-probe (der Zug: kopf und Puls) und main (die Nachwache: die volle
+// Batterie nach jeder Landung) — der Zug fährt voll nie, ohne main stünde jede voll-Zeit still „geschaetzt"; die Karten fahren
+// nur auf Abruf, ihre Zeiten bleiben geschätzt, bis ein Abruf sie wiegt
+const wiegt = (r) => r.head_branch === "integ-probe" || r.head_branch === "main";
 
 // die Schritte einer check.yml: Name → { run-Text, Job-Art } (ohne Vorbereitung)
 function schritteAus(doc) {
@@ -52,7 +56,7 @@ function schritteAus(doc) {
 // lief und sieben Läufe am Deckel brach (der langsame Läufer brach ab, der schnelle Wiederholungs-Versuch wurde gezählt).
 async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMain) {
     const soll = schritteAus(jetzt);
-    const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed" && gelandet(r.head_sha);
+    const nimm = (r) => wiegt(r) && r.status === "completed" && gelandet(r.head_sha);
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     // die Vorbereitung: die volle Stufe und je Karte ihr Läufer (die Karte heißt wie der Läufer bis zum ersten Bindestrich)
@@ -116,7 +120,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
             `ROT: die API lieferte ${neueste.length} Läufe, ${gemessen} Messungen, ${Object.keys(schritte).length} Schritte — ${AUS} bleibt, wie sie ist`
         );
     const out = {
-        quelle: "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe, deren Kopf auf main landete, im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
+        quelle: "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe und main, deren Kopf auf main landete, im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
         erzeugt: new Date().toISOString().slice(0, 10),
         kopf,
         je_schritt: JE_SCHRITT,
