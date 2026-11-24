@@ -1,7 +1,8 @@
 # Vorprüfung nerv-bewegung — `leben.tiere.bewegung#1` · `mensch.sport.koerper#1`
 
 ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 77 von 1 718. Die beiden Sprossen bucht erst der GPU-Lauf ihrer
-Stationen (`punkte.cjs` fährt nur auf den GPU-Läufern), bis dahin stehen sie.
+Stationen (`meisterkarte-quelle/punkte/punkte.cjs` im Zweig `punkte-maschine` fährt nur auf den GPU-Läufern), bis dahin stehen
+sie.
 
 **Geschnitten:** Die Bewegung ist ein Gesetz an der Gestalt. Der Gangwechsel des Tiers liegt an der Froude-Zahl der Natur. Gehen,
 Sprint und Sprung des Menschen kommen aus Bein, Masse und Kraft. Elf Verben sind Zeilen der EINEN Verb-Tafel. Das Spiel liest
@@ -21,8 +22,9 @@ fahren die GPU-Proben des Kopf-Commits.
 | ff04948 | `leibVerben`: Gehen an Fr 0,25, Sprint im Impuls-Gleichgewicht, Sprung h = d·(Φ − 1); `VERB_TAFEL` mit 11 Zeilen | Alexander 1989, Leurs 2011, Weyand 2000, Samozino 2008 |
 | 18965cd | `_blockerFugen`: eine Trittfläche (`tritt`) ist nie Stab — der Balken 0,10 m trägt | FIG-Gerätenorm 10 cm |
 
-Die Station steht im Zweig `pm-nerv-bewegung` (28e7cbc über punkte-maschine eea0f13): `k2-mensch-sport.js` setzt alle 11 Verben
-in der EINEN warmen Welt ein (`VERBEN`), sek 60, lokal emuliert 17,5–19,3 s.
+Die Station steht im Zweig `pm-nerv-bewegung` (28e7cbc über punkte-maschine eea0f13):
+`meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js` setzt alle 11 Verben in der EINEN warmen Welt ein (`VERBEN`), sek 60,
+lokal emuliert 17,5–19,3 s.
 
 ## Gemessen je Sprosse (vorher ↔ nachher, gleiche Bedingungen)
 
