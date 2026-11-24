@@ -2319,7 +2319,10 @@
       hub = (1 - lam) + lam * (1 + om * hubW);
       // das Relief am Regen der Front: Sperre · Föhn · Hub — genau 1 ohne Anstieg luvwärts (der Sturm liest es, ortRoh)
       relief = ((1 - lam) + lam * (1 - om * (1 - sp))) * schatten * hub;
-      meerLuv = (m - mLand) / (1 - mLand) > 0.02 ? 1 : 0;                // Feuchte mit Meeres-Anteil (Quelle luvwärts bzw. nach Küstenferne)
+      // Feuchte mit Meeres-Anteil (Quelle luvwärts bzw. nach Küstenferne). klima-aufwind: die Anzeige liest die QUELLE der Säule (mW vor
+      // der Sperre) — vorher m nach der Sperre: eine Säule vom Meer, der ein Kamm den Dampf unter die Rückführung nahm, hieß „ohne Meer“
+      // (43 von 63 Fällen an sechs Saaten); solange der Hub nur den Meeres-Anteil hob, fiel das nie auf.
+      meerLuv = ((1 - lam) + lam * (om * mW + (1 - om) * mNeutral) - mLand) / (1 - mLand) > 0.02 ? 1 : 0;
       // klima-kontinent: die Meeresluft am Ort ist der Anteil der Luft, die längs des EINEN Winds vom Meer kommt (om·mar) — die
       // Kontinentalität ist ihr Rest, gedämpft von der Küstennähe in jeder Richtung (Seewind, Tage mit auflandigem Strom:
       // glatt(−1 000, 1 500, kont), an der Küste 0,35). Vorher c = glatt(0, 1 500, kont)·(1 − 0,6·om·mar): an jeder Küste ≈ 0, auch wo
@@ -2402,7 +2405,7 @@
     o.tJahrC = tJ; o.tSommerC = tS; o.tWinterC = tW; o.tagAmpC = 4 + 10 * c * (1 - Math.min(1, pJahr / 1500));
     o.niederschlagMm = pJahr; o.sommerAnteil = sommerAnteil; o.kontinental = c;
     o.windOst = wl > 1e-9 ? uO / wl : 0; o.windNord = wl > 1e-9 ? vN / wl : 0;
-    o.luv = (hub - 1) * FEUCHTE_NAH_KM / KLIMA.landKm; o.lee = 1 - schatten; o.stromK = dTj; o.meerWest = meerWest; o.meerLuv = meerLuv; o.feuchte = m;
+    o.luv = (hub - 1) * FEUCHTE_NAH_KM / KLIMA.landKm; o.hub = hub; o.lee = 1 - schatten; o.stromK = dTj; o.meerWest = meerWest; o.meerLuv = meerLuv; o.feuchte = m;
     o.relief = relief; o.meerLuft = meerLuft;
     // klima-kontinent DER NEBEL aus demselben Gesetz: die Küstenluft (e^(−kont/nebelKm) an Land, über Meer 1) trägt den See-Nebel; die
     // vom kalten Auftrieb gekühlte Luft (der Rand-Strom dTj < 0 der Westküste, voll beim Taupunkt-Abstand — er klingt landein mit seinem

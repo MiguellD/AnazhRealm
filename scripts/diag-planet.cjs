@@ -296,7 +296,11 @@ function wechselAnteil(seitenA, seitenB) { let n = 0, w = 0; for (let i = 0; i <
 function widerspruchZaehlen(K, B, land) {
   // Nach dem Angriff: Meereis (eis 2) ist Winter-Eis — es widerspricht einem warmen WINTER, nicht einem warmen Sommer (Ochotsk);
   // Land-Eis (eis 1, EF) bleibt an den Sommer gebunden.
-  return { eisWarm: (B.eis === 1 && K.tSommerC > 5) || (B.eis === 2 && K.tWinterC >= -12) ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm >= 1500 && !K.meerLuv ? 1 : 0 };
+  // klima-aufwind: „Regen ohne Meer“ zählt den Regen der Front OHNE den Hub am Hang (K.hub). Per Bau trägt die Rückführung höchstens
+  // den halben Gürtel-Regen (≤ 1 425 mm); am Luv-Hang regnet auch ihre Säule aus — die Luv-Füße der Ost-Anden (Quincemil, Chipiriri;
+  // 400–700 m) tragen über 4 000 mm im Jahr, bis 190 mm je km Anstieg (Espinoza et al. 2015, Water Resour. Res. 51, 3459–3475), rund
+  // 2 700 km windab der Atlantik-Küste über Wald. Vorher hob der Hub nur den Meeres-Anteil: ohne Meer blieb jeder Hang trocken.
+  return { eisWarm: (B.eis === 1 && K.tSommerC > 5) || (B.eis === 2 && K.tWinterC >= -12) ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm / (K.hub > 1 ? K.hub : 1) >= 1500 && !K.meerLuv ? 1 : 0 };
 }
 function versatz(x, y, z, ostKm, R, out) { // ostKm entlang des Breitenkreis-Tangenten
   const c = Math.hypot(x, z) || 1e-12, ex = -z / c, ez = x / c, a = ostKm / R, ca = Math.cos(a), sa = Math.sin(a);
@@ -1406,7 +1410,10 @@ function gegner2Selbsttest(zeile) {
 //                    Neu gedruckt am Kern klima-kontinent: das Klima verlegt die Heimat — Gesetz, nicht Treppe. Die Küsten-Feuchte
 //                    trägt mehr Orte: ohne Ort bei 512 vorher 14 von 3 000 Saaten (0,47 %, h2-12; die sieben gefunden unter 1 000),
 //                    jetzt 4 von 4 900 (0,08 %; Saaten sha256('klima-kontinent-' + i), i < 4 900, in der Form des Spiels).
-const ANKER_OHNE = ['w-549d70713064-ybhbkh', 'w-a35ea78d2ddf-ocd04u', 'w-2547d735a0a9-u9clj0', 'w-f3b1679a7155-w49s5c'];
+//                    Neu gedruckt am Kern klima-aufwind (h2-15): der Regen am Hang hebt Spende und Wuchs — zwei der vier finden bei
+//                    512 Proben jetzt einen Ort, zwei andere verlieren ihn; wieder 4 von 4 900 (dieselben Saaten
+//                    neu gezählt), jede trägt ihren Anker auf Land, Küste ≤ 300 km, keine bleibt ohne.
+const ANKER_OHNE = ['w-549d70713064-ybhbkh', 'w-890cbedeebe6-e1bu8h', 'w-2547d735a0a9-u9clj0', 'w-928a32ae0faf-5xb8qx'];
 const ANKER_512 = { 'w-d10e897e3fad-azvhsr': [0.872109983490599, 1.8701752196816235], 'w-e6ea6c6b804e-mr4t9z': [0.7878341894854001, 1.7081433330043478], 'w-4a2768b6253a-h4uio8': [0.7638875402809908, -2.8201081782321613] };
 const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
 function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
@@ -1490,11 +1497,31 @@ function aufwindZeile(Q) {
   return { ok: v.length >= 40 && m >= 2 && mittel(auf) >= 0.7, median: m, n: v.length,
     wert: 'Luv/Lee an den ¾-Punkten (' + samen + '): Median ' + m.toFixed(2) + ' über ' + v.length + ' Kämme (≥ 2:1 an ' + (100 * ab2).toFixed(0) + ' %) · Luv über seinem Vorland ' + (100 * mittel(auf)).toFixed(0) + ' % (' + auf.length + ') · Lee unter dem Kamm ' + (100 * mittel(ab)).toFixed(0) + ' %' };
 }
+// klima.widerspruch an der Wand (klima-aufwind): der Richter bau2 zählt die drei Widersprüche des Klimas nur von Hand — der Schnitt am
+// Hang-Aufwind färbte „Regen ohne Meer“ rot (385 an 30 Saaten), und keine Wand sah es. Dieselbe Zählung (`widerspruchZaehlen`) an der
+// Heimat-Saat, 16 384 Proben: Eis bei warmem Sommer · Wüste über 1 500 mm · Regen der Front ohne Meeres-Anteil — je 0.
+function widerspruchZeile(Q) {
+  const samen = 'anazh-realm-seed', S = Q.planetScheibe(planQ(Q, samen), 0), N = 16384, F = Q._intern.fib(N), o = {}, K = {}, B = {};
+  const z = { eisWarm: 0, wuesteNass: 0, regenOhneMeer: 0 }; let land = 0;
+  for (let i = 0; i < N; i++) {
+    const x = F[3 * i], y = F[3 * i + 1], zz = F[3 * i + 2], h = Q.planetPunktR(S, x, y, zz, 40, o);
+    Q.planetKlimaR(S, x, y, zz, -1, K, o); Q.planetBiom(K, h, B); if (h > 0) land++;
+    const w = widerspruchZaehlen(K, B, h > 0); z.eisWarm += w.eisWarm; z.wuesteNass += w.wuesteNass; z.regenOhneMeer += w.regenOhneMeer;
+  }
+  return { ok: land > 1000 && z.eisWarm + z.wuesteNass + z.regenOhneMeer === 0,
+    wert: 'Eis bei warmem Sommer ' + z.eisWarm + ' · Wüste über 1 500 mm ' + z.wuesteNass + ' · Regen der Front ohne Meeres-Anteil ' + z.regenOhneMeer + ' (' + samen + ', ' + land + ' Land-Proben von ' + N + ')' };
+}
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
     const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich');
-    const A = aufwindZeile(P); zeile('klima.aufwind', A.ok, A.wert, 'Median Luv/Lee ≥ 2 über ≥ 40 Kämme, Luv über seinem Vorland ≥ 70 %'); return U; }
+    const A = aufwindZeile(P); zeile('klima.aufwind', A.ok, A.wert, 'Median Luv/Lee ≥ 2 über ≥ 40 Kämme, Luv über seinem Vorland ≥ 70 %');
+    const W = widerspruchZeile(P); zeile('klima.widerspruch', W.ok, W.wert, '0 · 0 · 0 (per Bau)'); return U; }
+  // der Täter des Widerspruchs: der Hub ohne Ausweis (das Klima nennt `hub` nicht) — die Zählung liest den Regen MIT dem Hang und
+  // nennt jeden Luv-Hang im Binnenland „Regen ohne Meer“ (der Stand des Schnitts, bevor die Wand ihn sah)
+  { const QW = kernMutant(/o\.hub = hub; /, '', 'hub');
+    if (!QW) zeile('klima.widerspruch nennt', false, 'der Kern ' + P.VERSION + ' trägt die Zeile des Täters „der Hub ohne Ausweis“ nicht — er lässt sich nicht pflanzen');
+    else { const W = widerspruchZeile(QW); zeile('klima.widerspruch feuert', !W.ok, 'gepflanzt: der Hub ohne Ausweis → ' + W.wert); } }
   // die Täter des Hang-Aufwinds (klima-aufwind): der Hang ohne Aufwind, das Lee ohne den Abstieg der Säule, die Schritte an der Hülle
   // (dem Klima fehlt das Relief der Kette — der Stand bis klima-aufwind); jeder fällt an der Zeile klima.aufwind
   for (const [name, re, ersatz, marke] of [
@@ -1506,7 +1533,11 @@ function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--ank
     else { const A = aufwindZeile(QA); zeile('klima.aufwind feuert', !A.ok, 'gepflanzt: ' + name + ' → ' + A.wert); }
   }
   // die Täter der Neigung: der eigene Anker (vor dem Schnitt) und die Zuschläge der Küsten ohne den Gang der Neigung (jG = 1)
-  const N1 = neigungZeile(P, og, true), QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
+  // Der Planet ohne Neigung trägt die Konstanten der Heimat (Sommer 18 / Winter −4 °C) nur zufällig — h2-14: 2 von 43 520 Proben der
+  // ganzen Treppe, h2-15 (klima-aufwind): keine. Der Täter „eigener Anker“ zeigt sich als volle Spanne ODER als Bruch der Anker-Suche
+  // beim Namen (K10): beides ist ROT an der Wand (ein Bruch ist Exit 1), jeder andere Fehler bricht den Selbsttest weiter.
+  let N1; try { N1 = neigungZeile(P, og, true); } catch (e) { if (!/planetAnker: kein Ort/.test(e.message)) throw e; N1 = { ok: false, wert: 'der Planet ohne Neigung trägt keinen eigenen Anker — die Reise bricht beim Namen (K10)' }; }
+  const QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
   zeile('ort.neigung feuert', !N1.ok, 'gepflanzt: das Δ gegen den eigenen Anker → ' + N1.wert);
   if (!QG) zeile('ort.neigung nennt', false, 'der Kern ' + P.VERSION + ' trägt keine Zeile jG — der Täter lässt sich nicht pflanzen');
   else { const N2 = neigungZeile(QG, og); zeile('ort.neigung nennt', !N2.ok, 'gepflanzt: die Küsten-Zuschläge ohne den Gang der Neigung (jG = 1) → ' + N2.wert); }
