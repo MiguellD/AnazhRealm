@@ -11080,7 +11080,7 @@
   },
   "karte2.leben.evolution.erbe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#1 gtx: Station seit der Messung geändert · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#2 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 ekRegression 0,54 gegen Soll 0,2–0,8 ✓ · generationen 13 gegen Soll ≥ 10 ✓ · Zeuge: Geburten im Zeitraffer, Kind mit Eltern; Mutante „Erbe aus“ → ≈ 0 an 2d6a0447 gtx — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#2 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.erbe#1",
@@ -11095,11 +11095,11 @@
     {
      "id": "karte2.leben.evolution.erbe#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 ekRegression 0,54 gegen Soll 0,2–0,8 ✓ · generationen 13 gegen Soll ≥ 10 ✓ · Zeuge: Geburten im Zeitraffer, Kind mit Eltern; Mutante „Erbe aus“ → ≈ 0",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11312,7 +11312,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#1 gtx: ROT: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0073 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere) an 2d6a0447 · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11328,10 +11328,10 @@
      "id": "karte2.leben.evolution.fremde-physik#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0073 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": "ROT: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0073 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -11964,7 +11964,7 @@
   },
   "karte2.leben.evolution.zivilisation": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#1 gtx: Station seit der Messung geändert · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 rEltern 0,212 gegen Soll > 0 ✓ · scheuDelta 19,84 gegen Soll > 0 ✓ · Zeuge: Tiere mit ihrer Fluchtdistanz an 2d6a0447 gtx — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.zivilisation#1",
@@ -11979,11 +11979,11 @@
     {
      "id": "karte2.leben.evolution.zivilisation#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 rEltern 0,212 gegen Soll > 0 ✓ · scheuDelta 19,84 gegen Soll > 0 ✓ · Zeuge: Tiere mit ihrer Fluchtdistanz",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -14214,7 +14214,7 @@
   },
   "karte2.leben.tiere.bewegung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.bewegung#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.tiere.bewegung#1 gtx: Station seit der Messung geändert · karte2.leben.tiere.bewegung#2 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#2 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#3 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#3 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#4 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#4 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#5 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#5 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#6 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#6 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#7 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#7 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#8 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 gleitProzent 1,8 % gegen Soll ≤ 5 % ✓ · froudeAbw 0 % gegen Soll ≤ 10 % ✓ · Zeuge: die Welt geändert an 2d6a0447 gtx — offen: karte2.leben.tiere.bewegung#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.tiere.bewegung#2 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#2 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#3 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#3 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#4 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#4 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#5 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#5 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#6 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#6 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#7 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#7 gtx: ungemessen (R10) · karte2.leben.tiere.bewegung#8 radeon: ungemessen (R10) · karte2.leben.tiere.bewegung#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.bewegung#1",
@@ -14229,11 +14229,11 @@
     {
      "id": "karte2.leben.tiere.bewegung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 gleitProzent 1,8 % gegen Soll ≤ 5 % ✓ · froudeAbw 0 % gegen Soll ≤ 10 % ✓ · Zeuge: die Welt geändert",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37521,7 +37521,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 306,
+  "konsum": 310,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37689,10 +37689,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3316
+  "ohne": 3312
  },
  "kopfVoll": "2d6a0447b80ae36b4b83e52e12757c457c536133",
- "zeit": "2026-11-24T19:44:10.035Z",
+ "zeit": "2026-11-24T19:55:21.313Z",
  "vorher": "2d6a0447",
  "bilanz": {
   "gewinn": [],

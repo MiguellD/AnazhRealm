@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 12,
+    "heute": 15,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 6,
+    "anteilHeute": 7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3631,7 +3631,7 @@
        "richter": "gleiche Art auf 3 Planeten: Gangwechsel-Tempo ±10 %; Gegenprobe: in dünner Luft bleibt sie am Boden"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Gang aus Froude für 4 Säuger, Schlupf max 0,011 in 25 Läufen — headless (alte Tiere K3), am Gerät halb; der Fisch pendelt als starrer Leib 2,5 Hz (tetrapoda-core.js:2685).",
@@ -5037,7 +5037,7 @@
        "richter": "100 Zufallsindividuen: Ahnenlinie zurück bis zur Klade; Verwandte im Revier gleichen ihm messbar mehr als Fremde"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Bestand als Zahl je Revier, kein Erbe; Individuen einer Gattung bis auf Würfe gleich (GESTALTEN_JE_REZEPT = 1).",
@@ -5415,7 +5415,7 @@
        "richter": "10 Zivilisationen aus 10 Saaten: Blind-Sortierung nach Herkunft ≥ 90 %; Fremdwelt-Probe (R10): Bau-Maße aus dem Körper der Erbauer vorhergesagt Rang ≥ 0,7, Abstand der Bauten zur menschlichen Architektur über deren 95. Perzentil bei ≥ 50 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Temperament je Gattung von Hand, Verhalten als Daten, nicht vererbt; die „Evolution“ in stamm/feld-nexus.js mutiert DSL-Programme der KI, nicht Leben.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 89,
+  "heute": 92,
   "davonKopplungen": 33,
   "kern": 5,
   "kernDazu": 5,
-  "anteilHeute": 4.8,
+  "anteilHeute": 4.9,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 36
+  "nachwache": 39
  },
  "zusammengelegt": [
   {
