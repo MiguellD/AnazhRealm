@@ -31,7 +31,7 @@
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
-//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, es wächst nicht (Ratsche `S0_ZEICHEN`); die Zeit ist Auskunft.
+//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, es explodiert nicht (Ratsche `S0_ZEICHEN`, Luft 1,5 — das Wachstum nennt die Zeile); die Zeit ist Auskunft.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -894,7 +894,13 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // 18.11. GEHOBEN FÜR DEN WEG-KÖRPER (w28-weg-koerper, Wort des Koordinators): 102 120 Zeichen am Kopf (GTX 1060) — wegBord +2 499,
 // Aufruf/Kante +480, Belag +500, wegAn +96 über main 1f300260 (98 747). Davor hatte main seit 12.11. 3 450 Zeichen still
 // gefressen (95 297 → 98 747), ohne dass eine Abgabe es nannte: die Luft ist darum ENGER, 2 % statt 5 % — sie feuert früher.
-const S0_ZEICHEN = { stand: 102120, luft: 1.02 };
+// 24.11. DIE DECKE FÄNGT DIE KLASSE, NIE DAS WACHSTUM (Wort des Schöpfers: „was ist das wahre Ziel dieser Regel“; 19.11.: der
+// Kaltstart ist kein Tor): seit z713 trägt main 108 011 Zeichen (Radeon, ort-ausstattung 4d012d86) — der Zuwachs von 4 664 ist ein
+// gelandeter Bild-Gewinn (stadtklima#1 `_naesseOrtKnoten`, jahreslauf#2 `uLaubJahr`), und die 2-%-Decke hielt daran JEDE
+// Vorprüfung. Die Zeichenzahl sagt die Übersetzung in dieser Größe nicht voraus (dieselbe Probe: kalt 701 ms bei 108 011, 1 081 ms
+// bei 103 347). Das wahre Ziel ist der ausgeschriebene Fall (K17, ~188 000 Zeichen: ein Gesetz landet im Pixel statt in der
+// Funktion): die Luft ist darum 1,5 — sie fängt die Explosion, das Wachstum nennt die Zeile als Zahl (`s0ZeileText`: Zuwachs).
+const S0_ZEICHEN = { stand: 108011, luft: 1.5 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
     const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };
@@ -926,7 +932,8 @@ const s0ZeileText = (name, p, u, ref, fang) => {
         ? "ungemessen (swiftshader)"
         : `${p.ms.join(" · ")} ms, Median ${m} ms${mr ? ` · ÷ K17 derselben Sitzung ${String((m / mr).toFixed(2)).replace(".", ",")}` : ""} (Auskunft, kein Zeit-Urteil)`;
     const urteil = u.length ? (fang ? "GEFANGEN" : "ROT") : fang ? "nicht gefangen" : "GRÜN";
-    return `  ${name}: ${p.zeichen} Zeichen WGSL (Ratsche ≤ ${Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft)}) · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
+    const zuwachs = p.zeichen - S0_ZEICHEN.stand; // die Auskunft des Wachstums: gegen den gebuchten Stand, ohne Urteil
+    return `  ${name}: ${p.zeichen} Zeichen WGSL (Stand ${S0_ZEICHEN.stand}, Zuwachs ${zuwachs >= 0 ? "+" : ""}${zuwachs} · Ratsche ≤ ${Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft)}) · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
 };
 const s0Zeile = (...a) => console.log(s0ZeileText(...a));
 // DAS REGISTER DER PIPELINES (vor dem ersten Skript der Seite): je Pipeline des Geräts ihr Weg und ihr Deskriptor; `__s0Flug`
