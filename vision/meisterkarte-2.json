@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 30,
+    "heute": 31,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 5.3,
+    "anteilHeute": 5.5,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -6638,7 +6638,7 @@
        "richter": "N = 100 Saaten: ≥ 70 % bestehen Qualitätsmaße, paarweise unterscheidbar ≥ 90 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "kein Brett-, Karten- oder Würfelspiel (Grep leer)",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 85,
+  "heute": 86,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 32
+  "nachwache": 33
  },
  "zusammengelegt": [
   {
