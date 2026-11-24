@@ -139,3 +139,5 @@ Je Merkmal im Bild, gegen die Fotos:
     Log scratchpad/w/sechs/settlement-dbg.log, nicht meiner, nicht beendet). Lauf 2 starb sehr wahrscheinlich an derselben Kollision:
     ein zweiter fremder Lauf (PID 9904, settlement2.log) lief zur gleichen Zeit. gate:settlement braucht den Port allein. Nächster
     Handgriff: warten, bis 4436 frei ist, dann `npm run gate:settlement` allein am Kopf.
+  - gate:settlement nie zeitgleich mit einem zweiten Baum — fester Port 4436. Lauf 2 und Lauf 3 zählen nicht als Urteil (Lauf 3 an der
+    Port-Kollision, Lauf 2 verdächtig).
