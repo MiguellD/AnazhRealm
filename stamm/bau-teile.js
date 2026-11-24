@@ -2576,14 +2576,20 @@ class AnazhRealm_bau_teile {
         const B = this._werkGesetzImTakt;
         if (!B || !B.size) return;
         const schwere = Number.isFinite(this.state.gravity) ? Math.max(0, -this.state.gravity) : 9.81;
-        const wf = this._weatherFieldFor(this.state.weather);
+        const aus = this._werkFeldAus || (this._werkFeldAus = {});
         for (const e of B) {
             const g = e._gesetz;
             if (g.bruch) this._werkBricht(e, g.plan, g.bruch);
             else if (g.sturz) this._werkSturzSchritt(e, g, schwere, dt);
             else {
                 if (g.roll) this._werkRollSchritt(e, g, schwere, dt);
-                if (g.gefaess) this._gefaessSchritt(e, g.gefaess, wf, dt);
+                if (g.gefaess)
+                    this._gefaessSchritt(
+                        e,
+                        g.gefaess,
+                        this._wetterFeldAm(e.position.x, e.position.z, undefined, aus),
+                        dt
+                    ); // der Regen über DIESEM Gefäß (wetter-am-ort)
                 if (g.geraet) this._geraetSchritt(e, g, schwere, dt); // das Gerät der Arena schwingt nach dem EINEN Stoß (stamm/kampf.js)
             }
         }

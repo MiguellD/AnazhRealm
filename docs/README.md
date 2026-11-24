@@ -69,4 +69,5 @@ in ihre Leitern; „erreicht“ ist `heute` der Leiter am selben Stand:
 | `cloud-post/erbe-geburt.md`      | Der Zwischenstand `leben.evolution` — Erbe und Scheu von den Eltern zum Kind, Zahlen.     |
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
--Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main.
+-Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main. **Abgabe eines
+Arbeiter-Zweigs** (Kopf, je Sprosse Stand mit Zahl, Offenes mit Leser): `cloud-post/wetter-am-ort.md` (Zweig `wetter-am-ort`).
