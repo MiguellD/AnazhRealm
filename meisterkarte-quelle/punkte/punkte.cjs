@@ -777,6 +777,9 @@ function massDerStation(st, j, lauf, u) {
 // „Frist der Probe 64 s gerissen“, die Zeit lag im zweiten Umstellen, nicht in der Messung)
 const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b(?: — im (\/[a-z]+(?: [a-z0-9_-]+)?) seit (\d+(?:\.\d+)?) s)?/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
+// DER BRUCH DES MESSORTS als Grund (abbruchVon): die Frist riss in einem Weg des Messorts, oder das Messgerät warf vor der Linse — die
+// Probe erreichte ihren Apparat nie (fahreSitzung, DIE SITZUNG TRÄGT (c): offen)
+const MESSORT_BRUCH = /^(?:Frist der Probe \d+(?:\.\d+)? s gerissen im \/[a-z]+\b|Messort: )/;
 // der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
 function abbruchVon(stdout, deckel) {
     if (deckel) return deckel;
@@ -4095,6 +4098,25 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // Fortsetzung); jede Probe an einem anderen Ort ist offen und misst in der neuen Sitzung. Der Tod kostet den Ort, nie den Rest.
     const taeterOrte = ctx.taeterOrte || new Map();
     const amTaeterOrt = (g) => (probeOrt(g[0]) && taeterOrte.get(probeOrt(g[0]))) || null;
+    // DIE SITZUNG TRÄGT (pm-sitzung-traegt, 24.11., Koordinator; Radeon eba9bf8f, Sitzungen 17:11–17:30): jede Sitzung ab der zweiten fuhr
+    // ZUERST profiband.K4 (anfang), K4 endete „Last: Referenz f 1,456–1,726“ oder „Wirt-Wache: den Kontext der Probe hält noch …
+    // return window.__k4 || null“, der Grund fiel in DIESE Seite, und das /umstellen der nächsten Station lief jede Frist ganz aus (79,8
+    // von 80 s · 38,8 von 39 s · 23,8 von 24 s, auch ohne fremde Last); sechs Stationen standen ohne `offen`, die erste Sitzung ohne K4
+    // urteilte die Stadt sauber. Drei Regeln, je ein Gedächtnis des LAUFS (run: jede Welle und Fortsetzung, wie der Täter-Ort):
+    // (a) EINE SEITE, IN DER DIE PROBE NOCH LEBT, GEHT DURCH DIE TÜR: hält die Probe nach ihrem Ende ihren Kontext (die Wirt-Wache: ihre
+    //     Marke lebt — die Seiten-Funktion läuft weiter oder ein Halter trägt sie) oder endet ein Anfang ohne Urteil, ist sie gefallen
+    //     wie am Deckel (`abbruch`): vor dem Grund lädt die Seite neu, danach geht die Grundstellung durch die Tür — nie misst die nächste
+    //     Station in ihr, und ihre Frist läuft erst danach. Fuhr in dieser Sitzung kein Anfang oder lud sie nach ihm neu
+    //     (`neuNachAnfang`), urteilt ein `ende` nie (sein Urteil hieße „neu geladen — nie am Stück“ oder „kein Stand des Anfangs“, ein
+    //     ROT, das die Maschine machte): offen beim Grund, die nächste Fahrt fährt Anfang und Ende neu.
+    // (b) DER ANFANG FÄHRT EINMAL JE FAHRT (`anfangLief`): nach Urteil oder Abbruch steht er in keiner Fortsetzung dieses Laufs mehr
+    //     vorn (fahreFortsetzung); sein Ende sagt dort „kein Anfang in dieser Sitzung — offen“.
+    // (c) EIN BRUCH DES MESSORTS BLEIBT OFFEN (`messortZweit`): riss die Frist im Weg des Messorts („Frist der Probe … gerissen im
+    //     /umstellen …“) oder warf das Messgerät vor der Linse („Messort: …“), erreichte die Probe ihren Apparat nie — sie ist offen
+    //     (die Fortsetzung misst sie in einer neuen Sitzung, die Runde zählt den Versuch); bricht derselbe Messort in diesem Lauf ein
+    //     zweites Mal, steht sie beim Namen.
+    const anfangLief = ctx.anfangLief || new Set(), messortZweit = ctx.messortZweit || new Set();
+    let anfangHier = false, neuNachAnfang = null, seiteFiel = null;
     for (const g of gruppen) {
         // DIE LAUFENDE PROBE in der Akte des Läufers (akteLaeuft): stirbt er, nennt die Wache nur sie, die übrigen fahren neu
         akteLaeuft("sitzung", g.map(schluessel));
@@ -4124,11 +4146,14 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // DER GRUND der Welt nach der Reihe `anfang` (nie davor: anfang misst die frische Welt)
         if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
             // fiel die letzte Probe von anfang (Deckel, Absturz), lief ihre Seiten-Funktion weiter: erst die Seite neu (ihre Arbeit endet),
-            // dann der Grund — nie ein Grund aus einer Seite, in der eine gefallene Probe noch arbeitet
+            // dann der Grund — nie ein Grund aus einer Seite, in der eine gefallene Probe noch arbeitet (auch eine, die ihren Kontext
+            // hält: DIE SITZUNG TRÄGT (a))
             if (abbruch) {
                 const n = await rufFrist(W, "/reload", {}, GRUNDSTELLUNG_S * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
                 abbruch = false;
                 if (!n || n.neu !== true) tot = "die Seite nach dem Abbruch von anfang lädt nicht neu (/reload: " + JSON.stringify(n).slice(0, 200) + ")";
+                else if (anfangHier) neuNachAnfang = neuNachAnfang || "die Seite lud vor dem Grund neu (" + (seiteFiel || "der Anfang fiel") + ")";
+                console.log("  SITZUNG die Seite neu vor dem Grund: " + (seiteFiel || "die letzte Probe von anfang fiel") + (tot ? " — " + tot : ""));
             }
         }
         if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
@@ -4170,6 +4195,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 const taeter = (kopf.zeichner || []).filter((x) => !x.zurueck).pop();
                 if (taeter && (gs.kette || gs.ketteTuer)) taeter.zurueck = { vor: schluessel(g[0]), wie: gs.ketteTuer ? "durch die Tür" : "an Ort und Stelle", s: gs.s };
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
+                if (gs.tuer && anfangHier) neuNachAnfang = neuNachAnfang || "die Grundstellung vor " + schluessel(g[0]) + " ging durch die Tür";
                 console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" +
                     (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") +
                         (gs.anOrt ? " — an Ort und Stelle abweichend: " + gs.anOrt.join(" ") + (gs.anOrtWie ? " · wie " + JSON.stringify(gs.anOrtWie).slice(0, 300) : "") : "") : "") + ")" +
@@ -4199,6 +4225,20 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
             continue;
         }
+        // DAS ENDE URTEILT NIE OHNE SEINEN ANFANG AM STÜCK (DIE SITZUNG TRÄGT (a)): fuhr in DIESER Sitzung kein Anfang (er fuhr in einer
+        // früheren Sitzung des Laufs, fahreFortsetzung) oder lud die Sitzung nach ihm neu (vor dem Grund, durch die Tür einer
+        // Grundstellung oder der hängenden Welt), trägt kein Strom dieser Sitzung den Anfang am Stück — das Ende fährt nicht, es bleibt
+        // offen beim Grund (die nächste Fahrt fährt Anfang und Ende neu); geprüft vor dem Ort und noch einmal vor der Probe
+        const ohneStueck = async () => {
+            if (stellungVon(g) !== "ende" || (anfangHier && !neuNachAnfang)) return false;
+            const weil = !anfangHier ? "kein Anfang in dieser Sitzung" + (anfangLief.size ? " (" + [...anfangLief].join(", ") + " fuhr in einer früheren Sitzung dieses Laufs)" : "")
+                : "die Dauer misst nie über ein Neuladen: " + neuNachAnfang;
+            (kopf.dauerOhneStueck = kopf.dauerOhneStueck || []).push({ probe: schluessel(g[0]), weil });
+            console.log("  SITZUNG " + schluessel(g[0]) + " fährt nicht: " + weil + " — offen");
+            await melde(g, g.map(() => ohne(weil + " — offen, UNGEMESSEN", true)), null, new Date().toISOString());
+            return true;
+        };
+        if (await ohneStueck()) continue;
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
         // Deckel der Probe (er misst ihre Arbeit, nie den Ring) und steht je Ort im Kopf (`orte`: s, Takte, Chunks — Pflicht B, die
         // Ankunft); die Proben des Orts danach finden ihn gebaut. Scheitert das Umstellen, stellt die Probe selbst um (beim Namen im Log)
@@ -4226,6 +4266,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 console.log("  SITZUNG " + (ort ? "Ort " + ort : "die Welt") + " vor " + schluessel(g[0]) + " steht nicht — " +
                     (gs.ok ? "durch die Tür in " + gs.s + " s, neu umgestellt" : "die Tür trägt nicht: " + gs.grund));
                 if (gs.ok) (kopf.grundstellungS.push(gs.s), (u = await stelle()), (ortNach = "der Tür (die Welt hing)"));
+                if (gs.ok && anfangHier) neuNachAnfang = neuNachAnfang || "die Welt hing vor " + schluessel(g[0]) + ", die Sitzung ging durch die Tür";
             }
             const us = +((Date.now() - tu) / 1000).toFixed(1);
             const wo = ort ? "Ort " + ort : "die Welt";
@@ -4260,6 +4301,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             }
             ortNach = null;
         }
+        if (await ohneStueck()) continue;
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
         // DER BAU VOR DER PROBE (bauAbdruck): an jeder Probe ohne `mutiert`, sobald der Grund steht
@@ -4300,6 +4342,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
+        if (stellungVon(g) === "anfang") (anfangLief.add(schluessel(g[0])), (anfangHier = true)); // DIE SITZUNG TRÄGT (b): er fuhr in diesem Lauf
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         // DIE PROBE RÄUMT, WAS SIE AUF WINDOW LEGTE (probeFelder), VOR der Wache: jedes neue Daten-Feld fällt beim Namen (im Kopf `felder`)
         const felder = felderVor.fehler || gerissen || tot ? null : await felderRuf(true);
@@ -4337,7 +4380,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         const unter = (e) => (e.gruen || !weg ? e
             : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
-        abbruch = brachAb(es);
+        // DIE SITZUNG TRÄGT (a): eine Probe, die ihren Kontext hält, fiel wie am Deckel — die Seite geht vor der nächsten durch die Tür;
+        // ebenso ein Anfang ohne Urteil (UNGEMESSEN: Last, Wirt-Wache, Frist — Radeon eba9bf8f: nach „Last: Referenz f 1,726“ hing das
+        // /umstellen der nächsten Station die ganze Frist): vor dem Grund lädt die Seite neu, die nächste Station misst nie in ihr
+        abbruch = brachAb(es) || !!wirtHaelt || (stellungVon(g) === "anfang" && es.some((e) => e.ungemessen));
+        const fiel = es.find((e) => e.abbruch) || es.find((e) => ABBRUCH_GRUND.test(e.grund || "")) || es.find((e) => e.ungemessen) || {};
+        seiteFiel = abbruch ? schluessel(g[0]) + ": " + String(wirtHaelt || fiel.abbruch || fiel.grund || "fiel").slice(0, 160) : null;
         // DIE PROBE LEGTE ETWAS IN DIE WELT UND SAGTE ES NICHT (bauAbweichung): die Sitzung setzt zurück wie nach einer mutierenden und
         // nennt sie beim Namen (kopf.unerklaert) — die nächste Probe misst nie die Welt einer fremden
         const unerklaert = bauVor && !weg ? bauAbweichung(bauVor, await lies(), grundWege) : null;
@@ -4409,7 +4457,21 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const wirtBruch = (e) => (!wirtHaelt ? e : e.ungemessen ? { ...e, grund: e.grund + " · " + wirtHaelt, zahl: e.zahl + " · " + wirtHaelt }
             : { ...e, gruen: false, ungemessen: true, grund: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")",
                 zahl: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")" });
-        const urteile = es.map(unter).map(werkzeug).map(wirtBruch).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
+        // DIE SITZUNG TRÄGT (c): ein Bruch des Messorts ist offen — die Fortsetzung misst die Probe in einer neuen Sitzung, die Runde
+        // zählt den Versuch (`eintragen`: „— offen, UNGEMESSEN“); ein zweiter Bruch derselben Probe in diesem Lauf steht beim Namen
+        const messortOffen = (e, i) => {
+            if (!e.ungemessen || !MESSORT_BRUCH.test(e.grund || "") || /— offen, UNGEMESSEN$/.test(e.grund)) return e;
+            const id = schluessel(g[i]);
+            if (messortZweit.has(id)) return { ...e, grund: e.grund + " · der Messort brach in diesem Lauf zum zweiten Mal" };
+            messortZweit.add(id);
+            if (!kopf.offen.includes(id)) kopf.offen.push(id);
+            (kopf.messortOffen = kopf.messortOffen || []).push(id);
+            const mehr = " — offen, UNGEMESSEN";
+            return { ...e, grund: e.grund + mehr, zahl: e.zahl === e.grund ? e.grund + mehr : e.zahl };
+        };
+        const urteile = es.map(unter).map(werkzeug).map(wirtBruch).map(messortOffen).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
+        if (urteile.some((e, i) => (kopf.messortOffen || []).includes(schluessel(g[i])) && /— offen, UNGEMESSEN$/.test(e.grund || "")))
+            console.log("  SITZUNG " + schluessel(g[0]) + " — der Messort brach: offen, die Fortsetzung misst die Probe in einer neuen Sitzung");
         await melde(g, urteile, aus, zeit);
         richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, ...(preisFahrt || {}) });
     }
@@ -4432,6 +4494,10 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     } else if (aufgeschoben.length) {
         kopf.grund = "die Fahrt riss " + fahrtMaxS + " s am Grund-Deckel von " + aufgeschoben.join(", ") + " — offen: " + kopf.offen.join(", ");
         console.log("  SITZUNG " + kopf.grund);
+    } else if (kopf.offen.length) {
+        // nur der Messort brach (DIE SITZUNG TRÄGT (c)): die Fortsetzung misst seine Proben in einer neuen Sitzung
+        kopf.grund = "der Messort brach an " + (kopf.messortOffen || []).join(", ") + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
     } else delete kopf.offen;
     console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
     await sitzungStoppen(s, stop);
@@ -4446,13 +4512,26 @@ async function fahreSitzung(gruppen0, ctx, melde) {
 // beim Namen „die Fahrt riss“. Ein Lauf, der seinen Deckel reißt, ist nie offen: er steht UNGEMESSEN beim Grund und fährt nie nach —
 // ebenso jede Probe an einem TÄTER-ORT (fahreSitzung `taeterOrte`): sie ist nie offen, die Fortsetzung beginnt nie wieder dort.
 // fahre(gruppen) → der Kopf der neuen Sitzung; Rückgabe die Köpfe der Fortsetzungen
-async function fahreFortsetzung(gruppen, kopf, fahre) {
+// DER ANFANG FÄHRT EINMAL JE FAHRT (DIE SITZUNG TRÄGT (b), 24.11.; Radeon eba9bf8f: `karte2.same.preis.ausdauer#1` trägt das Ende der
+// Dauer, die Auswahl stellt profiband.K4 als Anfang dazu, und jede Fortsetzung fuhr K4 neu an ihrem Anfang — „Last: Referenz f 1,726“
+// oder „Wirt-Wache …“, dann hing der Ortswechsel der nächsten Station, je Sitzung eine verloren): `lauf.anfangLief` nennt die Anfänge,
+// die in diesem Lauf schon fuhren (fahreSitzung). Die Fortsetzung fährt keinen davon neu; ihr Ende fährt mit den übrigen offenen
+// Proben und sagt „kein Anfang in dieser Sitzung — offen“ (fahreSitzung), bleibt nur das Ende, beginnt keine Sitzung für es — es
+// trägt den offenen Grund der Sitzung davor, die nächste Fahrt fährt Anfang und Ende neu
+async function fahreFortsetzung(gruppen, kopf, fahre, lauf = {}) {
     const koepfe = [];
+    const lief = lauf.anfangLief || new Set();
+    const fuhr = (g) => stellungVon(g) === "anfang" && lief.has(schluessel(g[0]));
     let offen = (kopf && kopf.offen) || [];
     while (offen.length) {
-        const rest = gruppen.filter((g) => g.some((st) => offen.includes(schluessel(st))));
+        let rest = gruppen.filter((g) => g.some((st) => offen.includes(schluessel(st))) && !fuhr(g));
+        if (rest.some((g) => stellungVon(g) === "ende")) for (const g of gruppen) if (stellungVon(g) === "anfang" && !rest.includes(g) && !fuhr(g)) rest.unshift(g);
+        if (rest.length && rest.every((g) => stellungVon(g) === "ende")) {
+            console.log("  FORTSETZUNG " + rest.map((g) => schluessel(g[0])).join(", ") + " bleibt offen: der Anfang fuhr in diesem Lauf schon (" + [...lief].join(", ") +
+                ") — einmal je Fahrt, keine Sitzung für ein Ende allein");
+            break;
+        }
         if (!rest.length) break;
-        if (rest.some((g) => stellungVon(g) === "ende")) for (const g of gruppen) if (stellungVon(g) === "anfang" && !rest.includes(g)) rest.unshift(g);
         console.log("  FORTSETZUNG der Fahrt: " + offen.length + " offene Proben in " + rest.length + " Läufen — eine neue Sitzung (Teil " + (koepfe.length + 2) + ")");
         const k = await fahre(rest);
         koepfe.push(k);
@@ -4859,7 +4938,9 @@ async function run(opt) {
         const w = wellenDerFahrt(opt, sha, proben);
         // DER TÄTER-ORT gilt für den ganzen Lauf: jede Welle und jede Fortsetzung lässt ihn stehen (fahreSitzung)
         const taeterOrte = new Map();
-        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt, taeterOrte },
+        // DIE SITZUNG TRÄGT (b)(c): der Anfang, der fuhr, und der Messort, der brach, gelten ebenso für den ganzen Lauf
+        const anfangLief = new Set(), messortZweit = new Set();
+        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt, taeterOrte, anfangLief, messortZweit },
             (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session", baum }));
         delete m.fortsetzung;
         for (const [i, welle] of w.wellen.entries()) {
@@ -4874,7 +4955,7 @@ async function run(opt) {
                 (m.fortsetzung = m.fortsetzung || []).push(kf);
                 fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
                 return kf;
-            });
+            }, { anfangLief });
         }
     }
     await fahrePlan(gruppen, bahnen, async (g, b) => {
@@ -8701,7 +8782,7 @@ async function selbsttest(o = {}) {
             // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `r.state.__haelt` setzt (ein
             // Halter außerhalb von window), hält ihren Kontext — ebenso ein Daten-Feld `__gross`, das beim gib noch auf window steht
             'let wirtVor = []; const wirtWeg = (b, s) => { const W = seite.welt; n(b.gib ? "wirt-gib" : "wirt-nimm"); if (!b.gib) { wirtVor = Object.keys(W).filter((k) => typeof W[k] === "function"); return s({ genommen: true }); }',
-            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && (W.state.__haelt || seite.win.__gross) ? ["eval#2"] : [];',
+            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = /^wirt-(haelt|anfang)$/.test(art) && (W.state.__haelt || seite.win.__gross) ? ["eval#2"] : [];',
             '  return s({ anders, wie: Object.fromEntries(anders.map((k) => [k, "neu"])), haelt, heapVor: 100, heapNach: haelt.length ? 200 : 101, ungemessen: haelt.length ? "eine Marke lebt (eval#2), der Heap hält +100 MB über dem Stand vor der Probe (Schwelle 64)" : null, zeile: "r: " + (anders.join(", ") || "—") + (haelt.length ? " · hält " + haelt.join(", ") : "") }); };',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // DER TÄTER-ORT (art „ort-tod“): das Umstellen auf „dach“ reißt die Seite — danach fällt jede Frage an sie wie in der Werkbank
@@ -8721,8 +8802,9 @@ async function selbsttest(o = {}) {
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
             '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
             '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
-            // DIE WELT HÄNGT (art „haengt“): der Ort steht nicht, bis die Seite neu lud
-            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
+            // DIE WELT HÄNGT (art „haengt“): der Ort steht nicht, bis die Seite neu lud; „wirt-anfang“: nicht, solange eine Probe die Seite
+            // hält (`r.state.__haelt`, die Wirt-Wache nennt sie — die Radeon eba9bf8f nach profiband.K4)
+            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); if (art === "wirt-anfang" && seite.welt.state.__haelt) return s({ fehler: "DIE WELT STEHT NICHT nach 1800 Takten: die Probe davor hält die Seite" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/wirt" && /^wirt/.test(art)) return wirtWeg(b, s);',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
@@ -9064,6 +9146,76 @@ async function selbsttest(o = {}) {
         const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
         pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
             r10.z.join(",") === "start,reload,nimm,grund,warm,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
+        // DIE SITZUNG TRÄGT (pm-sitzung-traegt, 24.11.; Radeon eba9bf8f, Sitzungen 17:11–17:30: profiband.K4 hielt seinen Kontext — „Wirt-Wache:
+        // den Kontext der Probe hält noch … return window.__k4 || null“ —, der Grund fiel in diese Seite, das /umstellen der nächsten
+        // Station lief jede Frist aus, jede Fortsetzung fuhr K4 neu, sechs Stationen standen ohne `offen`)
+        {
+            // (a) die Attrappe „wirt-anfang“: eine Probe, die `r.state.__haelt` setzt, hält ihren Kontext, und kein Ort steht, solange sie
+            // die Seite hält. Vorher (punkte-maschine aa4a93d0b): z = start,wirt-nimm,wirt-gib,nimm,umstellen:wiese,tuer,reload,grund,
+            // umstellen:wiese,… — der Grund fiel in die gehaltene Seite, und das Ende urteilte über das Neuladen der hängenden Welt
+            const anfangLief = new Set(), messortZweit = new Set();
+            const endeDa = ["node", "-e", 'require("fs").writeFileSync(process.argv[1], "{}")', "{AUS}"];
+            const ga = [[S("a.K1", 1, { befehl: [...ruf, 'seite: r.state.__haelt = 1; return "warm";'], sek: 30, stellung: "anfang" }, warm)],
+                [S("b.K1", 1, { befehl: [...ruf, "return 1", "umstellen --ort wiese"], sek: 30 }, warm)],
+                [S("e.K1", 1, { befehl: endeDa, sek: 30, stellung: "ende" }, (j) => ({ gruen: !!j, zahl: "das Ende fuhr" }))]];
+            const ra = await lauf(ga, "wirt-anfang", null, null, false, { anfangLief, messortZweit });
+            const ea = ra.es["e.K1#1"] || {}, aa = ra.es["a.K1#1"] || {};
+            pruef("SITZUNG DIE SITZUNG TRÄGT (a): hält der Anfang seinen Kontext (die Wirt-Wache), lädt die Seite neu, ehe der Grund fällt — die Station am Messort misst in der heilen Seite; " +
+                "das Ende misst nie über das Neuladen (offen beim Grund, die Runde zählt den Versuch), der Anfang steht im Gedächtnis des Laufs",
+                ra.z.join(",") === "start,wirt-nimm,wirt-gib,reload,nimm,grund,umstellen:wiese,wirt-nimm,wirt-gib,stop" &&
+                    aa.ungemessen === true && /^Wirt-Wache: eine Marke lebt/.test(aa.grund || "") && (ra.es["b.K1#1"] || {}).gruen === true &&
+                    ea.ungemessen === true && /^die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu \(a\.K1#1: Wirt-Wache: .* — offen, UNGEMESSEN$/.test(ea.grund || "") &&
+                    apparatOffen(ea.grund) && (ra.kopf.dauerOhneStueck || []).map((x) => x.probe).join() === "e.K1#1" && [...anfangLief].join() === "a.K1#1",
+                JSON.stringify([ra.z, ra.es, ra.kopf.dauerOhneStueck, [...anfangLief]]));
+            // (a2) ein Anfang ohne Urteil (die Urteils-Zeile fehlt — ohne Abbruch, ohne Wirt-Wache, wie „Last: Referenz …“): die Seite
+            // lädt neu, ehe der Grund fällt. Vorher: z = start,nimm,umstellen:wiese,stop — die nächste Station mass in seiner Seite
+            const ra2 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "0"], sek: 30, stellung: "anfang" }, warm)],
+                [S("b.K1", 1, { befehl: [...ruf, "return 1", "umstellen --ort wiese"], sek: 30 }, warm)]], "gut", null, null, false, { anfangLief: new Set(), messortZweit: new Set() });
+            pruef("SITZUNG DIE SITZUNG TRÄGT (a2): ein Anfang ohne Urteil (UNGEMESSEN ohne Abbruch, wie „Last: Referenz f 1,726“) lädt die Seite neu, ehe der Grund fällt — die nächste Station misst nie in seiner Seite",
+                ra2.z.join(",") === "start,reload,nimm,grund,umstellen:wiese,stop" && (ra2.es["a.K1#1"] || {}).ungemessen === true && (ra2.es["b.K1#1"] || {}).gruen === true,
+                JSON.stringify([ra2.z, ra2.es]));
+            // (b) die Fortsetzung nach einer Sitzung, in der der Anfang a fuhr. Vorher (ohne das Gedächtnis des Laufs — derselbe Aufruf ohne
+            // `anfangLief`, wie ihn der Lauf bis hier machte): a · x · e in jeder Fortsetzung
+            const gb = [[S("a.K1", 1, { befehl: ["node", "-e", "0"], sek: 30, stellung: "anfang" }, warm)], [S("x.K1", 1, { befehl: ["node", "-e", "0"], sek: 30 }, warm)],
+                [S("e.K1", 1, { befehl: ["node", "-e", "0"], sek: 30, stellung: "ende" }, warm)]];
+            const fortVon = async (offen, lauf2) => {
+                const gefahren = [];
+                await fahreFortsetzung(gb, { offen }, async (gs) => (gefahren.push(gs.map((g) => schluessel(g[0])).join(",")), { proben: gs.length }), lauf2);
+                return gefahren;
+            };
+            const lief = new Set(["a.K1#1"]);
+            const fMit = await fortVon(["x.K1#1", "e.K1#1"], { anfangLief: lief }), fEnde = await fortVon(["e.K1#1"], { anfangLief: lief }), fVor = await fortVon(["x.K1#1", "e.K1#1"], {});
+            // die Sitzung der Fortsetzung: x misst, e (sein Anfang fuhr in der Sitzung davor) sagt „kein Anfang in dieser Sitzung — offen“
+            const rb = await lauf([gb[1].map((st) => ({ ...st, probe: { ...st.probe, befehl: [...ruf, "return 1"] } })), gb[2].map((st) => ({ ...st, probe: { ...st.probe, befehl: endeDa } }))],
+                "gut", null, null, false, { anfangLief: lief, messortZweit: new Set() });
+            const eb = rb.es["e.K1#1"] || {};
+            pruef("SITZUNG DIE SITZUNG TRÄGT (b): DER ANFANG FÄHRT EINMAL JE FAHRT — die Fortsetzung fährt x mit dem Ende e, nie den Anfang a, der schon fuhr; für ein Ende allein beginnt keine Sitzung; " +
+                "in ihr sagt e „kein Anfang in dieser Sitzung — offen“, nie ein Urteil (vorher, ohne das Gedächtnis des Laufs: a · x · e — Radeon eba9bf8f fuhr profiband.K4 in jeder Fortsetzung)",
+                JSON.stringify(fMit) === '["x.K1#1,e.K1#1"]' && JSON.stringify(fEnde) === "[]" && JSON.stringify(fVor) === '["a.K1#1,x.K1#1,e.K1#1"]' &&
+                    (rb.es["x.K1#1"] || {}).gruen === true && eb.ungemessen === true && eb.grund === "kein Anfang in dieser Sitzung (a.K1#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN" && apparatOffen(eb.grund),
+                JSON.stringify([fMit, fEnde, fVor, rb.es]));
+            // (c) die Frist reißt im /umstellen stadt (die Marke von sitzung-seite.js H.fristRiss). Vorher: m stand „Frist der Probe 5 s
+            // gerissen im /umstellen stadt … — kein Urteil, UNGEMESSEN“ ohne `offen`, nie mehr gefahren
+            const frist = ["node", "-e", 'console.log("@@PUNKTE@@ FRIST 5 s der Probe gerissen — im /umstellen stadt seit 4.8 s (der Ruf ab 0.1 s): der Messort trug die Frist, Abbau")', "umstellen --ort stadt"];
+            const gc = [[S("m.K1", 1, { befehl: frist, sek: 30 }, warm)], [S("y.K1", 1, { befehl: [...ruf, "return 1", "umstellen --ort wiese"], sek: 30 }, warm)]];
+            const rc = await lauf(gc, "gut", null, null, false, { messortZweit });
+            const cf = { gefahren: [], es: {} };
+            const rck = await fahreFortsetzung(gc, rc.kopf, async (gs) => {
+                cf.gefahren.push(gs.map((g) => schluessel(g[0])).join(","));
+                const k = await lauf(gs, "gut", null, null, false, { messortZweit });
+                Object.assign(cf.es, k.es);
+                return k.kopf;
+            }, { anfangLief: new Set() });
+            const m1 = rc.es["m.K1#1"] || {}, m2 = cf.es["m.K1#1"] || {}, mm = { je: {} };
+            eintragen(mm, "m.K1#1", m1);
+            pruef("SITZUNG DIE SITZUNG TRÄGT (c): EIN BRUCH DES MESSORTS BLEIBT OFFEN — riss die Frist im /umstellen, ist die Probe offen (die Runde zählt den Versuch: `offen` 1), die Sitzung misst weiter (y GRÜN), " +
+                "die Fortsetzung misst sie EINMAL in einer neuen Sitzung; bricht sie dort wieder, steht sie beim Namen (vorher, Radeon eba9bf8f: megastadt#1 · sprache#1 · koennen#2 · absicht#2 · technik#2 ohne `offen`)",
+                m1.ungemessen === true && /^Frist der Probe 5 s gerissen im \/umstellen stadt \(der Ruf lief 4\.8 s: der Messort trug die Frist\) — kein Urteil, UNGEMESSEN .* — offen, UNGEMESSEN$/.test(m1.grund || "") &&
+                    ((mm.ungemessen || {})["m.K1#1"] || {}).offen === 1 && (rc.es["y.K1#1"] || {}).gruen === true && JSON.stringify(rc.kopf.offen) === '["m.K1#1"]' &&
+                    /^der Messort brach an m\.K1#1 — offen: m\.K1#1$/.test(rc.kopf.grund || "") && cf.gefahren.join("|") === "m.K1#1" && m2.ungemessen === true &&
+                    / · der Messort brach in diesem Lauf zum zweiten Mal$/.test(m2.grund || "") && !apparatOffen(m2.grund) && rck.length === 1 && !rck[0].offen,
+                JSON.stringify([rc.es, rc.kopf.offen, rc.kopf.grund, cf, mm.ungemessen]));
+        }
         // DER ORT: die Proben eines Messorts stehen beieinander (die Reihe ihres ersten Auftritts, ohne Ort zuletzt), die Sitzung stellt je
         // Ort EINMAL um (vor dem Deckel der Probe, je Ort im Kopf), nach einer Grundstellung neu (der Grund stellt den Spieler zurück)
         const mitOrt = (o) => [...ruf, "return 1", "umstellen --ort " + o];
