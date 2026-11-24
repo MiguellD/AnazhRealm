@@ -7746,6 +7746,7 @@ L.perspektive("same", (() => {
             // ════════════════════════════════ same.kopplung.gewalt ════════════════════════════════
             [G]: {
                 sek: 40,
+                faecher: true,
                 mutiert: true,
                 pfad: PFAD_G,
                 ungefahren: "das Bild der Fremdwelt-Probe (S6) schießt nur das Gerät; die Takte im Gewitter laufen headless ohne Karte (Tempo am Gerät höher)",
@@ -7867,13 +7868,59 @@ L.perspektive("same", (() => {
                     const u1 = U[1] || {};
                     const x = await S(seite, { jahre: u1.jahre || 100, takte: u1.takte || 240, trockenZuege: 10, saaten8: (U[3] || {}).saaten || 8, gitter: (U[5] || {}).gitter || 6, fremd: (U[6] || {}).planeten || 100 });
                     const w = x.wetter || {};
+                    // S1 AM FÄCHER (M4): 12 Orte um den Spieler (±2 km) × zwei Fragen. „wetter“: die Wetter-Züge des Orts über die Spieljahre
+                    // (r._wetterAmOrt, derselbe Weg wie das Wetter am Ort) — die Gewitter und die Gewitter nach ≥ 10 trockenen Zügen, die
+                    // Ursache des Brands von selbst. „blitz“: die Fähigkeit der Welt, aus dem Gewitter zu zünden — fehlt sie, nennt die
+                    // Adresse ihr Fehlen (die Zündung `_brandEntfachen` hat nur die Tat und das Werk als Rufer)
+                    const GEWITTER_AN = async (r, T, a, mit) => {
+                        const pm = r.state.playerMesh.position;
+                        const x0 = pm.x + a.ort[0], z0 = pm.z + a.ort[1];
+                        if (a.zeit.k === "blitz") {
+                            const namen = new Set();
+                            for (let q = Object.getPrototypeOf(r); q && q !== Object.prototype; q = Object.getPrototypeOf(q)) for (const k of Object.getOwnPropertyNames(q)) namen.add(k);
+                            const da = [...namen].filter((k) => /blitz|lightning|einschlag/i.test(k));
+                            if (!da.length) return { fehlt: "kein Blitz schlägt ein: die Zündung stamm/feld-brand.js:440 _brandEntfachen rufen nur stamm/kampf.js:2471 (die Tat) und stamm/koerper-fahrt.js:2361 (das Werk), kein Leser des Gewitters" };
+                            return { da: da.length, namen: da.join("·") };
+                        }
+                        const Z = AnazhRealm.WETTER_ZUG_SEK;
+                        const nZ = Math.round((mit.jahre * r._kalender().jahrK) / Z);
+                        const tA = r.state.spielZeit;
+                        let sturm = 0, nachTrocken = 0, lauf = 0;
+                        for (let k = 0; k < nZ; k++) {
+                            const w = r._wetterAmOrt(x0, z0, tA + k * Z);
+                            if (w === "stormy") {
+                                sturm++;
+                                if (lauf >= mit.trocken) nachTrocken++;
+                                lauf = 0;
+                            } else if (w === "sunny") lauf++;
+                            else lauf = 0;
+                        }
+                        return { zuege: nZ, sturm, nachTrocken };
+                    };
+                    const orte1 = [];
+                    for (let i = 0; i < 12; i++) orte1.push([Math.round(2000 * Math.cos((i * Math.PI) / 6) * (0.4 + 0.05 * i)), Math.round(2000 * Math.sin((i * Math.PI) / 6) * (0.4 + 0.05 * i))]);
+                    let R1g = null;
+                    try {
+                        R1g = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: GEWITTER_AN, export: "r._wetterAmOrt (die Wetter-Züge des Orts, AnazhRealm.WETTER_ZUG_SEK) · der Prototyp der Welt (ein Blitz)", leser: "stamm/feld-brand.js:440 _brandEntfachen ← stamm/kampf.js:2471 · stamm/koerper-fahrt.js:2361" },
+                            adressen: { orte: orte1, zeiten: [{ k: "wetter" }, { k: "blitz" }] },
+                            mit: { jahre: u1.jahre || 100, trocken: 10 },
+                            ms: 12000,
+                            masse: { orte: { wie: "anzahl", feld: "sturm" }, zuegeJeOrt: { wie: "mittel", feld: "zuege" }, sturmJeOrt: { wie: "mittel", feld: "sturm" }, sturmMin: { wie: "min", feld: "sturm" }, nachTrocken: { wie: "summe", feld: "nachTrocken" } },
+                            schlecht: { feld: "nachTrocken", richtung: "max" },
+                            pose: (q) => "das Gewitter am Ort +" + q.ort.join("/+") + " m — Third 3 m, Blick zum Wald",
+                            ungemessen: ["der Brand von selbst im Bild (am Gerät)"],
+                        });
+                    } catch (e) {
+                        R1g = { werte: {}, fehlt: null, fehltAn: [], akte: "der Fächer warf: " + String((e && e.message) || e).slice(0, 160) };
+                    }
                     const zs = (x.sturm || {}).zuend || 0;
                     const zo = (x.ohne || {}).zuend || 0;
                     const sturmS = (a) => (w.sturm || 0) * (w.zugS || 120) / Math.max(1, w.jahre || 100);
                     const rate = (u1.takte || 240) > 0 ? (zs / ((u1.takte || 240) / 60)) * sturmS() / (u1.flaecheKm2 || 1) : null;
                     const real = u1.realRateKm2a || 0.001;
                     const faktor = rate > 0 ? Math.max(rate / real, real / rate) : null;
-                    const zz = { zuege: w.zuege, takte: u1.takte || 240, sturm: w.sturm, sturmNachTrocken: w.sturmNachTrocken, zuendSturm: zs, zuendOhne: zo, zellen: [(x.sturm || {}).zellen, (x.ohne || {}).zellen], brandZurueck: x.brandZurueck, zurueck: x.zurueck };
+                    const zz = { zuege: w.zuege, takte: u1.takte || 240, sturm: w.sturm, sturmNachTrocken: w.sturmNachTrocken, zuendSturm: zs, zuendOhne: zo, zellen: [(x.sturm || {}).zellen, (x.ohne || {}).zellen], brandZurueck: x.brandZurueck, zurueck: x.zurueck, faecherOrte: R1g.werte.orte || 0, sturmJeOrt: R1g.werte.sturmJeOrt, nachTrockenOrte: R1g.werte.nachTrocken, akte: R1g.akte };
                     const fl = x.fluss || {};
                     const klassen = (zs > 0 ? 1 : 0) + (fl.sturm30 > fl.sonne30 ? 1 : 0) + (fl.duerre3t < fl.sonne30 ? 1 : 0);
                     const s8 = x.saat8 || {};
@@ -7886,7 +7933,7 @@ L.perspektive("same", (() => {
                             1: {
                                 werte: { brandRateKm2a: rate, faktorZurRealRate: faktor },
                                 zeuge: zz,
-                                nicht: "kein Brand von selbst: " + (u1.takte || 240) + " Takte der Welt im Gewitter zünden " + zs + ", in der Sonne " + zo + " (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt " + w.sturm + " Sturm-Züge in " + w.jahre + " Spieljahren, " + w.sturmNachTrocken + " nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein",
+                                nicht: "kein Brand von selbst: " + (u1.takte || 240) + " Takte der Welt im Gewitter zünden " + zs + ", in der Sonne " + zo + " (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt " + w.sturm + " Sturm-Züge in " + w.jahre + " Spieljahren, " + w.sturmNachTrocken + " nach ≥ 10 trockenen Zügen — " + (R1g.fehlt || "kein Blitz schlägt ein") + " · am Fächer " + (R1g.werte.orte || 0) + " Orte × " + Math.round(R1g.werte.zuegeJeOrt || 0) + " Züge: im Mittel " + (R1g.werte.sturmJeOrt == null ? "—" : Math.round(R1g.werte.sturmJeOrt)) + " Gewitter je Ort, " + (R1g.werte.nachTrocken || 0) + " nach Trockenheit",
                             },
                             2: {
                                 werte: { klassenVonSelbst: klassen, steigungFaktor: null },
@@ -9521,6 +9568,7 @@ L.perspektive("same", (() => {
             // ════════ same.kopplung.terraform — Technik formt den Planeten ════════
             [TF]: {
                 sek: 20,
+                faecher: true,
                 pfad: ["stamm/bild-himmel.js", "stamm/wasser-hydro.js", "stamm/gelaende-chunks.js", "stamm/siedlung-ort.js", "voxel-worker.js", "planet-core.js", "gelaende-core.js", "fachwerk-core.js", "foundry-core.js"],
                 ungefahren: "die Bilder (S1 Bildpaar über der Stadt, S3 die ungewollte Folge, S5 die Folge der Halte, S6 das Orbitbild der Fremdwelt-Probe R10) schießt nur das Gerät",
                 mess: async function (H, U, M) {
@@ -9585,6 +9633,58 @@ L.perspektive("same", (() => {
                         return aus;
                     };
                     const x = await S(seite, { eingriff: U[1].eingriff, leeGrad: U[1].leeGrad, wuestePunkte: 24, jahre: U[2].jahre, halte: U[5].halte, jahre5: U[5].jahre, saaten: U[6].saaten });
+                    // S1 AM FÄCHER (M4): 5 Orte im Ziel (um den Spieler, ±400 m) und 5 im Lee (leeGrad windab, der EINE Wind `_windAt`,
+                    // stamm/stoff-material.js:368) × ohne ↔ mit Eingriff. „ohne“: das Wort des Orts (stamm/bild-himmel.js:3032 _wetterAmOrt)
+                    // und sein Regen-Feld; „mit“: das einzige Werkzeug der Welt, das Wort des Spielers (`__wetterSetzen` → `_setWeather`,
+                    // scripts/lib/ausgabe-aufnahme.cjs:156; im finally zurück), und der Regen, den das Spiel dort liest (`_weatherFieldFor`,
+                    // stamm/bild-himmel.js:3009). Dazu die Frage nach einem Eingriff, der den Regen EINER Region lenkt — fehlt er, nennt die
+                    // Adresse sein Fehlen
+                    const REGEN_AN = async (r, T, a, mit) => {
+                        const s = r.state;
+                        if (a.zeit.k === "eingriff") {
+                            const namen = new Set();
+                            for (let q = Object.getPrototypeOf(r); q && q !== Object.prototype; q = Object.getPrototypeOf(q)) for (const k of Object.getOwnPropertyNames(q)) namen.add(k);
+                            for (const k of Object.keys(r.dslEffects || {})) namen.add("dsl:" + k);
+                            const da = [...namen].filter((k) => /wolkenimpf|impfen|seeding|regenLenk|wetterEingriff|klimaEingriff|regenmach/i.test(k));
+                            if (!da.length) return { fehlt: "kein Eingriff lenkt den Regen einer Region: stamm/bild-himmel.js:3032 _wetterAmOrt liest Saat, Ort, Zeit und die Tafel des Orts (_gelaende().ort.wetter), keinen Eingriff; das Wort des Spielers (__wetterSetzen → _setWeather) gilt der ganzen Welt (stamm/bild-himmel.js:3009 _weatherFieldFor ohne Ort)" };
+                            return { da: da.length, namen: da.join("·") };
+                        }
+                        const [x, z] = a.ort;
+                        const wOrt = r._wetterAmOrt(x, z);
+                        if (a.zeit.k === "ohne") return { regen: r._weatherFieldFor(wOrt, true).rain, wort: wOrt };
+                        if (typeof window.__wetterSetzen !== "function") return { fehlt: "die Bühne trägt kein window.__wetterSetzen (scripts/lib/ausgabe-aufnahme.cjs:2263)" };
+                        const w0 = s.weather;
+                        try {
+                            window.__wetterSetzen(mit.eingriff);
+                            return { regen: r._weatherFieldFor(undefined, true).rain, wort: s.weather, wortOrt: r._wetterAmOrt(x, z) };
+                        } finally {
+                            window.__wetterSetzen(w0);
+                        }
+                    };
+                    let R1t = null;
+                    try {
+                        const lage = await H.seite("const p = r.state.playerMesh.position; const w = r._windAt(p.x, p.z, r._bildZeit); const n = Math.hypot(w.x, w.z) || 1; return { x: p.x, z: p.z, wx: w.x / n, wz: w.z / n };");
+                        const leeM = (U[1].leeGrad || 0.05) * 111000;
+                        const ring = (cx, cz, typ) => Array.from({ length: 5 }, (_, i) => [Math.round(cx + (i ? 400 * Math.cos((i * Math.PI) / 2) : 0)), Math.round(cz + (i ? 400 * Math.sin((i * Math.PI) / 2) : 0)), typ]);
+                        const orteT = ring(lage.x, lage.z, "ziel").concat(ring(lage.x + lage.wx * leeM, lage.z + lage.wz * leeM, "lee"));
+                        const m = (typ, k) => ({ wie: "mittel", feld: "regen", nur: (q) => q.ort && q.ort[2] === typ && q.zeit.k === k });
+                        R1t = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: REGEN_AN, export: "stamm/bild-himmel.js:3032 _wetterAmOrt · :3009 _weatherFieldFor · window.__wetterSetzen (scripts/lib/ausgabe-aufnahme.cjs:156, das Wort des Spielers)", leser: "stamm/bild-himmel.js:3009 _weatherFieldFor (der Regen, den Schliere und Nässe lesen) · :3032 _wetterAmOrt (der Wetter-Zug)" },
+                            adressen: { orte: orteT, zeiten: [{ k: "ohne" }, { k: "mit" }], dazu: [{ zeit: { k: "eingriff" } }] },
+                            mit: { eingriff: U[1].eingriff },
+                            ms: 6000,
+                            masse: { zielOhne: m("ziel", "ohne"), zielMit: m("ziel", "mit"), leeOhne: m("lee", "ohne"), leeMit: m("lee", "mit"), orte: { wie: "anzahl", feld: "regen", nur: (q) => q.zeit.k === "ohne" }, worte: { wie: "verschieden", feld: "wort", nur: (q) => q.zeit.k === "ohne" }, mitWorte: { wie: "verschieden", feld: "wort", nur: (q) => q.zeit.k === "mit" } },
+                            ungemessen: ["das Bildpaar über der Stadt mit ↔ ohne Eingriff (am Gerät)"],
+                        });
+                    } catch (e) {
+                        R1t = { werte: {}, fehlt: null, fehltAn: [], akte: "der Fächer warf: " + String((e && e.message) || e).slice(0, 160) };
+                    }
+                    const w1t = R1t.werte;
+                    const dt = (p, q) => (Number.isFinite(p) && Number.isFinite(q) ? Math.round((p - q) * 1e3) / 1e3 : null);
+                    const ohneT = (w1t.zielOhne || 0) + (w1t.leeOhne || 0);
+                    // das Wort am Ort und das Wort mit Eingriff: der Zeuge verlangt, dass der Eingriff das Wort wirklich wechselt
+                    const wortOhne = (R1t.je || []).filter((q) => q.a.zeit && q.a.zeit.k === "ohne").map((q) => q.w.wort)[0];
+                    const wortMit = (R1t.je || []).filter((q) => q.a.zeit && q.a.zeit.k === "mit").map((q) => q.w.wort)[0];
                     const bild = await M.auge("same-terraform", { ort: "wiese" });
                     const [s1, s2, s3, s4, s5, s6] = [x.s1 || {}, x.s2 || {}, x.s3 || {}, x.s4 || {}, x.s5 || {}, x.s6 || {}];
                     const d = (p, q) => (Number.isFinite(p) && Number.isFinite(q) ? Math.round((p - q) * 1e3) / 1e3 : null);
@@ -9592,10 +9692,10 @@ L.perspektive("same", (() => {
                     return {
                         sprossen: {
                             1: {
-                                werte: { zielMehr: d(s1.zielMit, s1.zielOhne), leeWeniger: d(s1.leeMit, s1.leeOhne), bilanzVerh: ohne > 0 ? Math.round((((s1.zielMit || 0) + (s1.leeMit || 0)) / ohne) * 1e3) / 1e3 : null },
-                                zeuge: s1,
+                                werte: { zielMehr: dt(w1t.zielMit, w1t.zielOhne), leeWeniger: dt(w1t.leeMit, w1t.leeOhne), bilanzVerh: ohneT > 0 ? Math.round((((w1t.zielMit || 0) + (w1t.leeMit || 0)) / ohneT) * 1e3) / 1e3 : null },
+                                zeuge: { wort: wortOhne, eingriff: wortMit, wunsch: U[1].eingriff, faecherOrte: w1t.orte || 0, worteOrt: w1t.worte, worteMit: w1t.mitWorte, zielOhne: w1t.zielOhne, zielMit: w1t.zielMit, leeOhne: w1t.leeOhne, leeMit: w1t.leeMit, eingriffFehlt: (R1t.fehltAn || []).length, planetZiel: s1.planetZiel, planetLee: s1.planetLee, gegen: s1.gegen, akte: R1t.akte },
                                 auge: bild,
-                                nicht: "kein Eingriff lenkt den Regen einer Region: das Wetter ist EIN Wort der ganzen Welt (Feld „" + s1.wort + "“ Regen " + s1.zielOhne + ", mit dem Wort „" + s1.eingriff + "“ " + s1.zielMit + " — an Ziel und Lee derselbe Leser ohne Ort); der Planet trägt Regen je Lage (Ziel " + s1.planetZiel + ", Lee " + s1.planetLee + "), ohne Eingang für einen Eingriff",
+                                nicht: (R1t.fehlt || "kein Eingriff lenkt den Regen einer Region") + " — am Fächer " + (w1t.orte || 0) + " Orte: Ziel " + w1t.zielOhne + " → " + w1t.zielMit + ", Lee " + w1t.leeOhne + " → " + w1t.leeMit + " mit dem Wort „" + U[1].eingriff + "“ (" + (w1t.mitWorte || 0) + " Wort an allen Orten, derselbe Leser ohne Ort); der Planet trägt Regen je Lage (Ziel " + s1.planetZiel + ", Lee " + s1.planetLee + "), ohne Eingang für einen Eingriff · " + R1t.akte,
                             },
                             2: {
                                 werte: { sprungJahre: s2.sprung, neuesUfer: s2.neuesUfer, wuesteBleibt: s2.bleibt },
@@ -9637,13 +9737,25 @@ L.perspektive("same", (() => {
                             K.soll(TF, 1, "Bilanz ±10 %", { key: "bilanzVerh", ref: 1, refQuelle: "Erde: Wolkenimpfung verlagert Niederschlag, Ziel + Lee mit ÷ ohne = 1 (WMO 2017, Weather Modification)" }),
                         ],
 // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge verlangt die Welt hinter der Zahl
-                        zeuge: (roh) => { const z = roh.zeuge || {}; return typeof z.wort === "string" && typeof z.eingriff === "string" && z.wort !== z.eingriff ? null : "kein Eingriff am Wetter-Wort der Region (" + z.wort + " → " + z.eingriff + ")"; },
+                        // der Zeuge verlangt den Fächer (≥ 10 Orte, Ziel und Lee je ohne ↔ mit), ein Wort, das der Eingriff wirklich wechselt,
+                        // und eine Fähigkeit, die den Regen EINER Region lenkt (heute: ihr Fehlen beim Namen, stamm/bild-himmel.js:3032)
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.faecherOrte >= 10)) return "der Fächer trug " + (z.faecherOrte || 0) + " von 10 Orten (Ziel und Lee je 5)";
+                            if (z.eingriffFehlt !== 0) return "keine Fähigkeit lenkt den Regen einer Region (die Adresse „eingriff“ ohne Fähigkeit)";
+                            return typeof z.wort === "string" && typeof z.eingriff === "string" && z.wort !== z.eingriff ? null : "kein Eingriff am Wetter-Wort der Region (" + z.wort + " → " + z.eingriff + ")";
+                        },
                         auge: { pose: "2 km über der Stadt, Ziel und Lee im Bild, mit ↔ ohne Eingriff an derselben Saat (heute kein Eingriff: geschossen an der Wiese)", vorbild: "Radar-Bilder geimpfter Wolken (Wolkenimpfung, WMO 2017), Prüfer-Satz R11" },
                         taeter: "stamm/bild-himmel.js `_weatherFieldFor` (der Regen ist ein Wort ohne Ort)",
                         nicht: "kein Eingriff lenkt den Regen einer Region",
-                        leser: "stamm/bild-himmel.js:2820 `_weatherFieldFor` — der Regen ist EIN Wort der ganzen Welt, ohne Ort; voxel-worker.js:1175 planetOrtAuftrag — kein Eingang für einen Eingriff",
-                        gruen: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: { wort: "cloudy", eingriff: "rainy" } },
-                        attrappen: [{ name: "Ziel nass, Lee trocken aus einer Tafel ohne Welt", roh: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: {} } }],
+                        leser: "stamm/bild-himmel.js:3009 `_weatherFieldFor` — der Regen ist EIN Wort der ganzen Welt, ohne Ort; :3032 `_wetterAmOrt` — das Wort des Orts ohne Eingang für einen Eingriff; voxel-worker.js:1446 planetOrtAuftrag — kein Eingang für einen Eingriff",
+                        gruen: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: { wort: "cloudy", eingriff: "rainy", faecherOrte: 10, eingriffFehlt: 0 } },
+                        attrappen: [
+                            { name: "Ziel nass, Lee trocken aus einer Tafel ohne Welt", roh: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: {} } },
+                            { name: "Mutant: das Wort der ganzen Welt (Lee nass wie das Ziel)", roh: { werte: { zielMehr: 0.3, leeWeniger: 0.3, bilanzVerh: 1.6 }, zeuge: { wort: "cloudy", eingriff: "rainy", faecherOrte: 10, eingriffFehlt: 0 } } },
+                            { name: "ein Ort statt zehn", roh: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: { wort: "cloudy", eingriff: "rainy", faecherOrte: 1, eingriffFehlt: 0 } } },
+                            { name: "ohne Fähigkeit: der Eingriff fehlt", roh: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: { wort: "cloudy", eingriff: "rainy", faecherOrte: 10, eingriffFehlt: 1 } } },
+                        ],
                     },
                     2: {
                         u: { flaecheKm2: 1e5, jahre: 100 },
