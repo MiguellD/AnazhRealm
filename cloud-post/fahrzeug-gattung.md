@@ -1,8 +1,8 @@
 # Vorprüfung fahrzeug-gattung — das Boot am Anleger aus dem Gesetz des Fahrzeugs, der Steg aus dem Zimmerwerk
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 83 von 1 718 (Stand `vision/karte-2-stand.json` im Zweig
-`punkte-maschine`; diese Abgabe bucht keine Sprosse, gebucht wird, wenn der Richter sie grün misst). Zweig `fahrzeug-gattung`
-auf main 5ef0404b.
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 83 von 1 718 (Stand `vision/karte-2-stand.json` im Zweig `punkte-maschine`;
+diese Abgabe bucht keine Sprosse, gebucht wird, wenn der Richter sie grün misst). Zweig `fahrzeug-gattung`
+auf main bf9be26c.
 
 **Die Stufe:** der Anleger am Dorf am Wasser, der Steg und das Boot. Der Leiterwagen steht als Gattung im Kern und im
 Asset-Vertrag; im Spiel steht er noch nicht (siehe Offen).
@@ -18,7 +18,7 @@ anleger-gestalt sind nicht übernommen.
 
 ## Sprosse `karte2.planet.kopplung.siedlungslage#1` (der Spiegel + 1 m, 100 % der Leser folgen)
 
-| Maß | main 5ef0404b | diese Abgabe |
+| Maß | main bf9be26c | diese Abgabe |
 |---|---|---|
 | Anleger am Dorf am Wasser (Radeon, Dorf 15012/−9561) | keiner | Steg 2 Felder (7,4 m), Boot `fahrzeug_boot` |
 | das Boot folgt dem Spiegel + 1 m (N1, node) | — | Hub 1,000 m, Bild 1,000 m; Mutante „eingefrorener Spiegel“ ROT |
@@ -26,7 +26,7 @@ anleger-gestalt sind nicht übernommen.
 
 ## Sprosse `karte2.mensch.fahrzeug.gestalt#1` (≥ 5 Fahrzeug-Typen, ein Wagen am Messort stadt-voll)
 
-| Maß | main 5ef0404b | diese Abgabe |
+| Maß | main bf9be26c | diese Abgabe |
 |---|---|---|
 | Gattungen im Kern (`GATTUNGEN`) | 6 | 8 (+ boot, karren) |
 | Flotte der Stadt (`flotte(21)`) | 6 Gattungen | 6 Gattungen, byte-gleich (boot und karren tragen keinen Anteil an `FLOTTE`) |
@@ -72,16 +72,21 @@ Freibord und Tiefgang nur aus der Rechnung (Boot); alle Steg-Maße außer Fuge u
 
 ## Bild (Radeon, 640 × 360, gleiche Kamera 14919,03/−0,80/−9346,52 → 14911,59/−2,80/−9341,92, fov 40, Mittag)
 
-- vorher (main 5ef0404b): `scratchpad/bild/fest/anleger-vor.png`
+- vorher (main bf9be26c): `scratchpad/bild/fest/anleger-vor.png`
 - nachher (diese Abgabe): `scratchpad/bild/fest/anleger-nach.png`
 
-BILDURTEIL
+Nachher (Kopf f71e5a4e, gelesen): der Steg steht als Zimmerwerk am Ufer, mit Bohlen-Deck, Geländer aus zwei Holmen und
+Pfosten auf seinen Jochen; längs an ihm liegt der Kahn flach im Wasser, ein langer, niedriger Plattboden aus breiten Brettern
+(Foto b1 Spreewaldkahn: die flache, lange Gestalt trifft; das Holz liest einheitlich braun, der Rumpf liegt zur Hälfte hinter
+dem Schilf). Gegen das Steg-Foto b4: Deck und Geländer treffen, die Joche sind vom Wasser verdeckt. Das Vorher-Bild an derselben
+Kamera wartet am Schloss der Radeon; die Absenz auf main belegt der Abdruck (`bau:steg_stegfeld` und `bau:fahrzeug_boot`
+„nur in B“).
 
 ## Offen, mit Leser
 
 | Was | Grund | Messname | Leser |
 |---|---|---|---|
-| Steg und Boot zählen in der Station nicht | `k2-zusammenspiel.js:207` addiert Steg und Boot als feste 0 | `leserProzent` | Station `planet.kopplung.siedlungslage#1`, Zweig `punkte-maschine` |
+| Steg und Boot zählen in der Station nicht | die Station `k2-zusammenspiel` (Zeile 207) addiert Steg und Boot als feste 0 | `leserProzent` | Station `planet.kopplung.siedlungslage#1`, Zweig `punkte-maschine` |
 | der Leiterwagen steht im Spiel an keiner Scheune | Eingang: das Tor der Scheune (`slot.tuer`, Plan `hof:scheune`); am Dorf trug der Platz vor dem Tor beim Heben der Scheune die Bau-Wand (`_bauFrei` false an 8 von 8 Scheunen), Sekunden später frei (5 von 6) — der Täter der Wand ist unbenannt | `typen`, `bauFreiAn` | Station `mensch.fahrzeug.gestalt#1` |
 | die Breite des Kahns 0,96 m gegen 1,04–1,16 m | das Gesetz rechnet die Breite am Bord ohne Dollbord-Überstand | `B` | `gate:vehicle-drive` A9 |
 | die Räder des Leiterwagens: europäische Maße unbelegt | nur US-Museumsmaße | `radR`, `radVorn` | FUND-REGISTER (Zweig koordination) |
