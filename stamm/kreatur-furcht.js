@@ -50,44 +50,46 @@ class AnazhRealm_kreatur_furcht {
         // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
         // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
         const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-        // DIE GLUT IST BEDROHUNG (w28-brand-flucht, feld.K3#2): eine glühende Zelle des Brands im noticeRadius wiegt wie ein Treffer,
-        // jedes Wesen flieht von ihr, das wilde auch. Vorher kehrte der wilde Zweig hier um, und keiner las die Glut: die Herde
-        // äste 15 m vor der Front (gate:kreatur-takt furcht (C): binnen 10 s floh 0 von 5).
+        // DIE GLUT IST BEDROHUNG (w28-brand-flucht, feld.K3#2): eine glühende Zelle des Brands in der Fluchtdistanz des Tiers wiegt
+        // wie ein Treffer, jedes Wesen flieht von ihr, das wilde auch. Vorher kehrte der wilde Zweig hier um, und keiner las die
+        // Glut: die Herde äste 15 m vor der Front (gate:kreatur-takt furcht (C): binnen 10 s floh 0 von 5).
         if (this._kreaturGlutNah(creature, NAT, von)) return NAT.combatFearWariness;
         if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
         // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
         const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
         const jaeger = this._kreaturJaeger;
         if (!jaeger || !jaeger.length) return wSpieler;
-        // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
-        // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
+        // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt auf, sobald das Auge der Beute ihn
+        // sieht (`_kreaturSiehtM`: sein Fell gegen den Boden unter ihm im Rezeptorraum der Beute — Welle LF: die Jagd gelingt aus
+        // der Pirsch; bis auge-der-art sah jede Beute jeden hetzenden Jäger auf denselben 22 m, der Wolf im Gras wie im Schnee).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
         let best = Infinity;
         let J = null;
+        let sichtJ = 0;
         for (const j of jaeger) {
             if (j === creature || !j.position) continue;
-            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? NAT.noticeRadius : sichtPirsch;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
-            if (d < sicht && d < best) {
-                best = d;
-                J = j;
-            }
+            if (!(d < best)) continue;
+            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? this._kreaturSiehtM(creature, j) : sichtPirsch;
+            if (d < sicht) [best, J, sichtJ] = [d, j, sicht];
         }
-        // Ein jagender Jäger in der Witterung wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie
-        // ihn wittert (Flucht-Radius = noticeRadius).
+        // Ein jagender Jäger im Blick wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie ihn sieht
+        // (Flucht-Radius = die Distanz, in der ihr Auge ihn sieht).
         if (!J || NAT.combatFearWariness < wSpieler) return wSpieler;
         von.x = J.position.x;
         von.z = J.position.z;
-        von.r = NAT.noticeRadius;
+        von.r = sichtJ;
         return NAT.combatFearWariness;
     }
 
-    // Die nächste glühende Zelle des Brands im noticeRadius (`_brandGlutUm`: die Blöcke des letzten Schritts, dieselben Zellen, die
-    // Licht, Rauch und Ohr lesen) → ihr Ort und der Flucht-Radius in `von`; ob eine glüht. Ohne Brand kostet die Frage nichts.
+    // Die nächste glühende Zelle des Brands in der Fluchtdistanz des Tiers (`_kreaturFluchtDistanzM`, das Maß seiner Gattung am
+    // Erbe — die Glut sieht jedes Auge weit, geflohen wird sie wie der Mensch; `_brandGlutUm`: die Blöcke des letzten Schritts,
+    // dieselben Zellen, die Licht, Rauch und Ohr lesen) → ihr Ort und der Flucht-Radius in `von`; ob eine glüht. Ohne Brand
+    // kostet die Frage nichts.
     _kreaturGlutNah(creature, NAT, von) {
         const bf = this.state.brandFeld;
         if (!bf || !bf.size) return false;
-        const [x, z, R] = [creature.position.x, creature.position.z, NAT.noticeRadius];
+        const [x, z, R] = [creature.position.x, creature.position.z, this._kreaturFluchtDistanzM(creature)];
         let best = R * R;
         let B = null;
         this._brandGlutUm(x, z, R, (b) => {
@@ -116,7 +118,10 @@ class AnazhRealm_kreatur_furcht {
         const FG = AnazhRealm._furchtGesetz();
         const erinnert = this._kreaturFurchtErinnert(creature);
         const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
-        const witterung = NAT.noticeRadius * weit;
+        // DAS AUGE DER ART (auge-der-art): fern der Distanz, in der sein Auge den Spieler sieht, ignoriert ihn das Wesen — seine
+        // Farbe gegen den Boden unter ihm im Rezeptorraum der Art (`_kreaturSiehtM`). Bis auge-der-art EIN noticeRadius 22 m
+        // für jede Gattung, jede Farbe und jeden Boden.
+        const witterung = this._kreaturSiehtM(creature, this.state.playerMesh) * weit;
         von.x = pm.x;
         von.z = pm.z;
         von.r = NAT.fleeRadius * weit;
@@ -191,6 +196,80 @@ class AnazhRealm_kreatur_furcht {
         if (!(d0 > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ.fluchtDistanzM." + g);
         const t = creature.userData && creature.userData._bestand;
         return t && t.a ? AnazhRealm._lebenKern().merkmal(d0, t.a, t.e, "scheu") : d0;
+    }
+
+    // DAS AUGE DER ART SIEHT (auge-der-art, tetrapoda SINNES_GESETZ): die Distanz (m), in der dieses Tier `ziel` (den Spieler,
+    // einen Jäger) sieht — die Schärfe aus der Augenlänge seines Leibs (`_kreaturAuge`), der Abstand der Farbe des Ziels gegen
+    // den Boden unter ihm (`_bodenFarbeAt`, linear) in den Zapfen der Art, die Fläche des Ziels (`_sichtZiel`). Leser: die
+    // Wariness vor dem Spieler, der hetzende Jäger. Ein Leib ohne Gattung im Gesetzbuch trägt kein Auge: er sieht nichts (0).
+    _kreaturSiehtM(creature, ziel) {
+        const A = this._kreaturAuge(creature);
+        if (!A || !ziel || !ziel.position) return 0;
+        const K = globalThis.__tetrapodaCore;
+        const Z = this._sichtZiel(ziel);
+        const p = ziel.position;
+        const boden = this._bodenFarbeAt(p.x, p.y, p.z, this._sichtBoden || (this._sichtBoden = [0, 0, 0]));
+        return K.augeEntdeckung(A.cpd, Z.kanteM, K.augeAbstand(A.fang, Z.farbe, boden), A.fang.kanaele);
+    }
+
+    // DAS AUGE DES LEIBS (tetrapoda `augeDesLeibs`): Taxon, Augenlänge und Schärfe aus den Dials seines Gusses (die Gattung mit
+    // `gussDials`, `_ofenKreaturDials` — dieselben Zahlen, die der Ofen zum Augapfel formt) und seiner Größe (`bodySize`);
+    // gemerkt je Größe. null für einen Leib ohne Gattung im Gesetzbuch.
+    _kreaturAuge(creature) {
+        const ud = creature.userData || {};
+        const bs = ud.bodySize > 0 ? ud.bodySize : 1;
+        if (ud._auge !== undefined && ud._augeBs === bs) return ud._auge;
+        const K = globalThis.__tetrapodaCore;
+        if (!K || !K.augeDesLeibs) return AnazhRealm._kernPflichtBruch("tetrapoda:augeDesLeibs");
+        const d = this._ofenKreaturDials(this._kreaturGattung(creature), ud.gussDials);
+        const A = d ? K.augeDesLeibs(K.deriveTierParams(d.dials), bs, AnazhRealm.FARBSICHT.lms) : null;
+        if (A && (!A.fang || !(A.cpd > 0))) return AnazhRealm._kernPflichtBruch("tetrapoda:SINNES_GESETZ.art." + A.art);
+        ud._augeBs = bs;
+        return (ud._auge = A);
+    }
+
+    // DAS ZIEL IM BLICK: seine Farbe (linear-sRGB — das Mittel der Stoffe seines Leibs nach Fläche, Stoff-Farbe × Mittel seiner
+    // Vertex-Farben: die Kleidung des Spielers, das Fell des Jägers) und die Kante des Quadrats gleicher Fläche (√(mittlere
+    // waagrechte Ausdehnung × Höhe) — Riccò liest die Fläche). Am Ziel gemerkt, frisch nach 1 s der Kreatur-Uhr: ein Wechsel der
+    // Kleidung zählt ab dem nächsten Blick, alle Tiere lesen dieselbe Zahl.
+    _sichtZiel(ziel) {
+        const ud = ziel.userData || (ziel.userData = {});
+        const t = this.state.creatureAnimationTime || 0;
+        const alt = ud._sichtZiel;
+        if (alt && t >= alt.t && t - alt.t < 1) return alt;
+        const box = new THREE.Box3(),
+            v = new THREE.Vector3(),
+            farbe = [0, 0, 0];
+        let flaeche = 0;
+        ziel.updateMatrixWorld(true);
+        ziel.traverse((o) => {
+            if (!o.isMesh || !o.geometry || !o.visible) return;
+            const m = Array.isArray(o.material) ? o.material[0] : o.material;
+            if (!m || !m.color) return;
+            const g = o.geometry;
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            const r = g.boundingSphere.radius * o.getWorldScale(v).x;
+            const a = r * r;
+            const ton = [m.color.r, m.color.g, m.color.b];
+            const vc = m.vertexColors && g.attributes.color;
+            if (vc) {
+                const schritt = Math.max(1, Math.floor(vc.count / 64));
+                const s = [0, 0, 0];
+                let n = 0;
+                for (let k = 0; k < vc.count; k += schritt, n++) {
+                    s[0] += vc.getX(k);
+                    s[1] += vc.getY(k);
+                    s[2] += vc.getZ(k);
+                }
+                for (let c = 0; c < 3; c++) ton[c] *= s[c] / n;
+            }
+            for (let c = 0; c < 3; c++) farbe[c] += ton[c] * a;
+            flaeche += a;
+            box.expandByObject(o);
+        });
+        const groesse = box.isEmpty() ? null : box.getSize(v);
+        const kanteM = groesse ? Math.sqrt(((groesse.x + groesse.z) / 2) * groesse.y) : 0;
+        return (ud._sichtZiel = { t, farbe: flaeche > 0 ? farbe.map((c) => c / flaeche) : farbe, kanteM });
     }
 
     // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·

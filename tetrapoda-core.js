@@ -159,7 +159,7 @@
             // traegt (der Baer ist keine Beute des Wolfs). Vorher folgte er einem Gradienten, der vom Ziel fortzeigte,
             // im Schritt-Tempo: 0 Bisse in 3600 Takten, der Sprinter entkam immer (Leben-Schau 07.10.).
             hetzM: 6, // m — von hier hetzt der Jaeger (der Ring, auf dem das Rudel seine Plaetze bezieht)
-            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden ab noticeRadius)
+            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden, sobald ihr Auge ihn sieht)
             // DIE EINE MASSE (V18.536): das Volumen der Gestalt × MASSSTAB.dichteKgM3 (Fuchs 15 · Wolf 64 · Hirsch 94 · Baer
             // 335 kg bei Groesse 1) — ein grosser Fleischfresser schlaegt Beute um seine eigene Masse und darueber (Carbone
             // et al. 2007): der Wolf (64 kg) den Hirsch (94 kg), nie den Baeren (335 kg).
@@ -180,7 +180,8 @@
             hungerAnteil: 0.5, // unter diesem Anteil des Magens jagt und frisst das Tier
         },
         furcht: {
-            noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
+            // noticeRadius (22 m für jede Gattung, jede Farbe, jeden Boden) fiel mit dem AUGE DER ART (auge-der-art, VERTRAGS-AKT
+            // 24.11.): fern davon ignoriert das Wesen den Spieler, wo sein Auge ihn nicht sieht (SINNES_GESETZ, `_kreaturSiehtM`).
             menaceFromChaos: 1.3, // Aggression/Zorn verschreckt am staerksten
             menaceFromSorrow: 0.5, // Trauer verunsichert etwas
             calmFromPeace: 0.9, // Ruhe laedt ein

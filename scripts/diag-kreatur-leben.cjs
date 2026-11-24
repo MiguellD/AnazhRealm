@@ -267,7 +267,7 @@ async function lebenBuehnen() {
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
-            witterungM: A._verhaltenGesetz().furcht.noticeRadius,
+            fleeRadiusM: A._verhaltenGesetz().furcht.fleeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
             brand: {
                 flieht: mittel(brand.feuer),
@@ -2932,11 +2932,12 @@ function lebenUrteil(name, z, soll) {
         `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
-    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits der Witterung der
-    // Aura (VERHALTEN.furcht.noticeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie
+    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits des Flucht-Radius
+    // der Aura (VERHALTEN.furcht.fleeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie. Die Reichweite der Aura
+    // selbst ist seit auge-der-art die Distanz, in der das Auge der Art den Spieler sieht (kein EINER noticeRadius mehr).
     soll(
-        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.witterungM),
-        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.witterungM} m)`
+        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.fleeRadiusM),
+        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.fleeRadiusM} m)`
     );
     soll(
         G.fluchtM >= 2 * K.fluchtM,
