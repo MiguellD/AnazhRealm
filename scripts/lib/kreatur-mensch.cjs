@@ -43,6 +43,7 @@ async function menschBuehnen() {
             const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0, standN: 0, standUeber: 0, standMax: 0, standWer: "—" }; // prettier-ignore
             const [stecken, beruehr, kandW, wSpur, akten] = [[], [], [], new Map(), []];
             let minute = 0;
+            const tage = new Set(); // die Tage der Welt, die der Messer sah (der Lebenslauf: wer an einem von ihnen krank war)
             const wann = (b) => `${b.rolle} #${b.heim} um ${(s.timeOfDay * 24).toFixed(2)} Uhr`;
             // DER UMSTAND DES STECKENBLEIBERS (w28-stadt-grammatik): worauf er wartet — die Leiber um ihn (2 m), die Wahl seines
             // Ausweichens (`frist`: steht er, weil keine Richtung frei ist?), die Fahrbahn unter und vor ihm und der nächste Wagen
@@ -133,6 +134,7 @@ async function menschBuehnen() {
             };
             const messen = (dt) => {
                 minute += (dt / tagS) * 1440;
+                tage.add(s.worldMeta.tag);
                 const draus = liste.filter((b) => !b.drinnen).map((b) => b.leib.position);
                 for (const b of liste) {
                     const P = b.leib.position;
@@ -215,7 +217,11 @@ async function menschBuehnen() {
             };
             // die Zahl: die Wand je Bau, die Tür, die Wege und die Strecke je Leib, Steckenbleiber, Berührung (je die ersten vier)
             const zahl = () => {
-                const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
+                // DER KRANKE GEHT NICHT (mensch.menge.seuche#1, `_bewohnerSoll`): wer an einem Tag der Messung krank war, sitzt daheim —
+                // seine Wege und seine Strecke misst das Soll seines Tags (Soll-Orte), nie das Band des Gesunden (4–10 Wege, ≥ 100 m)
+                const krankAn = (b) => [...tage].some((t) => r._bewohnerLauf(null, b, "krank", t));
+                const je = liste.map((b) => ({ wer: wer(b), krank: krankAn(b), ...wSpur.get(b) }));
+                const gesund = je.filter((q) => !q.krank);
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
                     wandN: [...WG.wand.values()].reduce(addiere, 0),
@@ -229,17 +235,18 @@ async function menschBuehnen() {
                     aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
                     sprungN: WG.sprungN,
                     stand: { n: WG.standN, ueber: WG.standUeber, mm: Math.round(WG.standMax * 1000), wer: WG.standWer },
-                    wegeMin: Math.min(...je.map((q) => q.n.size)),
-                    wegeMax: Math.max(...je.map((q) => q.n.size)),
-                    streckeMin: Math.round(Math.min(...je.map((q) => q.gesamt))),
+                    wegeMin: Math.min(...gesund.map((q) => q.n.size)),
+                    wegeMax: Math.max(...gesund.map((q) => q.n.size)),
+                    streckeMin: Math.round(Math.min(...gesund.map((q) => q.gesamt))),
                     ...vier(
                         "ausser",
-                        je.filter((q) => q.n.size < 4 || q.n.size > 10).map((q) => `${q.wer}: ${q.n.size}`)
+                        gesund.filter((q) => q.n.size < 4 || q.n.size > 10).map((q) => `${q.wer}: ${q.n.size}`)
                     ),
                     ...vier(
                         "kurz",
-                        je.filter((q) => !(q.gesamt >= 100)).map((q) => `${q.wer}: ${Math.round(q.gesamt)} m`)
+                        gesund.filter((q) => !(q.gesamt >= 100)).map((q) => `${q.wer}: ${Math.round(q.gesamt)} m`)
                     ),
+                    ...vier("krank", je.filter((q) => q.krank).map((q) => `${q.wer}: ${Math.round(q.gesamt)} m`)),
                     ...vier("stecken", stecken),
                     ...(akten.length ? { steckAkte: akten, steckPlan: steckPlan() } : null),
                     ...vier("beruehr", beruehr),
@@ -888,6 +895,11 @@ async function menschBuehnen() {
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
         const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
         const blieb = new Map();
+        // (je Prüf-Stunde auch der TAG, an dem er sie sah: der Lebenslauf liest ihn — der Kranke bleibt an seinem Tag daheim; bis
+        // bewohner-satz kam der Heimkehrer zu jeder Stunde am Tag nach dem Ende der Messung, und wer am Morgen davor krank daheim
+        // saß, stand am Tag danach gesund 34 m fort an seinem Werk)
+        const bliebTag = new Map();
+        const merke = () => (blieb.set(s.timeOfDay * 24, lagen()), bliebTag.set(s.timeOfDay * 24, s.worldMeta.tag));
         // DIE ZERLEGUNG DER WIEDERKEHR (je Prüf-Stunde, nur gelesen): der Rückstand des Bleibenden hinter seinem Tag (`rueck`,
         // `_bewohnerGehen` — die Länge, um die ihn die Ankunft weiter längs seines Wegs stellt), sein gegangener Weg seit der Wende
         // und die Sekunden, die er mit Weg stand (Vorrang der Fahrbahn, Ausweichen) seit der letzten Prüf-Stunde
@@ -926,7 +938,7 @@ async function menschBuehnen() {
             if ([7.5, 12, 17.2].some(um) && eng && !engGang) for (let k = 0; k < 600; k++) takt(1 / 60, SD);
             if (eng && !engGang) {
                 if (engMessung && [10, 12.5, 19].some(um)) engMessung();
-                if (i % 15 === 0) [blieb.set(s.timeOfDay * 24, lagen()), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
+                if (i % 15 === 0) [merke(), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
                 continue;
             }
             if ([7.5, 12, 17.2].some(um)) {
@@ -946,7 +958,7 @@ async function menschBuehnen() {
                 koennen.ende();
             }
             if (eng) {
-                if (i % 15 === 0) [blieb.set(s.timeOfDay * 24, lagen()), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
+                if (i % 15 === 0) [merke(), zuege.set(s.timeOfDay * 24, zug()), warten.clear()];
                 continue;
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible && !g.userData._drinnen).length);
@@ -955,11 +967,14 @@ async function menschBuehnen() {
             for (const b of planFn ? liste : []) {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
-                // der Regen der Welt, wie der Wirt ihn reicht (`_bewohnerSoll`: der Kanal rain des EINEN Wetter-Felds)
+                // der Plan des Kerns, bit-gleich je Same (der Regen der Welt, wie der Wirt ihn reicht)
                 const planJetzt = () => planFn(b.same, b.rolle, sh, o, r._weatherFieldFor().rain);
-                const soll = planJetzt();
-                if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
-                const ziel = soll.drinnen ? o.tuer : soll.ort;
+                if (JSON.stringify(planJetzt()) !== JSON.stringify(planJetzt())) planGleich = false;
+                // DAS SOLL IST DAS DES WIRTS (`_bewohnerSoll`: der Plan des Kerns samt dem Regen an der Tür und dem Kranken, der daheim
+                // bleibt — der Lebenslauf). Bis bewohner-satz las die Linse den Plan des Kerns allein, einen Zwilling des Solls: der
+                // Kranke saß daheim, wie sein Gesetz es will, und die Linse zählte ihn fehlend (Steintal wohnhaus/feld #431794: 57 %)
+                const soll = r._bewohnerSoll(b, sh);
+                const ziel = soll.ziel;
                 const g = b.leib;
                 const alt = vorher.get(b);
                 const rest = b.ziel === ziel && Number.isFinite(b.wegRest) ? b.wegRest : null;
@@ -979,7 +994,7 @@ async function menschBuehnen() {
             if (um(12.5)) haendlerFehlt = ohneHaendler(S, true);
             if (um(2)) z.schmiede2 = anStation();
             if (i % 15 === 0) {
-                blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
+                merke(); // je 1,5 h
                 zuege.set(s.timeOfDay * 24, zug());
                 warten.clear();
             }
@@ -1003,11 +1018,14 @@ async function menschBuehnen() {
             if (hat("bewohner-wiederkehr")) decke("_bewohnerAnkunft", () => () => {}, ab0);
             const [ueber, P, je] = [[], pm.clone(), new Map()];
             let [n, maxM, weit] = [0, 0, null];
+            const tagW = s.worldMeta.tag;
+            ab0.push(() => (s.worldMeta.tag = tagW));
             for (const [T, sah] of blieb) {
                 pm.x = P.x + A.AUTO_SETTLEMENT.nearM * A.BEWOHNER.fernFaktor + 80;
                 r._uhrSetzen(((T + 23) / 24) % 1, "regler");
                 leute(0); // fern gehen die Leiber
                 r._uhrSetzen(T / 24, "regler");
+                s.worldMeta.tag = bliebTag.get(T); // er kommt am Tag der Prüf-Stunde
                 pm.copy(P);
                 // die Vorlagen der Gestalten kommen aus dem Faden zurück (die Fortgegangenen gaben sie frei): die Freigabe
                 // der Foundry wie je Bild, die Uhr steht — das Werk der Leute ohne Zeit (`leuteTakt`), bis jeder zurück ist
@@ -1320,7 +1338,7 @@ function menschUrteil(name, z, soll) {
         );
         soll(
             !v.ausserN && !v.steckenN && v.aufWeg >= 0.85 && !v.kurzN && !v.beruehrN,
-            `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
+            `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}; krank daheim ${v.krankN}: ${v.krank}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
         soll(
             v.stand.n >= 10 && v.stand.mm <= 10,

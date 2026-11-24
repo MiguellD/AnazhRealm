@@ -363,12 +363,15 @@ class AnazhRealm_siedlung_bewohner {
             const familie = gross(wort(this._rollGenome(`${ps}:${b.heim}`, "familie"), "f", 2) + wort(gS, "e", 1));
             return feld === "vorname" ? vorname : feld === "familie" ? familie : `${vorname} ${familie}`;
         }
-        if (feld === "freunde") {
-            // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt
+        if (feld === "freunde" || feld === "kreis") {
+            // die Sympathie-Gruppe ohne den Haushalt: je Platz ein Mensch eines anderen Hauses des Plans, das Leute trägt. `kreis`
+            // nennt eine Schicht der Dunbar-Folge (`tag` trägt ihre Größe, LEBENSLAUF.freunde.schichten): dieselben Züge, weiter
+            // gezählt — jede Schicht enthält die innere
             const FC = globalThis.__fachwerkCore;
             const g = this._rollGenome(b.seed, "freunde");
             const aus = [];
-            for (let m = 0, F = Math.max(0, L.freunde.gruppe - (b.epoche.n - 1)); m < F; m++) {
+            const gr = feld === "kreis" ? tag : L.freunde.gruppe;
+            for (let m = 0, F = Math.max(0, gr - (b.epoche.n - 1)); m < F; m++) {
                 const si = Math.floor(g.axis(`${m}:haus:freund`) * plan.slots.length) % plan.slots.length;
                 const sl = plan.slots[si];
                 const n = sl ? FC.leuteVon(sl.ov) : 0;
@@ -1131,10 +1134,17 @@ class AnazhRealm_siedlung_bewohner {
             // DER BESUCH GILT DEN SEINEN (mensch.geist.netz#1, bewohner-satz): nur ein Haus, in dem einer seiner Sympathie-Gruppe
             // wohnt (`b.freunde`, der Lebenslauf) — unter ihnen wählt der Kern wie bisher nach Weg und Angebot. Bis hier wählte er
             // jedes Haus fern von Heim und Platz: am Messstand Steintal 0 von 89 Besuchen bei einem Bekannten.
+            // DIE SCHICHTEN DES BESUCHS (Dunbar: 15 · 50 · 150, LEBENSLAUF.freunde.schichten): wohnt keiner der Sympathie-Gruppe in
+            // einem Haus, das der Kern fern genug nennt, gilt der Besuch der nächsten Schicht. Bis hier blieb er dann ohne Besuch
+            // und ging einen Weg weniger (CI voll 11/18: Steintal gasthaus #419347 3 Wege, Soll 4–10; main 4).
             const P = besuche[i];
-            P.freund = new Set();
-            for (const f of b.freunde) if (ortVon.has(f.si)) P.freund.add(ortVon.get(f.si));
-            b.orte.besuch = (yield* binden(P, ["besuch"]))("besuch");
+            for (const n of AnazhRealm.LEBENSLAUF.freunde.schichten) {
+                P.freund = new Set();
+                for (const f of this._bewohnerLauf(S, b, "kreis", n))
+                    if (ortVon.has(f.si)) P.freund.add(ortVon.get(f.si));
+                b.orte.besuch = (yield* binden(P, ["besuch"]))("besuch");
+                if (b.orte.besuch) break;
+            }
         }
         // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik; koerper TAGES_GESETZ.rollen.haendler, fachwerk `platzAnziehung`
         // „haendler"): je Stand des Plans EIN Bewohner mit der Rolle des Händlers — sein Werk ist der Punkt hinter der Theke,
@@ -2487,13 +2497,25 @@ class AnazhRealm_siedlung_bewohner {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
+        const regen = this._weatherFieldFor().rain;
+        let soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen);
         // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1, bewohner-satz): ist er an diesem Tag der Sicht krank (der Lebenslauf,
         // `krank`), sitzt er in jeder Stunde, die ihn fortführte — Werk, Markt, Mahl, Besuch —, vor seiner Tür im Akt seines Abends
-        if (!soll.drinnen && soll.ort !== o.heim && !b.amSteuer) {
-            const wm = this.state.worldMeta;
-            if (this._bewohnerLauf(null, b, "krank", (+(wm && wm.tag) || 0) + Math.floor(stunde / 24)))
-                return { ziel: o.heim, drinnen: false, akt: "abend" };
+        const wm = this.state.worldMeta;
+        const tag = (+(wm && wm.tag) || 0) + Math.floor(stunde / 24);
+        const krank = (x) => this._bewohnerLauf(null, x, "krank", tag);
+        if (!soll.drinnen && soll.ort !== o.heim && !b.amSteuer && krank(b))
+            return { ziel: o.heim, drinnen: false, akt: "abend" };
+        // DIE VERTRETUNG (Leiter mensch.netz.verkehr: jeder Wagen der Stadt fährt): ist der andere Fahrer seines Wagens an diesem
+        // Tag krank und nennt dessen Plan jetzt das Werk, übernimmt er die Schicht — sein Soll ist das Werk (der Stand am Wagen),
+        // der Schichtwechsel des Verkehrs (`_tickVerkehr`) setzt ihn ans Steuer. Bis hier blieb der Kranke daheim und sein Wagen
+        // stand: am Messort stadt-voll fand der Verkehr keinen Fahrer, die Stadt wurde nie bereit (gate:fahr-leben VK, CI voll 9/18:
+        // „DER BAU STEHT NICHT: verkehr: die Stadt steht nach 39102 Takten").
+        const wg = b.wagen;
+        const f = wg && wg.fahrer ? wg.fahrer.find((x) => x !== b) : null;
+        if (f && soll.ort !== o.werk && krank(f) && !krank(b)) {
+            const fs = KC.tagesPlan(f.same, f.rolle, stunde, f.orte, regen);
+            if (!fs.drinnen && fs.ort === f.orte.werk) soll = { ort: o.werk, drinnen: false, akt: fs.akt };
         }
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
@@ -4353,7 +4375,7 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         koda: Object.freeze(["n", "m", "l", "r", "s", "t", "k"]),
     }),
     // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
-    freunde: Object.freeze({ gruppe: 15 }),
+    freunde: Object.freeze({ gruppe: 15, schichten: Object.freeze([15, 50, 150]) }),
     // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit ∝ N^−α, α gesetzt)
     uebung: Object.freeze({
         besteH: 10000,
