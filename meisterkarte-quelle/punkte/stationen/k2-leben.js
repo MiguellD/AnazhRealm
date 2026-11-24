@@ -1358,7 +1358,8 @@ L.perspektive("pflanzen", (() => {
 
             // ══ DICHTE: der Bestand nach Entfernung, der Wald von innen (Wald-Faden), die Bilder der Welt (Takt), die Sichtweite, /zaehlen ══
             [D_ID]: {
-                sek: 20,
+                sek: 32,
+                faecher: true,
                 pfad: PFAD_WALD.concat(["stamm/gelaende-fern.js", "stamm/bild-*.js", "scripts/lib/draw-zaehler.cjs", "spec/profiband/haushalt.json"]),
                 ungefahren: "die Ring-Bildanteile und Bildpaare (Foto, REF real-mischwald), der Pop-Zähler im Bild, Frame p95 an der Karte",
                 mess: async function (H, U, M) {
@@ -1426,6 +1427,124 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
+                    // DER FÄCHER DER WIESE (S1, M4): je Kachel der Nah-Wiese (8 × 8 im Abstand 18 m um den Spieler) × 4 Blick-Richtungen
+                    // die Blattfläche je Boden (LAI), die das Spiel in jedem Ring vor dem Ego-Auge (1,7 m) zeichnet — die Büschel der
+                    // Kachel aus DEM Gesetz der Nähe (`_nahWieseKachelBueschel`), jenseits der Übergabe (`radius`) Anteil und Größe aus DEM
+                    // Gesetz der Ferne (`_wieseFern` über `_wieseFuss`, die Zahlen-Algebra der Tafel), die Blattfläche je Büschel die der
+                    // GEZEICHNETEN Vorlage je Stufe (Dreiecke × Welt-Skala², × Skala² des Büschels). Das Vorbild: die Wiese des Fotos
+                    // trägt ihre Blattfläche unabhängig vom Auge (Grasland-LAI 1,71 ± 1,19, Asner, Scurlock & Hicke 2003, Global Ecol.
+                    // Biogeogr. 12:191); der Grund im Blick nach Nilson 1971 (Agric. Meteorol. 8:25): P(θ) = exp(−G·LAI/cos θ), G 0,5
+                    const D1_AN = async (r, T, a, mit) => {
+                        const NW = r.constructor.NAH_WIESE, K = NW.kachel, Z = globalThis.__phytoCore.WIND_ZAHLEN;
+                        const nw = r.state.nahWiese;
+                        if (!nw || !nw.vorlagen || !nw.vorlagen.size) return { fehlt: "die Nah-Wiese trägt keine gezeichnete Vorlage (stamm/vegetation-wiese.js _tickNahWiese, state.nahWiese.vorlagen leer)" };
+                        const flaeche = {};
+                        for (const [k, v] of nw.vorlagen) {
+                            let A = 0;
+                            for (const t of v.flat.leaves) {
+                                const g = t.geom, p = g.attributes.position.array, I = g.index.array, e = t.localMatrix.elements;
+                                let s = 0;
+                                for (let i = 0; i < I.length; i += 3) {
+                                    const [x, y, z] = [I[i] * 3, I[i + 1] * 3, I[i + 2] * 3];
+                                    const [ux, uy, uz, vx, vy, vz] = [p[y] - p[x], p[y + 1] - p[x + 1], p[y + 2] - p[x + 2], p[z] - p[x], p[z + 1] - p[x + 1], p[z + 2] - p[x + 2]];
+                                    s += 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
+                                }
+                                A += s * Math.hypot(e[0], e[1], e[2]) * Math.hypot(e[4], e[5], e[6]);
+                            }
+                            flaeche[k] = A;
+                        }
+                        const pl = r.state.playerMesh.position;
+                        const i = (a.saat - 1) % 8, j = Math.floor((a.saat - 1) / 8);
+                        const tx = Math.floor(pl.x / K) + (i - 3) * 3, tz = Math.floor(pl.z / K) + (j - 3) * 3;
+                        const b = r._nahWieseKachelBueschel(tx, tz);
+                        if (!b) return { offen: true, tx, tz };
+                        const cx = (tx + 0.5) * K, cz = (tz + 0.5) * K;
+                        const gy = r._bodenSichtAt(cx, cz);
+                        // das Licht der stehenden Kronen über der Kachel (dasselbe Feld, das den Wurf der Büschel dünnt)
+                        const Lf = r._bodenLichtFeld(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
+                        const licht = [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]].reduce((s, [u, v]) => s + Lf((tx + u) * K, (tz + v) * K), 0) / 5;
+                        if (!b.length) return { tx, tz, n: 0, licht };
+                        const w = (a.ort * Math.PI) / 2, E = 1.7;
+                        const lai = [], sicht = [], sichtRef = [];
+                        const eb = {};
+                        for (const d of mit.ringe) {
+                            const [ex, ez] = [cx - Math.cos(w) * d, cz - Math.sin(w) * d];
+                            const by = r._bodenSichtAt(ex, ez);
+                            const ey = (by == null ? gy : by) + E;
+                            let L = 0;
+                            for (const q of b) {
+                                const dh = Math.hypot(q.x - ex, q.z - ez);
+                                const A = flaeche[q.vorlage + ":" + (dh < NW.stufe1 ? "L1" : "L2")] * q.s * q.s;
+                                if (dh < NW.radius) {
+                                    L += A;
+                                    continue;
+                                }
+                                r._wieseHang(q.x, q.z, eb);
+                                const G = r.constructor._wieseFern(Z, dh, r.constructor._wieseFuss(Z, q.x - ex, q.y - ey, q.z - ez, -eb.gx, 1, -eb.gz, Math.max(NW.fern.auge, E)));
+                                // die Kachel der Ferne schneidet an o < Anteil (`_nahWieseFernKachel`), der Stoff wächst um `skala`
+                                if (q.o < G.anteil) L += A * G.skala * G.skala;
+                            }
+                            lai.push(L / (K * K));
+                            const c = E / Math.hypot(E, d);
+                            sicht.push(Math.exp((-0.5 * lai[lai.length - 1]) / c));
+                            sichtRef.push(Math.exp((-0.5 * lai[0]) / c));
+                        }
+                        const zu = lai.map((x) => (lai[0] > 0 ? x / lai[0] : null));
+                        const mitte = mit.ringe.map((d, k) => (d >= 10 && d <= 20 ? zu[k] : null)).filter((x) => x != null);
+                        return { tx, tz, n: b.length, licht, lai, sicht, sichtRef, zu, zu1020: b.length >= 20 ? mitte.reduce((s, x) => s + x, 0) / mitte.length : undefined };
+                    };
+                    const RINGE = [3.5, 7.5, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40];
+                    let s1 = null;
+                    try {
+                        const R1 = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: D1_AN, export: "stamm/vegetation-wiese.js:128 _nahWieseKachelBueschel (die Büschel der Nähe, Wurf GC(L, m, rk) :188) · :746 _wieseFern über :778 _wieseFuss (Anteil und Größe der Ferne) · die gezeichnete Vorlage state.nahWiese.vorlagen (Blattfläche je Stufe)", leser: "stamm/stoff-material.js:83 _halmFerne (der Stoff liest _wieseFern je Instanz) · stamm/vegetation-wiese.js:974 _nahWieseFernKachel (die Kachel der Ferne schneidet an o < Anteil)" },
+                            adressen: { saaten: 64, orte: [0, 1, 2, 3] },
+                            mit: { ringe: RINGE },
+                            ms: 9000,
+                            masse: {
+                                kacheln: { wie: "verschieden", feld: "a.saat", nur: (q, w) => w.n > 0 },
+                                kachelnLeer: { wie: "verschieden", feld: "a.saat", nur: (q, w) => w.n === 0 },
+                                kachelnOffen: { wie: "anzahl", feld: "offen", nur: (q, w) => !!w.offen },
+                                unterKronen: { wie: "verschieden", feld: "a.saat", nur: (q, w) => w.n > 0 && w.licht < 0.9 },
+                                lai: { wie: (v) => RINGE.map((_, k) => v.reduce((s, x) => s + x.lai[k], 0) / Math.max(1, v.length)), nur: (q, w) => w.n > 0 },
+                                sicht: { wie: (v) => RINGE.map((_, k) => v.reduce((s, x) => s + x.sicht[k], 0) / Math.max(1, v.length)), nur: (q, w) => w.n > 0 },
+                                sichtRef: { wie: (v) => RINGE.map((_, k) => v.reduce((s, x) => s + x.sichtRef[k], 0) / Math.max(1, v.length)), nur: (q, w) => w.n > 0 },
+                                laiOffen: { wie: "mittel", feld: "lai.0", nur: (q, w) => w.n > 0 && w.licht >= 0.9 },
+                                laiUnterKronen: { wie: "mittel", feld: "lai.0", nur: (q, w) => w.n > 0 && w.licht < 0.9 },
+                                lichtUnterKronen: { wie: "mittel", feld: "licht", nur: (q, w) => w.n > 0 && w.licht < 0.9 },
+                            },
+                            schlecht: { feld: "zu1020", richtung: "min" },
+                            // die schlechteste Kachel mit ≥ 20 Büscheln (eine Kachel am Weg mit zwei Büscheln trüge kein Bild der Wiese)
+                            pose: (q, w) => "Ego 1,7 m vor der Kachel " + w.tx + "," + w.tz + " (Blick " + ["+x", "+z", "−x", "−z"][q.ort] + "): die Blattfläche 10–20 m bei " + Math.round(100 * w.zu1020) + " % der Nähe",
+                            ungemessen: ["der Ring-Bildanteil im Bild gegen das Wiesenfoto (die Pixel der Halme und des Grunds je Ring) — ungemessen bis zum Gerät", "das Bildpaar Wald-innen gegen REF real-mischwald — ungemessen bis zum Gerät"],
+                        });
+                        // die Verdichtung je Ring über den Fächer: die Summe der Blattfläche je Ring durch die der Nähe (2–5 m)
+                        const L = R1.werte.lai, zu = L.map((x) => (L[0] > 0 ? x / L[0] : null));
+                        const k1020 = RINGE.map((d, k) => (d >= 10 && d <= 20 ? k : -1)).filter((k) => k >= 0);
+                        let dichtBis = null;
+                        for (let k = 1; k < RINGE.length && dichtBis == null; k++) if (zu[k] < 0.9) dichtBis = zu[k - 1] >= 0.9 ? RINGE[k - 1] + ((RINGE[k] - RINGE[k - 1]) * (zu[k - 1] - 0.9)) / (zu[k - 1] - zu[k]) : RINGE[k - 1];
+                        if (dichtBis == null && L[0] > 0) dichtBis = RINGE[RINGE.length - 1];
+                        const pc = (x) => Math.round(1000 * x) / 10;
+                        const ring = (A, k) => pc((A[k[0]] + A[k[1]]) / 2);
+                        const sichtText = "Grund im Blick 2–5 / 5–10 / 10–20 / 20–40 m: Spiel " + [pc(R1.werte.sicht[0]), pc(R1.werte.sicht[1]), ring(R1.werte.sicht, [4, 5]), ring(R1.werte.sicht, [8, 9])].join(" / ") + " % gegen die ungedünnte Wiese " + [pc(R1.werte.sichtRef[0]), pc(R1.werte.sichtRef[1]), ring(R1.werte.sichtRef, [4, 5]), ring(R1.werte.sichtRef, [8, 9])].join(" / ") + " % (Nilson, G 0,5)";
+                        s1 = {
+                            werte: {
+                                dichtBisM: dichtBis,
+                                dichte10bis20Prozent: L[0] > 0 ? (100 * k1020.reduce((s, k) => s + zu[k], 0)) / k1020.length : null,
+                                laiNah: L[0],
+                                laiJeRing: RINGE.map((d, k) => d + " m " + Math.round(100 * L[k]) / 100).join(" · "),
+                                bodenSicht: sichtText,
+                                laiOffen: R1.werte.laiOffen,
+                                laiUnterKronen: R1.werte.laiUnterKronen,
+                                lichtUnterKronen: R1.werte.lichtUnterKronen,
+                            },
+                            zeuge: { fehler: R1.fehler.length ? R1.fehler[0].fehler : null, faecher: R1.gemessen, kacheln: R1.werte.kacheln, kachelnLeer: R1.werte.kachelnLeer, kachelnOffen: R1.werte.kachelnOffen, unterKronen: R1.werte.unterKronen },
+                            akte: R1.akte + " · " + sichtText,
+                            ...(R1.fehlt ? { nicht: R1.fehlt } : {}),
+                        };
+                    } catch (e) {
+                        s1 = { werte: {}, zeuge: { fehler: "der Fächer warf: " + String((e && e.message) || e).slice(0, 200) } };
+                    }
                     let zl = null;
                     try {
                         zl = await Promise.race([H.ruf("/zaehlen", {}), new Promise((_, nein) => setTimeout(() => nein(new Error("/zaehlen > 8 s")), 8000))]);
@@ -1435,7 +1554,7 @@ L.perspektive("pflanzen", (() => {
                     const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
-                            aus[nr] = { werte: {}, zeuge: { fehler } };
+                            aus[nr] = nr === "1" ? s1 : { werte: {}, zeuge: { fehler } };
                             if (U[nr].auge) aus[nr].auge = await M.auge("pflanzen-dichte-s" + nr, U[nr].auge);
                         }
                         return { sprossen: aus };
@@ -1450,7 +1569,7 @@ L.perspektive("pflanzen", (() => {
                     const staemme = wald.length ? wald.reduce((s, x) => s + x, 0) / wald.length : 0;
                     const zeuge = { pflanzen: w.n, fernsteM: w.fernste, bilder: w.bilder.length, zaehlen: zl && zl.fehler ? zl.fehler : kl.length + " Klassen" };
                     const roh = {
-                        1: { werte: { wieseBisM: wieseBis, pflanzen0bis20: w.ringe[0], pflanzen20bis40: w.ringe[1], staemmeJeHaWald: staemme }, zeuge },
+                        1: Object.assign(s1, { werte: Object.assign({}, s1.werte, { wieseBisM: wieseBis, pflanzen0bis20: w.ringe[0], pflanzen20bis40: w.ringe[1], staemmeJeHaWald: staemme }), zeuge: Object.assign({}, zeuge, s1.zeuge) }),
                         2: { werte: { wieseBisM: wieseBis, staemmeJeHaWald: staemme, unterholzJe50m: w.unter }, zeuge },
                         3: { werte: { fernstePflanzeM: w.fernste, pflanzen300bis1000: w.ringe[4] }, zeuge, ...(w.fernste < 1000 ? { nicht: "die fernste einzelne Pflanze steht bei " + Math.round(w.fernste) + " m (Soll 1 km), dahinter zeichnet die Ferne Kronen-Mittel (fern-ring)" } : {}) },
                         4: { werte: { sichtweiteM: w.far, fernKlassen: fern }, zeuge, ...(w.far < 10000 ? { nicht: "die Kamera endet bei " + w.far + " m (Soll Horizont 10 km)" } : {}) },
@@ -1467,12 +1586,22 @@ L.perspektive("pflanzen", (() => {
                 sprossen: {
                     1: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [ohneZahl(D_ID, 1, "Ring-Bildanteil gegen Foto", "ringAbstand")],
+                        soll: [
+                            ohneZahl(D_ID, 1, "Ring-Bildanteil gegen Foto", "ringAbstand"),
+                            // am Gesetz (der Fächer der Wiese): so weit hält die Blattfläche je Boden, die das Spiel vor dem Ego-Auge zeichnet,
+                            // 90 % der Nähe (2–5 m) — die Wiese des Fotos trägt ihre Blattfläche unabhängig vom Auge
+                            K.soll(D_ID, 1, "Ring-Bildanteil gegen Foto", { key: "dichtBisM", rel: "≥", zahl: 20, einheit: "m", quelleFeld: "umfang", quelleWort: "~20 m" }),
+                            K.soll(D_ID, 1, "Ring-Bildanteil gegen Foto", { key: "dichte10bis20Prozent", rel: "≥", zahl: 90, einheit: "%", refQuelle: "die Wiese trägt ihre Blattfläche unabhängig vom Auge: Grasland-LAI 1,71 ± 1,19 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191), der Grund im Blick P(θ) = exp(−G·LAI/cos θ) (Nilson 1971, Agric. Meteorol. 8:25) — GEWÄHLT: im Ring 10–20 m ≥ 90 % der Blattfläche je Boden von 2–5 m (die ±10 % des Ring-Bildanteils)" }),
+                        ],
                         auge: { pose: "stehend an der Mess-Wiese, Ego", vorbild: "Wiesenfoto (Ring-Bildanteil 2–5/5–10/10–20 m) und REF real-mischwald (Prüfer-Satz R11)" },
-                        taeter: "stamm/vegetation-wiese.js (die Nah-Wiese und ihr Saum)",
-                        unklar: "der Richter nennt keine Schwelle — Vorschlag: Ring-Bildanteil je Ring 2–5/5–10/10–20 m ±10 % gegen das Wiesenfoto, Bildpaar gegen REF ≤ 70 % (2AFC).",
-                        gruen: { werte: { ringAbstand: 0.05 }, zeuge: { pflanzen: 300, fernsteM: 400, bilder: 60 } },
-                        attrappen: [{ name: "der Ring ohne Bestand", roh: { werte: { ringAbstand: 0.05 }, zeuge: { pflanzen: 0 } } }],
+                        taeter: "stamm/vegetation-wiese.js:746 _wieseFern (die Lücke des Strahls radius/Q: jenseits der Übergabe 10 m fällt die Blattfläche je Boden mit 1/Q, der Strahl sieht so viel Grund wie an der Übergabe — die Wiese des Fotos schließt sich) · :128 _nahWieseKachelBueschel",
+                        leser: "stamm/stoff-material.js:83 _halmFerne (der Stoff liest _wieseFern je Instanz) · stamm/vegetation-wiese.js:974 _nahWieseFernKachel (die Kachel der Ferne schneidet an o < Anteil)",
+                        unklar: "der Richter nennt keine Schwelle — Vorschlag: Ring-Bildanteil je Ring 2–5/5–10/10–20 m ±10 % gegen das Wiesenfoto, Bildpaar gegen REF ≤ 70 % (2AFC); am Gesetz GEWÄHLT: die Blattfläche je Boden hält ≥ 90 % der Nähe bis ~20 m.",
+                        gruen: { werte: { ringAbstand: 0.05, dichtBisM: 22, dichte10bis20Prozent: 95 }, zeuge: { pflanzen: 300, fernsteM: 400, bilder: 60, faecher: 200 } },
+                        attrappen: [
+                            { name: "der Ring ohne Bestand", roh: { werte: { ringAbstand: 0.05, dichtBisM: 22, dichte10bis20Prozent: 95 }, zeuge: { pflanzen: 0 } } },
+                            { name: "die Ferne dünnt mit 1/Q (die Lücke des Strahls)", roh: { werte: { ringAbstand: 0.05, dichtBisM: 9.7, dichte10bis20Prozent: 66.5 }, zeuge: { pflanzen: 300, fernsteM: 400, bilder: 60, faecher: 200 } } },
+                        ],
                     },
                     2: {
                         u: { auge: { ort: "wiese" } },
