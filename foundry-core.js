@@ -6541,6 +6541,237 @@ function __stoffSpannt(geo, heb) {
         pos.set(Q);
     }
 }
+// DIE HAUT UNTER DEM STOFF LIEGT UNTER IHM (mensch-nah, mensch.leib.stoff#1): der Guss zeichnet die Haut nicht, die der Stoff
+// ganz deckt (unten, `hautImStoff`) — doch der Rand dieser Maske (die Ecken mit einem Nachbarn außerhalb der Region, der Kragen am
+// Hals, der Bund unter dem Saum, wo die Hose zur Haut ausläuft) blieb, wo der Relief-Leser und das Spannen ihn ließen: am Ofen L0
+// in der Ruhe 13–20 Haut-Ecken je Same VOR ihrem Stoff (bis 1,8 cm am Hals), in jeder Pose durch ihn. Die Pipelines der Figuren
+// (Körper-Maske plus Einziehen der Haut unter der Hülle, wie das „Hide Inner Mesh"/Conform der Charakter-Werkzeuge) schieben nie
+// den Stoff hinaus: die verdeckte Haut weicht nach innen. DAS GESETZ: jede Haut-Ecke, deren nächste Stoff-Ecke (Radius `R`, seitlich
+// unter `quer`) mit ihr EIN Verformungsfeld teilt (ein gemeinsamer Knochen der Gewichte — die Haut, aus der der Stoff stieg; der
+// Arm neben dem Hemd teilt keinen und bleibt) und die weniger als die Lage des Stoffs (`__lage`, seine Dicke) unter ihm liegt,
+// rückt längs der Normale des Stoffs auf genau diese Tiefe: Haut und Stoff tragen dieselben Gewichte, die Tiefe reist mit jeder
+// Pose. In Körper-Einheiten (1 E ≈ 0,3 m). Antwort: die Zahl der gerückten Ecken.
+var HAUT_UNTER_STOFF = Object.freeze({ R: 0.15, quer: 0.06, runden: 3, fluss: [0.8, 0.8, 0.8] });
+function __hautUnterStoff(hg, stoffe, ring) {
+    const P = hg.attributes.position.array,
+        HI = hg.attributes.skinIndex.array,
+        HW = hg.attributes.skinWeight.array,
+        n = P.length / 3,
+        R = HAUT_UNTER_STOFF.R,
+        Q2 = HAUT_UNTER_STOFF.quer * HAUT_UNTER_STOFF.quer;
+    const best = new Float64Array(n).fill(R * R),
+        wer = new Int32Array(n).fill(-1),
+        von = new Int32Array(n).fill(-1);
+    stoffe.forEach((s, si) => {
+        const S = s.geometry.attributes.position.array,
+            m = S.length / 3,
+            gitter = new Map(),
+            zelle = (x, y, z) => Math.floor(x / R) + "," + Math.floor(y / R) + "," + Math.floor(z / R);
+        for (let j = 0; j < m; j++) {
+            const k = zelle(S[j * 3], S[j * 3 + 1], S[j * 3 + 2]);
+            const L = gitter.get(k);
+            if (L) L.push(j);
+            else gitter.set(k, [j]);
+        }
+        for (let i = 0; i < n; i++) {
+            const x = P[i * 3],
+                y = P[i * 3 + 1],
+                z = P[i * 3 + 2],
+                cx = Math.floor(x / R),
+                cy = Math.floor(y / R),
+                cz = Math.floor(z / R);
+            for (let a = -1; a <= 1; a++)
+                for (let b = -1; b <= 1; b++)
+                    for (let c = -1; c <= 1; c++) {
+                        const L = gitter.get(cx + a + "," + (cy + b) + "," + (cz + c));
+                        if (L)
+                            for (const j of L) {
+                                const ex = S[j * 3] - x,
+                                    ey = S[j * 3 + 1] - y,
+                                    ez = S[j * 3 + 2] - z,
+                                    d2 = ex * ex + ey * ey + ez * ez;
+                                if (d2 < best[i]) [best[i], wer[i], von[i]] = [d2, j, si];
+                            }
+                    }
+        }
+    });
+    // die Ecken des Rings der Naht (Kopf ↔ Leib, `ringLage`) liegen auf der Haut des Kopfs und rücken nie
+    const amRing = (i) => {
+        if (!ring) return false;
+        for (let r = 0; r < ring.length; r += 3)
+            if (
+                Math.abs(ring[r] - P[i * 3]) +
+                    Math.abs(ring[r + 1] - P[i * 3 + 1]) +
+                    Math.abs(ring[r + 2] - P[i * 3 + 2]) <
+                1e-6
+            )
+                return true;
+        return false;
+    };
+    let gerueckt = 0;
+    for (let i = 0; i < n; i++) {
+        if (wer[i] < 0 || amRing(i)) continue;
+        const s = stoffe[von[i]],
+            ga = s.geometry.attributes,
+            j = wer[i];
+        let teilt = false;
+        for (let k = 0; k < 4 && !teilt; k++)
+            if (HW[i * 4 + k] > 0)
+                for (let l = 0; l < 4; l++)
+                    if (ga.skinWeight.array[j * 4 + l] > 0 && ga.skinIndex.array[j * 4 + l] === HI[i * 4 + k])
+                        teilt = true;
+        if (!teilt) continue;
+        const N = ga.normal.array,
+            S = ga.position.array;
+        const dx = P[i * 3] - S[j * 3],
+            dy = P[i * 3 + 1] - S[j * 3 + 1],
+            dz = P[i * 3 + 2] - S[j * 3 + 2];
+        const h = dx * N[j * 3] + dy * N[j * 3 + 1] + dz * N[j * 3 + 2];
+        const lage = s.userData.__lage || 0;
+        if (dx * dx + dy * dy + dz * dz - h * h >= Q2) continue;
+        // das Feld des Stoffs: die verdeckte Haut trägt die Gewichte ihrer Stoff-Ecke (der Kollaps vereinfachte beide je für sich,
+        // ihre Gewichte liefen auseinander — 1,00 gegen 0,95/0,05 —, und jede Pose zog die Haut durch den Stoff, die in der Ruhe lag)
+        for (let c = 0; c < 4; c++)
+            [HI[i * 4 + c], HW[i * 4 + c]] = [ga.skinIndex.array[j * 4 + c], ga.skinWeight.array[j * 4 + c]];
+        if (h <= -lage) continue;
+        const k = -lage - h;
+        for (let d = 0; d < 3; d++) P[i * 3 + d] += k * N[j * 3 + d];
+        gerueckt++;
+    }
+    if (gerueckt) {
+        hg.attributes.position.needsUpdate = true;
+        hg.computeVertexNormals();
+    }
+    return gerueckt;
+}
+// DIE HAUT HÄLT DIE PRÜFUNG DES TUCHS (mensch-nah, mensch.leib.stoff#1): der Wirt legt das Tuch in der Ruhe über seine Haut
+// (koerper `tuchDrapieren`, TUCH_GESETZ: jede Tuch-Ecke liegt `luftM` über der Halb-Ebene jeder Haut-Ecke im Band um ihre nächste,
+// Radius `hautM`) — der Guss lieferte ein Tuch, das sie an 556–758 Ecken je Leib verletzte (Same k2-stoff:3, Ofen L0): die Haut
+// der Zeile ist grob (eine Ecke je ~3 cm), die Halb-Ebene einer seitlichen Ecke steht über dem gewölbten Leib (d²/2r ≈ 2 mm bei
+// 2,5 cm und 15 cm Radius), und die Lage des Stoffs ist 4,7 mm. Was vier Runden Heben nicht löste, setzte der Rückfall der Falte
+// auf eine andere Haut-Ecke — 180 Tuch-Ecken um 1–3,6 cm versetzt, am Kragen, an der Schulter, am Bund: dort lag die Haut vor
+// dem Stoff. Dasselbe Gesetz von der anderen Seite: die verdeckte Haut (sie teilt einen Knochen mit der Tuch-Ecke) weicht längs
+// IHRER Normale, bis jede Tuch-Ecke ihres Bands die Prüfung mit der Höhe des Rückfalls (1,5 · luftM) hält; das Tuch bleibt die
+// Gestalt des Gusses. Gerechnet in Metern wie der Wirt (`skala` = Wurzel-Skala × leibMassstab, die Normale wie `_tuchBind`).
+function __hautUnterTuch(hg, stoffe, ring, skala, G) {
+    const P = hg.attributes.position.array,
+        Nh = hg.attributes.normal.array,
+        HI = hg.attributes.skinIndex.array,
+        HW = hg.attributes.skinWeight.array,
+        n = P.length / 3,
+        R = G.hautM,
+        ziel = 1.5 * G.luftM;
+    const hp = new Float64Array(3 * n),
+        hn = new Float64Array(3 * n);
+    for (let i = 0; i < n; i++) {
+        let l = 0;
+        for (let d = 0; d < 3; d++) {
+            hp[3 * i + d] = P[3 * i + d] * skala[d];
+            hn[3 * i + d] = Nh[3 * i + d] * skala[d];
+            l += hn[3 * i + d] * hn[3 * i + d];
+        }
+        l = Math.sqrt(l) || 1;
+        for (let d = 0; d < 3; d++) hn[3 * i + d] /= l;
+    }
+    const zelle = (x, y, z) => Math.floor(x / R) + "," + Math.floor(y / R) + "," + Math.floor(z / R);
+    const gitter = new Map();
+    for (let i = 0; i < n; i++) {
+        const k = zelle(hp[3 * i], hp[3 * i + 1], hp[3 * i + 2]);
+        const L = gitter.get(k);
+        if (L) L.push(i);
+        else gitter.set(k, [i]);
+    }
+    const ringe = new Uint8Array(n);
+    if (ring)
+        for (let i = 0; i < n; i++)
+            for (let r = 0; r < ring.length; r += 3) if (Math.abs(ring[r] - P[i * 3]) + Math.abs(ring[r + 1] - P[i * 3 + 1]) + Math.abs(ring[r + 2] - P[i * 3 + 2]) < 1e-6) ringe[i] = 1; // prettier-ignore
+    const weg = new Float64Array(n);
+    const kand = [];
+    for (const s of stoffe) {
+        const ga = s.geometry.attributes,
+            S = ga.position.array,
+            SI = ga.skinIndex.array,
+            SW = ga.skinWeight.array,
+            SN = ga.normal.array;
+        for (let j = 0; j < S.length / 3; j++) {
+            const x = S[3 * j] * skala[0],
+                y = S[3 * j + 1] * skala[1],
+                z = S[3 * j + 2] * skala[2],
+                cx = Math.floor(x / R),
+                cy = Math.floor(y / R),
+                cz = Math.floor(z / R);
+            kand.length = 0;
+            let bd = R * R;
+            for (let a = -1; a <= 1; a++)
+                for (let b = -1; b <= 1; b++)
+                    for (let c = -1; c <= 1; c++) {
+                        const L = gitter.get(cx + a + "," + (cy + b) + "," + (cz + c));
+                        if (L)
+                            for (const i of L) {
+                                const ex = hp[3 * i] - x,
+                                    ey = hp[3 * i + 1] - y,
+                                    ez = hp[3 * i + 2] - z,
+                                    d2 = ex * ex + ey * ey + ez * ez;
+                                if (d2 >= R * R) continue;
+                                kand.push(d2, i);
+                                if (d2 < bd) bd = d2;
+                            }
+                    }
+            if (!kand.length) continue;
+            const rb = Math.sqrt(bd) + G.bandM,
+                rb2 = rb * rb;
+            for (let t = 0; t < kand.length; t += 2) {
+                const i = kand[t + 1];
+                if (kand[t] > rb2 || ringe[i]) continue;
+                const h =
+                    (x - hp[3 * i]) * hn[3 * i] +
+                    (y - hp[3 * i + 1]) * hn[3 * i + 1] +
+                    (z - hp[3 * i + 2]) * hn[3 * i + 2];
+                if (h >= G.luftM || ziel - h <= weg[i]) continue;
+                // nur die Haut, die zum Stoff blickt (Normale gegen Normale über 60°: die Haut am Rand ihrer Maske, deren Normale zur
+                // Seite kippt, weicht nie — ihr Weg „nach innen" führte hinaus)
+                const ux = SN[3 * j] * skala[0], uy = SN[3 * j + 1] * skala[1], uz = SN[3 * j + 2] * skala[2]; // prettier-ignore
+                if (
+                    ux * hn[3 * i] + uy * hn[3 * i + 1] + uz * hn[3 * i + 2] <
+                    0.5 * Math.sqrt(ux * ux + uy * uy + uz * uz)
+                )
+                    continue;
+                let teilt = false;
+                for (let k = 0; k < 4 && !teilt; k++) if (HW[i * 4 + k] > 0) for (let l = 0; l < 4; l++) if (SW[j * 4 + l] > 0 && SI[j * 4 + l] === HI[i * 4 + k]) teilt = true; // prettier-ignore
+                if (teilt) weg[i] = ziel - h;
+            }
+        }
+    }
+    // der Weg ist ein Feld, keine Delle: er fließt über die Kanten der Haut aus (je Runde der Mittel der Nachbarn mal `fluss`,
+    // nie kleiner als der eigene) — eine Ecke allein gerückt kippte die Normalen ihres Kranzes, und dessen Halb-Ebenen hoben das Tuch
+    const ix = hg.index.array;
+    for (let r = 0; r < HAUT_UNTER_STOFF.fluss.length; r++) {
+        const sum = new Float64Array(n),
+            zahl = new Uint16Array(n);
+        for (let t = 0; t < ix.length; t += 3)
+            for (let e = 0; e < 3; e++) {
+                const a = ix[t + e],
+                    b = ix[t + ((e + 1) % 3)];
+                sum[a] += weg[b];
+                sum[b] += weg[a];
+                zahl[a]++;
+                zahl[b]++;
+            }
+        for (let i = 0; i < n; i++)
+            if (zahl[i] && !ringe[i]) weg[i] = Math.max(weg[i], (HAUT_UNTER_STOFF.fluss[r] * sum[i]) / zahl[i]);
+    }
+    let gerueckt = 0;
+    for (let i = 0; i < n; i++) {
+        if (!(weg[i] > 0)) continue;
+        for (let d = 0; d < 3; d++) P[3 * i + d] -= (weg[i] * hn[3 * i + d]) / skala[d];
+        gerueckt++;
+    }
+    if (gerueckt) {
+        hg.attributes.position.needsUpdate = true;
+        hg.computeVertexNormals();
+    }
+    return gerueckt;
+}
 function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     const pa = hg.attributes.position.array,
         na = hg.attributes.normal.array,
@@ -10711,6 +10942,29 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 h.m.geometry.attributes.position.needsUpdate = true;
                 h.m.geometry.computeVertexNormals();
             }
+    }
+    // DIE VERDECKTE HAUT WEICHT UNTER IHREN STOFF (`__hautUnterStoff`) — am Ende der Ruhe-Gestalt der Stufe: nach dem Schnitt, dem
+    // Kollaps auf die Zeile (er vereinfacht Haut und Stoff je für sich) und der Anlage des Arms; der Ring der Naht am Hals bleibt
+    if (leib && leib.mesh && leib.mesh.geometry.attributes.skinIndex) {
+        const stoffe = [];
+        B.character.traverse((m) => m.isMesh && m !== leib.mesh && !m.userData.__nichtGiessen && m.userData.__huelle && m.userData.__lage > 0 && m.geometry.attributes.skinIndex && stoffe.push(m)); // prettier-ignore
+        const ring = leib.kopf && leib.kopf.ringLage ? leib.kopf.ringLage : null;
+        for (
+            let k = 0;
+            k < HAUT_UNTER_STOFF.runden && stoffe.length && __hautUnterStoff(leib.mesh.geometry, stoffe, ring);
+            k++
+        );
+        if (!kern.TUCH_GESETZ || typeof kern.leibMassstab !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne TUCH_GESETZ/leibMassstab — die Haut hält die Prüfung des Tuchs (fail-closed)"); // prettier-ignore
+        const me = kern.leibMassstab(),
+            sc = B.character.scale,
+            skala = [sc.x * me, sc.y * me, sc.z * me];
+        for (
+            let k = 0;
+            k < HAUT_UNTER_STOFF.runden &&
+            stoffe.length &&
+            __hautUnterTuch(leib.mesh.geometry, stoffe, ring, skala, kern.TUCH_GESETZ);
+            k++
+        );
     }
     // DIE NAHT TRÄGT EINE NORMALE (w21-leib-bau, `__ringNormalen`): nach dem letzten Schritt, der Normalen rechnet, liegt auf jeder
     // Ecke des Rings — in der Haut des Kopfs und in der des Leibs — die Normale des Felds: die Schattierung läuft über die Naht.
