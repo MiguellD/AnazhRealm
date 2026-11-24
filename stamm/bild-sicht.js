@@ -2791,15 +2791,11 @@ class AnazhRealm_bild_sicht {
         const t = A.U.toenung.value;
         const L = A.U.licht.value;
         const grau = A.U.grau.value;
-        // die Folge DIESER Lesung (licht-stetig): ihre Malung (`_skyEnvDatenQuelle`) zum Licht jetzt — wie `U.umgebung` die
-        // gezeichnete Umgebung trägt; ohne Tafel die Folge der GPU
-        const f = __weltLicht.umgebungFolge(A.tafel, A.U, st._skyEnvDatenQuelle) || A.U.umgebung.value;
-        const stempel =
-            (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + f + ":" + t.x + ":" + t.y + ":" + t.z + ":" + grau;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z + ":" + grau;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
         const J = this._himmelsIrrJe;
-        const k = [t.x, t.y, t.z].map((x) => (ei * L * f * x) / Math.PI);
+        const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
         const jetzt = (je) => __weltLicht.himmelGrau([je[0] * k[0], je[1] * k[1], je[2] * k[2]], grau); // + das Ergrauen der Decke
         if (J && J.version === st._skyEnvVersion) {
             this._himmelsIrr = { mitte: jetzt(J.mitte), oben: jetzt(J.oben) };

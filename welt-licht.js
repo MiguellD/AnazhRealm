@@ -288,8 +288,6 @@ var __weltLicht = (function () {
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
             // das Ergrauen des Himmels unter der Decke des Wetters (0 klar … 1 grau, `himmelGrau`; die Bühne trägt 0)
             grau: T.uniform(0),
-            // die Folge der gezeichneten Umgebung zum Licht jetzt (`umgebungFolge`; ihre Leser `himmelDerStoffe`, `_umgebungLicht`)
-            umgebung: T.uniform(1),
         });
         const ziel = (w, h, wrapS, name) => {
             const rt = new THREE.RenderTarget(w, h, {
@@ -912,10 +910,7 @@ var __weltLicht = (function () {
     // wo das Bild 1,1 und 1,4 stieg (genesis Uhr 0,232 → 0,236, GTX, Täter-Pass „Belichtung“). Im Logarithmus gemischt, über dem
     // Boden der Auflösung der Tafel (2^−24, die kleinste Stufe ihres Halb-Floats), folgt er der Steigung des Lichts in jedem Texel.
     const TAFEL_BODEN = 2 ** -24;
-    // JE EINHEIT DES LICHTS (`bestrahlungJe`): die Tafel an der Sonne `ms` und am Mond `mm` (Sinus der Höhe) mit den Quellen in
-    // der Einheit der Tafeln (`sE`, `mE`, `nE` wie `U.sonneE`, `U.mondE`, `U.nachtE`) — ohne das Licht jetzt, die Tönung und das
-    // Ergrauen; `bestrahlung` trägt sie dazu, `umgebungFolge` vergleicht zwei Stunden in ihr.
-    function bestrahlungJe(T, ms, mm, sE, m, n, out) {
+    function bestrahlung(T, U, out) {
         const W = T.W,
             w = T.werte;
         const lies = (mu, c) => {
@@ -926,49 +921,19 @@ var __weltLicht = (function () {
             const b = Math.max(0, w[(i + 1) * 3 + c]) + TAFEL_BODEN;
             return Math.max(0, a * (b / a) ** f - TAFEL_BODEN);
         };
+        const ms = U.sonne.value.y,
+            mm = U.mond.value.y;
+        const m = U.mondE.value,
+            n = U.nachtE.value,
+            t = U.toenung.value;
         for (let c = 0; c < 3; c++) {
             const k = c === 0 ? "x" : c === 1 ? "y" : "z";
-            out[c] = sE * lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c];
+            out[c] =
+                U.licht.value *
+                t[k] *
+                (U.sonneE.value * lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
         }
-        return out;
-    }
-    function bestrahlung(T, U, out) {
-        bestrahlungJe(T, U.sonne.value.y, U.mond.value.y, U.sonneE.value, U.mondE.value, U.nachtE.value, out);
-        const t = U.toenung.value;
-        out[0] = U.licht.value * t.x * out[0];
-        out[1] = U.licht.value * t.y * out[1];
-        out[2] = U.licht.value * t.z * out[2];
         return himmelGrau(out, U.grau.value);
-    }
-    // DIE FOLGE DER UMGEBUNG (licht-stetig): die gezeichnete Umgebung der Stoffe (`rtEq` → PMREM, je Einheit des Lichts) hält
-    // den Himmel ihrer Malung, bis die Sonne sich 0,5° gedreht hat, die Drossel oder die Leine sie freigibt (die Welt
-    // `_ensureSkyEnvironment`); was sie trägt, nimmt `umgebungQuelle` bei der Malung (Sonne, Mond und ihre Quellen in der Einheit
-    // der Tafeln), und `umgebungFolge` ist die Zahl, mit der ihre Leser sie je Bild zum Licht jetzt tragen (`U.umgebung`): die
-    // Bestrahlung der Tafel jetzt ÷ die ihrer Malung, Leuchtdichte, je in ihrer Einheit — das Licht jetzt (`U.licht`) multipliziert
-    // der Leser. Ohne Tafel null (der Leser hält, wie die Belichtung, die dieselbe Tafel liest). Die Bühne zeichnet je Uhr neu: 1.
-    // Die Quelle trägt die Tafel ihrer Luft (`T`, null, solange die Tafel des neuen Mediums noch nicht zurückkam: dann die nächste):
-    // hält die Drossel die Umgebung im Wetter-Zug, folgt sie auch dem Medium.
-    function umgebungQuelle(U, T) {
-        const v = (x) => ({ x: x.x, y: x.y, z: x.z });
-        return {
-            ms: U.sonne.value.y,
-            mm: U.mond.value.y,
-            sE: U.sonneE.value,
-            mE: v(U.mondE.value),
-            nE: v(U.nachtE.value),
-            T: T || null,
-        };
-    }
-    const FOLGE_JETZT = [0, 0, 0],
-        FOLGE_DANN = [0, 0, 0];
-    function umgebungFolge(T, U, q) {
-        if (!T || !q) return null;
-        const Y = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
-        const { sonne, mond, sonneE, mondE, nachtE } = U;
-        const jetzt = Y(bestrahlungJe(T, sonne.value.y, mond.value.y, sonneE.value, mondE.value, nachtE.value, FOLGE_JETZT));
-        if (!q.T) q.T = T; // die erste Tafel nach der Malung ist die ihrer Luft
-        const dann = Y(bestrahlungJe(q.T, q.ms, q.mm, q.sE, q.mE, q.nE, FOLGE_DANN));
-        return dann > 0 && jetzt >= 0 ? jetzt / dann : null;
     }
 
     // DIE UMGEBUNG DER STOFFE (material.K4) — EIN Gesetz der Welt und der Bühne: der Himmel, den jeder Standard- und Physical-Stoff
@@ -998,7 +963,7 @@ var __weltLicht = (function () {
         return gen.fromEquirectangular(A.rtEq.texture, ziel || null);
     }
     function himmelDerStoffe(quelle, U, richtung, stufe) {
-        return umgebungLicht(U, globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe).mul(U.umgebung));
+        return umgebungLicht(U, globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe));
     }
     // DIE BESTRAHLUNG ERKANNT: r184 reicht der Umgebung die Stufe der Bestrahlung als Variable über der Konstanten 1 (`float(1)`
     // in einer VarNode, gelesen am Vendor 03.11.), die der Spiegelung als Rauheit des Stoffs — der Spiegel (Welt
@@ -2227,8 +2192,6 @@ var __weltLicht = (function () {
         tafelAusPixeln,
         tafelAnker,
         bestrahlung,
-        umgebungQuelle,
-        umgebungFolge,
         umgebungLicht,
         himmelGrau,
         umgebungZeichnen,
