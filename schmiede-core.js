@@ -2887,6 +2887,9 @@
             natron:     [{ Na: 2, O: 1 },      "netz",        3068,  5e10,    1.1e9,  5e7,    1.59,   45,   1100, 1405,   0.001, null],
             kalk:       [{ Ca: 1, O: 1 },      "netz",        3894,  1.1e11,  1.1e9,  5e7,    1.73,   40,   750,  2886,   0.001, null],
             quarz:      [{ Si: 1, O: 2 },      "kovalent",    2650,  7.2e10,  1.1e9,  5e7,    1.5442, 69.9, 740,  1986,   0.001, 0.135],
+            // Hämatit Fe₂O₃, das Eisen-Oxid der Erze (stoffstrom#1, additiv): ρ 5 260, Härte ≈ 10 GPa → σ = H/3 (Tabor), spröde
+            // wie jedes Oxid; n ≈ 3,0 (ω 3,15, ε 2,87, opak), c 650 J/(kg·K), Schmelze 1 838 K; als Erz-Brocken matt
+            haematit:   [{ Fe: 2, O: 3 },      "ionisch",     5260,  2.1e11,  3.3e9,  5e7,    3.0,    null, 650,  1838,   0.001, 0.8],
             wasser:     [{ H: 2, O: 1 },       "wasserstoff", null,  2.2e9,   null,   null,   1.333,  55.8, 4186, 273.15, 0.03, 0.72],
             eis:        [{ H: 2, O: 1 },       "wasserstoff", 917,   9e9,     1e7,    1e6,    1.309,  55,   2050, null,   0.01, 0.7],
             blech:      [null,                 "metall",      null,  7e10,    1.5e8,  2.5e8,  null,   null, 460,  1723,   0.001, 0.44],
@@ -2927,7 +2930,11 @@
             stahl:   { C: 1.0, teile: karbid(1.0), bindung: "karbid", eigen: { tSchmelz: 1723, eta: 0.0003, rauheit: 0.09 } },
             eisen:   { C: 0.25, teile: karbid(0.25), bindung: "karbid", eigen: { tSchmelz: 1811, eta: 0.002, rauheit: 0.54 } },
             bronze:  { C: 0, teile: { kupfer: 0.88, zinn: 0.12 }, bindung: "loesung", loest: { zinn: 4e8 }, eigen: { tSchmelz: 1223, eta: 0.001, rauheit: 0.25 } },
-            glas:    { teile: { kieselglas: 0.74, natron: 0.16, kalk: 0.1 }, bindung: "netz", eigen: { tSchmelz: 1273, eta: 0.001, rauheit: 0.05 } }
+            glas:    { teile: { kieselglas: 0.74, natron: 0.16, kalk: 0.1 }, bindung: "netz", eigen: { tSchmelz: 1273, eta: 0.001, rauheit: 0.05 } },
+            // DAS ERZ DER RENNÖFEN (stoffstrom#1, additiv): Hämatit mit Kieselsäure als Gangart (die Erze der Rennfeuer trugen
+            // 50–90 % Fe₂O₃, Pleiner 2000) — ein Gestein aus zwei Phasen; es schmilzt nicht als Ganzes: im Feuer schmilzt die
+            // Schlacke (Fayalit Fe₂SiO₄, 1 478 K — darum läuft der Rennofen unter dem Schmelzpunkt des Eisens, `STOFFSTROM`)
+            erz:     { teile: { haematit: 0.8, quarz: 0.2 }, bindung: "gestein", eigen: { tSchmelz: 1478, eta: 0.01, rauheit: 0.85 } }
         };
         var LINIE = { F: 486.13e-9, d: 587.56e-9, C: 656.27e-9 };
         // die Schwerpunkte der drei Kanäle des Bilds (sRGB-Primärfarben, dominante Wellenlänge): R 611 nm, G 549 nm, B 464 nm
@@ -3341,6 +3348,52 @@
             plattenLast: plattenLast, plattenBruch: plattenBruch, ankerAbweichung: ankerAbweichung,
             druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel, staubLast: staubLast
         };
+    })();
+    // ════ DER STOFFSTROM (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, additiv) — Erz → Barren → Werkzeug, die Masse bleibt ════
+    //   Das Gesetz der Stoffe der Kette; ihren Lauf über die Stunden der Schmiede trägt der Bestand (koerper `stoffstromFassen`).
+    //   DIE VERHÜTTUNG (`verhuettung`): der Rennofen reduziert das Erz (die Zeile `erz`: Hämatit + Quarz) mit der Kohle unter dem
+    //   Schmelzpunkt des Eisens — die Gangart bindet Eisen als Schlacke (2 FeO + SiO₂ → Fe₂SiO₄, der Fayalit: je Mol Kieselsäure
+    //   zwei Mol Eisen verloren), der Rest des Eisens bleibt metallisch in der Luppe, der Sauerstoff geht als CO₂. Die Rechnung ist
+    //   eine Bilanz der Elemente (die molaren Massen des Periodensystems dieses Kerns): Erz + Kohle = Eisen + Schlacke + CO₂ auf
+    //   die Rundung. Die Ausbeute folgt der Zeile: 80 % Hämatit, 20 % Quarz → 0,188 kg Eisen je kg Erz (die Rennöfen gaben 10–20 %
+    //   der Erzmasse als Luppe). Die Kohle ist die der Reduktion (die Stöchiometrie) — die Kohle des Feuers (sein Holz) trägt die
+    //   Rechnung nicht.
+    //   DAS EISEN EINES WERKZEUGS (`werkEisen`): die Gestalt der Gattung der Schmiede (`prepP` → `measure`, wie `kampfMasze` sie
+    //   misst) ohne ihren Schaft aus Holz — ihr Metall-Volumen × ρ des Eisens (die Kette schmiedet Eisen aus der Luppe, keinen Stahl).
+    //   Nur ein Schlagkopf trägt diese Rechnung (sein Holz ist der Schaft); jede andere Gattung bricht beim Namen.
+    //   `werkzeug` die Gattung der Kette (das Beil: das Werkzeug jedes Hauses, Holz spalten). Leser: der Bestand (der Wirt reicht
+    //   Ausbeute und Werkzeug-Eisen an koerper `stoffstromHalter`) und gate:koerper-kern STOFFSTROM.
+    var STOFFSTROM = (function () {
+        var SG = STOFF_GESETZ;
+        var SCHLACKE = { Fe: 2, Si: 1, O: 4 }, CO2 = { C: 1, O: 2 };
+        function verhuettung(kg, erz) {
+            var Z = SG.zeile(erz || "erz");
+            if (!Z.teile || !Z.teile.haematit || !Z.teile.quarz)
+                throw new Error("STOFFSTROM: das Erz " + Z.name + " ist kein Hämatit mit Kieselsäure");
+            var H = SG.zeile("haematit").formel, Q = SG.zeile("quarz").formel, E = SG.ELEMENTE;
+            var g = Math.max(0, +kg || 0) * 1000;
+            var nH = (g * Z.teile.haematit) / SG.molMasse(H), nQ = (g * Z.teile.quarz) / SG.molMasse(Q);
+            var nFe = H.Fe * nH, nF = Math.min(nQ, nFe / 2); // der Fayalit: so viel, wie Kieselsäure UND Eisen tragen
+            var oCO2 = H.O * nH + Q.O * nQ - SCHLACKE.O * nF - Q.O * (nQ - nF); // der Sauerstoff, der nicht in der Schlacke bleibt
+            var nC = oCO2 / CO2.O;
+            return {
+                erz: g / 1000,
+                kohle: (nC * E.C.m) / 1000,
+                eisen: ((nFe - SCHLACKE.Fe * nF) * E.Fe.m) / 1000,
+                schlacke: (nF * SG.molMasse(SCHLACKE) + (nQ - nF) * SG.molMasse(Q)) / 1000,
+                co2: (nC * SG.molMasse(CO2)) / 1000
+            };
+        }
+        function werkEisen(rezept) {
+            var tp = prepP(rezept, null);
+            if (!tp) throw new Error("STOFFSTROM: das Werkzeug " + rezept + " ist keine Gattung der Schmiede");
+            if (tp.modus !== "wucht") throw new Error("STOFFSTROM: das Werkzeug " + rezept + " ist kein Schlagkopf — sein Eisen trägt die Rechnung nicht");
+            tp.schaftR = griffD(intentControl(tp)) * 0.5; // der Schaft, wie `kampfMasze` ihn misst
+            var m = measure(tp);
+            var holz = RHO.holz * Math.PI * tp.schaftR * tp.schaftR * m.S.xGripEnd;
+            return ((m.M - holz) / metallRho(tp)) * SG.zeile("eisen").rho;
+        }
+        return { erz: "erz", werkzeug: "beil", verhuettung: verhuettung, ausbeute: function (erz) { return verhuettung(1, erz).eisen; }, werkEisen: werkEisen };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
     //   E, ρ und der Kohlenstoff SIND die Zeile des Stoff-Gesetzes (ein Zugriff: sie folgen aus Eisen + Zementit bzw. Kupfer +
@@ -5528,6 +5581,7 @@
         BOGENMAT: BOGENMAT,
         MAT: MAT,
         STOFF_GESETZ: STOFF_GESETZ,
+        STOFFSTROM: STOFFSTROM,
         hamonGesetz: hamonGesetz,
         edgeBeta: edgeBeta,
         kantenLast: kantenLast,

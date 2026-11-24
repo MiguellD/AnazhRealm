@@ -968,7 +968,7 @@ class AnazhRealm_siedlung_bewohner {
                     drehen: u, platz: u, weichen: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
-                    wagen: u, amSteuer: u, bestand: null, bestandBild: null,
+                    wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
                 });
             besuche.push(P);
         }
@@ -1015,6 +1015,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
+        this._stoffstromAnlegen(S, liste);
         S.listeRest = 0;
         return liste;
     }
@@ -1097,6 +1098,156 @@ class AnazhRealm_siedlung_bewohner {
         return hof ? window.__koerperCore.scheuneFassen(hof.bestand, hof.werke, h) : 0;
     }
 
+    // DIE STOFFSTROM-KETTE DES ORTS (koerper `stoffstromHalter`, schmiede `STOFFSTROM`; Meisterkarte 2 mensch.wirtschaft.stoffstrom#1):
+    // Erz → Barren → Werkzeug. Die Öfen sind die Werke der Leute, deren Beruf aus Erz herstellt (BESTAND_GESETZ.herstellung, `aus`:
+    // die Schmiede) — sie stellen nichts aus dem Nichts her. Das Erz liegt, wo die Geologie den Fels legt: der erste Ort der Suche
+    // (`stoffstromOrte`, Ringe um den Plan ab seinem Samen), an dem der Hang anstehenden Fels trägt (`_rockGeologyClass`: Aufschluss
+    // oder Talus — dieselbe Regel, die den Fels der Streu stellt), trocken und frei von jedem Grundriss; dort liegt die Halde. Die
+    // Ausbeute und das Eisen eines Werkzeugs reicht das Stoff-Gesetz der Schmiede (die Verhüttung nach der Element-Bilanz, das
+    // Beil aus ihrer Messung); die Hände sind die Leute des Orts außer den Kindern, wer der Schmiede am nächsten wohnt, zuerst.
+    // Ohne Schmiede oder ohne Fels binnen `lager.bisM` trägt der Ort keine Kette (`S.stoffstrom` null — die Geologie entscheidet).
+    _stoffstromAnlegen(S, liste) {
+        const KC = window.__koerperCore;
+        const SC = globalThis.__schmiedeCore;
+        if (!KC || typeof KC.stoffstromHalter !== "function")
+            return AnazhRealm._kernPflichtBruch("koerper:stoffstromHalter");
+        if (!SC || !SC.STOFFSTROM) return AnazhRealm._kernPflichtBruch("schmiede:STOFFSTROM");
+        const H = KC.BESTAND_GESETZ.herstellung;
+        const ST = SC.STOFFSTROM;
+        S.stoffstrom = null;
+        const schmiede = liste.filter(
+            (b) => b.bestand && b.bestand.art === "werk" && H[b.beruf] && H[b.beruf].aus === ST.erz
+        );
+        if (!schmiede.length) return;
+        const basis = this.state.terrainBaseHeight || 0;
+        let lager = null;
+        for (const P of KC.stoffstromOrte(S.ox, S.oz, S.plan.seed >>> 0)) {
+            const y = this._voxelSurfaceY(P.x, P.z);
+            if (!Number.isFinite(y)) continue;
+            const geologie = this._rockGeologyClass(this._slopeAt(P.x, P.z), y - basis);
+            if (geologie !== "aufschluss" && geologie !== "talus") continue;
+            if (this._imGrundriss(P.x, P.z, 2) || this._nassAt(P.x, P.z)) continue;
+            lager = { x: P.x, z: P.z, r: P.r, geologie };
+            break;
+        }
+        if (!lager) return;
+        const w = schmiede[0].orte.werk;
+        const haende = liste
+            .filter((b) => b.rolle !== "kind")
+            .map((b) => [b, Math.hypot(b.orte.tuer.x - w.x, b.orte.tuer.z - w.z)])
+            .sort((a, b) => a[1] - b[1])
+            .map((e) => e[0]);
+        const K = KC.stoffstromHalter(
+            schmiede.map((b) => b.bestand),
+            this._weltStunde(),
+            ST.ausbeute(),
+            ST.werkEisen(ST.werkzeug),
+            haende.length,
+            S.plan.seed >>> 0
+        );
+        S.stoffstrom = { K, lager, schmiede, haende, gegeben: 0, rho: SC.STOFF_GESETZ.zeile(ST.erz).rho, bild: null };
+        const von = this._stoffstromVon || (this._stoffstromVon = new WeakMap());
+        for (const b of schmiede) von.set(b.bestand, S.stoffstrom);
+    }
+
+    // DIE KETTE BIS JETZT (koerper `stoffstromFassen`): sie legt ihre Schritte seit ihrer Uhr an — vor jedem Leser eines Ofens (der
+    // Wagen, der Barren lädt; das Bild; der Zensus), gleich in wie vielen Rufen. Wer neu ein Werkzeug hält (die Hände der Reihe
+    // nach), trägt es: `b.werkzeug` der Bauplan der Schmiede, nah an seinem Handgelenk (`_stoffstromHand`). `x` die Kette eines
+    // Orts (`S.stoffstrom`) oder ein Ofen.
+    _stoffstromFassen(x, h = this._weltStunde()) {
+        const Z = x && x.K ? x : this._stoffstromVon && this._stoffstromVon.get(x);
+        if (!Z) return 0;
+        const n = window.__koerperCore.stoffstromFassen(Z.K, h);
+        while (Z.gegeben < Z.K.haende) {
+            const b = Z.haende[Z.gegeben++];
+            b.werkzeug = globalThis.__schmiedeCore.STOFFSTROM.werkzeug;
+            this._stoffstromHand(b);
+        }
+        return n;
+    }
+
+    // DER ZENSUS DER KETTE (der Leser der Station mensch.wirtschaft.stoffstrom#1 und der Konsum-Probe): die Halde (kg, und zur Geburt
+    // der Liste), die Barren an den Öfen (der Bestand jedes Ofens zur Stunde), die Werkzeuge in den Händen der Leute, die Bücher
+    // der Kette; ohne Kette null.
+    _stoffstromZensus(S) {
+        const Z = S && S.stoffstrom;
+        if (!Z) return null;
+        const KC = window.__koerperCore;
+        const h = this._weltStunde();
+        this._stoffstromFassen(Z, h);
+        const K = Z.K;
+        let barren = 0;
+        for (const O of K.oefen) barren += KC.bestandAm(O, h);
+        return {
+            lager: { x: +Z.lager.x.toFixed(1), z: +Z.lager.z.toFixed(1), r: Z.lager.r, geologie: Z.lager.geologie },
+            oefen: K.oefen.length,
+            haldeKg: +K.haldeKg.toFixed(1),
+            halde0Kg: +K.halde0.toFixed(1),
+            barren,
+            werkzeug: Z.haende.filter((b) => b.werkzeug).length,
+            geschmiedet: K.werkzeug,
+            erzKg: +K.erz.toFixed(3),
+            eisenKg: +K.eisen.toFixed(3),
+            barrenGegossen: K.barren,
+            werkzeugKg: +K.werkzeugKg.toFixed(3),
+            stunde: +h.toFixed(3),
+        };
+    }
+
+    // DAS WERKZEUG IN DER HAND (der nahe Leib, `_bewohnerLeibAn`): wer ein Werkzeug der Kette hält und einen Leib mit Handgelenk
+    // trägt, dem hängt die EINE Hand des Spiels (`_geraetInHand`, derselbe Bau wie das Gerät des Spielers) den Bauplan der Schmiede
+    // an die rechte Hand; ohne Leib trägt er es im Zustand (`b.werkzeug`), sein Leib zeigt es, sobald er ihn trägt.
+    _stoffstromHand(b) {
+        const g = b && b.leib;
+        if (!b.werkzeug || !g || !g.userData.rig || g.userData.werkzeugMesh) return;
+        const bp = this._stoffstromBauplan(b.werkzeug);
+        if (!bp) return;
+        g.userData.werkzeugMesh = this._geraetInHand(g, bp, "right") || null;
+    }
+
+    // der Bauplan des Werkzeugs der Kette in der Welt: die Gattung der Schmiede trägt den Präfix ihrer Domäne (die Waffen- und
+    // Werkzeug-Domäne `klinge_`, AnazhRealm.KIND_POLICY.weapon); fehlt er, bricht es laut — EINMAL je Name, nie je Hand
+    _stoffstromBauplan(art) {
+        const name = AnazhRealm.KIND_POLICY.weapon.prefix + art;
+        if (this.state.blueprints && this.state.blueprints[name]) return name;
+        const gemeldet = this._stoffstromOhneBauplan || (this._stoffstromOhneBauplan = new Set());
+        if (!gemeldet.has(name)) {
+            gemeldet.add(name);
+            this._bruchMelden(`STOFFSTROM: das Werkzeug ${art} der Kette hat keinen Bauplan der Welt (${name})`);
+        }
+        return null;
+    }
+
+    // DAS BILD DER HALDE (nah, `BESTAND_BILD.nahM` vom Auge): der Schüttkegel ihres Erzes (koerper `stoffstromHaldeForm`, die Dichte der
+    // Zeile `erz` des Stoff-Gesetzes) am Ort der Geologie, gebaut aus dem EINEN Bau-Pfad (`_buildFromBlueprint`, ein Kegel aus
+    // Stein — der Fels, aus dem es gebrochen ist) und skaliert auf seine Form: er schrumpft mit jedem Kilogramm, das die Esse nimmt.
+    _stoffstromBild(S, p) {
+        const Z = S.stoffstrom;
+        if (!Z || !this.state.scene) return;
+        const nah = Math.hypot(Z.lager.x - p.x, Z.lager.z - p.z) < AnazhRealm.BESTAND_BILD.nahM;
+        if (!nah) {
+            if (Z.bild) Z.bild.visible = false;
+            return;
+        }
+        this._stoffstromFassen(Z);
+        const F = window.__koerperCore.stoffstromHaldeForm(Z.K.haldeKg, Z.rho);
+        if (!Z.bild) {
+            const y = this._bodenSichtAt(Z.lager.x, Z.lager.z);
+            if (y == null) return; // der Boden, auf dem sie liegt, ist das gezeichnete Mesh (Lehre 22) — das Bild wartet auf den Takt
+            const kegel = {
+                shape: "cone",
+                material: "stein",
+                size: { x: 2, y: 1, z: 2 },
+                position: { x: 0, y: 0.5, z: 0 },
+            };
+            Z.bild = this._buildFromBlueprint({ name: "halde", parts: [kegel] });
+            Z.bild.position.set(Z.lager.x, y, Z.lager.z);
+            this.state.scene.add(Z.bild);
+        }
+        Z.bild.scale.set(F.r, F.h, F.r);
+        Z.bild.visible = F.r > 0;
+    }
+
     // DER TAUSCH (markt S1: Spieler ↔ Bewohner, nur, was er hat): die Taste des Verbs (`einsteigen`, E) vor einem Stand, dessen
     // Händler an ihm steht — der Spieler gibt EINE Einheit eines Stoffs aus seinem Inventar (den ersten, der nicht die Ware des
     // Stands ist), der Händler gibt EINE seiner Ware, wenn er sie hat. Beide Seiten gehen durch den Kern (`bestandNimm` ·
@@ -1157,9 +1308,11 @@ class AnazhRealm_siedlung_bewohner {
     // sonst prüft der Takt (`_bestandBildTakt`) die Stände im Kreis je `taktS`.
     _bestandBild(b, jetzt = false) {
         const H = b.bestand;
-        if (!H || (H.art !== "stand" && H.art !== "scheune")) return;
+        if (!H || (H.art !== "stand" && H.art !== "scheune" && !this._stoffstromOfen(H))) return;
         const KC = window.__koerperCore;
-        if (H.art === "scheune") this._scheuneFassen(b); // die Scheune trägt die Ernten bis jetzt (vor dem Tor der Hof)
+        if (H.art === "scheune")
+            this._scheuneFassen(b); // die Scheune trägt die Ernten bis jetzt (vor dem Tor der Hof)
+        else if (H.art === "werk") this._stoffstromFassen(H); // der Ofen trägt die Barren der Kette bis jetzt (neben dem Schmied)
         const n = KC.bestandAm(H, this._weltStunde());
         const k = Math.ceil(n / KC.BESTAND_GESETZ.kiste - 1e-9);
         const G = this._bestandKisten(b, Math.ceil(H.cap / KC.BESTAND_GESETZ.kiste));
@@ -1238,12 +1391,23 @@ class AnazhRealm_siedlung_bewohner {
         const p = this._lodAuge() || this.state.playerMesh.position;
         const R = AnazhRealm.BESTAND_BILD.nahM;
         for (const b of [...(S.liste || []), ...(S.scheunen || [])]) {
-            if (!b.bestand || (b.bestand.art !== "stand" && b.bestand.art !== "scheune")) continue;
+            const H = b.bestand;
+            if (!H || (H.art !== "stand" && H.art !== "scheune" && !this._stoffstromOfen(H))) continue;
             const nah = Math.hypot(b.orte.werk.x - p.x, b.orte.werk.z - p.z) < R;
             if (nah) this._bestandBild(b);
             else if (b.bestandBild && b.bestandBild.visible)
                 [b.bestandBild.visible, b.bestandBild.userData.kisten] = [false, -1];
         }
+        // die Kette läuft an der Welt-Uhr, auch fern jedes Auges (die Hände empfangen ihre Werkzeuge); ihre Halde zeigt sich nah
+        if (S.stoffstrom) {
+            this._stoffstromFassen(S.stoffstrom);
+            this._stoffstromBild(S, p);
+        }
+    }
+
+    // ist der Halter H ein Ofen einer Stoffstrom-Kette? (sein Bild sind die Barren neben dem Schmied, im Kistenmaß des Bestands)
+    _stoffstromOfen(H) {
+        return !!(H && H.art === "werk" && this._stoffstromVon && this._stoffstromVon.has(H));
     }
 
     // die Kisten eines Halters fort (die Liste geht, `_bewohnerFort`)
@@ -1254,6 +1418,12 @@ class AnazhRealm_siedlung_bewohner {
                 this._disposeSoulGroup(b.bestandBild);
                 b.bestandBild = null;
             }
+        const Z = S.stoffstrom;
+        if (Z && Z.bild) {
+            this.state.scene.remove(Z.bild);
+            this._disposeSoulGroup(Z.bild);
+            Z.bild = null;
+        }
     }
 
     // DIE HÄUSER STEHEN MIT IHRER HÜLLE (siedlung.K3): die Liste entsteht, wenn jedes Haus ihres Plans seine Studio-Hülle trägt
@@ -2101,12 +2271,29 @@ class AnazhRealm_siedlung_bewohner {
         if (AnazhRealm._bewohnerStaendeListe) return AnazhRealm._bewohnerStaendeListe;
         const KC = window.__koerperCore;
         if (!KC || !KC.TAGES_GESETZ) return AnazhRealm._kernPflichtBruch("koerper:TAGES_GESETZ");
+        if (typeof KC.leibGeste !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibGeste");
         const L = [AnazhRealm.MOTION_PROFILE_MAP.koerper.idle];
         const nimm = (nm) => nm && !L.includes(nm) && L.push(nm);
         Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
         for (const r of AnazhRealm.MOTION_EMOTION_PROFILES)
             if (r.koerper && AnazhRealm.BEWOHNER.gemuet.includes(r.axis)) nimm(r.koerper.idle);
+        // DIE PHASEN DER GESTE (a-haltung 2): ein Stand, dessen Profil eine Seite über das Band der Ruhe hebt (koerper `leibGeste`
+        // gegen das idle des Buchs: joy), backt `GESTE.phasen` Zeilen — die erste an seinem Platz, die übrigen hinten an (jede andere
+        // Zeile bleibt, wo sie stand); `_bewohnerStandZeilen` nennt je Namen seine Zeilen
+        const M = KC.MOTION;
+        const Z = new Map(L.map((nm, h) => [nm, [h]]));
+        for (const nm of L.slice())
+            if (KC.leibGeste(M[nm], M[L[0]], 0) || KC.leibGeste(M[nm], M[L[0]], 1))
+                for (let k = 1; k < KC.GESTE.phasen; k++) Z.get(nm).push(L.push(nm) - 1);
+        AnazhRealm._bewohnerStandZeilen = Z;
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
+    }
+    // DIE UHR DES STANDS h (das Backen, a-haltung 2): die Zeile einer Geste steht zur Uhr ihrer Phase (koerper `leibGesteZeit`),
+    // jede andere bei 0 (der Kontrapost des Atems bei 0, wie bisher)
+    _bewohnerStandZeit(h) {
+        const nm = AnazhRealm._bewohnerStaende()[h];
+        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
+        return zeilen.length > 1 ? window.__koerperCore.leibGesteZeit(zeilen.indexOf(h), zeilen.length) : 0;
     }
     // DAS GEMÜT DES STANDS h (das Backen): das Gemüt, das die Brücke auf den Namen des Stands h führt (0: neutral, wie bisher);
     // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen
@@ -2120,12 +2307,17 @@ class AnazhRealm_siedlung_bewohner {
         return e;
     }
     // DER STAND DES BEWOHNERS: die Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
-    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
+    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut. Trägt der Stand eine Geste, die Zeile
+    // seiner Phase (a-haltung 2, koerper `leibGestePhase`: seine Uhr bei der Geburt, `atem` aus seinem Samen)
     _bewohnerStandVon(b) {
         const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
-        const h = AnazhRealm._bewohnerStaende().indexOf(nm);
-        if (h < 0) this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
-        return Math.max(0, h);
+        AnazhRealm._bewohnerStaende();
+        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
+        if (!zeilen) {
+            this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
+            return 0;
+        }
+        return zeilen.length > 1 ? zeilen[window.__koerperCore.leibGestePhase(b.atem || 0, zeilen.length)] : zeilen[0];
     }
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss

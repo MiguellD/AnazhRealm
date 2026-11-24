@@ -17,10 +17,12 @@
 __vehicleCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
 ```
 
-- `rezeptId` ∈ `gt · supersport · limousine · kompakt_fwd · suv`
-  (Schlüssel aus `__vehicleCore.PRESETS`, Namensraum `[a-z0-9_-]+`; jedes Rezept
+- `rezeptId` ∈ `gt · supersport · limousine · kompakt_fwd · suv · transporter`
+  (die Gattungen zählt der Kern auf, `__vehicleCore.GATTUNGEN` — die Linse liest
+  sie dort, nie aus einer Hand-Liste; ein Rezept ohne Golden ist rot beim Namen;
+  Schlüssel aus `__vehicleCore.PRESETS`, Namensraum `[a-z0-9_-]+`; jedes Rezept
   trägt `kind:"vehicle"` + `lab` (UI-Wortlaut) + `s` (numerischer Dial-Vektor) +
-  `fx` (domänen-eigene Ausstattung: `sig`, `heck`)).
+  `fx` (domänen-eigene Ausstattung: `sig`, `heck`, `kasten`)).
 - `seed` (int): **wählt den LACK der Gestalt — die GEOMETRIE ist seed-invariant.**
   Das Garage-Studio trägt keinen stochastischen Term (Math.random lebt nur in der
   Shell-Deko: Reifenrauch/Pylonen); derselbe Bauplan bei seed 7 und 12345 ist
@@ -31,9 +33,9 @@ __vehicleCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   jede Farbe folgt dem FARB-GESETZ (Hex = sRGB-Absicht, Material = linear); die
   Geometrie aller 12 Probe-Fälle blieb byte-gleich. Kein cv-Bump: die Naht
   (Float32-Attribute + Material-Daten) ist dieselbe.
-- `lod`: Fahrzeuge tragen NUR Stufe 0 (`PORTAL_RENDER_CONFIG.lod.kindStages =
-{ vehicle: [0] }`); jede andere Stufe wird auf 0 geklemmt — L1=L0-Grade und
-  L2-Auto-Impostor sind Sache des Wirts (Studio-Vertrag B2/W7b-Merge).
+- `lod`: Fahrzeuge tragen die Stufen 0 und 1 (`PORTAL_RENDER_CONFIG.lod.kindStages =
+{ vehicle: [0, 1] }`, seit K43-2: derselbe Bau unter `FAHRZEUG_DETAIL_1`); jede
+  andere Stufe wird geklemmt — der ferne Wurf ist Sache des Wirts.
 - `ov` (optional): Parameter-Override, gemergt NACH Preset (`{...DEFAULT_P,
 ...BASE_P, ...s, ...fx, ...ov}`) — der Kultur-Kanal reicht so seine Achsen
   (`__vehicleCore.CULTURES[x].fx`: cEdge/cTension/cStance/cGrille/cLight).
@@ -50,8 +52,10 @@ Emissive/roughness/metalness/opacity/transparent) · alle Geometrie-Attribute
 (Namen sortiert: itemSize + rohe Puffer-Bytes) · Index-Puffer. Ein einziges
 abweichendes Byte kippt den Hash.
 
-Fälle: 5 Gattungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Kultur-Fälle
-(gt+toro, supersport+cavallo — friert auch die Override-Merge-Semantik ein) = 12.
+Fälle: 6 Gattungen × 2 Seeds (7, 12345) × LOD 0 + je Gattung die Stufe 1
+(Seed 7) + 2 ov-Kultur-Fälle (gt+toro, supersport+cavallo — friert auch die
+Override-Merge-Semantik ein) = 20. Die Akte: 12 Fälle (W3) · K43-2 die Stufe 1
+(17) · fahrzeug-gattungen der Transporter als Kasten (20, die 17 alten byte-gleich).
 Seit W5 tragen seed 7 (Perlweiss) und 12345 (Racing-Grün) verschiedene Lacke —
 ihre Hashes unterscheiden sich in der Material-Signatur, die Geometrie nicht.
 

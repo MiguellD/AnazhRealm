@@ -1085,8 +1085,8 @@ class AnazhRealm_werkstatt_vorschau {
             out.add(mesh);
         }
         if (!out.children.length) return null;
-        // Die Hülle HÄLT die Quell-Gruppe (`_liveRefs`), solange sie lebt: der Ruhe-Deckel räumt jeden Untätigen nach seiner
-        // Ruhezeit — eine Vorschau oder Hand ohne Halter verlöre ihre Geometrie mitten im Blick. Die Rückgabe: `_disposeSoulGroup`
+        // Die Hülle HÄLT die Quell-Gruppe (`_liveRefs`), solange sie lebt: der Cache lässt jeden Körper ohne Halter los
+        // (`_foundryOhneLeser`) — eine Vorschau oder Hand ohne Halter verlöre ihre Geometrie mitten im Blick. Die Rückgabe: `_disposeSoulGroup`
         // (Hand, Ofen, Bühne) und der Vorschau-Umbau (`_workshopRebuildPreviewMesh`) rufen `_foundryLoslassen`.
         group._liveRefs = (group._liveRefs || 0) + 1;
         out.userData.foundrySrcGroup = group;

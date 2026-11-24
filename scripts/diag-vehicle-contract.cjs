@@ -29,7 +29,11 @@ const { errs, check, wandEnde } = pruefer();
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
-const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];
+// Die Gattungen zählt der KERN auf (`GATTUNGEN`: seine Fahrzeug-Rezepte, dieselbe Liste, aus der der Verkehr wählt). Bis
+// fahrzeug-gattungen stand hier eine Hand-Liste der fünf alten — der Transporter fuhr als sechste ohne Byte-Beweis, und die
+// Wand blieb grün. Ein Rezept ohne Golden nennt die Golden-Wand beim Namen („fehlt im Golden“).
+// VERTRAGS-AKT fahrzeug-gattungen: drei Fälle neu (transporter: zwei Saaten fein, Stufe 1), die siebzehn alten byte-gleich.
+const GATTUNGEN = [...VC.GATTUNGEN];
 const SEEDS = [7, 12345];
 const LODS = [0]; // kindStages.vehicle = [0, 1] — die feine Stufe je Seed; die Stufe 1 trägt je Gattung EINEN Fall (unten)
 const CASES = [];

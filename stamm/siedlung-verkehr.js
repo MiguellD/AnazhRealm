@@ -219,13 +219,21 @@ class AnazhRealm_siedlung_verkehr {
         }
         this._stlWegeBuild(flaechen, { x: 0, z: 0 }, "verkehr:" + S.key);
         // DIE SPUREN IM RASTER (`_verkehrAufSpur`): je Zelle die Stücke der Spuren, der Abbieger, der Bahn und des Rings jeder
-        // Wende, je Stück sein Ausscheren (`aus`, das fünfte Feld): in der Kurve schert der Wagen um l²·κ/2 aus seiner Bahn — der
-        // längste des Gesetzes (parkL) im Wendekreis (kurveR), (parkL/2)²/(2·kurveR) = 0,66 m, auf jedem Abbieger und in jeder
-        // Wende; die Spur der Strecke biegt flach (0). Bis hier war die Fahrbahn überall nur den halben Wagen breit: wer am Rand
+        // Wende, je Stück sein Ausscheren (`aus`, das fünfte Feld): in der Kurve schert der Wagen aus seiner Bahn — die weiteste
+        // Gattung des Fahrzeug-Kerns im Wendekreis (kurveR, `_verkehrAusscheren`: der Transporter 0,92 m), auf jedem Abbieger und
+        // in jeder Wende; die Spur der Strecke biegt flach (0). Bis hier war die Fahrbahn überall nur den halben Wagen breit: wer am Rand
         // eines Abbiegers stand, stand nicht „auf ihr“ — der Wagen aber hielt vor ihm (seine Bahn samt Ausscheren, `_verkehrFolge`),
-        // und beide warteten (stadt-voll 10 Uhr, die Kreuzung am Markt mit allen zwölf Abbiegern: 250 s, 18 Wagen dahinter)
+        // und beide warteten (stadt-voll 10 Uhr, die Kreuzung am Markt mit allen zwölf Abbiegern: 250 s, 18 Wagen dahinter). Bis
+        // fahrzeug-gattungen 2 galt der längste Wagen des Stadt-Gesetzes (parkL) als Tangente: (parkL/2)²/(2·kurveR) = 0,66 m
         VK.spurRaster = new Map();
-        const kurveAus = (VG.parkL / 2) ** 2 / (2 * VG.kurveR);
+        const vc = globalThis.__vehicleCore;
+        const kurveAus = Math.max(
+            ...vc.GATTUNGEN.map((g) => {
+                const d = vc.exportDrive(Object.assign({}, vc.PRESETS[g].s, vc.PRESETS[g].fx), g);
+                const [h, c] = [d.huelle, d.zweispur.c];
+                return this._verkehrAusscheren({ c, bug: h.noseX, heck: h.tailX, hw: h.bw }, 1 / VG.kurveR);
+            })
+        );
         const stueck = (a, b, aus) => {
             const M = AnazhRealm.BEWOHNER.rasterM;
             const rand = VG.halbM + AnazhRealm.PLAYER_WALL_RADIUS + V.spurRandM + aus; // der weiteste Leser (der Stand)
@@ -356,6 +364,12 @@ class AnazhRealm_siedlung_verkehr {
             }
             return null;
         };
+        // DIE FLOTTE DER STADT ist Gesetz des Fahrzeug-Kerns (vehicle-core `flotte`: seine Gattungen nach ihrem Anteil am Bestand,
+        // gemischt mit dem Samen der Stadt) — der Wagen w fährt die Gattung w. Bis fahrzeug-gattungen wählte der Same jedes Fahrers
+        // aus einer Tafel des Wirts (Kleinwagen, Limousine, SUV): die Stadt am Messort stadt-voll fuhr 3 Gattungen.
+        const vcF = globalThis.__vehicleCore;
+        if (!vcF || typeof vcF.flotte !== "function") return AnazhRealm._kernPflichtBruch("vehicle:flotte");
+        const flotte = vcF.flotte(von.slots.length, seed);
         for (const [w, si] of von.slots.entries()) {
             const b = frei(si, 0);
             if (!b) {
@@ -380,7 +394,7 @@ class AnazhRealm_siedlung_verkehr {
             const [ki, wende] = wahl;
             const park = wende.frei.shift();
             const gen = this._rollGenome(`${seed}:${si}`, "verkehr");
-            const typ = gen.pick("wagen", V.wagen);
+            const typ = flotte[w];
             const W = {
                 S,
                 b,
@@ -516,6 +530,7 @@ class AnazhRealm_siedlung_verkehr {
         if (ki === L.werkKi) {
             Z.amWerk++;
             this._scheuneFassen(L.werk.bestand, h); // die Ernte des Hofs vor dem Wagen (nach der Uhr, `_scheuneFassen`)
+            this._stoffstromFassen(L.werk.bestand, h); // die Barren des Ofens vor dem Wagen (die Kette nach der Uhr)
             Z.geladen += KC.bestandAnkunft(W.bestand, L.werk.bestand, h);
         }
         if (ki === L.standKi) {
@@ -768,10 +783,48 @@ class AnazhRealm_siedlung_verkehr {
         const fz = (e._fahr = vc.fahrZustand(p.x, p.z, p.fahrt - Math.PI / 2));
         vc.fahrStand(fz, G, this._fahrBoden(e), 0);
         if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
-        const um = this._fahrUmriss(e);
-        [W.hl, W.hw, W.bug] = [(um.bug - um.heck) / 2, um.hw, um.bug];
+        this._verkehrMass(W);
         this._verkehrBild(e);
         return true;
+    }
+
+    // DAS MASS DES WAGENS IM VERKEHR (fahrzeug-gattungen 2): Folge, Begegnung, Kette, Stauraum, das Umfahren und die Linse rechnen
+    // mit den Stationen der Gattung (vehicle-core `exportDrive.huelle`: Bug noseX · Heck tailX · halbe Breite bw, × Größe),
+    // symmetrisch um den Ursprung des Wagens und so lang, dass das Rechteck den Leib trägt: hl = max(Bug, −Heck). Bis hier fror das
+    // Stellen das MITTEL (Bug − Heck)/2 ein: der Kompakt ragt mit dem Bug 2,02 m vor seinen Ursprung, der Verkehr rechnete 1,92 m —
+    // stadt-voll 23 Uhr strich der Transporter (Wagen 8) am wartenden Kompakt (Wagen 4) bei 844/435 vorbei, 0,17 m im Rechteck,
+    // ein Stoß am Leib. NUR DAS GESETZ, nie die gezeichnete Gestalt (`_fahrUmriss` nach `_wagenMassSetzen`): sie trifft mit dem Bau
+    // ein, wann die Seite ihn liefert — die Stunde hinge an ihrer Vorgeschichte (gate:fahr-leben VK-V rot um 10 und 23 Uhr, als der
+    // Verkehr ihr Maß übernahm). Die Haut über den Stationen (Bug 0,12–0,14 m, Heck 0,13–0,15 m) trägt das Gesetz noch nicht.
+    _verkehrMass(W) {
+        const e = W.entry;
+        const fzg = this._fahrzeugGesetzFor(e);
+        const h = fzg && fzg.drive && fzg.drive.huelle;
+        if (!h || !(h.noseX > h.tailX) || !(h.bw > 0))
+            return AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle (" + e.type + ")");
+        const sc = Number.isFinite(e.scale) ? e.scale : 1;
+        [W.hl, W.hw, W.bug, W.heck] = [Math.max(h.noseX, -h.tailX) * sc, h.bw * sc, h.noseX * sc, h.tailX * sc];
+        // die Hinterachse hinter dem Schwerpunkt (exportDrive.zweispur.c, der Fahr-Satz rechnet mit ihr): um sie dreht der Leib im
+        // Bogen (`_verkehrAusscheren`)
+        const c = fzg.drive.zweispur && fzg.drive.zweispur.c;
+        if (!(c > 0)) return AnazhRealm._kernPflichtBruch("vehicle:exportDrive.zweispur.c (" + e.type + ")");
+        W.c = c * sc;
+    }
+
+    // DAS AUSSCHEREN DES LEIBS IM BOGEN der Krümmung k (fahrzeug-gattungen 2): so weit ragt der Leib über seine halbe Breite hinaus
+    // aus der Linie, die sein Schwerpunkt fährt. Der Wagen rollt um seine Hinterachse (das Einspur-Modell, das der Fahr-Satz
+    // fährt): der Mittelpunkt des Bogens liegt quer zur Hinterachse im Abstand Rr = √(R² − c²), der Leib steht um asin(c·k) schräg
+    // zur Linie — außen trägt die Ecke an Bug oder Heck √((c + x)² + (Rr + hw)²) − R, innen die Flanke an der Hinterachse R − Rr.
+    // Bis hier galt der Leib als Tangente der Linie am Schwerpunkt (l²·k/2, der Fall c = 0): der Transporter (c 1,65 m) stand im
+    // Umfahren um den Spieler 14,5° schräg zur Linie, seine Ecke ragte 0,92 statt 0,62 m aus ihr, und die Folge sah die Nase des
+    // wartenden Kompakts „frei“ — 0,07 m Wagen an Wagen (stadt-voll 23 Uhr, 844/435). Leser: die Linie (`F.rund`), das Fenster der
+    // Folge (`_verkehrFolge`).
+    _verkehrAusscheren(W, k) {
+        if (!(k > 0)) return 0;
+        const R = 1 / k;
+        const Rr = Math.sqrt(Math.max(0, R * R - W.c * W.c));
+        const aussen = Math.max(Math.hypot(W.c + W.bug, Rr + W.hw), Math.hypot(W.c + W.heck, Rr + W.hw)) - R - W.hw;
+        return Math.max(aussen, R - Rr);
     }
 
     // IM BLICK DER KAMERA: die Kugel (Mitte `m` — die Lage des Wagens oder sein letztes Bild —, Radius r) schneidet das Frustum
@@ -1013,6 +1066,7 @@ class AnazhRealm_siedlung_verkehr {
         // 22.11. stadt-voll: nach 48 s der nächste 154 m vor seinem Werk, 0 von 21 trugen eine Ware)
         if (W.ankunft && W.lieferung && W.gen.axis("fracht") < 0.5) {
             this._scheuneFassen(W.lieferung.werk.bestand); // die Ernte des Hofs vor dem Wagen (`_scheuneFassen`)
+            this._stoffstromFassen(W.lieferung.werk.bestand); // die Barren des Ofens vor dem Wagen (`_stoffstromFassen`)
             const n = window.__koerperCore.bestandAnkunft(W.bestand, W.lieferung.werk.bestand, this._weltStunde());
             if (n > 0) S.verkehr.zahl.ladung.geladen += n;
             this._verkehrLadung(W);
@@ -1491,14 +1545,14 @@ class AnazhRealm_siedlung_verkehr {
         const F = this._fahrerLinie(pts, AnazhRealm.VERKEHR.kurveM, AnazhRealm.VERKEHR.stil);
         if (!F) return;
         W.F = F;
-        // die Ausscherung je Punkt (`_verkehrFolge`, `rundAn`): l²·κ/2, κ die schärfste Krümmung binnen seiner halben Länge um ihn
-        // (höchstens die des Wendekreises) — einmal je Linie, nie je Ecke und Leib
+        // die Ausscherung je Punkt (`_verkehrFolge`, `rundAn`): der Leib im Bogen (`_verkehrAusscheren`), κ die schärfste Krümmung
+        // binnen seiner halben Länge um ihn (höchstens die des Wendekreises) — einmal je Linie, nie je Ecke und Leib
         const kR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
         F.rund = F.k.map((_, i) => {
             let k = 0;
             for (let j = i; j >= 0 && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
             for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
-            return (W.hl * W.hl * Math.min(2 * k, 1 / kR)) / 2;
+            return this._verkehrAusscheren(W, Math.min(2 * k, 1 / kR));
         });
         const vorher = W.zonen;
         W.zonen = [];
@@ -1787,7 +1841,7 @@ class AnazhRealm_siedlung_verkehr {
             if (w < deckel) [deckel, W.grund, W.wer] = [w, grund, wer]; // der Täter beim Namen (die Linse VK)
         };
         // DER WAGEN VOR IHM: nur wer in der Hülle des Fensters steht (samt seiner halben Länge und der Bahn), wird gefragt.
-        // In der Kurve schert der starre Wagen um l²·κ/2 aus seiner Bahn (κ höchstens die des Wendekreises `kurveR`; die gemittelte
+        // In der Kurve schert der starre Wagen aus seiner Bahn (`_verkehrAusscheren`; κ höchstens die des Wendekreises `kurveR`; die gemittelte
         // Krümmung der Linie zählt doppelt) — so viel breiter ist seine Bahn dort (bis hier streifte er im Ring der Wende den Wagen
         // am Platz, in der Kreuzung den Stehenden an ihrer Innenseite). κ ist die schärfste AM ORT des anderen (`rundAn`: binnen
         // seiner halben Länge um dessen Fußpunkt — dort steht sein Leib, wenn er ihn passiert); die des ganzen Fensters (`rund`)
@@ -1805,7 +1859,7 @@ class AnazhRealm_siedlung_verkehr {
             if (F.k[i] > kMax) kMax = F.k[i];
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
-        const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / kurveR)) / 2;
+        const rund = this._verkehrAusscheren(W, Math.min(2 * kMax, 1 / kurveR));
         const rundAn = (i) => F.rund[i];
         const rand = W.hw + V.seitM + 3;
         // nur wer in den Zellen der Belegung um das Fenster steht (`_verkehrBelegung`, samt dem Weg eines Schritts), nie die Stadt
@@ -2318,8 +2372,8 @@ class AnazhRealm_siedlung_verkehr {
                     kR: W.hw * Math.SQRT2 + AnazhRealm.PLAYER_WALL_RADIUS + 0.05,
                     rk: undefined, // seine Zelle (`_bewohnerRasterLage`): die Gestalt steht ab der Geburt (Lehre 25)
                 })));
-            const mitte = W.bug - W.hl;
-            const ab = Math.max(0, W.hl - W.hw);
+            const mitte = (W.bug + W.heck) / 2;
+            const ab = Math.max(0, (W.bug - W.heck) / 2 - W.hw);
             // der ruhende Wagen ist ein Stehender: um ihn geht der Gehende (`_bewohnerUm`), statt vor ihm zu warten, während er auf
             // ihn wartet (die Enge stand 40 s: ein Gehender 2,9 m vor dem Bug, beide warteten)
             const geht = !(fz.speed < AnazhRealm.VERKEHR.ruheMs);
@@ -2371,8 +2425,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
     [-1, -1],
 ]);
 // DER VERKEHR DES WIRTS (das Gesetz der Menge, des Netzes, der Wende und des Platzes lebt in fachwerk VERKEHR_GESETZ; hier, wie
-// der Wirt fährt): wagen = die Gestalten des Fahrzeug-Kerns, die die Stadt fährt (der Same des Fahrers wählt; Sport- und
-// Geländewagen fahren nicht in der Stadt) · stufeM = so viel darf der Boden der Spur je halben Meter springen (mehr ist eine
+// der Wirt fährt; welche Gattungen die Stadt fährt, sagt der Fahrzeug-Kern, vehicle-core `flotte`) · stufeM = so viel darf der Boden der Spur je halben Meter springen (mehr ist eine
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
@@ -2412,7 +2465,6 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // aus und ein, umfahrMaxM = so weit schert er höchstens rechts aus (sonst links). Wie nah der Leib sichtbar am Steuer sitzt, sagt
 // die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
 AnazhRealm.VERKEHR = Object.freeze({
-    wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),
     stufeM: 0.2,
     ruheMs: 0.05,
     platzBahnM: 3,
