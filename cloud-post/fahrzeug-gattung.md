@@ -120,3 +120,12 @@ Täter unbenannt: der nächste Handgriff ist der Lauf mit den Orten der fremden 
 danach die Familien-Schritte aus check.yml (vehicle-contract, nervensystem-vehicle, vehicle-drive, gegenstand-stoff, garage-labor,
 boot-rettung, boot-stage, erstarren, welt-boot, warm-start, mp-sync, hitch-telemetrie Teil 1; Läufer: scratchpad `w/familie.sh`).
 Leser: `gate:settlement`.
+
+Nachtrag 15:47: Der Verdacht C3 fällt am Code. Der C3-Schnitt ist ein Filter allein in der Linse (`anleger.includes(e.type)` in `allHaus`).
+Er berührt weder die Vergabe der Stellplätze noch die Schleife „fremde Bauten“ von Teil O; diese zählt jeden Eintrag ohne Fundament auf
+dem Erdbau, die fahrenden Wagen eingeschlossen, auf 86697613 und auf diesem Kopf gleich. Im Spiel geändert sind seit 86697613 nur
+vehicle-core (Sitz, `art`, Lasur, Stufe 1 von boot und karren; die Bauten der Autos sind byte-gleich, v3 20 von 20) und main (w28-auge-der-art).
+Neu geprägt in v1: recipes.json bei 8 Fahrzeugen (gt, supersport, limousine, kompakt_fwd, suv, transporter, boot, karren: der
+Antriebs-Export trägt `art`), manifest.json ihr Hash. wolf, fox, bear und deer kommen aus main.
+Der Lauf mit den Orten der Wagen (Lage, Stellplatz, Anleger) ist gestartet und reicht nicht bis zum Halt. Das Log liegt unter scratchpad `w/sechs/settlement-dbg.log`.
+Die Änderung an der Linse ist nicht eingecheckt; der Handgriff steht in `fremdOrt`.
