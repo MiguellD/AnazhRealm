@@ -39,3 +39,7 @@ pm-nacht-front karte2.erleben.bild.nacht#1,karte2.erleben.bild.nacht#2
 pm-front-widerspruch karte2.erleben.sinne.signale#1,karte2.same.physik.tragen#1,karte2.same.kopplung.zeitreise#1,karte2.same.preis.ausdauer#1
 # Station pm-beobachter (punkte-maschine 011f0280, 24.11. 01:44): neun Fronten urteilen über den Adress-Fächer stationen/faecher.js (M4, der Richter als Beobachter) statt an der Bühne; headless gefahren, jede Bildpflicht ungemessen bis zum Gerät (cloud-post/pm-beobachter.md); technik#1 gebucht, nicht beansprucht
 pm-beobachter karte2.mensch.fahrzeug.medium#2,karte2.mensch.nahrung.tier#2,karte2.planet.kosmos.systeme#1,karte2.erleben.spieler.wegfindung#1,karte2.same.massstab.spanne#1,karte2.planet.kopplung.bahn-klima#2,karte2.same.kopplung.kohaerenz#1,karte2.leben.evolution.fremde-physik#1,karte2.leben.oeko.netz#2
+# z701 (main 60e8909d, 24.11. 02:46): EIN Wetter-Feld je Ort — Wind, Regen und Wolken-Zug folgen der Front am Ort (die Richter terraform#1 und bahn-klima#2 urteilten am Zweig rot und stehen nicht im Anspruch)
+w28-wetter-am-ort karte2.planet.kopplung.wetter-welt#2,karte2.mensch.kopplung.leib#1,karte2.mensch.kopplung.kultur#2
+# z702 (main 5b0f551a, 24.11. 03:55): vier Stoff-Fronten — Rauch (Deckung 4,98 %), Wehr ihrer Zeit (0,75), Plankton im See (Sicht 8,323 m); alter#1 urteilt ehrlich rot (Seiten-ΔE 0,77 gegen 2,3) und steht nicht im Anspruch
+w28-front-stoff karte2.same.physik.reaktion#1,karte2.mensch.macht.wehrbau#2,karte2.planet.wasser.tiefsee#1
