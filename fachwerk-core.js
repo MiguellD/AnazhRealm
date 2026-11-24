@@ -180,12 +180,66 @@
     // DIE GRENZNEIGUNG JE STIL (w28-bau-rezept, EINE Quelle): so flach trägt die Deckung des Stils — HAUS klemmt jede Neigung darauf,
     // und das Bau-Gesetz schreibt die gebaute Neigung ins Rezept (`grenzNeigung`); vorher stand sie nur in STILMODE, und das Rezept
     // trug eine tote Zahl: die griechischen Wohnhäuser 10–14° im Plan, 18° gebaut. Ohne Stil-Eintrag (alt) 28°.
-    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 38 };
-    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung
-    function grenzNeigung(P) {
+    // haus-dach: `stroh` stand bei 38° unter der Reet-Regel 45° (BauNetz Wissen „Reet und Stroh“) — der Stil trägt jetzt die Grenze seiner Deckung
+    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 45 };
+    // DAS GESETZ DER DECKUNG (haus-dach): je Deckung ihre Regeldachneigung — so flach bleibt sie regensicher (je loser die Einzeldeckung,
+    // desto steiler: das Wasser läuft schneller ab, als es kapillar eindringt). Reet ≥ 45° (BauNetz Wissen „Reet und Stroh“; Landkreis
+    // Rostock 40–45°) · Mönch-Nonne ≥ 40° (BauNetz Wissen Glossar, keine Falz, Überdeckung 80 mm) · Biberschwanz 30° (BauNetz Wissen
+    // „Regeldachneigung“) · Schiefer altdeutsch 26,5° (Wikipedia „Dachneigung“) · Holzschindel dreilagig 22° (BauNetz Wissen
+    // „Regeldachneigung“) · Hohlziegel/Coppi 30 % = 16,7° (Manuale coperture in laterizio 2025, Tafel „Pendenza“: Pendenza minima 30 % bei 9 cm Überdeckung, < 30 % sconsigliata) · flach (Blech, Pappe, Lehm):
+    // die Grenze trägt der Stil. `rolle`: der Stoff, den HAUS der Deckung malt; `farbe`: sein Ton, wo der Ort die Deckung wechselt (je Rolle);
+    // `traufe`: die Dicke der Deckung an der Traufkante in m (Reet: 30–35 cm Packung, BauNetz Wissen; die Ziegel liegen als Reihen).
+    // prettier-ignore
+    var DECKUNG_GESETZ = {
+        reet:       { grad: 45,   rolle: "stroh", traufe: 0.32, farbe: [0x6e6242] },   // das Reet im Wetter: oliv-graubraun (Foto Molfsee, f3), nicht das Gold des frischen Strohs
+        moenchnonne:{ grad: 40,   rolle: "ziegel", farbe: [0xa65a36, 0x84432a] },
+        biber:      { grad: 30,   rolle: "ziegel", farbe: [0x9c4a35, 0x803a28] },
+        schiefer:   { grad: 26.5, rolle: "ziegel", farbe: [0x4c4f57, 0x3c3f46] },
+        schindel:   { grad: 22,   rolle: "stamm" },
+        hohlziegel: { grad: 16.7, rolle: "ziegel", farbe: [0xb5673c, 0x8c4a2a] },
+        flach:      { grad: 0,    rolle: "dachmod" },
+    };
+    // die Deckung je Stil, und die Kulturen, deren Deckung der Stil nicht nennt (ihre Farbe sagt es: Schiefer grau, Kanal-Ziegel des Südens)
+    var STIL_DECKUNG = { alt: "biber", modern: "flach", huette: "schindel", stein: "hohlziegel", glas: "flach", klinker: "biber", stroh: "reet" };
+    var KULTUR_DECKUNG = { franzoesisch: "schiefer", georgian: "schiefer", viktorianisch: "schiefer", gotisch: "biber" };
+    function _stilVon(P) {
         var stil = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"].indexOf(P.stil) >= 0 ? P.stil : "alt";
         if ((P.portikus || P.zinnen || P.kuppel || P.arkade) && (stil === "alt" || stil === "huette" || stil === "stroh")) stil = "stein";
-        return STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+        return stil;
+    }
+    // die Deckung des Baus: die des Orts (`P.deckung`, DORF mit Klima) oder die seiner Kultur und seines Stils (das Labor)
+    function deckungVon(P) {
+        if (P.deckung) {
+            if (!DECKUNG_GESETZ[P.deckung]) throw new Error("fachwerk deckungVon: die Deckung „" + P.deckung + "“ steht nicht in DECKUNG_GESETZ");
+            return P.deckung;
+        }
+        var stil = _stilVon(P);
+        if (stil === "modern" || stil === "glas" || stil === "huette" || stil === "stroh") return STIL_DECKUNG[stil];
+        return KULTUR_DECKUNG[P.kultur] || STIL_DECKUNG[stil];
+    }
+    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung — nie unter der seiner Deckung
+    function grenzNeigung(P) {
+        var stil = _stilVon(P), g = STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+        return Math.max(g, DECKUNG_GESETZ[deckungVon(P)].grad);
+    }
+    // DIE DECKUNG DES ORTS (haus-dach): der Stoff, der am Ort wächst, deckt das Dach des Landes — Eingang das Klima des Orts
+    // (`_siedlungKlima`: winter, sommer, spendeVerh aus gelaende-core `ortGesetz(teil)`), dazu die Stadt (`dicht`). Die Regeln:
+    //   · der Süden (winter ≥ 4 °C, Kottek C-warm wie REGION_KLIMA mediterran) deckt in Kanal-Ziegeln — Ton brennt, Reet wächst nicht im Trockenen;
+    //   · das nasse Land (spendeVerh ≥ 1, die Wasser-Spende der Heimat) trägt Schilf: der Holz- und Fachwerkbau des Dorfs deckt in Reet
+    //     (Molfsee, Ammerland; die Isba im Stroh) — die Stadt nicht: Weichdach brennt, die Bauordnungen der Städte verboten es;
+    //   · das trockene Schnee-Land (winter ≤ −3 °C, die Grenze C/D nach Kottek u. a. 2006) trägt Wald: Holzschindel;
+    //   · Schiefer und Flachdach bleiben (der Fels und das Werk des Baus, der Ort liest ihn nicht).
+    // Die Neigung folgt: nie unter der Regeldachneigung der Deckung (`grenzNeigung`). Leser: DORF, gate:settlement Teil R (R6, R7).
+    function ortDeckung(klima, P, dicht) {
+        if (!(klima && isFinite(klima.winter) && isFinite(klima.spendeVerh)))
+            throw new Error("fachwerk ortDeckung: das Klima des Orts trägt winter und spendeVerh nicht als Zahl");
+        var d = deckungVon(P), stil = _stilVon(P);
+        if (d === "schiefer" || d === "flach") return d;
+        if (klima.winter >= 4) return "hohlziegel";
+        var holz = stil === "alt" || stil === "huette" || stil === "stroh";
+        if (holz && !dicht && klima.spendeVerh >= 1) return "reet";
+        if (holz && klima.winter <= -3) return "schindel";
+        return d;
     }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
@@ -220,10 +274,11 @@
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
-  if(sm){
-    if(sm.brace!=null && !(PARAMS&&PARAMS.brace!=null)) P.brace=sm.brace;
-    if(sm.flat && !(PARAMS&&PARAMS.hip!=null)) P.hip=0;
-    const _m=mat, RM=sm.RM;
+  const DECK=DECKUNG_GESETZ[deckungVon(P)], DRM=(DECK.rolle==='ziegel')?{}:{ziegel:DECK.rolle,ziegel2:DECK.rolle};   // DIE DECKUNG MALT DAS DACH (haus-dach, DECKUNG_GESETZ): ihr Stoff, nicht der des Stils — ohne Deckung des Orts dieselbe Rolle wie STILMODE
+  if(sm||P.deckung){
+    if(sm&&sm.brace!=null && !(PARAMS&&PARAMS.brace!=null)) P.brace=sm.brace;
+    if(sm&&sm.flat && !(PARAMS&&PARAMS.hip!=null)) P.hip=0;
+    const _m=mat, RM=Object.assign({}, sm?sm.RM:{}, DRM); if(DECK.rolle==='ziegel'){ delete RM.ziegel; delete RM.ziegel2; }
     mat = r => { const m=_m(RM[r]||r); return (m && typeof m==='object' && '__role' in m) ? {__role:r} : m; };  // Material tauschen, im Mess-Harness aber ORIGINAL-Rolle behalten (sonst sieht das Gate falsche Rollen)
   }
   // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
@@ -893,7 +948,8 @@
     const xhAt=y=>{ const xh=(spanH<0.02||y<=hipStartY+0.01)?(W/2+ovX):Math.max(rH+0.05,W/2+(rH-W/2)*(y-hipStartY)/spanH); return [-xh,xh]; };  // Ortgang/Walm pro Reihe
       { const bx2=W/2+ovX+0.02, yB0=eaveY-ovZ*tanP+0.14, zB0=eaveZ+ovZ, yB1=Math.min(hipStartY,ridgeY)+0.14, zB1=gzTop;   // ORTGANG-GESETZ: Windbrett je Rake schließt die Ziegel-Sägezähne (voll & Krüppelwalm — folgt hipStartY)
         [1,-1].forEach(sx2=>[1,-1].forEach(sz3=>{ if(zB0-Math.abs(zB1)>0.3) strut(g,sx2*bx2,yB0,sz3*zB0, sx2*bx2,yB1,sz3*zB1, 0.24,TRIMR); })); }
-      [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.02,sz3*(eaveZ+ovZ+0.09), W+2*ovX+0.2,0.11,0.13,'dunkel'));   // TRAUFRINNEN-GESETZ Hauptdach: beidseitig, dunkel — synergetisch zum Ziegel
+      if(DECK.traufe) [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.10-DECK.traufe/2,sz3*(eaveZ+ovZ-0.12), W+2*ovX+0.1,DECK.traufe,0.36,'ziegel'));   // DIE TRAUFKANTE DER DECKUNG (haus-dach, DECKUNG_GESETZ.traufe): das Reet endet als Packung von 32 cm, ohne Rinne (das Wasser tropft vom Halm) — auch die ferne Stufe trägt sie (der Rand)
+      else [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.02,sz3*(eaveZ+ovZ+0.09), W+2*ovX+0.2,0.11,0.13,'dunkel'));   // TRAUFRINNEN-GESETZ Hauptdach: beidseitig, dunkel — synergetisch zum Ziegel
     const roofSkip=(x,z)=> (notchCut(x,z)&&notchCut(x, z+Math.sign(z||1)*0.30)) || (DORMER && z<DORMER.zBack+0.05 && z>DORMER.zFront-0.02 && x>DORMER.gx-DORMER.gW/2-0.10 && x<DORMER.gx+DORMER.gW/2+0.10);   // RANDBAND 0.30: Hauptreihen überlappen in den Notch (kein nacktes Unterdach am Stoß) · CONSTRAINT: Skip nur INNERHALB der Gauben-Deckung (z[zFront,zBack], vom Gaubendach verdeckt) — nicht VOR der Front, sonst liegt Unterdach frei   // Ziegel über dem Gauben-Footprint ausgespart
     if(!RAND){ eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip});
     eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:-1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip}); }
@@ -1925,7 +1981,7 @@
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
-  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
+  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:DRM.ziegel||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
   return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT, herdKaesten,
@@ -5381,6 +5437,11 @@
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
   // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff, `sockelImWasser`): jeder Bau und jede seiner Fassungen trägt die Höhe aus der Spende des Orts — ohne Klima (das Labor) der Bau, wie er stand
   if(DP.klima!=null){ const fh=sockelImWasser(DP.klima); alle.forEach((b,ai)=>{ b.foundH=fh; for(const f of za[ai].fr) f.v.foundH=fh; }); }
+  // DIE DECKUNG FOLGT DEM ORT (haus-dach, `ortDeckung`): jeder Bau und jede Fassung deckt im Stoff des Orts, die Neigung steigt auf die Regel
+  // seiner Deckung (`grenzNeigung`), der Ziegel trägt die Farbe seiner Deckung, wo der Ort sie wechselt — ohne Klima (das Labor) der Bau, wie er stand
+  if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));
+      const G=DECKUNG_GESETZ[d], F=G.farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, G.rolle==="ziegel"?{ziegel:F[0], ziegel2:F[1]}:{[G.rolle]:F[0]}); };
+    alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
@@ -14160,6 +14221,10 @@
         regionImKlima: regionImKlima,
         SOCKEL_WASSER: SOCKEL_WASSER, // der Sockel folgt dem Wasser des Orts (haus-stoff): Spritzwasser 0,30 · Heimat 0,55 · Böhmen 0,95 m; Leser: DORF, gate:settlement R5
         sockelImWasser: sockelImWasser,
+        DECKUNG_GESETZ: DECKUNG_GESETZ, // die Regeldachneigung und der Stoff je Deckung (haus-dach); Leser: HAUS, DORF, gate:settlement Teil R
+        deckungVon: deckungVon,
+        ortDeckung: ortDeckung,
+        grenzNeigung: grenzNeigung,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         dorfLayout: dorfLayout,

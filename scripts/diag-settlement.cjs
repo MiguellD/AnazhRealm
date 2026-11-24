@@ -227,17 +227,21 @@ function sockelUrteil(S, check) {
 const KLIMA_SAATEN = Array.from({ length: 200 }, (_, i) => i + 1);
 function klimaGang(FC) {
     const je = {},
-        aus = {};
+        aus = {},
+        unter = [];
     for (const [ort, k] of Object.entries(KLIMA_ORTE)) {
         const R = {},
             neig = [],
-            stil = {};
+            stil = {},
+            deck = {};
         for (const s of KLIMA_SAATEN) {
             const d = FC.DORF({ seed: s, nH: 18, klima: k });
             R[d.region] = (R[d.region] || 0) + 1;
             for (const h of d.houses) {
                 const p = h.p || h;
                 if (isFinite(p.pitchDeg)) neig.push(p.pitchDeg);
+                deckWand(FC, p, ort + " " + s, unter);
+                deck[p.deckung || "?"] = (deck[p.deckung || "?"] || 0) + 1;
                 const st = (FC.KULTUR[p.kultur] || {}).stil || "?";
                 stil[st] = (stil[st] || 0) + 1;
             }
@@ -246,6 +250,7 @@ function klimaGang(FC) {
             regionen: R,
             neigung: +(neig.reduce((a, b) => a + b, 0) / Math.max(1, neig.length)).toFixed(1),
             stil,
+            deck,
         };
         aus[ort] = Object.keys(R).filter((r) => {
             const z = FC.REGION_KLIMA.find((q) => q.region === r);
@@ -259,9 +264,22 @@ function klimaGang(FC) {
         });
     }
     // R4: ohne Klima (das Labor) würfelt der Kern über ALLE Regionen von REGION_KLIMA
-    const labor = new Set(KLIMA_SAATEN.map((s) => FC.DORF({ seed: s, nH: 18 }).region));
+    const labor = new Set(
+        KLIMA_SAATEN.map((s) => {
+            const d = FC.DORF({ seed: s, nH: 18 });
+            for (const h of d.houses) deckWand(FC, h.p || h, "labor " + s, unter);
+            return d.region;
+        })
+    );
     const r4 = FC.REGION_KLIMA.filter((q) => !labor.has(q.region)).map((q) => q.region);
-    return { je, aus, r4, sockel: sockelGang(FC) };
+    // jede Kultur aus dem Rezept (200 Würfe) und jeder Stil für sich: keine Deckung unter ihrer Regel
+    for (const k of Object.keys(FC.KULTUR)) for (const s of KLIMA_SAATEN) deckWand(FC, Object.assign(FC.bauRezept({ bauweise: k }, null, s), { kultur: k }), "kultur " + k + " " + s, unter);
+    for (const st of ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"]) {
+        const g = FC.grenzNeigung({ stil: st }),
+            d = FC.deckungVon({ stil: st });
+        if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
+    }
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -283,6 +301,45 @@ function klimaUrteil(K, check) {
     );
     check("R4 ohne Klima (das Labor) würfelt über alle sechs Regionen", !K.r4.length, K.r4.join(","));
     if (K.sockel) sockelUrteil(K.sockel, check);
+    check(
+        `R6 keine Deckung unter ihrer Regeldachneigung (DECKUNG_GESETZ) — über 200 Saaten in drei Klimaten und im Labor, jede Kultur in 200 Würfen, jeder Stil: ${K.unter.length} darunter`,
+        !K.unter.length,
+        K.unter.slice(0, 6).join(" · ")
+    );
+    if (K.dach) dachUrteil(K.dach, check);
+}
+// R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
+// Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
+// bis haus-dach stand der Stil `stroh` bei 38° unter der Reet-Regel. R7 die Gegenprobe: dasselbe Dorf des Messorts (Same 4291161376,
+// 13 Häuser, −4 / 18 °C) im nassen Land (Spende 1, die Heimat) und im trockenen Schnee-Land (Spende 0,5) — ohne neue Vorlage (dieselben
+// Kulturen) wechselt die Deckung (Reet ↔ Schindel) und mit ihr die Neigung und die Schneelast μ1 = 0,8·(60°−α)/30° (EN 1991-1-3).
+function deckWand(FC, p, wo, unter) {
+    const d = FC.deckungVon(p),
+        g = FC.DECKUNG_GESETZ[d].grad;
+    if (!(p.pitchDeg >= g)) unter.push(`${wo} ${p.kultur || p.stil}: ${d} bei ${p.pitchDeg}° (Regel ${g}°)`);
+}
+const mu1 = (a) => (a <= 30 ? 0.8 : a >= 60 ? 0 : (0.8 * (60 - a)) / 30);
+const DACH_ORTE = { nass: { winter: -4, sommer: 18, spendeVerh: 1 }, trocken: { winter: -4, sommer: 18, spendeVerh: 0.5 } };
+function dachGang(FC) {
+    const je = {};
+    for (const [ort, k] of Object.entries(DACH_ORTE)) {
+        const d = FC.DORF({ seed: 4291161376, nH: 13, klima: k }),
+            hs = d.houses.map((h) => h.p || h);
+        const deck = {};
+        for (const p of hs) deck[p.deckung] = (deck[p.deckung] || 0) + 1;
+        const mittel = (f) => +(hs.reduce((a, p) => a + f(p), 0) / Math.max(1, hs.length)).toFixed(2);
+        je[ort] = { region: d.region, kulturen: hs.map((p) => p.kultur).join(","), deck, neigung: mittel((p) => p.pitchDeg), mu: mittel((p) => mu1(p.pitchDeg)) };
+    }
+    return je;
+}
+function dachUrteil(D, check) {
+    const [n, t] = [D.nass, D.trocken],
+        z = (o) => Object.entries(o.deck).map(([k, v]) => k + " " + v).join(", ");
+    check(
+        `R7 die Gegenprobe: die Deckung folgt dem Ort — nass ${z(n)} (Neigung ${n.neigung}°, μ1 ${n.mu}) · trocken ${z(t)} (Neigung ${t.neigung}°, μ1 ${t.mu}), dieselben Kulturen`,
+        n.kulturen === t.kulturen && (n.deck.reet || 0) > 0 && !(t.deck.reet > 0) && (t.deck.schindel || 0) > 0 && n.neigung - t.neigung >= 2,
+        n.kulturen === t.kulturen ? "" : "die Vorlage wechselt"
+    );
 }
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
@@ -292,7 +349,17 @@ const KLIMA_TAETER = {
         ["h = S.spritz + (S.heimat - S.spritz) * v;", "h = S.spritz + (S.heimat - S.spritz) * 1;"],
     ],
 };
-const KLIMA_SOLL = { "der Kern liest das Klima nicht": "R1", "der Sockel liest das Wasser nicht": "R5" };
+KLIMA_TAETER["die alte Grenze (stroh 38°, die Deckung zählt nicht)"] = [
+    ["return Math.max(g, DECKUNG_GESETZ[deckungVon(P)].grad);", "return g;"],
+    ["glas: 4, klinker: 22, stroh: 45 };", "glas: 4, klinker: 22, stroh: 38 };"],
+];
+KLIMA_TAETER["die Deckung liest den Ort nicht"] = [["if (klima.winter >= 4) return \"hohlziegel\";", "return d;"]];
+const KLIMA_SOLL = {
+    "der Kern liest das Klima nicht": "R1",
+    "der Sockel liest das Wasser nicht": "R5",
+    "die alte Grenze (stroh 38°, die Deckung zählt nicht)": "R6",
+    "die Deckung liest den Ort nicht": "R7",
+};
 
 
 // ===== TEIL T (mensch.wirtschaft.technik): DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN — je Saat 1 … 20 der Ort ihrer Epoche
