@@ -1,14 +1,28 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 06:40 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 07:15 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 07:15 (gilt vor den Zeilen darunter): KARTE 2 = **80 von 1 718** (punkte-maschine 91051ba0; 06:03 waren es 78). `klima-kontinent` 3
+  (2ab011ec) war 21 von 21 GRÜN + GPU-Probe GRÜN (omen-gtx1060) + PROBE-TAG OK + Wiese im Bild heil → GESTEMPELT 06:46:53 als `w28-klima-kontinent`
+  28d4c8df, **z706 fährt seit 07:01:27** (trägt den Klassen-Schnitt der Karte nach main). EHRLICH: die Landung bucht voraussichtlich 0 Sprossen — die
+  Front der Leiter `planet.kopplung.land-meer-luft` ist #1 (Luv/Lee 1,258 statt ≥ 2); #3 (Nebel 4,46×) und #4 (5,05 K) sind erreicht, liegen aber
+  hinter der Front. Anspruch nach der Landung: #3, #4. NÄCHSTE MACHER-WELLE dafür (benannt, startet beim nächsten freien Platz, Opus): Niederschlag als
+  lineares Hang-Aufwind-Gesetz mit Lee-Abstieg (Smith & Barstad 2004: Quelle ∝ Feuchte × U·∇h, Verzögerung τ ≈ 1 000 s, Feuchte-Schicht ~2,5 km) statt
+  Abreicherung allein; zuerst der Zensus je Saat (Verhältnis gegen Δh, Erholungs-Länge im Lee, Mess-Orte der Station); node am Export, keine GPU.
+  `erbe-geburt` 5 (fb5096a5): GPU-Probe GRÜN, Batterie 20 GRÜN + 1 ROT = „voll 17/18 Stand-Takt“ mit der bekannten Zeile „DRUCK-SCHLAF: die letzte
+  der 70 Scherben schlief nach 3.9 s (Soll ≤ 3 s)“ → nach der Regel EIN Neulauf nur dieses Jobs (07:10:25, Versuch 2 läuft). STICHPROBE Sonde 3,
+  Läufe 2 und 3: echt 1,15 s (4,06 m/s) / Mutante 1,133 s (4,77 m/s) · echt 1,05 s (5,36 m/s) / Mutante 1,183 s (1,88 m/s) — sieben von acht Wellen
+  schnell, kein Täter benannt, kein Schnitt bestellt. HAUSHALT 07:14: Woche alle Modelle 59 %, Fable 57 % (Reset 28.11. 21:59). MEIN FEHLER 04:55–06:43:
+  zwei lokale Arbeiter ohne `model` gestartet → sie erbten Fable (einer 2 h 47 min, 1 510 Züge), Fable-Woche 38 → 56 %. REGEL: JEDER Agent-Start nennt
+  `model: "opus"`, das Modell wird im Protokoll nachgelesen, `get_usage` stündlich. Benannt für OMENs Apparat-Zweig: `model: opus` in den Kopf von
+  `.claude/agents/champion.md`.
 - GELANDET 24.11.: z700 `w28-linse-slot-rest` (01:09) · z701 `w28-wetter-am-ort` → 60e8909d (02:46) · z702 `w28-front-stoff` → 5b0f551a (03:55) ·
   z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; das Rennen des Welt-Wechsels, die Register-Zeile dazu
   ist gefallen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
   Kandidat 05:21 → erster Läufer 05:34 → Urteil 05:43; Anspruch `karte2.erleben.klang.raum#1`, `klang.stimme#1` = koordination f8744a76; `ein-ereignis#2` und
-  `getuemmel#1` sind Teil-Stände und nicht beansprucht). ALLE ZWEIGE: die Basis ist der main-Kopf oben. IM ZUG 06:05: nichts.
+  `getuemmel#1` sind Teil-Stände und nicht beansprucht). ALLE ZWEIGE: die Basis ist der main-Kopf oben. IM ZUG: z706 `w28-klima-kontinent` seit 07:01 (Stempel 06:46:53).
 - BUCHUNG: war 05:01–06:03 ROT („BUCHE-2 BRUCH“): mein Merge der Station `pm-front-stoff` (punkte-maschine 4f4db7d5) änderte den Richter-Text von
   `same.gedaechtnis.alter#1`, die alte Akte blieb liegen, EINE Akte mit fremdem Soll bricht die ganze Buchung. Geheilt an den Daten (die Akte fiel,
   punkte-maschine 026568c1), 06:03 „GEBUCHT 219/330 · 78 von 1718“. REGEL: wer einen Richter-Text ändert, entfernt im selben Commit die Akten der Sprosse.
@@ -69,15 +83,22 @@
   m/s, Sprint 5,18 → 6,28 m/s); Stationen `pm-nerv-bewegung` 28e7cbc danach. MEIN BLICK (Bilder Scratch `nerv/blick/`): Gehen trägt (Ferse zuerst,
   Abrollen), die Arme hängen; der SPRINT ist ein Spagat-Sprung (beide Beine fast gestreckt, Rumpf senkrecht, Ferse zuerst) — an main genauso, keine
   Verschlechterung, aber kein Sprint.
-- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt, beides MACHER): `nerv-schwung` (derselbe Arbeiter, fortgesetzt 06:40, gestapelt
-  auf 5ce568cb im Baum `AnazhRealm-nerv`): Schwung des Beins, Aufsatz, Rumpf und Arme als EINE stetige Funktion der Geschwindigkeit im Kern (Froude-Achse;
-  `ziele`/`kontakt` der `VERB_TAFEL` steuern heute 0 von 11 Verben, `koerper-core.js:6163`), Profi-Zahlen im Brief (Knie-Spitze im Schwung 60° / 90–110° /
-  ≥ 120°, Vorfuß im Sprint, Duty 0,6 → 0,25), Bildpaar in Scratch `nerv/blick2/`; KEIN `npm run check`, kein voller Playtest lokal · `mensch-nah`
-  FORTGESETZT 06:36 (derselbe Arbeiter, Kopf bb7c53c9, Baum
-  `AnazhRealm-nah`): die 504 echten Durchdringungen an geteilten Knochen → 0 als EIN Gesetz in `foundry-core.js` (`__hautUnterStoff`/`__hautUnterTuch`),
-  Bildpaar vorher ↔ nachher in Scratch `bild/mensch-nah/` (1,5 m und 4 m, Streiflicht), dann das Gesicht (`leib.gesicht#1` 7 von 10); die Station
-  (`pm-mensch-nah`, zählt heute Haut unter fremdem Tuch: 6 383 statt 504) baut er NICHT um — er nennt den Diff, ich buche. GPU-Deckel ≤ 180 s je Lauf, weil
-  die Runde misst; Push erst bei gemessenen 504 → 0. Der Arbeiter der bewohner-Heilung ENDETE 06:34 (sein Schnitt = Seitenzweig oben).
+- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt, beides MACHER, beide OPUS — im Protokoll nachgelesen): `nerv-schwung` (NEUER
+  Arbeiter seit 06:50, der Fable-Arbeiter ist angehalten; gestapelt auf 5ce568cb im Baum `AnazhRealm-nerv`): Schwung des Beins, Aufsatz, Rumpf und Arme
+  als EINE stetige Funktion der Geschwindigkeit im Kern (Froude-Achse; `ziele`/`kontakt` der `VERB_TAFEL` steuern heute 0 von 11 Verben,
+  `koerper-core.js:6163`), Profi-Zahlen im Brief (Knie-Spitze im Schwung 60° / 90–110° / ≥ 120°, Vorfuß im Sprint, Duty 0,6 → 0,25), Bildpaar in
+  Scratch `nerv/blick2/`. MEIN AUGE auf 5ce568cb (Scratch `nerv/blick/`): Gehen rollt über die Ferse (gut), die Arme hängen; der Sprint ist ein Spagat
+  mit zwei fast gestreckten Beinen, aufrechtem Rumpf und Fersen-Aufsatz — auf main genauso, das ist der Auftrag der Welle. · `mensch-nah` (Baum
+  `AnazhRealm-nah`, lokal 21f0513b auf 08aa22eb auf bb7c53c9, NICHT gepusht): Haut durch ihr eigenes Tuch 576 (main) → 0 (08aa22eb, aber mit hellem
+  Rand an Kragen und beiden Ärmel-Säumen — mein Auge 06:55: Rückschritt im Bild) → 32 (21f0513b: `__hautMaske` lässt hinter jeder offenen Tuch-Kante ein
+  Band Haut stehen, Breite √3 · (Spalt + 1,5 · luftM); die Kragen-Hebung ist gestrichen; mein Auge 07:13: kein heller Rand mehr bei 1,5 m). REST-TÄTER
+  mit Zeile: `foundry-core.js:6744` (`__hautUnterTuch` misst die Höhe über der Tangenten-Ebene einer Haut-Ecke, die 3,2 cm seitlich liegt → 16,5 mm
+  Scheinweg durch die Schulter-Naht, 2 Ecken × 16 Posen). AUFTRAG 07:14 (derselbe Arbeiter, 122k Kontext): eine Tuch-Ecke regiert nur die Haut, in
+  deren Stern sie fällt; Zeitkasten 30 min; danach in JEDEM Fall Goldens, Bildpaar im selben Licht (frontal + Profil), Merge des Klassen-Schnitts,
+  `cloud-post/mensch-nah.md`, EIN Push „Vorprüfung mensch-nah 2 … [ci voll]“. Die Station (`pm-mensch-nah`, zählt heute Haut unter FREMDEM Tuch) buche
+  ich nach der Landung aus Scratch `mensch-nah/station-eigenes-tuch.diff` (alte Akten der Sprosse im selben Commit weg). GESICHT (`leib.gesicht#1`
+  7 von 10) = nächste Welle: drei Täter benannt (`haaransatz`-Spanne `koerper-core.js` ~5173 gegen `KOPF_SOLL` ~1366; Lippen- und Augenhöhlen-Ton gegen
+  `KOPF_TON` ~1427), kein Schnitt. Verboten lokal: `npm run check`, voller Playtest, Ollama; GPU ≤ 180 s je Lauf, nie zwei zugleich.
 - RUNDE 15 am Kopf main 9d4319c0 seit 05:53 (Sprung von 447eaea6, koordination 3043a44d; Runde 14 stand bei gtx 10/241, radeon 15/58). K1 = die Ansprüche
   bis z705. 06:08: `gtx laeuft 0/241`, `radeon laeuft`. Die GTX braucht ~9 min je Station — die Listen beginnen mit den jüngsten Ansprüchen.
 - CI-REIHE = der Takt der Landung (20 gehostete Jobs, eine Batterie = 22; NICHT FIFO, keine Vorfahrt — Register-Nachtrag 06:10). Der Vorfahrt-Wächter läuft
