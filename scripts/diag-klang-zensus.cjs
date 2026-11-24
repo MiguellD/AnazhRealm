@@ -25,7 +25,8 @@
 //  (V) DER WEG ZUM OHR (klang-leib): Laufzeit über den Weg d/c(T), Luft nach ISO 9613-1, kein Panner ohne Kopf.
 //  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
 //  (Dn) DER DONNER AUS DEM BLITZ (klang-leib): der Einsatz am Abgriff gegen d/c(T) vom nächsten Punkt des Kanals, ±2 %.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S22 unten), Stubs restauriert.
+//  (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib): der Anteil des Sturms im Feld am Ort, exakt im Kern, fern wortfrei.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -1673,6 +1674,84 @@ async function donnerSeite(mut) {
     return { rot, je };
 }
 
+// (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib, `blitzAnteil` über `_wetterFeldAm`, erleben.kopplung.ein-ereignis#2): der
+// Kern — je Zeile der EINEN Tafel WEATHER_FIELD der Anteil 1 (Sturm) oder 0, je Mischung des Sturms mit jeder Zeile (¼, ½, ¾)
+// ihr Gewicht, im Lee 0,4 das Gewicht × 0,6, je ±1e-9 — und die Welt über den Leser des Donners (`_blitzAnteilAm`): am
+// Spieler unter dem Sturm-Wort 1, unter Sonne 0; 12 km fern in acht Richtungen derselbe Anteil unter beiden Worten (die Front
+// am Ort), im Lee des Eingriffs unter dem Sturm nie mehr als unter der Sonne. Der Täter: S23 das Wort gilt überall (der Leser
+// fragt das Feld des Spielers statt des Felds am Ort — der Stand von klang-leib vor wetter-am-ort).
+async function blitzSeite(mut) {
+    const [K, F, st, rot, je] = [__klangCore, AnazhRealm.WEATHER_FIELD, r.state, [], { kern: 0, welt: [], lee: 0 }];
+    const eigen = Object.hasOwn(r, "_wetterFeldAm");
+    const feld = r._wetterFeldAm;
+    if (mut === "wort-ueberall")
+        r._wetterFeldAm = function () {
+            return Object.assign({ lee: 0 }, this._weatherFieldFor());
+        };
+    const alt = { weather: st.weather, wetterWort: st.wetterWort, weatherTransition: st.weatherTransition };
+    const wort = (w) => Object.assign(st, { weather: w, wetterWort: w, weatherTransition: null });
+    try {
+        const misch = (a, b, t) => Object.fromEntries(Object.keys(a).map((c) => [c, a[c] * (1 - t) + b[c] * t]));
+        for (const w of Object.keys(F)) {
+            const a = K.blitzAnteil(F[w], F, "stormy");
+            const soll = w === "stormy" ? 1 : 0;
+            je.kern++;
+            if (!(Math.abs(a - soll) <= 1e-9))
+                rot.push(
+                    `Db Zeile ${w}: Anteil ${a}, Soll ${soll} (klang-core blitzAnteil, der duale Vektor der Tafel)`
+                );
+            if (w === "stormy") continue;
+            for (const t of [0.25, 0.5, 0.75]) {
+                const f = misch(F[w], F.stormy, t);
+                const b = K.blitzAnteil(f, F, "stormy");
+                const c = K.blitzAnteil(Object.assign({}, f, { rain: f.rain * 0.6, lee: 0.4 }), F, "stormy");
+                je.kern += 2;
+                if (!(Math.abs(b - t) <= 1e-9))
+                    rot.push(`Db ${w}↔stormy ${t}: Anteil ${b}, Soll ${t} (klang-core blitzAnteil, die Mischung)`);
+                if (!(Math.abs(c - 0.6 * t) <= 1e-9))
+                    rot.push(
+                        `Db ${w}↔stormy ${t} im Lee 0,4: Anteil ${c}, Soll ${0.6 * t} (klang-core blitzAnteil, das Lee nimmt den Sturm mit dem Regen)`
+                    );
+            }
+        }
+        const pm = st.playerMesh;
+        const [px, pz] = [pm.position.x, pm.position.z];
+        wort("stormy");
+        const hierS = r._blitzAnteilAm(px, pz);
+        wort("sunny");
+        const hierK = r._blitzAnteilAm(px, pz);
+        je.hier = [+hierS.toFixed(4), +hierK.toFixed(4)];
+        if (!(Math.abs(hierS - 1) <= 1e-6 && hierK <= 1e-6))
+            rot.push(
+                `Db am Spieler: Anteil unter dem Sturm-Wort ${hierS}, unter Sonne ${hierK} (stamm/klang _blitzAnteilAm: am Spieler gilt sein Wort)`
+            );
+        const lee = (x, z) => feld.call(r, x, z, st.spielZeit, undefined, false).lee;
+        for (let k = 0; k < 8; k++) {
+            const [x, z] = [px + 12000 * Math.cos((k * Math.PI) / 4), pz + 12000 * Math.sin((k * Math.PI) / 4)];
+            wort("stormy");
+            const [s, ls] = [r._blitzAnteilAm(x, z), lee(x, z)];
+            wort("sunny");
+            const [k0, lk] = [r._blitzAnteilAm(x, z), lee(x, z)];
+            je.welt.push([k * 45, +s.toFixed(4), +k0.toFixed(4)]);
+            if (ls !== 0 || lk !== 0) {
+                je.lee++;
+                if (!(s <= k0 + 1e-9))
+                    rot.push(
+                        `Db 12 km ${k * 45}° im Lee: Anteil unter dem Sturm-Wort ${s.toFixed(3)} über dem unter Sonne ${k0.toFixed(3)} (stamm/klang _blitzAnteilAm: das Lee trocknet den Sturm)`
+                    );
+            } else if (!(Math.abs(s - k0) <= 1e-9))
+                rot.push(
+                    `Db 12 km ${k * 45}°: Anteil unter dem Sturm-Wort ${s.toFixed(3)}, unter Sonne ${k0.toFixed(3)} — das Wort gilt fern (stamm/klang _blitzAnteilAm: die Front am Ort, nie das Wort überall)`
+                );
+        }
+    } finally {
+        if (eigen) r._wetterFeldAm = feld;
+        else delete r._wetterFeldAm;
+        Object.assign(st, alt);
+    }
+    return { rot, je };
+}
+
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
 // gehalten bis zum Ereignis) an den Bach der Mess-Wiese und zurück, derweil spricht er das Wetter (Sturm, dann bewölkt). Je
 // 0,1 s das Ohr — RMS am Gain der Stimmen fluss + ufer und regen (ein Analyser, die Stimme an ihrem Puffer erkannt) — und das
@@ -1926,6 +2005,12 @@ async function zensus(page, browser, ergebnis) {
     const dn = (ergebnis.donner = await page.evaluate(donnerSeite, false));
     rot.push(...dn.rot);
     console.log(`── (Dn) DER DONNER AUS DEM BLITZ: ${dn.je.length - dn.rot.length}/${dn.je.length} Einsätze ±2 % zu d/c(T) · Verhältnis ${Math.min(...dn.je)}…${Math.max(...dn.je)}`);
+    // (Db) der Blitz folgt dem Feld am Ort: der Anteil des Sturms im Kern und über den Leser des Donners in der Welt
+    const db = (ergebnis.blitz = await page.evaluate(blitzSeite, false));
+    rot.push(...db.rot);
+    console.log(
+        `── (Db) DER BLITZ FOLGT DEM FELD AM ORT: Kern ${db.je.kern} Anteile exakt · am Spieler Sturm ${db.je.hier[0]} / Sonne ${db.je.hier[1]} · 12 km je 45° (Sturm-Wort/Sonne) ${db.je.welt.map((w) => `${w[0]}° ${w[1]}/${w[2]}`).join(" · ")} · im Lee ${db.je.lee} von 8`
+    );
     // (St) die Stimme aus dem Leib: Grundton und Formanten am Abgriff gegen Peterson & Barney 1952
     const sm = (ergebnis.stimme = await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: false }));
     rot.push(...sm.rot);
@@ -2096,6 +2181,7 @@ async function zensus(page, browser, ergebnis) {
             nennt((await page.evaluate(wegSeite, mut)).rot, re, was);
         // S22: der Donner startet sofort — der Einsatz ohne die Laufzeit über den Weg
         nennt((await page.evaluate(donnerSeite, "sofort")).rot, /^Dn /, "S22: der Donner ohne Laufzeit");
+        nennt((await page.evaluate(blitzSeite, "wort-ueberall")).rot, /^Db 12 km /, "S23: das Wort gilt überall");
         // S21: der Mann ohne Pubertät (Rachen und Kehle wie die Frau) — sein Grundton fällt beim Namen
         nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
@@ -2104,7 +2190,7 @@ async function zensus(page, browser, ergebnis) {
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S22 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S23 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

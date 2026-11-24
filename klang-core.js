@@ -1659,10 +1659,10 @@
         return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
     }
     // ═══════════════════════════════════════════════════════════════════════
-    //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Wo das Wort am
-    //  Ort ein Sturm ist (der Wirt fragt die Front, `_wetterAmOrt` — derselbe Leser, der dem Spieler sein Wetter gibt; steht
-    //  das Wort des Spielers, gilt es fuer die Welt), schlaegt der Blitz als Poisson-Folge: `blitzJeKm2Min` auf jedem
-    //  Quadratkilometer der Hoerweite (`hoerweiteM`: der Donner traegt etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
+    //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Der Blitz
+    //  schlaegt als Poisson-Folge mit der Dichte `blitzJeKm2Min` × dem Anteil des Sturms im Wetter-Feld am Ort (`blitzAnteil`:
+    //  der Wirt fragt das EINE Feld, phyto-core `wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner
+    //  Region) auf der Scheibe der Hoerweite (`hoerweiteM`: der Donner traegt etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
     //  Boden zur Ladung der Wolke (`hoeheM`), gewunden (je `segmentM` ein Knick um `knickGrad`), mit `aeste` Seitenarmen.
     //  Jeder Punkt des Kanals strahlt eine N-Welle; ihre Dauer folgt dem Relaxations-Radius R0 = √(E_l / (π·p0)) (Few 1969:
     //  die Energie je Laenge E_l setzt die Skala, f_m = fFaktor·c / R0), ihr Gewicht 1/r. Die Ankunft je Punkt ist r / c(T):
@@ -1683,6 +1683,66 @@
         // seinen Scheitel (`scheitelDb`, Spitze ueber RMS) und der Pegel deckelt dort, wo die Spitze −1 dBFS erreichte
         pegel: { refDb: -14, dRef: 500, dMin: 150, spitzeDb: -1 }
     };
+    // DER ANTEIL DES STURMS AM ORT (klang-leib, die Dichte der Blitze = DONNER.blitzJeKm2Min × dieser Anteil): das Wetter-Feld am
+    // Ort (der Wirt fragt phyto-core `wetterFeldAm` ohne Relief: die Front, das Wort des Spielers als Eingriff in seiner Region)
+    // ist eine affine Mischung der Zeilen der Wetter-Tafel — die Front mischt sie stufig, der Eingriff und sein Übergang linear.
+    // Der Anteil EINER Zeile ist darum EIN lineares Mass über die Kanäle: der duale Vektor L der Tafel (L · Zeile = 1 für die
+    // Sturm-Zeile, 0 für jede andere; die kleinste Lösung L = Rᵀ (R Rᵀ)⁻¹ e, einmal je Tafel). Nur das Lee ist nicht affin: dort
+    // nimmt der Eingriff den Regen um (1 − lee) (`feld.lee`) — und mit ihm den Sturm: der Anteil ist (1 − lee) · L · (Kanäle
+    // ohne Regen) + L_regen · Regen, genau der Anteil der ungetrockneten Mischung × (1 − lee). feld → [0, 1]; fail-closed.
+    var _blitzDual = { zeilen: null, sturm: null, L: null, kanaele: null };
+    function blitzAnteil(feld, zeilen, sturm) {
+        var M = _blitzDual, i, j, k;
+        if (M.zeilen !== zeilen || M.sturm !== sturm) {
+            var worte = Object.keys(zeilen || {});
+            if (!zeilen || !zeilen[sturm]) throw new Error("blitzAnteil: die Tafel trägt die Sturm-Zeile „" + sturm + "“ nicht");
+            var kan = Object.keys(zeilen[sturm]);
+            if (kan.indexOf("rain") < 0) throw new Error("blitzAnteil: die Sturm-Zeile trägt keinen Regen (rain)");
+            var R = worte.map(function (w) {
+                return kan.map(function (c) {
+                    if (!isFinite(zeilen[w][c])) throw new Error("blitzAnteil: die Zeile " + w + " trägt " + c + " nicht");
+                    return zeilen[w][c];
+                });
+            });
+            var m = R.length, G = [], e = [];
+            for (i = 0; i < m; i++) {
+                G.push([]);
+                for (j = 0; j < m; j++) {
+                    var s = 0;
+                    for (k = 0; k < kan.length; k++) s += R[i][k] * R[j][k];
+                    G[i].push(s);
+                }
+                e.push(worte[i] === sturm ? 1 : 0);
+            }
+            for (var c0 = 0; c0 < m; c0++) {
+                var p = c0;
+                for (i = c0 + 1; i < m; i++) if (Math.abs(G[i][c0]) > Math.abs(G[p][c0])) p = i;
+                var tG = G[c0]; G[c0] = G[p]; G[p] = tG;
+                var te = e[c0]; e[c0] = e[p]; e[p] = te;
+                if (!(Math.abs(G[c0][c0]) > 1e-12)) throw new Error("blitzAnteil: die Zeilen der Tafel sind nicht unabhängig — der Sturm hat keinen eigenen Anteil");
+                for (i = 0; i < m; i++)
+                    if (i !== c0) {
+                        var f = G[i][c0] / G[c0][c0];
+                        for (k = c0; k < m; k++) G[i][k] -= f * G[c0][k];
+                        e[i] -= f * e[c0];
+                    }
+            }
+            var y = e.map(function (v, q) { return v / G[q][q]; });
+            var L = kan.map(function (_, q) {
+                var s = 0;
+                for (i = 0; i < m; i++) s += y[i] * R[i][q];
+                return s;
+            });
+            M = _blitzDual = { zeilen: zeilen, sturm: sturm, L: L, kanaele: kan };
+        }
+        var lee = feld && isFinite(feld.lee) ? feld.lee : 0, a = 0;
+        for (k = 0; k < M.kanaele.length; k++) {
+            var v = feld ? feld[M.kanaele[k]] : NaN;
+            if (!isFinite(v)) throw new Error("blitzAnteil: das Feld trägt " + M.kanaele[k] + " nicht");
+            a += M.kanaele[k] === "rain" ? M.L[k] * v : (1 - lee) * M.L[k] * v;
+        }
+        return a < 0 ? 0 : a > 1 ? 1 : a;
+    }
     // DER DONNER EINES BLITZES: ruf = { blitz, d (m bis zum Fusspunkt), saat, temperatur } → { sr, daten, dNah, f0, sek }
     function donnerPuffer(ruf) {
         var D = DONNER, r = ruf || {}, rnd = umweltRng((r.saat >>> 0) || 13), c = schallC(typeof r.temperatur === "number" && isFinite(r.temperatur) ? r.temperatur : UMWELT.luft.T);
@@ -2316,6 +2376,7 @@
         stimmForm: stimmForm,
         DONNER: DONNER,
         donnerPuffer: donnerPuffer,
+        blitzAnteil: blitzAnteil,
         roehre: roehre,
         stimmLeib: stimmLeib,
         stimmFormanten: stimmFormanten,
