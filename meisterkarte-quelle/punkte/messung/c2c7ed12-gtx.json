@@ -1,0 +1,287 @@
+{
+ "sha": "c2c7ed123ecff97de4c9f091e644bc30d5c9b365",
+ "geraet": "gtx",
+ "zeit": "2026-11-24T06:53:28.557Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.planet.kosmos.sternhimmel#1": {
+   "gruen": true,
+   "zahl": "✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 5, im Bild 5 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 167 Median 209 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 5, im Bild 5 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 133 Median 167 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 115 Median 148 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 75 Median 110 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 167↔170 150↔143 136↔124 86↔86; roh 106↔107 77↔76 93↔87 44↔35) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.18,\"Y\":0.0123,\"X\":0.0069,\"rb\":0.00 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 9.74,
+   "gpu": "nvidia/pascal",
+   "konsum": "k52178201ac0b",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k8f8d8cfcc5c2",
+   "s": 583.4,
+   "fremd": {
+    "s": 588.6,
+    "takte": 265,
+    "fremdS": 423.89,
+    "kerne": 0.72,
+    "fensterKerne": 1.89,
+    "namen": [
+     [
+      "node.exe punkte/punkte.cjs selbsttest --ohne 3c",
+      112.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      46.88
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c2c7ed12 x listen/kandidat-gtx-c2c7ed12.txt",
+      27.83
+     ]
+    ],
+    "dienerS": 237.84,
+    "diener": [
+     [
+      "System",
+      113.34
+     ],
+     [
+      "dwm.exe",
+      71.38
+     ]
+    ],
+    "geraetS": 262.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      161.38
+     ],
+     [
+      "svchost.exe",
+      87.11
+     ],
+     [
+      "SearchIndexer.exe",
+      7.3
+     ]
+    ],
+    "eigenS": 1135.67,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.372,
+     "nach": 0.79,
+     "station": 2.676
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 118.6,
+     "alle": 234.3,
+     "cpuEin": 78,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.85,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.33,
+       4.67,
+       3.52,
+       3.49,
+       2.77,
+       2.3
+      ]
+     },
+     "spanne": [
+      1795503210567,
+      1795503211054
+     ]
+    },
+    "nach": {
+     "ein": 130.9,
+     "alle": 317.6,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.68,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.89,
+       1.91,
+       1.57,
+       1.57,
+       1.88,
+       1.6
+      ]
+     },
+     "spanne": [
+      1795503795292,
+      1795503795908
+     ]
+    },
+    "ruhe": {
+     "ein": 89.9,
+     "alle": 229.7,
+     "n": 1190,
+     "von": "2026-11-18"
+    },
+    "f": 1.456,
+    "fEin": 1.456,
+    "fAlle": 1.383,
+    "verdraengt": 1.267,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-24T06:53:28.557Z",
+   "abdruck": "f972f2980d44",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k52178201ac0b": "dVTbjpswEP2XPO7W6yRAMJb2wQmREqmtdj9hbMbAhkBkm6VN1X+vSCAJsJ0nBOfM5cxh/sxOoA6Q4suHrcoZnz3Nvs0sfCKxaD7RvHzYGZ9FarFEj4trUCHEpoUpk5+cpUUuKcgSsiOS2jjMixd1oYFEP2GcNluRvlGq6ZnGjbjFRry+jtMUEpOKONB4SxKwRAd8DKxtChIJ1PpSuAM/jWASymTYU7QKQgz4/rcQ22n9JAd0pMhL22dcJGGk55z20fyYcAw05AyYFWg6ErLFwpcdia3bYVsBRkRd1NYOijEvCZaMUxqNsSnaXGWOnEwlsezgMlqGC+DrZjJHeqqJfuwIpAQmxypmgGWKZtDD3FN6teD0FxsnPcARDZASsl7LuRcu5V0bSulu2ktxafxSovzPmqzKcnMcDqd9XM49/n2a0GaQoCGHyrobmvkAyDqHxlS8CyHe/HjMvLfS8wCAPayXMip2k8ltpV0DBkl6qvsV+xiEARdiPwE7OB47VKA931Nj2a1rbfnYRhB6mq04pc/x1WWToa8mJmfMi56kte9HAd+s/TH408CRgExNrnW/KxkoHX1lrQYLR2RVuV4SyVBjK0n5uNmflz93e/99RdxUartJ38UwfgrxhQsuVSrjbhPL1Vz7XF+mVRN0bhxpQGU9fKklQsS/gJ7RFJjiQE4Zsqg1ZqMeuvX7h+fHseh5su1zjq3Qpa1tv2wFvgyuLukO2H54PBo0BwnloSOEiygKAx6LOKXP291QoPj9jcW3RH3QtNV2l4nh+0bsxbotdEJFNRiJ1EFKDOrBxW6/nkyl8/bi0Qxqm0Hh7pC//wA=",
+  "k8f8d8cfcc5c2": "jVXBjpswEP2XHNt6HQIEY2kPzhI1OXQ3K1XqeQxjYEMgsiF0U/XfK9g4CbCHzglZb2bevHk2f2ZHiPeQ4sObqcoZn32ZfZsZOCExqE+oH97MjM/C2Fmgy8VHUCHE9w4W6/xYG1rkkoIsITsgaXSNefEQ92kg0UsYp+1apDtKFT3TqBXXeBKPj+MyhcSkIjUovBbxWaJ8PgY2JgWJBBrVN76A/bnrSMVpHywSLxG9RvtDiJ2nvB2LRsUklMmQebj0A/T5thViPWWZ5IA1KfLS2L5OEoRqzu96TXI0tOQMmBWoL0nIHMeTluyqk6STaZSoisaYQTPmJv6CcUrDMTZFk8dZTY66klhe4DJcBA7wVTuZIz02RN0zAimBybHWGWCZoh5wmLuxWjqc/mbjons4oAZSQma1nLvBQt60oZRuplyKnnjfwhJPnMBfOIPEbqkfAouttRE9dcebK8KeR+nNauJ10tDEWa4PQ6mUh4u5O57fZJCgJvvK1Fck8wCQXW5ERMWr6Mw1Npa5DWXzAIDdGYUyKjYTDU2l6hY0kvTYWLN46Ac+F+nEWaaGw8H6X7meG08GqDuD39PwA1exJaf060XOiTwf14GcMS9sklKeF/r8aeWNwScNBwIy1blSduvSj1X4mUlbLGoiq6q2kkiGCjl1aXm/6OdWrFKxvq1wF71X7Nf73hXDeBbrzzpUur5OK5dz5XHVTxqPybe5rkkLcWbhCyURwrGIZ9QFpjiQUQYs7Kzdxjc6kWc/vg6Me55s+ZxjJ3BpGmOXHIMnfX5xeB/b4fPTot5LKPeXhMAJw84VndlfxOZOlY3Y/pzvWvF/sRavXZMjxvSoK5V3LyLNoDEZFPXt1/D3Hw=="
+ },
+ "ungemessen": {
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,383; vor 118,6/234,3 ms, nach 130,9/317,6 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: node.exe punkte/punkte.cjs selbsttest --ohne 3c 112,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 46,9 CPU-s · sh.exe n0611/kandidat.sh gtx-c2c7ed12 x listen/kandidat-gtx-c2c7ed12.txt 27,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 161,4 CPU-s · svchost.exe 87,1 CPU-s · SearchIndexer.exe 7,3 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.370 EV (Uhr 0.226→0.228, 224 Uhren) · ❌ Sterne Tag ≥10° max 1 · ≥−3° max 1 · Nacht ≤−18° min 167 Median 209 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.96 (n 53) · wiese: ❌ Sprung 0.173 EV (Uhr 0.214→0.216, 228 Uhren) )",
+   "exit": 1,
+   "minuten": 9.74,
+   "grund": "Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,383; vor 118,6/234,3 ms, nach 130,9/317,6 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: node.exe punkte/punkte.cjs selbsttest --ohne 3c 112,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 46,9 CPU-s · sh.exe n0611/kandidat.sh gtx-c2c7ed12 x listen/kandidat-gtx-c2c7ed12.txt 27,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 161,4 CPU-s · svchost.exe 87,1 CPU-s · SearchIndexer.exe 7,3 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.370 EV (Uhr 0.226→0.228, 224 Uhren) · ❌ Sterne Tag ≥10° max 1 · ≥−3° max 1 · Nacht ≤−18° min 167 Median 209 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.96 (n 53) · wiese: ❌ Sprung 0.173 EV (Uhr 0.214→0.216, 228 Uhren) )",
+   "gpu": "nvidia/pascal",
+   "konsum": "k52178201ac0b",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k8f8d8cfcc5c2",
+   "s": 583.4,
+   "fremd": {
+    "s": 588.6,
+    "takte": 265,
+    "fremdS": 423.89,
+    "kerne": 0.72,
+    "fensterKerne": 1.89,
+    "namen": [
+     [
+      "node.exe punkte/punkte.cjs selbsttest --ohne 3c",
+      112.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      46.88
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c2c7ed12 x listen/kandidat-gtx-c2c7ed12.txt",
+      27.83
+     ]
+    ],
+    "dienerS": 237.84,
+    "diener": [
+     [
+      "System",
+      113.34
+     ],
+     [
+      "dwm.exe",
+      71.38
+     ]
+    ],
+    "geraetS": 262.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      161.38
+     ],
+     [
+      "svchost.exe",
+      87.11
+     ],
+     [
+      "SearchIndexer.exe",
+      7.3
+     ]
+    ],
+    "eigenS": 1135.67,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.372,
+     "nach": 0.79,
+     "station": 2.676
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 118.6,
+     "alle": 234.3,
+     "cpuEin": 78,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.85,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.33,
+       4.67,
+       3.52,
+       3.49,
+       2.77,
+       2.3
+      ]
+     },
+     "spanne": [
+      1795503210567,
+      1795503211054
+     ]
+    },
+    "nach": {
+     "ein": 130.9,
+     "alle": 317.6,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.68,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.89,
+       1.91,
+       1.57,
+       1.57,
+       1.88,
+       1.6
+      ]
+     },
+     "spanne": [
+      1795503795292,
+      1795503795908
+     ]
+    },
+    "ruhe": {
+     "ein": 89.9,
+     "alle": 229.7,
+     "n": 1190,
+     "von": "2026-11-18"
+    },
+    "f": 1.456,
+    "fEin": 1.456,
+    "fAlle": 1.383,
+    "verdraengt": 1.267,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:53:28.557Z",
+   "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
