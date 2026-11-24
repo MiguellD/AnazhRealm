@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-24T00:21:50.490Z",
+ "zeit": "2026-11-24T00:22:02.436Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -3418,17 +3418,66 @@
   },
   "karte2.leben.kopplung.evolution-planet#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-23T23:57:52.424Z",
+   "zahl": "Deckel 247 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 57.5 s)",
+   "exit": 1,
+   "minuten": 4.12,
+   "grund": "Deckel 247 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 57.5 s)",
+   "s": 247.2,
+   "fremd": {
+    "s": 250.3,
+    "takte": 111,
+    "fremdS": 236.47,
+    "kerne": 0.945,
+    "fensterKerne": 1.437,
+    "namen": [
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      34.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      22.98
+     ]
+    ],
+    "dienerS": 108.89,
+    "diener": [
+     [
+      "System",
+      41.13
+     ],
+     [
+      "dwm.exe",
+      40.16
+     ]
+    ],
+    "geraetS": 179.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      63.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.34
+     ]
+    ],
+    "eigenS": 497.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T00:22:02.436Z",
    "abdruck": "8b1c999632a9",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
