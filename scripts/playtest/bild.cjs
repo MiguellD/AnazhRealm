@@ -86,17 +86,20 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r._weltUhrNimm(st.spielZeit + 45);
         r.tickDayNight(1e6 + 1);
         out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
-        // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
+        // DER BODEN DES MESSERS (w28-nacht-licht, licht-stetig): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet
+        // wie er selbst; der Mond im Zenit trägt ihn ganz (`mond` 1), der halbe Mond halb, ohne Mond (am Tag) steht keiner
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
-        const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
-        out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
+        const kb = (E, mond) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG, mond);
+        out.nachtKnoten = [EK, kb(EK, 1), kb(EK / 4, 1), kb(EK / 2, 0.5), kb(EK / 8, 0.5), kb(EK / 4, 0), kb(EK / 8, 0)];
         // DIE BILANZ DER NACHT (w28-nacht-bilanz): der Himmel ohne Mond (`_atmoSternenLicht`, E = π · Leuchtdichte) gegen den Vollmond
         // im Zenit — tiefe Nacht (Sonne −40°), das Ende der bürgerlichen Dämmerung (−6°), der Tag (+5°)
         const Mo = AnazhRealm.MOONLIGHT;
         const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
-        out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
-        out.mondLx = __weltLicht.MOND_LX;
+        const mE = Mo.intensity * lum([Mo.r, Mo.g, Mo.b]);
+        out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / mE).toFixed(4));
+        // … und STETIG in der Sonnenhöhe (licht-stetig): der größte Schritt je 0,1° von −30° bis 10° gegen den Vollmond
+        out.nachtStetig = Math.max(...Array.from({ length: 400 }, (_, i) => Math.abs(hE(-30 + (i + 1) / 10) - hE(-30 + i / 10)) / mE));
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -181,17 +184,20 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             S.join(" ")
         );
         const NK = wave6g3Results.nachtKnoten || [];
-        check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
-        const NB = wave6g3Results.nachtBilanz || [];
-        // die blaue Stunde in der EINEN Skala (licht-eine-skala): die REF (USNO Circular 171) trägt bei −6° 3,01 lx, der Vollmond
-        // `MOND_LX` — der Himmel ohne Mond trägt dort REF ÷ Mond (bis hier: so viel wie der Mond, das Gesetz der gestauchten Nacht)
-        const REF6 = require("../../spec/farbe/tag-ref.json").zeilen.find((z) => z[0] === -6)[1];
-        const blau = REF6 / (wave6g3Results.mondLx || NaN);
         check(
-            "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
-                "Stunde (−6°) die REF ÷ Vollmond ± 5 %, der Tag unter 0,1 % (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
-            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] / blau - 1) < 0.05 && NB[2] >= 0 && NB[2] < 0.001,
-            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} (Soll ${blau.toFixed(2)}) · Tag ${NB[2]}`
+            "der Boden des Messers steht mit dem Mond (Täter: `__weltLicht.belichtung`)",
+            NK[0] > 0 && NK[1] === NK[2] && NK[3] === NK[4] && NK[5] !== NK[6],
+            NK.join(" ")
+        );
+        const NB = wave6g3Results.nachtBilanz || [];
+        // die blaue Stunde tragen die Tafeln (licht-stetig): der Himmel ohne Mond trägt bei −6° kein zweites Dämmerlicht — bis hier
+        // 3 lx (die REF bei −6°), linear bis −18° auf 0: bei −12° 1,3 lx statt 0,008, vor −18° sprang das Bild bis 1,89 EV
+        check(
+            "w28-nacht-bilanz, licht-stetig: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht und bei −6° unter 1 % " +
+                "des Vollmonds, der Tag unter 0,1 %, stetig in der Sonnenhöhe (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als " +
+                "Füllung trug 65 %, das Dämmerlicht bei −6° 1 154 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && NB[1] >= 0 && NB[1] < 0.01 && NB[2] >= 0 && NB[2] < 0.001 && wave6g3Results.nachtStetig < 1e-3,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]} · Schritt je 0,1° ${wave6g3Results.nachtStetig}`
         );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);

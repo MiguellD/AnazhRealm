@@ -668,7 +668,13 @@ hauptLauf(async () => {
                 await __weltDa((w) => !!(w._foundry && w._foundry.ready && w._foundry.recipes));
                 const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0, gestellt: false }];
                 o.bauplan = Object.prototype.hasOwnProperty.call(st.blueprints || {}, "fahrzeug_suv");
+                // der Eintrag in der Gestalt des Registers (`_bewohnerMelden`: key, plan, ox, oz): ein Plan ohne Gassen und Häuser —
+                // der Wind des Wagens fragt seine Schluchten (`_gassenWind` → fachwerk `gassenNetz`) und findet keine
                 const S = {
+                    key: 0,
+                    plan: { roads: [], slots: [] },
+                    ox: pm.x,
+                    oz: pm.z,
                     raster: new Map(),
                     verkehr: { wagen: [], spurRaster: new Map(), zahl: AnazhRealm._verkehrZahl(1) },
                 }; // die Zahlen aus ihrer EINEN Quelle

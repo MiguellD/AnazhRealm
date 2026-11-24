@@ -22,7 +22,11 @@
 //  (N) UHR × WETTER × GANG an der Wiese (klang.K1 Staffel 2): nachts (Grillen, kein Vogel), im Regen, gehend und fahrend
 //      (im Sattel des GT) — Wetter und Uhr als Wort des Spielers, je Szene das Soll und der Weg in Bewegung.
 //  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S17 unten), Stubs restauriert.
+//  (V) DER WEG ZUM OHR (klang-leib): Laufzeit über den Weg d/c(T), Luft nach ISO 9613-1, kein Panner ohne Kopf.
+//  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
+//  (Dn) DER DONNER AUS DEM BLITZ (klang-leib): der Einsatz am Abgriff gegen d/c(T) vom nächsten Punkt des Kanals, ±2 %.
+//  (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib): der Anteil des Sturms im Feld am Ort, exakt im Kern, fern wortfrei.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -358,7 +362,7 @@ function werkzeug() {
     // (Ü) die Zeilen der Untertitel bisher · die Namen des Gesetzes ohne Satz in der Tafel
     W.zeilen = () => (st._untertitel ? st._untertitel.zeilen : 0);
     W.luecken = (K = __klangCore) =>
-        [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ]].flatMap(([a, t]) =>
+        [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ], ["laut", K.STIMME.laute]].flatMap(([a, t]) =>
             Object.keys(t).filter((n) => !AnazhRealm.UNTERTITEL[a][n]).map((n) => a + ":" + n)
         );
     // Die EREIGNIS-KLÄNGE der Welt, je einmal ausgelöst über ihre echten Wege: welche Quellen entstehen, wer baut sie,
@@ -1419,7 +1423,7 @@ async function raumSeite(dorf, mut) {
                     // der Pegel-Unterschied dort, wo der Kopf schattet: über f0 = c/(2πa) (ein Hochpass 2. Ordnung, RBJ, in
                     // f0) — darunter beugt sich der Schall um den Kopf, dort trägt die Laufzeit die Seite
                     const [hl, hr] = [kl, kr].map((c) => {
-                        const w = (2 * Math.PI * K.UMWELT.ohr.schallMs) / (2 * Math.PI * K.UMWELT.ohr.kopfRadiusM) / 48000;
+                        const w = (2 * Math.PI * K.schallC()) / (2 * Math.PI * K.UMWELT.ohr.kopfRadiusM) / 48000;
                         const [cw, al] = [Math.cos(w), Math.sin(w) / Math.SQRT2];
                         const [b0, b1, a0, a1, a2] = [(1 + cw) / 2, -(1 + cw), 1 + al, -2 * cw, 1 - al];
                         let [x1, x2, y1, y2, e] = [0, 0, 0, 0, 0];
@@ -1454,6 +1458,298 @@ async function raumSeite(dorf, mut) {
         pm.position.copy(p0);
     }
     return { rot, proben: zahl };
+}
+
+// (V) DER WEG ZUM OHR (klang-leib, das Raum-Gesetz `raumWeg`): je Ruf der Einsatz am Ohr gegen d / c(T) (Rw: ±0,5 ms oder
+// ±2 % an 3, 20, 50 m bei −10, 20, 35 °C), je Weg die Höhen gegen ISO 9613-1 (Rl: ein Sinus 0,5–4 kHz über 300, 1 000 und
+// 3 000 m, ±3 dB, wo die Norm ≤ 12 dB dämpft — die Leiter der Luft), kein StereoPanner im Graph aller Stimmen und im Nachhall
+// (Rp). Die Täter: S18 der Ruf startet sofort (die Laufzeit über den Weg fehlt), S19 die Leiter flach (kappeDb 0: die Höhen
+// reisen ungedämpft), S20 ein Panner im Weg.
+async function wegSeite(mut) {
+    const [K, P, B, rot, zahl] = [__klangCore, BaseAudioContext.prototype, AudioBufferSourceNode.prototype, [], []];
+    const [start, bq, mg] = [B.start, P.createBiquadFilter, P.createChannelMerger];
+    let panner = 0;
+    const sp = P.createStereoPanner;
+    P.createStereoPanner = function () {
+        panner++;
+        return sp.call(this);
+    };
+    if (mut === "weg")
+        B.start = function (when, ...rest) {
+            return start.call(this, 0, ...rest);
+        };
+    const kappe = K.SCHALLWEG.leiter.kappeDb;
+    if (mut === "luft") K.SCHALLWEG.leiter.kappeDb = 0; // die Luft ohne Daempfung: die Leiter steht flach
+    if (mut === "panner")
+        P.createChannelMerger = function (...a) {
+            this.createStereoPanner();
+            return mg.apply(this, a);
+        };
+    try {
+        for (const T of [-10, 20, 35])
+            for (const d of [3, 20, 50]) {
+                const ctx = new OfflineAudioContext(2, 48000 * 0.6, 48000);
+                const ruf = K.tierRuf(ctx, ctx.destination, { laengeM: 1, stimmung: "ruhe", d, pan: 0, saat: 7, temperatur: T });
+                const buf = await ctx.startRendering();
+                const A = buf.getChannelData(0);
+                let [peak, ein] = [0, -1];
+                for (const x of A) peak = Math.max(peak, Math.abs(x));
+                for (let i = 0; i < A.length && ein < 0; i++) if (Math.abs(A[i]) > 0.01 * peak) ein = i;
+                const soll = (d / K.schallC(T)) * 48000;
+                zahl.push(`${T} °C ${d} m Einsatz ${ein}/${soll.toFixed(0)}`);
+                // der Einsatz des Rufs selbst (die Hülle hebt ihn in 0,06 · 0,32 s): 1,6 ms nach seinem Start
+                if (!ruf || !(Math.abs(ein - soll - 77) <= Math.max(24, 0.02 * soll))) rot.push(`Rw tier ${d} m bei ${T} °C: Einsatz ${(ein / 48).toFixed(1)} ms, Soll d/c(T) ${(soll / 48).toFixed(1)} ms + 1,6 ms (klang-core raumWeg, die Laufzeit über den Weg)`);
+            }
+        for (const D of [300, 1000, 3000])
+            for (const f of [500, 1000, 2000, 4000]) {
+                const iso = K.luftAlpha(f, 20, 70) * D;
+                if (iso > 12) continue;
+                const db = [];
+                for (const d of [0, D]) {
+                    const ctx = new OfflineAudioContext(2, 48000 * 0.3, 48000);
+                    const o = ctx.createOscillator();
+                    o.frequency.value = f;
+                    const w = K.raumWeg(ctx, { d, pan: 0, temperatur: 20, feuchte: 70 }, 0);
+                    o.connect(w.eingang);
+                    w.ausgang.connect(ctx.destination);
+                    o.start(0);
+                    const c = (await ctx.startRendering()).getChannelData(0).subarray(4800);
+                    db.push(10 * Math.log10(c.reduce((v, x) => v + x * x, 0) / c.length + 1e-15));
+                }
+                const ist = db[0] - db[1];
+                zahl.push(`Luft ${f} Hz ${D} m ${ist.toFixed(1)}/${iso.toFixed(1)} dB`);
+                if (!(Math.abs(ist - iso) <= 3)) rot.push(`Rl ${f} Hz über ${D} m: ${ist.toFixed(1)} dB gedämpft, ISO 9613-1 ${iso.toFixed(1)} dB (klang-core luftLeiter, die Luft des Wegs)`);
+            }
+        const ctx = new OfflineAudioContext(2, 4800, 48000);
+        const mix = K.umweltMischung(K.UMWELT.orte.sturm);
+        for (const k of Object.keys(K.UMWELT.stimmen)) if (mix[k]) mix[k].db = Math.max(mix[k].db, K.UMWELT.hoerschwelleDb + 10);
+        K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0);
+        K.umweltRaum(ctx, ctx.createGain(), ctx.destination);
+        zahl.push(`Panner ${panner}`);
+        if (panner) rot.push(`Rp ${panner} StereoPanner im Graph und im Nachhall: ein Weg ohne Kopf und ohne Laufzeit (klang-core raumWeg)`);
+    } finally {
+        [B.start, P.createBiquadFilter, P.createChannelMerger, P.createStereoPanner] = [start, bq, mg, sp];
+        K.SCHALLWEG.leiter.kappeDb = kappe;
+    }
+    return { rot, proben: zahl };
+}
+
+// (St) DIE STIMME AUS DEM LEIB (klang-leib, das Stimm-Gesetz `stimmPuffer`, erleben.klang.stimme#1): je Sprecher-Gruppe der Tafel
+// von Peterson & Barney 1952 (die Mittel der 1 520 Messungen, CRAN phonTools `pb52` — 33 Männer, 28 Frauen, 15 Kinder; ihre
+// Leibmaße K.STIMME.bezug, K.STIMME.bezugFrau und ein Kind von zehn Jahren, 1,35 m) und je Vokal ein gehaltener Laut über den
+// EINEN Weg zum Ohr (`rufSpielen`, 1 m) gerendert; am Abgriff der Grundton (YIN über 92 ms) und F1–F3 im freien Ausklingen
+// nach dem letzten Puls (Kovarianz 14. Ordnung über 8 ms — die Pole, gleich welcher Grundton; die Autokorrelation sähe bei
+// hohem f0 nur die Harmonischen). Je Wert ±15 % zur Tafel (St); Mann und Frau sind die Eichung der Formen, das Kind die
+// Vorhersage des Gesetzes aus seinem Leib. Der Täter: S21 Rachen und Kehle des Manns ohne Pubertät (rachen 0, kehle 0).
+// prettier-ignore
+const PB_BAND = {"mann":{"i":[136,267,2294,2937],"I":[136,392,1993,2569],"E":[128,526,1854,2481],"ae":[125,664,1727,2420],"A":[124,718,1091,2442],"O":[127,568,836,2403],"U":[136,437,1023,2245],"u":[139,307,876,2239],"V":[129,631,1192,2377],"er":[133,489,1360,1709]},"frau":{"i":[231,310,2783,3312],"I":[232,441,2474,3063],"E":[220,608,2334,2999],"ae":[208,863,2049,2832],"A":[212,864,1229,2783],"O":[217,587,915,2736],"U":[234,469,1162,2685],"u":[235,378,961,2666],"V":[223,758,1409,2768],"er":[219,503,1641,1977]},"kind":{"i":[270,360,3178,3763],"I":[270,534,2744,3604],"E":[259,700,2616,3564],"ae":[248,1017,2334,3366],"A":[258,1030,1383,3188],"O":[259,694,1064,3263],"U":[273,560,1402,3332],"u":[278,432,1193,3250],"V":[263,855,1592,3328],"er":[264,569,1806,2194]}};
+const PB_LEIB = { kind: { hoeheM: 1.35, sex: 0.5, jahre: 10 } }; // Mann und Frau: K.STIMME.bezug, K.STIMME.bezugFrau
+async function stimmSeite(arg) {
+    const { band, leiber, mut } = arg;
+    const K = __klangCore, S = K.STIMME, rot = [], je = [], alt = { rachen: S.rachen, kehle: S.kehle };
+    if (mut === "pubertaet") [S.rachen, S.kehle] = [0, 0];
+    const sr = S.sr;
+    // die Kovarianz-Methode (Prony): das freie Ausklingen ist eine Summe gedämpfter Schwingungen an den Polen — exakt, gleich
+    // welcher Grundton (die Autokorrelation sieht bei hohem f0 nur die Harmonischen)
+    const kovarianz = (x, p) => {
+        const M = Array.from({ length: p }, () => new Float64Array(p + 1));
+        for (let i = 1; i <= p; i++)
+            for (let j = 0; j <= p; j++) {
+                let s = 0;
+                for (let n = p; n < x.length; n++) s += x[n - i] * x[n - j];
+                M[i - 1][j === 0 ? p : j - 1] = j === 0 ? -s : s;
+            }
+        for (let c = 0; c < p; c++) {
+            let m = c;
+            for (let r = c + 1; r < p; r++) if (Math.abs(M[r][c]) > Math.abs(M[m][c])) m = r;
+            [M[c], M[m]] = [M[m], M[c]];
+            for (let r = 0; r < p; r++)
+                if (r !== c) {
+                    const f = M[r][c] / M[c][c];
+                    for (let k = c; k <= p; k++) M[r][k] -= f * M[c][k];
+                }
+        }
+        return [1].concat(M.map((z, i) => z[p] / z[i]));
+    };
+    try {
+        for (const gruppe of Object.keys(band)) {
+            const leib = leiber[gruppe] || (gruppe === "frau" ? S.bezugFrau : S.bezug);
+            for (const v of Object.keys(band[gruppe])) {
+                const ctx = new OfflineAudioContext(2, sr * 0.9, sr);
+                const tex = K.stimmPuffer({ leib, laut: "halten", vokal: v, saat: 5 });
+                const ruf = K.rufSpielen(ctx, ctx.destination, { leib, d: 1, pan: 0, temperatur: 20 }, tex);
+                const A = (await ctx.startRendering()).getChannelData(0);
+                // der Grundton: YIN (de Cheveigné & Kawahara 2002) über 92 ms des gehaltenen Tons ab 0,2 s, die normierte Differenz
+                const i0 = Math.round(0.2 * sr), W = Math.round(0.092 * sr), dif = [1];
+                let summe = 0, tau = 0;
+                for (let L = 1; L <= Math.ceil(sr / 50); L++) {
+                    let s = 0;
+                    for (let i = 0; i < W; i++) s += (A[i0 + i] - A[i0 + i + L]) ** 2;
+                    summe += s;
+                    dif.push((s * L) / summe);
+                }
+                // die tiefste Senke, dann ihr kürzester Teiler, der ebenso tief sinkt (die Periode, nie ihr Vielfaches)
+                const L0 = Math.floor(sr / 600);
+                for (let L = L0; L < dif.length - 1; L++) if (!tau || dif[L] < dif[tau]) tau = L;
+                for (let k = 5; k >= 2; k--) {
+                    let c = Math.round(tau / k);
+                    for (let L = c - 2; L <= c + 2; L++) if (L >= L0 && dif[L] < dif[c]) c = L;
+                    if (c >= L0 && dif[c] <= dif[tau] + 0.03) {
+                        tau = c;
+                        break;
+                    }
+                }
+                const bestL = tau + (dif[tau - 1] - dif[tau + 1]) / (2 * (dif[tau - 1] - 2 * dif[tau] + dif[tau + 1]) || 1);
+                // die Formanten: das freie Ausklingen nach dem letzten Puls (die Silbe endet bei tex: 0,6 s, dazu der Weg),
+                // 8 ms, Kovarianz 14. Ordnung, die Wurzeln (Durand–Kerner): Winkel → Frequenz, Betrag → Bandbreite (< 400 Hz)
+                const t0 = Math.round((0.6 + ruf.verzug + 0.004) * sr), N = Math.round(0.008 * sr), x = new Float64Array(N);
+                let gross = 0;
+                for (let i = 0; i < N; i++) gross = Math.max(gross, Math.abs((x[i] = A[t0 + i])));
+                for (let i = 0; i < N; i++) x[i] /= gross || 1;
+                const a = kovarianz(x, 14), p = a.length - 1;
+                let z = Array.from({ length: p }, (_, k) => [Math.pow(0.9, k) * Math.cos(0.4 + 0.9 * k), Math.pow(0.9, k) * Math.sin(0.4 + 0.9 * k)].map((q) => q * 0.999));
+                const mul = (u, w) => [u[0] * w[0] - u[1] * w[1], u[0] * w[1] + u[1] * w[0]];
+                const div = (u, w) => { const d = w[0] * w[0] + w[1] * w[1]; return [(u[0] * w[0] + u[1] * w[1]) / d, (u[1] * w[0] - u[0] * w[1]) / d]; }; // prettier-ignore
+                for (let it = 0; it < 800; it++)
+                    z = z.map((zi, i) => {
+                        let f = [1, 0];
+                        for (let k = 1; k <= p; k++) f = [mul(f, zi)[0] + a[k], mul(f, zi)[1]];
+                        let q = [1, 0];
+                        z.forEach((zj, j) => j !== i && (q = mul(q, [zi[0] - zj[0], zi[1] - zj[1]])));
+                        const d = div(f, q);
+                        return [zi[0] - d[0], zi[1] - d[1]];
+                    });
+                const F = z
+                    .filter((w) => w[1] > 0)
+                    .map((w) => [(Math.atan2(w[1], w[0]) * sr) / (2 * Math.PI), (-Math.log(Math.hypot(w[0], w[1])) * sr) / Math.PI])
+                    .filter(([f, b]) => f > 150 && b < 400)
+                    .map(([f]) => f)
+                    .sort((u, w) => u - w);
+                const ist = [sr / bestL, F[0], F[1], F[2]], soll = band[gruppe][v];
+                const abw = ist.map((q, i) => (Number.isFinite(q) ? Math.abs(q / soll[i] - 1) : 1));
+                je.push({ gruppe, v, ist: ist.map((q) => Math.round(q)), soll, abw: abw.map((q) => +(100 * q).toFixed(1)) });
+                ["f0", "F1", "F2", "F3"].forEach((n, i) => {
+                    if (!(abw[i] <= 0.15)) rot.push(`St ${gruppe} /${v}/ ${n} ${Math.round(ist[i])} Hz, Peterson & Barney ${soll[i]} Hz (${(100 * abw[i]).toFixed(0)} %, klang-core STIMME: der Leib der Stimme)`);
+                });
+            }
+        }
+    } finally {
+        Object.assign(S, alt);
+    }
+    const alle = je.flatMap((z) => z.abw);
+    return { rot, je, mittelPct: +(alle.reduce((s, q) => s + q, 0) / alle.length).toFixed(2), maxPct: Math.max(...alle), innerhalbPct: +((100 * alle.filter((q) => q <= 15).length) / alle.length).toFixed(1) };
+}
+
+// (Dn) DER DONNER AUS DEM BLITZ (klang-leib, das Gesetz `donnerPuffer`, erleben.kopplung.ein-ereignis#2): je Blitz an 400,
+// 1 500, 5 000 und 12 000 m bei −10, 20 und 35 °C der Donner über den EINEN Weg zum Ohr (`rufSpielen`, der Blitz bei t0 = 0)
+// gerendert; am Abgriff der erste Laut gegen den Weg vom nächsten Punkt des Kanals, d / c(T): das Verhältnis ±2 % (Dn). Der
+// Täter: S22 der Donner startet sofort (der Einsatz ohne die Laufzeit über den Weg).
+async function donnerSeite(mut) {
+    const [K, B, rot, je] = [__klangCore, AudioBufferSourceNode.prototype, [], []];
+    const start = B.start;
+    if (mut === "sofort")
+        B.start = function (when, ...rest) {
+            return start.call(this, 0, ...rest);
+        };
+    try {
+        const sr = K.DONNER.sr;
+        for (const T of [-10, 20, 35])
+            for (const d of [400, 1500, 5000, 12000]) {
+                const ruf = { blitz: {}, d, pan: 0.3, saat: 9 + d, t0: 0, temperatur: T };
+                const tex = K.donnerPuffer(ruf);
+                const soll = tex.dNah / K.schallC(T);
+                const ctx = new OfflineAudioContext(2, Math.ceil(sr * (soll + tex.sek + 0.5)), sr);
+                const q = K.rufSpielen(ctx, ctx.destination, ruf, tex);
+                const A = (await ctx.startRendering()).getChannelData(0);
+                let ein = -1;
+                for (let i = 0; i < A.length && ein < 0; i++) if (Math.abs(A[i]) > 1e-9) ein = i;
+                const verh = ein / sr / soll;
+                je.push(+verh.toFixed(4));
+                if (!q || !(Math.abs(verh - 1) <= 0.02))
+                    rot.push(`Dn ${d} m bei ${T} °C: Einsatz ${(ein / sr).toFixed(3)} s, Soll d/c(T) ${soll.toFixed(3)} s vom nächsten Punkt des Kanals (${tex.dNah.toFixed(0)} m; klang-core donnerPuffer → rufSpielen, der Anschlag des Wegs)`);
+            }
+    } finally {
+        B.start = start;
+    }
+    return { rot, je };
+}
+
+// (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib, `blitzAnteil` über `_wetterFeldAm`, erleben.kopplung.ein-ereignis#2): der
+// Kern — je Zeile der EINEN Tafel WEATHER_FIELD der Anteil 1 (Sturm) oder 0, je Mischung des Sturms mit jeder Zeile (¼, ½, ¾)
+// ihr Gewicht, im Lee 0,4 das Gewicht × 0,6, je ±1e-9 — und die Welt über den Leser des Donners (`_blitzAnteilAm`): am
+// Spieler unter dem Sturm-Wort 1, unter Sonne 0; 12 km fern in acht Richtungen derselbe Anteil unter beiden Worten (die Front
+// am Ort), im Lee des Eingriffs unter dem Sturm nie mehr als unter der Sonne. Der Täter: S23 das Wort gilt überall (der Leser
+// fragt das Feld des Spielers statt des Felds am Ort — der Stand von klang-leib vor wetter-am-ort).
+async function blitzSeite(mut) {
+    const [K, F, st, rot, je] = [__klangCore, AnazhRealm.WEATHER_FIELD, r.state, [], { kern: 0, welt: [], lee: 0 }];
+    const eigen = Object.hasOwn(r, "_wetterFeldAm");
+    const feld = r._wetterFeldAm;
+    if (mut === "wort-ueberall")
+        r._wetterFeldAm = function () {
+            return Object.assign({ lee: 0 }, this._weatherFieldFor());
+        };
+    const alt = { weather: st.weather, wetterWort: st.wetterWort, weatherTransition: st.weatherTransition };
+    const wort = (w) => Object.assign(st, { weather: w, wetterWort: w, weatherTransition: null });
+    try {
+        const misch = (a, b, t) => Object.fromEntries(Object.keys(a).map((c) => [c, a[c] * (1 - t) + b[c] * t]));
+        for (const w of Object.keys(F)) {
+            const a = K.blitzAnteil(F[w], F, "stormy");
+            const soll = w === "stormy" ? 1 : 0;
+            je.kern++;
+            if (!(Math.abs(a - soll) <= 1e-9))
+                rot.push(
+                    `Db Zeile ${w}: Anteil ${a}, Soll ${soll} (klang-core blitzAnteil, der duale Vektor der Tafel)`
+                );
+            if (w === "stormy") continue;
+            for (const t of [0.25, 0.5, 0.75]) {
+                const f = misch(F[w], F.stormy, t);
+                const b = K.blitzAnteil(f, F, "stormy");
+                const c = K.blitzAnteil(Object.assign({}, f, { rain: f.rain * 0.6, lee: 0.4 }), F, "stormy");
+                je.kern += 2;
+                if (!(Math.abs(b - t) <= 1e-9))
+                    rot.push(`Db ${w}↔stormy ${t}: Anteil ${b}, Soll ${t} (klang-core blitzAnteil, die Mischung)`);
+                if (!(Math.abs(c - 0.6 * t) <= 1e-9))
+                    rot.push(
+                        `Db ${w}↔stormy ${t} im Lee 0,4: Anteil ${c}, Soll ${0.6 * t} (klang-core blitzAnteil, das Lee nimmt den Sturm mit dem Regen)`
+                    );
+            }
+        }
+        const pm = st.playerMesh;
+        const [px, pz] = [pm.position.x, pm.position.z];
+        wort("stormy");
+        const hierS = r._blitzAnteilAm(px, pz);
+        wort("sunny");
+        const hierK = r._blitzAnteilAm(px, pz);
+        je.hier = [+hierS.toFixed(4), +hierK.toFixed(4)];
+        if (!(Math.abs(hierS - 1) <= 1e-6 && hierK <= 1e-6))
+            rot.push(
+                `Db am Spieler: Anteil unter dem Sturm-Wort ${hierS}, unter Sonne ${hierK} (stamm/klang _blitzAnteilAm: am Spieler gilt sein Wort)`
+            );
+        const lee = (x, z) => feld.call(r, x, z, st.spielZeit, undefined, false).lee;
+        for (let k = 0; k < 8; k++) {
+            const [x, z] = [px + 12000 * Math.cos((k * Math.PI) / 4), pz + 12000 * Math.sin((k * Math.PI) / 4)];
+            wort("stormy");
+            const [s, ls] = [r._blitzAnteilAm(x, z), lee(x, z)];
+            wort("sunny");
+            const [k0, lk] = [r._blitzAnteilAm(x, z), lee(x, z)];
+            je.welt.push([k * 45, +s.toFixed(4), +k0.toFixed(4)]);
+            if (ls !== 0 || lk !== 0) {
+                je.lee++;
+                if (!(s <= k0 + 1e-9))
+                    rot.push(
+                        `Db 12 km ${k * 45}° im Lee: Anteil unter dem Sturm-Wort ${s.toFixed(3)} über dem unter Sonne ${k0.toFixed(3)} (stamm/klang _blitzAnteilAm: das Lee trocknet den Sturm)`
+                    );
+            } else if (!(Math.abs(s - k0) <= 1e-9))
+                rot.push(
+                    `Db 12 km ${k * 45}°: Anteil unter dem Sturm-Wort ${s.toFixed(3)}, unter Sonne ${k0.toFixed(3)} — das Wort gilt fern (stamm/klang _blitzAnteilAm: die Front am Ort, nie das Wort überall)`
+                );
+        }
+    } finally {
+        if (eigen) r._wetterFeldAm = feld;
+        else delete r._wetterFeldAm;
+        Object.assign(st, alt);
+    }
+    return { rot, je };
 }
 
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
@@ -1701,6 +1997,26 @@ async function zensus(page, browser, ergebnis) {
     console.log(
         `── (Ra) DER RAUM AM OHR: ${ra.proben.length - ra.rot.length}/${ra.proben.length} Proben GRÜN · ${ra.proben.join(" · ")}`
     );
+    // (V) der Weg zum Ohr: Laufzeit über den Weg, Luft nach ISO 9613-1, kein Panner ohne Kopf
+    const wg = (ergebnis.weg = await page.evaluate(wegSeite, false));
+    rot.push(...wg.rot);
+    console.log(`── (V) DER WEG ZUM OHR: ${wg.proben.length - wg.rot.length}/${wg.proben.length} Proben GRÜN · ${wg.proben.join(" · ")}`);
+    // (Dn) der Donner aus dem Blitz: der Einsatz am Abgriff gegen d / c(T)
+    const dn = (ergebnis.donner = await page.evaluate(donnerSeite, false));
+    rot.push(...dn.rot);
+    console.log(`── (Dn) DER DONNER AUS DEM BLITZ: ${dn.je.length - dn.rot.length}/${dn.je.length} Einsätze ±2 % zu d/c(T) · Verhältnis ${Math.min(...dn.je)}…${Math.max(...dn.je)}`);
+    // (Db) der Blitz folgt dem Feld am Ort: der Anteil des Sturms im Kern und über den Leser des Donners in der Welt
+    const db = (ergebnis.blitz = await page.evaluate(blitzSeite, false));
+    rot.push(...db.rot);
+    console.log(
+        `── (Db) DER BLITZ FOLGT DEM FELD AM ORT: Kern ${db.je.kern} Anteile exakt · am Spieler Sturm ${db.je.hier[0]} / Sonne ${db.je.hier[1]} · 12 km je 45° (Sturm-Wort/Sonne) ${db.je.welt.map((w) => `${w[0]}° ${w[1]}/${w[2]}`).join(" · ")} · im Lee ${db.je.lee} von 8`
+    );
+    // (St) die Stimme aus dem Leib: Grundton und Formanten am Abgriff gegen Peterson & Barney 1952
+    const sm = (ergebnis.stimme = await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: false }));
+    rot.push(...sm.rot);
+    console.log(
+        `── (St) DIE STIMME AUS DEM LEIB: ${sm.je.length * 4 - sm.rot.length}/${sm.je.length * 4} Werte ±15 % zu Peterson & Barney · Mittel ${sm.mittelPct} % · max ${sm.maxPct} % · Kind max ${Math.max(...sm.je.filter((z) => z.gruppe === "kind").flatMap((z) => z.abw))} %`
+    );
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -1856,13 +2172,25 @@ async function zensus(page, browser, ergebnis) {
         for (const q of ["tier", "glut"]) nennt(u15, new RegExp(`^Ra ${q} `), `S15: ${q} ohne Schatten des Kopfs`);
         const u17 = (await page.evaluate(raumSeite, orte.dorf, "laufzeit")).rot;
         for (const q of ["tier", "glut"]) nennt(u17, new RegExp(`^Ra ${q} `), `S17: ${q} ohne Laufzeit je Ohr`);
+        // S18: der Ruf startet sofort (die Laufzeit über den Weg fehlt); S19: die Leiter der Luft flach; S20: ein Panner im Weg
+        for (const [mut, re, was] of [
+            ["weg", /^Rw tier /, "S18: der Ruf ohne Laufzeit über den Weg"],
+            ["luft", /^Rl /, "S19: die Luft ohne Dämpfung der Höhen"],
+            ["panner", /^Rp /, "S20: ein StereoPanner im Weg"],
+        ])
+            nennt((await page.evaluate(wegSeite, mut)).rot, re, was);
+        // S22: der Donner startet sofort — der Einsatz ohne die Laufzeit über den Weg
+        nennt((await page.evaluate(donnerSeite, "sofort")).rot, /^Dn /, "S22: der Donner ohne Laufzeit");
+        nennt((await page.evaluate(blitzSeite, "wort-ueberall")).rot, /^Db 12 km /, "S23: das Wort gilt überall");
+        // S21: der Mann ohne Pubertät (Rachen und Kehle wie die Frau) — sein Grundton fällt beim Namen
+        nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S17 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S23 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

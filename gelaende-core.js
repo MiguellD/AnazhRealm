@@ -5751,12 +5751,12 @@
     const ORT_FELDER = Object.freeze({
         klima: Object.freeze(["sommer", "winter", "tagAmp", "sommerPhase", "spendeVerh"]),
         meer: Object.freeze(["waterLevelM"]),
-        wetter: Object.freeze(["regenQuote", "sturmQuote"]),
+        wetter: Object.freeze(["regenQuote", "sturmQuote", "nebelQuote"]),
         wuchs: Object.freeze(["decke", "wald"]),
         eis: Object.freeze(["zeit"]),
     });
     // DIE EIS-ZEIT (Karte 2 planet.kopplung.gegenwart, `eis` der Tafel): 1, wo das Eis des Quartärs den Ort trug (planet-core
-    // `ortEisZeit`: polwärts der Eisgrenze des Planeten in einer der `EIS_ZEITEN`), sonst 0. Die Heimat trägt 0 — ihr Anker liegt
+    // `ortEisZeit`: das Jahresmittel des Orts unter −10 °C in einer der `EIS_ZEITEN`), sonst 0. Die Heimat trägt 0 — ihr Anker liegt
     // nie unter dem Eis (scripts/diag-phyto-tree.cjs fragt den Planeten); am Ziel Heimat + Δ. Leser: der Findling (Stamm
     // `_rockGeologyClass`).
     // DER WUCHS DES ORTS (Reise, Welle 3: Bewuchs und Grund nach Klima) — ein Teil der EINEN Tafel (`ortGesetz(teil).wuchs`): was
@@ -5988,7 +5988,7 @@
                 spendeVerh: k.spendeVerh,
                 schneeBandM: linie(ohneBand) - linie(H),
                 eis: Math.min(1, Math.max(0, H.eis + d.eis.zeit)),
-                wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
+                wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote, nebelQuote: d.wetter.nebelQuote }),
                 wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
                 siedlung: ortSiedlung(teil.zeitMa, ortWuchs(klimaHeute, teil.zeitMa, d.wuchs), false),
                 reglerDelta: Object.freeze(Object.assign({}, d.wildnis)),
