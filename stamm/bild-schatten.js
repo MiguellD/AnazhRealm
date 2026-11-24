@@ -94,7 +94,17 @@ class AnazhRealm_bild_schatten {
             atmo: T.uniform(new THREE.Vector3()),
         });
         st.rueckstrahlLeser = Object.assign(
-            { rt, lesung: null, gelesen: false, licht: 0, sicht: 1, sichtRichtung: new THREE.Vector3() },
+            {
+                rt,
+                lesung: null,
+                lesungLicht: -1,
+                nr: 0,
+                sichtNr: 0,
+                gelesen: false,
+                licht: 0,
+                sicht: 1,
+                sichtRichtung: new THREE.Vector3(),
+            },
             U
         );
         // die Strahldichte, die die untere Hemisphäre ändert — EIN Knoten für jeden Leser
@@ -394,7 +404,13 @@ class AnazhRealm_bild_schatten {
             P.sprung = P.sprung || P.laeufe === 0 || !!(st._traaR && st._traaR.sprung);
             // IM STAND MISST ER NICHT NEU: der Boden um ein ruhendes Auge unter demselben Licht ist derselbe — ein Messen je Bild
             // folgte nur dem Wechsel der Auflösung und dem Raster (die ruhende Welt änderte 0,27 der Pixel, gate:ziel-zensus)
-            if (L.lesung || !this._rueckstrahlWach(P, P.sprung)) return;
+            // EINE LESUNG JE LICHT (sonnenbahn): die Lesung unterwegs hält die nächste Messung nur, solange sie dem Licht gilt, das
+            // jetzt steht (`L.licht`) — springt der Himmel (`_rueckstrahlSprung`), misst der Pass das neue Licht im nächsten Bild, und
+            // die alte Lesung verfällt im Flug (ihr Boden zählt nicht, ihre Sicht trägt die Richtung IHRER Messung und nie über eine
+            // jüngere). Bis hier wartete das neue Licht hinter ihr: das erste Uhr-Wort nach dem Sprung der Bühne las nach 4 Bildern
+            // statt 3 (GTX 1050, Mess-Wiese, Mitternacht: die Lesung des Mittags aus Bild 432 unterwegs, das neue Licht gemessen erst
+            // in Bild 434 — gate:tag-achse:echt ASYNC wiese, d6a9f057).
+            if ((L.lesung && L.lesungLicht === L.licht) || !this._rueckstrahlWach(P, P.sprung)) return;
             P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
             P.U.invVP.value.copy(P.vp).invert();
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
@@ -415,18 +431,20 @@ class AnazhRealm_bild_schatten {
             const licht = L.licht; // das Licht dieser Messung: springt der Himmel, bis sie zurück ist, verfällt sie
             const [KX, KY] = AnazhRealm.RUECKSTRAHL.kacheln;
             const mitSicht = P.sicht;
-            // die Richtung des Lichts dieser Messung (`_rueckstrahlWach` stellt sie): EINE Lesung ist unterwegs
-            (P.messRichtung || (P.messRichtung = new THREE.Vector3())).copy(P.lichtDir);
-            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2 * KX + 1, KY).then(
+            // die Richtung des Lichts dieser Messung (`_rueckstrahlWach` stellt sie) und ihre Nummer: je Licht EINE Lesung unterwegs
+            const richtung = new THREE.Vector3().copy(P.lichtDir);
+            const nr = (L.nr = (L.nr || 0) + 1);
+            const lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2 * KX + 1, KY).then(
                 (px) => {
-                    L.lesung = null;
+                    if (L.lesung === lesung) L.lesung = null;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
                     const zeile = __weltLicht.zeilenSchritt(px, 2 * KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
                     // DIE SICHT DES BILDES: das Flächen-Mittel über die Kacheln der unteren Bildhälfte, gewogen nach der Zahl
                     // ihrer Proben; ohne eine Fläche im Bild (nur Himmel) hält die letzte Lesung. Sie gilt ohne Folge: die
                     // Kamera misst das Bild, das steht (keine Zeitkonstante — M5 ist zurückgezogen). Sie gilt der Richtung des
                     // Lichts ihrer Messung (`_bildSichtSteht`) — ein Sprung des Himmels im Flug nimmt ihr nichts, er nimmt den Boden
-                    if (mitSicht) {
+                    if (mitSicht && nr > (L.sichtNr || 0)) {
+                        L.sichtNr = nr;
                         let ss = 0;
                         let sm = 0;
                         for (let y = 0; y < KY >> 1; y++)
@@ -439,7 +457,7 @@ class AnazhRealm_bild_schatten {
                                 }
                             }
                         if (sm > 0) L.sicht = Math.min(1, Math.max(0, ss / sm));
-                        L.sichtRichtung.copy(P.messRichtung);
+                        L.sichtRichtung.copy(richtung);
                     }
                     if (L.licht !== licht) return;
                     L.atmo.value.set(w(4 * KX), w(4 * KX + 1), w(4 * KX + 2));
@@ -468,6 +486,8 @@ class AnazhRealm_bild_schatten {
                     );
                 }
             );
+            L.lesung = lesung;
+            L.lesungLicht = licht;
         } catch (err) {
             st.rueckstrahlBruch = true;
             L.an.value = 0;
