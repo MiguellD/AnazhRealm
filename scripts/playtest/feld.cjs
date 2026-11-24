@@ -3,7 +3,7 @@
 // 18 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, feldFolgeSteht } = require("../playtest.cjs");
 
 // Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
 // Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
@@ -461,6 +461,7 @@ async function checkBandV1733WorldRules({ page, check }) {
 // die Heilungs-Regel schließt den Loop (field_below lebendig → deposit_life → steigt → Regel
 // stoppt); Default at_player; invalide Achse → no-op.
 async function checkBandV1734FieldRules({ page, check }) {
+    if (!(await feldFolgeSteht(page, check, "Feld-Regeln"))) return; // deposit_life wirkt sofort nur über stehender Folge
     const res = await page.evaluate(() => {
         const out = {};
         const mkCtx = () => r.dslCtx({ source: "test" });
@@ -1341,6 +1342,7 @@ async function checkBandV1741RuleThread({ page, check }) {
 // rule.value; _worldRuleFitness = valueScore × Erfolg × Kosten (neutral knapp unter der Schwelle). Geprüft: Heiler/neutral/
 // Schädling diskriminieren; die Eviction wirft den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
 async function checkBandV1743RuleFitness({ page, check }) {
+    if (!(await feldFolgeSteht(page, check, "Wertung"))) return; // steht sie nicht, nennt EINE Zeile den Täter
     const res = await page.evaluate(() => {
         const out = {};
 

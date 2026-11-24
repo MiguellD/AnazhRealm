@@ -40,6 +40,55 @@ function erreichbar(check, name, res, leer = "page.evaluate fehlgeschlagen") {
     return false;
 }
 
+// DIE FOLGE DES FELDS STEHT (feld.K2#2, w28-mp-boden): ein Feld-Akt wirkt am Eingang nur sofort, wenn kein Takt einer nahen Region
+// vor seinem Stempel aussteht (`_feldFolgeSteht`) und keiner vor ihm wartet — sonst tritt er in die Reihe, und die Folge
+// (`_feldTakt`) nimmt ihn, sobald die Region ihre Wahrheit trägt (Hydro-Kacheln, Gau, `_bestandGauSteht`). Ein Band, der die
+// SOFORTIGE Wirkung eines Akts prüft, prüft sie über stehender Folge: er treibt sie mit ihrem EINEN Schreiber und wartet bis
+// `frist` ms; steht sie nicht, ist die Zeile ROT beim Namen (die Region, wie weit hinter der Uhr, welche Wahrheit fehlt). Bis
+// front-stoff las jeder dieser Bänder sofort: stand die erste Stunde einer nahen Region an, ehe ihr Faden lieferte, wartete der
+// Akt in der Reihe, und der Band fiel ohne Täter (CI 45292065770: sechs Zeilen, „Cannot read properties of undefined“).
+async function feldFolgeSteht(page, check, name, frist = 60000) {
+    const t0 = Date.now();
+    let s = null;
+    for (;;) {
+        s = await safeEvaluate(page, () => {
+            // der Schritt des Lebens im Bild des Spiels (`tickFaunaLifecycle`, vor der Bereitschaft steht seine Uhr): ERST der Leser
+            // des Gaus (`_gauTakt` — die Antwort des Fadens wirkt nur dort), dann die Folge. Die Bänder laufen ohne Bild: an
+            // 10,01 s (0,01 s nach dem Takt 1) trug die Spur des Gaus den Takt 1 nie, die Folge stand 60 s (Lauf am Kopf 24.11.)
+            r.tickFaunaLifecycle();
+            const T = AnazhRealm._bestandGesetz().B.taktS;
+            const gau = (k) => {
+                const [ix, iz] = k.split(",").map(Number);
+                const o = r._gauOrt(ix, iz);
+                const b = r._gauBildStand && r._gauBildStand.gaue.get(o.gx + "," + o.gz);
+                const m = b && b.spur.get(o.revier);
+                return b && { takt: b.takt, bestellt: b.bestellt, flug: b.flug, wartet: !!b.wartet, sperre: b.sperre, spur: m ? [...m.keys()].slice(-3) : null }; // prettier-ignore
+            };
+            const F = r._bestandRegionen().regionen;
+            const A = st.feldAkte || [];
+            const hinter = r
+                ._bestandNah()
+                .filter((k) => !F[k] || F[k].t + T < st.spielZeit)
+                .map((k) => {
+                    const R = F[k];
+                    const wahr = R && { hydro: r._bestandBereit(k), gau: !!r._gauRevier(k), steht: r._bestandGauSteht(k, R), bild: gau(k) }; // prettier-ignore
+                    return { region: k, hinterS: R ? +(st.spielZeit - R.t).toFixed(1) : null, wahr };
+                });
+            return { steht: !hinter.length && !A.length, hinter, akte: A.length, erster: A[0] ? A[0].art : null, uhr: st.spielZeit };
+        });
+        if (s && !s.error && s.steht) return true;
+        if (Date.now() - t0 > frist) break;
+        await new Promise((ja) => setTimeout(ja, 250));
+    }
+    const was =
+        s && !s.error
+            ? `nach ${frist / 1000} s ${s.hinter.length} nahe Regionen hinter der Uhr ${s.uhr.toFixed(2)} s ` +
+              `${JSON.stringify(s.hinter.slice(0, 4))}, ${s.akte} Akte in der Reihe (erster ${s.erster})`
+            : s?.error || "page.evaluate fehlgeschlagen";
+    check(`${name}: die Folge des Felds steht`, false, was);
+    return false;
+}
+
 // die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile rot: `name: evaluate-Fehler — <Wurf>`, mit `zeile`
 // die Zeile `name` selbst mit dem Wurf als Detail; ohne Antwort schweigt sie, die Prüfungen entfallen
 function ohneWurf(check, name, res, zeile) {
@@ -115,7 +164,7 @@ async function gatherInitialFinalState(page) {
 const FLUEGEL = [{ shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } }].concat(
     [0.62, -0.62].map((x) => ({ shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x, y: 0.55, z: 0 } }))
 );
-module.exports = { safeEvaluate, erreichbar, ohneWurf, FLUEGEL };
+module.exports = { safeEvaluate, erreichbar, ohneWurf, feldFolgeSteht, FLUEGEL };
 const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));
 
 if (require.main === module) hauptLauf(async () => {
