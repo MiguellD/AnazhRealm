@@ -5218,8 +5218,9 @@ L.perspektive("wasser", (() => {
             },
             // ═══ DIE RHYTHMEN: Tag, Jahr, Jahrzehnt, Jahrhundert ═══
             [RH]: {
-                sek: 10,
+                sek: 26,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "der Zeitraffer über Jahre (S3–S5) am Gerät; headless misst die Station vier Jahreszeiten und Mittag ↔ Mitternacht",
                 mess: async function (H, U, M) {
@@ -5291,6 +5292,99 @@ L.perspektive("wasser", (() => {
                         return aus;
                     };
                     const Z = await seite(takt, {});
+                    // DER FÄCHER DES TAGS (S2, M4): die Stände des EINEN Fisch-Gesetzes (`_fischZelle` → `_fischTiefeY`: die Höhe des Stands
+                    // aus Bett und Spiegel) an jeder Zelle mit Stand um 24 Punkte der Läufe der geladenen Hydro-Kacheln, im See und an der
+                    // tiefsten Stelle des Meers der Mess-Wiese — je Stand zu vier Uhrzeiten (Mitternacht, Morgen, Mittag, Abend; die Uhr der
+                    // Welt `setTimeOfDay`). Die Streuschicht des Wassers ist der Fisch: ein Gesetz des Zooplanktons trägt die Welt nicht
+                    // (Absenz-Grep „plankton“ über *-core.js: nur die Optik des Sees, foundry-core.js:178)
+                    const RH2_LISTE = async (r, T, a) => {
+                        const s = r.state, A = r.constructor, F = A._fischGesetz().F;
+                        if (!r._fischKarte) r._fischTakt(0);
+                        const fk = { saat: r._fischKarte.saat };
+                        const O = await window.__wasserOrte({});
+                        const wl = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
+                        let tief = null;
+                        if (O.meer)
+                            for (let i = -30; i <= 30; i++)
+                                for (let j = -30; j <= 30; j++) {
+                                    const x = O.meer[0] + i * 200, z = O.meer[1] + j * 200, d = wl - r._terrainMacroSurfaceY(x, z, false);
+                                    if (!tief || d > tief.d) tief = { d, x, z };
+                                }
+                        const liste = [];
+                        const gesehen = new Set();
+                        const scan = async (x, z, rad, ort, max) => {
+                            await __weltDa(() => !r._ensureHydroTilesAround(x, z, 64));
+                            const [ix0, iz0] = [Math.floor(x / F.zelleM), Math.floor(z / F.zelleM)];
+                            let n = 0;
+                            for (let i = -rad; i <= rad && n < max; i++)
+                                for (let j = -rad; j <= rad && n < max; j++) {
+                                    const k = ix0 + i + "," + (iz0 + j);
+                                    if (gesehen.has(k)) continue;
+                                    gesehen.add(k);
+                                    if (r._fischZelle(fk, { ix: ix0 + i, iz: iz0 + j }).stand) (liste.push({ ix: ix0 + i, iz: iz0 + j, ort }), n++);
+                                }
+                            return n;
+                        };
+                        const regionen = [s.hydrosphere].concat(s.hydroTiles ? [...s.hydroTiles.values()] : []).filter((h) => h && h.ready);
+                        const pts = [];
+                        for (const h of regionen) for (const rv of h.rivers || []) for (const q of rv.points || []) if (!q.inLake) pts.push(q);
+                        const je = { bach: 0, see: 0, meer: 0 };
+                        for (let k = 0; k < a.laeufe && pts.length; k++) {
+                            const q = pts[Math.floor(((k + 0.5) * pts.length) / a.laeufe)];
+                            je.bach += await scan(q.x, q.z, 3, "bach", 2);
+                        }
+                        if (O.see) je.see = await scan(O.see.mitte[0], O.see.mitte[1], 6, "see", 12);
+                        if (tief && tief.d > 1) je.meer = await scan(tief.x, tief.z, 6, "meer", 12);
+                        return { liste, je, tod: s.timeOfDay, meerTiefeM: tief ? Math.round(tief.d * 100) / 100 : null };
+                    };
+                    const RH2_AN = async (r, T, a, mit) => {
+                        const c = mit.liste[a.ort];
+                        const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        r.setTimeOfDay(a.zeit, "regler");
+                        try {
+                            const z = r._fischZelle({ saat: r._fischKarte.saat }, { ix: c.ix, iz: c.iz });
+                            if (!z.stand) return { fehlt: "der Stand der Zelle " + c.ix + "," + c.iz + " fällt um " + a.zeit + " (kreatur-fauna.js:566 _fischZelle)" };
+                            const bett = r._voxelSurfaceY(z.stand.x, z.stand.z);
+                            const spiegel = r._koerperWasser(z.stand.x, z.stand.z, bett);
+                            return { typ: c.ort, x: R3(z.stand.x), z: R3(z.stand.z), y: R3(z.stand.y), unterSpiegel: R3(spiegel - z.stand.y), saeule: R3(spiegel - bett), sonne: R3(r._sonnenRichtung().y) };
+                        } finally {
+                            r.setTimeOfDay(mit.tod, "regler");
+                        }
+                    };
+                    let R2 = null;
+                    if (Object.values(U).some((u) => u.mass === "tag"))
+                        try {
+                            const L2 = await seite(RH2_LISTE, { laeufe: 24 });
+                            if (!L2.liste.length) R2 = { fehlerText: "kein Stand des Fisch-Gesetzes an 24 Läufen, im See und im Meer (kreatur-fauna.js:566 _fischZelle)" };
+                            else {
+                                const zu = (t) => (q) => q.zeit === t;
+                                const tiefeBei = (t) => ({ wie: "mittel", feld: "unterSpiegel", nur: zu(t) });
+                                R2 = await FAECHER((c) => H.seite(c), {
+                                    gesetz: { fn: RH2_AN, export: "stamm/kreatur-fauna.js:566 _fischZelle → :590 _fischTiefeY (die Höhe des Stands aus Bett und Spiegel) · tetrapoda-core.js:2877 FISCH_GESETZ", leser: "stamm/kreatur-fauna.js:465 _fischTakt (der Fisch schwimmt zu seinem Stand, der Pool tier:fisch zeichnet ihn)" },
+                                    adressen: { orte: L2.liste.map((_, k) => k), zeiten: [0, 0.25, 0.5, 0.75] },
+                                    mit: { liste: L2.liste, tod: L2.tod },
+                                    ms: 12000,
+                                    masse: {
+                                        staende: { wie: "verschieden", feld: "a.ort" },
+                                        tiefeMitternachtM: tiefeBei(0),
+                                        tiefeMorgenM: tiefeBei(0.25),
+                                        tiefeMittagM: tiefeBei(0.5),
+                                        tiefeAbendM: tiefeBei(0.75),
+                                        hubJeStandMaxM: { wie: (v, aus) => { const o = {}; aus.forEach((e) => (o[e.a.ort] = o[e.a.ort] || []).push(e.w.unterSpiegel)); const h = Object.values(o).map((t) => Math.max(...t) - Math.min(...t)); return h.length ? Math.max(...h) : null; } },
+                                        saeuleMaxM: { wie: "max", feld: "saeule" },
+                                        sonnen: { wie: "verschieden", feld: "sonne" },
+                                        staendeJe: { wie: (v, aus) => { const o = {}; aus.forEach((e) => (o[e.w.typ] = o[e.w.typ] || new Set()).add(e.a.ort)); return Object.fromEntries(Object.entries(o).map(([k, m]) => [k, m.size])); } },
+                                    },
+                                    schlecht: { feld: "saeule", richtung: "max" },
+                                    pose: (q, w) => "unter Wasser am Stand in der tiefsten Säule (" + w.typ + " bei " + Math.round(w.x) + ", " + Math.round(w.z) + ", Säule " + w.saeule + " m, der Fisch " + w.unterSpiegel + " m unter dem Spiegel), Mittag gegen Mitternacht",
+                                    ungemessen: ["die Streuschicht im Echolot-Bild (Bildpflicht) — ungemessen bis zum Gerät"],
+                                });
+                                R2.je0 = L2.je;
+                                R2.meerTiefeM = L2.meerTiefeM;
+                            }
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const [mittag, nacht] = Z.tag || [];
                     const hub = mittag && nacht && mittag.y !== null && nacht.y !== null ? Math.round(Math.abs(mittag.y - nacht.y) * 1000) / 1000 : undefined;
                     const jz = (Z.jahr || []).map((x) => x[1]);
@@ -5301,11 +5395,29 @@ L.perspektive("wasser", (() => {
                         const u = U[nr];
                         let roh;
                         if (u.mass === "tag") {
+                            // der Hub trägt der Fächer allein (die Tiefe der Stände unter dem Spiegel, Mittag gegen Mitternacht); die gezeichneten
+                            // Fische am Bach der Mess-Wiese stehen als Zeuge des Lesers daneben (`_fischTakt` zeichnet, was der Stand sagt)
+                            const RW = (R2 && R2.werte) || null;
+                            const R2r = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : v);
+                            const hubF = RW && RW.tiefeMittagM != null && RW.tiefeMitternachtM != null ? R2r(Math.abs(RW.tiefeMittagM - RW.tiefeMitternachtM)) : undefined;
                             roh = {
-                                werte: { hubM: hub, tiefeMaxM: Z.tiefeM },
-                                zeuge: { antworten: mittag && nacht ? Math.min(mittag.n, nacht.n) : 0, streuung: mittag && nacht ? Math.abs(mittag.sonne - nacht.sonne) : 0, vor: mittag && mittag.y, nach: nacht && nacht.y },
-                                nicht: "keine Vertikalwanderung: die Fische stehen mittags und mitternachts in derselben Höhe (" + (mittag && mittag.y) + " / " + (nacht && nacht.y) + " m, FISCH_GESETZ ohne Uhr), kein Zooplankton, das Meer der Welt ist " + Z.tiefeM + " m tief",
+                                werte: {
+                                    hubM: hubF,
+                                    tiefeMaxM: Z.tiefeM,
+                                    ...(RW ? { staende: RW.staende, staendeJe: Object.entries(RW.staendeJe).map(([k, n]) => k + " " + n).join(" · "), tiefeUhr: [RW.tiefeMitternachtM, RW.tiefeMorgenM, RW.tiefeMittagM, RW.tiefeAbendM].map(R2r).join(" / ") + " m (0/6/12/18 Uhr)", hubJeStandMaxM: R2r(RW.hubJeStandMaxM), saeuleMaxM: R2r(RW.saeuleMaxM), gezeichnetHubM: hub } : {}),
+                                },
+                                zeuge: { antworten: RW ? RW.staende : 0, streuung: RW ? RW.sonnen - 1 : 0, vor: RW ? R2r(RW.tiefeMittagM) : undefined, nach: RW ? R2r(RW.tiefeMitternachtM) : undefined, faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)) },
+                                ...(R2 && R2.akte ? { akte: R2.akte } : {}),
                             };
+                            const offen = [];
+                            if (!RW) offen.push("der Fächer des Tags warf: " + ((R2 && R2.fehlerText) || "ohne Antwort"));
+                            else {
+                                if (!(RW.hubJeStandMaxM > 0)) offen.push("keine Vertikalwanderung: " + RW.staende + " Stände des Fisch-Gesetzes stehen zu jeder Stunde in derselben Tiefe (" + roh.werte.tiefeUhr + ") — die Höhe liest Bett und Spiegel, nie die Uhr (kreatur-fauna.js:590 _fischTiefeY)");
+                                offen.push("kein Zooplankton: kein Gesetz einer Streuschicht in der Welt (Absenz-Grep „plankton“ über *-core.js, nur die Optik foundry-core.js:178)");
+                                if (R2.je0 && !R2.je0.meer) offen.push("0 Stände im Meer: an der tiefsten Stelle (" + R2.meerTiefeM + " m) steht kein Fisch — der Stand verlangt Strömung im Wurf (kreatur-fauna.js:566 _fischZelle, FISCH_GESETZ stand)");
+                                if (!(Z.tiefeM >= 200)) offen.push("kein Wasser für 200 m Hub: das Meer der Mess-Wiese ist höchstens " + Z.tiefeM + " m tief, die tiefste Säule an einem Stand " + R2r(RW.saeuleMaxM) + " m (gelaende-core.js, das Meer der Welt)");
+                            }
+                            roh.nicht = offen.join(" · ");
                         } else if (u.mass === "jahr") {
                             roh = {
                                 werte: { bestandJahresHub: jahrHub, zuege: 0 },
@@ -5323,12 +5435,21 @@ L.perspektive("wasser", (() => {
                     2: {
                         u: { mass: "tag" },
                         soll: [K.soll(RH, 2, "Hub ≥ 200 m", { key: "hubM", einheit: "m" })],
-                        zeuge: zeugeWelt(3, true),
-                        taeter: "tetrapoda-core.js FISCH_GESETZ (keine Uhr, kein Zooplankton)",
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer des Tags warf: " + z.fehler;
+                            if (!(z.faecher >= 40)) return "nur " + (z.faecher || 0) + " Adressen des Fächers gemessen (Soll ≥ 40: Stände × vier Uhrzeiten)";
+                            return zeugeWelt(3, true)(roh);
+                        },
+                        taeter: "stamm/kreatur-fauna.js:590 _fischTiefeY (die Tiefe aus Bett und Spiegel, keine Uhr) · tetrapoda-core.js:2877 FISCH_GESETZ (kein Zooplankton, keine Streuschicht)",
                         nicht: "keine Vertikalwanderung",
                         leser: "stamm/kreatur-fauna.js:590 _fischTiefeY — die Höhe liest Bett und Spiegel, nie die Uhr",
-                        gruen: { werte: { hubM: 320 }, zeuge: { antworten: 20, streuung: 1.2, vor: -150, nach: -470 } },
-                        attrappen: [{ name: "Hub 320 m, Mittag = Mitternacht", roh: { werte: { hubM: 320 }, zeuge: { antworten: 20, streuung: 1.2, vor: -150, nach: -150 } } }],
+                        gruen: { werte: { hubM: 320 }, zeuge: { antworten: 20, streuung: 1.2, vor: -150, nach: -470, faecher: 236 } },
+                        attrappen: [
+                            { name: "Hub 320 m, Mittag = Mitternacht", roh: { werte: { hubM: 320 }, zeuge: { antworten: 20, streuung: 1.2, vor: -150, nach: -150, faecher: 236 } } },
+                            { name: "Hub 320 m an zwei gezeichneten Fischen (der Fächer fehlt)", roh: { werte: { hubM: 320 }, zeuge: { antworten: 2, streuung: 1.2, vor: -150, nach: -470, faecher: 0 } } },
+                            { name: "die Stände ohne Uhr (die Welt heute)", roh: { werte: { hubM: 0, tiefeMaxM: 17 }, zeuge: { antworten: 59, streuung: 3, vor: 0.27, nach: 0.27, faecher: 236 } } },
+                        ],
                     },
                     3: {
                         u: { mass: "jahr" },
