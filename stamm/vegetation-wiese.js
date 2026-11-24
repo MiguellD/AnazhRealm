@@ -1653,6 +1653,7 @@ class AnazhRealm_vegetation_wiese {
             mat: wiegt
                 ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
                       jahr: u.jahr === true,
+                      art: u.jahr === true && typeof u.jahrArtName === "string" ? u.jahrArtName : null, // jahreslauf#2
                   })
                 : lf.mat,
             lokal: lf.localMatrix,

@@ -7283,8 +7283,8 @@
     // (Widerstand ∝ u^(2+B), B ≈ −0,6 für umformende Kronen: Vogel 1989, Vollsinger 2005) — der Sturm biegt, die Brise
     // regt nur das Laub (Flattern ∝ √U). Wie stark ein Glied in SEINER Frequenz schwingt, sagt das Böen-Spektrum: die
     // Turbulenz trägt bei f die Energie S ∝ f^(−5/3) (Kolmogorov, von Kármán), die Antwort ∝ √S — ein gedrungener Stamm
-    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert (λ ≈ 164 m,
-    // Periode ≈ 15,7 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
+    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert mit dem Wind (λ ≈ 164 m,
+    // `boeTempo`: im Sturm 15 m/s, Periode ≈ 11 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
     // Die Formel rechnet über einer Algebra A (TSL im Welt-Stoff, GLSL-Text im Labor, Zahlen in der Linse — wie
     // `_durchsichtGewicht`): EIN Term, drei Leser.
     var WIND_GESETZ = Object.freeze({
@@ -7294,9 +7294,22 @@
         ast: Object.freeze({ faktor: 2.4, hub: 0.06, heben: 0.03 }), // f_Ast = faktor · f0 · Hub je Hebel · Heben je Hebel
         blatt: Object.freeze({ f: 4.5, ueberAst: 1.5, hub: 0.035 }), // Hz · Abstand zum Ast · Hub (m) bei Sturm
         spektrum: Object.freeze({ fRef: 0.4, exp: 5 / 6 }), // Antwort = min(1, (fRef / f)^exp) — fRef die Fichte, exp = ½ · 5/3
-        boe: Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 }), // g = sin(ω·t − k·(x·w))·amp + mitte
+        // g = sin(k·(s(t) − x·w))·amp + mitte — die Böe ist ein Muster, das MIT dem Wind wandert (`boeTempo`, s der Weg des Musters)
+        boe: Object.freeze({ k: 0.0384, amp: 0.45, mitte: 0.7, taylor: 0.9 }),
         dbh: 1.3, // m — die Brusthöhe, in der D gemessen wird
     });
+    // DAS TEMPO DER BÖE (wind-saison, Karte 2 leben.pflanzen.kraft#2): die Böe ist eingefrorene Turbulenz (Taylor 1938, Proc. R.
+    // Soc. A 164: f(x − U_c·t)) — ihr Muster zieht mit der Konvektions-Geschwindigkeit U_c = taylor × dem mittleren Wind über dem
+    // Ort (Böen und Wirbel der Grenzschicht ziehen mit 0,8–1,0 × dem mittleren Wind ihrer Höhe), nie mit einem eigenen ω/k. Der
+    // mittlere Wind ist der Wind-Kanal U des Wetters (0,06 ruhig … 1 Sturm) × der mittleren Böe × WIND_FELD.sturmMS. Bis
+    // wind-saison zog die Böe mit ω/k = 10,4 m/s in jedem Wetter: im Sturm (16 m/s am Ort) kam sie 100 m windab 9,5 s statt
+    // 6,2 s nach (Laufzeit +53 %), in der Ruhe überholte sie den Wind 7-fach. → m/s. Leser: die Welt (`_boeWeg`: der Weg des
+    // Musters, den Gras, Krone, Karte, Tuch, Rauch und Ohr über `_windAt` und `uBoePhase` lesen), das Labor (`baumWindGlsl`).
+    function boeTempo(U) {
+        if (!Number.isFinite(U)) throw new Error("boeTempo: der Wind-Kanal ist endlich (" + U + ")");
+        var B = WIND_GESETZ.boe;
+        return B.taylor * B.mitte * WIND_FELD.sturmMS * Math.max(0, U);
+    }
     // DER FUSS-DURCHMESSER DER GELIEFERTEN GESTALT: der erste Rinden-Strang ist der Stamm, seine Ringe liegen je R1 Ecken
     // hintereinander (die Naht wiederholt die erste Ecke) und steigen; D ist der mittlere doppelte Abstand der Ring-Ecken
     // von ihrer Mitte im Ring nächst der Höhe yT (Vorlagen-Einheiten). null, wenn der Strang keinen Ring trägt.
@@ -7461,6 +7474,84 @@
             y: A.mul(oy, ha),
             z: A.add(A.mul(oz, ha), A.mul(A.mul(nx, w), A.k(-1))),
         };
+    }
+    // DIE PHÄNOLOGIE JE ART (Meisterkarte 2 leben.pflanzen.jahreslauf#2, additiv): jede Art erwacht im Frühling, wenn die WÄRME
+    // ihres Orts ihre Schwelle erreicht — die Grünland-Temperatursumme (GTS, Ernst & Loeper 1976, die Agrarmeteorologie des DWD:
+    // die positiven Tagesmittel ab dem 1. Januar, Januar × 0,5, Februar × 0,75, danach × 1; GTS 200 °C ≈ Vegetationsbeginn) aus der
+    // EINEN Jahres-Welle der Luft des Orts (gelaende-core `temperaturFeld`: Mittel, Amplitude, Gipfel, Verspätung). Die Schwellen
+    // sind die GTS der beobachteten Eintritts-Tage im Bezugs-Klima: das Phänologie-Netz des DWD (Jahresmelder, 1991–2020, Mittel
+    // der Tage: Hasel Blüte 47,1 · Schwarz-Erle Blüte 66,1, Blattentfaltung 105,7 · Hänge-Birke Austrieb 95,8, Blattentfaltung
+    // 105,3, Blüte 108,9 · Rotbuche Blattentfaltung 114,0 · Stiel-Eiche Blattentfaltung 119,9; Hasel Blüte-Ende 76,1, Sofortmelder)
+    // über dem Gebietsmittel Deutschland 1991–2020 (DWD, regional_averages_tm: 9,30 °C, die erste Harmonische 8,85 K, der kälteste
+    // Tag 17,6). Gesetz, keine Tabelle: in einem kälteren Ort steigt die Summe später, und jede Art erwacht später, in der Reihe
+    // ihrer Schwellen (Hasel vor Erle vor Birke vor Buche vor Eiche). `laub` die GTS der Blattentfaltung (die Präsenz des Laubs geht
+    // dort durch 0,5; `austriebKd` die Spanne von 0 bis 1 = 2 × Austrieb → Blattentfaltung der Birke), `bluete` die GTS der Blüte
+    // (`bluehKd` die Dauer der Blüte: Beginn → Ende der Hasel; sie steigt und fällt über je die halbe Dauer). Eine Art ohne Zeile
+    // des Laubs trägt das Laub des `bestand` (die Rotbuche: der Buchenwald ist die natürliche Waldgesellschaft Mitteleuropas,
+    // Ellenberg 1996) — die Hasel meldet das Netz nur in der Blüte; eine Art ohne Zeile der Blüte die Blüte des SAISON_GESETZ.
+    // Der Herbst ist das Licht, nicht die Wärme (der Laubfall folgt der Tageslänge, Delpierre et al. 2009): ihn trägt das
+    // SAISON_GESETZ für jede Art; im Herbst steht die Summe auf ihrem Wert zur Mitte des Sommers.
+    var PHAENO_GESETZ = Object.freeze({
+        kaltTag: 17.6, // der kälteste Tag des Bezugs-Jahrs nach dem 1. Januar (der Anfang der Summe vor der Kälte)
+        gewicht: Object.freeze([
+            [31, 0.5],
+            [59, 0.75],
+        ]), // [bis Tag, Gewicht] — Januar, Februar; danach 1
+        laub: Object.freeze({ baum_erle: 297, baum_birke: 294, baum_buche: 376, baum_eiche: 438 }),
+        bluete: Object.freeze({ busch_hazel: 22, baum_erle: 61, baum_birke: 326 }),
+        bestand: "baum_buche",
+        austriebKd: 153,
+        bluehKd: 79,
+        bluehMax: 0.85, // die volle Blüte (SAISON_GESETZ bl des Frühlings)
+    });
+    // Die Schwellen einer Art: [GTS des Laubs, GTS der Blüte oder −1 (die Blüte des SAISON_GESETZ)]
+    function phaenoArt(art) {
+        const P = PHAENO_GESETZ;
+        const l = P.laub[art];
+        const b = P.bluete[art];
+        return [Number.isFinite(l) ? l : P.laub[P.bestand], Number.isFinite(b) ? b : -1];
+    }
+    // Die GTS zur Welt-Phase `phase` an der Jahres-Welle `welle` { mittel, amp, gipfel, spaet } (gelaende-core `temperaturFeld`:
+    // mittel und jahr) in einem Jahr von `jahrTage` Tagen. `sommer` die Phase der Mitte des Sommers, `winter` die des Winters (die
+    // Phase des Frühlings liegt dazwischen): im Herbst steht die Summe auf ihrem Wert zur Mitte des Sommers. Tagesmittel = Mittel +
+    // die Jahres-Welle (der Tagesgang mittelt sich weg); der 1. Januar liegt `kaltTag` Tage vor dem kältesten Tag der Welle.
+    function gruenSumme(welle, phase, jahrTage, sommer, winter) {
+        const N = jahrTage > 0 ? jahrTage : 365;
+        const ring = (v) => ((v % 1) + 1) % 1;
+        const imFruehling = ring(phase - winter) <= ring(sommer - winter);
+        const bis = imFruehling ? phase : sommer;
+        const kalt = welle.gipfel + welle.spaet / (2 * Math.PI) + 0.5;
+        const jan = kalt - PHAENO_GESETZ.kaltTag / N;
+        const tage = ring(bis - jan) * N;
+        const G = PHAENO_GESETZ.gewicht;
+        let s = 0;
+        for (let d = 0; d < tage; d++) {
+            const dt = Math.min(1, tage - d);
+            const p = jan + (d + 0.5 * dt) / N;
+            const t = welle.mittel + welle.amp * Math.cos(2 * Math.PI * (p - welle.gipfel) - welle.spaet);
+            if (t <= 0) continue;
+            const g = d < G[0][0] ? G[0][1] : d < G[1][0] ? G[1][1] : 1;
+            s += t * g * dt;
+        }
+        return s;
+    }
+    // Das Laub einer Art im Jahr über einer Algebra (WIND_ZAHLEN die CPU, die TSL-Algebra der Stoff): `G` die GTS, `F` die Schwelle
+    // des Laubs, `herbst` das Laub des SAISON_GESETZ im Herbst (im Frühling 1), `w` die kahle Krone (SAISON_GESETZ pr des Winters).
+    function laubImJahr(A, G, F, herbst, w) {
+        const r = A.min(
+            A.max(A.add(A.k(0.5), A.mul(A.add(G, A.mul(F, A.k(-1))), A.k(1 / PHAENO_GESETZ.austriebKd))), A.k(0)),
+            A.k(1)
+        );
+        return A.min(A.add(A.k(w), A.mul(r, A.k(1 - w))), herbst);
+    }
+    // Die Blüte einer Art im Jahr (Schwelle `Fb` ≥ 0): steigt über die halbe Dauer ab der Schwelle, fällt nach der Dauer
+    function bluehImJahr(A, G, Fb) {
+        const P = PHAENO_GESETZ;
+        const h = 2 / P.bluehKd;
+        const d = A.add(G, A.mul(Fb, A.k(-1)));
+        const auf = A.min(A.max(A.mul(d, A.k(h)), A.k(0)), A.k(1));
+        const ab = A.min(A.max(A.mul(A.add(d, A.k(-P.bluehKd)), A.k(h)), A.k(0)), A.k(1));
+        return A.mul(A.mul(auf, A.add(A.k(1), A.mul(ab, A.k(-1)))), A.k(P.bluehMax));
     }
     // DER ACKER UND SEINE FRUCHT (Meisterkarte 2 mensch.nahrung frucht S1 · hand S2, additiv): ein bestellter Acker trägt die Spur
     // der Arbeit und den Wuchs der Kulturpflanze als FUNKTION der Tage seit seiner Saat — kein Zustand, keine Liste. `furche`: die
@@ -7993,6 +8084,7 @@
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
         budgetFrei: budgetFrei, // E8.1: die Dreiecke, die die Zeile frei stellt (`ohneVerband`, vor der Faltung gezählt)
+        boeTempo: boeTempo, // wind-saison — die Böe zieht mit dem Wind (Taylor 1938)
         WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
         stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
         windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
@@ -8003,6 +8095,11 @@
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
         HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
         halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
+        PHAENO_GESETZ: PHAENO_GESETZ, // jahreslauf#2 — die Phänologie je Art: GTS-Schwellen von Laub und Blüte (DWD 1991–2020)
+        phaenoArt: phaenoArt, // jahreslauf#2 — die Schwellen einer Art [Laub, Blüte oder −1]
+        gruenSumme: gruenSumme, // jahreslauf#2 — die Grünland-Temperatursumme zur Phase aus der Jahres-Welle des Orts
+        laubImJahr: laubImJahr, // jahreslauf#2 — das Laub einer Art im Jahr über einer Algebra (CPU, Stoff)
+        bluehImJahr: bluehImJahr, // jahreslauf#2 — die Blüte einer Art im Jahr über einer Algebra (CPU, Stoff)
         ACKER_GESETZ: ACKER_GESETZ, // acker-kette — der bestellte Acker: Furchen des Pflugs, die Kulturpflanze in Reihen, ihr Wuchs je Tag
         ackerStand: ackerStand, // acker-kette — der Stand des Ackers n Tage nach der Saat (Höhe, Reife, Deckung, Stoppel, Farbe)
         ackerTage: ackerTage, // acker-kette — die Tage seit der Saat des Dorfs zur Phase des Jahrs
