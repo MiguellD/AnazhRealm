@@ -23494,7 +23494,7 @@
   },
   "karte2.mensch.sport.koerper": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.542 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.542 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.239 in 0.2–0 · [linse-gpu] amd/rdna-3 an bf9be26c radeon — offen: karte2.mensch.sport.koerper#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Tempo Gehen (m/s) 1.576 (Soll 1.5 ±0.15) · Tempo Sprint (m/s) 6.281 (Soll 6.8 ±0.68) · Sprunghöhe (m) 0.542 (Soll 0.53 ±0.053) · Umfang 11 (Soll ≥ 11 Verben im Spiel gegen Eichwert (5 des Leibs + 6 Geräte-Verben)) · die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen 1.576 · Sprint 6.281 m/s · Sprung 0.542 m (LEIB, Mess-Wiese) · wand 0.6 in 0.54–0.66 ✓ · schwimmen 1.371 in 1.234–1.508 ✓ · schaukeln 2.517 in 2.396–2.648 ✓ · rutschen 3.277 in 2–4 ✓ · klettern 0.376 in 0.3–0.6 ✓ · hangeln 0.239 in 0.2–0 · [linse-gpu] amd/rdna-3 an bf9be26c radeon — offen: karte2.mensch.sport.koerper#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs) · karte2.mensch.sport.koerper#2 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#3 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#4 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#5 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#6 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.koerper#7 radeon: ungemessen (R10) · karte2.mensch.sport.koerper#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koerper#1",
@@ -23513,8 +23513,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37560,7 +37561,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 311,
+  "konsum": 312,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37728,10 +37729,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3311
+  "ohne": 3310
  },
  "kopfVoll": "499f8b572290130d2a8264cf306f500dace25eba",
- "zeit": "2026-11-24T14:10:13.590Z",
+ "zeit": "2026-11-24T14:22:20.890Z",
  "vorher": "499f8b57",
  "bilanz": {
   "gewinn": [],
