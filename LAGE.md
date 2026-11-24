@@ -1,9 +1,23 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 13:35 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 14:32 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 14:32 (gilt VOR allem darunter): main weiter **a8dd22b5** (V18.546.403), KARTE 2: 83 von 1 718 (Stand-Datei punkte-maschine
+  0c01bc55). GESTEMPELT 14:23, im Zug: `w28-probe-deckel-einlass` 85788c53 (Kopf cf7deb94, trägt den Ratschen-Commit 28240b1b; nach
+  der Landung pflückt niemand mehr, `nach-landung.sh 717` ohne Anspruch, EIN Runden-Sprung von a8dd22b5).
+  IN DER BATTERIE: `ort-ausstattung` 4 **4612f450** (GPU-Probe grün, Code-Check Versuch 2 des Laufs 45396192201, 14:31 19 von 22 grün;
+  Satz `satz-ort-ausstattung.txt`; Ansprüche nach der Landung schrift#1 · bildkunst#1 · grenze#1 · megastadt#1) · `haus-stoff`
+  **c6cec836** (geheilter Stapel Gestalt + Stoff: das Klima trifft nur noch das Dorf OHNE Wort; Satz `satz-haus-stoff.txt`; der Stempel
+  braucht den NEUEN Namen `w28-haus-stoff2` — 5. Argument an stempel-msg.sh, 4. an stempel.sh —, weil `w28-haus-stoff` bei 509212d6 liegt).
+  BEI DEN ARBEITERN (je ein Baum, beide Opus): `fahrzeug-gattung` 86697613 heilt sechs Linsen (Baum AnazhRealm-acker) · `haus-dach`
+  lokal (Baum AnazhRealm-front-pl, Bildpaar mit --echt am Schloss; schiebt erst, wenn haus-stoff grün gemeldet ist).
+  OMEN: sport-regeln 3 (Kopf am Remote noch 998254be) → dienst-frist → scherbe-liegt. GTX 1050: anatomie-r4-heil (10 von 10), danach der
+  Einlass-Commit. RADEON-FUND: nach dem Sprung 13:34 maß die Radeon-Sitzung die ALTE Liste am bf9be26c weiter bis 14:28 (erst das
+  Weichen vor dem Arbeiter am Schloss beendete sie: „ANDERE RUNDE 22“); die Zeile in zug/runde.txt hieß solange „radeon offen 0/0“ mit
+  Alarm 13:51. Nach jedem Sprung die Radeon-Zeile nach 5 min lesen — steht dort 0/0, lebt die alte Sitzung (Wurzel offen: die Sitzung
+  liest den Runden-Kopf nicht an der Stations-Grenze). VERBRAUCH 14:32: 93 % alle Modelle, 88 % Fable (98 % gegen 16:10).
 - NACHTRAG 13:35 (gilt VOR allem darunter): main **a8dd22b5** (V18.546.403) — z716 `w28-auge-der-art` gelandet 13:32 (sechste
   Landung heute), Anspruch `karte2.erleben.sinne.gesehen#3` gebucht, Station gemischt (punkte-maschine 7437a5d0), RUNDE 22 am
   a8dd22b5 seit 13:34. KARTE 2: 83 von 1 718 (Buchung 13:29).
