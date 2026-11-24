@@ -1,0 +1,21 @@
+# Lesung OMEN 24.11. 17:20 — die acht Stationen der Reihe w28-bewohner-satz2 (für den Radeon-Arbeiter `pm-leser-welle`)
+
+Gelesen an main eba9bf8f und punkte-maschine 0338bd35 (nur git show/grep, kein Lauf). Kürzel: **Karte** = `vision/meisterkarte-2.json`
+(punkte-maschine; k2-mensch.js:54 liest sie, SPEC :371, Richter wörtlich :395) · **PM/x.js** = `meisterkarte-quelle/punkte/stationen/k2-mensch-x.js`
+· **sb** = stamm/siedlung-bewohner.js · **fn** = stamm/feld-nexus.js · **kc** = koerper-core.js. `K.nicht`/`K.leser` (k2-mensch.js:131/132) sind in
+`urteilDer` :203/:205 ROT ohne Bedingung; eine Augen-Sprosse wird an der Station nie GRÜN (:210). Selbsttest-Muster: PM/geist.js:328 `mut`
+(:397–399, :448, :498, :618–620), PM/sport.js:522 `mutante`, PM/macht.js:913–920; geprüft von k2-mensch.js:451.
+
+| Sprosse | Soll (Karte) | Heute | in main? | Urteil |
+|---|---|---|---|---|
+| gespraech#2 | :6835 „Faktentreue ≥ 0,95; Bezug auf die vorige Begegnung“, Umfang :6830 „10 Personen sprechen“ | PM/geist.js:433–436 K.leser ohne Bedingung, Grund überholt (`SPRECHEN` :200–212 liest `leib.userData.name`, der Name ist Getter `b.vorname`) | Ruf ja: `_findCreatureByName` fn:1284; Bezug: `_creatureRemember(…,"spoken")` fn:1671, `erinnerung` fn:1351–1356. **Täter:** ohne `state.llm.enabled` sagt `maybeAnswerCreature` fn:1641–1643 nur „nexus.keine-stimme“ | bleibt ROT, Grund „der LLM-Lauf fehlt“ (Muster `kiFn` k2-erleben.js:1430) |
+| netz#1 | :6906 „Besuche zu Verwandten/Freunden ≥ 0,6“, Umfang :6901 „10²“ | PM/geist.js:486–490 K.leser ohne Bedingung (`BESUCH` :216–223) | ja: Besuch bindet nur Häuser der Seinen sb:1155–1172 (`binden` sb:1045, d30bee13), Getter `b.freunde` sb:4534 | **kann GRÜN**: Besucher 17,25 · 17,6 · 18 Uhr, Treffer = `b.orte.besuch.anker` ist `orte.tuer` eines aus `b.freunde`; Mutante PM/geist.js:498 |
+| absicht#2 | :7069 „100 Befragte, 1 Spieljahr später: Fortschritt sichtbar ≥ 0,5“, Umfang :7064 „10³“ | PM/geist.js:607–610 K.leser ohne Bedingung; Messort `stadt` (91 Häuser) trägt 10³ nicht | ja: `_bewohnerLauf(S,b,"absicht")` sb:405–414, Fortschritt mit `_kalenderZeit()/jahrK` sb:391, Getter `b.absicht` | **kann GRÜN mit Vorbehalt**: an stadt-voll (1 391), Kalender +1 Jahr (`mutiert`, im finally zurück), Anteil höherer Fortschritt; „sichtbar“ nur im Wort der Persona |
+| koennen#2 | :6310 „Güte über 100 h gegen Potenzgesetz R² ≥ 0,8“, Umfang :6305 „1 Bewohner über 10² Übungsstunden“ | PM/sport.js:670 K.leser ohne Bedingung | Profil ja (sb:393–403, sb:4511); **Täter:** `_bestandAnlegen` sb:1276/:1292 setzt die Rate EINMAL beim Bau der Liste (Ruf sb:1262) — die Güte steht in der Sitzung still | bleibt ROT mit diesem Täter |
+| kunst#1 | :6525 „Blindtest Anfänger ↔ Meister ≥ 80 %“ | PM/sport.js:795 K.nicht ohne Bedingung | Profile ja; **Täter:** der Leib liest kein Können (`tagesHaltung` kc:5495, Tafel kc:5443) | Augen-Sprosse; braucht `KLASSE`-Zeile in auge-klasse.cjs, sobald `erwartet` fällt |
+| seuche#1 | :7540 „Bildpaar gesund/krank; Krank-Tag weicht ab“ | PM/menge.js:335 `Object.keys(b)` sieht die nicht aufzählbaren Getter nicht (sb:1150, sb:4534–4545) → 0 Kranke; :643–646 K.nicht | ja: `b.krank` (sb:303–311), Kranker daheim kc:5708 (d147ffdf); Haltung/Husten fehlen (kc:5443) | Augen-Sprosse; Kranke über `L.filter(b => b.krank)` zählen, Bildpaar + `K.auge`, `KLASSE`-Zeile |
+| krieg#1 | :10500 „20 Zweikämpfe im Bild …“, Umfang :10495 „2 Bewaffnete“ | PM/macht.js:804–805 K.nicht ohne Bedingung | Waffe ja (sb:313–316, sb:1453–1455); **Täter:** kein Zweikampf — `_bewohnerNahen` sb:2471, Hieb trifft nur `state.creatures` stamm/kampf.js:449 | bleibt ROT; Mutante PM/macht.js:915–919 ist der heutige Stand |
+| megastadt#1 | :10598 „Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7 …“, Umfang :10593 „1 Wache, Streife“ | PM/macht.js:935 K.leser, `wo` zeigt ins Literal des Wagens | Wache als Bau ja (fachwerk-core.js:2703, `wacheLose` :2750); **Täter:** keine Streife — siedlung-verkehr.js:372 (`verkehrVon`) | bleibt ROT |
+
+Kurz: GRÜN möglich netz#1, absicht#2 (Vorbehalt). Ehrlich ROT mit wahrem Täter statt dem überholten: gespraech#2, koennen#2, krieg#1,
+megastadt#1. Augen-Sprossen kunst#1, seuche#1 (seuche#1 zählt heute 0 Kranke wegen `Object.keys`).
