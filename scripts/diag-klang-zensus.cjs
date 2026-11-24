@@ -22,7 +22,8 @@
 //  (N) UHR × WETTER × GANG an der Wiese (klang.K1 Staffel 2): nachts (Grillen, kein Vogel), im Regen, gehend und fahrend
 //      (im Sattel des GT) — Wetter und Uhr als Wort des Spielers, je Szene das Soll und der Weg in Bewegung.
 //  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S17 unten), Stubs restauriert.
+//  (V) DER WEG ZUM OHR (klang-leib): Laufzeit über den Weg d/c(T), Luft nach ISO 9613-1, kein Panner ohne Kopf.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S20 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -1419,7 +1420,7 @@ async function raumSeite(dorf, mut) {
                     // der Pegel-Unterschied dort, wo der Kopf schattet: über f0 = c/(2πa) (ein Hochpass 2. Ordnung, RBJ, in
                     // f0) — darunter beugt sich der Schall um den Kopf, dort trägt die Laufzeit die Seite
                     const [hl, hr] = [kl, kr].map((c) => {
-                        const w = (2 * Math.PI * K.UMWELT.ohr.schallMs) / (2 * Math.PI * K.UMWELT.ohr.kopfRadiusM) / 48000;
+                        const w = (2 * Math.PI * K.schallC()) / (2 * Math.PI * K.UMWELT.ohr.kopfRadiusM) / 48000;
                         const [cw, al] = [Math.cos(w), Math.sin(w) / Math.SQRT2];
                         const [b0, b1, a0, a1, a2] = [(1 + cw) / 2, -(1 + cw), 1 + al, -2 * cw, 1 - al];
                         let [x1, x2, y1, y2, e] = [0, 0, 0, 0, 0];
@@ -1452,6 +1453,80 @@ async function raumSeite(dorf, mut) {
         // die Kamera stellt der Loop im nächsten Bild aus dem Blick des Spielers
         tier.position.copy(t0);
         pm.position.copy(p0);
+    }
+    return { rot, proben: zahl };
+}
+
+// (V) DER WEG ZUM OHR (klang-leib, das Raum-Gesetz `raumWeg`): je Ruf der Einsatz am Ohr gegen d / c(T) (Rw: ±0,5 ms oder
+// ±2 % an 3, 20, 50 m bei −10, 20, 35 °C), je Weg die Höhen gegen ISO 9613-1 (Rl: ein Sinus 0,5–4 kHz über 300, 1 000 und
+// 3 000 m, ±3 dB, wo die Norm ≤ 12 dB dämpft — die Leiter der Luft), kein StereoPanner im Graph aller Stimmen und im Nachhall
+// (Rp). Die Täter: S18 der Ruf startet sofort (die Laufzeit über den Weg fehlt), S19 die Leiter flach (kappeDb 0: die Höhen
+// reisen ungedämpft), S20 ein Panner im Weg.
+async function wegSeite(mut) {
+    const [K, P, B, rot, zahl] = [__klangCore, BaseAudioContext.prototype, AudioBufferSourceNode.prototype, [], []];
+    const [start, bq, mg] = [B.start, P.createBiquadFilter, P.createChannelMerger];
+    let panner = 0;
+    const sp = P.createStereoPanner;
+    P.createStereoPanner = function () {
+        panner++;
+        return sp.call(this);
+    };
+    if (mut === "weg")
+        B.start = function (when, ...rest) {
+            return start.call(this, 0, ...rest);
+        };
+    const kappe = K.SCHALLWEG.leiter.kappeDb;
+    if (mut === "luft") K.SCHALLWEG.leiter.kappeDb = 0; // die Luft ohne Daempfung: die Leiter steht flach
+    if (mut === "panner")
+        P.createChannelMerger = function (...a) {
+            this.createStereoPanner();
+            return mg.apply(this, a);
+        };
+    try {
+        for (const T of [-10, 20, 35])
+            for (const d of [3, 20, 50]) {
+                const ctx = new OfflineAudioContext(2, 48000 * 0.6, 48000);
+                const ruf = K.tierRuf(ctx, ctx.destination, { laengeM: 1, stimmung: "ruhe", d, pan: 0, saat: 7, temperatur: T });
+                const buf = await ctx.startRendering();
+                const A = buf.getChannelData(0);
+                let [peak, ein] = [0, -1];
+                for (const x of A) peak = Math.max(peak, Math.abs(x));
+                for (let i = 0; i < A.length && ein < 0; i++) if (Math.abs(A[i]) > 0.01 * peak) ein = i;
+                const soll = (d / K.schallC(T)) * 48000;
+                zahl.push(`${T} °C ${d} m Einsatz ${ein}/${soll.toFixed(0)}`);
+                // der Einsatz des Rufs selbst (die Hülle hebt ihn in 0,06 · 0,32 s): 1,6 ms nach seinem Start
+                if (!ruf || !(Math.abs(ein - soll - 77) <= Math.max(24, 0.02 * soll))) rot.push(`Rw tier ${d} m bei ${T} °C: Einsatz ${(ein / 48).toFixed(1)} ms, Soll d/c(T) ${(soll / 48).toFixed(1)} ms + 1,6 ms (klang-core raumWeg, die Laufzeit über den Weg)`);
+            }
+        for (const D of [300, 1000, 3000])
+            for (const f of [500, 1000, 2000, 4000]) {
+                const iso = K.luftAlpha(f, 20, 70) * D;
+                if (iso > 12) continue;
+                const db = [];
+                for (const d of [0, D]) {
+                    const ctx = new OfflineAudioContext(2, 48000 * 0.3, 48000);
+                    const o = ctx.createOscillator();
+                    o.frequency.value = f;
+                    const w = K.raumWeg(ctx, { d, pan: 0, temperatur: 20, feuchte: 70 }, 0);
+                    o.connect(w.eingang);
+                    w.ausgang.connect(ctx.destination);
+                    o.start(0);
+                    const c = (await ctx.startRendering()).getChannelData(0).subarray(4800);
+                    db.push(10 * Math.log10(c.reduce((v, x) => v + x * x, 0) / c.length + 1e-15));
+                }
+                const ist = db[0] - db[1];
+                zahl.push(`Luft ${f} Hz ${D} m ${ist.toFixed(1)}/${iso.toFixed(1)} dB`);
+                if (!(Math.abs(ist - iso) <= 3)) rot.push(`Rl ${f} Hz über ${D} m: ${ist.toFixed(1)} dB gedämpft, ISO 9613-1 ${iso.toFixed(1)} dB (klang-core luftLeiter, die Luft des Wegs)`);
+            }
+        const ctx = new OfflineAudioContext(2, 4800, 48000);
+        const mix = K.umweltMischung(K.UMWELT.orte.sturm);
+        for (const k of Object.keys(K.UMWELT.stimmen)) if (mix[k]) mix[k].db = Math.max(mix[k].db, K.UMWELT.hoerschwelleDb + 10);
+        K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0);
+        K.umweltRaum(ctx, ctx.createGain(), ctx.destination);
+        zahl.push(`Panner ${panner}`);
+        if (panner) rot.push(`Rp ${panner} StereoPanner im Graph und im Nachhall: ein Weg ohne Kopf und ohne Laufzeit (klang-core raumWeg)`);
+    } finally {
+        [B.start, P.createBiquadFilter, P.createChannelMerger, P.createStereoPanner] = [start, bq, mg, sp];
+        K.SCHALLWEG.leiter.kappeDb = kappe;
     }
     return { rot, proben: zahl };
 }
@@ -1701,6 +1776,10 @@ async function zensus(page, browser, ergebnis) {
     console.log(
         `── (Ra) DER RAUM AM OHR: ${ra.proben.length - ra.rot.length}/${ra.proben.length} Proben GRÜN · ${ra.proben.join(" · ")}`
     );
+    // (V) der Weg zum Ohr: Laufzeit über den Weg, Luft nach ISO 9613-1, kein Panner ohne Kopf
+    const wg = (ergebnis.weg = await page.evaluate(wegSeite, false));
+    rot.push(...wg.rot);
+    console.log(`── (V) DER WEG ZUM OHR: ${wg.proben.length - wg.rot.length}/${wg.proben.length} Proben GRÜN · ${wg.proben.join(" · ")}`);
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -1856,13 +1935,20 @@ async function zensus(page, browser, ergebnis) {
         for (const q of ["tier", "glut"]) nennt(u15, new RegExp(`^Ra ${q} `), `S15: ${q} ohne Schatten des Kopfs`);
         const u17 = (await page.evaluate(raumSeite, orte.dorf, "laufzeit")).rot;
         for (const q of ["tier", "glut"]) nennt(u17, new RegExp(`^Ra ${q} `), `S17: ${q} ohne Laufzeit je Ohr`);
+        // S18: der Ruf startet sofort (die Laufzeit über den Weg fehlt); S19: die Leiter der Luft flach; S20: ein Panner im Weg
+        for (const [mut, re, was] of [
+            ["weg", /^Rw tier /, "S18: der Ruf ohne Laufzeit über den Weg"],
+            ["luft", /^Rl /, "S19: die Luft ohne Dämpfung der Höhen"],
+            ["panner", /^Rp /, "S20: ein StereoPanner im Weg"],
+        ])
+            nennt((await page.evaluate(wegSeite, mut)).rot, re, was);
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S17 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S20 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

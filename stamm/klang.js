@@ -501,6 +501,8 @@ class AnazhRealm_klang {
             // der Trägheit ihres Lebensraums (klang:UMWELT.stimmen.grille.traegTage, der Boden ihrer Röhre) — die Sommernacht der
             // Wiese zirpt, über dem gefrorenen Bergsee schweigen sie
             temperatur: this._temperaturAt(py, AnazhRealm._umweltGesetz().UMWELT.stimmen.grille.traegTage),
+            // die Luft am Ohr (klang:SCHALLWEG, klang-leib): dasselbe Feld ohne Trägheit — ihr c trägt jede Laufzeit des Wegs
+            luft: this._temperaturAt(py, 0),
             voegel: e.voegel,
             ufer: e.ufer,
             fluss: e.fluss,
@@ -533,6 +535,11 @@ class AnazhRealm_klang {
             pan: this._umweltPanorama()(dx, dz),
             saat: this._klangZug("umwelt"),
             verdeckung: this._klangVerdeckung(pm, creature),
+            // die Luft des Wegs (klang:SCHALLWEG): die Laufzeit d / c(T) ist der Einsatz des Rufs
+            temperatur:
+                um.lage && Number.isFinite(um.lage.luft)
+                    ? um.lage.luft
+                    : this._temperaturAt(pm ? pm.position.y : creature.position.y, 0),
         };
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
