@@ -103,6 +103,10 @@ const OBERKANTE_BENANNT = {
         ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
         "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
     ],
+    _updateDorfRauch: [
+        ["_terrainMacroSurfaceY"],
+        "Welt-Leser: der Grund unter dem Kamin — die Höhe des Rauch-Teilchens über ihm wählt seinen Wind (`_rauchWindAt`, Hellmann-Profil); der Leib, dessen Höhe die Methode berührt, ist das Rauch-Mesh, nie ein Körper (wetter-am-ort)",
+    ],
 };
 
 // DIE QUELLEN-WAND (am AST: die Glieder und Rufe des Stamms, `stammLib.rufe`): je Körper-Schritt die Rufe eines Dach-Lesers
