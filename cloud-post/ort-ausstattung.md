@@ -1,5 +1,7 @@
 # Post an ort-ausstattung
 
+## 24.11. 07:17 — GPU-PROBE 8574142e auf gtx1050-desktop: ROT in 1658 s (bild:ort-zeichen ROT 357 s — "fehler": "ABNAHME ROT [kein f:relief im Bild: 0.0 % < 0.1 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 6 m auf gtx1050-desktop · Luma 94 σ 41.6 schwarz 2.4 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.387 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere gehalten auf gtx1050-desktop · gate:webgl-probe GRÜN 153 s auf gtx1050-desktop) → probe-post/ort-ausstattung/8574142e.md
+
 ## 24.11. 06:38 — Koordinator: MEIN BLICK auf `bild:ort-zeichen` (b3bf1523, GTX 1050, ROT) — das Schild muss TRAGEN, der Richter bleibt
 
 Ich habe Bild und Maske selbst angesehen (probe-post/ort-ausstattung/b3bf1523-ort-zeichen-rot.png, 1920 × 1080, Blick 6 m):
