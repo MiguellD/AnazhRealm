@@ -1,0 +1,89 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.392",
+  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1327,
+  "taeter": {
+   "Rinde baum_tanne": 0.1327
+  },
+  "vordergrund": {
+   "radius": 2.89,
+   "deckung": 0.1406,
+   "taeter": {
+    "Rinde baum_tanne": 0.1406
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 5.78,
+  "gestalt": [
+   "baum_tanne 2424"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -183.271,
+   99.769,
+   -60.72
+  ],
+  "blick": [
+   -0.69172,
+   -0.20752,
+   -0.69171
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 55.2,
+  "sigma": 37.3,
+  "schwarz": 0.003,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 13.3 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 13.3 %] · beweis · Sicht 13.3 % (Rinde baum_tanne 13.3 %) · Ziel Blickziel im Bild frei 5.78 m · Luma 55.2 σ 37.3 schwarz 0.3 % weiß 0.0 % · Stand 18.546.392 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 13.3 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 13.3 %"
+  }
+ ],
+ "urteil": "ROT"
+}

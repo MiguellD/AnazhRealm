@@ -3462,7 +3462,8 @@ LEITERN.push(
     // ─────────── same.gedaechtnis.alter — Alter des Gebauten ───────────
     // S1/S2 an der vollen Stadt: die Albedo der gebauten Werke binnen 60 m (Lehre 19: Ecken-Farbe × Stoff-Farbe × Instanz-Farbe des
     // Bau-Satzes, der Host-Baupläne `g:` und der Bau-Teile mit `userData.stoff`) je LAGE der Fläche — oben, nord (−z), Wetterseite (gegen den Zug der Fronten,
-    // `_alterWind`, dieselbe Richtung, die der Kern `_alterLage` liest) —, zweimal vorher (das Rauschen), dann springt die Welt-Uhr der
+    // `_alterWind`, dieselbe Richtung, die der Kern `_alterLage` liest; „verschieden“ urteilt an den DISJUNKTEN Resten nur-Nord ↔
+    // nur-Wetter mit dem Farbabstand ΔE*ab, Entscheid des Koordinators 24.11.) —, zweimal vorher (das Rauschen), dann springt die Welt-Uhr der
     // Prozesse um 30 Tage über den Weg, den das Spiel für eine spätere Uhr hat (`_weltUhrNimm`: Stand und Mitspieler; das Alter liest
     // `_weltTag`, nie die Uhr des Spielers — `setTimeOfDay` altert seit w28-lava-nachlauf nichts), der Loop des Spiels legt die gealterten
     // Ecken (`_tickWerkAlter`), und die Albedo wird neu gelesen. S2: weiter bis 1 Jahr, das Bild an der Pose. S3–S8 zählen die Welt.
@@ -3480,7 +3481,7 @@ LEITERN.push(
                 1: {
                     soll: [
                         { wort: "albedo_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02", feld: "richter" },
-                        { wort: "seiten_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden", feld: "richter" },
+                        { wort: "seiten_de", richtung: "≥", wert: 2.3, wortlaut: "Nord- und Wetterseite verschieden (ΔE*ab ≥ 2,3)", feld: "richter" },
                     ],
                     umfang: { verlangt: 3, einheit: "alternde Stoffe in einem Werk", wortlaut: "1 Werk, 3 Stoffe", feld: "umfang" },
                 },
@@ -3539,17 +3540,19 @@ LEITERN.push(
                         if (set.size) werke++;
                         if (set.size > max) [max, typ] = [set.size, e.type + " (" + [...set].join(", ") + ")"];
                     }
-                    // die Studio-Werke im Bau-Satz: je Rezept die Stoffe seiner alternden Gruppen (`_satzAlter`, WERK_ALTER.seh)
+                    // die Studio-Werke im Bau-Satz: je Rezept die Arten seiner alternden Gruppen — der Name, als den das Spiel die Gruppe
+                    // altert (`_satzAlter(g).stoff`: die Tafel des Gesetzes des Alters je Art des Gefüges), nie eine eigene Zuordnung
                     const jeRezept = new Map();
                     for (const g of (s.archInstanceGroups || new Map()).values()) {
                         if (!g || !g.satz || !(g.liveCount > 0) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const im = g.mesh.instanceMatrix.array;
-                        if (Math.hypot(im[12] - P.x, im[14] - P.z) > o.R || !r._satzAlter(g)) continue;
-                        const pre = /^f:([^|]+)\|/.exec(String(g.key)), u = g.mesh.material && g.mesh.material.userData;
-                        const name = u && u.foundryMp ? AnazhRealm.WERK_ALTER.seh[u.foundryMp.seh] : null;
-                        if (!pre || !name) continue;
+                        const al = Math.hypot(im[12] - P.x, im[14] - P.z) > o.R ? null : r._satzAlter(g);
+                        if (!al) continue;
+                        if (typeof al.stoff !== "string" || !al.stoff) throw new Error("same.gedaechtnis.alter: _satzAlter(g) nennt die Art nicht (" + String(g.key) + ")");
+                        const pre = /^f:([^|]+)\|/.exec(String(g.key));
+                        if (!pre) continue;
                         if (!jeRezept.has(pre[1])) jeRezept.set(pre[1], new Set());
-                        jeRezept.get(pre[1]).add(name);
+                        jeRezept.get(pre[1]).add(al.stoff);
                     }
                     for (const [k, set] of jeRezept) if (set.size > max) [max, typ] = [set.size, k + " (" + [...set].join(", ") + ")"];
                     werke += jeRezept.size;
@@ -3599,6 +3602,8 @@ LEITERN.push(
                                 else if (Math.abs(n.y) < 0.3) {
                                     if (n.z < -0.5) lagen.push("nord");
                                     if (-(n.x * gx + n.z * gz) > 0.5) lagen.push("wetter");
+                                    // die DISJUNKTEN Reste: nur im Nord-Fach, nur im Wetter-Fach (decken sich die Fächer, urteilt „verschieden“ nur dort)
+                                    if (lagen.includes("nord") !== lagen.includes("wetter")) lagen.push(lagen.includes("nord") ? "nordNur" : "wetterNur");
                                 }
                                 if (!lagen.length) continue;
                                 const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];
@@ -3636,22 +3641,39 @@ LEITERN.push(
                 };
                 const d = (a, b) => (a && b ? Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]), Math.abs(b[2] - a[2])) : null);
                 const r4 = (v) => (Number.isFinite(v) ? Math.round(v * 1e4) / 1e4 : null);
-                // je Klasse: Δ je Lage (≥ 20 Ecken) über dem Rauschen der Klasse; die Seiten: |Δ nord − Δ wetter|
+                const r2 = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
+                // CIE L*a*b* aus der linearen Albedo (sRGB-Primärvalenzen, Weiß D65 — CIE 15:2004); ΔE*ab = CIE76, die Schwelle der
+                // Wahrnehmung 2,3 (Mahy · Van Eycken · Oosterlinck 1994, Color Res. Appl. 19(2):105–121)
+                const fL = (x) => (x > (6 / 29) ** 3 ? Math.cbrt(x) : x / (3 * (6 / 29) ** 2) + 4 / 29);
+                const lab = (c) => {
+                    const X = fL((0.4124564 * c[0] + 0.3575761 * c[1] + 0.1804375 * c[2]) / 0.95047), Y = fL(0.2126729 * c[0] + 0.7151522 * c[1] + 0.072175 * c[2]);
+                    const Z = fL((0.0193339 * c[0] + 0.119192 * c[1] + 0.9503041 * c[2]) / 1.08883);
+                    return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+                };
+                const dE = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+                // je Klasse: Δ je Lage (≥ 20 Ecken) über dem Rauschen der Klasse; die Seiten: ΔE*ab zwischen dem Alter des Rests nur-Nord
+                // und dem des Rests nur-Wetter (|ΔLab nur-Nord − ΔLab nur-Wetter|: die Seiten ALTERN verschieden, nie der Grund der Wände)
+                // über dem Rauschen beider Reste; trägt keine Klasse ≥ 20 Ecken in beiden Resten, decken sich die Fächer
                 const vergleich = (vor, zwei, nach) => {
-                    let albedo = null, seiten = null, wo = null, wos = null;
+                    let albedo = null, seiten = null, wo = null, wos = null, reste = 0;
                     for (const kl of Object.keys(vor.je)) {
                         const a = vor.je[kl], b = nach.je[kl], z = zwei.je[kl] || {};
                         if (!b) continue;
-                        const rausch = Math.max(0, ...Object.keys(a).map((l) => d(a[l], z[l]) || 0));
+                        const rausch = Math.max(0, ...["oben", "nord", "wetter"].map((l) => d(a[l], z[l]) || 0));
                         const D = {};
                         for (const l of ["oben", "nord", "wetter"]) if (a[l] && b[l] && a[l][3] >= 20) D[l] = d(a[l], b[l]);
                         for (const l of Object.keys(D)) if (albedo === null || D[l] - rausch > albedo) [albedo, wo] = [D[l] - rausch, kl + " " + l + " Δ " + r4(D[l]) + " (Rauschen " + r4(rausch) + ")"];
-                        if ("nord" in D && "wetter" in D) {
-                            const sd = Math.abs(D.nord - D.wetter);
-                            if (seiten === null || sd > seiten) [seiten, wos] = [sd, kl + " nord Δ " + r4(D.nord) + " · wetter Δ " + r4(D.wetter)];
+                        const rest = (l) => a[l] && b[l] && a[l][3] >= 20 && b[l][3] >= 20;
+                        if (rest("nordNur") && rest("wetterNur")) {
+                            reste++;
+                            const [vN, vW, nN, nW] = [lab(a.nordNur), lab(a.wetterNur), lab(b.nordNur), lab(b.wetterNur)];
+                            const rN = z.nordNur ? dE(vN, lab(z.nordNur)) : 0, rW = z.wetterNur ? dE(vW, lab(z.wetterNur)) : 0;
+                            const de = dE([nN[0] - vN[0], nN[1] - vN[1], nN[2] - vN[2]], [nW[0] - vW[0], nW[1] - vW[1], nW[2] - vW[2]]) - Math.max(rN, rW);
+                            if (seiten === null || de > seiten)
+                                [seiten, wos] = [de, kl + " ΔE nur-Nord " + r2(dE(nN, vN)) + " · nur-Wetter " + r2(dE(nW, vW)) + " · Rauschen " + r2(Math.max(rN, rW)) + " (" + b.nordNur[3] + " · " + b.wetterNur[3] + " Ecken)"];
                         }
                     }
-                    return { albedo: r4(albedo), seiten: r4(seiten), wo, wos, klassen: Object.keys(vor.je).length };
+                    return { albedo: r4(albedo), seiten: r2(seiten), wo, wos, reste, klassen: Object.keys(vor.je).length };
                 };
                 await L.ort("stadt-voll", "third");
                 L.preisPose("stadt-voll", "third");
@@ -3686,10 +3708,11 @@ LEITERN.push(
                     const v = vergleich(vor, zwei, nach30);
                     L.zeile("Alter 30 d: Sprung " + JSON.stringify(s30) + " · Loop " + JSON.stringify(a30) + " · " + JSON.stringify(v));
                     const tage = r4(s30.nach - s30.vor);
-                    L.gemessen(1, { albedo_delta: v.albedo, seiten_delta: v.seiten }, {
+                    if (!v.reste) throw new Error("Fächer decken sich: keine Klasse binnen 60 m trägt ≥ 20 Ecken in nur-Nord UND nur-Wetter (Wind " + JSON.stringify(w.wind) + ")");
+                    L.gemessen(1, { albedo_delta: v.albedo, seiten_de: v.seiten }, {
                         erzeugt: w.max,
                         welt: { tage, werke: w.werke },
-                        taeter: "größtes Δ " + (v.wo || "keines") + " · Seiten " + (v.wos || "keine Klasse mit Nord- und Wetterseite") + " · " + v.klassen + " Klassen · reichstes Werk " + (w.typ || "keines") + (a30.gelaufen && !a30.werke && !a30.satz ? "" : " · nach " + a30.lauf_s + " s Loop warteten " + a30.werke + " Werke, " + a30.satz + " Sätze"),
+                        taeter: "größtes Δ " + (v.wo || "keines") + " · Seiten " + v.wos + " · " + v.klassen + " Klassen · reichstes Werk " + (w.typ || "keines") + (a30.gelaufen && !a30.werke && !a30.satz ? "" : " · nach " + a30.lauf_s + " s Loop warteten " + a30.werke + " Werke, " + a30.satz + " Sätze"),
                     });
                 });
                 // S2: weiter bis 1 Jahr, das Bild an der Pose (die Zahlen daneben)
@@ -3701,7 +3724,7 @@ LEITERN.push(
                     const nach365 = await ev(lies, { R: 60 });
                     const v = vergleich(vor, vor, nach365);
                     L.zeile("Alter 1 a: Sprung " + JSON.stringify(s365) + " · Loop " + JSON.stringify(a365) + " · " + JSON.stringify(v));
-                    await L.auge(2, { werte: { albedo_delta_1a: v.albedo, seiten_delta_1a: v.seiten, tage: r4(s365.nach - s30.vor) } });
+                    await L.auge(2, { werte: { albedo_delta_1a: v.albedo, seiten_de_1a: v.seiten, tage: r4(s365.nach - s30.vor) } });
                 });
             },
         })

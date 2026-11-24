@@ -39,3 +39,24 @@ pm-nacht-front karte2.erleben.bild.nacht#1,karte2.erleben.bild.nacht#2
 pm-front-widerspruch karte2.erleben.sinne.signale#1,karte2.same.physik.tragen#1,karte2.same.kopplung.zeitreise#1,karte2.same.preis.ausdauer#1
 # Station pm-beobachter (punkte-maschine 011f0280, 24.11. 01:44): neun Fronten urteilen über den Adress-Fächer stationen/faecher.js (M4, der Richter als Beobachter) statt an der Bühne; headless gefahren, jede Bildpflicht ungemessen bis zum Gerät (cloud-post/pm-beobachter.md); technik#1 gebucht, nicht beansprucht
 pm-beobachter karte2.mensch.fahrzeug.medium#2,karte2.mensch.nahrung.tier#2,karte2.planet.kosmos.systeme#1,karte2.erleben.spieler.wegfindung#1,karte2.same.massstab.spanne#1,karte2.planet.kopplung.bahn-klima#2,karte2.same.kopplung.kohaerenz#1,karte2.leben.evolution.fremde-physik#1,karte2.leben.oeko.netz#2
+# z701 (main 60e8909d, 24.11. 02:46): EIN Wetter-Feld je Ort — Wind, Regen und Wolken-Zug folgen der Front am Ort (die Richter terraform#1 und bahn-klima#2 urteilten am Zweig rot und stehen nicht im Anspruch)
+w28-wetter-am-ort karte2.planet.kopplung.wetter-welt#2,karte2.mensch.kopplung.leib#1,karte2.mensch.kopplung.kultur#2
+# z702 (main 5b0f551a, 24.11. 03:55): vier Stoff-Fronten — Rauch (Deckung 4,98 %), Wehr ihrer Zeit (0,75), Plankton im See (Sicht 8,323 m); alter#1 urteilt ehrlich rot (Seiten-ΔE 0,77 gegen 2,3) und steht nicht im Anspruch
+w28-front-stoff karte2.same.physik.reaktion#1,karte2.mensch.macht.wehrbau#2,karte2.planet.wasser.tiefsee#1
+# z703 (main 447eaea6, 24.11. 04:25): der Fisch folgt dem Pegel (Hub des Stands je Pegel-Hub 0,394 → 0,844); Brandflucht (ereignis#2 ohne Zeugen) und Stirn (gesicht#1 noch 7 von 10 rot) stehen nicht im Anspruch
+w28-front-leben karte2.leben.wasser.netz#1
+# z705 (main 9d4319c0, 24.11. 05:21): der Klang folgt dem Weg und dem Leib — Einsatz nach d/c(T) 12 von 12 Proben (vorher 0), die Stimme 120 von 120 Formanten ±15 % (vorher stumm); ein-ereignis#2 (das Bild des Blitzes fehlt) und getuemmel#1 (nur der Duck 12,0 → 10,0 dB) stehen nicht im Anspruch
+w28-klang-leib karte2.erleben.klang.raum#1,karte2.erleben.klang.stimme#1
+# 706 (main 87bb259c, 24.11. 07:04): das Klima des Planeten ist EIN Gesetz (planetKlimaR): Nebel an Ostrand-Strömen 4,46× Umland an 77,1 %, zwei Küsten gleicher Breite 5,05 K; die Front der Leiter steht bei #1 (Luv/Lee 1,258 gegen ≥ 2 — die Station misst an Plateau-Buckeln, echte Ketten geben 2,92), #2 (Rang 0,211) und #5 (−9,5 %) stehen nicht im Anspruch, gegenwart#2 (Wert 98,6 %, Zeuge 12 statt 100 Saaten) und stadtklima#1 (Stadt 18,3°, Dorf offen) ebenso nicht; der Klassen-Schnitt der Karte (cloud-post/<zweig>.md) landete mit
+w28-klima-kontinent karte2.planet.kopplung.land-meer-luft#3,karte2.planet.kopplung.land-meer-luft#4
+# 707 (main c2c7ed12, 24.11. 07:32): z707 w28-licht-stetig gelandet 07:42:02 → main c2c7ed12
+w28-licht-stetig karte2.planet.kosmos.himmelsmechanik#1
+# 708 (main 07693cc8, 24.11. 07:49): z708 w28-erbe-geburt gelandet 07:59:14 → main 07693cc8
+w28-erbe-geburt karte2.leben.evolution.erbe#1,karte2.leben.evolution.zivilisation#1
+# 709 (main c9da3a64, 24.11. 08:03): nerv-bewegung: der Gang der Tiere aus dem Nerv · bewohner-satz: der Bewohner als EIN Satz (elf Front-Sprossen laut Zweig-Bericht; gespraech#2 misst bis zur Erweiterung der Station 0, seuche#1 ohne Ansteckung)
+w28-nerv-bewegung karte2.leben.tiere.bewegung#1
+w28-bewohner-satz2 karte2.mensch.kultur.sprache#1,karte2.mensch.geist.gespraech#2,karte2.mensch.geist.netz#1,karte2.mensch.geist.generationen#1,karte2.mensch.geist.absicht#2,karte2.mensch.sport.koennen#2,karte2.mensch.sport.kunst#1,karte2.mensch.menge.seuche#1,karte2.mensch.macht.recht#1,karte2.mensch.macht.krieg#1,karte2.mensch.macht.megastadt#1
+# Nachmessung 24.11. 09:07 (kein Zug): zwei Front-Sprossen sind rot nur durch ALTE Akten — sukzession#1 trägt eine NaN-Kurve vom 22.11. (sechs andere Läufe und headless am main: 4 · 0,4), gegenwart#2 trägt 46,3 % von vor klima-kontinent (am Kopf c9da3a64 gemessen: 98,6 %, 356 von 361)
+nachmessung-2411 karte2.leben.oeko.sukzession#1,karte2.planet.kopplung.gegenwart#2
+# 710 (main f18576b6, 24.11. 09:46): z710 gelandet 09:57 (main f18576b6): der Schwung des Gangs — Sprint Knie-Spitze 107,2 → 123,1°, Rumpf 0,5 → 9,0° (node); die Station k2-mensch-sport urteilt Tempo, Sprung und Umfang am Gerät
+w28-nerv-schwung karte2.mensch.sport.koerper#1

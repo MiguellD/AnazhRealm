@@ -149,8 +149,11 @@ const SPORT = async (r, T, arg) => {
 // DER LEIB IM TAKT (sport.koerper S1 + S2): der Spieler an der Mess-Wiese im Takt des Spiels (60 Hz, die Verb-Tafel `gehalten`):
 // gehen und laufen je 150 Takte (das Tempo über die letzte Sekunde), springen aus dem Stand (der Hub der Lage über 84 Takte), dann
 // den steilsten Hang im Umkreis von 12 m hinauf (die Richtung probiert die Gier aus: der Weg der Probe nennt seine Neigung). DER FUSS
-// IM STAND: je Knöchel (`rig.legL/legR.ankle`) die Takte, in denen er höchstens 1 cm über seinem tiefsten Stand über dem Gelände
-// steht (der flache Fuß); je solcher Phase (≥ 3 Takte) der größte waagrechte Weg ab ihrem Beginn — das Gleiten.
+// IM STAND: je Fuß seine Drehpunkte, Ferse und Ballen (die Sohle der Fuß-IK, `rig._sohle` aus koerper `leibSohle`, im Rahmen des
+// Knöchels), je Punkt die Takte, in denen er höchstens 1 cm über seinem tiefsten Stand über dem Gelände steht (er trägt); je solcher
+// Phase (≥ 3 Takte) der größte waagrechte Weg ab ihrem Beginn — das Gleiten. Bis nerv-bewegung maß die Probe den KNÖCHEL: rollt der
+// Fuß über die Ferse ab (Perry 1992, der erste Wiegepunkt), schwenkt der Knöchel um die ruhende Ferse nach vorn — die Probe las
+// die Drehung als Gleiten (1,89 cm an a69cac3 bei 1,15 m/s, die Ferse selbst steht).
 const LEIB = async (r, T, arg) => {
     const st = r.state;
     const pm = st.playerMesh;
@@ -158,6 +161,7 @@ const LEIB = async (r, T, arg) => {
     const halt = st.verbTafel.gehalten;
     const rig = pm.userData && pm.userData.rig;
     const fuesse = rig ? [rig.legL && rig.legL.ankle, rig.legR && rig.legR.ankle].filter(Boolean) : [];
+    const punkte = []; // je Fuß [Knöchel, Ferse], [Knöchel, Ballen] — gesetzt, sobald die Fuß-IK ihre Sohle vermessen hat
     let uhr = performance.now();
     const takt = () => r._gameLoopTick((uhr += 1000 / 60));
     const v = new T.Vector3();
@@ -170,15 +174,15 @@ const LEIB = async (r, T, arg) => {
     };
     const lauf = (sprint, n) => {
         const spur = [];
-        const F = fuesse.map(() => []);
+        const F = punkte.map(() => []);
         halt.vor = true;
         halt.sprint = !!sprint;
         try {
             for (let i = 0; i < n; i++) {
                 takt();
                 spur.push([pm.position.x, pm.position.y, pm.position.z]);
-                fuesse.forEach((b, k) => {
-                    b.getWorldPosition(v);
+                punkte.forEach(([b, q], k) => {
+                    b.localToWorld(v.copy(q));
                     F[k].push([v.x, v.y - boden(v.x, v.z), v.z]);
                 });
             }
@@ -215,6 +219,9 @@ const LEIB = async (r, T, arg) => {
     let gehen, sprint, hub, hang, steil;
     try {
         ruhe(10);
+        const so = rig && rig._sohle;
+        if (!so) return { fehlt: "keine Sohle am Rig (koerper leibSohle über _gaitIKPrep)" };
+        for (const b of fuesse) punkte.push([b, new T.Vector3(0, -so[1], -so[2])], [b, new T.Vector3(0, -so[1], so[0])]);
         gehen = lauf(false, 150);
         sprint = lauf(true, 150);
         ruhe(40);
@@ -265,6 +272,249 @@ const LEIB = async (r, T, arg) => {
         steilGrad: +((Math.atan(steil.s) * 180) / Math.PI).toFixed(1),
         gleitenCm: +(100 * Math.max(0, ...gehen.gleiten, ...sprint.gleiten, ...hang.gleiten)).toFixed(2),
     };
+};
+
+// DIE ELF VERBEN IM SPIEL (sport.koerper S1, nerv-bewegung): je Zeile der Verb-Tafel des Kerns (koerper VERB_TAFEL) der Leib des
+// Spielers im Takt des Spiels (60 Hz, die Verb-Tafel `gehalten`, wie LEIB) gegen das Gesetz seines Verbs — gemessen, nie gesetzt.
+// Gehen, Sprint und Sprung misst LEIB; hier die acht anderen. Die Geräte stehen als Werke des Fachwerks (WERKE mit siteTag
+// spielplatz) 20 m auseinander neben dem Leib, ihr Angebot aus dem EINEN Gesetz der Welt (`_geraetAngebotWelt`), der Zustand des
+// Geräts am Verb des Leibs (`leibVerb.theta`, `leibVerb.ang.zustand` — nie an einer Kopie); die Wand ist ein Bauplan (3 × 5,5 m),
+// das Wasser der See nächst der Mess-Wiese (wasser-linse `__wasserOrte`, die Welt an sein Ostufer gestreamt). Je Verb der Wert und
+// sein Band: Schaukel-Periode gegen 2π√(L/g) (VERB_SOLL.periode), Rutsche Spitze und Ausgang, Wippe an den Anschlag, Klettern ·
+// Hangeln · Balancieren im Tempo-Band (VERB_SOLL.tempo), die Wand im Tempo parkour.kletterV, Schwimmen gegen Gehen × speedMul
+// (koerper fx.bewegung.schwimmen). Spike nerv-bewegung (Cloud, Null-Renderer, an 374e1c6+): 8 von 8 im Band, 14,8 s.
+const VERBEN = async (r, T, arg) => {
+    const st = r.state;
+    const pm = st.playerMesh;
+    const KC = window.__koerperCore;
+    const FC = globalThis.__fachwerkCore;
+    if (!pm || typeof r._gameLoopTick !== "function" || !KC || !KC.VERB_TAFEL || !KC.VERB_SOLL || !FC || !FC.WERKE)
+        return { fehlt: "kein Leib, kein Spiel-Takt oder kein Verb-Gesetz (koerper VERB_TAFEL · VERB_SOLL, fachwerk WERKE)" };
+    const halt = st.verbTafel.gehalten;
+    const F = AnazhRealm.PLAYER_FOOT_OFFSET;
+    const S = KC.VERB_SOLL;
+    const VG = KC.VERB_GESETZ;
+    const g = Math.abs(st.gravity);
+    let uhr = performance.now();
+    const takt = () => r._gameLoopTick((uhr += 1000 / 60));
+    const los = () => {
+        for (const k of ["vor", "sprint", "jump", "rutschen"]) halt[k] = false;
+    };
+    const boden = (x, z) => r.getTerrainHeightAt(x, z);
+    // die Lage setzen wie die Leib-Proben (g5 leibK3): Mesh, Sim-Lage und der Zustand des Kontakts
+    const setz = (x, y, z, gier) => {
+        st.leibVerb = null;
+        pm.position.set(x, y + F, z);
+        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+        [st._fixedPrevPos, st._fieldVy, st.isInAir, st._fieldWasGrounded, st.playerUnderwater, st.playerEyesUnderwater] = [null, 0, false, false, false, false];
+        st.playerVel.setValue(0, 0, 0);
+        st.yaw = gier;
+        if (st.player) st.player.stamina = 100;
+    };
+    // die Tasten je Strecke (W vor · + Sprint · ^ Sprung · C Sitzen), je Takt der Leser `je(n, tasten)`
+    const fahre = (skript, je) => {
+        let n = 0;
+        try {
+            for (const [k, t] of skript) {
+                halt.vor = t.includes("W");
+                halt.sprint = t.includes("+");
+                halt.jump = t.includes("^");
+                halt.rutschen = t.includes("C");
+                for (let i = 0; i < k; i++) {
+                    takt();
+                    if (je) je(n++, t);
+                }
+            }
+        } finally {
+            los();
+        }
+    };
+    const ruhe = (n) => fahre([[n, ""]]);
+    const P0 = pm.position.clone();
+    const yaw0 = st.yaw;
+    const aus = {};
+    const band = (name, wert, lo, hi, gesetz) => (aus[name] = { wert: Number.isFinite(wert) ? +wert.toFixed(3) : null, lo, hi, gesetz, ok: Number.isFinite(wert) && wert >= lo && wert <= hi });
+    const fehlt = (name, warum) => (aus[name] = { wert: null, ok: false, fehlt: warum });
+    const werke = [];
+    try {
+        // DIE GERÄTE: je Werk des Spielplatzes eine Stelle 20 m weiter, der Boden der Stelle trägt es
+        const arten = Object.entries(FC.WERKE).filter(([, w]) => w && w.siteTag === "spielplatz");
+        const ang = {};
+        arten.forEach(([id, w], i) => {
+            const x = P0.x + 20 * (i + 1);
+            const z = P0.z + 20;
+            const e = r.spawnArchitecture(w.kind + "_" + id, { x, y: boden(x, z) + 0.5, z }, { rotationY: 0, silent: true, precise: true, seed: 1 });
+            if (!e) return;
+            werke.push(e);
+            ang[id] = r._geraetAngebotWelt(e, id);
+        });
+        const an = (werk, verb, teil) => (ang[werk] || []).find((a) => a.verb === verb && (!teil || a.teil === teil));
+        const verb = () => st.leibVerb && st.leibVerb.verb;
+        // SCHAUKELN: aufsitzen, eine Sekunde anschwingen, frei ausschwingen — die Periode aus den Nulldurchgängen hinauf
+        const sa = an("doppelschaukel", "schaukeln", "sitz0");
+        if (!sa) fehlt("schaukeln", "keine Doppelschaukel gesetzt");
+        else {
+            setz(sa.sitz[0], boden(sa.sitz[0], sa.sitz[2] + 0.3), sa.sitz[2] + 0.3, 0);
+            ruhe(10);
+            const nd = [];
+            let prev = null;
+            let drin = 0;
+            fahre([[1, "C"], [2, ""], [60, "W"], [360, ""]], (n) => {
+                if (verb() !== "schaukeln") return (prev = null);
+                drin++;
+                const th = st.leibVerb.theta;
+                if (n > 63 && prev !== null && prev < 0 && th >= 0) nd.push(n);
+                prev = th;
+            });
+            const Lp = sa.achse.a[1] - sa.sitz[1] - VG.schaukeln.sitzSchwerpunktM;
+            const soll = 2 * Math.PI * Math.sqrt(Lp / g);
+            const per = nd.length > 1 ? (nd[nd.length - 1] - nd[0]) / (nd.length - 1) / 60 : NaN;
+            band("schaukeln", drin ? per : NaN, soll * (1 - S.periode), soll * (1 + S.periode), "Periode 2π√(L/g) " + soll.toFixed(3) + " s ± " + 100 * S.periode + " % (L " + Lp.toFixed(3) + " m)");
+            fahre([[1, "C"]]);
+            ruhe(30);
+        }
+        // RUTSCHEN: am Kopf der Bahn sitzen, gleiten — die Spitze und der Ausgang
+        const ra = an("turmrutsche", "rutschen");
+        if (!ra) fehlt("rutschen", "keine Turmrutsche gesetzt");
+        else {
+            setz(ra.bahn[0][0], ra.podest, ra.bahn[0][2] - 0.15, 0);
+            ruhe(5);
+            let vmax = NaN;
+            let ab = NaN;
+            fahre([[1, "C"], [300, ""]], () => {
+                const V = st.leibVerb;
+                if (V && V.verb === "rutschen") vmax = Math.max(Number.isFinite(vmax) ? vmax : 0, V.tempo || 0);
+                else if (Number.isFinite(vmax) && !Number.isFinite(ab)) ab = Math.hypot(st.playerVel.x(), st.playerVel.z());
+            });
+            band("rutschen", vmax, S.tempo.rutscheMax[0], S.tempo.rutscheMax[1], "Spitze im Band der Rutsche (Ausgang " + (Number.isFinite(ab) ? ab.toFixed(2) : "—") + " m/s, Band " + S.tempo.rutscheAusgang.join("–") + ")");
+            if (aus.rutschen.ok && !(ab >= S.tempo.rutscheAusgang[0] && ab <= S.tempo.rutscheAusgang[1])) aus.rutschen.ok = false;
+            aus.rutschen.ausgang = Number.isFinite(ab) ? +ab.toFixed(3) : null;
+            ruhe(30);
+        }
+        // WIPPEN: aufsitzen, abstoßen — der Hebel kippt an seinen Anschlag
+        const wa = an("balkenwippe", "wippen");
+        if (!wa) fehlt("wippen", "keine Balkenwippe gesetzt");
+        else {
+            setz(wa.sitz[0][0], boden(wa.sitz[0][0], wa.sitz[0][2] + 0.3), wa.sitz[0][2] + 0.3, 0);
+            ruhe(10);
+            let phi = NaN;
+            fahre([[1, "C"], [60, ""], [1, "^"], [90, ""]], () => {
+                const z = verb() === "wippen" && st.leibVerb.ang.zustand;
+                if (z) phi = Math.max(Number.isFinite(phi) ? phi : 0, Math.abs(z.phi || 0));
+            });
+            band("wippen", phi, wa.phiMax - 1e-6, Math.PI, "der Hebel am Anschlag phiMax " + wa.phiMax.toFixed(3) + " rad");
+            fahre([[1, "C"]]);
+            ruhe(30);
+        }
+        // KLETTERN am Sprossengerüst: vor gegen die Fläche, hinauf — das Tempo des Stiegs
+        const ka = an("sprossengeruest", "klettern");
+        if (!ka) fehlt("klettern", "kein Sprossengerüst gesetzt");
+        else {
+            const n = ka.normale;
+            setz(ka.flaeche[0] + n[0] * 0.4, boden(ka.flaeche[0] + n[0] * 0.4, ka.flaeche[2] + n[1] * 0.4), ka.flaeche[2] + n[1] * 0.4, Math.atan2(-n[0], -n[1]));
+            ruhe(10);
+            const v = [];
+            fahre([[40, "W"], [300, "W"]], () => {
+                const V = st.leibVerb;
+                if (V && V.verb === "klettern" && Number.isFinite(V.tempo)) v.push(V.tempo);
+            });
+            band("klettern", v.length ? v.reduce((s, x) => s + x, 0) / v.length : NaN, S.tempo.klettern[0], S.tempo.klettern[1], "Tempo des Stiegs im Band (VERB_SOLL.tempo.klettern)");
+            ruhe(60);
+        }
+        // HANGELN an der Hangelbahn: hinauf springen, greifen, vor — das Tempo längs des Holms
+        const ha = an("hangelbahn", "hangeln");
+        if (!ha) fehlt("hangeln", "keine Hangelbahn gesetzt");
+        else {
+            const h = ha.holme[0];
+            const x = (h[0][0] + h[1][0]) / 2;
+            setz(x, boden(x, h[0][2]), h[0][2], 0);
+            ruhe(10);
+            let p0 = null;
+            let t0 = 0;
+            let p1 = null;
+            let t1 = 0;
+            fahre([[1, "^"], [40, "^"], [200, "W"]], (n) => {
+                if (verb() !== "hangeln") return;
+                if (!p0) [p0, t0] = [pm.position.clone(), n];
+                [p1, t1] = [pm.position.clone(), n];
+            });
+            band("hangeln", p0 && t1 > t0 ? Math.hypot(p1.x - p0.x, p1.z - p0.z) / ((t1 - t0) / 60) : NaN, S.tempo.hangeln[0], S.tempo.hangeln[1], "Tempo längs des Holms im Band (VERB_SOLL.tempo.hangeln)");
+            ruhe(60);
+        }
+        // BALANCIEREN auf dem Schwebebalken: aufsteigen, vor — das Tempo auf der Linie
+        const ba = an("schwebebalken", "balancieren");
+        if (!ba) fehlt("balancieren", "kein Schwebebalken gesetzt");
+        else {
+            const b = ba.bahn[0];
+            setz(b[0], b[1] + 0.05, b[2] + 0.3, 0);
+            ruhe(20);
+            let v = NaN;
+            fahre([[2, "W"], [150, "W+"]], () => {
+                const V = st.leibVerb;
+                if (V && V.verb === "balancieren") v = Math.max(Number.isFinite(v) ? v : 0, V.tempo || 0);
+            });
+            band("balancieren", v, S.tempo.balancieren[0], S.tempo.balancieren[1], "Tempo auf dem Balken im Band (VERB_SOLL.tempo.balancieren)");
+            ruhe(30);
+        }
+        // DIE WAND (Leib-Verb, parkour): ein Bauplan 3 × 4 m, vor gegen seine Fläche — der Stieg im Tempo kletterV
+        const kv = KC.PRESETS.mensch.fx.bewegung.parkour.kletterV;
+        if (!st.blueprints.messwand && r.createBlueprint("messwand"))
+            r.addPartToBlueprint("messwand", { position: { x: 0, y: 1.25, z: 0 }, size: { x: 3, y: 5.5, z: 0.4 } });
+        const wx = P0.x - 20;
+        const wz = P0.z + 20;
+        const wand = r.spawnArchitecture("messwand", { x: wx, y: boden(wx, wz) + 0.5, z: wz }, { precise: true, rotationY: 0 });
+        if (!wand) fehlt("wand", "der Bauplan der Wand steht nicht");
+        else {
+            werke.push(wand);
+            setz(wx, boden(wx, wz - 1.2), wz - 1.2, 0);
+            ruhe(10);
+            let y0 = null;
+            let n0 = 0;
+            let y1 = null;
+            let n1 = 0;
+            fahre([[240, "W"]], (n) => {
+                if (!(st._parkourKletter > 0)) return;
+                if (y0 === null) [y0, n0] = [pm.position.y, n];
+                [y1, n1] = [pm.position.y, n];
+            });
+            band("wand", y0 !== null && n1 > n0 ? (y1 - y0) / ((n1 - n0) / 60) : NaN, kv * 0.9, kv * 1.1, "Stieg an der Wand parkour.kletterV " + kv + " m/s ± 10 %");
+            ruhe(30);
+        }
+        // SCHWIMMEN im See nächst der Mess-Wiese (wasser-linse `__wasserOrte`, die Welt an sein Ostufer gestreamt wie gate:wasser-leben
+        // und g5 leib.K3): vom Ufer nach Westen, W bis der Leib schwimmt und nicht mehr geerdet ist, dann 90 Takte — das Tempo
+        // der letzten 60 gegen Gehen × speedMul (koerper fx.bewegung.schwimmen)
+        const SW = KC.PRESETS.mensch.fx.bewegung.schwimmen;
+        const orte = typeof window.__wasserOrte === "function" ? await window.__wasserOrte({}) : null;
+        if (!orte) fehlt("schwimmen", "die Orte des Wassers fehlen (wasser-linse WASSER_INSTALL)");
+        else if (!orte.see) fehlt("schwimmen", "kein See nächst der Mess-Wiese (__wasserOrte)");
+        else {
+            await window.__wasserStrom(orte.see.ufer, 0.6);
+            const [ux, uz] = orte.see.ufer;
+            setz(ux, r._voxelSurfaceY(ux, uz) + 0.05, uz, -Math.PI / 2);
+            ruhe(30);
+            let bis = 0;
+            halt.vor = true;
+            try {
+                while (bis < 2400 && !(st.playerUnderwater && !st._fieldWasGrounded)) (takt(), bis++);
+            } finally {
+                los();
+            }
+            const spur = [];
+            fahre([[90, "W"]], () => spur.push(st.playerUnderwater && !st._fieldWasGrounded ? [pm.position.x, pm.position.z] : null));
+            const letzte = spur.slice(-61);
+            const v = letzte.length === 61 && letzte.every(Boolean) ? Math.hypot(letzte[60][0] - letzte[0][0], letzte[60][1] - letzte[0][1]) : NaN;
+            const soll = st.speed * SW.speedMul;
+            band("schwimmen", v, soll * 0.9, soll * 1.1, "Tempo im See = Gehen × speedMul " + soll.toFixed(3) + " m/s ± 10 % (See " + orte.see.x + "/" + orte.see.z + ", nach " + bis + " Takten am Ufer)");
+            ruhe(10);
+        }
+    } finally {
+        los();
+        st.leibVerb = null;
+        for (const e of werke) r.removeArchitecture(e);
+        setz(P0.x, P0.y - F, P0.z, yaw0);
+        for (let i = 0; i < 30; i++) takt();
+    }
+    return { verben: aus, tafel: Object.keys(KC.VERB_TAFEL) };
 };
 
 const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
@@ -323,10 +573,10 @@ module.exports = (F) => [
 
     // ═══ KÖRPERKÖNNEN: der Leib des Spielers im Takt an der Mess-Wiese — Tempo, Sprung, der Fuß im Stand ═══
     F.leiter("mensch.sport.koerper", {
-        sek: 45,
+        sek: 60,
         mutiert: true,
-        pfad: ["koerper-core.js", "stamm/koerper-bewegung.js", "stamm/dirigent-kern.js", "stamm/gelaende-boden.js"],
-        seite: { LEIB, SPORT },
+        pfad: ["koerper-core.js", "stamm/koerper-bewegung.js", "stamm/dirigent-kern.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "fachwerk-core.js"],
+        seite: { LEIB, SPORT, VERBEN },
         messe: async (H, K) => {
             K.sicht = "third";
             await K.messort("wiese");
@@ -338,14 +588,28 @@ module.exports = (F) => [
             await K.schritt(7, async () => K.nicht(7, { n: 0, fehlt: "Weltklasse jeder Disziplin und Schwere: 0 Disziplinen" }));
             const L = await K.welt("return await (" + H.seite.LEIB + ")(r, T, {});", 40000);
             H.zeile("Leib: " + JSON.stringify(L));
+            // die acht Verben jenseits von Gehen, Sprint und Sprung (VERBEN, zuletzt: das Schwimmen streamt die Welt an den See)
+            await K.welt(require(require("path").resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL + "\nreturn true;", 10000);
+            const V = await K.welt("return await (" + H.seite.VERBEN + ")(r, T, {});", 60000);
+            H.zeile("Verben: " + JSON.stringify(V));
             await K.schritt(1, async () => {
                 if (L.fehlt) throw new Error(L.fehlt);
+                if (V.fehlt) throw new Error(V.fehlt);
                 const w = { gehen: L.gehen.tempo, sprint: L.sprint.tempo, sprung: L.sprungM };
+                // je Zeile der Verb-Tafel (koerper-core.js:6154 VERB_TAFEL): Gehen, Sprint, Sprung gemessen (ihr Band richten die Maße),
+                // jedes andere gemessen UND im Band seines Gesetzes
+                const tafel = V.tafel || [];
+                const da = tafel.filter((k) => (k in w ? Number.isFinite(w[k]) && w[k] > 0 : !!(V.verben[k] && V.verben[k].ok)));
+                const fehl = tafel.filter((k) => !da.includes(k));
+                const zeig = (k) => {
+                    const e = V.verben[k] || {};
+                    return k + " " + (e.fehlt ? "fehlt (" + e.fehlt + ")" : e.wert + " in " + +(+e.lo).toFixed(3) + "–" + +(+e.hi).toFixed(3) + " " + (e.ok ? "✓" : "✗"));
+                };
                 K.zahl(1, {
-                    n: Object.values(w).filter((x) => Number.isFinite(x) && x > 0).length,
+                    n: da.length,
                     werte: w,
-                    beleg: "Eichwert koerper-core.js:502 (Gehen ~1,5 · Sprint ~6,8 m/s · Sprung ~0,53 m; Klettern 0,6 · Schwimmen 1,3 m/s und die Geräte-Verben " + z.geraetVerben.join(", ") + " an der Wiese ungemessen: keine Wand, kein Wasser, kein Gerät)",
-                    taeter: "die Leib-Werte des Menschen (koerper-core.js fx.bewegung) — am Umfang: die Probe der Wiese stellt Klettern, Schwimmen und die Geräte-Verben nicht",
+                    beleg: "die Verb-Tafel koerper-core.js:6154 (leibVerben :6180) — Gehen " + w.gehen + " · Sprint " + w.sprint + " m/s · Sprung " + w.sprung + " m (LEIB, Mess-Wiese) · " + tafel.filter((k) => !(k in w)).map(zeig).join(" · "),
+                    taeter: fehl.length ? "die Verben außerhalb ihres Gesetzes: " + fehl.map(zeig).join(" · ") : "die Leib-Werte des Menschen (koerper-core.js leibVerben: Bein, Masse, Kraft)",
                 });
             });
             await K.schritt(2, async () => {

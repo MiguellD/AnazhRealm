@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 7,
+    "heute": 8,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.6,
+    "anteilHeute": 4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1560,7 +1560,7 @@
        "richter": "Licht, Druck und Phasen gegen deren Stoff ±20 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Stand 0: Absorption und Sicht je Wasser-Art als Gesetz (foundry-core.js:163-172), im Bild ungemessen.",
@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 27,
+    "heute": 28,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 4.9,
+    "anteilHeute": 5.1,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -10330,7 +10330,7 @@
        "richter": "Waffe getauscht → Form-Cluster wechselt ≥ 0,7"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "mauerRing 30 Ecken, Tore, Türme (fachwerk-core.js:4481); ummauerte Stadt vom Hügel in 7/8 Saaten an beiden Geräten (siedlung.K2) — KARTE: 0 — die ummauerte Stadt vom Hügel zählt bei mensch.stadt.siedlungsnetz (R9); Ring ohne Schwebe-Spalt bei Mittag und Dämmerung nie gerichtet.",
@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 10,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.7,
+    "anteilHeute": 4.5,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14202,7 +14202,7 @@
        "richter": "Bildpaar: im passenden Sinn sichtbar, im Menschensinn nicht; Empfänger reagieren ≥ 0,8"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Grep Warnruf/Alarmruf/Duftmarke/Gesang: 0 Treffer.",
@@ -14859,7 +14859,7 @@
        "richter": "100 Saaten: Laufzeit, Pegel, Höhendämpfung folgen der Atmosphären-Zeile in ≥ 95 %; Vakuum: Luftschall 0"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "kern",
      "beleg": "RT60 Feld 0,283 · Wald 0,649 · Gasse 1,522 · Höhle 3,195 s, Verdeckung Haus −11,2 dB (§32.K3 2/2); Klang-Takt Radeon p95 0,25 ms > 0,2 (§32.K5 1/2); kein HRTF, kein Medienwechsel. — KARTE: Kern 2 — am Abgriff gemessen (klang.K3); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget (an der Radeon 0,25 ms gegen 0,2) ist kein Preis mehr (R8).",
@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 11,
+    "heute": 12,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.4,
+    "anteilHeute": 5.8,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15455,7 +15455,7 @@
        "richter": "N = 100 Planeten-Saaten: Höhe der höchsten Bauten ∝ σ/(ρ·g) ±30 %; Blind-Jury ordnet Silhouetten der richtigen Schwere zu ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Biegung und Euler-Knick je Glied (stamm/bau-buch.js:1823-1892), aber durch knickSicherheit 500 geeicht (:2580-2591): relativ wahr, absolut nicht; Lastpfad-Bruch nur in der Werkstatt, kein gesätes Stadthaus bricht.",
@@ -16802,7 +16802,7 @@
        "preis": "P",
        "klasse": "Ort",
        "klasseGrund": "hand",
-       "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden, beide Geräte"
+       "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden (ΔE*ab ≥ 2,3), beide Geräte"
       },
       {
        "nr": 2,
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 77,
+  "heute": 82,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 4.2,
+  "anteilHeute": 4.4,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,8 +20103,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 50,
-  "nachwache": 27
+  "beide": 52,
+  "nachwache": 30
  },
  "zusammengelegt": [
   {
