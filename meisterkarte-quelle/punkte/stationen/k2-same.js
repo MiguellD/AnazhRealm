@@ -66,6 +66,34 @@ const AKTE_AN = async (r, T, a, mit) => {
     return { wirkt: allein !== kappe ? 1 : 0, bleibt: allein !== kappe && imStand === allein ? 1 : 0, mode: e.mode };
 };
 
+// DER PLAN OHNE EIN GLIED (same.physik.tragen#2, das Gesetz des Fächers): a = { plan, weg } — ein Plan des Gesetzbuchs
+// (`state.blueprints`, über den die Statik urteilt: `_werkAusTeilen` stamm/bau-teile.js:2491) ohne sein Glied `weg` (−1: der Plan
+// selbst, die Kontrolle). Die EINE Statik `_workshopPhysicsVerdict` (stamm/werkstatt-vorschau.js:659: der Lastpfad `_loadPath`
+// stamm/bau-buch.js:2001, Kippen, Knicken) — dieselbe, die `_werkGesetzSetzen` (stamm/bau-teile.js:2502) beim Setzen jedes Werks
+// liest — nennt die Glieder ohne Lastpfad. Kein Werk wird gesetzt.
+const TRAGEN_AN = async (r, T, a) => {
+    const bp = r.state.blueprints && r.state.blueprints[a.plan];
+    if (!bp || !Array.isArray(bp.parts)) return { fehlt: "der Plan " + a.plan + " fehlt im Gesetzbuch (state.blueprints)" };
+    const v = r._workshopPhysicsVerdict(a.weg < 0 ? bp : Object.assign({}, bp, { parts: bp.parts.filter((_, i) => i !== a.weg) }), 0);
+    return { glieder: bp.parts.length, ohne: (v.floatingParts || []).length, kippt: v.lean >= 1 ? 1 : 0, knickt: v.buckles ? 1 : 0 };
+};
+
+// DIE ZELLE DES BRAND-FELDS (same.physik.feuer#2, das Gesetz des Fächers): a.ort = [dc, dk] Zellen vom Leib (LIFE_FIELD.cell,
+// stamm/feld-leben.js:3184). Das Bett, wie die Front es antrifft (`_brandStoff` stamm/feld-brand.js:297: kein Bett auf Asche, über
+// Wasser — das EINE Urteil `_nassAt` —, unter minStoff) und sein Tempo (`_brandTempo` :395, Rothermel/Albini, zur Welt-Uhr
+// `spielZeit`) — dieselben zwei Rufe, mit denen `_brandZuenden` :481 jede Zelle der Front zündet oder ausfallen lässt. Ob an der Zelle
+// Wasser steht, sagt ein ZWEITES Gesetz: das gezeichnete Wasser (`_wasserBildAt` stamm/wasser-zellen.js:809) über dem Grund
+// (`_voxelSurfaceY`); dort muss die Front halten. Kein Feuer fängt (kein `_brandFangen`, kein Feld-Eintrag).
+const FEUER_AN = async (r, T, a) => {
+    const st = r.state, cs = r.constructor.LIFE_FIELD.cell, p = st.playerMesh.position;
+    const c = Math.floor(p.x / cs) + a.ort[0], k = Math.floor(p.z / cs) + a.ort[1], x = (c + 0.5) * cs, z = (k + 0.5) * cs;
+    const f = r._brandStoff(c, k, st.spielZeit);
+    const t = f ? r._brandTempo(f, st.spielZeit) : null;
+    const w = r._wasserBildAt(x, z), g = r._voxelSurfaceY(x, z);
+    const brennt = t && t.R > 0 ? 1 : 0, wasser = w === undefined || !Number.isFinite(g) ? null : Number.isFinite(w) && w > g + 0.05 ? 1 : 0;
+    return { brennt, haelt: 1 - brennt, wasser, bruch: wasser === 1 && brennt ? 1 : 0, R: brennt ? +t.R.toFixed(3) : null, stoff: f && f.zeile ? f.zeile.name : null };
+};
+
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
 const leiterDerKarte = (id) => {
@@ -814,6 +842,7 @@ LEITERN.push(
             leiter: "same.physik.tragen",
             sek: 60,
             mutiert: true,
+            seite: { FAECHER, TRAGEN_AN },
             pfad: [
                 "scripts/werkbank.cjs",
                 "stamm/bau-buch.js",
@@ -1114,8 +1143,45 @@ LEITERN.push(
                 L.zeile("Werke unter dem Gesetz an der Stadt-Pose (120 m): " + JSON.stringify(z));
                 const ohneStatik = z.haeuser + " Häuser binnen 120 m sind Studio-Gestalten ohne Statik (stamm/bau-teile.js:2493)";
                 await L.je(2, async () => {
-                    if (z.maxTeile < P.sprossen[2].umfang.verlangt)
-                        return L.umfang(2, z.maxTeile, "das größte Werk unter dem Gesetz binnen 120 m trägt " + z.maxTeile + " Glieder (" + (z.maxTyp || "keines") + ") — " + ohneStatik);
+                    // trägt die Welt an der Stadt kein Werk von ≈ 10 Gliedern, fragt der Fächer das Gesetz statt einer Bühne (vorher
+                    // „Umfang nicht erzeugbar“): je Plan des Gesetzbuchs mit ≥ 10 Gliedern unter der Statik und je Glied, das man ihm
+                    // nimmt, die Glieder ohne Lastpfad (TRAGEN_AN); die Kontrolle ist der Plan selbst (er steht: 0 ohne Lastpfad)
+                    if (z.maxTeile < P.sprossen[2].umfang.verlangt) {
+                        const v = P.sprossen[2].umfang.verlangt;
+                        const plaene = await L.ev(
+                            "const o = []; for (const [n, b] of Object.entries(r.state.blueprints || {})) if (b && Array.isArray(b.parts) && b.parts.length >= " + v +
+                                " && r._werkAusTeilen({ type: n, position: { x: 0, y: 0, z: 0 } }, b)) o.push([n, b.parts.length]); return o;",
+                            20
+                        );
+                        const dazu = [];
+                        for (const [plan, n] of plaene) for (let i = -1; i < n; i++) dazu.push({ plan, weg: i, ...(i < 0 ? { kontrolle: true } : {}) });
+                        const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                            gesetz: { fn: H.seite.TRAGEN_AN, export: "stamm/werkstatt-vorschau.js:659 _workshopPhysicsVerdict (Lastpfad stamm/bau-buch.js:2001 _loadPath)", leser: "stamm/bau-teile.js:2502 _werkGesetzSetzen" },
+                            adressen: { dazu },
+                            ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                            masse: {
+                                plaene: { wie: "verschieden", feld: "a.plan" },
+                                proben: { wie: "anzahl", nur: (a) => !a.kontrolle },
+                                glieder: { wie: "max", feld: "glieder" },
+                                ohne: { wie: "summe", feld: "ohne", nur: (a) => !a.kontrolle },
+                                stuerzt: { wie: "anzahl", nur: (a, w) => !a.kontrolle && (w.ohne > 0 || w.kippt || w.knickt) },
+                                kontrolle: { wie: "max", feld: "ohne", nur: "kontrolle" },
+                            },
+                            schlecht: { feld: "ohne", richtung: "max" },
+                            pose: (a) => "der Plan " + a.plan + " ohne Glied " + a.weg + " an der Wiese, Third — die Trümmer nach 10 min",
+                            ungemessen: ["was `_tickWerkGesetz` (stamm/bau-teile.js:2563) fallen lässt und ob die Trümmer 10 min liegen: nur am gesetzten Werk (der Richter setzt keines)", "das Bild: ungemessen bis zum Gerät"],
+                        });
+                        L.zeile("tragen S2 über den Fächer: " + R.akte.slice(0, 500));
+                        const w = R.werte;
+                        if (!w.proben) return L.leser(2, "das Werk von ≈ 10 Gliedern: " + (R.fehlt || "kein Plan des Gesetzbuchs mit ≥ " + v + " Gliedern unter der Statik") + " · " + R.akte, w.glieder || 0);
+                        if (w.kontrolle > 0) throw new Error("die Kontrolle (ein Plan ganz) trägt " + w.kontrolle + " Glieder ohne Lastpfad — der Lastpfad des Gesetzbuchs steht nicht, kein Urteil");
+                        return L.leser(
+                            2,
+                            "gefallene Teile gegen Teile ohne Lastpfad: kein Gesetz nennt, was ein Werk ohne Glied fallen lässt, ohne es zu setzen (`_tickWerkGesetz` stamm/bau-teile.js:2563 liest nur gesetzte Werke) — an " + w.plaene + " Plänen des Gesetzbuchs (bis " + w.glieder + " Glieder) × " + w.proben +
+                                " genommenen Gliedern nennt die Statik in " + w.stuerzt + " Fällen einen Sturz, " + w.ohne + " Glieder ohne Lastpfad; " + ohneStatik + "; Trümmer 10 min und das Bild: ungemessen bis zum Gerät · " + R.akte,
+                            w.glieder
+                        );
+                    }
                     const w = await ev(pfosten, { typ: z.maxTyp, budgetMs: Math.max(1000, (L.rest() - 12) * 1000) }, Math.max(5, L.rest() - 5));
                     L.zeile("Pfosten entfernt: " + JSON.stringify(w));
                     if (w.fehler) throw new Error(w.fehler);
@@ -1273,6 +1339,7 @@ LEITERN.push(
             leiter: "same.physik.feuer",
             sek: 60,
             mutiert: true,
+            seite: { FAECHER, FEUER_AN },
             pfad: [
                 "scripts/werkbank.cjs",
                 "scripts/lib/ausgabe-aufnahme.cjs",
@@ -1285,6 +1352,7 @@ LEITERN.push(
                 "stamm/dirigent-takt.js",
                 "stamm/bau-vorlagen.js",
                 "stamm/gelaende-boden.js",
+                "stamm/wasser-zellen.js",
             ],
             welt: [{ wort: "feld_neu", ab: 1, was: "Zellen, die das Brand-Feld beim Entfachen trug" }],
             sprossen: {
@@ -1302,6 +1370,7 @@ LEITERN.push(
                         { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "Bild-p95 ≤ 33 ms während 2 000 Zellen brennen", feld: "richter" },
                     ],
                     umfang: { verlangt: 2000, einheit: "brennbare Zellen der Wiese (10⁴ m²)", wortlaut: "eine Wiese (10⁴ m², 2 000 Zellen)", feld: "umfang" },
+                    welt: [{ wort: "zellen", ab: 1, was: "Zellen des Brand-Felds, die der Fächer las" }],
                 },
                 3: {
                     soll: [{ wort: "temp_abw_pct", richtung: "≤", wert: 20, wortlaut: "Raum-Temperatur gegen ISO 834 ±20 %", feld: "richter" }],
@@ -1465,9 +1534,45 @@ LEITERN.push(
                 const z = await ev(zaehlen, null, 50);
                 L.zeile("Brand-Feld und Häuser der Welt: " + JSON.stringify(z));
                 const nurVegetation = "das Brand-Feld brennt nur Betten der Zeilen gras und laub (stamm/feld-brand.js:214 `_brandStoff`)";
+                // S2 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“ an der Wiese): der Richter zündet keine Wiese. Je Zelle des
+                // Brand-Felds in 25 × 25 Zellen um den Leib (400 m × 400 m) das Bett und sein Tempo (FEUER_AN) — die Proben des Halts sind
+                // die Zellen, an denen gezeichnetes Wasser steht: dort darf die Front nie weiter. Die Gras-Zellen sind die Kontrolle: ohne
+                // eine Zelle, die brennt, trennt das Prädikat nichts.
                 await L.je(2, async () => {
-                    if (z.wiese < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.wiese, "die Wiese 100 × 100 m trägt " + z.wiese + " brennbare Zellen zu " + z.zelle + " m (AnazhRealm.LIFE_FIELD.cell, stamm/feld-leben.js:3078)");
-                    L.leser(2, "Halt und Front je Probe: kein Leser nennt die Front-Proben eines Brands (stamm/feld-brand.js:374 `_brandZuenden`)", z.wiese);
+                    const s2 = P.sprossen[2], orte = [];
+                    for (let dc = -12; dc <= 12; dc++) for (let dk = -12; dk <= 12; dk++) orte.push([dc, dk]);
+                    const wiese = (a) => Math.abs(a.ort[0]) <= 3 && Math.abs(a.ort[1]) <= 3;
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.FEUER_AN, export: "stamm/feld-brand.js:297 _brandStoff + :395 _brandTempo (gegen stamm/wasser-zellen.js:809 _wasserBildAt)", leser: "stamm/feld-brand.js:481 _brandZuenden" },
+                        adressen: { orte },
+                        ms: Math.max(4000, Math.floor((L.rest() - 12) * 1000)),
+                        masse: {
+                            zellen: { wie: "anzahl" },
+                            wiese: { wie: "summe", feld: "brennt", nur: wiese },
+                            brennt: { wie: "summe", feld: "brennt" },
+                            wasser: { wie: "summe", feld: "wasser" },
+                            halt: { wie: "mittel", feld: "haelt", nur: (a, w) => w.wasser === 1 },
+                            rMin: { wie: "min", feld: "R" },
+                            rMax: { wie: "max", feld: "R" },
+                        },
+                        schlecht: { feld: "bruch", richtung: "max" },
+                        pose: (a, x) => "die Zelle (" + a.ort.join(", ") + ") des Brand-Felds vom Leib" + (x.bruch ? " — ihr Bett brennt über Wasser" : "") + ", Third über der Front",
+                        ungemessen: ["Bild-p95 während 2 000 Zellen brennen: ungemessen bis zum Gerät (und das Feld rastert 16 m, die Wiese trägt keine 2 000)", "die Zeit der Front-Ankunft je Probe (eine Closure in `_brandZuenden` stamm/feld-brand.js:493)"],
+                    });
+                    L.zeile("feuer S2: " + R.akte.slice(0, 500));
+                    const w = R.werte;
+                    if (!w.zellen) return L.leser(2, "das Bett einer Zelle: " + (R.fehlt || "keine Zelle gemessen") + " · " + R.akte);
+                    if (!w.brennt) throw new Error("keine der " + w.zellen + " Zellen trägt ein Bett mit Tempo — die Kontrolle (Gras brennt) fehlt, kein Urteil über den Halt");
+                    const raster = "das Brand-Feld rastert " + z.zelle + " m (LIFE_FIELD.cell, stamm/feld-leben.js:3184): die Wiese 10⁴ m² trägt " + w.wiese + " brennbare Zellen — 2 000 verlangen Zellen von 2,24 m";
+                    const halt = w.halt == null ? null : +(100 * w.halt).toFixed(1);
+                    const zahlen = w.zellen + " Zellen, " + w.brennt + " mit Tempo (R " + w.rMin + "–" + w.rMax + " m/s), " + w.wasser + " unter gezeichnetem Wasser" + (halt == null ? "" : ", dort hält die Front an " + halt + " %");
+                    if (halt != null && halt < s2.soll[0].wert)
+                        return L.gemessen(2, { halt_pct: halt }, {
+                            erzeugt: w.wiese,
+                            welt: { zellen: w.zellen },
+                            taeter: "das Bett über gezeichnetem Wasser brennt: `_brandStoff` (stamm/feld-brand.js:297, `_nassAt`) sieht dort kein Wasser, `_wasserBildAt` (stamm/wasser-zellen.js:809) zeichnet es — " + zahlen + "; " + raster + "; Bild-p95: ungemessen bis zum Gerät · " + R.akte,
+                        });
+                    L.leser(2, raster + "; die Front-Ankunft je Probe: kein Leser (eine Closure in `_brandZuenden` stamm/feld-brand.js:493) — " + zahlen + (halt == null ? " (keine Zelle unter Wasser: keine Probe des Halts)" : "") + "; Bild-p95: ungemessen bis zum Gerät · " + R.akte, w.wiese);
                 });
                 await L.je(3, async () => {
                     if (z.maxHaus < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxHaus, "das größte Haus der geladenen Welt misst " + z.maxHaus + " m³ (" + z.haeuser + " Häuser)");
