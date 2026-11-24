@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: Last: Referenz f 1,33 (Faden 1,33 · alle Kerne 1; vor 101,3/240,6 ms, nach 108/237,4 ms, Ruhe 81,2/261,5 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc -- · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 447eaea6: Last: Referenz f 1,421 (Faden 1,237 · alle Kerne 1,421; vor 95,3/252,5 ms, nach 111,3/326,5 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
+   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: Last: Referenz f 1,33 (Faden 1,33 · alle Kerne 1; vor 101,3/240,6 ms, nach 108/237,4 ms, Ruhe 81,2/261,5 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc -- · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 9d4319c0: Last: Referenz f 1,591 (Faden 1,234 · alle Kerne 1,591; vor 94,4/365,5 ms, nach 110,9/299,5 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3082,7 +3082,7 @@
      "gruen": true,
      "zahl": "Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert — zuletzt an 447eaea6: Last: Referenz f 1,421 (Faden 1,237 · alle Kerne 1,421; vor 95,3/252,5 ms, nach 111,3/326,5 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
+     "grund": "Station seit der Messung geändert — zuletzt an 9d4319c0: Last: Referenz f 1,591 (Faden 1,234 · alle Kerne 1,591; vor 94,4/365,5 ms, nach 110,9/299,5 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a",
      "gehalten": true
     },
     {
@@ -3100,7 +3100,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 447eaea6: Last: Referenz f 1,421 (Faden 1,237 · alle Kerne 1,421; vor 95,3/252,5 ms, nach 111,3/326,5 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
+     "grund": "Station seit der Messung geändert — zuletzt an 9d4319c0: Last: Referenz f 1,591 (Faden 1,234 · alle Kerne 1,591; vor 94,4/365,5 ms, nach 110,9/299,5 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a",
      "ungemessen": true
     }
    ]
@@ -36703,7 +36703,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +95) — zuletzt an b7ed8419: Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.1 min in 1 Seite(n) · · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 9d4319c0: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Th · karte2.same.preis.ausdauer#1 gtx: ROT: Spielgang 1.3 min in 1 Seite(n) · Heap-Kurve 21 Punkte, 249 → 334.6 MB (max 366.6), Steigung 80.14 MB/min · nach dem Collector 56.5 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Kurve steigt 80.14 MB/min > 50 | Heap nach dem Collector 227.9 → 301.4 MB: 56.5 MB/min > 50 · ROT trotz Last: Referenz f 1,577 (Faden 1,571 · alle Kerne 1,577; vor 107,1/296,9 ms, nach 141,2/362,3 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-26852-profil-T0V0un --no-p 38,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · sh.exe n0611/kandidat.sh gtx-9d4319c0-w070644 x listen/kandidat-gtx-9d4319c0-w070644.txt 3,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,2 CPU-s · svchost.exe 4,7 CPU-s · SearchIndexer.exe 1,8 CPU-s — auch entlastet: Heap-Kurve MB/min roh 80,14 (fest), Schwelle ≤ 50 an 9d4319c0 · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36719,10 +36719,9 @@
      "id": "karte2.same.preis.ausdauer#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +95) — zuletzt an b7ed8419: Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.1 min in 1 Seite(n) ·",
-     "ungemessen": true,
+     "zahl": "Spielgang 1.3 min in 1 Seite(n) · Heap-Kurve 21 Punkte, 249 → 334.6 MB (max 366.6), Steigung 80.14 MB/min · nach dem Collector 56.5 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Kurve steigt 80.14 MB/min > 50 | Heap nach dem Collector 227.9 → 301.4 MB: 56.5 MB/min > 50",
+     "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
+     "grund": "ROT: Spielgang 1.3 min in 1 Seite(n) · Heap-Kurve 21 Punkte, 249 → 334.6 MB (max 366.6), Steigung 80.14 MB/min · nach dem Collector 56.5 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Kurve steigt 80.14 MB/min > 50 | Heap nach dem Collector 227.9 → 301.4 MB: 56.5 MB/min > 50 · ROT trotz Last: Referenz f 1,577 (Faden 1,571 · alle Kerne 1,577; vor 107,1/296,9 ms, nach 141,2/362,3 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-26852-profil-T0V0un --no-p 38,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · sh.exe n0611/kandidat.sh gtx-9d4319c0-w070644 x listen/kandidat-gtx-9d4319c0-w070644.txt 3,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,2 CPU-s · svchost.exe 4,7 CPU-s · SearchIndexer.exe 1,8 CPU-s — auch entlastet: Heap-Kurve MB/min roh 80,14 (fest), Schwelle ≤ 50",
      "r6": "konsum",
      "beide": true
     },
@@ -37710,7 +37709,7 @@
   "ohne": 3313
  },
  "kopfVoll": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
- "zeit": "2026-11-24T06:07:58.359Z",
+ "zeit": "2026-11-24T06:14:16.826Z",
  "vorher": "9d4319c0",
  "bilanz": {
   "gewinn": [],
