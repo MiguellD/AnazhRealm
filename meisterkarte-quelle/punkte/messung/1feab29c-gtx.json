@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-24T00:22:02.436Z",
+ "zeit": "2026-11-24T00:52:37.854Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -1671,6 +1671,75 @@
    },
    "zeit": "2026-11-24T00:05:11.715Z",
    "abdruck": "1d1dbcc29cc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.vertikal#1": {
+   "gruen": true,
+   "zahl": "dorf 7 9310: höchstes Haus 27,0 m bis zum First (Kachel 1/-5) · im Bild 4 von 5 Punkten seiner Achse (Soll ≥ 2, im Rahmen 4) vom Straßenpunkt 18,8 m · begehbare Ebenen 1 (Überführungen 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.27,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke2603b5c3227",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 73.6,
+   "fremd": {
+    "s": 78.7,
+    "takte": 30,
+    "fremdS": 79.31,
+    "kerne": 1.007,
+    "fensterKerne": 1.226,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.27
+     ],
+     [
+      "sh.exe dienst-omen/landung-dienst.sh --selbsttest",
+      12.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      9.77
+     ]
+    ],
+    "dienerS": 50.64,
+    "diener": [
+     [
+      "dwm.exe",
+      22.45
+     ],
+     [
+      "System",
+      18.38
+     ]
+    ],
+    "geraetS": 57.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.66
+     ],
+     [
+      "svchost.exe",
+      21.84
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 588.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T00:52:37.854Z",
+   "abdruck": "c74671988637",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -3594,252 +3663,99 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-23T23:36:08.157Z",
-  "ordner": "sitzung-20261124-003608",
+  "start": "2026-11-24T00:43:28.968Z",
+  "ordner": "sitzung-20261124-014328",
   "port": 7804,
-  "warten": 0.06,
-  "bootS": 7.8,
-  "grundstellungS": [
-   4.5,
-   8.1
-  ],
-  "proben": 4,
+  "warten": 8.3,
+  "bootS": 10.4,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
-  "offen": [
-   "karte2.mensch.netz.verkehr#1",
-   "karte2.planet.wetter.vorhersage#1",
-   "karte2.same.preis.ankunft#2",
-   "karte2.same.preis.eingabe#2",
-   "karte2.erleben.schoepfen.satz#1",
-   "karte2.leben.kopplung.evolution-planet#1",
-   "karte2.erleben.spieler.hand#1",
-   "karte2.mensch.stadt.siedlungsnetz#1",
-   "karte2.planet.wasser.seegang#1",
-   "karte2.planet.wasser.eis#1",
-   "karte2.same.physik.feuer#2",
-   "karte2.same.massstab.sprung#1",
-   "karte2.planet.relief.grossform#1",
-   "karte2.same.entfaltung.schirm#1"
-  ],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.erleben.spieler.gemeinsam#1",
-    "s": 31.7,
-    "takte": 903,
+    "vor": "karte2.mensch.stadt.vertikal#1",
+    "s": 33.4,
+    "takte": 935,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "karte2.mensch.menge.kollektiv#1",
-    "s": 27.9,
-    "takte": 615,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "karte2.mensch.bau.innen#1",
-    "s": 32.6,
-    "takte": 703,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "karte2.mensch.menge.kollektiv#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] …",
-    "s": 4.5
-   },
-   {
-    "vor": "karte2.mensch.bau.innen#1",
-    "wege": "wege +5 [-115.5,-246.4,3.8,-128.3/448] [-116.4,-245.3,7.9,-120/22] [-116.6,-234.8,9.9,-118.6/4] …",
-    "s": 8.1
-   }
-  ],
+  "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.same.preis.takt#1",
+    "probe": "karte2.mensch.stadt.vertikal#1",
     "weg": [
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.mensch.bau.innen#1",
-    "weg": [
-     "__startDorfStand",
-     "__imSchuss"
+     "__buehneUhr",
+     "__ring"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.same.preis.takt#1",
+    "probe": "karte2.mensch.stadt.vertikal#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
      "r._weltaktGehalten",
      "r._setWeather",
-     "r.state.weather",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "r.state.weather"
     ],
     "wie": {
      "r._bildZeit": "neu: () => S.T",
      "r._wolkenZeit": "neu: () => S.T",
      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "r.state.weather": "neu: () => wert"
     },
     "haelt": [],
     "heap": [
-     193.4,
-     514.2
+     191.8,
+     361.9
     ],
     "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.menge.kollektiv#1",
-    "anders": [
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     222.6,
-     421.6
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.bau.innen#1",
-    "anders": [
-     "r._tickNahWiese",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._tickNahWiese": "neu: _tickNahWiese(deadline) { const st = this.state; if (!st.scene || !st.camera || ",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     226.5,
-     493.3
-    ],
-    "ungemessen": null
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "karte2.same.preis.takt#1",
-    "wie": "orte +d:7@836,438 · wege +5 [-119.1,-274.9,279.2,201/278] [422,53.3,1070.1,817.4/2675] [660.2,284.5,992.9,577.1/4] … (d:7@836,438, genesis, netz:d:7@836,438, verkehr:d:7@836,438)"
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.preis.takt#1",
+    "probe": "karte2.mensch.stadt.vertikal#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.same.preis.takt#1",
+    "probe": "karte2.mensch.stadt.vertikal#1",
     "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.mensch.menge.kollektiv#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.mensch.bau.innen#1",
-    "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
    }
   ],
-  "anOrt": [
-   {
-    "vor": "karte2.mensch.menge.kollektiv#1",
-    "anders": [
-     "worldMeta.kalender"
-    ],
-    "wie": {
-     "worldMeta.kalender": "undefined → undefined"
-    }
-   },
-   {
-    "vor": "karte2.mensch.bau.innen#1",
-    "anders": [
-     "worldMeta.kalender"
-    ],
-    "wie": {
-     "worldMeta.kalender": "undefined → undefined"
-    }
-   }
-  ],
-  "wanderung": [
-   {
-    "probe": "karte2.mensch.menge.kollektiv#1",
-    "ort": "genesis",
-    "m": 184.13,
-    "dreh": 0
-   },
-   {
-    "probe": "karte2.mensch.bau.innen#1",
-    "ort": "genesis",
-    "m": 257.31,
-    "dreh": 2.408
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.mensch.netz.verkehr#1: /fenster ohne Antwort binnen 30 s — offen: karte2.mensch.netz.verkehr#1, karte2.planet.wetter.vorhersage#1, karte2.same.preis.ankunft#2, karte2.same.preis.eingabe#2, karte2.erleben.schoepfen.satz#1, karte2.leben.kopplung.evolution-planet#1, karte2.erleben.spieler.hand#1, karte2.mensch.stadt.siedlungsnetz#1, karte2.planet.wasser.seegang#1, karte2.planet.wasser.eis#1, karte2.same.physik.feuer#2, karte2.same.massstab.sprung#1, karte2.planet.relief.grossform#1, karte2.same.entfaltung.schirm#1",
-  "ciBlicke": 6,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6960,
-   "frameP95": 41.57,
-   "taktP95": 31.76,
-   "vramMax": 192.8,
-   "seiten": 4,
+   "bilder": 3893,
+   "frameP95": 33.48,
+   "taktP95": 32.48,
+   "vramMax": 145,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.same.preis.takt#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "karte2.mensch.bau.innen#1",
-     "m": 269,
+     "probe": "karte2.mensch.stadt.vertikal#1",
+     "m": 1461,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 1063,
-   "luecken": 9,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 286,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 1301.4,
-  "minuten": 21.95
+  "fahrtS": 305.7,
+  "minuten": 13.66
  }
 }
