@@ -7,6 +7,9 @@ const fs=require('fs'),path=require('path');
 const dir=process.argv[2];
 const mk=JSON.parse(fs.readFileSync(path.join(dir,'vision/meisterkarte-2.json'),'utf8'));
 const rd=path.join(dir,'vision/richter');
+// DIE ANSPRUECHE (zug/anspruch.txt, optional): eine Front-Sprosse, die ein gelandeter Zweig beansprucht, ist GEBAUT und wartet auf die Messung —
+// die Tafel nennt den Zweig, sonst bestellt der Leser einen zweiten Macher (24.11.: Klang, Stoffstrom, Fisch-Pegel standen rot mit alter Akte).
+const anspr={};try{for(const z of fs.readFileSync(path.join(dir,'zug/anspruch.txt'),'utf8').split(/\r?\n/)){if(!z||z[0]==='#')continue;const m=z.match(/^(\S+)\s+(\S+)/);if(!m)continue;for(const k of m[2].split(',')){const s=k.replace(/^karte2\./,'');(anspr[s]=anspr[s]||[]).push(m[1]);}}}catch(e){}
 const je={};
 for(const f of fs.readdirSync(rd)){
   const m=f.match(/^(.+)\.(\d+)\.([0-9a-f]{8})-(gtx|radeon)\.json$/); if(!m)continue;
@@ -52,6 +55,6 @@ for(const [a,l] of Object.entries(grp).sort((x,y)=>y[1].length-x[1].length)){
   const kap={}; l.forEach(r=>kap[r.l.split('.')[0]]=(kap[r.l.split('.')[0]]||0)+1);
   console.log('\n'+String(l.length).padStart(4),a,JSON.stringify(kap),'tiefe+',l.reduce((s,r)=>s+r.tiefe,0));
   const show=process.argv[3]==='alle'?l:l.slice(0,3);
-  for(const r of show) console.log('     ',r.l+'#'+r.nr,'/'+r.n,r.klasse||'',r.kopf||'',r.tag||'',r.station?('['+r.station+']'):'', (r.wert||'').replace(/\s+/g,' ').slice(0,+(process.argv[4]||170)));
+  for(const r of show) console.log('     ',r.l+'#'+r.nr,'/'+r.n,r.klasse||'',r.kopf||'',r.tag||'',r.station?('['+r.station+']'):'', anspr[r.l+'#'+r.nr]?('⟵ BEANSPRUCHT '+anspr[r.l+'#'+r.nr].slice(-2).join(' · ')+' ⟶'):'', (r.wert||'').replace(/\s+/g,' ').slice(0,+(process.argv[4]||170)));
 }
 fs.writeFileSync(path.join(path.dirname(process.argv[1]),'front.json'),JSON.stringify(rows));
