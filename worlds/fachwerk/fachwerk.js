@@ -19,7 +19,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 const FC=window.__fachwerkCore;
 const HAUS=FC.HAUS;                                                          // die parametrische Haus-Fabrik — EINE Quelle
-const M=FC.materials(), _MM=FC._MM;                                          // geteilte Materialien (nie disposen) + VC-Zwillinge (setZeit zündet das Glas stadtweit)
+const M=FC.materials(), _MM=FC._MM;                                          // geteilte Materialien (nie disposen) + VC-Zwillinge (die Ort-Ansichten der Bühne)
 const _mmFor=FC._mmFor, mLay=FC.mLay, mat=FC.mat;                            // Rollen-Materialien (Bake · Layout · Fabrik)
 const DEFCOL=FC.DEFCOL, KULTUR=FC.KULTUR, KULTNAMES=FC.KULTNAMES;
 let farbeJetzt=DEFCOL; const tintM=c=>{ farbeJetzt=c; return FC.tintM(c); };   // die Farbe reist im Rückgängig-Zustand (Sitzung der Hülle)
@@ -56,13 +56,10 @@ function proxyGroup(hp){ const pr=PROXYHAUS(hp), g=new THREE.Group();
   return {g, bb:pr.bb, prims:pr.B.length+pr.T2.length}; }
 let dorfB=null, dorfChunks=null, lastLOD=0, promoPend=null;                                   // promoPend: Bau aus Phase 1, wartet auf Einbau im nächsten Tick
 const dorfRauch={quellen:[], teilchen:[]};
-function proxyGroup(hp){ const pr=PROXYHAUS(hp), g=new THREE.Group();
-  pr.B.forEach(q=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(q.b[3],q.b[4],q.b[5]),M[q.r]||M.holz); m.position.set(q.b[0],q.b[1],q.b[2]); g.add(m); });
-  pr.T2.forEach(q=>{ const bg=new THREE.BufferGeometry(), v=[]; q.verts.forEach(p2=>v.push(p2[0],p2[1],p2[2]));
-    bg.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); bg.computeVertexNormals(); g.add(new THREE.Mesh(bg,M[q.r]||M.holz)); });
-  return {g, bb:pr.bb, prims:pr.B.length+pr.T2.length}; }
-const dorfBlend=[]; const dorfSterben=[];
-function finalizeGeoms(geoms, sofort){ const out=[];                                          // sofort=true: ATOMARER TAUSCH (geteiltes Material, ein Frame) — für Rebakes gleicher Stufe, wo identische Flächen NIE doppelt leben dürfen
+// ATOMARER TAUSCH (geteiltes Material, ein Frame): jede Stufe erscheint im selben Bild, in dem die alte fällt — identische Flächen
+// leben NIE doppelt. Die Dither-Blende der Stufen-Wechsel (r128-GLSL über onBeforeCompile, IGN-Sieb) fiel mit dem r128 des Labors
+// (fachwerk-buehne): die Bühne der Welt zeichnet WebGPU, ihr Stoff kennt kein onBeforeCompile.
+function finalizeGeoms(geoms){ const out=[];
   for(const role in geoms){ const G=geoms[role]; if(!G.vo) continue;
     const bg=new THREE.BufferGeometry();
     bg.setAttribute('position', new THREE.Float32BufferAttribute(G.pos,3));
@@ -70,26 +67,17 @@ function finalizeGeoms(geoms, sofort){ const out=[];                            
     bg.setAttribute('color',    new THREE.Float32BufferAttribute(G.col,3));
     if(G.uv&&G.uv.length===(G.pos.length/3)*2) bg.setAttribute('uv', new THREE.Float32BufferAttribute(G.uv,2));
     bg.setIndex(G.idx);
-    if(sofort){ const mm=new THREE.Mesh(bg,_mmFor(role)); mm.castShadow=true; mm.receiveShadow=true; dorfGroup.add(mm); out.push(mm); continue; }
-    const shared=_mmFor(role), fmat=shared.clone(); fmat.transparent=false; fmat.opacity=0;   // DITHER-BLENDE: opake Pipeline, Tiefe schreibt, NICHTS wird sortiert — Alpha-Blenden ganzer Stadtteile waren das Sortierchaos
-    fmat.polygonOffset=true; fmat.polygonOffsetFactor=-1; fmat.polygonOffsetUnits=-1;         // BLEND-TIEFEN-GESETZ: das Neue gewinnt den Tiefen-Gleichstand — kein Z-Fight-Schimmern während der Blende
-    fmat.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <alphatest_fragment>',
-      'float ign=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))); if(diffuseColor.a<ign) discard; diffuseColor.a=1.0;\n#include <alphatest_fragment>'); };   // IGN-DISSOLVE (Jimenez): opacity treibt weiter die Blende — nur per Pixel-Sieb statt Mischung. Fehlt der Chunk-Anker je, degradiert es sanft zum Sofort-Tausch
-    fmat.customProgramCacheKey=()=>'ign_dissolve';                                            // EIN Shader-Programm für ALLE Blenden — kein Compile-Hitch je Mesh
-    const mm=new THREE.Mesh(bg,fmat); mm.castShadow=true; mm.receiveShadow=true; dorfGroup.add(mm); out.push(mm);
-    dorfBlend.push({m:mm,t0:performance.now(),shared});                                        // CROSS-FADE-GESETZ: neues LOD blendet ein, kein Versinken
-  }
+    const mm=new THREE.Mesh(bg,_mmFor(role)); mm.castShadow=true; mm.receiveShadow=true; dorfGroup.add(mm); out.push(mm); }
   return out; }
 function chunkKey(x,z){ return (Math.floor((x+3000)/48))+'_'+(Math.floor((z+3000)/48)); }
-function rebakeChunk(ck, wechsel){ const C=dorfChunks&&dorfChunks[ck]; if(!C) return;         // STREAMING-ZELLE · wechsel=true: Stufen-Wechsel (fern) blendet; sonst ATOMARER TAUSCH — identische Flächen leben NIE doppelt
+function rebakeChunk(ck){ const C=dorfChunks&&dorfChunks[ck]; if(!C) return;                  // STREAMING-ZELLE · ATOMARER TAUSCH — identische Flächen leben NIE doppelt
   const alt=C.meshes; C.meshes=[];
   const geoms={};
   for(const bi of C.list){ const B=dorfB[bi]; if(B.lod!=='chunk') continue; mischeGeoms(geoms, fragFuer(B, C.stufe)); }
   if(C.stufe<=2) for(const bi of C.list){ mischeGeoms(geoms, hofFuer(dorfB[bi])); }           // HOF für ALLE (auch promovierte — der Hof überlebt die Promotion); fern (Vogel) trägt kein Hof-Detail
-  C.meshes=finalizeGeoms(geoms, !wechsel);
-  if(C.sicht===false) C.meshes.forEach(m=>{ m.visible=false; });                              // Nebel-Zustand überlebt den Rebake
-  if(alt.length){ if(wechsel) dorfSterben.push({meshes:alt, t:performance.now()+300});        // Blende: das Alte lebt bis zum Ende der Blende
-    else alt.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); }); } }                  // Tausch: das Alte stirbt im selben Frame
+  C.meshes=finalizeGeoms(geoms);
+  if(C.sicht===false) C.meshes.forEach(m=>{ m.visible=false; });                              // der Sicht-Zustand überlebt den Rebake
+  alt.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); }); }                           // das Alte stirbt im selben Frame
 function bauSolidsUndTueren(B, H, bi){
   const y0=B.q.y; H.solids.forEach(s=>solids.push({min:[s.min[0],s.min[1]+y0,s.min[2]],max:[s.max[0],s.max[1]+y0,s.max[2]], th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}));   // DER BODEN DES HAUSES (K10): Solids, Keller und Türen stehen auf q.y
   if(H.cellar){ const c=H.cellar; dorfCellars.push({x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,floorY:c.floorY+y0, th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}); }
@@ -105,16 +93,15 @@ function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return nul
 function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;                      // PHASE 2: Bake + Szene + Solids/Türen — die vordefinierte Feinstufe
   if(!B||B.lod!=='chunk'){ st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); return; }   // Welt hat sich gedreht (demotiert/neu gebaut) → Bau verwerfen, kein Leck
   const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,B.q.y,B.q.z); wrap.add(st.g); wrap.updateMatrixWorld(true);
-  const geoms={}; geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, B.p.col)); bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
+  const geoms={}; geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, B.p.col)); bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
   wrap.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });            // FLÜGEL-GESETZ: was bakeLOD lebend ließ (Türen/Fenster), muss auch GERENDERT werden
   dorfGroup.add(wrap); B.liveWrap=wrap;                                                      // FIX: wrap hing nie in der Szene → promovierte Häuser hatten unsichtbare Türen/Fenster (Loch-Fassade)
   B.lod='voll'; B.dyn=true; B.H=st.H;
   { const ix=solids.indexOf(B.huelle); if(ix>=0) solids.splice(ix,1); }                     // HAUS-LEBENSZYKLUS: die Hülle fällt im selben Tick, in dem die Haus-Solids kommen — die offene Tür ist begehbar (vorher 4 von 4 promovierten Häusern zu)
   bauSolidsUndTueren(B,st.H,bi);
   if(st.H.chimney){ const mc=st.H.chimney, mcx=(mc.min[0]+mc.max[0])/2, mcz=(mc.min[2]+mc.max[2])/2, c2=Math.cos(B.q.phi), s3=Math.sin(B.q.phi);
-    dorfRauch.quellen.push({bi, x:B.q.x+mcx*c2+mcz*s3, y:B.q.y+mc.max[1]+0.2, z:B.q.z-mcx*s3+mcz*c2});          // RAUCH folgt der Promotion
-    if(dorfRauch.quellen.length===1) fire.position.set(dorfRauch.quellen[0].x, dorfRauch.quellen[0].y+0.3, dorfRauch.quellen[0].z); }
-  rebakeChunk(B.chunk, false); }
+    dorfRauch.quellen.push({bi, x:B.q.x+mcx*c2+mcz*s3, y:B.q.y+mc.max[1]+0.2, z:B.q.z-mcx*s3+mcz*c2}); }        // RAUCH folgt der Promotion
+  rebakeChunk(B.chunk); }
 function promoteB(bi){ const p=promoteBauen(bi); if(p) promoteFertig(p); }                    // SYNCHRON-Pfad (Selbsttest & Direktaufrufe) — identisches Ergebnis, ein Tick
 function demoteB(bi){ const B=dorfB[bi]; if(!B||!B.dyn) return;                               // DEMOTION: hinter dem Rücken wieder Fassade — ATOMAR: Vollbau fällt im selben Frame, in dem die (gecachte) Hülle zurückkehrt
   B.meshes.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); });
@@ -127,7 +114,7 @@ function demoteB(bi){ const B=dorfB[bi]; if(!B||!B.dyn) return;                 
     doorList.splice(k,1); }
   for(let k=dorfRauch.quellen.length-1;k>=0;k--) if(dorfRauch.quellen[k].bi===bi) dorfRauch.quellen.splice(k,1);
   if(B.huelle) solids.push(B.huelle);                                                        // HAUS-LEBENSZYKLUS: fern trägt wieder die Hülle — kein Geister-Haus (vorher 0 Solids nach der Demotion)
-  B.lod='chunk'; B.dyn=false; B.H=null; rebakeChunk(B.chunk, false); }
+  B.lod='chunk'; B.dyn=false; B.H=null; rebakeChunk(B.chunk); }
 function lodTick(now){ if(!dorf||!dorfB) return; if(now-lastLOD<240) return; lastLOD=now;     // DREI-RING-STREAMING, ZEITGESCHNITTEN: Bau und Einbau in getrennten Ticks — der schwerste Frame halbiert
   const T0=performance.now();
   const px=camera.position.x, pz=camera.position.z;
@@ -145,7 +132,7 @@ function lodTick(now){ if(!dorf||!dorfB) return; if(now-lastLOD<240) return; las
   if(performance.now()-T0>8){ return; }                                                       // FRAME-BUDGET-GESETZ: war der Tick schon schwer, wartet der Chunk-Wechsel — nie zwei Lasten in einem Frame
   let best=null,bd=1e9,bs=3;
   for(const ck in dorfChunks){ const C=dorfChunks[ck]; const dx=C.cx-px, dz=C.cz-pz, d2=Math.hypot(dx,dz);
-    const sicht=(d2-36)<scene.fog.far+10;                                                      // NEBEL-CULLING: was der Nebel verschluckt, kostet keinen Draw — reiner Sichtbarkeits-Schalter, kein Rebake
+    const sicht=(d2-36)<sichtWeit+10;                                                          // SICHT-CULLING: hinter der Sichtweite des Orts (`sichtWeit`, die Weite des früheren Labor-Nebels) kostet keine Zelle einen Draw — reiner Sichtbarkeits-Schalter, kein Rebake
     if(sicht!==C.sicht){ C.sicht=sicht; C.meshes.forEach(m=>{ m.visible=sicht; }); }
     let soll=C.stufe;                                                                          // HYSTERESE gegen Flattern · RANDNÄHE-GESETZ: Distanz zur ZELLE (−34 Halbdiagonale), nicht zum Zentrum — Gebäude am Chunk-Rand standen dem Spieler grob vor der Nase
     const dc=Math.max(0,d2-34);
@@ -153,7 +140,7 @@ function lodTick(now){ if(!dorf||!dorfB) return; if(now-lastLOD<240) return; las
     if(soll!==1){ if(dc<220&&C.stufe===3)soll=2; else if(dc>275&&C.stufe===2)soll=3; }
     if(soll!==C.stufe){ const p2=(soll<C.stufe)?vprio(dx,dz,d2):d2+800;                        // Aufwertungen VOR Abwertungen, vorn vor hinten
       if(p2<bd){ bd=p2; best=ck; bs=soll; } } }
-  if(best){ dorfChunks[best].stufe=bs; rebakeChunk(best, true); } }                          // Stufen-Wechsel in der Ferne: Blende verdeckt den Silhouetten-Sprung
+  if(best){ dorfChunks[best].stufe=bs; rebakeChunk(best); } }                          // Stufen-Wechsel in der Ferne: atomar wie jeder Rebake
 // AUSSTATTUNG am Ort: das Gesetzbuch baut (buildInstance, Stufe 0), die Gestalt 1..V aus der Lage gewürfelt (die Welt
 // würfelt sie aus dem Samen des Eintrags — dieselben V Individuen).
 function ausstattungAm(id, x, z, ry){
@@ -212,13 +199,12 @@ function bodenFall(kind0, solid0){
     s.min=[s.min[0],s.min[1]+y,s.min[2]]; s.max=[s.max[0],s.max[1]+y,s.max[2]]; } }
 function buildDorf(dp){
   genesisAn=false;
-  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; parzelleSetzen(null); }
+  ortSzene();
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
   tintM(DEFCOL);
   const plan=DORF(dp); dorfGroup=new THREE.Group(); dorfCellars=[]; doorList.length=0; solids=[];
   if(promoPend){ promoPend.st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); promoPend=null; }   // hängender Phase-1-Bau überlebt keinen Weltwechsel
   dorfB=[]; dorfChunks={};
-  if(typeof ground!=='undefined') ground.visible=false;                                       // Szenen-Sheet weg: der Chunk-Boden regiert
   const maxDyn=Math.max(3,Math.min(9,(plan.norm.budget/42000)|0));                          // VOGEL-GESETZ: nichts initial voll — der Budget-Regler ist die Ring-Tiefe
   let prims=0, nVoll=0, nProxy=0;
   for(const hp of plan.houses){
@@ -260,7 +246,7 @@ function buildDorf(dp){
     const dc=Math.max(0, Math.hypot(C.cx-lay.spawn.x, C.cz-lay.spawn.z)-34);
     const bs=Math.max(0.55, Math.min(1.35, Math.sqrt((RW.budget||170000)/170000)));   /*Quelle: der REGLER selbst — norm.budget war Epochen-Konstante (GEMESSEN 100%)*/         /*BUDGET-WARMSTART-GESETZ: die Startlast FOLGT dem Prim-Regler — Radien skalieren mit sqrt(Budget), der Teller-Vollausbau war reglertaub*/
     C.stufe = dc<100*bs? 1 : (dc<220*bs? 2 : 3);
-    rebakeChunk(ck, true); }
+    rebakeChunk(ck); }
   const W2=lay.welt;
   const glatt=(P)=>{ if(!P||P.length<3) return P;                                            // SPLINE-GESETZ: Catmull-Rom-Verdichtung (~2.2m) NUR am Band — der Graph bleibt unberührt; th aus der Spline selbst
     const gp=i=>P[Math.max(0,Math.min(P.length-1,i))], out=[];
@@ -535,10 +521,7 @@ function buildDorf(dp){
   scene.add(dorfGroup);
   const R2=Math.max(W2.x1-W2.x0,W2.z1-W2.z0)/2;
   sun.shadow.camera.left=-R2-6; sun.shadow.camera.right=R2+6; sun.shadow.camera.top=R2+6; sun.shadow.camera.bottom=-R2-6; sun.shadow.camera.far=R2*2.8+120; sun.shadow.camera.updateProjectionMatrix();   // FAR-GESETZ: Schatten enden nicht mehr bei 140m — die ferne Stadt lag schattenlos
-  scene.fog.near=R2*1.6+30; scene.fog.far=R2*3.2+140;
-  const mk=lay.pl[0], mc=false&&dorfB[0].H&&dorfB[0].H.chimney;
-  if(mc){ const mcx=(mc.min[0]+mc.max[0])/2, mcz=(mc.min[2]+mc.max[2])/2, c2=Math.cos(mk.phi), s3=Math.sin(mk.phi);
-    fire.position.set(mk.x+mcx*c2+mcz*s3, dorfB[0].H.dims.baseY+0.6, mk.z-mcx*s3+mcz*c2); } else fire.position.set(0,-60,0);
+  sichtWeit=R2*3.2+140;
   dorfRauch.quellen=[]; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0;   // Quellen entstehen mit der Promotion
   { const gi=plan.houses.findIndex(h2=>h2.rolle==='gasthaus');                                 // AUSLEGER am Gasthaus
     if(gi>=0&&dorfB[gi]&&dorfB[gi].lod==='voll'){ const q=lay.pl[gi], e=ext[gi], c2=Math.cos(q.phi), s3=Math.sin(q.phi);
@@ -555,7 +538,7 @@ function buildDorf(dp){
   D={W:R2*2, D:R2*2, ridgeY:Math.max(8,ymax), baseY:0}; P=dorfB[0].lod==='voll'?dorfB[0].H.P:P;
   console.log('DORF:',plan.region,plan.groesse,plan.kernel,'ab',plan.jahr,'+'+plan.spanne+'J ·',nVoll,'voll +',nProxy,'im Strom (Hülle/Destillat) ·',prims,'Prims · Graph V='+lay.graph.nV,'E='+lay.graph.nE,'Zyklen='+lay.graph.zyklen,(lay.mauer?'· MAUER R'+lay.mauer.R.toFixed(0)+' Tore:'+lay.mauer.gates.length:''),'· R='+R2.toFixed(0)+'m');
 }
-function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; applyOrbit(); }
+function frameDorf(){ blick({r:Math.min(90,(dorf?dorf.R:30)*2.0+12), el:0.30, az:0.85, tx:0, ty:6, tz:0, weit:90}); }
 // ═══ DER GENESIS-ORT (Labor = Welt, Pflicht F) — derselbe Weg wie jedes Dorf: genesisLayout → ortPlan (Plan v2) auf dem Weltgrund ═══
 // `?ort=genesis` oder das Wort „genesis": der Plan der Welt-Saat mit den Welten seiner Slot-Tafel an M (0/0, sonst ?ort ist kein
 // Ort), der Boden samt Erdbau (gelaende-core hoehe über der Lage), je Fläche ihr Belag, die Ausstattung und das Bootshaus aus diesem
@@ -563,10 +546,10 @@ function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; appl
 // Der Plan-Hash (FC.ortHash) steht in der Zeile unten und in window.__genesisOrt — die Linse nennt denselben (Studio = Welt).
 let genesisAn=false;
 function buildGenesis(){
-  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; parzelleSetzen(null); }
+  ortSzene();
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
   dorf=null; dorfB=[]; dorfChunks={}; dorfCellars=[]; doorList.length=0; solids=[]; genesisAn=true;
-  dorfGroup=new THREE.Group(); if(typeof ground!=='undefined') ground.visible=false;
+  dorfGroup=new THREE.Group();
   const L=WELT.L||(WELT.L=GK.lageGrund(WELT.seed, window.SimplexNoise)), M0=WELT.ort||{x:0,z:0};
   const v2=FC.ortPlan(FC.genesisLayout(FC.genesisSaat(WELT.seed), FC.GENESIS_ORT.tafel.map(t=>t.welt)), M0, GK.ortCtx(L));
   const Lb=Object.assign({},L,{erdbau:GK.erdbauNormal(v2.erdbau)}), y0=v2.platz.y, H=(x,z)=>GK.hoehe(Lb,M0.x+x,M0.z+z,true)-y0;
@@ -611,7 +594,7 @@ function buildGenesis(){
   console.log('GENESIS-POSEN:\n'+P.text);
   scene.add(dorfGroup);
   sun.shadow.camera.left=-160; sun.shadow.camera.right=160; sun.shadow.camera.top=160; sun.shadow.camera.bottom=-160; sun.shadow.camera.far=500; sun.shadow.camera.updateProjectionMatrix();
-  scene.fog.near=700; scene.fog.far=1800;
+  sichtWeit=1800;
   const hash=FC.ortHash(v2);
   window.__genesisOrt={v2, hash, saat:FC.genesisSaat(WELT.seed), welt:WELT.seed};
   const chd=document.getElementById('chronik')||(()=>{ const d2=document.createElement('div'); d2.id='chronik';
@@ -621,7 +604,7 @@ function buildGenesis(){
   chd.style.display='block';
   console.log('GENESIS:', 'Plan-Hash', hash, 'Kern', v2.hoehen.kern, 'Terrasse', v2.hoehen.terrasse, 'Spiegel', v2.hoehen.spiegel, v2.erdbau.length, 'Erdbau');
 }
-function frameGenesis(){ orb.r=320; orb.el=0.62; orb.az=0.55; orb.tx=20; orb.ty=0; orb.tz=-10; applyOrbit(); }
+function frameGenesis(){ blick({r:320, el:0.62, az:0.55, tx:20, ty:0, tz:-10, weit:600}); }
 // ════════════ DER HAUSHALT ════════════ das Bau-Gesetz wohnt im Kern (bauRezept) — eine Quelle für Labor + Dorf + Welt:
 // das Los ist das Haus der gewählten Kultur (oder das von Hand gestellte), der Haushalt legt sein Raumprogramm darüber.
 function applyMeta(){
@@ -633,44 +616,61 @@ function applyMeta(){
 }
 // mat lebt im Kern (__fachwerkCore, oben aliast) — eine Quelle für Fabrik + Bake + Layout.
 
-// ════════════════ Szene (statisch) ════════════════
+// ════════════════ DIE BÜHNE DER WELT (fachwerk-buehne, mensch.bau.bauen#1 — das Labor ist ein Modus der Welt-Engine) ════════════════
+// Das Labor zeichnet auf der EINEN Bühne der Hülle (AnazhHuelle.studio → buehne, wie garage · schmiede · portale): die Engine der
+// Welt (three r184 WebGPU), ihr Licht an ihrer Uhr (welt-licht.js `buehne`: Tafeln, Sonne, Umgebung, Belichtung, Tonkurve — die
+// 18-%-Karte mittags auf Mittelgrau, Lehre 21) und als WERK den Körper, den der Ofen der Welt baut (`buehne.werk`: der Foundry-
+// Faden, `_foundryBuildGroup`, der Stoff der Welt — Lehre 19). Das Werk ist genau das, was „In der Welt ansehen" schickt
+// (`werkDerBuehne`), in der Stufe der Sonde (`stufeDerBuehne`).
+// GEFALLEN mit diesem Schnitt: der eigene r128-WebGLRenderer (ACES, Belichtung 1,12, PCF-weich), das eigene Licht (Sonne 2,1 ·
+// Hemisphäre 0,62 · Ambient 0,22 · das Herdfeuer als Punktlicht; die Tageszeiten `setZeit` samt Nacht und Fenster-Glut — die Uhr
+// trägt jetzt die Zeile der Bühne: Früh · Mittag · Spät · Nackt), der Labor-Nebel, der eigene Boden (Kreis 130 m) und die
+// Dither-Blende der Dorf-Stufen (r128-GLSL über onBeforeCompile). Im Labor stand der beschattete Giebel (Luma 128) heller als
+// das besonnte Dach (106), in der Welt 16 zu 54 — das Tageslicht trägt Schatten zu Sonne um 1 : 6 (Lehre 21).
+// DIE ZWEI SZENEN auf der EINEN Bühne: das WERK (Haus oder Ausstattung, der Körper des Ofens auf dem Boden der Atmosphäre;
+// die Anatomie auf Zuruf: Subsysteme, Explosion, Schnitt und Begehen zeigen das lebende Haus desselben Gesetzes `HAUS`, wie die
+// Garage ihr Ton-Modell) und der ORT (Dorf · Genesis · LOD-Sonde: die Planung des Labors aus dem Kern, ihr eigener Boden).
 const app=document.getElementById('app');
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12; renderer.localClippingEnabled=true; app.appendChild(renderer.domElement);
-const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fb2c4); scene.fog=new THREE.Fog(0x9fb2c4,55,150);
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.05,800);
-const sun=new THREE.DirectionalLight(0xfff1dc,2.1); sun.position.set(24,34,16); sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=140; sun.shadow.bias=-0.00045; sun.shadow.normalBias=0.02;
-sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26; sun.shadow.bias=-0.0004;
-scene.add(sun); const hemi=new THREE.HemisphereLight(0xbcd2f0,0x4d4636,0.62); const amb=new THREE.AmbientLight(0xffffff,0.22); scene.add(hemi); scene.add(amb);
-// ════ Tageszeiten ════
-// V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host: das Licht (ZEIT_VIS, K11).
-// Herdfeuer und Fenster-Glut lesen das Leuchtquellen-Gesetz des Kerns (FC.LICHT_GESETZ) — dasselbe Datum wie die Welt.
-const _LG=FC.LICHT_GESETZ, _FEU=_LG.feuer, _FEN=_LG.fenster, _FENF=FC.lichtFarbe(_FEN.kelvin), _LAT=_LG.laterne, _LATF=FC.lichtFarbe(_LAT.kelvin); let _feuerZeit=_FEU.zeit.mittag;
-// r128 zeichnet den Legacy-Abfall (1 − d/R)^abfall, nicht das Gesetz (FC.lichtAbfall: 1/d² mit Kern und Saum) — das Herdfeuer des Labors trifft die Welt in 2 m
-const _FEU_LAB=FC.lichtAbfall(_FEU,2)/Math.pow(1-2/_FEU.reichweiteM,_FEU.abfall);
-const _LAB_JE_CD=1/_FEU.cd;   // DIE EICHUNG DES LABORS (r128, Legacy-Licht ohne Skala; nacht-lichter): seine Einheit ist das Herdfeuer — eine Leuchte trägt im Labor ihre Lichtstärke cd ÷ die des Herdfeuers (bis nacht-lichter stand daneben eine eigene Zahl je Zeile, `staerke`)   // der Lichtstrom des Herdfeuers zur Tageszeit (setZeit), das Flackern im Bild-Takt
-const _ZG=(FC&&FC.ZEIT_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.ZEIT_GESETZ)||null;
-function _zeitPart(k,fb){ const s=_ZG&&_ZG[k]; if(!s) return {p:fb.p.slice(),c:fb.c,i:fb.i,h:fb.h,a:fb.a,bg:fb.bg};
-  return { p:(Array.isArray(s.p)&&s.p.length===3)?[s.p[0],s.p[1],s.p[2]]:fb.p.slice(),
-    c:(s.c!=null)?s.c:fb.c, i:Number.isFinite(s.i)?s.i:fb.i, h:Number.isFinite(s.h)?s.h:fb.h,
-    a:Number.isFinite(s.a)?s.a:fb.a, bg:(s.bg!=null)?s.bg:fb.bg }; }
-const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0.22,bg:0x9fb2c4}),
-  morgen:_zeitPart('morgen',{p:[34,14,20],c:0xffd9a8,i:1.7,h:0.55,a:0.26,bg:0xc8baa0}),
-  abend:_zeitPart('abend',{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a}),
-  nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
-function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
-  const glut=_FEN.zeit[t]||0;                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
-  for(const gm of Object.values(M).concat(typeof _MM!=='undefined'?Object.values(_MM):[])){ if(!gm||!gm.userData||gm.userData.__licht!=='fenster') continue;   // wer glüht, sagt der Stoff selbst (LICHT_GESETZ via __licht) — keine Liste
-    gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; }
-  const lat=_LAT.zeit[t]||0;                                                                  // der Kopf der Laterne: SEIN Datum (LICHT_GESETZ.laterne), dasselbe wie in der Welt — nie die Fenster-Glut
-  for(const gm of Object.values(M).concat(typeof _MM!=='undefined'?Object.values(_MM):[])){ if(!gm||!gm.userData||gm.userData.__licht!=='laterne') continue;
-    gm.emissive=gm.emissive||new THREE.Color(0); if(lat) gm.emissive.setRGB(..._LATF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=lat; } }
-const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
-ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const fire=new THREE.PointLight(0xffffff,_FEU.cd*_LAB_JE_CD,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)
+const STUDIO=AnazhHuelle.studio({welt:'fachwerk', werk:werkDerBuehne, lod:stufeDerBuehne, fov:45, ziel:app,
+  nachBau:(g)=>werkGebaut(g), takt:(dt)=>laborTakt(dt)});
+const scene=STUDIO.szene, camera=STUDIO.kamera, renderer=STUDIO.buehne.renderer, sun=STUDIO.buehne.sonne;
+// DER SCHNITT (halbes Haus): die Ebene x = 0 an der Gruppe der Anatomie (r184: `ClippingGroup`, die Engine der Welt kennt kein
+// `renderer.clippingPlanes`). Der Bootstrap reicht die Klasse nicht ins globale THREE: sie kommt aus demselben Modul der Import-Karte
+// (three/webgpu, schon geladen), die Anatomie hängt bis dahin am Teller.
+const clip=new THREE.Plane(new THREE.Vector3(-1,0,0),0.0);
+const anatomie=new THREE.Group(); STUDIO.teller.add(anatomie);
+let schnitt=null;
+import('three/webgpu').then(W=>{ schnitt=new W.ClippingGroup(); schnitt.clippingPlanes=[clip]; schnitt.enabled=$('cut').checked&&mode!=='walk';
+  STUDIO.teller.add(schnitt); schnitt.add(anatomie); STUDIO.wecke(); });
+// die Sichtweite des Orts (die Zellen dahinter kosten keinen Draw): das Haus 150 m, das Dorf aus seinem Radius, die Genesis 1 800 m
+let sichtWeit=150;
+let rahmenBitte=false;
+function ortSzene(){ hausFort(); sondeFort(); STUDIO.teller.visible=false; const g=STUDIO.buehne.grund(); if(g) g.visible=false; STUDIO.wecke(); }
+function werkSzene(){ STUDIO.teller.visible=true; const g=STUDIO.buehne.grund(); if(g) g.visible=true; sichtWeit=150; }
+// DAS WERK STEHT (der Ofen der Welt lieferte): es ist die Wurzel der Bühne (`houseGroup`, die Station und die Brücke lesen sie)
+function werkGebaut(g){
+  houseGroup=g;
+  const gr=STUDIO.buehne.grund(); if(gr) gr.visible=STUDIO.teller.visible;
+  if(rahmenBitte){ rahmenBitte=false; STUDIO.rahmen(); }
+  const aus=$('pAus')?$('pAus').value:'haus';
+  if(aus!=='haus'&&FC.AUSSTATTUNG[aus]&&!haus){
+    const bb=new THREE.Box3().setFromObject(g); let dc=0; g.traverse(o=>{ if(o.isMesh) dc++; });
+    D={W:bb.max.x-bb.min.x, D:bb.max.z-bb.min.z, ridgeY:Math.max(1.4, bb.max.y), baseY:0, eaveY:bb.max.y};
+    const inf=$('lodInfo'); if(inf){ inf.style.display='block';
+      inf.textContent=FC.AUSSTATTUNG[aus].lab+' · Gestalt '+werkDerBuehne().seed+'/'+(FC.AUSSTATTUNG[aus].gestalten||1)+' · Stufe '+stufeDerBuehne()+'\n'+dc+' Meshes · '+(g.userData.werk.tris|0).toLocaleString('de-DE')+' Dreiecke (der Ofen der Welt)'; } }
+  ansicht();
+  kostenLeiste.neu(); }
+// DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): das Einzelstück der Ausstattung mit seiner Gestalt, sonst das Haus der
+// gewählten Kultur mit dem Samen der Bühne und den Werten der Haus-Zeilen (die Welt-Gestalt der Kosten-Leiste) — die Bühne
+// zeichnet GENAU dieses Werk, das nächste gesetzte Werk des Rezepts trägt es. Der Same ist die Gestalt (`_foundryGestaltFor`): das
+// Haus zieht Fenstertakt, OG-Stoff, Giebel-Verband und Gauben aus ihm; bis 30.10. reiste Same 1 (studios.K4).
+function werkDerBuehne(){
+  const aus=$('pAus')?$('pAus').value:'haus';
+  if(aus!=='haus'&&FC.AUSSTATTUNG[aus]) return {kind:'ausstattung', preset:aus, seed:1+((SEED>>>0)%(FC.AUSSTATTUNG[aus].gestalten||1)), ov:{}};
+  const k=$('pK').value, ov={}; FC.PARAMS_BY_KIND.haus.forEach(z=>{ ov[z.id]=RW[z.id]; });
+  return {kind:'haus', preset:FC.PRESETS[k]?k:kulturFromSeed(SEED), seed:SEED, ov}; }
+// die Stufe des Werks: das Haus in L0 (die Welt zeichnet es an der Pose der Station in L0), die Ausstattung in der Stufe der Sonde
+function stufeDerBuehne(){ const aus=$('pAus')?$('pAus').value:'haus'; return (aus!=='haus'&&FC.AUSSTATTUNG[aus]&&(RW.lod|0)>=2)?1:0; }
 
 // ════════════════ Subsystem-UI (einmal angelegt) ════════════════
 const ORDER=['fundament','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
@@ -683,26 +683,32 @@ const subsDiv=document.getElementById('subs'); const checks={};
 ORDER.forEach(k=>{const r=document.createElement('div');r.className='row';
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=true;cb.id='cb_'+k;
   const lb=document.createElement('label');lb.htmlFor=cb.id;lb.textContent=LABEL[k]||k;
-  cb.onchange=()=>{if(haus&&haus.subsystems[k])haus.subsystems[k].visible=cb.checked;}; checks[k]=cb;
+  cb.onchange=()=>{if(haus&&haus.subsystems[k])haus.subsystems[k].visible=cb.checked; ansicht();}; checks[k]=cb;
   r.appendChild(cb);r.appendChild(lb);subsDiv.appendChild(r);});
-document.getElementById('alle').onclick=()=>{if(!haus)return;ORDER.forEach(k=>{checks[k].checked=true;haus.subsystems[k].visible=true;});};
+document.getElementById('alle').onclick=()=>{if(!haus)return;ORDER.forEach(k=>{checks[k].checked=true;if(haus.subsystems[k])haus.subsystems[k].visible=true;});ansicht();};
 document.getElementById('roh').onclick=()=>{if(!haus)return;const roh=['fundament','geruest','riegel','streben','dachwerk'];
-  ORDER.forEach(k=>{const on=roh.includes(k);checks[k].checked=on;haus.subsystems[k].visible=on;});};
+  ORDER.forEach(k=>{const on=roh.includes(k);checks[k].checked=on;if(haus.subsystems[k])haus.subsystems[k].visible=on;});ansicht();};
 
 // ════════════════ HAUS — mutierbar, live regenerierbar ════════════════
-let haus, houseGroup, D, P;       // werden in buildHouse() gesetzt/getauscht
+let haus, houseGroup, hausGroup, sondeGroup, D, P;   // houseGroup: das Werk (der Ofen der Welt) · hausGroup: das lebende Haus (Anatomie, Begehen) · sondeGroup: die LOD-Sonde
 // DIE WURZEL TRÄGT DAS WERK (studios.K4, Labor = Welt): `houseGroup` ist das Haus, das „In der Welt ansehen" setzt — die Parzelle
-// (Wiese, Vorderweg, Trittplatten, Hecke; HAUS `gelaende`) ist Möbel der Bühne und steht daneben, wie die Welt sie nie mitbaut
-// (fachwerk-core: „NICHT in buildInstance: die Parzelle"). Bis hier hing sie in der Wurzel: Box 31 × 13,3 × 31 m gegen das Haus der
+// (Wiese, Vorderweg, Trittplatten, Hecke; HAUS `gelaende`) ist Möbel der Anatomie und steht daneben, wie die Welt sie nie mitbaut
+// (fachwerk-core: „NICHT in buildInstance: die Parzelle"). Bis w16 hing sie in der Wurzel: Box 31 × 13,3 × 31 m gegen das Haus der
 // Welt 10,0 × 13,2 × 8,8 m (Tafel K4, viktorianisch) — die Bühne rahmte aus dem 2,4-fachen Abstand.
 let parzelle=null;
 function parzelleSetzen(g){
-  if(parzelle){ parzelle.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(parzelle); }
+  if(parzelle){ parzelle.traverse(o=>{if(o.geometry)o.geometry.dispose();}); anatomie.remove(parzelle); }
   parzelle=g||null;
   if(!parzelle) return;
-  parzelle.position.y=0; scene.add(parzelle);
+  parzelle.position.y=0; anatomie.add(parzelle);
   parzelle.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
 }
+function hausFort(){ if(hausGroup){ hausGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); anatomie.remove(hausGroup); hausGroup=null; } haus=null; parzelleSetzen(null); }
+function sondeFort(){ if(sondeGroup){ sondeGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); STUDIO.teller.remove(sondeGroup); sondeGroup=null; } }
+// DIE ANATOMIE AUF ZURUF: steht ein Subsystem aus, liegt die Explosion offen, schneidet der Schnitt oder geht der Spieler durchs
+// Haus, zeigt die Bühne das lebende Haus desselben Gesetzes (HAUS — Subsysteme, Flügel, Kollision); sonst das Werk der Welt
+function anatomieAn(){ return !!haus && (mode==='walk' || explode>0 || $('cut').checked || ORDER.some(k=>!checks[k].checked)); }
+function ansicht(){ const an=anatomieAn(); if(houseGroup) houseGroup.visible=!an&&!sondeGroup; if(hausGroup) hausGroup.visible=an; if(parzelle) parzelle.visible=an; STUDIO.wecke(); }
 let lodSpawn=null;                 // Begeh-Spawn der LOD-Sonde (haus ist dort null)
 let solids=[], doorList=[];        // Kollision + Türen (von Closures referenziert)
 let explode=0;
@@ -711,41 +717,33 @@ function buildHouse(params){
   genesisAn=false;
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); dorfGroup=null; dorf=null; dorfCellars=[];
     if(promoPend){ promoPend.st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); promoPend=null; }
-    sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26;sun.shadow.camera.updateProjectionMatrix(); scene.fog.near=55; scene.fog.far=150; tintM(DEFCOL); if($('pK'))applyKultur($('pK').value,SEED); }
-  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); }
-  parzelleSetzen(null);
-  if(typeof ground!=='undefined') ground.visible=true; const _ch=document.getElementById('chronik'); if(_ch)_ch.style.display='none'; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0; dorfRauch.quellen.length=0;
+    tintM(DEFCOL); if($('pK'))applyKultur($('pK').value,SEED); }
+  hausFort(); sondeFort(); werkSzene();
+  const _ch=document.getElementById('chronik'); if(_ch)_ch.style.display='none'; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0; dorfRauch.quellen.length=0;
   const lodSt=RW.lod|0;   // LOD-SONDE: >0 = Dorf-Bake-Pfad statt Editor-Haus (Bedienungs-Zeile der Hülle)
   const ausId=document.getElementById('pAus')?document.getElementById('pAus').value:'haus';      // AUSSTATTUNG statt Haus (Feuerstelle · Marktstand · Ziehbrunnen)
-  if(ausId!=='haus'&&FC.AUSSTATTUNG[ausId]){ buildAusstattungLab(ausId, lodSt); return; }
+  if(ausId!=='haus'&&FC.AUSSTATTUNG[ausId]){ buildAusstattungLab(ausId); return; }
   if(lodSt>0){ buildHausLOD(params, lodSt); return; }
   { const inf=document.getElementById('lodInfo'); if(inf)inf.style.display='none'; }
-  haus=HAUS(THREE,mat,params); houseGroup=haus.build({gelaende:false}); scene.add(houseGroup); parzelleSetzen(haus.subsystems.gelaende);
-  houseGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  haus=HAUS(THREE,mat,params); hausGroup=haus.build({gelaende:false}); anatomie.add(hausGroup); parzelleSetzen(haus.subsystems.gelaende);
+  hausGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   D=haus.dims; P=haus.P;
   solids=haus.solids;                                  // neue Kollisions-Liste
   doorList.length=0;                                   // Türen neu sammeln (Array-Identität halten)
   ['innenwaende','tueren','anbau','fluegel','balkon','fenster','moebel'].forEach(k=>haus.subsystems[k] && haus.subsystems[k].traverse(o=>{
     if(o.userData&&(o.userData.door||o.userData.window)){ doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null, ty:0}); }}));
-  if(haus.chimney){const c=haus.chimney; fire.position.set((c.min[0]+c.max[0])/2, D.baseY+0.6, (c.min[2]+c.max[2])/2);}
   // Checkbox-Zustände + Explosion auf neues Haus anwenden
   ORDER.forEach(k=>{ if(haus.subsystems[k]){ haus.subsystems[k].visible=checks[k].checked; haus.subsystems[k].position.y=explode*(EXPL[k]||0); } });
+  ansicht();
 }
 
 // ════════════════ AUSSTATTUNG (Einzelstück) ════════════════
-// LAB = WELT: dieselbe buildInstance wie der Foundry-Worker der Welt — die LOD-Sonde wählt die Stufe (Editor/Ring A =
-// nah · Chunk-Stufen = mittel), der Samen-Knopf die Gestalt. Das Herdlicht des Labors steht in der Glut der Feuerstelle.
-function buildAusstattungLab(id, lodSt){
+// LAB = WELT: das Stück baut der Ofen der Welt (das Werk der Bühne: Art ausstattung, die Gestalt aus dem Samen) — die LOD-Sonde
+// wählt die Stufe (Editor/Ring A = nah · Chunk-Stufen = mittel, `stufeDerBuehne`), der Samen-Knopf die Gestalt. Maße und Zeile
+// der Sonde liest `werkGebaut` am gelieferten Körper.
+function buildAusstattungLab(){
   haus=null; solids=[]; doorList.length=0; lodSpawn={x:0, z:3.2};
-  const V=FC.AUSSTATTUNG[id].gestalten||1, stufe=lodSt>=2?1:0;
-  houseGroup=FC.buildInstance(id, 1+((SEED>>>0)%V), stufe); let tris=0, dc=0;
-  houseGroup.traverse(o=>{ if(o.isMesh){ o.receiveShadow=true; tris+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3; dc++; } });
-  scene.add(houseGroup);
-  const bb=new THREE.Box3().setFromObject(houseGroup);
-  D={W:bb.max.x-bb.min.x, D:bb.max.z-bb.min.z, ridgeY:Math.max(1.4, bb.max.y), baseY:0, eaveY:bb.max.y}; P={};
-  fire.position.set(0, id==='feuerstelle'?_FEU.hoeheM:-60, 0);
-  const inf=document.getElementById('lodInfo'); if(inf){ inf.style.display='block';
-    inf.textContent=FC.AUSSTATTUNG[id].lab+' · Gestalt '+(1+((SEED>>>0)%V))+'/'+V+' · Stufe '+stufe+'\n'+dc+' Rollen-Meshes · '+(tris|0).toLocaleString('de-DE')+' Dreiecke'; }
+  ansicht();
 }
 
 // ════════════════ LOD-SONDE (Einzelhaus) ════════════════
@@ -782,7 +780,7 @@ function buildHausLOD(params, stufe){
     mischeGeoms(geoms, fragFuer(B,3)); B.frag=null; B.fragStufe=undefined;
     pfad='fragFuer(3): NUR lod2Koerper — GRUNDRISS-TREU: '+(B.fp?B.fp.length:1)+' Körper · wandTon warm · glas ⇒ glasfern';
   }
-  houseGroup=new THREE.Group(); let tris=0, dc=0;
+  sondeGroup=new THREE.Group(); let tris=0, dc=0;
   for(const role in geoms){ const G=geoms[role]; if(!G.vo) continue;
     const bg=new THREE.BufferGeometry();
     bg.setAttribute('position', new THREE.Float32BufferAttribute(G.pos,3));
@@ -790,9 +788,9 @@ function buildHausLOD(params, stufe){
     bg.setAttribute('color',    new THREE.Float32BufferAttribute(G.col,3));
     bg.setIndex(G.idx);
     const mm=new THREE.Mesh(bg,_mmFor(role)); mm.castShadow=true; mm.receiveShadow=true;    // KEIN Blend: die Sonde zeigt den Endzustand
-    houseGroup.add(mm); tris+=G.idx.length/3; dc++; }
-  if(liveG){ liveG.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); houseGroup.add(liveG); }
-  scene.add(houseGroup);
+    sondeGroup.add(mm); tris+=G.idx.length/3; dc++; }
+  if(liveG){ liveG.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); sondeGroup.add(liveG); }
+  STUDIO.teller.add(sondeGroup); ansicht();
   const inf=document.getElementById('lodInfo'); if(inf){ inf.style.display='block';
     inf.textContent=LODNAME[stufe]+(turm?' · TURM-Pfad (≥6 Geschosse)':'')+'\n'+dc+' Draw-Calls · '+(tris|0).toLocaleString('de-DE')+' Dreiecke\n'+pfad; }
 }
@@ -826,7 +824,7 @@ function readParams(){
            vorkragung:RW.vorkragung, pilotis:RW.pilotis, terrAsym:RW.terrAsym, terrasse:RW.terrasse, bend:RW.bend, seed:SEED }; }
 function labels(){}   // die Werte zeigt der Generator selbst (je Zeile, im Gesetz-Format)
 let SEED=3;
-function regen(keepCam){ if($('pDorf')&&$('pDorf').checked){ buildDorf({epoche:$('pEpoche').value, nH:RW.nH, seed:SEED, budget:RW.budget}); if(!keepCam) frameDorf(); else applyOrbit(); } else { buildHouse(readParams()); if(!keepCam) frameHouse(); else applyOrbit(); }
+function regen(keepCam){ if($('pDorf')&&$('pDorf').checked){ buildDorf({epoche:$('pEpoche').value, nH:RW.nH, seed:SEED, budget:RW.budget}); if(!keepCam) frameDorf(); } else { buildHouse(readParams()); STUDIO.bau(); if(!keepCam) frameHouse(); }
   wahlMerken(); kostenLeiste.neu(); }
 // Die Sitzung: jede Tat (Regler, Schalter, Kultur, Auswahl, Würfel, Same) ist EIN Rückgängig-Schritt über RW samt Wahl-Feldern,
 // Same und Farbe; das Schloss je Achse hält eine Achse beim Würfeln fest.
@@ -861,7 +859,6 @@ function wahlMerken(){ WAHL.forEach(id=>{ wahlVor[id]=wahlLies(id); }); }
 function wahlSchritt(id,tat){ const neu=wahlLies(id); wahlSchreib(id,wahlVor[id]); sitz.schritt(()=>{ wahlSchreib(id,neu); if(tat)tat(neu); }); }
 ['pB','pG','pStil','pDachTyp','pBogenTyp','pTerrain'].forEach(id=>$(id).addEventListener('change',()=>{ wahlSchritt(id); regen(true); }));
 $('pK').addEventListener('change',()=>{ wahlSchritt('pK',neu=>{ applyKultur(neu, SEED); $('vK').textContent=(neu==='samen'?'Samen→'+kulturFromSeed(SEED):neu); }); regen(true); });
-$('pZeit').addEventListener('change',()=>setZeit($('pZeit').value));
 if($('pAus')) $('pAus').addEventListener('change',()=>{ $('vAus').textContent=$('pAus').options[$('pAus').selectedIndex].text; regen(false); });
 // „⚂ Felder“: ein neuer Same (die Kultur würfelt ihre Felder neu); derselbe Weg wie das Same-Feld der Sitzung
 $('pSeed').onclick=()=>sitz.seedSetzen((Math.random()*1e6|0)+1);
@@ -909,7 +906,7 @@ $('pTest').onclick=()=>{ const R=[];
       if(ck3){ const C3=dorfChunks[ck3], b4=C3.list.find(bi4=>dorfB[bi4].lod==='chunk');
         const f1=fragFuer(dorfB[b4], C3.stufe), f2=fragFuer(dorfB[b4], C3.stufe);
         ok('Fragment-Cache: warmer Treffer (kein Neubau)', f1===f2&&dorfB[b4].fragStufe===C3.stufe);
-        const t3=performance.now(); rebakeChunk(ck3, false); const dt3=performance.now()-t3;
+        const t3=performance.now(); rebakeChunk(ck3); const dt3=performance.now()-t3;
         ok('Atomarer Rebake aus Cache: '+dt3.toFixed(1)+'ms', C3.meshes.length>0); } }
     { const cks=Object.keys(dorfChunks).filter(k=>dorfChunks[k].list.some(bi2=>dorfB[bi2].lod==='chunk'));
       if(cks.length){ const ck=cks[0], C=dorfChunks[ck], alt=C.stufe; C.stufe=1; rebakeChunk(ck);
@@ -943,24 +940,19 @@ const dorfRegler=AnazhHuelle.regler($('reglerDorf'),BED_DORF,{werte:RW,sitzung:s
   nachRuhe:()=>{ if($('pDorf').checked) regen(true); }});
 
 // Explosion / Schnitt
-function explodeSetzen(){ explode=RW.exp/100; if(haus)ORDER.forEach(k=>{if(haus.subsystems[k])haus.subsystems[k].position.y=explode*(EXPL[k]||0);}); }
+function explodeSetzen(){ explode=RW.exp/100; if(haus)ORDER.forEach(k=>{if(haus.subsystems[k])haus.subsystems[k].position.y=explode*(EXPL[k]||0);}); ansicht(); }
 const expRegler=AnazhHuelle.regler($('reglerExp'),BED_EXP,{werte:RW,format:reglerFmt,gruppen:false,zuruecksetzen:false,ruheMs:0,bei:explodeSetzen});
-const clip=new THREE.Plane(new THREE.Vector3(-1,0,0),0.0);
-$('cut').onchange=e=>{renderer.clippingPlanes=e.target.checked?[clip]:[];};
+$('cut').onchange=e=>{ schnitt.enabled=e.target.checked; ansicht(); };   // der Schnitt: die ClippingGroup der Anatomie (r184 kennt keine renderer.clippingPlanes)
 
-// ════════════════ Kamera: Orbit & Begehung ════════════════
+// ════════════════ Kamera: die Kugel der Bühne & Begehung ════════════════
+// Die Kamera hält die Kugel des Studios (AnazhHuelle.studio): das Werk rahmt S.rahmen(), die Orts-Ansichten setzen ihren Blick.
 let mode='orbit';
-const orb={az:0.85,el:0.30,r:30,tx:0,ty:5,tz:0};
-function frameHouse(){ orb.r=Math.max(D.W,D.D)*1.7+7; orb.ty=D.ridgeY*0.42; applyOrbit(); }
-function applyOrbit(){const ce=Math.cos(orb.el);
-  camera.position.set(orb.tx+Math.sin(orb.az)*ce*orb.r, orb.ty+Math.sin(orb.el)*orb.r, orb.tz+Math.cos(orb.az)*ce*orb.r);
-  camera.up.set(0,1,0); camera.lookAt(orb.tx,orb.ty,orb.tz);}
-
-let drag=false,px=0,py=0; const cv=renderer.domElement;
-cv.addEventListener('pointerdown',e=>{if(mode!=='orbit')return;drag=true;px=e.clientX;py=e.clientY;});
-addEventListener('pointerup',()=>drag=false);
-addEventListener('pointermove',e=>{if(mode!=='orbit'||!drag)return;orb.az-=(e.clientX-px)*0.008;orb.el+=(e.clientY-py)*0.008;orb.el=Math.max(-0.2,Math.min(1.45,orb.el));px=e.clientX;py=e.clientY;applyOrbit();});
-cv.addEventListener('wheel',e=>{if(mode!=='orbit')return;e.preventDefault();orb.r*=(1+Math.sign(e.deltaY)*0.08);orb.r=Math.max(6,Math.min(genesisAn?600:90,orb.r));applyOrbit();},{passive:false});
+function blick(o){ const ce=Math.cos(o.el);
+  camera.position.set(o.tx+Math.sin(o.az)*ce*o.r, o.ty+Math.sin(o.el)*o.r, o.tz+Math.cos(o.az)*ce*o.r);
+  STUDIO.kugel.target.set(o.tx,o.ty,o.tz); STUDIO.kugel.minDistance=6; STUDIO.kugel.maxDistance=o.weit;
+  camera.near=0.1; camera.far=Math.max(600,o.weit*4); camera.updateProjectionMatrix(); camera.lookAt(o.tx,o.ty,o.tz); STUDIO.wecke(); }
+function frameHouse(){ rahmenBitte=true; if(STUDIO.stand){ rahmenBitte=false; STUDIO.rahmen(); } }
+const cv=renderer.domElement;
 
 // ── Begehung (Ego) ──
 const player={pos:new THREE.Vector3(0,0,0),vy:0,onGround:false,groundY:0};
@@ -1007,16 +999,20 @@ function gravity(dt){const p=player.pos;player.vy-=G*dt;p.y+=player.vy*dt;player
     if(player.vy<=0 && p.y>=s.max[1]-STEP-0.35){p.y=s.max[1];player.vy=0;player.onGround=true;}
     else if(player.vy>0 && p.y+PH>s.min[1]){p.y=Math.max(s.min[1]-PH,player.groundY);player.vy=0;}}}   // Kopfstoß NIE unter den Stand-Boden → kein Rauswerfen
   if(player.onGround)player.groundY=p.y;}
-function enterWalk(){mode='walk';$('ui').style.display='none';
+let walkVor=null;
+function enterWalk(){walkVor={pos:camera.position.clone(),ziel:STUDIO.kugel.target.clone(),dreh:STUDIO.teller.rotation.y};
+  mode='walk';$('ui').style.display='none'; STUDIO.kugel.enabled=false; STUDIO.teller.rotation.y=0;   // begangen wird in den Achsen des Hauses
   $('hud').style.display='block';$('esc').style.display='block';
   if(haus)ORDER.forEach(k=>{if(haus.subsystems[k]){haus.subsystems[k].visible=true;haus.subsystems[k].position.y=0;}checks[k].checked=true;});
-  renderer.clippingPlanes=[];$('cut').checked=false;expRegler.setzen({exp:0},true);explode=0;
+  schnitt.enabled=false;$('cut').checked=false;expRegler.setzen({exp:0},true);explode=0; ansicht();
   const sp=dorf?dorf.spawn:(haus?haus.spawn:(lodSpawn||{x:0,z:-8}));                        // LOD-SONDE: begehbar ohne Kollision (durchlaufen = inspizieren)
   player.pos.set(sp.x,(dorf&&dorfBodenY)?dorfBodenY(sp.x,sp.z):0,sp.z);player.vy=0;player.groundY=player.pos.y;yaw=Math.PI;pitch=0;
   AnazhHuelle.zeiger(cv);}
 function exitWalk(){mode='orbit';$('ui').style.display='';
   $('hud').style.display='none';$('esc').style.display='none';dhint.style.display='none';
-  if(document.pointerLockElement)document.exitPointerLock();applyOrbit();}
+  if(document.pointerLockElement)document.exitPointerLock();
+  if(walkVor){ STUDIO.teller.rotation.y=walkVor.dreh; camera.position.copy(walkVor.pos); STUDIO.kugel.target.copy(walkVor.ziel); walkVor=null; }
+  STUDIO.kugel.enabled=true; ansicht(); }
 $('begehen').onclick=enterWalk;
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Escape'&&mode==='walk')exitWalk();
   if(e.code==='KeyE'&&mode==='walk'){const d=targetedDoor();if(d)toggleDoor(d);}
@@ -1043,16 +1039,10 @@ function walkUpdate(dt){
   if(td){ dhint.textContent='E — Tür '+(td.open?'schliessen':'öffnen'); dhint.style.display='block'; } else dhint.style.display='none';
 }
 
-// ════════════════ Loop ════════════════
-let last=performance.now();
-function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+// ════════════════ Takt ════════════════
+// Der Takt ist der Loop der Bühne (S.takt): Begehung, Dorf-LOD und Rauch; true hält das Bild wach.
+function laborTakt(dt){
   if(mode==='walk')walkUpdate(dt);
-  fire.intensity=_FEU_LAB*_FEU.cd*_LAB_JE_CD*_feuerZeit*(1+_FEU.flacker.amp*FC.lichtFlackern(_FEU,now/1000,0));   // die Flamme atmet in 6–10 Hz (LICHT_GESETZ.feuer.flacker, dasselbe Gesetz wie die Welt)
-  { const nw=performance.now();
-  for(let k=dorfBlend.length-1;k>=0;k--){ const B3=dorfBlend[k], f=Math.min(1,(nw-B3.t0)/240);
-    B3.m.material.opacity=f; if(f>=1){ B3.m.material.dispose(); B3.m.material=B3.shared; dorfBlend.splice(k,1); } }
-  for(let k=dorfSterben.length-1;k>=0;k--){ const S3=dorfSterben[k];
-    if(nw>=S3.t){ S3.meshes.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); }); dorfSterben.splice(k,1); } } }
 if(dorf&&dorfB){ lodTick(performance.now());
   // RAUCH_VIS.lab = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
   if(dorfRauch.quellen.length){
@@ -1075,15 +1065,14 @@ if(dorf&&dorfB){ lodTick(performance.now());
     for(let k=dorfRauch.teilchen.length-1;k>=0;k--){ const T2=dorfRauch.teilchen[k];
       T2.m.position.y+=T2.vy; T2.m.position.x+=T2.dx; T2.a-=fade; T2.m.material.opacity=T2.a; T2.m.scale.multiplyScalar(scaleMul);
       if(T2.a<=aKill){ scene.remove(T2.m); T2.m.geometry.dispose(); T2.m.material.dispose(); dorfRauch.teilchen.splice(k,1); } } } }
-renderer.render(scene,camera);requestAnimationFrame(frame);}
+return mode==='walk'||!!(dorf&&dorfB); }
 
 // ── Start ──
 // DIE BÜHNE STARTET IM WERK (studios.K4, Labor = Welt): die Kultur aus dem Samen — das Haus, das „In der Welt ansehen" trägt
 // (`werk`: Kultur des Samens + die Haus-Zeilen; PRESETS = „derselbe Zustand, den ein Klick auf die Kultur beim Lab-Start zeigt").
 // Bis hier startete sie in „Manuell" mit dem L-Grundriss des Formulars und übergab die Kultur des Samens (viktorianisch, I):
 // die Bühne zeigte einen Flügel bis z 7,34 m, den die Welt nie baut (Box-Tiefe 11,74 gegen 8,80 m, Tafel K4).
-setZeit($('pZeit').value); applyKultur($('pK').value, SEED); if($('pK').value==='samen') $('vK').textContent='Samen→'+kulturFromSeed(SEED); if(WELT.genesis){ buildGenesis(); frameGenesis(); } else { buildHouse(readParams()); frameHouse(); } wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+applyKultur($('pK').value, SEED); if($('pK').value==='samen') $('vK').textContent='Samen→'+kulturFromSeed(SEED); if(WELT.genesis){ buildGenesis(); frameGenesis(); } else { buildHouse(readParams()); frameHouse(); } wahlMerken(); kostenLeiste.neu();   // das Werk baut die Bühne selbst, sobald ihr Licht liegt
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die 32 Kulturen leben im <select id="pK">
@@ -1114,7 +1103,9 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
         welt: "fachwerk",
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {
-            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+            return STUDIO.steht.then(function () {
+                return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+            });
         },
         label: "Fachwerkhaus — parametrisch, begehbar",
         dsl: FC.KULTNAMES.concat(["dorf", "haus", "genesis"]),
@@ -1133,19 +1124,10 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
            das Haus der gewählten Kultur mit dem Samen der Bühne und den Werten der Haus-Zeilen (die Welt-Gestalt der
            Kosten-Leiste) — das nächste gesetzte Werk des Rezepts trägt es. Der Same ist die Gestalt (`_foundryGestaltFor`):
            das Haus zieht Fenstertakt, OG-Stoff, Giebel-Verband und Gauben aus ihm; bis 30.10. reiste Same 1 (studios.K4). */
-        werk: function () {
-            var aus = document.getElementById("pAus") ? document.getElementById("pAus").value : "haus";
-            if (aus !== "haus" && FC.AUSSTATTUNG[aus])
-                return { kind: "ausstattung", preset: aus, seed: 1 + ((SEED >>> 0) % (FC.AUSSTATTUNG[aus].gestalten || 1)), ov: {} };
-            var k = document.getElementById("pK").value;
-            var ov = {};
-            FC.PARAMS_BY_KIND.haus.forEach(function (z) {
-                ov[z.id] = RW[z.id];
-            });
-            return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: SEED, ov: ov };
-        },
+        werk: werkDerBuehne,
         wurzel: function () {
             return houseGroup;
         },
+        werkOrt: STUDIO.kopf ? STUDIO.kopf.werkOrt : null,
     });
 })();
