@@ -2061,14 +2061,7 @@ class AnazhRealm_siedlung_wege {
                         if (alt) [e.strassen, e.box, e.band] = [alt.strassen, alt.box, alt.band];
                         F.je.set(key, e);
                     } else if (!e && darf) {
-                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(
-                            s.seed,
-                            s.nH,
-                            i,
-                            k,
-                            s.epoche,
-                            this._siedlungKlima()
-                        );
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche); // die Stadt des Worts: ohne Klima
                         e = this._stadtFerneBauen(F, m, s.x + i * M, s.z + k * M, null);
                         e.strassen = m ? m.strassen : null;
                         F.je.set(key, e);
@@ -2082,14 +2075,7 @@ class AnazhRealm_siedlung_wege {
                     // eine Kachel, die ihren Plan ohne Stufe 1 bekam (der Reload: die Sitzung kennt ihre Siedlung), holt die
                     // Gassen ihres Netzes für das Band, sobald sie jenseits `bandAbM` liegt
                     if (!e.strassen && e.los && darf && d > A.bandAbM) {
-                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(
-                            s.seed,
-                            s.nH,
-                            i,
-                            k,
-                            s.epoche,
-                            this._siedlungKlima()
-                        );
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche); // die Stadt des Worts: ohne Klima
                         e.strassen = m ? m.strassen : [];
                         darf = false;
                     }

@@ -265,11 +265,15 @@ class AnazhRealm_siedlung_ort {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const d = Object.assign({}, dp || {});
-        const ort = d.ort;
+        const [ort, wort] = [d.ort, d.wort || !!d.kachel];
         delete d.ort;
-        // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt, fachwerk `REGION_KLIMA`): jeder Plan der Welt trägt das Klima des Orts — das
-        // Mittel des kältesten und des wärmsten Monats (gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C)
-        d.klima = this._siedlungKlima();
+        delete d.wort;
+        // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt, fachwerk `REGION_KLIMA`): jedes Dorf der Welt OHNE WORT trägt das Klima des Orts —
+        // das Mittel des kältesten und des wärmsten Monats (gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C). Der Plan
+        // eines Worts (`wort`: der Satz „dorf 7 300“, sein Gedächtnis „d:…“ und die Kacheln seiner Stadt) ist eine Funktion des Worts
+        // allein — derselbe an jedem Ort, für jeden, der ihn teilt. Bis hier trug auch er das Klima: die Stadt „dorf 7 300“ der Messorte
+        // stand alpin statt mediterran, ihre Lose, Tore und Bahnen lagen nicht mehr unter den Ständen des Plans, den die Messorte nennen.
+        if (!wort) d.klima = this._siedlungKlima();
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
         // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
@@ -1247,7 +1251,7 @@ class AnazhRealm_siedlung_ort {
         const stadt = SF && nH > SF.voll ? nH : undefined;
         const kachel = stadt ? { samen: seed, nH: stadt, i: 0, k: 0 } : undefined;
         if (stadt) nH = AnazhRealm.Gesetz("fachwerk:viertelWort")(seed, stadt, 0, 0, o.epoche).nH;
-        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null) };
+        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null), wort: true };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
@@ -1542,7 +1546,7 @@ class AnazhRealm_siedlung_ort {
                 const [dx, dz] = [cx - s.cx, cz - s.cz];
                 const drin = Math.max(Math.abs(dx), Math.abs(dz)) <= s.ringe * SF.schritt;
                 if (!drin || (!dx && !dz) || dx % SF.schritt || dz % SF.schritt) continue;
-                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche, this._siedlungKlima()); // das Erbe der Mitte im Klima des Orts
+                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche); // die Stadt des Worts: ihr Plan ohne Klima (`_foundryRequestSettlement`)
                 if (w)
                     aus = {
                         key: cx + "," + cz,
@@ -3089,6 +3093,7 @@ class AnazhRealm_siedlung_ort {
             budget: akt ? c.budget : undefined,
             jahr: c.wachs ? c.wachs.jahr : undefined,
             kern: c.kern,
+            wort: akt, // das Dorf des Satzes: sein Plan ohne Klima (`_foundryRequestSettlement`; die Kachel einer Stadt des Worts nennt sich selbst)
             ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
         };
     }
