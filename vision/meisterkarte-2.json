@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 15,
+    "heute": 16,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 7,
+    "anteilHeute": 7.9,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4270,7 +4270,7 @@
        "richter": "100 fremde Saaten: Spektrum-Steigung −1 ±0,3; Leben nur, wo Energie fließt"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Fische folgen dem Pegel (0,335 → 0,363) und fliehen ≥ 3 m — headless; Plankton nur als Kommentar zur Trübe des See-Körpers (foundry-core.js:163), kein Feld.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 91,
+  "heute": 92,
   "davonKopplungen": 33,
   "kern": 6,
   "kernDazu": 6,
-  "anteilHeute": 4.9,
+  "anteilHeute": 5,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 37
+  "nachwache": 38
  },
  "zusammengelegt": [
   {
