@@ -2660,7 +2660,7 @@ class AnazhRealm_koerper_leib {
         // je Achse das Paar (a, e) hintereinander (erbe-geburt): die Größe zieht dieselben vier Gleichverteilten wie vor der
         // zweiten Achse — der Gründer einer Kennung behält seine Größe, die Scheu kommt dahinter
         const [na, ne] = [[], []];
-        for (let i = 0; i < L.gesetz().achsen.length; i++) na.push(L.normal(u(), u())), ne.push(L.normal(u(), u()));
+        for (let i = 0; i < L.gesetz().achsen.length; i++) (na.push(L.normal(u(), u())), ne.push(L.normal(u(), u())));
         return { a: L.gruender(na), e: L.umwelt(ne) };
     }
 
