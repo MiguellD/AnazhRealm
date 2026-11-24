@@ -189,7 +189,21 @@ class AnazhRealm_klang {
             if (m.typ === "stimme" && m.paket) {
                 if (um.graph.aufnehmen(m.paket)) um.geliefert++;
             } else if (m.typ === "ruf" && m.tex) {
-                if (um.kern.rufSpielen(s.ctx, um.bus, m.ruf, m.tex)) um.rufeGespielt++;
+                const q = um.kern.rufSpielen(s.ctx, um.bus, m.ruf, m.tex);
+                if (q) um.rufeGespielt++;
+                // der Donner steht in der Zeile, wenn er am Ohr ankommt — nie mit dem Blitz
+                if (q && m.ruf.blitz) {
+                    (um.donner || (um.donner = [])).push({
+                        t0: q.t0,
+                        einsatz: q.einsatz,
+                        d: q.d,
+                        c: um.kern.schallC(m.ruf.temperatur),
+                    });
+                    setTimeout(
+                        () => this._untertitel("wetter", "donner", null, m.ruf.pan),
+                        Math.max(0, (q.einsatz - s.ctx.currentTime) * 1000)
+                    );
+                }
             }
         };
         return w;
@@ -302,6 +316,7 @@ class AnazhRealm_klang {
             } else {
                 this._tierRufTakt(um.rufDt);
                 this._bewohnerLautTakt(um.rufDt);
+                this._donnerTakt(um.rufDt);
             }
             return;
         }
@@ -850,6 +865,48 @@ class AnazhRealm_klang {
                 if (this._klangZug("umwelt") / 4294967296 < (rate / 60) * dt) this._bewohnerLaut(b, laut);
             }
         }
+    }
+    // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): der Blitz ist ein Ereignis des EINEN Wetters — je Ruf-Takt
+    // eine Poisson-Ziehung auf der Scheibe der Hörweite (klang DONNER: blitzJeKm2Min × Fläche), ihr Ort gleichverteilt in der
+    // Fläche; er schlägt nur, wo das Wort am Ort ein Sturm ist: die Front (`_wetterAmOrt`, derselbe Leser, der dem Spieler sein
+    // Wetter zieht) — steht das Wort des Spielers (`wetterWort`), gilt es für die Welt.
+    _donnerTakt(dt) {
+        const st = this.state;
+        const um = st.symphony.umwelt;
+        const pm = st.playerMesh;
+        if (!(dt > 0) || !um || !um.kern.DONNER || !pm) return null;
+        const D = um.kern.DONNER;
+        const zug = () => this._klangZug("umwelt") / 4294967296;
+        const rate = (D.blitzJeKm2Min * Math.PI * (D.hoerweiteM / 1000) ** 2) / 60;
+        if (!(zug() < 1 - Math.exp(-rate * dt))) return null;
+        const r = D.hoerweiteM * Math.sqrt(zug());
+        const w = 2 * Math.PI * zug();
+        const [x, z] = [pm.position.x + r * Math.cos(w), pm.position.z + r * Math.sin(w)];
+        const I = AnazhRealm.WEATHER_INTENSITY;
+        const wort = st.wetterWort ? st.weather : this._wetterAmOrt(x, z);
+        if (!((I[wort] || 0) >= I.stormy)) return null;
+        return this._blitz(x, z);
+    }
+    // Ein Blitz bei (x, z): zählt jeden (headless messbar); sein Donner geht an die Werkstatt, der Einsatz zählt ab dem Blitz.
+    _blitz(x, z) {
+        const s = this.state.symphony;
+        s.blitze = (s.blitze || 0) + 1;
+        const um = s.umwelt;
+        const pm = this.state.playerMesh;
+        if (!s.enabled || !s.ctx || !um || !um.werkstatt || !pm) return null;
+        const [dx, dz] = [x - pm.position.x, z - pm.position.z];
+        const ruf = {
+            blitz: { x, z },
+            d: Math.hypot(dx, dz),
+            pan: this._umweltPanorama()(dx, dz),
+            saat: this._klangZug("umwelt"),
+            t0: s.ctx.currentTime,
+            temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
+        };
+        if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
+        um.rufeBestellt++;
+        um.werkstatt.postMessage({ typ: "ruf", ruf });
+        return ruf;
     }
     // Ein Laut des Bewohners `b` (STIMME.laute): zählt jeden (headless messbar); nur ein hörbarer geht an die Werkstatt.
     _bewohnerLaut(b, laut) {
@@ -2400,6 +2457,8 @@ AnazhRealm._umweltGesetz = function () {
         kern.rufSpielen &&
         kern.rufPegel &&
         kern.stimmLeib &&
+        kern.donnerPuffer &&
+        kern.DONNER &&
         kern.tierRufPegel &&
         kern.substanzKlang &&
         kern.trefferPaar &&

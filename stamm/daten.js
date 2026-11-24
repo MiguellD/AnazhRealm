@@ -1352,6 +1352,7 @@ class AnazhRealm_daten {
             "untertitel.laut.muehe": ["Jemand ächzt bei der Arbeit", "someone grunts at work"],
             "untertitel.laut.seufzer": ["Jemand seufzt", "someone sighs"],
             "untertitel.laut.halten": ["Jemand singt einen Ton", "someone holds a note"],
+            "untertitel.wetter.donner": ["Donner grollt", "thunder rumbles"],
             "kern.perf-blackbox": ["BLACKBOX schlimmster {ms} ms (GPU-Lücke {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json", "BLACKBOX worst {ms} ms (GPU gap {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json"],
             "kern.perf-chunk": ["chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}", "chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}"],
             "kern.perf-export": ["Export: Einstellungen → Leistung → „Perf-Daten exportieren\"", "Export: Settings → Performance → “Export perf data”"],

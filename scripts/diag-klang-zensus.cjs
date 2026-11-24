@@ -24,7 +24,8 @@
 //  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
 //  (V) DER WEG ZUM OHR (klang-leib): Laufzeit über den Weg d/c(T), Luft nach ISO 9613-1, kein Panner ohne Kopf.
 //  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S21 unten), Stubs restauriert.
+//  (Dn) DER DONNER AUS DEM BLITZ (klang-leib): der Einsatz am Abgriff gegen d/c(T) vom nächsten Punkt des Kanals, ±2 %.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S22 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -1638,6 +1639,40 @@ async function stimmSeite(arg) {
     return { rot, je, mittelPct: +(alle.reduce((s, q) => s + q, 0) / alle.length).toFixed(2), maxPct: Math.max(...alle), innerhalbPct: +((100 * alle.filter((q) => q <= 15).length) / alle.length).toFixed(1) };
 }
 
+// (Dn) DER DONNER AUS DEM BLITZ (klang-leib, das Gesetz `donnerPuffer`, erleben.kopplung.ein-ereignis#2): je Blitz an 400,
+// 1 500, 5 000 und 12 000 m bei −10, 20 und 35 °C der Donner über den EINEN Weg zum Ohr (`rufSpielen`, der Blitz bei t0 = 0)
+// gerendert; am Abgriff der erste Laut gegen den Weg vom nächsten Punkt des Kanals, d / c(T): das Verhältnis ±2 % (Dn). Der
+// Täter: S22 der Donner startet sofort (der Einsatz ohne die Laufzeit über den Weg).
+async function donnerSeite(mut) {
+    const [K, B, rot, je] = [__klangCore, AudioBufferSourceNode.prototype, [], []];
+    const start = B.start;
+    if (mut === "sofort")
+        B.start = function (when, ...rest) {
+            return start.call(this, 0, ...rest);
+        };
+    try {
+        const sr = K.DONNER.sr;
+        for (const T of [-10, 20, 35])
+            for (const d of [400, 1500, 5000, 12000]) {
+                const ruf = { blitz: {}, d, pan: 0.3, saat: 9 + d, t0: 0, temperatur: T };
+                const tex = K.donnerPuffer(ruf);
+                const soll = tex.dNah / K.schallC(T);
+                const ctx = new OfflineAudioContext(2, Math.ceil(sr * (soll + tex.sek + 0.5)), sr);
+                const q = K.rufSpielen(ctx, ctx.destination, ruf, tex);
+                const A = (await ctx.startRendering()).getChannelData(0);
+                let ein = -1;
+                for (let i = 0; i < A.length && ein < 0; i++) if (Math.abs(A[i]) > 1e-9) ein = i;
+                const verh = ein / sr / soll;
+                je.push(+verh.toFixed(4));
+                if (!q || !(Math.abs(verh - 1) <= 0.02))
+                    rot.push(`Dn ${d} m bei ${T} °C: Einsatz ${(ein / sr).toFixed(3)} s, Soll d/c(T) ${soll.toFixed(3)} s vom nächsten Punkt des Kanals (${tex.dNah.toFixed(0)} m; klang-core donnerPuffer → rufSpielen, der Anschlag des Wegs)`);
+            }
+    } finally {
+        B.start = start;
+    }
+    return { rot, je };
+}
+
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
 // gehalten bis zum Ereignis) an den Bach der Mess-Wiese und zurück, derweil spricht er das Wetter (Sturm, dann bewölkt). Je
 // 0,1 s das Ohr — RMS am Gain der Stimmen fluss + ufer und regen (ein Analyser, die Stimme an ihrem Puffer erkannt) — und das
@@ -1887,6 +1922,10 @@ async function zensus(page, browser, ergebnis) {
     const wg = (ergebnis.weg = await page.evaluate(wegSeite, false));
     rot.push(...wg.rot);
     console.log(`── (V) DER WEG ZUM OHR: ${wg.proben.length - wg.rot.length}/${wg.proben.length} Proben GRÜN · ${wg.proben.join(" · ")}`);
+    // (Dn) der Donner aus dem Blitz: der Einsatz am Abgriff gegen d / c(T)
+    const dn = (ergebnis.donner = await page.evaluate(donnerSeite, false));
+    rot.push(...dn.rot);
+    console.log(`── (Dn) DER DONNER AUS DEM BLITZ: ${dn.je.length - dn.rot.length}/${dn.je.length} Einsätze ±2 % zu d/c(T) · Verhältnis ${Math.min(...dn.je)}…${Math.max(...dn.je)}`);
     // (St) die Stimme aus dem Leib: Grundton und Formanten am Abgriff gegen Peterson & Barney 1952
     const sm = (ergebnis.stimme = await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: false }));
     rot.push(...sm.rot);
@@ -2055,6 +2094,8 @@ async function zensus(page, browser, ergebnis) {
             ["panner", /^Rp /, "S20: ein StereoPanner im Weg"],
         ])
             nennt((await page.evaluate(wegSeite, mut)).rot, re, was);
+        // S22: der Donner startet sofort — der Einsatz ohne die Laufzeit über den Weg
+        nennt((await page.evaluate(donnerSeite, "sofort")).rot, /^Dn /, "S22: der Donner ohne Laufzeit");
         // S21: der Mann ohne Pubertät (Rachen und Kehle wie die Frau) — sein Grundton fällt beim Namen
         nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
@@ -2063,7 +2104,7 @@ async function zensus(page, browser, ergebnis) {
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S21 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S22 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

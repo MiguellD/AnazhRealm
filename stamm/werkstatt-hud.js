@@ -3196,6 +3196,8 @@ AnazhRealm.UNTERTITEL = Object.freeze({
         seufzer: "untertitel.laut.seufzer",
         halten: "untertitel.laut.halten",
     },
+    // der Donner eines Blitzes (klang:DONNER, `_blitz`), wenn er am Ohr ankommt
+    wetter: { donner: "untertitel.wetter.donner" },
     panSchwelle: 0.35, // |pan| darüber zeigt die Richtung
     maxZeilen: 4, // so viele Zeilen höchstens; die älteste weicht
     sek: 2.5, // so lange steht eine Zeile nach ihrer letzten Auffrischung

@@ -379,7 +379,9 @@
             angriffSek: 0.03, freiSek: 0.35,
             schritt: { db: -9, haltSek: 0.55 },
             ruf: { db: -10, haltSek: 0.9 },
-            gespraech: { db: -12, haltSek: 1.2, sekProZeichen: 0.07 }
+            // das Gespraech senkt die Musik um 10 dB: die Mitte des Bands 8–12 dB fuer die Stimme (erleben.klang.getuemmel#1;
+            // bis klang-leib −12, am Rand — die Station las am Bus 13,27 dB)
+            gespraech: { db: -10, haltSek: 1.2, sekProZeichen: 0.07 }
         }
     };
 
@@ -1450,20 +1452,23 @@
     // DER EINE RUF (klang-leib): ein Ruf mit Leib (`ruf.leib`: der Mensch) ist ein Laut des Stimm-Gesetzes (`stimmPuffer`),
     // sonst der Ruf des Tiers — die Werkstatt rechnet beide hier, der Pegel am Ohr folgt der Art (`rufPegel`)
     function rufPuffer(ruf) {
-        return ruf && ruf.leib ? stimmPuffer(ruf) : tierRufPuffer(ruf);
+        return ruf && ruf.leib ? stimmPuffer(ruf) : ruf && ruf.blitz ? donnerPuffer(ruf) : tierRufPuffer(ruf);
     }
     function rufPegel(ruf) {
-        var r = ruf || {}, T = r.leib ? STIMME.pegel : UMWELT.tier, d = typeof r.d === "number" ? r.d : T.dRef;
-        if (!r.leib) return tierRufPegel(d);
-        if (!(d < T.hoerweiteM)) return -Infinity;
+        var r = ruf || {}, T = r.leib ? STIMME.pegel : r.blitz ? DONNER.pegel : UMWELT.tier, d = typeof r.d === "number" ? r.d : T.dRef;
+        if (!r.leib && !r.blitz) return tierRufPegel(d);
+        if (!(d < (r.blitz ? DONNER.hoerweiteM : T.hoerweiteM))) return -Infinity;
         return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
     // Den gerechneten Ruf spielen: Puffer → der Weg zum Ohr (`raumWeg`: Luft, Kopf; die Laufzeit ueber den Weg ist sein
     // Einsatz, d / c(T) nach dem Ruf) → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
     function rufSpielen(ctx, ausgang, ruf, tex) {
-        var r = ruf || {}, pegel = rufPegel(r);
+        // der Donner kommt vom naechsten Punkt seines Kanals (`tex.dNah`), sein Einsatz zaehlt ab dem Blitz (`ruf.t0`)
+        var r = ruf && tex && typeof tex.dNah === "number" && isFinite(tex.dNah) ? Object.assign({}, ruf, { d: tex.dNah }) : ruf || {};
+        var pegel = rufPegel(r);
+        if (r.blitz && tex && typeof tex.scheitelDb === "number") pegel = Math.min(pegel, DONNER.pegel.spitzeDb - tex.scheitelDb);
         if (!(pegel >= UMWELT.hoerschwelleDb) || !tex || !tex.daten) return null;
-        var t = ctx.currentTime;
+        var t = ctx.currentTime, t0 = typeof r.t0 === "number" && isFinite(r.t0) ? Math.min(t, r.t0) : t;
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
         b.getChannelData(0).set(tex.daten);
         var src = ctx.createBufferSource(), g = ctx.createGain();
@@ -1483,8 +1488,9 @@
         } else ohr.ausgang.connect(g);
         g.connect(ausgang);
         src.onended = function () { try { ohr.knoten.forEach(function (nd) { nd.disconnect(); }); g.disconnect(); if (lp) lp.disconnect(); } catch (_e) {} };
-        src.start(t + ohr.verzug);
-        return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration, verzug: ohr.verzug };
+        var einsatz = Math.max(t, t0 + ohr.verzug);
+        src.start(einsatz);
+        return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration, verzug: ohr.verzug, einsatz: einsatz, t0: t0, d: r.d };
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1651,6 +1657,88 @@
         SYNTHESE.samples += n;
         SYNTHESE.rufe++;
         return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
+    }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Wo das Wort am
+    //  Ort ein Sturm ist (der Wirt fragt die Front, `_wetterAmOrt` — derselbe Leser, der dem Spieler sein Wetter gibt; steht
+    //  das Wort des Spielers, gilt es fuer die Welt), schlaegt der Blitz als Poisson-Folge: `blitzJeKm2Min` auf jedem
+    //  Quadratkilometer der Hoerweite (`hoerweiteM`: der Donner traegt etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
+    //  Boden zur Ladung der Wolke (`hoeheM`), gewunden (je `segmentM` ein Knick um `knickGrad`), mit `aeste` Seitenarmen.
+    //  Jeder Punkt des Kanals strahlt eine N-Welle; ihre Dauer folgt dem Relaxations-Radius R0 = √(E_l / (π·p0)) (Few 1969:
+    //  die Energie je Laenge E_l setzt die Skala, f_m = fFaktor·c / R0), ihr Gewicht 1/r. Die Ankunft je Punkt ist r / c(T):
+    //  das Grollen IST die Geometrie des Kanals, der Knall der Teil, der quer zum Ohr liegt (seine Wellen kommen zugleich).
+    //  Der naechste Punkt traegt den Einsatz: der Weg zum Ohr (`raumWeg`, der Anschlag) setzt ihn auf d / c(T) nach dem
+    //  Blitz (`ruf.t0`), die Luft nimmt die Hoehen ueber die Strecke. Kosten: je Blitz EIN Puffer in der Klang-Werkstatt
+    //  (≤ maxSek bei sr), nie je Bild.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var DONNER = {
+        blitzJeKm2Min: 0.01, // QUELLE UNGEPRUEFT im Wert: ein gewoehnliches Gewitter, wenige Blitze je Minute auf ~100 km²
+        hoerweiteM: 16000,   // NWS „Understanding Lightning: Thunder": der Donner traegt etwa 10 Meilen
+        hoeheM: 5000, segmentM: 40, knickGrad: 16, aeste: 3, astM: 1500, // QUELLE UNGEPRUEFT im Wert: die Gestalt des Kanals
+        energieJeM: 1e6, streuung: 0.6, p0: 101325, fFaktor: 0.63,   // E_l: die Groesse, die Few aus dem Spektrum des Donners las
+        punktM: 0.7,         // der Abstand der Strahler (≤ c·τ/4: die Welle laeuft, sie stottert nicht)
+        sr: 11025, maxSek: 14, ausSek: 0.6,
+        // QUELLE UNGEPRUEFT im Wert: der Donner in 500 m am Welt-Bus; der Bus hat keinen Begrenzer, darum traegt der Puffer
+        // seinen Scheitel (`scheitelDb`, Spitze ueber RMS) und der Pegel deckelt dort, wo die Spitze −1 dBFS erreichte
+        pegel: { refDb: -14, dRef: 500, dMin: 150, spitzeDb: -1 }
+    };
+    // DER DONNER EINES BLITZES: ruf = { blitz, d (m bis zum Fusspunkt), saat, temperatur } → { sr, daten, dNah, f0, sek }
+    function donnerPuffer(ruf) {
+        var D = DONNER, r = ruf || {}, rnd = umweltRng((r.saat >>> 0) || 13), c = schallC(typeof r.temperatur === "number" && isFinite(r.temperatur) ? r.temperatur : UMWELT.luft.T);
+        var dH = Math.max(1, typeof r.d === "number" && isFinite(r.d) ? r.d : 1000), sr = D.sr;
+        var gauss = function () { return Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd()); };
+        var knick = Math.tan((D.knickGrad * Math.PI) / 180);
+        // ein gewundener Arm: von p in Richtung v, je Segment ein Knick, `hebt` zieht ihn zur Wolke
+        var arme = [];
+        var arm = function (p, v, laenge, hebt) {
+            var pts = [p.slice()], q = p.slice(), w = v.slice();
+            for (var l = 0; l < laenge && q[1] >= 0; l += D.segmentM) {
+                for (var a = 0; a < 3; a++) w[a] += knick * gauss();
+                w[1] += hebt;
+                var n = Math.hypot(w[0], w[1], w[2]) || 1;
+                for (a = 0; a < 3; a++) q[a] += (D.segmentM * (w[a] /= n));
+                pts.push(q.slice());
+                if (hebt > 0 && q[1] >= D.hoeheM) break;
+            }
+            arme.push(pts);
+            return pts;
+        };
+        var stamm = arm([dH, 0, 0], [0, 1, 0], 4 * D.hoeheM, 0.35);
+        for (var k = 0; k < D.aeste; k++) {
+            var ab = stamm[Math.floor(stamm.length * (0.3 + 0.6 * rnd()))], phi = 2 * Math.PI * rnd();
+            arm(ab, [Math.cos(phi), -0.15, Math.sin(phi)], D.astM, 0);
+        }
+        // die Strahler: je Segment seine Energie (log-normal), je Punkt Abstand, Dauer und Gewicht
+        var R = [], TAU = [], G = [], rMin = Infinity, rMax = 0, tauMax = 0;
+        arme.forEach(function (pts) {
+            for (var i = 1; i < pts.length; i++) {
+                var A = pts[i - 1], B = pts[i], m = Math.max(1, Math.round(D.segmentM / D.punktM));
+                var R0 = Math.sqrt((D.energieJeM * Math.exp(D.streuung * gauss())) / (Math.PI * D.p0)), tau = R0 / (D.fFaktor * c);
+                for (var j = 0; j < m; j++) {
+                    var u = (j + 0.5) / m, x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u, z = A[2] + (B[2] - A[2]) * u;
+                    var rr = Math.max(1, Math.hypot(x, y, z));
+                    R.push(rr); TAU.push(tau); G.push(D.punktM / rr);
+                    if (rr < rMin) rMin = rr;
+                    if (rr > rMax) rMax = rr;
+                    if (tau > tauMax) tauMax = tau;
+                }
+            }
+        });
+        var sek = Math.min(D.maxSek, (rMax - rMin) / c + tauMax + 0.05), n = Math.ceil(sek * sr), x = new Float32Array(n);
+        for (var q = 0; q < R.length; q++) {
+            var i0 = Math.floor(((R[q] - rMin) / c) * sr), L = Math.max(2, Math.round(TAU[q] * sr));
+            for (var s = 0; s < L && i0 + s < n; s++) x[i0 + s] += G[q] * (1 - (2 * s) / (L - 1));
+        }
+        // das Ende des Puffers klingt aus (der ferne Rest des Kanals jenseits maxSek)
+        if ((rMax - rMin) / c + tauMax > D.maxSek)
+            for (var e = Math.max(0, n - Math.round(D.ausSek * sr)); e < n; e++) x[e] *= (n - e) / (D.ausSek * sr);
+        SYNTHESE.samples += n;
+        SYNTHESE.rufe++;
+        var spitze = 0, qs = 0;
+        for (q = 0; q < n; q++) (spitze = Math.max(spitze, Math.abs(x[q]))), (qs += x[q] * x[q]);
+        var scheitelDb = 20 * Math.log10(spitze / Math.sqrt(qs / n || 1e-30) || 1);
+        return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), dNah: rMin, scheitelDb: scheitelDb, f0: (D.fFaktor * c) / Math.sqrt(D.energieJeM / (Math.PI * D.p0)), sek: sek, strahler: R.length };
     }
     // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — eine Form singt (Resonanz →
     //    Tonhoehe), eine resonierende Form verklingt beim Abbau (die Zahlen wanderten byte-gleich aus dem Stamm; der Treffer
@@ -2226,6 +2314,8 @@
         STIMME: STIMME,
         STIMME_FORM: STIMME_FORM,
         stimmForm: stimmForm,
+        DONNER: DONNER,
+        donnerPuffer: donnerPuffer,
         roehre: roehre,
         stimmLeib: stimmLeib,
         stimmFormanten: stimmFormanten,
