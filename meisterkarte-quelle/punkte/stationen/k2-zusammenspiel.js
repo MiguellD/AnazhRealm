@@ -4748,6 +4748,7 @@ L.perspektive("erleben", (() => {
             // die Leser der Welt für Markt und Stadt-Ereignis. Bilder schießt nur das Gerät (M.auge).
             [E]: {
                 sek: 60,
+                faecher: true,
                 dorf: true,
                 mutiert: true,
                 pfad: ["stamm/kreatur-leben.js", "stamm/kreatur-fauna.js", "tetrapoda-core.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/feld-brand.js", "planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "scripts/werkbank.cjs"],
@@ -4917,16 +4918,29 @@ L.perspektive("erleben", (() => {
                     try {
                         tal = await S(kaskade, { stufe: "start" });
                         uhr.kaskade = M.uhr();
-                        let dauer = 0;
-                        for (let saat = 1; saat <= 8; saat++) {
-                            if (saat > 1 && M.uhr() + dauer * 1.15 > DECKEL - 5) break;
-                            const t = M.uhr();
-                            const mit = await S(kaskade, { saat, takte: 2160 });
-                            const ohne = await S(kaskade, { saat, takte: 2160, ohne: true });
-                            laeufe.push({ saat, mit, ohne });
-                            dauer = M.uhr() - t;
-                        }
-                        if (laeufe.length && M.uhr() + dauer / 8 + 2 < DECKEL - 3) wieder = await S(kaskade, { saat: 1, takte: 360 });
+                        // S1 AM FÄCHER (M4): 8 Saaten × mit ↔ ohne Wölfe (der Gegenlauf), je Adresse die Kaskade des Bestands über 6
+                        // Spielstunden (stamm/kreatur-leben.js tickFaunaLifecycle, 2160 Takte à 10 s); die Frist des Fächers ist der Rest des
+                        // Deckels — was sie reißt, steht gezählt als ungemessen, nie geraten
+                        const zugabe = 14000;
+                        const frist = Math.max(1000, (DECKEL - 8 - M.uhr()) * 1000 - zugabe);
+                        const RK = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: "async (r, T, a, mit) => (" + String(kaskade) + ")(r, T, { saat: a.saat, takte: mit.takte, ohne: !!a.zeit.ohne })", export: "stamm/kreatur-leben.js tickFaunaLifecycle (der Bestand je Saat-Strom r._streamRng) · r._kreaturBestand(…).deer.K (die Äsung = der Jungwuchs)", leser: "stamm/kreatur-leben.js _kreaturFrass (der Fraß am Jungwuchs) · tetrapoda-core BESTAND_GESETZ (Riss der Jäger)" },
+                            adressen: { saaten: 8, zeiten: [{ k: "mit" }, { k: "ohne", ohne: 1 }] },
+                            mit: { takte: 2160 },
+                            ms: frist,
+                            zugabe,
+                            masse: { laeufe: { wie: "anzahl", feld: "saat" } },
+                            schlecht: { feld: "ende.jung", richtung: "max" },
+                            pose: (q, x) => x.pose,
+                            ungemessen: ["das Bildpaar mit ↔ ohne Wölfe (am Gerät)"],
+                        });
+                        const je = {};
+                        for (const x of RK.je) (je[x.a.saat] = je[x.a.saat] || { saat: x.a.saat })[x.a.zeit.k] = x.w;
+                        laeufe.push(...Object.values(je));
+                        uhr.akte = RK.akte;
+                        uhr.gerissen = RK.gerissen;
+                        const dauer = RK.je.length ? RK.ms / 1000 / RK.je.length : 0;
+                        if (laeufe.length && M.uhr() + dauer / 6 + 2 < DECKEL - 3) wieder = await S(kaskade, { saat: 1, takte: 360 });
                     } catch (e) {
                         kf = kurz(e);
                     } finally {
@@ -4957,13 +4971,19 @@ L.perspektive("erleben", (() => {
                         jung: ok.map((l) => [+l.mit.ende.jung.toFixed(3), +l.ohne.ende.jung.toFixed(3)]),
                         hirsche: ok.map((l) => [+l.mit.ende.hirsche.toFixed(2), +l.ohne.ende.hirsche.toFixed(2)]),
                         tal: tal && { x: Math.round(tal.x), z: Math.round(tal.z), park: tal.park },
-                        uhrS: Object.fromEntries(Object.entries(uhr).map(([k, v]) => [k, +v.toFixed(1)])),
+                        uhrS: Object.fromEntries(Object.entries(uhr).filter(([k, v]) => typeof v === "number" && k !== "gerissen").map(([k, v]) => [k, +v.toFixed(1)])),
+                        akte: uhr.akte,
+                        gerissen: uhr.gerissen,
                         fehler: kf,
                     };
                     const pose = ok.length ? ok[0].mit.pose : null;
                     // S1: Jungwuchs nach 6 Spielstunden ohne Wölfe dünner, gezählt über die Saaten
                     if (U[1]) {
+                        // Wölfe weg → mehr Hirsche → weniger Jungwuchs (vision/blatt/28-sinn.md:62): das Minus des Jungwuchses ohne Wölfe gegen
+                        // mit Wölfen, je Saat in Prozent der Deckung mit Wölfen, gemittelt über die gefahrenen Paare
+                        const minus = ok.filter((l) => l.mit.ende.jung > 0).map((l) => (100 * (l.mit.ende.jung - l.ohne.ende.jung)) / l.mit.ende.jung);
                         roh[1] = { werte: ok.length ? { saaten: ok.filter((l) => l.ohne.ende.jung < l.mit.ende.jung).length, spielStunden: (2160 * 10) / 3600 } : {}, zeuge: zk };
+                        if (minus.length) roh[1].werte.jungwuchsMinusProzent = +(minus.reduce((q, v) => q + v, 0) / minus.length).toFixed(2);
                         roh[1].auge = await M.auge("erleben-emergenz-s1", pose || { ort: "wiese" });
                     }
                     // S2: die Kette nach EINER Spielstunde (Wolf weg → Hirsche mehr → Jungwuchs dünner) im Sichtkegel der Pose am Tal
@@ -5026,14 +5046,18 @@ L.perspektive("erleben", (() => {
                         soll: [
                             K.soll(E, 1, "nach 6 Spielstunden", { key: "spielStunden", rel: "≥", zahl: 6, einheit: "h" }),
                             K.soll(E, 1, "Jungwuchs sichtbar dünner über ≥ 8 Saaten", { key: "saaten", einheit: "Saaten" }),
-                            K.soll(E, 1, "Jungwuchs sichtbar dünner", { key: "jungwuchsMinusProzent", rel: ">", zahl: 0, refQuelle: "der Richter: „Jungwuchs sichtbar dünner“ — die Jungwuchs-Deckung mit Wölfen liegt unter der ohne (Minus > 0 %)", einheit: "%" }),
+                            K.soll(E, 1, "Jungwuchs sichtbar dünner", { key: "jungwuchsMinusProzent", rel: ">", zahl: 0, refQuelle: "der Richter: „Jungwuchs sichtbar dünner“ — Wölfe weg → mehr Hirsche → weniger Jungwuchs (vision/blatt/28-sinn.md:62): die Jungwuchs-Deckung ohne Wölfe liegt unter der mit Wölfen (Minus > 0 %)", einheit: "%" }),
                         ],
                         // ZAHL (auge-klasse.cjs): die Zahl urteilt, das Bild ist Beleg — der Zeuge ist die Kaskade selbst
                         zeuge: zeugeKaskade,
                         auge: { pose: "150 m westlich der Mitte des Tals der Kaskade, 25 m über dem Boden (das Tal mit der größten Äsung des Rotwilds abseits des Genesis-Orts), Blick auf seine Mitte", vorbild: "Bildpaar desselben Orts mit ↔ ohne Wölfe nach 6 Spielstunden (Prüfer-Satz R11)" },
                         taeter: "stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
                         gruen: { werte: { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: 25 }, zeuge: ZK },
-                        attrappen: [A("acht Saaten aus einer Tabelle, kein Lauf", { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: 25 }, { paare: 0 })],
+                        attrappen: [
+                            A("acht Saaten aus einer Tabelle, kein Lauf", { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: 25 }, { paare: 0 }),
+                            A("Mutant: ohne Wölfe dichter (Jungwuchs −12 %)", { saaten: 8, spielStunden: 6, jungwuchsMinusProzent: -12 }, ZK),
+                            A("drei Saaten statt acht (die Frist riss den Rest)", { saaten: 3, spielStunden: 6, jungwuchsMinusProzent: 25 }, ZK),
+                        ],
                     },
                     2: {
                         u: {},
@@ -5118,6 +5142,7 @@ L.perspektive("erleben", (() => {
             // Gesetzes mit ↔ ohne Lärm in der Lage; der Stern an 20 Saaten des Planet-Fadens.
             [W]: {
                 sek: 25,
+                faecher: true,
                 mutiert: true,
                 pfad: ["stamm/kreatur-verhalten.js", "stamm/kreatur-fauna.js", "stamm/kreatur-leben.js", "tetrapoda-core.js", "klang-core.js", "stamm/klang.js", "stamm/siedlung-ort.js", "planet-core.js", "voxel-worker.js"],
                 ungefahren: "das Bildpaar zweier Sterne (S6) schießt nur das Gerät",
@@ -5128,51 +5153,7 @@ L.perspektive("erleben", (() => {
                         const s = r.state;
                         const pm = s.playerMesh.position;
                         const aus = {};
-                        const arr = s.creatures;
-                        const andere = arr.splice(0, arr.length);
-                        const leichAlt = new Set(s.leichname || []);
-                        const eigen = Object.prototype.hasOwnProperty.call(r, "_windAt");
-                        const windAlt = r._windAt;
-                        const ort = { x: pm.x + 40, z: pm.z + 25 };
-                        ort.y = r._voxelSurfaceY(ort.x, ort.z);
                         const dt = 1 / 60;
-                        let rufe = 0;
-                        const lauf = (dreh) => {
-                            r._windAt = function () {
-                                rufe++;
-                                const w = windAlt.apply(this, arguments);
-                                return dreh ? Object.assign({}, w, { x: -w.x, z: -w.z }) : w;
-                            };
-                            s.creatureAnimationTime = 100;
-                            r._creatureAiFrame = 0;
-                            const k = r.spawnCreatureAt(ort.x, ort.y, ort.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
-                            if (!k) return null;
-                            k.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
-                            for (let i = 0; i < a.schritte; i++) {
-                                r._kreaturStossSchritt(dt);
-                                r._leibKontakte();
-                                r.updateCreatures(dt);
-                            }
-                            const p = { x: k.position.x, z: k.position.z };
-                            r.removeCreature(k);
-                            return p;
-                        };
-                        try {
-                            const p1 = lauf(false);
-                            const n1 = rufe;
-                            const p2 = lauf(false);
-                            const p3 = lauf(true);
-                            const d = (p, q) => (p && q ? Math.hypot(p.x - q.x, p.z - q.z) : null);
-                            aus.kitz = { rausch: d(p1, p2), wind: d(p1, p3), weg: d(p1, ort), windRufe: n1, laeufe: [p1, p2, p3].filter(Boolean).length };
-                        } catch (e) {
-                            aus.kitz = { fehler: String((e && e.message) || e).slice(0, 160) };
-                        } finally {
-                            if (eigen) r._windAt = windAlt;
-                            else delete r._windAt;
-                            for (const c of arr.slice()) r.removeCreature(c);
-                            arr.splice(0, arr.length, ...andere);
-                            for (const c of (s.leichname || []).slice()) if (!leichAlt.has(c)) r.removeCreature(c);
-                        }
                         try {
                             r._bestaeuberTakt(dt);
                             r._bestaeuberTakt(dt);
@@ -5193,26 +5174,94 @@ L.perspektive("erleben", (() => {
                         const mp = G.kern.umweltMischung(park);
                         const ml = G.kern.umweltMischung(laut);
                         aus.stadt = { laternen: lat.length, insektenLaterne: lat.reduce((n, p) => n + nahe(p), 0), insektenDunkel: lat.reduce((n, p) => n + nahe({ x: p.x + 25, z: p.z + 25 }), 0), hzPark: mp.vogel.hz, hzLaut: ml.vogel.hz, dbPark: mp.vogel.db, dbLaut: ml.vogel.db };
-                        await r._fadenQuelle();
-                        const an = await Promise.all(a.saaten.map((samen) => r._planetAuftrag({ type: "planet-anker", samen })));
-                        aus.stern = { planeten: an.length, felder: [...new Set(an.flatMap((x) => Object.keys(x)))], mitStern: an.filter((x) => Object.keys(x).some((k) => /stern|spektr|teff|leucht/i.test(k))).length, kuesteStreuung: an.length ? Math.max(...an.map((x) => x.kuesteKm)) - Math.min(...an.map((x) => x.kuesteKm)) : 0 };
                         return aus;
                     };
-                    const saaten = [];
-                    for (let i = 0; i < 20; i++) saaten.push("same-saat-" + i);
                     let w;
                     try {
-                        w = await S(sinne, { schritte: 300, saaten });
+                        w = await S(sinne, {});
                     } catch (e) {
                         w = { fehler: kurz(e) };
                     }
-                    const roh = M.teil || {}; // die Knoten-Seite legt die Sprossen in M.teil, bevor das Auge (S6) kommt — nie die Seite
-                    const k = w.kitz || {};
+                    // S2 AM FÄCHER (M4): das Kitz an 5 Orten um den Spieler × drei Läufe (Wind, derselbe Wind = das Rauschen, gedrehter
+                    // Wind über die Hülle `_windAt`, die den EINEN Wind dreht und jeden Ruf zählt). Je Adresse ein Leib, 300 Schritte des
+                    // Kreatur-Takts (`_kreaturStossSchritt`, `_leibKontakte`, `updateCreatures`), allein in der Welt; die anderen Kreaturen,
+                    // die Hülle und die Leichname kehren im finally zurück
+                    const KITZ_AN = async (r, T, a, mit) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const arr = s.creatures;
+                        const andere = arr.splice(0, arr.length);
+                        const leichAlt = new Set(s.leichname || []);
+                        const eigen = Object.prototype.hasOwnProperty.call(r, "_windAt");
+                        const windAlt = r._windAt;
+                        const ort = { x: pm.x + a.ort[0], z: pm.z + a.ort[1] };
+                        ort.y = r._voxelSurfaceY(ort.x, ort.z);
+                        const dt = 1 / 60;
+                        let rufe = 0;
+                        try {
+                            r._windAt = function () {
+                                rufe++;
+                                const w = windAlt.apply(this, arguments);
+                                return a.zeit.dreh ? Object.assign({}, w, { x: -w.x, z: -w.z }) : w;
+                            };
+                            s.creatureAnimationTime = 100;
+                            r._creatureAiFrame = 0;
+                            const k = r.spawnCreatureAt(ort.x, ort.y, ort.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
+                            if (!k) return { fehlt: "kein Leib am Ort (spawnCreatureAt gab nichts)" };
+                            k.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                            for (let i = 0; i < mit.schritte; i++) {
+                                r._kreaturStossSchritt(dt);
+                                r._leibKontakte();
+                                r.updateCreatures(dt);
+                            }
+                            const p = [k.position.x, k.position.z];
+                            r.removeCreature(k);
+                            return { p, rufe, weg: Math.hypot(p[0] - ort.x, p[1] - ort.z) };
+                        } finally {
+                            if (eigen) r._windAt = windAlt;
+                            else delete r._windAt;
+                            for (const c of arr.slice()) r.removeCreature(c);
+                            arr.splice(0, arr.length, ...andere);
+                            for (const c of (s.leichname || []).slice()) if (!leichAlt.has(c)) r.removeCreature(c);
+                        }
+                    };
+                    // je Ort der Abstand der Lagen: Wind ↔ gedrehter Wind (lageWind) gegen Wind ↔ derselbe Wind (Rauschen)
+                    const paar = (aus, k1, k2) => {
+                        const je = {};
+                        for (const x of aus) (je[x.a.ort.join(",")] = je[x.a.ort.join(",")] || {})[x.a.zeit.k] = x.w.p;
+                        const d = Object.values(je).filter((q) => q[k1] && q[k2]).map((q) => Math.hypot(q[k1][0] - q[k2][0], q[k1][1] - q[k2][1]));
+                        return d.length ? d.reduce((q, v) => q + v, 0) / d.length : null;
+                    };
+                    let R2w = null;
                     if (U[2]) {
-                        roh[2] = { werte: {}, zeuge: { laeufe: k.laeufe || 0, windRufe: k.windRufe, lageWindM: k.wind, lageRauschM: k.rausch, wegM: k.weg, fehler: k.fehler || w.fehler } };
-                        if (k.laeufe === 3 && Number.isFinite(k.wind) && Number.isFinite(k.rausch)) {
-                            roh[2].werte.lageWindM = +k.wind.toFixed(3);
-                            if (!(k.windRufe > 0 && k.wind > k.rausch + 0.05)) roh[2].nicht = "die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 3 × 300 Schritten " + k.windRufe + "×; mit gedrehtem Wind steht das Kitz nach 5 s " + k.wind.toFixed(2) + " m anders, im Rauschen zweier gleicher Läufe " + k.rausch.toFixed(2) + " m";
+                        try {
+                            R2w = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: KITZ_AN, export: "r.updateCreatures (der Kreatur-Takt) mit r._windAt als Hülle (gedreht, gezählt)", leser: "stamm/kreatur-furcht.js:119 witterung (NAT.noticeRadius × Furcht) · stamm/kreatur-verhalten.js:190 _creatureScentHuntDir (den Wind liest der Jäger)" },
+                                adressen: { orte: [[40, 25], [-35, 30], [30, -40], [-45, -20], [60, 0]], zeiten: [{ k: "wind" }, { k: "rausch" }, { k: "dreh", dreh: 1 }] },
+                                mit: { schritte: 300 },
+                                ms: 12000,
+                                masse: {
+                                    laeufe: { wie: "anzahl", feld: "rufe" },
+                                    windRufe: { wie: "summe", feld: "rufe" },
+                                    lageWindM: { wie: (v, aus) => paar(aus, "wind", "dreh"), feld: "p" },
+                                    lageRauschM: { wie: (v, aus) => paar(aus, "wind", "rausch"), feld: "p" },
+                                    wegM: { wie: "mittel", feld: "weg" },
+                                },
+                                schlecht: { feld: "weg", richtung: "min" },
+                                pose: (q) => "das Kitz am Ort +" + q.ort.join("/+") + " m (" + q.zeit.k + ") — Third 4 m hinter ihm, der Wind von vorn",
+                                ungemessen: ["die Flucht im Bild (am Gerät)"],
+                            });
+                        } catch (e) {
+                            R2w = { werte: {}, fehler: [{ fehler: kurz(e) }], akte: kurz(e) };
+                        }
+                    }
+                    const roh = M.teil || {}; // die Knoten-Seite legt die Sprossen in M.teil, bevor das Auge (S6) kommt — nie die Seite
+                    const k = (R2w && R2w.werte) || {};
+                    if (U[2]) {
+                        roh[2] = { werte: {}, zeuge: { laeufe: k.laeufe || 0, windRufe: k.windRufe, lageWindM: k.lageWindM, lageRauschM: k.lageRauschM, wegM: k.wegM, fehler: (R2w && R2w.fehler && R2w.fehler.length ? R2w.fehler[0].fehler : null) || w.fehler, akte: R2w && R2w.akte } };
+                        if (k.laeufe >= 3 && Number.isFinite(k.lageWindM) && Number.isFinite(k.lageRauschM)) {
+                            roh[2].werte.lageWindM = +k.lageWindM.toFixed(3);
+                            if (!(k.windRufe > 0 && k.lageWindM > k.lageRauschM + 0.05)) roh[2].nicht = "die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in " + k.laeufe + " × 300 Schritten an 5 Orten " + k.windRufe + "×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel " + k.lageWindM.toFixed(2) + " m anders, im Rauschen zweier gleicher Läufe " + k.lageRauschM.toFixed(2) + " m (stamm/kreatur-furcht.js:119 witterung ist ein Kreis, kein Wind)";
                         }
                     }
                     const b = w.bestaeuber || {};
@@ -5233,10 +5282,30 @@ L.perspektive("erleben", (() => {
                         if (st.insektenDunkel > 0) roh[5].werte.insektenFaktor = st.insektenLaterne / st.insektenDunkel;
                         roh[5].nicht = "Licht lockt keine Insekten (der Flug der Bestäuber liest kein Licht; " + (st.laternen || 0) + " Laternen im Umkreis) und Lärm verschiebt keinen Gesang (Vogelstimme laut " + st.hzLaut + " Hz = Park " + st.hzPark + " Hz)";
                     }
-                    const sn = w.stern || {};
+                    // S6 AM FÄCHER (M4): 40 Saaten — je Planet der Anker des Fadens (voxel-worker.js:1435 planetAnker, derselbe Weg wie die
+                    // Reise): trägt er einen Stern (Typ, Spektrum, Leuchtkraft), und streut der Planet (Küste, Breite)
+                    let sn = {};
                     if (U[6]) {
-                        roh[6] = { werte: { paare: Math.floor((sn.planeten || 0) / 2) }, zeuge: { planeten: sn.planeten || 0, mitStern: sn.mitStern || 0, felder: sn.felder } };
-                        if (!(sn.mitStern > 0)) roh[6].nicht = "der Planet trägt keinen Stern-Typ (planet-anker an " + (sn.planeten || 0) + " Saaten: " + (sn.felder || []).join(", ") + ") — Augen und Blütenfarben lesen keinen";
+                        const STERN_AN = async (r, T, a) => {
+                            await r._fadenQuelle();
+                            const an = await r._planetAuftrag({ type: "planet-anker", samen: a.saat });
+                            const f = Object.keys(an || {});
+                            return { stern: f.some((q) => /stern|spektr|teff|leucht/i.test(q)) ? 1 : 0, felder: f.join("·"), breite: an.breite, kueste: an.kuesteKm };
+                        };
+                        try {
+                            const R6w = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: STERN_AN, export: "voxel-worker.js:1435 planetAnker (planet-anker) über r._planetAuftrag", leser: "planet-core.js:2585 planetAnker — Vegetationsfarbe und Augen lesen keinen Stern" },
+                                adressen: { saaten: Array.from({ length: 40 }, (_, i) => "same-saat-" + i), zeiten: [{ k: "heute" }] },
+                                ms: 15000,
+                                masse: { planeten: { wie: "anzahl", feld: "stern" }, mitStern: { wie: "summe", feld: "stern" }, felder: { wie: "erste", feld: "felder" }, breiten: { wie: "verschieden", feld: "breite" } },
+                                ungemessen: ["das Bildpaar zweier Sterne (am Gerät)"],
+                            });
+                            sn = { planeten: R6w.werte.planeten, mitStern: R6w.werte.mitStern, felder: String(R6w.werte.felder || "").split("·"), breiten: R6w.werte.breiten, akte: R6w.akte };
+                        } catch (e) {
+                            sn = Object.assign({}, sn, { fehler: kurz(e) });
+                        }
+                        roh[6] = { werte: { paare: Math.floor((sn.planeten || 0) / 2) }, zeuge: { planeten: sn.planeten || 0, mitStern: sn.mitStern || 0, felder: sn.felder, breiten: sn.breiten, akte: sn.akte, fehler: sn.fehler } };
+                        if (!(sn.mitStern > 0)) roh[6].nicht = "der Planet trägt keinen Stern-Typ (voxel-worker.js:1435 planet-anker an " + (sn.planeten || 0) + " Saaten: " + (sn.felder || []).join(", ") + ") — Augen und Blütenfarben lesen keinen";
                         roh[6].auge = await M.auge("erleben-wahrnehmung-s6", { ort: "wiese" });
                     }
                     return { sprossen: roh };
@@ -5245,11 +5314,11 @@ L.perspektive("erleben", (() => {
                     2: {
                         u: {},
                         soll: [K.soll(W, 2, "Beute mit Wind-Wahl überlebt ≥ 1,5×", { key: "ueberlebenFaktor", einheit: "×" })],
-                        zeuge: zeugeMin([["laeufe", 3, "nicht drei Läufe des Kitzes (Wind, Rauschen, gedrehter Wind)"], ["windRufe", 1, "der Kreatur-Takt liest den Wind nie"], ["lageWindM", 0.05, "gedrehter Wind ändert die Lage der Beute nicht"]]),
+                        zeuge: zeugeMin([["laeufe", 15, "nicht 5 Orte × drei Läufe des Kitzes (Wind, Rauschen, gedrehter Wind)"], ["windRufe", 1, "der Kreatur-Takt liest den Wind nie"], ["lageWindM", 0.05, "gedrehter Wind ändert die Lage der Beute nicht"]]),
                         taeter: "stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
                         nicht: "die Beute wählt keine Lage gegen den Wind",
                         leser: "stamm/kreatur-furcht.js:119 witterung — die Witterung der Beute ist ein Kreis (NAT.noticeRadius × Furcht), kein Wind; den Wind liest nur der Jäger (stamm/kreatur-verhalten.js:190 _creatureScentHuntDir)",
-                        gruen: { werte: { ueberlebenFaktor: 1.7 }, zeuge: { laeufe: 3, windRufe: 300, lageWindM: 4.2, lageRauschM: 0.1 } },
+                        gruen: { werte: { ueberlebenFaktor: 1.7 }, zeuge: { laeufe: 15, windRufe: 4500, lageWindM: 4.2, lageRauschM: 0.1 } },
                         attrappen: [A("Überleben 1,7× ohne Lauf", { ueberlebenFaktor: 1.7 }, { laeufe: 0 }), A("Überleben 1,7×, aber der Wind ändert nichts", { ueberlebenFaktor: 1.7 }, { laeufe: 3, windRufe: 0, lageWindM: 0 })],
                     },
                     3: {
@@ -5290,7 +5359,7 @@ L.perspektive("erleben", (() => {
                         auge: { pose: "Ego am Messort wiese je Planet (roter ↔ heller Stern; heute nur der Stern der Sitzung)", vorbild: "Bildpaar zweier Planeten: Vegetationsfarbe und Augenspektren gesetzmäßig verschieden (Prüfer-Satz R11)" },
                         taeter: "planet-core.js planetPlan (kein Stern-Typ)",
                         nicht: "der Planet trägt keinen Stern-Typ",
-                        leser: "planet-core.js:2293 planetOrt — Ort und Anker des Planeten tragen keinen Stern-Typ; Vegetationsfarbe und Augen lesen keinen",
+                        leser: "planet-core.js:2585 planetAnker (voxel-worker.js:1435) — Ort und Anker des Planeten tragen keinen Stern-Typ; Vegetationsfarbe und Augen lesen keinen",
                         gruen: { werte: { anteil: 0.85, paare: 20 }, zeuge: { planeten: 40, mitStern: 40 } },
                         attrappen: [A("0,85 ohne Stern", { anteil: 0.85, paare: 20 }, { planeten: 0, mitStern: 0 })],
                     },
@@ -5479,6 +5548,7 @@ L.perspektive("erleben", (() => {
             // Stimme gegen ihre Quelle aus einem eigenen Leser (Waisen) und der Gegenlauf mit gekappten Quellen; S4 die Epochen der
             // Siedlungen (`_siedlungEpoche`) gegen die Stimmen des Gesetzes; S5/S6 die Zeitalter am Planet-Faden.
             [KL]: {
+                faecher: true,
                 // 60 s, die Grenze der Karte je Leiter (19.11.: 45 s riss an der frisch gestarteten Welt 1 — die Takte des Ohrs bauen dort
                 // noch Chunks; an der warmen Welt 2 maß dieselbe Leiter alle sechs Sprossen)
                 sek: 60,
@@ -5533,12 +5603,6 @@ L.perspektive("erleben", (() => {
                                 const m = r._rainSystem && r._rainSystem.mesh;
                                 aus.reihe.push({ w, rain: r._weatherFieldFor().rain, bild: m && m.visible ? m.material.opacity : 0, regen: stimme("regen") });
                             }
-                            const L0 = r._umweltLage();
-                            const dach = [0, 0.5, 1].map((bau) => {
-                                const m = G.kern.umweltMischung(Object.assign({}, L0, { regen: 1, raum: Object.assign({}, L0.raum || {}, { bau, bauAnteil: bau }), dach: bau, dachStoff: ["holz", "ziegel", "blech"][Math.round(bau * 2)] }));
-                                return m.regen.db.toFixed(2) + "/" + Math.round(m.regen.hz);
-                            });
-                            aus.dach = { klaenge: new Set(dach).size, dach };
                             window.__wetterSetzen("sunny");
                             await takt(a.takte);
                             // der Gegenlauf: dieselbe Spanne ohne Ereignis (sonnig bleibt sonnig), dann das Ereignis (der Sturm) — je Takt die
@@ -5562,24 +5626,57 @@ L.perspektive("erleben", (() => {
                         }
                         return aus;
                     };
-                    const orte = async (r, T, a) => {
+                    // DAS GESETZ DES OHRS AN EINER ADRESSE (M4, der Fächer): a.zeit.s nennt die Sprosse. S1: die Mischung des Spiels
+                    // (klang-core.js:917 regen, AnazhRealm._umweltGesetz().kern.umweltMischung) an der Lage des Ohrs (stamm/klang.js:408
+                    // _umweltLage) mit der Regenstärke der Adresse und — trägt die Lage ein Feld des Dachs — dem Baustil des Orts
+                    // (fachwerk-core.js:186 stil); trägt sie keins, nennt die Adresse ihr Fehlen. S2: der Welt-Akt des Ereignisses (die
+                    // Effekte der DSL, stamm/feld-dsl.js:946). S3: das Ohr am Ort (der Spieler dorthin, der Hör-Ring, die Vögel, die Lage)
+                    // — je hörbare Stimme ihre Quelle (Waisen) und der Gegenlauf mit gekappten Quellen; 100 Jahre fragt die Fähigkeit des
+                    // Raffers. S4: die Epoche der Siedlung an der Lage. S5/S6: der Planet-Faden an Saat × Zeitalter
+                    const OHR_AN = async (r, T, a, mit) => {
                         const s = r.state;
-                        const pm = s.playerMesh.position;
-                        const um = s.symphony.umwelt;
                         const G = AnazhRealm._umweltGesetz();
                         const UM = G.UMWELT;
-                        const alt = pm.clone();
-                        const aus = [];
-                        try {
-                            for (const [dx, dz] of a.orte) {
-                                const x = alt.x + dx;
-                                const z = alt.z + dz;
+                        const k = a.zeit.s;
+                        const felder = (L, re) => Object.keys(L || {}).concat(Object.keys((L && L.raum) || {})).filter((f) => re.test(f));
+                        const fx = (L, n) => Object.keys(r.dslEffects || {}).concat(Object.getOwnPropertyNames(Object.getPrototypeOf(r))).filter((f) => n.test(f));
+                        if (k === 1) {
+                            const L0 = r._umweltLage();
+                            const L = Object.assign({}, L0, { regen: a.zeit.regen });
+                            if (!a.zeit.dach) L.deckung = a.ort;
+                            else if (a.zeit.regen > 0) {
+                                const df = felder(L0, /dach|stoff|stil/i);
+                                if (!df.length) return { fehlt: "kein Dachstoff am Ohr: stamm/klang.js:408 _umweltLage trägt " + Object.keys(L0).join("·") + " — keinen Stil des Baus (fachwerk-core.js:186); klang-core.js:917 regen liest regen und deckung" };
+                                for (const f of df) if (f in L0) L[f] = a.ort; else L.raum = Object.assign({}, L0.raum, { [f]: a.ort });
+                            }
+                            const m = G.kern.umweltMischung(L).regen;
+                            return { regen: a.zeit.regen, db: Number.isFinite(m.db) ? m.db : null, amp: Number.isFinite(m.db) ? Math.pow(10, m.db / 20) : 0, klang: Number.isFinite(m.db) ? m.db.toFixed(2) + "/" + Math.round(m.hz) : "stumm", stumm: Number.isFinite(m.db) ? 0 : 1 };
+                        }
+                        if (k === 2) {
+                            if (a.ort === "sturm") return { da: typeof (r.dslEffects || {}).weather === "function" ? 1 : 0, akt: "weather stormy" };
+                            const n = { beben: /beben|quake|erschuett/i, ausbruch: /ausbruch|erupt|vulkan/i, unfall: /unfall|crash|kollision/i }[a.ort];
+                            const da = fx(null, n);
+                            if (!da.length) return { fehlt: "kein Welt-Akt „" + a.ort + "“: stamm/feld-dsl.js:946 dslEffects kennt " + Object.keys(r.dslEffects || {}).slice(0, 24).join("·") + "; die Lage am Ohr stamm/klang.js:485 _umweltLageZwei trägt keine Menge (kein Schrei, keine Hupe)" };
+                            return { da: 1, akt: da.join("·") };
+                        }
+                        if (k === 3) {
+                            if (a.zeit.jahre > 0) {
+                                const da = fx(null, /raffer|zeitraffer|jahreSprung|ortAltern/i);
+                                if (!da.length) return { fehlt: "kein Raffer von 100 Jahren am Ort: stamm/netz-portal.js:660 _reiseBetreten — die Zeit eines Orts springt nur über die Reise in eine neue Welt; kein Akt altert den Ort" };
+                                return { da: 1, akt: da.join("·") };
+                            }
+                            const pm = s.playerMesh.position;
+                            const um = s.symphony.umwelt;
+                            const alt = pm.clone();
+                            try {
+                                const x = mit.x + a.ort[0];
+                                const z = mit.z + a.ort[1];
                                 pm.set(x, r.getTerrainHeightAt(x, z) + AnazhRealm.PLAYER_FOOT_OFFSET, z);
                                 r._umweltRingProbe(um, x, z, um.ring.punkte.length);
                                 r._vogelTakt();
                                 const L = r._umweltLage();
                                 const mix = G.kern.umweltMischung(L);
-                                const hoer = Object.keys(mix).filter((k) => mix[k].db >= UM.hoerschwelleDb);
+                                const hoer = Object.keys(mix).filter((q) => mix[q].db >= UM.hoerschwelleDb);
                                 const ring = [];
                                 for (let i = 0; i < 16; i++) ring.push([x + 30 * Math.cos(i * 0.3927), z + 30 * Math.sin(i * 0.3927)]);
                                 const fl = (r._hydroFor(x, z).rivers || []).flatMap((v) => v.points || []).reduce((m, p) => Math.min(m, Math.hypot(p.x - x, p.z - z)), Infinity);
@@ -5598,38 +5695,43 @@ L.perspektive("erleben", (() => {
                                 };
                                 const gekappt = Object.assign({}, L, { voegel: [], deckung: 0, regen: 0, ufer: { d: Infinity, anteil: 0, pan: 0 }, fluss: { d: Infinity, tempo: 0, pan: 0 }, fall: { d: Infinity, hoehe: 0, pan: 0 }, glut: { d: Infinity, flaeche: 0, pan: 0 }, temperatur: -Infinity });
                                 const m2 = G.kern.umweltMischung(gekappt);
-                                const rest = Object.keys(m2).filter((k) => k !== "wind" && m2[k].db >= UM.hoerschwelleDb);
-                                aus.push({ x: Math.round(x), z: Math.round(z), hoer, waisen: hoer.filter((k) => !quelle[k]), rest });
+                                const rest = Object.keys(m2).filter((q) => q !== "wind" && m2[q].db >= UM.hoerschwelleDb);
+                                const waisen = hoer.filter((q) => !quelle[q]);
+                                return { x: Math.round(x), z: Math.round(z), hoer, waisen, rest, nHoer: hoer.length, nWaisen: waisen.length, nRest: rest.length };
+                            } finally {
+                                pm.copy(alt);
+                                r._umweltRingProbe(um, alt.x, alt.z, um.ring.punkte.length);
+                                r._vogelTakt();
                             }
-                        } finally {
-                            pm.copy(alt);
-                            r._umweltRingProbe(um, alt.x, alt.z, um.ring.punkte.length);
-                            r._vogelTakt();
                         }
-                        return aus;
-                    };
-                    const epochen = async (r, T, a) => {
-                        const G = AnazhRealm._umweltGesetz();
-                        const ep = [];
-                        for (let i = 1; i <= a.n; i++) ep.push(r._siedlungEpoche(i));
-                        const stimmen = Object.keys(G.UMWELT.stimmen);
-                        return { epochen: [...new Set(ep.filter(Boolean))], stimmen, epochStimmen: stimmen.filter((k) => /huf|dampf|motor|verbrenn|elektro|epoch|kutsche|glocke/i.test(k)) };
-                    };
-                    const zeitalter = async (r, T, a) => {
+                        if (k === 4) {
+                            const ep = r._siedlungEpoche(a.ort);
+                            const L0 = r._umweltLage();
+                            const ef = felder(L0, /epoch/i);
+                            const es = Object.keys(UM.stimmen).filter((q) => /huf|dampf|motor|verbrenn|elektro|epoch|kutsche|glocke/i.test(q));
+                            if (!ef.length && !es.length) return { fehlt: "die Lage am Ohr liest keine Epoche: stamm/klang.js:485 _umweltLageZwei trägt " + Object.keys(L0).join("·") + "; UMWELT.stimmen " + Object.keys(UM.stimmen).join("·") + " — keine Hufe, kein Dampf, kein Verbrenner (stamm/siedlung-ort.js:2006 _siedlungEpoche reicht nur ins Bild)", epoche: ep };
+                            return { epoche: ep, felder: ef.length, stimmen: es.length };
+                        }
                         await r._fadenQuelle();
-                        const aus = [];
-                        await Promise.all(a.saaten.map(async (samen) => {
-                            const an = await r._planetAuftrag({ type: "planet-anker", samen });
-                            const B = (an.breite * 180) / Math.PI;
-                            const L = (an.laenge * 180) / Math.PI;
-                            for (const zeitMa of a.zeiten) {
-                                const o = await r._planetAuftrag({ type: "planet-ort", samen, breite: B, laenge: L, zeitMa });
-                                aus.push({ samen, zeitMa, h: o.hoeheM, felder: Object.keys(o).concat(Object.keys(o.delta || {})), wuchs: o.delta && o.delta.wuchs ? o.delta.wuchs.wald : null });
-                            }
-                        }));
-                        return aus;
+                        const an = await r._planetAuftrag({ type: "planet-anker", samen: a.saat });
+                        const o = await r._planetAuftrag({ type: "planet-ort", samen: a.saat, breite: (an.breite * 180) / Math.PI, laenge: (an.laenge * 180) / Math.PI, zeitMa: a.zeit.ma });
+                        const f = Object.keys(o).concat(Object.keys(o.delta || {}));
+                        const re = k === 5 ? /art|fauna|leben|tier/i : /art|fauna|leben|tier|medium|atmo|druck/i;
+                        return { h: o.hoeheM, felder: f.length, arten: f.filter((q) => re.test(q)).length, wuchs: o.delta && o.delta.wuchs ? o.delta.wuchs.wald : null };
                     };
+                    const F = (adressen, masse, leser, schlecht, mit, ms) =>
+                        FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: OHR_AN, export: "klang-core.js:917 umweltMischung (AnazhRealm._umweltGesetz().kern) an stamm/klang.js:408 _umweltLage · stamm/feld-dsl.js:946 dslEffects · r._planetAuftrag planet-ort", leser },
+                            adressen,
+                            masse,
+                            mit: mit || {},
+                            ms: ms || 8000,
+                            schlecht,
+                            pose: (q) => "das Ohr an der Adresse " + JSON.stringify(q).slice(0, 60) + " (Third in Kopfhöhe)",
+                            ungemessen: ["das Hören am Gerät (headless ohne Ausgabe)"],
+                        });
                     const roh = {};
+                    const FA = {};
                     let an = null;
                     let wt = null;
                     let or = null;
@@ -5637,11 +5739,75 @@ L.perspektive("erleben", (() => {
                     try {
                         an = await S(ohr, { an: true });
                         if (U[1] || U[2]) wt = await S(wetter, { wetter: ["sunny", "cloudy", "foggy", "rainy", "stormy"], takte: 25, sturmTakte: 150 });
-                        if (U[3]) or = await S(orte, { orte: [[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40], [80, 60], [-80, -60], [120, -30], [-30, 120], [150, 150]] });
+                        if (U[1]) {
+                            const stile = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"];
+                            FA[1] = await F(
+                                { orte: [0, 0.5, 1], zeiten: [0, 0.25, 0.5, 0.75, 1].map((regen) => ({ s: 1, regen })), dazu: stile.map((ort) => ({ ort, zeit: { s: 1, regen: 1, dach: 1 } })) },
+                                {
+                                    pegelR: { wie: (v) => { const p = v.filter((q) => q.every(Number.isFinite)); if (p.length < 3) return null; const mx = p.reduce((q, x) => q + x[0], 0) / p.length, my = p.reduce((q, x) => q + x[1], 0) / p.length; let a = 0, b = 0, c = 0; for (const [x, y] of p) { a += (x - mx) * (y - my); b += (x - mx) ** 2; c += (y - my) ** 2; } return b > 0 && c > 0 ? a / Math.sqrt(b * c) : null; }, x: "regen", y: "amp", nur: (q) => !q.zeit.dach },
+                                    stummOhneRegen: { wie: "anteil", feld: "stumm", nur: (q) => !q.zeit.dach && q.zeit.regen === 0 },
+                                    dachKlaenge: { wie: "verschieden", feld: "klang", nur: (q) => q.zeit.dach },
+                                    dachOrte: { wie: "anzahl", feld: "klang", nur: (q) => q.zeit.dach },
+                                },
+                                "klang-core.js:917 regen (Sr.refDb + db(regen) + deckungDb · deck) — der Stimme am Ohr",
+                                { feld: "amp", richtung: "max" }
+                            );
+                        }
+                        if (U[3]) {
+                            const p0 = await H.seite("const p = r.state.playerMesh.position; return { x: p.x, z: p.z };");
+                            const O10 = [[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40], [80, 60], [-80, -60], [120, -30], [-30, 120], [150, 150]];
+                            FA[3] = await F(
+                                { orte: O10, zeiten: [{ s: 3, jahre: 0 }, { s: 3, jahre: 100 }] },
+                                { orte: { wie: "anzahl", feld: "nHoer", nur: (q) => q.zeit.jahre === 0 }, waisen: { wie: "summe", feld: "nWaisen" }, stimmen: { wie: "summe", feld: "nHoer" }, gegenRest: { wie: "summe", feld: "nRest" } },
+                                "stamm/klang.js:408 _umweltLage → klang-core.js umweltMischung (je hörbare Stimme ihre Quelle am Ort) · stamm/netz-portal.js:660 _reiseBetreten",
+                                { feld: "nWaisen", richtung: "max" },
+                                p0,
+                                20000
+                            );
+                            or = FA[3].je.filter((x) => x.a.zeit.jahre === 0).map((x) => x.w);
+                        }
+                        if (U[4]) {
+                            FA[4] = await F(
+                                { orte: Array.from({ length: 40 }, (_, i) => i + 1), zeiten: [{ s: 4 }] },
+                                { epochen: { wie: "verschieden", feld: "epoche" }, epochStimmen: { wie: "summe", feld: "stimmen" }, epochFelder: { wie: "summe", feld: "felder" } },
+                                "stamm/klang.js:485 _umweltLageZwei (die Lage am Ohr) · stamm/siedlung-ort.js:2006 _siedlungEpoche"
+                            );
+                        }
                     } catch (e) {
                         fe = kurz(e);
                     } finally {
                         await S(ohr, { an: false }).catch(() => null);
+                    }
+                    if (U[2]) {
+                        try {
+                            FA[2] = await F({ orte: ["sturm", "beben", "ausbruch", "unfall"], zeiten: [{ s: 2 }] }, { ereignisse: { wie: "summe", feld: "da" } }, "stamm/klang.js:485 _umweltLageZwei (die Lage am Ohr trägt das Ereignis) · stamm/feld-dsl.js:946 dslEffects");
+                        } catch (e) {
+                            fe = fe || kurz(e);
+                        }
+                    }
+                    for (const nr of [5, 6]) {
+                        if (!U[nr]) continue;
+                        try {
+                            const saaten = Array.from({ length: 10 }, (_, i) => "same-saat-" + (nr === 5 ? i : 10 + i));
+                            const zeiten = (nr === 5 ? [-541, -359, -252, -66, -0.02, 0] : [-500, -66, 0]).map((ma) => ({ s: nr, ma }));
+                            FA[nr] = await F(
+                                { saaten, zeiten },
+                                {
+                                    antworten: { wie: "anzahl", feld: "h" },
+                                    streuungM: { wie: (v) => { const z = v.filter(Number.isFinite); const m = z.reduce((q, x) => q + x, 0) / (z.length || 1); return Math.sqrt(z.reduce((q, x) => q + (x - m) ** 2, 0) / (z.length || 1)); }, feld: "h" },
+                                    artenFelder: { wie: "max", feld: "arten" },
+                                    zeitalter: { wie: "verschieden", feld: "a.zeit" },
+                                    saaten: { wie: "verschieden", feld: "a.saat" },
+                                    wuchs: { wie: "verschieden", feld: "wuchs" },
+                                },
+                                "planet-core.js:2684 planetOrt — delta trägt Klima, Meer, Wetter, Wuchs, Wildnis",
+                                null,
+                                null,
+                                30000
+                            );
+                        } catch (e) {
+                            fe = fe || kurz(e);
+                        }
                     }
                     const pearson = (xs, ys) => {
                         const n = xs.length;
@@ -5664,11 +5830,16 @@ L.perspektive("erleben", (() => {
                         const r = pearson(R.map((x) => x.bild), R.map((x) => amp(x.regen)));
                         roh[1] = {
                             werte: {},
-                            zeuge: { wetter: R.length, trocken: R.filter((x) => x.rain === 0 && amp(x.regen) === 0).length, nass: R.filter((x) => x.rain > 0 && amp(x.regen) > 0).length, reihe: R.map((x) => [x.w, +(+x.rain).toFixed(3), +(+x.bild).toFixed(3), Number.isFinite(x.regen) ? +x.regen.toFixed(1) : null]), dach: wt && wt.dach, fehler: fe },
+                            zeuge: { wetter: R.length, trocken: R.filter((x) => x.rain === 0 && amp(x.regen) === 0).length, nass: R.filter((x) => x.rain > 0 && amp(x.regen) > 0).length, reihe: R.map((x) => [x.w, +(+x.rain).toFixed(3), +(+x.bild).toFixed(3), Number.isFinite(x.regen) ? +x.regen.toFixed(1) : null]), fehler: fe },
                         };
                         if (r !== null) roh[1].werte.r = +r.toFixed(4);
-                        if (wt && wt.dach) roh[1].werte.dachKlaenge = wt.dach.klaenge;
-                        if (wt && wt.dach && wt.dach.klaenge <= 1) roh[1].nicht = "der Regen klingt auf jedem Dach gleich: die Regenstimme liest Regen und Kronen-Deckung, keinen Dachstoff (" + wt.dach.dach.join(" · ") + ")";
+                        // der Fächer S1: die Stimme über Regen × Deckung (pegelR, der Gegenlauf ohne Regen stumm) und je Baustil der Klang
+                        const f1 = FA[1];
+                        if (f1) {
+                            Object.assign(roh[1].zeuge, { pegelR: f1.werte.pegelR, stummOhneRegen: f1.werte.stummOhneRegen, dachOrte: f1.werte.dachOrte || 0, akte: f1.akte });
+                            if (!f1.fehlt) roh[1].werte.dachKlaenge = f1.werte.dachKlaenge;
+                            else roh[1].nicht = "der Regen klingt auf jedem Dach gleich: " + f1.fehlt + " — an " + f1.fehltAn.length + " Baustilen; die Stimme folgt Regen × Deckung (r " + (f1.werte.pegelR == null ? "—" : f1.werte.pegelR.toFixed(3)) + " an " + f1.gemessen + " Adressen)";
+                        } else roh[1].nicht = "der Fächer des Dachs lief nicht" + (fe ? " (" + fe + ")" : "");
                     }
                     if (U[2]) {
                         // -∞ dB (stumm) reist als null durch JSON: zurück zu -∞
@@ -5691,51 +5862,34 @@ L.perspektive("erleben", (() => {
                         roh[2] = { werte: {}, zeuge: { proben: Z.length, voegelVor: v0, voegelNach: Z.length ? Z[Z.length - 1][1] : 0, chorVor: Number.isFinite(db0) ? +db0.toFixed(1) : -999, ruhig, ruheProben: R0.length, sturm: zeig(Z), ruhe: zeig(R0) } };
                         if (r !== null) roh[2].werte.r = +r.toFixed(4);
                         if (iOhr >= 0) roh[2].werte.verzugS = Z[iOhr][0];
-                        roh[2].nicht = "kein Ausbruch, kein Beben, kein Unfall mit Klang-Folge (die Lage am Ohr trägt keine Menge: kein Schrei, keine Hupe) — gemessen am Sturm, dem Ereignis der Welt";
+                        const f2 = FA[2];
+                        if (f2) roh[2].zeuge.akte = f2.akte;
+                        if (!f2 || f2.fehlt) roh[2].nicht = "kein Ausbruch, kein Beben, kein Unfall mit Klang-Folge" + (f2 ? ": " + f2.fehlt + " — an " + f2.fehltAn.map((q) => q.ort).join(", ") : "") + " · gemessen am Sturm, dem Ereignis der Welt";
                     }
                     if (U[3]) {
                         const O = or || [];
                         roh[3] = { werte: { waisen: O.reduce((q, x) => q + x.waisen.length, 0), orte: O.length }, zeuge: { orte: O.length, stimmen: O.reduce((q, x) => q + x.hoer.length, 0), gegenRest: O.reduce((q, x) => q + x.rest.length, 0), je: O.map((x) => [x.x, x.z, x.hoer.join("+"), x.waisen.join("+")]), fehler: fe } };
                         if (!O.length) roh[3].werte = {};
-                        roh[3].nicht = "kein Raffer von 100 Jahren am Ort: die Zeit eines Orts springt nur über die Reise in eine neue Welt; keine Asche, keine wachsende Küste — die Waisen gemessen heute an " + O.length + " Orten";
+                        const f3 = FA[3];
+                        if (f3) roh[3].zeuge.akte = f3.akte;
+                        if (!f3 || f3.fehlt) roh[3].nicht = (f3 && f3.fehlt ? f3.fehlt : "kein Raffer von 100 Jahren am Ort") + "; keine Asche, keine wachsende Küste — die Waisen gemessen heute an " + O.length + " Orten";
                     }
                     if (U[4]) {
-                        let ep = null;
-                        try {
-                            ep = await S(epochen, { n: 40 });
-                        } catch (e) {
-                            ep = { fehler: kurz(e), epochen: [], stimmen: [], epochStimmen: [] };
-                        }
-                        roh[4] = { werte: {}, zeuge: { epochen: ep.epochen.length, liste: ep.epochen, stimmen: ep.stimmen, epochStimmen: ep.epochStimmen.length, fehler: ep.fehler } };
-                        if (!ep.epochStimmen.length) roh[4].nicht = "die Lage am Ohr liest keine Epoche: " + ep.epochen.length + " Epochen der Siedlungen (" + ep.epochen.join(", ") + "), aber die Stimmen sind " + ep.stimmen.join(", ") + " — keine Hufe, kein Dampf, kein Verbrenner";
+                        const f4 = FA[4];
+                        const w4 = (f4 && f4.werte) || {};
+                        const liste = f4 ? [...new Set(f4.je.map((x) => x.w.epoche).filter(Boolean))] : [];
+                        roh[4] = { werte: {}, zeuge: { epochen: liste.length, liste, epochStimmen: w4.epochStimmen || 0, fehler: fe, akte: f4 && f4.akte } };
+                        if (f4 && f4.fehlt) roh[4].nicht = f4.fehlt + " — an " + f4.fehltAn.length + " Siedlungen";
+                        else if (!f4) roh[4].nicht = "der Fächer der Epochen lief nicht" + (fe ? " (" + fe + ")" : "");
                     }
-                    if (U[5] || U[6]) {
-                        let Z5 = [];
-                        let Z6 = [];
-                        let zf = null;
-                        try {
-                            const s5 = [];
-                            for (let i = 0; i < 10; i++) s5.push("same-saat-" + i);
-                            const s6 = [];
-                            for (let i = 10; i < 20; i++) s6.push("same-saat-" + i);
-                            if (U[5]) Z5 = await S(zeitalter, { saaten: s5, zeiten: [-541, -359, -252, -66, -0.02, 0] });
-                            if (U[6]) Z6 = await S(zeitalter, { saaten: s6, zeiten: [-500, -66, 0] });
-                        } catch (e) {
-                            zf = kurz(e);
-                        }
-                        const art = (Z) => [...new Set(Z.flatMap((x) => x.felder))].filter((f) => /art|fauna|leben|tier|medium|atmo|druck/i.test(f));
-                        const sd = (xs) => {
-                            const m = xs.reduce((q, x) => q + x, 0) / (xs.length || 1);
-                            return Math.sqrt(xs.reduce((q, x) => q + (x - m) * (x - m), 0) / (xs.length || 1));
-                        };
-                        if (U[5]) {
-                            roh[5] = { werte: { zeitalter: new Set(Z5.map((x) => x.zeitMa)).size, saaten: new Set(Z5.map((x) => x.samen)).size }, zeuge: { antworten: Z5.length, streuungM: +sd(Z5.map((x) => x.h)).toFixed(1), artenFelder: art(Z5).length, wuchs: [...new Set(Z5.map((x) => x.wuchs))], fehler: zf } };
-                            if (!art(Z5).length) roh[5].nicht = "der Planet-Faden trägt kein Arten-Inventar je Zeitalter (" + Z5.length + " Antworten, 6 Zeitalter: Wuchs " + [...new Set(Z5.map((x) => x.wuchs))].join("/") + ") — der Vogel singt im Kambrium wie heute";
-                        }
-                        if (U[6]) {
-                            roh[6] = { werte: { planeten: new Set(Z6.map((x) => x.samen)).size, zeitalter: new Set(Z6.map((x) => x.zeitMa)).size }, zeuge: { antworten: Z6.length, streuungM: +sd(Z6.map((x) => x.h)).toFixed(1), artenFelder: art(Z6).length, fehler: zf } };
-                            if (!art(Z6).length) roh[6].nicht = "der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter (" + Z6.length + " Antworten) — der Klang kann ihnen nicht folgen";
-                        }
+                    for (const nr of [5, 6]) {
+                        if (!U[nr]) continue;
+                        const f = FA[nr];
+                        const w = (f && f.werte) || {};
+                        const z = { antworten: w.antworten || 0, streuungM: w.streuungM == null ? 0 : +w.streuungM.toFixed(1), artenFelder: w.artenFelder || 0, wuchs: w.wuchs, fehler: fe, akte: f && f.akte };
+                        roh[nr] = nr === 5 ? { werte: { zeitalter: w.zeitalter || 0, saaten: w.saaten || 0 }, zeuge: z } : { werte: { planeten: w.saaten || 0, zeitalter: w.zeitalter || 0 }, zeuge: z };
+                        if (!(w.artenFelder > 0))
+                            roh[nr].nicht = (nr === 5 ? "der Planet-Faden trägt kein Arten-Inventar je Zeitalter" : "der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter") + " (planet-core.js:2684 planetOrt: " + (w.antworten || 0) + " Adressen, Saaten × Zeitalter " + (w.saaten || 0) + " × " + (w.zeitalter || 0) + ", 0 Arten-Felder) — " + (nr === 5 ? "der Vogel singt im Kambrium wie heute" : "der Klang kann ihnen nicht folgen");
                     }
                     return { sprossen: roh };
                 },
@@ -5746,7 +5900,7 @@ L.perspektive("erleben", (() => {
                         zeuge: zeugeMin([["wetter", 5, "nicht alle fünf Wetter gefahren"], ["trocken", 1, "kein Gegenlauf: kein trockenes Wetter ohne Regenstimme"], ["nass", 2, "der Regen trägt im Ohr keine Stimme"]]),
                         taeter: "klang-core.js umweltMischung (die Regenstimme ohne Dachstoff)",
                         nicht: "der Regen klingt auf jedem Dach gleich",
-                        leser: "klang-core.js:912 regen — die Regenstimme liest regen und deckung, keinen Dachstoff (stamm/stoff-dach.js reicht keinen ans Ohr)",
+                        leser: "klang-core.js:917 regen — die Regenstimme liest regen und deckung, keinen Dachstoff (stamm/stoff-dach.js reicht keinen ans Ohr)",
                         gruen: { werte: { r: 0.97, dachKlaenge: 3 }, zeuge: { wetter: 5, trocken: 2, nass: 3 } },
                         attrappen: [A("r 0,97 ohne Gegenlauf", { r: 0.97, dachKlaenge: 3 }, { wetter: 5, trocken: 0, nass: 3 }), A("r 0,97 ohne Wetter", { r: 0.97, dachKlaenge: 3 }, { wetter: 0 })],
                     },
@@ -5762,7 +5916,7 @@ L.perspektive("erleben", (() => {
                         ]),
                         taeter: "stamm/klang.js _umweltLageZwei (kein Ausbruch, kein Beben, keine Menge)",
                         nicht: "kein Ausbruch, kein Beben, kein Unfall am Ohr",
-                        leser: "stamm/klang.js:474 _umweltLageZwei — trägt kein Beben, keinen Ausbruch, keine Menge (Schrei, Flucht, Hupe)",
+                        leser: "stamm/klang.js:485 _umweltLageZwei — trägt kein Beben, keinen Ausbruch, keine Menge (Schrei, Flucht, Hupe)",
                         gruen: { werte: { verzugS: 0.4, r: 0.92 }, zeuge: { proben: 30, voegelVor: 14, chorVor: -41, ruheProben: 30, ruhig: 1 } },
                         attrappen: [
                             A("Verzug 0,4 s ohne Vögel", { verzugS: 0.4, r: 0.92 }, { proben: 30, voegelVor: 0, chorVor: -41, ruheProben: 30, ruhig: 1 }),
@@ -5785,7 +5939,7 @@ L.perspektive("erleben", (() => {
                         zeuge: zeugeMin([["epochen", 3, "weniger als drei Epochen in der Welt"], ["epochStimmen", 1, "keine Stimme liest die Epoche"]]),
                         taeter: "stamm/klang.js _umweltLageZwei (liest keine Epoche)",
                         nicht: "die Lage am Ohr liest keine Epoche",
-                        leser: "stamm/klang.js:474 _umweltLageZwei — die Lage am Ohr liest keine Epoche der Siedlung (fachwerk-core.js:3718 siedlungsEpoche reicht nur ins Bild); UMWELT.stimmen ohne Hufe, Dampf, Verbrenner",
+                        leser: "stamm/klang.js:485 _umweltLageZwei — die Lage am Ohr liest keine Epoche der Siedlung (fachwerk-core.js:3718 siedlungsEpoche reicht nur ins Bild); UMWELT.stimmen ohne Hufe, Dampf, Verbrenner",
                         gruen: { werte: { anachronismen: 0, erkanntProzent: 84 }, zeuge: { epochen: 5, epochStimmen: 6 } },
                         attrappen: [A("84 % ohne Epochen-Stimme", { anachronismen: 0, erkanntProzent: 84 }, { epochen: 5, epochStimmen: 0 })],
                     },
@@ -5795,7 +5949,7 @@ L.perspektive("erleben", (() => {
                         zeuge: zeugeMin([["antworten", 60, "weniger als 60 Antworten des Planet-Fadens"], ["streuungM", 1e-6, "die Antworten tragen keine Streuung"], ["artenFelder", 1, "der Faden trägt kein Arten-Inventar"]]),
                         taeter: "planet-core.js planetOrt (kein Arten-Inventar je Zeitalter)",
                         nicht: "kein Arten-Inventar je Zeitalter",
-                        leser: "planet-core.js:2293 planetOrt — delta trägt Klima, Meer, Wetter, Wuchs, Wildnis; kein Arten-Inventar je Zeitalter, das der Klang lesen könnte",
+                        leser: "planet-core.js:2684 planetOrt — delta trägt Klima, Meer, Wetter, Wuchs, Wildnis; kein Arten-Inventar je Zeitalter, das der Klang lesen könnte",
                         gruen: { werte: { zeitalter: 6, saaten: 10, anachronismen: 0 }, zeuge: { antworten: 60, streuungM: 2100, artenFelder: 3 } },
                         attrappen: [A("0 Anachronismen ohne Faden", { zeitalter: 6, saaten: 10, anachronismen: 0 }, { antworten: 0 })],
                     },
@@ -5805,7 +5959,7 @@ L.perspektive("erleben", (() => {
                         zeuge: zeugeMin([["antworten", 30, "weniger als 30 Antworten des Planet-Fadens"], ["streuungM", 1e-6, "die Antworten tragen keine Streuung"], ["artenFelder", 1, "der Faden trägt weder Arten noch Medium"]]),
                         taeter: "planet-core.js planetOrt (weder Arten noch Medium)",
                         nicht: "weder Arten noch Medium je Planet",
-                        leser: "planet-core.js:2293 planetOrt — der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter",
+                        leser: "planet-core.js:2684 planetOrt — der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter",
                         gruen: { werte: { planeten: 10, zeitalter: 3, waisen: 0 }, zeuge: { antworten: 30, streuungM: 2100, artenFelder: 2 } },
                         attrappen: [A("0 Waisen ohne Faden", { planeten: 10, zeitalter: 3, waisen: 0 }, { antworten: 0 })],
                     },
@@ -5818,6 +5972,7 @@ L.perspektive("erleben", (() => {
             // Spieler ist jede Sprosse „Umfang nicht erzeugbar“ — gemessen wird, was die Welt dafür trägt.
             [GS]: {
                 sek: 8,
+                faecher: true,
                 dorf: true,
                 pfad: ["stamm/netz-p2p.js", "stamm/netz-identitaet.js", "stamm/feld-dsl.js", "stamm/siedlung-bewohner.js"],
                 ungefahren: "zwei Geräte an einer Saat (die Fahrt hat eines)",
@@ -5856,7 +6011,34 @@ L.perspektive("erleben", (() => {
                     const allein = "kein zweiter Spieler in der Sitzung (" + (w.peers || 0) + " Gegenstellen im Netz der Welt)";
                     for (const nr of Object.keys(U)) roh[nr] = { werte: { spieler: z.spieler, legenden: z.legenden }, zeuge: z };
                     if (U[1]) {
-                        roh[1].nicht = allein + "; die Tat spawn_studio " + (w.tatReist ? "reist" : "reist nicht") + " ins Netz";
+                        // S1 AM FÄCHER (M4): jede Tat der Welt (die Effekte der DSL, stamm/feld-dsl.js:946) × Spieler A und B. A: reist die Tat ins
+                        // Netz (sie steht nicht in NON_BROADCASTABLE_OPS, stamm/speicher-laden.js:1322 — derselbe Leser wie das Laden)? B: die
+                        // Spur am Ort bei einer Gegenstelle — ohne Gegenstelle nennt die Adresse ihr Fehlen
+                        const TAT_AN = async (r, T, a) => {
+                            const NB = r.constructor.NON_BROADCASTABLE_OPS;
+                            if (a.zeit.wer === "A") return { reist: NB ? (NB.has ? !NB.has(a.ort) : !NB.includes(a.ort)) ? 1 : 0 : null };
+                            const p = r.state.p2p || {};
+                            const zahl = (x) => (x instanceof Map || x instanceof Set ? x.size : Array.isArray(x) ? x.length : x && typeof x === "object" ? Object.keys(x).length : 0);
+                            const peers = Math.max(zahl(p.peers), zahl(p.rtcPeers), zahl(p.channels), zahl(p.verbunden));
+                            if (!peers) return { fehlt: "kein Spieler B: stamm/netz-p2p.js:1713 _p2pMsgPeerJoin — die Sitzung hat 0 Gegenstellen (ein Gerät, kein Broker)" };
+                            return { fehlt: "die Spur bei B liest nur das Gerät B (" + peers + " Gegenstellen; kein Leser der fremden Welt in dieser Sitzung)" };
+                        };
+                        try {
+                            const ops = await H.seite("return Object.keys(r.dslEffects || {}).slice(0, 60);");
+                            const R1g = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: TAT_AN, export: "AnazhRealm.NON_BROADCASTABLE_OPS · state.p2p (die Gegenstellen)", leser: "stamm/speicher-laden.js:1322 _dslContainsAnyOp(dsl, NON_BROADCASTABLE_OPS) · stamm/netz-p2p.js:1713 _p2pMsgPeerJoin" },
+                                adressen: { orte: ops, zeiten: [{ wer: "A" }, { wer: "B" }] },
+                                ms: 4000,
+                                masse: { taten: { wie: "anzahl", feld: "reist" }, reisenAnteil: { wie: "anteil", feld: "reist" } },
+                                ungemessen: ["das Bildpaar A ↔ B am Ort der Tat (zwei Geräte)"],
+                            });
+                            z.taten = R1g.werte.taten;
+                            z.reisenAnteil = R1g.werte.reisenAnteil;
+                            z.akte = R1g.akte;
+                            roh[1].nicht = (R1g.fehlt || allein) + " — an " + R1g.fehltAn.length + " Taten; bei A reisen " + Math.round(100 * (R1g.werte.reisenAnteil || 0)) + " % von " + (R1g.werte.taten || 0) + " Taten ins Netz";
+                        } catch (e) {
+                            roh[1].nicht = allein + "; der Fächer der Taten warf: " + kurz(e);
+                        }
                         roh[1].auge = await M.auge("erleben-geteilt-s1", { ort: "wiese" });
                     }
                     if (U[2]) roh[2].nicht = allein + "; kein Bewohner erzählt eine Tat (" + z.zeugen + " Zeugen mit Gedächtnis „gewalt“, " + z.akten + " Akten, davon " + z.aktenMitWer + " mit Wer und Wo)";
@@ -5873,7 +6055,7 @@ L.perspektive("erleben", (() => {
                         auge: { pose: "Ego am Ort der Tat von A, bei A und bei B (dieselbe Saat; heute ein Gerät)", vorbild: "Bildpaar A ↔ B am Ort der Tat zeigt dieselbe Spur (Prüfer-Satz R11)" },
                         taeter: "stamm/netz-p2p.js (keine Gegenstelle in der Sitzung)",
                         nicht: "kein zweiter Spieler in der Sitzung",
-                        leser: "stamm/netz-p2p.js:1706 _p2pMsgPeerJoin — die Sitzung der Fahrt hat keine Gegenstelle (ein Gerät, kein Broker)",
+                        leser: "stamm/netz-p2p.js:1713 _p2pMsgPeerJoin — die Sitzung der Fahrt hat keine Gegenstelle (ein Gerät, kein Broker)",
                         gruen: { werte: { spurGleich: 1 }, zeuge: { spieler: 2 } },
                         attrappen: [A("dieselbe Spur ohne B", { spurGleich: 1 }, { spieler: 1 })],
                     },
