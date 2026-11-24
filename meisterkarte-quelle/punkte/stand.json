@@ -7721,7 +7721,7 @@
   },
   "karte2.erleben.schoepfen.satz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,951 (Faden 1,951 · alle Kerne 1,938; vor 100/445,3 ms, nach 175,6/405,4 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjj · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.satz#1",
@@ -7739,7 +7739,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,951 (Faden 1,951 · alle Kerne 1,938; vor 100/445,3 ms, nach 175,6/405,4 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjj",
      "ungemessen": true,
      "beide": true
     },
@@ -36555,7 +36555,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 506 s unter dem Grund-Deckel 509 s von karte2.same.preis.ankunft#2) — offen, UNGEMESSEN · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,686 (Faden 1,686 · alle Kerne 1,683; vor 151,7/386,5 ms, nach 117,1/343,9 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe --max-old-space-size=12000 stark.cjs . --name genes · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -36594,7 +36594,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Fahrt riss 1800 s (der Rest 506 s unter dem Grund-Deckel 509 s von karte2.same.preis.ankunft#2) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,686 (Faden 1,686 · alle Kerne 1,683; vor 151,7/386,5 ms, nach 117,1/343,9 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe --max-old-space-size=12000 stark.cjs . --name genes",
      "ungemessen": true
     },
     {
@@ -36962,7 +36962,7 @@
   },
   "karte2.same.preis.eingabe": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,46 (Faden 1,46 · alle Kerne 1,342; vor 119,4/263,6 ms, nach 131,4/308,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: node.exe --max-old-space-size=12000 stark.cjs . --name genesis · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.eingabe#1",
@@ -36999,7 +36999,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,46 (Faden 1,46 · alle Kerne 1,342; vor 119,4/263,6 ms, nach 131,4/308,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: node.exe --max-old-space-size=12000 stark.cjs . --name genesis",
      "ungemessen": true
     },
     {
@@ -37716,8 +37716,8 @@
   "ohne": 3299
  },
  "kopfVoll": "f287dfb91e7672949f1ffaeb4908dab20a7fcdd7",
- "zeit": "2026-11-24T00:12:38.236Z",
- "vorher": "a8a9ab16",
+ "zeit": "2026-11-24T00:24:42.070Z",
+ "vorher": "f287dfb9",
  "bilanz": {
   "gewinn": [],
   "fall": [],
