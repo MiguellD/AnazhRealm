@@ -72,8 +72,14 @@ function epoche(gattungen) {
         }
     return out;
 }
-const E = epoche(Object.keys(VC.PRESETS));
+// die Gattungen ohne Zeit-Stufe (vehicle-core `OHNE_ZEIT`: Boot und Leiterwagen, ihre Gestalt aus Wasser und Last) formt keine
+// Epoche — jede lässt sie byte-gleich (fahrzeug-gattung); alle anderen formt jede Epoche
+const zeitlos = (r) => VC.OHNE_ZEIT.includes(VC.PRESETS[r].fx.topo);
+const E = epoche(Object.keys(VC.PRESETS).filter((r) => !zeitlos(r)));
 check("E: jede Epoche formt jeden Wagen in seiner Gestalt", !E.length, E.join(" · "));
+const Z = Object.keys(VC.PRESETS).filter(zeitlos);
+const Zb = Z.filter((r) => EG.some((_, e) => fp(VC.buildInstance(r, 7, 0, { epoche: e })) !== fp(VC.buildInstance(r, 7, 0))));
+check("E: die Gattungen ohne Zeit-Stufe trägt jede Epoche byte-gleich", Z.length >= 2 && !Zb.length, Zb.join(" · ") || Z.join(", "));
 const alt = EG.slice();
 EG[H - 1] = alt[H - 2];
 EG[H] = { s: { radR: 0.3 }, erbe: 0 };

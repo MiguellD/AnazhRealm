@@ -304,6 +304,51 @@ function kabineVerdict(faelle, gattungen) {
     return rot;
 }
 
+// ── A9 DIE URSACHE DES RUMPFS (fahrzeug-gattung): das Boot ist eine FUNKTION seines Wassers und seiner Last, kein Kasten. Gemessen
+// am BAU (Leser: `buildInstance`, derselbe Bau, den der Wirt am Anleger stempelt), nie an der Zahl des Gesetzes: das Gewässer
+// mit Hs 0,1 m (der See hinter dem Schilf) gegen Hs 0,5 m (die offene See) — der Rumpf wird höher (der Bord steht über der
+// Welle) und trägt mehr Gänge (der Klinker: ≥ 3× die Ecken); die Last 200 gegen 400 kg — der Rumpf wird um ≥ 1 Ducht länger
+// (der Kahn: 1,43 m Raum je Sitzendem, Keweloh 1995). Der Täter, den die Linse beim Namen nennt: ein Eingang, den der Rumpf
+// nicht liest (die Gestalt bleibt dieselbe, wie immer das Wasser ist).
+const RUMPF = { hoeher: 1.3, ecken: 3, laenger: 1.2 };
+function rumpfMass(K, ov) {
+    const g = K.buildInstance("boot", 7, 0, ov);
+    const lo = [1e9, 1e9],
+        hi = [-1e9, -1e9];
+    let ecken = 0;
+    g.updateMatrixWorld(true);
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        const p = o.geometry.attributes.position,
+            e = o.matrixWorld.elements;
+        ecken += p.count;
+        for (let i = 0; i < p.count; i++) {
+            const [x, y, z] = [p.getX(i), p.getY(i), p.getZ(i)];
+            const wx = e[0] * x + e[4] * y + e[8] * z + e[12],
+                wy = e[1] * x + e[5] * y + e[9] * z + e[13];
+            lo[0] = Math.min(lo[0], wx);
+            hi[0] = Math.max(hi[0], wx);
+            lo[1] = Math.min(lo[1], wy);
+            hi[1] = Math.max(hi[1], wy);
+        }
+    });
+    return { laenge: hi[0] - lo[0], hoehe: hi[1] - lo[1], ecken };
+}
+function rumpfMessen(K) {
+    return { see: rumpfMass(K, { welle: 0.1, last: 200 }), offen: rumpfMass(K, { welle: 0.5, last: 200 }), schwer: rumpfMass(K, { welle: 0.1, last: 400 }) };
+}
+function rumpfVerdict(m) {
+    const rot = [];
+    if (!m || !m.see) return ["der Rumpf ist ungemessen"];
+    if (!(m.offen.hoehe >= RUMPF.hoeher * m.see.hoehe))
+        rot.push(`RUMPF: welle 0,1 → 0,5 m — die Höhe ${m.see.hoehe.toFixed(2)} → ${m.offen.hoehe.toFixed(2)} m (Soll ≥ ${RUMPF.hoeher}×: der Bord steht über der Welle)`);
+    if (!(m.offen.ecken >= RUMPF.ecken * m.see.ecken))
+        rot.push(`RUMPF: welle 0,1 → 0,5 m — ${m.see.ecken} → ${m.offen.ecken} Ecken (Soll ≥ ${RUMPF.ecken}×: die offene See verlangt Klinker-Gänge)`);
+    if (!(m.schwer.laenge >= m.see.laenge + RUMPF.laenger))
+        rot.push(`RUMPF: last 200 → 400 kg — die Länge ${m.see.laenge.toFixed(2)} → ${m.schwer.laenge.toFixed(2)} m (Soll + ${RUMPF.laenger} m: eine Ducht je Sitzendem)`);
+    return rot;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 function expectedFor(presetId) {
@@ -452,10 +497,10 @@ hauptLauf(async () => {
         // die Mutante am ECHTEN Kern (sein Text ohne das Gesetz, der EINE Lader `kernAusText`): der GT am Rand Gürtel 1,2 steht mit
         // nicht-endlichen Werten und ohne Glas-Höhe beim Namen, der Sportwagen mit dem Gürtel über dem Dach als umgestülpt
         const kernText = ausDatei("vehicle-core.js");
-        const ankerK = "return kabineGesetz(epocheZeit(P));";
+        const ankerK = "return kabineGesetz(gattungForm(epocheZeit(P)));";
         const mutK =
             kernText.split(ankerK).length === 2
-                ? kabineVerdict(kabineMessen(require("./lib/asset-worker-harness.cjs").kernAusText(kernText.replace(ankerK, "return epocheZeit(P);"), "__vehicleCore")), VC.GATTUNGEN)
+                ? kabineVerdict(kabineMessen(require("./lib/asset-worker-harness.cjs").kernAusText(kernText.replace(ankerK, "return gattungForm(epocheZeit(P));"), "__vehicleCore")), VC.GATTUNGEN)
                 : [`Anker fehlt: ${ankerK}`];
         check(
             "Selbst-Test Kabine am Kern: ohne das Gesetz heißt der GT am Rand Gürtel 1,2 beim Namen (kein Glas, nicht-endliche Werte), der Sportwagen umgestülpt",
@@ -464,6 +509,17 @@ hauptLauf(async () => {
                 mutK.some((z) => /^KABINE: supersport guertel=1\.2 — Glas-Höhe -0\.080 m/.test(z)),
             `${mutK.length} Zeilen · ${mutK.slice(0, 3).join(" · ") || "die Mutante schweigt"}`
         );
+        // A9 am ECHTEN Kern: liest der Rumpf seine Welle nicht (oder seine Last), steht die Gestalt still — beim Namen
+        const harness = require("./lib/asset-worker-harness.cjs");
+        for (const [anker, ersatz, wort] of [
+            ["const hs = Number.isFinite(P && P.welle) ? Math.max(0, P.welle) : 0.1;", "const hs = 0.1;", /^RUMPF: welle 0,1 → 0,5 m — die Höhe/],
+            ["const last = Number.isFinite(P && P.last) ? Math.max(0, P.last) : 200;", "const last = 200;", /^RUMPF: last 200 → 400 kg/],
+        ]) {
+            const mut = kernText.split(anker).length === 2 ? rumpfVerdict(rumpfMessen(harness.kernAusText(kernText.replace(anker, ersatz), "__vehicleCore"))) : [`Anker fehlt: ${anker}`];
+            check(`Selbst-Test Rumpf am Kern: ${ersatz} — der ungelesene Eingang ist ROT beim Namen`, mut.some((z) => wort.test(z)), mut.join(" · ") || "die Mutante schweigt");
+        }
+        const rumpfHeil = rumpfVerdict(rumpfMessen(VC));
+        check("Selbst-Test Rumpf: der gesunde Kern ist grün", rumpfHeil.length === 0, rumpfHeil.join(" · "));
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -507,6 +563,16 @@ hauptLauf(async () => {
         `A8: das Gesetz der Kabine — an jeder Gattung hält jede Ecke des Regler-Paars Gürtel × Dach die Glas-Höhe (≥ ${KABINE.glasMin} m) und baut endlich`,
         kV.length === 0,
         kV.join(" · ") || `${kabine.length} Ecken an ${gattungenKern.length} Gattungen · kleinste Glas-Höhe ${Math.min(...kabine.map((f) => f.glas)).toFixed(3)} m`
+    );
+
+    // A9: die Ursache des Rumpfs — Welle und Last formen den Bau
+    const rumpf = rumpfMessen(VC);
+    const rV = rumpfVerdict(rumpf);
+    check(
+        `A9: das Boot fällt aus seinem Wasser und seiner Last (Hs 0,1 → 0,5 m: ≥ ${RUMPF.hoeher}× höher, ≥ ${RUMPF.ecken}× Ecken; 200 → 400 kg: + ${RUMPF.laenger} m)`,
+        rV.length === 0,
+        rV.join(" · ") ||
+            `See ${rumpf.see.laenge.toFixed(2)}×${rumpf.see.hoehe.toFixed(2)} m ${rumpf.see.ecken} Ecken · offen ${rumpf.offen.laenge.toFixed(2)}×${rumpf.offen.hoehe.toFixed(2)} m ${rumpf.offen.ecken} Ecken · schwer ${rumpf.schwer.laenge.toFixed(2)} m`
     );
 
     const ell = ellipseMessung(VC);

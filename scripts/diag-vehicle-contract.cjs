@@ -33,6 +33,8 @@ const VC = studioKern("vehicle-core.js", "__vehicleCore");
 // fahrzeug-gattungen stand hier eine Hand-Liste der fünf alten — der Transporter fuhr als sechste ohne Byte-Beweis, und die
 // Wand blieb grün. Ein Rezept ohne Golden nennt die Golden-Wand beim Namen („fehlt im Golden“).
 // VERTRAGS-AKT fahrzeug-gattungen: drei Fälle neu (transporter: zwei Saaten fein, Stufe 1), die siebzehn alten byte-gleich.
+// VERTRAGS-AKT fahrzeug-gattung: sieben Fälle neu (boot und karren je zwei Saaten fein und Stufe 1, dazu das Boot auf
+// welligem Wasser — der Eingang `welle` wählt das Spitzboot), die zwanzig alten byte-gleich.
 const GATTUNGEN = [...VC.GATTUNGEN];
 const SEEDS = [7, 12345];
 const LODS = [0]; // kindStages.vehicle = [0, 1] — die feine Stufe je Seed; die Stufe 1 trägt je Gattung EINEN Fall (unten)
@@ -43,12 +45,13 @@ for (const g of GATTUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 1 });
 // ov-Kanal (CULTURES als Parameter-Override) — friert auch die Merge-Semantik ein
 CASES.push({ rezeptId: "gt", seed: 7, lod: 0, ovKultur: "toro" });
 CASES.push({ rezeptId: "supersport", seed: 7, lod: 0, ovKultur: "cavallo" });
+CASES.push({ rezeptId: "boot", seed: 7, lod: 0, ovWelle: 0.5 });
 
 function buildCase(c, K = VC) {
-    return K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined);
+    return K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : c.ovWelle ? { welle: c.ovWelle } : undefined);
 }
 function caseKey(c) {
-    return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ovKultur ? "-ov_" + c.ovKultur : ""}`;
+    return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ovKultur ? "-ov_" + c.ovKultur : ""}${c.ovWelle ? "-welle" + c.ovWelle : ""}`;
 }
 
 (async function main() {

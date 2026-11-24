@@ -1,0 +1,13 @@
+# Prettier schreibt NUR die Dateien von `npm run format` / `npm run format:check` (package.json): den Stamm und die fünf Dateien
+# daneben. Alles andere ist ausgenommen — Skripte und Linsen (nie Prettier-rein gewesen: ein `prettier --write` aus Gewohnheit
+# schrieb scripts/diag-settlement.cjs mit 256 neuen und 84 gefallenen Zeilen um, 15.10. · 18.11. · 24.11.), die Kerne und
+# Studios (Gesetzbücher mit verbatim-Blöcken, Lehre 11) und die Daten unter spec/. Wächst `format:check` um eine Datei,
+# wächst diese Liste mit: der Selbsttest von scripts/format-teile.cjs (`grenzUrteil`, in `npm run format:check`) hält die
+# Ziele von `format:check`, die Ziele von `format` und die Rückkehrer hier gleich und nennt jede Abweichung beim Namen.
+/*
+!/stamm/
+!/phyto-core.js
+!/voxel-worker.js
+!/speicher-faden.js
+!/save-server.js
+!/signaling-server.js
