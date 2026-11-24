@@ -1686,7 +1686,7 @@
    "meshes": 1,
    "verts": 2053,
    "tris": 3809,
-   "sha256": "c70df6fc39a78ea874dc39aac6102889462dacf3d510ed356a52fc21a2cf1478"
+   "sha256": "e40ef5e1e1165b92cee8372316224206a2521c756647ef268a94167e166012ac"
   },
   "mensch-L0|stoff_233047|mensch": {
    "meshes": 1,
@@ -1798,9 +1798,9 @@
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,
-   "verts": 2113,
-   "tris": 3773,
-   "sha256": "b7408bcff6bf100cd5031c9f962d44e4aeedf167ee927ddad26e2f01ec1c68f9"
+   "verts": 1985,
+   "tris": 3608,
+   "sha256": "e3f2e4798b3b91741766a493a56235c4cded875eef329df39a51f6aa4a51fcf2"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
