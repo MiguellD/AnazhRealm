@@ -75,12 +75,12 @@
     "karren-s7-L0": {
       "objects": 23,
       "vertices": 4811,
-      "sha256": "165d5b028309a66503d7717780611309a50c563fa7c7e106b966feb8016936f4"
+      "sha256": "4cd1875aaa7740fcfa90f8d8c6dc5446a5c07ac9b07057776f4f3ca40d08eb72"
     },
     "karren-s12345-L0": {
       "objects": 23,
       "vertices": 4811,
-      "sha256": "d3db3608d170924d80e668236b183080012380ca5c8fb1b753b482e82e1734ec"
+      "sha256": "2a3273aa9dbd38b27a02161e85c6859e343f4b16d214b5cde7fc94e2abb04660"
     },
     "gt-s7-L1": {
       "objects": 328,
@@ -120,7 +120,7 @@
     "karren-s7-L1": {
       "objects": 23,
       "vertices": 2816,
-      "sha256": "d57272d490f69959f5ab823f1e9e6d52a5125bff3188951157d538ef929e4858"
+      "sha256": "864c54f7b21504550ad7d37d9851c1e634a2015118305d3d56d1932d9935f75f"
     },
     "gt-s7-L0-ov_toro": {
       "objects": 387,

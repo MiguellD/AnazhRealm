@@ -3475,9 +3475,11 @@
     // DAS MASS DES LEITERWAGENS (fahrzeug-gattung): Achsen, Schemel, Boden, Leitern und das Sitzbrett als EINE Funktion der Form —
     // die Quelle für den Bau (`bauKarren`) und den Sitz des Gesetzes (`gattungSitz`). Das Sitzbrett liegt quer über den Leitern,
     // `KARREN_GESETZ.sitzM` über dem Boden (die Kniekehlenhöhe des Sitzenden: der Fuß steht auf den Bodenbrettern) und
-    // `KARREN_GESETZ.tiefeM` hinter dem Schoßbrett (die Sitztiefe, die Knie vor dem Brett).
-    // Quelle: DIN 33402-2 Kniekehlenhöhe sitzend 0,40–0,50 m (Männer, 5.–95. Perzentil); die Sitztiefe 0,40–0,48 m.
-    const KARREN_GESETZ = Object.freeze({ sitzM: 0.45, tiefeM: 0.45, brettM: 0.025, brettTiefeM: 0.26 });
+    // `KARREN_GESETZ.tiefeM` hinter dem Schoßbrett (der Raum der Beine: Knie und Füße des Sitzenden bleiben im Kasten).
+    // Quelle: Pheasant (britische Männer) Kniekehlenhöhe 395/440/490 mm (5./50./95. Perzentil), ANSUR II 2012 (Gordon 2014)
+    // 390/430/471 mm — Band 0,39–0,49 m, Gesetz 0,45 m. Der Raum der Beine: Gesäß-Knie-Länge 595/645 mm (Pheasant, 50./95. Perzentil)
+    // und der Unterschenkel nach vorn (der Reiter sitzt mit dem Knöchel 0,78 m vor der Hüfte, gemessen L9) — Gesetz 0,85 m.
+    const KARREN_GESETZ = Object.freeze({ sitzM: 0.45, tiefeM: 0.85, brettM: 0.025, brettTiefeM: 0.26 });
     function karrenMass(H, P) {
         const S = scal(H, P),
             rR = H.HUB_RL[1],
@@ -3987,10 +3989,17 @@
     // DER ANTRIEB UND DIE HAUT DER GATTUNG (fahrzeug-gattung, rein additiv): trägt sie einen Motor (`motor`: kein Zug von Tier oder
     // Mensch), fährt sie auf Land oder schwimmt sie (`medium`: ohne Rad trägt sie das Wasser), ist sie offen (`offen`: kein Dach,
     // keine Kabine — der Leib steht über dem Bord). Leser: der Wirt (must-ignore), die Linsen der Fahrt (gate:fahr-leben).
+    // `wandY`: die Höhe, bis zu der die Seite der offenen Gattung geschlossen ist — der Bord des Boots (huelle.yBelt, null), der Boden
+    // des Leiterwagens (seine Leitern sind Sprossen, keine Wand).
     function gattungArt(P) {
         const E = epocheStufe(P),
             Z = (E && E.antrieb) || muskel(P.antrieb) || {};
-        return { motor: !Z.zug, medium: P.rad === "keins" ? "wasser" : "land", offen: P.haut === "offen" };
+        return {
+            motor: !Z.zug,
+            medium: P.rad === "keins" ? "wasser" : "land",
+            offen: P.haut === "offen",
+            wandY: P.topo === "karren" ? karrenMass(hardpoints(P), P).yB : null,
+        };
     }
     function exportDrive(Pin, rezeptId) {
         const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {})); // dieselbe Zeit-Achse wie der Bau

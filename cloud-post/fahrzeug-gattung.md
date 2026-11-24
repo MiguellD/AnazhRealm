@@ -2,7 +2,7 @@
 
 ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 83 von 1 718 (Stand `vision/karte-2-stand.json` im Zweig `punkte-maschine`;
 diese Abgabe bucht keine Sprosse, gebucht wird, wenn der Richter sie grün misst). Zweig `fahrzeug-gattung`
-auf main bf9be26c.
+auf main a8dd22b5 (die Tafeln maßen gegen bf9be26c).
 
 **Die Stufe:** der Anleger am Dorf am Wasser, der Steg und das Boot. Der Leiterwagen steht als Gattung im Kern und im
 Asset-Vertrag; im Spiel steht er noch nicht (siehe Offen).
@@ -39,9 +39,9 @@ schon sechs Gattungen, der Richter misst neu.
 
 | Werk | Tris | Stoffe |
 |---|---|---|
-| Boot, Kahn (Hs ≤ 0,3 m) | 1 556 / 796 | 2 |
-| Boot, Spitzboot (Hs > 0,3 m) | 4 916 / 2 484 | 3 |
-| Leiterwagen | 5 388 / 2 168 | 3 |
+| Boot, Kahn (Hs ≤ 0,3 m) | 1 556 / 732 (0,470) | 2 |
+| Boot, Spitzboot (Hs > 0,3 m) | 4 916 / 2 420 (0,492) | 3 |
+| Leiterwagen (mit Sitzbrett) | 5 400 / 2 180 (0,404) | 3 |
 | Stegfeld (Steg) | 1 268 / 132 | 14 Teile |
 
 ## Ursache je Merkmal (welcher Eingang der Welt es speist)
@@ -78,9 +78,28 @@ Freibord und Tiefgang nur aus der Rechnung (Boot); alle Steg-Maße außer Fuge u
 Nachher (Kopf f71e5a4e, gelesen): der Steg steht als Zimmerwerk am Ufer, mit Bohlen-Deck, Geländer aus zwei Holmen und
 Pfosten auf seinen Jochen; längs an ihm liegt der Kahn flach im Wasser, ein langer, niedriger Plattboden aus breiten Brettern
 (Foto b1 Spreewaldkahn: die flache, lange Gestalt trifft; das Holz liest einheitlich braun, der Rumpf liegt zur Hälfte hinter
-dem Schilf). Gegen das Steg-Foto b4: Deck und Geländer treffen, die Joche sind vom Wasser verdeckt. Das Vorher-Bild an derselben
-Kamera wartet am Schloss der Radeon; die Absenz auf main belegt der Abdruck (`bau:steg_stegfeld` und `bau:fahrzeug_boot`
-„nur in B“).
+dem Schilf). Gegen das Steg-Foto b4: Deck und Geländer treffen, die Joche sind vom Wasser verdeckt. Vorher an derselben Kamera: Ufer, Schilf und Wasser, kein Steg und kein Boot; die Absenz belegt dazu der Abdruck
+(`bau:steg_stegfeld` und `bau:fahrzeug_boot` „nur in B“).
+
+## Die Linsen fragen das Gesetz der Gattung (Batterie auf 86697613, sechs rote Jobs)
+
+Die Gattung trägt ihre Art als Datum (`gattungArt` → `exportDrive.art`: `motor`, `medium`, `offen`) und ihren Sitz
+(`gattungSitz` → `exportDrive.sitz`: im Boot die Ruderducht aus `bootLinien`, der Quelle des Baus; im Leiterwagen das neue Sitzbrett
+aus `karrenMass`, 0,45 m über dem Boden, Band Kniekehlenhöhe 0,39–0,49 m nach Pheasant und ANSUR II 2012, 0,85 m hinter dem
+Schoßbrett: der Raum der Beine, Gesäß-Knie-Länge 595/645 mm nach Pheasant). Die Linse misst, was das
+Gesetz gibt, und lässt, was es nicht gibt: FK (der Rückwärtsgang) und FK2 (die Drehzahl) nur bei `motor` an Land,
+L9 über der geschlossenen Seite einer offenen Gattung (`wandY`: der Bord des Boots, der Boden des Leiterwagens, dessen Leitern
+Sprossen sind) weder Dach noch Kabinen-Seite; Sitz, Schenkel, Hüft-Anker, Blick und Länge misst L9 an jeder Gattung.
+
+| Linse | auf 86697613 | diese Abgabe |
+|---|---|---|
+| Asset-Vertrag v1 Gestalten-Wand | boot, karren 1 von 8 Saaten verschieden | 8 von 8 (die Saat wählt die Lasur des Holzes, `epocheKoerper`) |
+| regler-wirkt Teil 1 | boot L1/L0 0,512 | 0,470 (Kahn), 0,492 (Spitzboot), 0,404 (Leiterwagen) — Soll ≤ 0,5 |
+| settlement C3 | Steg und Boot als fremde Werke | der Anleger zählt als Werk des Dorfs |
+| fahr-leben FK, FK2, L9 | boot ohne Rückwärtsgang und Drehzahl; der Reiter bei z −0,4 auf dem Sitz des Motorwagens | die Linse fragt die Art; der Ruderer auf der Ducht (z 0, y 0,30 m), der Fuhrmann auf dem Sitzbrett (x 0,80 m, y 1,33 m) |
+
+kreatur-takt Teil 1 und mensch-anatomie kommen nicht aus diesem Zweig: Job 138395421168 auf b8a594ea (kein Vorfahre des Zweigs)
+nennt denselben Täter „wachsen skala 5.9958“ und „schwarm kohaesion 0.031“; der Zweig ändert keine Datei der Kreatur und des Körpers.
 
 ## Offen, mit Leser
 
@@ -90,4 +109,4 @@ Kamera wartet am Schloss der Radeon; die Absenz auf main belegt der Abdruck (`ba
 | der Leiterwagen steht im Spiel an keiner Scheune | Eingang: das Tor der Scheune (`slot.tuer`, Plan `hof:scheune`); am Dorf trug der Platz vor dem Tor beim Heben der Scheune die Bau-Wand (`_bauFrei` false an 8 von 8 Scheunen), Sekunden später frei (5 von 6) — der Täter der Wand ist unbenannt | `typen`, `bauFreiAn` | Station `mensch.fahrzeug.gestalt#1` |
 | die Breite des Kahns 0,96 m gegen 1,04–1,16 m | das Gesetz rechnet die Breite am Bord ohne Dollbord-Überstand | `B` | `gate:vehicle-drive` A9 |
 | die Räder des Leiterwagens: europäische Maße unbelegt | nur US-Museumsmaße | `radR`, `radVorn` | FUND-REGISTER (Zweig koordination) |
-| das Boot trägt den Spieler nicht über das Wasser | das Fahr-Gesetz kennt kein Medium Wasser für die Gattung | `exportDrive` | `gate:vehicle-drive` |
+| das Boot trägt den Spieler nicht über das Wasser | das Fahr-Gesetz liest `art.medium` wasser noch nicht (der Kern nennt es, die Fahrt fährt an Land) | `exportDrive.art` | `gate:vehicle-drive` |

@@ -3270,6 +3270,7 @@ async function probeLeben(expected) {
                 // die offene Gattung (vehicle-core `gattungArt`: Boot, Leiterwagen) trägt kein Dach und keine Kabine — der Leib über
                 // dem Bord (huelle.yBelt) steht in der freien Luft; gemessen wird er dort nur längs (vor dem Bug, hinter dem Heck)
                 const offen = !!fzgH?.drive?.art?.offen;
+                const wandY = Number.isFinite(fzgH?.drive?.art?.wandY) ? fzgH.drive.art.wandY : hu?.yBelt;
                 const scH = Number.isFinite(e.scale) ? e.scale : 1;
                 const thH = Number.isFinite(e.rotationY) ? e.rotationY : 0;
                 const basisH = e.position.y - 0.5;
@@ -3307,7 +3308,7 @@ async function probeLeben(expected) {
                         }
                         if (!hu) continue;
                         aussen.n++;
-                        const frei = offen && (V.y - basisH) / scH > hu.yBelt; // über dem Bord der offenen Gattung
+                        const frei = offen && (V.y - basisH) / scH > wandY; // über der geschlossenen Seite der offenen Gattung
                         if (!frei && aussen.n % 40 === 0) {
                             const lzS = (V.x - e.position.x) * Math.sin(thH) + (V.z - e.position.z) * Math.cos(thH);
                             strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, kn?.name || o.name || "?");

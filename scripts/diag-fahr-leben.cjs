@@ -1291,7 +1291,8 @@ function bahnKernRueck(VC) {
     const DT = 1 / 60;
     const rows = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
-        if (artVon(VC, rezept).medium !== "land") continue; // das Boot schwimmt: an Land fährt es nicht rückwärts
+        const A = artVon(VC, rezept);
+        if (!A.motor || A.medium !== "land") continue; // der Rückwärtsgang gehört zum Getriebe des Motors; das Boot schwimmt
         const G = gesetzVon(VC, rezept);
         if (!G) {
             rows.push({ rezept, art: "kein Fahr-Satz", grad: 0, weg: 0 });
