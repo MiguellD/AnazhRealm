@@ -66,6 +66,7 @@ in ihre Leitern; „erreicht“ ist `heute` der Leiter am selben Stand:
 | Dokument                         | Zweck                                                                                     |
 | -------------------------------- | ----------------------------------------------------------------------------------------- |
 | `cloud-post/stoffstrom-kette.md` | Die Vorprüfung `mensch.wirtschaft.stoffstrom#1` — Erz → Barren → Werkzeug, Zahlen, Linse. |
+| `cloud-post/bewohner-satz.md`    | Die Vorprüfung des Lebenslaufs — elf Sprossen aus EINEM Gesetz, Zahlen je Sprosse, Bild.  |
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
 -Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main.
