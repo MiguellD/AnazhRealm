@@ -3893,17 +3893,15 @@ hauptLauf(async () => {
         for (const [ort, z] of Object.entries(u.zahlen)) console.log(`TAG ${ort} ${u.befunde.some((b) => b.includes(` ${ort}: `)) ? "ROT" : "GRUEN"}: ${z}`);
         // BLICK (nur Messung): je Schritt im Abend-Fenster dBild/dKamera/dMesser/dStufe (EV), die Uhr mit der Sonne
         for (const [ort, m] of Object.entries(welt)) {
-            const z = (m?.zeilen || []).concat(m?.fein || []).filter((x) => x.uhr > 0.69 && x.uhr < 0.731).sort((a, b) => a.uhr - b.uhr);
+            const z = (m?.zeilen || []).filter((x) => x.uhr > 0.7465 && x.uhr < 0.7501).sort((a, b) => a.uhr - b.uhr);
             const l2 = (b, a) => (b == null || a == null ? NaN : Math.log2(Math.max(b, 1e-12) / Math.max(a, 1e-12)));
             const f = (v) => (Number.isNaN(v) ? "?" : (v >= 0 ? "+" : "") + v.toFixed(3));
-            const g = (x) => (x ? `${x.uhr} si ${x.si} nl ${x.nl} nlv ${x.nlv} dy ${x.dy}` : "-");
-            // je Schritt: Szene (dBild − dKamera) / Messer / sin h / Sicht / mittleres N·L / mittleres N·L × Sicht (log2)
+            // je Schritt: dBild / dKamera (EV) · Sonne · Sonne der Umgebung · Stärke der Umgebung
             const teil = z.slice(1).map((b, i) => {
                 const a = z[i];
-                return `${b.uhr}:${f(l2(b.Y, a.Y) - l2(b.kA, a.kA))}/${f(l2(b.E, a.E))}/${f(l2(b.dy, a.dy))}/${f(l2(b.si, a.si))}/${f(l2(b.nl, a.nl))}/${f(l2(b.nlv, a.nlv))}`;
+                return `${b.uhr}:${f(l2(b.Y, a.Y))}/${f(l2(b.kA, a.kA))}/s${b.sonne}/u${b.env}/i${b.ei}`;
             });
-            console.log(`BLICKZ ${ort} ROT abs: ${g(z[0])} | ${g(z[z.length - 1])}`);
-            for (let i = 0; i < teil.length; i += 8) console.log(`BLICKZ ${ort} ROT ${i}: ${teil.slice(i, i + 8).join(" ")}`);
+            for (let i = 0; i < teil.length; i += 3) console.log(`BLICKZ ${ort} ROT ${i}: ${teil.slice(i, i + 3).join(" ")}`);
         }
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {

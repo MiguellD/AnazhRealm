@@ -1117,7 +1117,7 @@ const TAG_UHREN = Array.from({ length: 100 }, (_, i) => i / 100);
 // (licht-stetig) die Wachen der Dämmerung beider Seiten: die bürgerliche (−6°, 0,232/0,234 · 0,766/0,768; die Nachtastung füllt
 // von dort bis zum Horizont) und die astronomische (−18°, 0,2/0,202 · 0,798/0,8). Bis licht-stetig war die Wand dort blind: das
 // Bild sprang bei −18° bis 1,89 EV (das zweite Dämmerlicht, GTX 1feab29c) und brach bei −6° um 0,45 EV ein, die Wand blieb grün
-const TAG_UHREN_KURZ = [0, 0.2, 0.202, 0.232, 0.234, 0.25, 0.27, 0.28, 0.33, 0.5, 0.7, 0.71, 0.72, 0.73, 0.75, 0.766, 0.768, 0.798, 0.8];
+const TAG_UHREN_KURZ = [0, 0.2, 0.202, 0.232, 0.234, 0.25, 0.27, 0.28, 0.33, 0.5, 0.72, 0.73, 0.747, 0.7475, 0.748, 0.7485, 0.749, 0.7495, 0.75, 0.766, 0.768, 0.798, 0.8];
 function tagKurve(o) {
     return (async () => {
         const T = window.THREE;
@@ -1356,6 +1356,10 @@ function tagKurve(o) {
                     z.nl = RL && RL.blickNL != null ? +RL.blickNL.toPrecision(6) : null;
                     z.nlv = RL && RL.blickNLV != null ? +RL.blickNLV.toPrecision(6) : null;
                     z.dy = +r._sonnenRichtung().y.toPrecision(6);
+                    // die Sonne, unter der die Umgebung gezeichnet wurde, und ihre Stärke jetzt
+                    const EL = st._skyEnvLast;
+                    z.env = EL ? +((Math.asin(Math.max(-1, Math.min(1, EL.sy))) * 180) / Math.PI).toFixed(3) : null;
+                    z.ei = st.scene ? +(+st.scene.environmentIntensity).toPrecision(5) : null;
                 }
                 if (o.png) z.png = __png(u8, W, H);
                 zeilen.push(z);
