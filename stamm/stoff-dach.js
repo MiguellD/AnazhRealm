@@ -39,6 +39,131 @@ class AnazhRealm_stoff_dach {
         })();
     }
 
+    // DER SCHATTEN DER HÄUSER (Karte 2 planet.kopplung.stadtklima#1 — „Schatten kühlt, die Pfütze trocknet im Schatten später“):
+    // liegt der Welt-Ort `p` im Schatten eines Körpers des Dach-Pools? Der Strahl von `p` zur Sonne `s` (Einheitsvektor) gegen den
+    // Kasten jeder Decke (Grundriss Mitte xz, Gier cos/sin, halbe Kanten; vom Boden bis zur Oberkante): im Grundriss das Stück
+    // [tE, tX] des waagrechten Wegs, das im gedrehten Rechteck liegt (zwei Platten), und der Strahl steht am Eintritt noch unter
+    // der Oberkante (er steigt mit tan β). 1 im Schatten, 0 sonst; die Sonne unter dem Horizont wirft keinen. EINE Formel über
+    // einer Algebra (k · add · sub · mul · div · min · max · sqrt · step(a, b) = b ≥ a): die Zahlen auf der CPU (`_hausSchatten`,
+    // die Nässe am Ort `_naesseAm`, die Station), die TSL-Knoten im Stoff (`_naesseOrtKnoten`) — dieselben Plätze (`_dachTakt`).
+    static _hausSchattenGesetz(A, px, py, pz, sx, sy, sz, L, M) {
+        const dx = A.sub(px, L[0]);
+        const dz = A.sub(pz, L[1]);
+        const lx = A.sub(A.mul(dx, L[2]), A.mul(dz, L[3]));
+        const lz = A.add(A.mul(dx, L[3]), A.mul(dz, L[2]));
+        const h = A.max(A.sqrt(A.add(A.mul(sx, sx), A.mul(sz, sz))), A.k(1e-4));
+        const ux = A.div(A.sub(A.mul(sx, L[2]), A.mul(sz, L[3])), h);
+        const uz = A.div(A.add(A.mul(sx, L[3]), A.mul(sz, L[2])), h);
+        const platte = (l, u, e) => {
+            const v = A.add(u, A.mul(A.sub(A.mul(A.step(A.k(0), u), A.k(2)), A.k(1)), A.k(1e-6)));
+            const a = A.div(A.sub(A.mul(e, A.k(-1)), l), v);
+            const b = A.div(A.sub(e, l), v);
+            return [A.min(a, b), A.max(a, b)];
+        };
+        const [x0, x1] = platte(lx, ux, M[0]);
+        const [z0, z1] = platte(lz, uz, M[1]);
+        const tE = A.max(A.max(x0, z0), A.k(0));
+        const tX = A.min(x1, z1);
+        const hoch = A.add(py, A.mul(tE, A.div(sy, h)));
+        return A.mul(A.mul(A.step(tE, tX), A.step(hoch, M[2])), A.mul(A.step(A.k(0), sy), A.step(A.k(1e-6), M[0])));
+    }
+    // DIE SONNE DES SCHATTENS (je Takt der Nässe, EIN Schreiber): die Richtung zur Sonne (`_sonnenRichtung`, die des Lichts), der
+    // Anteil der Trocken-Rate im vollen Schatten `q1` und die Hülle des Schattens — der Kasten des Pools (`dachHuelle`), gestreckt
+    // gegen die Sonne um den längsten Wurf (die höchste Oberkante über dem Auge + `NAESSE.wurfUnterM`, × cot β, höchstens
+    // `NAESSE.wurfM`); unter dem Horizont leer.
+    _schattenTakt(q1) {
+        const U = this._ensureAtmoUniforms();
+        const s = this._sonnenRichtung();
+        U.schattenSonne.value.set(s.x, s.y, s.z, q1);
+        const H = U.dachHuelle.value;
+        const auge = this._lodAuge();
+        if (!(s.y > 0) || H.x > H.z || !auge) return U.schattenHuelle.value.set(1, 1, -1, -1);
+        const N = AnazhRealm.NAESSE;
+        const h = Math.max(1e-4, Math.hypot(s.x, s.z));
+        const lang = Math.min(N.wurfM, (Math.max(0, U.dachOben.value - (auge.y || 0)) + N.wurfUnterM) * (h / s.y));
+        const [wx, wz] = [(-s.x / h) * lang, (-s.z / h) * lang];
+        U.schattenHuelle.value.set(H.x + Math.min(0, wx), H.y + Math.min(0, wz), H.z + Math.max(0, wx), H.w + Math.max(0, wz));
+    }
+    // der Schatten der Häuser am Ort (x, y, z) auf der CPU — die Plätze und die Sonne, die der Stoff liest (`atmoUniforms`)
+    _hausSchatten(x, y, z) {
+        const U = this.state.atmoUniforms;
+        if (!U || !U.dachLage || !U.schattenSonne) return 0;
+        const s = U.schattenSonne.value;
+        const Z = AnazhRealm.SCHATTEN_ZAHLEN;
+        let im = 0;
+        U.dachLage.forEach((Lu, i) => {
+            const L = Lu.value;
+            const M = U.dachMass[i].value;
+            im = Math.max(im, AnazhRealm._hausSchattenGesetz(Z, x, y, z, s.x, s.y, s.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z]));
+        });
+        return im;
+    }
+    // DIE NÄSSE AM ORT (stadtklima#1): der Film der Welt trocknet je Ort mit seiner Rate — die Welt trägt ihren Trocken-Weg
+    // (`_naesseWeg`: 1 − Film, solange er steht, danach weiter mit der Rate des Wetters, EIN Schreiber `_naesseTakt`), der Ort den
+    // Anteil seiner Rate (`_trockenAnteil`: im Schatten der Häuser trägt die Sonne nur ihr Himmelslicht). Film am Ort = max(Film der
+    // Welt, 1 − Weg × Anteil) — in der Sonne genau der Film der Welt. `weg` optional (die Station fragt die Zeit, bis er trocken ist).
+    _naesseAm(x, y, z, weg) {
+        const st = this.state;
+        const n = Number.isFinite(st.naesse) ? st.naesse : 0;
+        const w = Number.isFinite(weg) ? weg : Number.isFinite(this._naesseWeg) ? this._naesseWeg : 1 - n;
+        const U = st.atmoUniforms;
+        const q1 = U && U.schattenSonne ? U.schattenSonne.value.w : 1;
+        const q = 1 - this._hausSchatten(x, y, z) * (1 - q1);
+        const ort = Math.min(1, Math.max(0, 1 - w * q));
+        return Number.isFinite(weg) ? ort : Math.max(n, ort);
+    }
+    // der Anteil der Trocken-Rate im vollen Schatten (je Wetter-Feld `wf`): die Luft trägt das Wasser nach Sonne, Wind und Luft ab
+    // (`_trockenRate`, Penman: der Strahlungs-Term und der Term der Luft) — im Schatten fällt vom Strahlungs-Term der direkte Teil,
+    // es bleibt das Himmelslicht (`NAESSE.diffus`); Wind und Luft trocknen wie in der Sonne.
+    static _trockenAnteil(wf) {
+        const N = AnazhRealm.NAESSE;
+        const sonne = N.sonne * Math.max(0, wf.sun);
+        const rest = N.wind * Math.max(0, wf.wind) + N.luft;
+        return (sonne * N.diffus + rest) / (sonne + rest);
+    }
+    // DIE NÄSSE AM ORT IM STOFF (EIN Knoten je Seite): dieselbe Rechnung wie `_naesseAm` am Welt-Ort des Fragments — die Plätze laufen
+    // nur, solange der Schatten noch nass ist (der Weg × der Anteil des Schattens < 1) und das Fragment in der Hülle des Schattens
+    // liegt (`schattenHuelle`, `_dachTakt`: der Kasten der Plätze, gestreckt um ihren Wurf).
+    _naesseOrtKnoten(T) {
+        if (this._naesseOrtK) return this._naesseOrtK;
+        const U = this._ensureAtmoUniforms();
+        const p = T.positionWorld;
+        const S = U.schattenSonne;
+        const H = U.schattenHuelle;
+        const A = {
+            k: (n) => T.float(n),
+            add: (a, b) => a.add(b),
+            sub: (a, b) => a.sub(b),
+            mul: (a, b) => a.mul(b),
+            div: (a, b) => a.div(b),
+            min: T.min,
+            max: T.max,
+            sqrt: T.sqrt,
+            step: (a, b) => T.step(a, b),
+        };
+        const drin = p.x
+            .greaterThanEqual(H.x)
+            .and(p.x.lessThanEqual(H.z))
+            .and(p.z.greaterThanEqual(H.y))
+            .and(p.z.lessThanEqual(H.w))
+            .and(U.naesseWeg.mul(S.w).lessThan(1));
+        this._naesseOrtK = T.Fn(() => {
+            const film = U.naesse.toVar();
+            T.If(drin, () => {
+                const im = T.float(0).toVar();
+                T.Loop(U.dachLage.length, ({ i: k }) => {
+                    const [L, M] = AnazhRealm._jePlatz(T, [U.dachLage, U.dachMass], k);
+                    im.assign(im.max(AnazhRealm._hausSchattenGesetz(A, p.x, p.y, p.z, S.x, S.y, S.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z]))); // prettier-ignore
+                });
+                const q = T.float(1).sub(im.mul(T.float(1).sub(S.w)));
+                film.assign(T.max(film, T.float(1).sub(U.naesseWeg.mul(q)).clamp(0, 1)));
+            });
+            return film;
+        })().toVar();
+        this._naesseOrtK.global = true;
+        return this._naesseOrtK;
+    }
+
     // DER HIMMEL IM RAUM am Welt-Ort `p` (w28-innenlicht, der EINE Leser im Stoff: die Umgebung `_spiegelUmgebung`): 1 unter
     // offenem Himmel, unter einer Decke des Dach-Pools das Raum-Licht ihres Körpers (`dachMass.w`, fachwerk `raumLicht`: der
     // mittlere Tageslicht-Quotient — Öffnungsfläche × Himmels-Anteil × Durchlass / (Raum-Oberfläche × (1 − R²))). Bis hier nahm
@@ -298,3 +423,15 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_dach]);
 // am Auge mit τ = `blendeS` in Blenden-Stufen (das Auge braucht seine Zeit — die Belichtung springt an der Schwelle nicht), ein
 // Sprung des Auges über `sprungM` in einem Takt (das Wort, die Sonde, die Ankunft) nimmt sie ohne Übergang.
 AnazhRealm.RAUM = Object.freeze({ kanteM: 0.3, blendeS: 0.8, blendeHellS: 0.3, sprungM: 3 });
+// DIE ZAHLEN-ALGEBRA DES SCHATTENS DER HÄUSER (`_hausSchattenGesetz` auf der CPU; der Stoff rechnet dieselbe Formel über TSL)
+AnazhRealm.SCHATTEN_ZAHLEN = Object.freeze({
+    k: (n) => n,
+    add: (a, b) => a + b,
+    sub: (a, b) => a - b,
+    mul: (a, b) => a * b,
+    div: (a, b) => a / b,
+    min: Math.min,
+    max: Math.max,
+    sqrt: Math.sqrt,
+    step: (a, b) => (b >= a ? 1 : 0),
+});

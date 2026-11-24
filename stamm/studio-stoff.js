@@ -707,11 +707,13 @@ class AnazhRealm_studio_stoff {
             (typeof ecken !== "object" ||
                 Object.entries(ecken).some(
                     ([k, v]) =>
-                        (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
+                        k === "art"
+                            ? v !== null && typeof v !== "string"
+                            : (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
                 ))
         )
             throw this._stoffBruch(
-                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr, verband, lage } aus Wahrheitswerten, nie ` +
+                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr, verband, lage } aus Wahrheitswerten (dazu art: die Spezies des Jahrs), nie ` +
                     (typeof ecken === "object"
                         ? "{ " +
                           Object.entries(ecken)
@@ -722,6 +724,9 @@ class AnazhRealm_studio_stoff {
             );
         const ton = !!ecken && ecken.ton === true;
         const jahr = !!ecken && ecken.jahr === true;
+        // DIE ART DES JAHRS (jahreslauf#2): die Spezies, deren Phänologie das Laub dieses Stoffs trägt (phyto-core `phaenoArt`;
+        // ohne sie der Bestand) — ein Stoff je Art, EIN Graph (der Stoff-Wert `userData.jahrArt`, `_jahrLage`)
+        const jahrArt = jahr ? (ecken && typeof ecken.art === "string" ? ecken.art : null) : null;
         const satz = !!(mp && mp.satzRegler === true);
         // `ecken.verband` (einheit-relief): die gefaltete Stufe nennt die Zeile des Verband-Gesetzes je Ecke (`aVerband`) und
         // `ecken.lage` ihre Lage in der Wand (`aLage`) — außerhalb des Satzes liest der Stoff sie dort, wie der Satz in seinem
@@ -771,7 +776,7 @@ class AnazhRealm_studio_stoff {
             (satz === true ? "|satz" : "") +
             (_krone ? "|krone" : "") +
             (ton ? "|ton" : "") +
-            (jahr ? "|jahr" : "") +
+            (jahr ? "|jahr" + (jahrArt ? ":" + jahrArt : "") : "") +
             (eckVerband ? (eckLage ? "|eckVb+lage" : "|eckVb") : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
@@ -844,7 +849,12 @@ class AnazhRealm_studio_stoff {
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
         if (_krone) mat.userData.krone = true;
-        if (jahr === true) mat.userData.jahr = true; // das Laub fällt (`_jahrLage`; der Baum-Wind webt es in seinen Knoten)
+        if (jahr === true) {
+            mat.userData.jahr = true; // das Laub fällt (`_jahrLage`; der Baum-Wind webt es in seinen Knoten)
+            mat.userData.jahrArtName = jahrArt; // die wiegende Nah-Streu baut den Stoff ihrer Art mit derselben Art
+            const ph = globalThis.__phytoCore.phaenoArt(jahrArt || globalThis.__phytoCore.PHAENO_GESETZ.bestand);
+            mat.userData.jahrArt = new THREE.Vector2(ph[0], ph[1]);
+        }
         // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.

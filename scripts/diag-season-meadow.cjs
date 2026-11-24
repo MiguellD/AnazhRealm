@@ -17,6 +17,11 @@
 //       deckt im Winter ≤ 0,3, die Nadel steht ungetönt.
 //   F6  der Halm im Jahr (phyto-core `halmImJahr`, w26): Fläche und Fläche von oben × ha, der Stoff (`_halmImJahr`) und das Labor
 //       (`halmJahrGlsl`) lesen das Gesetz, kein Leser staucht nur y.
+//   F7  die Phänologie je Art (leben.pflanzen.jahreslauf#2, phyto-core PHAENO_GESETZ): der Kalender des Spiels JE ART
+//       (`_saisonPraesenz(phase, o, art)`, die erste Woche nach der kahlen Krone, in der Laub oder die eigene Blüte der Art ≥ 0,5
+//       steht) folgt der Reihe des Phänologie-Netzes (DWD 1991–2020: Hasel, Erle, Birke, Buche, Eiche) mit Rang ≥ 0,8, und der Stoff
+//       liest das Gesetz je Art (`_jahrLage`: `laubImJahr` über dem Stoff-Wert `userData.jahrArt`; die Gestalt reicht ihre Art,
+//       `_foundryBuildGroup` über `_phaenoArtVon`). Bis jahreslauf#2 trug jede Art EINE Kurve: Rang 0.
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
 const { selbsttestEnde, wandEnde, SELBSTTEST, stammLib, ROOT: root } = require("./lib/welt-boot.cjs");
@@ -96,6 +101,25 @@ function pruefe(o) {
         "F6 der Halm kürzt seine Länge",
         [J(ha), J(ha, 1)] + "" === [ha, ha, 1, ha, ha, ha].map((q) => q.toFixed(9)) + "" && ["_halmFerne", "_foundryTreeMaterial"].every((g) => !stammLib.fehlt(g, /_halmImJahr\(/, { wandel: o.stamm })) // prettier-ignore
     );
+    // F7 DIE PHÄNOLOGIE JE ART (jahreslauf#2): der Kalender JE ART gegen die Reihe des Netzes, der Stoff liest das Gesetz je Art
+    const REIHE = ["busch_hazel", "baum_erle", "baum_birke", "baum_buche", "baum_eiche"];
+    const Wj = Object.assign(Object.create(A.prototype), { state: { seasonPhase: 0.375 } });
+    const praes = o.praesenz || A.prototype._saisonPraesenz;
+    const kurve = (art) => Array.from({ length: 52 }, (_, i) => { const q = praes.call(Wj, i / 52, {}, art); return [q.x, q.y]; }); // prettier-ignore
+    const bestand = kurve(undefined);
+    const kal = REIHE.map((a) => {
+        const k = kurve(a);
+        const eigen = k.some((q, i) => Math.abs(q[1] - bestand[i][1]) > 1e-6);
+        const x = k.map((q) => q[0]);
+        const tief = x.indexOf(Math.min(...x));
+        for (let s = 1; s <= 52; s++) { const i = (tief + s) % 52; if (x[i] >= 0.5 || (eigen && k[i][1] >= 0.5)) return i; } // prettier-ignore
+        return 99;
+    });
+    const rk = (v) => v.map((q) => v.filter((p) => p < q).length + (v.filter((p) => p === q).length - 1) / 2);
+    const pear = (a, b) => { const n = a.length, ma = a.reduce((s, q) => s + q, 0) / n, mb = b.reduce((s, q) => s + q, 0) / n; let ab = 0, aa = 0, bb = 0; for (let i = 0; i < n; i++) { ab += (a[i] - ma) * (b[i] - mb); aa += (a[i] - ma) ** 2; bb += (b[i] - mb) ** 2; } return aa > 0 && bb > 0 ? ab / Math.sqrt(aa * bb) : 0; }; // prettier-ignore
+    const rang = pear(rk(kal), rk(REIHE.map((_, i) => i)));
+    const stoff = !stammLib.fehlt("_jahrLage", /laubImJahr\([\s\S]*userData\.jahrArt|userData\.jahrArt[\s\S]*laubImJahr\(/, { wandel: o.stamm }) && !stammLib.fehlt("_foundryBuildGroup", /_phaenoArtVon\(/, { wandel: o.stamm }); // prettier-ignore
+    pruef("F7 die Phänologie je Art", rang >= 0.8 && stoff, "Kalender (Woche) " + REIHE.map((a, i) => a + " " + kal[i]).join(" · ") + " · Rang " + rang.toFixed(3) + (stoff ? "" : " · der Stoff liest die Art nicht")); // prettier-ignore
     return aus;
 }
 const WELT = (ph) => A.prototype._saisonMul.call(null, ph, {});
@@ -119,6 +143,9 @@ if (SELBSTTEST) {
     // die Brüche des Befunds (w26): das Gesetz und die Ferne stauchen nur y (das Labor liest das Gesetz über WIND_GLSL, `halmJahrGlsl`)
     check("Selbst-Test 10: Gesetz → F6 rot", roh({ halm: (Z, h, x, y, z) => ({ x, y: y * h, z }) }, "F6"));
     check("Selbst-Test 11: Ferne → F6 rot", roh({ stamm: (s) => s.replace("jahr = this._halmImJahr(T,", "jahr = (") }, "F6"));
+    // der Täter von jahreslauf#2: EINE Kurve für jede Art (die Art fällt), der Stoff liest die Präsenz ohne Art
+    check("Selbst-Test 12: eine Kurve für jede Art → F7 rot", roh({ praesenz(ph, out) { return A.prototype._saisonPraesenz.call(this, ph, out); } }, "F7")); // prettier-ignore
+    check("Selbst-Test 13: Stoff ohne Art → F7 rot", roh({ stamm: (s) => s.replace('this._stoffWert(T, "userData.jahrArt", "vec2")', "T.vec2(376, -1)") }, "F7")); // prettier-ignore
     selbsttestEnde(errs, "die Jahres-Linse feuert.");
     process.exit(0);
 }

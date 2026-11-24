@@ -1814,8 +1814,10 @@ class AnazhRealm_koerper_fahrt {
     // als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
     // nach dem Wetter-Wort — wird sie festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Bis 24.10. reichte die Welt
     // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).
+    // DIE NÄSSE AM RAD (stadtklima#1): der Film am Ort des Wagens (`_naesseAm`) — im Schatten der Häuser greift der Reifen länger
+    // nass; in der Sonne genau der Film der Welt.
     _fahrHaft(fz) {
-        const n = Math.min(1, Math.max(0, this.state.naesse || 0));
+        const n = Math.min(1, Math.max(0, this._naesseAm(fz.x, fz.y, fz.z)));
         // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
         // Wagen `HAFT_MERK_M` weiter ist oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je Schritt neu (der
         // Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms). Er trägt μ trocken und voll nass: die Zeile ist linear in der

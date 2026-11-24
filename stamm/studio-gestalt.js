@@ -214,7 +214,7 @@ class AnazhRealm_studio_gestalt {
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende (der Gruppen-Bau); ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
-    _foundryBuildMesh(m, baum) {
+    _foundryBuildMesh(m, baum, art) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
         // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
@@ -315,7 +315,8 @@ class AnazhRealm_studio_gestalt {
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton, Jahr, Verband und Lage an ihrem Namen
         // (`_foundryTreeMaterial`)
-        const ecken = { ton, jahr, verband: verbandEcke, lage: lageEcke };
+        // … und die Art des Jahrs (jahreslauf#2, `_phaenoArtVon`): das Laub der Gestalt trägt die Phänologie ihrer Spezies
+        const ecken = { ton, jahr, verband: verbandEcke, lage: lageEcke, art: jahr && typeof art === "string" ? art : null };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) {
             geo.computeVertexNormals();
@@ -479,12 +480,23 @@ class AnazhRealm_studio_gestalt {
         const ws = wsM && wsM.elements ? wsM.elements[0] || 1 : 1;
         return maxY > minY ? Math.max(0.1, (maxY - minY - hub) * ws) : 0.1;
     }
+    // DIE ART DES JAHRS EINES REZEPTS (leben.pflanzen.jahreslauf#2): die Spezies der Welt mit eigener Phänologie (phyto-core
+    // PHAENO_GESETZ: Laub oder Blüte), deren Gestalt das Rezept `preset` baut (`_foundryPresetFor`: baum_erle → weide, busch_hazel
+    // → hazel) — null, wo keine Spezies des Gesetzes auf das Rezept zeigt (das Laub trägt dann den Bestand).
+    _phaenoArtVon(preset) {
+        const P = globalThis.__phytoCore.PHAENO_GESETZ;
+        for (const s of [...new Set([...Object.keys(P.laub), ...Object.keys(P.bluete)])].sort())
+            if (this._foundryPresetFor(s) === preset) return s;
+        return null;
+    }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
         let group = null;
         // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
         const baum = stage && stage.preset ? this._baumWindDaten(stage.preset, meshes) : null;
+        // die Art des Jahrs (jahreslauf#2): die Spezies der Welt, deren Gestalt dieses Rezept baut (`_phaenoArtVon`)
+        const art = stage && stage.preset ? this._phaenoArtVon(stage.preset) : null;
         try {
             group = new T.Group();
             for (const m of meshes) {
@@ -503,7 +515,7 @@ class AnazhRealm_studio_gestalt {
                                 : m.huelle;
                     continue;
                 }
-                const mesh = this._foundryBuildMesh(m, baum);
+                const mesh = this._foundryBuildMesh(m, baum, art);
                 if (mesh) group.add(mesh);
             }
         } catch (_e) {

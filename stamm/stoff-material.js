@@ -929,6 +929,12 @@ class AnazhRealm_stoff_material {
             schirmJeSzene: TSL.uniform(1).setName("schirmJeSzene"),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
+            // DIE NÄSSE AM ORT (stadtklima#1, `_naesseOrtKnoten`): der Trocken-Weg der Welt (`_naesseWeg`, trocken weit über 1), die
+            // Richtung zur Sonne (xyz) mit dem Anteil der Trocken-Rate im vollen Schatten (w, `_trockenAnteil`) und die Hülle des
+            // Schattens der Plätze (min x, min z, max x, max z) — EIN Schreiber `_naesseTakt`
+            naesseWeg: TSL.uniform(1e3),
+            schattenSonne: TSL.uniform(new THREE.Vector4(0, -1, 0, 1)),
+            schattenHuelle: TSL.uniform(new THREE.Vector4(1, 1, -1, -1)),
             // die Stärke des Regens (das Wetter-Feld `rain`, 0 ohne Regen): die Tropfen-Ringe der Pfütze (`_pfuetzeKnoten`)
             regen: TSL.uniform(0),
             dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
@@ -2398,8 +2404,8 @@ class AnazhRealm_stoff_material {
         const karte = this._naesseKnoten || (this._naesseKnoten = new Map());
         if (!karte.has(schluessel)) {
             const farbe = mat.colorNode || T.vec4(T.materialColor, 1);
-            const w = this._ensureAtmoUniforms()
-                .naesse.mul(this._naesseHimmel(T))
+            const w = this._naesseOrtKnoten(T) // der Film am Ort (stadtklima#1): im Schatten der Häuser nass länger
+                .mul(this._naesseHimmel(T))
                 .mul(himmel ? T.float(poren).mul(himmel) : T.float(poren));
             const A = { k: (n) => T.float(n), mul: (a, b) => a.mul(b), sub: (a, b) => a.sub(b), mix: T.mix };
             const n = AnazhRealm._naesseGesetz(
@@ -2440,7 +2446,8 @@ class AnazhRealm_stoff_material {
             ecke: (x) => T.varying(x),
         };
         const nah = T.float(1).sub(T.smoothstep(P.fernM[0], P.fernM[1], B.abstand));
-        const deckung = AnazhRealm._pfuetzeGesetz(A, B.mulde, U.naesse, nah)
+        // der Film AM ORT (stadtklima#1, `_naesseOrtKnoten`): im Schatten der Häuser trocknet die Pfütze später
+        const deckung = AnazhRealm._pfuetzeGesetz(A, B.mulde, this._naesseOrtKnoten(T), nah)
             .deckung.mul(B.himmel)
             .mul(this._naesseHimmel(T));
         const W = P.welle;
@@ -2522,7 +2529,11 @@ class AnazhRealm_stoff_material {
         const p = T.positionWorld;
         // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
         // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
-        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
+        // … und solange der Schatten der Häuser noch nass ist (stadtklima#1: die Nässe am Ort, `_naesseOrtKnoten`)
+        const nass = U.naesse
+            .greaterThan(0)
+            .or(U.naesseWeg.mul(U.schattenSonne.w).lessThan(1))
+            .and(p.y.greaterThan(-1e9));
         this._naesseHimmelK = T.select(nass, this._offenerHimmel(T, p), T.float(0));
         return this._naesseHimmelK;
     }
@@ -4161,6 +4172,12 @@ AnazhRealm.NAESSE = Object.freeze({
     dachUmkreisM: 64,
     dachSchrittM: 4,
     dachArten: Object.freeze(["marktstand", "brunnen", "gate"]),
+    // DAS HIMMELSLICHT IM SCHATTEN (stadtklima#1, `_trockenAnteil`): der Anteil der diffusen Strahlung an der Global-Strahlung
+    // unter klarem Himmel — im Schatten trägt der Strahlungs-Term der Verdunstung (Penman 1948) nur ihn. Klar 0,15–0,25 (Liu &
+    // Jordan 1960, Solar Energy 4:1; Erbs, Klein & Duffie 1982: k_d ≈ 0,165 über k_T 0,8): 0,2.
+    diffus: 0.2,
+    wurfUnterM: 20, // die Hülle des Schattens: so tief unter dem Auge kann der Boden liegen, der den Wurf empfängt
+    wurfM: 120, // … und höchstens so lang ist der Wurf (die tief stehende Sonne)
 });
 // DIE PFÜTZE (wetter.K2, `_pfuetzeGesetz`, `_pfuetzeKnoten`): der Regen steht in den Mulden des Gesetzes (gelaende-core
 // `muldeEcken`, die Tiefe m in Einheiten von `MULDE.tiefeM` je Vertex des Bodens). Der Film der Welt (die EINE Nässe) hebt das
