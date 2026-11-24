@@ -37223,7 +37223,7 @@
   },
   "karte2.same.preis.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8) — zuletzt an 2d6a0447: Last: Referenz f 1,705 (Faden 1,705 · alle Kerne 1,262; vor 143,4/329,9 ms, nach 143,3/297,6 ms, Ruhe 84,1/261,4 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.same.preis.takt#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 2,078 (Faden 2,078 · alle Kerne 1,302; vor 187/289,2 ms, nach 136,4/299,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: sh.exe dienst-omen/landung-dienst.sh --selbsttest 35,1 CPU-s · · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.takt#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8) — zuletzt an 2d6a0447: Last: Referenz f 1,705 (Faden 1,705 · alle Kerne 1,262; vor 143,4/329,9 ms, nach 143,3/297,6 ms, Ruhe 84,1/261,4 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.same.preis.takt#1 gtx: ROT: S1 · ROT ❌ frame_p95_ms 33,41 (Soll ≤ 33) · ❌ Umfang verlangt 4 Boots je Gerät, die Welt erzeugte 1 — Täter: Wiese Ego stehend p95 33.41 ms · frame_p95_ms 33,41 statt ≤ 33 · gemessen unter dem Umfang (verlangt 4 Boots je Gerät, die Welt erzeugte 1) an 2d6a0447 · karte2.same.preis.takt#2 radeon: ungemessen (R10) · karte2.same.preis.takt#2 gtx: ungemessen (R10) · karte2.same.preis.takt#3 radeon: ungemessen (R10) · karte2.same.preis.takt#3 gtx: ungemessen (R10) · karte2.same.preis.takt#4 radeon: ungemessen (R10) · karte2.same.preis.takt#4 gtx: ungemessen (R10) · karte2.same.preis.takt#5 radeon: ungemessen (R10) · karte2.same.preis.takt#5 gtx: ungemessen (R10) · karte2.same.preis.takt#6 radeon: ungemessen (R10) · karte2.same.preis.takt#6 gtx: ungemessen (R10) · karte2.same.preis.takt#7 radeon: ungemessen (R10) · karte2.same.preis.takt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.takt#1",
@@ -37240,10 +37240,10 @@
      "id": "karte2.same.preis.takt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 2,078 (Faden 2,078 · alle Kerne 1,302; vor 187/289,2 ms, nach 136,4/299,3 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: sh.exe dienst-omen/landung-dienst.sh --selbsttest 35,1 CPU-s ·",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ frame_p95_ms 33,41 (Soll ≤ 33) · ❌ Umfang verlangt 4 Boots je Gerät, die Welt erzeugte 1 — Täter: Wiese Ego stehend p95 33.41 ms · frame_p95_ms 33,41 statt ≤ 33 · gemessen unter dem Umfang (verlangt 4 Boots je Gerät, die Welt erzeugte 1)",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": "ROT: S1 · ROT ❌ frame_p95_ms 33,41 (Soll ≤ 33) · ❌ Umfang verlangt 4 Boots je Gerät, die Welt erzeugte 1 — Täter: Wiese Ego stehend p95 33.41 ms · frame_p95_ms 33,41 statt ≤ 33 · gemessen unter dem Umfang (verlangt 4 Boots je Gerät, die Welt erzeugte 1)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37556,7 +37556,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 317,
+  "konsum": 318,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37724,10 +37724,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3305
+  "ohne": 3304
  },
  "kopfVoll": "32c0cd8b87c45b767ad81be177cd3ff1c1259c58",
- "zeit": "2026-11-24T21:41:02.646Z",
+ "zeit": "2026-11-24T21:46:53.113Z",
  "vorher": "32c0cd8b",
  "bilanz": {
   "gewinn": [],
