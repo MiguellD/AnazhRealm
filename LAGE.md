@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 01:22 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
+**STAND 24.11. 01:25 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; NEU GESCHRIEBEN 24.11. 01:03, koordination
   5f3f95d4: 296 Fronten — SONST 75 · KEINE STATION 74 · BUEHNE Umfang sonst 55 / Saaten 11 / Menge 10 / Spieler 9 / Kosmos 7 · SPIEL Leser fehlt 23 ·
   FERN 14 · NAH 7 · PROBE misst nichts 4 · GRUEN, Preis nicht grün 3 · GRUEN+PREIS 2; ihr Leser verlor bis dahin still 199 von 2 976 Akten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
@@ -67,9 +67,14 @@
   Linse H17 grün, sechs Mutanten rot. Meine Antwort: eine dritte Runde, R3 − R2 entscheidet Leck gegen begrenzten Cache; kein weiterer Schnitt, bevor der
   Halter-Diff EINEN Halter nennt; daneben die Station `pm-speicher-runde` für same.preis.speicher#1–#3. NACHTRAG, Meldung der OMEN zwischen 01:15 und 01:18 (nicht nachgemessen): R3 − R2 = +14,3 MB (467,7 → 482,0, 3,1 %), R2 − R1 +65,5, R1 − R0 +175,5 —
   der größte Teil ist Vorrat, je Besuch bleiben ~14 MB; Register R3 − R2: Geometrien +22 (153 → 175), attrMB +12,4, Schatten-dispose-Hörer +46.
-  Station `pm-speicher-runde` c3af69e7 am Remote, ihr Selbsttest steht aus. Mein Entscheid: EIN Durchgang (stark-Halde, Lauf mit gesperrter Kante
-  `_listeners`) nennt den Erzeuger der 22 Geometrien mit Datei:Zeile → Schnitt; nennt er keinen → Register-Zeile, kein weiterer Halden-Lauf; der
-  Richter der Station trägt die gemessene Streuung ±2 %. Danach die Welle „SPIEL Leser fehlt“ im Kapitel erleben (15 Fronten)) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
+  Station `pm-speicher-runde` c3af69e7 am Remote, ihr Selbsttest steht aus. DER ERZEUGER IST BENANNT (OMEN, Meldung vor 01:25; die Quelle von mir gegengelesen): die +14,3 MB sind
+  KEIN Leck je Besuch, sondern EIN Gast des Vorbaus im Bau zum Mess-Zeitpunkt — `vorbau:haus_alemannisch` in `_geistVorbau`
+  (stamm/siedlung-bauten.js:1437; die Halde zeigt `r._geistVorbauStand.gast.gruppe.children[].geometry` 0 → 14,0 MB, außerhalb nur +1,0 MB). Er hat
+  seinen Abschied: sobald er steht, `scene.remove` + `_disposeSoulGroup` und `V.gast = null` (:1447–1450). KEIN Schnitt am Spiel, `heap-loslassen`
+  9077e404 bleibt ungestempelt (Archiv-Kandidat). Der Schnitt liegt an der Messung: jeder Posten wartet auf die Ruhe des Vorbaus (kein Gast
+  `vorbau:`/`vorwaermen:` in der Szene, dreimal in Folge) — in runde.sh und in der Station; ihr Deckel je Teil ist jetzt 240 s. Die Runde dreimal
+  ohne Halde (runde-c-vor) wartet als EINE Hand hinter Runde 13 und liefert R3 − R2 danach. WAS BLEIBT: der Vorrat nach dem Stadt-Besuch
+  (+175,5 und +65,5 MB, dann flach) — den urteilt die Leiter same.preis.speicher. Danach die Welle „SPIEL Leser fehlt“ im Kapitel erleben (15 Fronten)) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
   (30 offen, ~4 min je Station), Schwanz 191; 33/246 um 00:38 laut der Runden-Zeile in koordination; zwei Alarme „16 min ohne Fortschritt“ (23:04,
   23:44) lösten sich von selbst · GTX 1050: `front-stoff` abgegeben (Zeile oben), weiter alter#1 nach
   dem Entscheid, danach nacht-laterne (Karten-Takt ≤ 9,43 ms) · VIER
