@@ -1158,7 +1158,8 @@ class AnazhRealm_speicher_welten {
             ],
             ["terrainSteepness", () => st().terrainSteepness],
             ["terrainBaseHeight", () => st().terrainBaseHeight],
-            ["weather", () => st().weather],
+            // das Wort, das die Welt zeigt (`_wetterGilt`): ein Zustand ohne Wort reist als „sunny“, wie jeder Leser es sieht
+            ["weather", () => AnazhRealm._wetterGilt(st().weather)],
             // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
             // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). DER ERDBAU
             // AUS DEM GESETZ EINES ORTS REIST NIE (Gebot 7, w13-erdbau-funktion): nicht der eines Orts mit Gedächtnis

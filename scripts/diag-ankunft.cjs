@@ -2769,6 +2769,44 @@ hauptLauf(async () => {
             rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
+        // DIE WIEDERKEHR ÜBERLEBT DIE GRUNDSTELLUNG (w4-grundstellung, am Wirt im vm: stamm.cjs `grundWirt`, die Lade-Kette echt): nach
+        // Tür und Neuladen warten die Wesen im Stash (`_pendingCreatureSnapshots`, ihre Etiketten in `_bootPhase3.wiederkehr`); der Grund
+        // trägt sie (`_wesenImStand`), spielt ihn `_grundstellung` an Ort und Stelle zurück, sind die Wesen gleich — und der Stash muss
+        // bleiben, wie er steht (Radeon daee7541 und bf9be26c, GTX 24.11.: „creatures 4 → 0“). Gleich am Boot: das Neuladen legt die
+        // Wesen in den Stash, das Aufräumen der Welt löscht ihre Etiketten nicht (GTX 24.11.: 4 im Stash, 0 Etiketten).
+        const grundWesen = (taeter, boot) => {
+            const { r, st, imWirt } = stammLib.grundWirt(ROOT, taeter);
+            const snaps = imWirt('["Joro", "Yune", "Nox", "Kai"].map((name, i) => ({ name, soul: "wesen", memory: [], position: { x: 10 * i, y: 5, z: 3 }, bornAt: 1 }))'); // prettier-ignore
+            const etik = ["happy", "sad", "happy", "sad"];
+            if (boot) {
+                r._loadStateRestoreBasicState({ creatures: snaps, creatureEmotions: etik });
+                r._worldgenCleanupOldObjects();
+                r._bootDeferCreatures(10);
+                return { stash: (r._wesenAusstehend() || []).length, etik: JSON.stringify(r._etikettenImStand()) };
+            }
+            st._pendingCreatureSnapshots = snaps;
+            st._bootPhase3 = { creaturesLeft: 0, lastAt: 0, announced: false, wiederkehr: etik.slice() };
+            st.creatureEmotions = [];
+            const z = r._grundstellung(r._grundstellung().grund);
+            return { anders: z.anders.join(" "), imStand: r._wesenImStand().length, gleich: st._pendingCreatureSnapshots === snaps, etik: JSON.stringify(r._etikettenImStand()) }; // prettier-ignore
+        };
+        const gMut = (glied, alt, neu) => [[glied, alt, neu]];
+        const ETIK = '["happy","sad","happy","sad"]';
+        const gb = grundWesen();
+        check(
+            "Selbst-Test G: die Grundstellung nach dem Neuladen lässt den Stash, wie er steht (4 Wesen, ihre Etiketten, nichts anders)",
+            gb.anders === "" && gb.imStand === 4 && gb.gleich && gb.etik === ETIK,
+            JSON.stringify(gb)
+        );
+        const gs = grundWesen(gMut("_standRueckspielen", "this.state._pendingCreatureSnapshots = wesen ? null : stash;", "this.state._pendingCreatureSnapshots = null;")); // prettier-ignore
+        check("Selbst-Test G: gepflanzt „die Kette nullt den Stash“ → creatures 4 → 0 fällt rot", gs.imStand === 0 && gs.anders.split(" ").includes("creatures"), JSON.stringify(gs)); // prettier-ignore
+        const gt = grundWesen(gMut("_standRueckspielen", "[this.state.creatureEmotions, p3.wiederkehr] = [e.slice(0, n), e.slice(n)];", "void [e, n];")); // prettier-ignore
+        check("Selbst-Test G: gepflanzt „die Etiketten der Wartenden fallen in die Lebenden“ → die Etiketten im Stand fallen rot", gt.imStand === 4 && gt.etik !== ETIK, JSON.stringify(gt)); // prettier-ignore
+        const gB = grundWesen(null, true);
+        check("Selbst-Test G: das Neuladen legt 4 Wesen in den Stash und lässt ihre Etiketten", gB.stash === 4 && gB.etik === ETIK, JSON.stringify(gB)); // prettier-ignore
+        const gBm = grundWesen(gMut("_worldgenCleanupOldObjects", "if (!this._wesenAusstehend()) this.state.creatureEmotions = [];", "this.state.creatureEmotions = [];"), true); // prettier-ignore
+        check("Selbst-Test G: gepflanzt „das Aufräumen löscht die Etiketten der Wartenden“ → 0 Etiketten fällt rot", gBm.stash === 4 && gBm.etik === "[]", JSON.stringify(gBm)); // prettier-ignore
+        console.log(`  (G) Wiederkehr am Wirt · Grundstellung ${JSON.stringify(gb)} · gepflanzt Stash ${gs.imStand}, Teilung ${gt.etik}, Boot ${gBm.etik}`); // prettier-ignore
         selbsttestEnde(errs, "die Ankunfts-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }

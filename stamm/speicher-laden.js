@@ -164,17 +164,22 @@ class AnazhRealm_speicher_laden {
             S[k] = (S[k] || []).filter((e) => !e || live.get(e.name) !== J(e));
         }
         this._ladeOrt = { weltGleich: J({ ...S.worldMeta, voxelEdits: null }) === J({ ...wm, voxelEdits: null }) };
+        // DIE TAG-LÄNGE des Grunds: der Stand trägt sie, die Lade-Kette setzt sie nie (die Wahl des Spielers, siehe „Tag-Länge“ in
+        // `_loadStateRestoreBasicState`) — an Ort und Stelle kehrt sie zurück, VOR der Kette: jeder Leser des Kalenders in ihr
+        // (`_uhrSetzen`, `_weltTagEichen`, der Anker des Jahrs) rechnet im Gang des Grunds, und `_kalenderZeit` legt dessen Versatz nie
+        // neu. Radeon 30.10. (mess-session): licht.K5#1 fiel am Deckel mitten im Wetter-Zug (`st.dayLengthMinutes = 1e9`, das Zurück
+        // erst im finally), die Grundstellung meldete `dayLengthMinutes` abweichend: 81 von 101 Stationen danach ungemessen. Bis
+        // grund-ohne-fehlalarm kam sie NACH der Kette: die Kette legte den Versatz auf die Tag-Länge der Seite, der nächste Leser zurück
+        // auf die des Grunds — zwei Rundungen (GTX 24.11., Tür und Neuladen: 0.10099999999394 → 0.10099999999394171; Radeon eba9bf8f:
+        // 71 Stationen ungemessen an `worldMeta.kalender`)
+        if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;
+        const stash = this._wesenAusstehend(); // die Wesen der Seite, die noch auf ihre Wiederkehr warten — die Kette ersetzt ihn
         try {
             this.loadState(S);
         } finally {
             this._ladeOrt = null;
         }
         if (J(jetzt.playerTools) !== J(S.playerTools)) this.state.player.tools = [...S.playerTools];
-        // DIE TAG-LÄNGE des Grunds: der Stand trägt sie, die Lade-Kette setzt sie nie (die Wahl des Spielers, siehe „Tag-Länge“ in
-        // `_loadStateRestoreBasicState`) — an Ort und Stelle kehrt sie zurück. Radeon 30.10. (mess-session): licht.K5#1 fiel am Deckel
-        // mitten im Wetter-Zug (`st.dayLengthMinutes = 1e9`, das Zurück erst im finally), die Grundstellung meldete `dayLengthMinutes`
-        // abweichend, die Welt der Sitzung trug nicht mehr: 81 von 101 Stationen danach ungemessen
-        if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;
         const nach = Array.isArray(S.worldMeta.voxelEdits) ? S.worldMeta.voxelEdits : [];
         if (S.worldMeta.voxelEdits) this.state.worldMeta.voxelEdits = nach;
         else delete this.state.worldMeta.voxelEdits;
@@ -203,7 +208,17 @@ class AnazhRealm_speicher_laden {
         if (wesen && this.state._pendingCreatureSnapshots)
             this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures());
         else if (wesen) this.clearCreatures();
-        this.state._pendingCreatureSnapshots = null;
+        // GLEICHE WESEN BLEIBEN, WIE SIE STEHEN — auch die, die nach einem Neuladen noch im Stash auf ihre Wiederkehr warten
+        // (`_bootDeferCreatures`): der Stash der Seite bleibt (DERSELBE Array, die Marke des Vorrats, `_ofenStandVorbau`), die
+        // Etiketten des Stands teilen sich wie die Wesen auf Leiber und Stash (`_etikettenImStand`: das Feld der Welt, dahinter
+        // `p3.wiederkehr`). Bis grund-ohne-fehlalarm fiel der Stash hier auch bei gleichen Wesen: nach Tür und Neuladen standen 0 von
+        // 4 Wesen des Grunds (GTX 24.11.; Radeon daee7541 und bf9be26c „creatures 14 → 0“ in 129 Stationen)
+        const p3 = this.state._bootPhase3;
+        if (!wesen && stash && p3 && Array.isArray(p3.wiederkehr)) {
+            const [e, n] = [this.state.creatureEmotions, this.state.creatures.filter((c) => c && c.userData).length];
+            [this.state.creatureEmotions, p3.wiederkehr] = [e.slice(0, n), e.slice(n)];
+        }
+        this.state._pendingCreatureSnapshots = wesen ? null : stash;
         return { ok: true, neu: { edits: edits.length, bauten: n, wesen: wesen ? this.state.creatures.length : 0 } };
     }
 
@@ -328,7 +343,7 @@ class AnazhRealm_speicher_laden {
         this.state._pendingCreatureSnapshots = looksLikeFullSnapshots ? incoming : null;
         this.state.terrainSteepness = state.terrainSteepness || 1.0;
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
-        this.state.weather = state.weather || "sunny";
+        this.state.weather = AnazhRealm._wetterGilt(state.weather); // das Wort, das die Welt zeigt — wie der Stand es trägt
         this.state.wetterWort =
             typeof state.wetterWort === "string" && state.wetterWort in AnazhRealm.WEATHER_INTENSITY
                 ? state.wetterWort

@@ -684,6 +684,25 @@ function ladeKlasse(root, opt = {}) {
     return { AnazhRealm: vm.runInContext("AnazhRealm", ctx), ctx, ms, vor };
 }
 
+// DER WIRT DER GRUNDSTELLUNG (w4-grundstellung, die Klasse im vm wie `ladeKlasse`): eine geborene Welt ohne Renderer, die die EINE
+// Lade-Kette an Ort und Stelle fährt (`_grundstellung` → `_standRueckspielen` → `loadState`). Gestellt ist nur, was erst der
+// Renderer trägt — die Uniformen der Atmosphäre (TSL), der Leib des Spielers (ein Vektor), der Boden unter ihm (`_ueberGrund`), die
+// Foundry (aus). Einmal durch die Kette, dann trägt das worldMeta, was das Laden heilt. `taeter`: die Mutante als Ersetzungen
+// `[[glied, alt, neu], …]` am Text des Stamms (`ersetze`: eine vakuöse wirft) — der Leser liest nie selbst Quelltext. → { r, A, st, ctx, imWirt } — `imWirt(js)` baut einen Wert im Reich des vm (`_grundJson` ordnet nur dessen Objekte).
+// Leser: die Grund-Fälle von gate:wetter-wache (Kalender, Wetter) und gate:ankunft (die Wesen des Stands).
+function grundWirt(root, taeter) {
+    const vm = require("vm");
+    const { AnazhRealm: A, ctx } = ladeKlasse(root, taeter ? { monolith: ersetze(text(root), taeter) } : {});
+    const imWirt = (js) => vm.runInContext(`(${js})`, ctx);
+    const r = imWirt("new AnazhRealm()");
+    const U = new Proxy({}, { get: (t, k) => t[k] || (t[k] = { value: 0 }) });
+    Object.assign(r, { _ensureAtmoUniforms: () => U, _foundryEnabled: () => false, _ueberGrund: () => 1.7 });
+    r.state.playerMesh = imWirt("{ position: new THREE.Vector3(1, 2, 3), visible: true }");
+    r.state.worldMeta = A._weltGeburt(imWirt('{ worldId: "w-grund", seed: "anazh-realm-seed", voxelTerrain: true }'));
+    r._grundstellung(r._grundstellung().grund);
+    return { r, A, st: r.state, ctx, imWirt };
+}
+
 // Der Klassen-Fingerabdruck: geordnete Reflect.ownKeys von Prototyp und Konstruktor, Deskriptor-Art, sha256 von
 // toString je Glied, name/length, Datenwerte (util.inspect). Der Klassen-Text selbst (`constructor` auf P, toString von
 // A) ist ausgenommen — er IST, was der Schnitt ändert.
@@ -1014,6 +1033,7 @@ module.exports = {
     liefere,
     versionsDatei,
     ladeKlasse,
+    grundWirt,
     fingerabdruck,
 };
 
