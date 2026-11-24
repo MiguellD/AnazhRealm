@@ -1617,7 +1617,8 @@ const BELICHTUNG_TEILER = [
     ["_erscheinung", 1, "bild-kosten.js — der EINE Mechanismus der Klasse Erscheinung: Bildwert ÷ k, vor dem Auge der Nacht"],
     ["_nachtAuge", 1, "bild-kosten.js — das Auge der Nacht liest die LEUCHTDICHTE des vor-belichteten Bilds (L × k ÷ k) an seiner Stäbchen-Schwelle"],
     // KORREKTUR (die Daten-Leser): seit a3663ef5f teilt die Kette dreimal, die Zeile nannte 1 — die Wand stand ROT am Kopf
-    ["_ensurePostProcessing", 3, "bild-kosten.js — das Ende der Post-Kette nimmt die Vor-Belichtung zurück (÷ k) an BEIDEN Ausgaben (aus · farbsicht), die Tonkurve des Renderers belichtet; die Differenz des lokalen Kontrasts steht in L (÷ k), sonst wüchse ihr Term mit k²"],
+    // auge-der-art: die dritte Ausgabe `auge` (u.augeBild × gesehen ÷ k) teilt wie farbsicht — vier Teiler
+    ["_ensurePostProcessing", 4, "bild-kosten.js — das Ende der Post-Kette nimmt die Vor-Belichtung zurück (÷ k) an DREI Ausgaben (aus · farbsicht · auge: das Bild durch die Zapfen einer Art, auge-der-art), die Tonkurve des Renderers belichtet; die Differenz des lokalen Kontrasts steht in L (÷ k), sonst wüchse ihr Term mit k²"],
     ["_rueckstrahlPass", 1, "bild-schatten.js — der Rückstrahl liest das Szenen-Ziel als Strahldichte zurück, ÷ das k seines Schreibens (kBild)"],
     // KORREKTUR (die Daten-Leser): seit a3663ef5f liest der Spiegel zweimal zurück, die Zeile nannte 1 — die Wand stand ROT am Kopf
     ["_spiegelPass", 2, "bild-sicht.js — der Spiegel-Pass liest das Szenen-Ziel als Strahldichte zurück, ÷ kBild: am Treffer (vier Abgriffe) und am Himmel des Bilds"],
