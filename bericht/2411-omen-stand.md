@@ -1,5 +1,20 @@
 # OMEN-Stand 24.11. 15:50 (vor dem Konto-Wechsel)
 
+## NACHTRAG 17:55 — sport-regeln 4 GESCHOBEN 26f27214 (grün-reif ja lokal, CI läuft)
+
+- **Kette:** a620781b Merge main eba9bf8f ohne Konflikt → 443d3bab Druck-Schnitt (eigener Commit, Bytes = claude/scherbe-liegt
+  cd0aa9fb, ohne CI-Lauf geschoben) → 26f27214 Kopf ohne Inhalt, Probe-Namen wie an c0e41d18, [ci voll].
+- **Zahl:** DRUCK-SCHLAF an c0e41d18 am Läufer 6,717 s ↔ GTX 1,217 · 1,233 s (Soll ≤ 3). Linse v2 (drei Böcke unter stehender
+  Uhr): altes Gesetz ROT „DRUCK-WANDUHR … 3 Brüche über dem Gesetz“, Schnitt GRÜN 0. Selbsttest 223 GRÜN. Lokal GRÜN: format · lint ·
+  nach-karte · betriebsgesetz · check:statik 509 s · Uhr-Tafel --quelle/--selftest; Anatomie-Selbsttest an der Frist abgebrochen (bis BA3 grün).
+- **Bild-Zeit Stand-Takt-Szene** main eba9bf8f (trägt ort-ausstattung) ↔ main 499f8b57, GTX, Mess-Kopie: Σ 1 144,1 ↔ 1 144,7 ms
+  über 96 ↔ 95 Bilder, p50 7,85 ↔ 7,72 ms, p95 46,58 ↔ 42,26 ms.
+- **Sprosse:** same.physik.reaktion#2 (`_tickDruck` an der Uhr der Welt). Beansprucht erst nach dem Urteil der echten Station am Kopf.
+- **SLOT-BILANZ-Wurzel:** bericht/2411-slot-bilanz-wurzel-omen.md. Der Nah-Gang (`ARCH_PLATZ_MS` 4, Wanduhr) legt den Proben-Baum
+  vor der Baseline, `_rebuildArchitectureMesh` legt ihn ein zweites Mal ohne Freigabe; 2 Waisen im Atlas, Σ 273 → 273.
+- **10 von 10 lokal:** 2 von 10 am Schnitt (h2 v1, h3 v2). Der Rest folgt in einem eigenen Handlauf.
+- **Weiter:** pm-leser-welle2 (22 Sprossen, die Lesung läuft).
+
 ## NACHTRAG 16:27 (neue OMEN-Sitzung „Meister der Omen“ — SendMessage an DIESEN Namen; „Omen Meister“ ist die alte Sitzung)
 
 - **Neustart der OMEN 16:02** (Konto-Wechsel): landung · platte · puls waren tot, die Mess-Sitzung der Runde 22 auch. 16:14
