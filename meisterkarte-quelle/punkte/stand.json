@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: Last: Referenz f 2,611 (Faden 2,611 · alle Kerne 2,016; vor 218/526,1 ms, nach 114,1/314,5 ms, Ruhe 83,5/260,9 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(w",
+   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 4171973a: Last: Referenz f 1,936 (Faden 1,936 · alle Kerne 1,495; vor 161,5/390,9 ms, nach 132,7/323 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(w",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3072,7 +3072,7 @@
      "gruen": true,
      "zahl": "Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +99) — zuletzt an 2d6a0447: Last: Referenz f 2,611 (Faden 2,611 · alle Kerne 2,016; vor 218/526,1 ms, nach 114,1/314,5 ms, Ruhe 83,5/260,9 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +99) — zuletzt an 4171973a: Last: Referenz f 1,936 (Faden 1,936 · alle Kerne 1,495; vor 161,5/390,9 ms, nach 132,7/323 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3091,7 +3091,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d6a0447: Last: Referenz f 2,611 (Faden 2,611 · alle Kerne 2,016; vor 218/526,1 ms, nach 114,1/314,5 ms, Ruhe 83,5/260,9 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
+     "grund": "Station seit der Messung geändert — zuletzt an 4171973a: Last: Referenz f 1,936 (Faden 1,936 · alle Kerne 1,495; vor 161,5/390,9 ms, nach 132,7/323 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true
     },
     {
@@ -16451,7 +16451,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.mensch.fahrzeug.medium#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/shader-kosten.cjs +12) · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 38.63–45.39 m (im Band 100 %), 50→0 im Band 83 %, ≥ 130 km/h 120/120 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 725 ms · (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.fahrzeug.medium#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/shader-kosten.cjs +12) · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16479,10 +16479,9 @@
      "id": "karte2.mensch.fahrzeug.medium#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n",
-     "ungemessen": true,
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 38.63–45.39 m (im Band 100 %), 50→0 im Band 83 %, ≥ 130 km/h 120/120 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 725 ms · (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 38.63–45.39 m (im Band 100 %), 50→0 im Band 83 %, ≥ 130 km/h 120/120 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 725 ms · (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -16879,26 +16878,24 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/bild-himmel.js +2) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/bild-himmel.js +2) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 4171973a · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/bild-himmel.js +2)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/bild-himmel.js +2)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -18096,7 +18093,7 @@
   },
   "karte2.mensch.kultur.bildkunst": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Motiv in der Welt gefunden 1 (Soll ≥ 0.8) · Paare gleicher Werke 0 (Soll ≤ 0) · Umfang 17 (Soll ≥ 10 Werke an einem Ort) · Werke 17 (Hauszeichen 16, Marktkreuz 1; im Plan 17) · Motiv in der Welt gefunden 17 · gleiche Paare 0 · [linse-gpu] amd/rdna-3 an 2d6a0447 radeon · gehalten: S1 GRÜN · Motiv in der Welt gefunden 1 (Soll ≥ 0.8) · Paare gleicher Werke 0 (Soll ≤ 0) · Umfang 17 (Soll ≥ 10 Werke an einem Ort) · Werke 17 (Hauszeichen 16, Marktkreuz 1; im Plan 17) · Motiv in der Welt gefunden 17 · gleiche Paare 0 · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Motiv in der Welt gefunden 1 (Soll ≥ 0.8) · Paare gleicher Werke 0 (Soll ≤ 0) · Umfang 17 (Soll ≥ 10 Werke an einem Ort) · Werke 17 (Hauszeichen 16, Marktkreuz 1; im Plan 17) · Motiv in der Welt gefunden 17 · gleiche Paare 0 · [linse-gpu] amd/rdna-3 an 2d6a0447 radeon · gehalten: S1 GRÜN · Motiv in der Welt gefunden 1 (Soll ≥ 0.8) · Paare gleicher Werke 0 (Soll ≤ 0) · Umfang 17 (Soll ≥ 10 Werke an einem Ort) · Werke 17 (Hauszeichen 16, Marktkreuz 1; im Plan 17) · Motiv in der Welt gefunden 17 · gleiche Paare 0 · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.kultur.bildkunst#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Kulturen mit Werken (gemessen 4 < 10) (gemessen 4) · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.bildkunst#1",
@@ -18124,10 +18121,10 @@
      "id": "karte2.mensch.kultur.bildkunst#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Kulturen mit Werken (gemessen 4 < 10) (gemessen 4) · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Kulturen mit Werken (gemessen 4 < 10) (gemessen 4) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kultur.bildkunst#2",
@@ -18732,7 +18729,7 @@
   },
   "karte2.mensch.kultur.schrift": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Sonderbauten mit lesbarem, passendem Schild 0.98551 (Soll ≥ 0.9) · Umfang 69 · Sonderbauten 69 · mit stehendem Schild 68 · Wort der Rolle 68 · passend und lesbar 68 · Schilde im Plan 68, stehend 68 · kleinste Letter 12.3 px am Stand des Auges, lesbar vom Stand der Kamera 0 · ohne Schild [\"kapelle\"] · [linse-gpu] amd/rdna-3 an 2d6a0447 radeon · gehalten: S1 GRÜN · Sonderbauten mit lesbarem, passendem Schild 0.98551 (Soll ≥ 0.9) · Umfang 69 · Sonderbauten 69 · mit stehendem Schild 68 · Wort der Rolle 68 · passend und lesbar 68 · Schilde im Plan 68, stehend 68 · kleinste Letter 12.3 px am Stand des Auges, lesbar vom Stand der Kamera 0 · ohne Schild [\"kapelle\"] · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.kultur.schrift#2 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Sonderbauten mit lesbarem, passendem Schild 0.98551 (Soll ≥ 0.9) · Umfang 69 · Sonderbauten 69 · mit stehendem Schild 68 · Wort der Rolle 68 · passend und lesbar 68 · Schilde im Plan 68, stehend 68 · kleinste Letter 12.3 px am Stand des Auges, lesbar vom Stand der Kamera 0 · ohne Schild [\"kapelle\"] · [linse-gpu] amd/rdna-3 an 2d6a0447 radeon · gehalten: S1 GRÜN · Sonderbauten mit lesbarem, passendem Schild 0.98551 (Soll ≥ 0.9) · Umfang 69 · Sonderbauten 69 · mit stehendem Schild 68 · Wort der Rolle 68 · passend und lesbar 68 · Schilde im Plan 68, stehend 68 · kleinste Letter 12.3 px am Stand des Auges, lesbar vom Stand der Kamera 0 · ohne Schild [\"kapelle\"] · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.kultur.schrift#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Grabsteine: der Kirchhof der Stadt trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof), keine Tafel mit Schrift (gemessen 32 < 500) (gemessen 32, Soll 500 Grabsteine) · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.schrift#1",
@@ -18760,10 +18757,10 @@
      "id": "karte2.mensch.kultur.schrift#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Grabsteine: der Kirchhof der Stadt trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof), keine Tafel mit Schrift (gemessen 32 < 500) (gemessen 32, Soll 500 Grabsteine) · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Grabsteine: der Kirchhof der Stadt trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof), keine Tafel mit Schrift (gemessen 32 < 500) (gemessen 32, Soll 500 Grabsteine) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kultur.schrift#2",
@@ -18850,16 +18847,15 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.kultur.sprache#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -20086,16 +20082,16 @@
   },
   "karte2.mensch.macht.grenze": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: Station seit der Messung geändert · karte2.mensch.macht.grenze#1 gtx: ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an 4171973a · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.macht.grenze#1 gtx: ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an 4171973a · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.grenze#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -20778,7 +20774,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S2 GRÜN · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.75 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Bastion R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalter · [linse-gpu] amd/rdna-3 an 447eaea6 radeon · gehalten: S2 GRÜN · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.75 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Bastion R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalter · [linse-gpu] nvidia/pascal an 9d4319c0 gtx — offen: karte2.mensch.macht.wehrbau#3 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs +4) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S2 GRÜN · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.75 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Bastion R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalter · [linse-gpu] amd/rdna-3 an 447eaea6 radeon · gehalten: S2 GRÜN · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.75 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R88 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R88 (Soll Steinring, Same 7) · 1650 hanse → Bastion R88 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R87 (Soll Palisade, Same 11) · 1350 mittelalter · [linse-gpu] nvidia/pascal an 9d4319c0 gtx — offen: karte2.mensch.macht.wehrbau#3 radeon: ROT: S3 ROT an Ring als Straße 0.024 verfehlt ≥ 0.7 — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.024 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.05 2:0.00 3:0.04 4:0.04 5:0.07 6:0.01 8:0.03 9:0.02 10:0.03 11:0.00 12:0.00 13:0.00 · 17828 ms · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.macht.wehrbau#3 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#4 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#4 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#5 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#5 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#6 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#6 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#7 gtx: ungemessen (R10) · karte2.mensch.macht.wehrbau#8 radeon: Station seit der Messung geändert · karte2.mensch.macht.wehrbau#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -20826,10 +20822,9 @@
      "id": "karte2.mensch.macht.wehrbau#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs +4) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n",
-     "ungemessen": true,
+     "zahl": "S3 ROT an Ring als Straße 0.024 verfehlt ≥ 0.7 — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.024 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.05 2:0.00 3:0.04 4:0.04 5:0.07 6:0.01 8:0.03 9:0.02 10:0.03 11:0.00 12:0.00 13:0.00 · 17828 ms · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S3 ROT an Ring als Straße 0.024 verfehlt ≥ 0.7 — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.024 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.05 2:0.00 3:0.04 4:0.04 5:0.07 6:0.01 8:0.03 9:0.02 10:0.03 11:0.00 12:0.00 13:0.00 · 17828 ms · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -23634,26 +23629,25 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Station seit der Messung geändert · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 4171973a · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -24821,7 +24815,7 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 9f24b5b8 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 1feab29c gtx — offen: karte2.mensch.stadt.siedlungsnetz#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.mensch.stadt.siedlungsnetz#2 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#3 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#3 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#4 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#4 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#5 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#5 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#6 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 9f24b5b8 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 1feab29c gtx — offen: karte2.mensch.stadt.siedlungsnetz#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] amd/rdna-3 an 4171973a · karte2.mensch.stadt.siedlungsnetz#2 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#3 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#3 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#4 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#4 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#5 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#5 gtx: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#6 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
@@ -24849,10 +24843,9 @@
      "id": "karte2.mensch.stadt.siedlungsnetz#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/shader-kosten.cjs, scripts/lib/stamm.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n",
-     "ungemessen": true,
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] amd/rdna-3",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -37567,7 +37560,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 319,
+  "konsum": 323,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37735,10 +37728,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3303
+  "ohne": 3299
  },
  "kopfVoll": "4171973adc8279ac233fc37a2cee24c6105104de",
- "zeit": "2026-11-24T22:17:56.031Z",
+ "zeit": "2026-11-24T22:25:12.616Z",
  "vorher": "4171973a",
  "bilanz": {
   "gewinn": [],
