@@ -18852,7 +18852,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.kultur.sprache#1 gtx: ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal an cf1e6404 · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18869,10 +18869,9 @@
      "id": "karte2.mensch.kultur.sprache#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+     "sha": "cf1e64047f17d45b48494115d2c4cf54d655e86e",
+     "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -20088,7 +20087,7 @@
   },
   "karte2.mensch.macht.grenze": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.macht.grenze#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Grenze im Bild deckt die Karte (Anteil) 1 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 109, davon am Rand 109 · Rand im Bild 360 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an cf1e6404 gtx — offen: karte2.mensch.macht.grenze#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js) · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.grenze#1",
@@ -20104,11 +20103,10 @@
     {
      "id": "karte2.mensch.macht.grenze#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Grenze im Bild deckt die Karte (Anteil) 1 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 109, davon am Rand 109 · Rand im Bild 360 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal",
+     "sha": "cf1e64047f17d45b48494115d2c4cf54d655e86e",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37742,8 +37740,8 @@
   "ohne": 3299
  },
  "kopfVoll": "cf1e64047f17d45b48494115d2c4cf54d655e86e",
- "zeit": "2026-11-24T23:19:02.281Z",
- "vorher": "4171973a",
+ "zeit": "2026-11-24T23:25:17.725Z",
+ "vorher": "cf1e6404",
  "bilanz": {
   "gewinn": [],
   "fall": [],

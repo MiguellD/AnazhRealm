@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 34,
+    "heute": 35,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 6,
+    "anteilHeute": 6.1,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -10242,7 +10242,7 @@
        "richter": "Abstand der Ordnungstypen zur Erde > Erde–Erde"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "BURG-GESETZ zu 50 % per Zufall (fachwerk-core.js:3705), Mauer bis 1750; kein Gemeinwesen, keine Grenze",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 95,
+  "heute": 96,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
-  "anteilHeute": 5.1,
+  "anteilHeute": 5.2,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 41
+  "nachwache": 42
  },
  "zusammengelegt": [
   {
