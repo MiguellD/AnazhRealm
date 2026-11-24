@@ -1,7 +1,7 @@
 {
  "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
  "geraet": "gtx",
- "zeit": "2026-11-24T14:21:36.554Z",
+ "zeit": "2026-11-24T14:54:53.541Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.megastadt#1": {
@@ -702,6 +702,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.pflanzen.jahreslauf#2": {
+   "gruen": true,
+   "zahl": "S2 rang 0,975 gegen Soll ≥ 0,8 ✓ · Zeuge: der Kalender der Laub-Arten des Bestands, das Jahr der Welt Winter ↔ Sommer · gemessen vor dem Wurf der Leiter nach 12,021 s: der Deckel der Leiter 12 s",
+   "exit": 0,
+   "minuten": 1.89,
+   "gpu": "nvidia/pascal",
+   "konsum": "k9ab40390d35b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 112.1,
+   "fremd": {
+    "s": 115.7,
+    "takte": 52,
+    "fremdS": 135.88,
+    "kerne": 1.174,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "grep.exe -rh FOLGE .*stand.* exit .",
+      53.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.91
+     ],
+     [
+      "grep.exe -rl DRUCK-SCHLAF/|stand-takt --include=*.txt .",
+      12.42
+     ]
+    ],
+    "dienerS": 71.31,
+    "diener": [
+     [
+      "System",
+      39.09
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 58.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      37.58
+     ],
+     [
+      "svchost.exe",
+      18.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 204.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T14:54:53.541Z",
+   "abdruck": "6d6808ba92ef",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.biome#1",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.kraft#2": {
+   "gruen": true,
+   "zahl": "S2 laufzeitAbw 6,117 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,016 s: der Deckel der Leiter 12 s",
+   "exit": 0,
+   "minuten": 1.89,
+   "gpu": "nvidia/pascal",
+   "konsum": "k9ab40390d35b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 112.1,
+   "fremd": {
+    "s": 115.7,
+    "takte": 52,
+    "fremdS": 135.88,
+    "kerne": 1.174,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "grep.exe -rh FOLGE .*stand.* exit .",
+      53.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.91
+     ],
+     [
+      "grep.exe -rl DRUCK-SCHLAF/|stand-takt --include=*.txt .",
+      12.42
+     ]
+    ],
+    "dienerS": 71.31,
+    "diener": [
+     [
+      "System",
+      39.09
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 58.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      37.58
+     ],
+     [
+      "svchost.exe",
+      18.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 204.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T14:54:53.541Z",
+   "abdruck": "5e8f1b8e5230",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.biome#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -712,7 +852,8 @@
   "kd5b30da3e5e2": "bVVdj5swEPwveWzLOXwFY+kenCNSTmp7uac+r80auBCIbAhtqv73yiQkAW7fgma849lZ5+/iCHIPGT59mLpasMWXxbeFgRM6BvUJ9dOHWbBFLF0PfcYvRTjnLxYmdXFsDCkLQUBUkB/QaXWDRfkkexoIDFLKSLfh2Y4QRc4k6Z6fp9RSYFo7DSi8EUOaqpBNga3JQKADreqbXcHLJV15wEhfNOFvCblVRznfBSrY0WRymIAqHauNV2GEIXvtON/wmcq0AGycsqjM0NdNo1gt2b3XjxlHQ+ecAfMS9ZWE1HUDMYhdWzutNROiKltjRs2on4YeZYTEU2yGppB54xx1LbC6wkXsRS6w9dzt7Ng66lERCAFUTL3OAasM9UjD0pdq5TLym04P3cMBNTgV5IOXSz/yxN0bQsh2rqXshfctBuGpG4WeOyLaoZKTNZi/8iGC9jfd3hDD9yTj93qfNTQyL/RhbJUK0Fv67PtcnskhRe3sa9Pc0DQAQHrdhITwd24DNg2XuV9s4AEAfQgLoYRvZz6aWjUdaHSyYzsEJsAwChnnrzNwA4fDFRUqP/DldIimsSF/lBFGvqIrRsjXy5LML31ZCeeMRTmQlAqCeLaNJw0HB0SmC6WGqYtQqvizkHZYNo6o62awQ1BUyIhPqsdB/+ysrZuHGSZdLX/9yTo+rg2f6u471Lq53VSslipgqg+OnKEL3TgdyHyAe0ogWOmzmZxRl5jhyEYR0djGu1MX3Wf7zETXZ0B9HYX3PD+xQGtwZVozDFlCIEL2yUg61HsB1f4KlKnrrtI+fus3vh158pK872hi12RUfmb9TPL15bu0SzK8VUeU5KhrVdjXkOTQmhzK5v5X8O8/",
   "k30dc08bee01f": "jVVNj5swEP0vObZlzWcwlvbgLFGTQ3ezUqWexzAGNgSQDaGbqv+9goUkwB46J2S9mXnz5tn8WVUQHSHBhzddFiu2+rL6ttJwRkOjOqN6eNMrtgoiy0aH8Y8gnPPvHSxSWVVrkmeCgCggPaHRqBqz/CHq00CgG1NG2i1PDoRIciFhy6/xxB8f52VygXFp1CDxWsSjsfTYHNjoBAQa0Mi+8QA2Tbq2gZE+aMhfQnKN9gfnB1e6BxrOigko4inzYO356LF9y/l2yTLOAGsjzwo99rViP5Amu+u1yFHQGhfANEc1JCG1LFeMZDedJJ1Ms0SZN1pPmlEn9mzKCAnm2AR1FqW1UalSYDHARWD7FrBNu5gjqRpD3jMCIYCKudYpYJGgmnAwnUiuLUZ+03nRI5xQgVFAOmppOr4tbtoQQnZLLnlPvG8xEo8t37OtSWK31A+B+X60ETl3x7srYjwPk5vV+OuioY7STJ2mUkkXbdOZz69TiFEZx1LXVyR1AZAONyIk/JV35pobS9+GGvMAgN4ZhVDCdwsNdSnrFhQaSdWMZnHR8z3Gk4WzdA2n04DypOM60WKAujP4PQ3PdyRdM0K+DnIu5Pm4DsYFs3xMktJ1A489bdw5+KzgZIBIVCbluHXhRTL4zKQt5rUhyrIeJREUJTLikOJ+0c8t3yR8e1vhIXwv6a/3o8On8cy3n3UoVX2dVqxN6TLZTxrNybeZqo0WonSE21IgBHMRL6hyTHAio/Bp0Fm7jW50Qnf8+Dox7mWx5UuGncCFbvS45Ahc4bHB4X3sp89Pi+oooDgOCVFsWeuY9WZ/4bs7VXZ8/9M8tPz/YstfuyYVRqRSpcy6F5Gk0OgU8vr2a/j7Dw==",
   "kebf3cd81e7d3": "bVVdj5swEPwveezV5/AVjKV7cI5IOantJT9hbdbAhUBkQ2hT9b9XcCEJcPsUohnveHYW/i5OoA6Q4vOHrcoFX3xbfF9YOCOxaM5onj/sgi8i5bjocfFZVAjx2sGUyU+1pUUuKcgSsiOSxtSYF8+qp4FEP2GcthuR7ijV9ELj9uVlSi0kJhWpQeONGLBEB3wKbGwKEgk0um92BS+XbOUCp32xWLzH9FbtTyF2vvZ3LJ4cJqFMxmqjVRBiwN/+CLERM5VJDliTIi/t0NdJwkgv+UOvGcdASy6AWYHmSkLmOL4cxK47OztrJkRdNNaOmjEvCVzGKY2m2BRtrrKanEwlsbzCZeSGDvD13O301BD9qAikBCanXmeAZYpmpGHpKb1yOP3Npoce4IgGSAnZ4OXSC11594ZSup1rKXrhfYtBeOKEgeuMiN1Q6bkzWLyJIYLdM9veEMP/cSrutZ81tCrLzXFslfbRXXr8x1yezSBBQw6VrW9o5gMgu25CTMVedAGbhsveLzbwAIA9hIUyKrYzH22l6xYMkvTUDIHxMQgDLsTbDFzD8XhFBdrzPTUdoq27kD/KCEJPsxWn9OlzSeaX/lwJcsG8GEha+34U8Ne1PwWfDRwJyNTkWg+Tl4HS0VdBbcHaSaKcyFGrcDLtSbVM0N04DdODsaiJrKp68Foy1MipR8tH3q+2m9nmISBxW6nNa7oX49qI6T37DpWpbzbK1VL7XPf61Aydm5q0oLIB7mqJEPEvoBc0BaY4MkWGLOp2p1UPSv3hx9PInMssQpccu+mVtrFDghT4MuBfzLtFc5BQHq5AlTjOKumzvX4X27Ep8X7H4m4HR+WlnZ/bTFwPPqGiJ1PpvHu90gwam0FR378t//4D",
-  "kcc6852a0879f": "bVXbjpswEP2XPHbLmmswlvbBWVbK9qJmpUp9HpsxsCEQ2bC0qfrvlZOQBMi8EZ2Zc+bMePJ3sQe5hRwf301TL9ji0+LzwsAHOgb1B+rHd7Ngi0R6PgaMv3EbhHP+bGFSl/vWkKoUBEQNxQ6dTrdYVo/ymAYCw4wy0r/wfEOIIgeS9vwSL/zpaVqmEpg1TgsKL0UimqmITYGdyUGgA506Ep/BrkuXPjByDJryHym5RE8534Qq3NDUkk8KCqizsfpkGcUYsdf+rtKsBGydqqzNwO1lcaJcduX7PsvR0DsHwKJCfU5C6nmhGASvrC3WqkmiqjpjRmQ0yCKfMkKSKTZHU8qidfa6EVif4SLxYw/Yqp/1ke87R90qAiGAiqnfBWCdox5pcAOplh4jv+m06BZ2qMGpoRi8dIPYF1dvCCHruZbqKPxIMQjPvDjyvVGiHSz5sAbz12GVjt90fUEMv6f5dd3424zQyKLUu7FVKkTfDdi3uTxTQIba2TamvaBpCICUndnI8YVswnSaeW1syAMAerMshBK+nvloGtX2oNHJ992wMCFGccQ4f52BW9jtzqhIBWEgp0M0rV3yWxlRHCi6ZIQ8nB7KvOnTk3AOWFZDklJhmETseZVPwR8adg6IXJdKDZMXkVTJvUXtsWod0TTtYImgqNBaUt8Oe9OfbsU10r6Rv/7kN5dkOCf3GBrdXroVS1eFTB2XR87QpW6dHmQxwH0lEKz02VwOqCvMcWSliGliV7xXJ90He27i8ylQD6MFPswrlmhNrk1nhkFLCEXE7oylR70VUG/PQJl53jJjXzjnqx98PfLk6093Q1MyjaC3fm6K1clDaR/KcK/2KMleN6q0F5EU0JkCqvb69/DvPw=="
+  "kcc6852a0879f": "bVXbjpswEP2XPHbLmmswlvbBWVbK9qJmpUp9HpsxsCEQ2bC0qfrvlZOQBMi8EZ2Zc+bMePJ3sQe5hRwf301TL9ji0+LzwsAHOgb1B+rHd7Ngi0R6PgaMv3EbhHP+bGFSl/vWkKoUBEQNxQ6dTrdYVo/ymAYCw4wy0r/wfEOIIgeS9vwSL/zpaVqmEpg1TgsKL0UimqmITYGdyUGgA506Ep/BrkuXPjByDJryHym5RE8534Qq3NDUkk8KCqizsfpkGcUYsdf+rtKsBGydqqzNwO1lcaJcduX7PsvR0DsHwKJCfU5C6nmhGASvrC3WqkmiqjpjRmQ0yCKfMkKSKTZHU8qidfa6EVif4SLxYw/Yqp/1ke87R90qAiGAiqnfBWCdox5pcAOplh4jv+m06BZ2qMGpoRi8dIPYF1dvCCHruZbqKPxIMQjPvDjyvVGiHSz5sAbz12GVjt90fUEMv6f5dd3424zQyKLUu7FVKkTfDdi3uTxTQIba2TamvaBpCICUndnI8YVswnSaeW1syAMAerMshBK+nvloGtX2oNHJ992wMCFGccQ4f52BW9jtzqhIBWEgp0M0rV3yWxlRHCi6ZIQ8nB7KvOnTk3AOWFZDklJhmETseZVPwR8adg6IXJdKDZMXkVTJvUXtsWod0TTtYImgqNBaUt8Oe9OfbsU10r6Rv/7kN5dkOCf3GBrdXroVS1eFTB2XR87QpW6dHmQxwH0lEKz02VwOqCvMcWSliGliV7xXJ90He27i8ylQD6MFPswrlmhNrk1nhkFLCEXE7oylR70VUG/PQJl53jJjXzjnqx98PfLk6093Q1MyjaC3fm6K1clDaR/KcK/2KMleN6q0F5EU0JkCqvb69/DvPw==",
+  "k9ab40390d35b": "bVVdk6IwEPwvPt4eG/mSkKp9iGKVXu3V6k+YhAmwIlgJyJVX99+vQFEB50mtnnRPTyf+nZ1AHiDB929TFjM2+zH7OTNwRsugPqN+/zYzNgul7aDL+LUI53zVwqTOTpUheSYIiALSI1q1rjDL32XXBgK9mDLSrHmyI0SRC4kafq81//gYH5MLjEurAoX3Q3waK5+NgbVJQKAFteqIb+D5nC4cYKQrGvGviNyr+c35zlPejkZ8RyVPJuwCing4QbjwA/TZtnmpNs4AKyvPCtPz23EQqjl74pz0aGisC2Cao741IbVtT/Sil601rV2jRpXXxgzIqBv7DmWEhGNsgiaTaWWddCmwuMFF6AQ2sGUzmSM51ZZ6VgRCABVjz1PAIkE90DB3pVrYjPyh40MPcEQNVgFp7+XcDRzx8IYQsplqyTvhHUUvPLYD37EHje1yybk1mG/7OHXf6eaO6H+Pkkfk+H5CaGSa6ePQKuWhM3fZ51SeSSFGbR1KU93R1ANAersdEeF73gYtGnc+Buv7AIA+hYVQwjcTH02pqgY0Wsmp7gPjoR/4jPPtBFzB8XhD+cr1XDleoqnakD/L8ANX0QUj5O16WaZDX6+EdcEs75uU8rzQZ6ulNwafNRwtEInOlOo3L3ypwldBbTCvLFGWVW+JoKiwtaR4Xvauub4Xj4qaUq5XyZ4Pa70sX2SqYyl1dZ9YLObKY6oLkJygM11ZDci0hztKIITsBfSCOscEB3aKgIZtzBv5pNbrP7wNQnyZbPuSYWt0YWrTL1uCJ3z2YjUN6oOA4nADyti2FzH7xTlffvHN0Jho33m4G16i9mXm28+Ud/6ueBfdFe9ITijJSZcqa19FkkJtUsirx9/Ev/8="
  },
  "ungemessen": {
   "karte2.mensch.macht.recht#1": {
@@ -775,6 +916,70 @@
    },
    "zeit": "2026-11-24T14:01:21.582Z",
    "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.pflanzen.biome#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 111.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 1.89,
+   "grund": "der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 111.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 112.1,
+   "fremd": {
+    "s": 115.7,
+    "takte": 52,
+    "fremdS": 135.88,
+    "kerne": 1.174,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "grep.exe -rh FOLGE .*stand.* exit .",
+      53.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.91
+     ],
+     [
+      "grep.exe -rl DRUCK-SCHLAF/|stand-takt --include=*.txt .",
+      12.42
+     ]
+    ],
+    "dienerS": 71.31,
+    "diener": [
+     [
+      "System",
+      39.09
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 58.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      37.58
+     ],
+     [
+      "svchost.exe",
+      18.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 204.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T14:54:53.541Z",
+   "abdruck": "0e2470c9b605",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
