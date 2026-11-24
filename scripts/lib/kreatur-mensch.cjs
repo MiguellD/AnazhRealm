@@ -467,7 +467,7 @@ async function menschBuehnen() {
             decke("_koerperBodenUnter", (alt) => (x, y, z) => (Number.isFinite(y) ? alt.call(r, Math.round(x * 2) / 2, y, Math.round(z * 2) / 2) : alt.call(r, x, y, z))); // prettier-ignore
         const SD = wegeMesser(liste);
         // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
-        // tempoEinheit an seinem Bein × TAGES_GESETZ.gang × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
+        // koerper `leibGehen` an seinem Bein × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
         // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
         // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher
         // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins
@@ -511,11 +511,10 @@ async function menschBuehnen() {
                     for (const [b, q] of spur) if (q.s >= 5 && b.koennen) paare.push([b.koennen.lauf, q.m / q.s]);
                 },
                 zahl: () => {
-                    const TC = window.__tetrapodaCore;
                     const ohne = liste.filter((b) => {
                         if (!b.koennen || !(b.tempo > 0)) return true;
                         const d = Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter });
-                        return Math.abs(b.tempo - TC.tempoEinheit(b.beinL) * KC.TAGES_GESETZ.gang * KC.leibKoennen(d).lauf) > 1e-9;
+                        return Math.abs(b.tempo - KC.leibGehen(b.beinL) * KC.leibKoennen(d).lauf) > 1e-9;
                     });
                     const [ra, rb, m] = [rang(paare.map((q) => q[0])), rang(paare.map((q) => q[1])), (paare.length - 1) / 2];
                     let [sab, sa, sb] = [0, 0, 0];
