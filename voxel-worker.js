@@ -4998,13 +4998,18 @@ function fernAuftrag(msg) {
     // in ihrer Mitte ((c + 0,5) · zm) — dieselbe Funktion wie `getTerrainHeightAt` im Main (`voxelSurfaceY`, ohne Fläche die
     // Basis), per Transfer zurück
     if (msg.art === "boden") {
-        const Z = msg.zellen;
-        const hoehen = new Float32Array(Z.length / 2);
+        // je Rechteck [x0, z0, x1, z1) der Zellen, Zeile um Zeile, die Fläche an der Mitte der Zelle
+        const R = msg.rechtecke;
+        let m = 0;
+        for (let r = 0; r < R.length; r += 4) m += (R[r + 2] - R[r]) * (R[r + 3] - R[r + 1]);
+        const hoehen = new Float32Array(m);
         const base = state.baseHeight || 0;
-        for (let k = 0; k < hoehen.length; k++) {
-            const y = voxelSurfaceY((Z[2 * k] + 0.5) * msg.zm, (Z[2 * k + 1] + 0.5) * msg.zm);
-            hoehen[k] = typeof y === "number" && Number.isFinite(y) ? y : base;
-        }
+        for (let r = 0, k = 0; r < R.length; r += 4)
+            for (let cz = R[r + 1]; cz < R[r + 3]; cz++)
+                for (let cx = R[r]; cx < R[r + 2]; cx++, k++) {
+                    const y = voxelSurfaceY((cx + 0.5) * msg.zm, (cz + 0.5) * msg.zm);
+                    hoehen[k] = typeof y === "number" && Number.isFinite(y) ? y : base;
+                }
         return { antwort: { hoehen }, transfer: [hoehen.buffer] };
     }
     if (msg.art === "kamm") return kammKrone(msg);

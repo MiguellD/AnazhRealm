@@ -3554,7 +3554,7 @@ function nachtSicht(o) {
         const K2 = window.anazhRealm.constructor.LICHT_KARTE;
         const takt = async (erst) => {
             const Zv = r._lichtKarteZ;
-            if (erst) aus.karteVor = Zv ? { wegM: +Math.hypot(cam.position.x - Zv.mx, cam.position.z - Zv.mz).toFixed(1), bau: !!Zv.bau, hoehen: Zv.hoehen.belegt, baue: Zv.baue } : null;
+            if (erst) aus.karteVor = Zv ? { wegM: +Math.hypot(cam.position.x - Zv.mx, cam.position.z - Zv.mz).toFixed(1), bau: !!Zv.bau, hoehen: Zv.hoehen.mitte ? Zv.hoehen.mitte.join(", ") : "leer", baue: Zv.baue } : null;
             const t0 = performance.now();
             r._leuchtPool = null;
             r._leuchtTakt();
@@ -3619,7 +3619,23 @@ function nachtSicht(o) {
                     r._lichtKarteTakt(r._leuchtPool, cam);
                 }
             }
-            aus.karte = LK && Z0 ? { schriften: Z0.schriften, baue: Z0.baue, flecken: Z0.flecken, taktMaxMs: +Z0.msMax.toFixed(2), taktWo: Z0.msMaxWo, bauMs: +Z0.bauMs.toFixed(2), einerMs: einer, ms: einer, zellen: window.anazhRealm.constructor.LICHT_KARTE.texel ** 2 } : null;
+            // DER BODEN DER KARTE IST DER BODEN DER WELT (w28-nacht-laterne): die Höhen der Mitte rechnet der Feld-Faden (`boden`
+            // im voxel-worker) — gegen `getTerrainHeightAt` des Haupt-Fadens an 8 × 8 Zellen im Raster, je Zelle an ihrer Mitte
+            let boden = null;
+            if (Z0 && Z0.g) {
+                const LKK = window.anazhRealm.constructor.LICHT_KARTE;
+                const [n, zm] = [LKK.texel, LKK.zelleM];
+                const [tx, tz] = [Math.round(Z0.mx / zm), Math.round(Z0.mz / zm)];
+                let [max, wo, k] = [0, null, 0];
+                for (let j = 4; j < n; j += 18)
+                    for (let i = 4; i < n; i += 18, k++) {
+                        const [x, z] = [(tx + i + 0.5 - n / 2) * zm, (tz + j + 0.5 - n / 2) * zm];
+                        const d = Math.abs(Z0.g.boden[j * n + i] - r.getTerrainHeightAt(x, z));
+                        if (!(d <= max)) [max, wo] = [d, `${x.toFixed(1)}, ${z.toFixed(1)}`];
+                    }
+                boden = { zellen: k, maxM: Number.isFinite(max) ? +max.toFixed(4) : String(max), wo };
+            }
+            aus.karte = LK && Z0 ? { boden, schriften: Z0.schriften, baue: Z0.baue, flecken: Z0.flecken, taktMaxMs: +Z0.msMax.toFixed(2), taktWo: Z0.msMaxWo, bauMs: +Z0.bauMs.toFixed(2), einerMs: einer, ms: einer, zellen: window.anazhRealm.constructor.LICHT_KARTE.texel ** 2 } : null;
             karten.visible = false;
             let ohneK;
             try {
@@ -3730,7 +3746,7 @@ function nachtSicht(o) {
 // DER TAKT DER KARTE (w28-nacht-laterne, Beweis des Auftrags 23.11.): ihr teuerster Takt ≤ `taktMs` — darüber ROT mit seinen Phasen
 // (`msMaxWo` des Schreibers `_lichtKarteTakt`, je Phase ihre ms: Soll · neue Mitte · Höhen gesucht/bestellt/eingelegt · Quellen der
 // Mitte · Zeilen der Mitte · Abschluss der Mitte · Unterschiede · Flecken und Bänder)
-const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200, taktMs: 9.43 };
+const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200, taktMs: 9.43, bodenM: 0.01 };
 // die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand, der Median ihrer Abweichung; das Feuer
 // steht als Zahl daneben. EINE Regel für das Gate und die Station der Punkte-Maschine (karte2.erleben.bild.nacht#1)
 function nachtKelvin(m) {
@@ -3748,7 +3764,7 @@ function nachtUrteil(welt) {
         }
         const { kMed, kel } = nachtKelvin(m);
         const KT = m.karteTakte;
-        zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms${m.karte.taktWo ? ` (${m.karte.taktWo})` : ""}, Bau der Mitte ${m.karte.bauMs} ms` : ""}${KT ? ` · steht nach ${KT.takte} Takten (${KT.ms} ms)` : ""}${m.menge ? ` · Menge der Stunde nach ${m.menge.takte} Takten` : ""}`;
+        zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Boden ±${m.karte.boden ? m.karte.boden.maxM : "?"} m (${m.karte.boden ? m.karte.boden.zellen : 0}) · Takt höchstens ${m.karte.taktMaxMs} ms${m.karte.taktWo ? ` (${m.karte.taktWo})` : ""}, Bau der Mitte ${m.karte.bauMs} ms` : ""}${KT ? ` · steht nach ${KT.takte} Takten (${KT.ms} ms)` : ""}${m.menge ? ` · Menge der Stunde nach ${m.menge.takte} Takten` : ""}`;
         // DIE KARTE STEHT NICHT (w28-nacht-laterne): nach ihren Takten trägt noch die alte Mitte oder ein halber Bau — die Wand misst
         // dann kein Licht, sie nennt den Stand
         if (KT && KT.nicht) {
@@ -3761,6 +3777,9 @@ function nachtUrteil(welt) {
         }
         if (m.karte && m.karte.taktMaxMs > NACHT_SOLL.taktMs)
             befunde.push(`${ort}: die Karte kostet ${m.karte.taktMaxMs} ms in EINEM Takt (Soll ≤ ${NACHT_SOLL.taktMs}) — Täter ${m.karte.taktWo || "ungenannt"} (\`_lichtKarteTakt\`)`);
+        const BK = m.karte && m.karte.boden;
+        if (BK && !(BK.maxM <= NACHT_SOLL.bodenM))
+            befunde.push(`${ort}: der Boden der Karte weicht ${BK.maxM} m vom Boden der Welt (an ${BK.wo}, ${BK.zellen} Zellen; Soll ≤ ${NACHT_SOLL.bodenM} m) — Täter der Feld-Faden (\`boden\` im voxel-worker)`);
         if (!m.sichtbar) continue;
         // JEDE SICHTBARE QUELLE TRÄGT IHREN FLECK (erleben.bild.nacht S2, w28-nacht-laterne): eine einzige ohne Fleck ≥ `ev` ist ROT
         // beim Namen — bis hier ließ der Anteil 0,9 eine dunkle Laterne durch (stadt-voll 11 von 12: `laterne_dorf` 38,6 m mit 0 EV)
@@ -3780,7 +3799,8 @@ function nachtUrteil(welt) {
 // Täter `_lichtKarteTakt`, eine Karte ohne Wirkung ROT bei `_lichtKarteTerm`, eine Linse, die den Pool misst, ROT, die Kelvin-Farbe des
 // falschen Lichts ROT, die Wildnis ohne Quelle urteilt nichts. Dazu (w28-nacht-laterne) die zwei Täter der Stadt: EINE Quelle ohne
 // Fleck unter zwölf sichtbaren (der Anteil 0,92 ließ sie durch) ROT beim Namen, und eine Karte, die nach ihren Takten nicht steht, ROT
-// beim Stand statt einer Zahl; der teuerste Takt der Karte über dem Soll ROT mit seinen Phasen.
+// beim Stand statt einer Zahl; der teuerste Takt der Karte über dem Soll ROT mit seinen Phasen; ein Boden der Karte, der nicht der
+// Boden der Welt ist (der Feld-Faden rechnet ihn), ROT beim Faden.
 function nachtSelbsttest() {
     const je = (n, ev) => Array.from({ length: n }, (_, i) => ({ art: "laterne", d: 10 + i, ev: i < ev ? 2 : 0.2 }));
     const m = (sichtbar, gut, ohneGut, schriften = 3, kelvin = [{ art: "laterne_dorf", abw: 60 }]) => ({ quellen: sichtbar + 2, sichtbar, gut, anteil: +(gut / sichtbar).toFixed(3), ohneKarte: { gut: ohneGut, anteil: +(ohneGut / sichtbar).toFixed(3) }, plaetze: 4, je: je(sichtbar, gut), kelvin, karte: { schriften, ms: 4 } });
@@ -3794,6 +3814,7 @@ function nachtSelbsttest() {
         [U({ stadt: Object.assign(m(12, 12, 3), { karteTakte: { takte: 400, ms: 812, nicht: "die Mitte baut (Höhen 9000 von 20736, Quellen 0 von ?, Zeilen 0 von 144)" } }) }), /^stadt: die Karte steht nicht nach 400 Takten — die Mitte baut \(Höhen 9000 von 20736.*die Wand misst sie nicht$/],
         [U({ stadt: Object.assign(m(12, 12, 3), { menge: { takte: 400, offen: 37 } }) }), /^stadt: die Menge steht nicht — 37 Bewohner kommen nach 400 Takten noch an/],
         [U({ stadt: Object.assign(m(12, 12, 3), { karte: { schriften: 3, ms: 4, taktMaxMs: 11.11, taktWo: "Zeilen der Mitte · Abschluss der Mitte" } }) }), /^stadt: die Karte kostet 11\.11 ms in EINEM Takt \(Soll ≤ 9\.43\) — Täter Zeilen der Mitte · Abschluss der Mitte \(`_lichtKarteTakt`\)$/],
+        [U({ stadt: Object.assign(m(12, 12, 3), { karte: { schriften: 3, ms: 4, boden: { zellen: 64, maxM: 3.2, wo: "10.5, -4.5" } } }) }), /^stadt: der Boden der Karte weicht 3\.2 m vom Boden der Welt \(an 10\.5, -4\.5, 64 Zellen; Soll ≤ 0\.01 m\) — Täter der Feld-Faden/],
         [U({ dorf: m(4, 4, 4, 1, [{ art: "laterne_dorf", abw: 700 }, { art: "wandlaterne_dorf", abw: 650 }, { art: "glutbrunnen", abw: 20 }]) }), /^dorf: Kelvin-Farbe ±700 K/],
         [U({ wildnis: { quellen: 0, sichtbar: 0, gut: 0, anteil: null, ohneKarte: { gut: 0, anteil: null }, plaetze: 4, kelvin: [] } }), /^$/],
         [nachtUrteil({}).urteil, /^ROT$/],
