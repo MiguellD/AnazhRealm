@@ -1,7 +1,7 @@
 {
  "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
  "geraet": "gtx",
- "zeit": "2026-11-24T13:20:27.544Z",
+ "zeit": "2026-11-24T13:21:58.336Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.megastadt#1": {
@@ -280,6 +280,76 @@
    },
    "zeit": "2026-11-24T13:20:27.544Z",
    "abdruck": "899501ce89ec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.19,
+   "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 11.1,
+   "fremd": {
+    "s": 15.4,
+    "takte": 7,
+    "fremdS": 11.14,
+    "kerne": 0.724,
+    "fensterKerne": 0.902,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      1.27
+     ]
+    ],
+    "dienerS": 4.67,
+    "diener": [
+     [
+      "System",
+      2.11
+     ],
+     [
+      "dwm.exe",
+      1.61
+     ]
+    ],
+    "geraetS": 4.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.25
+     ],
+     [
+      "svchost.exe",
+      1.33
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 24.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T13:21:58.336Z",
+   "abdruck": "bfd211beed4c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
