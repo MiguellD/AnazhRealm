@@ -21353,7 +21353,7 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 31 Zeugen, 31 in beiden Gängen · Abstand-Median vorher 5.77 m → nachher 13.02 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an 1feab29c gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +39) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.kollektiv#2 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.mensch.menge.kollektiv#2 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 31 Zeugen, 31 in beiden Gängen · Abstand-Median vorher 5.77 m → nachher 13.02 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an 1feab29c gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +39) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.kollektiv#2 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.mensch.menge.kollektiv#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js, stamm/siedlung-wege.js) · karte2.mensch.menge.kollektiv#3 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#3 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#4 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#5 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#6 gtx: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
@@ -21392,8 +21392,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js, stamm/siedlung-wege.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.kollektiv#3",
@@ -37556,7 +37557,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 318,
+  "konsum": 319,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37724,10 +37725,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3304
+  "ohne": 3303
  },
  "kopfVoll": "32c0cd8b87c45b767ad81be177cd3ff1c1259c58",
- "zeit": "2026-11-24T21:46:53.113Z",
+ "zeit": "2026-11-24T21:52:47.718Z",
  "vorher": "32c0cd8b",
  "bilanz": {
   "gewinn": [],
