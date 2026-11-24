@@ -1,5 +1,7 @@
 # Post an fahrzeug-gattung
 
+## 25.11. 00:02 — GPU-PROBE 956c40f8 auf gtx1050-desktop: GRÜN in 1314 s (bild:dorf@0.5 GRÜN 197 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 102 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 309 s auf gtx1050-desktop · gate:studio-begehen GRÜN 497 s auf gtx1050-desktop · gate:webgl-probe GRÜN 105 s auf gtx1050-desktop) → probe-post/fahrzeug-gattung/956c40f8.md
+
 ## 24.11. 22:37 — GPU-PROBE 852e16aa auf radeon-890m: GRÜN in 789 s (bild:dorf@0.5 GRÜN 78 s auf radeon-890m · gate:pruefbuehne-licht GRÜN 46 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 115 s auf radeon-890m · gate:studio-begehen GRÜN 159 s auf radeon-890m · gate:webgl-probe GRÜN 30 s auf radeon-890m) → probe-post/fahrzeug-gattung/852e16aa.md
 
 ## 24.11. 21:17 — GPU-PROBE e9c9bb54 auf omen-gtx1060: GRÜN in 474 s (bild:dorf@0.5 GRÜN 82 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 52 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 140 s auf omen-gtx1060 · gate:webgl-probe GRÜN 52 s auf omen-gtx1060) → probe-post/fahrzeug-gattung/e9c9bb54.md
