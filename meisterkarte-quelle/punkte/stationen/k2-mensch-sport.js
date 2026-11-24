@@ -517,6 +517,69 @@ const VERBEN = async (r, T, arg) => {
     return { verben: aus, tafel: Object.keys(KC.VERB_TAFEL) };
 };
 
+// DIE ÜBUNG (koennen S2, kunst S1): der Lebenslauf trägt je Bewohner die Stunden der Übung in drei Künsten und ihr Können
+// (`b.uebung` → `_bewohnerLauf` „uebung“: { haupt, handwerk|tanz|kampf: { h, koennen } }, LEBENSLAUF.uebung), und das Werk liest es:
+// die Herstellung je Stunde ist die seines Berufs mal dem Können seines Handwerks (`_bestandAnlegen`: `b.bestand.rate`, koerper
+// BESTAND_GESETZ.herstellung[beruf].jeStunde). DIE GÜTE, die die Welt zeigt, ist also die Rate seines Werks über der des Berufs — je
+// Hersteller ein Punkt (Stunden, Güte); der Fit log(Güte) = a + α·log(Stunden) über alle Hersteller (das Potenzgesetz der Übung,
+// Newell & Rosenbloom 1981), sein R² und α. Dazu je Kunst die Meister (Können ≥ 1: das Band der Guten, 7 500 h) und die Anfänger
+// (Können < 0,5) — die Paare für den Blindtest
+const UEBUNG = async (r, T, arg) => {
+    const KC = window.__koerperCore;
+    const HS = KC && KC.BESTAND_GESETZ && KC.BESTAND_GESETZ.herstellung;
+    if (!HS) return { fehler: "der Kern trägt keine Herstellung (koerper BESTAND_GESETZ)" };
+    const U = r.constructor.LEBENSLAUF && r.constructor.LEBENSLAUF.uebung;
+    if (!U) return { fehler: "der Wirt trägt keinen Lebenslauf (LEBENSLAUF.uebung)" };
+    const pts = [];
+    let [werke, ohneRate, bewohner] = [0, 0, 0];
+    const berufe = {};
+    const meister = {}, anfaenger = {};
+    for (const a of U.kuenste) meister[a] = anfaenger[a] = 0;
+    for (const S of (r._bewohnerSiedlungen || new Map()).values())
+        for (const b of S.liste || []) {
+            bewohner++;
+            const k = b.uebung;
+            for (const a of U.kuenste) {
+                if (k[a].koennen >= 1) meister[a]++;
+                else if (k[a].koennen < 0.5) anfaenger[a]++;
+            }
+            if (!(b.bestand && b.bestand.art === "werk")) continue;
+            werke++;
+            const P = HS[b.beruf];
+            if (!P || !(P.jeStunde > 0) || !(b.bestand.rate > 0)) {
+                ohneRate++;
+                continue;
+            }
+            berufe[b.beruf] = (berufe[b.beruf] || 0) + 1;
+            pts.push({ h: k.handwerk.h, g: b.bestand.rate / P.jeStunde });
+        }
+    const F = pts.filter((p) => p.h >= 1 && p.g > 0).map((p) => [Math.log(p.h), Math.log(p.g)]);
+    let r2 = null, alpha = null;
+    if (F.length >= 3) {
+        const mx = F.reduce((s, p) => s + p[0], 0) / F.length, my = F.reduce((s, p) => s + p[1], 0) / F.length;
+        let [sxx, sxy, syy] = [0, 0, 0];
+        for (const [x, y] of F) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
+        alpha = sxx > 0 ? sxy / sxx : null;
+        r2 = sxx > 0 && syy > 0 ? (sxy * sxy) / (sxx * syy) : null;
+    }
+    const hs = pts.map((p) => p.h);
+    return {
+        bewohner,
+        werke,
+        ohneRate,
+        hersteller: F.length,
+        berufe,
+        r2: r2 == null ? null : +r2.toFixed(4),
+        alpha: alpha == null ? null : +alpha.toFixed(4),
+        alphaGesetz: U.alpha,
+        hMin: hs.length ? Math.round(Math.min(...hs)) : null,
+        hMax: hs.length ? Math.round(Math.max(...hs)) : null,
+        spanne: hs.length ? Math.round(Math.max(...hs) - Math.min(...hs)) : 0,
+        meister,
+        anfaenger,
+    };
+};
+
 const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 const mutante = (id, n, name, werte, zahl, umfang) => [{ name, j: { leiter: id, adapter: KARTE, sprossen: { [n]: { art: "zahl", n: umfang, werte } } }, gruen: false, zahl }];
@@ -654,10 +717,13 @@ module.exports = (F) => [
     F.leiter("mensch.sport.koennen", {
         sek: 30,
         pfad: PFAD,
-        seite: { SPORT },
+        seite: { SPORT, UEBUNG },
         messe: async (H, K) => {
             await K.messort("stadt");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
+            const u = await K.welt("return await (" + H.seite.UEBUNG + ")(r, T, {});", 20000);
+            if (!u || u.fehler) throw new Error("die Übung der Stadt: " + ((u && u.fehler) || "ohne Antwort"));
+            H.zeile("Übung: " + u.hersteller + " Hersteller von " + u.werke + " Werken · R² " + u.r2 + " · α " + u.alpha + " (Gesetz " + u.alphaGesetz + ") · Stunden " + u.hMin + "–" + u.hMax);
             H.zeile("Können: " + z.n + " Bewohner · Lauf " + JSON.stringify(z.lauf) + " · mit Können-Profil " + z.koennen);
             await K.schritt(1, async () =>
                 K.zahl(1, {
@@ -667,7 +733,15 @@ module.exports = (F) => [
                     taeter: "das Tempo der Bewohner folgt nur der Beinlänge (stamm/siedlung-bewohner.js:1051), kein Können-Profil",
                 })
             );
-            await K.schritt(2, async () => K.leser(2, { n: z.koennen, fehlt: "keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe", wo: "koerper-core.js:5455" }));
+            // S2: die Güte, die das Werk zeigt (Rate des Werks ÷ Rate des Berufs), über den Stunden der Übung — gegen das Potenzgesetz
+            await K.schritt(2, async () =>
+                K.zahl(2, {
+                    n: u.spanne,
+                    werte: { r2: u.r2 },
+                    beleg: u.hersteller + " Hersteller (" + JSON.stringify(u.berufe) + ") über " + u.hMin + "–" + u.hMax + " Übungsstunden im Handwerk: die Güte = b.bestand.rate ÷ BESTAND_GESETZ.herstellung[beruf].jeStunde (das Werk, _bestandAnlegen), Fit log(Güte) ↔ log(Stunden) α " + u.alpha + " (Gesetz " + u.alphaGesetz + "); " + u.ohneRate + " Werke ohne Rate (der Beruf stellt nicht her)",
+                    taeter: "stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks folgt dem Können seines Handwerks nicht (`b.uebung.handwerk.koennen`)",
+                })
+            );
             await K.schritt(3, async () => K.leser(3, { n: z.sport, fehlt: "kein Wettkampf, kein Bestwert (" + z.n + " Bewohner, " + z.sport + " im Sport-Akt)", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine Altersklassen, Vereine, Meister: die Rollen des Tages-Gesetzes tragen keine", wo: "koerper-core.js:5135" }));
             await K.schritt(5, async () => K.leser(5, { n: 0, fehlt: "keine Weltmeisterschaft, kein Rekord: die Leib-Werte kennen weder Übung noch Talent", wo: "koerper-core.js:5455" }));
@@ -675,7 +749,7 @@ module.exports = (F) => [
         },
         sprossen: {
             1: { umfang: { soll: 100, wort: "Bewohner mit 100-m-Zeit" }, masse: [{ key: "cv", wort: "Variationskoeffizient der 100-m-Zeit (%)", von: 10, bis: 20 }] },
-            2: { umfang: { soll: 100, wort: "Übungsstunden eines Bewohners" }, masse: [{ key: "r2", wort: "R² Güte ↔ Potenzgesetz der Übung", soll: 0.8, richtung: "≥" }], erwartet: "leser", fehlt: "keine Übung", wo: "koerper-core.js:5455" },
+            2: { umfang: { soll: 100, wort: "Übungsstunden eines Bewohners" }, masse: [{ key: "r2", wort: "R² Güte ↔ Potenzgesetz der Übung", soll: 0.8, richtung: "≥" }] },
             3: { umfang: { soll: 10000, wort: "Bevölkerung im Wettkampf" }, masse: [{ key: "gegenlauf", wort: "Abweichung des Bestwerts im Gegenlauf von der Extremwert-Erwartung (%)", soll: 5, richtung: "≤" }], erwartet: "leser", fehlt: "kein Wettkampf, kein Bestwert", wo: "koerper-core.js:5126" },
             4: { umfang: { soll: 1000000, wort: "Bevölkerung mit Altersklassen" }, masse: [{ key: "ksP", wort: "KS-p Siegerzeiten ↔ Masters- und Landes-Rekordtafeln", soll: 0.05, richtung: "≥" }], erwartet: "leser", fehlt: "keine Altersklassen, Vereine, Meister", wo: "koerper-core.js:5135" },
             5: {
@@ -697,7 +771,13 @@ module.exports = (F) => [
                 wo: "koerper-core.js:5455",
             },
         },
-        proben: { 1: mutante("mensch.sport.koennen", 1, "100 Bewohner, CV 4 % (das Tempo nur aus der Beinlänge) — ROT", { cv: 4 }, /ROT an Variationskoeffizient der 100-m-Zeit \(%\) 4 verfehlt 10–20/, 100) },
+        proben: {
+            1: mutante("mensch.sport.koennen", 1, "100 Bewohner, CV 4 % (das Tempo nur aus der Beinlänge) — ROT", { cv: 4 }, /ROT an Variationskoeffizient der 100-m-Zeit \(%\) 4 verfehlt 10–20/, 100),
+            2: [
+                ...mutante("mensch.sport.koennen", 2, "das Können genommen (jeder Hersteller gleich, wie vor bewohner-satz): R² 0 — ROT", { r2: 0 }, /ROT an R² Güte ↔ Potenzgesetz der Übung 0 verfehlt ≥ 0\.8/, 5000),
+                ...mutante("mensch.sport.koennen", 2, "kein Hersteller mit Rate (der Fit ohne Punkte) — ROT", { r2: null }, /ROT an Umfang 0 < 100/, 0),
+            ],
+        },
     }),
 
     // ═══ MANNSCHAFT UND TAKTIK: Kampf und Spiel zweier Seiten — am Genesis-Ort mit seiner Arena ═══
@@ -787,12 +867,24 @@ module.exports = (F) => [
     F.leiter("mensch.sport.kunst", {
         sek: 30,
         pfad: [...PFAD, "schmiede-core.js"],
-        seite: { SPORT },
+        seite: { SPORT, UEBUNG },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Kunst: " + z.n + " Bewohner · mit Können-Profil " + z.koennen + " · Akte " + JSON.stringify(z.akte));
-            await K.schritt(1, async () => K.nicht(1, { n: z.koennen, fehlt: "Meister und Anfänger in 3 Künsten: " + z.koennen + " Bewohner mit Können-Profil, jeder Leib gleich geschickt" }));
+            // S1: Meister und Anfänger stehen im Lebenslauf (`b.uebung`, je Kunst), aber kein Leib liest ihr Können — Haltung, Gang und
+            // Geste sind f(Akt, Rolle, Gemüt); der Blindtest hätte nichts zu trennen
+            await K.schritt(1, async () => {
+                const u = await K.welt("return await (" + H.seite.UEBUNG + ")(r, T, {});", 20000);
+                if (!u || u.fehler) throw new Error("die Übung der Stadt: " + ((u && u.fehler) || "ohne Antwort"));
+                const paare = Object.keys(u.meister).filter((a) => u.meister[a] > 0 && u.anfaenger[a] > 0).length;
+                H.zeile("S1 Meister " + JSON.stringify(u.meister) + " · Anfänger " + JSON.stringify(u.anfaenger) + " · Künste mit Paar " + paare + " von 3");
+                K.leser(1, {
+                    n: paare,
+                    fehlt: "der Anfänger ist nicht sichtbar ungeschickt: Meister " + JSON.stringify(u.meister) + " und Anfänger " + JSON.stringify(u.anfaenger) + " in " + paare + " von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang und Geste gleich",
+                    wo: "koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet",
+                });
+            });
             await K.schritt(2, async () => K.leser(2, { n: z.koennen, fehlt: "die Güte des Werks liest Rezept und Prägung (gueteFaktor), nie die Hand, die es schmiedet", wo: "schmiede-core.js:4064" }));
             await K.schritt(3, async () => K.leser(3, { n: z.sport, fehlt: "kein Tanz-Akt, keine Musik, der ein Schritt folgt", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.nicht(4, { n: 0, fehlt: "10² Stile je Kultur: 0 Kampf- und Tanzstile" }));
@@ -800,7 +892,7 @@ module.exports = (F) => [
             await K.schritt(6, async () => K.nicht(6, { n: 0, fehlt: "neue Künste fremder Kulturen und Körper: 0" }));
         },
         sprossen: {
-            1: { auge: { pose: "keine: kein Meister, kein Anfänger", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" }, erwartet: "nicht", fehlt: "kein Können-Profil: Meister und Anfänger gleich" },
+            1: { auge: { pose: "stadt-voll: ein Meister und ein Anfänger derselben Kunst, 3 m vor ihnen, Augenhöhe", vorbild: "Videos von Meister und Anfänger in 3 Künsten (Blindtest ≥ 80 %)" }, erwartet: "nicht", fehlt: "kein sichtbar ungeschickter Anfänger: das Können im Lebenslauf liest kein Leib" },
             2: { umfang: { soll: 10, wort: "Werkstücke" }, masse: [{ key: "r2", wort: "R² Werk-Güte ↔ Können-Profil", soll: 0.7, richtung: "≥" }], erwartet: "leser", fehlt: "die Güte liest nie die Hand", wo: "schmiede-core.js:4064" },
             3: { umfang: { soll: 20, wort: "Tänzer zur Musik" }, masse: [{ key: "takt", wort: "Schritt-Takt-Abstand (ms)", soll: 50, richtung: "≤" }], erwartet: "leser", fehlt: "kein Tanz", wo: "koerper-core.js:5126" },
             4: { auge: { pose: "keine: keine Stile", vorbild: "10 Kampf- und Tanzstile einer Kultur (Fremde ordnen ≥ 70 %)" }, erwartet: "nicht", fehlt: "10² Stile je Kultur" },

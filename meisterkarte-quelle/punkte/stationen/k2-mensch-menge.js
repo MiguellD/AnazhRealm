@@ -328,12 +328,68 @@ const SCHRECK = async (r, T, arg, HILF) => {
 };
 
 // DIE GESUNDHEIT (seuche S1, S2): wessen Satz oder Leib ein Feld der Krankheit trägt (krank, Infekt, Seuche, Erreger, Fieber, gesund)
+// DER KRANKE (seuche S1, bewohner-satz): die Krankheit ist ein Feld des Lebenslaufs — ein GETTER der Tafel `BEWOHNER_SATZ`
+// (`b.krank` → `_bewohnerLauf` „krank“, am Tag der Prozesse), kein eigener Schlüssel des Satzes: `Object.keys(b)` sieht ihn nicht,
+// gelesen wird er beim Namen. Je Kranken DER KRANK-TAG: sein Soll der Stunde, wie der Takt es liest (`_bewohnerSoll`: der Kern-Plan
+// mit `b.krank` als Eingang), je Viertelstunde über 24 h gegen den Tag desselben Menschen gesund (der Kern-Plan `tagesPlan` mit
+// demselben Samen, derselben Rolle, denselben Orten und demselben Regen an seiner Tür, nur `krank` falsch) — der Anteil der
+// Viertelstunden, in denen Ort, drinnen oder Akt abweichen. DAS BILDPAAR: sein Leib zur Stunde `arg.uhr` (die Haltung seines
+// Gemüts, `_bewohnerGemuet` — die Stand-Zeile, die sein Leib zeigt) gegen die Haltung, die derselbe Akt einem Gesunden seiner Rolle
+// gibt (koerper `tagesHaltung(akt, rolle)`): trägt der Kranke eine eigene Haltung (Tiefe: „Haltung, Husten“)?
 const KRANK = async (r, T, arg, HILF) => {
     const { L } = HILF;
     if (!L.length) return { fehler: "keine Bewohner am Messort" };
+    const KC = window.__koerperCore;
+    if (!KC || typeof KC.tagesPlan !== "function" || typeof KC.tagesHaltung !== "function") return { fehler: "der Kern trägt keinen Tagesplan (koerper tagesPlan, tagesHaltung)" };
     const wort = (k) => ["krank", "infekt", "seuche", "erreger", "fieber", "gesund"].some((w) => String(k).toLowerCase().includes(w));
-    const krank = L.filter((b) => Object.keys(b).some(wort) || (b.leib && b.leib.userData && Object.keys(b.leib.userData).some(wort))).length;
-    return { bewohner: L.length, krank };
+    const feld = L.filter((b) => Object.keys(b).some(wort) || (b.leib && b.leib.userData && Object.keys(b.leib.userData).some(wort))).length;
+    const kranke = L.filter((b) => b.krank === true);
+    if (Number.isFinite(arg && arg.uhr)) HILF.uhrAuf(arg.uhr);
+    const bis = performance.now() + ((arg && arg.ms) || 10000) * 0.6;
+    let [gemessen, abweichend, summe, posten, mitHaltung, haltungAnders, daheim] = [0, 0, 0, 0, 0, 0, 0];
+    const akte = {};
+    for (const b of kranke) {
+        if (performance.now() > bis) break;
+        if (!b.orte || !b.orte.tuer || !Number.isFinite(b.same)) continue;
+        const o = b.orte;
+        const regen = r._wetterFeldAm(o.tuer.x, o.tuer.z, undefined, {}).rain;
+        let q0 = 0;
+        for (let q = 0; q < 96; q++) {
+            const h = q / 4;
+            const k = r._bewohnerSoll(b, h);
+            const g = KC.tagesPlan(b.same, b.rolle, h, o, regen, false);
+            const gZiel = g.drinnen ? o.tuer : g.ort;
+            if (k.akt !== g.akt || !!k.drinnen !== !!g.drinnen || (k.ziel !== gZiel && !(b.amSteuer && g.ort === o.werk))) q0++;
+        }
+        gemessen++;
+        summe += q0 / 96;
+        if (q0 > 0) abweichend++;
+        else posten++;
+        // das Bild zur Stunde: der Leib des Kranken, sein Akt und die Haltung, die er zeigt
+        if (b.leib && b.akt) {
+            const gm = r._bewohnerGemuet(b);
+            const gesund = KC.tagesHaltung(b.akt, b.rolle);
+            mitHaltung++;
+            if ((gm && gm.haltung) !== gesund) haltungAnders++;
+            akte[b.akt] = (akte[b.akt] || 0) + 1;
+            if (b.ziel === o.heim || b.ziel === o.tuer || b.drinnen) daheim++;
+        }
+    }
+    return {
+        bewohner: L.length,
+        krank: kranke.length,
+        feld,
+        gemessen,
+        abweichend,
+        posten,
+        tag: gemessen ? +(summe / gemessen).toFixed(4) : null,
+        mitHaltung,
+        haltungAnders,
+        haltung: mitHaltung ? +(haltungAnders / mitHaltung).toFixed(4) : null,
+        daheim,
+        akte,
+        uhr: +HILF.stunde().toFixed(2),
+    };
 };
 
 const PFAD = [
@@ -359,6 +415,7 @@ const nicht = (umfang, masse, fehlt) => ({ umfang, masse, erwartet: "nicht", feh
 const leser = (umfang, masse, fehlt, wo) => ({ umfang, masse, erwartet: "leser", fehlt, wo });
 // strikt („3 Uhr < 0,05“) ohne erfundenen Abstand; `her` hängt die Herleitung eines Solls an, das aus dem Wortlaut folgt
 const lt = (key, wort, soll) => ({ key, wort, soll, richtung: "<" });
+const gt = (key, wort, soll) => ({ key, wort, soll, richtung: ">" });
 const her = (m, herkunft) => Object.assign({}, m, { herkunft });
 const AM_PLAN = ge("amPlan", "Anteil Angetroffener am Plan-Ort", 0.95);
 const AM_PLAN_WIE4 = her(AM_PLAN, "„wie 4“: das Soll von S4, ≥ 0,95 der Angetroffenen am Plan-Ort aus 100 Teleports, im größeren Umfang");
@@ -615,9 +672,19 @@ module.exports = (F) => [
     // ── mensch.menge.seuche ── kein Gesetz der Krankheit: S1 das Bild ohne Kranken (Umfang nicht erzeugbar), S2 der fehlende Leser
     F.leiter("mensch.menge.seuche", {
         sek: 45,
+        mutiert: true,
         pfad: PFAD,
         sprossen: {
-            1: { auge: { pose: "Dorf, 3 m vor einer kranken und einer gesunden Person", vorbild: "Bildpaar gesund/krank (Haltung, Husten, bleibt daheim; der Krank-Tag weicht ab)" }, erwartet: "nicht", fehlt: "keine Krankheit: kein Bewohner kann erkranken" },
+            // S1 „Bildpaar gesund/krank; Krank-Tag weicht ab“ (Umfang 1 Person krank, Tiefe Haltung, Husten, bleibt daheim): zwei Zahlen
+            // aus dem Spiel — der Tag (Viertelstunden, in denen der Krank-Tag vom gesunden Tag desselben Menschen abweicht) und das Bild
+            // (der Kranke trägt im Bild eine andere Haltung als der Gesunde im selben Akt: das Paar trennt sich am Leib)
+            1: {
+                umfang: um(1, "Person krank"),
+                masse: [
+                    her(gt("tag", "Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht", 0), "„Krank-Tag weicht ab“: der Tag des Kranken gegen seinen gesunden Tag, strikt über 0"),
+                    her(ge("haltung", "Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht", 1), "„Bildpaar gesund/krank“ mit der Tiefe „Haltung, Husten“: das Paar trennt sich am Leib — jeder Kranke, den das Bild zeigt"),
+                ],
+            },
             2: leser(um(100, "Bewohner im Ausbruch"), [ge("sir", "Kurve in der Form S-I-R (1 = ja)", 1), ge("r0", "R0 im Band des Erregers (1 = ja)", 1)], "kein Erreger und keine Ansteckung: der Satz des Bewohners trägt keine Gesundheit", "stamm/siedlung-bewohner.js:887"),
             3: nicht(um(10000, "Bewohner einer Stadt"), [ge("senkung", "Senkung der Spitze bei geschlossenem Markt", 0.3)], "10⁴ Bewohner einer Stadt im Ausbruch"),
             4: nicht(um(1000000, "Bewohner einer Region"), [ge("r", "Korrelation Ankunft und Netzabstand", 0.7)], "10⁶ Bewohner einer Region"),
@@ -639,14 +706,22 @@ module.exports = (F) => [
             };
             let zen = null, kr = null;
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
-            const krank = async () => kr || (kr = pruef(await welt("KRANK"), "die Gesundheit der Stadt"));
+            const krank = async () => kr || (kr = pruef(await welt("KRANK", { uhr: 10 }), "die Gesundheit der Stadt"));
             await K.schritt(1, async () => {
                 const k = await krank();
-                K.nicht(1, { n: k.krank, fehlt: "keine Krankheit: " + k.krank + " von " + k.bewohner + " Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken" });
+                H.zeile("S1 krank " + k.krank + " von " + k.bewohner + ", gemessen " + k.gemessen + ", Tag weicht ab " + k.abweichend + " (Anteil " + k.tag + ", Posten " + k.posten + "), Haltung anders " + k.haltungAnders + " von " + k.mitHaltung + ", um " + k.uhr + " Uhr daheim " + k.daheim + " " + JSON.stringify(k.akte));
+                K.zahl(1, {
+                    n: k.abweichend,
+                    werte: { tag: k.tag, haltung: k.haltung },
+                    beleg: k.krank + " von " + k.bewohner + " Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); " + k.gemessen + " gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in " + k.tag + " der Viertelstunden anders, " + k.posten + " am Posten ohne Abweichung; um " + k.uhr + " Uhr " + k.daheim + " daheim, Akte " + JSON.stringify(k.akte) + ", Haltung anders " + k.haltungAnders + " von " + k.mitHaltung,
+                    taeter: !(k.tag > 0)
+                        ? "koerper-core.js tagesPlan — der Krank-Tag (Eingang krank) weicht vom gesunden nicht ab"
+                        : "koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten)",
+                });
             });
             await K.schritt(2, async () => {
                 const k = await krank();
-                K.leser(2, { fehlt: "kein Erreger und keine Ansteckung: der Satz des Bewohners trägt keine Gesundheit (" + k.krank + " von " + k.bewohner + " mit einem Feld der Krankheit)", wo: "stamm/siedlung-bewohner.js:887", n: k.krank });
+                K.leser(2, { fehlt: "kein Erreger und keine Ansteckung: " + k.krank + " von " + k.bewohner + " Bewohnern heute krank (ein Wurf je Woche aus ihrem Samen, LEBENSLAUF.krank), keiner steckt einen anderen an", wo: "stamm/siedlung-bewohner.js _bewohnerLauf (krank)", n: k.krank });
             });
             for (const [n, fehlt] of [[3, "10⁴ Bewohner einer Stadt im Ausbruch"], [4, "10⁶ Bewohner einer Region"], [5, "10⁸ Menschen über Epochen"], [6, "10¹⁰ Menschen eines Planeten"]])
                 await K.schritt(n, async () => {
@@ -655,6 +730,11 @@ module.exports = (F) => [
                 });
         },
         proben: {
+            1: [
+                { name: "die Krankheit genommen (der Plan liest b.krank nicht, wie vor bewohner-satz): kein Tag weicht ab — ROT am Umfang", j: mut("mensch.menge.seuche", 1, 0, { tag: 0, haltung: 0 }), gruen: false, zahl: /ROT an Umfang 0 < 1 Person krank/ },
+                { name: "der Kranke bleibt daheim, sitzt aber wie ein Gesunder (der Stand von heute) — ROT an der Haltung", j: mut("mensch.menge.seuche", 1, 40, { tag: 0.3, haltung: 0 }), gruen: false, zahl: /ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1/ },
+                { name: "ein Kranker mit eigener Haltung, dessen Tag nicht abweicht — ROT am Tag", j: mut("mensch.menge.seuche", 1, 1, { tag: 0, haltung: 1 }), gruen: false, zahl: /ROT an Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0 verfehlt > 0/ },
+            ],
             2: [
                 { name: "Attrappe: ein Ausbruch ohne Kurve (keiner steckt an) — ROT an der Form S-I-R", j: mut("mensch.menge.seuche", 2, 100, { sir: 0, r0: 1 }), gruen: false, zahl: /ROT an Kurve in der Form S-I-R \(1 = ja\) 0 verfehlt ≥ 1/ },
                 { name: "die Seuche ohne Maß des Erregers (R0 fremd) — ROT an R0", j: mut("mensch.menge.seuche", 2, 100, { sir: 1, r0: 0 }), gruen: false, zahl: /ROT an R0 im Band des Erregers \(1 = ja\) 0 verfehlt ≥ 1/ },
