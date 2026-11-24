@@ -5797,8 +5797,12 @@
         // die Klassen: Altersgrenzen (J) und die Drittel des Gewichts im Zweikampf
         klasse: Object.freeze({ alterJ: Object.freeze([15, 25, 41]), gewicht: 3 }),
         // das Programm des Abends (Stunden der Uhr): ab, bis; pauseS = die Sekunden zwischen zwei Gängen (Aufstellen, Kampfrichter);
-        // minGaeste = so viele Gäste braucht der Treff, damit ein Spiel stattfindet (der Akt rechnet nur, wo ein Ort ihn trägt)
-        programm: Object.freeze({ ab: 18, bis: 21, pauseS: 15, minGaeste: 8 }),
+        // minGaeste = so viele Gäste braucht der Treff, damit ein Spiel stattfindet (der Akt rechnet nur, wo ein Ort ihn trägt);
+        // nachbarM = DIE NACHBARSCHAFT DES PLATZES (sport-wurzel, `spielGaesteWahl`): wer seinen Abend daheim verbringt und binnen so vieler
+        // Meter des Platzes wohnt, kommt an den Abenden des Programms dazu — das Spiel ist ein Fest des Platzes, kein Tisch des Treffs.
+        // Bis sport-wurzel spielte nur der Treff: an stadt-voll (1 356 Bewohner, 816 mit dem Abend daheim, 137 davon binnen 100 m) waren
+        // es 12 Gäste, 8 davon außerhalb jeder Klasse oder allein in ihr (5 Kinder, 3 über 41 J) — 40 Tage ohne einen Lauf und einen Gang
+        programm: Object.freeze({ ab: 18, bis: 21, pauseS: 15, minGaeste: 8, nachbarM: 100 }),
         // das Feld auf dem Platz (die lange Achse des Platzes, `platz.phi`): randM frei vor jedem Rand des Platzes, ringM so weit
         // vor dem Feld steht der Ring der Zuschauer, minLaengeM = kürzer trägt das Feld keinen Lauf. DER RAUM DES STANDS: standM = so
         // weit stehen je zwei Stände des Abends wenigstens auseinander (je Stand im Ring, die zwei am Tisch; Bahn `bahnM` und Zweikampf
@@ -5946,6 +5950,21 @@
         var T = _tagesWenden(gast.same, gast.rolle),
             ab = T.w1 + (T.w1 + TAGES_GESETZ.besuchH <= T.ruhe - 0.5 ? TAGES_GESETZ.besuchH : 0);
         return [ab, T.ruhe];
+    }
+    // DIE GÄSTE DES ABENDS an einem Platz (Mitte mx, mz; R = sein Rand samt Saum): wer seinen Abend am Platz hat (abend binnen R), und
+    // wer ihn daheim verbringt (abend null) und binnen `programm.nachbarM` des Platzes wohnt (heim) — kand = [{abend, heim}] je Mensch
+    // ({x, z} oder null). Liefert die Indizes der Gäste in der Folge von kand. Leser: der Wirt (`_spielProgramm`), die Linse
+    // gate:koerper-kern E8.
+    function spielGaesteWahl(kand, mx, mz, R) {
+        var N = SPIEL_GESETZ.programm.nachbarM,
+            wahl = [];
+        for (var i = 0; i < kand.length; i++) {
+            var k = kand[i],
+                o = k.abend || k.heim,
+                r = k.abend ? R : N;
+            if (o && Math.hypot(o.x - mx, o.z - mz) <= r) wahl.push(i);
+        }
+        return wahl;
     }
     // DAS PROGRAMM DES ABENDS an einem Platz: same = der Same des Platzes, tag = der Tag der Welt (ganzzahlig), gaeste = die Gäste
     // seines Treffs [{same, rolle, mann, alterJ, masse, beinM, kraft, kampf, brett, orte}] (der Wirt: wer seinen Abend am Platz hat;
@@ -11101,6 +11120,7 @@
         spielKampf: spielKampf,
         spielBrett: spielBrett,
         brettErlaubt: brettErlaubt,
+        spielGaesteWahl: spielGaesteWahl,
         spielProgramm: spielProgramm,
         spielTischPartie: spielTischPartie,
         spielGeschehen: spielGeschehen,

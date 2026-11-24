@@ -2521,8 +2521,8 @@ class AnazhRealm_siedlung_bewohner {
         S.spielJetzt = g ? S.spiel.welt(g.x, g.z) : null;
     }
     // DAS PROGRAMM DES TAGS an der Siedlung S: das Feld ist der Platz ihres Plans (seine lange Achse, `randM` und der Ring der Zuschauer
-    // innerhalb seines Rechtecks), die Gäste sind, wer seinen Abend auf ihm hat (die Bindung `abend`; wer einen Posten hält, steht
-    // an ihm), ihre Leiber und ihre Übung tragen sie aus dem Satz (`koennen`, `genom`, der Lebenslauf `uebung`). Jeder Auftritt des
+    // innerhalb seines Rechtecks), die Gäste wählt der Kern (`spielGaesteWahl`: wer seinen Abend auf ihm hat — die Bindung `abend` —, und
+    // wer ihn daheim verbringt und nahe dem Platz wohnt, `programm.nachbarM`; wer einen Posten hält, steht an ihm), ihre Leiber und ihre Übung tragen sie aus dem Satz (`koennen`, `genom`, der Lebenslauf `uebung`). Jeder Auftritt des
     // Kerns wird ein Stand in der Welt — wo der Grund ihn nicht trägt (ein Bau, kein Land), fällt er, und der Gast bleibt an seinem
     // Ort des Abends (auch im Stück des Platzes: dem Tritt eines Marktstands, dem Kreis eines Brunnens, fachwerk `imPlatzStueck`).
     // Liefert { programm, welt(u, w), wer, gaeste, feld } oder null (kein Platz, zu wenige Gäste, ein Feld ohne Lauf) — die Gäste und
@@ -2548,10 +2548,9 @@ class AnazhRealm_siedlung_bewohner {
         const R = Math.max(pz.ex, pz.ez) + AnazhRealm.BEWOHNER.platzRandM;
         const RO = KC.TAGES_GESETZ.rollen;
         const [gaeste, wer] = [[], []];
-        for (const b of L0) {
-            const a = b.orte.abend;
-            if (!a || !b.koennen || !b.genom || (RO[b.rolle] && RO[b.rolle].regenfest)) continue;
-            if (Math.hypot(a.x - mx, a.z - mz) > R) continue;
+        const kand = L0.filter((b) => b.koennen && b.genom && !(RO[b.rolle] && RO[b.rolle].regenfest));
+        for (const i of KC.spielGaesteWahl(kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim })), mx, mz, R)) {
+            const b = kand[i];
             const d = this._dialsAusGenom(b.genom);
             const P = KC.labProportionen(d);
             const U = b.uebung;
