@@ -3468,6 +3468,7 @@ AnazhRealm._furchtGesetz = function () {
         typeof k.furchtErinnert === "function" &&
         typeof k.furchtOrt === "function" &&
         typeof k.fluchtRadius === "function" &&
+        typeof k.auraReichM === "function" &&
         typeof k.fluchtDistanz === "function" &&
         F.fluchtDistanzM &&
         Number.isFinite(F.naeherungMS) &&
@@ -3480,6 +3481,7 @@ AnazhRealm._furchtGesetz = function () {
             furchtErinnert: k.furchtErinnert,
             furchtOrt: k.furchtOrt,
             fluchtRadius: k.fluchtRadius,
+            auraReichM: k.auraReichM,
             fluchtDistanz: k.fluchtDistanz,
         });
         return AnazhRealm._furchtGesetzMemo;

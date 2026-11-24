@@ -4020,10 +4020,15 @@ AnazhRealm._lebensraumGesetz = function () {
         typeof k.durst === "function" &&
         k.ETHOGRAMM_GESETZ &&
         Number.isFinite(k.ETHOGRAMM_GESETZ.daemmerSin) &&
-        ["lichtPhase", "ruhePegel", "aesung", "taetigkeit"].every((f) => typeof k[f] === "function")
+        ["lichtPhase", "ruhePegel", "aesung", "taetigkeit"].every((f) => typeof k[f] === "function") &&
+        k.STOERUNG_GESETZ &&
+        Number.isFinite(k.STOERUNG_GESETZ.reichM) &&
+        typeof k.stoerung === "function"
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
+            S: k.STOERUNG_GESETZ,
+            stoerung: k.stoerung,
             bodenKlasseAm: k.bodenKlasseAm,
             lebensraum: k.lebensraum,
             wahl: k.lebensraumWahl,

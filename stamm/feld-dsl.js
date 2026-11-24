@@ -1304,7 +1304,7 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "remove_architecture_not_found", id: archId });
                     return;
                 }
-                this.removeArchitecture(arch);
+                if (this.removeArchitecture(arch)) this._werkAkt(arch, ctx, false); // der Abriss des Werks: eine Tat am Stempel
                 ctx.log.push({ event: "removed_architecture", id: archId });
             },
             // Schöpfer-Werkzeuge: LLM oder Chat erschaffen eigene Baupläne. Whitelist: nur die acht bekannten
@@ -2125,12 +2125,14 @@ class AnazhRealm_feld_dsl {
             }
             const ort = { x, y, z };
             // die Wand und die Wurzel nennen jede Absage (`absage`, die Wurzel über `opts.absage`)
-            if (
-                natur
-                    ? this._naturSetzen(name, ort, opts, null, absage)
-                    : this.spawnArchitecture(name, ort, Object.assign({ absage }, opts))
-            )
+            const werk = natur
+                ? this._naturSetzen(name, ort, opts, null, absage)
+                : this.spawnArchitecture(name, ort, Object.assign({ absage }, opts));
+            if (werk) {
                 spawned++;
+                // das Werk ist eine Tat der Welt: sein Akt tritt zur Uhr des Programms in die Folge des Felds (`_werkAkt`)
+                if (!natur) this._werkAkt(werk, ctx, true);
+            }
         }
         this._setzErgebnis(ctx, "spawn_studio", n, spawned, weicht, this._werkLabel(name), verb);
         return spawned;

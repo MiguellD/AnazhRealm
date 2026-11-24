@@ -2457,6 +2457,8 @@ class AnazhRealm_vegetation_wiese {
     // stoffe.K5 misst ihn beim ersten Lesen.
     _tatDauer(a) {
         const N = AnazhRealm.TAT_NARBE;
+        // das Werk heilt nicht (es steht bis zu seinem Abriss): es misst keinen Wuchs — seine Zeile trägt nur Ort, Fläche, Stempel
+        if (a.tat === "bauen" || a.tat === "abriss") return Infinity;
         if (!Number.isFinite(a.w)) a.w = Math.round(this._wuchsAt(a.x, a.z) * 1e3) / 1e3;
         return N[a.tat].stunden / Math.max(N.lebMin, a.w);
     }

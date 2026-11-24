@@ -1363,11 +1363,16 @@
     // 53 %, sein Winter bleibt über −1,9 °C. Das Meer ist das Wasser auf Meereshöhe; im Brack (`brack` über dem Meer) gehen
     // Salz und Schicht stetig in das Süßwasser und seine Säule über.
     // DER GANG: das Eis setzt ein, wenn das träge Wasser den Gefrierpunkt erreicht, und wächst nach STEFAN mit den Frost-Graden
-    // der Luft (h²/2k + h/H = ∫(T_f − T_Luft) dt / ρL: Leitung durch das Eis, Übergang an die Luft); ist die Luft wärmer,
+    // der Luft (h²/2k + h/H = ∫(T_f − T_Luft) dt / ρL: Leitung durch das Eis, Übergang an die Luft — ASHTON 1989, „Thin ice
+    // growth“, Water Resources Research 25(3), 564–566: der Übergang Eis → Luft lässt dünnes Eis linear wachsen, erst dickes
+    // in √t; H_ia 10–30 W/(m²·K)). H = 13 ist an der Feldregel geeicht (ist die erste Decke da, wächst das Eis 1 Zoll je
+    // 15 °F·d = 2,54 cm je 8,33 K·d; die tragenden 5 cm stehen damit nach 16,4, Gold 4,8 cm nach 15,7 K·d): mit k = 2,2,
+    // ρ = 917, L = 334 kJ/kg trägt das Eis nach 15,65 K·d ab dem ersten Eis (H = 12 gäbe 16,78, H = 20 gab 10,88 — und das
+    // einfache Stefan ohne Übergang, α√FDD, ist nur die obere Schranke für dickes Eis); ist die Luft wärmer,
     // schmilzt es an der Oberfläche (dh/dt = −H·(T_Luft − T_f) / ρL). Ein Wasser, das nie über den Gefrierpunkt kommt, trägt
     // sein Eis durchs Jahr (der Kreis, in dem Wachsen und Schmelzen sich die Waage halten); friert die Luft immer, friert die
     // Säule durch. Gerechnet geschlossen auf der Jahres-Welle des Tagesmittels: das Eis integriert den Tag (sein Gang trägt
-    // höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~6 Tagen vom ersten Eis zum tragenden.
+    // höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~9 Tagen vom ersten Eis zum tragenden.
     // `feld(traegTage)` ist das Temperatur-Feld an der Höhe (die Naht des Wirts; ohne sie das Feld des Kerns).
     // DER STOFF (stoffe.K1): `stoff` trägt die Zeilen `wasser` und `eis` der Stoff-Tafel des Wirts in SI — ρ·c der Säule (ρ kg/m³,
     // c J/(kg·K)), der Gefrierpunkt des Süßwassers (T_schmelz in K), ρ des Eises, seine Schmelzwärme L (J/kg) und seine
@@ -1380,7 +1385,7 @@
         kopplung: 25,
         saeule: [0.1, 30],
         meerSchicht: 50,
-        uebergang: 20,
+        uebergang: 13,
         traegt: 0.05,
     });
     // Der Wasserkörper mit dem Spiegel y über der Säule `tiefe`: sein Meer-Anteil, sein Gefrierpunkt (°C) und seine Trägheit
