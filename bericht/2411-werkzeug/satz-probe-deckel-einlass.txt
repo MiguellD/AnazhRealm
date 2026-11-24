@@ -10,3 +10,8 @@ check:statik GRÜN 1 012 s vor dem Nachtrag, ci-deckung und betriebsgesetz GRÜN
 Offen: die ganze Statik-Kette fuhr nach dem Nachtrag nicht noch einmal am Gerät (ihr Richter ist die Batterie am Kopf); die zehn
 abgewiesenen Tore messen nur noch in der Cloud-Batterie; der Anlass (spiegel-eis 2adc05ed, 502 am 24.11. 10:51) steht im Bericht
 bericht/2411-kreatur-takt-1050.md im Zweig koordination.
+
+Dazu (Commit 28240b1b, Wort des Schöpfers 24.11. „was ist das wahre Ziel dieser Regel“): die Zeichenzahl des Boden-Programms ist kein Tor
+mehr — main trägt seit z713 108 011 Zeichen, ein gelandeter Bild-Gewinn; die Zeile nennt Stand und Zuwachs als Auskunft, der
+Selbsttest trägt den Fall „Programm + 4 664 Zeichen: kein Befund“ mit der Mutante „die Ratsche urteilt“. gate:pruefbuehne-licht auf
+der GTX 1050 grün in 78 s.

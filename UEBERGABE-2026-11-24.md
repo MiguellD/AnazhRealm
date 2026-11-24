@@ -113,3 +113,47 @@ EINEN gpu-schloss, nie zwei zugleich, RAM frei ≥ 8 GB. Jeder Agent-Start nennt
   `satz-haus-stoff.txt` bereit (um die Heilung ergänzen).
 - **Offen beim Schöpfer:** die Auslagerungsdatei auf OMEN (systemverwaltet, heute + 11 GB) — gefragt um 13:00, ob OMEN eine
   Klick-Datei für eine feste Größe vorbereiten soll; bis zu seiner Antwort nichts anfassen.
+
+## 10. STAND 15:06 (gilt VOR Abschnitt 9; die lebende Zeile ist der oberste NACHTRAG in LAGE.md)
+
+**main 499f8b572290130d2a8264cf306f500dace25eba** — z717 `w28-probe-deckel-einlass` gelandet 14:38, SIEBTE Landung heute (nur
+Werkzeug, kein Laufzeit-Byte: darum KEIN Runden-Sprung; die Runde 22 steht am a8dd22b5). main trägt die Zeichen-Ratsche selbst,
+niemand pflückt 28240b1b mehr. **Karte 2 gebucht 83 von 1 718** (Stand-Datei punkte-maschine 0c01bc55).
+
+**Der Lande-Engpass ist EINE Linse, und ich habe sie drei Stunden falsch gelesen.** Mensch-Anatomie R4 („die Lagen des Rumpfs ohne
+Folge unter dem Arm … 1 Linse(n) vakuös“) ist kein Wackler: wo ihr Selbsttest LÄUFT, ist sie seit mensch-nah (z712, 85aec8c18,
+`__hautUnterStoff` im foundry-core) fest rot; die „grünen“ Läufe druckten „R6 ruht: … --selftest — 15 Dateien“ (der Selbsttest lief
+nicht). GTX 1050 hat die Ursache (die Mutante nullt nur die Kopie der Lage) und schiebt EINEN pflückbaren Commit `anatomie-r4-heil`
+über main 499f8b57 — Auftrag `auftrag/2411-r4-kein-wackler.md` (053131fd), mit der zweiten Hälfte: gehört foundry-core.js nicht zum
+Ruhe-Schlüssel der Linse (scripts/lib/ci-klasse.cjs), kommt es hinein, mit Selbsttest. SOBALD DER SHA KOMMT: an OMEN (ort-ausstattung
+Vorprüfung 5, sport-regeln 3) und an den Fahrzeug-Arbeiter weiterreichen. Lehre (Memory roter-job-erst-versuch-zwei): vor dem Wort
+„Wackler“ im Log des GRÜNEN Laufs lesen, ob der Schritt lief.
+
+**Abgaben, die warten:**
+- `ort-ausstattung` 4 **4612f450** (OMEN): GPU-Probe grün, 20 von 22, rot NUR R4 (Stand-Takt ging im dritten Versuch durch — der ist
+  ein echter Wanduhr-Wackler, 1 von 3). Neuläufe sind gestrichen; grün wird sie mit dem gepflückten Heil-Commit. Satz
+  `satz-ort-ausstattung.txt`, Ansprüche nach der Landung schrift#1 · bildkunst#1 · grenze#1 · megastadt#1.
+- `haus-stoff` **c6cec836** (Radeon-Arbeiter, Baum AnazhRealm-front-pl): 18 von 22, DREI echte Rots — Haus-Asset-Vertrag v6 (Golden
+  `holzhuette-s7-L0`, dazu „v6 sin kippt 12 > 11 ← fachwerk-core.js:321 · atan 19 > 18 ← :264“), Haus-Fernkörper („holzhuette/s1:
+  Glas L2: Farbe 0.195 von der L0“), Settlement-Kanal N5.7 („O Akt: Plan-Hash Studio ≠ Welt“ — bestellt: das Klima wird EIN Eingang
+  des EINEN Kanals, keine Ausnahme der Linse). Satz `satz-haus-stoff.txt` (Heil-Sätze ergänzen); der Stempel braucht den Namen
+  `w28-haus-stoff2` (5. Argument stempel-msg.sh, 4. stempel.sh). `haus-dach` liegt lokal obenauf (Bildpaar mit --echt), schiebt
+  erst nach grünem haus-stoff.
+- `fahrzeug-gattung` 86697613 (Radeon-Arbeiter, Baum AnazhRealm-acker): Bildpaar gesehen und gut (main 0 → 3 Anleger), heilt fünf
+  Linsen (R4 ist ihm abgenommen), dann Kopf + Batterie. Satz noch nicht geschrieben (Zahlen im NACHTRAG 13:35 der LAGE).
+- `sport-regeln` 3 (OMEN): Kopf am Remote noch 998254be. Danach `scherbe-liegt` (Stand-Takt zählt Schritte statt Wanduhr,
+  `auftrag/2411-wackler-vorrang.md`), danach `dienst-frist`.
+
+**Brief-Pflicht neu (dritte Abgabe mit gutem Bild und roter Batterie):** „vor dem Push laufen lokal ALLE Schritte aus
+.github/workflows/check.yml grün, deren Name oder Befehl das Wort der Familie trägt (grep -i), beim Namen im Bericht; ein neu
+geprägtes Golden nennt seine Fälle im Commit“ — eine von Hand gezählte Linsen-Liste reichte zweimal nicht (Memory
+brief-pflicht-statik-2411). Die Wurzel, ein Werkzeug, das aus den berührten Dateien die Schritte der Familie druckt, ist NICHT gebaut.
+
+**Radeon-Fund:** nach dem Sprung 13:34 maß die Radeon-Sitzung die alte Liste am alten Kopf weiter bis 14:28 (zug/runde.txt zeigte
+„radeon offen 0/0“ mit Alarm). Nach jedem Sprung die Radeon-Zeile nach 5 min lesen; die Wurzel (die Sitzung liest den Runden-Kopf
+nicht an der Stations-Grenze) ist offen.
+
+**Offen beim Schöpfer:** die Auslagerungsdatei am OMEN (systemverwaltet, wuchs heute um etwa 11 GB) — gefragt gegen 13:00, ob OMEN
+eine Klick-Datei für eine feste Größe vorbereiten soll; unbeantwortet, niemand fasst sie an.
+
+**Verbrauch 15:07:** 94 % alle Modelle, 91 % Fable. Bei 98 %: TaskStop der Arbeiter und Wächter, notbremse.sh, dann wechselt er das Konto.
