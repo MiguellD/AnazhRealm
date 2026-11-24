@@ -2592,8 +2592,9 @@ L.perspektive("tiere", (() => {
             },
             // ═══ VERHALTEN: das Ethogramm, die Alarm-Kette des Verbands, die Witterung im Wind, das Gedächtnis und die Gegenprobe Sinn aus ═══
             [VH]: {
-                sek: 40,
+                sek: 56,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder der Auge-Sprossen S3, S6, S7 (die Lebensweise blind zugeordnet) — headless zählt die Probe Akte und Fluchten im Takt",
                 mess: async function (H, U, M) {
@@ -2832,7 +2833,99 @@ L.perspektive("tiere", (() => {
                         aus.spieltagS = dayS;
                         return aus;
                     };
-                    const z = await lauf(probe, { ethoTakte: 1500, ethoDt: 0.1, etho: { nahrung: 0.52, ruhen: 0.33, ziehen: 0.1, sichern: 0.05 } });
+                    const ETHO = { nahrung: 0.52, ruhen: 0.33, ziehen: 0.1, sichern: 0.05 };
+                    const z = await lauf(probe, { ethoTakte: 1500, ethoDt: 0.1, etho: ETHO });
+                    // DER FÄCHER DES ETHOGRAMMS (S2, M4): der Leser des Tags (`_kreaturTaetigkeit`: Magen, Äsung, Ruhe-Pegel, Lichtphase →
+                    // ETHOGRAMM_GESETZ taetigkeit) an EINEM echten Hirsch, je Adresse eine Spielstunde Beobachtung (150 s, Takt 1 s, die Uhr
+                    // läuft) — 24 Anfänge (Ruhe-Pegel und Magen über ihre Spannen gestreut) × 4 Uhrzeiten (Mitternacht, Morgen, Mittag, Abend).
+                    // Je Takt zeigt das Tier seine Tätigkeit (ETHOGRAMM_GESETZ.zeigt, das Wandern stempelt `_gezeigt`); die Akte sind die
+                    // Tätigkeit, ihre Aktion und die Aktionen ihrer Stimmung im Buch (VERHALTEN.stimmung). Das Budget des Fächers ist das Mittel
+                    // der 96 Stunden gegen das Feld-Ethogramm; die Alarm-Kette misst die Annäherung an den Verband (die Probe oben)
+                    const VH2_AN = async (r, T, a, mit) => {
+                        const s = r.state, A = r.constructor;
+                        const LG = A._lebensraumGesetz(), VG = A._verhaltenGesetz(), E = LG.E;
+                        const t0 = s.creatureAnimationTime, tod = s.timeOfDay;
+                        let c = r.__vh2Leib && s.creatures.includes(r.__vh2Leib) ? r.__vh2Leib : null;
+                        if (!c) {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            c = r.__vh2Leib = r.spawnCreatureAt(mit.ort[0], r.getTerrainHeightAt(mit.ort[0], mit.ort[1]) + 0.5, mit.ort[1], "happy", "wesen", { precise: true, bodySize: 1, absage: (g) => (nein = g) });
+                            if (!c) return { fehlt: "spawnCreatureAt wesen: " + nein + " (stamm/kreatur-leben.js spawnCreatureAt)" };
+                        }
+                        try {
+                            const ud = c.userData;
+                            const G = E.gattung[A.TETRAPODA_SOUL_MAP[ud.soul]];
+                            if (!G) return { fehlt: "die Seele " + ud.soul + " trägt keine Zeile im Ethogramm (tetrapoda-core ETHOGRAMM_GESETZ.gattung)" };
+                            const voll = r._kreaturMagenVoll(c);
+                            ud._ruhe = ((a.saat - 0.5) / mit.saaten) * E.schwelle.aktiv;
+                            ud.magen = voll * (((a.saat * 7) % mit.saaten) / mit.saaten);
+                            [ud._magenT, ud._taetigT, ud._taetigkeit, ud._stehenBis] = [t0, t0, null, 0];
+                            r._uhrSetzen(a.ort, "regler");
+                            const budget = {};
+                            const akte = new Set();
+                            const n = Math.round(mit.dauerS / mit.dtS);
+                            for (let k = 0; k < n; k++) {
+                                if (k && k % mit.uhrAlle === 0) r._uhrSetzen((a.ort + (k * mit.dtS) / mit.tagS) % 1, "regler");
+                                s.creatureAnimationTime = t0 + k * mit.dtS;
+                                ud._gezeigt = ud._taetigkeit;
+                                const t = r._kreaturTaetigkeit(c);
+                                budget[t] = (budget[t] || 0) + 1;
+                                const zg = t && E.zeigt[t];
+                                if (zg) {
+                                    akte.add("taetigkeit:" + t);
+                                    if (zg.aktion) akte.add(zg.aktion);
+                                    for (const x of (VG.stimmung[zg.stimmung] || {}).aktionen || []) akte.add(x);
+                                }
+                            }
+                            for (const k of Object.keys(budget)) budget[k] = budget[k] / n;
+                            return { gattung: A.TETRAPODA_SOUL_MAP[ud.soul], budget, akte: [...akte], buch: Object.keys(VG.aktionen).length };
+                        } finally {
+                            s.creatureAnimationTime = t0;
+                            r._uhrSetzen(tod, "regler");
+                        }
+                    };
+                    let R2 = null;
+                    if (U[2])
+                        try {
+                            const ort = await H.seite("const s = r.state, pm = s.playerMesh.position; for (let d = 40; d <= 400; d += 20) for (let q = 0; q < 12; q++) { const x = pm.x + Math.cos(q * 0.52) * d, z = pm.z + Math.sin(q * 0.52) * d; if (r._landAt(x, z) && !r._nassAt(x, z)) return [x, z]; } return null;");
+                            if (!ort) R2 = { fehlerText: "kein trockenes Land 40–400 m um den Spieler" };
+                            else {
+                                const max0 = await H.seite("return r.state.maxCreatures;");
+                                try {
+                                    R2 = await FAECHER((c) => H.seite(c), {
+                                        gesetz: { fn: VH2_AN, export: "stamm/kreatur-leben.js:2095 _kreaturTaetigkeit → tetrapoda-core.js:2164 ETHOGRAMM_GESETZ (taetigkeit · ruhePegel · aesung · lichtPhase) · :100 VERHALTEN.aktionen/stimmung", leser: "stamm/kreatur-verhalten.js:2908 (der KI-Takt: der Tag des Tiers vor jedem Zweig) · stamm/koerper-leib.js:3039 (die Tätigkeit zeigt sich in der Aktion)" },
+                                        adressen: { saaten: 24, orte: [0, 0.25, 0.5, 0.75] },
+                                        mit: { ort, saaten: 24, dauerS: 150, dtS: 1, uhrAlle: 50, tagS: 3600 },
+                                        ms: 15000,
+                                        masse: {
+                                            stunden: { wie: "anzahl", feld: "gattung" },
+                                            budget: { wie: (v) => { const o = {}; v.forEach((b) => Object.entries(b).forEach(([k, x]) => (o[k] = (o[k] || 0) + x / v.length))); return o; }, feld: "budget" },
+                                            akte: { wie: (v) => [...new Set([].concat(...v))], feld: "akte" },
+                                            buch: { wie: "max", feld: "buch" },
+                                            stundenEinerTaetigkeit: { wie: (v) => v.filter((b) => Object.values(b).some((x) => x >= 0.99)).length, feld: "budget" },
+                                        },
+                                        schlecht: { feld: "budget.ruhen", richtung: "max" },
+                                        pose: (q, w) => "der Hirsch der Mess-Wiese um " + Math.round(q.ort * 24) + " Uhr (Anfang " + q.saat + "): " + Object.entries(w.budget).map(([k, x]) => k + " " + Math.round(100 * x) + " %").join(", "),
+                                        ungemessen: ["die Häufigkeiten im Bild der Herde (Bildpflicht) — ungemessen bis zum Gerät"],
+                                    });
+                                } finally {
+                                    await H.seite("if (r.__vh2Leib) { r.removeCreature(r.__vh2Leib); delete r.__vh2Leib; } r.state.maxCreatures = " + JSON.stringify(max0) + "; return true;");
+                                }
+                                // die Rangkorrelation (Spearman) des Budgets gegen das Feld-Ethogramm: sichern ↔ stehen (die Stimmung alert, scan)
+                                const b = R2.werte.budget || {};
+                                const ist = { nahrung: b.nahrung || 0, ruhen: b.ruhen || 0, ziehen: b.ziehen || 0, sichern: b.stehen || 0 };
+                                const rang = (o) => { const k = Object.keys(o).sort((x, y) => o[x] - o[y]); const R = {}; for (let i = 0; i < k.length; ) { let j = i; while (j + 1 < k.length && o[k[j + 1]] === o[k[i]]) j++; for (let q = i; q <= j; q++) R[k[q]] = (i + j) / 2 + 1; i = j + 1; } return R; };
+                                const [ri, rr] = [rang(ist), rang(ETHO)];
+                                const ks = Object.keys(ETHO);
+                                const mi = ks.reduce((x, k) => x + ri[k], 0) / ks.length, mr = ks.reduce((x, k) => x + rr[k], 0) / ks.length;
+                                const kov = ks.reduce((x, k) => x + (ri[k] - mi) * (rr[k] - mr), 0);
+                                const vi = Math.sqrt(ks.reduce((x, k) => x + (ri[k] - mi) ** 2, 0)), vr = Math.sqrt(ks.reduce((x, k) => x + (rr[k] - mr) ** 2, 0));
+                                R2.rang = vi > 0 && vr > 0 ? Math.round((1000 * kov) / (vi * vr)) / 1000 : 0;
+                                R2.ist = ist;
+                            }
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
                     const auge = augeNoetig ? await M.auge("tiere-verhalten", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
                     const fl = [z.alarm.d, z.wind.mit.d, z.wind.gegen.d, ...z.gedaechtnis.geschlagen.map((x) => x.d), ...z.gedaechtnis.fremd.map((x) => x.d), z.sinn.mit.d].filter((x) => Number.isFinite(x));
@@ -2847,7 +2940,27 @@ L.perspektive("tiere", (() => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
                     };
-                    nimm(2, { rang: z.etho.rang, alarmS: z.alarm.kette, akte: z.etho.akteN, spielStunden: z.etho.spielStunden }, z.etho.akteN < 30 ? "der Hirsch trägt " + z.etho.akteN + " Akte statt ≥ 30 (kein Alarmruf, kein Komfort, kein Markieren, kein Drohen)" : null);
+                    if (U[2]) {
+                        // das Budget und die Akte trägt der Fächer allein (96 Spielstunden am Leser); die Alarm-Kette die Annäherung an den Verband
+                        const RW = R2 && R2.werte;
+                        const pr = (x) => Math.round(1000 * x) / 10;
+                        const akteF = RW ? RW.akte.length : undefined;
+                        aus[2] = {
+                            werte: {
+                                rang: RW ? R2.rang : undefined,
+                                alarmS: z.alarm.kette,
+                                akte: akteF,
+                                spielStunden: RW ? RW.stunden : undefined,
+                                ...(RW ? { budget: Object.entries(R2.ist).map(([k, x]) => k + " " + pr(x) + " % (Feld " + pr(ETHO[k]) + " %)").join(" · "), akteListe: RW.akte.join("/"), buchAktionen: RW.buch, stundenEinerTaetigkeit: RW.stundenEinerTaetigkeit, buehneRang: z.etho.rang, buehneAkte: z.etho.akteN } : {}),
+                            },
+                            zeuge: Object.assign({}, zeuge, { faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)) }),
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                        };
+                        const offen = [];
+                        if (!RW) offen.push("der Fächer des Ethogramms warf: " + ((R2 && R2.fehlerText) || "ohne Antwort"));
+                        else if (akteF < 30) offen.push("der Hirsch zeigt im Fächer " + akteF + " Akte statt ≥ 30 (" + RW.akte.join("/") + ") — das Buch trägt " + RW.buch + " Aktionen ohne Alarmruf, Komfort, Markieren, Drohen, Spiel des Hirschs (tetrapoda-core.js:100 VERHALTEN.aktionen); sichern zeigt sich nur nach der Flucht (ETHOGRAMM_GESETZ.zeigt.stehen)");
+                        if (offen.length) aus[2].nicht = offen.join(" · ");
+                    }
                     nimm(3, { akte: z.etho.akteN }, "10² Stichproben-Arten aus dem Samen: die Welt trägt 4 Gattungen mit einem Buch der Aktionen", true);
                     nimm(4, { windRatio }, "der Spieler wird an Abstand, Näherung und Gedächtnis erkannt: kein Gehör, kein Geruch im Wind, keine Vibration, keine Wärme gegen ihn (Entdeckung mit Wind " + Math.round(10 * z.wind.mit.d) / 10 + " m, gegen Wind " + Math.round(10 * z.wind.gegen.d) / 10 + " m)");
                     nimm(5, { meideInd: meide(z.gedaechtnis.geschlagen), meideFremd: meide(z.gedaechtnis.fremd), spieltage: Math.round((100 * z.lebensdauerS) / z.spieltagS) / 100 }, "7 Spieltage (" + 7 * z.spieltagS + " s) überlebt kein Tier: die Lebensdauer ist " + z.lebensdauerS + " s");
@@ -2864,12 +2977,20 @@ L.perspektive("tiere", (() => {
                             K.soll(VH, 2, "Feld-Ethogramm", { quelleFeld: "umfang", quelleWort: "≥ 30 Akte", rel: "≥", zahl: 30, key: "akte", einheit: "Akte" }),
                             K.soll(VH, 2, "1 h Beobachtung", { rel: "≥", zahl: 1, key: "spielStunden", einheit: "Spielstunden" }),
                         ],
-                        zeuge: zeugeWelt(100, true),
-                        taeter: "tetrapoda-core.js VERHALTEN.aktionen (das Buch der Aktionen) / ETHOGRAMM_GESETZ",
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer des Ethogramms warf: " + z.fehler;
+                            if (!(z.faecher >= 48)) return "nur " + (z.faecher || 0) + " Spielstunden des Fächers gemessen (Soll ≥ 48: Anfänge × Uhrzeiten)";
+                            return zeugeWelt(100, true)(roh);
+                        },
+                        taeter: "tetrapoda-core.js:100 VERHALTEN.aktionen (das Buch der Aktionen, 13) / :2164 ETHOGRAMM_GESETZ.zeigt (sichern nur nach der Flucht)",
                         nicht: "eine Art mit vollem Ethogramm (≥ 30 Akte)",
                         leser: "tetrapoda-core.js:99 — VERHALTEN.aktionen trägt 13 Aktionen ohne Alarmruf, Komfort, Markieren, Drohen",
-                        gruen: gut({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 1 }, 4500),
-                        attrappen: atr({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 1 }, 4500, true),
+                        gruen: gut({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 96 }, 4500, { faecher: 96 }),
+                        attrappen: atr({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 96 }, 4500, true).concat([
+                            { name: "drei Hirsche eine Stunde (der Fächer fehlt)", roh: gut({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 1 }, 4500, { faecher: 0 }) },
+                            { name: "das Buch der Welt heute (13 Aktionen, sichern nur nach der Flucht)", roh: gut({ rang: 0.8, alarmS: 0.05, akte: 11, spielStunden: 96 }, 4500, { faecher: 96 }) },
+                        ]),
                     },
                     3: {
                         u: { auge: AUGE_ORT },
