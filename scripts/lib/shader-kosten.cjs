@@ -51,10 +51,12 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// Die Zeichen eines Programms (`zeichen`) urteilen nur als RATSCHE eines benannten Programms (`zeichenMax`, die Prüfbühne S0:
-// das Boden-Programm, `S0_ZEICHEN` in scripts/diag-pruefbuehne.cjs — der Stand des Tages + 5 %, sie fällt nur); die kalte
-// Übersetzung auf echter GPU ist Auskunft, nie Urteil im Zug (Wanduhr eines geteilten Läufers, z409 12.11.). Bis 07.11. hier die
-// feste Decke 100 000 Zeichen für jeden Stoff — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand.
+// Die Zeichen eines Programms (`zeichen`) sind AUSKUNFT, nie Urteil: die Prüfbühne S0 nennt sie am Boden-Programm mit dem Zuwachs
+// gegen den gebuchten Stand (`S0_ZEICHEN` in scripts/diag-pruefbuehne.cjs); ebenso die kalte Übersetzung auf echter GPU (Wanduhr
+// eines geteilten Läufers, z409 12.11.). Bis 07.11. hier die feste Decke 100 000 Zeichen für jeden Stoff — 4 Züge fielen an
+// 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand; bis 24.11. die Ratsche `zeichenMax` des Boden-Programms (der
+// Stand + 2 %) — sie hielt seit z713 jede Vorprüfung an 108 011 Zeichen, während dieselbe Probe kalt 701 ms bei 108 011 und
+// 1 081 ms bei 103 347 Zeichen maß (Radeon 890M): die Zeichenzahl sagt die Übersetzungszeit nicht voraus.
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 // EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
 // Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
@@ -363,12 +365,6 @@ const GRENZEN = {
         " — eine Stufe steht nicht mehr hinter ihrer Stärke",
     ],
     schleifeMax: [(k) => k.abtastungen.schleife, "≤", "Abtastungen in Schleifen", ""],
-    zeichenMax: [
-        (k) => k.zeichen,
-        "≤",
-        "Zeichen WGSL",
-        " — die Ratsche des Programms (der Stand + seine Luft, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
-    ],
     rauschenMax: [(k) => k.rauschen, "≤", "Rausch-Aufrufe je Fragment", ""],
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
