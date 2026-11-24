@@ -1618,27 +1618,36 @@ class AnazhRealm_bild_himmel {
         return new THREE.Vector3(x, y, z);
     }
 
-    // DIE BAHN DER SONNE JETZT (sonnenbahn): die Breite des Ankers und der Körper des Planeten (`_planetAnker`, im Planet-Faden
-    // gerechnet) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
-    // SPIKE: bis der Anker antwortet, die Gleiche am Äquator; mit seiner Antwort springt der Himmel einmal (`_himmelSprung`).
+    // DIE BAHN DER SONNE JETZT (sonnenbahn, Meeus Kap. 13): die Breite der Welt auf ihrem Planeten — die Heimat am Anker
+    // (`_planetAnker`, im Planet-Faden gerechnet), eine Reise-Welt am Ort ihres Teils (`ort.teil.breite`, Grad) —, der Körper des
+    // Planeten (Schiefe und Drehsinn, mit dem Anker) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
+    // Bestellt beim ersten Ruf; bis der Anker antwortet, steht die Sonne am Ort der Bühne (`BUEHNE_BAHN`), und das erste
+    // Weltbild wartet (`_belichtungSteht`, Term „licht“ der Ankunft) — mit der Antwort springt der Himmel EINMAL (`_himmelSprung`).
+    // Bis sonnenbahn kannte die Bahn weder Breite noch Saison: 46,13° gegen die Ephemeride (erleben.spieler.zeit#1, c1236fa8).
     _sonnenBahn() {
         if (!this._sonnenAnkerFrage)
             this._sonnenAnkerFrage = Promise.resolve()
                 .then(() => this._planetAnker())
                 .then(
                     (a) => {
+                        const teil = this._gelaende().ort.teil;
                         this._sonnenAnker = {
-                            breite: a.breite,
+                            breite: teil ? (teil.breite * Math.PI) / 180 : a.breite,
                             koerper: { neigungRad: a.neigungRad, drehsinn: a.drehsinn },
                         };
                         this._himmelSprung = true;
                     },
+                    // der Planet-Faden antwortet nicht (noch kein Gelände, ein Bruch des Fadens): beim Namen, der nächste Ruf fragt neu
                     (e) => {
                         this._sonnenAnkerFrage = null;
-                        this._sonnenAnkerBruch = String((e && e.message) || e);
+                        const grund = String((e && e.message) || e);
+                        if (grund !== this._sonnenAnkerBruch)
+                            this._bruchMelden("SONNE: der Anker des Planeten antwortet nicht — " + grund);
+                        this._sonnenAnkerBruch = grund;
                     }
                 );
-        const A = this._sonnenAnker || { breite: 0, koerper: { neigungRad: 0, drehsinn: 1 } };
+        const A = this._sonnenAnker;
+        if (!A) return __weltLicht.BUEHNE_BAHN;
         const p = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
         return __weltLicht.sonnenBahn(A.breite, p, A.koerper);
     }
@@ -2220,7 +2229,9 @@ class AnazhRealm_bild_himmel {
             // die Belichtung steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der
             // Stunde am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
             // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten; steht sie einmal, bleibt der Term zu
-            if (!this.state._belichtungSteht) this.state._belichtungSteht = this._bildSichtSteht();
+            // — und erst, wenn die Sonne an ihrem Ort steht (`_sonnenAnker`, sonnenbahn): vor dem Anker steht sie am Ort der Bühne
+            if (!this.state._belichtungSteht)
+                this.state._belichtungSteht = !!this._sonnenAnker && this._bildSichtSteht();
         }
         // die Blende eines Beobachters (`_blendeBestellen`) über dem Gesetz: fest `k` oder das Gesetz mal `mal` — ohne Gesetz (eine
         // Bühne ohne Himmel des Orts) die Blende, die vor der Bestellung stand

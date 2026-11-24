@@ -818,7 +818,11 @@ var __weltLicht = (function () {
     // der Breite φ des Ankers und der Deklination δ (`sonnenBahn`): sin h = sin φ sin δ + cos φ cos δ cos H, Osten = −cos δ sin H,
     // Norden = cos φ sin δ − sin φ cos δ cos H. Die Achsen der Welt: x Osten, y oben, −z Norden (die Mittagssonne der Nordhalbkugel
     // steht über +z, wie bis hier).
-    function sonnenRichtung(winkel, bahn) {
+    // DER ORT DER BÜHNE (die Studios, die Hülle `B.stunden`: sie tragen keinen Ort der Welt): die Gleiche (δ = 0) an der Breite, an der
+    // die Mittagssonne der Bühne steht, wo sie bis sonnenbahn stand — 74,21° (die alte Bahn, Neigung 0,4 × sin ½w: tan(90° − h) = 0,4 √½),
+    // im Süden, Aufgang im Osten zur Uhr 0,25. Die Welt reicht ihre Bahn (`_sonnenBahn`), die Bühne der Welt dieselbe (`o.bahn`).
+    const BUEHNE_BAHN = Object.freeze({ breite: Math.atan(0.4 * Math.SQRT1_2), dekl: 0, drehsinn: 1 });
+    function sonnenRichtung(winkel, bahn = BUEHNE_BAHN) {
         if (!bahn || !Number.isFinite(bahn.breite) || !Number.isFinite(bahn.dekl))
             throw new Error("DIE SONNENBAHN: ohne Breite und Deklination steht keine Sonne (`sonnenBahn`)");
         const H = (winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1);
@@ -843,7 +847,7 @@ var __weltLicht = (function () {
     }
     // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
     // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
-    function mondRichtung(winkel, bahn) {
+    function mondRichtung(winkel, bahn = BUEHNE_BAHN) {
         return sonnenRichtung(winkel, bahn).map((v) => -v);
     }
 
@@ -1256,8 +1260,8 @@ var __weltLicht = (function () {
         const AR = KERN.ATMO_RECHNUNG;
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
-        // SPIKE sonnenbahn: die Bahn der Bühne (`o.bahn`, sonst die Gleiche am Äquator — die Bühne der Studios trägt noch keinen Ort)
-        const bahn = o.bahn || sonnenBahn(0, 0, { neigungRad: 0, drehsinn: 1 });
+        // die Bahn der Bühne: die der Welt, die sie zeichnet (`o.bahn`), sonst ihr eigener Ort (`BUEHNE_BAHN`)
+        const bahn = o.bahn || BUEHNE_BAHN;
         const s = sonnenRichtung(winkel, bahn);
         const m = mondRichtung(winkel, bahn);
         const achse = tagAchse(s[1]);
@@ -2207,6 +2211,7 @@ var __weltLicht = (function () {
         sonnenWinkel,
         sonnenRichtung,
         sonnenBahn,
+        BUEHNE_BAHN,
         mondRichtung,
         tafelLicht,
         tagAchse,
