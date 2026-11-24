@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-12';
+  const VERSION = 'planet-h2-13';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2075,7 +2075,14 @@
     schattenKm: 1.5,                             // Regenschatten e^(−Δh/1,5 km) (Entscheid §4)
     leeKm: 800,                                  // Schranke eines Kamms wirkt mit e^(−d/800 km) hinter ihm (gesetzt)
     meerKm: 300,                                 // Nachladen über Meer e^(−Weg/300 km) (gesetzt)
-    recycleKm: 6000,                             // Feuchte über Land e^(−Weg/6 000 km): Rückführung durch Verdunstung (gesetzt)
+    // DAS LAND ZEHRT IM FENSTER (klima-kontinent): über unbewaldetem Land fällt der Niederschlag landein exponentiell mit einer e-Länge
+    // von einigen 100 km (Makarieva, Gorshkov & Li 2009) — vorher 6 000 km bei einem Fenster von 1 850 km: der Ort 1 850 km hinter
+    // der Küste trug 0,76, der 2 150 km dahinter 0,35 (die Klippe am Fensterrand). 600 km: am Rand des Fensters bleiben e^(−3,1).
+    landKm: 600,
+    // DIE SPERRE: steigt die Luft auf ihrem Weg über die Sperrhöhe (die höchste Querung seit dem letzten Meer), regnet sie den Dampf
+    // über dem Anstieg aus — Anteil e^(−Anstieg/2,5 km); über Land heilt die Sperre mit landKm, über Meer mit meerKm. Band: über die
+    // Süd-Anden (Kämme ~1,5–2 km) verliert der Strom rund 50 % seines Wassers (Smith & Evans 2007, drying ratio ≈ 0,5).
+    sperreKm: 2.5,
     feuchteLand0: 0.35, feuchteLand1: 0.5,       // Feuchte ohne Meer im Fenster: kalt 0,35 … warm (Zone ≥ 25 °C) 0,5 — Rückführung (gesetzt); 0,7
                                                  // hob das Tropen-Land, brach aber klima.widerspruch (Regen ≥ 1 500 mm ohne Meer luvwärts) — bleibt 0,5
     itcz: 2600, sturm: 1100, grund: 250,         // mm/a Gürtel-Amplituden (gesetzt, gegen Köppen gerichtet)
@@ -2083,6 +2090,21 @@
     trockenK: 6,                                 // K: trockenes Land heizt ohne Verdunstung und Wolken (Bowen-Verhältnis) — Sahara ~5–7 K über dem
                                                  // Zonen-Mittel (Literatur aus dem Gedächtnis, ungeprüft); warm-seitig, voll bei N/PET ≤ 0,2
     kontiMeerKm: 600,                            // Meer nahe Land: winterkalte Festlandsluft greift e^(−Abstand/600 km) aufs Meer (gesetzt)
+    // DIE MEERESLUFT IM WESTWIND (klima-kontinent): die Luft, die längs des EINEN Winds vom Meer kommt, trägt dessen Winter auf das Land
+    // (+14 K Winter, −2 K Sommer bei voller Meeresluft in der Mitte der Westwind-Zone); die Ostküste trägt den kalten Rand-Strom
+    // (−6 K Winter, −2 K Sommer). Band: Jahresmittel Westküste − Ostküste derselben Breite 5–7 K (Brest 11,6 °C − Wladiwostok 4,9 °C;
+    // Portland 12,5 °C − Halifax 6,6 °C; WMO-Normalwerte, aus dem Gedächtnis gegengelesen).
+    westWinterK: 14, westSommerK: -2, ostWinterK: -6, ostSommerK: -2,
+    // DIE WIRBEL DER STURMBAHN (klima-kontinent): in der Westwind-Zone trägt nicht der mittlere Wind allein den Dampf — die wandernden
+    // Zyklonen bringen ihn aus JEDER Richtung vom nahen Meer heran (die Küste, deren Meer im Norden oder Süden liegt, die Ostküste).
+    // Band: die Wirbel tragen in den Mittelbreiten rund die Hälfte des Dampf-Flusses (Peixoto & Oort 1992, Physics of Climate, Kap. 12);
+    // ihre Reichweite landein glatt bis 800 km (gesetzt). Jenseits 800 km Küstenabstand Bit für Bit ohne sie.
+    wirbelAnteil: 0.5, wirbelKm: 800,
+    // DER NEBEL (klima-kontinent): Δ des Anteils der regenfreien Zeit mit Nebel. See-Nebel der Küstenluft e^(−Küstenabstand/100 km)
+    // (Namib-Küste > 100 Nebeltage im Jahr, landein bis ~100 km: Seely & Henschel 1998); Advektions-Nebel über kaltem Auftrieb, voll,
+    // wenn der Rand-Strom die Meeresluft um ihren Taupunkt-Abstand kühlt (3 K: relative Feuchte ~80 % über dem Meer, Dai 2006); dazu der
+    // Strahlungs-Nebel feuchter Luft (N/PET). Gesetzt: Küste 0,2 + Auftrieb 0,35, Strahlung 0,3.
+    nebelKm: 100, nebelKueste: 0.2, nebelAuftrieb: 0.35, nebelFeucht: 0.3, nebelTaupunktK: 3,
   });
   const KOEPPEN = Object.freeze(['Af', 'Am', 'Aw', 'BWh', 'BWk', 'BSh', 'BSk', 'Csa', 'Csb', 'Csc', 'Cwa', 'Cwb', 'Cwc', 'Cfa', 'Cfb', 'Cfc',
     'Dsa', 'Dsb', 'Dsc', 'Dsd', 'Dwa', 'Dwb', 'Dwc', 'Dwd', 'Dfa', 'Dfb', 'Dfc', 'Dfd', 'ET', 'EF']);
@@ -2148,8 +2170,8 @@
 
   const KL_P = {};
   // B2 die Feuchte-Knoten luvwärts (fest, nie mit dem Wind skaliert; fern → nah gelesen): die nahen sind die Hüllen-Schritte (100-km-Takt,
-  // ihr kont fällt aus derselben Auswertung der Hülle, Bit für Bit kontGrob), die fernen stehen im 600-km-Takt bis 2 150 km — 2
-  // e-Faltungen des Nachladens je Knoten (meerKm); über Land trägt der Takt nichts (recycleKm 6 000 km). Vorher 14 Knoten im 150-km-Takt
+  // ihr kont fällt aus derselben Auswertung der Hülle: das Krusten-Feld der Gruppe in der groben Lesart, Radius gemischt), die fernen
+  // stehen im 600-km-Takt bis 2 150 km — 2 e-Faltungen des Nachladens je Knoten (meerKm), eine des Zehrens (landKm). Vorher 14 Knoten im 150-km-Takt
   // NEBEN vier eigenen Hüllen-Schritten: 19 Krusten-Felder je Ort, 47 % der Klima-Zeit (Profil 19.11.); jetzt 3 + 4 Hüllen
   const KL_H = new Float64Array(3), KL_K = new Float64Array(3), FEUCHTE_NAH_KM = 100, FEUCHTE_FERN_KM = 600;
   const FEUCHTE_FERN = Object.freeze([650, 1250, 1850]);
@@ -2164,11 +2186,17 @@
   // B2 DIE Verdunstung (PET, mm/a; Turc-Form, gesetzt): EINE Formel für den Trocken-Zuschlag des Klimas, die Pflanzen-Deckung (Atlas und
   // Wuchs des Orts) und das Wasser (planetPet) — vorher stand sie zweimal im Kern und einmal im Wasser-Prototyp
   function petMm(tC) { return 400 + 45 * (tC > 0 ? tC : 0); }
-  // EINE Küste für die Feuchte: der Krusten-Abstand (km) wie kont (G1.4) — Feld der Gruppe in der groben Lesart, Radius gemischt über die
-  // Schollen am Ort (stetig über jede Naht). Positiv landein, negativ seewärts.
-  function kontGrob(S, x, y, z) {
-    const f = krusteFeld(S, x, y, z, 400, true);
-    return (f - S.kuesteF) * radiusAmOrt(S) * S.R;
+  // klima-kontinent: EIN Schritt des Feuchte-Integrals längs des Winds über einen Knoten mit Meer-Anteil sj und Hülle hk (km), Schritt-
+  // Faktoren eM (Meer) und eL (Land). Zustand KL_W: [0] mW Nachladen/Zehren, [1] sp die Sperre, [2] hS die Sperrhöhe (−1 am Rand des
+  // Fensters: der erste Knoten setzt sie, ohne zu sperren — jenseits des Fensters ist nichts bekannt), [3] mLand die Rückführung.
+  const KL_W = new Float64Array(4);
+  function feuchteKnoten(eM, eL, sj, hk) {
+    const mW = KL_W[0], sp = KL_W[1], hS = KL_W[2], mLand = KL_W[3], hl = hk > 0 ? hk : 0;
+    let spL = 1 - (1 - sp) * eL, hL = hl;
+    if (hS >= 0) { if (hl > hS) spL *= kexpS(-(hl - hS) / KLIMA.sperreKm); else hL = hl + (hS - hl) * eL; }
+    KL_W[0] = sj * (1 - (1 - mW) * eM) + (1 - sj) * (mLand + (mW - mLand) * eL);
+    KL_W[1] = sj * (1 - (1 - sp) * eM) + (1 - sj) * spL;
+    KL_W[2] = (1 - sj) * hL;
   }
   function planetKlimaR(S, x, y, z, saison, aus, punkt) {
     pruefScheibe(S);
@@ -2178,6 +2206,9 @@
     const hKm = pt.hoeheKm, lam = landGewicht(hKm), kont = pt.kont, hPos = hKm > 0 ? hKm : 0;
     const cphi = Math.sqrt(x * x + z * z), phi = katan2(y, cphi), aphi = phi < 0 ? -phi : phi, sg = phi < 0 ? -1 : 1;
     const w = G.zellBreite, o = aus || {};
+    // die Westwind-Zone (klima-kontinent): flach von 1,4·w bis 1,9·w, Rampen bis w und 2,3·w (Erde 41–56°, 30–68°) — vorher eine Glocke
+    // um 1,6·w (σ 0,35·w): bei 60° nur 0,29, wo die Drift Norwegen trägt (Bergen 7,6 °C − Magadan −2,6 °C; WMO-Normalwerte)
+    const wwZ = glatt(w, 1.4 * w, aphi) * glatt(2.3 * w, 1.9 * w, aphi);
     // Wind (woher), Einheit im Ost-Nord-Rahmen: Passat aus Ost und polwärts, Westwind aus West und äquatorwärts, im Takt der Zellen
     const sw = ksin(PI * aphi / w);
     const uO0 = ds * sw, vN0 = sg * 0.3 * sw;                              // meridional ~0,3 des zonalen (gesetzt)
@@ -2191,14 +2222,14 @@
     // Temperatur der Zone (Meeres-Niveau, Jahr)
     const p2 = 1.5 * y * y - 0.5, tZ = G.T0 + G.T2 * p2;
     const fT = tZ >= 15 ? 1 : Math.max(0.08, kexpS(0.05 * (tZ - 15)));   // Clausius-Clapeyron nur kalt-seitig: das Profil trägt die Erd-Verteilung
-    let m = 1, schatten = 1, hub = 1, meerLuv = 1, c = 0, dTj = 0, dTs = 0, dTw = 0, pF = 1, meerWest = 0;
+    let m = 1, schatten = 1, hub = 1, meerLuv = 1, c = 0, dTj = 0, dTs = 0, dTw = 0, pF = 1, meerWest = 0, relief = 1, meerLuft = 1;
     if (lam > 0) {
       // Schritte luvwärts (fern → nah): Meer füllt die Feuchte auf, Land zehrt, Kämme beschatten. Alles stetig: Meer-Anteil je
       // Hüllen-Schritt s = glatt(+0,3; −0,6 km; Hülle), je Feuchte-Knoten glatt über den halben Takt; keine Schwelle.
       const mLand = KLIMA.feuchteLand0 + (KLIMA.feuchteLand1 - KLIMA.feuchteLand0) * glatt(5, 25, tZ);
       const hO = planetHuelle(S, x, y, z);                                // eigene Hülle: Schatten und Hub auf derselben Lesart wie die Schritte
       const mNeutral = mLand + (1 - mLand) * kexpS(-Math.max(0, kont) / 1000);   // ohne Windrichtung (Zellrand): Feuchte nach Küstenferne
-      let mW = mNeutral, schranke = 0, hubW = 0, mar = 0;
+      let mW = mNeutral, schranke = 0, hubW = 0, mar = 0, sp = 1;
       const om = wl / 1.044;                                              // G2.3 Gewicht des Luv-Gangs wächst stetig mit dem Wind; am Zellrand (Wind 0) trägt mNeutral
       if (cphi > 1e-9 && om > 0) {
         const eEx = -z / cphi, eEz = x / cphi, eNx = -y * x / cphi, eNy = cphi, eNz = -y * z / cphi;
@@ -2212,24 +2243,32 @@
         // scharfe Kante luvwärts erschien als Geister-Küste, und weil skal mit der Breite schrumpfte, liefen die Geister zu Keilen
         // aus einem Punkt zusammen: die Fächer, Befund Punkt 3). Die Meeres-Anzeige je Knoten liest den Krusten-Abstand derselben
         // EINEN Küste wie kont (Feld der Gruppe, Radius gemischt), über den halben Takt geglättet; über Meer lädt die Feuchte nach
-        // (meerKm), über Land strebt sie zur Rückführung mLand (recycleKm).
-        mW = mLand; mar = 0;
-        const eMf = kexpS(-FEUCHTE_FERN_KM / KLIMA.meerKm), eLf = kexpS(-FEUCHTE_FERN_KM / KLIMA.recycleKm);
+        // (meerKm), über Land strebt sie zur Rückführung mLand (landKm).
+        // klima-kontinent: die fernen Knoten lesen die Hülle (Höhe UND kont — vorher kontGrob, ein eigenes Krusten-Feld, B2): die Sperre
+        // sieht jeden Anstieg im Fenster. Die Sperre sp (Anteil des Dampfs, den die Anstiege übrig ließen) ist der zweite Faktor
+        // DERSELBEN Feuchte (m = mW·sp): mW trägt Nachladen und Zehren, sp das Ausregnen über dem Relief; die Sperrhöhe hS ist die
+        // höchste Querung seit dem letzten Meer (über Meer 0, über Land heilt sie mit landKm zur Höhe des Knotens). Ohne Anstieg im
+        // Fenster ist sp genau 1, ohne Meer im Fenster mW genau mLand — der Ort ohne Meer und Relief trägt sein Klima Bit für Bit.
+        KL_W[0] = mLand; KL_W[1] = 1; KL_W[2] = -1; KL_W[3] = mLand; mar = 0;
+        const eMf = kexpS(-FEUCHTE_FERN_KM / KLIMA.meerKm), eLf = kexpS(-FEUCHTE_FERN_KM / KLIMA.landKm);
         for (let kq = FEUCHTE_FERN.length - 1; kq >= 0; kq--) {
           const sk = FEUCHTE_FERN[kq], a = sk / R, ca = kcos(a), sa = ksin(a);
-          const kk = kontGrob(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz);
+          const hk = planetHuelle(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz), kk = PK.kont;
           const sj = glatt(0.5 * FEUCHTE_FERN_KM, -0.5 * FEUCHTE_FERN_KM, kk);
-          mW = sj * (1 - (1 - mW) * eMf) + (1 - sj) * (mLand + (mW - mLand) * eLf);
+          feuchteKnoten(eMf, eLf, sj, hk);
           const mj = sj * kexpS(-sk / 600); if (mj > mar) mar = mj;
         }
-        const eMn = kexpS(-FEUCHTE_NAH_KM / KLIMA.meerKm), eLn = kexpS(-FEUCHTE_NAH_KM / KLIMA.recycleKm);
+        const eMn = kexpS(-FEUCHTE_NAH_KM / KLIMA.meerKm), eLn = kexpS(-FEUCHTE_NAH_KM / KLIMA.landKm);
         for (let j = 2; j >= 0; j--) {
           const sj = glatt(0.5 * FEUCHTE_NAH_KM, -0.5 * FEUCHTE_NAH_KM, KL_K[j]);
-          mW = sj * (1 - (1 - mW) * eMn) + (1 - sj) * (mLand + (mW - mLand) * eLn);
+          feuchteKnoten(eMn, eLn, sj, KL_H[j]);
           const mj = sj * kexpS(-KLIMA.schritte[j] / 600); if (mj > mar) mar = mj;
         }
-        // der eigene halbe Schritt (0 … 50 km) liest das Land-Gewicht des Orts
-        mW = (1 - lam) * (1 - (1 - mW) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.meerKm)) + lam * (mLand + (mW - mLand) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.recycleKm));
+        mW = KL_W[0]; sp = KL_W[1];
+        // der eigene halbe Schritt (0 … 50 km) liest das Land-Gewicht des Orts; sein eigener Anstieg regnet HIER (der Hub), er sperrt nur windab
+        mW = (1 - lam) * (1 - (1 - mW) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.meerKm)) + lam * (mLand + (mW - mLand) * kexpS(-0.5 * FEUCHTE_NAH_KM / KLIMA.landKm));
+        // die Wirbel der Sturmbahn laden vom nahen Meer in jeder Richtung nach (vor der Sperre: auch ihr Dampf regnet am Anstieg aus)
+        mW += (1 - mW) * KLIMA.wirbelAnteil * wwZ * glatt(KLIMA.wirbelKm, 0, kont);
         // Kamm-Schranke: die nahen Hüllen-Schritte (fern → nah), gewichtet mit e^(−d/leeKm) — die Luft mischt sich hinter dem Kamm;
         // über Meer klingt sie mit meerKm ab
         for (let j = 2; j >= 0; j--) {
@@ -2238,15 +2277,23 @@
           schranke = sj * schranke * eMn + (1 - sj) * (b > schranke ? b : schranke);
         }
         const anstieg = hO - (KL_H[0] > 0 ? KL_H[0] : 0);
-        // Hub hebt nur die vom Meer herangeführte Feuchte (m über mLand), nie die rückgeführte
-        hubW = 0.9 * Math.min(1.5, Math.max(0, anstieg)) * Math.max(0, (mW - mLand) / (1 - mLand));
+        // Hub hebt nur die vom Meer herangeführte Feuchte (m über mLand), nie die rückgeführte — nach der Sperre
+        hubW = 0.9 * Math.min(1.5, Math.max(0, anstieg)) * Math.max(0, (mW * sp - mLand) / (1 - mLand));
       }
       // B2 jede Land-Wirkung klingt mit dem Land-Gewicht zum Meer aus (bei λ = 1 Bit für Bit der Land-Wert, bei λ = 0 der des Meers)
-      m = (1 - lam) + lam * (om * mW + (1 - om) * mNeutral);
+      m = (1 - lam) + lam * (om * mW * sp + (1 - om) * mNeutral);
       schatten = (1 - lam) + lam * kexpS(-Math.max(0, om * schranke) / KLIMA.schattenKm);
       hub = (1 - lam) + lam * (1 + om * hubW);
+      // das Relief am Regen der Front: Sperre · Föhn · Hub — genau 1 ohne Anstieg luvwärts (der Sturm liest es, ortRoh)
+      relief = ((1 - lam) + lam * (1 - om * (1 - sp))) * schatten * hub;
       meerLuv = (m - mLand) / (1 - mLand) > 0.02 ? 1 : 0;                // Feuchte mit Meeres-Anteil (Quelle luvwärts bzw. nach Küstenferne)
-      c = lam * glatt(0, 1500, kont) * (1 - 0.6 * om * mar);              // maritim = om·mar
+      // klima-kontinent: die Meeresluft am Ort ist der Anteil der Luft, die längs des EINEN Winds vom Meer kommt (om·mar) — die
+      // Kontinentalität ist ihr Rest, gedämpft von der Küstennähe in jeder Richtung (Seewind, Tage mit auflandigem Strom:
+      // glatt(−1 000, 1 500, kont), an der Küste 0,35). Vorher c = glatt(0, 1 500, kont)·(1 − 0,6·om·mar): an jeder Küste ≈ 0, auch wo
+      // der Wind vom Land kommt. Band: die Ostküste im Westwind trägt c ≈ 0,2–0,6 (aus der Jahres-Spanne: Boston, Halifax, Sapporo
+      // 0,23–0,27, Wladiwostok 0,57; WMO-Normalwerte), die Westküste ≈ 0. Ohne Meer im Fenster und kont ≥ 1 500 km Bit für Bit gleich.
+      meerLuft = om * mar;
+      c = lam * (1 - meerLuft) * glatt(-1000, 1500, kont);
     }
     // Küstenseite aus dem Gefälle des glatten Krustenfelds (± 400 km nach Ost), Abklingen landein — und seit dem Angriff auch
     // seewärts (Gegner 3, Meereis tot symmetrisch): die Randströme wärmen und kühlen das MEER an den Becken-Rändern; ohne sie war
@@ -2265,19 +2312,27 @@
         meerWest = glatt(kf + 0.02, kf - 0.08, fW) - glatt(kf + 0.02, kf - 0.08, fE);   // +1: Meer im Westen (Westküste)
         const seite = meerWest * ds;                                                    // Wirbel-Ast kehrt mit dem Drehsinn
         const decL = kexpS(-Math.max(0, kont) / 350), dec = (1 - lam) * kexpS(Math.min(0, kont) / 500) + lam * decL;   // seewärts: Randstrom ~500 km breit (gesetzt)
-        const su = (aphi - 0.8 * w) / (0.3 * w), wu = (aphi - 1.6 * w) / (0.35 * w);
-        const sub = su * su < 40 ? kexpS(-su * su) : 0, ww = wu * wu < 40 ? kexpS(-wu * wu) : 0;
+        const su = (aphi - 0.8 * w) / (0.3 * w);
+        const sub = su * su < 40 ? kexpS(-su * su) : 0, ww = wwZ;
         const sW = seite > 0 ? seite * dec : 0, sE = seite < 0 ? -seite * dec : 0;
-        const decW = (1 - lam) * kexpS(Math.min(0, kont) / 1500) + lam * decL, sWw = seite > 0 ? seite * decW : 0, sEw = seite < 0 ? -seite * decW : 0;
+        const decW = (1 - lam) * kexpS(Math.min(0, kont) / 1500) + lam * decL, sEw = seite < 0 ? -seite * decW : 0;
         // Subtropen: Westküste kalt und trocken (Ostrand-Strom), Ostküste warm und feucht; Westwind: Westküste mild, Ostküste winterkalt
         dTj = sub * (-4 * sW + 1.5 * sE);
-        dTw = ww * (5 * sWw - 4 * sEw); dTs = ww * (-1.5 * sWw + 1 * sEw);
+        // klima-kontinent: über Land trägt die Meeresluft längs des Winds den milden Winter (vorher die Küstenseite des Krustenfelds,
+        // 5·sWw: der Westwind las seine Luft nicht); über dem Meer wärmt die Westwind-Drift ihr Becken wie zuvor. Die Ostküste trägt
+        // den kalten Rand-Strom (Labrador, Oyashio) auf Land und Meer.
+        const sWm = seite > 0 ? seite * kexpS(Math.min(0, kont) / 1500) : 0;
+        dTw = ww * ((1 - lam) * 5 * sWm + lam * KLIMA.westWinterK * meerLuft + KLIMA.ostWinterK * sEw);
+        dTs = ww * ((1 - lam) * -1.5 * sWm + lam * KLIMA.westSommerK * meerLuft + KLIMA.ostSommerK * sEw);
         const decO = kexpS(-Math.max(0, kont) / 700), sEo = seite < 0 ? -seite * decO : 0;   // Ost-Rand: warmer Strom + Sommer-Monsun reichen weiter landein (gesetzt)
-        pF = 1 + sub * (-0.75 * sW + 1.0 * sEo) + ww * 0.2 * sW;
+        // klima-kontinent: der kalte Rand-Strom nimmt der Küste fast den ganzen Gürtel-Regen (vorher −0,75: die Westküsten-Wüste trug
+        // ~100 mm). Band: Antofagasta ~2 mm, Walvis Bay ~13 mm, Lima ~10 mm gegen ~500 mm des Land-Mittels bei 20–25° (≤ 5 %; WMO-Normalwerte)
+        pF = 1 + sub * (-0.95 * sW + 1.0 * sEo) + ww * 0.2 * sW;
       }
     }
-    // Gürtel über das Jahr: Deklination ±β, die Verschiebung wächst mit der Kontinentalität (Monsun)
-    const beta = kp.neigungRad, schub = (0.3 + 0.4 * c) * (1 - 0.5 * aphi / HALBPI);
+    // Gürtel über das Jahr: Deklination ±β, die Verschiebung wächst mit der Erwärmung des Landes (Monsun: das Hitzetief liegt über
+    // der Landmasse, gleich woher der Wind weht — klima-kontinent: nie die Luft längs des Winds, die Passat-Westküste ist kein Monsun)
+    const beta = kp.neigungRad, schub = (0.3 + 0.4 * lam * glatt(0, 1500, kont)) * (1 - 0.5 * aphi / HALBPI);
     // Gegner 2 (F5 Wüsten-Kante als Breitenkreis): die Hochs der Subtropen sind Zellen über den Becken, keine Bänder — die Gürtel
     // lesen die Breite verschoben um dasselbe Feld stehender Wellen (±~3°, λ 6 000–2 500 km, eigener Samen; gesetzt).
     const phiG = phi + 0.035 * fbmKm(plan.k ^ 0x27d4eb2f, x, y, z, R, 6000, 2500, 0.5);
@@ -2293,8 +2348,10 @@
     // Meer nahe Land (Gegner 3): winterkalte Festlandsluft — Randmeere schwingen stärker als der offene Ozean (Ochotsk, Hudson)
     const cL = (1 - lam) * 0.3 * kexpS(Math.min(0, kont) / KLIMA.kontiMeerKm) + lam * (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ));
     const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
-    // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel
-    const trocken = lam * KLIMA.trockenK * glatt(0.6, 0.2, pJahr / petMm(tZ)) * glatt(0, 20, tZ);
+    // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel —
+    // klima-kontinent: nur die warme Zone (voll ab 20 °C, aus unter 10 °C; vorher ab 0 °C halb bei 10 °C: die trockene Ostküste der
+    // Mittelbreiten lag 2–3 K über ihrer Westküste). Band: Gobi und Kasachstan liegen im Jahr UNTER der Breite, nicht über ihr.
+    const trocken = lam * KLIMA.trockenK * glatt(0.6, 0.2, pJahr / petMm(tZ)) * glatt(10, 20, tZ);
     const tJ = tZ - KLIMA.lapse * hPos + dTj + trocken;
     // Gegner 2 (F5 Meereis als Breitenkreis): die stehenden Wellen führen im Winter Luft aus der Breite, aus der sie kommen — dreht der
     // Wind (woher) polwärts, kommt Polarluft (kälter), dreht er äquatorwärts, Warmluft. 12 K je Einheit der meridionalen Abweichung
@@ -2313,6 +2370,12 @@
     o.niederschlagMm = pJahr; o.sommerAnteil = sommerAnteil; o.kontinental = c;
     o.windOst = wl > 1e-9 ? uO / wl : 0; o.windNord = wl > 1e-9 ? vN / wl : 0;
     o.luv = (hub - 1) / 1.35; o.lee = 1 - schatten; o.stromK = dTj; o.meerWest = meerWest; o.meerLuv = meerLuv; o.feuchte = m;
+    o.relief = relief; o.meerLuft = meerLuft;
+    // klima-kontinent DER NEBEL aus demselben Gesetz: die Küstenluft (e^(−kont/nebelKm) an Land, über Meer 1) trägt den See-Nebel; die
+    // vom kalten Auftrieb gekühlte Luft (der Rand-Strom dTj < 0 der Westküste, voll beim Taupunkt-Abstand — er klingt landein mit seinem
+    // eigenen Gesetz ab, 350 km) den Advektions-Nebel; feuchte Luft (N/PET) den Strahlungs-Nebel.
+    const kuesteNah = (1 - lam) + lam * kexpS(-Math.max(0, kont) / KLIMA.nebelKm), auftrieb = glatt(0, KLIMA.nebelTaupunktK, -dTj);
+    o.nebel = KLIMA.nebelKueste * kuesteNah + KLIMA.nebelAuftrieb * auftrieb + KLIMA.nebelFeucht * glatt(0.2, 1.5, pJahr / petMm(tJ));
     o.schneeKm = hPos + tS / KLIMA.lapse;
     o.abflussMm = lam * Math.max(0, pJahr - et);                        // B2 mit dem Land-Gewicht (offenes Meer: 0; das Wasser liest ihn nur an Land)
     o.hoeheKm = hKm;
@@ -2664,22 +2727,26 @@
   // am Anker ist jedes Feld +0 (x − x) und das Verhältnis 1 — die Heimat bleibt byte-gleich ohne Bedingung. Kein Aufrufer rechnet Δ nach.
   // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0, wo der Sommer des Orts in der Phase der Heimat liegt, sonst 0,5 — ein
   // Leser, der die absolute Phase läse, gäbe einer Heimat mit Süd-Anker den Sommer im Winter.
-  const ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
+  const ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote', 'nebelQuote'];
   // Reise, Welle 3: der Wuchs des Orts reist als Verhältnis zum Anker wie die Spende — am Anker genau 1 (x / x). Trägt der Anker
   // selbst nichts (0), fehlt das Maß: das Verhältnis ist 1, der Wuchs der Heimat gilt (immer endlich — der Ort reist als JSON).
   const ORT_WUCHS = ['decke', 'wald'];
-  // DIE EIS-ZEIT DES ORTS (Karte 2 planet.kopplung.gegenwart): lag der Ort in einer Zeit des Quartärs (`EIS_ZEITEN`, Ma: heute, das
-  // letzte Hochglazial, 0,1 … 2,6 Ma) polwärts der Eisgrenze des Planeten (`planetKlimaGlobal(plan, t).eisBreite`), trug ihn das Eis
-  // — 1, sonst 0. Sie reist als Δ zum Anker wie jede Größe (am Anker +0); der Leser ist der Findling (Stamm `_rockGeologyClass`: der
-  // Erratiker liegt, wo das Eis ihn ablud).
+  // DIE EIS-ZEIT DES ORTS (Karte 2 planet.kopplung.gegenwart): fiel das Jahresmittel des Orts in einer Zeit des Quartärs (`EIS_ZEITEN`,
+  // Ma: heute, das letzte Hochglazial, 0,1 … 2,6 Ma) unter die Eis-Linie (KLIMA.tEisC −10 °C, North 1975), trug ihn das Eis — 1, sonst 0.
+  // Das Jahresmittel ist das des Orts (planetKlimaR tJahrC: Land, Meer, Luft und Höhe), je Zeit um den Gang der Zone verschoben
+  // (T0 + T2·P2 der Energie-Bilanz zur Zeit t gegen die Zeit des Orts). Vorher las sie nur die Breite gegen die Eisgrenze der Zone (74,4°):
+  // Hochland und Kontinent-Inneres unter −10 °C trugen kein Eis, 377 von 2 000 Land-Orten. Fehlt das Jahresmittel, wirft sie beim Namen.
+  // Sie reist als Δ zum Anker wie jede Größe (am Anker +0); der Leser ist der Findling (Stamm `_rockGeologyClass`: der Erratiker liegt,
+  // wo das Eis ihn ablud).
   const EIS_ZEITEN = Object.freeze([0, -0.02, -0.1, -0.5, -1, -2, -2.6]);
-  function ortEisZeit(plan, breite) {
-    const ab = breite < 0 ? -breite : breite;
-    for (const t of EIS_ZEITEN) if (ab >= planetKlimaGlobal(plan, t).eisBreite) return 1;
+  function ortEisZeit(plan, breite, tJahrC, zeitMa) {
+    if (!Number.isFinite(tJahrC) || !Number.isFinite(zeitMa)) throw new Error('ortEisZeit: das Jahresmittel des Orts oder seine Zeit fehlt (K10)');
+    const y = ksin(breite), p2 = 1.5 * y * y - 0.5, G0 = planetKlimaGlobal(plan, zeitMa), ab = tJahrC - (G0.T0 + G0.T2 * p2);
+    for (const t of EIS_ZEITEN) { const G = planetKlimaGlobal(plan, t); if (G.T0 + G.T2 * p2 + ab < KLIMA.tEisC) return 1; }
     return 0;
   }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
-    wuchs: Object.assign({}, o.wuchs), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
+    wuchs: Object.assign({}, o.wuchs), eis: Object.assign({}, o.eis), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
   function ortAnkerRoh(plan, og) {
     const M = memoVon(plan); if (!M.ortAnker) M.ortAnker = new Map();
     const key = ortGesetzSchluessel(og);
@@ -2720,8 +2787,7 @@
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
     for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
-    const anker = planetAnker(hp, 0, og);
-    d.eis = { zeit: ortEisZeit(S.plan, breite) - ortEisZeit(hp, anker.breite) };
+    d.eis = { zeit: o.eis.zeit - a.eis.zeit };
     o.delta = d; return o;
   }
   function ortRoh(S, breite, laenge, og, aus, heimat) {
@@ -2741,7 +2807,10 @@
     const st = _orP.orogenStaerke, tJs = K.tJahrC + KLIMA.lapse * hk;
     const lam = rRL.min + (rRL.max - rRL.min) * glatt(0, 400, _orP.orogenAlterMa);
     const schAlter = _orP.scholle >= 0 ? plan.schollen[8 * _orP.scholle + 4] : 0;
-    const konv = _orP.randArt === RAND_ART.konvergent ? glatt(0, 8, _orP.randRateCmA) * kexpS(-_orP.randAbstandKm / 600) : 0;
+    // ks liest die Konvergenz JEMALS: die aktive Grenze (konv) oder das Gebirge, das sie hinterließ — orogenStaerke ist Orogen der
+    // aktiven Grenze ODER Gedächtnis der Nähte und erloschenen aktiven Ränder (punktRoh §6); vorher las ks nur die Grenze von heute,
+    // 172 von 356 Gipfeln > 2 km auf Nähten trugen ks der Ebene. Ein Gebirge ohne Konvergenz kennt das Gesetz nicht: st = 0 ⇒ ks wie vorher
+    const konv = Math.max(st, _orP.randArt === RAND_ART.konvergent ? glatt(0, 8, _orP.randRateCmA) * kexpS(-_orP.randAbstandKm / 600) : 0);
     o.wildnis = {
       land: klemm(rL, landAus(_orP.kont)),
       hoehe: klemm(rH, 0.6 + 1.0 * st),
@@ -2759,8 +2828,13 @@
     const G = planetKlimaGlobal(plan, S.zeitMa), aphi = breite < 0 ? -breite : breite, v = (aphi - 1.7 * G.zellBreite) / (0.4 * G.zellBreite);
     const wl = Math.sqrt(K.windOst * K.windOst + K.windNord * K.windNord);
     o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
-      regenQuote: K.niederschlagMm / (K.niederschlagMm + 900), sturmQuote: 0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0) };   // gesetzt
+      regenQuote: K.niederschlagMm / (K.niederschlagMm + 900),   // gesetzt
+      // klima-kontinent: der Sturm ist Wind UND Regen (WX_GESETZ sturm.rain 1) — sein Regen fällt nach demselben Relief wie der
+      // Niederschlag (Sperre · Föhn · Hub, K.relief; ohne Anstieg luvwärts genau 1). Der Nebel ist der Anteil der regenfreien Zeit
+      // (K.nebel: Küstenluft, Auftrieb, Feuchte) — wetterAt verschiebt mit seinem Δ die Stufe des Nebels.
+      sturmQuote: (0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0)) * K.relief, nebelQuote: K.nebel };
     o.biom = { koeppen: B.koeppen, hauptklasse: B.hauptklasse, biom: B.biom };
+    o.eis = { zeit: ortEisZeit(plan, breite, K.tJahrC, S.zeitMa) };   // das Eis des Quartärs liest das Jahresmittel des Orts
     // der Wuchs, den das Klima des Orts trägt — die stetige Form des Bioms, dieselbe Rechnung wie die Farbe des Atlas (`pflanzenDeckung`)
     pflanzenDeckung(K.tJahrC, K.niederschlagMm, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
     // Leit-Stützen 9×9 über 64 km in der Würfel-Karte des Ankers: gestauchte Höhen-Differenz zum Anker (t = 0) und Differenz von „land"

@@ -165,9 +165,7 @@ class AnazhRealm_kreatur_furcht {
         // der leere Anker (bis der Guss des Spielers steht, `_deferredAvatarSoul`) ist kein Leib: niemand flieht und jagt ihn
         if (this.state._deferredAvatarSoul) return 0;
         const FG = AnazhRealm._furchtGesetz();
-        const g = this._kreaturGattung(creature);
-        const d0 = FG.F.fluchtDistanzM[g];
-        if (!(d0 > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ.fluchtDistanzM." + g);
+        const d0 = this._kreaturFluchtDistanzM(creature);
         const D = FG.fluchtDistanz(d0, erinnert, menace, creature.userData.bond || 0, FG.F);
         if (!(dist < D)) return 0;
         // DIE NÄHERUNG (FURCHT_GESETZ.naeherungMS): die Fluchtdistanz antwortet dem, der auf das Tier ZUGEHT — sein Lauf dieses
@@ -179,6 +177,20 @@ class AnazhRealm_kreatur_furcht {
         const zu = sa ? (sa.vx * (creature.position.x - p.x) + sa.vz * (creature.position.z - p.z)) / (dist || 1) : 0;
         if (!(zu >= FG.F.naeherungMS)) return 0;
         return this._kreaturJagdBereit(creature, w) && this._kreaturIstBeute(creature, pm) ? 0 : D;
+    }
+
+    // DIE FLUCHTDISTANZ DES INDIVIDUUMS (m, erbe-geburt — leben.evolution.zivilisation#1, „Kinder scheuer Eltern sind scheu“): das
+    // Feldmaß seiner Gattung (tetrapoda FURCHT_GESETZ.fluchtDistanzM) am Erbe seines Tiers im Bestand (`userData._bestand`, die
+    // Achse scheu des Gesetzes des Lebens: `__lebenCore.merkmal`) — es erbt sie von Mutter und Vater (`kind`), der Riss liest sie
+    // (`fangGewicht`). Ein Leib ohne Tier (eine Bühne, die ihn selbst stellt) trägt kein Erbe: das Maß der Gattung. Bis erbe-geburt
+    // floh jedes Tier einer Gattung bei derselben Zahl (Hirsch 120 · Wolf 106 · Bär 55 · Fuchs 40 m, Streuung 0).
+    _kreaturFluchtDistanzM(creature) {
+        const FG = AnazhRealm._furchtGesetz();
+        const g = this._kreaturGattung(creature);
+        const d0 = FG.F.fluchtDistanzM[g];
+        if (!(d0 > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ.fluchtDistanzM." + g);
+        const t = creature.userData && creature.userData._bestand;
+        return t && t.a ? AnazhRealm._lebenKern().merkmal(d0, t.a, t.e, "scheu") : d0;
     }
 
     // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·

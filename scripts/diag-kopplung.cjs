@@ -9,6 +9,8 @@
 //   F4 GRAS: die uBend-Sphären biegen Halme RADIAL weg, die CPU-Seite (`_tickGrasBend`) füllt Spieler, Ritt, nahe Kreaturen.
 //   F5 DIE BÖE IM BILD (klang.K2#1): ohne Stärke steht jeder Halm, und derselbe Halm wiegt im Verhältnis der Böe am Ort
 //      (`_windAt`) — das Rauschen je Halm verschiebt nur die Phase; die zweite Welle (die Phase wandert mit dem Ort) MUSS rot sehen.
+//   F7 GASSE (klima-kontinent, stadtklima#1): die Häuser der Siedlung sind Kanal des Winds — in der Schlucht folgt `_windAt` der
+//      Gasse (fachwerk `gassenWind`), daneben Bit für Bit der alte Wind; die ungelesene Siedlung MUSS rot sehen.
 //   F6 DIE WELLE IM HALM (druckwelle-bild): die Druckwelle im EINEN Wind-Term — die Front im Halm am Radius des Gesetzes, der
 //      Winkel aus dem Luft-Weg der Welle, der Halm steht wieder auf; ohne Welle ist der Term bit-gleich der alte; der Bild-Takt
 //      trägt die Welle ein. Drei Mutanten (ohne Leser, halbe Trägheit, spätere Tafel) MÜSSEN rot sehen.
@@ -302,6 +304,44 @@ hauptLauf(async () => {
                     fail(`F3: das Gelände formt den Wind nicht oder ein Leser folgt ihm nicht: ${JSON.stringify(fd)}`);
             }
 
+            // ══ F7 GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1) — die Häuser sind Kanal des EINEN Winds: eine Gasse
+            //    längs z (w 5 m), beidseits Häuser (Fassade 5 m vom Weg-Mitte, 8 m hoch: H/W 0,8 — Schlucht), der Wind unter 45°.
+            //    Auf der Gasse folgt `_windAt` der Gasse (≤ 5°) mit der Stärke × |cos θ| (Soulhac 2008), 200 m daneben Bit für Bit
+            //    der Wind ohne Siedlung; der Täter (die Siedlung ungelesen, `_gassenWind` ohne Gesetz) MUSS rot sehen ══
+            {
+                const pts = Array.from({ length: 41 }, (_, i) => ({ x: 0, z: -60 + 3 * i }));
+                const slots = [];
+                for (const sx of [-8, 8])
+                    for (let cz = -54; cz <= 54; cz += 12)
+                        slots.push({ obb: { cx: sx, cz, phi: 0, ex: 3, ez: 5.5 }, ext: { y1: 8 } });
+                const plan = { roads: [{ pts, w: 5 }], slots };
+                const dir = { x: Math.SQRT1_2, z: Math.SQRT1_2 };
+                const mk = (mitOrt, ohneGesetz) =>
+                    Object.assign(Object.create(r), {
+                        _terrainMacroSurfaceY: () => 0,
+                        _windDirAt: () => dir,
+                        _bewohnerSiedlungen: mitOrt ? new Map([["gasse", { plan, ox: 1000, oz: 1000 }]]) : new Map(),
+                        ...(ohneGesetz ? { _gassenWind: (x, z, d) => ({ x: d.x, z: d.z, f: 1, kappa: 0 }) } : {}),
+                    });
+                const abw = (w) => {
+                    const g = (Math.abs(Math.atan2(w.x, w.z)) * 180) / Math.PI;
+                    return g > 90 ? 180 - g : g;
+                };
+                const [mit, ohne, mut] = [mk(true), mk(false), mk(true, true)];
+                const [a, a0, am] = [mit._windAt(1000, 1000, 0), ohne._windAt(1000, 1000, 0), mut._windAt(1000, 1000, 0)];
+                const [b, b0] = [mit._windAt(1200, 1000, 0), ohne._windAt(1200, 1000, 0)];
+                const gz = (o.zahlen.gasse = {
+                    abw: abw(a),
+                    faktor: a.staerke / a0.staerke,
+                    daneben: b.x === b0.x && b.z === b0.z && b.staerke === b0.staerke,
+                    mutant: abw(am),
+                });
+                if (!(gz.abw <= 5 && Math.abs(gz.faktor - Math.SQRT1_2) < 0.02 && gz.daneben))
+                    fail(`F7: die Gasse formt den Wind nicht (\`_windAt\` → \`_gassenWind\`, fachwerk gassenWind): ${JSON.stringify(gz)}`);
+                if (!(gz.mutant >= 40))
+                    fail(`F7: der Täter (die Siedlung ungelesen) bleibt grün — die Linse sieht die Gasse nicht: ${JSON.stringify(gz)}`);
+            }
+
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
             {
                 // die Sphäre bei x=2 (r=2) gegen den Slot aus (w=0, y=−1e6): der Halm links und rechts der Sphäre, an der Wurzel
@@ -522,6 +562,10 @@ hauptLauf(async () => {
         console.log(
             `  F3 Feld: Lee ${(100 * fd.lee).toFixed(0)} % · Tal-Düse +${(100 * fd.duese).toFixed(0)} % · Welt ${fd.min.toFixed(2)}–${fd.max.toFixed(2)} · Leser ${fd.folgt.length}/${Object.keys(fd.L).length} folgen ×0 (` +
                 Object.entries(fd.L).map(([n, [a, b]]) => `${n} ${a.toFixed(3)} → ${b.toFixed(3)}`).join(" · ") + ")"
+        );
+    if (z.gasse)
+        console.log(
+            `  F7 Gasse: Wind auf der Gasse ${z.gasse.abw.toFixed(2)}° zur Achse (Wind 45°) · Stärke ×${z.gasse.faktor.toFixed(3)} · 200 m daneben ${z.gasse.daneben ? "bitgleich" : "ANDERS"} · Täter (Siedlung ungelesen) ${z.gasse.mutant.toFixed(1)}°`
         );
     if (z.bend)
         console.log(

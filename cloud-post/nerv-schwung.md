@@ -1,7 +1,7 @@
 # Vorprüfung nerv-schwung — `mensch.sport.koerper#1`
 
 ZWISCHENSTAND (24.11., Zweig `nerv-schwung` über `nerv-bewegung` 5ce568cb): Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 82 von 1 718
-(`vision/karte-2-stand.json` am Kopf von `origin/punkte-maschine`). Die Sprosse bucht der GPU-Lauf der Station `k2-mensch-sport`; bis
+(`vision/karte-2-stand.json` im Zweig `punkte-maschine`). Die Sprosse bucht der GPU-Lauf der Station `k2-mensch-sport`; bis
 dahin steht sie. Von den 24 Profi-Bändern des Auftrags halten 20 (83 %); die vier offenen stehen unten mit Datei und Zeile.
 
 **Geschnitten:**

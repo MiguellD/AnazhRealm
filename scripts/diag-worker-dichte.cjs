@@ -2401,17 +2401,26 @@ async function wuchsProbe(page) {
     }
     return rot.length > 0 || !sieht;
 }
-// K7 DIE SIEDLUNG DES ORTS (Reise, w28-reise-ort — was am Ort steht, liest das Gesetz des Orts): der Spieler reist an den kalten Ort
-// (`SIEDLUNG_EIS`, Dauer-Frost) und an den heißen (`WUCHS_ORT`) und heim. Gelesen wird durch die Leser des Spiels: der Plan des
-// Prüfplatzes (`_genesisPlan`) und die Ankunft auf Grund (`_genesisMitte`, `_landAt`), die Dorf-Zellen im Umkreis von 2 km (die Wahl
-// der Zelle und ihres Grunds: `_autoSettlementCellInfo` → `_autoSettlementFindSite`) und der Hof-Baum an 81 Plätzen der Wüste im
-// selben Umkreis (`_hofBaumTraegt` je Platz und Samen gegen den Baum des Orts dort, gelaende-core `ortBaum`).
-// ROT beim Namen: das Eis trägt den Prüfplatz · die Ankunft steht nicht auf Grund · das Eis trägt ein Dorf · in der Wüste steht der
-// Hof-Baum außerhalb des Bands am Wasser (oder der Hof-Baum liest das Klima nicht: kein Leser `_hofBaumTraegt`).
+// K7 DIE SIEDLUNG DES ORTS (Reise, w28-reise-ort — was am Ort steht, liest das Gesetz des Orts): der Spieler reist an den leeren Ort
+// (`SIEDLUNG_LEER`: das Gesetz trägt dort kein Dorf und keinen Wald, `siedlung.bau` 0 und `wuchs.wald` 0) und an den heißen
+// (`WUCHS_ORT`) und heim. Gelesen wird durch die Leser des Spiels: der Plan des Prüfplatzes (`_genesisPlan`) und die Ankunft auf
+// Grund (`_genesisMitte`, `_landAt`), die Dorf-Zellen im Umkreis von 2 km (die Wahl der Zelle und ihres Grunds:
+// `_autoSettlementCellInfo` → `_autoSettlementFindSite`) und der Hof-Baum an 81 Plätzen der Wüste im selben Umkreis
+// (`_hofBaumTraegt` je Platz und Samen gegen den Baum des Orts dort, gelaende-core `ortBaum`).
+// Der leere Ort ist der polare Ort 79,07° N 0,56° O vor dem modernen Menschen (−1 Ma, `ORT_SIEDLUNG.mensch`): bau 0 aus der Zeit,
+// wald 0 aus der Wasser-Bilanz. Bis klima-kontinent stand die Linse dort heute im Dauer-Frost (Sommer am Meer −2,92 °C); seit der
+// Küste im ablandigen Wind ihr kontinentaler Sommer gehört (+0,18 °C, Alert und Eureka auf 80–82° N: +3…+6 °C), trägt das Land dieser
+// Saat nirgends Sommer ≤ −3 °C (0 von 5 756 Land-Orten), und heute baut der Mensch dort am Wasser (bau 0,546) — Gesetz, kein Täter.
+// Darum prüft die Linse ihre PRÄMISSE am Ort selbst (die Tafel, die der Wirt liest): trägt er bau oder wald > 0, fällt sie ROT an
+// „Prämisse“ und beschuldigt keinen Leser.
+// ROT beim Namen: der leere Ort trägt den Prüfplatz · die Ankunft steht nicht auf Grund · der leere Ort trägt ein Dorf oder einen
+// Baum · in der Wüste steht der Hof-Baum außerhalb des Bands am Wasser (oder der Hof-Baum liest das Klima nicht: kein Leser
+// `_hofBaumTraegt`) · die Prämisse fiel.
 // `--selftest`: derselbe Leser mit der gepflanzten Tafel der Heimat (die Lage des Wirts reicht `siedlung` und `wuchs` der Heimat)
-// fällt ROT an „Dorf auf dem Eis“ und „Baum in der Wüste“.
-const SIEDLUNG_EIS = "reise 79.07 0.56";
-async function siedlungSeite(eis, wueste, mutant) {
+// fällt ROT an „Dorf am leeren Ort“ und „Baum in der Wüste“; das Urteil über einen Ort mit bau > 0 fällt ROT an „Prämisse“ und
+// nennt keinen Leser.
+const SIEDLUNG_LEER = "reise 79.07 0.56 -1";
+async function siedlungSeite(leer, wueste, mutant) {
     const G = globalThis.__gelaendeCore;
     const tausch = async (s) => {
         const st0 = r.state;
@@ -2451,13 +2460,17 @@ async function siedlungSeite(eis, wueste, mutant) {
             }
         return n;
     };
-    const aus = { eis: null, wueste: null };
-    if (await tausch(eis)) {
-        // der Wald des Eises, wie die Welt ihn pflanzt (die Schlange des Walds und sein Faden, `_tickWaldPlan`): 600 Takte
+    const aus = { leer: null, wueste: null };
+    if (await tausch(leer)) {
+        // der Wald des leeren Orts, wie die Welt ihn pflanzt (die Schlange des Walds und sein Faden, `_tickWaldPlan`): 600 Takte
         for (let i = 0; i < 600; i++) await __seitenTakt();
         const M = r._genesisMitte();
-        aus.eis = {
-            teil: !!r._gelaende().ort.teil,
+        const O = r._gelaende().ort;
+        aus.leer = {
+            teil: !!O.teil,
+            // die Prämisse: die Tafel, die der Wirt am Ort liest (nie die gepflanzte des Selbsttests)
+            bau: O.siedlung ? O.siedlung.bau : null,
+            wald: O.wuchs ? O.wuchs.wald : null,
             platz: !!r._genesisPlan,
             grund: !!M && r._landAt(M.x, M.z, 0.2),
             doerfer: gepflanzt(dorfZellen),
@@ -2495,12 +2508,16 @@ async function siedlungSeite(eis, wueste, mutant) {
 }
 function siedlungUrteil(s) {
     const rot = [];
-    if (!s || !s.eis || !s.eis.teil) return ["die Reise kam nicht an — der Satz „" + SIEDLUNG_EIS + "“ führte in keine Welt des Planeten"];
-    if (s.eis.platz) rot.push("das Eis trägt den Prüfplatz — der Plan des Genesis-Orts liest `ortGesetz(teil).siedlung.platz` nicht");
-    if (!s.eis.grund) rot.push("die Ankunft auf dem Eis steht nicht auf Grund (Wasser an der Mitte des Orts)");
-    if (s.eis.baeume > 0)
-        rot.push(`Baum auf dem Eis: ${s.eis.baeume} Bäume stehen, wo das Gesetz keinen Wald trägt — der Wald-Faden pflanzt die Darts einer anderen Welt (sein Stand ohne die Welt, \`_waldStandSchluessel\`)`);
-    if (s.eis.doerfer !== 0) rot.push(`Dorf auf dem Eis: ${s.eis.doerfer} Dorf-Zellen im Umkreis von 2 km — die Wahl der Zelle liest \`siedlung.bau\` nicht`);
+    if (!s || !s.leer || !s.leer.teil) return ["die Reise kam nicht an — der Satz „" + SIEDLUNG_LEER + "“ führte in keine Welt des Planeten"];
+    // die PRÄMISSE vor jedem Urteil über einen Leser: trägt das Gesetz am Ort ein Dorf oder einen Wald, ist beides dort Gesetz
+    const praemisse = s.leer.bau === 0 && s.leer.wald === 0;
+    if (!praemisse)
+        rot.push(`Prämisse: „${SIEDLUNG_LEER}“ trägt nach der Tafel des Orts siedlung.bau ${s.leer.bau} und wuchs.wald ${s.leer.wald} — dort sind Dorf und Baum Gesetz, kein Täter; der Ort der Linse muss bau 0 und wald 0 tragen`);
+    if (s.leer.platz) rot.push("der leere Ort trägt den Prüfplatz — der Plan des Genesis-Orts liest `ortGesetz(teil).siedlung.platz` nicht");
+    if (!s.leer.grund) rot.push("die Ankunft am leeren Ort steht nicht auf Grund (Wasser an der Mitte des Orts)");
+    if (praemisse && s.leer.baeume > 0)
+        rot.push(`Baum am leeren Ort: ${s.leer.baeume} Bäume stehen, wo das Gesetz keinen Wald trägt — der Wald-Faden pflanzt die Darts einer anderen Welt (sein Stand ohne die Welt, \`_waldStandSchluessel\`)`);
+    if (praemisse && s.leer.doerfer !== 0) rot.push(`Dorf am leeren Ort: ${s.leer.doerfer} Dorf-Zellen im Umkreis von 2 km — die Wahl der Zelle liest \`siedlung.bau\` nicht`);
     if (!s.wueste) rot.push("die Reise in die Wüste kam nicht an");
     else if (!s.wueste.teil) rot.push("die Rückkehr in die Wüste trägt das Gesetz der Heimat — der Stand der Reise-Welt verlor `gesetz.ort` beim Speichern");
     else if (!s.wueste.leser) rot.push("Baum in der Wüste: der Hof-Baum liest das Klima des Orts nicht (kein Leser `_hofBaumTraegt`)");
@@ -2508,21 +2525,28 @@ function siedlungUrteil(s) {
     return rot;
 }
 async function siedlungProbe(page) {
-    const s = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, false);
+    const s = await page.evaluate(siedlungSeite, SIEDLUNG_LEER, WUCHS_ORT, false);
     const rot = siedlungUrteil(s);
-    if (s && s.eis)
+    if (s && s.leer)
         console.log(
-            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"}), Dorf-Zellen am Wasser ${s.wueste ? s.wueste.doerfer : "—"}`
+            `  Siedlung (K7): „${SIEDLUNG_LEER}“ (bau ${s.leer.bau}, wald ${s.leer.wald}) — Bäume ${s.leer.baeume}, Prüfplatz ${s.leer.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.leer.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.leer.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"}), Dorf-Zellen am Wasser ${s.wueste ? s.wueste.doerfer : "—"}`
         );
     for (const t of rot) console.log(`  ⛔ K7: ${t}`);
     let sieht = true;
     if (SELBSTTEST) {
-        const m = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, true);
+        const m = await page.evaluate(siedlungSeite, SIEDLUNG_LEER, WUCHS_ORT, true);
         const M = siedlungUrteil(m);
-        sieht = ["Dorf auf dem Eis", "Baum in der Wüste"].every((t) => M.some((x) => x.includes(t)));
+        sieht = ["Dorf am leeren Ort", "Baum in der Wüste"].every((t) => M.some((x) => x.includes(t)));
         console.log(
-            `  SELBSTTEST K7: die gepflanzte Tafel der Heimat (Dorf-Zellen auf dem Eis ${m && m.eis ? m.eis.doerfer : "—"}, Hof-Baum außerhalb des Bands ${m && m.wueste ? m.wueste.aussen : "—"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
+            `  SELBSTTEST K7: die gepflanzte Tafel der Heimat (Dorf-Zellen am leeren Ort ${m && m.leer ? m.leer.doerfer : "—"}, Hof-Baum außerhalb des Bands ${m && m.wueste ? m.wueste.aussen : "—"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
         );
+        // die Prämisse: derselbe Ort mit der Tafel von heute (bau 0,546 am Wasser) — ROT an „Prämisse“, kein Leser beschuldigt
+        const P = s && s.leer ? siedlungUrteil(Object.assign({}, s, { leer: Object.assign({}, s.leer, { bau: 0.546, doerfer: 15 }) })) : [];
+        const praemisseSieht = P.some((x) => x.startsWith("Prämisse")) && !P.some((x) => x.includes("Dorf am leeren Ort"));
+        console.log(
+            `  SELBSTTEST K7: das Urteil über einen Ort mit bau 0,546 und 15 Dorf-Zellen ${praemisseSieht ? "fällt ROT an der Prämisse und beschuldigt keinen Leser" : "BESCHULDIGT DEN LESER (" + P.join(" | ") + ")"}`
+        );
+        sieht = sieht && praemisseSieht;
     }
     return rot.length > 0 || !sieht;
 }
@@ -2573,9 +2597,9 @@ async function faden(page, url) {
         let rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
         // K7 DER WUCHS DES ORTS: die Reise an den heißen, trockenen Ort und heim (nach K6: der Planet-Faden steht)
         if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
-        // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): Eis und Wüste und heim
+        // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): der leere Ort, die Wüste und heim
         if (!planetIst.fehlt) rotK6 = (await siedlungProbe(page)) || rotK6;
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; das Eis trägt weder Prüfplatz noch Dorf, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; der leere Ort trägt weder Prüfplatz noch Dorf noch Baum, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");
