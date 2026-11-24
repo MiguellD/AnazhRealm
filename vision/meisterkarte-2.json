@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 32,
-    "kern": 5,
-    "kernDazu": 5,
-    "anteilHeute": 5.7,
-    "anteilKern": 0.7
+    "heute": 34,
+    "kern": 3,
+    "kernDazu": 3,
+    "anteilHeute": 6,
+    "anteilKern": 0.4
    },
    "perspektiven": [
     {
@@ -7105,8 +7105,8 @@
        "richter": "N = 100 Welten: Fremdwelt-Probe (R10) — Lebensentwurf aus Leib, Welt und Gesellschaft der Art vorhergesagt Rang ≥ 0,7"
       }
      ],
-     "heute": 1,
-     "kern": 1,
+     "heute": 2,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
      "alt": []
@@ -11228,8 +11228,8 @@
        "richter": "Fremdwelt-Probe (R10): Sinn und Glaube der Art aus dem Werk gelesen Rang ≥ 0,7"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Nie gemessen; keine Station der alten Karte misst Kunst am Bau oder im Raum.",
      "alt": []
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 92,
+  "heute": 94,
   "davonKopplungen": 33,
-  "kern": 6,
-  "kernDazu": 6,
-  "anteilHeute": 5,
+  "kern": 4,
+  "kernDazu": 4,
+  "anteilHeute": 5.1,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 38
+  "nachwache": 40
  },
  "zusammengelegt": [
   {
