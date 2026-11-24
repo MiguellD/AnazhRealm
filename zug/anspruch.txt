@@ -64,3 +64,5 @@ w28-nerv-schwung karte2.mensch.sport.koerper#1
 w28-wind-saison karte2.leben.pflanzen.kraft#2
 # 713 (main bf5a1542, 24.11. 11:13): z713 w28-saison-schatten (mit w28-klima-hebung im selben Zug): jede Baumart treibt nach ihrer Wärmesumme aus, die Pfütze trocknet im Hausschatten später
 w28-saison-schatten karte2.leben.pflanzen.jahreslauf#2,karte2.planet.kopplung.stadtklima#1
+# 714 (main daee7541, 24.11. 11:48): z714 w28-tat-aufwaerts: das gebaute Haus senkt das Leben ringsum, das Werk ist eine Tat im Feld (orteGeaendert 0 → 10 von 10)
+w28-tat-aufwaerts karte2.same.kopplung.aufwaerts#1
