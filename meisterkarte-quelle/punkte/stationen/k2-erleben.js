@@ -101,7 +101,8 @@ const SOG_AN = async (r, T, a) => {
     const probier = [];
     for (const q of (r.chatDslPatterns || []).concat(r.chatSystemPatterns || [])) if (Array.isArray(q.hilfe)) for (const b of q.hilfe) probier.push(String(b).toLowerCase());
     const g = gruss.toLowerCase();
-    const frei = (t) => new RegExp("(^|[^\\p{L}\\p{N}])" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^\\p{L}\\p{N}])", "u").test(g);
+    // eine Taste steht frei, wenn kein Buchstabe und keine Ziffer an sie grenzt (der Gruß ist kleingeschrieben)
+    const frei = (t) => new RegExp("(^|[^a-z0-9äöüß])" + t.replace(/[.*+?^$()|[\]\\]/g, "\\$&").replace(/[{}]/g, "\\$&") + "($|[^a-z0-9äöüß])").test(g);
     const taste = tasten.find(frei) || null, satz = probier.find((b) => g.includes(b)) || null;
     return { nennt: taste || satz ? 1 : 0, taste, satz, tore: (plan.tore || []).length, stationen: (plan.stationen || []).length, gruss: gruss.slice(0, 80) };
 };
