@@ -1144,6 +1144,8 @@ class AnazhRealm_stoff_karte {
         const su = this.state.seasonUniforms;
         still(su && su.uLaubPraesenz, (w) => w.set(jahr.praesenz.x, jahr.praesenz.y, jahr.praesenz.z));
         still(su && su.uSeasonMul, (w) => w.setRGB(jahr.mul.r, jahr.mul.g, jahr.mul.b));
+        // … und die Wärme der Stufe (jahreslauf#2, `uLaubJahr`): die Karte backt das Laub JE ART ihrer Gestalt (`_jahrLage`)
+        still(su && su.uLaubJahr, (w) => w.set(jahr.laubJahr.g, jahr.laubJahr.herbst));
         // … und trocken: die Nässe der Welt (`atmoUniforms.naesse`, wetter.K2) dunkelt die Albedo jedes Foundry-Stoffs — Regen
         // backte sonst in die Karte (Nässe 1 und Winter-Tönung bewegten 320 085 Albedo-Bytes der Fichte, gehalten 0)
         const au = this.state.atmoUniforms;
@@ -1849,6 +1851,8 @@ class AnazhRealm_stoff_karte {
         o.phase = mitte;
         this._saisonPraesenz(mitte, o.praesenz);
         this._saisonMul(mitte, o.mul);
+        const J = this._laubJahr(mitte); // die Wärme der Stufe (jahreslauf#2): das Laub der Art im Bake
+        o.laubJahr = { g: J.g, herbst: J.herbst };
         return o;
     }
 
