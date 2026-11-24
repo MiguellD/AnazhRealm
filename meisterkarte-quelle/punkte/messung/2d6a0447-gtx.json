@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T20:43:23.935Z",
+ "zeit": "2026-11-24T20:44:06.128Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -1671,6 +1671,147 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.kopplung.leib#1": {
+   "gruen": false,
+   "zahl": "S1 lagenDelta 0 gegen Soll > 0 ✗ · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2d6a0447-gtx\\auge-mensch-leib-s1-sommer.png ↔ C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2d6a0447-gtx\\auge-mensch-leib-s1-winter.png · Täter: stamm/siedlung-bewohner.js:374 _bewohnerTracht (der Schnitt der Epoche aus fachwerk kleidung; keine Jahreszeit, kein Wetter) · gemessen vor dem Wurf der Leiter nach 60,012 s: der Deckel der Leiter 60 s",
+   "exit": 0,
+   "minuten": 2.23,
+   "grund": "ROT: S1 lagenDelta 0 gegen Soll > 0 ✗ · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2d6a0447-gtx\\auge-mensch-leib-s1-sommer.png ↔ C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2d6a0447-gtx\\auge-mensch-leib-s1-winter.png · Täter: stamm/siedlung-bewohner.js:374 _bewohnerTracht (der Schnitt der Epoche aus fachwerk kleidung; keine Jahreszeit, kein Wetter) · gemessen vor dem Wurf der Leiter nach 60,012 s: der Deckel der Leiter 60 s",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfbafe7bfbba1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 133.7,
+   "fremd": {
+    "s": 137.3,
+    "takte": 63,
+    "fremdS": 49,
+    "kerne": 0.357,
+    "fensterKerne": 0.8,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.13
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.58
+     ]
+    ],
+    "dienerS": 32.22,
+    "diener": [
+     [
+      "System",
+      16.53
+     ],
+     [
+      "dwm.exe",
+      8.5
+     ]
+    ],
+    "geraetS": 53.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.66
+     ],
+     [
+      "svchost.exe",
+      16.03
+     ],
+     [
+      "SearchIndexer.exe",
+      2.16
+     ]
+    ],
+    "eigenS": 368.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T20:44:06.128Z",
+   "abdruck": "0cf7c4e58ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "S2 r 0 gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach)",
+   "exit": 0,
+   "minuten": 2.23,
+   "grund": "ROT: S2 r 0 gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfbafe7bfbba1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 133.7,
+   "fremd": {
+    "s": 137.3,
+    "takte": 63,
+    "fremdS": 49,
+    "kerne": 0.357,
+    "fensterKerne": 0.8,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.13
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.58
+     ]
+    ],
+    "dienerS": 32.22,
+    "diener": [
+     [
+      "System",
+      16.53
+     ],
+     [
+      "dwm.exe",
+      8.5
+     ]
+    ],
+    "geraetS": 53.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.66
+     ],
+     [
+      "svchost.exe",
+      16.03
+     ],
+     [
+      "SearchIndexer.exe",
+      2.16
+     ]
+    ],
+    "eigenS": 368.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T20:44:06.128Z",
+   "abdruck": "8446bfc95780",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1690,7 +1831,8 @@
   "k01e78465f1ef": "dVTRcpswEPwXPyZVZAwY0Ewe5OCOPW06ziecxAmIMXgkEVp3+u8dsLENJPcCA7t3e3sn/Z0dQe4hxad3U5UzNnuYfZsZ+EBiUH+gfno3MzaLpLNAl/FzUM75SwuTOj9aQ4tcUBAlZAcktbaYF0+yo4FALwkZbdY83VGq6InGDb/GC39+HqcpBCYVsaDwmsQPE+WzMbA2KQgkUKuu8AX8MIIJKJOhpmjpB+iz7R/O19P6SQ5oSZGXps/oJEGk5oz20bxOOBoacgLMCtQXEoaO44kLKVy1zbYGjIiqqI0ZFAvdxF+EjNJojE3R5DKz5KgrgeUFLqJF4ABbNZM+0mNN1L0iEAJCMXYxAyxT1AMNc1eqpcPo73CcdA8H1EBKyHov526wEDdvKKWbqZaiE96VKL8Yk5FZrg/D5pSHi7nLfk4TmgwS1GRfGXtFuxh4c3He0G1Mu+cuXI2ZNym94wAQ3o2XhpRvJp2bStkGNJL0WPcj9tAPfMb5dgK2cDhcUL5yPVeObTe2Xct7GV6wRERG6WN83rJJ0+clJifMi56klOdFPntZeWPwh4YDAZHqXKl+VsKXKvpstRosLBFVZXsrnSBw3daS8n6yv7qTu70dXx6nb97rd56u+SB+8NUunejvqlTa9uJ9sZwrj6muWzlB59qSBmTWwxdKIETsE+gJdYEpDuwUQRi1i9nIO7Ve//J43xY9TaZ9yrE1ujS16YctwRP+eUsuF9h2eHk0qPcCyv2FIBPHWSYs5nFKH9eboUHx2y6Mr4n6oJ2Pm4wPvzd8y7s1PqKkCrRAaiElGtXgxm7/HnWl8vbGoxnUJoPC3iD//gM=",
   "k65da12e7b54a": "bVVNj5swFPwvOXbLms9gLO3BKVslUrclxx6fzTOwIRDZZKlS9b9XEEgC7DtESjLPM8yMk7+rE8gDZPj8bupqxVZfVl9XBj7QMqg/UD+/mxVbRdJx0WPdV1IXp8aQshAERAX5Ea2zbrAon2UPBYF+ShlpX3mWEKLIhcTty8t8tRSY1lYDCm+LAU1VsOA4mwwEWnBWPdkAtm26doGRfmjMf8XkNu0b54mv/ITGs8MEVOlUbbQOQgzYruX8lS9UpgVgY5VFZUZeJw0jZbMHrsWOhta6AOYl6mEJqeP4YhS74Zz31swWVXk2ZkJGvTRwKSMkmmMzNIXMG+uka4HVABeRGzrANku3s9PZUo+KQAigYu51DlhlqCcabE+qtcPIHzo/9ABH1GBVkI9e2l7oirs3hJDtUkvZC+8pRuGpEwauM1nsQiUfncF8x4fp39PtDTF+Hmf8PvsFoZF5oY9Tq5SPru2xH0t5JocUtXWoTXNDexj6tmD9+bv4ypvQzXzz/mBjfgBAH8pCKOHbhY+mVk0LGq3sdB4L42MQBozz3QLcwPE4oALl+Z6ch2iaruSPMvxwjYiMkKfrJVk+9PVKWBcsynFJKd+PAvZt48/BHxqOFohMF0qNyYtAquizorZgzKxRTuTIdThLezYt5SSZtmF+MJaNJeq6GTNywtDzGPFI9bj3s+1DeyhInO39t+88e+WT2cX7JFsY07PUuhm1B2JtK5+pXqNcoAvdWC3IfIS7SiBEjHiL0C+oS8xwYowIadTdn1YOSruahYMh6mli0GV5YoFdgpU5m7FFEnwRsE8yb1EfBFSHAShTx1mnfb83v/h2aky8T2hMFtN2/iX5pveX/76+XElOKMlJ16rofm5JDmeTQ9nc/1/+/Qc=",
   "k1d97a6820fc4": "bVXbbqMwFPyXPG6XmmswlvrglK4SabtNpf2BYzgGGgKRDWWV1f77ChInXHqeEjTjM8yMk7+rEyQHyPDxQ9fViq2+rb6vNHyipVF9onr80Cu2ihLHRY/xyxDO+XMPS1RxajQpC0FAVJAf0WpVg0X5mAw0EOinlJHuhWd7QiQ5k7h7eppTS4FpbTUg8UYMaCoDNge2OgOBFrRyWHYF2zZdu8DIMDTmbzG5TffK+d6X/p7Gs8MEVOlUbbQOQgzYruP8hS9UpgVgY5VFpc1eJw0jabPRrgVHQWedAfMS1ZWE1HF8YcRuejt7a2ZEWbZaT5ZRLw1cygiJ5tgMdZHkjXVStcDqCheRGzrANku3s1NrybEiEAKomHudA1YZqokG20vk2mHkD50feoAjKrAqyI2Xthe64u4NIWS71FIOwocVRnjqhIHrTIh9qOSzN5jvuKlg/51ubwjzPM74fd4XC3WSF+o4tUr66Noe+7mUp3NIUVmHWjc3tIehb4vLTdjFl717upkz7y9m8gMAOioLoYRvFz7qWjYdKLSyU2sK42MQBozz3QLcwPF4RQXS871kHqJu+pKPZfjhGhEZIQ+XS7J86cuVsM5YlIYkpe9HAXveZHPwp4KjBSJThZQmeREkMvqqqB2WjSXqujFWOmHoeYx4pBqH/asbvB3lGGfv/usP3r3wyez4XM6woVaNER6ItS19JofyJAt0oRqrgyQ3cFcKhF76IpczqhIznFgpQhr1Fe+SkVLffHiYFPi8PLHA3uRKt9oEnYAvAvZFLB2qg4DqcAUmqeOs06GCmze+nXry297TuL8qk/Gy3rs434yfP1/8O2FCTqqWRf+LSHJodQ5lc/87+Pcf",
-  "ke86ef27c4b38": "bVVdj5swEPwveeyVM5/BWLoH54iUSNc2+QlrswYuBCIbjjZV/3sFCUmA7BtohpmdXZu/ixPIA6T4+mmqcsEW3xbfFwa+0DKov1C/fpoFW0TScdFjfM+7Ipzz9w4mdX6qDSlyQUCUkB3RanSNefEqexoI9BPKSLvm6Y4QRc4kbt/eptRCYFJZNSi8EQOaqIBNgY1JQaAFjerFrmDbpksXGOmLxvxXTG7VUs53vvJ3NJ58TECZjN1GyyDEgG3/cL7mM5dJDlhbRV6aQddJwkjZ7K71Y8bR0FpnwKxAfSUhdRxfDGZXXZxdNBOiKhpjRmLUSwKXMkKiKTZFk8ustk66Elhe4SJyQwfYap52emos9egIhAAqpllngGWKeuTB9qRaOp131ds37k79ppyv+FTkAEfUYJWQDdnaXuiKe1aEkM3cW9E30ksOjSROGLjOiNgNmXx1gfMtv1b/TDc3xPA+Tvm99jNBI7NcH8fRKR9d22Mfc3smgwS1dahMfUN7GPq2YP33t/FFd0dXU+a9sWGeAEAflodQwjd0plipugWNVnpqhgXyMQgDxvl2Bq7heLyiAuX5nmR8VusnrDIZWfPDJSIyQl4uB2kexOXYWGfMi4GklO9HsxP7peFogUh1rtSwCSKQKnq2yC0WtSWqqh6idcLQ87qIysfh/2z7rB96itO9Xxerdj1udTtby16h0vVgOhBLW/lM9cskZ+hc11YLMhvgrhIIEXsCPaMuMMVRjCKkUbfy7eWwkHN3FYXXq0K9jBb6PJv8Occu4NI0Zhi8BF8E7MlIWtQHAeXhCpSJ4ywT9sE5X/3im4dEWv4e73c07o7OqLy0y+4945f3sst0uM9OKMlJVyrvbkySQWMyKOr77+Lffw=="
+  "ke86ef27c4b38": "bVVdj5swEPwveeyVM5/BWLoH54iUSNc2+QlrswYuBCIbjjZV/3sFCUmA7BtohpmdXZu/ixPIA6T4+mmqcsEW3xbfFwa+0DKov1C/fpoFW0TScdFjfM+7Ipzz9w4mdX6qDSlyQUCUkB3RanSNefEqexoI9BPKSLvm6Y4QRc4kbt/eptRCYFJZNSi8EQOaqIBNgY1JQaAFjerFrmDbpksXGOmLxvxXTG7VUs53vvJ3NJ58TECZjN1GyyDEgG3/cL7mM5dJDlhbRV6aQddJwkjZ7K71Y8bR0FpnwKxAfSUhdRxfDGZXXZxdNBOiKhpjRmLUSwKXMkKiKTZFk8ustk66Elhe4SJyQwfYap52emos9egIhAAqpllngGWKeuTB9qRaOp131ds37k79ppyv+FTkAEfUYJWQDdnaXuiKe1aEkM3cW9E30ksOjSROGLjOiNgNmXx1gfMtv1b/TDc3xPA+Tvm99jNBI7NcH8fRKR9d22Mfc3smgwS1dahMfUN7GPq2YP33t/FFd0dXU+a9sWGeAEAflodQwjd0plipugWNVnpqhgXyMQgDxvl2Bq7heLyiAuX5nmR8VusnrDIZWfPDJSIyQl4uB2kexOXYWGfMi4GklO9HsxP7peFogUh1rtSwCSKQKnq2yC0WtSWqqh6idcLQ87qIysfh/2z7rB96itO9Xxerdj1udTtby16h0vVgOhBLW/lM9cskZ+hc11YLMhvgrhIIEXsCPaMuMMVRjCKkUbfy7eWwkHN3FYXXq0K9jBb6PJv8Occu4NI0Zhi8BF8E7MlIWtQHAeXhCpSJ4ywT9sE5X/3im4dEWv4e73c07o7OqLy0y+4945f3sst0uM9OKMlJVyrvbkySQWMyKOr77+Lffw==",
+  "kfbafe7bfbba1": "bVXbbqMwFPyXPG6XmmswlvrglKySVavSTziGY6AhENlQVlntv68gIeGS8wRojmc8c2z+rk4QHyDF5y9dlSu2+rH6udLwjYZG9Y3q+Uuv2CqILRsdxi9FOOevHSxW+anWpMgFAVFCdkSjUTXmxXPct4FAN6GMtFueRoRIciZhy2+15S8v82UKgUll1CDxtohHE+mxObDRKQg0oJE98RVsmnRtAyN90ZB/hORW7TvnkSvdiIY8opKnC3YBZTLdQbD2fPTYvn2oNskBa6PISz3wW4kfSJONOBc9ClrjDJgVqK5NSC3LFYPoTWdNZ9esURaN1hMy6iSeTRkhwRybos7jrDZOqhJYXuEisH0L2KZd7CM9NYYcKwIhgIq55xlgmaKaaDCdWK4tRv7Q+aIHOKICo4Rs8NJ0fFvcvSGE7JZail54TzEITyzfs61JYxcu+e4M5vthnPp3urshhu9heh85/rkg1HGWq+PUKumibTrsbSlPZ5CgMg6Vrm9oB33XFJfTsQ8vvBHdzDvvGxvyAwA6GhZCCd8tfNSVrFtQaKSnZhgYFz3fY5zvF+AajscrypOO68TzEHXdDflYhuuvEZER8nQ5LMtNX46Ecca8GJqkdN3AY68bdw7+VnA0QKQql3JIXnixDB4NaotFbYiqqgcrLd93nM6Schx21N8a+1GOYfrpvv/i6ZZPas95tDzXPUul6kG8J9amdJnsByheoHNVGy3E2QC3pUAI2APoGVWBKU7sFD4NujFv45Fad3h4mgzxeZH2OcfO6FI3egg7Bld47EE0LaqDgPJwBcaJZa0T9ptzvvngu6kx4WdEQ7Kodsv5/q3ko1uZv/Ke5IQxOalK5t2tSDJodAZFff9N/PsP"
  },
  "sitzung": {
   "start": "2026-11-24T20:41:56.498Z",
@@ -2496,46 +2638,17 @@
   },
   "karte2.same.preis.ausdauer#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "zahl": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "grund": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-24T20:43:23.564Z",
+   "zeit": "2026-11-24T20:43:35.118Z",
    "abdruck": "d73938ad5063",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 3
-  },
-  "karte2.mensch.kopplung.leib#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-24T20:43:23.627Z",
-   "abdruck": "0cf7c4e58ad0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2
-  },
-  "karte2.mensch.kopplung.kultur#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-24T20:43:23.627Z",
-   "abdruck": "8446bfc95780",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#1",
-   "modus": "session",
-   "offen": 2
+   "offen": 4
   },
   "karte2.planet.wasser.eis#2": {
    "gruen": false,
