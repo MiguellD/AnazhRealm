@@ -1,7 +1,7 @@
 {
  "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
  "geraet": "gtx",
- "zeit": "2026-11-24T01:06:16.281Z",
+ "zeit": "2026-11-24T01:09:52.918Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.wirtschaft.technik#1": {
@@ -1812,6 +1812,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.wasser.seegang#1": {
+   "gruen": false,
+   "zahl": "S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht",
+   "exit": 0,
+   "minuten": 1.84,
+   "grund": "ROT: S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d6fd56661a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 110.3,
+   "fremd": {
+    "s": 113,
+    "takte": 49,
+    "fremdS": 158.83,
+    "kerne": 1.406,
+    "fensterKerne": 2.18,
+    "namen": [
+     [
+      "grep.exe -o -i -E .{0,300}(acuity|spatial resolution|20/)… quelle-cerv/review.txt",
+      29.59
+     ],
+     [
+      "grep.exe -o -i -E .{0,250}(cycles per degree|cpd|axial le… quelle-cerv/review.txt",
+      23.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.42
+     ]
+    ],
+    "dienerS": 57.19,
+    "diener": [
+     [
+      "dwm.exe",
+      23.81
+     ],
+     [
+      "System",
+      22.05
+     ]
+    ],
+    "geraetS": 80.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      46.75
+     ],
+     [
+      "svchost.exe",
+      30.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.06
+     ]
+    ],
+    "eigenS": 325.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T01:09:52.918Z",
+   "abdruck": "9bbbae9d88a3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.eis#1": {
+   "gruen": true,
+   "zahl": "S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer",
+   "exit": 0,
+   "minuten": 1.84,
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d6fd56661a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 110.3,
+   "fremd": {
+    "s": 113,
+    "takte": 49,
+    "fremdS": 158.83,
+    "kerne": 1.406,
+    "fensterKerne": 2.18,
+    "namen": [
+     [
+      "grep.exe -o -i -E .{0,300}(acuity|spatial resolution|20/)… quelle-cerv/review.txt",
+      29.59
+     ],
+     [
+      "grep.exe -o -i -E .{0,250}(cycles per degree|cpd|axial le… quelle-cerv/review.txt",
+      23.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.42
+     ]
+    ],
+    "dienerS": 57.19,
+    "diener": [
+     [
+      "dwm.exe",
+      23.81
+     ],
+     [
+      "System",
+      22.05
+     ]
+    ],
+    "geraetS": 80.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      46.75
+     ],
+     [
+      "svchost.exe",
+      30.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.06
+     ]
+    ],
+    "eigenS": 325.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T01:09:52.918Z",
+   "abdruck": "995bea42b323",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wasser.seegang#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1845,7 +1985,8 @@
   "k31a8c4bfa77e": "dVVdj5swEPwveeyVMwkQjKV7cI6oOant5aT7A2uzBi4EIhtCm6r/vSKJEz6ufkIwy8zOzsKf2QHkDlJ8/DBVOWOzL7OvMwNHdAzqI+rHDzNjs0jOF+gxfjmEc/7cwaTOD7UhRS4IiBKyPTqNrjEvHuW5DAT6CWWkXfN0S4giJxK3T0/j0kJgUjk1KLwVBjRRARsDG5OCQAcadSa7ggPXmwvFyPnQmL/G5HbaH5xvfeVvaTx6mYAyGaqNlkGIAXv5zfmaT1QmOWDtFHlpLO88CSPlsh7XpEZD65wAswL1tQjpfO4LK3bV2dlZMypURWPMgIx6SbCgjJBojE3R5DKrnYOuBJZXuIgW4RzYaup2emgc1VcEQgAVY68zwDJFPdDgelIt54z8ovx/hxw7I9Zj0h3sUYNTQma9dr1wIe7eEUI2U63FubGzhHtjfpDAoLAbesc70EA3t6f2fpz2hL5NyIzMcr0f2qh8XLge+z6VZjJIUDu7ytQ3NPUBkF63JCb8jXfhGwfP3JuydQBAe0EilPANnTBWqm5Bo5MeGhsmH4MwYJy/TMA17Pd2P5Tne3I8YFN3C9CXEYSeoktGyMNlgaZNX9bFOWFe2CKlfD8K2PMqHYOPGvYOiFTnStmpi0Cq6LMQt1jUjqiq2loiKCpkxCNlf9A/287adW+OcVvJb8/p2yiHaz6Wc2aodH3rVixd5TN1DqycoHNdOy3IzMIXSiBEjHiTuZxQF5jiwEoR0qiLdyt7Sn178TAI72n6xhw7k0vTGDtoCb4I2CdjaVHvBJQ7K9MN5fISwdUr3/QDz1/e3S2NCWmHVnl6vVq1m8x+Kw4oyUFXKu++kCSDxmRQ1Pffw99/",
   "k6c69acc79a99": "dVXbjpswEP2XPHbrNQkQjKV9IMuqWamXrNQfGJsxsCFAbQhVqv57RRInXLbzhOCMz5mZM+bPoga5hxQf301VLvji0+LzwsARiUF9RP34bhZ8EcrlCl0eXYJGUfTcw6TO68bQIhcURAnZAUmrG8yLR3lOA4FewjjtXqJ0R6miJxp3T0/T1EJgUpEGFN4SfZYon0+BrUlBIIFWncmuYN9xl0Jxeg4WRz9ieovuWxTtPOXtWDw5TECZjNWGaz9A/1zkSzRTmeSADSny0ljeZRKEyuEDrlmOho6cALMC9TUJ2XLpCSt205P1rZkkqqI1ZkTG3MRfMU5pOMWmaHKZNaTWlcDyChfhKlgC38y7ndYtUUNFIAQwMe11BlimqEcaHFeq9ZLT3yz6X9Ajm+rbwwE1kBIy22fHDVbi3jdK6XauszgXdaa/F+X5CYwS+4HTI6V3/v7V9vbVvo/Tgci3GZmRWa4P4xYqD1eOy7/OpZkMEtRkX5nmhmYeALLrhsQ0eot6401NZ+5F2TwAYAMTUUajLZsxVqrpQCNJ69YayUM/6N36OgM3cDjY3VCu58rpcE3Tm38oww9cxdac0ofL8syLvqwKOWFe2CSlPC/0+fMmnYKPGg4ERKpzpezUhS9V+JGBOywaIqqqsS0RDBVyeqLlcNDfu8tm3iPuKvnlOZ2P83xipZtbdWLtKI+r3hydnKFz3ZAOZGbhKyUQeqmzOZxQF5jiqHUiYGFv504OlHn24WFk1tP8xBz7ppamNXawEjzh8w/G0KHeCyj3VqYTyPXFcpsf0Xa0h68/nZ0XU9qN19P99bLZdNvM3gs1Sntz031O9pWuWzP6E/SIWlcq7+9LmkFrMiiaO+TvPw==",
   "kf1c5e28a9b89": "bVXRkqIwEPwXH28vGxWQkKp9iItV7tVdrX7CJEyAFcFKQO68un+/Qo0KOE8U9GR6enrC38kB1A5SfP2yVTnhk2+T7xMLRyQWzRHN65ed8EmkZnP0uLgEFUK8dzBl8kNtaZFLCrKEbI+kMTXmxas6p4FEP2GctiuRbijV9ETjVtxiJd7ehscUEpOK1KDxdkjAEh3wIbCxKUgk0Ohz4Ss4mHozqTk9B4vFZ0xv0f4SYuNrf8NiIYQW6ai6hDLpdxAtghAD/vHnKdskB6xJkZfW1Z8lYaSn/KHmKMdAS06AWYHmmoRsNvOlI73spOnkGiTqorG2V4x5STBnnNJoiE3R5iqrycFUEssrXEbzcAZ82Y76SA8N0Y+MQEpgcqh5BlimaHocpp7Sixmnv9nw0B3s0QApIXNaTr1wLu/aUErXYy7Fmfi5xJ24HyTQS+yGS4+UOit1z5Stb1/d+zi9201sR8WsynKz78ukfZxPPf5zTM1mkKAhu8rWNzTzAZBdNyOmYis6k8XDzHtTLg8A2INRKKNiPdLQVrpuwSBJD40zi49BGHAhPkbgGvZ7twfa8z01HKCtO4M/0ghCT7MFp/Tlsijjpi/rQE6YFy5Ja9+PRht5NLAnIFOTa+0mLgOlo2cGbbGoiayq2skhGWrs5Cgfh7xpL/fEPeK2Uqv3dCv6sRJD3ucKlalvncrFVPtcd0Zp1Qidm5q0oDIHn2uJEPEn0BOaAlPsyShDFnXWbtUDU989vPSMexpN+ZRjJ3BpG+uGrMCXAX8ykhbNTkK5czSnoVow/kMIsfwU674o8XbDYjoMr+303JTi4SYW7xf9DqjowVQ6725CmkFjMyjq+6/h338=",
-  "ka40fd0d90f36": "bVZdk6I4FP0vPq6DQQkSUtUPobFap7q3sXZeZt8SuAFaPqyAxnJr/vsWICrQeUAx5557cnJv4n+zsFRQLXJepBKqevFVlcWMzv6a/ZhJHiYa1MFoIIuvakZnoWtDZFHkIISQm2LpIvbhNS9o3jyuhPnqajWvnmbsc8eCeYAQ0+w2/BbWDt19bKI5QxYiSH/sveyff8mWfDDNNuyDMfbpf7F9F6kD5Pah88CyLxokQQ6SvwjT+6zhJmi+kR3ev2P7cb1ixrY92338xszBnvZiFsRN3C3BJ7tYCN71A7h/ZS+zH7O0iOCySOo8u7l05OGBx/BsXMVzKJ5cc7m55mv6rvFLO3sGowJ1BnWbDpcrsOgtD2KMvTawMMlTiOCJR1puaK5pv4ZN92WDPbTf7Bmufn9g7+xeGXtl4tJh5v5hxxh7awlVeqwrFKU8Niqo6wxyKOpF2HIv8dJ0JNUBCRjzhh4NXjcvT1xZKhAXBU9yME6qhjS70XEBOCIU6Q2LA4QkuiL/ycw39jKhyQREpVFzCXcSm0TSpmPgqYq5AIOfZJv4BrZNaykk7faP+OzTf+y9/mAswBIHxG9WMCIUvIiG6t217YBNd7oxeaI0SjnURpYWVZ97GTmuNOlTvkmM4tq4ckgyULcgIMslFr3g1uPGqlGgzE5VNUhGrMheEYqQO8bGUKVhUhtHVQoobnDhrpwlp56erCM+ngz5rIgLwYkY+51wKGJQAw2mFcr1kqILGZMeeA6KGwVPei9Ny1kJ+tyK26mWrBXepngIx3bEB4HNxjbPvozQuflpe5+9nzLxU8Hup8nKaugRcRyXWOOFl2pkJQYuQ5PemYPLeAeqMElVPoySGFamRd+ni64SHoEyDmVVP6RgzoHccviobfEA++PIh119HOecPJUgIohtJ7tTlbLWXIERH099GWKwHZsytpuAax6NHJBLaU07sqp5nvdtKC1shd8gimig13YsSdYUoXnXp1N3uo40rpBmfZCUGLs2ffXwGHwGdYBEVQXU16FkJ3SdpTsWdFY8N7iIVSplX6jCDqX7XV9pyGpDlGV/VhJBQELjdTEoTh22p/Jj+LoM317j+53jdXX5N2PftECbpVT13SGxNiWmsmOeoFNVG5qHSQ9fSQG8kT/Z9CuoDGIY2C8c4jZd2Uru1eLpJd1d6hPGFJqNKapT1VdRyLGwu/K7nfO74cnZ/JMQvDj0ck0nXBP6k/nxzznbDu6b3S8zID6aDN14GySeHqB1k+QIITqqUqbNYY4SfqoSng3+zZyhiEqF6kQBLNo7NU+L7l6dTOdldMqeANzibrSisz//Aw=="
+  "ka40fd0d90f36": "bVZdk6I4FP0vPq6DQQkSUtUPobFap7q3sXZeZt8SuAFaPqyAxnJr/vsWICrQeUAx5557cnJv4n+zsFRQLXJepBKqevFVlcWMzv6a/ZhJHiYa1MFoIIuvakZnoWtDZFHkIISQm2LpIvbhNS9o3jyuhPnqajWvnmbsc8eCeYAQ0+w2/BbWDt19bKI5QxYiSH/sveyff8mWfDDNNuyDMfbpf7F9F6kD5Pah88CyLxokQQ6SvwjT+6zhJmi+kR3ev2P7cb1ixrY92338xszBnvZiFsRN3C3BJ7tYCN71A7h/ZS+zH7O0iOCySOo8u7l05OGBx/BsXMVzKJ5cc7m55mv6rvFLO3sGowJ1BnWbDpcrsOgtD2KMvTawMMlTiOCJR1puaK5pv4ZN92WDPbTf7Bmufn9g7+xeGXtl4tJh5v5hxxh7awlVeqwrFKU8Niqo6wxyKOpF2HIv8dJ0JNUBCRjzhh4NXjcvT1xZKhAXBU9yME6qhjS70XEBOCIU6Q2LA4QkuiL/ycw39jKhyQREpVFzCXcSm0TSpmPgqYq5AIOfZJv4BrZNaykk7faP+OzTf+y9/mAswBIHxG9WMCIUvIiG6t217YBNd7oxeaI0SjnURpYWVZ97GTmuNOlTvkmM4tq4ckgyULcgIMslFr3g1uPGqlGgzE5VNUhGrMheEYqQO8bGUKVhUhtHVQoobnDhrpwlp56erCM+ngz5rIgLwYkY+51wKGJQAw2mFcr1kqILGZMeeA6KGwVPei9Ny1kJ+tyK26mWrBXepngIx3bEB4HNxjbPvozQuflpe5+9nzLxU8Hup8nKaugRcRyXWOOFl2pkJQYuQ5PemYPLeAeqMElVPoySGFamRd+ni64SHoEyDmVVP6RgzoHccviobfEA++PIh119HOecPJUgIohtJ7tTlbLWXIERH099GWKwHZsytpuAax6NHJBLaU07sqp5nvdtKC1shd8gimig13YsSdYUoXnXp1N3uo40rpBmfZCUGLs2ffXwGHwGdYBEVQXU16FkJ3SdpTsWdFY8N7iIVSplX6jCDqX7XV9pyGpDlGV/VhJBQELjdTEoTh22p/Jj+LoM317j+53jdXX5N2PftECbpVT13SGxNiWmsmOeoFNVG5qHSQ9fSQG8kT/Z9CuoDGIY2C8c4jZd2Uru1eLpJd1d6hPGFJqNKapT1VdRyLGwu/K7nfO74cnZ/JMQvDj0ck0nXBP6k/nxzznbDu6b3S8zID6aDN14GySeHqB1k+QIITqqUqbNYY4SfqoSng3+zZyhiEqF6kQBLNo7NU+L7l6dTOdldMqeANzibrSisz//Aw==",
+  "k2d6fd56661a7": "bVVdj6JAEPwvPt4eOyggwyT7MC6buPeRZZNL7rln6AFWBDMDzq2X++8XVFTAfjJaPV1dXd3+ne1AbiDDxw9TVzM2+zL7OjOwR8eg3qN+/DAzNovkfIEe4++8C8I5f+5gUhe7xpCyEAREBfkWnVY3WJSP8pgGAv2UMmJfeJYQosiBxJZf4oU/PY2fKQWmtdOAwssjAU1VwMbA1mQg0IFWHQufwYHrzYVi5Bg05m8xuYSlnCe+8hMa84Qqnk2qC6jSYQfRMggxYK/2Ltu0AGycsqhMX3+ehpFy2bXmz0mOBuscAPMS9TkJ6Xzui570qpOmk2uUqMrWmEEx6qXBgjJCojE2Q1PIvHF2uhZYneEiWoRzYCs76SPbtY66ZQRCABVjzXPAKkM94OB6Ui3njPyh40c3sEUNTgV5r6XrhQtx1YYQsp5yKY/EjyWuxP0ghUFiN1yyJ6S3UveZ0PXl1/77OLvajb9PihmZF3o7lEn5uHA99mNKzeSQonY2tWkuaOoDIGXnauS4IYkfjzOvTfV5AEBvjEIo4euJhqZWjQWNTrZre7P4GIQB4/x1Am5gu+33QHm+J8cDNE1n8FsaQegpumSEPJwWZdr0aR2cAxZln6SU70cBe175Y/Bew9YBkelCqX7qIpAqumdSi2XjiLpuekkERYWdJNXtoBN7uhXXiG0tf39mN5fkfE74HT8dq9S6uXQslq7ymeoMY+UEXejGsSDzHr5QAqGjP5nNAXWJGQ7kFCGNOotbdeJ+6E5OeD4F6mFg4MP0xQI7oSvTmn7YEnwRsDujsag3AqpNT9MN5ZKyb5zz1RtfD3T5/stNaEwmYV84f02q1UlH2S0L+Tzdqx1KstO1KrqLSHJoTQ5lc/2L+Pcf"
  },
  "ungemessen": {
   "karte2.leben.wasser.bild#1": {
@@ -3756,35 +3897,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.planet.wasser.seegang#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T23:57:58.166Z",
-   "abdruck": "9bbbae9d88a3",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.planet.wasser.eis#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-23T23:57:58.166Z",
-   "abdruck": "995bea42b323",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.wasser.seegang#1",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.same.physik.feuer#2": {
    "gruen": false,
