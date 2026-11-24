@@ -11,6 +11,6 @@
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 15 kopf 9d4319c05f2426cea21cd7a5ee37dad47220b8db start 2026-11-24T04:53:52Z vorher 447eaea65297f44ca4135f8c4009685fa949045f
-gtx offen 0/0 station - fortschritt 2026-11-24T04:53:52Z alarm - liste -
+gtx offen 0/0 station - fortschritt 2026-11-24T04:53:52Z alarm 2026-11-24T05:02:03Z liste -
 radeon wartet 0/0 station - fortschritt 2026-11-24T04:53:52Z alarm - liste -
 notiz 2026-11-24T04:53:52Z Runde 14 am 447eaea6 sprang auf 9d4319c0 (gtx laeuft 10/241, radeon laeuft 15/58): Koordinator 24.11. 05:54: z704 (vorrat-wartet-erwachen, bad4d677) und z705 (klang-leib, 9d4319c0) sind gelandet; Anspruch klang.raum#1, klang.stimme#1 (koordination f8744a76)
