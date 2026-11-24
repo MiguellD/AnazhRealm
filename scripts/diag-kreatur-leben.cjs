@@ -3227,13 +3227,8 @@ if (V) {
     };
     const Z = zone(core);
     check("Die Störungszone des Baus: ein Haus senkt das Leben an allen 10 Orten bis 1 km, fallend, jenseits reichM nichts", !!Z.w, Z.fehler || "");
-    const fs = require("fs");
-    const vm = require("vm");
-    const quelle = fs.readFileSync(path.join(root, "tetrapoda-core.js"), "utf8");
-    const stelle = "reichM: 2500,";
-    const ctx = vm.createContext({ Math, Object, Array, Number, String, Error, Map, Set, Float64Array, Float32Array, Uint8Array, Uint16Array, Int32Array, Uint32Array, DataView, ArrayBuffer, JSON, TextEncoder, TextDecoder }); // prettier-ignore
-    if (quelle.split(stelle).length === 2) vm.runInContext(quelle.split(stelle).join("reichM: 900,"), ctx);
-    const M = ctx.__tetrapodaCore ? zone(ctx.__tetrapodaCore) : { w: "die Stelle fehlt" };
+    // der Täter ist das GESETZ mit kurzer Reichweite: `stoerung` nimmt sein Gesetz als Argument, der Kern rechnet ihn selbst (kein Quelltext)
+    const M = Z.w ? zone({ stoerung: core.stoerung, STOERUNG_GESETZ: Object.freeze({ ...core.STOERUNG_GESETZ, reichM: 900 }) }) : { w: "das Gesetz fehlt" };
     check("Die Störungszone, Selbsttest: die Zone, die vor 1 km endet, fällt ROT", !M.w && /unter der Auflösung bei (\d+, )*1000 m/.test(M.fehler || ""), M.w ? "der Täter blieb grün" : M.fehler);
     if (Z.w) console.log("  Störungszone Haus 100 m² an den Orten der Station: " + Z.w.map((v) => v.toFixed(4)).join(" "));
 }
