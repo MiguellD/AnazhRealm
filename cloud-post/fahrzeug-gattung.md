@@ -129,3 +129,8 @@ Neu geprägt in v1: recipes.json bei 8 Fahrzeugen (gt, supersport, limousine, ko
 Antriebs-Export trägt `art`), manifest.json ihr Hash. wolf, fox, bear und deer kommen aus main.
 Der Lauf mit den Orten der Wagen (Lage, Stellplatz, Anleger) ist gestartet und reicht nicht bis zum Halt. Das Log liegt unter scratchpad `w/sechs/settlement-dbg.log`.
 Die Änderung an der Linse ist nicht eingecheckt; der Handgriff steht in `fremdOrt`.
+
+Nachtrag 15:52: Der Verdacht auf den Heil-Commit 3bbb5b23 fällt an der Uhr. Beide roten Läufe von Teil O sind vor seinem Einmischen
+gelaufen, auf 495fff72 (main a8dd22b5 eingemischt um 13:54): settlement.log um 14:12, settlement2.log um 15:34, das Einmischen 5febf0d4 um 15:36.
+welt-boot.cjs war in beiden Läufen der Stand von a8dd22b5. Der Täter liegt zwischen 86697613 und 495fff72: die Fahrzeug-Schnitte dieses
+Zweigs, main a8dd22b5 oder das Pflücken von 28240b1b.
