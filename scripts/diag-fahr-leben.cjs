@@ -207,6 +207,10 @@ function wechselVerdict(m) {
 
 // DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
 const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive({ ...VC.DEFAULT_P, ...VC.presetPatch(pid) }));
+// DIE ART DER GATTUNG (vehicle-core `gattungArt`): trägt sie einen Motor, fährt sie auf Land — was das Gesetz ihr nicht gibt
+// (Drehzahl ohne Motor, Rückwärtsgang an Land ohne Rad), misst die Linse an ihr nicht; ohne das Feld (ein alter Kern) misst sie alles.
+const artVon = (VC, pid) =>
+    VC.exportDrive({ ...VC.DEFAULT_P, ...VC.presetPatch(pid) }).art || { motor: true, medium: "land" };
 // ── K2–K4, K6–K8 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
@@ -1287,6 +1291,7 @@ function bahnKernRueck(VC) {
     const DT = 1 / 60;
     const rows = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
+        if (artVon(VC, rezept).medium !== "land") continue; // das Boot schwimmt: an Land fährt es nicht rückwärts
         const G = gesetzVon(VC, rezept);
         if (!G) {
             rows.push({ rezept, art: "kein Fahr-Satz", grad: 0, weg: 0 });
@@ -1316,6 +1321,7 @@ function bahnKernStimme(KC, VC) {
     const F = KC.FAHRT;
     const out = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
+        if (!artVon(VC, rezept).motor) continue; // Zugtier und Ruderer: kein Motor, keine Drehzahl
         const G = gesetzVon(VC, rezept);
         if (!G) continue;
         const vmax = G.vmax;

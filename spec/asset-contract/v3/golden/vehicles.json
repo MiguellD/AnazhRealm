@@ -65,22 +65,22 @@
     "boot-s7-L0": {
       "objects": 5,
       "vertices": 940,
-      "sha256": "1f57f0131d90a43dfd0a09edca57fb1ddee43021f6de8589f718772942b4bbe1"
+      "sha256": "dd05463ef58bf05d94b3cad87529cbf075c695ac1d6f86ad5043ee2cf43b5044"
     },
     "boot-s12345-L0": {
       "objects": 5,
       "vertices": 940,
-      "sha256": "1f57f0131d90a43dfd0a09edca57fb1ddee43021f6de8589f718772942b4bbe1"
+      "sha256": "bfc320362f9d06af7073e1a7eb16b8aa19adad9380aca314de19cf9c663a5dd9"
     },
     "karren-s7-L0": {
       "objects": 23,
-      "vertices": 4787,
-      "sha256": "fbaf4c071bc035a0210f9da90fe5b8f5d708d691196b06cbaaef551fee9a384f"
+      "vertices": 4811,
+      "sha256": "165d5b028309a66503d7717780611309a50c563fa7c7e106b966feb8016936f4"
     },
     "karren-s12345-L0": {
       "objects": 23,
-      "vertices": 4787,
-      "sha256": "fbaf4c071bc035a0210f9da90fe5b8f5d708d691196b06cbaaef551fee9a384f"
+      "vertices": 4811,
+      "sha256": "d3db3608d170924d80e668236b183080012380ca5c8fb1b753b482e82e1734ec"
     },
     "gt-s7-L1": {
       "objects": 328,
@@ -114,13 +114,13 @@
     },
     "boot-s7-L1": {
       "objects": 5,
-      "vertices": 560,
-      "sha256": "423ae291269ec788a714cf4c244d1405f68e4644114c24d2617558e5a05b61cb"
+      "vertices": 528,
+      "sha256": "a3d2b593c5d388d910a397271434a8c4e9be368a34d3ff4aa01660609e4b98d7"
     },
     "karren-s7-L1": {
       "objects": 23,
-      "vertices": 2792,
-      "sha256": "d7b3958a8675145e3a4f038e6c2d8a0c9e77c98a1bbe542ca4483d6072383931"
+      "vertices": 2816,
+      "sha256": "d57272d490f69959f5ab823f1e9e6d52a5125bff3188951157d538ef929e4858"
     },
     "gt-s7-L0-ov_toro": {
       "objects": 387,
@@ -135,7 +135,7 @@
     "boot-s7-L0-welle0.5": {
       "objects": 6,
       "vertices": 2872,
-      "sha256": "6f5a78f8c580063551550534b3665a8cfdc21e1f421377ff82b941a120490a83"
+      "sha256": "876fd0c719fb7572708204059d57ced8c23d153b66acfb381d653a870e5bb621"
     }
   }
 }

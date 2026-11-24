@@ -2365,7 +2365,9 @@ hauptLauf(async () => {
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
             // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
-            // trees-Schicht): das Band wandert mit dem Gesetz.
+            // trees-Schicht): das Band wandert mit dem Gesetz. Liegt Wasser am Ort, legt sie den Anleger — Steg und Boot, die
+            // Werke, die das Gesetz des Anlegers nennt (`AnazhRealm.ANLEGER`, fahrzeug-gattung), nie eine Liste der Linse.
+            const anleger = AnazhRealm.ANLEGER ? [AnazhRealm.ANLEGER.steg, AnazhRealm.ANLEGER.boot] : [];
             res.c.allHaus = st.architectures
                 .slice(archBefore)
                 .every(
@@ -2376,6 +2378,7 @@ hauptLauf(async () => {
                             e.type === "marktstand_dorf" ||
                             e.type === "laterne_dorf" ||
                             e.type === "wandlaterne_dorf" ||
+                            anleger.includes(e.type) ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).

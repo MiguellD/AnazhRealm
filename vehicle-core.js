@@ -3207,21 +3207,22 @@
     // DIE STOFFE DER GATTUNG (ohne Zeit-Stufe): das Holz des Bootsbauers und des Stellmachers statt der Tafel von heute — Rad,
     // Nabe und Reifen des Leiterwagens sind Esche, Ulme und Eisen, nie Alu und Gummi.
     const GATTUNG_STOFF = {
-        karren: { stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "eisen" } },
-        boot: { stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "eisen" } },
+        karren: { stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "eisen" }, koerper: "holz" },
+        boot: { stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "eisen" }, koerper: "holz" },
     };
 
     // ── DAS BOOT (`topo: "boot"`): der Rumpf als Spantenriss. Je Station u (0 Heck → 1 Bug) die Linie des Bords und die Kimm (die
     // Kante des Bodens), dazwischen die Gänge; die FORM des Gesetzes (`bootRumpf`) wählt die Linien: der Kahn mit flacher Mitte,
     // aufgebogenen Enden und Kopfbrettern, Bodenwrangen; das Spitzboot mit Kiel, zwei Steven, Klinker-Gängen (jeder obere liegt
     // außen über dem unteren), Spanten, Dollen und zwei Riemen. Beide: Boden, Dollbord, Duchten auf ihren Weger-Leisten.
-    function bauBoot(H, P, ctx) {
-        const R = P.rumpf || bootRumpf(P),
-            K = BOOT_GESETZ,
-            Q = epocheStoff,
-            holz = Q("holz"),
-            dunkel = Q("holzDunkel"),
-            eisen = Q("eisen");
+    // DIE LINIEN DES RUMPFS (fahrzeug-gattung): Bord (ys, bs) und Kimm (yc, bc) als Funktion der Station u, ihr Ort längs (xs, xc),
+    // die Stationen der Duchten (`uD`: eine je Sitzendem, im Kahn über den Raum verteilt, im Spitzboot die Länge des Ruderplatzes
+    // auseinander) und die Ruderducht (`uR`, die der Mitte nächste). EINE Quelle für den Bau (`bauBoot`) und den Sitz des Gesetzes
+    // (`gattungSitz` → `exportDrive.sitz`): der Ruderer sitzt auf der Ducht, die der Bau zeichnet.
+    function bootLinien(P) {
+        const H = hardpoints(P),
+            R = P.rumpf || bootRumpf(P),
+            K = BOOT_GESETZ;
         const S = scal(H, P),
             xT = S.tailX,
             L = R.L,
@@ -3249,6 +3250,18 @@
             return [0, -dz / l, (sd * dy) / l]; // hinaus und etwas hinunter
         };
         const breiteBei = (u, y) => bc(u) + (bs(u) - bc(u)) * Math.max(0, Math.min(1, (y - yc(u)) / Math.max(0.01, ys(u) - yc(u))));
+        const raum = kahn ? K.raumM : K.sitzM,
+            vor = kahn ? K.hebM : K.endM / 2,
+            uD = Array.from({ length: R.duchten }, (_, j) => (vor + (j + 0.5) * raum) / L);
+        const uR = uD.reduce((a, u) => (Math.abs(u - 0.5) < Math.abs(a - 0.5) ? u : a), uD[0]);
+        return { R, K, S, xT, L, t, y0, kahn, rake, tf, ende, sm, rr, hoch, yc, ys, bs, bc, xs, xc, punkt, normale, breiteBei, uD, uR };
+    }
+    function bauBoot(H, P, ctx) {
+        const Q = epocheStoff,
+            holz = ctx.bodyMat, // die Bretter unter der Lasur der Gestalt (`baueFahrzeug`)
+            dunkel = Q("holzDunkel"),
+            eisen = Q("eisen");
+        const { R, K, xT, L, t, y0, kahn, rake, yc, ys, bs, bc, xs, xc, punkt, normale, breiteBei, uD, uR } = bootLinien(P);
         // EIN Brett als geschlossener Strang über die Stationen: je Station vier Ecken (außen unten, außen oben, innen oben, innen
         // unten); `ecke(i)` liefert [aussenUnten, aussenOben, normale], die Dicke geht nach innen
         const brett = (n, ecke, m, sd) => {
@@ -3401,20 +3414,18 @@
             );
         // DIE DUCHTEN: eine je Sitzendem (0,2 m breit, 3 cm stark, 0,1 m unter dem Bord), im Kahn über den Raum verteilt, im Spitzboot
         // die Länge des Ruderplatzes auseinander; darunter je Seite die Weger-Leiste, auf der sie liegen
-        const raum = kahn ? K.raumM : K.sitzM,
-            vor = kahn ? K.hebM : K.endM / 2,
-            uD = Array.from({ length: R.duchten }, (_, j) => (vor + (j + 0.5) * raum) / L);
         for (const u of uD) {
             const yD = ys(u) - 0.1 - 0.015;
             ausbau.push(B(xs(u), yD, 0, 0.1, 0.015, breiteBei(u, yD) - t - 0.005, holz));
         }
+        const nW = teil(8, 4); // die Teilung der Weger-Leiste folgt dem Detail-Gesetz der Stufe
         for (const sd of [-1, 1]) {
             const u0 = uD[0] - 0.25 / L,
                 u1 = uD[uD.length - 1] + 0.25 / L;
             gerippe.push(
                 strang(
-                    Array.from({ length: 9 }, (_, i) => {
-                        const u = u0 + ((u1 - u0) * i) / 8,
+                    Array.from({ length: nW + 1 }, (_, i) => {
+                        const u = u0 + ((u1 - u0) * i) / nW,
                             y = ys(u) - 0.1 - 0.045;
                         return [xs(u), y, sd * (breiteBei(u, y) - t - 0.012)];
                     }),
@@ -3428,14 +3439,13 @@
         if (!kahn) {
             // DIE DOLLEN: an der Ruderducht (die der Mitte nächste), dolleM hinter ihrer Hinterkante — der Ruderer sitzt mit dem
             // Rücken zum Bug —, auf einem Klotz im Dollbord; dazu zwei Riemen im Boot (Leather: (halbe Spannweite) · 25/7)
-            const uR = uD.reduce((a, u) => (Math.abs(u - 0.5) < Math.abs(a - 0.5) ? u : a), uD[0]),
-                uDo = uR - (0.1 + K.dolleM) / L,
+            const uDo = uR - (0.1 + K.dolleM) / L,
                 xDo = xs(uDo),
                 yDo = ys(uDo),
                 bDo = bs(uDo) + R.gaenge * t * 0.6;
             for (const sd of [-1, 1]) {
                 ausbau.push(B(xDo, yDo + 0.03, sd * bDo, 0.07, 0.02, 0.03, dunkel));
-                ausbau.push(C(xDo, yDo + 0.09, sd * bDo, "y", 0.011, 0.1, eisen, 8));
+                ausbau.push(C(xDo, yDo + 0.09, sd * bDo, "y", 0.011, 0.1, eisen, teil(8, 4)));
                 ausbau.push(B(xDo, yDo + 0.14, sd * (bDo - 0.035), 0.012, 0.035, 0.008, eisen));
                 ausbau.push(B(xDo, yDo + 0.14, sd * (bDo + 0.035), 0.012, 0.035, 0.008, eisen));
             }
@@ -3443,7 +3453,7 @@
                 yR = ys(uR) - 0.1 + 0.03;
             for (const sd of [-1, 1]) {
                 const xa = xs(uR) - lR * 0.45;
-                ausbau.push(C(xa + lR * 0.4, yR, sd * 0.18, "x", 0.02, lR * 0.8, holz, 8));
+                ausbau.push(C(xa + lR * 0.4, yR, sd * 0.18, "x", 0.02, lR * 0.8, holz, teil(8, 4)));
                 ausbau.push(B(xa + lR * 0.88, yR, sd * 0.18, lR * 0.11, 0.006, 0.075, holz));
             }
         }
@@ -3462,23 +3472,50 @@
     // Räder (Nabe, Speichen, Felge, Eisenreif) baut `buildWheels` aus der Zeit-Tafel des Rads; die Deichsel `buildDeichsel`.
     // Das Band: Hinterrad Ø 1,22–1,37 m, Vorderrad Ø 1,07–1,12 m, Spur 1,42–1,52 m, Kasten 0,97–1,07 m breit, 3,2 m lang
     // (Henry Ford Museum, Farm Wagon c. 1900 / Hay Wagon 1890 und 1911); die Sprossen der Leiter 0,3 m.
-    function bauKarren(H, P, ctx) {
+    // DAS MASS DES LEITERWAGENS (fahrzeug-gattung): Achsen, Schemel, Boden, Leitern und das Sitzbrett als EINE Funktion der Form —
+    // die Quelle für den Bau (`bauKarren`) und den Sitz des Gesetzes (`gattungSitz`). Das Sitzbrett liegt quer über den Leitern,
+    // `KARREN_GESETZ.sitzM` über dem Boden (die Kniekehlenhöhe des Sitzenden: der Fuß steht auf den Bodenbrettern) und
+    // `KARREN_GESETZ.tiefeM` hinter dem Schoßbrett (die Sitztiefe, die Knie vor dem Brett).
+    // Quelle: DIN 33402-2 Kniekehlenhöhe sitzend 0,40–0,50 m (Männer, 5.–95. Perzentil); die Sitztiefe 0,40–0,48 m.
+    const KARREN_GESETZ = Object.freeze({ sitzM: 0.45, tiefeM: 0.45, brettM: 0.025, brettTiefeM: 0.26 });
+    function karrenMass(H, P) {
         const S = scal(H, P),
-            Q = epocheStoff,
-            holz = Q("holz"),
-            dunkel = Q("holzDunkel"),
-            eisen = Q("eisen");
-        const rR = H.HUB_RL[1],
+            rR = H.HUB_RL[1],
             rF = H.HUB_FL[1],
             hzR = Math.abs(H.HUB_RL[2]),
-            { fAx, rAx } = S,
-            hb = S.hz,
-            x0 = S.tailX,
-            x1 = S.noseX,
             yS = rR + 0.12,
             yB = yS + 0.12,
             hoch = P.guertel - yB,
-            weit = hzR + 0.12;
+            weit = hzR + 0.12,
+            hb = S.hz,
+            ySitz = yB + KARREN_GESETZ.sitzM;
+        // die Leiter steht schräg: ihre halbe Breite auf der Höhe des Sitzbretts
+        const sitzBreit = hb + ((weit - hb) * KARREN_GESETZ.sitzM) / Math.max(0.05, hoch);
+        return {
+            S,
+            rR,
+            rF,
+            hzR,
+            fAx: S.fAx,
+            rAx: S.rAx,
+            hb,
+            x0: S.tailX,
+            x1: S.noseX,
+            yS,
+            yB,
+            hoch,
+            weit,
+            ySitz,
+            sitzBreit,
+            xSitz: S.noseX - KARREN_GESETZ.tiefeM,
+        };
+    }
+    function bauKarren(H, P, ctx) {
+        const Q = epocheStoff,
+            holz = ctx.bodyMat, // Kasten und Leitern unter der Lasur der Gestalt (`baueFahrzeug`)
+            dunkel = Q("holzDunkel"),
+            eisen = Q("eisen");
+        const { rR, rF, hzR, fAx, rAx, hb, x0, x1, yS, yB, hoch, weit, ySitz, sitzBreit, xSitz } = karrenMass(H, P);
         const unter = [],
             kasten = [],
             leitern = [];
@@ -3499,6 +3536,9 @@
             kasten.push(B((x0 + x1) / 2, yB, -hb + w / 2 + i * (w + 0.01), (x1 - x0) / 2, 0.018, w / 2, holz));
         }
         kasten.push(B(x1 - 0.02, yB + hoch * 0.35, 0, 0.02, hoch * 0.35, hb, holz)); // das Schoßbrett vorn
+        // das Sitzbrett quer über den Leitern (`KARREN_GESETZ`): seine Oberkante ist der Sitz des Gesetzes
+        const KG = KARREN_GESETZ;
+        kasten.push(B(xSitz, ySitz - KG.brettM / 2, 0, KG.brettTiefeM / 2, KG.brettM / 2, sitzBreit, holz));
         // DIE LEITERN: je Seite der untere Baum am Rand des Bodens, der obere über dem Rad, die Sprossen alle 0,3 m dazwischen
         for (const sd of [-1, 1]) {
             const unten = [
@@ -3930,6 +3970,28 @@
     // `rezeptId` (mensch-zahlen, rein additiv): die Gattung, deren Motor der Wagen trägt — Pin ist dann ihr Rezept mit Stempel
     // (s + fx + ov, roh: mit `epoche`, wie der Bau mergt), der Kern formt ihr Rezept in derselben Zeit und reicht es carPhys
     // (`Pm`). Ein unbekanntes Rezept bricht laut; ohne `rezeptId` ist Pin sein eigenes Rezept.
+    // DER SITZ DER GATTUNG (fahrzeug-gattung): wo der Fahrer sitzt, sagt das Gesetz seiner Gattung — im Boot die Ruderducht
+    // (`bootLinien`: die Ducht der Mitte, ihre Oberkante, auf der Mittellinie), im Leiterwagen das Sitzbrett (`karrenMass`); jede
+    // andere Gattung trägt den vorderen seatRow-Anker des Motorwagens (null). Leser: `exportDrive.sitz` (der Wirt setzt den Reiter).
+    function gattungSitz(P) {
+        if (P.topo === "boot") {
+            const B = bootLinien(P);
+            return { x: B.xs(B.uR), y: B.ys(B.uR) - 0.1, z: 0 };
+        }
+        if (P.topo === "karren") {
+            const K = karrenMass(hardpoints(P), P);
+            return { x: K.xSitz, y: K.ySitz, z: 0 };
+        }
+        return null;
+    }
+    // DER ANTRIEB UND DIE HAUT DER GATTUNG (fahrzeug-gattung, rein additiv): trägt sie einen Motor (`motor`: kein Zug von Tier oder
+    // Mensch), fährt sie auf Land oder schwimmt sie (`medium`: ohne Rad trägt sie das Wasser), ist sie offen (`offen`: kein Dach,
+    // keine Kabine — der Leib steht über dem Bord). Leser: der Wirt (must-ignore), die Linsen der Fahrt (gate:fahr-leben).
+    function gattungArt(P) {
+        const E = epocheStufe(P),
+            Z = (E && E.antrieb) || muskel(P.antrieb) || {};
+        return { motor: !Z.zug, medium: P.rad === "keins" ? "wasser" : "land", offen: P.haut === "offen" };
+    }
     function exportDrive(Pin, rezeptId) {
         const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {})); // dieselbe Zeit-Achse wie der Bau
         const pre = rezeptId != null ? PRESETS[rezeptId] : null;
@@ -3945,7 +4007,8 @@
         return {
             // SITZ — der vordere seatRow-Anker (frontCx = cowlX − 0.72; Ober-
             // kante der Sitzfläche ySill + 0.11 + 0.055; Fahrerseite z −0.4).
-            sitz: { x: D.cowlX - 0.72, y: P.fahrhoehe + 0.18 + 0.165, z: -0.4 },
+            sitz: gattungSitz(P) || { x: D.cowlX - 0.72, y: P.fahrhoehe + 0.18 + 0.165, z: -0.4 },
+            art: gattungArt(P),
             // HÜLLE — die Blocker-Stationen (scal: bw = spur/2+0.13, cw =
             // spur/2−0.06, ySill = fahrhoehe+0.18); der Wirt komponiert daraus
             // Unterkörper + Greenhouse + Räder als Pseudo-Parts.
@@ -5263,7 +5326,7 @@
             kind: "vehicle",
             lab: "Ruderboot",
             s: { leistung: 0, cw: 0.9, radstand: 2.76, spur: 1.3, ueberhangV: 0.92, ueberhangH: 0.92, radR: 0.26, fahrhoehe: 0.06, guertel: 0.55, dach: 1.05, kabineMitte: 0, kabineLaenge: 2.3, tumblehome: 0, taille: 0, tueren: 0, springRate: 60 },
-            fx: { sig: "c", heck: "steil", topo: "boot", rad: "keins", antrieb: "ruder", welle: 0.1, last: 200 },
+            fx: { sig: "c", heck: "steil", topo: "boot", rad: "keins", antrieb: "ruder", haut: "offen", welle: 0.1, last: 200 },
         },
         // DIE GATTUNG LEITERWAGEN (fahrzeug-gattung, rein additiv): der Wagen des Hofs vor dem Motor — Speichenräder frei neben dem
         // Kasten (hinten Ø 1,28 m, vorn × 0,83), Spur 1,47 m über die Naben, die Leitern 0,75 m über dem Boden, das Pferd an der
@@ -5568,7 +5631,10 @@
         const mats = epocheTafel(E || GATTUNG_STOFF[P.topo]);
         const w = werk || {};
         const lack = w.bodyMat || lackStoff(lackIndex(seed));
-        const bodyMat = E && E.koerper && lack !== materials().clay ? epocheKoerper(E.koerper, lack) : lack;
+        // der Körper der Gattung ohne Stufe (Boot, Leiterwagen) ist Holz unter der Lasur des Lacks der Gestalt — wie der Kasten der
+        // Zeit: die acht Gestalten sind acht Anstriche, die Form bleibt die ihres Gesetzes
+        const kk = E ? E.koerper : GATTUNG_STOFF[P.topo] && GATTUNG_STOFF[P.topo].koerper;
+        const bodyMat = kk && lack !== materials().clay ? epocheKoerper(kk, lack) : lack;
         const ctx = { M: mats, bodyMat: bodyMat, doors: w.doors || [], corners: w.corners || [] };
         const H = hardpoints(P);
         const g = new THREE.Group();

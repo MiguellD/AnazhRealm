@@ -3267,6 +3267,9 @@ async function probeLeben(expected) {
                 // die Hülle des Kerns im Rahmen des Wagens (vor dem Durchlauf: Rahmen und Stationen)
                 const fzgH = r._fahrzeugGesetzFor(e);
                 const hu = fzgH?.drive?.huelle ? fzgH.drive.huelle : null;
+                // die offene Gattung (vehicle-core `gattungArt`: Boot, Leiterwagen) trägt kein Dach und keine Kabine — der Leib über
+                // dem Bord (huelle.yBelt) steht in der freien Luft; gemessen wird er dort nur längs (vor dem Bug, hinter dem Heck)
+                const offen = !!fzgH?.drive?.art?.offen;
                 const scH = Number.isFinite(e.scale) ? e.scale : 1;
                 const thH = Number.isFinite(e.rotationY) ? e.rotationY : 0;
                 const basisH = e.position.y - 0.5;
@@ -3304,7 +3307,8 @@ async function probeLeben(expected) {
                         }
                         if (!hu) continue;
                         aussen.n++;
-                        if (aussen.n % 40 === 0) {
+                        const frei = offen && (V.y - basisH) / scH > hu.yBelt; // über dem Bord der offenen Gattung
+                        if (!frei && aussen.n % 40 === 0) {
                             const lzS = (V.x - e.position.x) * Math.sin(thH) + (V.z - e.position.z) * Math.cos(thH);
                             strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, kn?.name || o.name || "?");
                         }
@@ -3316,10 +3320,10 @@ async function probeLeben(expected) {
                         const name = kn?.name || o.name || "?";
                         const T = 0.02;
                         if (ly < hu.ySill - T) raus("unten", hu.ySill - ly, name);
-                        else if (ly > hu.yRoof + T) raus("oben", ly - hu.yRoof, name);
+                        else if (!offen && ly > hu.yRoof + T) raus("oben", ly - hu.yRoof, name);
                         else {
                             const breit = hu.cw; // der Reiter sitzt in der Kabine (ihre halbe Breite, jede Höhe)
-                            if (Math.abs(lz) > breit + T) raus("seite", Math.abs(lz) - breit, name);
+                            if (!frei && Math.abs(lz) > breit + T) raus("seite", Math.abs(lz) - breit, name);
                             else if (lx > hu.noseX + T || lx < hu.tailX - T)
                                 raus("laengs", Math.max(lx - hu.noseX, hu.tailX - lx), name);
                         }
@@ -3386,7 +3390,10 @@ async function probeLeben(expected) {
                 reiter.push({
                     typ,
                     oben: +(oben - basis).toFixed(3),
-                    dach: d?.huelle && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
+                    dach:
+                        !d?.art?.offen && d?.huelle && Number.isFinite(d.huelle.yRoof)
+                            ? +(d.huelle.yRoof * sc).toFixed(3)
+                            : null,
                     schenkel: +(unten - basis).toFixed(3),
                     sitz: sitz ? +(sitz.y * sc).toFixed(3) : null,
                     ankerL: sitz ? +(lx - sitz.x * sc).toFixed(3) : null,
