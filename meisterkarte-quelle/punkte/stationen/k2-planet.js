@@ -1152,24 +1152,58 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ VULKAN ════════════════════════════════════════
     const vulkan = {
-        sek: 10,
+        sek: 14,
+        faecher: true,
         pfad: PFAD_ORT,
         ungefahren: "das Glutbild und die Blindpaare (Glut, Clip, Oberfläche, Ursachen-Probe) schießt die Probe nur am Gerät",
         mess: async function (H, U, M) {
             const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Zeit ist die Adresse — je Alter der Tat (log, U[1].jeDekade Stufen je
+            // Dekade, 1 s bis 10^8 s) × Wasser (0 an der Luft, 1 im Meer) EIN Ruf des Zustands, den das Feld liest
+            // (stamm/feld-leben.js:2532 `_lavaZustand` → gelaende-core.js:1835 `lava`, Leser des Felds stamm/feld-leben.js `_lavaGiessen`);
+            // die Kruste ist das erste Alter, an dem die Decke erstarrt — die Auflösung ist die Stufe (10^(1/jeDekade))
+            const LAVA_AN = async (r, T, a, mit) => {
+                const sy = r._voxelSurfaceY(0, 0), s = Math.pow(10, a.zeit / mit.jeDekade), stundeS = r.constructor.WELT_GESETZ_ERDE.kalender.stundeS;
+                const z = r._lavaZustand({ h: r._weltStunde() - s / stundeS, y: sy, wasser: a.ort });
+                return { s: z.alterS, wasser: a.ort, temperatur: z.temperatur, glut: z.glut, erstarrt: !!z.erstarrt, dampf: z.dampf, tau: z.tau };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: LAVA_AN, export: "stamm/feld-leben.js:2532 _lavaZustand (gelaende-core.js:1835 lava)", leser: "stamm/feld-leben.js:2460 _lavaGiessen (die Tat des Felds)" },
+                adressen: { orte: [0, 1], zeiten: Array.from({ length: 8 * U[1].jeDekade + 1 }, (_, j) => j) },
+                mit: { jeDekade: U[1].jeDekade },
+                ms: U[1].ms,
+                masse: {
+                    tK: { wie: "min", feld: "s", nur: (a, w) => a.ort === 0 && w.erstarrt },
+                    tG: { wie: "min", feld: "s", nur: (a, w) => a.ort === 0 && !(w.glut > 0) },
+                    tKw: { wie: "min", feld: "s", nur: (a, w) => a.ort === 1 && w.erstarrt },
+                    tMax: { wie: "max", feld: "temperatur", nur: (a) => a.ort === 0 },
+                    tMin: { wie: "min", feld: "temperatur", nur: (a) => a.ort === 0 },
+                    glutAnfang: { wie: "erste", feld: "glut", nur: (a) => a.ort === 0 && a.zeit === 0 },
+                    glutEnde: { wie: "erste", feld: "glut", nur: (a) => a.ort === 0 && a.zeit === 8 * U[1].jeDekade },
+                    dampf: { wie: "erste", feld: "dampf", nur: (a) => a.ort === 1 && a.zeit === 0 },
+                    tau: { wie: "erste", feld: "tau", nur: (a) => a.ort === 0 && a.zeit === 0 },
+                    t0: { wie: "erste", feld: "temperatur", nur: (a) => a.ort === 0 && a.zeit === 0 },
+                },
+                schlecht: { feld: "glut", richtung: "max" },
+                pose: () => "Ego am Spawn, Blick auf die Decke der jüngsten Tat",
+                ungemessen: ["das Glutbild gegen Lava-Fotos (2AFC, am Gerät)"],
+            });
+            const W1 = RF.werte;
             const v = await H.seite(
-                "const sy = r._voxelSurfaceY(0, 0); const jetzt = r._weltStunde(); const zu = (s, w) => r._lavaZustand({ h: jetzt - s / 3600, y: sy, wasser: w }); " +
-                    "const reihe = []; for (let e = 0; e <= 7; e += 0.5) { const s = Math.pow(10, e); const z = zu(s, 0); reihe.push([s, Math.round(z.temperatur * 10) / 10, Math.round(z.glut * 1000) / 1000, z.erstarrt ? 1 : 0]); } " +
-                    "const such = (w, f) => { let lo = 0, hi = 1e8; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (f(zu(m, w))) hi = m; else lo = m; } return hi; }; " +
-                    "const tK = such(0, (z) => z.erstarrt), tG = such(0, (z) => !(z.glut > 0)), tKw = such(1, (z) => z.erstarrt); const w0 = zu(1, 1), l0 = zu(1, 0); " +
-                    "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
+                "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
                     "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); " +
-                    "const N = [...namen]; return { tK, tG, tKw, dampf: w0.dampf, tau: l0.tau, t0: l0.temperatur, reihe, antworten: reihe.length + 150 + 2, ortSchl: Object.keys(o).sort().join(\",\"), deltaSchl: Object.keys(o.delta).sort().join(\",\"), " +
+                    "const N = [...namen]; return { antworten: 2, ortSchl: Object.keys(o).sort().join(\",\"), deltaSchl: Object.keys(o.delta).sort().join(\",\"), " +
                     "vulkanLeser: N.filter((n) => /vulkan|volcan|magma|ausbruch|eruption|roehre/i.test(n)), lavaLeser: N.filter((n) => /^_lava/.test(n)), fliesst: N.filter((n) => /^_lava(Strom|Fluss|Front|Fliess)/i.test(n)) };"
             );
-            const temps = v.reihe.map((x) => x[1]);
-            const glut = v.reihe.map((x) => x[2]);
-            const spanne = Math.max(...temps) - Math.min(...temps);
+            v.tK = W1.tK;
+            v.tG = W1.tG;
+            v.tKw = W1.tKw;
+            v.dampf = W1.dampf;
+            v.tau = W1.tau;
+            v.t0 = W1.t0;
+            v.antworten = RF.gemessen + v.antworten;
+            const glut = [W1.glutAnfang, W1.glutEnde];
+            const spanne = Number.isFinite(W1.tMax) && Number.isFinite(W1.tMin) ? W1.tMax - W1.tMin : null;
             const vulkanAmFaden = /vulkan/.test(v.ortSchl + "," + v.deltaSchl);
             const bild = await Promise.race([
                 M.auge("geologie-vulkan", { px: 0, py: 95, pz: 12, lx: 0, ly: 88, lz: 0 }),
@@ -1180,7 +1214,7 @@ L.perspektive("geologie", (() => {
                 sprossen: {
                     1: {
                         werte: { tKrusteS: r3(v.tK), tGlutAusS: r3(v.tG) },
-                        zeuge: { antworten: v.antworten, spanneK: r3(spanne), glutAnfang: glut[0], glutEnde: glut[glut.length - 1], tKrusteWasserS: r3(v.tKw), dampf: v.dampf, tauS: r3(v.tau), t0C: r3(v.t0) },
+                        zeuge: { antworten: v.antworten, spanneK: r3(spanne), glutAnfang: glut[0], glutEnde: glut[glut.length - 1], tKrusteWasserS: r3(v.tKw), dampf: v.dampf, tauS: r3(v.tau), t0C: r3(v.t0), adressen: RF.adressen, gerissen: RF.gerissen, akte: RF.akte.slice(0, 600) },
                         auge: bild,
                     },
                     2: { werte: {}, zeuge: { antworten: v.antworten, lavaLeser: v.lavaLeser.length }, auge: bild, nicht: "die Lava fließt nicht: eine Tat deckt EINE Zelle des Felds (stamm/feld-leben.js:2460 _lavaGiessen), kein Strom, keine Front" + (v.fliesst.length ? " (" + v.fliesst.join(", ") + ")" : "") },
@@ -1194,7 +1228,7 @@ L.perspektive("geologie", (() => {
         },
         sprossen: {
             1: {
-                u: { augeBis: 9 },
+                u: { augeBis: 13, jeDekade: 20, ms: 4000 },
                 soll: [
                     K.soll(VU, 1, "nach der Abkühlkurve gemessener Laven ±30 %", { key: "tKrusteS", ref: HON_S, refQuelle: "Erde: Hon et al. 1994 (Kīlauea-Pāhoehoe), Kruste H = 0,0779·√t (m, h) — die 1-m-Decke durch-erstarrt nach 165 h", einheit: "s" }),
                     K.soll(VU, 1, "2AFC ≤ 85 %", { key: "afcProzent", einheit: "%" }),
@@ -1286,7 +1320,8 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ GEBIRGE ════════════════════════════════════════
     const gebirge = {
-        sek: 40,
+        sek: 48,
+        faecher: true,
         pfad: PFAD_ORT,
         ungefahren: "die Blindpaare (Felswand, Feldfoto) schießt die Probe nur am Gerät",
         mess: async function (H, U, M) {
@@ -1350,7 +1385,52 @@ L.perspektive("geologie", (() => {
                 if (a) for (const s of S) st[s] = true;
             }
             const stich = await H.seite("const c = window.__geoStich; return c && c.N === " + S6.punkte + " ? c.je : {};");
-            // ── S1: die Felswände am Spawn (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest
+            // ── S1 ÜBER DEN FÄCHER (stationen/faecher.js): N Lagen der Fibonacci-Kugel des Planeten der Welt; je Lage fragt der Faden
+            // planet-ort (voxel-worker.js:1446 planetOrtAuftrag) nach der Zone (Kollision: Orogen aktiv · Kraton: alt, ohne Orogen) und die
+            // Reise-Welt dort nach dem Einfallen ihrer Wände (je Wand-Spalte, Hang ≥ 40°) — beides muss eine Funktion der Adresse sein;
+            // fehlt eine, nennt die Adresse sie (`fehlt`), die Wände der Heimat stehen daneben als Zeuge
+            const FELS_AN = async (r, T, a, mit) => {
+                const K = globalThis.__gelaendeCore, RAD = Math.PI / 180, k = a.ort + 1;
+                const breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                await r._fadenQuelle();
+                const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                if (!o || !o.land) return { meer: true };
+                const zone = Number.isFinite(o.orogenAktiv) ? (o.orogenAktiv ? "kollision" : Number.isFinite(o.orogenAlterMa) && o.orogenAlterMa > 1000 ? "kraton" : "sonst") : null;
+                const einfallAn = typeof K.felsEinfall === "function" ? K.felsEinfall : null;
+                if (zone == null || !einfallAn)
+                    return { fehlt: (zone == null ? "voxel-worker.js:1446 planetOrtAuftrag gibt die Zone nicht weiter (planet-core.js:1860 trägt orogenStaerke/orogenAktiv/orogenAlterMa, die Antwort nur " + Object.keys(o).sort().join(",") + ")" : "") + (zone == null && !einfallAn ? "; " : "") + (!einfallAn ? "gelaende-core.js:3351 FELS.einfall ist EINE Konstante (" + K.FELS.einfall + " rad), keine Funktion des Orts (gelaende-core.js:3417 FELS_TE liest sie)" : "") };
+                const heim = r.constructor._weltGesetz(r.state.worldMeta).gelaende;
+                const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                const O = K.ortGesetz(ort), eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                const wl = K.GRUND.basis - O.meerUnterBasisM;
+                const L = K.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: K.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise);
+                let waende = 0, verformt = 0;
+                for (let z = -mit.halb; z < mit.halb; z += 5)
+                    for (let x = -mit.halb; x < mit.halb; x += 5) {
+                        const h0 = K.hoehe(L, x, z, true);
+                        if (h0 < wl + 1) continue;
+                        if (Math.atan(Math.hypot(K.hoehe(L, x + 1.8, z, true) - h0, K.hoehe(L, x, z + 1.8, true) - h0) / 1.8) / RAD < 40) continue;
+                        waende++;
+                        if (einfallAn(L, x, z) / RAD >= 10) verformt++;
+                    }
+                return { zone, waende, verformt, breite: Math.round(breite * 10) / 10, laenge: Math.round(laenge * 10) / 10 };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: FELS_AN, export: "voxel-worker.js:1446 planetOrtAuftrag (die Zone) · gelaende-core.js:3351 FELS (das Einfallen)", leser: "gelaende-core.js:3417 FELS_TE (die Bänke im Fels-Stoff)" },
+                adressen: { orte: Array.from({ length: U[1].orte }, (_, j) => j) },
+                mit: { halb: U[1].halb },
+                ms: U[1].ms,
+                masse: {
+                    kollision: { wie: (v, aus) => { const w = aus.reduce((s, x) => s + x.w.waende, 0); return w ? (100 * aus.reduce((s, x) => s + x.w.verformt, 0)) / w : null; }, feld: "zone", nur: (a, w) => w.zone === "kollision" },
+                    kraton: { wie: (v, aus) => { const w = aus.reduce((s, x) => s + x.w.waende, 0); return w ? (100 * aus.reduce((s, x) => s + x.w.verformt, 0)) / w : null; }, feld: "zone", nur: (a, w) => w.zone === "kraton" },
+                    waende: { wie: "summe", feld: "waende" },
+                    zonen: { wie: "verschieden", feld: "zone", nur: (a, w) => w.zone === "kollision" || w.zone === "kraton" },
+                },
+                schlecht: { feld: "waende", richtung: "max" },
+                pose: (a, w) => "Ego vor der Wand der Lage " + w.breite + "°/" + w.laenge + "° (" + w.zone + ")",
+                ungemessen: ["die Felswand im Bild gegen Feldfotos (Blindpaar, am Gerät)"],
+            });
+            // ── die Felswände der Heimat (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest — der Zeuge
             const w = await H.seite(
                 "const G = globalThis.__gelaendeCore; const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const wl = r.state.waterLevel; let n = 0, wand = 0; const ein = [];" +
                     "for (let z = -500; z < 500; z += 5) for (let x = -500; x < 500; x += 5) { const h0 = hoch(x, z); n++; if (h0 < wl + 1) continue; const t = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; " +
@@ -1365,11 +1445,12 @@ L.perspektive("geologie", (() => {
                 new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
             ]);
             aus[1] = {
-                werte: { verformtProzent: r3(w.ein.length ? (100 * verformt) / w.ein.length : NaN), kratonProzent: r3(w.ein.length ? (100 * verformt) / w.ein.length : NaN) },
-                zeuge: { antworten: w.n, waende: w.wand, einfallGrad: r3(einMittel), einfallStreuGrad: r3(einStreu), streichenGrad: r3(w.streichenGrad) },
+                werte: { verformtProzent: r3(RF.werte.kollision), kratonProzent: r3(RF.werte.kraton) },
+                zeuge: { antworten: w.n + RF.adressen, waende: w.wand + (RF.werte.waende || 0), zonen: RF.werte.zonen || 0, einfallGrad: r3(einMittel), einfallStreuGrad: r3(einStreu), streichenGrad: r3(w.streichenGrad), adressen: RF.adressen, ohneFaehigkeit: RF.fehltAn.length },
                 auge: bild,
-                nicht: "keine Verformung je Ort: an " + w.wand + " Wand-Spalten (Hang ≥ 40°, 1 km² am Spawn) liegen die Bänke mit EINEM Einfallen " + r3(einMittel) + "° (Streuung " + r3(einStreu) + "°) — gelaende-core.js:3350 FELS.einfall ist EINE Konstante für jede Wand der Welt; und der Spieler steht nur in der Heimat, die weder Kollisionszone noch Kraton ist (planet-core.js:2215 planetAnker: Land ≤ 300 km von der Küste, kein konvergenter Rand < 500 km, kein lebendes Orogen)",
             };
+            if (RF.fehlt) aus[1].taeter = "Leser fehlt: " + RF.fehlt + " · " + RF.akte;
+            else aus[1].zeuge.akte = RF.akte.slice(0, 600);
             // ── S2: das Orogen der Heimat — der höchste Punkt des Planeten der Welt (r._planetSamen) und sein Fenster 13 × 13 zu 40 km
             const o = await H.seite(
                 "await r._fadenQuelle(); const s = r._planetSamen(); const N = " + U[2].punkte + "; const P = []; for (let i = 0; i < N; i++) P.push([Math.asin(1 - (2 * (i + 0.5)) / N) * 180 / Math.PI, ((i * 137.50776405) % 360) - 180]); " +
@@ -1439,14 +1520,13 @@ L.perspektive("geologie", (() => {
         },
         sprossen: {
             1: {
-                u: { augeBis: 38 },
+                u: { augeBis: 46, orte: 24, halb: 100, ms: 6000 },
                 soll: [K.soll(GE, 1, "in Kollisionszonen ≥ 80 % der Wände verformt", { key: "verformtProzent", einheit: "%" }), K.soll(GE, 1, "im alten Kraton ≤ 20 %", { key: "kratonProzent", einheit: "%" })],
-                zeuge: zMin({ antworten: 1000, waende: 20, einfallStreuGrad: 0.5 }),
+                zeuge: zMin({ antworten: 1000, waende: 20, zonen: 2, einfallStreuGrad: 0.5 }),
                 auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand, Blick auf sie", vorbild: "Fotos von Felswänden in Faltengebirgen und Kratonen (Feldfotos je Gestein), Blindpaar R11" },
                 taeter: "gelaende-core.js FELS (einfall/streichen: EIN Einfallen der Bänke)",
-                nicht: "keine Verformung je Ort, keine Kollisionszone an der Heimat",
-                leser: "gelaende-core.js:3350 FELS.einfall/streichen sind Konstanten: kein Leser setzt das Einfallen aus der Geschichte des Orts (Orogen-Stärke, Rand am Faden)",
-                gruen: gut({ verformtProzent: 85, kratonProzent: 12 }, { antworten: 40000, waende: 300, einfallStreuGrad: 18 }),
+                leser: "gelaende-core.js:3351 FELS.einfall/streichen sind Konstanten (0,07 rad), gelesen von gelaende-core.js:3417 FELS_TE — kein Leser setzt das Einfallen aus der Geschichte des Orts; voxel-worker.js:1446 planetOrtAuftrag gibt die Zone (planet-core.js:1860 orogenAktiv/orogenAlterMa) nicht weiter",
+                gruen: gut({ verformtProzent: 85, kratonProzent: 12 }, { antworten: 40000, waende: 300, zonen: 2, einfallStreuGrad: 18 }),
                 attrappen: [
                     { name: "die Wände als verformt gezählt, keine Wand gefragt", roh: leer({ verformtProzent: 85, kratonProzent: 12 }) },
                     { name: "EIN Einfallen für jede Wand", roh: gut({ verformtProzent: 85, kratonProzent: 12 }, { antworten: 40000, waende: 300, einfallStreuGrad: 0 }) },
@@ -1519,27 +1599,105 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ UNTERWELT ════════════════════════════════════════
     const unterwelt = {
-        sek: 20,
+        sek: 28,
+        faecher: true,
         pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-sicht.js", "stamm/bau-buch.js", "scripts/werkbank.cjs"],
         ungefahren: "der Mund im Bild, das Karstfeld und die Halle (Blindpaare) schießt die Probe nur am Gerät",
         mess: async function (H, U, M) {
             const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
             const u = U[1];
-            const m = await H.seite(
-                "const st = r.state, G0 = r._voxelChunkConfig(0), gy0 = (st.terrainBaseHeight || 0) - G0.floorDrop, wl = st.waterLevel; " +
-                    "const fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0; const gitter = (v) => Math.round(v / G0.step) * G0.step; " +
-                    "const himmel = (x, y, z) => { for (let h = y + G0.step; h < y + 60; h += G0.step) if (fest(x, h, z)) return false; return true; }; " +
-                    "const mundAn = (X0, Z0) => { const X = gitter(X0), Z = gitter(Z0); const S = r._voxelSurfaceY(X, Z); if (S == null) return null; " +
-                    "for (let j = Math.floor((S - 4 - gy0) / G0.step); gy0 + j * G0.step > S - 40; j--) { const y = gy0 + j * G0.step; if (fest(X, y, Z)) continue; " +
-                    "for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ax = X + dx * 2 * G0.step, az = Z + dz * 2 * G0.step; if (fest(ax, y, az) || !himmel(ax, y, az)) continue; " +
-                    "let L = 0; while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += G0.step; if (L >= 12) return { x: X, y, z: Z, tief: L }; break; } } return null; }; " +
-                    "const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const t0 = performance.now(); const liste = []; let flaeche = 0, kand = 0, spalten = 0; const HALB = " + u.halb + ", BIS = " + u.ms + "; " +
-                    "for (let z = -HALB; z < HALB && performance.now() - t0 < BIS; z += 3.6) { for (let x = -HALB; x < HALB; x += 3.6) { const h0 = hoch(x, z); spalten++; if (h0 < wl + 1) continue; " +
-                    "const hang = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; const g = Math.atan(hang) * 180 / Math.PI; if (g < 30) continue; kand++; " +
-                    "const mm = mundAn(x, z); if (mm && !liste.some((q) => Math.hypot(q.x - mm.x, q.z - mm.z) < 25)) liste.push(Object.assign(mm, { hangGrad: Math.round(g * 10) / 10 })); } flaeche += 2 * HALB * 3.6; } " +
-                    "const mats = Object.keys(st.materials || {}); return { km2: flaeche / 1e6, n: liste.length, kand, spalten, fels: liste.filter((q) => q.hangGrad >= 40).length, hang: liste.map((q) => q.hangGrad), ms: Math.round(performance.now() - t0), " +
-                    "seed: r._gelaende().seed, boden: G0.floorDrop, gestein: mats.filter((n) => /^(stein|fels|kalk|karbonat|dolomit|gips|salz|basalt|granit|marmor|eis)$/.test(n)), loeslich: mats.filter((n) => /^(kalk|karbonat|dolomit|gips|salz)/.test(n)) };"
+            // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Heimat und Reise-Welten an Land-Lagen des Planeten (planet-ort → `_reiseSaat` →
+            // gelaende-core lageAus, wie NAPF_AN), je Welt ein Gitter von Kacheln um den Ursprung; je Kachel die Spalten im Raster 3,6 m:
+            // steil (≥ 30°) → der Mund-Sucher an der Dichte, die das Spiel meshet — die Heimat über ihren Leser (stamm/gelaende-chunks.js:2208
+            // `_fieldDensityAt`, mit Edits), eine Reise-Welt über den Export (gelaende-core.js:7303 `dichte`, ohne Edits: sie ist frisch)
+            const MUND_AN = async (r, T, a, mit) => {
+                const K = globalThis.__gelaendeCore;
+                const C = window.__mundLagen || (window.__mundLagen = {});
+                if (!(a.saat in C)) {
+                    if (a.saat === "heim") C[a.saat] = { heim: true, L: r._gelaende(), wl: r.state.waterLevel, saat: r._gelaende().seed };
+                    else {
+                        await r._fadenQuelle();
+                        const k = a.saat, breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                        const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                        if (!o || !o.land) C[a.saat] = null;
+                        else {
+                            const heim = r.constructor._weltGesetz(r.state.worldMeta).gelaende;
+                            const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                            const O = K.ortGesetz(ort), eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                            const saat = r._reiseSaat(ort, heim), wl = K.GRUND.basis - O.meerUnterBasisM;
+                            C[a.saat] = { saat, wl, L: K.lageAus({ seed: saat, baseHeight: K.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise) };
+                        }
+                    }
+                }
+                const W = C[a.saat];
+                if (!W) return { meer: true };
+                const G0 = r._voxelChunkConfig(0), gy0 = (W.L.baseHeight || 0) - G0.floorDrop, st = G0.step;
+                const fest = W.heim ? (x, y, z) => r._fieldDensityAt(x, y, z) > 0 : (x, y, z) => K.dichte(W.L, x, y, z) > 0;
+                const oben = W.heim ? (X, Z) => r._voxelSurfaceY(X, Z) : (X, Z) => {
+                    let y = Math.ceil((K.hoehe(W.L, X, Z, true) + 4 - gy0) / st) * st + gy0;
+                    for (let i = 0; i < 40 && !fest(X, y, Z); i++) y -= st;
+                    return y;
+                };
+                const hoch = W.heim ? (x, z) => r._terrainMacroSurfaceY(x, z) : (x, z) => K.hoehe(W.L, x, z, true);
+                const gitter = (v) => Math.round(v / st) * st;
+                const himmel = (x, y, z) => { for (let h = y + st; h < y + 60; h += st) if (fest(x, h, z)) return false; return true; };
+                const mundAn = (X0, Z0) => {
+                    const X = gitter(X0), Z = gitter(Z0), S = oben(X, Z);
+                    if (S == null) return null;
+                    for (let j = Math.floor((S - 4 - gy0) / st); gy0 + j * st > S - 40; j--) {
+                        const y = gy0 + j * st;
+                        if (fest(X, y, Z)) continue;
+                        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                            const ax = X + dx * 2 * st, az = Z + dz * 2 * st;
+                            if (fest(ax, y, az) || !himmel(ax, y, az)) continue;
+                            let L = 0;
+                            while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += st;
+                            if (L >= 12) return { x: X, y, z: Z, tief: L };
+                            break;
+                        }
+                    }
+                    return null;
+                };
+                const n = mit.kacheln, x0 = ((a.ort % n) - n / 2) * mit.kachelM, z0 = (Math.floor(a.ort / n) - n / 2) * mit.kachelM;
+                const muender = [];
+                let spalten = 0, kand = 0;
+                for (let z = z0; z < z0 + mit.kachelM; z += 3.6)
+                    for (let x = x0; x < x0 + mit.kachelM; x += 3.6) {
+                        const h0 = hoch(x, z);
+                        spalten++;
+                        if (h0 < W.wl + 1) continue;
+                        const g = (Math.atan(Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8) * 180) / Math.PI;
+                        if (g < 30) continue;
+                        kand++;
+                        const mm = mundAn(x, z);
+                        if (mm && !muender.some((q) => Math.hypot(q.x - mm.x, q.z - mm.z) < 25)) muender.push({ x: mm.x, z: mm.z, tief: mm.tief, hangGrad: Math.round(g * 10) / 10 });
+                    }
+                return { saat: W.saat, km2: (mit.kachelM * mit.kachelM) / 1e6, spalten, kand, muender, n: muender.length };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: MUND_AN, export: "gelaende-core.js:7303 dichte (die Heimat über stamm/gelaende-chunks.js:2208 _fieldDensityAt)", leser: "stamm/gelaende-chunks.js:2208 _fieldDensityAt (der Boden meshet sie; voxel-worker dichte)" },
+                adressen: { saaten: Array.from({ length: u.saaten }, (_, i) => i + 1), orte: Array.from({ length: u.kacheln * u.kacheln }, (_, j) => j), dazu: Array.from({ length: u.kacheln * u.kacheln }, (_, j) => ({ saat: "heim", ort: j, zeit: null })) },
+                mit: { kacheln: u.kacheln, kachelM: u.kachelM },
+                ms: u.ms,
+                masse: {
+                    saaten: { wie: "verschieden", feld: "saat", nur: (a, w) => w.spalten > 0 },
+                    km2: { wie: "summe", feld: "km2", nur: (a, w) => w.spalten > 0 },
+                    spalten: { wie: "summe", feld: "spalten" },
+                    kand: { wie: "summe", feld: "kand" },
+                    n: { wie: "summe", feld: "n" },
+                    fels: { wie: (v) => v.reduce((s, m) => s + m.filter((q) => q.hangGrad >= 40).length, 0), feld: "muender", nur: (a, w) => Array.isArray(w.muender) },
+                    hang: { wie: (v) => [].concat(...v).map((q) => q.hangGrad).slice(0, 20), feld: "muender", nur: (a, w) => Array.isArray(w.muender) },
+                },
+                schlecht: { feld: "n", richtung: "max" },
+                pose: (a, w) => "Ego vor der Mündung " + (w.muender[0] ? w.muender[0].x + "/" + w.muender[0].z : "—") + " der Welt " + w.saat + ", Blick in den Mund",
+                ungemessen: ["der Mund im Bild gegen Feldfotos (Korpus, am Gerät)"],
+            });
+            const m0 = await H.seite(
+                "const st = r.state, G0 = r._voxelChunkConfig(0); const mats = Object.keys(st.materials || {}); return { seed: r._gelaende().seed, boden: G0.floorDrop, " +
+                    "gestein: mats.filter((n) => /^(stein|fels|kalk|karbonat|dolomit|gips|salz|basalt|granit|marmor|eis)$/.test(n)), loeslich: mats.filter((n) => /^(kalk|karbonat|dolomit|gips|salz)/.test(n)) };"
             );
+            const W1 = RF.werte;
+            const m = Object.assign(m0, { km2: W1.km2 || 0, n: W1.n || 0, kand: W1.kand || 0, spalten: W1.spalten || 0, fels: W1.fels || 0, hang: W1.hang || [], ms: RF.ms, saaten: W1.saaten || 0, akte: RF.akte.slice(0, 600) });
             const bild = await Promise.race([
                 M.auge("geologie-unterwelt", { px: 0, py: 120, pz: 160, lx: 0, ly: 95, lz: 0 }),
                 new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (u.augeBis - M.uhr()) * 1000))),
@@ -1549,8 +1707,8 @@ L.perspektive("geologie", (() => {
             return {
                 sprossen: {
                     1: {
-                        werte: { saaten: 1, mundFelsProzent: r3(m.n ? (100 * m.fels) / m.n : NaN), muendungenJeKm2: r3(m.km2 > 0 ? m.n / m.km2 : NaN) },
-                        zeuge: { antworten: m.spalten, kandidaten: m.kand, muendungen: m.n, km2: r3(m.km2), ms: m.ms, saat: m.seed, hangGrad: m.hang.slice(0, 20) },
+                        werte: { saaten: m.saaten, mundFelsProzent: r3(m.n ? (100 * m.fels) / m.n : NaN), muendungenJeKm2: r3(m.km2 > 0 ? m.n / m.km2 : NaN) },
+                        zeuge: { antworten: m.spalten, kandidaten: m.kand, muendungen: m.n, km2: r3(m.km2), ms: m.ms, saat: m.seed, hangGrad: m.hang.slice(0, 20), adressen: RF.adressen, gerissen: RF.gerissen, akte: m.akte },
                         auge: bild,
                     },
                     2: { werte: { karbonatProzent: 0 }, zeuge: { antworten: m.spalten, loeslich: m.loeslich.length }, auge: bild, ...(m.loeslich.length ? {} : { nicht: karst }) },
@@ -1563,7 +1721,7 @@ L.perspektive("geologie", (() => {
         },
         sprossen: {
             1: {
-                u: { halb: 500, ms: 9000, augeBis: 18 },
+                u: { saaten: 3, kacheln: 4, kachelM: 125, ms: 14000, augeBis: 26 },
                 soll: [
                     K.soll(UW, 1, "an 3 Saaten", { key: "saaten", rel: "≥", zahl: 3 }),
                     ohneZahl(UW, 1, "Mündungen je km²", "muendungenJeKm2"),
@@ -1572,7 +1730,7 @@ L.perspektive("geologie", (() => {
                 zeuge: zMin({ antworten: 10000, muendungen: 1 }),
                 auge: { pose: "Ego vor der nächsten Mündung am Spawn (1 km²), Blick in den Mund", vorbild: "Fotos natürlicher Höhlen-Mündungen im Fels (Feldfotos je Form), Prüfer-Satz R11" },
                 taeter: "gelaende-core.js dichteSpalte/dichteBasis (Höhlen-Feld, HOEHLEN_MUND) über stamm/gelaende-chunks.js _fieldDensityAt",
-                leser: "stamm/gelaende-boden.js:756 _gelaende — die Gelände-Lage liest EINE Saat (worldMeta.seed): die Probe misst die Mündungen nur der Saat dieser Welt",
+                leser: "stamm/gelaende-chunks.js:2208 _fieldDensityAt (die Heimat) und gelaende-core.js:7303 dichte (die Reise-Welten an Land-Lagen, gelaende-core.js:6069 lageAus) — der Fächer fragt Heimat + 3 Saaten",
                 unklar: "„Mündungen je km² … im Band“ nennt kein Band — Vorschlag: 1–20 Mündungen je km² (Mittelgebirge, die Karte K16 setzt ≥ 1); und die drei Saaten als drei Welten der Fahrt, „im Fels“ als Flanke ≥ 40° (K16: die Mündungs-Wand ist Fels)",
                 gruen: gut({ saaten: 3, mundFelsProzent: 95, muendungenJeKm2: 5 }, { antworten: 77000, muendungen: 5 }),
                 attrappen: [{ name: "5 · 1 · 14 je km² aus dem Kopf des Kerns abgeschrieben", roh: leer({ saaten: 3, mundFelsProzent: 95, muendungenJeKm2: 5 }) }],
@@ -1639,10 +1797,34 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ LAGERSTÄTTE ════════════════════════════════════════
     const lagerstaette = {
-        sek: 8,
+        sek: 12,
+        faecher: true,
         pfad: ["gelaende-core.js", "foundry-core.js", "stamm/bau-buch.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs"],
         ungefahren: "die Jury, die geologische Karte, der Abbau und die Mineral-Stufe (Blindpaare) urteilen nur am Gerät",
         mess: async function (H, U, M) {
+            // S1 ÜBER DEN FÄCHER (stationen/faecher.js): N Lagen der Fibonacci-Kugel; je Lage die Geschichte des Orts am Faden (planet-ort:
+            // Zone, Alter, Vulkan) und die Genese des Gesteins, die die Welt dort trägt — „passt“ heißt magmatisch an Vulkan/Rand,
+            // metamorph im Orogen, sedimentär sonst; fehlt eine Funktion der Adresse, nennt die Adresse sie (`fehlt`)
+            const GENESE_AN = async (r, T, a, mit) => {
+                const K = globalThis.__gelaendeCore, k = a.ort + 1;
+                const breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                await r._fadenQuelle();
+                const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                if (!o || !o.land) return { meer: true };
+                const gesch = Number.isFinite(o.orogenAktiv) && Number.isFinite(o.vulkanAbstandKm) ? (o.vulkanAbstandKm < 50 ? "magmatisch" : o.orogenAktiv ? "metamorph" : "sedimentaer") : null;
+                const genese = typeof K.felsGenese === "function" ? K.felsGenese : null;
+                if (gesch == null || !genese)
+                    return { fehlt: (gesch == null ? "voxel-worker.js:1446 planetOrtAuftrag gibt die Geschichte nicht weiter (planet-core.js:1860 trägt orogenAktiv/vulkanAbstandKm, die Antwort nur " + Object.keys(o).sort().join(",") + ")" : "") + (gesch == null && !genese ? "; " : "") + (!genese ? "gelaende-core.js:3351 FELS ist EIN Fels-Stoff je Welt, keine Genese je Ort (foundry-core.js:5242 rockPhenotype wählt nur die Sorte eines Brockens)" : "") };
+                const g = genese(o, breite, laenge);
+                return { gesch, genese: g, passt: g === gesch ? 1 : 0 };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: GENESE_AN, export: "voxel-worker.js:1446 planetOrtAuftrag (die Geschichte) · gelaende-core.js:3351 FELS (das Gestein)", leser: "gelaende-core.js:3417 FELS_TE (die Bänke im Fels-Stoff)" },
+                adressen: { orte: Array.from({ length: U[1].orte }, (_, j) => j) },
+                ms: U[1].ms,
+                masse: { passt: { wie: "mittel", feld: "passt" }, genesen: { wie: "verschieden", feld: "genese" }, orte: { wie: "anzahl", feld: "gesch" } },
+                ungemessen: ["die Jury der drei Genesen im Bild (Panel R11, am Gerät)"],
+            });
             const g = await H.seite(
                 "const mats = r.state.materials || {}; const N = Object.keys(mats); const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); " +
                     "const L = [...namen]; const G = globalThis.__gelaendeCore; const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); let n = 0, fels = 0; " +
@@ -1659,7 +1841,12 @@ L.perspektive("geologie", (() => {
             const kein = "die Stoff-Tafel trägt " + g.stoffe + " Stoffe, Gestein: " + gestein + ", Roh-Stoffe: " + erz + " (Bau-Stoffe ohne Fundort); " + (g.leser.length ? "Leser: " + g.leser.slice(0, 6).join(", ") : "0 Leser einer Lagerstätte, einer Bohrung, eines Abbaus oder eines Funds");
             return {
                 sprossen: {
-                    1: { werte: { genesen: g.gestein.length }, zeuge: { antworten: g.spalten, felsSpalten: g.fels, genesen: g.gestein.length }, auge: bild, nicht: "keine Genese je Ort: " + g.fels + " Fels-Spalten in 4 km² tragen EINEN Fels-Stoff (gelaende-core FELS, foundry-core rockPhenotype nur für Brocken); " + kein },
+                    1: {
+                        werte: { genesen: RF.werte.genesen || 0, passtProzent: Number.isFinite(RF.werte.passt) ? Math.round(1000 * RF.werte.passt) / 10 : null },
+                        zeuge: { antworten: g.spalten + RF.adressen, felsSpalten: g.fels, genesen: RF.werte.genesen || 0, adressen: RF.adressen, ohneFaehigkeit: RF.fehltAn.length },
+                        auge: bild,
+                        ...(RF.fehlt ? { taeter: "Leser fehlt: " + RF.fehlt + " · " + RF.akte } : {}),
+                    },
                     2: { werte: {}, zeuge: { antworten: g.spalten }, auge: bild, nicht: "keine geologische Karte: EIN Gestein je Ort, kein Leser bindet es an Tektonik und Alter" },
                     3: { werte: {}, zeuge: { antworten: g.spalten }, nicht: "keine Lagerstätte: " + kein },
                     4: { werte: {}, zeuge: { antworten: g.spalten }, auge: bild, nicht: "keine Kohle, keine Senkung: " + kein },
@@ -1670,13 +1857,12 @@ L.perspektive("geologie", (() => {
         },
         sprossen: {
             1: {
-                u: { augeBis: 7 },
+                u: { augeBis: 11, orte: 30, ms: 3000 },
                 soll: [K.soll(LA, 1, "Jury trennt drei Genesen ≥ 80 %", { key: "juryProzent", einheit: "%" }), K.soll(LA, 1, "Genese passt zur Geschichte des Orts ≥ 85 %", { key: "passtProzent", einheit: "%" })],
                 zeuge: zMin({ antworten: 1000, genesen: 3 }),
                 auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand", vorbild: "Feldfotos magmatischer, sedimentärer und metamorpher Wände (Jury, Prüfer-Satz R11)" },
                 taeter: "gelaende-core.js FELS (EIN Fels-Stoff) und foundry-core.js rockPhenotype (Genese nur am Brocken)",
-                nicht: "keine Genese je Ort",
-                leser: "foundry-core.js:5242 rockPhenotype — wählt die Sorte eines Brockens; kein Leser bindet die Genese an Ort oder Alter (gelaende-core.js:3350 FELS)",
+                leser: "foundry-core.js:5242 rockPhenotype — wählt die Sorte eines Brockens; kein Leser bindet die Genese an Ort oder Alter (gelaende-core.js:3351 FELS); voxel-worker.js:1446 planetOrtAuftrag gibt die Geschichte (planet-core.js:1860) nicht weiter",
                 gruen: gut({ juryProzent: 84, passtProzent: 88, genesen: 3 }, { antworten: 10000, genesen: 3 }),
                 attrappen: [{ name: "drei Genesen benannt, eine Wand", roh: gut({ juryProzent: 84, passtProzent: 88, genesen: 3 }, { antworten: 10000, genesen: 1 }) }],
             },
@@ -1744,11 +1930,51 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ INNERES ════════════════════════════════════════
     const inneres = {
-        sek: 8,
+        sek: 16,
+        faecher: true,
         pfad: ["stamm/bild-himmel.js", "gelaende-core.js", "stamm/gelaende-*.js", "planet-core.js", "voxel-worker.js", "scripts/werkbank.cjs"],
-        ungefahren: "die Ursachen-Probe (Bild) urteilt nur am Gerät",
+        ungefahren: "die Ursachen-Probe (Bild) urteilt nur am Gerät; der Kompass im Bild am schlechtesten Ort ebenso",
         mess: async function (H, U, M) {
             const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            // S1 ÜBER DEN FÄCHER (stationen/faecher.js): N Orte der Fibonacci-Kugel des Planeten, je Ort der Faden planet-ort
+            // (voxel-worker.js:1446 planetOrtAuftrag — derselbe Auftrag, den die Reise bestellt, stamm `_planetAuftrag`) und der Stamm
+            // als Leser eines Kompasses; trägt der Ort ein Feld (Inklination oder Vektor Nord/Ost/Unten), urteilt die Inklination gegen den
+            // Dipol tan I = 2 tan λm (λm die magnetische Breite gegen den Pol des Felds, ohne Pol die geographische)
+            const MAGNET_AN = async (r, T, a, mit) => {
+                const RAD = Math.PI / 180, k = a.ort + 1;
+                const breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                await r._fadenQuelle();
+                const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                const spur = [];
+                const such = (x, p, t) => {
+                    if (x && typeof x === "object" && t < 4) for (const q of Object.keys(x)) (/magnet|inklin|deklin|dipol/i.test(q) && spur.push(p + q), such(x[q], p + q + ".", t + 1));
+                };
+                such(o, "", 0);
+                const namen = new Set();
+                for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) if (/magnet|kompass|compass|deklin|inklin|dipol/i.test(n)) namen.add(n);
+                const B = (o && (o.magnet || o.feld)) || null;
+                const I = B && Number.isFinite(B.inklinationGrad) ? B.inklinationGrad : B && Array.isArray(B.nordOstUnten) ? Math.atan2(B.nordOstUnten[2], Math.hypot(B.nordOstUnten[0], B.nordOstUnten[1])) / RAD : null;
+                if (I == null)
+                    return { fehlt: "planet-core.js:264 PLANET_ERDE ohne Dipol (kein Feld, kein Pol, keine Stärke); voxel-worker.js:1446 planetOrtAuftrag antwortet mit " + Object.keys(o || {}).sort().join(",") + (spur.length ? " (Spur " + spur.join(",") + " ohne Inklination)" : "") + "; im Stamm " + (namen.size ? [...namen].join(",") : "kein Leser eines Kompasses") };
+                const lm = Number.isFinite(B.polBreite) && Number.isFinite(B.polLaenge) ? Math.asin(Math.sin(breite * RAD) * Math.sin(B.polBreite * RAD) + Math.cos(breite * RAD) * Math.cos(B.polBreite * RAD) * Math.cos((laenge - B.polLaenge) * RAD)) : breite * RAD;
+                const dip = Math.atan(2 * Math.tan(lm)) / RAD;
+                return { breite: Math.round(breite * 10) / 10, laenge: Math.round(laenge * 10) / 10, I, dip, abw: Math.abs(I - dip), dekl: Number.isFinite(B.deklinationGrad) ? Math.round(B.deklinationGrad * 10) / 10 : null };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: MAGNET_AN, export: "voxel-worker.js:1446 planetOrtAuftrag (planet-core.js:264 PLANET_ERDE)", leser: "stamm _planetAuftrag (die Reise) — ein Kompass liest das Feld nirgends" },
+                adressen: { orte: Array.from({ length: U[1].orte }, (_, j) => j) },
+                ms: U[1].ms,
+                masse: { orte: { wie: "anzahl", feld: "I" }, abw: { wie: "max", feld: "abw" }, dekl: { wie: "verschieden", feld: "dekl" } },
+                schlecht: { feld: "abw", richtung: "max" },
+                pose: (a, w) => "Kompass in der Hand am Ort " + w.breite + "°/" + w.laenge + "°, Nadel und Neigung im Bild",
+                ungemessen: ["der Kompass im Bild (am Gerät)"],
+            });
+            const s1 = {
+                werte: { inklinationAbwGrad: r3(RF.werte.abw), orte: RF.gemessen },
+                zeuge: { adressen: RF.adressen, orte: RF.gemessen, deklinationen: RF.werte.dekl || 0, ohneFeld: RF.fehltAn.length, ms: RF.ms },
+            };
+            if (RF.fehlt) s1.taeter = "Leser fehlt: " + RF.fehlt + " · " + RF.akte;
+            else s1.zeuge.akte = RF.akte.slice(0, 600);
             const i = await H.seite(
                 "const sy = r._voxelSurfaceY(0, 0); const T = [0, 10, 28, 50, 100].map((d) => [d, r._temperaturAt(sy - d, 0)]); const G0 = r._voxelChunkConfig(0); const boden = (r.state.terrainBaseHeight || 0) - G0.floorDrop; " +
                     "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); const L = [...namen]; " +
@@ -1765,7 +1991,7 @@ L.perspektive("geologie", (() => {
             ]);
             return {
                 sprossen: {
-                    1: { werte: {}, zeuge: { antworten: 2, magnetLeser: i.magnet.length }, ...(i.magnet.length ? { nicht: "kein Dipol-Feld am Ort (" + i.magnet.join(", ") + ")" } : { nicht: kein("kein Magnetfeld", i.magnet) }) },
+                    1: s1,
                     2: { werte: {}, zeuge: { antworten: 2 }, nicht: kein("keine Feldgeschichte im Gestein", i.magnet) },
                     3: { werte: {}, zeuge: { antworten: 2, geysirLeser: i.geysir.length }, nicht: kein("kein Geysir, keine Wärme-Anomalie", i.geysir) },
                     4: {
@@ -1780,14 +2006,22 @@ L.perspektive("geologie", (() => {
         },
         sprossen: {
             1: {
-                u: {},
+                u: { orte: 20, ms: 8000 },
                 soll: [K.soll(IN, 1, "Inklination ≤ 5° gegen Dipol an 20 Orten", { key: "inklinationAbwGrad", einheit: "°" }), K.soll(IN, 1, "an 20 Orten", { key: "orte", rel: "≥", zahl: 20 })],
-                zeuge: zMin({ antworten: 20, magnetLeser: 1 }),
-                taeter: "kein Magnetfeld in Welt und Planet (planet-core.js, stamm)",
-                nicht: "kein Magnetfeld",
-                leser: "planet-core.js:263 PLANET_ERDE trägt kein Feld (Dipol, Pol, Stärke); kein Leser eines Kompasses mit Deklination und Inklination",
-                gruen: gut({ inklinationAbwGrad: 2, orte: 20 }, { antworten: 20, magnetLeser: 1 }),
-                attrappen: [{ name: "die Dipol-Formel statt der Welt", roh: leer({ inklinationAbwGrad: 2, orte: 20 }) }],
+                // der Zeuge: der Fächer fragte 20 Orte, und die Deklination ändert sich mit dem Ort (der zweite Satz der Sprosse)
+                zeuge: zMin({ adressen: 20, orte: 20, deklinationen: 2 }),
+                taeter: "Leser fehlt: planet-core.js:264 PLANET_ERDE ohne Dipol; voxel-worker.js:1446 planetOrtAuftrag ohne Feld; kein Kompass im Stamm",
+                leser: "voxel-worker.js:1446 planetOrtAuftrag antwortet mit Höhe, Küste und Delta (Klima, Meer, Wetter, Wuchs, Eis, Wildnis) — kein Feld; planet-core.js:264 PLANET_ERDE trägt kein Feld (Dipol, Pol, Stärke); kein Leser eines Kompasses mit Deklination und Inklination",
+                gruen: gut({ inklinationAbwGrad: 2, orte: 20 }, { adressen: 20, orte: 20, deklinationen: 20 }),
+                attrappen: [
+                    { name: "die Dipol-Formel statt der Welt", roh: leer({ inklinationAbwGrad: 2, orte: 20 }) },
+                    { name: "EIN Ort trägt das Maß", roh: gut({ inklinationAbwGrad: 2, orte: 1 }, { adressen: 20, orte: 1, deklinationen: 1 }) },
+                    { name: "der Pol auf der Drehachse: die Deklination ist überall 0", roh: gut({ inklinationAbwGrad: 2, orte: 20 }, { adressen: 20, orte: 20, deklinationen: 1 }) },
+                ],
+                proben: [
+                    { name: "der Planet ohne Feld: 20 Orte ohne Fähigkeit (ROT beim Leser)", roh: { werte: { inklinationAbwGrad: null, orte: 0 }, zeuge: { adressen: 20, orte: 0, deklinationen: 0, ohneFeld: 20 }, taeter: "Leser fehlt: kein Feld" } },
+                    { name: "das Feld 12° neben dem Dipol", roh: gut({ inklinationAbwGrad: 12, orte: 20 }, { adressen: 20, orte: 20, deklinationen: 20 }) },
+                ],
             },
             2: {
                 u: {},
@@ -1851,10 +2085,99 @@ L.perspektive("geologie", (() => {
 
     // ════════════════════════════════════════ EINSCHLAG ════════════════════════════════════════
     const einschlag = {
-        sek: 6,
+        sek: 24,
+        faecher: true,
         pfad: ["planet-core.js", "voxel-worker.js", "gelaende-core.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs"],
-        ungefahren: "das Blindpaar gegen das Kraterfoto urteilt nur am Gerät",
+        ungefahren: "das Blindpaar gegen das Kraterfoto urteilt nur am Gerät; der Napf im Bild an der schlechtesten Adresse ebenso",
         mess: async function (H, U, M) {
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const med = (v) => {
+                const b = v.filter(Number.isFinite).sort((x, y) => x - y);
+                return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null;
+            };
+            // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Reise-Welten an den Land-Lagen des Planeten (der Weg der Geburt: der Faden
+            // planet-ort, stamm/gelaende-boden.js:1649 `_reiseSaat` → gelaende-core lageAus) und die Heimat, je Welt ein Gitter von Orten;
+            // je Adresse die Höhe, die der Wirt liest (gelaende-core.js:2821 `hoehe`, Leser stamm/gelaende-boden.js:810
+            // `_terrainMacroSurfaceY`): vom Ort bergab bis zur Senke, dort das Ringprofil in 16 Richtungen — ein Napf ist eine Senke,
+            // deren Ring auf jedem Radius über ihr UND über dem Außenring liegt (der Rand); Tiefe/Durchmesser und das Profil gegen die
+            // Parabel des einfachen Kraters (Pike 1977) urteilen nur an Näpfen
+            const NAPF_AN = async (r, T, a, mit) => {
+                const K = globalThis.__gelaendeCore;
+                const C = window.__napfLagen || (window.__napfLagen = {});
+                if (!(a.saat in C)) {
+                    if (a.saat === "heim") C[a.saat] = { L: r._gelaende(), wl: r.state.waterLevel, saat: r._gelaende().seed };
+                    else {
+                        await r._fadenQuelle();
+                        const k = a.saat, breite = (Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI, laenge = ((k * 137.508) % 360) - 180;
+                        const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                        if (!o || !o.land) C[a.saat] = null;
+                        else {
+                            const heim = r.constructor._weltGesetz(r.state.worldMeta).gelaende;
+                            const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                            const O = K.ortGesetz(ort), eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                            const saat = r._reiseSaat(ort, heim), wl = K.GRUND.basis - O.meerUnterBasisM;
+                            C[a.saat] = { saat, wl, L: K.lageAus({ seed: saat, baseHeight: K.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise) };
+                        }
+                    }
+                }
+                const W = C[a.saat];
+                if (!W) return { meer: true };
+                let rufe = 0;
+                const h = (x, z) => (rufe++, K.hoehe(W.L, x, z, true));
+                const n = mit.gitter, x0 = ((a.ort % n) - (n - 1) / 2) * mit.abstandM, z0 = (Math.floor(a.ort / n) - (n - 1) / 2) * mit.abstandM;
+                let x = x0, z = z0, h0 = h(x, z);
+                for (let i = 0; i < mit.schritte; i++) {
+                    let b = null;
+                    for (let q = 0; q < 8; q++) {
+                        const w = (q * Math.PI) / 4, hx = h(x + mit.schrittM * Math.cos(w), z + mit.schrittM * Math.sin(w));
+                        if (hx < h0 && (!b || hx < b[2])) b = [x + mit.schrittM * Math.cos(w), z + mit.schrittM * Math.sin(w), hx];
+                    }
+                    if (!b) break;
+                    [x, z, h0] = b;
+                }
+                let best = null;
+                for (const R of mit.radien) {
+                    const ring = [], aussen = [], prof = [[], [], []];
+                    for (let q = 0; q < 16; q++) {
+                        const w = (q * Math.PI) / 8, c = Math.cos(w), s = Math.sin(w);
+                        ring.push(h(x + R * c, z + R * s));
+                        aussen.push(h(x + 1.6 * R * c, z + 1.6 * R * s));
+                        [0.25, 0.5, 0.75].forEach((f, j) => prof[j].push(h(x + f * R * c, z + f * R * s)));
+                    }
+                    const d = ring.reduce((u, v) => u + v, 0) / 16 - h0;
+                    const rand = ring.every((v, q) => v > h0 && v > aussen[q]);
+                    const dD = d / (2 * R);
+                    if (rand && dD >= mit.dDmin && (!best || dD > best.dD)) {
+                        const abw = [0.25, 0.5, 0.75].map((f, j) => Math.abs((prof[j].reduce((u, v) => u + v, 0) / 16 - h0) / d - f * f));
+                        best = { R, dD, profilAbw: (100 * abw.reduce((u, v) => u + v, 0)) / 3 };
+                    }
+                }
+                return { saat: W.saat, senke: true, napf: !!best, dD: best ? best.dD : null, profilAbw: best ? best.profilAbw : null, radiusM: best ? best.R : null, x: Math.round(x), z: Math.round(z), hM: Math.round(h0 * 10) / 10, unterWasser: h0 < W.wl, rufe };
+            };
+            const RF = await FAECHER((c) => H.seite(c), {
+                gesetz: { fn: NAPF_AN, export: "gelaende-core.js:2821 hoehe (Reise-Welt aus gelaende-core.js:6069 lageAus)", leser: "stamm/gelaende-boden.js:810 _terrainMacroSurfaceY" },
+                adressen: { saaten: Array.from({ length: U[1].saaten }, (_, i) => i + 1), orte: Array.from({ length: U[1].gitter * U[1].gitter }, (_, j) => j), dazu: Array.from({ length: U[1].gitter * U[1].gitter }, (_, j) => ({ saat: "heim", ort: j, zeit: null })) },
+                mit: { gitter: U[1].gitter, abstandM: U[1].abstandM, schrittM: U[1].schrittM, schritte: U[1].schritte, radien: U[1].radien, dDmin: U[1].dDmin },
+                ms: U[1].ms,
+                masse: {
+                    senken: { wie: "anzahl", nur: (a, w) => !!w.senke },
+                    naepfe: { wie: "anzahl", nur: (a, w) => !!w.napf },
+                    welten: { wie: "verschieden", feld: "saat", nur: (a, w) => !!w.senke },
+                    rufe: { wie: "summe", feld: "rufe" },
+                    dD: { wie: (v) => med(v), feld: "dD", nur: (a, w) => !!w.napf },
+                    profil: { wie: (v) => med(v), feld: "profilAbw", nur: (a, w) => !!w.napf },
+                },
+                schlecht: { feld: "hM", richtung: "min" },
+                pose: (a, w) => "Ego am Rand der tiefsten Senke der Reise-Welt " + w.saat + " bei " + w.x + "/" + w.z + " (" + w.hM + " m), Blick in sie",
+                ungemessen: ["der Napf im Bild gegen das Kraterfoto (am Gerät)"],
+            });
+            const W1 = RF.werte;
+            const s1 = {
+                werte: { tiefeDurchmesser: r3(W1.dD), profilAbwProzent: r3(W1.profil) },
+                zeuge: { antworten: W1.rufe || 0, senken: W1.senken || 0, naepfe: W1.naepfe || 0, welten: W1.welten || 0, adressen: RF.adressen, gerissen: RF.gerissen, ms: RF.ms },
+            };
+            if (!W1.naepfe) s1.taeter = "planet-core.js:1389 punktKern und gelaende-core.js:2821 hoehe tragen keinen Krater-Term: " + (W1.senken || 0) + " Senken in " + (W1.welten || 0) + " Welten, bergab gesucht, " + (W1.naepfe || 0) + " Näpfe mit Rand (Tiefe/Durchmesser ≥ " + U[1].dDmin + ") · " + RF.akte;
+            else s1.zeuge.akte = RF.akte.slice(0, 600);
             const e = await H.seite(
                 "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); const L = [...namen]; " +
                     "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
@@ -1866,23 +2189,30 @@ L.perspektive("geologie", (() => {
             ]);
             const kein = "kein Krater: " + (e.leser.length || e.kern.length ? "Leser " + e.leser.concat(e.kern).join(", ") : "0 Leser eines Einschlags in Welt und Gelände-Kern") + "; der Faden antwortet mit " + e.ort + " (wildnis " + e.delta + ") — die „Krater“ im Code sind Grab-Taten des Spielers";
             const je = {};
-            for (const nr of [1, 2, 3, 4, 5, 6, 7]) je[nr] = { werte: {}, zeuge: { antworten: 2, leser: e.leser.length + e.kern.length }, nicht: kein };
+            for (const nr of [2, 3, 4, 5, 6, 7]) je[nr] = { werte: {}, zeuge: { antworten: 2, leser: e.leser.length + e.kern.length }, nicht: kein };
+            je[1] = s1;
             je[2].auge = bild;
             return { sprossen: je };
         },
         sprossen: {
             1: {
-                u: {},
+                u: { saaten: 24, gitter: 4, abstandM: 6000, schrittM: 80, schritte: 60, radien: [40, 80, 160, 320, 640, 1280], dDmin: 0.02, ms: 16000 },
                 soll: [
                     K.soll(EI, 1, "einfache Krater Tiefe/Durchmesser 1:5 ±20 %", { key: "tiefeDurchmesser", ref: 0.2, refQuelle: "Mond und Erde: einfache Krater d/D ≈ 1:5 (Pike 1977; Melosh 1989)" }),
                     K.soll(EI, 1, "Profil gegen reale Krater ≤ 15 %", { key: "profilAbwProzent", einheit: "%" }),
                 ],
-                zeuge: zMin({ antworten: 10, leser: 1 }),
-                taeter: "planet-core.js punktKern und gelaende-core.js (kein Krater-Term)",
-                nicht: "kein Krater als Form",
-                leser: "planet-core.js:1218 punktKern summiert Boden, Profil, Mantel, Schablone, Trapp, Orogen, Kegel — keinen Krater; gelaende-core.js kennt keine Napf-Form",
-                gruen: gut({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }, { antworten: 50, leser: 1 }),
-                attrappen: [{ name: "die Napf-Form gegraben, kein Einschlag", roh: leer({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }) }],
+                // der Zeuge: der Fächer hat die Höhe gefragt (Rufe), an Senken mehrerer Welten, und ≥ 5 Näpfe tragen das Maß
+                zeuge: zMin({ antworten: 1000, senken: 20, welten: 3, naepfe: 5 }),
+                taeter: "planet-core.js:1389 punktKern und gelaende-core.js:2821 hoehe (kein Krater-Term)",
+                leser: "stamm/gelaende-boden.js:810 _terrainMacroSurfaceY liest gelaende-core.js:2821 hoehe; planet-core.js:1389 punktKern summiert Boden, Profil, Mantel, Schablone, Trapp, Orogen, Kegel — keinen Krater",
+                unklar: "„Profil gegen reale Krater“ gelesen als die mittlere Abweichung des normierten Ringprofils (r/R = ¼, ½, ¾) von der Parabel des einfachen Kraters (Pike 1977) — ein Korpus realer Profile (LOLA, Barringer) ist nicht eingefroren",
+                gruen: gut({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }, { antworten: 40000, senken: 300, welten: 12, naepfe: 40 }),
+                attrappen: [
+                    { name: "die Napf-Form gegraben, kein Einschlag", roh: leer({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }) },
+                    { name: "EIN Napf trägt das Maß", roh: gut({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }, { antworten: 40000, senken: 300, welten: 12, naepfe: 1 }) },
+                    { name: "der Fächer las nur die Heimat", roh: gut({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }, { antworten: 40000, senken: 16, welten: 1, naepfe: 6 }) },
+                ],
+                proben: [{ name: "die Welt ohne Krater: 0 Näpfe, das Maß ungemessen (ROT beim Täter)", roh: { werte: { tiefeDurchmesser: null, profilAbwProzent: null }, zeuge: { antworten: 9000, senken: 380, welten: 11, naepfe: 0 }, taeter: "kein Krater-Term" } }],
             },
             2: {
                 u: { augeBis: 5 },
