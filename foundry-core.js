@@ -6687,6 +6687,9 @@ function __hautUnterTuch(hg, stoffe, ring, skala, G) {
             for (let r = 0; r < ring.length; r += 3) if (Math.abs(ring[r] - P[i * 3]) + Math.abs(ring[r + 1] - P[i * 3 + 1]) + Math.abs(ring[r + 2] - P[i * 3 + 2]) < 1e-6) ringe[i] = 1; // prettier-ignore
     const weg = new Float64Array(n);
     const kand = [];
+    const hebe = stoffe.map((s) => new Float64Array(s.geometry.attributes.position.count)),
+        hebeN = stoffe.map((s) => new Float64Array(3 * s.geometry.attributes.position.count));
+    stoffe.forEach((s, k) => (s.__hebeI = k));
     for (const s of stoffe) {
         const ga = s.geometry.attributes,
             S = ga.position.array,
@@ -6722,20 +6725,26 @@ function __hautUnterTuch(hg, stoffe, ring, skala, G) {
                 rb2 = rb * rb;
             for (let t = 0; t < kand.length; t += 2) {
                 const i = kand[t + 1];
-                if (kand[t] > rb2 || ringe[i]) continue;
+                if (kand[t] > rb2) continue;
                 const h =
                     (x - hp[3 * i]) * hn[3 * i] +
                     (y - hp[3 * i + 1]) * hn[3 * i + 1] +
                     (z - hp[3 * i + 2]) * hn[3 * i + 2];
-                if (h >= G.luftM || ziel - h <= weg[i]) continue;
-                // nur die Haut, die zum Stoff blickt (Normale gegen Normale über 60°: die Haut am Rand ihrer Maske, deren Normale zur
-                // Seite kippt, weicht nie — ihr Weg „nach innen" führte hinaus)
+                if (h >= G.luftM) continue;
+                // die Haut, die nicht weichen kann — die Ecke des Rings (die Naht am Hals trägt die Haut des Kopfs) und die Haut, die
+                // nicht zum Stoff blickt (Normale gegen Normale über 60°: der Hals unter dem Kragen, der Rand der Maske; ihr Weg „nach
+                // innen" führte hinaus) —, hält die Prüfung von der anderen Seite: der Stoff hebt sich über ihr um eben die Höhe des
+                // Rückfalls, ohne ihn (der Wirt setzte die Ecke sonst auf eine andere Haut-Ecke, cm weit)
                 const ux = SN[3 * j] * skala[0], uy = SN[3 * j + 1] * skala[1], uz = SN[3 * j + 2] * skala[2]; // prettier-ignore
-                if (
-                    ux * hn[3 * i] + uy * hn[3 * i + 1] + uz * hn[3 * i + 2] <
-                    0.5 * Math.sqrt(ux * ux + uy * uy + uz * uz)
-                )
+                const blickt = ux * hn[3 * i] + uy * hn[3 * i + 1] + uz * hn[3 * i + 2] >= 0.5 * Math.sqrt(ux * ux + uy * uy + uz * uz); // prettier-ignore
+                if (ringe[i] || !blickt) {
+                    if (ziel - h > hebe[s.__hebeI][j]) {
+                        hebe[s.__hebeI][j] = ziel - h;
+                        for (let d = 0; d < 3; d++) hebeN[s.__hebeI][3 * j + d] = hn[3 * i + d];
+                    }
                     continue;
+                }
+                if (ziel - h <= weg[i]) continue;
                 let teilt = false;
                 for (let k = 0; k < 4 && !teilt; k++) if (HW[i * 4 + k] > 0) for (let l = 0; l < 4; l++) if (SW[j * 4 + l] > 0 && SI[j * 4 + l] === HI[i * 4 + k]) teilt = true; // prettier-ignore
                 if (teilt) weg[i] = ziel - h;
@@ -6766,11 +6775,113 @@ function __hautUnterTuch(hg, stoffe, ring, skala, G) {
         for (let d = 0; d < 3; d++) P[3 * i + d] -= (weg[i] * hn[3 * i + d]) / skala[d];
         gerueckt++;
     }
+    stoffe.forEach((s, k) => {
+        const S = s.geometry.attributes.position.array;
+        let z = 0;
+        for (let j = 0; j < hebe[k].length; j++) {
+            if (!(hebe[k][j] > 0)) continue;
+            for (let d = 0; d < 3; d++) S[3 * j + d] += (hebe[k][j] * hebeN[k][3 * j + d]) / skala[d];
+            z++;
+        }
+        delete s.__hebeI;
+        if (!z) return;
+        s.geometry.attributes.position.needsUpdate = true;
+        s.geometry.computeVertexNormals();
+        gerueckt += z;
+    });
     if (gerueckt) {
         hg.attributes.position.needsUpdate = true;
         hg.computeVertexNormals();
     }
     return gerueckt;
+}
+// DIE MASKE DER VERDECKTEN HAUT (mensch-nah, mensch.leib.stoff#1): die Zunft schrumpft die Haut unter der Kleidung nicht, sie
+// zeichnet sie nicht — die Körper-Maske der Figuren-Werkzeuge blendet jedes Haut-Dreieck aus, das ein Kleid ganz deckt, die Haut
+// endet unter dem Saum. Der Schnitt oben (`hautImStoff`) maskierte nur die Region der Zone samt Nachbarn; an ihrem Rand standen
+// Dreiecke, deren drei Ecken unter IHREM Stoff lagen (Achsel, Schulter, Hüfte, Knie — jede Naht zweier Knochen), und ihre Ecken
+// gingen in der Pose durch ihn. DAS GESETZ: eine Ecke ist verdeckt, wenn ihre nächste Stoff-Ecke (Radius `R`, seitlich unter
+// `quer`) mit ihr einen Knochen teilt und sie unter ihr liegt; ein Dreieck mit drei verdeckten Ecken fällt (der Ring der Naht am
+// Hals bleibt), die Ecken ohne Dreieck fallen aus dem Netz (der Wirt prüft das Tuch an jeder Haut-Ecke, eine Ecke ohne Fläche
+// trüge eine Null-Normale). Antwort: die Zahl der gefallenen Dreiecke.
+function __hautMaske(hg, stoffe, ring) {
+    const P = hg.attributes.position.array,
+        HI = hg.attributes.skinIndex.array,
+        HW = hg.attributes.skinWeight.array,
+        n = P.length / 3,
+        R = HAUT_UNTER_STOFF.R,
+        Q2 = HAUT_UNTER_STOFF.quer * HAUT_UNTER_STOFF.quer;
+    const best = new Float64Array(n).fill(R * R),
+        wer = new Int32Array(n).fill(-1),
+        von = new Int32Array(n).fill(-1);
+    stoffe.forEach((s, si) => {
+        const S = s.geometry.attributes.position.array,
+            gitter = new Map(),
+            zelle = (x, y, z) => Math.floor(x / R) + "," + Math.floor(y / R) + "," + Math.floor(z / R);
+        for (let j = 0; j < S.length / 3; j++) {
+            const k = zelle(S[j * 3], S[j * 3 + 1], S[j * 3 + 2]);
+            const L = gitter.get(k);
+            if (L) L.push(j);
+            else gitter.set(k, [j]);
+        }
+        for (let i = 0; i < n; i++) {
+            const cx = Math.floor(P[i * 3] / R),
+                cy = Math.floor(P[i * 3 + 1] / R),
+                cz = Math.floor(P[i * 3 + 2] / R);
+            for (let a = -1; a <= 1; a++)
+                for (let b = -1; b <= 1; b++)
+                    for (let c = -1; c <= 1; c++) {
+                        const L = gitter.get(cx + a + "," + (cy + b) + "," + (cz + c));
+                        if (L)
+                            for (const j of L) {
+                                const ex = S[j * 3] - P[i * 3], ey = S[j * 3 + 1] - P[i * 3 + 1], ez = S[j * 3 + 2] - P[i * 3 + 2], d2 = ex * ex + ey * ey + ez * ez; // prettier-ignore
+                                if (d2 < best[i]) [best[i], wer[i], von[i]] = [d2, j, si];
+                            }
+                    }
+        }
+    });
+    const verdeckt = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+        if (wer[i] < 0) continue;
+        if (ring) {
+            let amRing = false;
+            for (let r = 0; r < ring.length && !amRing; r += 3) amRing = Math.abs(ring[r] - P[i * 3]) + Math.abs(ring[r + 1] - P[i * 3 + 1]) + Math.abs(ring[r + 2] - P[i * 3 + 2]) < 1e-6; // prettier-ignore
+            if (amRing) continue;
+        }
+        const ga = stoffe[von[i]].geometry.attributes,
+            j = wer[i],
+            N = ga.normal.array,
+            S = ga.position.array;
+        let teilt = false;
+        for (let k = 0; k < 4 && !teilt; k++) if (HW[i * 4 + k] > 0) for (let l = 0; l < 4; l++) if (ga.skinWeight.array[j * 4 + l] > 0 && ga.skinIndex.array[j * 4 + l] === HI[i * 4 + k]) teilt = true; // prettier-ignore
+        if (!teilt) continue;
+        const dx = P[i * 3] - S[j * 3],
+            dy = P[i * 3 + 1] - S[j * 3 + 1],
+            dz = P[i * 3 + 2] - S[j * 3 + 2],
+            h = dx * N[j * 3] + dy * N[j * 3 + 1] + dz * N[j * 3 + 2];
+        if (h <= 0 && dx * dx + dy * dy + dz * dz - h * h < Q2) verdeckt[i] = 1;
+    }
+    const ix = hg.index.array,
+        bleibt = [];
+    for (let t = 0; t < ix.length; t += 3) if (!(verdeckt[ix[t]] && verdeckt[ix[t + 1]] && verdeckt[ix[t + 2]])) bleibt.push(ix[t], ix[t + 1], ix[t + 2]); // prettier-ignore
+    const gefallen = (ix.length - bleibt.length) / 3;
+    if (!gefallen) return 0;
+    // das Netz ohne die Ecken, die kein Dreieck mehr trägt (jedes Attribut der Ecke zieht mit)
+    const neu = new Int32Array(n).fill(-1);
+    let m = 0;
+    for (const k of bleibt) if (neu[k] < 0) neu[k] = m++;
+    const alt = new Int32Array(m);
+    for (let i = 0; i < n; i++) if (neu[i] >= 0) alt[neu[i]] = i;
+    for (const name of Object.keys(hg.attributes)) {
+        const a = hg.attributes[name],
+            w = a.itemSize,
+            arr = new a.array.constructor(m * w);
+        for (let q = 0; q < m; q++) for (let c = 0; c < w; c++) arr[q * w + c] = a.array[alt[q] * w + c];
+        hg.setAttribute(name, new THREE.BufferAttribute(arr, w, a.normalized));
+    }
+    const idx = m > 65535 ? new Uint32Array(bleibt.length) : new Uint16Array(bleibt.length);
+    for (let t = 0; t < bleibt.length; t++) idx[t] = neu[bleibt[t]];
+    hg.setIndex(new THREE.BufferAttribute(idx, 1));
+    return gefallen;
 }
 function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     const pa = hg.attributes.position.array,
@@ -10954,6 +11065,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             k < HAUT_UNTER_STOFF.runden && stoffe.length && __hautUnterStoff(leib.mesh.geometry, stoffe, ring);
             k++
         );
+        if (stoffe.length) __hautMaske(leib.mesh.geometry, stoffe, ring);
         if (!kern.TUCH_GESETZ || typeof kern.leibMassstab !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne TUCH_GESETZ/leibMassstab — die Haut hält die Prüfung des Tuchs (fail-closed)"); // prettier-ignore
         const me = kern.leibMassstab(),
             sc = B.character.scale,
