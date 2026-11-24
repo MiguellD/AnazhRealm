@@ -11769,10 +11769,19 @@
         // Hauses, seine Fenster, jedes Stück in `belegt` ({x0, x1, y0, y1} an derselben Wand), jeden fremden Grund und seine
         // Wandlaterne nicht trifft. Rückgabe {x, z, th, kasten} (der Anker, die Drehung, sein Kasten an der Wand) oder null.
         var amTuerWand = function (B, q, i, m, reihe, belegt) {
-            var c = Math.cos(q.phi || 0),
+            var haupt = B.masse.find(function (x) {
+                    return x.art === "haupt";
+                }),
+                c = Math.cos(q.phi || 0),
                 s = Math.sin(q.phi || 0),
                 hw = B.dims.W / 2,
-                hd = B.dims.D / 2,
+                // DIE AUSSENFLÄCHE DER WAND (`ring` der Hauptmasse: Ständer und glatte Platte stehen mittig 2 cm innen in voller
+                // Stärke P.post — die Fläche der L0 und L1 steht so weit vor dem Grundriss): dort hängt das Brett, nie in ihr. Bis
+                // hier hing es an der Linie des Grundrisses — das Hauszeichen am Kaufhaus italienisch (P.post 0,16) 6 cm tief in der
+                // Putzwand, die Tafel nur über dem Sturz sichtbar (ort-zeichen 8574142e: f:relief 0,0 % im Bild). An der Wand
+                // schneidet die Traufe der steilen Kapelle (60°, 3,10 m) die Inschrift über ihrer Tür um 9 cm: sie trägt keine
+                // (stadt-voll 69 → 68 von 69 Sonderbauten; bis hier steckte das Brett dort in der Wand unter der Traufe)
+                hd = B.dims.D / 2 + haupt.ring,
                 t = B.dims.tuer,
                 sz = t.z > 0 ? 1 : -1,
                 rand = m.aus ? hw - 0.6 : hw - m.bw / 2 - 0.1,
