@@ -6186,6 +6186,7 @@
     //    Bis nerv-schwung trug jede Zeile Ziele in Worten und eine Kontakt-Folge — 11 von 11 Zeilen beschrieben, 0 steuerten. Sie
     //    fielen: die Kontakt-Folge des Gangs IST der Tastgrad des Gang-Gesetzes (Gehen 0,6: Doppel-Stand; Sprint 0,20: Flug), die
     //    der Geräte ihr Verb (VERB_GESETZ, `leibVerbPose`). Linse: gate:koerper-kern V7 · S1–S4. ──
+    var ELLBOGEN_HUB = 0.3;
     var VERB_TAFEL = Object.freeze({
         gehen: Object.freeze({ froude: 0.25, schwung: Object.freeze({ knie: 1.05, knieAufsatz: 0.09, aufsatz: -0.35, rumpf: 0.05, arm: 0.3, ellbogen: 0.3 }) }),
         sprint: Object.freeze({ schwung: Object.freeze({ knie: 2.2, knieAufsatz: 0.46, aufsatz: 0.2, rumpf: 0.16, arm: 0.66, ellbogen: 1.55 }) }),
@@ -8087,11 +8088,14 @@
             // um ± arm, der Ellbogen beugt um ellbogen (Gehen 17° fast gestreckt, Sprint 89°), der Rumpf neigt sich um rumpf nach vorn
             // — je eine Zahl der EINEN Kurve. Bis hier trug die Schulter ± 0,4 rad × die Amplitude des Tempos (am Gehen 33° Schwung,
             // im Sprint 56°), der Ellbogen eine eigene Tafel über den Tastgrad (GANG_ARME), der Rumpf stand im Sprint lotrecht.
+            // Der Ellbogen schließt sich vorn und öffnet sich hinten um ± ELLBOGEN_HUB seiner Beugung (Mann & Herman 1985: im Sprint
+            // vorn ~115°, hinten ~60° — die Hand kommt hinter die Hüfte); bis hier beugte er sich hinten um 0,2 rad MEHR (die Hand
+            // blieb im Sprint auch im Rückschwung 12 cm vor der Hüfte).
             var ell = SW.ellbogen;
             add(r.armL.shoulder, "x", -SW.arm * sw * w);
             add(r.armR.shoulder, "x", SW.arm * sw * w);
-            add(r.armL.elbow, "x", (-ell - 0.2 * Math.max(0, -sw)) * w);
-            add(r.armR.elbow, "x", (-ell - 0.2 * Math.max(0, sw)) * w);
+            add(r.armL.elbow, "x", -ell * (1 + ELLBOGEN_HUB * sw) * w);
+            add(r.armR.elbow, "x", -ell * (1 - ELLBOGEN_HUB * sw) * w);
             add(r.spine, "x", SW.rumpf * w);
             add(r.spine, "z", 0.05 * sw * wa);
             add(r.spine, "y", 0.07 * sw * wa);
