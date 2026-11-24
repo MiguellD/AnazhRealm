@@ -2433,3 +2433,4 @@ omen-gtx-gtx-4171973a-w231624-1-4171973a ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-24 23:29 landung Runde 25 am 4171973a: misst 70 von 242 Stationen (vorn; 9 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-24 23:35 RUNDE 25 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 9/76, Station -, Kopf 4171973a) — gesehen von radeon (radeon-dienst)
 2026-11-24 23:49 RUNDE 25 ALARM radeon: RADEON: 1 Messungen ungepusht seit 00:00 — weicht 12/76, Station -, Kopf 4171973a; die Runde setzt an derselben Station fort — gesehen von radeon (radeon-dienst)
+2026-11-24 23:58 RUNDE 25 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 12/242, Station karte2.mensch.sport.koennen#2, Kopf 4171973a) — gesehen von gtx (landung-dienst)
