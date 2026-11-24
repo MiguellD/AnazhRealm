@@ -1,44 +1,77 @@
 {
  "art": "glaette",
- "sekunden": 55.9,
+ "sekunden": 34.8,
  "uhrS": 98,
  "schritte": [
   [
    "anfang",
-   42
+   21.9
   ],
   [
    "k4-geh",
-   5.4
+   5.7
   ],
   [
    "k4-fahrt",
-   8.5
+   7.2
   ]
  ],
  "offen": [],
  "fehler": {},
  "strom": {
-  "bloecke": 67,
-  "bilder": 264,
+  "bloecke": 120,
+  "bilder": 558,
   "seiten": 1,
   "fehler": 0,
   "verloren": 0
  },
  "glaette": {
   "k4-geh": {
-   "n": 67,
-   "frame": 75.01,
-   "p99": 133.44,
-   "max": 133.44,
-   "ueber33": 22,
-   "ueber100": 3,
-   "takt": 75.82,
-   "vram": 135.3,
-   "gpu": 5.83,
-   "gpuN": 10,
-   "befehle": 128,
-   "dreiecke": 328576,
+   "n": 152,
+   "frame": 74.93,
+   "p99": 108.32,
+   "max": 133.32,
+   "ueber33": 44,
+   "ueber100": 2,
+   "takt": 60.34,
+   "vram": 134.1,
+   "gpu": 5.99,
+   "gpuN": 21,
+   "befehle": 154,
+   "dreiecke": 379818,
+   "voll": 0,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 7,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "laeufe": 2,
+   "sek": 2.5,
+   "befunde": [],
+   "tasten": {
+    "v": 5
+   }
+  },
+  "k4-fahrt": {
+   "n": 137,
+   "frame": 66.65,
+   "p99": 91.7,
+   "max": 133.31,
+   "ueber33": 72,
+   "ueber100": 1,
+   "takt": 63.09,
+   "vram": 143.6,
+   "gpu": 7.63,
+   "gpuN": 21,
+   "befehle": 229,
+   "dreiecke": 638959,
    "voll": 0,
    "halt": false,
    "last": 0,
@@ -47,45 +80,12 @@
     2
    ],
    "sichtWechsel": 4,
-   "sattel": "0",
+   "sattel": "10101",
    "wetter": [
     "sunny"
    ],
    "buehne": 0,
-   "laeufe": 1,
-   "sek": 2.5,
-   "befunde": [],
-   "tasten": {
-    "v": 4
-   }
-  },
-  "k4-fahrt": {
-   "n": 64,
-   "frame": 74.9,
-   "p99": 108.24,
-   "max": 108.24,
-   "ueber33": 41,
-   "ueber100": 1,
-   "takt": 61.14,
-   "vram": 141.2,
-   "gpu": 7.37,
-   "gpuN": 10,
-   "befehle": 166,
-   "dreiecke": 618023,
-   "voll": 0,
-   "halt": false,
-   "last": 0,
-   "sicht": [
-    1,
-    2
-   ],
-   "sichtWechsel": 2,
-   "sattel": "101",
-   "wetter": [
-    "sunny"
-   ],
-   "buehne": 0,
-   "laeufe": 1,
+   "laeufe": 2,
    "sek": 2.5,
    "befunde": [],
    "tasten": {
