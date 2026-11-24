@@ -814,17 +814,37 @@ var __weltLicht = (function () {
     // freigibt). Mit dem Dichte-Profil der Krone fiel der Sprung auf 0,15–0,18 EV (Soll 0,1): die Bahn bleibt draußen, bis der
     // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam). Seit laub-messer liest
     // er die Sicht des Bildes selbst (`_bildSonnenSicht`, 18 432 Proben der unteren Bildhälfte); seine eigenen Gestalten sind gefallen.
-    function sonnenRichtung(winkel) {
-        const x = Math.cos(winkel);
-        const y = Math.sin(winkel);
-        const z = Math.sin(winkel * 0.5) * 0.4;
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
+    // DIE BAHN (Meeus Kap. 13): am Stundenwinkel H — 0 am Mittag, westwärts, `winkel` der Uhr − π/2 im Drehsinn des Körpers —,
+    // der Breite φ des Ankers und der Deklination δ (`sonnenBahn`): sin h = sin φ sin δ + cos φ cos δ cos H, Osten = −cos δ sin H,
+    // Norden = cos φ sin δ − sin φ cos δ cos H. Die Achsen der Welt: x Osten, y oben, −z Norden (die Mittagssonne der Nordhalbkugel
+    // steht über +z, wie bis hier).
+    function sonnenRichtung(winkel, bahn) {
+        if (!bahn || !Number.isFinite(bahn.breite) || !Number.isFinite(bahn.dekl))
+            throw new Error("DIE SONNENBAHN: ohne Breite und Deklination steht keine Sonne (`sonnenBahn`)");
+        const H = (winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1);
+        const sp = Math.sin(bahn.breite),
+            cp = Math.cos(bahn.breite),
+            sd = Math.sin(bahn.dekl),
+            cd = Math.cos(bahn.dekl),
+            cH = Math.cos(H);
+        return [-cd * Math.sin(H), sp * sd + cp * cd * cH, sp * cd * cH - cp * sd];
+    }
+    // DIE BAHN DER SONNE aus dem Ort und dem Jahr: die Breite φ des Ankers (rad), die Saison-Phase p (0 die Gleiche des Frühlings ·
+    // 0,25 die Sonnwende des Sommers · 0,5 · 0,75 — die Phasen der Saison-Worte 0,125 · 0,375 · 0,625 · 0,875) und der Körper
+    // (Schiefe ε `neigungRad`, `drehsinn`, planet-core `planetPlan(...).koerper`): δ = asin(sin ε · sin 2πp), auf der Südhalbkugel
+    // gespiegelt — das Saison-Wort ist das des Orts, sein Sommer steht über seinem Pol.
+    function sonnenBahn(breite, phase, koerper) {
+        const hem = breite < 0 ? -1 : 1;
+        return {
+            breite,
+            dekl: hem * Math.asin(Math.sin(koerper.neigungRad) * Math.sin(2 * Math.PI * phase)),
+            drehsinn: koerper.drehsinn < 0 ? -1 : 1,
+        };
     }
     // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
     // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
-    function mondRichtung(winkel) {
-        return sonnenRichtung(winkel).map((v) => -v);
+    function mondRichtung(winkel, bahn) {
+        return sonnenRichtung(winkel, bahn).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -1236,8 +1256,10 @@ var __weltLicht = (function () {
         const AR = KERN.ATMO_RECHNUNG;
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
-        const s = sonnenRichtung(winkel);
-        const m = mondRichtung(winkel);
+        // SPIKE sonnenbahn: die Bahn der Bühne (`o.bahn`, sonst die Gleiche am Äquator — die Bühne der Studios trägt noch keinen Ort)
+        const bahn = o.bahn || sonnenBahn(0, 0, { neigungRad: 0, drehsinn: 1 });
+        const s = sonnenRichtung(winkel, bahn);
+        const m = mondRichtung(winkel, bahn);
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
@@ -2184,6 +2206,7 @@ var __weltLicht = (function () {
         e0,
         sonnenWinkel,
         sonnenRichtung,
+        sonnenBahn,
         mondRichtung,
         tafelLicht,
         tagAchse,

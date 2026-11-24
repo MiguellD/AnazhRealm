@@ -1193,6 +1193,9 @@ class AnazhRealm_bild_himmel {
         // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
         const k = this._kalenderZeit(Number.isFinite(uhr) ? uhr : this.state.spielZeit);
         this._saisonAnker = { anker: phaseFor[key], k, phase: phaseFor[key] };
+        // die Deklination der Sonne sprang mit der Phase (`_sonnenBahn`): der Himmel malt neu, der Licht-Pool wählt neu
+        this._himmelSprung = true;
+        if (this._leuchtPool) this._leuchtPool.t = -Infinity;
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -1611,8 +1614,33 @@ class AnazhRealm_bild_himmel {
     // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, die auch die Bühne der Studios
     // liest — bis w28-nacht-licht stand hier ihre Kopie)
     _dayNightSunDirection(angle) {
-        const [x, y, z] = __weltLicht.sonnenRichtung(angle);
+        const [x, y, z] = __weltLicht.sonnenRichtung(angle, this._sonnenBahn());
         return new THREE.Vector3(x, y, z);
+    }
+
+    // DIE BAHN DER SONNE JETZT (sonnenbahn): die Breite des Ankers und der Körper des Planeten (`_planetAnker`, im Planet-Faden
+    // gerechnet) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
+    // SPIKE: bis der Anker antwortet, die Gleiche am Äquator; mit seiner Antwort springt der Himmel einmal (`_himmelSprung`).
+    _sonnenBahn() {
+        if (!this._sonnenAnkerFrage)
+            this._sonnenAnkerFrage = Promise.resolve()
+                .then(() => this._planetAnker())
+                .then(
+                    (a) => {
+                        this._sonnenAnker = {
+                            breite: a.breite,
+                            koerper: { neigungRad: a.neigungRad, drehsinn: a.drehsinn },
+                        };
+                        this._himmelSprung = true;
+                    },
+                    (e) => {
+                        this._sonnenAnkerFrage = null;
+                        this._sonnenAnkerBruch = String((e && e.message) || e);
+                    }
+                );
+        const A = this._sonnenAnker || { breite: 0, koerper: { neigungRad: 0, drehsinn: 1 } };
+        const p = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
+        return __weltLicht.sonnenBahn(A.breite, p, A.koerper);
     }
 
     // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
