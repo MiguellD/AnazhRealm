@@ -157,3 +157,54 @@ nicht an der Stations-Grenze) ist offen.
 eine Klick-Datei für eine feste Größe vorbereiten soll; unbeantwortet, niemand fasst sie an.
 
 **Verbrauch 15:07:** 94 % alle Modelle, 91 % Fable. Bei 98 %: TaskStop der Arbeiter und Wächter, notbremse.sh, dann wechselt er das Konto.
+
+## 11. STAND BEIM WECHSEL 15:39 (gilt VOR Abschnitt 10 — hier beginnst du; Verbrauch 96 % alle Modelle, 94 % Fable)
+
+**Das Erste, was du tust (zwei Stempel liegen bereit, die Batterien laufen):**
+
+1. `anatomie-r4-heil` **3bbb5b233f33458176ca28bda54b6d113638ed2b** (GTX 1050, Heil-Commit der Mensch-Anatomie R4 + schärferer
+   Ruhe-Schlüssel; Batterie 45415387497 lief um 15:39 mit 2 von 22 grün). Bei Grün:
+   `bash S/stempel-msg.sh anatomie-r4-heil 3bbb5b233f33458176ca28bda54b6d113638ed2b S/satz-anatomie-r4-heil.txt S/msg-w28-anatomie-r4-heil.txt`
+   dann `bash S/stempel.sh anatomie-r4-heil 3bbb5b233f33458176ca28bda54b6d113638ed2b S/msg-w28-anatomie-r4-heil.txt`. Kein Anspruch (Apparat).
+2. `ort-ausstattung` 5 **7c517dc573b56dbe3179ee2e57d724ed6be7f8aa** (von mir per Plumbing: Merge des Heil-Commits in 4612f450;
+   Batterie 45415704717 stand um 15:39 noch in der Schlange hinter der ersten). Bei Grün (Code-Check UND GPU-Probe):
+   `bash S/stempel-msg.sh ort-ausstattung 7c517dc573b56dbe3179ee2e57d724ed6be7f8aa S/satz-ort-ausstattung.txt S/msg-w28-ort-ausstattung.txt`
+   dann `bash S/stempel.sh ort-ausstattung 7c517dc573b56dbe3179ee2e57d724ed6be7f8aa S/msg-w28-ort-ausstattung.txt`. Nach der Landung
+   `bash S/nach-landung.sh <zug-nr> "<kommentar>" "w28-ort-ausstattung karte2.mensch.kultur.schrift#1,…"` — die vier Ansprüche
+   (schrift#1 · bildkunst#1 · grenze#1 · megastadt#1) mit ihren vollen Sprossen-Namen aus OMENs Abgabe-Bericht lesen, nie aus dem Kopf;
+   dann EIN Runden-Sprung von a8dd22b5 auf das neue main. Fällt an 7c517dc5 Stand-Takt „DRUCK-SCHLAF“: das ist der echte
+   Wanduhr-Wackler (1 von 3 an Kopf 4) — `node S/neulauf.cjs 45415704717`. Fällt R4 dort noch einmal, ist die Heilung unvollständig:
+   Zeile an GTX 1050.
+   Beide Satz-Dateien liegen im Werkzeug-Ordner dieser Buchung.
+
+**Bei den Machern (Stand von ihnen selbst gemeldet):**
+- **Haus (Radeon-Arbeiter, Baum C:/Users/micha/AnazhRealm-front-pl), NICHT geschoben:** lokal `haus-stoff` =
+  2b13e5e9cd1b3c4cf33e85dcc7a46fcdfcb6def8, `haus-dach` = 5f0f608d5cb4c85c31b3cfcb22266ef9ad752ebc (WIP der Dach-Stufen, noch auf
+  c6cec836). Geheilt mit Zahl: Glas L2 der Hütte 0,195 → 0,105 (Soll ≤ 0,15; `herdKaesten` ist die eine Quelle für L0-Herd und
+  L2-Raum), gate:haus-fern grün · Haus-Asset-Vertrag v6: sin/cos jedes Balkenwinkels auf einem 2^-30-Raster, Ratsche cos 26 → 15,
+  sin 11 → 7, atan 18 → 0, tan 14 → 12; Golden haeuser.json neu geprägt an 221 von 258 Fällen (gleiche Ecken-Zahl je Fall),
+  gate:fachwerk-contract grün. GESCHNITTEN, NICHT GEMESSEN: Settlement-Kanal Akt O (das Klima ist ein Feld der Anfrage,
+  `_zellEingang`; die zwei Plan-Hashes fehlen noch), Golden siedlung.json neu geprägt und unbestätigt. Offen vor dem Push:
+  gate:settlement ganz (Log im Scratch `hd/st2.log`), haus-welt 2/2 (`hd/hw2b.log`), check:statik, gate:studio-begehen (GPU),
+  merge-tree gegen main 499f8b57. Danach haus-dach auf 2b13e5e9 setzen — der Labor-Hash des Dachs muss neu gemessen werden, das
+  Raster ändert die Bytes jedes Hauses. Stempel-Name `w28-haus-stoff2` (`w28-haus-stoff` liegt bei 509212d6).
+  ACHTUNG GOLDEN-KLASSE: 221 neu geprägte Fälle in haeuser.json — jeder andere Zweig, der dieses Golden prägt, kollidiert damit.
+- **Fahrzeug (Radeon-Arbeiter, Baum C:/Users/micha/AnazhRealm-acker):** Remote `fahrzeug-gattung` 86697613; heilt fünf Linsen
+  (Asset-Vertrag v1, Regler wirkt 1, Fahr-Linse des Lebens, Settlement-Kanal C3, Kreatur 1), mischt 3bbb5b23 ein; sein letzter Stand
+  kommt als Meldung — steht er nicht in der LAGE, lies `git -C C:/Users/micha/AnazhRealm-acker log -3` und `status`. Stempel-Name:
+  `w28-fahrzeug-gattung` ist frei (es gibt einen ALTEN `w28-fahrzeug-gattungen` mit n, fea05a2b — nicht verwechseln).
+- **OMEN:** sport-regeln 3 lokal kurz vor dem Push (Steckenbleiber 1 → 0, Tempo-Zwilling siedlung-bewohner.js:2837 im Zweig
+  geschnitten; Satz `satz-sport-regeln.txt` um die Heil-Sätze ergänzen), danach scherbe-liegt → dienst-frist. Sein Stand beim Wechsel:
+  koordination `bericht/2411-omen-stand.md` (bestellt).
+- **GTX 1050:** Bericht `bericht/2411-anatomie-r4-heil.md`, dann klima-aufwind; offener Fund gate:koerper-stand K6 (5 von 21 541
+  Punkten an der Stufen-Naht antworten null, an main a8dd22b5). Stand beim Wechsel: `bericht/2411-gtx-stand.md` (bestellt).
+
+**Arbeiter wieder aufnehmen:** beide lokalen Arbeiter sind Opus-`champion` dieser Sitzung; läuft die Sitzung nach dem Kontowechsel
+weiter, per SendMessage an ihre Agent-Id (Haus a8168eec7697e9c72, Fahrzeug aefb7f02d04943b66). Sonst je Baum ein neuer Arbeiter mit
+dem Brief: GOLDENE DEFINITION zuerst, der Stand oben, die Brief-Pflichten aus Abschnitt 4 und 10, höchstens ZWEI lokale Arbeiter.
+
+**LAGE-Handgriff (mein Stolperer um 15:36):** der Marker für `lage-block.cjs` ist die Überschrift des LETZTEN Baus, jetzt
+`"**STAND 24.11. 15:36"`; meldet das Werkzeug „kein Block beginnt mit …“, NICHT buchen (ich buchte einmal die alte Datei erneut).
+Nächste Betreff-Datei `betreff-lage-34.txt`. Uhrzeiten nur aus `date`.
+
+**Karte 2 gebucht 83 von 1 718.** Sieben Landungen heute (z711–z717), zwei Ansprüche gebucht (eis#2, gesehen#3), Runde 22 misst am a8dd22b5.
