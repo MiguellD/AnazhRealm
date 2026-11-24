@@ -2035,6 +2035,12 @@ async function proben(phasen) {
         const slots = q ? q.plan.slots : [];
         const amSlot = (t) => s.architectures.find(an(q.origin.x + t.x, q.origin.z + t.z));
         const haeuser = slots.filter(amSlot).length;
+        // der Täter beim Namen: jeder freie Slot ohne Bau (der letzte trägt die Sperre), mit Kultur, Rolle, Ort und dem Grund des Orts
+        const fehlt = slots.slice(0, -1).flatMap((t, i) =>
+            amSlot(t)
+                ? []
+                : [`#${i} ${t.kultur}/${t.rolle || "wohnhaus"} ${Math.round(q.origin.x + t.x)}/${Math.round(q.origin.z + t.z)}`]
+        );
         const zaehle = (liste, typ, kappe) => {
             const l = (liste || []).filter(Boolean).slice(0, kappe);
             return [
@@ -2063,6 +2069,7 @@ async function proben(phasen) {
             ohne: ohne.map((g) => `${Math.round(g.cx)}/${Math.round(g.cz)}`),
             slots: slots.length,
             haeuser,
+            fehlt,
             reload,
             zugOffen,
             ausstattung,
@@ -2389,7 +2396,9 @@ function urteil(o) {
         else if (wa.ohne.length) f.push(`W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne})`);
         if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt");
         else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
-            f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
+            f.push(
+                `W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen${wa.fehlt && wa.fehlt.length ? " — ohne Bau " + wa.fehlt.join(" · ") : ""}`
+            );
         if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
             f.push("W9 Ausstattung: blind — kein Brunnen, keine Laterne");
         else if (au && Object.values(au).some(([n, soll]) => n < soll)) f.push(`W9 Ausstattung: ${JSON.stringify(au)}`);
