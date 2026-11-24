@@ -1393,7 +1393,10 @@ function raumLinse() {
     {
         const GL = FC.GRENZE_IM_LAND;
         const SG = FC.SIEDLUNG;
-        const ringe = [SG.nHMin, 26, 295, 499].map((nH) => ({ x: 836.1, z: 438.2, r: FC.siedlungsReich(SG, nH), nH })); // BÜHNE: der Rand ist eine Funktion des Reichs, die Mitte (der Herr an stadt-voll) setzt nichts in eine Welt
+        // die Mitte: der Anker der Metropole am Messort stadt-voll (spec/profiband/haushalt.json, `gruendung.anker`) — dort misst die Station
+        const ort = JSON.parse(require("fs").readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")).messorte.find((m) => m.id === "stadt-voll");
+        const [ax, az] = ort.gruendung.anker;
+        const ringe = [SG.nHMin, 26, 295, 499].map((nH) => ({ x: ax, z: az, r: FC.siedlungsReich(SG, nH), nH }));
         let bandOk = true;
         let deckOk = true;
         let beispiel = "";
