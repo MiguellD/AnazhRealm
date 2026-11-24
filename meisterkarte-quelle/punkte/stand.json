@@ -18729,7 +18729,7 @@
   },
   "karte2.mensch.kultur.schrift": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.schrift#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) · karte2.mensch.kultur.schrift#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) · karte2.mensch.kultur.schrift#2 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.schrift#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) · karte2.mensch.kultur.schrift#1 gtx: ROT: S1 ROT: fehlender Leser: kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift (fachwerk-core.js:2182) · gemessen 69 · [linse-gpu] nvidia/pascal an eba9bf8f · karte2.mensch.kultur.schrift#2 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.schrift#1",
@@ -18746,10 +18746,9 @@
      "id": "karte2.mensch.kultur.schrift#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift (fachwerk-core.js:2182) · gemessen 69 · [linse-gpu] nvidia/pascal",
+     "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
+     "grund": "ROT: S1 ROT: fehlender Leser: kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift (fachwerk-core.js:2182) · gemessen 69 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37736,7 +37735,7 @@
   "ohne": 3304
  },
  "kopfVoll": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
- "zeit": "2026-11-24T16:31:46.322Z",
+ "zeit": "2026-11-24T16:38:12.032Z",
  "vorher": "eba9bf8f",
  "bilanz": {
   "gewinn": [],
