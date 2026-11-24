@@ -186,12 +186,12 @@
     // desto steiler: das Wasser läuft schneller ab, als es kapillar eindringt). Reet ≥ 45° (BauNetz Wissen „Reet und Stroh“; Landkreis
     // Rostock 40–45°) · Mönch-Nonne ≥ 40° (BauNetz Wissen Glossar, keine Falz, Überdeckung 80 mm) · Biberschwanz 30° (BauNetz Wissen
     // „Regeldachneigung“) · Schiefer altdeutsch 26,5° (Wikipedia „Dachneigung“) · Holzschindel dreilagig 22° (BauNetz Wissen
-    // „Regeldachneigung“) · Hohlziegel/Coppi 30 % = 16,7° (Manuale coperture in laterizio 2025: 30–40 %) · flach (Blech, Pappe, Lehm):
-    // die Grenze trägt der Stil. `rolle`: der Stoff, den HAUS der Deckung malt (`ziegel` trägt die Farbe der Kultur oder `farbe`);
+    // „Regeldachneigung“) · Hohlziegel/Coppi 30 % = 16,7° (Manuale coperture in laterizio 2025, Tafel „Pendenza“: Pendenza minima 30 % bei 9 cm Überdeckung, < 30 % sconsigliata) · flach (Blech, Pappe, Lehm):
+    // die Grenze trägt der Stil. `rolle`: der Stoff, den HAUS der Deckung malt; `farbe`: sein Ton, wo der Ort die Deckung wechselt (je Rolle);
     // `traufe`: die Dicke der Deckung an der Traufkante in m (Reet: 30–35 cm Packung, BauNetz Wissen; die Ziegel liegen als Reihen).
     // prettier-ignore
     var DECKUNG_GESETZ = {
-        reet:       { grad: 45,   rolle: "stroh", traufe: 0.32 },
+        reet:       { grad: 45,   rolle: "stroh", traufe: 0.32, farbe: [0x6e6242] },   // das Reet im Wetter: oliv-graubraun (Foto Molfsee, f3), nicht das Gold des frischen Strohs
         moenchnonne:{ grad: 40,   rolle: "ziegel", farbe: [0xa65a36, 0x84432a] },
         biber:      { grad: 30,   rolle: "ziegel", farbe: [0x9c4a35, 0x803a28] },
         schiefer:   { grad: 26.5, rolle: "ziegel", farbe: [0x4c4f57, 0x3c3f46] },
@@ -5416,7 +5416,7 @@
   // DIE DECKUNG FOLGT DEM ORT (haus-dach, `ortDeckung`): jeder Bau und jede Fassung deckt im Stoff des Orts, die Neigung steigt auf die Regel
   // seiner Deckung (`grenzNeigung`), der Ziegel trägt die Farbe seiner Deckung, wo der Ort sie wechselt — ohne Klima (das Labor) der Bau, wie er stand
   if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));
-      const F=DECKUNG_GESETZ[d].farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, {ziegel:F[0], ziegel2:F[1]}); };
+      const G=DECKUNG_GESETZ[d], F=G.farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, G.rolle==="ziegel"?{ziegel:F[0], ziegel2:F[1]}:{[G.rolle]:F[0]}); };
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},

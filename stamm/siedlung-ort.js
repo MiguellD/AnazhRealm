@@ -459,13 +459,6 @@ class AnazhRealm_siedlung_ort {
         // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
         // Welt erfindet keine Höhe mehr: die hMax-Suche über das Raster, das Podest, die Klippen-Wand und die Ersatz-Orte fielen,
         // der Erdbau des Orts trägt das Haus. Ein Slot ohne y fällt geschlossen und laut.
-        if (!Number.isFinite(slot.y)) {
-            this.log(
-                `SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`,
-                "ERROR"
-            );
-            return false;
-        }
         const wx = origin.x + slot.x;
         const wz = origin.z + slot.z;
         // DER GRUND FÄLLT MIT DEM SLOT (S4): der Erdbau des Orts trägt den Grund jedes Hauses seines Plans (`ortPlan`); fällt
@@ -492,6 +485,14 @@ class AnazhRealm_siedlung_ort {
             this._erdbauGrundFaellt({ position: { x: wx, z: wz } });
             return false;
         };
+        // ohne Boden fällt das Los beim Namen in die Bilanz (`so.gefallen`), nicht nur ins Log: bis haus-dach las die Probe es als „fiel still“
+        if (!Number.isFinite(slot.y)) {
+            this.log(
+                `SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`,
+                "ERROR"
+            );
+            return zu("kein Boden y");
+        }
         const name = this._slotBauplan(slot, f);
         if (!name) return zu("kein Bauplan"); // fail-closed
         const ry = slot.phi || 0;
