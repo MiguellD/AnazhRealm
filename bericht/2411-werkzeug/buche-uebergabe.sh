@@ -4,7 +4,7 @@
 S="C:/Users/micha/AppData/Local/Temp/claude/9fd86081514dce1c/020b359f-6bff-4326-a9cc-a8805834c858/scratchpad"
 cd /c/Users/micha/AnazhRealm-profiband || exit 2
 export MSYS_NO_PATHCONV=1
-DATEIEN="stempel.sh stempel-msg.sh nach-landung.sh pm-merge.sh pm-pruef.sh lage-block.cjs lage-flick.cjs ko-datei.cjs runde-jetzt.cjs anleger-bild.sh job-log.cjs buche-uebergabe.sh ci/ci-rot.cjs ci/ci-warte2.cjs ci/abbruch.cjs ci/lauf-jobs.cjs ci/schlange.cjs ci/vorfahrt-waechter.sh ci/gruen-warte.sh ci/main-veraltet.sh neulauf.cjs satz-auge-der-art.txt satz-probe-deckel-einlass.txt satz-haus-gestalt.txt satz-ort-ausstattung.txt satz-sport-regeln.txt satz-spiegel-eis.txt"
+DATEIEN="stempel.sh stempel-msg.sh nach-landung.sh pm-merge.sh pm-pruef.sh lage-block.cjs lage-flick.cjs ko-datei.cjs runde-jetzt.cjs anleger-bild.sh job-log.cjs buche-uebergabe.sh ci/ci-rot.cjs ci/ci-warte2.cjs ci/abbruch.cjs ci/lauf-jobs.cjs ci/schlange.cjs ci/vorfahrt-waechter.sh ci/gruen-warte.sh ci/main-veraltet.sh neulauf.cjs satz-auge-der-art.txt satz-probe-deckel-einlass.txt satz-haus-gestalt.txt satz-ort-ausstattung.txt satz-sport-regeln.txt satz-spiegel-eis.txt satz-haus-stoff.txt"
 LIT=""
 for f in $DATEIEN UEBERGABE-2411.md; do
     grep -q -E "ghp_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|@gm[a]il" "$S/$f" && LIT="$LIT $f"

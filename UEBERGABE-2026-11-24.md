@@ -89,3 +89,27 @@ EINEN gpu-schloss, nie zwei zugleich, RAM frei ≥ 8 GB. Jeder Agent-Start nennt
   als Zimmerwerk; die Mechanik „liegt am Ufer, folgt dem Spiegel“ steht im lokalen Zweig `anleger-gestalt` (Kopf 2c04ae52, Baum AnazhRealm-acker).
   Maß-Quellen: Ruder-Skiff 4,6–6,7 m lang, 1,02–1,22 m breit, Seitenhöhe 0,33–0,42 m, 3–5 Plankengänge je Seite; Deck: Fuge ≥ 4 mm, Balken alle
   450 mm bei 19-mm-Bohlen, 600 mm bei 32 mm.
+
+## 9. STAND 13:37 (gilt VOR Abschnitt 8; die lebende Zeile ist der oberste NACHTRAG in LAGE.md)
+
+- **main a8dd22b5** (V18.546.403), sechs Landungen heute (z711–z716), Runde 22. Karte 2: 83 von 1 718.
+- **Der Ratschen-Commit 28240b1bff13e4f1b7eeb9039c15195fd8b1309c** (GTX 1050): die Zeichenzahl des Boden-Programms ist kein Tor mehr.
+  Jeder Zweig mit main ab bf5a1542 pflückt ihn, bis `probe-deckel-einlass` (Vorprüf-Kopf cf7deb94) gelandet ist — danach genügt main
+  einmischen. Wort des Schöpfers dazu: „ist das wirklich ein problem? was ist das wahre ziel dieser regel“.
+- **Was ich falsch machte:** (1) Ich jagte 15 Minuten den „Täter“ einer Decke, statt zuerst zu fragen, was sie schützt. (2) Ich schob
+  nach 44 Minuten Stille einen eigenen Zwilling des Ratschen-Schnitts (`licht-ratsche-zahl`, zurückgezogen) — die GTX 1050 lieferte in
+  derselben Minute. Sie antwortet nicht in Minuten, sie arbeitet 45 Minuten still und liefert dann ganz: vor einem Zwilling ihren
+  Zweig per `git ls-remote` UND eine kurze Nachfrage. (3) Zwei Macher-Abgaben kamen mit grünem Bild und roter Batterie zurück
+  (haus-gestalt 5 Linsen, fahrzeug-gattung 6): der Brief verlangte `check:statik`, aber nicht die Linsen, die ALLE Häuser oder ALLE
+  Fahrzeug-Rezepte durchlaufen. Neuer Brief-Satz: „Vor dem Push laufen lokal die Linsen der berührten Familie beim Namen aus
+  .github/workflows/check.yml — für ein Haus: gate:haus-welt (beide Teile), Kreatur-Linse 1 und 3, Fahr-Linse des Lebens; für ein
+  Fahrzeug: Asset-Vertrag v1, Regler wirkt 1, Fahr-Linse des Lebens, Settlement-Kanal.“ (4) Ein Arbeiter beendete chrome.exe nach
+  Muster und riss die Mess-Sitzung der Runde — Brief-Satz „nur eigene PIDs“ (Gedächtnis `arbeiter-nur-eigene-pids`).
+- **Was trug:** die Täter-Zeilen aus den Job-Logs wörtlich in den Heil-Auftrag (`job-log.cjs <job> <ziel>`, dann grep auf ❌); EIN
+  Zweig je Stapel statt drei Batterien; überholte Batterien sofort abbrechen (20 Läufer, 22 Jobs je Batterie).
+- **Laufend beim Schreiben:** Arbeiter `haus-stoff-heil` (Baum AnazhRealm-front-pl) und `fahrzeug-gattung` (Baum AnazhRealm-acker) heilen
+  ihre roten Linsen; OMEN pflückt den Ratschen-SHA auf ort-ausstattung (Vorprüfung 3) und sport-regeln 3; Wächter
+  `ci/vorfahrt-waechter.sh 2` und `ci/main-veraltet.sh 2` laufen bis etwa 15:10. Der Stempel-Satz für haus-stoff liegt als
+  `satz-haus-stoff.txt` bereit (um die Heilung ergänzen).
+- **Offen beim Schöpfer:** die Auslagerungsdatei auf OMEN (systemverwaltet, heute + 11 GB) — gefragt um 13:00, ob OMEN eine
+  Klick-Datei für eine feste Größe vorbereiten soll; bis zu seiner Antwort nichts anfassen.
