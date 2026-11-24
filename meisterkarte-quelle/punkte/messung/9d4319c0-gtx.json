@@ -1,7 +1,7 @@
 {
  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
  "geraet": "gtx",
- "zeit": "2026-11-24T06:14:47.730Z",
+ "zeit": "2026-11-24T06:23:42.803Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -851,6 +851,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.physik.tragen#1": {
+   "gruen": true,
+   "zahl": "S1 · GRÜN ✅ abw_pct 0 (Soll ≤ 20) · ✅ abw_halbe_pct 0 (Soll ≤ 20) · ✅ Umfang verlangt 1 Glied, die Welt erzeugte 1 · gemessen vor dem Abbruch: Frist der Probe 111 s gerissen",
+   "exit": 3,
+   "minuten": 1.88,
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 111 s gerissen",
+   "konsum": "kcd2db44410e1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 111.3,
+   "fremd": {
+    "s": 114.9,
+    "takte": 50,
+    "fremdS": 150.03,
+    "kerne": 1.306,
+    "fensterKerne": 1.744,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      49.77
+     ],
+     [
+      "node scripts/diag-blocker-netz.cjs --selftest",
+      19.97
+     ],
+     [
+      "node scripts/diag-raum-tags.cjs --selftest",
+      11.86
+     ]
+    ],
+    "dienerS": 42.63,
+    "diener": [
+     [
+      "dwm.exe",
+      19.84
+     ],
+     [
+      "System",
+      13.95
+     ]
+    ],
+    "geraetS": 41.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.86
+     ],
+     [
+      "svchost.exe",
+      15.86
+     ],
+     [
+      "SearchIndexer.exe",
+      1
+     ]
+    ],
+    "eigenS": 458.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T06:23:42.803Z",
+   "abdruck": "6190143738c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1225,20 +1295,6 @@
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
    "modus": "session"
-  },
-  "karte2.same.physik.tragen#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-24T06:13:52.922Z",
-   "abdruck": "6190143738c9",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.leben.oeko.netz#2": {
    "gruen": false,
