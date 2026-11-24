@@ -78,6 +78,29 @@ const TRAGEN_AN = async (r, T, a) => {
     return { glieder: bp.parts.length, ohne: (v.floatingParts || []).length, kippt: v.lean >= 1 ? 1 : 0, knickt: v.buckles ? 1 : 0 };
 };
 
+// DER FALL EINES KÖRPERS (same.massstab.physik#2, das Gesetz des Fächers): a = { kante (m), stoff } — eine Kiste der Kante `kante`
+// aus dem Stoff `stoff` (ρ aus `_stoffRho` stamm/bau-buch.js:1629, m = ρ · Kante³, wie der Löser eine Kiste trägt: hx = hy = hz =
+// Kante/2). Ihre Luft packt das Gesetz des Lösers (`_freiLuftPacken` stamm/koerper-frei.js:1117: ½ ρ_Luft c_w A / m, die Luftdichte
+// aus `_fahrSchrittGesetz`), ihr Fall läuft in seinen Teil-Schritten (`_freiZiehen` :1266, h = FIXED_DT / FREI.teile, die Schwere
+// `state.gravity`) — dieselben zwei Rufe, mit denen `_freiSchritt` :477 jeden wachen Körper bewegt — auf einem EIGENEN Puffer (nie
+// `_freiX`), aus der Ruhe, bis das Tempo steht (Zuwachs < 10⁻⁶ der Schwere je Schritt) oder 300 s Fall. Kein Körper wird gesetzt.
+const FALL_AN = async (r, T, a) => {
+    const A = r.constructor, st = r.state, rhoS = r._stoffRho(a.stoff);
+    if (!(rhoS > 0)) return { fehlt: "der Stoff " + a.stoff + " trägt keine Dichte (_stoffRho)" };
+    const g = Number.isFinite(st.gravity) ? st.gravity : -9.81, h = A.FIXED_DT / A.FREI.teile, KS = A.FREI_KOERPER;
+    const X = new Float64Array(KS * 2), p = st.playerMesh.position, k = a.kante / 2;
+    const K = { kiste: true, hx: k, hy: k, hz: k, r: k, m: rhoS * a.kante * a.kante * a.kante, p: [p.x, p.y + 50, p.z] };
+    r._freiLuftPacken(K, X, 0, A._fahrSchrittGesetz().vc.FAHR.luft.rho);
+    let t = 0, v = 0, steht = false;
+    for (; t < 300 && !steht; t += h) {
+        r._freiZiehen(X, 1, h, g, true);
+        r._freiZiehen(X, 1, h, g, false);
+        steht = Math.abs(Math.abs(X[1]) - v) < 1e-6 * Math.abs(g) * h * 1000;
+        v = Math.abs(X[1]);
+    }
+    return { v: +v.toFixed(3), t: +t.toFixed(2), steht: steht ? 1 : 0, m: K.m, c: X[38], fall_m: +Math.abs(X[7] - (p.y + 50)).toFixed(1) };
+};
+
 // DIE ZELLE DES BRAND-FELDS (same.physik.feuer#2, das Gesetz des Fächers): a.ort = [dc, dk] Zellen vom Leib (LIFE_FIELD.cell,
 // stamm/feld-leben.js:3184). Das Bett, wie die Front es antrifft (`_brandStoff` stamm/feld-brand.js:297: kein Bett auf Asche, über
 // Wasser — das EINE Urteil `_nassAt` —, unter minStoff) und sein Tempo (`_brandTempo` :395, Rothermel/Albini, zur Welt-Uhr
@@ -3336,13 +3359,15 @@ LEITERN.push(
         leiter({
             leiter: "same.massstab.physik",
             sek: 30,
+            seite: { FAECHER, FALL_AN },
             pfad: ["scripts/werkbank.cjs", "stamm/bau-buch.js", "stamm/koerper-frei.js", "stamm/wasser-zellen.js", "stamm/wasser-hydro.js"],
             bestehend: [1],
             welt: [{ wort: "koerper", ab: 1, was: "Körper der Welt, die die Messung bewegt" }],
             sprossen: {
                 2: {
                     soll: [{ wort: "endtempo_abw_pct", richtung: "≤", wert: 20, wortlaut: "Endgeschwindigkeit eines 5-mm-Körpers ±20 % gegen ~6 m/s", feld: "richter" }],
-                    umfang: { verlangt: 3, einheit: "Größenordnungen der Werke an der Pose", wortlaut: "3 (Ameise bis Haus)", feld: "umfang" },
+                    umfang: { verlangt: 3, einheit: "Größenordnungen der Körper im Fächer (Kante)", wortlaut: "3 (Ameise bis Haus)", feld: "umfang" },
+                    welt: [{ wort: "koerper", ab: 1, was: "Körper (Größe × Stoff), die das Gesetz des Lösers im Fächer fallen ließ" }],
                 },
                 3: { soll: [{ wort: "bond_abw_pct", richtung: "≤", wert: 15, wortlaut: "Tropfenform gegen Bond-Zahl ±15 %", feld: "richter" }] },
                 4: { soll: [{ wort: "kepler_abw_pct", richtung: "≤", wert: 1, wortlaut: "Umlaufzeit gegen Kepler ±1 %", feld: "richter" }] },
@@ -3386,9 +3411,42 @@ LEITERN.push(
                 const g = await L.ev("return (" + groessen + ")(r);", 30);
                 L.zeile("Größen der Werke binnen 120 m: " + JSON.stringify(g));
                 const spanne = g.n + " Werke binnen 120 m spannen " + g.ordnungen + " Größenordnungen (" + g.min_m + " m " + g.mnTyp + " bis " + g.max_m + " m " + g.mxTyp + ")";
+                // S2 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: die Werke an der Wiese spannen ~1 Größenordnung): der Richter setzt
+                // keinen Körper. Die Adressen sind Größe × Stoff — die Kante 5 mm (die Ameise, Stoff `leib`) bis 5 m (das Haus), je in
+                // leib · holz · stein —, je Adresse der Fall nach dem Gesetz des Lösers (FALL_AN). Die Kontrolle: der 5-mm-Körper muss ein
+                // festes Tempo erreichen (die Mutante ohne Luft, c = 0 im Puffer, erreichte keines) — sonst kein Urteil.
                 await L.je(2, async () => {
-                    if (g.ordnungen < P.sprossen[2].umfang.verlangt) return L.umfang(2, g.ordnungen, spanne);
-                    L.leser(2, "Endgeschwindigkeit: der Löser kennt keinen Luftwiderstand, ein 5-mm-Körper fällt ohne Grenze (stamm/koerper-frei.js:421 `_freiSchritt`) — " + spanne, g.ordnungen);
+                    const s2 = P.sprossen[2], dazu = [];
+                    for (const kante of [0.005, 0.05, 0.5, 5]) for (const stoff of ["leib", "holz", "stein"]) dazu.push({ kante, stoff });
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.FALL_AN, export: "stamm/koerper-frei.js:1117 _freiLuftPacken + :1266 _freiZiehen", leser: "stamm/koerper-frei.js:477 _freiSchritt (dirigent-takt.js:1205)" },
+                        adressen: { dazu },
+                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+                        masse: {
+                            koerper: { wie: "anzahl" },
+                            ameise: { wie: "erste", feld: "v", nur: (a) => a.kante === 0.005 && a.stoff === "leib" },
+                            ameiseSteht: { wie: "erste", feld: "steht", nur: (a) => a.kante === 0.005 && a.stoff === "leib" },
+                            stehen: { wie: "summe", feld: "steht" },
+                            kanten: { wie: (v) => (v.length ? Math.log10(Math.max(...v) / Math.min(...v)) : 0), feld: "a.kante" },
+                            mensch: { wie: "erste", feld: "v", nur: (a) => a.kante === 0.5 && a.stoff === "leib" },
+                            haus: { wie: "erste", feld: "v", nur: (a) => a.kante === 5 && a.stoff === "stein" },
+                        },
+                        schlecht: { feld: "v", richtung: "max" },
+                        pose: (a, w) => "eine Kiste " + a.kante + " m aus " + a.stoff + " im Fall (" + w.v + " m/s nach " + w.t + " s), Third",
+                        ungemessen: ["Sturzfolge passend zur Größe: kein Gesetz der Folge am Aufprall — der Aufprall (stamm/koerper-bewegung.js:716–760) meldet ein Ereignis, kein Leib nimmt Schaden je Größe", "das Bild: ungemessen bis zum Gerät"],
+                    });
+                    L.zeile("massstab.physik S2: " + R.akte.slice(0, 500));
+                    const w = R.werte;
+                    if (!(w.ameise > 0)) return L.leser(2, "die Endgeschwindigkeit eines 5-mm-Körpers: " + (R.fehlt || "die Adresse 5 mm leib fiel nicht") + " · " + R.akte, w.kanten);
+                    if (w.ameiseSteht !== 1) throw new Error("der 5-mm-Körper erreicht in 300 s kein festes Tempo (" + w.ameise + " m/s) — das Gesetz der Luft wirkt nicht, kein Urteil");
+                    const soll = 6, abw = +((100 * Math.abs(w.ameise - soll)) / soll).toFixed(1);
+                    L.gemessen(2, { endtempo_abw_pct: abw }, {
+                        erzeugt: +w.kanten.toFixed(2),
+                        welt: { koerper: R.gemessen },
+                        taeter:
+                            "die Kiste 5 mm aus leib fällt nach dem Löser mit " + w.ameise + " m/s (Soll ~6 m/s ±20 %: " + abw + " %); 0,5 m leib " + w.mensch + " m/s, 5 m Stein " + w.haus + " m/s — c_w der Kiste ist fest (FREI.luft, stamm/koerper-frei.js:1478; keine Reynolds-Abhängigkeit, kein Körper der Ameise); Sturzfolge: kein Gesetz der Folge am Aufprall (stamm/koerper-bewegung.js:716) · " +
+                            R.akte,
+                    });
                 });
                 await L.je(3, async () => L.leser(3, "Tropfenform: das Zellen-Wasser trägt keine Oberflächenspannung, kein Leser nennt die Form eines Tropfens (stamm/wasser-zellen.js:1641 `_tickWaterCA`)"));
                 await L.je(4, async () => L.leser(4, "Umlauf: der Löser kennt nur die Schwere der Ebene, keine Zentralkraft eines Körpers (stamm/koerper-frei.js:421 `_freiSchritt`)"));

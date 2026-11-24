@@ -142,6 +142,18 @@ const NEULING_AN = async (r, T, a) => {
     return { ganz: eigen, erschafft: 1, teilt: 1, eigen, weg: eigen ? "ganz" : "geteilt mit Same " + seedCode + ", gesetzt mit " + seedWerk, name, zeichen: c.code.length };
 };
 
+// DIE LUFT EINES WETTERS (erleben.bild.ferne#1, das Gesetz des Fächers): a = { wetter } — ein Wort der Wetter-Tabelle
+// (`WEATHER_FIELD`, stamm/daten.js:122) oder a.feld (die Mutante: ein Feld ohne Dunst und Regen). Die CPU-Eingänge des Knotens der
+// Luft: β am Bezugs-Niveau (`_luftBeta(wf)` stamm/bild-himmel.js:2473) und die Extinktion je Kanal relativ zu β (`_luftSpektrum`
+// :2492); die Sicht V = −ln(LUFT.kontrast)/β (derselbe Weg wie `_luftSichtM` :2502 ohne Szene). Gesetzt werden sie von
+// `_dayNightApplyLuft` :2665 (β :2711, Spektrum :2718); die Durchlässigkeit T(d) selbst rechnet nur der Knoten `faktor` :2543 in TSL.
+const FERNE_AN = async (r, T, a) => {
+    const A = r.constructor, wf = a.feld || (A.WEATHER_FIELD && A.WEATHER_FIELD[a.wetter]);
+    if (!wf) return { fehlt: "das Wetter-Wort " + a.wetter + " steht nicht in WEATHER_FIELD" };
+    const beta = r._luftBeta(wf), s = r._luftSpektrum(beta, null, new T.Vector3());
+    return { beta, sicht_m: Math.round(-Math.log(A.LUFT.kontrast) / beta), rot: +s.x.toFixed(3), gruen: +s.y.toFixed(3), blau: +s.z.toFixed(3) };
+};
+
 // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
 {
     // ─────────── erleben.spieler.praesenz — Präsenz: der Leib antwortet ───────────
@@ -3608,6 +3620,7 @@ const NEULING_AN = async (r, T, a) => {
         leiter({
             leiter: "erleben.bild.ferne",
             sek: 45,
+            seite: { FAECHER, FERNE_AN },
             pfad: ["stamm/bild-sicht.js", "stamm/gelaende-fern.js", "stamm/bild-himmel.js", "stamm/netz-portal.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "scripts/werkbank.cjs", "spec/profiband/haushalt.json"],
             welt: [{ wort: "sicht_m", ab: 200, was: "Sichtweite der Welt in m (Feld-Pass oder camera.far), gezählt" }],
             sprossen: {
@@ -3700,7 +3713,38 @@ const NEULING_AN = async (r, T, a) => {
                         if (km < P.sprossen[nr].umfang.verlangt) return L.umfang(nr, km, sichtWas);
                         L.leser(nr, fehlt, km);
                     });
-                await stufe(1, FN + "; T/T_soll je Kanal gegen Koschmieder liest luftTiefe (scripts/lib/licht-linsen.cjs:2364) am Hügel, nie an 12 Posen in den 60 s der Leiter");
+                // S1 ÜBER DEN FÄCHER: je Wort der Wetter-Tabelle die Luft, die das Spiel dem Knoten gibt (FERNE_AN); die Mutante (ein Feld
+                // ohne Dunst und Regen) muss weiter sehen als jedes Wetter mit Dunst. T(0,2 km) je Kanal rechnet nur der Knoten selbst —
+                // der Richter rechnet ihn nicht nach: dort bleibt der Leser beim Namen, die Eingänge stehen gemessen daneben.
+                await L.je(1, async () => {
+                    if (km < P.sprossen[1].umfang.verlangt) return L.umfang(1, km, sichtWas);
+                    const worte = await L.ev("return Object.keys(r.constructor.WEATHER_FIELD || {});", 10);
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.FERNE_AN, export: "stamm/bild-himmel.js:2473 _luftBeta + :2492 _luftSpektrum", leser: "stamm/bild-himmel.js:2665 _dayNightApplyLuft → :2543 faktor (TSL)" },
+                        adressen: { dazu: worte.map((wetter) => ({ wetter })).concat([{ wetter: "ohne-dunst", feld: { fog: 0, rain: 0 }, mutante: true }]) },
+                        ms: Math.max(2000, Math.floor((L.rest() - 30) * 1000)),
+                        masse: {
+                            worte: { wie: "anzahl", nur: (a) => !a.mutante },
+                            sichtMin: { wie: "min", feld: "sicht_m", nur: (a) => !a.mutante },
+                            sichtMax: { wie: "max", feld: "sicht_m", nur: (a) => !a.mutante },
+                            mutante: { wie: "max", feld: "sicht_m", nur: "mutante" },
+                            je: { wie: (v, aus) => aus.map((x) => x.a.wetter + " " + (x.w.sicht_m / 1000).toFixed(2) + " km (" + x.w.rot + "/" + x.w.gruen + "/" + x.w.blau + ")").join(", "), nur: (a) => !a.mutante },
+                        },
+                        schlecht: { feld: "sicht_m", richtung: "min" },
+                        pose: (a) => "die Wiese, Ego, Wetter " + a.wetter + ", ein Ziel in 0,2 km gegen den Himmel",
+                        ungemessen: ["T/T_soll je Kanal in 0,2 km: kein CPU-Leser des Knotens `faktor` (stamm/bild-himmel.js:2543)", "Ferne = Nähe an 12 Posen: ungemessen bis zum Gerät"],
+                    });
+                    L.zeile("ferne S1: " + R.akte.slice(0, 500));
+                    const w = R.werte;
+                    if (!w.worte) return L.leser(1, "die Luft je Wetter: " + (R.fehlt || "kein Wetter gemessen") + " · " + R.akte, km);
+                    if (!(w.mutante > w.sichtMax)) throw new Error("die Mutante ohne Dunst sieht " + w.mutante + " m, nicht weiter als das klarste Wetter (" + w.sichtMax + " m) — das Gesetz der Luft trennt nicht");
+                    L.leser(
+                        1,
+                        "T/T_soll je Kanal gegen Koschmieder in 0,2 km: kein CPU-Leser der Durchlässigkeit — der Knoten `faktor` (stamm/bild-himmel.js:2543) rechnet T(d) nur in TSL, kein Export (Auge, Punkt, Wetter) → T je Kanal; die Eingänge an " + w.worte +
+                            " Wettern: Sicht und Extinktion rot/grün/blau je β — " + w.je + "; " + FN + " · " + R.akte,
+                        km
+                    );
+                });
                 await stufe(2, FN + "; der Gang auf ein Ziel aus 2 km mit der Leuchtdichte im Zielfenster: kein Leser (/bild, scripts/werkbank.cjs:2110, schießt stehend)");
                 await stufe(3, FN + "; T/T_soll und Restkontrast am Rand von 8 km: luftTiefe (scripts/lib/licht-linsen.cjs:2364) misst den Blick vom Hügel, nicht den Rand");
                 await stufe(4, FN + "; 100 Saaten verlangt, die Sitzung hält EINE (" + z.saat + ") — kein Leser wechselt die Saat in der Welt der Sitzung");
