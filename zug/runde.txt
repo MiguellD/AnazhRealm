@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 23 kopf eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698 start 2026-11-24T15:47:00Z vorher a8dd22b581f18eeda5d74fc835f1eaf343368267
 gtx offen 0/0 station - fortschritt 2026-11-24T15:47:00Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-24T15:47:00Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-24T15:47:00Z alarm - liste -
 notiz 2026-11-24T15:47:00Z Runde 22 am a8dd22b5 sprang auf eba9bf8f (gtx laeuft 39/239, radeon durch 77/77): Konto 19: z718 w28-ort-ausstattung (vier Ansprueche), dazu neu zu messen: elf im Sitzungs-Absturz 14:23 ungemessene Ansprueche und kraft#2 / jahreslauf#2 (altes Radeon-ROT vom 21.11.)
