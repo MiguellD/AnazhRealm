@@ -1,44 +1,44 @@
 {
  "art": "glaette",
- "sekunden": 61.4,
+ "sekunden": 34.8,
  "uhrS": 98,
  "schritte": [
   [
    "anfang",
-   46
+   22.4
   ],
   [
    "k4-geh",
-   4.7
+   4.6
   ],
   [
    "k4-fahrt",
-   10.7
+   7.8
   ]
  ],
  "offen": [],
  "fehler": {},
  "strom": {
-  "bloecke": 67,
-  "bilder": 209,
+  "bloecke": 119,
+  "bilder": 563,
   "seiten": 1,
   "fehler": 0,
   "verloren": 0
  },
  "glaette": {
   "k4-geh": {
-   "n": 87,
-   "frame": 50.01,
-   "p99": 83.44,
-   "max": 83.44,
-   "ueber33": 13,
+   "n": 181,
+   "frame": 58.28,
+   "p99": 83.26,
+   "max": 83.38,
+   "ueber33": 26,
    "ueber100": 0,
-   "takt": 45.52,
-   "vram": 134.6,
-   "gpu": 5.73,
-   "gpuN": 9,
-   "befehle": 122,
-   "dreiecke": 315594,
+   "takt": 44.65,
+   "vram": 141.3,
+   "gpu": 5.91,
+   "gpuN": 22,
+   "befehle": 137,
+   "dreiecke": 359110,
    "voll": 0,
    "halt": false,
    "last": 0,
@@ -46,13 +46,13 @@
     1,
     2
    ],
-   "sichtWechsel": 3,
+   "sichtWechsel": 7,
    "sattel": "0",
    "wetter": [
     "sunny"
    ],
    "buehne": 0,
-   "laeufe": 1,
+   "laeufe": 2,
    "sek": 2.5,
    "befunde": [],
    "tasten": {
@@ -60,36 +60,37 @@
    }
   },
   "k4-fahrt": {
-   "n": 6,
-   "frame": 99.97,
-   "p99": 99.97,
-   "max": 99.97,
-   "ueber33": 6,
-   "ueber100": 0,
-   "takt": 98.5,
-   "vram": 141.6,
-   "gpu": 6.95,
-   "gpuN": 1,
-   "befehle": 149,
-   "dreiecke": 608293,
+   "n": 133,
+   "frame": 83.32,
+   "p99": 116.63,
+   "max": 133.3,
+   "ueber33": 76,
+   "ueber100": 3,
+   "takt": 69.75,
+   "vram": 141.8,
+   "gpu": 7.34,
+   "gpuN": 23,
+   "befehle": 222,
+   "dreiecke": 618451,
    "voll": 0,
    "halt": false,
    "last": 0,
    "sicht": [
+    1,
     2
    ],
-   "sichtWechsel": 0,
-   "sattel": "1",
+   "sichtWechsel": 6,
+   "sattel": "1010101",
    "wetter": [
     "sunny"
    ],
    "buehne": 0,
-   "laeufe": 1,
+   "laeufe": 2,
    "sek": 2.5,
    "befunde": [],
    "tasten": {
     "wagen": "werkbank-fahrt",
-    "aus": "werkbank-fahrt",
+    "aus": null,
     "ein": "werkbank-fahrt"
    }
   }
