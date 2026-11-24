@@ -4055,8 +4055,8 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 56, wahlS: 0.25, w
 // Abgriffe je Fragment, gleich viele bei 5 wie bei 500 Quellen. Die Kosten an der Änderung (Gebot 7): eine Quelle, deren Stärke
 // um mehr als `stufe` wechselt (die Blende in `blendeStufen` Stufen), die kommt oder geht, trägt nur ihren Fleck ein (je Bild
 // bis `bauMs` und höchstens `zellenJeBild` hochzuladende Zellen, die nächste zuerst, der Rest im nächsten Bild); eine neue
-// Mitte (`nachM` Weg) baut im Hintergrund des Takts — je Bild höchstens `hoehenJeBild` Höhen des Bodens und Arbeit bis `bauMs`,
-// die alte Mitte trägt, bis die neue steht. `texel` 144 deckt die Quellen im Umkreis des Pools (56 m: 50 m um den Spieler, die dritte Person steht dahinter) bei jeder Lage der Mitte
+// Mitte (`nachM` Weg) baut im Hintergrund des Takts — die Höhen des Bodens, die der Torus nicht trägt, rechnet der Feld-Faden
+// (Lehre 14), Quellen und Zeilen je Bild bis `bauMs`; die alte Mitte trägt, bis die neue steht. `texel` 144 deckt die Quellen im Umkreis des Pools (56 m: 50 m um den Spieler, die dritte Person steht dahinter) bei jeder Lage der Mitte
 // (≤ 12 m vom Auge). `skala` hebt E in den Bereich des Halb-Floats.
 AnazhRealm.LICHT_KARTE = Object.freeze({
     texel: 144,
@@ -4065,7 +4065,6 @@ AnazhRealm.LICHT_KARTE = Object.freeze({
     lagenM: [0.1, 2.6],
     skala: 1000,
     blendeStufen: 4,
-    hoehenJeBild: 1024,
     bauMs: 2,
     zellenJeBild: 6000,
     stufe: 0.02,

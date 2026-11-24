@@ -1692,6 +1692,19 @@ function voxelSurfaceY(x, z, gitter) {
         const solid = d > 0;
         if (solid && prevAir) {
             const dLuft = prevD != null ? prevD : feld(y + 1.2);
+            // ÜBER EINEM KELLER halbiert die Suche den Schritt wie `_voxelSurfaceY` des Mains (der Boden des Hohlraums ist ein
+            // Knick, die Gerade durch zwei Proben lag 0,41 m über ihm) — bis w28-nacht-laterne zog der Faden hier die Gerade: an
+            // jeder Spalte über einem Keller eine andere Fläche als der Main (die Licht-Karte liest seit dann den Faden)
+            if (K) {
+                let [lo, hi, dLo, dHi] = [y, y + 1.2, d, dLuft];
+                for (let i = 0; i < 10; i++) {
+                    const m = (lo + hi) / 2;
+                    const dm = feld(m);
+                    if (dm > 0) [lo, dLo] = [m, dm];
+                    else [hi, dHi] = [m, dm];
+                }
+                return lo + (hi - lo) * (dLo - dHi > 1e-9 ? dLo / (dLo - dHi) : 0);
+            }
             const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
             return y + 1.2 * Math.min(1, Math.max(0, t));
         }
@@ -4979,6 +4992,19 @@ function fernAuftrag(msg) {
         for (let j = 0; j < msg.nz; j++)
             for (let i = 0; i < msg.nx; i++)
                 hoehen[j * msg.nx + i] = G.hoehe(state, msg.x0 + i * msg.d, msg.z0 + j * msg.d, false);
+        return { antwort: { hoehen }, transfer: [hoehen.buffer] };
+    }
+    // DER BODEN DER LICHT-KARTE (w28-nacht-laterne, `_lichtKarteTakt`): je Zelle (cx, cz) der Liste `zellen` die Fläche des Felds
+    // in ihrer Mitte ((c + 0,5) · zm) — dieselbe Funktion wie `getTerrainHeightAt` im Main (`voxelSurfaceY`, ohne Fläche die
+    // Basis), per Transfer zurück
+    if (msg.art === "boden") {
+        const Z = msg.zellen;
+        const hoehen = new Float32Array(Z.length / 2);
+        const base = state.baseHeight || 0;
+        for (let k = 0; k < hoehen.length; k++) {
+            const y = voxelSurfaceY((Z[2 * k] + 0.5) * msg.zm, (Z[2 * k + 1] + 0.5) * msg.zm);
+            hoehen[k] = typeof y === "number" && Number.isFinite(y) ? y : base;
+        }
         return { antwort: { hoehen }, transfer: [hoehen.buffer] };
     }
     if (msg.art === "kamm") return kammKrone(msg);

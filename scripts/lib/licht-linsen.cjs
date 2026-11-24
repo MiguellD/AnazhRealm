@@ -3550,16 +3550,23 @@ function nachtSicht(o) {
         // (w28-nacht-laterne): der erste Takt (der Schuss MIT den Lichtern) trägt, wie die Karte vor ihm stand (Weg der Kamera zur
         // Mitte, Bau offen, Höhen im Speicher), wie viele Takte er fuhr und ob sie danach steht — eine Karte, die nach 400 Takten
         // nicht steht, misst die Wand nicht (`nachtUrteil`: ROT beim Namen). Bis hier endete die Schleife still mit der alten Mitte.
-        const karteStand = (Z) => (!st.atmoUniforms.lichtKarte ? "" : !Z ? "kein Zustand" : !Z.g ? "kein Gitter" : Z.bau ? `die Mitte baut (Höhen ${Z.bau.zeiger} von ${K2.texel ** 2}, Quellen ${Z.bau.i} von ${Z.bau.liste ? Z.bau.liste.length : "?"}, Zeilen ${Z.bau.zeile | 0} von ${K2.texel})` : Z.offen > 0 ? `${Z.offen} Unterschiede offen` : "");
+        const karteStand = (Z) => (!st.atmoUniforms.lichtKarte ? "" : !Z ? "kein Zustand" : !Z.g ? "kein Gitter" : Z.bau ? `die Mitte baut (Höhen ${Z.bau.hoehen === "da" ? Z.bau.zeiger : `im Faden: ${Z.bau.hoehen || "nicht bestellt"}`} von ${K2.texel ** 2}, Quellen ${Z.bau.i} von ${Z.bau.liste ? Z.bau.liste.length : "?"}, Zeilen ${Z.bau.zeile | 0} von ${K2.texel})` : Z.offen > 0 ? `${Z.offen} Unterschiede offen` : "");
         const K2 = window.anazhRealm.constructor.LICHT_KARTE;
         const takt = async (erst) => {
             const Zv = r._lichtKarteZ;
-            if (erst) aus.karteVor = Zv ? { wegM: +Math.hypot(cam.position.x - Zv.mx, cam.position.z - Zv.mz).toFixed(1), bau: !!Zv.bau, hoehen: Zv.hoehen.size, baue: Zv.baue } : null;
+            if (erst) aus.karteVor = Zv ? { wegM: +Math.hypot(cam.position.x - Zv.mx, cam.position.z - Zv.mz).toFixed(1), bau: !!Zv.bau, hoehen: Zv.hoehen.belegt, baue: Zv.baue } : null;
             const t0 = performance.now();
             r._leuchtPool = null;
             r._leuchtTakt();
             let k = 1;
-            for (; k < 400 && r._lichtKarteZ && (r._lichtKarteZ.bau || !r._lichtKarteZ.g || r._lichtKarteZ.offen > 0); k++) r._leuchtTakt();
+            // die Höhen einer neuen Mitte rechnet der Feld-Faden (`boden`): der Takt wartet auf seine Antwort, wie das Spiel es zwischen
+            // zwei Bildern tut — die Schleife zählt Takte, nie die Uhr
+            const faden = async () => {
+                const B = r._lichtKarteZ && r._lichtKarteZ.bau;
+                if (B && B.hoehen === "flug") await B.zusage;
+            };
+            await faden();
+            for (; k < 400 && r._lichtKarteZ && (r._lichtKarteZ.bau || !r._lichtKarteZ.g || r._lichtKarteZ.offen > 0); k++) r._leuchtTakt(), await faden();
             if (erst) aus.karteTakte = { takte: k, ms: +(performance.now() - t0).toFixed(1), nicht: karteStand(r._lichtKarteZ) };
             await ruhe(cam, "die Nacht-Lichter");
             r._leuchtTakt();
@@ -3612,7 +3619,7 @@ function nachtSicht(o) {
                     r._lichtKarteTakt(r._leuchtPool, cam);
                 }
             }
-            aus.karte = LK && Z0 ? { schriften: Z0.schriften, baue: Z0.baue, flecken: Z0.flecken, taktMaxMs: +Z0.msMax.toFixed(2), bauMs: +Z0.bauMs.toFixed(2), einerMs: einer, ms: einer, zellen: window.anazhRealm.constructor.LICHT_KARTE.texel ** 2 } : null;
+            aus.karte = LK && Z0 ? { schriften: Z0.schriften, baue: Z0.baue, flecken: Z0.flecken, taktMaxMs: +Z0.msMax.toFixed(2), taktWo: Z0.msMaxWo, bauMs: +Z0.bauMs.toFixed(2), einerMs: einer, ms: einer, zellen: window.anazhRealm.constructor.LICHT_KARTE.texel ** 2 } : null;
             karten.visible = false;
             let ohneK;
             try {
@@ -3720,7 +3727,10 @@ function nachtSicht(o) {
 // ≥ 0,9; die Kelvin-Farbe je Quelle (Median der Abweichung) ≤ 200 K; DIE LINSE SIEHT DEN TÄTER: wo mehr Quellen sichtbar sind als der
 // Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen).
 // Ein Ort ohne sichtbare Quelle urteilt nichts (die Wildnis: nur die Kosten).
-const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200 };
+// DER TAKT DER KARTE (w28-nacht-laterne, Beweis des Auftrags 23.11.): ihr teuerster Takt ≤ `taktMs` — darüber ROT mit seinen Phasen
+// (`msMaxWo` des Schreibers `_lichtKarteTakt`, je Phase ihre ms: Soll · neue Mitte · Höhen gesucht/bestellt/eingelegt · Quellen der
+// Mitte · Zeilen der Mitte · Abschluss der Mitte · Unterschiede · Flecken und Bänder)
+const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200, taktMs: 9.43 };
 // die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand, der Median ihrer Abweichung; das Feuer
 // steht als Zahl daneben. EINE Regel für das Gate und die Station der Punkte-Maschine (karte2.erleben.bild.nacht#1)
 function nachtKelvin(m) {
@@ -3738,7 +3748,7 @@ function nachtUrteil(welt) {
         }
         const { kMed, kel } = nachtKelvin(m);
         const KT = m.karteTakte;
-        zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms, Bau der Mitte ${m.karte.bauMs} ms` : ""}${KT ? ` · steht nach ${KT.takte} Takten (${KT.ms} ms)` : ""}${m.menge ? ` · Menge der Stunde nach ${m.menge.takte} Takten` : ""}`;
+        zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms${m.karte.taktWo ? ` (${m.karte.taktWo})` : ""}, Bau der Mitte ${m.karte.bauMs} ms` : ""}${KT ? ` · steht nach ${KT.takte} Takten (${KT.ms} ms)` : ""}${m.menge ? ` · Menge der Stunde nach ${m.menge.takte} Takten` : ""}`;
         // DIE KARTE STEHT NICHT (w28-nacht-laterne): nach ihren Takten trägt noch die alte Mitte oder ein halber Bau — die Wand misst
         // dann kein Licht, sie nennt den Stand
         if (KT && KT.nicht) {
@@ -3749,6 +3759,8 @@ function nachtUrteil(welt) {
             befunde.push(`${ort}: die Menge steht nicht — ${m.menge.offen} Bewohner kommen nach ${m.menge.takte} Takten noch an; die Wand misst nicht`);
             continue;
         }
+        if (m.karte && m.karte.taktMaxMs > NACHT_SOLL.taktMs)
+            befunde.push(`${ort}: die Karte kostet ${m.karte.taktMaxMs} ms in EINEM Takt (Soll ≤ ${NACHT_SOLL.taktMs}) — Täter ${m.karte.taktWo || "ungenannt"} (\`_lichtKarteTakt\`)`);
         if (!m.sichtbar) continue;
         // JEDE SICHTBARE QUELLE TRÄGT IHREN FLECK (erleben.bild.nacht S2, w28-nacht-laterne): eine einzige ohne Fleck ≥ `ev` ist ROT
         // beim Namen — bis hier ließ der Anteil 0,9 eine dunkle Laterne durch (stadt-voll 11 von 12: `laterne_dorf` 38,6 m mit 0 EV)
@@ -3768,7 +3780,7 @@ function nachtUrteil(welt) {
 // Täter `_lichtKarteTakt`, eine Karte ohne Wirkung ROT bei `_lichtKarteTerm`, eine Linse, die den Pool misst, ROT, die Kelvin-Farbe des
 // falschen Lichts ROT, die Wildnis ohne Quelle urteilt nichts. Dazu (w28-nacht-laterne) die zwei Täter der Stadt: EINE Quelle ohne
 // Fleck unter zwölf sichtbaren (der Anteil 0,92 ließ sie durch) ROT beim Namen, und eine Karte, die nach ihren Takten nicht steht, ROT
-// beim Stand statt einer Zahl.
+// beim Stand statt einer Zahl; der teuerste Takt der Karte über dem Soll ROT mit seinen Phasen.
 function nachtSelbsttest() {
     const je = (n, ev) => Array.from({ length: n }, (_, i) => ({ art: "laterne", d: 10 + i, ev: i < ev ? 2 : 0.2 }));
     const m = (sichtbar, gut, ohneGut, schriften = 3, kelvin = [{ art: "laterne_dorf", abw: 60 }]) => ({ quellen: sichtbar + 2, sichtbar, gut, anteil: +(gut / sichtbar).toFixed(3), ohneKarte: { gut: ohneGut, anteil: +(ohneGut / sichtbar).toFixed(3) }, plaetze: 4, je: je(sichtbar, gut), kelvin, karte: { schriften, ms: 4 } });
@@ -3781,6 +3793,7 @@ function nachtSelbsttest() {
         [U({ stadt: m(12, 11, 3) }), /^stadt: Bodenfleck ≥ 1 EV an 11 von 12 sichtbaren Quellen — ohne Fleck: laterne 21 m 0\.2 EV — Täter/],
         [U({ stadt: Object.assign(m(12, 12, 3), { karteTakte: { takte: 400, ms: 812, nicht: "die Mitte baut (Höhen 9000 von 20736, Quellen 0 von ?, Zeilen 0 von 144)" } }) }), /^stadt: die Karte steht nicht nach 400 Takten — die Mitte baut \(Höhen 9000 von 20736.*die Wand misst sie nicht$/],
         [U({ stadt: Object.assign(m(12, 12, 3), { menge: { takte: 400, offen: 37 } }) }), /^stadt: die Menge steht nicht — 37 Bewohner kommen nach 400 Takten noch an/],
+        [U({ stadt: Object.assign(m(12, 12, 3), { karte: { schriften: 3, ms: 4, taktMaxMs: 11.11, taktWo: "Zeilen der Mitte · Abschluss der Mitte" } }) }), /^stadt: die Karte kostet 11\.11 ms in EINEM Takt \(Soll ≤ 9\.43\) — Täter Zeilen der Mitte · Abschluss der Mitte \(`_lichtKarteTakt`\)$/],
         [U({ dorf: m(4, 4, 4, 1, [{ art: "laterne_dorf", abw: 700 }, { art: "wandlaterne_dorf", abw: 650 }, { art: "glutbrunnen", abw: 20 }]) }), /^dorf: Kelvin-Farbe ±700 K/],
         [U({ wildnis: { quellen: 0, sichtbar: 0, gut: 0, anteil: null, ohneKarte: { gut: 0, anteil: null }, plaetze: 4, kelvin: [] } }), /^$/],
         [nachtUrteil({}).urteil, /^ROT$/],

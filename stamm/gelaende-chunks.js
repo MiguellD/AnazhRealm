@@ -711,11 +711,12 @@ class AnazhRealm_gelaende_chunks {
     // DIE BAHN DES PANORAMAS (B4): das Feld („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der
     // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
     // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %). Das Gitter
-    // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring.
+    // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring —, und
+    // ebenso der Boden der Licht-Karte („boden“: die Fläche des Felds je Zelle einer neuen Mitte, `_lichtKarteTakt`).
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
+            art === "feld" || art === "gitter" || art === "boden" ? "feld" : art === "kamm" ? "kamm" : "fern",
             Object.assign(
                 {
                     type: "fern",

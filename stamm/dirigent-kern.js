@@ -1705,10 +1705,20 @@ class AnazhRealm {
     // DIE KOSTEN AN DER ÄNDERUNG (Gebot 7, Lehre 25): die Karte hält je Quelle ihren Beitrag (`beitrag`: Stärke und Ort) — ändert
     // sich die Stärke einer Quelle (Blende, Schaltplan, Glut), trägt sie nur ihren Unterschied ein (ihr Fleck, nie die Karte), kommt
     // eine hinzu oder geht eine, ebenso. EINE NEUE MITTE (nach `nachM` Weg) baut die Karte neu im Hintergrund des Takts (Lehre 14):
-    // je Bild höchstens `hoehenJeBild` Höhen des Bodens (`getTerrainHeightAt`, ein Speicher je Welt-Zelle: nur, was er nicht trägt)
-    // und Quellen bis `bauMs` — die alte Mitte trägt, bis die neue steht (ihr Gitter deckt den Weg). Hochgeladen wird nach jeder
+    // die Höhen des Bodens (ein Speicher je Welt-Zelle: nur, was er nicht trägt) und je Bild Quellen bis `bauMs` — die alte Mitte
+    // trägt, bis die neue steht (ihr Gitter deckt den Weg). Hochgeladen wird nach jeder
     // Änderung das Rechteck, das sie traf. Bis hier schrieb die Karte jede Änderung ganz: 42 Laternen der Stadt 20,1 ms je Schrift
     // (Radeon, nacht-lichter-2), je Blendstufe einmal.
+    // DER SPEICHER DER HÖHEN IST EIN TORUS (w28-nacht-laterne): n² Plätze, die Welt-Zelle (cx, cz) wohnt im Platz (cx mod n, cz mod n)
+    // — jedes Fenster der Karte (n × n Zellen am Stück) trifft jeden Platz genau einmal, die neue Mitte findet die Zellen der alten an
+    // ihrem Platz, nichts wird umgebaut (die Toroid-Ablage der Clipmaps, Losasso & Hoppe 2004). Bis hier trug ihn eine Map je
+    // Welt-Zelle, im Abschluss JEDER Mitte neu gebaut (20 736 Einträge): der teuerste Takt der Karte, 11,11 ms an der GTX 1050
+    // (stadt-voll, Ankunft; Frist 2 ms), und der Beginn jeder Mitte las bis 17 856 Zellen aus ihr ohne Frist (bis 4 ms). Jeder Takt
+    // trägt seine Phasen (`msMaxWo` am teuersten): die Nacht-Wand nennt den Täter beim Namen.
+    // DIE HÖHEN RECHNET DER FELD-FADEN (Lehre 14, `boden` im voxel-worker): die Karte fragt 144² Spalten um das Auge, weiter als
+    // jeder andere Leser des Haupt-Fadens, und eine kalte Höhe kostete dort 10–46 ms in EINEM Ruf, die Spalte 0,37 m daneben gleich
+    // danach 0,1 ms (GTX 1050, stadt-voll: der Takt 13,56 · 40,37 · 23,61 ms in den Höhen, kein Neubau des Erdbaus darin; 64 Höhen
+    // waren früher 451,67 ms in einem Takt). Der Haupt-Faden legt nur noch die Antwort an ihren Platz.
     _lichtKarteTakt(pool, cam) {
         const LK = this.state.atmoUniforms.lichtKarte;
         if (!LK) return;
@@ -1716,6 +1726,14 @@ class AnazhRealm {
         const K = AnazhRealm.LICHT_KARTE;
         const n = K.texel;
         const zm = K.zelleM;
+        // die Phasen des Takts, je Phase ihre Millisekunden seit der vorigen (der teuerste Takt nennt sein Glied beim Namen)
+        const wo = [];
+        let tl = t0;
+        const stempel = (was) => {
+            const t = performance.now();
+            wo.push(`${was} ${(t - tl).toFixed(2)}`);
+            tl = t;
+        };
         const gitter = () => ({
             boden: new Float32Array(n * n),
             d: [new Float64Array(n * n * 3), new Float64Array(n * n * 3)],
@@ -1730,15 +1748,29 @@ class AnazhRealm {
                 g: null,
                 beitrag: new Map(),
                 bau: null,
-                hoehen: new Map(),
+                frei: null, // das Gitter der vorigen Mitte, für die nächste
+                ablageFrei: null,
+                // der Torus: je Platz die Höhe und die Welt-Zelle, die er trägt (−2³¹: leer)
+                hoehen: {
+                    h: new Float32Array(n * n),
+                    cx: new Int32Array(n * n).fill(-0x80000000),
+                    cz: new Int32Array(n * n),
+                    belegt: 0,
+                },
                 schriften: 0,
                 baue: 0,
                 flecken: 0,
                 hoehenGefragt: 0,
                 msMax: 0,
+                msMaxWo: "",
                 bauMs: 0,
                 offen: 0,
             });
+        // der teuerste Takt und seine Phasen
+        const ende = () => {
+            const ms = performance.now() - t0;
+            if (ms > Z.msMax) [Z.msMax, Z.msMaxWo] = [ms, wo.join(" · ")];
+        };
         // DAS SOLL: je Quelle ohne Platz ihre Stärke × (1 − Blende), die Blende in `blendeStufen` Stufen
         const soll = new Map();
         for (const q of pool.alle) {
@@ -1748,56 +1780,95 @@ class AnazhRealm {
             const I = w > 0 ? this._leuchtStaerke(q, 0, true) * w : 0;
             if (I > 0) soll.set(q.id, { q, I, x: q.x, y: q.y, z: q.z });
         }
+        stempel("Soll");
         // DIE NEUE MITTE im Hintergrund: erst die Höhen, dann die Quellen des Solls, je Bild bis zur Frist
         const cp = cam.position;
         if (!Z.bau && !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM)) {
             const [tx, tz] = [Math.round(cp.x / zm), Math.round(cp.z / zm)];
-            Z.bau = { tx, tz, zeiger: 0, g: gitter(), beitrag: new Map(), liste: null, i: 0, ms: 0 };
+            // das Gitter der vorigen Mitte trägt sie (`frei`: die Mitte vor der jetzigen), geleert — nie ein neues je Mitte
+            const g = Z.frei || gitter();
+            if (Z.frei) {
+                for (const a of [g.d[0], g.d[1], g.c, g.e]) a.fill(0);
+                Z.frei = null;
+            }
+            Z.bau = { tx, tz, zeiger: 0, g, beitrag: new Map(), liste: null, i: 0, ms: 0, ablage: Z.ablageFrei };
+            stempel("neue Mitte");
         }
         if (Z.bau) {
             const B = Z.bau;
-            const zelle = (t) => (B.tx + (t % n) - n / 2) * 1048576 + (B.tz + Math.floor(t / n) - n / 2);
-            let rest = K.hoehenJeBild;
-            for (; B.zeiger < n * n; B.zeiger++) {
-                const t = B.zeiger;
-                const key = zelle(t);
-                if (!Z.hoehen.has(key)) {
-                    // die Frist JE Höhe: kalt kostet eine Höhe des Gesetzes Millisekunden (GTX 1050, i7-950: 64 Höhen zwischen
-                    // zwei Blicken auf die Uhr waren 451,67 ms in EINEM Takt an stadt-voll)
-                    if (rest-- <= 0 || performance.now() - t0 >= K.bauMs) break;
-                    Z.hoehen.set(
-                        key,
-                        this.getTerrainHeightAt(
-                            (B.tx + (t % n) + 0.5 - n / 2) * zm,
-                            (B.tz + Math.floor(t / n) + 0.5 - n / 2) * zm
-                        )
-                    );
-                    Z.hoehenGefragt++;
+            const H = Z.hoehen;
+            const platz = (cx, cz) => (((cx % n) + n) % n) + n * (((cz % n) + n) % n);
+            // DIE HÖHEN IM FADEN: die Zellen der neuen Mitte, die der Torus nicht trägt, gehen EINMAL an den Feld-Faden (`boden`
+            // im voxel-worker, dieselbe Fläche wie `getTerrainHeightAt`); die Antwort legt sie an ihren Platz. Ein Bruch des Fadens
+            // meldet sich laut und hält den Bau an (die alte Mitte trägt), nie still ein Boden aus dem Haupt-Faden
+            if (!B.hoehen) {
+                const fehlt = [];
+                for (let t = 0; t < n * n; t++) {
+                    const cx = B.tx + (t % n) - n / 2;
+                    const cz = B.tz + Math.floor(t / n) - n / 2;
+                    const p = platz(cx, cz);
+                    if (H.cx[p] !== cx || H.cz[p] !== cz) fehlt.push(cx, cz);
                 }
-                B.g.boden[t] = Z.hoehen.get(key);
+                B.hoehen = fehlt.length ? "flug" : "da";
+                stempel(fehlt.length ? `Höhen gesucht (${fehlt.length / 2})` : "Höhen aus dem Speicher");
+                if (fehlt.length) {
+                    const zellen = Int32Array.from(fehlt);
+                    B.zusage = this._fernAuftrag("boden", { zellen, zm }, [zellen.buffer])
+                        .then((a) => {
+                            if (Z.bau !== B || this._lichtKarteZ !== Z) return; // eine neuere Mitte, eine neue Karte
+                            const h = a && a.hoehen;
+                            const m = fehlt.length / 2;
+                            if (!h || h.length !== m)
+                                throw new Error(`die Antwort trägt ${h ? h.length : 0} statt ${m} Höhen`);
+                            for (let k = 0; k < m; k++) {
+                                const [cx, cz] = [fehlt[2 * k], fehlt[2 * k + 1]];
+                                if (!Number.isFinite(h[k]))
+                                    throw new Error(`die Höhe ${h[k]} an der Zelle ${cx}, ${cz}`);
+                                const p = platz(cx, cz);
+                                if (H.cx[p] === -0x80000000) H.belegt++;
+                                [H.h[p], H.cx[p], H.cz[p]] = [h[k], cx, cz];
+                            }
+                            Z.hoehenGefragt += m;
+                            B.hoehen = "da";
+                        })
+                        .catch((e) => {
+                            if (Z.bau === B) B.hoehen = "gebrochen";
+                            this._stoffBruch("die Licht-Karte (die Höhen im Feld-Faden)", e);
+                        });
+                    stempel("Höhen bestellt");
+                }
+            }
+            if (B.hoehen === "da" && B.zeiger < n * n) {
+                for (; B.zeiger < n * n; B.zeiger++) {
+                    const t = B.zeiger;
+                    B.g.boden[t] = H.h[platz(B.tx + (t % n) - n / 2, B.tz + Math.floor(t / n) - n / 2)];
+                }
+                stempel("Höhen eingelegt");
             }
             if (B.zeiger >= n * n) {
                 if (!B.liste) B.liste = [...soll.values()];
                 const tb = performance.now();
+                const i0 = B.i;
                 for (; B.i < B.liste.length && performance.now() - t0 < K.bauMs; B.i++) {
                     const s = B.liste[B.i];
                     this._lichtKarteFleck(B.g, B.tx * zm, B.tz * zm, s, s.I);
                     B.beitrag.set(s.q.id, s);
                 }
+                if (B.i > i0) stempel("Quellen der Mitte");
                 // die Bänder der neuen Mitte entstehen Zeile um Zeile in ihrer eigenen Ablage (`_lichtKarteHalb`), bis zur Frist
                 if (B.i >= B.liste.length) {
-                    B.ablage = B.ablage || new Uint16Array(LK.gitter.image.data.length);
+                    B.ablage = B.ablage || new Uint16Array(LK.gitter.image.data.length); // jede Zeile schreibt jede ihrer Zellen
                     B.zeile = B.zeile || 0;
+                    const j0 = B.zeile;
                     for (; B.zeile < n && performance.now() - t0 < K.bauMs; B.zeile++)
                         this._lichtKarteHalb(B.g, B.ablage, [0, B.zeile, n - 1, B.zeile]);
+                    if (B.zeile > j0) stempel("Zeilen der Mitte");
                 }
                 B.ms += performance.now() - tb;
                 if (B.i >= B.liste.length && B.zeile >= n) {
-                    // die neue Mitte steht: der Speicher der Höhen behält nur ihre Zellen, die Beiträge sind ihre
-                    const behalten = new Map();
-                    for (let t = 0; t < n * n; t++) behalten.set(zelle(t), B.g.boden[t]);
+                    // die neue Mitte steht: die Beiträge sind ihre (ihre Höhen stehen im Torus an ihrem Platz)
+                    [Z.frei, Z.ablageFrei] = [Z.g, B.ablage];
                     Object.assign(Z, {
-                        hoehen: behalten,
                         g: B.g,
                         beitrag: B.beitrag,
                         mx: B.tx * zm,
@@ -1810,10 +1881,11 @@ class AnazhRealm {
                     LK.gitter.needsUpdate = true;
                     LK.mitte.value.set(Z.mx, Z.mz);
                     Z.schriften++;
+                    stempel("Abschluss der Mitte");
                 }
             }
         }
-        if (!Z.g) return void (Z.msMax = Math.max(Z.msMax, performance.now() - t0));
+        if (!Z.g) return void ende();
         // DER UNTERSCHIED je Quelle: was geht, kommt oder seine Stärke ändert (> `stufe` relativ), trägt nur seinen Fleck — die
         // nächste zuerst (am Auge), bis zur Frist `bauMs` und höchstens `zellenJeBild` Zellen hochzuladen; der Rest bleibt Unterschied
         // und folgt im nächsten Bild (die Nacht bricht
@@ -1842,6 +1914,7 @@ class AnazhRealm {
                   ]
                 : r4);
         Z.offen = wechsel.length;
+        stempel(`Unterschiede (${wechsel.length})`);
         for (const [id, alt, s, ort] of wechsel) {
             if (
                 rand &&
@@ -1862,8 +1935,9 @@ class AnazhRealm {
             this._lichtKarteHalb(Z.g, LK.gitter.image.data, rand);
             LK.gitter.needsUpdate = true;
             Z.schriften++;
+            stempel("Flecken und Bänder");
         }
-        Z.msMax = Math.max(Z.msMax, performance.now() - t0);
+        ende();
     }
 
     // DIE BÄNDER DER KARTE in Halb-Float (`_lichtKarteNeu`: d0 ab Zelle 0, d1 ab n², c ab 2n², d0.w die Höhe des Bodens) aus dem

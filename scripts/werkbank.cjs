@@ -3913,7 +3913,7 @@ hauptLauf(async () => {
         // Bodenfleck je sichtbarer Quelle in 50 m mit Karte und ohne (der Pool allein), die Kelvin-Farbe je Quelle, die Kosten einer
         // Schrift der Karte; das Urteil `nachtUrteil`, je Ort EINE Zeile `NACHT <ort> ROT|GRUEN:`. `--selbsttest` ohne Welt.
         const fehl = LL.nachtSelbsttest();
-        console.log(`NACHT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "10/10"}`);
+        console.log(`NACHT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "11/11"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const halt = await eigeneWelt();
         const welt = {};
