@@ -1846,6 +1846,14 @@ function selbsttest() {
     //   c1 ← c3 (main im Ursprung, nach dem Klonen) ← c5 (main später) ; c1 ← c2 (Zweig im Ursprung)
     {
         const os = require("os");
+        // DIE FIXTUR HAT IHR EIGENES REPO (24.11., der Koordinator): ein geerbtes GIT_DIR (ein Lauf aus einem Baum ohne .git, der sein
+        // Repo per Umgebung nennt) lenkte jedes git der Fixtur in DIESES Repo — `update-ref refs/heads/main c3` setzte am 24.11. viermal
+        // den lokalen main-Zeiger des Haupt-Klons auf den Fixtur-Commit und legte dort „zweig“ und „probe“ an. Die Fixtur läuft darum
+        // ohne die Repo-Umgebung; der Fall „FIXTUR bleibt in ihrem Repo“ nennt jeden ihrer drei Zeiger, der sich im Repo des Laufs bewegte.
+        const umgebung = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY"].map((n) => [n, process.env[n]]);
+        const zeiger = () => spawnSync("git", ["for-each-ref", "--format=%(refname) %(objectname)", "refs/heads/main", "refs/heads/zweig", "refs/heads/probe"], { encoding: "utf8", cwd: __dirname }).stdout.trim();
+        const zeigerVor = zeiger();
+        for (const [n] of umgebung) delete process.env[n];
         const t = fs.mkdtempSync(path.join(os.tmpdir(), "buche-2-kopf-"));
         const ursprung = path.join(t, "ursprung.git"),
             klon = path.join(t, "klon");
@@ -1906,6 +1914,11 @@ function selbsttest() {
             }
         });
         fs.rmSync(t, { recursive: true, force: true });
+        for (const [n, v] of umgebung) if (v !== undefined) process.env[n] = v;
+        pruefe("FIXTUR bleibt in ihrem Repo: kein Zeiger main · zweig · probe des Repos, in dem der Lauf steht, bewegte sich (auch unter geerbtem GIT_DIR)", () => {
+            const nach = zeiger();
+            return nach === zeigerVor ? true : `die Fixtur schrieb in das Repo des Laufs — vorher [${zeigerVor.replace(/\n/g, " · ")}] nachher [${nach.replace(/\n/g, " · ")}]`;
+        });
     }
     pruefe("KOPF-FOLGE git: e4eeee08 ist echter Vorfahre von a635bfee, nicht umgekehrt, beide auf main", () => {
         const K = kopfFolgeAusGit(["e4eeee08", "a635bfee"]);
