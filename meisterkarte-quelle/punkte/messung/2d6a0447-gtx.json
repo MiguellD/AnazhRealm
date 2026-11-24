@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T18:57:39.152Z",
+ "zeit": "2026-11-24T19:00:32.470Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -835,6 +835,76 @@
    },
    "zeit": "2026-11-24T18:57:39.152Z",
    "abdruck": "4d36fe5002d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an R² Güte ↔ Potenzgesetz der Übung 0 verfehlt ≥ 0.8 — Täter: stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks liest das Können EINMAL beim Bau der Liste (`b.bestand.rate *= b.uebung.handwerk.koennen`): über die Stunden der Übung eines Menschen steht seine Güte still · R² Güte ↔ Potenzgesetz der Übung 0 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 2077–2177 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.5983 → 0.5983, das Können seines Lebenslaufs 0.5983 → 0.6097; Querschnitt 140 Hersteller {\"feld\":150} über 0–36214 h: R² 1, α 0.4 (Gesetz 0.4) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.19,
+   "grund": "ROT: S2 ROT an R² Güte ↔ Potenzgesetz der Übung 0 verfehlt ≥ 0.8 — Täter: stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks liest das Können EINMAL beim Bau der Liste (`b.bestand.rate *= b.uebung.handwerk.koennen`): über die Stunden der Übung eines Menschen steht seine Güte still · R² Güte ↔ Potenzgesetz der Übung 0 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 2077–2177 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.5983 → 0.5983, das Können seines Lebenslaufs 0.5983 → 0.6097; Querschnitt 140 Hersteller {\"feld\":150} über 0–36214 h: R² 1, α 0.4 (Gesetz 0.4) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5d22618bde07",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kab45c9954465",
+   "s": 11.1,
+   "fremd": {
+    "s": 15.4,
+    "takte": 7,
+    "fremdS": 3.2,
+    "kerne": 0.209,
+    "fensterKerne": 0.19,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.78
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.3
+     ]
+    ],
+    "dienerS": 2.36,
+    "diener": [
+     [
+      "System",
+      0.94
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.7
+     ]
+    ],
+    "geraetS": 6.5,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.81
+     ],
+     [
+      "svchost.exe",
+      2.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 39.64,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T19:00:32.470Z",
+   "abdruck": "27df9043949a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
