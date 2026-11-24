@@ -1478,7 +1478,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             w.ohneGrund = await wasserFarbe();
             grund.visible = true;
             aus.wasser = w;
-            // (d) die Godrays mit der Sonne im Bild: tiefe Sonne, Blick in die Sonne; mit und ohne Godrays (der Regler).
+            // (d) die Godrays mit der Sonne im Bild: tiefe Sonne, Blick in die Sonne; mit Godrays (ihr Pegel ist Licht, `GODRAY.pegel`
+            // — kein Regler stellt ihn, sonnenbahn) und ohne (das Gate der Schäfte 0; es bleibt 0 für das Dunkel (h)).
             gruppe.visible = false;
             r._uhrSetzen(0.3, "regler");
             r._applyDayNightToScene();
@@ -1491,8 +1492,11 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                 cam.rotateX(-0.2);
                 cam.updateMatrixWorld(true);
             };
-            const bild = async (skala) => {
-                st._godrayScale = skala;
+            const gateEigen = Object.hasOwn(r, "_godrayFrameGate") ? r._godrayFrameGate : null;
+            const bild = async (mit) => {
+                if (!mit) r._godrayFrameGate = () => 0;
+                else if (gateEigen) r._godrayFrameGate = gateEigen;
+                else delete r._godrayFrameGate;
                 blickSonne();
                 blickSonne();
                 const { u8 } = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
@@ -1531,13 +1535,13 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             const stufe = st.godrayUniforms && st.godrayUniforms.stufe;
             const laeufe = () => (stufe ? stufe.laeufe : NaN);
             const l0 = laeufe();
-            const mit1 = await bild(1);
+            const mit1 = await bild(true);
             const staerke = st.godrayUniforms ? st.godrayUniforms.strength.value : null;
-            const mit2 = await bild(1);
+            const mit2 = await bild(true);
             const progG = await window.__shaderKosten({ frames: 1 });
             const schachtProg = progG.find((p) => p.programm === "post:godray");
             const l1 = laeufe();
-            const ohne = await bild(0);
+            const ohne = await bild(false);
             const l2 = laeufe();
             const ziel = st.godrayUniforms ? st.godrayUniforms.sunScreenPos.value : null;
             aus.godray = {

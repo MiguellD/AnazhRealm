@@ -837,6 +837,9 @@ const FORBIDDEN = [
     // foundry-halten — DER CACHE HÄLT NICHTS ÜBER SEINE LESER HINAUS: der Ruhe-Deckel (jeder Untätige 60 s über seinen letzten
     // Leser hinaus, bis 64 MB) fiel; ein losgelassener Körper fällt im nächsten Takt, ein Leser ohne Senke nach der Gnade einer Hülle
     ...["_foundryRuheDeckel", "FOUNDRY_RUHE_BYTES", "_foundryRuheMs"].map((t) => [t, "foundry-halten — der Cache hält nichts über seine Leser hinaus (_foundryOhneLeser)"]), // prettier-ignore
+    // sonnenbahn — DIE LICHT-SCHÄFTE SIND KEIN STELLGLIED: ihr Pegel ist Licht (`GODRAY.pegel` × Gate × Sicht, `_loopRender`); der
+    // Hebel des Reglers fiel (er sparte zwischen 0 und 0,8 nichts und pumpte die Mess-Wiese um 0,14 EV mit der Bildzeit)
+    ...["_godrayScale", "PERF_GODRAY_MAX"].map((t) => [t, "sonnenbahn — der Pegel der Schäfte ist Licht, nie Last (GODRAY.pegel)", ["scripts/playtest.cjs", "scripts/diag-post-kette.cjs"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

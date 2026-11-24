@@ -1320,27 +1320,30 @@ async function checkBandExistenzBoden({ page, check }) {
 
 // Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
 // (A) die reine `_godrayFrameGate` remappt Höhe×Wetter (dass der March im Ausgabe-Bild zeichnet, beweist gate:post-kette an
-// und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
+// und aus); (B) KEIN STELLGLIED (sonnenbahn): unter Last und im Kopfraum schreibt der Regler keinen Pegel der Schäfte — er ist
+// Licht (`GODRAY.pegel` × Gate × Sicht, `_loopRender`); bis sonnenbahn zog ein Pegel im Stand ihn mit der Bildzeit (Mess-Wiese 0,14 EV).
 async function checkBandGodray({ page, check }) {
     const o = await safeEvaluate(page, () => {
-        const out = { MAX: AnazhRealm.PERF_GODRAY_MAX };
+        const out = { PEGEL: AnazhRealm.GODRAY.pegel };
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
         out.gateHigh = r._godrayFrameGate(0.9, 1.0);
         out.gateBelow = r._godrayFrameGate(-0.2, 1.0);
         out.gateTief = r._godrayFrameGate(0.03, 1.0);
         out.gateStorm = r._godrayFrameGate(0.9, AnazhRealm.WEATHER_FIELD.stormy.sun);
-        // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
+        // (B) KEIN STELLGLIED — die echten Regel-Zweige (headless-Kurzschluss kontrolliert umgangen, wie der Schatten-Regler):
+        // weder Last noch Kopfraum schreiben einen Pegel der Schäfte, und die Stärke der Stufe bleibt, wie sie stand
         const wasNull = st.renderer?._isHeadlessNull;
         const sense = (ls, gpuMs, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0, gpuMs }, frameMs });
+        const staerke = () => (st.godrayUniforms ? st.godrayUniforms.strength.value : null);
+        // jede Godray-Größe im Stand außer der Stufe selbst (`godrayUniforms`) wäre ein zweiter Schreiber des Pegels
+        const pegelImStand = () => Object.keys(st).filter((k) => /godray/i.test(k) && k !== "godrayUniforms").join(",");
         try {
-            if (st.renderer) st.renderer._isHeadlessNull = true;
-            r._nexusPerfActuate(sense(0.0, 22, 60));
-            out.headlessScale = st._godrayScale;
             if (st.renderer) st.renderer._isHeadlessNull = false;
-            r._nexusPerfActuate(sense(0.0, 22, 60)); // heavy → effArch ~0 → Faktor ~0
-            out.heavyScale = st._godrayScale;
-            r._nexusPerfActuate(sense(1.0, 0, 8)); // light → effArch ~1 → Faktor ~MAX
-            out.lightScale = st._godrayScale;
+            const vor = staerke();
+            r._nexusPerfActuate(sense(0.0, 22, 60)); // Last → effArch ~0
+            out.heavy = [pegelImStand(), staerke() === vor];
+            r._nexusPerfActuate(sense(1.0, 0, 8)); // Kopfraum → effArch ~1
+            out.light = [pegelImStand(), staerke() === vor];
         } finally {
             if (st.renderer) st.renderer._isHeadlessNull = wasNull;
         }
@@ -1349,9 +1352,9 @@ async function checkBandGodray({ page, check }) {
     const g = o || {};
     check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · 1,7° darüber auf (die Tag-Achse, keine eigene Schwelle) · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateTief > 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateTief} · ${g.gateStorm}`);
     check(
-        "Godray (B) der Perf-Hebel: headless → MAX, Last → aus, Kopfraum → MAX, klar getrennt",
-        g.headlessScale != null && Math.abs(g.headlessScale - g.MAX) < 1e-6 && g.heavyScale < 0.1 && g.lightScale > g.MAX - 0.05 && g.heavyScale < g.lightScale - 0.4,
-        `headless ${g.headlessScale} · heavy ${g.heavyScale} · light ${g.lightScale} (MAX ${g.MAX})`
+        "Godray (B) kein Stellglied: Last und Kopfraum schreiben keinen Pegel der Schäfte (keine Godray-Größe im Stand), die Stärke der Stufe steht, der Pegel ist das Licht (GODRAY.pegel 0,8)",
+        g.PEGEL === 0.8 && !!g.heavy && !!g.light && g.heavy[0] === "" && g.light[0] === "" && g.heavy[1] && g.light[1],
+        `Last ${JSON.stringify(g.heavy)} · Kopfraum ${JSON.stringify(g.light)} (Pegel ${g.PEGEL})`
     );
 }
 
@@ -1566,7 +1569,6 @@ async function checkBandReglerSim({ page, check }) {
             loadScale: st.perfSense.loadScale,
             density: st._foliageDensityScale,
             shadowIv: st._shadowMinInterval,
-            godray: st._godrayScale,
             streamBudget: st._voxelStreamBudgetMs,
         });
         try {
