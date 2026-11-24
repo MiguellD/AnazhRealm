@@ -3050,8 +3050,9 @@ L.perspektive("tiere", (() => {
             },
             // ═══ LEBENSZYKLUS: Jungtier, Jahreszeit, Brut, Stadien, Wurf und der Bestand über Generationen — im Gesetz des Bestands ═══
             [LZ]: {
-                sek: 30,
+                sek: 48,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "das Bildpaar Kitz/Hirsch (S2) und die Ereignisse im Bild (S3) — headless zählt die Probe Akte, Nester und den Bestand",
                 mess: async function (H, U, M) {
@@ -3282,6 +3283,134 @@ L.perspektive("tiere", (() => {
                         return aus;
                     };
                     const z = await lauf(probe, { jungBruch: 0.1, saisonTakte: 200, brunftMonat: 10, weltTakte: 20, generationen: 100, msDeckel: 9000, gegenLeben: 3, wurfRef: { deer: 1, wolf: 5, fox: 4.5, bear: 2.2 } });
+                    // DER FÄCHER DES JUNGTIERS (S2): das Rotwild lebt im GAU (Leben C2b) — je Phase des dritten Jahrs (12 Monate, Phase 0 =
+                    // Frühlingsbeginn wie `setSeason`, stamm/bild-himmel.js:1153; der Frühsommer Juni = 0,29) der Auftrag an den Gau-Faden
+                    // (`_gauAuftrag`, stamm/kreatur-erbe.js:277) für die 25 Reviere des Tals: Kitze je Tal und je Herde (Verband `v`) — Kitz ist,
+                    // was das Gesetz selbst Welpe nennt: alterS < ZEIT.jahrS (leben-core.js:1051, die EINE Uhr des Bestands :454, die das Spiel
+                    // über `_gauWirt` liest, kreatur-erbe.js:233); dazu je Alter (0,05 … 8 Jahre dieser Uhr) DERSELBE Hirsch des Gaus (sein Erbe a, e, M∞): die Masse aus dem
+                    // Gesetz des Wachstums (`_bestandKg` → leben-core masseZurZeit), die Größe daraus (`_bestandBs`, kreatur-erbe.js:77), der
+                    // Leib in dieser Größe (`_kreaturGroesseSetzen`, kreatur-verhalten.js:590 — der EINE Schreiber, den `_bestandVerkoerpern`
+                    // je Takt ruft) und seine Proportion an den Knochen (Bein Schulter→Huf, Hals→Kopf gegen den Rumpf Schulter→Hüfte, Höhe/Länge)
+                    const LZ2_AN = async (r, T, a, mit) => {
+                        const A = r.constructor, G = A.GAU, B = A._bestandGesetz().B;
+                        const S = r._bestandSeite(), pm = r.state.playerMesh.position;
+                        const [ix0, iz0] = [Math.floor(pm.x / S), Math.floor(pm.z / S)];
+                        const o = r._gauOrt(ix0, iz0);
+                        const jahrK = r._kalender().jahrK, jahrT = Math.round(jahrK / B.taktS);
+                        const saat = (r._gauSaat(o.gx, o.gz) ^ Math.imul(7, 0x9e3779b1)) | 0;
+                        const liste = (x) => (Array.isArray(x) ? x : Object.values(x || {}));
+                        const C = r.__lz2 || (r.__lz2 = { gau: [o.gx, o.gz], leib: null, t0: null, max: r.state.maxCreatures, jahrS: null });
+                        // die Uhr, wie der Wirt des Gaus sie liest (`_gauWirt`, kreatur-erbe.js:233: TJ = refS ÷ taktS ÷ jahreRef) — ZEIT.jahrS = TJ · taktS
+                        const LK = A._lebenKern();
+                        const jahrS = C.jahrS || (C.jahrS = (LK.gesetz().refS / B.taktS / LK.zeitJagd().jahreRef) * B.taktS);
+                        const lesen = [];
+                        for (let dx = -mit.ring; dx <= mit.ring; dx++)
+                            for (let dz = -mit.ring; dz <= mit.ring; dz++) {
+                                const q = r._gauOrt(ix0 + dx, iz0 + dz);
+                                if (q.gx === o.gx && q.gz === o.gz) lesen.push(q.revier);
+                            }
+                        lesen.sort((p, q) => p - q);
+                        if (a.zeit != null) {
+                            const takt = Math.round((mit.jahr + a.zeit) * jahrT);
+                            const ant = await r._gauAuftrag(o.gx, o.gz, takt, [], { lesen, saat });
+                            let [alle, kitze] = [0, 0];
+                            const herde = {};
+                            for (const Rv of liste(ant.reviere))
+                                for (const t of Rv.tiere)
+                                    if (t.g === "beute") {
+                                        alle++;
+                                        const k = t.alterS < jahrS;
+                                        if (k) kitze++;
+                                        const h = herde[t.v] || (herde[t.v] = [0, 0]);
+                                        h[0]++;
+                                        if (k) h[1]++;
+                                        if (!C.t0 && !k) C.t0 = t;
+                                    }
+                            const hs = Object.values(herde).filter((h) => h[0] >= 5).map((h) => h[1] / h[0]).sort((p, q) => p - q);
+                            return { phase: a.zeit, takt, jahrS, kalenderJeLebensjahr: Math.round((100 * jahrK) / jahrS) / 100, alle, kitze, prozent: alle ? Math.round((1e4 * kitze) / alle) / 100 : null, herden: hs.length, herdeMedianProzent: hs.length ? Math.round(1e4 * hs[Math.floor(hs.length / 2)]) / 100 : null };
+                        }
+                        if (!C.t0) return { fehlt: "kein erwachsener Hirsch im Tal des Gaus" };
+                        const t = { id: "lz2-" + a.alter, g: G.beute, a: C.t0.a, e: C.t0.e, M: C.t0.M, alterS: a.alter * jahrS };
+                        const kg = r._bestandKg(t), bs = r._bestandBs(t);
+                        if (!C.leib) {
+                            const s = r.state;
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            const [x, z] = [pm.x + 40, pm.z];
+                            C.leib = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.5, z, "happy", "wesen", { precise: true, bodySize: 1 });
+                            if (!C.leib) return { fehlt: "kein Leib des Hirschs (spawnCreatureAt wesen)" };
+                        }
+                        const c = C.leib;
+                        r._kreaturGroesseSetzen(c, bs);
+                        c.updateMatrixWorld(true);
+                        const P = (n) => {
+                            const b = c.getObjectByName(n);
+                            return b ? b.getWorldPosition(new T.Vector3()) : null;
+                        };
+                        const [sch, huf, huefte, hals, kopf] = ["legFL", "flP", "legHL", "neckRoot", "headGroup"].map(P);
+                        const box = new T.Box3().setFromObject(c).getSize(new T.Vector3());
+                        const rumpf = sch && huefte ? sch.distanceTo(huefte) : null;
+                        const r4 = (v) => Math.round(v * 1e4) / 1e4;
+                        return { alter: a.alter, kg: Math.round(kg * 100) / 100, bs: r4(bs), groesse: r4(c.userData.bodySize), hoeheLaenge: r4(box.y / Math.max(box.x, box.z)), beinRumpf: rumpf && huf ? r4(sch.distanceTo(huf) / rumpf) : null, kopfRumpf: rumpf && hals && kopf ? r4(hals.distanceTo(kopf) / rumpf) : null, lebensdauerJahre: Math.round((10 * r._bestandErbe(t).tod) / jahrS) / 10, reifeJahre: Math.round((10 * r._bestandErbe(t).reif) / jahrS) / 10 };
+                    };
+                    let R2 = null;
+                    if (U[2]) {
+                        const FS = 0.29; // der Frühsommer (Juni) in der Phase des Jahrs
+                        const am = (aus, alter, feld) => {
+                            const x = aus.find((q) => q.a.alter === alter);
+                            return x ? x.w[feld] : null;
+                        };
+                        const ALT = 8;
+                        try {
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: LZ2_AN, export: "stamm/kreatur-erbe.js:277 _gauAuftrag (Alter, Verband, Erbe der Köpfe) · :77 _bestandBs · stamm/kreatur-verhalten.js:590 _kreaturGroesseSetzen", leser: "stamm/kreatur-leben.js:2700 _bestandVerkoerpern (der Leib trägt die Größe seines Tiers je Takt)" },
+                                adressen: { zeiten: [0.04, 0.125, 0.21, FS, 0.375, 0.46, 0.54, 0.625, 0.71, 0.79, 0.875, 0.96], dazu: [0.05, 0.25, 0.5, 1, 2, 4, ALT].map((alter) => ({ alter })) },
+                                mit: { ring: 2, jahr: 2 },
+                                ms: 12000,
+                                masse: {
+                                    jungProzent: { wie: "erste", feld: "prozent", nur: (q) => q.zeit === FS },
+                                    herdeJungProzent: { wie: "erste", feld: "herdeMedianProzent", nur: (q) => q.zeit === FS },
+                                    herden: { wie: "erste", feld: "herden", nur: (q) => q.zeit === FS },
+                                    jungMin: { wie: "min", feld: "prozent", nur: "zeit" },
+                                    jungMax: { wie: "max", feld: "prozent", nur: "zeit" },
+                                    jungJeMonat: { wie: (v) => v, feld: "prozent", nur: "zeit" },
+                                    tiereTal: { wie: "mittel", feld: "alle", nur: "zeit" },
+                                    tiereSumme: { wie: "summe", feld: "alle", nur: "zeit" },
+                                    kgKitz: { wie: (v, aus) => am(aus, 0.25, "kg"), nur: "alter" },
+                                    kgAdult: { wie: (v, aus) => am(aus, ALT, "kg"), nur: "alter" },
+                                    bsKitz: { wie: (v, aus) => am(aus, 0.25, "bs"), nur: "alter" },
+                                    bsAdult: { wie: (v, aus) => am(aus, ALT, "bs"), nur: "alter" },
+                                    wachstum: { wie: (v, aus) => (am(aus, 0.05, "bs") > 0 ? Math.round((1e3 * am(aus, ALT, "bs")) / am(aus, 0.05, "bs")) / 1e3 : null), nur: "alter" },
+                                    beinRumpfKitz: { wie: (v, aus) => am(aus, 0.25, "beinRumpf"), nur: "alter" },
+                                    beinRumpfAdult: { wie: (v, aus) => am(aus, ALT, "beinRumpf"), nur: "alter" },
+                                    kopfRumpfKitz: { wie: (v, aus) => am(aus, 0.25, "kopfRumpf"), nur: "alter" },
+                                    kopfRumpfAdult: { wie: (v, aus) => am(aus, ALT, "kopfRumpf"), nur: "alter" },
+                                    // die Abweichung der Proportion jung ↔ alt: das Maximum über die Alter und die drei Verhältnisse gegen das Erwachsene
+                                    proportionAbwProzent: {
+                                        wie: (v, aus) => {
+                                            let m = null;
+                                            for (const f of ["beinRumpf", "kopfRumpf", "hoeheLaenge"]) {
+                                                const ad = am(aus, ALT, f);
+                                                if (!(ad > 0)) continue;
+                                                for (const x of aus) if (x.w[f] > 0) m = Math.max(m || 0, Math.abs(x.w[f] / ad - 1) * 100);
+                                            }
+                                            return m === null ? null : Math.round(m * 1000) / 1000;
+                                        },
+                                        nur: "alter",
+                                    },
+                                    lebensdauerJahre: { wie: "erste", feld: "lebensdauerJahre", nur: "alter" },
+                                    reifeJahre: { wie: "erste", feld: "reifeJahre", nur: "alter" },
+                                    kalenderJeLebensjahr: { wie: "erste", feld: "kalenderJeLebensjahr", nur: "zeit" },
+                                },
+                                schlecht: { feld: "prozent", richtung: "min" },
+                                pose: (q, w) => "Third auf eine Herde im Tal (Phase " + w.phase + " des Jahrs): " + w.kitze + " Kitze unter " + w.alle + " Hirschen (" + w.prozent + " %)",
+                                ungemessen: ["das Bildpaar Kitz/Hirsch im Panel (Bildpflicht) — ungemessen bis zum Gerät", "der Frühsommer ist die Phase 0,29 des Kalenderjahrs (`_kalender().jahrK`), gezählt ab Takt 0 des Gaus: der Gau liest keine Jahreszeit (Geburt je Takt, leben-core.js:989), und sein Lebensjahr (ZEIT.jahrS) ist eine andere Uhr als das Kalenderjahr"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
+                        // der Sandkasten: der Leib der Probe geht, die Kappe steht wieder, die eigenen Läufe fallen mit dem Gau
+                        await H.seite("const C = r.__lz2; delete r.__lz2; if (!C) return false; if (C.leib) r.removeCreature(C.leib); r.state.maxCreatures = C.max; r._gauGeht(C.gau[0], C.gau[1]); return true;");
+                    }
                     const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
                     const auge = augeNoetig ? await M.auge("tiere-lebenszyklus", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
                     const zeuge = { antworten: z.region.schritte + z.jung.alle, streuung: z.region.ende !== z.region.nachAufholen || z.region.wuerfe > 1 ? Math.abs(z.region.ende - z.region.nachAufholen) + z.region.wuerfe : 0, vor: z.gegen.vor, nach: z.gegen.nach };
@@ -3290,7 +3419,46 @@ L.perspektive("tiere", (() => {
                         if (!U[nr]) return;
                         aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
                     };
-                    nimm(2, { jungProzent: z.jung.prozent, proportionAbw: z.proportion.abwProzent }, z.proportion.abwProzent < 5 ? "kein Leib wächst: klein und groß tragen dieselbe Gestalt (Höhe/Länge " + z.proportion.klein + " ↔ " + z.proportion.gross + ")" : null, true);
+                    if (U[2]) {
+                        // die Kitze und der wachsende Leib trägt der Fächer allein (das Gau-Tal je Monat, derselbe Hirsch je Alter); die Bühne bleibt Beiwert
+                        const RW = R2 && R2.werte;
+                        aus[2] = {
+                            werte: {
+                                jungProzent: RW ? RW.jungProzent : undefined,
+                                proportionAbw: RW ? RW.proportionAbwProzent : undefined,
+                                ...(RW
+                                    ? {
+                                          herdeJungProzent: RW.herdeJungProzent,
+                                          herden: RW.herden,
+                                          jungMin: RW.jungMin,
+                                          jungMax: RW.jungMax,
+                                          jungJeMonat: (RW.jungJeMonat || []).join("/"),
+                                          tiereTal: RW.tiereTal == null ? null : Math.round(RW.tiereTal),
+                                          kgKitz: RW.kgKitz,
+                                          kgAdult: RW.kgAdult,
+                                          bsKitz: RW.bsKitz,
+                                          bsAdult: RW.bsAdult,
+                                          wachstum: RW.wachstum,
+                                          beinRumpf: RW.beinRumpfKitz + " ↔ " + RW.beinRumpfAdult,
+                                          kopfRumpf: RW.kopfRumpfKitz + " ↔ " + RW.kopfRumpfAdult,
+                                          lebensdauerJahre: RW.lebensdauerJahre,
+                                          reifeJahre: RW.reifeJahre,
+                                          kalenderJeLebensjahr: RW.kalenderJeLebensjahr,
+                                      }
+                                    : {}),
+                                buehneJungProzent: z.jung.prozent,
+                                buehneProportionAbw: z.proportion.abwProzent,
+                            },
+                            // der Zeuge ist der Fächer: die gezählten Köpfe des Tals über 12 Monate und die 7 Alter des Leibs, die Streuung der
+                            // Kitz-Anteile über die Monate; vor ↔ nach die Größe des Kitzes gegen die des Hirschs (wächst der Leib nicht, ist vor = nach)
+                            zeuge: Object.assign({ antworten: RW ? (RW.tiereSumme || 0) + 7 : 0, streuung: RW && RW.jungMax != null ? Math.round(100 * (RW.jungMax - RW.jungMin)) / 100 : 0 }, { faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null) || (R2.fehlt ? "ohne Fähigkeit: " + R2.fehlt : null)), vor: RW ? RW.bsKitz : undefined, nach: RW ? RW.bsAdult : undefined }),
+                            auge,
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                        };
+                        // Umfang „sichtbares Jungtier, das wächst“: fehlt nur, wenn der Leib des Gaus mit dem Alter nicht wächst
+                        if (!RW) aus[2].nicht = "der Fächer des Jungtiers warf: " + ((R2 && R2.fehlerText) || "ohne Antwort");
+                        else if (!(RW.wachstum > 1.05)) aus[2].nicht = "kein Leib wächst: derselbe Hirsch wächst von 0,05 zu 8 Jahren ×" + RW.wachstum + " (Kitz " + RW.bsKitz + " ↔ Hirsch " + RW.bsAdult + ", stamm/kreatur-erbe.js:77 _bestandBs)";
+                    }
                     nimm(3, { ereignisse: z.saison.ereignisse, gipfelAbw: z.saison.gipfelAbw }, z.saison.ereignisse === 0 ? "keine Brunft, keine Balz, kein Revierkampf: 0 Ereignisse über vier Jahreszeiten" : null);
                     nimm(4, { nestQuote: z.brut.quote, voegel: z.brut.voegel }, "kein Nest, keine Brut, kein Laich: " + z.brut.nester + " Nester bei " + z.brut.voegel + " gezeichneten Vögeln");
                     nimm(5, { stadienQuote: z.stadien.quote }, "keine Stadien: " + z.stadien.mitStadium + " von " + z.stadien.tiere + " Tieren des Bestands tragen ein Stadium");
@@ -3301,13 +3469,35 @@ L.perspektive("tiere", (() => {
                 sprossen: {
                     2: {
                         u: { auge: AUGE_ORT },
-                        soll: [K.soll(LZ, 2, "Bildpaar Kitz/Hirsch Panel ≥ 0,7", { key: "panel" }), K.soll(LZ, 2, "Jungtiere ≥ 10 % einer Herde im Frühsommer", { key: "jungProzent", einheit: "%" })],
+                        soll: [
+                            K.soll(LZ, 2, "Bildpaar Kitz/Hirsch Panel ≥ 0,7", { key: "panel" }),
+                            K.soll(LZ, 2, "Jungtiere ≥ 10 % einer Herde im Frühsommer", { key: "jungProzent", einheit: "%" }),
+                            // der Teil des Bildpaars, den der Fächer ohne Gerät misst: die Proportion des Kitzes gegen den Hirsch
+                            K.soll(LZ, 2, "Bildpaar Kitz/Hirsch", {
+                                key: "proportionAbw",
+                                rel: "≥",
+                                zahl: 10,
+                                einheit: "%",
+                                refQuelle:
+                                    "die Tiefe der Sprosse „Proportion jung ↔ alt allometrisch (großer Kopf, lange Beine beim Kitz)“ — das Bein des Kalbs eilt dem Rumpf voraus: der Hinterfuß hört als erstes Maß des Rothirschs auf zu wachsen, höchste Wachstumskonstante (Becciolini et al. 2016, Ital. J. Anim. Sci. 15:461); isometrisch (der verkleinerte Hirsch) ist 0 %, die 10 % sind die Schwelle der Station",
+                            }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer des Jungtiers warf: " + z.fehler;
+                            if (!(z.faecher >= 19)) return "nur " + (z.faecher || 0) + " Adressen des Fächers gemessen (Soll 19: 12 Monate des Tals + 7 Alter des Hirschs)";
+                            return zeugeWelt(100, true)(roh);
+                        },
                         auge: { pose: "Third auf eine Herde mit Kitz aus 15 m im Frühsommer (heute: die Wiese)", vorbild: "Foto Kitz/Hirsch; Panel ≥ 0,7" },
-                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (die Größe fällt bei der Geburt, nie mit dem Alter)",
+                        taeter: "stamm/kreatur-verhalten.js:590 _kreaturGroesseSetzen (scale.setScalar: das Kitz ist ein verkleinerter Hirsch) · tetrapoda-core.js:858 skullR (der Schädel folgt der Gattung, nie dem Alter) · leben-core.js:989 (die Geburt je Takt, keine Setzzeit)",
                         nicht: "ein sichtbares Jungtier, das wächst",
-                        leser: "stamm/kreatur-leben.js:1993 `_creatureBodySize` — die Größe des Geworfenen fällt einmal aus dem Strom; kein Leser liest `alterS` für Größe und Proportion",
-                        gruen: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
-                        attrappen: atr({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
+                        leser: "stamm/kreatur-leben.js:2700 `_bestandVerkoerpern` — der Leib trägt je Takt die Größe seines Tiers (`_bestandBs`, kreatur-erbe.js:77, aus der Masse des Alters); die Gestalt liest `alterS` nie",
+                        gruen: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300, { faecher: 19, vor: 0.33, nach: 1 }),
+                        attrappen: atr({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300, true).concat([
+                            { name: "die Bühne allein (der Fächer fehlt)", roh: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300, { faecher: 0 }) },
+                            { name: "die Welt heute (der verkleinerte Hirsch: Proportion 0 %)", roh: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 0 }, 300, { faecher: 19, vor: 0.33, nach: 1 }) },
+                            { name: "der Leib wächst nicht (Kitz = Hirsch)", roh: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300, { faecher: 19, vor: 1, nach: 1 }) },
+                        ]),
                     },
                     3: {
                         u: {},
