@@ -2316,3 +2316,4 @@ omen-gtx-gtx-f18576b6-1-f18576b6 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-24 10:54 PLATTE 6.9 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 10:57 PLATTE 17.9 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
 2026-11-24 10:58 landung Runde 18 am f18576b6: misst 70 von 240 Stationen (vorn; 3 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 11:04 RUNDE 18 SPRUNG am f18576b6 → Runde 19 am 5ef0404b (gtx laeuft 3/240, radeon weicht 4/73): z711 w28-wind-saison (10:39) und z712 w28-mensch-nah (11:03) gelandet; die Listen standen bei gtx 2/240, radeon 1/73 — der Sprung kostet drei Stationen und misst den Anspruch leben.pflanzen.kraft#2 am tragenden Kopf
