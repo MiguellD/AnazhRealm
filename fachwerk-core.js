@@ -5644,7 +5644,7 @@
     // gilt die Grenze am Weg (`grenzeAmWeg`, d_A/r_A = d_B/r_B); das Rang-Gesetz (`siedlungsZelle`) hält jeden Nachbarn um die
     // Summe beider Reiche fern, also liegt jene Grenze nie innerhalb des Rands — der Rand ist die Grenze des Herrschaftsgebiets.
     // Band: Hauptgrenzsteine 250–600 m voneinander, bis 1,5 m über Grund (Kreisarchiv Bodenseekreis, Historie der Grenzsteine) —
-    // hier `hauptM` 250 m, der Hauptstein in der größten Größe der Ausstattung (`hauptGroesse` 1,25: 0,875 m); der Läufer
+    // hier je Hauptabschnitt ≥ `hauptM` 250 m (so viele, wie der Umfang ganz trägt, mindestens drei), der Hauptstein in der größten Größe der Ausstattung (`hauptGroesse` 1,25: 0,875 m); der Läufer
     // wiederholt als Zwischenmarke nur eine festgelegte Grenze und macht ihren Verlauf erkennbar (bayerische Rechtsprechung zum
     // Läufer) — hier je Abschnitt so viele, dass kein Stein weiter als `laeuferM` vom nächsten steht: drei Steine in Sicht (ein
     // 0,7-m-Stein liest am Schirm bis ~60 m, die Blick-Sonde an stadt-voll). Der Stein steht nur, wo `frei(x, z)` Land und keinen
@@ -5658,7 +5658,7 @@
             aus = { steine: [], fehlt: 0, haupt: 0, abstandM: 0 };
         if (!A || !(A.r > 0) || !isFinite(A.x) || !isFinite(A.z)) return aus;
         var U = 2 * Math.PI * A.r,
-            nH = Math.max(G.minHaupt, Math.ceil(U / G.hauptM)),
+            nH = Math.max(G.minHaupt, Math.floor(U / G.hauptM)),
             je = Math.max(1, Math.ceil(U / nH / G.laeuferM)),
             n = nH * je,
             a0 = ((rangSchluessel(seed >>> 0) >>> 8) / 16777216) * ((2 * Math.PI) / n),
