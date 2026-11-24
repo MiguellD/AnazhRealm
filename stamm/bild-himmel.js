@@ -1030,6 +1030,9 @@ class AnazhRealm_bild_himmel {
         this.state.seasonUniforms = {
             uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
             uLaubPraesenz: TSL.uniform(new THREE.Vector3(1, 1, 1)),
+            // die Wärme des Jahrs (`_laubJahr`: x die Grünland-Temperatursumme, y das Laub des Herbsts) — der Stoff rechnet daraus
+            // das Laub und die Blüte JE ART (`_jahrLage`, phyto-core `laubImJahr` · `bluehImJahr`)
+            uLaubJahr: TSL.uniform(new THREE.Vector2(1000, 1)),
         };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
@@ -1066,13 +1069,43 @@ class AnazhRealm_bild_himmel {
     // SAISON_GESETZ `ha`): z staucht jeden Halm der Wiese über seiner Wurzel, vor dem Wind — der Gras-Stoff der Nah-Wiese, ihre
     // Ferne (`_halmFerne`) und das Studio (`injectWind` uHalm) lesen dieselbe Zeile: Frühling 0,7, Sommer 1, Herbst 0,8, Winter
     // 0,35. Bis dahin stand die Winter-Wiese in voller Höhe, orange getönt (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
-    _saisonPraesenz(phase, out) {
+    // DIE PHÄNOLOGIE JE ART (leben.pflanzen.jahreslauf#2, phyto-core PHAENO_GESETZ): `art` (die Spezies der Welt, `baum_eiche` …;
+    // ohne sie der Bestand) wählt die Schwellen ihres Laubs und ihrer Blüte; das Laub und die Blüte der Art steigen im Frühling
+    // mit der Grünland-Temperatursumme des Orts (`_laubJahr`), der Herbst ist das SAISON_GESETZ für jede Art. Bis jahreslauf#2
+    // trug jede Art EINE Kurve (die Stützen `pr` · `bl`): Hasel und Eiche trieben in derselben Woche aus (Rang 0).
+    _saisonPraesenz(phase, out, art) {
         const { a, b, k } = AnazhRealm._saisonLage(phase);
         if (!(Number.isFinite(a.ha) && Number.isFinite(b.ha))) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.ha");
-        out.x = a.pr + (b.pr - a.pr) * k;
-        out.y = a.bl + (b.bl - a.bl) * k;
+        const P = globalThis.__phytoCore;
+        const J = this._laubJahr(phase);
+        const [F, Fb] = P.phaenoArt(art || P.PHAENO_GESETZ.bestand);
+        out.x = P.laubImJahr(P.WIND_ZAHLEN, J.g, F, J.herbst, J.w);
+        out.y = Fb < 0 ? a.bl + (b.bl - a.bl) * k : P.bluehImJahr(P.WIND_ZAHLEN, J.g, Fb);
         out.z = a.ha + (b.ha - a.ha) * k;
         return out;
+    }
+    // DIE WÄRME DES JAHRS (jahreslauf#2): die Grünland-Temperatursumme `g` zur Phase aus der EINEN Jahres-Welle der Luft des Orts
+    // (`_temperaturFeld` am Meer: Mittel und Jahres-Welle, die Kühlung der Höhe trägt der Ort nicht), das Laub des Herbsts `herbst`
+    // (SAISON_GESETZ `pr` zwischen der Mitte des Sommers und der des Winters, im Frühling 1) und die kahle Krone `w` (`pr` des
+    // Winters). Die Uniform `uLaubJahr` (x g, y herbst) trägt beides zum Stoff (`_jahrLage`), die Karte backt ihre Stufe damit.
+    _laubJahr(phase) {
+        const c = this._laubJahrStand;
+        const L = this._gelaende();
+        if (c && c.phase === phase && c.feld === this._temperaturFeld && c.ort === L.ort) return c.j;
+        const { SG, a, b, k } = AnazhRealm._saisonLage(phase);
+        const st = this.state;
+        const F = this._temperaturFeld(Number.isFinite(st.waterLevel) ? st.waterLevel : 0, 0);
+        const welle = { mittel: F.mittel, amp: F.jahr.amp, gipfel: F.jahr.gipfel, spaet: F.jahr.spaet };
+        const jt = L.ort && L.ort.klimaHeute && L.ort.klimaHeute.jahrTage;
+        const ring = (v) => ((v % 1) + 1) % 1;
+        const fruehling = ring(phase - 0.875) <= 0.5;
+        const j = {
+            g: globalThis.__phytoCore.gruenSumme(welle, phase, jt, 0.375, 0.875),
+            herbst: fruehling ? 1 : a.pr + (b.pr - a.pr) * k,
+            w: SG.stuetzen[3].pr,
+        };
+        this._laubJahrStand = { phase, feld: this._temperaturFeld, ort: L.ort, j };
+        return j;
     }
 
     // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. Jeder Foundry-Körper ist Golden-Sommer
@@ -1103,6 +1136,10 @@ class AnazhRealm_bild_himmel {
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
         if (su && su.uLaubPraesenz && su.uLaubPraesenz.value)
             this._saisonPraesenz(st.seasonPhase, su.uLaubPraesenz.value);
+        if (su && su.uLaubJahr && su.uLaubJahr.value) {
+            const J = this._laubJahr(st.seasonPhase);
+            su.uLaubJahr.value.set(J.g, J.herbst);
+        }
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
@@ -1274,7 +1311,11 @@ class AnazhRealm_bild_himmel {
         const wf = this._weatherFieldFor(st.weather);
         if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
-            if (st.naesse === 0 && !st.weatherTransition) this._regenRuht = { wort: st.weather, naesse: 0 };
+            // die Ruhe erst, wenn auch der Schatten der Häuser trocken ist (stadtklima#1, der Trocken-Weg × sein Anteil ≥ 1)
+            const U = st.atmoUniforms;
+            const schattenNass = U && U.naesseWeg && U.naesseWeg.value * U.schattenSonne.value.w < 1;
+            if (st.naesse === 0 && !st.weatherTransition && !schattenNass)
+                this._regenRuht = { wort: st.weather, naesse: 0 };
             return;
         }
         const sys = this._ensureRainSystem();
@@ -3356,10 +3397,19 @@ class AnazhRealm_bild_himmel {
         const ziel = wf.rain > N.regenAb ? 1 : 0;
         const n = AnazhRealm._naesseKurve(n0, wf, dt);
         st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
+        // DER TROCKEN-WEG DER WELT (stadtklima#1, `_naesseAm`): 1 − Film, solange er steht; ohne Regen wächst er mit der Rate
+        // weiter, wenn der Film der Welt schon trocken ist — der Schatten der Häuser trocknet mit seinem Anteil der Rate nach
+        const q1 = AnazhRealm._trockenAnteil(wf);
+        const weg0 = n0 <= 0 && Number.isFinite(this._naesseWeg) ? this._naesseWeg : 1 - n0;
+        this._naesseWeg = ziel
+            ? 1 - st.naesse
+            : Math.min(1 / q1 + 1, weg0 + Math.max(0, dt) * AnazhRealm._trockenRate(wf));
         const U = this._ensureAtmoUniforms();
         U.naesse.value = st.naesse;
         U.regen.value = ziel ? wf.rain : 0;
+        U.naesseWeg.value = this._naesseWeg;
         this._dachTakt();
+        this._schattenTakt(q1);
         this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;
     }
