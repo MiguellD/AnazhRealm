@@ -1,8 +1,9 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 00:54 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
-- KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; die Tafel trägt den Stand 22:30 am 5b36f69a und ist
-  nach Runde 13 neu zu schreiben) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
+**STAND 24.11. 01:22 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
+- KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; NEU GESCHRIEBEN 24.11. 01:03, koordination
+  5f3f95d4: 296 Fronten — SONST 75 · KEINE STATION 74 · BUEHNE Umfang sonst 55 / Saaten 11 / Menge 10 / Spieler 9 / Kosmos 7 · SPIEL Leser fehlt 23 ·
+  FERN 14 · NAH 7 · PROBE misst nichts 4 · GRUEN, Preis nicht grün 3 · GRUEN+PREIS 2; ihr Leser verlor bis dahin still 199 von 2 976 Akten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
   tore, decken, alles deine definitionen“): Meta-Gesetze M1 Adresse · M2 Ableitung · M3 Band · M4 Beobachter · M5 Angebot · M6 eine Quelle; Tiefen
   0 Adresse · 1 Gestalt · 2 Nerv · 3 Antrieb · 4 Absicht · 5 Geschichte. Jeder Brief nennt seine Tiefe und seine Front-Sprossen.
 - GEBUCHT am 23.11.: 58 → 68 um 23:14 (buche 29f6bc4e: planet.wasser.eis#1 · planet.wetter.vorhersage#1 · leben.oeko.zerfall#1 · mensch.stadt.vertikal#1 ·
@@ -26,20 +27,28 @@
   die volle Batterie auf integ-probe grün (Lauf 45273252006) — dasselbe Byte, zwei Urteile; z699 trug kein Spiel-Byte. VERSUCH 2 IST GRÜN (00:39, Job
   138089422222, derselbe Kopf): die Prüfung ist nicht deterministisch — drei Messungen, zwei grün, eine rot; die Nachwache liest a8a9ab16 seither grün,
   das Grün steht auf Versuch 2. Offen: ob die Linse wackelt oder der Abbau im Spiel selten einen Rest lässt; die Rate ist ungemessen.
-  GESTEMPELT 00:47: `w28-linse-slot-rest` 272721d5 (die Prüfung nennt slotEntry, Gruppen, beide Felder und removeLief; Vorprüfung b2747d90 grün:
-  Code-Check 45288504946 mit 21 Jobs, GPU-Probe 45288504794 an der GTX 1050; ein Werkzeug-Zug ohne Spiel-Byte) — das nächste Rot nennt den Rest.
-  Zeile im FUND-REGISTER (koordination eca87360).
+  GELANDET: `w28-linse-slot-rest` 272721d5 als Zug z700 → main f287dfb9 (Stempel 00:47:00, Abholung 00:57, Ende 01:09:22 — die Fahrt rund 12 min, über
+  dem Gesetz ≤ 10 min, die Phasen sind ungelesen; ein Werkzeug-Zug ohne Spiel-Byte). Die Prüfung nennt jetzt slotEntry, Gruppen, beide Felder und
+  removeLief. DIE PRÜFUNG FIEL WIEDER: am Vorprüf-Kopf front-stoff 39b52932 (Basis a8a9ab16, noch ohne den Linsen-Schnitt), Job voll 18/18 — mit
+  der alten Linse zwei Rot in vier Läufen. Der nächste Lauf auf f287dfb9 oder neuer nennt den Rest. Zeile im FUND-REGISTER (koordination eca87360).
 - VORPRÜFUNGEN vom 24.11. 00:36 (leere Commits von mir, nach der Lese-Liste der Cloud-Ernte: 0 von 33 Zweigen stempelreif): `erbe-geburt` 3fd5e0cc
   (`[gpu-probe: gate:kreatur-leben, bild:wiese@0.5]`; erbe#1 und zivilisation#1 laut Arbeiter headless grün) · `wetter-am-ort` 447d65b4 (die vier
-  Pflicht-Tore; die Marke trägt höchstens VIER Proben je Push, das Bild der Wiese folgt als eigener Blick). Gestempelt wird nach grüner CI und meinem
-  Blick aufs Bild. `front-leben` e47bec8f (vier Front-Sprossen) holt ein Arbeiter an der Radeon heim (Agent a1c595927fd400089; um 00:45 lief bei ihm
+  Pflicht-Tore; die Marke trägt höchstens VIER Proben je Push): Code-Check geerbt grün, GPU-Probe 45290342310 grün an der Radeon. MEIN BLICK (Bilder
+  über den Seitenzweig `blick-wetter-am-ort` 17fa3f8e, Dorf neben dem Dorf von main): zwei Bewohner mit waagrecht ausgestreckten Armen — der Stand
+  VOR w28-a-haltung, der Zweig stand 54 Commits hinter main. Darum NEU: Merge mit main f287dfb9 als Vorprüf-Kopf 3a87a8fa (01:19, probe-tag OK,
+  volle Batterie und vier Tore am vereinten Baum), Bilder am Seitenzweig `blick-wetter-am-ort-2` b5a01590. Für `erbe-geburt` (auch 54 zurück) gilt
+  dasselbe, sobald seine CI am 3fd5e0cc durch ist. Gestempelt wird nach grüner CI am vereinten Baum und meinem Blick aufs Bild. `front-leben` e47bec8f (vier Front-Sprossen) holt ein Arbeiter an der Radeon heim (Agent a1c595927fd400089; um 00:45 lief bei ihm
   `npm run check:statik`). Die Rohdaten der Ernte liegen nur im Scratch dieser Sitzung (ernte/ernte.txt, ernte/ci.txt); die Lese-Liste: `pm-beobachter`
   (Richter-Lauf, dann Merge) · `acker-furche` 9c776e7f (S0 über dem Budget, Bild rot) · `stoffstrom-kette-2` 6ef21842 (im Bild vom Schöpfer abgelehnt) ·
   `leib-ausdruck` 13ef2e76 (K7 rot) · `saat-vor-heil` (DRUCK-SCHLAF rot) · sechs Zweige im Konflikt, deren Ersatz nicht bewiesen ist (w28-strahler,
   w28-strahler-messer, w28-licht-spike, vorrat8-ankunft, bau-oeffnungen, einheit-stufe-wirt) · neun Archiv-Kandidaten, die in main stehen oder ersetzt sind.
 - ABGABE `front-stoff` 39b52932 (GTX 1050, 24.11. 00:49; 14 Dateien, EIN Gesetz des Alters je Art, die Wetterseite aus dem Wind des Orts, der Sprung
   trägt den Regen der Front): am Remote bestätigt (main drin, merge-tree sauber, probe-tag OK, vier Pflicht-Tore in der Marke), Bildpaar von mir gesehen
-  (koordination `bericht/2311-front-stoff/`: keine Brüche; die Alterung liegt gleichmäßig je Ecke, kein Fleck), die CI läuft — Stempel bei Grün.
+  (koordination `bericht/2311-front-stoff/`: keine Brüche; die Alterung liegt gleichmäßig je Ecke, kein Fleck). NICHT GESTEMPELT: Code-Check
+  45292065770 ROT an vier Jobs (GPU-Probe 45292065819 grün) — (1) Prettier: `stamm/feld-brand.js` ab 899, `stamm/siedlung-wege.js` ab 2762;
+  (2) Playtest, 6 Invarianten der Familie `_depositLife` (Wurf „Cannot read properties of undefined (reading 'a')“ in checkBandV1729CreatureTrickle;
+  main trägt den Playtest in der CI grün, der Zweig fasst feld-brand.js an); (3) gate:mp-sync „(f) Reload mitten im Sturm: wetter VERSCHIEDEN“
+  (A sunny, B rainy — der Regen des Sprungs hängt am Ort des Spielers); (4) die Slot-Bilanz. Heil-Auftrag mit diesen Namen an die GTX 1050 gesendet.
   Zahlen der GTX (nicht nachgemessen): reaktion#1 4,98 % · wehrbau#2 0,75 · tiefsee#1 sichtM 8,323 gleich · alter#1 OFFEN (Albedo 0,028 → 0,037 ✓,
   Seiten 0,0045 von 0,02: Wetter aus N37W, Nord- und Wetter-Fach decken sich auf 83 von 120°, beide dunkeln mit demselben Moos). Stationen `pm-front-stoff` 5f62727a.
 - ZWEI ENTSCHEIDE des Koordinators 24.11. (an die Geräte gesendet bis 00:54, Zustellung nicht bestätigt): (1) alter#1 — der Richter urteilt „Nord- und
@@ -56,13 +65,17 @@
 - IN FAHRT: OMEN `heap-loslassen` 9077e404 (ihre Meldung nach Mitternacht, von mir nicht nachgemessen: der Schnitt am Abschied der Siedlung gibt an der
   GTX NICHTS frei — Runde zweimal auf main 225,8 → 398,1 → 468,2 MB (R2 − R1 +70,1 MB bei 3 267 Einträgen), mit Schnitt 227,0 → 407,5 → 492,5 (+85,0);
   Linse H17 grün, sechs Mutanten rot. Meine Antwort: eine dritte Runde, R3 − R2 entscheidet Leck gegen begrenzten Cache; kein weiterer Schnitt, bevor der
-  Halter-Diff EINEN Halter nennt; daneben die Station `pm-speicher-runde` für same.preis.speicher#1–#3. Die Zustellung ist nicht bestätigt) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
+  Halter-Diff EINEN Halter nennt; daneben die Station `pm-speicher-runde` für same.preis.speicher#1–#3. NACHTRAG, Meldung der OMEN zwischen 01:15 und 01:18 (nicht nachgemessen): R3 − R2 = +14,3 MB (467,7 → 482,0, 3,1 %), R2 − R1 +65,5, R1 − R0 +175,5 —
+  der größte Teil ist Vorrat, je Besuch bleiben ~14 MB; Register R3 − R2: Geometrien +22 (153 → 175), attrMB +12,4, Schatten-dispose-Hörer +46.
+  Station `pm-speicher-runde` c3af69e7 am Remote, ihr Selbsttest steht aus. Mein Entscheid: EIN Durchgang (stark-Halde, Lauf mit gesperrter Kante
+  `_listeners`) nennt den Erzeuger der 22 Geometrien mit Datei:Zeile → Schnitt; nennt er keinen → Register-Zeile, kein weiterer Halden-Lauf; der
+  Richter der Station trägt die gemessene Streuung ±2 %. Danach die Welle „SPIEL Leser fehlt“ im Kapitel erleben (15 Fronten)) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
   (30 offen, ~4 min je Station), Schwanz 191; 33/246 um 00:38 laut der Runden-Zeile in koordination; zwei Alarme „16 min ohne Fortschritt“ (23:04,
   23:44) lösten sich von selbst · GTX 1050: `front-stoff` abgegeben (Zeile oben), weiter alter#1 nach
   dem Entscheid, danach nacht-laterne (Karten-Takt ≤ 9,43 ms) · VIER
   CLOUD-SITZUNGEN (vom Schöpfer gestartet; die App startet sie nie von selbst): `pm-beobachter` steht um 00:43 auf 1d638433 (laut Ernte am 23da5766:
-  zehn Richter auf dem Fächer, `stationen/faecher.js`; es fasst `k2-erleben.js` nur in den Zeilen 7–558 an); `bewohner-satz`, `ort-ausstattung`,
-  `nerv-bewegung` hatten um 00:43 noch keinen Zweig am Remote. DOPPEL-ZIEL: `nerv-bewegung` zielt auf leben.tiere.bewegung#1, das `front-leben` schon
+  zehn Richter auf dem Fächer, `stationen/faecher.js`; es fasst `k2-erleben.js` nur in den Zeilen 7–558 an); `bewohner-satz` steht um 01:04 am Remote
+  (d4cb242f, von mir ungelesen); `ort-ausstattung` und `nerv-bewegung` hatten um 01:04 noch keinen Zweig. DOPPEL-ZIEL: `nerv-bewegung` zielt auf leben.tiere.bewegung#1, das `front-leben` schon
   bei 8 % trägt (Soll-Abweichung 26 → 8 %) — front-leben landet zuerst, die Nachricht geht per `cloud-post/nerv-bewegung.md`, sobald der Zweig steht. Bericht je Zweig in
   `cloud-post/<zweig>.md`; die Cloud meldet ihr Ende nicht. Aus Konto 17: `leib-ausdruck` 13ef2e76 (WIP, Tiefe 3; offen K7 und das Bild) —
   `bewohner-satz` fasst dieselben zwei Stamm-Dateien an.
@@ -74,8 +87,15 @@
 - AN DER RADEON: pm-Buchhalter (a1568895388f16a7b) DURCH um 00:43 — `pm-nacht-front` gebucht als 41fbb2ea (am Remote bestätigt; Selbsttest laut
   Arbeiter 268 Fälle grün vor und nach dem Merge, dieselben fünf KONSUM-Fälle rot am Auszug), die sieben anderen Zweige standen schon in
   punkte-maschine; Anspruchs-Zeile `pm-nacht-front karte2.erleben.bild.nacht#1,#2` (koordination 0e8f5281; laut Zweig #1 rot am Pfosten 2,36 gegen
-  3:1, #2 rot ohne Fotosatz). Cloud-Ernte (a8edb190197973084) DURCH. Stations-Heiler (a019f448dd2c13b4d; 16 am Apparat rote Fronten, 10 × „spawn
-  ENAMETOOLONG“; nicht `stationen/faecher.js` und nicht `k2-erleben.js` Zeilen 7–558) wieder aufgenommen um 00:48.
+  3:1, #2 rot ohne Fotosatz). Cloud-Ernte (a8edb190197973084) DURCH. Stations-Heiler (a019f448dd2c13b4d) DURCH (Zweig-Commit 00:57): die zehn
+  „spawn ENAMETOOLONG“ waren nie Apparat-Rot — der Leser der Front-Tafel nahm nur Akten als Objekt; geheilt im Zweig `pm-front-widerspruch` b32ba806,
+  von mir gemergt als koordination a5b7882c (Selbsttest der Runden-Reihe am Zweig-Blob nachgefahren: grün, Mutante rot). Dazu die Reihen-Regel
+  WIDERSPRUCH DER GERÄTE in `zug/dienst/runde.cjs` (ein ROT, dem das andere Gerät später GRÜN widersprach, steht vorn statt im Schwanz; GTX-Reihe vorn
+  102 → 104) — sie wirkt je Gerät erst nach `start.sh`; an der Radeon NICHT installiert (kein Tausch unter einem fahrenden Zug). Anspruchs-Zeile
+  `pm-front-widerspruch` (signale#1, tragen#1, zeitreise#1, ausdauer#1). Echtes Welt-Rot laut Heiler: 8 der 10 „Umfang nicht erzeugbar“ ·
+  ein-ereignis#2 reißt den Deckel in `stamm/klang.js _umweltLageEins` · gegenwart#1 zählt 0 Findlinge (`_rockGeologyClass` nur mit `ort.eis`) ·
+  ausdauer#1 +95,5 MB/min gegen Soll 50. pm-Buchhalter nach 01:20 erneut aufgenommen: `pm-beobachter` 1d638433 (die Bauart Fächer und neun Fronten
+  „BUEHNE Saaten“) einmergen und beanspruchen — der Hebel für die 92 Fronten der Gruppen BUEHNE.
 - GEPARKT mit Grund: OMEN `dienst-runde-in-der-schlange` / `pm-runde-in-der-schlange` (2 h 15 min Schloss für 0 Sprossen). `pm-innen-ein-haus`: Rebase,
   Selbsttest und ein Lauf bau.innen#1 fehlen. Zu archivieren: `w28-iperka-arbeiter` 327a6ad5 und `iperka-arbeiter` 15a712f3 (gelandet als -2 in z698).
 - DANACH (steht auf `bewohner-satz` und `ort-ausstattung`): Tiefe 4, der Alltag aus Angebot × Antrieb → sport.regeln#1 · sport.geistspiel#1 ·
