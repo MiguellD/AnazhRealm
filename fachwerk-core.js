@@ -12185,12 +12185,18 @@
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
         });
+        // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
+        // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
+        // ungeklemmt) bei MAUER_BIS oder darüber, ist die Mauer gefallen, auch wo die Chronik des Orts früher endet (er behält die
+        // Häuser seines letzten Schnitts); ohne es urteilt das Jahr des Schnitts. Das Band: vollständig erhalten blieben in
+        // Deutschland drei Ringe (Rothenburg, Nördlingen, Dinkelsbühl) von 3 000–5 000 Städten des 15. Jh. — unter 0,1 %, kein Wurf.
+        var mauerSteht = Math.max(kachel ? plan.jahr : plan.schnitt.jahr, isFinite(dp.jahr) ? Number(dp.jahr) : -Infinity) < MAUER_BIS;
         var kNetz = null,
             kRand = null;
         if (kachel) {
             kNetz = kachelNetz(kachel.samen, kachel.i, kachel.k);
             kRand = kachelRand(kachel.samen, kachel.nH, kachel.i, kachel.k, epo);
-            var kMauer = plan.staedtisch && plan.jahr < MAUER_BIS;
+            var kMauer = plan.staedtisch && mauerSteht;
             var kh = kNetz.m / 2,
                 kd = 400;
             var aussen = function (rand, cx, cz, ex, ez, nx, nz) {
@@ -12322,23 +12328,23 @@
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
         // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
-        var mz = kachel
-            ? plan.staedtisch && plan.jahr < MAUER_BIS
+        var mz = !mauerSteht
+            ? null
+            : kachel
+            ? plan.staedtisch
                 ? kachelMauer(kNetz, kRand)
                 : null
-            : lay.mauer ||
-              (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
-                  ? schnittMauer(slots, lay.roads, plan.seed)
-                  : null);
-        // DER GEFALLENE RING WIRD GASSE (`ringGasse`): ein Ort der Chronik, vor MAUER_BIS gegründet, den das Jahr seines Orts über
-        // MAUER_BIS trägt (`dp.jahr`, ohne es das Jahr des Schnitts), legt den Ring, den er im letzten Jahr der Mauern trug, als Straße
-        // — der Ring derselben Ableitung (der Export desselben Auftrags am Jahr MAUER_BIS - 1; die Kachel ihre Rand-Mauer,
-        // `kachelMauer`) —, wenn seine Mauer gefallen ist oder weiter draußen steht (der Ring der Gegenwart um mehr als die Breite
-        // der Gasse jenseits des alten)
-        var jahrOrt = plan.chronik && isFinite(dp.jahr) ? Math.min(plan.chronik.ende, Number(dp.jahr)) : plan.schnitt.jahr;
-        if (plan.chronik && plan.chronik.gr0 < MAUER_BIS && (kachel ? plan.staedtisch && !mz && plan.jahr >= MAUER_BIS : jahrOrt >= MAUER_BIS)) {
-            var alt = kachel ? kachelMauer(kNetz, kRand) : exportSettlement(Object.assign({}, dp, { jahr: MAUER_BIS - 1 })).mauer;
-            if (alt && (!mz || mz.R - alt.R > Math.max(DORF_NORM.strasseW, RING_GASSE.anteilR * alt.R))) lay.roads = lay.roads.concat(ringGasse(alt, slots));
+            : lay.mauer || (plan.chronik && plan.schnitt.staedtisch ? schnittMauer(slots, lay.roads, plan.seed) : null);
+        // DER GEFALLENE RING WIRD GASSE (`ringGasse`): fiel die Mauer, legt der Ort den Ring, den er im letzten Jahr der Mauern trug,
+        // als Straße — der Ring derselben Ableitung: die Kachel ihre Rand-Mauer (`kachelMauer`), die ummauerte Gestalt ihren Ring
+        // (`lay.mauer`), der Ort der Chronik, vor MAUER_BIS gegründet, den Ring seines Exports am Jahr MAUER_BIS - 1
+        if (!mauerSteht) {
+            var alt = kachel
+                ? plan.staedtisch && (plan.jahr < MAUER_BIS || (plan.chronik && plan.chronik.gr0 < MAUER_BIS))
+                    ? kachelMauer(kNetz, kRand)
+                    : null
+                : lay.mauer || (plan.chronik && plan.chronik.gr0 < MAUER_BIS ? exportSettlement(Object.assign({}, dp, { jahr: MAUER_BIS - 1 })).mauer : null);
+            if (alt) lay.roads = lay.roads.concat(ringGasse(alt, slots));
         }
         var aus = {
             seed: plan.seed,

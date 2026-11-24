@@ -1387,9 +1387,9 @@ function raumLinse() {
     goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall");
 
     // 10c) DER GEFALLENE RING WIRD GASSE (mensch.macht.wehrbau#3, `ringGasse`): je Same 1 … der Ort der Gründung im Mittelalter,
-    //      sein Ring im letzten Jahr der Mauern (MAUER_BIS - 1) und seine Straßen im Jahr 1900. Fiel die Mauer oder steht sie um mehr
-    //      als die Breite der Gasse weiter draußen, liegt jeder Punkt des alten Rings (5 je Segment) ≤ 4 m an einer Straße, die
-    //      Ringstraße quert kein Haus; steht sie, wo sie stand, trägt der Ort keine; ein Jahr vor MAUER_BIS trägt nie eine.
+    //      sein Ring im letzten Jahr der Mauern (MAUER_BIS - 1) und seine Straßen im Jahr der Welt 1900. Die Mauer ist gefallen, auch
+    //      wo die Chronik früher endet (das Jahr der Welt urteilt), jeder Punkt des alten Rings (5 je Segment) liegt ≤ 4 m an einer
+    //      Straße, die Ringstraße quert kein Haus; ein Jahr vor MAUER_BIS trägt nie eine.
     {
         const ep = FC.epocheImJahr(1320);
         const dSeg = (px, pz, a, b) => {
@@ -1397,19 +1397,15 @@ function raumLinse() {
             const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (pz - a.z) * dz) / (dx * dx + dz * dz || 1)));
             return Math.hypot(px - a.x - t * dx, pz - a.z - t * dz);
         };
-        const R = { fiel: 0, weiter: 0, steht: 0, deck: [], quer: 0, falsch: [] };
+        const R = { fiel: 0, steht: [], deck: [], quer: 0, falsch: [] };
         for (let seed = 1; seed <= 16; seed++) {
             const A = FC.exportSettlement({ seed, epoche: ep, jahr: FC.MAUER_BIS - 1 });
             if (A.roads.some((r) => r.ring)) R.falsch.push(seed + ": Ringstraße vor MAUER_BIS");
             if (!A.mauer) continue;
             const B = FC.exportSettlement({ seed, epoche: ep, jahr: 1900 });
             const ring = B.roads.filter((r) => r.ring);
-            const art = !B.mauer ? "fiel" : B.mauer.R - A.mauer.R > Math.max(...ring.map((r) => r.w), FC.RING_GASSE.anteilR * A.mauer.R) ? "weiter" : "steht";
-            R[art]++;
-            if (art === "steht") {
-                if (ring.length) R.falsch.push(seed + ": Ringstraße unter der stehenden Mauer");
-                continue;
-            }
+            if (B.mauer) R.steht.push(seed + " (Schnitt " + B.jahr + ")");
+            else R.fiel++;
             let [tot, hit] = [0, 0];
             for (const s of A.mauer.segs)
                 for (let k = 0; k <= 4; k++) {
@@ -1424,9 +1420,9 @@ function raumLinse() {
         }
         console.log("RINGGASSE " + JSON.stringify(R));
         check(
-            `Der gefallene Ring wird Gasse: ${R.fiel} gefallen + ${R.weiter} überbaut, je Ort der alte Ring an der Straße (min ${Math.min(...R.deck)} ≥ 0,9), ${R.steht} stehend ohne`,
-            R.fiel + R.weiter >= 8 && R.deck.length && Math.min(...R.deck) >= 0.9 && !R.falsch.length,
-            R.falsch.join(" · ")
+            `Der gefallene Ring wird Gasse: ${R.fiel} Mauern im Jahr der Welt 1900 gefallen, ${R.steht.length} stehen (Soll 0), je Ort der alte Ring an der Straße (min ${Math.min(...R.deck)} ≥ 0,9)`,
+            R.fiel >= 8 && !R.steht.length && Math.min(...R.deck) >= 0.9 && !R.falsch.length,
+            R.falsch.concat(R.steht.map((x) => "Mauer zu viel: " + x)).join(" · ")
         );
         check(`Die Ringstraße quert kein Haus (${R.quer} Punkte in einem Grundriss)`, R.quer === 0);
     }
