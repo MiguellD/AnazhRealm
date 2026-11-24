@@ -1175,7 +1175,10 @@ class AnazhRealm_feld_nexus {
     _buildCreaturePersonaPrompt(creature, gedaechtnis = this._creatureGedaechtnis(creature)) {
         if (!creature || !creature.userData) return null;
         const ud = creature.userData;
-        const name = ud.name || "namenlos";
+        // der Leib eines Bewohners trägt seinen Satz (`_feldLageVon`): sein Name und sein Lebenslauf rechnen aus dessen Samen
+        const lage = ud._feldLageVon && ud._feldLageVon.b && ud._feldLageVon.b.sied ? ud._feldLageVon : null;
+        const name = ud.name || (lage && lage.b.vorname) || "namenlos";
+        const laufLine = lage ? AnazhRealm._datum(this._bewohnerLauf(lage.S, lage.b, "satz")) : null;
         const soulName = ud.soul || "wesen";
         const soulDef = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
         const soulLabel = soulDef && soulDef.label ? this._t(soulDef.label) : soulName;
@@ -1242,6 +1245,7 @@ class AnazhRealm_feld_nexus {
         return [
             AnazhRealm._datum`Du bist ${name}` +
                 `, ein/e ${soulDef && soulDef.label ? soulLabel : AnazhRealm._datum(soulLabel)}. Du wurdest vor ${ageStr} in diese Welt geboren.`,
+            ...(laufLine ? [`Dein Lebenslauf: ${laufLine}`] : []),
             `Dein Körper trägt: ${statLine}.`,
             `Du hast gelernt: ${specsLine}.`,
             `Du trägst: ${eqLine}.`,
@@ -1274,15 +1278,25 @@ class AnazhRealm_feld_nexus {
     // Findet die erste Kreatur mit diesem Namen (case-insensitive). Bei
     // Mehrfach-Treffern → die erste. Phase 2E V2 könnte mit räumlicher
     // Priorität ergänzen („die nächste namens X").
+    // DER BEWOHNER IST ANSPRECHBAR (mensch.geist.gespraech#2, bewohner-satz): sein Vorname ist eine Funktion seines Samens (der
+    // Lebenslauf, `_bewohnerLauf`) — trägt kein Wesen den Namen, antwortet der nächste Leib eines Bewohners dieses Namens. Bis hier
+    // suchte der Ruf nur `state.creatures`: kein Bewohner trug einen Namen, keiner war zu rufen.
     _findCreatureByName(name) {
         if (typeof name !== "string" || name.length === 0) return null;
         const target = name.toLowerCase();
-        if (!Array.isArray(this.state.creatures)) return null;
-        for (const c of this.state.creatures) {
+        for (const c of Array.isArray(this.state.creatures) ? this.state.creatures : []) {
             const cn = c && c.userData && c.userData.name;
             if (typeof cn === "string" && cn.toLowerCase() === target) return c;
         }
-        return null;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        let [wer, dMin] = [null, Infinity];
+        for (const S of (this._bewohnerSiedlungen || new Map()).values())
+            for (const b of S.liste || []) {
+                if (!b.leib || b.vorname.toLowerCase() !== target) continue;
+                const d = pm ? (b.leib.position.x - pm.x) ** 2 + (b.leib.position.z - pm.z) ** 2 : 0;
+                if (d < dMin) [wer, dMin] = [b.leib, d];
+            }
+        return wer;
     }
 
     // DAS GEDÄCHTNIS EINES WESENS (KI K3): der Abruf aus seinen Erinnerungen (Cap 30) — je Satz der EINEN Tafel

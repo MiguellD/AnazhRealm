@@ -20,7 +20,7 @@ function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Ma
 var G_BUEHNE=window.__koerperCore.LEIB.sprung.refG/window.__koerperCore.leibMassstab();
 var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
 // jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
-if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangReich!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub','rollWinkel','fersenAb','ballen','knoechel'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangReich/gangPhaseHaelt + koerper fx.bewegung.gang');
+if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangReich!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub','rollWinkel','fersenAb','ballen','knoechel','ferse','fersenWinkel','fersenFlach'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangReich/gangPhaseHaelt + koerper fx.bewegung.gang');
 var _GZ=Object.assign({},_GZ0,{g:G_BUEHNE,vMax:Infinity});
 function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),omega:gs.omega,S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
 // der Fuss zur Studio-Phase ph (0..1, der Stand zuerst): die Phase des Gesetzes beginnt mit dem Schwung; cs = die Skala
@@ -542,7 +542,7 @@ function _playOrt(T) {
   return { tempo: T.sprint ? W.sprintSpeed : W.speed, gehTempo: W.speed, hang: 1, ritt: null, rittKAcc: null, rittKBrake: null, reitet: false, fahr: null, wasser: false, wasserKBrake: 0,
     leben: play.leben, angebote: parkAngebote, lage: play.p, beinM: play.M.L, mass: play.kette.mass, masse: play.masse, g: G_WELT,
     amBoden: function () { return play.amBoden; }, hangSprung: function () { return false; },
-    abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
+    abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower, play.masse), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
 }
 function _kopfraum() {
   var top = play.p[1] + 2 * KAPSEL.fussM, best = Infinity;
