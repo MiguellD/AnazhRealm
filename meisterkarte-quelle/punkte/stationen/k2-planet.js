@@ -4267,7 +4267,8 @@ window.__pwMeer = m;
             // das Gesetz des Eises) und ob das Eis trägt (gelaende-core eisDicke ≥ EIS.traegt, derselbe Ruf wie `_eisLinien`); die
             // Heimat am Feld des Spiels (`_temperaturFeld`, `_wasserStoff`), der See der Soll-Tafel über den Leser des Spielers
             // (`_eisAt` je Tag der Saison), jede andere Saat an ihrer Lage (planet-ort → lageAus). Das Einsetzen: die Frostgrad-Summe
-            // ab dem ersten Frosttag nach dem wärmsten bis zum ersten tragenden — gezählt nur, wo das Jahr friert UND taut
+            // stündlich ab dem ersten Eis (Dicke > 1 mm) bis zum ersten tragenden, wie Stefan sie zählt (Ashton 1986: ab dem Gefrieren);
+            // daneben `fddLuft` ab dem ersten Frosttag der Luft (die Abkühlung der Säule dazu) — gezählt nur, wo das Jahr friert UND taut
             const u2 = U[2];
             if (u2) {
                 const EIS_AN = async (r, T, a, mit) => {
@@ -4295,42 +4296,71 @@ window.__pwMeer = m;
                         feld = (y, tr) => G.temperaturFeld(L, y, tr);
                     }
                     const luft = (y, s) => { const F = feld(y, 0); let t = 0; for (let h = 0; h < 4; h++) t += G.temperaturAus(F, s, 0.125 + h / 4, null) / 4; return t; };
+                    // `dicke(s)` die Dicke des Gesetzes an der Säule, `traegtBei(s)` der Leser, der trägt (der See der Soll-Tafel: `_eisAt`
+                    // des Spielers in der Saison s; die Säule: die Dicke ≥ EIS.traegt)
                     const Tt = [], E = [];
+                    let dicke, traegtBei, ende = () => {};
                     if (a.ort === "see") {
                         const S = mit.see;
                         let n = 0;
                         while (r._ensureHydroTilesAround(S[0], S[1], 32) && n < 100) { await new Promise((f) => setTimeout(f, 50)); n++; }
                         const spiegel = r._koerperWasser(S[0], S[1], -Infinity), alt = st.seasonPhase;
                         if (!Number.isFinite(spiegel)) return { saat: "heim", ort: "see", kein: 1 };
+                        const tiefeSee = spiegel - r._voxelSurfaceY(S[0], S[1]);
+                        dicke = (s) => G.eisDicke(L, spiegel, s, tiefeSee, (tr) => feld(spiegel, tr), stoff);
+                        traegtBei = (s) => { st.seasonPhase = s; return r._eisAt(S[0], S[1]) !== null; };
+                        ende = () => { st.seasonPhase = alt; r._eisLinien(); };
                         try {
-                            for (let d = 0; d < nT; d++) { st.seasonPhase = d / nT; Tt.push(luft(spiegel, d / nT)); E.push(r._eisAt(S[0], S[1]) === null ? 0 : 1); }
-                        } finally {
-                            st.seasonPhase = alt;
-                            r._eisLinien();
-                        }
+                            for (let d = 0; d < nT; d++) { Tt.push(luft(spiegel, d / nT)); E.push(traegtBei(d / nT) ? 1 : 0); }
+                        } catch (e) { ende(); throw e; }
                     } else {
                         const tiefe = a.ort[0], y = wl + a.ort[1];
-                        for (let d = 0; d < nT; d++) { const s = d / nT; Tt.push(luft(y, s)); E.push(G.eisDicke(L, y, s, tiefe, (tr) => feld(y, tr), stoff) >= G.EIS.traegt ? 1 : 0); }
+                        dicke = (s) => G.eisDicke(L, y, s, tiefe, (tr) => feld(y, tr), stoff);
+                        traegtBei = (s) => dicke(s) >= G.EIS.traegt;
+                        for (let d = 0; d < nT; d++) { Tt.push(luft(y, d / nT)); E.push(traegtBei(d / nT) ? 1 : 0); }
                     }
                     const traegt = E.reduce((p, v) => p + v, 0), warm = Tt.indexOf(Math.max(...Tt));
-                    let start = -1, on = -1, fdd = 0, auf = -1;
+                    let start = -1, on = -1, fddLuft = 0, auf = -1;
                     for (let k = 1; k < nT; k++) {
                         const d = (warm + k) % nT;
                         if (start < 0 && Tt[d] < 0) start = k;
-                        if (start >= 0 && on < 0) { fdd += Math.max(0, -Tt[d]); if (E[d]) on = k; }
+                        if (start >= 0 && on < 0) { fddLuft += Math.max(0, -Tt[d]); if (E[d]) on = k; }
                         if (on >= 0 && auf < 0 && !E[d]) auf = k;
                     }
-                    const jz = traegt > 0 && traegt < nT && on >= 0 ? 1 : 0;
-                    return { saat: String(a.saat), tage: nT, frost: Tt.filter((t) => t < 0).length, traegt, bricht: E.filter((e, d) => !e && Tt[d] > 0).length, jz, ewig: traegt === nT ? 1 : 0, fdd: jz ? Math.round(fdd * 10) / 10 : null, abw: jz ? Math.round((Math.abs(fdd - mit.ref) / mit.ref) * 1000) / 1000 : null, einsetzen: jz ? (warm + on) % nT : null, tau: jz && auf >= 0 ? (warm + auf) % nT : null, tminC: Math.round(Math.min(...Tt) * 10) / 10 };
+                    // offenes Wasser: ein Tag ohne Eis (Dicke ≤ 1 mm) — die Säule, deren Eis den Sommer überdauert, setzt nie ein
+                    let offen = false;
+                    for (let d = 0; d < nT && !offen; d++) offen = dicke(d / nT) <= 0.001;
+                    const jz = traegt > 0 && traegt < nT && on >= 0 && offen ? 1 : 0;
+                    // DAS EINSETZEN NACH STEFAN (Ashton 1986 zählt die Frostgrad-Summe ab dem Gefrieren der Oberfläche, nie ab dem ersten
+                    // Frosttag der Luft — bis dahin kühlt die Säule ab): stündlich vom ersten Frosttag bis zum tragenden die erste Stunde mit
+                    // Eis (Dicke > 1 mm), ab ihr die Summe der Stunden bis zur ersten tragenden
+                    let fdd = null, stunden = null;
+                    if (jz) {
+                        const nH = 24 * nT, h0 = 24 * (warm + start);
+                        let hAn = -1, q = 0, frei = false;
+                        try {
+                            for (let h = h0; h <= 24 * (warm + on + 1); h++) {
+                                const s = (h % nH) / nH;
+                                if (hAn < 0) { const dd = dicke(s); if (dd <= 0.001) frei = true; else if (frei) hAn = h; }
+                                if (hAn < 0) continue;
+                                if (traegtBei(s)) { fdd = q; stunden = h - hAn; break; }
+                                q += Math.max(0, -Tt[Math.floor(h / 24) % nT]) / 24;
+                            }
+                        } finally {
+                            ende();
+                        }
+                    } else ende();
+                    const ein = jz && fdd !== null ? 1 : 0;
+                    return { saat: String(a.saat), tage: nT, frost: Tt.filter((t) => t < 0).length, traegt, bricht: E.filter((e, d) => !e && Tt[d] > 0).length, jz, ewig: traegt === nT || !offen ? 1 : 0, fdd: ein ? Math.round(fdd * 1000) / 1000 : null, fddLuft: ein ? Math.round(fddLuft * 10) / 10 : null, stunden, abw: ein ? Math.round((Math.abs(fdd - mit.ref) / mit.ref) * 1000) / 1000 : null, einsetzen: ein ? (warm + on) % nT : null, tau: ein && auf >= 0 ? (warm + auf) % nT : null, tminC: Math.round(Math.min(...Tt) * 10) / 10 };
                 };
                 const ORTE = [[1, 5], [1, 25], [3.4, 10], [3.4, 50], [4.5, 25], [4.5, 100], [10, 50], [10, 150]];
                 const med = (v) => { const b = v.filter(Number.isFinite).sort((p, q) => p - q); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
                 const sd = (v) => { const m = v.length ? v.reduce((p, q) => p + q, 0) / v.length : 0; return v.length > 1 ? Math.sqrt(v.reduce((p, q) => p + (q - m) ** 2, 0) / v.length) : 0; };
                 const jz = (a, w) => w.jz === 1;
                 const RF = await FAECHER((c) => H.seite(c), {
-                    gesetz: { fn: EIS_AN, export: "gelaende-core.js:1404 eisDicke ≥ EIS.traegt (gelaende-core.js:1376) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3178 _eisLinien (der Ruf :3204, die tragende Linie je Säule) → stamm/wasser-hydro.js:705 _eisAt (der Spieler auf dem See)" },
+                    gesetz: { fn: EIS_AN, export: "gelaende-core.js:1411 eisDicke ≥ EIS.traegt (gelaende-core.js:1391) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3263 _eisLinien (der Ruf :3289, die tragende Linie je Säule) → stamm/wasser-hydro.js:749 _eisAt (der Spieler auf dem See)" },
                     adressen: { saaten: Array.from({ length: Number(u2.saaten) || 12 }, (_, i) => i + 1), orte: ORTE, dazu: ORTE.map((o) => ({ saat: "heim", ort: o, zeit: null })).concat([{ saat: "heim", ort: "see", zeit: null }]) },
-                    mit: { ref: 13.7, see: u2.see || [1816, -6168] },
+                    mit: { ref: 3.43, see: u2.see || [1816, -6168] },
                     ms: Number(u2.ms) || 12000,
                     masse: {
                         adressen: { wie: "anzahl", feld: "tage" },
@@ -4341,6 +4371,7 @@ window.__pwMeer = m;
                         fddEinsetzen: { wie: med, feld: "fdd", nur: jz },
                         fddMin: { wie: "min", feld: "fdd", nur: jz },
                         fddMax: { wie: "max", feld: "fdd", nur: jz },
+                        fddLuft: { wie: med, feld: "fddLuft", nur: jz },
                         streu: { wie: sd, feld: "fdd", nur: jz },
                         imBand: { wie: "anzahl", feld: "abw", nur: (a, w) => jz(a, w) && w.abw <= 0.2 },
                         traegtTage: { wie: "summe", feld: "traegt", nur: jz },
@@ -4354,8 +4385,8 @@ window.__pwMeer = m;
                 const W2 = RF.werte;
                 aus[2] = {
                     werte: Object.assign({ jahreszeitlich: W2.jahreszeitlich, ewig: W2.ewig, imBand: W2.imBand }, W2.fddEinsetzen != null ? { fddEinsetzen: R(W2.fddEinsetzen), fddMin: W2.fddMin, fddMax: W2.fddMax } : {}),
-                    zeuge: { adressen: W2.adressen, tage: W2.tage, saaten: W2.saaten, jahreszeitlich: W2.jahreszeitlich, traegtTage: W2.traegtTage, brichtTage: W2.brichtTage, see: W2.see, streu: R(W2.streu), gerissen: RF.gerissen, akte: RF.akte },
-                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1404 eisDicke trägt (EIS.traegt 0,05 m, gelaende-core.js:1376) nach " + (W2.fddEinsetzen == null ? "—" : R(W2.fddEinsetzen)) + " K·d (Median über " + W2.jahreszeitlich + " frierende und tauende Säulen, " + W2.fddMin + "–" + W2.fddMax + ", " + W2.imBand + " im Band ±20 %), " + W2.ewig + " Säulen frieren ganzjährig · " + RF.akte,
+                    zeuge: { adressen: W2.adressen, tage: W2.tage, saaten: W2.saaten, fddLuft: W2.fddLuft, jahreszeitlich: W2.jahreszeitlich, traegtTage: W2.traegtTage, brichtTage: W2.brichtTage, see: W2.see, streu: R(W2.streu), gerissen: RF.gerissen, akte: RF.akte },
+                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1411 eisDicke trägt (EIS.traegt 0,05 m, gelaende-core.js:1391) nach " + (W2.fddEinsetzen == null ? "—" : R(W2.fddEinsetzen)) + " K·d (Median über " + W2.jahreszeitlich + " frierende und tauende Säulen, " + W2.fddMin + "–" + W2.fddMax + ", " + W2.imBand + " im Band ±20 %), " + W2.ewig + " Säulen frieren ganzjährig · " + RF.akte,
                 };
             }
             // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
@@ -4444,7 +4475,7 @@ return { meer, kalt, felder: Object.keys(a) };
             je[4] = {
                 werte: { gipfelM: gipfel.gipfelM, firnSommerM: gipfel.sommerTritt },
                 zeuge: { gletscher: 0 },
-                nicht: "kein Gletscher: kein Leser lässt Eis fließen (gelaende-core.js:1404 eisDicke ist stehendes See-Eis, die Schnee-Decke trägt nur Tritt); der Gipfel der Heimat " + gipfel.gipfelM + " m trägt im Sommer " + gipfel.sommerTritt + " m Schnee",
+                nicht: "kein Gletscher: kein Leser lässt Eis fließen (gelaende-core.js:1411 eisDicke ist stehendes See-Eis, die Schnee-Decke trägt nur Tritt); der Gipfel der Heimat " + gipfel.gipfelM + " m trägt im Sommer " + gipfel.sommerTritt + " m Schnee",
             };
             je[5] = {
                 werte: {},
@@ -4487,15 +4518,16 @@ return { meer, kalt, felder: Object.keys(a) };
             },
             2: {
                 u: { saaten: 12, see: [1816, -6168], ms: 12000 },
-                soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 13.7, refQuelle: "Erde: Stefan mit α = 2,7 cm/√(K·d) (Ashton 1986, windiger See ohne Schnee) — 10 cm tragend: (10/2,7)² = 13,7 K·d", einheit: "K·d" })],
+                soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 3.43, refQuelle: "Erde: Stefan h = α·√FDD mit α = 2,7 cm/√(K·d) (Ashton 1986, River and Lake Ice Engineering, windiger See ohne Schnee; FDD ab dem Gefrieren der Oberfläche) — tragend 5 cm (Gold 1971, P = A·h², A = 3,5 kg/cm²: 80 kg auf 4,8 cm): (5/2,7)² = 3,43 K·d. Bis spiegel-eis stand hier 13,7 = (10/2,7)², gezählt ab dem ersten Frosttag der Luft — die 10 cm ohne Quelle, die Abkühlung der Säule mitgezählt", einheit: "K·d" })],
                 zeuge: zMin({ tage: 365, jahreszeitlich: 10, saaten: 3, traegtTage: 1, brichtTage: 1 }),
                 zeugeText: "der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter",
-                taeter: "gelaende-core.js:1404 eisDicke (EIS.traegt, gelaende-core.js:1376) · stamm/wasser-hydro.js:705 _eisAt",
-                leser: "stamm/bild-himmel.js:3178 _eisLinien ruft (:3204) gelaende-core.js:1404 eisDicke je Säule, stamm/wasser-hydro.js:705 _eisAt trägt den Spieler über der Linie voll",
-                gruen: gut({ fddEinsetzen: 14.5 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
+                taeter: "gelaende-core.js:1411 eisDicke (EIS.traegt, gelaende-core.js:1391) · stamm/wasser-hydro.js:749 _eisAt",
+                leser: "stamm/bild-himmel.js:3263 _eisLinien ruft (:3289) gelaende-core.js:1411 eisDicke je Säule, stamm/wasser-hydro.js:749 _eisAt trägt den Spieler über der Linie voll",
+                gruen: gut({ fddEinsetzen: 3.3 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
                 attrappen: [
-                    { name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
-                    { name: "EINE Säule der Heimat", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, jahreszeitlich: 1, saaten: 1, traegtTage: 130, brichtTage: 200 }) },
+                    { name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 3.43 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
+                    { name: "EINE Säule der Heimat", roh: gut({ fddEinsetzen: 3.43 }, { tage: 365, jahreszeitlich: 1, saaten: 1, traegtTage: 130, brichtTage: 200 }) },
+                    { name: "der Übergang ohne Quelle (h²/2k + h/H, H = 20 W/(m²·K)): der See trägt nach 13,5 K·d vom ersten Eis", roh: gut({ fddEinsetzen: 13.5 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
                     { name: "die ganzjährige Kälte als Einsetzen gezählt (die Säule 10 m · 800 m über dem Meer am Export: 70,6 K·d)", roh: gut({ fddEinsetzen: 70.6 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
                 ],
             },
@@ -4518,7 +4550,7 @@ return { meer, kalt, felder: Object.keys(a) };
                 zeugeText: "ein Gletscher floss",
                 taeter: "gelaende-core.js (kein Gletscher)",
                 nicht: "kein Gletscher",
-                leser: "gelaende-core.js:1404 eisDicke — stehendes Eis; kein Leser von Eis-Fluss, Spalten, Gletschertor",
+                leser: "gelaende-core.js:1411 eisDicke — stehendes Eis; kein Leser von Eis-Fluss, Spalten, Gletschertor",
                 gruen: gut({ fliessMa: 60, spaltenAbwGrad: 8 }, { gletscher: 1 }),
                 attrappen: [{ name: "60 m/a eingetragen ohne Gletscher", roh: leer({ fliessMa: 60, spaltenAbwGrad: 8 }) }],
             },
