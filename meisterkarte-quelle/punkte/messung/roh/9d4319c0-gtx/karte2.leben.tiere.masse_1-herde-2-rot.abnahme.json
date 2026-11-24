@@ -1,0 +1,296 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.392",
+  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 51.32,
+  "gestalt": [
+   "tier:wesen 0 UNGEZEICHNET",
+   "tier:wesen 1 UNGEZEICHNET",
+   "tier:wesen 2 UNGEZEICHNET",
+   "tier:wesen 3 UNGEZEICHNET",
+   "tier:wesen 4 UNGEZEICHNET"
+  ],
+  "gezeichnet": false
+ },
+ "pose": {
+  "kamera": [
+   -582.46,
+   58.6,
+   -866.95
+  ],
+  "blick": [
+   0.73259,
+   -0.37721,
+   -0.56659
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 99.5,
+  "sigma": 35.3,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 14,
+  "gewaehlt": null,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -582.46,
+     58.6,
+     -866.95
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -573.652,
+     58.728,
+     -858.209
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -562.883,
+     57.14,
+     -852.046
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -588.705,
+     55.248,
+     -877.672
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -550.885,
+     54.953,
+     -848.88
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -538.476,
+     51.171,
+     -848.927
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -591.963,
+     51.087,
+     -889.646
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -592.01,
+     47.221,
+     -902.055
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -588.844,
+     44.45,
+     -914.053
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -515.78,
+     42.146,
+     -858.43
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 9,
+    "kamera": [
+     -573.94,
+     37.039,
+     -933.63
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 12,
+    "kamera": [
+     -497.71,
+     34.433,
+     -890.005
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 11,
+    "kamera": [
+     -538.835,
+     33.636,
+     -943.18
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 13,
+    "kamera": [
+     -507.26,
+     32.87,
+     -925.11
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+    ],
+    "ms": 1
+   }
+  ],
+  "ms": 26
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.32 m · Luma 99.5 σ 35.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.392 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen",
+ "rot": [
+  {
+   "feld": "ziel.gezeichnet",
+   "grund": "Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1362,
+   "wechsel": 939878
+  },
+  "rinde": null,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:fisch=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 27
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\9d4319c0-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.maske.png"
+ }
+}

@@ -1,7 +1,7 @@
 {
  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
  "geraet": "gtx",
- "zeit": "2026-11-24T06:08:50.576Z",
+ "zeit": "2026-11-24T06:13:53.582Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -712,6 +712,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1226 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 34.9 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (197 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.32 m · Luma 99.5 σ 35.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.392 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\9d4319c0-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (61 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.25,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 1226 Takte, letzter Flüchter 0.02 s (4 aus zweiter Hand), Fluchtweg 34.9 m, ID 600 s hält (Flucht 6 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.6 m: 46.6 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (197 px) · 43 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.32 m · Luma 99.5 σ 35.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.392 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\9d4319c0-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 43.4 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (61 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfbfd6a696f67",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 74.7,
+   "fremd": {
+    "s": 78.9,
+    "takte": 35,
+    "fremdS": 137.3,
+    "kerne": 1.739,
+    "fensterKerne": 2.174,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34384-profil-chYjtU --no-p",
+      95.34
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.53
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-9d4319c0-w070644 x listen/kandidat-gtx-9d4319c0-w070644.txt",
+      4.34
+     ]
+    ],
+    "dienerS": 30.63,
+    "diener": [
+     [
+      "System",
+      12.63
+     ],
+     [
+      "dwm.exe",
+      10.58
+     ]
+    ],
+    "geraetS": 33.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.25
+     ],
+     [
+      "svchost.exe",
+      11.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 180.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T06:11:10.037Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -724,7 +794,8 @@
   "kde0f40b0484c": "bVVRj5pAEP4vPvbKLQrIssk9rMclXntNuaRJn2eXWeBEMLsgPZv+92ZVVMB5MvrNzjfffDP+ne1AbiDDxw9TVzM2+zL7OjOwR8eg3qN+/DAzNovkfIEe4+/cBuGcP1uY1MWuMaQsBAFRQb5Fp9UNFuWjPKaBQD+ljHQvPEsIUeRA4o5f4oU/PY2fKQWmtdOAwssjAU1VwMbA1mQg0IFWHQufwYHrzYVi5Bg05j9jcomOcp74yk9ozBOqeDapLqBKhx1EyyDEgL12d9mmBWDjlEVl+vrzNIyUy641f0xyNHTOATAvUZ+TkM7nvuhJr6w0Vq5RoipbYwbFqJcGC8oIicbYDE0h88bZ6VpgdYaLaBHOga26SR/ZrnXULSMQAqgYa54DVhnqAQfXk2o5Z+QPHT+6gS1qcCrIey1dL1yIqzaEkPWUS3kkfixxJe4HKQwS7XDJnpDeSvYzoevLr/33cXa1G3+fFDMyL/R2KJPyceF67G1KzeSQonY2tWkuaOoDIGXnauS4IYkfjzOvTfV5AEBvjEIo4euJhqZWTQcanWzX9mbxMQgDxvnrBNzAdtvvgfJ8T44HaBpr8FsaQegpumSEPJwWZdr0aR2cAxZln6SU70cBe175Y/Bew9YBkelCqX7qIpAqumfSDsvGEXXd9JIIigqtJNXtoJPudCuuEXe1/P2Z3VyS8znhd/x0rFLr5tKxWLrKZ8oappMTdKEbpwOZ9/CFEgiW/mQ2B9QlZjiQU4Q0shbv1In7wZ6c8HwK1MPAwIfpiwVaoSvTmn7YEnwRsDuj6VBvBFSbnqYbyiVl3zjnq598PdDl+y83oTGZRPfC+etbtTrpKO2ykM/TvdqhJDtdq8JeRJJDa3Iom+tfxL//",
   "k8f43a9075905": "bVVdb6MwEPwvebweNQkQjKU+OE2kVPfRVDrpntdmDTQEIhvCNaf77ycncRKg+2hmveOZsfk72YPcQoaP76auJmzyZfJ1YuCAnkF9QP34biZsksjpDAPGz0U4588WJnWxbwwpC0FAVJDv0Gt1g0X5KE9tIDBMKSPdimcbQhQ5kmX39DRsLQWmtdeAwmtjRFMVsSGwNRkI9KBVp2EXcOQHU6EYORVd8tcluVZHOd+EKtzQ5WAzAVXaZ5vMoxgj9vLB+YqPWKYFYOOVRWXc3GkaJ8pnt1k/Rj0aOu8ImJeoL01Ip9NQOLILK6eVZtCoytaY3jAapNGMMkKSITZDU8i88fa6Flhd4CKZxVNgi7Ha2b711D0jEAKoGGqdA1YZ6h4HP5BqPmXkDx1uuoUdavAqyJ2WfhDPxE0bQsh6zKU8ET+NuBEPoxR6jdZUciCEu/gd7NL6+tWtLzN+q7fRMCPzQu/6MqkQZ37Avo+pmRxS1N62Ns0VTUMApJdbsCT8jdtwDYNlbodyfQBA74JCKOHrkYamVk0HGr1s37qwhBjFEeP8ZQRuYLdz+VdBGMihgaaxAb+nEcWBonNGyMP5gowPfb4O3hGL0jUpFYZJxJ4X2RB80LDzQGS6UMq5LiKpks9C2mHZeKKuGyeJoKiQkYBU90b/7Ky0qzsfl10tf39kHe/Xig/pnCbUurmeVsx9FTJlw9LJEbrQjdeBzB18pgSCpT7y5Yi6xAx7UoqYJjbenTrzPtpnJr48A+qhF97jeMcCrciVaY0zWkIoIvaJLR3qrYBq62j6sZyfI7h45eueJt9++RtqrY1784PO6rnJF2cNpb0o7q3aoyR7XavCvoYkh9bkUDa3X8G//w==",
   "k07927e0350f8": "bVXBcpswEP0XH9sqsg0YoZkc5JAZZyZtnFPPK7ECYgweCULjTv+9I2xsA94Tg9/jvX3alf/ODqB2kOLDh63KGZ99m/2YWfhEYtF8onn4sDM+i9RiiR4X78IVFUI8OZgy+aG2tMglBVlCtkfSmBrz4kF1NJDoJ4zT9lmkW0o1PdK4fXwcUwuJSUVq0HghBizRAR8DG5uCRAKN7sTO4GDuLaTmtCsWi7eYXqplQmx97W9ZPPqYhDIZuo1WQYgBf/kS4llMXCY5YE2KvLS97iIJIz3nV62fE46BlhwBswLNmYRssfBlb3bt4nTRjIi6aKwdiDEvCZaMUxqNsSnaXGU1OZhKYnmGy2gZLoCvp2mnh4boW0cgJTA5zjoDLFM0Aw9zT+nVwnnXnX272uo/TIi1GIvsYI8GSAlZn+3cC5fymhWldDP1VnSNdJLXRvwggQHRHTL9pFScyz1Ttrn82r+PU3Gt94mYVVlu9sPYtI/Lucdfp9ZsBgkasqtsfUEzHwAZP6vRbju2/njQ7LWpngcA7GZwKKNiwyaKla5bMEjSQ9MPj49BGHAhXibgGvb7fh+053uKi0k932GVycBaEHqarTil309LNA3itDLkiHnRk7T2/WiyrZ8G9gRkanKt+ymQgdLRvSFusaiJrKq6j0gy1OgiKm8P/lfb9XHTU9xW6vdX2o5bnYxkp1CZ+tKpXM21z7UbnlZN0LmpSQsq6+FLLREifgd6RFNgioMYZcgiN+7taVHo0V1D4fma0N8Hw3ycnPwxRxdwaRvbH7wCXwb8zpG0aHYSyl1vcx6qFeOvQoj1m9jcJNKKp/h9y2JKR1l5qcvzKROn98otTn+XHVDRg6l07m5LmkFjMyjq61/Fv/8=",
-  "k8c25bc73dceb": "bVXBcpswEP0XH5sqsg0YoZkc5OAZZ6ZtnEOm55VYATEGjwSmcaf/3sG2bAPZo3irfXr7dvk72YPaQoqPH7YqJ3zybfJ9YuGAxKI5oHn8sBM+idRsjh4X56BCiOcOpky+ry0tcklBlpDtkDSmxrx4VKc0kOgnjNN2JdINpZoeadw+PQ1TC4lJRWrQeE0MWKIDPgQ2NgWJBBp9KnYBB1NvJjWnp2CxeI3pNVomxMbX/obFg8sklEmfbbQIQgz4y6cQKzFimeSANSny0rq6sySM9JTfav0c5RhoyREwK9BckpDNZr50ZJcPG3aSZpCoi8baXjHmJcGccUqjITZFm6usJntTSSwvcBnNwxnw5VjtdN8Qfc8IpAQmh1pngGWKpsdh6im9mHH6hw0v3cIODZASMqfl1Avn8qYNpXQ95lKciJ9K3Ij7QQK9xK6p9ECpcPY7dEfr61d3HqfiFm+jYlZludn1ZdI+zqce/zGmZjNI0JBtZesrmvkAyC5TEFPxJjpzDY1lb49yeQDA7oxCGRXrkYa20nULBkm6b5xZfAzCgAvxMgLXsNs5/2vP99SwgbbuDH5PIwg9zRac0ofzgIwffR4HcsS8cEla+340msSDgR0BmZpca9dxGSgdfWXQFouayKqqnRySoUZOPVreN/lX28m6uuth3Fbq92fain6sxJD3qUJl6utL5WKqfa47o7RqhM5NTVpQmYPPtUToqI96ckRTYIo9GWXIos7arT7zPnYrJrysAP3QM+5xfGOOncClbaxrsgJfBvyLlrRothLKraM5DdXibL/lq1j3NHmO3zcspnSglZd2esbZ8nyuuiFxe2qPiu5NpfNuE9IMGptBUd9+A//+Aw=="
+  "k8c25bc73dceb": "bVXBcpswEP0XH5sqsg0YoZkc5OAZZ6ZtnEOm55VYATEGjwSmcaf/3sG2bAPZo3irfXr7dvk72YPaQoqPH7YqJ3zybfJ9YuGAxKI5oHn8sBM+idRsjh4X56BCiOcOpky+ry0tcklBlpDtkDSmxrx4VKc0kOgnjNN2JdINpZoeadw+PQ1TC4lJRWrQeE0MWKIDPgQ2NgWJBBp9KnYBB1NvJjWnp2CxeI3pNVomxMbX/obFg8sklEmfbbQIQgz4y6cQKzFimeSANSny0rq6sySM9JTfav0c5RhoyREwK9BckpDNZr50ZJcPG3aSZpCoi8baXjHmJcGccUqjITZFm6usJntTSSwvcBnNwxnw5VjtdN8Qfc8IpAQmh1pngGWKpsdh6im9mHH6hw0v3cIODZASMqfl1Avn8qYNpXQ95lKciJ9K3Ij7QQK9xK6p9ECpcPY7dEfr61d3HqfiFm+jYlZludn1ZdI+zqce/zGmZjNI0JBtZesrmvkAyC5TEFPxJjpzDY1lb49yeQDA7oxCGRXrkYa20nULBkm6b5xZfAzCgAvxMgLXsNs5/2vP99SwgbbuDH5PIwg9zRac0ofzgIwffR4HcsS8cEla+340msSDgR0BmZpca9dxGSgdfWXQFouayKqqnRySoUZOPVreN/lX28m6uuth3Fbq92fain6sxJD3qUJl6utL5WKqfa47o7RqhM5NTVpQmYPPtUToqI96ckRTYIo9GWXIos7arT7zPnYrJrysAP3QM+5xfGOOncClbaxrsgJfBvyLlrRothLKraM5DdXibL/lq1j3NHmO3zcspnSglZd2esbZ8nyuuiFxe2qPiu5NpfNuE9IMGptBUd9+A//+Aw==",
+  "kfbfd6a696f67": "rVXfj6M2EP5f8tgrawgQjKV7cJaTdqteL/t0z2MzBi4EIhvW3VT93yuSOARIpavUeULJfDPffPPDf62OIPdQ4NMP0zYrtvpl9evKwDt6BvU76qcfZsVWqQzWGDJ+McI5fx7cpK6OnSF5BYW31whdr70aBTZP8gwDVJBSRv4vO1Hu7NVyvuVvn/+NRgf77srCR5HmAdsWnFv++R5RV4KAaKA8oNfrDqvaERcY5ZQR+4UXO0IUOZHM3nLzLw/C1ALz1utA4S1ITHMVs7ljbwoQ6EGvzomvzrEfBkJdpaIZ/5aNZVvK+S5S0Y5mnHPFi0V2AU0+rSDdxAnG7PXjIdu8Auy8umqMyx/kSar8sVX26wKjwXonwLJGfQUhDYJIONLbQZpBrhlQ1b0xk2Q0zOP1MBfp3LdAU8my8466HcdIpOskALa1izqKY++pe0YgBFAx17wEbArUEw5+KNUmYORPOg+6hwNq8BoonZZ+mKzFZIxfllzc5B2wMdJBAyp9CP/jBtC5Ki70VJUNDf2Y8Z+2t/Fz+/Mo+5XPK63PLTqLObYoinOY1Ukz8k6ICzR8E/py+9f9nhX3HBeyGllW+jAtXUW49kP2+7IJpoQctbdvTXfzphEA0qtQGTnrsIuyOXIsyuEAgN6tBKGEvyymxbSqs6DRK469W4sI42TozOvCuYPDwW28CqNQPuzfg0k33bDi9/TiJFR0wwj5dDkVS8zlIHgnrGoHUiqK0pg9b6O587uGgwei0JVSbu5FLFX6aE0t1p0n2tadWCooKhykau4HYGcv13K0zLby+0dhZwX/wbNwyf+cpdXdrWKx8VXE1LlaufCudOdZkKVzXyuBMNBf9OyEusYCJ3KKhKbDkls1vjW75HoM1afZO7SIWOEgdGN644ZAQiRi9qA1FvVeQLN3NP1Ebij7bej7N/4y0eU5e9vRjCzMDprumu1FRzksEfm4XOwjSnLUraqGN4GU0JsS6m7yul9celSix7LBYba6qm2wGb3+/gc="
  },
  "ungemessen": {
   "karte2.erleben.klang.stimme#1": {
@@ -1084,6 +1155,238 @@
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
    "modus": "session"
+  },
+  "karte2.erleben.sinne.signale#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:52.853Z",
+   "abdruck": "286ce6d42455",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.physik.tragen#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:52.922Z",
+   "abdruck": "6190143738c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.202Z",
+   "abdruck": "a5387cf1d3b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.326Z",
+   "abdruck": "27569cd06067",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.397Z",
+   "abdruck": "4391a217714f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.397Z",
+   "abdruck": "a376ca60d00c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.397Z",
+   "abdruck": "ca15941d57ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.bahn-klima#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.465Z",
+   "abdruck": "c0bb2827d664",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.wasser.netz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.465Z",
+   "abdruck": "1ff89f26b170",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.wasser.bild#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.517Z",
+   "abdruck": "f02b4a055eab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.517Z",
+   "abdruck": "82075316e138",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.517Z",
+   "abdruck": "a2356b1bdb4a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.517Z",
+   "abdruck": "fb224f47155b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.517Z",
+   "abdruck": "29fca3c1de41",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.ereignis#2",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.kopplung.leib#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.582Z",
+   "abdruck": "25bd303e5b31",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Yto\",\"Glim\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.199999999988\"],\"neu\":[\"0.19999999998800178\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\",\"weather\":\"undefined → \\\"sunny\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T06:13:53.582Z",
+   "abdruck": "24766a95480a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session",
+   "offen": 1
   }
  }
 }
