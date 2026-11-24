@@ -135,3 +135,7 @@ Je Merkmal im Bild, gegen die Fotos:
     zählt an main 499f8b57 und am Kopf gleich viel (s1 3 148 · s7 3 232 · s12345 2 766). Der Überschuss entsteht am Welt-Bau (mit `ov`
     des Plans) und ist am Preset nicht neu. Offen: derselbe Welt-Fall an main · Messname gate:asset-contract · Leser welt-boot KOSTEN.
   - haus-welt 2/2 am Kopf noch nicht zu Ende gelaufen (abgebrochen für den Alleinlauf).
+  - Exit-Grund von Lauf 3 (15:50): `listen EADDRINUSE 127.0.0.1:4436`. Den Port hält ein fremder gate:settlement-Lauf (PID 26676,
+    Log scratchpad/w/sechs/settlement-dbg.log, nicht meiner, nicht beendet). Lauf 2 starb sehr wahrscheinlich an derselben Kollision:
+    ein zweiter fremder Lauf (PID 9904, settlement2.log) lief zur gleichen Zeit. gate:settlement braucht den Port allein. Nächster
+    Handgriff: warten, bis 4436 frei ist, dann `npm run gate:settlement` allein am Kopf.
