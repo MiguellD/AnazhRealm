@@ -125,7 +125,8 @@ L.perspektive("pflanzen", (() => {
         leitern: {
             // ══ ARTEN: der Bestand am Spieler, Zufallsgänge des Wald-Fadens über ±20 km und über 100 fremde Saaten ══
             [A_ID]: {
-                sek: 25,
+                sek: 35,
+                faecher: true,
                 pfad: PFAD_WALD,
                 ungefahren: "die Bilder der Blindtests (Gattung, Wuchsform, Herbar, Foto ↔ Spiel), die Arten im Bild per Blindbenennung (R11)",
                 mess: async function (H, U, M) {
@@ -214,6 +215,90 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): die Gestalt ist eine Adresse — je Welt-Art (die 12 Namen, unter denen Wald
+                    // und Streu pflanzen) und Gestalt g = 1..T (T = `_studioGestaltenKern`, die Gestalten-Zahl, aus der der Ort wählt) der
+                    // GEZEICHNETE Körper aus dem Faden (`_foundryRequest`, studio-bruecke.js:1541 — derselbe Ruf, mit dem die Welt ihn in
+                    // `_foundryZug` :1631 bestellt und in den Cache baut), Stufe 1. Seine Silhouette ohne Maß: je Höhen-Achtel der Radius
+                    // (95-%-Quantil um die Achse am Fuß) durch die Höhe, dazu die Lage des Laubs. Der Blindtest der Profis (R11) braucht
+                    // Gestalten, die sich an der Silhouette unterscheiden: zwei Arten, deren Silhouetten näher liegen als die Gestalten
+                    // EINER Art untereinander (Median), sind verwechselbar — die Obergrenze des Blindtests ist der Mittelwert über die
+                    // Arten von 1 / (1 + verwechselbare Arten). Die Bild-Panels (Gattung, Herbar) bleiben ungemessen bis zum Gerät
+                    const A1_AN = async (r, T, a) => {
+                        const pre = r._foundryPresetFor(a.saat);
+                        if (!pre) return { fehlt: "die Welt-Art " + a.saat + " trägt kein Rezept (stamm/studio-bruecke.js:2121 _foundryPresetFor → null)" };
+                        const n = r.constructor._studioGestaltenKern(pre);
+                        if (a.ort > n) return { jenseits: true, pre, T: n };
+                        const m = await r._foundryRequest(pre, a.ort, 1, null, 0);
+                        const teile = (m || []).filter((x) => x && x.position && x.position.array && !/^__|schatten/.test(x.kind));
+                        if (!teile.length) throw new Error("der Körper " + pre + "|" + a.ort + " kam leer aus dem Faden");
+                        let y0 = Infinity, y1 = -Infinity;
+                        for (const x of teile) for (let i = 1, p = x.position.array; i < p.length; i += 3) (y0 = Math.min(y0, p[i])), (y1 = Math.max(y1, p[i]));
+                        const H = y1 - y0;
+                        let cx = 0, cz = 0, c = 0;
+                        for (const x of teile) for (let i = 0, p = x.position.array; i < p.length; i += 3) if (p[i + 1] < y0 + 0.1 * H) (cx += p[i]), (cz += p[i + 2]), c++;
+                        if (c) (cx /= c), (cz /= c);
+                        const band = Array.from({ length: 8 }, () => []);
+                        let ly = 0, ln = 0;
+                        for (const x of teile) {
+                            const laub = x.kind !== "bark" && x.kind !== "stem";
+                            for (let i = 0, p = x.position.array; i < p.length; i += 3) {
+                                band[Math.min(7, Math.floor(((p[i + 1] - y0) / H) * 8))].push(Math.hypot(p[i] - cx, p[i + 2] - cz));
+                                if (laub) (ly += (p[i + 1] - y0) / H), ln++;
+                            }
+                        }
+                        const q95 = (v) => (v.length ? v.sort((u, w) => u - w)[Math.min(v.length - 1, Math.floor(0.95 * v.length))] : 0);
+                        const rb = band.map((v) => q95(v) / H);
+                        return { pre, g: a.ort, T: n, H, laub: ln ? ly / ln : 0, v: rb.concat([ln ? ly / ln : 0]), teile: teile.map((x) => x.kind).join("+") };
+                    };
+                    const WELT_ARTEN = ["baum_tanne", "baum_kiefer", "baum_buche", "baum_birke", "baum_eiche", "baum_erle", "baum_karst", "busch_hazel", "farn_busch", "blume_gross", "baum_palme", "baum_zypresse"];
+                    let s1 = null;
+                    try {
+                        const R1 = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: A1_AN, export: "stamm/studio-bruecke.js:1541 _foundryRequest (der gezeichnete Körper je Rezept und Gestalt, Stufe 1)", leser: "stamm/studio-bruecke.js:1631 _foundryZug → _foundryBuildGroup → f.cache (die Welt zeichnet ihn)" },
+                            adressen: { saaten: WELT_ARTEN, orte: [1, 2, 3, 4] },
+                            ms: 12000,
+                            masse: {
+                                arten: { wie: "verschieden", feld: "a.saat", nur: (q, w) => !w.jenseits },
+                                rezepte: { wie: "verschieden", feld: "pre", nur: (q, w) => !w.jenseits },
+                                koerper: { wie: "anzahl", nur: (q, w) => !w.jenseits },
+                                hoeheMittel: { wie: "mittel", feld: "H", nur: (q, w) => !w.jenseits },
+                            },
+                            ungemessen: ["der Blindtest der Gattung (10 Bilder je Gestalt) und das Herbar-Bildpaar (Panel R11) — ungemessen bis zum Gerät"],
+                        });
+                        const je = R1.je.filter((e) => !e.w.jenseits).map((e) => ({ art: e.a.saat, g: e.a.ort, pre: e.w.pre, x: e.w.v }));
+                        const dist = (p, q) => Math.sqrt(p.x.reduce((s, x, i) => s + (x - q.x[i]) ** 2, 0));
+                        const satz = {};
+                        for (const p of je) (satz[p.art] = satz[p.art] || []).push(p);
+                        const arten = Object.keys(satz);
+                        // die Gestalten: verschiedene Silhouetten-Sätze der Welt-Arten (zwei Namen auf EINEM Rezept tragen denselben)
+                        const gestalten = new Set(arten.map((k) => satz[k].map((p) => p.x.map((x) => Math.round(x * 1e4)).join(",")).sort().join(";"))).size;
+                        const innen = [];
+                        for (const k of arten) for (let i = 0; i < satz[k].length; i++) for (let j = i + 1; j < satz[k].length; j++) innen.push(dist(satz[k][i], satz[k][j]));
+                        const delta = innen.length ? innen.slice().sort((u, w) => u - w)[Math.floor(innen.length / 2)] : 0;
+                        const nah = {};
+                        let paar = null;
+                        for (let i = 0; i < arten.length; i++)
+                            for (let j = i + 1; j < arten.length; j++) {
+                                let best = Infinity, bp = null;
+                                for (const p of satz[arten[i]]) for (const q of satz[arten[j]]) if (dist(p, q) < best) (best = dist(p, q)), (bp = [p, q]);
+                                if (best < delta) (nah[arten[i]] = (nah[arten[i]] || []).concat(arten[j])), (nah[arten[j]] = (nah[arten[j]] || []).concat(arten[i]));
+                                if (!paar || best < paar.d) paar = { d: best, a: bp[0], b: bp[1] };
+                            }
+                        const ober = arten.length ? (100 * arten.reduce((s, k) => s + 1 / (1 + (nah[k] || []).length), 0)) / arten.length : null;
+                        const verwechselt = arten.filter((k) => nah[k]).map((k) => k + " ≈ " + nah[k].join("/"));
+                        const paarText = paar ? paar.a.art + " Gestalt " + paar.a.g + " (" + paar.a.pre + ") ↔ " + paar.b.art + " Gestalt " + paar.b.g + " (" + paar.b.pre + "), Silhouetten-Abstand " + Math.round(paar.d * 1e4) / 1e4 + " (innerhalb einer Art im Median " + Math.round(delta * 1e4) / 1e4 + ")" : "—";
+                        const hs = je.length ? R1.je.filter((e) => !e.w.jenseits).map((e) => e.w.H) : [];
+                        const mh = hs.length ? hs.reduce((s, x) => s + x, 0) / hs.length : 0;
+                        s1 = {
+                            werte: { gestalten, gattungObergrenzeProzent: ober, arten: arten.length, rezepte: R1.werte.rezepte, koerper: R1.werte.koerper, verwechselbar: verwechselt.length, innenMedian: delta, schlechtestesPaar: paarText },
+                            zeuge: { fehler: R1.fehler.length ? R1.fehler[0].fehler : null, faecher: R1.gemessen, streuung: hs.length > 1 ? Math.sqrt(hs.reduce((s, x) => s + (x - mh) ** 2, 0) / (hs.length - 1)) : 0 },
+                            verwechselt: verwechselt.join(" · "),
+                            akte: R1.akte + " · schlechtestes Paar " + paarText + (verwechselt.length ? " · verwechselbar: " + verwechselt.join(" · ") : ""),
+                            ...(R1.fehlt ? { nicht: R1.fehlt } : {}),
+                        };
+                    } catch (e) {
+                        s1 = { werte: {}, zeuge: { fehler: "der Fächer warf: " + String((e && e.message) || e).slice(0, 200) } };
+                    }
                     const chao1 = (cnt) => {
                         const v = Object.values(cnt).filter((x) => x > 0);
                         const f1 = v.filter((x) => x === 1).length;
@@ -226,7 +311,7 @@ L.perspektive("pflanzen", (() => {
                     };
                     const aus = M.teil || {};
                     if (!w) {
-                        for (const nr of Object.keys(U)) aus[nr] = { werte: {}, zeuge: { fehler } };
+                        for (const nr of Object.keys(U)) aus[nr] = nr === "1" ? s1 : { werte: {}, zeuge: { fehler } };
                         return { sprossen: aus };
                     }
                     const welt = plus(plus({}, w.je), w.wg);
@@ -242,7 +327,7 @@ L.perspektive("pflanzen", (() => {
                     const dup = w.n ? 100 * (1 - w.gestalten / w.n) : null;
                     const tafel = "die Arten stehen in EINER Tafel (" + w.tafel + " Zeilen: stamm/vegetation-baum.js SPECIES_TREE_PARAMS, phyto-core FOREST_SPECIES), je Art " + w.vps + " Gestalten";
                     const roh = {
-                        1: { werte: { gestaltenImBestand: w.gestalten, artenImBestand: artenBestand }, ...(artenBestand < 10 ? { nicht: "der Bestand am Spieler trägt " + artenBestand + " Gestalten (Soll 10)" } : {}) },
+                        1: Object.assign(s1, { werte: Object.assign({}, s1.werte, { gestaltenImBestand: w.gestalten, artenImBestand: artenBestand }) }),
                         2: { werte: { saaten: beantwortet, artenUeberSaaten: artenSaaten, wuchsformen: w.wuchs.length }, nicht: "über " + beantwortet + " Saaten trägt die Welt " + artenSaaten + " Arten (Soll 10²) in " + w.wuchs.length + " Wuchsformen (" + w.wuchs.join(", ") + ") — " + tafel },
                         3: { werte: { artenPlanet: artenWelt, artenImBild: bildArten }, nicht: "der Planet trägt " + artenWelt + " Arten (Soll 10³), das Bild zugleich " + bildArten + " (Soll ≥ 50) — " + tafel },
                         4: { werte: { artenPlanet: artenWelt, baumartenJeHektar: w.haMax }, nicht: artenWelt + " Arten (Soll 10⁴), ein Hektar trägt höchstens " + w.haMax + " Baumarten (Soll ~300)" },
@@ -252,7 +337,7 @@ L.perspektive("pflanzen", (() => {
                     };
                     for (const nr of Object.keys(U)) {
                         const x = roh[nr] || { werte: {} };
-                        x.zeuge = zeuge;
+                        x.zeuge = Object.assign({}, zeuge, x.zeuge || {});
                         if (U[nr].auge) x.auge = await M.auge("pflanzen-arten-s" + nr, U[nr].auge);
                         aus[nr] = x;
                     }
@@ -261,11 +346,22 @@ L.perspektive("pflanzen", (() => {
                 sprossen: {
                     1: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(A_ID, 1, "Gattung ≥ 80 % richtig", { key: "gattungProzent", einheit: "%" }), K.soll(A_ID, 1, "Herbar-Bildpaar je Gestalt ≥ 0,7", { key: "herbar" })],
+                        // dazu am Fächer: die Gestalten der Welt (Umfang „10 Gestalten“) und die Obergrenze, die die Silhouette dem Blindtest
+                        // lässt (dasselbe Wort „Gattung ≥ 80 % richtig“ — zwei Namen auf EINER Silhouette halbieren ihn, ehe ein Prüfer sieht)
+                        soll: [
+                            K.soll(A_ID, 1, "Gattung ≥ 80 % richtig", { key: "gattungProzent", einheit: "%" }),
+                            K.soll(A_ID, 1, "Herbar-Bildpaar je Gestalt ≥ 0,7", { key: "herbar" }),
+                            K.soll(A_ID, 1, "Blindtest 10 Bilder je Gestalt", { key: "gestalten", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "10 Gestalten", einheit: "Gestalten" }),
+                            K.soll(A_ID, 1, "Gattung ≥ 80 % richtig", { key: "gattungObergrenzeProzent", einheit: "%" }),
+                        ],
                         auge: { pose: "Ego am Waldrand der Mess-Wiese, 10 Bilder je Gestalt", vorbild: "Blindtest Gattung (≥ 80 %) und Herbarfoto je Gestalt (Bildpaar ≥ 0,7, R11)" },
-                        taeter: "stamm/vegetation-baum.js SPECIES_TREE_PARAMS (die Gestalten von Hand)",
-                        gruen: { werte: { gattungProzent: 86, herbar: 0.74, gestaltenImBestand: 30 }, zeuge: ART_Z },
-                        attrappen: [{ name: "Blindtest-Zahlen ohne Bild", roh: { werte: { gattungProzent: 86, herbar: 0.74 }, zeuge: { antworten: 0 } } }],
+                        taeter: "stamm/studio-bruecke.js:3305 STREU_NAMEN (12 Welt-Namen auf 10 Rezepte: Palme und Erle → weide, Zypresse → tanne, Kiefer → fichte) · stamm/vegetation-baum.js SPECIES_TREE_PARAMS (die Gestalten von Hand)",
+                        leser: "stamm/studio-bruecke.js:1631 _foundryZug → :1541 _foundryRequest → _foundryBuildGroup (der gezeichnete Körper je Rezept und Gestalt, die Gestalt wählt der Ort aus 1.._studioGestaltenKern, stamm/studio-gestalt.js:1616)",
+                        gruen: { werte: { gattungProzent: 86, herbar: 0.74, gestalten: 12, gattungObergrenzeProzent: 100, gestaltenImBestand: 30 }, zeuge: ART_Z },
+                        attrappen: [
+                            { name: "Blindtest-Zahlen ohne Bild", roh: { werte: { gattungProzent: 86, herbar: 0.74 }, zeuge: { antworten: 0 } } },
+                            { name: "zwei Namen auf EINER Silhouette (die Obergrenze des Blindtests unter 80 %)", roh: { werte: { gattungProzent: 86, herbar: 0.74, gestalten: 10, gattungObergrenzeProzent: 66.7 }, zeuge: ART_Z } },
+                        ],
                     },
                     2: {
                         u: { auge: { ort: "wiese" } },
