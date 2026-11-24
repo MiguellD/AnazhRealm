@@ -3017,7 +3017,11 @@ hauptLauf(async () => {
                             res.err = `der Dorf-Zug baut an ${messort.join("/")} kein Dorf der Zelle ${zelle}`;
                             return res;
                         }
-                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed) };
+                        // das Dorf ohne Wort plant im Klima seines Orts (`_zellEingang`) — die Linse reicht es als Argument aus dem
+                        // Ort-Gesetz des Geländes (gelaende-core `ortGesetz`), nicht aus dem Leser der Welt; der Akt (ein Wort) trägt keins
+                        const k = L.ort.klimaHeute;
+                        const klima = { winter: k.winter, sommer: k.sommer, spendeVerh: L.ort.spendeVerh };
+                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima };
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
                         res.hang = ort;

@@ -261,7 +261,12 @@
   // je Lage): alpenchalet L0 blockholz 23 124 → 45 876 Dreiecke, gegen die Zeile gezählt. `lage` = [Raster quer, Raster hoch, Fuge].
   const STEIN_ECHT=!(sm&&sm.RM.backstein);
   const lage=gross=>{ if(STEIN_ECHT){ const v=VERBAND_GESETZ.mauerwerk; return [v.steinM+v.fugeM, v.hoeheM+v.fugeM, v.fugeM]; } const z=gross?GROSSFORMAT():1; return [0.32*z, 0.15*z, 0.025]; };
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
+  // DIE DREHUNG IM RASTER (haus-stoff, Plattform-Ratsche v6): Sinus und Kosinus jedes Winkels liegen auf 2^-30 (je Bau EINMAL je Winkel
+  // gerechnet, `_SC`) — eine Drift der Transzendenten um 1 ULP (2^-53) kippt kein Byte mehr, außer an einer Raster-Grenze (2^-23 je Winkel).
+  // Leser: die Neigung der Eindeckung (`th`, atan auf demselben Raster: alpenchalet L3, fachwerk-core.js:264), der gedrehte Balken (`beam`: das Quaternion aus den halben Winkeln, XYZ wie three `setFromEuler`) und der gebogene (`rotE`).
+  // Bis hier rechnete three je Balken sin/cos neu (holzhuette L2: sin kippte die Stufe, fachwerk-core.js:321).
+  const _SC=new Map(), DREH_RASTER=1073741824, sc=a=>{ let v=_SC.get(a); if(!v){ v=[Math.round(Math.sin(a)*DREH_RASTER)/DREH_RASTER+0, Math.round(Math.cos(a)*DREH_RASTER)/DREH_RASTER+0]; _SC.set(a,v); } return v; };
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.round(Math.atan(slope)*DREH_RASTER)/DREH_RASTER, lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -310,7 +315,8 @@
   const defYZ=r=>Math.hypot(r[1],r[2]);
   // BIEGE-ACHSEN-GESETZ (pipeline.K3): die Biegung krümmt nur entlang x — für festes x ist das Feld in (y,z) linear (X=r·sin θ, Z=r·cos θ−R, r=R+z), die Teilung misst die x-Länge Lx; der Schwung darüber misst wie ohne Biegung die (Y,Z)-Länge (gleicher Sehnenfehler, die gerade Strebe entlang z bleibt EIN Segment)
   function defSeg(L,Lyz,min,step,cap,yTop,Lx){ if(P.__sehne>1) step*=P.__sehne; if(DEF_bk>0){ const nb=Lx>min?Math.min(cap,Math.ceil(Lx/step)):1; return (DEF_cv>0&&yTop>eaveY-1e-6&&Lyz>min)?Math.max(nb,Math.min(cap,Math.ceil(Lyz/step))):nb; } if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
-  function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
+  const drehQ=(m,rx,ry,rz)=>{ const [s1,c1]=sc(rx/2),[s2,c2]=sc(ry/2),[s3,c3]=sc(rz/2); m.quaternion.set(s1*c2*c3+c1*s2*s3, c1*s2*c3-s1*c2*s3, c1*c2*s3+s1*s2*c3, c1*c2*c3-s1*s2*s3); };
+  function rotE(vx,vy,vz,rx,ry,rz){ const [b,a]=sc(rx),[d,c]=sc(ry),[f,e]=sc(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
   // ════ DIE MASS-HÜLLE (`__nurMass`, nur massBau): der Mass-Bau zählt nur seine Box (Box3.setFromObject = Vereinigung der Geometrie-Boxen unter der Welt-Matrix) — ungebogen teilt jede Box gleichen Maßes EINE Geometrie (gleiche Float32-Ecken ⇒ dieselbe Box), ohne Tint; die Ziegelreihe legt je Maß nur ihre Enden (eindeckenFlaeche). Der Export bleibt byte-gleich (gate:settlement), der Mass-Bau fällt ~6× ════
@@ -318,7 +324,7 @@
   function _hgBox(lx,ly,lz){ let a=_HG.get(lx); if(!a)_HG.set(lx,a=new Map()); let b=a.get(ly); if(!b)a.set(ly,b=new Map()); let q=b.get(lz); if(!q)b.set(lz,q=new THREE.BoxGeometry(lx,ly,lz)); return q; }
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)drehQ(m,rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
     const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz, Ln*Math.abs(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)[0])), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
@@ -916,10 +922,13 @@
       beam(g,cx,levelTop+hh,cz,h?len:0.07,0.08,h?0.07:len,'holz');
       for(let t=0;t<=Math.max(2,Math.round(len/0.5));t++){const f=t/Math.max(2,Math.round(len/0.5));beam(g,x0+dx*f,levelTop+hh/2,z0+dz*f,0.06,hh,0.06,'holz');}
       const sx=(hcx!==undefined&&!h)?cx+Math.sign(hcx-cx)*0.06:cx, sz=(hcz!==undefined&&h)?cz+Math.sign(hcz-cz)*0.06:cz; addSolid(sx,levelTop+hh/2,sz,h?len:0.12,hh,h?0.12:len); };  // Solid auf Loch-Seite → ragt nicht in die Lane
+    // DER BODEN IST DIE WAND (haus-stoff, Heilung 24.11.): im Blockbau (huette · stroh: `RM.backstein` → blockholz) liegt der EG-Boden in
+    // Bohlen — Stein trägt nur der Sockel im Spritzwasser (Marx 1891); bis hier sah das Fenster der Hütte auf Stein (gate:haus-fern S3, Glas L2 0,195)
+    const EG_BODEN=(sm&&sm.RM.backstein==='blockholz')?'blockholz':'stein';
     if(P.keller){ const ks={x0:lxL-0.04,x1:lxR+0.04,z0:stZ0-0.06,z1:wz1+0.10};                // EG-Boden mit Kellertreppen-Loch (rechte Spur)
-      [[-Wi,ks.x0,-Di,Di],[ks.x1,Wi,-Di,Di],[ks.x0,ks.x1,-Di,ks.z0],[ks.x0,ks.x1,ks.z1,Di]].forEach(([x0,x1,z0,z1])=>{ if(x1-x0<0.05||z1-z0<0.05)return; rect(baseY+0.03,x0,x1,z0,z1,'stein'); });
+      [[-Wi,ks.x0,-Di,Di],[ks.x1,Wi,-Di,Di],[ks.x0,ks.x1,-Di,ks.z0],[ks.x0,ks.x1,ks.z1,Di]].forEach(([x0,x1,z0,z1])=>{ if(x1-x0<0.05||z1-z0<0.05)return; rect(baseY+0.03,x0,x1,z0,z1,EG_BODEN); });
       levelTop=baseY; if(!P.flaechig){ bruestungSeg(g,'z',ks.x0,ks.x1,ks.z1,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x0,ks.x0,ks.z0,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x1,ks.x1,ks.z0,ks.z1,baseY+0.06,'holz'); } }   // FLÄCHEN-STUFE: die Brüstung ums Kellermaul schläft im Innern wie die der Geschosse (railSeg) — 492 Dreiecke hinter dem Innenkörper   // SIA-BRÜSTUNGS-GESETZ ums Kellermaul — EIN Gesetz statt Ad-hoc-railSeg, Antritt vorn frei
-    else rect(baseY+0.03,-Wi,Wi,-Di,Di,'stein');                                  // EG-Boden (voll)
+    else rect(baseY+0.03,-Wi,Wi,-Di,Di,EG_BODEN);                                  // EG-Boden (voll)
     // Geschossboden mit Treppenloch + 3-seitiger Brüstung (Austritt nach +z offen)
     const floorWithStair=(yT,op)=>{ levelTop=yT;
       rect(yT+0.02,-Wi,wx0,-Di,Di,'boden'); rect(yT+0.02,wx1,Wi,-Di,Di,'boden');
@@ -973,16 +982,23 @@
         s.cuts.forEach(zc=>wallX(zc,Math.min(xf,xOut),Math.max(xf,xOut),[],hh,y0)); }); }); // Querwände (Vollwand)
     return g; }
 
+  // DER STEIN DES HERDS IM RAUM (haus-stoff, Heilung 24.11.): Feuerraum, die zwei Stufen des Rauchsammlers und der Schornstein bis
+  // über den First, je [Mitte x, y, z, Maß x, y, z] — EINE Quelle: der Herd baut sie (`herd`), das Fern-Fenster der L2 liest sie
+  // (`kamin` am Bau → `fensterFern`: der Raum hinter der Scheibe trägt den Stein, soweit er die Scheibe deckt). Bis hier sah die
+  // L0 der Hütte durch ihr Giebel-Fenster den Stein-Schornstein, die L2 Holz (gate:haus-fern G, holzhuette/s1 Farbe 0,195).
+  function herdKaesten(){ if(ROUND||P.kuppel||modern) return null; const hx=hearthX, hz=hearthZ, bD=hearthBD, bW=hearthBW, bH=1.0, top=ridgeY+0.9;
+    return { feuer:[hx,baseY+bH/2,hz,bD,bH,bW], sammler:[[hx,baseY+bH+0.45,hz,bD*0.78,0.80,bW*0.72],[hx,baseY+bH+1.05,hz,bD*0.62,0.55,bW*0.5]],
+      rohr:[hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83] }; }
   function herd(){const g=grp(); if(ROUND||P.kuppel){chimney=null;return g;} if(modern){ chimney=null; return g; }   // KAMIN-GESETZ (Realität): Rücken an der Giebelwand · Feuerraum mit Wangen+Sturz · SIMS · verjüngter Rauchsammler · VERWAHRUNG am Dachdurchgang · Kopfplatte
     const hx=hearthX, hz=hearthZ, nx=hearthNX, bD=hearthBD, bW=hearthBW, bH=1.0, fO=hx+nx*(bD/2);
     if(!P.flaechig){   // FLÄCHEN-STUFE (Stufe 1): der Feuerraum schläft im Innern — es bleibt der Schornstein über Dach
-    beam(g,hx,baseY+bH/2,hz,bD,bH,bW,'stein'); addSolid(hx,baseY+bH/2,hz,bD,bH,bW);
+    const HK=herdKaesten(); beam(g,...HK.feuer,'stein'); addSolid(...HK.feuer);
     [-1,1].forEach(s5=>beam(g,fO-nx*0.10,baseY+0.40,hz+s5*(bW/2-0.14),0.20,0.80,0.24,'stein'));
     beam(g,fO-nx*0.10,baseY+0.86,hz,0.20,0.16,bW-0.20,'stein');
     beam(g,fO-nx*0.05,baseY+0.42,hz,0.10,0.66,bW-0.62,'dunkel'); beam(g,fO-nx*0.16,baseY+0.14,hz,0.30,0.22,0.7,'feuer');
     beam(g,hx+nx*0.10,baseY+bH+0.05,hz,bD+0.26,0.10,bW+0.30,'holz');
-    beam(g,hx,baseY+bH+0.45,hz,bD*0.78,0.80,bW*0.72,'stein'); beam(g,hx,baseY+bH+1.05,hz,bD*0.62,0.55,bW*0.5,'stein'); }
-    const top=ridgeY+0.9; beam(g,hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83,'stein'); addSolid(hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83);
+    for(const k of HK.sammler) beam(g,...k,'stein'); }
+    const top=ridgeY+0.9, RO=herdKaesten().rohr; beam(g,...RO,'stein'); addSolid(...RO);
     { const sk=roofSkinY(hx,hz); beam(g,hx,sk+0.10,hz,STACK_W*0.83+0.22,0.16,STACK_W*0.83+0.22,'dunkel'); }
     beam(g,hx,top,hz,STACK_W,0.12,STACK_W,'stein'); beam(g,hx,top+0.10,hz,STACK_W+0.14,0.08,STACK_W+0.14,'stein');
     [-1,1].forEach(s5=>beam(g,hx+s5*(STACK_W/2+0.02),top+0.20,hz,0.10,0.12,STACK_W*0.9,'ziegel'));
@@ -1912,7 +1928,7 @@
   { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT,
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT, herdKaesten,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -3438,8 +3454,15 @@
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
   const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
   const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
-  const innen=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
-  const schlafF=[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
+  const innen0=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
+  // DER STEIN HINTER DER SCHEIBE (`herdKaesten`, EINE Quelle mit dem Herd der L0): je Fenster der Anteil der Scheibe, den die Kästen
+  // des Herds im Raum decken (der Blick senkrecht durch die Wand, wie der Strahl der L0) — der Raum mischt den Stein des Hauses zu
+  // diesem Anteil unter (gedämmt wie der Raum, INNEN_DAEMMER)
+  const HK=fen.kamin, steinF=_colFor('stein',kol).map((c,i)=>c*INNEN_DAEMMER/Math.max(1e-4,pu[i])), kaesten=HK?[HK.feuer,...HK.sammler,HK.rohr]:[];
+  const steinAnteil=(o,z,pw,ph)=>{ const u=z?o.cx:o.cz, A=4*pw*ph; let d=0; for(const k of kaesten){ const ku=z?k[0]:k[2], kl=z?k[3]:k[5];
+      const du=Math.min(u+pw,ku+kl/2)-Math.max(u-pw,ku-kl/2), dv=Math.min(o.cy+ph,k[1]+k[4]/2)-Math.max(o.cy-ph,k[1]-k[4]/2); if(du>0&&dv>0) d+=du*dv; } return Math.min(1,d/A); };
+  const innenVon=(o,z,pw,ph)=>{ const a=steinAnteil(o,z,pw,ph); return a>0?innen0.map((c,i)=>c*(1-a)+steinF[i]*a):innen0; };
+  const schlafVon=innen=>[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
   const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1];
   // Flächen aus Ecken, ohne Drehung (kein sin/cos im Bau — die Plattform-Ratsche v6 zählt jede Drift); die Wicklung folgt der Normale
   const teile=(Qs,mat,f)=>{ const pos=[],nrm=[],col=[],idx=[];
@@ -3454,6 +3477,7 @@
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
+    const innen=innenVon(o,z,pw,ph), schlafF=schlafVon(innen);
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
     else { teile([scheibe(d1+0.01)], M.putz, innen); if(Math.sign(z?o.cz:o.cx)!==s) teile([scheibe(d1+0.02)], M.glas, eins); }   // DAS GLAS STEHT IM FLÜGEL, NICHT IN DER ÖFFNUNG (licht-eine-skala): schwenkt der Flügel aus (unten, wie an der L0: fensterAt dreht jeden um 0,62 rad), ist die Öffnung leer — man sieht den Raum; bis hier glühte dort eine zweite Scheibe (gate:haus-fern G: Glut L2/L0 1,274)
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
@@ -3490,7 +3514,7 @@
   for(const k of kappen) if(k.perp===o.perp&&k.s===s&&s*k.d>s*e&&(drin(k.Q,u-1e-3,o.cy)||drin(k.Q,u+1e-3,o.cy))) e=k.d;   // die Mitte auf der First-Kante zweier Keile: eine Seite trägt sie
   return e; }
     // Die Öffnungen eines Stapel-Baus (`stapelBau`: der Aufsatz eines Turms steht um `off` höher) — die Liste des Fern-Fensters.
-    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach'; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum}; }
+    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach', kamin=(st.H&&st.H.herdKaesten)?st.H.herdKaesten():null; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum, kamin}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum, kamin}; }
     // prettier-ignore
     function fpVon(H){ const d=H.dims;                                                          // GRUNDRISS-QUELLE: Hauptkörper + Flügel-Rechtecke (lokal) — speist den silhouetten-treuen Fernkörper
   return [{x0:-d.W/2,x1:d.W/2,z0:-d.D/2,z1:d.D/2,eY:d.eaveY,rY:d.ridgeY}]

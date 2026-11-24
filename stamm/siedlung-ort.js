@@ -265,15 +265,13 @@ class AnazhRealm_siedlung_ort {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const d = Object.assign({}, dp || {});
-        const [ort, wort] = [d.ort, d.wort || !!d.kachel];
+        const ort = d.ort;
         delete d.ort;
-        delete d.wort;
-        // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt, fachwerk `REGION_KLIMA`): jedes Dorf der Welt OHNE WORT trägt das Klima des Orts —
-        // das Mittel des kältesten und des wärmsten Monats (gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C). Der Plan
-        // eines Worts (`wort`: der Satz „dorf 7 300“, sein Gedächtnis „d:…“ und die Kacheln seiner Stadt) ist eine Funktion des Worts
-        // allein — derselbe an jedem Ort, für jeden, der ihn teilt. Bis hier trug auch er das Klima: die Stadt „dorf 7 300“ der Messorte
-        // stand alpin statt mediterran, ihre Lose, Tore und Bahnen lagen nicht mehr unter den Ständen des Plans, den die Messorte nennen.
-        if (!wort) d.klima = this._siedlungKlima();
+        // DAS KLIMA IST EIN EINGANG DES PLANS (haus-gestalt, fachwerk `REGION_KLIMA`): der Kanal liest kein Klima selbst — wer ein Dorf
+        // OHNE WORT bestellt, legt das Klima seines Orts in den Auftrag (`_zellEingang`: die Zelle des Dorf-Zugs, ihr Gedächtnis), und
+        // wer den Plan nachrechnet, rechnet mit demselben Eingang denselben Plan (gate:settlement Teil O: der Plan-Hash Studio = Welt).
+        // Der Plan eines Worts (der Satz „dorf 7 300“, sein Gedächtnis „d:…“ und die Kacheln seiner Stadt) trägt keins: er ist eine
+        // Funktion des Worts allein, derselbe an jedem Ort, für jeden, der ihn teilt.
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
         // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
@@ -1251,7 +1249,7 @@ class AnazhRealm_siedlung_ort {
         const stadt = SF && nH > SF.voll ? nH : undefined;
         const kachel = stadt ? { samen: seed, nH: stadt, i: 0, k: 0 } : undefined;
         if (stadt) nH = AnazhRealm.Gesetz("fachwerk:viertelWort")(seed, stadt, 0, 0, o.epoche).nH;
-        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null), wort: true };
+        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null) };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
@@ -1567,6 +1565,12 @@ class AnazhRealm_siedlung_ort {
         }
         M.set(mk, aus);
         return aus;
+    }
+    // DER EINGANG EINER ZELLE (haus-gestalt): ihre Zeit (`_zellZeit`), dazu das Klima ihres Orts, wenn kein Wort sie plant — das Viertel
+    // einer Stadt des Worts (`kachel`) trägt keins. Leser: der Export der Zelle (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
+    _zellEingang(key, seed) {
+        const z = this._zellZeit(key, seed);
+        return z.kachel ? z : Object.assign(z, { klima: this._siedlungKlima() });
     }
     // DIE ZEIT EINER ZELLE: das Viertel einer Stadt trägt die Epoche und das Erbe seiner Stadt (`_viertelInfo`: Region, Jahr und
     // Spanne ihres Kerns), jede andere Zelle die Legende ihres Samens (`_siedlungEpoche`). Leser: der Export der Zelle
@@ -2159,7 +2163,7 @@ class AnazhRealm_siedlung_ort {
         // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
         // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
         // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
-        const dp = { seed: i2.seed, nH: i2.nH, ...this._zellZeit(key, i2.seed) }; // die Epochen-Legende (V18.488), im Viertel die Zeit seiner Stadt
+        const dp = { seed: i2.seed, nH: i2.nH, ...this._zellEingang(key, i2.seed) }; // die Epochen-Legende (V18.488), im Viertel die Zeit seiner Stadt
         v.fertig = this._ortMitTrasse(dp, i2, null, key === "start", !!i2.fest).then((b) => {
             if (!b || !b.plan) {
                 if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu — eine Trasse ohne Ruhe trägt kein Dorf
@@ -3085,7 +3089,7 @@ class AnazhRealm_siedlung_ort {
         // die Kachel trägt die Zeit ihrer Stadt und nennt sich (`kachel`); die Mitte einer Stadt des Worts ist ihre Kachel (0, 0)
         const zeit = akt
             ? { epoche: c.epoche, ...(c.stadt ? { kachel: { samen: c.seed, nH: c.stadt, i: 0, k: 0 } } : null) }
-            : this._zellZeit(k, c.seed);
+            : this._zellEingang(k, c.seed);
         return {
             seed: c.seed,
             nH: c.nH,
@@ -3093,7 +3097,6 @@ class AnazhRealm_siedlung_ort {
             budget: akt ? c.budget : undefined,
             jahr: c.wachs ? c.wachs.jahr : undefined,
             kern: c.kern,
-            wort: akt, // das Dorf des Satzes: sein Plan ohne Klima (`_foundryRequestSettlement`; die Kachel einer Stadt des Worts nennt sich selbst)
             ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
         };
     }
