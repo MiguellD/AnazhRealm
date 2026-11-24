@@ -2543,12 +2543,15 @@ const GESETZ_LEER = 0.01;
 // B4 — die Welt-Bindung, Saat 1 (gemessen am Feld des Haupt-Fadens: `--bestand-welt`): Wolf und Beute je 4 Jahre, Land, Zellen
 // der Beute und Σ K des Gaus (0, 0) der Heimat — das Soll des Gaus im Faden (G1). Am 20.11. neu gemünzt, seit der Kern den EINEN
 // Strom der Welt zieht (samen-core `samenStrom` statt seines mulberry32): dieselbe Rechnung an anderen Würfen, das Feld
-// gleich (Land 2240 · Zellen 10884 · Σ K 33989); vorher Wolf 27 … 58 · Beute 11339 … 14476 (18.11., Kopf 2672c409). Am 23.11.
-// wieder gemünzt (erbe-geburt, wie Lauf 4: die zweite Achse scheu zieht je Vektor zwei Normale, Nische und Fang lesen sie), das
-// Feld gleich; vorher Wolf 24 … 58 · Beute 11449 … 14135
+// gleich (Land 2240 · Zellen 10884 · Σ K 33989); vorher Wolf 27 … 58 · Beute 11339 … 14476 (18.11., Kopf 2672c409). Am 24.11.
+// wieder gemünzt (erbe-geburt, am Kopf 6a548391: die zweite Achse scheu zieht aus dem Strom der Adresse — der Wurf des Gaus
+// bleibt der von main, Wolf am Anfang 24 —, Nische und Fang lesen sie, `EIGNUNG_EICH` eicht die Geburt), das Feld gleich; vorher
+// Wolf 24 … 58 · Beute 11449 … 14135. Die Münzung vom 23.11. (Wolf 19 … 46, die Achse zog je Vektor zwei Normale aus dem Strom
+// des Gaus) stand einen Kern-Schnitt lang veraltet im Zweig: gemünzt wird NACH dem letzten Schnitt am Kern, am Feld des
+// Haupt-Fadens — der Faden-Lauf der CI und `--bestand-welt` an der Radeon gaben am 24.11. dieselben zwanzig Zahlen
 const GAU_B4 = {
-    wolf: [19, 47, 51, 53, 47, 55, 51, 56, 56, 46],
-    reh: [11451, 11810, 13314, 13301, 13405, 13552, 13507, 13606, 13857, 13615],
+    wolf: [24, 32, 43, 52, 53, 45, 59, 56, 68, 64],
+    reh: [11451, 11883, 14213, 13884, 13925, 14106, 14155, 14147, 14249, 14185],
     feld: { land: 2240, zellen: 10884, kSumme: 33989 },
 };
 function lebenUrteil(name, z, soll) {
