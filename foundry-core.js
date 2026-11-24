@@ -6737,13 +6737,7 @@ function __hautUnterTuch(hg, stoffe, ring, skala, G) {
                 // Rückfalls, ohne ihn (der Wirt setzte die Ecke sonst auf eine andere Haut-Ecke, cm weit)
                 const ux = SN[3 * j] * skala[0], uy = SN[3 * j + 1] * skala[1], uz = SN[3 * j + 2] * skala[2]; // prettier-ignore
                 const blickt = ux * hn[3 * i] + uy * hn[3 * i + 1] + uz * hn[3 * i + 2] >= 0.5 * Math.sqrt(ux * ux + uy * uy + uz * uz); // prettier-ignore
-                if (ringe[i] || !blickt) {
-                    if (ziel - h > hebe[s.__hebeI][j]) {
-                        hebe[s.__hebeI][j] = ziel - h;
-                        for (let d = 0; d < 3; d++) hebeN[s.__hebeI][3 * j + d] = hn[3 * i + d];
-                    }
-                    continue;
-                }
+                if (ringe[i] || !blickt) continue;
                 if (ziel - h <= weg[i]) continue;
                 let teilt = false;
                 for (let k = 0; k < 4 && !teilt; k++) if (HW[i * 4 + k] > 0) for (let l = 0; l < 4; l++) if (SW[j * 4 + l] > 0 && SI[j * 4 + l] === HI[i * 4 + k]) teilt = true; // prettier-ignore
@@ -6803,7 +6797,42 @@ function __hautUnterTuch(hg, stoffe, ring, skala, G) {
 // `quer`) mit ihr einen Knochen teilt und sie unter ihr liegt; ein Dreieck mit drei verdeckten Ecken fällt (der Ring der Naht am
 // Hals bleibt), die Ecken ohne Dreieck fallen aus dem Netz (der Wirt prüft das Tuch an jeder Haut-Ecke, eine Ecke ohne Fläche
 // trüge eine Null-Normale). Antwort: die Zahl der gefallenen Dreiecke.
-function __hautMaske(hg, stoffe, ring) {
+// DAS BAND HINTER DEM SAUM: die Maske schneidet nie bis an die OFFENE KANTE des Tuchs (Kante mit EINEM Dreieck, nach Lage
+// verschweißt: Hals, Ärmel, Bund, Hosenbein) — das Tuch steht dort um seinen Spalt g über der Haut, und wer in den Saum sieht,
+// sähe durch den Spalt ins Leere (der helle Rand am Kragen und an den Ärmeln, mensch-nah 24.11.). Herleitung: ein Blick unter dem
+// Winkel α gegen die Haut streift die Kante in der Höhe g und trifft die Haut nach g · cot α; der flachste Blick, unter dem man
+// in einen Saum sieht, ist der in Kragen und Ärmel (30° von oben, 30° von unten — darunter deckt das Tuch selbst die Öffnung),
+// also hält jede Haut-Ecke unter EINER Lage, die zum Tuch blickt und näher als `band` = (g + 1,5 · luftM) · cot 30° = √3 · (g + 1,5 · luftM) an einer offenen Kante
+// liegt, ihr Dreieck. g ist der Spalt der Kanten-Ecke über der Tangential-Ebene ihrer nächsten Haut-Ecke; 1,5 · luftM ist der Weg,
+// den die Haut danach unter das Tuch weicht (`__hautUnterTuch`, sein Ziel). Die Zunft schneidet die Körper-Maske ebenso nie bis
+// an den Saum.
+var HAUT_SAUM = Object.freeze({ cotAlpha: Math.sqrt(3) });
+function __saumKanten(s) {
+    const S = s.geometry.attributes.position.array,
+        ns = S.length / 3,
+        kanon = new Int32Array(ns),
+        lage = new Map();
+    for (let j = 0; j < ns; j++) {
+        const k = Math.round(S[3 * j] * 1e5) + "," + Math.round(S[3 * j + 1] * 1e5) + "," + Math.round(S[3 * j + 2] * 1e5);
+        const a = lage.get(k);
+        if (a === undefined) lage.set(k, (kanon[j] = j));
+        else kanon[j] = a;
+    }
+    const ix = s.geometry.index ? s.geometry.index.array : Uint32Array.from({ length: ns }, (_, j) => j),
+        zahl = new Map();
+    for (let t = 0; t < ix.length; t += 3)
+        for (let e = 0; e < 3; e++) {
+            const a = kanon[ix[t + e]],
+                b = kanon[ix[t + ((e + 1) % 3)]];
+            if (a === b) continue;
+            const key = a < b ? a * ns + b : b * ns + a;
+            zahl.set(key, (zahl.get(key) || 0) + 1);
+        }
+    const kanten = [];
+    for (const [key, z] of zahl) if (z === 1) kanten.push(Math.floor(key / ns), key % ns);
+    return kanten;
+}
+function __hautMaske(hg, stoffe, ring, skala, G) {
     const P = hg.attributes.position.array,
         HI = hg.attributes.skinIndex.array,
         HW = hg.attributes.skinWeight.array,
@@ -6812,8 +6841,12 @@ function __hautMaske(hg, stoffe, ring) {
         Q2 = HAUT_UNTER_STOFF.quer * HAUT_UNTER_STOFF.quer;
     const best = new Float64Array(n).fill(R * R),
         wer = new Int32Array(n).fill(-1),
-        von = new Int32Array(n).fill(-1);
+        von = new Int32Array(n).fill(-1),
+        lagen = new Uint8Array(n);
     stoffe.forEach((s, si) => {
+        const SN = s.geometry.attributes.normal.array,
+            eigen = new Float64Array(n).fill(R * R),
+            ej = new Int32Array(n).fill(-1);
         const S = s.geometry.attributes.position.array,
             gitter = new Map(),
             zelle = (x, y, z) => Math.floor(x / R) + "," + Math.floor(y / R) + "," + Math.floor(z / R);
@@ -6835,8 +6868,17 @@ function __hautMaske(hg, stoffe, ring) {
                             for (const j of L) {
                                 const ex = S[j * 3] - P[i * 3], ey = S[j * 3 + 1] - P[i * 3 + 1], ez = S[j * 3 + 2] - P[i * 3 + 2], d2 = ex * ex + ey * ey + ez * ez; // prettier-ignore
                                 if (d2 < best[i]) [best[i], wer[i], von[i]] = [d2, j, si];
+                                if (d2 < eigen[i]) [eigen[i], ej[i]] = [d2, j];
                             }
                     }
+        }
+        // wie viele Lagen die Ecke decken (unter der Normale der nächsten Ecke JEDES Stoffs, seitlich unter `quer`): hinter einem
+        // Saum über einer zweiten Lage (der Bund des Hemds über der Hose) sieht der Blick die zweite Lage, nie die Leere
+        for (let i = 0; i < n; i++) {
+            const j = ej[i];
+            if (j < 0) continue;
+            const dx = P[i * 3] - S[j * 3], dy = P[i * 3 + 1] - S[j * 3 + 1], dz = P[i * 3 + 2] - S[j * 3 + 2], h = dx * SN[j * 3] + dy * SN[j * 3 + 1] + dz * SN[j * 3 + 2]; // prettier-ignore
+            if (h <= 0 && dx * dx + dy * dy + dz * dz - h * h < Q2) lagen[i]++;
         }
     });
     const verdeckt = new Uint8Array(n);
@@ -6860,6 +6902,66 @@ function __hautMaske(hg, stoffe, ring) {
             h = dx * N[j * 3] + dy * N[j * 3 + 1] + dz * N[j * 3 + 2];
         if (h <= 0 && dx * dx + dy * dy + dz * dz - h * h < Q2) verdeckt[i] = 1;
     }
+    // das Band hinter jeder offenen Kante (Gesetz oben): je Kanten-Ecke ihr Spalt über der Haut, je Kante das breitere Band;
+    // gerechnet in Metern (`skala`), die Haut-Normale wie `__hautUnterTuch`
+    const Nh = hg.attributes.normal.array,
+        m3 = (A, i, d) => A[3 * i + d] * skala[d];
+    // nur Haut, die zum Tuch blickt, hält den Blick durch den Spalt (Normale gegen Normale unter 60°, wie `__hautUnterTuch`): eine
+    // abgewandte Ecke zeigte dem Strahl ihre Rückseite — sie fiele dem Schirm ohnehin, und im Tuch stäche sie in jeder Pose durch
+    const blickt = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+        if (!verdeckt[i]) continue;
+        const SN = stoffe[von[i]].geometry.attributes.normal.array,
+            j = wer[i];
+        let d = 0, a = 0, b = 0; // prettier-ignore
+        for (let c = 0; c < 3; c++) {
+            const u = SN[3 * j + c] * skala[c],
+                w = Nh[3 * i + c] * skala[c];
+            d += u * w;
+            a += u * u;
+            b += w * w;
+        }
+        blickt[i] = d >= 0.5 * Math.sqrt(a * b) ? 1 : 0;
+    }
+    stoffe.forEach((s, si) => {
+        const S = s.geometry.attributes.position.array,
+            kanten = __saumKanten(s);
+        if (!kanten.length) return;
+        const spalt = new Map();
+        const band = (j) => {
+            let b = spalt.get(j);
+            if (b !== undefined) return b;
+            let bd = Infinity,
+                bi = -1;
+            for (let i = 0; i < n; i++) {
+                let d2 = 0;
+                for (let d = 0; d < 3; d++) d2 += (m3(S, j, d) - m3(P, i, d)) ** 2;
+                if (d2 < bd) [bd, bi] = [d2, i];
+            }
+            let g = 0,
+                l = 0;
+            for (let d = 0; d < 3; d++) {
+                const nd = Nh[3 * bi + d] * skala[d];
+                g += (m3(S, j, d) - m3(P, bi, d)) * nd;
+                l += nd * nd;
+            }
+            g = Math.max(0, g / (Math.sqrt(l) || 1));
+            b = (g + 1.5 * G.luftM) * HAUT_SAUM.cotAlpha;
+            spalt.set(j, b);
+            return b;
+        };
+        for (let k = 0; k < kanten.length; k += 2) {
+            const a = kanten[k],
+                c = kanten[k + 1],
+                b = Math.max(band(a), band(c));
+            const ax = m3(S, a, 0), ay = m3(S, a, 1), az = m3(S, a, 2), ux = m3(S, c, 0) - ax, uy = m3(S, c, 1) - ay, uz = m3(S, c, 2) - az, uu = ux * ux + uy * uy + uz * uz || 1; // prettier-ignore
+            for (let i = 0; i < n; i++) {
+                if (!verdeckt[i] || von[i] !== si || lagen[i] > 1 || !blickt[i]) continue;
+                const px = m3(P, i, 0) - ax, py = m3(P, i, 1) - ay, pz = m3(P, i, 2) - az, t = Math.max(0, Math.min(1, (px * ux + py * uy + pz * uz) / uu)); // prettier-ignore
+                if ((px - t * ux) ** 2 + (py - t * uy) ** 2 + (pz - t * uz) ** 2 < b * b) verdeckt[i] = 0;
+            }
+        }
+    });
     const ix = hg.index.array,
         bleibt = [];
     for (let t = 0; t < ix.length; t += 3) if (!(verdeckt[ix[t]] && verdeckt[ix[t + 1]] && verdeckt[ix[t + 2]])) bleibt.push(ix[t], ix[t + 1], ix[t + 2]); // prettier-ignore
@@ -11065,11 +11167,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             k < HAUT_UNTER_STOFF.runden && stoffe.length && __hautUnterStoff(leib.mesh.geometry, stoffe, ring);
             k++
         );
-        if (stoffe.length) __hautMaske(leib.mesh.geometry, stoffe, ring);
         if (!kern.TUCH_GESETZ || typeof kern.leibMassstab !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne TUCH_GESETZ/leibMassstab — die Haut hält die Prüfung des Tuchs (fail-closed)"); // prettier-ignore
         const me = kern.leibMassstab(),
             sc = B.character.scale,
             skala = [sc.x * me, sc.y * me, sc.z * me];
+        if (stoffe.length) __hautMaske(leib.mesh.geometry, stoffe, ring, skala, kern.TUCH_GESETZ);
         for (
             let k = 0;
             k < HAUT_UNTER_STOFF.runden &&
