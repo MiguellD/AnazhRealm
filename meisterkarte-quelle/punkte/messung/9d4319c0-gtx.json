@@ -1,7 +1,7 @@
 {
  "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
  "geraet": "gtx",
- "zeit": "2026-11-24T06:27:59.163Z",
+ "zeit": "2026-11-24T06:47:33.353Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -988,6 +988,76 @@
    },
    "zeit": "2026-11-24T06:27:59.163Z",
    "abdruck": "a5387cf1d3b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.95,
+   "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 270 Pflanzen im Acker (weizen in 270 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb3479b59188a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kec8d4d7e00d6",
+   "s": 55.9,
+   "fremd": {
+    "s": 59,
+    "takte": 25,
+    "fremdS": 51.77,
+    "kerne": 0.878,
+    "fensterKerne": 1.46,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.58
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.73
+     ],
+     [
+      "Explorer.EXE",
+      3.55
+     ]
+    ],
+    "dienerS": 35.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.95
+     ],
+     [
+      "System",
+      14.69
+     ]
+    ],
+    "geraetS": 29.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.52
+     ],
+     [
+      "svchost.exe",
+      10.86
+     ],
+     [
+      "SearchIndexer.exe",
+      2.39
+     ]
+    ],
+    "eigenS": 256.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T06:47:33.353Z",
+   "abdruck": "c23e51a638e2",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
