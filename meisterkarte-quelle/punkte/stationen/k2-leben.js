@@ -7219,8 +7219,9 @@ L.perspektive("oeko", (() => {
             },
             // ═══ DIE STOFFE: Nährstoff je Zelle, N und P, Kohlenstoff, CO₂-Säge, Regen aus Wald, Sauerstoff, Biosignatur ═══
             [ST]: {
-                sek: 25,
+                sek: 28,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_FELD.concat(PFAD_PLANET),
                 ungefahren: "die Bildpaare (S1 Acker, S2 Wiesen, S6 Bändereisen) — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
@@ -7290,6 +7291,69 @@ L.perspektive("oeko", (() => {
                         const gas = [...schl].filter((k) => /co2|kohlen|carbon|sauer|o2\b|oxy|methan|stick|nitro|phosph|atmo|gas|bio/i.test(k));
                         return { gas, fehler, schluessel: schl.size, fremdN: fremd.length, fruehN: frueh.length, ms: Math.round(performance.now() - t0), hoehen: heute.concat(fremd).map((x) => x.hoeheM), regen: heute.map((x) => (x.delta && x.delta.wetter ? x.delta.wetter.regenQuote : null)), wald: heute.map((x) => (x.delta && x.delta.wuchs ? x.delta.wuchs.wald : null)), fruehLand: frueh.map((x) => x.land), n: heute.length + frueh.length + fremd.length };
                     };
+                    // DER FÄCHER DER STOFFE (S2): das Gesetz, das der Wuchs liest (`_naehrstoffAt`, stamm/vegetation-wiese.js:2338; sein Leser
+                    // `_wuchsAt` :2323 nach Monod), an 64 Zellen des Lebens-Felds (8 × 8 im Abstand 64 m um den Spieler) — je Zelle die Kanäle
+                    // des Nährstoffs (ein Skalar ist EIN Kanal, ein Objekt trägt seine Schlüssel), sein Wert, der Wuchs, das Material des
+                    // Bodens (`_terrainMaterialAt` :2603, dasselbe Feld wie der Terrain-Shader: der Fels gäbe P) und das Licht am Boden (das
+                    // Kronendach: Wald gegen Wiese); dazu je Art der Boden-Flora (placement.boden der Render-Config, der Leser `_nahStreuArten`
+                    // :1489) und des Walds (SPECIES_TREE_PARAMS stamm/vegetation-baum.js:3306) die Zeile ihres Gesetzes — trüge eine Art ein Feld
+                    // der Bindung von N (Leguminose, Erle), stünde der Klee des Bildpaars in der Welt
+                    const ST2_AN = async (r, T, a, mit) => {
+                        const A = r.constructor;
+                        if (a.art != null) {
+                            const zeile = a.schicht === "boden" ? A._studioRenderConfig.placement.boden[a.art] : A.SPECIES_TREE_PARAMS[a.art];
+                            if (!zeile) return { fehlt: "die Art " + a.art + " steht in keiner Tafel (" + a.schicht + ")" };
+                            const felder = [];
+                            const walk = (o, p, t) => {
+                                if (t > 3 || !o || typeof o !== "object") return;
+                                for (const k of Object.keys(o)) (felder.push(p + k), walk(o[k], p + k + ".", t + 1));
+                            };
+                            walk(zeile, "", 0);
+                            const bind = felder.filter((k) => /stick|nitro|nfix|n_fix|legum|bind|fixier|knoll|rhizob|frankia/i.test(k));
+                            return { art: a.art, schicht: a.schicht, felder: felder.length, bindetN: bind.length > 0, bindFeld: bind[0] || null };
+                        }
+                        const pm = r.state.playerMesh.position, cs = A.LIFE_FIELD.cell;
+                        const i = a.ort % 8, j = Math.floor(a.ort / 8);
+                        const x = Math.floor((pm.x + (i - 3.5) * mit.abstand) / cs) * cs + cs / 2;
+                        const z = Math.floor((pm.z + (j - 3.5) * mit.abstand) / cs) * cs + cs / 2;
+                        const n = r._naehrstoffAt(x, z);
+                        const kanaele = typeof n === "number" ? 1 : n && typeof n === "object" ? Object.keys(n).length : 0;
+                        const licht = r._bodenLichtFeld(x, z, x, z)(x, z);
+                        return { x, z, n: typeof n === "number" ? Math.round(n * 1e4) / 1e4 : n, kanaele, wuchs: Math.round(r._wuchsAt(x, z) * 1e4) / 1e4, mat: r._terrainMaterialAt(x, z), licht: Math.round(licht * 1e3) / 1e3 };
+                    };
+                    let R2 = null;
+                    if (U[2])
+                        try {
+                            const tafeln = await H.seite("const A = r.constructor; return { boden: Object.keys(A._studioRenderConfig.placement.boden), baum: Object.keys(A.SPECIES_TREE_PARAMS) };");
+                            const mittelN = (v) => (v.length ? Math.round((1e4 * v.reduce((s, x) => s + x, 0)) / v.length) / 1e4 : null);
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: ST2_AN, export: "stamm/vegetation-wiese.js:2338 _naehrstoffAt (Taten der Zelle + Leichname, ein Skalar bis WUCHS.naehrMax) · placement.boden · SPECIES_TREE_PARAMS", leser: "stamm/vegetation-wiese.js:2323 _wuchsAt (Monod im Nährstoff, der Wuchs jeder Narbe)" },
+                                adressen: { orte: Array.from({ length: 64 }, (_, k) => k), dazu: tafeln.boden.map((art) => ({ art, schicht: "boden" })).concat(tafeln.baum.map((art) => ({ art, schicht: "baum" }))) },
+                                mit: { abstand: 64 },
+                                ms: 8000,
+                                masse: {
+                                    zellen: { wie: "anzahl", feld: "kanaele", nur: "ort" },
+                                    naehrKanaele: { wie: "max", feld: "kanaele", nur: "ort" },
+                                    naehrMin: { wie: "min", feld: "n", nur: "ort" },
+                                    naehrMax: { wie: "max", feld: "n", nur: "ort" },
+                                    wuchsMin: { wie: "min", feld: "wuchs", nur: "ort" },
+                                    wuchsMax: { wie: "max", feld: "wuchs", nur: "ort" },
+                                    material: { wie: (v) => v.reduce((o, m) => ((o[m] = (o[m] || 0) + 1), o), {}), feld: "mat", nur: "ort" },
+                                    naehrStein: { wie: mittelN, feld: "n", nur: (q, w) => q.ort != null && w.mat === "stein" },
+                                    naehrErde: { wie: mittelN, feld: "n", nur: (q, w) => q.ort != null && w.mat === "erde" },
+                                    naehrWald: { wie: mittelN, feld: "n", nur: (q, w) => q.ort != null && w.licht < 0.6 },
+                                    naehrOffen: { wie: mittelN, feld: "n", nur: (q, w) => q.ort != null && w.licht >= 0.6 },
+                                    arten: { wie: "anzahl", feld: "art", nur: "art" },
+                                    artenMitNBindung: { wie: (v) => v.filter(Boolean).length, feld: "bindetN", nur: "art" },
+                                    bindFelder: { wie: (v) => v.filter(Boolean), feld: "bindFeld", nur: "art" },
+                                },
+                                schlecht: { feld: "wuchs", richtung: "min" },
+                                pose: (q, w) => "die Zelle (" + w.x + ", " + w.z + ") " + w.mat + " · Licht " + w.licht + " · Nährstoff " + w.n + " · Wuchs " + w.wuchs,
+                                ungemessen: ["das Bildpaar Wiese mit Klee neben Wiese ohne nach 5 Spieljahren (Bildpflicht) — ungemessen bis zum Gerät, und ohne bindende Art ohne Gegenstand"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const E = await seite(ernte, { orte: 8, abstand: 45, ernten: 15 });
                     const P = await seite(faden, { breiten: [-60, -45, -20, 0, 20, 45, 60], zeiten: [-2500, -2000], fremd: 32, budgetMs: 14000 });
                     const O = E.orte;
@@ -7299,7 +7363,29 @@ L.perspektive("oeko", (() => {
                     const aus = M.teil || {};
                     const ws = O.map((o) => o.wv);
                     aus[1] = { werte: { naehrVor: Math.round(vor * 1000) / 1000, naehrNach: Math.round(nach * 1000) / 1000, wuchsMinus: Math.round(wMinus * 1e4) / 1e4 }, zeuge: { antworten: O.length, streuung: Math.round((Math.max(...ws) - Math.min(...ws)) * 1e4) / 1e4, vor: Math.round(vor * 1000) / 1000, nach: Math.round(nach * 1000) / 1000, orte: O }, auge: await M.auge("oeko-stoffe-s1", { ort: "wiese" }) };
-                    aus[2] = { werte: { naehrKanaele: E.kanal === "number" ? 1 : 0, jahre: 0 }, zeuge: { antworten: O.length, streuung: 0 }, auge: await M.auge("oeko-stoffe-s2", { ort: "wiese" }), nicht: "N und P getrennt — der Boden trägt EINEN Nährstoff (vegetation-wiese.js:2097), keine Leguminose, keine Erle bindet N" };
+                    if (U[2]) {
+                        // die Werte trägt der Fächer allein: die Kanäle je Zelle, die Arten mit Bindung von N, der Nährstoff auf Fels gegen
+                        // Erde und unter Wald gegen offen; der Wuchs-Unterschied Klee gegen ohne ist ohne bindende Art UNGEMESSEN (kein Paar)
+                        const RW = R2 && R2.werte;
+                        const pFels = RW && RW.naehrStein != null && RW.naehrErde != null ? Math.round((RW.naehrStein - RW.naehrErde) * 1e4) / 1e4 : undefined;
+                        aus[2] = {
+                            werte: RW
+                                ? { naehrKanaele: RW.naehrKanaele, zellen: RW.zellen, naehrMin: RW.naehrMin, naehrMax: RW.naehrMax, wuchsMin: RW.wuchsMin, wuchsMax: RW.wuchsMax, material: RW.material, naehrStein: RW.naehrStein, naehrErde: RW.naehrErde, pFelsMinusErde: pFels, naehrWald: RW.naehrWald, naehrOffen: RW.naehrOffen, arten: RW.arten, artenMitNBindung: RW.artenMitNBindung }
+                                : {},
+                            zeuge: { antworten: R2 && R2.gemessen, streuung: RW && RW.wuchsMax != null ? Math.round((RW.wuchsMax - RW.wuchsMin) * 1e4) / 1e4 : 0, faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)) },
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                            auge: await M.auge("oeko-stoffe-s2", { ort: "wiese" }),
+                        };
+                        const offen = [];
+                        if (!RW) offen.push("der Fächer der Stoffe warf: " + ((R2 && R2.fehlerText) || "ohne Antwort"));
+                        else {
+                            if (!(RW.naehrKanaele >= 2)) offen.push("N und P nicht getrennt: der Boden trägt " + RW.naehrKanaele + " Kanal an " + RW.zellen + " Zellen (stamm/vegetation-wiese.js:2338 _naehrstoffAt, EIN Skalar " + RW.naehrMin + "–" + RW.naehrMax + "; der Leser _wuchsAt :2323 rechnet Monod in EINEM Nährstoff)");
+                            if (!(RW.artenMitNBindung > 0)) offen.push("keine Art bindet N: 0 von " + RW.arten + " Arten (placement.boden der Render-Config, SPECIES_TREE_PARAMS stamm/vegetation-baum.js:3306) tragen ein Feld der Bindung; der Klee fiel (stamm/studio-bruecke.js:3358), die Erle ist der Name der Weide (STREU_NAMEN :3321 baum_erle → weide) — kein Bildpaar Klee gegen ohne");
+                            if (!(pFels !== undefined && Math.abs(pFels) > 1e-6))
+                                offen.push("kein P aus Gestein: " + (pFels !== undefined ? "Fels-Zellen tragen Nährstoff " + RW.naehrStein + " wie Erde-Zellen " + RW.naehrErde : "der Fächer traf " + JSON.stringify(RW.material) + " — und") + " _naehrstoffAt liest nur die Taten der Zelle und ihre Leichname (:2338), nie das Material");
+                        }
+                        if (offen.length) aus[2].nicht = offen.join(" · ");
+                    }
                     const zg = { antworten: P.n, streuung: Math.round((Math.max(...P.hoehen) - Math.min(...P.hoehen)) * 10) / 10, gas: P.gas, schluessel: P.schluessel };
                     aus[3] = { werte: { cKanaele: P.gas.length }, zeuge: zg, nicht: "kein Kohlenstoff: weder die Zelle noch der Planet-Faden trägt Biomasse oder Boden-C (" + P.schluessel + " Schlüssel der Antwort, davon Stoff: " + (P.gas.join(", ") || "keiner") + ")" };
                     aus[4] = { werte: { gasKanaele: P.gas.length }, zeuge: zg, nicht: "keine CO₂-Säge: keine Atmosphäre aus Stoffen im Planet-Faden (" + P.gas.length + " Stoff-Schlüssel)" };
@@ -7327,13 +7413,23 @@ L.perspektive("oeko", (() => {
                         u: { auge: { ort: "wiese" } },
                         soll: [K.soll(ST, 2, "nach 5 Spieljahren", { key: "jahre", rel: "≥", zahl: 5 }), K.soll(ST, 2, "Wuchs-Unterschied", { key: "wuchsUnterschied", rel: ">", zahl: 0, refQuelle: "der Richter: Wuchs-Unterschied Klee gegen ohne > 0" })],
                         auge: { pose: "Ego zwischen zwei Wiesen (mit und ohne Klee)", vorbild: "Bildpaar nach 5 Spieljahren: Wuchs-Unterschied (Prüfer-Satz R11)" },
-                        taeter: "stamm/vegetation-wiese.js _naehrstoffAt (EIN Skalar, kein N und P)",
+                        taeter: "stamm/vegetation-wiese.js:2338 _naehrstoffAt (EIN Skalar, kein N und P, liest kein Gestein) · placement.boden und SPECIES_TREE_PARAMS (keine Art bindet N)",
                         nicht: "N und P nicht getrennt",
-                        leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — ein Nährstoff; keine Bindung von N durch Leguminosen, kein P aus Gestein",
-                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
-                        zeuge: zeugeWelt(1, true),
-                        gruen: gut({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, 8),
-                        attrappen: [{ name: "Klee-Effekt behauptet", roh: flach({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }) }],
+                        leser: "stamm/vegetation-wiese.js:2323 _wuchsAt liest :2338 _naehrstoffAt — ein Nährstoff; keine Bindung von N durch Leguminosen, kein P aus Gestein",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg; der Zeuge ist der Fächer (64 Zellen + die Arten)
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer der Stoffe warf: " + z.fehler;
+                            if (!(z.faecher >= 48)) return "nur " + (z.faecher || 0) + " Adressen des Fächers gemessen (Soll ≥ 48: Zellen des Lebens-Felds und Arten)";
+                            return zeugeWelt(48, false)(roh);
+                        },
+                        gruen: { werte: { jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, zeuge: { antworten: 84, streuung: 0.4, faecher: 84 } },
+                        attrappen: [
+                            { name: "Klee-Effekt behauptet", roh: flach({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }) },
+                            { name: "die feste Pose ohne Fächer", roh: gut({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, 84) },
+                            { name: "die Welt heute (EIN Kanal, keine bindende Art)", roh: { werte: { naehrKanaele: 1, artenMitNBindung: 0 }, zeuge: { antworten: 84, streuung: 0.4, faecher: 84 }, nicht: "N und P nicht getrennt: der Boden trägt 1 Kanal an 64 Zellen" } },
+                            { name: "der Klee ohne Wirkung", roh: { werte: { jahre: 5, wuchsUnterschied: 0, naehrKanaele: 2 }, zeuge: { antworten: 84, streuung: 0.4, faecher: 84 } } },
+                        ],
                     },
                     3: {
                         u: {},
