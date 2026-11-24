@@ -23357,7 +23357,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.sport.koennen#2 radeon: ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.sport.koennen#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.sport.koennen#2 radeon: ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.sport.koennen#2 gtx: ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal an c9da3a64 · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23394,10 +23394,10 @@
      "id": "karte2.mensch.sport.koennen#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal",
+     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
+     "grund": "ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.koennen#3",
@@ -37537,7 +37537,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 294,
+  "konsum": 295,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37705,10 +37705,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3328
+  "ohne": 3327
  },
  "kopfVoll": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
- "zeit": "2026-11-24T08:00:10.934Z",
+ "zeit": "2026-11-24T08:16:08.544Z",
  "vorher": "c9da3a64",
  "bilanz": {
   "gewinn": [],
