@@ -4358,7 +4358,7 @@ window.__pwMeer = m;
                 const sd = (v) => { const m = v.length ? v.reduce((p, q) => p + q, 0) / v.length : 0; return v.length > 1 ? Math.sqrt(v.reduce((p, q) => p + (q - m) ** 2, 0) / v.length) : 0; };
                 const jz = (a, w) => w.jz === 1;
                 const RF = await FAECHER((c) => H.seite(c), {
-                    gesetz: { fn: EIS_AN, export: "gelaende-core.js:1411 eisDicke ≥ EIS.traegt (gelaende-core.js:1391) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3263 _eisLinien (der Ruf :3289, die tragende Linie je Säule) → stamm/wasser-hydro.js:749 _eisAt (der Spieler auf dem See)" },
+                    gesetz: { fn: EIS_AN, export: "gelaende-core.js:1409 eisDicke ≥ EIS.traegt (gelaende-core.js:1389) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3263 _eisLinien (der Ruf :3289, die tragende Linie je Säule) → stamm/wasser-hydro.js:749 _eisAt (der Spieler auf dem See)" },
                     adressen: { saaten: Array.from({ length: Number(u2.saaten) || 12 }, (_, i) => i + 1), orte: ORTE, dazu: ORTE.map((o) => ({ saat: "heim", ort: o, zeit: null })).concat([{ saat: "heim", ort: "see", zeit: null }]) },
                     mit: { ref: 15.7, see: u2.see || [1816, -6168] },
                     ms: Number(u2.ms) || 12000,
@@ -4386,7 +4386,7 @@ window.__pwMeer = m;
                 aus[2] = {
                     werte: Object.assign({ jahreszeitlich: W2.jahreszeitlich, ewig: W2.ewig, imBand: W2.imBand }, W2.fddEinsetzen != null ? { fddEinsetzen: R(W2.fddEinsetzen), fddMin: W2.fddMin, fddMax: W2.fddMax } : {}),
                     zeuge: { adressen: W2.adressen, tage: W2.tage, saaten: W2.saaten, fddLuft: W2.fddLuft, jahreszeitlich: W2.jahreszeitlich, traegtTage: W2.traegtTage, brichtTage: W2.brichtTage, see: W2.see, streu: R(W2.streu), gerissen: RF.gerissen, akte: RF.akte },
-                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1411 eisDicke trägt (EIS.traegt 0,05 m, gelaende-core.js:1391) nach " + (W2.fddEinsetzen == null ? "—" : R(W2.fddEinsetzen)) + " K·d (Median über " + W2.jahreszeitlich + " frierende und tauende Säulen, " + W2.fddMin + "–" + W2.fddMax + ", " + W2.imBand + " im Band ±20 %), " + W2.ewig + " Säulen frieren ganzjährig · " + RF.akte,
+                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1409 eisDicke trägt (EIS.traegt 0,05 m, gelaende-core.js:1389) nach " + (W2.fddEinsetzen == null ? "—" : R(W2.fddEinsetzen)) + " K·d (Median über " + W2.jahreszeitlich + " frierende und tauende Säulen, " + W2.fddMin + "–" + W2.fddMax + ", " + W2.imBand + " im Band ±20 %), " + W2.ewig + " Säulen frieren ganzjährig · " + RF.akte,
                 };
             }
             // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
@@ -4475,7 +4475,7 @@ return { meer, kalt, felder: Object.keys(a) };
             je[4] = {
                 werte: { gipfelM: gipfel.gipfelM, firnSommerM: gipfel.sommerTritt },
                 zeuge: { gletscher: 0 },
-                nicht: "kein Gletscher: kein Leser lässt Eis fließen (gelaende-core.js:1411 eisDicke ist stehendes See-Eis, die Schnee-Decke trägt nur Tritt); der Gipfel der Heimat " + gipfel.gipfelM + " m trägt im Sommer " + gipfel.sommerTritt + " m Schnee",
+                nicht: "kein Gletscher: kein Leser lässt Eis fließen (gelaende-core.js:1409 eisDicke ist stehendes See-Eis, die Schnee-Decke trägt nur Tritt); der Gipfel der Heimat " + gipfel.gipfelM + " m trägt im Sommer " + gipfel.sommerTritt + " m Schnee",
             };
             je[5] = {
                 werte: {},
@@ -4521,8 +4521,8 @@ return { meer, kalt, felder: Object.keys(a) };
                 soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 15.7, refQuelle: "Erde: Gold 1971 (80 kg, P = A·h², A = 3,5 kg/cm²) trägt auf 4,8 cm; die Feldregel — ist die erste dünne Decke da, wächst das Eis 1 Zoll je 15 °F·d = 2,54 cm je 8,33 K·d — gibt 4,8 / 2,54 · 8,33 = 15,7 K·d ab der ersten Decke (das Band 12,6 … 18,9). Das einfache Stefan α·√FDD ist nur die obere Schranke für dickes Eis (Ashton 1989, Thin ice growth: der Übergang Eis → Luft lässt dünnes Eis linear wachsen). Bis spiegel-eis stand hier 13,7 = (10/2,7)², gezählt ab dem ersten Frosttag der Luft — die 10 cm ohne Quelle, die Abkühlung der Säule mitgezählt", einheit: "K·d" })],
                 zeuge: zMin({ tage: 365, jahreszeitlich: 10, saaten: 3, traegtTage: 1, brichtTage: 1 }),
                 zeugeText: "der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter",
-                taeter: "gelaende-core.js:1411 eisDicke (EIS.traegt, gelaende-core.js:1391) · stamm/wasser-hydro.js:749 _eisAt",
-                leser: "stamm/bild-himmel.js:3263 _eisLinien ruft (:3289) gelaende-core.js:1411 eisDicke je Säule, stamm/wasser-hydro.js:749 _eisAt trägt den Spieler über der Linie voll",
+                taeter: "gelaende-core.js:1409 eisDicke (EIS.traegt, gelaende-core.js:1389) · stamm/wasser-hydro.js:749 _eisAt",
+                leser: "stamm/bild-himmel.js:3263 _eisLinien ruft (:3289) gelaende-core.js:1409 eisDicke je Säule, stamm/wasser-hydro.js:749 _eisAt trägt den Spieler über der Linie voll",
                 gruen: gut({ fddEinsetzen: 15.2 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
                 attrappen: [
                     { name: "die Frostgrad-Summe der Feldregel eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 15.7 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
@@ -4550,7 +4550,7 @@ return { meer, kalt, felder: Object.keys(a) };
                 zeugeText: "ein Gletscher floss",
                 taeter: "gelaende-core.js (kein Gletscher)",
                 nicht: "kein Gletscher",
-                leser: "gelaende-core.js:1411 eisDicke — stehendes Eis; kein Leser von Eis-Fluss, Spalten, Gletschertor",
+                leser: "gelaende-core.js:1409 eisDicke — stehendes Eis; kein Leser von Eis-Fluss, Spalten, Gletschertor",
                 gruen: gut({ fliessMa: 60, spaltenAbwGrad: 8 }, { gletscher: 1 }),
                 attrappen: [{ name: "60 m/a eingetragen ohne Gletscher", roh: leer({ fliessMa: 60, spaltenAbwGrad: 8 }) }],
             },

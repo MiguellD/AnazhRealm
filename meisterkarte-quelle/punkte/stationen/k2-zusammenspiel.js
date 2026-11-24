@@ -40,9 +40,8 @@ L.perspektive("planet", (() => {
         leitern: {
             // ════════ siedlungslage — Gelände, Wasser und Gestein tragen Siedlung und Verkehr ════════
             // S1 hebt den EINEN Spiegel (`state.waterLevel` + 1 m, im finally zurück) an 50 Uferpunkten und liest die Leser Ufer (`_atlasWaterLevelAt`),
-            // Schilf (der Leser der Nah-Streu `_nahStreuBodenGewicht` an der Wasserlinie, am festen Grund), Fuß (`_koerperWasserSpiegel`), Steg und
-            // Boot (die Lage `_anlegerLage` des Anlegers `_anlegerOrt`, die `_anlegerTakt` je Schritt schreibt — gezählt über die Ufer, die einen
-            // tragen); der Gegenlauf liest dieselben Punkte zweimal ohne Hebung. S3 die Orte der Region (25 × 25 Zellen,
+            // Schilf (`_ortNass` im Band 30/60 m), Fuß (`_koerperWasserSpiegel`), Steg und Boot (die Welt fragt nach ihrem Leser) und daneben Spiegel,
+            // Wand (`_landAt`) und Nässe (`_nassAt`); der Gegenlauf liest dieselben Punkte zweimal ohne Hebung. S3 die Orte der Region (25 × 25 Zellen,
             // `_autoSettlementFindSite`) an Küste/Fluss gegen Zufallspunkte, der Gegenlauf mit eingeebnetem Relief und gekapptem Fluss (Hüllen
             // `_slopeAt` → 0, `_hydroRiverAt` → null an der Instanz, gelöscht im finally). S4 die Steigung der Trassen der geladenen Orte gegen
             // `ORT_GESETZ.trasse`. S2/S5 fragen die Welt nach Bodenart und Schicht; S6/S7 sind Jury-Sprossen (Auge).
@@ -69,43 +68,32 @@ L.perspektive("planet", (() => {
                                 const x = p.x + Math.cos(ang) * d;
                                 const z = p.z + Math.sin(ang) * d;
                                 if (r._terrainMacroSurfaceY(x, z) < wl) {
-                                    if (vor) {
-                                        // die Wasserlinie auf dem Strahl (Halbierung auf 1 cm): dort steht das Schilf
-                                        let [lo, hi] = [d - 40, d];
-                                        for (let i = 0; i < 12; i++) {
-                                            const mm = (lo + hi) / 2;
-                                            if (r._terrainMacroSurfaceY(p.x + Math.cos(ang) * mm, p.z + Math.sin(ang) * mm) < wl) hi = mm;
-                                            else lo = mm;
-                                        }
-                                        ufer.push([vor[0], vor[1], p.x + Math.cos(ang) * lo, p.z + Math.sin(ang) * lo]);
-                                    }
+                                    if (vor) ufer.push(vor);
                                     break;
                                 }
                                 vor = [x, z];
                             }
                         }
-                        // Schilf: der echte Leser der Nah-Streu (`_nahStreuBodenGewicht` mit der Zeile schilf des Studios) an der Wasserlinie
-                        // VOR der Hebung, am festen Grund — die Art folgt dem Wasser, nicht der Strand dem Meer
-                        const schilfArt = (r._nahStreuArten() || []).find((q) => q.id === "schilf");
-                        const grund = ufer.map(([, , x, z]) => r._terrainMacroSurfaceY(x, z));
-                        const schilf = (i) => {
-                            if (!schilfArt) return null;
-                            const uf = { see: 0, fluss: null, ufer: 0 };
-                            r._waterLevelAt(ufer[i][2], ufer[i][3], uf);
-                            return r3(r._nahStreuBodenGewicht(globalThis.__phytoCore, schilfArt.zeile, {}, uf, grund[i]));
+                        const band = (x, z) => {
+                            let s = 0;
+                            for (let k = 0; k < 8; k++)
+                                for (const d of [30, 60]) {
+                                    const qx = x + Math.cos(k * 0.785) * d;
+                                    const qz = z + Math.sin(k * 0.785) * d;
+                                    s += r._ortNass(qx, qz, r._terrainMacroSurfaceY(qx, qz));
+                                }
+                            return r3(s);
                         };
-                        // Steg und Boot: der Anleger des Orts (`_anlegerOrt`, getragen nur, wo das Wasser Tiefgang + Luft hat), ihre Lage
-                        // `_anlegerLage` — dieselbe, die `_anlegerTakt` je Schritt an Steg und Boot schreibt
-                        const anleger = ufer.map(([x, z]) => (typeof r._anlegerOrt === "function" ? r._anlegerOrt(x, z) : null));
                         const leser = {
-                            ufer: (i, x, z, g) => r._atlasWaterLevelAt(x, z, g),
-                            schilf: (i) => schilf(i),
-                            fuss: (i, x, z, g) => r._koerperWasserSpiegel(x, z, g),
-                            steg: (i) => (anleger[i] ? r3(r._anlegerLage(anleger[i]).steg) : null),
-                            boot: (i) => (anleger[i] ? r3(r._anlegerLage(anleger[i]).boot) : null),
+                            ufer: (x, z, g) => r._atlasWaterLevelAt(x, z, g),
+                            schilf: (x, z) => band(x, z),
+                            fuss: (x, z, g) => r._koerperWasserSpiegel(x, z, g),
+                            spiegel: (x, z) => r._waterLevelAt(x, z),
+                            wand: (x, z) => (r._landAt(x, z, 0) ? 1 : 0),
+                            naesse: (x, z) => (r._nassAt(x, z) ? 1 : 0),
                         };
                         const namen = Object.keys(leser);
-                        const lies = () => ufer.map(([x, z], i) => { const g = r._terrainMacroSurfaceY(x, z); return namen.map((k) => leser[k](i, x, z, g)); });
+                        const lies = () => ufer.map(([x, z]) => { const g = r._terrainMacroSurfaceY(x, z); return namen.map((k) => leser[k](x, z, g)); });
                         const vor = lies();
                         const gegen = lies();
                         let nach;
@@ -120,21 +108,14 @@ L.perspektive("planet", (() => {
                         namen.forEach((n, j) => {
                             let folgt = 0;
                             let still = 0;
-                            let traeger = 0;
-                            const hub = [];
                             for (let i = 0; i < ufer.length; i++) {
-                                if (vor[i][j] === null) continue;
-                                traeger++;
                                 if (nach[i][j] !== vor[i][j]) folgt++;
                                 if (gegen[i][j] !== vor[i][j]) still++;
-                                if (n === "steg" || n === "boot") hub.push(Math.abs(nach[i][j] - vor[i][j] - 1));
                             }
-                            je[n] = [folgt, still, traeger, hub.length ? r3(Math.max(...hub)) : null];
+                            je[n] = [folgt, still];
                         });
-                        const a0 = anleger.find(Boolean);
-                        // das Auge sieht den Anleger: Steg und Boot an das erste tragende Ufer gelegt (`_anlegerLegen`, nach der Messung)
-                        if (a0) r._anlegerLegen(ufer[anleger.indexOf(a0)][0], ufer[anleger.indexOf(a0)][1], "siedlungslage-s1");
-                        aus.s1 = { punkte: ufer.length, je, zurueck: JSON.stringify(vor) === JSON.stringify(zur), anleger: anleger.filter(Boolean).length, schilfZeile: !!schilfArt, pose: a0 ? [a0.steg.x, r._koerperWasser(a0.steg.x, a0.steg.z, -Infinity), a0.steg.z, a0.steg.phi] : null };
+                        const fehlt = ["_stegAt", "_bootAt", "_stegeAm", "_bootAmUfer"].filter((n) => typeof r[n] === "function");
+                        aus.s1 = { punkte: ufer.length, je, zurueck: JSON.stringify(vor) === JSON.stringify(zur), steg: fehlt.length, pose: ufer[0] ? [ufer[0][0], r._terrainMacroSurfaceY(ufer[0][0], ufer[0][1]), ufer[0][1]] : null };
                         const art = ["_bodenArtAt", "_gesteinAt", "_schichtAt", "_bodenartAt", "_gesteinsArt"].filter((n) => typeof r[n] === "function");
                         let bG = 0;
                         let bF = 0;
@@ -221,21 +202,15 @@ L.perspektive("planet", (() => {
                     const w = await S(seite, { n: 50, zellen: 12 });
                     const aus = M.teil || {};
                     const s1 = w.s1;
-                    // je Leser der Anteil seiner Träger, der der Hebung folgt (Ufer, Schilf, Fuß an jedem Uferpunkt; Steg und Boot an jedem
-                    // Anleger — ein Ufer ohne Tiefgang trägt keinen); ein Leser ohne Träger zählt 0
-                    const anteil = (n) => (s1.je[n] && s1.je[n][2] ? s1.je[n][0] / s1.je[n][2] : 0);
-                    const leserProzent = s1.punkte ? Math.round((1000 * ["ufer", "schilf", "fuss", "steg", "boot"].reduce((s, n) => s + anteil(n), 0)) / 5) / 10 : null;
+                    const benannt = ["ufer", "schilf", "fuss"];
+                    const anteil = (n) => (s1.punkte ? s1.je[n][0] / s1.punkte : 0);
+                    const leserProzent = s1.punkte ? Math.round((1000 * (benannt.reduce((s, n) => s + anteil(n), 0) + 0 + 0)) / 5) / 10 : null;
                     const still = Object.values(s1.je).reduce((s, v) => s + v[1], 0);
-                    const hubAbw = Math.max(0, ...["steg", "boot"].map((n) => (s1.je[n] && s1.je[n][3] !== null ? s1.je[n][3] : 1)));
-                    // das Auge am Anleger: 14 m landeinwärts der Steg-Achse, 5 m hoch, auf Steg und Boot; die EINE Blick-Wahl rückt die
-                    // Pose frei, steht ein Werk zwischen Auge und Ziel (wahl 42)
-                    const pose = s1.pose
-                        ? { px: s1.pose[0] - Math.sin(s1.pose[3]) * 14, py: s1.pose[1] + 5, pz: s1.pose[2] - Math.cos(s1.pose[3]) * 14, lx: s1.pose[0] + Math.sin(s1.pose[3]) * 3, ly: s1.pose[1] + 0.5, lz: s1.pose[2] + Math.cos(s1.pose[3]) * 3 }
-                        : { ort: "wiese" };
+                    const pose = s1.pose ? { px: s1.pose[0] - 40, py: s1.pose[1] + 25, pz: s1.pose[2] - 40, lx: s1.pose[0], ly: s1.pose[1], lz: s1.pose[2] } : { ort: "wiese" };
                     aus[1] = {
                         werte: { leserProzent },
-                        zeuge: { punkte: s1.punkte, je: s1.je, still, zurueck: s1.zurueck, anleger: s1.anleger, hubAbw, schilfZeile: s1.schilfZeile },
-                        auge: await M.auge("siedlungslage-s1", pose, { wahl: 42 }),
+                        zeuge: { punkte: s1.punkte, je: s1.je, still, zurueck: s1.zurueck, stegBoot: s1.steg },
+                        auge: await M.auge("siedlungslage-s1", pose),
                         ...(s1.punkte < 50 ? { nicht: "nur " + s1.punkte + " Uferpunkte in 20 km um den Spieler (Soll 50)" } : {}),
                     };
                     // S2–S5 AM FÄCHER (M4): je Adresse der Export, den die Welt liest — die Bodenklasse und die Felsklasse an den Punkten
@@ -374,25 +349,18 @@ L.perspektive("planet", (() => {
                     1: {
                         u: { n: 50 },
                         soll: [K.soll(A, 1, "100 % der Leser", { key: "leserProzent", einheit: "%" })],
-                        auge: { pose: "14 m landeinwärts des ersten Anlegers, 5 m hoch, Blick auf Steg und Boot (die freie Pose der Blick-Wahl), vor ↔ nach der Hebung um 1 m", vorbild: "Bildpaar: Ufer, Schilf, Steg, Boot und Fuß folgen dem Spiegel (Blindpaar R11)" },
+                        auge: { pose: "50 m über dem ersten Uferpunkt, Blick aufs Ufer, vor ↔ nach der Hebung um 1 m", vorbild: "Bildpaar: Ufer, Schilf, Steg, Boot und Fuß folgen dem Spiegel (Blindpaar R11)" },
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
                             if (!(z.punkte >= 50)) return "nur " + (z.punkte || 0) + " Uferpunkte (Soll 50)";
                             if (z.still !== 0) return "im Gegenlauf ohne Hebung bewegen sich Leser (" + z.still + ")";
                             if (z.zurueck !== true) return "der Spiegel kehrte nicht zurück";
-                            if (!(z.anleger >= 1)) return "kein Ufer trägt einen Anleger (Steg und Boot ohne Träger)";
-                            if (!(z.hubAbw <= 0.03)) return "Steg und Boot heben sich nicht um 1 m ± 3 cm (Abweichung " + z.hubAbw + " m)";
-                            if (z.schilfZeile !== true) return "die Zeile schilf der Nah-Streu fehlt (kein Schilf-Leser)";
                             return null;
                         },
-                        taeter: "stamm/wasser-hydro.js:1045 _anlegerLage (Steg und Boot schwimmen am Spiegel) · :1011 _anlegerOrt · vegetation-wiese.js _nahStreuBodenGewicht (Schilf)",
-                        leser: "stamm/dirigent-takt.js:1206 _anlegerTakt je Schritt → stamm/wasser-hydro.js:1073 schreibt Steg und Boot auf _anlegerLage (:1045, liest _koerperWasser) · stamm/siedlung-ort.js:641 _anlegerLegen am Ort",
-                        gruen: { werte: { leserProzent: 100 }, zeuge: { punkte: 50, still: 0, zurueck: true, anleger: 2, hubAbw: 0, schilfZeile: true } },
-                        attrappen: [
-                            { name: "100 % ohne Uferpunkte der Welt", roh: { werte: { leserProzent: 100 }, zeuge: { punkte: 0 } } },
-                            { name: "100 % ohne einen Anleger (Steg und Boot ohne Träger)", roh: { werte: { leserProzent: 100 }, zeuge: { punkte: 50, still: 0, zurueck: true, anleger: 0, hubAbw: 0, schilfZeile: true } } },
-                            { name: "der Steg folgt nur halb (ein gedämpfter Spiegel)", roh: { werte: { leserProzent: 100 }, zeuge: { punkte: 50, still: 0, zurueck: true, anleger: 2, hubAbw: 0.5, schilfZeile: true } } },
-                        ],
+                        taeter: "stamm/wasser-hydro.js _waterLevelAt/_koerperWasserSpiegel (Steg und Boot ohne Leser)",
+                        leser: "stamm/siedlung-ort.js:3413 — _wegenetzLegen setzt keinen Steg und kein Boot ans Ufer (kein Leser des Spiegels für Steg/Boot)",
+                        gruen: { werte: { leserProzent: 100 }, zeuge: { punkte: 50, still: 0, zurueck: true } },
+                        attrappen: [{ name: "100 % ohne Uferpunkte der Welt", roh: { werte: { leserProzent: 100 }, zeuge: { punkte: 0 } } }],
                     },
                     2: {
                         u: {},
