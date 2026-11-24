@@ -375,8 +375,9 @@ const BRANDWAND_TAETER = {
     // die Toleranz ohne die Reichweite der Öffnungen (nur die Norm gap + 0,15)
     // (seit bau-rezept-tuer am Burg-Paar 12/60: die Brandwand urteilt über die ganze seitliche Überdeckung, an 2/120 reicht die Norm allein)
     "ohne Reichweite": { R: [["<Math.max(norm,A.reich[s])", "<norm"]], faelle: [{ seed: 12, nH: 60 }] },
-    // nur vor dem Los-Gesetz: die Brandwand urteilt nicht, wo die Lose stehen
-    "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 10, nH: 400 }] },
+    // nur vor dem Los-Gesetz: die Brandwand urteilt nicht, wo die Lose stehen (seit der Wache des Grund-Satzes, ort-ausstattung:
+    // 10/400 legt sich mit zwei Wachen neu, die Mutante fand dort 0 Paare — an 11/400 4, die tiefste Öffnung 0,151 m)
+    "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 11, nH: 400 }] },
 };
 function oeffnungImNachbarn(K, KH, faelle) {
     const ax = (o) => [[Math.cos(o.phi), -Math.sin(o.phi)], [Math.sin(o.phi), Math.cos(o.phi)]];
