@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 28,
+    "heute": 29,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 5.1,
+    "anteilHeute": 5.2,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -7037,7 +7037,7 @@
        "richter": "N = 20 Saaten: stabile Populationen ≥ 0,8; Pyramide folgt der Lebensspanne"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "der Leib kennt nur 18–80 J, keine Kinder (koerper-core.js:120–126); keine Geburt, kein Tod, keine Verwandtschaft bei Menschen (Grep leer)",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 82,
+  "heute": 83,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20103,7 +20103,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 52,
+  "beide": 53,
   "nachwache": 30
  },
  "zusammengelegt": [
