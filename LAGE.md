@@ -1,9 +1,27 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 10:58 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 12:18 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 12:20 (gilt VOR allem darunter): main **daee7541** (V18.546.401). GELANDET seit 10:39: z711 `w28-wind-saison` · z712 `w28-mensch-nah` ·
+  z713 `w28-saison-schatten` + `w28-klima-hebung` · z714 `w28-tat-aufwaerts`. Ansprüche gebucht: kraft#2 · jahreslauf#2, stadtklima#1 ·
+  aufwaerts#1; Station `pm-saison-schatten` gemischt (punkte-maschine 16f1cdae). KARTE 2: 83 von 1 718 (12:17).
+  GESTEMPELT, wartet auf den Zug: `w28-spiegel-eis` 04aa7ca9 (12:03; Anspruch nach der Landung `karte2.planet.wasser.eis#2`).
+  IN DER BATTERIE (Stempel bei Grün, Sätze `satz-<zweig>.txt` im Scratch und unten in der Übergabe): `auge-der-art` 3 f55b3018 (OMEN) ·
+  `probe-deckel-einlass` f4158c03 (GTX 1050) · `haus-gestalt` 5e497a9f · `haus-stoff` 51a7a9cb (gestapelt auf haus-gestalt: zuerst
+  haus-gestalt stempeln, dann haus-stoff). Wartezeug: `ci/gruen-warte.sh <name>:<sha40> …` (meldet nur echtes Grün/Rot, nie „abgebrochen“).
+  BEI OMEN (Aufträge in `auftrag/`): `2411-omen-ort-2.md` (ort-ausstattung dd38954b ist grün, aber KONFLIKT gegen main in README + zwei
+  GOLDEN → Merge, Vorprüfung 2; Satz `satz-ort-ausstattung.txt`) · `2411-omen-sport-3.md` (sport-regeln 998254be deterministisch ROT:
+  Kreatur-Linse Teil 1, Probe bewohner, 1 Steckenbleiber am Pfarrhaus um 18,8 Uhr) · danach scherbe-liegt.
+  RUNDE 20 am daee7541 seit 11:59: um 12:06 gtx „offen 0/0“, radeon „wartet nach dem Gesetz“ — prüfen; steht gtx nach 15 min, OMEN per Name.
+  GESTALT-MACHER (Radeon, höchstens zwei): `fahrzeug-gattung` (Baum AnazhRealm-acker, Boot/Karren/Steg, läuft seit 10:52, noch keine Abgabe) ·
+  das Haus in drei Stufen im Baum AnazhRealm-front-pl: `haus-gestalt` (Region folgt dem Klima: 16 Putz-Kuben → 17 Holzhäuser, Neigung
+  19,9 → 41,5°) → `haus-stoff` (Sockel in Stein, Höhe aus dem Wasser des Orts: 0,30 / 0,55 / 0,80 m) → OFFEN: Dach (Deckung und Neigung aus
+  Klima und Schnee; `stroh` erlaubt 38° unter der Reet-Regel 45°), Gefach aus Boden und Bestand, Sockel am Hang, L1/L2 verlieren Sockel und
+  Gefach. Bilder: Scratch `hg/` (vorher2, nachher, stoff-vorher, stoff-nachher). Quellen-Band: `bericht/2411-quellen/`.
+  APPARAT: `ci/main-veraltet.sh` bricht Batterien an überholten main-Köpfen ab (jede Landung stößt 22 Jobs an main an; die alte band 12 von
+  20 Läufern); der Vorfahrt-Wächter läuft bis ~13:08. VERBRAUCH 12:17: 85 % alle Modelle, 78 % Fable — etwa 6 % je Stunde; Wechsel bei 98 %.
 - NACHTRAG 10:58 (gilt VOR allem darunter): main a3af6df0 (z711 `w28-wind-saison`, 10:39). GESTEMPELT, warten auf den Zug: `w28-mensch-nah`
   28e4f478 (10:27) · `w28-saison-schatten` b931d665 (10:54) · `w28-klima-hebung` 119cc162 (10:57). IN DER BATTERIE: `tat-aufwaerts` 03d2bba8
   (GPU-Probe grün, Code-Check Versuch 4) · `sport-regeln` 998254be (dreimal vom Vorfahrt-Wächter abgebrochen, abgebrochen ist nicht rot; vor dem
