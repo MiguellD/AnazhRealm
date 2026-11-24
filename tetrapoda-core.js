@@ -5659,13 +5659,29 @@
         }
         return Math.sqrt(s);
     }
-    // die Entdeckungsdistanz (m) eines Ziels der Breite breiteM mit dem Abstand dS (Schritte) für ein Auge der Schärfe cpd
-    function augeEntdeckung(cpd, breiteM, dS, kanaele) {
+    // die Entdeckungsdistanz (m) eines Ziels der Breite breiteM mit dem Abstand dS (Schritte) für ein Auge der Schärfe cpd, DURCH
+    // DIE LUFT der Welt: der Abstand fällt mit der Strecke wie der Kontrast (Koschmieder, dS·e^{−β·d}; β die Extinktion der EINEN
+    // Luft am Auge in 1/m, 0 = Vakuum) — entdeckt ist, was bei d noch über 1 Schritt trägt und dessen Fläche bei d die
+    // Riccò-Schwelle hält: der größte solche Abstand (weit(dS·e^{−β·d}) − d fällt monoton, Halbierung). Bis auge-der-art 2 sah
+    // jedes Auge durch Vakuum: der Hirsch den Spieler auf 1,2 km, der Mensch den Hirsch auf 9,7 km, bei Sonne wie im Sturm.
+    function augeEntdeckung(cpd, breiteM, dS, kanaele, beta) {
+        if (!(beta >= 0)) throw new Error("augeEntdeckung: die Extinktion der Luft fehlt (" + beta + ")");
         if (!(cpd > 0) || !(breiteM > 0) || !(dS > 1)) return 0;
         var w = SINNES_GESETZ.omega,
             voll = (Math.sqrt(kanaele) * Math.log(1 / w)) / w,
             b0 = Math.PI / 180 / (2 * cpd);
-        return breiteM / Math.tan(b0 * Math.sqrt(Math.max(1, voll / dS)));
+        var weit = function (s) {
+            return breiteM / Math.tan(b0 * Math.sqrt(Math.max(1, voll / s)));
+        };
+        var hi = beta > 0 ? Math.min(weit(dS), Math.log(dS) / beta) : weit(dS),
+            lo = 0;
+        if (weit(dS * Math.exp(-beta * hi)) >= hi) return hi;
+        for (var i = 0; i < 40; i++) {
+            var m = (lo + hi) / 2;
+            if (weit(dS * Math.exp(-beta * m)) >= m) lo = m;
+            else hi = m;
+        }
+        return lo;
     }
     // DAS AUGE DES LEIBS: aus den Tier-Parametern (`deriveTierParams`) und der Größe des Leibs (skala, 1 = das Rezept) das
     // Taxon, die Augenlänge (mm) und die Schärfe — dieselben Zahlen, die `bauTier` zum Augapfel formt

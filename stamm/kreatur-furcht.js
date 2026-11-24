@@ -211,7 +211,10 @@ class AnazhRealm_kreatur_furcht {
         const Z = this._sichtZiel(ziel);
         const p = ziel.position;
         const boden = this._bodenFarbeAt(p.x, p.y, p.z, this._sichtBoden || (this._sichtBoden = [0, 0, 0]));
-        return K.augeEntdeckung(A.cpd, Z.kanteM, K.augeAbstand(A.fang, Z.farbe, boden), A.fang.kanaele);
+        // DIE LUFT DER WELT (auge-der-art 2): die Extinktion am Auge aus der EINEN Sichtweite, die Bild und Wetter lesen
+        // (`_luftSichtM`, Koschmieder: β = −ln(LUFT.kontrast) / V) — kein eigener Dunst im Auge
+        const beta = -Math.log(AnazhRealm.LUFT.kontrast) / this._luftSichtM(creature.position.y);
+        return K.augeEntdeckung(A.cpd, Z.kanteM, K.augeAbstand(A.fang, Z.farbe, boden), A.fang.kanaele, beta);
     }
 
     // DAS AUGE DES LEIBS (tetrapoda `augeDesLeibs`): Taxon, Augenlänge und Schärfe aus den Dials seines Gusses (die Gattung mit
