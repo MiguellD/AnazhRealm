@@ -7039,8 +7039,9 @@ L.perspektive("oeko", (() => {
             },
             // ═══ DER ZERFALL: Kadaver und Nährstoff nach jedem Tod, Verwesung, Totholz, Pilze, Streu, Bilanz ═══
             [ZE]: {
-                sek: 10,
+                sek: 24,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_TIER.concat(["stamm/vegetation-wiese.js", "foundry-core.js"]),
                 ungefahren: "die Bildreihen (S2 Verwesung, S3 Totholz, S6 Walfall) — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
@@ -7252,6 +7253,109 @@ L.perspektive("oeko", (() => {
                         KD = { fehler: String((e && e.message) || e).slice(0, 200), rate: {} };
                     }
                     const HO = await seite(holz, { halb: 50 });
+                    // DER FÄCHER DER VERWESUNG (S2): zehn Kadaver jeder Größe ZUGLEICH (Hirsch, Wolf, Fuchs, Bär je in zwei bis drei
+                    // Größen, 9 … 450 kg) fallen nebeneinander durch den EINEN Fall (`_kreaturFaellt`, stamm/kreatur-leben.js:931: der Kadaver
+                    // trägt sein Fleisch, die Frist des Leichnams) — dann treibt DERSELBE Takt der Gefallenen (`_tickLeichname`, :3407, den der
+                    // Kreatur-Takt je Frame ruft, kreatur-verhalten.js:2811) ihre Uhr bis zu den Tagen der Bildreihe 0/3/10/30 (Tag = der
+                    // Standard-Tag `normS` des Kalenders, feld-leben.js:2678 — die Bühne hält ihren Tag an). Je Tag: wer liegt, sein Fleisch,
+                    // seine Phase, seine Witterung an der Reichweite der Nase (`_scentAt`, koerper-seele.js:1618, Quelle = das Fleisch wie
+                    // `_kreaturAasZug`, kreatur-verhalten.js:257); die Gilden am Aas: wer das Fleisch frisst (`_kreaturDiet` über pflanzDiet, :265)
+                    const ZE2_AN = async (r, T, a, mit) => {
+                        const A = r.constructor, s = r.state, pm = s.playerMesh.position;
+                        const tagS = r._kalender().normS;
+                        let C = r.__ze2;
+                        if (!C) {
+                            C = r.__ze2 = { t: 0, L: [], leichen: [], fort: [], max: s.maxCreatures };
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + mit.kadaver.length + 1);
+                            mit.kadaver.forEach(([seele, b], i) => {
+                                const [x, z] = [pm.x + mit.dx + (i % 5) * mit.abstand, pm.z + mit.dz + Math.floor(i / 5) * mit.abstand];
+                                const k = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.5, z, "happy", seele, { precise: true, bodySize: b });
+                                if (!k) return;
+                                const kg = r._leibMasse(k);
+                                r._kreaturFaellt(k);
+                                // der Gefallene liegt in der Liste der Probe, nie in der der Welt (kein fremder Takt treibt ihn, kein Tier der Welt riecht ihn)
+                                const j = s.leichname.indexOf(k);
+                                if (j >= 0) s.leichname.splice(j, 1);
+                                C.L.push(k);
+                                C.leichen.push({ k, seele, b, kg, f0: k.userData.kadaver ? k.userData.kadaver.fleisch : null });
+                            });
+                            const VG = A._verhaltenGesetz();
+                            C.gattungen = Object.entries(r._bestandDiet()).filter(([, d]) => d > VG.temperament.gattung.pflanzDiet).map(([g]) => g);
+                            C.R = VG.jagd.scentRangeM;
+                        }
+                        if (C.leichen.length < mit.kadaver.length) return { fehlt: "nur " + C.leichen.length + " von " + mit.kadaver.length + " Kadavern fielen (spawnCreatureAt)" };
+                        const ziel = a.zeit * tagS;
+                        const zeilen = r._schirm().hoehe;
+                        while (C.L.length && C.t < ziel - 1e-9) {
+                            const dt = Math.min(mit.schrittS, ziel - C.t);
+                            const L0 = s.leichname;
+                            s.leichname = C.L;
+                            try {
+                                r._tickLeichname(dt, pm, zeilen);
+                            } finally {
+                                s.leichname = L0;
+                            }
+                            C.t += dt;
+                            C.leichen.forEach((e, i) => {
+                                if (C.fort[i] == null && !C.L.includes(e.k)) C.fort[i] = C.t;
+                            });
+                        }
+                        C.t = Math.max(C.t, ziel);
+                        const je = C.leichen.map((e, i) => {
+                            const K = e.k.userData.kadaver, d = e.k.userData.dying;
+                            const liegt = C.fort[i] == null;
+                            const phase = !liegt ? "fort" : d.fall < d.dauer ? "kippt" : d.t > d.dauer + d.nachklang - d.sinken ? "sinkt" : "liegt";
+                            const wit = liegt && K && K.fleisch > 0 ? r._scentAt(e.k.position.x + C.R, e.k.position.z, [{ x: e.k.position.x, z: e.k.position.z, strength: K.fleisch }]) : 0;
+                            return { seele: e.seele, kg: Math.round(e.kg * 10) / 10, liegt, phase, fleisch: liegt && K ? Math.round(K.fleisch * 100) / 100 : 0, felder: K ? Object.keys(K).join("+") : "", wit: Math.round(wit * 1e4) / 1e4, liegtS: liegt ? Math.round(C.t) : Math.round(C.fort[i]) };
+                        });
+                        const g = je.reduce((p, q) => (q.kg > p.kg ? q : p), je[0]);
+                        return { tag: a.zeit, n: je.length, liegen: je.filter((q) => q.liegt).length, fleisch: Math.round(je.reduce((q, e) => q + e.fleisch, 0) * 10) / 10, kgMin: Math.min(...je.map((q) => q.kg)), kgMax: g.kg, phaseGross: g.phase, phasen: [...new Set(je.map((q) => q.phase))].join("/"), felder: [...new Set(je.map((q) => q.felder))].join("/"), witMin: Math.min(...je.map((q) => q.wit)), witMax: Math.max(...je.map((q) => q.wit)), riechen: je.filter((q) => q.wit > 0).length, liegtTageMax: Math.round((1e4 * Math.max(...je.map((q) => q.liegtS))) / tagS) / 1e4, liegtSMin: Math.min(...je.map((q) => q.liegtS)), liegtSMax: Math.max(...je.map((q) => q.liegtS)), gattungen: C.gattungen.join(", "), tagS };
+                    };
+                    let R2 = null;
+                    if (U[2]) {
+                        const TAGE = [0, 3, 10, 30];
+                        const amTag = (aus, t, f) => {
+                            const x = aus.find((q) => q.a.zeit === t);
+                            return x ? x.w[f] : null;
+                        };
+                        try {
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: ZE2_AN, export: "stamm/kreatur-leben.js:931 _kreaturFaellt (der Kadaver und seine Frist) · :3407 _tickLeichname · stamm/koerper-seele.js:1618 _scentAt", leser: "stamm/kreatur-verhalten.js:2811 (der Kreatur-Takt treibt die Gefallenen je Frame) · :257 _kreaturAasZug (wer wittert und frisst)" },
+                                adressen: { zeiten: TAGE },
+                                mit: { kadaver: [["wesen", 0.6], ["wesen", 1], ["wesen", 1.4], ["wolf", 0.8], ["wolf", 1.2], ["fuchs", 0.7], ["fuchs", 1], ["fuchs", 1.3], ["baer", 0.8], ["baer", 1.15]], dx: 24, dz: 24, abstand: 6, schrittS: 0.5 },
+                                ms: 9000,
+                                masse: {
+                                    kadaver: { wie: "erste", feld: "n" },
+                                    kgMin: { wie: "erste", feld: "kgMin" },
+                                    kgMax: { wie: "erste", feld: "kgMax" },
+                                    kadaverTage: { wie: "max", feld: "liegtTageMax" },
+                                    liegenJeTag: { wie: (v) => v.join("/"), feld: "liegen" },
+                                    // die Verwesungsstufen: die verschiedenen Zustände des größten Kadavers an den Tagen der Bildreihe
+                                    stufen: { wie: (v) => new Set(v).size, feld: "phaseGross" },
+                                    stufenListe: { wie: (v) => v.join(" → "), feld: "phaseGross" },
+                                    kadaverFelder: { wie: "erste", feld: "felder" },
+                                    liegtSMin: { wie: "max", feld: "liegtSMin" },
+                                    liegtSMax: { wie: "max", feld: "liegtSMax" },
+                                    fleischTag0: { wie: (v, aus) => amTag(aus, 0, "fleisch") },
+                                    fleischTag30: { wie: (v, aus) => amTag(aus, 30, "fleisch") },
+                                    riechenTag3: { wie: (v, aus) => amTag(aus, 3, "riechen") },
+                                    witterungMin: { wie: (v, aus) => amTag(aus, 0, "witMin") },
+                                    witterungMax: { wie: (v, aus) => amTag(aus, 0, "witMax") },
+                                    aasGattungen: { wie: "erste", feld: "gattungen" },
+                                    // die Gilden am Aas (Kamerafallen zählen Vögel und Säuger): der EINE Leser des Fleischs ist der Säuger mit diet über pflanzDiet
+                                    aasGilden: { wie: (v, aus) => (aus.length && aus[0].w.gattungen ? 1 : 0) },
+                                    tagS: { wie: "erste", feld: "tagS" },
+                                },
+                                schlecht: { feld: "liegen", richtung: "min" },
+                                pose: (q, w) => "Ego vor 10 Kadavern jeder Größe am Tag " + w.tag + ": " + w.liegen + " von " + w.n + " liegen (" + w.phasen + ")",
+                                ungemessen: ["die Bildreihe 0/3/10/30 Tage gegen die forensische Referenz (Bildpflicht) — ungemessen bis zum Gerät", "die Ankunftsfolge im Bild: der Fächer zählt die Gilden, die das Fleisch lesen, und die Witterung je Kadaver; den Weg der Fresser hin geht nur der Kreatur-Takt"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
+                        // der Sandkasten: die Kadaver der Probe gehen (in ihrer eigenen Liste), die Kappe steht wieder
+                        await H.seite("const C = r.__ze2; delete r.__ze2; if (!C) return false; const L0 = r.state.leichname; r.state.leichname = C.L; try { for (const c of C.L.slice()) r.removeCreature(c); } finally { r.state.leichname = L0; } r.state.maxCreatures = C.max; return true;");
+                    }
                     const aus = M.teil || {};
                     const plus = TD.tode.map((d) => Math.round((d.nach - d.vor) * 1000) / 1000);
                     const verh = KD.rate[1] > 0 ? Math.round((KD.rate[3] / KD.rate[1]) * 100) / 100 : null;
@@ -7259,7 +7363,26 @@ L.perspektive("oeko", (() => {
                     const ohne = TD.tode.filter((d) => !(d.nach > d.vor)).map((d) => d.u);
                     if (ohne.length) aus[1].taeter = "stamm/kreatur-leben.js _bestandStirbt — kein Nährstoff nach " + ohne.join(", ") + " (nur die Tat riss des Spielers düngt)";
                     const tage = KD.nachklangS ? Math.round(((KD.nachklangS + (KD.sinkenS || 0)) / KD.tagS) * 1000) / 1000 : null;
-                    aus[2] = { werte: tage === null ? {} : { kadaverTage: tage, aasGilden: 1 }, zeuge: { antworten: 1, streuung: 0, aasGattungen: HO.aasGattungen }, auge: await M.auge("oeko-zerfall-s2", { ort: "wiese" }), nicht: "keine Verwesungsstufen und keine Gilde-Folge — der Kadaver trägt Fleisch und sinkt nach " + (tage === null ? "?" : tage) + " Spieltagen; Aasfresser nur die Säuger (" + HO.aasGattungen.join(", ") + ")" };
+                    if (U[2]) {
+                        // die zehn Kadaver und ihre Tage trägt der Fächer allein; der eine Hirsch der Bühne (KD) bleibt Beiwert
+                        const RW = R2 && R2.werte;
+                        aus[2] = {
+                            werte: {
+                                kadaverTage: RW ? RW.kadaverTage : undefined,
+                                stufen: RW ? RW.stufen : undefined,
+                                aasGilden: RW ? RW.aasGilden : undefined,
+                                ...(RW ? { kadaver: RW.kadaver, kg: RW.kgMin + "–" + RW.kgMax, liegenJeTag: RW.liegenJeTag, stufenListe: RW.stufenListe, kadaverFelder: RW.kadaverFelder, liegtS: RW.liegtSMin + "–" + RW.liegtSMax, fleischTag0: RW.fleischTag0, fleischTag30: RW.fleischTag30, witterung: RW.witterungMin + "–" + RW.witterungMax, riechenTag3: RW.riechenTag3, aasGattungen: RW.aasGattungen, tagS: RW.tagS } : {}),
+                                buehneKadaverTage: tage,
+                            },
+                            // der Zeuge ist der Fächer: 10 Kadaver × 4 Tage, die Streuung der Liegenden über die Tage, vor ↔ nach das Fleisch am Tag 0 und 30
+                            zeuge: { antworten: RW ? (RW.kadaver || 0) * R2.gemessen : 0, streuung: RW ? new Set(String(RW.liegenJeTag).split("/")).size - 1 : 0, vor: RW ? RW.fleischTag0 : undefined, nach: RW ? RW.fleischTag30 : undefined, faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)), aasGattungen: HO.aasGattungen },
+                            auge: await M.auge("oeko-zerfall-s2", { ort: "wiese" }),
+                            ...(R2 && R2.akte ? { akte: R2.akte } : {}),
+                        };
+                        // Umfang „10 Kadaver jeder Größe zugleich“: fehlt nur, wenn die Welt die zehn nicht fallen lässt
+                        if (!RW) aus[2].nicht = "der Fächer der Verwesung warf: " + ((R2 && R2.fehlerText) || "ohne Antwort");
+                        else if (R2.fehlt) aus[2].nicht = R2.fehlt;
+                    }
                     const tot = Object.entries(HO.je).filter(([k]) => /^deadwood:/.test(k)).reduce((q, [, n]) => q + n, 0);
                     const tp = HO.streuBereit && HO.baeume + tot > 0 ? Math.round((1000 * tot) / (HO.baeume + tot)) / 10 : null;
                     aus[3] = { werte: tp === null ? {} : { totholzProzent: tp }, zeuge: { antworten: HO.streuBereit ? HO.baeume + tot : 0, streuung: tot > 0 ? 1 : 0, je: HO.je, baeume: HO.baeume, streuBereit: HO.streuBereit, streuWarteMs: HO.streuWarteMs }, auge: await M.auge("oeko-zerfall-s3", { ort: "wiese" }), nicht: "Totholz ohne Zeit — Stumpf und Totstamm der Nah-Streu ohne Zerfallsklasse, Moos und Ammenstamm; der Anteil zählt Stücke, keine Biomasse" };
@@ -7289,13 +7412,28 @@ L.perspektive("oeko", (() => {
                     },
                     2: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(ZE, 2, "Bildreihe 0/3/10/30 Tage", { key: "kadaverTage", rel: "≥", zahl: 30, einheit: "Tage" })],
+                        soll: [
+                            K.soll(ZE, 2, "Bildreihe 0/3/10/30 Tage", { key: "kadaverTage", rel: "≥", zahl: 30, einheit: "Tage" }),
+                            K.soll(ZE, 2, "forensische Referenz", { key: "stufen", rel: "≥", zahl: 4, refQuelle: "Payne 1965, Ecology 46:592 (Ferkel-Kadaver im Sommer): sechs Stufen der Verwesung — frisch, aufgebläht, aktive Verwesung, fortgeschrittene Verwesung, trocken, Reste; die Bildreihe der Karte (vier Tage 0/3/10/30) trifft vier verschiedene" }),
+                            K.soll(ZE, 2, "Gilde-Folge im Band von Kamerafallen-Studien", { key: "aasGilden", rel: "≥", zahl: 2, refQuelle: "Selva et al. 2005, Can. J. Zool. 83:1590 (doi 10.1139/z05-158): 214 Kadaver, meist Huftiere, im Urwald von Białowieża — am meisten genutzt von Baummarder, Eichelhäher und Wildschwein: Vögel UND Säuger am Aas (zwei Gilden)" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer der Verwesung warf: " + z.fehler;
+                            if (!(z.faecher >= 4)) return "nur " + (z.faecher || 0) + " Tage des Fächers gemessen (Soll 4: 0/3/10/30)";
+                            return zeugeWelt(10, true)(roh);
+                        },
                         auge: { pose: "Ego vor 10 Kadavern jeder Größe (heute: die Wiese)", vorbild: "Bildreihe 0/3/10/30 Tage gegen eine forensische Referenz; Gilde-Folge gegen Kamerafallen-Studien (Prüfer-Satz R11)" },
-                        taeter: "stamm/kreatur-leben.js _tickLeichname (keine Verwesungsstufe)",
-                        nicht: "keine Verwesungsstufen, keine Gilde-Folge",
-                        leser: "stamm/kreatur-leben.js:3179 _tickLeichname — kennt Fleisch und Sinken, keine Verwesungsstufe; kein Vogel, kein Insekt am Aas",
-                        gruen: gut({ kadaverTage: 32, aasGilden: 4 }, 10),
-                        attrappen: [{ name: "30 Tage behauptet ohne Kadaver", roh: flach({ kadaverTage: 32, aasGilden: 4 }) }],
+                        taeter: "schmiede-core.js:3995 gefuehl.leichnamSec 90 / :3996 leichnamSinkSec 4 (die Frist jedes Leichnams, gleich welcher Größe) · stamm/kreatur-leben.js:1006 Kadaver { fleisch } (keine Stufe, keine Temperatur) · stamm/kreatur-verhalten.js:265 (nur der Säuger über pflanzDiet frisst Aas; kein Vogel, kein Insekt liest state.leichname)",
+                        nicht: "10 Kadaver jeder Größe zugleich",
+                        leser: "stamm/kreatur-leben.js:3407 _tickLeichname — kippt, liegt die Frist, sinkt, removeCreature; kennt Fleisch und Sinken, keine Verwesungsstufe",
+                        gruen: { werte: { kadaverTage: 32, stufen: 4, aasGilden: 3 }, zeuge: { antworten: 40, streuung: 3, vor: 520, nach: 12, faecher: 4 } },
+                        attrappen: [
+                            { name: "30 Tage behauptet ohne Kadaver", roh: flach({ kadaverTage: 32, stufen: 4, aasGilden: 3 }) },
+                            { name: "der Kadaver der Bühne allein (der Fächer fehlt)", roh: { werte: { kadaverTage: 32, stufen: 4, aasGilden: 3 }, zeuge: { antworten: 40, streuung: 3, vor: 520, nach: 12, faecher: 0 } } },
+                            { name: "das Fleisch blieb unberührt (vor = nach)", roh: { werte: { kadaverTage: 32, stufen: 4, aasGilden: 3 }, zeuge: { antworten: 40, streuung: 3, vor: 520, nach: 520, faecher: 4 } } },
+                            { name: "die Welt heute (94 s Frist, zwei Phasen, eine Gilde)", roh: { werte: { kadaverTage: 0.0261, stufen: 2, aasGilden: 1 }, zeuge: { antworten: 40, streuung: 1, vor: 520, nach: 0, faecher: 4 } } },
+                        ],
                     },
                     3: {
                         u: { auge: { ort: "wiese" } },
