@@ -20086,7 +20086,7 @@
   },
   "karte2.mensch.macht.grenze": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: Station seit der Messung geändert · karte2.mensch.macht.grenze#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js +1) · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: Station seit der Messung geändert · karte2.mensch.macht.grenze#1 gtx: ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal an 4171973a · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.grenze#1",
@@ -20102,10 +20102,9 @@
      "id": "karte2.mensch.macht.grenze#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/stamm.cjs, stamm/siedlung-ort.js +1)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal",
+     "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
+     "grund": "ROT: S1 ROT an Grenze im Bild deckt die Karte (Anteil) 0 verfehlt ≥ 1 — Täter: stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEines · Grenze im Bild deckt die Karte (Anteil) 0 (Soll ≥ 1) · Burg, wo Lage und Reichtum sie tragen (Anteil) 1 (Soll ≥ 1) · Umfang 1 (Soll ≥ 1 Herrschaftsgebiet) · Reich 424 m um den Ort mit Herrn (0.565 km²) · Grenzzeichen in der Szene 0, davon am Rand 0 · Rand im Bild 0 von 360 Punkten · Burg in Lage 1 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37739,7 +37738,7 @@
   "ohne": 3303
  },
  "kopfVoll": "4171973adc8279ac233fc37a2cee24c6105104de",
- "zeit": "2026-11-24T22:11:19.516Z",
+ "zeit": "2026-11-24T22:17:56.031Z",
  "vorher": "4171973a",
  "bilanz": {
   "gewinn": [],
