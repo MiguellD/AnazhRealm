@@ -2209,19 +2209,25 @@
   // klima-kontinent: EIN Schritt des Feuchte-Integrals längs des Winds über einen Knoten mit Meer-Anteil sj und Hülle hk (km), Schritt-
   // Faktoren eM (Meer) und eL (Land). Zustand KL_W: [0] mW Nachladen/Zehren, [1] sp die Sperre, [2] hS die Sperrhöhe (−1 am Rand des
   // Fensters: der erste Knoten setzt sie, ohne zu sperren — jenseits des Fensters ist nichts bekannt), [3] mLand die Rückführung.
+  // klima-aufwind: sh ist der Meer-Anteil der SPERRE — er liest die Höhe, an der die Sperre steigt (nah glatt(+0,3; −0,6 km) am Relief
+  // des Schritts; fern sj: die Hülle trägt Höhe und Küste aus EINEM Lesen). Vorher teilten Sperre und Feuchte sj von der Küste der Hülle:
+  // wo sie Meer sagte und das Relief des Schritts ein Hochland trug, fiel hS auf 0, und der Hub sprang am nächsten Ort (Flachland-Paare
+  // auf 20 km, erde-01: p99 377 → 244 mm, größter Sprung 3 289 → 2 341 mm).
   const KL_W = new Float64Array(4);
-  function feuchteKnoten(eM, eL, sj, hk) {
+  function feuchteKnoten(eM, eL, sj, hk, sh) {
     const mW = KL_W[0], sp = KL_W[1], hS = KL_W[2], mLand = KL_W[3], hl = hk > 0 ? hk : 0;
     let spL = 1 - (1 - sp) * eL, hL = hl;
     if (hS >= 0) { if (hl > hS) spL *= kexpS(-(hl - hS) / KLIMA.sperreKm); else hL = hl + (hS - hl) * eL; }
     KL_W[0] = sj * (1 - (1 - mW) * eM) + (1 - sj) * (mLand + (mW - mLand) * eL);
-    KL_W[1] = sj * (1 - (1 - sp) * eM) + (1 - sj) * spL;
-    KL_W[2] = (1 - sj) * hL;
+    KL_W[1] = sh * (1 - (1 - sp) * eM) + (1 - sh) * spL;
+    KL_W[2] = (1 - sh) * hL;
   }
-  // klima-aufwind DAS RELIEF DER LUFT-SCHRITTE: die nahen Schritte (100 … 300 km) und der eigene Ort lesen das Relief am Fuß ihres
-  // Schritts (FEUCHTE_NAH_KM: Wellen ≥ 2 Schritte — was der Takt der Knoten ohne Alias trägt). Vorher
+  // klima-aufwind DAS RELIEF DER LUFT-SCHRITTE: die nahen Schritte (100 … 300 km) lesen das Relief am Fuß ihres Schritts
+  // (FEUCHTE_NAH_KM: Wellen ≥ 2 Schritte — was der Takt der Knoten trägt), der eigene Ort seine sichtbare Höhe (der Punkt des Rufers,
+  // dieselbe, an der die Temperatur fällt): der Regen steigt, wo das Land steigt, das man sieht — am Fuß des Schritts gelesen (ein
+  // fünftes Lesen des Kerns) trug der eigene Ort dieselben Zahlen (Luv/Lee 2,41 ↔ 2,43, Sprung p99 248 ↔ 244 mm) für +7,5 µs. Vorher
   // lasen sie die Hülle (Fuß 400 km, Wellen ≥ 800 km): eine Kette von 300 km Breite stand dem Klima als flacher Buckel, ihr Luv-Hang
-  // 160 km vor dem Kamm trug keinen Anstieg und ihr Lee keinen Abstieg (Heimat, 291 Kämme: Median Luv/Lee 1,91 an der Hülle, 2,47
+  // 160 km vor dem Kamm trug keinen Anstieg und ihr Lee keinen Abstieg (Heimat, 291 Kämme: Median Luv/Lee 1,91 an der Hülle, 2,49
   // am Relief des Schritts). Die fernen Knoten (650 … 1 850 km, Takt 600 km) lesen weiter die Hülle: ihr Takt trägt nichts Feineres.
   // DIE KÜSTE DER SCHRITTE bleibt die der Hülle (`kuesteHuelle`: dasselbe grobe Krustenfeld am Fuß 400 km, das `planetHuelle` als kont
   // trägt, ohne ihre Höhe): sie trägt die Meeresluft `mar` und damit Sommer und Winter — mit der Küste am Fuß des Schritts wanderte
@@ -2258,7 +2264,7 @@
       // Schritte luvwärts (fern → nah): Meer füllt die Feuchte auf, Land zehrt, Kämme beschatten. Alles stetig: Meer-Anteil je
       // Hüllen-Schritt s = glatt(+0,3; −0,6 km; Hülle), je Feuchte-Knoten glatt über den halben Takt; keine Schwelle.
       const mLand = KLIMA.feuchteLand0 + (KLIMA.feuchteLand1 - KLIMA.feuchteLand0) * glatt(5, 25, tZ);
-      const hO = klimaRelief(S, x, y, z);                                 // das eigene Relief: Föhn und Hub auf derselben Lesart wie die Schritte
+      const hO = hKm;                                                     // das eigene Relief: die sichtbare Höhe des Orts — Hub und Föhn gegen die Sperrhöhe der Säule
       const mNeutral = mLand + (1 - mLand) * kexpS(-Math.max(0, kont) / 1000);   // ohne Windrichtung (Zellrand): Feuchte nach Küstenferne
       let mW = mNeutral, schranke = 0, hubW = 0, mar = 0, sp = 1;
       const om = wl / 1.044;                                              // G2.3 Gewicht des Luv-Gangs wächst stetig mit dem Wind; am Zellrand (Wind 0) trägt mNeutral
@@ -2287,13 +2293,13 @@
           const sk = FEUCHTE_FERN[kq], a = sk / R, ca = kcos(a), sa = ksin(a);
           const hk = planetHuelle(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz), kk = PK.kont;
           const sj = glatt(0.5 * FEUCHTE_FERN_KM, -0.5 * FEUCHTE_FERN_KM, kk);
-          feuchteKnoten(eMf, eLf, sj, hk);
+          feuchteKnoten(eMf, eLf, sj, hk, sj);
           const mj = sj * kexpS(-sk / 600); if (mj > mar) mar = mj;
         }
         const eMn = kexpS(-FEUCHTE_NAH_KM / KLIMA.meerKm), eLn = kexpS(-FEUCHTE_NAH_KM / KLIMA.landKm);
         for (let j = 2; j >= 0; j--) {
           const sj = glatt(0.5 * FEUCHTE_NAH_KM, -0.5 * FEUCHTE_NAH_KM, KL_K[j]);
-          feuchteKnoten(eMn, eLn, sj, KL_H[j]);
+          feuchteKnoten(eMn, eLn, sj, KL_H[j], glatt(0.3, -0.6, KL_H[j]));
           const mj = sj * kexpS(-KLIMA.schritte[j] / 600); if (mj > mar) mar = mj;
         }
         mW = KL_W[0]; sp = KL_W[1];
