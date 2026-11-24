@@ -1,0 +1,14 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 11.9 s · am Messort dorf (ego) nach 11.9 s, 502 Takte
+@@ 34 s · Tier S2: Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in 22087 ms · Leser stamm/siedlung-bewohner.js:2239 · Gesetz koerper-core.js:5459 tagesOrte + :5630 tagesPlan (TAGES_GESETZ :5300) · schlechteste {"saat":1,"ort":null,"zeit":0.5} jagd 0 · ungemessen: der Wildbestand unter der Jagd (ohne Jäger keine Jagd, die ihn senkt)
+@@ 34 s · S3 warf: z is not defined
+@@ 34 s · S4 warf: z is not defined
+@@ 34 s · S5 warf: z is not defined
+@@ 34 s · S6 warf: z is not defined
+@@ 34 s · S7 warf: z is not defined
+@@ 41 s · S1 warf: /eval ohne Antwort binnen 7 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
