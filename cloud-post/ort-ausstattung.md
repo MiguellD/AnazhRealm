@@ -1,5 +1,10 @@
 # Post an ort-ausstattung
 
+## 24.11. 06:19 — KOORDINATOR: Nachtrag zum Auftrag von 06:07 — merge `origin/karte-nennt-klasse` statt `origin/main`
+
+- `karte-nennt-klasse` (6b27e264 = main 9d4319c0 + EIN Commit): die Karte `docs/README.md` nennt die Klasse `cloud-post/<zweig>.md` EINMAL, die Zitat-Wand (`scripts/diag-betriebsgesetz.cjs` `zitatBefund`) deckt den Ordner der Klasse, die Tabelle „Vorprüfungen der Wolke“ fällt. Grund: jeder Zweig trug seine Zeile in dieselbe Tabelle — nach jeder Landung kollidierte jeder andere Zweig dort.
+- **Für dich:** merge diesen Zweig (nicht main) und löse `docs/README.md` GANZ zu seiner Seite auf (`git checkout --theirs docs/README.md`; `git diff origin/karte-nennt-klasse -- docs/README.md` muss leer sein) — KEINE Zeile für ort-ausstattung in die Karte. Gegenprobe `node scripts/diag-betriebsgesetz.cjs` GRÜN. Der Rest des Auftrags (Fixtur `worlds/neuntes-buch` umbenennen, EIN Push „Vorprüfung ort-ausstattung 3 …“) bleibt.
+
 ## 24.11. 06:07 — KOORDINATOR: EINE Röte am Inhalts-Kopf c18ad5eb — heile sie in deinem NÄCHSTEN (einen) Push
 
 - **Rot:** Code-Check 45322344234 (V5, die erste Batterie, die durchlief), Job „voll 17/18“, Schritt „Das Nervensystem (die Pipeline-Abnahme)“: `❌ S: der Stammbaum — S: kein Zwilling (grenzstein)` und `❌ E: das neue Gesetzbuch steht über die Werkstatt in der Welt, ohne eine Zeile im Wirt — 3/3 Baupläne … der Wirt nennt die Art nie`. Alle anderen 21 Jobs grün, beide GPU-Proben grün.
