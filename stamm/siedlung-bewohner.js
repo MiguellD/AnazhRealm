@@ -2264,7 +2264,14 @@ class AnazhRealm_siedlung_bewohner {
         let bd = Infinity;
         for (let d = 0; d <= AnazhRealm.BEWOHNER.brandRinge && !best; d++)
             for (let i = -d; i <= d; i++)
-                for (const [ix, iz] of d ? [[cx + i, cz - d], [cx + i, cz + d], [cx - d, cz + i], [cx + d, cz + i]] : [[cx, cz]]) {
+                for (const [ix, iz] of d
+                    ? [
+                          [cx + i, cz - d],
+                          [cx + i, cz + d],
+                          [cx - d, cz + i],
+                          [cx + d, cz + i],
+                      ]
+                    : [[cx, cz]]) {
                     if (G.has(ix * 2097152 + iz)) continue;
                     const nah = { x: Math.min(Math.max(x, ix * cs + 1), (ix + 1) * cs - 1), z: Math.min(Math.max(z, iz * cs + 1), (iz + 1) * cs - 1) }; // prettier-ignore
                     const q = frei(nah) ? nah : { x: (ix + 0.5) * cs, z: (iz + 0.5) * cs };
