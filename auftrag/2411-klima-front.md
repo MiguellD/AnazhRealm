@@ -85,3 +85,11 @@ Commit-Messages: deutsch, Zahlen vorher ↔ nachher, keine Siegel-Wörter (ferti
 Geschnitten · Gemessen (je Sprosse vorher ↔ nachher am Export, Saaten-Zahl) · Offen (Sprosse · Grund · Messname · Leser). Dazu: beide Köpfe mit
 sha40, der Pfad der Zensus-Tafel, je Bild-Pflicht Saat/Ort/Blick. Karte 2 gebucht n von 1 718 — n aus `vision/karte-2-stand.json` am Kopf von
 `origin/punkte-maschine` gelesen, nie aus dem Kopf.
+
+## NACHTRAG 08:02 (Koordinator): dieselbe Wurzel trägt eine vierte Front
+
+Die frische Front-Tafel (Akten bis Runde 15) zeigt `planet.kopplung.gegenwart#2` FERN und ohne Anspruch: `gipfelProzent 46,3 %` gegen Soll ≥ 95 % —
+Täter laut Richter: `planet-core.js` `planetPunktR` (Orogen an der konvergenten Grenze). Das ist die Wurzel deines #5 (Hebung als Funktion der
+Konvergenz). Lies die Sprosse im Zensus mit (Richter-Text in `vision/meisterkarte-2.json`, Station per `git grep -n gipfelProzent`): fällt sie mit
+demselben Schnitt, dann nennt dein Bericht die Zahl vorher ↔ nachher und sie geht in den Anspruch; verlangt sie einen eigenen Schnitt, steht sie
+ehrlich offen mit Messname. Kein zweiter Zweig. main steht inzwischen auf 07693cc8 (z707 licht-stetig, z708 erbe-geburt gelandet).
