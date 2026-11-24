@@ -5443,9 +5443,9 @@
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
-        // (das Spiel des Abends, SPIEL_GESETZ: der Wettkämpfer gebeugt in der Kraft, der Ringer im Zweikampf ebenso, am Brett über den
-        // Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "pwalk", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
+        // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
+        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den

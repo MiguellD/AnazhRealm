@@ -913,7 +913,8 @@ function nachbarUrteil(C0, nurTreff) {
     const z = (w) => linseZahl(21, w);
     const leiber = spielGaeste(C0, 242, 21);
     const um = (i, r0, r1) => ((a, r) => ({ x: r * Math.cos(a), z: r * Math.sin(a) }))(2 * Math.PI * z("a" + i), r0 + (r1 - r0) * z("r" + i));
-    const kand = leiber.map((g, i) => (i < 12 ? { abend: um(i, 0, 15), heim: um(i + 500, 60, 200) } : i < 152 ? { abend: null, heim: um(i, 20, 95) } : i < 212 ? { abend: null, heim: um(i, 120, 300) } : { abend: { x: 200, z: 0 }, heim: um(i, 150, 250) })); // prettier-ignore
+    const fernTreff = um(999, 200, 200); // der Treff eines anderen Platzes, 200 m fort
+    const kand = leiber.map((g, i) => (i < 12 ? { abend: um(i, 0, 15), heim: um(i + 500, 60, 200) } : i < 152 ? { abend: null, heim: um(i, 20, 95) } : i < 212 ? { abend: null, heim: um(i, 120, 300) } : { abend: fernTreff, heim: um(i, 150, 250) })); // prettier-ignore
     const wahl = nurTreff ? kand.map((k, i) => (k.abend && Math.hypot(k.abend.x, k.abend.z) <= 20 ? i : -1)).filter((i) => i >= 0) : C0.spielGaesteWahl(kand, 0, 0, 20); // prettier-ignore
     const gaeste = wahl.map((i) => Object.assign({}, leiber[i], { orte: Object.assign({}, leiber[i].orte, { abend: kand[i].abend ? leiber[i].orte.abend : null }) })); // prettier-ignore
     const abende = [];

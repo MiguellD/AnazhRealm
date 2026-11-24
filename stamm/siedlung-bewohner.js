@@ -2549,7 +2549,8 @@ class AnazhRealm_siedlung_bewohner {
         const RO = KC.TAGES_GESETZ.rollen;
         const [gaeste, wer] = [[], []];
         const kand = L0.filter((b) => b.koennen && b.genom && !(RO[b.rolle] && RO[b.rolle].regenfest));
-        for (const i of KC.spielGaesteWahl(kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim })), mx, mz, R)) {
+        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim }));
+        for (const i of KC.spielGaesteWahl(wo, mx, mz, R)) {
             const b = kand[i];
             const d = this._dialsAusGenom(b.genom);
             const P = KC.labProportionen(d);
