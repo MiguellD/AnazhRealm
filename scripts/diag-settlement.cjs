@@ -3512,6 +3512,13 @@ hauptLauf(async () => {
                             anker,
                             Gs.ortCtx(Gs.lageGrund(L.seed, window.SimplexNoise))
                         );
+                        // der Hash beider Seiten beim Namen (FNV-1a über das JSON des Plans)
+                        const fnv = (t) => {
+                            let h = 0x811c9dc5;
+                            for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 0x01000193);
+                            return (h >>> 0).toString(16).padStart(8, "0");
+                        };
+                        res.planHash = { studio: fnv(JSON.stringify(studio)), welt: fnv(res.v2Json) };
                         res.planHashGleich = JSON.stringify(studio) === res.v2Json;
                     }
                     res.planJson = JSON.stringify({ roads: P.roads || [] });
@@ -3849,7 +3856,7 @@ hauptLauf(async () => {
             "  ORT-ZAHLEN " +
                 JSON.stringify(
                     Object.assign(
-                        { planV2: outO.planV2, zellen: u.zellen, fremdArten: outO.fremdArten || {}, zweit: outO.zweit },
+                        { planV2: outO.planV2, planHash: outO.planHash, zellen: u.zellen, fremdArten: outO.fremdArten || {}, zweit: outO.zweit },
                         m
                     )
                 )

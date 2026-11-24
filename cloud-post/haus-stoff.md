@@ -100,3 +100,30 @@ Je Merkmal im Bild, gegen die Fotos:
   - Labor-Hash c31204c7cdb89380 unverändert.
 - **OFFEN.** Ein Wort an einem fremden Klima baut seine eigene Region (das teilbare Wort geht vor dem Ort). Der Ort spricht nur, wo kein
   Wort spricht · Messname gate:settlement R · Leser `_foundryRequestSettlement`.
+
+## Heilung 2: drei Linsen der Batterie an c6cec836
+
+- **Settlement-Kanal N5.7, O Akt („Plan-Hash Studio ≠ Welt“).**
+  - Ursache: der Kanal entschied selbst über das Klima (`wort = dp.wort || dp.kachel`). Der Akt baute über `spawnSettlement` mit
+    `wort: true` ohne Klima. Die Linse fragte denselben Plan ohne `wort` nach und bekam ihn mit Klima: zwei Eingänge für einen Plan.
+  - Eingang: das Klima ist jetzt EIN Feld des Auftrags. `_foundryRequestSettlement` liest kein Klima mehr selbst. Die Zelle ohne Wort
+    legt es in ihren Auftrag (`_zellEingang`: `_dorfBereiten` und das Gedächtnis `_ortDp`), der Akt eines Worts und die Kachel seiner
+    Stadt tragen keins. Die Linse reicht im Auto-Dorf das Klima des Orts als Argument (gelaende-core `ortGesetz`: `klimaHeute`,
+    `spendeVerh`), im Akt bleibt sie unverändert.
+  - Stand: siehe die Plan-Hashes unten.
+- **Haus-Fernkörper S3 („holzhuette/s1: Glas L2: Farbe 0,195 von der L0 entfernt“).**
+  - Ursache: seit dem Stein-Sockel ist im Blockbau `stein` kein Blockholz mehr. Damit stehen auch Herd, Rauchsammler und Schornstein
+    in Stein. Die L0 sieht ihn durch das Giebel-Fenster des Estrichs (je Giebel-Fenster rund die Hälfte der Pixel), die L2 sah Holz.
+  - Gesetz: `herdKaesten` ist die EINE Quelle. Der Herd der L0 baut aus diesen Kästen, und das Fern-Fenster der L2 mischt den Stein
+    zu dem Anteil in den Raum hinter der Scheibe, zu dem die Kästen die Scheibe decken (Blick senkrecht durch die Wand, wie der Strahl
+    der Linse). Der EG-Boden des Blockbaus liegt in Bohlen.
+  - Stand: holzhuette/s1 L2/L0 Farbe 0,195 → 0,105 (Soll ≤ 0,15). gate:haus-fern ist grün.
+- **Haus-Asset-Vertrag v6 (Golden und Plattform-Probe).**
+  - Ursache (Probe): der Herd-Stein kippte zwei Fälle mehr, holzhuette L2 an sin (fachwerk-core.js:321, three `rotation.set` je
+    Balken) und alpenchalet L3 an atan (:264, die Neigung `th` der Eindeckung).
+  - Gesetz: die Drehung liegt im Raster. Sinus und Kosinus jedes Balken-Winkels und `th` liegen auf 2^-30 (`sc`, `drehQ`), je Bau
+    einmal je Winkel gerechnet. Der Balken setzt sein Quaternion selbst (XYZ wie three `setFromEuler`).
+  - Stand: cos 26 → 15, sin 11 → 7, atan 18 → 0, tan 14 → 12 (Summe 69 → 34). Die Ratsche fällt auf diese Zahlen, gehoben wird nichts.
+  - Golden haeuser.json neu geprägt: 221 von 258 Fällen, die Ecken-Zahl je Fall ist gleich. Darunter die 56 Hütten-Fälle (holzhuette,
+    alpenchalet, skandinavisch, norwegisch, russisch, schwarzwald, japanisch je s7/s12345 × L0–L3). Golden siedlung.json neu geprägt
+    (7/12 „Villaalto“ und 12345/6 „Grünbach“). Die Pläne weichen höchstens um 4·10^-9 m vom alten Stand ab, Slots und Namen sind gleich.
