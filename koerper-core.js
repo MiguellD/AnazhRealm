@@ -6176,6 +6176,18 @@
     //   sprung  = h = abdruckM · (Φ − 1) (Samozino 2008), das Abdruck-Tempo √(2·g·h) ist die Sprungkraft der Seele.
     // Die Größe der Dials skaliert danach im Wirt mit 1/√Größe (`_applySizeMultipliersToStats`) — gegen die Froude-Ähnlichkeit;
     // das steht offen (nerv-bewegung, cloud-post). Linse: gate:koerper-kern VERBEN.
+    // DER TANGENS OHNE TRANSZENDENTE (Daten-Vertrag v7): `fx.bewegung` trägt die Werte von `leibVerben` im kanonischen JSON der
+    // Daten — Math.tan ist die Klasse, die je Plattform im letzten Bit runden darf, der Satz v7 ruft keine (Plattform-Probe:
+    // „ruft jetzt tan 1"). Lamberts Kettenbruch tan x = x / (1 − x² / (3 − x² / (5 − …))) rechnet nur mit − · ÷, IEEE-754 rundet
+    // jede davon exakt: dieselben Bits auf jeder Plattform. Zwölf Glieder tragen |x| ≤ 0,8 auf 1 ULP (an maxWinkel 0,47 die Bits
+    // von Math.tan); den Gang zur Laufzeit rechnet tetrapoda `gangSchritt`, gate:koerper-kern V5 bindet beide (2·Tastgrad·Φ = 1).
+    function tanKette(x) {
+        if (!(Math.abs(x) <= 0.8)) throw new Error("KERN-PFLICHT verletzt: tanKette außerhalb |x| ≤ 0,8 (" + x + ")");
+        var x2 = x * x,
+            d = 25;
+        for (var k = 12; k >= 1; k--) d = 2 * k - 1 - x2 / d;
+        return x / d;
+    }
     var _leibVerbenMemo = null;
     function leibVerben() {
         if (_leibVerbenMemo) return _leibVerbenMemo;
@@ -6186,7 +6198,7 @@
             g = LEIB.sprung.refG,
             phi = LEIB.kraft * K.kraft,
             einheit = Math.sqrt(g * beinM);
-        var vh = (4 * Math.tan(G.maxWinkel) * phi - G.schrittBasis) / G.schrittFroude;
+        var vh = (4 * tanKette(G.maxWinkel) * phi - G.schrittBasis) / G.schrittFroude;
         // der Sprint liegt im Lauf (der Tastgrad unter tastgradLauf, die Froude-Zahl über dem Wechsel) — sonst gilt die Formel nicht
         if (!(beinM > 0) || !(phi > 1) || !(1 / (2 * phi) < G.tastgradLauf) || !(vh * vh >= 1.3 * G.laufFroude))
             throw new Error("KERN-PFLICHT verletzt: leibVerben außerhalb des Laufs (Bein " + beinM + " m, Φ " + phi + ", v̂ " + vh + ")");
