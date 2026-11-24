@@ -59,8 +59,11 @@ Bewohner: nur Siedlungen im Nah-Ring, nie die Welt.
 
 - `erleben.klang.ereignis#3` (Rollen · Gleiten · Schaben): das Kontakt-Gesetz ist nicht gebaut; der Klang kennt den Stoß
   (`trefferPaar`), die Kontakt-Geschwindigkeit je Fuge müsste der Körper-Löser liefern (koerper-core nur LESEN).
-- `erleben.klang.getuemmel#1`: die sieben Stimmen (die Station zählt 3) und `dauer_min` (0,234 gegen ≥ 10) sind nicht geschnitten;
-  nur der Duck rückte in die Mitte des Bands.
+- `erleben.klang.getuemmel#1`: die sieben Stimmen und `dauer_min` sind nicht geschnitten, nur der Duck rückte in die Mitte des
+  Bands. Der Grund steht im Urteil des Richters (vision/richter/erleben.klang.getuemmel.1.31ea3847-gtx.json, 20.11.): „nur 3
+  Stimmen zugleich an der Wiese im Regen (wind, regen, glut)“ — der Ort der Station trägt drei Quellen, der Deckel des Gesetzes
+  (7, die lautesten gewinnen) greift dort nie; und „die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter
+  (60 s)“ — die Dauer ist der Rahmen der Station. Beides liegt an der Station, die dieser Auftrag nicht ändert.
 - `erleben.kopplung.epoche-ganz#1` (Grillen still): das Grillen-Gesetz (Dolbear, stumm unter 12 °C) ist richtig, die Wärme am
   Ort falsch — im Hochsommer liest das Dorf auf 91 m Luft 2,6–12,6 °C, Boden 4,2–11,0 °C, weil der Gelände-Kern mit
   `kuehlungKJeM` = TEMPERATUR.sommer / mittlere Schneegrenze = 0,1108 K/m kühlt (gelaende-core.js:5918, angewandt :1334: 10,1 K
