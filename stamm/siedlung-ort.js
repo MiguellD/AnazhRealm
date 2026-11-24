@@ -538,53 +538,11 @@ class AnazhRealm_siedlung_ort {
         );
         if (entry) ohne(); // (der Zug, der wiederkehrt: das Los steht jetzt)
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
-        if (entry && slot.rolle === "scheune") this._hofKarren(entry, slot, wx, wz);
         return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
-    }
-    // DER WAGEN DES HOFS (fahrzeug-gattung, Karte 2 mensch.fahrzeug.gestalt#1): vor dem Tor der Scheune (die Tenne: dort fährt der
-    // Wagen ein, das Gesetz des Hofs `hof:scheune`) steht der Leiterwagen (vehicle-core `karren`), längs der Wand neben dem Tor,
-    // die Deichsel vom Tor weg — dieselbe Wasser- und Bau-Wand wie jedes Werk; der Same aus dem Haus. Rückgabe: der Wagen oder null.
-    _hofKarren(haus, slot, wx, wz) {
-        const typ = "fahrzeug_karren";
-        const tu = slot.tuer;
-        if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return null;
-        // der Bauplan des Wagens wird erst mit dem Buch der Garage geboren (gemessen: das Dorf am Wasser hob seine 5 Scheunen
-        // vor der Geburt, 0 Wagen) — der Wagen wartet auf sie, solange seine Scheune steht
-        if (!this.state.blueprints || !this.state.blueprints[typ])
-            return this._wartetAufBauplan([typ], () =>
-                this.state.architectures.includes(haus) ? this._hofKarren(haus, slot, wx, wz) : null
-            );
-        const VC = globalThis.__vehicleCore;
-        const P = VC.PRESETS.karren;
-        const halb = (P.s.radstand + P.s.ueberhangV + P.s.ueberhangH) / 2 + AnazhRealm.HOF_KARREN.deichselM / 2;
-        // haus-lokal: neben dem Tor (+x), vor der Wand (−z, der Vorplatz der Tür), längs der Wand; R_y(φ) trägt es in die Welt
-        const lx = tu.x + (tu.w || 0) / 2 + AnazhRealm.HOF_KARREN.torM + halb,
-            lz = tu.z - AnazhRealm.HOF_KARREN.wandM;
-        const ph = slot.phi || 0;
-        const [x, z] = [wx + lx * Math.cos(ph) + lz * Math.sin(ph), wz - lx * Math.sin(ph) + lz * Math.cos(ph)];
-        if (!this._landAt(x, z, 0.2)) return null;
-        const y = this.getTerrainHeightAt(x, z);
-        if (
-            !Number.isFinite(y) ||
-            !this._bauFrei(
-                x,
-                z,
-                ph,
-                { ex: halb, ez: AnazhRealm.HOF_KARREN.halbBreitM, ox: AnazhRealm.HOF_KARREN.deichselM / 2, oz: 0 },
-                null,
-                y
-            )
-        )
-            return null;
-        return this.spawnArchitecture(
-            typ,
-            { x, y: y + 0.5, z },
-            { seed: (slot.seed >>> 0) ^ 0x6b61, rotationY: ph, silent: true, precise: true, ausGesetz: true }
-        );
     }
     // DAS WERK WARTET AUF SEINEN BAUPLAN (fahrzeug-gattung): ein Werk des Gesetzes, dessen Bauplan erst mit dem Buch geboren wird
     // (`_foundryAutoRegisterSpecies`: die Arten der Studios, `fahrzeug_*`, `steg_*`), steht mit der Geburt (`_wartendeTreten`) —
-    // bis hier fiel es still, wo der Ort vor dem Buch stand. Leser: der Wagen des Hofs, der Anleger. Rückgabe null (noch nichts).
+    // bis hier fiel es still, wo der Ort vor dem Buch stand. Leser: der Anleger (`_anlegerLegen`). Rückgabe null (noch nichts).
     _wartetAufBauplan(typen, tat) {
         (this._bauplanWarten || (this._bauplanWarten = [])).push({ typen, tat });
         return null;
@@ -660,12 +618,6 @@ class AnazhRealm_siedlung_ort {
             for (let k = 0; k < (A[art].kappe || (plan.laternen || []).length); k++)
                 S.add(this._ausstattungSame(plan, art, k));
         for (const e of this.state.architectures.slice()) {
-            // der Wagen des Hofs (`_hofKarren`) fällt mit seiner Scheune: er steht binnen ihrer Reichweite und seiner Länge
-            const k = e && e._ausGesetz && e.type === "fahrzeug_karren" && e.position;
-            if (k && weg.some((h) => Math.hypot(h.x - k.x, h.z - k.z) <= h.r + 6)) {
-                this.removeArchitecture(e, { still: true });
-                continue;
-            }
             const p = e && e._ausGesetz && S.has(e.seed >>> 0) && e.position;
             if (!p || p.x < o.x + w.x0 || p.x > o.x + w.x1 || p.z < o.z + w.z0 || p.z > o.z + w.z1) continue;
             if (e.type !== "wandlaterne_dorf" || weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r))
@@ -3876,7 +3828,3 @@ AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // ein
 // bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
 AnazhRealm.SICHT_SCHRITT_M = 0.5;
 AnazhRealm.SICHT_GELAENDE_M = 0.25;
-// DER WAGEN DES HOFS (`_hofKarren`): so weit steht er neben dem Tor der Scheune (0,8 m — die Tür schwingt frei), so weit vor
-// der Wand (1,6 m: die halbe Breite des Wagens 0,9 m und 0,7 m Luft), die Deichsel (2,4 m) liegt vor ihm, die halbe Breite
-// seines Platzes für die Bau-Wand (0,9 m).
-AnazhRealm.HOF_KARREN = Object.freeze({ torM: 0.8, wandM: 1.6, deichselM: 2.4, halbBreitM: 0.9 });

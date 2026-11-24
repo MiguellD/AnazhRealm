@@ -545,7 +545,7 @@ class AnazhRealm_studio_bruecke {
             this._forestDartMemo = null;
             this._forestExtraCache = null; // die Auto-Arten-Liste neu ableiten (gleiche Buch-Identität möglich)
             this.log(`Nervensystem: ${registered} neue Studio-Art(en) automatisch registriert.`, "INFO");
-            this._wartendeTreten(); // die Werke des Gesetzes, die auf ihren Bauplan warteten (der Wagen des Hofs, der Anleger)
+            this._wartendeTreten(); // die Werke des Gesetzes, die auf ihren Bauplan warteten (der Anleger)
         }
         return registered;
     }
